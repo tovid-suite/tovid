@@ -1,0 +1,287 @@
+Usando el interfaz gráfico (GUI)
+
+
+El interfaz gráfico de tovid (tovidgui.py) es la cara amable 
+de tovid. Desde el GUI, puedes dar estructura, codificar y tostar un 
+[VCD #VCD],
+[SVCD #SVCD],
+o DVD con menús y videos.
+El GUI es principalmente una fachada para los componentes del interfaz de línea de comandos;
+aparte de pequeñas prestaciones interactivas, el GUI no puede hacer nada que las
+herramientas de la línea de comando no puedan hacer. Si prefieres usar un interfaz de línea de comandos,
+puede que quieras saltar hasta [Uso de las herramientas de la línea de comandos cli.html].
+
+
+
+==Prestaciones y capacidades==
+
+- Sencillo proceso en tres pasos para autoría de discos de vídeo
+- Los discos pueden tener un único menú enlazando a varios videos, o un
+    una jerarquía de dos niveles de menús (menú principal enlazando a varios submenús, 
+    cada uno con enlaces a varios videos)
+- El árbol de estructura del disco permite la fácil edición de la navegación por el disco
+    
+- En los menús, la imagen y sonido de fondo, los colores del texto, los tipos de letra, y la alineación 
+    son configurables (mira la documentación de [makemenu makemenu.html] para encontrar consejos sobre cómo maximizar el número de tipos de letra disponibles)
+- La resolución del vídeo, la relación de aspecto, la tasa de bits por segundo, y otras opcions son
+    configurables
+
+
+==Uso y disfrute==
+Suponiendo que has instalado la familia tovid en algún directorio incluído en la variable PATH, 
+(véase las instrucciones de instalación), todo lo que tiene que hacer es ejecutar tovidgui.py. 
+El GUI de tovid no funcionará adecuadamente a menos que hayas instalado la familia tovid en algún directorio incluído en la variable PATH.
+Por el momento, el GUI de tovid no acepta parámetros al invocarse desde la línea de comando.
+
+
+==Cómo funciona==
+El GUI de tovid, en su diseño actual, opera según una sencilla noción: tú pones los ficheros de vídeo, 
+y opcionalmente una imagen de fondo o un trocito de audio, para cada menú. 
+El GUI lleva a cabo todas las conversiones ncesarias, y crea un (S)VCD
+o DVD:
+
+[../images/tovid_gui_organization.jpg]
+
+Si estás interesado en saber más detalles de lo que ocurre tras el telón, lee 
+[Uso de las herramientas de la línea de comandos cli.html].
+
+
+==Visita guiada al GUI==
+Seguidamente proponemos un viajecito por el interfaz gráfico y una guía sobre cómo usarlo. En estos momentos,
+el GUI está diseñado con un tarea relativamente sencilla en mente:
+Crear un disco de vídeo, usando un puñado de videos. El GUI gestiona 
+todas las conversiones necesarias (using [tovid tovid.html]), la creación del menú(s)
+(usando [makemenu makemenu.html]), y la autoría del disco (usando
+[makexml makexml.html]).
+
+===Nota===
+El GUI está todavía en desarrollo; en tu pantalla puede parecer ligeramente
+diferente, dependiendo de la versión del GUI, gestor de ventanas y tema GTK+
+que utilices. Estos pantallazos se tomaron usando la versión 0.18a (versión de preestreno) de tovidgui.py
+, ejecutándose bajo 
+[XFCE 4.2 http://www.xfce.org/]
+con el tema XFCE-light y el estilo por omisión para el gestor de ventanas.
+
+===Pantalla de arranque===
+Cuando lances por primera vez el GUI de tovid, verás una pantalla tal que esta:
+
+[../images/gui_disc_format.png]
+
+El árbol Disc layout en el lado izquierdo representa
+la estructura de tu disco. Irá creciendo conforme añadas menús y videos.
+En el panel Disc options a la derecha, puedes escoger qué tipo de disco
+quieres hacer. Si tienes una unidad grabadora de DVDs, puedes crear DVDs;
+si tienes una unidad grabadora de CDs, puedes crear VCDs y SVCDs.
+
+[../images/gui_disc_working_dir.png]
+
+También en el panel Disc options, puedes escoger un directorio
+de trabajo, necesario para los ficheros temporales que se creen durante la codificación. Este directorio
+debe tener suficiente espacio para codificar todos los videos, así que comprueba que has escogido un
+directorio con varios GB disponibles, especialmente si estás creando un disco DVD grande.
+En el árbol Disc layout, puedes editar el título de un elemento
+pulsando el ratón sobre él. Haz clic sobre el título al lado del icono de disco si quieres 
+cambiar el título del disco.
+Cuando ya estés satisfecho con las opciones que has escogido aquí, selecciona
+el botón Add menu para empezar a añadir contenido al disco.
+Hace falta al menos un menú para navegar por el disco, así que debes añadir un menú 
+antes de seguir avanzando. Siempre puedes volver a esta pantalla seleccionando 
+el icono de disco que aparece en el árbol.
+
+
+===Añadiendo un menú===
+Prosigue con la creación del disco seleccionando el botón Add menu.
+Cuando añadas un menú, verás una ventana nueva como esta: 
+
+[../images/gui_menu_options.png]
+
+Cuando se selecciona un menú en el árbol Disc layout, las
+opciones relevantes de codificación a tal menú se muestran en el panel de opciones de Menu
+que está a la derecha. Una vez más, puedes hacer clic sobre el título del menú en el árbol
+(al lado del icono de menú) para editar el título del menú.
+En el panel Menu options, puedes escoger una imagen como fondo del menú,
+y también se puede reproducir un corte de sonido mientras se muestra el menú. 
+Si no escoges imagen de fondo ni sonido, 
+se usa un fondo por omisión, y no habrá sonido mientras el menú aparezca en pantalla.
+Aquí también puedes configurar el tipo de letra, alineación, y color
+de los elementos mostrados en el menú.
+Ahora que ya tienes un menú, puedes añadirle videos seleccionando el botón
+Add video(s).
+
+===Nota===
+El botón Add slide(s) se usará en el futuro
+para añadir un carrusel de diapositivas a un disco. En la entrega inicial (versión 0.18), sin embargo, 
+esta característica está desactivada.
+
+===Adición de videos===
+Cuando seleccionas Add video(s), aparece una ventana se selección de ficheros
+donde puedes seleccionar uno o más videos que se añadirán al menú seleccionado.
+Tras añadir algunos videos, la pantalla tiene una apariencia similar a esta:
+
+[../images/gui_videos_added.png]
+
+Los videos se muestran en el árbol con un icono a su lado que representa una tira de película.
+Una vez más, puedes hacer clic sobre los títulos para editarlos; inicialmente, el título 
+de cada vídeo es el mismo que el nombre del fichero. Observarás que el panel
+Menu options muestra ahora la lista de títulos que aparecen en en ese menú;
+y también el tipo de letra seleccionado, la alineación, y color que se aplicarán
+a tales títulos cuando se muestren en el menú ya acabado.
+
+
+===Múltiples menús===
+Si tienes muchos videos, puede que quieras dividir tu disco en
+varios submenús. Para lograrlo, simplemente selecciona de nuevo Add menu.
+Si así lo haces, la disposición del árbol cambiará para aparecer como sigue:
+
+[../images/gui_second_menu_added.png]
+
+Observarás que ha surgido un "Main menu" sobre los dos menús sin título. Este
+menú principal se usa para navegar a los otros menús. Puedes poner tantos videos 
+como gustes dentro de cada menú. Puedes cambiar el tipo de letra, color y fondo
+del menú principal tal y como puedes hacerlo en otros menús; la diferencia reside en que 
+el menú principal enlaza a otros menús, en vez de a videos.
+Si deseas usar el mismo tipo de letra, alineación, color y fondo para 
+todos los menús de tu disco, marca Use these settings for all
+menus.
+Este botón copiará estos ajustes a todos los menús del disco.
+El menú principal enlaza a cada uno de los submenús bajo él, y cada submenú
+incluirá automáticamente un enlace "Back" que vuelve al menú principal. Independientemente de
+cuántos menús añadas, el primer menú listado en el árbol 
+Disc layout será el primero que veas cuando
+reproduzcas el disco.
+
+===Opciones de vídeo===
+Ahora que tenemos añadidos algunos videos, puedes deidir cómo deseas 
+codificarlos. Cuando seleccionas un vídeo en el árbol, se muestra el panel de 
+Video options, mostrando todas las opciones de configuración
+aplicables a tal vídeo:
+
+[../images/gui_video_enc_opts.png]
+
+La resolución de salida para cada vídeo depende del formato de disco 
+elegido; ciertas resoluciones no están disponibles con ciertos formatos. Si
+no te agradan las resoluciones de vídeo disponibles, puedes volver atrás y cambiar el
+formato de disco pulsando en el icono de disco en el árbol.
+También puedes escoger una relación de aspecto para el vídeo; si es necesario, a los formatos de pantalla panorámica
+se les pondrán bandas negras arriba y abajo, para que se muestren correctamente en tu televisor.
+Si lo deseas, también puedes ajustar la tasa de bits por segundo de audio y vídeo. Los 
+valores por omisión son normalmente razonables, así que puedes dejarlos tal y como están si no tienes claro
+qué tasa usar. Finalmente, puedes activar opciones adicionales como la
+normalización del audio (útil si el nivel sonoro es demasiado fuerte o demasiado débil), 
+vídeo de baja calidad (si prefieres mayor velocidad a expensas de la calidad), o desentrelazado de vídeo
+(si el vídeo de partida proviene de la señal de antena o de VHS).
+Para usar los mismos ajustes en todos los videos del disco, seleccionar el botón 
+Use these settings for all videos. La resolución, relación de aspecto, tasas de bits y otras opciones 
+seleccionadas en estemomento se aplicarán a todos los
+videos en árbol de estructura de disco.
+Puedes usar los botones Move up, Move
+down, y
+Remove en el árbol de estructura para situar los elementos donde prefieras, 
+o para eliminarlos del disco.
+Cuando estés satisfecho con la estructura de tu disco, pulsa el botón 
+Next: Encoding setup para proceder con la codificación y
+autoría del disco:
+
+[../images/gui_layout_done.png]
+
+Seguramente querrás asegurarte de que todos tus menús y títulos de vídeo están
+tal y como quieres antes de proceder, así que comprueba que no queda ningún 
+elemento "Untitled" en el árbol. Pero no te preocupes, puedes volver a esta
+pantalla si es que le has dado al botón accidentalmente.
+
+===Codificando todo===
+Cuando seleccionas Next: Encoding setup, llegarás
+a un nuevo panel que muestra una ventana que registra la salida de comandos:
+
+[../images/gui_encoding_setup.png]
+
+En la entrega de preestreno 0.18a, 
+el "Output directory" se ignora (pero en la entrega oficial este será el lugar 
+donde se escriba la imagen de disco). Pulsa Next:
+Begin encoding para arrancarlo todo. Si has seleccionado
+muchos videos, este paso puede llevar horas completarse. El registro de la salida de los comandos
+se actualizará regularmente para mantenerte informado del progreso de la codificación. Cuando
+se termine, el siguiente paso es crear la imagen del disco, la autoría de 
+la estructura final del disco.
+
+===Creación de la imagen de disco===
+El la versión de preestreno 0.18a del GUI, este paso lo tienes que hacer
+a mano. El GUI te informará cuando el fichero XML ya está listo para autoría;
+si estás haciendo un VCD o SVCD, necesitas usar vcdxbuild,
+ejecutando un comando tal que ``vcdxbuild /path/to/output.xml``.
+Si están usando cualquiera de los formatos DVD, has de usar dvdauthor,
+ejecutando un comando como ``dvdauthor -x /path/to/output.xml``. El
+GUI te dirá la ruta completa del fichero del fichero XML.
+La versión siguiente de tovid tendrá al menos la capacidad de autoría, pero 
+puede que sea todavía necesario tostar a mano el disco, usando cdrecord, K3B, etc.
+
+
+===Pantallazos de desarrollo===
+El desarrollo del GUI progresa con tesón, y las fotos de las pantallas puede que no 
+se asemejen exactamente a lo que veas en tu GUI. Esta visita guiada se actualizará periódicamente
+conforme crezca la fuuncionalidad del GUI, pero debido a la inversión de tiempo necesaria 
+para recopilar las pantallas actualizadas, esta guía puede que no se actualice con cada nueva entrega
+del GUI.
+Esta sección muestra varias pantallas de la versión de desarrollo del GUI
+(actualmente la versión 0.18), con una breve descripción de lo que se muestra en pantalla.
+
+[../images/gui_devel_guide_panel_thumb.png]
+
+Guide panel. Este es un nuevo sistema de ayuda que ha sido implantado
+para ayudar al usuario a ir de un paso al siguiente. El panel de guía es una mera caja de texto 
+alargada que describe cuál es la tarea en curso en el GUI, y qué paso
+puedes querer hacer después. Este panel hace que el GUI ocupe significativamente más
+espacio en la pantalla, así que se ha añadido un nuevo View, que
+incluye la opción de ocultar/mostrar el panel de guía.
+Se ha escogido esta solución porque ofrece grandes posibilidades como un muy
+conveniente y completo sistema de ayuda. En futuras versiones, este panel podría ser
+mejorado funcionalmente, o bien ser interactivo (con enlaces a 
+los temas relacionados) o con capacidades de búsqueda. Se parecería más a la navegación
+dentro del panel de una ventana de ayuda de Windows, y contendría texto con formato, imágenes, 
+etc. escrito en HTML.
+La ventaja que esto tiene sobre un sistema de ayuda tradicional, con sus diálogos de ayuda separados
+es un menor esfurzo en el mantenimiento de las ventanas. Siempre que estoy mirando la ayuda, estoy habitualmente 
+intentando hacer algo con el programa a al vez. De esta manera, no tengo que 
+cambiar a mano el tamaño de la ventana de ayuda y la del GUI, ponerlas lado a lado, etc.
+Ya están justo ahí, y diseñadas para una óptima presentación de la ayuda y el GUI 
+lado a lado.
+Hacer esto implicaría casi ciertamente dividir el GUI en muchos ficheros dependientes entre sí;
+el HTML usado en tal sistema de ayuda necesita un formato específico para que
+wxWidgets pueda usarlo, y consistiría en varios ficheros separados. Los cuales sensatamente
+tendrían que estar instalados en tu directorio /usr/local/share/doc`` o un lugar similar,
+lo que significaría que el instalador de tovid necesitaría revisarse, y
+que casi con certeza habría que guardar un fichero de configuración por usuario (para que el 
+GUI supiera dónde encontrar los ficheros de documentación).
+Así que, por ahora, el panel de guía es simplemente unos pocos párrafos of text, incrustados en el mismo
+código del GUI. Pero es un buen comienzo, y ¡tiene muchas posibilidades!
+
+==Planes futuros==
+Hay planeadas algunas características adicionales en el GUI. Entre las cosas 
+que tengo en mente (más o menos en orden de prioridad):
+- Un sistema de ayuda incorporado.
+- Capacidad de carrusel de diapositivas. Requeriría implantarlo en [makexml makexml.html], 
+    si se permite hacerlos en DVDs.
+- Pantallas para [postproc postproc.html], [idvid idvid.html],
+        y [dvrequant dvrequant.html].
+- Una regleta dinámica mostrando "Espacio estimado remamente en disco" en el panel de estructura de disco.
+        Sería un barra hrozontal que se llenaría conforme añadieras videos al disco;
+        el tamaño requerido de cada vídeo se estimaría para dar al usuario una
+        idea de cuando no cabe más. Se le avisaría al usuario si se excediera el espacio disponible.
+- Vista previa de elementos del disco, incluyendo menús, videos, y carruseles de diapositivas.
+- Durante la selección de ficheros de imágenes, mostrar 
+        vistas reducidas de cada imagen, para hacer más fácil la búsqueda de la diapositiva o del fondo deseados.
+- Posibilidad de añadir pistas extra de audio/vídeo a un vídeo.
+        Permitiría producir discos con múltiples puntos de vista de cámara, o múltiples
+        pistas de audio incluyendo traduccciones, comentarios, etc. Tendría que ser 
+        implantado asimismo en el propio [tovid tovid.html].
+- Capacidad de añadir subtítulos (como una pista de subtítulos) a
+        los videos. También requeriría primero ser implantado en [tovid tovid.html].
+- Posibilidad de añadir capítulos, quizás en 
+        conjunción con la capacidad de vista previa del vídeo. Requeriría
+        implantarlo en [makexml makexml.html].
+- Arrastrar-y-soltar para añadir/reordenar videos/diapositivas en el
+        árbol de estructura del disco.
+- Posibilidad de guardar/cargar estructuras de disco no acabadas; posiblemente
+        en conjunción con esto, la capacidad de interrumpir/reanudar el
+        proceso de codificación del disco.
+

@@ -1,0 +1,52 @@
+/* tovid_print.css
+ * CSS print stylesheet for the tovid documentation
+ * http://tovid.sourceforge.net/
+ */
+
+body {
+    margin: 0.5in 0.75in;
+    font-family: Times, serif;
+    font-size: 12pt;
+    text-align: justify;
+}
+
+/* Show link URLs in parentheses */
+/*
+a:link:after, a:visited:after {
+    content: " (" attr(href) ") ";
+    font-size: 90%;
+}
+*/
+
+pre {
+    margin: 2em;
+}
+h1, h2 {
+    font-size: 150%;
+    margin: 4em 0 2em 0;
+    text-decoration: none;
+    border-bottom: 1pt solid black;
+    page-break-after: avoid;
+}
+h3, h4, h5, h6 {
+    margin-top: 2em;
+    page-break-after: avoid;
+}
+
+.toc {
+    font-size: 90%;
+    margin: 2em;
+}
+
+ul {
+    page-break-inside: avoid;
+}
+a:link, a:visited {
+    color: #028;
+    text-decoration: underline;
+}
+
+img {
+    margin: 2em;
+    page-break-inside: avoid;
+}

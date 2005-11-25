@@ -1,0 +1,25 @@
+#!/bin/bash
+
+FILES="*.html \
+    tovid_screen.css \
+    tovid_print.css"
+FR_FILES="fr/*.html"
+ES_FILES="es/*.html"
+
+if test $# -eq 0; then
+    echo "Please give the language (en, fr, es) of the translation you want to upload."
+    exit 1
+fi
+
+if test $1 = "en"; then
+    echo "Uploading en translation..."
+    scp $FILES wapcaplet@shell.sourceforge.net:/home/groups/t/to/tovid/htdocs
+fi
+if test $1 = "fr"; then
+    echo "Uploading fr translation..."
+    scp $FR_FILES wapcaplet@shell.sourceforge.net:/home/groups/t/to/tovid/htdocs/fr
+fi
+if test $1 = "es"; then
+    echo "Uploading es translation..."
+    scp $ES_FILES wapcaplet@shell.sourceforge.net:/home/groups/t/to/tovid/htdocs/es
+fi

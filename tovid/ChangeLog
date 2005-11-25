@@ -1,0 +1,466 @@
+=====================================================
+tovid suite changelog
+
+Project homepage: http://tovid.sourceforge.net/
+=====================================================
+
+This is an ongoing report of changes in the tovid suite
+command-line tools (and, in versions 0.18b and prior, the
+tovid GUI).
+
+
+============================================================
+Version 0.23
+2005-11-14
+============================================================
+
+tovid
+* Minor fixes to -fps (now accepting integers, as well as
+  X:Y ratios)
+* Better in/out directory handling
+* -debug now prints to stdout in addition to the logfile
+* Disc splitting revised (not well tested, though)
+
+idvid
+* Minor bugfixes
+* AC3 is now OK for PAL DVDs
+
+makemenu
+* Default menu highlight color changed to green (#0F0)
+* Tidied up code, arithmetic expressions
+
+postproc
+* Code cleanup
+
+
+============================================================
+Version 0.22
+2005-09-17
+============================================================
+
+tovid
+* Removed 'normalize' dependency by using mplayer -af volnorm.
+  Normalization is now possible using -parallel.
+* Aspect ratio control moved to advanced usage notes
+* New -quality option added (controlling bitrate and quantization).
+  Default bitrates for each format removed from script; they're now
+  calculated based on default quality.
+* Safe area is now rounded down to a 16-pixel multiple for (presumably)
+  more efficient encoding.
+* -interlaced option fixed (hopefully)
+
+idvid
+* mplayer output parsing simplified; ID_XXX= options are now executed
+  directly as bash commands, instead of excessive grepping and awking.
+  Many variables renamed appropriately.
+* ID_LENGTH from mplayer is now used if it's nonzero, resulting in much
+  faster (but possibly inaccurate) determination of video duration.
+  If ID_LENGTH is zero, the old (time-consuming) approach is used.
+
+makemenu
+* Fixed backward logic in deleting/keeping temporary files (they are
+  now removed UNLESS -debug is used).
+
+makexml
+* "Update scan offsets" option added to VCD output
+
+makevcd
+* Fixed vcdxbuild command-line error
+
+============================================================
+Version 0.21
+2005-08-27
+============================================================
+
+previd
+* New expermiental script for creating "thumbnail" video previews
+
+tovidgui.py
+* Minor tweaks to (re-)enable important functionality. Disc burning
+  is now possible.
+* Revamped bitrate controls (still experimental)
+
+tovid
+* -ffmpeg encoding option improved and mostly functional
+* BSD-oriented and other portability enhancements
+* Fixed bug causing log output to be lost
+* Bugfix for re-encoding already-compliant video
+* Cleaned up output
+
+makedvd
+* Mostly functional burning
+* Truncate Volume ID to valid length
+
+============================================================
+Version 0.20
+2005-08-14
+============================================================
+
+tovid-init 
+* New script containing common suite functions and declarations
+
+tovid
+* Improved progress-meter with a new approach
+* Portability enhancements and code cleanup
+* Tidied up console/logfile output a bit
+* Fixed (hopefully) -parallel encoding
+* Temporary work directory for each tovid instance partially implemented
+* -filters now actually takes comma-separated options
+* Experimental -ffmpeg encoding option added (doesn't work yet)
+* -fps option back in at user request, until a better solution is found
+
+idvid
+* Portability enhancements and additional output
+
+============================================================
+Version 0.19
+2005-07-27
+============================================================
+
+GNU autotools now used for installation. The old tovid 'configure' script
+is retired; instead, run "./configure && make install" as root to install
+tovid.
+
+tovid
+IMPORTANT CHANGES
+* Input filename and output filename prefix must now be specified using
+  the -in and -out command-line options.
+* Configuration files must now contain 'tovid' alone on the first line.
+  Please edit your configuration files accordingly.
+* Heavy modifications are in progress with the aim of improving portability.
+  tovid now uses /bin/sh instead of bash, but it's still experimental
+  and you may experience new bugs.
+
+OTHER CHANGES
+* Output and logfile formatting improved for completeness and readability
+* Bugfix for panavision encoding
+* Interlacing encoding (hopefully) fixed
+
+
+============================================================
+Version 0.18
+2005-07-04
+============================================================
+
+tovid
+* Able to handle input without an audio track; silence is generated instead.
+* -safe option for defining a target TV safe area.
+* -filters option to specify post-processing filters to be applied (or none)
+* Auto aspect ratio detection and appropriate letterboxing. New -aspect option
+  to override the autodetection
+* Experimental -interlaced and -interlaced_bf options for creating interlaced
+  output streams.
+* -discsize option for breaking output files into chunks of any size. Default
+  is 700 MB for (S)VCD, 4500 MB for DVD.
+* Sanity check for missing audio stream.wav file.
+* -subtitles option for encoding a given subtitle stream into the video.
+  Currently only supports hard-encoding of subtitles; good for foreign films
+  or anime, to have subs on-screen all the time.
+* -update option, to print out progress reports only at specified intervals.
+* Minor stream redirection, to prevent mplayer errors from showing up
+  as tovid errors.
+* Better stat reporting; accumulates total size of all outputs, instead of just
+  the first output file.
+* -fps and -twopass options removed.
+* -version option
+* Full URI may be used as the input file; input will be streamed over the net if
+  necessary.
+* -mplayeropts for passing arguments directly to mplayer
+* -config option, with inclusion of a default config file. Config files contain
+  valid tovid command-line options with any amount of whitespace or comments.
+* Statistics log (~/.tovid/stats) now in comma-separated format for easy import,
+  and now includes min/max GOP size
+* Various bugfixes
+
+tovidgui.py
+* New supporting classes added for future use (HidablePanel, MiniEditorFrame)
+* Bugfix to keep log window updated when GUI is not focused
+* 3-step interface, instead of next/previous
+* Reorganized interface classes into "task panels;" each task panel is
+  responsible for completing a specific task, and will usually comprise several
+  steps.
+* Allowed disabling of tooltips (annoying with continued use)
+* Various structural changes and bugfixes
+
+idvid
+* Identifies files that have no audio stream
+* Infers aspect ratio from mplayer
+
+makedvd, makevcd
+* New scripts for imaging and burning discs. Incomplete.
+
+
+============================================================
+Version 0.18b
+2005-02-28
+============================================================
+
+* Remaining (known) bugs to fix before version 0.18:
+  * GUI crash/segfault on using the "Suspend" button during encoding.
+  * 'makemenu' does not multiplex menu highlights on some versions of
+    ImageMagick
+
+tovidgui.py
+* Fixed bugs:
+  * PyNoAppError that occurred because of premature font object creation
+  * Incorrect VCD video bitrate of 1500 changed to correct value 1150
+  * 'makemenu' command bug with text color, caused menu creation to fail
+  * Idle-event processing bug that prevented the next command from being
+    run when the system was truly idle
+  * wxWidgets version bug that caused failure on GetFirstChild
+  * "Next: Encoding setup" was being enabled too soon. Fixed some cases
+    where it wouldn't make sense to proceed with encoding.
+  * Refresh problem with menus; title list was only refreshed when menu was
+    selected.
+* Features and touch-ups:
+  * Integrated help system to guide user from one step to the next, option
+    to show/hide the help panel
+  * Default video title is now filename with underscores converted to spaces
+  * "Preview video" button on video options panel
+  * Command output window has larger font
+  * Removed unnecessary "Print command" buttons from options panels
+  * Disabled "Add slides" button (not working anyway)
+  * NTSC film (23.976fps) output support
+
+tovid
+* Fixed bugs:
+  * Bug causing normalization failure with newer version of 'normalize'
+    (called 'normalize-audio')
+  * Bug manifesting in GUI when normalization was used
+  * Using 'tr' instead of 'sed' for CR/LF replacement, fixes potential
+    problems under Cygwin
+* Features and touch-ups:
+  * KVCDx3, KVCDx3a and "KDVD" support added
+  * -type option added for specifying video type (live action, animation,
+    or black and white). Not fully implemented yet.
+  * Added -ntscfilm for NTSC film (23.976fps) output
+  * Quick fix for already-compliant video: symbolic link from output file
+    to input file is created (avoids extra complications in the GUI)
+  * Tidied up logic in encoding
+
+
+============================================================
+Version 0.18a
+2005-02-09
+============================================================
+
+tovidgui.py
+* Completely revised version of the old GUI
+
+dvrequant
+* New component created by Jean-Francois Ouellette for
+  requantizing (shrinking) and re-authoring DVD titles
+
+tovid
+* New -parallel option for more CPU- and space-efficient
+  encoding
+* Use -vc dummy during audio dump by default if functional
+
+makemenu
+* Support for different fonts. (See tovid webpage for
+  instructions on maximizing your font choices.)
+* Configurable text, selection, and activation colors
+
+makexml
+* Support for chapter breaks at whole-minute intervals
+* Grouping capability, for combining several videos into a
+  single title
+* Forced separate-titleset flag to author differing
+  resolutions to the same disc (DVD, Half-DVD, DVD-VCD)
+
+
+============================================================
+Version 0.17
+2004-12-12
+============================================================
+
+tovid-batch
+* New component for processing multiple videos with tovid
+
+tovid
+* New -priority option for controlling run-time priority of the
+  important components
+* New -deinterlace option for fixing interlaced input video
+* Fixed bug that caused invalid VCD output
+* Put CPU speed back into stats output; added version number to
+  stats output
+* Increased intra-DC precision, modified GOP size/selection
+* Included luminance stretching in postprocessing to maximize
+  luminance range, make darks darker, lights lighter
+* Fixed some bugs affecting progress reporting and mplex commands
+* Fixed some bugs affecting the use of filenames with spaces
+* Audio encoding done first to minimize overall disk space usage
+  during encoding
+
+idvid
+* More accurate duration reporting
+* More complete identification of (S)VCD- and DVD-compliant files,
+  identification of multiply-compliant video
+
+makemenu
+* Merged with old 'makempg' component and expanded; this component
+  now does all the necessary steps in creating an MPEG menu for
+  (S)VCD/DVD
+
+makexml
+* Added output for "back" button from submenus
+* Added support for (S)VCD still-image MPEG slides
+* Fixed many bugs with (S)VCD XML output
+
+postproc
+* Added -debug option to save logs
+* Added stats output
+
+
+============================================================
+Version 0.16
+2004-11-22
+============================================================
+
+tovid
+* Faster encoding time and better CPU usage on some machines by
+  using mplayer -benchmark, and removing 'nice -n 16' from mpeg2enc
+* Much higher quality output (lower quantization) at high bitrates,
+  as well as more intelligent quantization settings at all bitrates
+* Fixed bug that caused problems for locales using
+  a comma ',' for the decimal separator
+* Fixed zero-length bugs in duration, width, height, and FPS reporting
+* Helpful message printed at end of encoding
+* -lowquality option now affects other encoding options in addition to
+  denoising
+* Required-space messages printed in megabytes instead of kilobytes
+* CPU model instead of CPU speed reported in ~/.tovid/stats; other
+  useful stats included, better stats output formatting
+
+makexml
+* Support for (S)VCD XML output
+* Checks for existence of video files
+* Fixed bug that caused titlesets to begin at 2
+* Message at end tells user how to use the XML file
+
+makempg
+* Improved interface and usage output
+* Support for (S)VCD and PAL
+* Better standards-compliance (AC3 audio for NTSC DVD)
+* Automatic image rescaling
+
+idvid
+* Fixed bug that caused error on filenames with spaces
+
+postproc
+* Shrink percentage reported
+
+============================================================
+Version 0.15
+2004-11-15
+============================================================
+
+tovid-interactive
+* New tovid interface for interactive video encoding
+
+postproc
+* New component for shrinking video or adjusting A/V sync in finished
+  mpeg videos
+
+tovid
+* Corrected default bitrates to conform to (S)VCD and DVD standards
+* Added mplex options for variable bitrate and better buffer sizes
+* Switched all scaling routines to mplayer instead of yuvscaler
+* AC3 audio encoding for NTSC DVD, to conform to standard. Requires ffmpeg.
+* New options for controlling video and audio bitrate
+* Sanity checks for needed utilities; graceful failure if they aren't available
+* Extended command-line options moved to "advanced", visible by using the
+  -help flag
+* Added -lowquality option to turn off denoising
+
+idvid
+* Identifies mpeg1 and mpeg2 video by name instead of hex code
+
+
+============================================================
+Version 0.14
+2004-11-03
+============================================================
+
+New installer, 'configure'
+
+tovid
+* Multiprocessor support is now enabled. mpeg2enc will use multiprocessing
+  if more than 1 CPU is available
+* Progress indicator and encoding-time estimate during encoding. Most
+  other output suppressed and redirected to a log file
+* Statistics printed out on exit, and saved to ~/.tovid/stats
+* Denoising now applied to all videos
+* Slightly better error-checking
+
+idvid
+* More output, ffmpeg used if available for determining running length
+
+makempg
+* Quick-and-dirty script for converting a still image plus background
+  music into an MPEG video. Useful in making menus.
+
+
+============================================================
+Version 0.13
+2004-10-25
+============================================================
+
+tovid
+* All options now require a dash '-' prefix. See usage notes.
+* Added -twopass option to fix some videos with variable frame rates
+* Code cleanup
+
+tovidgui.py
+* Changed options to include dash '-' when calling tovid.
+
+idvid
+* Initial release. Prints some useful identifying information,
+  makes attempts to recognize valid VCD/SVCD/DVD video. Not fully reliable.
+
+makemenu
+* Initial release. Can create a basic menu image. Only one font
+  at the moment.
+
+makexml
+* Initial release. Creates a basic XML file for dvdauthor,
+  defining navigation structure.
+
+
+============================================================
+Version 0.12
+2004-10-20
+============================================================
+
+tovid
+* Added support for PAL output
+* Included '%d' field in output prefix for VCD/SVCD, allowing mplex to
+  split output into CD-sized chunks for large videos
+* Changed '-H' mpeg2enc option to '--keep-hf' to eliminate possible
+  problem with differing mpeg2enc versions
+* Fixed some of the frame rate problems. Most videos should encode
+  correctly now (with the exception of ASF and some MOV).
+* Added (hopefully temporary) "fps" option to force a specific frame
+  rate. For information on using this, please see the project website.
+
+
+============================================================
+Version 0.11
+2004-09-09
+============================================================
+
+tovid
+* Switched to mplex (of mjpegtools) instead of tcmplex (of transcode),
+  thus removing dependency on transcode
+* Fixed bug when scaling to 2.35:1 aspect without denoising or normalizing
+* Removed "-vc dummy" from audio encoding command (segfault reported)
+* Prettied up output a little bit
+
+
+============================================================
+Version 0.1
+2004-05-30
+============================================================
+
+* Initial release on LinuxQuestions.org
+

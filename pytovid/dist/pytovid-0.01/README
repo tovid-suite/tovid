@@ -1,0 +1,11 @@
+pytovid
+A Python implementation of tovid
+
+This module is under development. Currently, you will
+only find some rough drafts and project notes. Please
+feel free to offer suggestions or criticism on the
+#tovid IRC channel (irc.freenode.net), or on the tovid
+discussion forums (www.createphpbb.com/phpbb/?mforum=tovid).
+
+This software (such as it is) is licensed under the GNU
+General Public License.

@@ -1,0 +1,645 @@
+#!/bin/bash
+. tovid-init
+
+# makemenu
+# Part of the tovid suite
+# ==============
+# A bash script for generating menus for use with DVD, VCD, or SVCD.
+# Given a background image and a list of titles, and an optional audio
+# file to use as background music, this script produces an MPEG video
+# displaying the specified text, with subtitle-multiplexed menu
+# highlights (for DVD) or enumerated titles (for (S)VCD).
+#
+# Project homepage: http://tovid.sourceforge.net/
+#
+# This software is licensed under the GNU General Public License
+# For the full text of the GNU GPL, see:
+#
+#   http://www.gnu.org/copyleft/gpl.html
+#
+# No guarantees of any kind are associated with use of this software.
+
+# Options to consider
+# font selection
+# font color, highlight color, selection color
+# font shadow, border
+# icons, graphic overlays
+# Support for full-motion video menus
+
+SCRIPT_NAME=`cat << EOF
+--------------------------------
+makemenu
+A script to generate DVD/(S)VCD menus
+Part of the tovid suite, version $TOVID_VERSION
+http://tovid.sourceforge.net/
+--------------------------------
+EOF`
+
+USAGE=`cat << EOF
+Usage: makemenu [FORMAT] [OPTIONS] TITLES -out OUT_PREFIX
+
+Where FORMAT is any of the following:
+
+  -ntsc (default)
+  -ntscfilm
+    Generate an NTSC-format menu
+  -pal
+    Generate a PAL-format menu
+    
+  -dvd (default)
+    Generate a DVD-format menu, with highlighted text included
+    as a multiplexed subtitle stream.
+  -vcd
+  -svcd
+    Generate a VCD/SVCD menu; each menu option will have a
+    number associated with it. You can have up to nine menu
+    options per menu.
+
+OPTIONS may be any of the following:
+
+Menu background/audio options:
+
+  -background IMAGE
+    Use IMAGE (in most any graphic format) as a background. If image is not
+    the correct aspect ratio (4:3), it will be scaled and/or cropped,
+    depending on the -crop and -scale options. If no background is
+    supplied, a default background will be created.
+  -crop (default)
+    If provided background image is not 4:3 aspect ratio, crop edges
+    to make it so. Image will be scaled up if it is too small. Cropping
+    keeps the center area of image. If you want to do cropping/scaling
+    yourself in another program, provide an image of 768x576 pixels.
+  -scale
+    If provided background image is not 4:3 aspect ratio, scale/stretch
+    it to make it fit. May cause visible distortion!
+  -audio AUDIOFILE
+    Use AUDIOFILE (in most any audio format) for background music. The
+    menu will play for long enough to hear the whole audio clip. If
+    one is not provided, silence will be used.
+
+Menu text options:
+
+  -font "FONTNAME"
+    Use FONTNAME for the menu text. Run 'convert -list type' to see a
+    list of the fonts that you can use; choose a font name from the
+    leftmost column that is displayed.
+  -fontsize n
+    Set the size for the font to n pixels. Default is 24.
+  -align [left|center|right]
+    Align the text on the left, center, or right side of the screen.
+  -textcolor "[#RRGGBB|#RGB|COLORNAME]"
+    Use specified color for menu text. #RRGGBB and #RGB are
+    hexadecimal triplets (i.e., #FF8035). COLORNAME may be any of
+    several hundred named colors; run 'convert -list color' to see them.
+    Use quotation marks around the color name or RGB triplet.
+    White (#FFF) is the default color.
+  -highlightcolor "[#RRGGBB|#RGB|COLORNAME]"
+    Do menu highlighting in specified color. Green (#0F0) is the
+    default color.
+  -selectcolor "[#RRGGBB|#RGB|COLORNAME]"
+    Do menu selection in specified color (when a menu item is played
+    or activated). Red (#F00) is the default color.
+
+Other options:
+
+  -nosafearea
+    Do not attempt to put text inside a TV-safe viewing area. Most
+    television sets cut off about 10% of the image border, so the script
+    automatically leaves a substantial margin. This option turns that
+    behavior off, leaving only a tiny margin. Use at your own risk.
+  -overwrite
+    Overwrite any existing output files.
+  -debug
+    Run in debug mode; creates a makemenu.log file with additional output
+    and leaves temporary files in place when finished.
+
+TITLES is a list of quoted text you want to be printed on the menu, i.e.
+
+  "Episode 1" "Episode 2" "Episode 3" "Back"
+
+If the word "back" is given as an episode title, a "back" button will
+be generated; this is meant to jump to a higher-level menu in a
+hierarchical menu system. Be sure to create your XML disc structure
+(with makexml) accordingly.
+
+OUT_PREFIX is the name you want to give the finished menu.
+
+Example: Make menu from ocean.jpg, with three titles aligned in the top-right corner:
+
+  makemenu -background ocean.jpg "First" "Second" "Third" -out mymenu
+
+The output file will be mymenu.mpg.
+EOF`
+
+# Defaults and function definitions
+
+# Print script name, usage notes, and optional error message, then exit.
+# Args: $@ == text string containing error message
+usage_error ()
+{
+  echo $"$USAGE"
+  echo $"$@"
+  exit 1
+}
+
+# Add a button to the spumux list
+# Args: (name, x0, y0, x1, y1)
+add_button ()
+{
+  BTN_Y0=`expr $3 \+ $BUTTON_YOFFSET`
+  BTN_Y1=`expr $5 \+ $BUTTON_YOFFSET`
+  SPUMUX_BUTTONS=`cat << EOF
+$SPUMUX_BUTTONS
+  <button name="$1" x0="$2" y0="$BTN_Y0" x1="$4" y1="$BTN_Y1" />
+EOF`
+}
+
+# Initializations
+
+# No background image or audio
+BG_IMAGE=""
+BG_AUDIO=""
+# NTSC DVD
+TVSYS="ntsc"
+RES="dvd"
+# Use a safe area
+SAFE_AREA="y"
+# Number of titles
+NUM_TITLES=0
+# Scale up and crop non-4:3 images by default
+#SCALECROP="-resize 768x -resize x576< -gravity center -crop 768x576+0+0"
+SCALECROP="crop"
+# Colors for menu items (RGB)
+TEXT_COLOR="#FFF"
+HIGHLIGHT_COLOR="#0F0"
+SELECT_COLOR="#F00"
+# Default title font and point size
+TITLE_FONT="helvetica"
+TITLE_SIZE="24"
+TEXT_ALIGN="northwest"
+# Amount of vertical spacing (pixels) between titles
+TITLE_SPACING="30"
+# Button list for spumux XML
+SPUMUX_BUTTONS=""
+# Padding for spumux buttons (from screen left and right)
+SPUMUX_BUTTON_PAD=1
+# No "back" button
+BACK_BUTTON=""
+# Temporary files
+BG_CANVAS="makemenu.bg_canvas.$PPID.png"
+FG_CANVAS="makemenu.fg_canvas.$PPID.png"
+FG_HIGHLIGHT="makemenu.fg_highlight.$PPID.png"
+FG_SELECTION="makemenu.fg_selection.$PPID.png"
+BG_SILENCE="makemenu.bg_silence.$PPID"
+# NTSC DVD
+SAMPRATE="48000"
+ASUF="ac3"
+VSUF="m2v"
+FPS="2997"
+MPEG2ENC_FMT="-f 8"
+MPLEX_OPTS="-V"
+MPEG2ENC_SYS="-F 4 -n n"
+# Figure out what version of ppmtoy4m is in use;
+# mjpegtools 1.6.2 seems to require 420_mpeg2
+if mplex 2>&1 | grep -q "version 1.6.2"; then
+    CHROMA_MODE="420_mpeg2"
+else
+    CHROMA_MODE="420mpeg2"
+fi
+PPM_OPTS="-S $CHROMA_MODE -A 10:11 -F 30000:1001"
+# Direct stuff to /dev/null
+REDIR="/dev/null"
+# Not doing debugging
+DEBUG=false
+OUT_PREFIX=""
+
+# ***********************************
+# EXECUTION BEGINS HERE
+# ***********************************
+
+echo $"$SCRIPT_NAME"
+
+# Process all options
+while test $# -gt 0; do
+    case "$1" in
+        "-ntsc" | "-ntscfilm" )
+            TVSYS="ntsc"
+            MPEG2ENC_SYS="-F 4 -n n"
+            PPM_OPTS="-S $CHROMA_MODE -A 10:11 -F 30000:1001"
+            FPS="2997"
+            ;;
+        "-pal" )
+            TVSYS="pal"
+            MPEG2ENC_SYS="-F 3 -n p"
+            PPM_OPTS="-S $CHROMA_MODE -A 59:54 -F 25:1"
+            FPS="2500"
+            ;;
+        "-dvd" )
+            RES="dvd"
+            MPEG2ENC_FMT="-f 8"
+            # Variable bitrate
+            MPLEX_OPTS="-V"
+            VSUF="m2v"
+            ;;
+        "-vcd" )
+            RES="vcd"
+            MPEG2ENC_FMT="-f 1"
+            # Constant bitrate
+            MPLEX_OPTS=""
+            VSUF="m1v"
+            ;;
+        "-svcd" )
+            RES="vcd"
+            MPEG2ENC_FMT="-f 4"
+            # Variable bitrate
+            MPLEX_OPTS="-V"
+            VSUF="m2v"
+            ;;
+        "-audio" )
+            shift
+            if [[ -z $BG_AUDIO ]]; then
+              BG_AUDIO=$1
+            else
+              usage_error "Please specify only one -audio option."
+            fi
+            ;;
+        "-background" )
+            shift
+            if [[ -z $BG_IMAGE ]]; then
+              BG_IMAGE=$1
+            else
+              usage_error "Please specify only one -background option."
+            fi
+            ;;
+        "-overwrite" ) OVERWRITE="y" ;;
+        "-crop" ) SCALECROP="crop" ;;
+        "-scale" ) SCALECROP="scale" ;;
+        "-nosafearea" ) SAFE_AREA="" ;;
+        "-font" )
+            shift
+            TITLE_FONT="$1"
+            ;;
+        "-fontsize" )
+            shift
+            TITLE_SIZE="$1"
+            TITLE_SPACING=`expr $TITLE_SIZE \* 5 \/ 4`
+            ;;
+        "-textcolor" )
+            shift
+            TEXT_COLOR="$1"
+            ;;
+        "-highlightcolor" )
+            shift
+            HIGHLIGHT_COLOR="$1"
+            ;;
+        "-selectcolor" )
+            shift
+            SELECT_COLOR="$1"
+            ;;
+        "-align" )
+            shift
+            if [[ $1 == "left" ]]; then
+              TEXT_ALIGN="northwest"
+            elif [[ $1 == "right" ]]; then
+              TEXT_ALIGN="northeast"
+            else
+              TEXT_ALIGN="north"
+            fi
+            ;;
+        "-debug" )
+            DEBUG=:
+            REDIR="makemenu.log"
+            ;;
+        "-out" )
+            shift
+            OUT_PREFIX="$1"
+            ;;
+        # Assume anything in quotes is a video title
+        ""*"" )
+            echo "Adding title $1"
+            NUM_TITLES=`expr $NUM_TITLES \+ 1`
+            TITLES[$NUM_TITLES]="$1"
+            ;;
+        * )
+            usage_error "Unrecognized command-line option: $1"
+            ;;
+    esac
+
+    # Get the next argument
+    shift
+done
+
+# If output prefix was not provided, exit with error
+if test -z $OUT_PREFIX; then
+    usage_error "Please provide an output prefix with the -out option."
+fi
+# If no titles were provided, exit with error
+if test $NUM_TITLES -eq 0; then
+    usage_error "Please provide at least one title string, enclosed in double-quotes."
+fi
+
+# Use appropriate settings for DVD
+if test $RES = "dvd"; then
+    WIDTH="720"
+    SAMPRATE="48000"
+    test $TVSYS = "ntsc" && HEIGHT="480"
+    test $TVSYS = "pal" && HEIGHT="576"
+# And for (S)VCD
+else
+    WIDTH="352"
+    SAMPRATE="44100"
+    test $TVSYS = "ntsc" && HEIGHT="240"
+    test $TVSYS = "pal" && HEIGHT="288"
+    # Reduce font size and spacing
+    TITLE_SIZE=`expr $TITLE_SIZE \/ 2`  
+    TITLE_SPACING=`expr $TITLE_SPACING \/ 2`  
+fi
+
+# Set audio stream format
+if [[ $RES == "dvd" ]]; then
+  ASUF="ac3"
+else
+  ASUF="mpa"
+fi
+
+
+
+# Make sure there are 9 or fewer titles for VCD
+if [[ $RES == "vcd" && $NUM_TITLES -gt 9 ]]; then
+  echo $SEPARATOR
+  echo "It looks like you've specified more than 9 titles for an (S)VCD menu."
+  echo "Since (S)VCD menus are navigated by pressing single-digit numbers on"
+  echo "the remote control, they are limited to 9 choices per menu. Please"
+  echo "try using fewer titles."
+  exit 1
+fi
+
+
+# Use a foreground canvas the size of the background minus safe area
+if [[ -n $SAFE_AREA ]]; then
+  FG_WIDTH=`expr $WIDTH \* 4 \/ 5`
+  FG_HEIGHT=`expr $HEIGHT \* 4 \/ 5`
+else
+  FG_WIDTH=`expr $WIDTH \- 10`
+  FG_HEIGHT=`expr $HEIGHT \- 10`
+fi
+
+# Check to see if the given font name is available in ImageMagick
+# (only return the first exact match)
+USE_TITLE_FONT=$( convert -list type | grep -m 1 "$TITLE_FONT" | awk '{print $1}' )
+# If not available, try to use something similar
+if [[ -z $USE_TITLE_FONT ]]; then
+  echo $SEPARATOR
+  echo "Font: \"$TITLE_FONT\" does not appear to be available in ImageMagick."
+  USE_TITLE_FONT=$( convert -list type | grep -i -m 1 "${TITLE_FONT:0:20}" | \
+    awk '{print $1}' )
+  if [[ -z $USE_TITLE_FONT ]]; then
+    echo "A similarly-named font was not found. Sorry!"
+    USE_TITLE_FONT="Helvetica"
+  fi
+  echo "The font \"$USE_TITLE_FONT\" will be used instead."
+  echo $SEPARATOR
+fi
+
+TITLE_TEXT=""
+# Start text at top of image
+CUR_Y=0
+NEXT_Y=$TITLE_SPACING
+# Y-offset for spumux button XML
+BUTTON_YOFFSET=`expr \( $HEIGHT \- $FG_HEIGHT \) \/ 2`
+let "BUTTON_X1=$SPUMUX_BUTTON_PAD"
+let "BUTTON_X2=$WIDTH-$SPUMUX_BUTTON_PAD"
+CUR_BUTTON_NUM="1"
+
+# Concatenate the titles together with newlines to prepare for
+# drawing on background image
+echo "Adding $NUM_TITLES titles to the menu:"
+for CUR_TITLE in "${TITLES[@]}"
+do
+  echo "$CUR_TITLE"
+  # If "back" was listed, create a back button
+  if [[ $CUR_TITLE == "back" || $CUR_TITLE == "Back" ]]; then
+    BACK_BUTTON="y"
+  else
+    # Escape quotes in title
+    CUR_TITLE=${CUR_TITLE//"'"/"\'"}
+    # If using (S)VCD, enumerate titles
+    if [[ $RES == "vcd" ]]; then
+      TITLE_TEXT=$( echo "$TITLE_TEXT text 0,$CUR_Y '$CUR_BUTTON_NUM. $CUR_TITLE'" )
+    else
+      TITLE_TEXT=$( echo "$TITLE_TEXT text 0,$CUR_Y '$CUR_TITLE'" )
+    fi
+    add_button "button${CUR_BUTTON_NUM}" $BUTTON_X1 $CUR_Y $BUTTON_X2 $NEXT_Y
+    CUR_Y=$NEXT_Y
+    NEXT_Y=`expr $NEXT_Y \+ $TITLE_SPACING`
+    (( CUR_BUTTON_NUM++ ))
+  fi
+done
+
+# If there was a "back", add it at the end
+if [[ -n $BACK_BUTTON ]]; then
+  # Leave an empty line
+  CUR_Y=$NEXT_Y
+  NEXT_Y=`expr $NEXT_Y \+ $TITLE_SPACING`
+  if [[ $RES == "vcd" ]]; then
+    TITLE_TEXT=$( echo "$TITLE_TEXT text 0,$CUR_Y '$CUR_BUTTON_NUM. Back'" )
+  else
+    TITLE_TEXT=$( echo "$TITLE_TEXT text 0,$CUR_Y 'Back'" )
+  fi
+  add_button "back" $BUTTON_X1 $CUR_Y $BUTTON_X2 $NEXT_Y
+fi
+
+if [[ $SCALECROP == "crop" ]]; then
+  SCALECROP="-resize ${WIDTH}x -resize \"x${HEIGHT}<\" -gravity center -crop ${WIDTH}x${HEIGHT}+0+0"
+else
+  SCALECROP="-resize ${WIDTH}x${HEIGHT}!"
+fi
+
+# If no background was provided, create a default
+# one (blue-black gradient)
+if [[ -z $BG_IMAGE ]]; then
+  BG_CMD="convert -size ${WIDTH}x${HEIGHT} gradient:blue-black -gravity center -matte $BG_CANVAS"
+# Otherwise, scale/crop the provided image
+else
+  BG_CMD="convert \"$BG_IMAGE\" $SCALECROP -matte $BG_CANVAS"
+fi
+echo "Creating the background canvas with the following command:"
+echo $"$BG_CMD"
+eval $BG_CMD
+
+# If no background audio was provided, generate a 4-second
+# silent audio clip
+if [[ -z $BG_AUDIO ]]; then
+  # Use this sox command instead, if the given one fails
+  #SOX_CMD="sox -t raw -c 2 -r $SAMPRATE -w -s /dev/zero $BG_SILENCE.wav trim 0 4"
+  SOX_CMD="cat /dev/zero | sox -t raw -c 2 -r $SAMPRATE -w -s - $BG_SILENCE.wav trim 0 4"
+  echo $SOX_CMD
+  eval $SOX_CMD
+  BG_AUDIO=$BG_SILENCE
+  VID_LENGTH=`expr 4 \* $FPS \/ 100`
+# Otherwise, convert provided audio to WAV
+else
+  echo "Converting audio to $SAMPRATE hz WAV..."
+  sox "$BG_AUDIO" -r $SAMPRATE -w "$BG_AUDIO.wav" >> $REDIR 2>&1
+  # Calculate video length from length of audio sample
+  VID_LENGTH=$( sox "$BG_AUDIO" -t raw /dev/null stat 2>&1 | grep 'Length' | \
+     sed -e "s/[^0-9]*\([0-9][0-9]*\)\..*/\1/g" )
+  VID_LENGTH=`expr $VID_LENGTH \* $FPS \/ 100`
+fi
+
+# Make sure VID_LENGTH is nonzero
+if [[ $VID_LENGTH -eq 0 ]]; then
+    # Use 30 seconds as a sensible default
+    VID_LENGTH=`expr 30 \* $FPS \/ 100`
+fi
+
+# Add text titles to a blank image the size of the foreground canvas
+MAGICK_CMD="convert -size ${FG_WIDTH}x${FG_HEIGHT} xc:none -antialias \
+  -font \"$USE_TITLE_FONT\" -pointsize $TITLE_SIZE -fill \"$TEXT_COLOR\" -stroke black \
+  -strokewidth 3 -draw \"gravity $TEXT_ALIGN $TITLE_TEXT\" \
+  -stroke none -draw \"gravity $TEXT_ALIGN $TITLE_TEXT\" \
+  \"$FG_CANVAS\""
+echo $SEPARATOR
+echo "Creating the foreground canvas with the following command:"
+echo $"$MAGICK_CMD"
+eval $MAGICK_CMD
+
+# Add text titles in highlight color on transparent foreground
+MAGICK_CMD="convert -size ${FG_WIDTH}x${FG_HEIGHT} xc:none +antialias \
+  -font \"$USE_TITLE_FONT\" -pointsize $TITLE_SIZE -fill \"$HIGHLIGHT_COLOR\" \
+  -draw \"gravity $TEXT_ALIGN $TITLE_TEXT\" \
+  -type Palette -colors 3 \
+  png8:$FG_HIGHLIGHT"
+echo $SEPARATOR
+echo "Creating the highlighted titles with the following command:"
+echo $"$MAGICK_CMD"
+eval $MAGICK_CMD
+
+# Add text titles in selection color on transparent foreground
+MAGICK_CMD="convert -size ${FG_WIDTH}x${FG_HEIGHT} xc:none +antialias \
+  -font \"$USE_TITLE_FONT\" -pointsize $TITLE_SIZE -fill \"$SELECT_COLOR\" \
+  -draw \"gravity $TEXT_ALIGN $TITLE_TEXT\" \
+  -type Palette -colors 3 \
+  png8:$FG_SELECTION"
+echo $SEPARATOR
+echo "Creating the selection titles with the following command:"
+echo $"$MAGICK_CMD"
+eval $MAGICK_CMD
+
+# Composite foreground canvas onto background
+MAGICK_CMD="composite -compose Over -gravity center \
+  $FG_CANVAS $BG_CANVAS -depth 8 \"$OUT_PREFIX.ppm\""
+echo $SEPARATOR
+echo "Compositing foreground canvas over background with the following command:"
+echo $"$MAGICK_CMD"
+eval $MAGICK_CMD
+
+# Composite highlight canvas with transparent background
+MAGICK_CMD="composite -compose Src -gravity center \
+  $FG_HIGHLIGHT $BG_CANVAS png8:\"$OUT_PREFIX.hi.png\""
+echo $SEPARATOR
+echo "Compositing highlighted titles with the following command:"
+echo $"$MAGICK_CMD"
+eval $MAGICK_CMD
+
+# Composite highlight canvas with transparent background
+MAGICK_CMD="composite -compose Src -gravity center \
+  $FG_SELECTION $BG_CANVAS png8:\"$OUT_PREFIX.sel.png\""
+echo $SEPARATOR
+echo "Compositing selection titles with the following command:"
+echo $"$MAGICK_CMD"
+eval $MAGICK_CMD
+
+# Make video of specified length from PPM background image
+echo $SEPARATOR
+echo "Converting to video with the following command:"
+VIDEO_CMD="ppmtoy4m $PPM_OPTS -n $VID_LENGTH -r \"$OUT_PREFIX.ppm\" 2>>$REDIR | \
+  mpeg2enc -a 2 $MPEG2ENC_FMT $MPEG2ENC_SYS -o \"$OUT_PREFIX.$VSUF\" >> $REDIR 2>&1"
+echo $VIDEO_CMD
+echo "This may take a while..."
+eval $VIDEO_CMD
+  
+# Convert WAV to ac3 or mp2
+echo $SEPARATOR
+if [[ $ASUF == "ac3" ]]; then
+  echo "Converting audio WAV to ac3 with the following command:"
+  AUDIO_CMD="ffmpeg -i \"$BG_AUDIO.wav\" -ab 224 -ar $SAMPRATE \
+    -ac 2 -acodec ac3 -y \"$OUT_PREFIX.$ASUF\" >> $REDIR 2>&1"
+  echo $AUDIO_CMD
+  eval $AUDIO_CMD
+else
+  echo "Converting audio WAV to mpeg2 with the following command:"
+  AUDIO_CMD="cat \"$BG_AUDIO.wav\" | mp2enc -r $SAMPRATE -s -o \
+    \"$OUT_PREFIX.$ASUF\" >> $REDIR 2>&1"
+  echo $AUDIO_CMD
+  eval $AUDIO_CMD
+fi
+
+# Multiplex audio and video
+echo $SEPARATOR
+echo "Multiplexing video and audio with the following command:"
+MPLEX_CMD="mplex $MPLEX_OPTS $MPEG2ENC_FMT -o \"$OUT_PREFIX.mpg\" \
+  \"$OUT_PREFIX.$VSUF\" \"$OUT_PREFIX.$ASUF\" >> $REDIR 2>&1"
+echo $MPLEX_CMD
+eval $MPLEX_CMD
+
+# For DVD, create spumux XML
+if [[ $RES == "dvd" ]]; then
+
+  SPUMUX_XML=`cat << EOF
+<subpictures>
+  <stream>
+  <spu force="yes" start="00:00:00.00"
+       highlight="$OUT_PREFIX.hi.png"
+       select="$OUT_PREFIX.sel.png">
+$SPUMUX_BUTTONS
+  </spu>
+  </stream>
+</subpictures>
+EOF`
+  echo $"$SPUMUX_XML" > "$OUT_PREFIX.xml"
+  wait
+  SPUMUX_CMD="spumux \"$OUT_PREFIX.xml\" < \"$OUT_PREFIX.mpg\" > \"$OUT_PREFIX.temp.mpg\" 2>>$REDIR"
+  echo $SEPARATOR
+  echo "Multiplexing menu selection highlight and menu with the following command:"
+  echo $SPUMUX_CMD
+  eval $SPUMUX_CMD
+  mv "$OUT_PREFIX.temp.mpg" "$OUT_PREFIX.mpg"
+  rm "$OUT_PREFIX.xml"
+fi
+
+echo $SEPARATOR
+echo "Cleaning up..."
+if $DEBUG; then
+    # Leave temporary files in place
+    :
+else
+    rm $BG_CANVAS $FG_CANVAS $FG_HIGHLIGHT $FG_SELECTION "$OUT_PREFIX.hi.png" \
+      "$OUT_PREFIX.sel.png" "$OUT_PREFIX.$VSUF" "$OUT_PREFIX.$ASUF" "$OUT_PREFIX.ppm" \
+      "$BG_AUDIO.wav"
+fi
+
+echo $SEPARATOR
+if [[ -e "$OUT_PREFIX.mpg" ]]; then
+  echo "Done. Your completed menu should be in the file $OUT_PREFIX.mpg."
+  if [[ $RES == "vcd" ]]; then
+    echo "You can use this menu on an (S)VCD or VCD disc by invoking:"
+    echo
+    echo "  makexml -vcd -menu $OUT_PREFIX.mpg <title 1> <title 2> ... <output name>"
+  else
+    echo "You can use this menu on a DVD disc by invoking:"
+    echo
+    echo "  makexml -dvd -menu $OUT_PREFIX.mpg <title 1> <title 2> ... <output name>"
+  fi
+  echo
+  echo "where <title X> is an MPEG video file corresponding to title X as listed"
+  echo "on your menu. Run 'makexml' without any options for more usage information."
+else
+  echo "It looks like something went wrong, because there is no output file."
+  echo "Please submit a bug report on the tovid homepage, listing any error messages"
+  echo "printed above. Sorry for the inconvenience."
+  exit 1
+fi
+echo $SEPARATOR
+echo "Thanks for using makemenu!"
+exit 0

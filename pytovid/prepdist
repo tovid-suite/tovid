@@ -1,0 +1,12 @@
+#! /bin/sh
+
+# Create and distribute pytovid
+
+UPLOAD_DIR="/home/groups/t/to/tovid/htdocs/download"
+
+# Make source distribution tarball
+python setup.py sdist
+
+# Copy tarball to sourceforge
+scp dist/pytovid-*.*.tar.gz wapcaplet@shell.sf.net:$UPLOAD_DIR
+

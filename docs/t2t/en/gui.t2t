@@ -1,0 +1,319 @@
+Using the GUI
+
+
+%!include(xhtml): ''navmenu.html''
+
+The tovid GUI (tovidgui.py) is the user-friendly face of tovid. From the GUI,
+you can layout, encode, and burn a VCD, SVCD, or DVD with menus and videos. The
+GUI is primarily a front-end for the command-line interface components; aside
+from minor interactive features, the GUI cannot do anything the command-line
+tools cannot do. If you prefer to use a command-line interface, you may wish to
+skip to [Using the command-line tools cli.html].
+
+
+== Features and capabilities ==
+
+- Simple three-step process to video disc authoring
+- Discs may have a single menu linking to several videos, or a
+    two-level hierarchy of menus (top-level menu linking to several other menus,
+    each linking to several videos)
+- Disc layout tree allows easy editing of the disc navigation
+    structure
+- Menu background, audio clip, text colors, font, and
+    alignment are configurable (see the [makemenu makemenu.html] documentation
+    for a tip on how to maximize the number of available fonts)
+- Video resolution, aspect, bitrate, and other options are
+    configurable
+
+
+== Usage ==
+
+Assuming you have installed the tovid suite to your path (see the
+installation instructions above), all you need to do is
+execute tovidgui.py. The tovid GUI will not work properly unless
+you have installed the suite to your path.
+The tovid GUI has no command-line options at this time.
+
+
+== How it works ==
+
+The tovid GUI, as currently designed, operates on a simple notion: You
+provide video files, and optionally provide a background image or audio clip for
+each menu. The GUI performs all the necessary conversion, and creates an (S)VCD
+or DVD:
+
+[images/tovid_gui_organization.jpg]
+
+If you are interested in knowing more behind-the-scenes details, see
+[Using the command-line tools cli.html].
+
+
+== Graphical tour ==
+
+Following is a brief tour of the tovid GUI and how to use it. At this time,
+the GUI is designed with a relatively simple task in mind:
+Create a video disc, using a bunch of videos that you provide. The GUI handles
+all the necessary conversion (using [tovid tovid.html]), menu creation
+(using [makemenu makemenu.html]), and disc authoring (using
+[makexml makexml.html]).
+
+The documentation and screenshots that follow have not been updated since the
+release of tovid version 0.18a in December 2004. Sorry for the obsolescence!
+These screenshots were taken using tovidgui.py version 0.18a, running under
+[XFCE 4.2 http://www.xfce.org/] with the XFCE-light theme and default window
+manager style.
+
+
+=== Startup screen ===
+
+When you first start the tovid GUI, you will see a screen something like
+this:
+
+[images/gui_disc_format.png]
+
+The **Disc layout** tree on the left-hand side represents
+the layout of your disc. It will grow as you begin to add menus and videos.
+In the **Disc options** panel to the right, you can choose what
+sort of disc you want to make. If you have a DVD-recordable drive, you can
+create DVDs; if you have a CD-recordable drive, you can create VCDs and SVCDs.
+
+[images/gui_disc_working_dir.png]
+
+Also in the **Disc options** panel, you can choose a working
+directory to use for temporary files needed during encoding. This directory
+should have enough space to encode all the videos, so be sure to pick a directory
+with several gigabytes available, especially if you are creating a large DVD disc.
+
+In the **Disc layout** tree, you can edit the title of an item
+by clicking on it. Click on the title next to the disc icon if you want to
+change the title of the disc.
+
+When you are satisfied with the options you have chosen here, select
+the Add menu button to begin adding content to the disc.
+A menu is necessary in order to navigate the disc, so you must add a menu
+before going any further. You can always come back to this screen by selecting
+the disc icon in the tree.
+
+
+=== Adding a menu ===
+
+Proceed with disc creation by selecting the Add menu
+button. When you add a menu, you will see a new screen something like this:
+
+[images/gui_menu_options.png]
+
+When a menu is selected in the Disc layout tree, the encoding options
+relevant to that menu are shown in the Menu options panel to the right.
+Once again, you can click on the title of the menu in the tree
+(next to the menu icon) to edit the menu's title.
+
+In the Menu options panel, you can choose an image to
+be shown in the background of the menu, and an audio clip to be played while
+the menu is displayed. If you do not choose a background image or audio clip,
+a default background will be used, and no sound will be played while the menu
+is shown. Here, you can also configure the font, alignment, and color
+of items listed in the menu.
+
+Now that you have a menu, you can add some videos to the disc by selecting
+the Add video(s) button.
+
+//Note//: The Add slide(s) button will be used in the future
+for adding slideshows to a disc. As of version 0.22, this feature is still
+disabled.
+
+
+=== Adding videos ===
+
+When you select **Add video(s)**, a file chooser will be displayed
+that you can use to select one or more videos to add under the selected menu.
+After adding some videos, the screen looks something like this:
+
+[images/gui_videos_added.png]
+
+Videos are listed in the tree with a film-strip icon next to them.
+Once again, you can click their titles to edit them; initially, the title
+of each video is the same as its filename. You'll notice the
+Menu options panel now displays a list of titles shown
+on that menu; the selected font, alignment, and color will apply to these
+titles when they are displayed on the final menu.
+
+
+=== Multiple menus ===
+
+If you have a lot of videos, you may want to divide your disc up into
+several sub-menus. To do this, just select **Add menu** again.
+If you do, the layout tree will change to look like the following:
+
+[images/gui_second_menu_added.png]
+
+Notice that a "Main menu" has appeared above the two untitled menus. This
+main menu is used to navigate to the other menus. You can put as many videos
+as you like under each menu. You can change the font, color, and background
+of the main menu just like you can for other menus; the difference is that
+the main menu links to other menus, rather than videos.
+If you want to use the same font, alignment, background, and colors for
+all the menus on your disc, choose **Use these settings for all menus**.
+
+This button will copy the current settings to all the menus on the disc.
+The main menu links to each of the sub-menus below it, and each sub-menu will
+automatically include a "Back" link that returns to the main menu. Regardless of
+how many menus you add, the first menu that is listed in the
+Disc layout tree will be the first one you see when
+you play the disc.
+
+
+=== Video options ===
+
+Now that some videos have been added, you can decide how you want to
+encode them. When you select a video in the tree, the Video
+options
+panel is displayed, showing all the configuration options that apply to
+that video:
+
+[images/gui_video_enc_opts.png]
+
+The output resolution for each video depends on the disc format you have
+chosen; certain resolutions are not available with certain formats. If you
+don't like the available video resolutions, you can go back and change the
+disc format by clicking on the disc icon in the tree.
+You can also choose an aspect ratio to use for the video; widescreen formats
+will be letterboxed if necessary, to display correctly on your TV.
+
+If you want to, you can also adjust the video and audio bitrates. The default
+values are usually reasonable, so you can leave these alone if you aren't sure
+what bitrate to use. Finally, you can enable additional options such as
+audio normalization (useful if the audio is too loud or too quiet), low-quality
+video (if you want faster encoding at the expense of quality), or video
+deinterlacing (if the source video was recorded from interlaced broadcast or VHS).
+
+To use the same settings for all the videos on the disc, select the
+**Use these settings for all videos** button. The currently-selected
+resolution, aspect ratio, bitrates and other options will be applied to all
+videos in the disc layout tree.
+
+You can use the **Move up**, **Move down**, and
+**Remove** buttons in the layout tree to position elements where you
+want them or remove them from the disc.
+When you are satisfied with the layout of your disc, select the
+**Next: Encoding setup** button to proceed with encoding and
+authoring the disc:
+
+[images/gui_layout_done.png]
+
+You will probably want to make sure all your menu and video titles are the
+way you want them before proceeding, so double-check to be sure there are no
+more "Untitled" items in the tree. But don't worry&#8211;you can come back to this
+screen if you click the button by accident.
+
+=== Encoding everything ===
+
+When you select **Next: Encoding setup**, you will be taken
+to a new panel showing a log window of command output:
+
+[images/gui_encoding_setup.png]
+
+In the 0.18a preview
+release, the "Output directory" is ignored (but in the official release,
+will be the place where the disc image is written). Select Next:
+Begin encoding to start everything running. If you have selected
+many videos, this step may take several hours. The log output will be
+updated regularly to keep you informed about the encoding progress. When
+it is done, the next step is to create the disc image by authoring
+the final disc structure.
+
+
+=== Creating the disc image ===
+
+In the 0.18a preview release of the tovid GUI, you must do this step by
+hand. The GUI will inform you when the XML file is ready to be authored;
+if you are making a VCD or SVCD, you need to use vcdxbuild to author the disc,
+using a command like vcdxbuild /path/to/output.xml**.
+If you're using any of the DVD formats, you must use dvdauthor to author it,
+using a command like dvdauthor -x /path/to/output.xml**. The
+GUI will tell you the full path name of the XML file.
+
+The final release of 0.18 will at least have authoring capability, but
+it may still be necessary to burn the disc by hand using cdrecord, K3B, etc.
+
+
+=== Development screenshots ===
+
+GUI development is progressing steadily, and the above screenshots may not
+exactly resemble what you see in your GUI. This tour will be updated periodically
+as the functionality of the GUI grows, but due to the time-consuming nature of
+putting together updated screenshots, this tour may not be updated for every new
+GUI release.
+
+This section shows several screenshots from the development version of the
+tovid GUI (currently version 0.18), with a short description of what is shown
+on the screen.
+
+[images/gui_devel_guide_panel_thumb.png]
+
+Guide panel. This is a new help system that has been implemented
+to aid the user in getting from one step to the next. The guide panel is a long
+skinny box of text that describes what the current task in the GUI is, and what
+you might want to do next. This panel makes the GUI take up significantly more
+screen space, so a new View menu has been added, which
+includes the option to hide/show the guide panel.
+This approach was chosen because it offers great possibilities for a very
+convenient complete help system. In future versions, this panel could be
+functionally enhanced, interactive (with hypertext links to
+related topics) and searchable. It will more closely resemble the navigation
+panel of a standard Windows help dialog, and will consist of formatted text, images,
+etc. written in HTML.
+
+The advantage this has over a traditional help system, with its own separate
+dialogs, is reduced window maintenance. Whenever I'm browsing help, I'm usually
+trying to do something with the program at the same time. This way, I don't have
+to manually size the help and main GUI windows, arrange them side-by-side, etc.
+It's already right there, and designed for optimal presentation of help and GUI
+side-by-side.
+
+Doing this would almost certainly require splitting the GUI up into many dependent
+files; the HTML used for such a help system needs to be formatted specifically so
+wxWidgets can use it, and would consist of several separate files. These would most
+sensibly need to be installed in your /usr/local/share/doc`` or a
+similar location, which would mean the tovid installer would need updating, and
+almost certainly a user-level configuration file would need to be saved (so the
+GUI knows where to find the documentation files).
+
+So, for now, the guide panel is simply a few paragraphs of text, hard-coded into
+the GUI code. But it's a good start, and it has many possibilities!
+
+
+==Future plans==
+
+A number of additional features are planned for the tovid GUI. Among the
+things I have in mind (more or less in order of priority):
+
+- A built-in help system.
+- Slide-show capability. This would require a [makexml makexml.html]
+    implementation, if DVD slideshows are to be allowed.
+- Front-ends to postproc, [idvid idvid.html],
+    and [dvrequant dvrequant.html].
+- "Estimated disk space left" meter on the disc layout panel.
+    This would be a horizontal bar that fills up as you add videos to the disc;
+    the required size for each video would be estimated to give the user an
+    idea of when there is no more space. User will be warned if maximum space
+    is exceeded.
+- Previewing items on the disc, including menus, videos, and
+    slideshows.
+- When browsing for images, an image browser that shows
+    thumbnails of each image, to make finding desired slides or background
+    images easier
+- Capability to add extra audio/video tracks to a video.
+    This would allow producing discs with multiple camera angles, or multiple
+    audio tracks including translations, commentary, etc. This would have to
+    be implemented in [tovid tovid.html] itself, also.
+- Capability to add subtitles (as a subtitle stream) to
+    videos. This would also require a [tovid tovid.html]
+    implementation first.
+- Capability to add chapter breaks to videos, perhaps in
+    conjunction with the video previewing capability. This would require
+    a [makexml makexml.html] implementation.
+- Drag-n-drop for adding/rearranging videos/slides to the
+    disc layout tree.
+- Capability to save/load disc layouts in progress; possibly
+    in conjunction with this, a capability to interrupt/resume the disc
+    encoding process.

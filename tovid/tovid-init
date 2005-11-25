@@ -1,0 +1,209 @@
+#!/bin/sh
+
+# tovid-init
+# ==============
+# Define global (suite-wide) functions and variables
+# for the tovid suite. 
+#
+# Project homepage: http://tovid.sourceforge.net/
+#
+# This software is licensed under the GNU General Public License.
+# For the full text of the GNU GPL, see:
+#
+#   http://www.gnu.org/copyleft/gpl.html
+#
+# No guarantees of any kind are associated with use of this software.
+
+
+# ******************************************************************************
+# ******************************************************************************
+#
+#
+# VARIABLES
+#
+#
+# ******************************************************************************
+# ******************************************************************************
+
+# Reset input field separator to default
+IFS=
+
+# Exit with error on undeclared variables
+#set -u
+
+# Suite version
+TOVID_VERSION="0.23"
+
+# String used to separate blocks of output
+SEPARATOR="========================================================="
+
+
+# ******************************************************************************
+# ******************************************************************************
+#
+#
+# FUNCTIONS
+#
+#
+# ******************************************************************************
+# ******************************************************************************
+
+
+# ******************************************************************************
+# Print error message, then exit.
+# Args: $@ == text string containing error message 
+# ******************************************************************************
+exit_with_error()
+{
+    echo $@
+    exit 1
+}
+
+# ******************************************************************************
+# Take an integer number of seconds and format it as hours:minutes:seconds
+# Echoes result to stdout, so in order to use the output as a "return value",
+# call the function like this:
+#     RETURN_VALUE=`format_time $NUM_SECONDS`
+# ******************************************************************************
+format_time()
+{
+    HMS_HOURS=`expr $1 / 3600`
+    HMS_MINS=`expr \( $1 % 3600 \) / 60`
+    HMS_SECS=`expr $1 % 3600 % 60`
+
+    test "$HMS_HOURS" -lt 10 && HMS_HOURS="0${HMS_HOURS}"
+    test "$HMS_MINS" -lt 10 && HMS_MINS="0${HMS_MINS}"
+    test "$HMS_SECS" -lt 10 && HMS_SECS="0${HMS_SECS}"
+
+    echo "${HMS_HOURS}:${HMS_MINS}:${HMS_SECS}"
+}
+
+# ******************************************************************************
+# Take a string containing a time (like "02:15:25.3") and
+# format it as an integer number of seconds. Fractional seconds
+# are truncated. Result is echoed to stdout, so to use the output
+# as a "return value", call the function like this:
+#     RETURN_VALUE=`unformat_time $TIME_STRING`
+# ******************************************************************************
+unformat_time()
+{
+    echo "unformat_time $1"
+    HMS_HOURS=`echo $1 | awk -F ':' '{print $1}'`
+    HMS_MINS=`echo $1 | awk -F ':' '{print $2}'`
+    HMS_SECS=`echo $1 | awk -F ':' '{print $3}'`
+    TOT_SECONDS=`expr $HMS_HOURS \* 3600 + $HMS_MINS \* 60 + $HMS_SECS`
+    echo $TOT_SECONDS
+}
+
+
+# ******************************************************************************
+# Display a progress meter showing MB written to a file
+# Args: $1 = name of file to monitor
+#       $2 = a short message to display, such as "Encoding video"
+# ******************************************************************************
+file_output_progress()
+{
+    FOP_OUTFILE="$1"
+    FOP_BASENAME=`basename $FOP_OUTFILE`
+    FOP_MSG="$2"
+    # A dumb little animation toggle
+    FOP_FLIP=false
+
+    printf "\n"
+
+    # Wait for input file to appear
+    # After a 30-second timeout, exit gracefully
+    CUR_TIME=30
+    while test $CUR_TIME -gt 0; do
+        # If file exists, wait a few more seconds, then break out
+        if test -e "$FOP_OUTFILE"; then
+            printf "Processing started. Please wait...                                               "
+            sleep 3s
+            break
+        fi
+        printf "Waiting $CUR_TIME seconds for output file \"$FOP_BASENAME\" to appear...\r"
+        sleep 1s
+        CUR_TIME=`expr $CUR_TIME - 1`
+    done
+
+    printf "\n"
+
+    # If file does not exist, exit with a runtime error
+    if test ! -e "$FOP_OUTFILE"; then
+        runtime_error "Couldn't create file: \"$FOP_OUTFILE\""
+    fi
+    
+    # File size in bytes
+    FOP_LAST_SIZE=0
+    FOP_CUR_SIZE=`du -b "$FOP_OUTFILE" | awk '{print $1}'`
+    
+    # Keep looping until outfile stops getting bigger
+    while test "$FOP_CUR_SIZE" -gt "$FOP_LAST_SIZE"; do
+        # Display a changing line
+        if $FOP_FLIP; then
+            FOP_FLIP=false
+            ANIM_STR="||| "
+        else
+            FOP_FLIP=:
+            ANIM_STR="--- "
+        fi
+
+        # Display completion status
+        FOP_CUR_MB=`expr 1 + $FOP_CUR_SIZE / 1048576`
+        printf "    %s %s: %s MB written to %s        \r" \
+            "$ANIM_STR" "$FOP_MSG" "$FOP_CUR_MB" "$FOP_BASENAME"
+
+        # Doze a bit to let the file size increase
+        # (SLEEP_TIME defaults to 1s if unset)
+        sleep ${SLEEP_TIME-"1s"}
+
+        FOP_LAST_SIZE=$FOP_CUR_SIZE 
+        FOP_CUR_SIZE=`du -b "$FOP_OUTFILE" | awk '{print $1}'`
+    done
+    printf "\n\n"
+}
+
+
+# ******************************************************************************
+# Platform-specific initialization
+# Determines host platform and configures things accordingly
+# ******************************************************************************
+KERNEL=`uname`
+if test "$KERNEL" = "Linux"; then
+    # Linux should have /proc/cpuinfo
+    CPU_MODEL=`cat /proc/cpuinfo | grep -i "model name" | awk -F ":" '{print $2}'`
+    CPU_SPEED=`cat /proc/cpuinfo | grep -i mhz | awk '{print $4}'`
+    # Test for multiple CPUs. If they are available, try to use them.
+    if test `cat /proc/cpuinfo | grep processor | wc -l` -ge "2"; then
+        MTHREAD="-M 2"
+    fi
+elif test "$KERNEL" = "Darwin"; then
+    :
+fi
+
+
+# ******************************************************************************
+# Working directory configuration
+# ******************************************************************************
+USER_PREFS=$HOME/.tovid/preferences
+
+# Default working/output directories
+WORKING_DIR=$PWD
+OUTPUT_DIR=$PWD
+
+# If prefs file exists, read it
+if test -f $USER_PREFS; then
+    eval `grep -v ^# $USER_PREFS`
+# Otherwise, create a default prefs file
+else
+    PREFS_CONTENTS=`cat << EOF
+# tovid preferences
+# Configures working/output directories for tovid
+#WORKING_DIR=/tmp
+#OUTPUT_DIR=/video/outfiles
+EOF`
+    printf "$PREFS_CONTENTS\n" > "$USER_PREFS"
+fi
+
+
+# End tovid-init

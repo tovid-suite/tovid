@@ -1,0 +1,581 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+<head>
+  <meta name="generator" content=
+  "HTML Tidy for Linux/x86 (vers 1st August 2004), see www.w3.org">
+  <meta http-equiv="Content-Type" content=
+  "text/html; charset=utf-8">
+
+  <title>Preparación</title>
+  <link rel="stylesheet" href="tovid_style.css" type="text/css">
+  <link rel="stylesheet" href="tovid_print.css" type="text/css">
+  <meta name="generator" content="DocBook XSL Stylesheets V1.68.1">
+  <link rel="start" href="bk01.html" title=
+  "Documentación de tovid">
+  <link rel="up" href="bk01.html" title="Documentación de tovid">
+  <link rel="prev" href="index.html" title="Bienvenida">
+  <link rel="next" href="GUI.html" title=
+  "Usando el interfaz gráfico (GUI)">
+</head>
+
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084"
+alink="#0000FF">
+  <div class="navheader">
+    <table width="100%" summary="Navigation header">
+      <tr>
+        <th colspan="3" align="center">Preparación</th>
+      </tr>
+
+      <tr>
+        <td width="20%" align="left"><a accesskey="p" href=
+        "index.html">Anterior</a>&nbsp;</td>
+
+        <th width="60%" align="center">&nbsp;</th>
+
+        <td width="20%" align="right">&nbsp;<a accesskey="n" href=
+        "GUI.html">Siguiente</a></td>
+      </tr>
+    </table>
+    <hr>
+  </div>
+
+  <div class="chapter" lang="es">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h2 class="title"><a name="GettingStarted" id=
+          "GettingStarted"></a>Preparación</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="toc">
+      <p><b>Tabla de contenidos</b></p>
+
+      <dl>
+        <dt><span class="sect1"><a href=
+        "GettingStarted.html#id2518212">1.
+        Preliminaries</a></span></dt>
+
+        <dd>
+          <dl>
+            <dt><span class="sect2"><a href=
+            "GettingStarted.html#id2518217">1.1.
+            Requerimientos</a></span></dt>
+
+            <dt><span class="sect2"><a href=
+            "GettingStarted.html#sec:Dependencies">1.2.
+            Dependencias</a></span></dt>
+          </dl>
+        </dd>
+
+        <dt><span class="sect1"><a href=
+        "GettingStarted.html#Installation">2.
+        Instalación</a></span></dt>
+
+        <dd>
+          <dl>
+            <dt><span class="sect2"><a href=
+            "GettingStarted.html#id2518736">2.1.
+            Paquetes</a></span></dt>
+
+            <dt><span class="sect2"><a href=
+            "GettingStarted.html#id2518786">2.2. Código
+            fuente</a></span></dt>
+
+            <dt><span class="sect2"><a href=
+            "GettingStarted.html#id2518973">2.3. Versiones desde
+            CVS</a></span></dt>
+          </dl>
+        </dd>
+      </dl>
+    </div>
+
+    <p>Este capítulo explica cómo conseguir que tovid funcione en
+    tu ordenador. Si ya tienes tovid en marcha, puedes saltar
+    directamente a <a href="GUI.html" title=
+    "Usando el interfaz gráfico (GUI)">Usando el interfaz gráfico
+    (GUI)</a> o <a href="CLI.html" title=
+    "Uso de las herramientas de la línea de comandos">Uso de las
+    herramientas de la línea de comandos</a>.</p>
+
+    <div class="sect1" lang="es">
+      <div class="titlepage">
+        <div>
+          <div>
+            <h2 class="title" style="clear: both"><a name=
+            "id2518212" id="id2518212"></a>1. Preliminaries</h2>
+          </div>
+        </div>
+      </div>
+
+      <div class="sect2" lang="es">
+        <div class="titlepage">
+          <div>
+            <div>
+              <h3 class="title"><a name="id2518217" id=
+              "id2518217"></a>1.1. Requerimientos</h3>
+            </div>
+          </div>
+        </div>
+
+        <p>No hay requerimientos mínimos de sistema para ejecutar
+        tovid. Si tu máquina puede arrancar una instalación Linux
+        normal, probablemente ya tienes suficiente velocidad de CPU
+        para procesar y reproducir vídeo.</p>
+
+        <p>Si vas a trabajar conficheros de vídeo, querrás tener
+        espacio en disco de sobras; el proceso de autoría de un DVD
+        puede consumir 11GB de tu disco, y si trabajas en varios
+        proyectos de DVD a la vez, los requerimientos de espacio se
+        multiplican rápidamente. Como mínimo, deberías disponer de
+        unos 20GB que puedas dedicar a la autoría de DVDes. Si sólo
+        planeas crear (S)VCDs, puedes ir tirando con sólo
+        6-8GB.</p>
+
+        <p>La familia tovid se desarrolla y comprueba
+        principalmente en Linux. Algunos usuarios han informado de
+        que funciona exitosamente en FreeBSD y Cygwin con sólo
+        modificaciones menores. Parte de los componentes puede
+        funcionar en otros sistemas operativos parecidos a UNIX,
+        pero tal posibilidad no ha sido verificada de momento.
+        Actualmente no hay planes para desarrollar una versión en
+        Windows o Mac OS, pero si estás interesado en emprender el
+        trabajo, ¡por favor contacta con los desarrolladores de
+        tovid!</p>
+
+        <p>Se requiren varios paquetes de programas para poder usar
+        los componente de tovid (mira <a href=
+        "GettingStarted.html#sec:Dependencies" title=
+        "1.2. Dependencias">Dependencias</a>). Casi todos los
+        componentes, al estar escritos en el lenguaje de script
+        <span><strong class="command">bash</strong></span>,
+        requieren <span><strong class=
+        "command">bash</strong></span>, y también requieren los
+        comandos habituales en UNIX, como <span><strong class=
+        "command">grep</strong></span>, <span><strong class=
+        "command">sed</strong></span>, <span><strong class=
+        "command">cat</strong></span>, y <span><strong class=
+        "command">awk</strong></span>. Si tienes Linux, todos estos
+        comandos están disponibles.</p>
+      </div>
+
+      <div class="sect2" lang="es">
+        <div class="titlepage">
+          <div>
+            <div>
+              <h3 class="title"><a name="sec:Dependencies" id=
+              "sec:Dependencies"></a>1.2. Dependencias</h3>
+            </div>
+          </div>
+        </div>
+
+        <p>tovid ha acumulado su buen montoncillo de dependencias a
+        lo largo de su desarrollo. Aquí está la lista completa de
+        dependencias, y hasta qué punto son requeridos:</p>
+
+        <div class="variablelist">
+          <dl>
+            <dt><span class="term"><span class=
+            "application"><a href="http://www.python.org/" target=
+            "_top">Python</a></span></span></dt>
+
+            <dd>
+              <p>Un intérprete que permite ejecutar programas
+              escritos en Python. Python es cada vez más habitual,
+              así que es bueno tener un intérprete de Python
+              instalado. Es necesario sólo para el interfaz gráfico
+              de tovid.</p>
+            </dd>
+
+            <dt><span class="term"><span class=
+            "application"><a href="http://www.wxpython.org/"
+            target="_top">wxPython</a></span></span></dt>
+
+            <dd>
+              <p>Da soporte a <span class="acronym">GUI</span>s
+              escritos en Python usando la <span class=
+              "acronym">API</span> wxWidgets. También solo para el
+              GUI.</p>
+            </dd>
+
+            <dt><span class="term"><span class=
+            "application"><a href="http://www.mplayerhq.hu/"
+            target="_top">mplayer</a></span></span></dt>
+
+            <dd>
+              <p>Probablemente el reproductor multimedia más
+              robusto y maduro para Linux. Casi todos los
+              componenete de tovid dependen fuertemente de mplayer
+              para reproducir y convertir vídeo, así que su
+              instalación es necesaria. Aunque seguro que querrás
+              usar mplayer de todos modos, si piensas trabajar con
+              vídeo en Linux.</p>
+            </dd>
+
+            <dt><span class="term"><span class=
+            "application"><a href="http://mjpeg.sourceforge.net/"
+            target="_top">mjpegtools</a></span></span></dt>
+
+            <dd>
+              <p>Herramientas de línea de comando para codificar y
+              trabajar con vídeo, particularmente MPEG. Requerido
+              por la mayor parte de los componentes de tovid, y lo
+              necesitarás pra cualquier cosa útil que quieras hacer
+              con tovid.</p>
+            </dd>
+
+            <dt><span class="term"><span class=
+            "application"><a href="http://ffmpeg.sourceforge.net/"
+            target="_top">ffmpeg</a></span></span></dt>
+
+            <dd>
+              <p>Herramientas para grabar, convertir, y enviar por
+              la red audio y vídeo. Usados por varios componentes,
+              y requeridos si quieres crear DVDs en formato
+              <a href="go01.html#NTSC"><em class=
+              "glossterm">NTSC</em></a>.</p>
+            </dd>
+
+            <dt><span class="term"><span class=
+            "application"><a href=
+            "http://freshmeat.net/projects/normalize" target=
+            "_top">normalize/normalize-audio</a></span></span></dt>
+
+            <dd>
+              <p>Una utilidad para ajustar el volumen de ficheros
+              de audio. Si quieres normalizar el volumen de tus
+              discos de vídeo, lo necesitas, pero no es de vital
+              importancia.</p>
+            </dd>
+
+            <dt><span class="term"><span class=
+            "application"><a href="http://www.imagemagick.org"
+            target="_top">ImageMagick</a></span></span></dt>
+
+            <dd>
+              <p>Un potente conjunto de herramientas en la línea de
+              comando para dar formato, cambiar tamaños, convertir
+              y dibujar en ficheros de imágenes. Se usa por
+              <span><strong class="command"><a href=
+              "CLI.html#CLI.makemenu" title=
+              "3. makemenu">makemenu</a></strong></span>, el
+              componente generador de menús de tovid. Si quieres
+              crear discos de vídeo con menús, lo necesitas. Muchas
+              distribuciones Linux lo instalan por defecto.</p>
+            </dd>
+
+            <dt><span class="term"><span class=
+            "application"><a href="http://sox.sourceforge.net/"
+            target="_top">SoX</a></span></span></dt>
+
+            <dd>
+              <p>El ImageMagick de procesamiento de audio, a su
+              manera. Herramientas en la línea de comando para
+              convertir, recortar, y filtrar ficheros de audio. Se
+              usa por <span><strong class="command"><a href=
+              "CLI.html#CLI.makemenu" title=
+              "3. makemenu">makemenu</a></strong></span>.</p>
+            </dd>
+
+            <dt><span class="term"><span class=
+            "application"><a href=
+            "http://dvdauthor.sourceforge.net/" target=
+            "_top">dvdauthor</a></span> 0.6.0 o más
+            nuevo</span></dt>
+
+            <dd>
+              <p>Herramientas para crear sistemas de archivo DVD.
+              Si quieres hacer DVDs con tovid, lo necesitas.</p>
+            </dd>
+
+            <dt><span class="term"><span class=
+            "application"><a href="http://www.vcdimager.org/"
+            target="_top">vcdimager</a></span></span></dt>
+
+            <dd>
+              <p>Herramientas para crear sistemas de archivo
+              (S)VCD. Si quieres hacer VCDs o SVCDs, lo
+              necesitas.</p>
+            </dd>
+
+            <dt><span class="term"><span class=
+            "application"><a href=
+            "http://zebra.fh-weingarten-de/~transcode/" target=
+            "_top">transcode</a></span></span></dt>
+
+            <dd>
+              <p>Herramientas para procesar y convertir flujos de
+              vídeo. Se usa por postproc (el componente de tovid
+              para postprocesado) y <span><strong class=
+              "command"><a href="CLI.html#CLI.dvrequant" title=
+              "9. dvrequant">dvrequant</a></strong></span> (el
+              componente de tovid para encoger DVDs). Útil si
+              quieres poder ajustar al detalle el tamaño de salida
+              de tus videos, para que encaje la cantidad deseada de
+              contenido en un DVD grabable.</p>
+            </dd>
+
+            <dt><span class="term"><span class=
+            "application"><a href=
+            "http://developers.videolan.org/libdvdcss/" target=
+            "_top">libdvdcss</a></span></span></dt>
+
+            <dd>
+              <p>DVD decryption routines, used for playing
+              encrypted DVDs on your computer. Needed by
+              <span><strong class="command"><a href=
+              "CLI.html#CLI.dvrequant" title=
+              "9. dvrequant">dvrequant</a></strong></span> too.</p>
+            </dd>
+
+            <dt><span class="term"><span class=
+            "application"><a href=
+            "http://untrepid.com/acidrip/lsdvd.html" target=
+            "_top">lsdvd</a></span></span></dt>
+
+            <dd>
+              <p>Práctica herramienta para ver los atributos de los
+              discos DVD. También necesaria para
+              <span><strong class="command"><a href=
+              "CLI.html#CLI.dvrequant" title=
+              "9. dvrequant">dvrequant</a></strong></span> .</p>
+            </dd>
+          </dl>
+        </div>
+
+        <p>La mayor parte de estas herramientas están ampliamente
+        disponibles en los principales repositorios de paquetes, lo
+        más probable es que puedas obtenerlos todos usando el
+        gestor de paquetes que incluya tu distribución Linux.</p>
+      </div>
+    </div>
+
+    <div class="sect1" lang="es">
+      <div class="titlepage">
+        <div>
+          <div>
+            <h2 class="title" style="clear: both"><a name=
+            "Installation" id="Installation"></a>2.
+            Instalación</h2>
+          </div>
+        </div>
+      </div>
+
+      <div class="sect2" lang="es">
+        <div class="titlepage">
+          <div>
+            <div>
+              <h3 class="title"><a name="id2518736" id=
+              "id2518736"></a>2.1. Paquetes</h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="itemizedlist">
+          <ul type="disc">
+            <li>
+              <p><a href=
+              "http://bugs.gentoo.org/show_bug.cgi?id=84761"
+              target="_top">tovid Gentoo ebuild</a>. Mira <a href=
+              "http://gentoo-wiki.com/HOWTO_Installing_3rd_Party_Ebuilds"
+              target="_top">Instalación de Ebuilds de terceras
+              partes</a> para ayuda en la instalación.</p>
+            </li>
+
+            <li>
+              <p><a href="http://julien.valroff.free.fr/" target=
+              "_top">Debian .deb</a>.</p>
+            </li>
+
+            <li>
+              <p><a href=
+              "http://rpm.pbone.net/index.php3/stat/4/idpl/2108685/com/tovid-0.19-0.oc2pus.1.noarch.rpm.html"
+              target="_top">SuSE RPMs</a></p>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="sect2" lang="es">
+        <div class="titlepage">
+          <div>
+            <div>
+              <h3 class="title"><a name="id2518786" id=
+              "id2518786"></a>2.2. Código fuente</h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="itemizedlist">
+          <ul type="disc">
+            <li>
+              <p><a href=
+              "http://prdownloads.sourceforge.net/tovid/tovid_0.21.tar.gz?download"
+              target="_top">tovid_0.21.tar.gz</a> contiene todos
+              los scripts de la línea de comando.</p>
+            </li>
+
+            <li>
+              <p><a href=
+              "http://prdownloads.sourceforge.net/tovid/tovid-gui-0.21.tar.gz?download"
+              target="_top">tovid-gui-0.21.tar.gz</a> contiene la
+              aplicación gráfica y sus iconos. Los scripts de la
+              línea de comando han de estar instalados ante de
+              poder usarse el interfaz gráfico.</p>
+            </li>
+          </ul>
+        </div>
+
+        <p>Descárgate el paquete para la línea de comando y
+        guárdalo en tu ordenador Supongamos que lo has guardado en
+        <code class="filename">~/Downloads/</code>.</p>
+
+        <p>Lo siguiente es abrir una ventana de terminal, (como
+        <span class="application">XTerm</span>, <span class=
+        "application">RXVT</span>, o <span class=
+        "application">Konsole</span>) y extraer el "tarball" al
+        teclear los siguientes comandos:</p>
+        <pre class="screen">
+<code class="prompt">$</code> <strong class=
+"userinput"><code>cd ~/Downloads</code></strong>
+<code class="prompt">$</code> <strong class=
+"userinput"><code>tar -xzvf tovid_0.21.tar.gz</code></strong>
+</pre>
+
+        <p>Los ficheros de instalación irán a un subdirectorio
+        <code class="filename">tovid_0.21</code> dentro del
+        directorio en curso. Ahora, haced lo siguiente:</p>
+        <pre class="screen">
+<code class="prompt">$</code> <strong class=
+"userinput"><code>cd ~/Downloads/tovid_0.21</code></strong>
+<code class="prompt">$</code> <strong class=
+"userinput"><code>./configure</code></strong>
+<code class="prompt">$</code> <strong class=
+"userinput"><code>su -c "make install"</code></strong>
+</pre>
+
+        <p>Si decides que ya no quieres tovid, puedes ejecutar
+        <span><strong class="command">make
+        uninstall</strong></span> desde el directorio original de
+        instalación (<code class=
+        "filename">~/Downloads/tovid_0.21</code>).</p>
+
+        <p>Repite el procedimiento anterior para el paquete
+        <code class="filename">tovid-gui-0.21.tar.gz</code> si
+        quieres instalar el interfaz gráfico.</p>
+      </div>
+
+      <div class="sect2" lang="es">
+        <div class="titlepage">
+          <div>
+            <div>
+              <h3 class="title"><a name="id2518973" id=
+              "id2518973"></a>2.3. Versiones desde CVS</h3>
+            </div>
+          </div>
+        </div>
+
+        <p>Puedes traerte una copia de la última versión de
+        desarrollo de tovid por medio de CVS. Para obtener esta
+        versión, necesitas tener <a href="http://www.cvshome.org/"
+        target="_top">CVS</a> instalado.</p>
+
+        <p>Usar CVS es un poquillo diferente; en vez de simplemente
+        descargarte tovid, estarás "desregistrando" una copia. (N.
+        del T. Si "registrarse," es traducción de "check-in",
+        entonces "desregistrarse" lo es de "checking out", forzada
+        regla de tres de la traducción ;-) ) Usando el mismo
+        directorio de ejemplo que anteriormente:</p>
+        <pre class="screen">
+<code class="prompt">$</code> <strong class=
+"userinput"><code>cd ~/Downloads</code></strong>
+<code class="prompt">$</code> <strong class=
+"userinput"><code>cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/tovid login</code></strong>
+<code class=
+"computeroutput">Logging in to :pserver:anonymous@cvs.sourceforge.net:2401/cvsroot/tovid
+CVS password:</code> <strong class=
+"userinput"><code>(your email address)</code></strong>
+<code class="prompt">$</code> <strong class=
+"userinput"><code>cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/tovid co -P tovid</code></strong>
+<code class="prompt">$</code> <strong class=
+"userinput"><code>cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/tovid co -P gui</code></strong>
+<code class="prompt">$</code> <strong class=
+"userinput"><code>cd tovid</code></strong>
+<code class="prompt">$</code> <strong class=
+"userinput"><code>aclocal</code></strong>
+<code class="prompt">$</code> <strong class=
+"userinput"><code>autoconf</code></strong>
+<code class="prompt">$</code> <strong class=
+"userinput"><code>automake</code></strong>
+</pre>
+
+        <p>Si estás instalando el interfaz gráfico, repite estos
+        pasos en su directorio (<span><strong class=
+        "command">aclocal</strong></span>, <span><strong class=
+        "command">autoconf</strong></span>, y <span><strong class=
+        "command">automake</strong></span>). Finalmente, ejecuta
+        <span><strong class="command">./configure</strong></span> y
+        <span><strong class="command">su -c "make
+        install"</strong></span>, según se mostró anteriormente, en
+        cada directorio respectivo para instalar tovid (y el
+        interfaz gráfico) en tu sistema.</p>
+
+        <div class="note" style=
+        "margin-left: 0.5in; margin-right: 0.5in;">
+          <div class="title">
+            Nota
+          </div>
+
+          <p>También hay disponibles a través de CVS tres módulos
+          adicionales: <code class="literal">docs</code> contiene
+          los fuentes <a href="http://www.docbook.org/" target=
+          "_top">DocBook</a> (completos con ilustraciones) de la
+          documentación que estás leyendo; <code class=
+          "literal">test-tools</code> es un conjunto de scripts
+          diseñado para comprobar las opciones de codificación de
+          mplayer y mpeg2enc (junto algunos otras propinillas);
+          <code class="literal">pytovid</code> devendrá
+          eventualmente en una completa re-implantación de tovid en
+          lenguaje <a href="go01.html#Python"><em class=
+          "glossterm">Python</em></a>.</p>
+
+          <p>Si estás interesado en estas otras ramas de
+          desarrollo, por favor coge los módulos CVS y contacta con
+          los desarrolladores el canal <code class=
+          "literal">#tovid</code> de <code class=
+          "literal">irc.freenode.net</code>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="navfooter">
+    <hr>
+
+    <table width="100%" summary="Navigation footer">
+      <tr>
+        <td width="40%" align="left"><a accesskey="p" href=
+        "index.html">Anterior</a>&nbsp;</td>
+
+        <td width="20%" align="center">&nbsp;</td>
+
+        <td width="40%" align="right">&nbsp;<a accesskey="n" href=
+        "GUI.html">Siguiente</a></td>
+      </tr>
+
+      <tr>
+        <td width="40%" align="left" valign="top">
+        Bienvenida&nbsp;</td>
+
+        <td width="20%" align="center"><a accesskey="h" href=
+        "bk01.html">Inicio</a></td>
+
+        <td width="40%" align="right" valign="top">&nbsp;Usando el
+        interfaz gráfico (GUI)</td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

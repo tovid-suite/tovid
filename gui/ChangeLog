@@ -1,0 +1,5 @@
+2005-07-06  Petric Frank  <pfrank@gmx.de>
+	* configure.in/Makefile.am: make tovid-gui handled by autotools
+
+2005-07-04  Eric Pierce  <wapcaplet@users.sf.net>
+	* release version 0.18

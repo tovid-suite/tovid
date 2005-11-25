@@ -1,0 +1,189 @@
+Getting started
+
+
+%!include(xhtml): ''navmenu.html''
+
+This chapter explains how to get tovid running on your computer.
+If you already have tovid running, then you may skip directly to
+[Using the GUI gui.html] or
+[Using the command-line tools cli.html].
+
+
+== Preliminaries ==
+
+=== Requirements ===
+
+There are no known minimum system requirements for running tovid. If your
+machine is capable of running a standard Linux installation, then you probably
+have enough CPU power for video processing and playback.  If you're going to
+work with video files, you probably want to have plenty of hard drive space to
+spare; the process of authoring a DVD might consume 11GB on your disk, and if
+you are working on several DVD projects at once, the space requirements
+multiply quickly. At minimum, you should have about 20GB that you can devote to
+authoring DVDs. If you only plan to create (S)VCDs, you could get by with only
+6-8GB.
+
+The tovid suite is developed and tested primarily on Linux. Some users have
+also reported successful execution on FreeBSD and Cygwin with only minor
+modifications. Parts of the suite may work on other UNIX-like operating
+systems, but that possibility is unverified at this point. There are currently
+no plans to develop a Windows or Mac OS port, but if you are interested in
+taking on the job, please contact the tovid developers!  Several software
+packages are required in order to use various components of the tovid suite.
+Nearly all of the components, being written in the ``bash`` scripting language,
+require ``bash``, as well as standard UNIX utilities like ``grep``, ``sed``,
+``cat``, and ``awk``.  If you are running Linux, all of these should already be
+available.
+
+
+=== Dependencies ===
+tovid has amassed some dependency hell during its development.
+Here is the complete list of dependencies, and to what extent they are required:
+
+: [Python http://www.python.org/]
+    An interpreter that allows you to run programs written in
+    Python. Python is becoming increasingly common, so it's good to have a Python
+    interpreter installed. If you want to use the graphical interface for tovid,
+    you need this.
+
+: [wxPython http://www.wxpython.org/]
+    Provides support for GUIs written in Python using the
+    wxWidgets API. You also need this to run the GUI.
+
+: [mplayer http://www.mplayerhq.hu/]
+    Probably the most robust and mature video player for Linux.
+    Almost all of the tovid components depend heavily on mplayer for video
+    playback and conversion, so this is a must-install. You'll want
+    mplayer anyway, if you plan to be working with video.
+
+: [mjpegtools http://mjpeg.sourceforge.net/]
+    Command-line tools for encoding and working with video,
+    particularly MPEG. This is required by most of tovid's components, and you
+    will need it in order to do anything useful with tovid.
+
+: [ffmpeg http://ffmpeg.sourceforge.net/]
+    Tools and libraries for recording, converting, and streaming
+    audio and video. Used by several components, and required if you want to
+    create DVDs in NTSC format.
+
+: [ImageMagick http://www.imagemagick.org]
+    A powerful set of command-line tools for formatting, resizing,
+    converting and drawing on image files. This is used by the [makemenu makemenu.html], the
+    menu-generation component of tovid. If you want to create video discs with
+    menus, you need this. Many Linux distributions install this by
+    default.
+
+: [SoX http://sox.sourceforge.net/]
+    The ImageMagick of audio processing, in a way. Command-line
+    tools for converting, trimming, and filtering audio files. This is used by
+    [makemenu makemenu.html].
+
+: [dvdauthor http://dvdauthor.sourceforge.net/] 0.6.0 or newer
+    Tools for creating DVD filesystems. If you want to make
+    DVDs with tovid, you need this.
+
+: [vcdimager http://www.vcdimager.org/]
+    Tools for creating (S)VCD filesystems. If you want to make
+    VCDs or SVCDs, you need this.
+
+: [transcode http://zebra.fh-weingarten-de/~transcode/]
+    Video stream processing and conversion tools. This is used
+    by postproc (the tovid postprocessing component) and [dvrequant dvrequant.html] (the tovid
+    DVD shrinking tool). Useful if you want to be able to fine-tune the output
+    size of your videos, to fit a desired amount of content on a recordable
+    DVD.
+
+: [libdvdcss http://developers.videolan.org/libdvdcss/]
+    DVD decryption routines, used for playing encrypted DVDs
+    on your computer. Needed by [dvrequant dvrequant.html] for copying encrypted DVDs. You
+    want this.
+
+: [lsdvd http://untrepid.com/acidrip/lsdvd.html]
+    Handy tool for viewing the attributes of DVD discs. Also
+    needed by [dvrequant dvrequant.html], for copying discs.
+
+
+Most of these tools are widely available in major package repositories;
+chances are good that you can get them all through your distribution's preferred
+package manager.
+
+
+==Installation==
+
+
+===Packages===
+
+- [tovid Gentoo ebuild http://bugs.gentoo.org/show_bug.cgi?id=84761]. See
+  [Installing 3rd Party Ebuilds http://gentoo-wiki.com/HOWTO_Installing_3rd_Party_Ebuilds] for help
+  installing.
+- [Debian .deb http://julien.valroff.free.fr/].
+- [SuSE RPMs http://rpm.pbone.net/index.php3/stat/4/idpl/2108685/com/tovid-0.19-0.oc2pus.1.noarch.rpm.html]
+
+
+===Source tarball===
+- [tovid_0.22.tar.gz http://prdownloads.sourceforge.net/tovid/tovid-0.22.tar.gz?download]
+  contains all the command-line scripts.
+- [tovid-gui-0.22.tar.gz http://prdownloads.sourceforge.net/tovid/tovid-gui-0.22.tar.gz?download]
+  contains the GUI and program icons. The command-line scripts must be
+  installed before using the GUI.
+
+
+Download the command-line package and save it on your computer.  We'll assume
+it's saved in ``~/Downloads/``.  Next, open a terminal window (such as XTerm,
+RXVT, or Konsole) and extract the tarball by typing the following commands:
+
+```
+$ cd ~/Downloads
+$ tar -xzvf tovid-0.22.tar.gz
+```
+
+The installation files will go into a subdirectory ``tovid-0.22`` within the
+current directory.  Next, do the following:
+
+```
+$ cd ~/Downloads/tovid-0.22
+$ ./configure
+$ su -c "make install"
+```
+
+If you decide you don't want tovid installed anymore, run ``make uninstall``
+from the original installation directory (``~/Downloads/tovid-0.22``).  Repeat
+the above procedure for the ``tovid-gui-0.22.tar.gz`` package if you would like
+to install the graphical interface.
+
+
+=== CVS builds ===
+
+You can get a copy of the latest development version of tovid through CVS. To
+get this version, you need to have [CVS http://www.cvshome.org/] installed.
+Using CVS is a little different; instead of just downloading tovid, you'll be
+"checking out" a copy of it. Using the same example directory as above:
+
+```
+$ cd ~/Downloads
+$ cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/tovid login
+Logging in to :pserver:anonymous@cvs.sourceforge.net:2401/cvsroot/tovid
+CVS password: (your email address)
+$ cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/tovid co -P tovid
+$ cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/tovid co -P gui
+$ cd tovid
+$ aclocal
+$ autoconf
+$ automake
+```
+
+If you're installing the GUI, repeat these steps in its directory (``aclocal``,
+``autoconf``, and ``automake``). Finally, do ``./configure`` and
+``su -c "make install"`` as shown above in each repsective directory to install
+tovid (and the GUI) system-wide.
+
+Also available through CVS are three additional modules: ``docs`` contains
+the [DocBook http://www.docbook.org/] sources (complete with illustrations)
+of the documentation you are reading; ``test-tools`` is a suite of scripts
+designed for testing the encoding options of mplayer and mpeg2enc (along
+with some other small freebies); ``pytovid`` will eventually become a
+complete re-implementation of tovid in the Python language.  If you are
+interested in these other branches of development, please grab the CVS
+modules and get in touch with the developers on the ``#tovid`` channel of
+``irc.freenode.net``.
+
