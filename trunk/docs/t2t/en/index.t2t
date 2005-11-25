@@ -1,0 +1,80 @@
+tovid homepage
+
+
+%!include(xhtml): ''navmenu.html''
+
+The [txt2tags http://txt2tags.sf.net/] source for this document is
+[index.t2t t2t/en/index.t2t].
+
+[images/tovid_logo.png]
+
+
+== What is tovid? ==
+
+tovid is a collection of video disc authoring tools; it can help you create your own
+DVDs, VCDs, and SVCDs for playback on your home DVD player.
+It has a [command-line interface cli.html]
+as well as a [graphical frontend gui.html].
+tovid is [free software http://en.wikipedia.org/wiki/Free_software].
+
+You may find tovid useful if:
+- you have a digital camcorder, and want to share home movies with family and friends
+- you are a 3D artist or animator, and want to put
+  your portfolio on DVD for easy distribution
+- your video files are eating up too much hard drive
+  space, and you want to back them up onto a portable medium
+
+
+Interested? See [Getting started getting_started.html] for download and
+installation instructions.
+
+
+== News ==
+
+(Newest on top)
+
+- 2005-11-14: tovid 0.23 is released. Mostly a maintenance release, with minor
+    bugfixes, but it's good to be up-to-date!
+    [Download it from sourceforge http://sourceforge.net/projects/tovid].
+- 2005-10-28: The tovid website has been revamped slightly, with
+    some fancier
+    [CSS http://www.wikipedia.org/Cascading_Style_Sheets].
+    The tovid Python reimplementation progresses steadily; check out the
+    new [tovid design language download/test.tdl.txt].
+- 2005-09-21: [Linux Format magazine http://linuxformat.co.uk/] gives
+    tovid a positive review (issue 72).
+- 2005-09-17: tovid 0.22 is released.
+    [Get it http://sourceforge.net/projects/tovid]
+    and [install it getting_started.html]; try out the new
+    ``-quality [1-10]`` option for controlling quantization, and the (I hope) improved
+    ``-interlaced`` option.
+- 2005-08-27:
+    Version 0.21 of tovid hits the streets.
+    [Get it from sourceforge http://sourceforge.net/projects/tovid]
+    and see [Getting started getting_started.html]
+    for instructions. [makedvd makedvd.html] is now functional, and the GUI
+    is considerably less buggy.
+- 2005-08-14:
+    New and improved, with better-tasting syntax!
+    Version 0.20 of tovid has been released.
+    [Get it from sourceforge http://sourceforge.net/projects/tovid] and see
+    [Getting started getting_started.html]
+    for instructions. Lots of minor
+    bugfixes and formatting improvements, and the -parallel option just might work!
+    Also, ``-fps`` makes a reappearance for anyone having framerate problems. See
+    the ``ChangeLog`` file in the tovid install directory for
+    details.
+- 2005-08-09: [Linux.com http://www.linux.com/]
+    runs an [article on tovid http://www.linux.com/article.pl?sid=05/08/01/1734201]. tovid gets a nice boost in downloads for several days!
+
+
+== Where to start? ==
+
+tovid is still in early development, and isn't yet available in most package
+repositories, so you will probably not be able to install it using your
+distribution's package manager. Download the latest official release of tovid
+from the [sourceforge project page http://sourceforge.net/projects/tovid/], or
+get the latest development version through CVS.  Feel free to stop by the
+[tovid forum http://www.createphpbb.com/phpbb/tovid.html], or the IRC channel
+``#tovid`` on ``irc.freenode.net``, for tech support and friendly chat.
+

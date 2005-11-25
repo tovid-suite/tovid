@@ -1,0 +1,424 @@
+diff -C 2 tovid-0.19/idvid tovidX-0.19/idvid
+*** tovid-0.19/idvid	Thu Jul 28 06:09:07 2005
+--- tovidX-0.19/idvid	Sun Jul 31 10:09:21 2005
+***************
+*** 57,60 ****
+--- 57,79 ----
+  SEPARATOR="====================================================="
+  
++ # Define SED commands based on operating system
++ if test -r /proc/cpuinfo; then
++   # Linux with /proc mounted, extract CPU information from it
++   SED_E="sed -e"
++   SED_RE="sed -r -e"
++ elif test -r /compat/linux/proc/cpuinfo; then
++   # FreeBSD with Linux emulation /proc mounted
++   SED_E="sed -e"
++   SED_RE="sed -r -e"
++ elif test -x /usr/bin/hostinfo; then
++   # Darwin (Apple OS X)
++   SED_E="sed -e"
++   SED_RE="sed -E -e"
++ else
++    # Can't identify host type. Use GNU options.
++   SED_E="sed -e"
++   SED_RE="sed -r -e"
++ fi
++ 
+  # Print usage notes and optional error message, then exit.
+  # Args: $@ == text string containing error message
+***************
+*** 83,89 ****
+  unformat_time ()
+  {
+!   HMS_HOURS=$( echo $1 | sed -r -e 's/0?([0-9]+):0?([0-9]+):0?([0-9]+)(\.[0-9])?/\1/' )
+!   HMS_MINS=$( echo $1 | sed -r -e 's/0?([0-9]+):0?([0-9]+):0?([0-9]+)(\.[0-9])?/\2/' )
+!   HMS_SECS=$( echo $1 | sed -r -e 's/0?([0-9]+):0?([0-9]+):0?([0-9]+)(\.[0-9])?/\3/' )
+    let "TOT_SECONDS=$HMS_HOURS * 3600 + $HMS_MINS * 60 + $HMS_SECS"
+  }
+--- 102,108 ----
+  unformat_time ()
+  {
+!   HMS_HOURS=$( echo $1 | $SED_RE 's/0?([0-9]+):0?([0-9]+):0?([0-9]+)(\.[0-9])?/\1/' )
+!   HMS_MINS=$( echo $1 | $SED_RE 's/0?([0-9]+):0?([0-9]+):0?([0-9]+)(\.[0-9])?/\2/' )
+!   HMS_SECS=$( echo $1 | $SED_RE 's/0?([0-9]+):0?([0-9]+):0?([0-9]+)(\.[0-9])?/\3/' )
+    let "TOT_SECONDS=$HMS_HOURS * 3600 + $HMS_MINS * 60 + $HMS_SECS"
+  }
+***************
+*** 120,146 ****
+    # Gather relevant output from mplayer
+    WIDTH=$( grep 'ID_VIDEO_WIDTH' $MPLAYER_TMP | \
+!     sed -e "s/..*=//g" )
+    HEIGHT=$( grep 'ID_VIDEO_HEIGHT' $MPLAYER_TMP | \
+!     sed -e "s/..*=//g" )
+    FPS=$( grep 'ID_VIDEO_FPS' $MPLAYER_TMP | \
+!     sed -e "s/..*=//g" -e "s/,/./g" )
+    V_FORMAT=$( grep 'ID_VIDEO_FORMAT' $MPLAYER_TMP | \
+!     sed -e "s/..*=//g" )
+    V_BITRATE=$( grep 'ID_VIDEO_BITRATE' $MPLAYER_TMP | \
+!     sed -e "s/..*=//g" )
+    A_BITRATE=$( grep 'ID_AUDIO_BITRATE' $MPLAYER_TMP | \
+!     sed -e "s/..*=//g" )
+    A_SAMPRATE=$( grep 'ID_AUDIO_RATE' $MPLAYER_TMP | \
+!     sed -e "s/..*=//g" )
+    A_FORMAT=$( grep 'ID_AUDIO_CODEC' $MPLAYER_TMP | \
+!     sed -e "s/..*=//g" )
+    A_FORMAT_CODE=$( grep 'ID_AUDIO_FORMAT' $MPLAYER_TMP | \
+!     sed -e "s/..*=//g" )
+    A_CHANNELS=$( grep 'ID_AUDIO_NCH' $MPLAYER_TMP | \
+!     sed -e "s/..*=//g" )
+  
+    # Infer aspect ratio by what mplayer uses for playback
+    MPLAYER_RES=$( grep '^VO:' $MPLAYER_TMP | \
+!     sed -e "s/..*=> *//g" -e "s/ .*$//g" )
+    PLAY_WIDTH=$( echo $MPLAYER_RES | awk -F 'x' '{print $1}' )
+    PLAY_HEIGHT=$( echo $MPLAYER_RES | awk -F 'x' '{print $2}' )
+--- 139,165 ----
+    # Gather relevant output from mplayer
+    WIDTH=$( grep 'ID_VIDEO_WIDTH' $MPLAYER_TMP | \
+!     $SED_E "s/..*=//g" )
+    HEIGHT=$( grep 'ID_VIDEO_HEIGHT' $MPLAYER_TMP | \
+!     $SED_E "s/..*=//g" )
+    FPS=$( grep 'ID_VIDEO_FPS' $MPLAYER_TMP | \
+!     $SED_E "s/..*=//g" -e "s/,/./g" )
+    V_FORMAT=$( grep 'ID_VIDEO_FORMAT' $MPLAYER_TMP | \
+!     $SED_E "s/..*=//g" )
+    V_BITRATE=$( grep 'ID_VIDEO_BITRATE' $MPLAYER_TMP | \
+!     $SED_E "s/..*=//g" )
+    A_BITRATE=$( grep 'ID_AUDIO_BITRATE' $MPLAYER_TMP | \
+!     $SED_E "s/..*=//g" )
+    A_SAMPRATE=$( grep 'ID_AUDIO_RATE' $MPLAYER_TMP | \
+!     $SED_E "s/..*=//g" )
+    A_FORMAT=$( grep 'ID_AUDIO_CODEC' $MPLAYER_TMP | \
+!     $SED_E "s/..*=//g" )
+    A_FORMAT_CODE=$( grep 'ID_AUDIO_FORMAT' $MPLAYER_TMP | \
+!     $SED_E "s/..*=//g" )
+    A_CHANNELS=$( grep 'ID_AUDIO_NCH' $MPLAYER_TMP | \
+!     $SED_E "s/..*=//g" )
+  
+    # Infer aspect ratio by what mplayer uses for playback
+    MPLAYER_RES=$( grep '^VO:' $MPLAYER_TMP | \
+!     $SED_E "s/..*=> *//g" -e "s/ .*$//g" )
+    PLAY_WIDTH=$( echo $MPLAYER_RES | awk -F 'x' '{print $1}' )
+    PLAY_HEIGHT=$( echo $MPLAYER_RES | awk -F 'x' '{print $2}' )
+***************
+*** 153,157 ****
+    let "ASPECT_WIDTH=$PLAY_WIDTH * 100 / $PLAY_HEIGHT"
+    ASPECT_RATIO=$( echo $ASPECT_WIDTH | \
+!     sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g' )
+  
+    # Convert nulls to zeros and unknowns
+--- 172,176 ----
+    let "ASPECT_WIDTH=$PLAY_WIDTH * 100 / $PLAY_HEIGHT"
+    ASPECT_RATIO=$( echo $ASPECT_WIDTH | \
+!     $SED_RE 's/([0-9]*)([0-9][0-9])/\1.\2:1/g' )
+  
+    # Convert nulls to zeros and unknowns
+diff -C 2 tovid-0.19/tovid tovidX-0.19/tovid
+*** tovid-0.19/tovid	Thu Jul 28 06:37:56 2005
+--- tovidX-0.19/tovid	Sun Jul 31 12:25:51 2005
+***************
+*** 112,116 ****
+  
+  Example: Convert HomeMovie.avi to DVD widescreen format, output in HomeMovie.mpg:
+!   tovid -dvd -wide HomeMovie.avi HomeMovie
+  
+  You may use a full URI as the input file (i.e., "http://foo.com/video.avi").
+--- 112,116 ----
+  
+  Example: Convert HomeMovie.avi to DVD widescreen format, output in HomeMovie.mpg:
+!   tovid -dvd -wide -in HomeMovie.avi -out HomeMovie
+  
+  You may use a full URI as the input file (i.e., "http://foo.com/video.avi").
+***************
+*** 340,351 ****
+  #Trap Ctrl-C and TERM to clean up child processes
+  trap 'killsubprocs; exit 13' TERM INT
+! # Test for multiple CPUs. If they are available, try to use them.
+! if test `cat /proc/cpuinfo | grep processor | wc -l` -ge "2"; then
+!     MTHREAD="-M 2"
+  else
+!     MTHREAD="-M 0"
+  fi
+  
+- 
+  # ******************************************************************************
+  # ******************************************************************************
+--- 340,423 ----
+  #Trap Ctrl-C and TERM to clean up child processes
+  trap 'killsubprocs; exit 13' TERM INT
+! 
+! 
+! # Perform platform specific initialization
+! if test -r /proc/cpuinfo; then
+!   # Linux with /proc mounted
+!   # Test for multiple CPUs. If they are available, try to use them.
+!   if test `cat /proc/cpuinfo | grep processor | wc -l` -ge "2"; then
+!       MTHREAD="-M 2"
+!   else
+!       MTHREAD="-M 0"
+!   fi
+!   
+!   # Define SED commands
+!   SED_E="sed -e"
+!   SED_RE="sed -r -e"
+! 
+!   # Define a function wrapping the usage of expr 
+!   is_URI()
+!   {
+!     EXPR=`expr match "$#" ".*:\/\/"`
+!     return `test $EXPR = "1"`
+!   }  
+! elif test -r /compat/linux/proc/cpuinfo; then
+!   # FreeBSD with Linux emulation /proc mounted
+!   
+!   # Test for multiple CPUs. If they are available, try to use them.
+!   if test `cat /compat/linux/proc/cpuinfo | grep processor | wc -l` -ge "2"; then
+!       MTHREAD="-M 2"
+!   else
+!       MTHREAD="-M 0"
+!   fi  
+!   
+!   # Define SED commands
+!   SED_E="sed -e"
+!   SED_RE="sed -E -e"
+! 
+!   # Define a function wrapping the usage of expr 
+!   is_URI()
+!   {
+!     EXPR=`expr "$#" : ".*:\/\/"`
+!     return `test $EXPR -gt 0`  
+!   }  
+! elif test -x /usr/bin/hostinfo; then
+!   # Darwin (Apple OS X)
+!   
+!   # Test for multiple CPUs. If they are available, try to use them.
+!   if test "`/usr/bin/hostinfo | grep '1 processor is physically available.'`"; then
+!       MTHREAD="-M 0"
+!   else
+!       MTHREAD="-M 2"
+!   fi
+! 
+!   # Define SED commands
+!   SED_E="sed -e"
+!   SED_RE="sed -E -e"
+! 
+!   # Define a function wrapping the usage of expr 
+!   is_URI()
+!   {
+!     EXPR=`expr "$#" : ".*:\/\/"`
+!     return `test $EXPR -gt 0`
+!   }
+  else
+!    # Can't identify host CPU type. 
+!    
+!    # Default to single threaded.
+!    MTHREAD="-M 0"
+!    
+!   # Define SED commands
+!   SED_E="sed -e"
+!   SED_RE="sed -r -e"
+! 
+!   # Define a function wrapping the usage of expr 
+!   is_URI()
+!   {
+!     EXPR=`expr match "$#" ".*:\/\/"`
+!     return `test  = "1"`
+!   }     
+  fi
+  
+  # ******************************************************************************
+  # ******************************************************************************
+***************
+*** 427,433 ****
+  unformat_time()
+  {
+!     HMS_HOURS=`echo $1 | sed -r -e 's/0?([0-9]+):0?([0-9]+):0?([0-9]+)(\.[0-9])?/\1/'`
+!     HMS_MINS=`echo $1 | sed -r -e 's/0?([0-9]+):0?([0-9]+):0?([0-9]+)(\.[0-9])?/\2/'`
+!     HMS_SECS=`echo $1 | sed -r -e 's/0?([0-9]+):0?([0-9]+):0?([0-9]+)(\.[0-9])?/\3/'`
+      let "TOT_SECONDS=$HMS_HOURS * 3600 + $HMS_MINS * 60 + $HMS_SECS"
+      echo $TOT_SECONDS
+--- 499,505 ----
+  unformat_time()
+  {
+!     HMS_HOURS=`echo $1 | $SED_RE 's/0?([0-9]+):0?([0-9]+):0?([0-9]+)(\.[0-9])?/\1/'`
+!     HMS_MINS=`echo $1 | $SED_RE 's/0?([0-9]+):0?([0-9]+):0?([0-9]+)(\.[0-9])?/\2/'`
+!     HMS_SECS=`echo $1 | $SED_RE 's/0?([0-9]+):0?([0-9]+):0?([0-9]+)(\.[0-9])?/\3/'`
+      let "TOT_SECONDS=$HMS_HOURS * 3600 + $HMS_MINS * 60 + $HMS_SECS"
+      echo $TOT_SECONDS
+***************
+*** 483,491 ****
+      while ps | grep $ENCODING_PID > /dev/null 2>&1; do
+          # Get last line of output from the temp file
+!         CUR_OUTPUT=`tail --bytes=100 "$TMP_FILE" | tr '\r' '\n' | sed -e "/^$/d" |
+          tail -n 1 | grep "^V:"`
+          # Extract the current progress in tenths of a second, trimming leading zeroes
+          test -n $CUR_OUTPUT && CUR_PROGRESS=`echo "$CUR_OUTPUT" | \
+!             sed -e "s/V: *\([0-9]*\)[.,]\([0-9]\).*/\1\2/" -e "s/^0//g"`
+          # If null, make it 0
+          test -z $CUR_PROGRESS && CUR_PROGRESS="0"
+--- 555,563 ----
+      while ps | grep $ENCODING_PID > /dev/null 2>&1; do
+          # Get last line of output from the temp file
+!         CUR_OUTPUT=`tail -c 100 "$TMP_FILE" | tr '\r' '\n' | $SED_E "/^$/d" |
+          tail -n 1 | grep "^V:"`
+          # Extract the current progress in tenths of a second, trimming leading zeroes
+          test -n $CUR_OUTPUT && CUR_PROGRESS=`echo "$CUR_OUTPUT" | \
+!             $SED_E "s/V: *\([0-9]*\)[.,]\([0-9]\).*/\1\2/" -e "s/^0//g"`
+          # If null, make it 0
+          test -z $CUR_PROGRESS && CUR_PROGRESS="0"
+***************
+*** 539,548 ****
+  check_dependencies()
+  {
+!     if test -z `type -p mplayer`; then
+          echo "$ME It looks like you don't have mplayer installed. I need mplayer"
+          echo "for playing and encoding video. You can get mplayer from:"
+          echo "    http://www.mplayerhq.hu/"
+          exit 1
+!     elif test -z `type -p mpeg2enc`; then
+          echo "$ME It looks like you don't have mjpegtools installed. I need mjpegtools"
+          echo "for encoding video and audio. You can get mjpegtools from:"
+--- 611,620 ----
+  check_dependencies()
+  {
+!     if test -z "`type -p mplayer`"; then
+          echo "$ME It looks like you don't have mplayer installed. I need mplayer"
+          echo "for playing and encoding video. You can get mplayer from:"
+          echo "    http://www.mplayerhq.hu/"
+          exit 1
+!     elif test -z "`type -p mpeg2enc`"; then
+          echo "$ME It looks like you don't have mjpegtools installed. I need mjpegtools"
+          echo "for encoding video and audio. You can get mjpegtools from:"
+***************
+*** 551,557 ****
+      fi
+      # See which version of normalize is available, if any
+!     if test -n `type -p normalize`; then
+          NORM_EXEC="normalize"
+!     elif test -n `type -p normalize-audio`; then
+          NORM_EXEC="normalize-audio"
+      fi
+--- 623,629 ----
+      fi
+      # See which version of normalize is available, if any
+!     if test -n "`type -p normalize`"; then
+          NORM_EXEC="normalize"
+!     elif test -n "`type -p normalize-audio`"; then
+          NORM_EXEC="normalize-audio"
+      fi
+***************
+*** 675,679 ****
+              "-safe" )
+                  shift
+!                 SAFE_AREA=`echo $1 | sed -e 's/%//g'`
+                  ;;
+              "-filters" )
+--- 747,751 ----
+              "-safe" )
+                  shift
+!                 SAFE_AREA=`echo $1 | $SED_E 's/%//g'`
+                  ;;
+              "-filters" )
+***************
+*** 927,931 ****
+      # Determine whether input is a normal file or a URI of some sort
+      # (if input name contains "://", it's assumed to be a URI)
+!     if test `expr match "$INFILE" ".*:\/\/"` = "1"; then
+          yecho "Input appears to be a URI."
+          INFILE_TYPE="uri"
+--- 999,1003 ----
+      # Determine whether input is a normal file or a URI of some sort
+      # (if input name contains "://", it's assumed to be a URI)
+!     if `is_URI "$INFILE"`; then
+          yecho "Input appears to be a URI."
+          INFILE_TYPE="uri"
+***************
+*** 937,943 ****
+      # Make sure infile exists
+      if test "$INFILE_TYPE" = "file"; then
+!         if test -e $INFILE; then
+!             :
+!         else
+              print_error "Could not find input file $INFILE. Exiting."
+          fi
+--- 1009,1013 ----
+      # Make sure infile exists
+      if test "$INFILE_TYPE" = "file"; then
+!         if ! test -e "$INFILE"; then
+              print_error "Could not find input file $INFILE. Exiting."
+          fi
+***************
+*** 1146,1150 ****
+  echo "$ME Version $TOVID_VERSION" >> "$LOG_FILE"
+  
+! get_args $@
+  
+  echo $"$SCRIPT_NAME"
+--- 1216,1220 ----
+  echo "$ME Version $TOVID_VERSION" >> "$LOG_FILE"
+  
+! get_args "$@"
+  
+  echo $"$SCRIPT_NAME"
+***************
+*** 1427,1433 ****
+  # Don't use -q for VCD (since -q implies variable bitrate)
+  if test $RES = "vcd"; then
+!     MPEG2_QUALITY="-4 2 -2 1 --keep-hf"
+  else
+!     MPEG2_QUALITY="-4 2 -2 1 -q $QUANT --keep-hf"
+  fi
+  
+--- 1497,1503 ----
+  # Don't use -q for VCD (since -q implies variable bitrate)
+  if test $RES = "vcd"; then
+!     MPEG2_QUALITY="-4 2 -2 1 -H"
+  else
+!     MPEG2_QUALITY="-4 2 -2 1 -q $QUANT -H"
+  fi
+  
+***************
+*** 1511,1515 ****
+      # (i.e., format '133' as '1.33:1', etc.)
+      ASPECT_RATIO=`echo $ASPECT_WIDTH | \
+!         sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g'`
+      yecho "Using auto-detected aspect ratio of $ASPECT_RATIO"
+  fi
+--- 1581,1585 ----
+      # (i.e., format '133' as '1.33:1', etc.)
+      ASPECT_RATIO=`echo $ASPECT_WIDTH | \
+!         $SED_RE 's/([0-9]*)([0-9][0-9])/\1.\2:1/g'`
+      yecho "Using auto-detected aspect ratio of $ASPECT_RATIO"
+  fi
+***************
+*** 1715,1720 ****
+  let "FINAL_BITRATE=$FINAL_SIZE / ( $CUR_LENGTH + 1 )"
+  # Get CPU speed
+! CPU_MODEL=`cat /proc/cpuinfo | grep -i "model name" | awk -F ":" '{print $2}'`
+! CPU_SPEED=`cat /proc/cpuinfo | grep -i mhz | awk '{print $4}'`
+  # Get average/peak bitrates from mplex
+  AVG_BITRATE=`grep 'Average bit-rate' "$LOG_FILE" | awk '{print $6}'`
+--- 1785,1806 ----
+  let "FINAL_BITRATE=$FINAL_SIZE / ( $CUR_LENGTH + 1 )"
+  # Get CPU speed
+! if test -r /proc/cpuinfo; then
+!   # Linux with /proc mounted, extract CPU information from it
+!   CPU_MODEL=`cat /proc/cpuinfo | grep -i "model name" | awk -F ":" '{print $2}'`
+!   CPU_SPEED=`cat /proc/cpuinfo | grep -i mhz | awk '{print $4}'`
+! elif test -r /compat/linux/proc/cpuinfo; then
+!   # FreeBSD with Linux emulation /proc mounted,
+!   # extract CPU information from it
+!   CPU_MODEL=`cat /compat/linux/proc/cpuinfo | grep -i "model name" | awk -F ":" '{print $2}'`
+!   CPU_SPEED=`cat /compat/linux/proc/cpuinfo | grep -i mhz | awk '{print $4}'`
+! elif test -x /usr/bin/hostinfo; then
+!   # use hostinfo on Darwin
+!   CPU_MODEL=`/usr/bin/hostinfo | grep -i "Processor type:" | awk -F ": " '{print  $2}'`
+!   CPU_SPEED="Unknown"
+! else
+!   # Cannot identify CPU model and speed
+!   CPU_MODEL="Unknown CPU Model"
+!   CPU_SPEED="Unknown"
+! fi
+  # Get average/peak bitrates from mplex
+  AVG_BITRATE=`grep 'Average bit-rate' "$LOG_FILE" | awk '{print $6}'`

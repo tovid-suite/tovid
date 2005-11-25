@@ -1,0 +1,26 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(tovidgui.py)
+AM_INIT_AUTOMAKE(tovid-gui, 0.22)
+
+dnl Checks for programs.
+AC_PROG_INSTALL
+
+# check for mandatory programs
+AC_CHECK_PROG(TOVID, [tovid], "yes")
+AC_CHECK_PROG(MAKEMENU, [makemenu], "yes")
+AC_CHECK_PROG(MAKEXML, [makexml], "yes")
+
+if @<:@ -z "$TOVID" @:>@ || @<:@ -z "$MAKEMENU" @:>@ || @<:@ -z "$MAKEXML" @:>@; then
+  AC_MSG_ERROR([tovid suite must be installed. exiting...])
+fi
+
+AC_MSG_CHECKING([Installed version of tovid])
+TOVIDVERSION=$( tovid -version )
+AC_MSG_RESULT($TOVIDVERSION)
+
+AC_CHECK_PROG(PYTHON, [python], "yes")
+if test -z "$PYTHON"; then
+  AC_MSG_ERROR("python must be installed. exiting...")
+fi
+
+AC_OUTPUT(Makefile icons/Makefile)

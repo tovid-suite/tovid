@@ -1,0 +1,256 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+<head>
+  <meta name="generator" content=
+  "HTML Tidy for Linux/x86 (vers 1st August 2004), see www.w3.org">
+  <meta http-equiv="Content-Type" content=
+  "text/html; charset=utf-8">
+
+  <title>Consejos breves y pruebas</title>
+  <link rel="stylesheet" href="tovid_style.css" type="text/css">
+  <link rel="stylesheet" href="tovid_print.css" type="text/css">
+  <meta name="generator" content="DocBook XSL Stylesheets V1.68.1">
+  <link rel="start" href="bk01.html" title=
+  "Documentación de tovid">
+  <link rel="up" href="bk01.html" title="Documentación de tovid">
+  <link rel="prev" href="FAQ.html" title=
+  "Preguntas habituales sobre tovid">
+  <link rel="next" href="ch09.html" title="Comparaciones de vídeo">
+</head>
+
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084"
+alink="#0000FF">
+  <div class="navheader">
+    <table width="100%" summary="Navigation header">
+      <tr>
+        <th colspan="3" align="center">Consejos breves y
+        pruebas</th>
+      </tr>
+
+      <tr>
+        <td width="20%" align="left"><a accesskey="p" href=
+        "FAQ.html">Anterior</a>&nbsp;</td>
+
+        <th width="60%" align="center">&nbsp;</th>
+
+        <td width="20%" align="right">&nbsp;<a accesskey="n" href=
+        "ch09.html">Siguiente</a></td>
+      </tr>
+    </table>
+    <hr>
+  </div>
+
+  <div class="chapter" lang="es">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h2 class="title"><a name="id2524831" id=
+          "id2524831"></a>Consejos breves y pruebas</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="toc">
+      <p><b>Tabla de contenidos</b></p>
+
+      <dl>
+        <dt><span class="sect1"><a href="ch08.html#id2524853">1.
+        Comparación de opciones de línea de comando</a></span></dt>
+
+        <dt><span class="sect1"><a href="ch08.html#id2524915">2.
+        Comparación de vídeos</a></span></dt>
+
+        <dt><span class="sect1"><a href="ch08.html#id2525036">3.
+        Análisis de las estadísticas de tovid</a></span></dt>
+      </dl>
+    </div>
+
+    <p>Los siguientes son algunos scripts breves (tanto
+    <span><strong class="command">bash</strong></span> como su
+    explicación en español) para depurar, comprobar, y comparar
+    tovid.</p>
+
+    <div class="sect1" lang="es">
+      <div class="titlepage">
+        <div>
+          <div>
+            <h2 class="title" style="clear: both"><a name=
+            "id2524853" id="id2524853"></a>1. Comparación de
+            opciones de línea de comando</h2>
+          </div>
+        </div>
+      </div>
+
+      <p>Estando depurando un día, quise descubrir<span class=
+      "emphasis"><em>exactamante</em></span> qué distintas opciones
+      de codificación resultaban afectadas por la opción
+      <code class="option">-deinterlace</code>. El script
+      <span><strong class="command"><a href="CLI.html#CLI.tovid"
+      title="2. tovid">tovid</a></strong></span> es tan complejo
+      ahora que incluso yo no puedo recordar todas opciones que han
+      de pasarse a <span><strong class=
+      "command">mpeg2enc</strong></span>, <span><strong class=
+      "command">mplayer</strong></span>, y otros programas de los
+      que depende tovid.</p>
+
+      <p>Así que aquí está un breve script en bash que te muestra
+      la diferencia, en detalle, entre dos de las opciones de línea
+      de comando.</p>
+      <pre class="screen">
+#!/bin/bash
+tovid -debug -deinterlace dv1.avi dv1_deint &gt; 1.log
+tovid -debug dv1.avi dv1_blahblah &gt; 2.log
+diff 1.log 2.log
+</pre>
+    </div>
+
+    <div class="sect1" lang="es">
+      <div class="titlepage">
+        <div>
+          <div>
+            <h2 class="title" style="clear: both"><a name=
+            "id2524915" id="id2524915"></a>2. Comparación de
+            vídeos</h2>
+          </div>
+        </div>
+      </div>
+
+      <p>A menudo resulta difícil comparar la calidad de dos vídeos
+      simplemente observándolos. El ojo humano es muy indulgente
+      con las imágenes animadas, y es útil hacer una comparación
+      recuadro a recuadro.</p>
+
+      <p>Para obtener un volcado de todos los recuadros en VÍDEO,
+      usa el siguiente comando:</p>
+      <pre class="screen">
+mplayer -nosound -vo png VÍDEO
+</pre>
+
+      <p>Si quieres ver la diferencia entre dos imágenes (IMAGEN_1
+      e IMAGEN_2), usa uno de estos comandos:</p>
+      <pre class="screen">
+convert IMAGEN_1 IMAGEN_2 -compose difference -composite x: &amp;
+convert IMAGEN_1 IMAGEN_2 -compose difference -composite -normalize x: &amp;
+</pre>
+
+      <p>Estos comandos usan <a href="http://www.imagemagick.org/"
+      target="_top">ImageMagick</a> para mostrar un representación
+      en escala de grises de la diferencia entre IMAGEN_1 e
+      IMAGEN_2, indicando las áreas claras mayor diferencia. La
+      opción <code class="option">-normalize</code> resulta útil
+      para imágenes que son muy similares. Utilízalo para obtener
+      una visualización rápida de la calidad de imagen, en
+      particular la degradación y artefactos que a menudo se
+      introducen durante la conversión a otro formato de
+      imagen.</p>
+
+      <p>Las versiones más nuevas de ImageMagick incluyen la
+      utilidad <span><strong class=
+      "command">compare</strong></span>. Prueba:</p>
+      <pre class="screen">
+compare IMAGE_1 IMAGE_2 x: &amp;
+</pre>
+
+      <p>Si te gustan los números, puede que disfrutes con:</p>
+      <pre class="screen">
+compare -metric MAE IMAGE_1 IMAGE_2 null:
+</pre>
+
+      <p>Ve probando las métricas MSE, PSE, PSNR, y RMSE para
+      distintos tipos de comparación. Para más detalles en la
+      comparación de imágenes, mira las <a href=
+      "http://www.cit.gu.edu.au/~anthony/info/graphics/image_comparing"
+      target="_top">notas de Anthony Thyssen</a> sobre el tema.</p>
+    </div>
+
+    <div class="sect1" lang="es">
+      <div class="titlepage">
+        <div>
+          <div>
+            <h2 class="title" style="clear: both"><a name=
+            "id2525036" id="id2525036"></a>3. Análisis de las
+            estadísticas de tovid</h2>
+          </div>
+        </div>
+      </div>
+
+      <p>Comenzando con la versión 0.18, <span><strong class=
+      "command"><a href="CLI.html#CLI.tovid" title=
+      "2. tovid">tovid</a></strong></span> escribe estadísticas a
+      <code class="filename">~/.tovid/stats</code> en un formato
+      separado por coma, con las cadenas de texto entrecomilladas
+      habitualmente conocido como <a href=
+      "http://en.wikipedia.org/wiki/Comma-separated_values" target=
+      "_top">CSV</a> (que no debe confundirse con <a href=
+      "http://www.cvshome.org/" target="_top">CVS</a>). Lo cual
+      hace las estadísticas fácilmente procesables, sobre todo si
+      quieres importarlas en una hoja de cálculo para análisis
+      posterior o para gráficos.</p>
+
+      <p>Aquí se ve cómo importar las estadísticas en <a href=
+      "http://www.openoffice.org" target="_top">OpenOffice.org</a>
+      Calc:</p>
+      <pre class="screen">
+cp ~/.tovid/stats ~/.tovid/stats.csv
+</pre>
+
+      <p>Ayuda que el fichero teng el sufijo <code class=
+      "filename">.csv</code>, porque entonces OOo Calc ya presupone
+      que contiene valores separados por comas. Ejecuta OOo Calc, y
+      abre <code class="filename">~/.tovid/stats.csv</code>. Te
+      aparecerá un diálogo:</p>
+
+      <div class="figure">
+        <a name="id2525120" id="id2525120"></a>
+
+        <p class="title"><b>Figura 1. Ajustando la importación de
+        CSV</b></p>
+
+        <div class="mediaobject">
+          <img src="../images/ooo_calc_import.png" alt=
+          "Ajustando la importación de CSV">
+        </div>
+      </div>
+
+      <p>Las opciones significativas están resaltadas; comprueba
+      que están activas antes de importar. Ajusta el valor
+      <span class="guibutton">From row</span> hasta que el punto de
+      comienzo esté justo sobre la línea <code class=
+      "literal">TOVID_VERSION</code>. Pulsa <span class=
+      "guibutton">OK</span> y obtendrás una bonita hoja de cálculo,
+      con cabeceras de columna que coinciden con los nombres de
+      variables en <span><strong class="command"><a href=
+      "CLI.html#CLI.tovid" title=
+      "2. tovid">tovid</a></strong></span>.</p>
+    </div>
+  </div>
+
+  <div class="navfooter">
+    <hr>
+
+    <table width="100%" summary="Navigation footer">
+      <tr>
+        <td width="40%" align="left"><a accesskey="p" href=
+        "FAQ.html">Anterior</a>&nbsp;</td>
+
+        <td width="20%" align="center">&nbsp;</td>
+
+        <td width="40%" align="right">&nbsp;<a accesskey="n" href=
+        "ch09.html">Siguiente</a></td>
+      </tr>
+
+      <tr>
+        <td width="40%" align="left" valign="top">Preguntas
+        habituales sobre tovid&nbsp;</td>
+
+        <td width="20%" align="center"><a accesskey="h" href=
+        "bk01.html">Inicio</a></td>
+
+        <td width="40%" align="right" valign="top">
+        &nbsp;Comparaciones de vídeo</td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

@@ -1,0 +1,212 @@
+profile, an mpeg2enc testing frontend
+
+
+%!include(xhtml): ''navmenu.html''
+
+= profile =
+
+== Name ==
+
+profile -- Analyze the options of mpeg2enc
+
+== Synopsis ==
+
+``` profile [ OPTIONS ] { -f /path/to/video.avi }
+
+== Description ==
+
+profile evaluates the encoding options of mpeg2enc (from mjpegtools). profile takes a video and systematically encodes it with mpeg2enc to measure various effects of mpeg2enc's options on output video bitrate, encoding time, and quality, leaving the data in a comma separated values (.csv) file.
+
+Additional command line options tell profile to take a snap shot from each test trial and to find the Peak-Signal-to-Noise (PSNR) ratio between the original video file and each test trial. Further options tweak the properties of profile's behavior.
+
+== Features ==
+- Tests any and every mpeg2enc option, recording the output bitrate and encoding time (both in absolute units and normalized to an optionless 'control' trial).
+- Captures an encoded frame from each trial.
+- Finds the Peak-Signal-to-Noise (PSNR) ratio between the source video and each encoded trial.
+
+
+== Options ==
+
+=== Required Options ===
+
+: ``-f | -file /path/to/video.avi``
+
+  Evaluate mpeg2enc using video.avi. Specify a full or relative path to the source video file. profile will use this video to test the mpeg2enc options you specify (see ``-t``).
+
+
+=== Logs ===
+
+: ``-l | -logfile /path/to/logfile.csv``
+  Specify a different path for the data file other than the default: $HOME/.tovid/profile.csv. The data file is saved as a plain ASCII comma-separated values file (.csv) for further analysis and plotting.
+
+  Recorded data: the tested mpeg2enc command line option(s), duration of source video (s), time to encode (s), output size (kB), time scale factor, output bitrate (kbps), normalized time (%), normalized bitrate (%), and the Peak-Signal-to-Noise Ratio (dB).
+
+: ``-el | -errlog /path/to/error.log``
+  Specify a different path for the error log other than the default: /dev/null. All subprocess errors are written here EXCEPT for mplayer's and mpeg2enc's errors, which are written to ``-enclog``.
+
+: ``-nl | -enclog /path/to/encoder.log``
+  Specify a different path for the encoding log other than the default: /dev/null. This log is incredibly verbose: all of mplayer's and mpeg2enc's frame-by-frame statistics (and errors, if any) are written here.
+
+: ``-pl | -psnrlog /path/to/psnr.csv``
+  Specify a different path for the frame-by-frame Peak-Signal-to-Noise Ratio data other than the default: $HOME/.tovid/psnr.csv. The data file is saved as a plain ASCII comma-separated values file (.csv) for further analysis and plotting.
+
+  Recorded data: frame number, Y (or luminance) PSNR (dB), Cb (or blue chroma) PSNR (dB), Cr (or red chroma) PSNR (dB),  whole frame PSNR (dB), frame PSNR error, cumulative error sum.
+
+  In cases where the images do not differ, the PSNR cannot be found (because the denominator is zero). Since the images are exactly the same, there is no 'noise', and the PSNR is infinite instead.
+
+  NOTE: nothing will be written to the log unless the PSNR is calculated (see -p).
+
+
+=== Option Tests ===
+
+The main purpose of profile is to test mpeg2enc's many options on a video to evaluate the encoder's behavior.
+
+mpeg2enc has many different options which separate into three classes. Some are flags (either on or off), others independently take one numerical argument in a valid range, and finally some are inter-dependent, where using one implies using another. The classic example of inter-dependent options in mpeg2enc is -b and -q. Using -q (a quantization) implies a variable bitrate, and thus to keep the bitrate under control, -b can be used to limit the maximum bitrate.
+ 
+profile can test EVERY option of mpeg2enc; the following (summarized) mpeg2enc options are the more interesting ones. See the mpeg2enc man page for complete details of these (and the other) options.
+ 
+There are two generalized test specifications:
+ 
+: ``-t | -test "TEST"``
+  Multiple tests (-t) may be called for any profile (see the Examples).
+
+: ``-t | -test "TEST 1:TEST 2:TEST 3"``
+  Instead of specifying each test with a separate -t option, you may specify many tests at once using a colon (:) as a separator.
+ 
+
+Tests are carried out in the order specified (so no reshuffling). In addition, if tests are specified in the default (or in a -c given) configuration file, the tests given on command line DO NOT override the configuration file tests. Instead, the command line tests are appended to the end of the test list and carried out last. You may have overlapping tests if you're not careful! This is not a Bad Thing, but you'll run the same test more than once and waste some time.
+ 
+Each encoder option class has its own syntax as described below:
+
+==== Suggested flags ====
+
+: ``"-FLAG"``
+  A FLAG in mpeg2enc takes no numerical arguments: it simply turns on a feature, like a switch. Consequently, only the flag must be given.
+
+  
+A FLAG is called using the same letter as those for mpeg2enc:
+
+: ``c``
+  Generate closed GOPs.
+
+: ``H``
+  Keep the high-frequency information.
+
+: ``p``
+  Tell the _decoder_ to use 3-2 pulldown.
+
+: ``s``
+  Generate sequence headers for ff/rew/seek.
+
+
+==== Suggested independent numerical options ====
+
+: ``"-OPTION MIN MAX STEP"``
+  An independent numerical option needs four pieces of information to completely specify an option test: the option to test (OPTION), the value at which to start testing (MIN), the value at which to finish testing (MAX), and the numerical increment between tests (STEP). NOTE: if an option can take a decimal argument, both MAX and STEP must have the same number of decimal points.
+ 
+
+Each OPTION is called using the same letter as those for mpeg2enc:
+ 
+: ``D    9..10``
+  DC component precision.
+ 
+: ``E    -40..40``
+  The 'unit coefficient elimination' threshold.
+ 
+: ``N    0.0..2.0``
+  Reduce high-frequency content. 0.0 means don't reduce.
+ 
+: ``r    8|16|24|32``
+  Motion search radius.
+ 
+: ``R    0..2``
+  Number of B-frames between I- or P-frames.
+
+
+==== Suggested inter-dependent numerical options ====
+
+: ``"-OPTION1 MIN1 MAX1 STEP1 -OPTION2 MIN2 MAX2 STEP2"``
+  Inter-dependent numerical options are similar to independent numerical options, but using one inter-dependent option implies the use of another option (or creates the need to use another option). Specifying inter-dependent options is just giving two options with ranges. Eight pieces of information are needed: the first option to test (OPTION1), that option's value at which to start testing (MIN1), that option's value at which to finish testing (MAX1), and that option's numerical increment between tests (STEP1); next, the second option to test (OPTION2), that option's value at which to start testing (MIN2), that option's value at which to finish testing (MAX2), and that option's numerical increment between tests (STEP2). NOTE: if an option can take a decimal argument, both MAX and STEP must have the same number of decimal points.
+ 
+
+profile makes no strictly defined distinction between an independent option and an inter-dependent option. In fact, profile uses the length of the test string to determine which test to run. Consequently, there's no reason you cannot specify 'independent' options as 'inter-dependent' options. For example, -t "-E -40 40 5 -Q 0.0 5.0 1.0", which will evaluate the inter-dependence of -E and -Q, is a perfectly valid test specification.
+ 
+Each OPTION is called using the same number/letter as those for mpeg2enc:
+     
+: ``2    1..4``
+: ``4    1..4``
+  Motion estimation aggressiveness. -4 controls 4*4 pixel areas, and -2 controls 2*2 pixel areas.
+ 
+: ``b    100..15000``
+  The video bitrate. When -q is present, variable bitrate encoding is enabled, and -b becomes the maximum bitrate.
+: ``q    1..31``
+  Amount of quantization. A lower number implies less quantization and thus higher quality.
+ 
+: ``g    1..24``
+: ``G    1..24``
+  Limits for the size of GOPs (Group of Pictures). -g is the lower limit; -G is the upper limit.
+ 
+: ``Q    0.0..5.0``
+  Reduce the quantization for highly detailed blocks as needed. 0.0 means always use the quantization for the entire frame.
+: ``X    0.0..2500.0``
+  Luma (brightness) variance below which to use -Q.
+  
+  
+=== Other Options ===
+
+: ``-c | -config /path/to/config.file``
+  Specify a path to a config file; profile looks for a default configuration file in $HOME/.tovid/profile.conf and reads it before starting. See the README for an example configuration file. When using a configuration file, all command line options placed _after_ the configuration file will override the options in the configuration file (except for -test, in which case all tests are included and none are overridden). If the default configuration file exists and another file is specified with -c, the specified file takes precedence over the default file. The order of importance, from least to most important, is: default configuration file, specified configuration file, right-most command line options.
+ 
+: ``-k | -keepvids``
+  Keep encoded videos. After each option trial is finished, profile deletes the encoded video by default. Use this option if you want to keep every trial encoding. Videos are left in the present working directory, so this could take up a lot of space!
+ 
+: ``-nf | -encframe NUMBER``
+  Encode NUMBER frames. profile encodes the _entire_ source video for every trial by default. If you don't want to encode the whole file, you may specify an integer number of frames (NUMBER) to encode with this option. As a rule of thumb, 1 second of NTSC video is 30 frames and one second of PAL video is 25 frames.
+ 
+: ``-p | -psnr NUMBER|all``
+  Find the Peak-Signal-to-Noise Ratio for NUMBER frames. profile does not find the Peak-Signal-to-Noise Ratio by default. If you want to find the PSNR between the source video and each encoding trial, use this option. NUMBER is the number of frames to average for the PSNR (use "all" to compare the entire videos). If -nf is given, the number of PSNR frames must be less than or equal to the number of encoded frames.
+ 
+: ``-s | -snapshot NUMBER``
+  Take a snapshot of frame NUMBER. profile can take one frame from the source video and each encoding trial. Use this option to enable this feature and specify which frame to capture. Like -p, if -nf is specified, the snapshot frame number must be less than or equal to the number of encoded frames. Snapshots are left in the present working directory.
+ 
+: ``-h | -help``
+  Display this usage guide.
+ 
+: ``-v | -version``
+  Print the version number and exit.
+
+
+== Examples ==
+
+: ``profile -t "-H" -t "-4 1 4 1 -2 1 4 1" -nf 450 -f /home/foo/bar.avi``
+  Test the flag -H, and the options -4 and -2 using the first 450 frames from /home/foo/bar.avi. First, -H will be tested. Next, -2 will be tested for 1, 2, 3, and 4 while -4 is at 1; then, -4 will be set to 2 and -2 will be tested from 1 to 4 again; and so on until -4 reaches 4. Provided the default config file isn't present, or sets the other options, logs are sent to the default locations, snapshots are not taken, encoded videos are not kept, and the PSNR is not calculated.
+ 
+: ``profile -c $HOME/.tovid/custom.conf -l $HOME/profile-data.csv``
+  Test all the flags present in $HOME/.tovid/custom.conf, and use other settings specified (like snapshots or PSNR) in that file. Specifying -l after -c ensures the data log will be written to $HOME/profile-data.csv (even if -c lists a custom data log location - options to the right of -c override any options in the config file).
+
+
+== Files ==
+
+: $HOME/.tovid/profile.conf
+  The default configuration file. See -c for more description.
+
+: $HOME/.tovid/profile.csv
+  The data output file. See -l for more description.
+
+
+== See Also ==
+
+[psnrcore psnrcore.html], [vidpsnr profile.html]
+
+== Bugs ==
+
+If an option can take a decimal argument, both MAX and STEP must have the same number of decimal points: eg -N 0 2 0.1 would break profile (needs to be -N 0.0 2.0 0.1).
+
+Whether or not an option takes a numerical argument is not checked: eg -H 0 5 1 would break profile (-H is a flag!).
+
+== Author ==
+
+Streamlined and made robust by Joe Friedrichsen. Original idea and rough-cut by Matthias Wieser.
+
+== Contact ==
+Please see the tovid homepage ([tovid.org http://www.tovid.org/]) for further assistance (contact information, phpbb forum, and IRC links).

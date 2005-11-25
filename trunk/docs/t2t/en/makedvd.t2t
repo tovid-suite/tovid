@@ -1,0 +1,58 @@
+makedvd manual
+
+
+%!include(xhtml): ''navmenu.html''
+
+==Name==
+makedvd--Create and burn DVD image from dvdauthor XML input
+
+
+==Synopsis==
+```
+makedvd [ OPTIONS ] XML_INFILE
+```
+
+
+==Description==
+makedvd takes an XML file as input; this file is
+expected to contain a DVD file-structure specification in the format
+understood by [dvdauthor http://dvdauthor.sourceforge.net/].
+(For a description of the XML format, see the dvdauthor manual page.)
+If you used makexml to create the XML file, you can
+use it as input to makedvd.
+
+
+==Features==
+- Configurable burn device and burn speed
+- Create an image only, or burn an existing image
+
+
+==Options==
+
+```
+-author
+    Overwrite an existing directory containing the dvdauthor output
+-image
+    Overwrite an existing ISO file
+-burn
+    Burn the disc after creating the ISO file
+-device DEVFS_NAME (default /dev/dvd)
+    Burn the disc image to DEVICE, the Linux device filesystem
+    name of your DVD-recorder. Common examples might be /dev/dvdrw,
+    /dev/scd1, and /dev/hdc. You can also use a bus/id/lun triple
+    such as ATAPI:0,1,0
+
+-speed NUM (default 1)
+    Burn disc at speed NUM.
+
+-label DISC_LABEL
+    Uses "DISC_LABEL" as the volume ID. This appears as the mount
+    name of the disc on some computer platforms. Must be <=32
+    alphanumeric digits without spaces.
+```
+
+
+==Contact==
+For further assistance, contact information, forum and IRC links,
+please refer to the [tovid homepage http://tovid.org/].
+

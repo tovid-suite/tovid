@@ -1,0 +1,3065 @@
+﻿<?xml version='1.0' encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-OASIS//DTD DocBook XML V4.3//EN"
+"http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+    <!ENTITY suite_version "0.21">
+    <!ENTITY tovidgui '<command><link linkend="GUI">tovidgui.py</link></command>' >
+    <!ENTITY tovid '<command><link linkend="CLI.tovid">tovid</link></command>' >
+    <!ENTITY makexml '<command><link linkend="CLI.makexml">makexml</link></command>' >
+    <!ENTITY makemenu '<command><link linkend="CLI.makemenu">makemenu</link></command>' >
+    <!ENTITY idvid '<command><link linkend="CLI.idvid">idvid</link></command>' >
+    <!ENTITY postproc '<command><link linkend="CLI.postproc">postproc</link></command>' >
+    <!ENTITY makedvd '<command><link linkend="CLI.makedvd">makedvd</link></command>' >
+    <!ENTITY dvrequant '<command><link linkend="CLI.dvrequant">dvrequant</link></command>' >
+    <!ENTITY forum_url 'http://www.createphpbb.com/phpbb/?mforum=tovid' >
+]>
+<!--
+$Id: tovid_documentation.es.xml,v 1.5 2005/10/10 03:29:17 wapcaplet Exp $
+This is the Spanish translation of CVS revision 1.11 of docs/tovid_documentation.xml 
+My memory is weak, I jot down here a few commands:
+
+  # Untar CVS snapshot
+  cd ~src
+  tar jxvf /cygdrive/c/Cosecha/Video/Author/tovid-cvsroot.tar.bz2
+  export CVSROOT=:local:/home/Sacelen/src/tovid/
+  cd ~/src/tovid-cvs/
+  cvs checkout docs tovid gui pytovid
+
+  # Get revision level of English documentation
+  cvs log tovid_documentation.xml
+  
+  # Login only once into SourceForge to create account
+  ssh  wzrlpy@cvs.sourceforge.net
+  
+  # Commit changes to SourceForge
+  export CVS_RSH=ssh
+  cd ~/src/tovid-cvs/
+  cvs -z3 -d:ext:wzrlpy@cvs.sourceforge.net:/cvsroot/tovid ci -m 'This is the Spanish translation of CVS revision 1.11 of docs/tovid_documentation.xml' docs/es/tovid_documentation.es.xml
+  
+  # Convert XML to HTML
+  xmlto -o es -m tovid_documentation.xsl xhtml es/tovid_documentation.es.xml
+
+  # Clean up HTML
+  tidy -utf8 -i -m *.html
+
+-->
+<!-- 
+In my Cygwin box (no access to Internet) I use this DTD:
+  /usr/share/xml/docbook/4.3/docbookx.dtd
+instead of:
+  http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd
+-->
+<book lang="es">
+<bookinfo>
+    <title>Documentación de tovid</title>
+
+    <abstract>
+    <para>Esta es la traducción al español de la documentación oficial (y el sitio web) de
+    <application>tovid</application>, un conjunto de herramientas open-source
+    para crear discos de vídeo en los formatos VCD, SVCD, o DVD.
+    </para>
+    </abstract>
+
+    <author>
+        <firstname>Eric</firstname>
+        <surname>Pierce</surname>
+    </author>
+
+    <othercredit role="traduction" class="translator">
+        <firstname>Víctor</firstname>
+        <surname>Paesa</surname>
+        <contrib>Adaptación española</contrib>
+        <email>wzrlpy en users.sourceforge.net</email>
+    </othercredit>
+  
+  <revhistory>
+        <revision>
+            <revnumber>$Revision: 1.5 $</revnumber>
+            <date>$Date: 2005/10/10 03:29:17 $</date>
+        </revision>
+    </revhistory>
+</bookinfo>
+
+<!--
+======================================================
+
+Welcome
+
+======================================================
+-->
+
+<chapter id="index">
+<title>Bienvenida</title> <!-- REVIEW translate "tovid homepage" -->
+
+<informalfigure>
+    <mediaobject>
+        <imageobject><imagedata fileref="../images/tovid_logo.png"/></imageobject>
+        <textobject><phrase>tovid</phrase></textobject>
+    </mediaobject>
+</informalfigure>
+
+<para><emphasis>Traducciones:</emphasis> 
+<ulink url="../index.html">English</ulink>
+<ulink url="../fr/">Français</ulink>
+</para>
+
+<para>
+¡Hola! Gracias por interesarte en
+<application>tovid</application>, un conjunto de herramientas Linux
+    para autoría de discos de vídeo.
+tovid te ayuda a crear tus propios DVDs y (S)VCDs desde videos partida
+cualesquiera; tiene un <link linkend="CLI">interfaz de línea de comando</link>, y
+también un <link linkend="GUI">interfaz gráfico</link>. tovid es
+<ulink url="http://en.wikipedia.org/wiki/Free_software">free software</ulink>.
+.</para>
+
+<para><ulink url="toc.html">Índice del sitio</ulink></para>
+<sect1>
+<title>Novedades</title>
+
+<para>(lo más reciente arriba)</para>
+
+<itemizedlist>
+    <listitem><para>2005-08-27:
+    La versión 0.21 of tovid sale a la calle.
+    La puedes <ulink url="http://sourceforge.net/projects/tovid">obtener en sourceforge</ulink>, 
+   <link linkend="GettingStarted" endterm="GettingStarted.title"> aquí </link> tienes las instrucciones
+    necesarias. &makedvd; es ahora funcional, y el interfaz
+    tiene considerablemente menos errores.</para>
+    </listitem>
+    <listitem><para>2005-08-14:
+    ¡Nuevo y mejorado, con sintaxis más sabrosa!
+    Estreno de la versión 0.20 de tovid. <ulink url="http://sourceforge.net/projects/tovid">Descárgatela desde sourceforge</ulink> y mira
+    <link linkend="GettingStarted" endterm="GettingStarted.title"></link>
+    para las instrucciones. Montones de correcciones a pequeños
+    errores y mejoras en el formato, y ¡la opción -parallel podría funcionar!
+    Asimismo, -fps hace su reaparición para todos aquellos con problemas de en los recuadros por segundo. Mira
+    el <filename>Registro de Cambios</filename> en el directorio de instalación de tovid para
+    mayor detalle.</para>
+    </listitem>
+    <listitem><para>2005-08-09: <ulink url="http://www.linux.com/">Linux.com</ulink>
+    lanza un <ulink url="http://www.linux.com/article.pl?sid=05/08/01/1734201">artículo sobre tovid</ulink>. 
+    tovid obtiene un buen empujón en sus descargas durante varios días!</para>
+    </listitem>
+</itemizedlist>
+
+</sect1>
+
+<sect1>
+<title>¿Dónde empezar?</title>
+
+
+<variablelist>
+<varlistentry>
+    <term>Mira</term><!-- REVIEW -->
+    <listitem>
+        <itemizedlist>
+            <listitem>
+                <para>Contempla <ulink url="../images/tovid_screenshot.png">algunas pantallas de tovid</ulink></para>
+            </listitem>
+            <listitem>
+                <para><ulink url="http://sourceforge.net/projects/tovid">Descarga tovid</ulink></para>
+            </listitem>
+        </itemizedlist>
+    </listitem>
+</varlistentry>
+
+<varlistentry>
+    <term>Aprende</term><!-- REVIEW -->
+    <listitem>
+        <itemizedlist>
+            <listitem><para><link linkend="GettingStarted">Instalación de
+            tovid</link></para></listitem>
+            <listitem><para><link linkend="CLI" endterm="CLI.title"></link></para>
+            </listitem>
+            <listitem><para><link linkend="GUI" endterm="GUI.title"></link></para>
+            </listitem>
+            <listitem><para><link linkend="FAQ">Preguntas habituales</link></para>
+            </listitem>
+        </itemizedlist>
+    </listitem>
+</varlistentry>
+
+<varlistentry>
+    <term>Interactúa</term><!-- REVIEW -->
+    <listitem>
+        <itemizedlist>
+            <listitem>
+                <para><ulink
+                url="http://sourceforge.net/tracker/?func=add&amp;group_id=113675&amp;atid=665859">Reporte de errores</ulink></para>
+            </listitem>
+            <listitem>
+                <para><ulink
+                url="http://sourceforge.net/tracker/?func=add&amp;group_id=113675&amp;atid=665862">Peticiones de cambios</ulink></para>
+            </listitem>
+            <listitem>
+                <para><ulink url="&forum_url;">Participa en el foro</ulink></para>
+            </listitem>
+            <listitem>
+                <para><ulink
+                url="http://lists.sourceforge.net/lists/listinfo/tovid-users">Suscripciones a
+                la lista de correo</ulink></para>
+            </listitem>
+        </itemizedlist>
+    </listitem>
+</varlistentry>
+</variablelist>
+
+<para>tovid todavía está en sus primeras etapas de desarrollo, y no está todavía disponible en la mayor parte de
+los repositorios de paquetes, así que probablemente no podrás instalarlo usando el gestor de paquetes 
+de tu distribución Linux. Descárgate la última entrega oficial de tovid desde la 
+<ulink url="http://sourceforge.net/projects/tovid/">página del proyecto en sourceforge</ulink>
+, o tráete la última versión de desarrollo a través de CVS (mira <link
+linkend="Installation">Instalación</link> para los detalles).</para>
+
+<para>Si te apetece, pásate por el <ulink url="&forum_url;">forum de tovid </ulink>, o
+el canal IRC <literal>#tovid</literal> en <literal>irc.freenode.net</literal>,
+para soporte técnico y una charradica amistosa (en inglés).</para>
+
+<para>Puedes bajarte esta <ulink url="tovid_documentation.es.xml">documentación en español</ulink> en
+formato <ulink url="http://www.docbook.org">DocBook XML</ulink>.</para>
+</sect1>
+
+<sect1>
+<title>Acerca de tovid</title>
+
+<para>La familia tovid es una colección de varios componente, cada uno 
+especializado en una tarea determinada. Todos los componentes están escritos en texto puro y duro, 
+usando lenguajes de script, lo que permite su modificación y parcheo de un modo relativamente sencillo.
+tovid se entrega con las condiciones de la <ulink url="http://www.gnu.org/copyleft/gpl.html">GNU General Public
+License</ulink>.</para>
+
+<para>tovid comenzó sus andares en mayo de 2004, como un sencillo script de una línea
+para convertir vídeo al formato VCD. Había descubierto que no era especialmente fácil
+recordar los comandos y opciones requeridos para convertir vídeo de un formato 
+a otro, y conseguir que el vídeo de salida cumpliera la estricta norma VCD no era en absoluto trivial.</para>
+
+<para>La necesidad de convertir y codificar vídeo se convirtió en urgente cuando 
+mi mujer y yo compramos una unidad DVD-RW. De repente, la posibilidad de crear nuestros propios DVD
+ya era realidad. Desafortunadamente, parecía bastante difícil encontrar programas que pudieran
+convertir de un modo fiable vídeo de un formato a otro, en particular
+cuando el resultado debía cumplir estrictamente una tasa de bits por segundo, cuadros por segundo, 
+resolución y formato de codificación.VCD, SVCD, y DVD han de estar todos en formato MPEG,
+con muy específicas resooluciones y tasas de bits por segundo. Incluso en Windows, la mayor parte de
+las herramientas libremente disponibles para autoría de discos de vídeo tenían serias limitacions a la hora de
+convertir, si siquiera hacían alguna conversión; muchos programas de autoría requieren que los videos de partida 
+ya cumplan la norma adecuada.</para>
+
+<para>Probé distintos caminos, incluyendo
+<ulink url="http://ffmpeg.sourceforge.net/">ffmpeg</ulink> y
+<ulink url="http://zebra.fh-weingarten-de/~transcode/">transcode</ulink>, antes de quedarme con mplayer y mjpegtools.
+Mientras que el comando <command>mencoder</command> de mplayer en realidad no es particularmente adecuado 
+para codificar vídeo a formato MPEG, mplayer es el reproductor de vídeo más robusto
+que conozco para la plataforma Linux. Puede reproducir casi cualquier vídeo que le eches, sin importar su formato. Las
+utilidades incluídas con mjpegtools eran perfectas para obtener el formato MPEG dentro de los parámetros correctos. 
+Resultó bastante fácil emparejar ambas herramientas, gracias a la <ulink
+url="https://sourceforge.net/docman/display_doc.php?docid=3456&amp;group_id=5776">concienzuda documentación</ulink>. Pronto tuve un conversor de vídeo que funcionaba,
+diseñado para partir de un vídeo arbitrario y convertirlo en VCD. Siempre que necesitaba convertir a un formato distinto, simplemente editaba el script.
+Pronto tuve una pequeña colección de scripts de conversión, con nombres como <command>todvd</command>,
+<command>tovcd</command>, y <command>tosvcd</command>.</para>
+
+<para>El deso de más flexibilidad acabó por empujarme a escribir un
+script con una serie de alternativas de formato de salida. Una vez que tuve mi script en 
+un estado más o menos usable, lo <ulink
+url="http://www.linuxquestions.org/questions/showthread.php?s=&amp;threadid=187527">envié a
+LinuxQuestions.org</ulink>.
+Poco después, un moderador de LinuxQuestions me preguntó si estaría ineresado en enviar el script a la sección <ulink
+url="http://www.linuxquestions.org/questions/answers.php">LinuxAnswers</ulink>;
+<ulink url="http://www.linuxquestions.org/questions/answers/193">lo hice</ulink>, y pronto
+recibí algunos comentarios de la gente que empezaba a usar el script.
+Con renovado interés, decidí que merecía la pena montar un 
+<ulink url="http://sourceforge.net/projects/tovid/">proyecto en SourceForge.net</ulink>. El interés continua creciente, 
+y ya habido varias versiones oficiales, cada una con nuevas prestaciones y nuevas correciones de errores, basados en los comentarios de otros usuarios, y en mi propio uso continuado del programa..</para>
+
+<para>Gracias al tremendo soporte y comentarios de ayuda de los usuarios, tovid se está convirtiendo en una herramienta de autoría
+<!-- REVIEW -->one-stop de vídeo discos. Puede pasar algún tiempo antes de que tovid se convierta en el 
+equivalente Linux de <ulink url="http://ww3.nero.com/">Nero</ulink>, pero muy bien puede
+convertirse en la herramienta <foreignphrase>de facto</foreignphrase> open-source para discos de vídeo.</para>
+</sect1>
+
+<sect1>
+<title>Otros programas similares a tovid</title>
+
+<itemizedlist>
+    <listitem>
+        <para><ulink url="http://dvd-slideshow.sourceforge.net/">DVD Slideshow</ulink></para>
+    </listitem>
+    <listitem>
+        <para><ulink url="http://dvdstyler.sourceforge.net/">DVDStyler</ulink></para>
+    </listitem>
+    <listitem>
+        <para><ulink url="http://susku.pyhaselka.fi/damu/software/kmediafactory/">KMediaFactory</ulink></para>
+    </listitem>
+    <listitem>
+        <para><ulink url="http://pingwing.xs4all.nl/view.php/page/DVDAuthor">KDE DVD Authoring Wizard</ulink></para>
+    </listitem>
+    <listitem>
+        <para><ulink url="http://polidori.sourceforge.net/">Polidori</ulink></para>
+    </listitem>
+    <listitem>
+        <para><ulink url="http://qdvdauthor.sourceforge.net/">Q DVD-Author</ulink></para>
+    </listitem>
+    <listitem>
+        <para><ulink url="http://varsha.sourceforge.net/">Varsha</ulink></para>
+    </listitem>
+    <listitem>
+        <para><ulink url="http://www.vcdeasy.org/">VCDEasy</ulink></para>
+    </listitem>
+
+</itemizedlist>
+</sect1>
+
+</chapter>
+
+<!--
+======================================================
+
+Getting started
+
+======================================================
+-->
+
+<chapter id="GettingStarted">
+<title id="GettingStarted.title">Preparación</title>
+
+<para>Este capítulo explica cómo conseguir que tovid funcione en tu ordenador.
+Si ya tienes tovid en marcha, puedes saltar directamente a 
+<link linkend="GUI" endterm="GUI.title"></link> o
+<link linkend="CLI" endterm="CLI.title"></link>.
+</para>
+
+<sect1>
+<title>Preliminaries</title>
+
+<sect2>
+<title>Requerimientos</title>
+
+<para>No hay requerimientos mínimos de sistema para ejecutar tovid. Si
+tu máquina puede arrancar una instalación Linux normal, probablemente ya tienes suficiente 
+velocidad de CPU para procesar y reproducir vídeo.</para>
+
+<para>Si vas a trabajar conficheros de vídeo, querrás tener espacio en disco de sobras;
+el proceso de autoría de un DVD puede consumir 11GB de tu disco, y si trabajas en varios proyectos de DVD a la vez, 
+los requerimientos de espacio se multiplican rápidamente. Como mínimo, deberías disponer de unos 20GB que puedas dedicar
+a la autoría de DVDes. Si sólo planeas crear (S)VCDs, puedes ir tirando con sólo 6-8GB.</para>
+
+<para>La familia tovid se desarrolla y comprueba principalmente en Linux. Algunos usuarios
+han informado de que funciona exitosamente en FreeBSD y Cygwin con sólo modificaciones 
+menores. Parte de los componentes puede funcionar en otros sistemas operativos parecidos a UNIX, pero tal posibilidad
+no ha sido verificada de momento. Actualmente no hay planes para desarrollar una versión en Windows o Mac OS, pero si 
+estás interesado en emprender el trabajo, ¡por favor contacta con los desarrolladores de tovid!</para>
+
+<para>Se requiren varios paquetes de programas para poder usar los componente de tovid (mira <link linkend="sec:Dependencies">Dependencias</link>).
+Casi todos los componentes, al estar escritos en el lenguaje de script <command>bash</command>, requieren <command>bash</command>, y también
+requieren los comandos habituales en UNIX, como <command>grep</command>,
+<command>sed</command>, <command>cat</command>, y <command>awk</command>.
+Si tienes Linux, todos estos comandos están disponibles.</para>
+
+</sect2>
+
+<sect2 id="sec:Dependencies">
+<title>Dependencias</title>
+
+<para>tovid ha acumulado su buen montoncillo de dependencias a lo largo de su desarrollo. 
+Aquí está la lista completa de dependencias, y hasta qué punto son requeridos:</para>
+
+<variablelist>
+<varlistentry>
+    <term><application><ulink
+url="http://www.python.org/">Python</ulink></application></term>
+    <listitem><para>Un intérprete que permite ejecutar programas escritos en Python. Python es cada vez más habitual, así
+    que es bueno tener un intérprete de Python instalado. Es necesario sólo para el interfaz gráfico de tovid.</para></listitem>
+</varlistentry>
+<varlistentry>
+    <term><application><ulink url="http://www.wxpython.org/">wxPython</ulink></application></term>
+    <listitem><para>Da soporte a <acronym>GUI</acronym>s escritos en Python usando la
+  <acronym>API</acronym> wxWidgets. También solo para el GUI.</para></listitem>
+</varlistentry>
+<varlistentry>
+    <term><application><ulink url="http://www.mplayerhq.hu/">mplayer</ulink></application></term>
+    <listitem><para>Probablemente el reproductor multimedia más robusto y maduro para Linux.
+    Casi todos los componenete de tovid dependen fuertemente de mplayer para reproducir y convertir vídeo, así
+    que su instalación es necesaria. Aunque seguro que querrás usar mplayer de todos modos, si piensas trabajar con vídeo en Linux.</para></listitem>
+</varlistentry>
+<varlistentry>
+    <term><application><ulink url="http://mjpeg.sourceforge.net/">mjpegtools</ulink></application></term>
+    <listitem><para>Herramientas de línea de comando para codificar y trabajar con vídeo,
+    particularmente MPEG. Requerido por la mayor parte de los componentes de tovid, y lo necesitarás 
+    pra cualquier cosa útil que quieras hacer con tovid.</para></listitem>
+</varlistentry>
+<varlistentry>
+    <term><application><ulink url="http://ffmpeg.sourceforge.net/">ffmpeg</ulink></application></term>
+    <listitem><para>Herramientas para grabar, convertir, y enviar por la red audio y vídeo. Usados por varios 
+    componentes, y requeridos si quieres crear DVDs en formato <glossterm>NTSC</glossterm>.</para></listitem>
+</varlistentry>
+<varlistentry>
+    <term><application><ulink url="http://freshmeat.net/projects/normalize">normalize/normalize-audio</ulink></application></term>
+    <listitem><para>Una utilidad para ajustar el volumen de ficheros de audio. Si quieres normalizar el volumen 
+    de tus discos de vídeo, lo necesitas, pero no es de vital importancia.</para></listitem>
+</varlistentry>
+<varlistentry>
+    <term><application><ulink url="http://www.imagemagick.org">ImageMagick</ulink></application></term>
+    <listitem><para>Un potente conjunto de herramientas en la línea de comando para
+    dar formato, cambiar tamaños, convertir y dibujar en ficheros de imágenes. 
+    Se usa por &makemenu;, el componente generador de menús de tovid. 
+    Si quieres crear discos de vídeo con menús, lo necesitas. Muchas distribuciones Linux lo instalan por defecto.
+    </para></listitem>
+</varlistentry>
+<varlistentry>
+    <term><application><ulink url="http://sox.sourceforge.net/">SoX</ulink></application></term>
+    <listitem><para>El ImageMagick de procesamiento de audio, a su manera. 
+    Herramientas en la línea de comando para convertir, recortar, y filtrar ficheros de audio. Se usa por 
+    &makemenu;.</para></listitem>
+</varlistentry>
+<varlistentry>
+    <term><application><ulink
+    url="http://dvdauthor.sourceforge.net/">dvdauthor</ulink></application>
+    0.6.0 o más nuevo</term>
+    <listitem><para>Herramientas para crear sistemas de archivo DVD. Si quieres hacer DVDs
+    con tovid, lo necesitas.</para></listitem>
+</varlistentry>
+<varlistentry>
+    <term><application><ulink url="http://www.vcdimager.org/">vcdimager</ulink></application></term>
+    <listitem><para>Herramientas para crear sistemas de archivo (S)VCD. Si quieres hacer
+    VCDs o SVCDs, lo necesitas.</para></listitem>
+</varlistentry>
+<varlistentry>
+    <term><application><ulink url="http://zebra.fh-weingarten-de/~transcode/">transcode</ulink></application></term>
+    <listitem><para>Herramientas para procesar y convertir flujos de vídeo. Se usa por
+    postproc (el componente de tovid para postprocesado) y &dvrequant; (el componente de tovid para encoger
+    DVDs). Útil si quieres poder ajustar al detalle el tamaño de salida de tus videos, para que encaje
+    la cantidad deseada de contenido en un DVD grabable.</para></listitem>
+</varlistentry>
+<varlistentry>
+    <term><application><ulink url="http://developers.videolan.org/libdvdcss/">libdvdcss</ulink></application></term>
+    <listitem><para>DVD decryption routines, used for playing encrypted DVDs
+    on your computer. Needed by &dvrequant; too.</para></listitem>
+</varlistentry>
+<varlistentry>
+    <term><application><ulink url="http://untrepid.com/acidrip/lsdvd.html">lsdvd</ulink></application></term>
+    <listitem><para>Práctica herramienta para ver los atributos de los discos DVD. También necesaria para &dvrequant; .</para>
+</listitem>
+</varlistentry>
+</variablelist>
+
+<para>La mayor parte de estas herramientas están ampliamente disponibles en los 
+principales repositorios de paquetes, lo más probable es que puedas obtenerlos todos usando el gestor de paquetes que incluya
+tu distribución Linux.</para>
+
+</sect2>
+
+</sect1>
+
+<sect1 id="Installation">
+<title>Instalación</title>
+
+<sect2>
+<title>Paquetes</title>
+
+<itemizedlist>
+    
+    <listitem><para><ulink
+        url="http://bugs.gentoo.org/show_bug.cgi?id=84761">tovid Gentoo ebuild</ulink>. Mira
+        <ulink url="http://gentoo-wiki.com/HOWTO_Installing_3rd_Party_Ebuilds">Instalación
+        de Ebuilds de terceras partes </ulink> para ayuda en la instalación.</para>
+    </listitem>
+
+    <listitem><para><ulink
+        url="http://julien.valroff.free.fr/">Debian .deb</ulink>.</para>
+    </listitem>
+
+    <listitem><para><ulink
+    url="http://rpm.pbone.net/index.php3/stat/4/idpl/2108685/com/tovid-0.19-0.oc2pus.1.noarch.rpm.html">SuSE RPMs</ulink></para>
+    </listitem>
+
+</itemizedlist>
+
+</sect2>
+
+<sect2>
+<title>Código fuente</title>
+
+
+<itemizedlist>
+    <listitem><para><ulink
+    url="http://prdownloads.sourceforge.net/tovid/tovid_&suite_version;.tar.gz?download">tovid_&suite_version;.tar.gz</ulink>
+    contiene todos los scripts de la línea de comando.</para></listitem>
+    <listitem><para><ulink
+    url="http://prdownloads.sourceforge.net/tovid/tovid-gui-&suite_version;.tar.gz?download">tovid-gui-&suite_version;.tar.gz</ulink>
+    contiene la aplicación gráfica y sus iconos. Los scripts de la línea de comando
+    han de estar instalados ante de poder usarse el interfaz gráfico.</para></listitem>
+</itemizedlist>
+    
+<para>Descárgate el paquete para la línea de comando y guárdalo en tu ordenador
+Supongamos que lo has guardado en <filename>~/Downloads/</filename>.</para>
+
+<para>Lo siguiente es abrir una ventana de terminal, (como <application>XTerm</application>,
+<application>RXVT</application>, o <application>Konsole</application>) y
+extraer el "tarball" al teclear los siguientes comandos:</para>
+
+<screen>
+<prompt>$</prompt> <userinput>cd ~/Downloads</userinput>
+<prompt>$</prompt> <userinput>tar -xzvf tovid_&suite_version;.tar.gz</userinput>
+</screen>
+
+<para>Los ficheros de instalación irán a un subdirectorio
+<filename>tovid_&suite_version;</filename> dentro del directorio en curso. Ahora,
+haced lo siguiente:</para>
+
+<screen>
+<prompt>$</prompt> <userinput>cd ~/Downloads/tovid_&suite_version;</userinput>
+<prompt>$</prompt> <userinput>./configure</userinput>
+<prompt>$</prompt> <userinput>su -c "make install"</userinput>
+</screen>
+
+<para>Si decides que ya no quieres tovid, 
+puedes ejecutar <command>make uninstall</command> desde el directorio original de 
+instalación (<filename>~/Downloads/tovid_&suite_version;</filename>).</para>
+
+<para>Repite el procedimiento anterior para el paquete
+<filename>tovid-gui-&suite_version;.tar.gz</filename>  
+si quieres instalar el interfaz gráfico.</para>
+
+</sect2>
+
+<sect2>
+<title>Versiones desde CVS</title>
+
+<para>Puedes traerte una copia de la última versión de desarrollo de tovid 
+por medio de CVS. Para obtener esta versión, necesitas tener <ulink
+url="http://www.cvshome.org/">CVS</ulink> instalado.</para>
+
+<para>Usar CVS es un poquillo diferente; en vez de simplemente descargarte tovid, estarás "desregistrando" una copia. 
+(N. del T. Si "registrarse," es traducción de "check-in", entonces "desregistrarse" lo es de "checking out", forzada regla de tres de la traducción ;-) ) 
+Usando el mismo directorio de ejemplo que anteriormente:</para>
+
+<screen>
+<prompt>$</prompt> <userinput>cd ~/Downloads</userinput>
+<prompt>$</prompt> <userinput>cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/tovid login</userinput>
+<computeroutput>Logging in to :pserver:anonymous@cvs.sourceforge.net:2401/cvsroot/tovid
+CVS password:</computeroutput> <userinput>(your email address)</userinput>
+<prompt>$</prompt> <userinput>cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/tovid co -P tovid</userinput>
+<prompt>$</prompt> <userinput>cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/tovid co -P gui</userinput>
+<prompt>$</prompt> <userinput>cd tovid</userinput>
+<prompt>$</prompt> <userinput>aclocal</userinput>
+<prompt>$</prompt> <userinput>autoconf</userinput>
+<prompt>$</prompt> <userinput>automake</userinput>
+</screen>
+
+<para>Si estás instalando el interfaz gráfico,
+repite estos pasos en su directorio (<command>aclocal</command>, <command>autoconf</command>, y <command>automake</command>). 
+Finalmente, ejecuta <command>./configure</command> 
+y <command>su -c "make install"</command>, según se mostró anteriormente, en cada directorio respectivo para instalar
+tovid (y el interfaz gráfico) en tu sistema.</para>
+
+<note><para>También hay disponibles a través de CVS tres módulos adicionales:
+<literal>docs</literal> contiene los fuentes
+<ulink url="http://www.docbook.org/">DocBook</ulink> (completos
+con ilustraciones) de la documentación que estás leyendo;
+<literal>test-tools</literal> es un conjunto de scripts diseñado para
+comprobar las opciones de codificación de mplayer y mpeg2enc (junto
+algunos otras propinillas); <literal>pytovid</literal> devendrá
+eventualmente en una completa re-implantación de tovid en lenguaje
+<glossterm>Python</glossterm>.</para>
+
+<para>Si estás interesado en estas otras ramas  de desarrollo,
+por favor coge los módulos CVS y contacta con los desarrolladores
+el canal <literal>#tovid</literal> de
+<literal>irc.freenode.net</literal>.</para>
+</note>
+
+
+</sect2>
+
+</sect1>
+
+</chapter>
+
+<!--
+======================================================
+
+tovidgui.py
+
+======================================================
+-->
+
+<chapter id="GUI">
+<title id="GUI.title">Usando el interfaz gráfico (GUI)</title>
+<!-- REVIEW -->
+<para>El interfaz gráfico de tovid (<command>tovidgui.py</command>) es la cara amable 
+de tovid. Desde el GUI, puedes dar estructura, codificar y tostar un 
+<glossterm linkend="VCD">VCD</glossterm>,
+<glossterm linkend="SVCD">SVCD</glossterm>,
+o <glossterm>DVD</glossterm> con menús y videos.</para>
+
+<para>El GUI es principalmente una fachada para los componentes del interfaz de línea de comandos;
+aparte de pequeñas prestaciones interactivas, el GUI no puede hacer nada que las
+herramientas de la línea de comando no puedan hacer. Si prefieres usar un interfaz de línea de comandos,
+puede que quieras saltar hasta <link linkend="CLI" endterm="CLI.title"></link>.
+</para>
+
+
+<sect1>
+<title>Prestaciones y capacidades</title>
+
+<itemizedlist>
+    <listitem><para>Sencillo proceso en tres pasos para autoría de discos de vídeo</para></listitem>
+    <listitem><para>Los discos pueden tener un único menú enlazando a varios videos, o un
+    una jerarquía de dos niveles de menús (menú principal enlazando a varios submenús, 
+    cada uno con enlaces a varios videos)</para></listitem>
+    <listitem><para>El árbol de estructura del disco permite la fácil edición de la navegación por el disco
+    </para></listitem>
+    <listitem><para>En los menús, la imagen y sonido de fondo, los colores del texto, los tipos de letra, y la alineación 
+    son configurables (mira la documentación de &makemenu; para encontrar consejos sobre cómo maximizar el número de tipos de letra disponibles)</para></listitem>
+    <listitem><para>La resolución del vídeo, la relación de aspecto, la tasa de bits por segundo, y otras opcions son
+    configurables</para></listitem>
+</itemizedlist>
+
+</sect1>
+
+
+<sect1>
+<title>Uso y disfrute</title>
+
+<para>Suponiendo que has instalado la familia tovid en algún directorio incluído en la variable PATH, 
+(véase las instrucciones de instalación), todo lo que tiene que hacer es ejecutar <command>tovidgui.py</command>. 
+El GUI de tovid no funcionará adecuadamente a menos que hayas instalado la familia tovid en algún directorio incluído en la variable PATH.</para>
+
+<para>Por el momento, el GUI de tovid no acepta parámetros al invocarse desde la línea de comando.</para>
+
+</sect1>
+
+<sect1>
+<title>Cómo funciona</title>
+
+<para>El GUI de tovid, en su diseño actual, opera según una sencilla noción: tú pones los ficheros de vídeo, 
+y opcionalmente una imagen de fondo o un trocito de audio, para cada menú. 
+El GUI lleva a cabo todas las conversiones ncesarias, y crea un (S)VCD
+o DVD:</para>
+
+<figure>
+<title>Diagrama de flujo de datos en el GUI</title>
+<graphic fileref="../images/tovid_gui_organization.jpg"></graphic>
+</figure>
+
+<para>Si estás interesado en saber más detalles de lo que ocurre tras el telón, lee 
+<link linkend="CLI" endterm="CLI.title"></link>.</para>
+
+</sect1>
+
+<sect1 lang="es">
+<title>Visita guiada al GUI</title>
+
+<para>Seguidamente proponemos un viajecito por el interfaz gráfico y una guía sobre cómo usarlo. En estos momentos,
+el GUI está diseñado con un tarea relativamente sencilla en mente:
+Crear un disco de vídeo, usando un puñado de videos. El GUI gestiona 
+todas las conversiones necesarias (using &tovid;), la creación del menú(s)
+(usando &makemenu;), y la autoría del disco (usando
+&makexml;).</para>
+
+<note>
+<para>El GUI está todavía en desarrollo; en tu pantalla puede parecer ligeramente
+diferente, dependiendo de la versión del GUI, gestor de ventanas y tema GTK+
+que utilices. Estos pantallazos se tomaron usando la versión 0.18a (versión de preestreno) de <command>tovidgui.py</command>
+, ejecutándose bajo 
+<application><ulink url="http://www.xfce.org/">XFCE 4.2</ulink></application>
+con el tema XFCE-light y el estilo por omisión para el gestor de ventanas.</para>
+</note>
+
+<sect2>
+<title>Pantalla de arranque</title>
+<para>Cuando lances por primera vez el GUI de tovid, verás una pantalla tal que esta:
+</para>
+
+<figure>
+<title>Selección de un formato de disco</title>
+<screenshot><graphic fileref="../images/gui_disc_format.png"></graphic></screenshot>
+</figure>
+
+<para>El árbol <guilabel>Disc layout</guilabel> en el lado izquierdo representa
+la estructura de tu disco. Irá creciendo conforme añadas menús y videos.
+En el panel <guilabel>Disc options</guilabel> a la derecha, puedes escoger qué tipo de disco
+quieres hacer. Si tienes una unidad grabadora de DVDs, puedes crear DVDs;
+si tienes una unidad grabadora de CDs, puedes crear VCDs y SVCDs.</para>
+
+<figure>
+<title>Árbol de estructura de disco y directorio temporal</title>
+<screenshot><graphic fileref="../images/gui_disc_working_dir.png"></graphic></screenshot>
+</figure>
+
+<para>También en el panel <guilabel>Disc options</guilabel>, puedes escoger un directorio
+de trabajo, necesario para los ficheros temporales que se creen durante la codificación. Este directorio
+debe tener suficiente espacio para codificar todos los videos, así que comprueba que has escogido un
+directorio con varios GB disponibles, especialmente si estás creando un disco DVD grande.</para>
+
+<para>En el árbol <guilabel>Disc layout</guilabel>, puedes editar el título de un elemento
+pulsando el ratón sobre él. Haz clic sobre el título al lado del icono de disco si quieres 
+cambiar el título del disco.</para>
+
+<para>Cuando ya estés satisfecho con las opciones que has escogido aquí, selecciona
+el botón <guibutton>Add menu</guibutton> para empezar a añadir contenido al disco.
+Hace falta al menos un menú para navegar por el disco, así que debes añadir un menú 
+antes de seguir avanzando. Siempre puedes volver a esta pantalla seleccionando 
+el icono de disco que aparece en el árbol.
+</para>
+</sect2>
+
+
+<sect2>
+<title>Añadiendo un menú</title>
+
+<para>Prosigue con la creación del disco seleccionando el botón <guibutton>Add menu</guibutton>.
+Cuando añadas un menú, verás una ventana nueva como esta: </para>
+
+<figure>
+<title>Configuración de un menú</title>
+<screenshot><graphic fileref="../images/gui_menu_options.png"></graphic></screenshot>
+</figure>
+
+<para>Cuando se selecciona un menú en el árbol <guilabel>Disc layout</guilabel>, las
+opciones relevantes de codificación a tal menú se muestran en el panel de opciones de <guilabel>Menu</guilabel>
+que está a la derecha. Una vez más, puedes hacer clic sobre el título del menú en el árbol
+(al lado del icono de menú) para editar el título del menú.</para>
+
+<para>En el panel <guilabel>Menu options</guilabel>, puedes escoger una imagen como fondo del menú,
+y también se puede reproducir un corte de sonido mientras se muestra el menú. 
+Si no escoges imagen de fondo ni sonido, 
+se usa un fondo por omisión, y no habrá sonido mientras el menú aparezca en pantalla.
+Aquí también puedes configurar el tipo de letra, alineación, y color
+de los elementos mostrados en el menú.</para>
+
+<para>Ahora que ya tienes un menú, puedes añadirle videos seleccionando el botón
+<guibutton>Add video(s)</guibutton>.</para>
+
+<note>
+<para>El botón <guibutton>Add slide(s)</guibutton> se usará en el futuro
+para añadir un carrusel de diapositivas a un disco. En la entrega inicial (versión 0.18), sin embargo, 
+esta característica está desactivada.</para>
+</note>
+
+</sect2>
+
+<sect2>
+<title>Adición de videos</title>
+
+<para>Cuando seleccionas <guibutton>Add video(s)</guibutton>, aparece una ventana se selección de ficheros
+donde puedes seleccionar uno o más videos que se añadirán al menú seleccionado.
+Tras añadir algunos videos, la pantalla tiene una apariencia similar a esta:</para>
+
+<figure>
+<title>Adición de videos</title>
+<screenshot><graphic fileref="../images/gui_videos_added.png"></graphic></screenshot>
+</figure>
+
+<para>Los videos se muestran en el árbol con un icono a su lado que representa una tira de película.
+Una vez más, puedes hacer clic sobre los títulos para editarlos; inicialmente, el título 
+de cada vídeo es el mismo que el nombre del fichero. Observarás que el panel
+<guilabel>Menu options</guilabel> muestra ahora la lista de títulos que aparecen en en ese menú;
+y también el tipo de letra seleccionado, la alineación, y color que se aplicarán
+a tales títulos cuando se muestren en el menú ya acabado.</para>
+</sect2>
+
+
+<sect2>
+<title>Múltiples menús</title>
+
+<para>Si tienes muchos videos, puede que quieras dividir tu disco en
+varios submenús. Para lograrlo, simplemente selecciona de nuevo <guilabel>Add menu</guilabel>.
+Si así lo haces, la disposición del árbol cambiará para aparecer como sigue:</para>
+
+<figure>
+<title>Adición de otro menú</title>
+<screenshot><graphic fileref="../images/gui_second_menu_added.png"></graphic></screenshot>
+</figure>
+
+<para>Observarás que ha surgido un "Main menu" sobre los dos menús sin título. Este
+menú principal se usa para navegar a los otros menús. Puedes poner tantos videos 
+como gustes dentro de cada menú. Puedes cambiar el tipo de letra, color y fondo
+del menú principal tal y como puedes hacerlo en otros menús; la diferencia reside en que 
+el menú principal enlaza a otros menús, en vez de a videos.</para>
+
+<para>Si deseas usar el mismo tipo de letra, alineación, color y fondo para 
+todos los menús de tu disco, marca <guibutton>Use these settings for all
+menus</guibutton>.
+Este botón copiará estos ajustes a todos los menús del disco.</para>
+
+<para>El menú principal enlaza a cada uno de los submenús bajo él, y cada submenú
+incluirá automáticamente un enlace "Back" que vuelve al menú principal. Independientemente de
+cuántos menús añadas, el primer menú listado en el árbol 
+<guilabel>Disc layout</guilabel> será el primero que veas cuando
+reproduzcas el disco.</para>
+</sect2>
+
+
+<sect2>
+<title>Opciones de vídeo</title>
+
+<para>Ahora que tenemos añadidos algunos videos, puedes deidir cómo deseas 
+codificarlos. Cuando seleccionas un vídeo en el árbol, se muestra el panel de 
+<guilabel>Video options</guilabel>, mostrando todas las opciones de configuración
+aplicables a tal vídeo:</para>
+
+<figure>
+<title>Opciones de vídeo</title>
+<screenshot><graphic fileref="../images/gui_video_enc_opts.png"></graphic></screenshot>
+</figure>
+
+<para>La resolución de salida para cada vídeo depende del formato de disco 
+elegido; ciertas resoluciones no están disponibles con ciertos formatos. Si
+no te agradan las resoluciones de vídeo disponibles, puedes volver atrás y cambiar el
+formato de disco pulsando en el icono de disco en el árbol.
+También puedes escoger una relación de aspecto para el vídeo; si es necesario, a los formatos de pantalla panorámica
+se les pondrán bandas negras arriba y abajo, para que se muestren correctamente en tu televisor.</para>
+
+<para>Si lo deseas, también puedes ajustar la tasa de bits por segundo de audio y vídeo. Los 
+valores por omisión son normalmente razonables, así que puedes dejarlos tal y como están si no tienes claro
+qué tasa usar. Finalmente, puedes activar opciones adicionales como la
+normalización del audio (útil si el nivel sonoro es demasiado fuerte o demasiado débil), 
+vídeo de baja calidad (si prefieres mayor velocidad a expensas de la calidad), o desentrelazado de vídeo
+(si el vídeo de partida proviene de la señal de antena o de VHS).</para>
+
+<para>Para usar los mismos ajustes en todos los videos del disco, seleccionar el botón 
+<guibutton>Use these settings for all videos</guibutton>. La resolución, relación de aspecto, tasas de bits y otras opciones 
+seleccionadas en estemomento se aplicarán a todos los
+videos en árbol de estructura de disco.</para>
+
+<para>Puedes usar los botones <guibutton>Move up</guibutton>, <guibutton>Move
+down</guibutton>, y
+<guibutton>Remove</guibutton> en el árbol de estructura para situar los elementos donde prefieras, 
+o para eliminarlos del disco.</para>
+
+<para>Cuando estés satisfecho con la estructura de tu disco, pulsa el botón 
+<guibutton>Next: Encoding setup</guibutton> para proceder con la codificación y
+autoría del disco:</para>
+
+<figure>
+<title>Una estructura de disco completa</title>
+<screenshot><graphic fileref="../images/gui_layout_done.png"></graphic></screenshot>
+</figure>
+
+<para>Seguramente querrás asegurarte de que todos tus menús y títulos de vídeo están
+tal y como quieres antes de proceder, así que comprueba que no queda ningún 
+elemento "Untitled" en el árbol. Pero no te preocupes, puedes volver a esta
+pantalla si es que le has dado al botón accidentalmente.</para>
+</sect2>
+
+
+<sect2>
+<title>Codificando todo</title>
+
+<para>Cuando seleccionas <guibutton>Next: Encoding setup</guibutton>, llegarás
+a un nuevo panel que muestra una ventana que registra la salida de comandos:</para>
+
+<figure>
+<title>Preparación para codificar</title>
+<screenshot><graphic fileref="../images/gui_encoding_setup.png"></graphic></screenshot>
+</figure>
+
+<para>En la entrega de preestreno 0.18a, 
+el "Output directory" se ignora (pero en la entrega oficial este será el lugar 
+donde se escriba la imagen de disco). Pulsa <guibutton>Next:
+Begin encoding</guibutton> para arrancarlo todo. Si has seleccionado
+muchos videos, este paso puede llevar horas completarse. El registro de la salida de los comandos
+se actualizará regularmente para mantenerte informado del progreso de la codificación. Cuando
+se termine, el siguiente paso es crear la imagen del disco, la autoría de 
+la estructura final del disco.</para>
+</sect2>
+
+
+<sect2>
+<title>Creación de la imagen de disco</title>
+
+<para>El la versión de preestreno 0.18a del GUI, este paso lo tienes que hacer
+a mano. El GUI te informará cuando el fichero XML ya está listo para autoría;
+si estás haciendo un VCD o SVCD, necesitas usar vcdxbuild,
+ejecutando un comando tal que <command>vcdxbuild /path/to/output.xml</command>.
+Si están usando cualquiera de los formatos DVD, has de usar dvdauthor,
+ejecutando un comando como <command>dvdauthor -x /path/to/output.xml</command>. El
+GUI te dirá la ruta completa del fichero del fichero XML.</para>
+
+<para>La versión siguiente de tovid tendrá al menos la capacidad de autoría, pero 
+puede que sea todavía necesario tostar a mano el disco, usando cdrecord, K3B, etc.</para>
+</sect2>
+
+<sect2>
+<title>Pantallazos de desarrollo</title>
+
+<para>El desarrollo del GUI progresa con tesón, y las fotos de las pantallas puede que no 
+se asemejen exactamente a lo que veas en tu GUI. Esta visita guiada se actualizará periódicamente
+conforme crezca la fuuncionalidad del GUI, pero debido a la inversión de tiempo necesaria 
+para recopilar las pantallas actualizadas, esta guía puede que no se actualice con cada nueva entrega
+del GUI.</para>
+
+<para>Esta sección muestra varias pantallas de la versión de desarrollo del GUI
+(actualmente la versión 0.18), con una breve descripción de lo que se muestra en pantalla.</para>
+
+<figure>
+<title>Sistema de guía</title>
+<!-- <ulink url="gui_devel_guide_panel.png"> -->
+<screenshot>
+<graphic fileref="../images/gui_devel_guide_panel_thumb.png"></graphic>
+</screenshot>
+</figure>
+
+<para><guilabel>Guide panel</guilabel>. Este es un nuevo sistema de ayuda que ha sido implantado
+para ayudar al usuario a ir de un paso al siguiente. El panel de guía es una mera caja de texto 
+alargada que describe cuál es la tarea en curso en el GUI, y qué paso
+puedes querer hacer después. Este panel hace que el GUI ocupe significativamente más
+espacio en la pantalla, así que se ha añadido un nuevo <guimenu>View</guimenu>, que
+incluye la opción de ocultar/mostrar el panel de guía.</para>
+
+<para>Se ha escogido esta solución porque ofrece grandes posibilidades como un muy
+conveniente y completo sistema de ayuda. En futuras versiones, este panel podría ser
+mejorado funcionalmente, o bien ser interactivo (con enlaces a 
+los temas relacionados) o con capacidades de búsqueda. Se parecería más a la navegación
+dentro del panel de una ventana de ayuda de Windows, y contendría texto con formato, imágenes, 
+etc. escrito en HTML.</para>
+
+<para>La ventaja que esto tiene sobre un sistema de ayuda tradicional, con sus diálogos de ayuda separados
+es un menor esfurzo en el mantenimiento de las ventanas. Siempre que estoy mirando la ayuda, estoy habitualmente 
+intentando hacer algo con el programa a al vez. De esta manera, no tengo que 
+cambiar a mano el tamaño de la ventana de ayuda y la del GUI, ponerlas lado a lado, etc.
+Ya están justo ahí, y diseñadas para una óptima presentación de la ayuda y el GUI 
+lado a lado.</para>
+
+<para>Hacer esto implicaría casi ciertamente dividir el GUI en muchos ficheros dependientes entre sí;
+el HTML usado en tal sistema de ayuda necesita un formato específico para que
+wxWidgets pueda usarlo, y consistiría en varios ficheros separados. Los cuales sensatamente
+tendrían que estar instalados en tu directorio <filename>/usr/local/share/doc</filename> o un lugar similar,
+lo que significaría que el instalador de tovid necesitaría revisarse, y
+que casi con certeza habría que guardar un fichero de configuración por usuario (para que el 
+GUI supiera dónde encontrar los ficheros de documentación).</para>
+
+<para>Así que, por ahora, el panel de guía es simplemente unos pocos párrafos of text, incrustados en el mismo
+código del GUI. Pero es un buen comienzo, y ¡tiene muchas posibilidades!</para>
+</sect2>
+
+</sect1>
+
+
+<sect1>
+<title>Planes futuros</title>
+
+<para>Hay planeadas algunas características adicionales en el GUI. Entre las cosas 
+que tengo en mente (más o menos en orden de prioridad):</para>
+
+<itemizedlist>
+    <listitem><para>Un sistema de ayuda incorporado.</para>
+    </listitem>
+    <listitem><para>Capacidad de carrusel de diapositivas. Requeriría implantarlo en &makexml;, 
+    si se permite hacerlos en DVDs.</para></listitem>
+    <listitem><para>Pantallas para <command>postproc</command>, &idvid;,
+        y &dvrequant;.</para>
+    </listitem>
+    <listitem><para>Una regleta dinámica mostrando "Espacio estimado remamente en disco" en el panel de estructura de disco.
+        Sería un barra hrozontal que se llenaría conforme añadieras videos al disco;
+        el tamaño requerido de cada vídeo se estimaría para dar al usuario una
+        idea de cuando no cabe más. Se le avisaría al usuario si se excediera el espacio disponible.</para>
+    </listitem>
+    <listitem><para>Vista previa de elementos del disco, incluyendo menús, videos, y carruseles de diapositivas.</para>
+    </listitem>
+    <listitem><para>Durante la selección de ficheros de imágenes, mostrar 
+        vistas reducidas de cada imagen, para hacer más fácil la búsqueda de la diapositiva o del fondo deseados.</para>
+    </listitem>
+    <listitem><para>Posibilidad de añadir pistas extra de audio/vídeo a un vídeo.
+        Permitiría producir discos con múltiples puntos de vista de cámara, o múltiples
+        pistas de audio incluyendo traduccciones, comentarios, etc. Tendría que ser 
+        implantado asimismo en el propio &tovid;.</para>
+    </listitem>
+    <listitem><para>Capacidad de añadir subtítulos (como una pista de subtítulos) a
+        los videos. También requeriría primero ser implantado en &tovid;.</para>
+    </listitem>
+    <listitem><para>Posibilidad de añadir capítulos, quizás en 
+        conjunción con la capacidad de vista previa del vídeo. Requeriría
+        implantarlo en &makexml;.</para>
+    </listitem>
+    <listitem><para>Arrastrar-y-soltar para añadir/reordenar videos/diapositivas en el
+        árbol de estructura del disco.</para>
+    </listitem>
+    <listitem><para>Posibilidad de guardar/cargar estructuras de disco no acabadas; posiblemente
+        en conjunción con esto, la capacidad de interrumpir/reanudar el
+        proceso de codificación del disco.</para>
+    </listitem>
+</itemizedlist>
+
+</sect1>
+
+</chapter>
+
+
+<!--
+======================================================
+
+Using the command-line tools
+
+======================================================
+-->
+
+<chapter id="CLI">
+<title id="CLI.title">Uso de las herramientas de la línea de comandos</title>
+
+<para><application>La base de tovid</application> es una colección de scripts
+escritos en "bash" diseñados para tareas específicas. Cada tarea es parte del
+proceso de autoría de un disco devideo; puedes usar los scripts de la línea de comandos
+para controlar completamente la construcción de tu disco (dentro de las limitaciones de
+de tovid, claro está).
+</para>
+
+<para>Si el uso de la línea decomando no es plato de tu gusto, 
+puedes escoger utilizar el interfaz gráfico. El GUI hace mucho más sencillo e interactivo
+el proceso de autoría del disco.
+Mira <link linkend="GUI" endterm="GUI.title"></link>.
+</para>
+
+<sect1>
+<title>Cómo funciona</title>
+
+<para>Par no dejar al amable lector perdido en la espesura de la línea de comando de 
+scripts aparentemente dispares, querría aquí reconducir su atención y explicar
+cómo encaja todas las piezas. Empecemos con un diagrama:</para>
+
+<figure>
+<title>Organización de las herramientas</title>
+<graphic fileref="../images/tovid_cli_organization.jpg"></graphic>
+</figure>
+
+<para>Los engranajes azules son cada uno de los scripts de tovid. Hay algunos más,
+pero los mostrados son los principales.Los otros iconos son entradas
+y salidas de cada script. Como puedes ver aquí, cada script espera un cierto
+tipo de entrada, y produce un específico tipo de salida. Por ejemplo, el
+script &tovid; acepta cualquier fichero multimedia de vídeo como entrada,
+y produce como salida ficheros MPEG que cumplen las normas (S)VCD o DVD.
+La salida de
+&tovid; entonces deviene en entrada de <command>makevcd</command>
+o &makedvd;, e igualmente con el resto.</para>
+
+<para>tovid sigue la tradición de modularización de UNIX . En lugar de tener un 
+único programa grande que haga todo, tovid tiene varios programas menores
+para hacer tareas específicas:</para>
+
+<itemizedlist>
+<listitem><para>
+    &tovid; convierte ficheros multimedia arbitrarios de vídeo a formatos que cumplan (S)VCD, DVD,
+    o KVCD.
+</para></listitem>
+<listitem><para>
+    &makemenu; crea un menú MPEG, para navegar un disco de vídeo.
+</para></listitem>
+<listitem><para>
+    &makexml; genera un descripción en XML del contenido
+    del disco de vídeo, compatible bien con <command>vcdxbuild</command> o bien con
+    <command>dvdauthor</command>.
+</para></listitem>
+<listitem><para>
+    <command>makevcd</command> para la autoría y opcionalmente tostado de VCD o SVCD (incompleto).
+</para></listitem>
+<listitem><para>
+    &makedvd; para la autoría y opcionalmente tostado de DVD (también incompleto).
+</para></listitem>
+</itemizedlist>
+
+<sect2>
+<title>Cinco pasos</title>
+
+<para>La creación de un  disco de vídeo usando la línea de comando se reduce
+a cinco pasos:</para>
+
+<orderedlist>
+<listitem><para>
+    <emphasis>Planificar</emphasis>. Decidir qué videos querrías 
+    incluir en el disco, y si quieres hacer un (S)VCD o un DVD. Si tienes
+    montones de videos, puede que quieras tener menús navegacionales para poder elegir
+    cuál quieres reproducir. Traza un esquema de qué menús quieres tener, y a qué
+    videos quieres que enlacen.
+</para></listitem>
+<listitem><para>
+    <emphasis>Codificar el contenido</emphasis>. Casi todos los videos de partida han de ser
+    convertidos a un formato que cumpla (S)VCD o DVD. El script <command><link
+    linkend="CLI.tovid">tovid</link></command>
+    lo hace por tí; úsalo para convertir todos los videos que quieras
+    incluir. Puedes usar <command>tovid-batch</command> para convertir varios
+    videos a la vez.
+</para></listitem>
+<listitem><para>
+    <emphasis>Crear menús (optional)</emphasis>. Si quieres que tu disco tenga
+    menús interactivos para navegar, usa &makemenu;
+    para crearlos. Aquí es donde especificarás los títulos ya que 
+    aparecerán en el menú.
+</para></listitem>
+<listitem><para>
+    <emphasis>Estructura del disco</emphasis>. Aquí especificas exactamente cómo
+    se organiza tu disco. Da los nombres de todos tus archivos de videos y menús, y 
+     &makexml; hará el resto.
+</para></listitem>
+<listitem><para>
+    <emphasis>Autoría y tostado</emphasis>. Cuando llegues a este paso, tendrás
+    varios ficheros <filename>.mpg</filename> (menús and videos), junto con 
+    un fichero <filename>.xml</filename> file que contiene la estructura del disco. Da el 
+    fichero <filename>.xml</filename> a <command>makevcd</command> o
+    &makedvd; para proceder con la autoría y tostado del disco.
+</para></listitem>
+</orderedlist>
+
+<para>Para una exposición más detallada de cómo llevar a cabo todos estos pasos, mira el
+CÓMO HACERLO.</para>
+
+</sect2>
+
+<sect2>
+<title>Otros scripts</title>
+
+<para>Hay varios scripts adicionales especializados en otras tareas:</para>
+
+<itemizedlist>
+    <listitem><para>&dvrequant; copia una única pista, con
+        subtítulos opcionales y múltiples canales de audio, desde un 
+        DVD.</para>
+    </listitem>
+    <listitem><para>&idvid; identifica ficheros de vídeo, mostrándote 
+        la duración, resolución, codec, y otra información útil.
+        Quizás lo más importante, puede decirte si un archivo de vídeo dado 
+        cumple las normas (S)VCD o DVD.</para>
+    </listitem>
+    <listitem><para><command>makeslides</command> crea un carrusel de 
+        diapositivas, en formato (S)VCD, desde imágenes cualesquiera. Tales carruseles de 
+        diapositivas pueden 
+        ser incluidos en un disco usando la opción <option>-slides</option> en
+        &makexml;.</para>
+    </listitem>
+    <listitem><para><command>postproc</command> postprocesa un
+        vídeo codificado según MPEG. Puede encoger el tamaño (en bytes) del vídeo reduciendo
+        su calidad, y puede ajustar la sincronización audio/vídeo.</para>
+    </listitem>
+    <listitem><para><command>tovid-batch</command> procesa múltiples ficheros de vídeo
+        usando las mismas opciones de salida. Utilízalo si quieres codificar varios videos
+        con el mismo formato.</para>
+    </listitem>
+    <listitem><para><command>tovid-interactive</command> es una herramienta
+        de línea de comando que te va preguntando cada una de las opciones necesarias en
+        &tovid;. Úsalo si la línea de comando te es familiar,
+        pero no quieres ejecutar el GUI por cualquier motivo.</para>
+    </listitem>
+</itemizedlist>
+
+<para>Cada uno de ellos se describe en mayor detalle en las secciones que siguen.</para>
+
+</sect2>
+
+</sect1>
+
+<!--
+======================================================
+
+tovid
+
+======================================================
+-->
+
+<sect1 id="CLI.tovid">
+<title id="CLI.tovid.title">tovid</title>
+
+<para><command>tovid</command>, aparte de ser el nombre de la familia de comandos, es el nombre
+de su componente primario. Es un script en bash, cuyo propósito 
+es codificar formatos de vídeo cualesquiera
+en vídeo MPEG que cumpla las normas VCD, SVCD, o DVD. Estos ficheros de vídeo se pueden
+tostar en un CD o DVD usando otros componentes, o usando otras herramientas de autoría 
+tales como
+<ulink url="http://k3b.sourceforge.net/">k3b</ulink> o
+<ulink url="http://dvdauthor.sourceforge.net/">dvdauthor</ulink>. Si tienes un
+vídeo que quieras tostar en un CD o DVD, este componente te ayudará 
+a convertirlo a formato adecuado.</para>
+
+<sect2>
+<title>Prestaciones y características</title>
+
+<itemizedlist>
+    <listitem><para>Pued crear una variedad de formatos de salida MPEG, incluyendo
+        VCD, SVCD, DVD, Half-DVD, y VCD-on-DVD (las opciones <option>-vcd</option>,
+        <option>-svcd</option>, <option>-dvd</option>, <option>-half-dvd</option>,
+        y <option>-dvd-vcd</option> , respectivamente)</para>
+    </listitem>
+    <listitem><para>Se salta la codificación de los canales de vídeo y audio ya válidos,
+        para evitar degradaciones de calidad innecesarias.</para>
+    </listitem>
+    <listitem><para>Admite salida PAL y NTSC (las opciones <option>-pal</option> y
+        <option>-ntsc</option>)</para>
+    </listitem>
+    <listitem><para>Detección automática de la relación de aspecto. Puedes saltarte 
+        la autodetección con la opción <option>-aspect W:H</option>, o usar
+        relaciones de aspecto estándar como <option>-full</option> (4:3), <option>-wide</option>
+        (16:9), y <option>-panavision</option> (2.35:1).</para>
+    </listitem>
+    <listitem><para>Mejora de calidad de imagen via la opción <option>-filters</option>
+    .</para>
+    </listitem>
+    <listitem><para>Codificación entrelazada para todos los formatos excepto VCD
+        (la opción <option>-interlaced</option> )</para>
+    </listitem>
+    <listitem><para>Puede normalizar el volumen de audio demasido sonoro o demasiado débil (la
+        opción <option>-normalize</option> )</para>
+    </listitem>
+    <listitem><para>Divide automáticamente los ficheros de salida en trozos para tostarlos
+        en múltiples CDs o DVDs. Usa la opción <option>-discsize</option> 
+        para especificar un tamaño de disco a medida.</para>
+    </listitem>
+    <listitem><para>Ajuste automático de la cuantización basado en la tasa de bits por segundo
+        elegida para vídeo. Las tasas altas de bits usan cuantizaciones bajas (alta calidad), mientras
+        que las tasas bajas usan cuantizaciones más altas.</para>
+    </listitem>
+    <listitem><para>Muestra estadísticas, incluyendo tamaño de fichero resultante,
+        tasa de bits, y tiempo de codificación, y las guarda en
+        <filename>~/.tovid/stats</filename></para>
+    </listitem>
+    <listitem><para>Utiliza multiproceso durante la codificación de vídeo en los sistemas
+        con más de una CPU.</para>
+    </listitem>
+    <listitem><para>Estima e informa del espacio requerido antes de empezar a codificar, y
+        advierte si no hay espacio suficiente para codificar.</para>
+    </listitem>
+    <listitem><para>Se muestra durante la codificación un indicador de progreso 
+    y un tiempo estimado de terminación.</para>
+    </listitem>
+    <listitem><para>Prioridad ajustable, para prevenir que la codificación interfiera
+        con tus otras actividades en el ordenador (la opción
+        <option>-priority [low|medium|high]</option>)</para>
+    </listitem>
+    <listitem><para>Procesado paralelo, a través de la opción <option>-parallel</option>
+        , para ayudar a maximizar el uso de CPU durante la codificación (especialmente para
+        codificación multi-CPU)</para>
+    </listitem>
+</itemizedlist>
+
+</sect2>
+
+<sect2>
+<title>Utilización</title>
+
+<para><command>tovid</command> se ejecuta desde laa línea de comando. Si te sientes
+incómodo usando las opciones de la línea de comando, puedes usar el script
+<command>tovid-interactive</command>, que te irá preguntando todas las opciones 
+relevantes. Si prefieres usarun interfaz gráfico, prueba a usar <command>tovidgui.py</command>.
+Puedes ejecutar <command>tovid</command> sin parámetros para ver (en inglés) qué clase de
+argumentos espera:</para>
+
+<screen>
+Usage: tovid [OPTIONS] -in {input file} -out {output prefix}
+
+OPTIONS may be any of the following:
+
+    -v, -version    Prints tovid version number only
+
+Television standards:
+    -ntsc           NTSC format video (USA, Americas) (default)
+    -ntscfilm       NTSC-film format video
+    -pal            PAL format video (Europe and others)
+
+Formats:
+
+  Standard formats, should be playable in most DVD players:
+    -dvd            (720x480 NTSC, 720x576 PAL) DVD-compatible output (default)
+    -half-dvd       (352x480 NTSC, 352x576 PAL) Half-D1-compatible output
+    -svcd           (480x480 NTSC, 480x576 PAL) Super VideoCD-compatible output
+    -dvd-vcd        (352x240 NTSC, 352x288 PAL) VCD-on-DVD output
+    -vcd            (352x240 NTSC, 352x288 PAL) VideoCD-compatible output
+
+  Non-standard formats, playable in some DVD players:
+    -kvcdx3/-kvcd   (528x480 NTSC, 520x576 PAL) KVCDx3 long-playing VCD
+    -kvcdx3a/-ksvcd (544x480 NTSC, 544x576 PAL) KVCDx3A long-playing VCD
+    -kdvd           (720x480 NTSC, 720x576 PAL) KDVD long-playing DVD
+
+Aspect ratios:
+
+    By default, the aspect ratio will be inferred from mplayer; if mplayer
+    displays the correct aspect for your video, you do not need to supply
+    an aspect ratio. If you want to supply one anyway, use these options:
+
+    -full           Same as -aspect 4:3
+    -wide           Same as -aspect 16:9
+    -panavision     Same as -aspect 235:100
+    -aspect WIDTH:HEIGHT
+        Custom aspect ratio. You may use any _whole_number_ ratio;
+        your video will be automatically "letterboxed" as necessary.
+
+Other options:
+  -config FILE      Include command-line options contained in FILE
+  -overwrite        Overwrite any existing output files with the specified name
+  -force            Force encoding, even if the existing file is already compliant
+  -version          Print out the tovid version number and exit
+  -help             Print out all usage information, including advanced options
+
+Example: Convert HomeMovie.avi to DVD widescreen format, output in HomeMovie.mpg:
+  tovid -dvd -wide -in HomeMovie.avi -out HomeMovie
+
+You may use a full URI as the input file (i.e., "http://foo.com/video.avi"),
+although this feature is still experimental.
+
+
+Use 'tovid -help' to see advanced options.
+</screen>
+
+<para>Las opciones avanzadas son como sigue:</para>
+
+<screen>
+Video adjustment:
+
+  -vbitrate NUM
+    Maximum bitrate to use for video (in kbits/sec). Must be
+    within allowable limits for the given format. Overrides
+    default values.
+  -interlaced
+    Do interlaced encoding of the input video. Use this option if
+    your video is interlaced, and you want to preserve as much
+    picture quality as possible. Ignored for VCD.
+  -deinterlace (DEPRECATED)
+    Use this option if your source video is interlaced. You can
+    usually tell if you can see a bunch of horizontal lines when
+    you pause the video during playback. If you have recorded
+    a video from TV or your VCR, it may be interlaced. Use this
+    option to convert to progressive (non-interlaced) video. This
+    option is DEPRECATED, and will probably be ditched in favor of
+    interlaced encoding, which is better in almost every way.
+  -subtitles FILE
+    Get subtitles from FILE and encode them into the video.
+    WARNING: This hard-codes the subtitles into the video, and you
+    cannot turn them off while viewing the video. By default, no
+    subtitles are loaded. If your video is already compliant with the
+    chosen output format, it will be re-encoded to include the subtitles.
+  -type {live|animation|bw}
+    Optimize video encoding for different kinds of video. Use
+    'live' (default) for live-action video, use 'animation' for
+    cartoons or anime, and 'bw' for black-and-white video.
+    This option currently only has an effect with KVCD/KSVCD
+    output formats; other formats may support this in the future.
+  -safe PERCENT
+    Fit the video within a safe area defined by PERCENT. For example,
+    "-safe 90%" will scale the video to 90% of the width/height of
+    the output resolution, and pad the edges with a black border. Use
+    this if some of the picture is cut off when played on your TV.
+    The percent sign is optional.
+  -filters {none,denoise,contrast,all}
+    Apply post-processing filters to enhance the video. If your input
+    video is very high quality, use 'none' (default). If your input
+    video is grainy, use 'denoise'; if it looks washed out or faded,
+    use 'contrast'. You can use multiple filters separated by commas.
+    To apply all filters, use 'all'.
+
+Audio adjustment:
+
+  -normalize
+    Normalize the volume of the audio. Useful if the audio is too
+    quiet or too loud, or you want to make volume consistent for
+    a bunch of videos.
+  -abitrate NUM
+    Maximum bitrate to use for audio (in kbits/sec). Must be within
+    allowable limits for the given format. Ignored for VCD.
+    Default is 224. 
+
+Other options:
+
+  -debug             
+    Print extra debugging information to the log file. Useful in
+    diagnosing problems if they occur. This option also leaves
+    the log file (with a .log extension) in the directory after
+    encoding finishes.
+  -priority {low|medium|high}
+    Sets the main encoding process to the given priority. With
+    high priority, it may take other programs longer to load
+    and respond. With lower priority, other programs will be
+    more responsive, but encoding will usually take 30-40% longer.
+    The default is high priority.
+  -discsize NUM
+    This sets the desired target DVD/CD-R size in MB (2^10). Default
+    is 700 for CD, 4500 for DVD. Use higher values at your own risk.
+    Use 650 or lower if you plan to burn to smaller-capacity CDs.
+  -parallel
+    Will perform encode/rip processes in parallel using named
+    pipes. Should maximize CPU utilization and minimize disk
+    usage.
+  -update TIME
+    Print status updates at intervals of TIME. Argument may be any
+    valid argument to the *NIX 'sleep' utility. 10s prints updates
+    every 10 seconds; 1m prints them every minute. The default is
+    one per second.
+  -mplayeropts "OPTIONS"
+    Append OPTIONS to the mplayer command run during video encoding.
+    Use this if you want to add specific video filters (documented in
+    the mplayer manual page). Overriding some options will cause
+    encoding to fail, so use this with caution!
+</screen>
+
+<para>Los dos últimos argumentos deben ser el nombre del vídeo que quieras codificar (input)
+y el nombre que quieras usar como prefijo para la salida (output). Algunos ejemplos:</para>
+
+<variablelist>
+    <varlistentry>
+        <term><command>tovid -vcd -wide Batman.avi Batman_movie</command></term>
+        <listitem><para>Codifica el vídeo <filename>Batman.avi</filename>
+            a resolución VCD, con relación de aspecto de pantalla ancha (16:9) conseguida por 
+            la inclusión de bandas negras arriba y abajo. La salida será
+            <filename>Batman_movie.mpg</filename>.</para>
+        </listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><command>tovid -dvd -full -normalize The_Tick_01.avi Tick01</command></term>
+        <listitem><para>Codifica <filename>The_Tick_01.avi</filename> en
+            <filename>Tick01.mpg</filename> usando la resolución de pantalla completa y formato DVD.
+            El audio se normaliza a un volumen constante (útil si tienes un lote de videos
+            cada uno con un nivel sonoro distinto).</para>
+        </listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><command>tovid Firefly1.avi Firefly_episode_1</command></term>
+        <listitem><para>Si no se especifica nada, la codificación por omisión es DVD 16:9
+            pantalla ancha. Aquí, <filename>Firefly1.avi</filename>
+            será codificado en <filename>Firefly_episode_1.mpg</filename>.</para>
+        </listitem>
+    </varlistentry>
+</variablelist>
+
+<para>Si necesitas codificar múltiples ficheros de entrada, usa <command>tovid-batch</command>.
+La sintaxis es exactamente la misma que <command>tovid</command> excepto que no se da nombre 
+al fichero de salida; la salida tiene el mimo nombre que la entrada. Por ejemplo:</para>
+
+<variablelist>
+    <varlistentry>
+        <term><command>tovid-batch -dvd-vcd *.avi</command></term>
+        <listitem><para>Codifica todos los ficheros .avi en el directorio presente en
+            resolución VCD-on-DVD.</para>
+        </listitem>
+    </varlistentry>
+</variablelist>
+
+</sect2>
+
+<sect2>
+<title>Planes futuros</title>
+
+<para>Esta sección no ha sido escrita todavía.</para>
+
+</sect2>
+
+</sect1>
+
+<!--
+======================================================
+
+makemenu
+
+======================================================
+-->
+
+<sect1 id="CLI.makemenu">
+<title id="CLI.makemenu.title">makemenu</title>
+
+<para><command>makemenu</command> es un script en bash que genera menús VCD, SVCD, o DVD, 
+dados una imagen de fondo opcional, un corte de sonido de fondo opcional,
+y una lista de cadenas de texto para usar como títulos.</para>
+
+<sect2>
+<title>Prestaciones y características</title>
+
+<itemizedlist>
+<listitem><para>Puede crear menús VCD, SVCD, o DVD en formato PAL o NTSC 
+</para></listitem>
+<listitem><para>Puede incluir una imagen de fondo opcional en casi cualquier formato; 
+la imagen se puede cambiar de escala y/o ser recortada para encajar en el tamaño de pantalla requerido
+</para></listitem>
+<listitem><para>Puede incluir un corte de audio opcional en casi cualquier formato;
+la duración del menú coincidirá con la longitud de la pista de audio.
+</para></listitem>
+<listitem><para>Puede superponer sobre el fondo una lista de texto de títulos de vídeo; 
+los menús de DVD utilizan resaltado para la navegación por los menús,
+mientras que los menús (S)VCD tiene opciones numeradas
+para selección usando el control remoto del DVD
+</para></listitem>
+<listitem><para>Color de resaltado y alineación del texto a medida ajustables.
+</para></listitem>
+</itemizedlist>
+
+</sect2>
+
+<sect2>
+<title>Utilización</title>
+
+<para>Puedes ejecutar <command>makemenu</command> sin parámetros para ver (en inglés) qué
+argumentos se esperan:</para>
+
+<screen>Usage: makemenu [FORMAT] [OPTIONS] TITLES OUT_PREFIX
+
+Where FORMAT is any of the following:
+
+  -ntsc (default)
+    Generate an NTSC-format menu
+  -pal
+    Generate a PAL-format menu
+    
+  -dvd (default)
+    Generate a DVD-format menu, with highlighted text included
+    as a multiplexed subtitle stream.
+  -vcd
+  -svcd
+    Generate a VCD/SVCD menu; each menu option will have a
+    number associated with it. You can have up to nine menu
+    options per menu.
+
+OPTIONS may be any of the following:
+
+Menu background/audio options:
+
+  -background IMAGE
+    Use IMAGE (in most any graphic format) as a background. If image is not
+    the correct aspect ratio (4:3), it will be scaled and/or cropped,
+    depending on the -crop and -scale options. If no background is
+    supplied, a default background will be created.
+  -crop (default)
+    If provided background image is not 4:3 aspect ratio, crop edges
+    to make it so. Image will be scaled up if it is too small. Cropping
+    keeps the center area of image. If you want to do cropping/scaling
+    yourself in another program, provide an image of 768x576 pixels.
+  -scale
+    If provided background image is not 4:3 aspect ratio, scale/stretch
+    it to make it fit. May cause visible distortion!
+  -audio AUDIOFILE
+    Use AUDIOFILE (in most any audio format) for background music. The
+    menu will play for long enough to hear the whole audio clip. If
+    one is not provided, silence will be used.
+
+Menu text options:
+
+  -font "FONTNAME"
+    Use FONTNAME for the menu text. Run 'convert -list type' to see a
+    list of the fonts that you can use; choose a font name from the
+    leftmost column that is displayed.
+  -align [left|center|right]
+    Align the text on the left, center, or right side of the screen.
+  -textcolor [#RRGGBB|#RGB|COLORNAME]
+    Use specified color for menu text. #RRGGBB and #RGB are
+    hexadecimal triplets (i.e., #FF8035). COLORNAME may be any of
+    several hundred named colors; run 'convert -list color' to see them.
+    White (#FFF) is the default color.
+  -highlightcolor [#RRGGBB|#RGB|COLORNAME]
+    Use specified color for menu highlighting. Yellow (#FF0) is the
+    default color.
+  -selectcolor [#RRGGBB|#RGB|COLORNAME]
+    Use specified color for menu selections (when a menu item is played
+    or activated). Red (#F00) is the default color.
+
+Other options:
+
+  -nosafearea
+    Do not attempt to put text inside a TV-safe viewing area. Most
+    television sets cut off about 10% of the image border, so the script
+    automatically leaves a substantial margin. This option turns that
+    behavior off, leaving only a tiny margin. Use at your own risk.
+  -overwrite
+    Overwrite any existing output files.
+
+TITLES is a list of quoted text you want to be printed on the menu, i.e.
+
+  "Episode 1" "Episode 2" "Episode 3" "Back"
+
+If the word "back" is given as an episode title, a "back" button for
+returning to a higher-level menu will be added at the end of the list
+of episodes.
+
+OUT_PREFIX is the name (file prefix) you want to use for the resulting menu files
+</screen>
+
+<para>El argumento dado a <option>-font</option> ha de ser uno de los tipos de letra
+mostrados por el comando <command>convert -list type</command>. Por favor, observa que muchos
+de los tipos de letra instalados pueden no estar disponibles; si quieres maximizar el
+número de tipos de letra disponibles para &makemenu;, descárgate el script
+<ulink url="http://www.cit.gu.edu.au/~anthony/software/imagick_type_gen.pl">imagick_type_gen.pl</ulink> de
+<ulink url="http://www.cit.gu.edu.au/~anthony/anthony.html">Anthony Thyssen</ulink>
+e invócalo como sigue:</para>
+
+<screen>imagick_type_gen.pl &gt; ~/.magick/type.xml</screen>
+
+<para>Esto también maximiza el número de tipos de letra disponibles en los menús en
+<command>tovidgui.py</command>.</para>
+
+</sect2>
+
+<sect2>
+<title>Planes futuros</title>
+
+<para>Este componente es, necesariamente, considerablemente complejo; la composición de imágenes
+no es muy afín al uso de la lína de comandos. Hay muchas más cosas 
+que pueden ser ajustadas o automatizadas; el soporte de distintos tios de letra 
+es la mayor prioridad. Existe también el potencial de permitir incluir 
+imágenes, logos, u otras superposiciones en el menú, y la posibilidad remota de
+poder admitir elementos de vídeo en un futuro (usar un breve vídeo como 
+fondo, o componiendo otros videos sobre el fondo).</para>
+
+</sect2>
+
+</sect1>
+
+<!--
+======================================================
+
+makexml
+
+======================================================
+-->
+
+<sect1 id="CLI.makexml">
+<title id="CLI.makexml.title">makexml</title>
+
+<para>El componente <command>makexml</command> genera salida XML que describe
+una estructura de ficheros y una jerarquía de navegación (S)VCD o DVD, la cual puede ser
+consumida por <ulink url="http://dvdauthor.sourceforge.net/">dvdauthor</ulink> o
+<ulink url="http://www.vcdimager.org/">vcdxbuild</ulink>.</para>
+
+<sect2>
+<title>Prestaciones y capacidades</title>
+
+<itemizedlist>
+<listitem><para>Puede generar una jerarquía de navegación sin menús (los vídeos se reproducen
+secuencialmente al insertar el disco).</para></listitem>
+<listitem><para>Puede generar un disco con un menú que salta a cada uno de los vídeos.</para></listitem>
+<listitem><para>Puede generar un disco con un menú principal (raíz) que salta a cada uno de varios
+submenús, cada uno de los cuales puede saltar a los títulos de vídeo, o volver al menú principal.</para></listitem>
+<listitem><para>Puede generar un disco con fotos fijas en MPEG.</para></listitem>
+</itemizedlist>
+
+</sect2>
+
+<sect2>
+<title>Utilización</title>
+
+<para>Puedes invocar <command>makexml</command> sin parámetros para ver (en inglés) qué
+argumentos espera:</para>
+
+<screen>Usage: makexml [OPTIONS] [VIDEOS] OUTFILE
+
+Where:
+  OPTIONS may be any of the following:
+
+  -dvd (default)
+    Generate the XML for a DVD menu, to be used with dvdauthor.
+  -vcd
+    Generate the XML for a VCD menu, to be used with vcdxbuild.
+  -svcd
+    Generate the XML for an SVCD menu, to be used with vcdxbuild.
+  -overwrite
+    Overwrite any existing output files.
+
+  VIDEOS may be any of the following:
+
+  &lt;file list&gt;
+    List of one or more video files to include, separated by spaces. At
+    minimum, a DVD must have one video file. You can use shell wildcards
+    (i.e., "*.mpg") to include multiple files easily. Put filenames in
+    quotes if they have spaces in them.
+  -group &lt;file list&gt; -endgroup
+    (DVD only) List of video files to include as one single title. This is useful
+    if you have split a movie into several video files. 
+  -menu VIDEO &lt;file list&gt;
+    Use video file VIDEO as a menu from which you can jump to each of
+    the listed video files. If you have multiple menus, include a
+    top menu so they are reachable.
+  -topmenu VIDEO [-menu VIDEO &lt;file list&gt;] [-menu VIDEO &lt;file list&gt;]...
+    Use video file VIDEO for the top-level (VMGM) menu. The top menu will
+    jump to each of the subsequent [-menu...] videos listed. Use this only if
+    you have multiple sub-menus to jump to. You can only have one top menu.
+  -titlesets
+    (DVD only) Forces the creation of a separate titleset per title. This
+    is useful if the titles of a DVD have different video formats, 
+    e.g. PAL + NTSC or 4:3 + 16:9. If used with menus, there must be a 
+    -topmenu option that specifies a menu file with an entry for each of the 
+    titlesets.   
+  -chapters &lt;interval&gt;
+    (DVD only) Creates a chapter every &lt;interval&gt; minutes. This option can be put at any 
+    position in a &lt;file list&gt; and is valid for all subsequent titles until a new
+    -chapters option is encountered. Using this option may take some time, since the
+    duration of the video is calculated.  
+  -slides &lt;file list&gt;
+    Create a slide-show of still images
+
+  OUT_PREFIX is the file you want to put the resulting XML in
+</screen>
+
+<para><command>makexml</command> comprueba que los archivos de video que reciba
+existen, pero no comprueba si son válidos para el
+formato de disco escogido. Los vídeos MPEG de los menús deben tener el 
+número de botones especificado para llegar a todos los videos, y, en el caso de DVD, 
+han de estar ya multiplexados con sus correspondientes subtítulos
+usando el comando <command>spumux</command> del paquete dvdauthor 0.6.0, antes de
+su autoría con <command>dvdauthor</command>. Si usas el componente &makemenu;
+para generar el menú, todo esto se hará sin tu intervención.</para>
+
+</sect2>
+
+<sect2>
+<title>Planes futuros</title>
+
+<para>Este script ya hace la mayor parte de lo que necesito que haga (a saber, escribir
+el tedioso XML), pero sería un buen añadido el soporte a especificar ruptura por capítulos en la línea de comando,
+ya que haría más sencilla la automatización de la autoría de (S)VCD/DVD.
+También sería útil añadir alguna forma de verificar que se cumplen los requerimientos de la autoría
+(comprobar la validez de los vídeos dados a  <command>makexml</command>).</para>
+
+</sect2>
+
+</sect1>
+
+<!--
+======================================================
+
+makedvd
+
+======================================================
+-->
+
+<sect1 id="CLI.makedvd">
+<title id="CLI.makedvd.title">makedvd</title>
+
+<para>El componente <command>makedvd</command> crea una imagen de disco DVD-Video
+y opcionalmente la tuesta en un disco DVD grabable.</para>
+
+<sect2>
+<title>Prestaciones y características</title>
+
+<itemizedlist>
+    <listitem><para>La velocidad de grabación y el dispositivo de grabación son configurables.</para></listitem>
+    <listitem><para>Puede crear sólo una imagen, o tostar una imagen existente</para></listitem>
+</itemizedlist>
+
+</sect2>
+
+<sect2>
+<title>Utilización</title>
+
+<para>Puedes invocar <command>makedvd</command> sin parámetros para ver qué
+argumentos espera:</para>
+
+<screen>
+Usage: makedvd {OPTIONS} DVDAUTHOR_XML
+
+Where OPTIONS may be any of the following:
+
+  -author
+      Overwrite an existing directory containing the dvdauthor output
+  -image
+      Overwrite an existing ISO file
+  -burn
+      Burn the disc after creating the ISO file
+  -device DEVFS_NAME (default /dev/dvd)
+      Burn the disc image to DEVICE, the Linux device filesystem
+      name of your DVD-recorder. Common examples might be /dev/dvdrw,
+      /dev/scd1, and /dev/hdc. You can also use a bus/id/lun triple
+      such as ATAPI:0,1,0
+  -speed NUM (default 1)
+      Burn disc at speed NUM.
+  -label DISC_LABEL
+      Uses "DISC_LABEL" as the volume ID. This appears as the mount
+      name of the disc on some computer platforms. Must be &lt;=32
+      alphanumeric digits without spaces.
+
+And:
+
+  DVDAUTHOR_XML is an XML description of the DVD navigational structure
+      in a format that dvdauthor can understand. (For a description of
+      the XML format, run 'man dvdauthor'.) If you use(d) 'makexml' to
+      create the XML file, you can use that as input here.
+</screen>
+
+</sect2>
+
+<sect2>
+<title>Planes futuros</title>
+
+<para>Ninguno de momento.</para>
+
+</sect2>
+
+</sect1>
+
+<!--
+======================================================
+
+idvid
+
+======================================================
+-->
+
+<sect1 id="CLI.idvid">
+<title id="CLI.idvid.title">idvid</title>
+
+<para><command>idvid</command> es un pequeño script en bash para identificar vídeos.</para>
+
+<sect2>
+<title>Prestaciones y capacidades</title>
+
+<itemizedlist>
+<listitem><para>Muestra la duración, resolución, cuadros por segundo, y otra información de un vídeo o 
+vídeos.</para></listitem>
+<listitem><para>Identifica con qué formatos (VCD, SVCD, o DVD) cumplen el audio y el vídeo, y dice
+qué tipo de disco de vídeo podrías tostar.</para></listitem>
+<listitem><para>Puede mostrar estadísticas en formato terso, fácil de analizar con otros scripts 
+o utilidades (la opción <option>-terse</option> de la línea de comando).</para></listitem></itemizedlist>
+
+</sect2>
+
+<sect2>
+<title>Utilización</title>
+
+<para><command>idvid</command> puede ejecutarse sobre un único fichero de vídeo o de una vez 
+sobre multiple ficheros. Acepta comodines al estilo de <command>bash</command>, o puedes
+listar explícitamente cada uno de los ficheros. Usa la opción <option>-terse</option> para obtener
+una salida más concisa, apropiada para ser analizada por otros programas:</para>
+
+<variablelist>
+<varlistentry><term><command>idvid
+Wonderfalls1.mpg</command></term><listitem><para>Muestra la información de identificación
+del fichero "Wonderfalls1.mpg".</para></listitem></varlistentry>
+<varlistentry><term><command>idvid
+-terse Wonder*.mpg</command></term><listitem><para>Muestra concisamente la información 
+de identificación de todos los ficheros .mpg files que comiencen por "Wonder".</para></listitem></varlistentry>
+</variablelist>
+
+</sect2>
+
+<sect2>
+<title>Planes futuros</title>
+
+<para>Ninguno de momento.</para>
+
+</sect2>
+
+</sect1>
+
+<!--
+======================================================
+
+makeslides
+
+======================================================
+-->
+
+<sect1 id="CLI.makeslides">
+<title id="CLI.makeslides.title">makeslides</title>
+
+<para><command>makeslides</command> está diseñado para convertir imágenes en fotos fijas
+MPEG, para usarlas como carruseles de diapositivas en discos VCD y SVCD.</para>
+
+<sect2>
+<title>Prestaciones y capacidades</title>
+
+<itemizedlist><listitem><para>Puede convertir lotes de imágenes,
+en casi cualquier formato, a fotos fijas que cumplen la norma MPEG-(S)VCD.
+</para></listitem></itemizedlist>
+
+</sect2>
+
+<sect2>
+<title>Utilización</title>
+
+<screen>Usage: makeslides [FORMAT] [IMAGES]
+
+Where:
+  FORMAT is one or more of the following:
+
+  -ntsc (default)
+    Generate NTSC (704x480) output
+  -pal
+    Generate PAL (704x576) output
+
+  IMAGES is a single image or list of images to be
+    converted to still MPEGs. The output names will
+    be the same as the input name, with a .mpg extension.
+</screen>
+
+<para>Tras crear las fotos fijas, puedes pasar a su autoría a (S)VCD
+usando &makexml; y la opción <option>-slides</option>.</para>
+
+</sect2>
+
+<sect2>
+<title>Planes futuros</title>
+
+<para>No he confirmado si esto funciona para fotos fijas en DVD; puede que sí, pero
+el componente &makexml; todavía no lo soporta.</para>
+
+</sect2>
+
+</sect1>
+
+<!--
+======================================================
+
+postproc
+
+======================================================
+-->
+
+<sect1 id="CLI.postproc">
+<title id="CLI.postproc.title">postproc</title>
+
+<para><command>postproc</command> está dieñado para hacer post-procesado sencillo
+a los vídeos MPEG producidos por &tovid;. Tras codificar un un vídeo
+con &tovid;, puedes descubrir que el vídeo terminado es demasido grande,
+lo tiene problemas de sincronía audio/vídeo; esta utilidad puede ser de ayuda.</para>
+
+<sect2>
+<title>Prestaciones y capcidades</title>
+
+<itemizedlist>
+<listitem><para>Puede ajustar el desplazamiento entre audio y vídeo, si hay un
+    retraso indeseado entre ambos.</para></listitem>
+<listitem><para>Puede recuantizar ("encoger") el vídeo para reducir el tamaño del fichero
+  a costa de su calidad.</para></listitem></itemizedlist>
+
+</sect2>
+
+<sect2>
+<title>Utilización</title>
+
+<para>Puedes invocar <command>postproc</command> sin opciones para ver (en inglés)
+los argumentos que espera:</para>
+
+<screen>
+Usage: postproc [OPTIONS] &lt;input file&gt; &lt;output file&gt;
+
+OPTIONS may be any of the following:
+
+  -audiodelay [NUM]
+      Delay the audio stream by [NUM] milliseconds. Use this if
+      your final output has audio that is not synced with the
+      video. For example, if the audio comes 2 seconds sooner than
+      the video, use "-audiodelay 2000". Use a negative number for
+      audio that comes later than the video.
+  -shrink [NUM]
+      Shrink the video stream by a factor of [NUM]. May be a decimal
+      value. A value of 1.0 means the video will be the same size;
+      larger values cause more reduction in size. Beyond 2.0, the
+      returns are diminishing.
+  -parallel
+      Run all processes in parallel and pipe into multiplexer should
+      increase speed significantly.
+  -debug
+      Save output in a temporary file, for later viewing if
+      something goes wrong.
+</screen>
+
+<informalfigure><mediaobject><imageobject><imagedata fileref="../images/shrink_chart.png"/></imageobject></mediaobject></informalfigure>
+
+<para>Una nota acerca de la opción <option>-shrink</option>: habitualmente es mejor
+usarla con un valor maor que 1.0, pero menor que 2.0. Culaquier valor
+mayor que 2.0 no encogerá mucho el fichero, según se desprende
+del diagrama a la izquierda. Los factores de reducción se muestran en el eje inferior; el
+tamaño del fichero resultante para dos vídeos de prueba diferentes se muestra a la izquierda.
+Los resultados son una reducción en  tamaño del 40% como mucho, pero puede ser la diferencia
+entre que un vídeo quepa o no en un DVD. Un factor de más o menos 1,5 da
+probablemente el mejor equilibrio entre tamaño y calidad.</para>
+
+<para>El diagrama mostrado a la izquierda se generó anteriormente a la versión 0.16, así
+que es posible que ahora alcances mejores reducciones con vídeos de partidad de alta calidad
+(baja cuantización). Esto no ha sido confirmado todavía.</para>
+
+<para>Para la opción <option>-audiodelay</option> , lo mejor que puedes hacer 
+es estimar cuán desplazados están el audio y el vídeo. Esta opción se suele
+ejecutar muy rápidamente (ya que todo lo que tiene que hacer es separar y recombinar 
+los componentes de audio y vídeo), así que ve probando distintos valores hasta que
+encuentres uno que funcione.</para>
+
+</sect2>
+
+<sect2>
+<title>Planes futuros</title>
+
+<para>No hay planes por el momento, aunque existe potencial de otras
+opciones de postprocesado que no requieran recodificación; como añadir canales
+adicionales de audio o subtítulos, por ejemplo.</para>
+
+</sect2>
+
+</sect1>
+
+<!--
+======================================================
+
+dvrequant
+
+======================================================
+-->
+
+<sect1 id="CLI.dvrequant">
+<title id="CLI.dvrequant.title">dvrequant</title>
+
+<para><emphasis>Esta parte de la documentación no se ha escrito 
+todavía.</emphasis></para>
+
+</sect1>
+
+<sect1 id="CLI.config">
+<title id="CLI.config.title">Ficheros de configuración</title>
+
+<para>La versión 0.18 de &tovid; implanta el uso de
+ficheros de configuración. En el futuro, los principales scripts de tovid
+podrán leer ficheros de configuración de un directorio global,
+un directorio de preferencias del usuario, y de un fichero de texto 
+especificado.</para>
+
+<para>Los ficheros de configuración de la familia tovid son meros textos ASCII.
+La primera línea del fichero comienza con un nombre de script (tal que 
+<command>tovid</command>, <command>makexml</command>,
+o <command>makemenu</command>); el resto del fichero
+consiste de opciones de línea de comando apropiadas para tal script.
+Los espacios en blanco se ignoran, y los comentarios se incluyen en líneas
+que empiecen por <literal>#</literal>.</para>
+
+<screen>tovid
+# sample tovid configuration file
+
+# This is a comment, and will be ignored by tovid
+
+# Always use NTSC format by default
+-ntsc
+
+# Run in "parallel" mode for faster execution and
+# reduced disk usage
+-parallel
+
+# Run in "debug" mode, so when something goes wrong
+# it's easier to diagnose
+-debug
+
+# Always overwrite existing output files.
+-overwrite
+</screen>
+
+<para>Este formato permite su edición en un abriry cerrar de ojos, especialmente si ya 
+estás familiarizado con las variadas opciones de línea de comando de tovid.
+Puedes encontrar útiles los ficheros de configuración, si te aburres de
+poner siempre las mismas opciones en un lote de vídeos, o
+si quieres personalizar tus tasas de bits por segundo, menús, o formatos
+para un cierto proyecto.</para>
+
+<para>&tovidgui; será algún día capaz de guardar y cargar proyectos en un fichero.
+El formato de este fichero será de nuevo mero texto ASCII, y
+tendrá el aspecto de varios ficheros de configuración concatenados
+juntos; unos para &tovid;, otros para &makexml;, y algunos
+para &makemenu;.</para>
+
+</sect1>
+
+</chapter>
+
+
+<!--
+======================================================
+
+Aspect ratio and safe area
+
+======================================================
+-->
+
+<chapter>
+<title>Relación de aspecto y área segura</title>
+
+<sect1>
+<title>¿Qué es la relación de aspecto?</title>
+
+<para>En el procesado de video, la <emphasis>relación de aspecto</emphasis> es un par de
+números que expresa el achatamiento de una imagen o vídeo. Los dos números son 
+una relación entre anchura y altura. Por ejemplo, una relación de aspecto <literal>4:3</literal>
+significa que la imagen tiene 4 unidades de anchura por cada 3 unidades de altura.</para>
+
+<figure>
+<title>Qué significa 4:3</title>
+<mediaobject>
+<imageobject><imagedata fileref="../images/4_3_grid.jpg"/></imageobject>
+</mediaobject>
+</figure>
+
+<para>Las televisiones habituales en los 1980s-1990s tienen esta relación de aspecto, como la mayor parte 
+de los monitores de ordenador. En los inicios de los 2000s, las pantallas de <glossterm linkend="HDTV">
+televisión de alta definición</glossterm> (HDTV) empiezan a ser populares y asequibles; las HDTVs
+habitualmente tienen una relación de aspecto 16:9.</para>
+
+<figure>
+<title>Una imagen 16:9</title>
+<mediaobject>
+<imageobject><imagedata fileref="../images/16_9_grid.jpg"/></imageobject>
+</mediaobject>
+</figure>
+
+
+<para>Para hallar la relación de aspecto de un vído o una imagen, simplemente mide su
+anchura y altura. La relación de aspecto puede ser expresada como 
+<literal>anchura:altura</literal>. Si la imagen tiene
+24cm de ancho y 18cm de alto, la relación de aspecto se puede expresar como 
+<literal>24:18</literal>.</para>
+
+<note><para>La relación de aspecto se expresa en términos de las 
+<emphasis>dimensiones pretendidas en pantalla</emphasis>. La resolución de la imagen
+en pixels no es siempre un buen indicador de la relación de aspecto. Para saber con mayor detalle por qué 
+es así, mira (está en inglés)<ulink url="http://www.mir.com/DMG/aspect.html">Aspect Ratios and
+Frame Sizes</ulink>.</para></note>
+
+<para>¿Cómo se compara <literal>24:18</literal> con otras relaciones de aspecto? 
+¿Es más ancho o más estrecho? ¿Es más ancho o estrecho que otras relaciones de aspecto como <literal>16:9</literal>
+o <literal>4:3</literal>? Es difícil decirlo a primera vista, 
+porque los denominadores son diferentes. El modo más fácil de comparar
+relaciones de aspecto es reducirlas a común denominador haciendo una simple
+división:</para>
+
+<screen>
+24 / 18 = 1,33
+ 4 /  3 = 1,33
+16 /  9 = 1,78
+</screen>
+
+<para>Las dos primeras relaciones de aspecto son equivalentes a <literal>1,33:1</literal>.
+Ambas son más estrechas que la relación de aspecto de pantalla panorámica <literal>1,78:1</literal>.
+La reducción de las relaciones de aspecto a a común denominador hace más sencilla la comparación.</para>
+
+<figure>
+<title>Comparación visual de a común denominador de relaciones de aspecto</title>
+<mediaobject>
+<imageobject><imagedata fileref="../images/Aspect_ratios.png"/></imageobject>
+</mediaobject>
+</figure>
+
+<para>Otras dos relaciones de aspecto comúnmente usadas en películas proyectadas son:
+<literal>1.85:1</literal> (Academy Standard, o "flat"), y
+<literal>2.35:1</literal> (o "Scope", también llamada Panavision o
+CinemaScope). Ambas son incluso más anchas que<literal>16:9</literal>,
+con CinemaScope casi dos veces más ancha que <literal>4:3</literal>.
+El término "pantalla panorámica" típicamente se refiere a cualquier relación de aspecto
+mayor que aproximadamente<literal>1,33:1</literal>.</para>
+
+<para>Si quieres saber algo más sobre relaciones de aspecto, comprueba la 
+<ulink url="http://www.wikipedia.org/wiki/Aspect_ratio_(image)">entrada en Wikipedia
+</ulink> sobre el tema.</para>
+
+</sect1>
+
+<sect1>
+<title>Conversión entre relaciones de aspecto</title>
+
+<para>Desde los 1950s, los estrenos en las salas de cine han usando típicamente una relación de aspecto
+panorámica. La mayor parte de los televisores usan una relación de aspecto <literal>4:3</literal>, así
+que las películas panorámicas tienen que ser convertidas para ser vistas en televisores <literal>4:3</literal>.
+Se describen seguidamente dos populares propuestas. Son 
+<glossterm>pan and scan</glossterm> y <glossterm>letterbox</glossterm> 
+(N.delT.: lo dejo en inglés, hasta que encuentre alguna traducción aceptable).</para>
+<!-- REVIEW -->
+
+<para>Con "pan and scan", se muestra una región <literal>4:3</literal>, cortando
+los laterales izquierdo y derecho de la imagen original. Un operador (a veces el director) 
+selecciona las áreas que son importantes para la escena, e intenta encajarlas dentro
+del recuadro <literal>4:3</literal>. Cuando la acción se traslada a una parte distinta de la 
+pantalla, la región visible se desplaza a ella.</para>
+
+<figure>
+<title>Versión "Pan and scan" de una película panorámica</title>
+<mediaobject>
+<imageobject><imagedata fileref="../images/pan_and_scan.jpg"/></imageobject>
+</mediaobject>
+</figure>
+
+<para>A lo largo de los 1980s, "pan and scan" era de lejos el más popular
+formato de video doméstico. La transferencia "pan and scan" hace un uso completo del
+encuadre <literal>4:3</literal>, así que los televidentes ven la pantalla llena en todo momento.
+En los 1980s, VHS todavía dominaba el mrcado doméstico still; "pan and scan" hace uso completo
+de la reducida (según los estándares actuales) resolución de VHS. Al "acercarse" a primeros planos de la imagen ,
+el detalle y calidad de la imagen se preservan mejor.</para>
+
+<para>Pero esta ganancia se hace a costa de un sacrificio; hasta un 50% de la película original 
+haber sido cortado. Los planos tomados en panorámico pueden parecer asimétricos y poco profesionales
+tras convertirse a "pan and scan"; a veces, pueden desaparecer personajes, objetos o escenarios importantes.
+Algunos directores incluso prohiben conversiones 
+"pan and scan" de sus películas.</para>
+
+<note><para>El disco láser fue un nicho popular para los cinéfilos
+a lo largo del reinado del VHS; la calidad de imagen del disco láser
+es superior a la de VHS, pero inferior a la de nuestro bienamado DVD.</para>
+<para>Mira (en inglés) 
+<ulink url="http://www.widescreen.org/examples.shtml">Widescreen vs. Pan &amp;
+Scan Examples</ulink> para algunas comparaciones de panorámico y "pan and scan" en
+películas reales.</para></note>
+
+<para>El formato "letterbox", por el contrario, preserva el ancho completo
+de la película original. Dado que la película original no es tan alta (relativamente hablando) como
+una televisión <literal>4:3</literal>, las áreas sobre y
+bajo la imagen se rellenan con negro.</para>
+
+<figure>
+<title>Versión "letterbox" de una película panorámica</title>
+<mediaobject>
+<imageobject><imagedata fileref="../images/letterbox.jpg"/></imageobject>
+</mediaobject>
+</figure>
+
+<para>La ventajade del formato "letterbox" es que toda la imagen original
+es visible. La desventaja es que está encogida para encajar dentro de
+una pantalla <literal>4:3</literal> de televisión; una porción significativa de la pantalla
+se "desperdicia" en las bandas negras. Con VHS, una película "letterbox" pierde
+mucho de su detalle original.</para>
+
+<para>Desde finales de los 1990s, "pan and scan" ha sido menos popular. Su principal 
+ventaja para el consumidor era el uso óptimo del área de pantalla de televisión, pero la creciente
+popularidad del DVD, combinado con el coste decreciente de la
+<glossterm>HDTV</glossterm>, ha hecho más fácil que nunca el
+disfrutar alta calidad panorámica en el hogar. Ya en los incios de los 2000s, las ventas de DVDs panorámicos
+(letterbox) y pantalla completa (pan and scan) fueron casi iguales; algunas series de TV
+han empezado incluso a usar <literal>16:9</literal>.</para>
+
+<para>Hay otros planteamientos en la creación de versiones <literal>4:3</literal>
+de películas, pero típicamente requieren técnicas especiales de rodaje, o
+acceso a las pruebas finales de la película original. Para más información sobre métodos de
+transferencia de vídeo, mira <ulink
+url="http://www.digieffects.com/frames/transferfilmtovideo/filmtovideo.html">Cómo
+se transfieren las películas a video</ulink>.</para>
+
+</sect1>
+
+
+<sect1>
+<title>Píxeles y relación de aspecto</title>
+
+<para>Las imágenes y vídeos se guardan en un ordenador como un gran rectángulo lleno de
+diminutos <glossterm>píxeles</glossterm> cuadrados. Cada píxel almacena un color; 
+puedes pensar que una imagen digital es una cuadrícula numerada gigante, con millones de 
+posibles colores. Cuantos más píxeles en una imagen digital, mayor detalle puede ser 
+capturado. En el mercado de las cámaras digitales, esta resolución se expresa simplemente en
+<emphasis>megapixels</emphasis>, o millones de píxeles. Una cámara de 4 megapixels 
+puede capturar una imagen de más o menos 2.000 píxeles de ancho y 
+2.000 píxeles de alto. Es bueno que los ordenadores sean rápidos, porque llevaría bastante
+tiempo a un ser humano ir coloreando una a una todas las casillas de esa cuadrícula.</para>
+
+<para>El vídeo digital lamacenado en un ordenador no tiene especiales limitaciones
+en resolución, pero los formatos digitales de discos de vídeo como <glossterm>VCD</glossterm>,
+<glossterm>SVCD</glossterm>, y <glossterm>DVD</glossterm> sólo permiten 
+ciertas resoluciones, por lo que se refiere a píxeles. La resolución más habitual para 
+DVDs comerciales es Full-D1, que es <literal>720&times;480</literal> píxeles de
+tamaño.</para>
+
+<note><para>Full-D1 es en realidad el nombre de dos distintas resoluciones, dependiendo si
+el DVD está destinado a reproductores <glossterm>NTSC</glossterm> o
+<glossterm>PAL</glossterm>. PAL usa una resolución de
+<literal>720&times;576</literal> para Full-D1; NTSC usa <literal>720&times;480</literal>.
+</para>
+
+<para>Además de Full-D1, DVD soporta varias otras resoluciones,
+incluyendo <literal>352&times;480</literal> (<literal>352&times;576 PAL</literal>) y
+<literal>352&times;240</literal> (<literal>352&times;288 PAL</literal>). Las resoluciones mayores
+dan mejor detalle y calidad, pero ocupan más espacio en el 
+disco. Estas resoluciones adicionales permiten que incluso los DVD de capa sencilla contengan
+de 2 a 10 horas de video, dando a los autores de DVD varias opciones para equilibrar
+cantidad y calidad.</para>
+</note>
+
+<para>Puedes haber notado, si intentas calcular cuál es la relación de aspecto, que
+<literal>720 / 480 = 1.5</literal>, lo cual no es la relación de aspecto estándar ni
+para TV clásicos ni para panorámicos. Obviamente, la resolución de un vídeo
+<emphasis>en píxeles</emphasis> tiene poca semejanza con la relación de aspecto del
+vídeo; <literal>1.5:1</literal> es la relación de anchura a altura en píxeles, pero
+nadie contempla DVDs en una televisión <literal>1.5:1</literal>.</para>
+
+<para>Así que, ¿por qué la extraña relación? Hay  una buena razón detrás.El DVD fue diseñado
+para desenvolverse bien tanto con <literal>1.33:1</literal> (televisión <literal>4:3</literal>
+) como con <literal>1.78:1</literal> (<literal>16:9)</literal> panorámico).
+Pero en vez de tener dos resoluciones distintas en <emphasis>píxeles</emphasis>,
+DVD usa sólo <literal>720&times;480</literal>. Como <literal>1.5:1</literal> está
+a medio camino entre <literal>1.33:1</literal> y <literal>1.78:1</literal>,
+Full-D1 DVD resulta muy adecuado para codificar ambas estas dos relaciones de aspecto.</para>
+
+<para>Para lograrlo, los vídeos se estrujan o se estiran para encajar en los
+<literal>720&times;480</literal> píxeles. Cada vídeo se marca con un
+bit de información diciendo al lector de DVD si se ha de usar <literal>4:3</literal> o
+<literal>16:9</literal> en la reproducción. El reproductor DVD entonces 
+automáticamente realiza el encogido o estirado requeridos para restaurar las
+proporciones normales.</para>
+
+<figure>
+<title>Codificación Full-D1 de relación de aspecto 4:3</title>
+<mediaobject>
+<imageobject><imagedata fileref="../images/4_3_dvd.jpg"/></imageobject>
+</mediaobject>
+</figure>
+
+<para>Una imagen <literal>4:3</literal> llena el área visible de una pantalla
+<literal>4:3</literal>, pero puede ser estirada o bordeada con bandas negras
+cuando reproducida en una televisión panorámica. Los DVDs que usan este formato
+se etiquetan como "pantalla completa."</para>
+
+<figure>
+<title>Codificación Full-D1 de relación de aspecto 16:9</title>
+<mediaobject>
+<imageobject><imagedata fileref="../images/16_9_dvd.jpg"/></imageobject>
+</mediaobject>
+</figure>
+
+<para>Una imagen <literal>16:9</literal> aparece bordeada con bandas negras si 
+se reproduce en una pantalla <literal>4:3</literal>, pero llena completamente el área 
+visible en televisiones panorámicas. Los DVDs que usan este formato
+se etiquetan como "panorámicos."</para>
+
+<note><para>Los DVDs etiquetados "<glossterm>anamorphic widescreen</glossterm>" (lo suelen poner en inglés, tal cual)
+o  "mejorado para televisores panorámicos" usan una codificación <literal>16:9</literal>
+directa de la imagen panorámica. Si el DVD está etiquetado como "panorámico"
+(pero no anamórfico), entonces el disco contiene probablemente una codificación
+<literal>4:3</literal> de una imagen con bandas negras arriba y abajo; y
+lógicamente, desperdicia un 25% o más de los píxeles en las bandas negras.
+Los DVDs anamórficos panorámicos hace mejor uso de
+su resolución vertical, y así son superiores en calidad
+de imagen frente a los DVDs no anamórficos. Mira
+<ulink url="http://www.thedigitalbits.com/editorial/bz100298.html">The ABCs of
+Anamorphic DVD</ulink> para una explicación más extensa (en inglés).</para>
+<para>De ahora en adelante en este capítulo, "panorámico" is synonymous with "panorámico anamórfico";
+panorámico no anamórfico es ignorado completamente, como si nunca 
+hubiera existido.</para>
+</note>
+
+<para>En estos dos formatos, las bandas negras arriba y abajo las pone by the DVD player (o, en
+algunos casos, el televisor). Todos los <literal>720&times;576</literal> píxeles se usan
+óptimamente, ninguno se deperdicia en bandas negras. Con el DVD, los consumidores podemos escoger
+la relación de aspecto que mejor encaja con nuestras necesidades.</para>
+
+</sect1>
+
+
+<sect1>
+<title>Área segura</title>
+
+<para>Los televisores no son perfectos. La mayor parte de los televisores recortan un trocito
+de la imagen alrededor de los bordes, debido a <glossterm>overscan</glossterm>.
+Si hay presente un texto o una imagen importante cerca de los bordes, puede que no sea visible
+en un televisor promedio. Los directores y productores de video mantienen los
+elementos visuales importantes lejos delos bordes, permaneciendo dentro del 
+<emphasis>área segura</emphasis>.</para>
+
+<figure>
+<title>Área segura del 90%</title>
+<mediaobject>
+<imageobject><imagedata fileref="../images/4_3_safe.jpg"/></imageobject>
+</mediaobject>
+</figure>
+
+<para>Al hacer producción de video, una buena regla es colocar el texto importante
+dentro de un área del 90% "segura para títulos", los elementos menos importantes dentro
+de un área del 95% "segura para acción". Cualquier cosa fuera del área del 95% será 
+probablemente recortada en los televisores normales.</para>
+
+</sect1>
+
+</chapter>
+
+<!--
+======================================================
+
+Changelog
+
+======================================================
+-->
+
+<chapter>
+<title>Registro de cambios</title>
+
+<para>El 30 de mayo de 2005 marcó el aniversario del primer estreno al público del código de tovid
+en <ulink
+url="http://www.linuxquestions.org/questions/showthread.php?s=&amp;threadid=187527">LinuxQuestions.org
+post</ulink>. En su primer año, tovid creció y floreció más allá de mis espectativas.
+Ahora hay más de 85 usuarios registrados en el
+<ulink url="&forum_url;">forum de tovid </ulink>, y cientos de personas han descargado
+y probado tovid.</para>
+
+<para>Y tovid es aún un proyecto inmaduro. Hay un largo y tortuoso camino desde aquí y 
+la versión 1.0; realmente no hay forma de predecir como será 1.0.
+Quizás sea similar a los programas comerciales de autoría de discos de video.
+Tal vez crezca hasta llegar a ser un estudio completo de edición y autoría de video.
+Una cosa es segura: Habrá un montón de versiones de tovid antes de llegar 
+a la 1.0.</para>
+
+<para>Las primeras versiones de &tovid; se estrenaron con un ligeramente 
+caótico esquema de numeración  de versiones. Las versiones 0.18a y 0.18b precedieron
+version 0.18, lo cual es algo contraintuitivo. Todas las versiones futuras
+se numerarán secuencialmente; 0.18, 0.19, 0.20, etc.</para>
+
+<sect1>
+<title>Versiones venideras</title>
+
+<para><emphasis>Pendiente de escribir</emphasis></para>
+
+</sect1>
+
+<sect1>
+<!-- REVIEW -->
+<title>Características obsoletas</title>
+
+<para>A medida que tovid crezca, algunas de sus características pueden llegar a ser obsoletas.
+Esto puede ser debido a su desuso, pero también puede ser debido al capricho
+de sus desarrolladores. Cuando ocurra, se pondrá en marcha un proceso de retirada
+gradual.</para>
+
+<orderedlist>
+    <listitem><para>La caraterística se marcará como DEPRECATED en toda la
+    documentación. En ocasiones, las características se marcarán como tal
+    cuando se anticipe su supresión, incluso aunque no se haya encontrado aún un sustituto 
+    adecuado.</para></listitem>
+    <listitem><para>La característica se convierte en no documentada. La característica 
+    continúa en su sitio, pero toda la documentación que se refiera a ella
+    es eliminada, para disuadir de su uso.</para></listitem>
+    <listitem><para>La característica se suprime completamente, y se anuncia
+    como tal en las notas de la versión .</para></listitem>
+</orderedlist>
+
+<para>Siempre que sea posible, la planificación de la retirada progresiva se
+anunciará de antemano. Si estás usando tovid en tus propios proyectos,
+y te preocupa que futuras versiones rompan la compatibilidad
+con tus proyectos, echa un ojo a los anuncios importantes en esta página.</para>
+
+</sect1>
+</chapter>
+
+
+<!--
+======================================================
+
+Frequently asked questions
+
+======================================================
+-->
+
+<chapter id="FAQ">
+<title id="FAQ.title">Preguntas habituales sobre tovid</title>
+
+<variablelist>
+    
+    <varlistentry><term>El video ya codificado se reproduce extremadamente rápido.</term>
+    <listitem><para>Por alguna razón, algunos codecs de vídeo se identifican como si usaran 
+    1000 recuadros por segundo. (Lo pueds ver ejecutando &idvid; en tu video de partida.)
+    Puedes solucionarlo si recodificas usando la opción <option>-fps</option>
+    para forzar una tasa de recuadros por segundo.</para></listitem>
+    </varlistentry>
+    
+    <varlistentry><term>¿Por qué es tan lento?</term>
+    <listitem><para>Breve respuesta: porque la codificación de vídeo 
+    es un proceso muy intensivo en uso de procesador.
+    Respuesta larga y complicada: porquehay muchos factores que pueden
+    influir el tiempo de codificación, incluyendo, pero no excluyendo otros: la velocidad de tu
+    procesador, el formato el vídeo de partida, la resolución en la que codificas, y la 
+    tasa de bits por segundo, calidad, y reducción de ruido que estén vigor. Aunque aún no tengo
+    estadísticas muy detalladas en los tiempos de codificación, en mi experiencia es
+    habitual que la codificación tarde de dos a tres veces la duración del vídeo
+    en mi AMD Athlon 1600XP. Así que si estás codificando una película de dos horas, te llevará
+    de cuatro a seis horas, dependiendo de la velocidad de tu procesador. La salida a DVD lleva más tiempo
+    que la salida a VCD o SVCD. Hay muy probablemente algunas mejoras de rendimiento
+    que se podrían hacer, pero por ahora puedes esperar que la codificación de vídeo
+    lleve mucho tiempo. Algo que puede causar un tiempo de codificación artificialmente largo
+    es que el fichero de partida tenga un (incorrrectamente reportado) número muy bajo de cuadros por segundo;
+    si ves que tovid reporta "1.00 frames per second",
+    necesitarás usar las opciones <option>-fps</option> o
+    <option>-twopass</option> para una codificación correcta.</para></listitem>
+    </varlistentry>
+    
+    <varlistentry><term>¿Por qué mi procesador sólo muestra un 50% de uso durante la codificación?</term>
+    <listitem><para>Esta es otra compleja pregunta para la que no tengo una buena respuesta.
+    El rendimiento de tovid progresa constantemente con cada nueva versión, y
+    mi objetivo es tener el potencial de casi un 100% de uso de procesador durante  la codificación,
+    pero desafortunadamente no es tan simple. Esta situación debería mejorarse 
+    ia partir de la versión 0.18, que incluye la opción <option>-parallel</option> 
+    para tanto &tovid; como <command>postproc</command>; prueba esta esta opción
+    si adviertes que tu procesador no está siendo usado completamente.</para></listitem>
+    </varlistentry>
+    
+    <varlistentry><term>¿Podrías hacer que tovid haga ____ o añadr soporte a  ____?</term>
+    <listitem><para>Es bastante posible; depende si personalmente encuentro que tal
+    característica merece la pena implantarla, o si pienso que sería útil a muchos otros usuarios
+    de tovid. Si tienes una petición de mejora, compártela en los
+    <ulink url="&forum_url;">forums de tovid </ulink>.</para></listitem>
+    </varlistentry>
+    
+    <varlistentry><term>¿Qué tipos de letra puedo usar en  &makemenu; ?
+    (o, ¿por qué tengo tan pocos tipos de letra para escoger cuando hago menús desde el interfaz gráfico?)</term>
+    <listitem><para>El argumento dado a la opción <option>-font</option> ha de ser una
+    de los tipos de letra listados por <command>convert -list type</command>. Muchos de tus tipos de letra instalados
+    pueden no estar disponibles; si quieres maximizar el número 
+    disponible para &makemenu;, descarga el script
+    <ulink url="http://www.cit.gu.edu.au/~anthony/software/imagick_type_gen.pl">imagick_type_gen.pl</ulink>
+    de <ulink url="http://www.cit.gu.edu.au/~anthony/anthony.html">Anthony
+    Thyssen</ulink>
+    
+    y ejecútalo como sigue: <command>imagick_type_gen.pl &gt;
+    ~/.magick/type.xml</command></para></listitem>
+    </varlistentry>
+    
+    <varlistentry><term>Cuando lanzo <command>vcdxbuild my_disc.xml</command>, obtengo:
+    <computeroutput>ERROR: charset conversion failed</computeroutput>.
+    ¿Cómo lo arreglo?</term>
+    <listitem><para>Este es  un problema que surge con algunas versiones de
+    <command>vcdxbuild</command>.
+    Si te ocurre, prueba a usar 
+    <command>vcdxbuild --filename-encoding=iso8859-1 my_disc.xml</command>.</para>
+    </listitem>
+    </varlistentry>
+    
+    <varlistentry><term>¿Dónde obtengo mjpegtools para
+    <ulink url="http://www.suse.com/">SuSE</ulink> Linux?</term>
+    <listitem><para>Prueba <ulink url="http://packman.links2linux.de/?action=154">este 
+    enlace</ulink>.</para></listitem>
+    </varlistentry>
+    
+    <varlistentry><term>¿Dónde obtengo mjpegtools o mplayer para
+    <ulink url="http://www.debian.org/">Debian</ulink>
+    o una distribución basada en Debian?</term>
+    <listitem><para>Usa el repositorio <application>apt</application> de  Christian Marillat, añadiendo
+    <literal>deb ftp://ftp.nerim.net/debian-marillat/ unstable main</literal> a tu fichero
+    <filename>/etc/apt/sources.list</filename> .</para></listitem>
+    </varlistentry>
+    
+    <varlistentry><term>¿Cómo puedo ejecutar tovid como proceso
+    de fondo?</term>
+    <listitem><para>Prueba a ejecutarlo como sigue: <command>tovid
+    (-options) &gt;logfile 2&gt;&amp;1 &lt;/dev/null
+    &amp;</command>. Esto ejecutará tovid como proceso
+    de fondo (y así puedes hacer otras tareas con
+    tu terminal) y enviará toda la salida de tovid a
+    <filename>logfile</filename>.</para></listitem>
+    </varlistentry>
+
+    <varlistentry><term>Al ejecutar <command>tovidgui.py</command>, obtengo <computeroutput>No module named wxPython.wx</computeroutput>, o
+    <computeroutput>Error -3 while decompressing data: invalid window size</computeroutput>.</term>
+    <listitem><para>Han ocurrido frecuentemente problemas con el wxPython incluído en
+    <ulink url="http://www.mandriva/">Mandriva</ulink> y otras distribuciones Mandrake Linux.
+    <ulink url="http://www.createphpbb.com/phpbb/viewtopic.php?t=89&amp;mforum=tovid">Una 
+    posible solución es </ulink> actualizar wxPythonGTK usando el último
+    <ulink url="ftp://mandrake.mirrors.pair.com/Mandrakelinux/devel/cooker/SRPMS/main/">RPM de código fuente de Cooker</ulink>.
+    </para></listitem>
+    </varlistentry>
+
+    <varlistentry><term>Al ejecutar <command>makedvd -burn</command>, me sale
+    <computeroutput>unable to open64("/dev/dvd",O_RDONLY): Permission
+    denied</computeroutput>. ¿Qué significa?</term>
+    <listitem><para>Probablemente quiere decir que no tienes permiso para tostar DVDs, y has de
+    tostarlos con el usuario "root". Para tostar como "root", ejecutat <command>su -c "makedvd -burn MyDisc.xml"</command>.
+    </para></listitem>
+    </varlistentry>
+    
+</variablelist>
+
+</chapter>
+
+<!--
+======================================================
+
+Quick tips and tests
+
+======================================================
+-->
+
+<chapter>
+<title>Consejos breves y pruebas</title>
+
+<para>Los siguientes son algunos scripts breves (tanto <command>bash</command> como
+su explicación en español) para depurar, comprobar, y comparar tovid.</para>
+
+<sect1>
+<title>Comparación de opciones de línea de comando</title>
+
+<para>Estando depurando un día, quise descubrir<emphasis>exactamante</emphasis>
+qué distintas opciones de codificación resultaban afectadas por la opción
+<option>-deinterlace</option>. El script &tovid; es tan complejo ahora
+que incluso yo no puedo recordar todas opciones que han de pasarse
+a <command>mpeg2enc</command>, <command>mplayer</command>, y otros
+programas de los que depende tovid.</para>
+
+<para>Así que aquí está un breve script en bash que te muestra la diferencia, en detalle,
+entre dos de las opciones de línea de comando.</para>
+
+<screen>
+#!/bin/bash
+tovid -debug -deinterlace dv1.avi dv1_deint > 1.log
+tovid -debug dv1.avi dv1_blahblah > 2.log
+diff 1.log 2.log
+</screen>
+
+</sect1>
+
+<sect1>
+<title>Comparación de vídeos</title>
+
+<para>A menudo resulta difícil comparar la calidad de dos vídeos simplemente
+observándolos. El ojo humano es muy indulgente con las imágenes animadas,
+y es útil hacer una comparación recuadro a recuadro.</para>
+
+<para>Para obtener un volcado de todos los recuadros en VÍDEO, usa el siguiente 
+comando:</para>
+
+<screen>mplayer -nosound -vo png VÍDEO</screen>
+
+<para>Si quieres ver la diferencia entre dos imágenes (IMAGEN_1 e IMAGEN_2),
+usa uno de estos comandos:</para>
+
+<screen>convert IMAGEN_1 IMAGEN_2 -compose difference -composite x: &amp;
+convert IMAGEN_1 IMAGEN_2 -compose difference -composite -normalize x: &amp;
+</screen>
+
+<para>Estos comandos usan <ulink url="http://www.imagemagick.org/">ImageMagick</ulink>
+para mostrar un representación en escala de grises de la diferencia entre 
+IMAGEN_1 e IMAGEN_2, indicando las áreas claras mayor diferencia.
+La opción <option>-normalize</option> resulta útil para imágenes que son muy similares.
+Utilízalo para obtener una visualización rápida de la calidad de imagen, en particular la
+degradación y artefactos que a menudo se introducen durante la conversión a otro
+formato de imagen.</para>
+
+<para>Las versiones más nuevas de ImageMagick incluyen la utilidad <command>compare</command>. Prueba:</para>
+
+<screen>compare IMAGE_1 IMAGE_2 x: &amp;</screen>
+
+<para>Si te gustan los números, puede que disfrutes con:</para>
+
+<screen>compare -metric MAE IMAGE_1 IMAGE_2 null:
+</screen>
+
+<para>Ve probando las métricas MSE, PSE, PSNR, y RMSE para distintos tipos de comparación.
+Para más detalles en la comparación de imágenes, mira las <ulink
+url="http://www.cit.gu.edu.au/~anthony/info/graphics/image_comparing">notas de Anthony
+Thyssen</ulink> sobre el tema.</para>
+
+</sect1>
+
+<sect1>
+<title>Análisis de las estadísticas de tovid</title>
+
+<para>Comenzando con la versión 0.18, &tovid; escribe estadísticas a
+<filename>~/.tovid/stats</filename> en un formato separado por coma, con las cadenas de texto entrecomilladas
+habitualmente conocido como <ulink
+url="http://en.wikipedia.org/wiki/Comma-separated_values">CSV</ulink> (que no debe
+confundirse con <ulink url="http://www.cvshome.org/">CVS</ulink>).
+Lo cual hace las estadísticas fácilmente procesables, sobre todo si
+quieres importarlas en una hoja de cálculo para análisis posterior o para
+gráficos.</para>
+
+<para>Aquí se ve cómo importar las estadísticas en <ulink
+url="http://www.openoffice.org">OpenOffice.org</ulink> Calc:</para>
+
+<screen>cp ~/.tovid/stats ~/.tovid/stats.csv</screen>
+
+<para>Ayuda que el fichero teng el sufijo <filename>.csv</filename>, porque
+entonces OOo Calc ya presupone que contiene valores separados por comas. Ejecuta OOo Calc, y
+abre <filename>~/.tovid/stats.csv</filename>. Te aparecerá un
+diálogo:</para>
+
+<figure>
+<title>Ajustando la importación de CSV</title>
+<mediaobject>
+<imageobject><imagedata fileref="../images/ooo_calc_import.png"/></imageobject>
+</mediaobject>
+</figure>
+
+<para>Las opciones significativas están resaltadas; comprueba que están activas antes 
+de importar. Ajusta el valor <guibutton>From row</guibutton> hasta que
+el punto de comienzo esté justo sobre la línea <literal>TOVID_VERSION</literal>. Pulsa
+<guibutton>OK</guibutton> y obtendrás una bonita hoja de cálculo, con cabeceras de columna
+que coinciden con los nombres de variables en &tovid;.</para>
+
+</sect1>
+
+</chapter>
+
+<chapter>
+<title>Comparaciones de vídeo</title>
+
+<sect1>
+<title>Entrelazado</title>
+
+<para>Si quieres codificar vídeo entrelazado con &tovid;, tienes
+que considerar un cierto número de posibles planteamientos:</para>
+
+<figure>
+<title>Tratamiento del entrelazado</title>
+<mediaobject>
+<imageobject><imagedata fileref="../images/interlacing_comparison.jpg"/></imageobject>
+</mediaobject>
+</figure>
+
+<para>Fíjate primero en el ejemplo sin opciones de entrelazado (none).
+Los líneas de cada campo están distorsionadas al codificarse a MPEG, porque la imagen
+se ha tratado como un recuadro <glossterm>progresivo</glossterm>.
+Hasta la versión 0.18, la opción recomendada era <option>-deinterlace</option>,
+que intenta usar el mejor algoritmo disponible para generar una imagen progresiva restaurada 
+de las imágenes entrelazadas de partida. Como puedes ver, hay grandes mejoras.
+Pero incluso los algoritmos buenos de desentrelazado desperdician hasta la
+mitad de la resolución vertical existente. La imagen resultante es suave, como debe ser
+todo recuadro de vídeo progresivo, pero se ha perdido mucho del
+detalle original.</para>
+
+<para>La versión 0.18 introduce dos opciones nuevas: <option>-interlaced</option>
+e <option>-interlaced_bf</option>. Ambas codifican el vídeo a
+salida entelazada MPEG, preservando la resolución vertical; la segunda opción
+codifica el campo de abajo primero, lo cual puede ser necesario en algunos vídeos. 
+Fíjate cómo la imagen con opción <option>-interlaced</option> tiene líneas horizontales
+nítidamente definidas alrededor de la pala verde. Esto indica que los dos campos todavía están separados,
+y mantendrán su resolución vertical todo el trayecto hasta el reproductor de
+DVDs, el cual puede integrarlos en una imagen progresiva, o puede simplemente
+enviarlos a tu televisor; el formato ideal, porque los televisores usan
+una imagen entrelazada.</para>
+
+<para>Observa ahora cómo el borde de la mesa parece más dentado en la
+imagen <option>-interlaced_bf</option>. Esto indica que la codificación con el campo de abajo primero,
+no es apropiada para este vídeo. Si tu vído tiene este aspecto 
+durante la reproducción, prueba otra opción distinta de entrelazado.</para>
+
+<para>La opción <option>-interlaced</option> es la mejor para
+entrada entrelazada. VCD es el único formato que no soporta codificación
+entrelazada; en este caso, se usa automáticamente la mejor rutina disponible para 
+desentrelazado.</para>
+
+</sect1>
+
+</chapter>
+
+<chapter>
+<title>Notas para desarrolladores</title>
+
+<note><para>Este capítulo de la documentación contendrá a su debido tiempo una 
+diversidad de ideas de diseño y otro material de interés primariamente para desarrolladores.
+</para></note>
+
+<sect1>
+<title>La jerarquía de ficheros tovid</title>
+
+<para>He aquí la lista de todos los ficheros instalados por la versión 0.18 de tovid:</para>
+
+<screen>
+/usr/local/bin/
+    dvrequant
+    idvid
+    makedvd
+    makemenu
+    makeslides
+    makevcd
+    makexml
+    postproc
+    tovid
+    tovid-batch
+    tovid-interactive
+    tovid-test
+</screen>
+
+<para>Si instalas el paquete separado con el interfaz gráfico (tovid-gui), también tendrás:</para>
+
+<screen>
+/usr/local/bin/
+    icons/
+        tovid_icon_32.png
+        tovid_icon_48.png
+        tovid_icon_64.png
+        tovid_icon_128.png
+    tovidgui.py
+</screen>
+
+<para>Cuando ejecutes el script &tovid; script, obtendrás dos ficheros más en un directorio 
+oculto en tu directorio hogar:</para>
+
+<screen>
+~/.tovid/
+    stats
+    tovid.config
+</screen>
+
+<para>Antes de de que pase mucho tiempo, tovid ncesitará muchos más ficheros que estos. Próximamente, el
+interfaz gráfico se dividirá en varios módulos Pyhon, y se añadirán algunos ficheros globales de configuración.
+La documentación HTML estará disponible como un paquete separado,
+e incluirá múltiples traducciones, y también los ficheros DocBook XML de partida usados para
+generar los HTML.</para>
+
+<para>Aquí está la estructura dedirectorios planeada para alguna posible versión 
+futura:</para>
+
+<screen>
+/usr/share/
+    tovid/
+        bin/
+            dvrequant
+            idvid
+            makedvd
+            makemenu
+            makeslides
+            makevcd
+            makexml
+            postproc
+            tovid
+            tovid-batch
+            tovid-interactive
+            tovid-test
+            tovidgui.py
+        
+        config/
+            tovid.config
+
+        docs/
+            source/
+                tovid_documentation.en.xml
+                tovid_documentation.fr.xml
+                tohtml
+            images/
+                (all .jpg and .png illustrations)
+            english/
+                images/ -> /usr/share/tovid/docs/images/
+                tovid_style.css -> /usr/share/tovid/docs/tovid_style.css
+                index.html
+                ch01.html
+                ch02.html
+                ..
+                ..
+            french/
+                images/ -> /usr/share/tovid/docs/images/
+                tovid_style.css -> /usr/share/tovid/docs/tovid_style.css
+                index.html
+                ch01.html
+                ch02.html
+                ..
+                ..
+
+            index.html (choose language)
+            tovid_style.css
+
+        gui/
+            (wxPython GUI modules)
+
+        icons/
+            tovid_icon_32.png
+            tovid_icon_48.png
+            tovid_icon_64.png
+            tovid_icon_128.png
+
+        README
+        GNU_GPL
+        ChangeLog
+
+/usr/bin/
+    dvrequant           -> /usr/share/tovid/bin/dvrequant
+    idvid               ..
+    makedvd             ..
+    makemenu            ..
+    makeslides          ..
+    makevcd             .. (symbolic links)
+    makexml             ..
+    postproc            ..
+    tovid               ..
+    tovid-batch         ..
+    tovid-interactive   ..
+    tovid-test          -> /usr/share/tovid/bin/tovid-test
+
+~/.tovid/
+    stats
+    tovid.config
+    tovidgui.prefs
+</screen>
+
+<para>Todos esto es extremadamente provisional, pero da una idea de qué hay en el futuro de 
+tovid.</para>
+
+</sect1>
+
+<!--
+======================================================
+
+About the developers
+
+======================================================
+-->
+
+</chapter>
+
+<chapter>
+<title>Desarrolladores</title>
+
+<sect1><title>Eric Pierce</title>
+
+<para>Eric (alias wapcaplet) es el creador y principal desarrollador de tovid.
+Vive en <ulink
+url="http://en.wikipedia.org/wiki/Colorado_Springs">Colorado
+Springs</ulink> con su mujer Andrea, y su gato Fitz. Sus aficiones incluyen
+Linux, ilustración, LEGO, discogolf, y juegos de tablero de estrategia.
+También es un contribuidor ocasional a <ulink
+url="http://www.wikipedia.org/">Wikipedia</ulink>, donde edita como
+<ulink url="http://en.wikipedia.org/wiki/User:Wapcaplet">Wapcaplet</ulink>.</para>
+
+<figure>
+<title>Nuestro principal desarrollador con una paloma en su brazo</title>
+<screenshot><graphic fileref="../images/eric_small.jpg"></graphic></screenshot>
+</figure>
+
+</sect1>
+
+<sect1><title>Joe Friedrichsen</title>
+
+<para>Joe (alias Mac North) simplemente un tipo y uno de los desarrolladores de tovid.
+Vive en <ulink url="http://maps.google.com/maps?q=yaizu+japan&amp;spn=0.151988,0.323874&amp;t=k&amp;hl=en">Yaizu, Japón</ulink> con su tortuga Marutomo. Aparte
+de cosas de código fuente abierto, disfruta <ulink url="http://en.wikipedia.org/wiki/Lindy_Hop">Lindy Hop</ulink>, <ulink url="http://www.kusastro.kyoto-u.ac.jp/~baba/iaido/">
+ejercitarse con espadas Iai</ulink>, y <ulink url="http://www.dclxvi.org/chunk/">bicis
+artísticas</ulink>. También se sabe que toca la guitarra (tanto acústica como eléctrica) para artistas como
+The Flaming Lips y Nick Drake.</para>
+<!-- REVIEW Is "air" guitar really electric or is studio made performances? -->
+
+<figure>
+<title>Nuestro desarrollador "simplemente un tío" </title>
+<screenshot><graphic fileref="../images/joe_small.jpg"></graphic></screenshot>
+</figure>
+
+</sect1>
+
+<sect1>
+<title>Otros contribuyentes</title>
+
+<para>Un número enorme de personas han colaborado, en mucho o en poco, a la 
+creación de tovid. Sería dificultoso listar a todos ellos, pero he aquí a 
+unos pocos:</para>
+
+<itemizedlist>
+    <listitem><para>Khurram Ahmed</para></listitem>
+    <listitem><para>Marcello Chagas</para></listitem>
+    <listitem><para>Joe Friedrichsen</para></listitem>
+    <listitem><para>Carl Hall</para></listitem>
+    <listitem><para>Thomas Lie</para></listitem>
+    <listitem><para>Rick Measham</para></listitem>
+    <listitem><para>Jean-Francois Ouellette</para></listitem>
+    <listitem><para>Rainer Unseld</para></listitem>
+</itemizedlist>
+
+<para>Gracias a los autores de<application>mplayer</application>,
+<application>mjpegtools</application>, <application>ffmpeg</application>,
+<application>vcdimager</application>, <application>dvdauthor</application>,
+<application>ImageMagick</application>, <application>SoX</application>,
+<application>transcode</application>, y <application>normalize</application>,
+de las cuales depende tovid para la mayor parte de sus capacidades. Gracias también a
+<ulink url="http://www.linuxquestions.org/">LinuxQuestions.org</ulink>
+por hospedar el forum de discusión sobre tovid, y por ser en general un gran recurso para construir comunidades.</para>
+
+<para>Finalmente, ¡gracias a <emphasis>tí</emphasis> por tu interés
+en tovid!</para>
+
+</sect1>
+
+</chapter>
+
+<!--
+======================================================
+
+Glossary
+
+======================================================
+-->
+
+
+<glossary>
+<title>Glosario</title>
+
+<glossentry id="anamorphic_widescreen2">
+    <glossterm>anamorphic widescreen</glossterm>
+    <glossdef><para>Mira "panorámico anamórfico"</para>
+    </glossdef>
+</glossentry> 
+
+<glossentry id="anamorphic_widescreen">
+    <glossterm>panorámico anamórfico</glossterm>
+    <glossdef><para>Un DVD panorámico anamórfico es simplemente uno que hace
+    buen uso de su resolución vertical. Específicamente, significa usar la relación de aspecto
+    <literal>16:9</literal>  de los DVDs para todos los vídeos que tengan esa
+    relación de aspecto o mayor. En el contexto del rodaje, In the context of filming, panorámico anamórfico
+    es un proceso que usa lentes especiales para maximizar el uso del área fotosensible de una película.
+    Para más información, mira 
+    <ulink url="http://www.thedigitalbits.com/editorial/bz100298.html">The ABCs of
+    Anamorphic DVD</ulink>, y el 
+    <ulink url="http://www.wikipedia.org/wiki/Anamorphic_widescreen">
+    artículo sobre panorámico anamórfico en Wikipedia </ulink>.</para>
+    </glossdef>
+</glossentry>
+<glossentry id="DVD">
+    <glossterm>DVD</glossterm>
+    <glossdef><para>Tecnología de almacenamiento para discos ópticos. Los soportes DVD pueden ser
+    marcados o grabados con varios formatos distintos. DVD-ROM es
+    el formato base, que almacena ficheros en un sistema de ficheros UDF; DVD-Video es probablemente
+    el formato de aplicación más común, y define cómo se guardan los ficheros de vídeo en el disco 
+    y cómo se reproducen en un reproductor de DVDs. DVD-Audio es otro
+    formato de aplicación, de uso creciente. Mira
+    <ulink url="http://www.dvddemystified.com/dvdfaq.html">DVD FAQ</ulink> para
+    más información.</para>
+    </glossdef>
+</glossentry>
+<glossentry id="HDTV">
+    <glossterm>HDTV</glossterm>
+    <glossdef><para>Televisión de alta definición</para>
+    </glossdef>
+</glossentry>
+
+<glossentry id="pixels">
+    <glossterm>píxeles</glossterm>
+    <glossdef><para>Puntos de imagen</para>
+    </glossdef>
+</glossentry>
+
+<glossentry id="overscan">
+    <glossterm>overscan</glossterm>
+    <glossdef><para>Pendiente</para>
+    </glossdef>
+</glossentry>
+
+<glossentry id="progresive">
+    <glossterm>progresivo</glossterm>
+    <glossdef><para>Pendiente</para>
+    </glossdef>
+</glossentry>
+
+<glossentry id="pan_and_scan">
+    <glossterm>pan and scan</glossterm>
+    <glossdef><para>Pendiente</para>
+    </glossdef>
+</glossentry>
+
+<glossentry id="letterbox">
+    <glossterm>letterbox</glossterm>
+    <glossdef><para>Pendiente</para>
+    </glossdef>
+</glossentry>
+
+<glossentry id="Python">
+    <glossterm><ulink url="http://www.python.org/">Python</ulink></glossterm>
+    <glossdef><para>Lenguaje interpretado de programación creado por Guido van Rossum en
+    1990. También es el nombre del programa que interpreta Python.</para></glossdef>
+</glossentry>
+<glossentry id="NTSC">
+    <glossterm>NTSC</glossterm>
+    <glossdef><para>El sistema de televisión analógica que se usa en la mayor parte de las Américas
+    y algunos países del Este Asiático. NTSC es el acrónimo de National Television
+    System(s) Committee, comité que creó la norma.
+    Mira el <ulink url="http://www.wikipedia.org/wiki/NTSC">artículo Wikipedia sobre
+    NTSC</ulink> para más información.</para></glossdef>
+</glossentry>
+<glossentry id="PAL">
+    <glossterm>PAL</glossterm>
+    <glossdef><para>El sistema de televisión analógica (más específicamente, 
+    una codificación en color) usado en la mayor parte del mundo excepto in most of the Americas, en la mayor parte de las Américas
+    y algunos países del Este Asiático, Oriente Medio, y parte de Europa. PAL es el acrónimo de 
+    "phase-alternating line", alternación de fase por línea.
+    Mira <ulink url="http://www.wikipedia.org/wiki/PAL">artículo Wikipedia sobre
+    PAL</ulink> para más información.</para></glossdef>
+</glossentry>
+<glossentry id="SVCD">
+    <glossterm>SVCD</glossterm>
+    <glossdef><para>Super Video Compact Disc (SVCD) es un formato
+    para almacenar casi una hora de vídeo de calidad media en un disco 
+    compacto normal y corriente. Aunque SVCD no está normalizado
+    totalmente, los discos SVCD son reproducibles en la mayor parte de los reproductores domésticos de DVD.
+    Mira <ulink url="http://www.videohelp.com/svcd/">What is SVCD?</ulink> para
+    detalles técnicos y una lista de reproductores compatibles con SVCD.</para></glossdef>
+</glossentry>
+<glossentry id="VCD">
+    <glossterm>VCD</glossterm>
+    <glossdef><para>Video Compact Disc (VCD) es un formato estándar para
+    almacenar algo más de una hora de vídeo de baja calidad en un disco 
+    compacto normal. VCD sigue la norma White Book, y es reproducible en la mayor parte 
+    de los reproductores domésticos de DVD. See <ulink
+    url="http://www.videohelp.com/vcd/">What is VCD?</ulink> para
+    detalles técnicos y una lista de reproductores compatibles con VCD.</para></glossdef>
+</glossentry>
+
+</glossary>
+
+</book>

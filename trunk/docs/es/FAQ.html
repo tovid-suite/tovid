@@ -1,0 +1,268 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+<head>
+  <meta name="generator" content=
+  "HTML Tidy for Linux/x86 (vers 1st August 2004), see www.w3.org">
+  <meta http-equiv="Content-Type" content=
+  "text/html; charset=utf-8">
+
+  <title>Preguntas habituales sobre tovid</title>
+  <link rel="stylesheet" href="tovid_style.css" type="text/css">
+  <link rel="stylesheet" href="tovid_print.css" type="text/css">
+  <meta name="generator" content="DocBook XSL Stylesheets V1.68.1">
+  <link rel="start" href="bk01.html" title=
+  "Documentación de tovid">
+  <link rel="up" href="bk01.html" title="Documentación de tovid">
+  <link rel="prev" href="ch06.html" title="Registro de cambios">
+  <link rel="next" href="ch08.html" title=
+  "Consejos breves y pruebas">
+</head>
+
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084"
+alink="#0000FF">
+  <div class="navheader">
+    <table width="100%" summary="Navigation header">
+      <tr>
+        <th colspan="3" align="center">Preguntas habituales sobre
+        tovid</th>
+      </tr>
+
+      <tr>
+        <td width="20%" align="left"><a accesskey="p" href=
+        "ch06.html">Anterior</a>&nbsp;</td>
+
+        <th width="60%" align="center">&nbsp;</th>
+
+        <td width="20%" align="right">&nbsp;<a accesskey="n" href=
+        "ch08.html">Siguiente</a></td>
+      </tr>
+    </table>
+    <hr>
+  </div>
+
+  <div class="chapter" lang="es">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h2 class="title"><a name="FAQ" id="FAQ"></a>Preguntas
+          habituales sobre tovid</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="variablelist">
+      <dl>
+        <dt><span class="term">El video ya codificado se reproduce
+        extremadamente rápido.</span></dt>
+
+        <dd>
+          <p>Por alguna razón, algunos codecs de vídeo se
+          identifican como si usaran 1000 recuadros por segundo.
+          (Lo pueds ver ejecutando <span><strong class=
+          "command"><a href="CLI.html#CLI.idvid" title=
+          "6. idvid">idvid</a></strong></span> en tu video de
+          partida.) Puedes solucionarlo si recodificas usando la
+          opción <code class="option">-fps</code> para forzar una
+          tasa de recuadros por segundo.</p>
+        </dd>
+
+        <dt><span class="term">¿Por qué es tan lento?</span></dt>
+
+        <dd>
+          <p>Breve respuesta: porque la codificación de vídeo es un
+          proceso muy intensivo en uso de procesador. Respuesta
+          larga y complicada: porquehay muchos factores que pueden
+          influir el tiempo de codificación, incluyendo, pero no
+          excluyendo otros: la velocidad de tu procesador, el
+          formato el vídeo de partida, la resolución en la que
+          codificas, y la tasa de bits por segundo, calidad, y
+          reducción de ruido que estén vigor. Aunque aún no tengo
+          estadísticas muy detalladas en los tiempos de
+          codificación, en mi experiencia es habitual que la
+          codificación tarde de dos a tres veces la duración del
+          vídeo en mi AMD Athlon 1600XP. Así que si estás
+          codificando una película de dos horas, te llevará de
+          cuatro a seis horas, dependiendo de la velocidad de tu
+          procesador. La salida a DVD lleva más tiempo que la
+          salida a VCD o SVCD. Hay muy probablemente algunas
+          mejoras de rendimiento que se podrían hacer, pero por
+          ahora puedes esperar que la codificación de vídeo lleve
+          mucho tiempo. Algo que puede causar un tiempo de
+          codificación artificialmente largo es que el fichero de
+          partida tenga un (incorrrectamente reportado) número muy
+          bajo de cuadros por segundo; si ves que tovid reporta
+          "1.00 frames per second", necesitarás usar las opciones
+          <code class="option">-fps</code> o <code class=
+          "option">-twopass</code> para una codificación
+          correcta.</p>
+        </dd>
+
+        <dt><span class="term">¿Por qué mi procesador sólo muestra
+        un 50% de uso durante la codificación?</span></dt>
+
+        <dd>
+          <p>Esta es otra compleja pregunta para la que no tengo
+          una buena respuesta. El rendimiento de tovid progresa
+          constantemente con cada nueva versión, y mi objetivo es
+          tener el potencial de casi un 100% de uso de procesador
+          durante la codificación, pero desafortunadamente no es
+          tan simple. Esta situación debería mejorarse ia partir de
+          la versión 0.18, que incluye la opción <code class=
+          "option">-parallel</code> para tanto <span><strong class=
+          "command"><a href="CLI.html#CLI.tovid" title=
+          "2. tovid">tovid</a></strong></span> como
+          <span><strong class="command">postproc</strong></span>;
+          prueba esta esta opción si adviertes que tu procesador no
+          está siendo usado completamente.</p>
+        </dd>
+
+        <dt><span class="term">¿Podrías hacer que tovid haga ____ o
+        añadr soporte a ____?</span></dt>
+
+        <dd>
+          <p>Es bastante posible; depende si personalmente
+          encuentro que tal característica merece la pena
+          implantarla, o si pienso que sería útil a muchos otros
+          usuarios de tovid. Si tienes una petición de mejora,
+          compártela en los <a href=
+          "http://www.createphpbb.com/phpbb/?mforum=tovid" target=
+          "_top">forums de tovid</a> .</p>
+        </dd>
+
+        <dt><span class="term">¿Qué tipos de letra puedo usar
+        en</span> <strong class="command"><a href=
+        "CLI.html#CLI.makemenu" title=
+        "3. makemenu">makemenu</a></strong> ? (o, ¿por qué tengo
+        tan pocos tipos de letra para escoger cuando hago menús
+        desde el interfaz gráfico?)</dt>
+
+        <dd>
+          <p>El argumento dado a la opción <code class=
+          "option">-font</code> ha de ser una de los tipos de letra
+          listados por <span><strong class="command">convert -list
+          type</strong></span>. Muchos de tus tipos de letra
+          instalados pueden no estar disponibles; si quieres
+          maximizar el número disponible para <span><strong class=
+          "command"><a href="CLI.html#CLI.makemenu" title=
+          "3. makemenu">makemenu</a></strong></span>, descarga el
+          script <a href=
+          "http://www.cit.gu.edu.au/~anthony/software/imagick_type_gen.pl"
+          target="_top">imagick_type_gen.pl</a> de <a href=
+          "http://www.cit.gu.edu.au/~anthony/anthony.html" target=
+          "_top">Anthony Thyssen</a> y ejecútalo como sigue:
+          <span><strong class="command">imagick_type_gen.pl &gt;
+          ~/.magick/type.xml</strong></span></p>
+        </dd>
+
+        <dt><span class="term">Cuando lanzo</span> <strong class=
+        "command">vcdxbuild my_disc.xml</strong>, obtengo:
+        <code class="computeroutput">ERROR: charset conversion
+        failed</code>. ¿Cómo lo arreglo?</dt>
+
+        <dd>
+          <p>Este es un problema que surge con algunas versiones de
+          <span><strong class="command">vcdxbuild</strong></span>.
+          Si te ocurre, prueba a usar <span><strong class=
+          "command">vcdxbuild --filename-encoding=iso8859-1
+          my_disc.xml</strong></span>.</p>
+        </dd>
+
+        <dt><span class="term">¿Dónde obtengo mjpegtools para
+        <a href="http://www.suse.com/" target="_top">SuSE</a>
+        Linux?</span></dt>
+
+        <dd>
+          <p>Prueba <a href=
+          "http://packman.links2linux.de/?action=154" target=
+          "_top">este enlace</a>.</p>
+        </dd>
+
+        <dt><span class="term">¿Dónde obtengo mjpegtools o mplayer
+        para <a href="http://www.debian.org/" target=
+        "_top">Debian</a> o una distribución basada en
+        Debian?</span></dt>
+
+        <dd>
+          <p>Usa el repositorio <span class=
+          "application">apt</span> de Christian Marillat, añadiendo
+          <code class="literal">deb
+          ftp://ftp.nerim.net/debian-marillat/ unstable main</code>
+          a tu fichero <code class=
+          "filename">/etc/apt/sources.list</code> .</p>
+        </dd>
+
+        <dt><span class="term">¿Cómo puedo ejecutar tovid como
+        proceso de fondo?</span></dt>
+
+        <dd>
+          <p>Prueba a ejecutarlo como sigue: <span><strong class=
+          "command">tovid (-options) &gt;logfile 2&gt;&amp;1
+          &lt;/dev/null &amp;</strong></span>. Esto ejecutará tovid
+          como proceso de fondo (y así puedes hacer otras tareas
+          con tu terminal) y enviará toda la salida de tovid a
+          <code class="filename">logfile</code>.</p>
+        </dd>
+
+        <dt><span class="term">Al ejecutar</span> <strong class=
+        "command">tovidgui.py</strong>, obtengo <code class=
+        "computeroutput">No module named wxPython.wx</code>, o
+        <code class="computeroutput">Error -3 while decompressing
+        data: invalid window size</code>.</dt>
+
+        <dd>
+          <p>Han ocurrido frecuentemente problemas con el wxPython
+          incluído en <a href="http://www.mandriva/" target=
+          "_top">Mandriva</a> y otras distribuciones Mandrake
+          Linux. <a href=
+          "http://www.createphpbb.com/phpbb/viewtopic.php?t=89&amp;mforum=tovid"
+          target="_top">Una posible solución es</a> actualizar
+          wxPythonGTK usando el último <a href=
+          "ftp://mandrake.mirrors.pair.com/Mandrakelinux/devel/cooker/SRPMS/main/"
+          target="_top">RPM de código fuente de Cooker</a>.</p>
+        </dd>
+
+        <dt><span class="term">Al ejecutar</span> <strong class=
+        "command">makedvd -burn</strong>, me sale <code class=
+        "computeroutput">unable to open64("/dev/dvd",O_RDONLY):
+        Permission denied</code>. ¿Qué significa?</dt>
+
+        <dd>
+          <p>Probablemente quiere decir que no tienes permiso para
+          tostar DVDs, y has de tostarlos con el usuario "root".
+          Para tostar como "root", ejecutat <span><strong class=
+          "command">su -c "makedvd -burn
+          MyDisc.xml"</strong></span>.</p>
+        </dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="navfooter">
+    <hr>
+
+    <table width="100%" summary="Navigation footer">
+      <tr>
+        <td width="40%" align="left"><a accesskey="p" href=
+        "ch06.html">Anterior</a>&nbsp;</td>
+
+        <td width="20%" align="center">&nbsp;</td>
+
+        <td width="40%" align="right">&nbsp;<a accesskey="n" href=
+        "ch08.html">Siguiente</a></td>
+      </tr>
+
+      <tr>
+        <td width="40%" align="left" valign="top">Registro de
+        cambios&nbsp;</td>
+
+        <td width="20%" align="center"><a accesskey="h" href=
+        "bk01.html">Inicio</a></td>
+
+        <td width="40%" align="right" valign="top">&nbsp;Consejos
+        breves y pruebas</td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+             <html><head><title>Python: Libtovid.TDL</title></head><body>
+<h2>Classes</h2>
+<dl class="class">
+<dt>Element</dt>
+<dd>
+<pre class="doc">
+A TDL element (Disc, Menu, or Video) with associated options.
+
+    The Element is automatically filled with default values for the
+    corresponding TDL element (from element_options); these may then
+    be overridden by user-defined values.
+    
+</pre>
+<dt>OptionDef</dt>
+<dd>
+<pre class="doc">
+Defines a single option, its default value, and documentation on its
+    usage and purpose.
+    
+    An example:
+        
+        OptionDef(
+            'debug',
+            '[no|some|all]',
+            'some',
+            "Amount of debugging information to display"
+           )
+
+    This is a definition of a 'debug' option, along with a human-readable
+    string showing expected argument formatting, a default value for the
+    option, and a string documenting the purpose and usage of the option.
+    
+</pre>
+</dl>
+<h2>Functions</h2>
+<dl class="function">
+<dt>strip_indentation(block)</dt>
+<dd><pre class="doc">Strip leading indentation from a multi-line string literal.
+    
+    Stolen from Brett Levin:
+    http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/145672</pre></dd>
+<dt>usage(elem)</dt>
+<dd><pre class="doc">Return a string containing usage noted for the given element type.</pre></dd>
+</dl>
+</body></html>

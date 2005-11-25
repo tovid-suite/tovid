@@ -1,0 +1,149 @@
+Using the command-line tools
+
+
+%!include(xhtml): ''navmenu.html''
+
+This chapter gives an overview of how to use the command-line tools; see the
+manpages for more detailed usage notes.
+
+If using the command line does not sound like your cup of tea, you may choose
+the tovid GUI instead. The GUI makes the disc authoring process much simpler
+and more interactive. See [Using the GUI gui.html].
+
+
+== The scripts ==
+
+tovid's foundation rests on a collection of shell scripts designed for specific
+tasks relevant to authoring a video disc. One script converts video, another
+makes menus, another generates the disc navigation structure, etc. Here's how
+it all fits together:
+
+[images/tovid_cli_organization.jpg]
+
+The blue gear icons are the primary tovid scripts. Each script has certain
+inputs and outputs; for example, the [tovid tovid.html] script takes any
+multimedia video file as input, and produces (S)VCD or DVD-compliant MPEG video
+files as output. The output of [tovid tovid.html] then becomes an input to
+makevcd or [makedvd makedvd.html], and so on.
+
+tovid follows the UNIX tradition of modularization. Rather than having a
+    single large program that does everything, tovid has several smaller programs
+    that do specific things:
+
+- [tovid tovid.html] converts arbitrary multimedia video files to (S)VCD, DVD,
+    or KVCD-compliant format.
+- [makemenu makemenu.html] create an MPEG menu, for navigating a video disc.
+- [makexml makexml.html] generates an XML description of video disc
+    content, compatible with vcdxbuild or
+    dvdauthor.
+- [makedvd makedvd.html] authors and optionally burns a DVD.
+- makevcd authors and optionally burns a VCD or SVCD (not
+    yet complete)
+
+
+=== Five steps ===
+
+Creating a video disc using the command-line tools boils down to five
+steps:
+
+- Plan ahead. Decide what videos you would like to
+    include on the disc, and whether you want to make an (S)VCD or a DVD. If you
+    have lots of videos, you may want to have navigational menus to select them
+    for playback. Sketch out an outline of what menus you want to have, and what
+    videos they will link to.
+- Encode the content. Almost all video sources need to be
+    converted to an (S)VCD or DVD-compliant format. The [tovid tovid.html]
+    script does this for you; use it to convert all the videos you want to
+    include. You can use tovid-batch to convert several
+    videos at once.
+- Create menus (optional). If you want your disc to have
+    interactive menus for navigation, use [makemenu makemenu.html]
+    to create them. This is where you will specify video titles, as they
+    will appear on the menu.
+- Layout the disc. This is where you specify exactly how
+    your disc will be organized. Provide the names of all your video and menu
+    files, and [makexml makexml.html] does the rest.
+- Author and burn. When you reach this step, you should
+    have several ``.mpg`` files (menus and videos), along with
+    an ``.xml`` file containing the disc layout. Give the
+    ``.xml`` file to makevcd or
+    [makedvd makedvd.html] to author and burn your disc.
+
+
+For a step-by-step example of creating a disc, see the
+[tovid howto howto.html].
+
+=== Other scripts ===
+
+There are several additional scripts customized for other tasks:
+- **[dvrequant dvrequant.html]** copies a single track, with
+    optional subtitles and multiple audio streams, from an existing
+    DVD.
+- **[idvid idvid.html]** identifies video files, telling
+    you the duration, resolution, codec, and other useful information.
+    Perhaps most important, it can tell you whether a given video file is
+    compliant with (S)VCD or DVD.
+- **makeslides** creates a still-image
+    slideshow, in (S)VCD format, from arbitrary images. Slideshows may
+    be included on a disc using the ``-slides`` option to
+    [makexml makexml.html].
+- **postproc** does post-processing on an
+    encoded/compliant MPEG video. It can shrink the video stream by reducing
+    quality, and it can adjust the audio/video synchronization.
+- **tovid-batch** processes multiple video
+    files using the same output options. Use this if you want to encode
+    several videos to the same format.
+- **tovid-interactive** is an interactive
+    command-line tool that prompts you for all the necessary
+    [tovid tovid.html] encoding options. Use this if you are
+    unfamiliar with the command line, but do not want to run the GUI for
+    whatever reason.
+
+
+Each of these is described in more detail in the sections that
+follow.
+
+
+== Configuration files ==
+
+The **[tovid tovid.html]** script implements the use of configuration files,
+allowing you to customize tovid's behavior and specify default encoding
+options. As of this writing, configuration files are not implemented for any
+other scripts in the suite.
+
+Configuration files are plain ASCII text.  The first line of the file begins
+with a script name (tovid); the remainder of the file consists of command-line
+options appropriate to that script.  Whitespace is ignored, and comments may be
+included on lines beginning with ``#``.
+
+```
+tovid
+# sample tovid configuration file
+
+# This is a comment; it will be ignored by tovid.
+
+# Always use NTSC format by default
+-ntsc
+
+# Run in "parallel" mode for faster execution and
+# reduced disk usage
+-parallel
+
+# Run in "debug" mode, so when something goes wrong
+# it's easier to diagnose
+-debug
+
+# Always overwrite existing output files.
+-overwrite
+```
+
+This format makes editing a snap, especially if you are already familiar with
+tovid's various command-line options.  You may find configuration files useful,
+if you get tired of entering the same options by hand for a bunch of videos, or
+if you want to customize your bitrates, menus, or formats for a certain
+project.
+
+The configuration file concept is expanded somewhat in the
+[tovid design language download/test.tdl.txt] (TDL), which will be
+implemented in the upcoming [pytovid pytovid.html] implementation.
+
