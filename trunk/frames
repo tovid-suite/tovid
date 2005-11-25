@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# Output a single frame from several videos
+#
+# frames takes at least two parameters: the frame to grab and a list of 
+# videos to grab from.
+
+if test $# -lt 2; then
+    echo "Usage: frames [frame] [infile1] [infile2] [...] [infileN]"
+    echo "e.g., frames 300 *.avi"
+    echo "      to grab the 300th frame of every .avi video."
+    exit 1
+fi
+
+FRAME="$1"
+shift
+
+while test $# -gt 0; do
+    mplayer -vo png -frames $FRAME "$1"
+    mv *$FRAME.png "frame-$FRAME.png"
+    rm -f 0*.png
+    shift
+done
