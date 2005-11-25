@@ -1,0 +1,57 @@
+Glossary
+
+
+%!include(xhtml): ''navmenu.html''
+
+: anamorphic widescreen
+    An anamorphic widescreen DVD is simply one that makes good use of vertical
+    resolution. Specifically, it means using DVD's 16:9 aspect ratio for all
+    videos having that aspect ratio or greater. In the context of filming,
+    anamorphic widescreen is a process using special lenses to maximize the use
+    of available film exposure area. For more information, see the
+    [The ABCs of Anamorphic DVD http://www.thedigitalbits.com/editorial/bz100298.html],
+    and the [Wikipedia article on anamorphic widescreen http://www.wikipedia.org/wiki/Anamorphic_widescreen].
+
+: DVD
+    Storage technology for optical discs. DVD media can be imprinted or
+    recorded with any of several different formats. DVD-ROM is the base format,
+    storing files in a UDF filesystem; DVD-Video is probably the most common
+    application format, and defines how video files are stored on the disc and
+    played back in a DVD player. DVD-Audio is another increasingly common
+    application format. See the
+    [DVD FAQ http://www.dvddemystified.com/dvdfaq.html] for more information.
+
+: [Python http://www.python.org/]
+    Interpreted programming language created by Guido van Rossum in 1990. Also
+    the name of the program that interprets Python.
+
+: NTSC
+    The analog television system used in most of the Americas and some parts of
+    East Asia. NTSC is named for the National Television System(s) Committee,
+    which created the standard. See the
+    [Wikipedia article on NTSC http://www.wikipedia.org/wiki/NTSC]
+    for more information.
+
+: PAL
+    The analog television system (more specifically, a color encoding) used in
+    most of the world except in most of the Americas, and parts of East Asia,
+    the Middle East, and Europe. PAL is short for phase-alternating line, phase
+    alternation by line or phase alternation line. See the
+    [Wikipedia article on PAL http://www.wikipedia.org/wiki/PAL] for more information.
+
+: SVCD
+    Super Video Compact Disc (SVCD) is a non-standardized format for storing
+    approximately one hour of medium-quality video on an ordinary compact disc.
+    Although SVCD has not been standardized, SVCD discs are playable in most
+    consumer-model DVD players. See
+    [What is SVCD? http://www.videohelp.com/svcd/]
+    for technical details and a list of SVCD-compatible players.
+
+: VCD
+    Video Compact Disc (VCD) is a standard format for storing slightly more
+    than one hour of low-quality video on an ordinary compact disc. VCD follows
+    the White Book standard, and is playable in most consumer-model DVD
+    players. See [What is VCD? http://www.videohelp.com/vcd/] for technical
+    details and a list of VCD-compatible players.
+
+

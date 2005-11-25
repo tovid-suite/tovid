@@ -1,0 +1,33 @@
+README
+=====================================================
+tovid
+Video disc authoring software
+Project homepage: http://tovid.sourceforge.net/
+=====================================================
+
+tovid is a suite of tools for creating video DVDs, VCDs,
+and SVCDs. It can convert your video files to the correct
+format, generate navigational menus, and create and burn
+the disc image.
+
+Please note that tovid is in its ALPHA phase of development.
+It should not be used for mission-critical applications;
+numerous bugs, quirks, and syntax errors undoubtedly remain.
+
+This program is provided "as is" without warranty of
+any kind. Use it at your own risk.
+
+=====================================================
+SUPPORT
+=====================================================
+
+If you need assistance or have questions about tovid,
+please consult the following (in order of preference):
+
+tovid documentation:
+    http://tovid.sourceforge.net/
+tovid discussion forum:
+    http://www.createphpbb.com/phpbb/?mforum=tovid
+tovid IRC channel:
+    irc.freenode.org, channel #tovid
+

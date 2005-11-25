@@ -1,0 +1,162 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+<head>
+  <meta name="generator" content=
+  "HTML Tidy for Linux/x86 (vers 1st August 2004), see www.w3.org">
+  <meta http-equiv="Content-Type" content=
+  "text/html; charset=utf-8">
+
+  <title>Comparaciones de vídeo</title>
+  <link rel="stylesheet" href="tovid_style.css" type="text/css">
+  <link rel="stylesheet" href="tovid_print.css" type="text/css">
+  <meta name="generator" content="DocBook XSL Stylesheets V1.68.1">
+  <link rel="start" href="bk01.html" title=
+  "Documentación de tovid">
+  <link rel="up" href="bk01.html" title="Documentación de tovid">
+  <link rel="prev" href="ch08.html" title=
+  "Consejos breves y pruebas">
+  <link rel="next" href="ch10.html" title=
+  "Notas para desarrolladores">
+</head>
+
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084"
+alink="#0000FF">
+  <div class="navheader">
+    <table width="100%" summary="Navigation header">
+      <tr>
+        <th colspan="3" align="center">Comparaciones de vídeo</th>
+      </tr>
+
+      <tr>
+        <td width="20%" align="left"><a accesskey="p" href=
+        "ch08.html">Anterior</a>&nbsp;</td>
+
+        <th width="60%" align="center">&nbsp;</th>
+
+        <td width="20%" align="right">&nbsp;<a accesskey="n" href=
+        "ch10.html">Siguiente</a></td>
+      </tr>
+    </table>
+    <hr>
+  </div>
+
+  <div class="chapter" lang="es">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h2 class="title"><a name="id2525181" id=
+          "id2525181"></a>Comparaciones de vídeo</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="toc">
+      <p><b>Tabla de contenidos</b></p>
+
+      <dl>
+        <dt><span class="sect1"><a href="ch09.html#id2525187">1.
+        Entrelazado</a></span></dt>
+      </dl>
+    </div>
+
+    <div class="sect1" lang="es">
+      <div class="titlepage">
+        <div>
+          <div>
+            <h2 class="title" style="clear: both"><a name=
+            "id2525187" id="id2525187"></a>1. Entrelazado</h2>
+          </div>
+        </div>
+      </div>
+
+      <p>Si quieres codificar vídeo entrelazado con
+      <span><strong class="command"><a href="CLI.html#CLI.tovid"
+      title="2. tovid">tovid</a></strong></span>, tienes que
+      considerar un cierto número de posibles planteamientos:</p>
+
+      <div class="figure">
+        <a name="id2525209" id="id2525209"></a>
+
+        <p class="title"><b>Figura 1. Tratamiento del
+        entrelazado</b></p>
+
+        <div class="mediaobject">
+          <img src="../images/interlacing_comparison.jpg" alt=
+          "Tratamiento del entrelazado">
+        </div>
+      </div>
+
+      <p>Fíjate primero en el ejemplo sin opciones de entrelazado
+      (none). Los líneas de cada campo están distorsionadas al
+      codificarse a MPEG, porque la imagen se ha tratado como un
+      recuadro <a href="go01.html#progresive"><em class=
+      "glossterm">progresivo</em></a>. Hasta la versión 0.18, la
+      opción recomendada era <code class=
+      "option">-deinterlace</code>, que intenta usar el mejor
+      algoritmo disponible para generar una imagen progresiva
+      restaurada de las imágenes entrelazadas de partida. Como
+      puedes ver, hay grandes mejoras. Pero incluso los algoritmos
+      buenos de desentrelazado desperdician hasta la mitad de la
+      resolución vertical existente. La imagen resultante es suave,
+      como debe ser todo recuadro de vídeo progresivo, pero se ha
+      perdido mucho del detalle original.</p>
+
+      <p>La versión 0.18 introduce dos opciones nuevas:
+      <code class="option">-interlaced</code> e <code class=
+      "option">-interlaced_bf</code>. Ambas codifican el vídeo a
+      salida entelazada MPEG, preservando la resolución vertical;
+      la segunda opción codifica el campo de abajo primero, lo cual
+      puede ser necesario en algunos vídeos. Fíjate cómo la imagen
+      con opción <code class="option">-interlaced</code> tiene
+      líneas horizontales nítidamente definidas alrededor de la
+      pala verde. Esto indica que los dos campos todavía están
+      separados, y mantendrán su resolución vertical todo el
+      trayecto hasta el reproductor de DVDs, el cual puede
+      integrarlos en una imagen progresiva, o puede simplemente
+      enviarlos a tu televisor; el formato ideal, porque los
+      televisores usan una imagen entrelazada.</p>
+
+      <p>Observa ahora cómo el borde de la mesa parece más dentado
+      en la imagen <code class="option">-interlaced_bf</code>. Esto
+      indica que la codificación con el campo de abajo primero, no
+      es apropiada para este vídeo. Si tu vído tiene este aspecto
+      durante la reproducción, prueba otra opción distinta de
+      entrelazado.</p>
+
+      <p>La opción <code class="option">-interlaced</code> es la
+      mejor para entrada entrelazada. VCD es el único formato que
+      no soporta codificación entrelazada; en este caso, se usa
+      automáticamente la mejor rutina disponible para
+      desentrelazado.</p>
+    </div>
+  </div>
+
+  <div class="navfooter">
+    <hr>
+
+    <table width="100%" summary="Navigation footer">
+      <tr>
+        <td width="40%" align="left"><a accesskey="p" href=
+        "ch08.html">Anterior</a>&nbsp;</td>
+
+        <td width="20%" align="center">&nbsp;</td>
+
+        <td width="40%" align="right">&nbsp;<a accesskey="n" href=
+        "ch10.html">Siguiente</a></td>
+      </tr>
+
+      <tr>
+        <td width="40%" align="left" valign="top">Consejos breves y
+        pruebas&nbsp;</td>
+
+        <td width="20%" align="center"><a accesskey="h" href=
+        "bk01.html">Inicio</a></td>
+
+        <td width="40%" align="right" valign="top">&nbsp;Notas para
+        desarrolladores</td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE article PUBLIC "-OASIS//DTD DocBook XML V4.3//EN" 
+"http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY howto "http://www.traduc.org/docs/howto/lecture/">
+<!ENTITY guide "http://www.traduc.org/docs/guides/lecture/">
+]>
+<article id="index" lang="fr">
+<articleinfo>
+  <title>tovid GUI tour</title>
+  <subtitle>Version française du document <foreignphrase lang="en">Tour of tovidGUI</foreignphrase></subtitle>
+  <author>
+	<firstname>Yves</firstname>
+	<surname>Jacolin</surname>
+  </author>
+  <othercredit role="traduction" class="translator">
+	<firstname>Yves</firstname>
+	<surname>Jacolin</surname>
+	<contrib>Adaptation française</contrib>
+	<email>softlibre chez free.fr</email>
+  </othercredit>
+  <othercredit role="relecture" class="translator">
+	<firstname>Damien</firstname>
+	<surname>Alliau</surname>
+	<contrib>Relecture de la version française</contrib>
+  </othercredit>
+  <releaseinfo>Version&nbsp;: 1.0.fr.1.0</releaseinfo>
+  <pubdate>1 avril 2005</pubdate>
+  <revhistory>
+  	<revision>
+		<revnumber>1.0.fr.1.0</revnumber>
+		<date>2005-04-01</date>
+		<authorinitials>YJA,DAL</authorinitials>
+		<revremark>Première traduction française</revremark>
+	</revision>
+  </revhistory>
+  <abstract><para>
+Ce document est un bref aperçu de TovidGUI, version 0.18a (preview release).
+  </para></abstract>
+ </articleinfo>
+
+<para><emphasis>Traducciones:</emphasis> 
+<ulink url="/index.html">English</ulink>
+<ulink url="/fr/">Français</ulink>
+</para>
+
+ <section>
+ <title>Copyright</title>
+  <para>Copyright &copy; 2005 Yves Jacolin et Damien Alliau pour la version française.</para>
+ </section>
+  <section>
+  	<title>Nouvelles versions de ce document</title>
+	<para>Vous trouverez la plus récente version française de ce document à l'adresse&nbsp;:
+	<ulink url="http://softlibre.free.fr/tovid" /> ou <ulink url="http://tovid.sourceforge.net/" />.</para>
+	<para>La version originale la plus récente de ce document est disponible à l'adresse&nbsp;: 
+	<ulink url="http://tovid.sourceforge.net/" />.</para>
+  </section>
+
+<section>
+<title>Aperçu de l'interface graphique Tovid</title>
+<para>Ce qui suit est un bref aperçu de TovidGUI, version 0.18a
+(parareview release). Aujourd'hui, l'interface a été
+déssinée pour une tâche relativement simple
+: créer un disque vidéo, en utilisant un groupe de
+vidéos fournis par vos soins. L'interface prend en charge
+toutes les conversions nécessaires (en utilisant <code>tovid</code>),
+la création d'un menu (avec <code>makemenu</code>), ou de
+documents hypermedia (à l'aide de <code>makexml</code>).
+</para>
+
+<para>Remarque : votre écran peut être sensiblement
+différent, selon le gestionnaire de fenêtre et le
+thème GTK+ que vous utilisez. Ces captures d'écran ont
+été réalisées avec <ulink url="http://www.xfce.org/" /> (XFCE 4.2) avec le thème
+XFCE-light et le sytle par défaut du gestionnaire de
+fenêtre.</para>
+</section>
+<section>
+<title>Écran de démarrage</title>
+<para>Lorsque vous démarrez pour la première fois
+l'interface graphique, vous verrez un écran comme celui-ci :
+</para>
+
+<figure id="disc_format">
+ <title>Choix du format du disque</title>
+ <graphic fileref="/images/gui_disc_format.png"/>
+</figure>
+
+<para>L'arborescence <emphasis>Disc layout</emphasis> sur la gauche
+représente la disposition de votre disque. Il grandira lorsque
+vous ajouterez des menus et des vidéos.
+Dans le panneau appelé <emphasis>Disc options</emphasis> à
+droite, vous pouvez choisir quelle sorte de disque vous voulez
+créer. Si vous avez un graveur de DVD, vous pouvez créer
+des DVD ; si vous avez un graveur de CD, vous pouvez créer des
+VCD et des SVCDs.
+</para>
+
+<figure id="repertoire_temp">
+ <title>Choix du répertoire de travail</title>
+ <graphic fileref="/images/gui_disc_working_dir.png"/>
+</figure>
+
+<para>Également dans le panneau <emphasis>Disc options</emphasis>,
+vous pouvez choisir un répertoire de travail
+à utiliser pour les fichiers temporaires
+nécéssaires au traitement pour l'encodage. Ce
+répertoire doit avoir assez
+d'espace paraour encoder toutes les vidéos, soyez certain
+d'utiliser un répertoire avec plusieurs gigaoctets de
+disponible, spécialement
+si vous créer un DVD.
+</para>
+<para>Dans l'arborescence <emphasis>Disc layout</emphasis>, vous pouvez
+éditer le titre d'un article en cliquant dessus.
+Cliquez sur le titre, près de l'icône du disque si vous
+voulez changer le titre du disque.
+</para>
+<para>Lorsque vous êtes satisfait de vos options,
+sélectionnez le bouton <emphasis>Add menu</emphasis>
+paraour ajouter du contenu au disque. Un menu est obligatoire afin de
+naviguer dans le disque, vous devez donc ajouter un menu avant d'aller
+plus loin. Vous pourrez toujours revenir à cet écran en
+sélectionnant sur l'icône représentant le disque
+dans l'arborescence.
+</para>
+</section>
+<section>
+<title>Ajouter un menu</title>
+<para>Procédez à la création du disque en
+sélectionant le bouton <emphasis>Add menu</emphasis>. Lorsque vous
+ajoutez un nouveau menu, vous apercevrez un nouvel écran comme
+celui-ci :
+</para>
+
+<figure id="option_menu">
+ <title>Options des menus</title>
+ <graphic fileref="/images/gui_menu_options.png"/>
+</figure>
+
+<para> Lorsque un menu est sélectionné dans l'arborescence
+du <emphasis>Disc layout</emphasis>,
+les oparations d'encodage relevant de ce menu sont affichées dans
+le panneau <emphasis>Menu options</emphasis>, à droite.
+Une fois encore vous pouvez cliquer sur le titre du menu dans
+l'arborescence (à côté de l'icône menu) pour
+éditer le titre du menu.</para>
+<para>Dans le panneau <emphasis>Menu options</emphasis>, vous pouvez choisir
+une image à afficher à l'arrière-plan du menu, ajouter un clip audio à
+jouer lors de l'affichage du menu. Si vous ne choisissez pas une image d'arrière-plan ou
+un clip audio, un arrière-plan par défaut sera utilisé, et aucun son ne sera joué lorsque le menu sera
+affiché. Vous pouvez définir, ici, la police, l'alignement, et la couleur des choix listés dans le menu.
+</para>
+<para>Maintenant que vous avez un menu, vous pouvez ajouter des
+vidéos au disque en sélectionnant le bouton <emphasis>Add
+video(s)</emphasis>.</para>
+<para>Remarque : le bouton <emphasis>Add slide(s)</emphasis> sera
+utilisé dans le futur
+pour ajouter des diapositives au disque. Pour la version initiale
+(version 0.18), cependant, ce paramètre
+ne sera pas disponible.
+</para>
+</section>
+<section>
+<title>Ajouter des vidéos</title>
+<para>Lorsque vous sélectionnez <emphasis>Add video(s)</emphasis>, une
+fenêtre sera affichée vous permettant
+de choisir un ou plusieurs fichiers vidéos à ajouter sous
+le menu sélectionné.
+Après avoir ajouter quelques vidéos, la fenêtre
+sera à peu près comme cela :
+</para>
+
+<figure id="ajout_video">
+ <title>Ajout d'une vidéo</title>
+ <graphic fileref="/images/gui_videos_added.png"/>
+</figure>
+
+<para>Les vidéos seront listées dans l'arborescence avec une
+icône ressemblant à un bout de film. Là encore, vous pouvez cliquer 
+sur le titre pour l'éditer ; initialement, le titre du fichier
+est celui du fichier. Vous remarquerez le panneau <emphasis>Menu options</emphasis>
+affiche maintenant une liste de titre listé dans le menu ; la
+police sélectionnée, l'alignement, et la couleur
+s'appliquera à ces titres lorsqu'ils seront affichés au
+menu final.
+</para>
+</section>
+<section>
+<title>Menus multiples</title>
+<para>Si vous avez beaucoup de vidéos, vous pouvez vouloir diviser
+votre disque en plusieurs sous-menus. Pour cela, sélectionner <emphasis>Add
+menu</emphasis> de nouveau.
+Si vous faites cela, la disposition de l'arborescence sera modifier
+comme cela :
+</para>
+
+<figure id="ajout_menu">
+ <title>Ajout d'un menu</title>
+ <graphic fileref="/images/gui_second_menu_added.png"/>
+</figure>
+
+<para>Remarquez que "Main menu" est apparu au-dessus des deux menus sans
+titre.
+Ce menu principal est utilisé afin de naviguer vers les autres
+menus. Vous pouvez placer autant de vidéos que vous voulez dans
+chaque menu. Vous pouvez changer la police, la couleur et
+l'arrière-plan du menu principal de la même
+manière que vous le faite pour les autres menus ; la seule
+différence est que ce menu principal affiche les liens vers les
+autres menus, plutôt que vers des vidéos.
+</para>
+<para>Si vous voulez la même police, le même alignement, et
+les mêmes couleurs
+pour tous vos menus, choisissez <emphasis>Use these settings for all
+menus</emphasis>.
+Ce bouton copiera le paramètrage courant vers tous les menus du
+disque.
+</para>
+<para>Le menu principal est relié à chaque sous-menu en
+dessous de lui, et chaque sous-menu affichera automatiquement un bouton
+"back" qui permettra le retour au menu principaraal. Le premier menu qui
+est listé dans l'arborescence <emphasis>Disc layout</emphasis> sera
+le premier que vous verez lors du lancement
+du disque, avec n'importe quel nombre de sous-menu ajouté.
+</para>
+</section>
+<section>
+<title>Options video</title>
+<para>Maintenant que des vidéos ont été
+ajoutées, vous pouvez décider de la
+manière de les encoder. Lorsque vous sélectionnez une
+vidéo dans l'arborescence,
+le panneau <emphasis>Video options</emphasis> est affiché,
+affichant toute les options de configuration qui s'applique à la
+vidéo :
+</para>
+
+<figure id="options_encodage">
+ <title>Les options d'encodage de la vidéo</title>
+ <graphic fileref="/images/gui_video_enc_opts.png"/>
+</figure>
+
+<para>La résolution d'export pour chaque vidéos
+dépend du format du disque
+que vous avez choisit ; certaines résolutions ne sont pas
+disponibles avec
+certains formats. Si vous ne souhaitez pas utiliser la
+résolution de la vidéo disponible, vous pouvez revenir en
+arrière et modifier le format du disque en cliquant sur
+l'icône du disque dans l'arborescence. Vous pouvez
+aussi choisir une proportion paraour l'affichage de la vidéo : le
+format widescreen sera éventuellement entouré de bande
+noire pour s'afficher correctement sur votre télé.
+</para>
+<para>Si vous le voulez, vous pouvez ajuster le flux vidéo et
+audio. Les valeurs par défaut sont généralement
+raisonnables, vous pouvez donc les laisser tels quel si vous
+n'êtes pas s&ucirc;r de savoir lequel utiliser.
+Finalement, vous pouvez permettre des options additionnelles telles que
+la normalisation audio (utile lorsque le son est soit trop haut, soit
+trop bas), vidéo de faible qualité (si vous voulez
+accélérer l'encodage aux dépends de la
+qualité), ou désintrelacement vidéo (si la source
+vidéo a été enregistrée à partir
+d'un flux enterlacé ou VHS).
+</para>
+<para>Pour utiliser le même paramétrage pour toutes les
+vidéos sur le disque, sélectionnez le bouton <emphasis>Use
+these settings for all videos</emphasis>.
+La résolution, la proportion de l'écran, les flux et les
+autres options
+actuellement sélectionnés seront appliqués
+à toutes les vidéos de l'arborescence.
+</para>
+<para>Vous pouvez utiliser les boutons <emphasis>Move upara</emphasis>, <emphasis>Move
+down</emphasis>, et
+<emphasis>Remove</emphasis> dans l'arborescence de la disposition pour
+positionner
+les éléments où vous désirez ou les enlever
+du disque.
+</para>
+<para>Lorsque vous êtes satisfait de la disposition de votre disque,
+sélectionnez le bouton <emphasis>Next: Encoding setupara</emphasis>
+pour procéder à l'encodage et à la création
+du disque :
+</para>
+
+<figure id="disposition_fin">
+ <title>La disposition du disque est terminée</title>
+ <graphic fileref="/images/gui_layout_done.png"/>
+</figure>
+
+<para>Vous voudrez certainement vous assurer que tout vos menus et tous
+vos
+titres vidéos sont comme vous le souhaiter avant d'avancer plus
+loin, alors
+vérifiez pour être certain qu'il n'y est plus de titre
+"Untitled" dans
+l'arborescence. Mais ne vous en faites pas, vous pourrez revenir en
+arrière
+si vous cliquez sur le bouton par accident.
+</para>
+</section>
+<section>
+<title>Tout encoder</title>
+<para>Lorsque vous sélectionnez <emphasis>Next: Encoding setupara</emphasis>,
+vous
+arrivez à un nouveau panneau affichant une fenêtre de log
+d'une sortie de commande :
+</para>
+
+<figure id="setup_encodage">
+ <title>Paramétrage de l'encodage</title>
+ <graphic fileref="/images/gui_encoding_setup.png"/>
+</figure>
+
+<para>Dans la version 0.18a, le "répertoire de sortie" est
+ignoré (mais dans la version officiel, il sera placé
+où l'image du disque sera créée).
+Sélectionnez <emphasis>Next: Begin encoding</emphasis> pour
+démarrer le tout.
+Si vous avez sélectionnez plusieurs vidéos, cette
+étape peut prendre plusieurs
+heures. La sortie du log sera mis à jour
+régulièrement pour vous informer
+de la progression de l'encodage. Lorsque c'est fini, la prochaine
+étape est de finaliser l'image disque en créant la
+structure du disque final.
+</para>
+</section>
+<section>
+<title>Créer l'image disque</title>
+<para>Dans la version 0.18a de l'interface graphique de Tovid, vous devez
+faire cette étape à la main. L'interface vous informera
+lorsque le fichier XML
+sera prêt à être édité ; si vous
+désirez faire un VCD ou un SVCD, vous aurez besoin de
+vcdxbuilder pour finaliser le disque, en utilisant la ligne de commande
+comme <code>vcdxbuild /path/to/output.xml</code>.
+Si vous utilisez un format DVD, vous devez utiliser dvdauthor pour le
+finaliser,
+en utilisant la commande <code>dvdauthor -x /path/to/output.xml</code>.
+L'interface vous donnera le chemin complet du fichier XML. </para>
+<para>La version final 0.18 aure au moins la capacité à
+finaliser, mais
+il sera peut être nécessaire de graver le disque à
+la main avec cdrecord, K3B, etc.
+</para>
+</section>
+<section>
+<title>Capture d'écran de la version en dévelopemment</title>
+<para>Le développement de l'interface progresse doucement, et les
+captures d'écran
+ci-dessus peuvent ne pas ressembler exactement à ce que vous
+verrez chez vous.
+Ce guide sera mis à jour régulièrement au fur et
+à mesure que les fonctionnalités
+apparaîtront, mais à cause du temps que pend la
+création des captures d'écran,
+ce guide ne sera pas mis à jour pour chaque version.
+</para>
+<para>Cette section montre plusieurs capture d'écran de la version
+en développement
+de l'interface TovidGUI (actuellement la version 0.18), avec une courte
+description
+de ce qui est affiché sur l'écran.
+</para>
+
+<figure id="panneau_guide">
+ <title>Le nouveau panneau d'informations pour vous guier</title>
+ <graphic fileref="/images/gui_devel_guide_panel_thumb.png"/>
+</figure>
+
+<para><emphasis>Panneau d'Information</emphasis>. C'est un nouveau
+système d'aide qui a été implémenté
+afin d'aider les utilisateurs étape après étape.
+Le panneau d'informations
+est une longue boîte contenant du texte qui décrit la
+tâche en cour dans l'interface, et ce que vous pouvez y faire. Ce
+panneau prennant beaucoup plus d'espace, un nouveau menu
+<emphasis>View</emphasis> a été ajouté, et qui inclut
+l'option caché/montré le panneau
+d'informations.
+</para>
+<para>Cette approche a été choisit pour la
+possibilité d'avoir un système d'aide efficace. Dans les
+versions futures, ce panneau pourrait avoir d'autres utilisations,
+être interactive (par des liens hypertextes vers un article
+lié) et y faire des recherches. Il sera proche du panneau de
+navigation d'une fenêtre d'aide standard, et consistera en une
+page HTML avec du texte, des images, etc.
+</para>
+<para>L'avantage de cela par rapport à un système d'aide
+traditionnel, avec ses fenêtres de dialogue
+séparées, est de réduire la maintenance des
+fenêtres. Lorsque je recherche
+de l'aide, j'essaie habituellement de faire quelque chose avec le
+programme en
+même temps. De cette façon, je n'ai pas à modifier
+la taille des fenêtres afin
+de l'arranger. Elles sont déjà prêtes, et
+dessinées pour une présentation optimale
+de l'aide.
+</para>
+<para>Faire cela, entraînera certainement la dispersion de
+l'interface en plusieurs fichiers dépendant ; le code HTML
+utilisé pour un tel système devra être
+formaté afin que wxWidgets puisse l'utiliser, et consistera en
+plusieurs fichiers séparés.
+Cela devra être installé dans votre <code>/usr/local/share/doc</code>
+ou un endroit similaire, ce qui signifie que l'installeur de tovid devra
+être mis à jour, et presque certainement un fichier de
+configuration au niveau de l'utilisateur sera sauvegardé (afin
+que l'interface sache où trouver les fichiers de
+documentations).
+</para>
+<para>Alors, pour l'instant, le panneau d'informations est simplement
+quelques paragraphes, codé en dur dans le code de l'interface.
+Mais c'est un bon début, et il y a beaucoup de
+possibilités !
+</para>
+</section>
+</article>

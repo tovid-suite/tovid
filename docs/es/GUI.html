@@ -1,0 +1,878 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+<head>
+  <meta name="generator" content=
+  "HTML Tidy for Linux/x86 (vers 1st August 2004), see www.w3.org">
+  <meta http-equiv="Content-Type" content=
+  "text/html; charset=utf-8">
+
+  <title>Usando el interfaz gráfico (GUI)</title>
+  <link rel="stylesheet" href="tovid_style.css" type="text/css">
+  <link rel="stylesheet" href="tovid_print.css" type="text/css">
+  <meta name="generator" content="DocBook XSL Stylesheets V1.68.1">
+  <link rel="start" href="bk01.html" title=
+  "Documentación de tovid">
+  <link rel="up" href="bk01.html" title="Documentación de tovid">
+  <link rel="prev" href="GettingStarted.html" title="Preparación">
+  <link rel="next" href="CLI.html" title=
+  "Uso de las herramientas de la línea de comandos">
+</head>
+
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084"
+alink="#0000FF">
+  <div class="navheader">
+    <table width="100%" summary="Navigation header">
+      <tr>
+        <th colspan="3" align="center">Usando el interfaz gráfico
+        (GUI)</th>
+      </tr>
+
+      <tr>
+        <td width="20%" align="left"><a accesskey="p" href=
+        "GettingStarted.html">Anterior</a>&nbsp;</td>
+
+        <th width="60%" align="center">&nbsp;</th>
+
+        <td width="20%" align="right">&nbsp;<a accesskey="n" href=
+        "CLI.html">Siguiente</a></td>
+      </tr>
+    </table>
+    <hr>
+  </div>
+
+  <div class="chapter" lang="es">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h2 class="title"><a name="GUI" id="GUI"></a>Usando el
+          interfaz gráfico (GUI)</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="toc">
+      <p><b>Tabla de contenidos</b></p>
+
+      <dl>
+        <dt><span class="sect1"><a href="GUI.html#id2519299">1.
+        Prestaciones y capacidades</a></span></dt>
+
+        <dt><span class="sect1"><a href="GUI.html#id2519364">2. Uso
+        y disfrute</a></span></dt>
+
+        <dt><span class="sect1"><a href="GUI.html#id2519398">3.
+        Cómo funciona</a></span></dt>
+
+        <dt><span class="sect1"><a href="GUI.html#id2519444">4.
+        Visita guiada al GUI</a></span></dt>
+
+        <dd>
+          <dl>
+            <dt><span class="sect2"><a href=
+            "GUI.html#id2519528">4.1. Pantalla de
+            arranque</a></span></dt>
+
+            <dt><span class="sect2"><a href=
+            "GUI.html#id2519647">4.2. Añadiendo un
+            menú</a></span></dt>
+
+            <dt><span class="sect2"><a href=
+            "GUI.html#id2519768">4.3. Adición de
+            videos</a></span></dt>
+
+            <dt><span class="sect2"><a href=
+            "GUI.html#id2519832">4.4. Múltiples
+            menús</a></span></dt>
+
+            <dt><span class="sect2"><a href=
+            "GUI.html#id2519919">4.5. Opciones de
+            vídeo</a></span></dt>
+
+            <dt><span class="sect2"><a href=
+            "GUI.html#id2520071">4.6. Codificando
+            todo</a></span></dt>
+
+            <dt><span class="sect2"><a href=
+            "GUI.html#id2520132">4.7. Creación de la imagen de
+            disco</a></span></dt>
+
+            <dt><span class="sect2"><a href=
+            "GUI.html#id2520178">4.8. Pantallazos de
+            desarrollo</a></span></dt>
+          </dl>
+        </dd>
+
+        <dt><span class="sect1"><a href="GUI.html#id2465895">5.
+        Planes futuros</a></span></dt>
+      </dl>
+    </div>
+
+    <p>El interfaz gráfico de tovid (<span><strong class=
+    "command">tovidgui.py</strong></span>) es la cara amable de
+    tovid. Desde el GUI, puedes dar estructura, codificar y tostar
+    un <a href="go01.html#VCD"><em class="glossterm">VCD</em></a>,
+    <a href="go01.html#SVCD"><em class="glossterm">SVCD</em></a>, o
+    <a href="go01.html#DVD"><em class="glossterm">DVD</em></a> con
+    menús y videos.</p>
+
+    <p>El GUI es principalmente una fachada para los componentes
+    del interfaz de línea de comandos; aparte de pequeñas
+    prestaciones interactivas, el GUI no puede hacer nada que las
+    herramientas de la línea de comando no puedan hacer. Si
+    prefieres usar un interfaz de línea de comandos, puede que
+    quieras saltar hasta <a href="CLI.html" title=
+    "Uso de las herramientas de la línea de comandos">Uso de las
+    herramientas de la línea de comandos</a>.</p>
+
+    <div class="sect1" lang="es">
+      <div class="titlepage">
+        <div>
+          <div>
+            <h2 class="title" style="clear: both"><a name=
+            "id2519299" id="id2519299"></a>1. Prestaciones y
+            capacidades</h2>
+          </div>
+        </div>
+      </div>
+
+      <div class="itemizedlist">
+        <ul type="disc">
+          <li>
+            <p>Sencillo proceso en tres pasos para autoría de
+            discos de vídeo</p>
+          </li>
+
+          <li>
+            <p>Los discos pueden tener un único menú enlazando a
+            varios videos, o un una jerarquía de dos niveles de
+            menús (menú principal enlazando a varios submenús, cada
+            uno con enlaces a varios videos)</p>
+          </li>
+
+          <li>
+            <p>El árbol de estructura del disco permite la fácil
+            edición de la navegación por el disco</p>
+          </li>
+
+          <li>
+            <p>En los menús, la imagen y sonido de fondo, los
+            colores del texto, los tipos de letra, y la alineación
+            son configurables (mira la documentación de
+            <span><strong class="command"><a href=
+            "CLI.html#CLI.makemenu" title=
+            "3. makemenu">makemenu</a></strong></span> para
+            encontrar consejos sobre cómo maximizar el número de
+            tipos de letra disponibles)</p>
+          </li>
+
+          <li>
+            <p>La resolución del vídeo, la relación de aspecto, la
+            tasa de bits por segundo, y otras opcions son
+            configurables</p>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sect1" lang="es">
+      <div class="titlepage">
+        <div>
+          <div>
+            <h2 class="title" style="clear: both"><a name=
+            "id2519364" id="id2519364"></a>2. Uso y disfrute</h2>
+          </div>
+        </div>
+      </div>
+
+      <p>Suponiendo que has instalado la familia tovid en algún
+      directorio incluído en la variable PATH, (véase las
+      instrucciones de instalación), todo lo que tiene que hacer es
+      ejecutar <span><strong class=
+      "command">tovidgui.py</strong></span>. El GUI de tovid no
+      funcionará adecuadamente a menos que hayas instalado la
+      familia tovid en algún directorio incluído en la variable
+      PATH.</p>
+
+      <p>Por el momento, el GUI de tovid no acepta parámetros al
+      invocarse desde la línea de comando.</p>
+    </div>
+
+    <div class="sect1" lang="es">
+      <div class="titlepage">
+        <div>
+          <div>
+            <h2 class="title" style="clear: both"><a name=
+            "id2519398" id="id2519398"></a>3. Cómo funciona</h2>
+          </div>
+        </div>
+      </div>
+
+      <p>El GUI de tovid, en su diseño actual, opera según una
+      sencilla noción: tú pones los ficheros de vídeo, y
+      opcionalmente una imagen de fondo o un trocito de audio, para
+      cada menú. El GUI lleva a cabo todas las conversiones
+      ncesarias, y crea un (S)VCD o DVD:</p>
+
+      <div class="figure">
+        <a name="id2519416" id="id2519416"></a>
+
+        <p class="title"><b>Figura 1. Diagrama de flujo de datos en
+        el GUI</b></p>
+
+        <div>
+          <img src="../images/tovid_gui_organization.jpg" alt=
+          "Diagrama de flujo de datos en el GUI">
+        </div>
+      </div>
+
+      <p>Si estás interesado en saber más detalles de lo que ocurre
+      tras el telón, lee <a href="CLI.html" title=
+      "Uso de las herramientas de la línea de comandos">Uso de las
+      herramientas de la línea de comandos</a>.</p>
+    </div>
+
+    <div class="sect1" lang="es">
+      <div class="titlepage">
+        <div>
+          <div>
+            <h2 class="title" style="clear: both"><a name=
+            "id2519444" id="id2519444"></a>4. Visita guiada al
+            GUI</h2>
+          </div>
+        </div>
+      </div>
+
+      <p>Seguidamente proponemos un viajecito por el interfaz
+      gráfico y una guía sobre cómo usarlo. En estos momentos, el
+      GUI está diseñado con un tarea relativamente sencilla en
+      mente: Crear un disco de vídeo, usando un puñado de videos.
+      El GUI gestiona todas las conversiones necesarias (using
+      <span><strong class="command"><a href="CLI.html#CLI.tovid"
+      title="2. tovid">tovid</a></strong></span>), la creación del
+      menú(s) (usando <span><strong class="command"><a href=
+      "CLI.html#CLI.makemenu" title=
+      "3. makemenu">makemenu</a></strong></span>), y la autoría del
+      disco (usando <span><strong class="command"><a href=
+      "CLI.html#CLI.makexml" title=
+      "4. makexml">makexml</a></strong></span>).</p>
+
+      <div class="note" style=
+      "margin-left: 0.5in; margin-right: 0.5in;">
+        <div class="title">
+          Nota
+        </div>
+
+        <p>El GUI está todavía en desarrollo; en tu pantalla puede
+        parecer ligeramente diferente, dependiendo de la versión
+        del GUI, gestor de ventanas y tema GTK+ que utilices. Estos
+        pantallazos se tomaron usando la versión 0.18a (versión de
+        preestreno) de <span><strong class=
+        "command">tovidgui.py</strong></span> , ejecutándose bajo
+        <span class="application"><a href="http://www.xfce.org/"
+        target="_top">XFCE 4.2</a></span> con el tema XFCE-light y
+        el estilo por omisión para el gestor de ventanas.</p>
+      </div>
+
+      <div class="sect2" lang="es">
+        <div class="titlepage">
+          <div>
+            <div>
+              <h3 class="title"><a name="id2519528" id=
+              "id2519528"></a>4.1. Pantalla de arranque</h3>
+            </div>
+          </div>
+        </div>
+
+        <p>Cuando lances por primera vez el GUI de tovid, verás una
+        pantalla tal que esta:</p>
+
+        <div class="figure">
+          <a name="id2519540" id="id2519540"></a>
+
+          <p class="title"><b>Figura 2. Selección de un formato de
+          disco</b></p>
+
+          <div class="screenshot">
+            <div>
+              <img src="../images/gui_disc_format.png" alt=
+              "Selección de un formato de disco">
+            </div>
+          </div>
+        </div>
+
+        <p>El árbol <span class="guilabel">Disc layout</span> en el
+        lado izquierdo representa la estructura de tu disco. Irá
+        creciendo conforme añadas menús y videos. En el panel
+        <span class="guilabel">Disc options</span> a la derecha,
+        puedes escoger qué tipo de disco quieres hacer. Si tienes
+        una unidad grabadora de DVDs, puedes crear DVDs; si tienes
+        una unidad grabadora de CDs, puedes crear VCDs y SVCDs.</p>
+
+        <div class="figure">
+          <a name="id2519582" id="id2519582"></a>
+
+          <p class="title"><b>Figura 3. Árbol de estructura de
+          disco y directorio temporal</b></p>
+
+          <div class="screenshot">
+            <div>
+              <img src="../images/gui_disc_working_dir.png" alt=
+              "Árbol de estructura de disco y directorio temporal">
+            </div>
+          </div>
+        </div>
+
+        <p>También en el panel <span class="guilabel">Disc
+        options</span>, puedes escoger un directorio de trabajo,
+        necesario para los ficheros temporales que se creen durante
+        la codificación. Este directorio debe tener suficiente
+        espacio para codificar todos los videos, así que comprueba
+        que has escogido un directorio con varios GB disponibles,
+        especialmente si estás creando un disco DVD grande.</p>
+
+        <p>En el árbol <span class="guilabel">Disc layout</span>,
+        puedes editar el título de un elemento pulsando el ratón
+        sobre él. Haz clic sobre el título al lado del icono de
+        disco si quieres cambiar el título del disco.</p>
+
+        <p>Cuando ya estés satisfecho con las opciones que has
+        escogido aquí, selecciona el botón <span class=
+        "guibutton">Add menu</span> para empezar a añadir contenido
+        al disco. Hace falta al menos un menú para navegar por el
+        disco, así que debes añadir un menú antes de seguir
+        avanzando. Siempre puedes volver a esta pantalla
+        seleccionando el icono de disco que aparece en el
+        árbol.</p>
+      </div>
+
+      <div class="sect2" lang="es">
+        <div class="titlepage">
+          <div>
+            <div>
+              <h3 class="title"><a name="id2519647" id=
+              "id2519647"></a>4.2. Añadiendo un menú</h3>
+            </div>
+          </div>
+        </div>
+
+        <p>Prosigue con la creación del disco seleccionando el
+        botón <span class="guibutton">Add menu</span>. Cuando
+        añadas un menú, verás una ventana nueva como esta:</p>
+
+        <div class="figure">
+          <a name="id2519676" id="id2519676"></a>
+
+          <p class="title"><b>Figura 4. Configuración de un
+          menú</b></p>
+
+          <div class="screenshot">
+            <div>
+              <img src="../images/gui_menu_options.png" alt=
+              "Configuración de un menú">
+            </div>
+          </div>
+        </div>
+
+        <p>Cuando se selecciona un menú en el árbol <span class=
+        "guilabel">Disc layout</span>, las opciones relevantes de
+        codificación a tal menú se muestran en el panel de opciones
+        de <span class="guilabel">Menu</span> que está a la
+        derecha. Una vez más, puedes hacer clic sobre el título del
+        menú en el árbol (al lado del icono de menú) para editar el
+        título del menú.</p>
+
+        <p>En el panel <span class="guilabel">Menu options</span>,
+        puedes escoger una imagen como fondo del menú, y también se
+        puede reproducir un corte de sonido mientras se muestra el
+        menú. Si no escoges imagen de fondo ni sonido, se usa un
+        fondo por omisión, y no habrá sonido mientras el menú
+        aparezca en pantalla. Aquí también puedes configurar el
+        tipo de letra, alineación, y color de los elementos
+        mostrados en el menú.</p>
+
+        <p>Ahora que ya tienes un menú, puedes añadirle videos
+        seleccionando el botón <span class="guibutton">Add
+        video(s)</span>.</p>
+
+        <div class="note" style=
+        "margin-left: 0.5in; margin-right: 0.5in;">
+          <div class="title">
+            Nota
+          </div>
+
+          <p>El botón <span class="guibutton">Add slide(s)</span>
+          se usará en el futuro para añadir un carrusel de
+          diapositivas a un disco. En la entrega inicial (versión
+          0.18), sin embargo, esta característica está
+          desactivada.</p>
+        </div>
+      </div>
+
+      <div class="sect2" lang="es">
+        <div class="titlepage">
+          <div>
+            <div>
+              <h3 class="title"><a name="id2519768" id=
+              "id2519768"></a>4.3. Adición de videos</h3>
+            </div>
+          </div>
+        </div>
+
+        <p>Cuando seleccionas <span class="guibutton">Add
+        video(s)</span>, aparece una ventana se selección de
+        ficheros donde puedes seleccionar uno o más videos que se
+        añadirán al menú seleccionado. Tras añadir algunos videos,
+        la pantalla tiene una apariencia similar a esta:</p>
+
+        <div class="figure">
+          <a name="id2519791" id="id2519791"></a>
+
+          <p class="title"><b>Figura 5. Adición de videos</b></p>
+
+          <div class="screenshot">
+            <div>
+              <img src="../images/gui_videos_added.png" alt=
+              "Adición de videos">
+            </div>
+          </div>
+        </div>
+
+        <p>Los videos se muestran en el árbol con un icono a su
+        lado que representa una tira de película. Una vez más,
+        puedes hacer clic sobre los títulos para editarlos;
+        inicialmente, el título de cada vídeo es el mismo que el
+        nombre del fichero. Observarás que el panel <span class=
+        "guilabel">Menu options</span> muestra ahora la lista de
+        títulos que aparecen en en ese menú; y también el tipo de
+        letra seleccionado, la alineación, y color que se aplicarán
+        a tales títulos cuando se muestren en el menú ya
+        acabado.</p>
+      </div>
+
+      <div class="sect2" lang="es">
+        <div class="titlepage">
+          <div>
+            <div>
+              <h3 class="title"><a name="id2519832" id=
+              "id2519832"></a>4.4. Múltiples menús</h3>
+            </div>
+          </div>
+        </div>
+
+        <p>Si tienes muchos videos, puede que quieras dividir tu
+        disco en varios submenús. Para lograrlo, simplemente
+        selecciona de nuevo <span class="guilabel">Add menu</span>.
+        Si así lo haces, la disposición del árbol cambiará para
+        aparecer como sigue:</p>
+
+        <div class="figure">
+          <a name="id2519855" id="id2519855"></a>
+
+          <p class="title"><b>Figura 6. Adición de otro
+          menú</b></p>
+
+          <div class="screenshot">
+            <div>
+              <img src="../images/gui_second_menu_added.png" alt=
+              "Adición de otro menú">
+            </div>
+          </div>
+        </div>
+
+        <p>Observarás que ha surgido un "Main menu" sobre los dos
+        menús sin título. Este menú principal se usa para navegar a
+        los otros menús. Puedes poner tantos videos como gustes
+        dentro de cada menú. Puedes cambiar el tipo de letra, color
+        y fondo del menú principal tal y como puedes hacerlo en
+        otros menús; la diferencia reside en que el menú principal
+        enlaza a otros menús, en vez de a videos.</p>
+
+        <p>Si deseas usar el mismo tipo de letra, alineación, color
+        y fondo para todos los menús de tu disco, marca
+        <span class="guibutton">Use these settings for all
+        menus</span>. Este botón copiará estos ajustes a todos los
+        menús del disco.</p>
+
+        <p>El menú principal enlaza a cada uno de los submenús bajo
+        él, y cada submenú incluirá automáticamente un enlace
+        "Back" que vuelve al menú principal. Independientemente de
+        cuántos menús añadas, el primer menú listado en el árbol
+        <span class="guilabel">Disc layout</span> será el primero
+        que veas cuando reproduzcas el disco.</p>
+      </div>
+
+      <div class="sect2" lang="es">
+        <div class="titlepage">
+          <div>
+            <div>
+              <h3 class="title"><a name="id2519919" id=
+              "id2519919"></a>4.5. Opciones de vídeo</h3>
+            </div>
+          </div>
+        </div>
+
+        <p>Ahora que tenemos añadidos algunos videos, puedes deidir
+        cómo deseas codificarlos. Cuando seleccionas un vídeo en el
+        árbol, se muestra el panel de <span class="guilabel">Video
+        options</span>, mostrando todas las opciones de
+        configuración aplicables a tal vídeo:</p>
+
+        <div class="figure">
+          <a name="id2519942" id="id2519942"></a>
+
+          <p class="title"><b>Figura 7. Opciones de vídeo</b></p>
+
+          <div class="screenshot">
+            <div>
+              <img src="../images/gui_video_enc_opts.png" alt=
+              "Opciones de vídeo">
+            </div>
+          </div>
+        </div>
+
+        <p>La resolución de salida para cada vídeo depende del
+        formato de disco elegido; ciertas resoluciones no están
+        disponibles con ciertos formatos. Si no te agradan las
+        resoluciones de vídeo disponibles, puedes volver atrás y
+        cambiar el formato de disco pulsando en el icono de disco
+        en el árbol. También puedes escoger una relación de aspecto
+        para el vídeo; si es necesario, a los formatos de pantalla
+        panorámica se les pondrán bandas negras arriba y abajo,
+        para que se muestren correctamente en tu televisor.</p>
+
+        <p>Si lo deseas, también puedes ajustar la tasa de bits por
+        segundo de audio y vídeo. Los valores por omisión son
+        normalmente razonables, así que puedes dejarlos tal y como
+        están si no tienes claro qué tasa usar. Finalmente, puedes
+        activar opciones adicionales como la normalización del
+        audio (útil si el nivel sonoro es demasiado fuerte o
+        demasiado débil), vídeo de baja calidad (si prefieres mayor
+        velocidad a expensas de la calidad), o desentrelazado de
+        vídeo (si el vídeo de partida proviene de la señal de
+        antena o de VHS).</p>
+
+        <p>Para usar los mismos ajustes en todos los videos del
+        disco, seleccionar el botón <span class="guibutton">Use
+        these settings for all videos</span>. La resolución,
+        relación de aspecto, tasas de bits y otras opciones
+        seleccionadas en estemomento se aplicarán a todos los
+        videos en árbol de estructura de disco.</p>
+
+        <p>Puedes usar los botones <span class="guibutton">Move
+        up</span>, <span class="guibutton">Move down</span>, y
+        <span class="guibutton">Remove</span> en el árbol de
+        estructura para situar los elementos donde prefieras, o
+        para eliminarlos del disco.</p>
+
+        <p>Cuando estés satisfecho con la estructura de tu disco,
+        pulsa el botón <span class="guibutton">Next: Encoding
+        setup</span> para proceder con la codificación y autoría
+        del disco:</p>
+
+        <div class="figure">
+          <a name="id2520041" id="id2520041"></a>
+
+          <p class="title"><b>Figura 8. Una estructura de disco
+          completa</b></p>
+
+          <div class="screenshot">
+            <div>
+              <img src="../images/gui_layout_done.png" alt=
+              "Una estructura de disco completa">
+            </div>
+          </div>
+        </div>
+
+        <p>Seguramente querrás asegurarte de que todos tus menús y
+        títulos de vídeo están tal y como quieres antes de
+        proceder, así que comprueba que no queda ningún elemento
+        "Untitled" en el árbol. Pero no te preocupes, puedes volver
+        a esta pantalla si es que le has dado al botón
+        accidentalmente.</p>
+      </div>
+
+      <div class="sect2" lang="es">
+        <div class="titlepage">
+          <div>
+            <div>
+              <h3 class="title"><a name="id2520071" id=
+              "id2520071"></a>4.6. Codificando todo</h3>
+            </div>
+          </div>
+        </div>
+
+        <p>Cuando seleccionas <span class="guibutton">Next:
+        Encoding setup</span>, llegarás a un nuevo panel que
+        muestra una ventana que registra la salida de comandos:</p>
+
+        <div class="figure">
+          <a name="id2520089" id="id2520089"></a>
+
+          <p class="title"><b>Figura 9. Preparación para
+          codificar</b></p>
+
+          <div class="screenshot">
+            <div>
+              <img src="../images/gui_encoding_setup.png" alt=
+              "Preparación para codificar">
+            </div>
+          </div>
+        </div>
+
+        <p>En la entrega de preestreno 0.18a, el "Output directory"
+        se ignora (pero en la entrega oficial este será el lugar
+        donde se escriba la imagen de disco). Pulsa <span class=
+        "guibutton">Next: Begin encoding</span> para arrancarlo
+        todo. Si has seleccionado muchos videos, este paso puede
+        llevar horas completarse. El registro de la salida de los
+        comandos se actualizará regularmente para mantenerte
+        informado del progreso de la codificación. Cuando se
+        termine, el siguiente paso es crear la imagen del disco, la
+        autoría de la estructura final del disco.</p>
+      </div>
+
+      <div class="sect2" lang="es">
+        <div class="titlepage">
+          <div>
+            <div>
+              <h3 class="title"><a name="id2520132" id=
+              "id2520132"></a>4.7. Creación de la imagen de
+              disco</h3>
+            </div>
+          </div>
+        </div>
+
+        <p>El la versión de preestreno 0.18a del GUI, este paso lo
+        tienes que hacer a mano. El GUI te informará cuando el
+        fichero XML ya está listo para autoría; si estás haciendo
+        un VCD o SVCD, necesitas usar vcdxbuild, ejecutando un
+        comando tal que <span><strong class="command">vcdxbuild
+        /path/to/output.xml</strong></span>. Si están usando
+        cualquiera de los formatos DVD, has de usar dvdauthor,
+        ejecutando un comando como <span><strong class=
+        "command">dvdauthor -x /path/to/output.xml</strong></span>.
+        El GUI te dirá la ruta completa del fichero del fichero
+        XML.</p>
+
+        <p>La versión siguiente de tovid tendrá al menos la
+        capacidad de autoría, pero puede que sea todavía necesario
+        tostar a mano el disco, usando cdrecord, K3B, etc.</p>
+      </div>
+
+      <div class="sect2" lang="es">
+        <div class="titlepage">
+          <div>
+            <div>
+              <h3 class="title"><a name="id2520178" id=
+              "id2520178"></a>4.8. Pantallazos de desarrollo</h3>
+            </div>
+          </div>
+        </div>
+
+        <p>El desarrollo del GUI progresa con tesón, y las fotos de
+        las pantallas puede que no se asemejen exactamente a lo que
+        veas en tu GUI. Esta visita guiada se actualizará
+        periódicamente conforme crezca la fuuncionalidad del GUI,
+        pero debido a la inversión de tiempo necesaria para
+        recopilar las pantallas actualizadas, esta guía puede que
+        no se actualice con cada nueva entrega del GUI.</p>
+
+        <p>Esta sección muestra varias pantallas de la versión de
+        desarrollo del GUI (actualmente la versión 0.18), con una
+        breve descripción de lo que se muestra en pantalla.</p>
+
+        <div class="figure">
+          <a name="id2520207" id="id2520207"></a>
+
+          <p class="title"><b>Figura 10. Sistema de guía</b></p>
+
+          <div class="screenshot">
+            <div>
+              <img src="../images/gui_devel_guide_panel_thumb.png"
+              alt="Sistema de guía">
+            </div>
+          </div>
+        </div>
+
+        <p><span class="guilabel">Guide panel</span>. Este es un
+        nuevo sistema de ayuda que ha sido implantado para ayudar
+        al usuario a ir de un paso al siguiente. El panel de guía
+        es una mera caja de texto alargada que describe cuál es la
+        tarea en curso en el GUI, y qué paso puedes querer hacer
+        después. Este panel hace que el GUI ocupe
+        significativamente más espacio en la pantalla, así que se
+        ha añadido un nuevo <span class="guimenu">View</span>, que
+        incluye la opción de ocultar/mostrar el panel de guía.</p>
+
+        <p>Se ha escogido esta solución porque ofrece grandes
+        posibilidades como un muy conveniente y completo sistema de
+        ayuda. En futuras versiones, este panel podría ser mejorado
+        funcionalmente, o bien ser interactivo (con enlaces a los
+        temas relacionados) o con capacidades de búsqueda. Se
+        parecería más a la navegación dentro del panel de una
+        ventana de ayuda de Windows, y contendría texto con
+        formato, imágenes, etc. escrito en HTML.</p>
+
+        <p>La ventaja que esto tiene sobre un sistema de ayuda
+        tradicional, con sus diálogos de ayuda separados es un
+        menor esfurzo en el mantenimiento de las ventanas. Siempre
+        que estoy mirando la ayuda, estoy habitualmente intentando
+        hacer algo con el programa a al vez. De esta manera, no
+        tengo que cambiar a mano el tamaño de la ventana de ayuda y
+        la del GUI, ponerlas lado a lado, etc. Ya están justo ahí,
+        y diseñadas para una óptima presentación de la ayuda y el
+        GUI lado a lado.</p>
+
+        <p>Hacer esto implicaría casi ciertamente dividir el GUI en
+        muchos ficheros dependientes entre sí; el HTML usado en tal
+        sistema de ayuda necesita un formato específico para que
+        wxWidgets pueda usarlo, y consistiría en varios ficheros
+        separados. Los cuales sensatamente tendrían que estar
+        instalados en tu directorio <code class=
+        "filename">/usr/local/share/doc</code> o un lugar similar,
+        lo que significaría que el instalador de tovid necesitaría
+        revisarse, y que casi con certeza habría que guardar un
+        fichero de configuración por usuario (para que el GUI
+        supiera dónde encontrar los ficheros de documentación).</p>
+
+        <p>Así que, por ahora, el panel de guía es simplemente unos
+        pocos párrafos of text, incrustados en el mismo código del
+        GUI. Pero es un buen comienzo, y ¡tiene muchas
+        posibilidades!</p>
+      </div>
+    </div>
+
+    <div class="sect1" lang="es">
+      <div class="titlepage">
+        <div>
+          <div>
+            <h2 class="title" style="clear: both"><a name=
+            "id2465895" id="id2465895"></a>5. Planes futuros</h2>
+          </div>
+        </div>
+      </div>
+
+      <p>Hay planeadas algunas características adicionales en el
+      GUI. Entre las cosas que tengo en mente (más o menos en orden
+      de prioridad):</p>
+
+      <div class="itemizedlist">
+        <ul type="disc">
+          <li>
+            <p>Un sistema de ayuda incorporado.</p>
+          </li>
+
+          <li>
+            <p>Capacidad de carrusel de diapositivas. Requeriría
+            implantarlo en <span><strong class="command"><a href=
+            "CLI.html#CLI.makexml" title=
+            "4. makexml">makexml</a></strong></span>, si se permite
+            hacerlos en DVDs.</p>
+          </li>
+
+          <li>
+            <p>Pantallas para <span><strong class=
+            "command">postproc</strong></span>,
+            <span><strong class="command"><a href=
+            "CLI.html#CLI.idvid" title=
+            "6. idvid">idvid</a></strong></span>, y
+            <span><strong class="command"><a href=
+            "CLI.html#CLI.dvrequant" title=
+            "9. dvrequant">dvrequant</a></strong></span>.</p>
+          </li>
+
+          <li>
+            <p>Una regleta dinámica mostrando "Espacio estimado
+            remamente en disco" en el panel de estructura de disco.
+            Sería un barra hrozontal que se llenaría conforme
+            añadieras videos al disco; el tamaño requerido de cada
+            vídeo se estimaría para dar al usuario una idea de
+            cuando no cabe más. Se le avisaría al usuario si se
+            excediera el espacio disponible.</p>
+          </li>
+
+          <li>
+            <p>Vista previa de elementos del disco, incluyendo
+            menús, videos, y carruseles de diapositivas.</p>
+          </li>
+
+          <li>
+            <p>Durante la selección de ficheros de imágenes,
+            mostrar vistas reducidas de cada imagen, para hacer más
+            fácil la búsqueda de la diapositiva o del fondo
+            deseados.</p>
+          </li>
+
+          <li>
+            <p>Posibilidad de añadir pistas extra de audio/vídeo a
+            un vídeo. Permitiría producir discos con múltiples
+            puntos de vista de cámara, o múltiples pistas de audio
+            incluyendo traduccciones, comentarios, etc. Tendría que
+            ser implantado asimismo en el propio
+            <span><strong class="command"><a href=
+            "CLI.html#CLI.tovid" title=
+            "2. tovid">tovid</a></strong></span>.</p>
+          </li>
+
+          <li>
+            <p>Capacidad de añadir subtítulos (como una pista de
+            subtítulos) a los videos. También requeriría primero
+            ser implantado en <span><strong class=
+            "command"><a href="CLI.html#CLI.tovid" title=
+            "2. tovid">tovid</a></strong></span>.</p>
+          </li>
+
+          <li>
+            <p>Posibilidad de añadir capítulos, quizás en
+            conjunción con la capacidad de vista previa del vídeo.
+            Requeriría implantarlo en <span><strong class=
+            "command"><a href="CLI.html#CLI.makexml" title=
+            "4. makexml">makexml</a></strong></span>.</p>
+          </li>
+
+          <li>
+            <p>Arrastrar-y-soltar para añadir/reordenar
+            videos/diapositivas en el árbol de estructura del
+            disco.</p>
+          </li>
+
+          <li>
+            <p>Posibilidad de guardar/cargar estructuras de disco
+            no acabadas; posiblemente en conjunción con esto, la
+            capacidad de interrumpir/reanudar el proceso de
+            codificación del disco.</p>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="navfooter">
+    <hr>
+
+    <table width="100%" summary="Navigation footer">
+      <tr>
+        <td width="40%" align="left"><a accesskey="p" href=
+        "GettingStarted.html">Anterior</a>&nbsp;</td>
+
+        <td width="20%" align="center">&nbsp;</td>
+
+        <td width="40%" align="right">&nbsp;<a accesskey="n" href=
+        "CLI.html">Siguiente</a></td>
+      </tr>
+
+      <tr>
+        <td width="40%" align="left" valign="top">
+        Preparación&nbsp;</td>
+
+        <td width="20%" align="center"><a accesskey="h" href=
+        "bk01.html">Inicio</a></td>
+
+        <td width="40%" align="right" valign="top">&nbsp;Uso de las
+        herramientas de la línea de comandos</td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

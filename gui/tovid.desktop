@@ -1,0 +1,19 @@
+[Desktop Entry]
+Comment=
+Comment[en_US]=
+Encoding=UTF-8
+Exec=/usr/local/bin/tovidgui.py
+GenericName=
+GenericName[en_US]=
+Icon=/pub/cvs/tovid/gui/icons/tovid_icon_48.png
+MimeType=
+Name=tovid GUI
+Name[en_US]=tovid GUI
+Path=
+StartupNotify=true
+Terminal=false
+TerminalOptions=
+Type=Application
+X-DCOP-ServiceType=
+X-KDE-SubstituteUID=false
+X-KDE-Username=
