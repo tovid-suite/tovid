@@ -1,0 +1,221 @@
+#!/bin/sh
+
+# Peak Signal to Noise Ratio engine for comparing the PSNR between two video files
+
+# This script calculates the PSNR between two video files. The first video file is
+# generally the original video, and the second is a modified version of the original.
+# Often, the second video is encoded in a different codec, or uses filters to 
+# improve or change the video. The aim of this script is to give concrete numbers
+# to often subjective video quality comparisons.
+#
+# The script sequentially compares frames from both videos, calculating the PSNR for
+# each frame, and finally averages the overall PSNR for both videos. 
+# Frame-by-frame data are written to a text file, while the final PSNR is retured to 
+# standard out.
+
+# INPUT:  (1) a pointer to the directory containing numbered frames from the original 
+#             video. The frames should be ppm.
+#         (2) a pointer to the directory containing numbered frames from the modified
+#             video (to be compared against the original video file). ppm format
+#         (3) a pointer to a file to which the PSNR for each frame will be written.
+#
+# OUTPUT: (1) the overall, averaged PSNR between the two input directories.
+#         (2) a log file of the PSNR for every frame (as given by the input pointer).
+
+# Copyright (C) 2005 Joe Friedrichsen <pengi.films@gmail.com>
+# Original shell script by Matthias Wieser, available in MPlayer CVS.
+# Modified on 2005 September 23.
+# 
+# This program is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License 
+# as published by the Free Software Foundation; either 
+# version 2 of the License, or (at your option) any later 
+# version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+
+# ******************************************************************************
+# ******************************************************************************
+#
+#
+# CONSTANTS
+#
+#
+# ******************************************************************************
+# ******************************************************************************
+
+USAGE=`cat << EOF
+Usage: psnrcore ORIGINAL COMPARE PSNR_LOG
+
+where ORIGINAL is a path to the directory containing numbered frames from the 
+               original video. The frames should be in ppm format.
+      COMPARE  is a path to the directory containing numbered frames from the 
+               modified video (to be compared against the original video file).
+      PSNR_LOG is a path (including the name) to a file to which the PSNR for 
+               each frame will be written. If the log doesn't exist, it will
+               be created.
+EOF`
+
+PNM_SCRATCH=pnmpsnr.del
+
+# Frame-by-frame log headers
+LOG_HEADER="\"Frame\", \"Y (dB)\", \"Cb (dB)\", \"Cr (dB)\", \"PSNR (dB)\", \"Error\", \"Error Sum\""
+
+# Prepare the loop
+ERROR_SUM=0
+i=1
+
+
+# ******************************************************************************
+# ******************************************************************************
+#
+#
+# BASIC SET-UP
+#
+#
+# ******************************************************************************
+# ******************************************************************************
+
+# Sanity checks
+# Three and only three input arguments ok
+if test $# -ne 3; then
+   echo "$USAGE"
+   exit 1
+fi
+
+ORIGINAL="$1"
+COMPARE="$2"
+PSNR_LOG="$3"
+
+# Do the directories exist?
+if test -d "$ORIGINAL"; then
+   :
+else
+   echo "Could not find orignal frames directory: $ORIGINAL. Exiting."
+   exit 1
+fi
+
+if test -d "$COMPARE"; then
+   :
+else
+   echo "Could not find comparison frames directory: $COMPARE. Exiting."
+   exit 1
+fi
+
+touch $PSNR_LOG
+
+# Do the dependencies exist?
+if type pnmpsnr >> /dev/null; then
+   :
+else
+   echo "Could not find dependency pnmpsnr. Please install netpbm."
+   echo "See http://netpbm.sourceforge.net/"
+   exit 1
+fi
+
+# Find how many frames to compare (NUM_FRAMES), and which directory 
+# limits the tests (FRAME_DIR).
+NUM_ORIG_FRAMES=`ls -1 ${ORIGINAL}/*ppm | wc -l`
+NUM_COMP_FRAMES=`ls -1 ${COMPARE}/*ppm | wc -l`
+
+if test $NUM_ORIG_FRAMES -ne $NUM_COMP_FRAMES; then
+   echo "\"Found $NUM_ORIG_FRAMES original frames and $NUM_COMP_FRAMES comparison frames!\"" >> $PSNR_LOG
+   if test $NUM_ORIG_FRAMES -gt $NUM_COMP_FRAMES; then
+      echo "\"Using the frist $NUM_COMP_FRAMES for PSNR calculattion.\"" >> $PSNR_LOG
+      NUM_FRAMES=$NUM_COMP_FRAMES
+      FRAME_DIR=$COMPARE
+   else
+      echo "\"Using the first $NUM_ORIG_FRAMES for PSNR calculation.\"" >> $PSNR_LOG
+      NUM_FRAMES=$NUM_ORIG_FRAMES
+      FRAME_DIR=$ORIGINAL
+   fi
+else
+   echo "\"Found $NUM_ORIG_FRAMES frames to compare for PSNR calculation.\"" >> $PSNR_LOG
+   NUM_FRAMES=$NUM_ORIG_FRAMES
+   FRAME_DIR=$ORIGINAL
+fi
+
+echo $LOG_HEADER >> $PSNR_LOG
+
+
+# ******************************************************************************
+# ******************************************************************************
+#
+#
+# CALCULATE THE PEAK SIGNAL TO NOISE RATIO
+#
+#
+# ******************************************************************************
+# ******************************************************************************
+
+for frame in $( find $FRAME_DIR -name "*.ppm" | sort )
+do
+     # Assume the input frames are different to begin with
+     NO_DIFF=false
+
+     FRAME=`basename $frame`
+     CMD="pnmpsnr $ORIGINAL/$FRAME $COMPARE/$FRAME > $PNM_SCRATCH 2>&1"
+     
+     eval $CMD
+     
+     # Extract the individual (luma and chroma) PSNR
+     # NOTE: pnmpsnr output says: "xx color component doesn't differ"
+     #       when the two images are exactly the same,
+     #       but the ' is not greppable in a shell, AFAIK
+     #       Also, the Cb line has inconsistent spacing.
+     if grep "differ" $PNM_SCRATCH > /dev/null 2>&1
+     then
+        Y="inf"
+        CB="inf"
+        CR="inf"
+        NO_DIFF=:
+     else
+        Y=`grep "Y" $PNM_SCRATCH | awk '{ print $5 }'`
+        CB=`grep "Cb" $PNM_SCRATCH | awk '{ print $5 }'`
+        CR=`grep "Cr" $PNM_SCRATCH | awk '{ print $5 }'`
+     fi
+     
+     # Find the average for the frame and calculate the error
+     # Find PSNR if every component is different
+     if $NO_DIFF
+     then
+        ALL="inf"
+        ERROR="0"
+     else
+        ALL=`echo "(-10)*l((e(-$Y/10*l(10))+e(-$CB/10*l(10))/4+e(-$CR/10*l(10))/4)/1.5)/l(10)" | bc -l`
+        ERROR=`echo "scale=30; (e(-1*$Y/10*l(10))+e(-1*$CB/10*l(10))/4+e(-1*$CR/10*l(10))/4)/1.5" | bc -l`
+     fi
+     
+     ERROR_SUM=`echo "scale=30; $ERROR + $ERROR_SUM" | bc -l`
+     
+     echo "\"$i\", \"$Y\", \"$CB\", \"$CR\", \"$ALL\", \"$ERROR\", \"$ERROR_SUM\"" >> $PSNR_LOG
+     
+     if test $i -eq $NUM_FRAMES; then
+        break
+     fi
+     
+     i=$(($i+1))
+done
+
+# Calculate final statistics
+# If every frame was the same as the original, then the ERROR_SUM will be 0. In that case,
+# the PSNR cannot be computed because log(0) is undefined. Instead, the PSNR is 'infinite'.
+ZERO_ERROR=`echo "if ( $ERROR_SUM == 0 ) \":\" else \"false\"" | bc -l` 
+if $ZERO_ERROR; then
+   PSNR="inf"
+else
+   PSNR=`echo "-10*l($ERROR_SUM/$i)/l(10)" | bc -l`
+fi
+
+echo "\"$i frames\", \"AVG\", \"AVG\", \"AVG\", \"$PSNR\", \"AVG\", \"$ERROR_SUM\"" >> $PSNR_LOG
+
+rm -f $PNM_SCRATCH
+echo $PSNR
