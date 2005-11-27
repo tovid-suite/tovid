@@ -3,6 +3,9 @@ pytovid: A Python implementation of tovid
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 This document summarizes the origins, development, and inner workings of
 **pytovid**, a reimplementation of the [tovid suite scripts cli.html]
 in the [Python http://www.python.org/] programming language. For additional

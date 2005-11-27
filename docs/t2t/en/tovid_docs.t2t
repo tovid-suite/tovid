@@ -1,8 +1,6 @@
 tovid documentation
 
 
-%!include(xhtml): ''navmenu.html''
-
 You are reading the complete documentation for
 [tovid http://tovid.org/], a suite of tools for creating
 (S)VCD and DVD discs.
@@ -18,5 +16,4 @@ You are reading the complete documentation for
 %!include: tips.t2t
 %!include: references.t2t
 %!include: about.t2t
-%!include: glossary.t2t
 
