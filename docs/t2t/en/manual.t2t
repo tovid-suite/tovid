@@ -3,6 +3,9 @@ tovid manual pages
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 - [tovid tovid.html]
 - [idvid idvid.html]
 - [makemenu makemenu.html]

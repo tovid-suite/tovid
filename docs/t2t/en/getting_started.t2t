@@ -3,6 +3,9 @@ Getting started
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 This chapter explains how to get tovid running on your computer.
 If you already have tovid running, then you may skip directly to
 [Using the GUI gui.html] or

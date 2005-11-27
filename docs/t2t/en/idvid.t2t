@@ -3,6 +3,9 @@ idvid manual
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 ==Name==
 idvid--Identify video files
 

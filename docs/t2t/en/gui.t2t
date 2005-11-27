@@ -3,6 +3,9 @@ Using the GUI
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 The tovid GUI (tovidgui.py) is the user-friendly face of tovid. From the GUI,
 you can layout, encode, and burn a VCD, SVCD, or DVD with menus and videos. The
 GUI is primarily a front-end for the command-line interface components; aside

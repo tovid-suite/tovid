@@ -3,6 +3,9 @@ dvrequant manual page
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 ==Name==
 dvrequant--Rip and shrink a title from DVD
 

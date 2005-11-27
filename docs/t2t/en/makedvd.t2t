@@ -3,6 +3,9 @@ makedvd manual
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 ==Name==
 makedvd--Create and burn DVD image from dvdauthor XML input
 
