@@ -20,6 +20,10 @@ dest_dir = os.path.realpath( 'html' )
 translation_subdirs = [ 'en', 'es' ]
 
 
+def archive_t2t():
+    """Create tar/gzip of all t2t sources and copy to the
+    html/download output directory."""
+    cmd = 'tar --exclude .svn -czvvf tovid_t2t.tar.gz %s' % source_dir
 
 def generate_html( t2tfile, htmlfile ):
     cmd = 'txt2tags -i %s -o %s' % ( t2tfile, htmlfile )
