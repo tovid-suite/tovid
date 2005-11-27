@@ -3,6 +3,9 @@ profile, an mpeg2enc testing frontend
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 = profile =
 
 == Name ==

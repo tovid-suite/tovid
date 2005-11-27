@@ -3,6 +3,9 @@ Quick tips and tests
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 The following are some short scripts (both bash and
 English) for doing debugging, testing, and comparisons on tovid.
 
