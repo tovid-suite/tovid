@@ -3,6 +3,9 @@ About tovid
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 == How it got started ==
 tovid began life in May 2004 as a simple one-line script for converting video
 to VCD format. I had found that it was not terribly easy to remember the

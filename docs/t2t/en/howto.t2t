@@ -3,6 +3,9 @@ tovid howto
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 This document explains how to create a DVD using the tovid suite.
 It assumes you have a collection of videos, in various formats,
 and want to end up with a finished DVD with menus. Each step of

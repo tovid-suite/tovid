@@ -3,6 +3,9 @@ makexml manual
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 ==Name==
 makexml--Generate a video disc structure XML description
 

@@ -3,6 +3,9 @@ Aspect ratio and safe area
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 == What is aspect ratio? ==
 
 In video processing, the aspect ratio is a pair of numbers that expresses the
