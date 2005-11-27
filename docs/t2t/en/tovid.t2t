@@ -3,6 +3,9 @@ tovid manual
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 ==Name==
 tovid--Convert video to (S)VCD/DVD format
 
