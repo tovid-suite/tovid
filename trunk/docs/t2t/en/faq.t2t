@@ -3,6 +3,9 @@ tovid FAQ
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 : My encoded video plays back extremely fast, as if it's in fast-forward.
 For some reason, certain video codecs are identified as using
 1000 frames per second. (You can see this by running [idvid #idvid] on the video.)

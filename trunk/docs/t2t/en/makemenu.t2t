@@ -3,6 +3,9 @@ makemenu manual
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 ==Name==
 makemenu--Create (S)VCD/DVD-compliant menus
 

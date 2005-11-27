@@ -3,6 +3,9 @@ Using the command-line tools
 
 %!include(xhtml): ''navmenu.html''
 
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
 This chapter gives an overview of how to use the command-line tools; see the
 manpages for more detailed usage notes.
 

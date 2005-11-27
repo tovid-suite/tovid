@@ -3,10 +3,9 @@ tovid homepage
 
 %!include(xhtml): ''navmenu.html''
 
-The [txt2tags http://txt2tags.sf.net/] source for this document is
-[index.t2t t2t/en/index.t2t].
-
 [images/tovid_logo.png]
+
+//This document was last edited on %%mtime(%A, %d %B %Y).//
 
 
 == What is tovid? ==
