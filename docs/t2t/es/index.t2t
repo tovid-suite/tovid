@@ -92,55 +92,73 @@ Si tienes Linux, todos estos comandos están disponibles.
 
 ===Dependencias===
 
-tovid ha acumulado su buen montoncillo de dependencias a lo largo de su desarrollo. 
-Aquí está la lista completa de dependencias, y hasta qué punto son requeridos:: [Python http://www.python.org/]
+tovid ha acumulado su buen montoncillo de dependencias a lo largo de su
+desarrollo.  Aquí está la lista completa de dependencias, y hasta qué punto son
+requeridos:
 
-Un intérprete que permite ejecutar programas escritos en Python. Python es cada vez más habitual, así
-    que es bueno tener un intérprete de Python instalado. Es necesario sólo para el interfaz gráfico de tovid.: [wxPython http://www.wxpython.org/]
+: [Python http://www.python.org/]
+Un intérprete que permite ejecutar programas escritos en Python. Python es cada
+vez más habitual, así que es bueno tener un intérprete de Python instalado. Es
+necesario sólo para el interfaz gráfico de tovid.
 
-Da soporte a GUIs escritos en Python usando la
-  API wxWidgets. También solo para el GUI.: [mplayer http://www.mplayerhq.hu/]
+: [wxPython http://www.wxpython.org/]
+Da soporte a GUIs escritos en Python usando la API wxWidgets. También solo para
+el GUI.
 
-Probablemente el reproductor multimedia más robusto y maduro para Linux.
-    Casi todos los componenete de tovid dependen fuertemente de mplayer para reproducir y convertir vídeo, así
-    que su instalación es necesaria. Aunque seguro que querrás usar mplayer de todos modos, si piensas trabajar con vídeo en Linux.: [mjpegtools http://mjpeg.sourceforge.net/]
+: [mplayer http://www.mplayerhq.hu/]
+Probablemente el reproductor multimedia más robusto y maduro para Linux.  Casi
+todos los componenete de tovid dependen fuertemente de mplayer para reproducir
+y convertir vídeo, así que su instalación es necesaria. Aunque seguro que
+querrás usar mplayer de todos modos, si piensas trabajar con vídeo en Linux.
 
+: [mjpegtools http://mjpeg.sourceforge.net/]
 Herramientas de línea de comando para codificar y trabajar con vídeo,
-    particularmente MPEG. Requerido por la mayor parte de los componentes de tovid, y lo necesitarás 
-    pra cualquier cosa útil que quieras hacer con tovid.: [ffmpeg http://ffmpeg.sourceforge.net/]
+particularmente MPEG. Requerido por la mayor parte de los componentes de tovid,
+y lo necesitarás pra cualquier cosa útil que quieras hacer con tovid.
 
-Herramientas para grabar, convertir, y enviar por la red audio y vídeo. Usados por varios 
-    componentes, y requeridos si quieres crear DVDs en formato NTSC.: [normalize/normalize-audio http://freshmeat.net/projects/normalize]
+: [ffmpeg http://ffmpeg.sourceforge.net/]
+Herramientas para grabar, convertir, y enviar por la red audio y vídeo. Usados
+por varios componentes, y requeridos si quieres crear DVDs en formato NTSC.
 
-Una utilidad para ajustar el volumen de ficheros de audio. Si quieres normalizar el volumen 
-    de tus discos de vídeo, lo necesitas, pero no es de vital importancia.: [ImageMagick http://www.imagemagick.org]
+: [normalize/normalize-audio http://freshmeat.net/projects/normalize]
+Una utilidad para ajustar el volumen de ficheros de audio. Si quieres
+normalizar el volumen de tus discos de vídeo, lo necesitas, pero no es de vital
+importancia.
 
-Un potente conjunto de herramientas en la línea de comando para
-    dar formato, cambiar tamaños, convertir y dibujar en ficheros de imágenes. 
-    Se usa por [makemenu makemenu.html], el componente generador de menús de tovid. 
-    Si quieres crear discos de vídeo con menús, lo necesitas. Muchas distribuciones Linux lo instalan por defecto.
-    : [SoX http://sox.sourceforge.net/]
+: [ImageMagick http://www.imagemagick.org]
+Un potente conjunto de herramientas en la línea de comando para dar formato,
+cambiar tamaños, convertir y dibujar en ficheros de imágenes.
+Se usa por [makemenu makemenu.html], el componente generador de menús de tovid.
+Si quieres crear discos de vídeo con menús, lo necesitas. Muchas distribuciones
+Linux lo instalan por defecto.
 
-El ImageMagick de procesamiento de audio, a su manera. 
-    Herramientas en la línea de comando para convertir, recortar, y filtrar ficheros de audio. Se usa por 
-    [makemenu makemenu.html].: [dvdauthor http://dvdauthor.sourceforge.net/]
-    0.6.0 o más nuevo
+: [SoX http://sox.sourceforge.net/]
+El ImageMagick de procesamiento de audio, a su manera.  Herramientas en la
+línea de comando para convertir, recortar, y filtrar ficheros de audio. Se usa
+por [makemenu makemenu.html].
 
-Herramientas para crear sistemas de archivo DVD. Si quieres hacer DVDs
-    con tovid, lo necesitas.: [vcdimager http://www.vcdimager.org/]
+: [dvdauthor http://dvdauthor.sourceforge.net/] 0.6.0 o más nuevo
+Herramientas para crear sistemas de archivo DVD. Si quieres hacer DVDs con
+tovid, lo necesitas.
 
-Herramientas para crear sistemas de archivo (S)VCD. Si quieres hacer
-    VCDs o SVCDs, lo necesitas.: [transcode http://zebra.fh-weingarten-de/~transcode/]
+: [vcdimager http://www.vcdimager.org/]
+Herramientas para crear sistemas de archivo (S)VCD. Si quieres hacer VCDs o
+SVCDs, lo necesitas.
 
-Herramientas para procesar y convertir flujos de vídeo. Se usa por
-    postproc (el componente de tovid para postprocesado) y [dvrequant dvrequant.html] (el componente de tovid para encoger
-    DVDs). Útil si quieres poder ajustar al detalle el tamaño de salida de tus videos, para que encaje
-    la cantidad deseada de contenido en un DVD grabable.: [libdvdcss http://developers.videolan.org/libdvdcss/]
+: [transcode http://zebra.fh-weingarten-de/~transcode/]
+Herramientas para procesar y convertir flujos de vídeo. Se usa por postproc (el
+componente de tovid para postprocesado) y [dvrequant dvrequant.html] (el
+componente de tovid para encoger DVDs). Útil si quieres poder ajustar al
+detalle el tamaño de salida de tus videos, para que encaje la cantidad deseada
+de contenido en un DVD grabable.
 
-DVD decryption routines, used for playing encrypted DVDs
-    on your computer. Needed by [dvrequant dvrequant.html] too.: [lsdvd http://untrepid.com/acidrip/lsdvd.html]
+: [libdvdcss http://developers.videolan.org/libdvdcss/]
+DVD decryption routines, used for playing encrypted DVDs on your computer.
+Needed by [dvrequant dvrequant.html] too.
 
-Práctica herramienta para ver los atributos de los discos DVD. También necesaria para [dvrequant dvrequant.html] .
+: [lsdvd http://untrepid.com/acidrip/lsdvd.html]
+Práctica herramienta para ver los atributos de los discos DVD. También
+necesaria para [dvrequant dvrequant.html].
 
 
 La mayor parte de estas herramientas están ampliamente disponibles en los 
@@ -151,55 +169,54 @@ tu distribución Linux.
 
 ===Paquetes===
 - [tovid Gentoo ebuild http://bugs.gentoo.org/show_bug.cgi?id=84761]. Mira
-        [Instalación de Ebuilds de terceras partes  http://gentoo-wiki.com/HOWTO_Installing_3rd_Party_Ebuilds] para ayuda en la instalación.
+    [Instalación de Ebuilds de terceras partes  http://gentoo-wiki.com/HOWTO_Installing_3rd_Party_Ebuilds] para ayuda en la instalación.
 - [Debian .deb http://julien.valroff.free.fr/].
 - [SuSE RPMs http://rpm.pbone.net/index.php3/stat/4/idpl/2108685/com/tovid-0.19-0.oc2pus.1.noarch.rpm.html]
 
 
 ===Código fuente===
-- [tovid_0.21.tar.gz http://prdownloads.sourceforge.net/tovid/tovid_0.21.tar.gz?download]
+- [tovid_0.23.tar.gz http://prdownloads.sourceforge.net/tovid/tovid_0.23.tar.gz?download]
     contiene todos los scripts de la línea de comando.
-- [tovid-gui-0.21.tar.gz http://prdownloads.sourceforge.net/tovid/tovid-gui-0.21.tar.gz?download]
-    contiene la aplicación gráfica y sus iconos. Los scripts de la línea de comando
-    han de estar instalados ante de poder usarse el interfaz gráfico.
+- [tovid-gui-0.22.tar.gz http://prdownloads.sourceforge.net/tovid/tovid-gui-0.22.tar.gz?download]
+    contiene la aplicación gráfica y sus iconos. Los scripts de la línea de
+    comando han de estar instalados ante de poder usarse el interfaz gráfico.
 
 
 
 Descárgate el paquete para la línea de comando y guárdalo en tu ordenador
-Supongamos que lo has guardado en ~/Downloads/``.
-Lo siguiente es abrir una ventana de terminal, (como XTerm,
-RXVT, o Konsole) y
-extraer el "tarball" al teclear los siguientes comandos:
+Supongamos que lo has guardado en ``~/Downloads/``.  Lo siguiente es abrir una
+ventana de terminal, (como XTerm, RXVT, o Konsole) y extraer el "tarball" al
+teclear los siguientes comandos:
 
 ```
 $ cd ~/Downloads
-$ tar -xzvf tovid_0.21.tar.gz
+$ tar -xzvf tovid_0.23.tar.gz
 ```
 
-Los ficheros de instalación irán a un subdirectorio
-tovid_0.21 dentro del directorio en curso. Ahora,
-haced lo siguiente:
+Los ficheros de instalación irán a un subdirectorio ``tovid_0.23`` dentro del
+directorio en curso. Ahora, haced lo siguiente:
 
 ```
-$ cd ~/Downloads/tovid_0.21
+$ cd ~/Downloads/tovid_0.23
 $ ./configure
 $ su -c "make install"
 ```
 
-Si decides que ya no quieres tovid, 
-puedes ejecutar make uninstall desde el directorio original de 
-instalación (~/Downloads/tovid_0.21``).
-Repite el procedimiento anterior para el paquete
-tovid-gui-0.21.tar.gz``  
-si quieres instalar el interfaz gráfico.
+Si decides que ya no quieres tovid, puedes ejecutar make uninstall desde el
+directorio original de instalación (``~/Downloads/tovid_0.21``).  Repite el
+procedimiento anterior para el paquete ``tovid-gui-0.22.tar.gz`` si quieres
+instalar el interfaz gráfico.
 
 
 ===Versiones desde CVS===
-Puedes traerte una copia de la última versión de desarrollo de tovid 
-por medio de CVS. Para obtener esta versión, necesitas tener [CVS http://www.cvshome.org/] instalado.
-Usar CVS es un poquillo diferente; en vez de simplemente descargarte tovid, estarás "desregistrando" una copia. 
-(N. del T. Si "registrarse," es traducción de "check-in", entonces "desregistrarse" lo es de "checking out", forzada regla de tres de la traducción ;-) ) 
-Usando el mismo directorio de ejemplo que anteriormente:
+Puedes traerte una copia de la última versión de desarrollo de tovid por medio
+de CVS. Para obtener esta versión, necesitas tener
+[CVS http://www.cvshome.org/] instalado.
+Usar CVS es un poquillo diferente; en vez de simplemente descargarte tovid,
+estarás "desregistrando" una copia.  (N. del T. Si "registrarse," es traducción
+de "check-in", entonces "desregistrarse" lo es de "checking out", forzada regla
+de tres de la traducción ;-) ) Usando el mismo directorio de ejemplo que
+anteriormente:
 
 ```
 $ cd ~/Downloads
@@ -221,20 +238,15 @@ según se mostró anteriormente, en cada directorio respectivo para instalar
 tovid (y el interfaz gráfico) en tu sistema.
 
 ===Nota===
-También hay disponibles a través de CVS tres módulos adicionales:
-``docs`` contiene los fuentes
-[DocBook http://www.docbook.org/] (completos
-con ilustraciones) de la documentación que estás leyendo;
-``test-tools`` es un conjunto de scripts diseñado para
-comprobar las opciones de codificación de mplayer y mpeg2enc (junto
-algunos otras propinillas); ``pytovid`` devendrá
-eventualmente en una completa re-implantación de tovid en lenguaje
-Python.
-Si estás interesado en estas otras ramas  de desarrollo,
-por favor coge los módulos CVS y contacta con los desarrolladores
-el canal #tovid`` de
-irc.freenode.net``.
-
+También hay disponibles a través de CVS tres módulos adicionales: ``docs``
+contiene los fuentes [DocBook http://www.docbook.org/] (completos con
+ilustraciones) de la documentación que estás leyendo; ``test-tools`` es un
+conjunto de scripts diseñado para comprobar las opciones de codificación de
+mplayer y mpeg2enc (junto algunos otras propinillas); ``pytovid`` devendrá
+eventualmente en una completa re-implantación de tovid en lenguaje Python.  Si
+estás interesado en estas otras ramas  de desarrollo, por favor coge los
+módulos CVS y contacta con los desarrolladores el canal ``#tovid`` de
+``irc.freenode.net``.
 
 
 
