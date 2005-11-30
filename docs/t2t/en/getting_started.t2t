@@ -155,20 +155,18 @@ the above procedure for the ``tovid-gui-0.22.tar.gz`` package if you would like
 to install the graphical interface.
 
 
-=== CVS builds ===
+=== Bleeding-edge version ===
 
-You can get a copy of the latest development version of tovid through CVS. To
+You can get a copy of the latest development version of tovid by checking it
+out with [Subversion http://subversion/tigris.org/] (SVN).
+
 get this version, you need to have [CVS http://www.cvshome.org/] installed.
 Using CVS is a little different; instead of just downloading tovid, you'll be
 "checking out" a copy of it. Using the same example directory as above:
 
 ```
 $ cd ~/Downloads
-$ cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/tovid login
-Logging in to :pserver:anonymous@cvs.sourceforge.net:2401/cvsroot/tovid
-CVS password: (your email address)
-$ cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/tovid co -P tovid
-$ cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/tovid co -P gui
+$ svn checkout svn://svn.berlios.de/tovid/trunk/tovid
 $ cd tovid
 $ aclocal
 $ autoconf
