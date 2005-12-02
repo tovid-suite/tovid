@@ -31,7 +31,7 @@ To parse 'foo.tdl' containing text in the TDL language:
 # Currently, Parser.py is generalized enough to handle
 # any TDL-like language; none of the TDL module's classes
 # are used directly right now.
-import TDL
+import tdl
 
 # ===========================================================
 class Parser:
@@ -48,10 +48,10 @@ class Parser:
             -booloption1
             -booloption2
 
-    This implementation parses the language defined in TDL.py."""
+    This implementation parses the language defined in tdl.py."""
 
 
-    def __init__( self, lang = TDL, interactive = False ):
+    def __init__( self, lang = tdl, interactive = False ):
         # Someday allow more interactive parsing
         # (such as when parsing from stdin)
         self.lang = lang
@@ -133,7 +133,7 @@ class Parser:
             if not token:
                 break
 
-            # If an element in the language (TDL) is found (that is,
+            # If an element in the language (tdl) is found (that is,
             # 'Disc', 'Menu', or 'Video' was encountered), get a
             # new Element object, and add it to the list
             elif token in self.lang.elements:
@@ -242,7 +242,7 @@ if __name__ == "__main__":
 
     if len( elements ) > 0:
         for element in elements:
-            print element.toString()
+            print element.tdl_string()
     else:
         print "None"
 
