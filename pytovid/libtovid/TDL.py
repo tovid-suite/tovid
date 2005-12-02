@@ -3,6 +3,9 @@
 # ===========================================================
 # TDL
 # Definition of the tovid design language
+
+# TODO:
+# Make Parser part of this module
 # ===========================================================
 
 import copy
