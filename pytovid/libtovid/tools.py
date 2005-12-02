@@ -12,15 +12,6 @@ YUV4MPEG_ILACE
 VF_PRE
     ''
     -vf-pre il=d:d
-VID_FILTER
-    ''
-    -vf kerndeint
-    -vf lavcdeint
-+   -vf-add hqdn3d
-+   -vf-add denoise3d
-+   -vf-add pp=al:f
-+   -vf-add pp=hb/vb
-+   -vf-add spp
 
 VID_SCALE
     ''
@@ -59,8 +50,19 @@ MPEG2_QUALITY
     vcd: -4 2 -2 1 -H
     other: -4 2 -2 1 -q $QUANT -H
 
+def get_mplayer_opts(format, tvsys, filters = []):
 
-def get_mpeg2enc_opts( format, tvsys, aspect = '4:3' ):
+    opts = ''
+
+    if 'denoise' in filters:
+        opts += '-vf-add hqdn3d '
+    if 'contrast' in filters:
+        opts += '-vf-add pp=al:f '
+    if 'deblock' in filters:
+        opts += '-vf-add pp=hb/vb '
+
+
+def get_mpeg2enc_opts(format, tvsys, aspect = '4:3'):
     """Get mpeg2enc command-line options suitable for encoding
     a video stream to the given format and TV system, at the given
     aspect ratio (if the format supports it).
@@ -89,7 +91,7 @@ def get_mpeg2enc_opts( format, tvsys, aspect = '4:3' ):
     return opts
 
 
-def get_mplex_opts( format, tvsys ):
+def get_mplex_opts(format, tvsys):
     """Get mplex command-line options suitable for muxing
     streams with the given format and TV system."""
 
