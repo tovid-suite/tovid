@@ -1,15 +1,10 @@
 #! /usr/bin/env python
 
 # ===========================================================
-# TDL
-# Definition of the tovid design language
-
-# TODO:
-# Make Parser part of this module
-# ===========================================================
+# tdl
 
 import copy
-from Globals import *
+from Globals import strip_indentation
 
 # ===========================================================
 __doc__ = \
@@ -130,8 +125,8 @@ And you would like to change the background:
     >>>
 
 
-
 """
+
 
 # ===========================================================
 class OptionDef:
@@ -414,3 +409,5 @@ if __name__ == "__main__":
     vid.tdl_string()
     menu.tdl_string()
     disc.tdl_string()
+
+
