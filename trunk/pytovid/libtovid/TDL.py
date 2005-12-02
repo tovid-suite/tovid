@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 # ===========================================================
-# tdl
+# TDL
 
 import copy
 from Globals import strip_indentation
