@@ -24,56 +24,39 @@ You may find tovid useful if:
   space, and you want to back them up onto a portable medium
 
 
-Interested? See [Getting started getting_started.html] for download and
-installation instructions.
+Interested? Check out the [installation instructions install.html], and
+see [before installing before_installing.html] for dependency information.
 
 
 == News ==
 
 (Newest on top)
 
-- 2005-11-14: tovid 0.23 is released. Mostly a maintenance release, with minor
-    bugfixes, but it's good to be up-to-date!
-    [Download it from sourceforge http://sourceforge.net/projects/tovid].
-- 2005-10-28: The tovid website has been revamped slightly, with
-    some fancier
-    [CSS http://www.wikipedia.org/Cascading_Style_Sheets].
-    The tovid Python reimplementation progresses steadily; check out the
-    new [tovid design language download/test.tdl.txt].
-- 2005-09-21: [Linux Format magazine http://linuxformat.co.uk/] gives
-    tovid a positive review (issue 72).
-- 2005-09-17: tovid 0.22 is released.
-    [Get it http://sourceforge.net/projects/tovid]
-    and [install it getting_started.html]; try out the new
-    ``-quality [1-10]`` option for controlling quantization, and the (I hope) improved
-    ``-interlaced`` option.
+- 2005-11-14:
+    tovid 0.23 is released. Mostly a maintenance release, with minor bugfixes,
+    but it's good to be up-to-date!
+- 2005-10-28:
+    The tovid website has been revamped slightly, with some fancier
+    [CSS http://www.wikipedia.org/Cascading_Style_Sheets].  The tovid Python
+    reimplementation progresses steadily; check out the new
+    [tovid design language download/test.tdl.txt].
+- 2005-09-21:
+    [Linux Format magazine http://linuxformat.co.uk/] gives tovid a positive
+    review (issue 72).
+- 2005-09-17:
+    tovid 0.22 is released.  Try out the new ``-quality [1-10]`` option for
+    controlling quantization, and the (I hope) improved ``-interlaced`` option.
 - 2005-08-27:
     Version 0.21 of tovid hits the streets.
-    [Get it from sourceforge http://sourceforge.net/projects/tovid]
-    and see [Getting started getting_started.html]
-    for instructions. [makedvd makedvd.html] is now functional, and the GUI
+    [makedvd makedvd.html] is now functional, and the GUI
     is considerably less buggy.
 - 2005-08-14:
-    New and improved, with better-tasting syntax!
-    Version 0.20 of tovid has been released.
-    [Get it from sourceforge http://sourceforge.net/projects/tovid] and see
-    [Getting started getting_started.html]
-    for instructions. Lots of minor
-    bugfixes and formatting improvements, and the -parallel option just might work!
-    Also, ``-fps`` makes a reappearance for anyone having framerate problems. See
-    the ``ChangeLog`` file in the tovid install directory for
-    details.
-- 2005-08-09: [Linux.com http://www.linux.com/]
-    runs an [article on tovid http://www.linux.com/article.pl?sid=05/08/01/1734201]. tovid gets a nice boost in downloads for several days!
-
-
-== Where to start? ==
-
-tovid is still in early development, and isn't yet available in most package
-repositories, so you will probably not be able to install it using your
-distribution's package manager. Download the latest official release of tovid
-from the [sourceforge project page http://sourceforge.net/projects/tovid/], or
-get the latest development version through CVS.  Feel free to stop by the
-[tovid forum http://www.createphpbb.com/phpbb/tovid.html], or the IRC channel
-``#tovid`` on ``irc.freenode.net``, for tech support and friendly chat.
-
+    New and improved, with better-tasting syntax!  Version 0.20 of tovid has
+    been released.  Lots of minor bugfixes and formatting improvements, and the
+    -parallel option just might work!  Also, ``-fps`` makes a reappearance for
+    anyone having framerate problems. See the ``ChangeLog`` file in the tovid
+    install directory for details.
+- 2005-08-09:
+    [Linux.com http://www.linux.com/] runs an
+    [article on tovid http://www.linux.com/article.pl?sid=05/08/01/1734201].
+    tovid gets a nice boost in downloads for several days!
