@@ -5,8 +5,8 @@
 
 import os, sys, glob
 # Get TDL
-import Libtovid
-from Libtovid import TDL
+import libtovid
+from libtovid import TDL
 # Get mypydoc
 import mypydoc
 
