@@ -1,4 +1,4 @@
-Before installing tovid
+tovid dependencies
 
 
 %!include(xhtml): ''navmenu.html''
@@ -8,31 +8,6 @@ Before installing tovid
 Here are some things to know before you [install tovid install.html], including
 environmental requirements (platform, hardware, shell resources) and software
 dependencies.
-
-
-==tovid requirements==
-
-There are no known minimum system requirements for running tovid. If your
-machine is capable of running a standard Linux installation, then you probably
-have enough CPU power for video processing and playback.  If you're going to
-work with video files, you probably want to have plenty of hard drive space to
-spare; the process of authoring a DVD might consume 11GB on your disk, and if
-you are working on several DVD projects at once, the space requirements
-multiply quickly. At minimum, you should have about 20GB that you can devote to
-authoring DVDs. If you only plan to create (S)VCDs, you could get by with only
-6-8GB.
-
-The tovid suite is developed and tested primarily on Linux. Some users have
-also reported successful execution on FreeBSD and Cygwin with only minor
-modifications. Parts of the suite may work on other UNIX-like operating
-systems, but that possibility is unverified at this point. There are currently
-no plans to develop a Windows or Mac OS port, but if you are interested in
-taking on the job, please contact the tovid developers!  Several software
-packages are required in order to use various components of the tovid suite.
-Nearly all of the components, being written in the ``bash`` scripting language,
-require ``bash``, as well as standard UNIX utilities like ``grep``, ``sed``,
-``cat``, and ``awk``.  If you are running Linux, all of these should already be
-available.
 
 
 ==Dependencies==
@@ -108,4 +83,26 @@ package manager.
 
 For best results, install all dependencies before moving onto
 [installing tovid install.html].
+
+
+==System requirements==
+
+There are no known minimum system requirements for running tovid. If your
+machine is capable of running a standard Linux installation, then you probably
+have enough CPU power for video processing and playback.
+
+If you're going to work with video files, you probably want to have plenty of
+hard drive space to spare; the process of authoring a DVD might consume 11GB on
+your disk, and if you are working on several DVD projects at once, the space
+requirements multiply quickly. At minimum, you should have about 20GB that you
+can devote to authoring DVDs. If you only plan to create (S)VCDs, you could get
+by with only 6-8GB.
+
+The tovid suite is developed and tested primarily on Linux. Some users have
+also reported successful execution on FreeBSD, Cygwin, and OSX with only minor
+modifications.  Nearly all of the components, being written in the ``bash``
+scripting language, require ``bash``, as well as standard UNIX utilities like
+``grep``, ``sed``, ``cat``, and ``awk``.  If you are running Linux, all of
+these should already be available.
+
 
