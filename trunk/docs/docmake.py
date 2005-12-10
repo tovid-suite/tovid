@@ -30,6 +30,7 @@ def generate_t2t_tarball():
 
 def generate_html(t2tfile, htmlfile):
     cmd = 'txt2tags -i %s -o %s' % (t2tfile, htmlfile)
+    cmd += ' --encoding utf-8'
     cmd += ' -t xhtml --css-sugar --toc --style=tovid_screen.css'
     # Run txt2tags cmd, displaying its normal output
     os.system(cmd)
@@ -79,9 +80,15 @@ if __name__ == '__main__':
 
     print "tovid documentation maker"
 
-    generate_t2t_tarball()
-    generate_tdl_t2t()
-    generate_pydocs()
+    regen_all = False
+
+    for arg in sys.argv[1:]:
+        if arg == 'all':
+            regen_all = True
+
+    #generate_t2t_tarball()
+    #generate_tdl_t2t()
+    #generate_pydocs()
 
     # Convert all language translations (.t2t sources) to HTML
     for trans_dir in translation_subdirs:
@@ -92,21 +99,24 @@ if __name__ == '__main__':
             outfile = '%s/%s/%s.html' % \
                     (dest_dir, trans_dir, os.path.basename(t2tfile)[:-4])
             
-            # Determine last-modified times for the source and target files
-            t2t_mod = os.path.getmtime(t2tfile)
-            if os.path.exists(outfile):
-                html_mod = os.path.getmtime(outfile)
-            else:
-                html_mod = 0
-
-            # If the .t2t source is newer than the existing HTML target,
-            # recreate the HTML.
-            if t2t_mod > html_mod:
-                print "Source file: %s is new. Regenerating %s" % \
-                    (t2tfile, outfile)
+            if regen_all:
                 generate_html(t2tfile, outfile)
             else:
-                print "Skipping file: %s" % t2tfile
+                # Determine last-modified times for the source and target files
+                t2t_mod = os.path.getmtime(t2tfile)
+                if os.path.exists(outfile):
+                    html_mod = os.path.getmtime(outfile)
+                else:
+                    html_mod = 0
+
+                # If the .t2t source is newer than the existing HTML target,
+                # recreate the HTML.
+                if t2t_mod > html_mod:
+                    print "Source file: %s is new. Regenerating %s" % \
+                        (t2tfile, outfile)
+                    generate_html(t2tfile, outfile)
+                else:
+                    print "Skipping file: %s" % t2tfile
 
 
     print "Done!"
