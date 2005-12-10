@@ -86,7 +86,27 @@ readable by the average user--simple and well-documented.
 
 == Hacking it ==
 
-[Hacking http://www.catb.org/~esr/faqs/hacker-howto.html] the pytovid
-source code is strongly encouraged.
+[Hacking http://www.catb.org/~esr/faqs/hacker-howto.html] the pytovid source
+code is strongly encouraged, even if you've never done any programming before.
+If you don't feel comfortable editing the source code, you may consider simply
+reading it and trying to understand it better--and if you have any problems
+understanding it, please let the developers know! It's your feedback, whether
+you hack or not, that drives open-source software to improve.
 
-[Instant Hacking http://www.hetland.org/python/instant-hacking.php]
+If you've never programmed, but would like to start learning right now,
+try [Instant Hacking http://www.hetland.org/python/instant-hacking.php].
+[python.org http://www.python.org] has a wealth of Python resources,
+including a [Beginner's Guide http://wiki.python.org/moin/BeginnersGuide] and
+a thorough [tutorial http://www.python.org/doc/2.4.2/tut/tut.html].
+If you've programmed before, but don't know Python yet,
+[Dive into Python http://diveintopython.org/] is a good introduction.
+
+Before editing the pytovid code, I'd suggest reading Guido van Rossum's
+[Python Style Guide http://www.python.org/doc/essays/styleguide.html].
+I don't care much if pytovid follows his code-formatting preferences, but
+there's some good advice there on comments, docstrings, and naming
+conventions.
+
+Indentation is 4 spaces--no tabs allowed! Before doing any pytovid editing,
+make sure your editor is configured to insert 4 spaces instead of a tab.
+
