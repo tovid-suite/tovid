@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(tovid)
-AM_INIT_AUTOMAKE(tovid, 0.23)
+AM_INIT_AUTOMAKE(tovid, svn)
 
 dnl Checks for programs.
 AC_PROG_INSTALL
