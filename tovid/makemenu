@@ -578,7 +578,7 @@ fi
 # Multiplex audio and video
 echo $SEPARATOR
 echo "Multiplexing video and audio with the following command:"
-MPLEX_CMD="mplex $MPLEX_OPTS $MPEG2ENC_FMT -o \"$OUT_PREFIX.mpg\" \
+MPLEX_CMD="mplex $MPLEX_OPTS $MPEG2ENC_FMT -o \"$OUT_PREFIX.temp.mpg\" \
   \"$OUT_PREFIX.$VSUF\" \"$OUT_PREFIX.$ASUF\" >> $REDIR 2>&1"
 echo $MPLEX_CMD
 eval $MPLEX_CMD
@@ -599,12 +599,12 @@ $SPUMUX_BUTTONS
 EOF`
   echo $"$SPUMUX_XML" > "$OUT_PREFIX.xml"
   wait
-  SPUMUX_CMD="spumux \"$OUT_PREFIX.xml\" < \"$OUT_PREFIX.mpg\" > \"$OUT_PREFIX.temp.mpg\" 2>>$REDIR"
+  SPUMUX_CMD="spumux \"$OUT_PREFIX.xml\" < \"$OUT_PREFIX.temp.mpg\" > \"$OUT_PREFIX.mpg\" 2>>$REDIR"
   echo $SEPARATOR
   echo "Multiplexing menu selection highlight and menu with the following command:"
   echo $SPUMUX_CMD
   eval $SPUMUX_CMD
-  mv "$OUT_PREFIX.temp.mpg" "$OUT_PREFIX.mpg"
+  #mv "$OUT_PREFIX.temp.mpg" "$OUT_PREFIX.mpg"
   rm "$OUT_PREFIX.xml"
 fi
 
