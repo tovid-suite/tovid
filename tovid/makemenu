@@ -616,7 +616,7 @@ if $DEBUG; then
 else
     rm $BG_CANVAS $FG_CANVAS $FG_HIGHLIGHT $FG_SELECTION "$OUT_PREFIX.hi.png" \
       "$OUT_PREFIX.sel.png" "$OUT_PREFIX.$VSUF" "$OUT_PREFIX.$ASUF" "$OUT_PREFIX.ppm" \
-      "$BG_AUDIO.wav" "$OUT_PREFIX.xml"
+      "$BG_AUDIO.wav" "$OUT_PREFIX.temp.mpg" "$OUT_PREFIX.xml"
 fi
 
 echo $SEPARATOR
