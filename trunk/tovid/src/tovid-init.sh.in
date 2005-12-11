@@ -32,7 +32,7 @@ IFS=
 #set -u
 
 # Suite version
-TOVID_VERSION="svn"
+TOVID_VERSION="@VERSION@"
 
 # String used to separate blocks of output
 SEPARATOR="========================================================="
