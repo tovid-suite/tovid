@@ -1,4 +1,4 @@
-#!/bin/bash
+# -* sh *-
 . tovid-init
 
 # makeslides

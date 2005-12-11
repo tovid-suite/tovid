@@ -1,4 +1,4 @@
-#! /bin/sh
+# -* sh *-
 ME="[previd]:"
 . tovid-init
 
