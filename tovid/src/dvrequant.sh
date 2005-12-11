@@ -1,4 +1,4 @@
-#! /bin/bash
+# -* sh *-
 
 # DVrequant script   
 
