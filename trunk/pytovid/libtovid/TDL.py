@@ -29,7 +29,7 @@ following.
 
 First, tell python where to find this module:
 
-    >>> import Libtovid.TDL
+    >>> import libtovid.TDL
     >>>
 
 The first thing of interest is what elements are available in TDL:
@@ -77,7 +77,7 @@ usage_string() function:
 
 To display full usage notes for an element, do like this:
 
-    >>> print TDL.usage( 'Menu' )
+    >>> print TDL.usage('Menu')
     -highlightcolor [#RRGGBB|#RGB|COLORNAME] (default red)
         Undocumented option
 
@@ -150,7 +150,7 @@ class OptionDef:
         self.name = name
         self.argformat = argformat
         self.default = default
-        self.doc = strip_indentation( doc )
+        self.doc = strip_indentation(doc)
 
         
     def num_args(self):
@@ -331,10 +331,10 @@ for elem in element_options:
     elements.append(elem)
 
 
-def usage( elem ):
+def usage(elem):
     """Return a string containing usage notes for the given element type."""
     usage_str = ''
-    for opt, optdef in element_options[ elem ].iteritems():
+    for opt, optdef in element_options[elem].iteritems():
         usage_str += optdef.usage_string() + '\n'
     return usage_str
         
