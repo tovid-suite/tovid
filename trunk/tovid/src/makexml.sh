@@ -216,7 +216,7 @@ addMenu ()
     # Generate XML for the button linking to this titleset menu from the top menu
     TOP_MENU_BUTTONS=`cat << EOF
   $TOP_MENU_BUTTONS\
-    <button name=\"button$CUR_TS\">jump titleset $CUR_TS menu;<\/button>\n
+    <button>jump titleset $CUR_TS menu;<\/button>\n
 EOF`
 
     # Generate XML for the menu header, with a placeholder for
@@ -304,7 +304,7 @@ addTitle ()
       if [[ $CUR_VIDEO -lt 2 ]]; then
         MENU_BUTTONS=`cat << EOF
 $MENU_BUTTONS\
-        <button name=\"button$CUR_TITLE\">jump title $CUR_TITLE;<\/button>\n
+        <button>jump title $CUR_TITLE;<\/button>\n
 EOF`
       fi
     else
@@ -312,7 +312,7 @@ EOF`
       if [[ $CUR_VIDEO -le 1 ]]; then
         TOP_MENU_BUTTONS=`cat << EOF
 $TOP_MENU_BUTTONS\
-        <button name=\"button$CUR_TS\">jump titleset $CUR_TS menu;<\/button>\n
+        <button>jump titleset $CUR_TS menu;<\/button>\n
 EOF`
       fi
     fi 
@@ -490,7 +490,7 @@ closeTitleset ()
     if [[ -n $HAVE_TOP_MENU ]]; then
       MENU_BUTTONS=`cat << EOF
 $MENU_BUTTONS\
-      <button name=\"back\">jump vmgm menu;<\/button>\n
+      <button>jump vmgm menu;<\/button>\n
 EOF`
     fi
 
