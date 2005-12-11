@@ -606,17 +606,14 @@ EOF`
   echo "Multiplexing menu selection highlight and menu with the following command:"
   echo $SPUMUX_CMD
   eval $SPUMUX_CMD
-  mv "$OUT_PREFIX.temp.mpg" "$OUT_PREFIX.mpg"
-  rm "$OUT_PREFIX.xml"
 fi
 
 echo $SEPARATOR
-echo "Cleaning up..."
 if $DEBUG; then
-    # Leave temporary files in place
-    :
+    echo "Leaving temporary files in place"
 else
-    rm $BG_CANVAS $FG_CANVAS $FG_HIGHLIGHT $FG_SELECTION "$OUT_PREFIX.hi.png" \
+    echo "Cleaning up..."
+    rm -fv $BG_CANVAS $FG_CANVAS $FG_HIGHLIGHT $FG_SELECTION "$OUT_PREFIX.hi.png" \
       "$OUT_PREFIX.sel.png" "$OUT_PREFIX.$VSUF" "$OUT_PREFIX.$ASUF" "$OUT_PREFIX.ppm" \
       "$BG_AUDIO.wav" "$OUT_PREFIX.temp.mpg" "$OUT_PREFIX.xml"
 fi
