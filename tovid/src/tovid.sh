@@ -1220,13 +1220,13 @@ if test x"$IN_FILE_TYPE" = x"file"; then
         cleanup
         exit 0
     fi
-    if $VIDEO_OK; then
+    if ! $FORCE_ENCODING && $VIDEO_OK; then
         yecho
         yecho "Video stream is already compliant with $TVSYS $TGT_RES."
         yecho "No re-encoding is necessary. To force encoding, use -force"
         yecho
     fi
-    if $AUDIO_OK; then
+    if ! $FORCE_ENCODING && $AUDIO_OK; then
         yecho
         yecho "Audio stream is already compliant with $TVSYS $TGT_RES."
         yecho "No re-encoding is necessary. To force encoding, use -force"

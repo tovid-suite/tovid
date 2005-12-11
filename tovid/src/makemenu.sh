@@ -427,7 +427,8 @@ do
     if [[ $RES == "vcd" ]]; then
       TITLE_TEXT=$( echo "$TITLE_TEXT text 0,$CUR_Y '$CUR_BUTTON_NUM. $CUR_TITLE'" )
     else
-      TITLE_TEXT=$( echo "$TITLE_TEXT text 0,$CUR_Y '$CUR_TITLE'" )
+      TITLE_TEXT=$( echo "$TITLE_TEXT text 15,$CUR_Y '$CUR_TITLE'" )
+      BUTTON_TEXT=$( echo "$BUTTON_TEXT text 0,$CUR_Y '>'" )
     fi
     add_button "button${CUR_BUTTON_NUM}" $BUTTON_X1 $CUR_Y $BUTTON_X2 $NEXT_Y
     CUR_Y=$NEXT_Y
@@ -442,9 +443,10 @@ if [[ -n $BACK_BUTTON ]]; then
   CUR_Y=$NEXT_Y
   NEXT_Y=`expr $NEXT_Y \+ $TITLE_SPACING`
   if [[ $RES == "vcd" ]]; then
-    TITLE_TEXT=$( echo "$TITLE_TEXT text 0,$CUR_Y '$CUR_BUTTON_NUM. Back'" )
+    TITLE_TEXT=$( echo "$TITLE_TEXT text 15,$CUR_Y '$CUR_BUTTON_NUM. Back'" )
   else
     TITLE_TEXT=$( echo "$TITLE_TEXT text 0,$CUR_Y 'Back'" )
+    BUTTON_TEXT=$( echo "$BUTTON_TEXT text 0,$CUR_Y '<'" )
   fi
   add_button "back" $BUTTON_X1 $CUR_Y $BUTTON_X2 $NEXT_Y
 fi
@@ -506,8 +508,8 @@ eval $MAGICK_CMD
 
 # Add text titles in highlight color on transparent foreground
 MAGICK_CMD="convert -size ${FG_WIDTH}x${FG_HEIGHT} xc:none +antialias \
-  -font \"$USE_TITLE_FONT\" -pointsize $TITLE_SIZE -fill \"$HIGHLIGHT_COLOR\" \
-  -draw \"gravity $TEXT_ALIGN $TITLE_TEXT\" \
+  -font \"$USE_TITLE_FONT\" -weight bold -pointsize $TITLE_SIZE \
+  -fill \"$HIGHLIGHT_COLOR\" -draw \"gravity $TEXT_ALIGN $BUTTON_TEXT\" \
   -type Palette -colors 3 \
   png8:$FG_HIGHLIGHT"
 echo $SEPARATOR
@@ -517,8 +519,8 @@ eval $MAGICK_CMD
 
 # Add text titles in selection color on transparent foreground
 MAGICK_CMD="convert -size ${FG_WIDTH}x${FG_HEIGHT} xc:none +antialias \
-  -font \"$USE_TITLE_FONT\" -pointsize $TITLE_SIZE -fill \"$SELECT_COLOR\" \
-  -draw \"gravity $TEXT_ALIGN $TITLE_TEXT\" \
+  -font \"$USE_TITLE_FONT\" -weight bold -pointsize $TITLE_SIZE \
+  -fill \"$SELECT_COLOR\" -draw \"gravity $TEXT_ALIGN $BUTTON_TEXT\" \
   -type Palette -colors 3 \
   png8:$FG_SELECTION"
 echo $SEPARATOR
@@ -591,8 +593,8 @@ if [[ $RES == "dvd" ]]; then
   <stream>
   <spu force="yes" start="00:00:00.00"
        highlight="$OUT_PREFIX.hi.png"
-       select="$OUT_PREFIX.sel.png">
-$SPUMUX_BUTTONS
+       select="$OUT_PREFIX.sel.png"
+       autooutline="infer">
   </spu>
   </stream>
 </subpictures>
@@ -604,8 +606,8 @@ EOF`
   echo "Multiplexing menu selection highlight and menu with the following command:"
   echo $SPUMUX_CMD
   eval $SPUMUX_CMD
-  #mv "$OUT_PREFIX.temp.mpg" "$OUT_PREFIX.mpg"
-  #rm "$OUT_PREFIX.xml"
+  mv "$OUT_PREFIX.temp.mpg" "$OUT_PREFIX.mpg"
+  rm "$OUT_PREFIX.xml"
 fi
 
 echo $SEPARATOR
