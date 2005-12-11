@@ -1,8 +1,11 @@
-dnl Process this file with autoconf to produce a configure script.
-AC_INIT(tovid)
-AM_INIT_AUTOMAKE(tovid, svn)
+# Process this file with autoconf to produce a configure script.
 
-dnl Checks for programs.
+AC_INIT([tovid], [svn])
+AC_CONFIG_SRCDIR([src/tovid.sh])
+
+AM_INIT_AUTOMAKE
+
+# Checks for programs.
 AC_PROG_INSTALL
 
 # check for mandatory programs
@@ -38,4 +41,5 @@ if @<:@ -z "$MPLAYER" @:>@ || \
     AC_MSG_ERROR([Missing some dependencies. Exiting.])
 fi
 
-AC_OUTPUT(Makefile)
+AC_CONFIG_FILES([Makefile src/Makefile src/tovid-init.sh])
+AC_OUTPUT
