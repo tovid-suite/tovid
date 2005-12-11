@@ -12,11 +12,11 @@ import shlex
 # ===========================================================
 """This module contains a text parser for a simple option-attribute
 language. The current implementation is designed to work with the
-tovid design language defined in Libtovid/TDL.py.
+tovid design language defined in libtovid/TDL.py.
 
 To use this parser in your own module:
 
-    import Libtovid.Parser
+    import libtovid.Parser
 
 To create a parser for the TDL language:
 
@@ -106,9 +106,11 @@ class Parser:
 
         tok = self.lexer.get_token()
         if tok:
-            print "Got '%s'" % tok
+            #print "Got '%s'" % tok
+            pass
         else:
-            print "Got EOF"
+            #print "Got EOF"
+            pass
         return tok
 
 
@@ -142,8 +144,8 @@ class Parser:
                 name = self.next_token()   # e.g., "Music videos"
                 # Get a new element with the given type and name
                 element = self.lang.Element(tag, name)
-                print "New element created:"
-                print element.tdl_string()
+                #print "New element created:"
+                #print element.tdl_string()
 
                 # Add the element to the list
                 self.elements.append(element)
@@ -156,8 +158,8 @@ class Parser:
 
                 # How many arguments are expected for this
                 # option? (0, 1, or unlimited)
-                expected_args = self.lang.element_options[ element.tag ][ opt ].num_args()
-                print "%s expects %s args" % (opt, expected_args)
+                expected_args = self.lang.element_options[element.tag][opt].num_args()
+                #print "%s expects %s args" % (opt, expected_args)
 
                 # No args? Must just be a flag--set it to True
                 if expected_args == 0:

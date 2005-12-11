@@ -1,3 +1,18 @@
+#! /usr/bin/env python
+
+# tools.py
+
+# An interface to some external command-line tools for
+# encoding/multiplexing video.
+
+# Sort of a scratch-pad of functions at the moment
+
+from Target import *
+
+"""
+Notes:
+
+
 Command-line option variables:
 
 # Filters
@@ -49,66 +64,82 @@ MPEG2_FMT
 MPEG2_QUALITY
     vcd: -4 2 -2 1 -H
     other: -4 2 -2 1 -q $QUANT -H
+"""
 
-def get_mplayer_opts(format, tvsys, filters = []):
-
-    opts = ''
-
-    if 'denoise' in filters:
-        opts += '-vf-add hqdn3d '
-    if 'contrast' in filters:
-        opts += '-vf-add pp=al:f '
-    if 'deblock' in filters:
-        opts += '-vf-add pp=hb/vb '
-
-
-def get_mpeg2enc_opts(format, tvsys, aspect = '4:3'):
-    """Get mpeg2enc command-line options suitable for encoding
-    a video stream to the given format and TV system, at the given
-    aspect ratio (if the format supports it).
+def get_mplayer_cmd(infile, format, tvsys, filters = []):
+    """Get mplayer command-line for making a video compliant with the given
+    format and tvsys, while applying named custom filters, writing output to
+    stream.yuv.
     
-    Not yet implemented: Control over quality (bitrate/quantization)
-    and disc split size."""
+    TODO: Custom mplayer options, subtitles, interlacing, safe area, corresp.
+    to $MPLAYER_OPT, $SUBTITLES, $VF_PRE/POST, $YUV4MPEG_ILACE, etc.
+    
+    TODO: Determine aspect ratio and scale appropriately (in a separate
+    function, preferably)."""
 
-    opts = ''
+
+    cmd = 'mplayer -nosound -vo yuv4mpeg "%s" ' % infile
+    # Get resolution
+    tgt = Target(format, tvsys)
+    cmd += '-vf scale=%s:%s ' % tgt.get_resolution()
+    # Filters
+    if 'denoise' in filters:
+        cmd += '-vf-add hqdn3d '
+    if 'contrast' in filters:
+        cmd += '-vf-add pp=al:f '
+    if 'deblock' in filters:
+        cmd += '-vf-add pp=hb/vb '
+
+    return cmd
+
+
+def get_mpeg2enc_cmd(format, tvsys, aspect = '4:3'):
+    """Get mpeg2enc command-line suitable for encoding a video stream to the
+    given format and TV system, at the given aspect ratio (if the format
+    supports it).
+    
+    TODO: Control over quality (bitrate/quantization) and disc split size,
+    corresp. to $VID_BITRATE, $MPEG2_QUALITY, $DISC_SIZE, etc."""
+
+    cmd = 'cat stream.yuv | mpeg2enc '
     if tvsys == 'pal':
-        opts += '-F 3 -n p'
+        cmd += '-F 3 -n p '
     elif tvsys == 'ntsc':
-        opts += '-F 4 -n n'
+        cmd += '-F 4 -n n '
 
     if format == 'vcd':
-        opts += '-f 1 '
+        cmd += '-f 1 '
     elif format == 'svcd':
-        opts += '-f 4 '
+        cmd += '-f 4 '
     elif 'dvd' in format:
-        opts += '-f 8 '
+        cmd += '-f 8 '
 
     if aspect == '4:3':
-        opts += '-a 2 '
+        cmd += '-a 2 '
     elif aspect == '16:9':
-        opts += '-a 3 '
+        cmd += '-a 3 '
 
-    return opts
+    return cmd
 
 
-def get_mplex_opts(format, tvsys):
-    """Get mplex command-line options suitable for muxing
-    streams with the given format and TV system."""
+def get_mplex_cmd(format, tvsys):
+    """Get mplex command-line suitable for muxing streams with the given format
+    and TV system."""
 
-    opts = ''
+    cmd = 'mplex '
     if format == 'vcd':
-        opts += '-f 1 '
+        cmd += '-f 1 '
     elif format == 'dvd-vcd':
-        opts += '-V -f 8 '
+        cmd += '-V -f 8 '
     elif format == 'svcd':
-        opts += '-V -f 4 -b 230 '
+        cmd += '-V -f 4 -b 230 '
     elif format == 'half-dvd':
-        opts += '-V -f 8 -b 300 '
+        cmd += '-V -f 8 -b 300 '
     elif format == 'dvd':
-        opts += '-V -f 8 -b 400 '
+        cmd += '-V -f 8 -b 400 '
     # elif format == 'kvcd':
-    #   opts += '-V -f 5 -b 350 -r 10800 '
+    #   cmd += '-V -f 5 -b 350 -r 10800 '
 
-    return opts
+    return cmd
 
 
