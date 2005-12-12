@@ -33,6 +33,7 @@ IFS=
 
 # Suite version
 TOVID_VERSION="@VERSION@"
+BUILD_OPTIONS="@BUILD_OPTS@"
 
 # String used to separate blocks of output
 SEPARATOR="========================================================="
