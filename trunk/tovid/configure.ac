@@ -58,60 +58,48 @@ AM_INIT_AUTOMAKE
 # ******************************************************************************
 # Required Dependencies 
 # ******************************************************************************
-AC_MSG_NOTICE([Checking for required core dependencies...])
-AC_PATH_PROG(GREP, [grep], [NOT FOUND])
-AC_PATH_PROG(AWK, [awk], [NOT FOUND])
-AC_PATH_PROG(SED, [sed], [NOT FOUND])
-AC_PATH_PROG(MD5SUM, [md5sum], [NOT FOUND])
-AC_PATH_PROG(MPLAYER, [mplayer], [NOT FOUND])
-AC_PATH_PROG(MENCODER, [mencoder], [NOT FOUND])
-AC_PATH_PROG(MPLEX, [mplex], [NOT FOUND])
-AC_PATH_PROG(MPEG2ENC, [mpeg2enc], [NOT FOUND])
-AC_PATH_PROG(YUVFPS, [yuvfps], [NOT FOUND])
-AC_PATH_PROG(YUVDENOISE, [yuvdenoise], [NOT FOUND])
-AC_PATH_PROG(PPMTOY4M, [ppmtoy4m], [NOT FOUND])
-AC_PATH_PROG(MP2ENC, [mp2enc], [NOT FOUND])
-AC_PATH_PROG(FFMPEG, [ffmpeg], [NOT FOUND])
-AC_PATH_PROG(SOX, [sox], [NOT FOUND])
+AC_MSG_NOTICE([Checking for required core dependencies... (: means found)])
+AC_CHECK_PROG(GREP, [grep], [:], [false])
+AC_CHECK_PROG(SED, [sed], [:], [false])
+AC_CHECK_PROG(MD5SUM, [md5sum], [:], [false])
+AC_CHECK_PROG(MPLAYER, [mplayer], [:], [false])
+AC_CHECK_PROG(MENCODER, [mencoder], [:], [false])
+AC_CHECK_PROG(MPLEX, [mplex], [:], [false])
+AC_CHECK_PROG(MPEG2ENC, [mpeg2enc], [:], [false])
+AC_CHECK_PROG(YUVFPS, [yuvfps], [:], [false])
+AC_CHECK_PROG(YUVDENOISE, [yuvdenoise], [:], [false])
+AC_CHECK_PROG(PPMTOY4M, [ppmtoy4m], [:], [false])
+AC_CHECK_PROG(MP2ENC, [mp2enc], [:], [false])
+AC_CHECK_PROG(FFMPEG, [ffmpeg], [:], [false])
+AC_CHECK_PROG(SOX, [sox], [:], [false])
 
-if test "$GREP" = "NOT FOUND" || \
-   test "$AWK" = "NOT FOUND" || \
-   test "$SED" = "NOT FOUND" || \
-   test "$MD5SUM" = "NOT FOUND" || \
-   test "$MPLAYER" = "NOT FOUND" || \
-   test "$MENCODER" = "NOT FOUND" || \
-   test "$MPLEX" = "NOT FOUND" || \
-   test "$MPEG2ENC" = "NOT FOUND" || \
-   test "$YUVFPS" = "NOT FOUND" || \
-   test "$YUVDENOISE" = "NOT FOUND" || \
-   test "$PPMTOY4M" = "NOT FOUND" || \
-   test "$MP2ENC" = "NOT FOUND" || \
-   test "$FFMPEG" = "NOT FOUND" || \
-   test "$SOX" = "NOT FOUND"; then
-        AC_MSG_ERROR([
+################# PRE-TEMP#################
+##### Un-comment this section when optional dependencies are turned on.
+# Sneaky make-do array. 
+#DEP_LIST="grep=$GREP sed=$SED md5sum=$MD5SUM mplayer=$MPLAYER mencoder=$MENCODER mplex=$MPLEX #mpeg2enc=$MPEG2ENC yuvfps=$YUVFPS yuvdenoise=$YUVDENOISE ppmtoy4m=$PPMTOY4M mp2enc=$MP2ENC #ffmpeg=$FFMPEG sox=$SOX"
 
-Could not find these REQUIRED dependencies:
- 
-    grep:               $GREP
-    awk:                $AWK
-    sed:                $SED
-    md5sum:             $MD5SUM
-    mplayer:            $MPLAYER
-    mencoder:           $MENCODER
-    mplex:              $MPLEX
-    mpeg2enc:           $MPEG2ENC
-    yuvfps:             $YUVFPS
-    yuvdenoise:         $YUVDENOISE
-    ppmtoy4m:           $PPMTOY4M
-    mp2enc:             $MP2ENC
-    ffmpeg:             $FFMPEG
-    sox:                $SOX
- 
- Please install the missing (NOT FOUND) dependencies and ./configure again.
- See www.tovid.org for links.
- 
-])
-fi
+# We can use gawk with confidence because the above
+# initiation macros look for it and will exit if gawk isn't found.
+#FAIL=false
+#for DEP in $DEP_LIST
+#do
+#  NAME=`echo $DEP | gawk -F '=' '{ print $1 }'`
+#  FOUND=`echo $DEP | gawk -F '=' '{ print $2 }'`
+#  if $FOUND; then :
+#  else
+#    AC_MSG_WARN([Cannot find REQUIRED dependency: $NAME])
+#    FAIL=:
+#  fi
+#done
+
+#if $FAIL; then
+# AC_MSG_ERROR([
+#
+# Could not find the above REQUIRED dependencies.
+# Please install the missing dependencies and ./configure again.
+# See www.tovid.org for links.
+#])
+#fi
 
 # ******************************************************************************
 # Optional Dependencies 
@@ -120,25 +108,25 @@ fi
 AC_MSG_NOTICE([Checking for optional dependencies...])
 
 # ImageMagick components
-AC_MSG_NOTICE([Checking for ImageMagick...])
+AC_MSG_NOTICE([Checking for ImageMagick... (: means found)])
 AC_CHECK_PROG(HAVE_COMPOSITE, [composite], [:], [false])
 AC_CHECK_PROG(HAVE_CONVERT, [convert], [:], [false])
 
 if $HAVE_COMPOSITE && $HAVE_CONVERT; then
    HAVE_MAGICK="magick"
-   HAVE_COMPOSITE="composite"
-   HAVE_CONVERT="convert"
+   HAVE_COMPOSITE="ok"
+   HAVE_CONVERT="ok"
 else
    HAVE_MAGICK=""
-   if $HAVE_COMPOSITE; then HAVE_COMPOSITE="composite"; else HAVE_COMPOSITE="NOT FOUND"; fi
-   if $HAVE_CONVERT; then HAVE_CONVERT="convert"; else HAVE_CONVERT="NOT FOUND"; fi
+   if $HAVE_COMPOSITE; then HAVE_COMPOSITE="ok"; else HAVE_COMPOSITE="MISSING"; fi
+   if $HAVE_CONVERT; then HAVE_CONVERT="ok"; else HAVE_CONVERT="MISSING"; fi
    AC_MSG_WARN([Cannot find ImageMagick! You cannot use makemenu or mkslides.])
 fi
 
 # dvdauthor compononets
 # (note: growisofs and mkisofs are NOT distributed with dvdauthor, but for tovid's
 # purposes, it fits in the same catagory, as it burns DVDs!)
-AC_MSG_NOTICE([Checking for dvd tools...])
+AC_MSG_NOTICE([Checking for dvd tools... (: means found)])
 AC_CHECK_PROG(HAVE_SPUMUX, [spumux], [:], [false])
 AC_CHECK_PROG(HAVE_DVDAUTHOR, [dvdauthor], [:], [false])
 AC_CHECK_PROG(HAVE_GROWISOFS, [growisofs], [:], [false])
@@ -146,50 +134,50 @@ AC_CHECK_PROG(HAVE_MKISOFS, [mkisofs], [:], [false])
 
 if $HAVE_SPUMUX && $HAVE_DVDAUTHOR && $HAVE_GROWISOFS && $HAVE_MKISOFS; then
    HAVE_DVD="dvd"
-   HAVE_SPUMUX="spumux"
-   HAVE_DVDAUTHOR="dvdauthor"
-   HAVE_GROWISOFS="growisofs"
-   HAVE_MKISOFS="mkisofs"
+   HAVE_SPUMUX="ok"
+   HAVE_DVDAUTHOR="ok"
+   HAVE_GROWISOFS="ok"
+   HAVE_MKISOFS="ok"
 else
    HAVE_DVD=""
-   if $HAVE_SPUMUX; then HAVE_SPUMUX="spumux"; else HAVE_SPUMUX="NOT FOUND"; fi
-   if $HAVE_DVDAUTHOR; then HAVE_DVDAUTHOR="dvdauthor"; else HAVE_DVDAUTHOR="NOT FOUND"; fi
-   if $HAVE_GROWISOFS; then HAVE_GROWISOFS="growisofs"; else HAVE_GROWISOFS="NOT FOUND"; fi
-   if $HAVE_MKISOFS; then HAVE_MKISOFS="mkisofs"; else HAVE_MKISOFS="NOT FOUND"; fi
+   if $HAVE_SPUMUX; then HAVE_SPUMUX="ok"; else HAVE_SPUMUX="MISSING"; fi
+   if $HAVE_DVDAUTHOR; then HAVE_DVDAUTHOR="ok"; else HAVE_DVDAUTHOR="MISSING"; fi
+   if $HAVE_GROWISOFS; then HAVE_GROWISOFS="ok"; else HAVE_GROWISOFS="MISSING"; fi
+   if $HAVE_MKISOFS; then HAVE_MKISOFS="ok"; else HAVE_MKISOFS="MISSING"; fi
    AC_MSG_WARN([Cannot find dvd authoring tools! You cannot burn DVDs.])
 fi
 
 # vcdimager components
 # (note: cdrdao is NOT distributed with vcdimager, but for tovid's
 # purposes, it fits in the same catagory, as it burns (S)VCDs!)
-AC_MSG_NOTICE([Checking for vcd tools...])
+AC_MSG_NOTICE([Checking for vcd tools...] (: means found))
 AC_CHECK_PROG(HAVE_VCDXBUILD, [vcdxbuild], [:], [false])
 AC_CHECK_PROG(HAVE_CDRDAO, [cdrdao], [:], [false])
 
 if $HAVE_VCDXBUILD && $HAVE_CDRDAO; then
    HAVE_VCD="vcd"
-   HAVE_VCDXBUILD="vcdxbuild"
-   HAVE_CDRDAO="cdrdao"
+   HAVE_VCDXBUILD="ok"
+   HAVE_CDRDAO="ok"
 else
    HAVE_VCD=""
-   if $HAVE_VCDXBUILD; then HAVE_VCDXBUILD="vcdxbuild"; else HAVE_VCDXBUILD="NOT FOUND"; fi
-   if $HAVE_CDRDAO; then HAVE_CDRDAO="cdrdao"; else HAVE_CDRDAO="NOT FOUND"; fi
+   if $HAVE_VCDXBUILD; then HAVE_VCDXBUILD="ok"; else HAVE_VCDXBUILD="MISSING"; fi
+   if $HAVE_CDRDAO; then HAVE_CDRDAO="ok"; else HAVE_CDRDAO="MISSING"; fi
    AC_MSG_WARN([Cannot find vcdimager! You cannot burn (S)VCDs.])
 fi
 
 # transcode components
-AC_MSG_NOTICE([Checking for transcode...])
+AC_MSG_NOTICE([Checking for transcode... (: means found)])
 AC_CHECK_PROG(HAVE_TCPROBE, [tcprobe], [:], [false])
 AC_CHECK_PROG(HAVE_TCREQUANT, [tcrequant], [:], [false])
 
 if $HAVE_TCPROBE && $HAVE_TCREQUANT; then
    HAVE_TRANSCODE="transcode"
-   HAVE_TCPROBE="tcprobe"
-   HAVE_TCREQUANT="tcrequant"
+   HAVE_TCPROBE="ok"
+   HAVE_TCREQUANT="ok"
 else
    HAVE_TRANSCODE=""
-   if $HAVE_TCPROBE; then HAVE_TCPROBE="tcprobe"; else HAVE_TCPROBE="NOT FOUND"; fi
-   if $HAVE_TCREQUANT; then HAVE_TCREQUANT="tcrequant"; else HAVE_TCREQUANT="NOT FOUND"; fi
+   if $HAVE_TCPROBE; then HAVE_TCPROBE="ok"; else HAVE_TCPROBE="MISSING"; fi
+   if $HAVE_TCREQUANT; then HAVE_TCREQUANT="ok"; else HAVE_TCREQUANT="MISSING"; fi
    AC_MSG_WARN([Cannot find transcode! You cannot use postproc.])
 fi
 
@@ -202,6 +190,51 @@ then
 else
    OPT_DEPENDENCIES="SOME MISSING"
 fi
+
+############### TEMP ##################
+##### For now, all dependencies are required, later these will be optional
+
+# Sneaky make-do array. 
+DEP_LIST="grep=$GREP sed=$SED md5sum=$MD5SUM mplayer=$MPLAYER mencoder=$MENCODER mplex=$MPLEX mpeg2enc=$MPEG2ENC yuvfps=$YUVFPS yuvdenoise=$YUVDENOISE ppmtoy4m=$PPMTOY4M mp2enc=$MP2ENC ffmpeg=$FFMPEG sox=$SOX"
+
+FAIL=false
+for DEP in $DEP_LIST
+do
+  NAME=`echo $DEP | gawk -F '=' '{ print $1 }'`
+  FOUND=`echo $DEP | gawk -F '=' '{ print $2 }'`
+  if $FOUND; then :
+  else
+    AC_MSG_WARN([Cannot find REQUIRED dependency: $NAME])
+    FAIL=:
+  fi
+done
+
+# Another sneaky make-do array. 
+DEP_LIST="composite=$HAVE_COMPOSITE convert=$HAVE_CONVERT spumux=$HAVE_SPUMUX dvdauthor=$HAVE_DVDAUTHOR growisofs=$HAVE_GROWISOFS mkisofs=$HAVE_MKISOFS vcdxbuild=$HAVE_VCDXBUILD cdrdao=$HAVE_CDRDAO tcprobe=$HAVE_TCPROBE tcrequant=$HAVE_TCREQUANT"
+
+##### Un-comment when optional dependencies are turned on
+#FAIL=false
+for DEP in $DEP_LIST
+do
+  NAME=`echo $DEP | gawk -F '=' '{ print $1 }'`
+  FOUND=`echo $DEP | gawk -F '=' '{ print $2 }'`
+  if test x$FOUND = "xok"; then :
+  else
+    AC_MSG_WARN([Cannot find REQUIRED dependency: $NAME])
+    FAIL=:
+  fi
+done
+
+if $FAIL; then
+ AC_MSG_ERROR([
+
+ Could not find the above REQUIRED dependencies.
+ Please install the missing dependencies and ./configure again.
+ See www.tovid.org for links.
+])
+fi
+############## END TEMP #################
+
 
 BUILD_OPTS=""
 for OPT in $HAVE_DVD $HAVE_VCD $HAVE_MAGICK $HAVE_TRANSCODE
@@ -235,7 +268,7 @@ FINAL SUMMARY
 
 Required dependencies   ALL FOUND
 
-Optional dependencies   $OPT_DEPENDENCIES
+Other dependencies      $OPT_DEPENDENCIES
   
   magick (needed to make menus and slideshows)
     composite:          $HAVE_COMPOSITE
@@ -253,12 +286,17 @@ Optional dependencies   $OPT_DEPENDENCIES
     
   transcode (needed to compress encoded videos)
     tcprobe:            $HAVE_TCPROBE
-    tcrequant           $HAVE_TCREQUANT
+    tcrequant:          $HAVE_TCREQUANT
 
- If optional dependencies are missing (NOT FOUND), some features of the 
- tovid suite will be disabled. Please install any missing dependencies 
- and ./configure again. See www.tovid.org for links.
+ You may now type 'su -c make install' to compile and install tovid.
  ])
 
+############ POST-TEMP #################
+##### This message belongs in the FINAL SUMMARY once optional dependencies
+##### are turned on.
+# If optional dependencies are missing (MISSING), some features of the 
+# tovid suite will be disabled. Please install any missing dependencies 
+# and ./configure again. See www.tovid.org for links. 
+ 
 AC_CONFIG_FILES([Makefile src/Makefile src/tovid-init.sh])
 AC_OUTPUT
