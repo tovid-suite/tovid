@@ -30,7 +30,7 @@ ME="[tovid]:"
 # Script name and usage notes
 
 SCRIPT_NAME=`cat << EOF
---------------------------------
+-------------------------------*** -
 tovid video conversion script
 Version $TOVID_VERSION
 http://tovid.sourceforge.net/
@@ -40,177 +40,20 @@ EOF`
 USAGE=`cat << EOF
 Usage: tovid [OPTIONS] -in {input file} -out {output prefix}
 
-OPTIONS may be any of the following:
+Common options:
 
-    -v, -version    Prints tovid version number only
+    -dvd | -half-dvd | -dvd-vcd         Encode to standard DVD format
+    -vcd | -svcd                        Encode to (S)VCD format
+    -kvcd | -ksvcd | -kdvd              Encode to non-standard MPEG-2 format
+    -pal | -ntsc | -ntscfilm            Set TV standard
 
-Television standards:
-    -ntsc           NTSC format video (USA, Americas) (default)
-    -ntscfilm       NTSC-film format video
-    -pal            PAL format video (Europe and others)
+Example:
 
-Formats:
+    tovid -in foo.avi -out foo_encoded
+        Convert 'foo.avi' with default options (NTSC DVD), putting the
+        encoded video in 'foo_encoded.mpg'.
 
-  Standard formats, should be playable in most DVD players:
-    -dvd            (720x480 NTSC, 720x576 PAL) DVD-compatible output (default)
-    -half-dvd       (352x480 NTSC, 352x576 PAL) Half-D1-compatible output
-    -svcd           (480x480 NTSC, 480x576 PAL) Super VideoCD-compatible output
-    -dvd-vcd        (352x240 NTSC, 352x288 PAL) VCD-on-DVD output
-    -vcd            (352x240 NTSC, 352x288 PAL) VideoCD-compatible output
-
-  Non-standard formats, playable in some DVD players:
-    -kvcdx3/-kvcd   (528x480 NTSC, 520x576 PAL) KVCDx3 long-playing VCD
-    -kvcdx3a/-ksvcd (544x480 NTSC, 544x576 PAL) KVCDx3A long-playing VCD
-    -kdvd           (720x480 NTSC, 720x576 PAL) KDVD long-playing DVD
-
-Other options:
-  -config FILE      Include command-line options contained in FILE
-  -overwrite        Overwrite any existing output files with the specified name
-  -force            Force encoding, even if the existing file is already compliant
-  -version          Print out the tovid version number and exit
-  -help             Print out all usage information, including advanced options
-
-Example: Convert HomeMovie.avi to DVD widescreen format, output in HomeMovie.mpg:
-  tovid -dvd -wide -in HomeMovie.avi -out HomeMovie
-
-You may use a full URI as the input file (i.e., "http://foo.com/video.avi"),
-although this feature is still experimental.
-
-Use 'tovid -help' to see advanced options.
-EOF`
-
-ADVANCED_USAGE=`cat << EOF
-
-Advanced options
-----------------
-
-Aspect ratios:
-
-    tovid automatically determines aspect ratio of the input video by
-    playing it in mplayer. If your video plays with correct aspect in
-    mplayer, you should not need to override the default tovid behavior.
-
-    If mplayer does not play your video with correct aspect, you may
-    provide an explicit aspect ratio in one of several ways:
-
-        -full           Same as -aspect 4:3
-        -wide           Same as -aspect 16:9
-        -panavision     Same as -aspect 235:100
-        -aspect WIDTH:HEIGHT
-            Custom aspect, where WIDTH and HEIGHT are integers.
-
-    NOTE: This is the INPUT aspect ratio. tovid chooses an optimal
-    output aspect ratio for the selected disc format (VCD, DVD, etc.)
-    and does the appropriate letterboxing or anamorphic scaling.
-
-Video adjustment:
-
-  -quality NUM (EXPERIMENTAL. Default is 8)
-        Desired output quality, on a scale of 1 to 10, with 10
-        giving the best quality at the expense of a larger
-        output file. Output size can vary by approximately a
-        factor of 4 (that is, -quality 1 output can be 25%
-        the size of -quality 10 output). Your results may vary.
-        
-        At present, this option affects both output
-        bitrate and quantization (but may, in the future, affect
-        other quality/size-related attributes). Use -vbitrate
-        if you want to explicitly provide a maximium bitrate.
-
-  -vbitrate NUM
-        Maximum bitrate to use for video (in kbits/sec). Must be
-        within allowable limits for the given format. Overrides
-        default values.
-  -interlaced (EXPERIMENTAL)
-        Do interlaced encoding of the input video. Use this option if
-        your video is interlaced, and you want to preserve as much
-        picture quality as possible. Ignored for VCD.
-  -deinterlace
-        Remove interlacing from the source video. Use this if you want
-        to produce progressive output video. Note: the currently-used
-        deinterlacing method results in significant loss of vertical
-        resolution, due to averaging or blending. Use the -interlaced
-        option for better results.
-  -subtitles FILE
-        Get subtitles from FILE and encode them into the video.
-        WARNING: This hard-codes the subtitles into the video, and you
-        cannot turn them off while viewing the video. By default, no
-        subtitles are loaded. If your video is already compliant with the
-        chosen output format, it will be re-encoded to include the subtitles.
-  -type {live|animation|bw}
-        Optimize video encoding for different kinds of video. Use
-        'live' (default) for live-action video, use 'animation' for
-        cartoons or anime, and 'bw' for black-and-white video.
-        This option currently only has an effect with KVCD/KSVCD
-        output formats; other formats may support this in the future.
-  -safe PERCENT
-        Fit the video within a safe area defined by PERCENT. For example,
-        "-safe 90%" will scale the video to 90% of the width/height of
-        the output resolution, and pad the edges with a black border. Use
-        this if some of the picture is cut off when played on your TV.
-        The percent sign is optional.
-  -filters {none,denoise,contrast,all} (default none)
-        Apply post-processing filters to enhance the video. If your input
-        video is very high quality, use 'none'. If your input video is grainy,
-        use 'denoise'; if it looks washed out or faded, use 'contrast'. You
-        can use multiple filters separated by commas. To apply all filters,
-        use 'all'.
-  -fps RATIO
-        Force input video to be interpreted as [NUM] frames per second.
-        May be necessary for some ASF, MOV, or other videos. NUM
-        should be an integer ratio such as "24000:1001" (23.976fps),
-        "30000:1001" (29.97fps), or "25:1" (25fps). This option is
-        temporary, and may disappear in future releases.
-
-Audio adjustment:
-
-  -normalize
-        Normalize the volume of the audio. Useful if the audio is too
-        quiet or too loud, or you want to make volume consistent for
-        a bunch of videos.
-  -abitrate NUM
-        Maximum bitrate to use for audio (in kbits/sec). Must be within
-        allowable limits for the given format. Ignored for VCD.
-        Default is 224. 
-
-Other options:
-
-  -debug             
-        Print extra debugging information to the log file. Useful in
-        diagnosing problems if they occur. This option also leaves
-        the log file (with a .log extension) in the directory after
-        encoding finishes.
-  -priority {low|medium|high}
-        Sets the main encoding process to the given priority. With
-        high priority, it may take other programs longer to load
-        and respond. With lower priority, other programs will be
-        more responsive, but encoding may take 30-40% longer.
-        The default is high priority.
-  -discsize NUM
-        This sets the desired target DVD/CD-R size in MB (10^6). Default
-        is 700 for CD, 4500 for DVD. Use higher values at your own risk.
-        Use 650 or lower if you plan to burn to smaller-capacity CDs.
-  -parallel
-        Will perform encode/rip processes in parallel using named
-        pipes. Maximizes CPU utilization and minimizes disk usage.
-  -update SECS
-        Print status updates at intervals of SECS seconds. This affects
-        how regularly the progress-meter is updated. The default is once
-        per second
-  -mplayeropts "OPTIONS"
-        Append OPTIONS to the mplayer command run during video encoding.
-        Use this if you want to add specific video filters (documented in
-        the mplayer manual page). Overriding some options will cause
-        encoding to fail, so use this with caution!
-  -ffmpeg (EXPERIMENTAL)
-        Use ffmpeg for video encoding, instead of mplayer/mpeg2enc.
-        Encoding will be noticeably faster; (S)VCD and DVD are supported,
-        but KVCD/KDVD is not fully supported yet.
-  -nofifo (EXPERIMENTAL)
-        Do not use a FIFO pipe for video encoding. If you are getting
-        "Broken pipe" errors with normal encoding, try this option.
-        WARNING: This uses lots of disk space (about 2 GB per minute of
-        video).
+See the tovid manual page ('man tovid') for additional documentation.
 
 EOF`
 
@@ -370,7 +213,7 @@ usage_error()
 {
     printf "%s\n" "$USAGE"
     printf "%s\n" "$SEPARATOR"
-    echo $@
+    printf "*** %s\n" "$@"
     exit 1
 }
 
@@ -428,7 +271,7 @@ check_disk_space()
         yecho  "The encoding process will require about"
     # Estimate space based as kbps * duration
     else
-        NEED_SPACE=`expr $V_DURATION \* $K_PER_SEC / 500`
+        NEED_SPACE=`expr $V_DURATION \* $K_PER_SEC \/ 500`
         yecho "The encoding process is estimated to require $NEED_SPACE MB of disk space."
     fi
 
@@ -745,8 +588,11 @@ printf "%s\n" "$SCRIPT_NAME"
 # ******************************************************************************
 
 # Make sure infile and outfile were provided somewhere
-if test -z "$IN_FILE" || test -z "$OUT_PREFIX"; then
-    usage_error "Please provide input and output filenames using -in and -out options."
+if test -z "$IN_FILE"; then
+    usage_error "Please provide an input filename with the -in option."
+fi
+if test -z "$OUT_PREFIX"; then
+    usage_error "Please provide an output name with the -out option."
 fi
 
 # Determine whether input is a normal file or a URI of some sort
@@ -1027,7 +873,7 @@ yecho
 
 # Set nonvideo bitrate
 # Formula: Sum of all nonvideo bitrates + 1% of total bitrate
-NONVIDEO_BITRATE=`expr \( 101 \* $AUD_BITRATE + $VID_BITRATE \) / 100`
+NONVIDEO_BITRATE=`expr \( 101 \* $AUD_BITRATE \+ $VID_BITRATE \) \/ 100`
 
 # Put available mplayer -vf filters into temp file
 mplayer -vf help > "$SCRATCH_FILE" 2>&1
@@ -1067,14 +913,16 @@ if $DEINTERLACE; then
 fi
 
 # Default quantization
-QUANT=`expr 13 - $VID_QUALITY`
+QUANT=`expr 13 \- $VID_QUALITY`
 
 # mpeg2enc encoding quality options
 # Don't use -q for VCD (since -q implies variable bitrate)
 if test x"$TGT_RES" = x"VCD"; then
     MPEG2_QUALITY="-4 2 -2 1 -H"
+    FF_QUANT=""
 else
     MPEG2_QUALITY="-4 2 -2 1 -q $QUANT -H"
+    FF_QUANT="-qscale $QUANT"
 fi
 
 # Apply requested postprocessing filters, or
@@ -1113,7 +961,7 @@ fi
 # Do fast encoding if requested. Sacrifice quality for encoding speed.
 # NOT IMPLEMENTED IN COMMAND-LINE YET!
 if $FAST_ENCODING; then
-    QUANT=`expr $QUANT + 4`
+    QUANT=`expr $QUANT \+ 4`
     MPEG2_QUALITY="-4 4 -2 4 -q $QUANT"
 fi
 
@@ -1256,12 +1104,12 @@ if test -n "$ASPECT_RATIO"; then
     yecho "Using explicitly provided aspect ratio of $ASPECT_RATIO"
     PLAY_WIDTH=`echo $ASPECT_RATIO | awk -F ':' '{print $1}'`
     PLAY_HEIGHT=`echo $ASPECT_RATIO | awk -F ':' '{print $2}'`
-    V_ASPECT_WIDTH=`expr $PLAY_WIDTH \* 100 / $PLAY_HEIGHT`
+    V_ASPECT_WIDTH=`expr $PLAY_WIDTH \* 100 \/ $PLAY_HEIGHT`
 else
     # Set human-readable aspect ratio string
     # (i.e., format '133' as '1.33:1', etc.)
-    #ASPECT_RATIO=`echo $V_ASPECT_WIDTH | sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g'`
-    yecho "Using auto-detected aspect ratio of $V_ASPECT_WIDTH:100 (override with -aspect)"
+    ASPECT_RATIO="$V_ASPECT_WIDTH:100"
+    yecho "Using auto-detected aspect ratio of $ASPECT_RATIO (override with -aspect)"
 fi
 
 
@@ -1269,10 +1117,12 @@ fi
 # (anamorphic widescreen)
 if test x"$FORMAT" = x"DVD" && test "$V_ASPECT_WIDTH" -ge 177; then
     TGT_ASPECT_WIDTH=177
+    FF_ASPECT="-aspect 16:9"
     ASPECT_FMT="-a 3"
 # For all others, overall aspect is 4:3 (133 / 100)
 else
     TGT_ASPECT_WIDTH=133
+    FF_ASPECT="-aspect 4:3"
     ASPECT_FMT="-a 2"
 fi
 
@@ -1287,25 +1137,25 @@ if test "$V_ASPECT_WIDTH" -eq "$TGT_ASPECT_WIDTH"; then
 elif test "$V_ASPECT_WIDTH" -gt "$TGT_ASPECT_WIDTH"; then
     yecho "Letterboxing vertically"
     INNER_WIDTH=$TGT_WIDTH
-    INNER_HEIGHT=`expr $TGT_HEIGHT \* $TGT_ASPECT_WIDTH / $V_ASPECT_WIDTH`
+    INNER_HEIGHT=`expr $TGT_HEIGHT \* $TGT_ASPECT_WIDTH \/ $V_ASPECT_WIDTH`
 # Otherwise, use full height, and letterbox horizontally
 else
     yecho "Letterboxing horizontally"
-    INNER_WIDTH=`expr $TGT_WIDTH \* $V_ASPECT_WIDTH / $TGT_ASPECT_WIDTH`
+    INNER_WIDTH=`expr $TGT_WIDTH \* $V_ASPECT_WIDTH \/ $TGT_ASPECT_WIDTH`
     INNER_HEIGHT=$TGT_HEIGHT
 fi
 
 if test $SAFE_AREA -lt 100; then
     yecho "Using a safe area of ${SAFE_AREA}%"
     # Reduce inner size to fit within safe area
-    INNER_WIDTH=`expr $INNER_WIDTH \* $SAFE_AREA / 100`
-    INNER_HEIGHT=`expr $INNER_HEIGHT \* $SAFE_AREA / 100`
+    INNER_WIDTH=`expr $INNER_WIDTH \* $SAFE_AREA \/ 100`
+    INNER_HEIGHT=`expr $INNER_HEIGHT \* $SAFE_AREA \/ 100`
 fi
 
 # Round down inner width and height to nearest multiple of 16
 # for optimal encoding
-INNER_WIDTH=`expr $INNER_WIDTH - \( $INNER_WIDTH \% 16 \)`
-INNER_HEIGHT=`expr $INNER_HEIGHT - \( $INNER_HEIGHT \% 16 \)`
+INNER_WIDTH=`expr $INNER_WIDTH \- \( $INNER_WIDTH \% 16 \)`
+INNER_HEIGHT=`expr $INNER_HEIGHT \- \( $INNER_HEIGHT \% 16 \)`
 
 # ******************************************************************************
 #
@@ -1366,19 +1216,20 @@ fi
 # If using ffmpeg, encode and exit
 # ******************************************************************************
 if $USE_FFMPEG; then
-    yecho "Using ffmpeg to do all encoding"
+    yecho
+    yecho "Using ffmpeg to encode audio and video."
+
     FF_TVSTD="-tvstd $BASETVSYS"
     FF_SIZE="-s ${INNER_WIDTH}x${INNER_HEIGHT}"
     FF_FPS="-r $TGT_FPS"
     FF_BITRATE="-b $VID_BITRATE -ab $AUD_BITRATE"
     FF_SAMPRATE="-ar $SAMPRATE"
-    FF_ASPECT="-aspect $ASPECT_RATIO"
 
     # Padding, for any letterboxing to be done
     FF_VPAD=""
     FF_HPAD=""
-    FF_VPIX=`expr \( $TGT_HEIGHT - $INNER_HEIGHT \) / 2`
-    FF_HPIX=`expr \( $TGT_WIDTH - $INNER_WIDTH \) / 2`
+    FF_VPIX=`expr \( $TGT_HEIGHT \- $INNER_HEIGHT \) \/ 2`
+    FF_HPIX=`expr \( $TGT_WIDTH \- $INNER_WIDTH \) \/ 2`
     test "$FF_VPIX" -ne 0 && FF_VPAD="-padtop $FF_VPIX -padbottom $FF_VPIX"
     test "$FF_HPIX" -ne 0 && FF_HPAD="-padleft $FF_HPIX -padright $FF_HPIX"
 
@@ -1396,11 +1247,21 @@ if $USE_FFMPEG; then
             ;;
     esac
     
-    FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $FF_ASPECT $FF_CODECS $FF_BITRATE $FF_TVSTD \
-        $FF_TARGET $FF_FPS $FF_SIZE $FF_VPAD $FF_HPAD \"$OUT_FILENAME\""
+    FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" \
+        $FF_QUANT $FF_CODECS $FF_BITRATE $FF_TVSTD $FF_TARGET $FF_FPS \
+        $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT \"$OUT_FILENAME\""
     yecho "Encoding video and audio with the following command:"
     yecho "$FF_ENC_CMD"
-    eval "$FF_ENC_CMD"
+    if $DEBUG; then
+        eval "$FF_ENC_CMD" 2>&1 | tee -a "$LOG_FILE" &
+    else
+        eval "$FF_ENC_CMD" >> "$LOG_FILE" 2>&1 &
+    fi
+
+    PIDS="$PIDS $!"
+    file_output_progress "$OUT_FILENAME" "Encoding with ffmpeg"
+    wait
+    yecho
     cleanup
     exit 0
 fi
@@ -1419,7 +1280,7 @@ fi
 
 # If audio is already in the chosen output format, do not re-encode.
 if ! $FORCE_ENCODING && $AUDIO_OK; then
-    yecho "Copying the existing audio stream using the following command:"
+    yecho "Copying the existing audio stream with the following command:"
     AUDIO_CMD="$PRIORITY mplayer \"$IN_FILE\" -dumpaudio -dumpfile \"$OUT_PREFIX.$AUD_SUF\""
     yecho "$AUDIO_CMD"
 
@@ -1565,7 +1426,7 @@ if ! $FORCE_ENCODING && $VIDEO_OK; then
         wait
     fi
 else
-    yecho "Encoding video stream using the following commands:"
+    yecho "Encoding video stream with the following commands:"
 
     # Normal one-pass encoding, with mplayer piped into the mjpegtools
     if $USE_FIFO; then
@@ -1634,7 +1495,7 @@ fi
 AUDIO_SIZE=`du -c -b "$OUT_PREFIX.$AUD_SUF" | awk 'END{print $1}'`
 VIDEO_SIZE=`du -c -b "$OUT_PREFIX.$VID_SUF" | awk 'END{print $1}'`
 # Total size of streams so far (in MBytes)
-TOTAL_SIZE=`expr \($AUDIO_SIZE \+ $VIDEO_SIZE \) \/ 1000000`
+TOTAL_SIZE=`expr \( $AUDIO_SIZE \+ $VIDEO_SIZE \) \/ 1000000`
 # If it will exceed disc size, add '%d' field to allow mplex to split the output
 if test $TOTAL_SIZE -gt $DISC_SIZE; then
     OUT_FILENAME=`echo "$OUT_FILENAME" | sed -e 's/\.mpg$/.%d.mpg/'`
@@ -1642,7 +1503,7 @@ fi
 
 
 MPLEX_CMD="mplex $MUX_OPTS -o \"$OUT_FILENAME\" \"$OUT_PREFIX.$VID_SUF\" \"$OUT_PREFIX.$AUD_SUF\""
-yecho "Multiplexing audio and video together using the following command:"
+yecho "Multiplexing audio and video together with the following command:"
 yecho $MPLEX_CMD
 if $DEBUG; then
     eval "$MPLEX_CMD" 2>&1 | tee -a "$LOG_FILE" &
@@ -1733,16 +1594,16 @@ fi
 
 # Gather some statistics...
 SCRIPT_END_TIME=`date +%s`
-SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME - $SCRIPT_START_TIME`
+SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
 HHMMSS=`format_time $SCRIPT_TOT_TIME`
 # Avoid dividing by zero (+1 in denominator, since accuracy isn't that important)
-FINAL_BITRATE=`expr $FINAL_SIZE / \( $V_DURATION + 1 \)`
+FINAL_BITRATE=`expr $FINAL_SIZE \/ \( $V_DURATION \+ 1 \)`
 # Get average/peak bitrates from mplex
 AVG_BITRATE=`grep 'Average bit-rate' "$LOG_FILE" | awk '{print $6}'`
 PEAK_BITRATE=`grep 'Peak bit-rate' "$LOG_FILE" | awk '{print $6}'`
 # Convert to kbits/sec
-AVG_BITRATE=`expr $AVG_BITRATE / 1000`
-PEAK_BITRATE=`expr $PEAK_BITRATE / 1000`
+AVG_BITRATE=`expr $AVG_BITRATE \/ 1000`
+PEAK_BITRATE=`expr $PEAK_BITRATE \/ 1000`
 
 # Final statistics string (pretty-printed)
 FINAL_STATS_PRETTY=`cat << EOF
