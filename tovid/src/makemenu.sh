@@ -36,99 +36,23 @@ http://tovid.sourceforge.net/
 EOF`
 
 USAGE=`cat << EOF
-Usage: makemenu [FORMAT] [OPTIONS] TITLES -out OUT_PREFIX
+Usage: makemenu [OPTIONS] "Title1" "Title2" ... -out {output prefix}
 
-Where FORMAT is any of the following:
+Common options:
 
-  -ntsc (default)
-  -ntscfilm
-    Generate an NTSC-format menu
-  -pal
-    Generate a PAL-format menu
-    
-  -dvd (default)
-    Generate a DVD-format menu, with highlighted text included
-    as a multiplexed subtitle stream.
-  -vcd
-  -svcd
-    Generate a VCD/SVCD menu; each menu option will have a
-    number associated with it. You can have up to nine menu
-    options per menu.
+    -pal | -ntsc | -ntscfilm            Set TV standard
+    -dvd | -vcd | -svcd                 Encode to standard format
+    -background IMAGE                   ex: -background star_field.png
+    -audio AUDIOFILE                    ex: -audio foo_fighters.mp3
+    -font "FONTNAME"                    ex: -font Courier
 
-OPTIONS may be any of the following:
+Example: 
 
-Menu background/audio options:
+    makemenu -background ocean.jpg "First" "Second" "Third" -out mymenu
+        Create 'mymenu.mpg' with three titles and a custom background image.
 
-  -background IMAGE
-    Use IMAGE (in most any graphic format) as a background. If image is not
-    the correct aspect ratio (4:3), it will be scaled and/or cropped,
-    depending on the -crop and -scale options. If no background is
-    supplied, a default background will be created.
-  -crop (default)
-    If provided background image is not 4:3 aspect ratio, crop edges
-    to make it so. Image will be scaled up if it is too small. Cropping
-    keeps the center area of image. If you want to do cropping/scaling
-    yourself in another program, provide an image of 768x576 pixels.
-  -scale
-    If provided background image is not 4:3 aspect ratio, scale/stretch
-    it to make it fit. May cause visible distortion!
-  -audio AUDIOFILE
-    Use AUDIOFILE (in most any audio format) for background music. The
-    menu will play for long enough to hear the whole audio clip. If
-    one is not provided, silence will be used.
+See the makemenu manual page ('man makemenu') for additional documentation.
 
-Menu text options:
-
-  -font "FONTNAME"
-    Use FONTNAME for the menu text. Run 'convert -list type' to see a
-    list of the fonts that you can use; choose a font name from the
-    leftmost column that is displayed.
-  -fontsize n
-    Set the size for the font to n pixels. Default is 24.
-  -align [left|center|right]
-    Align the text on the left, center, or right side of the screen.
-  -textcolor "[#RRGGBB|#RGB|COLORNAME]"
-    Use specified color for menu text. #RRGGBB and #RGB are
-    hexadecimal triplets (i.e., #FF8035). COLORNAME may be any of
-    several hundred named colors; run 'convert -list color' to see them.
-    Use quotation marks around the color name or RGB triplet.
-    White (#FFF) is the default color.
-  -highlightcolor "[#RRGGBB|#RGB|COLORNAME]"
-    Do menu highlighting in specified color. Green (#0F0) is the
-    default color.
-  -selectcolor "[#RRGGBB|#RGB|COLORNAME]"
-    Do menu selection in specified color (when a menu item is played
-    or activated). Red (#F00) is the default color.
-
-Other options:
-
-  -nosafearea
-    Do not attempt to put text inside a TV-safe viewing area. Most
-    television sets cut off about 10% of the image border, so the script
-    automatically leaves a substantial margin. This option turns that
-    behavior off, leaving only a tiny margin. Use at your own risk.
-  -overwrite
-    Overwrite any existing output files.
-  -debug
-    Run in debug mode; creates a makemenu.log file with additional output
-    and leaves temporary files in place when finished.
-
-TITLES is a list of quoted text you want to be printed on the menu, i.e.
-
-  "Episode 1" "Episode 2" "Episode 3" "Back"
-
-If the word "back" is given as an episode title, a "back" button will
-be generated; this is meant to jump to a higher-level menu in a
-hierarchical menu system. Be sure to create your XML disc structure
-(with makexml) accordingly.
-
-OUT_PREFIX is the name you want to give the finished menu.
-
-Example: Make menu from ocean.jpg, with three titles aligned in the top-right corner:
-
-  makemenu -background ocean.jpg "First" "Second" "Third" -out mymenu
-
-The output file will be mymenu.mpg.
 EOF`
 
 # Defaults and function definitions
@@ -137,9 +61,10 @@ EOF`
 # Args: $@ == text string containing error message
 usage_error ()
 {
-  echo $"$USAGE"
-  echo $"$@"
-  exit 1
+    printf "%s\n" "$USAGE"
+    printf "%s\n" "$SEPARATOR"
+    printf "*** %s\n" "$@"
+    exit 1
 }
 
 # Add a button to the spumux list
