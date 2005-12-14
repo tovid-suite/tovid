@@ -1,24 +1,39 @@
 # -* sh *-
+ME="[dvrequant]:"
 
-# DVrequant script   
-
+# DVrequant script 
+# Part of the tovid suite  
+# =======================
 # Will rip a DVD-9 disc with the  title and audio of your
 # choice and requantize it to fit on a DVD-R 4.7
 # Copyright Jean-François Ouellette (Steel_J)  2005-08-12
-
+#
+# Project homepage: http://www.tovid.org
+#
+#
 # Further coding, concept analysis and alpha testing and also set to read 
 # from config file and work hands free by Daniel Patterson (KillFire) 2005-04-23
 # Additional code for chaptering and error checking from Eric Pierce (WapCaplet) 2005-03-04
 # Special thanks to SK545 (Khurram Ahmed) for is beta testing efforts and precious feedback 2005-06-07
 # Without these guys this script would'nt have been the same.
-
-# This software is licensed under the GNU General Public License
-# For the full text of the GNU GPL, see:
 #
-#   http://www.gnu.org/copyleft/gpl.html
+# This program is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License 
+# as published by the Free Software Foundation; either 
+# version 2 of the License, or (at your option) any later 
+# version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
 #
-# No guarantees of any kind are associated with use of this software.
-
+#           http://www.gnu.org/licenses/gpl.txt
+#
 # Requirement: mplayer / libdvdcss / transcode / mjpegtools / dvdauhtor 0.6.10 / cdrecord (mkisofs) / lsdvd 
 
 #===========================================================================
