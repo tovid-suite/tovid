@@ -1295,7 +1295,7 @@ fi
 # If audio is already in the chosen output format, do not re-encode.
 if ! $FORCE_ENCODING && $AUDIO_OK; then
     yecho "Copying the existing audio stream with the following command:"
-    AUDIO_CMD="$PRIORITY mplayer \"$IN_FILE\" -dumpaudio -dumpfile \"$OUT_PREFIX.$AUD_SUF\""
+    AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$OUT_PREFIX.$AUD_SUF\""
     yecho "$AUDIO_CMD"
 
     if $DEBUG; then
@@ -1321,7 +1321,7 @@ else
         AUDIO_CMD="cat /dev/zero | $PRIORITY sox -t raw -c 2 -r $SAMPRATE -w -s - $AUDIO_WAV trim 0 $V_DURATION"
     # Extract audio normally
     else
-        AUDIO_CMD="$PRIORITY mplayer -quiet -vc null -vo null -ao pcm:waveheader:file=$AUDIO_WAV \"$IN_FILE\""
+        AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null -ao pcm:waveheader:file=$AUDIO_WAV \"$IN_FILE\""
         # Normalize, if requested
         if $DO_NORM; then
             AUDIO_CMD="$AUDIO_CMD -af volnorm"
