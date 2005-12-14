@@ -1,6 +1,9 @@
 # Process this file with automake to produce a Makefile.in
 
-# Copyright (C) 2005 Joe Friedrichsen <friedrij@users.berlios.de>
+# Project homepage: http://www.tovid.org
+#
+#
+# Copyright (C) 2005 tovid.org <http://www.tovid.org>
 # 
 # This program is free software; you can redistribute it and/or 
 # modify it under the terms of the GNU General Public License 
@@ -15,7 +18,9 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
+#
+#           http://www.gnu.org/licenses/gpl.txt
 
 bin_SCRIPTS = \
 	dvrequant \
