@@ -681,7 +681,7 @@ case "$TVSYS" in
         if test x"$TGT_RES" = x"VCD"; then
             VID_FPS="-F 2"
         else
-            VID_FPS="-F 1 -p"
+            VID_FPS="-F 1"
         fi
         TGT_FPS="23.976"
         TGT_FPSRATIO="24000:1001"
