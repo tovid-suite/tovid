@@ -33,9 +33,10 @@ ME="[postproc]:"
 
 SCRIPT_NAME=`cat << EOF
 --------------------------------
-postproc video postprocessing script
+postproc
+Video postprocessing script
 Part of the tovid suite, version $TOVID_VERSION
-http://tovid.sourceforge.net/
+http://www.tovid.org
 --------------------------------
 EOF`
 

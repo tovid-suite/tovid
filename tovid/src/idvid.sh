@@ -32,9 +32,10 @@ ME="[idvid]:"
 
 SCRIPT_NAME=`cat << EOF
 --------------------------------
-idvid video identification script
-Version $TOVID_VERSION
-http://tovid.sourceforge.net/
+idvid 
+Video identification script
+Part of the tovid suite, version $TOVID_VERSION
+http://www.tovid.org
 --------------------------------
 EOF`
 

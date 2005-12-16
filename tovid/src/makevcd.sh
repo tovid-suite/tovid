@@ -35,7 +35,7 @@ SCRIPTNAME=`cat << EOF
 makevcd
 A script to create cue/bin files for a (S)VCD and burn them to a CD
 Part of the tovid suite, version $TOVID_VERSION
-http://tovid.sourceforge.net/
+http://www.tovid.org
 --------------------------------
 EOF`
 

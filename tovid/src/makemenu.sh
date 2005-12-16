@@ -45,7 +45,7 @@ SCRIPT_NAME=`cat << EOF
 makemenu
 A script to generate DVD/(S)VCD menus
 Part of the tovid suite, version $TOVID_VERSION
-http://tovid.sourceforge.net/
+http://www.tovid.org
 --------------------------------
 EOF`
 
