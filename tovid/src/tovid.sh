@@ -44,7 +44,7 @@ ME="[tovid]:"
 # Script name and usage notes
 
 SCRIPT_NAME=`cat << EOF
--------------------------------*** -
+--------------------------------
 tovid 
 DVD and (S)VCD video conversion script
 Version $TOVID_VERSION
