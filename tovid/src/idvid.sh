@@ -62,7 +62,7 @@ EOF`
 TERSE=false
 TMP_DIR=`mktemp -d idvid-temp.XXXXXX`
 SCRATCH_FILE="$TMP_DIR/idvid.scratch"
-STAT_DIR=$HOME/.tovid
+STAT_DIR=$TOVID_HOME
 STAT_FILE="$STAT_DIR/stats.idvid"
 NTSC_FPS=""
 NTSC_FILM_FPS=""
