@@ -52,6 +52,8 @@ BUILD_OPTIONS="@BUILD_OPTS@"
 # String used to separate blocks of output
 SEPARATOR="========================================================="
 
+TOVID_HOME="$HOME/.tovid"
+
 
 # ******************************************************************************
 # ******************************************************************************
@@ -180,6 +182,20 @@ file_output_progress()
 
 
 # ******************************************************************************
+# ******************************************************************************
+#
+#
+# EXECUTED INITIALIZATION
+#
+#
+# ******************************************************************************
+# ******************************************************************************
+
+# Trap Ctrl-C and TERM to clean up child processes
+trap 'killsubprocs; exit 13' TERM INT
+
+
+# ******************************************************************************
 # Platform-specific initialization
 # Determines host platform and configures things accordingly
 # ******************************************************************************
@@ -198,9 +214,49 @@ fi
 
 
 # ******************************************************************************
-# Working directory configuration
+# tovid home setup
 # ******************************************************************************
-USER_PREFS=$HOME/.tovid/preferences
+
+# Make home!
+if test -d "$TOVID_HOME"; then :
+else
+  mkdir "$TOVID_HOME"
+fi
+
+# Config file configuration and creation
+CONFIG_FILE=$TOVID_HOME/tovid.config
+
+if test -f $CONFIG_FILE; then :
+else
+  CONFIG_CONTENTS=`cat << EOF
+tovid
+# Sample tovid configuration file
+# Each line may have one or more tovid options
+# This file is read EVERY time tovid runs
+# DO NOT COMMENT IN LINE
+
+# See 'man tovid' for a complete list of options
+
+# Disc type
+#-dvd
+#-half-dvd
+#-dvd-vcd
+#-vcd
+#-svcd
+#-kvcd
+#-ksvcd
+#-kdvd
+    
+# TV system standard
+#-pal
+#-ntsc
+#-ntscfilm
+EOF`
+  printf "$CONFIG_CONTENTS\n" > "$CONFIG_FILE"
+fi
+
+# Working directory configuration
+USER_PREFS=$TOVID_HOME/preferences
 
 # Default working/output directories
 WORKING_DIR=$PWD
@@ -219,6 +275,5 @@ else
 EOF`
     printf "$PREFS_CONTENTS\n" > "$USER_PREFS"
 fi
-
 
 # End tovid-init
