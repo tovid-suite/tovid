@@ -76,8 +76,6 @@ EOF`
 
 SEPARATOR="========================================================="
 
-# Config file
-CONFIG_FILE=$HOME/.tovid/tovid.config
 # Not currently reading in config file
 READING_CONFIG=false
 
@@ -184,8 +182,6 @@ FAST_ENCODING=false
 
 # Make note of when encoding starts, to determine total time later.
 SCRIPT_START_TIME=`date +%s`
-# Trap Ctrl-C and TERM to clean up child processes
-trap 'killsubprocs; exit 13' TERM INT
 
 
 # ******************************************************************************
