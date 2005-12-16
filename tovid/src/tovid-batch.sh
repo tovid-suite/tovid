@@ -34,7 +34,7 @@ SCRIPT_NAME=`cat << EOF
 tovid-batch
 A batch conversion script using tovid
 Part of the tovid suite, version $TOVID_VERSION
-http://tovid.sourceforge.net/
+http://www.tovid.org
 --------------------------------
 EOF`
 
