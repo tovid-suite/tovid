@@ -42,7 +42,6 @@ ME="[tovid-test]:"
 SEPARATOR="========================================================="
 
 # An identifying string to be printed before all console/log output
-ME="[tovid-test]:"
 ERRORS=0
 
 SCRIPT_NAME=`cat << EOF

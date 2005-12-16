@@ -34,8 +34,9 @@ ME="[tovid-interactive]:"
 WELCOME=`cat << EOF
 --------------------------------
 tovid-interactive
+Interactive CLI front-end to tovid
 Part of the tovid suite, version $TOVID_VERSION
-http://tovid.sourceforge.net/
+http://www.tovid.org
 --------------------------------
 
 Welcome to the tovid-interactive script. This script is an interactive

@@ -35,7 +35,7 @@ SCRIPTNAME=`cat << EOF
 makedvd
 A script to create a DVD-Video file structure and burn it to DVD
 Part of the tovid suite, version $TOVID_VERSION
-http://tovid.sourceforge.net/
+http://www.tovid.org
 --------------------------------
 EOF`
 
