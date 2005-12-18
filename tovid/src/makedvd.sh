@@ -40,49 +40,19 @@ http://www.tovid.org
 EOF`
 
 USAGE=`cat << 'EOF'
-Usage: makedvd {OPTIONS} DVDAUTHOR_XML
+Usage: makedvd {OPTIONS} FILE.xml
 
 Where OPTIONS may be any of the following:
 
   -author
-      Overwrite an existing directory containing the dvdauthor output
   -image
-      Overwrite an existing ISO file
   -burn
-      Burn the disc after creating the ISO file
   -device DEVFS_NAME (default /dev/dvd)
-      Burn the disc image to DEVICE, the Linux device filesystem
-      name of your DVD-recorder. Common examples might be /dev/dvdrw,
-      /dev/scd1, and /dev/hdc. You can also use a bus/id/lun triple
-      such as ATAPI:0,1,0
   -speed NUM (default 1)
-      Burn disc at speed NUM.
   -label DISC_LABEL
-      Uses "DISC_LABEL" as the volume ID. This appears as the mount
-      name of the disc on some computer platforms. Must be <=32
-      alphanumeric digits without spaces.
 
-And:
-
-  DVDAUTHOR_XML is an XML description of the DVD navigational structure
-      in a format that dvdauthor can understand. (For a description of
-      the XML format, run 'man dvdauthor'.) If you use(d) 'makexml' to
-      create the XML file, you can use that as input here.
-
-Please insert a blank DVD before running the script if you use the -burn option.
-
-Note that if you are using a 2.6.x Linux kernel without
-SCSI emulation (and growisofs is not suid root), then this script
-will likely fail to burn a disc from a normal user account. In
-that situation, please run 'makedvd' from a root account, or
-setuid root on the 'makedvd' script.
-
-!! IMPORTANT !!
-To ensure that this script successfully executes, please run
-it from a directory with plenty of free space. "Plenty" would
-be 10 GB for single-layer discs, and 20 GB for dual-layer discs.
-Running this program may slow down your other applications,
-due to intense disk activity.
+FILE.xml is a
+See the makedvd manual page ('man makedvd') for additional documentation.
 
 EOF`
 
