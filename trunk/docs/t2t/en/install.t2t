@@ -1,0 +1,87 @@
+Installing tovid
+
+
+%!include(xhtml): ''navmenu.html''
+
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+Following are instructions for installing the tovid suite.
+
+
+==From a package==
+
+Several tovid users have kindly created packages for tovid. Here are the ones
+that I know about:
+
+- [tovid Gentoo ebuild http://bugs.gentoo.org/show_bug.cgi?id=84761]. See
+  [Installing 3rd Party Ebuilds http://gentoo-wiki.com/HOWTO_Installing_3rd_Party_Ebuilds] for help
+  installing.
+- [Debian .deb http://julien.valroff.free.fr/].
+- [SuSE RPMs http://rpm.pbone.net/index.php3/stat/4/idpl/2108685/com/tovid-0.19-0.oc2pus.1.noarch.rpm.html]
+
+
+(Other package contributions are welcome, so if you've packaged tovid, please
+let us know by posting to the
+[tovid forum http://www.createphpbb.com/phpbb/tovid.html].)
+
+
+==From the source tarball==
+
+If you install from the source ``.tar.gz``, you should first install
+[all dependencies dependencies.html], to prevent potential problems.
+
+Next, download
+[tovid-0.23.tar.gz http://download.berlios.de/tovid/tovid-0.23.tar.gz].
+This has all the [command-line scripts cli.html], and provides the core
+functionality of tovid. Save this somewhere on your computer (for now,
+we'll assume it's saved in ``~/Downloads/``).
+
+If you would like use the [tovid GUI gui.html], you'll also need
+[tovid-gui-0.22.tar.gz http://prdownloads.sourceforge.net/tovid/tovid-gui-0.22.tar.gz?download]. You must install the command-line scripts before installing
+the GUI.
+
+Next, to extract the tarball: Open a terminal window (such as XTerm, RXVT, or
+Konsole) and type the following commands (substituting ``~/Downloads`` for
+the path where you saved the .tar.gz:
+
+```
+$ cd ~/Downloads
+$ tar -xzvf tovid-0.23.tar.gz
+```
+
+The installation files will go into a subdirectory ``tovid-0.23`` within the
+current directory.  Next, do the following:
+
+```
+$ cd ~/Downloads/tovid-0.23
+$ ./configure
+$ su -c "make install"
+```
+
+If you decide you don't want tovid installed anymore, run ``make uninstall``
+from the original installation directory (``~/Downloads/tovid-0.23``).  Repeat
+the above procedure for the ``tovid-gui-0.22.tar.gz`` package if you would like
+to install the graphical interface.
+
+
+==From SVN==
+
+You can get a copy of the latest development version of tovid by checking it
+out with [Subversion http://subversion/tigris.org/] (SVN). Here's how:
+
+```
+$ cd ~/Downloads
+$ svn checkout svn://svn.berlios.de/tovid/trunk/tovid
+$ cd tovid
+$ aclocal
+$ autoconf
+$ automake
+```
+
+If you're installing the GUI, repeat these steps in its directory (``aclocal``,
+``autoconf``, and ``automake``). Finally, do ``./configure`` and
+``su -c "make install"`` as shown above in each repsective directory to install
+tovid (and the GUI) system-wide.
+
+You can [browse the SVN repository http://svn.berlios.de/wsvn/tovid] to see
+what other modules are available for checkout.
