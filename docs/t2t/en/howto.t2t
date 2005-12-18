@@ -94,7 +94,7 @@ $ makemenu "Serenity trailer" \
            "Hitchhiker's Guide trailer" \
            "Revenge of the Brick" \
            "Metal Gear Solid 4 trailer" \
-           MiscTrailers
+           -out MiscTrailers
 ```
 
 //Note//: The backslash at the end of each line indicates continuation on

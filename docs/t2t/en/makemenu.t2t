@@ -33,7 +33,7 @@ image or audio clip, or by using custom font and font color.
 ==Usage==
 
 ```
-makemenu [ OPTIONS ] TITLES OUT_PREFIX
+makemenu [ OPTIONS ] TITLES -out OUT_PREFIX
 ```
 
 
