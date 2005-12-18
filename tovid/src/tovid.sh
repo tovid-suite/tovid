@@ -1174,6 +1174,15 @@ INNER_HEIGHT=`expr $INNER_HEIGHT \- \( $INNER_HEIGHT \% 16 \)`
 #
 # ******************************************************************************
 
+# Correct wmv 1000fps videos
+if $FORCE_FPS; then :
+elif test x"$ID_VIDEO_FPS" = "x1000.000"; then
+    FORCE_FPS=:
+    FORCE_FPSRATIO=$TGT_FPSRATIO
+    yecho "Found 1000fps (wmv) source, setting input to $TGT_FPS fps."
+    yecho "Use -fps to force a different input fps (see 'man tovid')"
+fi
+
 # If forced FPS was used, apply it
 if $FORCE_FPS; then
     yecho "Forcing input to be treated as $FORCE_FPSRATIO fps."
