@@ -45,71 +45,25 @@ http://www.tovid.org
 EOF`
 
 USAGE=`cat << 'EOF'
-Usage: makexml [OPTIONS] [VIDEOS] OUT_PREFIX
+Usage:  makexml [OPTIONS] video1.mpg video2.mpg ... OUT_PREFIX
 
-Where:
-  OPTIONS may be any of the following:
+    -dvd | -vcd | -svcd       Specify the target disc format
+    -overwrite                Overwrite any existing output files
 
-  -dvd (default)
-    Generate the XML for a DVD menu, to be used with dvdauthor.
-  -vcd
-    Generate the XML for a VCD menu, to be used with vcdxbuild.
-  -svcd
-    Generate the XML for an SVCD menu, to be used with vcdxbuild.
-  -overwrite
-    Overwrite any existing output files.
+Provide a list of .mpg video files, and they will be played back in
+sequence. You may organize several lists of videos into menus by
+providing the name of a menu .mpg:
 
-  VIDEOS may be any of the following:
+    makexml -menu menu1.mpg \\
+        video1.mpg video2.mpg video3.mpg \\
+        mydisc
+    makexml -topmenu topmenu.mpg \\
+        -menu submenu1.mpg vid1.mpg vid2.mpg vid3.mpg \\
+        -menu submenu2.mpg vid4.mpg vid5.mpg vid6.mpg \\
+        mydisc2
 
-  <file list>
-    List of one or more video files to include, separated by spaces. At
-    minimum, a DVD must have one video file. You can use shell wildcards
-    (i.e., "*.mpg") to include multiple files easily. Put filenames in
-    quotes if they have spaces in them.
-  -group <file list> -endgroup
-    (DVD only) List of video files to include as one single title. This is useful
-    if you have split a movie into several video files. 
-  -menu VIDEO <file list>
-    Use video file VIDEO as a menu from which you can jump to each of
-    the listed video files. If you have multiple menus, include a
-    top menu so they are reachable.
-  -topmenu VIDEO [-menu VIDEO <file list>] [-menu VIDEO <file list>]...
-    Use video file VIDEO for the top-level (VMGM) menu. The top menu will
-    jump to each of the subsequent [-menu...] videos listed. Use this only if
-    you have multiple sub-menus to jump to. You can only have one top menu.
-  -titlesets
-    (DVD only) Forces the creation of a separate titleset per title. This
-    is useful if the titles of a DVD have different video formats, 
-    e.g. PAL + NTSC or 4:3 + 16:9. If used with menus, there must be a 
-    -topmenu option that specifies a menu file with an entry for each of the 
-    titlesets.   
-  -chapters <interval>
-    (DVD only) Creates a chapter every <interval> minutes. This option can be put at any 
-    position in a <file list> and is valid for all subsequent titles until a new
-    -chapters option is encountered. Using this option may take some time, since the
-    duration of the video is calculated.  
-  -slides <file list>
-    Create a slide-show of still images
+See the makexml manual page ('man makexml') for additional documentation.
 
-  OUT_PREFIX is the file you want to put the resulting XML in
-
-Example: Put vid1.mpg, vid2.mpg, and vid3.mpg on a DVD with no menus:
-
-  makexml vid1.mpg vid2.mpg vid3.mpg outfile
-
-Example: Put all vid*.mpg files on a DVD, with menu.mpg as the menu:
-
-  makexml -menu menu.mpg vid*.mpg outfile
-
-(note: vidmenu.mpg must contain enough buttons to jump to all the vid*.mpg titles)
-
-Example: Use top-level menu topmenu.mpg, sub-menus sub1.mpg and sub2.mpg,
-with sub-menus linking to vid1*.mpg and vid2*.mpg, respectively
-  
-  makexml -topmenu topmenu.mpg -menu sub1.mpg vid1*.mpg -menu sub2.mpg vid2*.mpg outfile
-
-(note: Each sub-menu must have enough buttons to jump to all the titles that
-follow it; the top menu must have enough buttons to jump to all sub-menus)
 EOF`
 
 SEPARATOR="=========================================="
@@ -129,18 +83,18 @@ CUR_TS=1
 # Currently-numbered video title under a titleset menu (0 for no titles)
 CUR_TITLE=0
 # Do we have a top menu yet?
-HAVE_TOP_MENU=""
+HAVE_TOP_MENU=false
 # Do we have any menus yet?
-HAVE_MENU=""
+HAVE_MENU=false
 # Do not overwrite by default
-OVERWRITE="n"
+OVERWRITE=false
 # Use dvdauthor XML for DVD authoring
 XML_FORMAT="dvd"
 # No un-found files yet
-FILE_NOT_FOUND="n"
+FILE_NOT_FOUND=false
 # Not doing still titles
-STILL_TITLES="n"
-FIRST_TITLE="y"
+STILL_TITLES=false
+FIRST_TITLE=:
 # Avoid some unbound variables
 TOP_MENU_XML=""
 TOP_MENU_BUTTONS=""
@@ -152,9 +106,9 @@ SEQUENCE_ITEMS_XML=""
 PBC_XML=""
 PLAYLIST_XML=""
 
-MAKE_GROUP="n"
-MAKE_CHAPTERS="n"
-FORCE_TITLESETS="n"
+MAKE_GROUP=false
+MAKE_CHAPTERS=false
+FORCE_TITLESETS=false
 CUR_VIDEO=0
 declare -i CHAPTER_INTERVAL
 
@@ -164,10 +118,10 @@ declare -i CHAPTER_INTERVAL
 # Args: $1 = file to look for
 checkExistence ()
 {
-  if [[ ! -e $1 ]]; then
-    echo "The file "$1" was not found."
-    FILE_NOT_FOUND="y"
-  fi
+    if [[ ! -e $1 ]]; then
+        echo "The file "$1" was not found."
+        FILE_NOT_FOUND=:
+    fi
 }
 
 # ==========================================================
@@ -175,7 +129,7 @@ checkExistence ()
 # Args: $1 = video file to use for top menu
 addTopMenu ()
 {
-  HAVE_TOP_MENU="y"
+  HAVE_TOP_MENU=:
   echo "Adding top-level menu using file: $1"
 
   # --------------------------
@@ -265,7 +219,7 @@ EOF`
     # Generate XML for the selection to go in pbc
     # If there's a top menu, "return" goes back to it.
     # Otherwise, don't use a "return" command.
-    if [[ -n $HAVE_TOP_MENU ]]; then
+    if $HAVE_TOP_MENU; then
       RETURN_CMD="<return ref=\"select-top-menu\"/>"
     else
       RETURN_CMD=""
@@ -289,11 +243,11 @@ EOF`
 # Args: $1 = video file to use for the title
 addTitle ()
 {
-  if [[ $FORCE_TITLESETS == "y" && $CUR_VIDEO -eq 0 ]]; then
+  if $FORCE_TITLESETS && test $CUR_VIDEO -eq 0; then
     closeTitleset
   fi
   # Increment the current title number
-  if [[ $MAKE_GROUP == "n" ]]; then
+  if ! $MAKE_GROUP; then
     (( CUR_TITLE++ ))
   else
     # Grouping several videos within one title 
@@ -305,7 +259,7 @@ addTitle ()
   # --------------------------
   # For DVD
   if [[ $XML_FORMAT == "dvd" ]]; then
-    if [[ $MAKE_GROUP == "n" ]]; then
+    if ! $MAKE_GROUP; then
       echo "Adding title: $1 as title number $CUR_TITLE of titleset $CUR_TS"
     else
       if [[ $CUR_VIDEO -eq 1 ]]; then
@@ -314,7 +268,7 @@ addTitle ()
       echo "Adding $1 as video $CUR_VIDEO of title $CUR_TITLE"
     fi
     # Generate XML for the button linking to this title from the titleset menu
-    if [[ $FORCE_TITLESETS == "n" ]]; then
+    if ! $FORCE_TITLESETS; then
       if [[ $CUR_VIDEO -lt 2 ]]; then
         MENU_BUTTONS=`cat << EOF
 $MENU_BUTTONS\
@@ -332,7 +286,7 @@ EOF`
     fi 
 
     # Generate the chapters tag
-    if [[ $MAKE_CHAPTERS != "y" ]]; then
+    if ! $MAKE_CHAPTERS; then
       CHAPTERS="0"
     else
       CMD="idvid -terse \"$1\""
@@ -367,7 +321,7 @@ EOF`
     fi
 
     # Generate the XML for the title itself, appending to existing titles
-    if [[ $MAKE_GROUP == "y" ]]; then
+    if $MAKE_GROUP; then
       if [[ $CUR_VIDEO -eq 1 ]]; then
         TS_TITLES=`cat << EOF
 $TS_TITLES
@@ -394,13 +348,13 @@ EOF`
 
     # If there's a menu, "return" goes back to it; if not,
     # do not generate a "return" command
-    if [[ $HAVE_MENU == "y" ]]; then
+    if $HAVE_MENU; then
       RETURN_CMD="<return ref=\"select-menu-$CUR_TS\"/>"
     else
       RETURN_CMD=""
     fi
     # If this is the first title or slide in a series
-    if [[ $FIRST_TITLE == "y" ]]; then
+    if $FIRST_TITLE; then
       # For the first titles, PREV stays on the current title
       let "PREV_TITLE=$CUR_TITLE"
     # For all other titles
@@ -416,12 +370,12 @@ EOF`
 
     # --------------------------
     # If doing a still-image slideshow, use segment/selection
-    if [[ $STILL_TITLES == "y" ]]; then
+    if $STILL_TITLES; then
       echo "Adding title: $1 as number $CUR_TITLE in a slideshow"
 
       # Generate XML for the selection (menu) "buttons" that will
       # jump to this slideshow. Only the first slide gets a button.
-      if [[ $FIRST_TITLE == "y" ]]; then
+      if $FIRST_TITLE; then
         MENU_BUTTONS=`cat << EOF
 $MENU_BUTTONS
     <select ref="play-title-$CUR_TITLE"\/>\n
@@ -485,7 +439,7 @@ EOF`
 
   fi # DVD or (S)VCD
 
-  FIRST_TITLE="n"
+  FIRST_TITLE=false
 }
 
 # ==========================================================
@@ -501,7 +455,7 @@ closeTitleset ()
     echo "Closing titleset $CUR_TS with $CUR_TITLE title(s)."
 
     # Give each menu a button linking back to the top menu, if there is one
-    if [[ -n $HAVE_TOP_MENU ]]; then
+    if $HAVE_TOP_MENU; then
       MENU_BUTTONS=`cat << EOF
 $MENU_BUTTONS\
       <button>jump vmgm menu;<\/button>\n
@@ -513,9 +467,9 @@ EOF`
 
     # Fill in the POST command. If there is a menu to jump back to, use that;
     # otherwise, do not insert a POST command.
-    if [[ $HAVE_MENU == "y" ]]; then
+    if $HAVE_MENU; then
       POST_CMD="<post>call menu;<\/post>"
-    elif [[ $FORCE_TITLESETS == "y" && $HAVE_TOP_MENU == "y" ]]; then
+    elif $FORCE_TITLESETS && $HAVE_TOP_MENU; then
       POST_CMD="<post>call vmgm menu;<\/post>"
     else
       POST_CMD=""
@@ -523,7 +477,7 @@ EOF`
     TS_TITLES=$( echo "$TS_TITLES" | sed -e "s/__POST_CMD__/$POST_CMD/g" )
 
     # Append titleset info to ALL_MENU_XML
-    if [[ $FORCE_TITLESETS == "n" || $HAVE_TOP_MENU != "y" ]]; then
+    if ! $FORCE_TITLESETS || ! $HAVE_TOP_MENU; then
       ALL_MENU_XML=`cat << EOF
 $ALL_MENU_XML
 <titleset>
@@ -580,7 +534,7 @@ EOF`
     PLAYLIST_XML=""
     MENU_BUTTONS=""
     # Go back to doing normal video titles
-    STILL_TITLES="n"
+    STILL_TITLES=false
   fi
 
   # Increment the current titleset number
@@ -606,45 +560,45 @@ while [[ $# -gt 1 ]]; do
   elif [[ $1 == "-svcd" ]]; then
     XML_FORMAT="svcd"
   elif [[ $1 == "-overwrite" ]]; then
-    OVERWRITE="y"
+    OVERWRITE=:
   # Menus and video titles
   elif [[ $1 == "-topmenu" ]]; then
     shift
-    if [[ -z $HAVE_TOP_MENU ]]; then
+    if ! $HAVE_TOP_MENU; then
       checkExistence "$1"
       addTopMenu "$1"
     else
       usage_error "You can only have one top menu. Please specify only one -topmenu option. If you would like to have multiple menus, please use the -menu option."
     fi
   elif [[ $1 == "-menu" ]]; then
-    if [[ $FORCE_TITLESETS == "y" ]]; then
+    if $FORCE_TITLESETS; then
       usage_error "You can not use -titlesets with -menu. Please use -topmenu instead."
     fi
     shift
-    HAVE_MENU="y"
-    FIRST_TITLE="y"
+    HAVE_MENU=:
+    FIRST_TITLE=:
     checkExistence "$1"
     closeTitleset
     addMenu "$1"
   elif [[ $1 == "-slides" ]]; then
-    STILL_TITLES="y"
-    FIRST_TITLE="y"
+    STILL_TITLES=:
+    FIRST_TITLE=:
   elif [[ $1 == "-group" ]]; then
-    MAKE_GROUP="y"
+    MAKE_GROUP=:
     CUR_VIDEO=0
   elif [[ $1 == "-endgroup" ]]; then
-    if [[ $MAKE_GROUP == "y" ]]; then
+    if $MAKE_GROUP; then
       TS_TITLES=`cat << EOF
        $TS_TITLES
        __POST_CMD__
     </pgc>
 EOF`
-       MAKE_GROUP="n"
+       MAKE_GROUP=false
     fi
-    MAKE_GROUP="n"
+    MAKE_GROUP=false
     CUR_VIDEO=0
   elif [[ $1 == "-chapters" ]]; then
-    MAKE_CHAPTERS="y"
+    MAKE_CHAPTERS=:
     shift
     CHAPTER_INTERVAL=$1
     if [[ "$CHAPTER_INTERVAL" -lt "0" || "$CHAPTER_INTERVAL" -gt "9999" ]]
@@ -652,12 +606,12 @@ EOF`
        usage_error "Please use a -chapters interval between 0 and 9999."
     fi
   elif [[ $1 == "-nochapters" ]]; then
-    MAKE_CHAPTERS="y"
+    MAKE_CHAPTERS=:
   elif [[ $1 == "-titlesets" ]]; then
-    if [[ $HAVE_MENU == "y" ]]; then
+    if $HAVE_MENU; then
       usage_error "You can not use -titlesets with -menu. Please use -topmenu instead."
     fi
-    FORCE_TITLESETS="y"
+    FORCE_TITLESETS=:
     echo "Creation of titlesets forced ..."
   else
     checkExistence "$1"
@@ -683,7 +637,7 @@ TOP_MENU_XML=$( echo "$TOP_MENU_XML" | sed -e "s/__TOP_MENU_BUTTONS__/$TOP_MENU_
 
 # If there is a top menu with no other menus, print an error and
 # a suggestion that user specify -menu instead of -topmenu
-if [[ -n $HAVE_TOP_MENU && -z $HAVE_MENU && $FORCE_TITLESETS != "y" ]]; then
+if $HAVE_TOP_MENU && ! $HAVE_MENU && ! $FORCE_TITLESETS; then
   echo "You have specified a top menu without any other menus. If you only want to have one menu, please use the -menu option instead of -topmenu."
   echo "Exiting without writing XML file."
   exit 1
@@ -766,7 +720,7 @@ fi
 if [[ -e $OUT_PREFIX.xml ]]; then
   echo $SEPARATOR
   echo "The output file you specified: $OUT_PREFIX.xml already exists."
-  if [[ $OVERWRITE == "y" ]]; then
+  if $OVERWRITE; then
     echo "Overwriting existing file."
   else
     echo "If you would like to overwrite, please re-run the script with the -overwrite option."
@@ -777,7 +731,7 @@ fi
 # Remove blank lines and write final result to output file
 echo "$FINAL_DISC_XML" | sed -e '/^ *$/d' > $OUT_PREFIX.xml
 
-if [[ $FILE_NOT_FOUND == "y" ]]; then
+if $FILE_NOT_FOUND; then
   echo $SEPARATOR
   echo "Some of the video files you specified were not found."
   echo "The XML file was written anyway, but you might want to"
