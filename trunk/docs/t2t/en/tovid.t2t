@@ -293,7 +293,11 @@ and does the appropriate letterboxing or anamorphic scaling.
 
 ==Examples==
 
-None yet
+: ``tovid -in foo.avi -out foo_encoded``
+    Convert ``foo.avi`` using default options (NTSC DVD), and put the encoded
+    video in ``foo_encoded.mpg``.
+: ``tovid -pal -vcd foo.avi -out foo_encoded``
+    Convert ``foo.avi`` to PAL VCD format, outputting to ``foo_encoded.mpg``.
 
 
 ==Contact==
