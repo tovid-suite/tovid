@@ -1324,7 +1324,7 @@ else
     if $GENERATE_AUDIO; then
         # Generate an empty .wav file of the needed length
         yecho "Input file appears to have no audio stream. Silence will be used."
-        AUDIO_CMD="cat /dev/zero | $PRIORITY sox -t raw -c 2 -r $SAMPRATE -w -s - $AUDIO_WAV trim 0 $V_DURATION"
+        AUDIO_CMD="cat /dev/zero | $PRIORITY sox -t raw -c 2 -r $SAMPRATE -w -s - -t wav $AUDIO_WAV trim 0 $V_DURATION"
     # Extract audio normally
     else
         AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null -ao pcm:waveheader:file=$AUDIO_WAV \"$IN_FILE\""
