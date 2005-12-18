@@ -48,7 +48,7 @@ SCRIPT_NAME=`cat << EOF
 tovid 
 DVD and (S)VCD video conversion script
 Version $TOVID_VERSION
-http://www.tovid.org
+$TOVID_HOME_PAGE
 --------------------------------
 EOF`
 
@@ -243,7 +243,7 @@ runtime_error()
         echo "output, if the log file doesn't give you enough information."
     fi
     echo " "
-    echo "See the tovid website (http://tovid.org/) for what to do next."
+    echo "See the tovid website ($TOVID_HOME_PAGE) for what to do next."
     echo "Sorry for the inconvenience!"
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     exit 1

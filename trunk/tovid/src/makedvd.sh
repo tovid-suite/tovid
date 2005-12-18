@@ -35,7 +35,7 @@ SCRIPTNAME=`cat << EOF
 makedvd
 A script to create a DVD-Video file structure and burn it to DVD
 Part of the tovid suite, version $TOVID_VERSION
-http://www.tovid.org
+$TOVID_HOME_PAGE
 --------------------------------
 EOF`
 
@@ -251,7 +251,7 @@ if [[ -n $DO_BURN ]]; then
     if $SUCCESS; then
         echo $SEPARATOR
         echo "Done. You should now have a working DVD. Please visit"
-        echo "the tovid homepage: http://tovid.sourceforge.net/"
+        echo "the tovid homepage: $TOVID_HOME_PAGE"
         echo $SEPARATOR
     else
         runtime_error "Could not burn the disc to $DVDRW_DEVICE at speed $BURN_SPEED"
