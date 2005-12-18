@@ -413,7 +413,7 @@ eval $BG_CMD
 if [[ -z $BG_AUDIO ]]; then
   # Use this sox command instead, if the given one fails
   #SOX_CMD="sox -t raw -c 2 -r $SAMPRATE -w -s /dev/zero $BG_SILENCE.wav trim 0 4"
-  SOX_CMD="cat /dev/zero | sox -t raw -c 2 -r $SAMPRATE -w -s - $BG_SILENCE.wav trim 0 4"
+  SOX_CMD="cat /dev/zero | sox -t raw -c 2 -r $SAMPRATE -w -s - -t wav $BG_SILENCE.wav trim 0 4"
   echo $SOX_CMD
   eval $SOX_CMD
   BG_AUDIO=$BG_SILENCE
