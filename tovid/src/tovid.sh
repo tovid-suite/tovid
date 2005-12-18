@@ -1376,7 +1376,7 @@ else
 
     # VCD and SVCD need to be MP2 (mpa) audio, as does PAL
     if test x"$AUD_SUF" = x"mpa"; then
-        AUDIO_ENC="cat $AUDIO_WAV | $PRIORITY mp2enc -b $AUD_BITRATE $SND_OPTS -o \"$OUT_PREFIX.$AUD_SUF\""
+        AUDIO_ENC="cat $AUDIO_WAV | $PRIORITY mp2enc -s -b $AUD_BITRATE $SND_OPTS -o \"$OUT_PREFIX.$AUD_SUF\""
         yecho "$AUDIO_ENC"
     # Use AC3 audio for all NTSC DVD formats
     else
