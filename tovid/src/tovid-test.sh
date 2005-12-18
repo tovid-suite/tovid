@@ -48,7 +48,7 @@ SCRIPT_NAME=`cat << EOF
 --------------------------------
 tovid-test
 Part of the tovid suite, version $TOVID_VERSION
-http://tovid.sourceforge.net/
+$TOVID_HOME_PAGE
 --------------------------------
 EOF`
 

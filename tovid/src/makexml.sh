@@ -39,8 +39,7 @@ SCRIPTNAME=`cat << EOF
 --------------------------------
 makexml
 A script to generate XML for authoring a VCD, SVCD, or DVD.
-Part of the tovid suite, version $TOVID_VERSION
-http://www.tovid.org
+$TOVID_HOME_PAGE
 --------------------------------
 EOF`
 

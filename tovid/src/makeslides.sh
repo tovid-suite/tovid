@@ -36,7 +36,7 @@ SCRIPTNAME=`cat << EOF
 makeslides
 A script to create MPEG stills from provided images
 Part of the tovid suite, version $TOVID_VERSION
-http://www.tovid.org
+$TOVID_HOME_PAGE
 --------------------------------
 `
 

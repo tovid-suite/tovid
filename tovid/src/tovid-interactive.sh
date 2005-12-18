@@ -36,7 +36,7 @@ WELCOME=`cat << EOF
 tovid-interactive
 Interactive CLI front-end to tovid
 Part of the tovid suite, version $TOVID_VERSION
-http://www.tovid.org
+$TOVID_HOME_PAGE
 --------------------------------
 
 Welcome to the tovid-interactive script. This script is an interactive

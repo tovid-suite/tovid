@@ -35,7 +35,7 @@ SCRIPT_NAME=`cat << EOF
 idvid 
 Video identification script
 Part of the tovid suite, version $TOVID_VERSION
-http://www.tovid.org
+$TOVID_HOME_PAGE
 --------------------------------
 EOF`
 
