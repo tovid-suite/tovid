@@ -24,6 +24,12 @@ understood by [dvdauthor http://dvdauthor.sourceforge.net/].
 If you used makexml to create the XML file, you can
 use it as input to makedvd.
 
+To ensure that this script successfully executes, please run
+it from a directory with plenty of free space. "Plenty" would
+be 10 GB for single-layer discs, and 20 GB for dual-layer discs.
+Running this program may slow down your other applications,
+due to intense disk activity.
+
 
 ==Features==
 - Configurable burn device and burn speed
