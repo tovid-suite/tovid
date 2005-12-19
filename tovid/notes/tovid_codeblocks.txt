@@ -1,0 +1,181 @@
+Logical code blocks in the 'tovid' script:
+
+
+# =============================================================================
+# get_args()
+# Lines 444 to 678
+# =============================================================================
+Reads globals:
+
+
+Sets globals:
+IN_FILE
+OUT_PREFIX
+OUT_FILENAME
+CONFIG_FILE
+TVSYS
+BASETVSYS
+TGT_RES
+DO_NORM
+OVERWRITE
+ASPECT_RATIO
+VERBOSE
+DEBUG
+FORCE_ENCODING
+FORCE_FPS
+VID_BITRATE
+VID_QUALITY
+SAFE_AREA
+DO_DENOISE
+DO_CONTRAST
+DO_DEBLOCK
+AUD_BITRATE
+PRIORITY
+DEINTERLACE
+INTERLACED
+ILACE_FIELD_ORDER
+VIDEO_TYPE
+DISC_SIZE
+PARALLEL
+ENCODING_MODE
+SUBTITLES
+SLEEP_TIME
+MPLAYER_OPTS
+USE_FFMPEG
+USE_FIFO
+
+
+Locals:
+CONFIG_ARGS
+READING_CONFIG
+CONFIG_TYPE
+
+
+# =============================================================================
+# Set-up and sanity checking
+# =============================================================================
+Reads globals:
+
+Sets globals:
+
+Locals:
+
+# =============================================================================
+# Interpretation of user-defined variables, and construction of
+# command-line options
+# =============================================================================
+Reads globals:
+
+Sets globals:
+
+Locals:
+
+
+
+# =============================================================================
+# Analysis of input video and spec-compliance for a/v streams
+# =============================================================================
+Reads globals:
+
+Sets globals:
+
+Locals:
+
+
+# =============================================================================
+# Further command-line construction
+# =============================================================================
+Reads globals:
+
+Sets globals:
+
+Locals:
+
+
+# =============================================================================
+# ffmpeg encoding
+# =============================================================================
+Reads globals:
+
+Sets globals:
+
+Locals:
+
+
+
+# =============================================================================
+# Audio encoding/normalizing
+# Lines 1418 to 1513
+# =============================================================================
+Reads globals:
+
+Sets globals:
+
+Locals:
+
+
+# =============================================================================
+# Video encoding
+# Lines 1529 to 1586
+# =============================================================================
+Reads globals:
+FORCE_ENCODING
+VIDEO_OK
+PARALLEL
+LOG_FILE
+USE_FIFO
+PRIORITY
+SUBTITLES
+YUV4MPEG_ILACE
+VF_PRE
+VID_FILTER
+VID_SCALE
+VF_POST
+IN_FILE
+MPLAYER_OPTS
+YUVDENOISE
+ADJUST_FPS
+DISC_SIZE
+NONVIDEO_BITRATE
+MTHREAD
+ASPECT_FMT
+MPEG2_FMT
+VID_FPS
+VERBOSE
+VID_NORM
+MPEG2_QUALITY
+OUT_PREFIX
+AUD_SUF
+VID_SUF
+
+
+
+Sets globals:
+
+Locals:
+
+
+
+# =============================================================================
+# Multiplexing
+# Lines 1605 to 1626
+# =============================================================================
+Reads globals:
+
+Sets globals:
+
+Locals:
+
+
+
+# =============================================================================
+# Statistics-gathering and user feedback
+# Lines 1448 to end
+# =============================================================================
+Reads globals:
+
+Sets globals:
+
+Locals:
+
+
