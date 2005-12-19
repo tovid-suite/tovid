@@ -1,1 +1,0 @@
-../pytovid/tovidgui.py
