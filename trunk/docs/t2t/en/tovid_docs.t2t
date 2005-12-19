@@ -6,7 +6,8 @@ You are reading the complete documentation for
 (S)VCD and DVD discs.
 
 %!include: index.t2t
-%!include: getting_started.t2t
+%!include: dependencies.t2t
+%!include: install.t2t
 %!include: gui.t2t
 %!include: cli.t2t
 
