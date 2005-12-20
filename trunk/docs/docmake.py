@@ -30,7 +30,7 @@ def generate_t2t_tarball():
 
 def generate_html(t2tfile, htmlfile):
     cmd = 'txt2tags -i %s -o %s' % (t2tfile, htmlfile)
-    cmd += ' --encoding utf-8'
+    cmd += ' --encoding iso-8859-1'
     cmd += ' -t xhtml --css-sugar --toc --style=tovid_screen.css'
     # Run txt2tags cmd, displaying its normal output
     os.system(cmd)
