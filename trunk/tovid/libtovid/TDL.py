@@ -388,7 +388,12 @@ class Element:
         """Format element as a TDL-compliant string and return it."""
         tdl = "%s \"%s\"\n" % (self.tag, self.name)
         for key, value in self.options.iteritems():
-            tdl += "    %s %s\n" % (key, value)
+            # If value has spaces, quote it
+            if value.__class__ == str and ' ' in value:
+                tdl += "    %s \"%s\"\n" % (key, value)
+            # Otherwise, don't
+            else:
+                tdl += "    %s %s\n" % (key, value)
         return tdl
 
     

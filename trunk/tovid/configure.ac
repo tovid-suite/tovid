@@ -1,4 +1,6 @@
 # Process this file with autoconf to produce a configure script.
+# Autoconf documentation:
+#     http://www.gnu.org/software/autoconf/manual/index.html
 
 # Project homepage: http://www.tovid.org
 #
@@ -125,7 +127,7 @@ else
    HAVE_MAGICK=""
    if $HAVE_COMPOSITE; then HAVE_COMPOSITE="ok"; else HAVE_COMPOSITE="MISSING"; fi
    if $HAVE_CONVERT; then HAVE_CONVERT="ok"; else HAVE_CONVERT="MISSING"; fi
-   AC_MSG_WARN([Cannot find ImageMagick! You cannot use makemenu or mkslides.])
+   AC_MSG_WARN([Cannot find ImageMagick! You cannot use makemenu or makeslides.])
 fi
 
 # dvdauthor compononets

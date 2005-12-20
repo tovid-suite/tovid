@@ -1,8 +1,8 @@
 Summary: (S)VCD/DVD Authoring Suite 
 Name: tovid
-Version: 0.21
+Version: 0.23
 Release: 1
-Vendor: http://tovid.sourceforge.net/
+Vendor: http://tovid.org/
 Packager: Matt Hyclak <hyclak@math.ohiou.edu>
 Source: http://prdownloads.sourceforge.net/tovid/%{name}-%{version}.tar.gz
 Group: Applications/System
