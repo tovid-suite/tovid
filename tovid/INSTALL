@@ -1,22 +1,29 @@
 INSTALL
 =====================================================
-tovid
+tovid (http://tovid.org/)
 Video disc authoring software
-Project homepage: http://tovid.sourceforge.net/
 =====================================================
 
-To install tovid, simply run the configure script, then
-do 'make install' as root:
+This file contains configuration and installation instructions for tovid.
+
+To install tovid and the GUI, simply run the configure script, then do 'make
+install' as root:
 
     $ ./configure
-    (lots of output)
-    $ su -
-    (enter root password)
-    # make install
-    (lots more output)
+    $ su -c 'make install'
+    (root password)
 
-There is no additional configuration. See the tovid
-homepage for additional documentation.
+The GUI now depends on a set of Python modules designed for tovid. In
+order to use the GUI, you must also do this:
+
+    $ su -c './setup.py install'
+
+See the tovid homepage (http://tovid.org/) for additional documentation.
+
+
+Following are the standard, autotools installation instructions, which may be
+useful if you are a developer or packager.
+
 
 
 =====================================================
