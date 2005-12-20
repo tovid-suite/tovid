@@ -179,13 +179,20 @@ class DiscOptions:
         element = TDL.Element('Disc', self.title)
         element.set('tvsys', self.tvsys)
         element.set('format', self.format)
+
+        # Find top menu
+        for curItem in self.optionList:
+            if curItem.type == ID_MENU:
+                if curItem.isTopMenu:
+                    element.set('topmenu', curItem.title)
+
         return element
 
     def fromElement(self, element):
         """Load current disc options from a TDL Element.
         """
         print "Loading Disc element:"
-        print element.toString()
+        print element.tdl_string()
         self.type = ID_DISC
         self.title = element.name
         self.format = element.get('format')
@@ -195,8 +202,10 @@ class DiscOptions:
     # Set disc layout hierarchy, given a list of VideoOptions,
     # MenuOptions, and SlideOptions
     # ==========================================================
-    def SetLayout(self, options):
-        self.optList = options
+    def SetLayout(self, optionList):
+        print "disc.SetLayout: optionList = "
+        print optionList
+        self.optionList = optionList
 
     # ==========================================================
     # Return the 'makexml' command for generating XML for this disc
@@ -208,7 +217,7 @@ class DiscOptions:
         strCommand = "makexml -%s " % self.format
         strCommand += "-overwrite "
 
-        for curItem in self.optList:
+        for curItem in self.optionList:
             # Prefix -topmenu or -menu if necessary
             if curItem.type == ID_MENU:
                 if curItem.isTopMenu:
@@ -294,7 +303,7 @@ class VideoOptions:
         """Load current video options from a TDL Element.
         """
         print "Loading Video element:"
-        print element.toString()
+        print element.tdl_string()
         self.type = ID_VIDEO
         self.tvsys = element.get('tvsys')
         self.format = element.get('format')
@@ -433,24 +442,27 @@ class MenuOptions:
             element.set('background', self.background)
         if self.audio != "":
             element.set('audio', self.audio)
-        element.set('textcolor', "rgb(%d,%d,%d)" % \
+        element.set('textcolor', '"#%X%X%X"' % \
             (self.colorText.Red(), self.colorText.Green(), self.colorText.Blue()))
         # For DVD, highlight and select colors
         if self.format == 'dvd':
-            element.set('highlightcolor', "rgb(%d,%d,%d)" % \
+            element.set('highlightcolor', '"#%X%X%X"' % \
                 (self.colorHi.Red(), self.colorHi.Green(), self.colorHi.Blue()))
-            element.set('selectcolor', "rgb(%d,%d,%d)" % \
+            element.set('selectcolor', '"#%X%X%X"' % \
                 (self.colorSel.Red(), self.colorSel.Green(), self.colorSel.Blue()))
         if self.font.GetFaceName() != "":
             element.set('font', self.font.GetFaceName())
-        element.set('linksto', self.titles)
+        # Convert self.titles to ordinary strings
+        strtitles = []
+        for title in self.titles: strtitles.append(str(title))
+        element.set('linksto', strtitles)
         return element
 
     def fromElement(self, element):
         """Load current video options from a TDL Element.
         """
         print "Loading Menu element:"
-        print element.toString()
+        print element.tdl_string()
         self.type = ID_MENU
         self.tvsys = element.get('tvsys')
         self.format = element.get('format')
@@ -1077,6 +1089,7 @@ class FlexTreeCtrl(wx.TreeCtrl):
         """Move the currently-selected item down in the list.  Item stays
         within its group of siblings."""
         curItem = self.GetSelection()
+
         nextItem = self.GetNextSibling(curItem)
         parentItem = self.GetItemParent(curItem)
         # If next sibling is OK, move-insert current item
@@ -1106,23 +1119,24 @@ class FlexTreeCtrl(wx.TreeCtrl):
         # If topItem is not OK, just return
         if not topItem.IsOk():
             return
-        listRefs = []
+        refs = []
         # Append topItem's data
-        listRefs.append(self.GetPyData(topItem))
+        refs.append(self.GetPyData(topItem))
         # Recursively append children
-        nextChild, cookie = VER_GetFirstChild(self, topItem)
-        while nextChild.IsOk():
+        child, cookie = VER_GetFirstChild(self, topItem)
+        while child.IsOk():
             # If item has children, recurse
-            if self.ItemHasChildren(nextChild):
-                listChildren = self.GetReferenceList(nextChild)
-                listRefs.extend(listChildren)
-            # Otherwise, just add this child
+            if self.ItemHasChildren(child):
+                grandchildren = self.GetReferenceList(child)
+                refs.extend(grandchildren)
+            # Otherwise, just append this item
             else:
-                listRefs.append(self.GetPyData(nextChild))
+                refs.append(self.GetPyData(child))
+
             # Get the next child
-            nextChild, cookie = self.GetNextChild(topItem, cookie)
+            child, cookie = self.GetNextChild(topItem, cookie)
         # Return the results
-        return listRefs
+        return refs
 
 # ===================================================================
 # End FlexTreeCtrl
@@ -2916,6 +2930,7 @@ class DiscLayoutPanel(wx.Panel):
             # Create a new top menu at the root of the tree
             self.discTree.SetPyData(self.topItem,
                 MenuOptions(self.discFormat, self.discTVSystem, "Main menu", True))
+
             copiedMenu = self.discTree.AppendItemMove(self.topItem, oldMenu)
             # Refresh the copied menu
             self.RefreshItem(copiedMenu)
@@ -3168,8 +3183,8 @@ class DiscLayoutPanel(wx.Panel):
         self.panMenuOptions.SetDiscFormat(format)
         # Make all encoding options in the disc compliant
         format = self.discTree.GetPyData(self.rootItem).format
-        listRefs = self.discTree.GetReferenceList(self.rootItem)
-        for curItem in listRefs:
+        refs = self.discTree.GetReferenceList(self.rootItem)
+        for curItem in refs:
             if curItem.type != ID_DISC:
                 curItem.SetDiscFormat(format)
 
@@ -3182,8 +3197,8 @@ class DiscLayoutPanel(wx.Panel):
         self.panVideoOptions.SetDiscTVSystem(tvsys)
         # Make all encoding options in the disc compliant
         tvsys = self.discTree.GetPyData(self.rootItem).tvsys
-        listRefs = self.discTree.GetReferenceList(self.rootItem)
-        for curItem in listRefs:
+        refs = self.discTree.GetReferenceList(self.rootItem)
+        for curItem in refs:
             # Menus and slides need to know TV system
             if curItem.type != ID_DISC:
                 curItem.SetDiscTVSystem(tvsys)
@@ -3213,12 +3228,12 @@ class DiscLayoutPanel(wx.Panel):
     # ==========================================================
     def UseForAllItems(self, opts):
         # Get references for all items
-        listRefs = self.discTree.GetReferenceList(self.rootItem)
+        refs = self.discTree.GetReferenceList(self.rootItem)
         # Count how many items are changed
         countItems = 0
         # Apply options to all items in the tree of the same type
         # Don't copy to self
-        for curItem in listRefs:
+        for curItem in refs:
             if curItem != opts:
                 if curItem.type == opts.type:
                     curItem.CopyFrom(opts)
@@ -3231,19 +3246,19 @@ class DiscLayoutPanel(wx.Panel):
         """Return an array of strings containing all encoding commands to be
         executed."""
         # Get references for all items
-        listRefs = self.discTree.GetReferenceList(self.rootItem)
+        refs = self.discTree.GetReferenceList(self.rootItem)
         # Send the reference list to the root DiscOptions item
         # (so it can generate the authoring command)
         discOpts = self.discTree.GetPyData(self.rootItem)
-        discOpts.SetLayout(listRefs)
+        discOpts.SetLayout(refs)
 
         # Pop root command off, since it needs to be
         # put at the end of the command list
-        strDiscCmd = listRefs.pop(0).GetCommand()
+        strDiscCmd = refs.pop(0).GetCommand()
 
         # Append command associated with each item
         commands = []
-        for curItem in listRefs:
+        for curItem in refs:
             commands.append(curItem.GetCommand())
 
         # Append root command
@@ -3253,13 +3268,20 @@ class DiscLayoutPanel(wx.Panel):
 
 
     def GetElements(self):
-        listrefs = self.discTree.GetReferenceList(self.rootItem)
+        refs = self.discTree.GetReferenceList(self.rootItem)
+        for item in refs:
+            print item.title
+
+        # Set discOpts, so topmenu will be included
+        discOpts = self.discTree.GetPyData(self.rootItem)
+        discOpts.SetLayout(refs)
+        # Append each element in disc
         elements = []
-        for curitem in listrefs:
+        for curitem in refs:
             elements.append(curitem.toElement())
         print "DiscLayoutPanel.GetElements(): elements:"
         for elem in elements:
-            print elem.toString()
+            print elem.tdl_string()
         return elements
 
 
@@ -3701,6 +3723,9 @@ class AuthorFilesTaskPanel(wx.Panel):
 
     def GetElements(self):
         """Return a list of TDL elements representing the current project."""
+        # Hackery: Call GetAllCommands so the disc item will
+        # be updated (and thus, topmenu can be saved correctly)
+        self.panDiscLayout.GetAllCommands()
         return self.panDiscLayout.GetElements()
 
 
@@ -3981,7 +4006,6 @@ class MainFrame(wx.Frame):
 
     def OnFileSave(self, evt):
         """Save the current project to a TDL file."""
-        #outFile = open("tovid.dump", "w")
         outFileDialog = wx.FileDialog(self, _("Select a save location"),
             self.dirname, "", "*.tdl", wx.SAVE)
         if outFileDialog.ShowModal() == wx.ID_OK:
@@ -3992,7 +4016,7 @@ class MainFrame(wx.Frame):
             
             elements = self.panAuthorFiles.GetElements()
             for element in elements:
-                outFile.write(element.toString())
+                outFile.write(element.tdl_string())
 
             outFile.close()
     
