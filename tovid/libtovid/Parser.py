@@ -120,7 +120,7 @@ class Parser:
         attributes"""
 
         # Set rules for splitting tokens
-        self.lexer.wordchars = self.lexer.wordchars + ".:-%()[]/"
+        self.lexer.wordchars = self.lexer.wordchars + ".:-%()/"
         self.lexer.whitespace_split = False
 
         # Begin with an empty list of elements
