@@ -36,7 +36,8 @@ bin_SCRIPTS = \
 	tovid-batch \
 	tovid-init \
 	tovid-interactive \
-	tovid-test
+	tovid-test \
+	tovidgui
 
 CLEANFILES = $(bin_SCRIPTS)
 
@@ -139,3 +140,8 @@ tovid-test: $(srcdir)/tovid-test.sh
 	echo "#! `which env` sh"  > tovid-test
 	cat $(srcdir)/tovid-test.sh >> tovid-test
 	chmod ugo+x tovid-test
+
+tovidgui: $(srcdir)/tovidgui.py
+	rm -f "tovidgui"
+	cat $(srcdir)/tovidgui.py >> tovidgui
+	chmod ugo+x tovidgui
