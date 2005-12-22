@@ -7,6 +7,10 @@
 
 # Sort of a scratch-pad of functions at the moment
 
+# TODO: Finish writing functions for doing tovid-related things,
+# and write a (possibly separate) module for invoking these
+# functions and running the commands.
+
 from Target import *
 
 """
