@@ -21,6 +21,7 @@ class Project:
         """Load project data from the given TDL file."""
         self.elemdict = {}
         p = Parser.Parser()
+        # Index elemdict by element name for easy access
         for element in p.parse_file(filename):
             self.elemdict[element.name] = element
         self.build_hierarchy()
@@ -56,9 +57,14 @@ class Project:
                                 (linkname, name)
                         element.children.append(self.elemdict[linkname])
                         self.elemdict[linkname].parents.append(element)
+
+                    # TODO: Find a way to link 'back' to this menu's parent
+                    # elif string.lower(linkname) == 'back': ?
+
                     else:
                         print "Menu \"%s\" links to undefined element \"%s\"" % \
                                 (name, linkname)
+            
 
         # Look for orphans (topitems)
         self.topitems = []
@@ -75,3 +81,11 @@ class Project:
             projstring += "%s\n" % element.tdl_string()
         return projstring
 
+# ===========================================================
+#
+# Unit test
+#
+# ===========================================================
+
+# TODO: Write a proper unit test
+# See http://docs.python.org/lib/module-unittest.html
