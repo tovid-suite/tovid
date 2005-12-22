@@ -4,10 +4,7 @@
 # Parser
 # ===========================================================
 
-import os
-import sys
-import string
-import shlex
+import os, sys, string, shlex
 
 # ===========================================================
 """This module contains a text parser for a simple option-attribute
@@ -57,6 +54,8 @@ class Parser:
         self.lang = lang
         self.interactive = interactive
 
+    # TODO: Find an elegant shortcut (preferably a single function)
+    # to replace all these (mostly redundant) parse_X functions
 
     def parse_stdin(self):
         """Parse all text from stdin until EOF (^D)"""
@@ -98,6 +97,8 @@ class Parser:
         return self.parse()
 
 
+    # TODO: Make this function useful for turning on/off debugging
+    # or interactive output (?)
     def next_token(self):
         """Get the next token and print it out.
         
@@ -114,6 +115,8 @@ class Parser:
         return tok
 
 
+    # TODO: Modularize this function better, splitting some chunks
+    # into other (private) functions
     def parse(self):
         """Parse all text in self.lexer and return a
         list of Elements filled with appropriate
@@ -214,11 +217,8 @@ class Parser:
 #
 # ===========================================================
 
-#import unittest
-
-# Test case
-#class TestTDLParser(unittest.TestCase):
-#    """Test the Parser using TDL"""
+# TODO: Write a proper unit test
+# See http://docs.python.org/lib/module-unittest.html
 
 
 # Self-test; executed when this module is run as a standalone script

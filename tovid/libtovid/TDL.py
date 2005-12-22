@@ -6,6 +6,7 @@
 import copy
 from Globals import strip_indentation
 
+
 # ===========================================================
 __doc__ = \
 """This module contains a definition of the tovid design language (TDL),
@@ -176,11 +177,11 @@ class OptionDef:
 
 
 # ===========================================================
-"""Dictionary of TDL options, categorized by element tag
+# Dictionary of TDL options, categorized by element tag
+#
+# TODO: Expand to include all currently-supported tovid suite
+# options, where feasible. Document all options.
 
-TODO: Expand to include all currently-supported tovid suite
-options, where feasible. Document all options.
-"""
 element_options = {
 # Disc element definition
 # Options pertaining to high-level disc structure
@@ -397,6 +398,15 @@ class Element:
         return tdl
 
     
+# ===========================================================
+#
+# Unit test
+#
+# ===========================================================
+
+# TODO: Write a proper unit test
+# See http://docs.python.org/lib/module-unittest.html
+
 
 # Self-test; executed when this module is run as a standalone script
 if __name__ == "__main__":
