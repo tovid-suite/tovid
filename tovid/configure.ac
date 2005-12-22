@@ -37,7 +37,7 @@
 # The first arugment sets the package name, the second sets the package version.
 # eg [tovid], [0.40] would yield a tovid-0.40.tar.gz after "$ make dist"
 #                    the version number is also substituted into tovid-init.sh.in
-AC_INIT([tovid], [svn])
+AC_INIT([tovid], [0.24])
 AC_CONFIG_SRCDIR([src/tovid.sh])
 
 AM_INIT_AUTOMAKE
@@ -209,7 +209,7 @@ for DEP in $DEP_LIST
 do
   NAME=`echo $DEP | gawk -F '=' '{ print $1 }'`
   FOUND=`echo $DEP | gawk -F '=' '{ print $2 }'`
-  if $FOUND; then :
+  if test -n $FOUND; then :
   else
     AC_MSG_WARN([Cannot find REQUIRED dependency: $NAME])
     FAIL=:
