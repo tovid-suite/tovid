@@ -226,7 +226,10 @@ element_options = {
         'highlightcolor':
             OptionDef('highlightcolor', '[#RRGGBB|#RGB|COLORNAME]', 'red'),
         'selectcolor':
-            OptionDef('selectcolor', '[#RRGGBB|#RGB|COLORNAME]', 'green')
+            OptionDef('selectcolor', '[#RRGGBB|#RGB|COLORNAME]', 'green'),
+
+        'out':
+            OptionDef('out', 'FILE', None)
     },
 
     # Video element definition
