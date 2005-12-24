@@ -13,8 +13,7 @@ class Project:
     complete video disc project (or a multiple-disc project)."""
 
     def __init__(self):
-        # Highest-level elements in the project (those with no other parent)
-        self.topelements = []
+        pass
 
     
     def load_file(self, filename):
@@ -69,9 +68,25 @@ class Project:
         # Look for orphans (topitems)
         self.topitems = []
         for name, element in self.elemdict.iteritems():
-            if element.parents == []:
+            if len(element.parents) == 0:
                 self.topitems.append(element)
                 print "Element: %s has no parents" % name
+
+
+    def get(self, name):
+        """Return the element with the given name, or None if not found."""
+        if name in self.elemdict:
+            return self.elemdict[name]
+        else:
+            return None
+
+    def get_elements(self, type):
+        """Return a list of elements of the given type in this project."""
+        elements = []
+        for name, element in self.elemdict.iteritems():
+            if element.tag == type:
+                elements.append(element)
+        return elements
 
 
     def tdl_string(self):
@@ -80,6 +95,7 @@ class Project:
         for name, element in self.elemdict.iteritems():
             projstring += "%s\n" % element.tdl_string()
         return projstring
+
 
 # ===========================================================
 #
