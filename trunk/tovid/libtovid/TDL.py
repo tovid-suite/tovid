@@ -194,7 +194,10 @@ element_options = {
             """Make the disc for the specified TV system."""),
         'topmenu':
             OptionDef('topmenu', 'MENUNAME', None,
-            """Use MENUNAME for the top-level menu on the disc.""")
+            """Use MENUNAME for the top-level menu on the disc."""),
+        'out':
+            OptionDef('out', 'FILE', None,
+            """Filename to write disc navigational structure to.""")
 
     },
 
@@ -205,7 +208,6 @@ element_options = {
             """Generate a menu compliant with the specified disc format"""),
         'tvsys': OptionDef('tvsys', '[pal|ntsc]', 'ntsc',
             """Make the menu for the specified TV system"""),
-
         'linksto': OptionDef('linksto', '"TITLE" [, "TITLE"]', [],
             """Comma-separated list of quoted titles; these are the
             titles that will be displayed (and linked) from the menu."""),
@@ -227,7 +229,6 @@ element_options = {
             OptionDef('highlightcolor', '[#RRGGBB|#RGB|COLORNAME]', 'red'),
         'selectcolor':
             OptionDef('selectcolor', '[#RRGGBB|#RGB|COLORNAME]', 'green'),
-
         'out':
             OptionDef('out', 'FILE', None)
     },
