@@ -1,5 +1,10 @@
 #! /usr/bin/env python
 
+# ===========================================================
+#
+
+# TODO: Exception handling
+
 """This module takes a tovid Project, finds all the Disc elements present
 therein, and generates vcdxbuild|dvdauthor XML for the disc (and all its
 menu/video navigational hierarchy), writing the results to the filename
@@ -9,17 +14,34 @@ contained in each Disc element's 'out' option.
 import string, sys
 from libtovid import Project
 
-def vcdimager_xml(project):
+
+def write_project_xml(project):
+    """Write dvdauthor or vcdimager XML for each disc in the given project."""
+    for disc in project.get_elements('Disc'):
+        if disc.get('format') == 'dvd':
+            xml = dvd_disc_xml(disc)
+        elif disc.get('format') in ['vcd', 'svcd']:
+            xml = vcd_disc_xml(disc)
+        outfile = open(disc.get('out'), 'w')
+        outfile.write(xml)
+
+
+# ===========================================================
+# Disc XML generators
+
+def vcd_disc_xml(disc):
     xml = """<?xml version="1.0"?>
     <!DOCTYPE videocd PUBLIC "-//GNU/DTD VideoCD//EN"
       "http://www.gnu.org/software/vcdimager/videocd.dtd">
     <videocd xmlns="http://www.gnu.org/software/vcdimager/1.0/"
     """
     # format == vcd|svcd, version=1.0 (svcd) | 2.0 (vcd)
+    format = disc.get('format')
+    if format == 'vcd': version = "2.0" else: version = "1.0"
     xml += 'class="%s" version="%s">\n' % (format, version)
 
-    # For SVCD:
-    # xml += '<option name="update scan offsets" value="true" />'
+    if format == 'svcd':
+        xml += '<option name="update scan offsets" value="true" />'
 
     xml += """<info>
       <album-id>VIDEO_DISC</album-id>
@@ -36,24 +58,10 @@ def vcdimager_xml(project):
     # sequence-items
     # pbc + selections
     xml += '</videocd>'
-    return xml
-
-    
-def dvdauthor_xml(project):
-    """Write dvdauthor XML files for the given project, returning a list
-    of resulting filenames."""
-
-    xmlfiles = []
-    for disc in project.get_elements('Disc'):
-        # Write a dvdauthor XML file for each disc
-        xmlfile = "%s.xml" % disc.name.replace(' ', '_')
-        xmlfiles.append(xmlfile)
-        xml = _disc_xml(disc)
-        # TODO: write xml to the file
-        print xml
 
 
-def _disc_xml(disc):
+def dvd_disc_xml(disc):
+    """Return a string containing dvdauthor XML for the given disc element."""
     xml = '<dvdauthor dest="%s">\n' % disc.name.replace(' ', '_')
     xml += '<vmgm>\n'
     # If there's a topmenu, write vmgm-level XML for it
@@ -75,16 +83,19 @@ def _disc_xml(disc):
     # TODO: add titlesets for each submenu
     for menu in topmenu.children:
         xml += '<titleset>\n'
-        xml += _menu_xml(menu)
+        xml += dvd_menu_xml(menu)
         for video in menu.children:
-            xml += _video_xml(video)
+            xml += dvd_video_xml(video)
         xml += '</titleset>\n'
         
     xml += '</dvdauthor>\n'
     return xml
 
 
-def _menu_xml(menu):
+# ===========================================================
+# Menu XML generators
+
+def dvd_menu_xml(menu):
     """Return a string containing dvdauthor XML for the given menu element."""
     xml = '<menus>\n'
     xml += '  <video />\n'
@@ -101,16 +112,26 @@ def _menu_xml(menu):
     return xml
 
 
-def _video_xml(video):
+# ===========================================================
+# Video XML generators
+
+def dvd_video_xml(video):
     """Return a string containing dvdauthor XML for the given video element."""
 
+    chap_str = '0'
+    for chap in video.get('chapters'):
+        chap_str += ',' + chap
+
     xml = '  <pgc>\n'
-    xml += '    <vob file="%s" chapters="0" />\n' % video.get('out')
+    xml += '    <vob file="%s" chapters="%s" />\n' % \
+            (video.get('out'), chap_str)
     xml += '    <post>call menu;</post>\n'
     xml += '  </pgc>\n'
     return xml
 
 
+# ===========================================================
+# Self-test; executed when this script is run standalone
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print "Please supply the name of a .tdl file."
@@ -119,4 +140,4 @@ if __name__ == '__main__':
     proj = Project.Project()
     proj.load_file(sys.argv[1])
 
-    dvdauthor_xml(proj)
+    write_dvdauthor_xml(proj)

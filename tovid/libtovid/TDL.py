@@ -324,7 +324,10 @@ element_options = {
         'normalize':    OptionDef('normalize', '', False,
             """Normalize the volume of the audio. Useful if the audio is too
             quiet or too loud, or you want to make volume consistent for a
-            bunch of videos.""")
+            bunch of videos."""),
+        'chapters':     OptionDef('chapters', 'TIME [, TIME]', [],
+            """Put chapter breaks at the specified times (HH:MM:SS).""")
+
     }
 }
 
