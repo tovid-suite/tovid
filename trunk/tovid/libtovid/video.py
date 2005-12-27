@@ -1,7 +1,5 @@
 #! /usr/bin/env python
 
-# tools.py
-
 # An interface to some external command-line tools for
 # encoding/multiplexing video.
 
