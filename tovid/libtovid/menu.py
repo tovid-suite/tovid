@@ -7,6 +7,72 @@ from libtovid import Project
 
 FRAMES=60
 
+class Thumb:
+    """Video thumbnail, for use in thumbnail menus.
+    Stores everything needed for making a thumbnail of an existing
+    video."""
+    def __init__(self, id, video, coords, effects=[]):
+        """Create a Thumb with the given unique ID, from the given video."""
+        self.id = id
+        self.video = video
+        self.coords = coords
+        self.size = rect_size(coords)
+        self.effects = effects
+
+    def generate(self):
+        """Generate .jpg thumbnail images of the video using mplayer, and
+        return the full pathname of the directory where the images are
+        saved."""
+        self.outdir = os.path.abspath('thumb%s' % self.id)
+        cmd = 'mplayer "%s" ' % self.video.get('in')
+
+        x, y = self.size
+        if 'border' in self.effects:
+            cmd += ' -vf expand=%s:%s:2:2 ' % (x+2, y+2)
+
+        if 'glass' in self.effects:
+            cmd += ' -vf '
+            cmd += 'rectangle=%s:%s,' % (x, y)
+            cmd += 'rectangle=%s:%s,' % (x-2, y-2)
+            cmd += 'rectangle=%s:%s,' % (x-4, y-4)
+            cmd += 'rectangle=%s:%s' % (x-6, y-6)
+
+        cmd += ' -zoom -x %s -y %s ' % self.size
+        cmd += ' -vo jpeg:outdir="%s" -ao null ' % self.outdir
+        cmd += ' -ss 05:00 -frames %s ' % FRAMES
+
+        print "Generating thumbnails for video %s with command:" % \
+                self.video.get('in')
+        print cmd
+        for line in os.popen(cmd, 'r').readlines():
+            #print line
+            pass
+        return self.outdir
+
+
+    def decorate(self, label = '', border = 0):
+        """Decorate the thumbnail with a text label or black border."""
+        if not self.outdir:
+            self.generate()
+        # For all images in outdir, add decoration
+        for image in os.listdir(self.outdir):
+            cmd = 'convert %s/%s -gravity south' % (self.outdir, image)
+            if label:
+                cmd += ' -stroke "#0004" -strokewidth 1'
+                cmd += ' -annotate 0 "%s"' % label
+                cmd += ' -stroke none -fill white -annotate 0 "%s"' % label
+            if border > 0:
+                pass
+            # Write output back to the original image
+            cmd += ' %s/%s' % (self.outdir, image)
+
+            print "Adding label with command:"
+            print cmd
+            for line in os.popen(cmd, 'r').readlines():
+                print line
+
+
+
 def generate_project_menus(project):
     """Create an MPEG menu for each Menu in the given project."""
     for menu in project.get_elements('Menu'):
@@ -23,39 +89,49 @@ def generate_dvd_menu(menu):
     # TODO:
     # Convert audio to compliant format
 
+    effects = menu.get('effects')
     coords = grid_coordinates(720, 480, 3, 2)
-    print "coords:"
-    print coords
-    x0, y0, x1, y1 = coords[0]
-    size = rect_size(x0, y0, x1, y1)
-    thumbnum = 1
-    thumbdirs = []
+    index = 0
+    thumbs = []
     for video in menu.children:
-        generate_thumbs(video.get('in'), size, "thumbs_%s" % thumbnum)
-        thumbdirs.append("thumbs_%s" % thumbnum)
-        thumbnum += 1
+        print "video: "
+        print video
+        thumbs.append(Thumb(index, video, coords[index], effects))
+        thumbs[-1].generate()
+        thumbs[-1].decorate(video.name)
+        index += 1
     
-    composite_thumbs(thumbdirs, coords)
+    composite_thumbs(thumbs)
+    generate_video('composite')
 
     # TODO:
-    # Create a video stream of the composite images
     # Create a subtitle stream with "button" regions over each thumbnail
     # Multiplex video, audio, and subtitles, output in menu.get('out')
 
 
-def composite_thumbs(thumbdirs, coords):
+def composite_thumbs(thumbs):
     outdir = 'composite'
     for frame in range(FRAMES):
         cmd = 'convert -size 720x480 xc:skyblue '
-        thumbnum = 0
-        for dir in thumbdirs:
-            x0, y0, x1, y1 = coords[thumbnum]
-            thumbnum += 1
+        for thumb in thumbs:
+            x0, y0, x1, y1 = thumb.coords
             cmd += ' -page +%s+%s' % (x0, y0)
-            cmd += ' %s/%s.jpg' % (dir, string.zfill(frame, 8))
+            cmd += ' -label "%s"' % thumb.video.name
+            #cmd += ' -frame 6x6+2+2'
+            cmd += ' %s/%s.jpg' % (thumb.outdir, string.zfill(frame, 8))
         cmd += ' -mosaic %s/%s.jpg' % (outdir, string.zfill(frame, 8))
-
+        print cmd
         os.popen(cmd, 'r')
+  
+def generate_video(framedir):
+    """Generate a video stream from numbered images in framedir."""
+    cmd = 'jpeg2yuv -v 0 -f 29.970 -I p -n %s' % FRAMES
+    cmd += ' -L 1 -b1 -j "%s/%%08d.jpg"' % framedir
+    cmd += ' | mpeg2enc -v 0 -q 3 -f 8 -o %s.m2v' % framedir
+    print "Generating video stream with command:"
+    print cmd
+    for line in os.popen(cmd, 'r'):
+        print line
 
     
 def generate_vcd_menu(menu):
@@ -87,26 +163,12 @@ def grid_coordinates(width, height, cols, rows):
     return coords
 
 
-def rect_size(x0, y0, x1, y1):
+def rect_size(coords):
     """Return the size (w,h) of the rectangle defined by the given
     coordinates."""
+    x0, y0, x1, y1 = coords
     return (x1-x0, y1-y0)
 
-
-def generate_thumbs(video, size, outdir):
-    """Generate thumbnail images of a video."""
-    # TODO: Solve outdir problem
-    print "size: "
-    print size
-    cmd = 'mplayer "%s" ' % video
-    cmd += ' -zoom -x %s -y %s ' % size
-    cmd += ' -vo jpeg:outdir="%s" -ao null ' % outdir
-    cmd += ' -ss 02:00 -frames %s ' % FRAMES
-    print "Generating thumbnails for video " + video + " with command:"
-    print cmd
-    for line in os.popen(cmd, 'r').readlines():
-        #print line
-        pass
 
 
 

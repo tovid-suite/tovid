@@ -230,7 +230,18 @@ element_options = {
         'selectcolor':
             OptionDef('selectcolor', '[#RRGGBB|#RGB|COLORNAME]', 'green'),
         'out':
-            OptionDef('out', 'FILE', None)
+            OptionDef('out', 'FILE', None),
+        # Thumbnail menus and effects
+        'choices':
+            OptionDef('choices', '[list|thumbnails]', 'list',
+                """Display links as a list of titles, or as a grid
+                of labeled thumbnail videos."""),
+        'border':
+            OptionDef('border', 'NUM', '0',
+                """Add a border of NUM pixels around thumbnails."""),
+        'effects':
+            OptionDef('effects', '[shadow|round|glass] [, ...]', [],
+                """Add the listed effects to the thumbnails.""")
     },
 
     # Video element definition
