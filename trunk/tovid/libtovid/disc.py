@@ -16,7 +16,7 @@ from libtovid import Project
 
 
 def write_project_xml(project):
-    """Write dvdauthor or vcdimager XML for each disc in the given project."""
+    """Write dvdauthor or vcdimager XML for each Disc in the given project."""
     for disc in project.get_elements('Disc'):
         if disc.get('format') == 'dvd':
             xml = dvd_disc_xml(disc)
@@ -37,7 +37,10 @@ def vcd_disc_xml(disc):
     """
     # format == vcd|svcd, version=1.0 (svcd) | 2.0 (vcd)
     format = disc.get('format')
-    if format == 'vcd': version = "2.0" else: version = "1.0"
+    if format == 'vcd':
+        version = "2.0"
+    else:
+        version = "1.0"
     xml += 'class="%s" version="%s">\n' % (format, version)
 
     if format == 'svcd':
