@@ -1,75 +1,126 @@
 #! /usr/bin/env python
 
-import string, sys, os
+import string, sys, os, glob
 from libtovid import Project
 
 """Generate Menu elements for a tovid project."""
 
-FRAMES=60
+"""Conceptual steps in generating a menu:
 
-class Thumb:
-    """Video thumbnail, for use in thumbnail menus.
-    Stores everything needed for making a thumbnail of an existing
-    video."""
-    def __init__(self, id, video, coords, effects=[]):
-        """Create a Thumb with the given unique ID, from the given video."""
-        self.id = id
-        self.video = video
-        self.coords = coords
-        self.size = rect_size(coords)
-        self.effects = effects
+    - convert/generate background (image or video)
+    - convert audio
+    - generate link content (titles and/or thumbnails)
+    - generate link navigation (spumux)
+    - composite links/thumbnails over background
+    - convert image sequence into video stream
+    - mux video/audio streams
+    - mux link highlight/select subtitles
 
-    def generate(self):
-        """Generate .jpg thumbnail images of the video using mplayer, and
-        return the full pathname of the directory where the images are
-        saved."""
-        self.outdir = os.path.abspath('thumb%s' % self.id)
-        cmd = 'mplayer "%s" ' % self.video.get('in')
+Interfaces:
+
+    - Convert video to image sequence
+    - Convert image sequence to video
+    - Composite two or more image sequences together
+    - Alter an image sequence (decoration, labeling, etc.)
+
+Data structures:
+
+    - Image sequence
+        - Name/title
+        - Resolution
+        - Filesystem location (directory name)
+
+"""
+
+
+FRAMES=30
+
+class ImageSequence:
+    """A collection of images comprising a video sequence."""
+    def __init__(self, dir, size):
+        """Create an image sequence in the given directory, using
+        any existing image files there. Images must be at the given
+        size (x,y)."""
+        self.dir = os.path.abspath(dir)
+        self.size = size
+        # Create directory if it doesn't exist
+        if not self.dir:
+            os.mkdir(self.dir)
+
+        
+    def from_video(self, video):
+        """Create an image sequence from the given Video element."""
+        cmd = 'mplayer "%s" ' % video.get('in')
 
         x, y = self.size
-        if 'border' in self.effects:
-            cmd += ' -vf expand=%s:%s:2:2 ' % (x+2, y+2)
-
-        if 'glass' in self.effects:
-            cmd += ' -vf '
-            cmd += 'rectangle=%s:%s,' % (x, y)
-            cmd += 'rectangle=%s:%s,' % (x-2, y-2)
-            cmd += 'rectangle=%s:%s,' % (x-4, y-4)
-            cmd += 'rectangle=%s:%s' % (x-6, y-6)
 
         cmd += ' -zoom -x %s -y %s ' % self.size
-        cmd += ' -vo jpeg:outdir="%s" -ao null ' % self.outdir
+        cmd += ' -vo jpeg:outdir="%s" -ao null ' % self.dir
         cmd += ' -ss 05:00 -frames %s ' % FRAMES
 
-        print "Generating thumbnails for video %s with command:" % \
-                self.video.get('in')
+        print "Creating image sequence from %s" % video.get('in')
         print cmd
         for line in os.popen(cmd, 'r').readlines():
             #print line
             pass
-        return self.outdir
 
 
-    def decorate(self, label = '', border = 0):
-        """Decorate the thumbnail with a text label or black border."""
-        if not self.outdir:
-            self.generate()
-        # For all images in outdir, add decoration
-        for image in os.listdir(self.outdir):
-            cmd = 'convert %s/%s -gravity south' % (self.outdir, image)
-            if label:
+    def to_video(self):
+        """Create a video stream from the image sequence."""
+        outfile = os.path.abspath("%s.m2v" % self.name)
+        cmd = 'jpeg2yuv -v 0 -f 29.970 -I p -n %s' % FRAMES
+        cmd += ' -L 1 -b1 -j "%s/%%08d.jpg"' % self.dir
+        cmd += ' | mpeg2enc -v 0 -q 3 -f 8 -o "%s"' % outfile
+        print "Generating video stream with command:"
+        print cmd
+        for line in os.popen(cmd, 'r'):
+            print line
+        return outfile
+
+
+    def decorate(self, effects):
+        """Apply the given filters and decorations to the image sequence."""
+
+        # For all .jpg images in self.dir, add decoration
+        for image in glob.glob('%s/*.jpg' % self.dir):
+            cmd = 'convert "%s"' % image
+
+            if 'label' in effects:
+                cmd += ' -gravity south'
                 cmd += ' -stroke "#0004" -strokewidth 1'
-                cmd += ' -annotate 0 "%s"' % label
-                cmd += ' -stroke none -fill white -annotate 0 "%s"' % label
-            if border > 0:
-                pass
-            # Write output back to the original image
-            cmd += ' %s/%s' % (self.outdir, image)
+                cmd += ' -annotate 0 "%s"' % self.name
+                cmd += ' -stroke none -fill white'
+                cmd += ' -annotate 0 "%s"' % self.name
 
-            print "Adding label with command:"
+            if 'shadow' in effects:
+                cmd += ''
+
+            # TODO: Convert these mplayer effects to IM equivalents
+            """
+            if 'border' in effects:
+                cmd += ' -vf expand=%s:%s:2:2 ' % (x+2, y+2)
+
+            if 'glass' in effects:
+                cmd += ' -vf '
+                cmd += 'rectangle=%s:%s,' % (x, y)
+                cmd += 'rectangle=%s:%s,' % (x-2, y-2)
+                cmd += 'rectangle=%s:%s,' % (x-4, y-4)
+                cmd += 'rectangle=%s:%s' % (x-6, y-6)
+            """
+
+            # Write output back to the original image
+            cmd += ' "%s"' % image
+
+            print 'Decorating "%s" with command:' % image
             print cmd
             for line in os.popen(cmd, 'r').readlines():
                 print line
+
+
+    def composite(self, imgseq):
+        """Composite the given image sequence over this one."""
+        # (Maybe better to put this at a higher level)
+        pass
 
 
 
@@ -98,45 +149,56 @@ def generate_dvd_menu(menu):
         print video
         thumbs.append(Thumb(index, video, coords[index], effects))
         thumbs[-1].generate()
-        thumbs[-1].decorate(video.name)
+        thumbs[-1].decorate()
         index += 1
     
-    composite_thumbs(thumbs)
-    generate_video('composite')
+    outdir = os.path.abspath('composite')
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+    background = menu.get('background')
+    generate_highlight_png(coords[:index])
+    composite_thumbs(background, thumbs, outdir)
 
     # TODO:
     # Create a subtitle stream with "button" regions over each thumbnail
     # Multiplex video, audio, and subtitles, output in menu.get('out')
 
 
-def composite_thumbs(thumbs):
-    outdir = 'composite'
+def composite_thumbs(background, thumbs, outdir):
     for frame in range(FRAMES):
-        cmd = 'convert -size 720x480 xc:skyblue '
+        cmd = 'convert -size 720x480 %s' % background
         for thumb in thumbs:
             x0, y0, x1, y1 = thumb.coords
             cmd += ' -page +%s+%s' % (x0, y0)
             cmd += ' -label "%s"' % thumb.video.name
-            #cmd += ' -frame 6x6+2+2'
             cmd += ' %s/%s.jpg' % (thumb.outdir, string.zfill(frame, 8))
         cmd += ' -mosaic %s/%s.jpg' % (outdir, string.zfill(frame, 8))
         print cmd
         os.popen(cmd, 'r')
-  
-def generate_video(framedir):
-    """Generate a video stream from numbered images in framedir."""
-    cmd = 'jpeg2yuv -v 0 -f 29.970 -I p -n %s' % FRAMES
-    cmd += ' -L 1 -b1 -j "%s/%%08d.jpg"' % framedir
-    cmd += ' | mpeg2enc -v 0 -q 3 -f 8 -o %s.m2v' % framedir
-    print "Generating video stream with command:"
-    print cmd
-    for line in os.popen(cmd, 'r'):
-        print line
 
+
+def generate_highlight_png(coords):
+    """Generate a transparent highlight .png for the menu, with
+    cursor positions near the given coordinates."""
+    outfile = 'high.png'
+    cmd = 'convert -size 720x480 xc:none +antialias'
+    cmd += ' -fill "#20FF40"'
+    for rect in coords:
+        x0, y0, x1, y1 = rect
+        cmd += ' -draw "rectangle %s,%s %s,%s"' % \
+            (x0, y1+4, x1, y1+10)
+    cmd += ' -type Palette -colors 3 png8:%s' % outfile
+    print cmd
+    for line in os.popen(cmd, 'r').readlines():
+        print line
+    return outfile
+
+  
     
 def generate_vcd_menu(menu):
     """Generate an (S)VCD MPEG menu, saving to the file specified by the menu's
     'out' option."""
+    # TODO
     pass
 
 
@@ -168,7 +230,6 @@ def rect_size(coords):
     coordinates."""
     x0, y0, x1, y1 = coords
     return (x1-x0, y1-y0)
-
 
 
 
