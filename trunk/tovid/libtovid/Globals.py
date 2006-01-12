@@ -4,9 +4,17 @@
 # tovid suite-wide constants
 # ===========================================================
 
-import re
+import re, string
 
-def strip_indentation( block ):
+def degunk(str):
+    """Strip special characters from the given string (any that might
+    cause problems when used in a filename)."""
+    trans = string.maketrans(' :;?![]()\'\"','@@@@@@@@@@@')
+    result = string.translate(str, trans)
+    result = result.replace('@','')
+    return result
+
+def strip_indentation(block):
     """Strip leading indentation from a multi-line string literal.
     
     Stolen from Brett Levin:
