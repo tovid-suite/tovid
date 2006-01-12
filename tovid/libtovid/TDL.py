@@ -137,7 +137,7 @@ class OptionDef:
         
         opt = OptionDef(
             'debug',
-            '[no|some|all]',
+            'none|some|all',
             'some',
             "Amount of debugging information to display"
            )
@@ -187,10 +187,10 @@ element_options = {
 # Options pertaining to high-level disc structure
     'Disc': { 
         'format':
-            OptionDef('format', '[vcd|svcd|dvd]', 'dvd',
+            OptionDef('format', 'vcd|svcd|dvd', 'dvd',
             """Create a disc of the specified format."""),
         'tvsys':
-            OptionDef('tvsys', '[pal|ntsc]', 'ntsc',
+            OptionDef('tvsys', 'pal|ntsc', 'ntsc',
             """Make the disc for the specified TV system."""),
         'topmenu':
             OptionDef('topmenu', 'MENUNAME', None,
@@ -204,9 +204,9 @@ element_options = {
     # Menu element definition
     # Options pertaining to generating a video disc menu
     'Menu': {
-        'format': OptionDef('format', '[vcd|svcd|dvd]', 'dvd',
+        'format': OptionDef('format', 'vcd|svcd|dvd', 'dvd',
             """Generate a menu compliant with the specified disc format"""),
-        'tvsys': OptionDef('tvsys', '[pal|ntsc]', 'ntsc',
+        'tvsys': OptionDef('tvsys', 'pal|ntsc', 'ntsc',
             """Make the menu for the specified TV system"""),
         'linksto': OptionDef('linksto', '"TITLE" [, "TITLE"]', [],
             """Comma-separated list of quoted titles; these are the
@@ -222,13 +222,13 @@ element_options = {
             OptionDef('fontsize', 'NUM', '24',
             """Use a font size of NUM pixels."""),
         'alignment':
-            OptionDef('alignment', '[left|center|right]', 'left'),
+            OptionDef('alignment', 'left|center|right', 'left'),
         'textcolor':
-            OptionDef('textcolor', '[#RRGGBB|#RGB|COLORNAME]', 'white'),
+            OptionDef('textcolor', '#RRGGBB|#RGB|COLORNAME', 'white'),
         'highlightcolor':
-            OptionDef('highlightcolor', '[#RRGGBB|#RGB|COLORNAME]', 'red'),
+            OptionDef('highlightcolor', '#RRGGBB|#RGB|COLORNAME', 'red'),
         'selectcolor':
-            OptionDef('selectcolor', '[#RRGGBB|#RGB|COLORNAME]', 'green'),
+            OptionDef('selectcolor', '#RRGGBB|#RGB|COLORNAME', 'green'),
         'out':
             OptionDef('out', 'FILE', None),
         # Thumbnail menus and effects
@@ -240,7 +240,7 @@ element_options = {
             OptionDef('border', 'NUM', '0',
                 """Add a border of NUM pixels around thumbnails."""),
         'effects':
-            OptionDef('effects', '[shadow|round|glass] [, ...]', [],
+            OptionDef('effects', 'shadow|round|glass [, ...]', [],
                 """Add the listed effects to the thumbnails.""")
     },
 
@@ -249,11 +249,11 @@ element_options = {
     'Video': {
         # New options to (eventually) replace -vcd, -pal etc.
         'format':
-            OptionDef('format', '[vcd|svcd|dvd|half-dvd|dvd-vcd]', 'dvd',
+            OptionDef('format', 'vcd|svcd|dvd|half-dvd|dvd-vcd', 'dvd',
             """Make video compliant with the specified format"""),
 
         'tvsys':
-            OptionDef('tvsys', '[ntsc|pal]', 'ntsc',
+            OptionDef('tvsys', 'ntsc|pal', 'ntsc',
             """Make the video compliant with the specified TV system"""),
 
         # Deprecated options. Need to find a way to
