@@ -85,9 +85,9 @@ usage_error ()
 # Args: (name, x0, y0, x1, y1)
 add_button ()
 {
-  BTN_Y0=`expr $3 \+ $BUTTON_YOFFSET`
-  BTN_Y1=`expr $5 \+ $BUTTON_YOFFSET`
-  SPUMUX_BUTTONS=`cat << EOF
+    BTN_Y0=`expr $3 \+ $BUTTON_YOFFSET`
+    BTN_Y1=`expr $5 \+ $BUTTON_YOFFSET`
+    SPUMUX_BUTTONS=`cat << EOF
 $SPUMUX_BUTTONS
   <button name="$1" x0="$2" y0="$BTN_Y0" x1="$4" y1="$BTN_Y1" />
 EOF`
@@ -237,13 +237,12 @@ while test $# -gt 0; do
             ;;
         "-align" )
             shift
-            if [[ $1 == "left" ]]; then
-              TEXT_ALIGN="northwest"
-            elif [[ $1 == "right" ]]; then
-              TEXT_ALIGN="northeast"
-            else
-              TEXT_ALIGN="north"
-            fi
+            case "$1" in
+                "left" ) TEXT_ALIGN="northwest" ;;
+                "right" ) TEXT_ALIGN="northeast" ;;
+                "center" ) TEXT_ALIGN="north" ;;
+                "*" ) TEXT_ALIGN="$1"
+            esac
             ;;
         "-debug" )
             DEBUG=:
@@ -295,49 +294,50 @@ else
 fi
 
 # Set audio stream format
-if [[ $RES == "dvd" ]]; then
-  ASUF="ac3"
+if test "$RES" = "dvd"; then
+    ASUF="ac3"
 else
-  ASUF="mpa"
+    ASUF="mpa"
 fi
 
 
 
 # Make sure there are 9 or fewer titles for VCD
-if [[ $RES == "vcd" && $NUM_TITLES -gt 9 ]]; then
-  echo $SEPARATOR
-  echo "It looks like you've specified more than 9 titles for an (S)VCD menu."
-  echo "Since (S)VCD menus are navigated by pressing single-digit numbers on"
-  echo "the remote control, they are limited to 9 choices per menu. Please"
-  echo "try using fewer titles."
-  exit 1
+if test "$RES" = "vcd" && test "$NUM_TITLES" -gt 9; then
+    echo $SEPARATOR
+    echo "It looks like you've specified more than 9 titles for an (S)VCD menu."
+    echo "Since (S)VCD menus are navigated by pressing single-digit numbers on"
+    echo "the remote control, they are limited to 9 choices per menu. Please"
+    echo "try using fewer titles."
+    exit 1
 fi
 
 
 # Use a foreground canvas the size of the background minus safe area
-if [[ -n $SAFE_AREA ]]; then
-  FG_WIDTH=`expr $WIDTH \* 4 \/ 5`
-  FG_HEIGHT=`expr $HEIGHT \* 4 \/ 5`
+if test -n $SAFE_AREA; then
+    FG_WIDTH=`expr $WIDTH \* 4 \/ 5`
+    FG_HEIGHT=`expr $HEIGHT \* 4 \/ 5`
 else
-  FG_WIDTH=`expr $WIDTH \- 10`
-  FG_HEIGHT=`expr $HEIGHT \- 10`
+    FG_WIDTH=`expr $WIDTH \- 10`
+    FG_HEIGHT=`expr $HEIGHT \- 10`
 fi
 
 # Check to see if the given font name is available in ImageMagick
 # (only return the first exact match)
-USE_TITLE_FONT=$( convert -list type | grep -m 1 "$TITLE_FONT" | awk '{print $1}' )
+USE_TITLE_FONT=$( convert -list type | \
+    grep -m 1 "$TITLE_FONT" | awk '{print $1}' )
 # If not available, try to use something similar
 if [[ -z $USE_TITLE_FONT ]]; then
-  echo $SEPARATOR
-  echo "Font: \"$TITLE_FONT\" does not appear to be available in ImageMagick."
-  USE_TITLE_FONT=$( convert -list type | grep -i -m 1 "${TITLE_FONT:0:20}" | \
-    awk '{print $1}' )
-  if [[ -z $USE_TITLE_FONT ]]; then
-    echo "A similarly-named font was not found. Sorry!"
-    USE_TITLE_FONT="Helvetica"
-  fi
-  echo "The font \"$USE_TITLE_FONT\" will be used instead."
-  echo $SEPARATOR
+    echo $SEPARATOR
+    echo "Font: \"$TITLE_FONT\" does not appear to be available in ImageMagick."
+    USE_TITLE_FONT=$( convert -list type | \
+        grep -i -m 1 "${TITLE_FONT:0:20}" | awk '{print $1}' )
+    if test -z "$USE_TITLE_FONT"; then
+        echo "A similarly-named font was not found. Sorry!"
+        USE_TITLE_FONT="Helvetica"
+    fi
+    echo "The font \"$USE_TITLE_FONT\" will be used instead."
+    echo $SEPARATOR
 fi
 
 TITLE_TEXT=""
@@ -378,31 +378,33 @@ done
 
 # If there was a "back", add it at the end
 if [[ -n $BACK_BUTTON ]]; then
-  # Leave an empty line
-  CUR_Y=$NEXT_Y
-  NEXT_Y=`expr $NEXT_Y \+ $TITLE_SPACING`
-  if [[ $RES == "vcd" ]]; then
-    TITLE_TEXT=$( echo "$TITLE_TEXT text 15,$CUR_Y '$CUR_BUTTON_NUM. Back'" )
-  else
-    TITLE_TEXT=$( echo "$TITLE_TEXT text 0,$CUR_Y 'Back'" )
-    BUTTON_TEXT=$( echo "$BUTTON_TEXT text 0,$CUR_Y '<'" )
-  fi
-  add_button "back" $BUTTON_X1 $CUR_Y $BUTTON_X2 $NEXT_Y
+    # Leave an empty line
+    CUR_Y=$NEXT_Y
+    NEXT_Y=`expr $NEXT_Y \+ $TITLE_SPACING`
+    if [[ $RES == "vcd" ]]; then
+        TITLE_TEXT=$( echo "$TITLE_TEXT text 15,$CUR_Y '$CUR_BUTTON_NUM. Back'" )
+    else
+        TITLE_TEXT=$( echo "$TITLE_TEXT text 0,$CUR_Y 'Back'" )
+        BUTTON_TEXT=$( echo "$BUTTON_TEXT text 0,$CUR_Y '<'" )
+    fi
+    add_button "back" $BUTTON_X1 $CUR_Y $BUTTON_X2 $NEXT_Y
 fi
 
-if [[ $SCALECROP == "crop" ]]; then
-  SCALECROP="-resize ${WIDTH}x -resize \"x${HEIGHT}<\" -gravity center -crop ${WIDTH}x${HEIGHT}+0+0"
+if test "$SCALECROP" = "crop"; then
+    SCALECROP="-resize ${WIDTH}x -resize \"x${HEIGHT}<\" -gravity center \
+        -crop ${WIDTH}x${HEIGHT}+0+0"
 else
-  SCALECROP="-resize ${WIDTH}x${HEIGHT}!"
+    SCALECROP="-resize ${WIDTH}x${HEIGHT}!"
 fi
 
 # If no background was provided, create a default
 # one (blue-black gradient)
-if [[ -z $BG_IMAGE ]]; then
-  BG_CMD="convert -size ${WIDTH}x${HEIGHT} gradient:blue-black -gravity center -matte $BG_CANVAS"
+if test -z "$BG_IMAGE"; then
+    BG_CMD="convert -size ${WIDTH}x${HEIGHT} gradient:blue-black \
+        -gravity center -matte $BG_CANVAS"
 # Otherwise, scale/crop the provided image
 else
-  BG_CMD="convert \"$BG_IMAGE\" $SCALECROP -matte $BG_CANVAS"
+    BG_CMD="convert \"$BG_IMAGE\" $SCALECROP -matte $BG_CANVAS"
 fi
 echo "Creating the background canvas with the following command:"
 echo $"$BG_CMD"
@@ -411,21 +413,20 @@ eval $BG_CMD
 # If no background audio was provided, generate a 4-second
 # silent audio clip
 if [[ -z $BG_AUDIO ]]; then
-  # Use this sox command instead, if the given one fails
-  #SOX_CMD="sox -t raw -c 2 -r $SAMPRATE -w -s /dev/zero $BG_SILENCE.wav trim 0 4"
-  SOX_CMD="cat /dev/zero | sox -t raw -c 2 -r $SAMPRATE -w -s - -t wav $BG_SILENCE.wav trim 0 4"
-  echo $SOX_CMD
-  eval $SOX_CMD
-  BG_AUDIO=$BG_SILENCE
-  VID_LENGTH=`expr 4 \* $FPS \/ 100`
+    SOX_CMD="cat /dev/zero | sox -t raw -c 2 -r $SAMPRATE \
+        -w -s - -t wav $BG_SILENCE.wav trim 0 4"
+    echo $SOX_CMD
+    eval $SOX_CMD
+    BG_AUDIO=$BG_SILENCE
+    VID_LENGTH=`expr 4 \* $FPS \/ 100`
 # Otherwise, convert provided audio to WAV
 else
-  echo "Converting audio to $SAMPRATE hz WAV..."
-  sox "$BG_AUDIO" -r $SAMPRATE -w "$BG_AUDIO.wav" >> $REDIR 2>&1
-  # Calculate video length from length of audio sample
-  VID_LENGTH=$( sox "$BG_AUDIO" -t raw /dev/null stat 2>&1 | grep 'Length' | \
-     sed -e "s/[^0-9]*\([0-9][0-9]*\)\..*/\1/g" )
-  VID_LENGTH=`expr $VID_LENGTH \* $FPS \/ 100`
+    echo "Converting audio to $SAMPRATE hz WAV..."
+    sox "$BG_AUDIO" -r $SAMPRATE -w "$BG_AUDIO.wav" >> $REDIR 2>&1
+    # Calculate video length from length of audio sample
+    VID_LENGTH=$( sox "$BG_AUDIO" -t raw /dev/null stat 2>&1 | \
+        grep 'Length' | sed -e "s/[^0-9]*\([0-9][0-9]*\)\..*/\1/g" )
+    VID_LENGTH=`expr $VID_LENGTH \* $FPS \/ 100`
 fi
 
 # Make sure VID_LENGTH is nonzero
@@ -436,10 +437,10 @@ fi
 
 # Add text titles to a blank image the size of the foreground canvas
 MAGICK_CMD="convert -size ${FG_WIDTH}x${FG_HEIGHT} xc:none -antialias \
-  -font \"$USE_TITLE_FONT\" -pointsize $TITLE_SIZE -fill \"$TEXT_COLOR\" -stroke black \
-  -strokewidth 3 -draw \"gravity $TEXT_ALIGN $TITLE_TEXT\" \
-  -stroke none -draw \"gravity $TEXT_ALIGN $TITLE_TEXT\" \
-  \"$FG_CANVAS\""
+    -font \"$USE_TITLE_FONT\" -pointsize $TITLE_SIZE -fill \"$TEXT_COLOR\" \
+    -stroke black -strokewidth 3 -draw \"gravity $TEXT_ALIGN $TITLE_TEXT\" \
+    -stroke none -draw \"gravity $TEXT_ALIGN $TITLE_TEXT\" \
+    \"$FG_CANVAS\""
 echo $SEPARATOR
 echo "Creating the foreground canvas with the following command:"
 echo $"$MAGICK_CMD"
@@ -447,10 +448,10 @@ eval $MAGICK_CMD
 
 # Add text titles in highlight color on transparent foreground
 MAGICK_CMD="convert -size ${FG_WIDTH}x${FG_HEIGHT} xc:none +antialias \
-  -font \"$USE_TITLE_FONT\" -weight bold -pointsize $TITLE_SIZE \
-  -fill \"$HIGHLIGHT_COLOR\" -draw \"gravity $TEXT_ALIGN $BUTTON_TEXT\" \
-  -type Palette -colors 3 \
-  png8:$FG_HIGHLIGHT"
+    -font \"$USE_TITLE_FONT\" -weight bold -pointsize $TITLE_SIZE \
+    -fill \"$HIGHLIGHT_COLOR\" -draw \"gravity $TEXT_ALIGN $BUTTON_TEXT\" \
+    -type Palette -colors 3 \
+    png8:$FG_HIGHLIGHT"
 echo $SEPARATOR
 echo "Creating the highlighted titles with the following command:"
 echo $"$MAGICK_CMD"
@@ -458,10 +459,10 @@ eval $MAGICK_CMD
 
 # Add text titles in selection color on transparent foreground
 MAGICK_CMD="convert -size ${FG_WIDTH}x${FG_HEIGHT} xc:none +antialias \
-  -font \"$USE_TITLE_FONT\" -weight bold -pointsize $TITLE_SIZE \
-  -fill \"$SELECT_COLOR\" -draw \"gravity $TEXT_ALIGN $BUTTON_TEXT\" \
-  -type Palette -colors 3 \
-  png8:$FG_SELECTION"
+    -font \"$USE_TITLE_FONT\" -weight bold -pointsize $TITLE_SIZE \
+    -fill \"$SELECT_COLOR\" -draw \"gravity $TEXT_ALIGN $BUTTON_TEXT\" \
+    -type Palette -colors 3 \
+    png8:$FG_SELECTION"
 echo $SEPARATOR
 echo "Creating the selection titles with the following command:"
 echo $"$MAGICK_CMD"
@@ -469,7 +470,7 @@ eval $MAGICK_CMD
 
 # Composite foreground canvas onto background
 MAGICK_CMD="composite -compose Over -gravity center \
-  $FG_CANVAS $BG_CANVAS -depth 8 \"$OUT_PREFIX.ppm\""
+    $FG_CANVAS $BG_CANVAS -depth 8 \"$OUT_PREFIX.ppm\""
 echo $SEPARATOR
 echo "Compositing foreground canvas over background with the following command:"
 echo $"$MAGICK_CMD"
@@ -477,7 +478,7 @@ eval $MAGICK_CMD
 
 # Composite highlight canvas with transparent background
 MAGICK_CMD="composite -compose Src -gravity center \
-  $FG_HIGHLIGHT $BG_CANVAS png8:\"$OUT_PREFIX.hi.png\""
+    $FG_HIGHLIGHT $BG_CANVAS png8:\"$OUT_PREFIX.hi.png\""
 echo $SEPARATOR
 echo "Compositing highlighted titles with the following command:"
 echo $"$MAGICK_CMD"
@@ -485,7 +486,7 @@ eval $MAGICK_CMD
 
 # Composite highlight canvas with transparent background
 MAGICK_CMD="composite -compose Src -gravity center \
-  $FG_SELECTION $BG_CANVAS png8:\"$OUT_PREFIX.sel.png\""
+    $FG_SELECTION $BG_CANVAS png8:\"$OUT_PREFIX.sel.png\""
 echo $SEPARATOR
 echo "Compositing selection titles with the following command:"
 echo $"$MAGICK_CMD"
@@ -503,17 +504,17 @@ eval $VIDEO_CMD
 # Convert WAV to ac3 or mp2
 echo $SEPARATOR
 if [[ $ASUF == "ac3" ]]; then
-  echo "Converting audio WAV to ac3 with the following command:"
-  AUDIO_CMD="ffmpeg -i \"$BG_AUDIO.wav\" -ab 224 -ar $SAMPRATE \
-    -ac 2 -acodec ac3 -y \"$OUT_PREFIX.$ASUF\" >> $REDIR 2>&1"
-  echo $AUDIO_CMD
-  eval $AUDIO_CMD
+    echo "Converting audio WAV to ac3 with the following command:"
+    AUDIO_CMD="ffmpeg -i \"$BG_AUDIO.wav\" -ab 224 -ar $SAMPRATE \
+        -ac 2 -acodec ac3 -y \"$OUT_PREFIX.$ASUF\" >> $REDIR 2>&1"
+    echo $AUDIO_CMD
+    eval $AUDIO_CMD
 else
-  echo "Converting audio WAV to mpeg2 with the following command:"
-  AUDIO_CMD="cat \"$BG_AUDIO.wav\" | mp2enc -r $SAMPRATE -s -o \
-    \"$OUT_PREFIX.$ASUF\" >> $REDIR 2>&1"
-  echo $AUDIO_CMD
-  eval $AUDIO_CMD
+    echo "Converting audio WAV to mpeg2 with the following command:"
+    AUDIO_CMD="cat \"$BG_AUDIO.wav\" | mp2enc -r $SAMPRATE -s -o \
+        \"$OUT_PREFIX.$ASUF\" >> $REDIR 2>&1"
+    echo $AUDIO_CMD
+    eval $AUDIO_CMD
 fi
 
 # Multiplex audio and video
@@ -525,7 +526,7 @@ echo $MPLEX_CMD
 eval $MPLEX_CMD
 
 # For DVD, create spumux XML
-if [[ $RES == "dvd" ]]; then
+if test "$RES" = "dvd"; then
 
   SPUMUX_XML=`cat << EOF
 <subpictures>
@@ -538,13 +539,13 @@ if [[ $RES == "dvd" ]]; then
   </stream>
 </subpictures>
 EOF`
-  echo $"$SPUMUX_XML" > "$OUT_PREFIX.xml"
-  wait
-  SPUMUX_CMD="spumux \"$OUT_PREFIX.xml\" < \"$OUT_PREFIX.temp.mpg\" > \"$OUT_PREFIX.mpg\" 2>>$REDIR"
-  echo $SEPARATOR
-  echo "Multiplexing menu selection highlight and menu with the following command:"
-  echo $SPUMUX_CMD
-  eval $SPUMUX_CMD
+    echo $"$SPUMUX_XML" > "$OUT_PREFIX.xml"
+    wait
+    SPUMUX_CMD="spumux \"$OUT_PREFIX.xml\" < \"$OUT_PREFIX.temp.mpg\" > \"$OUT_PREFIX.mpg\" 2>>$REDIR"
+    echo $SEPARATOR
+    echo "Multiplexing menu selection highlight and menu with the following command:"
+    echo $SPUMUX_CMD
+    eval $SPUMUX_CMD
 fi
 
 echo $SEPARATOR
@@ -552,32 +553,35 @@ if $DEBUG; then
     echo "Leaving temporary files in place"
 else
     echo "Cleaning up..."
-    rm -fv $BG_CANVAS $FG_CANVAS $FG_HIGHLIGHT $FG_SELECTION "$OUT_PREFIX.hi.png" \
-      "$OUT_PREFIX.sel.png" "$OUT_PREFIX.$VSUF" "$OUT_PREFIX.$ASUF" "$OUT_PREFIX.ppm" \
-      "$BG_AUDIO.wav" "$OUT_PREFIX.temp.mpg" "$OUT_PREFIX.xml"
+    rm -fv $BG_CANVAS $FG_CANVAS $FG_HIGHLIGHT $FG_SELECTION \
+        "$OUT_PREFIX.hi.png" "$OUT_PREFIX.sel.png" "$OUT_PREFIX.$VSUF" \
+        "$OUT_PREFIX.$ASUF" "$OUT_PREFIX.ppm" "$BG_AUDIO.wav" \
+        "$OUT_PREFIX.temp.mpg" "$OUT_PREFIX.xml"
 fi
 
 echo $SEPARATOR
-if [[ -e "$OUT_PREFIX.mpg" ]]; then
-  echo "Done. Your completed menu should be in the file $OUT_PREFIX.mpg."
-  if [[ $RES == "vcd" ]]; then
-    echo "You can use this menu on an (S)VCD or VCD disc by invoking:"
+if test -e "$OUT_PREFIX.mpg"; then
+    echo "Done. Your completed menu should be in the file $OUT_PREFIX.mpg."
+    if test "$RES" = "vcd"; then
+        echo "You can use this menu on an (S)VCD or VCD disc by invoking:"
+        echo
+        echo "  makexml -vcd -menu $OUT_PREFIX.mpg <title 1> <title 2> ... <output name>"
+    else
+        echo "You can use this menu on a DVD disc by invoking:"
+        echo
+        echo "  makexml -dvd -menu $OUT_PREFIX.mpg <title 1> <title 2> ... <output name>"
+    fi
+
     echo
-    echo "  makexml -vcd -menu $OUT_PREFIX.mpg <title 1> <title 2> ... <output name>"
-  else
-    echo "You can use this menu on a DVD disc by invoking:"
-    echo
-    echo "  makexml -dvd -menu $OUT_PREFIX.mpg <title 1> <title 2> ... <output name>"
-  fi
-  echo
-  echo "where <title X> is an MPEG video file corresponding to title X as listed"
-  echo "on your menu. Run 'makexml' without any options for more usage information."
+    echo "where <title X> is an MPEG video file corresponding to title X as listed"
+    echo "on your menu. Run 'makexml' without any options for more usage information."
 else
-  echo "It looks like something went wrong, because there is no output file."
-  echo "Please submit a bug report on the tovid homepage, listing any error messages"
-  echo "printed above. Sorry for the inconvenience."
-  exit 1
+    echo "It looks like something went wrong, because there is no output file."
+    echo "Please submit a bug report on the tovid homepage, listing any error messages"
+    echo "printed above. Sorry for the inconvenience."
+    exit 1
 fi
+
 echo $SEPARATOR
 echo "Thanks for using makemenu!"
 exit 0

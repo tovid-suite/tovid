@@ -741,11 +741,11 @@ echo $SEPARATOR
 
 echo "Done. The resulting XML was written to $OUT_PREFIX.xml."
 if [[ $XML_FORMAT == "dvd" ]]; then
-  echo "You can create the DVD filesystem by running the command:"
-  echo "  dvdauthor -x $OUT_PREFIX.xml"
+    echo "You can now author, image and/or burn the disc by running:"
+    echo "    makedvd $OUT_PREFIX.xml"
 else
-  echo "You can create the (S)VCD .bin and .cue files by running the command:"
-  echo "  vcdxbuild $OUT_PREFIX.xml"
+    echo "You can create the (S)VCD .bin and .cue files by running the command:"
+    echo "  vcdxbuild $OUT_PREFIX.xml"
 fi
 
 echo "Thanks for using makexml!"

@@ -363,7 +363,7 @@ idvid_main ()
                 V_DVD="$NTSC_FILM_FPS fps with 3:2 pulldown $ID_VIDEO_FORMAT NTSC DVD-VCD"
             fi
         # PAL
-        elif test "$V_RES" = "PAL_VCD" && test-n "$PAL_FPS"; then
+        elif test "$V_RES" = "PAL_VCD" && test -n "$PAL_FPS"; then
             V_TV="PAL"
             V_DVD="$PAL_FPS fps $ID_VIDEO_FORMAT PAL DVD-VCD"
         fi
