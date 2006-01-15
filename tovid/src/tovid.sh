@@ -112,6 +112,8 @@ DO_CONTRAST=false
 DO_DEBLOCK=false
 # Use fifo for video encoding?
 USE_FIFO=:
+# Rip .wav prior to encoding audio?
+RIP_WAV=:
 
 # Audio defaults
 AUD_SUF="ac3"
@@ -468,6 +470,11 @@ get_args()
             "-nofifo" )
                 USE_FIFO=false
                 ;;
+            # Experimental; skip .wav-ripping, and encode with ffmpeg
+            # directly to AC3 for supported formats
+            "-nowav" )
+                RIP_WAV=false
+                ;;
             "-help" )
                 # Print normal and advanced usage options, and exit
                 printf "%s\n" "$USAGE"
@@ -496,8 +503,8 @@ get_args()
                 ;;
 
             # If the option wasn't recognized, exit with an error
-            * )
-                usage_error "Error: Unrecognized command-line option $1"
+            "*" )
+                usage_error "Error: Unrecognized command-line option '$1'"
                 ;;
             esac
 
@@ -552,7 +559,7 @@ cleanup()
     if $DEBUG; then
         yecho "Keeping temporary files in directory $TMP_DIR"
     else
-        rm -rfv "$TMP_DIR" | tee -a "$LOG_FILE"
+        rm -rfv "$TMP_DIR"
     fi
 }
 
@@ -742,6 +749,7 @@ case "$TGT_RES" in
             TGT_HEIGHT="240"
         fi
         AUD_SUF="mpa"
+        RIP_WAV=:
         # Explicitly set audio/video bitrates
         AUD_BITRATE="224"
         VID_BITRATE="1150"
@@ -782,6 +790,7 @@ case "$TGT_RES" in
             TGT_HEIGHT="480"
         fi
         AUD_SUF="mpa"
+        RIP_WAV=:
         FORMAT="SVCD"
         # -quality gives bitrates from 260-2600 kbps
         DEFAULT_BR=`expr $VID_QUALITY \* 2600 \/ 10`
@@ -831,6 +840,7 @@ case "$TGT_RES" in
         fi
         FORMAT="SIZE_${TGT_WIDTH}x${TGT_HEIGHT}"
         AUD_SUF="mpa"
+        RIP_WAV=:
 
         # -quality gives bitrates from 400-4000 kbps
         DEFAULT_BR=`expr $VID_QUALITY \* 4000 \/ 10`
@@ -1181,6 +1191,10 @@ elif test x"$ID_VIDEO_FPS" = "x1000.000"; then
     FORCE_FPSRATIO=$TGT_FPSRATIO
     yecho "Found 1000fps (wmv) source, setting input to $TGT_FPS fps."
     yecho "Use -fps to force a different input fps (see 'man tovid')"
+    # TODO: Instead, use a two-pass encoding (since mencoder can
+    # do -ofps)
+    # mencoder -ovc copy -oac copy -ofps $TGT_FPSRATIO $INFILE -o twopass
+    # then do normal encoding on twopass
 fi
 
 # If forced FPS was used, apply it
@@ -1282,7 +1296,7 @@ if $USE_FFMPEG; then
     file_output_progress "$OUT_FILENAME" "Encoding with ffmpeg"
     wait
     yecho
-    cleanup
+    ! $DEBUG && cleanup
     exit 0
 fi
 
@@ -1322,10 +1336,11 @@ else
 
     # Do we need to generate an empty audio file?
     if $GENERATE_AUDIO; then
+        RIP_WAV=:
         # Generate an empty .wav file of the needed length
         yecho "Input file appears to have no audio stream. Silence will be used."
         AUDIO_CMD="cat /dev/zero | $PRIORITY sox -t raw -c 2 -r $SAMPRATE -w -s - -t wav $AUDIO_WAV trim 0 $V_DURATION"
-    # Extract audio normally
+    # Otherwise, rip existing audio to .wav
     else
         AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null -ao pcm:waveheader:file=$AUDIO_WAV \"$IN_FILE\""
         # Normalize, if requested
@@ -1334,42 +1349,48 @@ else
         fi
     fi
         
-    rm -f "$AUDIO_WAV"
-    # Use a FIFO in parallel mode
-    if $PARALLEL; then 
-         mkfifo "$AUDIO_WAV"
-    fi
-
-    # Generate or dump audio
-    yecho "Creating WAV of audio stream with the following command:"
-    yecho "$AUDIO_CMD"
-
-    if $DEBUG; then
-        eval "$AUDIO_CMD" 2>&1 | tee -a "$LOG_FILE" &
-    else
-        eval "$AUDIO_CMD" >> "$LOG_FILE" 2>&1 &
-    fi
-
-    PIDS="$PIDS $!"
-
-    # For parallel encoding, nothing more to do right now
-    if $PARALLEL; then
-        :
-    # If not in parallel mode, show .wav-ripping progress,
-    # and wait for successful completion.
-    else
-        file_output_progress "$AUDIO_WAV" "Creating wav of audio stream"
-        wait
-
-        # Make sure the audio stream exists before proceeding
-        if test ! -f $AUDIO_WAV; then
-            if $GENERATE_AUDIO; then
-                runtime_error "Could not generate a silent audio track"
-            else
-                runtime_error "Could not extract audio from original video"
-            fi
+    if $RIP_WAV; then
+        rm -f "$AUDIO_WAV"
+        # Use a FIFO in parallel mode
+        if $PARALLEL; then 
+             mkfifo "$AUDIO_WAV"
         fi
 
+        # Generate or dump audio
+        yecho "Creating WAV of audio stream with the following command:"
+        yecho "$AUDIO_CMD"
+
+        if $DEBUG; then
+            eval "$AUDIO_CMD" 2>&1 | tee -a "$LOG_FILE" &
+        else
+            eval "$AUDIO_CMD" >> "$LOG_FILE" 2>&1 &
+        fi
+
+        PIDS="$PIDS $!"
+
+        # For parallel encoding, nothing more to do right now
+        if $PARALLEL; then
+            :
+        # If not in parallel mode, show .wav-ripping progress,
+        # and wait for successful completion.
+        else
+            file_output_progress "$AUDIO_WAV" "Creating wav of audio stream"
+            wait
+
+            # Make sure the audio stream exists before proceeding
+            if test ! -f $AUDIO_WAV; then
+                if $GENERATE_AUDIO; then
+                    runtime_error "Could not generate a silent audio track"
+                else
+                    runtime_error "Could not extract audio from original video"
+                fi
+            fi
+
+        fi
+    else
+        # Hack: put input video in place of AUDIO_WAV, so ffmpeg
+        # can encode an AC3 directly
+        AUDIO_WAV="$IN_FILE"
     fi
 
     yecho "Encoding WAV to $AUD_SUF format with the following command:"

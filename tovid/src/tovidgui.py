@@ -4,7 +4,7 @@
 # ===============
 # A wxPython frontend for the tovid suite
 #
-# Project homepage: http://tovid.sourceforge.net/
+# Project homepage: http://tovid.org/
 #
 # This software is licensed under the GNU General Public License
 # For the full text of the GNU GPL, see:
@@ -43,8 +43,8 @@ from libtovid import TDL, Parser, Project
 
 
 # Global help provider
-provider = wx.SimpleHelpProvider()
-wx.HelpProvider_Set(provider)
+#provider = wx.SimpleHelpProvider()
+#wx.HelpProvider_Set(provider)
 
 # Identifier for command-panel timer
 ID_CMD_TIMER = 101
@@ -203,8 +203,6 @@ class DiscOptions:
     # MenuOptions, and SlideOptions
     # ==========================================================
     def SetLayout(self, optionList):
-        print "disc.SetLayout: optionList = "
-        print optionList
         self.optionList = optionList
 
     # ==========================================================
@@ -809,7 +807,7 @@ class Config:
     def ConfigInit(self):
         self.isInitialized = True
         self.ConfigAvailFonts()
-        self.InitLocales()
+        #self.InitLocales()
     
     # ==========================================================
     # Determine fonts that are available in both wx.Python and ImageMagick
@@ -1506,7 +1504,7 @@ class FontChooserDialog(wx.Dialog):
         if len(self.curConfig.strAvailFonts) < 6:
             dlgGetMoreFonts = wx.MessageDialog(self,
                 "You have less than six fonts to choose from. See the\n"
-                "tovid documentation (http://tovid.sourceforge.net/)\n"
+                "tovid documentation (http://tovid.org/)\n"
                 "for instructions on how to get more.",
                 "How to get more fonts", wx.OK | wx.ICON_INFORMATION)
             dlgGetMoreFonts.ShowModal()
@@ -1900,8 +1898,9 @@ class CommandOutputPanel(wx.Panel):
             print "ERROR:"
             print "The following command returned an exit status of %d:" % curExitStatus
             print self.strCurCmd
-            print "Please file a bug report on the tovid project page"
-            print "at http://sourceforge.net/projects/tovid"
+            print "Please report this bug on the tovid forum or IRC channel:"
+            print "    Forum: http://www.createphpbb.com/phpbb/tovid.html"
+            print "    IRC:   irc://irc.freenode.net/tovid"
             print "Include all the output shown above, as well as any output"
             print "shown in the log window of the tovid GUI."
             self.errorOccurred = True
@@ -2400,7 +2399,7 @@ class MenuPanel(wx.Panel):
 
         self.txtHeading.SetLabel("Menu options: %s" % self.curOptions.title)
         self.txtBGImage.SetValue(self.curOptions.background)
-        self.txtBGAudio.SetValue(self.curOptions.audio)
+        self.txtBGAudio.SetValue(self.curOptions.audio or '')
         self.rbAlignment.SetSelection(text_to_ID(self.curOptions.alignment))
         self.btnTextColor.SetBackgroundColour(self.curOptions.colorText)
         self.btnHiColor.SetBackgroundColour(self.curOptions.colorHi)
@@ -3923,9 +3922,9 @@ class MainFrame(wx.Frame):
         #    "Configuration settings for tovid GUI")
         #self.menuFile.AppendSeparator()
         self.menuFile.Append(ID_MENU_FILE_OPEN, "&Open project",
-                "Open an existing project")
+                "Open an existing TDL text file (EXPERIMENTAL)")
         self.menuFile.Append(ID_MENU_FILE_SAVE, "&Save project",
-                "Save this project")
+                "Save this project as a TDL text file (EXPERIMENTAL)")
         self.menuFile.AppendSeparator()
         self.menuFile.Append(ID_MENU_FILE_EXIT, "E&xit",
                 "Exit tovid GUI")
@@ -3949,11 +3948,11 @@ class MainFrame(wx.Frame):
         self.menuViewShowGuide.Check(False)
         self.menuViewShowTooltips.Check(True)
 
-        self.menuLang = wx.Menu()
-        self.menuLang.Append(ID_MENU_LANG_EN, "&English")
-        self.menuLang.Append(ID_MENU_LANG_DE, "&Deutsch")
+        #self.menuLang = wx.Menu()
+        #self.menuLang.Append(ID_MENU_LANG_EN, "&English")
+        #self.menuLang.Append(ID_MENU_LANG_DE, "&Deutsch")
         # Append language menu as a submenu of View
-        self.menuView.AppendMenu(ID_MENU_LANG, "Language", self.menuLang)
+        #self.menuView.AppendMenu(ID_MENU_LANG, "Language", self.menuLang)
 
         
         # Menu events
@@ -4060,11 +4059,11 @@ class MainFrame(wx.Frame):
         
     def OnAbout(self, evt):
         """Display a dialog showing information about tovidgui."""
-        strAbout = "You are using the tovid GUI, version 0.22,\n" \
+        strAbout = "You are using the tovid GUI, version 0.24,\n" \
           "part of the tovid video disc authoring suite.\n\n" \
           "For more information and documentation, please\n" \
           "visit the tovid web site:\n\n" \
-          "http://tovid.sourceforge.net/"
+          "http://tovid.org/"
         dlgAbout = wx.MessageDialog(self, strAbout, "About tovid GUI", wx.OK)
         dlgAbout.ShowModal()
 

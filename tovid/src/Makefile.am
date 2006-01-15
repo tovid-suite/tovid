@@ -37,6 +37,7 @@ bin_SCRIPTS = \
 	tovid-init \
 	tovid-interactive \
 	tovid-test \
+	pymakemenu \
 	tovidgui
 
 CLEANFILES = $(bin_SCRIPTS)
@@ -55,7 +56,9 @@ EXTRA_DIST = \
 	tovid-batch.sh \
 	tovid-init.sh.in \
 	tovid-interactive.sh \
-	tovid-test.sh
+	tovid-test.sh \
+	pymakemenu.py \
+	tovidgui.py
 
 dvrequant: $(srcdir)/dvrequant.sh
 	rm -f "dvrequant"
@@ -145,3 +148,9 @@ tovidgui: $(srcdir)/tovidgui.py
 	rm -f "tovidgui"
 	cat $(srcdir)/tovidgui.py >> tovidgui
 	chmod ugo+x tovidgui
+
+pymakemenu: $(srcdir)/pymakemenu.py
+	rm -f "pymakemenu"
+	cat $(srcdir)/pymakemenu.py >> pymakemenu
+	chmod ugo+x pymakemenu
+
