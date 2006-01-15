@@ -82,57 +82,55 @@ runtime_error ()
 
 # Defaults
 # Create the DVD filesystem hierarchy?
-DO_AUTHOR=""
+DO_AUTHOR=false
 # Create an ISO image?
-DO_IMAGE=""
+DO_IMAGE=false
 # Burn the image to disc?
-DO_BURN=""
+DO_BURN=false
 
 DVDRW_DEVICE="/dev/dvd"
 BURN_SPEED=1
 OUT_DIR="makedvd_out"
 DISC_LABEL=""
-DO_IMAGE=""
 
 # ==========================================================
 # EXECUTION BEGINS HERE
 echo $"$SCRIPTNAME"
 
-while [[ ${1:0:1} == "-" ]]; do
-    if [[ $1 == "-author" ]]; then
-        DO_AUTHOR="y"
-    elif [[ $1 == "-image" ]]; then
-        DO_IMAGE="y"
-    elif [[ $1 == "-burn" ]]; then
-        DO_BURN="y"
-    elif [[ $1 == "-device" ]]; then
-        # Get device name
-        shift
-        DVDRW_DEVICE="$1"
-    elif [[ $1 == "-speed" ]]; then
-        shift
-        BURN_SPEED=$1
-    elif [[ $1 == "-label" ]]; then
-        shift
-        DISC_LABEL="$1"
-    fi
+while test $# -gt 1; do
+    case "$1" in
+        "-author" ) DO_AUTHOR=: ;;
+        "-image" )  DO_IMAGE=: ;;
+        "-burn" )   DO_BURN=: ;;
+        "-device" )
+            # Get device name
+            shift
+            DVDRW_DEVICE="$1"
+            ;;
+        "-speed" )
+            shift
+            BURN_SPEED=$1
+            ;;
+        "-label" )
+            shift
+            DISC_LABEL="$1"
+            ;;
+        "*" )
+            usage_error "Error: Unrecognized command-line option '$1'"
+    esac
 
     # Get next argument
     shift
 done
 
-# Make sure there's one more argument (XML file)
-if test $# -gt 0; then
-    DVDAUTHOR_XML="$1"
-    # Set disc title and output directory based on XML filename
-    # (without .xml, space to underscore)
-    [[ -z $DISC_LABEL ]] && DISC_LABEL=$( echo "$DVDAUTHOR_XML" | sed -e "s/\.xml//g" | tr ' ' '_')
-    # And, just in case that failed...
-    [[ -z $DISC_LABEL ]] && DISC_LABEL="UNTITLED_DVD"
-    OUT_DIR=`grep 'dest=' $DVDAUTHOR_XML | cut -d= -f2 | tr -d '">'`
-else
-    usage_error "Please provide the name of a dvdauthor-style XML file to use."
-fi
+DVDAUTHOR_XML="$1"
+
+# Set disc title and output directory based on XML filename
+# (without .xml, space to underscore)
+test -z $DISC_LABEL && DISC_LABEL=$( echo "$DVDAUTHOR_XML" | sed -e "s/\.xml//g" | tr ' ' '_')
+# And, just in case that failed...
+test -z $DISC_LABEL && DISC_LABEL="UNTITLED_DVD"
+OUT_DIR=`grep 'dest=' $DVDAUTHOR_XML | cut -d= -f2 | tr -d '">'`
 
 # Make sure the file exists
 if [[ ! -f "$DVDAUTHOR_XML" ]]; then
@@ -143,7 +141,7 @@ else
 fi
 
 # Remind user to insert a DVD
-if [[ -n $DO_BURN ]]; then
+if $DO_BURN; then
     echo "Please insert a blank DVD+/-R(W) disc into your DVD-recorder"
     echo "($DVDRW_DEVICE) if you have not already done so."
 fi
@@ -160,24 +158,24 @@ fi
 if [[ -d $OUT_DIR ]]; then
     echo "Authoring directory $OUT_DIR already exists."
 
-    # If target directory exists, it may be due to a prior
-    # attempt at encoding. Skip authoring unless -author
-    # was specified.
-    if [[ -z $DO_AUTHOR ]]; then
+    # An existing target directory may be due to a prior attempt at encoding.
+    # If -author was specified, overwrite it.
+
+    # Remove existing directory, and author from scratch
+    if $DO_AUTHOR; then
+        echo "Deleting contents of directory: $OUT_DIR"
+        rm -rf "$OUT_DIR"
+    else
         echo $SEPARATOR
         echo "Skipping authoring; to force, use the -author option."
         echo $SEPARATOR
-    # Remove existing directory, and author from scratch
-    else
-        echo "Deleting contents of directory: $OUT_DIR"
-        rm -rf "$OUT_DIR"
     fi
+# Target doesn't exist; need to author
 else
-    # DVD Tree doesn't exist, so create it
-    DO_AUTHOR="y"
+    DO_AUTHOR=:
 fi
 
-if [[ ! -z $DO_AUTHOR ]]; then
+if $DO_AUTHOR; then
     # Create disc structure
     DVDAUTHOR_CMD="dvdauthor -x \"$DVDAUTHOR_XML\""
     echo $SEPARATOR
@@ -199,19 +197,17 @@ fi
 
 # See if target disc image exists
 if [[ -f $DISC_LABEL.iso && -s $DISC_LABEL.iso ]]; then
-    if [[ -z $DO_IMAGE ]]; then 
+    # If -image was supplied, remove existing .iso
+    if $DO_IMAGE; then 
+        rm $DISC_LABEL.iso
+    # Keep existing .iso
+    else
         echo "Disc image $DISC_LABEL.iso already exists."
         echo "Skipping image (.iso) creation; To force, use the -image option."
-    # Otherwise, proceed with image creation
-    else
-        rm $DISC_LABEL.iso
     fi
-else
-    # Image doesn't exist, so create it
-    DO_IMAGE="y"
 fi
 
-if [[ ! -z $DO_IMAGE ]]; then
+if $DO_IMAGE; then
     # Create ISO image
     VOLID=`echo "$DISC_LABEL" | tr a-z A-Z`
     # Make sure we have a valid VOLID at this point...can't be too long
@@ -239,7 +235,7 @@ if [[ ! -z $DO_IMAGE ]]; then
 fi
     
 # Burn the disc, if requested
-if [[ -n $DO_BURN ]]; then
+if $DO_BURN; then
     BURN_CMD="growisofs -dvd-compat -speed=$BURN_SPEED -Z $DVDRW_DEVICE=$DISC_LABEL.iso"
     echo $SEPARATOR
     echo "Burning ISO to DVD with the following command:"
