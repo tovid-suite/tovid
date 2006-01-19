@@ -54,7 +54,7 @@ SEPARATOR="========================================================="
 
 TOVID_HOME="$HOME/.tovid"
 TOVID_HOME_PAGE="http://www.tovid.org"
-TOVID_FORUMS="http://www.createphpbb.com/phpbb/tovid.html"
+TOVID_FORUMS="http://www.createphpbb.com/tovid/"
 
 
 # ******************************************************************************
