@@ -305,5 +305,5 @@ Other dependencies      $OPT_DEPENDENCIES
 # tovid suite will be disabled. Please install any missing dependencies 
 # and ./configure again. See www.tovid.org for links. 
  
-AC_CONFIG_FILES([Makefile src/Makefile src/tovid-init.sh])
+AC_CONFIG_FILES([Makefile src/Makefile src/tovid-init.sh setup.py])
 AC_OUTPUT
