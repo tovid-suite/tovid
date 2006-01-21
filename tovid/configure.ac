@@ -56,136 +56,169 @@ AM_INIT_AUTOMAKE
 # ******************************************************************************
 # ******************************************************************************
 
-# AC_MSG_CHECKING(feature-description)
-# AC_MSG_RESULT(result-description)
-# AC_PATH_PROG(variable, prog-to-check-for, [value-if-not-found])
-# AC_CHECK_PROG(variable, prog-to-check-for, value-if-found, 
-#               [value-if-not-found], [path-to-search], [reject])
-# AC_MSG_WARN([problem-description])
-
 # ******************************************************************************
 # Required Dependencies 
 # ******************************************************************************
-AC_MSG_NOTICE([Checking for required core dependencies... (: means found)])
-AC_CHECK_PROG(GREP, [grep], [:], [false])
-AC_CHECK_PROG(SED, [sed], [:], [false])
-AC_CHECK_PROG(MD5SUM, [md5sum], [:], [false])
-AC_CHECK_PROG(MPLAYER, [mplayer], [:], [false])
-AC_CHECK_PROG(MENCODER, [mencoder], [:], [false])
-AC_CHECK_PROG(MPLEX, [mplex], [:], [false])
-AC_CHECK_PROG(MPEG2ENC, [mpeg2enc], [:], [false])
-AC_CHECK_PROG(YUVFPS, [yuvfps], [:], [false])
-AC_CHECK_PROG(YUVDENOISE, [yuvdenoise], [:], [false])
-AC_CHECK_PROG(PPMTOY4M, [ppmtoy4m], [:], [false])
-AC_CHECK_PROG(MP2ENC, [mp2enc], [:], [false])
-AC_CHECK_PROG(FFMPEG, [ffmpeg], [:], [false])
-AC_CHECK_PROG(SOX, [sox], [:], [false])
+# How to add a dependency called foo: 
+#  (1) append another line to the AC_CHECK_PROG block to check for foo:
+#         AC_CHECK_PROG(FOO, [foo], [ok], [MISSING])
+#  (2) add another msg called foo_msg to the *_msg block 
+#  (3) add another name/variable pair to REQ_DEP_LIST: foo=$FOO
 
-################# PRE-TEMP#################
-##### Un-comment this section when optional dependencies are turned on.
+AC_MSG_NOTICE([Checking for required core dependencies...])
+AC_CHECK_PROG(GREP, [grep], [ok], [MISSING])
+AC_CHECK_PROG(SED, [sed], [ok], [MISSING])
+AC_CHECK_PROG(MD5SUM, [md5sum], [ok], [MISSING])
+AC_CHECK_PROG(MPLAYER, [mplayer], [ok], [MISSING])
+AC_CHECK_PROG(MENCODER, [mencoder], [ok], [MISSING])
+AC_CHECK_PROG(MPLEX, [mplex], [ok], [MISSING])
+AC_CHECK_PROG(MPEG2ENC, [mpeg2enc], [ok], [MISSING])
+AC_CHECK_PROG(YUVFPS, [yuvfps], [ok], [MISSING])
+AC_CHECK_PROG(YUVDENOISE, [yuvdenoise], [ok], [MISSING])
+AC_CHECK_PROG(PPMTOY4M, [ppmtoy4m], [ok], [MISSING])
+AC_CHECK_PROG(MP2ENC, [mp2enc], [ok], [MISSING])
+AC_CHECK_PROG(FFMPEG, [ffmpeg], [ok], [MISSING])
+AC_CHECK_PROG(SOX, [sox], [ok], [MISSING])
+
+# ------------------------------------------------------------------------------
+# Complain about missing required dependencies. If some are missing, list all
+# missing ones and their _msg before failing and exiting.
+
+grep_msg="a GNU utility (www.gnu.org/software/grep)"
+sed_msg="a GNU utility (directory.fsf.org/GNU/sed.html)"
+md5sum_msg="a GNU utility (www.gnu.org/software/coreutils)"
+mplayer_msg="part of mplayer (www.mplayerhq.hu)"
+mencoder_msg="$mplayer_msg"
+mplex_msg="part of mjpegtools (mjpeg.sf.net}"
+mpeg2enc_msg="$mplex_msg"
+yuvfps_msg="$mplex_msg"
+yuvdenoise_msg="$mplex_msg"
+ppmtoy4m_msg="mplex_msg"
+mp2enc_msg="mplex_msg"
+ffmpeg_msg="a video encoding utility (ffmpeg.sf.net)"
+sox_msg="a CLI sound utility (sox.sf.net)"
+
 # Sneaky make-do array. 
-#DEP_LIST="grep=$GREP sed=$SED md5sum=$MD5SUM mplayer=$MPLAYER mencoder=$MENCODER mplex=$MPLEX #mpeg2enc=$MPEG2ENC yuvfps=$YUVFPS yuvdenoise=$YUVDENOISE ppmtoy4m=$PPMTOY4M mp2enc=$MP2ENC #ffmpeg=$FFMPEG sox=$SOX"
+REQ_DEP_LIST="grep=$GREP sed=$SED md5sum=$MD5SUM mplayer=$MPLAYER mencoder=$MENCODER mplex=$MPLEX mpeg2enc=$MPEG2ENC yuvfps=$YUVFPS yuvdenoise=$YUVDENOISE ppmtoy4m=$PPMTOY4M mp2enc=$MP2ENC ffmpeg=$FFMPEG sox=$SOX"
 
+# Build a list of missing dependencies
 # We can use gawk with confidence because the above
 # initiation macros look for it and will exit if gawk isn't found.
-#FAIL=false
-#for DEP in $DEP_LIST
-#do
-#  NAME=`echo $DEP | gawk -F '=' '{ print $1 }'`
-#  FOUND=`echo $DEP | gawk -F '=' '{ print $2 }'`
-#  if $FOUND; then :
-#  else
-#    AC_MSG_WARN([Cannot find REQUIRED dependency: $NAME])
-#    FAIL=:
-#  fi
-#done
-
-#if $FAIL; then
-# AC_MSG_ERROR([
-#
-# Could not find the above REQUIRED dependencies.
-# Please install the missing dependencies and ./configure again.
-# See www.tovid.org for links.
-#])
-#fi
+FAIL=false
+for DEP in $REQ_DEP_LIST; do
+   NAME=`echo $DEP | gawk -F '=' '{ print $1 }'`
+   FOUND=`echo $DEP | gawk -F '=' '{ print $2 }'`
+   if test "x$FOUND" = "xMISSING"; then
+     FAIL=:
+     ERR_MSG=$`eval echo ${NAME}_msg`
+     ERR_MSG=`eval echo $ERR_MSG`
+     MISSING_DEPS=`echo "$MISSING_DEPS"; printf "    %-10s %s\n" "$NAME" "$ERR_MSG"`
+   fi
+done
 
 # ******************************************************************************
 # Optional Dependencies 
 # ******************************************************************************
+# Optional dependencies are grouped according to the functionality they bring
+# to tovid: menu creation, DVD creation, (S)VCD creation, and post-processing.
+# Each catagory is broken into three steps. 
+# To add a new catagory, follow this pattern:
+#  (1) test for the dependency
+#  (2) define a message given to the user when a specific dep isn't found
+#  (3) set the build option if all deps in the catagory were found, else warn.
+
+# To add a new depedency called bar inside a catagory:
+#  (1) append another line to the AC_CHECK_PROG block to check for bar:
+#         AC_CHECK_PROG(BAR, [bar], [ok], [MISSING])
+#  (2) add another msg called bar_msg to the *_msg block 
+#  (3) add another test to the catagories build option:
+#         test "x$FOO" = "xok"
+#  (4) add another name/variable pair to OPT_DEP_LIST: bar=$BAR
 
 AC_MSG_NOTICE([Checking for optional dependencies...])
 
+# ------------------------------------------------------------------------------
 # ImageMagick components
-AC_MSG_NOTICE([Checking for ImageMagick... (: means found)])
-AC_CHECK_PROG(HAVE_COMPOSITE, [composite], [:], [false])
-AC_CHECK_PROG(HAVE_CONVERT, [convert], [:], [false])
+AC_MSG_NOTICE([Checking for ImageMagick...])
+AC_CHECK_PROG(COMPOSITE, [composite], [ok], [MISSING])
+AC_CHECK_PROG(CONVERT, [convert], [ok], [MISSING])
 
-if $HAVE_COMPOSITE && $HAVE_CONVERT; then
+# Disabled messages given to user in the FINAL SUMMARY when a dependency cannot
+# be found.
+composite_msg="part of ImageMagick (www.imagemagick.org)"
+convert_msg="$composite_msg"
+
+# Set the build option if all dependencies were found
+if test "x$COMPOSITE" = "xok" && \
+   test "x$CONVERT" = "xok"
+then
    HAVE_MAGICK="magick"
-   HAVE_COMPOSITE="ok"
-   HAVE_CONVERT="ok"
 else
    HAVE_MAGICK=""
-   if $HAVE_COMPOSITE; then HAVE_COMPOSITE="ok"; else HAVE_COMPOSITE="MISSING"; fi
-   if $HAVE_CONVERT; then HAVE_CONVERT="ok"; else HAVE_CONVERT="MISSING"; fi
    AC_MSG_WARN([Cannot find ImageMagick! You cannot use makemenu or makeslides.])
 fi
 
+# ------------------------------------------------------------------------------
 # dvdauthor compononets
 # (note: growisofs and mkisofs are NOT distributed with dvdauthor, but for tovid's
 # purposes, it fits in the same catagory, as it burns DVDs!)
-AC_MSG_NOTICE([Checking for dvd tools... (: means found)])
-AC_CHECK_PROG(HAVE_SPUMUX, [spumux], [:], [false])
-AC_CHECK_PROG(HAVE_DVDAUTHOR, [dvdauthor], [:], [false])
-AC_CHECK_PROG(HAVE_GROWISOFS, [growisofs], [:], [false])
-AC_CHECK_PROG(HAVE_MKISOFS, [mkisofs], [:], [false])
+AC_MSG_NOTICE([Checking for dvd tools...])
+AC_CHECK_PROG(SPUMUX, [spumux], [ok], [MISSING])
+AC_CHECK_PROG(DVDAUTHOR, [dvdauthor], [ok], [MISSING])
+AC_CHECK_PROG(GROWISOFS, [growisofs], [ok], [MISSING])
+AC_CHECK_PROG(MKISOFS, [mkisofs], [ok], [MISSING])
 
-if $HAVE_SPUMUX && $HAVE_DVDAUTHOR && $HAVE_GROWISOFS && $HAVE_MKISOFS; then
+spumux_msg="part of dvdauthor (dvdauthor.sf.net)"
+dvdauthor_msg="$spumux_msg"
+growisofs_msg="part of dvd+rw-tools: (fy.chalmers.se/~appro/linux/DVD+RW)"
+mkisofs_msg="part of cdrecord (cdrecord.berlios.de)"
+
+if test "x$SPUMUX" = "xok" && \
+   test "x$DVDAUTHOR" = "xok" && \
+   test "x$GROWISOFS" = "xok" && \
+   test "x$MKISOFS" = "xok"
+then
    HAVE_DVD="dvd"
-   HAVE_SPUMUX="ok"
-   HAVE_DVDAUTHOR="ok"
-   HAVE_GROWISOFS="ok"
-   HAVE_MKISOFS="ok"
 else
    HAVE_DVD=""
-   if $HAVE_SPUMUX; then HAVE_SPUMUX="ok"; else HAVE_SPUMUX="MISSING"; fi
-   if $HAVE_DVDAUTHOR; then HAVE_DVDAUTHOR="ok"; else HAVE_DVDAUTHOR="MISSING"; fi
-   if $HAVE_GROWISOFS; then HAVE_GROWISOFS="ok"; else HAVE_GROWISOFS="MISSING"; fi
-   if $HAVE_MKISOFS; then HAVE_MKISOFS="ok"; else HAVE_MKISOFS="MISSING"; fi
    AC_MSG_WARN([Cannot find dvd authoring tools! You cannot burn DVDs.])
 fi
 
+# ------------------------------------------------------------------------------
 # vcdimager components
 # (note: cdrdao is NOT distributed with vcdimager, but for tovid's
 # purposes, it fits in the same catagory, as it burns (S)VCDs!)
-AC_MSG_NOTICE([Checking for vcd tools...] (: means found))
-AC_CHECK_PROG(HAVE_VCDXBUILD, [vcdxbuild], [:], [false])
-AC_CHECK_PROG(HAVE_CDRDAO, [cdrdao], [:], [false])
+AC_MSG_NOTICE([Checking for vcd tools...])
+AC_CHECK_PROG(VCDXBUILD, [vcdxbuild], [ok], [MISSING])
+AC_CHECK_PROG(CDRDAO, [cdrdao], [ok], [MISSING])
 
-if $HAVE_VCDXBUILD && $HAVE_CDRDAO; then
+vcdxbuild_msg="part of vcdimager (www.vcdimager.org)"
+cdrdao_msg="$mkisofs_msg"
+
+if test "x$VCDXBUILD" = "xok" && \
+   test "x$CDRDAO" = "xok"
+then
    HAVE_VCD="vcd"
-   HAVE_VCDXBUILD="ok"
-   HAVE_CDRDAO="ok"
 else
    HAVE_VCD=""
-   if $HAVE_VCDXBUILD; then HAVE_VCDXBUILD="ok"; else HAVE_VCDXBUILD="MISSING"; fi
-   if $HAVE_CDRDAO; then HAVE_CDRDAO="ok"; else HAVE_CDRDAO="MISSING"; fi
    AC_MSG_WARN([Cannot find vcdimager! You cannot burn (S)VCDs.])
 fi
 
+# ------------------------------------------------------------------------------
 # transcode components
-AC_MSG_NOTICE([Checking for transcode... (: means found)])
-AC_CHECK_PROG(HAVE_TCPROBE, [tcprobe], [:], [false])
-AC_CHECK_PROG(HAVE_TCREQUANT, [tcrequant], [:], [false])
+AC_MSG_NOTICE([Checking for transcode...])
+AC_CHECK_PROG(TCPROBE, [tcprobe], [ok], [MISSING])
+AC_CHECK_PROG(TCREQUANT, [tcrequant], [ok], [MISSING])
 
-if $HAVE_TCPROBE && $HAVE_TCREQUANT; then
+tcprobe_msg="part of transcode (www.transcoding.org)"
+tcrequant_msg="$tcprobe_msg"
+
+if test "x$TCPROBE" = "xok" && \
+   test "x$TCREQUANT" = "xok"
+then   
    HAVE_TRANSCODE="transcode"
-   HAVE_TCPROBE="ok"
-   HAVE_TCREQUANT="ok"
 else
    HAVE_TRANSCODE=""
-   if $HAVE_TCPROBE; then HAVE_TCPROBE="ok"; else HAVE_TCPROBE="MISSING"; fi
-   if $HAVE_TCREQUANT; then HAVE_TCREQUANT="ok"; else HAVE_TCREQUANT="MISSING"; fi
    AC_MSG_WARN([Cannot find transcode! You cannot use postproc.])
 fi
 
@@ -199,51 +232,44 @@ else
    OPT_DEPENDENCIES="SOME MISSING"
 fi
 
+# ------------------------------------------------------------------------------
 ############### TEMP ##################
-##### For now, all dependencies are required, later these will be optional
-
-# Sneaky make-do array. 
-DEP_LIST="grep=$GREP sed=$SED md5sum=$MD5SUM mplayer=$MPLAYER mencoder=$MENCODER mplex=$MPLEX mpeg2enc=$MPEG2ENC yuvfps=$YUVFPS yuvdenoise=$YUVDENOISE ppmtoy4m=$PPMTOY4M mp2enc=$MP2ENC ffmpeg=$FFMPEG sox=$SOX"
-
-FAIL=false
-for DEP in $DEP_LIST
-do
-  NAME=`echo $DEP | gawk -F '=' '{ print $1 }'`
-  FOUND=`echo $DEP | gawk -F '=' '{ print $2 }'`
-  if test -n $FOUND; then :
-  else
-    AC_MSG_WARN([Cannot find REQUIRED dependency: $NAME])
-    FAIL=:
-  fi
-done
+##### For now, all dependencies are required, later these will be optional and
+##### this test will be removed.
 
 # Another sneaky make-do array. 
-DEP_LIST="composite=$HAVE_COMPOSITE convert=$HAVE_CONVERT spumux=$HAVE_SPUMUX dvdauthor=$HAVE_DVDAUTHOR growisofs=$HAVE_GROWISOFS mkisofs=$HAVE_MKISOFS vcdxbuild=$HAVE_VCDXBUILD cdrdao=$HAVE_CDRDAO tcprobe=$HAVE_TCPROBE tcrequant=$HAVE_TCREQUANT"
+OPT_DEP_LIST="composite=$COMPOSITE convert=$CONVERT spumux=$SPUMUX dvdauthor=$DVDAUTHOR growisofs=$GROWISOFS mkisofs=$MKISOFS vcdxbuild=$VCDXBUILD cdrdao=$CDRDAO tcprobe=$TCPROBE tcrequant=$TCREQUANT"
 
-##### Un-comment when optional dependencies are turned on
-#FAIL=false
-for DEP in $DEP_LIST
+# Build the rest of the list of missing dependencies
+for DEP in $OPT_DEP_LIST
 do
-  NAME=`echo $DEP | gawk -F '=' '{ print $1 }'`
-  FOUND=`echo $DEP | gawk -F '=' '{ print $2 }'`
-  if test x$FOUND = "xok"; then :
-  else
-    AC_MSG_WARN([Cannot find REQUIRED dependency: $NAME])
-    FAIL=:
-  fi
+   NAME=`echo $DEP | gawk -F '=' '{ print $1 }'`
+   FOUND=`echo $DEP | gawk -F '=' '{ print $2 }'`
+   if test "x$FOUND" = "xMISSING"; then
+     FAIL=:
+     ERR_MSG=$`eval echo ${NAME}_msg`
+     ERR_MSG=`eval echo $ERR_MSG`
+     MISSING_DEPS=`echo "$MISSING_DEPS"; printf "    %-10s %s\n" "$NAME" "$ERR_MSG"`
+   else
+     unset ${NAME}_msg
+   fi
 done
 
+##### This belongs up with the required options when optional deps are turned on
 if $FAIL; then
  AC_MSG_ERROR([
 
- Could not find the above REQUIRED dependencies.
- Please install the missing dependencies and ./configure again.
- See www.tovid.org for links.
+  Could not find these REQUIRED dependencies:
+$MISSING_DEPS
+ 
+  Please install the missing dependencies and ./configure again.
+  Go to http://tovid.org for more help.
 ])
 fi
 ############## END TEMP #################
 
 
+# Build the build options string for substitution into tovid-init.sh.in
 BUILD_OPTS=""
 for OPT in $HAVE_DVD $HAVE_VCD $HAVE_MAGICK $HAVE_TRANSCODE
 do
@@ -258,7 +284,6 @@ BUILD_OPTS="core$BUILD_OPTS"
 # Make VARIABLE .in file substitutable. @VARIABLE@ found inside .in files will 
 # be replaced with VALUE
 AC_SUBST(BUILD_OPTS)
-
 
 
 AC_CONFIG_FILES([Makefile src/Makefile src/tovid-init.sh setuplib.py])
@@ -282,22 +307,22 @@ Required dependencies   ALL FOUND
 Other dependencies      $OPT_DEPENDENCIES
   
   magick (needed to make menus and slideshows)
-    composite:          $HAVE_COMPOSITE
-    convert:            $HAVE_CONVERT
+    composite:    $COMPOSITE $composite_msg
+    convert:      $CONVERT $convert_msg
   
   dvd (needed to make DVD menus and burn DVDs)
-    spumux:             $HAVE_SPUMUX
-    dvdauthor:          $HAVE_DVDAUTHOR
-    growisofs:          $HAVE_GROWISOFS
-    mkisofs:            $HAVE_MKISOFS
+    spumux:       $SPUMUX $spumux_msg
+    dvdauthor:    $DVDAUTHOR $dvdauthor_msg
+    growisofs:    $GROWISOFS $growisofs_msg
+    mkisofs:      $MKISOFS $mkisofs_msg
     
   vcd (needed to burn (S)VCDs)
-    vcdxbuild:          $HAVE_VCDXBUILD
-    cdrdao:             $HAVE_CDRDAO
+    vcdxbuild:    $VCDXBUILD $vcdxbuild_msg
+    cdrdao:       $CDRDAO $cdrdao_msg
     
-  transcode (needed to compress encoded videos)
-    tcprobe:            $HAVE_TCPROBE
-    tcrequant:          $HAVE_TCREQUANT
+  transcode (needed to compress encode videos)
+    tcprobe:      $TCPROBE $tcprobe_msg
+    tcrequant:    $TCREQUANT $tcrequant_msg
 
  You may now type 'su -c "sh setup.sh"' to compile and install tovid.
  ])
