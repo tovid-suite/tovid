@@ -181,6 +181,8 @@ MPLAYER_OPTS=""
 MUX_OPTS=""
 # Don't do fast encoding
 FAST_ENCODING=false
+# Don't fake it
+FAKE=false
 
 # Make note of when encoding starts, to determine total time later.
 SCRIPT_START_TIME=`date +%s`
@@ -250,6 +252,21 @@ runtime_error()
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     exit 1
 }
+
+
+# ******************************************************************************
+# Execute the given command-line string, with appropriate stream redirection
+# Args: $@ == text string contianing complete command-line
+# ******************************************************************************
+cmd_exec()
+    if $DEBUG; then
+        eval "$@" 2>&1 | tee -a "$LOG_FILE" &
+    else
+        eval "$@" >> "$LOG_FILE" 2>&1 &
+    fi
+    PIDS="$PIDS $!"
+
+
 
 # ******************************************************************************
 # Kill child processes
@@ -500,6 +517,10 @@ get_args()
 
             # Null option; ignored.
             "-" )
+                ;;
+            # Fake encoding (print commands only)
+            "-fake" )
+                FAKE=:
                 ;;
 
             # If the option wasn't recognized, exit with an error
@@ -1286,13 +1307,11 @@ if $USE_FFMPEG; then
         $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT \"$OUT_FILENAME\""
     yecho "Encoding video and audio with the following command:"
     yecho "$FF_ENC_CMD"
-    if $DEBUG; then
-        eval "$FF_ENC_CMD" 2>&1 | tee -a "$LOG_FILE" &
-    else
-        eval "$FF_ENC_CMD" >> "$LOG_FILE" 2>&1 &
-    fi
 
-    PIDS="$PIDS $!"
+
+    cmd_exec "$FF_ENC_CMD"
+    
+
     file_output_progress "$OUT_FILENAME" "Encoding with ffmpeg"
     wait
     yecho
@@ -1318,13 +1337,10 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$OUT_PREFIX.$AUD_SUF\""
     yecho "$AUDIO_CMD"
 
-    if $DEBUG; then
-        eval "$AUDIO_CMD" 2>&1 | tee -a "$LOG_FILE" &
-    else
-        eval "$AUDIO_CMD" >> "$LOG_FILE" 2>&1 &
-    fi
 
-    PIDS="$PIDS $!"
+    cmd_exec "$AUDIO_CMD"
+
+
     if $PARALLEL; then
         :
     else
@@ -1360,13 +1376,9 @@ else
         yecho "Creating WAV of audio stream with the following command:"
         yecho "$AUDIO_CMD"
 
-        if $DEBUG; then
-            eval "$AUDIO_CMD" 2>&1 | tee -a "$LOG_FILE" &
-        else
-            eval "$AUDIO_CMD" >> "$LOG_FILE" 2>&1 &
-        fi
+        
+        cmd_exec "$AUDIO_CMD"
 
-        PIDS="$PIDS $!"
 
         # For parallel encoding, nothing more to do right now
         if $PARALLEL; then
@@ -1405,13 +1417,9 @@ else
         yecho "$AUDIO_ENC"
     fi
 
-    if $DEBUG; then
-        eval "$AUDIO_ENC" 2>&1 | tee -a "$LOG_FILE" &
-    else
-        eval "$AUDIO_ENC" >> "$LOG_FILE" 2>&1 &
-    fi
 
-    PIDS="$PIDS $!"
+    cmd_exec "$AUDIO_ENC"
+
 
     # For parallel, nothing else to do right now
     if $PARALLEL; then
@@ -1451,14 +1459,10 @@ if ! $FORCE_ENCODING && $VIDEO_OK; then
     VID_COPY_CMD="mencoder -of rawvideo -nosound -ovc copy \"$IN_FILE\" -o \"$OUT_PREFIX.$VID_SUF\""
     yecho "$VID_COPY_CMD"
 
-    # Copy the video stream
-    if $DEBUG; then
-        eval "$VID_COPY_CMD" 2>&1 | tee -a "$LOG_FILE" &
-    else
-        eval "$VID_COPY_CMD" >> "$LOG_FILE" 2>&1 &
-    fi
 
-    PIDS="$PIDS $!"
+    # Copy the video stream
+    cmd_exec "$VID_COPY_CMD"
+
 
     if $PARALLEL; then
         :
@@ -1479,24 +1483,17 @@ else
     yecho $VID_ENC_CMD
     # Start encoding
 
-    if $DEBUG; then
-        eval "$VID_PLAY_CMD" 2>&1 | tee -a "$LOG_FILE" &
-    else
-        eval "$VID_PLAY_CMD" >> "$LOG_FILE" 2>&1 &
-    fi
 
-    PIDS="$PIDS $!"
+    cmd_exec "$VID_PLAY_CMD"
+
+
     if $USE_FIFO; then
         file_output_progress stream.yuv "Ripping raw uncompressed video stream"
     fi
     
-    if $DEBUG; then
-        eval "$VID_ENC_CMD" 2>&1 | tee -a "$LOG_FILE" &
-    else
-        eval "$VID_ENC_CMD" >> "$LOG_FILE" 2>&1 &
-    fi
 
-    PIDS="$PIDS $!"
+    cmd_exec "$VID_ENC_CMD"
+
 
     # For parallel encoding, nothing further yet
     if $PARALLEL; then
@@ -1546,12 +1543,10 @@ fi
 MPLEX_CMD="mplex $MUX_OPTS -o \"$OUT_FILENAME\" \"$OUT_PREFIX.$VID_SUF\" \"$OUT_PREFIX.$AUD_SUF\""
 yecho "Multiplexing audio and video together with the following command:"
 yecho $MPLEX_CMD
-if $DEBUG; then
-    eval "$MPLEX_CMD" 2>&1 | tee -a "$LOG_FILE" &
-else
-    eval "$MPLEX_CMD" >> "$LOG_FILE" 2>&1 &
-fi
-PIDS="$PIDS $!"
+
+
+cmd_exec "$MPLEX_CMD"
+
 
 # Parallel encoding doesn't enter the progress
 # loop until multiplexing begins.
