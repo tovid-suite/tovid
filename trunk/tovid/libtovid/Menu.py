@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+# Menu generator module
+
 import string, sys, os, glob
 from libtovid import Project
 from Globals import degunk
