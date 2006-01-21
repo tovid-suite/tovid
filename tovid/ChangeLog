@@ -1,12 +1,35 @@
+ChangeLog
 =====================================================
-tovid suite changelog
-
-Project homepage: http://tovid.sourceforge.net/
+tovid changelog
+Project homepage: http://tovid.org/
 =====================================================
 
-This is an ongoing report of changes in the tovid suite
-command-line tools (and, in versions 0.18b and prior, the
-tovid GUI).
+This is an ongoing report of changes in tovid.
+
+
+============================================================
+Version 0.24
+2005-12-20
+============================================================
+
+tovid and the GUI are back together again, along with a new
+(experimental) tovid Python library, 'libtovid'.
+
+tovidgui(.py)
+* Experimental Save/Open feature added, for saving a disc project
+  as a TDL text file (and loading it again later)
+
+tovid
+* Better handling of those "1000 fps" (variable framerate) input videos
+* Quantization and output progress meter implemented for -ffmpeg
+* Usage notes condensed
+* Minor bugfixes
+
+makemenu
+* Switched to a simpler button-generation algorithm; menu highlights
+  now use a "cursor" instead of highlighted text. Should eliminate
+  some spumux button-related errors.
+* Usage notes condensed
 
 
 ============================================================

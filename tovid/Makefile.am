@@ -23,6 +23,10 @@
 #           http://www.gnu.org/licenses/gpl.txt
 
 man_MANS = man/*.1
-EXTRA_DIST = $(man_MANS) bootstrap
+EXTRA_DIST = $(man_MANS) \
+	libtovid/*.py \
+	icons/*.png \
+	bootstrap \
+	setup.py
 
 SUBDIRS = src
