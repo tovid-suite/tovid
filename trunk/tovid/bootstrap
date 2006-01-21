@@ -24,9 +24,9 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 rm -rvf "autom4te.cache"
-rm -rvf aclocal.m4 configure Makefile.in \
-        confdefs.h config.log config.status
-rm -rvf src/Makefile src/Makefile.in
+rm -rvf aclocal.m4 config.log config.status configure \
+        Makefile Makefile.in setuplib.py
+rm -rvf src/Makefile src/Makefile.in src/tovid-init.sh
 
 aclocal \
 && automake --gnu --add-missing \
