@@ -5,25 +5,19 @@
 
 # TODO: Exception handling
 
-"""This module takes a tovid Project, finds all the Disc elements present
-therein, and generates vcdxbuild|dvdauthor XML for the disc (and all its
-menu/video navigational hierarchy), writing the results to the filename
-contained in each Disc element's 'out' option.
-"""
-
 import string, sys
 from libtovid import Project
 
 
-def write_project_xml(project):
-    """Write dvdauthor or vcdimager XML for each Disc in the given project."""
-    for disc in project.get_elements('Disc'):
-        if disc.get('format') == 'dvd':
-            xml = dvd_disc_xml(disc)
-        elif disc.get('format') in ['vcd', 'svcd']:
-            xml = vcd_disc_xml(disc)
-        outfile = open(disc.get('out'), 'w')
-        outfile.write(xml)
+def generate(disc):
+    """Write dvdauthor or vcdimager XML for the given Disc element, to
+    the file specified by the disc's 'out' option."""
+    if disc.get('format') == 'dvd':
+        xml = dvd_disc_xml(disc)
+    elif disc.get('format') in ['vcd', 'svcd']:
+        xml = vcd_disc_xml(disc)
+    outfile = open(disc.get('out'), 'w')
+    outfile.write(xml)
 
 
 # ===========================================================
@@ -57,6 +51,7 @@ def vcd_disc_xml(disc):
       <system-id>CD-RTOS CD-BRIDGE</system-id>
     </pvd>
     """
+    # TODO:
     # segment-items
     # sequence-items
     # pbc + selections

@@ -12,7 +12,8 @@ if __name__ == '__main__':
 
     # If no arguments were provided, print usage notes
     if len(sys.argv) == 1:
-        print "Please provide some arguments."
+        print 'Usage: pymakemenu [options] "Title 1" "Title 2" ... -out NAME'
+        print "See the 'makemenu' manual page for more details."
         sys.exit()
         
     # If a TDL file name was provided, parse and generate Menus in it
@@ -28,17 +29,18 @@ if __name__ == '__main__':
     else:
         print "pymakemenu"
         # Insert a dummy element/name declaration
-        sys.argv.insert(0, 'Menu')
-        sys.argv.insert(1, 'UNTITLED_MENU')
-        print "Converted command-line options to a TDL element declaration:"
-        print sys.argv
+        tdl = 'Menu "FOO MENU" '
+        for arg in sys.argv[1:]:
+            tdl += '%s ' % arg
+
+        print "TDL string:"
+        print tdl
 
         # TODO: Fix this dumb redundancy in naming (same for Project.Project
         # above)
-        menu = Parser.Parser.parse_args(sys.argv)
-
-        print "Parsed menu element:"
-        print menu.tdl_string()
-
+        par = Parser.Parser()
+        elems = par.parse_string(tdl)
+        print "Parsed Menu element:"
+        print elems[0].tdl_string()
         print "Generating menu..."
-        libtovid.Menu.generate(menu)
+        Menu.generate(elems[0])

@@ -128,3 +128,31 @@ Parsing and TDL
 
 			Can build a generalized GUI engine for this that would
 			work with any language implementation similar to TDL.
+
+Implementing tovid/makemenu/makexml
+
+	A Project encapsulates all user-customizable info, generally
+	read from a TDL file. Videos, menus, and discs are typically
+	described.
+
+	tovid:
+		Frontend: Takes standard tovid options, and adjusts formatting so they
+		comprise a Project.
+
+		Backend: Performs equivalent of encode_videos(project); seeks Video
+		elements, encodes to target format.
+	
+	makemenu:
+		Frontend: Takes standard makemenu options and formats them as a
+		Project.
+
+		Backend: Does generate_menus(project); seeks Menu elements and
+		generates them.
+	
+	makexml:
+		Backend: Does generate_dvdauthor_xml(project), or something like it.
+		Finds any Disc elements in the project, does any necessary inspection
+		of its content (for setting 'nopanscan', pal/ntsc, or other
+		title-specific options), and writes (possibly also authors) the XML.
+
+	

@@ -2,5 +2,7 @@
 
 __all__ = [ "Parser",
             "Project",
+            "Disc",
             "Menu",
+            "Video",
             "TDL" ]

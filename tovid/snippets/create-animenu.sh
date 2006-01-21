@@ -29,32 +29,77 @@
 FRAMES=30
 FRAMERATE=29.970
 TIME=`awk 'BEGIN { printf("'"$FRAMES"'" /"'"$FRAMERATE"'")"\n" ; exit  }'`
-#
+LOGFILE="animenu.log"
+rm -f $LOGFILE
+rm -rf pics
+
 echo -e "\nWe will be creating a menu of $TIME seconds length\n"
 echo -e "\nCreating the directory structure\n"
 mkdir -p pics/{1,2,3,4,intro,background}
 echo -e "\nCreating jpegs of the intro clip in the intro/ directory\n"
-mplayer -vo jpeg:outdir=pics/intro/ -ao null -zoom -x 432 -y 288  -ss 0:0:00 -frames $FRAMES  mpeg/bg.mpg > /dev/null 2>&1
+mplayer -vo jpeg:outdir=pics/intro/ -ao null -zoom -x 432 -y 288  -ss 0:0:00 -frames $FRAMES  mpeg/bg.mpg >> $LOGFILE 2>&1
 #for i in `find pics/intro -name \*.jpg -exec basename {} \;`;do cp bg.jpg pics/background/$i;done
 echo -e "\nCreating the background images in background/ - this will take some time\n"
-for i in `find pics/intro -name \*.jpg -exec basename {} \;`;do convert  -size 720x480 pattern:bricks -fill "#8B7D6B" -colorize "150"  pics/background/$i;done
+
+for i in `find pics/intro -name \*.jpg -exec basename {} \;`;
+do
+    convert -size 720x480 pattern:bricks -fill "#8B7D6B" \
+        -colorize "150"  pics/background/$i
+done
+
 echo -e "\nCreating jpegs of clips 1 to 4 in directories 1/ 2/ 3/ and 4/ \n "
-mplayer -vo jpeg:outdir=pics/1 -ao null -zoom -x 96 -y 64  -ss 0:0:00 -frames $FRAMES  mpeg/1.mpg >/dev/null 2>&1
-mplayer -vo jpeg:outdir=pics/2 -ao null -zoom -x 96 -y 64  -ss 0:0:00 -frames $FRAMES  mpeg/2.mpg >/dev/null 2>&1
-mplayer -vo jpeg:outdir=pics/3 -ao null -zoom -x 96 -y 64  -ss 0:0:00 -frames $FRAMES  mpeg/3.mpg >/dev/null 2>&1
-mplayer -vo jpeg:outdir=pics/4 -ao null -zoom -x 96 -y 64  -ss 0:0:00 -frames $FRAMES  mpeg/4.mpg >/dev/null 2>&1
+
+for num in 1 2 3 4;
+do
+    mplayer -vo jpeg:outdir=pics/$num -ao null -zoom -x 96 -y 64 \
+        -ss 0:0:00 -frames $FRAMES  mpeg/$num.mpg >> $LOGFILE 2>&1
+done
+
 #for i in pics/intro/*.jpg;do mogrify -border 8x8 -bordercolor black $i;done
+
 echo -e "\nCreating borders for all pictures - please be patient\n"
-for i in pics/intro/*.jpg;do convert -border 6x6 -bordercolor black -raise 3x3 $i $i;done
+
+for i in pics/intro/*.jpg;
+do
+    convert -border 6x6 -bordercolor black -raise 3x3 $i $i
+done
+
 #for i in pics/{1,2,3,4}/*.jpg;do mogrify -border 2x2 -bordercolor black $i;done
-for i in pics/{1,2,3,4}/*.jpg;do convert -border 3x3 -bordercolor black -raise 2x2 $i $i;done
+for i in pics/{1,2,3,4}/*.jpg;
+do
+    convert -border 3x3 -bordercolor black -raise 2x2 $i $i
+done
+
 echo -e "\nUsing imagemagick's composite to overlay clip images onto the background images\n"
 echo -e "\nThis will take some time, please be patient\n"
-for i in `find pics/intro -name \*.jpg -exec basename {} \;`;do composite  -compose over  -geometry +210+100 pics/intro/$i pics/background/$i pics/background/$i;done
-for i in `find pics/1/ -name \*.jpg -exec basename {} \;`;do composite  -compose over  -geometry +68+66 pics/1/$i pics/background/$i pics/background/$i;done
-for i in `find pics/2/ -name \*.jpg -exec basename {} \;`;do composite  -compose over  -geometry +68+162 pics/2/$i pics/background/$i pics/background/$i;done
-for i in `find pics/3/ -name \*.jpg -exec basename {} \;`;do composite  -compose over  -geometry +68+258  pics/3/$i pics/background/$i pics/background/$i;done
-for i in `find pics/4/ -name \*.jpg -exec basename {} \;`;do composite  -compose over  -geometry +68+354  pics/4/$i pics/background/$i pics/background/$i;done
+
+for i in `find pics/intro -name \*.jpg -exec basename {} \;`;
+do
+    composite  -compose over  -geometry +210+100 pics/intro/$i pics/background/$i pics/background/$i
+done
+
+for i in `find pics/1/ -name \*.jpg -exec basename {} \;`;
+do
+    composite  -compose over  -geometry +68+66 pics/1/$i pics/background/$i pics/background/$i
+done
+
+for i in `find pics/2/ -name \*.jpg -exec basename {} \;`;
+do
+    composite  -compose over  -geometry +68+162 pics/2/$i pics/background/$i pics/background/$i
+done
+
+for i in `find pics/3/ -name \*.jpg -exec basename {} \;`;
+do
+    composite  -compose over  -geometry +68+258  pics/3/$i pics/background/$i pics/background/$i
+done
+
+for i in `find pics/4/ -name \*.jpg -exec basename {} \;`;
+do
+    composite  -compose over  -geometry +68+354  pics/4/$i pics/background/$i pics/background/$i
+done
+
 echo -e "\nPictures are complete !  - now creating video stream with jpeg2yuv and encoding to mpg\n"
 jpeg2yuv -v0 -f 29.970 -I p -L 1 -b1 -j pics/background/%08d.jpg | mpeg2enc -q 3 -f 8 -o animenu.mpg
 echo -e "\nEncoding complete !  Your menu should be ready in the file $PWD/animenu.mpg\n"
+
+
