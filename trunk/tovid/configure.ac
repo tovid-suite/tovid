@@ -295,7 +295,7 @@ Other dependencies      $OPT_DEPENDENCIES
     tcprobe:            $HAVE_TCPROBE
     tcrequant:          $HAVE_TCREQUANT
 
- You may now type 'su -c "make install"' to compile and install tovid.
+ You may now type 'su -c "sh setup.sh"' to compile and install tovid.
  ])
 
 ############ POST-TEMP #################
@@ -305,5 +305,5 @@ Other dependencies      $OPT_DEPENDENCIES
 # tovid suite will be disabled. Please install any missing dependencies 
 # and ./configure again. See www.tovid.org for links. 
  
-AC_CONFIG_FILES([Makefile src/Makefile src/tovid-init.sh setup.py])
+AC_CONFIG_FILES([Makefile src/Makefile src/tovid-init.sh setuplib.py])
 AC_OUTPUT
