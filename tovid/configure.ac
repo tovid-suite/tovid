@@ -37,6 +37,7 @@
 # The first arugment sets the package name, the second sets the package version.
 # eg [tovid], [0.40] would yield a tovid-0.40.tar.gz after "$ make dist"
 #                    the version number is also substituted into tovid-init.sh.in
+#                    and into setup.py.in
 AC_INIT([tovid], [0.24])
 AC_CONFIG_SRCDIR([src/tovid.sh])
 
@@ -260,6 +261,9 @@ AC_SUBST(BUILD_OPTS)
 
 
 
+AC_CONFIG_FILES([Makefile src/Makefile src/tovid-init.sh setuplib.py])
+AC_OUTPUT
+
 
 # ******************************************************************************
 # ******************************************************************************
@@ -305,5 +309,3 @@ Other dependencies      $OPT_DEPENDENCIES
 # tovid suite will be disabled. Please install any missing dependencies 
 # and ./configure again. See www.tovid.org for links. 
  
-AC_CONFIG_FILES([Makefile src/Makefile src/tovid-init.sh setuplib.py])
-AC_OUTPUT
