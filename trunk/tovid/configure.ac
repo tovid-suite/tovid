@@ -131,7 +131,7 @@ done
 #  (1) append another line to the AC_CHECK_PROG block to check for bar:
 #         AC_CHECK_PROG(BAR, [bar], [ok], [MISSING])
 #  (2) add another msg called bar_msg to the *_msg block 
-#  (3) add another test to the catagories build option:
+#  (3) add another test to the catagory's build option:
 #         test "x$FOO" = "xok"
 #  (4) add another name/variable pair to OPT_DEP_LIST: bar=$BAR
 
