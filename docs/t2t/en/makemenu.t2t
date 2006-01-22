@@ -111,6 +111,12 @@ Menu text options:
 Other options:
 
 ```
+-debug
+    Print extra debugging information to the log file. Useful in
+    diagnosing problems if they occur. This option also leaves
+    the log file (with a .log extension) in the directory after
+    encoding finishes.
+
 -nosafearea
     Do not attempt to put text inside a TV-safe viewing area. Most
     television sets cut off about 10% of the image border, so the script
@@ -131,6 +137,14 @@ If the word "back" is given as an episode title, a "back" button for
 returning to a higher-level menu will be added at the end of the list
 of episodes.
 
+
+==Examples==
+: makemenu -ntsc -vcd -align center -textcolor "rgb(255,255,255)" -font "Helvetica" "Episode 1" "Episode 2" "Episode 3" -out "Season-1"
+   Make an NTSC VCD menu with white Helvetica text containing three centered selections: Episode 1, Episode 2, and Episode 3. The finished menu will be called Season-1.mpg.
+   
+: makemenu -ntsc -dvd -align left -textcolor "rgb(255,255,255)" -highlightcolor "rgb(255,255,0)" -selectcolor "rgb(255,0,0)" -font "Helvetica" "Episode 1" "Episode 2" "Episode 3" "Main_menu" 
+   Make an NTSC DVD menu with white Helvetica text containing three left-aligned selections: Episode 1, Episode 2, and Episode 3. Items under the cursor will be highlighted yellow, and selected items will be red (before going to the selected title). The finished menu will be called Main-menu.mpg.
+     
 
 ==Usage notes==
 The argument given to -font must be one of the fonts listed
