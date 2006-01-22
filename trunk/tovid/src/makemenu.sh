@@ -546,6 +546,10 @@ EOF`
     echo "Multiplexing menu selection highlight and menu with the following command:"
     echo $SPUMUX_CMD
     eval $SPUMUX_CMD
+
+# Rename the output menu for VCD and SVCD
+else
+    mv "$OUT_PREFIX.temp.mpg" "$OUT_PREFIX.mpg"
 fi
 
 echo $SEPARATOR
