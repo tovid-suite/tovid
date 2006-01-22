@@ -183,6 +183,7 @@ MUX_OPTS=""
 FAST_ENCODING=false
 # Don't fake it
 FAKE=false
+QUIET=false
 
 # Make note of when encoding starts, to determine total time later.
 SCRIPT_START_TIME=`date +%s`
@@ -228,7 +229,7 @@ usage_error()
 {
     printf "%s\n" "$USAGE"
     printf "%s\n" "$SEPARATOR"
-    printf "*** %s\n" "$@"
+    printf "*** Usage error: %s\n" "$@"
     exit 1
 }
 
@@ -259,7 +260,12 @@ runtime_error()
 # Args: $@ == text string contianing complete command-line
 # ******************************************************************************
 cmd_exec()
-    if $DEBUG; then
+    if $FAKE; then
+        yecho
+        yecho "    [Fake mode is on; command would be executed here]"
+        yecho
+        return
+    elif $DEBUG; then
         eval "$@" 2>&1 | tee -a "$LOG_FILE" &
     else
         eval "$@" >> "$LOG_FILE" 2>&1 &
@@ -362,7 +368,12 @@ get_args()
             # Aspect ratio
             "-aspect" )
                 shift
-                ASPECT_RATIO="$1"
+                # Make sure aspect follows expected formatting (INT:INT)
+                if expr match "$1" '[0-9][0-9]*:[0-9][0-9]*$'; then
+                    ASPECT_RATIO="$1"
+                else
+                    usage_error "Please provide an integer ratio to -aspect (i.e. 235:100)"
+                fi
                 ;;
             "-wide" ) ASPECT_RATIO="16:9" ;;
             "-full" ) ASPECT_RATIO="4:3" ;;
@@ -518,6 +529,11 @@ get_args()
             # Null option; ignored.
             "-" )
                 ;;
+            # Quiet encoding (minimal output)
+            "-quiet" )
+                QUIET=:
+                ;;
+
             # Fake encoding (print commands only)
             "-fake" )
                 FAKE=:
@@ -525,7 +541,7 @@ get_args()
 
             # If the option wasn't recognized, exit with an error
             "*" )
-                usage_error "Error: Unrecognized command-line option '$1'"
+                usage_error "Unrecognized command-line option '$1'"
                 ;;
             esac
 
@@ -570,7 +586,6 @@ cleanup()
 {
     cd "$WORKING_DIR"
     yecho "Cleaning up..."
-    pwd
     rm -fv "$OUT_PREFIX.$VID_SUF"
     rm -fv "$OUT_PREFIX.$AUD_SUF"
     rm -fv stream.yuv
@@ -600,7 +615,7 @@ get_args "$@"
 # ******************************************************************************
 # Do all work in the working directory
 # ******************************************************************************
-echo "Changing to working directory: $WORKING_DIR"
+$QUIET || echo "Changing to working directory: $WORKING_DIR"
 cd $WORKING_DIR
 
 # ******************************************************************************
@@ -619,7 +634,7 @@ if type mpeg2enc >/dev/null; then :; else
     exit 1
 fi
 
-printf "%s\n" "$SCRIPT_NAME"
+$QUIET || printf "%s\n" "$SCRIPT_NAME"
 
 # ******************************************************************************
 # Sanity checks. Make sure input file exists, and see if we're going
@@ -1312,8 +1327,12 @@ if $USE_FFMPEG; then
     cmd_exec "$FF_ENC_CMD"
     
 
-    file_output_progress "$OUT_FILENAME" "Encoding with ffmpeg"
-    wait
+    if $FAKE; then
+        :
+    else
+        file_output_progress "$OUT_FILENAME" "Encoding with ffmpeg"
+        wait
+    fi
     yecho
     ! $DEBUG && cleanup
     exit 0
@@ -1341,7 +1360,7 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     cmd_exec "$AUDIO_CMD"
 
 
-    if $PARALLEL; then
+    if $FAKE || $PARALLEL; then
         :
     else
         file_output_progress "$OUT_PREFIX.$AUD_SUF" "Copying compliant audio stream"
@@ -1381,7 +1400,7 @@ else
 
 
         # For parallel encoding, nothing more to do right now
-        if $PARALLEL; then
+        if $FAKE || $PARALLEL; then
             :
         # If not in parallel mode, show .wav-ripping progress,
         # and wait for successful completion.
@@ -1422,7 +1441,7 @@ else
 
 
     # For parallel, nothing else to do right now
-    if $PARALLEL; then
+    if $FAKE || $PARALLEL; then
         :
     # If not in parallel mode, show output progress
     # and wait for successful completion
@@ -1464,7 +1483,7 @@ if ! $FORCE_ENCODING && $VIDEO_OK; then
     cmd_exec "$VID_COPY_CMD"
 
 
-    if $PARALLEL; then
+    if $FAKE || $PARALLEL; then
         :
     else
         file_output_progress "$OUT_PREFIX.$VID_SUF" "Copying existing video stream"
@@ -1496,7 +1515,7 @@ else
 
 
     # For parallel encoding, nothing further yet
-    if $PARALLEL; then
+    if $FAKE || $PARALLEL; then
         :
     # Show progress report while video is encoded
     else
@@ -1510,7 +1529,7 @@ yecho
 
 # For non-parallel encoding/multiplexing,
 # make sure the video and audio streams exist before proceeding
-if $PARALLEL; then
+if $FAKE || $PARALLEL; then
     :
 else
     test ! -f "$OUT_PREFIX.$AUD_SUF" && \
@@ -1577,11 +1596,14 @@ cd `dirname $OUT_FILENAME`
 FINAL_SIZE=`du -c -k "$OUT_PREFIX"*.mpg | awk 'END{print $1}'`
 test -z $FINAL_SIZE && FINAL_SIZE=0
 
-pwd
-yecho "Output files:"
-for OUTFILE in `ls -1 "$OUT_PREFIX.mpg $OUT_PREFIX.[0-9].mpg" 2>/dev/null`; do
-    yecho "    $OUTFILE (`du -h "$OUTFILE" | awk 'END{print $1}'`)"
-done
+if $FAKE; then
+    :
+else
+    yecho "Output files:"
+    for OUTFILE in `ls -1 "$OUT_PREFIX.mpg $OUT_PREFIX.[0-9].mpg" 2>/dev/null`; do
+        yecho "    $OUTFILE (`du -h "$OUTFILE" | awk 'END{print $1}'`)"
+    done
+fi
 
 # Save video statistics. Create stats directory if it doesn't
 # already exist.
@@ -1625,7 +1647,7 @@ $SCRIPT_NAME
 "TOVID_VERSION", "OUT_FILENAME", "V_DURATION", "TGT_RES", "TVSYS", "FINAL_SIZE", "VID_BITRATE", "AVG_BITRATE", "PEAK_BITRATE", "GOP_MINSIZE", "GOP_MAXSIZE", "SCRIPT_TOT_TIME", "CPU_MODEL", "CPU_SPEED", "ID_VIDEO_FORMAT", "ID_AUDIO_CODEC", "ENCODING_MODE", "IN_FILE_MD5", "ID_VIDEO_WIDTH", "ID_VIDEO_HEIGHT"
 EOF`
 
-    printf "%s\n" "$STAT_FILE_HEADER" > "$STAT_FILE"
+    $QUIET || printf "%s\n" "$STAT_FILE_HEADER" > "$STAT_FILE"
 fi
 
 # Gather some statistics...
@@ -1638,8 +1660,8 @@ FINAL_BITRATE=`expr $FINAL_SIZE \/ \( $V_DURATION \+ 1 \)`
 AVG_BITRATE=`grep 'Average bit-rate' "$LOG_FILE" | awk '{print $6}'`
 PEAK_BITRATE=`grep 'Peak bit-rate' "$LOG_FILE" | awk '{print $6}'`
 # Convert to kbits/sec
-AVG_BITRATE=`expr $AVG_BITRATE \/ 1000`
-PEAK_BITRATE=`expr $PEAK_BITRATE \/ 1000`
+test -n $AVG_BITRATE && AVG_BITRATE=`expr $AVG_BITRATE \/ 1000`
+test -n $PEAK_BITRATE && PEAK_BITRATE=`expr $PEAK_BITRATE \/ 1000`
 
 # Final statistics string (pretty-printed)
 FINAL_STATS_PRETTY=`cat << EOF
@@ -1662,10 +1684,10 @@ FINAL_STATS_FORMATTED=`cat << EOF
 EOF`
 
 
-printf "%s\n" "$FINAL_STATS_FORMATTED" >> "$STAT_FILE"
+$FAKE || printf "%s\n" "$FINAL_STATS_FORMATTED" >> "$STAT_FILE"
 
 yecho
-printf "%s\n" "$FINAL_STATS_PRETTY"
+$QUIET || printf "%s\n" "$FINAL_STATS_PRETTY"
 yecho "Statistics written to $STAT_FILE"
 
 cleanup
