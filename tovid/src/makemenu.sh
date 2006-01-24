@@ -377,7 +377,7 @@ do
 done
 
 # If there was a "back", add it at the end
-if [[ -n $BACK_BUTTON ]]; then
+if [[ -n "$BACK_BUTTON" ]]; then
     # Leave an empty line
     CUR_Y=$NEXT_Y
     NEXT_Y=`expr $NEXT_Y \+ $TITLE_SPACING`
