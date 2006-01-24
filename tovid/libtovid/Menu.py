@@ -55,6 +55,7 @@ def generate(menu):
     elif disc.get('format') in ['vcd', 'svcd']:
         generate_vcd_menu(menu)
 
+
 def generate_vcd_menu(menu):
     """Generate an (S)VCD MPEG menu, saving to the file specified by the menu's
     'out' option."""
