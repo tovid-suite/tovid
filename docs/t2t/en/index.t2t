@@ -10,11 +10,14 @@ tovid homepage
 
 == What is tovid? ==
 
+[See a screenshot images/screenshot_menu.png].
+
 tovid is a collection of video disc authoring tools; it can help you create your own
 DVDs, VCDs, and SVCDs for playback on your home DVD player.
 It has a [command-line interface cli.html]
 as well as a [graphical frontend gui.html].
 tovid is [free software http://en.wikipedia.org/wiki/Free_software].
+
 
 You may find tovid useful if:
 - you have a digital camcorder, and want to share home movies with family and friends
@@ -32,6 +35,12 @@ Interested? Check out the [installation instructions install.html], and
 
 (Newest on top)
 
+- 2005-12-20:
+    tovid 0.24 is released. The GUI has been merged back in with the regular
+    tovid package, and the experimental Python tovid libraries are included
+    now also. [Get it from berlios http://developer.berlios.de/projects/tovid/],
+    and follow the [installation instructions install.html]. Also, please see
+    the [release notes on the tovid forum http://www.createphpbb.com/phpbb/viewtopic.php?p=1189&mforum=tovid#1189].
 - 2005-11-14:
     tovid 0.23 is released. Mostly a maintenance release, with minor bugfixes,
     but it's good to be up-to-date!
