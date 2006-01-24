@@ -45,12 +45,11 @@ that works? If it ain't broken, why fix it? Good questions. There's a only one
 really good reason for this reimplementation: maintenance.
 
 With any software (but with open-source software especially), it's all about
-code maintenance. From the moment tovid was released
-[on sourceforge http://sourceforge.net/projects/tovid/], it has been undergoing
-bugfixes, feature enhancements, portability improvements, and other revisions
-to the code. Developers (and sometimes users) spend a lot of time reading,
-and trying to understand, that code. The choice of programming language
-has a strong effect on the simplicity and intelligibility of the code.
+code maintenance. From the moment tovid was first released, it has been
+undergoing bugfixes, feature enhancements, portability improvements, and other
+revisions to the code. Developers (and sometimes users) spend a lot of time
+reading, and trying to understand, that code. The choice of programming
+language has a strong effect on the simplicity and intelligibility of the code.
 
 The existing tovid suite is written in
 [shell script http://en.wikipedia.org/wiki/Shell_script]. While not the hardest

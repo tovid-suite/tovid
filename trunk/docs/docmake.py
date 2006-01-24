@@ -14,6 +14,7 @@ import mypydoc
 source_dir = os.path.realpath('t2t')
 # Directory to save output in
 dest_dir = os.path.realpath('html')
+man_dir = os.path.realpath('man')
 
 # Subdirectories of source_dir containing translations to build
 translation_subdirs = [ 'en', 'es' ]
@@ -22,10 +23,17 @@ translation_subdirs = [ 'en', 'es' ]
 def generate_t2t_tarball():
     """Create tar/gzip of all t2t sources in the html/download directory."""
     print "Generating .tar.gz of all .t2t sources..."
-    cmd = 'tar --exclude .svn -czvvf %s/download/tovid_t2t.tar.gz t2t' % \
-            dest_dir
-    os.system(cmd)
+    for lang in translation_subdirs:
+        cmd = 'tar --exclude .svn -czvvf %s/download/tovid_t2t_%s.tar.gz t2t/%s' % \
+                (dest_dir, lang, lang)
+        os.system(cmd)
     
+
+
+def generate_manpage(t2tfile, manfile):
+    cmd = 'txt2tags -i %s -o %s' % (t2tfile, manfile)
+    cmd += ' -t man'
+    os.system(cmd)
 
 
 def generate_html(t2tfile, htmlfile):
@@ -86,7 +94,7 @@ if __name__ == '__main__':
         if arg == 'all':
             regen_all = True
 
-    #generate_t2t_tarball()
+    generate_t2t_tarball()
     #generate_tdl_t2t()
     #generate_pydocs()
 
