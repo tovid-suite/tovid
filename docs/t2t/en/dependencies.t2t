@@ -14,15 +14,15 @@ dependencies.
 tovid has amassed some dependency hell during its development.  Here is the
 complete list of dependencies, and to what extent they are required:
 
-: [Python http://www.python.org/]
+: [Python http://www.python.org/] (and python-dev, if your distro has it)
     An interpreter that allows you to run programs written in
     Python. Python is becoming increasingly common, so it's good to have a Python
     interpreter installed. If you want to use the graphical interface for tovid,
     you need this.
 
-: [wxPython http://www.wxpython.org/]
+: [wxPython http://www.wxpython.org/] 2.6 or newer
     Provides support for GUIs written in Python using the
-    wxWidgets API. You also need this to run the GUI.
+    wxWidgets API. You need this to run the tovid GUI.
 
 : [mplayer http://www.mplayerhq.hu/]
     Probably the most robust and mature video player for Linux.

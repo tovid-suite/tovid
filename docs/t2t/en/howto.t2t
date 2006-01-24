@@ -15,12 +15,12 @@ the DVD-creation process is explained in detail.
 == Getting started ==
 
 Before we begin, we need several things:
-- Some videos. Where you get them is up to you.
-- The tovid suite of utilities, which you can download from
-  [sourceforge.net http://www.sourceforge.net/projects/tovid].
-- The [tovid documentation documentation.html], for
-  reference on how to install and use tovid
-- A command-line interface. Any terminal or console will do.
+- Some videos (where you get them is up to you)
+- The tovid suite of utilities, which you can
+  [download from berliOS http://developer.berlios.de/projects/tovid]
+  and [install install.html]
+- The [tovid manual manual.html]
+- A command-line interface (any terminal or console will do)
 - Some patience, and perhaps a nice cup of coffee
 
 
