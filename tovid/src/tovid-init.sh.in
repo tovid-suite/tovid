@@ -122,6 +122,9 @@ unformat_time()
 # ******************************************************************************
 file_output_progress()
 {
+    if $FAKE; then
+        return
+    fi
     FOP_OUTFILE="$1"
     FOP_BASENAME=`basename $FOP_OUTFILE`
     FOP_MSG="$2"
