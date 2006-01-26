@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Tasks SYSTEM "Tasks-3.7.dtd">
+<!-- Tasks file for project tovid -->
+<!-- Saved: 2006-01-25, 19:16:17 -->
+<Tasks version="3.7">
+  <Task priority="1" completed="0">
+    <Description>TODO: Expand to include all currently-supported tovid suite</Description>
+    <Created>2006-01-20, 06:11:11</Created>
+    <Resource>
+      <Filename>
+        <Dir>libtovid</Dir>
+        <Name>TDL.py</Name>
+      </Filename>
+      <Linenumber>182</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="0">
+    <Description>TODO: Find a more efficient way to create new Elements filled with default</Description>
+    <Created>2006-01-20, 06:11:11</Created>
+    <Resource>
+      <Filename>
+        <Dir>libtovid</Dir>
+        <Name>TDL.py</Name>
+      </Filename>
+      <Linenumber>373</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="0">
+    <Description>TODO: Write a proper unit test</Description>
+    <Created>2006-01-20, 06:11:11</Created>
+    <Resource>
+      <Filename>
+        <Dir>libtovid</Dir>
+        <Name>TDL.py</Name>
+      </Filename>
+      <Linenumber>425</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="0">
+    <Description>TODO: Exception handling</Description>
+    <Created>2006-01-20, 08:26:05</Created>
+    <Resource>
+      <Filename>
+        <Dir>libtovid</Dir>
+        <Name>Disc.py</Name>
+      </Filename>
+      <Linenumber>6</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="0">
+    <Description>TODO: Add buttons for each submenu</Description>
+    <Created>2006-01-20, 08:26:05</Created>
+    <Resource>
+      <Filename>
+        <Dir>libtovid</Dir>
+        <Name>Disc.py</Name>
+      </Filename>
+      <Linenumber>77</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="0">
+    <Description>TODO: add titlesets for each submenu</Description>
+    <Created>2006-01-20, 08:26:05</Created>
+    <Resource>
+      <Filename>
+        <Dir>libtovid</Dir>
+        <Name>Disc.py</Name>
+      </Filename>
+      <Linenumber>86</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="0">
+    <Description>TODO: Execute each command, with proper stream redirection and</Description>
+    <Created>2006-01-20, 17:10:07</Created>
+    <Resource>
+      <Filename>
+        <Dir>libtovid</Dir>
+        <Name>Video.py</Name>
+      </Filename>
+      <Linenumber>19</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="0">
+    <Description>TODO: Custom mplayer options, subtitles, interlacing, safe area, corresp.</Description>
+    <Created>2006-01-20, 17:10:07</Created>
+    <Resource>
+      <Filename>
+        <Dir>libtovid</Dir>
+        <Name>Video.py</Name>
+      </Filename>
+      <Linenumber>86</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="0">
+    <Description>TODO: Determine aspect ratio and scale appropriately (in a separate</Description>
+    <Created>2006-01-20, 17:10:07</Created>
+    <Resource>
+      <Filename>
+        <Dir>libtovid</Dir>
+        <Name>Video.py</Name>
+      </Filename>
+      <Linenumber>89</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="0">
+    <Description>TODO: Control over quality (bitrate/quantization) and disc split size,</Description>
+    <Created>2006-01-20, 17:10:07</Created>
+    <Resource>
+      <Filename>
+        <Dir>libtovid</Dir>
+        <Name>Video.py</Name>
+      </Filename>
+      <Linenumber>111</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="0">
+    <Description>TODO: Exception handling</Description>
+    <Created>2006-01-20, 17:10:23</Created>
+    <Resource>
+      <Filename>
+        <Dir>libtovid</Dir>
+        <Name>Parser.py</Name>
+      </Filename>
+      <Linenumber>7</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="0">
+    <Description>TODO: Find an elegant shortcut (preferably a single function)</Description>
+    <Created>2006-01-20, 17:10:23</Created>
+    <Resource>
+      <Filename>
+        <Dir>libtovid</Dir>
+        <Name>Parser.py</Name>
+      </Filename>
+      <Linenumber>59</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="0">
+    <Description>TODO: Make this function useful for turning on/off debugging</Description>
+    <Created>2006-01-20, 17:10:23</Created>
+    <Resource>
+      <Filename>
+        <Dir>libtovid</Dir>
+        <Name>Parser.py</Name>
+      </Filename>
+      <Linenumber>102</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="0">
+    <Description>TODO: Modularize this function better, splitting some chunks</Description>
+    <Created>2006-01-20, 17:10:23</Created>
+    <Resource>
+      <Filename>
+        <Dir>libtovid</Dir>
+        <Name>Parser.py</Name>
+      </Filename>
+      <Linenumber>120</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="0">
+    <Description>TODO: Write a proper unit test</Description>
+    <Created>2006-01-20, 17:10:23</Created>
+    <Resource>
+      <Filename>
+        <Dir>libtovid</Dir>
+        <Name>Parser.py</Name>
+      </Filename>
+      <Linenumber>222</Linenumber>
+    </Resource>
+  </Task>
+</Tasks>
