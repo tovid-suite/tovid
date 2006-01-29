@@ -4,7 +4,7 @@
 # TDL
 # TODO: Finish restructuring
 
-import copy
+import sys, copy, shlex
 from libtovid import Disc, Menu, Video
 from libtovid.Option import OptionDef
 
@@ -206,7 +206,13 @@ class Element:
     
     def get(self, opt):
         """Get the value of the given option."""
-        return self.options[opt]
+        if opt in self.options:
+            return self.options[opt]
+        else:
+            print "Error: '%s' is not a valid option for %s elements" % \
+                (opt, self.tag)
+            print "Please add an OptionDef to libtovid/%s.py" % self.tag
+            sys.exit()
     
 
     def tdl_string(self):
@@ -338,7 +344,7 @@ class Parser:
                 tag = token                # e.g., "Menu"
                 name = self.next_token()   # e.g., "Music videos"
                 # Get a new element with the given type and name
-                element = self.lang.Element(tag, name)
+                element = Element(tag, name)
                 #print "New element created:"
                 #print element.tdl_string()
 

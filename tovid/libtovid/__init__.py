@@ -1,10 +1,14 @@
 #! /usr/bin/env python
 
-__all__ = [ "Parser",
-            "Project",
-            "Option",
-            "Globals",
-            "Disc",
-            "Menu",
-            "Video",
-            "TDL" ]
+__all__ = [ \
+    "Globals",
+    "Standards",
+
+    "Disc",
+    "Menu",
+    "Video",
+    "VideoPlugins",
+
+    "Option",
+    "TDL",
+    "Project" ]
