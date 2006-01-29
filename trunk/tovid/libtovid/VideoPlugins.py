@@ -1,0 +1,262 @@
+#! /usr/bin/env python
+
+# Video plugins
+# TODO: Cleanup/modularize, move stuff to classes, make interface simple
+
+# from libtovid import Video
+from libtovid import Standards
+
+def get_mplayer_cmd(video):
+    """Get mplayer command-line for making a video compliant with the given
+    format and tvsys, while applying named custom filters, writing output to
+    stream.yuv."""
+    infile = video.get('in')
+    format = video.get('format')
+    tvsys = video.get('tvsys')
+    filters = video.get('filters')
+    
+    # TODO: Custom mplayer options, subtitles, interlacing, safe area, corresp.
+    # to $MPLAYER_OPT, $SUBTITLES, $VF_PRE/POST, $YUV4MPEG_ILACE, etc.
+    
+    # TODO: Determine aspect ratio and scale appropriately (in a separate
+    # function, preferably).
+
+    cmd = 'mplayer "%s" ' % infile
+    cmd += ' -vo yuv4mpeg -nosound -benchmark -noframedrop '
+    # TODO: Support subtitles. For now, use default tovid behavior.
+    cmd += ' -noautosub '
+    # TODO: Avoid scaling unless necessary
+    cmd += ' -vf scale=%s:%s ' % Standards.get_resolution(format, tvsys)
+    # Filters
+    if 'denoise' in filters:
+        cmd += ' -vf-add hqdn3d '
+    if 'contrast' in filters:
+        cmd += ' -vf-add pp=al:f '
+    if 'deblock' in filters:
+        cmd += ' -vf-add pp=hb/vb '
+
+    return cmd
+
+
+def get_mpeg2enc_cmd(video):
+    """Get mpeg2enc command-line suitable for encoding a video stream to the
+    given format and TV system, at the given aspect ratio (if the format
+    supports it)."""
+    format = video.get('format')
+    tvsys = video.get('tvsys')
+    aspect = video.get('aspect')
+    outfile = '%s.m2v' % video.get('out')
+
+    # TODO: Control over quality (bitrate/quantization) and disc split size,
+    # corresp. to $VID_BITRATE, $MPEG2_QUALITY, $DISC_SIZE, etc.
+    
+    # Missing options (compared to tovid)
+    # -S 700 -B 247 -b 2080 -v 0 -4 2 -2 1 -q 5 -H -o FILE
+
+    cmd = 'cat stream.yuv | mpeg2enc '
+    if tvsys == 'pal':
+        cmd += ' -F 3 -n p '
+    elif tvsys == 'ntsc':
+        cmd += ' -F 4 -n n '
+
+    if format == 'vcd':
+        cmd += ' -f 1 '
+    elif format == 'svcd':
+        cmd += ' -f 4 '
+    elif 'dvd' in format:
+        cmd += ' -f 8 '
+
+    if aspect == '4:3':
+        cmd += ' -a 2 '
+    elif aspect == '16:9':
+        cmd += ' -a 3 '
+    cmd += ' -o "%s"' % outfile
+
+    return cmd
+
+
+def get_mplex_cmd(video):
+    """Get mplex command-line suitable for muxing streams with the given format
+    and TV system."""
+    format = video.get('format')
+
+    cmd = 'mplex '
+    if format == 'vcd':
+        cmd += '-f 1 '
+    elif format == 'dvd-vcd':
+        cmd += '-V -f 8 '
+    elif format == 'svcd':
+        cmd += '-V -f 4 -b 230 '
+    elif format == 'half-dvd':
+        cmd += '-V -f 8 -b 300 '
+    elif format == 'dvd':
+        cmd += '-V -f 8 -b 400 '
+    # elif format == 'kvcd':
+    #   cmd += '-V -f 5 -b 350 -r 10800 '
+
+    return cmd
+
+
+def ratio_to_float(ratio):
+    """Convert a string expressing a numeric ratio, with X and Y parts
+    separated by a colon ':', into a floating-point value.
+    
+    For example:
+        
+        >>> ratio_to_float('4:3')
+        1.33333
+        >>>
+    """
+    values = ratio.split(':', 1)
+    if len(values) == 2:
+        return float(values[0]) / float(values[1])
+    elif len(values) == 1:
+        return float(values[0])
+    else:
+        return 1.0
+
+
+def get_mencoder_cmd(video):
+    """Get mencoder command-line suitable for encoding the given video to
+    its target format."""
+    format = video.get('format')
+    tvsys = video.get('tvsys')
+
+    cmd = 'mplayer -oac lavc -ovc lavc -of mpeg '
+    if format in ['vcd', 'svcd']:
+        cmd += ' -mpegopts format=x%s ' % format
+    else:
+        cmd += ' -mpegopts format=dvd '
+
+    # TODO: Move all aspect/scaling stuff into a separate
+    # function, so all backends can benefit from it
+
+    # Determine correct scaling and target aspect ratio
+    src_aspect = ratio_to_float(video.get('aspect'))
+    tgt_width, tgt_height = Standards.get_resolution(format, tvsys)
+    
+    # Use anamorphic widescreen for any video 16:9 or wider
+    if src_aspect >= 1.7 and format == 'dvd':
+        cmd += ' -vaspect=16/9 '
+        tgt_aspect = 16.0/9.0
+    else:
+        cmd += ' -vaspect=4/3 '
+        tgt_aspect = 4.0/3.0
+    
+    # If aspect matches target, no letterboxing is necessary
+    # (Match within a tolerance of 0.05)
+    if abs(src_aspect - tgt_aspect) < 0.05:
+        inner_width = tgt_width
+        inner_height = tgt_height
+        letterbox = False
+    # If aspect is wider than target, letterbox vertically
+    elif src_aspect > tgt_aspect:
+        inner_width = tgt_width
+        inner_height = tgt_height * tgt_aspect / src_aspect
+        letterbox = True
+    # Otherwise (rare), letterbox horizontally
+    else:
+        inner_width = tgt_width * src_aspect / tgt_aspect
+        inner_height = tgt_height
+        letterbox = True
+    
+    # TODO: Implement safe area calculation
+
+    if letterbox:
+        cmd += ' -vf scale=%s:%s,expand=%s:%s ' % \
+            (inner_width, inner_height, tgt_width, tgt_height)
+    else:
+        cmd += ' -vf scale=%s:%s ' % (inner_width, inner_height)
+
+    # Audio settings
+    if 'dvd' in format:
+        cmd += ' -srate 48000 -af lavcresample=48000 '
+    else:
+        cmd += ' -srate 41000 -af lavcresample=41000 '
+
+    return cmd
+
+
+
+"""
+For DVD:
+
+Filtering: -vf hqdn3d,crop=624:464:8:8,pp=lb,scale=704:480,harddup
+
+-lavcopts vcodec=mpeg2video:vrc_buf_size=1835:vrc_maxrate=9800:vbitrate=5000:keyint=18:acodec=ac3:abitrate=192:aspect=4/3 -ofps 30000/1001 -o Bill_Linda-DVD.mpg bill.mjpeg
+
+For SVCD:
+
+mencoder 100_0233.MOV  -oac lavc -ovc lavc -of mpeg -mpegopts format=xsvcd  -vf   scale=480:480,harddup -noskip -mc 0 -srate 44100 -af lavcresample=44100 -lavcopts   vcodec=mpeg2video:mbd=2:keyint=18:vrc_buf_size=917:vrc_minrate=600:vbitrate=2500:vrc_maxrate=2500:acodec=mp2:abitrate=224 -ofps 30000/1001   -o movie.mpg
+
+"""
+
+"""
+Notes:
+
+
+Command-line option variables:
+
+# Filters
+mplayer:
+SUBTITLES
+    -noautosub
+    -sub FILE
+YUV4MPEG_ILACE
+    ''
+    :interlaced
+    :interlaced_bf
+VF_PRE
+    ''
+    -vf-pre il=d:d
+
+VID_SCALE
+    ''
+    -vf-add scale=$INNER_WIDTH:$INNER_HEIGHT
++   -vf-add expand=$TGT_WIDTH:$TGT_HEIGHT
+
+VF_POST
+    ''
+    -vf-pre il=i:i
+MPLAYER_OPTS
+    (user-defined)
+
+YUVDENOISE
+    ''
+    yuvdenoise |
+ADJUST_FPS
+    ''
+    yuvfps -s $FORCE_FPSRATIO -r $TGT_FPSRATIO $VERBOSE |
+    yuvfps -r $TGT_FPSRATIO $VERBOSE |
+
+
+mpeg2enc
+DISC_SIZE
+    ''
+    '4500'
+    '700'
+    (user-defined)
+
+NONVIDEO_BITRATE
+MTHREAD
+
+MPEG2_FMT
++   !vcd: -b $VID_BITRATE
+
+MPEG2_QUALITY
+    vcd: -4 2 -2 1 -H
+    other: -4 2 -2 1 -q $QUANT -H
+
+
+mencoder command-lines to build upon:
+
+For DVD:
+
+mencoder -oac lavc -ovc lavc -of mpeg -mpegopts format=dvd -vf hqdn3d,crop=624:464:8:8,pp=lb,scale=704:480,harddup -srate 48000 -af lavcresample=48000,equalizer=11:11:10:8:8:8:8:10:10:12 -lavcopts vcodec=mpeg2video:vrc_buf_size=1835:vrc_maxrate=9800:vbitrate=5000:keyint=18:acodec=ac3:abitrate=192:aspect=4/3 -ofps 30000/1001 -o Bill_Linda-DVD.mpg bill.mjpeg
+
+For SVCD:
+
+mencoder 100_0233.MOV  -oac lavc -ovc lavc -of mpeg -mpegopts format=xsvcd  -vf   scale=480:480,harddup -noskip -mc 0 -srate 44100 -af lavcresample=44100 -lavcopts   vcodec=mpeg2video:mbd=2:keyint=18:vrc_buf_size=917:vrc_minrate=600:vbitrate=2500:vrc_maxrate=2500:acodec=mp2:abitrate=224 -ofps 30000/1001   -o movie.mpg
+
+
+"""

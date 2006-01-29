@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-3.7.dtd">
 <!-- Project file for project tovid -->
-<!-- Saved: 2006-01-25, 19:27:32 -->
+<!-- Saved: 2006-01-28, 16:55:59 -->
 <!-- Copyright (C) 2006 ,  -->
 <Project version="3.7">
-  <ProgLanguage mixed="0">Python</ProgLanguage>
-  <UIType>Qt</UIType>
-  <Description>TODO: Write a proper unit test</Description>
+  <ProgLanguage mixed="1">Python</ProgLanguage>
+  <UIType>Console</UIType>
+  <Description>Suite for authoring (S)VCDs and DVDs</Description>
+  <Version>0.25</Version>
   <Author></Author>
   <Email></Email>
   <Sources>
@@ -40,25 +41,7 @@
       <Dir>build</Dir>
       <Dir>lib</Dir>
       <Dir>libtovid</Dir>
-      <Name>disc.py</Name>
-    </Source>
-    <Source>
-      <Dir>build</Dir>
-      <Dir>lib</Dir>
-      <Dir>libtovid</Dir>
       <Name>TDL.py</Name>
-    </Source>
-    <Source>
-      <Dir>build</Dir>
-      <Dir>lib</Dir>
-      <Dir>libtovid</Dir>
-      <Name>makexml.py</Name>
-    </Source>
-    <Source>
-      <Dir>build</Dir>
-      <Dir>lib</Dir>
-      <Dir>libtovid</Dir>
-      <Name>menu.py</Name>
     </Source>
     <Source>
       <Dir>build</Dir>
@@ -95,18 +78,6 @@
       <Dir>lib</Dir>
       <Dir>libtovid</Dir>
       <Name>Parser.py</Name>
-    </Source>
-    <Source>
-      <Dir>build</Dir>
-      <Dir>lib</Dir>
-      <Dir>libtovid</Dir>
-      <Name>tools.py</Name>
-    </Source>
-    <Source>
-      <Dir>build</Dir>
-      <Dir>lib</Dir>
-      <Dir>libtovid</Dir>
-      <Name>Target.py</Name>
     </Source>
     <Source>
       <Dir>build</Dir>
@@ -115,12 +86,6 @@
       <Name>__init__.py</Name>
     </Source>
     <Source>
-      <Dir>build</Dir>
-      <Dir>lib</Dir>
-      <Dir>libtovid</Dir>
-      <Name>video.py</Name>
-    </Source>
-    <Source>
       <Dir>libtovid</Dir>
       <Name>TDL.py</Name>
     </Source>
@@ -143,10 +108,6 @@
     <Source>
       <Dir>libtovid</Dir>
       <Name>Menu.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
-      <Name>Parser.py</Name>
     </Source>
     <Source>
       <Dir>libtovid</Dir>
