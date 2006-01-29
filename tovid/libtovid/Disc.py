@@ -6,8 +6,26 @@
 # TODO: Exception handling
 
 import string, sys
-from libtovid import Project
+import libtovid
+from libtovid.Option import OptionDef
 
+# Disc TDL element definition
+# Options pertaining to high-level disc structure
+optiondefs = { 
+    'format':
+        OptionDef('format', 'vcd|svcd|dvd', 'dvd',
+        """Create a disc of the specified format."""),
+    'tvsys':
+        OptionDef('tvsys', 'pal|ntsc', 'ntsc',
+        """Make the disc for the specified TV system."""),
+    'topmenu':
+        OptionDef('topmenu', 'MENUNAME', None,
+        """Use MENUNAME for the top-level menu on the disc."""),
+    'out':
+        OptionDef('out', 'FILE', None,
+        """Filename to write disc navigational structure to.""")
+
+}
 
 def generate(disc):
     """Write dvdauthor or vcdimager XML for the given Disc element, to
@@ -130,6 +148,7 @@ def dvd_video_xml(video):
 
 # ===========================================================
 # Self-test; executed when this script is run standalone
+"""
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print "Please supply the name of a .tdl file."
@@ -139,3 +158,4 @@ if __name__ == '__main__':
     proj.load_file(sys.argv[1])
 
     write_dvdauthor_xml(proj)
+"""
