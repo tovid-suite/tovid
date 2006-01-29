@@ -3,8 +3,9 @@
 # Menu generator module
 
 import string, sys, os, glob
-from libtovid import Project
-from Globals import degunk
+import libtovid
+from libtovid.Option import OptionDef
+from libtovid.Globals import degunk
 
 """Generate Menu elements for a tovid project."""
 
@@ -42,6 +43,49 @@ Desired end result:
         - For applying effects and visual widgets to a video
         - For adding customized subtitle streams
 """
+
+# Menu TDL element definition
+# Options pertaining to generating a video disc menu
+optiondefs = {
+    'format': OptionDef('format', 'vcd|svcd|dvd', 'dvd',
+        """Generate a menu compliant with the specified disc format"""),
+    'tvsys': OptionDef('tvsys', 'pal|ntsc', 'ntsc',
+        """Make the menu for the specified TV system"""),
+    'linksto': OptionDef('linksto', '"TITLE" [, "TITLE"]', [],
+        """Comma-separated list of quoted titles; these are the
+        titles that will be displayed (and linked) from the menu."""),
+    'background': OptionDef('background', 'IMAGE', None,
+        """Use IMAGE (in most any graphic format) as a background."""),
+    'audio': OptionDef('audio', 'AUDIOFILE', None,
+        """Use AUDIOFILE for background music while the menu plays."""),
+    'font':
+        OptionDef('font', 'FONTNAME', 'Helvetica',
+        """Use FONTNAME for the menu text."""),
+    'fontsize':
+        OptionDef('fontsize', 'NUM', '24',
+        """Use a font size of NUM pixels."""),
+    'alignment':
+        OptionDef('alignment', 'left|center|right', 'left'),
+    'textcolor':
+        OptionDef('textcolor', '#RRGGBB|#RGB|COLORNAME', 'white'),
+    'highlightcolor':
+        OptionDef('highlightcolor', '#RRGGBB|#RGB|COLORNAME', 'red'),
+    'selectcolor':
+        OptionDef('selectcolor', '#RRGGBB|#RGB|COLORNAME', 'green'),
+    'out':
+        OptionDef('out', 'FILE', None),
+    # Thumbnail menus and effects
+    'choices':
+        OptionDef('choices', '[list|thumbnails]', 'list',
+            """Display links as a list of titles, or as a grid
+            of labeled thumbnail videos."""),
+    'border':
+        OptionDef('border', 'NUM', '0',
+            """Add a border of NUM pixels around thumbnails."""),
+    'effects':
+        OptionDef('effects', 'shadow|round|glass [, ...]', [],
+            """Add the listed effects to the thumbnails.""")
+}
 
 
 def generate(menu):
