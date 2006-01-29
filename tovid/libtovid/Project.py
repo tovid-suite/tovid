@@ -7,7 +7,7 @@
 # TODO: Exception handling
 
 import sys
-import Parser
+from TDL import Parser
 
 # ===========================================================
 class Project:

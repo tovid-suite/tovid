@@ -2,6 +2,8 @@
 
 __all__ = [ "Parser",
             "Project",
+            "Option",
+            "Globals",
             "Disc",
             "Menu",
             "Video",

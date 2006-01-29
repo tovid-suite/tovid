@@ -2,9 +2,11 @@
 
 # ===========================================================
 # TDL
+# TODO: Finish restructuring
 
 import copy
-from Globals import strip_indentation
+from libtovid import Disc, Menu, Video
+from libtovid.Option import OptionDef
 
 
 # ===========================================================
@@ -30,12 +32,12 @@ following.
 
 First, tell python where to find this module:
 
-    >>> import libtovid.TDL
+    >>> from libtovid import TDL
     >>>
 
 The first thing of interest is what elements are available in TDL:
 
-    >>> for elem in TDL.elements:
+    >>> for elem in TDL.element_defs:
     ...     print elem
     ...
     Menu
@@ -46,7 +48,7 @@ The first thing of interest is what elements are available in TDL:
 You can see that TDL has three different kinds of element: Menu, Disc, and
 Video. What options are available for a Menu element?
 
-    >>> for option in TDL.element_options['Menu']:
+    >>> for option in TDL.element_defs['Menu']:
     ...     print option
     ...
     highlightcolor
@@ -64,14 +66,14 @@ Video. What options are available for a Menu element?
 
 Say you want to know the purpose of the Menu 'background' option:
 
-    >>> print TDL.element_options['Menu']['background'].doc
+    >>> print TDL.element_defs['Menu']['background'].doc
     Use IMAGE (in most any graphic format) as a background.
     >>>
 
 You can also display full usage notes for an option, by using the
 usage_string() function:
 
-    >>> print TDL.element_options['Menu']['background'].usage_string()
+    >>> print TDL.element_defs['Menu']['background'].usage_string()
     -background IMAGE (default None)
         Use IMAGE (in most any graphic format) as a background.
     >>>
@@ -125,54 +127,18 @@ And you would like to change the background:
     >>> menu.set('background', "/pub/images/foo.jpg")
     >>>
 
+These values may then later be retrieved, by doing:
 
+    >>> font = menu.get('font')
+    >>> font
+    'Times'
+    >>>
+
+Elements basically serve as a container for a bunch of
+info related to a disc, menu, or video.
 """
 
 
-# ===========================================================
-class OptionDef:
-    """An option, its default value, and notes on usage and purpose.
-    
-    For example:
-        
-        opt = OptionDef(
-            'debug',
-            'none|some|all',
-            'some',
-            "Amount of debugging information to display"
-           )
-
-    This defines a 'debug' option, along with a human-readable string showing
-    expected argument formatting, a default value, and a string documenting the
-    purpose of the 'debug' option."""
-
-    def __init__(self, name, argformat, default, doc = "Undocumented option"):
-        """Create a new option definition with the given attributes."""
-        self.name = name
-        self.argformat = argformat
-        self.default = default
-        self.doc = strip_indentation(doc)
-
-        
-    def num_args(self):
-        """Return the number of arguments expected by this option, or -1 if
-        unlimited."""
-        if self.default.__class__ == bool:
-            # Boolean: no argument
-            return 0
-        elif self.default.__class__ == list:
-            # List: unlimited arguments
-            return -1
-        else:
-            # Unary: one argument
-            return 1
-
-    def usage_string(self):
-        """Return a string containing "usage notes" for this option."""
-        usage = "-%s %s (default %s)\n" % \
-                (self.name, self.argformat, self.default)
-        usage += "    %s\n" % self.doc
-        return usage
 
 
 
@@ -182,178 +148,18 @@ class OptionDef:
 # TODO: Expand to include all currently-supported tovid suite
 # options, where feasible. Document all options.
 
-element_options = {
-# Disc element definition
-# Options pertaining to high-level disc structure
-    'Disc': { 
-        'format':
-            OptionDef('format', 'vcd|svcd|dvd', 'dvd',
-            """Create a disc of the specified format."""),
-        'tvsys':
-            OptionDef('tvsys', 'pal|ntsc', 'ntsc',
-            """Make the disc for the specified TV system."""),
-        'topmenu':
-            OptionDef('topmenu', 'MENUNAME', None,
-            """Use MENUNAME for the top-level menu on the disc."""),
-        'out':
-            OptionDef('out', 'FILE', None,
-            """Filename to write disc navigational structure to.""")
-
-    },
-
-    # Menu element definition
-    # Options pertaining to generating a video disc menu
-    'Menu': {
-        'format': OptionDef('format', 'vcd|svcd|dvd', 'dvd',
-            """Generate a menu compliant with the specified disc format"""),
-        'tvsys': OptionDef('tvsys', 'pal|ntsc', 'ntsc',
-            """Make the menu for the specified TV system"""),
-        'linksto': OptionDef('linksto', '"TITLE" [, "TITLE"]', [],
-            """Comma-separated list of quoted titles; these are the
-            titles that will be displayed (and linked) from the menu."""),
-        'background': OptionDef('background', 'IMAGE', None,
-            """Use IMAGE (in most any graphic format) as a background."""),
-        'audio': OptionDef('audio', 'AUDIOFILE', None,
-            """Use AUDIOFILE for background music while the menu plays."""),
-        'font':
-            OptionDef('font', 'FONTNAME', 'Helvetica',
-            """Use FONTNAME for the menu text."""),
-        'fontsize':
-            OptionDef('fontsize', 'NUM', '24',
-            """Use a font size of NUM pixels."""),
-        'alignment':
-            OptionDef('alignment', 'left|center|right', 'left'),
-        'textcolor':
-            OptionDef('textcolor', '#RRGGBB|#RGB|COLORNAME', 'white'),
-        'highlightcolor':
-            OptionDef('highlightcolor', '#RRGGBB|#RGB|COLORNAME', 'red'),
-        'selectcolor':
-            OptionDef('selectcolor', '#RRGGBB|#RGB|COLORNAME', 'green'),
-        'out':
-            OptionDef('out', 'FILE', None),
-        # Thumbnail menus and effects
-        'choices':
-            OptionDef('choices', '[list|thumbnails]', 'list',
-                """Display links as a list of titles, or as a grid
-                of labeled thumbnail videos."""),
-        'border':
-            OptionDef('border', 'NUM', '0',
-                """Add a border of NUM pixels around thumbnails."""),
-        'effects':
-            OptionDef('effects', 'shadow|round|glass [, ...]', [],
-                """Add the listed effects to the thumbnails.""")
-    },
-
-    # Video element definition
-    # Options pertaining to video format and postprocessing
-    'Video': {
-        # New options to (eventually) replace -vcd, -pal etc.
-        'format':
-            OptionDef('format', 'vcd|svcd|dvd|half-dvd|dvd-vcd', 'dvd',
-            """Make video compliant with the specified format"""),
-
-        'tvsys':
-            OptionDef('tvsys', 'ntsc|pal', 'ntsc',
-            """Make the video compliant with the specified TV system"""),
-
-        # Deprecated options. Need to find a way to
-        # mark options as deprecated, so the parser can
-        # warn the user.
-        'vcd':
-            OptionDef('vcd', '', False),
-        'svcd':
-            OptionDef('svcd', '', False),
-        'dvd':
-            OptionDef('dvd', '', False),
-        'half-dvd':
-            OptionDef('half-dvd', '', False),
-        'dvd-vcd':
-            OptionDef('dvd-vcd', '', False),
-        'ntsc':
-            OptionDef('ntsc', '', False),
-        'ntscfilm':
-            OptionDef('ntscfilm', '', False),
-        'pal':
-            OptionDef('pal', '', False),
-
-        # Other options
-        'in':           OptionDef('in', 'FILENAME', None),
-        'out':          OptionDef('out', 'FILENAME', None),
-
-        'aspect':       OptionDef('aspect', 'WIDTH:HEIGHT', "4:3",
-            """Force the input video to be the given aspect ratio, where WIDTH
-            and HEIGHT are integers."""),
-
-        'quality':      OptionDef('quality', '[1-9]', 8,
-            """Desired output quality, on a scale of 1 to 10, with 10 giving
-            the best quality at the expense of a larger output file. Output
-            size can vary by approximately a factor of 4 (that is, -quality 1
-            output can be 25% the size of -quality 10 output). Your results may
-            vary."""),
-        
-        'vbitrate':     OptionDef('vbitrate', '[0-9800]', 6000,
-            """Maximum bitrate to use for video (in kbits/sec). Must be within
-            allowable limits for the given format. Overrides default values.
-            Ignored for VCD."""),
-
-        'abitrate':     OptionDef('abitrate', '[0-1536]', 224,
-            """Encode audio at NUM kilobits per second.  Reasonable values
-            include 128, 224, and 384. The default is 224 kbits/sec, good
-            enough for most encodings. The value must be within the allowable
-            range for the chosen disc format; Ignored for VCD, which must be
-            224."""),
-
-        'safe':         OptionDef('safe', '[0-100]%', "100%",
-            """Fit the video within a safe area defined by PERCENT. For
-            example, '-safe 90%' will scale the video to 90% of the
-            width/height of the output resolution, and pad the edges with a
-            black border. Use this if some of the picture is cut off when
-            played on your TV."""),
-
-        'interlaced':   OptionDef('interlaced', '', False,
-            """Do interlaced encoding of the input video. Use this option if
-            your video is interlaced, and you want to preserve as much picture
-            quality as possible. Ignored for VCD."""),
-
-        'deinterlace':  OptionDef('deinterlace', '', False,
-            """Use this option if your source video is interlaced. You can
-            usually tell if you can see a bunch of horizontal lines when you
-            pause the video during playback. If you have recorded a video from
-            TV or your VCR, it may be interlaced. Use this option to convert to
-            progressive (non-interlaced) video. This option is DEPRECATED, and
-            will probably be ditched in favor of interlaced encoding, which is
-            better in almost every way."""),
-
-        'subtitles':    OptionDef('subtitles', 'FILE', None,
-            """Get subtitles from FILE and encode them into the video.
-            WARNING: This hard-codes the subtitles into the video, and you
-            cannot turn them off while viewing the video. By default, no
-            subtitles are loaded. If your video is already compliant with the
-            chosen output format, it will be re-encoded to include the
-            subtitles."""),
-
-        'normalize':    OptionDef('normalize', '', False,
-            """Normalize the volume of the audio. Useful if the audio is too
-            quiet or too loud, or you want to make volume consistent for a
-            bunch of videos."""),
-        'chapters':     OptionDef('chapters', 'TIME [, TIME]', [],
-            """Put chapter breaks at the specified times (HH:MM:SS).""")
-
-    }
+element_defs = {
+    'Video': Video.optiondefs,
+    'Menu':  Menu.optiondefs,
+    'Disc':  Disc.optiondefs
 }
 
-
-# ===========================================================
-"""Convenience variable for listing available elements"""
-elements = []
-for elem in element_options:
-    elements.append(elem)
 
 
 def usage(elem):
     """Return a string containing usage notes for the given element type."""
     usage_str = ''
-    for opt, optdef in element_options[elem].iteritems():
+    for opt, optdef in element_defs[elem].iteritems():
         usage_str += optdef.usage_string() + '\n'
     return usage_str
         
@@ -379,13 +185,13 @@ class Element:
         name, filled with default values for that element type."""
         self.tag = tag
         self.name = name
-        if not element_options.has_key(tag):
+        if not element_defs.has_key(tag):
             print "TDL.Element(): unknown element '%s'" % tag
 
         else:
             # Fill a dictionary of options with their default values
             self.options = {}
-            for key, optdef in element_options[tag].iteritems():
+            for key, optdef in element_defs[tag].iteritems():
                 self.options[key] = copy.copy(optdef.default)
 
         self.parents = []
@@ -415,6 +221,193 @@ class Element:
                 tdl += "    %s %s\n" % (key, value)
         return tdl
 
+
+
+
+# ===========================================================
+class Parser:
+    """Parse a provided file, stream, or string, and return a list of TDL
+    Elements found within.
+    
+    This parser doesn't know much about TDL; it can handle any simple element-attribute
+    text language resembling the following:
+
+        ElementTag "Identifying name"
+            -option1 value
+            -option2 value
+            -listoption1 list, of, values
+            -booloption1
+            -booloption2
+    """
+
+
+    def __init__(self, interactive = False):
+        # Someday allow more interactive parsing
+        # (such as when parsing from stdin)
+        self.interactive = interactive
+
+    # TODO: Find an elegant shortcut (preferably a single function)
+    # to replace all these (mostly redundant) parse_X functions
+
+    def parse_stdin(self):
+        """Parse all text from stdin until EOF (^D)"""
+
+        # shlex uses stdin by default
+        self.lexer = shlex.shlex(posix = True)
+        return self.parse()
+
+
+    def parse_file(self, filename):
+        """Parse all text in a file"""
+
+        # Open file and create a lexer for it
+        stream = open(filename, "r")
+        self.lexer = shlex.shlex(stream, filename, posix = True)
+        # Parse, close file, and return
+        result = self.parse()
+        stream.close()
+        return result
+
+
+    def parse_string(self, str):
+        """Parse all text in a string"""
+
+        # Create a lexer for the string
+        self.lexer = shlex.shlex(str, posix = True)
+        return self.parse()
+
+
+    def parse_args(self, args):
+        """Parse all text in a list of strings such as sys.argv"""
+
+        # Create a lexer
+        self.lexer = shlex.shlex(posix = True)
+        # Push args onto the lexer (in reverse order)
+        self.lexer.push_token(None)
+        while len(args) > 0:
+            self.lexer.push_token(args.pop())
+        return self.parse()
+
+
+    # TODO: Make this function useful for turning on/off debugging
+    # or interactive output (?)
+    def next_token(self):
+        """Get the next token and print it out.
+        
+        This is a wrapper for lexer.get_token(), mainly for
+        producing debugging output. Cleanup later."""
+
+        tok = self.lexer.get_token()
+        if tok:
+            #print "Got '%s'" % tok
+            pass
+        else:
+            #print "Got EOF"
+            pass
+        return tok
+
+
+    # TODO: Modularize this function better, splitting some chunks
+    # into other (private) functions
+    def parse(self):
+        """Parse all text in self.lexer and return a
+        list of Elements filled with appropriate
+        attributes"""
+
+        # Set rules for splitting tokens
+        self.lexer.wordchars = self.lexer.wordchars + ".:-%()/"
+        self.lexer.whitespace_split = False
+
+        # Begin with an empty list of elements
+        element = None
+        self.elements = []
+
+        # Parse all input
+        while True:
+            token = self.next_token()
+
+            # Exit on EOF
+            if not token:
+                break
+
+            # If an element in the language (TDL) is found (that is,
+            # 'Disc', 'Menu', or 'Video' was encountered), get a
+            # new Element object, and add it to the list
+            elif token in element_defs:
+
+                tag = token                # e.g., "Menu"
+                name = self.next_token()   # e.g., "Music videos"
+                # Get a new element with the given type and name
+                element = self.lang.Element(tag, name)
+                #print "New element created:"
+                #print element.tdl_string()
+
+                # Add the element to the list
+                self.elements.append(element)
+
+
+            # If a valid option for the current element is found, set its value
+            # appropriately (depending on number of arguments)
+            elif element and token.lstrip('-') in element.options:
+                opt = token.lstrip('-')
+
+                # How many arguments are expected for this
+                # option? (0, 1, or unlimited)
+                expected_args = element_defs[element.tag][opt].num_args()
+                #print "%s expects %s args" % (opt, expected_args)
+
+                # No args? Must just be a flag--set it to True
+                if expected_args == 0:
+                    element.set(opt, True)
+
+                # One arg? Easy...
+                elif expected_args == 1:
+                    arg = self.next_token()
+                    # TODO: Clean up this ugly syntax...
+                    if element_defs[element.tag][opt].is_valid(arg):
+                        element.set(opt, arg)
+                    else:
+                        print "Invalid argument to -%s: %s" % (opt, arg)
+
+                # Unlimited (-1) number of args? Create a list,
+                # and look for comma-separation.
+                elif expected_args < 0:
+                    arglist = []
+
+                    next = self.next_token()
+                    # Ignore optional opening bracket
+                    if next == '[':
+                        next = self.next_token()
+
+                    # Append the first argument to the list
+                    arglist.append(next)
+
+                    # Read the next token, and keep appending
+                    # as long as there are more commas
+                    next = self.next_token()
+                    while next == ',':
+                        next = self.next_token()
+                        arglist.append(next)
+                        next = self.next_token()
+
+                    # Ignore optional closing bracket
+                    if next == ']':
+                        pass
+                    else:
+                        # Put the last-read token back
+                        self.lexer.push_token(next)
+
+                    element.set(opt, arglist)
+
+
+            else:
+                print self.lexer.error_leader()
+                print "parse(): Unrecognized token: %s" % token
+
+
+        return self.elements
+
+
     
 # ===========================================================
 #
@@ -429,9 +422,9 @@ class Element:
 # Self-test; executed when this module is run as a standalone script
 if __name__ == "__main__":
     # Print all element/option definitions
-    for elem in element_options:
+    for elem in element_defs:
         print "%s element options:" % elem
-        for key, optdef in element_options[elem].iteritems():
+        for key, optdef in element_defs[elem].iteritems():
             print optdef.usage_string()
 
     # Create one of each element and display them (to ensure that
