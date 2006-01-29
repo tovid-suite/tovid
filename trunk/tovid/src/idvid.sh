@@ -44,9 +44,12 @@ Usage: idvid [OPTIONS] <file list>
 
 OPTIONS may be any of the following:
 
-  -terse
-    Print information in a terse format suitable for
-    parsing by other scripts
+    -terse
+        Print information in a terse format suitable for parsing by other
+        scripts.
+    -verbose
+        Print extra information, including the results of identifying the video
+        with mplayer, ffmpeg, and tcprobe.
 EOF`
 
 NON_COMPLIANT=`cat << EOF
@@ -60,6 +63,7 @@ EOF`
 
 # Do not use terse output by default
 TERSE=false
+VERBOSE=false
 TMP_DIR=`mktemp -d idvid-temp.XXXXXX`
 SCRATCH_FILE="$TMP_DIR/idvid.scratch"
 STAT_DIR=$TOVID_HOME
@@ -98,22 +102,43 @@ get_info ()
         printf "%s\n" "$SCRIPT_NAME"
         echo "Gathering video information. This may take several minutes,"
         echo "so please be patient..."
-        echo $SEPARATOR
     fi
 
     # Identify video using mplayer
     if test -n "$MPLAYER"; then
-    mplayer -vo null -ao null -frames 1 -channels 6 -identify \
-        "$INFILE" > "$SCRATCH_FILE" 2>&1
+        if $VERBOSE; then
+            echo $SEPARATOR
+            echo "Identifying video with mplayer..."
+            echo $SEPARATOR
+            mplayer -vo null -ao null -frames 1 -channels 6 -identify \
+                "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
+        else
+            mplayer -vo null -ao null -frames 1 -channels 6 -identify \
+                "$INFILE" > "$SCRATCH_FILE" 2>&1
+        fi
     fi
     # Identify video using ffmpeg
     if test -n "$FFMPEG"; then
-        # ffmpeg puts its output on standard error
-        ffmpeg -i "$INFILE" >> "$SCRATCH_FILE" 2>&1
+        if $VERBOSE; then
+            echo $SEPARATOR
+            echo "Identifying video with ffmpeg..."
+            echo $SEPARATOR
+            # ffmpeg puts its output on standard error
+            ffmpeg -i "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
+        else
+            ffmpeg -i "$INFILE" >> "$SCRATCH_FILE" 2>&1
+        fi
     fi
     # Identify video using tcprobe
     if test -n "$TCPROBE"; then
-        tcprobe -i "$INFILE" >> "$SCRATCH_FILE" 2>/dev/null
+        if $VERBOSE; then
+            echo $SEPARATOR
+            echo "Identifying video with tcprobe..."
+            echo $SEPARATOR
+            tcprobe -i "$INFILE" 2>/dev/null | tee -a "$SCRATCH_FILE"
+        else
+            tcprobe -i "$INFILE" >> "$SCRATCH_FILE" 2>/dev/null
+        fi
     fi
 
     # Exit if the file couldn't be identified
@@ -234,6 +259,7 @@ idvid_main ()
         echo "V_ASPECT_WIDTH=$V_ASPECT_WIDTH"
         echo "ID_VIDEO_FRAMES=$ID_VIDEO_FRAMES"
     else
+        echo $SEPARATOR
         echo "               File: $INFILE"
         echo "              Width: $ID_VIDEO_WIDTH pixels"
         echo "             Height: $ID_VIDEO_HEIGHT pixels"
@@ -510,9 +536,14 @@ MPLAYER=`type -p mplayer`
 FFMPEG=`type -p ffmpeg`
 TCPROBE=`type -p tcprobe`
 
+if test $# -eq 0; then
+    usage_error "Please provide the name of at least one video file."
+fi
+
 while test $# -gt 0; do
     case "$1" in
         "-terse" ) TERSE=: ;;
+        "-verbose" ) VERBOSE=: ;;
         * )
             idvid_main "$1"
             ;;
