@@ -285,39 +285,39 @@ EOF`
     fi 
 
     # Generate the chapters tag
+    CMD="idvid -terse \"$1\""
+    echo "Calculating the duration of the video using the following command:"
+    echo $CMD
+    echo "This may take a few minutes, so please be patient..."
+    DURATION=`eval $CMD | grep DURATION | awk -F '=' '{print $2}'`
+    echo $DURATION | awk '{hh=int($1/3600);mm=int(($1-hh*3600)/60);ss=$1-hh*3600-mm*60;\
+        printf "The duration of the video is %02d:%02d:%02d\n",hh,mm,ss}'
+
     if ! $MAKE_CHAPTERS; then
-      CHAPTERS="0"
-    else
-      CMD="idvid -terse \"$1\""
-      echo "Calculating the duration of the video using the following command:"
-      echo $CMD
-      echo "This may take a few minutes, so please be patient..."
-      DURATION=`eval $CMD | grep DURATION | awk -F '=' '{print $2}'`
-      echo $DURATION | awk '{hh=int($1/3600);mm=int(($1-hh*3600)/60);ss=$1-hh*3600-mm*60;\
-          printf "The duration of the video is %02d:%02d:%02d\n",hh,mm,ss}'
-  
-      CHAPTERS=`echo $DURATION $CHAPTER_INTERVAL | \
-         awk '{dur=$1;\
-                  iv=$2*60;\
-                  if (iv==0){\
-                     printf "0";\
-                     exit\
-                  }\
-                  cur=0;\
-                  i=0;\
-                  while(cur<dur){\
-                     if(i>0){\
-                        printf ","\
-                     }\
-                     i++;\
-                     hh=int(cur/3600);\
-                     mm=int((cur-hh*3600)/60);\
-                     ss=cur-hh*3600-mm*60;\
-                     printf "%02d:%02d:%02d",hh,mm,ss;
-                     cur+=iv\
-                  }\
-              }'`
+      CHAPTER_INTERVAL="5"
     fi
+
+    CHAPTERS=`echo $DURATION $CHAPTER_INTERVAL | \
+       awk '{dur=$1;\
+                iv=$2*60;\
+                if (iv==0){\
+                   printf "0";\
+                   exit\
+                }\
+                cur=0;\
+                i=0;\
+                while(cur<dur){\
+                   if(i>0){\
+                      printf ","\
+                   }\
+                   i++;\
+                   hh=int(cur/3600);\
+                   mm=int((cur-hh*3600)/60);\
+                   ss=cur-hh*3600-mm*60;\
+                   printf "%02d:%02d:%02d",hh,mm,ss;
+                   cur+=iv\
+                }\
+            }'`
 
     # Generate the XML for the title itself, appending to existing titles
     if $MAKE_GROUP; then
