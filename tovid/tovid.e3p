@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-3.7.dtd">
 <!-- Project file for project tovid -->
-<!-- Saved: 2006-01-28, 16:55:59 -->
+<!-- Saved: 2006-01-29, 11:57:41 -->
 <!-- Copyright (C) 2006 ,  -->
 <Project version="3.7">
   <ProgLanguage mixed="1">Python</ProgLanguage>
@@ -13,9 +13,6 @@
   <Sources>
     <Source>
       <Name>setuplib.py</Name>
-    </Source>
-    <Source>
-      <Name>setup.py</Name>
     </Source>
     <Source>
       <Dir>src</Dir>
@@ -186,6 +183,18 @@
     <Source>
       <Dir>src</Dir>
       <Name>tovid-test.sh</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>VideoPlugins.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>Option.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>Standards.py</Name>
     </Source>
   </Sources>
   <Forms>
