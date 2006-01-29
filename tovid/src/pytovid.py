@@ -5,7 +5,8 @@
 # (to replace the 'tovid' shell script)
 
 import sys, libtovid
-from libtovid import Video, Parser
+from libtovid import Video
+from libtovid.TDL import Parser
 
 if __name__ == '__main__':
     """Create a Video element from the provided command-line options,
@@ -24,7 +25,7 @@ if __name__ == '__main__':
     print "TDL string:"
     print tdl
 
-    par = Parser.Parser()
+    par = Parser()
     elems = par.parse_string(tdl)
     print "Parsed Video element:"
     print elems[0].tdl_string()
