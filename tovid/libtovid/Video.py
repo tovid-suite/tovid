@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-
+# Video.py
 # Video generator module
 
 import sys
@@ -114,7 +114,7 @@ optiondefs = {
     'chapters':     OptionDef('chapters', 'TIME [, TIME]', [],
         """Put chapter breaks at the specified times (HH:MM:SS)."""),
         
-    'method':       OptionDef('method', 'mpeg2enc|mencoder|ffmpeg', 'mpeg2enc',
+    'method':       OptionDef('method', 'mpeg2enc|mencoder|ffmpeg', 'mencoder',
         """Encode using the given tool. The mpeg2enc method uses mplayer
         to rip the audio and video, and mpeg2enc to encode the video. The
         mencoder and ffmpeg methods do all encoding with the respective tool.""")
@@ -128,16 +128,12 @@ def generate(video):
 
     method = video.get('method')
     if method == 'mpeg2enc':
-        # TODO: Modularize backend more, so only one command (essentially)
-        # is needed here.
-        print "mplayer command:"
-        print get_mplayer_cmd(video)
-        print "mpeg2enc command:"
-        print get_mpeg2enc_cmd(video)
-        print "mplex command:"
-        print get_mplex_cmd(video)
+        encoder = Mpeg2encEncoder(video)
     elif method == 'mencoder':
-        print get_mencoder_cmd(video)
+        encoder = MencoderEncoder(video)
+    elif method == 'ffmpeg':
+        print "The ffmpeg encoding method is not yet implemented."
+        sys.exit()
     else:
         print "Error: encoding method '%s' is not yet supported by the backend" % method
         print "Perhaps you'd like to write a backend for it? :-)"
