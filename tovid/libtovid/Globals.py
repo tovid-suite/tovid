@@ -1,8 +1,6 @@
 #! /usr/bin/env python
-
-# ===========================================================
-# tovid suite-wide constants
-# ===========================================================
+# Globals.py
+# Miscellaneous helper functions that don't have a good home yet
 
 import re, string
 
@@ -43,3 +41,20 @@ def strip_indentation(block):
     # Rejoin and return the block
     return '\n'.join(lines) + '\n'
 
+def ratio_to_float(ratio):
+    """Convert a string expressing a numeric ratio, with X and Y parts
+    separated by a colon ':', into a floating-point value.
+    
+    For example:
+        
+        >>> ratio_to_float('4:3')
+        1.33333
+        >>>
+    """
+    values = ratio.split(':', 1)
+    if len(values) == 2:
+        return float(values[0]) / float(values[1])
+    elif len(values) == 1:
+        return float(values[0])
+    else:
+        return 1.0
