@@ -207,16 +207,20 @@ if [[ -f $DISC_LABEL.iso && -s $DISC_LABEL.iso ]]; then
     fi
 fi
 
+# Extract a valid volume ID
+VOLID=`echo "$DISC_LABEL" | tr a-z A-Z`
+# Make sure we have a valid VOLID at this point...can't be too long
+VALID_VOLID=`echo $VOLID | awk '{ print substr($0, 0, 32) }'`
+if [ $VOLID != $VALID_VOLID ]; then
+    echo "Disk label is too long. Truncating to $VALID_VOLID"
+    VOLID=$VALID_VOLID
+else
+    echo "Using disk label \"$VOLID\""
+fi
+
 if $DO_IMAGE; then
     # Create ISO image
-    VOLID=`echo "$DISC_LABEL" | tr a-z A-Z`
-    # Make sure we have a valid VOLID at this point...can't be too long
-    VALID_VOLID=`echo $VOLID | awk '{ print substr($0, 0, 32) }'`
-    if [ $VOLID != $VALID_VOLID ]; then
-        echo "Disk Label is too long. Truncating to $VALID_VOLID"
-        VOLID=$VALID_VOLID
-    fi
-    ISO_CMD="mkisofs -dvd-video -V $VOLID -o $DISC_LABEL.iso $OUT_DIR"
+    ISO_CMD="mkisofs -dvd-video -V \"$VOLID\" -o \"$DISC_LABEL.iso\" $OUT_DIR"
     echo $SEPARATOR
     echo "Creating DVD filesystem ISO image with the following command:"
     echo $ISO_CMD
@@ -236,9 +240,17 @@ fi
     
 # Burn the disc, if requested
 if $DO_BURN; then
-    BURN_CMD="growisofs -dvd-compat -speed=$BURN_SPEED -Z $DVDRW_DEVICE=$DISC_LABEL.iso"
+    # If an image was created, burn that
+    if $DO_IMAGE; then
+       BURN_CMD="growisofs -dry-run -dvd-compat -speed=$BURN_SPEED -Z $DVDRW_DEVICE=\"$DISC_LABEL.iso\""
+       BURN_METHOD="ISO to DVD"
+    # or burn from the DVD directory
+    else
+       BURN_CMD="growisofs -dry-run -dvd-compat -speed=$BURN_SPEED -Z $DVDRW_DEVICE -dvd-video -V \"$VOLID\" $OUT_DIR"
+       BURN_METHOD="DVD directly"
+    fi
     echo $SEPARATOR
-    echo "Burning ISO to DVD with the following command:"
+    echo "Burning $BURN_METHOD with the following command:"
     echo $BURN_CMD
     echo $SEPARATOR
     SUCCESS=false
@@ -258,5 +270,3 @@ fi
 echo "Thanks for using makedvd!"
 
 exit 0
-
-
