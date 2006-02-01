@@ -69,6 +69,61 @@ TOVID_FORUMS="http://www.createphpbb.com/tovid/"
 
 
 # ******************************************************************************
+# Verify that a variable meets certain conditions
+# Usage: verify $VAR set|range "test limits"
+# Input: $1 = the variable to check
+#        $2 = the kind of test to perform (set|range)
+#             set: test if $VAR is in the space-separated set "test limits"
+#             range: test if $VAR is in the range given by "test limits"
+#        $3 = the limits for the test
+#
+# ex: verify $CMD_LN_OPT set "y n Y N"
+#     will return ":" (true) if $CMD_LN_OPT is one of "y n Y N"
+#     or retern "false" if it isn't (so if $CMD_LN_OPT was "no", you'd get "false")
+#
+# ex: verify $CMD_LN_OPT range "0 10"
+#     will return ":" (true) if 0 <= $CMD_LN_OPT <= 10
+# ******************************************************************************
+verify ()
+{
+  VERIFY_VAR=$1
+  VERIFY_TEST_TYPE=$2
+  case $VERIFY_TEST_TYPE in
+     "range" )
+     VERIFY_LOW=`echo "$3" | awk '{ print $1 }'`
+     VERIFY_HIGH=`echo "$3" | awk '{ print $2 }'`
+
+     if test $VERIFY_LOW -le $VERIFY_VAR && \
+        test $VERIFY_HIGH -ge $VERIFY_VAR
+     then
+        echo ":"
+     else
+        echo "false"
+     fi 
+     ;;
+
+     "set" )
+     VERIFY_SET="$3"
+
+     if echo "$VERIFY_SET" | grep "$VERIFY_VAR" >> /dev/null 2>&1; then
+         echo ":"
+     else
+         echo "false"
+     fi
+     ;;
+  esac
+}
+
+# ******************************************************************************
+# Print a pretty (wrapped) notice message.
+# Args: $@ == text string containing the message 
+# ******************************************************************************
+precho()
+{
+  echo -e "$@" | fold -s -w ${COLUMNS:-80}
+}
+
+# ******************************************************************************
 # Print error message, then exit.
 # Args: $@ == text string containing error message 
 # ******************************************************************************
