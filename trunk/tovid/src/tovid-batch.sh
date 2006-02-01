@@ -41,14 +41,12 @@ EOF`
 USAGE=`cat << 'EOF'
 Usage: tovid-batch [OPTIONS] -infiles <input files>
 
-OPTIONS may be any options that tovid accepts. Run 'tovid'
-without any options to see what it expects.
+OPTIONS may be any options that tovid accepts. See 'man tovid'.
 
-You can provide any number of input files; the output
-files will be named INPUT_FILENAME.tovid_encoded.mpg
+You can provide any number of input files; the output files will be named INPUT_FILENAME.tovid_encoded.mpg
 EOF`
 
-SEPARATOR="========================================================="
+SEPARATOR="=============================================================================="
 
 # No tovid arguments to start with
 TOVID_ARGS=""
@@ -57,7 +55,7 @@ TOVID_ARGS=""
 # EXECUTION BEGINS HERE
 # ***********************************
 
-printf "%s\n" "$SCRIPT_NAME"
+precho "$SCRIPT_NAME"
 
 # Get all arguments up to -infiles
 while test $# -gt 0; do
@@ -74,15 +72,22 @@ done
 
 # If no infiles, print usage notes
 if test $# -le 0; then
-    printf "%s\n" "$USAGE"
-    printf "%s\n" "$SEPARATOR"
+    precho "$USAGE"
+    echo "$SEPARATOR"
     echo "Please provide a list of files to encode using -infiles"
     exit 1
 fi
 
 # For every input filename provided, run tovid with the given options
 for FILE in "$@"; do
-    TOVID_CMD="tovid $TOVID_ARGS -in \"$FILE\" -out \"$FILE.tovid_encoded\""
-    echo $TOVID_CMD
-    eval $TOVID_CMD
+    echo $SEPARATOR
+    if test -e "$FILE"; then
+       EXT=`echo "$FILE" | awk -F '.' '{ print $NF }'`
+       FILENAME=`basename "$FILE" ."$EXT"`
+       TOVID_CMD="tovid $TOVID_ARGS -in \"$FILE\" -out \"$FILENAME.tovid_encoded\""
+       precho $TOVID_CMD
+       eval $TOVID_CMD
+    else
+       echo "Couldn't find file \"$FILE\", not encoding it."
+    fi
 done
