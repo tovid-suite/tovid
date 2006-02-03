@@ -4,7 +4,6 @@
 
 import sys
 from libtovid.Option import OptionDef
-from libtovid.VideoPlugins import *
 
 # TODO: Eliminate some of the redundancy of this module; integrate related
 # encoding/muxing functions into a class or other container, with the aim
@@ -121,6 +120,8 @@ optiondefs = {
 
 }
 
+
+from libtovid.VideoPlugins import *
     
 def generate(video):
     """Generate a video element by encoding an input file to a target
@@ -139,8 +140,8 @@ def generate(video):
         print "Perhaps you'd like to write a backend for it? :-)"
         sys.exit()
     
-    # TODO: Execute each command, with proper stream redirection and
-    # other nonsense required for correct logging
+    print "generate(): Encoding with the %s plugin..." % encoder.__class__
+    encoder.run()
 
 
 

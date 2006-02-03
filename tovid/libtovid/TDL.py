@@ -134,8 +134,9 @@ These values may then later be retrieved, by doing:
     'Times'
     >>>
 
-Elements basically serve as a container for a bunch of
-info related to a disc, menu, or video.
+Elements basically serve as a container for a bunch of info related to a disc,
+menu, or video. You might also think of them as templates, defining a
+customizable framework, with self-contained documentation.
 """
 
 

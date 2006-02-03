@@ -21,7 +21,7 @@ class Project:
     def load_file(self, filename):
         """Load project data from the given TDL file."""
         self.elemdict = {}
-        p = Parser.Parser()
+        p = Parser()
         # Index elemdict by element name for easy access
         for element in p.parse_file(filename):
             self.elemdict[element.name] = element
