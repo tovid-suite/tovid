@@ -19,18 +19,30 @@ class EncoderPlugin:
         self.aspect = self.video.get('aspect')
         self.filters = self.video.get('filters')
         self.resolution = Standards.get_resolution(self.format, self.tvsys)
+        # List of commands to be executed
+        self.commands = []
 
+    def run(self):
+        """Execute all queued commands, with proper stream redirection and
+        verbosity level. Subclasses should override this function if they need
+        different runtime behavior."""
+        for cmd in self.commands:
+            # TODO: Proper stream redirection and verbosity level
+            print "EncoderPlugin: Running the following command:"
+            print cmd
+            # TODO: Catch failed execution
+            for line in os.popen(cmd, 'r').readlines():
+                print line
 
 
 class Mpeg2encEncoder (EncoderPlugin):
     def __init__(self, video):
+        """Create an mplayer/mpeg2enc/mplex encoder for the given video."""
         EncoderPlugin.__init__(self, video)
-        print "mplayer command:"
-        print self.get_mplayer_cmd()
-        print "mpeg2enc command:"
-        print self.get_mpeg2enc_cmd()
-        print "mplex command:"
-        print self.get_mplex_cmd()
+        # Add appropriate commands to list
+        self.commands.append(self.get_mplayer_cmd())
+        self.commands.append(self.get_mpeg2enc_cmd())
+        self.commands.append(self.get_mplex_cmd())
         
     def get_mplayer_cmd(self):
         """Get mplayer command-line for making a video compliant with the given
@@ -118,12 +130,9 @@ class Mpeg2encEncoder (EncoderPlugin):
 
 class MencoderEncoder (EncoderPlugin):
     def __init__(self, video):
+        """Create an mencoder encoder for the given video."""
         EncoderPlugin.__init__(self, video)
-        cmd = self.get_mencoder_cmd()
-        print "The following mencoder command will be run:"
-        print cmd
-        for line in os.popen(cmd, 'r').readlines():
-            print line
+        self.commands.append(self.get_mencoder_cmd())
         
     def get_mencoder_cmd(self):
         """Get mencoder command-line suitable for encoding the given video to
@@ -211,10 +220,10 @@ class MencoderEncoder (EncoderPlugin):
         # Audio settings
         # The following cause segfaults on mencoder 1.0pre7try2-3.3.6 (Gentoo)
         # Could it be that -mpegopts format=[dvd|xvcd|xsvcd] is adequate?
-        # if 'dvd' in format:
-            # cmd += ' -srate 48000 -af lavcresample=48000 '
-        # else:
-            # cmd += ' -srate 41000 -af lavcresample=41000 '
+        if 'dvd' in self.format:
+            cmd += ' -srate 48000 -af lavcresample=48000 '
+        else:
+            cmd += ' -srate 44100 -af lavcresample=44100 '
     
         return cmd
 
