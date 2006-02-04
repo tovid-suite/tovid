@@ -105,7 +105,7 @@ verify ()
      "set" )
      VERIFY_SET="$3"
 
-     if echo "$VERIFY_SET" | grep "$VERIFY_VAR" >> /dev/null 2>&1; then
+     if echo "$VERIFY_SET" | grep -w "$VERIFY_VAR" >> /dev/null 2>&1; then
          echo ":"
      else
          echo "false"
