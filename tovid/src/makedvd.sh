@@ -88,7 +88,8 @@ DO_IMAGE=false
 # Burn the image to disc?
 DO_BURN=false
 
-DVDRW_DEVICE="/dev/dvd"
+# Guess for the device
+DVDRW_DEVICE="/dev/`ls /dev | grep dvdrw | sed s/@//g`"
 BURN_SPEED=1
 OUT_DIR="makedvd_out"
 DISC_LABEL=""
@@ -198,7 +199,11 @@ if [[ -d $OUT_DIR ]]; then
         echo "Skipping authoring; to force, use the -author option."
         echo $SEPARATOR
     fi
-# Target doesn't exist; need to author
+
+# If there's an image already, user probably wants to burn it. Don't need to author.
+elif test -f $DISC_LABEL.iso && test -s $DISC_LABEL.iso; then :
+
+# Target and iso image don't exist; need to author
 else
     DO_AUTHOR=:
 fi
@@ -299,7 +304,7 @@ if $DO_BURN; then
     # DVD-RW need explicit blanking, DVD+RW blanking is done by growisofs automatically
     if test "x$DISC_TYPE" = "xDVD-RW" && test "x$DISC_STATUS" = "xcomplete"; then 
       echo "Found $DISC_STATUS $DISC_TYPE in $DVDRW_DEVICE. Blanking..."
-      echo "dvd+rw-format -blank $DVDRW_DEVICE"
+      dvd+rw-format -blank $DVDRW_DEVICE
     fi
 
     # If an image was created, burn that
