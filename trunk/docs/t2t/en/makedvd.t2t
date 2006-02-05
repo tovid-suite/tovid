@@ -34,17 +34,20 @@ due to intense disk activity.
 ==Features==
 - Configurable burn device and burn speed
 - Create an image only, or burn an existing image
+- Burn directly without creating an image (saves hard disk space)
 
 
 ==Options==
 
 ```
 -author
-    Overwrite an existing directory containing the dvdauthor output
+    Overwrite an existing directory containing the dvdauthor output.
 -image
-    Overwrite an existing ISO file
+    Overwrite an existing ISO file.
 -burn
-    Burn the disc after creating the ISO file
+    Burn the disc. If **-image** is specified, an image will be
+    made first, and then the dvd burned from that. If not given, 
+    the dvd wlll be burned directly from the authored filesystem.
 -device DEVFS_NAME (default /dev/dvd)
     Burn the disc image to DEVICE, the Linux device filesystem
     name of your DVD-recorder. Common examples might be /dev/dvdrw,
@@ -61,7 +64,29 @@ due to intense disk activity.
 ```
 
 
+==Examples==
+: makedvd -burn -device /dev/dvdrw foo.xml
+    Author the dvd filesystem and burn to /dev/dvdrw. makedvd will
+    automatically call dvdauthor to make the filesystem. **-author**
+    is not explicitly needed. If there's an existing filesystem, it
+    will be burned.
+
+: makedvd -author foo.xml
+    Author the dvd filesystem and exit without burning. If the output
+    directory given in foo.xml already exists, then the contents are
+    removed before authoring. At this point, the DVD can be previewed
+    by calling //xine dvd:/path/to/output/directory//.
+
+: makedvd -image foo.xml
+    Create an image. makedvd will automatically call dvdauthor to make
+    the filesystem. **-author** is not explicitly needed. If there's 
+    an existing filesystem, it will be imaged with that.
+
+: makedvd -author -image foo.xml
+    Author the dvd filesystem and make an .iso image. Any existing 
+    filesystems or iso image files will be overwritten.
+
+
 ==Contact==
 For further assistance, contact information, forum and IRC links,
 please refer to the [tovid homepage http://tovid.org/].
-
