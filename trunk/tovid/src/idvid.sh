@@ -170,7 +170,8 @@ get_info ()
 
     # Source mplayer's output to set relevant variables
     # (ID_V(ideo), ID_A(udio), and ID_L(ength))
-    eval `cat "$SCRATCH_FILE" | grep "^ID_[VAL]"`
+    # Grep out special characters ()[
+    eval `cat "$SCRATCH_FILE" | grep "^ID_[VAL]" | grep -v "[()\[]"`
     
     ID_VIDEO_FRAMES=`grep 'length:' "$SCRATCH_FILE" | \
         awk -F ' ' '{print $2}'`
@@ -487,10 +488,8 @@ idvid_main ()
         # Print out what discs this video can be burned to
         # PAL
         if test x"$V_TV" = x"PAL"; then
-            if test -n "$A_VCD1" || test -n "$A_VCD2"; then
-                if test -n "$V_VCD"; then
-                    echo "You can burn this video to PAL VCD"
-                fi
+            if test -n "$A_VCD1" || test -n "$A_VCD2" && test -n "$V_VCD"; then
+                echo "You can burn this video to PAL VCD"
             elif test -n "$A_SVCD" && test -n "$V_SVCD"; then
                 echo "You can burn this video to PAL SVCD"
             elif test -n "$A_DVD" && test -n "$V_DVD"; then
@@ -500,10 +499,8 @@ idvid_main ()
             fi
         # NTSC
         elif test x"$V_TV" = x"NTSC"; then
-            if test -n "$A_VCD1" || test -n "$A_VCD2"; then
-                if test -n "$V_VCD"; then
-                    echo "You can burn this video to NTSC VCD"
-                fi
+            if test -n "$A_VCD1" || test -n "$A_VCD2" && test -n "$V_VCD"; then
+                echo "You can burn this video to NTSC VCD"
             elif test -n "$A_SVCD" && test -n "$V_SVCD"; then
                 echo "You can burn this video to NTSC SVCD"
             elif test -n "$A_DVD" && test -n "$V_DVD"; then
