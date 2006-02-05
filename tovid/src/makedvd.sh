@@ -163,20 +163,20 @@ else
     echo "Authoring disc from file: $DVDAUTHOR_XML"
 fi
 
-# Remind user to insert a DVD
+# Remind user to insert a DVD, check for DVD device
 if $DO_BURN; then
     echo "Please insert a blank DVD+/-R(W) disc into your DVD-recorder"
     echo "($DVDRW_DEVICE) if you have not already done so."
-fi
 
-# Sanity check: Make sure given device is valid (somehow)
-# before creating the image. Give option to proceed anyway?
-# (i.e., could there be any point to proceeding?)
-# Here's a simple way: just quit
-if test -b $DVDRW_DEVICE; then :
-else
-  echo "Couldn't find $DVDRW_DEVICE! Stopping here."
-  exit 1
+    # Sanity check: Make sure given device is valid (somehow)
+    # before creating the image. Give option to proceed anyway?
+    # (i.e., could there be any point to proceeding?)
+    # Here's a simple way: just quit
+    if test -b $DVDRW_DEVICE; then :
+    else
+      echo "Couldn't find $DVDRW_DEVICE! Stopping here."
+      exit 1
+    fi
 fi
 
 # TODO:
