@@ -3,6 +3,11 @@
 
 # TODO: Cleanup/modularize, move stuff to classes, make interface simple
 
+__doc__=\
+"""This module implements several backends for encoding a video file to
+a standard MPEG format such as (S)VCD or DVD.
+"""
+
 # from libtovid import Video
 import os
 from libtovid import Standards
@@ -11,6 +16,7 @@ from libtovid.Globals import ratio_to_float
 
 
 class EncoderPlugin:
+    """Base plugin class; all encoders inherit from this."""
     def __init__(self, video):
         self.video = video
         self.infile = self.video.get('in')
@@ -18,21 +24,56 @@ class EncoderPlugin:
         self.tvsys = self.video.get('tvsys')
         self.aspect = self.video.get('aspect')
         self.filters = self.video.get('filters')
-        self.resolution = Standards.get_resolution(self.format, self.tvsys)
         # List of commands to be executed
         self.commands = []
+
+        self.preproc()
+
+    def preproc(self):
+        """Do preprocessing common to all backends."""
+
+        width, height = Standards.get_resolution(self.format, self.tvsys)
+
+        # Convert aspect (ratio) to a floating-point value
+        src_aspect = ratio_to_float(self.aspect)
+        # Use anamorphic widescreen for any video 16:9 or wider
+        # (Only DVD supports this)
+        if src_aspect >= 1.7 and self.format == 'dvd':
+            self.tgt_aspect = 16.0/9.0
+        else:
+            self.tgt_aspect = 4.0/3.0
+
+        # If aspect matches target, no letterboxing is necessary
+        # (Match within a tolerance of 0.05)
+        if abs(src_aspect - self.tgt_aspect) < 0.05:
+            self.scale = (width, height)
+            self.expand = False
+        # If aspect is wider than target, letterbox vertically
+        elif src_aspect > self.tgt_aspect:
+            self.scale = (width, height * self.tgt_aspect / src_aspect)
+            self.expand = (width, height)
+        # Otherwise (rare), letterbox horizontally
+        else:
+            self.scale = (width * src_aspect / self.tgt_aspect, height)
+            self.expand = (width, height)
+
 
     def run(self):
         """Execute all queued commands, with proper stream redirection and
         verbosity level. Subclasses should override this function if they need
         different runtime behavior."""
+        # TODO: Proper stream redirection and verbosity level
+        # For now, just append some things to a log...
+        log = open('encoderplugin.log', 'a')
+        log.write('Encoding to %s %s\n' % (self.format, self.tvsys))
         for cmd in self.commands:
-            # TODO: Proper stream redirection and verbosity level
+            log.write('    %s\n' % cmd)
             print "EncoderPlugin: Running the following command:"
             print cmd
             # TODO: Catch failed execution
             for line in os.popen(cmd, 'r').readlines():
                 print line
+        log.close()
 
 
 class Mpeg2encEncoder (EncoderPlugin):
@@ -60,7 +101,7 @@ class Mpeg2encEncoder (EncoderPlugin):
         # TODO: Support subtitles. For now, use default tovid behavior.
         cmd += ' -noautosub '
         # TODO: Avoid scaling unless necessary
-        cmd += ' -vf scale=%s:%s ' % self.resolution
+        cmd += ' -vf scale=%s:%s ' % self.scale
         # Filters
         if 'denoise' in self.filters:
             cmd += ' -vf-add hqdn3d '
@@ -151,38 +192,60 @@ class MencoderEncoder (EncoderPlugin):
         # TODO: Move all aspect/scaling stuff into a separate
         # function, so all backends can benefit from it
     
-        # Determine correct scaling and target aspect ratio
-        src_aspect = ratio_to_float(self.aspect)
-        tgt_width, tgt_height = self.resolution
-        
         
         # TODO: Implement safe area calculation
     
         # Construct lavcopts
     
-        # Audio and video bitrates
-        lavcopts = 'abitrate=%s:vbitrate=%s' % \
-            (self.video.get('abitrate'), self.video.get('vbitrate'))
-    
         # Video codec
         if self.format == 'vcd':
-            lavcopts += ':vcodec=mpeg1video'
+            lavcopts = 'vcodec=mpeg1video'
         else:
-            lavcopts += ':vcodec=mpeg2video'
+            lavcopts = 'vcodec=mpeg2video'
     
         # Audio codec
         if self.format in ['vcd', 'svcd']:
             lavcopts += ':acodec=mp2'
         else:
             lavcopts += ':acodec=ac3'
+
+        # TODO: Preprocessing: Set audio/video bitrates
+        # based on target format, quality, or user-defined values
+
+        vbitrate = self.video.get('vbitrate')
+        abitrate = self.video.get('abitrate')
+        
+        # Audio and video bitrates
+        if self.format == 'vcd':
+            abitrate = 224
+            vbitrate = 1152
+        else:
+            # If user didn't override, use reasonable defaults
+            if not vbitrate:
+                # TODO: Adjust bitrate based on -quality
+                if self.format in ['svcd', 'dvd-vcd']:
+                    vbitrate = 2600
+                else:
+                    vbitrate = 7000
+            if not abitrate:
+                abitrate = 224
+
+        lavcopts += ':abitrate=%s:vbitrate=%s' % (abitrate, vbitrate)
+
+        # Maximum video bitrate
+        lavcopts += ':vrc_maxrate=%s' % vbitrate
+        if self.format == 'vcd':
+            lavcopts += ':vrc_buf_size=327'
+        elif self.format == 'svcd':
+            lavcopts += ':vrc_buf_size=917'
+        else:
+            lavcopts += ':vrc_buf_size=1835'
     
-        # Use anamorphic widescreen for any video 16:9 or wider
-        if src_aspect >= 1.7 and self.format == 'dvd':
+        # Set appropriate target aspect
+        if self.tgt_aspect == 16.0/9.0:
             lavcopts += ':aspect=16/9'
-            tgt_aspect = 16.0/9.0
         else:
             lavcopts += ':aspect=4/3'
-            tgt_aspect = 4.0/3.0
     
         # Put it all together
         cmd += ' -lavcopts %s ' % lavcopts
@@ -193,37 +256,20 @@ class MencoderEncoder (EncoderPlugin):
         else:
             cmd += ' -ofps 30000/1001 ' # ~= 29.97
     
-        # If aspect matches target, no letterboxing is necessary
-        # (Match within a tolerance of 0.05)
-        if abs(src_aspect - tgt_aspect) < 0.05:
-            inner_width = tgt_width
-            inner_height = tgt_height
-            letterbox = False
-        # If aspect is wider than target, letterbox vertically
-        elif src_aspect > tgt_aspect:
-            inner_width = tgt_width
-            inner_height = tgt_height * tgt_aspect / src_aspect
-            letterbox = True
-        # Otherwise (rare), letterbox horizontally
-        else:
-            inner_width = tgt_width * src_aspect / tgt_aspect
-            inner_height = tgt_height
-            letterbox = True
     
         # Scale/expand to fit target frame
-        if letterbox:
-            cmd += ' -vf scale=%s:%s,expand=%s:%s ' % \
-                (inner_width, inner_height, tgt_width, tgt_height)
-        else:
-            cmd += ' -vf scale=%s:%s ' % (inner_width, inner_height)
+        cmd += ' -vf scale=%s:%s' % self.scale
+        if self.expand:
+            cmd += ',expand=%s:%s ' % self.expand
     
         # Audio settings
         # The following cause segfaults on mencoder 1.0pre7try2-3.3.6 (Gentoo)
-        # Could it be that -mpegopts format=[dvd|xvcd|xsvcd] is adequate?
+        # when the input file's audio bitrate already matches
         if 'dvd' in self.format:
             cmd += ' -srate 48000 -af lavcresample=48000 '
         else:
-            cmd += ' -srate 44100 -af lavcresample=44100 '
+            #cmd += ' -srate 44100 -af lavcresample=44100 '
+            pass
     
         return cmd
 
