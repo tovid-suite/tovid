@@ -51,8 +51,7 @@ current directory.  Next, do the following:
 ```
 $ cd ~/Downloads/tovid-0.24
 $ ./configure
-$ su -c 'make install'
-$ su -c './setup.py install'
+$ su -c 'sh setup.sh'
 ```
 
 If you decide you don't want tovid installed anymore, run ``make uninstall``
@@ -62,15 +61,13 @@ from the original installation directory (``~/Downloads/tovid-0.24``).
 ==From SVN==
 
 You can get a copy of the latest development version of tovid by checking it
-out with [Subversion http://subversion/tigris.org/] (SVN). Here's how:
+out with [Subversion http://subversion.tigris.org/] (SVN). Here's how:
 
 ```
 $ cd ~/Downloads
 $ svn checkout svn://svn.berlios.de/tovid/trunk/tovid
 $ cd tovid
-$ aclocal
-$ autoconf
-$ automake
+$ ./bootstrap
 ```
 
 Finally, do ``./configure`` etc. as shown above to install
