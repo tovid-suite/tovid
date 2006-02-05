@@ -89,7 +89,7 @@ DO_IMAGE=false
 DO_BURN=false
 
 # Guess for the device
-DVDRW_DEVICE="/dev/`ls /dev | grep dvdrw | sed s/@//g`"
+DVDRW_DEVICE="/dev/dvdrw"
 BURN_SPEED=1
 OUT_DIR="makedvd_out"
 DISC_LABEL=""
