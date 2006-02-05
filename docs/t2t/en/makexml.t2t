@@ -83,10 +83,11 @@ VIDEOS may be any of the following:
     titlesets.
 
 -chapters <interval>
-    (DVD only) Creates a chapter every <interval> minutes. This option can be put at any
-    position in a <file list> and is valid for all subsequent titles until a new
-    -chapters option is encountered. Using this option may take some time, since the
-    duration of the video is calculated.
+    (DVD only) Creates a chapter every <interval> minutes (default 5 minutes:
+    without **-chapters**, each movie will be divided into 5-minute chapters). 
+    This option can be put at any position in a <file list> and is valid for 
+    all subsequent titles until a new -chapters option is encountered. Using 
+    this option may take some time, since the duration of the video is calculated.
 
 -slides <file list>
     Create a slide-show of still images
@@ -106,7 +107,19 @@ authoring using dvdauthor. If you use the [makemenu makemenu.html]
 component to generate the menu, this should all be handled for you.
 
 
+==Examples==
+: makexml -dvd title-1.mpg title-2.mpg title-3.mpg My_DVD
+    Make a DVD without a menu. Title 1, 2, and 3 will play in sequnce.
+
+: makexml -dvd -group chapter-1.mpg chapter-2.mpg chapter-3.mpg -end-group My_DVD
+    Make a DVD without a menu. Chapters 1, 2, 3 will be in the same title, and
+    pressing the remote's <next> and <prev> buttons will navigate the chapters.
+
+: makexml -dvd -menu main_menu.mpg -chapters 3 movie-1.mpg -chapters 10 movie-2.mpg My_DVD
+    Make a DVD with a main menu that points to two movies. movie-1.mpg will
+    be divided into 3 minute chapters, and movie-2 will have 7 minute chapters.
+
+
 ==Contact==
 For further assistance, contact information, forum and IRC links,
 please refer to the [tovid homepage http://tovid.org/].
-
