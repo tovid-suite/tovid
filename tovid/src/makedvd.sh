@@ -303,7 +303,7 @@ if $DO_BURN; then
     fi
 
     # If an image was created, burn that
-    if $DO_IMAGE; then
+    if test -f $DISC_LABEL.iso && test -s $DISC_LABEL.iso; then
        BURN_CMD="growisofs -use-the-force-luke=dao -dvd-compat -speed=$BURN_SPEED -Z $DVDRW_DEVICE=\"$DISC_LABEL.iso\""
        BURN_METHOD="ISO to DVD"
     # or burn from the DVD directory
