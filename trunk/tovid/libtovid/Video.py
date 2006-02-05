@@ -65,12 +65,12 @@ optiondefs = {
         output can be 25% the size of -quality 10 output). Your results may
         vary."""),
     
-    'vbitrate':     OptionDef('vbitrate', '[0-9800]', 6000,
+    'vbitrate':     OptionDef('vbitrate', '[0-9800]', None,
         """Maximum bitrate to use for video (in kbits/sec). Must be within
         allowable limits for the given format. Overrides default values.
         Ignored for VCD."""),
 
-    'abitrate':     OptionDef('abitrate', '[0-1536]', 224,
+    'abitrate':     OptionDef('abitrate', '[0-1536]', None,
         """Encode audio at NUM kilobits per second.  Reasonable values
         include 128, 224, and 384. The default is 224 kbits/sec, good
         enough for most encodings. The value must be within the allowable
