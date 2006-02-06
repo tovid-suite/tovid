@@ -14,9 +14,9 @@ install' as root:
     (root password)
 
 The GUI now depends on a set of Python modules designed for tovid. In
-order to use the GUI, you must also do this:
+order to use the GUI, you must also do this (_after_ ./configure):
 
-    $ su -c './setup.py install'
+    $ su -c './setuplib install'
 
 See the tovid homepage (http://tovid.org/) for additional documentation.
 
