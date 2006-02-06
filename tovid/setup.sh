@@ -1,3 +1,4 @@
+#! /usr/bin/env sh
 # -* sh *-
 
 # Install the tovid suite of tools

@@ -83,12 +83,12 @@ EXTRA_DIST = \
 # http://www.gnu.org/software/make/manual/html_mono/make.html#SEC47
 $(sh_bin): %: %.sh
 	rm -f "$@"
-	echo "#! `which env` sh"  > $@
+	echo "#! `command -v sh`"  > $@
 	cat $(srcdir)/$< >> $@
 	chmod ugo+x $@
 
 $(py_bin): %: %.py
 	rm -f "$@"
-	echo "#! `which env` python"  > $@
+	echo "#! `command -v python`"  > $@
 	cat $(srcdir)/$< >> $@
 	chmod ugo+x $@
