@@ -23,6 +23,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
+make distclean
+
 rm -rvf "autom4te.cache"
 rm -rvf aclocal.m4 config.log config.status configure \
         Makefile Makefile.in setuplib.py
@@ -32,4 +34,6 @@ aclocal \
 && automake --gnu --add-missing \
 && autoconf
 
+echo
 echo "Done. You may now do ./configure && su -c ./setup.sh"
+echo
