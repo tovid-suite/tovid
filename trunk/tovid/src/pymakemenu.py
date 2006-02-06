@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+# -* python -*
 
 # pymakemenu
 # Generate an (S)VCD/DVD menu MPEG

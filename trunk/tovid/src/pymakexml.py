@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+# -* python -*
 
 # pymakexml
 # Generate vcdimager/dvdauthor XML for an (S)VCD/DVD disc

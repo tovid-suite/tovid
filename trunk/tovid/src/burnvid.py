@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+# -* python -*
 
 # Inputs:
 # A list of .mpg files to burn to disc
