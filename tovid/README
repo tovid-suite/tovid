@@ -4,7 +4,13 @@ tovid (http://tovid.org/)
 Video disc authoring software
 =====================================================
 
-See INSTALL for installation instructions.
+Quick install:
+
+$ ./configure
+$ su -c ./setup.sh
+
+See INSTALL for installation instructions specific to the
+shell scripts in this package.
 
 tovid is a suite of tools for creating video DVDs, VCDs,
 and SVCDs. It can convert your video files to the correct
@@ -29,7 +35,6 @@ please consult the following (in order of preference):
 tovid documentation:
     http://tovid.org/
 tovid discussion forum:
-    http://www.createphpbb.com/phpbb/?mforum=tovid
+    http://www.createphpbb.com/tovid
 tovid IRC channel:
-    irc.freenode.org, channel #tovid
-
+    chat.freenode.org, channel #tovid
