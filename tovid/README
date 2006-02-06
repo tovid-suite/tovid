@@ -9,8 +9,8 @@ Quick install:
 $ ./configure
 $ su -c ./setup.sh
 
-See INSTALL for installation instructions specific to the
-shell scripts in this package.
+See INSTALL for installation instructions for more details 
+about the shell and python scripts in this package.
 
 tovid is a suite of tools for creating video DVDs, VCDs,
 and SVCDs. It can convert your video files to the correct
