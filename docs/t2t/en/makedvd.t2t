@@ -41,13 +41,20 @@ due to intense disk activity.
 
 ```
 -author
-    Overwrite an existing directory containing the dvdauthor output.
+    Author the DVD described by **XML_INFILE**. Overwrites an existing 
+    directory containing the dvdauthor output if already present.
+
 -image
-    Overwrite an existing ISO file.
+    Create a DVD iso image of the DVD described by **XML_INFILE**. 
+    Overwrites an existing ISO file if already present.
+
 -burn
-    Burn the disc. If **-image** is specified, an image will be
-    made first, and then the dvd burned from that. If not given, 
-    the dvd wlll be burned directly from the authored filesystem.
+    Burn the DVD described by **XML_INFILE**. The dvd filesystem is 
+    automatically authored and the DVD is burned directly from that. If 
+    an iso image is present, or if **-image** is specified, an image will 
+    be made first, and then the dvd burned from that. If not given, 
+    the dvd wlll be burned directly     from the authored filesystem.
+
 -device DEVFS_NAME (default /dev/dvd)
     Burn the disc image to DEVICE, the Linux device filesystem
     name of your DVD-recorder. Common examples might be /dev/dvdrw,
