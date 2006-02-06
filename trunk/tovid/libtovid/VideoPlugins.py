@@ -264,7 +264,8 @@ class MencoderEncoder (EncoderPlugin):
     
         # Audio settings
         # The following cause segfaults on mencoder 1.0pre7try2-3.3.6 (Gentoo)
-        # when the input file's audio bitrate already matches
+        # when the input file's audio bitrate already matches.
+        # Can anyone confirm?
         if 'dvd' in self.format:
             cmd += ' -srate 48000 -af lavcresample=48000 '
         else:
