@@ -1,0 +1,12 @@
+#! /bin/bash
+
+# Convert a bunch of images into a video stream,
+# with one image for each frame
+
+for FILE in $@; do
+    echo "Converting $FILE..."
+    convert -resize 720x480 "$FILE" "$FILE.ppm"
+done
+
+PPM_OPTS="-S 420_mpeg2 -A 10:11 -F 30000:1001"
+cat *.ppm | ppmtoy4m $PPM_OPTS > image_stream.yuv
