@@ -1,0 +1,14 @@
+tovid plans
+
+
+What's still needed
+
+- Good system for translating documentation (and applications)
+- Fewer dependencies!
+- Automation script(s) for batch-converting and auto-generating
+    menus/disc structure for a given dir hierarchy containing videos
+- Working save/load in the GUI (requires some kind of merge of the
+    GUI and pytovid codebases)
+- Nicer default menu backgrounds, as suggested by corpix (see IRC log)
+
+

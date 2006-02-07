@@ -1,0 +1,20 @@
+tovid documentation
+
+
+You are reading the complete documentation for
+[tovid http://tovid.org/], a suite of tools for creating
+(S)VCD and DVD discs.
+
+%!include: index.t2t
+%!include: dependencies.t2t
+%!include: install.t2t
+%!include: gui.t2t
+%!include: cli.t2t
+
+%!include: manual.t2t
+
+%!include: faq.t2t
+%!include: tips.t2t
+%!include: references.t2t
+%!include: about.t2t
+
