@@ -1,0 +1,86 @@
+makexml
+
+
+El componente makexml genera salida XML que describe
+una estructura de ficheros y una jerarquía de navegación (S)VCD o DVD, la cual puede ser
+consumida por [dvdauthor http://dvdauthor.sourceforge.net/] o
+[vcdxbuild http://www.vcdimager.org/].
+
+===Prestaciones y capacidades===
+- Puede generar una jerarquía de navegación sin menús (los vídeos se reproducen
+secuencialmente al insertar el disco).
+- Puede generar un disco con un menú que salta a cada uno de los vídeos.
+- Puede generar un disco con un menú principal (raíz) que salta a cada uno de varios
+submenús, cada uno de los cuales puede saltar a los títulos de vídeo, o volver al menú principal.
+- Puede generar un disco con fotos fijas en MPEG.
+
+===Utilización===
+Puedes invocar makexml sin parámetros para ver (en inglés) qué
+argumentos espera:Usage: makexml [OPTIONS] [VIDEOS] OUTFILE
+
+Where:
+  OPTIONS may be any of the following:
+
+```
+  -dvd (default)
+    Generate the XML for a DVD menu, to be used with dvdauthor.
+  -vcd
+    Generate the XML for a VCD menu, to be used with vcdxbuild.
+  -svcd
+    Generate the XML for an SVCD menu, to be used with vcdxbuild.
+  -overwrite
+    Overwrite any existing output files.
+```
+
+  VIDEOS may be any of the following:
+
+```
+  <file list>
+    List of one or more video files to include, separated by spaces. At
+    minimum, a DVD must have one video file. You can use shell wildcards
+    (i.e., "*.mpg") to include multiple files easily. Put filenames in
+    quotes if they have spaces in them.
+  -group <file list> -endgroup
+    (DVD only) List of video files to include as one single title. This is useful
+    if you have split a movie into several video files. 
+  -menu VIDEO <file list>
+    Use video file VIDEO as a menu from which you can jump to each of
+    the listed video files. If you have multiple menus, include a
+    top menu so they are reachable.
+  -topmenu VIDEO [-menu VIDEO <file list>] [-menu VIDEO <file list>]...
+    Use video file VIDEO for the top-level (VMGM) menu. The top menu will
+    jump to each of the subsequent [-menu...] videos listed. Use this only if
+    you have multiple sub-menus to jump to. You can only have one top menu.
+  -titlesets
+    (DVD only) Forces the creation of a separate titleset per title. This
+    is useful if the titles of a DVD have different video formats, 
+    e.g. PAL + NTSC or 4:3 + 16:9. If used with menus, there must be a 
+    -topmenu option that specifies a menu file with an entry for each of the 
+    titlesets.   
+  -chapters <interval>
+    (DVD only) Creates a chapter every <interval> minutes. This option can be put at any 
+    position in a <file list> and is valid for all subsequent titles until a new
+    -chapters option is encountered. Using this option may take some time, since the
+    duration of the video is calculated.  
+  -slides <file list>
+    Create a slide-show of still images
+
+  OUT_PREFIX is the file you want to put the resulting XML in
+```
+
+makexml comprueba que los archivos de video que reciba
+existen, pero no comprueba si son válidos para el
+formato de disco escogido. Los vídeos MPEG de los menús deben tener el 
+número de botones especificado para llegar a todos los videos, y, en el caso de DVD, 
+han de estar ya multiplexados con sus correspondientes subtítulos
+usando el comando ``spumux`` del paquete dvdauthor 0.6.0, antes de
+su autoría con ``dvdauthor``. Si usas el componente [makemenu makemenu.html]
+para generar el menú, todo esto se hará sin tu intervención.
+
+===Planes futuros===
+Este script ya hace la mayor parte de lo que necesito que haga (a saber, escribir
+el tedioso XML), pero sería un buen añadido el soporte a especificar ruptura por capítulos en la línea de comando,
+ya que haría más sencilla la automatización de la autoría de (S)VCD/DVD.
+También sería útil añadir alguna forma de verificar que se cumplen los requerimientos de la autoría
+(comprobar la validez de los vídeos dados a  makexml).
+

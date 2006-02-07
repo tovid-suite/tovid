@@ -1,0 +1,215 @@
+Relación de aspecto y área segura
+
+
+===¿Qué es la relación de aspecto?===
+En el procesado de video, la relación de aspecto es un par de
+números que expresa el achatamiento de una imagen o vídeo. Los dos números son 
+una relación entre anchura y altura. Por ejemplo, una relación de aspecto 4:3
+significa que la imagen tiene 4 unidades de anchura por cada 3 unidades de altura.
+
+[../images/4_3_grid.jpg]
+
+Las televisiones habituales en los 1980s-1990s tienen esta relación de aspecto, como la mayor parte 
+de los monitores de ordenador. En los inicios de los 2000s, las pantallas de 
+televisión de alta definición (HDTV) empiezan a ser populares y asequibles; las HDTVs
+habitualmente tienen una relación de aspecto 16:9.
+
+[../images/16_9_grid.jpg]
+
+Para hallar la relación de aspecto de un vído o una imagen, simplemente mide su
+anchura y altura. La relación de aspecto puede ser expresada como 
+anchura:altura. Si la imagen tiene
+24cm de ancho y 18cm de alto, la relación de aspecto se puede expresar como 
+24:18.
+
+===Nota===
+La relación de aspecto se expresa en términos de las 
+dimensiones pretendidas en pantalla. La resolución de la imagen
+en pixels no es siempre un buen indicador de la relación de aspecto. Para saber con mayor detalle por qué 
+es así, mira (está en inglés)[Aspect Ratios and Frame Sizes http://www.mir.com/DMG/aspect.html].
+¿Cómo se compara 24:18 con otras relaciones de aspecto? 
+¿Es más ancho o más estrecho? ¿Es más ancho o estrecho que otras relaciones de aspecto como 16:9
+o 4:3? Es difícil decirlo a primera vista, 
+porque los denominadores son diferentes. El modo más fácil de comparar
+relaciones de aspecto es reducirlas a común denominador haciendo una simple
+división:
+
+```
+24 / 18 = 1,33
+ 4 /  3 = 1,33
+16 /  9 = 1,78
+```
+
+Las dos primeras relaciones de aspecto son equivalentes a 1,33:1.
+Ambas son más estrechas que la relación de aspecto de pantalla panorámica 1,78:1.
+La reducción de las relaciones de aspecto a a común denominador hace más sencilla la comparación.
+
+[../images/Aspect_ratios.png]
+
+Otras dos relaciones de aspecto comúnmente usadas en películas proyectadas son:
+1.85:1 (Academy Standard, o "flat"), y
+2.35:1 (o "Scope", también llamada Panavision o
+CinemaScope). Ambas son incluso más anchas que16:9,
+con CinemaScope casi dos veces más ancha que 4:3.
+El término "pantalla panorámica" típicamente se refiere a cualquier relación de aspecto
+mayor que aproximadamente1,33:1.
+Si quieres saber algo más sobre relaciones de aspecto, comprueba la 
+[entrada en Wikipedia  http://www.wikipedia.org/wiki/Aspect_ratio_(image)] sobre el tema.
+
+
+==Conversión entre relaciones de aspecto==
+Desde los 1950s, los estrenos en las salas de cine han usando típicamente una
+relación de aspecto panorámica. La mayor parte de los televisores usan una
+relación de aspecto 4:3, así que las películas panorámicas tienen que ser
+convertidas para ser vistas en televisores 4:3.  Se describen seguidamente
+dos populares propuestas. Son pan and scan y letterbox (N.delT.: lo dejo en
+inglés, hasta que encuentre alguna traducción aceptable).  Con "pan and scan",
+se muestra una región 4:3, cortando los laterales izquierdo y derecho de la
+imagen original. Un operador (a veces el director) selecciona las áreas que son
+importantes para la escena, e intenta encajarlas dentro del recuadro 4:3.
+Cuando la acción se traslada a una parte distinta de la pantalla, la región
+visible se desplaza a ella.
+
+[../images/pan_and_scan.jpg]
+
+A lo largo de los 1980s, "pan and scan" era de lejos el más popular formato de
+video doméstico. La transferencia "pan and scan" hace un uso completo del
+encuadre 4:3, así que los televidentes ven la pantalla llena en todo momento.
+En los 1980s, VHS todavía dominaba el mrcado doméstico still; "pan and scan"
+hace uso completo de la reducida (según los estándares actuales) resolución de
+VHS. Al "acercarse" a primeros planos de la imagen , el detalle y calidad de la
+imagen se preservan mejor.  Pero esta ganancia se hace a costa de un
+sacrificio; hasta un 50% de la película original haber sido cortado. Los planos
+tomados en panorámico pueden parecer asimétricos y poco profesionales tras
+convertirse a "pan and scan"; a veces, pueden desaparecer personajes, objetos o
+escenarios importantes.  Algunos directores incluso prohiben conversiones "pan
+and scan" de sus películas.
+
+===Nota===
+El disco láser fue un nicho popular para los cinéfilos a lo largo del reinado
+del VHS; la calidad de imagen del disco láser es superior a la de VHS, pero
+inferior a la de nuestro bienamado DVD.  Mira (en inglés) 
+[Widescreen vs. Pan & Scan Examples http://www.widescreen.org/examples.shtml]
+para algunas comparaciones de panorámico y "pan and scan" en películas reales.
+El formato "letterbox", por el contrario, preserva el ancho completo de la
+película original. Dado que la película original no es tan alta (relativamente
+hablando) como una televisión 4:3, las áreas sobre y bajo la imagen se
+rellenan con negro.
+
+[../images/letterbox.jpg]
+
+La ventajade del formato "letterbox" es que toda la imagen original es visible.
+La desventaja es que está encogida para encajar dentro de una pantalla 4:3 de
+televisión; una porción significativa de la pantalla se "desperdicia" en las
+bandas negras. Con VHS, una película "letterbox" pierde mucho de su detalle
+original.  Desde finales de los 1990s, "pan and scan" ha sido menos popular. Su
+principal ventaja para el consumidor era el uso óptimo del área de pantalla de
+televisión, pero la creciente popularidad del DVD, combinado con el coste
+decreciente de la HDTV, ha hecho más fácil que nunca el disfrutar alta calidad
+panorámica en el hogar. Ya en los incios de los 2000s, las ventas de DVDs
+panorámicos (letterbox) y pantalla completa (pan and scan) fueron casi iguales;
+algunas series de TV han empezado incluso a usar 16:9.  Hay otros
+planteamientos en la creación de versiones 4:3 de películas, pero típicamente
+requieren técnicas especiales de rodaje, o acceso a las pruebas finales de la
+película original. Para más información sobre métodos de transferencia de
+vídeo, mira
+[Cómo se transfieren las películas a video http://www.digieffects.com/frames/transferfilmtovideo/filmtovideo.html].
+
+
+==Píxeles y relación de aspecto==
+Las imágenes y vídeos se guardan en un ordenador como un gran rectángulo lleno
+de diminutos píxeles cuadrados. Cada píxel almacena un color; puedes pensar que
+una imagen digital es una cuadrícula numerada gigante, con millones de posibles
+colores. Cuantos más píxeles en una imagen digital, mayor detalle puede ser
+capturado. En el mercado de las cámaras digitales, esta resolución se expresa
+simplemente en megapixels, o millones de píxeles. Una cámara de 4 megapixels
+puede capturar una imagen de más o menos 2.000 píxeles de ancho y 2.000 píxeles
+de alto. Es bueno que los ordenadores sean rápidos, porque llevaría bastante
+tiempo a un ser humano ir coloreando una a una todas las casillas de esa
+cuadrícula.  El vídeo digital lamacenado en un ordenador no tiene especiales
+limitaciones en resolución, pero los formatos digitales de discos de vídeo como
+VCD, SVCD, y DVD sólo permiten ciertas resoluciones, por lo que se refiere a
+píxeles. La resolución más habitual para DVDs comerciales es Full-D1, que es
+720×480 píxeles de tamaño.
+
+===Nota===
+Full-D1 es en realidad el nombre de dos distintas resoluciones, dependiendo si
+el DVD está destinado a reproductores NTSC o
+PAL. PAL usa una resolución de
+720×576 para Full-D1; NTSC usa 720×480.
+
+Además de Full-D1, DVD soporta varias otras resoluciones,
+incluyendo 352×480 (352×576 PAL) y
+352×240 (352×288 PAL). Las resoluciones mayores
+dan mejor detalle y calidad, pero ocupan más espacio en el 
+disco. Estas resoluciones adicionales permiten que incluso los DVD de capa sencilla contengan
+de 2 a 10 horas de video, dando a los autores de DVD varias opciones para equilibrar
+cantidad y calidad.
+Puedes haber notado, si intentas calcular cuál es la relación de aspecto, que
+720 / 480 = 1.5, lo cual no es la relación de aspecto estándar ni
+para TV clásicos ni para panorámicos. Obviamente, la resolución de un vídeo
+en píxeles tiene poca semejanza con la relación de aspecto del
+vídeo; 1.5:1 es la relación de anchura a altura en píxeles, pero
+nadie contempla DVDs en una televisión 1.5:1.
+Así que, ¿por qué la extraña relación? Hay  una buena razón detrás.El DVD fue diseñado
+para desenvolverse bien tanto con 1.33:1 (televisión 4:3
+) como con 1.78:1 (16:9) panorámico).
+Pero en vez de tener dos resoluciones distintas en píxeles,
+DVD usa sólo 720×480. Como 1.5:1 está
+a medio camino entre 1.33:1 y 1.78:1,
+Full-D1 DVD resulta muy adecuado para codificar ambas estas dos relaciones de aspecto.
+Para lograrlo, los vídeos se estrujan o se estiran para encajar en los
+720×480 píxeles. Cada vídeo se marca con un
+bit de información diciendo al lector de DVD si se ha de usar 4:3 o
+16:9 en la reproducción. El reproductor DVD entonces 
+automáticamente realiza el encogido o estirado requeridos para restaurar las
+proporciones normales.
+
+[../images/4_3_dvd.jpg]
+
+Una imagen 4:3 llena el área visible de una pantalla
+4:3, pero puede ser estirada o bordeada con bandas negras
+cuando reproducida en una televisión panorámica. Los DVDs que usan este formato
+se etiquetan como "pantalla completa."
+
+[../images/16_9_dvd.jpg]
+
+Una imagen 16:9 aparece bordeada con bandas negras si 
+se reproduce en una pantalla 4:3, pero llena completamente el área 
+visible en televisiones panorámicas. Los DVDs que usan este formato
+se etiquetan como "panorámicos."
+
+===Nota===
+Los DVDs etiquetados "anamorphic widescreen" (lo suelen poner en inglés, tal cual)
+o  "mejorado para televisores panorámicos" usan una codificación 16:9
+directa de la imagen panorámica. Si el DVD está etiquetado como "panorámico"
+(pero no anamórfico), entonces el disco contiene probablemente una codificación
+4:3 de una imagen con bandas negras arriba y abajo; y
+lógicamente, desperdicia un 25% o más de los píxeles en las bandas negras.
+Los DVDs anamórficos panorámicos hace mejor uso de
+su resolución vertical, y así son superiores en calidad
+de imagen frente a los DVDs no anamórficos. Mira
+[The ABCs of Anamorphic DVD http://www.thedigitalbits.com/editorial/bz100298.html] para una explicación más extensa (en inglés).
+De ahora en adelante en este capítulo, "panorámico" is synonymous with "panorámico anamórfico";
+panorámico no anamórfico es ignorado completamente, como si nunca 
+hubiera existido.
+En estos dos formatos, las bandas negras arriba y abajo las pone by the DVD player (o, en
+algunos casos, el televisor). Todos los 720×576 píxeles se usan
+óptimamente, ninguno se deperdicia en bandas negras. Con el DVD, los consumidores podemos escoger
+la relación de aspecto que mejor encaja con nuestras necesidades.
+
+==Área segura==
+Los televisores no son perfectos. La mayor parte de los televisores recortan un trocito
+de la imagen alrededor de los bordes, debido a overscan.
+Si hay presente un texto o una imagen importante cerca de los bordes, puede que no sea visible
+en un televisor promedio. Los directores y productores de video mantienen los
+elementos visuales importantes lejos delos bordes, permaneciendo dentro del 
+área segura.
+
+[../images/4_3_safe.jpg]
+
+Al hacer producción de video, una buena regla es colocar el texto importante
+dentro de un área del 90% "segura para títulos", los elementos menos importantes dentro
+de un área del 95% "segura para acción". Cualquier cosa fuera del área del 95% será 
+probablemente recortada en los televisores normales.
+

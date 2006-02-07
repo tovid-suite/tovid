@@ -1,0 +1,87 @@
+tovid FAQ
+
+
+%!include(xhtml): ''navmenu.html''
+
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
+: My encoded video plays back extremely fast, as if it's in fast-forward.
+For some reason, certain video codecs are identified as using
+1000 frames per second. (You can see this by running [idvid #idvid] on the video.)
+You may be able to fix it by re-encoding using the -fps`` option
+to force a framerate.
+
+: Why is it so slow?
+
+Short answer: because video encoding is a very CPU-intensive process.
+Longer, more complicated answer: because there are many factors that can
+influence encoding time, including, but not limited to: the speed of your
+CPU, the format of the input video, the resolution you're encoding to, and the
+bitrate, quality, and denoising that are in effect. While I don't have
+very detailed statistics on encoding times yet, in my experience it's
+common for encoding to take two to three times the length of the video on
+my AMD Athlon 1600XP. So if you're encoding a 2-hour movie, it could take
+from four to six hours, depending on your CPU speed. DVD output takes longer
+than VCD or SVCD output. There are most likely some performance improvements
+that could be made, but for now you can probably expect that encoding video
+will take a long time.
+
+: Why is my CPU only showing 50% usage during encoding?
+
+This is another complex question that I don't have a good answer for.
+The performance of tovid is steadily improving with each new release, and
+my goal is to have the potential for near-100% CPU usage during encoding,
+but unfortunately it's not quite that simple. This situation should be much
+improved as of version 0.18, which includes the ``-parallel`` option
+for both [tovid #tovid] and postproc; try using this option
+if you find that your CPU is not being utilized fully.
+
+: What fonts can I use in [makemenu #makemenu]
+(or, why do I have so few fonts to choose from when making menus from the
+GUI)?
+
+The argument given to ``-font`` must be one of
+the fonts listed by the command ``convert -list type``. Many of
+your installed fonts may not be available; if you want to maximize the
+number of fonts available to [makemenu #makemenu]**, download and run
+[Anthony Thyssen's http://www.cit.gu.edu.au/~anthony/anthony.html]
+[imagick_type_gen.pl http://www.cit.gu.edu.au/~anthony/software/imagick_type_gen.pl]
+script and run it like this: ``imagick_type_gen.pl > ~/.magick/type.xml``.
+If that doesn't work, try ``imagick_type_gen.pl > ~/.magick/type.mgk``.
+
+: When I run ``vcdxbuild my_disc.xml``, I get: ``ERROR: charset conversion failed``.
+How do I fix this?
+
+This is a problem that crops up with some versions of ``vcdxbuild``.
+If it happens to you, try using ``vcdxbuild --filename-encoding=iso8859-1 my_disc.xml``.
+
+: Where do I get mjpegtools or mplayer for [Debian http://www.debian.org/]
+or a Debian-based distribution?
+
+Use Christian Marillat's apt repository, by adding
+``deb ftp://ftp.nerim.net/debian-marillat/ unstable main`` to your
+``/etc/apt/sources.list`` file.
+
+: When running ``makedvd -burn``, I get
+``unable to open64("/dev/dvd",O_RDONLY): Permission denied``. What does this mean?
+
+It probably means you don't have permission to burn DVDs, and must
+burn them as the root user. To burn as root, run
+``su -c "makedvd -burn MyDisc.xml"``.
+
+: When running ``tovidgui.py``, I get ``No module named wxPython.wx``, or
+``Error -3 while decompressing data: invalid window size``.
+
+wxPython problems have been occurring frequently with [Mandriva
+http://www.mandriva/] and other Mandrake Linux distributions.  [One possible
+solution http://www.createphpbb.com/phpbb/viewtopic.php?t=89&mforum=tovid] is
+to upgrade wxPythonGTK using the latest [source RPM from Cooker
+ftp://mandrake.mirrors.pair.com/Mandrakelinux/devel/cooker/SRPMS/main/].
+
+: I can't choose a disc format or TV format; I just see empty boxes in the GUI.
+
+Try switching to a different GTK theme. If you don't use GNOME, you
+may find [gtk-theme-switch http://www.muhri.net/nav.php3?node=gts]
+to be useful.
+

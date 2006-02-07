@@ -1,0 +1,103 @@
+Acerca de tovid
+
+
+tovid todavía está en sus primeras etapas de desarrollo, y no está todavía disponible en la mayor parte de
+los repositorios de paquetes, así que probablemente no podrás instalarlo usando el gestor de paquetes 
+de tu distribución Linux. Descárgate la última entrega oficial de tovid desde la 
+[página del proyecto en sourceforge http://sourceforge.net/projects/tovid/]
+, o tráete la última versión de desarrollo a través de CVS (mira [Instalación #Installation] para los detalles).
+Si te apetece, pásate por el [forum de tovid  http://www.createphpbb.com/phpbb/?mforum=tovid], o
+el canal IRC ``#tovid`` en ``irc.freenode.net``,
+para soporte técnico y una charradica amistosa (en inglés).
+Puedes bajarte esta [documentación en español tovid_documentation.es.xml] en
+formato [DocBook XML http://www.docbook.org].Acerca de tovid==
+La familia tovid es una colección de varios componente, cada uno 
+especializado en una tarea determinada. Todos los componentes están escritos en texto puro y duro, 
+usando lenguajes de script, lo que permite su modificación y parcheo de un modo relativamente sencillo.
+tovid se entrega con las condiciones de la [GNU General Public License http://www.gnu.org/copyleft/gpl.html].
+tovid comenzó sus andares en mayo de 2004, como un sencillo script de una línea
+para convertir vídeo al formato VCD. Había descubierto que no era especialmente fácil
+recordar los comandos y opciones requeridos para convertir vídeo de un formato 
+a otro, y conseguir que el vídeo de salida cumpliera la estricta norma VCD no era en absoluto trivial.
+La necesidad de convertir y codificar vídeo se convirtió en urgente cuando 
+mi mujer y yo compramos una unidad DVD-RW. De repente, la posibilidad de crear nuestros propios DVD
+ya era realidad. Desafortunadamente, parecía bastante difícil encontrar programas que pudieran
+convertir de un modo fiable vídeo de un formato a otro, en particular
+cuando el resultado debía cumplir estrictamente una tasa de bits por segundo, cuadros por segundo, 
+resolución y formato de codificación.VCD, SVCD, y DVD han de estar todos en formato MPEG,
+con muy específicas resooluciones y tasas de bits por segundo. Incluso en Windows, la mayor parte de
+las herramientas libremente disponibles para autoría de discos de vídeo tenían serias limitacions a la hora de
+convertir, si siquiera hacían alguna conversión; muchos programas de autoría requieren que los videos de partida 
+ya cumplan la norma adecuada.
+Probé distintos caminos, incluyendo
+[ffmpeg http://ffmpeg.sourceforge.net/] y
+[transcode http://zebra.fh-weingarten-de/~transcode/], antes de quedarme con mplayer y mjpegtools.
+Mientras que el comando mencoder** de mplayer en realidad no es particularmente adecuado 
+para codificar vídeo a formato MPEG, mplayer es el reproductor de vídeo más robusto
+que conozco para la plataforma Linux. Puede reproducir casi cualquier vídeo que le eches, sin importar su formato. Las
+utilidades incluídas con mjpegtools eran perfectas para obtener el formato MPEG dentro de los parámetros correctos. 
+Resultó bastante fácil emparejar ambas herramientas, gracias a la [concienzuda documentación https://sourceforge.net/docman/display_doc.php?docid=3456&group_id=5776]. Pronto tuve un conversor de vídeo que funcionaba,
+diseñado para partir de un vídeo arbitrario y convertirlo en VCD. Siempre que necesitaba convertir a un formato distinto, simplemente editaba el script.
+Pronto tuve una pequeña colección de scripts de conversión, con nombres como todvd**,
+tovcd**, y tosvcd**.
+El deso de más flexibilidad acabó por empujarme a escribir un
+script con una serie de alternativas de formato de salida. Una vez que tuve mi script en 
+un estado más o menos usable, lo [envié a LinuxQuestions.org http://www.linuxquestions.org/questions/showthread.php?s=&threadid=187527].
+Poco después, un moderador de LinuxQuestions me preguntó si estaría ineresado en enviar el script a la sección [LinuxAnswers http://www.linuxquestions.org/questions/answers.php];
+[lo hice http://www.linuxquestions.org/questions/answers/193], y pronto
+recibí algunos comentarios de la gente que empezaba a usar el script.
+Con renovado interés, decidí que merecía la pena montar un 
+[proyecto en SourceForge.net http://sourceforge.net/projects/tovid/]. El interés continua creciente, 
+y ya habido varias versiones oficiales, cada una con nuevas prestaciones y nuevas correciones de errores, basados en los comentarios de otros usuarios, y en mi propio uso continuado del programa..
+Gracias al tremendo soporte y comentarios de ayuda de los usuarios, tovid se está convirtiendo en una herramienta de autoría
+one-stop de vídeo discos. Puede pasar algún tiempo antes de que tovid se convierta en el 
+equivalente Linux de [Nero http://ww3.nero.com/], pero muy bien puede
+convertirse en la herramienta de facto open-source para discos de vídeo.
+
+
+==Eric Pierce==
+
+Eric (alias wapcaplet) es el creador y principal desarrollador de tovid.
+Vive en [Colorado Springs http://en.wikipedia.org/wiki/Colorado_Springs] con su mujer Andrea, y su gato Fitz. Sus aficiones incluyen
+Linux, ilustración, LEGO, discogolf, y juegos de tablero de estrategia.
+También es un contribuidor ocasional a [Wikipedia http://www.wikipedia.org/], donde edita como
+[Wapcaplet http://en.wikipedia.org/wiki/User:Wapcaplet].
+
+[../images/eric_small.jpg]
+
+==Joe Friedrichsen==
+Joe (alias Mac North) simplemente un tipo y uno de los desarrolladores de tovid.
+Vive en [Yaizu, Japón http://maps.google.com/maps?q=yaizu+japan&spn=0.151988,0.323874&t=k&hl=en] con su tortuga Marutomo. Aparte
+de cosas de código fuente abierto, disfruta [Lindy Hop http://en.wikipedia.org/wiki/Lindy_Hop], [ ejercitarse con espadas Iai http://www.kusastro.kyoto-u.ac.jp/~baba/iaido/], y bicis
+artísticas. También se sabe que toca la guitarra (tanto acústica como eléctrica) para artistas como
+The Flaming Lips y Nick Drake.
+
+[../images/joe_small.jpg]
+
+==Otros contribuyentes==
+
+Un número enorme de personas han colaborado, en mucho o en poco, a la 
+creación de tovid. Sería dificultoso listar a todos ellos, pero he aquí a 
+unos pocos:
+- Khurram Ahmed
+- Marcello Chagas
+- Joe Friedrichsen
+- Carl Hall
+- Thomas Lie
+- Rick Measham
+- Jean-Francois Ouellette
+- Rainer Unseld
+
+
+Gracias a los autores demplayer,
+mjpegtools, ffmpeg,
+vcdimager, dvdauthor,
+ImageMagick, SoX,
+transcode, y normalize,
+de las cuales depende tovid para la mayor parte de sus capacidades. Gracias también a
+[LinuxQuestions.org http://www.linuxquestions.org/]
+por hospedar el forum de discusión sobre tovid, y por ser en general un gran recurso para construir comunidades.
+Finalmente, ¡gracias a tí por tu interés
+en tovid!
+
+
