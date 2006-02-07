@@ -15,15 +15,13 @@ if __name__ == '__main__':
 
     # Create a TDL disc element definition using the
     # provided command-line options
-    tdl = 'Disc "FOO DISC" '
-    for arg in sys.argv[1:]:
-        tdl += '%s ' % arg
 
-    print "TDL string:"
-    print tdl
+    # Insert a dummy element/name declaration
+    sys.argv.insert(0, 'Disc')
+    sys.argv.insert(1, '"FOO DISC"')
 
     par = Parser.Parser()
-    elems = par.parse_string(tdl)
+    elems = par.parse_args(sys.argv)
     print "Parsed Disc element:"
     print elems[0].tdl_string()
     print "Generating disc XML..."
