@@ -1,0 +1,46 @@
+References and links
+
+
+%!include(xhtml): ''navmenu.html''
+
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
+==Video authoring links==
+
+- [DVD Technical Notes http://www.mpeg.org/MPEG/DVD/] provides fairly detailed
+  technical information about the DVD standard.
+- Ian Pointer's [DVD Authoring http://www.linuxjournal.com/article/6953]
+  article explains how to create a DVD slideshow with music and subtitles,
+  using open-source tools.
+- The [GNU VCDImager Authoring Guide http://www.videohelp.com/~vitualis/] has
+  comprehensive instructions for creating VCDs and SVCDs using VCDImager, as
+  well as thorough documentation of the [VCDImager XML
+  http://www.videohelp.com/~vitualis/general_xml_structure.html] file
+  structure.
+- The [Linux Video Handling Sorta-HOWTO
+  http://www.dogphilosophy.net/SECTION-Technical_Stuff/linuxvid.html] discusses
+  the basics of video capturing and VCD authoring.
+- [Linux Media http://dvdripping-guid.berlios.de/] has several HOWTOs and
+  scripts for DVD-ripping and disc authoring.
+- [What is deinterlacing? http://www.100fps.com/] is a thorough introduction to
+  the concept of interlacing, including comparisons of many deinterlacing
+  methods.
+
+
+
+==Other programs similar to tovid==
+
+- [DVD Slideshow http://dvd-slideshow.sourceforge.net/]
+- [DVDStyler http://dvdstyler.sourceforge.net/]
+- [KMediaFactory http://susku.pyhaselka.fi/damu/software/kmediafactory/]
+- [KDE DVD Authoring Wizard http://pingwing.xs4all.nl/view.php/page/DVDAuthor]
+- [Linux Video Maker http://www.videomaker.dnc.pl/]
+- [MakeMovingMenus http://jensge.org/?mmm]
+- [Polidori http://polidori.sourceforge.net/]
+- [Q DVD-Author http://qdvdauthor.sourceforge.net/]
+- [Varsha http://varsha.sourceforge.net/]
+- [VCDEasy http://www.vcdeasy.org/]
+
+
+

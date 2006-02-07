@@ -1,0 +1,22 @@
+#! /bin/sh
+
+USER="wapcaplet"
+DEST="shell.berlios.de:/home/groups/tovid/htdocs"
+
+cd html
+scp *.html *.css "$USER@$DEST"
+
+for TRANS in en; do
+#for TRANS in en es fr; do
+    echo "Uploading $TRANS translation"
+    pushd $TRANS
+    scp *.html *.css "$USER@$DEST/$TRANS"
+    popd
+done
+
+# Upload images
+# pushd images && scp *.jpg *.png "$USER@$DEST/images" && popd
+
+echo "Uploading contents of 'download'"
+pushd download && scp * "$USER@$DEST/download" && popd
+

@@ -1,0 +1,224 @@
+Aspect ratio and safe area
+
+
+%!include(xhtml): ''navmenu.html''
+
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
+== What is aspect ratio? ==
+
+In video processing, the aspect ratio is a pair of numbers that expresses the
+"wideness" of an image or video. The two numbers are a width-to-height ratio.
+For example, an aspect ratio of 4:3 means the picture is 4 units wide for every
+3 units in height.
+
+[images/4_3_grid.jpg]
+
+Typical 1980s-1990s TV sets have this aspect ratio, as do most computer
+monitors. In the early 2000s, High-definition TV (HDTV) screens have become
+more popular and affordable; HDTVs commonly have a 16:9 aspect ratio.
+
+[images/16_9_grid.jpg]
+
+To find the aspect ratio of a video or image, just measure its width and
+height. The aspect ratio can then be expressed as **width:height**. If the
+picture is 24cm wide and 18cm tall, the aspect ratio can be expressed 24:18.
+
+The aspect ratio is expressed in terms of the intended display dimensions. The
+resolution of an image in pixels is not always a good indicator of aspect
+ratio. For more on why this is so, see
+[Aspect Ratios and Frame Sizes http://www.mir.com/DMG/aspect.html].
+How does 24:18 compare to other aspect ratios?  Is wider or narrower than other
+aspect ratios like 16:9 or 4:3? It's hard to tell at a glance, because the
+denominators are different. The easiest way to compare aspect ratios is to
+reduce them to lowest terms by doing a simple division:
+
+```
+24 / 18 = 1.33
+ 4 /  3 = 1.33
+16 /  9 = 1.78
+```
+
+The first two aspect ratios are equivalent to 1.33:1.
+Both are narrower than the widescreen aspect ratio of 1.78:1.
+Reducing aspect ratios to their lowest terms makes comparison easier.
+
+[images/Aspect_ratios.png]
+
+Two other aspect ratios are commonly used in filming movies: 1.85:1 (Academy
+Standard, or "flat"), and 2.35:1 (or "Scope", also called Panavision or
+CinemaScope). Both are even wider than 16:9, with Scope being almost twice as
+wide as 4:3.  The term "widescreen" typically refers to any aspect ratio
+greater than about 1.33:1.
+
+
+
+== Converting between aspect ratios ==
+
+Since the 1950s, theatrical releases have typically used a widescreen aspect
+ratio. Most TV sets use a 4:3 aspect ratio, so widescreen movies must be
+converted for viewing on 4:3 TVs.  Two popular approaches to this conversion
+are described here. They are
+[pan and scan http://en.wikipedia.org/wiki/Pan_and_scan]
+and [letterbox http://en.wikipedia.org/wiki/Letterbox].
+
+With pan and scan, a 4:3 region is shown, cutting off the left and/or right
+sides of the original picture. A human operator (sometimes the director)
+selects areas that are important to the scene, and tries to fit them in the 4:3
+frame. When the action moves to a different part of the screen, the visible
+region is panned over to it.
+
+[images/pan_and_scan.jpg]
+
+Throughout the 1980s, pan and scan was by far the most popular home video
+format. Pan and scan transfers make full use of the 4:3 frame, so the viewer's
+TV screen is filled at all times.  In the 1980s, VHS still ruled the home
+market; pan and scan makes full use of VHS's low (by today's standards)
+resolution. By "zooming in" on the picture, detail and picture quality are
+better preserved.
+
+But this gain comes at a significant loss; up to half of the original movie
+picture may be cut off. Camera shots framed for widescreen may look amateurish
+and asymmetrical when converted to pan and scan; sometimes, important
+characters, objects, or scenery may be lost. Some directors forbid pan-and-scan
+transfers of their films.
+
+//Note//: Laserdisc was a popular niche market for movie buffs
+throughout VHS's reign; the picture quality of Laserdisc transfers is
+superior to that of VHS, but inferior to that of our beloved DVD.
+
+See
+[Widescreen vs. Pan & Scan Examples http://www.widescreen.org/examples.shtml]
+for some comparisons of widescreen and pan and scan on actual movies.
+
+The letterbox format, in contrast, preserves the entire width of the original
+picture. Since the original film is not as tall (relatively speaking) as a 4:3
+TV set, the areas above and below the picture are filled with black.
+
+[images/letterbox.jpg]
+
+The advantage of letterbox format is that all of the original picture is
+visible. The disadvantage is that it's shrunk down to fit a 4:3 TV screen; a
+significant portion of the screen is "wasted" on the black bars. With VHS, a
+letterbox film would lose much of its original detail.
+
+Since the late 1990s, pan and scan has become less popular. Its primary
+advantage to the consumer was optimal use of TV screen area, but the growing
+popularity of DVD, combined with the decreasing cost of HDTV, has made it
+easier than ever to enjoy high-quality widescreen at home. By the early 2000s,
+sales of widescreen (letterbox) and full-screen (pan and scan) DVDs were almost
+equal; some TV series have even begun using 16:9.
+
+There are several other approaches to creating 4:3 versions of films, but those
+typically require special filming techniques, or access to final proofs of the
+original film. For more information on video-transfer methods, see
+[How Film is Transferred to Video http://www.digieffects.com/frames/transferfilmtovideo/filmtovideo.html].
+
+
+== Pixels and aspect ratio ==
+
+Images and videos stored on a computer are saved as a big rectangle full of
+tiny square [pixels http://en.wikipedia.org/wiki/Pixel]. Each pixel stores a
+single color; you can think of a digital image as a giant paint-by-number grid,
+with millions of possible colors. The more pixels in a digital image, the more
+detail can be captured. In the digital camera market, this resolution is simply
+expressed in megapixels, or millions of pixels. A 4.0 megapixel (4 million
+pixel) camera can capture an image roughly 2,000 pixels wide and 2,000 pixels
+high. It's a good thing computers are fast, because it would take a human a
+very long time to do a paint-by-number this big.
+
+Digital video stored on a computer has no particular limitation on
+resolution, but digital video disc formats such as VCD, SVCD, and DVD only
+allow certain resolutions, in terms of pixels. The most common resolution for
+commercial DVDs is Full-D1, which is 720×480 pixels in size.
+
+{{{
+Full-D1 is actually the name of two different resolutions, depending on whether
+the DVD is formatted for NTSC or PAL viewers and players. PAL uses a resolution
+of 720×576 for Full-D1; NTSC uses 720×480.
+
+In addition to Full-D1, DVD supports several other output resolutions,
+including 352×480 (352×576 PAL) and 352×240 (352×288 PAL). Higher resolutions
+give better detail and overall quality, but fill up more space on the disc.
+These additional resolutions allow even single-layer DVDs to contain from 2 to
+10 hours of video, giving DVD authors several options for balancing quality
+with quantity.
+}}}
+
+You may notice, if you try to calculate what aspect ratio this is, that 720 /
+480 = 1.5, which is not a standard aspect ratio for either standard or
+widescreen TV sets. Obviously, the resolution of a video in pixels has little
+bearing on the aspect ratio of the video; 1.5:1 is the ratio of width to height
+in pixels, but nobody watches DVDs on a 1.5:1 TV set.
+
+So why the weird ratio? There's a good reason for it. DVD was designed to
+perform well with both 1.33:1 (4:3 television) and 1.78:1 (16:9) widescreen).
+But instead of having two different pixel resolutions, DVD uses only 720×480.
+Since 1.5:1 is about halfway between 1.33:1 and 1.78:1, Full-D1 DVD is
+well-suited to encoding both of these common aspect ratios.
+
+To achieve this, videos are first squished or stretched to fit into 720×480
+pixels. Each video is marked with a bit of information telling the DVD player
+whether 4:3 or 16:9 should be used for playback. The DVD player then
+automatically does the appropriate squishing or stretching to restore the
+proportions to normal.
+
+[images/4_3_dvd.jpg]
+
+A 4:3 picture fills the viewing area of a 4:3 screen, but may be stretched or
+letterboxed when played back on a widescreen TV. DVDs using this format are
+typically labelled "full screen."
+
+[images/16_9_dvd.jpg]
+
+A 16:9 picture is letterboxed when played on a 4:3 screen, but fills the
+viewing area of a widescreen TV. DVDs using this format are typically labelled
+"widescreen."
+
+In these two formats, all letterboxing is done by the DVD player (or, in some
+cases, by the TV). All 720×480 pixels are used optimally, with none wasted on
+black bars. With DVD, consumers can choose the aspect ratio that best suits
+their viewing needs.
+
+//Note//: DVDs labelled "anamorphic widescreen" or "enhanced for widescreen displays" use
+a direct 16:9 encoding of the widescreen picture. If a DVD is labelled
+"widescreen" (but not anamorphic), then the disc probably contains a 4:3
+encoding of a letterboxed widescreen image--and consequently, wastes 25%
+or more of its pixels on black letterbox bars. Anamorphic widescreen DVDs make
+better use of their available vertical resolution, and are thus superior in
+picture quality to non-anamorphic DVDs. See
+[The ABCs of Anamorphic DVD http://www.thedigitalbits.com/editorial/bz100298.html]
+for a more thorough explanation.
+
+Henceforth in this chapter, "widescreen" is synonymous with "anamorphic
+widescreen"; non-anamorphic widescreen is ignored completely, as if it never
+existed.
+
+
+== Safe area ==
+
+Television sets are not perfect. Most TVs cut off a small amount of the picture
+around the edges, due to [overscan http://en.wikipedia.org/wiki/Overscan].  If
+there is important imagery or text present around the edge, it may not be
+visible on the average TV set. Directors and video producers keep important
+visual elements away from the edges by staying within the safe area.
+
+[images/4_3_safe.jpg]
+
+In doing video production, a good rule of thumb is to keep important text
+inside a 90% "title safe" area, and less important elements within a 95%
+"action safe" area. Anything outside 95% is likely to be clipped off by normal
+TV sets.
+
+//Note//: If you want to find out your TV's safe area, download the
+[NTSC safe area test video download/safe_area_test_ntsc.mpg]
+or [PAL safe area test video download/safe_area_test_pal.mpg].
+The video is in VCD format; to burn it to
+DVD, first convert it using the ``-dvd-vcd`` option of [tovid tovid.html].
+This video shows a growing green box and a percentage; when the green box
+goes off-screen, make note of the percentage (go frame-by-frame if necessary).
+This percentage is your TV's approximate safe area.
+
+
+

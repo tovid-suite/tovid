@@ -1,0 +1,96 @@
+Contributing to tovid
+
+
+%!include(xhtml): ''navmenu.html''
+
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+If you like tovid, please show your appreciation by giving something
+back to the community that developed it. There are many different ways
+to contribute...
+
+
+==Participate==
+
+This is the easiest way to contribute, involving no long-term commitment, no
+obligation, and no responsibility for anything! Bug reports, success stories,
+ideas and criticisms are all welcome. Get in touch with other tovid users and
+developers, to brainstorm or shoot the breeze.
+
+- [Post to the forum http://www.createphpbb.com/tovid]
+- [Chat in the IRC channel irc://irc.freenode.net/tovid]
+- [Subscribe to the mailing list https://lists.berlios.de/mailman/listinfo/tovid-users]
+
+
+
+==Hack==
+
+If you have any coding experience (or would like to start learning), you're
+encouraged to hack the tovid code, and share your improvements with others.
+Open-source software flourishes when many people study and tinker with the
+source code.
+
+To work on the tovid code directly, you may become a tovid developer. Here's
+how:
+
+- Participate a little bit first. The only requirement for being a tovid
+  developer is a demonstrated interest, so stop by the
+  [IRC channel irc://irc.freenode.net/tovid] or
+  [forum http://www.createphpbb.com/tovid] and make your interest known.
+- Get a free account on [BerliOS http://www.berlios.de/], where the tovid
+  project is hosted.
+- Ask Eric (wapcaplet) to make you a developer.
+
+
+
+
+==Wikify==
+
+If coding isn't your forte, you may prefer to
+[edit the tovid wiki http://openfacts.berlios.de/index-en.phtml?title=tovid].
+Wikis are a great way to publish, exchange, and revise ideas; they're also
+an ideal place for FAQs, HOWTOs, and other community-authored documents.
+
+
+==Translate==
+
+If you would like to help translate the tovid documentation into another
+language, first download the [txt2tags http://txt2tags.sf.net/] sources
+for one of the existing translations:
+
+- English: [tovid_t2t_en.tar.gz /download/tovid_t2t_en.tar.gz]
+- Espanol: [tovid_t2t_es.tar.gz /download/tovid_t2t_es.tar.gz]
+
+
+Extract the tarball with a command like this:
+
+```
+$ tar -xzvf tovid_t2t_en.tar.gz
+t2t/en/
+t2t/en/manual.t2t
+t2t/en/makeslides.t2t
+t2t/en/install.t2t
+...
+```
+
+Each ``.t2t`` file is written in the plain-text [txt2tags http://txt2tags.sf.net]
+format, which you can read and modify with any text editor. Translate as many
+or as few of them as you like (we can always combine the work of several
+translators) and contact the tovid developers through the
+[forum http://www.createphpbb.com/tovid] or
+[IRC channel irc://irc.freenode.net/tovid] to send them your completed work.
+
+
+==Package==
+
+There are so many packaging formats (``.rpm``, ``.deb``, and ``.ebuild`` to
+name a few), the tovid project could really use a packaging specialist--someone
+who could be responsible for keeping the various packages in sync with the most
+recent source distribution of tovid. If you are such a person, we'd love
+to hear from you!
+
+But even if you are just interested in maintaining a tovid package for your
+favorite distribution, please contact the developers through the
+[forum http://www.createphpbb.com/tovid] or
+[IRC channel irc://irc.freenode.net/tovid].
+

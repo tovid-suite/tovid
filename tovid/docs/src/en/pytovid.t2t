@@ -1,0 +1,111 @@
+pytovid: A Python implementation of tovid
+
+
+%!include(xhtml): ''navmenu.html''
+
+//This document was last edited on %%mtime(%A, %d %B %Y).//
+
+
+This document summarizes the origins, development, and inner workings of
+**pytovid**, a reimplementation of the [tovid suite scripts cli.html]
+in the [Python http://www.python.org/] programming language. For additional
+updates and discussion, see the
+[pytovid forum thread http://www.createphpbb.com/phpbb/viewtopic.php?t=167&mforum=tovid].
+
+
+== Getting pytovid ==
+
+Installing pytovid is easy.
+[Download the tarball http://tovid.sf.net/download/pytovid-0.01.tar.gz], then
+open a terminal window and issue these commands at the prompt (``$``):
+
+```
+$ tar -xzf pytovid-0.01.tar.gz
+$ cd pytovid-0.01
+$ su -c "python setup.py install"
+Password: (enter root password)
+```
+
+If all goes well, the pytovid modules will be installed in a system-wide
+place, so all Python programs can use them. For more on how this works
+(and how to customize the process),
+see [Installing Python Modules http://www.python.org/doc/current/inst/].
+
+
+== Why reimplement? ==
+
+It seems like with any project of moderate size, there comes a point where it
+makes sense to ask "Should we just start over from scratch?" That time has
+come, for tovid, and I've decided to start building a brand new tovid, using
+the [Python http://www.python.org/] programming language (more on why Python
+later).
+
+You may be wondering: Why start from scratch when you already have something
+that works? If it ain't broken, why fix it? Good questions. There's a only one
+really good reason for this reimplementation: maintenance.
+
+With any software (but with open-source software especially), it's all about
+code maintenance. From the moment tovid was first released, it has been
+undergoing bugfixes, feature enhancements, portability improvements, and other
+revisions to the code. Developers (and sometimes users) spend a lot of time
+reading, and trying to understand, that code. The choice of programming
+language has a strong effect on the simplicity and intelligibility of the code.
+
+The existing tovid suite is written in
+[shell script http://en.wikipedia.org/wiki/Shell_script]. While not the hardest
+language to understand, its syntax can be quite cryptic even for simple
+operations. Shell script is not designed for handling complicated data
+structures (such as multimedia video files), and its arithmetic abilities are
+very limited. It's not very user-friendly when things go wrong, and you often
+don't get enough diagnostic information (such as line numbers) to locate bugs
+quickly. New features tend to be added in a
+[crufty http://www.clueless.com/jargon3.0.0/crufty.html] fashion, making
+maintenance even harder for future generations.
+
+It's time for a change--before tovid gets any bigger or more complicated,
+we need an implementation that is simpler and more transparent. We need
+something that the average user can look at and understand, and even debug
+and improve.
+
+
+== So, why Python? ==
+
+I chose Python as the new development language mainly because it's
+(relatively) easy to read. My goal is for tovid's source code to be
+readable by the average user--simple and well-documented.
+
+
+== Module documentation ==
+
+- libtovid:
+    - [TDL libtovid.TDL.html]
+    - [Parser libtovid.Parser.html]
+    - [Project libtovid.Project.html]
+
+
+== Hacking it ==
+
+[Hacking http://www.catb.org/~esr/faqs/hacker-howto.html] the pytovid source
+code is strongly encouraged, even if you've never done any programming before.
+If you don't feel comfortable editing the source code, you may consider simply
+reading it and trying to understand it better--and if you have any problems
+understanding it, please let the developers know! It's your feedback, whether
+you hack or not, that drives open-source software to improve.
+
+If you've never programmed, but would like to start learning right now,
+try [Instant Hacking http://www.hetland.org/python/instant-hacking.php].
+[python.org http://www.python.org] has a wealth of Python resources,
+including a [Beginner's Guide http://wiki.python.org/moin/BeginnersGuide] and
+a thorough [tutorial http://www.python.org/doc/2.4.2/tut/tut.html].
+If you've programmed before, but don't know Python yet,
+[Dive into Python http://diveintopython.org/] is a good introduction.
+
+Before editing the pytovid code, I'd suggest reading Guido van Rossum's
+[Python Style Guide http://www.python.org/doc/essays/styleguide.html].
+I don't care much if pytovid follows his code-formatting preferences, but
+there's some good advice there on comments, docstrings, and naming
+conventions.
+
+Indentation is 4 spaces--no tabs allowed! Before doing any pytovid editing,
+make sure your editor is configured to insert 4 spaces instead of a tab.
+
