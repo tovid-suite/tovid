@@ -194,7 +194,19 @@ class MencoderEncoder (EncoderPlugin):
     
         
         # TODO: Implement safe area calculation
+        
+        # Audio settings
+        # The following cause segfaults on mencoder 1.0pre7try2-3.3.6 (Gentoo)
+        # when the input file's audio bitrate already matches.
+        # Can anyone confirm?
+        if 'dvd' in self.format:
+            cmd += ' -srate 48000 -af lavcresample=48000 '
+        else:
+            cmd += ' -srate 44100 -af lavcresample=44100 '
+            pass
     
+    
+        # Video settings
         # Construct lavcopts
     
         # Video codec
@@ -261,16 +273,6 @@ class MencoderEncoder (EncoderPlugin):
         cmd += ' -vf scale=%s:%s' % self.scale
         if self.expand:
             cmd += ',expand=%s:%s ' % self.expand
-    
-        # Audio settings
-        # The following cause segfaults on mencoder 1.0pre7try2-3.3.6 (Gentoo)
-        # when the input file's audio bitrate already matches.
-        # Can anyone confirm?
-        if 'dvd' in self.format:
-            cmd += ' -srate 48000 -af lavcresample=48000 '
-        else:
-            #cmd += ' -srate 44100 -af lavcresample=44100 '
-            pass
     
         return cmd
 
