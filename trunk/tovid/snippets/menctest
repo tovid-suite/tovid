@@ -1,0 +1,8 @@
+#! /bin/sh
+
+CMD="mencoder -oac lavc -ovc lavc -of mpeg \
+    -mpegopts format=dvd -vf scale=720:576 \
+    -lavcopts vcodec=mpeg2video:acodec=mp2:aspect=4/3 \
+    -ofps 25 -o menctest.mpg \"$1\""
+echo "$CMD"
+eval "$CMD"

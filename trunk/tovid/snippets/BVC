@@ -1,0 +1,131 @@
+#!/bin/sh
+# a kdialog script to convert and burn video files as svcd
+# using the tovid scripts, mplayer and vcdimager and friends
+# by grepper on irc.freenode.net <grepper@gmail.com>
+
+DEVICE=/dev/hdc
+WIN_TITLE="BEN'S VIDEO CONVERTER" 
+
+# make sure we don't overwrite files from previous runs for now
+
+mv -f files.txt `date +"%s"`-files.txt >/dev/null 2>&1
+
+mv -f combined.mpg `date +"%s"`-combined.mpg >/dev/null 2>&1
+ 
+mv -f combined.avi `date +"%s"`-combined.avi >/dev/null 2>&1
+
+mv -f mydisc.xml `date +"%s"`mydisk.xml > /dev/null 2>&1
+
+kdialog --title "BEN'S VIDEO CONVERTER" \
+--msgbox "<html><H3>BEN'S VIDEO CONVERTER</H3><p><H4>A program to convert \
+camera movie files into a format that can be used on a video CD (called vcd \
+or svcd)<p>When the file browser comes up next, choose the files that you \
+want to combine into one video, one at a time. in the order you want them \
+arranged on the video.<p>You can select more than one file at a time \
+by holding down the Control key when clicking. \
+<p>When you are done press the cancel button and the processing will start.</html>"
+
+# get a file list from the user
+
+while [ $? = 0 ]; do
+kdialog  --separate-output  --multiple \
+--getopenfilename :label1 '*.MOV *.mov  |Files from my camera' >>files.txt 2>/dev/null
+done
+
+kdialog --title "WIN_TITLE" \
+geometry +400+400 --passivepopup "<html><h3>Thankyou - the processing will begin now. 
+<p>Please be patient<p> Don't be alarmed if the progress bar doesn't seem to move. \
+<p>It doesn't increase bit by bit but in large jumps.</html>" 5 &
+
+# a somewhat irrelevent progress dialog at least letting the user something is happening.
+
+dcopRef=$(kstart --ontop --window "BEN'S VIDEO CONVERTER"  kdialog -geometry 400x100+0+0 \
+--caption "BEN'S VIDEO CONVERTER" --progressbar "Processing input files")
+
+# combine the files first, because these short *.MOV 's looked terrible doing it the 
+# other way around
+
+mencoder  `cat files.txt` -ovc copy -oac pcm -o combined.avi
+
+dcop $dcopRef setProgress 20
+dcop `dcop |grep kdialog` ProgressDialog setLabel "Processing the combined file"
+tovid -svcd -ntsc -in combined.avi -out combined
+dcop `dcop |grep kdialog` ProgressDialog setLabel "Finished creating the combined file !"
+dcop $dcopRef setProgress 70
+
+# shall we proceed to burn ?
+
+kdialog --title "BEN'S VIDEO CONVERTER" --yesno "<html><H3>Your combined video is now \
+ready and is called combined.mpg in the same directory as the original movie clips. \
+<p> Do you want to proceed to make a svcd video disk ?<p>If you press the 'yes' button, \
+we will proceed, press the 'no'button and the program will close and you can enjoy the \
+combined video file we made.</html>"
+
+if [ $? = 0 ]; then
+
+OPTION=`kdialog --menu "<html><h3>What do you want to do ?</h3><p>Please select one: \
+" a "Just Create files for burning"  b "Create files and burn disk"`
+
+case "$OPTION" in
+     a) dcop `dcop |grep kdialog` ProgressDialog setLabel "Making svcd configurations files"
+        makexml -svcd -overwrite  combined.mpg mydisc
+        dcop $dcopRef setProgress 80 
+        dcop `dcop |grep kdialog` ProgressDialog setLabel "Making svcd bin and cue files"
+        vcdxbuild -c "mydisc.xml.cue" -b     "mydisc.xml.bin" "mydisc.xml"
+        dcop `dcop |grep kdialog` ProgressDialog setLabel "DONE !"
+        dcop $dcopRef setProgress 100
+        sleep 5
+        dcop $dcopRef close
+
+        kdialog --title "BEN'S VIDEO CONVERTER" --msgbox "<html><h3>The files have \
+been created. <p><h5> you can burn them at any time with the  "k3b" burning program. \
+<p>The Proceedure is this: go to tools->burn cd image in the menu. Browse to the file \
+and load mydisc.xml.cue. Proceed to burn. </html>" 
+        exit 1;;
+
+        b) makexml -svcd   combined.mpg mydisc
+kdialog --title "BEN'S VIDEO CONVERTER" --msgbox "<html><H3>Please insert a blank CD or \
+formated rewritable CD in your CDROM drive. <p> When its ready, press OK</html>";;
+esac
+
+# double check if the disk is rewritable and needs blanking
+
+kdialog --title "BEN'S VIDEO CONVERTER" --yesno "<html><H3>Is this a rewritable disk <p> \
+If it is just a plain CDR then press the no button <p> If it is a rewritable disk, press \
+the yes button</html>"
+
+case "$?" in
+     0) dcop `dcop |grep kdialog` ProgressDialog setLabel "Blanking CD"
+        cdrecord dev=$DEVICE -blank=fast
+        dcop $dcopRef setProgress 80
+        dcop `dcop |grep kdialog` ProgressDialog setLabel "Writing the CD"
+        makevcd --burn -device $DEVICE mydisc.xml
+        dcop `dcop |grep kdialog` ProgressDialog setLabel "DONE !"
+        dcop $dcopRef setProgress 100
+        sleep 5
+        dcop $dcopRef close;;
+           
+     1) dcop `dcop |grep kdialog` ProgressDialog setLabel "Writing the CD"
+        makevcd --burn -device $DEVICE mydisc.xml
+        dcop `dcop |grep kdialog` ProgressDialog setLabel "DONE !"
+        dcop $dcopRef setProgress 100
+        sleep 5
+        dcop $dcopRef close;;
+esac
+
+           kdialog --title "BEN'S VIDEO CONVERTER" --msgbox "<html><H3>Your video CD \
+disk should be ready</html><p>Thanks for using Ben's Video Converter !</html>"
+exit 1
+
+# if the user selected "No" above, then finish up
+
+elif [ $? = 1 ]; then
+        dcop `dcop |grep kdialog` ProgressDialog setLabel "DONE !"
+        dcop $dcopRef setProgress 100
+        sleep 5
+        dcop $dcopRef close
+
+kdialog --title "BEN'S VIDEO CONVERTER" --msgbox "<html><H3>The program will exit now.<p> \
+Thanks for using Ben's Video converter !</html>"
+fi
+
