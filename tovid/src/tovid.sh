@@ -184,6 +184,8 @@ FAST_ENCODING=false
 # Don't fake it
 FAKE=false
 QUIET=false
+# Keep the intermediate files (.wav|.mpa|.ac3|.m2v|.m1v)
+KEEPFILES=false
 
 # Make note of when encoding starts, to determine total time later.
 SCRIPT_START_TIME=`date +%s`
@@ -538,6 +540,11 @@ get_args()
             "-fake" )
                 FAKE=:
                 ;;
+            
+            # Keep encoded files
+            "-keepfiles" )
+                KEEPFILES=:
+                ;;
 
             # If the option wasn't recognized, exit with an error
             "*" )
@@ -586,10 +593,12 @@ cleanup()
 {
     cd "$WORKING_DIR"
     yecho "Cleaning up..."
-    rm -fv "$OUT_PREFIX.$VID_SUF"
-    rm -fv "$OUT_PREFIX.$AUD_SUF"
     rm -fv stream.yuv
-    rm -fv $AUDIO_WAV
+    if ! $KEEPFILES; then
+      rm -fv "$OUT_PREFIX.$VID_SUF"
+      rm -fv "$OUT_PREFIX.$AUD_SUF"
+      rm -fv $AUDIO_WAV
+    fi
 
     # Remove log/temp files, unless debugging was enabled
     if $DEBUG; then
