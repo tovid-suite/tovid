@@ -25,11 +25,14 @@ a:hover {
 }
 a:visited { color: #A4A; }
 
+.toc:before { content: 'Contents:' }
 .toc {
     float: left;
     padding: 0;
     margin: 1em 3em 2em 1em;
     font-family: Georgia, serif;
+    font-size: 16px;
+    font-weight: bold;
 }
 
 .toc a {
@@ -37,9 +40,6 @@ a:visited { color: #A4A; }
     text-decoration: none;
 }
 
-.toc ul {
-    list-style: circle;
-}
 
 h1 {
     border-bottom: 3px solid grey;
@@ -49,7 +49,7 @@ h1 {
 h2 {
     color: #000;
     padding: 0.5em;
-    margin: 2em 0 1em 0;
+    margin: 2em 0;
     border-width: 1px;
     border-style: solid;
     border-color: #432;
@@ -61,7 +61,7 @@ h2 {
 h3 {
     color: #383;
     font-style: italic;
-    margin: 2em 1em 1em 1em;
+    margin: 2em 0;
     padding: 0.5em;
     border-width: 1px 0 1px 0;
     border-style: solid;
@@ -72,11 +72,15 @@ h3 {
 
 pre
 {
-    padding: 1.5em;
-    margin: 0.5em 2em;
+    padding: 1em;
+    margin: 2em;
     background: #F8F8F8 url( "images/bg_film_sepia.jpg" ) 0 0 no-repeat fixed;
     border: 1px dotted grey;
 }
+/* Indentation */
+body p   { margin-left: 3em }
+body pre { margin-left: 3em }
+body ul  { margin-left: 4em }
 
 dl { clear: both; }
 dt { font-weight: bold; }
