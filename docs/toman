@@ -1,6 +1,0 @@
-#! /bin/sh
-# This script converts the tovid DocBook documentation
-# into troff man-page format
-
-echo "Converting DocBook XML to manpages..."
-xmlto man en/tovid_documentation.en.xml -o manpages
