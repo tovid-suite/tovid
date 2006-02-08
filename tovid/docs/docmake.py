@@ -11,7 +11,7 @@ from libtovid import TDL
 import mypydoc
 
 # Directory containing .t2t doc sources
-source_dir = os.path.realpath('t2t')
+source_dir = os.path.realpath('src')
 # Directory to save output in
 dest_dir = os.path.realpath('html')
 man_dir = os.path.realpath('man')
@@ -26,7 +26,7 @@ def generate_t2t_tarball():
     """Create tar/gzip of all t2t sources in the html/download directory."""
     print "Generating .tar.gz of all .t2t sources..."
     for lang in translation_subdirs:
-        cmd = 'tar --exclude .svn -czvvf %s/download/tovid_t2t_%s.tar.gz t2t/%s' % \
+        cmd = 'tar --exclude .svn -czvvf %s/download/tovid_t2t_%s.tar.gz src/%s' % \
                 (dest_dir, lang, lang)
         os.system(cmd)
     
