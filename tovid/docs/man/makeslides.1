@@ -2,36 +2,30 @@
 
 
 .P
-\fIThis document was last edited on Saturday, 26 November 2005.\fR
+\fIThis document was last edited on Thursday, 09 February 2006.\fR
 
 .SS Name
 .P
-makeslides\-\-Convert images into still\-frame MPEG video
+makeslides: Convert images into still\-frame MPEG video
 
-.SS Synopsis
+.SS Usage
 .nf
   makeslides [-ntsc|-pal] IMAGES
 .fi
 
 
-.SS Features
-.RS
-.IP \(bu 3
-Can batch\-convert images, in nearly any format, into (S)VCD\-compliant
-MPEG stills
+.SS Options
+.P
+    \-ntsc (default)
+    \-ntscfilm
+        Generate NTSC (704x480) output
+    \-pal
+        Generate PAL (704x576) output
 
-==Options==
-
-\-ntsc (default)
-\-ntscfilm
-Generate NTSC (704x480) output
-\-pal
-Generate PAL (704x576) output
-
-IMAGES is a single image or list of images to be
-converted to still MPEGs. The output names will
-be the same as the input name, with a .mpg extension.
-.RE
+.P
+    IMAGES is a single image or list of images to be
+    converted to still MPEGs. The output names will
+    be the same as the input name, with a .mpg extension.
 
 .SS Contact
 .P

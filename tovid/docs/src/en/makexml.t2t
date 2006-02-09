@@ -7,13 +7,7 @@ makexml manual
 
 
 ==Name==
-makexml--Generate a video disc structure XML description
-
-
-==Synopsis==
-```
-makexml [ OPTIONS ] VIDEOS OUTFILE
-```
+makexml: Generate a video disc structure XML description
 
 
 ==Description==
@@ -23,75 +17,65 @@ or DVD file structure and navigation hierarchy in the format expected by
 [vcdxbuild http://www.vcdimager.org/].
 
 
-==Features==
-- Can generate a navigation hierarchy with no menus (videos play
-        in sequence when the disc is inserted)
-- Can generate a disc with one menu that jumps to each of the videos
-- Can generate a disc with a main (top) menu that jumps to one of several
-        sub-menus, each of which may then jump to video titles, or back to the top
-        menu
-- Can generate a disc with MPEG still-image slides
-
-
 ==Usage==
 ```
-makexml [ OPTIONS ] VIDEOS OUTFILE
+makexml [OPTIONS] VIDEOS OUTFILE
+```
+For example:
+```
+makexml -menu MainMenu.mpg Season1.mpg Season2.mpg Featurettes.mpg MyDisc
 ```
 
 
 ==Options==
 
-```
--dvd (default)
+: -dvd (default)
     Generate the XML for a DVD menu, to be used with dvdauthor.
--vcd
+: -vcd
     Generate the XML for a VCD menu, to be used with vcdxbuild.
--svcd
+: -svcd
     Generate the XML for an SVCD menu, to be used with vcdxbuild.
--overwrite
+: -overwrite
     Overwrite any existing output files.
-```
 
 VIDEOS may be any of the following:
 
-```
-<file list>
+: <file list>
     List of one or more video files to include, separated by spaces. At
     minimum, a DVD must have one video file. You can use shell wildcards
     (i.e., "*.mpg") to include multiple files easily. Put filenames in
     quotes if they have spaces in them.
 
--group <file list> -endgroup
+: -group <file list> -endgroup
     (DVD only) List of video files to include as one single title. This is useful
     if you have split a movie into several video files.
 
--menu VIDEO <file list>
+: -menu VIDEO <file list>
     Use video file VIDEO as a menu from which you can jump to each of
     the listed video files. If you have multiple menus, include a
     top menu so they are reachable.
 
--topmenu VIDEO [-menu VIDEO <file list>] [-menu VIDEO <file list>]...
+: -topmenu VIDEO [-menu VIDEO <file list>] [-menu VIDEO <file list>]...
     Use video file VIDEO for the top-level (VMGM) menu. The top menu will
     jump to each of the subsequent [-menu...] videos listed. Use this only if
     you have multiple sub-menus to jump to. You can only have one top menu.
 
--titlesets
+: -titlesets
     (DVD only) Forces the creation of a separate titleset per title. This
     is useful if the titles of a DVD have different video formats,
     e.g. PAL + NTSC or 4:3 + 16:9. If used with menus, there must be a
     -topmenu option that specifies a menu file with an entry for each of the
     titlesets.
 
--chapters <interval>
+: -chapters <interval>
     (DVD only) Creates a chapter every <interval> minutes (default 5 minutes:
     without **-chapters**, each movie will be divided into 5-minute chapters). 
     This option can be put at any position in a <file list> and is valid for 
     all subsequent titles until a new -chapters option is encountered. Using 
     this option may take some time, since the duration of the video is calculated.
 
--slides <file list>
+: -slides <file list>
     Create a slide-show of still images
-```
 
 OUT_PREFIX is the file you want to put the resulting XML in
 
