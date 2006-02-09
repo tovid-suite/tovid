@@ -7,14 +7,7 @@ tovid manual
 
 
 ==Name==
-tovid--Convert video to (S)VCD/DVD format
-
-
-==Synopsis==
-
-```
-tovid [OPTIONS] -in INFILE -out OUTPREFIX
-```
+tovid: Convert video to (S)VCD/DVD format
 
 
 ==Description==
@@ -23,51 +16,7 @@ MPEG format, suitable for burning to CD/DVD-R for playback on a
 standalone DVD player.
 
 
-==Features==
-- Can create a variety of MPEG output formats, including
-    VCD, SVCD, DVD, Half-DVD, and VCD-on-DVD (the ``-vcd``,
-    ``-svcd``, ``-dvd``, ``-half-dvd``,
-    and ``-dvd-vcd`` options, respectively)
-- Skips encoding of already-valid video and audio streams,
-    to avoid unnecessary quality degradation
-- Supports PAL and NTSC output (the ``-pal`` and
-    ``-ntsc`` options)
-- Automatic aspect ratio detection. You can override the
-    auto-detection with the ``-aspect W:H`` option, or use
-    standard aspect ratios ``-full`` (4:3), ``-wide``
-    (16:9), and ``-panavision`` (2.35:1).
-- Picture quality enhancement via the ``-filters``
-    option.
-- Interlaced encoding for all formats except VCD
-    (the ``-interlaced`` option)
-- Can normalize the volume of too-loud or too-soft audio (the
-    ``-normalize`` option)
-- Automatically splits output files into chunks for burning
-    to multiple CDs or DVDs. Use the ``-discsize`` option
-    to specify a custom disc size.
-- Automatic quantization adjustment based on the selected
-    video bitrate. High bitrates use low quantization (high quality), while
-    low bitrates use higher quantization.
-- Prints out statistics, including resulting file size,
-    bitrate, and encoding time, and logs statistics to
-    ``~/.tovid/stats``
-- Utilizes multiprocessing during video encoding on systems
-    with more than one CPU
-- Estimates and reports required space before encoding, and
-    warns if there's not enough space to encode
-- Progress indicator and estimated completion time shown
-    during encoding
-- Adjustable priority to prevent encoding from interfering
-    with your other computing activities (the
-    -priority ``[low|medium|high]`` option)
-- Parallel processing, via the ``-parallel``
-    option, to help maximize CPU usage during encoding (especially for
-    multi-CPU encoding)
-
-
 ==Usage==
-
-To use tovid, run a command like this:
 
 ```
 tovid [OPTIONS] -in INFILE -out OUTPREFIX
@@ -82,51 +31,55 @@ MPEG-2 video file; if you burn this file to a DVD-R, it should be
 playable on most DVD players.
 
 
-===Options===
+==Examples==
 
-```
--v, -version    Prints tovid version number only
-```
+: ``tovid -in foo.avi -out foo_encoded``
+    Convert 'foo.avi' to NTSC DVD format, saving to 'foo_encoded.mpg'.
+
+: ``tovid -pal -vcd foo.avi -out foo_encoded``
+    Convert 'foo.avi' to PAL VCD format, saving to 'foo_encoded.mpg'.
+
+
+==Basic options==
+
+: -v, -version
+    Print tovid version number only
+
 
 ===Television standards===
 
-```
--ntsc
+: -ntsc
     NTSC format video (USA, Americas) (default)
--ntscfilm
+: -ntscfilm
     NTSC-film format video
--pal
+: -pal
     PAL format video (Europe and others)
-```
 
 
 ===Formats===
 
 Standard formats, should be playable in most DVD players:
 
-```
--dvd
+: -dvd
     (720x480 NTSC, 720x576 PAL) DVD-compatible output (default)
--half-dvd
+: -half-dvd
     (352x480 NTSC, 352x576 PAL) Half-D1-compatible output
--svcd
+: -svcd
     (480x480 NTSC, 480x576 PAL) Super VideoCD-compatible output
--dvd-vcd
+: -dvd-vcd
     (352x240 NTSC, 352x288 PAL) VCD-on-DVD output
--vcd
+: -vcd
     (352x240 NTSC, 352x288 PAL) VideoCD-compatible output
-```
+
 
 Non-standard formats, playable in some DVD players:
 
-```
--kvcdx3/-kvcd
+: -kvcdx3/-kvcd
     (528x480 NTSC, 520x576 PAL) KVCDx3 long-playing VCD
--kvcdx3a/-ksvcd
+: -kvcdx3a/-ksvcd
     (544x480 NTSC, 544x576 PAL) KVCDx3A long-playing VCD
--kdvd
+: -kdvd
     (720x480 NTSC, 720x576 PAL) KDVD long-playing DVD
-```
 
 
 ==Advanced options==
@@ -141,13 +94,15 @@ mplayer, you should not need to override the default tovid behavior.
 If mplayer does not play your video with correct aspect, you may
 provide an explicit aspect ratio in one of several ways:
 
-```
--full           Same as -aspect 4:3
--wide           Same as -aspect 16:9
--panavision     Same as -aspect 235:100
--aspect WIDTH:HEIGHT
+: -full
+    Same as -aspect 4:3
+: -wide
+    Same as -aspect 16:9
+: -panavision
+    Same as -aspect 235:100
+: -aspect WIDTH:HEIGHT
     Custom aspect, where WIDTH and HEIGHT are integers.
-```
+
 
 NOTE: This is the INPUT aspect ratio. tovid chooses an optimal
 output aspect ratio for the selected disc format (VCD, DVD, etc.)
@@ -157,30 +112,29 @@ and does the appropriate letterboxing or anamorphic scaling.
 ===Video adjustment===
 
 
-```
--quality NUM (EXPERIMENTAL)
+: -quality NUM (EXPERIMENTAL)
     Desired output quality, on a scale of 1 to 10, with 10
     giving the best quality at the expense of a larger
     output file. Output size can vary by approximately a
     factor of 4 (that is, -quality 1 output can be 25%
     the size of -quality 10 output). Your results may vary.
-    
+
     At present, this option affects both output
     bitrate and quantization (but may, in the future, affect
     other quality/size-related attributes). Use -vbitrate
     if you want to explicitly provide a maximium bitrate.
 
--vbitrate NUM
+: -vbitrate NUM
     Maximum bitrate to use for video (in kbits/sec). Must be
     within allowable limits for the given format. Overrides
     default values. Ignored for VCD.
 
--interlaced (EXPERIMENTAL)
+: -interlaced (EXPERIMENTAL)
     Do interlaced encoding of the input video. Use this option if
     your video is interlaced, and you want to preserve as much
     picture quality as possible. Ignored for VCD.
 
--deinterlace (DEPRECATED)
+: -deinterlace (DEPRECATED)
     Use this option if your source video is interlaced. You can
     usually tell if you can see a bunch of horizontal lines when
     you pause the video during playback. If you have recorded
@@ -189,129 +143,116 @@ and does the appropriate letterboxing or anamorphic scaling.
     option is DEPRECATED, and will probably be ditched in favor of
     interlaced encoding, which is better in almost every way.
 
--subtitles FILE
+: -subtitles FILE
     Get subtitles from FILE and encode them into the video.
     WARNING: This hard-codes the subtitles into the video, and you
     cannot turn them off while viewing the video. By default, no
     subtitles are loaded. If your video is already compliant with the
     chosen output format, it will be re-encoded to include the subtitles.
 
--type {live|animation|bw}
+: -type {live|animation|bw}
     Optimize video encoding for different kinds of video. Use
     'live' (default) for live-action video, use 'animation' for
     cartoons or anime, and 'bw' for black-and-white video.
     This option currently only has an effect with KVCD/KSVCD
     output formats; other formats may support this in the future.
 
--safe PERCENT
+: -safe PERCENT
     Fit the video within a safe area defined by PERCENT. For example,
     "-safe 90%" will scale the video to 90% of the width/height of
     the output resolution, and pad the edges with a black border. Use
     this if some of the picture is cut off when played on your TV.
     The percent sign is optional.
 
--filters {none,denoise,contrast,all} (default none)
+: -filters {none,denoise,contrast,all} (default none)
     Apply post-processing filters to enhance the video. If your input
     video is very high quality, use 'none'. If your input video is grainy,
     use 'denoise'; if it looks washed out or faded, use 'contrast'. You
     can use multiple filters separated by commas. To apply all filters,
     use 'all'.
 
--fps RATIO
+: -fps RATIO
     Force input video to be interpreted as [NUM] frames per second.
     May be necessary for some ASF, MOV, or other videos. NUM
     should be an integer ratio such as "24000:1001" (23.976fps),
     "30000:1001" (29.97fps), or "25:1" (25fps). This option is
     temporary, and may disappear in future releases.
-```
 
 
 ===Audio adjustment===
 
-```
--normalize
+: -normalize
     Normalize the volume of the audio. Useful if the audio is too
     quiet or too loud, or you want to make volume consistent for
     a bunch of videos.
 
--abitrate NUM
+: -abitrate NUM
     Encode audio at NUM kilobits per second.
     Reasonable values include 128, 224, and 384. The default is 224 kbits/sec,
     good enough for most encodings. The value must be within the allowable
     range for the chosen disc format; Ignored for VCD, which must be 224.
-```
 
 
 ===Other options===
 
-```
--debug
+: -debug
     Print extra debugging information to the log file. Useful in
     diagnosing problems if they occur. This option also leaves
     the log file (with a .log extension) in the directory after
     encoding finishes.
 
--fake
+: -fake
     Do not actually encode; only print the commands (mplayer,
     mpeg2enc etc.) that would be executed. Useful in debugging;
     have tovid give you the commands, and run them manually.
 
--priority {low|medium|high}
+: -priority {low|medium|high}
     Sets the main encoding process to the given priority. With
     high priority, it may take other programs longer to load
     and respond. With lower priority, other programs will be
     more responsive, but encoding may take 30-40% longer.
     The default is high priority.
 
--discsize NUM
+: -discsize NUM
     Sets the desired target DVD/CD-R size to NUM MB (10^6).
     Default is 700 for CD, 4500 for DVD. Use higher values at your own
     risk. Use 650 or lower if you plan to burn to smaller-capacity CDs.
 
--parallel
+: -parallel
     Will perform encode/rip processes in parallel using named
     pipes. Maximizes CPU utilization and minimizes disk usage.
 
--update SECS
+: -update SECS
     Print status updates at intervals of SECS seconds. This affects
     how regularly the progress-meter is updated. The default is once
     per second
 
--mplayeropts "OPTIONS"
+: -mplayeropts "OPTIONS"
     Append OPTIONS to the mplayer command run during video encoding.
     Use this if you want to add specific video filters (documented in
     the mplayer manual page). Overriding some options will cause
     encoding to fail, so use this with caution!
 
--ffmpeg (EXPERIMENTAL)
+: -ffmpeg (EXPERIMENTAL)
     Use ffmpeg for video encoding, instead of mplayer/mpeg2enc.
     Encoding will be noticeably faster; (S)VCD and DVD are supported,
     but KVCD/KDVD is not fully supported yet.
 
--nofifo (EXPERIMENTAL)
+: -nofifo (EXPERIMENTAL)
     Do not use a FIFO pipe for video encoding. If you are getting
     "Broken pipe" errors with normal encoding, try this option.
     WARNING: This uses lots of disk space (about 2 GB per minute of
     video).
 
--keepfiles
+: -keepfiles
     Keep the intermediate files after encoding. Usually, this means the
     audio and video streams are kept (eg the .ac3 and .m2v files for an
     NTSC DVD). This doesn't work with -parallel because the intermediate
     files are named pipes, and not real files.
 
--quiet
+: -quiet
     Reduce output to the console.
-```
 
-
-==Examples==
-
-: ``tovid -in foo.avi -out foo_encoded``
-    Convert ``foo.avi`` using default options (NTSC DVD), and put the encoded
-    video in ``foo_encoded.mpg``.
-: ``tovid -pal -vcd foo.avi -out foo_encoded``
-    Convert ``foo.avi`` to PAL VCD format, outputting to ``foo_encoded.mpg``.
 
 
 ==Contact==

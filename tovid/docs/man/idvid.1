@@ -2,17 +2,11 @@
 
 
 .P
-\fIThis document was last edited on Saturday, 26 November 2005.\fR
+\fIThis document was last edited on Thursday, 09 February 2006.\fR
 
 .SS Name
 .P
-idvid\-\-Identify video files
-
-.SS Synopsis
-.nf
-  idvid [ -terse ] { FILES }
-.fi
-
+idvid: Identify video files
 
 .SS Description
 .P
@@ -20,19 +14,29 @@ idvid identifies each multimedia video file in a
 list, and reports its compliance with video disc standards such as VCD,
 SVCD, and DVD.
 
-.SS Features
-.RS
-.IP \(bu 3
-Prints out running time, resolution, frame rate, and other information
-about a video or videos
-.IP \(bu 3
-Identifies what formats (VCD, SVCD, or DVD) the audio and video streams
-are compliant with, and tells you what kind of video disc you can burn a
-video to, if it's compliant
-.IP \(bu 3
-Can print out statistics in terse format, suitable for parsing with other
-scripts or utilities (the \-terse`` command\-line option)
-.RE
+.SS Usage
+.nf
+  idvid [OPTIONS] VIDEO_FILE(s)
+.fi
+
+.P
+For example:
+
+.nf
+  idvid foo.avi
+  idvid videos/*.mpg
+.fi
+
+
+.SS Options
+.TP
+\-terse
+Print raw video characteristics, no formatting. Helpful when
+calling from other scripts.
+
+.TP
+\-verbose
+Print extra information from mplayer, tcprobe, and ffmpeg.
 
 .SS Contact
 .P

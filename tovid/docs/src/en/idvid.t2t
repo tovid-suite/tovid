@@ -7,13 +7,7 @@ idvid manual
 
 
 ==Name==
-idvid--Identify video files
-
-
-==Synopsis==
-```
-idvid [ -terse ] { FILES }
-```
+idvid: Identify video files
 
 
 ==Description==
@@ -22,26 +16,24 @@ list, and reports its compliance with video disc standards such as VCD,
 SVCD, and DVD.
 
 
-
-==Features==
-- Prints out running time, resolution, frame rate, and other information
-        about a video or videos
-- Identifies what formats (VCD, SVCD, or DVD) the audio and video streams
-        are compliant with, and tells you what kind of video disc you can burn a
-        video to, if it's compliant
-- Can print out statistics in terse format, suitable for parsing with other
-        scripts or utilities (the -terse`` command-line option)
+==Usage==
+```
+idvid [OPTIONS] VIDEO_FILE(s)
+```
+For example:
+```
+idvid foo.avi
+idvid videos/*.mpg
+```
 
 
 ==Options==
-```
--terse
-    Print raw video characteristics, no formatting. Helpful when 
+: -terse
+    Print raw video characteristics, no formatting. Helpful when
     calling from other scripts.
 
--verbose
+: -verbose
     Print extra information from mplayer, tcprobe, and ffmpeg.
-```
 
 
 ==Contact==
