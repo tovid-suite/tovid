@@ -293,6 +293,15 @@ and does the appropriate letterboxing or anamorphic scaling.
     "Broken pipe" errors with normal encoding, try this option.
     WARNING: This uses lots of disk space (about 2 GB per minute of
     video).
+
+-keepfiles
+    Keep the intermediate files after encoding. Usually, this means the
+    audio and video streams are kept (eg the .ac3 and .m2v files for an
+    NTSC DVD). This doesn't work with -parallel because the intermediate
+    files are named pipes, and not real files.
+
+-quiet
+    Reduce output to the console.
 ```
 
 
