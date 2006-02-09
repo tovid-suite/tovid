@@ -78,9 +78,11 @@ pre
     border: 1px dotted grey;
 }
 /* Indentation */
-body p   { margin-left: 3em }
-body pre { margin-left: 3em }
+body p   { margin-left: 2em }
+body pre { margin-left: 2em }
 body ul  { margin-left: 4em }
+body dl  { margin-left: 4em }
+.toc ul  { margin-left: 1em }
 
 dl { clear: both; }
 dt { font-weight: bold; }

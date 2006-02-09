@@ -7,18 +7,14 @@ makeslides manual
 
 
 ==Name==
-makeslides--Convert images into still-frame MPEG video
+makeslides: Convert images into still-frame MPEG video
 
 
-==Synopsis==
+==Usage==
 ```
 makeslides [-ntsc|-pal] IMAGES
 ```
 
-
-==Features==
-- Can batch-convert images, in nearly any format, into (S)VCD-compliant
-        MPEG stills
 
 ==Options==
 

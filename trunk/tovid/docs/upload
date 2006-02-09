@@ -17,6 +17,6 @@ done
 # Upload images
 # pushd images && scp *.jpg *.png "$USER@$DEST/images" && popd
 
-echo "Uploading contents of 'download'"
-pushd download && scp * "$USER@$DEST/download" && popd
+#echo "Uploading contents of 'download'"
+#pushd download && scp * "$USER@$DEST/download" && popd
 
