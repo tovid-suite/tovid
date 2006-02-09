@@ -11,5 +11,8 @@ tovid manual pages
 - [makemenu makemenu.html]
 - [makexml makexml.html]
 - [makedvd makedvd.html]
+- [makeslides makeslides.html]
 - [postproc postproc.html]
+- [dvrequant dvrequant.html]
+- [pytovid pytovid.html]
 
