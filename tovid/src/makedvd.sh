@@ -305,8 +305,13 @@ if $DO_BURN; then
 
     echo "Found $DISC_STATUS $DISC_TYPE."
 
-    # DVD-RW need explicit blanking, DVD+RW blanking is done by growisofs automatically
-    if test "x$DISC_TYPE" = "xDVD-RW" && test "x$DISC_STATUS" = "xcomplete"; then 
+    # complete DVD+/-RW need explicit blanking
+    # a bug report for tkDVD points out that -use-the-force-luke=tty is req'd to
+    # burn to complete +/-RW discs:
+    # http://savannah.nongnu.org/bugs/index.php?func=detailitem&item_id=10751
+    # but this support is still spotty (works for grepper and his +RW, but not 
+    # MacNorth and his -RW)
+    if test "x$DISC_STATUS" = "xcomplete"; then 
       echo "Found $DISC_STATUS $DISC_TYPE in $DVDRW_DEVICE. Blanking..."
       dvd+rw-format -blank $DVDRW_DEVICE
     fi
