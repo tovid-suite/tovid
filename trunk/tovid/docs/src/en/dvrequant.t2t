@@ -7,7 +7,7 @@ dvrequant manual page
 
 
 ==Name==
-dvrequant--Rip and shrink a title from DVD
+dvrequant: Rip and shrink a title from DVD
 
 
 ==Synopsis==
@@ -15,19 +15,11 @@ dvrequant--Rip and shrink a title from DVD
 
 
 ==Description==
-dvrequant is designed to rip a
+dvrequant is an interactive script designed to rip a
 single title from a DVD disc, along with up to two audio
-tracks, and requantize (shrink) the title to fit on a
-
-dvrequant--Rip and shrink a title from DVD
+tracks, and requantize (shrink) the title to fit on a 4.7GB DVD.
 
 
-==Synopsis==
-``dvrequant``
-
-
-==Description==
-dvrequant is designed to rip a
-single title from a DVD disc, along with up to two audio
-tracks, and requantize (shrink) the title to fit on a
-
+==Contact==
+For further assistance, contact information, forum and IRC links,
+please refer to the [tovid homepage http://tovid.org/].
