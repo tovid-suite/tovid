@@ -22,6 +22,7 @@ list, and reports its compliance with video disc standards such as VCD,
 SVCD, and DVD.
 
 
+
 ==Features==
 - Prints out running time, resolution, frame rate, and other information
         about a video or videos
@@ -30,6 +31,17 @@ SVCD, and DVD.
         video to, if it's compliant
 - Can print out statistics in terse format, suitable for parsing with other
         scripts or utilities (the -terse`` command-line option)
+
+
+==Options==
+```
+-terse
+    Print raw video characteristics, no formatting. Helpful when 
+    calling from other scripts.
+
+-verbose
+    Print extra information from mplayer, tcprobe, and ffmpeg.
+```
 
 
 ==Contact==
