@@ -266,7 +266,9 @@ if test "$KERNEL" = "Linux"; then
     CPU_SPEED=`cat /proc/cpuinfo | grep -i mhz | awk '{print $4}'`
     # Test for multiple CPUs. If they are available, try to use them.
     if test `cat /proc/cpuinfo | grep processor | wc -l` -ge "2"; then
-        MTHREAD="-M 2"
+        MULTIPLE_CPUS=:
+    else
+        MULTIPLE_CPUS=false
     fi
 elif test "$KERNEL" = "Darwin"; then
     :

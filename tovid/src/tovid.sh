@@ -150,7 +150,6 @@ FORCE_FPSRATIO=""
 # No parallel by default
 PARALLEL=false
 ENCODING_MODE="serial"
-MTHREAD=""
 # List of PIDS to kill on exit
 PIDS=""
 # Live video
@@ -594,10 +593,16 @@ cleanup()
     cd "$WORKING_DIR"
     yecho "Cleaning up..."
     rm -fv stream.yuv
-    if ! $KEEPFILES; then
-      rm -fv "$OUT_PREFIX.$VID_SUF"
-      rm -fv "$OUT_PREFIX.$AUD_SUF"
-      rm -fv $AUDIO_WAV
+    if $KEEPFILES; then
+        yecho "Keeping temporary files:"
+        yecho "  $OUT_PREFIX.$VID_SUF"
+        yecho "  $OUT_PREFIX.$AUD_SUF"
+        yecho "  $AUDIO_WAV"
+    else
+        yecho "Removing temporary files..."
+        rm -fv "$OUT_PREFIX.$VID_SUF"
+        rm -fv "$OUT_PREFIX.$AUD_SUF"
+        rm -fv $AUDIO_WAV
     fi
 
     # Remove log/temp files, unless debugging was enabled
@@ -713,24 +718,24 @@ echo "$ME Version $TOVID_VERSION" >> "$LOG_FILE"
 # ******************************************************************************
 case "$TVSYS" in
     "PAL" )
-        VID_NORM="-n p"
-        VID_FPS="-F 3"
+        VID_NORM="--video-norm p"
+        VID_FPS="--frame-rate 3"
         TGT_FPS="25.000"
         TGT_FPSRATIO="25:1"
         ;;
     "NTSC" )
-        VID_NORM="-n n"
-        VID_FPS="-F 4"
+        VID_NORM="--video-norm n"
+        VID_FPS="--frame-rate 4"
         TGT_FPS="29.970"
         TGT_FPSRATIO="30000:1001"
         ;;
     "NTSCFILM" )
-        VID_NORM="-n n"
+        VID_NORM="--video-norm n"
         # VCD can't use 3:2 pulldown; all others can
         if test x"$TGT_RES" = x"VCD"; then
-            VID_FPS="-F 2"
+            VID_FPS="--frame-rate 2"
         else
-            VID_FPS="-F 4 -p"
+            VID_FPS="--frame-rate 4 --3-2-pulldown"
         fi
         TGT_FPS="23.976"
         TGT_FPSRATIO="24000:1001"
@@ -984,10 +989,10 @@ QUANT=`expr 13 \- $VID_QUALITY`
 # mpeg2enc encoding quality options
 # Don't use -q for VCD (since -q implies variable bitrate)
 if test x"$TGT_RES" = x"VCD"; then
-    MPEG2_QUALITY="-4 2 -2 1 -H"
+    MPEG2_QUALITY="--reduction-4x4 2 --reduction-2x2 1 --keep-hf"
     FF_QUANT=""
 else
-    MPEG2_QUALITY="-4 2 -2 1 -q $QUANT -H"
+    MPEG2_QUALITY="--reduction-4x4 2 --reduction-2x2 1 -q $QUANT --keep-hf"
     FF_QUANT="-qscale $QUANT"
 fi
 
@@ -1040,6 +1045,15 @@ fi
 yecho "Converting $IN_FILE to compliant $TVSYS $TGT_RES format"
 yecho "Storing log and temporary files in $TMP_DIR"
 $DEBUG && yecho "Run 'tail -f $LOG_FILE' in another terminal to monitor the log"
+
+# If multiple CPUs are available, do multithreading in mpeg2enc
+if $MULTIPLE_CPUS; then
+    yecho "Multiple CPUs detected; mpeg2enc will use multithreading."
+    MTHREAD="--multi-thread 2"
+else
+    MTHREAD=""
+fi
+
 yecho
 
 
@@ -1184,12 +1198,12 @@ fi
 if test x"$FORMAT" = x"DVD" && test "$V_ASPECT_WIDTH" -ge 177; then
     TGT_ASPECT_WIDTH=177
     FF_ASPECT="-aspect 16:9"
-    ASPECT_FMT="-a 3"
+    ASPECT_FMT="--aspect 3"
 # For all others, overall aspect is 4:3 (133 / 100)
 else
     TGT_ASPECT_WIDTH=133
     FF_ASPECT="-aspect 4:3"
-    ASPECT_FMT="-a 2"
+    ASPECT_FMT="--aspect 2"
 fi
 
 # Determine width/height to scale to, maintaining aspect
@@ -1267,12 +1281,13 @@ if test $INNER_WIDTH != $TGT_WIDTH || test $INNER_HEIGHT != $TGT_HEIGHT; then
     VID_SCALE="$VID_SCALE -vf-add expand=$TGT_WIDTH:$TGT_HEIGHT"
 fi
 
+
 # Tell mplayer and mpeg2enc to do interlaced encoding, if requested
 # (except for VCD, which doesn't support it)
 if $INTERLACED && test x"$TGT_RES" != x"VCD"; then
 
     # Unneeded, and possibly harmful?
-    # MPEG2_FMT="$MPEG2_FMT -I 1"
+    # MPEG2_FMT="$MPEG2_FMT --interlace-mode 1"
 
     # If video filters are being applied, need to deinterleave/reinterlave
     if test -n $VID_FILTER || test -n $VID_SCALE; then
@@ -1506,7 +1521,7 @@ else
         mkfifo stream.yuv
     fi
     VID_PLAY_CMD="$PRIORITY mplayer -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg${YUV4MPEG_ILACE} ${VF_PRE} ${VID_FILTER} ${VID_SCALE} ${VF_POST} \"$IN_FILE\" $MPLAYER_OPTS"
-    VID_ENC_CMD="cat stream.yuv | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc -S $DISC_SIZE -B $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$OUT_PREFIX.$VID_SUF\""
+    VID_ENC_CMD="cat stream.yuv | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$OUT_PREFIX.$VID_SUF\""
     yecho $VID_PLAY_CMD
     yecho $VID_ENC_CMD
     # Start encoding
@@ -1561,9 +1576,9 @@ fi
 AUDIO_SIZE=`du -c -b "$OUT_PREFIX.$AUD_SUF" | awk 'END{print $1}'`
 VIDEO_SIZE=`du -c -b "$OUT_PREFIX.$VID_SUF" | awk 'END{print $1}'`
 # Total size of streams so far (in MBytes)
-TOTAL_SIZE=`expr \( $AUDIO_SIZE \+ $VIDEO_SIZE \) \/ 1000000`
+STREAM_SIZE=`expr \( $AUDIO_SIZE \+ $VIDEO_SIZE \) \/ 1000000`
 # If it will exceed disc size, add '%d' field to allow mplex to split the output
-if test $TOTAL_SIZE -gt $DISC_SIZE; then
+if test $STREAM_SIZE -gt $DISC_SIZE; then
     OUT_FILENAME=`echo "$OUT_FILENAME" | sed -e 's/\.mpg$/.%d.mpg/'`
 fi
 
@@ -1647,6 +1662,7 @@ $SCRIPT_NAME
     MD5sum of the input file (IN_FILE_MD5)
     Width in pixels of input file (ID_VIDEO_WIDTH)
     Height in pixels of input file (ID_VIDEO_HEIGHT)
+    Total size of audio and video streams (STREAM_SIZE)
     ===================================================
 
     Values are stored as comma-separated quoted strings, for ease of
