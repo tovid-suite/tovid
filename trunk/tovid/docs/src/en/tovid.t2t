@@ -176,7 +176,9 @@ and does the appropriate letterboxing or anamorphic scaling.
     May be necessary for some ASF, MOV, or other videos. NUM
     should be an integer ratio such as "24000:1001" (23.976fps),
     "30000:1001" (29.97fps), or "25:1" (25fps). This option is
-    temporary, and may disappear in future releases.
+    temporary, and may disappear in future releases. (Hint: To
+    convert a decimal like 23.976 to an integer ratio, just multiply
+    by 1000, i.e. 23976:1000)
 
 
 ===Audio adjustment===
