@@ -38,7 +38,7 @@
 # eg [tovid], [0.40] would yield a tovid-0.40.tar.gz after "$ make dist"
 #                    the version number is also substituted into tovid-init.sh.in
 #                    and into setup.py.in
-AC_INIT([tovid], [0.24])
+AC_INIT([tovid], [0.25])
 AC_CONFIG_SRCDIR([src/tovid.sh])
 
 AM_INIT_AUTOMAKE
