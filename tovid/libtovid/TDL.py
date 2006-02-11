@@ -220,8 +220,14 @@ class Element:
         """Format element as a TDL-compliant string and return it."""
         tdl = "%s \"%s\"\n" % (self.tag, self.name)
         for key, value in self.options.iteritems():
+            # For boolean options, print Trues and omit Falses
+            if value.__class__ == bool:
+                if value == True:
+                    tdl += "    %s\n" % key
+                else:
+                    pass
             # If value has spaces, quote it
-            if value.__class__ == str and ' ' in value:
+            elif value.__class__ == str and ' ' in value:
                 tdl += "    %s \"%s\"\n" % (key, value)
             # Otherwise, don't
             else:
@@ -361,7 +367,7 @@ class Parser:
                 # How many arguments are expected for this
                 # option? (0, 1, or unlimited)
                 expected_args = element_defs[element.tag][opt].num_args()
-                #print "%s expects %s args" % (opt, expected_args)
+                print "%s expects %s args" % (opt, expected_args)
 
                 # No args? Must just be a flag--set it to True
                 if expected_args == 0:
@@ -370,11 +376,12 @@ class Parser:
                 # One arg? Easy...
                 elif expected_args == 1:
                     arg = self.next_token()
-                    # TODO: Clean up this ugly syntax...
-                    if element_defs[element.tag][opt].is_valid(arg):
-                        element.set(opt, arg)
-                    else:
-                        print "Invalid argument to -%s: %s" % (opt, arg)
+                    # TODO: Get validation working properly
+                    # if element_defs[element.tag][opt].is_valid(arg):
+                    #     element.set(opt, arg)
+                    # else:
+                    #     print "Invalid argument to -%s: %s" % (opt, arg)
+                    element.set(opt, arg)
 
                 # Unlimited (-1) number of args? Create a list,
                 # and look for comma-separation.
