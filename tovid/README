@@ -7,7 +7,7 @@ Video disc authoring software
 Quick install:
 
 $ ./configure
-$ su -c ./setup.sh
+$ ./setup.sh
 
 See INSTALL for installation instructions for more details 
 about the shell and python scripts in this package.
