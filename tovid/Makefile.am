@@ -22,7 +22,7 @@
 #
 #           http://www.gnu.org/licenses/gpl.txt
 
-man_MANS = man/*.1
+man_MANS = docs/man/*.1
 EXTRA_DIST = $(man_MANS) \
 	libtovid/*.py \
 	icons/*.png \
