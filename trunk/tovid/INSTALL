@@ -6,20 +6,14 @@ Video disc authoring software
 
 This file contains configuration and installation instructions for tovid.
 
-To install tovid and the GUI, simply run the configure script, then do 'make
-install' as root:
+To install an official source distribution of tovid (from a tarball such
+as tovid-0.25.tar.gz), do the following after extracting the tarball:
 
     $ ./configure
-    $ su -c 'make install'
-    (root password)
-
-The GUI now depends on a set of Python modules designed for tovid. In
-order to use the GUI, you must also do this (_after_ ./configure):
-
-    $ su -c './setuplib install'
+    $ ./setup.sh
+    (Enter root password)
 
 See the tovid homepage (http://tovid.org/) for additional documentation.
-
 
 Following are the standard, autotools installation instructions, which may be
 useful if you are a developer or packager.
