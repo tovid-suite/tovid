@@ -31,7 +31,7 @@ If you install from the source ``.tar.gz``, you should first install
 [all dependencies dependencies.html], to prevent potential problems.
 
 Next, download
-[tovid-0.24.tar.gz http://download.berlios.de/tovid/tovid-0.24.tar.gz].
+[tovid-0.25.tar.gz http://download.berlios.de/tovid/tovid-0.25.tar.gz].
 This tarball contains everything you need to run tovid and the GUI.
 Save this somewhere on your computer (for now, we'll assume it's saved
 in ``~/Downloads/``).
@@ -42,21 +42,21 @@ the path where you saved the .tar.gz:
 
 ```
 $ cd ~/Downloads
-$ tar -xzvf tovid-0.24.tar.gz
+$ tar -xzvf tovid-0.25.tar.gz
 ```
 
-The installation files will go into a subdirectory ``tovid-0.24`` within the
+The installation files will go into a subdirectory ``tovid-0.25`` within the
 current directory.  Next, do the following:
 
 ```
-$ cd ~/Downloads/tovid-0.24
+$ cd ~/Downloads/tovid-0.25
 $ ./configure
-$ su -c 'make install'
-$ su -c './setup.py install'
+$ ./setup.sh
 ```
 
+You will be prompted for the root password to install tovid system-wide.
 If you decide you don't want tovid installed anymore, run ``make uninstall``
-from the original installation directory (``~/Downloads/tovid-0.24``).
+from the original installation directory (``~/Downloads/tovid-0.25``).
 
 
 ==From SVN==
@@ -71,8 +71,22 @@ $ svn checkout svn://svn.berlios.de/tovid/trunk/tovid
 $ cd tovid
 $ ./bootstrap
 $ ./configure
-$ su -c 'sh ./setup.sh'
+$ ./setup.sh
 ```
 
-You can [browse the SVN repository http://svn.berlios.de/wsvn/tovid] to see
-what other modules are available for checkout.
+To stay updated with the latest changes in tovid (as the developers make them),
+do:
+
+```
+$ cd ~/Downloads/tovid
+$ svn update
+```
+
+Then ``./bootstrap && ./configure && ./setup.sh`` as above to install.  If you
+install from SVN, you're strongly encouraged to start hanging out with the
+developers on the IRC channel, or on the tovid forum, to get involved with
+development. Even if you don't know the first thing about code, your input is
+needed. (Do you really want to leave tovid in the hands of a bunch of code
+monkeys?)
+
+
