@@ -1624,8 +1624,10 @@ if $FAKE; then
     :
 else
     yecho "Output files:"
-    for OUTFILE in `ls -1 "$OUT_PREFIX.mpg $OUT_PREFIX.[0-9].mpg" 2>/dev/null`; do
-        yecho "    $OUTFILE (`du -h "$OUTFILE" | awk 'END{print $1}'`)"
+    for OUTFILE in `ls -1 $OUT_PREFIX.mpg $OUT_PREFIX.[0-9].mpg`; do
+        echo "$OUTFILE"
+        OUTSIZE=`du -h "$OUTFILE" | awk 'END{print $1}'`
+        echo "    $OUTFILE ($OUTSIZE)"
     done
 fi
 
