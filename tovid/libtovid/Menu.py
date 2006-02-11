@@ -67,11 +67,15 @@ optiondefs = {
     'alignment':
         OptionDef('alignment', 'left|center|right', 'left'),
     'textcolor':
-        OptionDef('textcolor', '#RRGGBB|#RGB|COLORNAME', 'white'),
+        OptionDef('textcolor', 'COLOR' 'white',
+        """Color of menu text. COLOR may be a hexadecimal triplet
+        (#RRGGBB or #RGB), or a color name from 'convert -list color'."""),
     'highlightcolor':
-        OptionDef('highlightcolor', '#RRGGBB|#RGB|COLORNAME', 'red'),
+        OptionDef('highlightcolor', 'COLOR', 'red',
+        """Color of menu highlights."""),
     'selectcolor':
-        OptionDef('selectcolor', '#RRGGBB|#RGB|COLORNAME', 'green'),
+        OptionDef('selectcolor', 'COLOR', 'green',
+        """Color of menu selections."""),
     'out':
         OptionDef('out', 'FILE', None),
     # Thumbnail menus and effects
