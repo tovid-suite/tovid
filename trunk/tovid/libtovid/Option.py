@@ -49,14 +49,15 @@ class OptionDef:
         False otherwise. Expected/allowed values are inferred from
         the argformat string.
         
-        Understood self.argformat patterns:
+        self.argformat patterns to consider:
             opta|optb|optc      # Either opta, optb, or optc
             [100-999]           # Any integer between 100 and 999
             NUM:NUM             # Any two integers separated by a colon
             VAR                 # A single string (VAR can be any all-caps word)
             VAR [, VAR]         # List of strings
             (empty)             # Boolean; no argument required
-        (Not all are implemented yet)
+
+        All very experimental...
         """
         # TODO: Eliminate hackery; find a more robust way of doing this.
         # Also, pretty inefficient, since regexp matching is done every
@@ -95,6 +96,8 @@ class OptionDef:
             else:
                 return False
 
+        # For now, accept any unknown cases
+        return True
 
     def usage_string(self):
         """Return a string containing "usage notes" for this option."""
