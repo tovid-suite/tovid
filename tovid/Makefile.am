@@ -27,6 +27,7 @@ EXTRA_DIST = $(man_MANS) \
 	libtovid/*.py \
 	icons/*.png \
 	bootstrap \
+	setuplib \
 	setup.sh
 
 SUBDIRS = src
