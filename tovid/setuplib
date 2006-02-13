@@ -1,11 +1,11 @@
-# - python -
+#! /usr/bin/python
 
 from distutils.core import setup
 
 setup(  name='libtovid',
         author='Eric Pierce',
         author_email='wapcaplet@users.sf.net',
-        version='@VERSION@',
+        version='0.25',
         url='http://tovid.org/',
         packages=['libtovid'],
     )

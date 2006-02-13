@@ -3,8 +3,7 @@
 # Call this script after editing configure.ac or Makefile.am
 # then:
 # $ ./configure
-# $ make
-# $ make install
+# $ ./setup.sh
 
 # Copyright (C) 2005 Joe Friedrichsen <friedrij@users.berlios.de>
 # 
@@ -27,7 +26,7 @@ make distclean
 
 rm -rvf "autom4te.cache"
 rm -rvf aclocal.m4 config.log config.status configure \
-        Makefile Makefile.in setuplib.py
+        Makefile Makefile.in
 rm -rvf src/Makefile src/Makefile.in src/tovid-init.sh
 
 aclocal \
@@ -35,5 +34,5 @@ aclocal \
 && autoconf
 
 echo
-echo "Done. You may now do ./configure && su -c ./setup.sh"
+echo "Done. You may now do ./configure && ./setup.sh"
 echo
