@@ -1,6 +1,6 @@
 #!/bin/sh
 
 echo "Running aclocal, automake, and autoconf..."
-./bootstrap
+./bootstrap && ./configure
 echo "Making distribution .tar.gz..."
 make dist
