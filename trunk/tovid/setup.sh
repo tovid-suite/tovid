@@ -15,15 +15,14 @@ echo "Making and installing the executables..."
 if make install; then :
 else
   echo "Could not make and intall the executables!"
-  echo "Try \"su -c 'make install'\""
+  echo "Did you run ./configure first?"
+  echo "If so, try \"su -c 'make install'\""
   exit 1
 fi
 
 # Then, the python libraries
 # Make the install script
-rm -f "setuplib"
-echo "#! `which env` python"  > setuplib
-cat setuplib.py >> setuplib
+sed -i "s:^#!.*:#! `command -v python`:" setuplib
 chmod ugo+x setuplib
 
 # Install the libraries
