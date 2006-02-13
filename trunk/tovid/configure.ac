@@ -286,7 +286,7 @@ BUILD_OPTS="core$BUILD_OPTS"
 AC_SUBST(BUILD_OPTS)
 
 
-AC_CONFIG_FILES([Makefile src/Makefile src/tovid-init.sh setuplib.py])
+AC_CONFIG_FILES([Makefile src/Makefile src/tovid-init.sh])
 AC_OUTPUT
 
 
