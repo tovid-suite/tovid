@@ -104,7 +104,6 @@ PRIORITY="nice -n 0"
 DEINTERLACE=false
 # Don't do interlaced encoding
 INTERLACED=false
-ILACE_FIELD_ORDER=""
 YUV4MPEG_ILACE=""
 # Don't do any filtering by default
 DO_DENOISE=false
@@ -452,14 +451,6 @@ get_args()
             "-interlaced" )
                 # Do interlaced encoding
                 INTERLACED=:
-                # Top field first
-                ILACE_FIELD_ORDER="top"
-                ;;
-            "-interlaced_bf" )
-                # Do interlaced encoding
-                INTERLACED=:
-                # Bottom field first
-                ILACE_FIELD_ORDER="bottom"
                 ;;
             "-type" )
                 shift
@@ -1289,12 +1280,7 @@ if $INTERLACED && test x"$TGT_RES" != x"VCD"; then
         VF_POST="-vf-add il=i:i"
     fi
 
-    # Do top or bottom-first interlacing
-    if test x"$ILACE_FIELD_ORDER" = x"top"; then
-        YUV4MPEG_ILACE=":interlaced"
-    else
-        YUV4MPEG_ILACE=":interlaced_bf"
-    fi
+    YUV4MPEG_ILACE=":interlaced"
 
     # Add the ilpack video filter
     #VF_POST="$VF_POST -vf-add ilpack"
