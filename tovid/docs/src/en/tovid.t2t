@@ -31,8 +31,7 @@ By default, you will (hopefully) end up with an NTSC DVD-compliant
 MPEG-2 video file; if you burn this file to a DVD-R, it should be
 playable on most DVD players.
 
-
-==Examples==
+For example:
 
 : ``tovid -in foo.avi -out foo_encoded``
     Convert 'foo.avi' to NTSC DVD format, saving to 'foo_encoded.mpg'.
@@ -259,7 +258,7 @@ and does the appropriate letterboxing or anamorphic scaling.
 ==See also==
 
 **dvrequant**(1), **idvid**(1), **makedvd**(1), **makemenu**(1),
-**makeslids**(1), **makexml**(1), **postproc**(1), **tovid**(1)
+**makeslides**(1), **makexml**(1), **postproc**(1), **tovid**(1)
 
 
 ==Contact==
