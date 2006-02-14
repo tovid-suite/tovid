@@ -39,7 +39,7 @@
 #                    the version number is also substituted into tovid-init.sh.in
 #                    and into setup.py.in
 AC_INIT([tovid], [0.25])
-AC_CONFIG_SRCDIR([src/tovid.sh])
+AC_CONFIG_SRCDIR([src/tovid])
 
 AM_INIT_AUTOMAKE
 
