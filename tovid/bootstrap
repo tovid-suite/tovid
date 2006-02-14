@@ -34,5 +34,5 @@ aclocal \
 && autoconf
 
 echo
-echo "Done. You may now do ./configure && ./setup.sh"
+echo "Done. You may now do ./configure && make && su -c \"make install\""
 echo

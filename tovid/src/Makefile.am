@@ -45,6 +45,7 @@ sh_source = \
 # installed. Correct names are automatically created for the 
 # build process, as well as install directives.
 py_source = \
+	pyidvid.py \
 	pytovid.py \
 	pymakemenu.py \
 	pymakexml.py \
