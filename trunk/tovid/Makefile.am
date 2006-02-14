@@ -31,3 +31,10 @@ EXTRA_DIST = $(man_MANS) \
 	setup.sh
 
 SUBDIRS = src
+
+install-exec-hook: pythonlib
+
+pythonlib:
+	sed -i "s:^#!.*:#! `command -v python`:" setuplib
+	chmod ugo+x setuplib
+	./setuplib install
