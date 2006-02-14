@@ -1,4 +1,4 @@
-# -* sh *-
+#! /bin/sh
 ME="[tovid]:"
 . tovid-init
 
@@ -503,12 +503,6 @@ get_args()
             # directly to AC3 for supported formats
             "-nowav" )
                 RIP_WAV=false
-                ;;
-            "-help" )
-                # Print normal and advanced usage options, and exit
-                printf "%s\n" "$USAGE"
-                printf "%s\n" "$ADVANCED_USAGE"
-                exit 0
                 ;;
             "-in" )
                 shift
