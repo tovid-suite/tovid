@@ -108,12 +108,18 @@ adding new ones, etc.)
 
 A few other useful ``svn`` commands are:
 
+: svn status -u
+    Compare your local (or 'working') copy to the svn repository
+
 : svn update
     Get and merge updates from the repository (as other developers make them)
+
 : svn commit -m "Fixed bugs"
     Upload/merge your changes into the repository, with a brief summary
+
 : svn add FILE
     Add FILE to the repository (will be added on your next commit)
+
 : svn move FILE_A FILE_B
     Use this when you need to move or rename a file in the repository
 
@@ -125,7 +131,7 @@ $ ssh-keygen -t rsa
 $ ssh-copy-id -i ~/.ssh/id_rsa.pub username@shell.berlios.de
 ```
 
-Then, before you startx or after open a new terminal, start the ssh-agent and add your public keys to the session:
+Then, before you startx or after you open a new terminal, start the ssh-agent and add your public keys to the session:
 
 ```
 $ ssh-agent
