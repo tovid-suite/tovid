@@ -1,4 +1,4 @@
-# -* sh *-
+#! /bin/sh
 ME="[makexml]:"
 . tovid-init
 
