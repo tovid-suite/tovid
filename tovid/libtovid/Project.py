@@ -50,9 +50,9 @@ class Project:
                             (name, linkname)
 
             elif element.tag == 'Menu':
-                # Link to all 'linksto' targets, if they exist
-                print element.get('linksto')
-                for linkname in element.get('linksto'):
+                # Link to all 'titles' targets, if they exist
+                print element.get('titles')
+                for linkname in element.get('titles'):
                     if self.elemdict.has_key(linkname):
                         print "build_hierarchy: making %s a child of %s" % \
                                 (linkname, name)

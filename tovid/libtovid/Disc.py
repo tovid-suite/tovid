@@ -117,7 +117,7 @@ def dvd_menu_xml(menu):
     xml += '  <video />\n'
     xml += '  <pgc entry="root">\n'
     xml += '  <vob file="%s" />\n' % menu.get('out')
-    # For each child ('linksto' target), add a button
+    # For each child ('titles' target), add a button
     num = 1
     for target in menu.children:
         xml += '    <button>jump title %d;</button>\n' % num
