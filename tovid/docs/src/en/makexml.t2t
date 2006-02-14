@@ -80,7 +80,7 @@ For example:
     Create a slide-show of still images
 
 
-//OUT_PREFIX// is the file you want to put the resulting XML in
+//OUT_PREFIX// is the file that will receive the resulting XML.
 
 
 ==Usage notes==
@@ -112,7 +112,7 @@ component to generate the menu, this should all be handled for you.
 ==See also==
 
 **dvrequant**(1), **idvid**(1), **makedvd**(1), **makemenu**(1),
-**makeslids**(1), **makexml**(1), **postproc**(1), **tovid**(1)
+**makeslides**(1), **makexml**(1), **postproc**(1), **tovid**(1)
 
 
 ==Contact==
