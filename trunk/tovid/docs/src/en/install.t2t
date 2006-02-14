@@ -71,7 +71,8 @@ $ svn checkout svn://svn.berlios.de/tovid/trunk/tovid
 $ cd tovid
 $ ./bootstrap
 $ ./configure
-$ ./setup.sh
+$ make
+$ su -c "make install"
 ```
 
 To stay updated with the latest changes in tovid (as the developers make them),
@@ -82,11 +83,11 @@ $ cd ~/Downloads/tovid
 $ svn update
 ```
 
-Then ``./bootstrap && ./configure && ./setup.sh`` as above to install.  If you
-install from SVN, you're strongly encouraged to start hanging out with the
-developers on the IRC channel, or on the tovid forum, to get involved with
-development. Even if you don't know the first thing about code, your input is
-needed. (Do you really want to leave tovid in the hands of a bunch of code
-monkeys?)
+Then ``./bootstrap && ./configure && make && su -c "make install"`` as above 
+to install.  If you install from SVN, you're strongly encouraged to start
+hanging out with the developers on the IRC channel, or on the tovid forum, to
+get involved with development. Even if you don't know the first thing about
+code, your input is needed. (Do you really want to leave tovid in the hands 
+of a bunch of code monkeys?)
 
 
