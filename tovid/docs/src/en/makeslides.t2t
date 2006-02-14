@@ -7,32 +7,37 @@ makeslides manual
 
 
 ==Name==
+
 makeslides: Convert images into still-frame MPEG video for (S)VCD
 
 
 ==Usage==
-```
-makeslides [-ntsc|-pal] IMAGES
-```
+
+**makeslides** [-ntsc|-pal] //IMAGES//
 
 
 ==Options==
 
-: -ntsc (default)
+: **-ntsc** (default)
 
-: -ntscfilm
+: **-ntscfilm**
         Generate NTSC (704x480) output
 
-: -pal
+: **-pal**
         Generate PAL (704x576) output
 
-    
-IMAGES is a single image or list of images to be
+
+//IMAGES// is a single image or list of images to be
 converted to still MPEGs. The output names will
 be the same as the input name, with a .mpg extension.
 
+==See also==
+
+**dvrequant**(1), **idvid**(1), **makedvd**(1), **makemenu**(1),
+**makeslids**(1), **makexml**(1), **postproc**(1), **tovid**(1)
+
 
 ==Contact==
+
 For further assistance, contact information, forum and IRC links,
 please refer to the [tovid homepage http://tovid.org/].
-
