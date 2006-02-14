@@ -35,6 +35,11 @@ Interested? Check out the [installation instructions install.html], and
 
 (Newest on top)
 
+- 2006-02-10:
+    tovid 0.25 is released; see the
+    [release notes http://www.createphpbb.com/tovid/viewtopic.php?t=95&mforum=tovid] for details.
+    [Download the source http://download.berlios.de/tovid/tovid-0.25.tar.gz]
+    and follow the [installation instructions install.html] to install.
 - 2005-12-20:
     tovid 0.24 is released. The GUI has been merged back in with the regular
     tovid package, and the experimental Python tovid libraries are included
