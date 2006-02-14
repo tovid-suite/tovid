@@ -32,6 +32,8 @@ For example:
 
 : **-ntsc** (default)
     Generate an NTSC-format menu
+: **-ntscfilm**
+    Generate an NTSC-format menu (24000/1001fps)
 : **-pal**
     Generate a PAL-format menu
 : **-dvd** (default)
