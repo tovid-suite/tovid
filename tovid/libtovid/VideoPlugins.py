@@ -19,6 +19,7 @@ class EncoderPlugin:
     """Base plugin class; all encoders inherit from this."""
     def __init__(self, video):
         self.video = video
+        # Keep local copies of commonly-needed values
         self.infile = self.video.get('in')
         self.format = self.video.get('format')
         self.tvsys = self.video.get('tvsys')
@@ -39,23 +40,28 @@ class EncoderPlugin:
         # Use anamorphic widescreen for any video 16:9 or wider
         # (Only DVD supports this)
         if src_aspect >= 1.7 and self.format == 'dvd':
-            self.tgt_aspect = 16.0/9.0
+            tgt_aspect = 16.0/9.0
         else:
-            self.tgt_aspect = 4.0/3.0
+            tgt_aspect = 4.0/3.0
 
         # If aspect matches target, no letterboxing is necessary
         # (Match within a tolerance of 0.05)
-        if abs(src_aspect - self.tgt_aspect) < 0.05:
-            self.scale = (width, height)
-            self.expand = False
+        if abs(src_aspect - tgt_aspect) < 0.05:
+            scale = (width, height)
+            expand = False
         # If aspect is wider than target, letterbox vertically
-        elif src_aspect > self.tgt_aspect:
-            self.scale = (width, height * self.tgt_aspect / src_aspect)
-            self.expand = (width, height)
+        elif src_aspect > tgt_aspect:
+            scale = (width, height * tgt_aspect / src_aspect)
+            expand = (width, height)
         # Otherwise (rare), letterbox horizontally
         else:
-            self.scale = (width * src_aspect / self.tgt_aspect, height)
-            self.expand = (width, height)
+            scale = (width * src_aspect / tgt_aspect, height)
+            expand = (width, height)
+
+        # Remember scale/expand sizes and target aspect
+        self.scale = scale
+        self.expand = expand
+        self.tgt_aspect = tgt_aspect
 
 
     def run(self):

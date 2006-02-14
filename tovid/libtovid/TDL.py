@@ -61,7 +61,7 @@ Video. What options are available for a Menu element?
     background
     audio
     alignment
-    linksto
+    titles 
     >>>
 
 Say you want to know the purpose of the Menu 'background' option:
@@ -112,7 +112,7 @@ string representation of the element, like so:
         fontsize 24
         background None
         font Helvetica
-        linksto []
+        titles []
         alignment left
         audio None
     >>>
