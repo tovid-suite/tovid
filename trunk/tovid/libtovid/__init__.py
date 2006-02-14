@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-__all__ = [ \
+__all__ = [\
     "Globals",
     "Standards",
 
@@ -11,4 +11,6 @@ __all__ = [ \
 
     "Option",
     "TDL",
-    "Project" ]
+    "Project",
+    "Streams",
+    "Filetypes"]
