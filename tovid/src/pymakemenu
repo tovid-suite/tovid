@@ -1,19 +1,23 @@
-#! /usr/bin/env python
+# -* python -*
 
 # pymakemenu
 # Generate an (S)VCD/DVD menu MPEG
 # (to replace the 'makemenu' shell script)
 
 import sys, libtovid
-from libtovid import Menu, Parser, Project
+from libtovid import Menu, Parser, Project, TDL
 
 if __name__ == '__main__':
     """Parse the provided command-line arguments as a Menu element."""
 
     # If no arguments were provided, print usage notes
-    if len(sys.argv) == 1:
-        print 'Usage: pymakemenu [options] "Title 1" "Title 2" ... -out NAME'
-        print "See the 'makemenu' manual page for more details."
+
+    # TODO: Proper argument verification
+    if len(sys.argv) < 3:
+        print 'Usage: pymakemenu [options] -out NAME'
+        print 'Where [options] may be any of the following:'
+        print TDL.usage('Menu')
+        print 'Please provide an output name (-out).'
         sys.exit()
         
     # If a TDL file name was provided, parse and generate Menus in it
