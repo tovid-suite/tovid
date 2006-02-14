@@ -29,7 +29,7 @@ def _(str):
 
 
 # Import other tovid modules
-from libtovid import TDL, Parser, Project
+from libtovid import TDL, Project
 
 # ###################################################################
 # ###################################################################
