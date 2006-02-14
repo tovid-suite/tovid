@@ -2,7 +2,7 @@
 
 
 .P
-\fIThis document was last edited on Friday, 10 February 2006.\fR
+\fIThis document was last edited on Tuesday, 14 February 2006.\fR
 
 .SS Name
 .P
@@ -15,14 +15,12 @@ MPEG format, suitable for burning to CD/DVD\-R for playback on a
 standalone DVD player.
 
 .SS Usage
-.nf
-  tovid [OPTIONS] -in INFILE -out OUTPREFIX
-.fi
-
+.P
+\fBtovid\fR [ \fIOPTIONS\fR ] \fB\-in\fR \fIINFILE\fR \fB\-out\fR \fIOUTPREFIX\fR
 
 .P
-Where INFILE is any multimedia video file, and OUTPREFIX is what
-you want to call the output file, minus the file extension. OPTIONS
+Where \fIINFILE\fR is any multimedia video file, and \fIOUTPREFIX\fR is what
+you want to call the output file, minus the file extension. \fIOPTIONS\fR
 are additional customizations, described below.
 
 .P
@@ -41,18 +39,18 @@ Convert 'foo.avi' to PAL VCD format, saving to 'foo_encoded.mpg'.
 
 .SS Basic options
 .TP
-\-v, \-version
+\fB\-v\fR, \fB\-version\fR
 Print tovid version number only
 
 .SS Television standards
 .TP
-\-ntsc
+\fB\-ntsc\fR
 NTSC format video (USA, Americas) (default)
 .TP
-\-ntscfilm
+\fB\-ntscfilm\fR
 NTSC\-film format video
 .TP
-\-pal
+\fB\-pal\fR
 PAL format video (Europe and others)
 
 .SS Formats
@@ -60,32 +58,32 @@ PAL format video (Europe and others)
 Standard formats, should be playable in most DVD players:
 
 .TP
-\-dvd
+\fB\-dvd\fR
 (720x480 NTSC, 720x576 PAL) DVD\-compatible output (default)
 .TP
-\-half\-dvd
+\fB\-half\-dvd\fR
 (352x480 NTSC, 352x576 PAL) Half\-D1\-compatible output
 .TP
-\-svcd
+\fB\-svcd\fR
 (480x480 NTSC, 480x576 PAL) Super VideoCD\-compatible output
 .TP
-\-dvd\-vcd
+\fB\-dvd\-vcd\fR
 (352x240 NTSC, 352x288 PAL) VCD\-on\-DVD output
 .TP
-\-vcd
+\fB\-vcd\fR
 (352x240 NTSC, 352x288 PAL) VideoCD\-compatible output
 
 .P
 Non\-standard formats, playable in some DVD players:
 
 .TP
-\-kvcdx3/\-kvcd
+\fB\-kvcdx3\fR/\fB\-kvcd\fR
 (528x480 NTSC, 520x576 PAL) KVCDx3 long\-playing VCD
 .TP
-\-kvcdx3a/\-ksvcd
+\fB\-kvcdx3a\fR/\fB\-ksvcd\fR
 (544x480 NTSC, 544x576 PAL) KVCDx3A long\-playing VCD
 .TP
-\-kdvd
+\fB\-kdvd\fR
 (720x480 NTSC, 720x576 PAL) KDVD long\-playing DVD
 
 .SS Advanced options
@@ -100,17 +98,17 @@ If mplayer does not play your video with correct aspect, you may
 provide an explicit aspect ratio in one of several ways:
 
 .TP
-\-full
-Same as \-aspect 4:3
+\fB\-full\fR
+Same as \fB\-aspect 4:3\fR
 .TP
-\-wide
-Same as \-aspect 16:9
+\fB\-wide\fR
+Same as \fB\-aspect 16:9\fR
 .TP
-\-panavision
-Same as \-aspect 235:100
+\fB\-panavision\fR
+Same as \fB\-aspect 235:100\fR
 .TP
-\-aspect WIDTH:HEIGHT
-Custom aspect, where WIDTH and HEIGHT are integers.
+\fB\-aspect\fR \fIWIDTH\fR\fB:\fR\fIHEIGHT\fR
+Custom aspect, where \fIWIDTH\fR and \fIHEIGHT\fR are integers.
 
 .P
 NOTE: This is the INPUT aspect ratio. tovid chooses an optimal
@@ -119,7 +117,7 @@ and does the appropriate letterboxing or anamorphic scaling.
 
 .SS Video adjustment
 .TP
-\-quality NUM (EXPERIMENTAL)
+\fB\-quality\fR \fINUM\fR (EXPERIMENTAL)
 Desired output quality, on a scale of 1 to 10, with 10
 giving the best quality at the expense of a larger
 output file. Output size can vary by approximately a
@@ -132,19 +130,19 @@ other quality/size\-related attributes). Use \-vbitrate
 if you want to explicitly provide a maximium bitrate.
 
 .TP
-\-vbitrate NUM
+\fB\-vbitrate\fR \fINUM\fR
 Maximum bitrate to use for video (in kbits/sec). Must be
 within allowable limits for the given format. Overrides
 default values. Ignored for VCD.
 
 .TP
-\-interlaced (EXPERIMENTAL)
+\fB\-interlaced\fR (EXPERIMENTAL)
 Do interlaced encoding of the input video. Use this option if
 your video is interlaced, and you want to preserve as much
 picture quality as possible. Ignored for VCD.
 
 .TP
-\-deinterlace (DEPRECATED)
+\fB\-deinterlace\fR (DEPRECATED)
 Use this option if your source video is interlaced. You can
 usually tell if you can see a bunch of horizontal lines when
 you pause the video during playback. If you have recorded
@@ -154,15 +152,15 @@ option is DEPRECATED, and will probably be ditched in favor of
 interlaced encoding, which is better in almost every way.
 
 .TP
-\-subtitles FILE
-Get subtitles from FILE and encode them into the video.
+\fB\-subtitles\fR \fIFILE\fR
+Get subtitles from \fIFILE\fR and encode them into the video.
 WARNING: This hard\-codes the subtitles into the video, and you
 cannot turn them off while viewing the video. By default, no
 subtitles are loaded. If your video is already compliant with the
 chosen output format, it will be re\-encoded to include the subtitles.
 
 .TP
-\-type {live|animation|bw}
+\fB\-type\fR {live|animation|bw}
 Optimize video encoding for different kinds of video. Use
 'live' (default) for live\-action video, use 'animation' for
 cartoons or anime, and 'bw' for black\-and\-white video.
@@ -170,15 +168,15 @@ This option currently only has an effect with KVCD/KSVCD
 output formats; other formats may support this in the future.
 
 .TP
-\-safe PERCENT
-Fit the video within a safe area defined by PERCENT. For example,
+\fB\-safe\fR \fIPERCENT\fR
+Fit the video within a safe area defined by \fIPERCENT\fR. For example,
 "\-safe 90%" will scale the video to 90% of the width/height of
 the output resolution, and pad the edges with a black border. Use
 this if some of the picture is cut off when played on your TV.
 The percent sign is optional.
 
 .TP
-\-filters {none,denoise,contrast,all} (default none)
+\fB\-filters\fR {none,denoise,contrast,all} (default none)
 Apply post\-processing filters to enhance the video. If your input
 video is very high quality, use 'none'. If your input video is grainy,
 use 'denoise'; if it looks washed out or faded, use 'contrast'. You
@@ -186,9 +184,9 @@ can use multiple filters separated by commas. To apply all filters,
 use 'all'.
 
 .TP
-\-fps RATIO
-Force input video to be interpreted as [NUM] frames per second.
-May be necessary for some ASF, MOV, or other videos. NUM
+\fB\-fps\fR \fIRATIO\fR
+Force input video to be interpreted as \fIRATIO\fR frames per second.
+May be necessary for some ASF, MOV, or other videos. \fIRATIO\fR
 should be an integer ratio such as "24000:1001" (23.976fps),
 "30000:1001" (29.97fps), or "25:1" (25fps). This option is
 temporary, and may disappear in future releases. (Hint: To
@@ -197,34 +195,34 @@ by 1000, i.e. 23976:1000)
 
 .SS Audio adjustment
 .TP
-\-normalize
+\fB\-normalize\fR
 Normalize the volume of the audio. Useful if the audio is too
 quiet or too loud, or you want to make volume consistent for
 a bunch of videos.
 
 .TP
-\-abitrate NUM
-Encode audio at NUM kilobits per second.
+\fB\-abitrate\fR \fINUM\fR
+Encode audio at \fINUM\fR kilobits per second.
 Reasonable values include 128, 224, and 384. The default is 224 kbits/sec,
 good enough for most encodings. The value must be within the allowable
 range for the chosen disc format; Ignored for VCD, which must be 224.
 
 .SS Other options
 .TP
-\-debug
+\fB\-debug\fR
 Print extra debugging information to the log file. Useful in
 diagnosing problems if they occur. This option also leaves
 the log file (with a .log extension) in the directory after
 encoding finishes.
 
 .TP
-\-fake
+\fB\-fake\fR
 Do not actually encode; only print the commands (mplayer,
 mpeg2enc etc.) that would be executed. Useful in debugging;
 have tovid give you the commands, and run them manually.
 
 .TP
-\-priority {low|medium|high}
+\fB\-priority\fR {low|medium|high}
 Sets the main encoding process to the given priority. With
 high priority, it may take other programs longer to load
 and respond. With lower priority, other programs will be
@@ -232,52 +230,57 @@ more responsive, but encoding may take 30\-40% longer.
 The default is high priority.
 
 .TP
-\-discsize NUM
-Sets the desired target DVD/CD\-R size to NUM MB (10^6).
+\fB\-discsize\fR \fINUM\fR
+Sets the desired target DVD/CD\-R size to \fINUM\fR MB (10^6).
 Default is 700 for CD, 4500 for DVD. Use higher values at your own
 risk. Use 650 or lower if you plan to burn to smaller\-capacity CDs.
 
 .TP
-\-parallel
+\fB\-parallel\fR
 Will perform encode/rip processes in parallel using named
 pipes. Maximizes CPU utilization and minimizes disk usage.
 
 .TP
-\-update SECS
-Print status updates at intervals of SECS seconds. This affects
+\fB\-update\fR \fISECS\fR
+Print status updates at intervals of \fISECS\fR seconds. This affects
 how regularly the progress\-meter is updated. The default is once
 per second
 
 .TP
-\-mplayeropts "OPTIONS"
-Append OPTIONS to the mplayer command run during video encoding.
+\fB\-mplayeropts\fR \fB"\fR\fIOPTIONS\fR\fB"\fR
+Append \fIOPTIONS\fR to the mplayer command run during video encoding.
 Use this if you want to add specific video filters (documented in
 the mplayer manual page). Overriding some options will cause
 encoding to fail, so use this with caution!
 
 .TP
-\-ffmpeg (EXPERIMENTAL)
+\fB\-ffmpeg\fR (EXPERIMENTAL)
 Use ffmpeg for video encoding, instead of mplayer/mpeg2enc.
 Encoding will be noticeably faster; (S)VCD and DVD are supported,
 but KVCD/KDVD is not fully supported yet.
 
 .TP
-\-nofifo (EXPERIMENTAL)
+\fB\-nofifo\fR (EXPERIMENTAL)
 Do not use a FIFO pipe for video encoding. If you are getting
 "Broken pipe" errors with normal encoding, try this option.
 WARNING: This uses lots of disk space (about 2 GB per minute of
 video).
 
 .TP
-\-keepfiles
+\fB\-keepfiles\fR
 Keep the intermediate files after encoding. Usually, this means the
 audio and video streams are kept (eg the .ac3 and .m2v files for an
 NTSC DVD). This doesn't work with \-parallel because the intermediate
 files are named pipes, and not real files.
 
 .TP
-\-quiet
+\fB\-quiet\fR
 Reduce output to the console.
+
+.SS See also
+.P
+\fBdvrequant\fR(1), \fBidvid\fR(1), \fBmakedvd\fR(1), \fBmakemenu\fR(1),
+\fBmakeslids\fR(1), \fBmakexml\fR(1), \fBpostproc\fR(1), \fBtovid\fR(1)
 
 .SS Contact
 .P
@@ -285,6 +288,6 @@ For further assistance, contact information, forum and IRC links,
 please refer to the tovid homepage (http://tovid.org/).
 
 
-.\" man code generated by txt2tags 2.1 (http://txt2tags.sf.net)
-.\" cmdline: txt2tags -t man -i /pub/svn/tovid/tovid/docs/src/en/tovid.t2t -o /pub/svn/tovid/tovid/docs/man/tovid.1
+.\" man code generated by txt2tags 2.3 (http://txt2tags.sf.net)
+.\" cmdline: txt2tags -t man -i /home/friedrij/dev/tovid-svn/trunk/tovid/docs/src/en/tovid.t2t -o /home/friedrij/dev/tovid-svn/trunk/tovid/docs/man/tovid.1
 
