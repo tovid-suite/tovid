@@ -25,31 +25,31 @@
 # List the source files for each shell script to be built and 
 # installed. Correct names are automatically created for the 
 # build process, as well as install directives.
-sh_source = \
-	dvrequant.sh \
-	idvid.sh \
-	makedvd.sh \
-	makemenu.sh \
-	makeslides.sh \
-	makevcd.sh \
-	makexml.sh \
-	postproc.sh \
-	previd.sh \
-	tovid.sh \
-	tovid-batch.sh \
-	tovid-init.sh \
-	tovid-interactive.sh \
-	tovid-test.sh
+sh_bin = \
+	dvrequant \
+	idvid \
+	makedvd \
+	makemenu \
+	makeslides \
+	makevcd \
+	makexml \
+	postproc \
+	previd \
+	tovid \
+	tovid-batch \
+	tovid-init \
+	tovid-interactive \
+	tovid-test
 
 # List the source files for each python script to be built and 
 # installed. Correct names are automatically created for the 
 # build process, as well as install directives.
-py_source = \
-	pyidvid.py \
-	pytovid.py \
-	pymakemenu.py \
-	pymakexml.py \
-	tovidgui.py
+py_bin = \
+	pyidvid \
+	pytovid \
+	pymakemenu \
+	pymakexml \
+	tovidgui
 
 ################### LEAVE BELOW ALONE #########################
 
@@ -63,8 +63,7 @@ py_source = \
 # by the basename of its source.
 #   eg: tovid.sh becomes made and installed as tovid
 #       tovidgui.py becomes made and installed as tovidgui
-sh_bin = $(basename $(sh_source))
-py_bin = $(basename $(py_source))
+#py_bin = $(basename $(py_source))
 
 # Specify the scripts to make and install.
 bin_SCRIPTS = \
@@ -72,24 +71,24 @@ bin_SCRIPTS = \
 	$(py_bin)
 
 # Clean the built scripts only. Leave the source files alone.
-CLEANFILES = $(bin_SCRIPTS)
+#CLEANFILES = $(bin_SCRIPTS)
 
 # Distribute the source files so the suite can be built!
-EXTRA_DIST = \
-	$(sh_source) \
-	$(py_source)
+#EXTRA_DIST = \
+#	$(sh_source) \
+#	$(py_source)
 
 # Make all the shell and python scripts 
 # These are Static Pattern Rules, found at:
 # http://www.gnu.org/software/make/manual/html_mono/make.html#SEC47
-$(sh_bin): %: %.sh
-	rm -f "$@"
-	echo "#! `command -v sh`"  > $@
-	cat $(srcdir)/$< >> $@
-	chmod ugo+x $@
+#$(sh_bin): %: %.sh
+#	rm -f "$@"
+#	echo "#! `command -v sh`"  > $@
+#	cat $(srcdir)/$< >> $@
+#	chmod ugo+x $@
 
-$(py_bin): %: %.py
-	rm -f "$@"
-	echo "#! `command -v python`"  > $@
-	cat $(srcdir)/$< >> $@
-	chmod ugo+x $@
+#$(py_bin): %: %.py
+#	rm -f "$@"
+#	echo "#! `command -v python`"  > $@
+#	cat $(srcdir)/$< >> $@
+#	chmod ugo+x $@
