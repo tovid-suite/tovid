@@ -1,4 +1,4 @@
-# -* sh *-
+#! /bin/sh
 ME="[makeslides]:"
 . tovid-init
 

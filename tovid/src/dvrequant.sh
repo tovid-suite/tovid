@@ -1,4 +1,4 @@
-# -* sh *-
+#! /bin/sh
 ME="[dvrequant]:"
 
 # DVrequant script 

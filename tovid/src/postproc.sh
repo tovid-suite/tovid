@@ -1,4 +1,4 @@
-# -* sh *-
+#! /bin/sh
 ME="[postproc]:"
 . tovid-init
 
