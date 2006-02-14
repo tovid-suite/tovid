@@ -324,7 +324,7 @@ Other dependencies      $OPT_DEPENDENCIES
     tcprobe:      $TCPROBE $tcprobe_msg
     tcrequant:    $TCREQUANT $tcrequant_msg
 
- You may now type './setup.sh' to compile and install tovid.
+ You may now type 'make && su -c "make install"' to compile and install tovid.
  ])
 
 ############ POST-TEMP #################
