@@ -1,4 +1,6 @@
-#!/bin/sh
+#! /bin/sh
+#  Make a new distribution tarball for tovid
+#  !! Change the version number in configure.ac and in setuplib  !!
 
 WKG_DIR=`pwd`
 
