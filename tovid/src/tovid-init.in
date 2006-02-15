@@ -1,0 +1,341 @@
+#! /bin/sh
+
+# tovid-init
+# Part of the tovid suite
+# =======================
+# Define global (suite-wide) functions and variables
+# for the tovid suite. 
+#
+# Project homepage: http://www.tovid.org
+#
+#
+# Copyright (C) 2005 tovid.org <http://www.tovid.org>
+# 
+# This program is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License 
+# as published by the Free Software Foundation; either 
+# version 2 of the License, or (at your option) any later 
+# version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
+#
+#           http://www.gnu.org/licenses/gpl.txt
+
+
+# ******************************************************************************
+# ******************************************************************************
+#
+#
+# VARIABLES
+#
+#
+# ******************************************************************************
+# ******************************************************************************
+
+# Reset input field separator to default
+IFS=
+
+# Exit with error on undeclared variables
+#set -u
+
+# Suite version
+TOVID_VERSION="@VERSION@"
+BUILD_OPTIONS="@BUILD_OPTS@"
+
+# String used to separate blocks of output
+SEPARATOR="========================================================="
+
+TOVID_HOME="$HOME/.tovid"
+TOVID_HOME_PAGE="http://www.tovid.org"
+TOVID_FORUMS="http://www.createphpbb.com/tovid/"
+
+
+# ******************************************************************************
+# ******************************************************************************
+#
+#
+# FUNCTIONS
+#
+#
+# ******************************************************************************
+# ******************************************************************************
+
+
+# ******************************************************************************
+# Verify that a variable meets certain conditions
+# Usage: verify $VAR set|range "test limits"
+# Input: $1 = the variable to check
+#        $2 = the kind of test to perform (set|range)
+#             set: test if $VAR is in the space-separated set "test limits"
+#             range: test if $VAR is in the range given by "test limits"
+#        $3 = the limits for the test
+#
+# ex: verify $CMD_LN_OPT set "y n Y N"
+#     will return ":" (true) if $CMD_LN_OPT is one of "y n Y N"
+#     or retern "false" if it isn't (so if $CMD_LN_OPT was "no", you'd get "false")
+#
+# ex: verify $CMD_LN_OPT range "0 10"
+#     will return ":" (true) if 0 <= $CMD_LN_OPT <= 10
+# ******************************************************************************
+verify ()
+{
+  VERIFY_VAR=$1
+  VERIFY_TEST_TYPE=$2
+  case $VERIFY_TEST_TYPE in
+     "range" )
+     VERIFY_LOW=`echo "$3" | awk '{ print $1 }'`
+     VERIFY_HIGH=`echo "$3" | awk '{ print $2 }'`
+
+     if test $VERIFY_LOW -le $VERIFY_VAR && \
+        test $VERIFY_HIGH -ge $VERIFY_VAR
+     then
+        echo ":"
+     else
+        echo "false"
+     fi 
+     ;;
+
+     "set" )
+     VERIFY_SET="$3"
+
+     if echo "$VERIFY_SET" | grep -w "$VERIFY_VAR" >> /dev/null 2>&1; then
+         echo ":"
+     else
+         echo "false"
+     fi
+     ;;
+  esac
+}
+
+# ******************************************************************************
+# Print a pretty (wrapped) notice message.
+# Args: $@ == text string containing the message 
+# ******************************************************************************
+precho()
+{
+  echo -e "$@" | fold -s -w ${COLUMNS:-80}
+}
+
+# ******************************************************************************
+# Print error message, then exit.
+# Args: $@ == text string containing error message 
+# ******************************************************************************
+exit_with_error()
+{
+    echo $@
+    exit 1
+}
+
+# ******************************************************************************
+# Take an integer number of seconds and format it as hours:minutes:seconds
+# Echoes result to stdout, so in order to use the output as a "return value",
+# call the function like this:
+#     RETURN_VALUE=`format_time $NUM_SECONDS`
+# ******************************************************************************
+format_time()
+{
+    HMS_HOURS=`expr $1 / 3600`
+    HMS_MINS=`expr \( $1 % 3600 \) / 60`
+    HMS_SECS=`expr $1 % 3600 % 60`
+
+    test "$HMS_HOURS" -lt 10 && HMS_HOURS="0${HMS_HOURS}"
+    test "$HMS_MINS" -lt 10 && HMS_MINS="0${HMS_MINS}"
+    test "$HMS_SECS" -lt 10 && HMS_SECS="0${HMS_SECS}"
+
+    echo "${HMS_HOURS}:${HMS_MINS}:${HMS_SECS}"
+}
+
+# ******************************************************************************
+# Take a string containing a time (like "02:15:25.3") and
+# format it as an integer number of seconds. Fractional seconds
+# are truncated. Result is echoed to stdout, so to use the output
+# as a "return value", call the function like this:
+#     RETURN_VALUE=`unformat_time $TIME_STRING`
+# ******************************************************************************
+unformat_time()
+{
+    echo "unformat_time $1"
+    HMS_HOURS=`echo $1 | awk -F ':' '{print $1}'`
+    HMS_MINS=`echo $1 | awk -F ':' '{print $2}'`
+    HMS_SECS=`echo $1 | awk -F ':' '{print $3}'`
+    TOT_SECONDS=`expr $HMS_HOURS \* 3600 + $HMS_MINS \* 60 + $HMS_SECS`
+    echo $TOT_SECONDS
+}
+
+
+# ******************************************************************************
+# Display a progress meter showing MB written to a file
+# Args: $1 = name of file to monitor
+#       $2 = a short message to display, such as "Encoding video"
+# ******************************************************************************
+file_output_progress()
+{
+    if $FAKE; then
+        return
+    fi
+    FOP_OUTFILE="$1"
+    FOP_BASENAME=`basename $FOP_OUTFILE`
+    FOP_MSG="$2"
+    # A dumb little animation toggle
+    FOP_FLIP=false
+
+    printf "\n"
+
+    # Wait for input file to appear
+    # After a 30-second timeout, exit gracefully
+    CUR_TIME=30
+    while test $CUR_TIME -gt 0; do
+        # If file exists, wait a few more seconds, then break out
+        if test -e "$FOP_OUTFILE"; then
+            printf "Processing started. Please wait...                                               "
+            sleep 3s
+            break
+        fi
+        printf "Waiting $CUR_TIME seconds for output file \"$FOP_BASENAME\" to appear...\r"
+        sleep 1s
+        CUR_TIME=`expr $CUR_TIME - 1`
+    done
+
+    printf "\n"
+
+    # If file does not exist, exit with a runtime error
+    if test ! -e "$FOP_OUTFILE"; then
+        runtime_error "Couldn't create file: \"$FOP_OUTFILE\""
+    fi
+    
+    # File size in bytes
+    FOP_LAST_SIZE=0
+    FOP_CUR_SIZE=`du -b "$FOP_OUTFILE" | awk '{print $1}'`
+    
+    # Keep looping until outfile stops getting bigger
+    while test "$FOP_CUR_SIZE" -gt "$FOP_LAST_SIZE"; do
+        # Display a changing line
+        if $FOP_FLIP; then
+            FOP_FLIP=false
+            ANIM_STR="||| "
+        else
+            FOP_FLIP=:
+            ANIM_STR="--- "
+        fi
+
+        # Display completion status
+        FOP_CUR_MB=`expr 1 + $FOP_CUR_SIZE / 1048576`
+        printf "    %s %s: %s MB written to %s        \r" \
+            "$ANIM_STR" "$FOP_MSG" "$FOP_CUR_MB" "$FOP_BASENAME"
+
+        # Doze a bit to let the file size increase
+        # (SLEEP_TIME defaults to 1s if unset)
+        sleep ${SLEEP_TIME-"1s"}
+
+        FOP_LAST_SIZE=$FOP_CUR_SIZE 
+        FOP_CUR_SIZE=`du -b "$FOP_OUTFILE" | awk '{print $1}'`
+    done
+    printf "\n\n"
+}
+
+
+# ******************************************************************************
+# ******************************************************************************
+#
+#
+# EXECUTED INITIALIZATION
+#
+#
+# ******************************************************************************
+# ******************************************************************************
+
+# Trap Ctrl-C and TERM to clean up child processes
+trap 'killsubprocs; exit 13' TERM INT
+
+
+# ******************************************************************************
+# Platform-specific initialization
+# Determines host platform and configures things accordingly
+# ******************************************************************************
+KERNEL=`uname`
+if test "$KERNEL" = "Linux"; then
+    # Linux should have /proc/cpuinfo
+    CPU_MODEL=`cat /proc/cpuinfo | grep -i "model name" | awk -F ":" '{print $2}'`
+    CPU_SPEED=`cat /proc/cpuinfo | grep -i mhz | awk '{print $4}'`
+    # Test for multiple CPUs. If they are available, try to use them.
+    if test `cat /proc/cpuinfo | grep processor | wc -l` -ge "2"; then
+        MULTIPLE_CPUS=:
+    else
+        MULTIPLE_CPUS=false
+    fi
+elif test "$KERNEL" = "Darwin"; then
+    :
+fi
+
+
+# ******************************************************************************
+# tovid home setup
+# ******************************************************************************
+
+# Make home!
+if test -d "$TOVID_HOME"; then :
+else
+  mkdir "$TOVID_HOME"
+fi
+
+# Config file configuration and creation
+CONFIG_FILE=$TOVID_HOME/tovid.config
+
+if test -f $CONFIG_FILE; then :
+else
+  CONFIG_CONTENTS=`cat << EOF
+tovid
+# Sample tovid configuration file
+# Each line may have one or more tovid options
+# This file is read EVERY time tovid runs
+# DO NOT COMMENT IN LINE
+
+# See 'man tovid' for a complete list of options
+
+# Disc type
+#-dvd
+#-half-dvd
+#-dvd-vcd
+#-vcd
+#-svcd
+#-kvcd
+#-ksvcd
+#-kdvd
+    
+# TV system standard
+#-pal
+#-ntsc
+#-ntscfilm
+EOF`
+  printf "$CONFIG_CONTENTS\n" > "$CONFIG_FILE"
+fi
+
+# Working directory configuration
+USER_PREFS=$TOVID_HOME/preferences
+
+# Default working/output directories
+WORKING_DIR=$PWD
+OUTPUT_DIR=$PWD
+
+# If prefs file exists, read it
+if test -f $USER_PREFS; then
+    eval `grep -v ^# $USER_PREFS`
+# Otherwise, create a default prefs file
+else
+    PREFS_CONTENTS=`cat << EOF
+# tovid preferences
+# Configures working/output directories for tovid
+#WORKING_DIR=/tmp
+#OUTPUT_DIR=/video/outfiles
+EOF`
+    printf "$PREFS_CONTENTS\n" > "$USER_PREFS"
+fi
+
+# End tovid-init
