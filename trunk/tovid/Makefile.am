@@ -61,7 +61,6 @@ EXTRA_DIST = \
 	$(man_MANS) \
 	libtovid/*.py \
 	icons/*.png \
-	bootstrap \
 	setuplib
 
 # Install libtovid with setuplib
