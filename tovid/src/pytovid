@@ -1,4 +1,4 @@
-# -* python -*
+#! /usr/bin/env python
 
 # pytovid
 # Convert a video into an (S)VCD/DVD-compliant MPEG
