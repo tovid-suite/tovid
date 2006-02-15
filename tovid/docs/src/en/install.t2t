@@ -17,7 +17,7 @@ that I know about:
   [Installing 3rd Party Ebuilds http://gentoo-wiki.com/HOWTO_Installing_3rd_Party_Ebuilds] for help
   installing.
 - [Debian .deb http://julien.valroff.free.fr/].
-- [SuSE RPMs http://rpm.pbone.net/index.php3/stat/4/idpl/2108685/com/tovid-0.19-0.oc2pus.1.noarch.rpm.html]
+- [SuSE RPM http://ftp.gwdg.de/pub/linux/suse/apt/SuSE/9.3-i386/RPMS.suser-oc2pus/]
 
 
 (Other package contributions are welcome, so if you've packaged tovid, please

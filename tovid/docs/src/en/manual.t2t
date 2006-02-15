@@ -6,6 +6,8 @@ tovid manual pages
 //This document was last edited on %%mtime(%A, %d %B %Y).//
 
 
+==tovid scripts==
+
 - [tovid tovid.html]
 - [idvid idvid.html]
 - [makemenu makemenu.html]
@@ -15,4 +17,19 @@ tovid manual pages
 - [postproc postproc.html]
 - [dvrequant dvrequant.html]
 - [pytovid pytovid.html]
+
+
+==libtovid==
+
+- [Disc ../pydocs/libtovid.Disc.html]
+- [Menu ../pydocs/libtovid.Menu.html]
+- [MenuPlugins ../pydocs/libtovid.MenuPlugins.html]
+- [Video ../pydocs/libtovid.Video.html]
+- [VideoPlugins ../pydocs/libtovid.VideoPlugins.html]
+- [TDL ../pydocs/libtovid.TDL.html]
+- [Filetypes ../pydocs/libtovid.Filetypes.html]
+- [Globals ../pydocs/libtovid.Globals.html]
+- [Project ../pydocs/libtovid.Project.html]
+- [Standards ../pydocs/libtovid.Standards.html]
+- [Streams ../pydocs/libtovid.Streams.html]
 
