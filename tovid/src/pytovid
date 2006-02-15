@@ -24,12 +24,14 @@ if __name__ == '__main__':
     # Create a TDL video element definition using the
     # provided command-line options
 
+    args = sys.argv[1:]
+
     # Insert a dummy element/name declaration
-    sys.argv.insert(0, 'Video')
-    sys.argv.insert(1, '"FOO VIDEO"')
+    args.insert(0, 'Video')
+    args.insert(1, '"FOO VIDEO"')
 
     par = TDL.Parser()
-    elems = par.parse_args(sys.argv)
+    elems = par.parse_args(args)
     print "Parsed Video element:"
     print elems[0].tdl_string()
     print "Generating video..."
