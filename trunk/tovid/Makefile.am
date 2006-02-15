@@ -31,9 +31,8 @@ EXTRA_DIST = $(man_MANS) \
 
 SUBDIRS = src
 
+# Install libtovid with setuplib
 install-exec-hook: pythonlib
 
 pythonlib:
-	sed -i "s:^#!.*:#! `command -v python`:" setuplib
-	chmod ugo+x setuplib
 	./setuplib install
