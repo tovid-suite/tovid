@@ -285,7 +285,7 @@ BUILD_OPTS="core$BUILD_OPTS"
 AC_SUBST(BUILD_OPTS)
 
 
-AC_CONFIG_FILES([Makefile src/Makefile src/tovid-init])
+AC_CONFIG_FILES([Makefile src/tovid-init])
 AC_OUTPUT
 
 

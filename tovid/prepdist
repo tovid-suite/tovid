@@ -3,7 +3,11 @@
 WKG_DIR=`pwd`
 
 echo "Running aclocal, automake, and autoconf..."
-./bootstrap && ./configure
+if ./bootstrap && ./configure; then :
+else
+   echo "Uf. Couldn't configure the package. Read above for clues."
+   exit 1
+fi
 
 echo "Refreshing the man pages..."
 cd docs

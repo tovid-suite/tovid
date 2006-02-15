@@ -22,14 +22,47 @@
 #
 #           http://www.gnu.org/licenses/gpl.txt
 
+# List the source files for each shell script
+sh_bin = \
+	src/dvrequant \
+	src/idvid \
+	src/makedvd \
+	src/makemenu \
+	src/makeslides \
+	src/makevcd \
+	src/makexml \
+	src/postproc \
+	src/previd \
+	src/tovid \
+	src/tovid-batch \
+	src/tovid-init \
+	src/tovid-interactive \
+	src/tovid-test
+
+# List the source files for each python script
+py_bin = \
+	src/pyidvid \
+	src/pytovid \
+	src/pymakemenu \
+	src/pymakexml \
+	src/tovidgui
+
+# Specify the scripts to make and install.
+bin_SCRIPTS = \
+	$(sh_bin) \
+	$(py_bin)
+
+# The manpages
 man_MANS = docs/man/*.1
-EXTRA_DIST = $(man_MANS) \
+
+# And distribute them
+EXTRA_DIST = \
+	$(bin_SCRIPTS) \
+	$(man_MANS) \
 	libtovid/*.py \
 	icons/*.png \
 	bootstrap \
 	setuplib
-
-SUBDIRS = src
 
 # Install libtovid with setuplib
 install-exec-hook: pythonlib
