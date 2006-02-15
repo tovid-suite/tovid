@@ -7,7 +7,6 @@ Video disc authoring software
 Quick install:
 
 $ ./configure
-$ make
 $ su -c "make install"
 
 See INSTALL for installation instructions for more details 
