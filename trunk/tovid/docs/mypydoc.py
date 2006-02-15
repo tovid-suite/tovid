@@ -229,7 +229,9 @@ class HTMLGenerator:
             self.emit('''<h2>Functions</h2>''')
             self.emit('''<dl class="function">''')
             for name, func in funcs:
-                self.doc_function(func)
+                # Only document functions defined in this module
+                if inspect.getmodule(func) == mod:
+                    self.doc_function(func)
             self.emit('''</dl>''')
 
     def doc_class(self, cls):

@@ -81,7 +81,9 @@ Menu text options:
     Sets the size for the font to //NUM// pixels.
 
 : **-align** {left|center|right}
-    Align the text on the left, center, or right side of the screen.
+    Align the text at the top left, top center, or top right side of the
+    screen.  You may also substitute any "gravity" keyword allowed by
+    ImageMagick (north|south|east|west|northeast|southwest|...).
 
 : **-textcolor** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
     Use specified color for menu text. #//RRGGBB// and #//RGB// are
