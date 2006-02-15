@@ -27,12 +27,18 @@ make distclean
 rm -rvf "autom4te.cache"
 rm -rvf aclocal.m4 config.log config.status configure \
         Makefile Makefile.in
-rm -rvf src/Makefile src/Makefile.in src/tovid-init.sh
 
-aclocal \
-&& automake --gnu --add-missing \
-&& autoconf
+if aclocal \
+   && automake --gnu --add-missing \
+   && autoconf
+then
+   echo
+   echo "Done. You may now do ./configure && make && su -c \"make install\""
+   echo
+else
+   echo "Uf. Autotools error. Read above for clues."
+   exit 1
+fi
 
-echo
-echo "Done. You may now do ./configure && make && su -c \"make install\""
-echo
+exit 0
+
