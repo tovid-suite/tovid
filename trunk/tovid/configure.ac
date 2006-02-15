@@ -36,8 +36,7 @@
 
 # The first arugment sets the package name, the second sets the package version.
 # eg [tovid], [0.40] would yield a tovid-0.40.tar.gz after "$ make dist"
-#                    the version number is also substituted into tovid-init.sh.in
-#                    and into setup.py.in
+#                    the version number is also substituted into tovid-init.in
 AC_INIT([tovid], [0.25])
 AC_CONFIG_SRCDIR([src/tovid])
 
@@ -286,7 +285,7 @@ BUILD_OPTS="core$BUILD_OPTS"
 AC_SUBST(BUILD_OPTS)
 
 
-AC_CONFIG_FILES([Makefile src/Makefile src/tovid-init.sh])
+AC_CONFIG_FILES([Makefile src/Makefile src/tovid-init])
 AC_OUTPUT
 
 
