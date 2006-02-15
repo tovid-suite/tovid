@@ -13,7 +13,7 @@ fi
 
 echo "Refreshing the man pages..."
 cd docs
-if ./docmake.py; then :
+if ./docmake man; then :
 else
    echo "Uf. Couldn't make the new manpages. Read above for clues."
    exit 1
