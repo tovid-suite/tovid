@@ -61,8 +61,8 @@ def generate_pydocs():
     print "Generating HTML documentation of libtovid Python sources"
     for mod in libtovid.__all__:
         mod = "libtovid.%s" % mod
-        print "Writing %s/en/%s.html" % (dest_dir, mod)
-        htmlfile = open("%s/en/%s.html" % (dest_dir, mod), 'w')
+        print "Writing %s/pydocs/%s.html" % (dest_dir, mod)
+        htmlfile = open("%s/pydocs/%s.html" % (dest_dir, mod), 'w')
         gen = mypydoc.HTMLGenerator()
         html = gen.document(mod)
         htmlfile.write(html)
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     generate_t2t_tarball()
     generate_manpages()
     #generate_tdl_t2t()
-    #generate_pydocs()
+    generate_pydocs()
 
     # Convert all language translations (.t2t sources) to HTML
     for trans_dir in translation_subdirs:

@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: Latin-1 -*-
 
+
 """Reimplementation of the pydoc HTML generator.
 
 Notes:
@@ -44,10 +45,11 @@ for key, value in inspect.getmembers(thing, inspect.isclass)
 
 """
 
+import datetime
 import re, sys, inspect, __builtin__
 from string import join, split, lower
 
-def strip_indentation( block ):
+def strip_indentation(block):
     """Strip leading indentation from a multi-line string literal.
     
     Stolen from Brett Levin:
@@ -69,9 +71,9 @@ def strip_indentation( block ):
     nonblank = 1
     while nonblank < len(lines) and not lines[nonblank]: nonblank += 1
     # Give all lines indentation relative to the first non-blank line
-    ws = re.match( r'\s*',lines[nonblank]).group(0)
+    ws = re.match(r'\s*',lines[nonblank]).group(0)
     if ws:
-        lines = map( lambda x: x.replace(ws,'',1), lines )
+        lines = map(lambda x: x.replace(ws,'',1), lines)
 
     # Rejoin and return the block
     return '\n'.join(lines) + '\n'
@@ -160,34 +162,34 @@ class HTMLGenerator:
     def emit_pre(self, text, css_class='doc', linenum=False):
         if not text: return
         # Replace '<' with '&lt;'
-        text = text.replace( '<', '&lt;' )
-        text = strip_indentation( text )
+        text = text.replace('<', '&lt;')
+        text = strip_indentation(text)
         if linenum:
             lines = text.split('\n')
-            self.emit( '''<pre class="%s">''' % css_class )
+            self.emit('''<pre class="%s">''' % css_class)
             lineno = 1
             for line in lines:
                 strlineno = "%s" % lineno
-                self.emit( '''%s:   %s\n''' % (strlineno.rjust(4), line) )
+                self.emit('''%s:   %s\n''' % (strlineno.rjust(4), line))
                 lineno += 1
-            self.emit( '''</pre>''' )
+            self.emit('''</pre>''')
         else:
-            self.emit( '''<pre class="%s">%s</pre>''' % \
-                ( css_class, text ) )
+            self.emit('''<pre class="%s">%s</pre>''' % \
+                (css_class, text))
 
     # Generate docs for given name
     def document(self, name):
 
         # Resolve object name
-        self.obj, self.name = resolve( name )
+        self.obj, self.name = resolve(name)
 
-        self.emit( """<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+        self.emit("""<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
          <html><head>
             <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
             <title>Python: %s</title>
             <link rel="stylesheet" type="text/css" href="tovid_screen.css">
         </head>
-        <body>""" % self.name )
+        <body>""" % self.name)
 
         # Document modules only (for now)
         if inspect.ismodule(self.obj): self.doc_module(self.obj)
@@ -195,60 +197,62 @@ class HTMLGenerator:
         # Write source code as preformatted text
         source = inspect.getsource(self.obj)
         if source:
-            self.emit( '''<h2>Source code</h2>''' )
+            self.emit('''<h2>Source code</h2>''')
             self.emit_pre(source, 'source', linenum=True)
 
-        self.emit( '''</body></html>''' )
+        self.emit('''</body></html>''')
 
         return self.html
 
     def doc_module(self, mod):
         if not inspect.ismodule(mod): return
-        self.emit( '''<h1>%s</h1>''' % mod.__name__ )
-        self.emit_pre( mod.__doc__ )
+        self.emit('''<h1>%s</h1>''' % mod.__name__)
+        self.emit('''<p class="date">Generated %s</p>''' % \
+            datetime.datetime.now().ctime())
+        self.emit_pre(mod.__doc__)
 
         classes = inspect.getmembers(mod, inspect.isclass)
         if classes:
-            self.emit( '''<h2>Classes</h2>''' )
-            self.emit( '''<dl class="class">''' )
+            self.emit('''<h2>Classes</h2>''')
+            self.emit('''<dl class="class">''')
             for name, cls in classes:
                 self.doc_class(cls)
-            self.emit( '''</dl>''' )
+            self.emit('''</dl>''')
 
         funcs = inspect.getmembers(mod, inspect.isfunction)
         if funcs:
-            self.emit( '''<h2>Functions</h2>''' )
-            self.emit( '''<dl class="function">''' )
+            self.emit('''<h2>Functions</h2>''')
+            self.emit('''<dl class="function">''')
             for name, func in funcs:
                 self.doc_function(func)
-            self.emit( '''</dl>''' )
+            self.emit('''</dl>''')
 
     def doc_class(self, cls):
         if not inspect.isclass(cls): return
-        self.emit( '''<dt>%s</dt>''' % cls.__name__ )
-        self.emit( '''<dd>''' )
-        self.emit_pre( cls.__doc__ )
+        self.emit('''<dt>%s</dt>''' % cls.__name__)
+        self.emit('''<dd>''')
+        self.emit_pre(cls.__doc__)
 
-        self.emit( '''<p>Methods defined in this class:</p>''' )
+        self.emit('''<p>Methods defined in this class:</p>''')
         methods = inspect.getmembers(cls, inspect.ismethod)
         if methods:
-            self.emit( '''<dl class="method">''' )
+            self.emit('''<dl class="method">''')
             for name, method in methods:
                 self.doc_function(method.im_func)
-            self.emit( '''</dl>''' )
-        self.emit( '''</dd>''' )
+            self.emit('''</dl>''')
+        self.emit('''</dd>''')
         
             
     def doc_function(self, func):
         if not inspect.isfunction(func) and not inspect.ismethod(func): return
-        args, varargs, varkw, defaults = inspect.getargspec( func )
-        signature = inspect.formatargspec( args, varargs, varkw, defaults )
+        args, varargs, varkw, defaults = inspect.getargspec(func)
+        signature = inspect.formatargspec(args, varargs, varkw, defaults)
         # Strip parentheses
         signature = signature[1:-1]
-        self.emit( '''<dt><code class="function">%s(<code class="args">%s</code>)</code></dt>''' % ( func.__name__, signature ) )
-        self.emit( '''<dd>''' )
-        self.emit_pre( func.__doc__ or "No documentation" )
-        self.emit( '''</dd>''' )
+        self.emit('''<dt><code class="function">%s(<code class="args">%s</code>)</code></dt>''' % (func.__name__, signature))
+        self.emit('''<dd>''')
+        self.emit_pre(func.__doc__ or "No documentation")
+        self.emit('''</dd>''')
 
     
 
