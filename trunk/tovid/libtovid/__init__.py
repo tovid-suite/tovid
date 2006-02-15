@@ -6,6 +6,7 @@ __all__ = [\
 
     "Disc",
     "Menu",
+    "MenuPlugins",
     "Video",
     "VideoPlugins",
 
