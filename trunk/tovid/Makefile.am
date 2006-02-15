@@ -68,3 +68,7 @@ install-exec-hook: pythonlib
 
 pythonlib:
 	./setuplib install
+
+# src/tovid-init not needed b/c ./configure derives it from src/tovid-init.in
+dist-hook:
+	rm -rvf $(top_distdir)/src/tovid-init
