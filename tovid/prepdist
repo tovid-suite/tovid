@@ -23,7 +23,9 @@ cd $WKG_DIR
 echo "Making distribution .tar.gz..."
 if make dist
 then 
-    echo "Great! You now a shiny new tarball"
+    echo
+    echo "Great! You now have a shiny new tarball"
+    echo
 else 
     echo "Uf. Problem making the tarball. Read above for clues."
     exit 1
