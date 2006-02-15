@@ -19,14 +19,11 @@ fi
 cd $WKG_DIR
 
 echo "Making distribution .tar.gz..."
-make dist
-
-echo "Checking the distribution..."
-if make distcheck
+if make dist
 then 
     echo "Great! You now a shiny new tarball"
 else 
-    echo "Uf. Problem checking the tarball. Read above for clues."
+    echo "Uf. Problem making the tarball. Read above for clues."
     exit 1
 fi
 

@@ -72,7 +72,6 @@ $ svn checkout svn://svn.berlios.de/tovid/trunk/tovid
 $ cd tovid
 $ ./bootstrap
 $ ./configure
-$ make
 $ su -c "make install"
 ```
 
@@ -81,7 +80,7 @@ From now on, you can just do this:
 ```
 $ cd ~/Downloads/tovid
 $ svn update
-$ ./bootstrap && ./configure && make && su -c "make install"
+$ ./bootstrap && ./configure && su -c "make install"
 ```
 
 to keep up with the latest changes. See the [SVN crash course svncrash.html]
