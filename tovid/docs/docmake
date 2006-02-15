@@ -10,11 +10,14 @@ from libtovid import TDL
 # Get mypydoc
 import mypydoc
 
+# Directories are relative to the docmake script
+base_dir = os.path.dirname(sys.argv[0])
+
 # Directory containing .t2t doc sources
-source_dir = os.path.realpath('src')
+source_dir = os.path.abspath(base_dir + '/src')
 # Directory to save output in
-dest_dir = os.path.realpath('html')
-man_dir = os.path.realpath('man')
+dest_dir = os.path.abspath(base_dir + '/html')
+man_dir = os.path.abspath(base_dir + '/man')
 man_pages = ['tovid', 'idvid', 'makemenu', 'makedvd', \
     'makeslides', 'makexml', 'postproc']
 
