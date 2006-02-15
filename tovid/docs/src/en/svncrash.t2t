@@ -60,7 +60,39 @@ and [Version Control with Subversion http://svnbook.red-bean.com/] to learn more
 
 ==Errors==
 
-Some common errors and what they mean:
+
+===Need to update===
+
+```
+$ svn commit -m "Various updates"
+Sending        tovid/docs/man/idvid.1
+Sending        tovid/docs/man/makedvd.1
+Sending        tovid/docs/man/makemenu.1
+Transmitting file data .................svn: Commit failed (details follow):
+svn: Out of date: '/trunk/tovid/docs/man/idvid.1' in transaction '190-1'
+```
+
+(Need to ``svn update`` to fix?)
+
+
+===Failed to add===
+
+```
+$ svn update
+svn: Failed to add file 'setuplib': object of the same name already exists
+```
+
+```
+$ svn status | grep setuplib
+?      setuplib
+?      setuplib.py
+eric@malcolm ~/tovid/tovid $ rm setuplib
+rm: remove write-protected regular file `setuplib'? y
+eric@malcolm ~/tovid/tovid $ svn update
+A    setuplib
+Updated to revision 192.
+```
+
 
 ===Conflicts===
 
