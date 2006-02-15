@@ -33,7 +33,7 @@ if aclocal \
    && autoconf
 then
    echo
-   echo "Done. You may now do ./configure && make && su -c \"make install\""
+   echo "Done. You may now do ./configure && su -c \"make install\""
    echo
 else
    echo "Uf. Autotools error. Read above for clues."
