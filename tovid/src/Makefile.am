@@ -51,44 +51,10 @@ py_bin = \
 	pymakexml \
 	tovidgui
 
-################### LEAVE BELOW ALONE #########################
-
-# No need to modify anything below! The above two lists can 
-# handle an arbitrary amount of shell and python scripts.
-# Everything is correctly built, installed, and cleaned so long
-# as the source files have a .sh suffix for shell scripts and
-# a .py suffix for python scripts.
-
-# Strip the source file extentions. A built file will be called
-# by the basename of its source.
-#   eg: tovid.sh becomes made and installed as tovid
-#       tovidgui.py becomes made and installed as tovidgui
-#py_bin = $(basename $(py_source))
-
 # Specify the scripts to make and install.
 bin_SCRIPTS = \
 	$(sh_bin) \
 	$(py_bin)
 
-# Clean the built scripts only. Leave the source files alone.
-#CLEANFILES = $(bin_SCRIPTS)
-
-# Distribute the source files so the suite can be built!
-#EXTRA_DIST = \
-#	$(sh_source) \
-#	$(py_source)
-
-# Make all the shell and python scripts 
-# These are Static Pattern Rules, found at:
-# http://www.gnu.org/software/make/manual/html_mono/make.html#SEC47
-#$(sh_bin): %: %.sh
-#	rm -f "$@"
-#	echo "#! `command -v sh`"  > $@
-#	cat $(srcdir)/$< >> $@
-#	chmod ugo+x $@
-
-#$(py_bin): %: %.py
-#	rm -f "$@"
-#	echo "#! `command -v python`"  > $@
-#	cat $(srcdir)/$< >> $@
-#	chmod ugo+x $@
+# And distribute them
+EXTRA_DIST = $(bin_SCRIPTS)
