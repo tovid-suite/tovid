@@ -77,6 +77,7 @@ def strip_indentation(block):
 
     # Rejoin and return the block
     return '\n'.join(lines) + '\n'
+
 # safeimport, locate and resolve Stolen from pydoc.py
 # (Clean up and rewrite later)
 def safeimport(path, forceload=0, cache={}):
@@ -122,6 +123,7 @@ def safeimport(path, forceload=0, cache={}):
         try: module = getattr(module, part)
         except AttributeError: return None
     return module
+
 def locate(path, forceload=0):
     """Locate an object by name or dotted path, importing as necessary."""
     parts = [part for part in split(path, '.') if part]
@@ -149,6 +151,7 @@ def resolve(thing, forceload=0):
         return object, thing
     else:
         return thing, getattr(thing, '__name__', None)
+
 
 class HTMLGenerator:
 
@@ -216,7 +219,9 @@ class HTMLGenerator:
             self.emit('''<h2>Classes</h2>''')
             self.emit('''<dl class="class">''')
             for name, cls in classes:
-                self.doc_class(cls)
+                # Only document classes defined in this module
+                if inspect.getmodule(cls) == mod:
+                    self.doc_class(cls)
             self.emit('''</dl>''')
 
         funcs = inspect.getmembers(mod, inspect.isfunction)
