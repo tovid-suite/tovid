@@ -292,6 +292,7 @@ class Parser:
 
     def parse_args(self, args):
         """Parse all text in a list of strings such as sys.argv"""
+        print args
 
         # Create a lexer
         self.lexer = shlex.shlex(posix = True)

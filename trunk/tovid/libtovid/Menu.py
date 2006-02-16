@@ -64,12 +64,12 @@ optiondefs = {
     'fontsize':
         OptionDef('fontsize', 'NUM', '24',
         """Use a font size of NUM pixels."""),
-    'alignment':
-        OptionDef('alignment', 'left|center|right', 'left'),
+    'align':
+        OptionDef('align', 'west|north|east|south|center', 'northwest'),
     'textcolor':
-        OptionDef('textcolor', 'COLOR' 'white',
+        OptionDef('textcolor', 'COLOR', 'white',
         """Color of menu text. COLOR may be a hexadecimal triplet (#RRGGBB or
-        #RGB), or a color name from 'convert -list color'."""),
+        #RGB), or a color name from 'convert -list color."""),
     'highlightcolor':
         OptionDef('highlightcolor', 'COLOR', 'red',
         """Color of menu highlights."""),
@@ -115,10 +115,10 @@ def generate_dvd_menu(menu):
     """Generate a DVD MPEG menu, saving to the file specified by the menu's
     'out' option."""
 
-    foo = ThumbMenu(menu)
+    #foo = ThumbMenu(menu)
+    foo = TextMenu(menu)
+    foo.run()
 
-    # TODO:
-    # Write this TODO
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
