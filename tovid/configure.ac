@@ -116,6 +116,57 @@ for DEP in $REQ_DEP_LIST; do
 done
 
 # ******************************************************************************
+# Python
+# ******************************************************************************
+# As seen on http://sources.redhat.com/automake/automake.html#Python
+# AM_PATH_PYTHON sets many vars, including $(pythondir), which is the directory 
+# name for the site-packages subdirectory of the standard Python install tree;
+# and $(pyexecdir), which is the directory where Python extension modules 
+# (shared libraries) should be installed.
+
+# For example, on friedrij's debian system
+# $(pythondir) = ${prefix}/lib/python2.3/site-packages
+# $(pyexecdir) = ${exec_prefix}/lib/python2.3/site-packages
+
+# From the autoconf manual, available in anything _but_ html (uf, fsf) from
+# http://www.gnu.org/software/autoconf/manual/index.html
+# $(prefix) is "The common installation prefix for all files. If $(exec_prefix)
+# is defined to a different value, prefix is used only for architecture-
+# independent files."
+# $(exec_prefix) is "The installation prefix for architecture-dependent files. 
+# By default it's the same as $(prefix). You should avoid installing anything
+# directly to $(exec_prefix). However, the default value for directories 
+# containing architecture-dependent files should be relative to $(exec_prefix)."
+
+# The GNU Coding Standards, available in html (yosh) from
+# (http://www.gnu.org/prep/standards/standards.html#Directory-Variables),
+# clarifies the difference between $(prefix) and $(exec_prefix): "Generally, 
+# $(exec_prefix) is used for directories that contain machine-specific files 
+# (such as executables and subroutine libraries), while $(prefix) is used
+# directly for other directories."
+
+# So, this dev thinks we need $(pyexecdir) and some 'enlightened' python
+# scripts, as pointed out by 
+# http://sources.redhat.com/automake/automake.html#Hard_002dCoded-Install-Paths
+# If you do [use $(pythondir) or $(pyexecdir)], then:
+#    * root users can install your package with the same --prefix as Python (you
+#      get the behavior of the previous attempt - eg /usr/lib/python-2.3/...)
+#    * non-root users can install your package too, they will have the extension
+#      module in a place that is not searched by Python but they can work around
+#      this using environment variables (and if you installed scripts that use
+#      this shared library, it's easy to tell Python were to look in the
+#      beginning of your script, so the script works in both cases). 
+
+# Using pyexecdir_PYTHON for libtovid will install it to 
+# ${exec_prefix}/lib/python2.3/site-packages (for example)
+# and the pytovid suite (left as bin_SCRIPTS, so that they are installed as
+# executables and not byte-compiled like python_PYTHON would do) will need to be
+# told how to look for libtovid.
+
+AM_PATH_PYTHON(2.2)
+
+
+# ******************************************************************************
 # Optional Dependencies 
 # ******************************************************************************
 # Optional dependencies are grouped according to the functionality they bring
