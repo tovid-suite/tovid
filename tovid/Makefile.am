@@ -55,19 +55,32 @@ bin_SCRIPTS = \
 # The manpages
 man_MANS = docs/man/*.1
 
+# libtovid
+# See lengthy comments in configure.ac
+# pkgpyexecdir is a convenience variable that is defined as $(pyexecdir)/$(PACKAGE),
+# but libtovid should be installed as $(pyexecdir)/libtovid, not
+# $(pyexecdir)/tovid ($(PACKAGE) is 'tovid' from configure.ac's AC_INIT macro.
+
+# WTF: with pkgpyexecdir = $(pyexecdir)/libtovid , automake borks:
+# Makefile.am:68: `pkgpyexecdir_PYTHON' is used but `pkgpyexecdirdir' is undefined
+# Notice the 'hack' below:
+#           vvv
+pkgpyexecdirdir = $(pyexecdir)/libtovid
+pkgpyexecdir_PYTHON = libtovid/*.py
+
 # And distribute them
 EXTRA_DIST = \
 	$(bin_SCRIPTS) \
 	$(man_MANS) \
-	libtovid/*.py \
-	icons/*.png \
-	setuplib
+	icons/*.png
+##	setuplib
+##	libtovid/*.py \
 
 # Install libtovid with setuplib
-install-exec-hook: pythonlib
+##install-exec-hook: pythonlib
 
-pythonlib:
-	./setuplib install
+#pythonlib:
+##	./setuplib install
 
 # src/tovid-init not needed b/c ./configure derives it from src/tovid-init.in
 dist-hook:
