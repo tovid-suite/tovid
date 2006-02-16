@@ -82,16 +82,8 @@ $ svn update
 svn: Failed to add file 'setuplib': object of the same name already exists
 ```
 
-```
-$ svn status | grep setuplib
-?      setuplib
-?      setuplib.py
-eric@malcolm ~/tovid/tovid $ rm setuplib
-rm: remove write-protected regular file `setuplib'? y
-eric@malcolm ~/tovid/tovid $ svn update
-A    setuplib
-Updated to revision 192.
-```
+[Explanation http://tortoisesvn.sourceforge.net/node/8]. Quick solution: rename
+or remove the offending file (``rm setuplib``) and re-run ``svn update``.
 
 
 ===Conflicts===
