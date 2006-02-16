@@ -108,6 +108,7 @@ class TextMenu (MenuPlugin):
         self.im_labels = labels
         self.im_buttons = buttons
 
+
     def draw_background_canvas(self):
         """Draw background canvas.
         Corresp. to lines 400-411 of makemenu."""
@@ -119,6 +120,7 @@ class TextMenu (MenuPlugin):
         cmd += ' -gravity center -matte '
         cmd += ' %s' % self.bg_canvas
         self.commands.append(cmd)
+
 
     def draw_background_layer(self):
         """Draw the background layer for the menu, including static title text.
@@ -268,6 +270,7 @@ class TextMenu (MenuPlugin):
                 cmd += ' -f 4 '
         cmd += ' "%s" "%s" ' % (self.astream, self.vstream)
         self.commands.append(cmd)
+
 
 # ===========================================================
 # Supporting variables and classes for thumbnail menu
