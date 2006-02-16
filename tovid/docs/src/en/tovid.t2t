@@ -188,6 +188,7 @@ letterboxing or anamorphic scaling.
     Skip the intermediate .wav-ripping step, and encode the audio stream
     directly with ffmpeg (this may cure some audio encoding or sync problems).
 
+
 ===Other options===
 
 : **-config** //FILE//
