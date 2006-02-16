@@ -125,10 +125,10 @@ of titles.
 
 ==Examples==
 
-: ``makemenu -ntsc -vcd -align center -textcolor "rgb(255,255,255)" -font "Helvetica" "Episode 1" "Episode 2" "Episode 3" -out "Season-1"``
+: ``makemenu -ntsc -vcd -align center -textcolor "#FFF" -font "Helvetica" "Episode 1" "Episode 2" "Episode 3" -out "Season-1"``
    Make an NTSC VCD menu with white Helvetica text containing three centered selections: Episode 1, Episode 2, and Episode 3. The finished menu will be called Season-1.mpg.
 
-: ``makemenu -ntsc -dvd -align left -textcolor "rgb(255,255,255)" -highlightcolor "rgb(255,255,0)" -selectcolor "rgb(255,0,0)" -font "Helvetica" "Episode 1" "Episode 2" "Episode 3" "Main_menu"``
+: ``makemenu -ntsc -dvd -align left -textcolor "#FFF" -highlightcolor "#FF0" -selectcolor "#F00" -font "Helvetica" "Episode 1" "Episode 2" "Episode 3" -out "Main_menu"``
    Make an NTSC DVD menu with white Helvetica text containing three left-aligned selections: Episode 1, Episode 2, and Episode 3. Items under the cursor will be highlighted yellow, and selected items will be red (before going to the selected title). The finished menu will be called Main-menu.mpg.
 
 
