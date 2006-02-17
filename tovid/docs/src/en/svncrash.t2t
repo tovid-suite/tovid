@@ -38,12 +38,6 @@ A few other useful ``svn`` commands are:
 : svn move FILE_A FILE_B
     Use this when you need to move or rename a file in the repository
 
-: svn propset svn:ignore FILES DIR
-    Ignore FILES in directory DIR, where FILES may be a single file, or a
-    newline-separated list. For instance,
-    ``svn propset svn:ignore "*.html" foo/`` will cause SVN to ignore all
-    ``.html`` files in the directory ``foo``.
-
 
 See the
 [SVN HowTo https://developer.berlios.de/docman/display_doc.php?docid=394&group_id=2]
