@@ -38,8 +38,21 @@ A few other useful ``svn`` commands are:
 : svn move FILE_A FILE_B
     Use this when you need to move or rename a file in the repository
 
+: svn propset svn:ignore FILES DIR
+    Ignore FILES in directory DIR, where FILES may be a single file, or a
+    newline-separated list. For instance,
+    ``svn propset svn:ignore "*.html" foo/`` will cause SVN to ignore all
+    ``.html`` files in the directory ``foo``.
 
-NOTE: when communicating with the svn server, your shell will prompt you for your BerliOS password each time. You can automate password giving with **ssh-agent**. Genereate a public key and place it on the BerliOS servers:
+
+See the
+[SVN HowTo https://developer.berlios.de/docman/display_doc.php?docid=394&group_id=2]
+and [Version Control with Subversion http://svnbook.red-bean.com/] to learn more about using SVN.
+
+
+==Automated secure login==
+
+When communicating with the svn server, your shell will prompt you for your BerliOS password each time. You can automate password giving with **ssh-agent**. Genereate a public key and place it on the BerliOS servers:
 
 ```
 $ ssh-keygen -t rsa
@@ -52,10 +65,6 @@ Then, before you startx or after you open a new terminal, start the ssh-agent an
 $ ssh-agent
 $ ssh-add
 ```
-
-See the
-[SVN HowTo https://developer.berlios.de/docman/display_doc.php?docid=394&group_id=2]
-and [Version Control with Subversion http://svnbook.red-bean.com/] to learn more about using SVN.
 
 
 ==Errors==
