@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=BVC-dvd
+GenericName=Wizard to create DVD/SVCD from clips
+Exec=/usr/local/bin/BVC -s
+Type=Application
+Icon=cdrom_unmount
+Categories=Qt;KDE;AudioVideo;
