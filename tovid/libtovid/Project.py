@@ -32,6 +32,7 @@ class Project:
         """Save project data as a TDL text file."""
         outfile = open(filename, 'w')
         outfile.write(self.tdl_tring())
+        outfile.close()
 
 
     def build_hierarchy(self):
