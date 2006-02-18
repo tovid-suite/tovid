@@ -2,7 +2,7 @@
 # Globals.py
 # Miscellaneous helper functions that don't have a good home yet
 
-import re, string
+import sys, re, string
 
 def degunk(str):
     """Strip special characters from the given string (any that might
@@ -58,3 +58,5 @@ def ratio_to_float(ratio):
         return float(values[0])
     else:
         return 1.0
+
+
