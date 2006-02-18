@@ -243,7 +243,7 @@ AC_CHECK_PROG(VCDXBUILD, [vcdxbuild], [ok], [MISSING])
 AC_CHECK_PROG(CDRDAO, [cdrdao], [ok], [MISSING])
 
 vcdxbuild_msg="part of vcdimager (www.vcdimager.org)"
-cdrdao_msg="$mkisofs_msg"
+cdrdao_msg="a standalone package (cdrdao.sf.net/)"
 
 if test "x$VCDXBUILD" = "xok" && \
    test "x$CDRDAO" = "xok"
