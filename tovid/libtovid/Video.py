@@ -3,7 +3,10 @@
 # Video generator module
 
 import sys
+import libtovid
 from libtovid.Option import OptionDef
+
+log = libtovid.Log('Video')
 
 # TODO: Eliminate some of the redundancy of this module; integrate related
 # encoding/muxing functions into a class or other container, with the aim
@@ -133,14 +136,14 @@ def generate(video):
     elif method == 'mencoder':
         encoder = MencoderEncoder(video)
     elif method == 'ffmpeg':
-        print "The ffmpeg encoding method is not yet implemented."
+        log.info("The ffmpeg encoding method is not yet implemented.")
         sys.exit()
     else:
-        print "Error: encoding method '%s' is not yet supported by the backend" % method
-        print "Perhaps you'd like to write a backend for it? :-)"
+        log.info("Encoding method '%s' is not yet supported by the backend" % method)
+        log.info("Perhaps you'd like to write a backend for it? :-)")
         sys.exit()
     
-    print "generate(): Encoding with the %s plugin..." % encoder.__class__
+    log.info("generate(): Encoding with the %s plugin..." % encoder.__class__)
     encoder.run()
 
 

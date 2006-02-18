@@ -271,6 +271,28 @@ class TextMenu (MenuPlugin):
         cmd += ' "%s" "%s" ' % (self.astream, self.vstream)
         self.commands.append(cmd)
 
+    def mux_subtitles(self):
+        """Multiplex the output video with highlight and selection
+        subtitles, so the resulting menu can be navigated.
+        Corresp. to lines 528-548 of makemenu."""
+
+        xml =  '<subpictures>\n'
+        xml += '  <stream>\n'
+        xml += '  <spu force="yes" start="00:00:00.00"\n'
+        xml += '       highlight="%s.hi.png"\n' % self.get('out')
+        xml += '       select="%s.sel.png"\n' % self.get('out')
+        xml += '       autooutline="infer">\n'
+        xml += '  </spu>\n'
+        xml += '  </stream>\n'
+        xml += '</subpictures>\n'
+        xmlfile = open('%s.xml' % self.get('out'), 'w')
+        xmlfile.write(xml)
+        xmlfile.close()
+
+        cmd = 'spumux "%s.xml" < "%s.temp.mpg" > "%s.mpg"' % \
+                (self.get('out'), self.get('out'), self.get('out'))
+        self.commands.append(cmd)
+
 
 # ===========================================================
 # Supporting variables and classes for thumbnail menu

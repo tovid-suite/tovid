@@ -9,15 +9,17 @@ a standard MPEG format such as (S)VCD or DVD.
 """
 
 # from libtovid import Video
-import os
+import os, sys
+import libtovid
 from libtovid import Standards
 from libtovid.Globals import ratio_to_float
 
-
+log = libtovid.Log('VideoPlugins')
 
 class VideoPlugin:
     """Base plugin class; all encoders inherit from this."""
     def __init__(self, video):
+        log.info('Creating a VideoPlugin')
         self.video = video
         # Alias, for shorter lookups
         self.get = self.video.get
@@ -65,17 +67,13 @@ class VideoPlugin:
         verbosity level. Subclasses should override this function if they need
         different runtime behavior."""
         # TODO: Proper stream redirection and verbosity level
-        # For now, just append some things to a log...
-        log = open('encoderplugin.log', 'a')
-        log.write('Encoding to %s %s\n' % (self.get('format'), self.get('tvsys')))
         for cmd in self.commands:
-            log.write('    %s\n' % cmd)
-            print "VideoPlugin: Running the following command:"
-            print cmd
+            log.info("VideoPlugin: Running the following command:")
+            log.info(cmd)
             # TODO: Catch failed execution
-            for line in os.popen(cmd, 'r').readlines():
-                print line
-        log.close()
+            cin, cout = os.popen4(cmd, 1)
+            for line in cout.readlines():
+                log.info(line)
 
 
 class Mpeg2encEncoder (VideoPlugin):
