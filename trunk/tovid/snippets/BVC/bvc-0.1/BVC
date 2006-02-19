@@ -956,7 +956,7 @@ elif [ $TARGET = "SVCD" ]; then
     PROGRESS_LABEL="Making svcd configuration, bin, and cue files"
     set_progress_bar_label
     printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
-    VCDXGEN_CMD="vcdxgen $WORK_DIR/final.mpg -o $VCD_XML"
+    VCDXGEN_CMD="vcdxgen -t svcd $WORK_DIR/final.mpg -o $VCD_XML"
         if $VCDXGEN_CMD >> $BVC_LOG 2>&1; then
             :
         else
