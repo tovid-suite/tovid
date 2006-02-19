@@ -45,6 +45,9 @@ SORRY_MSG="<html><h4>Oops . . .<p>Something went wrong, $OUTPUT was not created.
 Please check the log at $BVC_LOG"
 DVDRW_MEDIA="PLUS_R"
 VCD_XML="$WORK_DIR/mydisc.xml"
+FADE=1  # number of seconds to fade the audio in and out in each clip
+DO_FADE=true # set to false if you don't want audio fade
+
 
 ###############################################################################
 #                               FUNCTIONS                                     #
@@ -475,16 +478,22 @@ done
 progress_bar_progress 3
 
 #create fade effect on the extracted wavs
-for i in `seq 1 $FILES`; do
-mencoder -quiet -ovc copy -oac copy -o /dev/null  \
-$WORK_DIR/pics/$i/$i.avi |grep "Video stream"|awk '{print$10}' \
->$WORK_DIR/pics/$i/$i.wav.stat
+if [ $DO_FADE = true ]; then
 
-WAV_TIME=`cat $WORK_DIR/pics/$i/$i.wav.stat`
-FADE=1
-sox $WORK_DIR/pics/$i/$i.wav \
-$WORK_DIR/pics/$i/$i-processed.wav fade t $FADE $WAV_TIME $FADE
-done
+    for i in `seq 1 $FILES`; do
+        mencoder -quiet -ovc copy -oac copy -o /dev/null  \
+        $WORK_DIR/pics/$i/$i.avi |grep "Video stream"|awk '{print$10}' \
+        >$WORK_DIR/pics/$i/$i.wav.stat
+
+        WAV_TIME=`cat $WORK_DIR/pics/$i/$i.wav.stat`
+        FADE=1
+        sox $WORK_DIR/pics/$i/$i.wav \
+        $WORK_DIR/pics/$i/$i-processed.wav fade t $FADE $WAV_TIME $FADE
+    done
+
+elif [ $DO_FADE = false ]; then
+    mv $WORK_DIR/pics/$i/$i.wav $WORK_DIR/pics/$i/$i-processed.wav
+fi
 
 
 # convert faded wav to mp2
