@@ -138,6 +138,11 @@ letterboxing or anamorphic scaling.
     video. This option is DEPRECATED, and will probably be ditched in favor of
     interlaced encoding, which is better in almost every way.
 
+: **-mkvsub** //LANG// (EXPERIMENTAL)
+    Attempt to encode an integrated subtitle stream (such as may be found in
+    Matroska .mkv files) in the given language code (eng, jpn, etc.) May work
+    for other formats.
+
 : **-subtitles** //FILE//
     Get subtitles from //FILE// and encode them into the video.  WARNING: This
     hard-codes the subtitles into the video, and you cannot turn them off while

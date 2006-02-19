@@ -2,7 +2,11 @@
 # MenuPlugins.py
 
 import os
+import libtovid
 from Globals import degunk
+
+log = libtovid.Log('MenuPlugins')
+
 
 # TODO: Eliminate this:
 FRAMES=90
@@ -46,10 +50,10 @@ class MenuPlugin:
         
     def run(self):
         for cmd in self.commands:
-            print "MenuPlugin: Running the following command:"
-            print cmd
+            log.info("MenuPlugin: Running the following command:")
+            log.info(cmd)
             for line in os.popen(cmd, 'r').readlines():
-                print line
+                log.debug(line)
 
 
 class TextMenu (MenuPlugin):

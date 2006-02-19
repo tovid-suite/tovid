@@ -174,6 +174,8 @@ ID_VIDEO_WIDTH="0"
 ID_VIDEO_HEIGHT="0"
 ID_VIDEO_FPS="0.000"
 V_DURATION="0"
+# mplayer executable to use
+MPLAYER="mplayer"
 # No custom mplayer opts
 MPLAYER_OPTS=""
 MUX_OPTS=""
@@ -464,16 +466,23 @@ get_args()
                 PARALLEL=:
                 ENCODING_MODE="parallel"
                 ;;
-            "-subtitles" )
+            "-mkvsub" )
                 shift
+                SUBTITLES="-slang $1"
+                # Use gmplayer
+                MPLAYER="gmplayer"
                 # Force re-encoding of compliant video,
                 # so subtitles can be added
                 FORCE_ENCODING=:
+                ;;
+            "-subtitles" )
+                shift
                 if test -e "$1"; then
                     SUBTITLES="-sub $1"
                 else
                     yecho "Cannot find subtitle file $1."
                 fi
+                FORCE_ENCODING=:
                 ;;
             "-update" )
                 # Set status update interval
@@ -1500,7 +1509,7 @@ else
     if $USE_FIFO; then
         mkfifo stream.yuv
     fi
-    VID_PLAY_CMD="$PRIORITY mplayer -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg${YUV4MPEG_ILACE} ${VF_PRE} ${VID_FILTER} ${VID_SCALE} ${VF_POST} \"$IN_FILE\" $MPLAYER_OPTS"
+    VID_PLAY_CMD="$PRIORITY $MPLAYER -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg${YUV4MPEG_ILACE} ${VF_PRE} ${VID_FILTER} ${VID_SCALE} ${VF_POST} \"$IN_FILE\" $MPLAYER_OPTS"
     VID_ENC_CMD="cat stream.yuv | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$OUT_PREFIX.$VID_SUF\""
     yecho $VID_PLAY_CMD
     yecho $VID_ENC_CMD
