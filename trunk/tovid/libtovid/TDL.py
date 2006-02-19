@@ -5,9 +5,11 @@
 # TODO: Finish restructuring
 
 import sys, copy, shlex
+import libtovid
 from libtovid import Disc, Menu, Video
 from libtovid.Option import OptionDef
 
+log = libtovid.Log('TDL')
 
 # ===========================================================
 __doc__ = \
@@ -187,7 +189,7 @@ class Element:
         self.tag = tag
         self.name = name
         if not element_defs.has_key(tag):
-            print "TDL.Element(): unknown element '%s'" % tag
+            log.error("TDL.Element(): unknown element '%s'" % tag)
 
         else:
             # Fill a dictionary of options with their default values
@@ -210,9 +212,10 @@ class Element:
         if opt in self.options:
             return self.options[opt]
         else:
-            print "Error: '%s' is not a valid option for %s elements" % \
-                (opt, self.tag)
-            print "Please add an OptionDef to libtovid/%s.py" % self.tag
+            log.error("'%s' is not a valid option for %s elements" % \
+                (opt, self.tag))
+            # TODO: Log level for developer hints? (like the following)
+            log.error("Please add an OptionDef to libtovid/%s.py" % self.tag)
             sys.exit()
     
 
