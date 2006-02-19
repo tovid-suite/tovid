@@ -73,7 +73,7 @@ class VideoPlugin:
             # TODO: Catch failed execution
             cin, cout = os.popen4(cmd, 1)
             for line in cout.readlines():
-                log.info(line)
+                log.debug(line)
 
 
 class Mpeg2encEncoder (VideoPlugin):

@@ -46,7 +46,7 @@ class Log:
         >>>
     """
 
-    # Simple integer verbosity level
+    # Simple numeric verbosity level
     DEBUG = 3
     INFO = 2
     ERROR = 1
@@ -55,7 +55,7 @@ class Log:
     def __init__(self, name):
         """Create a logger with the given name."""
         self.name = name
-        self.level = self.INFO
+        self.level = self.DEBUG
         
     def debug(self, message):
         if self.level >= self.DEBUG:
@@ -71,9 +71,5 @@ class Log:
 
     def console(self, level, message):
         print "%s [%s]: %s" % (level, self.name, message)
-
-
-# For info on Python's logging implementation, see:
-# http://docs.python.org/lib/module-logging.html
 
 
