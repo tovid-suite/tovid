@@ -7,12 +7,15 @@
 #  and burning them to disk.                                                  #
 #                                                                             #
 # It uses ffmpeg, png2yuv (mjpegtools), mplayer/mencoder, growisofs, cdrdao,  #
-# cdrecord, imagemagick, sox, vcdimager, and dvdauthor (k3b is optional).     #
-# Of course if you are just doing DVD's you don't need vcdimager              #
-# or cdrecord, and if just doing SVCD's you don't need dvdauthor.            #
+# imagemagick, sox, vcdimager, and dvdauthor (k3b is optional).               #
+# kmplayer is suggested for nice previews of videos in the file dialog.       #
+# (kmplayer.sourceforge.net)                                                  #
 #                                                                             #
-# It was originally written for doing the above with short clips from a       #
-# camera, but could be used for any similar purpose                           #
+# (If you are just doing DVD's you don't need vcdimager or cdrdao             #
+# and if just doing SVCD's you don't need dvdauthor or growisofs.)            #
+#                                                                             #
+# It was originally written for short clips from a  camera, but it could      #
+# be used for any similar purpose                                             #
 #                                                                             #
 # by Robert Sohn <grepper@gmail.com> (grepper on irc.freenode.net)            #
 #                                                                             # 
@@ -41,6 +44,7 @@ OUTPUT="the output"
 SORRY_MSG="<html><h4>Oops . . .<p>Something went wrong, $OUTPUT was not created. \
 Please check the log at $BVC_LOG"
 DVDRW_MEDIA="PLUS_R"
+VCD_XML="$WORK_DIR/mydisc.xml"
 
 ###############################################################################
 #                               FUNCTIONS                                     #
@@ -98,19 +102,23 @@ function cleanlog()
 # process $BVC_LOG.tmp variously - eg. ffmpeg's output is ugly without this
 {
 FOLD="fold -bs"
-CTRL_M="'s/\r//g'"
-FRAME="'s/\r//g;s/ frame=/\nframe=/g'"
+NO_CR="tr -d '\r'"
+RELINE="{s/$SED_VAR/\n$SED_VAR/g}"
 TMP_LOG="$BVC_LOG.tmp"
+
 
 case "$1" in
     1 )
-         eval $FOLD $TMP_LOG >> $BVC_LOG
+        $FOLD $TMP_LOG >> $BVC_LOG
+        echo >> $BVC_LOG
         ;;
     2 )
-         eval sed $CTRL_M $TMP_LOG |$FOLD >> $BVC_LOG
+        $NO_CR < $TMP_LOG | $FOLD >> $BVC_LOG
+        echo >> $BVC_LOG
         ;;
     3 ) 
-         eval sed $FRAME $TMP_LOG | $FOLD >> $BVC_LOG
+        $NO_CR < $TMP_LOG | sed $RELINE | $FOLD >> $BVC_LOG
+        echo >> $BVC_LOG
         ;;
 esac
 
@@ -175,34 +183,30 @@ do
     case $Option in
     s )
         TARGET="SVCD"
+        VID_SIZE_OPT=$SVCD_VID_SIZE_OPT
+        AUDIO_OPTS=$SVCD_AUDIO_OPTS
+        SAMPLERATE=$SVCD_SAMPLERATE
+        AUDIO_EXT=$SVCD_AUDIO_EXT
+        FFMPEG_TARGET=$SVCD_FFMPEG_TARGET
+        INTRO_SIZE=$SVCD_INTRO_SIZE
+        FFMPEG_OPTS=$SVCD_FFMPEG_OPTS
+        MPLEX_FORMAT=$SVCD_MPLEX_FORMAT
         ;;
     d )
         TARGET="DVD"
+        VID_SIZE_OPT=$DVD_VID_SIZE_OPT
+        AUDIO_OPTS=$DVD_AUDIO_OPTS
+        SAMPLERATE=$DVD_SAMPLERATE
+        AUDIO_EXT=$DVD_AUDIO_EXT
+        FFMPEG_TARGET=$DVD_FFMPEG_TARGET
+        INTRO_SIZE=$DVD_INTRO_SIZE
+        FFMPEG_OPTS=$DVD_FFMPEG_OPTS
+        MPLEX_FORMAT=$DVD_MPLEX_FORMAT
         ;;
     esac
 done
 shift $(($OPTIND - 1))
 
-if [ $TARGET = "SVCD" ]; then
-    VID_SIZE_OPT=$SVCD_VID_SIZE_OPT
-    AUDIO_OPTS=$SVCD_AUDIO_OPTS
-    SAMPLERATE=$SVCD_SAMPLERATE
-    AUDIO_EXT=$SVCD_AUDIO_EXT
-    FFMPEG_TARGET=$SVCD_FFMPEG_TARGET
-    INTRO_SIZE=$SVCD_INTRO_SIZE
-    FFMPEG_OPTS=$SVCD_FFMPEG_OPTS
-    MPLEX_FORMAT=$SVCD_MPLEX_FORMAT
-
-elif [ $TARGET = "DVD" ]; then
-    VID_SIZE_OPT=$DVD_VID_SIZE_OPT
-    AUDIO_OPTS=$DVD_AUDIO_OPTS
-    SAMPLERATE=$DVD_SAMPLERATE
-    AUDIO_EXT=$DVD_AUDIO_EXT
-    FFMPEG_TARGET=$DVD_FFMPEG_TARGET
-    INTRO_SIZE=$DVD_INTRO_SIZE
-    FFMPEG_OPTS=$DVD_FFMPEG_OPTS
-    MPLEX_FORMAT=$DVD_MPLEX_FORMAT
-fi
 
 # check dvdrw-rw or dvdrw+rw status
 # maybe I'll even use this someday
@@ -213,7 +217,31 @@ elif [ $DVDRW_MEDIA = MINUS_R ]; then
 fi
 
 ###############################################################################
-#        set up dirs and create videocd.xml or dvdauthor.xml as needed        #
+#           BEGIN: kdialog greeting, and see if user wants to continue        #
+###############################################################################
+
+GREETING="<html><H2>BEN'S VIDEO CONVERTER</H2><p><H3>A program to convert \
+camera movie files into a format that can be used on a $TARGET disk. \
+<p>When the file browser comes up next, choose the files that you \
+want to combine into one video.<br>Choose them one at a time. in the order \
+you want them arranged on the video, and press 'Open' for each one. \
+<br><br>You can preview them if you make sure 'Show preview' is selected \
+when you click on the icon shaped like a wrench at the top of the file \
+browser that comes up.<br> \
+<br><font color='#0000C6' weight=900>When you are done selecting your video \
+clips, press the 'Cancel' button the next time the file browser comes up \
+and the processing will start.</font><p><p> \
+To begin press 'Yes' , to exit  press 'No'.</H4> \
+<p><H3>Do you want to continue ?</html>"
+
+$KDIALOG $KDIALOG_OPTS $WIN_TITLE --yesno  "$GREETING"
+if [ $? != 0 ]; then
+    exit 0
+fi
+
+
+###############################################################################
+#        set up WORK_DIR and create videocd.xml or dvdauthor.xml as needed    #
 ###############################################################################
 
 
@@ -252,71 +280,14 @@ if [ $TARGET = "DVD" ]; then
 EOF
     ) | sed 's/^    //' > "$DVD_AUTHOR_XML"
 
-elif [ $TARGET = "SVCD" ]; then
-    VCD_XML="$WORK_DIR/mydisc.xml"
-    # borrowed from tovid's makexml output with thanks
-    (
-    cat <<EOF
-    <?xml version="1.0"?>
-    <!DOCTYPE videocd PUBLIC "-//GNU/DTD VideoCD//EN"
-      "http://www.gnu.org/software/vcdimager/videocd.dtd">
-    <videocd xmlns="http://www.gnu.org/software/vcdimager/1.0/"
-      class="svcd" version="1.0">
-    <option name="update scan offsets" value="true" />
-    <info>
-      <album-id>VIDEO_DISC</album-id>
-      <volume-count>1</volume-count>
-      <volume-number>1</volume-number>
-      <restriction>0</restriction>
-    </info>
-    <pvd>
-      <volume-id>VIDEO_DISC</volume-id>
-      <system-id>CD-RTOS CD-BRIDGE</system-id>
-    </pvd>
-    <sequence-items>
-      <sequence-item src="$WORK_DIR/final.mpg" id="seq-title-1"/>
-    </sequence-items>
-    <pbc>
-      <playlist id="play-title-1">
-        <prev ref="play-title-1"/>
-        <wait>0</wait>
-        <play-item ref="seq-title-1"/>
-      </playlist>
-    </pbc>
-    </videocd>
-EOF
-    ) | sed 's/^    //' > "$VCD_XML"
-
 fi
 
-###############################################################################
-#           BEGIN: get file names from user and start progress bar            #
-###############################################################################
-
-GREETING="<html><H2>BEN'S VIDEO CONVERTER</H2><p><H3>A program to convert \
-camera movie files into a format that can be used on a $TARGET disk. \
-<p>When the file browser comes up next, choose the files that you \
-want to combine into one video.<br>Choose them one at a time. in the order \
-you want them arranged on the video, and press 'Open' for each one. \
-<br><br>You can preview them if you make sure 'Show preview' is selected \
-when you click on the icon shaped like a wrench at the top of the file \
-browser that comes up.<br> \
-<br><font color='#0000C6' weight=900>When you are done selecting your video \
-clips, press the 'Cancel' button the next time the file browser comes up \
-and the processing will start.</font><p><p> \
-To begin press 'Yes' , to exit  press 'No'.</H4> \
-<p><H3>Do you want to continue ?</html>"
-
-$KDIALOG $KDIALOG_OPTS $WIN_TITLE --yesno  "$GREETING"
-if [ $? != 0 ]; then
-    exit 0
-fi
-
+##############################################################################
+#   get the file names, start progress bar, and create WORK_DIR directories  # 
+##############################################################################
 
 # do processing in $WORK_DIR
 cd $WORK_DIR
-
-# get file names from user
 
 while [ $? = 0 ]; do
     $KDIALOG $KDIALOG_OPTS --separate-output --getopenfilename $HOME  \
@@ -331,7 +302,7 @@ while [ $? = 0 ]; do
         fi
 done
 
-FILES=`wc -l $WORK_DIR/files.txt|awk '{print $1}'`
+FILES=$(cat $WORK_DIR/files.txt | wc -l)
 
 # make sure the user didn't press cancel before doing anything
 if [ ! -s $WORK_DIR/files.txt ]; then
@@ -339,10 +310,11 @@ if [ ! -s $WORK_DIR/files.txt ]; then
 fi
 
 # set up our log file
-printf "%s\n%s\n" "$LINE" "Ben's video Converter (BVC) - log for `date`" \
-"$LINE" >> $BVC_LOG
+PATTERN="$(for i in `seq 1 79`;do echo -n \*;done)"
+printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
+"Ben's video Converter (BVC) - log for `date`" \
+"$PATTERN" >> $BVC_LOG
 
-# start the progress bar
 
 dcopRef=$(kstart --ontop --window "Ben's Video Converter"  \
 kdialog -geometry 400x100+0+0   --icon mplayer --miniicon mplayer \
@@ -372,10 +344,11 @@ for i in `seq 1 $FILES`; do
     VID=`sed -n -e $(echo $i)p $WORK_DIR/files.txt`
     CREATE_PNG_CMD="ffmpeg -i  "$VID" \
     -vframes 8 -s $INTRO_SIZE  $WORK_DIR/pics/$i/%08d.png" 
-    printf "%s\n%s\n" "$LINE" "$LINE" >> $BVC_LOG
+    printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
     echo -e "\nRunning: $CREATE_PNG_CMD\n" | fold -bs | tr -s ' ' >> $BVC_LOG
 
-    if eval $CREATE_PNG_CMD >> $BVC_LOG.tmp 2>&1;then
+    SED_VAR="frame="
+    if   $CREATE_PNG_CMD >> $BVC_LOG.tmp 2>&1;then
         cleanlog 3
     else
         cleanlog 3
@@ -451,19 +424,20 @@ fi
 #                       process original video and audio                      #
 ###############################################################################
 # update progress bar
-progress_bar_progress 2
-PROGRESS_LABEL="converting source video to high bitrate xvid avi"
+progress_bar_progress 1
+PROGRESS_LABEL="converting source video to high bitrate mpeg-4"
 set_progress_bar_label
 
-# create m2v's of our video clips
+# create high bitrate xvid avi's of our video clips
 for i in `seq 1 $FILES`; do 
     CURRENT_CLIP="`sed   -n -e $(echo $i)p $WORK_DIR/files.txt`"
     FFMPEG_ENC_CMD="ffmpeg -i $CURRENT_CLIP -f avi -an -vcodec mpeg4 -b 3000 \
     -r 29.970 -s $VID_SIZE_OPT -aspect 4:3 $WORK_DIR/pics/$i/$i.avi"
-    printf "%s\n%s\n" "$LINE" "$LINE" >> $BVC_LOG
+    printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
     echo -e "\nRunning: $FFMPEG_ENC_CMD\n" | fold -bs | tr -s ' ' >> $BVC_LOG
 
-    if eval $FFMPEG_ENC_CMD >> $BVC_LOG.tmp 2>&1; then
+    SED_VAR="frame="
+    if $FFMPEG_ENC_CMD >> $BVC_LOG.tmp 2>&1; then
         cleanlog 3
     else
         cleanlog 3
@@ -477,7 +451,7 @@ for i in `seq 1 $FILES`; do
 done
 
 # update progress bar
-progress_bar_progress 5
+progress_bar_progress 10
 PROGRESS_LABEL="Extracting audio and processing"
 set_progress_bar_label
 
@@ -636,7 +610,7 @@ done
 #                       begin work on video fades                             #
 ###############################################################################
 
-# create the pngs for the video fadeout from our new m2v's 
+# create the pngs for the video fadeout from our new mpeg-4's 
 #and move to proper fadeout dir
 for i in `seq 1 $FILES`; do
 
@@ -702,21 +676,22 @@ for i in `seq 1 $FILES`; do
 
     # convert to video stream
 
-    ENC_PNG_CMD="png2yuv  -f 29.970 -I p -b 1 -n 130 \
-    -j  $WORK_DIR/pics/$i/video_fadeout/%0d.png |
-    ffmpeg -f yuv4mpegpipe -i - -an -vcodec mpeg4 -r 29.970 -s $VID_SIZE_OPT \
-    -aspect 4:3 -b 3000 -y "$WORK_DIR/pics/$i/$i-video_fadeout.avi""
+    PNG2YUV_CMD="png2yuv  -f 29.970 -I p -b 1 -n 130 -j \
+    $WORK_DIR/pics/$i/video_fadeout/%0d.png"
+    FFMPEG_CMD="ffmpeg -f yuv4mpegpipe -i - -an -vcodec mpeg4 -r 29.970 -s \
+    $VID_SIZE_OPT -aspect 4:3 -b 3000 -y $WORK_DIR/pics/$i/$i-video_fadeout.avi"
 
-    printf "%s\n%s\n" "$LINE" "$LINE" >> $BVC_LOG
-    echo -e "\nRunning: $ENC_PNG_CMD\n" | fold -bs | tr -s ' ' >> $BVC_LOG
+    printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
+    echo -e "\nRunning: $PNG2YUV_CMD | $FFMPEG_CMD\n" | fold -bs | tr -s ' ' >> $BVC_LOG
 
-    if eval $ENC_PNG_CMD >> $BVC_LOG.tmp 2>&1; then
+    SED_VAR="frame="
+    if { $PNG2YUV_CMD | $FFMPEG_CMD ;}  >> $BVC_LOG.tmp 2>&1; then
         cleanlog 3
     else
         cleanlog 3
         OUTPUT="There was a problem converting the pngs to video. \
-        "Please see the output of $BVC_LOG"    
-        $KDIALOG --msgbox "$OUTPUT""
+        Please see the output of $BVC_LOG"
+        $KDIALOG --msgbox "$OUTPUT"
         dcop $dcopRef close
         exit 1
     fi
@@ -781,7 +756,7 @@ COPY_CMD="mencoder -quiet -oac copy -ovc copy $JOINED_VIDEO \
 printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
 echo -e "\nRunning: $COPY_CMD\n" |fold -bs | tr -s ' ' >> $BVC_LOG
 #if $COPY_CMD 2>&1| fold -bs >> $BVC_LOG; then
-if eval $COPY_CMD >> $BVC_LOG.tmp 2>&1; then
+if $COPY_CMD >> $BVC_LOG.tmp 2>&1; then
     cleanlog 1
 else
     cleanlog 1
@@ -792,7 +767,7 @@ else
 fi
 
 
-progress_bar_progress 10
+progress_bar_progress 3
 PROGRESS_LABEL="Converting our new video file to $TARGET mpeg-2 format"
 set_progress_bar_label
 
@@ -803,9 +778,8 @@ JOIN_CMD="ffmpeg -i $WORK_DIR/joined-tmp.avi -r 29.970 -f mpeg2video \
 printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
 echo -e "\nRunning: $JOIN_CMD\n" | fold -bs  | tr -s ' ' >> $BVC_LOG
 
-#if $JOIN_CMD 2>&1 | sed 's/\r//g;s/ frame=/\nframe=/g' |
-#fold -bs >> $BVC_LOG; then
-if eval $JOIN_CMD >> $BVC_LOG.tmp 2>&1; then
+SED_VAR="frame="
+if $JOIN_CMD >> $BVC_LOG.tmp 2>&1; then
     cleanlog 3
 else
     cleanlog 3
@@ -831,8 +805,7 @@ $WORK_DIR/joined.m2v $WORK_DIR/joined.$AUDIO_EXT"
 printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
 echo -e "\nRunning: $MPLEX_CMD\n" |fold -bs | tr -s ' ' >> $BVC_LOG
 
-#if $MPLEX_CMD 2>&1 | fold -bs >> $BVC_LOG; then
-if eval $MPLEX_CMD >> $BVC_LOG.tmp 2>&1; then
+if $MPLEX_CMD >> $BVC_LOG.tmp 2>&1; then
     cleanlog 1
 else
     cleanlog 1
@@ -882,7 +855,7 @@ if [ $TARGET = "DVD" ]; then
         printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
         echo -e "\nRunning: $DVDAUTHOR_CMD\n" |fold -bs | tr -s ' ' >> $BVC_LOG
 
-        if eval $DVDAUTHOR_CMD >> $BVC_LOG.tmp 2>&1; then
+        if $DVDAUTHOR_CMD >> $BVC_LOG.tmp 2>&1; then
             cleanlog 2
         else
             cleanlog 2
@@ -903,7 +876,7 @@ if [ $TARGET = "DVD" ]; then
 :<<UNUSED
         DVD_BLANK_CMD="dvd+rw-format $BLANK $DEVICE"
         echo -e "Running: $DVD_BLANK_CMD\n" >> $BVC_LOG
-        if eval $DVD_BLANK_CMD >> $BVC_LOG 2>&1; then
+        if $DVD_BLANK_CMD >> $BVC_LOG 2>&1; then
             :
         else
             $KDIALOG --msgbox \
@@ -922,7 +895,7 @@ UNUSED
         SORRY_MSG=$(sorry_msg)
 
         #if $GROWISOFS_CMD 2>&1 | fold -bs >> $BVC_LOG; then
-        if eval $GROWISOFS_CMD >> $BVC_LOG.tmp 2>&1; then
+        if $GROWISOFS_CMD >> $BVC_LOG.tmp 2>&1; then
             cleanlog 1
         else
             cleanlog 1
@@ -961,7 +934,7 @@ UNUSED
                 dcop $dcopRef close
                 exit 1
             fi
-        elif [ $? -eq 1 ]; then
+        else
             $KDIALOG --msgbox "$NOBURN_STRING"
             dcop $dcopRef close
             exit 0
@@ -983,8 +956,8 @@ elif [ $TARGET = "SVCD" ]; then
     PROGRESS_LABEL="Making svcd configuration, bin, and cue files"
     set_progress_bar_label
     printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
-
-        if [ -f $VCD_XML ] >> $BVC_LOG 2>&1; then
+    VCDXGEN_CMD="vcdxgen $WORK_DIR/final.mpg -o $VCD_XML"
+        if $VCDXGEN_CMD >> $BVC_LOG 2>&1; then
             :
         else
             OUTPUT="svcd configuration file"
@@ -998,7 +971,7 @@ elif [ $TARGET = "SVCD" ]; then
     VCDXBUILD_CMD="vcdxbuild -c "$VCD_XML.cue" -b "$VCD_XML.bin" "$VCD_XML""
     echo -e "\nRunning: "$VCDXBUILD_CMD"\n" |fold -bs | tr -s ' ' >> $BVC_LOG
 
-    if eval $VCDXBUILD_CMD >> $BVC_LOG.tmp 2>&1; then
+    if $VCDXBUILD_CMD >> $BVC_LOG.tmp 2>&1; then
         cleanlog 1
     else
         cleanlog 1
@@ -1026,11 +999,12 @@ elif [ $TARGET = "SVCD" ]; then
         PROGRESS_LABEL="Blanking the CD"
         set_progress_bar_label
 
-        CDRW_BLANK_CMD="cdrecord dev=$DEVICE blank=fast"
+#        CDRW_BLANK_CMD="cdrecord dev=$DEVICE blank=fast"
+        CDRW_BLANK_CMD="cdrdao blank --device $DEVICE"
         printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
         echo -e "\nRunning: $CDRW_BLANK_CMD\n" |fold -bs | tr -s ' ' >> $BVC_LOG
 
-        if eval $CDRW_BLANK_CMD >> $BVC_LOG.tmp 2>&1; then
+        if $CDRW_BLANK_CMD >> $BVC_LOG.tmp 2>&1; then
             cleanlog 1
             progress_bar_progress 5
         else
@@ -1050,10 +1024,12 @@ elif [ $TARGET = "SVCD" ]; then
         printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
         echo -e "\nRunning: $CDRDAO_CMD\n" |fold -bs | tr -s ' ' >> $BVC_LOG
 
-        if eval $CDRDAO_CMD >> $BVC_LOG.tmp 2>&1; then
-            fold -bs $BVC_LOG.tmp >> $BVC_LOG
+        SED_VAR="Wrote"
+        if $CDRDAO_CMD >> $BVC_LOG.tmp 2>&1; then
+            cleanlog 3
             rm -f $BVC_LOG.tmp
         else
+            cleanlog 3
             SORRY_MSG=$(sorry_msg)
             $KDIALOG --sorry "$SORRY_MSG"
             dcop $dcopRef close
@@ -1071,10 +1047,12 @@ elif [ $TARGET = "SVCD" ]; then
 
         CDRDAO_CMD="cdrdao write --device $DEVICE --driver generic-mmc \
         "$VCD_XML.cue""
+
+        SED_VAR="Wrote"
         printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
         echo -e "\nRunning: "$CDRDAO_CMD\n"" |fold -bs | tr -s ' ' >> $BVC_LOG
-        if eval $CDRDAO_CMD >> $BVC_LOG.tmp 2>&1; then
-            cleanlog 1
+        if $CDRDAO_CMD >> $BVC_LOG.tmp 2>&1; then
+            cleanlog 3
         else
             cleanlog 1
             OUTPUT="SVCD disk"
@@ -1092,14 +1070,21 @@ elif [ $TARGET = "SVCD" ]; then
         dcop $dcopRef close
         ;;
     2 )
+        # user cancels
+        OUTPUT="$WORK_DIR/final.mpg"
         dcop $dcopRef setProgress 100
         $KDIALOG --yesno \
         "<html><h4>your converted and combined file is ready and can be found at \
         $WORK_DIR/final.mpg .  Do you wish to watch it now?</html>"
-        OUTPUT="$WORK_DIR/final.mpg"
         
+
+        # if no, then exit with message
         # if yes, then play with mplayer
-        if [ $? -eq 0 ]; then
+        if [ $? -ne 0 ]; then
+            $KDIALOG --msgbox "$NOBURN_STRING"
+            dcop $dcopRef close
+            exit 0
+        else
             dcop $dcopRef close
             if test -f $OUTPUT; then
                 mplayer $OUTPUT
@@ -1111,10 +1096,6 @@ elif [ $TARGET = "SVCD" ]; then
                 dcop $dcopRef close
                 exit 1
             fi
-        elif [ $? -eq 1 ]; then
-            $KDIALOG --msgbox "$NOBURN_STRING"
-            dcop $dcopRef close
-            exit 0
         fi
         ;;
     esac
