@@ -1,9 +1,12 @@
 #! /usr/bin/env python
+# Standards.py
 
 __doc__ = \
 """This module defines functions for retrieving information about multimedia
 standards. Any data about widely-published standards should be defined here,
 for use by all libtovid modules."""
+
+__all__ = ['VideoStandard', 'AudioStandard']
 
 def get_resolution(format, tvsys):
     """Get the pixel resolution (x,y) for the given format and TV system."""

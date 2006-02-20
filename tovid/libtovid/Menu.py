@@ -1,15 +1,10 @@
 #! /usr/bin/env python
+# Menu.py
 
-# Menu generator module
+__doc__ = \
+"""Module for generating Menu elements for a tovid project.
 
-import string, sys, os, glob
-import libtovid
-from Option import OptionDef
-from MenuPlugins import *
-
-"""Generate Menu elements for a tovid project."""
-
-"""Conceptual steps in generating a menu:
+Conceptual steps in generating a menu:
 
     - convert/generate background (image or video)
     - convert audio
@@ -43,6 +38,11 @@ Desired end result:
         - For applying effects and visual widgets to a video
         - For adding customized subtitle streams
 """
+
+import string, sys, os, glob
+import libtovid
+from Option import OptionDef
+from MenuPlugins import *
 
 # Menu TDL element definition
 # Options pertaining to generating a video disc menu

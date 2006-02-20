@@ -1,8 +1,7 @@
 #! /usr/bin/env python
+# Streams.py
 
-# ===========================================================
-# VideoStrea, AudioStream
-# ===========================================================
+__all__ = ['VideoStream', 'AudioStream']
 
 from Standards import *
 

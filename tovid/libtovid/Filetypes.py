@@ -1,4 +1,7 @@
 #! /usr/bin/env python
+# Filetypes.py
+
+__all__ = ['MultimediaFile']
 
 import os, sys
 from Globals import *
