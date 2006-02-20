@@ -1,7 +1,5 @@
 #! /usr/bin/env python
-
-# ===========================================================
-#
+# Disc.py
 
 # TODO: Exception handling
 

@@ -1,6 +1,12 @@
 #! /usr/bin/env python
 # MenuPlugins.py
 
+__doc__ = \
+"""This module implements several backends for generating MPEG menus
+from a list of video titles."""
+
+__all__ = ['MenuPlugin', 'TextMenu', 'ThumbMenu']
+
 import os
 import libtovid
 from Globals import degunk
@@ -12,33 +18,28 @@ log = libtovid.Log('MenuPlugins')
 FRAMES=90
 
 
-__doc__=\
-"""This module implements several backends for generating MPEG menus
-from a list of video titles."""
 
 class MenuPlugin:
     """Base plugin class; all menu-generators inherit from this."""
     def __init__(self, menu):
         self.menu = menu
-        # Alias, for shorter lookups
-        self.get = self.menu.get
         # List of commands to be executed
         self.commands = []
         
         self.preproc()
 
     def preproc(self):
-        if self.get('format') == 'dvd':
+        if self.menu['format'] == 'dvd':
             width = 720
             samprate = 48000
-            if self.get('tvsys') == 'ntsc':
+            if self.menu['tvsys'] == 'ntsc':
                 height = 480
             else:
                 height = 576
         else:
             width = 352
             samprate = 44100
-            if self.get('tvsys') == 'ntsc':
+            if self.menu['tvsys'] == 'ntsc':
                 height = 240
             else:
                 height = 288
@@ -67,7 +68,7 @@ class TextMenu (MenuPlugin):
         self.fg_highlight = 'pymakemenu.fg_highlight.png'
         self.fg_selection = 'pymakemenu.fg_selection.png'
         
-        print "Creating a menu with %s titles" % len(self.get('titles'))
+        print "Creating a menu with %s titles" % len(self.menu['titles'])
         self.build_reusables()
         self.draw_background_canvas()
         self.draw_background_layer()
@@ -92,12 +93,12 @@ class TextMenu (MenuPlugin):
         titlenum = 1        # Title number (for labeling)
         labels = ''
         buttons = ''
-        for title in self.get('titles'):
+        for title in self.menu['titles']:
             print "Adding '%s'" % title
             # TODO: Escape special characters in title
             
             # For VCD, number the titles
-            if self.get('format') == 'vcd':
+            if self.menu['format'] == 'vcd':
                 labels += " text 0,%s '%s. %s' " % (y, titlenum, title)
             # Others use title string alone
             else:
@@ -132,20 +133,20 @@ class TextMenu (MenuPlugin):
 
         # Draw text titles on a transparent background.
         cmd = 'convert -size %sx%s ' % self.scale
-        cmd += ' xc:none -antialias -font "%s" ' % self.get('font')
-        cmd += ' -pointsize %s ' % self.get('fontsize')
-        cmd += ' -fill "%s" ' % self.get('textcolor')
+        cmd += ' xc:none -antialias -font "%s" ' % self.menu['font']
+        cmd += ' -pointsize %s ' % self.menu['fontsize']
+        cmd += ' -fill "%s" ' % self.menu['textcolor']
         cmd += ' -stroke black -strokewidth 3 '
-        cmd += ' -draw "gravity %s %s" ' % (self.get('align'), self.im_labels)
+        cmd += ' -draw "gravity %s %s" ' % (self.menu['align'], self.im_labels)
         cmd += ' -stroke none -draw "gravity %s %s" ' % \
-                (self.get('align'), self.im_labels)
+                (self.menu['align'], self.im_labels)
         cmd += ' %s' % self.fg_canvas
         self.commands.append(cmd)
 
         # Composite text over background
         cmd = 'composite -compose Over -gravity center '
         cmd += ' %s %s ' % (self.fg_canvas, self.bg_canvas)
-        cmd += ' -depth 8 "%s.ppm"' % self.get('out')
+        cmd += ' -depth 8 "%s.ppm"' % self.menu['out']
         self.commands.append(cmd)
 
 
@@ -155,11 +156,11 @@ class TextMenu (MenuPlugin):
 
         # Create text layer (at safe-area size)
         cmd = 'convert -size %sx%s ' % self.scale
-        cmd += ' xc:none -antialias -font "%s" ' % self.get('font')
+        cmd += ' xc:none -antialias -font "%s" ' % self.menu['font']
         cmd += ' -weight bold '
-        cmd += ' -pointsize %s ' % self.get('fontsize')
-        cmd += ' -fill "%s" ' % self.get('highlightcolor')
-        cmd += ' -draw "gravity %s %s" ' % (self.get('align'), self.im_buttons)
+        cmd += ' -pointsize %s ' % self.menu['fontsize']
+        cmd += ' -fill "%s" ' % self.menu['highlightcolor']
+        cmd += ' -draw "gravity %s %s" ' % (self.menu['align'], self.im_buttons)
         cmd += ' -type Palette -colors 3 '
         cmd += ' png8:%s' % self.fg_highlight
         self.commands.append(cmd)
@@ -167,7 +168,7 @@ class TextMenu (MenuPlugin):
         # Pseudo-composite, to expand layer to target size
         cmd = 'composite -compose Src -gravity center '
         cmd += ' %s %s ' % (self.fg_highlight, self.bg_canvas)
-        cmd += ' png8:"%s.hi.png"' % self.get('out')
+        cmd += ' png8:"%s.hi.png"' % self.menu['out']
         self.commands.append(cmd)
 
 
@@ -177,11 +178,11 @@ class TextMenu (MenuPlugin):
 
         # Create text layer (at safe-area size)
         cmd = 'convert -size %sx%s ' % self.scale
-        cmd += ' xc:none -antialias -font "%s" ' % self.get('font')
+        cmd += ' xc:none -antialias -font "%s" ' % self.menu['font']
         cmd += ' -weight bold '
-        cmd += ' -pointsize %s ' % self.get('fontsize')
-        cmd += ' -fill "%s" ' % self.get('selectcolor')
-        cmd += ' -draw "gravity %s %s" ' % (self.get('align'), self.im_buttons)
+        cmd += ' -pointsize %s ' % self.menu['fontsize']
+        cmd += ' -fill "%s" ' % self.menu['selectcolor']
+        cmd += ' -draw "gravity %s %s" ' % (self.menu['align'], self.im_buttons)
         cmd += ' -type Palette -colors 3 '
         cmd += ' png8:%s' % self.fg_selection
         self.commands.append(cmd)
@@ -189,7 +190,7 @@ class TextMenu (MenuPlugin):
         # Pseudo-composite, to expand layer to target size
         cmd = 'composite -compose Src -gravity center '
         cmd += ' %s %s ' % (self.fg_selection, self.bg_canvas)
-        cmd += ' png8:"%s.sel.png"' % self.get('out')
+        cmd += ' png8:"%s.sel.png"' % self.menu['out']
         self.commands.append(cmd)
 
 
@@ -199,28 +200,28 @@ class TextMenu (MenuPlugin):
         
         # ppmtoy4m part
         cmd = 'ppmtoy4m -S 420mpeg2 '
-        if self.get('tvsys') == 'ntsc':
+        if self.menu['tvsys'] == 'ntsc':
             cmd += ' -A 10:11 -F 30000:1001 '
         else:
             cmd += ' -A 59:54 -F 25:1 '
         cmd += ' -n %s ' % FRAMES
-        cmd += ' -r "%s.ppm" ' % self.get('out')
+        cmd += ' -r "%s.ppm" ' % self.menu['out']
         # mpeg2enc part
         cmd += ' | mpeg2enc -a 2 '
         # PAL/NTSC
-        if self.get('tvsys') == 'ntsc':
+        if self.menu['tvsys'] == 'ntsc':
             cmd += ' -F 4 -n n '
         else:
             cmd += ' -F 3 -n p '
         # Use correct format flags and filename extension
-        if self.get('format') == 'vcd':
-            self.vstream = '%s.m1v' % self.get('out')
+        if self.menu['format'] == 'vcd':
+            self.vstream = '%s.m1v' % self.menu['out']
             cmd += ' -f 1 '
         else:
-            self.vstream = '%s.m2v' % self.get('out')
-            if self.get('format') == 'dvd':
+            self.vstream = '%s.m2v' % self.menu['out']
+            if self.menu['format'] == 'dvd':
                 cmd += ' -f 8 '
-            elif self.get('format') == 'svcd':
+            elif self.menu['format'] == 'svcd':
                 cmd += ' -f 4 '
         cmd += ' -o "%s" ' % self.vstream
         self.commands.append(cmd)
@@ -231,26 +232,26 @@ class TextMenu (MenuPlugin):
         (or generate silence instead).
         Corresp. to lines 413-430, 504-518 of makemenu."""
         # If audio file was provided, create .wav of it
-        if self.get('audio'):
-            cmd = 'sox "%s" ' % self.get('audio')
+        if self.menu['audio']:
+            cmd = 'sox "%s" ' % self.menu['audio']
             cmd += ' -r %s ' % self.samprate
-            cmd += ' -w "%s.wav" ' % self.get('out')
+            cmd += ' -w "%s.wav" ' % self.menu['out']
         # Otherwise, generate 4-second silence
         else:
             cmd = 'cat /dev/zero | sox -t raw -c 2 '
             cmd += ' -r %s -w -s - ' % self.samprate
-            cmd += ' -t wav "%s.wav" trim 0 4 ' % self.get('out')
+            cmd += ' -t wav "%s.wav" trim 0 4 ' % self.menu['out']
         self.commands.append(cmd)
         
         # mp2 for (S)VCD
-        if self.get('format') in ['vcd', 'svcd']:
-            self.astream = '%s.mp2' % self.get('out')
-            cmd = 'cat "%s.wav" | mp2enc ' % self.get('out')
+        if self.menu['format'] in ['vcd', 'svcd']:
+            self.astream = '%s.mp2' % self.menu['out']
+            cmd = 'cat "%s.wav" | mp2enc ' % self.menu['out']
             cmd += ' -r %s -s ' % self.samprate
         # ac3 for all others
         else:
-            self.astream = '%s.ac3' % self.get('out')
-            cmd = 'ffmpeg -i "%s.wav" ' % self.get('out')
+            self.astream = '%s.ac3' % self.menu['out']
+            cmd = 'ffmpeg -i "%s.wav" ' % self.menu['out']
             cmd += ' -ab 224 -ar %s ' % self.samprate
             cmd += ' -ac 2 -acodec ac3 -y '
         cmd += ' "%s" ' % self.astream
@@ -261,16 +262,16 @@ class TextMenu (MenuPlugin):
         """Multiplex audio and video streams to create an mpeg.
         Corresp. to lines 520-526 of makemenu."""
         
-        cmd = 'mplex -o "%s.temp.mpg" ' % self.get('out')
+        cmd = 'mplex -o "%s.temp.mpg" ' % self.menu['out']
         # Format flags
-        if self.get('format') == 'vcd':
+        if self.menu['format'] == 'vcd':
             cmd += ' -f 1 '
         else:
             # Variable bitrate
             cmd += ' -V '
-            if self.get('format') == 'dvd':
+            if self.menu['format'] == 'dvd':
                 cmd += ' -f 8 '
-            elif self.get('format') == 'svcd':
+            elif self.menu['format'] == 'svcd':
                 cmd += ' -f 4 '
         cmd += ' "%s" "%s" ' % (self.astream, self.vstream)
         self.commands.append(cmd)
@@ -283,18 +284,18 @@ class TextMenu (MenuPlugin):
         xml =  '<subpictures>\n'
         xml += '  <stream>\n'
         xml += '  <spu force="yes" start="00:00:00.00"\n'
-        xml += '       highlight="%s.hi.png"\n' % self.get('out')
-        xml += '       select="%s.sel.png"\n' % self.get('out')
+        xml += '       highlight="%s.hi.png"\n' % self.menu['out']
+        xml += '       select="%s.sel.png"\n' % self.menu['out']
         xml += '       autooutline="infer">\n'
         xml += '  </spu>\n'
         xml += '  </stream>\n'
         xml += '</subpictures>\n'
-        xmlfile = open('%s.xml' % self.get('out'), 'w')
+        xmlfile = open('%s.xml' % self.menu['out'], 'w')
         xmlfile.write(xml)
         xmlfile.close()
 
         cmd = 'spumux "%s.xml" < "%s.temp.mpg" > "%s.mpg"' % \
-                (self.get('out'), self.get('out'), self.get('out'))
+                (self.menu['out'], self.menu['out'], self.menu['out'])
         self.commands.append(cmd)
 
 
@@ -330,7 +331,7 @@ class ImageSequence:
             print "Creating thumbnail directory: %s" % self.outdir
             os.mkdir(self.outdir)
 
-        cmd = 'mplayer "%s" ' % video.get('in')
+        cmd = 'mplayer "%s" ' % video['in']
 
         x, y = self.size
 
@@ -338,7 +339,7 @@ class ImageSequence:
         cmd += ' -vo jpeg:outdir="%s" -ao null ' % self.outdir
         cmd += ' -ss 05:00 -frames %s ' % FRAMES
 
-        print "Creating image sequence from %s" % video.get('in')
+        print "Creating image sequence from %s" % video['in']
         print cmd
         for line in os.popen(cmd, 'r').readlines():
             #print line
@@ -409,7 +410,7 @@ class ThumbMenu (MenuPlugin):
         for thumb in self.thumbs:
             thumb.generate()
             # Apply effects
-            if 'label' in self.menu.get('effects'):
+            if 'label' in self.menu['effects']:
                 thumb.label()
 
         if not os.path.exists(self.outdir):
@@ -418,7 +419,7 @@ class ThumbMenu (MenuPlugin):
 
         # Composite thumbs over background
         for frame in range(FRAMES):
-            cmd = 'convert -size 720x480 %s' % self.menu.get('background')
+            cmd = 'convert -size 720x480 %s' % self.menu['background']
             for thumb in self.thumbs:
                 cmd += ' -page +%s+%s' % thumb.loc
                 cmd += ' -label "%s"' % thumb.video.name
@@ -440,7 +441,8 @@ class ThumbMenu (MenuPlugin):
 
 def generate_highlight_png(coords):
     """Generate a transparent highlight .png for the menu, with
-    cursor positions near the given coordinates."""
+    cursor positions near the given coordinates.
+    """
     outfile = 'high.png'
     cmd = 'convert -size 720x480 xc:none +antialias'
     cmd += ' -fill "#20FF40"'

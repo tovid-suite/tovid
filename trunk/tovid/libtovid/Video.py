@@ -1,20 +1,20 @@
 #! /usr/bin/env python
 # Video.py
-# Video generator module
 
-import sys
-import libtovid
-from libtovid.Option import OptionDef
+__doc__ = \
+"""This module generates MPEG video files from TDL Video element definitions."""
 
-log = libtovid.Log('Video')
 
 # TODO: Eliminate some of the redundancy of this module; integrate related
 # encoding/muxing functions into a class or other container, with the aim
 # of making it as simple as possible to write alternative backends (easy
 # access to data about standard targets, about input video specs, etc.)
 
-__doc__ = \
-"""This module generates MPEG video files from TDL Video element definitions."""
+import sys
+import libtovid
+from libtovid.Option import OptionDef
+
+log = libtovid.Log('Video')
 
 
 # Video TDL element definition
@@ -130,7 +130,7 @@ def generate(video):
     """Generate a video element by encoding an input file to a target
     standard."""
 
-    method = video.get('method')
+    method = video['method']
     if method == 'mpeg2enc':
         encoder = Mpeg2encEncoder(video)
     elif method == 'mencoder':

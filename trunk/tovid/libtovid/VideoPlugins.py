@@ -1,12 +1,14 @@
 #! /usr/bin/env python
 # VideoPlugins.py
 
-# TODO: Cleanup/modularize, move stuff to classes, make interface simple
-
-__doc__=\
+__doc__ = \
 """This module implements several backends for encoding a video file to
 a standard MPEG format such as (S)VCD or DVD.
 """
+
+__all__ = ['VideoPlugin', 'Mpeg2encEncoder', 'MencoderEncoder']
+
+# TODO: Cleanup/modularize, move stuff to classes, make interface simple
 
 # from libtovid import Video
 import os, sys
@@ -21,8 +23,6 @@ class VideoPlugin:
     def __init__(self, video):
         log.info('Creating a VideoPlugin')
         self.video = video
-        # Alias, for shorter lookups
-        self.get = self.video.get
         # List of commands to be executed
         self.commands = []
 
@@ -31,13 +31,13 @@ class VideoPlugin:
     def preproc(self):
         """Do preprocessing common to all backends."""
 
-        width, height = Standards.get_resolution(self.get('format'), self.get('tvsys'))
+        width, height = Standards.get_resolution(self.video['format'], self.video['tvsys'])
 
         # Convert aspect (ratio) to a floating-point value
-        src_aspect = ratio_to_float(self.get('aspect'))
+        src_aspect = ratio_to_float(self.video['aspect'])
         # Use anamorphic widescreen for any video 16:9 or wider
         # (Only DVD supports this)
-        if src_aspect >= 1.7 and self.get('format') == 'dvd':
+        if src_aspect >= 1.7 and self.video['format'] == 'dvd':
             tgt_aspect = 16.0/9.0
         else:
             tgt_aspect = 4.0/3.0
@@ -73,6 +73,8 @@ class VideoPlugin:
             # TODO: Catch failed execution
             cin, cout = os.popen4(cmd, 1)
             for line in cout.readlines():
+                # Strip extra line breaks
+                line = line.rstrip('\n\r')
                 log.debug(line)
 
 
@@ -96,18 +98,18 @@ class Mpeg2encEncoder (VideoPlugin):
         # TODO: Determine aspect ratio and scale appropriately (in a separate
         # function, preferably).
     
-        cmd = 'mplayer "%s" ' % self.get('in')
+        cmd = 'mplayer "%s" ' % self.video['in']
         cmd += ' -vo yuv4mpeg -nosound -benchmark -noframedrop '
         # TODO: Support subtitles. For now, use default tovid behavior.
         cmd += ' -noautosub '
         # TODO: Avoid scaling unless necessary
         cmd += ' -vf scale=%s:%s ' % self.scale
         # Filters
-        if 'denoise' in self.get('filters'):
+        if 'denoise' in self.video['filters']:
             cmd += ' -vf-add hqdn3d '
-        if 'contrast' in self.get('filters'):
+        if 'contrast' in self.video['filters']:
             cmd += ' -vf-add pp=al:f '
-        if 'deblock' in self.get('filters'):
+        if 'deblock' in self.video['filters']:
             cmd += ' -vf-add pp=hb/vb '
     
         self.commands.append(cmd)
@@ -125,23 +127,23 @@ class Mpeg2encEncoder (VideoPlugin):
         # -S 700 -B 247 -b 2080 -v 0 -4 2 -2 1 -q 5 -H -o FILE
     
         cmd = 'cat stream.yuv | mpeg2enc '
-        if self.get('tvsys') == 'pal':
+        if self.video['tvsys'] == 'pal':
             cmd += ' -F 3 -n p '
-        elif self.get('tvsys') == 'ntsc':
+        elif self.video['tvsys'] == 'ntsc':
             cmd += ' -F 4 -n n '
     
-        if self.get('format') == 'vcd':
+        if self.video['format'] == 'vcd':
             cmd += ' -f 1 '
-        elif self.get('format') == 'svcd':
+        elif self.video['format'] == 'svcd':
             cmd += ' -f 4 '
-        elif 'dvd' in self.get('format'):
+        elif 'dvd' in self.video['format']:
             cmd += ' -f 8 '
     
-        if self.get('aspect') == '4:3':
+        if self.video['aspect'] == '4:3':
             cmd += ' -a 2 '
-        elif self.get('aspect') == '16:9':
+        elif self.video['aspect'] == '16:9':
             cmd += ' -a 3 '
-        cmd += ' -o "%s.m2v"' % self.get('out')
+        cmd += ' -o "%s.m2v"' % self.video['out']
     
         self.commands.append(cmd)
     
@@ -151,15 +153,15 @@ class Mpeg2encEncoder (VideoPlugin):
         and TV system."""
     
         cmd = 'mplex '
-        if self.get('format') == 'vcd':
+        if self.video['format'] == 'vcd':
             cmd += '-f 1 '
-        elif self.get('format') == 'dvd-vcd':
+        elif self.video['format'] == 'dvd-vcd':
             cmd += '-V -f 8 '
-        elif self.get('format') == 'svcd':
+        elif self.video['format'] == 'svcd':
             cmd += '-V -f 4 -b 230 '
-        elif self.get('format') == 'half-dvd':
+        elif self.video['format'] == 'half-dvd':
             cmd += '-V -f 8 -b 300 '
-        elif self.get('format') == 'dvd':
+        elif self.video['format'] == 'dvd':
             cmd += '-V -f 8 -b 400 '
         # elif format == 'kvcd':
         #   cmd += '-V -f 5 -b 350 -r 10800 '
@@ -178,11 +180,11 @@ class MencoderEncoder (VideoPlugin):
         """Get mencoder command-line suitable for encoding the given video to
         its target format."""
     
-        cmd = 'mencoder "%s" -o "%s.mpg"' % (self.get('in'), self.get('out'))
+        cmd = 'mencoder "%s" -o "%s.mpg"' % (self.video['in'], self.video['out'])
         cmd += ' -oac lavc -ovc lavc -of mpeg '
         
-        if self.get('format') in ['vcd', 'svcd']:
-            cmd += ' -mpegopts format=x%s ' % self.get('format')
+        if self.video['format'] in ['vcd', 'svcd']:
+            cmd += ' -mpegopts format=x%s ' % self.video['format']
         else:
             cmd += ' -mpegopts format=dvd '
     
@@ -196,7 +198,7 @@ class MencoderEncoder (VideoPlugin):
         # The following cause segfaults on mencoder 1.0pre7try2-3.3.6 (Gentoo)
         # when the input file's audio bitrate already matches.
         # Can anyone confirm?
-        if 'dvd' in self.get('format'):
+        if 'dvd' in self.video['format']:
             cmd += ' -srate 48000 -af lavcresample=48000 '
         else:
             cmd += ' -srate 44100 -af lavcresample=44100 '
@@ -207,13 +209,13 @@ class MencoderEncoder (VideoPlugin):
         # Construct lavcopts
     
         # Video codec
-        if self.get('format') == 'vcd':
+        if self.video['format'] == 'vcd':
             lavcopts = 'vcodec=mpeg1video'
         else:
             lavcopts = 'vcodec=mpeg2video'
     
         # Audio codec
-        if self.get('format') in ['vcd', 'svcd']:
+        if self.video['format'] in ['vcd', 'svcd']:
             lavcopts += ':acodec=mp2'
         else:
             lavcopts += ':acodec=ac3'
@@ -221,18 +223,18 @@ class MencoderEncoder (VideoPlugin):
         # TODO: Preprocessing: Set audio/video bitrates
         # based on target format, quality, or user-defined values
 
-        vbitrate = self.video.get('vbitrate')
-        abitrate = self.video.get('abitrate')
+        vbitrate = self.video['vbitrate']
+        abitrate = self.video['abitrate']
         
         # Audio and video bitrates
-        if self.get('format') == 'vcd':
+        if self.video['format'] == 'vcd':
             abitrate = 224
             vbitrate = 1152
         else:
             # If user didn't override, use reasonable defaults
             if not vbitrate:
                 # TODO: Adjust bitrate based on -quality
-                if self.get('format') in ['svcd', 'dvd-vcd']:
+                if self.video['format'] in ['svcd', 'dvd-vcd']:
                     vbitrate = 2600
                 else:
                     vbitrate = 7000
@@ -243,9 +245,9 @@ class MencoderEncoder (VideoPlugin):
 
         # Maximum video bitrate
         lavcopts += ':vrc_maxrate=%s' % vbitrate
-        if self.get('format') == 'vcd':
+        if self.video['format'] == 'vcd':
             lavcopts += ':vrc_buf_size=327'
-        elif self.get('format') == 'svcd':
+        elif self.video['format'] == 'svcd':
             lavcopts += ':vrc_buf_size=917'
         else:
             lavcopts += ':vrc_buf_size=1835'
@@ -260,7 +262,7 @@ class MencoderEncoder (VideoPlugin):
         cmd += ' -lavcopts %s ' % lavcopts
     
         # FPS
-        if self.get('tvsys') == 'pal':
+        if self.video['tvsys'] == 'pal':
             cmd += ' -ofps 25/1 '
         else:
             cmd += ' -ofps 30000/1001 ' # ~= 29.97

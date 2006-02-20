@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 # Globals.py
+
 # Miscellaneous helper functions that don't have a good home yet
 
 import sys, re, string
