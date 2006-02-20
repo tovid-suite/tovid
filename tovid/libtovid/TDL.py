@@ -1,15 +1,5 @@
 #! /usr/bin/env python
-
-# ===========================================================
-# TDL
-# TODO: Finish restructuring
-
-import sys, copy, shlex
-import libtovid
-from libtovid import Disc, Menu, Video
-from libtovid.Option import OptionDef
-
-log = libtovid.Log('TDL')
+# TDL.py
 
 # ===========================================================
 __doc__ = \
@@ -141,7 +131,16 @@ menu, or video. You might also think of them as templates, defining a
 customizable framework, with self-contained documentation.
 """
 
+__all__ = ['Element', 'Parser']
 
+# TODO: Finish restructuring
+
+import sys, copy, shlex
+import libtovid
+from libtovid import Disc, Menu, Video
+from libtovid.Option import OptionDef
+
+log = libtovid.Log('TDL')
 
 
 
@@ -201,23 +200,27 @@ class Element:
         self.children = []
 
 
-    def set(self, opt, value):
+    def set(self, key, value):
+        self.__setitem__(key, value)
+
+    def __setitem__(self, key, value):
         """Set the given option (with/without leading '-') to the given value."""
         # Consider: Treat value=='' as resetting to default value?
-        self.options[opt.lstrip('-')] = copy.copy(value)
+        self.options[key.lstrip('-')] = copy.copy(value)
     
-    
-    def get(self, opt):
+    def __getitem__(self, key):
         """Get the value of the given option."""
-        if opt in self.options:
-            return self.options[opt]
+        if key in self.options:
+            return self.options[key]
         else:
             log.error("'%s' is not a valid option for %s elements" % \
-                (opt, self.tag))
+                (key, self.tag))
             # TODO: Log level for developer hints? (like the following)
             log.error("Please add an OptionDef to libtovid/%s.py" % self.tag)
             sys.exit()
-    
+
+    def get(self, key):
+        return self.__getitem__(key)
 
     def tdl_string(self):
         """Format element as a TDL-compliant string and return it."""

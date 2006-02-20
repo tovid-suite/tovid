@@ -1,4 +1,7 @@
 #! /usr/bin/env python
+# Option.py
+
+__all__ = ['OptionDef']
 
 # Sorta temporary holding location for OptionDef class, until a more suitable
 # home can be found
