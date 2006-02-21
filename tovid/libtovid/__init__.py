@@ -21,5 +21,6 @@ __all__ = [\
     "TDL",
     "Project",
     "Streams",
-    "Filetypes"]
-
+    "Filetypes",
+    
+    "gui"]
