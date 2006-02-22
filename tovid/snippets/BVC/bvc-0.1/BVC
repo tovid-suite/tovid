@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -x
 ###############################################################################
 #                                                                             #
 # BVC: a kdialog script for converting and combining seperate clips into one  #
@@ -46,7 +46,7 @@ Please check the log at $BVC_LOG"
 DVDRW_MEDIA="PLUS_R"
 VCD_XML="$WORK_DIR/mydisc.xml"
 FADE=1  # number of seconds to fade the audio in and out in each clip
-DO_FADE=true # set to false if you don't want audio fade
+DO_FADE=true
 
 
 ###############################################################################
@@ -147,7 +147,7 @@ dcop `dcop |grep kdialog` ProgressDialog >/dev/null 2>&1
 if [ $? -eq 0 ]; then
     dcop $dcopRef close;exit
 else
-    exit
+    exit 1
 fi
 }
 
@@ -206,6 +206,7 @@ do
         FFMPEG_OPTS=$DVD_FFMPEG_OPTS
         MPLEX_FORMAT=$DVD_MPLEX_FORMAT
         ;;
+    
     esac
 done
 shift $(($OPTIND - 1))
@@ -223,14 +224,15 @@ fi
 #           BEGIN: kdialog greeting, and see if user wants to continue        #
 ###############################################################################
 
-GREETING="<html><H2>BEN'S VIDEO CONVERTER</H2><p><H3>A program to convert \
+GREETING="<html><h2>BEN'S VIDEO CONVERTER</h2><p><h3>A program to convert \
 camera movie files into a format that can be used on a $TARGET disk. \
 <p>When the file browser comes up next, choose the files that you \
 want to combine into one video.<br>Choose them one at a time. in the order \
 you want them arranged on the video, and press 'Open' for each one. \
 <br><br>You can preview them if you make sure 'Show preview' is selected \
 when you click on the icon shaped like a wrench at the top of the file \
-browser that comes up.<br> \
+browser that comes up.<h4> \
+* install kmplayer if this doesn't work for you *<br></h4><h3>
 <br><font color='#0000C6' weight=900>When you are done selecting your video \
 clips, press the 'Cancel' button the next time the file browser comes up \
 and the processing will start.</font><p><p> \
@@ -292,25 +294,30 @@ fi
 # do processing in $WORK_DIR
 cd $WORK_DIR
 
+v=0
+t=0
 while [ $? = 0 ]; do
-    $KDIALOG $KDIALOG_OPTS --separate-output --getopenfilename $HOME  \
-    "*.avi *.AVI *.mov *.MOV *.mpg *.MPG *.mpeg *.MPEG *.m2v *.M2V|videos" \
-    >> $WORK_DIR/files.txt 2>/dev/null
+    VIDEOS_ARRAY[$v]=$($KDIALOG $KDIALOG_OPTS --separate-output --getopenfilename $HOME "*.avi *.AVI *.mov *.MOV *.mpg *.MPG *.mpeg *.MPEG *.m2v *.M2V|videos") 2>/dev/null
         if [ $? = 0 ]; then
-          $KDIALOG $KDIALOG_OPTS --inputbox \
-          "What name would you like to use for your clip?" \
-          "The Big Serve" >>$WORK_DIR/titles.txt
+            echo -e "in VIDEOS loop, VIDEOS_ARRAY[$v] is ${VIDEOS_ARRAY[$v]}"
+            v=$((v+1))
+            TITLES_ARRAY[$t]=$($KDIALOG $KDIALOG_OPTS --inputbox \
+            "What name would you like to use for your clip?" "The Big Serve") >/dev/null 2>&1
+            echo -e "in TITLES loop, TITLES_ARRAY[$t] is ${TITLES_ARRAY[$t]}"
+            t=$((t+1))
         else
+            unset VIDEOS_ARRAY[$v]
             break
         fi
 done
 
-FILES=$(cat $WORK_DIR/files.txt | wc -l)
+ARRAY_TOTAL=${#VIDEOS_ARRAY[@]}
+FILES=$(($ARRAY_TOTAL - 1))
 
 # make sure the user didn't press cancel before doing anything
-if [ ! -s $WORK_DIR/files.txt ]; then
-    exit 0
-fi
+#if [ ! -s $WORK_DIR/files.txt ]; then
+#    exit 0
+#fi
 
 # set up our log file
 PATTERN="$(for i in `seq 1 79`;do echo -n \*;done)"
@@ -327,7 +334,7 @@ kdialog -geometry 400x100+0+0   --icon mplayer --miniicon mplayer \
 trap cleanup 0 2 15
 
 # create_dirs
-for i in `seq 1 $FILES`; do
+for i in `seq 0 $FILES`; do
     mkdir -p  $WORK_DIR/pics/$i/video_fadeout
     #mkdir -p  $WORK_DIR/pics/$i/video_fadein
 done
@@ -343,15 +350,17 @@ PROGRESS_LABEL="Creating image files from the videos"
 set_progress_bar_label
 
 # create the pngs for background image and move to proper pics/ dir
-for i in `seq 1 $FILES`; do
-    VID=`sed -n -e $(echo $i)p $WORK_DIR/files.txt`
-    CREATE_PNG_CMD="ffmpeg -i  "$VID" \
-    -vframes 8 -s $INTRO_SIZE  $WORK_DIR/pics/$i/%08d.png" 
+for i in `seq 0 $FILES`; do
+#    VID=`sed -n -e $(echo $i)p $WORK_DIR/files.txt`
+    VID=${VIDEOS_ARRAY[$i]}
+
+    CREATE_PNG_CMD=(ffmpeg -i "${VIDEOS_ARRAY[$i]}"  -vframes "8" -s "$INTRO_SIZE"  \
+    "$WORK_DIR/pics/$i/%08d.png")
     printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
-    echo -e "\nRunning: $CREATE_PNG_CMD\n" | fold -bs | tr -s ' ' >> $BVC_LOG
+    echo -e "\nRunning: ${CREATE_PNG_CMD[@]}\n" | fold -bs >> $BVC_LOG
 
     SED_VAR="frame="
-    if   $CREATE_PNG_CMD >> $BVC_LOG.tmp 2>&1;then
+    if "${CREATE_PNG_CMD[@]}" >> $BVC_LOG.tmp 2>&1;then
         cleanlog 3
     else
         cleanlog 3
@@ -389,10 +398,11 @@ convert  -size $VID_SIZE_OPT xc:"#1E1E1E" $BACKGROUND_PIC
 
 # allow for someday expanding to other frame options
 if [ $FRAME_STYLE = "fancy" ]; then
-    for VAR in `seq 1 $FILES`; do
+    for VAR in `seq 0 $FILES`; do
 
         #  create a transparant png with the title on it
-        TITLE=`sed   -n -e $(echo $VAR)p $WORK_DIR/titles.txt`
+#        TITLE=`sed   -n -e $(echo $VAR)p $WORK_DIR/titles.txt`
+        TITLE=${TITLES_ARRAY[$VAR]}
         convert -font $DATA_DIR/Candice.ttf -pointsize 30 -size 420x \
         -gravity Center caption:"$TITLE"  -negate  \( +clone -blur 0x8 \
         -shade 110x45 -normalize \
@@ -432,15 +442,16 @@ PROGRESS_LABEL="converting source video to high bitrate mpeg-4"
 set_progress_bar_label
 
 # create high bitrate xvid avi's of our video clips
-for i in `seq 1 $FILES`; do 
-    CURRENT_CLIP="`sed   -n -e $(echo $i)p $WORK_DIR/files.txt`"
-    FFMPEG_ENC_CMD="ffmpeg -i $CURRENT_CLIP -f avi -an -vcodec mpeg4 -b 3000 \
-    -r 29.970 -s $VID_SIZE_OPT -aspect 4:3 $WORK_DIR/pics/$i/$i.avi"
+for i in `seq 0 $FILES`; do 
+#    CURRENT_CLIP="`sed   -n -e $(echo $i)p $WORK_DIR/files.txt`"
+    CURRENT_CLIP=${VIDEOS_ARRAY[$i]}
+    FFMPEG_ENC_CMD=(ffmpeg -i "${VIDEOS_ARRAY[$i]}"  -f avi -an -vcodec mpeg4 -b 3000 \
+    -r 29.970 -s $VID_SIZE_OPT -aspect 4:3 $WORK_DIR/pics/$i/$i.avi)
     printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
-    echo -e "\nRunning: $FFMPEG_ENC_CMD\n" | fold -bs | tr -s ' ' >> $BVC_LOG
+    echo -e "\nRunning: ${FFMPEG_ENC_CMD[@]}" | fold -bs | tr -s ' ' >> $BVC_LOG
 
     SED_VAR="frame="
-    if $FFMPEG_ENC_CMD >> $BVC_LOG.tmp 2>&1; then
+    if "${FFMPEG_ENC_CMD[@]}" >> $BVC_LOG.tmp 2>&1; then
         cleanlog 3
     else
         cleanlog 3
@@ -460,14 +471,15 @@ set_progress_bar_label
 
         
 # extract audio from files, or if none, create silence
-for i in `seq 1 $FILES`; do 
-    CURRENT_CLIP=`sed   -n -e $(echo $i)p $WORK_DIR/files.txt`
-    if ! mplayer -identify -frames 0 -vo null -ao null $CURRENT_CLIP|
+for i in `seq 0 $FILES`; do 
+#    CURRENT_CLIP=`sed   -n -e $(echo $i)p $WORK_DIR/files.txt`
+    CURRENT_CLIP=${VIDEOS_ARRAY[$i]}
+    if ! mplayer -identify -frames 0 -vo null -ao null "$CURRENT_CLIP" |
     grep "no sound"; then
-        ffmpeg -i $CURRENT_CLIP -ar 44100 -ac 2 -acodec pcm_s16le -y \
+        ffmpeg -i "$CURRENT_CLIP" -ar 44100 -ac 2 -acodec pcm_s16le -y \
         $WORK_DIR/pics/$i/$i.wav
     else
-        TIME=`mencoder -quiet -ovc copy -oac pcm -o /dev/null  $CURRENT_CLIP \
+        TIME=`mencoder -quiet -ovc copy -oac pcm -o /dev/null  "$CURRENT_CLIP" \
         |grep "Video stream"|awk '{print$10}'`
         cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
         -s - $WORK_DIR/pics/$i/$i.wav  trim 0 $TIME
@@ -480,7 +492,7 @@ progress_bar_progress 3
 #create fade effect on the extracted wavs
 if [ $DO_FADE = true ]; then
 
-    for i in `seq 1 $FILES`; do
+    for i in `seq 0 $FILES`; do
         mencoder -quiet -ovc copy -oac copy -o /dev/null  \
         $WORK_DIR/pics/$i/$i.avi |grep "Video stream"|awk '{print$10}' \
         >$WORK_DIR/pics/$i/$i.wav.stat
@@ -497,7 +509,7 @@ fi
 
 
 # convert faded wav to mp2
-for i in `seq 1 $FILES`; do ffmpeg -i $WORK_DIR/pics/$i/$i-processed.wav \
+for i in `seq 0 $FILES`; do ffmpeg -i $WORK_DIR/pics/$i/$i-processed.wav \
 $AUDIO_OPTS -y $WORK_DIR/pics/$i/$i.$AUDIO_EXT ; done
 
 # update progress bar
@@ -519,7 +531,7 @@ set_progress_bar_label
 convert  -size $VID_SIZE_OPT xc:black $WORK_DIR/black.png
 
 # copy enough background.png's to destination for a lead-{in,out}
-for i in `seq 1 $FILES`; do
+for i in `seq 0 $FILES`; do
     for a in `seq 0 $TOTAL_PNGS`; do
         cp $WORK_DIR/pics/$i/background.png $WORK_DIR/pics/$i/$a.png
     done
@@ -529,13 +541,12 @@ done
 # finish the leadin operations, like identifying the target 
 # pngs, dissolving, and making a video stream of them 
 
-for i in `seq 1 $FILES`; do
-
+for i in `seq 0 $FILES`; do
+    CLIP_CNT=$(($i + 1))
     # try to make the progress bar a little less irrelevent
     # percentage of total time taken for these operation (for progress bar)
     LEADIN_PCENT_TOTAL=30
-
-    LEADIN_OPERATIONS=$(($FILES * 4))
+    LEADIN_OPERATIONS=$(($ARRAY_TOTAL * 4))
     PROG_INC=$(echo "scale=0; $LEADIN_PCENT_TOTAL / $LEADIN_OPERATIONS"|bc -l)
     if [ $PROG_INC -lt 1 ]; then
     PROG_INC=1
@@ -552,7 +563,7 @@ for i in `seq 1 $FILES`; do
 
     # use -dissolve to create fade effect 
     Y=0;S=100;for X in $TITLE_FADEIN_PNGS ; do
-        PROGRESS_LABEL="processing title fade-in: $X of clip $i"
+        PROGRESS_LABEL="processing title fade-in: $X of clip $CLIP_CNT"
         set_progress_bar_label
         composite -dissolve \
         $S $WORK_DIR/black.png  $WORK_DIR/pics/$i/$X  $WORK_DIR/pics/$i/$X
@@ -566,7 +577,7 @@ for i in `seq 1 $FILES`; do
     sleep 1
 
     Y=0;S=0;for X in $TITLE_FADEOUT_PNGS ; do
-        PROGRESS_LABEL="processing title fade-out: $X of clip $i" 
+        PROGRESS_LABEL="processing title fade-out: $X of clip $CLIP_CNT" 
         set_progress_bar_label
         composite -dissolve \
         $S $WORK_DIR/black.png  $WORK_DIR/pics/$i/$X  $WORK_DIR/pics/$i/$X
@@ -575,7 +586,7 @@ for i in `seq 1 $FILES`; do
 
     # update progress bar
     progress_bar_progress  $PROG_INC
-    PROGRESS_LABEL="Finished title fade-outs for clip $i"
+    PROGRESS_LABEL="Finished title fade-outs for clip $CLIP_CNT"
     set_progress_bar_label
     sleep 1
 
@@ -585,7 +596,7 @@ for i in `seq 1 $FILES`; do
     done
 
     # use png2yuv to convert to an mpeg stream
-    PROGRESS_LABEL="converting title pngs of clip $i to video"
+    PROGRESS_LABEL="converting title pngs of clip $CLIP_CNT to video"
     set_progress_bar_label
     png2yuv  -f 29.970 -I p -b 1 -n $TOTAL_PNGS -j  $WORK_DIR/pics/$i/%0d.png |
     ffmpeg -f yuv4mpegpipe -i -  -an -vcodec mpeg4 -r 29.970 -b 3000 \
@@ -596,13 +607,11 @@ for i in `seq 1 $FILES`; do
     # remove pngs to save disk space
     rm -f $WORK_DIR/pics/$i/*.png
 
-done
 
-PROGRESS_LABEL="Creating silence for Titles" 
-set_progress_bar_label
+    PROGRESS_LABEL="Creating silence for Titles" 
+    set_progress_bar_label
 
-# create silence for leadin/leadout
-for i in `seq 1 $FILES`; do 
+    # create silence for leadin/leadout
     TIME=`mencoder -quiet -ovc copy -oac copy -o /dev/null  \
     $WORK_DIR/pics/$i/$i-leadin.avi |grep "Video stream"|awk '{print$10}'`
     ffmpeg -t $TIME $AUDIO_OPTS \
@@ -610,6 +619,20 @@ for i in `seq 1 $FILES`; do
     progress_bar_progress  $PROG_INC
 done
 
+
+:<<UNUSED
+PROGRESS_LABEL="Creating silence for Titles" 
+set_progress_bar_label
+
+# create silence for leadin/leadout
+for i in `seq 0 $FILES`; do 
+    TIME=`mencoder -quiet -ovc copy -oac copy -o /dev/null  \
+    $WORK_DIR/pics/$i/$i-leadin.avi |grep "Video stream"|awk '{print$10}'`
+    ffmpeg -t $TIME $AUDIO_OPTS \
+    $WORK_DIR/pics/$i/$i-leadin.$AUDIO_EXT
+    progress_bar_progress  $PROG_INC
+done
+UNUSED
 ###############################################################################
 #                       end of title lead-in stuff                            #
 ###############################################################################
@@ -621,7 +644,7 @@ done
 
 # create the pngs for the video fadeout from our new mpeg-4's 
 #and move to proper fadeout dir
-for i in `seq 1 $FILES`; do
+for i in `seq 0 $FILES`; do
 
 
     VID_LENGTH=`vid_length $WORK_DIR/pics/$i/$i.avi`
@@ -642,7 +665,7 @@ for i in `seq 1 $FILES`; do
 done
 
 # copy enough video_fadeout.png's to create a fade
-for i in `seq 1 $FILES`; do
+for i in `seq 0 $FILES`; do
     for a in `seq 0 130`; do 
         cp $WORK_DIR/pics/$i/$i-video_fadeout.png \
         $WORK_DIR/pics/$i/video_fadeout/$a.png
@@ -652,13 +675,13 @@ done
 # do the leadin operations on the video clip
 
 
-for i in `seq 1 $FILES`; do
-
+for i in `seq 0 $FILES`; do
+    CLIP_CNT=$(($i + 1))
     # try to make the progress bar a little less irrelevent
     # percentage of total time taken for these operation (for progress bar)
 
     FADEOUT_PCENT_TOTAL=20
-    FADEOUT_OPERATIONS=$(($FILES * 3))
+    FADEOUT_OPERATIONS=$(($ARRAY_TOTAL * 3))
     PROG_INC=$(echo "scale=0; $FADEOUT_PCENT_TOTAL / $FADEOUT_OPERATIONS"|bc -l)
     if [ $PROG_INC -lt 1 ]; then
     PROG_INC=1
@@ -670,7 +693,7 @@ for i in `seq 1 $FILES`; do
 
     # do the fadeout on each video
     Y=0;S=0;for X in $CLIP_FADEOUT_PNGS ; do
-    PROGRESS_LABEL="processing clip fade-out: $X of clip $i"
+    PROGRESS_LABEL="processing clip fade-out: $X of clip $CLIP_CNT"
     set_progress_bar_label
 
     composite -dissolve $S $WORK_DIR/black.png  \
@@ -680,7 +703,7 @@ for i in `seq 1 $FILES`; do
 
     # update progress bar
     progress_bar_progress  $PROG_INC
-    PROGRESS_LABEL="converting clip fadeout pngs of clip $i to video"
+    PROGRESS_LABEL="converting clip fadeout pngs of clip $CLIP_CNT to video"
     set_progress_bar_label
 
     # convert to video stream
@@ -707,7 +730,7 @@ for i in `seq 1 $FILES`; do
     
     # update progress bar
     progress_bar_progress  $PROG_INC
-    PROGRESS_LABEL="creating silence for video fadeout of clip $i"
+    PROGRESS_LABEL="creating silence for video fadeout of clip $CLIP_CNT"
     set_progress_bar_label
 
     # create silence for video fadeout
@@ -739,19 +762,19 @@ PROGRESS_LABEL="Joining all video and audio, and combining into one file"
 set_progress_bar_label
 
 # put everything together into m2v and mp2,then mplex them together
-JOIN_AUDIO_FILES="$(for i in `seq 1 $FILES`; do
+JOIN_AUDIO_FILES="$(for i in `seq 0 $FILES`; do
     echo -en "$WORK_DIR/pics/$i/$i-leadin.$AUDIO_EXT \
     $WORK_DIR/pics/$i/$i.$AUDIO_EXT \
     $WORK_DIR/pics/$i/$i-video_fadeout.$AUDIO_EXT ";done)"
 
 
-JOINED_VIDEO="$(for i in `seq 1 $FILES`; do
+JOINED_VIDEO="$(for i in `seq 0 $FILES`; do
     echo -en "$WORK_DIR/pics/$i/$i-leadin.avi $WORK_DIR/pics/$i/$i.avi \
     $WORK_DIR/pics/$i/$i-video_fadeout.avi ";done)"
 OUTPUT="clips from your videos"
 
 # make sure the right number of files got created
-if test  `echo $JOINED_VIDEO | wc -w`  -ne $(($FILES * 3)) ; then
+if test  `echo $JOINED_VIDEO | wc -w`  -ne $(($ARRAY_TOTAL * 3)) ; then
     SORRY_MSG=$(sorry_msg)
     $KDIALOG --msgbox "$SORRY_MSG"
     dcop $dcopRef close
@@ -759,13 +782,13 @@ if test  `echo $JOINED_VIDEO | wc -w`  -ne $(($FILES * 3)) ; then
 fi
 
 OUTPUT="joined video"
-COPY_CMD="mencoder -quiet -oac copy -ovc copy $JOINED_VIDEO \
--o $WORK_DIR/joined-tmp.avi"
+COPY_CMD=(mencoder -quiet -oac copy -ovc copy $JOINED_VIDEO \
+-o $WORK_DIR/joined-tmp.avi)
 
 printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
-echo -e "\nRunning: $COPY_CMD\n" |fold -bs | tr -s ' ' >> $BVC_LOG
+echo -e "\nRunning: ${COPY_CMD[@]}\n" |fold -bs | tr -s ' ' >> $BVC_LOG
 #if $COPY_CMD 2>&1| fold -bs >> $BVC_LOG; then
-if $COPY_CMD >> $BVC_LOG.tmp 2>&1; then
+if "${COPY_CMD[@]}" >> $BVC_LOG.tmp 2>&1; then
     cleanlog 1
 else
     cleanlog 1
@@ -781,14 +804,14 @@ PROGRESS_LABEL="Converting our new video file to $TARGET mpeg-2 format"
 set_progress_bar_label
 
 OUTPUT="final joined svcd video"
-JOIN_CMD="ffmpeg -i $WORK_DIR/joined-tmp.avi -r 29.970 -f mpeg2video \
--tvstd ntsc $FFMPEG_OPTS -s $VID_SIZE_OPT -y $WORK_DIR/joined.m2v"
+JOIN_CMD=(ffmpeg -i $WORK_DIR/joined-tmp.avi -r 29.970 -f mpeg2video \
+-tvstd ntsc $FFMPEG_OPTS -s $VID_SIZE_OPT -y $WORK_DIR/joined.m2v)
 
 printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
-echo -e "\nRunning: $JOIN_CMD\n" | fold -bs  | tr -s ' ' >> $BVC_LOG
+echo -e "\nRunning ${JOIN_CMD[@]}\n" | fold -bs  | tr -s ' ' >> $BVC_LOG
 
 SED_VAR="frame="
-if $JOIN_CMD >> $BVC_LOG.tmp 2>&1; then
+if "${JOIN_CMD[@]}" >> $BVC_LOG.tmp 2>&1; then
     cleanlog 3
 else
     cleanlog 3
@@ -865,7 +888,8 @@ if [ $TARGET = "DVD" ]; then
         echo -e "\nRunning: $DVDAUTHOR_CMD\n" |fold -bs | tr -s ' ' >> $BVC_LOG
 
         if $DVDAUTHOR_CMD >> $BVC_LOG.tmp 2>&1; then
-            cleanlog 2
+            SED_VAR="STAT:"
+            cleanlog 3
         else
             cleanlog 2
             SORRY_MSG=$(sorry_msg)
