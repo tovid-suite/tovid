@@ -63,7 +63,7 @@ class Log:
     def __init__(self, name):
         """Create a logger with the given name."""
         self.name = name
-        self.level = self.INFO
+        self.level = self.DEBUG
         
     def debug(self, message):
         if self.level >= self.DEBUG:
