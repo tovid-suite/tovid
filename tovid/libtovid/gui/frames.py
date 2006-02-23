@@ -8,9 +8,10 @@
 # ###################################################################
 # ###################################################################
 import os, wx
+from libtovid import Project
 from libtovid.gui.configs import TovidConfig
 from libtovid.gui.constants import *
-from libtovid import Project
+from libtovid.gui.icons import AppIcon
 from libtovid.gui.panels import AuthorFilesTaskPanel, GuidePanel
 from libtovid.gui.util import _
 
@@ -26,7 +27,9 @@ class MainFrame(wx.Frame):
         wx.Frame.__init__(self, parent, id , title, wx.DefaultPosition,
             (800, 600), wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
 
-        self.SetIcon(wx.Icon("icons/tovid_icon_32.png", wx.BITMAP_TYPE_PNG))
+        icon = wx.EmptyIcon()
+        wx.Icon.CopyFromBitmap(icon, AppIcon())
+        self.SetIcon(icon)
 
         # Global configuration
         self.curConfig = TovidConfig()
