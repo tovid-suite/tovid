@@ -2093,7 +2093,7 @@ class MenuPanel(wx.Panel):
 
     def OnAlignment(self, evt):
         """Set the text alignment according to the radiobox setting."""
-        self.curOptions.alignment = ID_to_text('alignment', evt.GetInt())
+        self.curOptions.alignment = util.ID_to_text('alignment', evt.GetInt())
 
 
     def OnFontSelection(self, evt):
@@ -2164,7 +2164,7 @@ class MenuPanel(wx.Panel):
         self.txtHeading.SetLabel("Menu options: %s" % self.curOptions.title)
         self.txtBGImage.SetValue(self.curOptions.background)
         self.txtBGAudio.SetValue(self.curOptions.audio or '')
-        self.rbAlignment.SetSelection(text_to_ID(self.curOptions.alignment))
+        self.rbAlignment.SetSelection(util.text_to_ID(self.curOptions.alignment))
         self.btnTextColor.SetBackgroundColour(self.curOptions.colorText)
         self.btnHiColor.SetBackgroundColour(self.curOptions.colorHi)
         self.btnSelColor.SetBackgroundColour(self.curOptions.colorSel)
@@ -2323,13 +2323,13 @@ class VideoPanel(wx.Panel):
     def OnFormat(self, evt):
         # Convert integer value to text representation
         # (e.g., ID_FMT_DVD to 'dvd')
-        self.curOptions.format = ID_to_text('format', evt.GetInt())
+        self.curOptions.format = util.ID_to_text('format', evt.GetInt())
 
     # ==========================================================
     # Set aspect ratio based on radio button selection
     # ==========================================================
     def OnAspect(self, evt):
-        self.curOptions.aspect = ID_to_text('aspect', evt.GetInt())
+        self.curOptions.aspect = util.ID_to_text('aspect', evt.GetInt())
 
     # ==========================================================
     # Update CLI options
@@ -2371,8 +2371,8 @@ class VideoPanel(wx.Panel):
 
         self.txtHeading.SetLabel("Video options: %s" % self.curOptions.title)
         self.txtInFile.SetLabel(self.curOptions.inFile)
-        self.rbResolution.SetSelection(text_to_ID(self.curOptions.format))
-        self.rbAspect.SetSelection(text_to_ID(self.curOptions.aspect))
+        self.rbResolution.SetSelection(util.text_to_ID(self.curOptions.format))
+        self.rbAspect.SetSelection(util.text_to_ID(self.curOptions.aspect))
         self.txtCLIOptions.SetValue(self.curOptions.addoptions)
 
     # ==========================================================
