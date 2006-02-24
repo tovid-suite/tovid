@@ -1,6 +1,26 @@
 #! /usr/bin/env python
 # Disc.py
 
+__doc__ = \
+"""This module defines attributes related to authoring a video disc,
+and an interface for doing the actual authoring process.
+"""
+
+"""Restructuring thoughts:
+
+Provide a high-level interface like:
+
+    from libtovid import Disc
+
+    mydisc = Disc.from_tdl("foo.tdl")
+    mydisc.author()
+
+Or:
+    
+    if len(sys.argv) < 2:
+        print Disc.usage
+"""
+
 # TODO: Exception handling
 
 import string
