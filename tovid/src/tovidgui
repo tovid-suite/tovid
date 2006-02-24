@@ -13,7 +13,17 @@
 #
 # No guarantees of any kind are associated with use of this software.
 #
-import wx
+
+import sys
+
+# Try to import wx; print error if it's unavailable
+try:
+    import wx
+except ImportError:
+    print "Python cannot find the 'wx' library. You may need to install or"
+    print "upgrade wxPython 2.6.x."
+    sys.exit()
+
 from libtovid.gui.frames import MainFrame
 
 TovidGUI = wx.PySimpleApp()
