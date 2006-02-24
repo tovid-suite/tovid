@@ -11,10 +11,12 @@ __doc__ = \
 # access to data about standard targets, about input video specs, etc.)
 
 import sys
+
 import libtovid
 from libtovid.Option import OptionDef
+from libtovid.Log import Log
 
-log = libtovid.Log('Video')
+log = Log('Video')
 
 
 # Video TDL element definition
