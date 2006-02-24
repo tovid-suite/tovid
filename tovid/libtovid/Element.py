@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 # Element.py
 
+import libtovid
+from libtovid import TDL
 
 # ===========================================================
 class Element:
@@ -19,32 +21,16 @@ class Element:
     # values. (Maybe fill a module-level dictionary once at runtime, then copy it
     # when a new Element is created?)
     
-    def __init__(self, tag, name):
-        """Create a TDL element of the given type, and with the given (unique)
-        name, filled with default values for that element type."""
+    def __init__(self, tag, name, optiondefs):
+        # TODO: Eliminate tag
         self.tag = tag
         self.name = name
-        if not element_defs.has_key(tag):
-            log.error("TDL.Element(): unknown element '%s'" % tag)
-
-        else:
-            # Fill a dictionary of options with their default values
-            self.options = {}
-            for key, optdef in element_defs[tag].iteritems():
-                self.options[key] = copy.copy(optdef.default)
-
+        self.options = {}
+        for key, optdef in optiondefs.iteritems():
+            self.options[key] = copy.copy(optdef.default)
         self.parents = []
         self.children = []
 
-
-    def set(self, key, value):
-        self.__setitem__(key, value)
-
-    def __setitem__(self, key, value):
-        """Set the given option (with/without leading '-') to the given value."""
-        # Consider: Treat value=='' as resetting to default value?
-        self.options[key.lstrip('-')] = copy.copy(value)
-    
     def __getitem__(self, key):
         """Get the value of the given option."""
         if key in self.options:
@@ -56,8 +42,17 @@ class Element:
             log.error("Please add an OptionDef to libtovid/%s.py" % self.tag)
             sys.exit()
 
+    def __setitem__(self, key, value):
+        """Set the given option to the given value."""
+        # Consider: Treat value=='' as resetting to default value?
+        self.options[key.lstrip('-')] = copy.copy(value)
+    
     def get(self, key):
-        return self.__getitem__(key)
+        return self[key]
+
+    def set(self, key, value):
+        self[key] = value
+
 
     def tdl_string(self):
         """Format element as a TDL-compliant string and return it."""
