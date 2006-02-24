@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-3.7.dtd">
 <!-- Project file for project tovid -->
-<!-- Saved: 2006-02-14, 19:06:33 -->
+<!-- Saved: 2006-02-22, 15:50:03 -->
 <!-- Copyright (C) 2006 ,  -->
 <Project version="3.7">
   <ProgLanguage mixed="1">Python</ProgLanguage>
@@ -116,11 +116,61 @@
     </Source>
     <Source>
       <Dir>docs</Dir>
-      <Name>docmake.py</Name>
+      <Name>mypydoc.py</Name>
     </Source>
     <Source>
-      <Dir>docs</Dir>
-      <Name>mypydoc.py</Name>
+      <Dir>libtovid</Dir>
+      <Name>VideoUtils.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Dir>gui</Dir>
+      <Name>frames.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Dir>gui</Dir>
+      <Name>options.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Dir>gui</Dir>
+      <Name>panels.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Dir>gui</Dir>
+      <Name>icons.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Dir>gui</Dir>
+      <Name>configs.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Dir>gui</Dir>
+      <Name>dialogs.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Dir>gui</Dir>
+      <Name>constants.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Dir>gui</Dir>
+      <Name>controls.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Dir>gui</Dir>
+      <Name>util.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Dir>gui</Dir>
+      <Name>__init__.py</Name>
     </Source>
   </Sources>
   <Forms>
