@@ -7,6 +7,7 @@ __all__ = ['OptionDef']
 # home can be found
 
 import re
+
 from libtovid.Globals import strip_indentation
 
 # ===========================================================

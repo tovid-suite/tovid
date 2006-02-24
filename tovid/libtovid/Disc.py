@@ -3,7 +3,9 @@
 
 # TODO: Exception handling
 
-import string, sys
+import string
+import sys
+
 import libtovid
 from libtovid.Option import OptionDef
 

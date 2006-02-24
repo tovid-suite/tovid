@@ -6,6 +6,7 @@ __all__ = ['Project']
 # TODO: Exception handling
 
 import sys
+
 from TDL import Parser
 
 # ===========================================================

@@ -135,12 +135,16 @@ __all__ = ['Element', 'Parser']
 
 # TODO: Finish restructuring
 
-import sys, copy, shlex
+import sys
+import copy
+import shlex
+
 import libtovid
 from libtovid import Disc, Menu, Video
 from libtovid.Option import OptionDef
+from libtovid.Log import Log
 
-log = libtovid.Log('TDL')
+log = Log('TDL')
 
 
 

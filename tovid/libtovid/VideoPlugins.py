@@ -10,13 +10,15 @@ __all__ = ['VideoPlugin', 'Mpeg2encEncoder', 'MencoderEncoder']
 
 # TODO: Cleanup/modularize, move stuff to classes, make interface simple
 
-# from libtovid import Video
-import os, sys
+import os
+import sys
+
 import libtovid
 from libtovid import Standards
 from libtovid.Globals import ratio_to_float
+from libtovid.Log import Log
 
-log = libtovid.Log('VideoPlugins')
+log = Log('VideoPlugins')
 
 class VideoPlugin:
     """Base plugin class; all encoders inherit from this."""

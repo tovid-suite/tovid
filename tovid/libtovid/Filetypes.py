@@ -3,7 +3,9 @@
 
 __all__ = ['MultimediaFile']
 
-import os, sys
+import os
+import sys
+
 from Globals import *
 from Streams import *
 from Standards import *
