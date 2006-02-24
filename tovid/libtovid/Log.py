@@ -5,7 +5,7 @@ class Log:
     """Logger for libtovid backend and frontend; can be configured with
     a verbosity level and name. To use, declare:
         
-        >>> from libtovid import Log
+        >>> from libtovid.Log import Log
         >>> log = Log('MyApp')
         >>>
 
@@ -36,10 +36,11 @@ class Log:
     ERROR = 1
     NONE = 0
 
-    def __init__(self, name):
-        """Create a logger with the given name."""
+    def __init__(self, name, level=DEBUG):
+        """Create a logger with the given name and verbosity level."""
+        print "Creating Log for %s with level %s verbosity." % (name, level)
         self.name = name
-        self.level = self.DEBUG
+        self.level = level
         
     def debug(self, message):
         if self.level >= self.DEBUG:
