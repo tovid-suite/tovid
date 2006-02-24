@@ -8,7 +8,7 @@ __all__ = ['OptionDef']
 
 import re
 
-from libtovid.Globals import strip_indentation
+from libtovid.Globals import trim
 
 # ===========================================================
 class OptionDef:
@@ -33,7 +33,7 @@ class OptionDef:
         self.name = name
         self.argformat = argformat
         self.default = default
-        self.doc = strip_indentation(doc)
+        self.doc = trim(doc)
 
     def num_args(self):
         """Return the number of arguments expected by this option, or -1 if
