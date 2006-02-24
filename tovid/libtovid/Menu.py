@@ -39,7 +39,11 @@ Desired end result:
         - For adding customized subtitle streams
 """
 
-import string, sys, os, glob
+import string
+import sys
+import os
+import glob
+
 import libtovid
 from Option import OptionDef
 from MenuPlugins import *

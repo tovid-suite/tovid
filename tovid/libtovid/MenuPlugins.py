@@ -8,10 +8,12 @@ from a list of video titles."""
 __all__ = ['MenuPlugin', 'TextMenu', 'ThumbMenu']
 
 import os
+
 import libtovid
 from Globals import degunk
+from libtovid.Log import Log
 
-log = libtovid.Log('MenuPlugins')
+log = Log('MenuPlugins')
 
 
 # TODO: Eliminate this:

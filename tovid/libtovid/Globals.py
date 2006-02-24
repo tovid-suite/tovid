@@ -3,7 +3,9 @@
 
 # Miscellaneous helper functions that don't have a good home yet
 
-import sys, re, string
+import sys
+import re
+import string
 
 def degunk(str):
     """Strip special characters from the given string (any that might

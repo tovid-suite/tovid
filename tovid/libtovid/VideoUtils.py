@@ -9,7 +9,11 @@ __all__ = [\
     'images_to_video',
     'label_images']
 
-import os, sys
+import os
+import sys
+
+from libtovid.Log import Log
+log = Log('VideoPlugins')
 
 def video_to_images(infile, start = 0, end = 0, scale = (0, 0)):
     """Convert a video file to a sequence of images, starting and ending at the
