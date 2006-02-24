@@ -38,9 +38,10 @@ Or directly to the developers via the #tovid channel of irc.freenode.net.
 Coding style:
 
 The libtovid package shall, as much as possible, follow the Style Guide for
-Python Code:
+Python Code (PEP 8) and Docstring Conventions (PEP 257):
 
     http://www.python.org/peps/pep-0008.html
+    http://www.python.org/peps/pep-0257.html
 
 Readability is the top priority. Keep it simple. If you need further advice,
 consult the following:
