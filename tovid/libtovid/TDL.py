@@ -131,7 +131,7 @@ menu, or video. You might also think of them as templates, defining a
 customizable framework, with self-contained documentation.
 """
 
-__all__ = ['Element', 'Parser']
+__all__ = ['element_defs', 'usage', 'Parser']
 
 # TODO: Finish restructuring
 

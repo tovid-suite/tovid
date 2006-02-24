@@ -292,9 +292,13 @@ class TextMenu (MenuPlugin):
         xml += '  </spu>\n'
         xml += '  </stream>\n'
         xml += '</subpictures>\n'
-        xmlfile = open('%s.xml' % self.menu['out'], 'w')
-        xmlfile.write(xml)
-        xmlfile.close()
+        try:
+            xmlfile = open('%s.xml' % self.menu['out'], 'w')
+        except:
+            log.error('Could not open file "%s.xml"' % self.menu['out'])
+        else:
+            xmlfile.write(xml)
+            xmlfile.close()
 
         cmd = 'spumux "%s.xml" < "%s.temp.mpg" > "%s.mpg"' % \
                 (self.menu['out'], self.menu['out'], self.menu['out'])

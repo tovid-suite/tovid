@@ -4,9 +4,8 @@
 __doc__ = \
 """This module defines attributes related to authoring a video disc,
 and an interface for doing the actual authoring process.
-"""
 
-"""Restructuring thoughts:
+Restructuring thoughts:
 
 Provide a high-level interface like:
 
@@ -28,34 +27,38 @@ import sys
 
 import libtovid
 from libtovid.Option import OptionDef
+from libtovid.Element import Element
 
-# Disc TDL element definition
-# Options pertaining to high-level disc structure
-optiondefs = { 
-    'format':
-        OptionDef('format', 'vcd|svcd|dvd', 'dvd',
-        """Create a disc of the specified format."""),
-    'tvsys':
-        OptionDef('tvsys', 'pal|ntsc', 'ntsc',
-        """Make the disc for the specified TV system."""),
-    'topmenu':
-        OptionDef('topmenu', 'MENUNAME', None,
-        """Use MENUNAME for the top-level menu on the disc."""),
-    'out':
-        OptionDef('out', 'FILE', None,
-        """Filename to write disc navigational structure to.""")
+class Disc(Element):
+    """A Disc element with associated options"""
+    optiondefs = { 
+        'format':
+            OptionDef('format', 'vcd|svcd|dvd', 'dvd',
+            """Create a disc of the specified format."""),
+        'tvsys':
+            OptionDef('tvsys', 'pal|ntsc', 'ntsc',
+            """Make the disc for the specified TV system."""),
+        'topmenu':
+            OptionDef('topmenu', 'MENUNAME', None,
+            """Use MENUNAME for the top-level menu on the disc."""),
+        'out':
+            OptionDef('out', 'FILE', None,
+            """Filename to write disc navigational structure to.""")
+    }
 
-}
+    def __init__(self, name='Untitled Disc'):
+        Element.__init__(self, 'Disc', name, self.optiondefs)
 
-def generate(disc):
-    """Write dvdauthor or vcdimager XML for the given Disc element, to
-    the file specified by the disc's 'out' option."""
-    if disc.get('format') == 'dvd':
-        xml = dvd_disc_xml(disc)
-    elif disc.get('format') in ['vcd', 'svcd']:
-        xml = vcd_disc_xml(disc)
-    outfile = open(disc.get('out'), 'w')
-    outfile.write(xml)
+
+    def generate(self):
+        """Write dvdauthor or vcdimager XML for the element, to
+        the file specified by the disc's 'out' option."""
+        if self.get('format') == 'dvd':
+            xml = dvd_disc_xml(self)
+        elif self.get('format') in ['vcd', 'svcd']:
+            xml = vcd_disc_xml(self)
+        outfile = open(self.get('out'), 'w')
+        outfile.write(xml)
 
 
 # ===========================================================

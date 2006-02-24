@@ -47,65 +47,68 @@ import glob
 import libtovid
 from Option import OptionDef
 from MenuPlugins import *
+from libtovid.Element import Element
 
-# Menu TDL element definition
-# Options pertaining to generating a video disc menu
-optiondefs = {
-    'format': OptionDef('format', 'vcd|svcd|dvd', 'dvd',
-        """Generate a menu compliant with the specified disc format"""),
-    'tvsys': OptionDef('tvsys', 'pal|ntsc', 'ntsc',
-        """Make the menu for the specified TV system"""),
-    'titles': OptionDef('titles', '"TITLE" [, "TITLE"]', [],
-        """Comma-separated list of quoted titles; these are the titles that
-        will be displayed (and linked) from the menu."""),
-    'background': OptionDef('background', 'IMAGE', None,
-        """Use IMAGE (in most any graphic format) as a background."""),
-    'audio': OptionDef('audio', 'AUDIOFILE', None,
-        """Use AUDIOFILE for background music while the menu plays."""),
-    'font':
-        OptionDef('font', 'FONTNAME', 'Helvetica',
-        """Use FONTNAME for the menu text."""),
-    'fontsize':
-        OptionDef('fontsize', 'NUM', '24',
-        """Use a font size of NUM pixels."""),
-    'align':
-        OptionDef('align', 'west|north|east|south|center', 'northwest'),
-    'textcolor':
-        OptionDef('textcolor', 'COLOR', 'white',
-        """Color of menu text. COLOR may be a hexadecimal triplet (#RRGGBB or
-        #RGB), or a color name from 'convert -list color."""),
-    'highlightcolor':
-        OptionDef('highlightcolor', 'COLOR', 'red',
-        """Color of menu highlights."""),
-    'selectcolor':
-        OptionDef('selectcolor', 'COLOR', 'green',
-        """Color of menu selections."""),
-    'out':
-        OptionDef('out', 'FILE', None),
-    # Thumbnail menus and effects
-    'choices':
-        OptionDef('choices', '[list|thumbnails]', 'list',
-            """Display links as a list of titles, or as a grid of labeled
-            thumbnail videos."""),
-    'border':
-        OptionDef('border', 'NUM', '0',
-            """Add a border of NUM pixels around thumbnails."""),
-    'effects':
-        OptionDef('effects', 'shadow|round|glass [, ...]', [],
-            """Add the listed effects to the thumbnails.""")
-}
+class Menu(Element):
+    """A Menu element with associated options"""
+    optiondefs = {
+        'format': OptionDef('format', 'vcd|svcd|dvd', 'dvd',
+            """Generate a menu compliant with the specified disc format"""),
+        'tvsys': OptionDef('tvsys', 'pal|ntsc', 'ntsc',
+            """Make the menu for the specified TV system"""),
+        'titles': OptionDef('titles', '"TITLE" [, "TITLE"]', [],
+            """Comma-separated list of quoted titles; these are the titles that
+            will be displayed (and linked) from the menu."""),
+        'background': OptionDef('background', 'IMAGE', None,
+            """Use IMAGE (in most any graphic format) as a background."""),
+        'audio': OptionDef('audio', 'AUDIOFILE', None,
+            """Use AUDIOFILE for background music while the menu plays."""),
+        'font':
+            OptionDef('font', 'FONTNAME', 'Helvetica',
+            """Use FONTNAME for the menu text."""),
+        'fontsize':
+            OptionDef('fontsize', 'NUM', '24',
+            """Use a font size of NUM pixels."""),
+        'align':
+            OptionDef('align', 'west|north|east|south|center', 'northwest'),
+        'textcolor':
+            OptionDef('textcolor', 'COLOR', 'white',
+            """Color of menu text. COLOR may be a hexadecimal triplet (#RRGGBB or
+            #RGB), or a color name from 'convert -list color."""),
+        'highlightcolor':
+            OptionDef('highlightcolor', 'COLOR', 'red',
+            """Color of menu highlights."""),
+        'selectcolor':
+            OptionDef('selectcolor', 'COLOR', 'green',
+            """Color of menu selections."""),
+        'out':
+            OptionDef('out', 'FILE', None),
+        # Thumbnail menus and effects
+        'choices':
+            OptionDef('choices', '[list|thumbnails]', 'list',
+                """Display links as a list of titles, or as a grid of labeled
+                thumbnail videos."""),
+        'border':
+            OptionDef('border', 'NUM', '0',
+                """Add a border of NUM pixels around thumbnails."""),
+        'effects':
+            OptionDef('effects', 'shadow|round|glass [, ...]', [],
+                """Add the listed effects to the thumbnails.""")
+    }
 
+    def __init__(self, name='Untitled Menu'):
+        Element.__init__(self, 'Menu', name, self.optiondefs)
 
-def generate(menu):
-    """Generate the given menu element, and return the filename of the
-    resulting menu."""
-    # TODO: Raise exceptions
+    def generate(self):
+        """Generate the element, and return the filename of the
+        resulting menu."""
+        # TODO: Raise exceptions
 
-    # Generate a menu of the appropriate format
-    if menu.get('format') == 'dvd':
-        generate_dvd_menu(menu)
-    elif disc.get('format') in ['vcd', 'svcd']:
-        generate_vcd_menu(menu)
+        # Generate a menu of the appropriate format
+        if self.get('format') == 'dvd':
+            generate_dvd_menu(self)
+        elif self.get('format') in ['vcd', 'svcd']:
+            generate_vcd_menu(self)
 
 
 def generate_vcd_menu(menu):

@@ -30,9 +30,13 @@ class Project:
 
     def save_file(self, filename):
         """Save project data as a TDL text file."""
-        outfile = open(filename, 'w')
-        outfile.write(self.tdl_tring())
-        outfile.close()
+        try:
+            outfile = open(filename, 'w')
+        except:
+            log.error('Could not open file "%s"' % filename)
+        else:
+            outfile.write(self.tdl_tring())
+            outfile.close()
 
 
     def build_hierarchy(self):
