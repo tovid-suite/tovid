@@ -14,11 +14,11 @@ import os
 import sys
 
 import libtovid
-from libtovid import Standards
-from libtovid.Globals import ratio_to_float
-from libtovid.Log import Log
+from libtovid.standards import get_resolution
+from libtovid.globals import ratio_to_float
+from libtovid.log import Log
 
-log = Log('VideoPlugins')
+log = Log('VideoPlugins.py')
 
 class VideoPlugin:
     """Base plugin class; all encoders inherit from this."""
@@ -33,7 +33,7 @@ class VideoPlugin:
     def preproc(self):
         """Do preprocessing common to all backends."""
 
-        width, height = Standards.get_resolution(self.video['format'], self.video['tvsys'])
+        width, height = get_resolution(self.video['format'], self.video['tvsys'])
 
         # Convert aspect (ratio) to a floating-point value
         src_aspect = ratio_to_float(self.video['aspect'])

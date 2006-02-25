@@ -12,7 +12,7 @@ __all__ = [\
 import os
 import sys
 
-from libtovid.Log import Log
+from libtovid.log import Log
 log = Log('VideoPlugins')
 
 def video_to_images(infile, start = 0, end = 0, scale = (0, 0)):

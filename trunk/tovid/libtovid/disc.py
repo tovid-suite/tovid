@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# Disc.py
+# disc.py
 
 __doc__ = \
 """This module defines attributes related to authoring a video disc,
@@ -26,8 +26,8 @@ import string
 import sys
 
 import libtovid
-from libtovid.Option import OptionDef
-from libtovid.Element import Element
+from libtovid.option import OptionDef
+from libtovid.element import Element
 
 class Disc(Element):
     """A Disc element with associated options"""

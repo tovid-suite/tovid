@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# Globals.py
+# globals.py
 
 # Miscellaneous helper functions that don't have a good home yet
 
