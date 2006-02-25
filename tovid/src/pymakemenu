@@ -5,7 +5,8 @@
 # (to replace the 'makemenu' shell script)
 
 import sys, libtovid
-from libtovid import Menu, Project, TDL
+from libtovid.menu import Menu
+from libtovid.project import Project
 
 if __name__ == '__main__':
     """Parse the provided command-line arguments as a Menu element."""
@@ -16,19 +17,19 @@ if __name__ == '__main__':
     if len(sys.argv) < 3:
         print 'Usage: pymakemenu [options] -out NAME'
         print 'Where [options] may be any of the following:'
-        print TDL.usage('Menu')
+        print libtovid.tdl.usage('Menu')
         print 'Please provide an output name (-out).'
         sys.exit()
         
     # If a TDL file name was provided, parse and generate Menus in it
     elif len(sys.argv) == 3 and sys.argv[1] == '-tdl':
         print "Generating menus from TDL: '%s'" % sys.argv[2]
-        proj = Project.Project()
+        proj = Project()
         proj.load_file(sys.argv[2])
 
         for menu in proj.get_elements('Menu'):
             print "Generating menu: '%s'" % menu.name
-            libtovid.Menu.generate(menu)
+            menu.generate()
 
     else:
         print "pymakemenu"
@@ -39,11 +40,9 @@ if __name__ == '__main__':
         args.insert(0, 'Menu')
         args.insert(1, '"FOO MENU"')
 
-        # TODO: Fix this dumb redundancy in naming (same for Project.Project
-        # above)
-        par = TDL.Parser()
+        par = libtovid.tdl.Parser()
         elems = par.parse_args(args)
         print "Parsed Menu element:"
         print elems[0].tdl_string()
         print "Generating menu..."
-        Menu.generate(elems[0])
+        elems[0].generate()

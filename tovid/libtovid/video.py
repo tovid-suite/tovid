@@ -115,15 +115,18 @@ class Video(Element):
             tool.""")
     }
 
-    def generate(video):
+    def __init__(self, name='Untitled Video'):
+        Element.__init__(self, 'Video', name, self.optiondefs)
+        
+    def generate(self):
         """Generate a video element by encoding an input file to a target
         standard."""
 
-        method = video['method']
+        method = self['method']
         if method == 'mpeg2enc':
-            encoder = Mpeg2encEncoder(video)
+            encoder = Mpeg2encEncoder(self)
         elif method == 'mencoder':
-            encoder = MencoderEncoder(video)
+            encoder = MencoderEncoder(self)
         elif method == 'ffmpeg':
             log.info("The ffmpeg encoding method is not yet implemented.")
             sys.exit()
