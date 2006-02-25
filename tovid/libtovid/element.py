@@ -1,8 +1,7 @@
 #! /usr/bin/env python
-# Element.py
+# element.py
 
-import libtovid
-from libtovid import TDL
+import sys
 
 # ===========================================================
 class Element:

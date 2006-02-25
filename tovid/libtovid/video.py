@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# Video.py
+# video.py
 
 __doc__ = \
 """This module generates MPEG video files from TDL Video element definitions."""
@@ -13,12 +13,12 @@ __doc__ = \
 import sys
 
 import libtovid
-from libtovid.Option import OptionDef
-from libtovid.Log import Log
-from libtovid.Element import Element
+from libtovid.option import OptionDef
+from libtovid.log import Log
+from libtovid.element import Element
 from libtovid.VideoPlugins import *
 
-log = Log('Video')
+log = Log('video.py')
 
 
 class Video(Element):

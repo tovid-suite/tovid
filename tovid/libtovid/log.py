@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# Log.py
+# log.py
 
 class Log:
     """Logger for libtovid backend and frontend; can be configured with

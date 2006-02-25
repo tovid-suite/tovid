@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# Standards.py
+# standards.py
 
 __doc__ = \
 """This module defines functions for retrieving information about multimedia

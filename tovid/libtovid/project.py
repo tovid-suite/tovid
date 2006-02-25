@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# Project.py
+# project.py
 
 __all__ = ['Project']
 
@@ -7,7 +7,8 @@ __all__ = ['Project']
 
 import sys
 
-from TDL import Parser
+import libtovid
+from libtovid.tdl import Parser
 
 # ===========================================================
 class Project:

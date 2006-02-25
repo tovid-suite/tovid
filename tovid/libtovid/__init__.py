@@ -8,21 +8,21 @@ __doc__ = \
 __version__ = '0.26-dev'
 
 __all__ = [\
-    "Log",
-    "Globals",
-    "Standards",
+    "log",
+    "globals",
+    "standards",
 
-    "Disc",
-    "Menu",
+    "disc",
+    "menu",
     "MenuPlugins",
-    "Video",
+    "video",
     "VideoPlugins",
 
-    "Option",
-    "TDL",
-    "Project",
-    "Streams",
-    "Filetypes",
+    "option",
+    "tdl",
+    "project",
+    "streams",
+    "filetypes",
     "gui"]
 
 

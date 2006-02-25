@@ -1,9 +1,10 @@
 #! /usr/bin/env python
-# Streams.py
+# streams.py
 
 __all__ = ['VideoStream', 'AudioStream']
 
-from Standards import *
+import libtovid
+from libtovid.standards import *
 
 # ===========================================================
 # Video stream
