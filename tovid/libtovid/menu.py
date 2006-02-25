@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# Menu.py
+# menu.py
 
 __doc__ = \
 """Module for generating Menu elements for a tovid project.
@@ -45,9 +45,9 @@ import os
 import glob
 
 import libtovid
-from Option import OptionDef
-from MenuPlugins import *
-from libtovid.Element import Element
+from libtovid.option import OptionDef
+from libtovid.MenuPlugins import *
+from libtovid.element import Element
 
 class Menu(Element):
     """A Menu element with associated options"""

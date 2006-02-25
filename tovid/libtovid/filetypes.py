@@ -1,14 +1,15 @@
 #! /usr/bin/env python
-# Filetypes.py
+# filetypes.py
 
 __all__ = ['MultimediaFile']
 
 import os
 import sys
 
-from Globals import *
-from Streams import *
-from Standards import *
+import libtovid
+from libtovid.globals import *
+from libtovid.streams import *
+from libtovid.standards import *
 
 # ===========================================================
 # Multimedia video/audio file

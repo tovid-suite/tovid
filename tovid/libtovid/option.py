@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# Option.py
+# option.py
 
 __all__ = ['OptionDef']
 
@@ -8,7 +8,7 @@ __all__ = ['OptionDef']
 
 import re
 
-from libtovid.Globals import trim
+from libtovid.globals import trim
 
 # ===========================================================
 class OptionDef:

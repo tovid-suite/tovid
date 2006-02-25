@@ -140,12 +140,14 @@ import copy
 import shlex
 
 import libtovid
-from libtovid import Disc, Menu, Video
-from libtovid.Option import OptionDef
-from libtovid.Log import Log
-from libtovid.Element import Element
+from libtovid.video import Video
+from libtovid.menu import Menu
+from libtovid.disc import Disc
+from libtovid.option import OptionDef
+from libtovid.log import Log
+from libtovid.element import Element
 
-log = Log('TDL')
+log = Log('tdl.py')
 
 
 
