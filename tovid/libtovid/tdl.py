@@ -153,16 +153,11 @@ log = Log('tdl.py')
 
 # ===========================================================
 # Dictionary of TDL options, categorized by element tag
-#
-# TODO: Expand to include all currently-supported tovid suite
-# options, where feasible. Document all options.
-
 element_defs = {
     'Video': Video.optiondefs,
     'Menu':  Menu.optiondefs,
     'Disc':  Disc.optiondefs
 }
-
 
 
 def usage(elem):
@@ -282,21 +277,15 @@ class Parser:
             if not token:
                 break
 
-            # If an element in the language (TDL) is found (that is,
-            # 'Disc', 'Menu', or 'Video' was encountered), get a
-            # new Element object, and add it to the list
-            elif token in element_defs:
-
-                tag = token                # e.g., "Menu"
-                name = self.next_token()   # e.g., "Music videos"
-                # Get a new element with the given type and name
-                element = Element(tag, name)
-                #print "New element created:"
-                #print element.tdl_string()
-
-                # Add the element to the list
+            elif token in ['Disc', 'Menu', 'Video']:
+                name = self.next_token()
+                if token == 'Disc':
+                    element = Disc(name)
+                elif token == 'Menu':
+                    element = Menu(name)
+                elif token == 'Video':
+                    element = Video(name)
                 self.elements.append(element)
-
 
             # If a valid option for the current element is found, set its value
             # appropriately (depending on number of arguments)
@@ -305,7 +294,7 @@ class Parser:
 
                 # How many arguments are expected for this
                 # option? (0, 1, or unlimited)
-                expected_args = element_defs[element.tag][opt].num_args()
+                expected_args = element.optiondefs[opt].num_args()
                 print "%s expects %s args" % (opt, expected_args)
 
                 # No args? Must just be a flag--set it to True

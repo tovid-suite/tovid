@@ -49,7 +49,6 @@ class Disc(Element):
     def __init__(self, name='Untitled Disc'):
         Element.__init__(self, 'Disc', name, self.optiondefs)
 
-
     def generate(self):
         """Write dvdauthor or vcdimager XML for the element, to
         the file specified by the disc's 'out' option."""

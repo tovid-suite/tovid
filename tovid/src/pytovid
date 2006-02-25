@@ -4,9 +4,11 @@
 # Convert a video into an (S)VCD/DVD-compliant MPEG
 # (to replace the 'tovid' shell script)
 
-import sys, libtovid
-from libtovid import Video
-from libtovid import TDL
+import sys
+
+import libtovid
+from libtovid.video import Video
+from libtovid import tdl
 
 if __name__ == '__main__':
     """Create a Video element from the provided command-line options,
@@ -17,7 +19,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 5:
         print 'Usage: pytovid [options] -in FILE -out NAME'
         print 'Where [options] may be any of the following:'
-        print TDL.usage('Video')
+        print tdl.usage('Video')
         print 'Please provide an input file (-in) and output name (-out).'
         sys.exit()
 
@@ -30,7 +32,7 @@ if __name__ == '__main__':
     args.insert(0, 'Video')
     args.insert(1, '"FOO VIDEO"')
 
-    par = TDL.Parser()
+    par = tdl.Parser()
     elems = par.parse_args(args)
     print "Parsed Video element:"
     print elems[0].tdl_string()
