@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-3.7.dtd">
 <!-- Project file for project tovid -->
-<!-- Saved: 2006-02-22, 15:50:03 -->
+<!-- Saved: 2006-02-24, 19:12:34 -->
 <!-- Copyright (C) 2006 ,  -->
 <Project version="3.7">
   <ProgLanguage mixed="1">Python</ProgLanguage>
@@ -16,51 +16,11 @@
     </Source>
     <Source>
       <Dir>libtovid</Dir>
-      <Name>TDL.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
-      <Name>Disc.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
-      <Name>Globals.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
-      <Name>Project.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
-      <Name>Video.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
-      <Name>Menu.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
       <Name>__init__.py</Name>
     </Source>
     <Source>
       <Dir>libtovid</Dir>
       <Name>VideoPlugins.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
-      <Name>Option.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
-      <Name>Standards.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
-      <Name>Streams.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
-      <Name>Filetypes.py</Name>
     </Source>
     <Source>
       <Dir>libtovid</Dir>
@@ -171,6 +131,54 @@
       <Dir>libtovid</Dir>
       <Dir>gui</Dir>
       <Name>__init__.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>disc.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>menu.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>filetypes.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>standards.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>log.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>globals.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>project.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>option.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>streams.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>tdl.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>element.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>video.py</Name>
     </Source>
   </Sources>
   <Forms>

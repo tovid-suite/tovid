@@ -2,10 +2,13 @@
 # element.py
 
 import sys
+import copy
 
 # ===========================================================
 class Element:
-    """A Disc, Menu, or Video with associated options.
+    """An element with attributes.
+    
+    A Disc, Menu, or Video with associated options.
 
     Create an element by calling Element() with the type of element desired,
     along with an identifying name. For example:

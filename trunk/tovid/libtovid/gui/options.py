@@ -8,7 +8,9 @@
 # ###################################################################
 # ###################################################################
 import os, wx
-from libtovid import TDL
+from libtovid.disc import Disc
+from libtovid.menu import Menu
+from libtovid.video import Video
 from libtovid.gui.constants import *
 from libtovid.gui.configs import TovidConfig
 from libtovid.gui.util import _
@@ -34,30 +36,27 @@ class DiscOptions:
         self.tvsys = tvsys
 
     def toElement(self):
-        """Convert the current disc options into a TDL Element
-        and return it.
-        """
-        element = TDL.Element('Disc', self.title)
-        element.set('tvsys', self.tvsys)
-        element.set('format', self.format)
+        """Convert the current options into a Disc Element and return it."""
+        element = Disc(self.title)
+        element['tvsys'] = self.tvsys
+        element['format'] = self.format
 
         # Find top menu
         for curItem in self.optionList:
             if curItem.type == ID_MENU:
                 if curItem.isTopMenu:
-                    element.set('topmenu', curItem.title)
+                    element['topmenu'] = curItem.title
 
         return element
 
     def fromElement(self, element):
-        """Load current disc options from a TDL Element.
-        """
+        """Load current options from a Disc Element."""
         print "Loading Disc element:"
         print element.tdl_string()
         self.type = ID_DISC
         self.title = element.name
-        self.format = element.get('format')
-        self.tvsys = element.get('tvsys')
+        self.format = element['format']
+        self.tvsys = element['tvsys']
         
     # ==========================================================
     # Set disc layout hierarchy, given a list of VideoOptions,
@@ -150,49 +149,46 @@ class MenuOptions:
             wx.FONTWEIGHT_NORMAL, False, "Default")
 
     def toElement(self):
-        """Convert the current menu options into a TDL Element
-        and return it.
-        """
+        """Convert the current options into a Menu Element and return it."""
         # Get global configuration (for output directory)
         curConfig = TovidConfig()
-        # Create TDL Element and set relevant options
-        element = TDL.Element('Menu', self.title)
-        element.set('tvsys', self.tvsys)
-        element.set('format', self.format)
-        element.set('alignment', self.alignment)
+        # Create Menu Element and set relevant options
+        element = Menu(self.title)
+        element['tvsys'] = self.tvsys
+        element['format'] = self.format
+        element['alignment'] = self.alignment
         # Image and audio backgrounds, if any
         if self.background != "":
-            element.set('background', self.background)
+            element['background'] = self.background
         if self.audio != "":
-            element.set('audio', self.audio)
-        element.set('textcolor', '"#%X%X%X"' % \
-            (self.colorText.Red(), self.colorText.Green(), self.colorText.Blue()))
+            element['audio'] = self.audio
+        element['textcolor'] = '"#%X%X%X"' % \
+            (self.colorText.Red(), self.colorText.Green(), self.colorText.Blue())
         # For DVD, highlight and select colors
         if self.format == 'dvd':
-            element.set('highlightcolor', '"#%X%X%X"' % \
-                (self.colorHi.Red(), self.colorHi.Green(), self.colorHi.Blue()))
-            element.set('selectcolor', '"#%X%X%X"' % \
-                (self.colorSel.Red(), self.colorSel.Green(), self.colorSel.Blue()))
+            element['highlightcolor'] = '"#%X%X%X"' % \
+                (self.colorHi.Red(), self.colorHi.Green(), self.colorHi.Blue())
+            element['selectcolor'] = '"#%X%X%X"' % \
+                (self.colorSel.Red(), self.colorSel.Green(), self.colorSel.Blue())
         if self.font.GetFaceName() != "":
-            element.set('font', self.font.GetFaceName())
+            element['font'] = self.font.GetFaceName()
         # Convert self.titles to ordinary strings
         strtitles = []
         for title in self.titles: strtitles.append(str(title))
-        element.set('linksto', strtitles)
+        element['linksto'] = strtitles
         return element
 
     def fromElement(self, element):
-        """Load current video options from a TDL Element.
-        """
+        """Load options from a Video Element."""
         print "Loading Menu element:"
         print element.tdl_string()
         self.type = ID_MENU
-        self.tvsys = element.get('tvsys')
-        self.format = element.get('format')
-        self.alignment = element.get('alignment')
-        self.background = element.get('background')
-        self.audio = element.get('audio')
-        self.titles = element.get('linksto')
+        self.tvsys = element['tvsys']
+        self.format = element['format']
+        self.alignment = element['alignment']
+        self.background = element['background']
+        self.audio = element['audio']
+        self.titles = element['linksto']
         # TODO: Find a good way to parse/assign colors and font
 
     # ==========================================================
@@ -377,29 +373,26 @@ class VideoOptions:
         self.outPrefix = "%s.tovid_encoded" % self.title
 
     def toElement(self):
-        """Convert the current video options into a TDL Element
-        and return it.
-        """
+        """Convert the current options into a Video Element and return it."""
         # Get global configuration (for output directory)
         curConfig = TovidConfig()
-        # Create TDL Element and set relevant options
-        element = TDL.Element('Video', self.title)
-        element.set('tvsys', self.tvsys)
-        element.set('format', self.format)
-        element.set('aspect', self.aspect)
-        element.set('in', self.inFile)
-        element.set('out', "%s/%s" % (curConfig.strOutputDirectory, self.outPrefix))
+        # Create Video Element and set relevant options
+        element = Video(self.title)
+        element['tvsys'] = self.tvsys
+        element['format'] = self.format
+        element['aspect'] = self.aspect
+        element['in'] = self.inFile
+        element['out'] = "%s/%s" % (curConfig.strOutputDirectory, self.outPrefix)
         return element
 
     def fromElement(self, element):
-        """Load current video options from a TDL Element.
-        """
+        """Load options from a Video Element."""
         print "Loading Video element:"
         print element.tdl_string()
         self.type = ID_VIDEO
-        self.tvsys = element.get('tvsys')
-        self.format = element.get('format')
-        aspect = element.get('aspect')
+        self.tvsys = element['tvsys']
+        self.format = element['format']
+        aspect = element['aspect']
         if aspect in [ 'full', 'wide', 'panavision' ]:
             self.aspect = aspect
         elif aspect == '4:3':
@@ -408,8 +401,8 @@ class VideoOptions:
             self.aspect = 'wide'
         elif aspect == '235:100':
             self.aspect = 'panavision'
-        self.inFile = element.get('in')
-        self.outPrefix = element.get('out')
+        self.inFile = element['in']
+        self.outPrefix = element['out']
 
 
     # ==========================================================

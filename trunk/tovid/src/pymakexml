@@ -1,11 +1,14 @@
 #! /usr/bin/env python
-
 # pymakexml
-# Generate vcdimager/dvdauthor XML for an (S)VCD/DVD disc
-# (to replace the 'makexml' shell script)
 
-import sys, libtovid
-from libtovid import Disc, Parser
+__doc__ = \
+"""Generate vcdimager/dvdauthor XML for an (S)VCD/DVD disc (to replace the
+'makexml' shell script).
+"""
+
+import sys
+
+import libtovid
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
@@ -20,11 +23,11 @@ if __name__ == '__main__':
     sys.argv.insert(0, 'Disc')
     sys.argv.insert(1, '"FOO DISC"')
 
-    par = Parser.Parser()
+    par = libtovid.tdl.Parser()
     elems = par.parse_args(sys.argv)
     print "Parsed Disc element:"
     print elems[0].tdl_string()
     print "Generating disc XML..."
-    Disc.generate(elems[0])
+    elems[0].generate()
     
 
