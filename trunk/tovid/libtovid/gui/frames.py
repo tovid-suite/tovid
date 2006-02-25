@@ -87,6 +87,7 @@ class MainFrame(wx.Frame):
         wx.EVT_MENU(self, ID_MENU_HELP_ABOUT, self.OnAbout)
         wx.EVT_MENU(self, ID_MENU_LANG_EN, self.OnLang)
         wx.EVT_MENU(self, ID_MENU_LANG_DE, self.OnLang)
+        self.Bind(wx.EVT_KEY_UP, self.OnKeyDown)
 
         # Build menubar
         self.menubar.Append(self.menuFile, "&File")
@@ -124,7 +125,6 @@ class MainFrame(wx.Frame):
         self.sizMain.Add(self.sizTask, 5, wx.EXPAND)
         self.SetSizer(self.sizMain)
 
-
     def OnFileSave(self, evt):
         """Save the current project to a TDL file."""
         outFileDialog = wx.FileDialog(self, _("Select a save location"),
@@ -141,7 +141,6 @@ class MainFrame(wx.Frame):
 
             outFile.close()
     
-
     def OnFileOpen(self, evt):
         inFileDialog = wx.FileDialog(self, _("Choose a TDL file to open"),
             self.dirname, "", "*.tdl", wx.OPEN)
@@ -153,11 +152,9 @@ class MainFrame(wx.Frame):
 
         inFileDialog.Destroy()
 
-        
     def OnExit(self, evt):
         """Exit the GUI and close all windows."""
         self.Close(True)
-
 
     def OnShowGuide(self, evt):
         """Show or hide the guide panel."""
@@ -189,7 +186,6 @@ class MainFrame(wx.Frame):
         dlgAbout = wx.MessageDialog(self, strAbout, "About tovid GUI", wx.OK)
         dlgAbout.ShowModal()
 
-
     def OnLang(self, evt):
         """Change GUI to selected language."""
         if evt.GetId() == ID_MENU_LANG_EN:
@@ -197,7 +193,14 @@ class MainFrame(wx.Frame):
             
         elif evt.GetId() == ID_MENU_LANG_DE:
             self.curConfig.UseLanguage('de')
-        
+
+    def OnKeyDown(self, evt):
+        """Key down event handler.  Primarily used to close the app if certain keys are pressed.
+        """
+        key = evt.KeyCode()
+        controlDown = evt.ControlDown()
+        if ((controlDown) and ("Q" == chr(key))):
+            self.Close()
 
     # ==========================================================
     # Open preferences window and set configuration
