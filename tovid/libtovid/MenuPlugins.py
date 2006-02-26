@@ -20,7 +20,6 @@ log = Log('MenuPlugins.py')
 FRAMES=90
 
 
-
 class MenuPlugin:
     """Base plugin class; all menu-generators inherit from this."""
     def __init__(self, menu):
