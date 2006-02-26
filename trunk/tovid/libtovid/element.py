@@ -4,6 +4,11 @@
 import sys
 import copy
 
+import libtovid
+from libtovid.log import Log
+
+log = Log('element.py')
+
 # ===========================================================
 class Element:
     """An element with attributes.

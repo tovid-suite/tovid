@@ -73,8 +73,8 @@ id_dict = {
         ID_ASPECT_PANA: "panavision"
     },
     'alignment': {
-        ID_ALIGN_LEFT: "left",
-        ID_ALIGN_CENTER: "center",
-        ID_ALIGN_RIGHT: "right"
+        ID_ALIGN_LEFT: "northwest",
+        ID_ALIGN_CENTER: "north",
+        ID_ALIGN_RIGHT: "northeast"
     }
 }
