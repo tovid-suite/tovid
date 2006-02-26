@@ -42,8 +42,8 @@
 # This is an example definition of a Disc element:
 
 Disc "Trailers"
-    -dvd
-    -ntsc
+    -format dvd
+    -tvsys ntsc
     -topmenu
         "Main Menu"
 
@@ -63,7 +63,7 @@ Disc "Trailers"
 # element. Here is its definition:
 
 Menu "Main Menu"
-    -linksto
+    -titles
         # Names of other elements, separated by commas
         "Movie Trailers",
         "Game Trailers"
@@ -79,13 +79,13 @@ Menu "Main Menu"
 # and "Game Trailers". Their definitions follow:
 
 Menu "Movie Trailers"
-    -linksto
+    -titles
         "Serenity", "Hitchhiker's Guide"
     -background movietrailersmenu.png
     -font "Courier New"
 
 Menu "Game Trailers"
-    -linksto
+    -titles
         "MGS4", "FF7"
     -background gametrailersmenu.tif
     -font Verdana
