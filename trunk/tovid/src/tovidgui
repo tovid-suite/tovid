@@ -15,13 +15,18 @@
 #
 
 import sys
+import traceback
 
 # Try to import wx; print error if it's unavailable
 try:
     import wx
 except ImportError:
-    print "Python cannot find the 'wx' library. You may need to install or"
-    print "upgrade wxPython 2.6.x."
+    traceback.print_exc()
+    print "Python can't find the 'wx' libraries. Here's where it looked:"
+    for dir in sys.path[1:]:
+        print "  " + dir
+    print "You may need to install or upgrade wxPython 2.6.x [wxpython.org]."
+    print "Sorry, 'tovidgui' will not work."
     sys.exit()
 
 from libtovid.gui.frames import MainFrame
