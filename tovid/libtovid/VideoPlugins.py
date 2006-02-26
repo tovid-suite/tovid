@@ -17,6 +17,7 @@ import libtovid
 from libtovid.standards import get_resolution
 from libtovid.globals import ratio_to_float
 from libtovid.log import Log
+from libtovid.filetypes import MultimediaFile
 
 log = Log('VideoPlugins.py')
 
@@ -27,8 +28,15 @@ class VideoPlugin:
         self.video = video
         # List of commands to be executed (in order)
         self.commands = []
+        self.identify_infile()
         self.preproc()
 
+    def identify_infile(self):
+        """Gather information about the input file and store it locally."""
+        log.debug('Creating MultimediaFile for "%s"' % self.video['in'])
+        self.infile = MultimediaFile(self.video['in'])
+        self.infile.display()
+        
     def preproc(self):
         """Do preprocessing common to all backends."""
         width, height = get_resolution(self.video['format'], self.video['tvsys'])
@@ -53,10 +61,16 @@ class VideoPlugin:
         else:
             scale = (width * src_aspect / tgt_aspect, height)
             expand = (width, height)
+        # If infile is already the correct size, don't scale
+        if scale == self.infile.video.size:
+            scale = False
+            log.debug('Infile resolution matches target resolution.')
+            log.debug('No scaling will be done.')
         # Remember scale/expand sizes and target aspect
         self.scale = scale
         self.expand = expand
         self.tgt_aspect = tgt_aspect
+
 
     def run(self):
         """Execute all queued commands, with proper stream redirection and
@@ -180,10 +194,11 @@ class MencoderEncoder(VideoPlugin):
         # when the input file's audio bitrate already matches.
         # Can anyone confirm?
         if 'dvd' in self.video['format']:
-            cmd += ' -srate 48000 -af lavcresample=48000 '
+            if self.infile.audio.samprate != 48000:
+                cmd += ' -srate 48000 -af lavcresample=48000 '
         else:
-            cmd += ' -srate 44100 -af lavcresample=44100 '
-            pass
+            if self.infile.audio.samprate != 44100:
+                cmd += ' -srate 44100 -af lavcresample=44100 '
     
         # Video codec
         if self.video['format'] == 'vcd':
@@ -238,11 +253,27 @@ class MencoderEncoder(VideoPlugin):
             cmd += ' -ofps 30000/1001 ' # ~= 29.97
     
         # Scale/expand to fit target frame
-        cmd += ' -vf scale=%s:%s' % self.scale
-        if self.expand != self.scale:
+        if self.scale:
+            cmd += ' -vf scale=%s:%s' % self.scale
+        if self.expand:
             cmd += ',expand=%s:%s ' % self.expand
         return cmd
 
+
+class FfmpegEncoder(VideoPlugin):
+    def __init__(self, video):
+        """Create an ffmpeg encoder for the given video."""
+        VideoPlugin.__init__(self, video)
+        self.commands.append(self.get_ffmpeg_cmd())
+        
+    def get_ffmpeg_cmd(self):
+        """Return ffmpeg command for encoding the current video."""
+        cmd = 'ffmpeg -i "%s" ' % self.video['in']
+        if self.video['tvsys'] in ['pal', 'ntsc']:
+            cmd += ' -tvstd %s ' % self.video['tvsys']
+        if self.scale:
+            cmd += ' -s %sx%s ' % self.scale
+    
 
 """
 For DVD:
