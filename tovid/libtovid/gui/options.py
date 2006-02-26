@@ -125,8 +125,8 @@ class MenuOptions:
     background = ""
     # -audio FILE
     audio = ""
-    # -align [left|center|right]
-    alignment = 'left'
+    # -align [northwest|north|northeast]
+    alignment = 'northwest'
     # Other settings
     titles = []
     colorText = wx.Colour(255, 255, 255)
@@ -156,7 +156,7 @@ class MenuOptions:
         element = Menu(self.title)
         element['tvsys'] = self.tvsys
         element['format'] = self.format
-        element['alignment'] = self.alignment
+        element['align'] = self.alignment
         # Image and audio backgrounds, if any
         if self.background != "":
             element['background'] = self.background
@@ -175,7 +175,7 @@ class MenuOptions:
         # Convert self.titles to ordinary strings
         strtitles = []
         for title in self.titles: strtitles.append(str(title))
-        element['linksto'] = strtitles
+        element['titles'] = strtitles
         return element
 
     def fromElement(self, element):
@@ -185,10 +185,10 @@ class MenuOptions:
         self.type = ID_MENU
         self.tvsys = element['tvsys']
         self.format = element['format']
-        self.alignment = element['alignment']
+        self.alignment = element['align']
         self.background = element['background']
         self.audio = element['audio']
-        self.titles = element['linksto']
+        self.titles = element['titles']
         # TODO: Find a good way to parse/assign colors and font
 
     # ==========================================================

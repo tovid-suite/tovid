@@ -7,8 +7,11 @@
 #
 # ###################################################################
 # ###################################################################
-import os, wx
-from libtovid import Project
+import os
+import wx
+
+import libtovid
+from libtovid.project import Project
 from libtovid.gui.configs import TovidConfig
 from libtovid.gui.constants import *
 from libtovid.gui.icons import AppIcon
@@ -146,7 +149,7 @@ class MainFrame(wx.Frame):
             self.dirname, "", "*.tdl", wx.OPEN)
         if inFileDialog.ShowModal() == wx.ID_OK:
             self.dirname = inFileDialog.GetDirectory()
-            proj = Project.Project()
+            proj = Project()
             proj.load_file(inFileDialog.GetPath())
             self.panAuthorFiles.SetElements(proj.topitems)
 

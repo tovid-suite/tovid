@@ -7,7 +7,9 @@
 #       
 # ###################################################################
 # ###################################################################
-import os, wx
+import os
+import wx
+
 from libtovid.gui.configs import TovidConfig
 from libtovid.gui.constants import *
 from libtovid.gui.controls import BoldToggleButton, FlexTreeCtrl, HeadingText
@@ -15,7 +17,8 @@ from libtovid.gui.dialogs import FontChooserDialog
 from libtovid.gui.icons import MenuIcon, SlideIcon, VideoIcon, DiscIcon
 from libtovid.gui.options import DiscOptions, MenuOptions, VideoOptions
 from libtovid.gui import util
-from libtovid.gui.util import _, VER_GetFirstChild, VideoStatSeeker
+from libtovid.gui.util import _, VER_GetFirstChild, VideoStatSeeker, element_to_options
+
 # ===================================================================
 #
 # CLASS DEFINITION
