@@ -74,7 +74,7 @@ $ tovid -pal -half-dvd -in MGS4.wmv -out Metal_Gear_Solid_4
 This will convert to PAL format, using a "half-sized"
 DVD resolution (352x480). There are many other options for further customizing
 your output video; see the [tovid tovid.html] documentation, or run
-``tovid -help`` to see a complete list of them.
+``man tovid`` to see a complete list of them.
 After running a tovid command, it's time to get that cup of coffee.
 Video encoding takes a long time! But if all goes well, I'll end up with
 four output videos: ``Serenity_trailer.mpg``,

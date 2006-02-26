@@ -9,7 +9,10 @@ import sys
 import libtovid
 from libtovid.globals import *
 from libtovid.streams import *
-from libtovid.standards import *
+from libtovid import standards
+from libtovid.log import Log
+
+log = Log('filetypes.py')
 
 # ===========================================================
 # Multimedia video/audio file
@@ -27,8 +30,11 @@ class MultimediaFile:
     def __init__(self, filename):
         self.filename = filename
         # If the file exists, get specs from it
-        if os.path.isfile(filename):
+        try:
             self.getSpecs(filename)
+        except:
+            log.debug('Could not get specs from file: %s' % filename)
+            sys.exit()
         self.validate()
 
     def getSpecs(self, filename):
@@ -36,7 +42,10 @@ class MultimediaFile:
         VideoStream/AudioStream."""
         # Use os.popen to grab info from mplayer
         cmd = "mplayer -vo null -ao null -frames 1 -channels 6 -identify %s 2>&1" % filename
-        mpout = os.popen(cmd, 'r')
+        log.debug('IDing video with this command: "%s"' % filename)
+        log.debug(cmd)
+        mpin, mpout = os.popen4(cmd, 'r')
+        mpin.close()
         mp_dict = {}
         video = None
         audio = None
@@ -51,13 +60,16 @@ class MultimediaFile:
         mpout.close()
 
         if 'ID_VIDEO_ID' in mp_dict:
+            log.debug('Found video stream in file %s' % filename)
             video = VideoStream()
             
         if 'ID_AUDIO_ID' in mp_dict:
+            log.debug('Found audio stream in file %s' % filename)
             audio = AudioStream()
 
         # Parse the dictionary and set appropriate values
         for left, right in mp_dict.iteritems():
+            log.debug('%s = %s' % (left, right))
             # If there's a video stream, check for video attributes
             if video:
                 if left == "ID_VIDEO_WIDTH":
@@ -70,6 +82,7 @@ class MultimediaFile:
                     video.codec = right
                 elif left == "ID_VIDEO_BITRATE":
                     video.bitrate = int(right) / 1000
+                video.size = (video.width, video.height)
             
             # If there's an audio stream, check for audio attributes
             if audio:
@@ -107,7 +120,7 @@ class MultimediaFile:
         if self.video:
             # Keep a list of matching standards
             self.validVideo = []
-            for vstd in VideoStandardList:
+            for vstd in standards.VideoStandardList:
                 if self.video.isValid(vstd):
                     self.validVideo.append(vstd)
         # Otherwise, video doesn't match anything
@@ -118,7 +131,7 @@ class MultimediaFile:
         if self.audio:
             # Keep a list of matching standards
             self.validAudio = []
-            for astd in AudioStandardList:
+            for astd in standards.AudioStandardList:
                 if self.audio.isValid(astd):
                     self.validAudio.append(astd)
         # Otherwise, audio doesn't match anything
@@ -127,23 +140,23 @@ class MultimediaFile:
 
 
     def display(self):
-        print "File: %s" % self.filename
+        log.info("File: %s" % self.filename)
         # Print video stream info
         if self.video:
             self.video.display()
         else:
-            print "No video stream"
+            log.info("No video stream")
         # Print audio stream info
         if self.audio:
             self.audio.display()
         else:
-            print "No audio stream"
+            log.info("No audio stream")
         # Print compliance info
         for vstd in self.validVideo:
-            print "Matches video standard:"
+            log.info("Matches video standard:")
             vstd.display()
         for astd in self.validAudio:
-            print "Matches audio standard:"
+            log.info("Matches audio standard:")
             astd.display()
 
 # Self-test; executed when this file is run standalone

@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# TDL.py
+# tdl.py
 
 # ===========================================================
 __doc__ = \
@@ -134,7 +134,23 @@ customizable framework, with self-contained documentation.
 __all__ = ['element_defs', 'usage', 'Parser']
 
 # TODO: Finish restructuring
+"""Restructuring thoughts:
 
+The Parser below is basically tovid's own 'getopts', with a customizable
+list of acceptable options (Video.optiondefs, etc.) Handling of options
+should be separate from interpretation of TDL element declarations;
+part of the complexity arises from trying to do both.
+
+Instead, perhaps something like this:
+
+    getopts(optdefs): parses input, matching against optdefs; returns
+        matching (set) options found, w/ defaults for all others.
+        Better suited to parsing command-line options; no need to
+        create artificial Menu/Video/Disc elements from pytovid, etc.
+    project.load(file): looks for Menu/Video/Disc declarations, builds
+        project hierarchy
+
+"""
 import sys
 import copy
 import shlex

@@ -48,6 +48,9 @@ import libtovid
 from libtovid.option import OptionDef
 from libtovid.MenuPlugins import *
 from libtovid.element import Element
+from libtovid.log import Log
+
+log = Log('menu.py')
 
 class Menu(Element):
     """A Menu element with associated options"""
@@ -106,31 +109,11 @@ class Menu(Element):
 
         # Generate a menu of the appropriate format
         if self.get('format') == 'dvd':
-            generate_dvd_menu(self)
+            log.info('Generating a DVD menu with text titles...')
+            #foo = ThumbMenu(menu)
+            foo = TextMenu(self)
+            foo.run()
         elif self.get('format') in ['vcd', 'svcd']:
-            generate_vcd_menu(self)
+            log.error('VCD and SVCD menus are not supported yet.')
+            pass
 
-
-def generate_vcd_menu(menu):
-    """Generate an (S)VCD MPEG menu, saving to the file specified by the menu's
-    'out' option."""
-    # TODO
-    pass
-
-
-def generate_dvd_menu(menu):
-    """Generate a DVD MPEG menu, saving to the file specified by the menu's
-    'out' option."""
-
-    #foo = ThumbMenu(menu)
-    foo = TextMenu(menu)
-    foo.run()
-
-
-if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print "Please supply the name of a .tdl file."
-        sys.exit()
-
-
-    generate_project_menus(proj)
