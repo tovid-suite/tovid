@@ -22,7 +22,23 @@ log = Log('video.py')
 
 
 class Video(Element):
-    """A Video element with associated options"""
+    """A Video element with associated options.
+    
+    This dictionary defines the set of options that may be given to a
+    command-line invocation of 'tovid', or which may be present in a
+    TDL Video element declaration.
+    
+    A backend may implement these features by accessing the instantiated
+    Video element using an index-style syntax, i.e.:
+        
+        if video['format'] == 'dvd' and video['tvsys'] == 'ntsc':
+            ...
+    
+    By convention, all options are nonhyphenated lowercase English words
+    or short phrases. There are no 'long' and 'short' forms; when invoked
+    from the command-line, options may be preceded by a hyphen (though it's
+    not required).
+    """
     optiondefs = {
         # New options to (eventually) replace -vcd, -pal etc.
         'format': OptionDef('format', 'vcd|svcd|dvd|half-dvd|dvd-vcd', 'dvd',
@@ -36,14 +52,14 @@ class Video(Element):
         # Deprecated options. Need to find a way to
         # mark options as deprecated, so the parser can
         # warn the user.
-        'vcd': OptionDef('vcd', '', False),
-        'svcd': OptionDef('svcd', '', False),
-        'dvd': OptionDef('dvd', '', False),
-        'half-dvd': OptionDef('half-dvd', '', False),
-        'dvd-vcd': OptionDef('dvd-vcd', '', False),
-        'ntsc': OptionDef('ntsc', '', False),
+        'vcd': OptionDef('vcd', '', False, alias=('format', 'vcd')),
+        'svcd': OptionDef('svcd', '', False, alias=('format', 'svcd')),
+        'dvd': OptionDef('dvd', '', False, alias=('format', 'dvd')),
+        'half-dvd': OptionDef('half-dvd', '', False, alias=('format', 'half-dvd')),
+        'dvd-vcd': OptionDef('dvd-vcd', '', False, alias=('format', 'dvd-vcd')),
+        'ntsc': OptionDef('ntsc', '', False, alias=('tvsys', 'ntsc')),
         'ntscfilm': OptionDef('ntscfilm', '', False),
-        'pal': OptionDef('pal', '', False),
+        'pal': OptionDef('pal', '', False, alias=('tvsys', 'pal')),
 
         # Other options
         'in': OptionDef('in', 'FILENAME', None),

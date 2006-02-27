@@ -8,35 +8,41 @@ SVN crash course
 
 ==Developer access==
 
-If wapcaplet has made you a tovid developer, you'll need to know a bit
-more about ``svn`` commands. The first is that you'll need to use a slightly
-different method to checkout:
+If wapcaplet has made you a tovid developer, you'll need to checkout like this:
 
 ```
 $ export SVN_SSH="ssh -l username"
 $ svn checkout svn+ssh://svn.berlios.de/tovid/trunk/tovid
 ```
 
-Where ``username`` is your BerliOS username. This does proper, authenticated
+where ``username`` is your BerliOS username. This does proper, authenticated
 checkout, so that you can make changes to the repository itself (editing files,
 adding new ones, etc.)
 
 A few other useful ``svn`` commands are:
 
-: svn status -u
-    Compare your local (or 'working') copy to the svn repository
+: ``svn help``
+    Display a list of available svn commands; use ``svn help COMMAND`` to show
+    usage information for ``COMMAND``.
 
-: svn update
-    Get and merge updates from the repository (as other developers make them)
+: ``svn status -u``
+    Compare your local (or 'working') copy to the svn repository, and show
+    which files were modified, added, deleted, etc.
 
-: svn commit -m "Fixed bugs"
-    Upload/merge your changes into the repository, with a brief summary
+: ``svn update``
+    Get and merge updates from the repository (as other developers make them).
+    Watch out for merging conflicts (a ``C`` in the file's status column)!
 
-: svn add FILE
-    Add FILE to the repository (will be added on your next commit)
+: ``svn commit -m "Fixed bugs"``
+    Upload/merge your changes into the repository, with a brief summary.
 
-: svn move FILE_A FILE_B
-    Use this when you need to move or rename a file in the repository
+: ``svn add FILE``
+    Add FILE to the repository--the file will actually be added on your next
+    ``svn commit``.
+
+: ``svn move FILE_A FILE_B``
+    Move/rename FILE_A to FILE_B. Use this for all renaming or moving of
+    files you've checked out.
 
 
 See the
@@ -46,19 +52,34 @@ and [Version Control with Subversion http://svnbook.red-bean.com/] to learn more
 
 ==Automated secure login==
 
-When communicating with the svn server, your shell will prompt you for your BerliOS password each time. You can automate password giving with **ssh-agent**. Genereate a public key and place it on the BerliOS servers:
+Normally, when you do anything with ``svn``, you'll be prompted for your
+BerliOS password. If you're sick of typing it repeatedly, you can do secure,
+automated login with **ssh-agent**. Here's how:
+
+First, create authentication keys that will be used to verify your identity
+(If you have files ``~/.ssh/id_rsa`` and ``~/.ssh/id_rsa.pub``, you can skip
+this step):
 
 ```
 $ ssh-keygen -t rsa
+```
+
+Next, copy your public key to BerliOS--this will let BerliOS authenticate you
+on future logins:
+
+```
 $ ssh-copy-id -i ~/.ssh/id_rsa.pub username@shell.berlios.de
 ```
 
-Then, before you startx or after you open a new terminal, start the ssh-agent and add your public keys to the session:
+Then, before you startx or after you open a new terminal, start the ssh-agent
+and add your public keys to the session:
 
 ```
 $ ssh-agent
 $ ssh-add
 ```
+
+No more passwords--and you're still getting logged in securely!
 
 
 ==Errors==
@@ -75,7 +96,7 @@ Transmitting file data .................svn: Commit failed (details follow):
 svn: Out of date: '/trunk/tovid/docs/man/idvid.1' in transaction '190-1'
 ```
 
-(Need to ``svn update`` to fix?)
+This usually means you need to run ``svn update``.
 
 
 ===Failed to add===
@@ -102,9 +123,9 @@ U    makemenu.t2t
 Updated to revision 189.
 ```
 
-See the ``C`` next to ``install.t2t``? That means there was an edit
-conflict; you edited the file, but at the same time someone else committed
-changes to the repository.
+See the ``C`` next to ``install.t2t``? That means there was an edit conflict;
+you edited the file, but at the same time someone else committed changes to the
+repository.
 
 You'll also notice some temporary files that appear, with names like
 ``install.t2t.r189`` and ``install.t2t.mine``. You can manually shuffle these
