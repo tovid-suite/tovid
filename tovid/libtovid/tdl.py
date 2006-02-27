@@ -147,9 +147,17 @@ Instead, perhaps something like this:
         matching (set) options found, w/ defaults for all others.
         Better suited to parsing command-line options; no need to
         create artificial Menu/Video/Disc elements from pytovid, etc.
-    project.load(file): looks for Menu/Video/Disc declarations, builds
-        project hierarchy
+    tdl.getelements(string|file): looks for Menu/Video/Disc declarations, builds
+        project hierarchy.
+        
+Merge tdl.py and project.py.
 
+Note: Learn more about PendingDeprecationWarning (possibly for use by libtovid
+for deprecating features). Mentioned here:
+
+    http://www.python.org/doc/2.3.5/lib/module-exceptions.html
+
+    
 """
 import sys
 import copy
@@ -244,43 +252,48 @@ class Parser:
         print args
 
         # Create a lexer
-        self.lexer = shlex.shlex(posix = True)
+        self.lexer = shlex.shlex(posix = False)
         # Push args onto the lexer (in reverse order)
         self.lexer.push_token(None)
         while len(args) > 0:
             self.lexer.push_token(args.pop())
         return self.parse()
 
-
-    # TODO: Make this function useful for turning on/off debugging
-    # or interactive output (?)
     def next_token(self):
-        """Get the next token and print it out.
-        
-        This is a wrapper for lexer.get_token(), mainly for
-        producing debugging output. Cleanup later."""
-
+        """Return the next token in the lexer."""
         tok = self.lexer.get_token()
         if tok:
-            #print "Got '%s'" % tok
-            pass
+            log.debug("next_token: Got '%s'" % tok)
         else:
-            #print "Got EOF"
-            pass
+            log.debug("next_token: Got EOF")
         return tok
 
+    def is_keyword(self, arg):
+        """Return True if the given argument is an element option name."""
+        # If it matches 'Menu', 'Disc', 'Video'
+        if arg in element_defs:
+            return True
+        # If it matches any 'Menu' option, 'Disc' option, or 'Video' option
+        for tag in element_defs:
+            if arg.lstrip('-') in element_defs[tag]:
+                return True
+        return False
 
+    def error(self, message):
+        """Print an error message and raise an exception."""
+        log.debug(self.lexer.error_leader())
+        log.error(message)
+        sys.exit()
+        
     # TODO: Modularize this function better, splitting some chunks
     # into other (private) functions
     def parse(self):
         """Parse all text in self.lexer and return a
         list of Elements filled with appropriate
         attributes"""
-
         # Set rules for splitting tokens
         self.lexer.wordchars = self.lexer.wordchars + ".:-%()/"
         self.lexer.whitespace_split = False
-
         # Begin with an empty list of elements
         element = None
         self.elements = []
@@ -295,6 +308,9 @@ class Parser:
 
             elif token in ['Disc', 'Menu', 'Video']:
                 name = self.next_token()
+                if self.is_keyword(name):
+                    self.error('Expecting name to follow %s (got %s)' % \
+                            (token, name))
                 if token == 'Disc':
                     element = Disc(name)
                 elif token == 'Menu':
@@ -313,13 +329,21 @@ class Parser:
                 expected_args = element.optiondefs[opt].num_args()
                 print "%s expects %s args" % (opt, expected_args)
 
+                # Is this option an alias (short-form) of another option?
+                # (i.e., -vcd == -format vcd)
+                if element.optiondefs[opt].alias:
+                    key, value = element.optiondefs[opt].alias
+                    element.set(key, value)
+                    
                 # No args? Must just be a flag--set it to True
-                if expected_args == 0:
+                elif expected_args == 0:
                     element.set(opt, True)
 
                 # One arg? Easy...
                 elif expected_args == 1:
                     arg = self.next_token()
+                    if self.is_keyword(arg):
+                        self.error('-%s option expects an argument.' % opt)
                     # TODO: Get validation working properly
                     # if element_defs[element.tag][opt].is_valid(arg):
                     #     element.set(opt, arg)
@@ -331,37 +355,21 @@ class Parser:
                 # and look for comma-separation.
                 elif expected_args < 0:
                     arglist = []
-
                     next = self.next_token()
-                    # Ignore optional opening bracket
-                    if next == '[':
+                    # While the next token is not a keyword
+                    if self.is_keyword(next):
+                        self.error('-%s option expects one or more arguments.' \
+                                % opt)
+                    # Until the next keyword is reached, add to list
+                    while next and not self.is_keyword(next):
+                        # Ignore any surrounding [ , , ]
+                        arglist.append(next.lstrip('[').rstrip(',]'))
                         next = self.next_token()
-
-                    # Append the first argument to the list
-                    arglist.append(next)
-
-                    # Read the next token, and keep appending
-                    # as long as there are more commas
-                    next = self.next_token()
-                    while next == ',':
-                        next = self.next_token()
-                        arglist.append(next)
-                        next = self.next_token()
-
-                    # Ignore optional closing bracket
-                    if next == ']':
-                        pass
-                    else:
-                        # Put the last-read token back
-                        self.lexer.push_token(next)
-
+                    # Put the last-read token back
+                    self.lexer.push_token(next)
                     element.set(opt, arglist)
-
-
             else:
-                print self.lexer.error_leader()
-                print "parse(): Unrecognized token: %s" % token
-
+                self.error("Unrecognized token: %s" % token)
 
         return self.elements
 

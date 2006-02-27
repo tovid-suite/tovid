@@ -46,8 +46,10 @@ class VideoPlugin:
         # (Only DVD supports this)
         if src_aspect >= 1.7 and self.video['format'] == 'dvd':
             tgt_aspect = 16.0/9.0
+            self.widescreen = True
         else:
             tgt_aspect = 4.0/3.0
+            self.widescreen = False
         # If aspect matches target, no letterboxing is necessary
         # (Match within a tolerance of 0.05)
         if abs(src_aspect - tgt_aspect) < 0.05:
@@ -70,6 +72,15 @@ class VideoPlugin:
         self.scale = scale
         self.expand = expand
         self.tgt_aspect = tgt_aspect
+        # Other commonly-used values
+        if 'dvd' in self.video['format']:
+            self.samprate = 48000
+        else:
+            self.samprate = 44100
+        if self.video['tvsys'] == 'pal':
+            self.fps = '25.0'
+        elif self.video['tvsys'] == 'ntsc':
+            self.fps = '29.97'
 
 
     def run(self):
@@ -190,15 +201,10 @@ class MencoderEncoder(VideoPlugin):
         # TODO: Implement safe area calculation
         
         # Audio settings
-        # The following cause segfaults on mencoder 1.0pre7try2-3.3.6 (Gentoo)
-        # when the input file's audio bitrate already matches.
-        # Can anyone confirm?
-        if 'dvd' in self.video['format']:
-            if self.infile.audio.samprate != 48000:
-                cmd += ' -srate 48000 -af lavcresample=48000 '
-        else:
-            if self.infile.audio.samprate != 44100:
-                cmd += ' -srate 44100 -af lavcresample=44100 '
+        # Adjust sampling rate if necessary
+        if self.infile.audio and self.infile.audio.samprate != self.samprate:
+            cmd += ' -srate %s -af lavcresample=%s ' % \
+                    (self.samprate, self.samprate)
     
         # Video codec
         if self.video['format'] == 'vcd':
@@ -239,7 +245,7 @@ class MencoderEncoder(VideoPlugin):
         else:
             lavcopts += ':vrc_buf_size=1835'
         # Set appropriate target aspect
-        if self.tgt_aspect == 16.0/9.0:
+        if self.widescreen:
             lavcopts += ':aspect=16/9'
         else:
             lavcopts += ':aspect=4/3'
@@ -249,7 +255,7 @@ class MencoderEncoder(VideoPlugin):
         # FPS
         if self.video['tvsys'] == 'pal':
             cmd += ' -ofps 25/1 '
-        else:
+        elif self.video['tvsys'] == 'ntsc':
             cmd += ' -ofps 30000/1001 ' # ~= 29.97
     
         # Scale/expand to fit target frame
@@ -269,10 +275,40 @@ class FfmpegEncoder(VideoPlugin):
     def get_ffmpeg_cmd(self):
         """Return ffmpeg command for encoding the current video."""
         cmd = 'ffmpeg -i "%s" ' % self.video['in']
-        if self.video['tvsys'] in ['pal', 'ntsc']:
+        # Format and TV system
+        if self.video['format'] in ['vcd', 'svcd', 'dvd']:
             cmd += ' -tvstd %s ' % self.video['tvsys']
+            cmd += ' -target %s-%s ' % \
+                    (self.video['format'], self.video['tvsys'])
+        # FPS
+        if self.video['tvsys'] == 'pal':
+            cmd += ' -r 25.00 '
+        elif self.video['tvsys'] == 'ntsc':
+            cmd += ' -r 29.97 '
+        # Audio sampling rate
+        if 'dvd' in self.video['format']:
+            cmd += ' -ar 48000 '
+        else:
+            cmd += ' -ar 44100 '
+
+        # Convert scale/expand to ffmpeg's padding system
         if self.scale:
             cmd += ' -s %sx%s ' % self.scale
+        if self.expand:
+            e_width, e_height = self.expand
+            s_width, s_height = self.scale
+            h_pad = (e_width - s_width) / 2
+            v_pad = (e_height - s_height) / 2
+            if h_pad > 0:
+                cmd += ' -padleft %s -padright %s ' % (h_pad, h_pad)
+            if v_pad > 0:
+                cmd += ' -padtop %s -padbottom %s ' % (v_pad, v_pad)
+        if self.widescreen:
+            cmd += ' -aspect 16:9 '
+        else:
+            cmd += ' -aspect 4:3 '
+
+        return cmd
     
 
 """

@@ -15,7 +15,7 @@ import sys
 from libtovid.log import Log
 log = Log('VideoPlugins')
 
-def video_to_images(infile, start = 0, end = 0, scale = (0, 0)):
+def video_to_images(infile, start=0, end=0, scale=(0,0)):
     """Convert a video file to a sequence of images, starting and ending at the
     given times in seconds. Returns directory name where the images are saved.
 

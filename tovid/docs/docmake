@@ -4,9 +4,9 @@
 """Quick-and-dirty 'make' tool for building tovid documentation."""
 
 import os, sys, glob
-# Get TDL
+# Get tdl
 import libtovid
-from libtovid import TDL
+#from libtovid import tdl
 # Get mypydoc
 import mypydoc
 
@@ -86,20 +86,20 @@ def generate_pydocs():
 
     
 def generate_tdl_t2t():
-    """Generate t2t versions of the TDL documentation defined in TDL.py."""
+    """Generate t2t versions of the TDL documentation defined in tdl.py."""
     # For now, just generate a single file containing TDL usage notes
     t2t_str = "tovid design language\n\n\n" \
     + "==Disc==\n\n" \
     + "```\n" \
-    + TDL.usage('Disc') \
+    + tdl.usage('Disc') \
     + "```\n\n" \
     + "==Menu==\n\n" \
     + "```\n" \
-    + TDL.usage('Menu') \
+    + tdl.usage('Menu') \
     + "```\n\n" \
     + "==Video==\n\n" \
     + "```\n" \
-    + TDL.usage('Video') \
+    + tdl.usage('Video') \
     + "```\n\n"
 
     os.popen("rm -f %s/en/tdl.t2t" % source_dir)

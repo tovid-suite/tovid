@@ -28,12 +28,14 @@ class OptionDef:
     expected argument formatting, a default value, and a string documenting the
     option's purpose and/or usage information."""
 
-    def __init__(self, name, argformat, default, doc = "Undocumented option"):
+    def __init__(self, name, argformat, default, doc="Undocumented option",
+            alias=None):
         """Create a new option definition with the given attributes."""
         self.name = name
         self.argformat = argformat
         self.default = default
         self.doc = trim(doc)
+        self.alias = alias
 
     def num_args(self):
         """Return the number of arguments expected by this option, or -1 if
