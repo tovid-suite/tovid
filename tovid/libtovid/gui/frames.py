@@ -1,12 +1,6 @@
-# ###################################################################
-# ###################################################################
-#
-#
-#                             FRAMES
-#
-#
-# ###################################################################
-# ###################################################################
+#! /usr/bin/env python
+# frames.py
+
 import os
 import wx
 
@@ -19,13 +13,10 @@ from libtovid.gui.panels import AuthorFilesTaskPanel, GuidePanel
 from libtovid.gui.util import _
 
 __all__ = ["MainFrame", "MiniEditorFrame"]
-# ===================================================================
-#
-# CLASS DEFINITION
-# Main tovid GUI frame. Contains and manages all sub-panels.
-#
-# ===================================================================
+
 class MainFrame(wx.Frame):
+    """Main tovid GUI frame. Contains and manages all sub-panels."""
+
     def __init__(self, parent, id, title):
         wx.Frame.__init__(self, parent, id , title, wx.DefaultPosition,
             (800, 600), wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
@@ -205,43 +196,27 @@ class MainFrame(wx.Frame):
         if ((controlDown) and ("Q" == chr(key))):
             self.Close()
 
-    # ==========================================================
-    # Open preferences window and set configuration
-    # ==========================================================
     #def OnFilePrefs(self, evt):
+    #    """Open preferences window and set configuration"""
     #    dlgPrefs = PreferencesDialog(self, wx.ID_ANY)
     #    dlgPrefs.ShowModal()
     #    # Set the output directory in the PreEncoding panel
     #    self.panEncoding.SetOutputDirectory(self.curConfig.strOutputDirectory)
           
-# ===================================================================
-# End MainFrame
-# ===================================================================
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# Simple text editor (for editing configuration files) in a frame
-#
-# ===================================================================
 class MiniEditorFrame(wx.Frame):
-    # ==========================================================
-    # Initialize MiniEditorFrame
-    # Takes same arguments as a frame, in addition to a filename
-    # ==========================================================
+    """Simple text editor (for editing configuration files) in a frame"""
     def __init__(self, parent, id, filename):
-        wx.Frame.__init__(self, parent, id, "%s (MiniEditor)" % filename, wx.DefaultPosition,
-            (500, 400), wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
+        wx.Frame.__init__(self, parent, id, "%s (MiniEditor)" % filename, \
+            wx.DefaultPosition, (500, 400), \
+            wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
 
         # Current directory is current dirname
         self.dirname = os.getcwd()
-
         # Center dialog
         self.Centre()
-
         # Menu bar
         self.menubar = wx.MenuBar()
-        
         # File menu
         self.menuFile = wx.Menu()
         self.menuFile.Append(ID_MENU_FILE_NEW, "&New", "Start a new file")
@@ -250,29 +225,24 @@ class MiniEditorFrame(wx.Frame):
         self.menuFile.Append(ID_MENU_FILE_SAVE, "&Save", "Save current file")
         self.menuFile.AppendSeparator()
         self.menuFile.Append(ID_MENU_FILE_EXIT, "E&xit", "Exit mini editor")
-        
         # Menu events
         wx.EVT_MENU(self, ID_MENU_FILE_NEW, self.OnNew)
         wx.EVT_MENU(self, ID_MENU_FILE_OPEN, self.OnOpen)
         wx.EVT_MENU(self, ID_MENU_FILE_SAVE, self.OnSave)
         wx.EVT_MENU(self, ID_MENU_FILE_EXIT, self.OnExit)
-
         # Build menubar
         self.menubar.Append(self.menuFile, "&File")
         self.SetMenuBar(self.menubar)
-
         # Editor window
         self.editWindow = wx.Editor(self, wx.ID_ANY, style = wx.SUNKEN_BORDER)
         self.sizMain = wx.BoxSizer(wx.VERTICAL)
         self.sizMain.Add(self.editWindow, 1, wx.EXPAND | wx.ALL, 6)
-
         # Open the given filename and load its text into the editor window
         self.OpenFile(filename)
-
         self.SetSizer(self.sizMain)
 
-    # Create a new file
     def OnNew(self, evt):
+        """Edit a new file"""
         # Just empty edit window and set filename to null
         self.editWindow.SetText([""])
         self.currentFilename = ""
@@ -290,19 +260,21 @@ class MiniEditorFrame(wx.Frame):
         inFileDialog.Destroy()
 
     def OnSave(self, evt):
-        # Save current file. If currentFilename is set, just overwrite existing
+        """Save the current file."""
         if self.currentFilename:
             # Save the current filename (prompt for overwrite)
-            confirmDialog = wx.MessageDialog(self, _("Overwrite the existing file?"),
-                _("Confirm overwrite"), wx.YES_NO)
+            confirmDialog = wx.MessageDialog(self, \
+                    _("Overwrite the existing file?"), \
+                    _("Confirm overwrite"), wx.YES_NO)
             # If not overwriting, return now
             if confirmDialog.ShowModal() == wx.ID_NO:
                 return
 
         # currentFilename is empty; prompt for a filename
         else:
-            outFileDialog = wx.FileDialog(self, _("Choose a filename to save"), self.dirname,
-                "", "*.*", wx.SAVE)
+            outFileDialog = wx.FileDialog(self, \
+                    _("Choose a filename to save"), \
+                    self.dirname, "", "*.*", wx.SAVE)
             if outFileDialog.ShowModal() == wx.ID_OK:
                 self.dirname = outFileDialog.GetDirectory()
                 self.currentFilename = outFileDialog.GetPath()
@@ -311,18 +283,16 @@ class MiniEditorFrame(wx.Frame):
         for line in self.editWindow.GetText():
             outFile.write("%s\n" % line)
         outFile.close()
-
         # Update title bar
         self.SetTitle("%s (MiniEditor)" % self.currentFilename)
 
     def OnExit(self, evt):
         self.Close(True)
 
-    # Open the given filename
     def OpenFile(self, filename):
+        """Open the given filename in the editor."""
         # Save the filename locally
         self.currentFilename = filename
-
         # Create the file input stream
         inFile = open(filename, 'r')
         buffer = inFile.readline()
@@ -332,13 +302,9 @@ class MiniEditorFrame(wx.Frame):
             buffer = inFile.readline()
             # Append file's text to a string
             strEditText.append(buffer)
-
         # Fill the editor window with the text buffer
         self.editWindow.SetText(strEditText)
         inFile.close()
-
         # Update titlebar text
         self.SetTitle("%s (MiniEditor)" % self.currentFilename)
-# ===================================================================
-# End MiniEditorFrame
-# ===================================================================
+
