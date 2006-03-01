@@ -111,17 +111,14 @@ def generate_all_html():
             outfile = '%s/%s/%s.html' % \
                     (dest_dir, trans_dir, os.path.basename(t2tfile)[:-4])
             
-            if regen_all:
+            # If the .t2t source is newer than the existing HTML target,
+            # recreate the HTML.
+            if newer(t2tfile, outfile):
+                print "Source file: %s is new. Regenerating %s" % \
+                    (t2tfile, outfile)
                 generate_html(t2tfile, outfile)
             else:
-                # If the .t2t source is newer than the existing HTML target,
-                # recreate the HTML.
-                if newer(t2tfile, outfile):
-                    print "Source file: %s is new. Regenerating %s" % \
-                        (t2tfile, outfile)
-                    generate_html(t2tfile, outfile)
-                else:
-                    print "Skipping file: %s" % t2tfile
+                print "Skipping file: %s" % t2tfile
 
 
 if __name__ == '__main__':
