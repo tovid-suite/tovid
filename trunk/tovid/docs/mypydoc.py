@@ -49,34 +49,36 @@ import datetime
 import re, sys, inspect, __builtin__
 from string import join, split, lower
 
-def strip_indentation(block):
-    """Strip leading indentation from a multi-line string literal.
+def trim(text):
+    """Strip leading indentation from a block of text.
+
+    Borrowed from http://www.python.org/peps/pep-0257.html 
+    """
+    if not text:
+        return ''
+    # Split text into lines, converting tabs to spaces
+    lines = text.expandtabs().splitlines()
+    # Determine minimum indentation (except first line)
+    indent = sys.maxint
+    for line in lines[1:]:
+        stripped = line.lstrip()
+        if stripped:
+            indent = min(indent, len(line) - len(stripped))
+    # Remove indentation (first line is special)
+    trimmed = [lines[0].strip()]
+    if indent < sys.maxint:
+        for line in lines[1:]:
+            # Append line, minus indentation
+            trimmed.append(line[indent:].rstrip())
+    # Strip leading blank lines
+    while trimmed and not trimmed[0]:
+        trimmed.pop(0)
+    # Strip trailing blank lines
+    while trimmed and not trimmed[-1]:
+        trimmed.pop()
+    # Return a string, rejoined with newlines
+    return '\n'.join(trimmed)
     
-    Stolen from Brett Levin:
-    http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/145672"""
-
-    # Split block into lines
-    lines = str(block).split('\n')
-    if not lines: return block
-
-    # If there's only one line, strip leading whitespace and return
-    if len(lines) < 2:
-        return block.lstrip(' \t')
-
-    # Strip leading/trailing empty lines
-    while not lines[0]: del lines[0]
-    while not lines[-1]: del lines[-1]
-
-    # Find first non-blank line after first line
-    nonblank = 1
-    while nonblank < len(lines) and not lines[nonblank]: nonblank += 1
-    # Give all lines indentation relative to the first non-blank line
-    ws = re.match(r'\s*',lines[nonblank]).group(0)
-    if ws:
-        lines = map(lambda x: x.replace(ws,'',1), lines)
-
-    # Rejoin and return the block
-    return '\n'.join(lines) + '\n'
 
 # safeimport, locate and resolve Stolen from pydoc.py
 # (Clean up and rewrite later)
@@ -166,7 +168,7 @@ class HTMLGenerator:
         if not text: return
         # Replace '<' with '&lt;'
         text = text.replace('<', '&lt;')
-        text = strip_indentation(text)
+        text = trim(text)
         if linenum:
             lines = text.split('\n')
             self.emit('''<pre class="%s">''' % css_class)
@@ -245,7 +247,9 @@ class HTMLGenerator:
         if methods:
             self.emit('''<dl class="method">''')
             for name, method in methods:
-                self.doc_function(method.im_func)
+                # Only document methods defined in this class's module
+                if inspect.getmodule(method) == inspect.getmodule(cls):
+                    self.doc_function(method.im_func)
             self.emit('''</dl>''')
         self.emit('''</dd>''')
         

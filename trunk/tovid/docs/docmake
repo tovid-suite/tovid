@@ -6,6 +6,7 @@
 import os, sys, glob
 # Get tdl
 import libtovid
+from libtovid import gui
 #from libtovid import tdl
 # Get mypydoc
 import mypydoc
@@ -22,7 +23,18 @@ man_pages = ['tovid', 'idvid', 'makemenu', 'makedvd', \
     'makeslides', 'makexml', 'postproc']
 
 # Subdirectories of source_dir containing translations to build
-translation_subdirs = [ 'en', 'es' ]
+translation_subdirs = ['en', 'es']
+
+
+# Add full names of python modules to document with pydoc
+pydoc_modules = []
+mods = libtovid.__all__
+for mod in mods:
+    pydoc_modules.append('libtovid.%s' % mod)
+mods = libtovid.gui.__all__
+for mod in mods:
+    pydoc_modules.append('libtovid.gui.%s' % mod)
+
 
 def newer(source, target):
     """Return True if the source file is more recently modified than the
@@ -36,13 +48,14 @@ def newer(source, target):
     return source_mod > target_mod
 
     
-def generate_t2t_tarball():
+def generate_t2t_tarballs():
     """Create tar/gzip of all t2t sources in the html/download directory."""
     print "Generating .tar.gz of all .t2t sources..."
     for lang in translation_subdirs:
-        cmd = 'tar --exclude .svn -czvvf %s/download/tovid_t2t_%s.tar.gz src/%s' % \
-                (dest_dir, lang, lang)
+        cmd = 'tar --exclude .svn -czvvf tovid_t2t_%s.tar.gz src/%s' % \
+                (lang, lang)
         os.system(cmd)
+        print "Generated tovid_t2t_%s.tar.gz" % lang
 
 
 def generate_manpages():
@@ -60,6 +73,22 @@ def generate_manpage(t2tfile, manfile):
     os.system(cmd)
 
 
+def generate_pydocs():
+    print "Generating HTML documentation of libtovid Python sources"
+    for mod in pydoc_modules:
+        print "Writing %s/pydocs/%s.html" % (dest_dir, mod)
+        htmlfile = open("%s/pydocs/%s.html" % (dest_dir, mod), 'w')
+        gen = mypydoc.HTMLGenerator()
+        html = gen.document(mod)
+        if html:
+            htmlfile.write(html)
+            htmlfile.close()
+        else:
+            print "Couldn't generate docs for %s" % mod
+        # Run tidy on HTML output
+        #os.popen2("tidy -utf8 -i -m %s" % htmlfile)
+
+
 def generate_html(t2tfile, htmlfile):
     cmd = 'txt2tags -i %s -o %s' % (t2tfile, htmlfile)
     cmd += ' --encoding iso-8859-1'
@@ -70,68 +99,9 @@ def generate_html(t2tfile, htmlfile):
     # Run tidy on HTML output
     #os.popen2("tidy -utf8 -i -m %s" % htmlfile)
 
-
-def generate_pydocs():
-    print "Generating HTML documentation of libtovid Python sources"
-    for mod in libtovid.__all__:
-        mod = "libtovid.%s" % mod
-        print "Writing %s/pydocs/%s.html" % (dest_dir, mod)
-        htmlfile = open("%s/pydocs/%s.html" % (dest_dir, mod), 'w')
-        gen = mypydoc.HTMLGenerator()
-        html = gen.document(mod)
-        htmlfile.write(html)
-        htmlfile.close()
-        # Run tidy on HTML output
-        #os.popen2("tidy -utf8 -i -m %s" % htmlfile)
-
     
-def generate_tdl_t2t():
-    """Generate t2t versions of the TDL documentation defined in tdl.py."""
-    # For now, just generate a single file containing TDL usage notes
-    t2t_str = "tovid design language\n\n\n" \
-    + "==Disc==\n\n" \
-    + "```\n" \
-    + tdl.usage('Disc') \
-    + "```\n\n" \
-    + "==Menu==\n\n" \
-    + "```\n" \
-    + tdl.usage('Menu') \
-    + "```\n\n" \
-    + "==Video==\n\n" \
-    + "```\n" \
-    + tdl.usage('Video') \
-    + "```\n\n"
-
-    os.popen("rm -f %s/en/tdl.t2t" % source_dir)
-    t2tfile = open('%s/en/tdl.t2t' % source_dir, 'w')
-    t2tfile.write(t2t_str)
-    t2tfile.close()
-
-
-if __name__ == '__main__':
-
-    print "tovid documentation maker"
-
-    regen_all = False
-    for arg in sys.argv[1:]:
-        # Regenerate all HTML files
-        if arg == 'all':
-            regen_all = True
-        # Generate manpages only (then exit)
-        elif arg == 'man':
-            generate_manpages()
-            sys.exit()
-        # Generate pydocs only (then exit)
-        elif arg == 'pydocs':
-            generate_pydocs()
-            sys.exit()
-
-
-    # Default: Generate HTML versions of all .t2t sources
-
-    #generate_t2t_tarball()
-    #generate_tdl_t2t()
-
+def generate_all_html():
+    print "Generating HTML for all translations of documentation."
     # Convert all language translations (.t2t sources) to HTML
     for trans_dir in translation_subdirs:
         print "Looking for .t2t sources in %s/%s" % (source_dir, trans_dir)
@@ -154,4 +124,25 @@ if __name__ == '__main__':
                     print "Skipping file: %s" % t2tfile
 
 
-    print "Done!"
+if __name__ == '__main__':
+
+    usage = "Usage: docmake [targets], where targets may be:\n"
+    usage += "manpages, pydocs, tarballs, or html (or any combination)\n"
+
+    print "tovid documentation maker"
+    if len(sys.argv) < 2:
+        print usage
+        sys.exit()
+    for arg in sys.argv[1:]:
+        if arg == 'manpages':
+            generate_manpages()
+        elif arg == 'pydocs':
+            generate_pydocs()
+        elif arg == 'tarballs':
+            generate_t2t_tarballs()
+        elif arg == 'html':
+            generate_all_html()
+        else:
+            print usage
+            print "Unknown argument: %s" % arg
+
