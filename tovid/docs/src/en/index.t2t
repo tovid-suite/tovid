@@ -35,6 +35,10 @@ Interested? Check out the [installation instructions install.html], and
 
 (Newest on top)
 
+- 2006-02-28:
+    You can now get [daily releases from FTP ftp://ftp.berlios.de/pub/tovid].
+    Just download the latest tarball, and [install normally install.html]!
+    If you try it, please [give feedback contributing.html] to the developers.
 - 2006-02-10:
     tovid 0.25 is released; see the
     [release notes http://www.createphpbb.com/tovid/viewtopic.php?t=95&mforum=tovid] for details.
