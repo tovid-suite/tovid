@@ -1,15 +1,10 @@
-# ###################################################################
-# ###################################################################
-#
-#
-#                               PANELS
-#
-#       
-# ###################################################################
-# ###################################################################
+#! /usr/bin/env python
+# panels.py
+
 import os
 import wx
 
+import libtovid
 from libtovid.gui.configs import TovidConfig
 from libtovid.gui.constants import *
 from libtovid.gui.controls import BoldToggleButton, FlexTreeCtrl, HeadingText
@@ -19,23 +14,10 @@ from libtovid.gui.options import DiscOptions, MenuOptions, VideoOptions
 from libtovid.gui import util
 from libtovid.gui.util import _, VER_GetFirstChild, VideoStatSeeker, element_to_options
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# AuthorFilesTaskPanel. Handles 3-step authoring from video files,
-# using DiscLayoutPanel, EncodingPanel, and BurnDiscPanel.
-#
-# ===================================================================
 class AuthorFilesTaskPanel(wx.Panel):
-    # ==========================================================
-    #
-    # Internal functions and event handlers
-    #
-    # ==========================================================
+    """A three-step interface for authoring video files to disc.
+    Uses DiscLayoutPanel, EncodingPanel, and BurnDiscPanel."""
 
-    # ==========================================================
-    # Initialize AuthorFilesTaskPanel
-    # ==========================================================
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
 
@@ -111,34 +93,31 @@ class AuthorFilesTaskPanel(wx.Panel):
         return self.panDiscLayout.GetElements()
 
 
-    # Set encoding to OK/not OK (True/False)
     def EncodeOK(self, ok):
+        """Indicate whether it's okay to begin encoding."""
         if ok == True:
             self.btnEncode.Enable(True)
         else:
             self.btnEncode.Enable(False)
 
-    # Set burning to OK/not OK (True/False)
     def BurnOK(self, ok):
+        """Indicate whether it's okay to begin burning."""
         if ok:
             self.btnBurn.Enable(True)
         else:
             self.btnBurn.Enable(False)
 
-    # Layout button
     def OnLayout(self, evt):
+        """Display controls for doing disc layout."""
         # Set buttons
         self.btnLayout.SetValue(True)
         self.btnEncode.SetValue(False)
         self.btnBurn.SetValue(False)
-
         # If Layout is showing, do nothing else
         if self.curPanel == self.panDiscLayout:
             return
-
         # Clear Encoding panel command list
         self.panEncoding.panCmdList.Clear()
-
         # Show Layout panel
         self.curPanel = self.panDiscLayout
         self.sizTask.Remove(0)
@@ -152,21 +131,18 @@ class AuthorFilesTaskPanel(wx.Panel):
         self.btnLayout.SetValue(True)
         self.btnEncode.SetValue(False)
         self.btnBurn.SetValue(False)
-
         # Set appropriate guide text
         self.curConfig.panGuide.SetTask(ID_TASK_GETTING_STARTED)
 
-    # Encode button
     def OnEncode(self, evt):
+        """Display controls for encoding."""
         # Set buttons
         self.btnLayout.SetValue(False)
         self.btnEncode.SetValue(True)
         self.btnBurn.SetValue(False)
-
         # If Encode is showing, do nothing else
         if self.curPanel == self.panEncoding:
             return
-        
         # Show Encode panel
         self.curPanel = self.panEncoding
         self.sizTask.Remove(0)
@@ -176,24 +152,21 @@ class AuthorFilesTaskPanel(wx.Panel):
         self.panEncoding.Show()
         self.sizTask.Layout()
         self.curPanel = self.panEncoding
-
         # Give command list to encoding panel
         cmdList = self.panDiscLayout.GetAllCommands()
         self.panEncoding.SetCommands(cmdList)
         # Set appropriate guide text
         self.curConfig.panGuide.SetTask(ID_TASK_PREP_ENCODING)
 
-    # Burn button
     def OnBurn(self, evt):
+        """Display controls for burning the disc."""
         # Set buttons
         self.btnLayout.SetValue(False)
         self.btnEncode.SetValue(False)
         self.btnBurn.SetValue(True)
-
         # If Burn is showing, do nothing
         if self.curPanel == self.panBurnDisc:
             return
-
         # Show Burn panel
         self.curPanel = self.panBurnDisc
         self.sizTask.Remove(0)
@@ -206,27 +179,10 @@ class AuthorFilesTaskPanel(wx.Panel):
         # Set appropriate guide text
         self.curConfig.panGuide.SetTask(ID_TASK_BURN_DISC)
 
-# ===================================================================
-# End AuthorFilesTaskPanel
-# ===================================================================
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# Disc-burning panel. Show controls for authoring and burning the
-# disc.
-#
-# ===================================================================
 class BurnDiscPanel(wx.Panel):
-    # ==========================================================
-    #
-    # Internal functions and event handlers
-    #
-    # ==========================================================
+    """A panel of controls for burning a disc"""
 
-    # ==========================================================
-    # Initialize BurnDiscPanel
-    # ==========================================================
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
 
@@ -242,12 +198,12 @@ class BurnDiscPanel(wx.Panel):
         self.chkDoAuthor = wx.CheckBox(self, wx.ID_ANY, "Author disc structure")
         self.chkDoImage = wx.CheckBox(self, wx.ID_ANY, "Create disc image (.iso)")
         self.chkDoBurn = wx.CheckBox(self, wx.ID_ANY, "Burn disc")
-        self.chkDoAuthor.SetToolTipString("Create the disc filesystem hierarchy " \
-            "using dvdauthor")
-        self.chkDoImage.SetToolTipString("Create an .iso image of the disc before" \
-            "burning")
+        self.chkDoAuthor.SetToolTipString("Create the disc filesystem " \
+                "hierarchy using dvdauthor")
+        self.chkDoImage.SetToolTipString("Create an .iso image of the " \
+                "disc before burning")
         self.chkDoBurn.SetToolTipString("Burn the image to the selected " \
-            "device")
+                "device")
         self.chkDoAuthor.SetValue(self.doAuthor)
         self.chkDoImage.SetValue(self.doImage)
         self.chkDoBurn.SetValue(self.doBurn)
@@ -286,26 +242,21 @@ class BurnDiscPanel(wx.Panel):
         self.sizMain.Add(self.btnStart, 0, wx.EXPAND | wx.ALL, 8)
         self.SetSizer(self.sizMain)
     
-    # ==========================================================
-    # Turn on/off authoring, imaging, or burning
-    # ==========================================================
     def OnDoAuthor(self, evt):
         self.doAuthor = evt.Checked()
+        
     def OnDoImage(self, evt):
         self.doImage = evt.Checked()
+
     def OnDoBurn(self, evt):
         self.doBurn = evt.Checked()
 
-    # ==========================================================
-    # Use selected device
-    # ==========================================================
     def OnSetDevice(self, evt):
+        """Use the selected device."""
         self.device = self.txtDiscDevice.GetValue()
 
-    # ==========================================================
-    # Author (and burn) the disc
-    # ==========================================================
     def OnStart(self, evt):
+        """Begin authoring and burning the disc."""
         # Get global config (for XML filename and format)
         curConfig = TovidConfig()
 
@@ -338,10 +289,8 @@ class BurnDiscPanel(wx.Panel):
         self.panCmdList.Execute(strAuthorCmd)
         self.panCmdList.Start()
 
-    # ==========================================================
-    # Signify that disc burning is done
-    # ==========================================================
     def ProcessingDone(self, errorOccurred):
+        """Signify that disc burning is done."""
         # Let user know if error(s) occurred
         if errorOccurred:
             msgError = wx.MessageDialog(self,
@@ -360,25 +309,17 @@ class BurnDiscPanel(wx.Panel):
             msgSuccess.ShowModal()
 
 
-# ===================================================================
-# End BurnDiscPanel
-# ===================================================================import wx
 
 # ===================================================================
-#
-# CLASS DEFINITION
-# Command output panel. Specialized panel with a text box
-# that captures and prints the output from enqueued command-line
-# processes.
-#
-# To use CommandOutputPanel, the parent should implement a function
-# ProcessingDone(bool errStatus), which is called by CommandOutputPanel
-# to notify the parent that the panel is done running commands.
-# Presumably, the commands that are executing must finish before
-# proceeding with another operation, so this function is used to let
-# the parent know that the commands are done executing.
-# ===================================================================
 class CommandOutputPanel(wx.Panel):
+    """A panel for executing and logging command-lines.
+
+    To use CommandOutputPanel, the parent should implement a function
+    ProcessingDone(bool errStatus), which is called by CommandOutputPanel to
+    notify the parent that the panel is done running commands.  Presumably, the
+    commands that are executing must finish before proceeding with another
+    operation, so this function is used to let the parent know that the commands
+    are done executing."""
     # Current (running) process
     process = None
     # Has an error occurred in any of the commands?
@@ -387,15 +328,6 @@ class CommandOutputPanel(wx.Panel):
     strCmdQueue = []
     strCurCmd = ""
       
-    # ==========================================================
-    #
-    # Internal functions and event handlers
-    #
-    # ==========================================================
-
-    # ==========================================================
-    # Initialize CommandOutputPanel
-    # ==========================================================
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
         
@@ -454,26 +386,20 @@ class CommandOutputPanel(wx.Panel):
         self.sizMain.Add(self.sizControl, 0, wx.EXPAND | wx.BOTTOM, 6)
         self.SetSizer(self.sizMain)
 
-    # ==========================================================
-    # Destructor. Detach any running process
-    # ==========================================================
     def __del__(self):
+        """Detach any running process."""
         # Detach any running process
         self.process.Detach()
 
-    # ==========================================================
-    # Change log window font size
-    # ==========================================================
     def OnFontSize(self, evt):
+        """Change log window font size."""
         newFontSize = int(self.cboFontSize.GetValue())
         self.txtOut.SetFont(wx.Font(newFontSize, wx.FONTFAMILY_TELETYPE,
             wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         #self.txtOut.Refresh()
 
-    # ==========================================================
-    # Save output log
-    # ==========================================================
     def OnSaveLog(self, evt):
+        """Save output log to a file."""
         # Prompt for a filename
         outFileDlg = wx.FileDialog(self, _("Choose a filename to save to"),
             "", "", "*.*", wx.SAVE | wx.OVERWRITE_PROMPT)
@@ -493,20 +419,15 @@ class CommandOutputPanel(wx.Panel):
             dlgAck.ShowModal()
             outFileDlg.Destroy()
 
-    # ==========================================================
-    # OnIdleTime event. When idle, execute commands in queue and
-    # print output to the command window
-    # ==========================================================
     def OnIdleTime(self, evt):
+        """Execute commands in the queue and print output to the log."""
         # If processing hasn't been started/enabled, do nothing
         if not self.idleTimer.IsRunning():
             return
-
         # If no process is currently executing, start the next
         # one in the queue.
         if self.process is None:
             self.StartNextProcess()
-
         # If a process is currently running, get its output and
         # print it to the command window
         if self.process is not None and self.pid != 0:
@@ -514,10 +435,8 @@ class CommandOutputPanel(wx.Panel):
             if stream.CanRead():
                 self.txtOut.AppendText(stream.read())
             
-    # ==========================================================
-    # Start the next process in the queue
-    # ==========================================================
     def StartNextProcess(self):
+        """Start the next process in the queue."""
         # If there is a command in the queue
         if len(self.strCmdQueue) > 0:
             self.strCurCmd = self.strCmdQueue.pop(0)
@@ -529,19 +448,18 @@ class CommandOutputPanel(wx.Panel):
             self.process = wx.Process(self)
             self.process.Redirect()
             self.pid = wx.Execute(self.strCurCmd, wx.EXEC_ASYNC, self.process)
-            self.lblQueue.SetLabel("Commands left to run: %d" % len(self.strCmdQueue))
+            self.lblQueue.SetLabel("Commands left to run: %d" % \
+                    len(self.strCmdQueue))
 
-    # ==========================================================
-    # Process-end event. Print any remaining output, and destroy
-    # the process
-    # ==========================================================
     def OnProcessEnded(self, evt):
+        """Print any remaining output, and destroy the process."""
         # Get process exit status
         curExitStatus = evt.GetExitCode()
         # Print message to console if there was an error
         if curExitStatus != 0:
             print "ERROR:"
-            print "The following command returned an exit status of %d:" % curExitStatus
+            print "The following command returned an exit status of %d:" % \
+                    curExitStatus
             print self.strCurCmd
             print "Please report this bug on the tovid forum or IRC channel:"
             print "    Forum: http://www.createphpbb.com/phpbb/tovid.html"
@@ -555,7 +473,6 @@ class CommandOutputPanel(wx.Panel):
             self.txtOut.AppendText(stream.read())
         self.process.Destroy()
         self.process = None
-
         # If there are more commands in the queue, start the next one
         if len(self.strCmdQueue) > 0:
             self.StartNextProcess()
@@ -567,17 +484,8 @@ class CommandOutputPanel(wx.Panel):
             # Let parent know that processing is done
             self.parent.ProcessingDone(self.errorOccurred)
 
-
-    # ==========================================================
-    #
-    # Public utility functions
-    #
-    # ==========================================================
-
-    # ==========================================================
-    # Clear out the command queue
-    # ==========================================================
     def Clear(self):
+        """Clear out the command queue."""
         self.strCmdQueue = []
         self.txtCurCmd.SetValue("")
         self.txtOut.Clear()
@@ -586,29 +494,22 @@ class CommandOutputPanel(wx.Panel):
         self.lblQueue.SetLabel("Commands left to run: 0")
         self.process = None
 
-    # ==========================================================
-    # Put the given command-line string into the queue for
-    # execution.
-    # ==========================================================
     def Execute(self, command):
+        """Put the given command-line string into the queue for execution."""
         self.strCmdQueue.append(command)
         self.txtOut.AppendText("%s\n------------------------\n" % command)
         # Update the queue size indicator
         self.lblQueue.SetLabel("Commands left to run: %d" % len(self.strCmdQueue))
         self.sizCurCmd.Layout()
 
-    # ==========================================================
-    # Start processing all commands in queue
-    # ==========================================================
     def Start(self):
+        """Start processing all commands in queue."""
         # NOTE FOR FUTURE VERSION: Include capability to resume
         # a cancelled queue, or start over from the beginning
         # (requires keeping a copy of the original queue)
-        
         # If already running, do nothing
         if self.idleTimer.IsRunning():
             return
-
         # Start running commands, if any remain to be executed
         if len(self.strCmdQueue) > 0:
             # Start the idle timer (1s interval)
@@ -616,11 +517,8 @@ class CommandOutputPanel(wx.Panel):
         else:
             self.parent.ProcessingDone()
 
-
-    # ==========================================================
-    # Stop processing (and return current process to queue)
-    # ==========================================================
     def Stop(self):
+        """Stop processing and return current process to queue."""
         # Stop the idle timer and kill current process
         self.idleTimer.Stop()
         if self.process is not None:
@@ -634,9 +532,6 @@ class CommandOutputPanel(wx.Panel):
         self.txtCurCmd.SetValue("")
         self.lblQueue.SetLabel("Commands left to run: %d" % len(self.strCmdQueue))
 
-# ===================================================================
-# End CommandOutputPanel
-# ===================================================================import wx
 
 # ===================================================================
 #

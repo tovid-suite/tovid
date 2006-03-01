@@ -1,13 +1,10 @@
-# ###################################################################
-# ###################################################################
-#
-#
-#                           OPTIONS 
-#
-#
-# ###################################################################
-# ###################################################################
-import os, wx
+#! /usr/bin/env python
+# options.py
+
+import os
+import wx
+
+import libtovid
 from libtovid.disc import Disc
 from libtovid.menu import Menu
 from libtovid.video import Video
@@ -16,16 +13,9 @@ from libtovid.gui.configs import TovidConfig
 from libtovid.gui.util import _
 
 __all__ = ["DiscOptions", "MenuOptions", "SlideOptions", "VideoOptions"]
-# ===================================================================
-#
-# CLASS DEFINITION
-# Disc options that apply to the entire disc
-#
-# ===================================================================
+
 class DiscOptions:
-    # ==========================================================
-    # Class data
-    # ==========================================================
+    """Options that apply to an entire disc"""
     type = ID_DISC
     format = 'dvd'
     tvsys = 'ntsc'
@@ -58,17 +48,13 @@ class DiscOptions:
         self.format = element['format']
         self.tvsys = element['tvsys']
         
-    # ==========================================================
-    # Set disc layout hierarchy, given a list of VideoOptions,
-    # MenuOptions, and SlideOptions
-    # ==========================================================
     def SetLayout(self, optionList):
+        """Set disc layout hierarchy, given a list of VideoOptions,
+        MenuOptions, and SlideOptions."""
         self.optionList = optionList
 
-    # ==========================================================
-    # Return the 'makexml' command for generating XML for this disc
-    # ==========================================================
     def GetCommand(self):
+        """Return the 'makexml' command for generating XML for this disc."""
         # Get global configuration (for output directory)
         curConfig = TovidConfig()
 
@@ -97,21 +83,10 @@ class DiscOptions:
         # Use output directory
         strCommand += "\"%s/%s\"" % (curConfig.strOutputDirectory, self.outPrefix)
         return strCommand
-# ===================================================================
-# End DiscOptions
-# ===================================================================
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# Menu generation options. Contains all configuration options
-# specific to generating a menu with makemenu
-#
-# ===================================================================
+
 class MenuOptions:
-    # ==========================================================
-    # Class data
-    # ==========================================================
+    """Options related to generating a menu"""
     # Type of item being encoded (menu, video, or slides)
     type = ID_MENU
     isTopMenu = False
@@ -134,9 +109,6 @@ class MenuOptions:
     colorSel = wx.Colour(255, 0, 0)
     outPrefix = ""
 
-    # ==========================================================
-    # Initialize MenuOptions class
-    # ==========================================================
     def __init__(self, format = 'dvd', tvsys = 'ntsc',
         title = _("Untitled menu"), isTop = False):
         self.SetDiscFormat(format)
@@ -191,10 +163,8 @@ class MenuOptions:
         self.titles = element['titles']
         # TODO: Find a good way to parse/assign colors and font
 
-    # ==========================================================
-    # Assemble and return the complete command-line command for this object
-    # ==========================================================
     def GetCommand(self):
+        """Return the complete makemenu command to generate this menu."""
         # Get global configuration (for output directory)
         curConfig = TovidConfig()
 
@@ -228,28 +198,20 @@ class MenuOptions:
         for title in range(len(self.titles)):
             strCommand += "\"%s\" " % self.titles[ title ]
 
-        strCommand += "-out \"%s/%s\"" % (curConfig.strOutputDirectory, self.outPrefix)
-
+        strCommand += "-out \"%s/%s\"" % \
+                (curConfig.strOutputDirectory, self.outPrefix)
         return strCommand
 
-    # ==========================================================
-    # Make menu compliant with given disc format
-    # ==========================================================
     def SetDiscFormat(self, format):
+        """Make menu compliant with given disc format."""
         self.format = format 
 
-    # ==========================================================
-    # Make menu compliant with given disc TV system
-    # ==========================================================
     def SetDiscTVSystem(self, tvsys):
+        """Make menu compliant with given disc TV system."""
         self.tvsys = tvsys
 
-    # ==========================================================
-    # Copy the given MenuOptions' data into this object. Only
-    # the encoding settings are copied; title and filename are
-    # left alone.
-    # ==========================================================
     def CopyFrom(self, opts):
+        """Copy the given MenuOptions' data into this menu."""
         # Return if types are different
         if self.type != opts.type:
             return
@@ -263,21 +225,10 @@ class MenuOptions:
         self.colorSel = opts.colorSel
         self.font = opts.font
         self.alignment = opts.alignment
-# ===================================================================
-# End MenuOptions
-# ===================================================================
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# Slide-generation options. Contains all configuration options
-# specific to generating slides using makeslides
-#
-# ===================================================================
+
 class SlideOptions:
-    # ==========================================================
-    # Class data
-    # ==========================================================
+    """Options related to generating a slideshow"""
     # Type of item being encoded (menu, video, or slides)
     type = ID_SLIDE
     # Title of the group of slides
@@ -289,61 +240,36 @@ class SlideOptions:
     # -ntsc or -pal
     tvsys = 'ntsc'
 
-    # ==========================================================
-    # Initialize SlideOptions class
-    # ==========================================================
     def __init__(self, format = 'dvd', tvsys = 'ntsc',
         files = []):
         self.tvsys = tvsys
         self.format = format 
         self.files = files
 
-    # ==========================================================
-    # Assemble and return the complete command-line command for this object
-    # ==========================================================
     def GetCommand(self):
+        """Return the makeslides command to generate this slideshow."""
         strCommand = "makeslides -%s -%s " % \
             (self.tvsys, self.format)
 
-    # ==========================================================
-    # Make slides compliant with given disc format
-    # ==========================================================
     def SetDiscFormat(self, format):
+        """Make slides compliant with given disc format."""
         self.format = format 
 
-    # ==========================================================
-    # Make slides compliant with given disc TV system
-    # ==========================================================
     def SetDiscTVSystem(self, tvsys):
+        """Make slides compliant with given disc TV system."""
         self.tvsys = tvsys
 
-    # ==========================================================
-    # Copy the given SlideOptions' data into this object. Only
-    # the encoding settings are copied; title and filename are
-    # left alone.
-    # ==========================================================
     def CopyFrom(self, opts):
+        """Copy the given options into this object."""
         # If types are different, return
         if self.type != opts.type:
             return
         # Copy opts into self
         self.format = opts.format
         self.tvsys = opts.tvsys
-# ===================================================================
-# End SlideOptions
-# ===================================================================
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# Video encoding options. Contains all configuration options
-# specific to encoding a video file with tovid.
-#
-# ===================================================================
 class VideoOptions:
-    # ==========================================================
-    # Class data
-    # ==========================================================
+    """Options related to encoding a video"""
     # Type of item being encoded (menu, video or slides)
     type = ID_VIDEO
     # Title of the video itself
@@ -361,9 +287,6 @@ class VideoOptions:
     inFile = ""
     outPrefix = ""
 
-    # ==========================================================
-    # Initialize VideoOptions class
-    # ==========================================================
     def __init__(self, format = 'dvd', tvsys = 'ntsc',
         filename = ""):
         self.SetDiscTVSystem(tvsys)
@@ -405,10 +328,8 @@ class VideoOptions:
         self.outPrefix = element['out']
 
 
-    # ==========================================================
-    # Assemble and return the complete command-line command for this object
-    # ==========================================================
     def GetCommand(self):
+        """Return the complete tovid command for converting this video."""
         # Get global configuration (for output directory)
         curConfig = TovidConfig()
 
@@ -425,10 +346,8 @@ class VideoOptions:
         strCommand += "-out \"%s/%s\" " % (curConfig.strOutputDirectory, self.outPrefix)
         return strCommand
 
-    # ==========================================================
-    # Make video compliant with given disc format
-    # ==========================================================
     def SetDiscFormat(self, format):
+        """Make video compliant with given disc format."""
         if format == 'vcd':
             self.format = format
         elif format == 'svcd':
@@ -438,18 +357,12 @@ class VideoOptions:
             if self.format in [ 'vcd', 'svcd' ]:
                 self.format = 'dvd'
 
-    # ==========================================================
-    # Make menu compliant with given disc TV system
-    # ==========================================================
     def SetDiscTVSystem(self, tvsys):
+        """Make menu compliant with given disc TV system."""
         self.tvsys = tvsys
 
-    # ==========================================================
-    # Copy the given VideoOptions' data into this object. Only
-    # the encoding settings are copied; title and filename are
-    # left alone.
-    # ==========================================================
     def CopyFrom(self, opts):
+        """Copy the given options into this object."""
         # If types are different, return
         if self.type != opts.type:
             return
@@ -458,6 +371,4 @@ class VideoOptions:
         self.tvsys = opts.tvsys
         self.aspect = opts.aspect
         self.addoptions = opts.addoptions
-# ===================================================================
-# End VideoOptions
-# ===================================================================
+
