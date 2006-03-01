@@ -28,7 +28,7 @@ class OptionDef:
     expected argument formatting, a default value, and a string documenting the
     option's purpose and/or usage information."""
 
-    def __init__(self, name, argformat, default, doc="Undocumented option",
+    def __init__(self, name, argformat, default, doc='Undocumented option',
             alias=None):
         """Create a new option definition with the given attributes."""
         self.name = name
@@ -36,6 +36,11 @@ class OptionDef:
         self.default = default
         self.doc = trim(doc)
         self.alias = alias
+        # If an alias was provided, generate documentation.
+        # i.e., alias=('tvsys', 'ntsc') means this option is the same as
+        # giving the 'tvsys' option with 'ntsc' as the argument.
+        if self.alias:
+            self.doc = 'Same as -%s %s.' % alias
 
     def num_args(self):
         """Return the number of arguments expected by this option, or -1 if
