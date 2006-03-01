@@ -533,29 +533,12 @@ class CommandOutputPanel(wx.Panel):
         self.lblQueue.SetLabel("Commands left to run: %d" % len(self.strCmdQueue))
 
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# Disc structure control. Contains a wx.TreeListCtrl showing the disc
-# structure, and buttons for manipulating the tree
-#
-# ===================================================================
 class DiscLayoutPanel(wx.Panel):
-    # ==========================================================
-    #
-    # Internal functions and event handlers
-    #
-    # ==========================================================
+    """Panel for adding menus and videos to a disc, with configurations"""
 
-    # ==========================================================
-    # Initialize DiscLayoutPanel
-    # ==========================================================
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
 
-        # ================================
-        # Class data
-        # ================================
         self.numMenus = 0   # Layout begins with no menus
         self.discFormat = 'dvd'
         self.discTVSystem = 'ntsc'
@@ -563,10 +546,7 @@ class DiscLayoutPanel(wx.Panel):
         self.curConfig = TovidConfig()
         self.lastUsedPath = ""
 
-        # ================================
         # Set up controls and sizers
-        # ================================
-
         # Buttons and their tooltips
         self.btnAddVideos = wx.Button(self, wx.ID_ANY, "Add video(s)")
         self.btnAddSlides = wx.Button(self, wx.ID_ANY, "Add slide(s)")
@@ -595,9 +575,8 @@ class DiscLayoutPanel(wx.Panel):
         self.btnRemove.Enable(False)
 
         # The disc layout tree
-        self.discTree = FlexTreeCtrl(self, wx.ID_ANY,
-            style = wx.TR_SINGLE | wx.TR_HAS_BUTTONS | wx.TR_EDIT_LABELS | wx.SUNKEN_BORDER)
-        # The disc layout tree
+        self.discTree = FlexTreeCtrl(self, wx.ID_ANY, style = wx.TR_SINGLE \
+                | wx.TR_HAS_BUTTONS | wx.TR_EDIT_LABELS | wx.SUNKEN_BORDER)
         # Icons to use in the tree
         iconSize = (16, 16)
         self.listIcons = wx.ImageList(iconSize[0], iconSize[1])
@@ -605,7 +584,6 @@ class DiscLayoutPanel(wx.Panel):
         self.idxIconSlide = self.listIcons.Add(SlideIcon())
         self.idxIconVideo = self.listIcons.Add(VideoIcon())
         self.idxIconDisc = self.listIcons.Add(DiscIcon())
-
         self.discTree.SetImageList(self.listIcons)
 
         # Root of disc. Non-deletable.
@@ -614,8 +592,10 @@ class DiscLayoutPanel(wx.Panel):
         self.discTree.SetToolTipString("Navigation layout of the disc. "
             "Use the buttons below to add elements. Click on the title of "
             "an element to edit it.")
-        wx.EVT_TREE_SEL_CHANGED(self.discTree, self.discTree.GetId(), self.OnTreeSelChanged)
-        wx.EVT_TREE_END_LABEL_EDIT(self.discTree, self.discTree.GetId(), self.OnTreeItemEdit)
+        wx.EVT_TREE_SEL_CHANGED(self.discTree, self.discTree.GetId(), \
+                self.OnTreeSelChanged)
+        wx.EVT_TREE_END_LABEL_EDIT(self.discTree, self.discTree.GetId(), \
+                self.OnTreeItemEdit)
         self.discTree.Expand(self.rootItem)
         # topItem starts out being root
         self.topItem = self.rootItem
@@ -661,10 +641,8 @@ class DiscLayoutPanel(wx.Panel):
         self.SetDiscFormat('dvd')
         self.SetDiscTVSystem('ntsc')
 
-    # ==========================================================
-    # When a tree selection changes
-    # ==========================================================
     def OnTreeSelChanged(self, evt):
+        """Update controls when a tree selection changes."""
         curItem = self.discTree.GetSelection()
         curOpts = self.discTree.GetPyData(curItem)
         curType = curOpts.type
@@ -741,10 +719,8 @@ class DiscLayoutPanel(wx.Panel):
             # Set appropriate guide text
             self.curConfig.panGuide.SetTask(ID_TASK_MENU_SELECTED)
 
-    # ==========================================================
-    # When a tree item's title is edited
-    # ==========================================================
     def OnTreeItemEdit(self, evt):
+        """Update controls when a tree item's title is edited."""
         if not evt.IsEditCancelled():
             curItem = evt.GetItem()
             curOpts = self.discTree.GetPyData(curItem)
@@ -777,10 +753,8 @@ class DiscLayoutPanel(wx.Panel):
                         # get out of the loop
                         break
 
-    # ==========================================================
-    # Append a menu
-    # ==========================================================
     def OnAddMenu(self, evt):
+        """Append a menu to the disc."""
         self.numMenus += 1
         # If this is the second menu on the disc, and a top menu does
         # not already exist, create a top menu and insert the current
@@ -791,8 +765,8 @@ class DiscLayoutPanel(wx.Panel):
                 "Main menu", self.idxIconMenu)
             # Create a new top menu at the root of the tree
             self.discTree.SetPyData(self.topItem,
-                MenuOptions(self.discFormat, self.discTVSystem, "Main menu", True))
-
+                MenuOptions(self.discFormat, self.discTVSystem, \
+                        "Main menu", True))
             copiedMenu = self.discTree.AppendItemMove(self.topItem, oldMenu)
             # Refresh the copied menu
             self.RefreshItem(copiedMenu)
@@ -822,11 +796,8 @@ class DiscLayoutPanel(wx.Panel):
         # Set appropriate guide text
         self.curConfig.panGuide.SetTask(ID_TASK_MENU_ADDED)
 
-    # ==========================================================
-    # Add video files to the disc structure
-    # One or more videos are inserted after the current item
-    # ==========================================================
     def OnAddVideos(self, evt):
+        """Add videos to the disc, under the currently-selected menu."""
         curParent = self.discTree.GetSelection()
 
         # If there are no menus yet, create one before adding
@@ -891,14 +862,8 @@ class DiscLayoutPanel(wx.Panel):
         # Set appropriate guide text
         self.curConfig.panGuide.SetTask(ID_TASK_VIDEO_ADDED)
 
-    # ==========================================================
-    # Add slides to the disc structure
-    # A group of slides is added under the current menu
-    # ==========================================================
     def OnAddSlides(self, evt):
-        # ***********************************
-        # SLIDES ARE DISABLED IN THIS RELEASE
-        # ***********************************
+        """Add slides to the disc structure. Not enabled yet."""
         # Display a message and return
         msgDlg = wx.MessageDialog(self, "Slideshows are not supported "
             "in this version. Sorry!", "Slides not functional yet",
@@ -908,7 +873,6 @@ class DiscLayoutPanel(wx.Panel):
         return
 
         # The real functionality, for when slides are supported
-
         curParent = self.discTree.GetSelection()
         # If a menu is not selected, print an error and return
         if self.discTree.GetPyData(curParent).type != ID_MENU:
@@ -946,30 +910,23 @@ class DiscLayoutPanel(wx.Panel):
         if self.discTree.GetCount() > 1:
             self.parent.EncodeOK(True)
 
-    # ==========================================================
-    # Move the currently-selected item up in the list
-    # Item stays within its group of siblings
-    # ==========================================================
     def OnCuritemUp(self, evt):
+        """Move the currently-selected item up in the tree."""
         self.discTree.MoveItemUp()
         # Refresh the parent
         curParent = self.discTree.GetItemParent(self.discTree.GetSelection())
         self.RefreshItem(curParent)
 
-    # ==========================================================
-    # Move the currently-selected item down in the list
-    # Item stays within its group of siblings
-    # ==========================================================
     def OnCuritemDown(self, evt):
+        """Move the currently-selected item down in the tree."""
         self.discTree.MoveItemDown()
         # Refresh the parent
         curParent = self.discTree.GetItemParent(self.discTree.GetSelection())
         self.RefreshItem(curParent)
 
-    # ==========================================================
-    # Remove the currently-selected item and its descendants
-    # ==========================================================
     def OnRemoveCuritem(self, evt):
+        """Remove the currently-selected item and its descendants from the
+        tree."""
         curItem = self.discTree.GetSelection()
         curParent = self.discTree.GetItemParent(curItem)
 
@@ -1016,28 +973,16 @@ class DiscLayoutPanel(wx.Panel):
             self.parent.EncodeOK(False)
 
 
-    # ==========================================================
-    #
-    # Public utility functions
-    #
-    # ==========================================================
-
-    # ==========================================================
-    # Set the encoding options associated with the current item
-    # ==========================================================
     def SetOptions(self, options):
+        """Set the encoding options associated with the current item."""
         self.discTree.SetPyData(self.discTree.GetSelection(), options)
 
-    # ==========================================================
-    # Get the encoding options associated with the current item
-    # ==========================================================
     def GetOptions(self):
+        """Get the encoding options associated with the current item."""
         return self.discTree.GetPyData(self.discTree.GetSelection())
 
-    # ==========================================================
-    # Set the disc format (DVD, VCD, SVCD)
-    # ==========================================================
     def SetDiscFormat(self, format):
+        """Set the disc format (DVD, VCD, SVCD)."""
         self.discFormat = format 
         # Make video panel controls appropriate for this disc format
         self.panVideoOptions.SetDiscFormat(format)
@@ -1050,10 +995,8 @@ class DiscLayoutPanel(wx.Panel):
             if curItem.type != ID_DISC:
                 curItem.SetDiscFormat(format)
 
-    # ==========================================================
-    # Set the disc TV system (NTSC, PAL)
-    # ==========================================================
     def SetDiscTVSystem(self, tvsys):
+        """Set the disc TV system (NTSC, PAL)."""
         self.discTVSystem = tvsys
         # Make video panel controls appropriate for this disc TVsystem
         self.panVideoOptions.SetDiscTVSystem(tvsys)
@@ -1065,11 +1008,9 @@ class DiscLayoutPanel(wx.Panel):
             if curItem.type != ID_DISC:
                 curItem.SetDiscTVSystem(tvsys)
 
-    # ==========================================================
-    # Refresh the given tree item and make sure it is up-to-date
-    # Should be called for an item after its children have changed
-    # ==========================================================
     def RefreshItem(self, curItem):
+        """Refresh the given tree item and make sure it is up-to-date.
+        Should be called for an item after its children have changed."""
 
         curOpts = self.discTree.GetPyData(curItem)
 
@@ -1085,10 +1026,8 @@ class DiscLayoutPanel(wx.Panel):
                 curOpts.titles.append("Back")
         # Nothing to do for other items (yet?)
         
-    # ==========================================================
-    # Use the given options for all videos/menus/slides
-    # ==========================================================
     def UseForAllItems(self, opts):
+        """Use the given options for all videos/menus/slides."""
         # Get references for all items
         refs = self.discTree.GetReferenceList(self.rootItem)
         # Count how many items are changed
@@ -1100,7 +1039,6 @@ class DiscLayoutPanel(wx.Panel):
                 if curItem.type == opts.type:
                     curItem.CopyFrom(opts)
                     countItems += 1
-
         return countItems
 
 
@@ -1192,26 +1130,10 @@ class DiscLayoutPanel(wx.Panel):
         else:
             return self.idxIconVideo
 
-# ===================================================================
-# End DiscLayoutPanel
-# ===================================================================
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# Panel for choosing disc format (DVD/VCD/SVCD, PAL/NTSC)
-#
-# ===================================================================
 class DiscPanel(wx.Panel):
-    # ==========================================================
-    #
-    # Internal functions and event handlers
-    #
-    # ==========================================================
+    """Panel for choosing disc format (DVD/VCD/SVCD, PAL/NTSC)"""
 
-    # ==========================================================
-    # Initialize DiscPanel
-    # ==========================================================
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
         
@@ -1223,15 +1145,16 @@ class DiscPanel(wx.Panel):
         self.parent = parent
 
         # Disc format selector
-        self.lblDiscFormat = wx.StaticText(self, wx.ID_ANY, "Choose what kind of video disc"
-            " you want to make:")
+        self.lblDiscFormat = wx.StaticText(self, wx.ID_ANY, \
+                "Choose what kind of video disc you want to make:")
         strFormats = ["VCD: Low-quality, up to about one hour of video",
             "SVCD: Medium quality, 30 to 70 minutes of video",
             "DVD: Range of quality, from 1 to 8 hours of video"]
 
         
-        self.rbFormat = wx.RadioBox(self, wx.ID_ANY, "Disc format", wx.DefaultPosition,
-            wx.DefaultSize, strFormats, 1, wx.RA_SPECIFY_COLS)
+        self.rbFormat = wx.RadioBox(self, wx.ID_ANY, "Disc format", \
+                wx.DefaultPosition, wx.DefaultSize, strFormats, 1, \
+                wx.RA_SPECIFY_COLS)
         self.rbFormat.SetToolTipString("Select what disc format you want to use."
             " For VCD and SVCD, you can use a normal CD-recordable drive. For"
             " DVD, you need a DVD-recordable drive.")
@@ -1242,10 +1165,11 @@ class DiscPanel(wx.Panel):
         strTVSystems = ["NTSC: Used in the Americas and East Asia",
                         "NTSC Film: Same as NTSC, with a film frame rate",
                         "PAL: Used in most of Europe, Asia, and Africa"]
-        self.rbTVSystem = wx.RadioBox(self, wx.ID_ANY, "TV format", wx.DefaultPosition,
-                wx.DefaultSize, strTVSystems, 1, wx.RA_SPECIFY_COLS)
-        self.rbTVSystem.SetToolTipString("Select NTSC or PAL, depending on what kind"
-            " of TV you want to play the disc on.")
+        self.rbTVSystem = wx.RadioBox(self, wx.ID_ANY, "TV format", \
+                wx.DefaultPosition, wx.DefaultSize, strTVSystems, 1, \
+                wx.RA_SPECIFY_COLS)
+        self.rbTVSystem.SetToolTipString("Select NTSC or PAL, depending " \
+                "on what kind of TV you want to play the disc on.")
         self.rbTVSystem.SetSelection(ID_TVSYS_NTSC)
         wx.EVT_RADIOBOX(self, self.rbTVSystem.GetId(), self.OnTVSystem)
 
@@ -1253,9 +1177,10 @@ class DiscPanel(wx.Panel):
         self.txtHeading = HeadingText(self, wx.ID_ANY, "Disc")
 
         # Output directory
-        self.lblOutputDirectory = wx.StaticText(self, wx.ID_ANY, "Output directory:")
+        self.lblOutputDirectory = wx.StaticText(self, wx.ID_ANY, \
+                "Output directory:")
         self.txtOutputDirectory = wx.TextCtrl(self, wx.ID_ANY,
-            self.curConfig.strOutputDirectory)
+                self.curConfig.strOutputDirectory)
         self.txtOutputDirectory.SetToolTipString("Type the full path of a "
             "directory where you want to save finished videos and disc images, "
             "or use the browse button. Should have 2-6GB of free space.")
@@ -1267,9 +1192,11 @@ class DiscPanel(wx.Panel):
 
         # Sizer to hold working directory controls
         self.sizDirs = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizDirs.AddMany([ (self.lblOutputDirectory, 0, wx.ALIGN_RIGHT | wx.ALL, 8),
-                                (self.txtOutputDirectory, 1, wx.EXPAND | wx.ALL, 8),
-                                (self.btnBrowseOutputDirectory, 0, wx.ALL, 8) ])
+        self.sizDirs.AddMany([\
+            (self.lblOutputDirectory, 0, wx.ALIGN_RIGHT | wx.ALL, 8),
+            (self.txtOutputDirectory, 1, wx.EXPAND | wx.ALL, 8),
+            (self.btnBrowseOutputDirectory, 0, wx.ALL, 8)
+            ])
 
         # Sizer to hold controls
         self.sizMain = wx.BoxSizer(wx.VERTICAL)
@@ -1280,26 +1207,20 @@ class DiscPanel(wx.Panel):
         self.sizMain.Add(self.sizDirs, 0, wx.EXPAND | wx.ALL, 8)
         self.SetSizer(self.sizMain)
 
-    # ==========================================================
-    # Set disc format according to radiobox
-    # ==========================================================
     def OnFormat(self, evt):
+        """Set disc format according to radiobox."""
         self.curOptions.format = util.ID_to_text('format', evt.GetInt())
         # Tell parent to adjust disc format
         self.parent.SetDiscFormat(self.curOptions.format)
 
-    # ==========================================================
-    # Set disc TV system according to radiobox
-    # ==========================================================
     def OnTVSystem(self, evt):
+        """Set disc TV system according to radiobox."""
         self.curOptions.tvsys = util.ID_to_text('tvsys', evt.GetInt())
         # Tell parent to adjust disc TVSystem
         self.parent.SetDiscTVSystem(self.curOptions.tvsys)
 
-    # ==========================================================
-    # Browse for output directory
-    # ==========================================================
     def OnBrowseOutputDirectory(self, evt):
+        """Browse for output directory."""
         workDirDlg = wx.DirDialog(self, "Select a directory for output",
             style = wx.DD_DEFAULT_STYLE | wx.DD_NEW_DIR_BUTTON)
         workDirDlg.SetPath(self.txtOutputDirectory.GetValue())
@@ -1309,32 +1230,17 @@ class DiscPanel(wx.Panel):
             self.txtOutputDirectory.SetValue(self.curConfig.strOutputDirectory)
             workDirDlg.Destroy()
 
-    # ==========================================================
-    # Update Config with newly-entered output directory
-    # ==========================================================
     def OnEditOutputDirectory(self, evt):
+        """Update Config with newly-entered output directory."""
         self.curConfig.strOutputDirectory = self.txtOutputDirectory.GetValue()
 
-
-    # ==========================================================
-    #
-    # Public utility functions
-    #
-    # ==========================================================
-
-    # ==========================================================
-    # Set control values based on the provided MenuOptions
-    # ==========================================================
     def SetOptions(self, discOpts):
+        """Set control values based on the provided DiscOptions"""
         self.curOptions = discOpts
-
         self.rbFormat.SetSelection(util.text_to_ID(self.curOptions.format))
         self.rbTVSystem.SetSelection(util.text_to_ID(self.curOptions.tvsys))
         self.txtHeading.SetLabel("Disc options: %s" % self.curOptions.title)
 
-# ===================================================================
-# End DiscPanel
-# ===================================================================
 
 # ===================================================================
 #
