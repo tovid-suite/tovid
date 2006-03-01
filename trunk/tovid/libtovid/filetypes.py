@@ -7,7 +7,6 @@ import os
 import sys
 
 import libtovid
-from libtovid.globals import *
 from libtovid.streams import *
 from libtovid import standards
 from libtovid.log import Log

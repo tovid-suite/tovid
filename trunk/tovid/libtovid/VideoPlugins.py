@@ -15,9 +15,10 @@ import sys
 
 import libtovid
 from libtovid.standards import get_resolution
-from libtovid.globals import ratio_to_float
+from libtovid.utils import ratio_to_float
 from libtovid.log import Log
 from libtovid.filetypes import MultimediaFile
+from libtovid.utils import which
 
 log = Log('VideoPlugins.py')
 
@@ -82,7 +83,16 @@ class VideoPlugin:
         elif self.video['tvsys'] == 'ntsc':
             self.fps = '29.97'
 
-
+    def verify_app(self, appname):
+        """Verify that the given appname is available; if not, log an error
+        and exit."""
+        app = which(appname)
+        if not app:
+            # TODO: A more friendly error message
+            log.error("Cannot find '%s' in your path." % app)
+            log.error("You may need to (re)install it.")
+            sys.exit()
+            
     def run(self):
         """Execute all queued commands, with proper stream redirection and
         verbosity level. Subclasses should override this function if they need
@@ -184,6 +194,7 @@ class MencoderEncoder(VideoPlugin):
     def __init__(self, video):
         """Create an mencoder encoder for the given video."""
         VideoPlugin.__init__(self, video)
+        self.verify_app('mencoder')
         self.commands.append(self.get_mencoder_cmd())
         
     def get_mencoder_cmd(self):
@@ -270,6 +281,7 @@ class FfmpegEncoder(VideoPlugin):
     def __init__(self, video):
         """Create an ffmpeg encoder for the given video."""
         VideoPlugin.__init__(self, video)
+        self.verify_app('ffmpeg')
         self.commands.append(self.get_ffmpeg_cmd())
         
     def get_ffmpeg_cmd(self):
