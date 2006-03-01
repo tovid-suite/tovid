@@ -10,7 +10,7 @@ __all__ = ['MenuPlugin', 'TextMenu', 'ThumbMenu']
 import os
 
 import libtovid
-from libtovid.globals import degunk
+from libtovid.utils import degunk
 from libtovid.log import Log
 
 log = Log('MenuPlugins.py')

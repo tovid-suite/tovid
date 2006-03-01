@@ -8,7 +8,7 @@ __all__ = ['OptionDef']
 
 import re
 
-from libtovid.globals import trim
+from libtovid.utils import trim
 
 # ===========================================================
 class OptionDef:

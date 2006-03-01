@@ -23,6 +23,7 @@ __all__ = [\
     "project",
     "streams",
     "filetypes",
+    "utils",
     "gui"]
 
 
