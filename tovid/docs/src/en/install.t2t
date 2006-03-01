@@ -62,9 +62,18 @@ from the original installation directory (``~/Downloads/tovid-0.25``).
 ==From SVN==
 
 For life on the bleeding edge, you can get a copy of the latest development
-version of tovid by checking it out with
-[Subversion http://subversion/tigris.org/] (SVN). Here's how (again, assuming
-you want to save it in ``~/Downloads``):
+version of tovid. You can do this one of two ways:
+
+- Download the daily release from the
+    [tovid FTP server ftp://ftp.berlios.de/pub/tovid]
+- Check it out with [Subversion http://subversion/tigris.org/] (SVN)
+
+For the daily release, just find the most recently-dated ``.tar.gz`` file
+on the [FTP server ftp://ftp.berlios.de/pub/tovid], and install it as you
+would a normal release.
+
+The second method is more complicated. Again, assuming you want to put the
+tovid installer in ``~/Downloads``):
 
 ```
 $ cd ~/Downloads
@@ -75,17 +84,18 @@ $ ./configure
 $ su -c "make install"
 ```
 
-From now on, you can just do this:
+You should now have the latest version installed (bugs and all!) You can keep
+in sync with updates by doing:
 
 ```
 $ cd ~/Downloads/tovid
 $ svn update
-$ ./bootstrap && ./configure && su -c "make install"
 ```
 
-to keep up with the latest changes. See the [SVN crash course svncrash.html]
+followed by a re-install. See the [SVN crash course svncrash.html]
 for more about dealing with SVN. If you install from SVN, you're strongly
 encouraged to start hanging out with the developers on the IRC channel, or on
 the tovid forum, to get involved with development. Even if you don't know the
 first thing about code, your input is needed. (Do you really want to leave
 tovid in the hands of a bunch of code monkeys?)
+
