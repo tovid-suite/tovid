@@ -6,6 +6,7 @@ __all__ = ['degunk', 'trim', 'ratio_to_float', 'subst']
 
 import os
 import sys
+import string
 
 def degunk(text):
     """Strip special characters from the given string (any that might
@@ -17,7 +18,6 @@ def degunk(text):
 
 def trim(text):
     """Strip leading indentation from a block of text.
-
     Borrowed from http://www.python.org/peps/pep-0257.html 
     """
     if not text:
@@ -62,7 +62,7 @@ def ratio_to_float(ratio):
     elif len(values) == 1:
         return float(values[0])
     else:
-        return 1.0
+        raise Exception("ratio_to_float: too many values in ratio '%s'" % ratio)
 
 def subst(command):
     """Do shell-style command substitution and return the output of command
