@@ -1,28 +1,17 @@
-# ###################################################################
-# ###################################################################
-#
-#
-#                             DIALOGS
-#
-#
-# ###################################################################
-# ###################################################################
+#! /usr/bin/env python
+# dialogs.py
+
 import wx
+
+import libtovid
 from libtovid.gui.configs import TovidConfig
 from libtovid.gui.constants import *
 from libtovid.gui.util import _
 
 __all__ = ["FontChooserDialog", "PreferencesDialog"]
-# ===================================================================
-#
-# CLASS DEFINITION
-# Simple font chooser dialog
-#
-# ===================================================================
 class FontChooserDialog(wx.Dialog):
-    # ==========================================================
-    # Initialize FontChooserDialog
-    # ==========================================================
+    """A simple font chooser"""
+
     def __init__(self, parent, id, curFacename = "Default"):
         wx.Dialog.__init__(self, parent, id, _("Font chooser"), wx.DefaultPosition,
                 (400, 400))
@@ -80,47 +69,29 @@ class FontChooserDialog(wx.Dialog):
                 "How to get more fonts", wx.OK | wx.ICON_INFORMATION)
             dlgGetMoreFonts.ShowModal()
 
-    # ==========================================================
-    # Change the sample font to reflect the selected font
-    # ==========================================================
     def OnSelectFont(self, evt):
+        """Change the sample font to reflect the selected font"""
         face = self.listFonts.GetStringSelection()
         self.font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
             wx.FONTWEIGHT_NORMAL, False, face)
         self.lblFontSample.SetFont(self.font)
 
-    # ==========================================================
-    # Get the font that was selected
-    # ==========================================================
     def GetSelectedFont(self):
+        """Return the font that was selected"""
         return self.font
-# ===================================================================
-# End FontChooserDialog
-# ===================================================================
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# Preferences/configuration settings dialog
-#
-# ===================================================================
 class PreferencesDialog(wx.Dialog):
-    # ==========================================================
-    # Initialize PreferencesDialog
-    # ==========================================================
-    def __init__(self, parent, id):
-        wx.Dialog.__init__(self, parent, id, "tovid GUI Preferences", wx.DefaultPosition,
-                (400, 200))
+    """Preferences/configuration settings dialog. Not yet used."""
 
+    def __init__(self, parent, id):
+        wx.Dialog.__init__(self, parent, id, "tovid GUI Preferences", \
+                wx.DefaultPosition, (400, 200))
         # Center dialog
         self.Centre()
-
         # Get global configuration
         self.curConfig = TovidConfig()
-
         # Heading
         self.txtHeading = HeadingText(self, wx.ID_ANY, "Preferences")
-
         # OK/Cancel buttons
         self.btnOK = wx.Button(self, wx.ID_OK, "OK")
         self.btnCancel = wx.Button(self, wx.ID_CANCEL, "Cancel")
@@ -128,7 +99,6 @@ class PreferencesDialog(wx.Dialog):
         self.sizButtons.Add(self.btnOK, 1, wx.EXPAND | wx.ALL, 16)
         self.sizButtons.Add(self.btnCancel, 1, wx.EXPAND | wx.ALL, 16)
         wx.EVT_BUTTON(self, wx.ID_OK, self.OnOK)
-        
         # Main sizer to hold all controls
         self.sizMain = wx.BoxSizer(wx.VERTICAL)
         self.sizMain.Add(self.txtHeading, 0, wx.EXPAND | wx.ALL, 8)
@@ -136,13 +106,8 @@ class PreferencesDialog(wx.Dialog):
         self.sizMain.Add(self.sizButtons, 0, wx.EXPAND | wx.ALL, 8)
         self.SetSizer(self.sizMain)
 
-    # ==========================================================
-    # Event handler for OK button
-    # Assign configuration to underlying Config
-    # ==========================================================
     def OnOK(self, evt):
+        """Assign configuration to underlying Config class"""
         # Config assignment goes here
         self.EndModal(wx.ID_OK)
-# ===================================================================
-# End PreferencesDialog
-# ===================================================================
+
