@@ -1,6 +1,14 @@
 #! /usr/bin/env python
 # log.py
 
+from libtovid.globals import Config
+
+# Simple integer verbosity level
+DEBUG = 3
+INFO = 2
+ERROR = 1
+NONE = 0
+
 class Log:
     """Logger for libtovid backend and frontend; can be configured with
     a verbosity level and name. To use, declare:
@@ -30,30 +38,31 @@ class Log:
         >>>
     """
 
-    # Simple integer verbosity level
-    DEBUG = 3
-    INFO = 2
-    ERROR = 1
-    NONE = 0
-
     def __init__(self, name, level=DEBUG):
         """Create a logger with the given name and verbosity level."""
-        print "Creating Log for %s with level %s verbosity." % (name, level)
+        # TODO: Do thread-safe logging to a logfile
+        # TODO: Make logfile optional/configurable
         self.name = name
         self.level = level
+        try:
+            os.remove(Config().logfile)
+        except:
+            pass
+        self.logfile = open(Config().logfile, 'w')
         
     def debug(self, message):
-        if self.level >= self.DEBUG:
-            self.console('Debug', message)
+        if self.level >= DEBUG:
+            self._log('Debug', message)
 
     def info(self, message):
-        if self.level >= self.INFO:
-            self.console('Info', message)
+        if self.level >= INFO:
+            self._log('Info', message)
 
     def error(self, message):
-        if self.level >= self.ERROR:
-            self.console('*** Error', message)
+        if self.level >= ERROR:
+            self._log('*** Error', message)
 
-    def console(self, level, message):
-        print "%s [%s]: %s" % (level, self.name, message)
+    def _log(self, level, message):
+        print message
+        self.logfile.write("%s [%s]: %s\n" % (level, self.name, message))
 
