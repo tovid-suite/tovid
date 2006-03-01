@@ -29,7 +29,7 @@ First, tell python where to find this module:
 
 The first thing of interest is what elements are available in TDL:
 
-    >>> for elem in TDL.element_defs:
+    >>> for elem in tdl.element_classes:
     ...     print elem
     ...
     Menu
@@ -40,7 +40,7 @@ The first thing of interest is what elements are available in TDL:
 You can see that TDL has three different kinds of element: Menu, Disc, and
 Video. What options are available for a Menu element?
 
-    >>> for option in TDL.element_defs['Menu']:
+    >>> for option in Menu.optiondefs:
     ...     print option
     ...
     highlightcolor
@@ -58,21 +58,13 @@ Video. What options are available for a Menu element?
 
 Say you want to know the purpose of the Menu 'background' option:
 
-    >>> print TDL.element_defs['Menu']['background'].doc
+    >>> print Menu['background'].doc
     Use IMAGE (in most any graphic format) as a background.
-    >>>
-
-You can also display full usage notes for an option, by using the
-usage_string() function:
-
-    >>> print TDL.element_defs['Menu']['background'].usage_string()
-    -background IMAGE (default None)
-        Use IMAGE (in most any graphic format) as a background.
     >>>
 
 To display full usage notes for an element, do like this:
 
-    >>> print TDL.usage('Menu')
+    >>> print tdl.usage('Menu')
     -highlightcolor [#RRGGBB|#RGB|COLORNAME] (default red)
         Undocumented option
 
@@ -131,7 +123,7 @@ menu, or video. You might also think of them as templates, defining a
 customizable framework, with self-contained documentation.
 """
 
-__all__ = ['element_defs', 'usage', 'Parser']
+__all__ = ['element_classes', 'usage', 'Parser']
 
 # TODO: Finish restructuring
 """Restructuring thoughts:
@@ -177,17 +169,17 @@ log = Log('tdl.py')
 
 # ===========================================================
 # Dictionary of TDL options, categorized by element tag
-element_defs = {
-    'Video': Video.optiondefs,
-    'Menu':  Menu.optiondefs,
-    'Disc':  Disc.optiondefs
+element_classes = {
+    'Video': Video,
+    'Menu':  Menu,
+    'Disc':  Disc
 }
 
 
 def usage(elem):
     """Return a string containing usage notes for the given element type."""
     usage_str = ''
-    for opt, optdef in element_defs[elem].iteritems():
+    for opt, optdef in element_classes[elem].optiondefs.iteritems():
         usage_str += optdef.usage_string() + '\n'
     return usage_str
         
@@ -271,11 +263,11 @@ class Parser:
     def is_keyword(self, arg):
         """Return True if the given argument is an element option name."""
         # If it matches 'Menu', 'Disc', 'Video'
-        if arg in element_defs:
+        if arg in element_classes:
             return True
         # If it matches any 'Menu' option, 'Disc' option, or 'Video' option
-        for tag in element_defs:
-            if arg.lstrip('-') in element_defs[tag]:
+        for tag in element_classes:
+            if arg.lstrip('-') in element_classes[tag].optiondefs:
                 return True
         return False
 
@@ -283,7 +275,7 @@ class Parser:
         """Print an error message and raise an exception."""
         log.debug(self.lexer.error_leader())
         log.error(message)
-        sys.exit()
+        raise Exception
         
     # TODO: Modularize this function better, splitting some chunks
     # into other (private) functions
@@ -311,12 +303,8 @@ class Parser:
                 if self.is_keyword(name):
                     self.error('Expecting name to follow %s (got %s)' % \
                             (token, name))
-                if token == 'Disc':
-                    element = Disc(name)
-                elif token == 'Menu':
-                    element = Menu(name)
-                elif token == 'Video':
-                    element = Video(name)
+                else:
+                    element = element_classes[token](name)
                 self.elements.append(element)
 
             # If a valid option for the current element is found, set its value
@@ -345,7 +333,7 @@ class Parser:
                     if self.is_keyword(arg):
                         self.error('-%s option expects an argument.' % opt)
                     # TODO: Get validation working properly
-                    # if element_defs[element.tag][opt].is_valid(arg):
+                    # if element_classes[element.tag].optiondefs[opt].is_valid(arg):
                     #     element.set(opt, arg)
                     # else:
                     #     print "Invalid argument to -%s: %s" % (opt, arg)
@@ -388,9 +376,9 @@ class Parser:
 # Self-test; executed when this module is run as a standalone script
 if __name__ == "__main__":
     # Print all element/option definitions
-    for elem in element_defs:
+    for elem in element_classes:
         print "%s element options:" % elem
-        for key, optdef in element_defs[elem].iteritems():
+        for key, optdef in element_classes[elem].optiondefs.iteritems():
             print optdef.usage_string()
 
     # Create one of each element and display them (to ensure that
