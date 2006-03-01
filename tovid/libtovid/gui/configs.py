@@ -1,23 +1,13 @@
-# ###################################################################
-# ###################################################################
-#
-#
-#                             CONFIGS
-#
-#
-# ###################################################################
-# ###################################################################
-import gettext, os, wx
+#! /usr/bin/env python
+# configs.py
+
+import os
+import gettext
+import wx
 
 __all__ = ["TovidConfig"]
-# ===================================================================
-#
-# CLASS DEFINITION
-# "Borg" monostate class containing global configuration information
-# Thanks to Alex Martelli for the design pattern
-#
-# ===================================================================
 class TovidConfig:
+    """Borg monostate class containing global configuration information"""
     __shared_state = {}
 
     # ==========================================================
@@ -39,9 +29,6 @@ class TovidConfig:
     # Reference to the status bar
     statusBar = None
 
-    # ==========================================================
-    # Initialize monostate Config class
-    # ==========================================================
     def __init__(self):
         self.__dict__ = self.__shared_state
     
@@ -49,19 +36,16 @@ class TovidConfig:
         if self.isInitialized == False:
             self.ConfigInit()
     
-    # ==========================================================
-    # The real initialization function, only called once
-    # Initializes "static" class data
-    # ==========================================================
     def ConfigInit(self):
+        """Initialize "static" class data.
+        The real initialization function, only called once."""
         self.isInitialized = True
         self.ConfigAvailFonts()
         #self.InitLocales()
     
-    # ==========================================================
-    # Determine fonts that are available in both wx.Python and ImageMagick
-    # ==========================================================
     def ConfigAvailFonts(self):
+        """Determine fonts that are available in both wx.Python and
+        ImageMagick."""
         # Find out what fonts are available in ImageMagick
         strIMFonts = []
         fIMOutput = os.popen("convert -list type | grep -v \"^$\|^Name\|^Path:\|^--\" | sort", 'r')
@@ -98,6 +82,4 @@ class TovidConfig:
             #self.trans['de'] = gettext.translation('tovidgui', '.', ['de'])
         except IOError:
             print "Couldn't initialize translations"
-# ===================================================================
-# End Config
-# ===================================================================
+
