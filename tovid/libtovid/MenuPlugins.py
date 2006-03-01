@@ -316,8 +316,6 @@ thumb_slots = [
     (72, 342),  (224, 342),  (376, 342),  (528, 342)
 ]
     
-# TODO: Generalize globals into a shared-state class in an imported module
-WORK_DIR='~/tmp'
 
 class ImageSequence:
     """A collection of images comprising a video sequence."""

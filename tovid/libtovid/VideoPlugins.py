@@ -89,7 +89,7 @@ class VideoPlugin:
         app = which(appname)
         if not app:
             # TODO: A more friendly error message
-            log.error("Cannot find '%s' in your path." % app)
+            log.error("Cannot find '%s' in your path." % appname)
             log.error("You may need to (re)install it.")
             sys.exit()
             
