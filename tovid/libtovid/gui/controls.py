@@ -1,41 +1,25 @@
-# ###################################################################
-# ###################################################################
-#
-#
-#                             CONTROLS
-#
-#
-# ###################################################################
-# ###################################################################
+#! /usr/bin/env python
+# controls.py
+
 import wx
+
+import libtovid
 from libtovid.gui.util import VER_GetFirstChild
 
 __all__ = ["BoldToggleButton", "FlexTreeCtrl", "HeadingText"]
-# ===================================================================
-#
-# CLASS DEFINITION
-# BoldToggleButton, a normal wx.ToggleButton with bold font
-#
-# ===================================================================
 class BoldToggleButton(wx.ToggleButton):
+    """A wx.ToggleButton with bold font"""
     def __init__(self, parent, id, label):
         wx.ToggleButton.__init__(self, parent, id, label,
             wx.DefaultPosition, wx.Size(-1, 40))
         font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
             wx.FONTWEIGHT_BOLD)
         self.SetFont(font)
-# ===================================================================
-# End BoldToggleButton
-# ===================================================================
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# A more flexible tree class. Has functions for moving elements
-# between branches and copying elements
-#
-# ===================================================================
+
 class FlexTreeCtrl(wx.TreeCtrl):
+    """A more flexible tree control, with support for moving and copying
+    branches."""
     
     def __init__(self, parent, id, pos = wx.DefaultPosition,
         size = wx.DefaultSize, style = wx.TR_HAS_BUTTONS,
@@ -241,22 +225,12 @@ class FlexTreeCtrl(wx.TreeCtrl):
         # Return the results
         return refs
 
-# ===================================================================
-# End FlexTreeCtrl
-# ===================================================================
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# HeadingText, a larger, bold static text control to use for headings
-#
-# ===================================================================
 class HeadingText(wx.StaticText):
+    """A large, bold static text control to use for headings"""
     def __init__(self, parent, id, label):
         wx.StaticText.__init__(self, parent, id, label)
         font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
             wx.FONTWEIGHT_BOLD)
         self.SetFont(font)
-# ===================================================================
-# End HeadingText
-# ===================================================================
+
