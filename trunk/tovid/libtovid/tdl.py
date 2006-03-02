@@ -241,8 +241,6 @@ class Parser:
 
     def parse_args(self, args):
         """Parse all text in a list of strings such as sys.argv"""
-        print args
-
         # Create a lexer
         self.lexer = shlex.shlex(posix = False)
         # Push args onto the lexer (in reverse order)
@@ -254,10 +252,7 @@ class Parser:
     def next_token(self):
         """Return the next token in the lexer."""
         tok = self.lexer.get_token()
-        if tok:
-            log.debug("next_token: Got '%s'" % tok)
-        else:
-            log.debug("next_token: Got EOF")
+        #log.debug("next_token: Got '%s'" % tok)
         return tok
 
     def is_keyword(self, arg):
@@ -272,10 +267,10 @@ class Parser:
         return False
 
     def error(self, message):
-        """Print an error message and raise an exception."""
+        """Print an error message and exit."""
         log.debug(self.lexer.error_leader())
         log.error(message)
-        raise Exception
+        sys.exit()
         
     # TODO: Modularize this function better, splitting some chunks
     # into other (private) functions
@@ -301,7 +296,7 @@ class Parser:
             elif token in ['Disc', 'Menu', 'Video']:
                 name = self.next_token()
                 if self.is_keyword(name):
-                    self.error('Expecting name to follow %s (got %s)' % \
+                    self.error('Expecting name to follow %s (got keyword %s)' % \
                             (token, name))
                 else:
                     element = element_classes[token](name)
@@ -315,7 +310,7 @@ class Parser:
                 # How many arguments are expected for this
                 # option? (0, 1, or unlimited)
                 expected_args = element.optiondefs[opt].num_args()
-                print "%s expects %s args" % (opt, expected_args)
+                log.debug("%s expects %s args" % (opt, expected_args))
 
                 # Is this option an alias (short-form) of another option?
                 # (i.e., -vcd == -format vcd)
@@ -330,8 +325,6 @@ class Parser:
                 # One arg? Easy...
                 elif expected_args == 1:
                     arg = self.next_token()
-                    if self.is_keyword(arg):
-                        self.error('-%s option expects an argument.' % opt)
                     # TODO: Get validation working properly
                     # if element_classes[element.tag].optiondefs[opt].is_valid(arg):
                     #     element.set(opt, arg)
@@ -346,8 +339,8 @@ class Parser:
                     next = self.next_token()
                     # While the next token is not a keyword
                     if self.is_keyword(next):
-                        self.error('-%s option expects one or more arguments.' \
-                                % opt)
+                        self.error('-%s option expects one or more arguments ' \
+                                '(got keyword %s)' % (opt, next))
                     # Until the next keyword is reached, add to list
                     while next and not self.is_keyword(next):
                         # Ignore any surrounding [ , , ]

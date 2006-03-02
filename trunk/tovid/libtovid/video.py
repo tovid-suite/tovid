@@ -152,7 +152,7 @@ class Video(Element):
             sys.exit()
         
         log.info("generate(): Encoding with the %s plugin..." % encoder.__class__)
-        encoder.run()
+        encoder.encode()
 
 
 

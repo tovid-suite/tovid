@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-3.7.dtd">
 <!-- Project file for project tovid -->
-<!-- Saved: 2006-02-27, 15:07:57 -->
+<!-- Saved: 2006-03-01, 16:32:08 -->
 <!-- Copyright (C) 2006 ,  -->
 <Project version="3.7">
   <ProgLanguage mixed="1">Python</ProgLanguage>
@@ -191,6 +191,10 @@
     <Source>
       <Dir>src</Dir>
       <Name>tovid-interactive</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>utils.py</Name>
     </Source>
   </Sources>
   <Forms>
