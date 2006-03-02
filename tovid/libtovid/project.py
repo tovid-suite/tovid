@@ -9,6 +9,9 @@ import sys
 
 import libtovid
 from libtovid.tdl import Parser
+from libtovid.log import Log
+
+log = Log('project.py')
 
 # ===========================================================
 class Project:
@@ -52,16 +55,15 @@ class Project:
                     element.children.append(self.elemdict[linkname])
                     self.elemdict[linkname].parents.append(element)
                 else:
-                    print "Disc \"%s\" links to undefined topmenu \"%s\"" % \
-                            (name, linkname)
+                    log.error("Disc \"%s\" links to undefined topmenu \"%s\"" % \
+                            (name, linkname))
 
             elif element.tag == 'Menu':
                 # Link to all 'titles' targets, if they exist
-                print element.get('titles')
                 for linkname in element.get('titles'):
                     if self.elemdict.has_key(linkname):
-                        print "build_hierarchy: making %s a child of %s" % \
-                                (linkname, name)
+                        log.debug("Making %s a child of %s" % \
+                                (linkname, name))
                         element.children.append(self.elemdict[linkname])
                         self.elemdict[linkname].parents.append(element)
 
@@ -69,8 +71,8 @@ class Project:
                     # elif string.lower(linkname) == 'back': ?
 
                     else:
-                        print "Menu \"%s\" links to undefined element \"%s\"" % \
-                                (name, linkname)
+                        log.error("Menu \"%s\" links to undefined element \"%s\"" % \
+                                (name, linkname))
             
 
         # Look for orphans (topitems)
@@ -78,7 +80,7 @@ class Project:
         for name, element in self.elemdict.iteritems():
             if len(element.parents) == 0:
                 self.topitems.append(element)
-                print "Element: %s has no parents" % name
+                log.error("Element: %s has no parents" % name)
 
 
     def get(self, name):

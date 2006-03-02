@@ -19,6 +19,7 @@ from libtovid.utils import ratio_to_float
 from libtovid.log import Log
 from libtovid.filetypes import MultimediaFile
 from libtovid.utils import which
+from libtovid.globals import Config
 
 log = Log('VideoPlugins.py')
 
@@ -27,8 +28,8 @@ class VideoPlugin:
     def __init__(self, video):
         log.info('Creating a VideoPlugin')
         self.video = video
-        # List of commands to be executed (in order)
-        self.commands = []
+        # Base name for output files
+        self.basename = os.path.abspath(video['out'])
         self.identify_infile()
         self.preproc()
 
@@ -69,19 +70,44 @@ class VideoPlugin:
             scale = False
             log.debug('Infile resolution matches target resolution.')
             log.debug('No scaling will be done.')
-        # Remember scale/expand sizes and target aspect
+        # TODO: Calculate safe area
+        # Other commonly-used values
+        if 'dvd' in self.video['format']:
+            samprate = 48000
+        else:
+            samprate = 44100
+        if self.video['tvsys'] == 'pal':
+            fps = '25.0'
+        elif self.video['tvsys'] == 'ntsc':
+            fps = '29.97'
+        
+        # Set audio/video bitrates based on target format, quality, or
+        # user-defined values (if given)
+        vbitrate = self.video['vbitrate']
+        abitrate = self.video['abitrate']
+        # Audio and video bitrates
+        if self.video['format'] == 'vcd':
+            abitrate = 224
+            vbitrate = 1152
+        else:
+            # If user didn't override, use reasonable defaults
+            if not vbitrate:
+                # TODO: Adjust bitrate based on -quality
+                if self.video['format'] in ['svcd', 'dvd-vcd']:
+                    vbitrate = 2600
+                else:
+                    vbitrate = 7000
+            if not abitrate:
+                abitrate = 224
+
+        # Everything exported from this function:
+        self.abitrate = abitrate
+        self.vbitrate = vbitrate
         self.scale = scale
         self.expand = expand
         self.tgt_aspect = tgt_aspect
-        # Other commonly-used values
-        if 'dvd' in self.video['format']:
-            self.samprate = 48000
-        else:
-            self.samprate = 44100
-        if self.video['tvsys'] == 'pal':
-            self.fps = '25.0'
-        elif self.video['tvsys'] == 'ntsc':
-            self.fps = '29.97'
+        self.samprate = samprate
+        self.fps = fps
 
     def verify_app(self, appname):
         """Verify that the given appname is available; if not, log an error
@@ -93,46 +119,61 @@ class VideoPlugin:
             log.error("You may need to (re)install it.")
             sys.exit()
             
-    def run(self):
-        """Execute all queued commands, with proper stream redirection and
-        verbosity level. Subclasses should override this function if they need
+    def run(self, cmd):
+        """Execute the given command, with proper stream redirection and
+        verbosity. Subclasses should override this function if they need
         different runtime behavior."""
-        # TODO: Proper stream redirection and verbosity level
-        for cmd in self.commands:
-            log.info("VideoPlugin: Running the following command:")
-            log.info(cmd)
-            # TODO: Catch failed execution
-            cin, cout = os.popen4(cmd, 1)
-            for line in cout.readlines():
-                # Strip extra line breaks
-                line = line.rstrip('\n\r')
-                log.debug(line)
+        log.info("VideoPlugin: Running the following command:")
+        log.info(cmd)
+        # TODO: Catch failed execution
+        cin, cout, cerr = os.popen3(cmd)
+        cin.close()
+        for line in cout.readlines():
+            # Strip extra line breaks
+            line = line.rstrip('\n\r')
+            log.info(line)
+        cout.close()
+        for line in cerr.readlines():
+            line = line.rstrip('\n\r')
+            log.debug(line)
+        cerr.close()
 
 
 class Mpeg2encEncoder(VideoPlugin):
     def __init__(self, video):
         """Create an mplayer/mpeg2enc/mplex encoder for the given video."""
         VideoPlugin.__init__(self, video)
-        # TODO: os.mkfifo("/work/directory/stream.yuv")
-        # Add appropriate commands to list
-        self.commands.append(self.get_mplayer_cmd())
-        self.commands.append(self.get_mpeg2enc_cmd())
-        self.commands.append(self.get_mplex_cmd())
+        self.yuvfile = '%s/stream.yuv' % Config().workdir
+        if video['format'] in ['vcd', 'svcd']:
+            self.asuf = 'mpa'
+        else:
+            self.asuf = 'ac3'
+
+    def encode(self):
+        """Start encoding."""
+        os.remove(self.yuvfile)
+        #os.mkfifo(self.yuvfile)
+        self.rip_video()
+        self.encode_video()
+        self.rip_wav()
+        self.encode_wav()
+        self.mplex_streams()
         
-    def get_mplayer_cmd(self):
-        """Get mplayer command-line for making a video compliant with the given
-        format and tvsys, while applying named custom filters, writing output to
-        stream.yuv."""
-        # TODO: Custom mplayer options, subtitles, interlacing, safe area,
+    def rip_video(self):
+        """Rip the input video to yuv4mpeg format, and write to stream.yuv
+        pipe."""
+        # TODO: Custom mplayer options, subtitles, interlacing,
         # corresp.  to $MPLAYER_OPT, $SUBTITLES, $VF_PRE/POST, $YUV4MPEG_ILACE,
         # etc.
         cmd = 'mplayer "%s" ' % self.video['in']
-        cmd += ' -vo yuv4mpeg -nosound -benchmark -noframedrop '
+        cmd += ' -vo yuv4mpeg:file=%s ' % self.yuvfile
+        cmd += ' -nosound -benchmark -noframedrop '
         # TODO: Support subtitles. For now, use default tovid behavior.
         cmd += ' -noautosub '
-        # TODO: Avoid scaling unless necessary
-        cmd += ' -vf scale=%s:%s ' % self.scale
-        cmd += ' -vf-add expand=%s:%s ' % self.expand
+        if self.scale:
+            cmd += ' -vf scale=%s:%s ' % self.scale
+        if self.expand:
+            cmd += ' -vf-add expand=%s:%s ' % self.expand
         # Filters
         if 'denoise' in self.video['filters']:
             cmd += ' -vf-add hqdn3d '
@@ -140,17 +181,16 @@ class Mpeg2encEncoder(VideoPlugin):
             cmd += ' -vf-add pp=al:f '
         if 'deblock' in self.video['filters']:
             cmd += ' -vf-add pp=hb/vb '
-        return cmd
+        self.run(cmd)
     
-    def get_mpeg2enc_cmd(self):
-        """Get mpeg2enc command-line suitable for encoding a video stream to the
-        given format and TV system, at the given aspect ratio (if the format
-        supports it)."""
+    def encode_video(self):
+        """Encode the yuv4mpeg stream to the given format and TV system."""
         # TODO: Control over quality (bitrate/quantization) and disc split size,
         # corresp. to $VID_BITRATE, $MPEG2_QUALITY, $DISC_SIZE, etc.
         # Missing options (compared to tovid)
         # -S 700 -B 247 -b 2080 -v 0 -4 2 -2 1 -q 5 -H -o FILE
-        cmd = 'cat stream.yuv | mpeg2enc '
+        # TODO: Consider using os.pipe?
+        cmd = 'cat %s | mpeg2enc ' % self.yuvfile
         # TV system
         if self.video['tvsys'] == 'pal':
             cmd += ' -F 3 -n p '
@@ -168,12 +208,43 @@ class Mpeg2encEncoder(VideoPlugin):
             cmd += ' -a 2 '
         elif self.video['aspect'] == '16:9':
             cmd += ' -a 3 '
-        cmd += ' -o "%s.m2v"' % self.video['out']
-        return cmd
+        cmd += ' -o "%s.m2v"' % self.basename
+        self.run(cmd)
     
-    def get_mplex_cmd(self):
-        """Get mplex command-line suitable for muxing streams with the given
-        format and TV system."""
+    def generate_silent(self):
+        """Generate a silent audio .wav."""
+        cmd = 'cat /dev/zero | sox -t raw -c 2 '
+        cmd += ' -r %s ' % self.samprate
+        cmd += ' -w -s -t wav '
+        cmd += ' "%s.wav" ' % self.basename
+        # TODO: Use actual video duration
+        cmd += ' trim 0 5'
+        self.run(cmd)
+
+    def rip_wav(self):
+        """Rip a .wav of the audio stream from the input video."""
+        cmd = 'mplayer -quiet -vc null -vo null '
+        cmd += ' -ao pcm:waveheader:file=%s.wav ' % self.basename
+        cmd += ' "%s"' % self.video['in']
+        self.run(cmd)
+
+    def encode_wav(self):
+        """Encode the audio .wav to the target format."""
+        if self.video['format'] in ['vcd', 'svcd']:
+            cmd = 'cat "%s.wav" ' % self.basename
+            cmd += '| mp2enc -s '
+            cmd += ' -b %s ' % self.abitrate
+            cmd += ' -o "%s.mpa" ' % self.basename
+        else:
+            cmd = 'ffmpeg -i "%s.wav" ' % self.basename
+            cmd += ' -ab %s ' % self.abitrate
+            cmd += ' -ar %s ' % self.samprate
+            cmd += ' -ac 2 -acodec ac3 -y '
+            cmd += ' "%s.%s"' % (self.basename, self.asuf)
+        self.run(cmd)
+
+    def mplex_streams(self):
+        """Multiplex the audio and video streams."""
         cmd = 'mplex '
         if self.video['format'] == 'vcd':
             cmd += '-f 1 '
@@ -187,7 +258,10 @@ class Mpeg2encEncoder(VideoPlugin):
             cmd += '-V -f 8 -b 400 '
         # elif format == 'kvcd':
         #   cmd += '-V -f 5 -b 350 -r 10800 '
-        return cmd
+        cmd += ' "%s.m2v" ' % self.basename
+        cmd += ' "%s.%s" ' % (self.basename, self.asuf)
+        cmd += ' -o "%s.mpg"' % self.basename
+        self.run(cmd)
 
 
 class MencoderEncoder(VideoPlugin):
@@ -195,21 +269,16 @@ class MencoderEncoder(VideoPlugin):
         """Create an mencoder encoder for the given video."""
         VideoPlugin.__init__(self, video)
         self.verify_app('mencoder')
-        self.commands.append(self.get_mencoder_cmd())
         
-    def get_mencoder_cmd(self):
-        """Get mencoder command-line suitable for encoding the given video to
-        its target format."""
-        cmd = 'mencoder "%s" -o "%s.mpg"' % (self.video['in'], self.video['out'])
+    def encode(self):
+        """Encode the input video to the target format."""
+        cmd = 'mencoder "%s" -o "%s.mpg"' % (self.video['in'], self.basename)
         cmd += ' -oac lavc -ovc lavc -of mpeg '
         # Format
         if self.video['format'] in ['vcd', 'svcd']:
             cmd += ' -mpegopts format=x%s ' % self.video['format']
         else:
             cmd += ' -mpegopts format=dvd '
-        # TODO: Move all aspect/scaling stuff into a separate
-        # function, so all backends can benefit from it
-        # TODO: Implement safe area calculation
         
         # Audio settings
         # Adjust sampling rate if necessary
@@ -228,25 +297,7 @@ class MencoderEncoder(VideoPlugin):
         else:
             lavcopts += ':acodec=ac3'
 
-        # TODO: Preprocessing: Set audio/video bitrates
-        # based on target format, quality, or user-defined values
-        vbitrate = self.video['vbitrate']
-        abitrate = self.video['abitrate']
-        # Audio and video bitrates
-        if self.video['format'] == 'vcd':
-            abitrate = 224
-            vbitrate = 1152
-        else:
-            # If user didn't override, use reasonable defaults
-            if not vbitrate:
-                # TODO: Adjust bitrate based on -quality
-                if self.video['format'] in ['svcd', 'dvd-vcd']:
-                    vbitrate = 2600
-                else:
-                    vbitrate = 7000
-            if not abitrate:
-                abitrate = 224
-        lavcopts += ':abitrate=%s:vbitrate=%s' % (abitrate, vbitrate)
+        lavcopts += ':abitrate=%s:vbitrate=%s' % (self.abitrate, self.vbitrate)
         # Maximum video bitrate
         lavcopts += ':vrc_maxrate=%s' % vbitrate
         if self.video['format'] == 'vcd':
@@ -282,7 +333,9 @@ class FfmpegEncoder(VideoPlugin):
         """Create an ffmpeg encoder for the given video."""
         VideoPlugin.__init__(self, video)
         self.verify_app('ffmpeg')
-        self.commands.append(self.get_ffmpeg_cmd())
+        
+    def encode(self):
+        self.run(self.get_ffmpeg_cmd())
         
     def get_ffmpeg_cmd(self):
         """Return ffmpeg command for encoding the current video."""
@@ -298,10 +351,7 @@ class FfmpegEncoder(VideoPlugin):
         elif self.video['tvsys'] == 'ntsc':
             cmd += ' -r 29.97 '
         # Audio sampling rate
-        if 'dvd' in self.video['format']:
-            cmd += ' -ar 48000 '
-        else:
-            cmd += ' -ar 44100 '
+        cmd += ' -ar %s ' % self.samprate
 
         # Convert scale/expand to ffmpeg's padding system
         if self.scale:
