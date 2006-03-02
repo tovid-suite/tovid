@@ -799,7 +799,6 @@ case "$TGT_RES" in
         VID_BITRATE="1150"
         FORMAT="VCD"
         MPEG2_FMT="-f 1"
-        SND_OPTS="-V"
         MUX_OPTS="-f 1"
         VID_SUF="m1v"
         ;;
@@ -820,7 +819,6 @@ case "$TGT_RES" in
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE"
-        SND_OPTS="-r $SAMPRATE -s"
         MUX_OPTS="-V -f 8"
         VID_SUF="m2v"
         ;;
@@ -841,7 +839,6 @@ case "$TGT_RES" in
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 4 -b $VID_BITRATE"
-        SND_OPTS="-V"
         MUX_OPTS="-V -f 4 -b 230"
         VID_SUF="m2v"
         ;;
@@ -862,7 +859,6 @@ case "$TGT_RES" in
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE"
-        SND_OPTS="-r $SAMPRATE -s"
         MUX_OPTS="-V -f 8 -b 300"
         VID_SUF="m2v"
         ;;
@@ -899,7 +895,6 @@ case "$TGT_RES" in
         # mpeg2enc 1.6.2 seems to want bitrate and buffer size (-b and -V)
         # to be explicit.
         MPEG2_FMT="-f 5 -b $VID_BITRATE -V 230 -K kvcd -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 8 -d"
-        SND_OPTS="-V" # (S)VCD-compliant sound
         MUX_OPTS="-V -f 5 -b 350 -r 10800"
         VID_SUF="m2v"
         ;;
@@ -921,7 +916,6 @@ case "$TGT_RES" in
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 10"
         # For KDVD, use KVCD "Notch" quantization
         test x"$TGT_RES" = x"KDVD" && MPEG2_FMT="$MPEG2_FMT -K kvcd"
-        SND_OPTS="-r $SAMPRATE -s"
         MUX_OPTS="-V -f 8 -b 400"
         VID_SUF="m2v"
         ;;
@@ -1441,7 +1435,7 @@ else
 
     # VCD and SVCD need to be MP2 (mpa) audio, as does PAL
     if test x"$AUD_SUF" = x"mpa"; then
-        AUDIO_ENC="cat $AUDIO_WAV | $PRIORITY mp2enc -s -b $AUD_BITRATE $SND_OPTS -o \"$OUT_PREFIX.$AUD_SUF\""
+        AUDIO_ENC="cat $AUDIO_WAV | $PRIORITY mp2enc -s -V -b $AUD_BITRATE -o \"$OUT_PREFIX.$AUD_SUF\""
         yecho "$AUDIO_ENC"
     # Use AC3 audio for all NTSC DVD formats
     else
