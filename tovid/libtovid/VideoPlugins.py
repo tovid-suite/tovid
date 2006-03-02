@@ -119,6 +119,12 @@ class VideoPlugin:
             log.error("Cannot find '%s' in your path." % appname)
             log.error("You may need to (re)install it.")
             sys.exit()
+        else:
+            log.debug("Found %s" % app)
+
+    def verify_apps(self, applist):
+        for app in applist:
+            self.verify_app(app)
             
     def run(self, command, wait=True):
         """Execute the given command, with proper stream redirection and
@@ -142,6 +148,7 @@ class Mpeg2encEncoder(VideoPlugin):
     def __init__(self, video):
         """Create an mplayer/mpeg2enc/mplex encoder for the given video."""
         VideoPlugin.__init__(self, video)
+        self.verify_apps(['mplayer', 'mpeg2enc', 'ffmpeg', 'mp2enc', 'mplex'])
         self.yuvfile = '%s/stream.yuv' % Config().workdir
         if video['format'] in ['vcd', 'svcd']:
             self.asuf = 'mpa'
@@ -155,10 +162,10 @@ class Mpeg2encEncoder(VideoPlugin):
         except:
             pass
         os.mkfifo(self.yuvfile)
-        self.rip_video()
-        self.encode_video()
         self.rip_wav()
         self.encode_wav()
+        self.rip_video()
+        self.encode_video()
         self.mplex_streams()
         
     def rip_video(self):
@@ -234,7 +241,7 @@ class Mpeg2encEncoder(VideoPlugin):
         """Encode the audio .wav to the target format."""
         if self.video['format'] in ['vcd', 'svcd']:
             cmd = 'cat "%s.wav" ' % self.basename
-            cmd += '| mp2enc -s '
+            cmd += '| mp2enc -s -V '
             cmd += ' -b %s ' % self.abitrate
             cmd += ' -o "%s.mpa" ' % self.basename
         else:
@@ -367,23 +374,17 @@ class FfmpegEncoder(VideoPlugin):
     
 
 """
+Notes:
+
 For DVD:
-
 Filtering: -vf hqdn3d,crop=624:464:8:8,pp=lb,scale=704:480,harddup
-
 -lavcopts vcodec=mpeg2video:vrc_buf_size=1835:vrc_maxrate=9800:vbitrate=5000:keyint=18:acodec=ac3:abitrate=192:aspect=4/3 -ofps 30000/1001 -o Bill_Linda-DVD.mpg bill.mjpeg
 
 For SVCD:
-
 mencoder 100_0233.MOV  -oac lavc -ovc lavc -of mpeg -mpegopts format=xsvcd  -vf   scale=480:480,harddup -noskip -mc 0 -srate 44100 -af lavcresample=44100 -lavcopts   vcodec=mpeg2video:mbd=2:keyint=18:vrc_buf_size=917:vrc_minrate=600:vbitrate=2500:vrc_maxrate=2500:acodec=mp2:abitrate=224 -ofps 30000/1001   -o movie.mpg
 
-"""
 
-"""
-Notes:
-
-
-Command-line option variables:
+Stuff not yet used in plugins:
 
 # Filters
 mplayer:
@@ -397,11 +398,6 @@ YUV4MPEG_ILACE
 VF_PRE
     ''
     -vf-pre il=d:d
-
-VID_SCALE
-    ''
-    -vf-add scale=$INNER_WIDTH:$INNER_HEIGHT
-+   -vf-add expand=$TGT_WIDTH:$TGT_HEIGHT
 
 VF_POST
     ''
@@ -434,17 +430,5 @@ MPEG2_FMT
 MPEG2_QUALITY
     vcd: -4 2 -2 1 -H
     other: -4 2 -2 1 -q $QUANT -H
-
-
-mencoder command-lines to build upon:
-
-For DVD:
-
-mencoder -oac lavc -ovc lavc -of mpeg -mpegopts format=dvd -vf hqdn3d,crop=624:464:8:8,pp=lb,scale=704:480,harddup -srate 48000 -af lavcresample=48000,equalizer=11:11:10:8:8:8:8:10:10:12 -lavcopts vcodec=mpeg2video:vrc_buf_size=1835:vrc_maxrate=9800:vbitrate=5000:keyint=18:acodec=ac3:abitrate=192:aspect=4/3 -ofps 30000/1001 -o Bill_Linda-DVD.mpg bill.mjpeg
-
-For SVCD:
-
-mencoder 100_0233.MOV  -oac lavc -ovc lavc -of mpeg -mpegopts format=xsvcd  -vf   scale=480:480,harddup -noskip -mc 0 -srate 44100 -af lavcresample=44100 -lavcopts   vcodec=mpeg2video:mbd=2:keyint=18:vrc_buf_size=917:vrc_minrate=600:vbitrate=2500:vrc_maxrate=2500:acodec=mp2:abitrate=224 -ofps 30000/1001   -o movie.mpg
-
 
 """
