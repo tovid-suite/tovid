@@ -1,12 +1,6 @@
-# ###################################################################
-# ###################################################################
-#
-#
-#                             UTIL
-#
-#
-# ###################################################################
-# ###################################################################
+#! /usr/bin/env python
+# util.py
+
 import threading, wx
 from libtovid.gui.constants import id_dict
 
@@ -48,15 +42,7 @@ def element_to_options(element):
     opts.fromElement(element)
     return opts
 
-# ===================================================================
-#
-# VERSION WORKAROUNDS
-# "Macro" functions to work around wx.Widgets/python
-# version incompatibilities
-#
-# ===================================================================
-
-# wx.TreeCtrl.GetFirstChild
+# wx.TreeCtrl.GetFirstChild workaround
 def VER_GetFirstChild(obj, item):
     # For wx.Widgets >=2.5, cookie isn't needed
     if wx.MAJOR_VERSION == 2 and wx.MINOR_VERSION >= 5:
@@ -65,35 +51,21 @@ def VER_GetFirstChild(obj, item):
     else:
         return obj.GetFirstChild(item, 1)
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# Video statistics-seeking thread class. Runs in the
-# background determining duration and size of input videos
-#
-# ===================================================================
 class VideoStatSeeker(threading.Thread):
-    # ==========================================================
-    # Class data (will be used as if it is static)
-    # ==========================================================
+    """Video statistics-seeking thread class. Runs in the background determining
+    duration and size of input videos."""
     # List of VideoOptions objects to gather statistics on
     listVideoOptions = []
 
-    # ==========================================================
-    # Initialize VideoStatSeeker and Thread base class
-    # ==========================================================
     def __init__(self, vidOptions):
         threading.Thread.__init__(self)
-
         # Add vidOptions to end of queue; thread will later
         # gather statistics and store them back in vidOptions
         self.listVideoOptions.append(vidOptions)
         self.doneWithStats = False
 
-    # ==========================================================
-    # Runs in background to gather and save statistics
-    # ==========================================================
     def run(self):
+        """Run in background to gather and save statistics."""
         # For each video in queue, get and save stats
         while len(self.listVideoOptions) > 0:
             curOpts = self.listVideoOptions.pop(0)
@@ -105,6 +77,3 @@ class VideoStatSeeker(threading.Thread):
 
         # Done with current batch of statistics
         self.doneWithStats = True
-# ===================================================================
-# End VideoStatSeeker
-# ===================================================================

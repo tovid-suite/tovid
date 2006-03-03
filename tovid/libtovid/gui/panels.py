@@ -961,7 +961,6 @@ class DiscLayoutPanel(wx.Panel):
                 if dlgConfirm.ShowModal() == wx.ID_NO:
                     return
                 self.numMenus -= 1
-
             # Delete the current item
             self.discTree.Delete(curItem)
 
@@ -1011,9 +1010,7 @@ class DiscLayoutPanel(wx.Panel):
     def RefreshItem(self, curItem):
         """Refresh the given tree item and make sure it is up-to-date.
         Should be called for an item after its children have changed."""
-
         curOpts = self.discTree.GetPyData(curItem)
-
         # If it's a menu, fill it with the titles listed below it
         if curOpts.type == ID_MENU:
             curOpts.titles = []
@@ -1024,7 +1021,6 @@ class DiscLayoutPanel(wx.Panel):
             # If this is not a top menu, add a "Back" title (link)
             if not curOpts.isTopMenu and self.numMenus > 1:
                 curOpts.titles.append("Back")
-        # Nothing to do for other items (yet?)
         
     def UseForAllItems(self, opts):
         """Use the given options for all videos/menus/slides."""
@@ -1041,7 +1037,6 @@ class DiscLayoutPanel(wx.Panel):
                     countItems += 1
         return countItems
 
-
     def GetAllCommands(self):
         """Return an array of strings containing all encoding commands to be
         executed."""
@@ -1051,21 +1046,16 @@ class DiscLayoutPanel(wx.Panel):
         # (so it can generate the authoring command)
         discOpts = self.discTree.GetPyData(self.rootItem)
         discOpts.SetLayout(refs)
-
         # Pop root command off, since it needs to be
         # put at the end of the command list
         strDiscCmd = refs.pop(0).GetCommand()
-
         # Append command associated with each item
         commands = []
         for curItem in refs:
             commands.append(curItem.GetCommand())
-
         # Append root command
         commands.append(strDiscCmd)
-
         return commands
-
 
     def GetElements(self):
         refs = self.discTree.GetReferenceList(self.rootItem)
@@ -1083,7 +1073,6 @@ class DiscLayoutPanel(wx.Panel):
         for elem in elements:
             print elem.tdl_string()
         return elements
-
 
     def SetElements(self, topitems):
         # Empty existing tree
@@ -1107,7 +1096,6 @@ class DiscLayoutPanel(wx.Panel):
             # HACK: Stop after the first top item (Disc element)
             break
                     
-
     def AddElement(self, element, parent):
         """Add a TDL element to the tree, under the given parent item,
         and return the new item ID."""
@@ -1120,7 +1108,6 @@ class DiscLayoutPanel(wx.Panel):
         # Ensure visibility
         self.discTree.EnsureVisible(item)
         return item
-
 
     def GetIcon(self, element):
         if element.tag == 'Disc':
@@ -1242,114 +1229,23 @@ class DiscPanel(wx.Panel):
         self.txtHeading.SetLabel("Disc options: %s" % self.curOptions.title)
 
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# DVRequant panel. Allows configuration and execution of the dvrequant
-# script.
-#
-# ===================================================================
-class DVRequantPanel(wx.Panel):
-    # ==========================================================
-    #
-    # Internal functions and event handlers
-    #
-    # ==========================================================
-
-    # ==========================================================
-    # Initialize DVRequantPanel
-    # ==========================================================
-    def __init__(self, parent, id):
-        wx.Panel.__init__(self, parent, id)
-
-        self.txtHeading = HeadingText(self, wx.ID_ANY, "Disc requantization")
-
-        self.strPossDevices = []
-        self.strPossDevices.append("/dev/dvd")
-        self.strPossDevices.append("/dev/dvdrw")
-        # DVD Device combo box
-        self.lblDVDDevice = wx.StaticText(self, wx.ID_ANY, "DVD Device:")
-        self.cboDVDDevice = wx.ComboBox(self, wx.ID_ANY, "/dev/dvd", wx.DefaultPosition,
-            wx.DefaultSize, self.strPossDevices)
-        self.strPossLanguages = []
-        self.strPossLanguages.append("en")
-        self.strPossLanguages.append("es")
-        # Language selector combo box
-        self.lblLanguage = wx.StaticText(self, wx.ID_ANY, "Language audio to use:")
-        self.cboLanguage = wx.ComboBox(self, wx.ID_ANY, "en", wx.DefaultPosition,
-            wx.DefaultSize, self.strPossLanguages)
-
-        # Sizer to hold device and language combo boxes
-        self.sizChoices = wx.FlexGridSizer(2, 2, 0, 0)
-        self.sizChoices.AddMany([ (self.lblDVDDevice, 0, wx.EXPAND | wx.ALL, 8),
-                                   (self.cboDVDDevice, 0, wx.EXPAND | wx.ALL, 8),
-                                   (self.lblLanguage, 0, wx.EXPAND | wx.ALL, 8),
-                                   (self.cboLanguage, 0, wx.EXPAND | wx.ALL, 8) ])
-
-        # Storage location text box
-        self.txtStorage = wx.TextCtrl(self, wx.ID_ANY, "/tmp")
-
-        self.sizMain = wx.BoxSizer(wx.VERTICAL)
-        self.sizMain.Add(self.txtHeading, 0, wx.EXPAND | wx.ALL, 8)
-        self.sizMain.Add(self.sizChoices, 0, wx.EXPAND | wx.ALL, 8)
-        self.sizMain.Add(self.txtStorage, 0, wx.EXPAND | wx.ALL, 8)
-        self.SetSizer(self.sizMain)
-
-# ===================================================================
-# End DVRequantPanel
-# ===================================================================
-
-# ===================================================================
-#
-# CLASS DEFINITION
-# Encoding setup panel. Allow selection of output directory,
-# display estimated encoding and final size requirements, controls
-# and log window for running all encoding commands.
-#
-# ===================================================================
 class EncodingPanel(wx.Panel):
-    # ==========================================================
-    #
-    # Internal functions and event handlers
-    #
-    # ==========================================================
-
-    # ==========================================================
-    # Initialize EncodingPanel
-    # ==========================================================
+    """Encoding setup panel. Allow selection of output directory, display
+    estimated encoding and final size requirements, controls and log window for
+    running all encoding commands.
+    """
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
-
-        # Class variables
         self.parent = parent
-
-        # Get a Config instance
         self.curConfig = TovidConfig()
-
-        # Estimated final size
-        #self.lblFinalSize = wx.StaticText(self, wx.ID_ANY, "Estimated final size:")
-        #self.txtFinalSize = wx.StaticText(self, wx.ID_ANY, "Unknown")
-        # Estimated encoding space needed
-        #self.lblEncodingSize = wx.StaticText(self, wx.ID_ANY, "Estimated space needed:")
-        #self.txtEncodingSize = wx.StaticText(self, wx.ID_ANY, "Unknown")
-
-        # Sizer to hold size estimates
-        #self.sizEstimates = wx.FlexGridSizer(2, 2, 8, 8)
-        #self.sizEstimates.AddMany([ (self.lblFinalSize, 0, wx.RIGHT),
-        #                             (self.txtFinalSize, 1, wx.EXPAND),
-        #                             (self.lblEncodingSize, 0, wx.RIGHT),
-        #                             (self.txtEncodingSize, 1, wx.EXPAND) ])
-        
         # Command window
         self.panCmdList = CommandOutputPanel(self, wx.ID_ANY)
-
         # Start/interrupt button
         self.btnStartStop = wx.Button(self, wx.ID_ANY, "Start encoding")
         self.btnStartStop.SetToolTipString("Begin encoding and preparing " \
             "all videos and menus on the disc")
         # Button events
         wx.EVT_BUTTON(self, self.btnStartStop.GetId(), self.OnStartStop)
-
         # Sizer to hold controls
         self.sizMain = wx.BoxSizer(wx.VERTICAL)
         #self.sizMain.Add(self.sizEstimates, 0, wx.EXPAND | wx.ALL, 8)
@@ -1357,10 +1253,8 @@ class EncodingPanel(wx.Panel):
         self.sizMain.Add(self.btnStartStop, 0, wx.EXPAND | wx.ALL, 8)
         self.SetSizer(self.sizMain)
 
-    # ==========================================================
-    # Browse for output directory
-    # ==========================================================
     def OnBrowseOutDir(self, evt):
+        """Browse for output directory."""
         outDirDlg = wx.DirDialog(self, "Select a directory for output",
             style = wx.DD_DEFAULT_STYLE | wx.DD_NEW_DIR_BUTTON)
         if outDirDlg.ShowModal() == wx.ID_OK:
@@ -1368,10 +1262,8 @@ class EncodingPanel(wx.Panel):
             self.txtOutDir.SetValue(self.curConfig.strOutputDirectory)
             outDirDlg.Destroy()
 
-    # ==========================================================
-    # Start/suspend/resume encoding
-    # ==========================================================
     def OnStartStop(self, evt):
+        """Start/suspend/resume encoding."""
         # If currently running, stop/suspend processing
         if self.panCmdList.idleTimer.IsRunning():
             # Disable button temporarily, to allow processes to die
@@ -1398,23 +1290,17 @@ class EncodingPanel(wx.Panel):
             self.btnStartStop.SetToolTipString("Interrupt the current " \
                 "encoding process and return the current command to the queue")
 
-    # ==========================================================
-    # Set command-list to be executed from DiscLayoutPanel
-    # ==========================================================
     def SetCommands(self, commands):
+        """Set command-list to be executed from DiscLayoutPanel."""
         for cmd in commands:
             self.panCmdList.Execute(cmd)
 
-    # ==========================================================
-    # Set the output directory to use
-    # ==========================================================
     def SetOutputDirectory(self, outDir):
+        """Set the output directory to use."""
         self.txtOutDir.SetValue(outDir)
           
-    # ==========================================================
-    # Signify that processing (video encoding) is done
-    # ==========================================================
     def ProcessingDone(self, errorOccurred):
+        """Signify that processing (video encoding) is done."""
         self.parent.btnBurn.Enable(False)
         # Let user know if error(s) occurred
         if errorOccurred:
@@ -1442,52 +1328,27 @@ class EncodingPanel(wx.Panel):
         self.btnStartStop.Enable(False)
 
 
-# ===================================================================
-# End EncodingPanel
-# ===================================================================
-
-# ===================================================================
-#
-# CLASS DEFINITION
-# Guide panel. Displays help information relevant to the current
-# task in the GUI.
-#
-# ===================================================================
 class GuidePanel(wx.Panel):
-    
-    # ==========================================================
-    #
-    # Internal functions and event handlers
-    #
-    # ==========================================================
+    """A panel showing live context-sensitive help."""
 
-    # ==========================================================
-    # Initialize GuidePanel
-    # ==========================================================
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
-        
         # Heading
         self.txtHeading = HeadingText(self, wx.ID_ANY, "What to do next")
-
         # Guide text box
         self.txtGuide = wx.TextCtrl(self, wx.ID_ANY, "",
             style = wx.TE_MULTILINE | wx.TE_READONLY)
-
         # Initialize text
         self.InitTaskText()
         self.SetTask(ID_TASK_GETTING_STARTED)
-
         # Main sizer
         self.sizMain = wx.BoxSizer(wx.VERTICAL)
         self.sizMain.Add(self.txtHeading, 0, wx.EXPAND | wx.ALL, 8)
         self.sizMain.Add(self.txtGuide, 1, wx.EXPAND | wx.ALL, 8)
         self.SetSizer(self.sizMain)
 
-    # ==========================================================
-    # Initialize task-based guide text for all tasks
-    # ==========================================================
     def InitTaskText(self):
+        """Initialize task-based guide text for all tasks."""
         self.strGettingStarted = _("Welcome to the tovid GUI. This program is " \
             "designed to help you create a video disc (VCD, SVCD, or DVD) " \
             "from videos that you provide. All you need is a CD or DVD " \
@@ -1591,10 +1452,8 @@ class GuidePanel(wx.Panel):
             "depending on your CPU speed. You may need to leave this running for " \
             "several hours in order for your disc to finish authoring.")
 
-    # ==========================================================
-    # Show the appropriate guide text for the given task
-    # ==========================================================
     def SetTask(self, curTask = ID_TASK_GETTING_STARTED):
+        """Show the appropriate guide text for the given task."""
         if curTask == ID_TASK_GETTING_STARTED:
             self.txtHeading.SetLabel(_("Getting started"))
             self.txtGuide.SetValue(self.strGettingStarted)
@@ -1620,41 +1479,30 @@ class GuidePanel(wx.Panel):
             self.txtHeading.SetLabel(_("Encoding started"))
             self.txtGuide.SetValue(self.strEncodingStarted)
 
-# ===================================================================
-# End GuidePanel
-# ===================================================================
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# Hidable panel. A simple horizontal/vertical panel containing
-# show/hide controls and one additional window or sizer, added via
-# the Add() method. Caller is responsible for not abusing these
-# assumptions.
-#
-# To use HidablePanel, first declare a HidablePanel object. Then,
-# create the wx.Window object that will go into the HidablePanel,
-# passing the HidablePanel as its parent. Add the HidablePanel to
-# the desired location (inside another sizer). Finally, call SetParent
-# with the containing sizer as the argument, to let the HidablePanel
-# know what sizer contains it.
-#
-# ===================================================================
 class HidablePanel(wx.Panel):
+    """A panel that can be hidden from view.
 
-    # ==========================================================
-    # Initialize hidable panel. orientation is wx.VERTICAL or
-    # wx.HORIZONTAL. A vertical panel has the hide controls at
-    # the top and extends downwards; a horizontal one has
-    # controls on the left and extends rightwards.
-    # ==========================================================
+    The panel may be horizontal or vertical, and contains show/hide controls
+    along with one additional window or sizer, added via the Add() method.
+
+    To use HidablePanel, first declare a HidablePanel object. Then, create the
+    wx.Window object that will go into the HidablePanel, passing the
+    HidablePanel as its parent. Add the HidablePanel to the desired location
+    (inside another sizer). Finally, call SetParent with the containing sizer as
+    the argument, to let the HidablePanel know what sizer contains it.
+    """
+
     def __init__(self, parent, id, orientation = wx.VERTICAL):
+        """Initialize hidable panel. orientation is wx.VERTICAL or
+        wx.HORIZONTAL. A vertical panel has the hide controls at the top and
+        extends downwards; a horizontal one has controls on the left and extends
+        rightwards.
+        """
         wx.Panel.__init__(self, parent, id)
-
         # Reference to contained content (window or sizer)
         self.content = None
         self.sizParent = None
-
         # Show/hide button
         self.btnShowHide = wx.ToggleButton(self, wx.ID_ANY, _("More >>"))
         self.btnShowHide.SetValue(True)
@@ -1662,29 +1510,22 @@ class HidablePanel(wx.Panel):
 
         self.sizMain = wx.BoxSizer(orientation)
         self.sizMain.Add(self.btnShowHide, 0)
-
         self.SetSizer(self.sizMain)
 
-    # ==========================================================
-    # Set the window/sizer that the panel will contain
-    # ==========================================================
     def SetContent(self, newContent):
+        """Set the window/sizer that the panel will contain."""
         self.content = newContent
         self.sizMain.Add(self.content, 1, wx.EXPAND)
         self.sizMain.SetItemMinSize(self.content, 200, 200)
         self.sizMain.Layout()
     
-    # ==========================================================
-    # Set the parent sizer (the sizer that holds the HidablePanel)
-    # ==========================================================
     def SetParent(self, parent):
+        """Set the parent sizer (the sizer that holds the HidablePanel)."""
         self.sizParent = parent
 
-    # ==========================================================
-    # Show/hide the main part of the sizer based on state of
-    # btnShowHide
-    # ==========================================================
     def ShowHide(self, evt):
+        """Show/hide the main part of the sizer based on state of
+        btnShowHide."""
         # If button is down, show content
         if self.btnShowHide.GetValue() == True:
             self.sizMain.Add(self.content)
@@ -1699,47 +1540,24 @@ class HidablePanel(wx.Panel):
         if self.sizParent != None:
             self.sizParent.Layout()
 
-# ===================================================================
-# End HidablePanel
-# ===================================================================
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# Panel for makemenu options
-#
-# ===================================================================
 class MenuPanel(wx.Panel):
-    # ==========================================================
-    #
-    # Internal functions and event handlers
-    #
-    # ==========================================================
-
-    # ==========================================================
-    # Initialize MenuPanel
-    # ==========================================================
+    """A panel showing controls appropriate to generating a menu"""
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
-
-        # ================================
-        # Class data
-        # ================================
         self.curOptions = MenuOptions()
         self.curColorData = wx.ColourData()
         self.parent = parent
-
         self.sboxBG = wx.StaticBox(self, wx.ID_ANY, "Menu background options")
         self.sizBG = wx.StaticBoxSizer(self.sboxBG, wx.VERTICAL)
 
-        # ================================
         # Background image/audio selection controls
-        # ================================
         # Image
         self.lblBGImage = wx.StaticText(self, wx.ID_ANY, "Image:")
         self.txtBGImage = wx.TextCtrl(self, wx.ID_ANY)
-        self.txtBGImage.SetToolTipString("Type the full name of the image file "
-            "you want to use in the background of the menu, or use the browse button.")
+        self.txtBGImage.SetToolTipString(\
+            "Type the full name of the image file you want to use in the" \
+            " background of the menu, or use the browse button.")
         self.btnBrowseBGImage = wx.Button(self, wx.ID_ANY, "Browse")
         self.btnBrowseBGImage.SetToolTipString("Browse for an image file to "
             "use for the background of the menu")
@@ -1768,26 +1586,26 @@ class MenuPanel(wx.Panel):
         # Add inner sizer to outer staticbox sizer
         self.sizBG.Add(self.sizBGInner, 0, wx.EXPAND | wx.ALL, 8)
 
-        # ================================
         # Menu font and alignment controls
-        # ================================
         self.lblFontFace = wx.StaticText(self, wx.ID_ANY, "Font:")
         self.btnFontChooserDialog = wx.Button(self, wx.ID_ANY, "Default")
-        self.btnFontChooserDialog.SetToolTipString("Select a font to use for the "
-                "menu text")
-        wx.EVT_BUTTON(self, self.btnFontChooserDialog.GetId(), self.OnFontSelection)
+        self.btnFontChooserDialog.SetToolTipString(\
+                "Select a font to use for the menu text")
+        wx.EVT_BUTTON(self, self.btnFontChooserDialog.GetId(), \
+                self.OnFontSelection)
         strAlignments = ['Left', 'Center', 'Right']
-        self.rbAlignment = wx.RadioBox(self, wx.ID_ANY, "Alignment",
-                wx.DefaultPosition, wx.DefaultSize, strAlignments, 1, wx.RA_SPECIFY_ROWS)
-        self.rbAlignment.SetToolTipString("Select how the menu text should be aligned")
+        self.rbAlignment = wx.RadioBox(self, wx.ID_ANY, "Alignment", \
+                wx.DefaultPosition, wx.DefaultSize, strAlignments, 1, \
+                wx.RA_SPECIFY_ROWS)
+        self.rbAlignment.SetToolTipString(\
+                "Select how the menu text should be aligned")
         wx.EVT_RADIOBOX(self, self.rbAlignment.GetId(), self.OnAlignment)
         self.sizFontFace = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizFontFace.AddMany([ (self.lblFontFace, 0, wx.ALL, 4),
-                                    (self.btnFontChooserDialog, 1, wx.EXPAND | wx.ALL, 4) ])
+        self.sizFontFace.AddMany([\
+                (self.lblFontFace, 0, wx.ALL, 4),
+                (self.btnFontChooserDialog, 1, wx.EXPAND | wx.ALL, 4) ])
 
-        # ================================
         # Menu text color controls
-        # ================================
         self.lblTextColor = wx.StaticText(self, wx.ID_ANY, _("Text color:"))
         self.lblHiColor = wx.StaticText(self, wx.ID_ANY, _("Highlight color:"))
         self.lblSelColor = wx.StaticText(self, wx.ID_ANY, _("Selection color:"))
@@ -1818,9 +1636,7 @@ class MenuPanel(wx.Panel):
                                      (self.lblSelColor, 0, wx.ALIGN_RIGHT),
                                      (self.btnSelColor, 0, wx.EXPAND) ])
 
-        # ================================
         # List of titles in this menu
-        # ================================
         self.lblTitleList = wx.StaticText(self, wx.ID_ANY, 
             _("Titles shown in this menu"))
         self.lbTitles = wx.ListBox(self, wx.ID_ANY)
@@ -1833,14 +1649,13 @@ class MenuPanel(wx.Panel):
         self.sizTitles.AddMany([ (self.lblTitleList, 0),
                                   (self.lbTitles, 1, wx.EXPAND) ])
     
-        # ================================
         # Put menu font/color controls in a static box
-        # ================================
         self.sboxTextFormat = wx.StaticBox(self, wx.ID_ANY, "Menu text format")
         self.sizTextFormat = wx.StaticBoxSizer(self.sboxTextFormat, wx.VERTICAL)
-        self.sizTextFormat.AddMany([ (self.sizFontFace, 0, wx.EXPAND | wx.ALL, 8),
-                                      (self.rbAlignment, 0, wx.EXPAND | wx.ALL, 8),
-                                      (self.sizFontColor, 0, wx.EXPAND | wx.ALL, 8) ])
+        self.sizTextFormat.AddMany([\
+                (self.sizFontFace, 0, wx.EXPAND | wx.ALL, 8),
+                (self.rbAlignment, 0, wx.EXPAND | wx.ALL, 8),
+                (self.sizFontColor, 0, wx.EXPAND | wx.ALL, 8) ])
         
         # Horizontal sizer holding sizTextFormat and sizTitles
         self.sizTextTitles = wx.BoxSizer(wx.HORIZONTAL)
@@ -1854,13 +1669,11 @@ class MenuPanel(wx.Panel):
         self.btnUseForAll = wx.Button(self, wx.ID_ANY,
             "Use these settings for all menus")
         self.btnUseForAll.SetToolTipString("Apply the current menu settings,"
-            " including background image, audio, text alignment, text color and font,"
-            " to all menus on the disc.")
+            " including background image, audio, text alignment, text color" \
+            " and font, to all menus on the disc.")
         wx.EVT_BUTTON(self, self.btnUseForAll.GetId(), self.OnUseForAll)
 
-        # ================================
         # Main sizer to hold all controls
-        # ================================
         self.sizMain = wx.BoxSizer(wx.VERTICAL)
         self.sizMain.Add(self.txtHeading, 0, wx.EXPAND | wx.ALL, 8)
         self.sizMain.Add(self.sizBG, 0, wx.EXPAND | wx.ALL, 8)
@@ -1873,32 +1686,29 @@ class MenuPanel(wx.Panel):
         """Set the background image in curOptions whenever text is altered."""
         self.curOptions.background = self.txtBGImage.GetValue()
 
-
     def OnBGAudio(self, evt):
         """Set the background audio in curOptions whenever text is altered."""
         self.curOptions.audio = self.txtBGAudio.GetValue()
 
-
     def OnBrowseBGImage(self, evt):
         """Show a file dialog and set the background image."""
-        inFileDlg = wx.FileDialog(self, "Select an image file", "", "", "*.*", wx.OPEN)
+        inFileDlg = wx.FileDialog(self, "Select an image file", "", "", \
+                "*.*", wx.OPEN)
         if inFileDlg.ShowModal() == wx.ID_OK:
             self.txtBGImage.SetValue(inFileDlg.GetPath())
             inFileDlg.Destroy()
 
-
     def OnBrowseBGAudio(self, evt):
         """Show a file dialog and set the background audio."""
-        inFileDlg = wx.FileDialog(self, "Select an audio file", "", "", "*.*", wx.OPEN)
+        inFileDlg = wx.FileDialog(self, "Select an audio file", "", "", \
+                "*.*", wx.OPEN)
         if inFileDlg.ShowModal() == wx.ID_OK:
             self.txtBGAudio.SetValue(inFileDlg.GetPath())
             inFileDlg.Destroy()
 
-
     def OnAlignment(self, evt):
         """Set the text alignment according to the radiobox setting."""
         self.curOptions.alignment = util.ID_to_text('alignment', evt.GetInt())
-
 
     def OnFontSelection(self, evt):
         """Show a font selection dialog and set the font."""
@@ -1908,11 +1718,9 @@ class MenuPanel(wx.Panel):
             strFontName = dlgFontChooserDialog.GetSelectedFont().GetFaceName()
             self.curOptions.font = wx.Font(10, wx.FONTFAMILY_DEFAULT,
                 wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False, strFontName)
-            
             # Button shows selected font name in selected font
             self.btnFontChooserDialog.SetFont(self.curOptions.font)
             self.btnFontChooserDialog.SetLabel(strFontName)
-
 
     def OnTextColor(self, evt):
         """Display a color dialog to select the text color."""
@@ -1923,7 +1731,6 @@ class MenuPanel(wx.Panel):
             self.curOptions.colorText = self.curColorData.GetColour()
             self.btnTextColor.SetBackgroundColour(self.curOptions.colorText)
 
-
     def OnHiColor(self, evt):
         """Display a color dialog to select the text highlight color."""
         self.curColorData.SetColour(self.curOptions.colorHi)
@@ -1933,7 +1740,6 @@ class MenuPanel(wx.Panel):
             self.curOptions.colorHi = self.curColorData.GetColour()
             self.btnHiColor.SetBackgroundColour(self.curOptions.colorHi)
 
-
     def OnSelColor(self, evt):
         """Display a color dialog to select the text selection color."""
         self.curColorData.SetColour(self.curOptions.colorSel)
@@ -1942,7 +1748,6 @@ class MenuPanel(wx.Panel):
             self.curColorData = dlgColor.GetColourData()
             self.curOptions.colorSel = self.curColorData.GetColour()
             self.btnSelColor.SetBackgroundColour(self.curOptions.colorSel)
-
 
     def OnUseForAll(self, evt):
         """Use the current menu settings for all menus on disc."""
@@ -1954,13 +1759,6 @@ class MenuPanel(wx.Panel):
             "Settings copied", wx.OK | wx.ICON_INFORMATION)
         dlgAck.ShowModal()
       
-
-    # ==========================================================
-    #
-    # Public utility functions
-    #
-    # ==========================================================
-
     def SetOptions(self, menuOpts):
         """Set control values based on the provided MenuOptions."""
         self.curOptions = menuOpts
@@ -1979,11 +1777,9 @@ class MenuPanel(wx.Panel):
             self.btnFontChooserDialog.SetLabel(self.curOptions.font.GetFaceName())
         self.lbTitles.Set(self.curOptions.titles)
 
-
     def GetOptions(self):
         """Get currently-set encoding options."""
         return self.curOptions
-
 
     def SetDiscFormat(self, format):
         """Enable/disable controls appropriate to the given disc format."""
@@ -1998,38 +1794,17 @@ class MenuPanel(wx.Panel):
             self.lblHiColor.Enable(False)
             self.lblSelColor.Enable(False)
 
-# ===================================================================
-# End MenuPanel
-# ===================================================================
 
-# ===================================================================
-#
-# CLASS DEFINITION
-# Panel for video conversion options
-#
-# ===================================================================
 class VideoPanel(wx.Panel):
-    # ==========================================================
-    #
-    # Internal functions and event handlers
-    #
-    # ==========================================================
-
-    # ==========================================================
-    # Initialize VideoPanel
-    # ==========================================================
+    """A panel showing controls appropriate to encoding a video."""
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
 
-        # ================================
         # Class data
-        # ================================
         self.curOptions = VideoOptions()
         self.parent = parent
 
-        # ================================
         # File information display
-        # ================================
         self.lblInFile = wx.StaticText(self, wx.ID_ANY, "Filename:")
         self.txtInFile = wx.StaticText(self, wx.ID_ANY, "None")
 
@@ -2039,9 +1814,7 @@ class VideoPanel(wx.Panel):
         self.sizFileInfo.Add(self.lblInFile, 0, wx.EXPAND | wx.ALL, 6)
         self.sizFileInfo.Add(self.txtInFile, 1, wx.EXPAND | wx.ALL, 6)
         
-        # ================================
         # Radio buttons
-        # ================================
         # Format-selection radio buttons
         outFormatList = ['352x240 VCD',
                          '480x480 SVCD',
@@ -2076,9 +1849,7 @@ class VideoPanel(wx.Panel):
         self.sizResAspect.Add(self.rbResolution, 1, wx.EXPAND | wx.ALL)
         self.sizResAspect.Add(self.rbAspect, 1, wx.EXPAND | wx.ALL)
                 
-        # ================================
         # Direct-entry CLI option box
-        # ================================
         self.lblCLIOptions = wx.StaticText(self, wx.ID_ANY, "Custom options:")
         self.txtCLIOptions = wx.TextCtrl(self, wx.ID_ANY, "")
         self.txtCLIOptions.SetToolTipString("Type custom tovid command-line "
@@ -2110,9 +1881,7 @@ class VideoPanel(wx.Panel):
         # Video options heading
         self.txtHeading = HeadingText(self, wx.ID_ANY, "Video options")
 
-        # ================================
         # Add controls to main vertical sizer
-        # ================================
         self.sizMain = wx.BoxSizer(wx.VERTICAL)
         self.sizMain.Add(self.txtHeading, 0, wx.EXPAND | wx.ALL, 8)
         self.sizMain.Add(self.sizFileInfo, 0, wx.EXPAND | wx.ALL, 8)
@@ -2121,30 +1890,22 @@ class VideoPanel(wx.Panel):
         self.sizMain.Add(self.btnUseForAll, 0, wx.EXPAND | wx.ALL, 8)
         self.SetSizer(self.sizMain)
 
-    # ==========================================================
-    # Set appropriate format based on radio button selection
-    # ==========================================================
     def OnFormat(self, evt):
+        """Set appropriate format based on radio button selection."""
         # Convert integer value to text representation
         # (e.g., ID_FMT_DVD to 'dvd')
         self.curOptions.format = util.ID_to_text('format', evt.GetInt())
 
-    # ==========================================================
-    # Set aspect ratio based on radio button selection
-    # ==========================================================
     def OnAspect(self, evt):
+        """Set aspect ratio based on radio button selection."""
         self.curOptions.aspect = util.ID_to_text('aspect', evt.GetInt())
 
-    # ==========================================================
-    # Update CLI options
-    # ==========================================================
     def OnCLIOptions(self, evt):
+        """Update custom CLI options when the user edits the textbox."""
         self.curOptions.addoptions = self.txtCLIOptions.GetValue()
 
-    # ==========================================================
-    # Use the current video settings for all videos on disc
-    # ==========================================================
     def OnUseForAll(self, evt):
+        """Use the current video settings for all videos on disc."""
         countItems = self.parent.UseForAllItems(self.curOptions)
         # Display acknowledgement
         dlgAck = wx.MessageDialog(self,
@@ -2153,24 +1914,14 @@ class VideoPanel(wx.Panel):
             "Settings copied", wx.OK | wx.ICON_INFORMATION)
         dlgAck.ShowModal()
 
-    # ==========================================================
-    # Preview the video in mplayer
-    # ==========================================================
     def OnPreview(self, evt):
+        """Preview the video in mplayer."""
         strCommand = "gmplayer \"%s\"" % self.curOptions.inFile
         wx.Execute(strCommand, wx.EXEC_SYNC)
-    
 
-    # ==========================================================
-    #
-    # Public utility functions
-    #
-    # ==========================================================
 
-    # ==========================================================
-    # Set control values based on the provided VideoOptions
-    # ==========================================================
     def SetOptions(self, videoOpts):
+        """Set control values based on the provided VideoOptions."""
         self.curOptions = videoOpts
 
         self.txtHeading.SetLabel("Video options: %s" % self.curOptions.title)
@@ -2179,16 +1930,12 @@ class VideoPanel(wx.Panel):
         self.rbAspect.SetSelection(util.text_to_ID(self.curOptions.aspect))
         self.txtCLIOptions.SetValue(self.curOptions.addoptions)
 
-    # ==========================================================
-    # Get currently-set encoding options
-    # ==========================================================
     def GetOptions(self):
+        """Return the currently-set encoding options."""
         return self.curOptions
 
-    # ==========================================================
-    # Enable/disable controls to suit DVD, VCD, or SVCD-compliance
-    # ==========================================================
     def SetDiscFormat(self, format):
+        """Enable/disable controls to suit DVD, VCD, or SVCD-compliance."""
         # For DVD, disable non-DVD output formats
         if format == 'dvd':
             for rbItem in [ID_FMT_DVD, ID_FMT_HALFDVD, ID_FMT_DVDVCD]:
@@ -2209,11 +1956,8 @@ class VideoPanel(wx.Panel):
         else:
             print "VideoPanel.SetDiscFormat: Unknown format %s" % format 
     
-    # ==========================================================
-    # Set the disc TV system to NTSC or PAL
-    # Enable/disable controls accordingly
-    # ==========================================================
     def SetDiscTVSystem(self, format):
+        """Set NTSC or PAL, and show appropriate controls."""
         # Display NTSC resolutions in format radiobox
         if format in [ 'ntsc', 'ntscfilm' ]:
             self.rbResolution.SetItemLabel(ID_FMT_VCD, '352x240 VCD')
@@ -2232,6 +1976,3 @@ class VideoPanel(wx.Panel):
         else:
             print "VideoPanel.SetDiscTVSystem: Unknown format %s" % format
 
-# ===================================================================
-# End VideoPanel
-# ===================================================================
