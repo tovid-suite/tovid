@@ -10,6 +10,9 @@ import sys
 import libtovid
 from libtovid.tdl import Parser
 from libtovid.log import Log
+from libtovid.disc import Disc
+from libtovid.menu import Menu
+from libtovid.video import Video
 
 log = Log('project.py')
 
@@ -48,9 +51,9 @@ class Project:
         handle undefined or orphaned elements."""
 
         for name, element in self.elemdict.iteritems():
-            if element.tag == 'Disc':
+            if isinstance(element, Disc):
                 # Link to 'topmenu' target, if it exists
-                linkname = element.get('topmenu')
+                linkname = element['topmenu']
                 if self.elemdict.has_key(linkname):
                     element.children.append(self.elemdict[linkname])
                     self.elemdict[linkname].parents.append(element)
@@ -58,9 +61,9 @@ class Project:
                     log.error("Disc \"%s\" links to undefined topmenu \"%s\"" % \
                             (name, linkname))
 
-            elif element.tag == 'Menu':
+            elif isinstance(element, Menu):
                 # Link to all 'titles' targets, if they exist
-                for linkname in element.get('titles'):
+                for linkname in element['titles']:
                     if self.elemdict.has_key(linkname):
                         log.debug("Making %s a child of %s" % \
                                 (linkname, name))
@@ -90,21 +93,13 @@ class Project:
         else:
             return None
 
-    def get_elements(self, type):
-        """Return a list of elements of the given type in this project."""
-        elements = []
-        for name, element in self.elemdict.iteritems():
-            if element.tag == type:
-                elements.append(element)
-        return elements
 
-
-    def tdl_string(self):
-        """Convert the project to a TDL string and return it."""
-        projstring = ""
+    def to_string(self):
+        """Return the project, formatted as a string."""
+        result = ''
         for name, element in self.elemdict.iteritems():
-            projstring += "%s\n" % element.tdl_string()
-        return projstring
+            result += '%s\n' % element.to_string()
+        return result
 
 
 # ===========================================================

@@ -75,3 +75,15 @@ def which(appname):
     found (just like UNIX 'which')."""
     return subst('which %s' % appname)
 
+def verify_app(self, appname):
+    """Verify that the given appname is available; if not, log an error
+    and exit."""
+    app = which(appname)
+    if not app:
+        # TODO: A more friendly error message
+        log.error("Cannot find '%s' in your path." % appname)
+        log.error("You may need to (re)install it.")
+        sys.exit()
+    else:
+        log.debug("Found %s" % app)
+

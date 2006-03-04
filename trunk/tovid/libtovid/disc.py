@@ -27,10 +27,10 @@ import sys
 
 import libtovid
 from libtovid.option import OptionDef
-from libtovid.element import Element
+from libtovid.element import OptionSet
 
-class Disc(Element):
-    """A Disc element with associated options"""
+class Disc(OptionSet):
+    """A Disc with associated options"""
     optiondefs = { 
         'format':
             OptionDef('format', 'vcd|svcd|dvd', 'dvd',
@@ -47,16 +47,16 @@ class Disc(Element):
     }
 
     def __init__(self, name='Untitled Disc'):
-        Element.__init__(self, 'Disc', name, self.optiondefs)
+        OptionSet.__init__(self, name, self.optiondefs)
 
     def generate(self):
         """Write dvdauthor or vcdimager XML for the element, to
         the file specified by the disc's 'out' option."""
-        if self.get('format') == 'dvd':
+        if self['format'] == 'dvd':
             xml = dvd_disc_xml(self)
-        elif self.get('format') in ['vcd', 'svcd']:
+        elif self['format'] in ['vcd', 'svcd']:
             xml = vcd_disc_xml(self)
-        outfile = open(self.get('out'), 'w')
+        outfile = open(self['out'], 'w')
         outfile.write(xml)
 
 
@@ -70,7 +70,7 @@ def vcd_disc_xml(disc):
     <videocd xmlns="http://www.gnu.org/software/vcdimager/1.0/"
     """
     # format == vcd|svcd, version=1.0 (svcd) | 2.0 (vcd)
-    format = disc.get('format')
+    format = disc['format']
     if format == 'vcd':
         version = "2.0"
     else:
@@ -99,7 +99,7 @@ def vcd_disc_xml(disc):
 
 
 def dvd_disc_xml(disc):
-    """Return a string containing dvdauthor XML for the given disc element."""
+    """Return a string containing dvdauthor XML for the given Disc."""
     xml = '<dvdauthor dest="%s">\n' % disc.name.replace(' ', '_')
     xml += '<vmgm>\n'
     # If there's a topmenu, write vmgm-level XML for it
@@ -108,7 +108,7 @@ def dvd_disc_xml(disc):
         xml += '  <menus>\n'
         xml += '    <video />\n'
         xml += '    <pgc entry="title">\n'
-        xml += '      <vob file="%s" />\n' % topmenu.get('out')
+        xml += '      <vob file="%s" />\n' % topmenu['out']
         # TODO: Add buttons for each submenu
         # <button>jump titleset N menu;</button>
         num = 1
@@ -134,11 +134,11 @@ def dvd_disc_xml(disc):
 # Menu XML generators
 
 def dvd_menu_xml(menu):
-    """Return a string containing dvdauthor XML for the given menu element."""
+    """Return a string containing dvdauthor XML for the given Menu."""
     xml = '<menus>\n'
     xml += '  <video />\n'
     xml += '  <pgc entry="root">\n'
-    xml += '  <vob file="%s" />\n' % menu.get('out')
+    xml += '  <vob file="%s" />\n' % menu['out']
     # For each child ('titles' target), add a button
     num = 1
     for target in menu.children:
@@ -154,15 +154,15 @@ def dvd_menu_xml(menu):
 # Video XML generators
 
 def dvd_video_xml(video):
-    """Return a string containing dvdauthor XML for the given video element."""
+    """Return a string containing dvdauthor XML for the given Video."""
 
     chap_str = '0'
-    for chap in video.get('chapters'):
+    for chap in video['chapters']:
         chap_str += ',' + chap
 
     xml = '  <pgc>\n'
     xml += '    <vob file="%s" chapters="%s" />\n' % \
-            (video.get('out'), chap_str)
+            (video['out'], chap_str)
     xml += '    <post>call menu;</post>\n'
     xml += '  </pgc>\n'
     return xml

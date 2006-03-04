@@ -15,13 +15,13 @@ import sys
 import libtovid
 from libtovid.option import OptionDef
 from libtovid.log import Log
-from libtovid.element import Element
+from libtovid.element import OptionSet
 from libtovid.VideoPlugins import *
 
 log = Log('video.py')
 
 
-class Video(Element):
+class Video(OptionSet):
     """A Video element with associated options.
     
     This dictionary defines the set of options that may be given to a
@@ -132,7 +132,7 @@ class Video(Element):
     }
 
     def __init__(self, name='Untitled Video'):
-        Element.__init__(self, 'Video', name, self.optiondefs)
+        OptionSet.__init__(self, name, self.optiondefs)
         
     def generate(self):
         """Generate a video element by encoding an input file to a target
@@ -154,10 +154,10 @@ class Video(Element):
         log.info("generate(): Encoding with the %s plugin..." % encoder.__class__)
         encoder.encode()
 
-
-
-
-
-
-    
+    def to_string(self):
+        """Return video and options, formatted as a string."""
+        result = 'Video "%s"\n' % self.name
+        result += self.options.to_string()
+        return result
+ 
 
