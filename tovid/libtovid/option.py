@@ -3,14 +3,19 @@
 
 __all__ = ['OptionDef']
 
+
 # Sorta temporary holding location for OptionDef class, until a more suitable
 # home can be found
 
 import re
+import sys
+import copy
 
 from libtovid.utils import trim
+from libtovid.log import Log
 
-# ===========================================================
+log = Log('option.py')
+
 class OptionDef:
     """A command-line-style option, expected argument formatting, default value,
     and notes on usage and purpose.
@@ -116,3 +121,50 @@ class OptionDef:
                 (self.name, self.argformat, self.default)
         usage += "    %s\n" % self.doc
         return usage
+
+
+class OptionSet:
+    """A set of attributes and values"""
+
+    def __init__(self, name, defaults):
+        self.name = name
+        self.options = {}
+        for key, value in defaults.iteritems():
+            self[key] = copy.copy(value)
+        self.parents = []
+        self.children = []
+
+    def __getitem__(self, key):
+        """Get the value of the given option."""
+        if key in self.options:
+            return self.options[key]
+        else:
+            log.error("'%s' is not a valid option" % key)
+            sys.exit()
+
+    def __setitem__(self, key, value):
+        """Set the given option to the given value."""
+        # Consider: Treat value=='' as resetting to default value?
+        self.options[key.lstrip('-')] = copy.copy(value)
+
+    # TODO:
+    # def from_string(str):
+
+    def to_string(self):
+        """Return all options, formatted as a string."""
+        result = ''
+        for key, value in self.options.iteritems():
+            # For boolean options, print Trues and omit Falses
+            if value.__class__ == bool:
+                if value == True:
+                    result += "    %s\n" % key
+                else:
+                    pass
+            # If value has spaces, quote it
+            elif value.__class__ == str and ' ' in value:
+                result += "    %s \"%s\"\n" % (key, value)
+            # Otherwise, don't
+            else:
+                result += "    %s %s\n" % (key, value)
+        return result
+

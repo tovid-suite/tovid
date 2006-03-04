@@ -86,7 +86,7 @@ Behind the scenes, a new element is created, and filled with all the default
 options befitting a Menu element. You can check it out by displaying the TDL
 string representation of the element, like so:
 
-    >>> print menu.tdl_string()
+    >>> print menu.to_string()
     Menu "Main menu"
         textcolor white
         format dvd
@@ -161,7 +161,7 @@ from libtovid.menu import Menu
 from libtovid.disc import Disc
 from libtovid.option import OptionDef
 from libtovid.log import Log
-from libtovid.element import Element
+from libtovid.element import OptionSet
 
 log = Log('tdl.py')
 
@@ -316,11 +316,11 @@ class Parser:
                 # (i.e., -vcd == -format vcd)
                 if element.optiondefs[opt].alias:
                     key, value = element.optiondefs[opt].alias
-                    element.set(key, value)
+                    element[key] = value
                     
                 # No args? Must just be a flag--set it to True
                 elif expected_args == 0:
-                    element.set(opt, True)
+                    element[opt] = True
 
                 # One arg? Easy...
                 elif expected_args == 1:
@@ -330,7 +330,7 @@ class Parser:
                     #     element.set(opt, arg)
                     # else:
                     #     print "Invalid argument to -%s: %s" % (opt, arg)
-                    element.set(opt, arg)
+                    element[opt] = arg
 
                 # Unlimited (-1) number of args? Create a list,
                 # and look for comma-separation.
@@ -348,7 +348,7 @@ class Parser:
                         next = self.next_token()
                     # Put the last-read token back
                     self.lexer.push_token(next)
-                    element.set(opt, arglist)
+                    element[opt] = arglist
             else:
                 self.error("Unrecognized token: %s" % token)
 
@@ -376,11 +376,11 @@ if __name__ == "__main__":
 
     # Create one of each element and display them (to ensure that
     # default values are copied correctly)
-    vid = Element('Video', "Test video")
-    menu = Element('Menu', "Test menu")
-    disc = Element('Disc', "Test disc")
-    vid.tdl_string()
-    menu.tdl_string()
-    disc.tdl_string()
+    vid = OptionSet('Video', "Test video")
+    menu = OptionSet('Menu', "Test menu")
+    disc = OptionSet('Disc', "Test disc")
+    vid.to_string()
+    menu.to_string()
+    disc.to_string()
 
 
