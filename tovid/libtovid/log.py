@@ -63,6 +63,8 @@ class Log:
             self._log('*** Error', message)
 
     def _log(self, level, message):
+        # Strip trailing newlines from message
+        message = message.rstrip('\n\r')
         print "%s [%s]: %s" % (level, self.name, message)
         self.logfile.write("%s [%s]: %s\n" % (level, self.name, message))
 

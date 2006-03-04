@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-3.7.dtd">
 <!-- Project file for project tovid -->
-<!-- Saved: 2006-03-01, 16:32:08 -->
+<!-- Saved: 2006-03-03, 17:11:30 -->
 <!-- Copyright (C) 2006 ,  -->
 <Project version="3.7">
   <ProgLanguage mixed="1">Python</ProgLanguage>
@@ -162,19 +162,11 @@
     </Source>
     <Source>
       <Dir>libtovid</Dir>
-      <Name>option.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
       <Name>streams.py</Name>
     </Source>
     <Source>
       <Dir>libtovid</Dir>
       <Name>tdl.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
-      <Name>element.py</Name>
     </Source>
     <Source>
       <Dir>libtovid</Dir>
@@ -195,6 +187,10 @@
     <Source>
       <Dir>libtovid</Dir>
       <Name>utils.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>options.py</Name>
     </Source>
   </Sources>
   <Forms>

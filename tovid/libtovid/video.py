@@ -13,9 +13,8 @@ __doc__ = \
 import sys
 
 import libtovid
-from libtovid.option import OptionDef
+from libtovid.options import OptionDef, OptionSet
 from libtovid.log import Log
-from libtovid.element import OptionSet
 from libtovid.VideoPlugins import *
 
 log = Log('video.py')
@@ -157,7 +156,7 @@ class Video(OptionSet):
     def to_string(self):
         """Return video and options, formatted as a string."""
         result = 'Video "%s"\n' % self.name
-        result += self.options.to_string()
+        result += OptionSet.to_string(self)
         return result
  
 
