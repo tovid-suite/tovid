@@ -328,7 +328,7 @@ class ImageSequence:
 
         
     def generate(self, video):
-        """Create an image sequence from the given Video element."""
+        """Create an image sequence from the given Video."""
         # Create work directory if it doesn't exist
         if not os.path.exists(self.outdir):
             print "Creating thumbnail directory: %s" % self.outdir
@@ -369,7 +369,7 @@ class ImageSequence:
 class Thumbnail:
     """Video thumbnail, a small preview of a video, with effects"""
     def __init__(self, video, size = (120,90), loc = (0,0)):
-        """Create a thumbnail from the given Video element."""
+        """Create a thumbnail from the given Video."""
         self.video = video
         self.size = size
         self.loc = loc
@@ -388,7 +388,7 @@ class Thumbnail:
 class ThumbMenu (MenuPlugin):
     """Menu of video thumbnails"""
     def __init__(self, menu):
-        """Create a thumbnail menu from the given Menu element."""
+        """Create a thumbnail menu from the given Menu."""
         self.menu = menu
         self.thumbs = []
         self.outdir = os.path.abspath('menu_%s' % degunk(self.menu.name))

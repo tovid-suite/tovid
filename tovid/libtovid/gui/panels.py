@@ -13,6 +13,9 @@ from libtovid.gui.icons import MenuIcon, SlideIcon, VideoIcon, DiscIcon
 from libtovid.gui.options import DiscOptions, MenuOptions, VideoOptions
 from libtovid.gui import util
 from libtovid.gui.util import _, VER_GetFirstChild, VideoStatSeeker, element_to_options
+from libtovid.disc import Disc
+from libtovid.menu import Menu
+from libtovid.video import Video
 
 class AuthorFilesTaskPanel(wx.Panel):
     """A three-step interface for authoring video files to disc.
@@ -1071,7 +1074,7 @@ class DiscLayoutPanel(wx.Panel):
             elements.append(curitem.toElement())
         print "DiscLayoutPanel.GetElements(): elements:"
         for elem in elements:
-            print elem.tdl_string()
+            print elem.to_string()
         return elements
 
     def SetElements(self, topitems):
@@ -1110,9 +1113,9 @@ class DiscLayoutPanel(wx.Panel):
         return item
 
     def GetIcon(self, element):
-        if element.tag == 'Disc':
+        if isinstance(element, Disc):
             return self.idxIconDisc
-        elif element.tag == 'Menu':
+        elif isinstance(element, Menu):
             return self.idxIconMenu
         else:
             return self.idxIconVideo

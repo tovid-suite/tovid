@@ -6,7 +6,7 @@ __doc__ = \
 a standard MPEG format such as (S)VCD or DVD.
 """
 
-__all__ = ['VideoPlugin', 'Mpeg2encEncoder', 'MencoderEncoder']
+__all__ = ['Encoder', 'Mpeg2encEncoder', 'MencoderEncoder']
 
 # TODO: Cleanup/modularize, move stuff to classes, make interface simple
 
@@ -19,12 +19,12 @@ from libtovid.standards import get_resolution
 from libtovid.utils import ratio_to_float
 from libtovid.log import Log
 from libtovid.filetypes import MultimediaFile
-from libtovid.utils import which
+from libtovid.utils import verify_app
 from libtovid.globals import Config
 
 log = Log('VideoPlugins.py')
 
-class VideoPlugin:
+class Encoder:
     """Base plugin class; all encoders inherit from this."""
     def __init__(self, video):
         log.info('Creating a VideoPlugin')
@@ -39,7 +39,7 @@ class VideoPlugin:
         log.debug('Creating MultimediaFile for "%s"' % self.video['in'])
         self.infile = MultimediaFile(self.video['in'])
         self.infile.display()
-        
+
     def preproc(self):
         """Do preprocessing common to all backends."""
         width, height = get_resolution(self.video['format'], self.video['tvsys'])
@@ -110,22 +110,6 @@ class VideoPlugin:
         self.samprate = samprate
         self.fps = fps
 
-    def verify_app(self, appname):
-        """Verify that the given appname is available; if not, log an error
-        and exit."""
-        app = which(appname)
-        if not app:
-            # TODO: A more friendly error message
-            log.error("Cannot find '%s' in your path." % appname)
-            log.error("You may need to (re)install it.")
-            sys.exit()
-        else:
-            log.debug("Found %s" % app)
-
-    def verify_apps(self, applist):
-        for app in applist:
-            self.verify_app(app)
-            
     def run(self, command, wait=True):
         """Execute the given command, with proper stream redirection and
         verbosity. Wait for execution to finish, if wait is True. Subclasses
@@ -144,11 +128,12 @@ class VideoPlugin:
             process.wait()
 
 
-class Mpeg2encEncoder(VideoPlugin):
+class Mpeg2encEncoder(Encoder):
     def __init__(self, video):
         """Create an mplayer/mpeg2enc/mplex encoder for the given video."""
-        VideoPlugin.__init__(self, video)
-        self.verify_apps(['mplayer', 'mpeg2enc', 'ffmpeg', 'mp2enc', 'mplex'])
+        Encoder.__init__(self, video)
+        for app in ['mplayer', 'mpeg2enc', 'ffmpeg', 'mp2enc', 'mplex']:
+            utils.verify_app(app)
         self.yuvfile = '%s/stream.yuv' % Config().workdir
         if video['format'] in ['vcd', 'svcd']:
             self.asuf = 'mpa'
@@ -273,11 +258,11 @@ class Mpeg2encEncoder(VideoPlugin):
         self.run(cmd)
 
 
-class MencoderEncoder(VideoPlugin):
+class MencoderEncoder(Encoder):
     def __init__(self, video):
         """Create an mencoder encoder for the given video."""
-        VideoPlugin.__init__(self, video)
-        self.verify_app('mencoder')
+        Encoder.__init__(self, video)
+        utils.verify_app('mencoder')
         
     def encode(self):
         """Encode the input video to the target format."""
@@ -337,11 +322,11 @@ class MencoderEncoder(VideoPlugin):
         self.run(cmd)
 
 
-class FfmpegEncoder(VideoPlugin):
+class FfmpegEncoder(Encoder):
     def __init__(self, video):
         """Create an ffmpeg encoder for the given video."""
-        VideoPlugin.__init__(self, video)
-        self.verify_app('ffmpeg')
+        Encoder.__init__(self, video)
+        utils.verify_app('ffmpeg')
         
     def encode(self):
         """Encode the video with ffmpeg."""

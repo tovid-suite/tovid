@@ -3,6 +3,9 @@
 
 import threading, wx
 from libtovid.gui.constants import id_dict
+from libtovid.disc import Disc
+from libtovid.menu import Menu
+from libtovid.video import Video
 
 __all__ = ["_", "ID_to_text", "text_to_ID", "element_to_options", "VER_GetFirstChild", 
             "VideoStatSeeker"]
@@ -30,14 +33,12 @@ def element_to_options(element):
     """Takes a TDL element and returns a DiscOptions, MenuOptions,
     or VideoOptions object filled with appropriate values.
     """
-    if element.tag == 'Disc':
+    if isinstance(element, Disc):
         opts = DiscOptions()
-    elif element.tag == 'Menu':
+    elif isinstance(element, Menu):
         opts = MenuOptions()
-    elif element.tag == 'Video':
+    else: # if isinstance(element, Video):
         opts = VideoOptions()
-    else:
-        print "element_to_options: unknown element.tag %s" % element.tag
 
     opts.fromElement(element)
     return opts

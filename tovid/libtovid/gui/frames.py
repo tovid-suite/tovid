@@ -131,7 +131,7 @@ class MainFrame(wx.Frame):
             
             elements = self.panAuthorFiles.GetElements()
             for element in elements:
-                outFile.write(element.tdl_string())
+                outFile.write(element.to_string())
 
             outFile.close()
     
