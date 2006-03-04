@@ -124,13 +124,13 @@ class OptionDef:
 
 
 class OptionSet:
-    """A set of attributes and values"""
+    """A named set of attributes and values"""
 
     def __init__(self, name, defaults):
         self.name = name
         self.options = {}
-        for key, value in defaults.iteritems():
-            self[key] = copy.copy(value)
+        for key, optdef in defaults.iteritems():
+            self[key] = copy.copy(optdef.default)
         self.parents = []
         self.children = []
 

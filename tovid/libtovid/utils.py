@@ -8,6 +8,10 @@ import os
 import sys
 import string
 
+from libtovid.log import Log
+
+log = Log('utils.py')
+
 def degunk(text):
     """Strip special characters from the given string (any that might
     cause problems when used in a filename)."""
@@ -70,15 +74,10 @@ def subst(command):
     output = os.popen(command, 'r').readlines()
     return ''.join(output).rstrip('\n')
 
-def which(appname):
-    """Return the full pathname of the given app, or empty string if not
-    found (just like UNIX 'which')."""
-    return subst('which %s' % appname)
-
-def verify_app(self, appname):
+def verify_app(appname):
     """Verify that the given appname is available; if not, log an error
     and exit."""
-    app = which(appname)
+    app = subst('which %s' % appname)
     if not app:
         # TODO: A more friendly error message
         log.error("Cannot find '%s' in your path." % appname)

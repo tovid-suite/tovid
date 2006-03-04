@@ -150,17 +150,17 @@ class MenuOptions:
         menu['titles'] = strtitles
         return menu
 
-    def fromElement(self, element):
-        """Load options from a Video Element."""
-        print "Loading Menu element:"
+    def fromElement(self, menu):
+        """Load options from a Menu."""
+        print "Loading Menu:"
         print element.to_string()
         self.type = ID_MENU
-        self.tvsys = element['tvsys']
-        self.format = element['format']
-        self.alignment = element['align']
-        self.background = element['background']
-        self.audio = element['audio']
-        self.titles = element['titles']
+        self.tvsys = menu['tvsys']
+        self.format = menu['format']
+        self.alignment = menu['align']
+        self.background = menu['background']
+        self.audio = menu['audio']
+        self.titles = menu['titles']
         # TODO: Find a good way to parse/assign colors and font
 
     def GetCommand(self):

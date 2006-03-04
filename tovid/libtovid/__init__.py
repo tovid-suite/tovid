@@ -18,7 +18,7 @@ __all__ = [\
     "video",
     "VideoPlugins",
 
-    "option",
+    "options",
     "tdl",
     "project",
     "streams",

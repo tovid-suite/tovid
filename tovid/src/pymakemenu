@@ -43,6 +43,6 @@ if __name__ == '__main__':
         par = libtovid.tdl.Parser()
         elems = par.parse_args(args)
         print "Parsed Menu element:"
-        print elems[0].tdl_string()
+        print elems[0].to_string()
         print "Generating menu..."
         elems[0].generate()

@@ -35,7 +35,7 @@ if __name__ == '__main__':
     par = tdl.Parser()
     elems = par.parse_args(args)
     print "Parsed Video element:"
-    print elems[0].tdl_string()
+    print elems[0].to_string()
     print "Generating video..."
     Video.generate(elems[0])
 

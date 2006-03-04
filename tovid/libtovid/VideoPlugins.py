@@ -133,7 +133,7 @@ class Mpeg2encEncoder(Encoder):
         """Create an mplayer/mpeg2enc/mplex encoder for the given video."""
         Encoder.__init__(self, video)
         for app in ['mplayer', 'mpeg2enc', 'ffmpeg', 'mp2enc', 'mplex']:
-            utils.verify_app(app)
+            verify_app(app)
         self.yuvfile = '%s/stream.yuv' % Config().workdir
         if video['format'] in ['vcd', 'svcd']:
             self.asuf = 'mpa'
@@ -262,7 +262,7 @@ class MencoderEncoder(Encoder):
     def __init__(self, video):
         """Create an mencoder encoder for the given video."""
         Encoder.__init__(self, video)
-        utils.verify_app('mencoder')
+        verify_app('mencoder')
         
     def encode(self):
         """Encode the input video to the target format."""
@@ -326,7 +326,7 @@ class FfmpegEncoder(Encoder):
     def __init__(self, video):
         """Create an ffmpeg encoder for the given video."""
         Encoder.__init__(self, video)
-        utils.verify_app('ffmpeg')
+        verify_app('ffmpeg')
         
     def encode(self):
         """Encode the video with ffmpeg."""

@@ -26,8 +26,7 @@ import string
 import sys
 
 import libtovid
-from libtovid.option import OptionDef
-from libtovid.element import OptionSet
+from libtovid.options import OptionDef, OptionSet
 
 class Disc(OptionSet):
     """A Disc with associated options"""
