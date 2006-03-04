@@ -12,6 +12,7 @@ class Config:
 
     def __init__(self):
         self.__dict__ = self._shared_state
+        self.workdir = '/tmp'
         if not self.initialized:
             self.one_time_init()
             self.initialized = True
