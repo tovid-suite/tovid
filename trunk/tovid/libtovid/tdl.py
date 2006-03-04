@@ -159,9 +159,8 @@ import libtovid
 from libtovid.video import Video
 from libtovid.menu import Menu
 from libtovid.disc import Disc
-from libtovid.option import OptionDef
+from libtovid.options import OptionDef, OptionSet
 from libtovid.log import Log
-from libtovid.element import OptionSet
 
 log = Log('tdl.py')
 

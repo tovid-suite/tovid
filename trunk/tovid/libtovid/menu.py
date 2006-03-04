@@ -45,9 +45,8 @@ import os
 import glob
 
 import libtovid
-from libtovid.option import OptionDef
+from libtovid.options import OptionDef, OptionSet
 from libtovid.MenuPlugins import *
-from libtovid.element import OptionSet
 from libtovid.log import Log
 
 log = Log('menu.py')

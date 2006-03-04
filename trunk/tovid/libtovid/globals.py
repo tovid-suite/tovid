@@ -5,8 +5,6 @@ __all__ = ['Config']
 
 import os
 
-from libtovid.utils import which
-
 class Config:
     """Borg class for holding global config and user preferences."""
     _shared_state = {}
