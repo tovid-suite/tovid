@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python2.4
 # filetypes.py
 
 __all__ = ['MultimediaFile']
