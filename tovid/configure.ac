@@ -56,7 +56,7 @@ AM_INIT_AUTOMAKE
 # ******************************************************************************
 
 # All run-time dependencies are checked in tovid-init now. In addition to being
-# the correct way to do things, it makes packaging much easier for dep|rpm|???
+# the Correct Way to do things, it makes packaging much easier for deb|rpm|???
 # maintainers.
 
 # ******************************************************************************
