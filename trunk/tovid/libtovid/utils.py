@@ -7,6 +7,7 @@ __all__ = ['degunk', 'trim', 'ratio_to_float', 'subst']
 import os
 import sys
 import string
+from subprocess import *
 
 from libtovid.log import Log
 
@@ -86,3 +87,37 @@ def verify_app(appname):
     else:
         log.debug("Found %s" % app)
 
+
+def pretty_dict(dict):
+    """Return a pretty-printed dictionary, with one line for each key."""
+    result = ''
+    for key, value in dict.iteritems():
+        # For boolean options, print Trues and omit Falses
+        if value.__class__ == bool:
+            if value == True:
+                result += "    %s\n" % key
+            else:
+                pass
+        # If value has spaces, quote it
+        elif value.__class__ == str and ' ' in value:
+            result += "    %s \"%s\"\n" % (key, value)
+        # Otherwise, don't
+        else:
+            result += "    %s %s\n" % (key, value)
+    return result
+
+
+def run(command, wait=True):
+    """Execute the given command, with proper stream redirection and
+    verbosity. Wait for execution to finish if desired."""
+    log.info("VideoPlugin: Running the following command:")
+    log.info(command)
+    process = Popen(command, shell=True, bufsize=1, \
+            stdout=PIPE, stderr=PIPE, close_fds=True)
+    if wait:
+        for line in process.stdout.readlines():
+            log.info(line.rstrip('\n'))
+        for line in process.stderr.readlines():
+            log.debug(line.rstrip('\n'))
+        log.info("Waiting for process to terminate...")
+        process.wait()

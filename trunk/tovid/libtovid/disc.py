@@ -24,11 +24,12 @@ Or:
 
 import string
 import sys
+from copy import copy
 
 import libtovid
-from libtovid.options import OptionDef, OptionSet
+from libtovid.options import OptionDef
 
-class Disc(OptionSet):
+class Disc:
     """A Disc with associated options"""
     optiondefs = { 
         'format':
@@ -46,16 +47,21 @@ class Disc(OptionSet):
     }
 
     def __init__(self, name='Untitled Disc'):
-        OptionSet.__init__(self, name, self.optiondefs)
+        self.name = name
+        self.options = {}
+        for key, optdef in self.optiondefs.iteritems():
+            self.options[key] = copy(optdef.default)
+        self.parents = []
+        self.children = []
 
     def generate(self):
         """Write dvdauthor or vcdimager XML for the element, to
         the file specified by the disc's 'out' option."""
-        if self['format'] == 'dvd':
+        if self.options['format'] == 'dvd':
             xml = dvd_disc_xml(self)
-        elif self['format'] in ['vcd', 'svcd']:
+        elif self.options['format'] in ['vcd', 'svcd']:
             xml = vcd_disc_xml(self)
-        outfile = open(self['out'], 'w')
+        outfile = open(self.options['out'], 'w')
         outfile.write(xml)
 
 

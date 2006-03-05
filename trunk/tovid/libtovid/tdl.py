@@ -1,7 +1,6 @@
 #! /usr/bin/env python2.4
 # tdl.py
 
-# ===========================================================
 __doc__ = \
 """This module contains a definition of the tovid design language (TDL),
 including:
@@ -159,7 +158,7 @@ import libtovid
 from libtovid.video import Video
 from libtovid.menu import Menu
 from libtovid.disc import Disc
-from libtovid.options import OptionDef, OptionSet
+from libtovid.options import OptionDef
 from libtovid.log import Log
 
 log = Log('tdl.py')
@@ -212,15 +211,12 @@ class Parser:
 
     def parse_stdin(self):
         """Parse all text from stdin until EOF (^D)"""
-
         # shlex uses stdin by default
         self.lexer = shlex.shlex(posix = True)
         return self.parse()
 
-
     def parse_file(self, filename):
         """Parse all text in a file"""
-
         # Open file and create a lexer for it
         stream = open(filename, "r")
         self.lexer = shlex.shlex(stream, filename, posix = True)
@@ -229,14 +225,11 @@ class Parser:
         stream.close()
         return result
 
-
     def parse_string(self, str):
         """Parse all text in a string"""
-
         # Create a lexer for the string
         self.lexer = shlex.shlex(str, posix = True)
         return self.parse()
-
 
     def parse_args(self, args):
         """Parse all text in a list of strings such as sys.argv"""
@@ -315,11 +308,11 @@ class Parser:
                 # (i.e., -vcd == -format vcd)
                 if element.optiondefs[opt].alias:
                     key, value = element.optiondefs[opt].alias
-                    element[key] = value
+                    element.options[key] = value
                     
                 # No args? Must just be a flag--set it to True
                 elif expected_args == 0:
-                    element[opt] = True
+                    element.options[opt] = True
 
                 # One arg? Easy...
                 elif expected_args == 1:
@@ -329,7 +322,7 @@ class Parser:
                     #     element.set(opt, arg)
                     # else:
                     #     print "Invalid argument to -%s: %s" % (opt, arg)
-                    element[opt] = arg
+                    element.options[opt] = arg
 
                 # Unlimited (-1) number of args? Create a list,
                 # and look for comma-separation.
@@ -347,7 +340,7 @@ class Parser:
                         next = self.next_token()
                     # Put the last-read token back
                     self.lexer.push_token(next)
-                    element[opt] = arglist
+                    element.options[opt] = arglist
             else:
                 self.error("Unrecognized token: %s" % token)
 
@@ -373,23 +366,3 @@ Output:
 
 # TODO: Write a proper unit test
 # See http://docs.python.org/lib/module-unittest.html
-
-
-# Self-test; executed when this module is run as a standalone script
-if __name__ == "__main__":
-    # Print all element/option definitions
-    for elem in element_classes:
-        print "%s element options:" % elem
-        for key, optdef in element_classes[elem].optiondefs.iteritems():
-            print optdef.usage_string()
-
-    # Create one of each element and display them (to ensure that
-    # default values are copied correctly)
-    vid = OptionSet('Video', "Test video")
-    menu = OptionSet('Menu', "Test menu")
-    disc = OptionSet('Disc', "Test disc")
-    vid.to_string()
-    menu.to_string()
-    disc.to_string()
-
-
