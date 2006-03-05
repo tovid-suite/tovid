@@ -1,0 +1,15 @@
+#! /bin/bash
+# Do a "quick release" of the SVN code
+
+TARBALL="tovid-svn-`date +%Y-%m-%d`.tar.gz"
+
+if test $# -lt 1; then
+    echo "Usage: quickrelease USERNAME"
+    exit
+else
+    USERNAME=$1
+fi
+./bootstrap
+make dist
+mv tovid-svn.tar.gz $TARBALL
+scp $TARBALL $USERNAME@shell.berlios.de:/home/groups/ftp/pub/tovid
