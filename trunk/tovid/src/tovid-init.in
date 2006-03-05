@@ -160,7 +160,6 @@ format_time()
 # ******************************************************************************
 unformat_time()
 {
-    echo "unformat_time $1"
     HMS_HOURS=`echo $1 | awk -F ':' '{print $1}'`
     HMS_MINS=`echo $1 | awk -F ':' '{print $2}'`
     HMS_SECS=`echo $1 | awk -F ':' '{print $3}'`
