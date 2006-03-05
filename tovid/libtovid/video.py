@@ -230,10 +230,10 @@ class Video:
         outfile = self.options['out']
         if method == 'mpeg2enc':
             log.info("generate(): Encoding with mpeg2enc")
-            encoder = mpeg2enc.encode(infile, outfile, self.options)
+            mpeg2enc.encode(infile, outfile, self.options)
         elif method == 'mencoder':
             log.info("generate(): Encoding with mencoder")
-            encoder = mencoder.encode(infile, outfile, self.options)
+            mencoder.encode(infile, outfile, self.options)
         elif method == 'ffmpeg':
             log.info("The ffmpeg encoding method is not yet implemented.")
             sys.exit()
