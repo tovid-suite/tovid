@@ -107,7 +107,7 @@ AM_INIT_AUTOMAKE
 # executables and not byte-compiled like python_PYTHON would do) will need to be
 # told how to look for libtovid.
 
-AM_PATH_PYTHON(2.2)
+AM_PATH_PYTHON(2.4)
 
 AC_CONFIG_FILES([Makefile src/tovid-init])
 AC_OUTPUT
