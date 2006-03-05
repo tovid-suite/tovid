@@ -436,7 +436,7 @@ then
 # (5) Add a comment that describes the new dependency group to the
 #     DEP_GROUP_COMMENTS array. (eg add [5]="# needed to have a fish fry")
 
-# List all the dependency groups. When the every member of one group is found,
+# List all the dependency groups. When every member of one group is found,
 # the name of the group will be added to the summary section of $DEP_LIST_FILE
 # for group grepping a la: if ! grep "have.*foo" $DEP_LIST_FILE; then exit 1; fi
 DEP_GROUPS=(core magick dvd vcd transcode)
@@ -454,8 +454,8 @@ mplex_msg="part of mjpegtools (mjpeg.sf.net}"
 mpeg2enc_msg="$mplex_msg"
 yuvfps_msg="$mplex_msg"
 yuvdenoise_msg="$mplex_msg"
-ppmtoy4m_msg="mplex_msg"
-mp2enc_msg="mplex_msg"
+ppmtoy4m_msg="$mplex_msg"
+mp2enc_msg="$mplex_msg"
 ffmpeg_msg="a video encoding utility (ffmpeg.sf.net)"
 sox_msg="a CLI sound utility (sox.sf.net)"
 
