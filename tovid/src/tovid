@@ -48,6 +48,7 @@ SCRIPT_NAME=`cat << EOF
 tovid 
 DVD and (S)VCD video conversion script
 Version $TOVID_VERSION
+$BUILD_OPTIONS
 $TOVID_HOME_PAGE
 --------------------------------
 EOF`
