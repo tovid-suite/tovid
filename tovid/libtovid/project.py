@@ -16,7 +16,6 @@ from libtovid.video import Video
 
 log = Log('project.py')
 
-# ===========================================================
 class Project:
     """A collection of related TDL elements comprising a
     complete video disc project (or a multiple-disc project)."""
@@ -101,12 +100,6 @@ class Project:
             result += '%s\n' % element.to_string()
         return result
 
-
-# ===========================================================
-#
-# Unit test
-#
-# ===========================================================
 
 # TODO: Write a proper unit test
 # See http://docs.python.org/lib/module-unittest.html
