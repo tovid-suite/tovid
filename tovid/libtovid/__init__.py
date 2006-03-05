@@ -8,22 +8,24 @@ __doc__ = \
 __version__ = '0.26-dev'
 
 __all__ = [\
-    "log",
-    "globals",
-    "standards",
+    # Subdirectories
+    "gui",
+    "encoders",
 
+    # .py files
     "disc",
+    "encoder",
+    "filetypes",
+    "globals",
+    "log",
     "menu",
     "MenuPlugins",
-    "video",
-    "VideoPlugins",
-
     "options",
-    "tdl",
     "project",
+    "standards",
     "streams",
-    "filetypes",
-    "utils",
-    "gui"]
+    "tdl",
+    "utils"
+    "video"]
 
 
