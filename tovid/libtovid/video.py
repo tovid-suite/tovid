@@ -15,7 +15,7 @@ import sys
 import libtovid
 from libtovid.options import OptionDef, OptionSet
 from libtovid.log import Log
-from libtovid.VideoPlugins import *
+from libtovid.encoders import *
 
 log = Log('video.py')
 
@@ -139,9 +139,9 @@ class Video(OptionSet):
 
         method = self['method']
         if method == 'mpeg2enc':
-            encoder = Mpeg2encEncoder(self)
+            encoder = mpeg2enc.Mpeg2encEncoder(self)
         elif method == 'mencoder':
-            encoder = MencoderEncoder(self)
+            encoder = mencoder.MencoderEncoder(self)
         elif method == 'ffmpeg':
             log.info("The ffmpeg encoding method is not yet implemented.")
             sys.exit()
