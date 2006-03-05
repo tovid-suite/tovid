@@ -43,15 +43,16 @@ import string
 import sys
 import os
 import glob
+from copy import copy
 
 import libtovid
-from libtovid.options import OptionDef, OptionSet
+from libtovid.options import OptionDef
 from libtovid.MenuPlugins import *
 from libtovid.log import Log
 
 log = Log('menu.py')
 
-class Menu(OptionSet):
+class Menu:
     """A Menu element with associated options"""
     optiondefs = {
         'format': OptionDef('format', 'vcd|svcd|dvd', 'dvd',
@@ -99,7 +100,12 @@ class Menu(OptionSet):
     }
 
     def __init__(self, name='Untitled Menu'):
-        OptionSet.__init__(self, name, self.optiondefs)
+        self.name = name
+        self.options = {}
+        for key, optdef in self.optiondefs.iteritems():
+            self.options[key] = copy(optdef.default)
+        self.parents = []
+        self.children = []
 
     def generate(self):
         """Generate the element, and return the filename of the
@@ -107,12 +113,12 @@ class Menu(OptionSet):
         # TODO: Raise exceptions
 
         # Generate a menu of the appropriate format
-        if self['format'] == 'dvd':
+        if self.options['format'] == 'dvd':
             log.info('Generating a DVD menu with text titles...')
             #foo = ThumbMenu(menu)
             foo = TextMenu(self)
             foo.run()
-        elif self['format'] in ['vcd', 'svcd']:
+        elif self.options['format'] in ['vcd', 'svcd']:
             log.error('VCD and SVCD menus are not supported yet.')
             pass
 

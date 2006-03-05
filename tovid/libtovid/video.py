@@ -11,16 +11,20 @@ __doc__ = \
 # access to data about standard targets, about input video specs, etc.)
 
 import sys
+from copy import copy
 
 import libtovid
-from libtovid.options import OptionDef, OptionSet
+from libtovid.options import OptionDef
 from libtovid.log import Log
+from libtovid.standards import get_resolution
+from libtovid.utils import ratio_to_float
 from libtovid.encoders import *
+from libtovid.filetypes import MultimediaFile
 
 log = Log('video.py')
 
 
-class Video(OptionSet):
+class Video:
     """A Video element with associated options.
     
     This dictionary defines the set of options that may be given to a
@@ -131,17 +135,105 @@ class Video(OptionSet):
     }
 
     def __init__(self, name='Untitled Video'):
-        OptionSet.__init__(self, name, self.optiondefs)
+        self.name = name
+        self.options = {}
+        for key, optdef in self.optiondefs.iteritems():
+            self.options[key] = copy(optdef.default)
+        self.parents = []
+        self.children = []
+        self.identify_infile()
+
+    def identify_infile(self):
+        """Gather information about the input file and store it locally."""
+        log.debug('Creating MultimediaFile for "%s"' % self.options['in'])
+        self.infile = MultimediaFile(self.options['in'])
+        self.infile.display()
+
+    def preproc(self):
+        """Do preprocessing common to all backends."""
+        width, height = get_resolution(self.options['format'], self.options['tvsys'])
+        # Convert aspect (ratio) to a floating-point value
+        src_aspect = ratio_to_float(self.options['aspect'])
+        # Use anamorphic widescreen for any video 16:9 or wider
+        # (Only DVD supports this)
+        if src_aspect >= 1.7 and self.options['format'] == 'dvd':
+            tgt_aspect = 16.0/9.0
+            widescreen = True
+        else:
+            tgt_aspect = 4.0/3.0
+            widescreen = False
+        # If aspect matches target, no letterboxing is necessary
+        # (Match within a tolerance of 0.05)
+        if abs(src_aspect - tgt_aspect) < 0.05:
+            scale = (width, height)
+            expand = False
+        # If aspect is wider than target, letterbox vertically
+        elif src_aspect > tgt_aspect:
+            scale = (width, height * tgt_aspect / src_aspect)
+            expand = (width, height)
+        # Otherwise (rare), letterbox horizontally
+        else:
+            scale = (width * src_aspect / tgt_aspect, height)
+            expand = (width, height)
+        # If infile is already the correct size, don't scale
+        if self.infile.video and self.infile.video.size == scale:
+            scale = False
+            log.debug('Infile resolution matches target resolution.')
+            log.debug('No scaling will be done.')
+        # TODO: Calculate safe area
+        # Other commonly-used values
+        if 'dvd' in self.options['format']:
+            samprate = 48000
+        else:
+            samprate = 44100
+        if self.options['tvsys'] == 'pal':
+            fps = '25.0'
+        elif self.options['tvsys'] == 'ntsc':
+            fps = '29.97'
         
+        # Set audio/video bitrates based on target format, quality, or
+        # user-defined values (if given)
+        vbitrate = self.options['vbitrate']
+        abitrate = self.options['abitrate']
+        # Audio and video bitrates
+        if self.options['format'] == 'vcd':
+            abitrate = 224
+            vbitrate = 1152
+        else:
+            # If user didn't override, use reasonable defaults
+            if not vbitrate:
+                # TODO: Adjust bitrate based on -quality
+                if self.options['format'] in ['svcd', 'dvd-vcd']:
+                    vbitrate = 2600
+                else:
+                    vbitrate = 7000
+            if not abitrate:
+                abitrate = 224
+
+        self.options['abitrate'] = abitrate
+        self.options['vbitrate'] = vbitrate
+        self.options['scale'] = scale
+        self.options['expand'] = expand
+        self.options['tgt_aspect'] = tgt_aspect
+        self.options['samprate'] = samprate
+        self.options['fps'] = fps
+        self.options['widescreen'] = widescreen
+
     def generate(self):
         """Generate a video element by encoding an input file to a target
         standard."""
 
-        method = self['method']
+        self.preproc()
+
+        method = self.options['method']
+        infile = self.options['in']
+        outfile = self.options['out']
         if method == 'mpeg2enc':
-            encoder = mpeg2enc.Mpeg2encEncoder(self)
+            log.info("generate(): Encoding with mpeg2enc")
+            encoder = mpeg2enc.encode(infile, outfile, self.options)
         elif method == 'mencoder':
-            encoder = mencoder.MencoderEncoder(self)
+            log.info("generate(): Encoding with mencoder")
+            encoder = mencoder.encode(infile, outfile, self.options)
         elif method == 'ffmpeg':
             log.info("The ffmpeg encoding method is not yet implemented.")
             sys.exit()
@@ -149,14 +241,3 @@ class Video(OptionSet):
             log.info("The '%s' encoder is not yet supported." % method)
             log.info("Perhaps you'd like to write a backend for it? :-)")
             sys.exit()
-        
-        log.info("generate(): Encoding with the %s plugin..." % encoder.__class__)
-        encoder.encode()
-
-    def to_string(self):
-        """Return video and options, formatted as a string."""
-        result = 'Video "%s"\n' % self.name
-        result += OptionSet.to_string(self)
-        return result
- 
-

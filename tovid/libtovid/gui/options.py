@@ -1,6 +1,8 @@
 #! /usr/bin/env python2.4
 # options.py
 
+__all__ = ["DiscOptions", "MenuOptions", "SlideOptions", "VideoOptions"]
+
 import os
 import wx
 
@@ -11,8 +13,6 @@ from libtovid.video import Video
 from libtovid.gui.constants import *
 from libtovid.gui.configs import TovidConfig
 from libtovid.gui.util import _
-
-__all__ = ["DiscOptions", "MenuOptions", "SlideOptions", "VideoOptions"]
 
 class DiscOptions:
     """Options that apply to an entire disc"""
