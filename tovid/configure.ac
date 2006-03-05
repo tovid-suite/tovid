@@ -40,7 +40,9 @@
 AC_INIT([tovid], [svn])
 AC_CONFIG_SRCDIR([src/tovid])
 
-AM_INIT_AUTOMAKE
+# Require minimum versions of the autotools
+AC_PREREQ(2.5)
+AM_INIT_AUTOMAKE([1.9])
 
 
 
