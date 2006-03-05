@@ -840,7 +840,7 @@ case "$TGT_RES" in
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 4 -b $VID_BITRATE"
-        MUX_OPTS="-V -f 4 -b 230"
+        MUX_OPTS="-V -f 4"
         VID_SUF="m2v"
         ;;
 
@@ -860,7 +860,7 @@ case "$TGT_RES" in
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE"
-        MUX_OPTS="-V -f 8 -b 300"
+        MUX_OPTS="-V -f 8"
         VID_SUF="m2v"
         ;;
 
@@ -917,7 +917,7 @@ case "$TGT_RES" in
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 10"
         # For KDVD, use KVCD "Notch" quantization
         test x"$TGT_RES" = x"KDVD" && MPEG2_FMT="$MPEG2_FMT -K kvcd"
-        MUX_OPTS="-V -f 8 -b 400"
+        MUX_OPTS="-V -f 8"
         VID_SUF="m2v"
         ;;
 
