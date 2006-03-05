@@ -73,6 +73,9 @@ man_MANS = docs/man/*.1
 pyexecLIBTOVID_PYTHON = libtovid/*.py
 pyexecLIBTOVIDdir = $(pyexecdir)/libtovid
 
+pyexecLIBTOVID_ENCODERS_PYTHON = libtovid/encoders/*.py
+pyexecLIBTOVID_ENCODERSdir = $(pyexecdir)/libtovid/encoders
+
 pyexecGUI_PYTHON = libtovid/gui/*.py
 pyexecGUIdir = $(pyexecdir)/libtovid/gui
 
