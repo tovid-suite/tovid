@@ -414,6 +414,7 @@ eval $BG_CMD
 # If no background audio was provided, generate a 4-second
 # silent audio clip
 if [[ -z $BG_AUDIO ]]; then
+    echo "Creating 4-second silent background audio with the following command:"
     SOX_CMD="cat /dev/zero | sox -t raw -c 2 -r $SAMPRATE \
         -w -s - -t wav $BG_SILENCE.wav trim 0 4"
     echo $SOX_CMD
@@ -422,8 +423,10 @@ if [[ -z $BG_AUDIO ]]; then
     VID_LENGTH=`expr 4 \* $FPS \/ 100`
 # Otherwise, convert provided audio to WAV
 else
-    echo "Converting audio to $SAMPRATE hz WAV..."
-    sox "$BG_AUDIO" -r $SAMPRATE -w "$BG_AUDIO.wav" >> $REDIR 2>&1
+    echo "Converting \"$BG_AUDIO\" to $SAMPRATE hz WAV with the following command:"
+    SOX_CMD="sox \"$BG_AUDIO\" -r $SAMPRATE -w -t wav \"$BG_AUDIO.wav\""
+    echo $SOX_CMD
+    eval $SOX_CMD
     # Calculate video length from length of audio sample
     VID_LENGTH=$( sox "$BG_AUDIO" -t raw /dev/null stat 2>&1 | \
         grep 'Length' | sed -e "s/[^0-9]*\([0-9][0-9]*\)\..*/\1/g" )
