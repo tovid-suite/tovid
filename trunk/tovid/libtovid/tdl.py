@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python2.4
 # tdl.py
 
 # ===========================================================
@@ -353,7 +353,17 @@ class Parser:
 
         return self.elements
 
+"""
+Input:
+-format vcd -tvsys ntsc -in foo.avi -out foo
 
+Output:
+{'format': 'vcd',
+ 'tvsys': 'ntsc',
+ 'in': 'foo.avi',
+ 'out': 'foo'
+}
+"""
     
 # ===========================================================
 #

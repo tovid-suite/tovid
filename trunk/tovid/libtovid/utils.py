@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python2.4
 # utils.py
 # Some short utility functions used by libtovid
 
