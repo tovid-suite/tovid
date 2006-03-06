@@ -90,6 +90,7 @@ DO_IMAGE=false
 DO_BURN=false
 
 # Guess for the device
+DVD_SIZE_MB=4300
 DVDRW_DEVICE="/dev/dvdrw"
 BURN_SPEED=1
 OUT_DIR="makedvd_out"
@@ -108,6 +109,10 @@ probe_media ()
   # Extract the disc type
   DISC_TYPE=`echo "$MEDIA_INFO" | grep "Mounted Media" | awk '{ print $4 }'`
   if test -z $DISC_TYPE; then DISC_TYPE="no disc"; fi
+
+  # Find the capcity
+  DISC_CAPACITY=`echo "$MEDIA_INFO" | grep "Legacy lead-out" | awk -F '=' '{ print $2 }'`
+  DISC_CAPACITY=`echo "$DISC_CAPACITY / 1024 / 1024" | bc`
 
   # Define usable DVDs
   HAVE_DVD_RW=`verify $DISC_TYPE set "DVD-RW DVD+RW"`
@@ -259,9 +264,15 @@ $DO_IMAGE && NEEDED_SPACE=`expr $NEEDED_SPACE \+ $DISC_SUM`
 
 if test $NEEDED_SPACE -gt $AVAIL_SPACE; then
    echo $SEPARATOR
-   echo "Cannot continue! ${NEEDED_SPACE}MB needed, but only ${AVAIL_SPACE}MB in `pwd`"
+   precho "Cannot continue! ${NEEDED_SPACE}MB needed, but only ${AVAIL_SPACE}MB in `pwd`"
    echo "Exiting..."
    exit 1
+fi
+
+if test $DISC_SUM -gt $DVD_SIZE_MB; then
+   echo $SEPARATOR
+   echo "Warning! Making a DVD image larger than a standard single-sided DVD."
+   echo "Current DVD image is ${DISC_SUM}MB."
 fi
 
 if $DO_AUTHOR; then
@@ -329,6 +340,13 @@ if $DO_BURN; then
 
     echo $SEPARATOR
     echo "Found $DISC_STATUS $DISC_TYPE."
+
+    if test $DISC_SUM -gt $DISC_CAPACITY; then
+       echo $SEPARATOR
+       echo "Cannot continue! DVD image (${DISC_SUM}MB) exceeds the DVD's capacity (${DISC_CAPACITY}MB)."
+       echo "Exiting..."
+       exit 1
+    fi
 
     # complete DVD+/-RW need explicit blanking
     # a bug report for tkDVD points out that -use-the-force-luke=tty is req'd to
