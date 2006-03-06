@@ -283,7 +283,7 @@ fi
 
 if $DO_IMAGE; then
     # Create ISO image
-    ISO_CMD="mkisofs -dvd-video -V \"$VOLID\" -o \"$DISC_LABEL.iso\" $OUT_DIR"
+    ISO_CMD="mkisofs -quiet -dvd-video -V \"$VOLID\" -o \"$DISC_LABEL.iso\" $OUT_DIR"
     echo $SEPARATOR
     echo "Building the DVD filesystem ISO image, estimated to require ${DISC_SUM}MB."
     echo "Creating the ISO image with the following command:"
