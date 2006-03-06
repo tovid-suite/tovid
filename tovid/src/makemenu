@@ -411,25 +411,25 @@ echo "Creating the background canvas with the following command:"
 echo $"$BG_CMD"
 eval $BG_CMD
 
-# If no background audio was provided, generate a 4-second
-# silent audio clip
+# If no background audio was provided, generate 4 seconds of silence
 if [[ -z $BG_AUDIO ]]; then
-    echo "Creating 4-second silent background audio with the following command:"
-    SOX_CMD="cat /dev/zero | sox -t raw -c 2 -r $SAMPRATE \
-        -w -s - -t wav $BG_SILENCE.wav trim 0 4"
-    echo $SOX_CMD
-    eval $SOX_CMD
-    BG_AUDIO=$BG_SILENCE
+    echo "Creating 4-second silent $ASUF audio with the following command:"
+    AUDIO_CMD="ffmpeg -f s16le -i /dev/zero -ac 2 -ar $SAMPRATE -ab 224 \
+        -t 4 -acodec $ASUF -y \"$OUT_PREFIX.$ASUF\""
+    echo $AUDIO_CMD
+    eval $AUDIO_CMD
     VID_LENGTH=`expr 4 \* $FPS \/ 100`
-# Otherwise, convert provided audio to WAV
+# Otherwise, convert provided audio to the target format
 else
-    echo "Converting \"$BG_AUDIO\" to $SAMPRATE hz WAV with the following command:"
-    SOX_CMD="sox \"$BG_AUDIO\" -r $SAMPRATE -w -t wav \"$BG_AUDIO.wav\""
-    echo $SOX_CMD
-    eval $SOX_CMD
+    echo "Converting \"$BG_AUDIO\" to $ASUF with the following command:"
+    AUDIO_CMD="ffmpeg -y -i \"$BG_AUDIO\" -ac 2 -ar $SAMPRATE -ab 224 \
+        -acodec $ASUF -y \"$OUT_PREFIX.$ASUF\""
+    echo $AUDIO_CMD
+    eval $AUDIO_CMD
     # Calculate video length from length of audio sample
-    VID_LENGTH=$( sox "$BG_AUDIO" -t raw /dev/null stat 2>&1 | \
-        grep 'Length' | sed -e "s/[^0-9]*\([0-9][0-9]*\)\..*/\1/g" )
+    VID_LENGTH=$(mplayer -quiet -identify -frames 0 -vo null -ao null \
+        "$BG_AUDIO" 2>&1 | grep '^ID_LENGTH' | awk -F '=' '{print $2}' | \
+        sed -e "s/\.[0-9]*//g")
     VID_LENGTH=`expr $VID_LENGTH \* $FPS \/ 100`
 fi
 
@@ -505,21 +505,6 @@ echo $VIDEO_CMD
 echo "This may take a while..."
 eval $VIDEO_CMD
   
-# Convert WAV to ac3 or mp2
-echo $SEPARATOR
-if [[ $ASUF == "ac3" ]]; then
-    echo "Converting audio WAV to ac3 with the following command:"
-    AUDIO_CMD="ffmpeg -i \"$BG_AUDIO.wav\" -ab 224 -ar $SAMPRATE \
-        -ac 2 -acodec ac3 -y \"$OUT_PREFIX.$ASUF\" >> $REDIR 2>&1"
-    echo $AUDIO_CMD
-    eval $AUDIO_CMD
-else
-    echo "Converting audio WAV to mpeg2 with the following command:"
-    AUDIO_CMD="cat \"$BG_AUDIO.wav\" | mp2enc -r $SAMPRATE -s -o \
-        \"$OUT_PREFIX.$ASUF\" >> $REDIR 2>&1"
-    echo $AUDIO_CMD
-    eval $AUDIO_CMD
-fi
 
 # Multiplex audio and video
 echo $SEPARATOR
@@ -563,7 +548,7 @@ else
     echo "Cleaning up..."
     rm -fv $BG_CANVAS $FG_CANVAS $FG_HIGHLIGHT $FG_SELECTION \
         "$OUT_PREFIX.hi.png" "$OUT_PREFIX.sel.png" "$OUT_PREFIX.$VSUF" \
-        "$OUT_PREFIX.$ASUF" "$OUT_PREFIX.ppm" "$BG_AUDIO.wav" \
+        "$OUT_PREFIX.$ASUF" "$OUT_PREFIX.ppm" \
         "$OUT_PREFIX.temp.mpg" "$OUT_PREFIX.xml"
 fi
 

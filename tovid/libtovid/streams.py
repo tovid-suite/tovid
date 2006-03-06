@@ -6,9 +6,6 @@ __all__ = ['VideoStream', 'AudioStream']
 import libtovid
 from libtovid.standards import *
 
-# ===========================================================
-# Video stream
-# ===========================================================
 class VideoStream:
     def __init__(self):
         self.filename = None
@@ -40,9 +37,6 @@ class VideoStream:
         print "  Framerate: %s" % self.fps
         print "    Bitrate: %s" % self.bitrate
 
-# ===========================================================
-# Audio stream
-# ===========================================================
 class AudioStream:
     def __init__(self):
         self.filename = None

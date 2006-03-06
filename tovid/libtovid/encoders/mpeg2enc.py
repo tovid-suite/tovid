@@ -9,7 +9,7 @@ for app in ['mplayer', 'mpeg2enc', 'ffmpeg', 'mp2enc', 'mplex']:
     verify_app(app)
 
 def encode(infile, outfile, options):
-    """Encode infile to outfile, using the given options."""
+    """Encode infile to outfile with mpeg2enc, using the given options."""
 
     # YUV raw video FIFO, for piping video from mplayer to mpeg2enc
     yuvfile = '%s.yuv' % infile
