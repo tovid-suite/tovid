@@ -44,6 +44,20 @@ For example:
 
 : **-v**, **-version**
     Print tovid version number only
+: **-quiet**
+    Reduce output to the console.
+: **-fake**
+    Do not actually encode; only print the commands (mplayer, mpeg2enc etc.)
+    that would be executed. Useful in debugging; have tovid give you the
+    commands, and run them manually.
+: **-debug**
+    Print extra debugging information to the log file. Useful in diagnosing
+    problems if they occur. This option also leaves the log file (with a .log
+    extension) in the directory after encoding finishes.
+: **-refresh-deps**
+    Regenerate the dependency list. tovid uses $HOME/.tovid/dependency.list to 
+    determine which of its dependencies are installed. If you install dependencies
+    after tovid, use this option to make tovid aware of the newly installed ones.
 
 
 ===Television standards===
@@ -201,22 +215,12 @@ letterboxing or anamorphic scaling.
     line, and free-formatted (whitespace-separated) tovid command-line options
     on remaining lines.
 
-: **-debug**
-    Print extra debugging information to the log file. Useful in diagnosing
-    problems if they occur. This option also leaves the log file (with a .log
-    extension) in the directory after encoding finishes.
-
 : **-force**
     Force encoding of already-compliant video or audio streams.
 
 : **-overwrite**
     Overwrite any existing output files (with the same name as the given
     **-out** option).
-
-: **-fake**
-    Do not actually encode; only print the commands (mplayer, mpeg2enc etc.)
-    that would be executed. Useful in debugging; have tovid give you the
-    commands, and run them manually.
 
 : **-priority** {low|medium|high}
     Sets the main encoding process to the given priority. With high priority,
@@ -258,9 +262,6 @@ letterboxing or anamorphic scaling.
     and video streams are kept (eg the .ac3 and .m2v files for an NTSC DVD).
     This doesn't work with -parallel because the intermediate files are named
     pipes, and not real files.
-
-: **-quiet**
-    Reduce output to the console.
 
 
 ==See also==
