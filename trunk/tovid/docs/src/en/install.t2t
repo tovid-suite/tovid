@@ -68,6 +68,7 @@ version of tovid. You can do this one of two ways:
     [tovid FTP server ftp://ftp.berlios.de/pub/tovid]
 - Check it out with [Subversion http://subversion/tigris.org/] (SVN)
 
+
 For the daily release, just find the most recently-dated ``.tar.gz`` file
 on the [FTP server ftp://ftp.berlios.de/pub/tovid], and install it as you
 would a normal release.
