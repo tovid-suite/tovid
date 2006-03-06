@@ -40,7 +40,7 @@ $TOVID_HOME_PAGE
 --------------------------------
 EOF`
 
-USAGE=`cat << 'EOF'
+USAGE=`cat << EOF
 Usage: makedvd {OPTIONS} FILE.xml
 
 Where OPTIONS may be any of the following:
@@ -146,6 +146,7 @@ while test $# -gt 1; do
             ;;
         "*" )
             usage_error "Error: Unrecognized command-line option '$1'"
+            ;;
     esac
 
     # Get next argument
@@ -154,19 +155,30 @@ done
 
 DVDAUTHOR_XML="$1"
 
-# Set disc title and output directory based on XML filename
-# (without .xml, space to underscore)
-test -z $DISC_LABEL && DISC_LABEL=$( echo "$DVDAUTHOR_XML" | sed -e "s/\.xml//g" | tr ' ' '_')
-# And, just in case that failed...
-test -z $DISC_LABEL && DISC_LABEL="UNTITLED_DVD"
-OUT_DIR=`grep 'dest=' $DVDAUTHOR_XML | cut -d= -f2 | tr -d '">'`
-
 # Make sure the file exists
-if [[ ! -f "$DVDAUTHOR_XML" ]]; then
+if test ! -f "$DVDAUTHOR_XML"; then
     echo "Could not open file: $DVDAUTHOR_XML"
     exit 1
 else
     echo "Authoring disc from file: $DVDAUTHOR_XML"
+fi
+
+# Set disc title and output directory based on XML filename
+# (without .xml, space to underscore)
+test -z $DISC_LABEL && DISC_LABEL=$( basename "$DVDAUTHOR_XML" ".xml" | tr ' ' '_')
+# And, just in case that failed...
+test -z $DISC_LABEL && DISC_LABEL="UNTITLED_DVD"
+OUT_DIR=`grep 'dest=' $DVDAUTHOR_XML | cut -d= -f2 | tr -d '">'`
+
+# Extract a valid volume ID
+VOLID=`echo "$DISC_LABEL" | tr a-z A-Z`
+# Make sure we have a valid VOLID at this point...can't be too long
+VALID_VOLID=`echo $VOLID | awk '{ print substr($0, 0, 32) }'`
+if test $VOLID != $VALID_VOLID; then
+    echo "Disk label is too long. Truncating to $VALID_VOLID"
+    VOLID=$VALID_VOLID
+else
+    echo "Using disk label \"$VOLID\""
 fi
 
 # Remind user to insert a DVD, check for DVD device
@@ -185,45 +197,83 @@ if $DO_BURN; then
     fi
 fi
 
-# TODO:
-# Warn if there isn't enough space to make the image
+# An existing target directory may be due to a prior attempt at encoding.
+# If -author was specified, overwrite it.
+if test -d $OUT_DIR; then
+   echo $SEPARATOR   
+   echo "Authoring directory $OUT_DIR already exists."
 
-# See if target directory already exists.
-if [[ -d $OUT_DIR ]]; then
-    echo "Authoring directory $OUT_DIR already exists."
+   if $DO_AUTHOR; then
+      echo "Deleting contents of directory: $OUT_DIR"
+      rm -rf "$OUT_DIR"
+   else
+      echo "Skipping authoring; to force, use the -author option."
+   fi
+   
+   echo $SEPARATOR
 
-    # An existing target directory may be due to a prior attempt at encoding.
-    # If -author was specified, overwrite it.
+# If there's no target directory, but there's an .iso image and the user
+# doesn't want to DO_IMAGE, then s/he probably wants to burn it. 
+# No need to author.
+elif test ! -d $OUT_DIR && test -s $DISC_LABEL.iso && ! $DO_IMAGE; then :
 
-    # Remove existing directory, and author from scratch
-    if $DO_AUTHOR; then
-        echo "Deleting contents of directory: $OUT_DIR"
-        rm -rf "$OUT_DIR"
-    else
-        echo $SEPARATOR
-        echo "Skipping authoring; to force, use the -author option."
-        echo $SEPARATOR
-    fi
-
-# If there's an image already, user probably wants to burn it. Don't need to author.
-elif test -f $DISC_LABEL.iso && test -s $DISC_LABEL.iso; then :
-
-# Target and iso image don't exist; need to author
+# No existing target directory, and no existing .iso (or the user wants
+# to remake an existing iso without having an existing target directory).
+# Need to author.
 else
-    DO_AUTHOR=:
+   DO_AUTHOR=:
+fi
+
+# See if target disc image exists, if -image was supplied overwrite it
+if test -s $DISC_LABEL.iso; then
+   echo $SEPARATOR
+   echo "Disc image $DISC_LABEL.iso already exists."
+
+   if $DO_IMAGE; then 
+      echo "Removing existing image: $DISC_LABEL.iso"
+      rm -f $DISC_LABEL.iso
+   else
+      echo "Skipping image (.iso) creation; To force, use the -image option."
+   fi
+   echo $SEPARATOR
+fi
+
+# Warn if there isn't enough space to make the image
+# Get the vobs in the xml file. Use ':' as field separator so that filenames can 
+# have spaces.
+NUM_VOBS=`grep vob "$DVDAUTHOR_XML" | wc -l`
+VOB_LIST=`grep vob "$DVDAUTHOR_XML" | awk -F '"' '{ print $2 }' | tr '\n' ':'`
+
+i=1
+DISC_SUM=0
+while test $i -le $NUM_VOBS; do
+  VOB=`echo "$VOB_LIST" | awk -F ':' '{ print $'$i' }'`
+  VOB_SIZE=`du -B M $VOB | awk -F ' ' '{print $1}' | tr -d M`
+  DISC_SUM=`expr $VOB_SIZE \+ $DISC_SUM`
+  i=`expr $i \+ 1`
+done
+
+AVAIL_SPACE=`df -B M -P . | awk 'NR != 1 {print $4;}' | tr -d M`
+
+NEEDED_SPACE=0
+$DO_AUTHOR && NEEDED_SPACE=`expr $NEEDED_SPACE \+ $DISC_SUM`
+$DO_IMAGE && NEEDED_SPACE=`expr $NEEDED_SPACE \+ $DISC_SUM`
+
+if test $NEEDED_SPACE -gt $AVAIL_SPACE; then
+   echo "Cannot continue! ${NEEDED_SPACE}MB needed, but only ${AVAIL_SPACE}MB in `pwd`"
+   echo "Exiting..."
+   exit 1
 fi
 
 if $DO_AUTHOR; then
     # Create disc structure
     DVDAUTHOR_CMD="dvdauthor -x \"$DVDAUTHOR_XML\""
     echo $SEPARATOR
-    echo "Creating DVD-Video disc structure with the following command:"
+    echo "Authoring DVD-Video disc structure, estimated to require ${DISC_SUM}MB."
+    echo "Creating disc structure with the following command:"
     echo $DVDAUTHOR_CMD
     SUCCESS=false
-    eval "$DVDAUTHOR_CMD" 2>&1 && SUCCESS=:
-
-    # Confirm that authoring worked
-    if $SUCCESS; then
+    if eval "$DVDAUTHOR_CMD" 2>&1; then
         echo $SEPARATOR
         echo "Disc structure successfully created in $OUT_DIR."
         echo $SEPARATOR
@@ -232,42 +282,16 @@ if $DO_AUTHOR; then
     fi
 fi
 
-
-# See if target disc image exists
-if [[ -f $DISC_LABEL.iso && -s $DISC_LABEL.iso ]]; then
-    # If -image was supplied, remove existing .iso
-    if $DO_IMAGE; then 
-        rm $DISC_LABEL.iso
-    # Keep existing .iso
-    else
-        echo "Disc image $DISC_LABEL.iso already exists."
-        echo "Skipping image (.iso) creation; To force, use the -image option."
-    fi
-fi
-
-# Extract a valid volume ID
-VOLID=`echo "$DISC_LABEL" | tr a-z A-Z`
-# Make sure we have a valid VOLID at this point...can't be too long
-VALID_VOLID=`echo $VOLID | awk '{ print substr($0, 0, 32) }'`
-if [ $VOLID != $VALID_VOLID ]; then
-    echo "Disk label is too long. Truncating to $VALID_VOLID"
-    VOLID=$VALID_VOLID
-else
-    echo "Using disk label \"$VOLID\""
-fi
-
 if $DO_IMAGE; then
     # Create ISO image
     ISO_CMD="mkisofs -dvd-video -V \"$VOLID\" -o \"$DISC_LABEL.iso\" $OUT_DIR"
     echo $SEPARATOR
-    echo "Creating DVD filesystem ISO image with the following command:"
+    echo "Building the DVD filesystem ISO image, estimated to require ${DISC_SUM}MB."
+    echo "Creating the ISO image with the following command:"
     echo $ISO_CMD
     echo $SEPARATOR
-    SUCCESS=false
-    eval "$ISO_CMD" 2>&1 && SUCCESS=:
 
-    # Confirm that the ISO command was successful
-    if $SUCCESS; then
+    if eval "$ISO_CMD" 2>&1; then
         echo $SEPARATOR
         echo "ISO image $DISC_LABEL.iso successfully created."
         echo $SEPARATOR
@@ -275,7 +299,7 @@ if $DO_IMAGE; then
         runtime_error "Could not create ISO image $DISC_LABEL.iso"
     fi
 fi
-    
+
 # Burn the disc, if requested
 if $DO_BURN; then
 
@@ -283,6 +307,8 @@ if $DO_BURN; then
 
     # Make sure there is a blank disc to write to
     probe_media
+
+    echo $SEPARATOR
 
     if ! $HAVE_DVD_RW && ! $HAVE_BLANK_DVD_R; then
       echo "Found $DISC_TYPE in $DVDRW_DEVICE. Cannot burn to this disc!"
@@ -302,6 +328,7 @@ if $DO_BURN; then
         echo "Looking for usable media..."
         probe_media
       done
+      echo $SEPARATOR
     fi
 
     echo "Found $DISC_STATUS $DISC_TYPE."
@@ -311,14 +338,15 @@ if $DO_BURN; then
     # burn to complete +/-RW discs:
     # http://savannah.nongnu.org/bugs/index.php?func=detailitem&item_id=10751
     # but this support is still spotty (works for grepper and his +RW, but not 
-    # MacNorth and his -RW)
+    # friedrij and his -RW)
     if test "x$DISC_STATUS" = "xcomplete"; then 
       echo "Found $DISC_STATUS $DISC_TYPE in $DVDRW_DEVICE. Blanking..."
       dvd+rw-format -blank $DVDRW_DEVICE
+      echo $SEPARATOR	  
     fi
 
     # If an image was created, burn that
-    if test -f $DISC_LABEL.iso && test -s $DISC_LABEL.iso; then
+    if test -s $DISC_LABEL.iso; then
        BURN_CMD="growisofs -use-the-force-luke=dao -dvd-compat -speed=$BURN_SPEED -Z $DVDRW_DEVICE=\"$DISC_LABEL.iso\""
        BURN_METHOD="ISO to DVD"
     # or burn from the DVD directory
@@ -326,15 +354,12 @@ if $DO_BURN; then
        BURN_CMD="growisofs -use-the-force-luke=dao -dvd-compat -speed=$BURN_SPEED -Z $DVDRW_DEVICE -dvd-video -V \"$VOLID\" $OUT_DIR"
        BURN_METHOD="DVD directly"
     fi
-    echo $SEPARATOR
+
     echo "Burning $BURN_METHOD with growisofs $GROWISOFS_VER using the following command:"
     echo "$BURN_CMD"
     echo $SEPARATOR
-    SUCCESS=false
-    eval "$BURN_CMD" 2>&1 && SUCCESS=:
 
-    if $SUCCESS; then
-        echo $SEPARATOR
+    if eval "$BURN_CMD" 2>&1; then
         echo "Done. You should now have a working DVD. Please visit"
         echo "the tovid homepage: $TOVID_HOME_PAGE"
         echo $SEPARATOR
