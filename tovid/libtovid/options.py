@@ -9,7 +9,8 @@ __all__ = ['OptionDef']
 
 import re
 import sys
-import copy
+import shlex
+from copy import copy
 
 from libtovid.utils import trim
 from libtovid.log import Log
@@ -121,3 +122,61 @@ class OptionDef:
                 (self.name, self.argformat, self.default)
         usage += "    %s\n" % self.doc
         return usage
+
+def tokenize(optionstring):
+    """Separate optionstring into tokens, and return them in a list."""
+    lexer = shlex.shlex(optionstring, posix = True)
+    # Rules for splitting tokens
+    lexer.wordchars = self.lexer.wordchars + ".:-%()/"
+    lexer.whitespace_split = False
+    # Append all tokens to a list
+    tokens = []
+    while True:
+        token = lexer.get_token()
+        if not token:
+            break
+        else:
+            tokens.append(token)
+    return tokens
+
+def parse_options(optionstring, optiondefs):
+    """Parse a string of options, returning a dictionary of those that match
+    optiondefs."""
+    optiondict = {}
+    tokens = tokenize(optionstring)
+    while len(tokens) > 0:
+        opt = tokens.pop(0)
+        if opt not in optiondefs:
+            log.error("Unrecognized option: %s. Ignoring." % opt)
+        else:
+            expected_args = optiondefs[opt].num_args()
+            log.debug("%s expects %s args" % (opt, expected_args))
+            # Is this option an alias (short-form) of another option?
+            # (i.e., -vcd == -format vcd)
+            if optiondefs[opt].alias:
+                key, value = optiondefs[opt].alias
+                optiondict[key] = value
+            # No args
+            elif expected_args == 0:
+                optiondict[opt] = True
+            # One arg
+            elif expected_args == 1:
+                arg = tokens.pop(0)
+                optiondict[opt] = arg
+            # Comma-separated list of args
+            elif expected_args < 0:
+                arglist = []
+                next = tokens.pop(0)
+                # If next is a keyword in optiondefs, print error
+                if next in optiondefs:
+                    log.error('"%s" option expects one or more arguments ' \
+                            '(got keyword "%s")' % (opt, next))
+                # Until the next keyword is reached, add to list
+                while next and next not in optiondefs:
+                    # Ignore any surrounding [ , , ]
+                    arglist.append(next.lstrip('[').rstrip(',]'))
+                    next = tokens.pop(0)
+                # Put the last token back
+                tokens.insert(0, next)
+                optiondict[opt] = arglist
+

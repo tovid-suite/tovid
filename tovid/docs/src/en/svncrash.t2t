@@ -75,7 +75,7 @@ Then, before you startx or after you open a new terminal, start the ssh-agent
 and add your public keys to the session:
 
 ```
-$ ssh-agent
+$ ssh-agent bash
 $ ssh-add
 ```
 

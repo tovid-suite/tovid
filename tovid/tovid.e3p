@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-3.7.dtd">
 <!-- Project file for project tovid -->
-<!-- Saved: 2006-03-04, 18:30:07 -->
+<!-- Saved: 2006-03-04, 22:21:42 -->
 <!-- Copyright (C) 2006 ,  -->
 <Project version="3.7">
   <ProgLanguage mixed="1">Python</ProgLanguage>
@@ -17,10 +17,6 @@
     <Source>
       <Dir>libtovid</Dir>
       <Name>__init__.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
-      <Name>VideoPlugins.py</Name>
     </Source>
     <Source>
       <Dir>libtovid</Dir>
@@ -194,7 +190,23 @@
     </Source>
     <Source>
       <Dir>libtovid</Dir>
-      <Name>encoder.py</Name>
+      <Dir>encoders</Dir>
+      <Name>mpeg2enc.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Dir>encoders</Dir>
+      <Name>ffmpeg.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Dir>encoders</Dir>
+      <Name>mencoder.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Dir>encoders</Dir>
+      <Name>__init__.py</Name>
     </Source>
   </Sources>
   <Forms>

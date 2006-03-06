@@ -71,38 +71,32 @@ class Video:
         'aspect': OptionDef('aspect', 'WIDTH:HEIGHT', "4:3",
             """Force the input video to be the given aspect ratio, where WIDTH
             and HEIGHT are integers."""),
-
         'quality': OptionDef('quality', '[1-10]', 8,
             """Desired output quality, on a scale of 1 to 10, with 10 giving
             the best quality at the expense of a larger output file. Output
             size can vary by approximately a factor of 4 (that is, -quality 1
             output can be 25% the size of -quality 10 output). Your results may
             vary."""),
-        
         'vbitrate': OptionDef('vbitrate', '[0-9800]', None,
             """Maximum bitrate to use for video (in kbits/sec). Must be within
             allowable limits for the given format. Overrides default values.
             Ignored for VCD."""),
-
         'abitrate': OptionDef('abitrate', '[0-1536]', None,
             """Encode audio at NUM kilobits per second.  Reasonable values
             include 128, 224, and 384. The default is 224 kbits/sec, good
             enough for most encodings. The value must be within the allowable
             range for the chosen disc format; Ignored for VCD, which must be
             224."""),
-
         'safe': OptionDef('safe', '[0-100]%', "100%",
             """Fit the video within a safe area defined by PERCENT. For
             example, '-safe 90%' will scale the video to 90% of the
             width/height of the output resolution, and pad the edges with a
             black border. Use this if some of the picture is cut off when
             played on your TV."""),
-
         'interlaced': OptionDef('interlaced', '', False,
             """Do interlaced encoding of the input video. Use this option if
             your video is interlaced, and you want to preserve as much picture
             quality as possible. Ignored for VCD."""),
-
         'deinterlace': OptionDef('deinterlace', '', False,
             """Use this option if your source video is interlaced. You can
             usually tell if you can see a bunch of horizontal lines when you
@@ -111,7 +105,6 @@ class Video:
             progressive (non-interlaced) video. This option is DEPRECATED, and
             will probably be ditched in favor of interlaced encoding, which is
             better in almost every way."""),
-
         'subtitles': OptionDef('subtitles', 'FILE', None,
             """Get subtitles from FILE and encode them into the video.
             WARNING: This hard-codes the subtitles into the video, and you
@@ -119,14 +112,10 @@ class Video:
             subtitles are loaded. If your video is already compliant with the
             chosen output format, it will be re-encoded to include the
             subtitles."""),
-
         'normalize': OptionDef('normalize', '', False,
             """Normalize the volume of the audio. Useful if the audio is too
             quiet or too loud, or you want to make volume consistent for a
             bunch of videos."""),
-        'chapters': OptionDef('chapters', 'TIME [, TIME]', [],
-            """Put chapter breaks at the specified times (HH:MM:SS)."""),
-            
         'method': OptionDef('method', 'mpeg2enc|mencoder|ffmpeg', 'mencoder',
             """Encode using the given tool. The mpeg2enc method uses mplayer to
             rip the audio and video, and mpeg2enc to encode the video. The
