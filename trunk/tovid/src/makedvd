@@ -183,6 +183,7 @@ fi
 
 # Remind user to insert a DVD, check for DVD device
 if $DO_BURN; then
+    echo $SEPARATOR
     echo "Please insert a blank DVD+/-R(W) disc into your DVD-recorder"
     echo "($DVDRW_DEVICE) if you have not already done so."
 
@@ -210,8 +211,6 @@ if test -d $OUT_DIR; then
       echo "Skipping authoring; to force, use the -author option."
    fi
    
-   echo $SEPARATOR
-
 # If there's no target directory, but there's an .iso image and the user
 # doesn't want to DO_IMAGE, then s/he probably wants to burn it. 
 # No need to author.
@@ -235,7 +234,6 @@ if test -s $DISC_LABEL.iso; then
    else
       echo "Skipping image (.iso) creation; To force, use the -image option."
    fi
-   echo $SEPARATOR
 fi
 
 # Warn if there isn't enough space to make the image
@@ -260,6 +258,7 @@ $DO_AUTHOR && NEEDED_SPACE=`expr $NEEDED_SPACE \+ $DISC_SUM`
 $DO_IMAGE && NEEDED_SPACE=`expr $NEEDED_SPACE \+ $DISC_SUM`
 
 if test $NEEDED_SPACE -gt $AVAIL_SPACE; then
+   echo $SEPARATOR
    echo "Cannot continue! ${NEEDED_SPACE}MB needed, but only ${AVAIL_SPACE}MB in `pwd`"
    echo "Exiting..."
    exit 1
@@ -272,11 +271,11 @@ if $DO_AUTHOR; then
     echo "Authoring DVD-Video disc structure, estimated to require ${DISC_SUM}MB."
     echo "Creating disc structure with the following command:"
     echo $DVDAUTHOR_CMD
-    SUCCESS=false
+    echo $SEPARATOR
+    
     if eval "$DVDAUTHOR_CMD" 2>&1; then
         echo $SEPARATOR
         echo "Disc structure successfully created in $OUT_DIR."
-        echo $SEPARATOR
     else
         runtime_error "Could not create the DVD-Video disc structure in $OUT_DIR. Leaving $OUT_DIR for inspection."
     fi
@@ -294,7 +293,6 @@ if $DO_IMAGE; then
     if eval "$ISO_CMD" 2>&1; then
         echo $SEPARATOR
         echo "ISO image $DISC_LABEL.iso successfully created."
-        echo $SEPARATOR
     else
         runtime_error "Could not create ISO image $DISC_LABEL.iso"
     fi
@@ -308,9 +306,8 @@ if $DO_BURN; then
     # Make sure there is a blank disc to write to
     probe_media
 
-    echo $SEPARATOR
-
     if ! $HAVE_DVD_RW && ! $HAVE_BLANK_DVD_R; then
+      echo $SEPARATOR
       echo "Found $DISC_TYPE in $DVDRW_DEVICE. Cannot burn to this disc!"
       until $HAVE_DVD_RW || $HAVE_BLANK_DVD_R
       do
@@ -328,9 +325,9 @@ if $DO_BURN; then
         echo "Looking for usable media..."
         probe_media
       done
-      echo $SEPARATOR
     fi
 
+    echo $SEPARATOR
     echo "Found $DISC_STATUS $DISC_TYPE."
 
     # complete DVD+/-RW need explicit blanking
@@ -340,9 +337,9 @@ if $DO_BURN; then
     # but this support is still spotty (works for grepper and his +RW, but not 
     # friedrij and his -RW)
     if test "x$DISC_STATUS" = "xcomplete"; then 
+      echo $SEPARATOR
       echo "Found $DISC_STATUS $DISC_TYPE in $DVDRW_DEVICE. Blanking..."
       dvd+rw-format -blank $DVDRW_DEVICE
-      echo $SEPARATOR	  
     fi
 
     # If an image was created, burn that
@@ -355,20 +352,22 @@ if $DO_BURN; then
        BURN_METHOD="DVD directly"
     fi
 
+    echo $SEPARATOR
     echo "Burning $BURN_METHOD with growisofs $GROWISOFS_VER using the following command:"
     echo "$BURN_CMD"
     echo $SEPARATOR
 
     if eval "$BURN_CMD" 2>&1; then
+        echo $SEPARATOR
         echo "Done. You should now have a working DVD. Please visit"
         echo "the tovid homepage: $TOVID_HOME_PAGE"
-        echo $SEPARATOR
     else
         runtime_error "Could not burn the disc to $DVDRW_DEVICE at speed $BURN_SPEED"
     fi
 
 fi
-
+    
+echo $SEPARATOR
 echo "Thanks for using makedvd!"
 
 exit 0
