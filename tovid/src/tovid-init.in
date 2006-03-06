@@ -415,7 +415,7 @@ fi
 
 if ! test -f $DEP_LIST_FILE
 then
-
+  echo "Generating dependency list file..."
 # Adding (or removing) dependencies:
 # (1) Does it belong to an existing group? If so, then add it to the list in
 #     [GROUP]_DEPS. If not, you'll need to add a new group. (keep reading...)
