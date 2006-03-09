@@ -123,6 +123,16 @@ class OptionDef:
         usage += "    %s\n" % self.doc
         return usage
 
+def get_defaults(optiondefs):
+    """Return a dictionary of default values for the given dictionary of
+    OptionDefs."""
+    defaults = {}
+    for key, optdef in optiondefs.iteritems():
+        defaults[key] = copy(optdef.default)
+    return defaults
+
+
+
 def tokenize(optionstring):
     """Separate optionstring into tokens, and return them in a list."""
     lexer = shlex.shlex(optionstring, posix = True)
@@ -139,13 +149,15 @@ def tokenize(optionstring):
             tokens.append(token)
     return tokens
 
-def parse_options(optionstring, optiondefs):
-    """Parse a string of options, returning a dictionary of those that match
-    optiondefs."""
+def parse(options, optiondefs):
+    """Parse a string or list of options, returning a dictionary of those that
+    match optiondefs."""
     optiondict = {}
-    tokens = tokenize(optionstring)
-    while len(tokens) > 0:
-        opt = tokens.pop(0)
+    # If options is a string, tokenize it before proceeding
+    if options.__class__ == str:
+        options = tokenize(options)
+    while len(options) > 0:
+        opt = options.pop(0).lstrip('-')
         if opt not in optiondefs:
             log.error("Unrecognized option: %s. Ignoring." % opt)
         else:
@@ -161,22 +173,22 @@ def parse_options(optionstring, optiondefs):
                 optiondict[opt] = True
             # One arg
             elif expected_args == 1:
-                arg = tokens.pop(0)
+                arg = options.pop(0)
                 optiondict[opt] = arg
             # Comma-separated list of args
             elif expected_args < 0:
                 arglist = []
-                next = tokens.pop(0)
+                next = options.pop(0)
                 # If next is a keyword in optiondefs, print error
                 if next in optiondefs:
                     log.error('"%s" option expects one or more arguments ' \
                             '(got keyword "%s")' % (opt, next))
                 # Until the next keyword is reached, add to list
-                while next and next not in optiondefs:
+                while next and next.lstrip('-') not in optiondefs:
                     # Ignore any surrounding [ , , ]
                     arglist.append(next.lstrip('[').rstrip(',]'))
-                    next = tokens.pop(0)
+                    next = options.pop(0)
                 # Put the last token back
-                tokens.insert(0, next)
+                options.insert(0, next)
                 optiondict[opt] = arglist
-
+    return optiondict

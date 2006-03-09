@@ -87,10 +87,10 @@ def encode_video(yuvfile, videofile, options):
     elif 'dvd' in format:
         cmd += ' -f 8 '
     # Aspect ratio
-    if options['aspect'] == '4:3':
-        cmd += ' -a 2 '
-    elif options['aspect'] == '16:9':
+    if options['widescreen']:
         cmd += ' -a 3 '
+    else:
+        cmd += ' -a 2 '
     cmd += ' -o "%s"' % videofile
     run(cmd)
 
