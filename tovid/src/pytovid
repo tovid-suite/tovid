@@ -23,17 +23,6 @@ if __name__ == '__main__':
         print 'Please provide an input file (-in) and output name (-out).'
         sys.exit()
 
-    # Create a TDL video element definition using the
-    # provided command-line options
-
     args = sys.argv[1:]
-
-    # Insert a dummy element/name declaration
-    args.insert(0, 'Video')
-    args.insert(1, '"FOO VIDEO"')
-
-    par = tdl.Parser()
-    elems = par.parse_args(args)
-    print "Generating video..."
-    Video.generate(elems[0])
-
+    vid = Video(args)
+    vid.generate()

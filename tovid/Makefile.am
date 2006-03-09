@@ -83,7 +83,7 @@ pyexecGUIdir = $(pyexecdir)/libtovid/gui
 EXTRA_DIST = \
 	$(bin_SCRIPTS) \
 	$(man_MANS) \
-	icons/*.png
+	icons/*
 ##	setuplib
 ##	libtovid/*.py \
 

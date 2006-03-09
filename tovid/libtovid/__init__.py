@@ -20,7 +20,7 @@ __all__ = [\
     "log",
     "menu",
     "MenuPlugins",
-    "options",
+    "opts",
     "project",
     "standards",
     "streams",

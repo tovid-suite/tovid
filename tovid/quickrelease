@@ -10,6 +10,7 @@ else
     USERNAME=$1
 fi
 ./bootstrap
+./configure
 make dist
 mv tovid-svn.tar.gz $TARBALL
 scp $TARBALL $USERNAME@shell.berlios.de:/home/groups/ftp/pub/tovid

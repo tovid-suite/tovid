@@ -14,7 +14,7 @@ import sys
 from copy import copy
 
 import libtovid
-from libtovid.options import OptionDef
+from libtovid.opts import OptionDef
 from libtovid.log import Log
 from libtovid.standards import get_resolution
 from libtovid.utils import ratio_to_float
@@ -43,6 +43,9 @@ class Video:
     not required).
     """
     optiondefs = {
+        'name': OptionDef('name', '"Video title"', '',
+            """Title of the video"""),
+    
         # New options to (eventually) replace -vcd, -pal etc.
         'format': OptionDef('format', 'vcd|svcd|dvd|half-dvd|dvd-vcd', 'dvd',
             """Make video compliant with the specified format"""),
@@ -123,15 +126,18 @@ class Video:
             tool.""")
     }
 
-    def __init__(self, name='Untitled Video'):
-        self.name = name
-        self.options = {}
-        for key, optdef in self.optiondefs.iteritems():
-            self.options[key] = copy(optdef.default)
+    def __init__(self, options):
+        """Initialize Video with a string or list of options."""
+        # Start with defaults
+        self.options = libtovid.opts.get_defaults(self.optiondefs)
+        # Overwrite defaults with options from list
+        custom = libtovid.opts.parse(options, self.optiondefs)
+        self.options.update(custom)
+        print self.options
         self.parents = []
         self.children = []
         self.identify_infile()
-
+        
     def identify_infile(self):
         """Gather information about the input file and store it locally."""
         log.debug('Creating MultimediaFile for "%s"' % self.options['in'])
@@ -146,23 +152,23 @@ class Video:
         # Use anamorphic widescreen for any video 16:9 or wider
         # (Only DVD supports this)
         if src_aspect >= 1.7 and self.options['format'] == 'dvd':
-            tgt_aspect = 16.0/9.0
+            target_aspect = 16.0/9.0
             widescreen = True
         else:
-            tgt_aspect = 4.0/3.0
+            target_aspect = 4.0/3.0
             widescreen = False
         # If aspect matches target, no letterboxing is necessary
         # (Match within a tolerance of 0.05)
-        if abs(src_aspect - tgt_aspect) < 0.05:
+        if abs(src_aspect - target_aspect) < 0.05:
             scale = (width, height)
             expand = False
         # If aspect is wider than target, letterbox vertically
-        elif src_aspect > tgt_aspect:
-            scale = (width, height * tgt_aspect / src_aspect)
+        elif src_aspect > target_aspect:
+            scale = (width, height * dvd_aspect / src_aspect)
             expand = (width, height)
         # Otherwise (rare), letterbox horizontally
         else:
-            scale = (width * src_aspect / tgt_aspect, height)
+            scale = (width * src_aspect / dvd_aspect, height)
             expand = (width, height)
         # If infile is already the correct size, don't scale
         if self.infile.video and self.infile.video.size == scale:
@@ -198,12 +204,11 @@ class Video:
                     vbitrate = 7000
             if not abitrate:
                 abitrate = 224
-
+        # Set options for use by the encoder backends
         self.options['abitrate'] = abitrate
         self.options['vbitrate'] = vbitrate
         self.options['scale'] = scale
         self.options['expand'] = expand
-        self.options['tgt_aspect'] = tgt_aspect
         self.options['samprate'] = samprate
         self.options['fps'] = fps
         self.options['widescreen'] = widescreen
@@ -217,6 +222,10 @@ class Video:
         method = self.options['method']
         infile = self.options['in']
         outfile = self.options['out']
+        # Add .mpg to outfile if not already present
+        if not outfile.endswith('.mpg'):
+            outfile += '.mpg'
+
         if method == 'mpeg2enc':
             log.info("generate(): Encoding with mpeg2enc")
             mpeg2enc.encode(infile, outfile, self.options)
@@ -230,3 +239,6 @@ class Video:
             log.info("The '%s' encoder is not yet supported." % method)
             log.info("Perhaps you'd like to write a backend for it? :-)")
             sys.exit()
+
+if __name__ == '__main__':
+    vid = Video(sys.argv[1:])
