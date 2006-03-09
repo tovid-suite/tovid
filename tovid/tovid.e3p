@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-3.7.dtd">
 <!-- Project file for project tovid -->
-<!-- Saved: 2006-03-04, 22:21:42 -->
+<!-- Saved: 2006-03-08, 16:16:07 -->
 <!-- Copyright (C) 2006 ,  -->
 <Project version="3.7">
   <ProgLanguage mixed="1">Python</ProgLanguage>
   <UIType>Console</UIType>
   <Description>Suite for authoring (S)VCDs and DVDs</Description>
-  <Version>0.25</Version>
+  <Version>0.26</Version>
   <Author></Author>
   <Email></Email>
   <Sources>
@@ -186,10 +186,6 @@
     </Source>
     <Source>
       <Dir>libtovid</Dir>
-      <Name>options.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
       <Dir>encoders</Dir>
       <Name>mpeg2enc.py</Name>
     </Source>
@@ -207,6 +203,10 @@
       <Dir>libtovid</Dir>
       <Dir>encoders</Dir>
       <Name>__init__.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>opts.py</Name>
     </Source>
   </Sources>
   <Forms>

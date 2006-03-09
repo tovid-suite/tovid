@@ -46,7 +46,7 @@ import glob
 from copy import copy
 
 import libtovid
-from libtovid.options import OptionDef
+from libtovid.opts import OptionDef
 from libtovid.MenuPlugins import *
 from libtovid.log import Log
 
@@ -55,6 +55,9 @@ log = Log('menu.py')
 class Menu:
     """A Menu element with associated options"""
     optiondefs = {
+        'name': OptionDef('name', '"Menu title"', '',
+            """Title of the menu"""),
+
         'format': OptionDef('format', 'vcd|svcd|dvd', 'dvd',
             """Generate a menu compliant with the specified disc format"""),
         'tvsys': OptionDef('tvsys', 'pal|ntsc', 'ntsc',
@@ -99,11 +102,13 @@ class Menu:
                 """Add the listed effects to the thumbnails.""")
     }
 
-    def __init__(self, name='Untitled Menu'):
-        self.name = name
-        self.options = {}
-        for key, optdef in self.optiondefs.iteritems():
-            self.options[key] = copy(optdef.default)
+    def __init__(self, options):
+        """Initialize Menu with a string or list of options."""
+        # Start with defaults
+        self.options = libtovid.opts.get_defaults(self.optiondefs)
+        # Overwrite defaults with options from list
+        custom = libtovid.opts.parse(options, self.optiondefs)
+        self.options.update(custom)
         self.parents = []
         self.children = []
 

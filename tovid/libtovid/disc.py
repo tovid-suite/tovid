@@ -27,11 +27,14 @@ import sys
 from copy import copy
 
 import libtovid
-from libtovid.options import OptionDef
+from libtovid.opts import OptionDef
 
 class Disc:
     """A Disc with associated options"""
     optiondefs = { 
+        'name': OptionDef('name', '"Disc title"', '',
+            """Title of the disc"""),
+
         'format':
             OptionDef('format', 'vcd|svcd|dvd', 'dvd',
             """Create a disc of the specified format."""),
@@ -46,11 +49,13 @@ class Disc:
             """Filename to write disc navigational structure to.""")
     }
 
-    def __init__(self, name='Untitled Disc'):
-        self.name = name
-        self.options = {}
-        for key, optdef in self.optiondefs.iteritems():
-            self.options[key] = copy(optdef.default)
+    def __init__(self, options):
+        """Initialize Disc with a string or list of options."""
+        # Start with defaults
+        self.options = libtovid.opts.get_defaults(self.optiondefs)
+        # Overwrite defaults with options from list
+        custom = libtovid.opts.parse(options, self.optiondefs)
+        self.options.update(custom)
         self.parents = []
         self.children = []
 

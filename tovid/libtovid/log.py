@@ -3,47 +3,39 @@
 
 from libtovid.globals import Config
 
-# Simple integer verbosity level
-DEBUG = 3
-INFO = 2
-ERROR = 1
-NONE = 0
 
 class Log:
-    """Logger for libtovid backend and frontend; can be configured with
-    a verbosity level and name. To use, declare:
+    """Logger for libtovid modules, with a name and verbosity level.
+
+    To use, declare:
         
-        >>> from libtovid.Log import Log
+        >>> from libtovid.log import Log
         >>> log = Log('MyApp')
         >>>
 
-    By default, the log uses Log.INFO verbosity level; messages of INFO
-    or less are shown:
+    You can also provide a verbosity level:
 
-        >>> log.info('Hello world')
-        Info [MyApp]: Hello world
+        >>> log = Log('MyApp', Log.DEBUG)
         >>>
 
-    debug() messages are of higher verbosity level, and won't be shown
-    by default:
+    Send messages to the logger like so:
 
-        >>> log.debug('Extra-verbose stuff for developers')
-        >>>
-
-    To set a new level (and show debugging messages, for example), do:
-
-        >>> log.level = Log.DEBUG
-        >>> log.debug('No bugs lurking here...')
-        Debug [MyApp]: No bugs lurking here...
-        >>>
+        >>> log.debug('Ugly verbose debugging message')
+        >>> log.info('Normal message to user')
     """
 
-    def __init__(self, name, level=DEBUG):
+    # Available verbosity levels
+    NONE = 0
+    ERROR = 1
+    INFO = 2
+    DEBUG = 3
+
+    def __init__(self, name, verbosity=DEBUG):
         """Create a logger with the given name and verbosity level."""
         # TODO: Do thread-safe logging to a logfile
         # TODO: Make logfile optional/configurable
         self.name = name
-        self.level = level
+        self.verbosity = verbosity
         try:
             os.remove(Config().logfile)
         except:
@@ -51,20 +43,19 @@ class Log:
         self.logfile = open(Config().logfile, 'w')
         
     def debug(self, message):
-        if self.level >= DEBUG:
+        if self.verbosity >= Log.DEBUG:
             self._log('Debug', message)
 
     def info(self, message):
-        if self.level >= INFO:
+        if self.verbosity >= Log.INFO:
             self._log('Info', message)
 
     def error(self, message):
-        if self.level >= ERROR:
+        if self.verbosity >= Log.ERROR:
             self._log('*** Error', message)
 
-    def _log(self, level, message):
+    def _log(self, header, message):
         # Strip trailing newlines from message
         message = message.rstrip('\n\r')
-        print "%s [%s]: %s" % (level, self.name, message)
-        self.logfile.write("%s [%s]: %s\n" % (level, self.name, message))
-
+        print "%s [%s]: %s" % (header, self.name, message)
+        self.logfile.write("%s [%s]: %s\n" % (header, self.name, message))
