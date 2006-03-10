@@ -2,13 +2,7 @@
 # video.py
 
 __doc__ = \
-"""This module generates MPEG video files from TDL Video element definitions."""
-
-
-# TODO: Eliminate some of the redundancy of this module; integrate related
-# encoding/muxing functions into a class or other container, with the aim
-# of making it as simple as possible to write alternative backends (easy
-# access to data about standard targets, about input video specs, etc.)
+"""A Video ."""
 
 import sys
 from copy import copy
@@ -25,23 +19,13 @@ log = Log('video.py')
 
 
 class Video:
-    """A Video element with associated options.
-    
-    This dictionary defines the set of options that may be given to a
-    command-line invocation of 'tovid', or which may be present in a
-    TDL Video element declaration.
-    
-    A backend may implement these features by accessing the instantiated
-    Video element using an index-style syntax, i.e.:
-        
-        if video['format'] == 'dvd' and video['tvsys'] == 'ntsc':
-            ...
-    
-    By convention, all options are nonhyphenated lowercase English words
-    or short phrases. There are no 'long' and 'short' forms; when invoked
-    from the command-line, options may be preceded by a hyphen (though it's
-    not required).
+    """A video title for (optional) inclusion on a video disc.
+
+    Encapsulates all user-configurable options, including the input file,
+    target format and TV system, and any other argument that may be passed to
+    the 'pytovid' command-line script.
     """
+    # Dictionary of valid options with documentation
     optiondefs = {
         'name': OptionDef('name', '"Video title"', '',
             """Title of the video"""),
@@ -136,16 +120,10 @@ class Video:
         print self.options
         self.parents = []
         self.children = []
-        self.identify_infile()
-        
-    def identify_infile(self):
-        """Gather information about the input file and store it locally."""
-        log.debug('Creating MultimediaFile for "%s"' % self.options['in'])
-        self.infile = MultimediaFile(self.options['in'])
-        self.infile.display()
 
     def preproc(self):
         """Do preprocessing common to all backends."""
+        self.infile = MultimediaFile(self.options['in'])
         width, height = get_resolution(self.options['format'], self.options['tvsys'])
         # Convert aspect (ratio) to a floating-point value
         src_aspect = ratio_to_float(self.options['aspect'])
@@ -204,6 +182,11 @@ class Video:
                     vbitrate = 7000
             if not abitrate:
                 abitrate = 224
+
+        # Add .mpg to outfile if not already present
+        if not self.options['out'].endswith('.mpg'):
+            self.options['out'] += '.mpg'
+
         # Set options for use by the encoder backends
         self.options['abitrate'] = abitrate
         self.options['vbitrate'] = vbitrate
@@ -216,22 +199,14 @@ class Video:
     def generate(self):
         """Generate a video element by encoding an input file to a target
         standard."""
-
         self.preproc()
-
         method = self.options['method']
-        infile = self.options['in']
-        outfile = self.options['out']
-        # Add .mpg to outfile if not already present
-        if not outfile.endswith('.mpg'):
-            outfile += '.mpg'
-
         if method == 'mpeg2enc':
             log.info("generate(): Encoding with mpeg2enc")
-            mpeg2enc.encode(infile, outfile, self.options)
+            mpeg2enc.encode(self.infile, self.options)
         elif method == 'mencoder':
             log.info("generate(): Encoding with mencoder")
-            mencoder.encode(infile, outfile, self.options)
+            mencoder.encode(self.infile, self.options)
         elif method == 'ffmpeg':
             log.info("The ffmpeg encoding method is not yet implemented.")
             sys.exit()
