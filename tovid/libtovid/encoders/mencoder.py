@@ -5,9 +5,9 @@ from libtovid.utils import verify_app, run
 
 verify_app('mencoder')
 
-def encode(infile, outfile, options):
-    """Encode infile to outfile with mencoder, using the given options."""
-    cmd = 'mencoder "%s" -o "%s"' % (infile, outfile)
+def encode(infile, options):
+    """Encode infile (a MultimediaFile) with mencoder, using the given options."""
+    cmd = 'mencoder "%s" -o "%s"' % (infile.filename, options['out'])
     cmd += ' -oac lavc -ovc lavc -of mpeg '
     # Format
     if options['format'] in ['vcd', 'svcd']:

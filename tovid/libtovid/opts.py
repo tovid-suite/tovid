@@ -1,11 +1,11 @@
 #! /usr/bin/env python2.4
-# option.py
+# opts.py
 
-__all__ = ['OptionDef']
+__doc__ =\
+"""Provides command-line-style option definition, documentation, and parsing.
+"""
+__all__ = ['OptionDef', 'get_defaults', 'tokenize', 'parse']
 
-
-# Sorta temporary holding location for OptionDef class, until a more suitable
-# home can be found
 
 import re
 import sys
@@ -132,7 +132,6 @@ def get_defaults(optiondefs):
     return defaults
 
 
-
 def tokenize(optionstring):
     """Separate optionstring into tokens, and return them in a list."""
     lexer = shlex.shlex(optionstring, posix = True)
@@ -148,6 +147,7 @@ def tokenize(optionstring):
         else:
             tokens.append(token)
     return tokens
+
 
 def parse(options, optiondefs):
     """Parse a string or list of options, returning a dictionary of those that
