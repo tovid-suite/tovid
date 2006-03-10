@@ -5,9 +5,9 @@ from libtovid.utils import verify_app, run
 
 verify_app('ffmpeg')
 
-def encode(infile, outfile, options):
-    """Encode infile to outfile with ffmpeg, using the given options."""
-    cmd = 'ffmpeg -i "%s" ' % infile
+def encode(infile, options):
+    """Encode infile (a MultimediaFile) with ffmpeg, using the given options."""
+    cmd = 'ffmpeg -i "%s" ' % infile.filename
     if options['format'] in ['vcd', 'svcd', 'dvd']:
         cmd += ' -tvstd %s ' % options['tvsys']
         cmd += ' -target %s-%s ' % \

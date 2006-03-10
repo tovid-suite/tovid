@@ -110,7 +110,7 @@ def pretty_dict(dict):
 def run(command, wait=True):
     """Execute the given command, with proper stream redirection and
     verbosity. Wait for execution to finish if desired."""
-    log.info("VideoPlugin: Running the following command:")
+    log.info("Running the following command:")
     log.info(command)
     process = Popen(command, shell=True, bufsize=1, \
             stdout=PIPE, stderr=PIPE, close_fds=True)
