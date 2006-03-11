@@ -1,8 +1,7 @@
 #! /usr/bin/env python2.4
 # video.py
 
-__doc__ = \
-"""A Video ."""
+__all__ = ['Video']
 
 import sys
 from copy import copy

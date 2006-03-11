@@ -1,6 +1,6 @@
 #! /usr/bin/env python2.4
-
 # pymakemenu
+
 # Generate an (S)VCD/DVD menu MPEG
 # (to replace the 'makemenu' shell script)
 
@@ -20,27 +20,9 @@ if __name__ == '__main__':
         print libtovid.tdl.usage('Menu')
         print 'Please provide an output name (-out).'
         sys.exit()
-        
-    # If a TDL file name was provided, parse and generate Menus in it
-    elif len(sys.argv) == 3 and sys.argv[1] == '-tdl':
-        print "Generating menus from TDL: '%s'" % sys.argv[2]
-        proj = Project()
-        proj.load_file(sys.argv[2])
-
-        for menu in proj.get_elements('Menu'):
-            print "Generating menu: '%s'" % menu.name
-            menu.generate()
 
     else:
         print "pymakemenu"
         args = sys.argv[1:]
-        for arg in args:
-            print arg
-        # Insert a dummy element/name declaration
-        args.insert(0, 'Menu')
-        args.insert(1, '"FOO MENU"')
-
-        par = libtovid.tdl.Parser()
-        elems = par.parse_args(args)
-        print "Generating menu..."
-        elems[0].generate()
+        menu = Menu(args)
+        menu.generate()
