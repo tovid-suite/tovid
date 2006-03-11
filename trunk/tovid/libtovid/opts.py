@@ -136,7 +136,7 @@ def tokenize(optionstring):
     """Separate optionstring into tokens, and return them in a list."""
     lexer = shlex.shlex(optionstring, posix = True)
     # Rules for splitting tokens
-    lexer.wordchars = self.lexer.wordchars + ".:-%()/"
+    lexer.wordchars = lexer.wordchars + ".:-%()/"
     lexer.whitespace_split = False
     # Append all tokens to a list
     tokens = []

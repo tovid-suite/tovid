@@ -1,43 +1,7 @@
 #! /usr/bin/env python2.4
 # menu.py
 
-__doc__ = \
-"""Module for generating Menu elements for a tovid project.
-
-Conceptual steps in generating a menu:
-
-    - convert/generate background (image or video)
-    - convert audio
-    - generate link content (titles and/or thumbnails)
-    - generate link navigation (spumux)
-    - composite links/thumbnails over background
-    - convert image sequence into video stream
-    - mux video/audio streams
-    - mux link highlight/select subtitles
-
-Interfaces:
-
-    - Convert video to image sequence
-    - Convert image sequence to video
-    - Composite two or more image sequences together
-    - Alter an image sequence (decoration, labeling, etc.)
-
-Data structures:
-
-    - Image sequence
-        - Name/title
-        - Resolution
-        - Filesystem location (directory name)
-    - Thumbnail (a specialized image sequence)
-
-
-Desired end result:
-
-    - Generalized video stream combination interface
-        - For streaming multiple videos into a single video
-        - For applying effects and visual widgets to a video
-        - For adding customized subtitle streams
-"""
+__all__ = ['Menu']
 
 import string
 import sys
@@ -47,13 +11,22 @@ from copy import copy
 
 import libtovid
 from libtovid.opts import OptionDef
-from libtovid.MenuPlugins import *
 from libtovid.log import Log
+from libtovid import textmenu
 
 log = Log('menu.py')
 
 class Menu:
-    """A Menu element with associated options"""
+    """A menu for navigating the titles on a video disc.
+
+    Menus are generated based on a collection of user-settable options. These
+    define the target format, and titles to be listed on the menu, among other
+    things such as font, color, and background.
+    
+    The primary output from a Menu is an .mpg video file suitable for use as
+    a video disc navigational menu.
+    """
+    # Dictionary of valid options with documentation
     optiondefs = {
         'name': OptionDef('name', '"Menu title"', '',
             """Title of the menu"""),
@@ -111,19 +84,37 @@ class Menu:
         self.options.update(custom)
         self.parents = []
         self.children = []
+        self.preproc()
+
+    def preproc(self):
+        if self.options['format'] == 'dvd':
+            width = 720
+            samprate = 48000
+            if self.options['tvsys'] == 'ntsc':
+                height = 480
+            else:
+                height = 576
+        else:
+            width = 352
+            samprate = 44100
+            if self.options['tvsys'] == 'ntsc':
+                height = 240
+            else:
+                height = 288
+        
+        self.options['samprate'] = samprate
+        # TODO: Proper safe area. Hardcoded to 90% for now.
+        self.options['expand'] = (width, height)
+        self.options['scale'] = (int(width * 0.9), int(height * 0.9))
 
     def generate(self):
         """Generate the element, and return the filename of the
         resulting menu."""
         # TODO: Raise exceptions
-
         # Generate a menu of the appropriate format
         if self.options['format'] == 'dvd':
             log.info('Generating a DVD menu with text titles...')
-            #foo = ThumbMenu(menu)
-            foo = TextMenu(self)
-            foo.run()
+            textmenu.generate(self.options)
         elif self.options['format'] in ['vcd', 'svcd']:
             log.error('VCD and SVCD menus are not supported yet.')
-            pass
 
