@@ -63,6 +63,10 @@ class Menu:
         'out':
             OptionDef('out', 'FILE', None),
         # Thumbnail menus and effects
+        'thumbnails':
+            OptionDef('thumbnails', 'FILE [, FILE ...]', [],
+            """Create thumbnails of the provided list of video files, which
+            should correspond to the given -titles list."""),
         'choices':
             OptionDef('choices', '[list|thumbnails]', 'list',
                 """Display links as a list of titles, or as a grid of labeled
@@ -112,9 +116,10 @@ class Menu:
         resulting menu."""
         # TODO: Raise exceptions
         # Generate a menu of the appropriate format
-        if self.options['format'] == 'dvd':
+        if self.options['thumbnails']:
+            log.info('Generating a menu with thumbnail videos...')
+            thumbmenu.generate(self.options)
+        else:
             log.info('Generating a DVD menu with text titles...')
             textmenu.generate(self.options)
-        elif self.options['format'] in ['vcd', 'svcd']:
-            log.error('VCD and SVCD menus are not supported yet.')
 

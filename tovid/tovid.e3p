@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-3.7.dtd">
 <!-- Project file for project tovid -->
-<!-- Saved: 2006-03-08, 16:16:07 -->
+<!-- Saved: 2006-03-10, 21:25:30 -->
 <!-- Copyright (C) 2006 ,  -->
 <Project version="3.7">
   <ProgLanguage mixed="1">Python</ProgLanguage>
@@ -17,10 +17,6 @@
     <Source>
       <Dir>libtovid</Dir>
       <Name>__init__.py</Name>
-    </Source>
-    <Source>
-      <Dir>libtovid</Dir>
-      <Name>MenuPlugins.py</Name>
     </Source>
     <Source>
       <Dir>src</Dir>
@@ -207,6 +203,14 @@
     <Source>
       <Dir>libtovid</Dir>
       <Name>opts.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>textmenu.py</Name>
+    </Source>
+    <Source>
+      <Dir>libtovid</Dir>
+      <Name>thumbmenu.py</Name>
     </Source>
   </Sources>
   <Forms>

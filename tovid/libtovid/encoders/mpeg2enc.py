@@ -1,6 +1,8 @@
 #! /usr/bin/env python2.4
 # mpeg2enc.py
 
+__all__ = ['encode']
+
 import os
 
 from libtovid.utils import verify_app, run
@@ -11,9 +13,9 @@ for app in ['mplayer', 'mpeg2enc', 'ffmpeg', 'mp2enc', 'mplex']:
 def encode(infile, options):
     """Encode infile (a MultimediaFile) with mpeg2enc, using the given options."""
 
-    infilename = infile.filename
+    outfile = options['out']
     # YUV raw video FIFO, for piping video from mplayer to mpeg2enc
-    yuvfile = '%s.yuv' % infilename
+    yuvfile = '%s.yuv' % outfile
     try:
         os.remove(yuvfile)
     except:
@@ -21,22 +23,22 @@ def encode(infile, options):
     os.mkfifo(yuvfile)
     
     # Filenames for intermediate streams (wav/ac3/m2v etc.)
-    wavfile = '%s.wav' % infilename
+    wavfile = '%s.wav' % outfile
     # Appropriate suffix for audio stream
     if options['format'] in ['vcd', 'svcd']:
-        audiofile = '%s.mpa' % infilename
+        audiofile = '%s.mpa' % outfile
     else:
-        audiofile = '%s.ac3' % infilename
+        audiofile = '%s.ac3' % outfile
     # Appropriate suffix for video stream
     if options['format'] == 'vcd':
-        videofile = '%s.m1v' % infilename
+        videofile = '%s.m1v' % outfile
     else:
-        videofile = '%s.m2v' % infilename
+        videofile = '%s.m2v' % outfile
     # Do audio
-    rip_wav(infilename, wavfile, options)
+    rip_wav(outfile, wavfile, options)
     encode_wav(wavfile, audiofile, options)
     # Do video
-    rip_video(infilename, yuvfile, options)
+    rip_video(outfile, yuvfile, options)
     encode_video(yuvfile, videofile, options)
     # Combine audio and video
     mplex_streams(videofile, audiofile, outfile, options)

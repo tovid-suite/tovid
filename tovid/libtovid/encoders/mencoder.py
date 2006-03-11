@@ -1,6 +1,8 @@
 #! /usr/bin/env python2.4
 # mencoder.py
 
+__all__ = ['encode']
+
 from libtovid.utils import verify_app, run
 
 verify_app('mencoder')
