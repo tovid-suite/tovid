@@ -1,6 +1,6 @@
 #! /usr/bin/env python2.4
-
 # pytovid
+
 # Convert a video into an (S)VCD/DVD-compliant MPEG
 # (to replace the 'tovid' shell script)
 
