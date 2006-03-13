@@ -1,0 +1,89 @@
+# TDL with indentation-based nesting
+
+# Here, you can define everything on a disc with a single block of TDL element
+# descriptions. This makes the hierarchy more obvious, and probably a little
+# easier to edit.
+
+# We can assume that some inheritance is going on--if a Disc has -format dvd, we
+# expect everything on the disc to also be -format dvd unless explicitly
+# overridden in the Menu or Video definitions to follow.
+
+# Basic usage:
+Disc "Trailers"
+    -options
+    Video "Serenity"
+        -options
+    Video "Hitchhiker's Guide"
+        -options
+
+# Indentation level determines nesting. This Disc has two videos on it, which
+# shall play in sequence, as expected.
+
+# With a menu:
+Disc "Trailers"
+    -options
+    Menu "Movies"
+        -options
+        Video "Serenity"
+            -options
+        Video "Hitchhiker's Guide"
+            -options
+
+# Now, we have a "Movies" menu as the main content of the disc. The menu
+# lets you choose "Serenity" or "Hitchhiker's Guide" for playback.
+
+# Two-level menus:
+Disc "Trailers"
+    -options
+    Menu "Main menu"
+        -options
+        Menu "Movie trailers"
+            Video "Serenity"
+            Video "Hitchhiker's Guide"
+        Menu "Game trailers"
+            Video "MGS4"
+            Video "FF7"
+
+# And so on. Indentation makes the disc organization obvious. Indents may
+# be any number of spaces, as long as you're consistent (4 is a good amount).
+# Never use tabs; configure your text-editor to use spaces for tabs!
+
+# A more complete demonstration:
+Disc "Trailers"
+    -format dvd
+    -tvsys ntsc
+    Menu "Main Menu"
+        Menu "Movie Trailers"
+            -background movietrailersmenu.png
+            -font "Courier New"
+            Video "Serenity"
+                -in "Serenity.avi"
+            Video "Hitchhiker's Guide"
+                -in "HHGG.mov"
+                -safe 95%
+                -aspect 16:9
+                -interlaced
+                -normalize
+                -quality 9
+
+        Menu "Game Trailers"
+            -background mainmenu.jpg
+            -font Hattenschweiler
+            -textcolor "#0099FF"
+            Video "MGS4"
+                -in "MGS4.wmv"
+                -aspect 4:3
+                -interlaced
+                -abitrate 448
+
+            Video "FF7"
+                -in "FF7.mpg"
+                -aspect 16:9
+                -vbitrate 3000
+                -quality 5
+                -background gametrailersmenu.tif
+                -font Verdana
+        
+# Element titles immediately follow their type name (Disc/Menu/Video),
+# and are quoted.
+
