@@ -8,15 +8,14 @@ import sys
 from copy import copy
 
 import libtovid
-from libtovid.opts import OptionDef
+from libtovid.opts import OptionDef, OptionDict
 
 class Disc:
     """A video disc containing video titles and optional menus."""
     # Dictionary of valid options with documentation
     optiondefs = { 
-        'name': OptionDef('name', '"Disc title"', '',
-            """Title of the disc"""),
-
+        'out': OptionDef('out', 'NAME', None,
+            """Output prefix or disc name."""),
         'format':
             OptionDef('format', 'vcd|svcd|dvd', 'dvd',
             """Create a disc of the specified format."""),
@@ -25,20 +24,14 @@ class Disc:
             """Make the disc for the specified TV system."""),
         'topmenu':
             OptionDef('topmenu', 'MENUNAME', None,
-            """Use MENUNAME for the top-level menu on the disc."""),
-        'out':
-            OptionDef('out', 'FILE', None,
-            """Filename to write disc navigational structure to.""")
+            """Use MENUNAME for the top-level menu on the disc.""")
     }
 
-    def __init__(self, options):
+    def __init__(self, custom_options=[]):
         """Initialize Disc with a string or list of options."""
-        # Start with defaults
-        self.options = libtovid.opts.get_defaults(self.optiondefs)
-        # Overwrite defaults with options from list
-        custom = libtovid.opts.parse(options, self.optiondefs)
-        self.options.update(custom)
-        self.parents = []
+        self.options = OptionDict(self.optiondefs)
+        self.options.override(custom_options)
+        self.parent = None
         self.children = []
 
     def generate(self):
@@ -168,7 +161,7 @@ if __name__ == '__main__':
         print "Please supply the name of a .tdl file."
         sys.exit()
 
-    proj = Project.Project()
+    proj = tdl.Project()
     proj.load_file(sys.argv[1])
 
     write_dvdauthor_xml(proj)

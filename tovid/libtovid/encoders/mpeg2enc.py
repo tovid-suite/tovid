@@ -66,7 +66,7 @@ def rip_video(infile, yuvfile, options):
         cmd += ' -vf-add pp=al:f '
     if 'deblock' in filters:
         cmd += ' -vf-add pp=hb/vb '
-    run(cmd, wait=False)
+    run(cmd, "Ripping video to yuv4mpeg format", wait=False)
 
 def encode_video(yuvfile, videofile, options):
     """Encode the yuv4mpeg stream to the given format and TV system."""
@@ -95,7 +95,7 @@ def encode_video(yuvfile, videofile, options):
     else:
         cmd += ' -a 2 '
     cmd += ' -o "%s"' % videofile
-    run(cmd)
+    run(cmd, "Encoding yuv4mpeg video stream to MPEG format")
 
 def generate_silent_wav(wavfile, options):
     """Generate a silent audio .wav."""
@@ -105,14 +105,14 @@ def generate_silent_wav(wavfile, options):
     cmd += ' "%s" ' % wavfile
     # TODO: Use actual video duration
     cmd += ' trim 0 5'
-    run(cmd)
+    run(cmd, "Generating a silent .wav file")
 
 def rip_wav(infile, wavfile, options):
     """Rip a .wav of the audio stream from the input video."""
     cmd = 'mplayer -quiet -vc null -vo null '
     cmd += ' -ao pcm:waveheader:file=%s ' % wavfile
     cmd += ' "%s"' % infile
-    run(cmd)
+    run(cmd, "Ripping audio to .wav format")
 
 def encode_wav(wavfile, audiofile, options):
     """Encode the audio .wav to the target format."""
@@ -121,13 +121,14 @@ def encode_wav(wavfile, audiofile, options):
         cmd += '| mp2enc -s -V '
         cmd += ' -b %s ' % options['abitrate']
         cmd += ' -o "%s"' % audiofile
+        run(cmd, "Encoding .wav to MP2 format")
     else:
         cmd = 'ffmpeg -i "%s" ' % wavfile
         cmd += ' -ab %s ' % options['abitrate']
         cmd += ' -ar %s ' % options['samprate']
         cmd += ' -ac 2 -acodec ac3 -y '
         cmd += ' "%s"' % audiofile
-    run(cmd)
+        run(cmd, "Encoding .wav to AC3 format")
 
 def mplex_streams(vstream, astream, outfile, options):
     """Multiplex the audio and video streams."""
@@ -146,5 +147,5 @@ def mplex_streams(vstream, astream, outfile, options):
     # elif format == 'kvcd':
     #   cmd += '-V -f 5 -b 350 -r 10800 '
     cmd += ' "%s" "%s" -o "%s"' % (vstream, astream, outfile)
-    run(cmd)
+    run(cmd, "Multiplexing audio and video streams")
 

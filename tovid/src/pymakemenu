@@ -6,7 +6,7 @@
 
 import sys, libtovid
 from libtovid.menu import Menu
-from libtovid.project import Project
+from libtovid.tdl import Project
 
 if __name__ == '__main__':
     """Parse the provided command-line arguments as a Menu element."""

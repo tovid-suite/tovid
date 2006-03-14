@@ -3,16 +3,15 @@
 
 __all__ = ['Menu']
 
-import string
 import sys
 import os
-import glob
 from copy import copy
 
 import libtovid
-from libtovid.opts import OptionDef
+from libtovid.opts import OptionDef, OptionDict
 from libtovid.log import Log
 from libtovid import textmenu
+from libtovid import thumbmenu
 
 log = Log('menu.py')
 
@@ -28,16 +27,17 @@ class Menu:
     """
     # Dictionary of valid options with documentation
     optiondefs = {
-        'name': OptionDef('name', '"Menu title"', '',
-            """Title of the menu"""),
+        'out': OptionDef('out', 'NAME', None,
+            """Output prefix or menu name."""),
+
+        'titles': OptionDef('titles', '"TITLE" [, "TITLE"]', [],
+            """Comma-separated list of quoted titles; these are the titles that
+            will be displayed (and linked) from the menu."""),
 
         'format': OptionDef('format', 'vcd|svcd|dvd', 'dvd',
             """Generate a menu compliant with the specified disc format"""),
         'tvsys': OptionDef('tvsys', 'pal|ntsc', 'ntsc',
             """Make the menu for the specified TV system"""),
-        'titles': OptionDef('titles', '"TITLE" [, "TITLE"]', [],
-            """Comma-separated list of quoted titles; these are the titles that
-            will be displayed (and linked) from the menu."""),
         'background': OptionDef('background', 'IMAGE', None,
             """Use IMAGE (in most any graphic format) as a background."""),
         'audio': OptionDef('audio', 'AUDIOFILE', None,
@@ -60,8 +60,7 @@ class Menu:
         'selectcolor':
             OptionDef('selectcolor', 'COLOR', 'green',
             """Color of menu selections."""),
-        'out':
-            OptionDef('out', 'FILE', None),
+
         # Thumbnail menus and effects
         'thumbnails':
             OptionDef('thumbnails', 'FILE [, FILE ...]', [],
@@ -79,16 +78,12 @@ class Menu:
                 """Add the listed effects to the thumbnails.""")
     }
 
-    def __init__(self, options):
+    def __init__(self, custom_options=[]):
         """Initialize Menu with a string or list of options."""
-        # Start with defaults
-        self.options = libtovid.opts.get_defaults(self.optiondefs)
-        # Overwrite defaults with options from list
-        custom = libtovid.opts.parse(options, self.optiondefs)
-        self.options.update(custom)
-        self.parents = []
+        self.options = OptionDict(self.optiondefs)
+        self.options.override(custom_options)
+        self.parent = None
         self.children = []
-        self.preproc()
 
     def preproc(self):
         if self.options['format'] == 'dvd':
@@ -105,7 +100,16 @@ class Menu:
                 height = 240
             else:
                 height = 288
-        
+
+        # Make sure number of thumbs and titles match
+        if self.options['thumbnails']:
+            numthumbs = len(self.options['thumbnails'])
+            numtitles = len(self.options['titles'])
+            if numthumbs > numtitles:
+                log.error('More thumbnails than titles!')
+            elif numthumbs < numtitles:
+                log.error('More titles than thumbnails!')
+
         self.options['samprate'] = samprate
         # TODO: Proper safe area. Hardcoded to 90% for now.
         self.options['expand'] = (width, height)
@@ -114,6 +118,7 @@ class Menu:
     def generate(self):
         """Generate the element, and return the filename of the
         resulting menu."""
+        self.preproc()
         # TODO: Raise exceptions
         # Generate a menu of the appropriate format
         if self.options['thumbnails']:
