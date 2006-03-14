@@ -63,7 +63,5 @@ def encode(infile, options):
         cmd += ' -vf scale=%s:%s' % options['scale']
     if options['expand']:
         cmd += ',expand=%s:%s ' % options['expand']
-    run(cmd)
-
-
-        
+    run(cmd, "Encoding " + infile.filename + " to " + options['format'] + \
+        " " + options['tvsys'] + " format")

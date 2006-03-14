@@ -9,23 +9,23 @@ __version__ = '0.26-dev'
 
 __all__ = [\
     # Subdirectories
-    "gui",
-    "encoders",
-
+    'gui',
+    'encoders',
     # .py files
-    "disc",
-    "encoder",
-    "filetypes",
-    "globals",
-    "log",
-    "menu",
-    "MenuPlugins",
-    "opts",
-    "project",
-    "standards",
-    "streams",
-    "tdl",
-    "utils"
-    "video"]
+    'disc',
+    'encoder',
+    'filetypes',
+    'globals',
+    'log',
+    'menu',
+    'opts',
+    'project',
+    'standards',
+    'streams',
+    'tdl',
+    'textmenu',
+    'thumbmenu',
+    'utils'
+    'video']
 
 

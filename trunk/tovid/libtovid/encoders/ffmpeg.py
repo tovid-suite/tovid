@@ -34,4 +34,5 @@ def encode(infile, options):
     else:
         cmd += ' -aspect 4:3 '
 
-    run(cmd)
+    run(cmd, "Encoding " + infile.filename + " to " + options['format'] + \
+        " " + options['tvsys'] + " format")
