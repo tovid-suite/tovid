@@ -9,10 +9,9 @@ __all__ = ['OptionDef', 'get_defaults', 'tokenize', 'parse']
 
 import re
 import sys
-import shlex
 from copy import copy
 
-from libtovid.utils import trim
+from libtovid import utils
 from libtovid.log import Log
 
 log = Log('option.py')
@@ -40,7 +39,7 @@ class OptionDef:
         self.name = name
         self.argformat = argformat
         self.default = default
-        self.doc = trim(doc)
+        self.doc = utils.trim(doc)
         self.alias = alias
         # If an alias was provided, generate documentation.
         # i.e., alias=('tvsys', 'ntsc') means this option is the same as
@@ -123,31 +122,6 @@ class OptionDef:
         usage += "    %s\n" % self.doc
         return usage
 
-def get_defaults(optiondefs):
-    """Return a dictionary of default values for the given dictionary of
-    OptionDefs."""
-    defaults = {}
-    for key, optdef in optiondefs.iteritems():
-        defaults[key] = copy(optdef.default)
-    return defaults
-
-
-def tokenize(optionstring):
-    """Separate optionstring into tokens, and return them in a list."""
-    lexer = shlex.shlex(optionstring, posix = True)
-    # Rules for splitting tokens
-    lexer.wordchars = lexer.wordchars + ".:-%()/"
-    lexer.whitespace_split = False
-    # Append all tokens to a list
-    tokens = []
-    while True:
-        token = lexer.get_token()
-        if not token:
-            break
-        else:
-            tokens.append(token)
-    return tokens
-
 
 def parse(options, optiondefs):
     """Parse a string or list of options, returning a dictionary of those that
@@ -155,7 +129,7 @@ def parse(options, optiondefs):
     optiondict = {}
     # If options is a string, tokenize it before proceeding
     if options.__class__ == str:
-        options = tokenize(options)
+        options = utils.tokenize(options)
     while len(options) > 0:
         opt = options.pop(0).lstrip('-')
         if opt not in optiondefs:
@@ -192,3 +166,28 @@ def parse(options, optiondefs):
                 options.insert(0, next)
                 optiondict[opt] = arglist
     return optiondict
+
+class OptionDict(dict):
+    """A custom dictionary of options."""
+    def __init__(self, optiondefs):
+        """Create an option dictionary using the given dictionary of OptionDefs."""
+        dict.__init__(self)
+        self.defs = optiondefs
+        # Fill options from defaults
+        for key, optdef in optiondefs.iteritems():
+            self[key] = copy(optdef.default)
+
+    def override(self, custom_options):
+        """Update the option dictionary with custom options. options may be
+        a string, a list of option/argument tokens, or a dictionary of
+        option/value pairs."""
+        if options.__class__ == str or options.__class__ == list:
+            options = parse(options, self.defs)
+        self.update(options)
+
+    def usage(self):
+        """Return a string containing usage notes for all option definitions."""
+        usage = ''
+        for opt in self.optiondefs.itervals():
+            usage += opt.usage_string()
+        return usage

@@ -22,10 +22,11 @@ try:
     import wx
 except ImportError:
     traceback.print_exc()
-    print "Python can't find the 'wx' libraries. Here's where it looked:"
-    for dir in sys.path[1:]:
-        print "  " + dir
-    print "You may need to install or upgrade wxPython 2.6.x [wxpython.org]."
+    print "There was an error importing the 'wx' libraries. The above"
+    print "output should help you find what went wrong. Re-installing"
+    print "wxPython 2.6 (or upgrading from wxPython 2.4 to 2.6) may"
+    print "help. Consult the tovid homepage (tovid.org) for further"
+    print "assistance."
     print "Sorry, 'tovidgui' will not work."
     sys.exit()
 

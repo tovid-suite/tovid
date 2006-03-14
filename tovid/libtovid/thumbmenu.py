@@ -4,9 +4,11 @@
 __all__ = ['generate']
 
 import os
+import glob
+import string
 
 import libtovid
-from libtovid.utils import degunk
+from libtovid.utils import run, degunk
 from libtovid.log import Log
 
 log = Log('MenuPlugins.py')
@@ -27,7 +29,7 @@ class ThumbMenu:
         self.outdir = os.path.abspath('menu_%s' % self.options['out'])
         print "\n\nself.outdir: %s\n\n" % self.outdir
         # Find out how many thumbnails are needed
-        self.numthumbs = len(self.options['titles'])
+        self.numthumbs = len(self.options['thumbnails'])
         # Arrange thumbs in a grid
         # TODO: Support more than 12 (generalize)
         if self.numthumbs > 12:
@@ -56,25 +58,24 @@ class ThumbMenu:
 
         # Composite thumbs over background
         for frame in range(FRAMES):
-            cmd = 'convert -size 720x480 %s' % self.options['background']
+            cmd = 'convert -size 720x480 '
+            if self.options['background']:
+                cmd += ' %s' % self.options['background']
+            else:
+                cmd += ' gradient:blue-black'
             for thumb in self.thumbs:
                 cmd += ' -page +%s+%s' % thumb.loc
-                cmd += ' -label "%s"' % thumb.video.name
+                cmd += ' -label "%s"' % thumb.videofile
                 cmd += ' %s/%s.jpg' % (thumb.outdir, string.zfill(frame, 8))
             cmd += ' -mosaic %s/%s.jpg' % (self.outdir, string.zfill(frame, 8))
-            print cmd
-            os.popen(cmd, 'r')
+            run(cmd)
             
         # Generate video stream of composite images
-        self.outfile = os.path.abspath("%s.m2v" % degunk(self.options.name))
+        self.outfile = os.path.abspath("%s.m2v" % degunk(self.options['out']))
         cmd = 'jpeg2yuv -v 0 -f 29.970 -I p -n %s' % FRAMES
         cmd += ' -L 1 -b1 -j "%s/%%08d.jpg"' % self.outdir
         cmd += ' | mpeg2enc -v 0 -q 3 -f 8 -o "%s"' % self.outfile
-        print "Generating video stream with command:"
-        print cmd
-        for line in os.popen(cmd, 'r'):
-            print line
-
+        run(cmd)
 
 
 # ===========================================================
@@ -107,15 +108,10 @@ class ImageSequence:
             print "Creating thumbnail directory: %s" % self.outdir
             os.mkdir(self.outdir)
         cmd = 'mplayer "%s" ' % videofile
-        x, y = self.size
-        cmd += ' -zoom -x %s -y %s ' % self.size
+        cmd += ' -vf scale=%s:%s ' % self.size
         cmd += ' -vo jpeg:outdir="%s" -ao null ' % self.outdir
-        cmd += ' -ss 05:00 -frames %s ' % FRAMES
-        print "Creating image sequence from %s" % videofile
-        print cmd
-        for line in os.popen(cmd, 'r').readlines():
-            print line
-
+        cmd += ' -frames %s ' % FRAMES
+        run(cmd)
 
     def label(self, text):
         for image in glob.glob('%s/*.jpg' % self.outdir):
@@ -126,11 +122,7 @@ class ImageSequence:
             cmd += ' -stroke none -fill white'
             cmd += ' -annotate 0 "%s"' % text
             cmd += ' "%s"' % image
-
-            print 'Labeling "%s" with command:' % image
-            print cmd
-            for line in os.popen(cmd, 'r').readlines():
-                print line
+            run(cmd)
 
 
 class Thumbnail:
@@ -144,11 +136,11 @@ class Thumbnail:
         self.imageseq = ImageSequence(self.outdir, self.size)
 
     def generate(self):
-        print "Generating ImageSeqence for thumbnail '%s'" % self.video.name
+        print "Generating ImageSeqence for thumbnail '%s'" % self.videofile
         self.imageseq.generate(self.videofile)
 
     def label(self):
-        print "Labeling thumbnail '%s'" % self.video.name
+        print "Labeling thumbnail '%s'" % self.videofile
         self.imageseq.label(self.videofile)
 
 
@@ -164,8 +156,6 @@ def generate_highlight_png(coords):
         cmd += ' -draw "rectangle %s,%s %s,%s"' % \
             (x0, y1+4, x1, y1+10)
     cmd += ' -type Palette -colors 3 png8:%s' % outfile
-    print cmd
-    for line in os.popen(cmd, 'r').readlines():
-        print line
+    run(cmd)
     return outfile
 

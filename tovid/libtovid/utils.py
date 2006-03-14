@@ -1,12 +1,15 @@
 #! /usr/bin/env python2.4
 # utils.py
-# Some short utility functions used by libtovid
 
-__all__ = ['degunk', 'trim', 'ratio_to_float', 'subst']
+# TODO: Categorize/reorganize these
+
+__all__ = ['degunk', 'tokenize', 'trim', 'ratio_to_float', 'subst',
+    'verify_app', 'pretty_dict', 'run', 'indent_level', 'get_code_lines']
 
 import os
 import sys
 import string
+import shlex
 from subprocess import *
 
 from libtovid.log import Log
@@ -20,6 +23,22 @@ def degunk(text):
     result = string.translate(text, trans)
     result = result.replace('@','')
     return result
+
+def tokenize(line):
+    """Separate a text line into tokens, returning them in a list."""
+    lexer = shlex.shlex(line, posix = True)
+    # Rules for splitting tokens
+    lexer.wordchars = lexer.wordchars + ".:-%()/"
+    lexer.whitespace_split = False
+    # Append all tokens to a list
+    tokens = []
+    while True:
+        token = lexer.get_token()
+        if not token:
+            break
+        else:
+            tokens.append(token)
+    return tokens
 
 def trim(text):
     """Strip leading indentation from a block of text.
@@ -107,10 +126,13 @@ def pretty_dict(dict):
     return result
 
 
-def run(command, wait=True):
+def run(command, purpose='', wait=True):
     """Execute the given command, with proper stream redirection and
     verbosity. Wait for execution to finish if desired."""
-    log.info("Running the following command:")
+    if purpose:
+        log.info(purpose + " with the following command:")
+    else:
+        log.info("Running the following command:")
     log.info(command)
     process = Popen(command, shell=True, bufsize=1, \
             stdout=PIPE, stderr=PIPE, close_fds=True)
@@ -121,3 +143,18 @@ def run(command, wait=True):
             log.debug(line.rstrip('\n'))
         log.info("Waiting for process to terminate...")
         process.wait()
+
+def indent_level(line):
+    """Return the number of leading whitespace characters in the line."""
+    return len(line) - len(line.lstrip())
+
+def get_code_lines(filename):
+    """Return a list of all lines of code in the given file.
+    Whitespace and #-style comments are ignored."""
+    infile = open(filename, 'r')
+    codelines = []
+    for line in infile.readlines():
+        if line.lstrip() and not line.lstrip().startswith('#'):
+            codelines.append(line)
+    infile.close()
+    return codelines

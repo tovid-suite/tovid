@@ -7,7 +7,7 @@ import sys
 from copy import copy
 
 import libtovid
-from libtovid.opts import OptionDef
+from libtovid.opts import OptionDef, OptionDict
 from libtovid.log import Log
 from libtovid.standards import get_resolution
 from libtovid.utils import ratio_to_float
@@ -26,9 +26,11 @@ class Video:
     """
     # Dictionary of valid options with documentation
     optiondefs = {
-        'name': OptionDef('name', '"Video title"', '',
-            """Title of the video"""),
-    
+        'in': OptionDef('in', 'FILENAME', None,
+            """Input video file, in any format."""),
+        'out': OptionDef('out', 'NAME', None,
+            """Output prefix or name."""),
+
         # New options to (eventually) replace -vcd, -pal etc.
         'format': OptionDef('format', 'vcd|svcd|dvd|half-dvd|dvd-vcd', 'dvd',
             """Make video compliant with the specified format"""),
@@ -49,10 +51,6 @@ class Video:
         'ntsc': OptionDef('ntsc', '', False, alias=('tvsys', 'ntsc')),
         'ntscfilm': OptionDef('ntscfilm', '', False),
         'pal': OptionDef('pal', '', False, alias=('tvsys', 'pal')),
-
-        # Other options
-        'in': OptionDef('in', 'FILENAME', None),
-        'out': OptionDef('out', 'FILENAME', None),
 
         'aspect': OptionDef('aspect', 'WIDTH:HEIGHT', "4:3",
             """Force the input video to be the given aspect ratio, where WIDTH
@@ -109,16 +107,13 @@ class Video:
             tool.""")
     }
 
-    def __init__(self, options):
+    def __init__(self, custom_options=[]):
         """Initialize Video with a string or list of options."""
-        # Start with defaults
-        self.options = libtovid.opts.get_defaults(self.optiondefs)
-        # Overwrite defaults with options from list
-        custom = libtovid.opts.parse(options, self.optiondefs)
-        self.options.update(custom)
-        print self.options
-        self.parents = []
+        self.options = OptionDict(self.optiondefs)
+        self.options.override(custom_options)
+        self.parent = None
         self.children = []
+
 
     def preproc(self):
         """Do preprocessing common to all backends."""
