@@ -1,25 +1,23 @@
 #! /usr/bin/env python2.4
 # pytovid
 
-# Convert a video into an (S)VCD/DVD-compliant MPEG
-# (to replace the 'tovid' shell script)
+__doc__ = \
+"""Convert a video into an (S)VCD/DVD-compliant MPEG (to replace the 'tovid'
+shell script).
+"""
 
 import sys
 
-import libtovid
 from libtovid.video import Video
-from libtovid import tdl
 
 if __name__ == '__main__':
-    """Create a Video element from the provided command-line options,
-    and generate it using the Video module."""
-    
-    # TODO: Fix ugly parsing hack here (i.e., find a way to properly verify
-    # arguments before proceeding)
+    """Create a Video with provided options and generate it."""
+    # If no arguments were provided, print usage notes
+    # TODO: Proper argument verification
     if len(sys.argv) < 5:
         print 'Usage: pytovid [options] -in FILE -out NAME'
         print 'Where [options] may be any of the following:'
-        print tdl.usage('Video')
+        print Video().options.usage()
         print 'Please provide an input file (-in) and output name (-out).'
         sys.exit()
 

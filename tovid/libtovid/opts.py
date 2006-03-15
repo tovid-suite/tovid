@@ -115,7 +115,7 @@ class OptionDef:
         # For now, accept any unknown cases
         return True
 
-    def usage_string(self):
+    def usage(self):
         """Return a string containing "usage notes" for this option."""
         usage = "-%s %s (default: %s)\n" % \
                 (self.name, self.argformat, self.default)
@@ -168,26 +168,26 @@ def parse(options, optiondefs):
     return optiondict
 
 class OptionDict(dict):
-    """A custom dictionary of options."""
+    """A dictionary of user-configurable options."""
     def __init__(self, optiondefs):
         """Create an option dictionary using the given dictionary of OptionDefs."""
         dict.__init__(self)
         self.defs = optiondefs
         # Fill options from defaults
-        for key, optdef in optiondefs.iteritems():
+        for key, optdef in self.defs.iteritems():
             self[key] = copy(optdef.default)
 
-    def override(self, custom_options):
+    def override(self, custom):
         """Update the option dictionary with custom options. options may be
         a string, a list of option/argument tokens, or a dictionary of
         option/value pairs."""
-        if options.__class__ == str or options.__class__ == list:
-            options = parse(options, self.defs)
-        self.update(options)
+        if custom.__class__ == str or custom.__class__ == list:
+            custom = parse(custom, self.defs)
+        self.update(custom)
 
     def usage(self):
         """Return a string containing usage notes for all option definitions."""
         usage = ''
-        for opt in self.optiondefs.itervals():
-            usage += opt.usage_string()
+        for opt in self.defs.itervalues():
+            usage += opt.usage()
         return usage
