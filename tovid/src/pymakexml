@@ -8,24 +8,19 @@ __doc__ = \
 
 import sys
 
-import libtovid
+from libtovid.disc import Disc
 
 if __name__ == '__main__':
+    """Create a Disc with the given options and generate the XML for it."""
+    # If no arguments were provided, print usage notes
+    # TODO: Proper argument verification
     if len(sys.argv) < 2:
         print "Usage: pymakexml [options] vid1.mpg vid2.mpg ... -out NAME"
-        print "See the 'makexml' manual page for more details."
+        print "Where [options] may be any of the following:"
+        print Disc().options.usage()
+        print "Please provide an output name with -out."
         sys.exit()
 
-    # Create a TDL disc element definition using the
-    # provided command-line options
-
-    # Insert a dummy element/name declaration
-    sys.argv.insert(0, 'Disc')
-    sys.argv.insert(1, '"FOO DISC"')
-
-    par = libtovid.tdl.Parser()
-    elems = par.parse_args(sys.argv)
-    print "Generating disc XML..."
-    elems[0].generate()
-    
-
+    args = sys.argv[1:]
+    disc = Disc(args)
+    disc.generate()
