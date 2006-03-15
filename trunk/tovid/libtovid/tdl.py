@@ -26,7 +26,6 @@ element_classes = {
     'Video': Video
 }
 
-
 def new_element(elemstring):
     """Return a new Disc, Menu, or Video created from the given string.
     Example: elemstring = 'Menu "Main menu" -format dvd -tvsys ntsc'."""
@@ -60,96 +59,36 @@ def get_elements(filename):
         elems.append(new_element(line))
     return elems
 
-def parse(filename):
-    """Parse a file and return a dictionary of Discs, Menus, and Videos
-    indexed by name."""
-    elems = get_elements(filename)
-    stack = [elems[0]]
-    for elem in elems[1:]:
-        if elem.indent > stack[-1].indent:
-            pass
-        elif elem.indent < stack[-1].indent:
-            stack.pop()
-            stack.pop()
-        elif elem.indent == stack[-1].indent:
-            stack.pop()
-        stack[-1].children.append(elem)
-        elem.parent = stack[-1]
-        stack.append(elem)
-    return elems
 
 class Project:
-    """A collection of related TDL elements comprising a
-    complete video disc project (or a multiple-disc project)."""
+    """A video disc project with one or more discs."""
 
     def __init__(self):
         pass
     
     def load_file(self, filename):
         """Load project data from the given TDL file."""
-        self.elemdict = {}
-        # Index elemdict by element name for easy access
-        #for element in parse(filename):
-        #    self.elemdict[element.name] = element
-        self.build_hierarchy()
+        elems = get_elements(filename)
+        stack = [elems[0]]
+        for elem in elems[1:]:
+            # Indentation same as top; new child
+            if elem.indent > stack[-1].indent:
+                pass
+            # Indentation same as top; new sibling
+            elif elem.indent == stack[-1].indent:
+                stack.pop()
+            # Indentation less than top; new uncle
+            elif elem.indent < stack[-1].indent:
+                stack.pop()
+                stack.pop()
+            stack[-1].children.append(elem)
+            elem.parent = stack[-1]
+            stack.append(elem)
+        self.elems = elems
 
     def save_file(self, filename):
         """Save project data as a TDL text file."""
-        try:
-            outfile = open(filename, 'w')
-        except:
-            log.error('Could not open file "%s"' % filename)
-        else:
-            outfile.write(self.tdl_tring())
-            outfile.close()
-
-    def build_hierarchy(self):
-        """Determine the hierarchy among the defined elements, and
-        handle undefined or orphaned elements."""
-
-        for name, element in self.elemdict.iteritems():
-            if isinstance(element, Disc):
-                # Link to 'topmenu' target, if it exists
-                linkname = element['topmenu']
-                if self.elemdict.has_key(linkname):
-                    element.children.append(self.elemdict[linkname])
-                    self.elemdict[linkname].parents.append(element)
-                else:
-                    log.error("Disc \"%s\" links to undefined topmenu \"%s\"" % \
-                            (name, linkname))
-
-            elif isinstance(element, Menu):
-                # Link to all 'titles' targets, if they exist
-                for linkname in element['titles']:
-                    if self.elemdict.has_key(linkname):
-                        log.debug("Making %s a child of %s" % \
-                                (linkname, name))
-                        element.children.append(self.elemdict[linkname])
-                        self.elemdict[linkname].parents.append(element)
-
-                    # TODO: Find a way to link 'back' to this menu's parent
-                    # elif string.lower(linkname) == 'back': ?
-
-                    else:
-                        log.error("Menu \"%s\" links to undefined element \"%s\"" % \
-                                (name, linkname))
-            
-
-        # Look for orphans (topitems)
-        self.topitems = []
-        for name, element in self.elemdict.iteritems():
-            if len(element.parents) == 0:
-                self.topitems.append(element)
-                log.error("Element: %s has no parents" % name)
-
-
-    def get(self, name):
-        """Return the element with the given name, or None if not found."""
-        if name in self.elemdict:
-            return self.elemdict[name]
-        else:
-            return None
-
+        pass
 
 
 # TODO: Write a proper unit test

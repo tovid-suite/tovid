@@ -16,7 +16,6 @@ from libtovid.filetypes import MultimediaFile
 
 log = Log('video.py')
 
-
 class Video:
     """A video title for (optional) inclusion on a video disc.
 
@@ -108,7 +107,9 @@ class Video:
     }
 
     def __init__(self, custom_options=[]):
-        """Initialize Video with a string or list of options."""
+        """Initialize Video with a string, list, or dictionary of options."""
+        # TODO: Possibly eliminate code repetition w/ Disc & Menu by adding
+        # a base class and inheriting
         self.options = OptionDict(self.optiondefs)
         self.options.override(custom_options)
         self.parent = None
