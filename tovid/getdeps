@@ -1,0 +1,36 @@
+#! /usr/bin/env sh
+# getdeps
+
+# Install tovid dependencies using the user's preferred package manager
+
+RPM=`which rpm`
+APTGET=`which apt-get`
+EMERGE=`which emerge`
+SWARET=`which swaret`
+
+DEPS="python wxpython mplayer mjpegtools ffmpeg ImageMagick dvdauthor \
+    vcdimager transcode"
+
+echo "tovid dependency installer"
+echo "=========================="
+echo "This program uses a command-line package manager to install"
+echo "all of tovid's dependencies. Here are the packagers I can use:"
+echo "  $SWARET  (Slackware)"
+echo "  $APTGET  (Debian)"
+echo "  $RPM  (Redhat, Mandrake/iva)"
+echo "  $EMERGE  (Gentoo)"
+echo "Please type the name of which one you'd like to use"
+echo "(e.g., 'rpm'): "
+read PREFER
+
+case "$PREFER" in
+    "swaret" )
+        ;;
+    "apt-get" )
+        CMD=""
+        ;;
+    "rpm" )
+        ;;
+    "emerge" )
+        CMD="emerge -uvaD $DEPS"
+        ;;
