@@ -597,7 +597,7 @@ cleanup()
         yecho "Removing temporary files..."
         rm -fv "$OUT_PREFIX.$VID_SUF"
         rm -fv "$OUT_PREFIX.$AUD_SUF"
-        rm -fv $AUDIO_WAV
+        if $RIP_WAV; then rm -fv $AUDIO_WAV; fi
     fi
 
     # Remove log/temp files, unless debugging was enabled
