@@ -17,8 +17,14 @@
 import sys
 import traceback
 
-# Try to import wx; print error if it's unavailable
+# Try to import wx 2.6; print error if it's unavailable
 try:
+    import wxversion
+    if wxversion.checkInstalled('2.6'):
+        wxversion.select('2.6')
+    else:
+        print "tovidgui requires wxPython 2.6; please install or upgrade wxPython."
+        sys.exit()
     import wx
 except ImportError:
     traceback.print_exc()
