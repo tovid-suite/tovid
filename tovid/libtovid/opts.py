@@ -3,9 +3,22 @@
 
 __doc__ =\
 """Provides command-line-style option definition, documentation, and parsing.
-"""
-__all__ = ['OptionDef', 'get_defaults', 'tokenize', 'parse']
 
+Option: Definition of an option, its arguments, default value, and docs
+OptionDict: Dictionary of user-defined options
+
+Essentially, an "option" is a named attribute/value pair, as you would
+find in a typical command-line. In:
+
+    $ tovid -format dvd -in foo.avi
+
+'format' and 'in' are the options; each of them has an argument. In the
+current implementation, the leading '-' may be omitted, or repeated.
+
+OptionDict is a Python dictionary of attribute/value pairs, with a slim wrapper.
+Use OptionDict to store a collection of options and values, for easy access.
+"""
+__all__ = ['Option', 'OptionDict', 'get_defaults', 'tokenize', 'parse']
 
 import re
 import sys
@@ -16,13 +29,13 @@ from libtovid.log import Log
 
 log = Log('option.py')
 
-class OptionDef:
+class Option:
     """A command-line-style option, expected argument formatting, default value,
     and notes on usage and purpose.
     
     For example:
         
-        debug_opt = OptionDef(
+        debug_opt = Option(
             'debug',
             'none|some|all',
             'some',
@@ -33,8 +46,8 @@ class OptionDef:
     expected argument formatting, a default value, and a string documenting the
     option's purpose and/or usage information."""
 
-    def __init__(self, name, argformat, default, doc='Undocumented option',
-            alias=None):
+    def __init__(self, name, argformat, default=None,
+                 doc='Undocumented option', alias=None):
         """Create a new option definition with the given attributes."""
         self.name = name
         self.argformat = argformat
@@ -123,71 +136,82 @@ class OptionDef:
         return usage
 
 
-def parse(options, optiondefs):
-    """Parse a string or list of options, returning a dictionary of those that
-    match optiondefs."""
-    optiondict = {}
-    # If options is a string, tokenize it before proceeding
-    if options.__class__ == str:
-        options = utils.tokenize(options)
-    while len(options) > 0:
-        opt = options.pop(0).lstrip('-')
-        if opt not in optiondefs:
-            log.error("Unrecognized option: %s. Ignoring." % opt)
-        else:
-            expected_args = optiondefs[opt].num_args()
-            log.debug("%s expects %s args" % (opt, expected_args))
-            # Is this option an alias (short-form) of another option?
-            # (i.e., -vcd == -format vcd)
-            if optiondefs[opt].alias:
-                key, value = optiondefs[opt].alias
-                optiondict[key] = value
-            # No args
-            elif expected_args == 0:
-                optiondict[opt] = True
-            # One arg
-            elif expected_args == 1:
-                arg = options.pop(0)
-                optiondict[opt] = arg
-            # Comma-separated list of args
-            elif expected_args < 0:
-                arglist = []
-                next = options.pop(0)
-                # If next is a keyword in optiondefs, print error
-                if next in optiondefs:
-                    log.error('"%s" option expects one or more arguments ' \
-                            '(got keyword "%s")' % (opt, next))
-                # Until the next keyword is reached, add to list
-                while next and next.lstrip('-') not in optiondefs:
-                    # Ignore any surrounding [ , , ]
-                    arglist.append(next.lstrip('[').rstrip(',]'))
-                    next = options.pop(0)
-                # Put the last token back
-                options.insert(0, next)
-                optiondict[opt] = arglist
-    return optiondict
-
-class OptionDict(dict):
+class OptionDict:
     """A dictionary of user-configurable options."""
     def __init__(self, optiondefs):
-        """Create an option dictionary using the given dictionary of OptionDefs."""
-        dict.__init__(self)
-        self.defs = optiondefs
-        # Fill options from defaults
-        for key, optdef in self.defs.iteritems():
-            self[key] = copy(optdef.default)
+        """Create an option dictionary using the given list of Options."""
+        self._data = {}
+        self.defdict = {}
+        for opt in optiondefs:
+            self._data[opt.name] = copy(opt.default)
+            self.defdict[opt.name] = opt
 
-    def override(self, custom):
+    def update(self, custom):
         """Update the option dictionary with custom options. options may be
         a string, a list of option/argument tokens, or a dictionary of
         option/value pairs."""
         if custom.__class__ == str or custom.__class__ == list:
-            custom = parse(custom, self.defs)
-        self.update(custom)
+            custom = self._parse(custom)
+        self._data.update(custom)
 
     def usage(self):
         """Return a string containing usage notes for all option definitions."""
         usage = ''
-        for opt in self.defs.itervalues():
+        for opt in self.defdict.itervalues():
             usage += opt.usage()
         return usage
+
+    def __getitem__(self, key):
+        """Return the value indexed by key, or None if not present."""
+        if key in self._data:
+            return self._data[key]
+        else:
+            return None
+
+    def __setitem__(self, key, value):
+        self._data[key] = value
+
+    def _parse(self, options):
+        """Parse a string or list of options, returning a dictionary of those
+        that match self.defdict."""
+        custom = {}
+        # If options is a string, tokenize it before proceeding
+        if options.__class__ == str:
+            options = utils.tokenize(options)
+        while len(options) > 0:
+            opt = options.pop(0).lstrip('-')
+            if opt not in self.defdict:
+                log.error("Unrecognized option: %s. Ignoring." % opt)
+            else:
+                expected_args = self.defdict[opt].num_args()
+                log.debug("%s expects %s args" % (opt, expected_args))
+                # Is this option an alias (short-form) of another option?
+                # (i.e., -vcd == -format vcd)
+                if self.defdict[opt].alias:
+                    key, value = self.defdict[opt].alias
+                    custom[key] = value
+                # No args
+                elif expected_args == 0:
+                    custom[opt] = True
+                # One arg
+                elif expected_args == 1:
+                    arg = options.pop(0)
+                    custom[opt] = arg
+                # Comma-separated list of args
+                elif expected_args < 0:
+                    arglist = []
+                    next = options.pop(0)
+                    # If next is a keyword in defs, print error
+                    if next in self.defdict:
+                        log.error('"%s" option expects one or more arguments ' \
+                                '(got keyword "%s")' % (opt, next))
+                    # Until the next keyword is reached, add to list
+                    while next and next.lstrip('-') not in self.defdict:
+                        # Ignore any surrounding [ , , ]
+                        arglist.append(next.lstrip('[').rstrip(',]'))
+                        next = options.pop(0)
+                    # Put the last token back
+                    options.insert(0, next)
+                    custom[opt] = arglist
+        return custom
+    

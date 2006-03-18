@@ -8,29 +8,26 @@ import sys
 from copy import copy
 
 import libtovid
-from libtovid.opts import OptionDef, OptionDict
+from libtovid.opts import Option, OptionDict
 
 class Disc:
     """A video disc containing video titles and optional menus."""
-    # Dictionary of valid options with documentation
-    optiondefs = { 
-        'out': OptionDef('out', 'NAME', None,
+    # List of valid options with documentation
+    optiondefs = [
+        Option('out', 'NAME', None,
             """Output prefix or disc name."""),
-        'format':
-            OptionDef('format', 'vcd|svcd|dvd', 'dvd',
+        Option('format', 'vcd|svcd|dvd', 'dvd',
             """Create a disc of the specified format."""),
-        'tvsys':
-            OptionDef('tvsys', 'pal|ntsc', 'ntsc',
+        Option('tvsys', 'pal|ntsc', 'ntsc',
             """Make the disc for the specified TV system."""),
-        'topmenu':
-            OptionDef('topmenu', 'MENUNAME', None,
+        Option('topmenu', 'MENUNAME', None,
             """Use MENUNAME for the top-level menu on the disc.""")
-    }
+    ]
 
     def __init__(self, custom_options=[]):
         """Initialize Disc with a string or list of options."""
         self.options = OptionDict(self.optiondefs)
-        self.options.override(custom_options)
+        self.options.update(custom_options)
         self.parent = None
         self.children = []
 
