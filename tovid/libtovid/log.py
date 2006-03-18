@@ -1,6 +1,8 @@
 #! /usr/bin/env python2.4
 # log.py
 
+import os
+
 from libtovid.globals import Config
 
 

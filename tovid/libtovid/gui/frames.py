@@ -22,7 +22,7 @@ class MainFrame(wx.Frame):
             (800, 600), wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
 
         icon = wx.EmptyIcon()
-        wx.Icon.CopyFromBitmap(icon, AppIcon())
+        icon.CopyFromBitmap(AppIcon())
         self.SetIcon(icon)
 
         # Global configuration
