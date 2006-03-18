@@ -60,7 +60,7 @@ complete list of dependencies, and to what extent they are required:
     Tools for creating (S)VCD filesystems. If you want to make
     VCDs or SVCDs, you need this.
 
-: [transcode http://zebra.fh-weingarten-de/~transcode/]
+: [transcode http://www.transcoding.org/cgi-bin/transcode]
     Video stream processing and conversion tools. This is used
     by postproc (the tovid postprocessing component) and [dvrequant dvrequant.html] (the tovid
     DVD shrinking tool). Useful if you want to be able to fine-tune the output

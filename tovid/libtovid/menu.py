@@ -8,7 +8,7 @@ import os
 from copy import copy
 
 import libtovid
-from libtovid.opts import OptionDef, OptionDict
+from libtovid.opts import Option, OptionDict
 from libtovid.log import Log
 from libtovid import textmenu
 from libtovid import thumbmenu
@@ -26,62 +26,52 @@ class Menu:
     a video disc navigational menu.
     """
     # Dictionary of valid options with documentation
-    optiondefs = {
-        'out': OptionDef('out', 'NAME', None,
+    optiondefs = [
+        Option('out', 'NAME', None,
             """Output prefix or menu name."""),
 
-        'titles': OptionDef('titles', '"TITLE" [, "TITLE"]', [],
+        Option('titles', '"TITLE" [, "TITLE"]', [],
             """Comma-separated list of quoted titles; these are the titles that
             will be displayed (and linked) from the menu."""),
 
-        'format': OptionDef('format', 'vcd|svcd|dvd', 'dvd',
+        Option('format', 'vcd|svcd|dvd', 'dvd',
             """Generate a menu compliant with the specified disc format"""),
-        'tvsys': OptionDef('tvsys', 'pal|ntsc', 'ntsc',
+        Option('tvsys', 'pal|ntsc', 'ntsc',
             """Make the menu for the specified TV system"""),
-        'background': OptionDef('background', 'IMAGE', None,
+        Option('background', 'IMAGE', None,
             """Use IMAGE (in most any graphic format) as a background."""),
-        'audio': OptionDef('audio', 'AUDIOFILE', None,
+        Option('audio', 'AUDIOFILE', None,
             """Use AUDIOFILE for background music while the menu plays."""),
-        'font':
-            OptionDef('font', 'FONTNAME', 'Helvetica',
+        Option('font', 'FONTNAME', 'Helvetica',
             """Use FONTNAME for the menu text."""),
-        'fontsize':
-            OptionDef('fontsize', 'NUM', '24',
+        Option('fontsize', 'NUM', '24',
             """Use a font size of NUM pixels."""),
-        'align':
-            OptionDef('align', 'west|north|east|south|center', 'northwest'),
-        'textcolor':
-            OptionDef('textcolor', 'COLOR', 'white',
+        Option('align', 'west|north|east|south|center', 'northwest'),
+        Option('textcolor', 'COLOR', 'white',
             """Color of menu text. COLOR may be a hexadecimal triplet (#RRGGBB or
             #RGB), or a color name from 'convert -list color."""),
-        'highlightcolor':
-            OptionDef('highlightcolor', 'COLOR', 'red',
+        Option('highlightcolor', 'COLOR', 'red',
             """Color of menu highlights."""),
-        'selectcolor':
-            OptionDef('selectcolor', 'COLOR', 'green',
+        Option('selectcolor', 'COLOR', 'green',
             """Color of menu selections."""),
 
         # Thumbnail menus and effects
-        'thumbnails':
-            OptionDef('thumbnails', 'FILE [, FILE ...]', [],
+        Option('thumbnails', 'FILE [, FILE ...]', [],
             """Create thumbnails of the provided list of video files, which
             should correspond to the given -titles list."""),
-        'choices':
-            OptionDef('choices', '[list|thumbnails]', 'list',
+        Option('choices', '[list|thumbnails]', 'list',
                 """Display links as a list of titles, or as a grid of labeled
                 thumbnail videos."""),
-        'border':
-            OptionDef('border', 'NUM', '0',
+        Option('border', 'NUM', '0',
                 """Add a border of NUM pixels around thumbnails."""),
-        'effects':
-            OptionDef('effects', 'shadow|round|glass [, ...]', [],
+        Option('effects', 'shadow|round|glass [, ...]', [],
                 """Add the listed effects to the thumbnails.""")
-    }
+    ]
 
     def __init__(self, custom_options=[]):
         """Initialize Menu with a string or list of options."""
         self.options = OptionDict(self.optiondefs)
-        self.options.override(custom_options)
+        self.options.update(custom_options)
         self.parent = None
         self.children = []
 
