@@ -60,7 +60,7 @@ Common options:
 
     -dvd | -half-dvd | -dvd-vcd         Encode to standard DVD format
     -vcd | -svcd                        Encode to (S)VCD format
-    -kvcd | -ksvcd | -kdvd              Encode to non-standard MPEG-2 format
+    -kvcd | -kvcdx3 | -kdvd             Encode to non-standard MPEG-2 format
     -pal | -ntsc | -ntscfilm            Set TV standard
 
 Example:
@@ -356,14 +356,15 @@ get_args()
                 ;;
 
             # Target video resolution
-            "-vcd" )        TGT_RES="VCD" ;;
-            "-dvd-vcd" )    TGT_RES="DVD-VCD" ;;
-            "-svcd" )       TGT_RES="SVCD" ;;
-            "-dvd" )        TGT_RES="DVD" ;;
-            "-half-dvd" )   TGT_RES="Half-DVD" ;;
-            "-kvcdx3" | "-kvcd" )   TGT_RES="KVCDx3" ;;
-            "-kvcdx3a" | "-ksvcd" ) TGT_RES="KVCDx3a" ;;
-            "-kdvd" )       TGT_RES="KDVD" ;;
+            "-vcd" )      TGT_RES="VCD" ;;
+            "-dvd-vcd" )  TGT_RES="DVD-VCD" ;;
+            "-svcd" )     TGT_RES="SVCD" ;;
+            "-dvd" )      TGT_RES="DVD" ;;
+            "-half-dvd" ) TGT_RES="Half-DVD" ;;
+            "-kvcd" )     TGT_RES="KVCD" ;;
+            "-kvcdx3" )   TGT_RES="KVCDx3" ;;
+            "-kvcdx3a" )  TGT_RES="KVCDx3a" ;;
+            "-kdvd" )     TGT_RES="KDVD" ;;
 
             # Other options
             "-normalize" )  DO_NORM=: ;;
@@ -785,6 +786,13 @@ else
     SAMPRATE=44100
 fi
 
+# DVD and KDVD can do anamorphic widescreen
+if test $TGT_RES = "DVD" || test $TGT_RES = "KDVD"; then
+    ANAMORPH=:
+else
+    ANAMORPH=false
+fi
+
 # Default quality 8, if not set by user
 : ${VID_QUALITY:=8}
 
@@ -803,21 +811,37 @@ case "$TGT_RES" in
         # Explicitly set audio/video bitrates
         AUD_BITRATE="224"
         VID_BITRATE="1150"
-        FORMAT="VCD"
         MPEG2_FMT="-f 1"
         MUX_OPTS="-f 1"
         VID_SUF="m1v"
         ;;
 
+    # KVCD: VCD resolution, but using MPEG-2 and with KVCD quantization
+    "KVCD" )
+        TGT_WIDTH="352"
+        if test x"$TVSYS" = x"PAL"; then
+            TGT_HEIGHT="288"
+        else
+            TGT_HEIGHT="240"
+        fi
+        AUD_SUF="mpa"
+        RIP_WAV=:
+        # -quality gives bitrates from 400-4000 kbps
+        DEFAULT_BR=`expr $VID_QUALITY \* 4000 \/ 10`
+        : ${VID_BITRATE:=$DEFAULT_BR}
+        MPEG2_FMT="-f 2 -b $VID_BITRATE -V 230 -K kvcd -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 8 -d"
+        MUX_OPTS="-V -f 5 -b 350 -r 10800"
+        VID_SUF="m2v"
+        ;;
+        
+        
     # VCD-on-DVD
     "DVD-VCD" )
         TGT_WIDTH="352"
         if test x"$TVSYS" = x"PAL"; then
             TGT_HEIGHT="288"
-            FORMAT="SIZE_352x288"
         else
             TGT_HEIGHT="240"
-            FORMAT="SIZE_352x240"
         fi
         AUD_SUF="ac3"
         # -quality gives bitrates from 400-4000 kbps
@@ -839,7 +863,6 @@ case "$TGT_RES" in
         fi
         AUD_SUF="mpa"
         RIP_WAV=:
-        FORMAT="SVCD"
         # -quality gives bitrates from 260-2600 kbps
         DEFAULT_BR=`expr $VID_QUALITY \* 2600 \/ 10`
         # Use default bitrate if none specified
@@ -847,6 +870,7 @@ case "$TGT_RES" in
         MPEG2_FMT="-f 4 -b $VID_BITRATE"
         MUX_OPTS="-V -f 4"
         VID_SUF="m2v"
+
         ;;
 
     # Half-D1 DVD
@@ -854,10 +878,8 @@ case "$TGT_RES" in
         TGT_WIDTH="352"
         if test x"$TVSYS" = x"PAL"; then
             TGT_HEIGHT="576"
-            FORMAT="SIZE_352x576"
         else
             TGT_HEIGHT="480"
-            FORMAT="SIZE_352x480"
         fi
         AUD_SUF="ac3"
         # -quality gives bitrates from 600-6000 kbps
@@ -871,10 +893,10 @@ case "$TGT_RES" in
 
     # KVCDx3(a) long-playing, high-resolution MPEG for (S)VCD
     "KVCDx3" | "KVCDx3a" )
-        # KVCD x3 or x3a?
-        if test x"$TGT_RES" = x"kvcdx3"; then
+        # KVCD, x3, or x3a?
+        if test "$TGT_RES" = "KVCDx3"; then
             TGT_WIDTH="528"
-        else
+        else:
             TGT_WIDTH="544"
         fi
 
@@ -884,10 +906,8 @@ case "$TGT_RES" in
         else
             TGT_HEIGHT="480"
         fi
-        FORMAT="SIZE_${TGT_WIDTH}x${TGT_HEIGHT}"
         AUD_SUF="mpa"
         RIP_WAV=:
-
         # -quality gives bitrates from 400-4000 kbps
         DEFAULT_BR=`expr $VID_QUALITY \* 4000 \/ 10`
         # Use default bitrate if none specified
@@ -914,7 +934,6 @@ case "$TGT_RES" in
             TGT_HEIGHT="480"
         fi
         AUD_SUF="ac3"
-        FORMAT="DVD"
         # -quality gives bitrates from 980-9800 kbps
         DEFAULT_BR=`expr $VID_QUALITY \* 9800 \/ 10`
         # Use default bitrate if none specified
@@ -927,6 +946,7 @@ case "$TGT_RES" in
         ;;
 
 esac # End resolution
+
 
 # ******************************************************************************
 #
@@ -1187,9 +1207,8 @@ else
 fi
 
 
-# For DVD only, if aspect exceeds 16:9 (177 / 100), use wide playback
-# (anamorphic widescreen)
-if test x"$FORMAT" = x"DVD" && test "$V_ASPECT_WIDTH" -ge 177; then
+# Use anamorphic widescreen if supported and suitable
+if $ANAMORPH && test "$V_ASPECT_WIDTH" -ge 177; then
     TGT_ASPECT_WIDTH=177
     FF_ASPECT="-aspect 16:9"
     ASPECT_FMT="--aspect 3"
