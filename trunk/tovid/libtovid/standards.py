@@ -1,6 +1,9 @@
 #! /usr/bin/env python2.4
 # standards.py
 
+# TODO: This module needs major cleanup, ruthless code-culling and
+# overall simplification.
+
 __doc__ = \
 """This module defines functions for retrieving information about multimedia
 standards. Any data about widely-published standards should be defined here,
@@ -63,23 +66,35 @@ def match_std(defs, keywords):
     return None
 
 
+def validate_specs(video, audio):
+    """Return a list of audio and video standards matched by the given specs."""
+
+    width = video.width
+    height = video.height
+    if width == 352:
+        if height == 240: res = 'ntsc vcd'
+        elif height == 288: res = 'pal vcd'
+        elif height == 480: res = 'ntsc half'
+        elif height == 576: res = 'pal half'
+    elif width == 480:
+        if height == 480: res = 'ntsc svcd'
+        elif height == 576: res = 'pal svcd'
+    elif width == 528:
+        if height == 480: res = 'ntsc kvcdx3'
+        elif height == 576: res = 'pal kvcdx3'
+    elif width == 544:
+        if height == 480: res = 'ntsc kvcdx3a'
+        elif height == 576: res = 'pal kvcdx3a'
+    elif width in [704, 720]:
+        if height == 480: res = 'ntsc dvd'
+        elif height == 576: res = 'pal dvd'
+
 
 # ===========================================================
 # TODO: Merge stuff above with stuff below somehow...
 # ===========================================================
 
-
-
-# ===========================================================
-# VideoStandard
-#
-# Generic video standard
-# Defines conditions under which a video stream complies
-# with a standard.
-# ===========================================================
 class VideoStandard:
-
-    # Construct a new video standard with the given constraints
     def __init__(self, keywords = [], codec = "",
                   resolution = (0, 0), fps = 0, bitrateRange = (0, 0)):
         self.keywords = keywords 
@@ -88,7 +103,6 @@ class VideoStandard:
         self.fps = fps
         self.minBitrate, self.maxBitrate = bitrateRange
 
-    # Display this standard
     def display(self):
         print "=========== Video standard ============="
         print "Keywords: %s" % self.keywords
@@ -99,16 +113,7 @@ class VideoStandard:
         print "Minimum bitrate: %s" % self.minBitrate
         print "Maximum bitrate: %s" % self.maxBitrate
 
-# ===========================================================
-# AudioStandard 
-
-# Generic audio standard
-# Defines conditions under which an audio stream complies
-# with a standard.
-# ===========================================================
 class AudioStandard:
-
-    # Construct a new audio standard with the given constraints
     def __init__(self, keywords = [], codec = "",
                   samprate = 0, channels = 0, bitrateRange = (0, 0)):
         self.keywords = keywords 
@@ -117,7 +122,6 @@ class AudioStandard:
         self.channels = channels
         self.minBitrate, self.maxBitrate = bitrateRange
 
-    # Display this standard
     def display(self):
         print "=========== Audio standard ============="
         print "Keywords: %s" % self.keywords
@@ -127,57 +131,6 @@ class AudioStandard:
         print "Maximum bitrate: %s" % self.maxBitrate
 
 
-"""What do we need to know?
-
-1. Given format/tvsys/framerate keywords, the resolution,
-   framerate, codecs
-2. Given file specs (res, fps, codec, etc.), what standards
-   are matched
-
-format (vcd/svcd/dvd) alters:
-    w/h
-    codec
-    valid bitrate
-    valid # audio channels
-    
-
-vcd:
-    width = 352
-    bitrate = 1152
-
-    ntsc:
-        height = 240
-        fps = 29.97
-    pal:
-        height = 288
-        fps = 25.00
-
-svcd:
-    width = 480
-    bitrate = (0, 2600)
-    
-    ntsc:
-        height = 480
-        fps = 29.97
-    pal:
-        height = 576
-        fps = 25.00
-
-dvd:
-    width = 720
-    bitrate = (0, 9800)
-
-    ntsc:
-        height = 480
-        fps = 29.97
-    pal:
-        height = 576
-        fps = 25.00
-"""
-
-# ===========================================================
-# List of defined video standards
-# ===========================================================
 VideoStandardList = [
     # VideoStandard([keywords], codec, (width, height), fps, (minBitrate, maxBitrate))
 

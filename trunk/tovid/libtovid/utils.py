@@ -6,13 +6,14 @@
 __all__ = ['degunk', 'tokenize', 'trim', 'ratio_to_float', 'subst',
     'verify_app', 'pretty_dict', 'run', 'indent_level', 'get_code_lines']
 
+# From standard library
 import os
 import sys
 import string
 import shlex
-from subprocess import *
-
-from libtovid.log import Log
+from subprocess import Popen, PIPE
+# From libtovid
+from log import Log
 
 log = Log('utils.py')
 
@@ -88,10 +89,16 @@ def ratio_to_float(ratio):
     else:
         raise Exception("ratio_to_float: too many values in ratio '%s'" % ratio)
 
-def subst(command):
+def subst(command, include_stderr=False):
     """Do shell-style command substitution and return the output of command
-    as a string (equivalent to bash `CMD` or $(CMD))."""
-    output = os.popen(command, 'r').readlines()
+    as a string (equivalent to bash `CMD` or $(CMD)). Optionally include
+    standard error output."""
+    if include_stderr:
+        cin, cout = os.popen4(command, 'r')
+        cin.close()
+        output = cout.readlines()
+    else:
+        output = os.popen(command, 'r').readlines()
     return ''.join(output).rstrip('\n')
 
 def verify_app(appname):

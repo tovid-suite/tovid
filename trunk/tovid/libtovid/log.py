@@ -1,9 +1,10 @@
 #! /usr/bin/env python2.4
 # log.py
 
+# From standard library
 import os
-
-from libtovid.globals import Config
+# From libtovid
+from globals import Config
 
 
 class Log:

@@ -6,17 +6,17 @@ __doc__ = \
 
 __all__ = ['element_classes']
 
+# From standard library
 import sys
 import copy
 import shlex
-
-import libtovid
-from libtovid import utils
-from libtovid.video import Video
-from libtovid.menu import Menu
-from libtovid.disc import Disc
-from libtovid.opts import Option
-from libtovid.log import Log
+# From libtovid
+from utils import tokenize, trim, pretty_dict
+from video import Video
+from menu import Menu
+from disc import Disc
+from opts import Option
+from log import Log
 
 log = Log('tdl.py')
 
@@ -29,23 +29,23 @@ element_classes = {
 def new_element(elemstring):
     """Return a new Disc, Menu, or Video created from the given string.
     Example: elemstring = 'Menu "Main menu" -format dvd -tvsys ntsc'."""
-    tokens = utils.tokenize(elemstring)
+    tokens = tokenize(elemstring)
     type = tokens.pop(0)
     name = tokens.pop(0)
     opts = tokens + ['out', name]
     newelem = element_classes[type](opts)
-    newelem.indent = utils.indent_level(elemstring)
+    newelem.indent = indent_level(elemstring)
     return newelem
 
 def get_elements(filename):
     """Get a list of elements from the given filename."""
-    lines = utils.get_code_lines(filename)
+    lines = get_code_lines(filename)
     # Condense lines so there's only one element definition per line
     condlines = []
     lastline = ''
     while len(lines) > 0:
         curline = lines.pop(0)
-        tokens = utils.tokenize(curline)
+        tokens = tokenize(curline)
         if tokens[0] in element_classes:
             if lastline:
                 condlines.append(lastline)
@@ -98,7 +98,7 @@ if __name__ == '__main__':
     elems = parse(sys.argv[1])
     for elem in elems:
         print "%s %s" % (elem.__class__, elem.options['out'])
-        print utils.pretty_dict(elem.options)
+        print pretty_dict(elem.options)
         for child in elem.children:
             print child
 

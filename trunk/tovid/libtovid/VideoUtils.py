@@ -9,10 +9,12 @@ __all__ = [\
     'images_to_video',
     'label_images']
 
+# From standard library
 import os
 import sys
+# From libtovid
+from log import Log
 
-from libtovid.log import Log
 log = Log('VideoUtils')
 
 def video_to_images(infile, start=0, end=0, scale=(0,0)):

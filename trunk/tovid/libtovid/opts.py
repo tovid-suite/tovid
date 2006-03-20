@@ -20,12 +20,13 @@ Use OptionDict to store a collection of options and values, for easy access.
 """
 __all__ = ['Option', 'OptionDict', 'get_defaults', 'tokenize', 'parse']
 
+# From standard library
 import re
 import sys
 from copy import copy
-
-from libtovid import utils
-from libtovid.log import Log
+# From libtovid
+import utils
+from log import Log
 
 log = Log('option.py')
 
@@ -138,7 +139,7 @@ class Option:
 
 class OptionDict:
     """A dictionary of user-configurable options."""
-    def __init__(self, optiondefs):
+    def __init__(self, optiondefs=[]):
         """Create an option dictionary using the given list of Options."""
         self._data = {}
         self.defdict = {}
