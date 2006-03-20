@@ -3,15 +3,15 @@
 
 __all__ = ['Menu']
 
+# From standard library
 import sys
 import os
 from copy import copy
-
-import libtovid
-from libtovid.opts import Option, OptionDict
-from libtovid.log import Log
-from libtovid import textmenu
-from libtovid import thumbmenu
+# From libtovid
+from opts import Option, OptionDict
+from log import Log
+import textmenu
+import thumbmenu
 
 log = Log('menu.py')
 
