@@ -658,6 +658,11 @@ if test -z "$OUT_PREFIX"; then
     usage_error "Please provide an output name with the -out option."
 fi
 
+# Can't do -subtitles with -ffmpeg; if both were used, print error and exit
+if $USE_FFMPEG && test -n $SUBTITLES; then
+    usage_error "Sorry, -subtitles is not currently supported with -ffmpeg."
+fi
+
 # Determine whether input is a normal file or a URI of some sort
 # (if input name contains "://", it's assumed to be a URI)
 if expr "$IN_FILE" : ".*:\/\/" >/dev/null; then
