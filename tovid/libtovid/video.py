@@ -3,16 +3,16 @@
 
 __all__ = ['Video']
 
+# From standard library
 import sys
 from copy import copy
-
-import libtovid
-from libtovid.opts import Option, OptionDict
-from libtovid.log import Log
-from libtovid.standards import get_resolution
-from libtovid.utils import ratio_to_float
-from libtovid.encoders import *
-from libtovid.filetypes import MultimediaFile
+# From libtovid
+from opts import Option, OptionDict
+from log import Log
+from standards import get_resolution
+from utils import ratio_to_float
+from encoders import mencoder, ffmpeg, mpeg2enc
+from filetypes import MultimediaFile
 
 log = Log('video.py')
 
