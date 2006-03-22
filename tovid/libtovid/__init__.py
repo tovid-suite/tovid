@@ -1,7 +1,6 @@
 #! /usr/bin/env python2.4
 # __init__.py
 
-__doc__ = \
 """This library provides a Python interface to the functionality of tovid.
 """
 
@@ -12,20 +11,19 @@ __all__ = [\
     'gui',
     'encoders',
     # .py files
+    'cli',
     'disc',
-    'encoder',
     'filetypes',
     'globals',
     'log',
     'menu',
     'opts',
-    'project',
     'standards',
     'streams',
     'tdl',
     'textmenu',
     'thumbmenu',
-    'utils'
+    'utils',
     'video']
 
 

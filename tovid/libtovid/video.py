@@ -7,12 +7,12 @@ __all__ = ['Video']
 import sys
 from copy import copy
 # From libtovid
-from opts import Option, OptionDict
-from log import Log
-from standards import get_resolution
-from utils import ratio_to_float
-from encoders import mencoder, ffmpeg, mpeg2enc
-from filetypes import MultimediaFile
+from libtovid.opts import Option, OptionDict
+from libtovid.log import Log
+from libtovid.standards import get_resolution
+from libtovid.utils import ratio_to_float
+from libtovid.encoders import mencoder, ffmpeg, mpeg2enc
+from libtovid.filetypes import MultimediaFile
 
 log = Log('video.py')
 
@@ -119,6 +119,7 @@ class Video:
     def preproc(self):
         """Do preprocessing common to all backends."""
         self.infile = MultimediaFile(self.options['in'])
+        
         width, height = get_resolution(self.options['format'], self.options['tvsys'])
         # Convert aspect (ratio) to a floating-point value
         src_aspect = ratio_to_float(self.options['aspect'])
@@ -144,10 +145,12 @@ class Video:
             scale = (width * src_aspect / dvd_aspect, height)
             expand = (width, height)
         # If infile is already the correct size, don't scale
-        if self.infile.video and self.infile.video.size == scale:
-            scale = False
-            log.debug('Infile resolution matches target resolution.')
-            log.debug('No scaling will be done.')
+        if self.infile.video:
+            in_res = (self.infile.video.width, self.infile.video.height)
+            if in_res == scale:
+                scale = False
+                log.debug('Infile resolution matches target resolution.')
+                log.debug('No scaling will be done.')
         # TODO: Calculate safe area
         # Other commonly-used values
         if 'dvd' in self.options['format']:

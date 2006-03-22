@@ -8,7 +8,7 @@ import string
 import sys
 from copy import copy
 # From libtovid
-from opts import Option, OptionDict
+from libtovid.opts import Option, OptionDict
 
 class Disc:
     """A video disc containing video titles and optional menus."""

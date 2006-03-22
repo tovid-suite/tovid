@@ -1,9 +1,6 @@
 #! /usr/bin/env python2.4
 # tdl.py
 
-__doc__ = \
-"""TODO"""
-
 __all__ = ['element_classes']
 
 # From standard library
@@ -11,12 +8,12 @@ import sys
 import copy
 import shlex
 # From libtovid
-from utils import tokenize, trim, pretty_dict
-from video import Video
-from menu import Menu
-from disc import Disc
-from opts import Option
-from log import Log
+from libtovid.utils import tokenize, trim, pretty_dict
+from libtovid.video import Video
+from libtovid.menu import Menu
+from libtovid.disc import Disc
+from libtovid.opts import Option
+from libtovid.log import Log
 
 log = Log('tdl.py')
 

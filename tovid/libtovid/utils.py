@@ -3,8 +3,8 @@
 
 # TODO: Categorize/reorganize these
 
-__all__ = ['degunk', 'tokenize', 'trim', 'ratio_to_float', 'subst',
-    'verify_app', 'pretty_dict', 'run', 'indent_level', 'get_code_lines']
+__all__ = ['degunk', 'tokenize', 'trim', 'ratio_to_float',
+    'pretty_dict', 'indent_level', 'get_code_lines']
 
 # From standard library
 import os
@@ -13,7 +13,7 @@ import string
 import shlex
 from subprocess import Popen, PIPE
 # From libtovid
-from log import Log
+from libtovid.log import Log
 
 log = Log('utils.py')
 
@@ -89,30 +89,6 @@ def ratio_to_float(ratio):
     else:
         raise Exception("ratio_to_float: too many values in ratio '%s'" % ratio)
 
-def subst(command, include_stderr=False):
-    """Do shell-style command substitution and return the output of command
-    as a string (equivalent to bash `CMD` or $(CMD)). Optionally include
-    standard error output."""
-    if include_stderr:
-        cin, cout = os.popen4(command, 'r')
-        cin.close()
-        output = cout.readlines()
-    else:
-        output = os.popen(command, 'r').readlines()
-    return ''.join(output).rstrip('\n')
-
-def verify_app(appname):
-    """Verify that the given appname is available; if not, log an error
-    and exit."""
-    app = subst('which %s' % appname)
-    if not app:
-        # TODO: A more friendly error message
-        log.error("Cannot find '%s' in your path." % appname)
-        log.error("You may need to (re)install it.")
-        sys.exit()
-    else:
-        log.debug("Found %s" % app)
-
 
 def pretty_dict(dict):
     """Return a pretty-printed dictionary, with one line for each key."""
@@ -133,23 +109,6 @@ def pretty_dict(dict):
     return result
 
 
-def run(command, purpose='', wait=True):
-    """Execute the given command, with proper stream redirection and
-    verbosity. Wait for execution to finish if desired."""
-    if purpose:
-        log.info(purpose + " with the following command:")
-    else:
-        log.info("Running the following command:")
-    log.info(command)
-    process = Popen(command, shell=True, bufsize=1, \
-            stdout=PIPE, stderr=PIPE, close_fds=True)
-    if wait:
-        for line in process.stdout.readlines():
-            log.info(line.rstrip('\n'))
-        for line in process.stderr.readlines():
-            log.debug(line.rstrip('\n'))
-        log.info("Waiting for process to terminate...")
-        process.wait()
 
 def indent_level(line):
     """Return the number of leading whitespace characters in the line."""
