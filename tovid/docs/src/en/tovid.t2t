@@ -88,12 +88,21 @@ Standard formats, should be playable in most DVD players:
 
 Non-standard formats, playable in some DVD players:
 
-: **-kvcdx3**/**-kvcd**
-    (528x480 NTSC, 520x576 PAL) KVCDx3 long-playing VCD
-: **-kvcdx3a**/**-ksvcd**
-    (544x480 NTSC, 544x576 PAL) KVCDx3A long-playing VCD
+: **-kvcd**
+    (352x240 NTSC, 352x288 PAL) KVCD-enhanced long-playing video CD
 : **-kdvd**
-    (720x480 NTSC, 720x576 PAL) KDVD long-playing DVD
+    (720x480 NTSC, 720x576 PAL) KVCD-enhanced long-playing DVD
+: **-kvcdx3**
+    (528x480 NTSC, 520x576 PAL) KVCDx3 specification
+: **-kvcdx3a**
+    (544x480 NTSC, 544x576 PAL) KVCDx3a specification (slightly wider)
+
+
+See [kvcd.net http://kvcd.net/] for details on the KVCD specification. Please
+note that KVCD ("K Video Compression Dynamics") is the name of a compression
+scheme that can be applied to any MPEG-1 or MPEG-2 video, and has little to
+do with VCD ("Video Compact Disc"), which is the name of a standard video disc
+format.
 
 
 ==Advanced options==
