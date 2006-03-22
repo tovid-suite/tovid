@@ -3,25 +3,27 @@
 
 __all__ = ['encode']
 
-from libtovid.utils import verify_app, run
+from libtovid.cli import Command
+from libtovid.log import Log
 
-verify_app('mencoder')
+log = Log('mencoder.py')
 
 def encode(infile, options):
     """Encode infile (a MultimediaFile) with mencoder, using the given options."""
-    cmd = 'mencoder "%s" -o "%s"' % (infile.filename, options['out'])
-    cmd += ' -oac lavc -ovc lavc -of mpeg '
+    cmd = Command('mencoder')
+    cmd.append('"%s" -o "%s"' % (infile.filename, options['out']))
+    cmd.append('-oac lavc -ovc lavc -of mpeg')
     # Format
     if options['format'] in ['vcd', 'svcd']:
-        cmd += ' -mpegopts format=x%s ' % options['format']
+        cmd.append('-mpegopts format=x%s' % options['format'])
     else:
-        cmd += ' -mpegopts format=dvd '
+        cmd.append('-mpegopts format=dvd')
     
     # Audio settings
     # Adjust sampling rate
     # TODO: Don't resample unless needed
-    cmd += ' -srate %s -af lavcresample=%s ' % \
-            (options['samprate'], options['samprate'])
+    cmd.append('-srate %s' % options['samprate'])
+    cmd.append('-af lavcresample=%s' % options['samprate'])
 
     # Video codec
     if options['format'] == 'vcd':
@@ -50,18 +52,22 @@ def encode(infile, options):
     else:
         lavcopts += ':aspect=4/3'
     # Put all lavcopts together
-    cmd += ' -lavcopts %s ' % lavcopts
+    cmd.append('-lavcopts %s' % lavcopts)
 
     # FPS
     if options['tvsys'] == 'pal':
-        cmd += ' -ofps 25/1 '
+        cmd.append('-ofps 25/1')
     elif options['tvsys'] == 'ntsc':
-        cmd += ' -ofps 30000/1001 ' # ~= 29.97
+        cmd.append('-ofps 30000/1001') # ~= 29.97
 
     # Scale/expand to fit target frame
     if options['scale']:
-        cmd += ' -vf scale=%s:%s' % options['scale']
-    if options['expand']:
-        cmd += ',expand=%s:%s ' % options['expand']
-    run(cmd, "Encoding " + infile.filename + " to " + options['format'] + \
-        " " + options['tvsys'] + " format")
+        vfilter = 'scale=%s:%s' % options['scale']
+        # Expand is not done unless also scaling
+        if options['expand']:
+            vfilter += ',expand=%s:%s' % options['expand']
+    cmd.append('-vf ' + vfilter)
+
+    cmd.purpose = "Encoding " + infile.filename + " to " + \
+       options['format'] + " " + options['tvsys'] + " format"
+    cmd.run()

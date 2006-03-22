@@ -5,14 +5,10 @@ __all__ = ['encode']
 
 import os
 
-from libtovid.utils import verify_app, run
-
-for app in ['mplayer', 'mpeg2enc', 'ffmpeg', 'mp2enc', 'mplex']:
-    verify_app(app)
+from libtovid.cli import Command
 
 def encode(infile, options):
     """Encode infile (a MultimediaFile) with mpeg2enc, using the given options."""
-
     outfile = options['out']
     # YUV raw video FIFO, for piping video from mplayer to mpeg2enc
     yuvfile = '%s.yuv' % outfile
@@ -44,29 +40,30 @@ def encode(infile, options):
     mplex_streams(videofile, audiofile, outfile, options)
     
 def rip_video(infile, yuvfile, options):
-    """Rip the input video to yuv4mpeg format, and write to stream.yuv
-    pipe."""
+    """Rip input video to yuv4mpeg format, and write to stream.yuv pipe."""
     # TODO: Custom mplayer options, subtitles, interlacing,
     # corresp.  to $MPLAYER_OPT, $SUBTITLES, $VF_PRE/POST, $YUV4MPEG_ILACE,
     # etc.
-    cmd = 'mplayer "%s" ' % infile
-    cmd += ' -vo yuv4mpeg:file=%s ' % yuvfile
-    cmd += ' -nosound -benchmark -noframedrop '
+    cmd = Command('mplayer', '"%s"' % infile)
+    cmd.append('-vo yuv4mpeg:file=%s' % yuvfile)
+    cmd.append('-nosound -benchmark -noframedrop')
     # TODO: Support subtitles. For now, use default tovid behavior.
-    cmd += ' -noautosub '
+    cmd.append('-noautosub')
     if options['scale']:
-        cmd += ' -vf scale=%s:%s ' % options['scale']
+        cmd.append('-vf scale=%s:%s' % options['scale'])
     if options['expand']:
-        cmd += ' -vf-add expand=%s:%s ' % options['expand']
+        cmd.append('-vf-add expand=%s:%s' % options['expand'])
     # Filters
     filters = options['filters']
     if 'denoise' in filters:
-        cmd += ' -vf-add hqdn3d '
+        cmd.append('-vf-add hqdn3d')
     if 'contrast' in filters:
-        cmd += ' -vf-add pp=al:f '
+        cmd.append('-vf-add pp=al:f')
     if 'deblock' in filters:
-        cmd += ' -vf-add pp=hb/vb '
-    run(cmd, "Ripping video to yuv4mpeg format", wait=False)
+        cmd.append('-vf-add pp=hb/vb')
+    cmd.purpose = "Ripping video to yuv4mpeg format"
+    cmd.run(wait=False)
+
 
 def encode_video(yuvfile, videofile, options):
     """Encode the yuv4mpeg stream to the given format and TV system."""
@@ -74,78 +71,92 @@ def encode_video(yuvfile, videofile, options):
     # corresp. to $VID_BITRATE, $MPEG2_QUALITY, $DISC_SIZE, etc.
     # Missing options (compared to tovid)
     # -S 700 -B 247 -b 2080 -v 0 -4 2 -2 1 -q 5 -H -o FILE
-    # TODO: Consider using os.pipe?
-    cmd = 'cat "%s" | mpeg2enc ' % yuvfile
+    cmd = Command('mpeg2enc')
+    cmd.purpose = "Encoding yuv4mpeg video stream to MPEG format"
     # TV system
     if options['tvsys'] == 'pal':
-        cmd += ' -F 3 -n p '
+        cmd.append('-F 3 -n p')
     elif options['tvsys'] == 'ntsc':
-        cmd += ' -F 4 -n n '
+        cmd.append('-F 4 -n n')
     # Format
     format = options['format']
     if format == 'vcd':
-        cmd += ' -f 1 '
+        cmd.append('-f 1')
     elif format == 'svcd':
-        cmd += ' -f 4 '
+        cmd.append('-f 4')
     elif 'dvd' in format:
-        cmd += ' -f 8 '
+        cmd.append('-f 8')
     # Aspect ratio
     if options['widescreen']:
-        cmd += ' -a 3 '
+        cmd.append('-a 3')
     else:
-        cmd += ' -a 2 '
-    cmd += ' -o "%s"' % videofile
-    run(cmd, "Encoding yuv4mpeg video stream to MPEG format")
+        cmd.append('-a 2')
+    cmd.append('-o "%s"' % videofile)
+
+    # Pipe the .yuv file into mpeg2enc
+    cmd.prepend('cat "%s" | ' % yuvfile)
+    cmd.run()
 
 def generate_silent_wav(wavfile, options):
     """Generate a silent audio .wav."""
-    cmd = 'cat /dev/zero | sox -t raw -c 2 '
-    cmd += ' -r %s ' % options['samprate']
-    cmd += ' -w -s -t wav '
-    cmd += ' "%s" ' % wavfile
+    cmd = Command('sox')
+    cmd.purpose = "Generating a silent .wav file"
+    cmd.append('sox -t raw -c 2')
+    cmd.append('-r %s' % options['samprate'])
+    cmd.append('-w -s -t wav')
+    cmd.append('"%s"' % wavfile)
     # TODO: Use actual video duration
-    cmd += ' trim 0 5'
-    run(cmd, "Generating a silent .wav file")
+    cmd.append('trim 0 5')
+    # Pipe zero-data into sox to get silence
+    cmd.prepend('cat /dev/zero | ')
+    cmd.run()
 
 def rip_wav(infile, wavfile, options):
     """Rip a .wav of the audio stream from the input video."""
-    cmd = 'mplayer -quiet -vc null -vo null '
-    cmd += ' -ao pcm:waveheader:file=%s ' % wavfile
-    cmd += ' "%s"' % infile
-    run(cmd, "Ripping audio to .wav format")
+    cmd = Command('mplayer')
+    cmd.purpose = "Ripping audio to .wav format"
+    cmd.append('-quiet -vc null -vo null')
+    cmd.append('-ao pcm:waveheader:file=%s' % wavfile)
+    cmd.append('"%s"' % infile)
 
 def encode_wav(wavfile, audiofile, options):
     """Encode the audio .wav to the target format."""
     if options['format'] in ['vcd', 'svcd']:
-        cmd = 'cat "%s" ' % wavfile
-        cmd += '| mp2enc -s -V '
-        cmd += ' -b %s ' % options['abitrate']
-        cmd += ' -o "%s"' % audiofile
-        run(cmd, "Encoding .wav to MP2 format")
+        cmd = Command('mp2enc')
+        cmd.purpose = "Encoding .wav to MP2 format"
+        cmd.append('-s -V')
+        cmd.append('-b %s' % options['abitrate'])
+        cmd.append('-o "%s"' % audiofile)
+        # Pipe wav file into mp2enc
+        cmd.prepend('cat "%s" | ' % wavfile)
+        cmd.run()
     else:
-        cmd = 'ffmpeg -i "%s" ' % wavfile
-        cmd += ' -ab %s ' % options['abitrate']
-        cmd += ' -ar %s ' % options['samprate']
-        cmd += ' -ac 2 -acodec ac3 -y '
-        cmd += ' "%s"' % audiofile
-        run(cmd, "Encoding .wav to AC3 format")
+        cmd = Command('ffmpeg')
+        cmd.purpose = "Encoding .wav to AC3 format"
+        cmd.append('-i "%s"' % wavfile)
+        cmd.append('-ab %s ' % options['abitrate'])
+        cmd.append('-ar %s ' % options['samprate'])
+        cmd.append('-ac 2 -acodec ac3 -y')
+        cmd.append('"%s"' % audiofile)
+        cmd.run()
 
 def mplex_streams(vstream, astream, outfile, options):
     """Multiplex the audio and video streams."""
+    cmd = Command('mplex')
+    cmd.purpose = "Multiplexing audio and video streams"
     format = options['format']
-    cmd = 'mplex '
     if format == 'vcd':
-        cmd += '-f 1 '
+        cmd.append('-f 1')
     elif format == 'dvd-vcd':
-        cmd += '-V -f 8 '
+        cmd.append('-V -f 8')
     elif format == 'svcd':
-        cmd += '-V -f 4 -b 230 '
+        cmd.append('-V -f 4 -b 230')
     elif format == 'half-dvd':
-        cmd += '-V -f 8 -b 300 '
+        cmd.append('-V -f 8 -b 300')
     elif format == 'dvd':
-        cmd += '-V -f 8 -b 400 '
+        cmd.append('-V -f 8 -b 400')
     # elif format == 'kvcd':
-    #   cmd += '-V -f 5 -b 350 -r 10800 '
-    cmd += ' "%s" "%s" -o "%s"' % (vstream, astream, outfile)
-    run(cmd, "Multiplexing audio and video streams")
+    #   cmd.append('-V -f 5 -b 350 -r 10800 '
+    cmd.append('"%s" "%s" -o "%s"' % (vstream, astream, outfile))
+    cmd.run()
 

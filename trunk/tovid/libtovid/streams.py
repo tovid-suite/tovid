@@ -4,7 +4,7 @@
 __all__ = ['VideoStream', 'AudioStream']
 
 # From libtovid
-from standards import *
+from libtovid.standards import *
 
 class VideoStream:
     def __init__(self):
@@ -14,19 +14,6 @@ class VideoStream:
         self.aspect = 0
         self.numframes = 0
         self.bitrate = 0
-
-    # Determine whether this video stream is valid
-    # under the given standard
-    def isValid(self, videoStd):
-        if (self.width == videoStd.width and
-             self.height == videoStd.height and
-             self.fps == videoStd.fps and
-             self.codec == videoStd.codec and
-             self.bitrate >= videoStd.minBitrate and
-             self.bitrate <= videoStd.maxBitrate):
-            return True
-        else:
-            return False
 
     def display(self):
         print "Video:"
@@ -42,17 +29,6 @@ class AudioStream:
         self.samprate = 0
         self.bitrate = 0
         self.channels = 0
-        
-    # Determine whether this audio stream is valid
-    # under the given standard
-    def isValid(self, audioStd):
-        if (self.bitrate >= audioStd.minBitrate and
-             self.bitrate <= audioStd.maxBitrate and
-             self.codec == audioStd.codec and
-             self.samprate == audioStd.samprate):
-            return True
-        else:
-            return False
 
     def display(self):
         print "Audio:"
