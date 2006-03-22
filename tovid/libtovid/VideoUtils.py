@@ -1,7 +1,6 @@
 #! /usr/bin/env python2.4
 # VideoUtils.py
 
-doc = \
 """A collection of utilities for working with multimedia video files."""
 
 __all__ = [\

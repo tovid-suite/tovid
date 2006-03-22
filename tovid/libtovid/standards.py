@@ -1,13 +1,12 @@
 #! /usr/bin/env python2.4
 # standards.py
 
-# TODO: This module needs major cleanup, ruthless code-culling and
-# overall simplification.
-
-__doc__ = \
 """This module defines functions for retrieving information about multimedia
 standards. Any data about widely-published standards should be defined here,
 for use by all libtovid modules."""
+
+# TODO: This module needs major cleanup, ruthless code-culling and
+# overall simplification.
 
 __all__ = ['VideoStandard', 'AudioStandard']
 
@@ -68,7 +67,6 @@ def match_std(defs, keywords):
 
 def validate_specs(video, audio):
     """Return a list of audio and video standards matched by the given specs."""
-
     width = video.width
     height = video.height
     if width == 352:
@@ -89,6 +87,29 @@ def validate_specs(video, audio):
         if height == 480: res = 'ntsc dvd'
         elif height == 576: res = 'pal dvd'
 
+
+def video_is_valid(vstream, vstandard):
+    """Return True if the video stream is valid under the given standard."""
+    if (vstream.width == vstandard.width and
+         vstream.height == vstandard.height and
+         vstream.fps == vstandard.fps and
+         vstream.codec == vstandard.codec and
+         vstream.bitrate >= vstandard.minBitrate and
+         vstream.bitrate <= vstandard.maxBitrate):
+        return True
+    else:
+        return False
+
+
+def audio_is_valid(astream, astandard):
+    """Return True if the audio stream is valid under the given standard."""
+    if (astream.bitrate >= astandard.minBitrate and
+         astream.bitrate <= astandard.maxBitrate and
+         astream.codec == astandard.codec and
+         astream.samprate == astandard.samprate):
+        return True
+    else:
+        return False
 
 # ===========================================================
 # TODO: Merge stuff above with stuff below somehow...
@@ -112,6 +133,7 @@ class VideoStandard:
         print "FPS: %s" % self.fps
         print "Minimum bitrate: %s" % self.minBitrate
         print "Maximum bitrate: %s" % self.maxBitrate
+
 
 class AudioStandard:
     def __init__(self, keywords = [], codec = "",

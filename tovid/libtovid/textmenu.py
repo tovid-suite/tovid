@@ -3,10 +3,10 @@
 
 __all__ = ['generate']
 
-from libtovid.utils import verify_app, run
+from libtovid.cli import Command
 
-for app in ['convert', 'composite', 'ppmtoy4m', 'sox', 'ffmpeg', 'mpeg2enc']:
-    verify_app(app)
+#for app in ['convert', 'composite', 'ppmtoy4m', 'sox', 'ffmpeg', 'mpeg2enc']:
+#    verify_app(app)
 
 def generate(options):
     """Generate a menu with selectable text titles."""

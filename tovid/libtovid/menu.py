@@ -1,6 +1,9 @@
 #! /usr/bin/env python2.4
 # menu.py
 
+"""This module provides menu encapsulation and MPEG generation.
+"""
+
 __all__ = ['Menu']
 
 # From standard library
@@ -8,8 +11,8 @@ import sys
 import os
 from copy import copy
 # From libtovid
-from opts import Option, OptionDict
-from log import Log
+from libtovid.opts import Option, OptionDict
+from libtovid.log import Log
 import textmenu
 import thumbmenu
 

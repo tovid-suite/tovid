@@ -8,7 +8,7 @@ import glob
 import string
 
 import libtovid
-from libtovid.utils import run, degunk
+from libtovid.cli import Command
 from libtovid.log import Log
 
 log = Log('MenuPlugins.py')
@@ -71,7 +71,7 @@ class ThumbMenu:
             run(cmd)
             
         # Generate video stream of composite images
-        self.outfile = os.path.abspath("%s.m2v" % degunk(self.options['out']))
+        self.outfile = os.path.abspath("%s.m2v" % self.options['out'])
         cmd = 'jpeg2yuv -v 0 -f 29.970 -I p -n %s' % FRAMES
         cmd += ' -L 1 -b1 -j "%s/%%08d.jpg"' % self.outdir
         cmd += ' | mpeg2enc -v 0 -q 3 -f 8 -o "%s"' % self.outfile
@@ -132,7 +132,7 @@ class Thumbnail:
         self.videofile = videofile
         self.size = size
         self.loc = loc
-        self.outdir = os.path.abspath('thumb_%s' % degunk(self.videofile))
+        self.outdir = os.path.abspath('thumb_%s' % self.videofile)
         self.imageseq = ImageSequence(self.outdir, self.size)
 
     def generate(self):

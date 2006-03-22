@@ -7,9 +7,9 @@ __all__ = ['MultimediaFile']
 import os
 import sys
 # From libtovid
-from log import Log
-from streams import VideoStream, AudioStream
-from utils import subst
+from libtovid.log import Log
+from libtovid.streams import VideoStream, AudioStream
+from libtovid.cli import Command
 
 log = Log('filetypes.py')
 
@@ -18,11 +18,7 @@ class MultimediaFile:
     def __init__(self, filename):
         self.filename = filename
         # If the file exists, get specs from it
-        try:
-            self.get_specs()
-        except:
-            log.debug('Could not get specs from file: %s' % filename)
-            sys.exit()
+        self.get_specs()
 
     def display(self):
         log.info("File: %s" % self.filename)
@@ -47,23 +43,21 @@ class MultimediaFile:
 
     def get_specs(self):
         """Get information about the audio/video streams in the file."""
-        # Use os.popen to grab info from mplayer
-        cmd = 'mplayer -vo null -ao null -frames 1 -channels 6 -identify '
-        cmd += ' "%s"' % filename
-        log.debug('IDing video with this command: "%s"' % filename)
-        log.debug(cmd)
-        lines = subst(cmd)
         mp_dict = {}
         audio = None
         video = None
-    
+        # Have mplayer identify the video
+        cmd = Command('mplayer')
+        cmd.purpose = "Identifying video"
+        cmd.append('-vo null -ao null -frames 1 -channels 6 -identify')
+        cmd.append('"%s"' % self.filename)
+        cmd.run()
         # Look for mplayer's "ID_..." lines and append to mp_dict
-        for line in lines():
+        for line in cmd.output:
             if line.startswith("ID_"):
                 left, right = line.split('=')
                 # Add entry to dictionary (stripping whitespace from argument)
                 mp_dict[left] = right.strip()
-        mpout.close()
     
         if 'ID_VIDEO_ID' in mp_dict:
             video = VideoStream()

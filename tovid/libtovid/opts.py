@@ -1,7 +1,6 @@
 #! /usr/bin/env python2.4
 # opts.py
 
-__doc__ =\
 """Provides command-line-style option definition, documentation, and parsing.
 
 Option: Definition of an option, its arguments, default value, and docs
@@ -25,8 +24,8 @@ import re
 import sys
 from copy import copy
 # From libtovid
-import utils
-from log import Log
+from libtovid.utils import trim, tokenize
+from libtovid.log import Log
 
 log = Log('option.py')
 
@@ -53,7 +52,7 @@ class Option:
         self.name = name
         self.argformat = argformat
         self.default = default
-        self.doc = utils.trim(doc)
+        self.doc = trim(doc)
         self.alias = alias
         # If an alias was provided, generate documentation.
         # i.e., alias=('tvsys', 'ntsc') means this option is the same as
@@ -178,7 +177,7 @@ class OptionDict:
         custom = {}
         # If options is a string, tokenize it before proceeding
         if options.__class__ == str:
-            options = utils.tokenize(options)
+            options = tokenize(options)
         while len(options) > 0:
             opt = options.pop(0).lstrip('-')
             if opt not in self.defdict:

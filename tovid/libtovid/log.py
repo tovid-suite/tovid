@@ -4,7 +4,7 @@
 # From standard library
 import os
 # From libtovid
-from globals import Config
+from libtovid.globals import Config
 
 
 class Log:
@@ -59,6 +59,6 @@ class Log:
 
     def _log(self, header, message):
         # Strip trailing newlines from message
-        message = message.rstrip('\n\r')
+        message = str(message).rstrip('\n\r')
         print "%s [%s]: %s" % (header, self.name, message)
         self.logfile.write("%s [%s]: %s\n" % (header, self.name, message))
