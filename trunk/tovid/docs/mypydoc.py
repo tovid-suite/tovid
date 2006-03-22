@@ -79,6 +79,19 @@ def trim(text):
     # Return a string, rejoined with newlines
     return '\n'.join(trimmed)
     
+class ErrorDuringImport(Exception):
+    """Errors that occurred while trying to import something to document it."""
+    def __init__(self, filename, (exc, value, tb)):
+        self.filename = filename
+        self.exc = exc
+        self.value = value
+        self.tb = tb
+
+    def __str__(self):
+        exc = self.exc
+        if type(exc) is types.ClassType:
+            exc = exc.__name__
+        return 'problem in %s - %s: %s' % (self.filename, exc, self.value)
 
 # safeimport, locate and resolve Stolen from pydoc.py
 # (Clean up and rewrite later)
@@ -104,6 +117,7 @@ def safeimport(path, forceload=0, cache={}):
                 cache[path] = sys.modules[path] # prevent module from clearing
                 del sys.modules[path]
     try:
+        print "Trying to import module: %s" % path
         module = __import__(path)
     except:
         # Did the error occur before or after the module was found?
