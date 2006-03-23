@@ -14,6 +14,7 @@ __all__ = ['Command', 'subst']
 # From standard library
 import os
 from subprocess import Popen, PIPE
+from signal import SIGKILL
 # From libtovid
 from libtovid.log import Log
 
@@ -23,7 +24,7 @@ class Command:
     """A command-line app with arguments, and process control."""
     def __init__(self, command, purpose=''):
         """Create a Command with the given command-line string. Optionally
-        include a brief description of the purpose of the command-line.
+        include a brief description of the command's purpose.
 
         The command string should begin with the name of the application to
         invoke, followed by that application's arguments. For example:
@@ -42,22 +43,21 @@ class Command:
         """
         self.command = command
         self.purpose = purpose
-        # Verify application availability
-        appname = command.split()[0]
-        verify_app(appname)
+        self.appname = command.split()[0]
+        verify_app(self.appname)
+        # Popen object of running process
+        self.proc = None
         # All lines of output from the command
         self.output = []
 
     def append(self, args):
         """Append the given string of arguments."""
+        if not isinstance(args, str):
+            raise TypeError, "Command.append() can only take strings."
         self.command += ' ' + args
 
     def prepend(self, args):
-        """Prepend the given string of arguments.
-
-        Note: Arguments are inserted before the existing command; this is
-        useful mainly for setting up piped input to the current command (by
-        calling prepend('cat infile | ') or similar)."""
+        """Prepend the given string of arguments."""
         self.command = args + ' ' + self.command
 
     def version(self):
@@ -67,26 +67,40 @@ class Command:
         pass
 
     def run(self, wait=True):
-        """Execute the given command, with proper stream redirection and
-        verbosity. Wait for execution to finish if desired. Return the
-        exit status of the process."""
+        """Execute the command and return its exit status. Optionally wait for
+        execution to finish."""
         log.info(self.purpose)
-        log.info(self.command)
-        proc = Popen(self.command, shell=True, bufsize=1, \
-                stdout=PIPE, stderr=PIPE, close_fds=True)
-        stdout = proc.stdout
-        stderr = proc.stderr
-
+        self.proc = Popen(self.command, shell=True, \
+                          bufsize=1, stdout=PIPE, stderr=PIPE, close_fds=True)
+        print "Command.run():"
+        print "PID: %s" % self.proc.pid
         if wait:
-            for line in stdout.readlines():
-                self.output.append(line.rstrip('\n'))
-            for line in stderr.readlines():
-                self.output.append(line.rstrip('\n'))
-            log.info("Waiting for process to terminate...")
-            return proc.wait()
+            self.read_output()
+            for line in self.output:
+                print line
+            return self.proc.wait()
         else:
-            return proc.returncode
+            return self.proc.returncode
 
+    def read_output(self):
+        """Read the output of the process and store it in self.output."""
+        stdout = self.proc.stdout
+        stderr = self.proc.stderr
+        for line in stdout.readlines():
+            self.output.append(line.rstrip('\n'))
+        for line in stderr.readlines():
+            self.output.append(line.rstrip('\n'))
+        
+    def is_done(self):
+        """Return True if the command is finished executing; False otherwise."""
+        if self.proc.poll():
+            return True
+        else:
+            return False
+
+    def kill(self):
+        """Kill processes spawned by this Command."""
+        os.kill(self.proc.pid, SIGKILL)
 
 def verify_app(appname):
     """If appname is not in the user's path, print a error and exit."""
