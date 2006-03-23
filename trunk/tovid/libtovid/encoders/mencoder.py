@@ -66,7 +66,7 @@ def encode(infile, options):
         # Expand is not done unless also scaling
         if options['expand']:
             vfilter += ',expand=%s:%s' % options['expand']
-    cmd.append('-vf ' + vfilter)
+        cmd.append('-vf ' + vfilter)
 
     cmd.purpose = "Encoding " + infile.filename + " to " + \
        options['format'] + " " + options['tvsys'] + " format"
