@@ -73,6 +73,7 @@ proj.file-list = [loc('AUTHORS'),
                   loc('icons/tovid_icon_64.png'),
                   loc('INSTALL'),
                   loc('install-sh'),
+                  loc('libtovid/cli.py'),
                   loc('libtovid/disc.py'),
                   loc('libtovid/encoders/ffmpeg.py'),
                   loc('libtovid/encoders/mencoder.py'),
@@ -190,4 +191,4 @@ proj.file-list = [loc('AUTHORS'),
                   loc('tovid.e3t'),
                   loc('tovid.spec')]
 proj.file-type = 'shared'
-proj.main-file = loc('src/tovidgui')
+proj.main-file = loc('src/pytovid')

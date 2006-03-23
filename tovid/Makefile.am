@@ -24,7 +24,6 @@
 
 # List the source files for each shell script
 sh_bin = \
-	src/dvrequant \
 	src/idvid \
 	src/makedvd \
 	src/makemenu \
