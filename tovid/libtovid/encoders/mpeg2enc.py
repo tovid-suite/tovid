@@ -31,10 +31,10 @@ def encode(infile, options):
     else:
         videofile = '%s.m2v' % outfile
     # Do audio
-    rip_wav(outfile, wavfile, options)
+    rip_wav(infile.filename, wavfile, options)
     encode_wav(wavfile, audiofile, options)
     # Do video
-    rip_video(outfile, yuvfile, options)
+    rip_video(infile.filename, yuvfile, options)
     encode_video(yuvfile, videofile, options)
     # Combine audio and video
     mplex_streams(videofile, audiofile, outfile, options)
@@ -44,7 +44,8 @@ def rip_video(infile, yuvfile, options):
     # TODO: Custom mplayer options, subtitles, interlacing,
     # corresp.  to $MPLAYER_OPT, $SUBTITLES, $VF_PRE/POST, $YUV4MPEG_ILACE,
     # etc.
-    cmd = Command('mplayer', '"%s"' % infile)
+    cmd = Command('mplayer')
+    cmd.append('"%s"' % infile)
     cmd.append('-vo yuv4mpeg:file=%s' % yuvfile)
     cmd.append('-nosound -benchmark -noframedrop')
     # TODO: Support subtitles. For now, use default tovid behavior.
@@ -118,6 +119,7 @@ def rip_wav(infile, wavfile, options):
     cmd.append('-quiet -vc null -vo null')
     cmd.append('-ao pcm:waveheader:file=%s' % wavfile)
     cmd.append('"%s"' % infile)
+    cmd.run()
 
 def encode_wav(wavfile, audiofile, options):
     """Encode the audio .wav to the target format."""
