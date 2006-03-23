@@ -23,9 +23,11 @@ __all__ = ['Option', 'OptionDict', 'get_defaults', 'tokenize', 'parse']
 import re
 import sys
 from copy import copy
+import textwrap
 # From libtovid
 from libtovid.utils import trim, tokenize
 from libtovid.log import Log
+
 
 log = Log('option.py')
 
@@ -132,7 +134,9 @@ class Option:
         """Return a string containing "usage notes" for this option."""
         usage = "-%s %s (default: %s)\n" % \
                 (self.name, self.argformat, self.default)
-        usage += "    %s\n" % self.doc
+        for line in textwrap.wrap(self.doc, 60):
+            usage += '    ' + line + '\n'
+        usage += '\n'
         return usage
 
 
