@@ -43,8 +43,6 @@ class Command:
         """
         self.command = command
         self.purpose = purpose
-        self.appname = command.split()[0]
-        verify_app(self.appname)
         # Popen object of running process
         self.proc = None
         # All lines of output from the command
@@ -70,6 +68,7 @@ class Command:
         """Execute the command and return its exit status. Optionally wait for
         execution to finish."""
         log.info(self.purpose)
+        log.info(self.command)
         self.proc = Popen(self.command, shell=True, \
                           bufsize=1, stdout=PIPE, stderr=PIPE, close_fds=True)
         print "Command.run():"
@@ -80,7 +79,15 @@ class Command:
                 print line
             return self.proc.wait()
         else:
-            return self.proc.returncode
+            # If not waiting for the process to finish, fork a child process
+            # to log output.
+            print "run(): Forking"
+            pid = os.fork()
+            print "pid = %s" % pid
+            if pid == 0:
+                self.read_output()
+                for line in self.output:
+                    print line
 
     def read_output(self):
         """Read the output of the process and store it in self.output."""
@@ -102,6 +109,7 @@ class Command:
         """Kill processes spawned by this Command."""
         os.kill(self.proc.pid, SIGKILL)
 
+    
 def verify_app(appname):
     """If appname is not in the user's path, print a error and exit."""
     app = subst('which %s' % appname)
