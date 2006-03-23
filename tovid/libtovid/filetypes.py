@@ -49,8 +49,8 @@ class MultimediaFile:
         # Have mplayer identify the video
         cmd = Command('mplayer')
         cmd.purpose = "Identifying video"
-        cmd.append('-vo null -ao null -frames 1 -channels 6 -identify')
         cmd.append('"%s"' % self.filename)
+        cmd.append('-vo null -ao null -frames 1 -channels 6 -identify')
         cmd.run()
         # Look for mplayer's "ID_..." lines and append to mp_dict
         for line in cmd.output:
