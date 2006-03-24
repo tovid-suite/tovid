@@ -8,7 +8,7 @@ shell script).
 
 import sys
 
-from libtovid import wingdbstub # For debugging in Wing IDE
+#from libtovid import wingdbstub # For debugging in Wing IDE
 from libtovid.video import Video
 
 if __name__ == '__main__':
