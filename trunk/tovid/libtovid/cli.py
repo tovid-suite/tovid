@@ -9,10 +9,11 @@ simple interface for building command-lines, spawning subprocesses, and reading
 output from them.
 """
 
-__all__ = ['Command', 'subst']
+__all__ = ['Command', 'verify_app', 'subst']
 
 # From standard library
 import os
+import sys
 from subprocess import Popen, PIPE
 from signal import SIGKILL
 # From libtovid
@@ -43,8 +44,8 @@ class Command:
         """
         self.command = command
         self.purpose = purpose
-        # Popen object of running process
         self.proc = None
+        self.childpid = None
         # All lines of output from the command
         self.output = []
 
@@ -65,39 +66,34 @@ class Command:
         pass
 
     def run(self, wait=True):
+        try:
+            self._run(wait)
+        except KeyboardInterrupt:
+            log.info("Process interrupted. Exiting...")
+            self.kill()
+            sys.exit()
+
+    def _run(self, wait):
         """Execute the command and return its exit status. Optionally wait for
         execution to finish."""
         log.info(self.purpose)
         log.info(self.command)
-        self.proc = Popen(self.command, shell=True, \
-                          bufsize=1, stdout=PIPE, stderr=PIPE, close_fds=True)
-        print "Command.run():"
-        print "PID: %s" % self.proc.pid
-        if wait:
-            self.read_output()
-            for line in self.output:
-                print line
-            return self.proc.wait()
-        else:
-            # If not waiting for the process to finish, fork a child process
-            # to log output.
-            print "run(): Forking"
-            pid = os.fork()
-            print "pid = %s" % pid
-            if pid == 0:
-                self.read_output()
-                for line in self.output:
-                    print line
-
-    def read_output(self):
-        """Read the output of the process and store it in self.output."""
-        stdout = self.proc.stdout
-        stderr = self.proc.stderr
-        for line in stdout.readlines():
-            self.output.append(line.rstrip('\n'))
-        for line in stderr.readlines():
-            self.output.append(line.rstrip('\n'))
+        self.proc = Popen(self.command, bufsize=1, shell=True,
+                     stdout=PIPE, stderr=PIPE, close_fds=True)
+        # Fork a child process to log output
+        pid = os.fork()
+        if pid > 0: # Parent
+            self.childpid = pid
+            if wait:
+                os.waitpid(pid, 0)
         
+        else: # Child
+            for line in self.proc.stdout:
+                log.debug(line)
+            for line in self.proc.stderr:
+                log.debug(line)
+            sys.exit()
+
     def is_done(self):
         """Return True if the command is finished executing; False otherwise."""
         if self.proc.poll():
@@ -106,7 +102,9 @@ class Command:
             return False
 
     def kill(self):
-        """Kill processes spawned by this Command."""
+        """Kill all processes spawned by this Command."""
+        if self.childpid:
+            os.kill(self.childpid, SIGKILL)
         os.kill(self.proc.pid, SIGKILL)
 
     
