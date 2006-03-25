@@ -8,31 +8,23 @@ from libtovid.standards import *
 
 class VideoStream:
     def __init__(self):
-        self.codec = None
-        self.width, self.height = (0, 0)
-        self.fps = 0
-        self.aspect = 0
-        self.numframes = 0
-        self.bitrate = 0
+        self.spec = {}
 
     def display(self):
         print "Video:"
-        print "      Codec: %s" % self.codec
-        print "      Width: %s" % self.width
-        print "     Height: %s" % self.height
-        print "  Framerate: %s" % self.fps
-        print "    Bitrate: %s" % self.bitrate
+        print "      Codec: %s" % self.spec['codec']
+        print "      Width: %s" % self.spec['width']
+        print "     Height: %s" % self.spec['height']
+        print "  Framerate: %s" % self.spec['fps']
+        print "    Bitrate: %s" % self.spec['bitrate']
 
 class AudioStream:
     def __init__(self):
-        self.codec = None
-        self.samprate = 0
-        self.bitrate = 0
-        self.channels = 0
+        self.spec = {}
 
     def display(self):
         print "Audio:"
-        print "          Codec: %s" % self.codec
-        print "        Bitrate: %s" % self.bitrate
-        print "       Channels: %s" % self.channels
-        print "  Sampling rate: %s" % self.samprate
+        print "          Codec: %s" % self.spec['codec']
+        print "        Bitrate: %s" % self.spec['bitrate']
+        print "       Channels: %s" % self.spec['channels']
+        print "  Sampling rate: %s" % self.spec['samprate']

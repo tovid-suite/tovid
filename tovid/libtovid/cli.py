@@ -89,9 +89,9 @@ class Command:
         
         else: # Child
             for line in self.proc.stdout:
-                log.debug(line)
+                self.output.append(line)
             for line in self.proc.stderr:
-                log.debug(line)
+                self.output.append(line)
             sys.exit()
 
     def is_done(self):

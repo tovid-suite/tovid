@@ -9,7 +9,7 @@ import sys
 # From libtovid
 from libtovid.log import Log
 from libtovid.streams import VideoStream, AudioStream
-from libtovid.cli import Command
+from libtovid.cli import Command, subst
 
 log = Log('filetypes.py')
 
@@ -32,13 +32,6 @@ class MultimediaFile:
             self.audio.display()
         else:
             log.info("No audio stream")
-        # Print compliance info
-        for vstd in self.validVideo:
-            log.info("Matches video standard:")
-            vstd.display()
-        for astd in self.validAudio:
-            log.info("Matches audio standard:")
-            astd.display()
 
 
     def get_specs(self):
@@ -47,61 +40,62 @@ class MultimediaFile:
         audio = None
         video = None
         # Have mplayer identify the video
-        cmd = Command('mplayer')
-        cmd.purpose = "Identifying video"
-        cmd.append('"%s"' % self.filename)
-        cmd.append('-vo null -ao null -frames 1 -channels 6 -identify')
-        cmd.run()
+        cmd = 'mplayer "%s"' % self.filename
+        cmd += ' -vo null -ao null -frames 1 -channels 6 -identify'
+        output = subst(cmd)
         # Look for mplayer's "ID_..." lines and append to mp_dict
-        for line in cmd.output:
+        for line in output.splitlines():
             if line.startswith("ID_"):
+                print line
                 left, right = line.split('=')
                 # Add entry to dictionary (stripping whitespace from argument)
                 mp_dict[left] = right.strip()
     
         if 'ID_VIDEO_ID' in mp_dict:
             video = VideoStream()
+            v_spec = video.spec
         if 'ID_AUDIO_ID' in mp_dict:
             audio = AudioStream()
+            a_spec = audio.spec
     
         # Parse the dictionary and set appropriate values
         for left, right in mp_dict.iteritems():
             log.debug('%s = %s' % (left, right))
             if video:
                 if left == "ID_VIDEO_WIDTH":
-                    video.width = int(right)
+                    v_spec['width'] = int(right)
                 elif left == "ID_VIDEO_HEIGHT":
-                    video.height = int(right)
+                    v_spec['height'] = int(right)
                 elif left == "ID_VIDEO_FPS":
-                    video.fps = float(right)
+                    v_spec['fps'] = float(right)
                 elif left == "ID_VIDEO_FORMAT":
-                    video.codec = right
+                    v_spec['codec'] = right
                 elif left == "ID_VIDEO_BITRATE":
-                    video.bitrate = int(right) / 1000
+                    v_spec['bitrate'] = int(right) / 1000
             if audio:
                 if left == "ID_AUDIO_CODEC":
-                    audio.codec = right
+                    a_spec['codec'] = right
                 elif left == "ID_AUDIO_FORMAT":
-                    audio.format = right
+                    a_spec['format'] = right
                 elif left == "ID_AUDIO_BITRATE":
-                    audio.bitrate = int(right) / 1000
+                    a_spec['bitrate'] = int(right) / 1000
                 elif left == "ID_AUDIO_RATE":
-                    audio.samprate = int(right)
+                    a_spec['samprate'] = int(right)
                 elif left == "ID_AUDIO_NCH":
-                    audio.channels = right
+                    a_spec['channels'] = right
     
         # Fix mplayer's audio codec naming for ac3 and mp2
         if audio:
-            if audio.format == "8192":
-                audio.codec = "ac3"
-            elif audio.format == "80":
-                audio.codec = "mp2"
+            if a_spec['format'] == "8192":
+                a_spec['codec'] = "ac3"
+            elif a_spec['format'] == "80":
+                a_spec['codec'] = "mp2"
         # Fix mplayer's video codec naming for mpeg1 and mpeg2
         if video:
-            if video.codec == "0x10000001":
-                video.codec = "mpeg1"
-            elif video.codec == "0x10000002":
-                video.codec = "mpeg2"
+            if v_spec['codec'] == "0x10000001":
+                v_spec['codec'] = "mpeg1"
+            elif v_spec['codec'] == "0x10000002":
+                v_spec['codec'] = "mpeg2"
         self.audio = audio
         self.video = video
 

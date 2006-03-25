@@ -8,6 +8,7 @@ from libtovid.log import Log
 
 log = Log('mencoder.py')
 
+
 def encode(infile, options):
     """Encode infile (a MultimediaFile) with mencoder, using the given options."""
     cmd = Command('mencoder')
