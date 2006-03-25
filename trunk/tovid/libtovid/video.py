@@ -146,7 +146,8 @@ class Video:
             expand = (width, height)
         # If infile is already the correct size, don't scale
         if self.infile.video:
-            in_res = (self.infile.video.width, self.infile.video.height)
+            in_res = (self.infile.video.spec['width'],
+                      self.infile.video.spec['height'])
             if in_res == scale:
                 scale = False
                 log.debug('Infile resolution matches target resolution.')
