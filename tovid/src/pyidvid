@@ -18,6 +18,8 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         print "Usage: %s FILE" % sys.argv[0]
     else:
-        print "Creating a MultimediaFile object from file: %s" % sys.argv[1]
-        infile = MultimediaFile(sys.argv[1])
-        infile.display()
+        for file in sys.argv[1:]:
+            print "Identifying file: %s" % sys.argv[1]
+            infile = MultimediaFile(file)
+            infile.display()
+
