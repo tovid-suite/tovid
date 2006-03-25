@@ -22,10 +22,9 @@ abitrate
 vbitrate
 """
 
-def encode(infile, outfile, options):
-    """Encode infile to outfile with mpeg2enc, using the given options.
-    infile and outfile are MultimediaFiles, options is a dictionary."""
-    outname = outfile.filename
+def encode(infile, options):
+    """Encode infile with mpeg2enc, using the given options."""
+    outname = options['out']
     # YUV raw video FIFO, for piping video from mplayer to mpeg2enc
     yuvfile = '%s.yuv' % outname
     try:
