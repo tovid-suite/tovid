@@ -7,12 +7,6 @@ import os
 import libtovid
 from libtovid.filetypes import MultimediaFile
 
-# ===========================================================
-# Execution begins here
-#
-# This stuff is just for testing; the true pyidvid script will
-# do real argument-parsing and whatnot.
-# ===========================================================
 if __name__ == '__main__':
     # If no arguments were provided, print usage notes
     if len(sys.argv) == 1:
