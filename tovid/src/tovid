@@ -163,6 +163,7 @@ NONVIDEO_BITRATE=""
 # Default progress-meter update interval
 SLEEP_TIME="5s"
 # Don't use subtitles unless user requests it
+DO_SUBS=false
 SUBTITLES="-noautosub"
 # Input file and type
 IN_FILE=""
@@ -471,6 +472,7 @@ get_args()
             "-mkvsub" )
                 shift
                 SUBTITLES="-slang $1"
+                DO_SUBS=:
                 # Use gmplayer
                 MPLAYER="gmplayer"
                 # Force re-encoding of compliant video,
@@ -481,6 +483,7 @@ get_args()
                 shift
                 if test -e "$1"; then
                     SUBTITLES="-sub $1"
+                    DO_SUBS=:
                 else
                     yecho "Cannot find subtitle file $1."
                 fi
@@ -660,7 +663,7 @@ if test -z "$OUT_PREFIX"; then
 fi
 
 # Can't do -subtitles with -ffmpeg; if both were used, print error and exit
-if $USE_FFMPEG && test -n $SUBTITLES; then
+if $USE_FFMPEG && $DO_SUBS; then
     usage_error "Sorry, -subtitles is not currently supported with -ffmpeg."
 fi
 
