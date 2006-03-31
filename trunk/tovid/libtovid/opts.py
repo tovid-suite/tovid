@@ -24,12 +24,11 @@ import re
 import sys
 from copy import copy
 import textwrap
+import logging
 # From libtovid
 from libtovid.utils import trim, tokenize
-from libtovid.log import Log
 
-
-log = Log('option.py')
+log = logging.getLogger('libtovid.opts')
 
 class Option:
     """A command-line-style option, expected argument formatting, default value,

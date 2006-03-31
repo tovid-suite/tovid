@@ -8,7 +8,13 @@ from libtovid.standards import *
 
 class VideoStream:
     def __init__(self):
-        self.spec = {}
+        self.spec = {
+            'codec': '',
+            'width': 0,
+            'height': 0,
+            'fps': 0,
+            'bitrate': 0
+            }
 
     def display(self):
         print "Video:"
@@ -20,7 +26,12 @@ class VideoStream:
 
 class AudioStream:
     def __init__(self):
-        self.spec = {}
+        self.spec = {
+            'codec': '',
+            'bitrate': 0,
+            'channels': 0,
+            'samprate': 0
+            }
 
     def display(self):
         print "Audio:"

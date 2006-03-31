@@ -11,10 +11,9 @@ __all__ = [\
 # From standard library
 import os
 import sys
-# From libtovid
-from log import Log
+import logging
 
-log = Log('VideoUtils')
+log = logging.getLogger('libtovid.VideoUtils')
 
 def video_to_images(infile, start=0, end=0, scale=(0,0)):
     """Convert a video file to a sequence of images, starting and ending at the

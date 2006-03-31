@@ -4,8 +4,12 @@
 __all__ = ['encode']
 
 import os
+import logging
 
 from libtovid.cli import Command
+from libtovid.utils import float_to_ratio
+
+log = logging.getLogger('libtovid.encoders.mpeg2enc')
 
 """options used by encoders:
 format
@@ -23,7 +27,10 @@ vbitrate
 """
 
 def encode(infile, options):
-    """Encode infile with mpeg2enc, using the given options."""
+    """Encode infile with mpeg2enc, using the given options.
+    infile is a MultimediaFile; options is a dictionary."""
+    log.warn("This encoder is very experimental, and may not work.")
+
     outname = options['out']
     # YUV raw video FIFO, for piping video from mplayer to mpeg2enc
     yuvfile = '%s.yuv' % outname
@@ -46,11 +53,11 @@ def encode(infile, options):
     else:
         videofile = '%s.m2v' % outname
     # Do audio
-    rip_wav(infile.filename, wavfile, options)
+    rip_wav(infile, wavfile, options)
     encode_wav(wavfile, audiofile, options)
     # Do video
-    rip_video(infile.filename, yuvfile, options)
-    encode_video(yuvfile, videofile, options)
+    rip_video(infile, yuvfile, options)
+    encode_video(infile, yuvfile, videofile, options)
     # Combine audio and video
     mplex_streams(videofile, audiofile, outname, options)
     
@@ -60,7 +67,7 @@ def rip_video(infile, yuvfile, options):
     # corresp.  to $MPLAYER_OPT, $SUBTITLES, $VF_PRE/POST, $YUV4MPEG_ILACE,
     # etc.
     cmd = Command('mplayer')
-    cmd.append('"%s"' % infile)
+    cmd.append('"%s"' % infile.filename)
     cmd.append('-vo yuv4mpeg:file=%s' % yuvfile)
     cmd.append('-nosound -benchmark -noframedrop')
     # TODO: Support subtitles. For now, use default tovid behavior.
@@ -81,7 +88,7 @@ def rip_video(infile, yuvfile, options):
     cmd.run(wait=False)
 
 
-def encode_video(yuvfile, videofile, options):
+def encode_video(infile, yuvfile, videofile, options):
     """Encode the yuv4mpeg stream to the given format and TV system."""
     # TODO: Control over quality (bitrate/quantization) and disc split size,
     # corresp. to $VID_BITRATE, $MPEG2_QUALITY, $DISC_SIZE, etc.
@@ -109,6 +116,11 @@ def encode_video(yuvfile, videofile, options):
         cmd.append('-a 2')
     cmd.append('-o "%s"' % videofile)
 
+    # Adjust framerate if necessary
+    if infile.video.spec['fps'] != options['fps']:
+        log.info("Adjusting framerate")
+        cmd.prepend('yuvfps -r %s |' % float_to_ratio(options['fps']))
+
     # Pipe the .yuv file into mpeg2enc
     cmd.prepend('cat "%s" | ' % yuvfile)
     cmd.run()
@@ -117,7 +129,7 @@ def generate_silent_wav(wavfile, options):
     """Generate a silent audio .wav."""
     cmd = Command('sox')
     cmd.purpose = "Generating a silent .wav file"
-    cmd.append('sox -t raw -c 2')
+    cmd.append('-t raw -c 2')
     cmd.append('-r %s' % options['samprate'])
     cmd.append('-w -s -t wav')
     cmd.append('"%s"' % wavfile)
@@ -133,7 +145,7 @@ def rip_wav(infile, wavfile, options):
     cmd.purpose = "Ripping audio to .wav format"
     cmd.append('-quiet -vc null -vo null')
     cmd.append('-ao pcm:waveheader:file=%s' % wavfile)
-    cmd.append('"%s"' % infile)
+    cmd.append('"%s"' % infile.filename)
     cmd.run()
 
 def encode_wav(wavfile, audiofile, options):

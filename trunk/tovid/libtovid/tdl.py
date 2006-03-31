@@ -7,15 +7,15 @@ __all__ = ['element_classes']
 import sys
 import copy
 import shlex
+import logging
 # From libtovid
 from libtovid.utils import tokenize, trim, pretty_dict
 from libtovid.video import Video
 from libtovid.menu import Menu
 from libtovid.disc import Disc
 from libtovid.opts import Option
-from libtovid.log import Log
 
-log = Log('tdl.py')
+log = logging.getLogger('libtovid.tdl')
 
 element_classes = {
     'Disc':  Disc,

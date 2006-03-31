@@ -100,7 +100,6 @@ def video_is_valid(vstream, vstandard):
     else:
         return False
 
-
 def audio_is_valid(astream, astandard):
     """Return True if the audio stream is valid under the given standard."""
     if (astream.bitrate >= astandard.minBitrate and

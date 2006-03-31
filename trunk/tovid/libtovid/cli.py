@@ -14,12 +14,13 @@ __all__ = ['Command', 'verify_app', 'subst']
 # From standard library
 import os
 import sys
+import logging
 from subprocess import Popen, PIPE
 from signal import SIGKILL
 # From libtovid
-from libtovid.log import Log
+#from libtovid.log import Log
 
-log = Log('cli.py')
+log = logging.getLogger('libtovid.cli')
 
 class Command:
     """A command-line app with arguments, and process control."""
@@ -36,11 +37,6 @@ class Command:
 
             >>> cmd.run()
         
-        To see the output from the command (after calling run()):
-
-            >>> for line in cmd.output:
-            ...     print line
-
         """
         self.command = command
         self.purpose = purpose
@@ -69,7 +65,7 @@ class Command:
         try:
             self._run(wait)
         except KeyboardInterrupt:
-            log.info("Process interrupted. Exiting...")
+            print "Process interrupted. Exiting..."
             self.kill()
             sys.exit()
 
@@ -89,9 +85,9 @@ class Command:
         
         else: # Child
             for line in self.proc.stdout:
-                log.debug(line)
+                log.debug(line.rstrip('\r\n'))
             for line in self.proc.stderr:
-                log.debug(line)
+                log.debug(line.rstrip('\r\n'))
             sys.exit()
 
     def is_done(self):
@@ -107,7 +103,7 @@ class Command:
             os.kill(self.childpid, SIGKILL)
         os.kill(self.proc.pid, SIGKILL)
 
-    
+
 def verify_app(appname):
     """If appname is not in the user's path, print a error and exit."""
     app = subst('which %s' % appname)
@@ -128,3 +124,4 @@ def subst(command, include_stderr=False):
         output = os.popen(command, 'r').readlines()
     return ''.join(output).rstrip('\n')
 
+    

@@ -3,10 +3,11 @@
 
 __all__ = ['encode']
 
-from libtovid.cli import Command
-from libtovid.log import Log
+import logging
 
-log = Log('mencoder.py')
+from libtovid.cli import Command
+
+log = logging.getLogger('mencoder.py')
 
 
 def encode(infile, options):

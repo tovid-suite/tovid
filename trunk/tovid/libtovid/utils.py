@@ -4,7 +4,7 @@
 # TODO: Categorize/reorganize these
 
 __all__ = ['degunk', 'tokenize', 'trim', 'ratio_to_float',
-    'pretty_dict', 'indent_level', 'get_code_lines']
+    'pretty_dict', 'indent_level', 'get_code_lines', 'wait']
 
 # From standard library
 import os
@@ -12,10 +12,7 @@ import sys
 import string
 import shlex
 from subprocess import Popen, PIPE
-# From libtovid
-from libtovid.log import Log
 
-log = Log('utils.py')
 
 def degunk(text):
     """Strip special characters from the given string (any that might
@@ -73,7 +70,7 @@ def trim(text):
 
 def ratio_to_float(ratio):
     """Convert a string expressing a numeric ratio, with X and Y parts
-    separated by a colon ':', into a floating-point value.
+    separated by a colon ':', into a decimal number.
     
     For example:
         
@@ -88,6 +85,13 @@ def ratio_to_float(ratio):
         return float(values[0])
     else:
         raise Exception("ratio_to_float: too many values in ratio '%s'" % ratio)
+
+def float_to_ratio(number):
+    """Convert a decimal number into an integer ratio string 'X:Y'.
+    Keeps three digits of precision."""
+    numerator = float(number) * 1000
+    print numerator
+    return "%g:1000" % numerator
 
 
 def pretty_dict(dict):
@@ -108,8 +112,6 @@ def pretty_dict(dict):
             result += "    %s %s\n" % (key, value)
     return result
 
-
-
 def indent_level(line):
     """Return the number of leading whitespace characters in the line."""
     return len(line) - len(line.lstrip())
@@ -124,3 +126,8 @@ def get_code_lines(filename):
             codelines.append(line)
     infile.close()
     return codelines
+
+def wait(seconds):
+    """Print a message and pause for the given number of seconds."""
+    print "Resuming in %s seconds..." % seconds
+    os.system('sleep %ss' % seconds)
