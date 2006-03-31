@@ -53,7 +53,6 @@ def mplayer_identify(filename):
     # Look for mplayer's "ID_..." lines and append to mp_dict
     for line in output.splitlines():
         if line.startswith("ID_"):
-            print line
             left, right = line.split('=')
             # Add entry to dictionary (stripping whitespace from argument)
             mp_dict[left] = right.strip()
