@@ -60,7 +60,7 @@ Common options:
 
     -dvd | -half-dvd | -dvd-vcd         Encode to standard DVD format
     -vcd | -svcd                        Encode to (S)VCD format
-    -kvcd | -kvcdx3 | -kdvd             Encode to non-standard MPEG-2 format
+    -kvcd | -kvcdx3 | -kdvd | -bdvd     Encode to non-standard MPEG-2 format
     -pal | -ntsc | -ntscfilm            Set TV standard
 
 Example:
@@ -366,6 +366,7 @@ get_args()
             "-kvcdx3" )   TGT_RES="KVCDx3" ;;
             "-kvcdx3a" )  TGT_RES="KVCDx3a" ;;
             "-kdvd" )     TGT_RES="KDVD" ;;
+            "-bdvd" )     TGT_RES="BDVD" ;;
 
             # Other options
             "-normalize" )  DO_NORM=: ;;
@@ -779,18 +780,17 @@ case "$VIDEO_TYPE" in
         ;;
 esac
 
-# Set disc size (if unset) and audio sampling rate
-if test x"$TGT_RES" = x"DVD-VCD" || test x"$TGT_RES" = x"Half-DVD" || test x"$TGT_RES" = x"DVD"; then
-    # Allow a little extra space for menus, etc. (4500 instead of 4700)
-    test -z "$DISC_SIZE" && DISC_SIZE="4500"
+# Set disc size in mebibytes (2^20) and audio sampling rate
+if echo $TGT_RES | grep -q 'DVD'; then
+    : ${DISC_SIZE:=4300}
     SAMPRATE=48000
 else
-    test -z "$DISC_SIZE" && DISC_SIZE="700"
+    : ${DISC_SIZE:=700}
     SAMPRATE=44100
 fi
 
-# DVD and KDVD can do anamorphic widescreen
-if test $TGT_RES = "DVD" || test $TGT_RES = "KDVD"; then
+# DVD, KDVD, and BDVD can do anamorphic widescreen
+if test $TGT_RES = "DVD" || test $TGT_RES = "KDVD" || test $TGT_RES = "BDVD"; then
     ANAMORPH=:
 else
     ANAMORPH=false
@@ -814,7 +814,7 @@ case "$TGT_RES" in
         # Explicitly set audio/video bitrates
         AUD_BITRATE="224"
         VID_BITRATE="1150"
-        MPEG2_FMT="-f 1"
+        MPEG2_FMT="-f 1 -K hi-res"
         MUX_OPTS="-f 1"
         VID_SUF="m1v"
         ;;
@@ -851,7 +851,7 @@ case "$TGT_RES" in
         DEFAULT_BR=`expr $VID_QUALITY \* 4000 \/ 10`
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
-        MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE"
+        MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -K hi-res"
         MUX_OPTS="-V -f 8"
         VID_SUF="m2v"
         ;;
@@ -870,7 +870,7 @@ case "$TGT_RES" in
         DEFAULT_BR=`expr $VID_QUALITY \* 2600 \/ 10`
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
-        MPEG2_FMT="-f 4 -b $VID_BITRATE"
+        MPEG2_FMT="-f 4 -b $VID_BITRATE -K hi-res"
         MUX_OPTS="-V -f 4"
         VID_SUF="m2v"
 
@@ -889,7 +889,7 @@ case "$TGT_RES" in
         DEFAULT_BR=`expr $VID_QUALITY \* 6000 \/ 10`
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
-        MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE"
+        MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -K hi-res"
         MUX_OPTS="-V -f 8"
         VID_SUF="m2v"
         ;;
@@ -928,8 +928,8 @@ case "$TGT_RES" in
         VID_SUF="m2v"
         ;;
 
-    # DVD (and KDVD)
-    "DVD" | "KDVD" )
+    # DVD (and KDVD/BDVD)
+    "DVD" | "KDVD" | "BDVD" )
         TGT_WIDTH="720"
         if test x"$TVSYS" = x"PAL"; then
             TGT_HEIGHT="576"
@@ -943,7 +943,36 @@ case "$TGT_RES" in
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 10"
         # For KDVD, use KVCD "Notch" quantization
-        test x"$TGT_RES" = x"KDVD" && MPEG2_FMT="$MPEG2_FMT -K kvcd"
+        case "$TGT_RES" in
+            "KDVD" )
+                MPEG2_FMT="$MPEG2_FMT -K kvcd"
+                ;;
+            "BDVD" )
+                # BVCD "Under" quantization matrix (www.bvcd.com.br)
+                # (Intra/Non Intra)
+                echo -e \
+                "16,18,20,22,26,28,32,39" \
+                "\n18,20,22,24,28,32,39,44" \
+                "\n20,22,26,28,32,39,44,48" \
+                "\n22,22,26,32,39,44,48,54" \
+                "\n22,26,32,39,44,48,54,64" \
+                "\n26,32,39,44,48,54,64,74" \
+                "\n32,39,44,48,54,64,74,84" \
+                "\n39,44,48,54,64,74,84,94" \
+                "\n20,24,26,28,38,42,46,53" \
+                "\n24,26,28,38,42,46,53,58" \
+                "\n26,28,38,42,46,53,58,62" \
+                "\n28,38,42,46,53,58,62,68" \
+                "\n38,42,46,53,58,62,68,78" \
+                "\n42,46,53,58,62,68,78,88" \
+                "\n46,53,58,62,68,78,88,99" \
+                "\n53,58,62,68,78,88,99,99" > "$TMP_DIR/bvcd.matrix" 
+                MPEG2_FMT="$MPEG2_FMT -K file=\"$TMP_DIR/bvcd.matrix\"" 
+                ;; 
+            * )
+                MPEG2_FMT="$MPEG2_FMT -K hi-res"
+                ;;
+        esac
         MUX_OPTS="-V -f 8"
         VID_SUF="m2v"
         ;;
@@ -1006,10 +1035,10 @@ QUANT=`expr 13 \- $VID_QUALITY`
 # mpeg2enc encoding quality options
 # Don't use -q for VCD (since -q implies variable bitrate)
 if test x"$TGT_RES" = x"VCD"; then
-    MPEG2_QUALITY="--reduction-4x4 2 --reduction-2x2 1 --keep-hf"
+    MPEG2_QUALITY="--reduction-4x4 2 --reduction-2x2 1"
     FF_QUANT=""
 else
-    MPEG2_QUALITY="--reduction-4x4 2 --reduction-2x2 1 -q $QUANT --keep-hf"
+    MPEG2_QUALITY="--reduction-4x4 2 --reduction-2x2 1 -q $QUANT"
     FF_QUANT="-qscale $QUANT"
 fi
 
