@@ -238,9 +238,9 @@ letterboxing or anamorphic scaling.
     longer.  The default is high priority.
 
 : **-discsize** //NUM//
-    Sets the desired target DVD/CD-R size to //NUM// MB (10^6).  Default is 700
-    for CD, 4500 for DVD. Use higher values at your own risk. Use 650 or lower
-    if you plan to burn to smaller-capacity CDs.
+    Sets the desired target DVD/CD-R size to //NUM// mebibytes (2^20).  Default
+    is 700 for CD, 4300 for DVD. Use higher values at your own risk. Use 650 or
+    lower if you plan to burn to smaller-capacity CDs.
 
 : **-parallel**
     Will perform encode/rip processes in parallel using named pipes. Maximizes

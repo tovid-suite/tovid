@@ -64,14 +64,15 @@ from the original installation directory (``~/Downloads/tovid-0.25``).
 For life on the bleeding edge, you can get a copy of the latest development
 version of tovid. You can do this one of two ways:
 
-- Download the daily release from the
+- Download the latest quick-release from the
     [tovid FTP server ftp://ftp.berlios.de/pub/tovid]
 - Check it out with [Subversion http://subversion/tigris.org/] (SVN)
 
 
-For the daily release, just find the most recently-dated ``.tar.gz`` file
+For the quick-release, just find the most recently-dated ``.tar.gz`` file
 on the [FTP server ftp://ftp.berlios.de/pub/tovid], and install it as you
-would a normal release.
+would a normal release. These quick-releases are just like official releases,
+except more unstable.
 
 The second method is more complicated. Again, assuming you want to put the
 tovid installer in ``~/Downloads``):
