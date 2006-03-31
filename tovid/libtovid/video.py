@@ -6,15 +6,17 @@ __all__ = ['Video']
 # From standard library
 import sys
 from copy import copy
+import logging
 # From libtovid
 from libtovid.opts import Option, OptionDict
-from libtovid.log import Log
 from libtovid.standards import get_resolution
 from libtovid.utils import ratio_to_float
 from libtovid.encoders import mencoder, ffmpeg, mpeg2enc
 from libtovid.filetypes import MultimediaFile
 
-log = Log('video.py')
+log = logging.getLogger('libtovid')
+log.setLevel(logging.DEBUG)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 class Video:
     """A video title for (optional) inclusion on a video disc.
@@ -159,9 +161,9 @@ class Video:
         else:
             samprate = 44100
         if self.options['tvsys'] == 'pal':
-            fps = '25.0'
+            fps = 25.00
         elif self.options['tvsys'] == 'ntsc':
-            fps = '29.97'
+            fps = 29.97
         
         # Set audio/video bitrates based on target format, quality, or
         # user-defined values (if given)

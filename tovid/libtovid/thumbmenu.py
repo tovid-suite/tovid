@@ -6,12 +6,12 @@ __all__ = ['generate']
 import os
 import glob
 import string
+import logging
 
 import libtovid
 from libtovid.cli import Command
-from libtovid.log import Log
 
-log = Log('MenuPlugins.py')
+log = logging.getLogger('libtovid.thumbmenu')
 
 # TODO: Eliminate this:
 FRAMES=90
