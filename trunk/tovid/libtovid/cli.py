@@ -9,12 +9,14 @@ simple interface for building command-lines, spawning subprocesses, and reading
 output from them.
 """
 
-__all__ = ['Command', 'verify_app', 'subst']
+__all__ = ['Command', 'verify_app']
 
 # From standard library
 import os
 import sys
 import logging
+import tempfile
+import commands
 from subprocess import Popen, PIPE
 from signal import SIGKILL
 # From libtovid
@@ -62,6 +64,8 @@ class Command:
         pass
 
     def run(self, wait=True):
+        log.info(self.purpose)
+        log.info(self.command)
         try:
             self._run(wait)
         except KeyboardInterrupt:
@@ -72,11 +76,12 @@ class Command:
     def _run(self, wait):
         """Execute the command and return its exit status. Optionally wait for
         execution to finish."""
-        log.info(self.purpose)
-        log.info(self.command)
+        self.tempfile = tempfile.mktemp()
+        # Fork a child process to log output
+
         self.proc = Popen(self.command, bufsize=1, shell=True,
                      stdout=PIPE, stderr=PIPE, close_fds=True)
-        # Fork a child process to log output
+
         pid = os.fork()
         if pid > 0: # Parent
             self.childpid = pid
@@ -106,22 +111,8 @@ class Command:
 
 def verify_app(appname):
     """If appname is not in the user's path, print a error and exit."""
-    app = subst('which %s' % appname)
+    app = commands.getoutput('which %s' % appname)
     if not app:
         log.error("Application: %s does not appear to be in your path.")
         sys.exit()
-
-
-def subst(command, include_stderr=False):
-    """Do shell-style command substitution and return the output of command
-    as a string (equivalent to bash `CMD` or $(CMD)). Optionally include
-    standard error output."""
-    if include_stderr:
-        cin, cout = os.popen4(command, 'r')
-        cin.close()
-        output = cout.readlines()
-    else:
-        output = os.popen(command, 'r').readlines()
-    return ''.join(output).rstrip('\n')
-
     

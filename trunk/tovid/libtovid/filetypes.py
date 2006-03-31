@@ -7,9 +7,10 @@ __all__ = ['MultimediaFile']
 import os
 import sys
 import logging
+import commands
 # From libtovid
 from libtovid.streams import VideoStream, AudioStream
-from libtovid.cli import Command, subst
+from libtovid.cli import Command
 
 log = logging.getLogger('libtovid.filetypes')
 
@@ -48,7 +49,7 @@ def mplayer_identify(filename):
     # Use mplayer 
     cmd = 'mplayer "%s"' % filename
     cmd += ' -vo null -ao null -frames 1 -channels 6 -identify'
-    output = subst(cmd)
+    output = commands.getoutput(cmd)
     # Look for mplayer's "ID_..." lines and append to mp_dict
     for line in output.splitlines():
         if line.startswith("ID_"):
