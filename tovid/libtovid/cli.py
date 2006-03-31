@@ -17,7 +17,6 @@ import sys
 import logging
 import tempfile
 import commands
-from subprocess import Popen, PIPE
 from signal import SIGKILL
 # From libtovid
 #from libtovid.log import Log
@@ -42,7 +41,6 @@ class Command:
         """
         self.command = command
         self.purpose = purpose
-        self.proc = None
         self.childpid = None
         # All lines of output from the command
         self.output = []
@@ -77,36 +75,31 @@ class Command:
         """Execute the command and return its exit status. Optionally wait for
         execution to finish."""
         self.tempfile = tempfile.mktemp()
-        # Fork a child process to log output
-
-        self.proc = Popen(self.command, bufsize=1, shell=True,
-                     stdout=PIPE, stderr=PIPE, close_fds=True)
-
+        # Fork a child process to run the command and log output
         pid = os.fork()
-        if pid > 0: # Parent
+        if pid == 0: # Child
+            cmd = "%s > %s 2>&1" % (self.command, self.tempfile)
+            status = os.system(cmd)
+            sys.exit()
+        else: # Parent
             self.childpid = pid
             if wait:
-                os.waitpid(pid, 0)
-        
-        else: # Child
-            for line in self.proc.stdout:
-                log.debug(line.rstrip('\r\n'))
-            for line in self.proc.stderr:
-                log.debug(line.rstrip('\r\n'))
-            sys.exit()
+                os.waitpid(self.childpid, 0)
+                self.get_output()
 
-    def is_done(self):
-        """Return True if the command is finished executing; False otherwise."""
-        if self.proc.poll():
-            return True
-        else:
-            return False
+    def get_output(self):
+        """Retrive output from the temp file and store locally."""
+        file = open(self.tempfile, 'r')
+        for line in file.readlines():
+            self.output.append(line.rstrip('\r\n '))
+        file.close()
+        for line in self.output:
+            log.debug(line)
 
     def kill(self):
         """Kill all processes spawned by this Command."""
         if self.childpid:
             os.kill(self.childpid, SIGKILL)
-        os.kill(self.proc.pid, SIGKILL)
 
 
 def verify_app(appname):
