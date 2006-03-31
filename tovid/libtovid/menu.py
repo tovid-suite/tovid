@@ -10,13 +10,14 @@ __all__ = ['Menu']
 import sys
 import os
 from copy import copy
+import logging
+
 # From libtovid
 from libtovid.opts import Option, OptionDict
-from libtovid.log import Log
 import textmenu
 import thumbmenu
 
-log = Log('menu.py')
+log = logging.getLogger('libtovid.menu')
 
 class Menu:
     """A menu for navigating the titles on a video disc.

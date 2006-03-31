@@ -6,12 +6,12 @@ __all__ = ['MultimediaFile']
 # From standard library
 import os
 import sys
+import logging
 # From libtovid
-from libtovid.log import Log
 from libtovid.streams import VideoStream, AudioStream
 from libtovid.cli import Command, subst
 
-log = Log('filetypes.py')
+log = logging.getLogger('libtovid.filetypes')
 
 class MultimediaFile:
     "A file containing video and/or audio streams"
