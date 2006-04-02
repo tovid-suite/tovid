@@ -6,9 +6,6 @@ __all__ = ['encode']
 import logging
 
 from libtovid.cli import Command
-from libtovid.log import Log
-
-log = logging.getLogger('libtovid.encoders.ffmpeg')
 
 def encode(infile, options):
     """Encode infile (a MultimediaFile) with ffmpeg, using the given options."""
