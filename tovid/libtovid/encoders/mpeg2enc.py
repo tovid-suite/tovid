@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.4
+#! /usr/bin/env python
 # mpeg2enc.py
 
 __all__ = ['encode']

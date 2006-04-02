@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.4
+#! /usr/bin/env python
 # __init__.py
 
 """This library provides a Python interface to the functionality of tovid.

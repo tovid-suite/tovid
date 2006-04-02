@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.4
+#! /usr/bin/env python
 # cli.py
 
 """This module provides an interface for running command-line applications.
