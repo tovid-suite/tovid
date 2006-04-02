@@ -9,10 +9,10 @@ OptionDict: Dictionary of user-defined options
 Essentially, an "option" is a named attribute/value pair, as you would
 find in a typical command-line. In:
 
-    $ tovid -format dvd -in foo.avi
+    $ pytovid -format dvd -in foo.avi
 
 'format' and 'in' are the options; each of them has an argument. In the
-current implementation, the leading '-' may be omitted, or repeated.
+current implementation, options may be preceded by zero or more dashes.
 
 OptionDict is a Python dictionary of attribute/value pairs, with a slim wrapper.
 Use OptionDict to store a collection of options and values, for easy access.
@@ -187,7 +187,6 @@ class OptionDict:
                 log.error("Unrecognized option: %s. Ignoring." % opt)
             else:
                 expected_args = self.defdict[opt].num_args()
-                log.debug("%s expects %s args" % (opt, expected_args))
                 # Is this option an alias (short-form) of another option?
                 # (i.e., -vcd == -format vcd)
                 if self.defdict[opt].alias:
