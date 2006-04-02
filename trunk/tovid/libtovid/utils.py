@@ -11,8 +11,6 @@ import os
 import sys
 import string
 import shlex
-from subprocess import Popen, PIPE
-
 
 def degunk(text):
     """Strip special characters from the given string (any that might
