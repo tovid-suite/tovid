@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.4
+#! /usr/bin/env python
 # utils.py
 
 # TODO: Categorize/reorganize these

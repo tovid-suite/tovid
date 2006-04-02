@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.4
+#! /usr/bin/env python
 # tdl.py
 
 __all__ = ['element_classes']

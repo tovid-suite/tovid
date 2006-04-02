@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.4
+#! /usr/bin/env python
 # opts.py
 
 """Provides command-line-style option definition, documentation, and parsing.

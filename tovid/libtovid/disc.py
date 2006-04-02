@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.4
+#! /usr/bin/env python
 # disc.py
 
 __all__ = ['Disc']

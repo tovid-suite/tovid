@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.4
+#! /usr/bin/env python
 # standards.py
 
 """This module defines functions for retrieving information about multimedia
