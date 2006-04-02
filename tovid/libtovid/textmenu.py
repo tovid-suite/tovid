@@ -3,13 +3,17 @@
 
 __all__ = ['generate']
 
-from libtovid.cli import Command
+import logging
 
-#for app in ['convert', 'composite', 'ppmtoy4m', 'sox', 'ffmpeg', 'mpeg2enc']:
-#    verify_app(app)
+from libtovid.cli import Command, verify_app
+
+log = logging.getLogger('libtovid.textmenu')
 
 def generate(options):
     """Generate a menu with selectable text titles."""
+    for app in ['convert', 'composite', 'ppmtoy4m',
+                'sox', 'ffmpeg', 'mpeg2enc']:
+        verify_app(app)
     TextMenu(options)
 
 class TextMenu:
@@ -17,11 +21,12 @@ class TextMenu:
     of the classic 'makemenu' output."""
     def __init__(self, options):
         self.options = options
+        basename = self.options['out']
         # TODO: Store intermediate images in a temp folder
-        self.bg_canvas = 'pymakemenu.bg_canvas.png'
-        self.fg_canvas = 'pymakemenu.fg_canvas.png'
-        self.fg_highlight = 'pymakemenu.fg_highlight.png'
-        self.fg_selection = 'pymakemenu.fg_selection.png'
+        self.bg_canvas = basename + '.bg_canvas.png'
+        self.fg_canvas = basename + '.fg_canvas.png'
+        self.fg_highlight = basename + '.fg_highlight.png'
+        self.fg_selection = basename + '.fg_selection.png'
         print "Creating a menu with %s titles" % len(options['titles'])
         self.build_reusables()
         self.draw_background_canvas()
@@ -67,33 +72,35 @@ class TextMenu:
         Corresp. to lines 400-411 of makemenu."""
         # Generate default blue-black gradient background
         # TODO: Implement -background
-        cmd = 'convert '
-        cmd += ' -size %sx%s ' % self.options['expand']
-        cmd += ' gradient:blue-black '
-        cmd += ' -gravity center -matte '
-        cmd += ' %s' % self.bg_canvas
-        run(cmd)
+        cmd = Command('convert')
+        cmd.append('-size %sx%s ' % self.options['expand'])
+        cmd.append('gradient:blue-black')
+        cmd.append('-gravity center -matte')
+        cmd.append(self.bg_canvas)
+        cmd.run()
     
     def draw_background_layer(self):
         """Draw the background layer for the menu, including static title text.
         Corresp. to lines 438-447, 471-477 of makemenu."""
         # Draw text titles on a transparent background.
-        cmd = 'convert '
-        cmd += ' -size %sx%s ' % self.options['scale']
-        cmd += ' xc:none -antialias -font "%s" ' % self.options['font']
-        cmd += ' -pointsize %s ' % self.options['fontsize']
-        cmd += ' -fill "%s" ' % self.options['textcolor']
-        cmd += ' -stroke black -strokewidth 3 '
-        cmd += ' -draw "gravity %s %s" ' % (self.options['align'], self.im_labels)
-        cmd += ' -stroke none -draw "gravity %s %s" ' % \
-                (self.options['align'], self.im_labels)
-        cmd += ' %s' % self.fg_canvas
-        run(cmd)
+        cmd = Command('convert')
+        cmd.append('-size %sx%s' % self.options['scale'])
+        cmd.append('xc:none -antialias -font "%s"' % self.options['font'])
+        cmd.append('-pointsize %s' % self.options['fontsize'])
+        cmd.append('-fill "%s"' % self.options['textcolor'])
+        cmd.append('-stroke black -strokewidth 3 ')
+        cmd.append('-draw "gravity %s %s"' %
+                   (self.options['align'], self.im_labels))
+        cmd.append('-stroke none -draw "gravity %s %s" ' % 
+                   (self.options['align'], self.im_labels))
+        cmd.append(self.fg_canvas)
+        cmd.run()
         # Composite text over background
-        cmd = 'composite -compose Over -gravity center '
-        cmd += ' %s %s ' % (self.fg_canvas, self.bg_canvas)
-        cmd += ' -depth 8 "%s.ppm"' % self.options['out']
-        run(cmd)
+        cmd = Command('composite')
+        cmd.append('-compose Over -gravity center')
+        cmd.append('%s %s' % (self.fg_canvas, self.bg_canvas))
+        cmd.append('-depth 8 "%s.ppm"' % self.options['out'])
+        cmd.run()
     
     def draw_highlight_layer(self):
         """Draw menu highlight layer, suitable for multiplexing.
@@ -107,12 +114,12 @@ class TextMenu:
         cmd += ' -draw "gravity %s %s" ' % (self.options['align'], self.im_buttons)
         cmd += ' -type Palette -colors 3 '
         cmd += ' png8:%s' % self.fg_highlight
-        run(cmd)
+        Command(cmd).run()
         # Pseudo-composite, to expand layer to target size
         cmd = 'composite -compose Src -gravity center '
         cmd += ' %s %s ' % (self.fg_highlight, self.bg_canvas)
         cmd += ' png8:"%s.hi.png"' % self.options['out']
-        run(cmd)
+        Command(cmd).run()
     
     def draw_selection_layer(self):
         """Draw menu selections on a transparent background.
@@ -126,12 +133,12 @@ class TextMenu:
         cmd += ' -draw "gravity %s %s" ' % (self.options['align'], self.im_buttons)
         cmd += ' -type Palette -colors 3 '
         cmd += ' png8:%s' % self.fg_selection
-        run(cmd)
+        Command(cmd).run()
         # Pseudo-composite, to expand layer to target size
         cmd = 'composite -compose Src -gravity center '
         cmd += ' %s %s ' % (self.fg_selection, self.bg_canvas)
         cmd += ' png8:"%s.sel.png"' % self.options['out']
-        run(cmd)
+        Command(cmd).run()
     
     def gen_video(self):
         """Generate a video stream (mpeg1/2) from the menu background image.
@@ -164,7 +171,7 @@ class TextMenu:
             elif self.options['format'] == 'svcd':
                 cmd += ' -f 4 '
         cmd += ' -o "%s" ' % self.vstream
-        run(cmd)
+        Command(cmd).run()
     
     def gen_audio(self):
         """Generate an audio stream (mp2/ac3) from the given audio file
@@ -180,7 +187,7 @@ class TextMenu:
             cmd = 'cat /dev/zero | sox -t raw -c 2 '
             cmd += ' -r %s -w -s - ' % self.options['samprate']
             cmd += ' -t wav "%s.wav" trim 0 4 ' % self.options['out']
-        run(cmd)
+        Command(cmd).run()
         
         # mp2 for (S)VCD
         if self.options['format'] in ['vcd', 'svcd']:
@@ -194,12 +201,11 @@ class TextMenu:
             cmd += ' -ab 224 -ar %s ' % self.options['samprate']
             cmd += ' -ac 2 -acodec ac3 -y '
         cmd += ' "%s" ' % self.astream
-        run(cmd)
+        Command(cmd).run()
     
     def gen_mpeg(self):
         """Multiplex audio and video streams to create an mpeg.
         Corresp. to lines 520-526 of makemenu."""
-        
         cmd = 'mplex -o "%s.temp.mpg" ' % self.options['out']
         # Format flags
         if self.options['format'] == 'vcd':
@@ -212,7 +218,7 @@ class TextMenu:
             elif self.options['format'] == 'svcd':
                 cmd += ' -f 4 '
         cmd += ' "%s" "%s" ' % (self.astream, self.vstream)
-        run(cmd)
+        Command(cmd).run()
     
     def mux_subtitles(self):
         """Multiplex the output video with highlight and selection
@@ -238,4 +244,4 @@ class TextMenu:
     
         cmd = 'spumux "%s.xml" < "%s.temp.mpg" > "%s.mpg"' % \
                 (self.options['out'], self.options['out'], self.options['out'])
-        run(cmd)
+        Command(cmd).run()
