@@ -1,36 +1,46 @@
 #! /usr/bin/env sh
 # getdeps
 
-# Install tovid dependencies using the user's preferred package manager
+# Install tovid dependencies with the user's preferred package manager
 
-RPM=`which rpm`
-APTGET=`which apt-get`
-EMERGE=`which emerge`
-SWARET=`which swaret`
+RPM=`type -p rpm`
+APTGET=`type -p apt-get`
+EMERGE=`type -p emerge`
+SWARET=`type -p swaret`
 
-DEPS="python wxpython mplayer mjpegtools ffmpeg ImageMagick dvdauthor \
-    vcdimager transcode"
+DEPS="python wxpython mplayer mjpegtools ffmpeg imagemagick dvdauthor vcdimager transcode"
 
+echo "=========================="
 echo "tovid dependency installer"
 echo "=========================="
 echo "This program uses a command-line package manager to install"
 echo "all of tovid's dependencies. Here are the packagers I can use:"
-echo "  $SWARET  (Slackware)"
-echo "  $APTGET  (Debian)"
-echo "  $RPM  (Redhat, Mandrake/iva)"
-echo "  $EMERGE  (Gentoo)"
+test -n "$SWARET" && echo "  swaret  (Slackware)"
+test -n "$APTGET" && echo "  apt-get  (Debian)"
+test -n "$RPM"    && echo "  rpm  (Redhat, Mandrake/iva)"
+test -n "$EMERGE" && echo "  emerge  (Gentoo)"
 echo "Please type the name of which one you'd like to use"
 echo "(e.g., 'rpm'): "
 read PREFER
 
 case "$PREFER" in
     "swaret" )
+        CMD=""
         ;;
     "apt-get" )
         CMD=""
         ;;
     "rpm" )
+        CMD=""
         ;;
     "emerge" )
         CMD="emerge -uvaD $DEPS"
         ;;
+esac
+
+echo "Installing dependencies with the following command:"
+echo "$CMD"
+su -c "$CMD"
+
+echo "Done! Thanks for using getdeps."
+

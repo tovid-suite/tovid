@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.4
+#! /usr/bin/env python
 # streams.py
 
 __all__ = ['VideoStream', 'AudioStream']

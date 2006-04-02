@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.4
+#! /usr/bin/env python
 # VideoUtils.py
 
 """A collection of utilities for working with multimedia video files."""

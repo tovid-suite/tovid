@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.4
+#! /usr/bin/env python
 # options.py
 
 __all__ = ["DiscOptions", "MenuOptions", "SlideOptions", "VideoOptions"]

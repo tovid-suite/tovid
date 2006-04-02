@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.4
+#! /usr/bin/env python
 # menu.py
 
 """This module provides menu encapsulation and MPEG generation.
