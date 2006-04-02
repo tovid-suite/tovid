@@ -14,9 +14,7 @@ from libtovid.utils import ratio_to_float
 from libtovid.encoders import mencoder, ffmpeg, mpeg2enc
 from libtovid.filetypes import MultimediaFile
 
-log = logging.getLogger('libtovid')
-log.setLevel(logging.DEBUG)
-log.addHandler(logging.StreamHandler(sys.stdout))
+log = logging.getLogger('libtovid.video')
 
 class Video:
     """A video title for (optional) inclusion on a video disc.

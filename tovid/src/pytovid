@@ -7,9 +7,14 @@ shell script).
 """
 
 import sys
+import logging
 
 #from libtovid import wingdbstub # For debugging in Wing IDE
 from libtovid.video import Video
+
+log = logging.getLogger('libtovid')
+log.setLevel(logging.DEBUG)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 if __name__ == '__main__':
     """Create a Video with provided options and generate it."""

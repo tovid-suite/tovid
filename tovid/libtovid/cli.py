@@ -46,7 +46,7 @@ class Command:
         self.output = []
 
     def append(self, args):
-        """Append the given string of arguments."""
+        """Append the given string of arguments to the end of the command."""
         if not isinstance(args, str):
             raise TypeError, "Command.append() can only take strings."
         self.command += ' ' + args
@@ -78,6 +78,8 @@ class Command:
         # Fork a child process to run the command and log output
         pid = os.fork()
         if pid == 0: # Child
+            log.debug("Writing command output to temporary file %s" %
+                      self.tempfile)
             cmd = "%s > %s 2>&1" % (self.command, self.tempfile)
             status = os.system(cmd)
             sys.exit()
@@ -94,7 +96,8 @@ class Command:
             self.output.append(line.rstrip('\r\n '))
         file.close()
         for line in self.output:
-            log.debug(line)
+            log.info(line)
+        os.remove(self.tempfile)
 
     def kill(self):
         """Kill all processes spawned by this Command."""

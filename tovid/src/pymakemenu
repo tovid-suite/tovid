@@ -7,8 +7,12 @@ script).
 """
 
 import sys
-
+import logging
 from libtovid.menu import Menu
+
+log = logging.getLogger('libtovid')
+log.setLevel(logging.DEBUG)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 if __name__ == '__main__':
     """Create a Menu with provided options and generate it."""
