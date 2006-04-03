@@ -7,7 +7,7 @@ import os, sys, glob
 # Get tdl
 import libtovid
 from libtovid import gui
-#from libtovid import tdl
+from libtovid import encoders
 # Get mypydoc
 import mypydoc
 
@@ -34,6 +34,9 @@ for mod in mods:
 mods = libtovid.gui.__all__
 for mod in mods:
     pydoc_modules.append('libtovid.gui.%s' % mod)
+mods = libtovid.encoders.__all__
+for mod in mods:
+    pydoc_modules.append('libtovid.encoders.%s' % mod)
 
 
 def newer(source, target):

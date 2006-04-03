@@ -190,4 +190,4 @@ proj.file-list = [loc('AUTHORS'),
                   loc('tovid.e3t'),
                   loc('tovid.spec')]
 proj.file-type = 'shared'
-proj.main-file = loc('src/pytovid')
+proj.main-file = loc('src/tovidgui')
