@@ -9,7 +9,7 @@ import copy
 import shlex
 import logging
 # From libtovid
-from libtovid.utils import tokenize, trim, pretty_dict
+from libtovid.utils import tokenize, trim, pretty_dict, get_code_lines, indent_level
 from libtovid.video import Video
 from libtovid.menu import Menu
 from libtovid.disc import Disc
