@@ -15,7 +15,6 @@ __all__ = [\
     'disc',
     'filetypes',
     'globals',
-    'log',
     'menu',
     'opts',
     'standards',

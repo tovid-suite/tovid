@@ -38,11 +38,13 @@ class MainFrame(wx.Frame):
         #self.menuFile.Append(ID_MENU_FILE_PREFS, "&Preferences",
         #    "Configuration settings for tovid GUI")
         #self.menuFile.AppendSeparator()
-        self.menuFile.Append(ID_MENU_FILE_OPEN, "&Open project",
-                "Open an existing TDL text file (EXPERIMENTAL)")
-        self.menuFile.Append(ID_MENU_FILE_SAVE, "&Save project",
-                "Save this project as a TDL text file (EXPERIMENTAL)")
-        self.menuFile.AppendSeparator()
+        # TODO: Re-enable save/open
+        # Commented out for the 0.26 release; not working
+        #self.menuFile.Append(ID_MENU_FILE_OPEN, "&Open project",
+        #        "Open an existing TDL text file (EXPERIMENTAL)")
+        #self.menuFile.Append(ID_MENU_FILE_SAVE, "&Save project",
+        #        "Save this project as a TDL text file (EXPERIMENTAL)")
+        #self.menuFile.AppendSeparator()
         self.menuFile.Append(ID_MENU_FILE_EXIT, "E&xit",
                 "Exit tovid GUI")
 
@@ -72,9 +74,11 @@ class MainFrame(wx.Frame):
 
         
         # Menu events
+        # TODO: Re-enable save/open
+        # Commented out for the 0.26 release; not working
+        #wx.EVT_MENU(self, ID_MENU_FILE_SAVE, self.OnFileSave)
+        #wx.EVT_MENU(self, ID_MENU_FILE_OPEN, self.OnFileOpen)
         #wx.EVT_MENU(self, ID_MENU_FILE_PREFS, self.OnFilePrefs)
-        wx.EVT_MENU(self, ID_MENU_FILE_SAVE, self.OnFileSave)
-        wx.EVT_MENU(self, ID_MENU_FILE_OPEN, self.OnFileOpen)
         wx.EVT_MENU(self, ID_MENU_FILE_EXIT, self.OnExit)
         wx.EVT_MENU(self, ID_MENU_VIEW_SHOWGUIDE, self.OnShowGuide)
         wx.EVT_MENU(self, ID_MENU_VIEW_SHOWTOOLTIPS, self.OnShowTooltips)

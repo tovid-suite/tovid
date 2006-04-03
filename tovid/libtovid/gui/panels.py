@@ -392,7 +392,8 @@ class CommandOutputPanel(wx.Panel):
     def __del__(self):
         """Detach any running process."""
         # Detach any running process
-        self.process.Detach()
+        if self.process:
+            self.process.Detach()
 
     def OnFontSize(self, evt):
         """Change log window font size."""
