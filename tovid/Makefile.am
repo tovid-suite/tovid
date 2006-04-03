@@ -83,15 +83,14 @@ EXTRA_DIST = \
 	$(bin_SCRIPTS) \
 	$(man_MANS) \
 	icons/*
-##	setuplib
-##	libtovid/*.py \
-
-# Install libtovid with setuplib
-##install-exec-hook: pythonlib
-
-#pythonlib:
-##	./setuplib install
 
 # src/tovid-init not needed b/c ./configure derives it from src/tovid-init.in
 dist-hook:
 	rm -rvf $(top_distdir)/src/tovid-init
+
+# After uninstalling tovid, remove the python module directories
+uninstall-hook:
+	rmdir $(pyexecLIBTOVID_ENCODERSdir)
+	rmdir $(pyexecGUIdir)
+	rmdir $(pyexecLIBTOVIDdir)
+
