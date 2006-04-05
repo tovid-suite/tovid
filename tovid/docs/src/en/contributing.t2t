@@ -59,8 +59,8 @@ If you would like to help translate the tovid documentation into another
 language, first download the [txt2tags http://txt2tags.sf.net/] sources
 for one of the existing translations:
 
-- English: [tovid_t2t_en.tar.gz /download/tovid_t2t_en.tar.gz]
-- Espanol: [tovid_t2t_es.tar.gz /download/tovid_t2t_es.tar.gz]
+- English: [tovid_t2t_en.tar.gz ftp://ftp.berlios.de/pub/tovid/tovid_t2t_en.tar.gz]
+- Espanol: [tovid_t2t_es.tar.gz ftp://ftp.berlios.de/pub/tovidtovid_t2t_es.tar.gz]
 
 
 Extract the tarball with a command like this:
