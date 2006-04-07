@@ -1,23 +1,59 @@
 #! /usr/bin/env python
 # opts.py
 
-"""Provides command-line-style option definition, documentation, and parsing.
+"""This module provides an interface for defining command-line-style "options",
+and for reading and storing their values as specified by the user. Two classes
+are provided:
 
-Option: Definition of an option, its arguments, default value, and docs
-OptionDict: Dictionary of user-defined options
+    Option: Definition of an option, its arguments, default value, and docs
+    OptionDict: An indexed collection of user-defined options
 
-Essentially, an "option" is a named attribute/value pair, as you would
-find in a typical command-line. In:
+In a way, this is the libtovid alternative to 'getopt'. If you're writing a
+command-line program that needs to accept width and height values, then just
+create a list of Options with expected args, default value, and documentation:
 
-    $ pytovid -format dvd -in foo.avi
+    >>> option_list = [
+    ...    Option('width', 'NUM', 8.5, 'Width of output in inches'),
+    ...    Option('height', 'NUM', 11.0, 'Height of output in inches')
+    ...    ]
 
-'format' and 'in' are the options; each of them has an argument. In the
-current implementation, options may be preceded by zero or more dashes.
+Nice enough, but it's not really useful until you create an OptionDict:
 
-OptionDict is a Python dictionary of attribute/value pairs, with a slim wrapper.
-Use OptionDict to store a collection of options and values, for easy access.
+    >>> useropts = OptionDict(option_list)
+
+Now, you can do several things. You can use useropts.usage() to display "usage
+notes" for your program. But OptionDict is more than that--it also stores a
+value for each option, and a simple method for getting and setting those values.
+To see a complete list:
+
+    >>> useropts.data
+    {'width': 8.5, 'height': 11.0}
+
+Note that the default values have been filled in for you. To set and get
+options individually, do this:
+
+    >>> useropts['width'] = 5.0
+    >>> useropts['height'] = 3.0
+    >>> useropts['width']
+    5.0
+    >>> useropts['height']
+    3.0
+
+Need to set a bunch of options at once? You can update the values by giving a
+string, list, or dictionary of options and values:
+
+    >>> useropts.update('-width 4.0 -height 2.0')
+    >>> useropts.data
+    {'width': '4.0', 'height': '2.0'}
+    >>> useropts.update({'width': 3.0})
+    >>> useropts.data
+    {'width': 3.0, 'height': '2.0'}
+
+Note: in the current implementation, the preceding '-' is optional, and ignored.
+To parse command-line options given to your script, call update() with the list
+of arguments from sys.argv[1:] (everything after the program name).
 """
-__all__ = ['Option', 'OptionDict', 'get_defaults', 'tokenize', 'parse']
+__all__ = ['Option', 'OptionDict']
 
 # From standard library
 import re
@@ -135,27 +171,27 @@ class Option:
                 (self.name, self.argformat, self.default)
         for line in textwrap.wrap(self.doc, 60):
             usage += '    ' + line + '\n'
-        usage += '\n'
         return usage
 
 
 class OptionDict:
-    """A dictionary of user-configurable options."""
-    def __init__(self, optiondefs=[]):
+    """An indexed collection (dictionary) of user-configurable options."""
+    def __init__(self, options=[]):
         """Create an option dictionary using the given list of Options."""
-        self._data = {}
+        self.data = {}
         self.defdict = {}
-        for opt in optiondefs:
-            self._data[opt.name] = copy(opt.default)
+        for opt in options:
+            self.data[opt.name] = copy(opt.default)
             self.defdict[opt.name] = opt
 
     def update(self, custom):
         """Update the option dictionary with custom options. options may be
         a string, a list of option/argument tokens, or a dictionary of
         option/value pairs."""
+        # If custom is a string or list, turn it into a dictionary
         if custom.__class__ == str or custom.__class__ == list:
             custom = self._parse(custom)
-        self._data.update(custom)
+        self.data.update(custom)
 
     def usage(self):
         """Return a string containing usage notes for all option definitions."""
@@ -166,13 +202,13 @@ class OptionDict:
 
     def __getitem__(self, key):
         """Return the value indexed by key, or None if not present."""
-        if key in self._data:
-            return self._data[key]
+        if key in self.data:
+            return self.data[key]
         else:
             return None
 
     def __setitem__(self, key, value):
-        self._data[key] = value
+        self.data[key] = value
 
     def _parse(self, options):
         """Parse a string or list of options, returning a dictionary of those
@@ -217,3 +253,11 @@ class OptionDict:
                     custom[opt] = arglist
         return custom
     
+def _test():
+    """Run doctest on this module."""
+    import doctest
+    doctest.testmod()
+
+if __name__ == '__main__':
+    _test()
+
