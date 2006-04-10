@@ -39,9 +39,6 @@ class Video:
             """Apply the given filters to the video before or during
             encoding."""),
             
-        # Deprecated options. Need to find a way to
-        # mark options as deprecated, so the parser can
-        # warn the user.
         Option('vcd', '', False, alias=('format', 'vcd')),
         Option('svcd', '', False, alias=('format', 'svcd')),
         Option('dvd', '', False, alias=('format', 'dvd')),
