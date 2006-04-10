@@ -9,7 +9,7 @@ import string
 import logging
 
 import libtovid
-from libtovid.cli import Command
+from libtovid.cli import Command, verify_app
 
 log = logging.getLogger('libtovid.thumbmenu')
 
@@ -18,6 +18,8 @@ FRAMES=90
 
 def generate(options):
     """Generate a menu with selectable thumbnail previews."""
+    for app in ['convert', 'jpeg2yuv', 'mplayer']:
+        verify_app(app)
     ThumbMenu(options)
 
 class ThumbMenu:
