@@ -1518,7 +1518,7 @@ else
         else
             runtime_error "There was a problem with encoding the WAV audio to $AUD_SUF format."
         fi
-        rm -f "$AUDIO_WAV"
+        if $RIP_WAV; then rm -fv "$AUDIO_WAV"; fi
     fi # If ! $PARALLEL
 
 fi # encode audio
