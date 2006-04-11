@@ -298,7 +298,7 @@ fi
 if test "$RES" = "dvd"; then
     ASUF="ac3"
 else
-    ASUF="mpa"
+    ASUF="mp2"
 fi
 
 
