@@ -1,0 +1,17 @@
+Source: bvc
+Section: utils
+Priority: optional
+Maintainer: The grepper <grepper@gmail.com>
+Build-Depends: debhelper (>= 4.0.0), cdbs
+Standards-Version: 3.6.2
+
+Package: bvc
+Architecture: any
+Depends: ffmpeg, sox, imagemagick, mplayer, mencoder, dvd+rw-tools, cdrdao, vcdimager, cdrecord, dvdauthor, kdebase-bin
+Suggests: avidemux
+Description: kdialog script for joining and burning small video clips
+ It was originally intended just for this specific purpose, but will
+ work with longer clips of various formats as well.  It creates an
+ introductory title for each clip, and fades the title in and out, as
+ well as fading each clip.
+ 
