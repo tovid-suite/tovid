@@ -1,8 +1,0 @@
-bvc for Debian
---------------
-
-This package has been tested on debian unstable, but none of the dependencies
-are versioned so it should work on testing or stable.
-Please report any problems in this regard.
-
- -- The Grepper <grepper@gmail.com>, Thurs,  16 Feb 2006 23:26:40 -0500
