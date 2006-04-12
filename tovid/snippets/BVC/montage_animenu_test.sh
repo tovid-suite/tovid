@@ -503,8 +503,7 @@ EOF
 ) > "$DVDAUTHOR_XML"
 
 for ((i=1; i<=$V_ARRAY_TOTAL; i++)); do
-    echo -e "
-        <button name=\"$i\">jump title $i;</button>\n"
+    echo -e "        <button name=\"$i\">jump title $i;</button>\n"
 done >> "$DVDAUTHOR_XML"
 
 (
@@ -516,14 +515,12 @@ cat <<EOF
 EOF
 ) >> "$DVDAUTHOR_XML"
 for i in ${VID_ARRAY[@]}; do
-     echo -e "    
-      <pgc>
+     echo -e "       <pgc>
         <vob file=\"$i\" chapters=\"0,00:15:00,00:30:00,00:45:00,01:00:00,01:15:00,01:30:00,01:45:00,02:00:00\"/>
         <post>call vmgm menu 1;</post>
       </pgc>" >> "$DVDAUTHOR_XML"
 done
-echo -e "
-    </titles>
+echo -e "    </titles>
   </titleset>
 </dvdauthor>"  >> "$DVDAUTHOR_XML"
 
