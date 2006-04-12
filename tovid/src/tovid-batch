@@ -39,12 +39,11 @@ $TOVID_HOME_PAGE
 --------------------------------
 EOF`
 
-USAGE=`cat << 'EOF'
+USAGE=`cat << EOF
 Usage: tovid-batch [OPTIONS] -infiles <input files>
 
 OPTIONS may be any options that tovid accepts. See 'man tovid'.
 
-You can provide any number of input files; the output files will be named INPUT_FILENAME.tovid_encoded.mpg
 EOF`
 
 SEPARATOR="=============================================================================="

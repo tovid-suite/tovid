@@ -37,18 +37,11 @@ Usage: previd [OPTIONS] -in {input file} -out {output file}
 OPTIONS may be any of the following:
 
     -v, -version    Prints previd version number only
-    
-    -x NUM
-    -y NUM
-        Sets the desired width and height, respectively, of the output video.
-        These must be multiples of 16.
+    -x NUM          
+    -y NUM          Sets width and height. Use multiples of 16 
+    -sstep NUM      Skip NUM seconds between frames 
+    -fps NUM        Show each frame NUM times.
 
-    -sstep NUM
-        Skip NUM seconds between frame captures. Larger numbers produce
-        faster-running previews.
-    -fps NUM
-        Show each captured frame NUM times. This effectively slows the preview
-        so it resembles a fast slideshow.
 EOF`
 
 SEPARATOR="========================================================="

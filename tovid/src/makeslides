@@ -41,11 +41,10 @@ $TOVID_HOME_PAGE
 --------------------------------
 EOF`
 
-USAGE=`cat << 'EOF'
-Usage: makeslides [FORMAT] [IMAGES]
+USAGE=`cat << EOF
+Usage: makeslides [FORMAT] {IMAGES}
 
-Where:
-  FORMAT is one or more of the following:
+Where FORMAT is one of the following:
 
   -ntsc (default)
   -ntscfilm
@@ -56,7 +55,11 @@ Where:
   IMAGES is a single image or list of images to be
     converted to still MPEGs. The output names will
     be the same as the input name, with a .mpg extension.
-`
+
+See the makeslides manual page ('man makeslides') for additional documentation.
+
+EOF`
+
 # ***********************************
 # DEFAULTS AND FUNCTION DEFINITIONS
 # ***********************************

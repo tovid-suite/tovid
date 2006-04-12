@@ -40,25 +40,16 @@ $TOVID_HOME_PAGE
 --------------------------------
 EOF`
 
-USAGE=`cat << 'EOF'
-Usage: makevcd {OPTIONS} VCDIMAGER_XML
+USAGE=`cat << EOF
+Usage: makevcd [OPTIONS] {VCDIMAGER.xml}
 
 Where OPTIONS may be any of the following:
 
-  -overwrite
-      Overwrite existing ISO image, and re-create the image.
-      By default, no existing files are overwritten.
-  -burn
-      Burn the disc after creating the ISO file. Default is off.
-  -device [DEVICE] (default /dev/cdrw)
-      Use DEVICE as the Linux device filesystem name of your
-      CD-recorder. Common examples might be /dev/cdrw, /dev/scd0,
-      and /dev/hdc. You can also use a bus/id/lun triple such as
-      ATAPI:0,1,0
-  -speed [NUM] (default 12)
-      Burn disc at speed NUM.
-  -noburn
-      Author the disc image only; do not burn it to disc.
+  -overwrite         Overwrite existing ISO image
+  -noburn            Author the disc image only
+  -burn              (default noburn)
+  -device DEVICE     (default /dev/cdrw)
+  -speed NUM         (default 12)
 
 And:
 
@@ -67,17 +58,8 @@ And:
       If you use(d) 'makexml' to create the XML file, you can use
       that as input here.
 
-Please insert a blank CD before running the script.
+See the makevcd manual page ('man makevcd') for additional documentation.
 
-The output cue/bin file is created in the current directory, so
-please run it from a directory that has at least 1.5GB of free
-space (~700MB .bin and ~700MB .iso), if you are burning a full disc.
-
-Please note that if you are using a 2.6.x Linux kernel without
-SCSI emulation (and cdrdao is not suid root), then this script
-will likely fail to burn a disc from a normal user account. In
-that situation, please run 'makevcd' from a root account, or
-setuid root on the 'makevcd' script.
 EOF`
 
 SEPARATOR="=========================================="
