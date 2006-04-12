@@ -40,17 +40,16 @@ $TOVID_HOME_PAGE
 --------------------------------
 EOF`
 
-USAGE=`cat << 'EOF'
+USAGE=`cat << EOF
 Usage: idvid [OPTIONS] <file list>
 
-OPTIONS may be any of the following:
+Where OPTIONS may be any of the following:
 
-    -terse
-        Print information in a terse format suitable for parsing by other
-        scripts.
-    -verbose
-        Print extra information, including the results of identifying the video
-        with mplayer, ffmpeg, and tcprobe.
+    -terse       Suitable for parsing
+    -verbose     Also use ffmpeg and tcprobe
+
+See the idvid manual page ('man idvid') for additional documentation.
+
 EOF`
 
 NON_COMPLIANT=`cat << EOF

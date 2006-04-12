@@ -45,8 +45,10 @@ $TOVID_HOME_PAGE
 --------------------------------
 EOF`
 
-USAGE=`cat << 'EOF'
-Usage:  makexml [OPTIONS] video1.mpg video2.mpg ... OUT_PREFIX
+USAGE=`cat << EOF
+Usage:  makexml [OPTIONS] {video1.mpg video2.mpg ...} {OUT_PREFIX}
+
+Common OPTIONS:
 
     -dvd | -vcd | -svcd       Specify the target disc format
     -overwrite                Overwrite any existing output files
@@ -55,12 +57,12 @@ Provide a list of .mpg video files, and they will be played back in
 sequence. You may organize several lists of videos into menus by
 providing the name of a menu .mpg:
 
-    makexml -menu menu1.mpg \\
-        video1.mpg video2.mpg video3.mpg \\
+    makexml -menu menu1.mpg \\\\
+        video1.mpg video2.mpg video3.mpg \\\\
         mydisc
-    makexml -topmenu topmenu.mpg \\
-        -menu submenu1.mpg vid1.mpg vid2.mpg vid3.mpg \\
-        -menu submenu2.mpg vid4.mpg vid5.mpg vid6.mpg \\
+    makexml -topmenu topmenu.mpg \\\\
+        -menu submenu1.mpg vid1.mpg vid2.mpg vid3.mpg \\\\
+        -menu submenu2.mpg vid4.mpg vid5.mpg vid6.mpg \\\\
         mydisc2
 
 See the makexml manual page ('man makexml') for additional documentation.
