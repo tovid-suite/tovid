@@ -85,6 +85,7 @@ usage_error ()
   printf "%s\n" "$USAGE"
   echo "$SEPARATOR"
   echo $@
+  rm -rf "$TMP_DIR"
   exit 1
 }
 
@@ -225,6 +226,7 @@ idvid_main ()
         get_info "$1"
     else
         echo "Could not find file: $1"
+        rm -rf "$TMP_DIR"
         exit 1
     fi
 
@@ -549,3 +551,5 @@ while test $# -gt 0; do
 done
 
 rm -rf "$TMP_DIR"
+
+exit 0
