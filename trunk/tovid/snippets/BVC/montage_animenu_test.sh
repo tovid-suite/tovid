@@ -503,7 +503,7 @@ EOF
 ) > "$DVDAUTHOR_XML"
 
 for ((i=1; i<=$V_ARRAY_TOTAL; i++)); do
-    echo -e "        <button name=\"$i\">jump title $i;</button>\n"
+    echo -e "        <button name=\"$i\">jump title $i;</button>"
 done >> "$DVDAUTHOR_XML"
 
 (
