@@ -83,6 +83,8 @@ usage_error ()
 
 echo $"$SCRIPTNAME"
 
+if test $# -eq 0; then usage_error "*** Please specify at least one image."; fi
+
 while [[ ${1:0:1} == "-" ]]; do
   # PAL or NTSC
   if [[ $1 == "-pal" ]]; then
