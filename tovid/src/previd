@@ -71,7 +71,7 @@ usage_error()
     printf "%s\n" "$USAGE"
     printf "%s\n" "$SEPARATOR"
     echo $@
-    rm -rf $TMP_DIR/*
+    rm -rf $TMP_DIR
     exit 1
 }
 
@@ -80,7 +80,7 @@ while test $# -gt 0; do
 	case "$1" in
 		"-v" | "-version" )
 			echo $PREVID_VERSION
-                        rm -rf $TMP_DIR/*
+                        rm -rf $TMP_DIR
 			exit 0
 			;;
 
@@ -99,7 +99,7 @@ while test $# -gt 0; do
 			WIDTH="$1"
 			if test `expr $WIDTH % 16` -ne 0; then
 				echo "-x must be a multiple of 16"
-                                rm -rf $TMP_DIR/*
+                                rm -rf $TMP_DIR
 				exit 1
 			fi
 			;;
@@ -109,7 +109,7 @@ while test $# -gt 0; do
 			HEIGHT="$1"
 			if test `expr $HEIGHT % 16` -ne 0; then
 				echo "-y must be a multiple of 16"
-                                rm -rf $TMP_DIR/*
+                                rm -rf $TMP_DIR
 				exit 1
 			fi
 			;;
@@ -129,7 +129,7 @@ while test $# -gt 0; do
 
 		* )
 			echo "Unrecognised command-line option $1"
-                        rm -rf $TMP_DIR/*
+                        rm -rf $TMP_DIR
 			exit 1
 	esac
 	shift
@@ -143,7 +143,7 @@ fi
 if test -e "$INFILE"; then :;
 else
 	echo "Cannot open the input file $INFILE for reading."
-        rm -rf $TMP_DIR/*
+        rm -rf $TMP_DIR
 	exit 1
 fi
 
@@ -177,7 +177,7 @@ echo "Step 4: Turn the m2v into an mpg"
 mplex -o $OUTFILE.mpg $TMP_DIR/$OUTFILE.m2v
 
 echo "Step 5: Clean up the temporary files"
-rm -rf $TMP_DIR/*
+rm -rf $TMP_DIR
 
 echo "$INFILE has been shortened by stepping $STEP and resized to $WIDTH x $HEIGHT."
 echo "Each resulting frame is now $FRAMES_PER_STEP frames of the final file"
