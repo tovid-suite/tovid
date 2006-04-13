@@ -544,10 +544,10 @@ if [ $TITLE_PAGE = "animated" ]; then
     for ((i=0; i<=FILES; i++)); do
         JPGS=( "${JPGS[@]}" $(find $WORK_DIR/pics/$i -maxdepth 1 -name '*[1-9]*.jpg') )
         for jpg in "${JPGS[@]}"; do
-            montage -geometry +0+0 -background '#1E1E1E' \
+            montage -geometry +4+4 -background '#1E1E1E' \
             -fill '#C6C6C6' -pointsize 22 -title "${TITLES[i]}"  $jpg miff:- |
-            convert -gravity South  -chop   0x${CHOP[FILES]}  - miff:- |
-            convert -background '#1E1E1E' -frame 5x5+0+0 \
+            convert -gravity South  -chop   0x${CHOP[FILES]} +repage - miff:- |
+            convert -background '#1E1E1E' -frame 5x5+2+2 \
             -bordercolor none -mattecolor "#444744" - miff:- |
             convert -resize $INTRO_SIZE! - $jpg
         done
