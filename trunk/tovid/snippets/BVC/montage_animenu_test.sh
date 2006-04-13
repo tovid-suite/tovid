@@ -28,6 +28,7 @@ TITLE_PG_TITLE="My Video Collection"
 DATA_DIR=$HOME/.BVC/data/
 SPUMUX_XML=$WORK_DIR/spumux.xml
 DVDAUTHOR_XML=$WORK_DIR/dvdauthor.xml
+GRADIENT="aqua_gradient.png"
 SUB_MENU="false" # unused
 
 ##############################################################################
@@ -97,53 +98,6 @@ for ((Y=0; Y<50; Y++)) ; do
     "${FADEOUT_JPGS[Y]}" "${FADEOUT_JPGS[Y]}"
     S=$((S+2))
 done
-}
-
-function format_seconds()
-{
-awk '{
-hr=($1/3600); hd=(sprintf("%02d", hr))
-mr=((hr-hd)*60); md=(sprintf("%02d", mr))
-s=((mr-md)*60); sd=(sprintf("%02d", s))
-t=(sprintf("%02d:%02d:%06.3f" ,hd,md,s)); print t}' <<< $1
-}
-
-
-function fancy()
-# thanks to Anthony Thyssen http://www.cit.gu.edu.au/~anthony/graphics/imagick6
-# for this function: the pngs used are copies of his example gifs
-# usage: fancy infile <infile dimension (XxY)> <outfile>
-{
-
-DIM=`identify -format %wx%h $1`
-NEW_DIM=$2
-for i in $1; do
-    convert -size $DIM $1 \
-    -thumbnail "$NEW_DIM>" \
-    -matte  -compose Copy \
-    -bordercolor Black -border 2 -bordercolor Sienna4 -border 3 \
-    -bordercolor Black -border 1 -bordercolor none -border 2 \
-    -bordercolor Black -border 2 -bordercolor Sienna4 -border 3 \
-    -bordercolor Black -border 1 \
-    -compose Over \
-    \( $DATA_DIR/fancy_add.png \) -gravity NorthWest -composite \
-    \( $DATA_DIR/fancy_add.png -flip       \) -gravity SouthWest -composite \
-    \( $DATA_DIR/fancy_add.png       -flop \) -gravity NorthEast -composite \
-    \( $DATA_DIR/fancy_add.png -flip -flop \) -gravity SouthEast -composite \
-    -compose DstOut \
-    \( $DATA_DIR/fancy_sub.png \)             -gravity NorthWest -composite \
-    \( $DATA_DIR/fancy_sub.png -flip       \) -gravity SouthWest -composite \
-    \( $DATA_DIR/fancy_sub.png       -flop \) -gravity NorthEast -composite \
-    \( $DATA_DIR/fancy_sub.png -flip -flop \) -gravity SouthEast -composite \
-    $3
-done
-
-}
-
-function steel()
-# this creates a steel frame instead of a fancy frame
-{
-convert -size $2 -border 4x4 -bordercolor "#444744" -raise 2x2 "$1" "$3"
 }
 
 function cleanup()
@@ -281,21 +235,6 @@ if  [ $TARGET = "DVD" ]; then
         GEO_ARRAY=("${DVD_GEO_ARRAY[@]}")
 fi
 
-# create a default if user doesn't specify DEVICE or if called from BVC*.desktop
-if [ ! "$DEVICE" ]; then
-    if [ "$TARGET" = "DVD" ]; then
-        if [ -b /dev/dvdrw ]; then
-            DEVICE=/dev/dvdrw
-        elif [ -b /dev/dvd ]; then
-            DEVICE=/dev/dvdrw
-        else
-            echo -e "Sorry, no dvdrw device found \
-            \nPlease symlink your device to /dev/dvdrw or /dev/dvd"
-            exit 1
-         fi
-    fi
-fi
-
 ###############################################################################
 #             get information about videos and store in an array              #
 ###############################################################################
@@ -349,7 +288,8 @@ MAX_VAL_FRAMES="$(($MAX_VAL * 30))"
 if [ $MAX_VAL_FRAMES -lt $MAX_ANI_LENGTH ]; then
     MAX_ANI_LENGTH=$MAX_VAL_FRAMES
 fi
-ANI_FRAMES=$(($MAX_ANI_LENGTH - 90))
+
+ANI_FRAMES=$MAX_ANI_LENGTH
 
 
 ###############################################################################
@@ -382,7 +322,7 @@ for ((i=0; i<=FILES; i++)) ; do
         sorry_msg
         exit 1
     fi
-cp $WORK_DIR/pics/$i/59.jpg $WORK_DIR/pics/$i/intro.jpg
+
 done
 
 #  create black background
@@ -402,42 +342,6 @@ if [[ $FRAME_STYLE != "fancy" ]]; then
         FRAME_FONT=$FRAME_FONT
     fi
 fi
-
-for ((f=0; f<=FILES; f++)) ; do
-
-    GRADIENT="aqua_gradient.png"
-
-    #  create a transparant png with the title on it
-    TITLE="\"${TITLES[$f]}\""
-    convert -font $FRAME_FONT -pointsize $TITLE_FONT_SIZE -size 420x \
-    -gravity Center caption:"$TITLE"  -negate  \( +clone -blur 0x8 \
-    -shade 110x45 -normalize \
-    $DATA_DIR/$GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
-    -compose CopyOpacity -composite  $WORK_DIR/pics/$f/title_txt.png
-
-    if [ $FRAME_STYLE = "none" ]; then
-        printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
-        echo -e "Running: convert -size $INTRO_SIZE \
-        $WORK_DIR/pics/$f/intro.jpg $WORK_DIR/pics/$f/title.jpg" >>$BVC_LOG.tmp
-        cleanlog 1
-        convert -size $INTRO_SIZE $WORK_DIR/pics/$f/intro.jpg \
-        $WORK_DIR/pics/$f/title.jpg >> $BVC_LOG 2>&1
-    else
-        #  create a frame around our title picture
-        printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
-        echo -e "Running: $FRAME_CMD $WORK_DIR/pics/$f/intro.jpg \
-        $INTRO_SIZE $WORK_DIR/pics/$f/title.jpg" >> $BVC_LOG.tmp
-        cleanlog 1
-
-        $FRAME_CMD $WORK_DIR/pics/$f/intro.jpg $INTRO_SIZE \
-        $WORK_DIR/pics/$f/title.jpg
-
-    #  paint the title and the title picture onto the black background
-    convert   $WORK_DIR/pics/template.jpg $WORK_DIR/pics/$f/title_txt.png \
-    -gravity south -geometry +0+65 -composite $WORK_DIR/pics/$f/title.jpg \
-    -gravity north -composite  $WORK_DIR/pics/$f/background.jpg
-    fi
-done
 
 
 ##############################################################################
@@ -499,31 +403,26 @@ EOF
   <titleset>
     <menus>
       <pgc>
-EOF
-) > "$DVDAUTHOR_XML"
-
-for ((i=1; i<=$V_ARRAY_TOTAL; i++)); do
+$(for ((i=1; i<=$V_ARRAY_TOTAL; i++)); do
     echo -e "        <button name=\"$i\">jump title $i;</button>"
-done >> "$DVDAUTHOR_XML"
-
-(
-cat <<EOF
+done) 
         <vob file="$WORK_DIR/menu.mpg" pause="inf"/>
       </pgc>
     </menus>
     <titles>
-EOF
-) >> "$DVDAUTHOR_XML"
-for i in ${VID_ARRAY[@]}; do
-     echo -e "       <pgc>
+$(for i in ${VID_ARRAY[@]}; do
+     echo -e "      <pgc>
         <vob file=\"$i\" chapters=\"0,00:15:00,00:30:00,00:45:00,01:00:00,01:15:00,01:30:00,01:45:00,02:00:00\"/>
         <post>call vmgm menu 1;</post>
-      </pgc>" >> "$DVDAUTHOR_XML"
-done
-echo -e "    </titles>
+      </pgc>"
+done)
+    </titles>
   </titleset>
-</dvdauthor>"  >> "$DVDAUTHOR_XML"
+</dvdauthor> 
+EOF
+) >> "$DVDAUTHOR_XML"
 
+exit 1
 ##############################################################################
 #                            Animenu stuff                                   #
 ##############################################################################
@@ -535,7 +434,7 @@ convert -font $FRAME_FONT -pointsize $TITLE_FONT_SIZE -size 420x \
 $DATA_DIR/$GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
 -compose CopyOpacity -composite  $WORK_DIR/intro_txt.png
 
-# check if we are using static or animated images, and using submenu or not
+# check if we are using submenu or not
 if [ $SUB_MENU = "true" ]; then 
     DVD_TILE_ARRAY=${WITH_CHAPT_TILE[@]}
 fi
@@ -576,6 +475,7 @@ if [ $TITLE_PAGE = "animated" ]; then
         $WORK_DIR/animenu/$count.jpg)
 
         "${IM_CMD[@]}" | "${IM_CMD2[@]}" 
+        rm -f ${ANI_PICS[@]}
     done
     # convert jpegs to video stream
 
