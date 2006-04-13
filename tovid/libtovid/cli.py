@@ -55,12 +55,6 @@ class Command:
         """Prepend the given string of arguments."""
         self.command = args + ' ' + self.command
 
-    def version(self):
-        """Return the version number of the application."""
-        # TODO: Call upon the user's package manager to determine installed
-        # version of self.appname
-        pass
-
     def run(self, wait=True):
         log.info(self.purpose)
         log.info(self.command)
@@ -74,7 +68,7 @@ class Command:
     def _run(self, wait):
         """Execute the command and return its exit status. Optionally wait for
         execution to finish."""
-        self.tempfile = tempfile.mktemp()
+        fd, self.tempfile = tempfile.mkstemp()
         # Fork a child process to run the command and log output
         pid = os.fork()
         if pid == 0: # Child
@@ -104,6 +98,31 @@ class Command:
         if self.childpid:
             os.kill(self.childpid, SIGKILL)
 
+class Script:
+    """An executable shell script."""
+    def __init__(self, name):
+        self.name = name
+        self.lines = []
+        # Set up logging
+        self.log = logging.getLogger('Script.%s' % self.name)
+        self.log.setLevel(logging.DEBUG)
+        self.log.addHandler(logging.StreamHandler(sys.stdout))
+
+    def append(self, command):
+        """Append the given command to the end of the script."""
+        self.lines.append(command)
+
+    def prepend(self, command):
+        """Prepend the given command at the beginning of the script."""
+        self.lines.insert(0, command)
+
+    def run(self):
+        """Write all lines to a temporary file and execute it."""
+        fd, script = tempfile.mkstemp('.sh', self.name)
+        logfile = tempfile.mkstemp('.log', self.name)
+
+        os.chmod(script, '+x')
+        
 
 def verify_app(appname):
     """If appname is not in the user's path, print a error and exit."""

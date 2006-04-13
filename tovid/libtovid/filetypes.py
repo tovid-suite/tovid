@@ -10,7 +10,6 @@ import logging
 import commands
 # From libtovid
 from libtovid.streams import VideoStream, AudioStream
-from libtovid.cli import Command
 
 log = logging.getLogger('libtovid.filetypes')
 
