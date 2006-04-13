@@ -83,6 +83,14 @@ usage_error ()
   exit 1
 }
 
+# Remove temporary files
+cleanup ()
+{
+    echo "Cleaning up..."
+    rm -fv video_shrink video_dump audio_dump
+}
+
+
 # ***********************************
 # EXECUTION BEGINS HERE
 # ***********************************
@@ -102,6 +110,7 @@ while [[ ${1:0:1} == "-" ]]; do
             ;;
         "-parallel" )
             PARALLEL=:
+            cleanup
             mkfifo video_dump
             mkfifo audio_dump
             mkfifo video_shrink
@@ -153,6 +162,7 @@ echo "Dumping audio and video streams with the following commands:"
 # Dump audio and video
 AUDIO_DUMP="mplayer \"$IN_FILE\" -quiet -dumpaudio -dumpfile audio_dump"
 VIDEO_DUMP="mplayer \"$IN_FILE\" -quiet -dumpvideo -dumpfile video_dump"
+VID_STREAM="video_dump"
 
 echo "$AUDIO_DUMP"
 echo "$VIDEO_DUMP"
@@ -162,7 +172,7 @@ eval $VIDEO_DUMP > $TMP_FILE 2>&1 $BACKGR
 
 # Let the audio process finish if not in parallel mode (should always finish 
 # before video, so this is just precautionary)
-$PARALLEL && wait
+$PARALLEL || wait
 
 # Shrink, if requested
 if $DO_SHRINK; then
@@ -181,23 +191,22 @@ if $DO_SHRINK; then
         echo "$SHRINK_CMD"
         eval $SHRINK_CMD $BACKGR
         if $PARALLEL; then
-            :
+            VID_STREAM="video_shrink"
         else
             wait
             SHRINK_SIZE=$( ls -l video_shrink | awk '{print $5}' )
-            mv video_shrink video_dump
             SHRINK_PERCENT=`expr 100 \- \( 100 \* $SHRINK_SIZE \/ $START_SIZE \)`
             echo "Video stream was shrunk by $SHRINK_PERCENT%"
+            mv video_shrink video_dump
         fi
     fi
 fi
 
 echo $SEPARATOR
 
-
 # Multiplex audio and video back together
 echo "Multiplexing audio and video streams with the following command:"
-MPLEX_CMD="mplex video_dump audio_dump -o \"$OUT_FILE\" $MUX_OPTS $AUDIO_DELAY"
+MPLEX_CMD="mplex $VID_STREAM audio_dump -o \"$OUT_FILE\" $MUX_OPTS $AUDIO_DELAY"
 echo "$MPLEX_CMD"
 eval $MPLEX_CMD > $TMP_FILE 2>&1
 
@@ -211,8 +220,7 @@ fi
   
 echo $SEPARATOR
 
-echo "Cleaning up..."
-rm -fv video_dump audio_dump
+cleanup
 
 # Create stats directory and save video statistics
 mkdir -p $STAT_DIR
