@@ -291,7 +291,6 @@ fi
 
 ANI_FRAMES=$MAX_ANI_LENGTH
 
-
 ###############################################################################
 #                           End of info block                                 #
 ###############################################################################
@@ -445,7 +444,7 @@ if [ $TITLE_PAGE = "animated" ]; then
             montage -geometry +4+4 -background '#1E1E1E' \
             -fill '#C6C6C6' -pointsize 22 -title "${TITLES[i]}"  $jpg miff:- |
             convert -gravity South  -chop   0x${CHOP[FILES]} +repage - miff:- |
-            convert -background '#1E1E1E' -frame 5x5+2+2 \
+            convert -background '#1E1E1E' -frame 5x5 \
             -bordercolor none -mattecolor "#444744" - miff:- |
             convert -resize $INTRO_SIZE! - $jpg
         done
