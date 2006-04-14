@@ -44,7 +44,8 @@ py_bin = \
 	src/pytovid \
 	src/pymakemenu \
 	src/pymakexml \
-	src/tovidgui
+	src/tovidgui \
+	src/vidsizeguess
 
 # Specify the scripts to make and install.
 bin_SCRIPTS = \
