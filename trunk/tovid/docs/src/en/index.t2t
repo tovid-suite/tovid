@@ -35,8 +35,13 @@ Interested? Check out the [installation instructions install.html], and
 
 (Newest on top)
 
+- 2006-04-03:
+    tovid 0.26 is out.
+    [See the changelog http://openfacts.berlios.de/index-en.phtml?title=Tovid_changelog]
+    for what's new; [get the source http://download.berlios.de/tovid/tovid-0.26.tar.gz]
+    and [install it install.html]!
 - 2006-02-28:
-    You can now get [daily releases from FTP ftp://ftp.berlios.de/pub/tovid].
+    You can now get [quick releases from FTP ftp://ftp.berlios.de/pub/tovid].
     Just download the latest tarball, and [install normally install.html]!
     If you try it, please [give feedback contributing.html] to the developers.
 - 2006-02-10:
