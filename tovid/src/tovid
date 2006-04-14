@@ -1419,9 +1419,11 @@ else
     AUDIO_ENC="$PRIORITY ffmpeg -ab $AUD_BITRATE -ar $SAMPRATE -ac 2 -acodec $AUD_SUF"
 
     if $GENERATE_AUDIO; then
+        # Read input from /dev/zero to generate a silent audio file
         AUDIO_ENC="$AUDIO_ENC -f s16le -i /dev/zero -t $V_DURATION"
         yecho "Generating a silent audio stream with the following command:"
     else
+        # Encode audio stream directly from the input file
         AUDIO_ENC="$AUDIO_ENC -i \"$IN_FILE\""
         yecho "Encoding audio stream to $AUD_SUF with the following command:"
     fi
