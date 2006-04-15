@@ -504,18 +504,13 @@ get_args()
             "-in" )
                 shift
                 # Get a full pathname for the infile
-                D=`dirname "$1"`
-                B=`basename "$1"`
-                IN_FILE="`cd \"$D\" && pwd || echo \"$D\"`/$B"
+                IN_FILE=`abspath "$1"`
                 ;;
             "-out" )
                 shift
                 OUT_PREFIX="$1"
-                # Get a full pathname for the final outfile
-                D=`dirname "$OUT_PREFIX"`
-                B=`basename "$OUT_PREFIX"`
                 # Use full pathname with extension (mpg)
-                OUT_FILENAME="`cd \"$D\" && pwd || echo \"$D\"`/$B.mpg"
+                OUT_FILENAME="`abspath \"$1\"`.mpg"
                 ;;
 
             # Null option; ignored.
@@ -1074,6 +1069,7 @@ fi
 # ******************************************************************************
 
 yecho "Converting $IN_FILE to compliant $TVSYS $TGT_RES format"
+yecho "Saving to $OUT_FILENAME"
 yecho "Storing log and temporary files in $TMP_DIR"
 $DEBUG && yecho "Run 'tail -f $LOG_FILE' in another terminal to monitor the log"
 
