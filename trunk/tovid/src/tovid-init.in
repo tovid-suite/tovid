@@ -40,7 +40,7 @@
 # ******************************************************************************
 
 # Reset input field separator to default
-IFS=
+#IFS=
 
 # Exit with error on undeclared variables
 #set -u
@@ -66,6 +66,20 @@ TOVID_FORUMS="http://www.createphpbb.com/tovid/"
 # ******************************************************************************
 # ******************************************************************************
 
+
+# ******************************************************************************
+# Return the full, absolute pathname of a given file or directory
+# Echoes result to stdout, so in order to use the output as a "return value",
+# call the function like this:
+#     RETURN_VALUE=`abspath "$FILENAME"`
+# ******************************************************************************
+abspath ()
+{
+    DIR=`dirname "$1"`
+    BASE=`basename "$1"`
+    ABS_PATH="`cd \"$DIR\" && pwd || echo \"$DIR\"`/$BASE"
+    echo "$ABS_PATH"
+}
 
 # ******************************************************************************
 # Verify that a variable meets certain conditions
