@@ -188,7 +188,7 @@ if [ -d $WORK_DIR ]; then
 fi
 
 for i in ${VIDS[@]}; do
-    VID_ARRAY=( ${VID_ARRAY[@]} $(realpath "$i") )
+    VID_ARRAY=( ${VID_ARRAY[@]} $(abspath "$i") )
 done
 
 echo -e "VID_ARRAY is ${VID_ARRAY[@]}"
