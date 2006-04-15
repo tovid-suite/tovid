@@ -193,20 +193,13 @@ get_info ()
     V_ASPECT_RATIO=`echo $V_ASPECT_WIDTH | \
         sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g'`
 
-    # Truncate floating-point values to integer
-    ID_LENGTH=`echo $ID_LENGTH | sed 's/\.[0-9]*//'`
+    # Determine duration by playing the video into /dev/null
+    V_DURATION="`LC_ALL=C mencoder -ovc frameno -oac copy -noskiplimit \"$INFILE\" \
+        -o /dev/null 2>/dev/null | tr '\r' '\n' | grep \"^Pos:\" | tail -n 1 | \
+        sed s/\"Pos:\"// | awk -- '{print $1}' | sed s/[.][0-9]s//`"
     
-    # If mplayer reported a non-zero length, assume it's correct
-    if test $ID_LENGTH -gt 0; then
-        V_DURATION=$ID_LENGTH
-    else
-        # A time-consuming alternative: determine duration by playing the video
-        # into /dev/null
-        V_DURATION="`LC_ALL=C mencoder -ovc frameno -oac copy -noskiplimit \"$INFILE\" \
-            -o /dev/null 2>/dev/null | tr '\r' '\n' | grep \"^Pos:\" | tail -n 1 | \
-            sed s/\"Pos:\"// | awk -- '{print $1}' | sed s/[.][0-9]s//`"
-    fi
-    test -z $V_DURATION && V_DURATION=0
+    # Use mplayer-reported length as a last resort (truncate floating-point)
+    test -z $V_DURATION && V_DURATION=`echo $ID_LENGTH | sed 's/\.[0-9]*//'`
 
     # Mplayer reports ac3 and mp2 incorrectly, so refer to numeric codes
     test "$ID_AUDIO_FORMAT" = "8192" && ID_AUDIO_CODEC="ac3"
