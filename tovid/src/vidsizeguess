@@ -44,8 +44,8 @@ class VidStat:
         else:
             return False
 
-def get_stats():
-    """Get a list of VidStats from ~/.tovid/stats.tovid."""
+def get_statlist():
+    """Get a list of all VidStats from ~/.tovid/stats.tovid."""
     statfile = open(os.path.expanduser('~/.tovid/stats.tovid'), 'r')
     csv_reader = csv.reader(statfile, skipinitialspace=True)
     statlist = []
@@ -68,18 +68,24 @@ def get_stats():
     print "Skipped %s lines because they contained empty fields." % skipped
     return statlist
 
-if __name__ == '__main__':
-    stats = get_stats()
-    stat_dict = {}
-    for stat in stats:
-        if stat_dict.has_key(stat.format):
-            stat_dict[stat.format].append(stat.avg_bitrate)
-        else:
-            stat_dict[stat.format] = []
-    print "Average bitrates:"
-    for format, bitrates in stat_dict.iteritems():
-        samples = len(bitrates)
-        if samples > 0:
-            print "%s: %s (%s samples)" % \
-                  (format, sum(bitrates) / samples, samples)
+def statlist_average(statlist, attribute):
+    """Return the average of a numeric attribute from a list of VidStats."""
+    values = []
+    for stat in statlist:
+        values.append(stat.__dict__[attribute])
+    if len(values) > 0:
+        return (sum(values) / len(values))
+    else:
+        return 0
 
+if __name__ == '__main__':
+    # Dictionary of VidStat lists, indexed by format
+    stats = {}
+    for stat in get_statlist():
+        if stats.has_key(stat.format):
+            stats[stat.format].append(stat)
+        else:
+            stats[stat.format] = []
+    print "Average bitrates by format:"
+    for format, statlist in stats.iteritems():
+        print "%s: %s" % (format, statlist_average(statlist, 'avg_bitrate'))
