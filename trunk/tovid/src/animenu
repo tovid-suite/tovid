@@ -281,7 +281,7 @@ fi
 ###############################################################################
 
 for i in ${!VID_ARRAY[@]}; do
-    mencoder_stats=( "${mencoder_stats[@]}" "$(mencoder "${VID_ARRAY[i]}" \
+    mencoder_stats=( "${mencoder_stats[@]}" "$(mencoder -quiet "${VID_ARRAY[i]}" \
     -oac pcm -ovc copy \
     -o /dev/null)" )
 done
@@ -297,18 +297,20 @@ for i in ${!VID_ARRAY[@]}; do
     if [ -z "$A_BR" ]; then
         A_BR="No audio found"
     fi
-    ID_LENGTH="$(awk '/Video stream:/{print $10}'<<<"${mencoder_stats[i]}")"
+    V_LENGTH="$(awk '/Video stream:/{print $10}'<<<"${mencoder_stats[i]}")"
+    FPS="$(awk '/VIDEO:/ {print $6}' <<<"${mencoder_stats[i]}")"
     printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
     echo -e "Stats for" "${VID_ARRAY[i]}" "\n" \
     "video codec:   " \
     "$VCODEC" "\n" \
     "video bitrate: " "$V_BR" "kbps" "\n" \
+    "framerate:     " "$FPS" "fps" "\n" \
     "audio codec:   " \
     "$ACODEC" "\n" \
     "audio bitrate: " \
     "$A_BR" " kbps" "\n" \
     "clip length:   " \
-    "$ID_LENGTH" " seconds" "\n" >> $BVC_LOG
+    "$V_LENGTH" " seconds" "\n" >> $BVC_LOG
 done
 
 
