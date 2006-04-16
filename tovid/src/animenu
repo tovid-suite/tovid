@@ -54,7 +54,7 @@ TITLE_PG_TITLE="My Video Collection"
 DATA_DIR=$HOME/.BVC/data/
 SPUMUX_XML=$WORK_DIR/spumux.xml
 DVDAUTHOR_XML=$WORK_DIR/dvdauthor.xml
-GRADIENT="aqua_gradient.png"
+GRADIENT="$WORK_DIR/aqua_gradient.png"
 SUB_MENU="false" # unused
 
 ##############################################################################
@@ -100,26 +100,6 @@ creating the $OUTPUT. \
 function vid_length()
 {
 mencoder "$1" -quiet -ovc copy -oac pcm -o /dev/null |awk '/Video stream/ {print $10}'
-}
-
-function static_fade()
-{
-    # this is suitable for fades for static images, not animated sequences
-    # use -dissolve to create fade effect
-    S=100
-    for ((X=0; X<50; X++)) ; do
-        composite -dissolve $S $WORK_DIR/black.jpg \
-        "${FADIN_JPGS[X]}" "${FADIN_JPGS[X]}"
-        S=$((S-2))
-    done
-
-    # do fade-outs
-    S=0
-    for ((Y=0; Y<50; Y++)) ; do
-        composite -dissolve $S $WORK_DIR/black.jpg \
-        "${FADEOUT_JPGS[Y]}" "${FADEOUT_JPGS[Y]}"
-        S=$((S+2))
-    done
 }
 
 function cleanup()
@@ -276,6 +256,11 @@ fi
 # create black jpg for dissolve
 convert  -size $VID_SIZE_OPT xc:black $WORK_DIR/black.jpg
 
+# create a gradient to speed up fancy title operation
+convert -size 1x512 gradient: -rotate 90 +matte \
+-fx '3.5u^3 - 5.05u^2 + 2.05u + 0.3' \
+-size 512x1 xc:DodgerBlue -compose Overlay -composite \
+$WORK_DIR/aqua_gradient.png
 
 
 if  [ $TARGET = "DVD" ]; then
@@ -485,7 +470,7 @@ EOF
 convert -font $FRAME_FONT -pointsize $TITLE_FONT_SIZE -size 420x \
 -gravity Center caption:"\"$TITLE_PG_TITLE\""  -negate  \( +clone -blur 0x8 \
 -shade 110x45 -normalize \
-$DATA_DIR/$GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
+$GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
 -compose CopyOpacity -composite  $WORK_DIR/intro_txt.png
 
 # check if we are using submenu or not
