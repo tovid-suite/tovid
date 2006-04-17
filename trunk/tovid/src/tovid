@@ -597,6 +597,21 @@ cleanup()
     fi
 }
 
+# ******************************************************************************
+# Print a completion message and exit
+# ******************************************************************************
+goodbye()
+{
+    yecho
+    yecho "Done!"
+    yecho
+    yecho "Your encoded video should be in the file(s) $OUT_FILENAME."
+    yecho "Thanks for using tovid!"
+    yecho
+
+    exit 0
+}
+
 
 # ******************************************************************************
 # ******************************************************************************
@@ -1380,7 +1395,7 @@ if $USE_FFMPEG; then
     fi
     yecho
     ! $DEBUG && cleanup
-    exit 0
+    goodbye
 fi
 
 
@@ -1682,11 +1697,4 @@ yecho "Statistics written to $STAT_FILE"
 
 cleanup
 
-yecho
-yecho "Done!"
-yecho
-yecho "Your encoded video should be in the file(s) $OUT_FILENAME."
-yecho "Thanks for using tovid!"
-yecho
-
-exit 0
+goodbye
