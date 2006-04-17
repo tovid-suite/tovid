@@ -24,6 +24,7 @@
 
 # List the source files for each shell script
 sh_bin = \
+	src/animenu \
 	src/idvid \
 	src/makedvd \
 	src/makemenu \
