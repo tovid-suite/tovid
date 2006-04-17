@@ -2,13 +2,13 @@
 ME="[animenu]:"
 . tovid-init
 
-##############################################################################
-# an example script to test montage method of animation                       #
+###############################################################################
+# an example script to test montage method of dvd menu animation              #
 #                                                                             #
 #                                                                             #
 # by Robert Sohn <grepper@gmail.com> (grepper on irc.freenode.net)            #
-#
-# usage: monage_animenu.sh <mpeg-2 file1> "title1" <mpeg-2 file2> "title2"... #
+#                                                                             #
+# usage: montage_animenu.sh <mpeg-2 file1> <mpeg-2 file2> "title1" "title2".. #
 #                                                                             #
 ###############################################################################
 
@@ -48,14 +48,13 @@ TARGET=DVD
 LINE=$(for ((i=1; i<=79; i++));do echo -n =;done)
 TITLE_PAGE=animated
 VID_SIZE_OPT=720x480
-FRAME_STYLE=fancy
-FRAME_CMD=fancy
 TITLE_PG_TITLE="My Video Collection"
-DATA_DIR=$HOME/.BVC/data/
 SPUMUX_XML=$WORK_DIR/spumux.xml
+SUBMENU_SPUMUX_XML=$WORK_DIR/submenu_spumux.xml
 DVDAUTHOR_XML=$WORK_DIR/dvdauthor.xml
 GRADIENT="$WORK_DIR/aqua_gradient.png"
-SUB_MENU="false" # unused
+SUB_MENU="false" 
+CHAPTERS=6
 
 ##############################################################################
 #                                 Functions                                  #
@@ -99,7 +98,8 @@ creating the $OUTPUT. \
 
 function vid_length()
 {
-mencoder "$1" -quiet -ovc copy -oac pcm -o /dev/null |awk '/Video stream/ {print $10}'
+mencoder "$1" -quiet -ovc copy -oac pcm -o /dev/null |
+awk '/Video stream/ {print $10}'
 }
 
 function cleanup()
@@ -107,6 +107,22 @@ function cleanup()
     # does nothing atm
     exit 1
 }
+
+function running_total ()
+{
+    awk '{
+for (i=1; i<=NF; i++) if (s=s+$i) printf("%s ",s);printf ("\n")}'
+}
+
+function format_seconds()
+{
+awk '{
+hr=($1/3600); hd=(sprintf("%02d", hr))
+mr=((hr-hd)*60); md=(sprintf("%02d", mr))
+s=((mr-md)*60); sd=(sprintf("%02d", s))
+t=(sprintf("%02d:%02d:%06.3f" ,hd,md,s)); print t}' <<< $1
+}
+
 
 ##############################################################################
 #                          	End of functions                                 #
@@ -176,14 +192,12 @@ echo -e "VID_ARRAY is ${VID_ARRAY[@]}"
 # do everything in $WORK_DIR
 cd $WORK_DIR
 
+
 # make sure titles have no more than 12 characters
 for ((i=0; i<${#TITLES[@]}; i++)); do
     val=${#TITLES[i]}
     [ -z "$MAX_VAL" ] || ((val > MAX_VAL)) && MAX_VAL=$val
 done
-
-
-echo -e "the longest value is " "$MAX_VAL"
 
 if [ $MAX_VAL -gt 14 ]; then
     echo -e "Sorry, the maximum number of characters you can use for a title is 14"
@@ -227,41 +241,20 @@ V_ARRAY_TOTAL=${#VID_ARRAY[@]}
 A_ARRAY_TOTAL=${#TITLES[@]}
 FILES=$(($V_ARRAY_TOTAL - 1))
 
-# test if BVC is installed or running from current dir
-if [ -d $DATA_DIR ]; then
-    DATA_DIR=$DATA_DIR
-else
-    DATA_DIR=`pwd`/data
-fi
-
-
 # set up our log file
 PATTERN=$(for ((i=1; i<=79; i++));do echo -n \*;done)
 printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
-"Ben's video Converter (BVC) - log for `date`" \
+"tovid suite's animenu - log for `date`" \
 "$PATTERN" >> $BVC_LOG
-
 
 # create_dirs
 for ((i=0; i<=FILES; i++)) ; do
-    mkdir -p  $WORK_DIR/pics/$i/video_fadeout
+    mkdir -p  $WORK_DIR/pics/$i
 done
 
 if [ $TITLE_PAGE = "animated" ]; then
-    mkdir $WORK_DIR/{animenu,fade}
-elif [ $TITLE_PAGE = "plain" ]; then
-    mkdir $WORK_DIR/fade
+    mkdir $WORK_DIR/animenu
 fi
-
-# create black jpg for dissolve
-convert  -size $VID_SIZE_OPT xc:black $WORK_DIR/black.jpg
-
-# create a gradient to speed up fancy title operation
-convert -size 1x512 gradient: -rotate 90 +matte \
--fx '3.5u^3 - 5.05u^2 + 2.05u + 0.3' \
--size 512x1 xc:DodgerBlue -compose Overlay -composite \
-$WORK_DIR/aqua_gradient.png
-
 
 if  [ $TARGET = "DVD" ]; then
         VID_SIZE_OPT=$DVD_VID_SIZE_OPT
@@ -281,9 +274,8 @@ fi
 ###############################################################################
 
 for i in ${!VID_ARRAY[@]}; do
-    mencoder_stats=( "${mencoder_stats[@]}" "$(mencoder -quiet "${VID_ARRAY[i]}" \
-    -oac pcm -ovc copy \
-    -o /dev/null)" )
+    mencoder_stats=( "${mencoder_stats[@]}" \
+    "$(mencoder -quiet "${VID_ARRAY[i]}" -oac pcm -ovc copy -o /dev/null)" )
 done
 
 # put in the log file in case anyone is interested
@@ -297,22 +289,21 @@ for i in ${!VID_ARRAY[@]}; do
     if [ -z "$A_BR" ]; then
         A_BR="No audio found"
     fi
-    V_LENGTH="$(awk '/Video stream:/{print $10}'<<<"${mencoder_stats[i]}")"
+    ID_LENGTH="$(awk '/Video stream:/{print $10}'<<<"${mencoder_stats[i]}")"
     FPS="$(awk '/VIDEO:/ {print $6}' <<<"${mencoder_stats[i]}")"
     printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
     echo -e "Stats for" "${VID_ARRAY[i]}" "\n" \
     "video codec:   " \
     "$VCODEC" "\n" \
     "video bitrate: " "$V_BR" "kbps" "\n" \
-    "framerate:     " "$FPS" "fps" "\n" \
+    "framerate: " "$FPS" "fps" "\n" \
     "audio codec:   " \
     "$ACODEC" "\n" \
     "audio bitrate: " \
     "$A_BR" " kbps" "\n" \
     "clip length:   " \
-    "$V_LENGTH" " seconds" "\n" >> $BVC_LOG
+    "$ID_LENGTH" " seconds" "\n" >> $BVC_LOG
 done
-
 
 for i in ${!mencoder_stats[@]}; do
     VID_LEN=( ${VID_LEN[@]}  "$(awk '/Video stream:/{print $10}' \
@@ -322,7 +313,6 @@ done
 for i in ${!VID_LEN[@]}; do
     NEW_LENGTH=( ${NEW_LENGTH[@]}   ${VID_LEN[i]%.*} )
 done
-
 for val in ${NEW_LENGTH[@]}; do
     [ -z "$MAX_VAL" ] || ((val > MAX_VAL)) && MAX_VAL=$val
 done
@@ -342,14 +332,10 @@ ANI_FRAMES=$MAX_ANI_LENGTH
 #                       work on the clip title images                         #
 ###############################################################################
 
-
 # create the pics for background image and move to proper pics/ dir
 for ((i=0; i<=FILES; i++)) ; do
     CREATE_JPG_CMD=(ffmpeg -i "${VID_ARRAY[$i]}" -vframes $ANI_FRAMES \
     -s "$INTRO_SIZE" "$WORK_DIR/pics/$i/%d.jpg")
-#    CREATE_PNG_CMD=(mplayer -vo png:z=$PNG_COMPRESS -ao null \
-#    -vf expand=-288:-192,rectangle=432:288,rectangle=430:286,rectangle=428:284,rectangle=426:282  \
-#    -zoom -x 360 -y 240  -ss 0:0:01 -frames $FRAMES $ANI_FRAMES >/dev/null 2>&1
     printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
     echo -e "\nRunning: ${CREATE_JPG_CMD[@]}\n" | fold -bs >> $BVC_LOG
 
@@ -371,7 +357,16 @@ done
 BG_PIC="$WORK_DIR/pics/template.jpg"
 convert  -size $VID_SIZE_OPT xc:"#1E1E1E" $BG_PIC
 
-FRAME_FONT="$DATA_DIR/Candice.ttf"
+# create black jpg for dissolve
+convert  -size $VID_SIZE_OPT xc:black $WORK_DIR/black.jpg
+
+# create a gradient to speed up fancy title operation
+convert -size 1x512 gradient: -rotate 90 +matte \
+-fx '3.5u^3 - 5.05u^2 + 2.05u + 0.3' \
+-size 512x1 xc:DodgerBlue -compose Overlay -composite \
+$WORK_DIR/aqua_gradient.png
+
+FRAME_FONT="Candice.ttf"
 # font to use for our plain title text - fall back on Candice if no helvetica
 
 if [[ $FRAME_STYLE != "fancy" ]]; then
@@ -385,12 +380,11 @@ if [[ $FRAME_STYLE != "fancy" ]]; then
     fi
 fi
 
-
 ##############################################################################
 #                     spumux and dvdauthor stuff                             #
 ##############################################################################
 
-# create the Highlight png
+# create the Highlight and Select pngs for main menu
 GEO="${GEO_ARRAY[FILES]/x/,}"
 SELECT_CMD="-size "${GEO_ARRAY[FILES]}+5+5" xc:none -fill none +antialias \
 -stroke '#DE7F7C' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
@@ -404,17 +398,66 @@ for ((i=0; i<=FILES; i++)); do
     cp $WORK_DIR/Highlightx1.png $WORK_DIR/$i-Highlight.png
 done
 
-montage -background none "$WORK_DIR/*-Select.png" -tile ${TILE_ARRAY[FILES]} \
--geometry ${GEO_ARRAY[FILES]}+5+5 -bordercolor none -mattecolor transparent miff:- |
+montage -background none "$WORK_DIR/*-Select.png" \
+-tile ${TILE_ARRAY[FILES]} -geometry ${GEO_ARRAY[FILES]}+5+5 \
+-bordercolor none -mattecolor transparent miff:- |
 convert  -colors 3 -size 720x480 xc:none  - -gravity north -geometry +0+55  \
 -composite  "$WORK_DIR/Select.png"
 
-montage -background none "$WORK_DIR/*-Highlight.png" -tile ${TILE_ARRAY[FILES]} \
--geometry ${GEO_ARRAY[FILES]}+5+5 -bordercolor none -mattecolor transparent  miff:- |
+montage -background none "$WORK_DIR/*-Highlight.png" \
+-tile ${TILE_ARRAY[FILES]} -geometry ${GEO_ARRAY[FILES]}+5+5 \
+-bordercolor none -mattecolor transparent  miff:- |
 convert  -size 720x480 xc:none  - -gravity north -geometry +0+55  \
 -composite  "$WORK_DIR/Highlight.png"
 
+# create the Highlight and Select pngs for sub menus
+if [ $SUB_MENU = "true" ]; then
+    GEO="${GEO_ARRAY[CHAPTERS - 1]/x/,}"
+    SELECT_CMD="-size "${GEO_ARRAY[CHAPTERS - 1]}+5+5" xc:none -fill none \
+    +antialias -stroke '#DE7F7C' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
+    HIGHLIGHT_CMD="-size "${GEO_ARRAY[CHAPTERS - 1]}+5+5" xc:none -fill none \
+    +antialias -stroke '#188DF6' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
+    eval convert "$SELECT_CMD" -colors 3 "$WORK_DIR/Submenu_Selectx1.png"
+    eval convert "$HIGHLIGHT_CMD" -colors 3 "$WORK_DIR/Submenu_Highlightx1.png"
 
+    for ((i=0; i<CHAPTERS ; i++)); do 
+        cp $WORK_DIR/Submenu_Selectx1.png $WORK_DIR/$i-Submenu_Select.png
+        cp $WORK_DIR/Submenu_Highlightx1.png $WORK_DIR/$i-Submenu_Highlight.png
+    done
+
+    montage -background none "$WORK_DIR/*-Submenu_Select.png" \
+    -tile ${TILE_ARRAY[CHAPTERS - 1]} -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 \
+    -bordercolor none -mattecolor transparent miff:- |
+    convert  -colors 3 -size 720x480 xc:none  - -gravity north -geometry +0+55  \
+    -composite  "$WORK_DIR/Submenu_Select.png"
+
+    montage -background none "$WORK_DIR/*-Submenu_Highlight.png" \
+    -tile ${TILE_ARRAY[CHAPTERS - 1]} -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 \
+    -bordercolor none -mattecolor transparent  miff:- |
+    convert  -size 720x480 xc:none  - -gravity north -geometry +0+55  \
+    -composite  "$WORK_DIR/Submenu_Highlight.png"
+fi
+
+# make appropriate chapter lengths for each video
+# get chapter lengths by dividing by $CHAPTERS, then getting running totals
+for i in ${!NEW_LENGTH[@]}; do
+  CHAPT_INTERVALS=( ${CHAPT_INTERVALS[@]} $(( ${NEW_LENGTH[i]} / $CHAPTERS)) )
+done
+echo -e "CHAPT_INTERVALS are ${CHAPT_INTERVALS[@]}"
+# and format in HH:MM:SS
+for len in ${CHAPT_INTERVALS[@]}; do
+    Y=( ${Y[@]} $(for i in `seq 1 5`; do echo "$len";done) )
+    chapt_intervals=$(running_total <<< ${Y[@]})
+    chapters="$(for c in $chapt_intervals; do echo $(format_seconds  $c,)|
+    sed 's/,$//';done)"
+    CHAPTS=$(for i in $chapters; do echo -n $i,;done|sed 's/,$//')
+    CHAPT_ARRAY=( ${CHAPT_ARRAY[@]} $CHAPTS )
+    unset Y chapt_intervals cmd
+    done
+# debug chapters
+for i in ${!VID_ARRAY[@]}; do
+    echo -e "CHAPTERS for VIDEO $((i + 1)):  ${CHAPT_ARRAY[i]}"
+done
 # make xml files, and run dvdauthor and spumux
 (
     cat <<EOF
@@ -429,8 +472,27 @@ convert  -size 720x480 xc:none  - -gravity north -geometry +0+55  \
  </subpictures>
 EOF
 )  > "$SPUMUX_XML"
+# make submenu spumux.xml
+if [ $SUB_MENU = "true" ]; then
+(
+    cat <<EOF
+<subpictures>
+   <stream>
+     <spu start="00:00:00.0" end="00:00:00.0"
+          highlight="$WORK_DIR/Submenu_Highlight.png"
+          select="$WORK_DIR/Submenu_Select.png"
+          autooutline="infer"
+          autoorder="rows"/>
+   </stream>
+ </subpictures>
+EOF
+) > "$SUBMENU_SPUMUX_XML"
 
-
+    JUMP=menu
+else
+    JUMP=title
+fi
+#else
 (
     cat <<EOF
 <?xml version="1.0" encoding="utf-8"?>
@@ -446,18 +508,30 @@ EOF
     <menus>
       <pgc>
 $(for ((i=1; i<=$V_ARRAY_TOTAL; i++)); do
-    echo -e "        <button name=\"$i\">jump title $i;</button>"
+    if [ $SUB_MENU = "true" ]; then
+        JUMP_INC=$(($i + 1))
+    else
+        JUMP_INC=$i
+    fi
+    echo -e "        <button name=\"$i\">jump $JUMP $JUMP_INC;</button>"
 done) 
         <vob file="$WORK_DIR/menu.mpg" pause="inf"/>
       </pgc>
-    </menus>
+$(if [ $SUB_MENU = "true" ]; then
+echo -n "      <pgc>"
+for ((Y=1; Y<=$V_ARRAY_TOTAL; Y++)); do
+    for ((i=1; i<=6; i++)); do
+        echo -e "        <button name=\"$i\">jump title $Y chapter $i;</button>"
+    done
+    echo -e "        <vob file=\"$WORK_DIR/Menu$Y.mpg\" pause=\"inf\"/>\n      </pgc>\n      <pgc>"
+done | sed '$d'
+else
+:
+fi)    </menus>
     <titles>
-$(for i in ${VID_ARRAY[@]}; do
-     echo -e "      <pgc>
-        <vob file=\"$i\" chapters=\"0,00:15:00,00:30:00,00:45:00,01:00:00,01:15:00,01:30:00,01:45:00,02:00:00\"/>
-        <post>call vmgm menu 1;</post>
-      </pgc>"
-done)
+$(for i in ${!VID_ARRAY[@]}; do
+echo -ne "      <pgc>\n        <vob file=\"${VID_ARRAY[i]}\""  " chapters=\""${CHAPT_ARRAY[i]}"\"/>\n        <post>call vmgm menu 1;</post>\n      </pgc>\n"
+    done)
     </titles>
   </titleset>
 </dvdauthor> 
@@ -468,6 +542,76 @@ EOF
 #                            Animenu stuff                                   #
 ##############################################################################
 
+# do submenu 1st for debug purposes
+if [ $SUB_MENU = true ]; then
+# get jpgs of chapters
+    for i in ${!VID_ARRAY[@]}; do
+        echo -e "VID_ARRAY indexes are ${!VID_ARRAY[@]}"
+        echo -e "CHAPT_INTERVALS is ${CHAPT_INTERVALS[i]}"
+#        transcode -i 2.mpg -o chapt -f 29.970 -J skip="0-10 10-30 31-4450" -y jpg,null
+        counts=$((${CHAPT_INTERVALS[i]} * 30))
+        SKIP=( 0 $(running_total <<<  $(for ((a=0; a<7;a++)); do echo -n "$counts ";done)) )
+        echo -e "SKIP is ${SKIP[@]}"
+        for c in ${!SKIP[@]}; do cmd[c]=$((${SKIP[c]} + 1))-${SKIP[c+1]};done
+        key=$((${#cmd[@]} - 1))
+        unset cmd[key]
+        echo -e "cmd is ${cmd[@]}"
+        CMD=${cmd[@]}
+        transcode -i ${VID_ARRAY[i]} -o chapt -f 29.970 -J skip="$CMD" -y jpg,null
+
+        #  create a transparant png with the title on it
+        convert -font $FRAME_FONT -pointsize $TITLE_FONT_SIZE -size 420x \
+        -gravity Center caption:"\"${TITLES[i]}\""  -negate  \( +clone -blur 0x8 \
+        -shade 110x45 -normalize $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
+        -compose CopyOpacity -composite  $WORK_DIR/animenu/intro_txt.png
+        # FIXME make sure $CHAPTERS number of jpegs got created
+        # just use $CHAPTERS number of jpegs
+        jpegs=$(find . -name chapt000\*.jpg|head -n $CHAPTERS)
+        echo -e "jpegs are\n" "$jpegs"
+    # create frames for the chapter thumbs
+        for PIC in $jpegs; do
+            convert -background '#1E1E1E' -frame 5x5 \
+            -bordercolor none -mattecolor "#444744" $PIC $PIC
+        done
+    
+        IM_CMD=(montage $jpegs -tile ${TILE_ARRAY[CHAPTERS -1]} \
+        -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -background '#1E1E1E' miff:-)
+        IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
+        $WORK_DIR/animenu/intro_txt.png  -gravity south -geometry +0+55 -composite \
+        -  -gravity north -geometry +0+55 -composite \
+        $WORK_DIR/animenu/1.jpg) 
+        "${IM_CMD[@]}" | "${IM_CMD2[@]}"
+
+        # copy enough for a menu    
+        for ((count=2; count<=300; count++)); do
+            cp $WORK_DIR/animenu/1.jpg $WORK_DIR/animenu/$count.jpg
+        done
+        rm -f $WORK_DIR/chapt*000*.jpg
+
+        # convert jpegs to m2v
+        jpeg2yuv -v 0 -f 29.970 -I p -n 300 -L 1 -b1 \
+        -j $WORK_DIR/animenu/%0d.jpg |
+        ffmpeg   -f yuv4mpegpipe -i - -r 29.970 -s $VID_SIZE_OPT \
+        -tvstd ntsc $FFMPEG_OPTS -y $WORK_DIR/menu$i.m2v
+        rm -f $WORK_DIR/animenu/*
+
+        # create audio wav for silence
+        TIME=`vid_length $WORK_DIR/menu$i.m2v`
+        cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
+        -s - $WORK_DIR/menu$i.wav  trim 0 $TIME
+        unset TIME
+
+        # convert to proper audio format
+        ffmpeg -i $WORK_DIR/menu$i.wav \
+        $AUDIO_OPTS -y $WORK_DIR/menu$i.$AUDIO_EXT
+        # mplex into a dvd complient mpg
+        I=$((i + 1))
+        mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/menu$I.mpg \
+        $WORK_DIR/menu$i.$AUDIO_EXT $WORK_DIR/menu$i.m2v
+
+    done
+fi
+
 #  create a transparant png with the title on it
 convert -font $FRAME_FONT -pointsize $TITLE_FONT_SIZE -size 420x \
 -gravity Center caption:"\"$TITLE_PG_TITLE\""  -negate  \( +clone -blur 0x8 \
@@ -475,18 +619,15 @@ convert -font $FRAME_FONT -pointsize $TITLE_FONT_SIZE -size 420x \
 $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
 -compose CopyOpacity -composite  $WORK_DIR/intro_txt.png
 
-# check if we are using submenu or not
-if [ $SUB_MENU = "true" ]; then 
-    DVD_TILE_ARRAY=${WITH_CHAPT_TILE[@]}
-fi
-
 if [ $TITLE_PAGE = "animated" ]; then
     for ((i=0; i<=FILES; i++)); do
-        JPGS=( "${JPGS[@]}" $(find $WORK_DIR/pics/$i -maxdepth 1 -name '*[1-9]*.jpg') )
+        JPGS=( "${JPGS[@]}" \
+        $(find $WORK_DIR/pics/$i -maxdepth 1 -name '*[1-9]*.jpg') )
+
         for jpg in "${JPGS[@]}"; do
             montage -geometry +4+4 -background '#1E1E1E' \
             -fill '#C6C6C6' -pointsize 22 -title "${TITLES[i]}"  $jpg miff:- |
-            convert -gravity South  -chop   0x${CHOP[FILES]} +repage - miff:- |
+            convert -gravity South  -chop  0x${CHOP[FILES]} +repage - miff:- |
             convert -background '#1E1E1E' -frame 5x5 \
             -bordercolor none -mattecolor "#444744" - miff:- |
             convert -resize $INTRO_SIZE! - $jpg
@@ -524,6 +665,10 @@ if [ $TITLE_PAGE = "animated" ]; then
     -j $WORK_DIR/animenu/%0d.jpg |
     ffmpeg -f yuv4mpegpipe -i -  -an -vcodec mpeg4 -r 29.970 -b 2000 \
     -s $VID_SIZE_OPT -aspect 4:3 -y $INTRO_VIDEO
+
+    # cleanup montage jpegs
+    rm -fr $WORK_DIR/animenu/*.jpg
+
     # convert to proper video format
     ENC_CMD=(ffmpeg -i $INTRO_VIDEO -f mpeg2video \
     -tvstd ntsc $FFMPEG_OPTS -s $VID_SIZE_OPT -y $WORK_DIR/intro.m2v)
@@ -539,11 +684,11 @@ fi
 TIME=`vid_length "$INTRO_VIDEO"`
 cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
 -s - $WORK_DIR/intro.wav  trim 0 $TIME
-
+unset TIME
 # convert to proper audio format
 ffmpeg -i $WORK_DIR/intro.wav \
 $AUDIO_OPTS -y $WORK_DIR/intro.$AUDIO_EXT
-        
+
 # mplex intro audio and video together
 INTRO_MPLEX_CMD="mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/intro.mpg \
 $WORK_DIR/intro.$AUDIO_EXT $WORK_DIR/intro.m2v"
@@ -561,9 +706,13 @@ fi
 #                       Run spumux and dvdauthor and pray                    #
 ##############################################################################
 
-
 spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > $WORK_DIR/menu.mpg
-mkdir $WORK_DIR/DVD
+if [ $SUB_MENU = "true" ]; then
+    for i in $(find $WORK_DIR/ -name menu[0-9]\*.mpg); do
+        spumux "$SUBMENU_SPUMUX_XML" < $i > ${i/menu/Menu}
+    done
+fi
 dvdauthor -x "$DVDAUTHOR_XML"
 
-echo -e "Your new DVD is ready to burn at $WORK_DIR/DVD"
+echo -e "Your new DVD is ready to burn at $WORK_DIR/DVD.
+Thanks for using animenu."
