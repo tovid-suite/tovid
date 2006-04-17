@@ -26,6 +26,10 @@ USAGE=`cat << EOF
 Usage: animenu -files File1.mpg File2.mpg ... -titles "Title 1" "Title 2" ...
 
 The number of -files and -titles must be equal.
+
+Options:
+
+-submenus      Create a submenu with chapters for each video. 
 EOF`
 
 # Print script name, usage notes, and optional error message, then exit.
@@ -160,6 +164,12 @@ while test $# -gt 0; do
                 TITLES=( "${TITLES[@]}" "$1" )
                 shift
             done
+            # Don't skip past the next argument
+            if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
+            ;;
+        "-submenus" )
+                SUB_MENU="true"
+                shift
             # Don't skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
             ;;
@@ -355,10 +365,7 @@ done
 
 #  create black background
 BG_PIC="$WORK_DIR/pics/template.jpg"
-convert  -size $VID_SIZE_OPT xc:"#1E1E1E" $BG_PIC
-
-# create black jpg for dissolve
-convert  -size $VID_SIZE_OPT xc:black $WORK_DIR/black.jpg
+convert  -size $VID_SIZE_OPT xc:"#282828" $BG_PIC
 
 # create a gradient to speed up fancy title operation
 convert -size 1x512 gradient: -rotate 90 +matte \
