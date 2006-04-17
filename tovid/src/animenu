@@ -578,12 +578,12 @@ if [ $SUB_MENU = true ]; then
         echo -e "jpegs are\n" "$jpegs"
     # create frames for the chapter thumbs
         for PIC in $jpegs; do
-            convert -background '#1E1E1E' -frame 5x5 \
+            convert -background '#282828' -frame 5x5 \
             -bordercolor none -mattecolor "#444744" $PIC $PIC
         done
     
         IM_CMD=(montage $jpegs -tile ${TILE_ARRAY[CHAPTERS -1]} \
-        -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -background '#1E1E1E' miff:-)
+        -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -background '#282828' miff:-)
         IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
         $WORK_DIR/animenu/intro_txt.png  -gravity south -geometry +0+55 -composite \
         -  -gravity north -geometry +0+55 -composite \
@@ -638,10 +638,10 @@ for ((i=0; i<=FILES; i++)); do
 
      for jpg in "${JPGS[@]}"; do
         # add title to jpegs, chop so there is no skew, and resize
-        montage -geometry +4+4 -background '#1E1E1E' \
+        montage -geometry +4+4 -background '#282828' \
         -fill '#C6C6C6' -pointsize 22 -title "${TITLES[i]}"  $jpg miff:- |
         convert -gravity South  -chop  0x${CHOP[FILES]} +repage - miff:- |
-        convert -background '#1E1E1E' -frame 5x5 \
+        convert -background '#282828' -frame 5x5 \
         -bordercolor none -mattecolor "#444744" - miff:- |
         convert -resize $INTRO_SIZE! - $jpg
       done
@@ -664,7 +664,7 @@ for (( count=1; count <= $MAX_ANI_LENGTH; count++)); do
 
     # make final montages and composite onto grey background with title
     IM_CMD=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
-    -geometry ${GEO_ARRAY[FILES]}+5+5 -background '#1E1E1E' miff:-)
+    -geometry ${GEO_ARRAY[FILES]}+5+5 -background '#282828' miff:-)
     IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
     $WORK_DIR/intro_txt.png  -gravity south -geometry +0+55 -composite \
     -  -gravity north -geometry +0+55 -composite \
