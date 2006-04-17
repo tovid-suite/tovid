@@ -53,7 +53,7 @@ SPUMUX_XML=$WORK_DIR/spumux.xml
 SUBMENU_SPUMUX_XML=$WORK_DIR/submenu_spumux.xml
 DVDAUTHOR_XML=$WORK_DIR/dvdauthor.xml
 GRADIENT="$WORK_DIR/aqua_gradient.png"
-SUB_MENU="false" 
+SUB_MENU="true" 
 CHAPTERS=6
 
 ##############################################################################
@@ -518,7 +518,7 @@ done)
         <vob file="$WORK_DIR/menu.mpg" pause="inf"/>
       </pgc>
 $(if [ $SUB_MENU = "true" ]; then
-echo -n "      <pgc>"
+echo -ne "      <pgc>\n"
 for ((Y=1; Y<=$V_ARRAY_TOTAL; Y++)); do
     for ((i=1; i<=6; i++)); do
         echo -e "        <button name=\"$i\">jump title $Y chapter $i;</button>"
@@ -527,7 +527,8 @@ for ((Y=1; Y<=$V_ARRAY_TOTAL; Y++)); do
 done | sed '$d'
 else
 :
-fi)    </menus>
+fi)    
+    </menus>
     <titles>
 $(for i in ${!VID_ARRAY[@]}; do
 echo -ne "      <pgc>\n        <vob file=\"${VID_ARRAY[i]}\""  " chapters=\""${CHAPT_ARRAY[i]}"\"/>\n        <post>call vmgm menu 1;</post>\n      </pgc>\n"
@@ -612,6 +613,10 @@ if [ $SUB_MENU = true ]; then
     done
 fi
 
+##############################################################################
+#                      Work on main menu                                     #
+##############################################################################
+
 #  create a transparant png with the title on it
 convert -font $FRAME_FONT -pointsize $TITLE_FONT_SIZE -size 420x \
 -gravity Center caption:"\"$TITLE_PG_TITLE\""  -negate  \( +clone -blur 0x8 \
@@ -619,68 +624,70 @@ convert -font $FRAME_FONT -pointsize $TITLE_FONT_SIZE -size 420x \
 $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
 -compose CopyOpacity -composite  $WORK_DIR/intro_txt.png
 
-if [ $TITLE_PAGE = "animated" ]; then
-    for ((i=0; i<=FILES; i++)); do
-        JPGS=( "${JPGS[@]}" \
-        $(find $WORK_DIR/pics/$i -maxdepth 1 -name '*[1-9]*.jpg') )
 
-        for jpg in "${JPGS[@]}"; do
-            montage -geometry +4+4 -background '#1E1E1E' \
-            -fill '#C6C6C6' -pointsize 22 -title "${TITLES[i]}"  $jpg miff:- |
-            convert -gravity South  -chop  0x${CHOP[FILES]} +repage - miff:- |
-            convert -background '#1E1E1E' -frame 5x5 \
-            -bordercolor none -mattecolor "#444744" - miff:- |
-            convert -resize $INTRO_SIZE! - $jpg
-        done
+for ((i=0; i<=FILES; i++)); do
+    JPGS=( "${JPGS[@]}" \
+    $(find $WORK_DIR/pics/$i -maxdepth 1 -name '*[1-9]*.jpg') )
 
-        last_jpg="$((${#JPGS[@]} - 1))"
-        next_jpg=$(($last_jpg + 1))
-        if [ $last_jpg -ge $MAX_ANI_LENGTH ]; then
-            :
-        else
-            for ((l=$next_jpg; l<=$MAX_ANI_LENGTH; l++)); do
-                cp $WORK_DIR/pics/$i/$last_jpg.jpg $WORK_DIR/pics/$i/$l.jpg
-            done
-        fi
-        unset JPGS last_jpg next_jpg
-    done
+     for jpg in "${JPGS[@]}"; do
+        # add title to jpegs, chop so there is no skew, and resize
+        montage -geometry +4+4 -background '#1E1E1E' \
+        -fill '#C6C6C6' -pointsize 22 -title "${TITLES[i]}"  $jpg miff:- |
+        convert -gravity South  -chop  0x${CHOP[FILES]} +repage - miff:- |
+        convert -background '#1E1E1E' -frame 5x5 \
+        -bordercolor none -mattecolor "#444744" - miff:- |
+        convert -resize $INTRO_SIZE! - $jpg
+      done
 
-    for (( count=1; count <= $MAX_ANI_LENGTH; count++)); do
-        ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.jpg)
-
-        # make montages and composite onto grey background with title
-        IM_CMD=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
-        -geometry ${GEO_ARRAY[FILES]}+5+5 -background '#1E1E1E' miff:-)
-        IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
-        $WORK_DIR/intro_txt.png  -gravity south -geometry +0+55 -composite \
-        -  -gravity north -geometry +0+55 -composite \
-        $WORK_DIR/animenu/$count.jpg)
-
-        "${IM_CMD[@]}" | "${IM_CMD2[@]}" 
-        rm -f ${ANI_PICS[@]}
-    done
-    # convert jpegs to video stream
-
-    jpeg2yuv -v 0 -f 29.970 -I p -n $MAX_ANI_LENGTH -L 1 -b1 \
-    -j $WORK_DIR/animenu/%0d.jpg |
-    ffmpeg -f yuv4mpegpipe -i -  -an -vcodec mpeg4 -r 29.970 -b 2000 \
-    -s $VID_SIZE_OPT -aspect 4:3 -y $INTRO_VIDEO
-
-    # cleanup montage jpegs
-    rm -fr $WORK_DIR/animenu/*.jpg
-
-    # convert to proper video format
-    ENC_CMD=(ffmpeg -i $INTRO_VIDEO -f mpeg2video \
-    -tvstd ntsc $FFMPEG_OPTS -s $VID_SIZE_OPT -y $WORK_DIR/intro.m2v)
-    if "${ENC_CMD[@]}" >> $BVC_LOG.tmp 2>&1; then
-        cleanlog 3
+    # make sure all animated thumbs finish at the same time 
+    last_jpg="$((${#JPGS[@]} - 1))"
+    next_jpg=$(($last_jpg + 1))
+    if [ $last_jpg -ge $MAX_ANI_LENGTH ]; then
+        :
     else
-        cleanlog 3
-        sorry_msg
-        exit 1
+        for ((l=$next_jpg; l<=$MAX_ANI_LENGTH; l++)); do
+            cp $WORK_DIR/pics/$i/$last_jpg.jpg $WORK_DIR/pics/$i/$l.jpg
+        done
     fi
+    unset JPGS last_jpg next_jpg
+done
+
+for (( count=1; count <= $MAX_ANI_LENGTH; count++)); do
+    ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.jpg)
+
+    # make final montages and composite onto grey background with title
+    IM_CMD=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
+    -geometry ${GEO_ARRAY[FILES]}+5+5 -background '#1E1E1E' miff:-)
+    IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
+    $WORK_DIR/intro_txt.png  -gravity south -geometry +0+55 -composite \
+    -  -gravity north -geometry +0+55 -composite \
+    $WORK_DIR/animenu/$count.jpg)
+
+    "${IM_CMD[@]}" | "${IM_CMD2[@]}" 
+    rm -f ${ANI_PICS[@]}
+done
+
+# convert to video stream FIXME: avi is an extra step from BVC - not needed
+jpeg2yuv -v 0 -f 29.970 -I p -n $MAX_ANI_LENGTH -L 1 -b1 \
+-j $WORK_DIR/animenu/%0d.jpg |
+ffmpeg -f yuv4mpegpipe -i -  -an -vcodec mpeg4 -r 29.970 -b 2000 \
+-s $VID_SIZE_OPT -aspect 4:3 -y $INTRO_VIDEO
+
+# cleanup montage jpegs
+rm -fr $WORK_DIR/animenu/*.jpg
+
+# convert to proper video format
+ENC_CMD=(ffmpeg -i $INTRO_VIDEO -f mpeg2video \
+-tvstd ntsc $FFMPEG_OPTS -s $VID_SIZE_OPT -y $WORK_DIR/intro.m2v)
+if "${ENC_CMD[@]}" >> $BVC_LOG.tmp 2>&1; then
+    cleanlog 3
+else
+    cleanlog 3
+    sorry_msg
+    exit 1
 fi
 
+# create silence for the main menu
 TIME=`vid_length "$INTRO_VIDEO"`
 cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
 -s - $WORK_DIR/intro.wav  trim 0 $TIME
@@ -689,7 +696,7 @@ unset TIME
 ffmpeg -i $WORK_DIR/intro.wav \
 $AUDIO_OPTS -y $WORK_DIR/intro.$AUDIO_EXT
 
-# mplex intro audio and video together
+# mplex main menu audio and video together
 INTRO_MPLEX_CMD="mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/intro.mpg \
 $WORK_DIR/intro.$AUDIO_EXT $WORK_DIR/intro.m2v"
 echo -e "\nRunning: $INTRO_MPLEX_CMD\n" >> $BVC_LOG.tmp 
