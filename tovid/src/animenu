@@ -42,7 +42,6 @@ usage_error ()
     exit 1
 }
 
-ARGS=("$@")
 WORK_DIR=$HOME/tmp/BVC
 BVC_LOG=$WORK_DIR/BVC.log
 TOTAL_PICS=230
@@ -59,6 +58,19 @@ DVDAUTHOR_XML=$WORK_DIR/dvdauthor.xml
 GRADIENT="$WORK_DIR/aqua_gradient.png"
 SUB_MENU="true" 
 CHAPTERS=6
+
+# Try to find a default font that is available
+#if [[ $FRAME_STYLE != "fancy" ]]; then
+if convert -font Helvetica -draw "text 0,0 'test'" $BG_PIC /dev/null; then
+    FRAME_FONT="Helvetica"
+elif convert -font helvetica -draw "text 0,0 'test'" $BG_PIC /dev/null; then
+    FRAME_FONT="helvetica"
+else
+    FRAME_FONT="Candice.ttf"
+fi
+#fi
+
+SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
 #                                 Functions                                  #
@@ -168,10 +180,14 @@ while test $# -gt 0; do
             if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
             ;;
         "-submenus" )
-                SUB_MENU="true"
-                shift
+            SUB_MENU="true"
+            shift
             # Don't skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
+            ;;
+        "-framefont" )
+            shift
+            FRAME_FONT="$1"
             ;;
     esac
     $DO_SHIFT && shift
@@ -232,8 +248,8 @@ SVCD_MPLEX_FORMAT=4
 DVD_MPLEX_FORMAT=8
 SVCD_TITLE_FONT_SIZE=32
 DVD_TITLE_FONT_SIZE=36
-PTSIZE=(30 36 42 42 42 42 48 48 48 48 48 48 54 54 54 54 54 54 54 54 \
-54 54 54 54 54 54 54 54 54 54) # unused
+# PTSIZE=(30 36 42 42 42 42 48 48 48 48 48 48 54 54 54 54 54 54 54 54 \
+# 54 54 54 54 54 54 54 54 54 54)
 CHOP=(42 48 54 54 54 54 60 60 60 60 60 60 60 60 60 60 60 60 60 60
 60 60 60 60 60 60 60 60 60 60) 
 DVD_GEO_ARRAY=(360x240 270x180 192x128 192x128 180x120 180x120 120x80 120x80 \
@@ -258,25 +274,27 @@ printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
 "$PATTERN" >> $BVC_LOG
 
 # create_dirs
+echo
+echo "Creating pics directories..."
 for ((i=0; i<=FILES; i++)) ; do
-    mkdir -p  $WORK_DIR/pics/$i
+    mkdir -pv  $WORK_DIR/pics/$i
 done
 
 if [ $TITLE_PAGE = "animated" ]; then
-    mkdir $WORK_DIR/animenu
+    mkdir -v $WORK_DIR/animenu
 fi
 
 if  [ $TARGET = "DVD" ]; then
-        VID_SIZE_OPT=$DVD_VID_SIZE_OPT
-        AUDIO_OPTS=$DVD_AUDIO_OPTS
-        SAMPLERATE=$DVD_SAMPLERATE
-        AUDIO_EXT=$DVD_AUDIO_EXT
-        FFMPEG_TARGET=$DVD_FFMPEG_TARGET
-        INTRO_SIZE=$DVD_INTRO_SIZE
-        FFMPEG_OPTS=$DVD_FFMPEG_OPTS
-        MPLEX_FORMAT=$DVD_MPLEX_FORMAT
-        TITLE_FONT_SIZE=$DVD_TITLE_FONT_SIZE
-        GEO_ARRAY=("${DVD_GEO_ARRAY[@]}")
+    VID_SIZE_OPT=$DVD_VID_SIZE_OPT
+    AUDIO_OPTS=$DVD_AUDIO_OPTS
+    SAMPLERATE=$DVD_SAMPLERATE
+    AUDIO_EXT=$DVD_AUDIO_EXT
+    FFMPEG_TARGET=$DVD_FFMPEG_TARGET
+    INTRO_SIZE=$DVD_INTRO_SIZE
+    FFMPEG_OPTS=$DVD_FFMPEG_OPTS
+    MPLEX_FORMAT=$DVD_MPLEX_FORMAT
+    TITLE_FONT_SIZE=$DVD_TITLE_FONT_SIZE
+    GEO_ARRAY=("${DVD_GEO_ARRAY[@]}")
 fi
 
 ###############################################################################
@@ -363,35 +381,23 @@ for ((i=0; i<=FILES; i++)) ; do
 
 done
 
-#  create black background
+echo
+echo "Creating a black background"
 BG_PIC="$WORK_DIR/pics/template.jpg"
 convert  -size $VID_SIZE_OPT xc:"#282828" $BG_PIC
 
-# create a gradient to speed up fancy title operation
+echo
+echo "Creating a gradient image for fancy titling"
 convert -size 1x512 gradient: -rotate 90 +matte \
 -fx '3.5u^3 - 5.05u^2 + 2.05u + 0.3' \
--size 512x1 xc:DodgerBlue -compose Overlay -composite \
-$WORK_DIR/aqua_gradient.png
+-size 512x1 xc:DodgerBlue -compose Overlay -composite "$GRADIENT"
 
-FRAME_FONT="Candice.ttf"
-# font to use for our plain title text - fall back on Candice if no helvetica
-
-if [[ $FRAME_STYLE != "fancy" ]]; then
-    if convert -font Helvetica -draw "text 0,0 'test'" $BG_PIC /dev/null; then
-        FRAME_FONT="Helvetica"
-    elif
-        convert -font helvetica -draw "text 0,0 'test'" $BG_PIC /dev/null; then
-            FRAME_FONT="helvetica"
-    else
-        FRAME_FONT=$FRAME_FONT
-    fi
-fi
 
 ##############################################################################
 #                     spumux and dvdauthor stuff                             #
 ##############################################################################
-
-# create the Highlight and Select pngs for main menu
+echo
+echo "Creating the highlight and selection PNGs for the main menu"
 GEO="${GEO_ARRAY[FILES]/x/,}"
 SELECT_CMD="-size "${GEO_ARRAY[FILES]}+5+5" xc:none -fill none +antialias \
 -stroke '#DE7F7C' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
@@ -417,8 +423,9 @@ montage -background none "$WORK_DIR/*-Highlight.png" \
 convert  -size 720x480 xc:none  - -gravity north -geometry +0+55  \
 -composite  "$WORK_DIR/Highlight.png"
 
-# create the Highlight and Select pngs for sub menus
 if [ $SUB_MENU = "true" ]; then
+    echo
+    echo "Creating the highlight and selection PNGs for the submenus"
     GEO="${GEO_ARRAY[CHAPTERS - 1]/x/,}"
     SELECT_CMD="-size "${GEO_ARRAY[CHAPTERS - 1]}+5+5" xc:none -fill none \
     +antialias -stroke '#DE7F7C' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
@@ -552,7 +559,10 @@ EOF
 
 # do submenu 1st for debug purposes
 if [ $SUB_MENU = true ]; then
-# get jpgs of chapters
+    echo $SEPARATOR
+    echo "Building submenus"
+    echo $SEPARATOR
+    echo "Creating JPEGs for each chapter"
     for i in ${!VID_ARRAY[@]}; do
         echo -e "VID_ARRAY indexes are ${!VID_ARRAY[@]}"
         echo -e "CHAPT_INTERVALS is ${CHAPT_INTERVALS[i]}"
@@ -567,8 +577,9 @@ if [ $SUB_MENU = true ]; then
         CMD=${cmd[@]}
         transcode -i ${VID_ARRAY[i]} -o chapt -f 29.970 -J skip="$CMD" -y jpg,null
 
-        #  create a transparant png with the title on it
-        convert -font $FRAME_FONT -pointsize $TITLE_FONT_SIZE -size 420x \
+        echo
+        echo "Creating a transparent title PNG"
+        convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 420x \
         -gravity Center caption:"\"${TITLES[i]}\""  -negate  \( +clone -blur 0x8 \
         -shade 110x45 -normalize $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
         -compose CopyOpacity -composite  $WORK_DIR/animenu/intro_txt.png
@@ -576,7 +587,7 @@ if [ $SUB_MENU = true ]; then
         # just use $CHAPTERS number of jpegs
         jpegs=$(find . -name chapt000\*.jpg|head -n $CHAPTERS)
         echo -e "jpegs are\n" "$jpegs"
-    # create frames for the chapter thumbs
+        # create frames for the chapter thumbs
         for PIC in $jpegs; do
             convert -background '#282828' -frame 5x5 \
             -bordercolor none -mattecolor "#444744" $PIC $PIC
@@ -596,23 +607,23 @@ if [ $SUB_MENU = true ]; then
         done
         rm -f $WORK_DIR/chapt*000*.jpg
 
-        # convert jpegs to m2v
+        echo
+        echo "Converting JPEGs to m2v video format"
         jpeg2yuv -v 0 -f 29.970 -I p -n 300 -L 1 -b1 \
         -j $WORK_DIR/animenu/%0d.jpg |
         ffmpeg   -f yuv4mpegpipe -i - -r 29.970 -s $VID_SIZE_OPT \
         -tvstd ntsc $FFMPEG_OPTS -y $WORK_DIR/menu$i.m2v
         rm -f $WORK_DIR/animenu/*
 
-        # create audio wav for silence
+        echo
+        echo "Creating a silent audio background"
         TIME=`vid_length $WORK_DIR/menu$i.m2v`
-        cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
-        -s - $WORK_DIR/menu$i.wav  trim 0 $TIME
+        ffmpeg -f s16le -i /dev/zero -t $TIME \
+        $AUDIO_OPTS -y $WORK_DIR/menu$i.$AUDIO_EXT
         unset TIME
 
-        # convert to proper audio format
-        ffmpeg -i $WORK_DIR/menu$i.wav \
-        $AUDIO_OPTS -y $WORK_DIR/menu$i.$AUDIO_EXT
-        # mplex into a dvd complient mpg
+        echo
+        echo "Multiplexing video and audio together"
         I=$((i + 1))
         mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/menu$I.mpg \
         $WORK_DIR/menu$i.$AUDIO_EXT $WORK_DIR/menu$i.m2v
@@ -623,21 +634,25 @@ fi
 ##############################################################################
 #                      Work on main menu                                     #
 ##############################################################################
-
-#  create a transparant png with the title on it
-convert -font $FRAME_FONT -pointsize $TITLE_FONT_SIZE -size 420x \
+echo $SEPARATOR
+echo "Building main menu"
+echo $SEPARATOR
+echo
+echo "Creating a transparant png with the title on it"
+convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 420x \
 -gravity Center caption:"\"$TITLE_PG_TITLE\""  -negate  \( +clone -blur 0x8 \
 -shade 110x45 -normalize \
 $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
 -compose CopyOpacity -composite  $WORK_DIR/intro_txt.png
 
 
+echo
+echo "Adding title to JPEGs, cropping and resizing"
 for ((i=0; i<=FILES; i++)); do
     JPGS=( "${JPGS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name '*[1-9]*.jpg') )
 
-     for jpg in "${JPGS[@]}"; do
-        # add title to jpegs, chop so there is no skew, and resize
+    for jpg in "${JPGS[@]}"; do
         montage -geometry +4+4 -background '#282828' \
         -fill '#C6C6C6' -pointsize 22 -title "${TITLES[i]}"  $jpg miff:- |
         convert -gravity South  -chop  0x${CHOP[FILES]} +repage - miff:- |
@@ -680,8 +695,9 @@ jpeg2yuv -v 0 -f 29.970 -I p -n $MAX_ANI_LENGTH -L 1 -b1 \
 ffmpeg -f yuv4mpegpipe -i -  -an -vcodec mpeg4 -r 29.970 -b 2000 \
 -s $VID_SIZE_OPT -aspect 4:3 -y $INTRO_VIDEO
 
-# cleanup montage jpegs
-rm -fr $WORK_DIR/animenu/*.jpg
+echo
+echo "Cleaning up montage JPEGs"
+rm -frv $WORK_DIR/animenu/*.jpg
 
 # convert to proper video format
 ENC_CMD=(ffmpeg -i $INTRO_VIDEO -f mpeg2video \
@@ -728,5 +744,12 @@ if [ $SUB_MENU = "true" ]; then
 fi
 dvdauthor -x "$DVDAUTHOR_XML"
 
-echo -e "Your new DVD is ready to burn at $WORK_DIR/DVD.
-Thanks for using animenu."
+SCRIPT_END_TIME=`date +%s`
+SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
+HHMMSS=`format_time $SCRIPT_TOT_TIME`
+
+echo "animenu took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
+echo
+echo "Your new DVD is ready to burn at $WORK_DIR/DVD."
+echo "Thanks for using animenu."
+
