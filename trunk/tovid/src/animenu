@@ -45,7 +45,6 @@ usage_error ()
 WORK_DIR=$HOME/tmp/BVC
 BVC_LOG=$WORK_DIR/BVC.log
 TOTAL_PICS=230
-INTRO_VIDEO="$WORK_DIR/intro.avi"
 MAX_ANI_LENGTH=600
 TARGET=DVD
 LINE=$(for ((i=1; i<=79; i++));do echo -n =;done)
@@ -506,7 +505,8 @@ EOF
 else
     JUMP=title
 fi
-#else
+
+# make dvdauthor.xml
 (
     cat <<EOF
 <?xml version="1.0" encoding="utf-8"?>
@@ -528,25 +528,30 @@ $(for ((i=1; i<=$V_ARRAY_TOTAL; i++)); do
         JUMP_INC=$i
     fi
     echo -e "        <button name=\"$i\">jump $JUMP $JUMP_INC;</button>"
-done) 
+done)
         <vob file="$WORK_DIR/menu.mpg" pause="inf"/>
       </pgc>
 $(if [ $SUB_MENU = "true" ]; then
-echo -ne "      <pgc>\n"
-for ((Y=1; Y<=$V_ARRAY_TOTAL; Y++)); do
-    for ((i=1; i<=6; i++)); do
-        echo -e "        <button name=\"$i\">jump title $Y chapter $i;</button>"
-    done
-    echo -e "        <vob file=\"$WORK_DIR/Menu$Y.mpg\" pause=\"inf\"/>\n      </pgc>\n      <pgc>"
-done | sed '$d'
+    echo -ne "      <pgc>\n"
+        for ((Y=1; Y<=$V_ARRAY_TOTAL; Y++)); do
+            for ((i=1; i<=6; i++)); do
+                echo -e "        <button name=\"$i\">jump title $Y chapter $i;</button>"
+            done
+            echo -e "        <vob file=\"$WORK_DIR/Menu$Y.mpg\" pause=\"inf\"/>"
+            echo -e "      </pgc>\n      <pgc>"
+        done | sed '$d'
 else
 :
-fi)    
+fi)
     </menus>
     <titles>
 $(for i in ${!VID_ARRAY[@]}; do
-echo -ne "      <pgc>\n        <vob file=\"${VID_ARRAY[i]}\""  " chapters=\""${CHAPT_ARRAY[i]}"\"/>\n        <post>call vmgm menu 1;</post>\n      </pgc>\n"
-    done)
+    echo -e "      <pgc>"
+    echo -ne "        <vob file=\"${VID_ARRAY[i]}\""
+    echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
+    echo -e "        <post>call vmgm menu 1;</post>"
+    echo -e "      </pgc>\n"
+done)
     </titles>
   </titleset>
 </dvdauthor> 
@@ -566,14 +571,11 @@ if [ $SUB_MENU = true ]; then
     for i in ${!VID_ARRAY[@]}; do
         echo -e "VID_ARRAY indexes are ${!VID_ARRAY[@]}"
         echo -e "CHAPT_INTERVALS is ${CHAPT_INTERVALS[i]}"
-#        transcode -i 2.mpg -o chapt -f 29.970 -J skip="0-10 10-30 31-4450" -y jpg,null
         counts=$((${CHAPT_INTERVALS[i]} * 30))
         SKIP=( 0 $(running_total <<<  $(for ((a=0; a<7;a++)); do echo -n "$counts ";done)) )
-        echo -e "SKIP is ${SKIP[@]}"
         for c in ${!SKIP[@]}; do cmd[c]=$((${SKIP[c]} + 1))-${SKIP[c+1]};done
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
-        echo -e "cmd is ${cmd[@]}"
         CMD=${cmd[@]}
         transcode -i ${VID_ARRAY[i]} -o chapt -f 29.970 -J skip="$CMD" -y jpg,null
 
@@ -586,7 +588,6 @@ if [ $SUB_MENU = true ]; then
         # FIXME make sure $CHAPTERS number of jpegs got created
         # just use $CHAPTERS number of jpegs
         jpegs=$(find . -name chapt000\*.jpg|head -n $CHAPTERS)
-        echo -e "jpegs are\n" "$jpegs"
         # create frames for the chapter thumbs
         for PIC in $jpegs; do
             convert -background '#282828' -frame 5x5 \
@@ -689,20 +690,12 @@ for (( count=1; count <= $MAX_ANI_LENGTH; count++)); do
     rm -f ${ANI_PICS[@]}
 done
 
-# convert to video stream FIXME: avi is an extra step from BVC - not needed
-jpeg2yuv -v 0 -f 29.970 -I p -n $MAX_ANI_LENGTH -L 1 -b1 \
--j $WORK_DIR/animenu/%0d.jpg |
-ffmpeg -f yuv4mpegpipe -i -  -an -vcodec mpeg4 -r 29.970 -b 2000 \
--s $VID_SIZE_OPT -aspect 4:3 -y $INTRO_VIDEO
-
-echo
-echo "Cleaning up montage JPEGs"
-rm -frv $WORK_DIR/animenu/*.jpg
-
-# convert to proper video format
-ENC_CMD=(ffmpeg -i $INTRO_VIDEO -f mpeg2video \
--tvstd ntsc $FFMPEG_OPTS -s $VID_SIZE_OPT -y $WORK_DIR/intro.m2v)
-if "${ENC_CMD[@]}" >> $BVC_LOG.tmp 2>&1; then
+# convert jpegs to video stream and encode to dvd complient m2v
+ENC_CMD1=(jpeg2yuv -v 0 -f 29.970 -I p -n $MAX_ANI_LENGTH -L 1 -b1 \
+-j $WORK_DIR/animenu/%0d.jpg)
+ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r 29.970 -s $VID_SIZE_OPT \
+-tvstd ntsc $FFMPEG_OPTS -y $WORK_DIR/intro.m2v)
+if "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" >> $BVC_LOG.tmp 2>&1; then
     cleanlog 3
 else
     cleanlog 3
@@ -710,8 +703,13 @@ else
     exit 1
 fi
 
+echo
+echo "Cleaning up montage JPEGs"
+rm -frv $WORK_DIR/animenu/*.jpg
+
+
 # create silence for the main menu
-TIME=`vid_length "$INTRO_VIDEO"`
+TIME=`vid_length "$WORK_DIR/intro.m2v"`
 cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
 -s - $WORK_DIR/intro.wav  trim 0 $TIME
 unset TIME
