@@ -177,7 +177,6 @@ while test $# -gt 0; do
             FPS="2500"
             ;;
         "-dvd" )
-	    assert_dep_group "dvd" "You are missing dependencies required for making DVD menus!"
             RES="dvd"
             MPEG2ENC_FMT="-f 8"
             # Variable bitrate
@@ -282,6 +281,7 @@ fi
 
 # Use appropriate settings for DVD
 if test $RES = "dvd"; then
+    assert_dep_group "dvd" "You are missing dependencies required for making DVD menus!"
     WIDTH="720"
     SAMPRATE="48000"
     test $TVSYS = "ntsc" && HEIGHT="480"
