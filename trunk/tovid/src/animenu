@@ -30,6 +30,7 @@ The number of -files and -titles must be equal.
 Options:
 
 -submenus      Create a submenu with chapters for each video. 
+-ani_submenus  Create an animated submenu with chapters for each video
 EOF`
 
 # Print script name, usage notes, and optional error message, then exit.
@@ -55,19 +56,10 @@ SPUMUX_XML=$WORK_DIR/spumux.xml
 SUBMENU_SPUMUX_XML=$WORK_DIR/submenu_spumux.xml
 DVDAUTHOR_XML=$WORK_DIR/dvdauthor.xml
 GRADIENT="$WORK_DIR/aqua_gradient.png"
-SUB_MENU="true" 
+SUB_MENU="false" 
 CHAPTERS=6
+FRAME_FONT=""
 
-# Try to find a default font that is available
-#if [[ $FRAME_STYLE != "fancy" ]]; then
-if convert -font Helvetica -draw "text 0,0 'test'" $BG_PIC /dev/null; then
-    FRAME_FONT="Helvetica"
-elif convert -font helvetica -draw "text 0,0 'test'" $BG_PIC /dev/null; then
-    FRAME_FONT="helvetica"
-else
-    FRAME_FONT="Candice.ttf"
-fi
-#fi
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -184,6 +176,13 @@ while test $# -gt 0; do
             # Don't skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
             ;;
+        "-ani_submenus" )
+            ANI_SUB_MENU="true"
+            SUB_MENU="true"
+            shift
+            # Don't skip past the next argument
+            if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
+            ;;
         "-framefont" )
             shift
             FRAME_FONT="$1"
@@ -202,17 +201,27 @@ fi
 # create a user's tmp dir if it doesn't exist
 # if it exists, move it to a new name
 if [ -d $WORK_DIR ]; then
-    mv $WORK_DIR $WORK_DIR-`date "+%s"`
-    mkdir -p $WORK_DIR
+    mv  $WORK_DIR $WORK_DIR-`date "+%s"`
+    echo
+    echo -e "Moving $WORK_DIR to $WORK_DIR-`date "+%s"`"
+    mkdir -pv $WORK_DIR
     else
-    mkdir -p  $WORK_DIR
+    mkdir -pv  $WORK_DIR
 fi
+
+# Try to find a default font that is available
+if convert -size 50x20 xc:none -font Helvetica -gravity Center \
+-draw "text 0,0 'test'" $WORK_DIR/test.png; then
+    FRAME_FONT="Helvetica"
+elif convert -size 200x100 xc:none -font helvetica -gravity Center \
+-draw "text 0,0 'test'" $WORK_DIR/test.png; then
+    FRAME_FONT="helvetica"
+fi
+rm -f $WORK_DIR/test.png
 
 for i in ${VIDS[@]}; do
     VID_ARRAY=( ${VID_ARRAY[@]} $(abspath "$i") )
 done
-
-echo -e "VID_ARRAY is ${VID_ARRAY[@]}"
 
 # do everything in $WORK_DIR
 cd $WORK_DIR
@@ -275,14 +284,18 @@ printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
 # create_dirs
 echo
 echo "Creating pics directories..."
-for ((i=0; i<=FILES; i++)) ; do
-    mkdir -pv  $WORK_DIR/pics/$i
-done
-
-if [ $TITLE_PAGE = "animated" ]; then
-    mkdir -v $WORK_DIR/animenu
+for ((i=0; i<=FILES; i++)) ; do mkdir -pv  $WORK_DIR/pics/$i; done
+mkdir -v $WORK_DIR/animenu
+if [ $ANI_SUB_MENU = true ]; then
+    for ((i=0; i<CHAPTERS; i++)); do
+        mkdir -v $WORK_DIR/animenu/$i
+    done
 fi
 
+echo
+echo -e "Videos to be processed"
+for vid in ${VID_ARRAY[@]}; do echo $vid;done
+echo  
 if  [ $TARGET = "DVD" ]; then
     VID_SIZE_OPT=$DVD_VID_SIZE_OPT
     AUDIO_OPTS=$DVD_AUDIO_OPTS
@@ -304,7 +317,9 @@ for i in ${!VID_ARRAY[@]}; do
     mencoder_stats=( "${mencoder_stats[@]}" \
     "$(mencoder -quiet "${VID_ARRAY[i]}" -oac pcm -ovc copy -o /dev/null)" )
 done
-
+echo
+echo $SEPARATOR
+echo
 # put in the log file in case anyone is interested
 for i in ${!VID_ARRAY[@]}; do
     VCODEC="$(awk '/VIDEO:/ {gsub(/\[|\]/, ""); print $2}' \
@@ -316,21 +331,23 @@ for i in ${!VID_ARRAY[@]}; do
     if [ -z "$A_BR" ]; then
         A_BR="No audio found"
     fi
-    ID_LENGTH="$(awk '/Video stream:/{print $10}'<<<"${mencoder_stats[i]}")"
+    V_LENGTH="$(awk '/Video stream:/{print $10}'<<<"${mencoder_stats[i]}")"
     FPS="$(awk '/VIDEO:/ {print $6}' <<<"${mencoder_stats[i]}")"
     printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
     echo -e "Stats for" "${VID_ARRAY[i]}" "\n" \
     "video codec:   " \
     "$VCODEC" "\n" \
     "video bitrate: " "$V_BR" "kbps" "\n" \
-    "framerate: " "$FPS" "fps" "\n" \
+    "framerate:     " "$FPS" "fps" "\n" \
     "audio codec:   " \
     "$ACODEC" "\n" \
     "audio bitrate: " \
     "$A_BR" " kbps" "\n" \
-    "clip length:   " \
-    "$ID_LENGTH" " seconds" "\n" >> $BVC_LOG
+    "video length:  " \
+    "$V_LENGTH" " seconds" "\n" |tee -a $BVC_LOG
 done
+echo
+echo $SEPARATOR
 
 for i in ${!mencoder_stats[@]}; do
     VID_LEN=( ${VID_LEN[@]}  "$(awk '/Video stream:/{print $10}' \
@@ -383,7 +400,7 @@ done
 echo
 echo "Creating a black background"
 BG_PIC="$WORK_DIR/pics/template.jpg"
-convert  -size $VID_SIZE_OPT xc:"#282828" $BG_PIC
+convert  -size $VID_SIZE_OPT xc:"#161514" $BG_PIC
 
 echo
 echo "Creating a gradient image for fancy titling"
@@ -456,7 +473,7 @@ fi
 for i in ${!NEW_LENGTH[@]}; do
   CHAPT_INTERVALS=( ${CHAPT_INTERVALS[@]} $(( ${NEW_LENGTH[i]} / $CHAPTERS)) )
 done
-echo -e "CHAPT_INTERVALS are ${CHAPT_INTERVALS[@]}"
+echo
 # and format in HH:MM:SS
 for len in ${CHAPT_INTERVALS[@]}; do
     Y=( ${Y[@]} $(for i in `seq 1 5`; do echo "$len";done) )
@@ -469,14 +486,14 @@ for len in ${CHAPT_INTERVALS[@]}; do
     done
 # debug chapters
 for i in ${!VID_ARRAY[@]}; do
-    echo -e "CHAPTERS for VIDEO $((i + 1)):  ${CHAPT_ARRAY[i]}"
+    echo -e "Chapters for ${VID_ARRAY[i]} are: \n${CHAPT_ARRAY[i]}\n"
 done
 # make xml files, and run dvdauthor and spumux
 (
     cat <<EOF
 <subpictures>
    <stream>
-     <spu start="00:00:00.0" end="00:00:00.0"
+     <spu force="yes" start="00:00:00.0"
           highlight="$WORK_DIR/Highlight.png"
           select="$WORK_DIR/Select.png"
           autooutline="infer"
@@ -491,7 +508,7 @@ if [ $SUB_MENU = "true" ]; then
     cat <<EOF
 <subpictures>
    <stream>
-     <spu start="00:00:00.0" end="00:00:00.0"
+     <spu force="yes" start="00:00:00.0"
           highlight="$WORK_DIR/Submenu_Highlight.png"
           select="$WORK_DIR/Submenu_Select.png"
           autooutline="infer"
@@ -564,73 +581,168 @@ EOF
 
 # do submenu 1st for debug purposes
 if [ $SUB_MENU = true ]; then
-    echo $SEPARATOR
-    echo "Building submenus"
-    echo $SEPARATOR
-    echo "Creating JPEGs for each chapter"
-    for i in ${!VID_ARRAY[@]}; do
-        echo -e "VID_ARRAY indexes are ${!VID_ARRAY[@]}"
-        echo -e "CHAPT_INTERVALS is ${CHAPT_INTERVALS[i]}"
-        counts=$((${CHAPT_INTERVALS[i]} * 30))
-        SKIP=( 0 $(running_total <<<  $(for ((a=0; a<7;a++)); do echo -n "$counts ";done)) )
-        for c in ${!SKIP[@]}; do cmd[c]=$((${SKIP[c]} + 1))-${SKIP[c+1]};done
-        key=$((${#cmd[@]} - 1))
-        unset cmd[key]
-        CMD=${cmd[@]}
-        transcode -i ${VID_ARRAY[i]} -o chapt -f 29.970 -J skip="$CMD" -y jpg,null
+    if [ $ANI_SUB_MENU = "true" ]; then
+        echo $SEPARATOR
+        echo "Building submenus"
+        echo $SEPARATOR
+        echo "Creating JPEGs for each chapter"
 
-        echo
-        echo "Creating a transparent title PNG"
-        convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 420x \
-        -gravity Center caption:"\"${TITLES[i]}\""  -negate  \( +clone -blur 0x8 \
-        -shade 110x45 -normalize $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
-        -compose CopyOpacity -composite  $WORK_DIR/animenu/intro_txt.png
-        # FIXME make sure $CHAPTERS number of jpegs got created
-        # just use $CHAPTERS number of jpegs
-        jpegs=$(find . -name chapt000\*.jpg|head -n $CHAPTERS)
-        # create frames for the chapter thumbs
-        for PIC in $jpegs; do
-            convert -background '#282828' -frame 5x5 \
-            -bordercolor none -mattecolor "#444744" $PIC $PIC
-        done
+        for i in ${!VID_ARRAY[@]}; do
+            echo -e "The chapter interval is ${CHAPT_INTERVALS[i]} seconds"
+            echo
+            echo "Creating a transparent title PNG"
+            convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 420x \
+            -gravity Center caption:"\"${TITLES[i]}\""  -negate  \( +clone -blur 0x8 \
+            -shade 110x45 -normalize $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
+            -compose CopyOpacity -composite  $WORK_DIR/animenu/intro_txt.png
+
+            #FIXME the below commands are creating a bunch of extra frames at
+            # which is harmless as they get removed, but needs to be tweaked         
+            counts=$((${CHAPT_INTERVALS[i]} * 30))
+            SKIP=( 0 $(running_total <<<  $(for ((a=0; a<7;a++)); do echo -n "$counts ";done)) )
+            for c in ${!SKIP[@]}; do
+                cmd[c]=$((${SKIP[c]}))-$((${SKIP[c]} + 340))
+            done
+            key=$((${#cmd[@]} - 1))
+            unset cmd[key]
+            CMD=${cmd[@]}
+            echo -e "\nRunning: "
+            echo -e "transcode -q 1 -i ${VID_ARRAY[i]}" 
+            echo -e "-o $WORK_DIR/animenu/chapt -f 29.970 -J cut=\"$CMD\" -y jpg,null\n"
+            sleep 2
+            transcode -q 1 -i ${VID_ARRAY[i]} -o $WORK_DIR/animenu/chapt -f 29.970 -J cut="$CMD" -y jpg,null
+        
+            echo
+            # FIXME make sure $CHAPTERS number of jpegs got created
+            jpegs=$(find $WORK_DIR/animenu -name chapt000\*.jpg)
+#            Disable frames for now - takes too long - (use montage -border TODO)
+#            # create frames for the chapter thumbs
+#            for PIC in $jpegs; do
+#                convert -background '#161514' -frame 8x8 \
+#                -bordercolor none -mattecolor "#444744" $PIC $PIC
+#            done
+            # move 340 jpegs to each subdir:  $WORK_DIR/animenu/{0,1,2,3,etc}
+            for ((a=0; a<CHAPTERS; a++)); do
+                pics=( $(find $WORK_DIR/animenu/  -maxdepth 1 -name chapt\*.jpg|head -n 340) )
+                for f in ${pics[@]}; do
+                    mv $f $WORK_DIR/animenu/$a
+                done
+            done
+            for ((a=0; a<CHAPTERS; a++)); do
+                # echo messages temporary for debug
+                find $WORK_DIR/animenu/$a/ -name chapt\*.jpg|head -n 20|xargs rm
+                echo removing 1st 20 pics
+                find $WORK_DIR/animenu/$a/ -name chapt\*.jpg|tail -n 20|xargs rm
+                echo removing last 20 pics
+                echo -n "Frame count in $WORK_DIR/$a is: "
+                echo "$(ls -l $WORK_DIR/animenu/$a/*.jpg|wc -l) frames"
+            done
+                echo
+                echo "Making montage images for chapter $(($i + 1))"
+            
+            for ((a=1; a<300; a++)); do
+                for ((b=0; b<CHAPTERS; b++)); do
+                    JPEGS=( "${JPEGS[@]}" $(find $WORK_DIR/animenu/$b -name \*.jpg|head -n $a|sed  -n -e "$a p") )
+                done
+                IM_CMD=(montage ${JPEGS[@]} -tile ${TILE_ARRAY[CHAPTERS - 1]} \
+                -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -border 2x2 \
+                -bordercolor gray -mattecolor gray -background '#161514' miff:-)
+                IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
+                $WORK_DIR/animenu/intro_txt.png  -gravity south -geometry +0+55 -composite \
+                -  -gravity north -geometry +0+55 -composite \
+                $WORK_DIR/animenu/$a.jpg)
+                
+                "${IM_CMD[@]}" | "${IM_CMD2[@]}"
+                unset JPEGS
+            done
+                
+                unset IM_CMD IM_CMD2 d f PIC
+                # FIXME
+                echo
+                echo "Converting chapter montages of $i to m2v video format"
+
+                jpeg2yuv -v 0 -f 29.970 -I p -n 300 -L 1 -b1 \
+                -j $WORK_DIR/animenu/%0d.jpg |
+                ffmpeg   -f yuv4mpegpipe -i - -r 29.970 -s $VID_SIZE_OPT \
+                -tvstd ntsc $FFMPEG_OPTS -y $WORK_DIR/menu$i.m2v
+                rm -f $WORK_DIR/animenu/chapt*.jpg
+                rm -f $WORK_DIR/animenu/[0-9]*.jpg
+        done    
+                
+        
     
-        IM_CMD=(montage $jpegs -tile ${TILE_ARRAY[CHAPTERS -1]} \
-        -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -background '#282828' miff:-)
-        IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
-        $WORK_DIR/animenu/intro_txt.png  -gravity south -geometry +0+55 -composite \
-        -  -gravity north -geometry +0+55 -composite \
-        $WORK_DIR/animenu/1.jpg) 
-        "${IM_CMD[@]}" | "${IM_CMD2[@]}"
+    elif [ ! $ANI_SUB_MENU = "true" ]; then
+        echo $SEPARATOR
+        echo "Building submenus"
+        echo $SEPARATOR
+        echo "Creating JPEGs for each chapter"
+        for i in ${!VID_ARRAY[@]}; do
+            echo -e "VID_ARRAY indexes are ${!VID_ARRAY[@]}"
+            echo -e "CHAPT_INTERVALS is ${CHAPT_INTERVALS[i]}"
+            counts=$((${CHAPT_INTERVALS[i]} * 30))
+            SKIP=( 0 $(running_total <<<  $(for ((a=0; a<7;a++)); do echo -n "$counts ";done)) )
+            for c in ${!SKIP[@]}; do cmd[c]=$((${SKIP[c]} + 1))-${SKIP[c+1]};done
+            key=$((${#cmd[@]} - 1))
+            unset cmd[key]
+            CMD=${cmd[@]}
+            transcode -i ${VID_ARRAY[i]} -o chapt -f 29.970 -J skip="$CMD" -y jpg,null
 
-        # copy enough for a menu    
-        for ((count=2; count<=300; count++)); do
-            cp $WORK_DIR/animenu/1.jpg $WORK_DIR/animenu/$count.jpg
+            echo
+            echo "Creating a transparent title PNG"
+            convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 420x \
+            -gravity Center caption:"\"${TITLES[i]}\""  -negate  \( +clone -blur 0x8 \
+            -shade 110x45 -normalize $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
+            -compose CopyOpacity -composite  $WORK_DIR/animenu/intro_txt.png
+            # FIXME make sure $CHAPTERS number of jpegs got created
+            # just use $CHAPTERS number of jpegs
+            jpegs=$(find . -name chapt000\*.jpg|head -n $CHAPTERS)
+            # create frames for the chapter thumbs
+            for PIC in $jpegs; do
+                convert -background '#141614' -frame 8x8 \
+                -bordercolor none -mattecolor "#444744" $PIC $PIC
+            done
+            IM_CMD=(montage $jpegs -tile ${TILE_ARRAY[CHAPTERS -1]} \
+            -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -background '#141614' miff:-)
+            IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
+            $WORK_DIR/animenu/intro_txt.png  -gravity south -geometry +0+55 -composite \
+            -  -gravity north -geometry +0+55 -composite \
+            $WORK_DIR/animenu/1.jpg)
+            "${IM_CMD[@]}" | "${IM_CMD2[@]}"
+
+            # copy enough for a menu
+            for ((count=2; count<=300; count++)); do
+                cp $WORK_DIR/animenu/1.jpg $WORK_DIR/animenu/$count.jpg
+            done
+            rm -f $WORK_DIR/chapt*000*.jpg
+
+            echo
+            echo "Converting JPEGs to m2v video format"
+            jpeg2yuv -v 0 -f 29.970 -I p -n 300 -L 1 -b1 \
+            -j $WORK_DIR/animenu/%0d.jpg |
+            ffmpeg   -f yuv4mpegpipe -i - -r 29.970 -s $VID_SIZE_OPT \
+            -tvstd ntsc $FFMPEG_OPTS -y $WORK_DIR/menu$i.m2v
+            rm -f $WORK_DIR/animenu/*
         done
-        rm -f $WORK_DIR/chapt*000*.jpg
+    fi
+fi    
 
-        echo
-        echo "Converting JPEGs to m2v video format"
-        jpeg2yuv -v 0 -f 29.970 -I p -n 300 -L 1 -b1 \
-        -j $WORK_DIR/animenu/%0d.jpg |
-        ffmpeg   -f yuv4mpegpipe -i - -r 29.970 -s $VID_SIZE_OPT \
-        -tvstd ntsc $FFMPEG_OPTS -y $WORK_DIR/menu$i.m2v
-        rm -f $WORK_DIR/animenu/*
+# create silence for either animated or plain submenus
+for ((s=0; s<=FILES; s++)); do
+    echo
+    echo "Creating a silent audio background"
+    TIME=`vid_length $WORK_DIR/menu$s.m2v`
+    ffmpeg -f s16le -i /dev/zero -t $TIME \
+    $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT
+    unset TIME
 
-        echo
-        echo "Creating a silent audio background"
-        TIME=`vid_length $WORK_DIR/menu$i.m2v`
-        ffmpeg -f s16le -i /dev/zero -t $TIME \
-        $AUDIO_OPTS -y $WORK_DIR/menu$i.$AUDIO_EXT
-        unset TIME
+    echo
+    echo "Multiplexing video and audio together"
+    S=$((s + 1))
+    mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/menu$S.mpg \
+    $WORK_DIR/menu$s.$AUDIO_EXT $WORK_DIR/menu$s.m2v
 
-        echo
-        echo "Multiplexing video and audio together"
-        I=$((i + 1))
-        mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/menu$I.mpg \
-        $WORK_DIR/menu$i.$AUDIO_EXT $WORK_DIR/menu$i.m2v
+done
 
-    done
-fi
 
 ##############################################################################
 #                      Work on main menu                                     #
@@ -646,7 +758,6 @@ convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 420x \
 $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
 -compose CopyOpacity -composite  $WORK_DIR/intro_txt.png
 
-
 echo
 echo "Adding title to JPEGs, cropping and resizing"
 for ((i=0; i<=FILES; i++)); do
@@ -654,10 +765,10 @@ for ((i=0; i<=FILES; i++)); do
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name '*[1-9]*.jpg') )
 
     for jpg in "${JPGS[@]}"; do
-        montage -geometry +4+4 -background '#282828' \
+        montage -geometry +4+4 -background '#161514' \
         -fill '#C6C6C6' -pointsize 22 -title "${TITLES[i]}"  $jpg miff:- |
         convert -gravity South  -chop  0x${CHOP[FILES]} +repage - miff:- |
-        convert -background '#282828' -frame 5x5 \
+        convert -background '#161514' -frame 8x8 \
         -bordercolor none -mattecolor "#444744" - miff:- |
         convert -resize $INTRO_SIZE! - $jpg
       done
@@ -675,12 +786,14 @@ for ((i=0; i<=FILES; i++)); do
     unset JPGS last_jpg next_jpg
 done
 
+echo
+echo "making final montages and compositing onto background with title"
 for (( count=1; count <= $MAX_ANI_LENGTH; count++)); do
     ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.jpg)
 
     # make final montages and composite onto grey background with title
     IM_CMD=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
-    -geometry ${GEO_ARRAY[FILES]}+5+5 -background '#282828' miff:-)
+    -geometry ${GEO_ARRAY[FILES]}+5+5 -background '#161514' miff:-)
     IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
     $WORK_DIR/intro_txt.png  -gravity south -geometry +0+55 -composite \
     -  -gravity north -geometry +0+55 -composite \
@@ -690,6 +803,8 @@ for (( count=1; count <= $MAX_ANI_LENGTH; count++)); do
     rm -f ${ANI_PICS[@]}
 done
 
+echo
+echo "converting JPEGS to video stream and encoding to dvd complient m2v video"
 # convert jpegs to video stream and encode to dvd complient m2v
 ENC_CMD1=(jpeg2yuv -v 0 -f 29.970 -I p -n $MAX_ANI_LENGTH -L 1 -b1 \
 -j $WORK_DIR/animenu/%0d.jpg)
@@ -705,7 +820,7 @@ fi
 
 echo
 echo "Cleaning up montage JPEGs"
-rm -frv $WORK_DIR/animenu/*.jpg
+rm -fr $WORK_DIR/animenu/*.jpg
 
 
 # create silence for the main menu
@@ -717,6 +832,8 @@ unset TIME
 ffmpeg -i $WORK_DIR/intro.wav \
 $AUDIO_OPTS -y $WORK_DIR/intro.$AUDIO_EXT
 
+echo
+echo "Multiplexing main menu audio and video together"
 # mplex main menu audio and video together
 INTRO_MPLEX_CMD="mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/intro.mpg \
 $WORK_DIR/intro.$AUDIO_EXT $WORK_DIR/intro.m2v"
@@ -734,6 +851,8 @@ fi
 #                       Run spumux and dvdauthor and pray                    #
 ##############################################################################
 
+echo
+echo "Running spumux and dvdauthor to create the final DVD structure"
 spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > $WORK_DIR/menu.mpg
 if [ $SUB_MENU = "true" ]; then
     for i in $(find $WORK_DIR/ -name menu[0-9]\*.mpg); do
