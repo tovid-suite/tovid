@@ -274,8 +274,8 @@ file_output_progress()
 # ******************************************************************************
 check_dep_group()
 {
-save_IFS=$IFS
-IFS=' '
+#save_IFS=$IFS
+#IFS=' '
 
 group_name="$1"
 dep_list="$2"
@@ -297,18 +297,44 @@ for DEP in $dep_list; do
      FOUND_DEPS=`echo -n "$HAVE_DEP" | tr '\n' ' '`
      DEP_MSG=`which $DEP`
      for FOUND_DEP in ${FOUND_DEPS[@]}; do
-         DEP_MSG=`echo "$DEP_MSG"; printf "  %-11s %+10s  %s" " " " " "found: $FOUND_DEP"`
+         DEP_MSG=`echo "$DEP_MSG"; printf "  %-11s %+9s  %s" " " " " "found: $FOUND_DEP"`
      done
   fi
-  printf "  %-11s %+10s: %s\n" "$DEP" "$DEP_STATUS" "$DEP_MSG" >> $DEP_LIST_FILE
+  printf "  %-11s %+9s: %s\n" "$DEP" "$DEP_STATUS" "$DEP_MSG" >> $DEP_LIST_FILE
   j=`expr $j \+ 1`
 done
 
 echo >> $DEP_LIST_FILE
 if $GROUP_PASS; then DEP_SUMMARY="$DEP_SUMMARY$group_name "; fi
 
-IFS=$save_IFS
+#IFS=$save_IFS
 }
+
+# ******************************************************************************
+# Check to see if a dependency group is in the dependency file, quit if missing
+# Input args: $1 = dependency group to check for
+#             $2 = Descriptive message about what the needs the dependencies for
+#
+# 
+# ******************************************************************************
+assert_dep_group ()
+{
+DEP_TO_CHECK="$1"
+DEP_MESSAGE="$2"
+
+MISSING_DEPS=`cat $DEP_LIST_FILE | tr '\n' '\t' | awk -F "# $DEP_TO_CHECK" '{ print $2 }' | \
+              awk -F '\t\t#' '{ print $1 }' | tr '\t' '\n' | grep "MISSING"`
+
+if ! grep -q "have.*$DEP_TO_CHECK" $DEP_LIST_FILE; then
+    echo "$DEP_MESSAGE"
+    echo
+    echo "$MISSING_DEPS"
+    echo
+    precho "Please install the above MISSING dependencies, run 'tovid -refresh-deps', and try again."
+    exit 1;
+fi
+}
+
 
 # ******************************************************************************
 # ******************************************************************************
@@ -421,8 +447,9 @@ fi
 # ******************************************************************************
 
 DEP_LIST_FILE=$TOVID_HOME/dependency.list
+DEP_LIST_VERSION=`grep "tovid version" $DEP_LIST_FILE | awk -F ': ' '{ print $2 }'`
 
-if $REFRESH_DEPS; then
+if $REFRESH_DEPS || test "$DEP_LIST_VERSION" != "$TOVID_VERSION" ; then
   echo "Removing old dependency list file..."
   rm -fv $DEP_LIST_FILE
 fi
@@ -513,13 +540,14 @@ DEP_GROUP_MEMBERS=([0]="$CORE_DEPS" [1]="$MAGICK_DEPS" [2]="$DVD_DEPS" [3]="$VCD
 
 # Comments describing each group of dependencies. Note the leading '#' isn't
 # necessary as this file isn't sourced, but it helps with readability.
-DEP_GROUP_COMMENTS=([0]="# core" [1]="# magick (needed to make menus and slideshows)" [2]="# dvd (needed to make DVD menus and burn DVDs)" [3]="# vcd (needed to burn (S)VCDs)" [4]="# vcd (needed to burn (S)VCDs)")
+DEP_GROUP_COMMENTS=([0]="# core" [1]="# magick (needed to make menus and slideshows)" [2]="# dvd (needed to make DVD menus and burn DVDs)" [3]="# vcd (needed to burn (S)VCDs)" [4]="# transcode (needed for animated menus)")
 
 # Check for deps and write the list file.
+echo "# tovid version: $TOVID_VERSION" >> "${DEP_LIST_FILE}"
 i=0
 for dep_group in ${DEP_GROUPS[@]}; do
   echo "${DEP_GROUP_COMMENTS[$i]}" >> "${DEP_LIST_FILE}"
-  check_dep_group "$dep_group" ${DEP_GROUP_MEMBERS[$i]}
+  check_dep_group "$dep_group" "${DEP_GROUP_MEMBERS[$i]}"
   i=`expr $i \+ 1`
 done
 
@@ -529,14 +557,14 @@ fi
 
 # Quit and complain if ANY dependency is missing. So far, all dependencies are
 # required, none are optional.
-if grep "MISSING" $DEP_LIST_FILE 
-then
-  echo
-  echo "Missing required dependencies!"
-  echo "Install them and run 'tovid-init -refresh-deps'"
-  echo "Exiting..."
-  exit 1
-fi
+#if grep "MISSING" $DEP_LIST_FILE 
+#then
+#  echo
+#  echo "Missing required dependencies!"
+#  echo "Install them and run 'tovid-init -refresh-deps'"
+#  echo "Exiting..."
+#  exit 1
+#fi
 
 BUILD_OPTIONS=`tail -n 1 $DEP_LIST_FILE | sed s/have/with/`
 
