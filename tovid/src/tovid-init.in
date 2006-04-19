@@ -566,6 +566,8 @@ fi
 #  exit 1
 #fi
 
+assert_dep_group "core" "You are missing tovid CORE dependencies!"
+
 BUILD_OPTIONS=`tail -n 1 $DEP_LIST_FILE | sed s/have/with/`
 
 # End tovid-init
