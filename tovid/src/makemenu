@@ -159,6 +159,8 @@ OUT_PREFIX=""
 
 echo $"$SCRIPT_NAME"
 
+assert_dep_group "magick" "You are missing dependencies required for making menus!"
+
 # Process all options
 while test $# -gt 0; do
     case "$1" in
@@ -175,6 +177,7 @@ while test $# -gt 0; do
             FPS="2500"
             ;;
         "-dvd" )
+	    assert_dep_group "dvd" "You are missing dependencies required for making DVD menus!"
             RES="dvd"
             MPEG2ENC_FMT="-f 8"
             # Variable bitrate
