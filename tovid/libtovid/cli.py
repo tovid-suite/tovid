@@ -17,6 +17,7 @@ import sys
 import logging
 import tempfile
 import commands
+from stat import S_IREAD, S_IWRITE, S_IEXEC
 from signal import SIGKILL
 # From libtovid
 #from libtovid.log import Log
@@ -110,19 +111,39 @@ class Script:
 
     def append(self, command):
         """Append the given command to the end of the script."""
+        assert isinstance(command, str)
         self.lines.append(command)
 
     def prepend(self, command):
         """Prepend the given command at the beginning of the script."""
+        assert isinstance(command, str)
         self.lines.insert(0, command)
 
     def run(self):
-        """Write all lines to a temporary file and execute it."""
-        fd, script = tempfile.mkstemp('.sh', self.name)
-        logfile = tempfile.mkstemp('.log', self.name)
+        """Write the script, execute it, and remove it."""
+        log.info("Preparing to execute script...")
+        self._prepare()
+        # TODO: Stream redirection (to logfile/stdout)
+        log.info("Running script: %s" % self.script_file)
+        os.system('sh %s' % self.script_file)
+        os.remove(self.script_file)
 
-        os.chmod(script, '+x')
-        
+    def _prepare(self):
+        """Write the script to a temporary file and prepare it for execution."""
+        fd, self.script_file = tempfile.mkstemp('.sh', self.name)
+        #fd, self.log_file = tempfile.mkstemp('.log', self.name)
+        # Make script file executable
+        os.chmod(self.script_file, S_IREAD|S_IWRITE|S_IEXEC)
+        # Write the script to the temporary script file
+        script = file(self.script_file, 'w')
+        script.write('#!/bin/sh\n')
+        script.write('# %s\n' % self.name)
+        script.write('cat %s' % self.script_file)
+        for line in self.lines:
+            script.write('%s\n' % line)
+        script.write('\n')
+        script.close()
+
 
 def verify_app(appname):
     """If appname is not in the user's path, print a error and exit."""
