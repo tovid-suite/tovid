@@ -39,13 +39,13 @@ options individually, do this:
     >>> useropts['height']
     3.0
 
-Need to set a bunch of options at once? You can update the values by giving a
+Need to set a bunch of options at once? You can override values by giving a
 string, list, or dictionary of options and values:
 
-    >>> useropts.update('-width 4.0 -height 2.0')
+    >>> useropts.override('-width 4.0 -height 2.0')
     >>> useropts.data
     {'width': '4.0', 'height': '2.0'}
-    >>> useropts.update({'width': 3.0})
+    >>> useropts.override({'width': 3.0})
     >>> useropts.data
     {'width': 3.0, 'height': '2.0'}
 
@@ -61,6 +61,7 @@ import sys
 from copy import copy
 import textwrap
 import logging
+import doctest
 # From libtovid
 from libtovid.utils import trim, tokenize
 
@@ -100,10 +101,10 @@ class Option:
     def num_args(self):
         """Return the number of arguments expected by this option, or -1 if
         unlimited."""
-        if self.default.__class__ == bool:
+        if isinstance(self.default, bool):
             # Boolean: no argument
             return 0
-        elif self.default.__class__ == list:
+        elif isinstance(self.default, list):
             # List: unlimited arguments
             return -1
         else:
@@ -174,7 +175,7 @@ class Option:
         return usage
 
 
-class OptionDict:
+class OptionDict(dict):
     """An indexed collection (dictionary) of user-configurable options."""
     def __init__(self, options=[]):
         """Create an option dictionary using the given list of Options."""
@@ -184,8 +185,8 @@ class OptionDict:
             self.data[opt.name] = copy(opt.default)
             self.defdict[opt.name] = opt
 
-    def update(self, custom):
-        """Update the option dictionary with custom options. options may be
+    def override(self, custom):
+        """Override the option dictionary with custom options. options may be
         a string, a list of option/argument tokens, or a dictionary of
         option/value pairs."""
         # If custom is a string or list, turn it into a dictionary
@@ -253,11 +254,6 @@ class OptionDict:
                     custom[opt] = arglist
         return custom
     
-def _test():
-    """Run doctest on this module."""
-    import doctest
-    doctest.testmod()
 
 if __name__ == '__main__':
-    _test()
-
+    doctest.testmod()
