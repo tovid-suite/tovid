@@ -127,6 +127,8 @@ probe_media ()
 # EXECUTION BEGINS HERE
 echo $"$SCRIPTNAME"
 
+assert_dep_group "dvd" "You are missing dependencies required for burning DVDs!"
+
 if test $# -lt 1; then
     usage_error "Please provide the name of a dvdauthor .xml file to author."
 fi
