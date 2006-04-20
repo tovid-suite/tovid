@@ -554,7 +554,8 @@ $(if [ $SUB_MENU = "true" ]; then
             for ((i=1; i<=6; i++)); do
                 echo -e "        <button name=\"$i\">jump title $Y chapter $i;</button>"
             done
-            echo -e "        <vob file=\"$WORK_DIR/Menu$Y.mpg\" pause=\"inf\"/>"
+            echo -e "        <vob file=\"$WORK_DIR/Menu$Y.mpg\"/>"
+            echo -e "        <post> jump cell 1; </post>"
             echo -e "      </pgc>\n      <pgc>"
         done | sed '$d'
 else
