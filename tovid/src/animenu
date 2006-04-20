@@ -645,12 +645,12 @@ if [ $SUB_MENU = true ]; then
                     JPEGS=( "${JPEGS[@]}" $(find $WORK_DIR/animenu/$b -name \*.jpg|head -n $a|sed  -n -e "$a p") )
                 done
                 IM_CMD=(montage ${JPEGS[@]} -tile ${TILE_ARRAY[CHAPTERS - 1]} \
-                -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -border 2x2 \
-                -bordercolor gray -mattecolor gray -background '#161514' miff:-)
+                -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -bordercolor '#161514' \
+                -mattecolor '#161514' -background '#161514' miff:-)
                 IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
-                $WORK_DIR/animenu/intro_txt.png  -gravity south -geometry +0+55 -composite \
-                -  -gravity north -geometry +0+55 -composite \
-                $WORK_DIR/animenu/$a.jpg)
+                $WORK_DIR/animenu/intro_txt.png  -gravity south \
+                -geometry +0+55 -composite -  -gravity north -geometry +0+55 \
+                -composite $WORK_DIR/animenu/$a.jpg)
                 
                 "${IM_CMD[@]}" | "${IM_CMD2[@]}"
                 unset JPEGS
