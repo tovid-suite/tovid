@@ -30,7 +30,10 @@ The number of -files and -titles must be equal.
 Options:
 
 -submenus      Create a submenu with chapters for each video. 
--ani_submenus  Create an animated submenu with chapters for each video
+-ani-submenus  Create an animated submenu with chapters for each video
+-menu-title    Title for the root menu - may be longer than thumbnail labels
+-framefont     Font to use for titles: use for example either:
+               "Arial" , or "/usr/share/fonts/truetype/managed/arial.ttf"
 EOF`
 
 # Print script name, usage notes, and optional error message, then exit.
@@ -51,12 +54,13 @@ TARGET=DVD
 LINE=$(for ((i=1; i<=79; i++));do echo -n =;done)
 TITLE_PAGE=animated
 VID_SIZE_OPT=720x480
-TITLE_PG_TITLE="My Video Collection"
+VMGM_TITLE=""
 SPUMUX_XML=$WORK_DIR/spumux.xml
 SUBMENU_SPUMUX_XML=$WORK_DIR/submenu_spumux.xml
 DVDAUTHOR_XML=$WORK_DIR/dvdauthor.xml
 GRADIENT="$WORK_DIR/aqua_gradient.png"
 SUB_MENU="false" 
+ANI_SUB_MENU="false"
 CHAPTERS=6
 FRAME_FONT=""
 
@@ -172,16 +176,14 @@ while test $# -gt 0; do
             ;;
         "-submenus" )
             SUB_MENU="true"
-            shift
-            # Don't skip past the next argument
-            if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
             ;;
-        "-ani_submenus" )
+        "-ani-submenus" )
             ANI_SUB_MENU="true"
             SUB_MENU="true"
+            ;;
+        "-menu-title" )
             shift
-            # Don't skip past the next argument
-            if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
+            VMGM_TITLE="$1"
             ;;
         "-framefont" )
             shift
@@ -190,7 +192,6 @@ while test $# -gt 0; do
     esac
     $DO_SHIFT && shift
 done
-
 # Make sure equal, nonzero number of titles and files were provided
 if test ${#VIDS[@]} -eq 0 || test ${#TITLES[@]} -eq 0; then
     usage_error "Please provide at least one file and one title."
@@ -209,14 +210,21 @@ if [ -d $WORK_DIR ]; then
     mkdir -pv  $WORK_DIR
 fi
 
+echo -e "FRAME_FONT is $FRAME_FONT"
+echo -e "ANI_SUB_MENU is $ANI_SUB_MENU"
+echo -e "SUB_MENU is $SUB_MENU"
+echo -e "VMGM_TITLE is $VMGM_TITLE"
 # Try to find a default font that is available
-if convert -size 50x20 xc:none -font Helvetica -gravity Center \
--draw "text 0,0 'test'" $WORK_DIR/test.png; then
-    FRAME_FONT="Helvetica"
-elif convert -size 200x100 xc:none -font helvetica -gravity Center \
--draw "text 0,0 'test'" $WORK_DIR/test.png; then
-    FRAME_FONT="helvetica"
+if [ -z $FRAME_FONT ]; then
+    if convert -size 50x20 xc:none -font Helvetica -gravity Center \
+    -draw "text 0,0 'test'" $WORK_DIR/test.png; then
+        FRAME_FONT="Helvetica"
+    elif convert -size 200x100 xc:none -font helvetica -gravity Center \
+    -draw "text 0,0 'test'" $WORK_DIR/test.png; then
+        FRAME_FONT="helvetica"
+    fi
 fi
+echo -e "FRAME_FONT is $FRAME_FONT"
 rm -f $WORK_DIR/test.png
 
 for i in ${VIDS[@]}; do
@@ -608,11 +616,25 @@ if [ $SUB_MENU = true ]; then
             unset cmd[key]
             CMD=${cmd[@]}
             echo -e "\nRunning: "
-            echo -e "transcode -q 1 -i ${VID_ARRAY[i]}" 
-            echo -e "-o $WORK_DIR/animenu/chapt -f 29.970 -J cut=\"$CMD\" -y jpg,null\n"
-            sleep 2
-            transcode -q 1 -i ${VID_ARRAY[i]} -o $WORK_DIR/animenu/chapt -f 29.970 -J cut="$CMD" -y jpg,null
-        
+            echo -e "transcode -q 0 -i ${VID_ARRAY[i]}" 
+            echo -e "-o $WORK_DIR/animenu/chapt -f 29.970 "
+            echo -e "-J cut=\"$CMD\"  -y jpg,null\n"
+
+            TCODE_CMD=(transcode -q 0 -i ${VID_ARRAY[i]} \
+            -o $WORK_DIR/animenu/chapt -f 29.970 -J cut="$CMD" -y jpg,null)
+             printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
+            if "${TCODE_CMD[@]}" 2>&1 >> $BVC_LOG.tmp; then
+                cleanlog 1
+            else
+                cleanlog 1
+                OUTPUT="There was a problem creating jpegs from the video.\n \
+                Please see the output of $BVC_LOG"
+                SORRY_MSG=$OUTPUT
+                sorry_msg
+                exit 1
+            fi
+            unset TCODE_CMD
+
             echo
             # FIXME make sure $CHAPTERS number of jpegs got created
             jpegs=$(find $WORK_DIR/animenu -name chapt000\*.jpg)
@@ -632,14 +654,12 @@ if [ $SUB_MENU = true ]; then
             for ((a=0; a<CHAPTERS; a++)); do
                 # echo messages temporary for debug
                 find $WORK_DIR/animenu/$a/ -name chapt\*.jpg|head -n 20|xargs rm
-                echo removing 1st 20 pics
                 find $WORK_DIR/animenu/$a/ -name chapt\*.jpg|tail -n 20|xargs rm
-                echo removing last 20 pics
                 echo -n "Frame count in $WORK_DIR/$a is: "
                 echo "$(ls -l $WORK_DIR/animenu/$a/*.jpg|wc -l) frames"
             done
                 echo
-                echo "Making montage images for chapter $(($i + 1))"
+                echo "Making montage images for  ${VID_ARRAY[i]}"
             
             for ((a=1; a<300; a++)); do
                 for ((b=0; b<CHAPTERS; b++)); do
@@ -725,25 +745,24 @@ if [ $SUB_MENU = true ]; then
             rm -f $WORK_DIR/animenu/*
         done
     fi
-fi    
+    
+    # create silence for either animated or plain submenus
+    for ((s=0; s<=FILES; s++)); do
+        echo
+        echo "Creating a silent audio background"
+        TIME=`vid_length $WORK_DIR/menu$s.m2v`
+        ffmpeg -f s16le -i /dev/zero -t $TIME \
+        $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT
+        unset TIME
 
-# create silence for either animated or plain submenus
-for ((s=0; s<=FILES; s++)); do
-    echo
-    echo "Creating a silent audio background"
-    TIME=`vid_length $WORK_DIR/menu$s.m2v`
-    ffmpeg -f s16le -i /dev/zero -t $TIME \
-    $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT
-    unset TIME
+        echo
+        echo "Multiplexing video and audio together"
+        S=$((s + 1))
+        mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/menu$S.mpg \
+        $WORK_DIR/menu$s.$AUDIO_EXT $WORK_DIR/menu$s.m2v
 
-    echo
-    echo "Multiplexing video and audio together"
-    S=$((s + 1))
-    mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/menu$S.mpg \
-    $WORK_DIR/menu$s.$AUDIO_EXT $WORK_DIR/menu$s.m2v
-
-done
-
+    done
+fi
 
 ##############################################################################
 #                      Work on main menu                                     #
@@ -754,7 +773,7 @@ echo $SEPARATOR
 echo
 echo "Creating a transparant png with the title on it"
 convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 420x \
--gravity Center caption:"\"$TITLE_PG_TITLE\""  -negate  \( +clone -blur 0x8 \
+-gravity Center caption:"\"$VMGM_TITLE\""  -negate  \( +clone -blur 0x8 \
 -shade 110x45 -normalize \
 $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
 -compose CopyOpacity -composite  $WORK_DIR/intro_txt.png
@@ -811,6 +830,7 @@ ENC_CMD1=(jpeg2yuv -v 0 -f 29.970 -I p -n $MAX_ANI_LENGTH -L 1 -b1 \
 -j $WORK_DIR/animenu/%0d.jpg)
 ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r 29.970 -s $VID_SIZE_OPT \
 -tvstd ntsc $FFMPEG_OPTS -y $WORK_DIR/intro.m2v)
+printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
 if "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" >> $BVC_LOG.tmp 2>&1; then
     cleanlog 3
 else
@@ -840,6 +860,7 @@ INTRO_MPLEX_CMD="mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/intro.mpg \
 $WORK_DIR/intro.$AUDIO_EXT $WORK_DIR/intro.m2v"
 echo -e "\nRunning: $INTRO_MPLEX_CMD\n" >> $BVC_LOG.tmp 
 cleanlog 1
+printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
 if ${INTRO_MPLEX_CMD[@]} >> $BVC_LOG.tmp 2>&1; then
     cleanlog 1
 else
