@@ -26,6 +26,9 @@ makeslides: Convert images into still-frame MPEG video for (S)VCD
 : **-pal**
         Generate PAL (704x576) output
 
+: **-verbose**
+        Print extra process information
+
 
 //IMAGES// is a single image or list of images to be
 converted to still MPEGs. The output names will
