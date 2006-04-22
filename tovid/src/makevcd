@@ -53,7 +53,7 @@ Where OPTIONS may be any of the following:
 
 And:
 
-  VCDIMAGER_XML is the name of a file containing a VCDImager XML
+  VCDIMAGER.xml is the name of a file containing a VCDImager XML
       description (For XML format, see http://www.vcdimager.org/).
       If you use(d) 'makexml' to create the XML file, you can use
       that as input here.
@@ -68,9 +68,9 @@ SEPARATOR="=========================================="
 # Args: $1 == text string containing error message
 usage_error ()
 {
-  echo $"$USAGE"
+  echo "$USAGE"
   echo $SEPARATOR
-  echo $"$@"
+  echo "$@"
   exit 1
 }
 
@@ -82,8 +82,8 @@ runtime_error ()
     echo "makevcd encountered an error during the VCD creation process:"
     echo $@
     echo "See if anything in the above output helps you diagnose the"
-    echo "problem, and please send a bug report containing the above"
-    echo "output to wapcaplet99@yahoo.com. Sorry for the inconvenience!"
+    echo "problem, and please file a bug report containing the above"
+    echo "output. Sorry for the inconvenience!"
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     exit 1
 }
@@ -95,21 +95,29 @@ BURN_SPEED=12
 # EXECUTION BEGINS HERE
 echo $"$SCRIPTNAME"
 
-while [[ ${1:0:1} == "-" ]]; do
-    if [[ $1 == "-device" ]]; then
+assert_dep_group "vcd" "You are missing dependencies required to image and burn (S)VCDs!"
+
+while test x"${1:0:1}" = "x-"; do
+    case "$1" in
+      "-device" )
         # Get device name
         shift
         CDRW_DEVICE="$1"
-    elif [[ $1 == "-speed" ]]; then
+	;;
+      "-speed" )
         shift
         BURN_SPEED=$1
-    fi
+	;;
+      * )
+        usage_error "Error: Unrecognized command-line option $1"
+	;;
+    esac
 
     # Get next argument
     shift
 done
 
-if [[ $# -ne 1 ]]; then
+if test $# -ne 1; then
     usage_error "Please provide the name of a VCDimager XML file \
 containing the (S)VCD description."
 else
@@ -124,6 +132,12 @@ echo "($CDRW_DEVICE) if you have not already done so."
 # Sanity check: Make sure given device is valid (somehow)
 # before creating the cue/bin. Give option to proceed anyway?
 # (i.e., could there be any point to proceeding?)
+# Here's a simple way: just quit
+if test -b $CDRW_DEVICE; then :
+   else
+   echo "Couldn't find $DDRW_DEVICE! Stopping here."
+   exit 1
+fi
 
 # Create cue/bin
 # Warn if there isn't enough space to make cue/bin
@@ -140,12 +154,10 @@ CDRDAO_CMD="cdrdao write --device $CDRW_DEVICE --driver generic-mmc \
 echo $SEPARATOR
 echo "Burning cue/bin image to $CDRW_DEVICE with the following command:"
 echo $CDRDAO_CMD
-( eval $CDRDAO_CMD )
-
-if [[ ! $? ]]; then
-    runtime_error "Could not burn the disc to $CDRW_DEVICE at speed $BURN_SPEED"
-else
+if eval $CDRDAO_CMD; then 
     echo "Done. You should now have a working VCD or SVCD. Please report"
     echo "any problems you might have to wapcaplet99@yahoo.com."
+else 
+    runtime_error "Could not burn the disc to $CDRW_DEVICE at speed $BURN_SPEED"
 fi
 exit 0
