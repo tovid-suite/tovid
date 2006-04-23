@@ -18,14 +18,13 @@ and more interactive. See [Using the GUI gui.html].
 
 tovid's foundation rests on a collection of shell scripts designed for specific
 tasks relevant to authoring a video disc. One script converts video, another
-makes menus, another generates the disc navigation structure, etc. Here's how
-it all fits together:
+makes menus, another generates the disc navigation structure, etc.
 
 [images/tovid_cli_organization.jpg]
 
-The blue gear icons are the primary tovid scripts. Each script has certain
-inputs and outputs; for example, the [tovid tovid.html] script takes any
-multimedia video file as input, and produces (S)VCD or DVD-compliant MPEG video
+Each script has certain inputs and outputs; for example, the [tovid tovid.html]
+script takes any multimedia video file as input, and produces (S)VCD or
+DVD-compliant MPEG video
 files as output. The output of [tovid tovid.html] then becomes an input to
 makevcd or [makedvd makedvd.html], and so on.
 
