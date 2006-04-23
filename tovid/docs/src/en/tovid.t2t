@@ -187,9 +187,9 @@ letterboxing or anamorphic scaling.
 
 : **-filters** {none,denoise,contrast,all} (default none)
     Apply post-processing filters to enhance the video. If your input video is
-    very high quality, use 'none'. If your input video is grainy, use
-    'denoise'; if it looks washed out or faded, use 'contrast'. You can use
-    multiple filters separated by commas. To apply all filters, use 'all'.
+    very high quality, use 'none'. If your input video is grainy, use 'denoise';
+    if it looks washed out or faded, use 'contrast'. You can use multiple filters
+    separated by commas. To apply all filters, use 'all'.
 
 : **-fps** //RATIO//
     Force input video to be interpreted as //RATIO// frames per second.  May be
