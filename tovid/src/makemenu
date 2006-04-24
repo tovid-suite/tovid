@@ -244,7 +244,7 @@ while test $# -gt 0; do
                 "left" ) TEXT_ALIGN="northwest" ;;
                 "right" ) TEXT_ALIGN="northeast" ;;
                 "center" ) TEXT_ALIGN="north" ;;
-                "*" ) TEXT_ALIGN="$1"
+                * ) TEXT_ALIGN="$1"
             esac
             ;;
         "-debug" )

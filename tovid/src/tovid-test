@@ -100,7 +100,7 @@ get_args()
                 # Test the DVD-compatible formats
                 TEST_FORMATS="dvd half-dvd dvd-vcd kdvd bdvd"
                 ;;
-            "*" )
+            * )
                 usage_error "Unrecognized command-line option: '$1'"
                 ;;
         esac
