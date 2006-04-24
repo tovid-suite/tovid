@@ -532,7 +532,7 @@ get_args()
                 ;;
 
             # If the option wasn't recognized, exit with an error
-            "*" )
+            * )
                 usage_error "Unrecognized command-line option '$1'"
                 ;;
             esac
