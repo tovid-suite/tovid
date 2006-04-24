@@ -256,8 +256,8 @@ if [ -z $FRAME_FONT ]; then
 fi
 rm -f $WORK_DIR/test.png
 
-for i in ${VIDS[@]}; do
-    VID_ARRAY=( ${VID_ARRAY[@]} $(abspath "$i") )
+for i in "${VIDS[@]}"; do
+    VID_ARRAY=( "${VID_ARRAY[@]}" "$(abspath "$i")" )
 done
 
 # do everything in $WORK_DIR
@@ -327,7 +327,7 @@ fi
 
 echo
 echo -e "Videos to be processed"
-for vid in ${VID_ARRAY[@]}; do echo $vid;done
+for vid in "${VID_ARRAY[@]}"; do echo "$vid";done
 echo  
 if  [ $TARGET = "DVD" ]; then
     VID_SIZE_OPT=$DVD_VID_SIZE_OPT
@@ -511,7 +511,7 @@ for len in ${CHAPT_INTERVALS[@]}; do
     done
 # debug chapters
 for i in ${!VID_ARRAY[@]}; do
-    echo -e "Chapters for ${VID_ARRAY[i]} are: \n${CHAPT_ARRAY[i++]}\n"
+    echo -e "Chapters for "${VID_ARRAY[i]}" are: \n${CHAPT_ARRAY[i++]}\n"
 done
 # make xml files, and run dvdauthor and spumux
 (
@@ -639,11 +639,11 @@ if [ $SUB_MENU = true ]; then
             unset cmd[key]
             CMD=${cmd[@]}
             echo -e "\nRunning: "
-            echo -e "transcode -q 0 -i ${VID_ARRAY[i]}" 
+            echo -e "transcode -q 0 -i "${VID_ARRAY[i]}"" 
             echo -e "-o $WORK_DIR/animenu/chapt -f 29.970 "
             echo -e "-J cut=\"$CMD\"  -y jpg,null\n"
 
-            TCODE_CMD=(transcode -q 0 -i ${VID_ARRAY[i]} \
+            TCODE_CMD=(transcode -q 0 -i "${VID_ARRAY[i]}" \
             -o $WORK_DIR/animenu/chapt -f 29.970  -J cut="$CMD" -y jpg,null)
              printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
             if "${TCODE_CMD[@]}" 2>&1 >> $BVC_LOG.tmp; then
@@ -679,7 +679,7 @@ if [ $SUB_MENU = true ]; then
                 echo "$(ls -l $WORK_DIR/animenu/$a/*.jpg|wc -l) frames"
             done
                 echo
-                echo "Making montage images for  ${VID_ARRAY[i]}"
+                echo "Making montage images for  "${VID_ARRAY[i]}""
             
             for ((a=1; a<300; a++)); do
                 for ((b=0; b<CHAPTERS; b++)); do
@@ -724,7 +724,7 @@ if [ $SUB_MENU = true ]; then
             key=$((${#cmd[@]} - 1))
             unset cmd[key]
             CMD=${cmd[@]}
-            transcode -i ${VID_ARRAY[i]} -o chapt -f 29.970 -J skip="$CMD" -y jpg,null
+            transcode -i "${VID_ARRAY[i]}" -o chapt -f 29.970 -J skip="$CMD" -y jpg,null
 
             echo
             echo "Creating a transparent title PNG"
