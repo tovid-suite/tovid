@@ -151,7 +151,7 @@ while test $# -gt 1; do
             shift
             DISC_LABEL="$1"
             ;;
-        "*" )
+        * )
             usage_error "Error: Unrecognized command-line option '$1'"
             ;;
     esac
@@ -253,7 +253,7 @@ i=1
 DISC_SUM=0
 while test $i -le $NUM_VOBS; do
   VOB=`echo "$VOB_LIST" | awk -F ':' '{ print $'$i' }'`
-  VOB_SIZE=`du -B M $VOB | awk -F ' ' '{print $1}' | tr -d M`
+  VOB_SIZE=`du -B M "$VOB" | awk -F ' ' '{print $1}' | tr -d M`
   DISC_SUM=`expr $VOB_SIZE \+ $DISC_SUM`
   i=`expr $i \+ 1`
 done
