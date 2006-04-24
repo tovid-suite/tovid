@@ -479,7 +479,7 @@ then
 # List all the dependency groups. When every member of one group is found,
 # the name of the group will be added to the summary section of $DEP_LIST_FILE
 # for group grepping a la: if ! grep "have.*foo" $DEP_LIST_FILE; then exit 1; fi
-DEP_GROUPS=(core magick dvd vcd transcode)
+DEP_GROUPS=(core magick dvd vcd transcode audio)
 
 # ******************************************************************************
 # Required Dependencies 
@@ -534,13 +534,18 @@ TRANSCODE_DEPS="tcprobe tcrequant"
 tcprobe_msg="part of transcode (www.transcoding.org)"
 tcrequant_msg="$tcprobe_msg"
 
+# ------------------------------------------------------------------------------
+# audio components
+AUDIO_DEPS="sox"
+sox_msg="swiss army knife for sound (sox.sf.net)"
+
 # Construct an array of each dependency group's members. Conveniently holds
 # ALL of tovid's run-time dependencies (echo ${DEP_GROUP_MEMBERS[@]}).
-DEP_GROUP_MEMBERS=([0]="$CORE_DEPS" [1]="$MAGICK_DEPS" [2]="$DVD_DEPS" [3]="$VCD_DEPS" [4]="$TRANSCODE_DEPS")
+DEP_GROUP_MEMBERS=([0]="$CORE_DEPS" [1]="$MAGICK_DEPS" [2]="$DVD_DEPS" [3]="$VCD_DEPS" [4]="$TRANSCODE_DEPS" [5]="$AUDIO_DEPS")
 
 # Comments describing each group of dependencies. Note the leading '#' isn't
 # necessary as this file isn't sourced, but it helps with readability.
-DEP_GROUP_COMMENTS=([0]="# core" [1]="# magick (needed to make menus and slideshows)" [2]="# dvd (needed to make DVD menus and burn DVDs)" [3]="# vcd (needed to burn (S)VCDs)" [4]="# transcode (needed for animated menus)")
+DEP_GROUP_COMMENTS=([0]="# core" [1]="# magick (needed to make menus and slideshows)" [2]="# dvd (needed to make DVD menus and burn DVDs)" [3]="# vcd (needed to burn (S)VCDs)" [4]="# transcode (needed for animated menus)" [5]="# audio (needed for fading audio)")
 
 # Check for deps and write the list file.
 echo "# tovid version: $TOVID_VERSION" >> "${DEP_LIST_FILE}"
