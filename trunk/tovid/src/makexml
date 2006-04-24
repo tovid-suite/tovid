@@ -75,9 +75,9 @@ SEPARATOR="=========================================="
 # Args: $1 == text string containing error message
 usage_error ()
 {
-  echo $"$USAGE"
+  echo "$USAGE"
   echo $SEPARATOR
-  echo $"$@"
+  echo "$@"
   exit 1
 }
 
@@ -121,7 +121,8 @@ declare -i CHAPTER_INTERVAL
 # Args: $1 = file to look for
 checkExistence ()
 {
-    if [[ ! -e $1 ]]; then
+    if test -e "$1"; then :
+    else
         echo "The file "$1" was not found."
         FILE_NOT_FOUND=:
     fi
@@ -137,7 +138,7 @@ addTopMenu ()
 
   # --------------------------
   # For DVD
-  if [[ $XML_FORMAT == "dvd" ]]; then
+  if test $XML_FORMAT = "dvd"; then
 
     # Generate XML for the top menu, with a placeholder for
     # the titleset menu buttons (to be replaced later by sed)
@@ -181,7 +182,7 @@ addMenu ()
 {
   # --------------------------
   # For DVD
-  if [[ $XML_FORMAT == "dvd" ]]; then
+  if test $XML_FORMAT = "dvd"; then
     echo "Adding a titleset-level menu using file: $1"
 
     # Generate XML for the button linking to this titleset menu from the top menu
@@ -254,25 +255,25 @@ addTitle ()
     (( CUR_TITLE++ ))
   else
     # Grouping several videos within one title 
-    if [[ $CUR_VIDEO -eq 0 ]]; then
+    if test $CUR_VIDEO -eq 0; then
        (( CUR_TITLE++ ))
     fi
     (( CUR_VIDEO++ ))
   fi
   # --------------------------
   # For DVD
-  if [[ $XML_FORMAT == "dvd" ]]; then
+  if test $XML_FORMAT = "dvd"; then
     if ! $MAKE_GROUP; then
       echo "Adding title: $1 as title number $CUR_TITLE of titleset $CUR_TS"
     else
-      if [[ $CUR_VIDEO -eq 1 ]]; then
+      if test $CUR_VIDEO -eq 1; then
         echo "Adding title number $CUR_TITLE of titleset $CUR_TS"
       fi
       echo "Adding $1 as video $CUR_VIDEO of title $CUR_TITLE"
     fi
     # Generate XML for the button linking to this title from the titleset menu
     if ! $FORCE_TITLESETS; then
-      if [[ $CUR_VIDEO -lt 2 ]]; then
+      if test $CUR_VIDEO -lt 2; then
         MENU_BUTTONS=`cat << EOF
 $MENU_BUTTONS\
         <button>jump title $CUR_TITLE;<\/button>
@@ -280,7 +281,7 @@ EOF`
       fi
     else
       # Add a button for the current titleset to the top menu 
-      if [[ $CUR_VIDEO -le 1 ]]; then
+      if test $CUR_VIDEO -le 1; then
         TOP_MENU_BUTTONS=`cat << EOF
 $TOP_MENU_BUTTONS\
         <button>jump titleset $CUR_TS menu;<\/button>
@@ -325,7 +326,7 @@ EOF`
 
     # Generate the XML for the title itself, appending to existing titles
     if $MAKE_GROUP; then
-      if [[ $CUR_VIDEO -eq 1 ]]; then
+      if test $CUR_VIDEO -eq 1; then
         TS_TITLES=`cat << EOF
 $TS_TITLES
     <pgc>
@@ -454,7 +455,7 @@ closeTitleset ()
 
   # --------------------------
   # For DVD
-  if [[ $XML_FORMAT == "dvd" ]]; then
+  if test $XML_FORMAT = "dvd"; then
     echo "Closing titleset $CUR_TS with $CUR_TITLE title(s)."
 
     # Give each menu a button linking back to the top menu, if there is one
@@ -549,24 +550,24 @@ EOF`
 
 # ==========================================================
 # EXECUTION BEGINS HERE
-echo $"$SCRIPTNAME"
+echo "$SCRIPTNAME"
 
-if [[ $# -lt 1 ]]; then
+if test $# -lt 1; then
   usage_error "Please provide at least one video to author, and the name of an output file to use."
 fi
 
-while [[ $# -gt 1 ]]; do
+while test $# -gt 1; do
   # Format and overwriting options
-  if [[ $1 == "-dvd" ]]; then
+  if test "$1" = "-dvd"; then
     XML_FORMAT="dvd"
-  elif [[ $1 == "-vcd" ]]; then
+  elif test "$1" = "-vcd"; then
     XML_FORMAT="vcd" 
-  elif [[ $1 == "-svcd" ]]; then
+  elif test "$1" = "-svcd"; then
     XML_FORMAT="svcd"
-  elif [[ $1 == "-overwrite" ]]; then
+  elif test "$1" = "-overwrite"; then
     OVERWRITE=:
   # Menus and video titles
-  elif [[ $1 == "-topmenu" ]]; then
+  elif test "$1" = "-topmenu"; then
     shift
     if ! $HAVE_TOP_MENU; then
       checkExistence "$1"
@@ -574,7 +575,7 @@ while [[ $# -gt 1 ]]; do
     else
       usage_error "You can only have one top menu. Please specify only one -topmenu option. If you would like to have multiple menus, please use the -menu option."
     fi
-  elif [[ $1 == "-menu" ]]; then
+  elif test "$1" = "-menu"; then
     if $FORCE_TITLESETS; then
       usage_error "You can not use -titlesets with -menu. Please use -topmenu instead."
     fi
@@ -584,13 +585,13 @@ while [[ $# -gt 1 ]]; do
     checkExistence "$1"
     closeTitleset
     addMenu "$1"
-  elif [[ $1 == "-slides" ]]; then
+  elif test "$1" = "-slides"; then
     STILL_TITLES=:
     FIRST_TITLE=:
-  elif [[ $1 == "-group" ]]; then
+  elif test "$1" = "-group"; then
     MAKE_GROUP=:
     CUR_VIDEO=0
-  elif [[ $1 == "-endgroup" ]]; then
+  elif test "$1" = "-endgroup"; then
     if $MAKE_GROUP; then
       TS_TITLES=`cat << EOF
        $TS_TITLES
@@ -601,17 +602,17 @@ EOF`
     fi
     MAKE_GROUP=false
     CUR_VIDEO=0
-  elif [[ $1 == "-chapters" ]]; then
+  elif test "$1" = "-chapters" ; then
     MAKE_CHAPTERS=:
     shift
     CHAPTER_INTERVAL=$1
-    if [[ "$CHAPTER_INTERVAL" -lt "0" || "$CHAPTER_INTERVAL" -gt "9999" ]]
+    if test "$CHAPTER_INTERVAL" -lt "0" || test "$CHAPTER_INTERVAL" -gt "9999" 
     then
        usage_error "Please use a -chapters interval between 0 and 9999."
     fi
-  elif [[ $1 == "-nochapters" ]]; then
+  elif test "$1" = "-nochapters" ; then
     MAKE_CHAPTERS=:
-  elif [[ $1 == "-titlesets" ]]; then
+  elif test "$1" = "-titlesets" ; then
     if $HAVE_MENU; then
       usage_error "You can not use -titlesets with -menu. Please use -topmenu instead."
     fi
@@ -627,7 +628,7 @@ EOF`
 done
 
 # Last argument should be the name of the output file
-if [[ $# -ne 1 ]]; then
+if test $# -ne 1 ; then
   usage_error "Please provide a name for the output file (the .xml extension will be added)"
 else
   OUT_PREFIX="$1"
@@ -650,7 +651,7 @@ fi
 # Assemble the final XML file
 
 # dvdauthor format for a DVD
-if [[ $XML_FORMAT == "dvd" ]]; then
+if test $XML_FORMAT = "dvd" ; then
 FINAL_DISC_XML=`cat << EOF
 <dvdauthor dest="$OUT_PREFIX">
 <vmgm>
@@ -663,7 +664,7 @@ EOF`
 # vcdxbuild (vcdimager) format for a VCD or SVCD
 else
   # Determine what version number to use
-  if [[ $XML_FORMAT == "vcd" ]]; then
+  if test $XML_FORMAT = "vcd" ; then
     VCD_VERSION="2.0"
     OPTION_LINE=''
   # Use 1.0 for SVCD
@@ -673,14 +674,14 @@ else
   fi
 
   # Make sure there are segment-items and sequence-items
-  if [[ -n $SEGMENT_ITEMS_XML ]]; then
+  if test -n "$SEGMENT_ITEMS_XML" ; then
     SEGMENT_ITEMS_XML=`cat << EOF
 <segment-items>
 $SEGMENT_ITEMS_XML
 </segment-items>
 EOF`
   fi
-  if [[ -n $SEQUENCE_ITEMS_XML ]]; then
+  if test -n "$SEQUENCE_ITEMS_XML" ; then
     SEQUENCE_ITEMS_XML=`cat << EOF
 <sequence-items>
 $SEQUENCE_ITEMS_XML
@@ -721,7 +722,7 @@ EOF`
 fi
 
 # See if selected output file exists. If so, confirm for overwrite.
-if [[ -e $OUT_PREFIX.xml ]]; then
+if test -e $OUT_PREFIX.xml ; then
   echo $SEPARATOR
   echo "The output file you specified: $OUT_PREFIX.xml already exists."
   if $OVERWRITE; then
@@ -745,7 +746,7 @@ fi
 echo $SEPARATOR
 
 echo "Done. The resulting XML was written to $OUT_PREFIX.xml."
-if [[ $XML_FORMAT == "dvd" ]]; then
+if test $XML_FORMAT = "dvd" ; then
     echo "You can now author, image and/or burn the disc by running:"
     echo "    makedvd $OUT_PREFIX.xml"
 else
