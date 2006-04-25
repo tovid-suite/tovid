@@ -77,9 +77,9 @@ BACKGR=""
 # Args: $1 == text string containing error message
 usage_error ()
 {
-  echo $"$USAGE"
+  echo "$USAGE"
   echo "$SEPARATOR"
-  echo $@
+  echo "$@"
   exit 1
 }
 
@@ -95,9 +95,9 @@ cleanup ()
 # EXECUTION BEGINS HERE
 # ***********************************
 
-echo $"$SCRIPT_NAME"
+echo "$SCRIPT_NAME"
 
-while [[ ${1:0:1} == "-" ]]; do
+while test ${1:0:1} = "-"; do
     case "$1" in
         "-audiodelay" )
             shift
@@ -107,6 +107,7 @@ while [[ ${1:0:1} == "-" ]]; do
             shift
             DO_SHRINK=:
             SHRINK_FACTOR="$1"
+            assert_dep_group "transcode" "You are missing dependencies required for shrinking video!"
             ;;
         "-parallel" )
             PARALLEL=:
