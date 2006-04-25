@@ -347,10 +347,14 @@ assert_dep ()
 DEP_TO_CHECK="$1"
 DEP_MESSAGE="$2"
 
+MISSING_DEP=`grep "$DEP_TO_CHECK" "$DEP_LIST_FILE"`
+
 if grep -q "$DEP_TO_CHECK.*MISSING" "$DEP_LIST_FILE"; then
     echo "$DEP_MESSAGE"
     echo
-    precho "Please install the above MISSING dependencies, run 'tovid -refresh-deps', and try again."
+    echo "$MISSING_DEP"
+    echo
+    precho "Please install the above MISSING dependency, run 'tovid -refresh-deps', and try again."
     exit 1;
 fi
 }
