@@ -411,6 +411,8 @@ ANI_FRAMES=$MAX_ANI_LENGTH
 ###############################################################################
 
 # create the pics for background image and move to proper pics/ dir
+echo
+echo "Creating JPEGs for each chapter"
 for ((i=0; i<=FILES; i++)) ; do
 #    CREATE_JPG_CMD=(transcode -q 0 -i ${VID_ARRAY[i]} \
 #    -c 90-$(($MAX_ANI_LENGTH + 90))
@@ -462,7 +464,7 @@ eval convert "$HIGHLIGHT_CMD" -colors 3 "$WORK_DIR/Highlightx1.png"
 
 for button in Select Highlight; do
     montage -background none \
-    $(for ((i=0; i<CHAPTERS; i++)); do echo $WORK_DIR/${button}x1.png;done) \
+    $(for ((i=0; i<=FILES; i++)); do echo $WORK_DIR/${button}x1.png;done) \
     -tile ${TILE_ARRAY[FILES]} -geometry ${GEO_ARRAY[FILES]}+5+5 \
     -bordercolor none -mattecolor transparent miff:- |
     convert  -colors 3 -size 720x480 xc:none  - -gravity north -geometry +0+55  \
@@ -676,7 +678,7 @@ if [ $SUB_MENU = true ]; then
                 find $WORK_DIR/animenu/$a/ -name chapt\*.jpg|head -n 20|xargs rm
                 find $WORK_DIR/animenu/$a/ -name chapt\*.jpg|tail -n 20|xargs rm
                 # a debug echo for now
-                echo -n "Frame count in $WORK_DIR/$a is: "
+                echo -n "Frame count in $WORK_DIR/animenu/$a is: "
                 echo "$(ls -l $WORK_DIR/animenu/$a/*.jpg|wc -l) frames"
             done
                 echo
