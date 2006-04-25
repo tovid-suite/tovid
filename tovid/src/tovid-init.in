@@ -313,9 +313,9 @@ if $GROUP_PASS; then DEP_SUMMARY="$DEP_SUMMARY$group_name "; fi
 # ******************************************************************************
 # Check to see if a dependency group is in the dependency file, quit if missing
 # Input args: $1 = dependency group to check for
-#             $2 = Descriptive message about what the needs the dependencies for
+#             $2 = Descriptive message about what the user needs the 
+#             dependencies for
 #
-# 
 # ******************************************************************************
 assert_dep_group ()
 {
@@ -335,6 +335,25 @@ if ! grep -q "have.*$DEP_TO_CHECK" $DEP_LIST_FILE; then
 fi
 }
 
+# ******************************************************************************
+# Check to see if a dependency is in the dependency file, quit if missing
+# Input args: $1 = dependency to check for
+#             $2 = Descriptive message about what the user needs the 
+#                  dependencies for
+# 
+# ******************************************************************************
+assert_dep ()
+{
+DEP_TO_CHECK="$1"
+DEP_MESSAGE="$2"
+
+if grep -q "$DEP_TO_CHECK.*MISSING" "$DEP_LIST_FILE"; then
+    echo "$DEP_MESSAGE"
+    echo
+    precho "Please install the above MISSING dependencies, run 'tovid -refresh-deps', and try again."
+    exit 1;
+fi
+}
 
 # ******************************************************************************
 # ******************************************************************************
@@ -479,12 +498,12 @@ then
 # List all the dependency groups. When every member of one group is found,
 # the name of the group will be added to the summary section of $DEP_LIST_FILE
 # for group grepping a la: if ! grep "have.*foo" $DEP_LIST_FILE; then exit 1; fi
-DEP_GROUPS=(core magick dvd vcd transcode audio)
+DEP_GROUPS=(core magick dvd vcd transcode plugins)
 
 # ******************************************************************************
 # Required Dependencies 
 # ******************************************************************************
-CORE_DEPS="grep sed md5sum mplayer mencoder mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc ffmpeg"
+CORE_DEPS="grep sed md5sum mplayer mencoder mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv ffmpeg"
 grep_msg="a GNU utility (www.gnu.org/software/grep)"
 sed_msg="a GNU utility (directory.fsf.org/GNU/sed.html)"
 md5sum_msg="a GNU utility (www.gnu.org/software/coreutils)"
@@ -496,6 +515,7 @@ yuvfps_msg="$mplex_msg"
 yuvdenoise_msg="$mplex_msg"
 ppmtoy4m_msg="$mplex_msg"
 mp2enc_msg="$mplex_msg"
+jpeg2yuv_msg="$mplex_msg"
 ffmpeg_msg="a video encoding utility (ffmpeg.sf.net)"
 
 # ******************************************************************************
@@ -535,17 +555,17 @@ tcprobe_msg="part of transcode (www.transcoding.org)"
 tcrequant_msg="$tcprobe_msg"
 
 # ------------------------------------------------------------------------------
-# audio components
-AUDIO_DEPS="sox"
+# Plugin tools
+PLUGIN_DEPS="sox"
 sox_msg="swiss army knife for sound (sox.sf.net)"
 
 # Construct an array of each dependency group's members. Conveniently holds
 # ALL of tovid's run-time dependencies (echo ${DEP_GROUP_MEMBERS[@]}).
-DEP_GROUP_MEMBERS=([0]="$CORE_DEPS" [1]="$MAGICK_DEPS" [2]="$DVD_DEPS" [3]="$VCD_DEPS" [4]="$TRANSCODE_DEPS" [5]="$AUDIO_DEPS")
+DEP_GROUP_MEMBERS=([0]="$CORE_DEPS" [1]="$MAGICK_DEPS" [2]="$DVD_DEPS" [3]="$VCD_DEPS" [4]="$TRANSCODE_DEPS" [5]="$PLUGIN_DEPS")
 
 # Comments describing each group of dependencies. Note the leading '#' isn't
 # necessary as this file isn't sourced, but it helps with readability.
-DEP_GROUP_COMMENTS=([0]="# core" [1]="# magick (needed to make menus and slideshows)" [2]="# dvd (needed to make DVD menus and burn DVDs)" [3]="# vcd (needed to burn (S)VCDs)" [4]="# transcode (needed for animated menus)" [5]="# audio (needed for fading audio)")
+DEP_GROUP_COMMENTS=([0]="# core" [1]="# magick (needed to make menus and slideshows)" [2]="# dvd (needed to make DVD menus and burn DVDs)" [3]="# vcd (needed to burn (S)VCDs)" [4]="# transcode (needed for animated menus)" [5]="# plugins (needed for other specific tests)")
 
 # Check for deps and write the list file.
 echo "# tovid version: $TOVID_VERSION" >> "${DEP_LIST_FILE}"
