@@ -497,6 +497,7 @@ get_args()
                 ;;
             "-ffmpeg" )
                 USE_FFMPEG=:
+		assert_dep "ffmpeg" "Cannot use ffmpeg: you don't have it installed!"
                 ;;
             "-nofifo" )
                 USE_FIFO=false

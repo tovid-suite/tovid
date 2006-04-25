@@ -507,7 +507,7 @@ DEP_GROUPS=(core magick dvd vcd transcode plugins)
 # ******************************************************************************
 # Required Dependencies 
 # ******************************************************************************
-CORE_DEPS="grep sed md5sum mplayer mencoder mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv ffmpeg"
+CORE_DEPS="grep sed md5sum mplayer mencoder mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv"
 grep_msg="a GNU utility (www.gnu.org/software/grep)"
 sed_msg="a GNU utility (directory.fsf.org/GNU/sed.html)"
 md5sum_msg="a GNU utility (www.gnu.org/software/coreutils)"
@@ -520,7 +520,6 @@ yuvdenoise_msg="$mplex_msg"
 ppmtoy4m_msg="$mplex_msg"
 mp2enc_msg="$mplex_msg"
 jpeg2yuv_msg="$mplex_msg"
-ffmpeg_msg="a video encoding utility (ffmpeg.sf.net)"
 
 # ******************************************************************************
 # Optional Dependencies (not quite optional yet...)
@@ -560,8 +559,9 @@ tcrequant_msg="$tcprobe_msg"
 
 # ------------------------------------------------------------------------------
 # Plugin tools
-PLUGIN_DEPS="sox"
+PLUGIN_DEPS="sox ffmpeg"
 sox_msg="swiss army knife for sound (sox.sf.net)"
+ffmpeg_msg="a video encoding utility (ffmpeg.sf.net)"
 
 # Construct an array of each dependency group's members. Conveniently holds
 # ALL of tovid's run-time dependencies (echo ${DEP_GROUP_MEMBERS[@]}).
