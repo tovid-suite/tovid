@@ -157,9 +157,10 @@ OUT_PREFIX=""
 # EXECUTION BEGINS HERE
 # ***********************************
 
-echo $"$SCRIPT_NAME"
+echo "$SCRIPT_NAME"
 
 assert_dep_group "magick" "You are missing dependencies required for making menus!"
+assert_dep "ffmpeg" "You cannot make audio without ffmpeg!"
 
 # Process all options
 while test $# -gt 0; do
@@ -199,7 +200,7 @@ while test $# -gt 0; do
             ;;
         "-audio" )
             shift
-            if [[ -z $BG_AUDIO ]]; then
+            if test -z $BG_AUDIO ; then
               BG_AUDIO=$1
             else
               usage_error "Please specify only one -audio option."
@@ -207,7 +208,7 @@ while test $# -gt 0; do
             ;;
         "-background" )
             shift
-            if [[ -z $BG_IMAGE ]]; then
+            if test -z $BG_IMAGE ; then
               BG_IMAGE=$1
             else
               usage_error "Please specify only one -background option."
@@ -331,7 +332,7 @@ fi
 USE_TITLE_FONT=$( convert -list type | \
     grep -m 1 "$TITLE_FONT" | awk '{print $1}' )
 # If not available, try to use something similar
-if [[ -z $USE_TITLE_FONT ]]; then
+if test -z $USE_TITLE_FONT ; then
     echo $SEPARATOR
     echo "Font: \"$TITLE_FONT\" does not appear to be available in ImageMagick."
     USE_TITLE_FONT=$( convert -list type | \
@@ -361,13 +362,13 @@ for CUR_TITLE in "${TITLES[@]}"
 do
   echo "$CUR_TITLE"
   # If "back" was listed, create a back button
-  if [[ $CUR_TITLE == "back" || $CUR_TITLE == "Back" ]]; then
+  if test $CUR_TITLE = "back" || test $CUR_TITLE = "Back" ; then
     BACK_BUTTON="y"
   else
     # Escape quotes in title
     CUR_TITLE=${CUR_TITLE//"'"/"\'"}
     # If using (S)VCD, enumerate titles
-    if [[ $RES == "vcd" ]]; then
+    if test $RES = "vcd" ; then
       TITLE_TEXT=$( echo "$TITLE_TEXT text 0,$CUR_Y '$CUR_BUTTON_NUM. $CUR_TITLE'" )
     else
       TITLE_TEXT=$( echo "$TITLE_TEXT text 15,$CUR_Y '$CUR_TITLE'" )
@@ -381,11 +382,11 @@ do
 done
 
 # If there was a "back", add it at the end
-if [[ -n "$BACK_BUTTON" ]]; then
+if test -n "$BACK_BUTTON" ; then
     # Leave an empty line
     CUR_Y=$NEXT_Y
     NEXT_Y=`expr $NEXT_Y \+ $TITLE_SPACING`
-    if [[ $RES == "vcd" ]]; then
+    if test $RES = "vcd" ; then
         TITLE_TEXT=$( echo "$TITLE_TEXT text 15,$CUR_Y '$CUR_BUTTON_NUM. Back'" )
     else
         TITLE_TEXT=$( echo "$TITLE_TEXT text 0,$CUR_Y 'Back'" )
@@ -415,7 +416,7 @@ echo $"$BG_CMD"
 eval $BG_CMD
 
 # If no background audio was provided, generate 4 seconds of silence
-if [[ -z $BG_AUDIO ]]; then
+if test -z $BG_AUDIO ; then
     echo "Creating 4-second silent $ASUF audio with the following command:"
     AUDIO_CMD="ffmpeg -f s16le -i /dev/zero -ac 2 -ar $SAMPRATE -ab 224 \
         -t 4 -acodec $ASUF -y \"$OUT_PREFIX.$ASUF\""
@@ -437,7 +438,7 @@ else
 fi
 
 # Make sure VID_LENGTH is nonzero
-if [[ $VID_LENGTH -eq 0 ]]; then
+if test $VID_LENGTH -eq 0 ; then
     # Use 30 seconds as a sensible default
     VID_LENGTH=`expr 30 \* $FPS \/ 100`
 fi
