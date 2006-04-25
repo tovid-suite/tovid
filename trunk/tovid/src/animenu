@@ -267,11 +267,12 @@ cd $WORK_DIR
 # make sure titles have no more than 12 characters
 for ((i=0; i<${#TITLES[@]}; i++)); do
     val=${#TITLES[i]}
-    [ -z "$MAX_VAL" ] || ((val > MAX_VAL)) && MAX_VAL=$val
+    [ -z "$MAX_VAL" ] || ((val > MAX_VAL)) && MAX_VAL=$val && key=$i
 done
 
 if [ $MAX_VAL -gt 14 ]; then
     echo -e "Sorry, the maximum number of characters you can use for a title is 14"
+    echo -e "The title \"${TITLES[key]}\" is too long"
     exit 1
 fi
 
