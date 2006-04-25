@@ -864,11 +864,11 @@ rm -fr $WORK_DIR/animenu/*.jpg
 
 # create silence for the main menu
 TIME=`vid_length "$WORK_DIR/intro.m2v"`
-if [ -z $BG_AUDIO ]; then
+if [ -z "$BG_AUDIO" ]; then
     cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
     -s - $WORK_DIR/intro.wav  trim 0 $TIME
 else
-    ffmpeg -i $BG_AUDIO -ar 48000 -ac 2 -acodec pcm_s16le -y \
+    ffmpeg -i "$BG_AUDIO" -ar 48000 -ac 2 -acodec pcm_s16le -y \
     -t 20 $WORK_DIR/intro.wav
     if [ $DO_FADE = "true" ]; then
         echo -e "Running:
