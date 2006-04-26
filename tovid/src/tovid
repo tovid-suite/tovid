@@ -260,6 +260,7 @@ runtime_error()
 # Args: $@ == text string contianing complete command-line
 # ******************************************************************************
 cmd_exec()
+{
     if $FAKE; then
         yecho
         yecho "    [Fake mode is on; command would be executed here]"
@@ -271,7 +272,7 @@ cmd_exec()
         eval "$@" >> "$LOG_FILE" 2>&1 &
     fi
     PIDS="$PIDS $!"
-
+}
 
 
 # ******************************************************************************
@@ -1427,7 +1428,7 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     
 # Re-encode audio
 else
-    AUDIO_ENC="$PRIORITY ffmpeg -ab $AUD_BITRATE -ar $SAMPRATE -ac 2 -acodec $AUD_SUF"
+    AUDIO_ENC="$PRIORITY ffmpeg"
 
     if $GENERATE_AUDIO; then
         # Read input from /dev/zero to generate a silent audio file
@@ -1438,8 +1439,8 @@ else
         AUDIO_ENC="$AUDIO_ENC -i \"$IN_FILE\""
         yecho "Encoding audio stream to $AUD_SUF with the following command:"
     fi
-    AUDIO_ENC="$AUDIO_ENC -y \"$OUT_PREFIX.$AUD_SUF\""
-
+    AUDIO_ENC="$AUDIO_ENC -vn -ab $AUD_BITRATE -ar $SAMPRATE -ac 2"
+    AUDIO_ENC="$AUDIO_ENC -acodec $AUD_SUF -y \"$OUT_PREFIX.$AUD_SUF\""
     yecho "$AUDIO_ENC"
     cmd_exec "$AUDIO_ENC"
 
