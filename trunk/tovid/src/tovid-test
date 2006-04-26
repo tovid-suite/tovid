@@ -2,8 +2,6 @@
 ME="[tovid-test]:"
 . tovid-init
 
-TEST_FORMATS="vcd svcd dvd"
-echo "TEST_FORMATS: $TEST_FORMATS"
 
 # tovid-test
 # Part of the tovid suite
@@ -60,10 +58,10 @@ Usage: tovid-test [OPTIONS] -in FILE
 
 OPTIONS may be any of the following:
 
-    -formats        Test VCD, SVCD, and DVD (Default)
-    -dvdformats     Test DVD-compatible formats
-    -allformats     Test all formats that tovid supports
-    -keepout        Keep all output files
+    -basic   Test VCD, SVCD, and DVD (Default)
+    -dvd     Test DVD-compatible formats
+    -all     Test all formats that tovid supports
+    -keep    Keep all output files
 
 The input file may be any video file. Output
 and logging go into a temporary directory
@@ -74,6 +72,7 @@ KEEP_OUTPUT=false
 TMP_DIR=`mktemp -d tovid-test.XXXXXX`
 LOG_FILE="tovid-test.log"
 DEFAULT_OUTFILE="$TMP_DIR/outfile.default"
+TEST_FORMATS="vcd svcd dvd"
 
 get_args()
 {
@@ -84,21 +83,25 @@ get_args()
                 shift
                 INFILE="$1"
                 ;;
-            "-keepoutput" )
+            "-keep" )
                 # Keep all output files, giving them unique names
                 KEEP_OUTPUT=:
                 ;;
-            "-allformats" )
+            "-all" )
                 # Test all formats
                 TEST_FORMATS="dvd half-dvd svcd dvd-vcd vcd kvcd kdvd bdvd"
                 ;;
-            "-formats" )
+            "-basic" )
                 # Test three basic formats
                 TEST_FORMATS="vcd svcd dvd"
                 ;;
-            "-dvdformats" )
+            "-dvd" )
                 # Test the DVD-compatible formats
                 TEST_FORMATS="dvd half-dvd dvd-vcd kdvd bdvd"
+                ;;
+            "-cd" )
+                # Test the CD-compatible formats
+                TEST_FORMATS="vcd svcd"
                 ;;
             * )
                 usage_error "Unrecognized command-line option: '$1'"
@@ -189,7 +192,7 @@ if test -z "$INFILE"; then
 fi
 
 # Remove any existing log file
-test -f "$LOG_FILE" && rm "$LOG_FILE"
+test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
 
 # Test each format in the list
 for FMT in `echo $TEST_FORMATS`
