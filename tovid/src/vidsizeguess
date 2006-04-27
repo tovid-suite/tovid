@@ -25,67 +25,111 @@ prediction is then based on the average for each format.
 import csv
 import os, sys
 
+# Order of fields in stats.tovid
+fields = [\
+    'tovid_version',
+    'final_name',
+    'cur_length',
+    'res',
+    'tvsys',
+    'final_size',
+    'tgt_bitrate',
+    'avg_bitrate',
+    'peak_bitrate',
+    'gop_minsize',
+    'gop_maxsize',
+    'script_tot_time',
+    'cpu_model',
+    'cpu_speed'
+    ]
+
 class VidStat:
-    """Statistics on a single encoded video file from stats.tovid."""
+    """Statistics on a single encoded video file."""
     def __init__(self):
         self.length = 0
         self.format = ''
         self.tvsys = ''
-        self.tgt_bitrate = 0
-        self.avg_bitrate = 0
+        self.bitrate = 0
+        self.cpu_speed = ''
     def display(self):
         print "%s secs, %s %s, %s kbps" % \
-              (self.length, self.format, self.tvsys, self.avg_bitrate)
+              (self.length, self.format, self.tvsys, self.bitrate)
     def values_ok(self):
         """Return True if all values are filled, False if any are empty."""
-        if self.length and self.format and self.tvsys and \
-           self.tgt_bitrate and self.avg_bitrate:
+        if self.length and self.format and self.tvsys and self.bitrate:
             return True
         else:
             return False
 
-def get_statlist():
-    """Get a list of all VidStats from ~/.tovid/stats.tovid."""
-    statfile = open(os.path.expanduser('~/.tovid/stats.tovid'), 'r')
-    csv_reader = csv.reader(statfile, skipinitialspace=True)
-    statlist = []
-    skipped = 0
-    for line in csv_reader:
-        # Only use real stat lines, not comments/empties
-        if len(line) >= 14 and line[0] != "TOVID_VERSION":
-            stat = VidStat()
-            stat.length = line[2]
-            stat.format = line[3].lower()
-            stat.tvsys = line[4].lower()
-            stat.tgt_bitrate = int(line[6] or 0)
-            stat.avg_bitrate = int(line[7] or 0)
-            if stat.values_ok():
-                statlist.append(stat)
-            else:
-                skipped += 1
-    statfile.close()
-    print "Read %s lines from ~/.tovid/stats.tovid" % len(statlist)
-    print "Skipped %s lines because they contained empty fields." % skipped
-    return statlist
+class Statlist:
+    """A list of VidStats that may be queried with a simple database-like
+    interface."""
+    def __init__(self):
+        stats = []
 
-def statlist_average(statlist, attribute):
-    """Return the average of a numeric attribute from a list of VidStats."""
-    values = []
-    for stat in statlist:
-        values.append(stat.__dict__[attribute])
-    if len(values) > 0:
-        return (sum(values) / len(values))
-    else:
-        return 0
+    def read_csv(self, filename):
+        """Import stats from a CSV (comma-delimited quoted text) file."""
+        self.stats = []
+        statfile = open(filename, 'r')
+        csv_reader = csv.reader(statfile, skipinitialspace=True)
+        skipped = 0
+        for line in csv_reader:
+            # Only use real stat lines, not comments/empties
+            if len(line) >= 14 and line[0] != "TOVID_VERSION":
+                stat = VidStat()
+                stat.length = int(line[fields.index('cur_length')] or 0)
+                stat.format = line[fields.index('res')].lower()
+                stat.tvsys = line[fields.index('tvsys')].lower()
+                stat.bitrate = int(line[fields.index('avg_bitrate')] or 0)
+                stat.encoding_time = float(line[fields.index('script_tot_time')]) \
+                        / float(stat.length)
+                stat.cpu_speed = line[fields.index('cpu_speed')]
+                if stat.values_ok():
+                    self.stats.append(stat)
+                else:
+                    skipped += 1
+        statfile.close()
+        print "Read %s lines from %s" % (len(self.stats), filename)
+        print "Skipped %s lines because they contained empty fields." % skipped
+
+    def average(self, attribute):
+        """Calculate the average value for a given numeric VidStat attribute.
+        For example, average('bitrate') returns the average overall bitrate of
+        all videos in the list."""
+        values = []
+        for stat in self.stats:
+            values.append(getattr(stat, attribute))
+        if len(values) > 0:
+            return float(sum(values) / len(values))
+        else:
+            return 0
+
+    def average_by(self, attribute, by_attribute):
+        """Return a dictionary of averages of an attribute, indexed by another
+        attribute. For example, average_by('bitrate', 'format') returns average
+        bitrates for each format."""
+        values = {}
+        for stat in self.stats:
+            byval = getattr(stat, by_attribute)
+            if not values.has_key(byval):
+                values[byval] = []
+            values[byval].append(getattr(stat, attribute))
+        # Calculate averages
+        averages = {}
+        if len(values) > 0:
+            for key, samples in values.iteritems():
+                averages[key] = float(sum(samples) / len(samples))
+        return averages
+
 
 if __name__ == '__main__':
-    # Dictionary of VidStat lists, indexed by format
-    stats = {}
-    for stat in get_statlist():
-        if stats.has_key(stat.format):
-            stats[stat.format].append(stat)
-        else:
-            stats[stat.format] = []
-    print "Average bitrates by format:"
-    for format, statlist in stats.iteritems():
-        print "%s: %s" % (format, statlist_average(statlist, 'avg_bitrate'))
+    statlist = Statlist()
+    statlist.read_csv(os.path.expanduser('~/.tovid/stats.tovid'))
+
+    print "Average bitrate"
+    print statlist.average('bitrate')
+    print "Average bitrates by format"
+    print statlist.average_by('bitrate', 'format')
+    print "Average bitrates by TV system"
+    print statlist.average_by('bitrate', 'tvsys')
+
