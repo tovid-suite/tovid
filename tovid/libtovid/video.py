@@ -108,7 +108,7 @@ class Video:
         # TODO: Possibly eliminate code repetition w/ Disc & Menu by adding
         # a base class and inheriting
         self.options = OptionDict(self.optiondefs)
-        self.options.update(custom_options)
+        self.options.override(custom_options)
         self.parent = None
         self.children = []
 
@@ -204,8 +204,8 @@ class Video:
             log.info("generate(): Encoding with mencoder")
             mencoder.encode(self.infile, self.options)
         elif method == 'ffmpeg':
-            log.info("The ffmpeg encoding method is not yet implemented.")
-            sys.exit()
+            log.info("generate(): Encoding with ffmpeg")
+            ffmpeg.encode(self.infile, self.options)
         else:
             log.info("The '%s' encoder is not yet supported." % method)
             log.info("Perhaps you'd like to write a backend for it? :-)")
