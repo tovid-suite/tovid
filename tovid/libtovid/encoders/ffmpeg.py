@@ -40,4 +40,5 @@ def encode(infile, options):
 
     script = Script('ffmpeg_encode')
     script.append(cmd)
+    script.run()
     return script
