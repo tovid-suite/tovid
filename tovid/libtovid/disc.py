@@ -27,7 +27,7 @@ class Disc:
     def __init__(self, custom_options=[]):
         """Initialize Disc with a string or list of options."""
         self.options = OptionDict(self.optiondefs)
-        self.options.update(custom_options)
+        self.options.override(custom_options)
         self.parent = None
         self.children = []
 

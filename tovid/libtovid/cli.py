@@ -126,7 +126,8 @@ class Script:
         # TODO: Stream redirection (to logfile/stdout)
         log.info("Running script: %s" % self.script_file)
         os.system('sh %s' % self.script_file)
-        os.remove(self.script_file)
+        #os.remove(self.script_file)
+        log.info("Finished script: %s" % self.script_file)
 
     def _prepare(self):
         """Write the script to a temporary file and prepare it for execution."""
@@ -138,12 +139,14 @@ class Script:
         script = file(self.script_file, 'w')
         script.write('#!/bin/sh\n')
         script.write('# %s\n' % self.name)
-        script.write('cat %s' % self.script_file)
+        script.write('cat %s\n' % self.script_file)
         for line in self.lines:
             script.write('%s\n' % line)
         script.write('\n')
         script.close()
 
+class Backend:
+    """"""
 
 def verify_app(appname):
     """If appname is not in the user's path, print a error and exit."""
