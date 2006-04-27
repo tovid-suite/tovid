@@ -40,8 +40,7 @@ def encode(infile, options):
         pass
     os.mkfifo(yuvfile)
     
-    # Filenames for intermediate streams (wav/ac3/m2v etc.)
-    wavfile = '%s.wav' % outname
+    # Filenames for intermediate streams (ac3/m2v etc.)
     # Appropriate suffix for audio stream
     if options['format'] in ['vcd', 'svcd']:
         audiofile = '%s.mpa' % outname
@@ -54,17 +53,17 @@ def encode(infile, options):
         videofile = '%s.m2v' % outname
     script = Script('mpeg2enc_encode')
     # Do audio
-    script.append(rip_wav(infile, wavfile, options))
-    script.append(encode_wav(wavfile, audiofile, options))
+    script.append(encode_audio(infile, audiofile, options))
     # Do video
     script.append(rip_video(infile, yuvfile, options))
     script.append(encode_video(infile, yuvfile, videofile, options))
     # Combine audio and video
     script.append(mplex_streams(videofile, audiofile, outname, options))
+    script.run()
     return script
     
 def rip_video(infile, yuvfile, options):
-    """Rip input video to yuv4mpeg format, and write to stream.yuv pipe."""
+    """Rip input video to yuv4mpeg format, and write to yuvfile."""
     # TODO: Custom mplayer options, subtitles, interlacing,
     # corresp.  to $MPLAYER_OPT, $SUBTITLES, $VF_PRE/POST, $YUV4MPEG_ILACE,
     # etc.
@@ -127,43 +126,23 @@ def encode_video(infile, yuvfile, videofile, options):
     catcmd = 'cat "%s" | ' % yuvfile
     return catcmd + cmd
 
-def generate_silent_wav(wavfile, options):
-    """Generate a silent audio .wav."""
-    cmd = 'sox'
-    cmd += ' -t raw -c 2'
-    cmd += ' -r %s' % options['samprate']
-    cmd += ' -w -s -t wav'
-    cmd += ' "%s"' % wavfile
-    # TODO: Use actual video duration
-    cmd += ' trim 0 5'
-    # Pipe zero-data into sox to get silence
-    return 'cat /dev/zero | ' + cmd
-
-def rip_wav(infile, wavfile, options):
-    """Rip a .wav of the audio stream from the input video."""
-    cmd = 'mplayer'
-    cmd += ' -quiet -vc null -vo null'
-    cmd += ' -ao pcm:waveheader:file=%s' % wavfile
-    cmd += ' "%s"' % infile.filename
-    return cmd
-
-def encode_wav(wavfile, audiofile, options):
-    """Encode the audio .wav to the target format."""
+def encode_audio(infile, audiofile, options):
+    """Encode the audio stream in infile to the target format."""
     if options['format'] in ['vcd', 'svcd']:
-        cmd = 'mp2enc'
-        cmd += ' -s -V'
-        cmd += ' -b %s' % options['abitrate']
-        cmd += ' -o "%s"' % audiofile
-        # Pipe wav file into mp2enc
-        catcmd = 'cat "%s" | ' % wavfile
-        cmd = catcmd + cmd
+        acodec = 'mp2'
     else:
-        cmd = 'ffmpeg'
-        cmd += ' -i "%s"' % wavfile
-        cmd += ' -ab %s ' % options['abitrate']
-        cmd += ' -ar %s ' % options['samprate']
-        cmd += ' -ac 2 -acodec ac3 -y'
-        cmd += ' "%s"' % audiofile
+        acodec = 'ac3'
+    cmd = 'ffmpeg '
+    # If infile was provided, encode it
+    if infile:
+        cmd += ' -i "%s"' % infile.filename
+    # Otherwise, generate 4-second silence
+    else:
+        cmd += ' -f s16le -i /dev/zero -t 4'
+    cmd += ' -ac 2 -ab 224'
+    cmd += ' -ar %s' % (options['samprate'])
+    cmd += ' -acodec %s' % acodec
+    cmd += ' -y "%s"' % audiofile
     return cmd
 
 def mplex_streams(vstream, astream, outfile, options):
