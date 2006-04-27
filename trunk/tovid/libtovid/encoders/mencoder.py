@@ -10,7 +10,8 @@ from libtovid.cli import Script
 log = logging.getLogger('mencoder.py')
 
 def encode(infile, options):
-    """Encode infile (a MultimediaFile) with mencoder, using the given options."""
+    """Return a Script to encode infile (a MultimediaFile) with mencoder,
+    using the given options."""
     cmd = 'mencoder'
     cmd += ' "%s" -o "%s"' % (infile.filename, options['out'])
     cmd += ' -oac lavc -ovc lavc -of mpeg'
@@ -36,7 +37,6 @@ def encode(infile, options):
         lavcopts += ':acodec=mp2'
     else:
         lavcopts += ':acodec=ac3'
-
     lavcopts += ':abitrate=%s:vbitrate=%s' % \
             (options['abitrate'], options['vbitrate'])
     # Maximum video bitrate
@@ -69,6 +69,8 @@ def encode(infile, options):
             vfilter += ',expand=%s:%s' % options['expand']
         cmd += ' -vf ' + vfilter
 
+    # Create the Script, and add the single command to it
     script = Script('mencoder_encode')
     script.append(cmd)
+    script.run()
     return script

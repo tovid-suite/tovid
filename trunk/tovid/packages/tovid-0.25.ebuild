@@ -12,7 +12,7 @@ SLOT="0"
 KEYWORDS="x86"
 IUSE="vcd dvd gui"
 
-DEPEND=">=dev-lang/python-2.4
+DEPEND="dev-lang/python
 	media-video/mplayer
 	media-video/mjpegtools
 	media-video/mjpegtools

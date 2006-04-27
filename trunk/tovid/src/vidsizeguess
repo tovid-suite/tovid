@@ -132,4 +132,5 @@ if __name__ == '__main__':
     print statlist.average_by('bitrate', 'format')
     print "Average bitrates by TV system"
     print statlist.average_by('bitrate', 'tvsys')
-
+    print "Average encoding time factors by CPU speed"
+    print statlist.average_by('encoding_time', 'cpu_speed')
