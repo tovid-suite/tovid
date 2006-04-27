@@ -2,7 +2,6 @@
 ME="[tovid-test]:"
 . tovid-init
 
-
 # tovid-test
 # Part of the tovid suite
 # =======================
@@ -42,9 +41,6 @@ ME="[tovid-test]:"
 
 SEPARATOR="========================================================="
 
-# An identifying string to be printed before all console/log output
-ERRORS=0
-
 SCRIPT_NAME=`cat << EOF
 --------------------------------
 tovid-test
@@ -69,9 +65,10 @@ with a name like "tovid-test.3peFka".
 EOF`
 
 KEEP_OUTPUT=false
-TMP_DIR=`mktemp -d tovid-test.XXXXXX`
+DEBUG=false
+ERRORS=0
 LOG_FILE="tovid-test.log"
-DEFAULT_OUTFILE="$TMP_DIR/outfile.default"
+DEFAULT_OUTFILE="outfile.default"
 TEST_FORMATS="vcd svcd dvd"
 
 get_args()
@@ -82,6 +79,10 @@ get_args()
                 # Input file to test
                 shift
                 INFILE="$1"
+                ;;
+            "-debug" )
+                # Run tovid in -debug mode and print all output
+                DEBUG=:
                 ;;
             "-keep" )
                 # Keep all output files, giving them unique names
@@ -154,24 +155,30 @@ test_tovid()
     # If we're keeping every output file, generate a unique name
     if $KEEP_OUTPUT; then
         OUTFILE_UNIQUE=`echo $@ | sed 's/ //g'`
-        OUTFILE="outfile.opts.$OUTFILE_UNIQUE"
+        OUTFILE="$OUTFILE_UNIQUE"
     else
         OUTFILE="$DEFAULT_OUTFILE"
+        rm -f "$OUTFILE"
     fi
-    CMD="tovid $@ -overwrite -out \"$OUTFILE\" >> \"$LOG_FILE\""
+    CMD="tovid $@ -debug -overwrite -out $OUTFILE"
     yecho $CMD
-    echo $CMD >> "$LOG_FILE"
+    if $DEBUG; then
+        eval "$CMD" | tee -a "$LOG_FILE"
+    else
+        eval "$CMD" >> "$LOG_FILE"
+    fi
 
-    if eval $CMD; then
+    if test -e "$OUTFILE.mpg"; then
         # Report success
         echo "--------"
         echo "Success!"
         echo "$ME Detected a successful encoding" >> $LOG_FILE
         echo $SEPARATOR
+        # TODO: Verify that output specs match the target format
         idvid "$OUTFILE" >> "$LOG_FILE"
     else
         # Count and log error
-        let "ERRORS=$ERRORS + 1"
+        ERRORS=`expr $ERRORS \+ 1`
         echo "$ME Detected an encoding failure" >> $LOG_FILE
         # Report failure
         echo "----------------"
@@ -198,7 +205,7 @@ test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
 for FMT in `echo $TEST_FORMATS`
 do
     echo "Encoding to $FMT format"
-    test_tovid -$FMT -in $INFILE
+    test_tovid "-$FMT -in $INFILE"
 done
 
 echo "There were $ERRORS errors. Please see $LOG_FILE for a complete report."
