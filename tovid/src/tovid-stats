@@ -1,0 +1,39 @@
+#! /usr/bin/env python
+# tovid-stats
+
+"""Predict the approximate encoded output size of a video stream.
+
+Inputs:
+    Multimedia video file (.avi, .mov, .mpg or whatever)
+
+Desired outputs:
+    Video stream size estimate for each format, ex.:
+        VCD: 15MB
+        SVCD: 25MB
+        DVD: 50MB
+        Half-DVD: 35MB
+        ...
+    Or, a single size estimate for a specific format, e.g.:
+        $ vidsizeguess -dvd -ntsc Video.avi
+        50263741
+
+Current implementation works by reading your ~/.tovid/stats.tovid file,
+containing statistics on all videos you've encoded with tovid. Output size
+prediction is then based on the average for each format.
+"""
+
+import os, sys
+from libtovid.stats import Statlist
+
+if __name__ == '__main__':
+    statlist = Statlist()
+    statlist.read_csv(os.path.expanduser('~/.tovid/stats.tovid'))
+
+    print "Average bitrate"
+    print statlist.average('bitrate')
+    print "Average bitrates by format"
+    print statlist.average_by('bitrate', 'format')
+    print "Average bitrates by TV system"
+    print statlist.average_by('bitrate', 'tvsys')
+    print "Average encoding time factors by CPU speed"
+    print statlist.average_by('encoding_time', 'cpu_speed')
