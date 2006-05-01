@@ -29,16 +29,29 @@ The number of -files and -titles must be equal.
 
 Options:
 
--submenus      Create a submenu with chapters for each video. 
--ani-submenus  Create an animated submenu with chapters for each video
--menu-title    Title for the root menu - may be longer than thumbnail labels
--framefont     Font to use for titles: use for example either: "Arial" , or
-               "/full/path/to/arial.ttf" (default: imagemagick default font)
--menu-audio    An audio file for the main menu background
--menu-audio-fade          number of sec to fade given menu audio out (default: no fade)
--submenu-audio # (not implemented yet) List of files for submenu backgrounds:
-               must equal the number of chapters (default: 6 chapters)
--chapters      The number of submenu chapters for each video (default: 6)
+-submenus         Create a submenu with chapters for each video. 
+-ani-submenus     Create an animated submenu with chapters for each video
+-menu-title       Title for the root menu - may be longer than thumbnail labels
+-framefont        Font to use for titles: use for example either: "Arial" , or
+                  "/full/path/to/arial.ttf" (default: imagemagick default font)
+-framefont-size   Font size for main menu - best to -preview if you use this.
+-menu-bg          Menu background image - pick on of correct aspect ration: ie.
+                  it should still look good when resize to 720x480 (pal: 720x576)
+-ani-menu-bg      Menu background video - again, needs to be resize to 720x480 or
+                  720x576, so pick one of appropriate aspect ratio/resolution
+-menu-fade        Fade the menu into the provided background image
+                  Do not use this for dark backgrounds like the default gray/black
+-transparency     The amount of transparency for the menu (0 -> 100):
+                  Lower values are more transparent, ie. less visable menu.. 
+                  Use keyword:  none   , for no transparency
+                  (only needed with -menu-fade or -menu-bg)
+-menu-audio       An audio file for the main menu background
+-menu-audio-fade  Number of sec to fade given menu audio out (default: no fade)
+-submenu-audio #  (not implemented yet) List of files for submenu backgrounds:
+                  must equal the number of chapters (default: 6 chapters)
+-chapters         The number of submenu chapters for each video (default: 6)
+-preview          display a preview of the menu with selected options and exit
+-seek             For main menu only - seek to N seconds before generating jpegs
 EOF`
 
 # Print script name, usage notes, and optional error message, then exit.
@@ -68,8 +81,12 @@ CHAPTERS=6
 FRAME_FONT=""
 BG_AUDIO=""
 SM_AUDIO=""
-DO_FADE="false"
-
+AUDIO_FADE="false"
+DISSOLVE=100
+MENU_FADE="false"
+TRANSPARENT="false"
+PREVIEW="false"
+PAUSE_TIME=6
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -180,6 +197,26 @@ while test $# -gt 0; do
             # Don't skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
             ;;
+        "-menu-bg" )
+            shift
+            BG_PIC="$(abspath "$1")"
+            ;;
+        "-menu-fade" )
+            MENU_FADE="true"
+            ;;
+        "-ani-menu-bg" )
+            shift
+            ANI_BG="$(abspath "$1")"
+            ;;
+        "-transparency" )
+            shift
+            if [ $1 = "none" ]; then
+                TRANSPARENT="false"
+            else
+                TRANSPARENT="true"
+                DISSOLVE="$1"
+            fi
+            ;;
         "-submenu-audio" )
             shift
             # Hackish list-parsing
@@ -196,12 +233,12 @@ while test $# -gt 0; do
             ;;
         "-menu-audio" )
             shift
-            BG_AUDIO="$1"
+            BG_AUDIO="$(abspath "$1")"
             ;;
         "-menu-audio-fade" )
             shift
-            DO_FADE="true"
             FADE="$1"
+            AUDIO_FADE="true"
             ;;
         "-submenus" )
             SUB_MENU="true"
@@ -216,7 +253,19 @@ while test $# -gt 0; do
             ;;
         "-framefont" )
             shift
-            FRAME_FONT="$1"
+            FRAME_FONT="$1" #FIXME should use abspath if ends with an extension .*
+            ;;
+        "-framefont-size" )
+            shift
+            TITLE_FONT_SIZE="$1"
+            ;;
+        "-preview" )
+            PREVIEW="true"
+            ;;
+        "-seek" )
+            shift
+            SEEK="$1"
+            SEEK="-ss $SEEK"
             ;;
     esac
     $DO_SHIFT && shift
@@ -239,22 +288,17 @@ if [ -d $WORK_DIR ]; then
     mkdir -pv  $WORK_DIR
 fi
 
-echo -e "FRAME_FONT is $FRAME_FONT"
-echo -e "ANI_SUB_MENU is $ANI_SUB_MENU"
-echo -e "SUB_MENU is $SUB_MENU"
-echo -e "VMGM_TITLE is $VMGM_TITLE"
-echo -e "FADE is $FADE and DO_FADE is $DO_FADE"
 # Try to find a default font that is available
-if [ -z $FRAME_FONT ]; then
+if [ -z "$FRAME_FONT" ]; then
     if convert -size 50x20 xc:none -font Helvetica -gravity Center \
-    -draw "text 0,0 'test'" $WORK_DIR/test.png; then
+    -draw "text 0,0 'test'" $WORK_DIR/font.png; then
         FRAME_FONT="Helvetica"
     elif convert -size 200x100 xc:none -font helvetica -gravity Center \
-    -draw "text 0,0 'test'" $WORK_DIR/test.png; then
+    -draw "text 0,0 'test'" $WORK_DIR/font.png; then
         FRAME_FONT="helvetica"
     fi
 fi
-rm -f $WORK_DIR/test.png
+rm -f $WORK_DIR/font.png
 
 for i in "${VIDS[@]}"; do
     VID_ARRAY=( "${VID_ARRAY[@]}" "$(abspath "$i")" )
@@ -293,7 +337,7 @@ DVD_INTRO_SIZE="360x240"
 SVCD_MPLEX_FORMAT=4
 DVD_MPLEX_FORMAT=8
 SVCD_TITLE_FONT_SIZE=32
-DVD_TITLE_FONT_SIZE=36
+DVD_TITLE_FONT_SIZE=42
 # PTSIZE=(30 36 42 42 42 42 48 48 48 48 48 48 54 54 54 54 54 54 54 54 \
 # 54 54 54 54 54 54 54 54 54 54)
 DVD_GEO_ARRAY=(360x240 270x180 192x128 192x128 180x120 180x120 120x80 120x80 \
@@ -339,8 +383,79 @@ if  [ $TARGET = "DVD" ]; then
     INTRO_SIZE=$DVD_INTRO_SIZE
     FFMPEG_OPTS=$DVD_FFMPEG_OPTS
     MPLEX_FORMAT=$DVD_MPLEX_FORMAT
-    TITLE_FONT_SIZE=$DVD_TITLE_FONT_SIZE
     GEO_ARRAY=("${DVD_GEO_ARRAY[@]}")
+    if [ -z $TITLE_FONT_SIZE ]; then
+        TITLE_FONT_SIZE=$DVD_TITLE_FONT_SIZE
+    else
+        TITLE_FONT_SIZE=$TITLE_FONT_SIZE
+    fi
+fi
+###############################################################################
+#      if preview is selected, generate a basic preview of the main menu      #
+###############################################################################
+if [ $PREVIEW = "true" ]; then
+    if [ -z "$BG_PIC" ]; then
+    echo
+    echo "Creating a black background"
+        BG_PIC="$WORK_DIR/pics/template.jpg"
+        convert  -resize $VID_SIZE_OPT! xc:"#161514" $BG_PIC
+    else
+        convert -resize $VID_SIZE_OPT! $BG_PIC "$WORK_DIR/pics/template.jpg"
+    fi
+
+    convert -size 1x512 gradient: -rotate 90 +matte \
+    -fx '3.5u^3 - 5.05u^2 + 2.05u + 0.3' \
+    -size 512x1 xc:"#08447B" -compose Overlay -composite "$GRADIENT"
+    echo "Creating a transparant png with the title on it"
+
+    convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
+    -gravity Center caption:"\"$VMGM_TITLE\""  -negate  \( +clone -blur 0x8 \
+    -shade 110x45 -normalize \
+    $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
+    -compose CopyOpacity -composite  \
+    \( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
+    -evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
+    -matte  -compose In  -composite $WORK_DIR/intro_txt.png
+
+    for ((i=0; i<=FILES; i++)) ; do
+        ffmpeg -i "${VID_ARRAY[$i]}" $SEEK -vframes 1 -s 360x240 $WORK_DIR/${i}-preview%d.jpg
+    done
+    JPGS=( "${JPGS[@]}" \
+    $(find $WORK_DIR/ -maxdepth 1 -name '*preview*.jpg') )
+    for i in "${!JPGS[@]}"; do
+        montage "${JPGS[i]}" -geometry +4+4 -bordercolor none -compose Copy  -background none \
+        -fill '#C6C6C6' -pointsize 22 -title "${TITLES[i]}"  $jpg miff:- |
+        convert -background none -frame 8x8 \
+        -bordercolor none -mattecolor "#444744" - miff:- |
+        convert -resize $INTRO_SIZE! - "${JPGS[i]}"
+    done
+    if [ $TRANSPARENT = "false" ]; then
+        montage ${JPGS[@]} -tile ${TILE_ARRAY[FILES]} \
+        -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:- |
+        convert $WORK_DIR/pics/template.jpg \
+        $WORK_DIR/intro_txt.png  -gravity south -geometry +0+55 -composite \
+        -  -gravity north -geometry +0+55 -composite \
+        $WORK_DIR/example.jpg
+        display $WORK_DIR/example.jpg
+        echo
+        echo -e "If you are happy with your preview, please proceed" 
+        echo "without the -preview option"
+        exit 1
+    elif [ $TRANSPARENT = "true" ]; then
+        montage ${JPGS[@]} -tile ${TILE_ARRAY[FILES]} \
+        -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:- |
+        composite -dissolve $DISSOLVE \
+        -gravity north -geometry +0+55 - \
+        $WORK_DIR/pics/template.jpg -background none miff:- |
+        convert - $WORK_DIR/intro_txt.png  \
+        -gravity south -geometry +0+55 -composite \
+        $WORK_DIR/example.jpg
+        display $WORK_DIR/example.jpg
+        echo
+        echo -e "If you are happy with your preview, please proceed" 
+        echo "without the -preview option"
+        exit 1 
+    fi
 fi
 
 ###############################################################################
@@ -412,13 +527,13 @@ ANI_FRAMES=$MAX_ANI_LENGTH
 
 # create the pics for background image and move to proper pics/ dir
 echo
-echo "Creating JPEGs for each chapter"
+echo "Creating JPEGs from each video for the main menu"
 for ((i=0; i<=FILES; i++)) ; do
 #    CREATE_JPG_CMD=(transcode -q 0 -i ${VID_ARRAY[i]} \
 #    -c 90-$(($MAX_ANI_LENGTH + 90))
 #    -o $WORK_DIR/pics/$i/pic -f 29.970  -j 72,72 -Z "$INTRO_SIZE" -y jpg,null)
 
-    CREATE_JPG_CMD=(ffmpeg -i "${VID_ARRAY[$i]}" -vframes $ANI_FRAMES \
+    CREATE_JPG_CMD=(ffmpeg -i "${VID_ARRAY[$i]}"  $SEEK -vframes $ANI_FRAMES \
     -s "$INTRO_SIZE" "$WORK_DIR/pics/$i/%d.jpg")
     printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
     echo -e "\nRunning: ${CREATE_JPG_CMD[@]}\n" | fold -bs >> $BVC_LOG
@@ -436,17 +551,23 @@ for ((i=0; i<=FILES; i++)) ; do
     fi
 
 done
-
-echo
-echo "Creating a black background"
-BG_PIC="$WORK_DIR/pics/template.jpg"
-convert  -size $VID_SIZE_OPT xc:"#161514" $BG_PIC
-
+# extract jpegs from the provided background video
+    if [ -z "$BG_PIC" ]; then
+        echo
+        echo "Creating a black background"
+        BG_PIC="$WORK_DIR/pics/template.jpg"
+        convert  -size $VID_SIZE_OPT xc:"#161514" $BG_PIC
+        cp $BG_PIC "$WORK_DIR/submenu_template.jpg"
+    else
+        convert -resize $VID_SIZE_OPT! $BG_PIC "$WORK_DIR/pics/template.jpg"
+        convert  -size $VID_SIZE_OPT xc:"#161514" "$WORK_DIR/submenu_template.jpg"
+    fi
+sleep 20
 echo
 echo "Creating a gradient image for fancy titling"
 convert -size 1x512 gradient: -rotate 90 +matte \
 -fx '3.5u^3 - 5.05u^2 + 2.05u + 0.3' \
--size 512x1 xc:DodgerBlue -compose Overlay -composite "$GRADIENT"
+-size 512x1 xc:"#08447B" -compose Overlay -composite "$GRADIENT"
 
 
 ##############################################################################
@@ -500,29 +621,42 @@ fi
 for i in ${!NEW_LENGTH[@]}; do
   CHAPT_INTERVALS=( ${CHAPT_INTERVALS[@]} $(( ${NEW_LENGTH[i]} / $CHAPTERS)) )
 done
-echo -e "chapter intervals in seconds are $CHAPT_INTERVALS"
-echo
+
 # and format in HH:MM:SS
 for len in ${CHAPT_INTERVALS[@]}; do
     Y=( ${Y[@]} $(for ((i=1; i<CHAPTERS; i++)) ; do echo "$len";done) )
     chapt_intervals=$(running_total <<< ${Y[@]})
-    chapters="$(for c in $chapt_intervals; do echo $(format_seconds  $c,)|
-    sed 's/,$//';done)"
+    chapters="$(for c in $chapt_intervals; do echo $(format_seconds $c); done)"
     chapters="00:00:00.000 $chapters"
     CHAPTS=$(for i in $chapters; do echo -n $i,;done|sed 's/,$//')
     CHAPT_ARRAY=( ${CHAPT_ARRAY[@]} $CHAPTS )
     unset Y chapt_intervals cmd
-    done
+done
 # debug chapters
 for i in ${!VID_ARRAY[@]}; do
     echo -e "Chapters for "${VID_ARRAY[i]}" are: \n${CHAPT_ARRAY[i++]}\n"
 done
 # make xml files, and run dvdauthor and spumux
+if [ $MENU_FADE = "true" ]; then
+    END_TIME=$((ANI_FRAMES / 30))
+    END_TIME=$((END_TIME - 3))
+    END_TIME=$(format_seconds $END_TIME)
+    END=" end=\"$END_TIME\""
+    START="00:00:03.0"
+    PAUSE_TIME="6"
+    POST="<post> jump cell 1; </post>"
+    MAIN_POST="        <post> jump cell 1; </post>"
+elif [ $MENU_FADE = "false" ]; then
+    PAUSE_TIME="inf"
+    unset END
+    START="00:00:00.0"
+fi
+
 (
     cat <<EOF
 <subpictures>
    <stream>
-     <spu force="yes" start="00:00:00.0"
+     <spu force="yes" start="$START"$END
           highlight="$WORK_DIR/Highlight.png"
           select="$WORK_DIR/Select.png"
           autooutline="infer"
@@ -550,14 +684,15 @@ fi
 if [ $SUB_MENU = "true" ]; then
     JUMP=menu
     POST="        <post> jump cell 1; </post>"
-    if [ ! $ANI_SUB_MENU = "true" ]; then
+    if [ $ANI_SUB_MENU = "false" ]; then
         PAUSE=" pause=\"inf\""
         unset POST
+    elif [ $ANI_SUB_MENU = "true" ]; then
+        PAUSE=" pause=\"5\""
     fi
 else
     JUMP=title
 fi
-
 # make dvdauthor.xml
 (
     cat <<EOF
@@ -581,7 +716,8 @@ $(for ((i=1; i<=$V_ARRAY_TOTAL; i++)); do
     fi
     echo -e "        <button name=\"$i\">jump $JUMP $JUMP_INC;</button>"
 done)
-        <vob file="$WORK_DIR/menu.mpg" pause="inf"/>
+        <vob file="$WORK_DIR/menu.mpg" pause="$PAUSE_TIME"/>
+$MAIN_POST
       </pgc>
 $(if [ $SUB_MENU = "true" ]; then
     echo -ne "      <pgc>\n"
@@ -590,12 +726,11 @@ $(if [ $SUB_MENU = "true" ]; then
                 echo -e "        <button name=\"$i\">jump title $Y chapter $i;</button>"
             done
             echo -e "        <vob file=\"$WORK_DIR/Menu$Y.mpg\"$PAUSE/>"
-            if [ $ANI_SUB_MENU = "true" ]
-                then  echo -e "$POST"
-            fi
-            echo -e "      </pgc>\n      <pgc>"
+echo "$POST"
+            echo "      </pgc>"
+            echo "      <pgc>"
         done | sed '$d'
-fi)
+fi)    
     </menus>
     <titles>
 $(for i in ${!VID_ARRAY[@]}; do
@@ -609,7 +744,7 @@ done)
   </titleset>
 </dvdauthor> 
 EOF
-) >> "$DVDAUTHOR_XML"
+) |sed '/^$/d' >> "$DVDAUTHOR_XML"
 
 ##############################################################################
 #                            Animenu stuff                                   #
@@ -626,19 +761,18 @@ if [ $SUB_MENU = true ]; then
         for i in ${!VID_ARRAY[@]}; do
             echo
             echo "Creating a transparent title PNG"
-            convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 420x \
+            convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
             -gravity Center caption:"\"${TITLES[i]}\""  -negate  \( +clone -blur 0x8 \
             -shade 110x45 -normalize $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
             -compose CopyOpacity -composite  $WORK_DIR/animenu/intro_txt.png
 
-            #FIXME the below commands are creating a bunch of extra frames at
+            #FIXME the below commands are creating a bunch of extra frames
             # which is harmless as they get removed, but needs to be tweaked         
             counts=$((${CHAPT_INTERVALS[i]} * 30))
-            SKIP=( 0 $(running_total <<<  $(for ((a=0; a<=CHAPTERS ; a++)); do echo -n "$counts ";done)) )
-            for c in ${!SKIP[@]}; do
-                cmd[c]=$((${SKIP[c]}))-$((${SKIP[c]} + 340))
+            CUT=( 0 $(running_total <<<  $(for ((a=0; a<=CHAPTERS ; a++)); do echo -n "$counts ";done)) )
+            for c in ${!CUT[@]}; do
+                cmd[c]=$((${CUT[c]}))-$((${CUT[c]} + 340))
             done
-            echo -e "cmd is ${cmd[@]}"
             key=$((${#cmd[@]} - 1))
             unset cmd[key]
             CMD=${cmd[@]}
@@ -675,7 +809,6 @@ if [ $SUB_MENU = true ]; then
                 done
             done
             for ((a=0; a<CHAPTERS; a++)); do
-                # echo messages temporary for debug
                 find $WORK_DIR/animenu/$a/ -name chapt\*.jpg|head -n 20|xargs rm
                 find $WORK_DIR/animenu/$a/ -name chapt\*.jpg|tail -n 20|xargs rm
                 # a debug echo for now
@@ -692,7 +825,7 @@ if [ $SUB_MENU = true ]; then
                 IM_CMD=(montage ${JPEGS[@]} -tile ${TILE_ARRAY[CHAPTERS - 1]} \
                 -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -bordercolor '#161514' \
                 -mattecolor '#161514' -background '#161514' miff:-)
-                IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
+                IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
                 $WORK_DIR/animenu/intro_txt.png  -gravity south \
                 -geometry +0+55 -composite -  -gravity north -geometry +0+55 \
                 -composite $WORK_DIR/animenu/$a.jpg)
@@ -732,7 +865,7 @@ if [ $SUB_MENU = true ]; then
 
             echo
             echo "Creating a transparent title PNG"
-            convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 420x \
+            convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
             -gravity Center caption:"\"${TITLES[i]}\""  -negate  \( +clone -blur 0x8 \
             -shade 110x45 -normalize $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
             -compose CopyOpacity -composite  $WORK_DIR/animenu/intro_txt.png
@@ -746,7 +879,7 @@ if [ $SUB_MENU = true ]; then
             done
             IM_CMD=(montage $jpegs -tile ${TILE_ARRAY[CHAPTERS -1]} \
             -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -background '#141614' miff:-)
-            IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
+            IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
             $WORK_DIR/animenu/intro_txt.png  -gravity south -geometry +0+55 -composite \
             -  -gravity north -geometry +0+55 -composite \
             $WORK_DIR/submenu.jpg)
@@ -795,14 +928,13 @@ echo "Building main menu"
 echo $SEPARATOR
 echo
 echo "Creating a transparant png with the title on it"
-convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 420x \
+convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
 -gravity Center caption:"\"$VMGM_TITLE\""  -negate  \( +clone -blur 0x8 \
 -shade 110x45 -normalize \
 $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
 -compose CopyOpacity -composite  $WORK_DIR/intro_txt.png
-
 echo
-echo "Adding title to JPEGs, cropping and resizing"
+echo "Adding title to JPEGs and resizing"
 for ((i=0; i<=FILES; i++)); do
     JPGS=( "${JPGS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name '*[1-9]*.jpg') )
@@ -828,23 +960,63 @@ for ((i=0; i<=FILES; i++)); do
     unset JPGS last_jpg next_jpg
 done
 
-echo
-echo "making final montages and compositing onto background with title"
-for (( count=1; count <= $MAX_ANI_LENGTH; count++)); do
-    ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.jpg)
+if [ ! $MENU_FADE = "true" ]; then
+    if [ $TRANSPARENT = "false" ]; then
+        echo
+        echo "making final montages and compositing onto background with title"
+        for (( count=1; count <= $MAX_ANI_LENGTH; count++)); do
+            ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.jpg)
 
-    # make final montages and composite onto grey background with title
-    IM_CMD=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
-    -geometry ${GEO_ARRAY[FILES]}+5+5 -background '#161514' miff:-)
-    IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
-    $WORK_DIR/intro_txt.png  -gravity south -geometry +0+55 -composite \
-    -  -gravity north -geometry +0+55 -composite \
-    $WORK_DIR/animenu/$count.jpg)
+            # make final montages and composite onto grey background with title
+            IM_CMD=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
+            -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:-)
+            IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
+            $WORK_DIR/intro_txt.png  -gravity south -geometry +0+55 -composite \
+            -  -gravity north -geometry +0+55 -composite \
+            $WORK_DIR/animenu/$count.jpg)
 
-    "${IM_CMD[@]}" | "${IM_CMD2[@]}" 
-    rm -f ${ANI_PICS[@]}
-done
+            "${IM_CMD[@]}" | "${IM_CMD2[@]}"
+            rm -f rm -f ${ANI_PICS[@]}
+        done
+    elif  [ $TRANSPARENT = "true" ]; then
+         for (( count=1; count <= $MAX_ANI_LENGTH; count++)); do
+            ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.jpg)
+            # dissovle the images to transparency N provided by user FIXME
+            IM_CMD=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
+            -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:-)
+            IM_CMD2=(composite -dissolve $DISSOLVE \
+            -gravity north -geometry +0+55 - \
+            $WORK_DIR/pics/template.jpg -background none miff:-)
+            IM_CMD3=(convert - $WORK_DIR/intro_txt.png  \
+            -gravity south -geometry +0+55 -composite \
+            $WORK_DIR/animenu/$count.jpg )
+            "${IM_CMD[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}"
+            rm -f rm -f ${ANI_PICS[@]}
+        done
+    fi    
+elif [ $MENU_FADE = "true" ]; then
+    echo
+    echo "making final montages and compositing onto background with title"
+#    convert $WORK_DIR/pics/template.jpg \
+#    $WORK_DIR/intro_txt.png  -gravity south -geometry +0+55 -composite \
+#    $WORK_DIR/pics/template.jpg
 
+    FRAMES=$((ANI_FRAMES - 1))
+   
+    # thanks to graycat on #bash (irc.freenode.net) for syntax of loop 
+    for ((count=0; count<=FRAMES; count++)); do
+        S=$(( (count<DISSOLVE) ? count : ((count>FRAMES-DISSOLVE) ? FRAMES-count : DISSOLVE) ));
+        ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.jpg) )
+
+        montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
+        -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:- |
+
+        composite -dissolve $S -gravity north -geometry +0+55 - \
+        $WORK_DIR/pics/template.jpg -background none miff:- |
+        composite -dissolve $S -gravity south -geometry +0+55 \
+        $WORK_DIR/intro_txt.png - -background none $WORK_DIR/animenu/$count.jpg
+    done
+fi
 echo
 echo "converting JPEGS to video stream and encoding to dvd complient m2v video"
 # convert jpegs to video stream and encode to dvd complient m2v
@@ -868,13 +1040,15 @@ rm -fr $WORK_DIR/animenu/*.jpg
 
 # create silence for the main menu
 TIME=`vid_length "$WORK_DIR/intro.m2v"`
+echo -e "TIME IS $TIME"
 if [ -z "$BG_AUDIO" ]; then
     cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
     -s - $WORK_DIR/intro.wav  trim 0 $TIME
 else
+    echo -e "BG_AUDIO is $BG_AUDIO"
     ffmpeg -i "$BG_AUDIO" -ar 48000 -ac 2 -acodec pcm_s16le -y \
     -t 20 $WORK_DIR/intro.wav
-    if [ $DO_FADE = "true" ]; then
+    if [ $AUDIO_FADE = "true" ]; then
         echo -e "Running:
         sox $WORK_DIR/intro.wav \
         $WORK_DIR/intro-processed.wav fade t 0 $TIME $FADE"
