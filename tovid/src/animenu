@@ -400,9 +400,9 @@ if [ $PREVIEW = "true" ]; then
     echo
     echo "Creating a black background"
         BG_PIC="$WORK_DIR/pics/template.jpg"
-        convert  -resize $VID_SIZE_OPT! xc:"#161514" $BG_PIC
+        convert  -resize $VID_SIZE_OPT! xc:"#161514" "$BG_PIC"
     else
-        convert -resize $VID_SIZE_OPT! $BG_PIC "$WORK_DIR/pics/template.jpg"
+        convert -resize $VID_SIZE_OPT! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
     fi
 
     convert -size 1x512 gradient: -rotate 90 +matte \
@@ -558,10 +558,10 @@ done
         echo
         echo "Creating a black background"
         BG_PIC="$WORK_DIR/pics/template.jpg"
-        convert  -size $VID_SIZE_OPT xc:"#161514" $BG_PIC
-        cp $BG_PIC "$WORK_DIR/submenu_template.jpg"
+        convert  -size $VID_SIZE_OPT xc:"#161514" "$BG_PIC"
+        cp "$BG_PIC" "$WORK_DIR/submenu_template.jpg"
     else
-        convert -resize $VID_SIZE_OPT! $BG_PIC "$WORK_DIR/pics/template.jpg"
+        convert -resize $VID_SIZE_OPT! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
         convert  -size $VID_SIZE_OPT xc:"#161514" "$WORK_DIR/submenu_template.jpg"
     fi
 sleep 20
