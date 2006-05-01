@@ -87,6 +87,7 @@ MENU_FADE="false"
 TRANSPARENT="false"
 PREVIEW="false"
 PAUSE_TIME=6
+BLACKEN="true"
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -200,6 +201,7 @@ while test $# -gt 0; do
         "-menu-bg" )
             shift
             BG_PIC="$(abspath "$1")"
+            BLACKEN="false"
             ;;
         "-menu-fade" )
             MENU_FADE="true"
@@ -762,9 +764,12 @@ if [ $SUB_MENU = true ]; then
             echo
             echo "Creating a transparent title PNG"
             convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
-            -gravity Center caption:"\"${TITLES[i]}\""  -negate  \( +clone -blur 0x8 \
+            -gravity Center caption:"\"${TITLES[i]}\""   -negate  \( +clone -blur 0x8 \
             -shade 110x45 -normalize $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
-            -compose CopyOpacity -composite  $WORK_DIR/animenu/intro_txt.png
+            -compose CopyOpacity -composite  \
+            \( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
+            -evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
+            -matte  -compose In  -composite $WORK_DIR/intro_txt.png
 
             #FIXME the below commands are creating a bunch of extra frames
             # which is harmless as they get removed, but needs to be tweaked         
@@ -868,7 +873,11 @@ if [ $SUB_MENU = true ]; then
             convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
             -gravity Center caption:"\"${TITLES[i]}\""  -negate  \( +clone -blur 0x8 \
             -shade 110x45 -normalize $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
-            -compose CopyOpacity -composite  $WORK_DIR/animenu/intro_txt.png
+            -compose CopyOpacity -composite  \
+            \( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
+            -evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
+            -matte  -compose In  -composite $WORK_DIR/intro_txt.png
+
             # FIXME make sure $CHAPTERS number of jpegs got created
             # just use $CHAPTERS number of jpegs
             jpegs=$(find . -name chapt000\*.jpg|head -n $CHAPTERS)
@@ -932,7 +941,11 @@ convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
 -gravity Center caption:"\"$VMGM_TITLE\""  -negate  \( +clone -blur 0x8 \
 -shade 110x45 -normalize \
 $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
--compose CopyOpacity -composite  $WORK_DIR/intro_txt.png
+-compose CopyOpacity -composite  \
+\( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
+-evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
+-matte  -compose In  -composite $WORK_DIR/intro_txt.png
+
 echo
 echo "Adding title to JPEGs and resizing"
 for ((i=0; i<=FILES; i++)); do
@@ -1001,11 +1014,9 @@ elif [ $MENU_FADE = "true" ]; then
 #    $WORK_DIR/intro_txt.png  -gravity south -geometry +0+55 -composite \
 #    $WORK_DIR/pics/template.jpg
 
-    FRAMES=$((ANI_FRAMES - 1))
-   
     # thanks to graycat on #bash (irc.freenode.net) for syntax of loop 
-    for ((count=0; count<=FRAMES; count++)); do
-        S=$(( (count<DISSOLVE) ? count : ((count>FRAMES-DISSOLVE) ? FRAMES-count : DISSOLVE) ));
+    for ((count=1; count<=ANI_FRAMES; count++)); do
+        S=$(( (count<DISSOLVE) ? count : ((count>ANI_FRAMES-DISSOLVE) ? ANI_FRAMES-count : DISSOLVE) ));
         ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.jpg) )
 
         montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
@@ -1016,7 +1027,19 @@ elif [ $MENU_FADE = "true" ]; then
         composite -dissolve $S -gravity south -geometry +0+55 \
         $WORK_DIR/intro_txt.png - -background none $WORK_DIR/animenu/$count.jpg
     done
+    # make last few frames *really* "black" if using default background
+    if [ $BLACKEN = "true" ]; then 
+        for ((j=$((ANI_FRAMES - 4)); j<=ANI_FRAMES; j++)); do
+            BLACK_FRAMES=( "${BLACK_FRAMES[@]}"  \
+            $(find $WORK_DIR/animenu -maxdepth 1 -name $j.jpg) )
+        done
+        for pic in "${BLACK_FRAMES[@]}"; do
+            rm -f "$pic"
+            convert -size 720x480 xc:"#161514" "$pic"
+        done
+    fi
 fi
+
 echo
 echo "converting JPEGS to video stream and encoding to dvd complient m2v video"
 # convert jpegs to video stream and encode to dvd complient m2v
@@ -1035,7 +1058,7 @@ fi
 
 echo
 echo "Cleaning up montage JPEGs"
-rm -fr $WORK_DIR/animenu/*.jpg
+#rm -fr $WORK_DIR/animenu/*.jpg
 
 
 # create silence for the main menu
