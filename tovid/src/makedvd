@@ -75,8 +75,9 @@ runtime_error ()
     echo "makedvd encountered an error during the DVD creation process:"
     echo $@
     echo "See if anything in the above output helps you diagnose the"
-    echo "problem, and please file a bug report containing the above"
-    echo "output. Sorry for the inconvenience!"
+    echo "problem, and please file a bug report at tovid.org (_not_ 
+    echo "the dvdauthor list) containing the above output. 
+    echo "Sorry for the inconvenience!"
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     exit 1
 }
