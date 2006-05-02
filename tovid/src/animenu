@@ -257,7 +257,12 @@ while test $# -gt 0; do
             ;;
         "-framefont" )
             shift
-            FRAME_FONT="$1" #FIXME should use abspath if ends with an extension .*
+            # If there's a filename extension, find the absolute path
+            if echo "$1" | grep -q '\...*$'; then
+                FRAME_FONT=`abspath "$1"`
+            else
+                FRAME_FONT="$1"
+            fi
             ;;
         "-framefont-size" )
             shift
@@ -420,7 +425,7 @@ if $PREVIEW; then
     \( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
     -evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
     -matte  -compose In  -composite miff:- |
-    convert -trim +repage - $WORK_DIR/intro_txt.png
+    convert -trim +repage - -blur 0.4x0.6 $WORK_DIR/intro_txt.png
 
     if $MIST; then
         # make a white png for misted background effect, only for user's bg
