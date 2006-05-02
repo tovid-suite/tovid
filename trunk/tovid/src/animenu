@@ -32,9 +32,10 @@ Options:
 -submenus         Create a submenu with chapters for each video. 
 -ani-submenus     Create an animated submenu with chapters for each video
 -menu-title       Title for the root menu - may be longer than thumbnail labels
--framefont        Font to use for titles: use for example either: "Arial" , or
+-menu-font        Font to use for titles: use for example either: "Arial" , or
                   "/full/path/to/arial.ttf" (default: imagemagick default font)
--framefont-size   Font size for main menu - best to -preview if you use this.
+-menu-fontsize   Font size for main menu - best to -preview if you use this.
+-thumb-font       Font to use for thumb titles in main menu. See -menu-font.
 -menu-bg          Menu background image - pick on of correct aspect ration: ie.
                   it should still look good when resize to 720x480 (pal: 720x576)
 -ani-menu-bg      Menu background video - again, needs to be resize to 720x480 or
@@ -78,7 +79,8 @@ GRADIENT="$WORK_DIR/aqua_gradient.png"
 SUB_MENU=false
 ANI_SUB_MENU=false
 CHAPTERS=6
-FRAME_FONT=""
+TITLE_FONT=""
+THUMB_FONT=""
 BG_AUDIO=""
 SM_AUDIO=""
 AUDIO_FADE=false
@@ -255,18 +257,27 @@ while test $# -gt 0; do
             shift
             VMGM_TITLE="$1"
             ;;
-        "-framefont" )
+        "-menu-font" )
             shift
             # If there's a filename extension, find the absolute path
             if echo "$1" | grep -q '\...*$'; then
-                FRAME_FONT=`abspath "$1"`
+                TITLE_FONT=`abspath "$1"`
             else
-                FRAME_FONT="$1"
+                TITLE_FONT="$1"
             fi
             ;;
-        "-framefont-size" )
+        "-menu-fontsize" )
             shift
             TITLE_FONT_SIZE="$1"
+            ;;
+        "-thumb-font" )
+            shift
+            # If there's a filename extension, find the absolute path
+            if echo "$1" | grep -q '\...*$'; then
+                THUMB_FONT=`abspath "$1"`
+            else
+                THUMB_FONT="$1"
+            fi
             ;;
         "-preview" )
             PREVIEW=:
@@ -298,13 +309,13 @@ if [ -d $WORK_DIR ]; then
 fi
 
 # Try to find a default font that is available
-if [ -z "$FRAME_FONT" ]; then
+if [ -z "$TITLE_FONT" ]; then
     if convert -size 50x20 xc:none -font Helvetica -gravity Center \
     -draw "text 0,0 'test'" $WORK_DIR/font.png; then
-        FRAME_FONT="Helvetica"
+        TITLE_FONT="Helvetica"
     elif convert -size 200x100 xc:none -font helvetica -gravity Center \
     -draw "text 0,0 'test'" $WORK_DIR/font.png; then
-        FRAME_FONT="helvetica"
+        TITLE_FONT="helvetica"
     fi
 fi
 rm -f $WORK_DIR/font.png
@@ -417,7 +428,7 @@ if $PREVIEW; then
     -size 512x1 xc:"#08447B" -compose Overlay -composite "$GRADIENT"
     echo "Creating a transparant png with the title on it"
 
-    convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
+    convert -font "$TITLE_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
     -gravity Center caption:"\"$VMGM_TITLE\""  -negate  \( +clone -blur 0x8 \
     -shade 110x45 -normalize \
     $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
@@ -451,8 +462,9 @@ if $PREVIEW; then
         # **if horizontal lines in frames, try montage "${JPGS[i]}" -blur 0x.3**
         # using a mask just on the frame portion would be even better
         # www.cit.gu.edu.au/~anthony/info/graphics/imagemagick.hints 1/4 down
-        montage "${JPGS[i]}" -geometry +4+4 -bordercolor none -compose Copy  -background none \
-        -fill '#C6C6C6' -pointsize 22 -title "${TITLES[i]}"  $jpg miff:- |
+        montage "${JPGS[i]}" -geometry +4+4 -bordercolor none -compose Copy  \
+        -background none -fill '#C6C6C6' -font "$THUMB_FONT" -pointsize 22 \
+        -title "${TITLES[i]}"  $jpg miff:- |
         convert -background none -frame 8x8 \
         -bordercolor none -mattecolor "#444744" - miff:- |
         convert -resize $INTRO_SIZE! - "${JPGS[i]}"
@@ -789,7 +801,7 @@ if $SUB_MENU; then
         for i in ${!VID_ARRAY[@]}; do
             echo
             echo "Creating a transparent title PNG"
-            convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
+            convert -font "$TITLE_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
             -gravity Center caption:"\"${TITLES[i]}\""   -negate  \( +clone -blur 0x8 \
             -shade 110x45 -normalize $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
             -compose CopyOpacity -composite  \
@@ -897,7 +909,7 @@ if $SUB_MENU; then
 
             echo
             echo "Creating a transparent title PNG"
-            convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
+            convert -font "$TITLE_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
             -gravity Center caption:"\"${TITLES[i]}\""  -negate  \( +clone -blur 0x8 \
             -shade 110x45 -normalize $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
             -compose CopyOpacity -composite  \
@@ -965,7 +977,7 @@ echo "Building main menu"
 echo $SEPARATOR
 echo
 echo "Creating a transparant png with the title on it"
-convert -font "$FRAME_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
+convert -font "$TITLE_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
 -gravity Center caption:"\"$VMGM_TITLE\""  -negate  \( +clone -blur 0x8 \
 -shade 110x45 -normalize \
 $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
@@ -988,13 +1000,15 @@ for ((i=0; i<=FILES; i++)); do
         -bordercolor none -mattecolor "#444744" - miff:- |
         convert -resize $INTRO_SIZE! - $jpg
     done
-
+    
     # make sure all animated thumbs finish at the same time 
-    last_jpg="$((${#JPGS[@]} - 1))"
+    # FIXME only works for animated length of less than 1000 frames
+    # which would break if we give user the ability to specify length
+    JPEGS=( "${JPEGS[@]}" \
+    $(find $WORK_DIR/pics/$i -maxdepth 1 -name '*[1-9]*.jpg') )
+    last_jpg="$((${#JPEGS[@]} - 1))"
     next_jpg=$(($last_jpg + 1))
-    if [ $last_jpg -ge $MAX_ANI_LENGTH ]; then
-        :
-    else
+    if [ $last_jpg -lt $MAX_ANI_LENGTH ]; then
         for ((l=$next_jpg; l<=$MAX_ANI_LENGTH; l++)); do
             cp $WORK_DIR/pics/$i/$last_jpg.jpg $WORK_DIR/pics/$i/000$l.jpg
         done
@@ -1035,7 +1049,7 @@ if $MENU_FADE; then
     fi
 else # Don't do menu fade
     if $TRANSPARENT; then
-         for (( count=1; count <= $MAX_ANI_LENGTH; count++)); do
+         for (( count=1; count<=$MAX_ANI_LENGTH; count++)); do
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.jpg)
             # dissovle the images to transparency N provided by user FIXME
             IM_CMD=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
@@ -1047,7 +1061,7 @@ else # Don't do menu fade
             -gravity south -geometry +0+55 -composite \
             $WORK_DIR/animenu/$count.jpg )
             "${IM_CMD[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}"
-            rm -f rm -f ${ANI_PICS[@]}
+            rm -f ${ANI_PICS[@]}
         done
     else # Not transparent
         echo
