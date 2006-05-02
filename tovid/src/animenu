@@ -88,6 +88,7 @@ TRANSPARENT=false
 PREVIEW=false
 PAUSE_TIME=6
 BLACKEN=:
+MIST=false
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -202,6 +203,7 @@ while test $# -gt 0; do
             shift
             BG_PIC="$(abspath "$1")"
             BLACKEN=false
+            MIST=: 
             ;;
         "-menu-fade" )
             MENU_FADE=:
@@ -255,12 +257,7 @@ while test $# -gt 0; do
             ;;
         "-framefont" )
             shift
-            # If there's a filename extension, find the absolute path
-            if echo "$1" | grep -q '\...*$'; then
-                FRAME_FONT=`abspath "$1"`
-            else
-                FRAME_FONT="$1"
-            fi
+            FRAME_FONT="$1" #FIXME should use abspath if ends with an extension .*
             ;;
         "-framefont-size" )
             shift
@@ -424,17 +421,20 @@ if $PREVIEW; then
     -evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
     -matte  -compose In  -composite miff:- |
     convert -trim +repage - $WORK_DIR/intro_txt.png
-    # make a white png for the misted background effect
-    Y=$(identify $WORK_DIR/intro_txt.png |awk '{print $3}'|cut -dx -f1)
-    X=$(identify $WORK_DIR/intro_txt.png |awk '{print $3}'|cut -dx -f2)
-    Y=$((Y + 10))
-    X=$((X + 10))
-    DIM=${Y}x${X}
-    convert -size $DIM xc:"#F7F5F3" $WORK_DIR/white.png
-    # overlay onto the background
-    composite -dissolve 30 -gravity south -geometry +0+55 \
-    $WORK_DIR/white.png $WORK_DIR/pics/template.jpg \
-    $WORK_DIR/pics/template.jpg
+
+    if $MIST; then
+        # make a white png for misted background effect, only for user's bg
+        Y=$(identify $WORK_DIR/intro_txt.png |awk '{print $3}'|cut -dx -f1)
+        X=$(identify $WORK_DIR/intro_txt.png |awk '{print $3}'|cut -dx -f2)
+        Y=$((Y + 10))
+        X=$((X + 10))
+        DIM=${Y}x${X}
+        convert -size $DIM xc:"#EBEBEB" $WORK_DIR/white.png
+        # overlay onto the background
+        composite -dissolve 30 -gravity south -geometry +0+55 \
+        $WORK_DIR/white.png $WORK_DIR/pics/template.jpg \
+        $WORK_DIR/pics/template.jpg
+    fi
 
     for ((i=0; i<=FILES; i++)) ; do
         ffmpeg -i "${VID_ARRAY[$i]}" $SEEK -vframes 1 -s 360x240 $WORK_DIR/${i}-preview%d.jpg
