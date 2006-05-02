@@ -164,7 +164,7 @@ t=(sprintf("%02d:%02d:%06.3f" ,hd,md,s)); print t}' <<< $1
 #                          	End of functions                                 #
 ##############################################################################
 
-trap cleanup 0 2 15
+trap cleanup 2 15
 
 ###############################################################################
 #       Process arguments to the script, set up VARS and WORK_DIR             #
@@ -431,6 +431,7 @@ if $PREVIEW; then
         # make a white png for misted background effect, only for user's bg
         Y=$(identify $WORK_DIR/intro_txt.png |awk '{print $3}'|cut -dx -f1)
         X=$(identify $WORK_DIR/intro_txt.png |awk '{print $3}'|cut -dx -f2)
+        # add 10 pixels to width and height compared to title text png
         Y=$((Y + 10))
         X=$((X + 10))
         DIM=${Y}x${X}
@@ -447,6 +448,9 @@ if $PREVIEW; then
     JPGS=( "${JPGS[@]}" \
     $(find $WORK_DIR/ -maxdepth 1 -name '*preview*.jpg') )
     for i in "${!JPGS[@]}"; do
+        # **if horizontal lines in frames, try montage "${JPGS[i]}" -blur 0x.3**
+        # using a mask just on the frame portion would be even better
+        # www.cit.gu.edu.au/~anthony/info/graphics/imagemagick.hints 1/4 down
         montage "${JPGS[i]}" -geometry +4+4 -bordercolor none -compose Copy  -background none \
         -fill '#C6C6C6' -pointsize 22 -title "${TITLES[i]}"  $jpg miff:- |
         convert -background none -frame 8x8 \
@@ -454,7 +458,7 @@ if $PREVIEW; then
         convert -resize $INTRO_SIZE! - "${JPGS[i]}"
     done
     if $TRANSPARENT; then
-        montage ${JPGS[@]} -tile ${TILE_ARRAY[FILES]} \
+        montage ${JPGS[@]} -blur 0x.3 -tile ${TILE_ARRAY[FILES]} \
         -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:- |
         composite -dissolve $DISSOLVE \
         -gravity north -geometry +0+55 - \
@@ -466,7 +470,7 @@ if $PREVIEW; then
         echo
         echo -e "If you are happy with your preview, please proceed" 
         echo "without the -preview option"
-        exit 1 
+        exit 0 
     else # Not transparent
         montage ${JPGS[@]} -tile ${TILE_ARRAY[FILES]} \
         -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:- |
@@ -478,7 +482,7 @@ if $PREVIEW; then
         echo
         echo -e "If you are happy with your preview, please proceed" 
         echo "without the -preview option"
-        exit 1
+        exit 0
     fi
 fi
 
@@ -792,7 +796,7 @@ if $SUB_MENU; then
             \( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
             -evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
             -matte  -compose In  -composite miff:- |
-            convert -trim +repage - $WORK_DIR/intro_txt.png
+            convert -trim +repage - -blur 0.4x0.6 $WORK_DIR/intro_txt.png
 
             #FIXME the below commands are creating a bunch of extra frames
             # which is harmless as they get removed, but needs to be tweaked         
@@ -900,7 +904,7 @@ if $SUB_MENU; then
             \( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
             -evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
             -matte  -compose In  -composite miff:- |
-            convert -trim +repage - $WORK_DIR/intro_txt.png
+            convert -trim +repage - -blur 0.4x0.6 $WORK_DIR/intro_txt.png
 
             # FIXME make sure $CHAPTERS number of jpegs got created
             # just use $CHAPTERS number of jpegs
@@ -969,7 +973,7 @@ $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
 \( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
 -evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
 -matte  -compose In  -composite miff:- |
-convert -trim +repage - $WORK_DIR/intro_txt.png
+convert -trim +repage - -blur 0.4x0.6 $WORK_DIR/intro_txt.png
 
 echo
 echo "Adding title to JPEGs and resizing"
