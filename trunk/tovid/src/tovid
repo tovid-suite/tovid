@@ -1280,6 +1280,11 @@ fi
 INNER_WIDTH=`expr $INNER_WIDTH \- \( $INNER_WIDTH \% 16 \)`
 INNER_HEIGHT=`expr $INNER_HEIGHT \- \( $INNER_HEIGHT \% 16 \)`
 
+# Round height back up if possible. Gives slightly more picture space.
+if test `expr $INNER_HEIGHT \+ 16` -le $TGT_HEIGHT; then
+    INNER_HEIGHT=`expr $INNER_HEIGHT \+ 16`
+fi
+
 # ******************************************************************************
 #
 # Set FPS and rescaling options
@@ -1351,7 +1356,6 @@ if $USE_FFMPEG; then
     yecho
     yecho "Using ffmpeg to encode audio and video."
 
-    FF_TVSTD="-tvstd $BASETVSYS"
     FF_SIZE="-s ${INNER_WIDTH}x${INNER_HEIGHT}"
     FF_FPS="-r $TGT_FPS"
     FF_BITRATE="-b $VID_BITRATE -ab $AUD_BITRATE"
@@ -1365,22 +1369,26 @@ if $USE_FFMPEG; then
     test "$FF_VPIX" -ne 0 && FF_VPAD="-padtop $FF_VPIX -padbottom $FF_VPIX"
     test "$FF_HPIX" -ne 0 && FF_HPAD="-padleft $FF_HPIX -padright $FF_HPIX"
 
-    # Target format, for those targets ffmpeg understands
+    # Target TV system
+    test "$TVSYS" = "PAL" && FF_TARGET="-target pal"
+    test "$TVSYS" = "NTSC" && FF_TARGET="-target ntsc"
+    test "$TVSYS" = "NTSCFILM" && FF_TARGET="-target film"
+
+    # Target format
     case "$TGT_RES" in
-        "VCD" | "SVCD" | "DVD" )
-            test "$BASETVSYS" = "PAL" && \
-                FF_TARGET="-target pal-`echo $TGT_RES | tr A-Z a-z`"
-            test "$BASETVSYS" = "NTSC" && \
-                FF_TARGET="-target ntsc-`echo $TGT_RES | tr A-Z a-z`"
-            FF_CODECS=""
+        "VCD" )
+            FF_TARGET="$FF_TARGET-vcd"
+            ;;
+        "SVCD" )
+            FF_TARGET="$FF_TARGET-svcd"
             ;;
         * )
-            FF_CODECS="-vcodec mpeg2video -acodec ac3"
+            FF_TARGET="$FF_TARGET-dvd"
             ;;
     esac
     
     FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" \
-        $FF_QUANT $FF_CODECS $FF_BITRATE $FF_TVSTD $FF_TARGET $FF_FPS \
+        $FF_QUANT $FF_BITRATE $FF_TARGET $FF_FPS \
         $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT \"$OUT_FILENAME\""
     yecho "Encoding video and audio with the following command:"
     yecho "$FF_ENC_CMD"
