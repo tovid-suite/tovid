@@ -436,7 +436,7 @@ if $PREVIEW; then
         DIM=${Y}x${X}
         convert -size $DIM xc:"#EBEBEB" $WORK_DIR/white.png
         # overlay onto the background
-        composite -dissolve 30 -gravity south -geometry +0+55 \
+        composite -dissolve 30 -gravity south -geometry +0+50 \
         $WORK_DIR/white.png $WORK_DIR/pics/template.jpg \
         $WORK_DIR/pics/template.jpg
     fi
