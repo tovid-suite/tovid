@@ -411,48 +411,56 @@ if  [ $TARGET = "DVD" ]; then
     fi
 fi
 ###############################################################################
-#      if preview is selected, generate a basic preview of the main menu      #
+#     generate title_txt png, and template.jpg needed for all operations       #
 ###############################################################################
-if $PREVIEW; then
-    if [ -z "$BG_PIC" ]; then
+
+if [ -z "$BG_PIC" ]; then
     echo
     echo "Creating a black background"
-        BG_PIC="$WORK_DIR/pics/template.jpg"
-        convert  -resize $VID_SIZE_OPT! xc:"#161514" "$BG_PIC"
-    else
-        convert -resize $VID_SIZE_OPT! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
-    fi
+    BG_PIC="$WORK_DIR/pics/template.jpg"
+    convert  -resize $VID_SIZE_OPT! xc:"#161514" "$BG_PIC"
+else
+    convert -resize $VID_SIZE_OPT! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
+fi
 
-    convert -size 1x512 gradient: -rotate 90 +matte \
-    -fx '3.5u^3 - 5.05u^2 + 2.05u + 0.3' \
-    -size 512x1 xc:"#08447B" -compose Overlay -composite "$GRADIENT"
-    echo "Creating a transparant png with the title on it"
+convert -size 1x512 gradient: -rotate 90 +matte \
+-fx '3.5u^3 - 5.05u^2 + 2.05u + 0.3' \
+-size 512x1 xc:"#08447B" -compose Overlay -composite "$GRADIENT"
+echo "Creating a transparant png with the title on it"
 
-    convert -font "$TITLE_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
-    -gravity Center caption:"\"$VMGM_TITLE\""  -negate  \( +clone -blur 0x8 \
-    -shade 110x45 -normalize \
-    $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
-    -compose CopyOpacity -composite  \
-    \( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
-    -evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
-    -matte  -compose In  -composite miff:- |
-    convert -trim +repage - -blur 0.4x0.6 $WORK_DIR/intro_txt.png
+convert -font "$TITLE_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
+-gravity Center caption:"\"$VMGM_TITLE\""  -negate  \( +clone -blur 0x8 \
+-shade 110x45 -normalize \
+$GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
+-compose CopyOpacity -composite  \
+\( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
+-evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
+-matte  -compose In  -composite miff:- |
+convert -trim +repage - -blur 0.4x0.6 $WORK_DIR/title_txt.png
 
+if $MIST; then
+    # make a white png for misted background effect, only for user's bg
+    Y=$(identify $WORK_DIR/title_txt.png |awk '{print $3}'|cut -dx -f1)
+    X=$(identify $WORK_DIR/title_txt.png |awk '{print $3}'|cut -dx -f2)
+    # add 10 pixels to width and height compared to title text png
+    Y=$((Y + 10))
+    X=$((X + 10))
+    DIM=${Y}x${X}
+    convert -size $DIM xc:"#EBEBEB" $WORK_DIR/white.png
+fi
+
+###############################################################################
+#      if preview is selected, generate a basic preview of the main menu      #
+###############################################################################
+
+if $PREVIEW; then
     if $MIST; then
-        # make a white png for misted background effect, only for user's bg
-        Y=$(identify $WORK_DIR/intro_txt.png |awk '{print $3}'|cut -dx -f1)
-        X=$(identify $WORK_DIR/intro_txt.png |awk '{print $3}'|cut -dx -f2)
-        # add 10 pixels to width and height compared to title text png
-        Y=$((Y + 10))
-        X=$((X + 10))
-        DIM=${Y}x${X}
-        convert -size $DIM xc:"#EBEBEB" $WORK_DIR/white.png
-        # overlay onto the background
+        # overlay white.png onto the background
         composite -dissolve 30 -gravity south -geometry +0+50 \
         $WORK_DIR/white.png $WORK_DIR/pics/template.jpg \
         $WORK_DIR/pics/template.jpg
     fi
-
+    # generate JPEGS for montage and title and resize them
     for ((i=0; i<=FILES; i++)) ; do
         ffmpeg -i "${VID_ARRAY[$i]}" $SEEK -vframes 1 -s 360x240 $WORK_DIR/${i}-preview%d.jpg
     done
@@ -475,7 +483,7 @@ if $PREVIEW; then
         composite -dissolve $DISSOLVE \
         -gravity north -geometry +0+55 - \
         $WORK_DIR/pics/template.jpg -background none miff:- |
-        convert - $WORK_DIR/intro_txt.png  \
+        convert - $WORK_DIR/title_txt.png  \
         -gravity south -geometry +0+55 -composite \
         $WORK_DIR/example.jpg
         display $WORK_DIR/example.jpg
@@ -487,7 +495,7 @@ if $PREVIEW; then
         montage ${JPGS[@]} -tile ${TILE_ARRAY[FILES]} \
         -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:- |
         convert $WORK_DIR/pics/template.jpg \
-        $WORK_DIR/intro_txt.png  -gravity south -geometry +0+55 -composite \
+        $WORK_DIR/title_txt.png  -gravity south -geometry +0+55 -composite \
         -  -gravity north -geometry +0+55 -composite \
         $WORK_DIR/example.jpg
         display $WORK_DIR/example.jpg
@@ -808,7 +816,7 @@ if $SUB_MENU; then
             \( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
             -evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
             -matte  -compose In  -composite miff:- |
-            convert -trim +repage - -blur 0.4x0.6 $WORK_DIR/intro_txt.png
+            convert -trim +repage - -blur 0.4x0.6 $WORK_DIR/title$i_txt.png
 
             #FIXME the below commands are creating a bunch of extra frames
             # which is harmless as they get removed, but needs to be tweaked         
@@ -870,7 +878,7 @@ if $SUB_MENU; then
                 -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -bordercolor '#161514' \
                 -mattecolor '#161514' -background '#161514' miff:-)
                 IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
-                $WORK_DIR/animenu/intro_txt.png  -gravity south \
+                $WORK_DIR/title$i_txt.png  -gravity south \
                 -geometry +0+55 -composite -  -gravity north -geometry +0+55 \
                 -composite $WORK_DIR/animenu/$a.jpg)
                 
@@ -916,7 +924,7 @@ if $SUB_MENU; then
             \( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
             -evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
             -matte  -compose In  -composite miff:- |
-            convert -trim +repage - -blur 0.4x0.6 $WORK_DIR/intro_txt.png
+            convert -trim +repage - -blur 0.4x0.6 $WORK_DIR/title$i_txt.png
 
             # FIXME make sure $CHAPTERS number of jpegs got created
             # just use $CHAPTERS number of jpegs
@@ -929,7 +937,7 @@ if $SUB_MENU; then
             IM_CMD=(montage $jpegs -tile ${TILE_ARRAY[CHAPTERS -1]} \
             -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -background '#141614' miff:-)
             IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
-            $WORK_DIR/animenu/intro_txt.png  -gravity south -geometry +0+55 -composite \
+            $WORK_DIR/title$i_txt.png  -gravity south -geometry +0+55 -composite \
             -  -gravity north -geometry +0+55 -composite \
             $WORK_DIR/submenu.jpg)
             "${IM_CMD[@]}" | "${IM_CMD2[@]}"
@@ -976,18 +984,6 @@ echo $SEPARATOR
 echo "Building main menu"
 echo $SEPARATOR
 echo
-echo "Creating a transparant png with the title on it"
-convert -font "$TITLE_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
--gravity Center caption:"\"$VMGM_TITLE\""  -negate  \( +clone -blur 0x8 \
--shade 110x45 -normalize \
-$GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
--compose CopyOpacity -composite  \
-\( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
--evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
--matte  -compose In  -composite miff:- |
-convert -trim +repage - -blur 0.4x0.6 $WORK_DIR/intro_txt.png
-
-echo
 echo "Adding title to JPEGs and resizing"
 for ((i=0; i<=FILES; i++)); do
     JPGS=( "${JPGS[@]}" \
@@ -1006,7 +1002,6 @@ for ((i=0; i<=FILES; i++)); do
     # which would break if we give user the ability to specify length
     JPEGS=( "${JPEGS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name '*[1-9]*.jpg') )
-set -x
     last_jpg=${#JPEGS[@]}
     next_jpg=$(($last_jpg + 1))
     if [ $last_jpg -lt $MAX_ANI_LENGTH ]; then
@@ -1016,26 +1011,39 @@ set -x
     fi
     unset JPGS JPEGS last_jpg next_jpg
 done
-set +x
 if $MENU_FADE; then
     echo
     echo "making final montages and compositing onto background with title"
 #    convert $WORK_DIR/pics/template.jpg \
-#    $WORK_DIR/intro_txt.png  -gravity south -geometry +0+55 -composite \
+#    $WORK_DIR/title_txt.png  -gravity south -geometry +0+55 -composite \
 #    $WORK_DIR/pics/template.jpg
 
+
     # thanks to graycat on #bash (irc.freenode.net) for syntax of loop 
-    for ((count=1; count<=ANI_FRAMES; count++)); do
+    for ((count=0; count<ANI_FRAMES; count++)); do
         S=$(( (count<DISSOLVE) ? count : ((count>ANI_FRAMES-DISSOLVE) ? ANI_FRAMES-count : DISSOLVE) ));
-        ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.jpg) )
+        B=$(( (count<30) ? count : ((count>ANI_FRAMES-30) ? ANI_FRAMES-count : 30) ));
+        ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $((count + 1)).jpg) )
+        MONTAGE_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
+        -geometry ${GEO_ARRAY[FILES]}+5+5 -background none)
 
-        montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
-        -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:- |
+        MONTAGE_CMD2=(composite -dissolve $S -gravity north \
+        -geometry +0+55 - $WORK_DIR/pics/template.jpg -background none)
 
-        composite -dissolve $S -gravity north -geometry +0+55 - \
-        $WORK_DIR/pics/template.jpg -background none miff:- |
-        composite -dissolve $S -gravity south -geometry +0+55 \
-        $WORK_DIR/intro_txt.png - -background none $WORK_DIR/animenu/$count.jpg
+        MONTAGE_CMD3=(composite -dissolve $B -gravity south -geometry +0+50 \
+        $WORK_DIR/white.png -)
+
+        MONTAGE_CMD4=(composite -dissolve $S -gravity south -geometry +0+55 \
+        $WORK_DIR/title_txt.png - -background none $WORK_DIR/animenu/$count.jpg)
+
+         if $MIST; then
+             "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
+             "${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD4[@]}"
+         else
+             "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
+             "${MONTAGE_CMD4[@]}"
+         fi
+
     done
     # make last few frames *really* "black" if using default background
     if $BLACKEN; then 
@@ -1058,7 +1066,7 @@ else # Don't do menu fade
             IM_CMD2=(composite -dissolve $DISSOLVE \
             -gravity north -geometry +0+55 - \
             $WORK_DIR/pics/template.jpg -background none miff:-)
-            IM_CMD3=(convert - $WORK_DIR/intro_txt.png  \
+            IM_CMD3=(convert - $WORK_DIR/title_txt.png  \
             -gravity south -geometry +0+55 -composite \
             $WORK_DIR/animenu/$count.jpg )
             "${IM_CMD[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}"
@@ -1074,7 +1082,7 @@ else # Don't do menu fade
             IM_CMD=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
             -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:-)
             IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
-            $WORK_DIR/intro_txt.png  -gravity south -geometry +0+55 -composite \
+            $WORK_DIR/title_txt.png  -gravity south -geometry +0+55 -composite \
             -  -gravity north -geometry +0+55 -composite \
             $WORK_DIR/animenu/$count.jpg)
 
