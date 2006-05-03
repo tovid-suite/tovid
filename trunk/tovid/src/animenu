@@ -1006,16 +1006,17 @@ for ((i=0; i<=FILES; i++)); do
     # which would break if we give user the ability to specify length
     JPEGS=( "${JPEGS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name '*[1-9]*.jpg') )
-    last_jpg="$((${#JPEGS[@]} - 1))"
+set -x
+    last_jpg=${#JPEGS[@]}
     next_jpg=$(($last_jpg + 1))
     if [ $last_jpg -lt $MAX_ANI_LENGTH ]; then
-        for ((l=$next_jpg; l<=$MAX_ANI_LENGTH; l++)); do
-            cp $WORK_DIR/pics/$i/$last_jpg.jpg $WORK_DIR/pics/$i/000$l.jpg
+        for ((l=next_jpg; l<=MAX_ANI_LENGTH; l++)); do
+            cp -v $WORK_DIR/pics/$i/${last_jpg}.jpg $WORK_DIR/pics/$i/$l.jpg
         done
     fi
-    unset JPGS last_jpg next_jpg
+    unset JPGS JPEGS last_jpg next_jpg
 done
-
+set +x
 if $MENU_FADE; then
     echo
     echo "making final montages and compositing onto background with title"
@@ -1078,7 +1079,7 @@ else # Don't do menu fade
             $WORK_DIR/animenu/$count.jpg)
 
             "${IM_CMD[@]}" | "${IM_CMD2[@]}"
-            rm -f rm -f ${ANI_PICS[@]}
+            rm -f ${ANI_PICS[@]}
         done
     fi    
 fi
