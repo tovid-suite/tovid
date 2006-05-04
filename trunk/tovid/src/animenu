@@ -429,14 +429,14 @@ convert -size 1x512 gradient: -rotate 90 +matte \
 echo "Creating a transparant png with the title on it"
 
 convert -font "$TITLE_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
--gravity Center caption:"\"$VMGM_TITLE\""  -negate  \( +clone -blur 0x8 \
+-gravity Center caption:"\"$VMGM_TITLE\""  -negate  \( +clone \
 -shade 110x45 -normalize \
 $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
 -compose CopyOpacity -composite  \
-\( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
+\( +clone -fx A +matte -shade 0x90 -normalize -negate \
 -evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
 -matte  -compose In  -composite miff:- |
-convert -trim +repage - -blur 0.4x0.6 $WORK_DIR/title_txt.png
+ convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png
 
 if $MIST; then
     # make a white png for misted background effect, only for user's bg
@@ -608,7 +608,7 @@ done
         cp "$BG_PIC" "$WORK_DIR/submenu_template.jpg"
     else
         convert -resize $VID_SIZE_OPT! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
-        convert  -size $VID_SIZE_OPT xc:"#161514" "$WORK_DIR/submenu_template.jpg"
+        convert -size $VID_SIZE_OPT xc:"#161514" "$WORK_DIR/submenu_template.jpg"
     fi
 sleep 20
 echo
@@ -636,7 +636,7 @@ for button in Select Highlight; do
     $(for ((i=0; i<=FILES; i++)); do echo $WORK_DIR/${button}x1.png;done) \
     -tile ${TILE_ARRAY[FILES]} -geometry ${GEO_ARRAY[FILES]}+5+5 \
     -bordercolor none -mattecolor transparent miff:- |
-    convert  -colors 3 -size 720x480 xc:none  - -gravity north -geometry +0+55  \
+    convert  -colors 3 -size 720x480 xc:none - -gravity north -geometry +0+55 \
     -composite  "$WORK_DIR/${button}.png"
 done
 
@@ -644,8 +644,8 @@ if $SUB_MENU; then
     echo
     echo "Creating the highlight and selection PNGs for the submenus"
     GEO="${GEO_ARRAY[CHAPTERS - 1]/x/,}"
-    SELECT_CMD="-size "${GEO_ARRAY[CHAPTERS - 1]}+5+5" xc:none -fill none +antialias \
-    -stroke '#DE7F7C' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
+    SELECT_CMD="-size "${GEO_ARRAY[CHAPTERS - 1]}+5+5" xc:none -fill none \
+    +antialias -stroke '#DE7F7C' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
     HIGHLIGHT_CMD="-size "${GEO_ARRAY[CHAPTERS - 1]}+5+5" xc:none -fill none \
     +antialias -stroke '#188DF6' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
     eval convert "$SELECT_CMD" -colors 3 "$WORK_DIR/Submenu_Selectx1.png"
@@ -687,10 +687,10 @@ done
 # make xml files, and run dvdauthor and spumux
 if $MENU_FADE; then
     END_TIME=$((ANI_FRAMES / 30))
-    END_TIME=$((END_TIME - 3))
+    END_TIME=$((END_TIME - 2))
     END_TIME=$(format_seconds $END_TIME)
     END=" end=\"$END_TIME\""
-    START="00:00:03.0"
+    START="00:00:02.0"
     PAUSE_TIME="6"
     POST="<post> jump cell 1; </post>"
     MAIN_POST="        <post> jump cell 1; </post>"
@@ -800,62 +800,77 @@ EOF
 
 # do submenu 1st for debug purposes
 if $SUB_MENU; then
-    if $ANI_SUB_MENU; then
-        echo $SEPARATOR
-        echo "Building submenus"
-        echo $SEPARATOR
-        echo "Creating JPEGs for each chapter"
+    echo $SEPARATOR
+    echo "Building submenus"
+    echo $SEPARATOR
+    echo "Creating JPEGs for each chapter"
 
-        for i in ${!VID_ARRAY[@]}; do
-            echo
-            echo "Creating a transparent title PNG"
-            convert -font "$TITLE_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
-            -gravity Center caption:"\"${TITLES[i]}\""   -negate  \( +clone -blur 0x8 \
-            -shade 110x45 -normalize $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
-            -compose CopyOpacity -composite  \
-            \( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
-            -evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
-            -matte  -compose In  -composite miff:- |
-            convert -trim +repage - -blur 0.4x0.6 $WORK_DIR/title$i_txt.png
+    for i in ${!VID_ARRAY[@]}; do
+        echo
+        echo "Creating a transparent title PNG"
+        convert -font "$TITLE_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
+        -gravity Center caption:"\"${TITLES[i]}\"" -negate \( +clone -blur 0x8 \
+        -shade 110x45 -normalize $GRADIENT -fx 'v.p{g*v.w,0}' \) +matte +swap \
+        -compose CopyOpacity -composite  \
+        \( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize \
+        -blur 0x2 -negate -evaluate multiply .4 -negate +clone \
+        -compose Multiply -composite \) -matte -compose In  -composite miff:- |
+        convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title${i}_txt.png
 
-            #FIXME the below commands are creating a bunch of extra frames
-            # which is harmless as they get removed, but needs to be tweaked         
+        #FIXME the below commands are creating a bunch of extra frames
+        # which is harmless as they get removed, but needs to be tweaked         
+        if $ANI_SUB_MENU; then    
             counts=$((${CHAPT_INTERVALS[i]} * 30))
-            CUT=( 0 $(running_total <<<  $(for ((a=0; a<=CHAPTERS ; a++)); do echo -n "$counts ";done)) )
+            CUT=( 0 $(running_total <<<  $(for ((a=0; a<=CHAPTERS ; a++)); \
+            do echo -n "$counts ";done)) )
             for c in ${!CUT[@]}; do
                 cmd[c]=$((${CUT[c]}))-$((${CUT[c]} + 340))
             done
             key=$((${#cmd[@]} - 1))
             unset cmd[key]
             CMD=${cmd[@]}
-            echo -e "\nRunning: "
-            echo -e "transcode -q 0 -i "${VID_ARRAY[i]}"" 
-            echo -e "-o $WORK_DIR/animenu/chapt -f 29.970 "
-            echo -e "-J cut=\"$CMD\"  -y jpg,null\n"
 
             TCODE_CMD=(transcode -q 0 -i "${VID_ARRAY[i]}" \
             -o $WORK_DIR/animenu/chapt -f 29.970  -J cut="$CMD" -y jpg,null)
-             printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
-            if "${TCODE_CMD[@]}" 2>&1 >> $BVC_LOG.tmp; then
-                cleanlog 1
-            else
-                cleanlog 1
-                OUTPUT="There was a problem creating jpegs from the video.\n \
-                Please see the output of $BVC_LOG"
-                SORRY_MSG=$OUTPUT
-                sorry_msg
-                exit 1
-            fi
-            unset TCODE_CMD
+            SM_MPLEX_OPTS=(-n 300)
+            JPEG_IN=($WORK_DIR/animenu/%0d.jpg)
 
-            echo
+        else  # not animated submenu
+            counts=$((${CHAPT_INTERVALS[i]} * 30))
+            SKIP=( 0 $(running_total <<<  $(for ((a=0; a<7;a++)); do \
+            echo -n "$counts ";done)) )
+            for c in ${!SKIP[@]}; do \
+            cmd[c]=$((${SKIP[c]} + 1))-${SKIP[c+1]};done
+            key=$((${#cmd[@]} - 1))
+            unset cmd[key]
+            CMD=${cmd[@]}
+            TCODE_CMD=(transcode -i "${VID_ARRAY[i]}" -o $WORK_DIR/chapt \
+            -f 29.970 -J skip="$CMD" -y jpg,null)
+            SM_MPLEX_OPTS=(-n 1 -l 60)
+            JPEG_IN=($WORK_DIR/submenu.jpg)
+        fi    
+
+        printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
+        if "${TCODE_CMD[@]}" 2>&1 >> $BVC_LOG.tmp; then
+            cleanlog 1
+        else
+            cleanlog 1
+            OUTPUT="There was a problem creating jpegs from the video.\n \
+            Please see the output of $BVC_LOG"
+            SORRY_MSG=$OUTPUT
+            sorry_msg
+            exit 1
+        fi
+        unset TCODE_CMD
+
+        if $ANI_SUB_MENU; then
             # FIXME make sure $CHAPTERS number of jpegs got created
             jpegs=$(find $WORK_DIR/animenu -name chapt000\*.jpg)
 
-#            Disabled frames for now - takes too long - (use montage -border TODO)
             # move 340 jpegs to each subdir:  $WORK_DIR/animenu/{0,1,2,3,etc}
             for ((a=0; a<CHAPTERS; a++)); do
-                pics=( $(find $WORK_DIR/animenu/  -maxdepth 1 -name chapt\*.jpg|head -n 340) )
+                pics=( $(find $WORK_DIR/animenu/ -maxdepth 1 -name chapt\*.jpg|
+                head -n 340) )
                 for f in ${pics[@]}; do
                     mv $f $WORK_DIR/animenu/$a
                 done
@@ -867,93 +882,60 @@ if $SUB_MENU; then
                 echo -n "Frame count in $WORK_DIR/animenu/$a is: "
                 echo "$(ls -l $WORK_DIR/animenu/$a/*.jpg|wc -l) frames"
             done
-                echo
-                echo "Making montage images for  "${VID_ARRAY[i]}""
+            echo
+            echo "Making montage images for  "${VID_ARRAY[i]}""
             
             for ((a=1; a<300; a++)); do
                 for ((b=0; b<CHAPTERS; b++)); do
-                    JPEGS=( "${JPEGS[@]}" $(find $WORK_DIR/animenu/$b -name \*.jpg|head -n $a|sed  -n -e "$a p") )
+                    JPEGS=( "${JPEGS[@]}" $(find $WORK_DIR/animenu/$b \
+                    -name \*.jpg|head -n $a|sed  -n -e "$a p") )
                 done
                 IM_CMD=(montage ${JPEGS[@]} -tile ${TILE_ARRAY[CHAPTERS - 1]} \
                 -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -bordercolor '#161514' \
                 -mattecolor '#161514' -background '#161514' miff:-)
                 IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
-                $WORK_DIR/title$i_txt.png  -gravity south \
+                $WORK_DIR/title${i}_txt.png  -gravity south \
                 -geometry +0+55 -composite -  -gravity north -geometry +0+55 \
                 -composite $WORK_DIR/animenu/$a.jpg)
-                
+               
                 "${IM_CMD[@]}" | "${IM_CMD2[@]}"
                 unset JPEGS
             done
                 
-                unset IM_CMD IM_CMD2 d f PIC
-                # FIXME
-                echo
-                echo "Converting chapter montages of $i to m2v video format"
-
-                jpeg2yuv -v 0 -f 29.970 -I p -n 300 -L 1 -b1 \
-                -j $WORK_DIR/animenu/%0d.jpg |
-                ffmpeg   -f yuv4mpegpipe -i - -r 29.970 -s $VID_SIZE_OPT \
-                -tvstd ntsc $FFMPEG_OPTS -y $WORK_DIR/menu$i.m2v
-                rm -f $WORK_DIR/animenu/chapt*.jpg
-                rm -f $WORK_DIR/animenu/[0-9]*.jpg
-        done    
-                
-        
+            unset IM_CMD IM_CMD2 d f PIC
     
-    else # not $ANI_SUB_MENU
-        echo $SEPARATOR
-        echo "Building submenus"
-        echo $SEPARATOR
-        echo "Creating JPEGs for each chapter"
-        for i in ${!VID_ARRAY[@]}; do
-            counts=$((${CHAPT_INTERVALS[i]} * 30))
-            SKIP=( 0 $(running_total <<<  $(for ((a=0; a<7;a++)); do echo -n "$counts ";done)) )
-            for c in ${!SKIP[@]}; do cmd[c]=$((${SKIP[c]} + 1))-${SKIP[c+1]};done
-            key=$((${#cmd[@]} - 1))
-            unset cmd[key]
-            CMD=${cmd[@]}
-            transcode -i "${VID_ARRAY[i]}" -o chapt -f 29.970 -J skip="$CMD" -y jpg,null
+        else # not $ANI_SUB_MENU
+            echo $SEPARATOR
+            echo "Building submenus"
+            echo $SEPARATOR
+            echo "Creating JPEGs for each chapter"
 
-            echo
-            echo "Creating a transparent title PNG"
-            convert -font "$TITLE_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
-            -gravity Center caption:"\"${TITLES[i]}\""  -negate  \( +clone -blur 0x8 \
-            -shade 110x45 -normalize $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
-            -compose CopyOpacity -composite  \
-            \( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize -blur 0x2 -negate \
-            -evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
-            -matte  -compose In  -composite miff:- |
-            convert -trim +repage - -blur 0.4x0.6 $WORK_DIR/title$i_txt.png
-
-            # FIXME make sure $CHAPTERS number of jpegs got created
             # just use $CHAPTERS number of jpegs
-            jpegs=$(find . -name chapt000\*.jpg|head -n $CHAPTERS)
+            jpegs=$(find $WORK_DIR -name chapt000\*.jpg|head -n $CHAPTERS)
             # create frames for the chapter thumbs
             for PIC in $jpegs; do
                 convert -background '#141614' -frame 8x8 \
                 -bordercolor none -mattecolor "#444744" $PIC $PIC
             done
-            IM_CMD=(montage $jpegs -tile ${TILE_ARRAY[CHAPTERS -1]} \
-            -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -background '#141614' miff:-)
+            IM_CMD=(montage $jpegs -tile ${TILE_ARRAY[CHAPTERS -1]} -geometry \
+            ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -background '#141614' miff:-)
             IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
-            $WORK_DIR/title$i_txt.png  -gravity south -geometry +0+55 -composite \
-            -  -gravity north -geometry +0+55 -composite \
+            $WORK_DIR/title${i}_txt.png  -gravity south -geometry +0+55 \
+            -composite - -gravity north -geometry +0+55 -composite \
             $WORK_DIR/submenu.jpg)
             "${IM_CMD[@]}" | "${IM_CMD2[@]}"
+        fi
 
-            rm -f $WORK_DIR/chapt*000*.jpg
+        echo
+        echo "Converting chapter montages of $i to m2v video format"
 
-            echo
-            echo "Converting JPEGs to m2v video format"
-            jpeg2yuv -v 0 -f 29.970 -I p -n 1 -l 60 -L 1 -b1 \
-            -j $WORK_DIR/submenu.jpg |
-            ffmpeg   -f yuv4mpegpipe -i - -r 29.970 -s $VID_SIZE_OPT \
-            -tvstd ntsc $FFMPEG_OPTS -y $WORK_DIR/menu$i.m2v
-            rm -f $WORK_DIR/animenu/*
-        done
-    fi
-    
+        jpeg2yuv -v 0 -f 29.970 -I p "${SM_MPLEX_OPTS[@]}" -L 1 -b1 \
+        -j "${JPEG_IN[@]}" |
+        ffmpeg   -f yuv4mpegpipe -i - -r 29.970 -s $VID_SIZE_OPT \
+        -tvstd ntsc $FFMPEG_OPTS -y $WORK_DIR/menu$i.m2v
+        rm -f $WORK_DIR/animenu/*.jpg
+    done    
+
     # create silence for either animated or plain submenus
     for ((s=0; s<=FILES; s++)); do
         echo
@@ -973,7 +955,6 @@ if $SUB_MENU; then
         S=$((s + 1))
         mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/menu$S.mpg \
         $WORK_DIR/menu$s.$AUDIO_EXT $WORK_DIR/menu$s.m2v
-
     done
 fi
 
@@ -998,8 +979,6 @@ for ((i=0; i<=FILES; i++)); do
     done
     
     # make sure all animated thumbs finish at the same time 
-    # FIXME only works for animated length of less than 1000 frames
-    # which would break if we give user the ability to specify length
     JPEGS=( "${JPEGS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name '*[1-9]*.jpg') )
     last_jpg=${#JPEGS[@]}
@@ -1011,40 +990,38 @@ for ((i=0; i<=FILES; i++)); do
     fi
     unset JPGS JPEGS last_jpg next_jpg
 done
+
 if $MENU_FADE; then
     echo
     echo "making final montages and compositing onto background with title"
-#    convert $WORK_DIR/pics/template.jpg \
-#    $WORK_DIR/title_txt.png  -gravity south -geometry +0+55 -composite \
-#    $WORK_DIR/pics/template.jpg
-
 
     # thanks to graycat on #bash (irc.freenode.net) for syntax of loop 
     for ((count=0; count<ANI_FRAMES; count++)); do
         S=$(( (count<DISSOLVE) ? count : ((count>ANI_FRAMES-DISSOLVE) ? ANI_FRAMES-count : DISSOLVE) ));
         B=$(( (count<30) ? count : ((count>ANI_FRAMES-30) ? ANI_FRAMES-count : 30) ));
         ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $((count + 1)).jpg) )
+        # create the montage from the JPEGS in each video dir
         MONTAGE_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
         -geometry ${GEO_ARRAY[FILES]}+5+5 -background none)
-
+        #  dissolve the finished montages onto the background
         MONTAGE_CMD2=(composite -dissolve $S -gravity north \
         -geometry +0+55 - $WORK_DIR/pics/template.jpg -background none)
-
+        # if MIST is called for, this dissolves the mist onto the background
         MONTAGE_CMD3=(composite -dissolve $B -gravity south -geometry +0+50 \
         $WORK_DIR/white.png -)
-
+        # finally, we dissolve the title onto the MIST (or plain background)
         MONTAGE_CMD4=(composite -dissolve $S -gravity south -geometry +0+55 \
         $WORK_DIR/title_txt.png - -background none $WORK_DIR/animenu/$count.jpg)
-
+         # pipe all of above commands if using MIST
          if $MIST; then
              "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
              "${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD4[@]}"
-         else
+         else  # no mist: pipe all commands but the mist command
              "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
              "${MONTAGE_CMD4[@]}"
          fi
-
     done
+
     # make last few frames *really* "black" if using default background
     if $BLACKEN; then 
         for ((j=$((ANI_FRAMES - 4)); j<=ANI_FRAMES; j++)); do
@@ -1056,6 +1033,7 @@ if $MENU_FADE; then
             convert -size 720x480 xc:"#161514" "$pic"
         done
     fi
+
 else # Don't do menu fade
     if $TRANSPARENT; then
          for (( count=1; count<=$MAX_ANI_LENGTH; count++)); do
