@@ -3,7 +3,10 @@
 
 """Quick-and-dirty 'make' tool for building tovid documentation."""
 
-import os, sys, glob
+import os
+import sys
+import glob
+import re
 # Get tdl
 import libtovid
 from libtovid import gui
@@ -21,6 +24,9 @@ dest_dir = os.path.abspath(base_dir + '/html')
 man_dir = os.path.abspath(base_dir + '/man')
 man_pages = ['tovid', 'idvid', 'makemenu', 'makedvd', \
     'makeslides', 'makexml', 'postproc']
+
+# Temporary directory to hold wikitext
+wiki_dir = os.path.abspath(base_dir + '/wiki')
 
 # Subdirectories of source_dir containing translations to build
 translation_subdirs = ['en', 'es']
@@ -123,6 +129,49 @@ def generate_all_html():
             else:
                 print "Skipping file: %s" % t2tfile
 
+from urllib import urlretrieve
+def generate_man_from_wiki():
+    """Generate manpages from sources on the wiki.
+    This function ultimately needs to oversee two things: (1) downloading
+    the raw wikitext for the tovid manual pages from tovid.wikia.com; (2)
+    translating the wikitext into troff-style manpages either directly or
+    via (2a) converting the wikitext to .t2t format with search/replace and
+    regular expressions, and (2b) running txt2tags on the resulting .t2t
+    file, already implemented in generate_manpages() above."""
+    base = 'http://tovid.wikia.com/wiki/'
+    # TODO: Get this working for the 'tovid' manual page first, then add
+    # the others in later
+    for manpage in ['tovid']:
+        wikitext_url = base + manpage + '?action=raw'
+        temp_file = wiki_dir + '/' + manpage
+        try:
+            urlretrieve(wikitext_url, temp_file)
+        except:
+            print "Couldn't retrieve wikitext for " + manpage
+        else:
+            print "Retrieved wikitext to " + temp_file
+            # wiki_to_t2t(temp_text)
+
+def wiki_to_t2t(wiki_text):
+    """Convert MediaWiki wikitext to a txt2tags string and return it."""
+    # Lists: '^*' to '^-'
+    listitem = re.compile('^*')
+    # Links: [URL linkname] to [linkname URL]
+    extlink = re.compile('\[(.[^ ]*) (.[^\]]*)]')
+    # [[foo]] to foo
+    wikilink = re.compile('\[\[(.[^\]]*)]]')
+    # Definition lists: ;: to :
+    defterm = re.compile('^;')
+    # Code: space-indented blocks to ```...``` blocks
+    # Emphasis: ''foo'' to //foo//
+    emphasis = re.compile("''(..*?)''") # Note: .*? is non-greedy
+    # Strong: '''foo''' to **foo**
+    strong = re.compile("'''(..*?)'''")
+    # Read each line and do replacements
+    for line in wiki_text:
+        listitem.sub(r'-', line)
+        extlink.sub(r'[\2 \1]', line)
+        # ...
 
 if __name__ == '__main__':
 
@@ -142,6 +191,8 @@ if __name__ == '__main__':
             generate_t2t_tarballs()
         elif arg == 'html':
             generate_all_html()
+        elif arg == 'manwiki':
+            generate_man_from_wiki()
         else:
             print usage
             print "Unknown argument: %s" % arg
