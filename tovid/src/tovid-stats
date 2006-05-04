@@ -30,10 +30,10 @@ if __name__ == '__main__':
     statlist.read_csv(os.path.expanduser('~/.tovid/stats.tovid'))
 
     print "Average bitrate"
-    print statlist.average('bitrate')
+    print statlist.average('avg_bitrate')
     print "Average bitrates by format"
-    print statlist.average_by('bitrate', 'format')
+    print statlist.average_by('avg_bitrate', 'format')
     print "Average bitrates by TV system"
-    print statlist.average_by('bitrate', 'tvsys')
-    print "Average encoding time factors by CPU speed"
+    print statlist.average_by('avg_bitrate', 'tvsys')
+    print "Average encoding time by CPU speed"
     print statlist.average_by('encoding_time', 'cpu_speed')
