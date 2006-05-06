@@ -854,8 +854,6 @@ if $SUB_MENU; then
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
         CMD=${cmd[@]}
-        echo  "CMD is ${cmd[@]}"
-        sleep 20
         TCODE_CMD=(transcode -i "${VID_ARRAY[i]}" -o "${JPEG_OUT[@]}" \
         -f 29.970 -J cut="$CMD" -y jpg,null)
         printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
