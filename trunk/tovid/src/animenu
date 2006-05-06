@@ -129,15 +129,15 @@ function cleanlog()
 
 function sorry_msg()
 {
-    echo -e "Oops . . .Something went wrong.\nThere was a problem \
-creating the $OUTPUT. \
-\nPlease check the log at $BVC_LOG"
+    echo -e "Oops . . .Something went wrong."
+    echo "There was a problem creating the $OUTPUT."
+    echo "Please check the log at $BVC_LOG"
 }
 
 function vid_length()
 {
-mencoder "$1" -quiet -ovc copy -oac pcm -o /dev/null |
-awk '/Video stream/ {print $10}'
+    mencoder "$1" -quiet -ovc copy -oac pcm -o /dev/null |
+    awk '/Video stream/ {print $10}'
 }
 
 function cleanup()
@@ -149,16 +149,16 @@ function cleanup()
 function running_total ()
 {
     awk '{
-for (i=1; i<=NF; i++) if (s=s+$i) printf("%s ",s);printf ("\n")}'
+    for (i=1; i<=NF; i++) if (s=s+$i) printf("%s ",s);printf ("\n")}'
 }
 
 function format_seconds()
 {
-awk '{
-hr=($1/3600); hd=(sprintf("%02d", hr))
-mr=((hr-hd)*60); md=(sprintf("%02d", mr))
-s=((mr-md)*60); sd=(sprintf("%02d", s))
-t=(sprintf("%02d:%02d:%06.3f" ,hd,md,s)); print t}' <<< $1
+    awk '{
+    hr=($1/3600); hd=(sprintf("%02d", hr))
+    mr=((hr-hd)*60); md=(sprintf("%02d", mr))
+    s=((mr-md)*60); sd=(sprintf("%02d", s))
+    t=(sprintf("%02d:%02d:%06.3f" ,hd,md,s)); print t}' <<< $1
 }
 
 
@@ -335,7 +335,7 @@ for ((i=0; i<${#TITLES[@]}; i++)); do
 done
 
 if [ $MAX_VAL -gt 14 ]; then
-    echo -e "Sorry, the maximum number of characters you can use for a title is 14"
+    echo -e "Sorry, maximum number of characters you can use for a title is 14"
     echo -e "The title \"${TITLES[key]}\" is too long"
     exit 1
 fi
@@ -462,7 +462,8 @@ if $PREVIEW; then
     fi
     # generate JPEGS for montage and title and resize them
     for ((i=0; i<=FILES; i++)) ; do
-        ffmpeg -i "${VID_ARRAY[$i]}" $SEEK -vframes 1 -s 360x240 $WORK_DIR/${i}-preview%d.jpg
+        ffmpeg -i "${VID_ARRAY[$i]}" $SEEK -vframes 1 \
+        -s 360x240 $WORK_DIR/${i}-preview%d.jpg
     done
     JPGS=( "${JPGS[@]}" \
     $(find $WORK_DIR/ -maxdepth 1 -name '*preview*.jpg') )
@@ -554,10 +555,23 @@ done
 for i in ${!VID_LEN[@]}; do
     NEW_LENGTH=( ${NEW_LENGTH[@]}   ${VID_LEN[i]%.*} )
 done
-for val in ${NEW_LENGTH[@]}; do
-    [ -z "$MAX_VAL" ] || ((val > MAX_VAL)) && MAX_VAL=$val
+# find out longest video and shortest video 
+for ((i=0; i<${#NEW_LENGTH[@]}; i++)); do
+    val=${NEW_LENGTH[i]}
+    [ -z "$MAX_VAL" ] || ((val > MAX_VAL)) && MAX_VAL=$val && max_key=$i
+    if $ANI_SUB_MENU; then 
+        [ -z "$MIN_VAL" ]  || ((val < MIN_VAL)) && MIN_VAL=$val && min_key=$i
+    fi
 done
-
+# if shortest is less than 340 frames * $CHAPTERS then no animated submenu
+if $ANI_SUB_MENU && [ $MIN_VAL -lt $(((340 * CHAPTERS) / 30)) ]; then
+    echo -n "Sorry, the shortest length video must be greater than "
+    echo "$(((340 * CHAPTERS) / 30)) seconds"
+    echo "to use animated submenus."
+    echo "${VID_ARRAY[min_key]} is only $MIN_VAL seconds long"
+    exit 1
+fi 
+# allow animated menus of length of longest video
 MAX_VAL_FRAMES="$(($MAX_VAL * 30))"
 if [ $MAX_VAL_FRAMES -lt $MAX_ANI_LENGTH ]; then
     MAX_ANI_LENGTH=$MAX_VAL_FRAMES
@@ -610,7 +624,7 @@ done
         convert -resize $VID_SIZE_OPT! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
         convert -size $VID_SIZE_OPT xc:"#161514" "$WORK_DIR/submenu_template.jpg"
     fi
-sleep 20
+
 echo
 echo "Creating a gradient image for fancy titling"
 convert -size 1x512 gradient: -rotate 90 +matte \
@@ -687,10 +701,10 @@ done
 # make xml files, and run dvdauthor and spumux
 if $MENU_FADE; then
     END_TIME=$((ANI_FRAMES / 30))
-    END_TIME=$((END_TIME - 2))
+    END_TIME=$((END_TIME - 0))
     END_TIME=$(format_seconds $END_TIME)
     END=" end=\"$END_TIME\""
-    START="00:00:02.0"
+    START="00:00:02.5"
     PAUSE_TIME="6"
     POST="<post> jump cell 1; </post>"
     MAIN_POST="        <post> jump cell 1; </post>"
@@ -820,37 +834,34 @@ if $SUB_MENU; then
         #FIXME the below commands are creating a bunch of extra frames
         # which is harmless as they get removed, but needs to be tweaked         
         if $ANI_SUB_MENU; then    
-            counts=$((${CHAPT_INTERVALS[i]} * 30))
-            CUT=( 0 $(running_total <<<  $(for ((a=0; a<=CHAPTERS ; a++)); \
-            do echo -n "$counts ";done)) )
-            for c in ${!CUT[@]}; do
-                cmd[c]=$((${CUT[c]}))-$((${CUT[c]} + 340))
-            done
-            key=$((${#cmd[@]} - 1))
-            unset cmd[key]
-            CMD=${cmd[@]}
-
-            TCODE_CMD=(transcode -q 0 -i "${VID_ARRAY[i]}" \
-            -o $WORK_DIR/animenu/chapt -f 29.970  -J cut="$CMD" -y jpg,null)
             SM_MPLEX_OPTS=(-n 300)
             JPEG_IN=($WORK_DIR/animenu/%0d.jpg)
+            JPEG_OUT=($WORK_DIR/animenu/chapt)
+            CUT_TIME=340
 
         else  # not animated submenu
-            counts=$((${CHAPT_INTERVALS[i]} * 30))
-            SKIP=( 0 $(running_total <<<  $(for ((a=0; a<7;a++)); do \
-            echo -n "$counts ";done)) )
-            for c in ${!SKIP[@]}; do \
-            cmd[c]=$((${SKIP[c]} + 1))-${SKIP[c+1]};done
-            key=$((${#cmd[@]} - 1))
-            unset cmd[key]
-            CMD=${cmd[@]}
-            TCODE_CMD=(transcode -i "${VID_ARRAY[i]}" -o $WORK_DIR/chapt \
-            -f 29.970 -J skip="$CMD" -y jpg,null)
             SM_MPLEX_OPTS=(-n 1 -l 60)
             JPEG_IN=($WORK_DIR/submenu.jpg)
+            JPEG_OUT=($WORK_DIR/chapt)
+            CUT_TIME=1
         fi    
 
+        counts=$((${CHAPT_INTERVALS[i]} * 30))
+        CUT=( 0 $(running_total <<<  $(for ((a=0; a<CHAPTERS ; a++)); \
+        do echo -n "$counts ";done)) )
+        for c in ${!CUT[@]}; do
+            cmd[c]=$((${CUT[c]}))-$((${CUT[c]} + CUT_TIME))
+        done
+        key=$((${#cmd[@]} - 1))
+        unset cmd[key]
+        CMD=${cmd[@]}
+        echo  "CMD is ${cmd[@]}"
+        sleep 20
+        TCODE_CMD=(transcode -i "${VID_ARRAY[i]}" -o "${JPEG_OUT[@]}" \
+        -f 29.970 -J cut="$CMD" -y jpg,null)
         printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
+        echo "Running  "${TCODE_CMD[@]}"" >> $BVC_LOG
+        echo "Running  "${TCODE_CMD[@]}""
         if "${TCODE_CMD[@]}" 2>&1 >> $BVC_LOG.tmp; then
             cleanlog 1
         else
@@ -865,8 +876,6 @@ if $SUB_MENU; then
 
         if $ANI_SUB_MENU; then
             # FIXME make sure $CHAPTERS number of jpegs got created
-            jpegs=$(find $WORK_DIR/animenu -name chapt000\*.jpg)
-
             # move 340 jpegs to each subdir:  $WORK_DIR/animenu/{0,1,2,3,etc}
             for ((a=0; a<CHAPTERS; a++)); do
                 pics=( $(find $WORK_DIR/animenu/ -maxdepth 1 -name chapt\*.jpg|
@@ -977,7 +986,7 @@ for ((i=0; i<=FILES; i++)); do
         -bordercolor none -mattecolor "#444744" - miff:- |
         convert -resize $INTRO_SIZE! - $jpg
     done
-    
+
     # make sure all animated thumbs finish at the same time 
     JPEGS=( "${JPEGS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name '*[1-9]*.jpg') )
@@ -995,10 +1004,13 @@ if $MENU_FADE; then
     echo
     echo "making final montages and compositing onto background with title"
 
-    # thanks to graycat on #bash (irc.freenode.net) for syntax of loop 
+#    for ((count=0; count<ANI_FRAMES; count++)); do
+#        S=$(( (count<DISSOLVE) ? count : ((count>ANI_FRAMES-DISSOLVE) ? ANI_FRAMES-count : DISSOLVE) ));
+#        B=$(( (count<30) ? count : ((count>ANI_FRAMES-30) ? ANI_FRAMES-count : 30) ));
     for ((count=0; count<ANI_FRAMES; count++)); do
-        S=$(( (count<DISSOLVE) ? count : ((count>ANI_FRAMES-DISSOLVE) ? ANI_FRAMES-count : DISSOLVE) ));
-        B=$(( (count<30) ? count : ((count>ANI_FRAMES-30) ? ANI_FRAMES-count : 30) ));
+        if [[ $count -le 30 ]]; then B=$count; C=0;S=0;fi # dissolve for mist
+        if [[ count -gt 29 && count -le 130 ]]; then C=$(($count - 30)); B=30;fi # title
+        if [[ $count -ge 75 && $count -le $((75 + $DISSOLVE)) ]]; then S=$(($count - 75)); fi #montage
         ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $((count + 1)).jpg) )
         # create the montage from the JPEGS in each video dir
         MONTAGE_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
@@ -1010,7 +1022,50 @@ if $MENU_FADE; then
         MONTAGE_CMD3=(composite -dissolve $B -gravity south -geometry +0+50 \
         $WORK_DIR/white.png -)
         # finally, we dissolve the title onto the MIST (or plain background)
-        MONTAGE_CMD4=(composite -dissolve $S -gravity south -geometry +0+55 \
+        MONTAGE_CMD4=(composite -dissolve $C -gravity south -geometry +0+55 \
+        $WORK_DIR/title_txt.png - -background none $WORK_DIR/animenu/$count.jpg)
+         # pipe all of above commands if using MIST
+         if $MIST; then
+             "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
+             "${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD4[@]}"
+         else  # no mist: pipe all commands but the mist command
+             "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
+             "${MONTAGE_CMD4[@]}"
+         fi
+    done
+    # we need to add some non-montaged bg pics for a still, and the fadeouts
+    # which is much cheaper this way, though adds code lines
+    stills_pics=30; mist_pics=30; text_pics=100; dissolve_pics=$DISSOLVE
+    FADEOUT_PICS=$(($mist_pics + $text_pics + $dissolve_pics))
+    START_POINT=$(($ANI_FRAMES + $stills_pics))
+    for ((i=ANI_FRAMES; i<$START_POINT; i++)); do
+        cp $WORK_DIR/animenu/$((ANI_FRAMES - 1)).jpg $WORK_DIR/animenu/$i.jpg
+    done
+
+    for ((count=START_POINT; count<=START_POINT+FADEOUT_PICS; count++)); do
+        if [[ $count -le $(($START_POINT + $DISSOLVE)) ]]; then
+            B=30; C=100; S=$(($START_POINT + $DISSOLVE - $count))
+        fi # montage goes from $DISSOLVE to 0
+        if [[ $count -gt $(($START_POINT + $DISSOLVE)) && \
+        $count -le $(($START_POINT + $DISSOLVE + 100)) ]]; then
+            B=30;C=$(($START_POINT + $DISSOLVE + 100 - $count)) # text 100-> 0
+        fi
+        if [[ $count -gt  $(($START_POINT + $DISSOLVE + 100)) ]]; then
+            B=$(($START_POINT + 100 + $DISSOLVE + 30 - $count))
+        fi # text goes from 30 to 0 , mist goes from 30 to 0, count finishes
+
+        ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $ANI_FRAMES.jpg) )
+        # create the montage from the JPEGS in each video dir
+        MONTAGE_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
+        -geometry ${GEO_ARRAY[FILES]}+5+5 -background none)
+        #  dissolve the finished montages onto the background
+        MONTAGE_CMD2=(composite -dissolve $S -gravity north \
+        -geometry +0+55 - $WORK_DIR/pics/template.jpg -background none)
+        # if MIST is called for, this dissolves the mist onto the background
+        MONTAGE_CMD3=(composite -dissolve $B -gravity south -geometry +0+50 \
+        $WORK_DIR/white.png -)
+        # finally, we dissolve the title onto the MIST (or plain background)
+        MONTAGE_CMD4=(composite -dissolve $C -gravity south -geometry +0+55 \
         $WORK_DIR/title_txt.png - -background none $WORK_DIR/animenu/$count.jpg)
          # pipe all of above commands if using MIST
          if $MIST; then
@@ -1022,8 +1077,10 @@ if $MENU_FADE; then
          fi
     done
 
+
     # make last few frames *really* "black" if using default background
-    if $BLACKEN; then 
+
+    if $BLACKEN; then
         for ((j=$((ANI_FRAMES - 4)); j<=ANI_FRAMES; j++)); do
             BLACK_FRAMES=( "${BLACK_FRAMES[@]}"  \
             $(find $WORK_DIR/animenu -maxdepth 1 -name $j.jpg) )
@@ -1071,9 +1128,9 @@ else # Don't do menu fade
 fi
 
 echo
-echo "converting JPEGS to video stream and encoding to dvd complient m2v video"
+echo "converting JPEGS to video stream & encoding to dvd complient m2v video"
 # convert jpegs to video stream and encode to dvd complient m2v
-ENC_CMD1=(jpeg2yuv -v 0 -f 29.970 -I p -n $MAX_ANI_LENGTH -L 1 -b1 \
+ENC_CMD1=(jpeg2yuv -v 0 -f 29.970 -I p -L 1 -b1 \
 -j $WORK_DIR/animenu/%0d.jpg)
 ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r 29.970 -s $VID_SIZE_OPT \
 -tvstd ntsc $FFMPEG_OPTS -y $WORK_DIR/intro.m2v)
@@ -1088,19 +1145,16 @@ fi
 
 echo
 echo "Cleaning up montage JPEGs"
-#rm -fr $WORK_DIR/animenu/*.jpg
-
+rm -fr $WORK_DIR/animenu/*.jpg
 
 # create silence for the main menu
 TIME=`vid_length "$WORK_DIR/intro.m2v"`
-echo -e "TIME IS $TIME"
 if [ -z "$BG_AUDIO" ]; then
     cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
     -s - $WORK_DIR/intro.wav  trim 0 $TIME
 else
-    echo -e "BG_AUDIO is $BG_AUDIO"
     ffmpeg -i "$BG_AUDIO" -ar 48000 -ac 2 -acodec pcm_s16le -y \
-    -t 20 $WORK_DIR/intro.wav
+    -t $TIME $WORK_DIR/intro.wav
     if $AUDIO_FADE; then
         echo -e "Running:
         sox $WORK_DIR/intro.wav \
