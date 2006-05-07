@@ -447,6 +447,7 @@ if $MIST; then
     X=$((X + 10))
     DIM=${Y}x${X}
     convert -size $DIM xc:"#EBEBEB" $WORK_DIR/white.png
+    unset X Y
 fi
 
 ###############################################################################
@@ -686,13 +687,13 @@ done
 
 # and format in HH:MM:SS
 for len in ${CHAPT_INTERVALS[@]}; do
-    Y=( ${Y[@]} $(for ((i=1; i<CHAPTERS; i++)) ; do echo "$len";done) )
-    chapt_intervals=$(running_total <<< ${Y[@]})
+    L=( ${L[@]} $(for ((i=1; i<CHAPTERS; i++)) ; do echo "$len";done) )
+    chapt_intervals=$(running_total <<< ${L[@]})
     chapters="$(for c in $chapt_intervals; do echo $(format_seconds $c); done)"
     chapters="00:00:00.000 $chapters"
     CHAPTS=$(for i in $chapters; do echo -n $i,;done|sed 's/,$//')
     CHAPT_ARRAY=( ${CHAPT_ARRAY[@]} $CHAPTS )
-    unset Y chapt_intervals cmd
+    unset L chapt_intervals cmd
 done
 # debug chapters
 for i in ${!VID_ARRAY[@]}; do
@@ -884,9 +885,6 @@ if $SUB_MENU; then
             for ((a=0; a<CHAPTERS; a++)); do
                 find $WORK_DIR/animenu/$a/ -name chapt\*.jpg|head -n 20|xargs rm
                 find $WORK_DIR/animenu/$a/ -name chapt\*.jpg|tail -n 20|xargs rm
-                # a debug echo for now
-                echo -n "Frame count in $WORK_DIR/animenu/$a is: "
-                echo "$(ls -l $WORK_DIR/animenu/$a/*.jpg|wc -l) frames"
             done
             echo
             echo "Making montage images for  "${VID_ARRAY[i]}""
@@ -991,7 +989,7 @@ for ((i=0; i<=FILES; i++)); do
     next_jpg=$(($last_jpg + 1))
     if [ $last_jpg -lt $MAX_ANI_LENGTH ]; then
         for ((l=next_jpg; l<=MAX_ANI_LENGTH; l++)); do
-            cp -v $WORK_DIR/pics/$i/${last_jpg}.jpg $WORK_DIR/pics/$i/$l.jpg
+            cp $WORK_DIR/pics/$i/${last_jpg}.jpg $WORK_DIR/pics/$i/$l.jpg
         done
     fi
     unset JPGS JPEGS last_jpg next_jpg
@@ -1038,7 +1036,7 @@ if $MENU_FADE; then
     END_POINT=$(($START_POINT + $FADEOUT_PICS))
     
     for ((i=ANI_FRAMES; i<$START_POINT; i++)); do
-        cp -v $WORK_DIR/animenu/$((ANI_FRAMES - 1)).jpg $WORK_DIR/animenu/$i.jpg
+        cp $WORK_DIR/animenu/$((ANI_FRAMES - 1)).jpg $WORK_DIR/animenu/$i.jpg
     done
 
     for ((count=START_POINT; count<=END_POINT; count++)); do
@@ -1082,7 +1080,7 @@ if $MENU_FADE; then
     if $BLACKEN; then
         START_BLACKEN=$(($END_POINT + $stills_pics - 34))
         END_BLACKEN=$(($END_POINT + $stills_pics))
-        for ((j=START_BLACKEN j<=END_BLACKEN; j++)); do
+        for ((j=START_BLACKEN; j<=END_BLACKEN; j++)); do
             BLACK_FRAMES=( "${BLACK_FRAMES[@]}"  \
             $(find $WORK_DIR/animenu -maxdepth 1 -name $j.jpg) )
         done
