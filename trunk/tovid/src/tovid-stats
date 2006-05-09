@@ -22,12 +22,17 @@ containing statistics on all videos you've encoded with tovid. Output size
 prediction is then based on the average for each format.
 """
 
-import os, sys
+import os
+import sys
 from libtovid.stats import Statlist
 
 if __name__ == '__main__':
+    statfile = os.path.expanduser('~/.tovid/stats.tovid')
+    tempfile = os.path.expanduser('~/.tovid/stats.tovid.csv')
+    os.system('cat "%s" | grep \'^\"\' > "%s"' % (statfile, tempfile))
     statlist = Statlist()
-    statlist.read_csv(os.path.expanduser('~/.tovid/stats.tovid'))
+    statlist.read_csv(tempfile)
+    os.remove(tempfile)
 
     print "Average bitrate"
     print statlist.average('avg_bitrate')
