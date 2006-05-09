@@ -17,6 +17,7 @@ __all__ = [\
     'globals',
     'menu',
     'opts',
+    'stats',
     'standards',
     'streams',
     'tdl',
