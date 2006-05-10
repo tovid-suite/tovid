@@ -47,13 +47,16 @@ EOF`
 
 USAGE=`cat << EOF
 Usage:
-animenu -files File1.mpg File2.mpg ... -titles "Title 1" "Title 2" -out NAME
+    animenu [OPTIONS] \
+      -files File1.mpg File2.mpg ... \
+      -titles "Title 1" "Title 2" ... \
+      -out OUT_PREFIX
 
 Input files must be MPEG, and the number of -files and -titles must be equal. 
 
 Options:
 
--menuonly         Just create the menu; do not author the disc
+-keepfiles        Keep all intermediate/temporary files (helps with debugging)
 -submenus         Create a submenu with chapters for each video. 
 -ani-submenus     Create an animated submenu with chapters for each video
 -menu-title       Title for the root menu - may be longer than thumbnail labels
@@ -90,17 +93,17 @@ usage_error ()
     exit 1
 }
 
-WORK_DIR=$HOME/tmp/BVC
-BVC_LOG=$WORK_DIR/BVC.log
+WORK_DIR=`abspath "animenu-work"`
+ANIMENU_LOG="`pwd`/animenu.log"
 OUT_PREFIX=""
 MAX_ANI_LENGTH=600
 TARGET=DVD
 LINE=$(for ((i=1; i<=79; i++));do echo -n =;done)
 VID_SIZE_OPT=720x480
 VMGM_TITLE="My Video Collection"
-SPUMUX_XML=$WORK_DIR/spumux.xml
-SUBMENU_SPUMUX_XML=$WORK_DIR/submenu_spumux.xml
-DVDAUTHOR_XML=$WORK_DIR/dvdauthor.xml
+SPUMUX_XML="$WORK_DIR/spumux.xml"
+SUBMENU_SPUMUX_XML="$WORK_DIR/submenu_spumux.xml"
+DVDAUTHOR_XML="$WORK_DIR/dvdauthor.xml"
 GRADIENT="$WORK_DIR/aqua_gradient.png"
 SUB_MENU=false
 ANI_SUB_MENU=false
@@ -108,6 +111,7 @@ CHAPTERS=6
 TITLE_FONT=""
 THUMB_FONT=""
 BG_AUDIO=""
+BG_PIC=""
 SM_AUDIO=""
 AUDIO_FADE=false
 DISSOLVE=100
@@ -117,7 +121,7 @@ PREVIEW=false
 PAUSE_TIME=6
 BLACKEN=:
 MIST=false
-MENU_ONLY=false
+KEEP_FILES=false
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -126,39 +130,39 @@ SCRIPT_START_TIME=`date +%s`
 ##############################################################################
 
 function cleanlog()
-# process $BVC_LOG.tmp variously - eg. ffmpeg's output is ugly without this
+# process $ANIMENU_LOG.tmp variously - eg. ffmpeg's output is ugly without this
 {
     FOLD="fold -bs"
     NO_CR="tr -d '\r'"
     RELINE="{s/$SED_VAR/\n$SED_VAR/g}"
-    TMP_LOG="$BVC_LOG.tmp"
+    TMP_LOG="$ANIMENU_LOG.tmp"
     NOSPACE="tr -s ' '"
 
     case "$1" in
         1 )
-            $FOLD $TMP_LOG >> $BVC_LOG
-            echo >> $BVC_LOG
+            $FOLD $TMP_LOG >> $ANIMENU_LOG
+            echo >> $ANIMENU_LOG
             ;;
         2 )
-            $NO_CR < $TMP_LOG | $FOLD >> $BVC_LOG
-            echo >> $BVC_LOG
+            $NO_CR < $TMP_LOG | $FOLD >> $ANIMENU_LOG
+            echo >> $ANIMENU_LOG
             ;;
         3 )
-            $NO_CR < $TMP_LOG | sed $RELINE | $FOLD >> $BVC_LOG
-            echo >> $BVC_LOG
+            $NO_CR < $TMP_LOG | sed $RELINE | $FOLD >> $ANIMENU_LOG
+            echo >> $ANIMENU_LOG
             ;;
         4 )
-            $NOSPACE < $TMP_LOG | $FOLD >> $BVC_LOG
+            $NOSPACE < $TMP_LOG | $FOLD >> $ANIMENU_LOG
             ;;
     esac
-    rm -f $BVC_LOG.tmp
+    rm -f $ANIMENU_LOG.tmp
 }
 
 function sorry_msg()
 {
     echo -e "Oops . . .Something went wrong."
     echo "There was a problem creating the $OUTPUT."
-    echo "Please check the log at $BVC_LOG"
+    echo "Please check the log at $ANIMENU_LOG"
 }
 
 function vid_length()
@@ -169,8 +173,11 @@ function vid_length()
 
 function cleanup()
 {
-    # does nothing atm
-    exit 1
+    if $KEEPFILES; then
+        echo "Keeping temporary files in $WORK_DIR"
+    else
+        rm -rf "$WORK_DIR"
+    fi
 }
 
 function running_total ()
@@ -232,12 +239,12 @@ while test $# -gt 0; do
             shift
             OUT_PREFIX="$1"
             ;;
-        "-menuonly" )
-            MENU_ONLY=:
+        "-keepfiles" )
+            KEEP_FILES=:
             ;;
         "-menu-bg" )
             shift
-            BG_PIC="$(abspath "$1")"
+            BG_PIC=`abspath "$1"`
             BLACKEN=false
             MIST=: 
             ;;
@@ -246,7 +253,7 @@ while test $# -gt 0; do
             ;;
         "-ani-menu-bg" )
             shift
-            ANI_BG="$(abspath "$1")"
+            ANI_BG=`abspath "$1"`
             ;;
         "-transparency" )
             shift
@@ -273,7 +280,7 @@ while test $# -gt 0; do
             ;;
         "-menu-audio" )
             shift
-            BG_AUDIO="$(abspath "$1")"
+            BG_AUDIO=`abspath "$1"`
             ;;
         "-menu-audio-fade" )
             shift
@@ -331,23 +338,25 @@ elif test ${#VIDS[@]} -ne ${#TITLES[@]}; then
     usage_error "Please give the same number of files as titles."
 fi
 
-# Make sure -out was provided
-if test -n "$OUT_PREFIX"; then
-    MENU_FILE="$WORK_DIR/$OUT_PREFIX.menu.mpg"
-else
+# Error if -out was not provided
+if test -z "$OUT_PREFIX"; then
     usage_error "Please provide an output name with -out"
 fi
+OUT_DIR=`abspath $OUT_PREFIX`
+MENU_FILE="animenu.mpg"
 
-# create a user's tmp dir if it doesn't exist
-# if it exists, move it to a new name
-if [ -d $WORK_DIR ]; then
-    mv  $WORK_DIR $WORK_DIR-`date "+%s"`
-    echo
-    echo -e "Moving $WORK_DIR to $WORK_DIR-`date "+%s"`"
-    mkdir -pv $WORK_DIR
-    else
-    mkdir -pv  $WORK_DIR
+# If output directory already exists, print a message and exit
+if test -d "$OUT_DIR"; then
+    echo "Output directory \"$OUT_DIR\" already exists."
+    echo "Please use a different -out name, or (re)move the existing directory."
+    exit 0
 fi
+# Clean out any existing WORK_DIR
+if test -d "$WORK_DIR"; then
+    echo "Removing existing files in \"$WORK_DIR\""
+    rm -rf "$WORK_DIR"
+fi
+mkdir -pv "$WORK_DIR"
 
 # Try to find a default font that is available
 if [ -z "$TITLE_FONT" ]; then
@@ -359,10 +368,10 @@ if [ -z "$TITLE_FONT" ]; then
         TITLE_FONT="helvetica"
     fi
 fi
-rm -f $WORK_DIR/font.png
+rm -f "$WORK_DIR/font.png"
 
 for i in "${VIDS[@]}"; do
-    VID_ARRAY=( "${VID_ARRAY[@]}" "$(abspath "$i")" )
+    VID_ARRAY=( "${VID_ARRAY[@]}" `abspath "$i"` )
 done
 
 # do everything in $WORK_DIR
@@ -418,16 +427,19 @@ FILES=$(($V_ARRAY_TOTAL - 1))
 PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
 printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
 "tovid suite's animenu - log for `date`" \
-"$PATTERN" >> $BVC_LOG
+"$PATTERN" >> $ANIMENU_LOG
 
 # create_dirs
 echo
 echo "Creating pics directories..."
-for ((i=0; i<=FILES; i++)) ; do mkdir -pv  $WORK_DIR/pics/$i; done
-mkdir -v $WORK_DIR/animenu
+for ((i=0; i<=FILES; i++));
+do
+    mkdir -pv "$WORK_DIR/pics/$i"
+done
+mkdir -v "$WORK_DIR/animenu"
 if $ANI_SUB_MENU; then
     for ((i=0; i<CHAPTERS; i++)); do
-        mkdir -v $WORK_DIR/animenu/$i
+        mkdir -v "$WORK_DIR/animenu/$i"
     done
 fi
 
@@ -467,7 +479,7 @@ fi
 convert -size 1x512 gradient: -rotate 90 +matte \
 -fx '3.5u^3 - 5.05u^2 + 2.05u + 0.3' \
 -size 512x1 xc:"#08447B" -compose Overlay -composite "$GRADIENT"
-echo "Creating a transparant png with the title on it"
+echo "Creating a transparent png with the title on it"
 
 convert -font "$TITLE_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
 -gravity Center caption:"\"$VMGM_TITLE\""  -negate  \( +clone \
@@ -573,7 +585,7 @@ for i in ${!VID_ARRAY[@]}; do
     fi
     V_LENGTH="$(awk '/Video stream:/{print $10}'<<<"${mencoder_stats[i]}")"
     FPS="$(awk '/VIDEO:/ {print $6}' <<<"${mencoder_stats[i]}")"
-    printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
+    printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
     echo -e "Stats for" "${VID_ARRAY[i]}" "\n" \
     "video codec:   " \
     "$VCODEC" "\n" \
@@ -584,7 +596,7 @@ for i in ${!VID_ARRAY[@]}; do
     "audio bitrate: " \
     "$A_BR" " kbps" "\n" \
     "video length:  " \
-    "$V_LENGTH" " seconds" "\n" |tee -a $BVC_LOG
+    "$V_LENGTH" " seconds" "\n" |tee -a $ANIMENU_LOG
 done
 echo
 echo $SEPARATOR
@@ -639,16 +651,16 @@ for ((i=0; i<=FILES; i++)) ; do
 
     CREATE_JPG_CMD=(ffmpeg -i "${VID_ARRAY[$i]}"  $SEEK -vframes $ANI_FRAMES \
     -s "$INTRO_SIZE" "$WORK_DIR/pics/$i/%d.jpg")
-    printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
-    echo -e "\nRunning: ${CREATE_JPG_CMD[@]}\n" | fold -bs >> $BVC_LOG
+    printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
+    echo -e "\nRunning: ${CREATE_JPG_CMD[@]}\n" | fold -bs >> $ANIMENU_LOG
 
     SED_VAR="frame="
-    if "${CREATE_JPG_CMD[@]}" >> $BVC_LOG.tmp 2>&1;then
+    if "${CREATE_JPG_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1;then
         cleanlog 3
     else
         cleanlog 3
         OUTPUT="There was a problem creating jpegs from the video.\n \
-        Please see the output of $BVC_LOG"
+        Please see the output of $ANIMENU_LOG"
         SORRY_MSG=$OUTPUT
         sorry_msg
         exit 1
@@ -801,7 +813,7 @@ fi
 (
     cat <<EOF
 <?xml version="1.0" encoding="utf-8"?>
-<dvdauthor dest="$WORK_DIR/$OUT_PREFIX" jumppad="1">
+<dvdauthor dest="$OUT_DIR" jumppad="1">
   <vmgm>
     <menus>
       <pgc>
@@ -898,15 +910,15 @@ if $SUB_MENU; then
         CMD=${cmd[@]}
         TCODE_CMD=(transcode -i "${VID_ARRAY[i]}" -o "${JPEG_OUT[@]}" \
         -f 29.970 -J cut="$CMD" -y jpg,null)
-        printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
-        echo "Running  "${TCODE_CMD[@]}"" >> $BVC_LOG
+        printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
+        echo "Running  "${TCODE_CMD[@]}"" >> $ANIMENU_LOG
         echo "Running  "${TCODE_CMD[@]}""
-        if "${TCODE_CMD[@]}" 2>&1 >> $BVC_LOG.tmp; then
+        if "${TCODE_CMD[@]}" 2>&1 >> $ANIMENU_LOG.tmp; then
             cleanlog 1
         else
             cleanlog 1
             OUTPUT="There was a problem creating jpegs from the video.\n \
-            Please see the output of $BVC_LOG"
+            Please see the output of $ANIMENU_LOG"
             SORRY_MSG=$OUTPUT
             sorry_msg
             exit 1
@@ -1180,8 +1192,8 @@ ENC_CMD1=(jpeg2yuv -v 0 -f 29.970 -I p -L 1 -b${offset} \
 -j $WORK_DIR/animenu/%0d.jpg)
 ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r 29.970 -s $VID_SIZE_OPT \
 -tvstd ntsc $FFMPEG_OPTS -y $WORK_DIR/intro.m2v)
-printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
-if "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" >> $BVC_LOG.tmp 2>&1; then
+printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
+if "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
     cleanlog 3
 else
     cleanlog 3
@@ -1223,10 +1235,10 @@ echo "Multiplexing main menu audio and video together"
 # mplex main menu audio and video together
 INTRO_MPLEX_CMD="mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/intro.mpg \
 $WORK_DIR/intro.$AUDIO_EXT $WORK_DIR/intro.m2v"
-echo -e "\nRunning: $INTRO_MPLEX_CMD\n" >> $BVC_LOG.tmp 
+echo -e "\nRunning: $INTRO_MPLEX_CMD\n" >> $ANIMENU_LOG.tmp 
 cleanlog 1
-printf "%s\n\n" "$LINE" "$LINE" >> $BVC_LOG
-if ${INTRO_MPLEX_CMD[@]} >> $BVC_LOG.tmp 2>&1; then
+printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
+if ${INTRO_MPLEX_CMD[@]} >> $ANIMENU_LOG.tmp 2>&1; then
     cleanlog 1
 else
     cleanlog 1
@@ -1234,27 +1246,33 @@ else
     exit 1
 fi
 
-if $MENU_ONLY; then
-    # Make sure file exists
-    test -f "$MENU_FILE" && echo "Menu file $MENU_FILE created"
+echo
+echo "Running spumux to create the main menu"
+spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE"
+if test -f "$MENU_FILE"; then
+    echo "Menu file $MENU_FILE created"
 else
-    echo
-    echo "Running spumux and dvdauthor to create the final DVD structure"
-    spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE"
-    if $SUB_MENU; then
-        for i in $(find $WORK_DIR/ -name menu[0-9]\*.mpg); do
-            spumux "$SUBMENU_SPUMUX_XML" < $i > ${i/menu/Menu}
-        done
-    fi
-    dvdauthor -x "$DVDAUTHOR_XML"
-    echo "Your new DVD is ready to burn at $WORK_DIR/$OUT_PREFIX."
+    echo "Menu file $MENU_FILE is missing!"
 fi
+
+if $SUB_MENU; then
+    echo "Creating submenus"
+    for i in $(find $WORK_DIR/ -name menu[0-9]\*.mpg); do
+        spumux "$SUBMENU_SPUMUX_XML" < $i > ${i/menu/Menu}
+    done
+fi
+echo "Running dvdauthor to create the DVD filesystem"
+dvdauthor -x "$DVDAUTHOR_XML"
 
 SCRIPT_END_TIME=`date +%s`
 SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
 HHMMSS=`format_time $SCRIPT_TOT_TIME`
 
+cleanup
+echo $SEPARATOR
 echo "animenu took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
+echo $SEPARATOR
+echo "Your new DVD should be in $OUT_DIR"
 echo
 echo "Thanks for using animenu."
 
