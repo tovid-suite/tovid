@@ -2,20 +2,43 @@
 ME="[animenu]:"
 . tovid-init
 
-###############################################################################
-# an example script to test montage method of dvd menu animation              #
-#                                                                             #
-#                                                                             #
-# by Robert Sohn <grepper@gmail.com> (grepper on irc.freenode.net)            #
-#                                                                             #
-# usage: montage_animenu.sh <mpeg-2 file1> <mpeg-2 file2> "title1" "title2".. #
-#                                                                             #
-###############################################################################
+# animenu
+# Part of the tovid suite
+# =======================
+# A bash script for generating a DVD with animated thumbnail menus
+# from a collection of MPEG video files.
+#
+# Project homepage: http://www.tovid.org
+#
+#
+# Copyright (C) 2005 tovid.org <http://www.tovid.org>
+# 
+# This program is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License 
+# as published by the Free Software Foundation; either 
+# version 2 of the License, or (at your option) any later 
+# version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
+#
+#           http://www.gnu.org/licenses/gpl.txt
+
+
+# Mostly written by Robert Sohn:
+#     <grepper@gmail.com>
+#     grepper on irc.freenode.net
 
 SCRIPT_NAME=`cat << EOF
 --------------------------------
 animenu
-A script to generate animated DVD/(S)VCD menus
+Generate a DVD filesystem with animated thumbnail menus
 Part of the tovid suite, version $TOVID_VERSION
 $BUILD_OPTIONS
 $TOVID_HOME_PAGE
@@ -23,12 +46,14 @@ $TOVID_HOME_PAGE
 EOF`
 
 USAGE=`cat << EOF
-Usage: animenu -files File1.mpg File2.mpg ... -titles "Title 1" "Title 2" ...
+Usage:
+animenu -files File1.mpg File2.mpg ... -titles "Title 1" "Title 2" -out NAME
 
-The number of -files and -titles must be equal.
+Input files must be MPEG, and the number of -files and -titles must be equal. 
 
 Options:
 
+-menuonly         Just create the menu; do not author the disc
 -submenus         Create a submenu with chapters for each video. 
 -ani-submenus     Create an animated submenu with chapters for each video
 -menu-title       Title for the root menu - may be longer than thumbnail labels
@@ -67,6 +92,7 @@ usage_error ()
 
 WORK_DIR=$HOME/tmp/BVC
 BVC_LOG=$WORK_DIR/BVC.log
+OUT_PREFIX=""
 MAX_ANI_LENGTH=600
 TARGET=DVD
 LINE=$(for ((i=1; i<=79; i++));do echo -n =;done)
@@ -91,6 +117,7 @@ PREVIEW=false
 PAUSE_TIME=6
 BLACKEN=:
 MIST=false
+MENU_ONLY=false
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -201,6 +228,13 @@ while test $# -gt 0; do
             # Don't skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
             ;;
+        "-out" )
+            shift
+            OUT_PREFIX="$1"
+            ;;
+        "-menuonly" )
+            MENU_ONLY=:
+            ;;
         "-menu-bg" )
             shift
             BG_PIC="$(abspath "$1")"
@@ -295,6 +329,13 @@ if test ${#VIDS[@]} -eq 0 || test ${#TITLES[@]} -eq 0; then
     usage_error "Please provide at least one file and one title."
 elif test ${#VIDS[@]} -ne ${#TITLES[@]}; then
     usage_error "Please give the same number of files as titles."
+fi
+
+# Make sure -out was provided
+if test -n "$OUT_PREFIX"; then
+    MENU_FILE="$WORK_DIR/$OUT_PREFIX.menu.mpg"
+else
+    usage_error "Please provide an output name with -out"
 fi
 
 # create a user's tmp dir if it doesn't exist
@@ -760,7 +801,7 @@ fi
 (
     cat <<EOF
 <?xml version="1.0" encoding="utf-8"?>
-<dvdauthor dest="$WORK_DIR/DVD" jumppad="1">
+<dvdauthor dest="$WORK_DIR/$OUT_PREFIX" jumppad="1">
   <vmgm>
     <menus>
       <pgc>
@@ -779,7 +820,7 @@ $(for ((i=1; i<=$V_ARRAY_TOTAL; i++)); do
     fi
     echo -e "        <button name=\"$i\">jump $JUMP $JUMP_INC;</button>"
 done)
-        <vob file="$WORK_DIR/menu.mpg" pause="$PAUSE_TIME"/>
+        <vob file="$MENU_FILE" pause="$PAUSE_TIME"/>
 $MAIN_POST
       </pgc>
 $(if $SUB_MENU; then
@@ -1193,19 +1234,21 @@ else
     exit 1
 fi
 
-##############################################################################
-#                       Run spumux and dvdauthor and pray                    #
-##############################################################################
-
-echo
-echo "Running spumux and dvdauthor to create the final DVD structure"
-spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > $WORK_DIR/menu.mpg
-if $SUB_MENU; then
-    for i in $(find $WORK_DIR/ -name menu[0-9]\*.mpg); do
-        spumux "$SUBMENU_SPUMUX_XML" < $i > ${i/menu/Menu}
-    done
+if $MENU_ONLY; then
+    # Make sure file exists
+    test -f "$MENU_FILE" && echo "Menu file $MENU_FILE created"
+else
+    echo
+    echo "Running spumux and dvdauthor to create the final DVD structure"
+    spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE"
+    if $SUB_MENU; then
+        for i in $(find $WORK_DIR/ -name menu[0-9]\*.mpg); do
+            spumux "$SUBMENU_SPUMUX_XML" < $i > ${i/menu/Menu}
+        done
+    fi
+    dvdauthor -x "$DVDAUTHOR_XML"
+    echo "Your new DVD is ready to burn at $WORK_DIR/$OUT_PREFIX."
 fi
-dvdauthor -x "$DVDAUTHOR_XML"
 
 SCRIPT_END_TIME=`date +%s`
 SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
@@ -1213,6 +1256,5 @@ HHMMSS=`format_time $SCRIPT_TOT_TIME`
 
 echo "animenu took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
 echo
-echo "Your new DVD is ready to burn at $WORK_DIR/DVD."
 echo "Thanks for using animenu."
 
