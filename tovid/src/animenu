@@ -775,7 +775,7 @@ if $MENU_FADE; then
     . animenu-fade-routine
     END_TIME=$(format_seconds $THUMBS_FADE_OUT_END_TIME)
     END=" end=\"$END_TIME\""
-    START=\"$(format_seconds $THUMBS_FADE_IN_START_TIME)\"
+    START=$(format_seconds $THUMBS_FADE_IN_START_TIME)
     PAUSE_TIME="6"
     POST="<post> jump cell 1; </post>"
     MAIN_POST="        <post> jump cell 1; </post>"
@@ -1066,21 +1066,25 @@ for ((i=0; i<=FILES; i++)); do
 done
 
 if $MENU_FADE; then
-    echo "get_bg_opacity is $(type get_bg_opacity)"
-    echo "MAX_ANI_LENGTH is $MAX_ANI_LENGTH"
-    echo "ANI_FRAMES is $ANI_FRAMES"
     echo
     echo "making final montages and compositing onto background with title"
-
     for ((frame=0; frame<=ANI_MENU_END_FRAME; frame++)); do
-        # copy template and fade out beginning and end frames
+        # copy template for fade out beginning and end frames
+        cp $WORK_DIR/pics/template.jpg $WORK_DIR/bg/$(($frame + 1)).jpg
+    done
+      
+    for ((frame=0; frame<=BACKGROUND_FADE_IN_END_FRAME; frame++)); do
         D=`get_bg_opacity`
-        cp -v $WORK_DIR/pics/template.jpg $WORK_DIR/bg/$(($frame + 1)).jpg
         composite -dissolve $D $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.jpg \
         $WORK_DIR/bg/$(($frame + 1)).jpg
-        # debug only
-#        echo "Running composite -dissolve $D $WORK_DIR/bg/$frame.jpg"
-#        echo "$WORK_DIR/black.jpg $WORK_DIR/bg/$(($frame + 1)).jpg"
+    done
+    for ((frame=BACKGROUND_FADE_OUT_START_FRAME; frame<=BACKGROUND_FADE_OUT_END_FRAME; frame++)); do
+        D=`get_bg_opacity`
+        composite -dissolve $D $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.jpg \
+        $WORK_DIR/bg/$(($frame + 1)).jpg
+    done
+
+    for ((frame=0; frame<=ANI_MENU_END_FRAME; frame++)); do
         # set dissolve vars from animenu-fade-routine functions
         BC=$(get_title_opacity)
         B=$(awk -F ':' '{print $1'}<<<$BC)
