@@ -1,41 +1,41 @@
 #! /usr/bin/env python
 
-fade_floor=0
-fade_ceiling=100
-mist_ceiling=33
-frame_rate=29.97
+fade_floor = 0
+fade_ceiling = 100
+mist_ceiling = 33
+frame_rate = 29.97
  
 # ##########################
 # user-defined variables....
-menu_length=30    # seconds
-dissolve_limit=60 # 0-100 possible
+menu_length = 30    # seconds
+dissolve_limit = 60 # 0-100 possible
 
 # ##############
 # New variables!
 # fade times (in seconds)
-bg_fade_length=0.7
-title_fade_length=1.0
-thumb_fade_length=1.0
+bg_fade_length = 0.7
+title_fade_length = 1.0
+thumb_fade_length = 1.0
  
 # fade in points (in seconds)
-bg_fadein_start_time=0
-bg_fadein_end_time=bg_fadein_start_time + bg_fade_length
+bg_fadein_start_time = 0
+bg_fadein_end_time = bg_fadein_start_time + bg_fade_length
  
-fadein_start_time=1.0
-fadein_end_time=fadein_start_time + title_fade_length
+fadein_start_time = 1.0
+fadein_end_time = fadein_start_time + title_fade_length
  
-thumb_fadein_start_time=3.5
-thumb_fadein_end_time=thumb_fadein_start_time + thumb_fade_length
+thumb_fadein_start_time = 3.5
+thumb_fadein_end_time = thumb_fadein_start_time + thumb_fade_length
  
 # fade out points (in seconds)
-bg_fadeout_end_time=menu_length
-bg_fadeout_start_time=bg_fadeout_end_time - bg_fade_length
+bg_fadeout_end_time = menu_length
+bg_fadeout_start_time = bg_fadeout_end_time - bg_fade_length
  
-fadeout_end_time=29
-fadeout_end_time=fadeout_end_time - title_fade_length
+fadeout_end_time = 29
+fadeout_end_time = fadeout_end_time - title_fade_length
 
-thumb_fadeout_end_time=27.5
-thumb_fadeout_start_time=thumb_fadeout_end_time - thumb_fade_length
+thumb_fadeout_end_time = 27.5
+thumb_fadeout_start_time = thumb_fadeout_end_time - thumb_fade_length
  
  
 # ################################################
