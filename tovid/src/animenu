@@ -59,6 +59,8 @@ Options:
 -keepfiles        Keep all intermediate/temporary files (helps with debugging)
 -submenus         Create a submenu with chapters for each video. 
 -ani-submenus     Create an animated submenu with chapters for each video
+-menu-length      The desired animated main menu length in seconds
+-submenu-length   The disired animated submenu length in seconds
 -menu-title       Title for the root menu - may be longer than thumbnail labels
 -menu-font        Font to use for titles: use for example either: "Arial" , or
                   "/full/path/to/arial.ttf" (default: imagemagick default font)
@@ -96,7 +98,9 @@ usage_error ()
 WORK_DIR=`abspath "animenu-work"`
 ANIMENU_LOG="`pwd`/animenu.log"
 OUT_PREFIX=""
-MAX_ANI_LENGTH=600
+ANI_MENU_LENGTH=20
+MAX_ANI_LENGTH=""
+FRAME_RATE=29.970  # when -ntsc and -pal options added put in body in if block
 TARGET=DVD
 LINE=$(for ((i=1; i<=79; i++));do echo -n =;done)
 VID_SIZE_OPT=720x480
@@ -241,6 +245,14 @@ while test $# -gt 0; do
             ;;
         "-keepfiles" )
             KEEP_FILES=:
+            ;;
+        "-menu-length" )
+            shift
+            ANI_MENU_LENGTH="$1"
+            ;;
+        "-submenu-length" )
+            shift
+            SUBMENU_LENGTH="$1"
             ;;
         "-menu-bg" )
             shift
@@ -436,6 +448,7 @@ for ((i=0; i<=FILES; i++));
 do
     mkdir -pv "$WORK_DIR/pics/$i"
 done
+if $MENU_FADE; then mkdir -v $WORK_DIR/bg; fi
 mkdir -v "$WORK_DIR/animenu"
 if $ANI_SUB_MENU; then
     for ((i=0; i<CHAPTERS; i++)); do
@@ -474,6 +487,10 @@ if [ -z "$BG_PIC" ]; then
     convert  -resize $VID_SIZE_OPT! xc:"#161514" "$BG_PIC"
 else
     convert -resize $VID_SIZE_OPT! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
+fi
+
+if $MIST; then
+    convert -size $VID_SIZE_OPT xc:"#161514" "$WORK_DIR/black.jpg"
 fi
 
 convert -size 1x512 gradient: -rotate 90 +matte \
@@ -626,6 +643,7 @@ if $ANI_SUB_MENU && [ $MIN_VAL -lt $(((340 * CHAPTERS) / 30)) ]; then
     exit 1
 fi 
 # allow animated menus of length of longest video
+MAX_ANI_LENGTH=$(awk -v fr=$FRAME_RATE -v al=$ANI_MENU_LENGTH 'BEGIN { printf("%d\n", (fr*al)); }')
 MAX_VAL_FRAMES="$(($MAX_VAL * 30))"
 if [ $MAX_VAL_FRAMES -lt $MAX_ANI_LENGTH ]; then
     MAX_ANI_LENGTH=$MAX_VAL_FRAMES
@@ -754,11 +772,10 @@ for i in ${!VID_ARRAY[@]}; do
 done
 # make xml files, and run dvdauthor and spumux
 if $MENU_FADE; then
-    END_TIME=$((ANI_FRAMES / 30))
-    END_TIME=$((END_TIME - 0))
-    END_TIME=$(format_seconds $END_TIME)
+    . animenu-fade-routine
+    END_TIME=$(format_seconds $THUMBS_FADE_OUT_END_TIME)
     END=" end=\"$END_TIME\""
-    START="00:00:02.5"
+    START=\"$(format_seconds $THUMBS_FADE_IN_START_TIME)\"
     PAUSE_TIME="6"
     POST="<post> jump cell 1; </post>"
     MAIN_POST="        <post> jump cell 1; </post>"
@@ -941,7 +958,7 @@ if $SUB_MENU; then
             done
             echo
             echo "Making montage images for  "${VID_ARRAY[i]}""
-            
+
             for ((a=1; a<300; a++)); do
                 for ((b=0; b<CHAPTERS; b++)); do
                     JPEGS=( "${JPEGS[@]}" $(find $WORK_DIR/animenu/$b \
@@ -954,13 +971,13 @@ if $SUB_MENU; then
                 $WORK_DIR/title${i}_txt.png  -gravity south \
                 -geometry +0+55 -composite -  -gravity north -geometry +0+55 \
                 -composite $WORK_DIR/animenu/$a.jpg)
-               
+ 
                 "${IM_CMD[@]}" | "${IM_CMD2[@]}"
                 unset JPEGS
             done
-                
+
             unset IM_CMD IM_CMD2 d f PIC
-    
+ 
         else # not $ANI_SUB_MENU
             echo $SEPARATOR
             echo "Building submenus"
@@ -1049,102 +1066,57 @@ for ((i=0; i<=FILES; i++)); do
 done
 
 if $MENU_FADE; then
+    echo "get_bg_opacity is $(type get_bg_opacity)"
+    echo "MAX_ANI_LENGTH is $MAX_ANI_LENGTH"
+    echo "ANI_FRAMES is $ANI_FRAMES"
     echo
     echo "making final montages and compositing onto background with title"
 
-#    for ((count=0; count<ANI_FRAMES; count++)); do
-#        S=$(( (count<DISSOLVE) ? count : ((count>ANI_FRAMES-DISSOLVE) ? ANI_FRAMES-count : DISSOLVE) ));
-#        B=$(( (count<30) ? count : ((count>ANI_FRAMES-30) ? ANI_FRAMES-count : 30) ));
-    for ((count=0; count<ANI_FRAMES; count++)); do
-        if [[ $count -le 30 ]]; then B=$count; C=0;S=0;fi # dissolve for mist
-        if [[ count -gt 29 && count -le 130 ]]; then C=$(($count - 30)); B=30;fi # title
-        if [[ $count -ge 75 && $count -le $((75 + $DISSOLVE)) ]]; then S=$(($count - 75)); fi #montage
-        ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $((count + 1)).jpg) )
+    for ((frame=0; frame<=ANI_MENU_END_FRAME; frame++)); do
+        # copy template and fade out beginning and end frames
+        D=`get_bg_opacity`
+        cp -v $WORK_DIR/pics/template.jpg $WORK_DIR/bg/$(($frame + 1)).jpg
+        composite -dissolve $D $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.jpg \
+        $WORK_DIR/bg/$(($frame + 1)).jpg
+        # debug only
+#        echo "Running composite -dissolve $D $WORK_DIR/bg/$frame.jpg"
+#        echo "$WORK_DIR/black.jpg $WORK_DIR/bg/$(($frame + 1)).jpg"
+        # set dissolve vars from animenu-fade-routine functions
+        BC=$(get_title_opacity)
+        B=$(awk -F ':' '{print $1'}<<<$BC)
+        C=$(awk -F ':' '{print $2'}<<<$BC)
+        S=$(get_thumb_opacity)
+
+        ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $((frame + 1)).jpg) )
+        BG_PIC=$(find $WORK_DIR/bg -name $(($frame + 1)).jpg)
         # create the montage from the JPEGS in each video dir
         MONTAGE_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
         -geometry ${GEO_ARRAY[FILES]}+5+5 -background none)
         #  dissolve the finished montages onto the background
         MONTAGE_CMD2=(composite -dissolve $S -gravity north \
-        -geometry +0+55 - $WORK_DIR/pics/template.jpg -background none)
+        -geometry +0+55 - $WORK_DIR/bg/$(($frame + 1)).jpg -background none)
         # if MIST is called for, this dissolves the mist onto the background
         MONTAGE_CMD3=(composite -dissolve $B -gravity south -geometry +0+50 \
         $WORK_DIR/white.png -)
         # finally, we dissolve the title onto the MIST (or plain background)
         MONTAGE_CMD4=(composite -dissolve $C -gravity south -geometry +0+55 \
-        $WORK_DIR/title_txt.png - -background none $WORK_DIR/animenu/$count.jpg)
-         # pipe all of above commands if using MIST
-         if $MIST; then
+        $WORK_DIR/title_txt.png - -background none $WORK_DIR/animenu/$(($frame + 1)).jpg)
+        # pipe all of above commands if using MIST
+        if $MIST; then
+            # debug echo only
+#            echo "Running "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |"
+#            echo  ""${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD4[@]}""
+            "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
+            "${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD4[@]}"
+        else  # no mist: pipe all commands but the mist command
              "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
-             "${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD4[@]}"
-         else  # no mist: pipe all commands but the mist command
-             "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
-             "${MONTAGE_CMD4[@]}"
-         fi
-    done
-    # we need to add some non-montaged bg pics for a still, and the fadeouts
-    # its cheaper this way, though adds it code lines (now reduced to 1 sec)
-    stills_pics=30; mist_pics=30; text_pics=100; dissolve_pics=$DISSOLVE
-    FADEOUT_PICS=$(($mist_pics + $text_pics + $dissolve_pics))
-    START_POINT=$(($ANI_FRAMES + $stills_pics))
-    END_POINT=$(($START_POINT + $FADEOUT_PICS))
-    
-    for ((i=ANI_FRAMES; i<$START_POINT; i++)); do
-        cp $WORK_DIR/animenu/$((ANI_FRAMES - 1)).jpg $WORK_DIR/animenu/$i.jpg
-    done
-
-    for ((count=START_POINT; count<=END_POINT; count++)); do
-        if [[ $count -le $(($START_POINT + $DISSOLVE)) ]]; then
-            B=30; C=100; S=$(($START_POINT + $DISSOLVE - $count))
-        fi # montage goes from $DISSOLVE to 0
-        if [[ $count -gt $(($START_POINT + $DISSOLVE)) && \
-        $count -le $(($START_POINT + $DISSOLVE + 100)) ]]; then
-            B=30;C=$(($START_POINT + $DISSOLVE + 100 - $count)) # text 100-> 0
+            "${MONTAGE_CMD4[@]}"
         fi
-        if [[ $count -gt  $(($START_POINT + $DISSOLVE + 100)) ]]; then
-            B=$(($START_POINT + 100 + $DISSOLVE + 30 - $count))
-        fi # text goes from 30 to 0 , mist goes from 30 to 0, count finishes
-
-        ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $ANI_FRAMES.jpg) )
-        # create the montage from the JPEGS in each video dir
-        MONTAGE_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
-        -geometry ${GEO_ARRAY[FILES]}+5+5 -background none)
-        #  dissolve the finished montages onto the background
-        MONTAGE_CMD2=(composite -dissolve $S -gravity north \
-        -geometry +0+55 - $WORK_DIR/pics/template.jpg -background none)
-        # if MIST is called for, this dissolves the mist onto the background
-        MONTAGE_CMD3=(composite -dissolve $B -gravity south -geometry +0+50 \
-        $WORK_DIR/white.png -)
-        # finally, we dissolve the title onto the MIST (or plain background)
-        MONTAGE_CMD4=(composite -dissolve $C -gravity south -geometry +0+55 \
-        $WORK_DIR/title_txt.png - -background none $WORK_DIR/animenu/$count.jpg)
-         # pipe all of above commands if using MIST
-         if $MIST; then
-             "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
-             "${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD4[@]}"
-         else  # no mist: pipe all commands but the mist command
-             "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
-             "${MONTAGE_CMD4[@]}"
-         fi
     done
-
-    # make last few frames *really* "black" if using default background
-    # remove 1st and last 30 frames at same time, as there is no mist effect
-
-    if $BLACKEN; then
-        START_BLACKEN=$(($END_POINT + $stills_pics - 34))
-        END_BLACKEN=$(($END_POINT + $stills_pics))
-        for ((j=START_BLACKEN; j<=END_BLACKEN; j++)); do
-            BLACK_FRAMES=( "${BLACK_FRAMES[@]}"  \
-            $(find $WORK_DIR/animenu -maxdepth 1 -name $j.jpg) )
-        done
-        for pic in "${BLACK_FRAMES[@]}"; do
-            rm -f "$pic"
-        done
-        for ((i=START_BLACKEN; i<START_BLACKEN+3; i++)); do         
-            convert -size 720x480 xc:"#161514" $i.jpg
-        done
-    fi
-
+# copy a few black frames to make sure end frame is really "black"
+for ((i=ANI_MENU_END_FRAME; i<ANI_MENU_END_FRAME+6; i++)); do
+    cp $WORK_DIR/black.jpg $WORK_DIR/animenu/$i.jpg
+done
 else # Don't do menu fade
     if $TRANSPARENT; then
          for (( count=1; count<=$MAX_ANI_LENGTH; count++)); do
@@ -1217,7 +1189,7 @@ else
         echo -e "Running:
         sox $WORK_DIR/intro.wav \
         $WORK_DIR/intro-processed.wav fade t 0 $TIME $FADE"
-        
+
         sox $WORK_DIR/intro.wav \
         $WORK_DIR/intro-processed.wav fade t 0 $TIME $FADE
         rm $WORK_DIR/intro.wav
