@@ -1,0 +1,133 @@
+#! /usr/bin/env python
+
+fade_floor=0
+fade_ceiling=100
+mist_ceiling=33
+frame_rate=29.97
+ 
+# ##########################
+# user-defined variables....
+menu_length=30    # seconds
+dissolve_limit=60 # 0-100 possible
+
+# ##############
+# New variables!
+# fade times (in seconds)
+bg_fade_length=0.7
+title_fade_length=1.0
+thumb_fade_length=1.0
+ 
+# fade in points (in seconds)
+bg_fadein_start_time=0
+bg_fadein_end_time=bg_fadein_start_time + bg_fade_length
+ 
+fadein_start_time=1.0
+fadein_end_time=fadein_start_time + title_fade_length
+ 
+thumb_fadein_start_time=3.5
+thumb_fadein_end_time=thumb_fadein_start_time + thumb_fade_length
+ 
+# fade out points (in seconds)
+bg_fadeout_end_time=menu_length
+bg_fadeout_start_time=bg_fadeout_end_time - bg_fade_length
+ 
+fadeout_end_time=29
+fadeout_end_time=fadeout_end_time - title_fade_length
+
+thumb_fadeout_end_time=27.5
+thumb_fadeout_start_time=thumb_fadeout_end_time - thumb_fade_length
+ 
+ 
+# ################################################
+# Translate things for frame-by-frame construction
+animenu_end_frame = int(frame_rate * menu_length)
+
+bg_fadein_start_frame = int(frame_rate * bg_fadein_start_time)
+bg_fadein_end_frame = int(frame_rate * bg_fadein_end_time)
+title_fadein_start_frame = int(frame_rate * fadein_start_time)
+title_fadein_end_frame = int(frame_rate * fadein_end_time)
+thumb_fadein_start_frame = int(frame_rate * thumb_fadein_start_time)
+thumb_fadein_end_frame = int(frame_rate * thumb_fadein_end_time)
+
+bg_fadeout_start_frame = int(frame_rate * bg_fadeout_start_time)
+bg_fadeout_end_frame = int(frame_rate * bg_fadeout_end_time)
+title_fadeout_start_frame = int(frame_rate * fadeout_end_time)
+title_fadeout_end_frame = int(frame_rate * fadeout_end_time)
+thumb_fadeout_start_frame = int(frame_rate * thumb_fadeout_start_time)
+thumb_fadeout_end_frame = int(frame_rate * thumb_fadeout_end_time)
+ 
+# Set fade rates (rise over run or alpha over frame number)
+bg_fade_rate = (fade_ceiling - fade_floor) / (frame_rate * bg_fade_length)
+title_fade_rate = (fade_ceiling - fade_floor) / (frame_rate * title_fade_length)
+mist_fade_rate = (mist_ceiling - fade_floor) / (frame_rate * title_fade_length)
+thumb_fade_rate = (dissolve_limit - fade_floor) / (frame_rate * thumb_fade_length)
+
+################################
+# So how do we get all these values?
+# Until foo_FADE_IN_START_TIME,  its value is zero
+#    by foo_FADE_IN_END_TIME  ,  its value is some upper limit
+# until foo_FADE_OUT_START_TIME, its value is at that upper limit
+#    by foo_FADE_OUT_END_TIME,   its value is back to zero
+#                                                            ___
+# Use some if statements and ratios to make this shape: ____/   \______
+def get_bg_opacity(frame):
+    """Get the opacity of the background at the given frame number."""
+    if 0 <= frame and frame < bg_fadein_start_frame:
+        D = fade_floor
+    if bg_fadein_start_frame  <= frame and frame < bg_fadein_end_frame:
+        D = fade_floor + ((frame-bg_fadein_start_frame) * bg_fade_rate)
+    if bg_fadein_end_frame <= frame and frame < bg_fadeout_start_frame:
+        D = fade_ceiling
+    if bg_fadeout_start_frame <= frame and frame < bg_fadeout_end_frame:
+        D = fade_ceiling - ((frame - bg_fadeout_start_frame) * bg_fade_rate)
+    if bg_fadeout_end_frame <= frame and frame <= animenu_end_frame:
+        D = fade_floor
+    return D
+ 
+def get_title_opacity(frame):
+  if  0 <= frame and frame < title_fadein_start_frame:
+      B = fade_floor; C = fade_floor
+  if title_fadein_start_frame <= frame and frame < title_fadein_end_frame: 
+      B = fade_floor + ((frame - title_fadein_start_frame) * mist_fade_rate)
+      C = fade_floor + ((frame - title_fadein_start_frame) * title_fade_rate)
+  if title_fadein_end_frame <= frame and frame < title_fadeout_start_frame:
+      B = mist_ceiling; C = fade_ceiling
+  if  title_fadeout_start_frame <= frame and frame < title_fadeout_end_frame:
+      B = mist_ceiling - ((frame - title_fadeout_start_frame) * mist_fade_rate)
+      C = fade_ceiling - ((frame - title_fadeout_start_frame) * title_fade_rate)
+  if  title_fadeout_end_frame <= frame and frame <= animenu_end_frame:
+      B = fade_floor; C = fade_floor
+  return (B, C)
+
+ 
+def get_thumb_opacity(frame):
+  if 0 <= frame and frame < thumb_fadein_start_frame:
+      S = fade_floor
+  if  thumb_fadein_start_frame <= frame and frame < thumb_fadein_end_frame:
+      S = fade_floor + ((frame - thumb_fadein_start_frame) * thumb_fade_rate)
+  if  thumb_fadein_end_frame <= frame and frame < thumb_fadeout_start_frame:
+      S = dissolve_limit
+  if  thumb_fadeout_start_frame <= frame and frame < thumb_fadeout_end_frame:
+      S = dissolve_limit - ((frame - thumb_fadeout_start_frame) * thumb_fade_rate)
+  if  thumb_fadeout_end_frame <= frame and frame <= animenu_end_frame:
+      S = fade_floor
+  return S
+
+
+# Get the values for each element of the frame
+#  (!) the background
+#  (2) the title and mist
+#  (3) the thumbs
+frame = 0
+while frame <= animenu_end_frame:
+    DD = get_bg_opacity(frame)
+    BC = get_title_opacity(frame)
+    BB = BC[0]
+    CC = BC[1]
+    SS = get_thumb_opacity(frame)
+
+    time = frame / frame_rate
+    print "frame (%s) | BG: %s mist: %s text: %s montage: %s" % \
+        (time, DD, BB, CC, SS)
+
+    frame = frame + 1
