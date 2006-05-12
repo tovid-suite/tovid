@@ -489,7 +489,7 @@ else
     convert -resize $VID_SIZE_OPT! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
 fi
 
-if $MIST; then
+if $MENU_FADE; then
     convert -size $VID_SIZE_OPT xc:"#161514" "$WORK_DIR/black.jpg"
 fi
 
@@ -513,11 +513,15 @@ if $MIST; then
     Y=$(identify $WORK_DIR/title_txt.png |awk '{print $3}'|cut -dx -f1)
     X=$(identify $WORK_DIR/title_txt.png |awk '{print $3}'|cut -dx -f2)
     # add 10 pixels to width and height compared to title text png
-    Y=$((Y + 10))
-    X=$((X + 10))
-    DIM=${Y}x${X}
-    convert -size $DIM xc:"#EBEBEB" $WORK_DIR/white.png
-    unset X Y
+    y=$((Y + 20))
+    x=$((X + 20))
+    newX=$(($X + 10))
+    newY=$(($Y + 10))
+    DIM=${y}x${x}
+    convert -size $DIM xc:none -fill white -stroke none \
+    -draw "rectangle 5,10 $newY,$newX" $WORK_DIR/white_orig.png
+    convert $WORK_DIR/white_orig.png -channel RGBA -blur 0x4 $WORK_DIR/white.png
+    unset X Y x y
 fi
 
 ###############################################################################
@@ -527,7 +531,7 @@ fi
 if $PREVIEW; then
     if $MIST; then
         # overlay white.png onto the background
-        composite -dissolve 30 -gravity south -geometry +0+50 \
+        composite -dissolve 30 -gravity south -geometry +0+45 \
         $WORK_DIR/white.png $WORK_DIR/pics/template.jpg \
         $WORK_DIR/pics/template.jpg
     fi
@@ -1084,7 +1088,7 @@ if $MENU_FADE; then
         $WORK_DIR/bg/$(($frame + 1)).jpg
     done
 
-    for ((frame=0; frame<=ANI_MENU_END_FRAME; frame++)); do
+    for ((frame=0; frame<ANI_MENU_END_FRAME; frame++)); do
         # set dissolve vars from animenu-fade-routine functions
         BC=$(get_title_opacity)
         B=$(awk -F ':' '{print $1'}<<<$BC)
@@ -1160,7 +1164,7 @@ echo
 echo "converting JPEGS to video stream & encoding to dvd complient m2v video"
 # convert jpegs to video stream and encode to dvd complient m2v
 if $BLACKEN; then
-    offset="30" # skip 1st 30 black frames as there is no mist effect
+    offset="1" # skip 1st 30 black frames as there is no mist effect
 else
     offset="1"
 fi
