@@ -95,7 +95,7 @@ usage_error ()
     exit 1
 }
 
-WORK_DIR=`abspath "animenu-work"`
+WORK_DIR="$(abspath "animenu-work")"
 ANIMENU_LOG="`pwd`/animenu.log"
 OUT_PREFIX=""
 ANI_MENU_LENGTH=20
@@ -123,7 +123,6 @@ MENU_FADE=false
 TRANSPARENT=false
 PREVIEW=false
 PAUSE_TIME=6
-BLACKEN=:
 MIST=false
 KEEP_FILES=false
 
@@ -257,8 +256,7 @@ while test $# -gt 0; do
             ;;
         "-menu-bg" )
             shift
-            BG_PIC=`abspath "$1"`
-            BLACKEN=false
+            BG_PIC="$(abspath "$1")"
             MIST=: 
             ;;
         "-menu-fade" )
@@ -266,7 +264,7 @@ while test $# -gt 0; do
             ;;
         "-ani-menu-bg" )
             shift
-            ANI_BG=`abspath "$1"`
+            ANI_BG="$(abspath "$1")"
             ;;
         "-transparency" )
             shift
@@ -293,7 +291,7 @@ while test $# -gt 0; do
             ;;
         "-menu-audio" )
             shift
-            BG_AUDIO=`abspath "$1"`
+            BG_AUDIO="$(abspath "$1")"
             ;;
         "-menu-audio-fade" )
             shift
@@ -315,7 +313,7 @@ while test $# -gt 0; do
             shift
             # If there's a filename extension, find the absolute path
             if echo "$1" | grep -q '\...*$'; then
-                TITLE_FONT=`abspath "$1"`
+                TITLE_FONT="$(abspath "$1")"
             else
                 TITLE_FONT="$1"
             fi
@@ -328,7 +326,7 @@ while test $# -gt 0; do
             shift
             # If there's a filename extension, find the absolute path
             if echo "$1" | grep -q '\...*$'; then
-                THUMB_FONT=`abspath "$1"`
+                THUMB_FONT="$(abspath "$1")"
             else
                 THUMB_FONT="$1"
             fi
@@ -355,7 +353,7 @@ fi
 if test -z "$OUT_PREFIX"; then
     usage_error "Please provide an output name with -out"
 fi
-OUT_DIR=`abspath $OUT_PREFIX`
+OUT_DIR="$(abspath "$OUT_PREFIX")"
 MENU_FILE="animenu.mpg"
 
 # If output directory already exists, print a message and exit
@@ -384,7 +382,7 @@ fi
 rm -f "$WORK_DIR/font.png"
 
 for i in "${VIDS[@]}"; do
-    VID_ARRAY=( "${VID_ARRAY[@]}" `abspath "$i"` )
+    VID_ARRAY=( "${VID_ARRAY[@]}" "$(abspath "$i")" )
 done
 
 # do everything in $WORK_DIR
@@ -1165,12 +1163,7 @@ fi
 echo
 echo "converting JPEGS to video stream & encoding to dvd complient m2v video"
 # convert jpegs to video stream and encode to dvd complient m2v
-if $BLACKEN; then
-    offset="1" # skip 1st 30 black frames as there is no mist effect
-else
-    offset="1"
-fi
-ENC_CMD1=(jpeg2yuv -v 0 -f 29.970 -I p -L 1 -b${offset} \
+ENC_CMD1=(jpeg2yuv -v 0 -f 29.970 -I p -L 1 -b1 \
 -j $WORK_DIR/animenu/%0d.jpg)
 ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r 29.970 -s $VID_SIZE_OPT \
 -tvstd ntsc $FFMPEG_OPTS -y $WORK_DIR/intro.m2v)
