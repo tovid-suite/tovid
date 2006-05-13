@@ -531,7 +531,6 @@ fi
 ###############################################################################
 #      if preview is selected, generate a basic preview of the main menu      #
 ###############################################################################
-echo "FEATHER is $FEATHER"
 if $PREVIEW; then
     if $MIST; then
         # overlay white.png onto the background
@@ -1059,6 +1058,7 @@ echo "Adding title to JPEGs and resizing"
 for ((i=0; i<=FILES; i++)); do
     JPGS=( "${JPGS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name '*[1-9]*.jpg') )
+    echo "Working on images from ${VID_ARRAY[i]}"
     o=1; sp="/-|-\|";  echo -n ' '
 
     for jpg in "${JPGS[@]}"; do
@@ -1119,7 +1119,7 @@ if $MENU_FADE; then
         MONTAGE_CMD2=(composite -dissolve $S -gravity north \
         -geometry +0+55 - $WORK_DIR/bg/$(($frame + 1)).jpg -background none)
         # if MIST is called for, this dissolves the mist onto the background
-        MONTAGE_CMD3=(composite -dissolve $B -gravity south -geometry +0+50 \
+        MONTAGE_CMD3=(composite -dissolve $B -gravity south -geometry +0+45 \
         $WORK_DIR/white.png -)
         # finally, we dissolve the title onto the MIST (or plain background)
         MONTAGE_CMD4=(composite -dissolve $C -gravity south -geometry +0+55 \
@@ -1144,15 +1144,21 @@ else # Don't do menu fade
     if $TRANSPARENT; then
          for (( count=1; count<=$MAX_ANI_LENGTH; count++)); do
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.jpg)
-            IM_CMD=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
+            IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
             -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:-)
             IM_CMD2=(composite -dissolve $DISSOLVE \
             -gravity north -geometry +0+55 - \
             $WORK_DIR/pics/template.jpg -background none miff:-)
-            IM_CMD3=(convert - $WORK_DIR/title_txt.png  \
+            IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+45 \
+            $WORK_DIR/white.png - miff:-)
+            IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
             -gravity south -geometry +0+55 -composite \
             $WORK_DIR/animenu/$count.jpg )
-            "${IM_CMD[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}"
+            if $MIST; then
+                "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
+            else
+                "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}"
+            fi
             rm -f ${ANI_PICS[@]}
         done
     else # Not transparent
@@ -1162,14 +1168,20 @@ else # Don't do menu fade
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.jpg)
 
             # make final montages and composite onto grey background with title
-            IM_CMD=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
+            IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
             -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:-)
             IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
-            $WORK_DIR/title_txt.png  -gravity south -geometry +0+55 -composite \
-            -  -gravity north -geometry +0+55 -composite \
-            $WORK_DIR/animenu/$count.jpg)
-
-            "${IM_CMD[@]}" | "${IM_CMD2[@]}"
+            -  -gravity north -geometry +0+55 -composite miff:-)
+            IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+45 \
+            $WORK_DIR/white.png - miff:-)
+            IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
+            -gravity south -geometry +0+55 -composite \
+            $WORK_DIR/animenu/$count.jpg )
+            if $MIST; then
+                "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
+            else
+                "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}"
+            fi
             rm -f ${ANI_PICS[@]}
         done
     fi    
