@@ -76,6 +76,7 @@ Options:
                   Lower values are more transparent, ie. less visable menu.. 
                   Use keyword:  none   , for no transparency
                   (only needed with -menu-fade or -menu-bg)
+-feather          feather thumbs: a frameless vignette look (preview only now)
 -menu-audio       An audio file for the main menu background
 -menu-audio-fade  Number of sec to fade given menu audio out (default: no fade)
 -submenu-audio #  (not implemented yet) List of files for submenu backgrounds:
@@ -124,6 +125,7 @@ TRANSPARENT=false
 PREVIEW=false
 PAUSE_TIME=6
 MIST=false
+FEATHER=false
 KEEP_FILES=false
 
 SCRIPT_START_TIME=`date +%s`
@@ -265,6 +267,9 @@ while test $# -gt 0; do
         "-ani-menu-bg" )
             shift
             ANI_BG="$(abspath "$1")"
+            ;;
+        "-feather" )
+            FEATHER=:
             ;;
         "-transparency" )
             shift
@@ -491,6 +496,12 @@ fi
 if $MENU_FADE; then
     convert -size $VID_SIZE_OPT xc:"#161514" "$WORK_DIR/black.jpg"
 fi
+if $FEATHER; then
+    convert -size 360x240 xc:black -fill white \
+    -draw "Rectangle 20,10 340,230" +matte -compose CopyOpacity miff:- |
+    convert - -blur 0x50 -channel RGBA +matte miff:- |
+    convert - -evaluate subtract 50% -normalize $WORK_DIR/feather_mask.png
+fi
 
 convert -size 1x512 gradient: -rotate 90 +matte \
 -fx '3.5u^3 - 5.05u^2 + 2.05u + 0.3' \
@@ -526,7 +537,7 @@ fi
 ###############################################################################
 #      if preview is selected, generate a basic preview of the main menu      #
 ###############################################################################
-
+echo "FEATHER is $FEATHER"
 if $PREVIEW; then
     if $MIST; then
         # overlay white.png onto the background
@@ -536,19 +547,27 @@ if $PREVIEW; then
     fi
     # generate JPEGS for montage and title and resize them
     for ((i=0; i<=FILES; i++)) ; do
-        ffmpeg -i "${VID_ARRAY[$i]}" $SEEK -vframes 1 \
-        -s 360x240 $WORK_DIR/${i}-preview%d.jpg
+        ffmpeg -i "${VID_ARRAY[i]}" $SEEK -vframes 1 \
+        -s 360x240 $WORK_DIR/${i}-preview%d.png
     done
     JPGS=( "${JPGS[@]}" \
-    $(find $WORK_DIR/ -maxdepth 1 -name '*preview*.jpg') )
+    $(find $WORK_DIR/ -maxdepth 1 -name '*preview*.png') )
     for i in "${!JPGS[@]}"; do
+        if $FEATHER; then
+            composite -compose CopyOpacity $WORK_DIR/feather_mask.png +matte \
+            "${JPGS[i]}" "${JPGS[i]}"
+            FRAME=""
+        else
+            FRAME="-frame 8x8"
+        fi
+     
         # **if horizontal lines in frames, try montage "${JPGS[i]}" -blur 0x.3**
         # using a mask just on the frame portion would be even better
         # www.cit.gu.edu.au/~anthony/info/graphics/imagemagick.hints 1/4 down
         montage "${JPGS[i]}" -geometry +4+4 -bordercolor none -compose Copy  \
         -background none -fill '#C6C6C6' -font "$THUMB_FONT" -pointsize 22 \
         -title "${TITLES[i]}"  $jpg miff:- |
-        convert -background none -frame 8x8 \
+        convert -background none $FRAME \
         -bordercolor none -mattecolor "#444744" - miff:- |
         convert -resize $INTRO_SIZE! - "${JPGS[i]}"
     done
