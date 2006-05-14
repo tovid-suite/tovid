@@ -1,11 +1,6 @@
 makemenu manual
 
 
-%!include(xhtml): ''navmenu.html''
-
-//This document was last edited on %%mtime(%A, %d %B %Y).//
-
-
 ==Name==
 
 makemenu: Create (S)VCD/DVD-compliant menus
@@ -148,7 +143,7 @@ imagick_type_gen.pl > ~/.magick/type.mgk.
 
 ==See also==
 
-**dvrequant**(1), **idvid**(1), **makedvd**(1), **makemenu**(1),
+**idvid**(1), **makedvd**(1), **makemenu**(1),
 **makeslides**(1), **makexml**(1), **postproc**(1), **tovid**(1)
 
 

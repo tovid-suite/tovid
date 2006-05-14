@@ -1,11 +1,6 @@
 makedvd manual
 
 
-%!include(xhtml): ''navmenu.html''
-
-//This document was last edited on %%mtime(%A, %d %B %Y).//
-
-
 ==Name==
 
 makedvd: Create and burn DVD image from dvdauthor XML input
@@ -88,7 +83,7 @@ For example:
 
 ==See also==
 
-**dvrequant**(1), **idvid**(1), **makedvd**(1), **makemenu**(1),
+**idvid**(1), **makedvd**(1), **makemenu**(1),
 **makeslides**(1), **makexml**(1), **postproc**(1), **tovid**(1)
 
 
