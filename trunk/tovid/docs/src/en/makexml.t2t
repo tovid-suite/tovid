@@ -1,11 +1,6 @@
 makexml manual
 
 
-%!include(xhtml): ''navmenu.html''
-
-//This document was last edited on %%mtime(%A, %d %B %Y).//
-
-
 ==Name==
 
 makexml: Generate a video disc structure XML description
@@ -111,7 +106,7 @@ component to generate the menu, this should all be handled for you.
 
 ==See also==
 
-**dvrequant**(1), **idvid**(1), **makedvd**(1), **makemenu**(1),
+**idvid**(1), **makedvd**(1), **makemenu**(1),
 **makeslides**(1), **makexml**(1), **postproc**(1), **tovid**(1)
 
 

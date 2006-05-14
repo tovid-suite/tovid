@@ -1,11 +1,6 @@
 idvid manual
 
 
-%!include(xhtml): ''navmenu.html''
-
-//This document was last edited on %%mtime(%A, %d %B %Y).//
-
-
 ==Name==
 
 idvid: Identify video files
@@ -24,8 +19,10 @@ SVCD, and DVD.
 
 For example:
 
-: ``idvid foo.avi``
-: ``idvid videos/*.mpg``
+```
+$ idvid foo.avi
+$ idvid videos/*.mpg
+```
 
 
 ==Options==
@@ -40,7 +37,7 @@ For example:
 
 ==See also==
 
-**dvrequant**(1), **idvid**(1), **makedvd**(1), **makemenu**(1),
+**idvid**(1), **makedvd**(1), **makemenu**(1),
 **makeslides**(1), **makexml**(1), **postproc**(1), **tovid**(1)
 
 

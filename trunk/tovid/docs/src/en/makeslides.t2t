@@ -1,11 +1,6 @@
 makeslides manual
 
 
-%!include(xhtml): ''navmenu.html''
-
-//This document was last edited on %%mtime(%A, %d %B %Y).//
-
-
 ==Name==
 
 makeslides: Convert images into still-frame MPEG video for (S)VCD
@@ -36,7 +31,7 @@ be the same as the input name, with a .mpg extension.
 
 ==See also==
 
-**dvrequant**(1), **idvid**(1), **makedvd**(1), **makemenu**(1),
+**idvid**(1), **makedvd**(1), **makemenu**(1),
 **makeslides**(1), **makexml**(1), **postproc**(1), **tovid**(1)
 
 
