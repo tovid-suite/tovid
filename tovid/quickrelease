@@ -2,6 +2,7 @@
 # Do a "quick release" of the SVN code
 
 TARBALL="tovid-svn-`date +%Y-%m-%d`.tar.gz"
+TARGET_DIR="/home/groups/t/to/tovid/htdocs/download"
 
 if test $# -lt 1; then
     echo "Usage: quickrelease USERNAME"
@@ -13,4 +14,4 @@ fi
 ./configure
 make dist
 mv tovid-svn.tar.gz $TARBALL
-scp $TARBALL $USERNAME@shell.berlios.de:/home/groups/ftp/pub/tovid
+scp $TARBALL $USERNAME@shell.sourceforge.net:$TARGET_DIR
