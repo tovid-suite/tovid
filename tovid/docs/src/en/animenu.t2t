@@ -1,0 +1,74 @@
+animenu manual
+
+
+== Name ==
+
+animenu: Create a DVD with animated menus
+
+
+== Description ==
+
+animenu is a command-line script for creating a DVD filesystem with animated thumbnail menus.
+
+
+== Usage ==
+
+```
+animenu [OPTIONS] \
+   -files <file list> -titles <title list>
+   -out OUT_PREFIX
+```
+
+For example:
+
+```
+ $ animenu -files File1.mpg File2.mpg File3.mpg \
+     -titles "Episode 1" "Episode 2" "Episode 3" \
+     -out Season_one
+```
+
+Input files must be MPEG, and the number of '''-files''' and '''-titles''' must be equal.
+
+== Options ==
+
+: -keepfiles
+     Keep all intermediate/temporary files (helps with debugging)
+: -submenus
+     Create a submenu with chapters for each video.
+: -ani-submenus
+     Create an animated submenu with chapters for each video
+: -menu-length
+     The desired animated main menu length in seconds
+: -submenu-length
+     The disired animated submenu length in seconds
+: -menu-title
+     Title for the root menu - may be longer than thumbnail labels
+: -menu-font
+     Font to use for titles: use for example either: "Arial" , or "/full/path/to/arial.ttf" (default: imagemagick default font)
+: -menu-fontsize
+     Font size for main menu - best to -preview if you use this.
+: -thumb-font
+     Font to use for thumb titles in main menu. See -menu-font.
+: -menu-bg
+     Menu background image - pick one of correct aspect ratio: ie. it should still look good when resize to 720x480 (PAL 720x576)
+: -ani-menu-bg
+     Menu background video - again, needs to be resize to 720x480 or 720x576, so pick one of appropriate aspect ratio/resolution
+: -menu-fade
+     Fade the menu into the provided background image
+: -transparency
+     The amount of transparency for the menu (0 -> 100): Lower values are more transparent, ie. less visible menu. Do not use this for dark backgrounds like the default gray/black
+: -feather
+     Feather thumbs: a frameless vignette look (preview only now)
+: -menu-audio
+     An audio file for the main menu background
+: -menu-audio-fade
+     Number of sec to fade given menu audio out (default: no fade)
+: -submenu-audio NUM
+     (not implemented yet) List of files for submenu backgrounds: must equal the number of chapters (default: 6 chapters)
+: -chapters NUM
+     The number of submenu chapters for each video (default: 6)
+: -preview
+     Display a preview of the menu with selected options and exit
+: -seek
+     For main menu only - seek to N seconds before generating jpegs
+
