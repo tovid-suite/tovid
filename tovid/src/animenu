@@ -53,35 +53,8 @@ Usage:
       -out OUT_PREFIX
 
 Input files must be MPEG, and the number of -files and -titles must be equal. 
+See the animenu manual page ('man animenu') for additional documentation.
 
-Options:
-
--keepfiles        Keep all intermediate/temporary files (helps with debugging)
--submenus         Create a submenu with chapters for each video. 
--ani-submenus     Create an animated submenu with chapters for each video
--menu-length      The desired animated main menu length in seconds
--submenu-length   The disired animated submenu length in seconds
--menu-title       Title for the root menu - may be longer than thumbnail labels
--menu-font        Font to use for titles: use for example either: "Arial" , or
-                  "/full/path/to/arial.ttf" (default: imagemagick default font)
--menu-fontsize   Font size for main menu - best to -preview if you use this.
--thumb-font       Font to use for thumb titles in main menu. See -menu-font.
--menu-bg          Menu background image - pick on of correct aspect ration: ie.
-                  it should still look good when resize to 720x480 (pal: 720x576)
--ani-menu-bg      Menu background video - again, needs to be resize to 720x480 or
-                  720x576, so pick one of appropriate aspect ratio/resolution
--menu-fade        Fade the menu into the provided background image
--transparency     The amount of transparency for the menu (0 -> 100):
-                  Lower values are more transparent, ie. less visable menu.. 
-                  Do not use this for dark backgrounds like the default gray/black
--feather          feather thumbs: a frameless vignette look (preview only now)
--menu-audio       An audio file for the main menu background
--menu-audio-fade  Number of sec to fade given menu audio out (default: no fade)
--submenu-audio #  (not implemented yet) List of files for submenu backgrounds:
-                  must equal the number of chapters (default: 6 chapters)
--chapters         The number of submenu chapters for each video (default: 6)
--preview          display a preview of the menu with selected options and exit
--seek             For main menu only - seek to N seconds before generating jpegs
 EOF`
 
 # Print script name, usage notes, and optional error message, then exit.
@@ -254,7 +227,7 @@ while test $# -gt 0; do
             shift
             SUBMENU_LENGTH="$1"
             ;;
-        "-menu-bg" )
+        "-bgimage" )
             shift
             BG_PIC="$(abspath "$1")"
             MIST=: 
@@ -262,7 +235,7 @@ while test $# -gt 0; do
         "-menu-fade" )
             MENU_FADE=:
             ;;
-        "-ani-menu-bg" )
+        "-bgvideo" )
             shift
             ANI_BG="$(abspath "$1")"
             ;;
@@ -288,7 +261,7 @@ while test $# -gt 0; do
             shift
             CHAPTERS="$1"
             ;;
-        "-menu-audio" )
+        "-bgaudio" )
             shift
             BG_AUDIO="$(abspath "$1")"
             ;;
