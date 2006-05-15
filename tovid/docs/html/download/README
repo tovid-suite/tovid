@@ -1,7 +1,0 @@
-The files in this directory are:
-
-test.tdl.txt:
-    A sample file written in the tovid design language (TDL).
-tovid_t2t.tar.gz:
-    A tarball of all the txt2tags sources for the documentation.
-
