@@ -480,7 +480,7 @@ get_args()
             "-subtitles" )
                 shift
                 if test -e "$1"; then
-                    SUBTITLES="-sub $1"
+                    SUBTITLES="-sub \"`abspath $1`\""
                     DO_SUBS=:
                 else
                     yecho "Cannot find subtitle file $1."
