@@ -488,7 +488,6 @@ if $FEATHER; then
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
     convert - -evaluate subtract 50% -normalize $WORK_DIR/feather_mask.png
 
-    echo "Running -draw "rectangle $dim1Y,$dim1X $dim2Y,$dim2X" "
     convert -size 360x240 xc:none -fill white -stroke none \
     -draw "rectangle 20,20 340,220" $WORK_DIR/feather_orig.png
     convert $WORK_DIR/feather_orig.png -channel RGBA \
