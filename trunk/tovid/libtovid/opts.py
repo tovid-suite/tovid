@@ -9,8 +9,8 @@ are provided:
     OptionDict: An indexed collection of user-defined options
 
 In a way, this is the libtovid alternative to 'getopt'. If you're writing a
-command-line program that needs to accept width and height values, then just
-create a list of Options with expected args, default value, and documentation:
+program that needs to accept width and height values, then just create a list
+of Options with expected args, default value, and documentation:
 
     >>> option_list = [
     ...    Option('width', 'NUM', 8.5, 'Width of output in inches'),
@@ -24,34 +24,33 @@ Nice enough, but it's not really useful until you create an OptionDict:
 Now, you can do several things. You can use useropts.usage() to display "usage
 notes" for your program. But OptionDict is more than that--it also stores a
 value for each option, and a simple method for getting and setting those values.
-To see a complete list:
+To see a complete list of options and values:
 
     >>> useropts.data
     {'width': 8.5, 'height': 11.0}
 
-Note that the default values have been filled in for you. To set and get
+Note that the default values have been filled in for you. To get and set
 options individually, do this:
 
+    >>> useropts['width']
+    8.5
     >>> useropts['width'] = 5.0
-    >>> useropts['height'] = 3.0
     >>> useropts['width']
     5.0
-    >>> useropts['height']
-    3.0
 
 Need to set a bunch of options at once? You can override values by giving a
 string, list, or dictionary of options and values:
 
-    >>> useropts.override('-width 4.0 -height 2.0')
+    >>> useropts.override('width 4.0 height 2.0')    # String of options
     >>> useropts.data
     {'width': '4.0', 'height': '2.0'}
-    >>> useropts.override({'width': 3.0})
+    >>> useropts.override({'width': 3.0})            # Dictionary of options
     >>> useropts.data
     {'width': 3.0, 'height': '2.0'}
 
-Note: in the current implementation, the preceding '-' is optional, and ignored.
-To parse command-line options given to your script, call update() with the list
-of arguments from sys.argv[1:] (everything after the program name).
+Any preceding '-'s before option names are ignored. To parse command-line
+options given to your script, call update() with the list of arguments from
+sys.argv[1:] (everything after the program name).
 """
 __all__ = ['Option', 'OptionDict']
 
