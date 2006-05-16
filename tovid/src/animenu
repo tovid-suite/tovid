@@ -356,6 +356,11 @@ if test -d "$WORK_DIR"; then
     rm -rf "$WORK_DIR"
 fi
 mkdir -pv "$WORK_DIR"
+# mv any existing animenu.log to a new name to keep its size reasonable
+if test -f $ANIMENU_LOG; then
+    echo "Moving $(pwd)/animenu.log to $(pwd)/animenu-$(date +%s).log"
+    mv $(pwd)/animenu.log $(pwd)/animenu-$(date +%s).log
+fi
 
 # Try to find a default font that is available
 if [ -z "$TITLE_FONT" ]; then
@@ -685,7 +690,6 @@ if $ANI_SUB_MENU; then
 fi
 
 ANI_FRAMES=$MAX_ANI_LENGTH
-echo "ANI_FRAMES are $ANI_FRAMES"
 
 ###############################################################################
 #                           End of info block                                 #
@@ -965,7 +969,7 @@ if $SUB_MENU; then
 
         echo "Running  "${TCODE_CMD[@]}"" >> $ANIMENU_LOG
         echo "Running  "${TCODE_CMD[@]}""
-        if "${TCODE_CMD[@]}" 2>&1 >> $ANIMENU_LOG.tmp; then
+        if "${TCODE_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
             cleanlog 1
         else
             cleanlog 1
@@ -1045,7 +1049,13 @@ if $SUB_MENU; then
         ENC_CMD1=(ffmpeg   -f yuv4mpegpipe -i - -r $FRAME_RATE -s $VID_SIZE_OPT \
         -tvstd $TV_STANDARD $FFMPEG_OPTS -y $WORK_DIR/menu$i.m2v)
         echo "Running "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}""
-        "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}"
+        if "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
+            cleanlog 3
+        else
+            cleanlog 3
+            sorry_msg
+            exit 1
+        fi
         rm -f $WORK_DIR/animenu/*.$IMG_FMT
     done    
 
@@ -1147,12 +1157,15 @@ if $MENU_FADE; then
         $WORK_DIR/bg/$(($frame + 1)).jpg
     done
 
+    o=1; sp="/-|-\|";  echo -n ' '  # initialize spinner
     for ((frame=0; frame<ANI_MENU_END_FRAME; frame++)); do
         # set dissolve vars from animenu-fade-routine functions
         BC=$(get_title_opacity)
         B=$(awk -F ':' '{print $1'}<<<$BC)
         C=$(awk -F ':' '{print $2'}<<<$BC)
         S=$(get_thumb_opacity)
+
+        echo -en "\b${sp:o++%${#sp}:1}" # start spinner
 
         ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $((frame + 1)).$IMG_FMT) )
         BG_PIC=$(find $WORK_DIR/bg -name $(($frame + 1)).jpg)
