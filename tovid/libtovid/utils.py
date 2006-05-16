@@ -88,7 +88,6 @@ def float_to_ratio(number):
     """Convert a decimal number into an integer ratio string 'X:Y'.
     Keeps three digits of precision."""
     numerator = float(number) * 1000
-    print numerator
     return "%g:1000" % numerator
 
 
