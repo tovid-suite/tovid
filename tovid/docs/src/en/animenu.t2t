@@ -49,9 +49,9 @@ Input files must be MPEG, and the number of '''-files''' and '''-titles''' must 
      Font size for main menu - best to -preview if you use this.
 : -thumb-font
      Font to use for thumb titles in main menu. See -menu-font.
-: -menu-bg
+: -bgimage
      Menu background image - pick one of correct aspect ratio: ie. it should still look good when resize to 720x480 (PAL 720x576)
-: -ani-menu-bg
+: -bgvideo
      Menu background video - again, needs to be resize to 720x480 or 720x576, so pick one of appropriate aspect ratio/resolution
 : -menu-fade
      Fade the menu into the provided background image
@@ -59,7 +59,7 @@ Input files must be MPEG, and the number of '''-files''' and '''-titles''' must 
      The amount of transparency for the menu (0 -> 100): Lower values are more transparent, ie. less visible menu. Do not use this for dark backgrounds like the default gray/black
 : -feather
      Feather thumbs: a frameless vignette look (preview only now)
-: -menu-audio
+: -audio
      An audio file for the main menu background
 : -menu-audio-fade
      Number of sec to fade given menu audio out (default: no fade)
