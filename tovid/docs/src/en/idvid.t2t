@@ -34,6 +34,10 @@ $ idvid videos/*.mpg
 : **-verbose**
     Print extra information from mplayer, tcprobe, and ffmpeg.
 
+: **-fast**
+    Don't do lengthy play-time estimation; report length as reported
+    by mplayer (possibly inaccurate). Results in faster execution.
+
 
 ==See also==
 
