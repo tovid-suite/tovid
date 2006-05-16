@@ -45,8 +45,9 @@ Usage: idvid [OPTIONS] <file list>
 
 Where OPTIONS may be any of the following:
 
-    -terse       Suitable for parsing
-    -verbose     Also use ffmpeg and tcprobe
+    -terse      Suitable for parsing
+    -verbose    Also use ffmpeg and tcprobe
+    -fast       Skip 
 
 See the idvid manual page ('man idvid') for additional documentation.
 
@@ -64,6 +65,7 @@ EOF`
 # Do not use terse output by default
 TERSE=false
 VERBOSE=false
+FAST=false
 TMP_DIR=`mktemp -d idvid-temp.XXXXXX`
 SCRATCH_FILE="$TMP_DIR/idvid.scratch"
 STAT_DIR=$TOVID_HOME
@@ -193,10 +195,17 @@ get_info ()
     V_ASPECT_RATIO=`echo $V_ASPECT_WIDTH | \
         sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g'`
 
-    # Determine duration by playing the video into /dev/null
-    V_DURATION="`LC_ALL=C mencoder -ovc frameno -oac copy -noskiplimit \"$INFILE\" \
-        -o /dev/null 2>/dev/null | tr '\r' '\n' | grep \"^Pos:\" | tail -n 1 | \
-        sed s/\"Pos:\"// | awk -- '{print $1}' | sed s/[.][0-9]s//`"
+    # If doing -fast identification, skip "accurate" length determination
+    if $FAST; then
+        :
+    else
+        # Determine duration by playing the video into /dev/null and doing
+        # tons of filtering. Time consuming, but presumably more accurate.
+        V_DURATION="`LC_ALL=C mencoder -ovc frameno -oac copy -noskiplimit \
+            \"$INFILE\" -o /dev/null 2>/dev/null \
+            | tr '\r' '\n' | grep \"^Pos:\" | tail -n 1 \
+            | sed s/\"Pos:\"// | awk -- '{print $1}' | sed s/[.][0-9]s//`"
+    fi
     
     # Use mplayer-reported length as a last resort (truncate floating-point)
     test -z $V_DURATION && V_DURATION=`echo $ID_LENGTH | sed 's/\.[0-9]*//'`
@@ -536,6 +545,7 @@ while test $# -gt 0; do
     case "$1" in
         "-terse" ) TERSE=: ;;
         "-verbose" ) VERBOSE=: ;;
+        "-fast" ) FAST=: ;;
         * )
             idvid_main "$1"
             ;;
