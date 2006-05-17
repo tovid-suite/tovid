@@ -241,6 +241,16 @@ while test $# -gt 0; do
             shift
             ANI_SUBMENU_LENGTH="$1"
             ;;
+        "-dvd" )
+            TARGET=DVD
+            ;;
+        "-svcd" )
+            TARGET=SVCD
+            ;;
+        "-static" )
+            STATIC=:
+            ;;
+
         "-bgimage" )
             shift
             BG_PIC="$(abspath "$1")"
@@ -485,10 +495,14 @@ elif [ $TARGET = "SVCD" ]; then
     GEO_ARRAY=("${SVCD_GEO_ARRAY[@]}")
     INTRO_SIZE=$SVCD_INTRO_SIZE
     FFMPEG_OPTS=$SVCD_FFMPEG_OPTS
-    if [ $TV_STANDARD = pal ]; then
+    if [ $TV_STANDARD = ntsc ]; then
+        VIDSIZE=$NTSC_SVCD_VIDSIZE
+        FRAME_RATE=29.970
+    elif [ $TV_STANDARD = pal ]; then
         VIDSIZE=$PAL_SVCD_VIDSIZE
         FRAME_RATE=25
-    fi    
+    fi
+
     if [ -z $TITLE_FONT_SIZE ]; then
         TITLE_FONT_SIZE=$SVCD_TITLE_FONT_SIZE
     else
@@ -553,7 +567,7 @@ else
         -pointsize $TITLE_FONT_SIZE \
         -fill black -draw \"gravity center text 2,2 '$VMGM_TITLE'\" \
         -stroke grey -strokewidth 1 \
-        -fill '#E6E6E6' -draw \"gravity center text 0,0 '$VMGM_TITLE'\" \
+        -fill '#E6E6E6' -stroke gray -draw \"gravity center text 1,1 '$VMGM_TITLE'\" \
         title_txt.png"
     echo "Creating a plain white title with the following command:"
     echo "$CMD"
@@ -740,6 +754,11 @@ if $ANI_SUB_MENU; then
 fi
 
 ANI_FRAMES=$MAX_ANI_LENGTH
+if $STATIC; then
+    FRAMES=1
+else
+    FRAMES=$ANI_FRAMES
+fi
 
 ###############################################################################
 #                           End of info block                                 #
@@ -754,7 +773,7 @@ echo "Creating images from each video for the main menu"
 o=1; sp="/-|-\|";  echo -n ' ' # initialize spinner
 for ((i=0; i<=FILES; i++)) ; do
     echo -en "\b${sp:o++%${#sp}:1}" # start spinner going
-    CREATE_IMG_CMD=(ffmpeg -i "${VID_ARRAY[$i]}"  $SEEK -vframes $ANI_FRAMES \
+    CREATE_IMG_CMD=(ffmpeg -i "${VID_ARRAY[$i]}"  $SEEK -vframes $FRAMES \
     -s "$INTRO_SIZE" "$WORK_DIR/pics/$i/%d.$IMG_FMT")
     printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
     echo -e "\nRunning: ${CREATE_IMG_CMD[@]}\n" | fold -bs >> $ANIMENU_LOG
@@ -1156,7 +1175,7 @@ for ((i=0; i<=FILES; i++)); do
         "$pic")
         IM_CMD1=(convert -trim +repage -)
         IM_CMD2=(montage -  -geometry +4+4 -compose Copy -background none \
-        -fill \"$FILL\" -font "$THUMB_FONT" -pointsize 22 -title "${TITLES[i]}")
+        -fill "$FILL" -font "$THUMB_FONT" -pointsize 22 -title "${TITLES[i]}")
 
         IM_CMD2b=(convert -resize $INTRO_SIZE! -)
         IM_CMD2c=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -) 
@@ -1174,22 +1193,25 @@ for ((i=0; i<=FILES; i++)); do
         else
             "${IM_CMD3[@]}" miff:- | "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
         fi
+        unset PICS
     done
 
     # make sure all animated thumbs finish at the same time 
-    IMAGES=( "${IMAGES[@]}" \
-    $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT) )
-    last_pic=${#IMAGES[@]}
-    next_pic=$(($last_pic + 1))
-    if [ $last_pic -lt $MAX_ANI_LENGTH ]; then
-        for ((l=next_pic; l<=MAX_ANI_LENGTH; l++)); do
-            cp $WORK_DIR/pics/$i/${last_pic}.$IMG_FMT $WORK_DIR/pics/$i/$l.$IMG_FMT
-        done
-    fi
-    unset IMAGES PICS last_pic next_pic
+    if ! $STATIC; then
+        IMAGES=( "${IMAGES[@]}" \
+        $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT) )
+        last_pic=${#IMAGES[@]}
+        next_pic=$(($last_pic + 1))
+        if [ $last_pic -lt $MAX_ANI_LENGTH ]; then
+            for ((l=next_pic; l<=MAX_ANI_LENGTH; l++)); do
+                cp $WORK_DIR/pics/$i/${last_pic}.$IMG_FMT $WORK_DIR/pics/$i/$l.$IMG_FMT
+            done
+        fi
+        unset IMAGES PICS last_pic next_pic
+   fi
 done
 
-if $MENU_FADE; then
+if $MENU_FADE && ! $STATIC; then
     echo
     echo "making final montages and compositing onto background with title"
     for ((frame=0; frame<=ANI_MENU_END_FRAME; frame++)); do
@@ -1275,7 +1297,7 @@ else # Don't do menu fade
         echo
         echo "making final montages and compositing onto background with title"
         o=1; sp="/-|-\|";  echo -n ' '  # initialize spinner
-        for (( count=1; count <= $MAX_ANI_LENGTH; count++)); do
+        for (( count=1; count <= $FRAMES; count++)); do
             echo -en "\b${sp:o++%${#sp}:1}"
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
 
@@ -1303,8 +1325,8 @@ echo
 echo "converting images to video stream & encoding to dvd complient m2v video"
 # convert images to video stream and encode to dvd complient m2v
 if $STATIC; then
-    JPEG2YUV_OPTS="-n 1 -l 60"
-    PICS_IN="$WORK_DIR/menu.jpg"
+    JPEG2YUV_OPTS=(-n 1 -l 60)
+    PICS_IN="$WORK_DIR/animenu/1.jpg"
 else  # animated menu
     if $MENU_FADE; then
         JPEG2YUV_OPTS="-n $((ANI_MENU_END_FRAME + 6))"
@@ -1313,7 +1335,7 @@ else  # animated menu
     fi
     PICS_IN="$WORK_DIR/animenu/%d.jpg"
 fi
-ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p "$JPEG2YUV_OPTS" -L 1 -b1 \
+ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p "${JPEG2YUV_OPTS[@]}" -L 1 -b1 \
 -j "$PICS_IN")
 ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
 -tvstd $TV_STANDARD $FFMPEG_OPTS -y $WORK_DIR/intro.m2v)
