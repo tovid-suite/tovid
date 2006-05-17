@@ -551,7 +551,8 @@ if $FANCY_TITLE; then
 else
     CMD="convert -size 620x100 xc:none -font \"$TITLE_FONT\" \
         -pointsize $TITLE_FONT_SIZE \
-        -fill black -draw \"gravity center text 4,4 '$VMGM_TITLE'\" \
+        -fill black -draw \"gravity center text 2,2 '$VMGM_TITLE'\" \
+        -stroke grey -strokewidth 1 \
         -fill '#E6E6E6' -draw \"gravity center text 0,0 '$VMGM_TITLE'\" \
         title_txt.png"
     echo "Creating a plain white title with the following command:"
