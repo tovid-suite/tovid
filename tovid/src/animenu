@@ -437,8 +437,7 @@ printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
 # create_dirs
 echo
 echo "Creating pics directories..."
-for ((i=0; i<=FILES; i++));
-do
+for ((i=0; i<=FILES; i++)); do
     mkdir -pv "$WORK_DIR/pics/$i"
 done
 if $MENU_FADE; then mkdir -v $WORK_DIR/bg; fi
@@ -466,6 +465,7 @@ if  [ $TARGET = "DVD" ]; then
         FRAME_RATE=29.970
     elif [ $TV_STANDARD = pal ]; then
         VIDSIZE=$PAL_DVD_VIDSIZE
+        FRAME_RATE=25
     fi
     if [ -z $TITLE_FONT_SIZE ]; then
         TITLE_FONT_SIZE=$DVD_TITLE_FONT_SIZE
@@ -521,6 +521,12 @@ if $FEATHER; then
     -blur 0x60 $WORK_DIR/feather_mask2.png
     
 fi
+if $FEATHER; then
+    FILL="#161514"
+else
+    FILL="#C6C6C6"
+fi
+#for ((i=0; i<=FILES; i++)); do
 
 convert -size 1x512 gradient: -rotate 90 +matte \
 -fx '3.5u^3 - 5.05u^2 + 2.05u + 0.3' \
@@ -589,22 +595,26 @@ if $PREVIEW; then
             composite -compose CopyOpacity $WORK_DIR/feather_mask.png +matte \
             "${PICS[i]}" miff:- |
             convert -trim +repage -  "${PICS[i]}"
-            FRAME=""
-        else
-            FRAME="-frame 8x8"
         fi
-     
+ 
         # **if horizontal lines in frames, try montage "${JPGS[i]}" -blur 0x.3**
         # using a mask just on the frame portion would be even better
         # www.cit.gu.edu.au/~anthony/info/graphics/imagemagick.hints 1/4 down
-        montage "${PICS[i]}" -geometry +4+4 -compose Copy  \
-        -background  none -fill '#161514' -font "$THUMB_FONT" -pointsize 22 \
-        -title "${TITLES[i]}"  miff:- |
-        convert -resize $INTRO_SIZE! - miff:- |
-        composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png - miff:- | 
-        convert -background none $FRAME \
-        -bordercolor "#444744" - miff:- |
-        convert -resize $INTRO_SIZE! - "${PICS[i]}"
+        IM_CMD1=(montage "${PICS[i]}" -geometry +4+4 -compose Copy  \
+        -background  none -fill "$FILL" -font "$THUMB_FONT" -pointsize 22 \
+        -title "${TITLES[i]}")
+        IM_CMD2=(convert -resize $INTRO_SIZE! -)
+        IM_CMD3=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png - )
+        IM_CMD4=(convert -background none -frame 8x8 \
+        -bordercolor "#444744" -)
+        IM_CMD5=(convert -resize $INTRO_SIZE! - "${PICS[i]}")
+        if $FEATHER; then
+            "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
+            "${IM_CMD3[@]}" miff:- | "${IM_CMD5[@]}"
+        else
+            "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
+            "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
+        fi
     done
     if $TRANSPARENT; then
         montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[FILES]} \
@@ -720,12 +730,12 @@ ANI_FRAMES=$MAX_ANI_LENGTH
 ###############################################################################
 #                       work on the clip title images                         #
 ###############################################################################
-
 # create the pics for background image and move to proper pics/ dir
 echo
 echo "Creating images from each video for the main menu"
+o=1; sp="/-|-\|";  echo -n ' ' # initialize spinner
 for ((i=0; i<=FILES; i++)) ; do
-
+    echo -en "\b${sp:o++%${#sp}:1}" # start spinner going
     CREATE_IMG_CMD=(ffmpeg -i "${VID_ARRAY[$i]}"  $SEEK -vframes $ANI_FRAMES \
     -s "$INTRO_SIZE" "$WORK_DIR/pics/$i/%d.$IMG_FMT")
     printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
@@ -985,7 +995,7 @@ if $SUB_MENU; then
         unset cmd[key]
         CMD=${cmd[@]}
         TCODE_CMD=(transcode -q 0 -i "${VID_ARRAY[i]}" -o "${PICS_OUT[@]}" \
-        -f 29.970 -J cut="$CMD" -y $SM_IMG_FMT,null)
+        -f $FRAME_RATE -J cut="$CMD" -y $SM_IMG_FMT,null)
         printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
         echo "Creating chapter images "${VID_ARRAY[i]}""
 
@@ -1222,7 +1232,9 @@ for ((i=ANI_MENU_END_FRAME; i<ANI_MENU_END_FRAME+6; i++)); do
 done
 else # Don't do menu fade
     if $TRANSPARENT; then
+         o=1; sp="/-|-\|";  echo -n ' '  # initialize spinner
          for (( count=1; count<=$MAX_ANI_LENGTH; count++)); do
+            echo -en "\b${sp:o++%${#sp}:1}"
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
             -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:-)
@@ -1244,7 +1256,9 @@ else # Don't do menu fade
     else # Not transparent
         echo
         echo "making final montages and compositing onto background with title"
+        o=1; sp="/-|-\|";  echo -n ' '  # initialize spinner
         for (( count=1; count <= $MAX_ANI_LENGTH; count++)); do
+            echo -en "\b${sp:o++%${#sp}:1}"
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
 
             # make final montages and composite onto grey background with title
@@ -1279,7 +1293,7 @@ else  # animated menu
 fi
 ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p "$JPEG2YUV_OPTS" -L 1 -b1 \
 -j "$PICS_IN")
-ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r 29.970 -s $VIDSIZE \
+ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
 -tvstd $TV_STANDARD $FFMPEG_OPTS -y $WORK_DIR/intro.m2v)
 printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
 echo "Running "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}""
