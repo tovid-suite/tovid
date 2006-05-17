@@ -76,7 +76,7 @@ MAX_ANI_LENGTH=""
 FRAME_RATE=29.970  # when -ntsc and -pal options added put in body in if block
 TARGET=DVD
 LINE=$(for ((i=1; i<=79; i++));do echo -n =;done)
-VID_SIZE_OPT=720x480
+VID_SIZE=720x480
 VMGM_TITLE="My Video Collection"
 SPUMUX_XML="$WORK_DIR/spumux.xml"
 SUBMENU_SPUMUX_XML="$WORK_DIR/submenu_spumux.xml"
@@ -372,6 +372,7 @@ if [ -z "$TITLE_FONT" ]; then
         TITLE_FONT="helvetica"
     fi
 fi
+echo "TITLE_FONT is $TITLE_FONT"
 rm -f "$WORK_DIR/font.png"
 
 for i in "${VIDS[@]}"; do
@@ -394,16 +395,16 @@ if [ $MAX_VAL -gt 14 ]; then
     exit 1
 fi
 
-SVCD_VID_SIZE_OPT="480x480"
-DVD_VID_SIZE_OPT="720x480"
+NTSC_SVCD_VIDSIZE="480x480"
+PAL_SVCD_VIDSIZE="560x576"
+NTSC_DVD_VIDSIZE="720x480"
+PAL_DVD_VIDSIZE="720x576"
 DVD_AUDIO_EXT=ac3
 SVCD_AUDIO_EXT=mp2
 DVD_SAMPLERATE="48000"
 SVCD_SAMPLERATE="44100"
 DVD_AUDIO_OPTS="-ab 224 -ar 48000 -ac 2 -acodec $DVD_AUDIO_EXT"
 SVCD_AUDIO_OPTS="-ab 224 -ar 44100 -ac 2 -acodec $SVCD_AUDIO_EXT"
-SVCD_FFMPEG_TARGET="ntsc-svcd"
-DVD_FFMPEG_TARGET="ntsc-dvd"
 SVCD_FFMPEG_OPTS="-b 2200 -minrate 2200 -maxrate 2200 -bufsize 230 -aspect 4:3"
 DVD_FFMPEG_OPTS="-b 8000  -maxrate 9000 -bufsize 230  -aspect 4:3"
 SVCD_INTRO_SIZE="240x240"
@@ -453,17 +454,38 @@ echo -e "Videos to be processed"
 for vid in "${VID_ARRAY[@]}"; do echo "$vid";done
 echo  
 if  [ $TARGET = "DVD" ]; then
-    VID_SIZE_OPT=$DVD_VID_SIZE_OPT
+    AUDIO_EXT=$DVD_AUDIO_EXT
     AUDIO_OPTS=$DVD_AUDIO_OPTS
     SAMPLERATE=$DVD_SAMPLERATE
-    AUDIO_EXT=$DVD_AUDIO_EXT
-    FFMPEG_TARGET=$DVD_FFMPEG_TARGET
-    INTRO_SIZE=$DVD_INTRO_SIZE
-    FFMPEG_OPTS=$DVD_FFMPEG_OPTS
     MPLEX_FORMAT=$DVD_MPLEX_FORMAT
     GEO_ARRAY=("${DVD_GEO_ARRAY[@]}")
+    INTRO_SIZE=$DVD_INTRO_SIZE
+    FFMPEG_OPTS=$DVD_FFMPEG_OPTS
+    if [ $TV_STANDARD = ntsc ]; then
+        VIDSIZE=$NTSC_DVD_VIDSIZE
+        FRAME_RATE=29.970
+    elif [ $TV_STANDARD = pal ]; then
+        VIDSIZE=$PAL_DVD_VIDSIZE
+    fi
     if [ -z $TITLE_FONT_SIZE ]; then
         TITLE_FONT_SIZE=$DVD_TITLE_FONT_SIZE
+    else
+        TITLE_FONT_SIZE=$TITLE_FONT_SIZE
+    fi
+elif [ $TARGET = "SVCD" ]; then
+    AUDIO_EXT=$SVCD_AUDIO_EXT
+    AUDIO_OPTS=$SVCD_AUDIO_OPTS
+    SAMPLERATE=$SVCD_SAMPLERATE
+    MPLEX_FORMAT=$SVCD_MPLEX_FORMAT
+    GEO_ARRAY=("${SVCD_GEO_ARRAY[@]}")
+    INTRO_SIZE=$SVCD_INTRO_SIZE
+    FFMPEG_OPTS=$SVCD_FFMPEG_OPTS
+    if [ $TV_STANDARD = pal ]; then
+        VIDSIZE=$PAL_SVCD_VIDSIZE
+        FRAME_RATE=25
+    fi    
+    if [ -z $TITLE_FONT_SIZE ]; then
+        TITLE_FONT_SIZE=$SVCD_TITLE_FONT_SIZE
     else
         TITLE_FONT_SIZE=$TITLE_FONT_SIZE
     fi
@@ -476,13 +498,13 @@ if [ -z "$BG_PIC" ]; then
     echo
     echo "Creating a black background"
     BG_PIC="$WORK_DIR/pics/template.png"
-    convert  -resize $VID_SIZE_OPT! xc:"#161514" "$BG_PIC"
+    convert  -resize $VIDSIZE! xc:"#161514" "$BG_PIC"
 else
-    convert -resize $VID_SIZE_OPT! "$BG_PIC" "$WORK_DIR/pics/template.png"
+    convert -resize $VIDSIZE! "$BG_PIC" "$WORK_DIR/pics/template.png"
 fi
 
 if $MENU_FADE || $FEATHER; then
-    convert -size $VID_SIZE_OPT xc:"#161514" "$WORK_DIR/black.jpg"
+    convert -size $VIDSIZE xc:"#161514" "$WORK_DIR/black.jpg"
 fi
 if $FEATHER; then
     convert -size 360x240 xc:black -fill white \
@@ -727,11 +749,11 @@ done
         echo
         echo "Creating a black background"
         BG_PIC="$WORK_DIR/pics/template.jpg"
-        convert  -size $VID_SIZE_OPT xc:"#161514" "$BG_PIC"
+        convert  -size $VIDSIZE xc:"#161514" "$BG_PIC"
         cp "$BG_PIC" "$WORK_DIR/submenu_template.jpg"
     else
-        convert -resize $VID_SIZE_OPT! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
-        convert -size $VID_SIZE_OPT xc:"#161514" "$WORK_DIR/submenu_template.jpg"
+        convert -resize $VIDSIZE! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
+        convert -size $VIDSIZE xc:"#161514" "$WORK_DIR/submenu_template.jpg"
     fi
 
 echo
@@ -1046,7 +1068,7 @@ if $SUB_MENU; then
         echo "Converting chapter montages of "${VID_ARRAY[i]}" to m2v video format"
         IMG_STREAM_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p \
         "${JPEG2YUV_OPTS[@]}" -L 1 -b 1  -j "${PICS_IN[@]}")
-        ENC_CMD1=(ffmpeg   -f yuv4mpegpipe -i - -r $FRAME_RATE -s $VID_SIZE_OPT \
+        ENC_CMD1=(ffmpeg   -f yuv4mpegpipe -i - -r $FRAME_RATE -s $VIDSIZE \
         -tvstd $TV_STANDARD $FFMPEG_OPTS -y $WORK_DIR/menu$i.m2v)
         echo "Running "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}""
         if "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
@@ -1092,7 +1114,7 @@ echo "Adding title to images and resizing"
 if $FEATHER; then
     FILL="#161514"
 else
-    FILL='#C6C6C6'
+    FILL="#C6C6C6"
 fi
 for ((i=0; i<=FILES; i++)); do
     PICS=( "${PICS[@]}" \
@@ -1106,7 +1128,8 @@ for ((i=0; i<=FILES; i++)); do
         "$pic")
         IM_CMD1=(convert -trim +repage -)
         IM_CMD2=(montage -  -geometry +4+4 -compose Copy -background none \
-        -fill "$FILL" -font "$THUMB_FONT" -pointsize 22 -title "${TITLES[i]}")
+        -fill \"$FILL\" -font "$THUMB_FONT" -pointsize 22 -title "${TITLES[i]}")
+
         IM_CMD2b=(convert -resize $INTRO_SIZE! -)
         IM_CMD2c=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -) 
         
@@ -1121,7 +1144,7 @@ for ((i=0; i<=FILES; i++)); do
             "${IM_CMD2b[@]}" miff:- |"${IM_CMD2c[@]}" miff:- |
             "${IM_CMD1[@]}" miff:- | "${IM_CMD5[@]}"
         else
-            "${IM_CMD3[@]}" miff:- | "${IM_CMD4[@]}"  "${IM_CMD5[@]}"
+            "${IM_CMD3[@]}" miff:- | "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
         fi
     done
 
@@ -1256,7 +1279,7 @@ else  # animated menu
 fi
 ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p "$JPEG2YUV_OPTS" -L 1 -b1 \
 -j "$PICS_IN")
-ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r 29.970 -s $VID_SIZE_OPT \
+ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r 29.970 -s $VIDSIZE \
 -tvstd $TV_STANDARD $FFMPEG_OPTS -y $WORK_DIR/intro.m2v)
 printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
 echo "Running "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}""
