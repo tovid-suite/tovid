@@ -563,8 +563,8 @@ if $PREVIEW; then
     $(find $WORK_DIR/ -maxdepth 1 -name '*preview*.png') )
     for i in "${!PICS[@]}"; do
         if $FEATHER; then
-            #composite -compose CopyOpacity $WORK_DIR/feather_mask.png +matte \
-            composite $WORK_DIR/feather_mask.png +matte -compose CopyOpacity \
+#            composite $WORK_DIR/feather_mask.png +matte -compose CopyOpacity \
+            composite -compose CopyOpacity $WORK_DIR/feather_mask.png +matte \
             "${PICS[i]}" miff:- |
             convert -trim +repage -  "${PICS[i]}"
             FRAME=""
@@ -576,7 +576,7 @@ if $PREVIEW; then
         # using a mask just on the frame portion would be even better
         # www.cit.gu.edu.au/~anthony/info/graphics/imagemagick.hints 1/4 down
         montage "${PICS[i]}" -geometry +4+4 -compose Copy  \
-        -background  none -fill '#003C6A' -font "$THUMB_FONT" -pointsize 22 \
+        -background  none -fill '#161514' -font "$THUMB_FONT" -pointsize 22 \
         -title "${TITLES[i]}"  miff:- |
         convert -resize $INTRO_SIZE! - miff:- |
         composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png - miff:- | 
@@ -1090,7 +1090,7 @@ echo $SEPARATOR
 echo
 echo "Adding title to images and resizing"
 if $FEATHER; then
-    FILL=black
+    FILL="#161514"
 else
     FILL='#C6C6C6'
 fi
@@ -1106,7 +1106,7 @@ for ((i=0; i<=FILES; i++)); do
         "$pic")
         IM_CMD1=(convert -trim +repage -)
         IM_CMD2=(montage -  -geometry +4+4 -compose Copy -background none \
-        -fill "$FILL" -pointsize 22 -title "${TITLES[i]}")
+        -fill "$FILL" -font "$THUMB_FONT" -pointsize 22 -title "${TITLES[i]}")
         IM_CMD2b=(convert -resize $INTRO_SIZE! -)
         IM_CMD2c=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -) 
         
