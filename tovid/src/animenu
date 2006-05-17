@@ -1288,7 +1288,11 @@ if $STATIC; then
     JPEG2YUV_OPTS="-n 1 -l 60"
     PICS_IN="$WORK_DIR/menu.jpg"
 else  # animated menu
-    JPEG2YUV_OPTS="-n $ANI_FRAMES"
+    if $MENU_FADE; then
+        JPEG2YUV_OPTS="-n $((ANI_MENU_END_FRAME + 6))"
+    else
+        JPEG2YUV_OPTS="-n $ANI_FRAMES"
+    fi
     PICS_IN="$WORK_DIR/animenu/%d.jpg"
 fi
 ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p "$JPEG2YUV_OPTS" -L 1 -b1 \
