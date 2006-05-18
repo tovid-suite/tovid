@@ -63,8 +63,8 @@ TV_STANDARD=ntsc
 ANI_MENU_LENGTH=20
 ANI_SUBMENU_LENGTH=10
 MAX_ANI_LENGTH=""
-FRAME_RATE=29.970  # when -ntsc and -pal options added put in body in if block
 TARGET=DVD
+FRAME_RATE=29.970  # when -ntsc and -pal options added put in body in if block
 LINE=$(for ((i=1; i<=79; i++));do echo -n =;done)
 VID_SIZE=720x480
 VMGM_TITLE="My Video Collection"
@@ -428,7 +428,8 @@ SVCD_AUDIO_OPTS="-ab 224 -ar 44100 -ac 2 -acodec $SVCD_AUDIO_EXT"
 SVCD_FFMPEG_OPTS="-b 2200 -minrate 2200 -maxrate 2200 -bufsize 230 -aspect 4:3"
 DVD_FFMPEG_OPTS="-b 8000  -maxrate 9000 -bufsize 230  -aspect 4:3"
 SVCD_INTRO_SIZE="240x240"
-DVD_INTRO_SIZE="360x240"
+#DVD_INTRO_SIZE="360x240"
+DVD_INTRO_SIZE="320x240"
 SVCD_MPLEX_FORMAT=4
 DVD_MPLEX_FORMAT=8
 SVCD_TITLE_FONT_SIZE=32
@@ -567,15 +568,15 @@ if $FANCY_TITLE; then
     -matte  -compose In  -composite miff:- |
      convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png
 else
-    CMD="convert -size 620x100 xc:none -font \"$TITLE_FONT\" \
-        -pointsize $TITLE_FONT_SIZE \
-        -fill black -draw \"gravity center text 2,2 '$VMGM_TITLE'\" \
-        -stroke grey -strokewidth 1 \
-        -fill '#E6E6E6' -stroke gray \
+    CMD="convert -size 620x100 xc:none -font \"$TITLE_FONT\" 
+        -pointsize $TITLE_FONT_SIZE 
+        -fill black -draw \"gravity center text 2,2 '$VMGM_TITLE'\" 
+        -stroke grey -strokewidth 1 
+        -fill '#E6E6E6' -stroke gray 
         -draw \"gravity center text 1,1 '$VMGM_TITLE'\" miff:- |
         convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png"
     echo "Creating a plain white title with the following command:"
-    echo "$CMD"
+    echo $CMD|sed 's/    */ /g'|fold -bs
     echo "(Use the -fancy option for a fancier dark blue title)"
     eval $CMD
 fi
@@ -628,7 +629,6 @@ if $PREVIEW; then
     $(find $WORK_DIR/ -maxdepth 1 -name '*preview*.png') )
     for i in "${!PICS[@]}"; do
         if $FEATHER; then
-#            composite $WORK_DIR/feather_mask.png +matte -compose CopyOpacity \
             composite -compose CopyOpacity $WORK_DIR/feather_mask.png +matte \
             "${PICS[i]}" miff:- |
             convert -trim +repage -  "${PICS[i]}"
@@ -1131,7 +1131,7 @@ if $SUB_MENU; then
         fi
         rm -f $WORK_DIR/animenu/*.$IMG_FMT
     done    
-
+    unset ENC_CMD1
     # create silence for either animated or plain submenus
     for ((s=0; s<=FILES; s++)); do
         echo
@@ -1354,7 +1354,7 @@ if "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
 fi
 echo
 echo "Cleaning up montage images"
-#rm -fr $WORK_DIR/animenu/*.jpg
+rm -fr $WORK_DIR/animenu/*.jpg
 
 # create silence for the main menu
 TIME=`vid_length "$WORK_DIR/intro.m2v"`
