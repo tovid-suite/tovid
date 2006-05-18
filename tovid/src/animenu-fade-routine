@@ -38,7 +38,7 @@ FADE_FLOOR=0
 FADE_CEILING=100
 MIST_CEILING=33
  
-FRAME_RATE=29.97
+FRAME_RATE=$FRAME_RATE
  
 # ##########################
 # user-defined variables....
