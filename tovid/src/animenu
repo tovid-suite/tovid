@@ -329,8 +329,10 @@ while test $# -gt 0; do
             # If there's a filename extension, find the absolute path
             if echo "$1" | grep -q '\...*$'; then
                 THUMB_FONT="$(abspath "$1")"
+                TFONT=(-font "$THUMBFONT")
             else
                 THUMB_FONT="$1"
+                TFONT=(-font "$THUMBFONT")
             fi
             ;;
         "-preview" )
@@ -360,7 +362,8 @@ OUT_DIR="$(abspath "$OUT_PREFIX")"
 MENU_FILE="animenu.mpg"
 
 # If output directory already exists, print a message and exit
-if test -d "$OUT_DIR"; then
+
+if test -d "$OUT_DIR" && ! $PREVIEW; then
     echo "Output directory \"$OUT_DIR\" already exists."
     echo "Please use a different -out name, or (re)move the existing directory."
     exit 0
@@ -382,9 +385,11 @@ if [ -z "$TITLE_FONT" ]; then
     if convert -size 50x20 xc:none -font Helvetica -gravity Center \
     -draw "text 0,0 'test'" $WORK_DIR/font.png; then
         TITLE_FONT="Helvetica"
+        THUMB_FONT="Helvetica"
     elif convert -size 200x100 xc:none -font helvetica -gravity Center \
     -draw "text 0,0 'test'" $WORK_DIR/font.png; then
         TITLE_FONT="helvetica"
+        THUMB_FONT="helvetica"
     fi
 fi
 echo "TITLE_FONT is $TITLE_FONT"
@@ -545,7 +550,6 @@ if $FEATHER; then
 else
     FILL="#C6C6C6"
 fi
-#for ((i=0; i<=FILES; i++)); do
 
 if $FANCY_TITLE; then
     convert -size 1x512 gradient: -rotate 90 +matte \
@@ -567,8 +571,9 @@ else
         -pointsize $TITLE_FONT_SIZE \
         -fill black -draw \"gravity center text 2,2 '$VMGM_TITLE'\" \
         -stroke grey -strokewidth 1 \
-        -fill '#E6E6E6' -stroke gray -draw \"gravity center text 1,1 '$VMGM_TITLE'\" \
-        title_txt.png"
+        -fill '#E6E6E6' -stroke gray \
+        -draw \"gravity center text 1,1 '$VMGM_TITLE'\" miff:- |
+        convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png"
     echo "Creating a plain white title with the following command:"
     echo "$CMD"
     echo "(Use the -fancy option for a fancier dark blue title)"
@@ -1093,21 +1098,20 @@ if $SUB_MENU; then
             echo
             echo "Making montage images for  "${VID_ARRAY[i]}""
             # just use $CHAPTERS number of images
-            imgs=$(find $WORK_DIR -name chapt000\*.$IMG_FMT|head -n $CHAPTERS)
-            o=1; sp="/-|-\|";  echo -n ' '
+            imgs=( $(find $WORK_DIR -name chapt000\*.$SM_IMG_FMT|head -n $CHAPTERS) )
             # create frames for the chapter thumbs
-            for PIC in $imgs; do
+            for PIC in "${imgs[@]}"; do
                 echo -en "\b${sp:o++%${#sp}:1}"
                 convert -background '#141614' -frame 8x8 \
-                -bordercolor none -mattecolor "#444744" $PIC $PIC
+                -bordercolor none -mattecolor "#444744" "$PIC" "$PIC"
             done
-            IM_CMD=(montage $imgs -tile ${TILE_ARRAY[CHAPTERS -1]} -geometry \
+            IM_CMD=(montage "${imgs[@]}" -tile ${TILE_ARRAY[CHAPTERS -1]} -geometry \
             ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -background '#141614' miff:-)
             IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
             $WORK_DIR/title${i}_txt.png  -gravity south -geometry +0+55 \
             -composite - -gravity north -geometry +0+55 -composite \
             $WORK_DIR/submenu.$SM_IMG_FMT)
-            echo -en "\b${sp:o++%${#sp}:1}"
+            echo "Running "${IM_CMD[@]}" | "${IM_CMD2[@]}""
             "${IM_CMD[@]}" | "${IM_CMD2[@]}"
         fi
 
@@ -1297,7 +1301,7 @@ else # Don't do menu fade
         echo
         echo "making final montages and compositing onto background with title"
         o=1; sp="/-|-\|";  echo -n ' '  # initialize spinner
-        for (( count=1; count <= $FRAMES; count++)); do
+        for (( count=1; count <=FRAMES; count++)); do
             echo -en "\b${sp:o++%${#sp}:1}"
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
 
