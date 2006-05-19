@@ -90,6 +90,7 @@ PREVIEW=:
 PAUSE_TIME=6
 MIST=false
 FEATHER=false
+OVAL=false
 BLUR=50
 SUB_MENU_FEATHER=false
 IMG_FMT=jpg
@@ -270,6 +271,12 @@ while test $# -gt 0; do
             FEATHER=:
             IMG_FMT=png
             ;;
+        "-oval" )
+            shift
+            BLUR="$1"
+            OVAL=:
+            IMG_FMT=png
+            ;;
         "-transparency" )
             shift
             TRANSPARENT=:
@@ -362,7 +369,7 @@ MENU_FILE="animenu.mpg"
 
 # If output directory already exists, print a message and exit
 
-if test -d "$OUT_DIR" && ! $PREVIEW; then
+if test -d "$OUT_DIR"; then
     echo "Output directory \"$OUT_DIR\" already exists."
     echo "Please use a different -out name, or (re)move the existing directory."
     exit 0
@@ -542,25 +549,56 @@ fi
 if $MENU_FADE || $FEATHER; then
     convert -size $VIDSIZE xc:"#161514" "$WORK_DIR/black.jpg"
 fi
+DIMY=$(echo $INTRO_SIZE|cut -f1 -dx)
+DIMX=$(echo $INTRO_SIZE|cut -f2 -dx)
+DIMY1=$((DIMY / 20))
+DIMX1=$((DIMX / 20))
+DIMY2=$((DIMY - DIMY1))
+DIMX2=$((DIMX - DIMY1))
+DIMY3=$(($DIMY2 / 2))
+DIMX3=$(($DIMX2 / 2))
 if $FEATHER; then
+    THUMB_MASK=$WORK_DIR/feather_mask.png
     convert -size $INTRO_SIZE xc:black -fill white \
-    -draw "Rectangle 20,10 300,230" +matte -compose CopyOpacity miff:- |
+    -draw "Rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2," +matte -compose CopyOpacity miff:- |
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
-    convert - -evaluate subtract 50% -normalize $WORK_DIR/feather_mask.png
+    convert - -evaluate subtract 50% -normalize $THUMB_MASK
 
     convert -size $INTRO_SIZE xc:none -fill white -stroke none \
-    -draw "rectangle 20,20 300,220" $WORK_DIR/feather_orig.png
+    -draw "rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2" $WORK_DIR/feather_orig.png
     convert $WORK_DIR/feather_orig.png -channel RGBA \
     -blur 0x60 $WORK_DIR/feather_mask2.png
-    
 fi
-if $FEATHER; then
+if $FEATHER || $OVAL; then
     FILL="#161514"
 else
     FILL="#C6C6C6"
+fi
+if $OVAL; then
+    THUMB_MASK=$WORK_DIR/oval_mask.png
+    echo "Running:
+    convert -size $INTRO_SIZE xc:black -fill white \
+    -draw "RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3" \
+    +matte -compose CopyOpacity miff:- |
+    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
+    convert - -evaluate subtract 50% -normalize oval_mask.png" |sed -e "s/^ *//"
+    echo
+    convert -size $INTRO_SIZE xc:black -fill white \
+    -draw "RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3" \
+    +matte -compose CopyOpacity miff:- |
+    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
+    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
+    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
+    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
+    convert - -evaluate subtract 50% -normalize $THUMB_MASK
+
+    convert -size $INTRO_SIZE xc:none -fill white -stroke none \
+    -draw "rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2" $WORK_DIR/feather_orig.png
+    convert $WORK_DIR/feather_orig.png -channel RGBA \
+    -blur 0x60 $WORK_DIR/feather_mask2.png
 fi
 
 if $FANCY_TITLE; then
@@ -589,6 +627,7 @@ else
     echo "Creating a plain white title with the following command:"
     echo $CMD|sed 's/    */ /g'
     echo "(Use the -fancy option for a fancier dark blue title)"
+    echo
     eval $CMD
 fi
 
@@ -638,8 +677,8 @@ done
 PICS=( "${PICS[@]}" \
 $(find $WORK_DIR/ -maxdepth 1 -name \*preview\*.$IMG_FMT) )
 for i in "${!PICS[@]}"; do
-    if $FEATHER; then
-        composite -compose CopyOpacity $WORK_DIR/feather_mask.png +matte \
+    if $FEATHER || $OVAL; then
+        composite -compose CopyOpacity $THUMB_MASK +matte \
         "${PICS[i]}" miff:- |
         convert -trim +repage -  "${PICS[i]}"
     fi
@@ -655,7 +694,7 @@ for i in "${!PICS[@]}"; do
     IM_CMD4=(convert -background none -frame 5x5 \
     -bordercolor "#444744" -)
     IM_CMD5=(convert -resize $INTRO_SIZE! - "${PICS[i]}")
-    if $FEATHER; then
+    if $FEATHER || $OVAL; then
         "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
         "${IM_CMD3[@]}" miff:- | "${IM_CMD5[@]}"
     else
@@ -711,6 +750,7 @@ unset PICS
 ###############################################################################
 
 for i in ${!VID_ARRAY[@]}; do
+    echo "Getting stats on "${VID_ARRAY[i]}""
     mencoder_stats=( "${mencoder_stats[@]}" \
     "$(mencoder -quiet "${VID_ARRAY[i]}" -oac pcm -ovc copy -o /dev/null 2>&1)" )
 done
@@ -1024,7 +1064,6 @@ if $SUB_MENU; then
     echo "Building submenus"
     echo $SEPARATOR
     echo "Creating images for each chapter"
-
     for i in ${!VID_ARRAY[@]}; do
         echo
         echo "Creating a transparent title PNG"
@@ -1063,7 +1102,7 @@ if $SUB_MENU; then
         TCODE_CMD=(transcode -q 0 -i "${VID_ARRAY[i]}" -o "${PICS_OUT[@]}" \
         -f $FRAME_RATE -J cut="$CMD" -y $SM_IMG_FMT,null)
         printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
-        echo "Creating chapter images "${VID_ARRAY[i]}""
+        echo "Creating chapter images for "${VID_ARRAY[i]}""
 
         echo "Running  "${TCODE_CMD[@]}"" >> $ANIMENU_LOG
         echo "Running  "${TCODE_CMD[@]}""
@@ -1161,8 +1200,16 @@ if $SUB_MENU; then
         echo
         echo "Creating a silent audio background"
         TIME=`vid_length $WORK_DIR/menu$s.m2v`
-        ffmpeg -f s16le -i /dev/zero -t $TIME \
-        $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT
+        BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
+        $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
+        OUT_PUT="background audio"
+        if "${BGAUDIO_CMD[@]}" >> "$ANIMENU_LOG.tmp" 2>&1; then
+            cleanlog 3
+        else
+            cleanlog 3
+            sorry_msg
+            exit 1
+        fi
         unset TIME
 #        command to use in for loop when SM_AUDIO is implemented
 #        ffmpeg -i ${SM_AUDIO[s]} -ar 48000 -ac 2 -acodec pcm_s16le -y \
@@ -1173,8 +1220,19 @@ if $SUB_MENU; then
         echo
         echo "Multiplexing video and audio together"
         S=$((s + 1))
-        mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/menu$S.mpg \
-        $WORK_DIR/menu$s.$AUDIO_EXT $WORK_DIR/menu$s.m2v
+        MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/menu$S.mpg \
+        $WORK_DIR/menu$s.$AUDIO_EXT $WORK_DIR/menu$s.m2v)
+        echo -e "\nRunning: $MPLEX_CMD\n" >> $ANIMENU_LOG.tmp
+        cleanlog 1
+        printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
+        if "${MPLEX_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
+            cleanlog 1
+        else
+            cleanlog 1
+            sorry_msg
+            exit 1
+        fi
+
     done
 fi
 
@@ -1186,7 +1244,7 @@ echo "Building main menu"
 echo $SEPARATOR
 echo
 echo "Adding title to images and resizing"
-if $FEATHER; then
+if $FEATHER || $OVAL; then
     FILL="#161514"
 else
     FILL="#C6C6C6"
@@ -1199,7 +1257,7 @@ for ((i=0; i<=FILES; i++)); do
 
     for pic in "${PICS[@]}"; do
         echo -en "\b${sp:o++%${#sp}:1}"
-        IM_CMD0=(composite -compose CopyOpacity $WORK_DIR/feather_mask.png +matte \
+        IM_CMD0=(composite -compose CopyOpacity $THUMB_MASK +matte \
         "$pic")
         IM_CMD1=(convert -trim +repage -)
         IM_CMD2=(montage -  -geometry +4+4 -compose Copy -background none \
@@ -1213,7 +1271,7 @@ for ((i=0; i<=FILES; i++)); do
         IM_CMD4=(convert -background '#161514' -frame 5x5 \
         -bordercolor none -mattecolor "#444744" -)
         IM_CMD5=(convert -resize $INTRO_SIZE! - $pic)
-        if $FEATHER; then
+        if $FEATHER || $OVAL; then
 #            "${IM_CMD0[@]}" miff:- | "${IM_CMD2[@]}" miff:- | "${IM_CMD1[@]}" miff:- |
             "${IM_CMD0[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
             "${IM_CMD2b[@]}" miff:- |"${IM_CMD2c[@]}" miff:- |
@@ -1295,9 +1353,9 @@ if $MENU_FADE && ! $STATIC; then
         fi
     done
 # copy a few black frames to make sure end frame is really "black"
-for ((i=ANI_MENU_END_FRAME; i<ANI_MENU_END_FRAME+6; i++)); do
-    cp $WORK_DIR/black.jpg $WORK_DIR/animenu/$i.jpg
-done
+    for ((i=ANI_MENU_END_FRAME; i<ANI_MENU_END_FRAME+6; i++)); do
+        cp $WORK_DIR/black.jpg $WORK_DIR/animenu/$i.jpg
+    done
 else # Don't do menu fade
     if $TRANSPARENT; then
          o=1; sp="/-|-\|";  echo -n ' '  # initialize spinner
@@ -1371,7 +1429,7 @@ printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
 echo "Running "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}""
 if "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
     cleanlog 3
-    else
+else
     cleanlog 3
     sorry_msg
     exit 1
@@ -1381,29 +1439,48 @@ echo "Cleaning up montage images"
 rm -fr $WORK_DIR/animenu/*.jpg
 
 # create silence for the main menu
+OUTPUT="main menu background audio"
 TIME=`vid_length "$WORK_DIR/intro.m2v"`
 if [ -z "$BG_AUDIO" ]; then
     cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
     -s - $WORK_DIR/intro.wav  trim 0 $TIME
 else
-    ffmpeg -i "$BG_AUDIO" -ar 48000 -ac 2 -acodec pcm_s16le -y \
-    -t $TIME $WORK_DIR/intro.wav
-    if $AUDIO_FADE; then
-        echo -e "Running:
-        sox $WORK_DIR/intro.wav \
-        $WORK_DIR/intro-processed.wav fade t 0 $TIME $FADE"
-
-        sox $WORK_DIR/intro.wav \
-        $WORK_DIR/intro-processed.wav fade t 0 $TIME $FADE
-        rm $WORK_DIR/intro.wav
-        mv $WORK_DIR/intro-processed.wav $WORK_DIR/intro.wav
+    BGAUDIO_CMD=(ffmpeg -i "$BG_AUDIO" -ar 48000 -ac 2 -acodec pcm_s16le -y \
+    -t $TIME $WORK_DIR/intro.wav)
+    if "${BGAUDIO_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
+        cleanlog 3
+    else
+        cleanlog 3
+        sorry_msg
+        exit 1
     fi
 fi
+
+unset BGAUDIO_CMD
+if $AUDIO_FADE; then
+    echo -e "Running:
+    sox $WORK_DIR/intro.wav \
+    $WORK_DIR/intro-processed.wav fade t 0 $TIME $FADE"
+
+    sox $WORK_DIR/intro.wav \
+    $WORK_DIR/intro-processed.wav fade t 0 $TIME $FADE
+    rm $WORK_DIR/intro.wav
+    mv $WORK_DIR/intro-processed.wav $WORK_DIR/intro.wav
+fi
+
 unset TIME
 
 # convert to proper audio format
-ffmpeg -i $WORK_DIR/intro.wav \
-$AUDIO_OPTS -y $WORK_DIR/intro.$AUDIO_EXT
+BGAUDIO_CMD=(ffmpeg -i $WORK_DIR/intro.wav \
+$AUDIO_OPTS -y $WORK_DIR/intro.$AUDIO_EXT)
+if "${BGAUDIO_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
+    cleanlog 3
+    else
+    cleanlog 3
+    sorry_msg
+    exit 1
+fi
+unset BGAUDIO_CMD
 
 echo
 echo "Multiplexing main menu audio and video together"
@@ -1437,6 +1514,7 @@ if $SUB_MENU; then
         spumux "$SUBMENU_SPUMUX_XML" < $i > $(echo $i|sed 's/\(.*\)menu/\1Menu/')
     done
 fi
+
 echo "Running dvdauthor to create the DVD filesystem"
 dvdauthor -x "$DVDAUTHOR_XML"
 
