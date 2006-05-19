@@ -433,16 +433,21 @@ DVD_INTRO_SIZE="320x240"
 SVCD_MPLEX_FORMAT=4
 DVD_MPLEX_FORMAT=8
 SVCD_TITLE_FONT_SIZE=32
-DVD_TITLE_FONT_SIZE=42
+DVD_TITLE_FONT_SIZE=40
 # PTSIZE=(30 36 42 42 42 42 48 48 48 48 48 48 54 54 54 54 54 54 54 54 \
 # 54 54 54 54 54 54 54 54 54 54)
-DVD_GEO_ARRAY=(360x240 270x180 210x140 210x140 192x128 192x128 144x96 144x96 \
-144x96 120x80 120x80 120x80 96x64 96x64 96x64 96x64 96x64 96x64 96x64 96x64 \
-72x48 72x48 72x48 72x48 72x48 72x48 72x48 72x48 72x48 72x48)
+#DVD_GEO_ARRAY=(360x240 270x180 210x140 210x140 192x128 192x128 144x96 144x96 \
+#144x96 120x80 120x80 120x80 96x64 96x64 96x64 96x64 96x64 96x64 96x64 96x64 \
+#72x48 72x48 72x48 72x48 72x48 72x48 72x48 72x48 72x48 72x48)
+DVD_GEO_ARRAY=(320x240 270x180 190x142 190x142 180x135 180x135 140x105 140x105 \
+120x90 120x90 120x90 120x90 96x72 96x72 96x72 96x72 96x72 96x72 96x72 96x72 \
+72x54 72x54 72x54 72x54 72x54 72x54 72x54 72x54 72x54 72x54)
 SVCD_GEO_ARRAY=(240x240 180x180 120x120 120x120 120x120 120x120 96x96 96x96 \
 96x96 80x80 80x80 80x80 64x64 64x64 64x64 64x64 64x64 64x64 64x64 64x64 \
 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48)
-TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 3x3 3x3 3x3 4x3 4x3 4x3 4x4 4x4 4x4
+#TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 3x3 3x3 3x3 4x3 4x3 4x3 4x4 4x4 4x4
+#4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5)
+TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5)
 
 V_ARRAY_TOTAL=${#VID_ARRAY[@]}
@@ -470,7 +475,7 @@ if $ANI_SUB_MENU; then
 fi
 
 echo
-echo -e "Videos to be processed"
+echo "Videos to be processed"
 for vid in "${VID_ARRAY[@]}"; do echo "$vid";done
 echo  
 if  [ $TARGET = "DVD" ]; then
@@ -532,16 +537,16 @@ if $MENU_FADE || $FEATHER; then
     convert -size $VIDSIZE xc:"#161514" "$WORK_DIR/black.jpg"
 fi
 if $FEATHER; then
-    convert -size 360x240 xc:black -fill white \
-    -draw "Rectangle 20,10 340,230" +matte -compose CopyOpacity miff:- |
+    convert -size $INTRO_SIZE xc:black -fill white \
+    -draw "Rectangle 20,10 300,230" +matte -compose CopyOpacity miff:- |
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
     convert - -evaluate subtract 50% -normalize $WORK_DIR/feather_mask.png
 
-    convert -size 360x240 xc:none -fill white -stroke none \
-    -draw "rectangle 20,20 340,220" $WORK_DIR/feather_orig.png
+    convert -size $INTRO_SIZE xc:none -fill white -stroke none \
+    -draw "rectangle 20,20 300,220" $WORK_DIR/feather_orig.png
     convert $WORK_DIR/feather_orig.png -channel RGBA \
     -blur 0x60 $WORK_DIR/feather_mask2.png
     
@@ -576,7 +581,7 @@ else
         -draw \"gravity center text 1,1 '$VMGM_TITLE'\" miff:- |
         convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png"
     echo "Creating a plain white title with the following command:"
-    echo $CMD|sed 's/    */ /g'|fold -bs
+    echo $CMD|sed 's/    */ /g'
     echo "(Use the -fancy option for a fancier dark blue title)"
     eval $CMD
 fi
@@ -610,7 +615,7 @@ if $PREVIEW; then
     # generate images for montage and title and resize them
     for ((i=0; i<=FILES; i++)) ; do
         FFMPEG_CMD=(ffmpeg -i "${VID_ARRAY[i]}" $SEEK -vframes 1 \
-        -s 360x240 $WORK_DIR/${i}-preview%d.$IMG_FMT)
+        -s $INTRO_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
         printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
         echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $ANIMENU_LOG
         SED_VAR="frame="
@@ -657,7 +662,7 @@ if $PREVIEW; then
         montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[FILES]} \
         -geometry ${GEO_ARRAY[FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
         composite -dissolve $DISSOLVE \
-        -gravity north -geometry +0+55 - \
+        -gravity north -geometry +0+50 - \
         $WORK_DIR/pics/template.png -background none miff:- |
         convert - $WORK_DIR/title_txt.png  \
         -gravity south -geometry +0+55 -composite \
@@ -672,7 +677,7 @@ if $PREVIEW; then
         -geometry ${GEO_ARRAY[FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
         convert $WORK_DIR/pics/template.png \
         $WORK_DIR/title_txt.png  -gravity south -geometry +0+55 -composite \
-        -  -gravity north -geometry +0+55 -composite \
+        -  -gravity north -geometry +0+50 -composite \
         $WORK_DIR/example.jpg
         display $WORK_DIR/example.jpg
         echo
@@ -833,7 +838,7 @@ for button in Select Highlight; do
     $(for ((i=0; i<=FILES; i++)); do echo $WORK_DIR/${button}x1.png;done) \
     -tile ${TILE_ARRAY[FILES]} -geometry ${GEO_ARRAY[FILES]}+5+5 \
     -bordercolor none -mattecolor transparent miff:- |
-    convert  -colors 3 -size 720x480 xc:none - -gravity north -geometry +0+55 \
+    convert  -colors 3 -size 720x480 xc:none - -gravity north -geometry +0+50 \
     -composite  "$WORK_DIR/${button}.png"
 done
 
@@ -856,7 +861,7 @@ if $SUB_MENU; then
         -bordercolor none -mattecolor transparent miff:- |
 
         convert  -colors 3 -size 720x480 xc:none  - \
-        -gravity north -geometry +0+55  \
+        -gravity north -geometry +0+50  \
         -composite  $WORK_DIR/Submenu_${button}.png
     done
 fi
@@ -1084,7 +1089,7 @@ if $SUB_MENU; then
                 -mattecolor '#161514' -background '#161514' miff:-)
                 IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
                 $WORK_DIR/title${i}_txt.png  -gravity south \
-                -geometry +0+55 -composite -  -gravity north -geometry +0+55 \
+                -geometry +0+55 -composite -  -gravity north -geometry +0+50 \
                 -composite $WORK_DIR/animenu/$a.$SM_IMG_FMT)
  
                 "${IM_CMD[@]}" | "${IM_CMD2[@]}"
@@ -1109,7 +1114,7 @@ if $SUB_MENU; then
             ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -background '#141614' miff:-)
             IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
             $WORK_DIR/title${i}_txt.png  -gravity south -geometry +0+55 \
-            -composite - -gravity north -geometry +0+55 -composite \
+            -composite - -gravity north -geometry +0+50 -composite \
             $WORK_DIR/submenu.$SM_IMG_FMT)
             echo "Running "${IM_CMD[@]}" | "${IM_CMD2[@]}""
             "${IM_CMD[@]}" | "${IM_CMD2[@]}"
@@ -1251,7 +1256,7 @@ if $MENU_FADE && ! $STATIC; then
         -geometry ${GEO_ARRAY[FILES]}+5+5 -background none)
         #  dissolve the finished montages onto the background
         MONTAGE_CMD2=(composite -dissolve $S -gravity north \
-        -geometry +0+55 - $WORK_DIR/bg/$(($frame + 1)).jpg -background none)
+        -geometry +0+50 - $WORK_DIR/bg/$(($frame + 1)).jpg -background none)
         # if MIST is called for, this dissolves the mist onto the background
         MONTAGE_CMD3=(composite -dissolve $B -gravity south -geometry +0+45 \
         $WORK_DIR/white.png -)
@@ -1283,7 +1288,7 @@ else # Don't do menu fade
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
             -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:-)
             IM_CMD2=(composite -dissolve $DISSOLVE \
-            -gravity north -geometry +0+55 - \
+            -gravity north -geometry +0+50 - \
             $WORK_DIR/pics/template.jpg -background none miff:-)
             IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+45 \
             $WORK_DIR/white.png - miff:-)
@@ -1309,7 +1314,7 @@ else # Don't do menu fade
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
             -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:-)
             IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
-            -  -gravity north -geometry +0+55 -composite miff:-)
+            -  -gravity north -geometry +0+50 -composite miff:-)
             IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+45 \
             $WORK_DIR/white.png - miff:-)
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
