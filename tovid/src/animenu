@@ -86,7 +86,7 @@ AUDIO_FADE=false
 DISSOLVE=100
 MENU_FADE=false
 TRANSPARENT=false
-PREVIEW=false
+PREVIEW=:
 PAUSE_TIME=6
 MIST=false
 FEATHER=false
@@ -95,6 +95,7 @@ SUB_MENU_FEATHER=false
 IMG_FMT=jpg
 SM_IMG_FMT=jpg  # submenu image format
 KEEP_FILES=false
+THUMB_FONTSIZE=false
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -308,6 +309,10 @@ while test $# -gt 0; do
             shift
             VMGM_TITLE="$1"
             ;;
+        "-thumb-fontsize" )
+            shift
+            THUMB_FONTSIZE="$1"
+            ;;
         "-menu-font" )
             shift
             # If there's a filename extension, find the absolute path
@@ -329,15 +334,9 @@ while test $# -gt 0; do
             # If there's a filename extension, find the absolute path
             if echo "$1" | grep -q '\...*$'; then
                 THUMB_FONT="$(abspath "$1")"
-                TFONT=(-font "$THUMBFONT")
             else
                 THUMB_FONT="$1"
-                TFONT=(-font "$THUMBFONT")
             fi
-            ;;
-        "-preview" )
-            PREVIEW=:
-            IMG_FMT=png
             ;;
         "-seek" )
             shift
@@ -392,7 +391,7 @@ if [ -z "$TITLE_FONT" ]; then
         THUMB_FONT="helvetica"
     fi
 fi
-echo "TITLE_FONT is $TITLE_FONT"
+
 rm -f "$WORK_DIR/font.png"
 
 for i in "${VIDS[@]}"; do
@@ -409,8 +408,8 @@ for ((i=0; i<${#TITLES[@]}; i++)); do
     [ -z "$MAX_VAL" ] || ((val > MAX_VAL)) && MAX_VAL=$val && key=$i
 done
 
-if [ $MAX_VAL -gt 14 ]; then
-    echo -e "Sorry, maximum number of characters you can use for a title is 14"
+if [ $MAX_VAL -gt 12 ]; then
+    echo -e "Sorry, maximum number of characters you can use for a title is 12"
     echo -e "The title \"${TITLES[key]}\" is too long"
     exit 1
 fi
@@ -429,17 +428,18 @@ SVCD_FFMPEG_OPTS="-b 2200 -minrate 2200 -maxrate 2200 -bufsize 230 -aspect 4:3"
 DVD_FFMPEG_OPTS="-b 8000  -maxrate 9000 -bufsize 230  -aspect 4:3"
 SVCD_INTRO_SIZE="240x240"
 #DVD_INTRO_SIZE="360x240"
-DVD_INTRO_SIZE="320x240"
 SVCD_MPLEX_FORMAT=4
 DVD_MPLEX_FORMAT=8
 SVCD_TITLE_FONT_SIZE=32
 DVD_TITLE_FONT_SIZE=40
 # PTSIZE=(30 36 42 42 42 42 48 48 48 48 48 48 54 54 54 54 54 54 54 54 \
 # 54 54 54 54 54 54 54 54 54 54)
+THUMB_FONTSIZE_ARRAY=(18 16 14 14 12 12 12 12 12 11 11 11 11 11 11 11 11 11 \
+11 11 11 11 11 11 11 11 11 11)
 #DVD_GEO_ARRAY=(360x240 270x180 210x140 210x140 192x128 192x128 144x96 144x96 \
 #144x96 120x80 120x80 120x80 96x64 96x64 96x64 96x64 96x64 96x64 96x64 96x64 \
 #72x48 72x48 72x48 72x48 72x48 72x48 72x48 72x48 72x48 72x48)
-DVD_GEO_ARRAY=(320x240 270x180 190x142 190x142 180x135 180x135 140x105 140x105 \
+DVD_GEO_ARRAY=(320x240 272x204 192x144 192x144 184x138 184x138 144x108 144x108 \
 120x90 120x90 120x90 120x90 96x72 96x72 96x72 96x72 96x72 96x72 96x72 96x72 \
 72x54 72x54 72x54 72x54 72x54 72x54 72x54 72x54 72x54 72x54)
 SVCD_GEO_ARRAY=(240x240 180x180 120x120 120x120 120x120 120x120 96x96 96x96 \
@@ -450,10 +450,15 @@ SVCD_GEO_ARRAY=(240x240 180x180 120x120 120x120 120x120 120x120 96x96 96x96 \
 TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5)
 
+
 V_ARRAY_TOTAL=${#VID_ARRAY[@]}
 A_ARRAY_TOTAL=${#TITLES[@]}
 FILES=$(($V_ARRAY_TOTAL - 1))
-
+if  "$THUMB_FONTSIZE"; then
+    THUMB_FONTSIZE=$THUMB_FONTSIZE
+else
+    THUMB_FONTSIZE=${THUMB_FONTSIZE_ARRAY[FILES]}
+fi
 # set up our log file
 PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
 printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
@@ -520,6 +525,7 @@ elif [ $TARGET = "SVCD" ]; then
         TITLE_FONT_SIZE=$TITLE_FONT_SIZE
     fi
 fi
+INTRO_SIZE="${GEO_ARRAY[FILES]}"
 ###############################################################################
 #     generate title_txt png, and template.png needed for all operations       #
 ###############################################################################
@@ -603,89 +609,102 @@ if $MIST; then
 fi
 
 ###############################################################################
-#      if preview is selected, generate a basic preview of the main menu      #
+#      generate a basic preview of the main menu      #
 ###############################################################################
-if $PREVIEW; then
-    if $MIST; then
-        # overlay white.png onto the background
-        composite -dissolve 30 -gravity south -geometry +0+45 \
-        $WORK_DIR/white.png $WORK_DIR/pics/template.png \
-        $WORK_DIR/pics/template.png
+if $MIST; then
+    # overlay white.png onto the background
+    composite -dissolve 30 -gravity south -geometry +0+45 \
+    $WORK_DIR/white.png $WORK_DIR/pics/template.png \
+    $WORK_DIR/pics/template.png
+fi
+# generate images for montage and title and resize them
+for ((i=0; i<=FILES; i++)) ; do
+    FFMPEG_CMD=(ffmpeg -i "${VID_ARRAY[i]}" $SEEK -vframes 1 \
+    -s $INTRO_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
+    printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
+    echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $ANIMENU_LOG
+    SED_VAR="frame="
+    if "${FFMPEG_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1;then
+        cleanlog 3
+    else
+        cleanlog 3
+        OUTPUT="There was a problem creating images from the video.\n \
+        Please see the output of $ANIMENU_LOG"
+        SORRY_MSG=$OUTPUT
+        sorry_msg
+        exit 1
     fi
-    # generate images for montage and title and resize them
-    for ((i=0; i<=FILES; i++)) ; do
-        FFMPEG_CMD=(ffmpeg -i "${VID_ARRAY[i]}" $SEEK -vframes 1 \
-        -s $INTRO_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
-        printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
-        echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $ANIMENU_LOG
-        SED_VAR="frame="
-        if "${FFMPEG_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1;then
-            cleanlog 3
-        else
-            cleanlog 3
-            OUTPUT="There was a problem creating images from the video.\n \
-            Please see the output of $ANIMENU_LOG"
-            SORRY_MSG=$OUTPUT
-            sorry_msg
-            exit 1
-        fi
-    done
-    PICS=( "${PICS[@]}" \
-    $(find $WORK_DIR/ -maxdepth 1 -name '*preview*.png') )
-    for i in "${!PICS[@]}"; do
-        if $FEATHER; then
-            composite -compose CopyOpacity $WORK_DIR/feather_mask.png +matte \
-            "${PICS[i]}" miff:- |
-            convert -trim +repage -  "${PICS[i]}"
-        fi
- 
-        # **if horizontal lines in frames, try montage "${JPGS[i]}" -blur 0x.3**
-        # using a mask just on the frame portion would be even better
-        # www.cit.gu.edu.au/~anthony/info/graphics/imagemagick.hints 1/4 down
-        IM_CMD1=(montage "${PICS[i]}" -geometry +4+4 -compose Copy  \
-        -background  none -fill "$FILL" -font "$THUMB_FONT" -pointsize 22 \
-        -title "${TITLES[i]}")
-        IM_CMD2=(convert -resize $INTRO_SIZE! -)
-        IM_CMD3=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png - )
-        IM_CMD4=(convert -background none -frame 8x8 \
-        -bordercolor "#444744" -)
-        IM_CMD5=(convert -resize $INTRO_SIZE! - "${PICS[i]}")
-        if $FEATHER; then
-            "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
-            "${IM_CMD3[@]}" miff:- | "${IM_CMD5[@]}"
-        else
-            "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
-            "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
-        fi
-    done
-    if $TRANSPARENT; then
-        montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[FILES]} \
-        -geometry ${GEO_ARRAY[FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
-        composite -dissolve $DISSOLVE \
-        -gravity north -geometry +0+50 - \
-        $WORK_DIR/pics/template.png -background none miff:- |
-        convert - $WORK_DIR/title_txt.png  \
-        -gravity south -geometry +0+55 -composite \
-        $WORK_DIR/example.jpg
-        display $WORK_DIR/example.jpg
-        echo
-        echo -e "If you are happy with your preview, please proceed" 
-        echo "without the -preview option"
-        exit 0 
-    else # Not transparent
-        montage ${PICS[@]} -tile ${TILE_ARRAY[FILES]} \
-        -geometry ${GEO_ARRAY[FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
-        convert $WORK_DIR/pics/template.png \
-        $WORK_DIR/title_txt.png  -gravity south -geometry +0+55 -composite \
-        -  -gravity north -geometry +0+50 -composite \
-        $WORK_DIR/example.jpg
-        display $WORK_DIR/example.jpg
-        echo
-        echo -e "If you are happy with your preview, please proceed" 
-        echo "without the -preview option"
+done
+PICS=( "${PICS[@]}" \
+$(find $WORK_DIR/ -maxdepth 1 -name \*preview\*.$IMG_FMT) )
+for i in "${!PICS[@]}"; do
+    if $FEATHER; then
+        composite -compose CopyOpacity $WORK_DIR/feather_mask.png +matte \
+        "${PICS[i]}" miff:- |
+        convert -trim +repage -  "${PICS[i]}"
+    fi
+
+    # **if horizontal lines in frames, try montage "${JPGS[i]}" -blur 0x.3**
+    # using a mask just on the frame portion would be even better
+    # www.cit.gu.edu.au/~anthony/info/graphics/imagemagick.hints 1/4 down
+    IM_CMD1=(montage "${PICS[i]}" -geometry +4+4 -compose Copy  \
+    -background  none -fill "$FILL" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
+    -title "${TITLES[i]}")
+    IM_CMD2=(convert -resize $INTRO_SIZE! -)
+    IM_CMD3=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png - )
+    IM_CMD4=(convert -background none -frame 5x5 \
+    -bordercolor "#444744" -)
+    IM_CMD5=(convert -resize $INTRO_SIZE! - "${PICS[i]}")
+    if $FEATHER; then
+        "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
+        "${IM_CMD3[@]}" miff:- | "${IM_CMD5[@]}"
+    else
+        "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
+        "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
+    fi
+done
+function confirm_msg()
+{
+    printf "%s\n" "$LINE"
+    echo
+    echo "If you want to fine tune your menu, then please see 'man animenu'"
+    echo "if titles do not fit, or look bad, then -menu-font, -menu-fontsize"
+    echo "-thumbfont and -thumb-fontsize are options to consider"
+    echo
+    echo "Your current font arrangement is: "
+    echo "menu title font: $TITLE_FONT at size $TITLE_FONT_SIZE "
+    echo "thumb font: $THUMB_FONT at size $THUMB_FONTSIZE"
+    echo
+    echo "If you are happy with your preview, type 'yes' to continue: "
+    echo
+    printf "%s\n" "$LINE"
+    read input
+    echo
+    if [ ! -z "$input" -a "$input" = 'yes' ]; then
+        :
+    else
         exit 0
     fi
+    echo
+}
+if $TRANSPARENT; then
+    montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[FILES]} \
+    -geometry ${GEO_ARRAY[FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
+    composite -dissolve $DISSOLVE \
+    -gravity north -geometry +0+50 - \
+    $WORK_DIR/pics/template.png -background none miff:- |
+    convert - $WORK_DIR/title_txt.png  \
+    -gravity south -geometry +0+55 -composite miff:- |display
+    confirm_msg
+else # Not transparent
+    montage ${PICS[@]} -tile ${TILE_ARRAY[FILES]} \
+    -geometry ${GEO_ARRAY[FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
+    convert $WORK_DIR/pics/template.png \
+    $WORK_DIR/title_txt.png  -gravity south -geometry +0+55 -composite \
+    -  -gravity north -geometry +0+50 -composite miff:- | display
+    confirm_msg
 fi
+
 unset PICS
 ###############################################################################
 #             get information about videos and store in an array              #
@@ -693,7 +712,7 @@ unset PICS
 
 for i in ${!VID_ARRAY[@]}; do
     mencoder_stats=( "${mencoder_stats[@]}" \
-    "$(mencoder -quiet "${VID_ARRAY[i]}" -oac pcm -ovc copy -o /dev/null)" )
+    "$(mencoder -quiet "${VID_ARRAY[i]}" -oac pcm -ovc copy -o /dev/null 2>&1)" )
 done
 echo
 echo $SEPARATOR
@@ -777,12 +796,11 @@ fi
 ###############################################################################
 #                       work on the clip title images                         #
 ###############################################################################
-# create the pics for background image and move to proper pics/ dir
+# extract images from the provided background video
 echo
 echo "Creating images from each video for the main menu"
-o=1; sp="/-|-\|";  echo -n ' ' # initialize spinner
 for ((i=0; i<=FILES; i++)) ; do
-    echo -en "\b${sp:o++%${#sp}:1}" # start spinner going
+    echo "Working on "${VID_ARRAY[$i]}""
     CREATE_IMG_CMD=(ffmpeg -i "${VID_ARRAY[$i]}"  $SEEK -vframes $FRAMES \
     -s "$INTRO_SIZE" "$WORK_DIR/pics/$i/%d.$IMG_FMT")
     printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
@@ -801,7 +819,7 @@ for ((i=0; i<=FILES; i++)) ; do
     fi
 
 done
-# extract images from the provided background video
+# create the pics for background image
     if [ -z "$BG_PIC" ]; then
         echo
         echo "Creating a black background"
@@ -825,6 +843,7 @@ convert -size 1x512 gradient: -rotate 90 +matte \
 ##############################################################################
 echo
 echo "Creating the highlight and selection PNGs for the main menu"
+echo
 GEO="${GEO_ARRAY[FILES]/x/,}"
 SELECT_CMD="-size "${GEO_ARRAY[FILES]}+5+5" xc:none -fill none +antialias \
 -stroke '#DE7F7C' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
@@ -1107,7 +1126,7 @@ if $SUB_MENU; then
             # create frames for the chapter thumbs
             for PIC in "${imgs[@]}"; do
                 echo -en "\b${sp:o++%${#sp}:1}"
-                convert -background '#141614' -frame 8x8 \
+                convert -background '#141614' -frame 5x5 \
                 -bordercolor none -mattecolor "#444744" "$PIC" "$PIC"
             done
             IM_CMD=(montage "${imgs[@]}" -tile ${TILE_ARRAY[CHAPTERS -1]} -geometry \
@@ -1184,14 +1203,14 @@ for ((i=0; i<=FILES; i++)); do
         "$pic")
         IM_CMD1=(convert -trim +repage -)
         IM_CMD2=(montage -  -geometry +4+4 -compose Copy -background none \
-        -fill "$FILL" -font "$THUMB_FONT" -pointsize 22 -title "${TITLES[i]}")
+        -fill "$FILL" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}")
 
         IM_CMD2b=(convert -resize $INTRO_SIZE! -)
         IM_CMD2c=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -) 
         
         IM_CMD3=(montage -geometry +4+4 -background '#161514' \
-        -fill '#C6C6C6' -pointsize 22 -title "${TITLES[i]}" "$pic")
-        IM_CMD4=(convert -background '#161514' -frame 8x8 \
+        -fill '#C6C6C6' -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}" "$pic")
+        IM_CMD4=(convert -background '#161514' -frame 5x5 \
         -bordercolor none -mattecolor "#444744" -)
         IM_CMD5=(convert -resize $INTRO_SIZE! - $pic)
         if $FEATHER; then
