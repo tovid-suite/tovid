@@ -63,7 +63,7 @@ TV_STANDARD=ntsc
 ANI_MENU_LENGTH=20
 ANI_SUBMENU_LENGTH=10
 MAX_ANI_LENGTH=""
-TARGET=DVD
+TARGET=dvd
 FRAME_RATE=29.970  # when -ntsc and -pal options added put in body in if block
 LINE=$(for ((i=1; i<=79; i++));do echo -n =;done)
 VID_SIZE=720x480
@@ -81,6 +81,7 @@ TITLE_FONT=""
 THUMB_FONT=""
 BG_AUDIO=""
 BG_PIC=""
+ANI_BG=""
 SM_AUDIO=""
 AUDIO_FADE=false
 DISSOLVE=100
@@ -90,12 +91,13 @@ PREVIEW=:
 PAUSE_TIME=6
 MIST=false
 FEATHER=false
-BLUR=50
+BLUR=5
 SUB_MENU_FEATHER=false
 IMG_FMT=jpg
 SM_IMG_FMT=jpg  # submenu image format
 KEEP_FILES=false
 THUMB_FONTSIZE=false
+THUMB_SHAPE=""
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -196,7 +198,6 @@ function confirm_msg()
     echo
     echo "If you are happy with your preview, type 'yes' to continue: "
     echo
-    printf "%s\n" "$LINE"
     read input
     echo
     if [ ! -z "$input" -a "$input" = 'yes' ]; then
@@ -204,6 +205,7 @@ function confirm_msg()
     else
         exit 0
     fi
+    printf "%s\n" "$LINE"
     echo
 }
 
@@ -269,10 +271,10 @@ while test $# -gt 0; do
             ANI_SUBMENU_LENGTH="$1"
             ;;
         "-dvd" )
-            TARGET=DVD
+            TARGET=dvd
             ;;
         "-svcd" )
-            TARGET=SVCD
+            TARGET=svcd
             ;;
         "-static" )
             STATIC=:
@@ -289,10 +291,13 @@ while test $# -gt 0; do
         "-bgvideo" )
             shift
             ANI_BG="$(abspath "$1")"
+            MIST=: 
             ;;
         "-thumb-shape" )
             shift
             THUMB_SHAPE="$1"
+            FEATHER=:
+            IMG_FMT=png
             ;;
         "-feather" )
             shift
@@ -513,7 +518,7 @@ echo
 echo "Videos to be processed"
 for vid in "${VID_ARRAY[@]}"; do echo "$vid";done
 echo  
-if  [ $TARGET = "DVD" ]; then
+if  [ $TARGET = "dvd" ]; then
     AUDIO_EXT=$DVD_AUDIO_EXT
     AUDIO_OPTS=$DVD_AUDIO_OPTS
     SAMPLERATE=$DVD_SAMPLERATE
@@ -533,7 +538,7 @@ if  [ $TARGET = "DVD" ]; then
     else
         TITLE_FONT_SIZE=$TITLE_FONT_SIZE
     fi
-elif [ $TARGET = "SVCD" ]; then
+elif [ $TARGET = "svcd" ]; then
     AUDIO_EXT=$SVCD_AUDIO_EXT
     AUDIO_OPTS=$SVCD_AUDIO_OPTS
     SAMPLERATE=$SVCD_SAMPLERATE
@@ -600,7 +605,7 @@ if $FEATHER; then
 else
     FILL="#C6C6C6"
 fi
-if test $THUMB_SHAPE = "oval"; then
+if test "$THUMB_SHAPE" = "oval"; then
     THUMB_MASK=$WORK_DIR/oval_mask.png
     echo "Running:
     convert -size $INTRO_SIZE xc:black -fill white \
@@ -1001,6 +1006,9 @@ if $SUB_MENU; then
 else
     JUMP=title
 fi
+if [ $TARGET = svcd ]; then
+:
+else
 # make dvdauthor.xml
 (
     cat <<EOF
@@ -1053,7 +1061,7 @@ done)
 </dvdauthor> 
 EOF
 ) |sed '/^$/d' >> "$DVDAUTHOR_XML"
-
+fi
 ##############################################################################
 #                            Animenu stuff                                   #
 ##############################################################################
@@ -1297,14 +1305,32 @@ for ((i=0; i<=FILES; i++)); do
    fi
 done
 
+if [ -n $ANI_BG ]; then
+    # extract images from the provided video
+    echo "ANI_BG is $ANI_BG"
+    FFMPEG_CMD=(ffmpeg -i "$ANI_BG" $SEEK -vframes $FRAMES \
+    -s "$VIDSIZE" "$WORK_DIR/bg/%d.jpg")
+    printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
+    echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $ANIMENU_LOG
+    if "${FFMPEG_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
+        cleanlog 3
+    else
+        cleanlog 3
+        OUTPUT="the images from the background video"
+        sorry_msg
+        exit 1
+    fi
+fi
+unset FFMPEG_CMD
 if $MENU_FADE && ! $STATIC; then
     echo
     echo "making final montages and compositing onto background with title"
-    for ((frame=0; frame<=ANI_MENU_END_FRAME; frame++)); do
-        # copy template for fade out beginning and end frames
-        cp $WORK_DIR/pics/template.jpg $WORK_DIR/bg/$(($frame + 1)).jpg
-    done
-      
+    if [ -z "$ANI_BG" ]; then
+        for ((frame=0; frame<=ANI_MENU_END_FRAME; frame++)); do
+            # copy template for fade out beginning and end frames
+            cp $WORK_DIR/pics/template.jpg $WORK_DIR/bg/$(($frame + 1)).jpg
+        done
+    fi      
     for ((frame=0; frame<=BACKGROUND_FADE_IN_END_FRAME; frame++)); do
         D=`get_bg_opacity`
         composite -dissolve $D $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.jpg \
@@ -1388,9 +1414,11 @@ else # Don't do menu fade
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
 
             # make final montages and composite onto grey background with title
-            IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
+            IM_CMD0=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
             -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:-)
-            IM_CMD2=(convert $WORK_DIR/pics/template.jpg \
+            IM_CMD1=(convert $WORK_DIR/pics/template.jpg \
+            -  -gravity north -geometry +0+50 -composite miff:-)
+            IM_CMD2=(convert $WORK_DIR/bg/$count.jpg \
             -  -gravity north -geometry +0+50 -composite miff:-)
             IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+45 \
             $WORK_DIR/white.png - miff:-)
@@ -1398,9 +1426,9 @@ else # Don't do menu fade
             -gravity south -geometry +0+55 -composite \
             $WORK_DIR/animenu/$count.jpg )
             if $MIST; then
-                "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
+                "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
             else
-                "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}"
+                "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}"
             fi
             rm -f ${ANI_PICS[@]}
         done
