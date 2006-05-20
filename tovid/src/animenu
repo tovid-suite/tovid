@@ -90,7 +90,6 @@ PREVIEW=:
 PAUSE_TIME=6
 MIST=false
 FEATHER=false
-OVAL=false
 BLUR=50
 SUB_MENU_FEATHER=false
 IMG_FMT=jpg
@@ -291,16 +290,14 @@ while test $# -gt 0; do
             shift
             ANI_BG="$(abspath "$1")"
             ;;
+        "-thumb-shape" )
+            shift
+            THUMB_SHAPE="$1"
+            ;;
         "-feather" )
             shift
             BLUR="$1"
             FEATHER=:
-            IMG_FMT=png
-            ;;
-        "-oval" )
-            shift
-            BLUR="$1"
-            OVAL=:
             IMG_FMT=png
             ;;
         "-transparency" )
@@ -598,12 +595,12 @@ if $FEATHER; then
     convert $WORK_DIR/feather_orig.png -channel RGBA \
     -blur 0x60 $WORK_DIR/feather_mask2.png
 fi
-if $FEATHER || $OVAL; then
+if $FEATHER; then
     FILL="#161514"
 else
     FILL="#C6C6C6"
 fi
-if $OVAL; then
+if test $THUMB_SHAPE = "oval"; then
     THUMB_MASK=$WORK_DIR/oval_mask.png
     echo "Running:
     convert -size $INTRO_SIZE xc:black -fill white \
@@ -704,7 +701,7 @@ done
 PICS=( "${PICS[@]}" \
 $(find $WORK_DIR/ -maxdepth 1 -name \*preview\*.$IMG_FMT) )
 for i in "${!PICS[@]}"; do
-    if $FEATHER || $OVAL; then
+    if $FEATHER; then
         composite -compose CopyOpacity $THUMB_MASK +matte \
         "${PICS[i]}" miff:- |
         convert -trim +repage -  "${PICS[i]}"
@@ -721,7 +718,7 @@ for i in "${!PICS[@]}"; do
     IM_CMD4=(convert -background none -frame 5x5 \
     -bordercolor "#444744" -)
     IM_CMD5=(convert -resize $INTRO_SIZE! - "${PICS[i]}")
-    if $FEATHER || $OVAL; then
+    if $FEATHER; then
         "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
         "${IM_CMD3[@]}" miff:- | "${IM_CMD5[@]}"
     else
@@ -1247,7 +1244,7 @@ echo "Building main menu"
 echo $SEPARATOR
 echo
 echo "Adding title to images and resizing"
-if $FEATHER || $OVAL; then
+if $FEATHER; then
     FILL="#161514"
 else
     FILL="#C6C6C6"
@@ -1274,7 +1271,7 @@ for ((i=0; i<=FILES; i++)); do
         IM_CMD4=(convert -background '#161514' -frame 5x5 \
         -bordercolor none -mattecolor "#444744" -)
         IM_CMD5=(convert -resize $INTRO_SIZE! - $pic)
-        if $FEATHER || $OVAL; then
+        if $FEATHER; then
 #            "${IM_CMD0[@]}" miff:- | "${IM_CMD2[@]}" miff:- | "${IM_CMD1[@]}" miff:- |
             "${IM_CMD0[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
             "${IM_CMD2b[@]}" miff:- |"${IM_CMD2c[@]}" miff:- |
