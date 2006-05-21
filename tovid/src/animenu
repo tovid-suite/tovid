@@ -82,7 +82,7 @@ THUMB_FONT=""
 BG_AUDIO=""
 BG_PIC=""
 ANI_BG=""
-SM_AUDIO=""
+SUBMENU_AUDIO=false
 AUDIO_FADE=false
 DISSOLVE=100
 MENU_FADE=false
@@ -279,7 +279,6 @@ while test $# -gt 0; do
         "-static" )
             STATIC=:
             ;;
-
         "-bgimage" )
             shift
             BG_PIC="$(abspath "$1")"
@@ -319,6 +318,7 @@ while test $# -gt 0; do
             done
             # Don't skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
+            SUBMENU_AUDIO=:
             ;;
         "-chapters" )
             shift
@@ -749,7 +749,7 @@ else # Not transparent
     confirm_msg
 fi
 
-unset PICS
+unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
 ###############################################################################
 #             get information about videos and store in an array              #
 ###############################################################################
@@ -1108,7 +1108,7 @@ if $SUB_MENU; then
         unset cmd[key]
         CMD=${cmd[@]}
         TCODE_CMD=(transcode -q 0 -i "${VID_ARRAY[i]}" -o "${PICS_OUT[@]}" \
-        -f $FRAME_RATE -J cut="$CMD" -y $SM_IMG_FMT,null)
+        -f $FRAME_RATE -Z ${GEO_ARRAY[CHAPTERS - 1]},fast -J cut="$CMD" -y $SM_IMG_FMT,null)
         printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
         echo "Creating chapter images for "${VID_ARRAY[i]}""
 
@@ -1174,7 +1174,8 @@ if $SUB_MENU; then
             for PIC in "${imgs[@]}"; do
                 echo -en "\b${sp:o++%${#sp}:1}"
                 convert -background '#141614' -frame 5x5 \
-                -bordercolor none -mattecolor "#444744" "$PIC" "$PIC"
+                -bordercolor none -mattecolor "#444744" "$PIC" miff:- |
+                convert -resize "${GEO_ARRAY[CHAPTERS - 1]}"! - "$PIC"
             done
             IM_CMD=(montage "${imgs[@]}" -tile ${TILE_ARRAY[CHAPTERS -1]} -geometry \
             ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -background '#141614' miff:-)
@@ -1203,14 +1204,25 @@ if $SUB_MENU; then
         rm -f $WORK_DIR/animenu/*.$IMG_FMT
     done    
     unset ENC_CMD1
-    # create silence for either animated or plain submenus
     for ((s=0; s<=FILES; s++)); do
+        # create audio background for either animated or plain submenus
         echo
-        echo "Creating a silent audio background"
+        echo "Creating an audio background"
+        echo "Working on submenu audio from "${VID_ARRAY[s]}""
         TIME=`vid_length $WORK_DIR/menu$s.m2v`
-        BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
-        $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
         OUT_PUT="background audio"
+        if "$SUBMENU_AUDIO"; then
+        # make seperate wavs for each supplied audio bg for each submenu 
+        BGAUDIO_CMD=(ffmpeg -i ${SM_AUDIO[s]} -ar 48000 -ac 2 -acodec pcm_s16le -y \
+        $WORK_DIR/menu$s.wav)
+        BGAUDIO_CMD2=(ffmpeg -i $WORK_DIR/menu$s.wav \
+        $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
+        else
+            BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
+            $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
+        fi
+        echo "Running "${BGAUDIO_CMD[@]}"" >> "$ANIMENU_LOG.tmp" 2>&1
+        cleanlog 1
         if "${BGAUDIO_CMD[@]}" >> "$ANIMENU_LOG.tmp" 2>&1; then
             cleanlog 3
         else
@@ -1218,13 +1230,18 @@ if $SUB_MENU; then
             sorry_msg
             exit 1
         fi
-        unset TIME
-#        command to use in for loop when SM_AUDIO is implemented
-#        ffmpeg -i ${SM_AUDIO[s]} -ar 48000 -ac 2 -acodec pcm_s16le -y \
-#        -t 20 $WORK_DIR/menu$s.wav
-#        ffmpeg -i $WORK_DIR/menu$s.wav \
-#        $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT
-#        fi
+        if "$SUBMENU_AUDIO"; then
+            echo "Running "${BGAUDIO_CMD2[@]}"" >> "$ANIMENU_LOG.tmp" 2>&1
+            cleanlog 1
+            if "${BGAUDIO_CMD2[@]}" >> "$ANIMENU_LOG.tmp" 2>&1; then
+                cleanlog 3
+            else
+                cleanlog 3
+                sorry_msg
+                exit 1
+            fi
+            unset TIME
+        fi
         echo
         echo "Multiplexing video and audio together"
         S=$((s + 1))
@@ -1240,7 +1257,6 @@ if $SUB_MENU; then
             sorry_msg
             exit 1
         fi
-
     done
 fi
 
@@ -1287,7 +1303,7 @@ for ((i=0; i<=FILES; i++)); do
         else
             "${IM_CMD3[@]}" miff:- | "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
         fi
-        unset PICS
+        unset PICS IM_CMD0 IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
     done
 
     # make sure all animated thumbs finish at the same time 
@@ -1305,7 +1321,7 @@ for ((i=0; i<=FILES; i++)); do
    fi
 done
 
-if [ -n $ANI_BG ]; then
+if [ -n "$ANI_BG" ]; then
     # extract images from the provided video
     echo "ANI_BG is $ANI_BG"
     FFMPEG_CMD=(ffmpeg -i "$ANI_BG" $SEEK -vframes $FRAMES \
@@ -1322,7 +1338,7 @@ if [ -n $ANI_BG ]; then
     fi
 fi
 unset FFMPEG_CMD
-if $MENU_FADE && ! $STATIC; then
+if "$MENU_FADE" && ! "$STATIC"; then
     echo
     echo "making final montages and compositing onto background with title"
     if [ -z "$ANI_BG" ]; then
@@ -1425,8 +1441,12 @@ else # Don't do menu fade
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
             -gravity south -geometry +0+55 -composite \
             $WORK_DIR/animenu/$count.jpg )
-            if $MIST; then
+            if $MIST && ! $STATIC; then
                 "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
+            elif "$MIST" && "$STATIC"; then
+                "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
+            elif ! "$MIST" && "$STATIC"; then
+                "${IM_CMD0[@]}" | "${IM_CMD1[@]}" |  "${IM_CMD4[@]}"   
             else
                 "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}"
             fi
@@ -1466,13 +1486,14 @@ echo
 echo "Cleaning up montage images"
 rm -fr $WORK_DIR/animenu/*.jpg
 
-# create silence for the main menu
+# create audio background for the main menu
 OUTPUT="main menu background audio"
 TIME=`vid_length "$WORK_DIR/intro.m2v"`
-if [ -z "$BG_AUDIO" ]; then
+
+if [ -z "$BG_AUDIO" ]; then # if no audio supplied, then use silence
     cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
     -s - $WORK_DIR/intro.wav  trim 0 $TIME
-else
+else # convert the supplied background audio to wav then dvd/svcd format
     BGAUDIO_CMD=(ffmpeg -i "$BG_AUDIO" -ar 48000 -ac 2 -acodec pcm_s16le -y \
     -t $TIME $WORK_DIR/intro.wav)
     if "${BGAUDIO_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
