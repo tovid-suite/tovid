@@ -96,7 +96,7 @@ SUB_MENU_FEATHER=false
 IMG_FMT=jpg
 SM_IMG_FMT=jpg  # submenu image format
 KEEP_FILES=false
-THUMB_FONTSIZE=false
+THUMB_FONTSIZE=""
 THUMB_SHAPE=""
 
 SCRIPT_START_TIME=`date +%s`
@@ -188,6 +188,10 @@ function confirm_msg()
 {
     printf "%s\n" "$LINE"
     echo
+    echo "If you want to fine tune your menu, then please see 'man animenu'"
+    echo "if titles do not fit, or look bad, then -menu-font, -menu-fontsize"
+    echo "-thumbfont and -thumb-fontsize are options to consider"
+    echo
     echo "Your current font arrangement is: "
     echo "menu title font: $TITLE_FONT at size $TITLE_FONT_SIZE "
     echo "thumb font: $THUMB_FONT at size $THUMB_FONTSIZE"
@@ -197,14 +201,8 @@ function confirm_msg()
     read input
     echo
     if [ ! -z "$input" -a "$input" = 'yes' ]; then
-        echo "Preview OK, continuing."
-        echo
+        :
     else
-        echo "If titles do not fit, or look bad, then -menu-font, -menu-fontsize"
-        echo "-thumbfont and -thumb-fontsize are options to consider"
-        echo "For other fine-tuning options, see 'man animenu'."
-        echo
-        echo "Exiting from animenu."
         exit 0
     fi
     printf "%s\n" "$LINE"
@@ -415,7 +413,11 @@ if test -f $ANIMENU_LOG; then
     echo "Moving $(pwd)/animenu.log to $(pwd)/animenu-$(date +%s).log"
     mv $(pwd)/animenu.log $(pwd)/animenu-$(date +%s).log
 fi
-
+# allow user to only specify one audio file for all submenus
+if [ ${#SM_AUDIO[@]} -eq 1 ]; then
+    SM_AUDIO_FILE=${SM_AUDIO[0]}
+fi
+echo "SM_AUDIO_FILE is $SM_AUDIO_FILE"
 # Try to find a default font that is available
 if [ -z "$TITLE_FONT" ]; then
     if convert -size 50x20 xc:none -font Helvetica -gravity Center \
@@ -437,7 +439,6 @@ done
 
 # do everything in $WORK_DIR
 cd $WORK_DIR
-
 
 # make sure titles have no more than 12 characters
 for ((i=0; i<${#TITLES[@]}; i++)); do
@@ -491,7 +492,7 @@ TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4
 V_ARRAY_TOTAL=${#VID_ARRAY[@]}
 A_ARRAY_TOTAL=${#TITLES[@]}
 FILES=$(($V_ARRAY_TOTAL - 1))
-if  "$THUMB_FONTSIZE"; then
+if  [ -n "$THUMB_FONTSIZE" ]; then
     THUMB_FONTSIZE=$THUMB_FONTSIZE
 else
     THUMB_FONTSIZE=${THUMB_FONTSIZE_ARRAY[FILES]}
@@ -632,8 +633,8 @@ if test "$THUMB_SHAPE" = "oval"; then
     convert - -evaluate subtract 50% -normalize $THUMB_MASK
 fi
 
-if test "$THUMB_SHAPE" = "rounded"; then
-    THUMB_MASK=$WORK_DIR/rounded_mask.png
+if test "$THUMB_SHAPE" = "egg"; then
+    THUMB_MASK=$WORK_DIR/egg_mask.png
     echo "Running:
 
     convert -size $INTRO_SIZE xc:black -fill white \
@@ -772,10 +773,6 @@ for i in "${!PICS[@]}"; do
         "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
     fi
 done
-
-echo "Creating and displaying a preview of the main menu."
-echo "(Press 'q' or ESC in the preview window to close it.)"
-
 if $TRANSPARENT; then
     montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[FILES]} \
     -geometry ${GEO_ARRAY[FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
@@ -784,14 +781,15 @@ if $TRANSPARENT; then
     $WORK_DIR/pics/template.png -background none miff:- |
     convert - $WORK_DIR/title_txt.png  \
     -gravity south -geometry +0+55 -composite miff:- |display
+    confirm_msg
 else # Not transparent
     montage ${PICS[@]} -tile ${TILE_ARRAY[FILES]} \
     -geometry ${GEO_ARRAY[FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
     convert $WORK_DIR/pics/template.png \
     $WORK_DIR/title_txt.png  -gravity south -geometry +0+55 -composite \
     -  -gravity north -geometry +0+50 -composite miff:- | display
+    confirm_msg
 fi
-confirm_msg
 
 unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
 ###############################################################################
@@ -1256,9 +1254,12 @@ if $SUB_MENU; then
         TIME=`vid_length $WORK_DIR/menu$s.m2v`
         OUT_PUT="background audio"
         if "$SUBMENU_AUDIO"; then
-            if [ ${SM_AUDIO[s]} = none ]; then
+            if [ "${SM_AUDIO[s]}" = "none" ]; then
                 BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
                 $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
+            elif [ -n "$SM_AUDIO_FILE" ]; then
+                BGAUDIO_CMD=(ffmpeg -i $SM_AUDIO_FILE -ar 48000 -ac 2 -acodec pcm_s16le -y \
+                $WORK_DIR/submenu.wav)
             else
             # make seperate wavs for each supplied audio bg for each submenu 
             BGAUDIO_CMD=(ffmpeg -i ${SM_AUDIO[s]} -ar 48000 -ac 2 -acodec pcm_s16le -y \
@@ -1266,12 +1267,15 @@ if $SUB_MENU; then
             BGAUDIO_CMD2=(ffmpeg -i $WORK_DIR/menu$s.wav \
             $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
             fi
-        else
+        else # no supplied audio for submenu so create silence
             BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
             $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
         fi
         echo "Running "${BGAUDIO_CMD[@]}"" >> "$ANIMENU_LOG.tmp" 2>&1
         cleanlog 1
+        if [ -e $WORK_DIR/submenu.wav ]; then
+            unset BGAUDIO_CMD
+        fi 
         if "${BGAUDIO_CMD[@]}" >> "$ANIMENU_LOG.tmp" 2>&1; then
             cleanlog 3
         else
@@ -1279,7 +1283,8 @@ if $SUB_MENU; then
             sorry_msg
             exit 1
         fi
-        if "$SUBMENU_AUDIO" && [ ! ${SM_AUDIO[s]} = none ]; then
+# FIXME
+        if "$SUBMENU_AUDIO" && [[ ! "${SM_AUDIO[s]}" = "none" && -z "$SM_AUDIO_FILE" ]]; then
             echo "Running "${BGAUDIO_CMD2[@]}"" >> "$ANIMENU_LOG.tmp" 2>&1
             cleanlog 1
             if "${BGAUDIO_CMD2[@]}" >> "$ANIMENU_LOG.tmp" 2>&1; then
@@ -1291,14 +1296,27 @@ if $SUB_MENU; then
             fi
             unset TIME
         fi
+        if [ -n "$SM_AUDIO_FILE" ]; then
+            BGAUDIO_CMD3=(ffmpeg -i $WORK_DIR/submenu.wav \
+            $AUDIO_OPTS -y $WORK_DIR/submenu.$AUDIO_EXT)
+            echo "Running "${BGAUDIO_CMD3[@]}"" >> "$ANIMENU_LOG.tmp" 2>&1
+            if "${BGAUDIO_CMD3[@]}" >> "$ANIMENU_LOG.tmp" 2>&1; then
+                cleanlog 3
+            else
+                cleanlog 3
+                sorry_msg
+                exit 1
+            fi
+            cp -v $WORK_DIR/submenu.$AUDIO_EXT $WORK_DIR/menu$s.$AUDIO_EXT
+        fi
         echo
         echo "Multiplexing video and audio together"
         S=$((s + 1))
         MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/menu$S.mpg \
         $WORK_DIR/menu$s.$AUDIO_EXT $WORK_DIR/menu$s.m2v)
-        echo -e "\nRunning: $MPLEX_CMD\n" >> $ANIMENU_LOG.tmp
-        cleanlog 1
         printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
+        echo "Running: "${MPLEX_CMD[@]}"" >> $ANIMENU_LOG.tmp
+        cleanlog 1
         if "${MPLEX_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
             cleanlog 1
         else
@@ -1505,8 +1523,8 @@ else # Don't do menu fade
 fi
 
 echo
-echo "Converting images to video stream and encoding to DVD-compliant format"
-# convert images to video stream and encode to dvd compliant m2v
+echo "converting images to video stream & encoding to dvd complient m2v video"
+# convert images to video stream and encode to dvd complient m2v
 if $STATIC; then
     JPEG2YUV_OPTS=(-n 1 -l 60)
     PICS_IN="$WORK_DIR/animenu/1.jpg"
@@ -1537,14 +1555,22 @@ rm -fr $WORK_DIR/animenu/*.jpg
 
 # create audio background for the main menu
 OUTPUT="main menu background audio"
-TIME=`vid_length "$WORK_DIR/intro.m2v"`
-
+if [ -n "$BG_AUDIO" ]; then
+    TIME=$(ffmpeg -i "$BG_AUDIO" 2>&1|awk '/Duration/ {print $2}')
+    echo "Running ffmpeg -i "BG_AUDIO" 2>&1|awk '/Duration/ {print $2}'"
+    TIME=${TIME/,/}
+    echo "BG_AUDIO is $BG_AUDIO and TIME is $TIME"
+else
+    TIME=`vid_length "$WORK_DIR/intro.m2v"`
+fi
 if [ -z "$BG_AUDIO" ]; then # if no audio supplied, then use silence
     cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
     -s - $WORK_DIR/intro.wav  trim 0 $TIME
 else # convert the supplied background audio to wav then dvd/svcd format
     BGAUDIO_CMD=(ffmpeg -i "$BG_AUDIO" -ar 48000 -ac 2 -acodec pcm_s16le -y \
     -t $TIME $WORK_DIR/intro.wav)
+    printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
+    echo "Running "${BGAUDIO_CMD[@]}"" >> $ANIMENU_LOG.tmp 2>&1
     if "${BGAUDIO_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
         cleanlog 3
     else
@@ -1558,10 +1584,10 @@ unset BGAUDIO_CMD
 if $AUDIO_FADE; then
     echo -e "Running:
     sox $WORK_DIR/intro.wav \
-    $WORK_DIR/intro-processed.wav fade t 0 $TIME $FADE"
+    $WORK_DIR/intro-processed.wav fade t $FADE $TIME $FADE"
 
     sox $WORK_DIR/intro.wav \
-    $WORK_DIR/intro-processed.wav fade t 0 $TIME $FADE
+    $WORK_DIR/intro-processed.wav fade t $FADE $TIME $FADE
     rm $WORK_DIR/intro.wav
     mv $WORK_DIR/intro-processed.wav $WORK_DIR/intro.wav
 fi
