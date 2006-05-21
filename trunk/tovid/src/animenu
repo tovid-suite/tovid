@@ -629,6 +629,28 @@ if test "$THUMB_SHAPE" = "oval"; then
     convert $WORK_DIR/feather_orig.png -channel RGBA \
     -blur 0x60 $WORK_DIR/feather_mask2.png
 fi
+if test "$THUMB_SHAPE" = "cloud"; then
+    THUMB_MASK=$WORK_DIR/cloud_mask.png
+    convert -size 320x240 xc:none -fill white \
+    -draw "circle 80,80 120,120" \
+    -draw "circle 160,80 200,120" \
+    -draw "circle 240,80 280,120" \
+    -draw "circle 80,160 120,200" \
+    -draw "circle 160,160 200,200" \
+    -draw "circle 240,160 280,200" \
+    +matte -compose CopyOpacity  miff:- |
+    convert -blur 0x$BLUR - miff:- |
+    convert -blur 0x$BLUR - miff:- |
+    convert -blur 0x$BLUR - miff:- |
+    convert -blur 0x$BLUR - miff:- |
+    convert -resize $INTRO_SIZE! - $WORK_DIR/cloud_mask.png
+
+    convert -size $INTRO_SIZE xc:none -fill white -stroke none \
+    -draw "rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2" $WORK_DIR/feather_orig.png
+    convert $WORK_DIR/feather_orig.png -channel RGBA \
+    -blur 0x60 $WORK_DIR/feather_mask2.png
+fi
+
 
 if $FANCY_TITLE; then
     convert -size 1x512 gradient: -rotate 90 +matte \
@@ -1212,11 +1234,16 @@ if $SUB_MENU; then
         TIME=`vid_length $WORK_DIR/menu$s.m2v`
         OUT_PUT="background audio"
         if "$SUBMENU_AUDIO"; then
-        # make seperate wavs for each supplied audio bg for each submenu 
-        BGAUDIO_CMD=(ffmpeg -i ${SM_AUDIO[s]} -ar 48000 -ac 2 -acodec pcm_s16le -y \
-        $WORK_DIR/menu$s.wav)
-        BGAUDIO_CMD2=(ffmpeg -i $WORK_DIR/menu$s.wav \
-        $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
+            if [ ${SM_AUDIO[s]} = none ]; then
+                BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
+                $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
+            else
+            # make seperate wavs for each supplied audio bg for each submenu 
+            BGAUDIO_CMD=(ffmpeg -i ${SM_AUDIO[s]} -ar 48000 -ac 2 -acodec pcm_s16le -y \
+            $WORK_DIR/menu$s.wav)
+            BGAUDIO_CMD2=(ffmpeg -i $WORK_DIR/menu$s.wav \
+            $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
+            fi
         else
             BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
             $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
@@ -1230,7 +1257,7 @@ if $SUB_MENU; then
             sorry_msg
             exit 1
         fi
-        if "$SUBMENU_AUDIO"; then
+        if "$SUBMENU_AUDIO" && [ ! ${SM_AUDIO[s]} = none ]; then
             echo "Running "${BGAUDIO_CMD2[@]}"" >> "$ANIMENU_LOG.tmp" 2>&1
             cleanlog 1
             if "${BGAUDIO_CMD2[@]}" >> "$ANIMENU_LOG.tmp" 2>&1; then
