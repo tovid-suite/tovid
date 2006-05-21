@@ -585,7 +585,17 @@ DIMY2=$((DIMY - DIMY1))
 DIMX2=$((DIMX - DIMY1))
 DIMY3=$(($DIMY2 / 2))
 DIMX3=$(($DIMX2 / 2))
-if $FEATHER; then
+DIMY4=$((DIMY / 2))
+DIMX4=$((DIMX / 2))
+DIMY5=$((DIMY / 3))
+DIMX5=$((DIMX4 / 3))
+if [ -n "$THUMB_SHAPE" ]; then
+    convert -size $INTRO_SIZE xc:none -fill white -stroke none \
+    -draw "rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2" $WORK_DIR/feather_orig.png
+    convert $WORK_DIR/feather_orig.png -channel RGBA \
+    -blur 0x60 $WORK_DIR/feather_mask2.png
+fi
+if test "$THUMB_SHAPE" = "normal"; then
     THUMB_MASK=$WORK_DIR/feather_mask.png
     convert -size $INTRO_SIZE xc:black -fill white \
     -draw "Rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2," +matte -compose CopyOpacity miff:- |
@@ -594,11 +604,6 @@ if $FEATHER; then
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
     convert - -evaluate subtract 50% -normalize $THUMB_MASK
-
-    convert -size $INTRO_SIZE xc:none -fill white -stroke none \
-    -draw "rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2" $WORK_DIR/feather_orig.png
-    convert $WORK_DIR/feather_orig.png -channel RGBA \
-    -blur 0x60 $WORK_DIR/feather_mask2.png
 fi
 if $FEATHER; then
     FILL="#161514"
@@ -612,7 +617,7 @@ if test "$THUMB_SHAPE" = "oval"; then
     -draw "RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3" \
     +matte -compose CopyOpacity miff:- |
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
-    convert - -evaluate subtract 50% -normalize oval_mask.png" |
+    convert - -evaluate subtract 50% -normalize $THUMB_MASK" |
     sed 's/    */ /g'|sed -e "s/^ *//" 
     echo
     convert -size $INTRO_SIZE xc:black -fill white \
@@ -623,12 +628,29 @@ if test "$THUMB_SHAPE" = "oval"; then
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
     convert - -evaluate subtract 50% -normalize $THUMB_MASK
-
-    convert -size $INTRO_SIZE xc:none -fill white -stroke none \
-    -draw "rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2" $WORK_DIR/feather_orig.png
-    convert $WORK_DIR/feather_orig.png -channel RGBA \
-    -blur 0x60 $WORK_DIR/feather_mask2.png
 fi
+
+if test "$THUMB_SHAPE" = "rounded"; then
+    THUMB_MASK=$WORK_DIR/rounded_mask.png
+    echo "Running:
+
+    convert -size $INTRO_SIZE xc:black -fill white \
+    -draw "circle $DIMY4,$DIMX4 $DIMY5,$DIMX5" \
+    +matte -compose CopyOpacity miff:- |
+    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
+    convert - -evaluate subtract 50% -normalize $THUMB_MASK" |
+    sed 's/    */ /g'|sed -e "s/^ *//"
+    echo
+    convert -size $INTRO_SIZE xc:black -fill white \
+    -draw "circle $DIMY4,$DIMX4 $DIMY5,$DIMX5" \
+    +matte -compose CopyOpacity miff:- |
+    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
+    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
+    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
+    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
+    convert - -evaluate subtract 50% -normalize - $THUMB_MASK
+fi
+
 if test "$THUMB_SHAPE" = "cloud"; then
     THUMB_MASK=$WORK_DIR/cloud_mask.png
     convert -size 320x240 xc:none -fill white \
@@ -643,12 +665,7 @@ if test "$THUMB_SHAPE" = "cloud"; then
     convert -blur 0x$BLUR - miff:- |
     convert -blur 0x$BLUR - miff:- |
     convert -blur 0x$BLUR - miff:- |
-    convert -resize $INTRO_SIZE! - $WORK_DIR/cloud_mask.png
-
-    convert -size $INTRO_SIZE xc:none -fill white -stroke none \
-    -draw "rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2" $WORK_DIR/feather_orig.png
-    convert $WORK_DIR/feather_orig.png -channel RGBA \
-    -blur 0x60 $WORK_DIR/feather_mask2.png
+    convert -resize $INTRO_SIZE! - $THUMB_MASK
 fi
 
 
