@@ -65,7 +65,6 @@ ANI_SUBMENU_LENGTH=10
 MAX_ANI_LENGTH=""
 TARGET=dvd
 FRAME_RATE=29.970  # when -ntsc and -pal options added put in body in if block
-LINE=$(for ((i=1; i<=79; i++));do echo -n =;done)
 VID_SIZE=720x480
 VMGM_TITLE="My Video Collection"
 SPUMUX_XML="$WORK_DIR/spumux.xml"
@@ -189,7 +188,7 @@ function vid_length()
 function cleanup()
 {
     yecho "Cleaning up..."
-    if $KEEPFILES; then
+    if $KEEP_FILES; then
         yecho "Keeping temporary files in $WORK_DIR"
     else
         rm -rf "$WORK_DIR"
@@ -214,7 +213,7 @@ function format_seconds()
 
 function confirm_preview()
 {
-    printf "%s\n" "$LINE"
+    yecho
     echo "If you are happy with the preview, type 'yes' to continue: "
     read input
     echo
@@ -229,8 +228,7 @@ function confirm_preview()
         echo "For other fine-tuning options, see 'man animenu'."
         exit 0
     fi
-    printf "%s\n" "$LINE"
-    echo
+    yecho
 }
 
 ##############################################################################
@@ -256,7 +254,7 @@ while test $# -gt 0; do
             shift
             # Hackish list-parsing
             while test $# -gt 0 && test ${1:0:1} != "-"; do
-                VIDS=( "${VIDS[@]}" "$1" )
+                FILES=( "${FILES[@]}" "$1" )
                 shift
             done
             # Don't skip past the next argument
@@ -403,18 +401,18 @@ echo
 ##############################################################################
 
 # Make sure equal, nonzero number of titles and files were provided
-if test ${#VIDS[@]} -eq 0 || test ${#TITLES[@]} -eq 0; then
+if test ${#FILES[@]} -eq 0 || test ${#TITLES[@]} -eq 0; then
     usage_error "Please provide at least one file and one title."
-elif test ${#VIDS[@]} -ne ${#TITLES[@]}; then
+elif test ${#FILES[@]} -ne ${#TITLES[@]}; then
     usage_error "Please give the same number of files as titles."
 fi
 
 # Make sure -out was provided
-if test -z "$OUT_PREFIX"; then
-    usage_error "Please provide an output name with -out"
-else
+if test -n "$OUT_PREFIX"; then
     OUT_DIR="$(abspath "$OUT_PREFIX")"
     MENU_FILE="animenu.mpg"
+else
+    usage_error "Please provide an output name with -out"
 fi
 
 # Make sure titles have no more than 12 characters
@@ -423,18 +421,21 @@ for ((i=0; i<${#TITLES[@]}; i++)); do
     [ -z "$MAX_VAL" ] || ((val > MAX_VAL)) && MAX_VAL=$val && key=$i
 done
 if [ $MAX_VAL -gt 12 ]; then
-    echo -e "Sorry, maximum number of characters you can use for a title is 12"
-    echo -e "The title \"${TITLES[key]}\" is too long"
+    echo -e "Sorry, titles can only be 12 characters in length."
+    echo "\"${TITLES[key]}\" is too long; please use a shorter title."
     exit 1
 fi
-
 
 # If output directory already exists, print a message and exit
 if test -d "$OUT_DIR"; then
     echo "Output directory \"$OUT_DIR\" already exists."
     echo "Please use a different -out name, or (re)move the existing directory."
-    exit 0
+    exit 1
 fi
+
+yecho
+yecho "Creating work directories"
+yecho
 
 # Clean out any existing WORK_DIR
 if test -d "$WORK_DIR"; then
@@ -453,11 +454,25 @@ if [ ${#SM_AUDIO[@]} -eq 1 ]; then
 fi
 echo "SM_AUDIO_FILE is $SM_AUDIO_FILE"
 rm -f "$WORK_DIR/font.png"
-for i in "${VIDS[@]}"; do
+for i in "${FILES[@]}"; do
     VID_ARRAY=( "${VID_ARRAY[@]}" "$(abspath "$i")" )
 done
 V_ARRAY_TOTAL=${#VID_ARRAY[@]}
-NUM_VIDS=$(($V_ARRAY_TOTAL - 1))
+NUM_FILES=$(($V_ARRAY_TOTAL - 1))
+
+# create_dirs
+yecho "Creating pics directories..."
+for ((i=0; i<=NUM_FILES; i++)); do
+    mkdir -pv "$WORK_DIR/pics/$i"
+done
+if $MENU_FADE; then mkdir -v $WORK_DIR/bg; fi
+mkdir -v "$WORK_DIR/animenu"
+if $ANI_SUB_MENU; then
+    for ((i=0; i<CHAPTERS; i++)); do
+        mkdir -v "$WORK_DIR/animenu/$i"
+    done
+fi
+
 
 ##############################################################################
 # Font defaults
@@ -471,7 +486,7 @@ test $TARGET = "svcd" && : ${MENU_FONTSIZE:="32"}
 # 54 54 54 54 54 54 54 54 54 54)
 THUMB_FONTSIZE_ARRAY=(18 16 14 14 12 12 12 12 12 11 11 11 11 11 11 11 11 11 \
 11 11 11 11 11 11 11 11 11 11)
-: ${THUMB_FONTSIZE:=${THUMB_FONTSIZE_ARRAY[NUM_VIDS]}}
+: ${THUMB_FONTSIZE:=${THUMB_FONTSIZE_ARRAY[NUM_FILES]}}
 
 # See if "Helvetica" or "helvetica" are available as default fonts
 if convert -size 50x20 xc:none -font Helvetica -gravity Center \
@@ -489,9 +504,8 @@ fi
 yecho
 yecho "Including the following videos:"
 for ((i=0; i<${#TITLES[@]}; i++)); do
-    yecho "  $i: \"${TITLES[i]}\" (${VIDS[i]})"
+    yecho "  \"${TITLES[i]}\" (${VID_ARRAY[i]})"
 done
-yecho
 yecho "Current font settings: "
 yecho "  -menu-font $MENU_FONT"
 yecho "  -menu-fontsize $MENU_FONTSIZE"
@@ -532,32 +546,15 @@ TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5)
 A_ARRAY_TOTAL=${#TITLES[@]}
 
-# Do everything in $WORK_DIR
-echo "Doing all work in directory: $WORK_DIR"
-cd $WORK_DIR
-
 PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
 printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
 "tovid suite's animenu - log for `date`" \
 "$PATTERN" >> $LOG_FILE
 
-# create_dirs
-echo
-echo "Creating pics directories..."
-for ((i=0; i<=NUM_VIDS; i++)); do
-    mkdir -pv "$WORK_DIR/pics/$i"
-done
-if $MENU_FADE; then mkdir -v $WORK_DIR/bg; fi
-mkdir -v "$WORK_DIR/animenu"
-if $ANI_SUB_MENU; then
-    for ((i=0; i<CHAPTERS; i++)); do
-        mkdir -v "$WORK_DIR/animenu/$i"
-    done
-fi
+# Do everything in $WORK_DIR
+echo "Doing all work in directory: $WORK_DIR"
+cd $WORK_DIR
 
-echo
-echo "Videos to be processed"
-for vid in "${VID_ARRAY[@]}"; do echo "$vid";done
 echo  
 if  [ $TARGET = "dvd" ]; then
     AUDIO_EXT=$DVD_AUDIO_EXT
@@ -590,7 +587,7 @@ elif [ $TARGET = "svcd" ]; then
         FRAME_RATE=25
     fi
 fi
-INTRO_SIZE="${GEO_ARRAY[NUM_VIDS]}"
+INTRO_SIZE="${GEO_ARRAY[NUM_FILES]}"
 ###############################################################################
 #     generate title_txt png, and template.png needed for all operations       #
 ###############################################################################
@@ -755,10 +752,10 @@ if $MIST; then
     $WORK_DIR/pics/template.png
 fi
 # generate images for montage and title and resize them
-for ((i=0; i<=NUM_VIDS; i++)) ; do
+for ((i=0; i<=NUM_FILES; i++)) ; do
     FFMPEG_CMD=(ffmpeg -i "${VID_ARRAY[i]}" $SEEK -vframes 1 \
     -s $INTRO_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
-    printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
+    yecho
     echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $LOG_FILE
     SED_VAR="frame="
     if "${FFMPEG_CMD[@]}" >> $LOG_FILE.tmp 2>&1;then
@@ -805,16 +802,16 @@ echo "Creating and displaying a preview of the main menu."
 echo "(Press 'q' or ESC in the preview window to close it.)"
 
 if $TRANSPARENT; then
-    montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_VIDS]} \
-    -geometry ${GEO_ARRAY[NUM_VIDS]}+5+5 -background none -bordercolor "#444744" miff:- |
+    montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
+    -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
     composite -dissolve $DISSOLVE \
     -gravity north -geometry +0+50 - \
     $WORK_DIR/pics/template.png -background none miff:- |
     convert - $WORK_DIR/title_txt.png  \
     -gravity south -geometry +0+55 -composite miff:- |display
 else # Not transparent
-    montage ${PICS[@]} -tile ${TILE_ARRAY[NUM_VIDS]} \
-    -geometry ${GEO_ARRAY[NUM_VIDS]}+5+5 -background none -bordercolor "#444744" miff:- |
+    montage ${PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
+    -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
     convert $WORK_DIR/pics/template.png \
     $WORK_DIR/title_txt.png  -gravity south -geometry +0+55 -composite \
     -  -gravity north -geometry +0+50 -composite miff:- | display
@@ -847,7 +844,7 @@ for i in ${!VID_ARRAY[@]}; do
     fi
     V_LENGTH="$(awk '/Video stream:/{print $10}'<<<"${mencoder_stats[i]}")"
     FPS="$(awk '/VIDEO:/ {print $6}' <<<"${mencoder_stats[i]}")"
-    printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
+    yecho
     echo -e "Stats for" "${VID_ARRAY[i]}" "\n" \
     "video codec:   " \
     "$VCODEC" "\n" \
@@ -916,11 +913,11 @@ fi
 # extract images from the provided background video
 echo
 echo "Creating images from each video for the main menu"
-for ((i=0; i<=NUM_VIDS; i++)) ; do
+for ((i=0; i<=NUM_FILES; i++)) ; do
     echo "Working on "${VID_ARRAY[$i]}""
     CREATE_IMG_CMD=(ffmpeg -i "${VID_ARRAY[$i]}"  $SEEK -vframes $FRAMES \
     -s "$INTRO_SIZE" "$WORK_DIR/pics/$i/%d.$IMG_FMT")
-    printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
+    yecho
     echo -e "\nRunning: ${CREATE_IMG_CMD[@]}\n" | fold -bs >> $LOG_FILE
 
     SED_VAR="frame="
@@ -961,18 +958,18 @@ convert -size 1x512 gradient: -rotate 90 +matte \
 echo
 echo "Creating the highlight and selection PNGs for the main menu"
 echo
-GEO="${GEO_ARRAY[NUM_VIDS]/x/,}"
-SELECT_CMD="-size "${GEO_ARRAY[NUM_VIDS]}+5+5" xc:none -fill none +antialias \
+GEO="${GEO_ARRAY[NUM_FILES]/x/,}"
+SELECT_CMD="-size "${GEO_ARRAY[NUM_FILES]}+5+5" xc:none -fill none +antialias \
 -stroke '#DE7F7C' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
-HIGHLIGHT_CMD="-size "${GEO_ARRAY[NUM_VIDS]}+5+5" xc:none -fill none +antialias \
+HIGHLIGHT_CMD="-size "${GEO_ARRAY[NUM_FILES]}+5+5" xc:none -fill none +antialias \
 -stroke '#188DF6' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
 eval convert "$SELECT_CMD" -colors 3 "$WORK_DIR/Selectx1.png"
 eval convert "$HIGHLIGHT_CMD" -colors 3 "$WORK_DIR/Highlightx1.png"
 
 for button in Select Highlight; do
     montage -background none \
-    $(for ((i=0; i<=NUM_VIDS; i++)); do echo $WORK_DIR/${button}x1.png;done) \
-    -tile ${TILE_ARRAY[NUM_VIDS]} -geometry ${GEO_ARRAY[NUM_VIDS]}+5+5 \
+    $(for ((i=0; i<=NUM_FILES; i++)); do echo $WORK_DIR/${button}x1.png;done) \
+    -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 \
     -bordercolor none -mattecolor transparent miff:- |
     convert  -colors 3 -size 720x480 xc:none - -gravity north -geometry +0+50 \
     -composite  "$WORK_DIR/${button}.png"
@@ -1181,7 +1178,7 @@ if $SUB_MENU; then
         CMD=${cmd[@]}
         TCODE_CMD=(transcode -q 0 -i "${VID_ARRAY[i]}" -o "${PICS_OUT[@]}" \
         -f $FRAME_RATE -Z ${GEO_ARRAY[CHAPTERS - 1]},fast -J cut="$CMD" -y $SM_IMG_FMT,null)
-        printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
+        yecho
         echo "Creating chapter images for "${VID_ARRAY[i]}""
 
         echo "Running  "${TCODE_CMD[@]}"" >> $LOG_FILE
@@ -1276,7 +1273,7 @@ if $SUB_MENU; then
         rm -f $WORK_DIR/animenu/*.$IMG_FMT
     done    
     unset ENC_CMD1
-    for ((s=0; s<=NUM_VIDS; s++)); do
+    for ((s=0; s<=NUM_FILES; s++)); do
         # create audio background for either animated or plain submenus
         echo
         echo "Creating an audio background"
@@ -1344,7 +1341,7 @@ if $SUB_MENU; then
         S=$((s + 1))
         MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/menu$S.mpg \
         $WORK_DIR/menu$s.$AUDIO_EXT $WORK_DIR/menu$s.m2v)
-        printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
+        yecho
         echo "Running: "${MPLEX_CMD[@]}"" >> $LOG_FILE.tmp
         cleanlog 1
         if "${MPLEX_CMD[@]}" >> $LOG_FILE.tmp 2>&1; then
@@ -1370,7 +1367,7 @@ if $FEATHER; then
 else
     FILL="#C6C6C6"
 fi
-for ((i=0; i<=NUM_VIDS; i++)); do
+for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT) )
     echo "Working on images from ${VID_ARRAY[i]}"
@@ -1423,7 +1420,7 @@ if [ -n "$ANI_BG" ]; then
     echo "ANI_BG is $ANI_BG"
     FFMPEG_CMD=(ffmpeg -i "$ANI_BG" $SEEK -vframes $FRAMES \
     -s "$VIDSIZE" "$WORK_DIR/bg/%d.jpg")
-    printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
+    yecho
     echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $LOG_FILE
     if "${FFMPEG_CMD[@]}" >> $LOG_FILE.tmp 2>&1; then
         cleanlog 3
@@ -1468,8 +1465,8 @@ if "$MENU_FADE" && ! "$STATIC"; then
         ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $((frame + 1)).$IMG_FMT) )
         BG_PIC=$(find $WORK_DIR/bg -name $(($frame + 1)).jpg)
         # create the montage from the images in each video dir
-        MONTAGE_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_VIDS]} \
-        -geometry ${GEO_ARRAY[NUM_VIDS]}+5+5 -background none)
+        MONTAGE_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
+        -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none)
         #  dissolve the finished montages onto the background
         MONTAGE_CMD2=(composite -dissolve $S -gravity north \
         -geometry +0+50 - $WORK_DIR/bg/$(($frame + 1)).jpg -background none)
@@ -1501,8 +1498,8 @@ else # Don't do menu fade
          for (( count=1; count<=$MAX_ANI_LENGTH; count++)); do
             echo -en "\b${sp:o++%${#sp}:1}"
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
-            IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_VIDS]} \
-            -geometry ${GEO_ARRAY[NUM_VIDS]}+5+5 -background none miff:-)
+            IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
+            -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none miff:-)
             IM_CMD2=(composite -dissolve $DISSOLVE \
             -gravity north -geometry +0+50 - \
             $WORK_DIR/pics/template.jpg -background none miff:-)
@@ -1527,8 +1524,8 @@ else # Don't do menu fade
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
 
             # make final montages and composite onto grey background with title
-            IM_CMD0=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_VIDS]} \
-            -geometry ${GEO_ARRAY[NUM_VIDS]}+5+5 -background none miff:-)
+            IM_CMD0=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
+            -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none miff:-)
             IM_CMD1=(convert $WORK_DIR/pics/template.jpg \
             -  -gravity north -geometry +0+50 -composite miff:-)
             IM_CMD2=(convert $WORK_DIR/bg/$count.jpg \
@@ -1543,9 +1540,9 @@ else # Don't do menu fade
             elif "$MIST" && "$STATIC"; then
                 "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
             elif ! "$MIST" && "$STATIC"; then
-                "${IM_CMD0[@]}" | "${IM_CMD1[@]}" |  "${IM_CMD4[@]}"   
+                "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}"   
             else
-                "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}"
+                "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}"
             fi
             rm -f ${ANI_PICS[@]}
         done
@@ -1570,7 +1567,7 @@ ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p "${JPEG2YUV_OPTS[@]}" -L 1 -b1 \
 -j "$PICS_IN")
 ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
 -tvstd $TV_STANDARD $FFMPEG_OPTS -y $WORK_DIR/intro.m2v)
-printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
+yecho
 echo "Running "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}""
 if "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" >> $LOG_FILE.tmp 2>&1; then
     cleanlog 3
@@ -1599,7 +1596,7 @@ if [ -z "$BG_AUDIO" ]; then # if no audio supplied, then use silence
 else # convert the supplied background audio to wav then dvd/svcd format
     BGAUDIO_CMD=(ffmpeg -i "$BG_AUDIO" -ar 48000 -ac 2 -acodec pcm_s16le -y \
     -t $TIME $WORK_DIR/intro.wav)
-    printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
+    yecho
     echo "Running "${BGAUDIO_CMD[@]}"" >> $LOG_FILE.tmp 2>&1
     if "${BGAUDIO_CMD[@]}" >> $LOG_FILE.tmp 2>&1; then
         cleanlog 3
@@ -1643,7 +1640,7 @@ INTRO_MPLEX_CMD="mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/intro.mpg \
 $WORK_DIR/intro.$AUDIO_EXT $WORK_DIR/intro.m2v"
 echo -e "\nRunning: $INTRO_MPLEX_CMD\n" >> $LOG_FILE.tmp 
 cleanlog 1
-printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
+yecho
 if ${INTRO_MPLEX_CMD[@]} >> $LOG_FILE.tmp 2>&1; then
     cleanlog 1
 else
