@@ -225,6 +225,7 @@ function confirm_preview()
         yecho
         echo "If titles do not fit, or look bad, then -menu-font, -menu-fontsize"
         echo "-thumbfont and -thumb-fontsize are options to consider"
+        echo "If you get black frames, then look at the -seek option"
         echo "For other fine-tuning options, see 'man animenu'."
         exit 0
     fi
@@ -452,6 +453,10 @@ fi
 if [ ${#SM_AUDIO[@]} -eq 1 ]; then
     SM_AUDIO_FILE=${SM_AUDIO[0]}
 fi
+# if more than one audio file for submenu make sure they equal video #
+if test ${#VIDS[@]} -ne ${#SM_AUDIO[@]} && [ ${#SM_AUDIO[@]} -ne 1 ]; then
+    usage_error "Please give the same number of submenu audios as videos."
+fi
 echo "SM_AUDIO_FILE is $SM_AUDIO_FILE"
 rm -f "$WORK_DIR/font.png"
 for i in "${FILES[@]}"; do
@@ -484,7 +489,7 @@ test $TARGET = "svcd" && : ${MENU_FONTSIZE:="32"}
 # Thumbnail title font size
 # PTSIZE=(30 36 42 42 42 42 48 48 48 48 48 48 54 54 54 54 54 54 54 54 \
 # 54 54 54 54 54 54 54 54 54 54)
-THUMB_FONTSIZE_ARRAY=(18 16 14 14 12 12 12 12 12 11 11 11 11 11 11 11 11 11 \
+THUMB_FONTSIZE_ARRAY=(14 14 14 14 12 12 12 12 11 11 11 11 11 11 11 11 11 11 \
 11 11 11 11 11 11 11 11 11 11)
 : ${THUMB_FONTSIZE:=${THUMB_FONTSIZE_ARRAY[NUM_FILES]}}
 
@@ -528,23 +533,16 @@ SVCD_AUDIO_OPTS="-ab 224 -ar 44100 -ac 2 -acodec $SVCD_AUDIO_EXT"
 SVCD_FFMPEG_OPTS="-b 2200 -minrate 2200 -maxrate 2200 -bufsize 230 -aspect 4:3"
 DVD_FFMPEG_OPTS="-b 8000  -maxrate 9000 -bufsize 230  -aspect 4:3"
 SVCD_INTRO_SIZE="240x240"
-#DVD_INTRO_SIZE="360x240"
 SVCD_MPLEX_FORMAT=4
 DVD_MPLEX_FORMAT=8
-#DVD_GEO_ARRAY=(360x240 270x180 210x140 210x140 192x128 192x128 144x96 144x96 \
-#144x96 120x80 120x80 120x80 96x64 96x64 96x64 96x64 96x64 96x64 96x64 96x64 \
-#72x48 72x48 72x48 72x48 72x48 72x48 72x48 72x48 72x48 72x48)
 DVD_GEO_ARRAY=(320x240 272x204 192x144 192x144 184x138 184x138 144x108 144x108 \
 120x90 120x90 120x90 120x90 96x72 96x72 96x72 96x72 96x72 96x72 96x72 96x72 \
 72x54 72x54 72x54 72x54 72x54 72x54 72x54 72x54 72x54 72x54)
 SVCD_GEO_ARRAY=(240x240 180x180 120x120 120x120 120x120 120x120 96x96 96x96 \
 96x96 80x80 80x80 80x80 64x64 64x64 64x64 64x64 64x64 64x64 64x64 64x64 \
 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48)
-#TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 3x3 3x3 3x3 4x3 4x3 4x3 4x4 4x4 4x4
-#4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5)
 TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5)
-A_ARRAY_TOTAL=${#TITLES[@]}
 
 PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
 printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
@@ -1277,17 +1275,23 @@ if $SUB_MENU; then
         # create audio background for either animated or plain submenus
         echo
         echo "Creating an audio background"
-        echo "Working on submenu audio from "${VID_ARRAY[s]}""
-        TIME=`vid_length $WORK_DIR/menu$s.m2v`
-        OUT_PUT="background audio"
-        if "$SUBMENU_AUDIO"; then
-            if [ "${SM_AUDIO[s]}" = "none" ]; then
+        echo "Working on submenu audio for "${VID_ARRAY[s]}""
+        OUTPUT="background audio"
+        if $SUBMENU_AUDIO; then
+            if [ "${SM_AUDIO[s]}" = "none" ]; then # user asked for silence
+                TIME=`vid_length "$WORK_DIR/menu$s.m2v"`
                 BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
                 $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
-            elif [ -n "$SM_AUDIO_FILE" ]; then
+            elif [ -n "$SM_AUDIO_FILE" ]; then # user supplied "1" audio file
+                COPY_AC3=(cp -v $WORK_DIR/submenu.$AUDIO_EXT \
+                $WORK_DIR/menu$s.$AUDIO_EXT)
+                TIME=$(ffmpeg -i "$SM_AUDIO_FILE" 2>&1|awk '/Duration/ {print $2}')
+                TIME=${TIME/,/}
                 BGAUDIO_CMD=(ffmpeg -i $SM_AUDIO_FILE -ar 48000 -ac 2 -acodec pcm_s16le -y \
                 $WORK_DIR/submenu.wav)
-            else
+            else # SM_AUDIO[s] is an audio file we will process it
+            TIME=$(ffmpeg -i "${SM_AUDIO[s]}" 2>&1|awk '/Duration/ {print $2}')
+            TIME=${TIME/,/}
             # make seperate wavs for each supplied audio bg for each submenu 
             BGAUDIO_CMD=(ffmpeg -i ${SM_AUDIO[s]} -ar 48000 -ac 2 -acodec pcm_s16le -y \
             $WORK_DIR/menu$s.wav)
@@ -1295,23 +1299,34 @@ if $SUB_MENU; then
             $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
             fi
         else # no supplied audio for submenu so create silence
+            TIME=`vid_length "$WORK_DIR/menu$s.m2v"`
             BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
             $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
         fi
+        if [ -e $WORK_DIR/submenu.wav ]; then # if wav exists do nothing
+            :
+        elif "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then #run command
+            cleanlog 3
         echo "Running "${BGAUDIO_CMD[@]}"" >> "$LOG_FILE.tmp" 2>&1
         cleanlog 1
-        if [ -e $WORK_DIR/submenu.wav ]; then
-            unset BGAUDIO_CMD
-        fi 
-        if "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then
-            cleanlog 3
         else
             cleanlog 3
             sorry_msg
             exit 1
         fi
-# FIXME
+        # convert to DVD/SVCD format as long as "none" is not called for
         if "$SUBMENU_AUDIO" && [[ ! "${SM_AUDIO[s]}" = "none" && -z "$SM_AUDIO_FILE" ]]; then
+            if $AUDIO_FADE; then
+                echo -e "Running:
+                sox $WORK_DIR/menu$s.wav \
+                $WORK_DIR/menu$s-processed.wav fade t $FADE $TIME $FADE" |
+                sed 's/    */ /g'|sed -e "s/^ *//"
+
+                sox -q $WORK_DIR/menu$s.wav \
+                $WORK_DIR/menu$s-processed.wav fade t $FADE $TIME $FADE
+                rm $WORK_DIR/menu$s.wav
+                mv $WORK_DIR/menu$s-processed.wav $WORK_DIR/menu$s.wav
+            fi
             echo "Running "${BGAUDIO_CMD2[@]}"" >> "$LOG_FILE.tmp" 2>&1
             cleanlog 1
             if "${BGAUDIO_CMD2[@]}" >> "$LOG_FILE.tmp" 2>&1; then
@@ -1323,19 +1338,35 @@ if $SUB_MENU; then
             fi
             unset TIME
         fi
-        if [ -n "$SM_AUDIO_FILE" ]; then
+        # if "1" audio file, then convert it if it hasn't been done yet
+        if [[ -n "$SM_AUDIO_FILE" && ! -e $WORK_DIR/submenu-processed.wav ]]; then 
+            if $AUDIO_FADE; then
+                echo -e "Running:
+                sox $WORK_DIR/submenu.wav \
+                $WORK_DIR/submenu-processed.wav fade t $FADE $TIME $FADE" |sed 's/    */ /g'
+
+                sox -q $WORK_DIR/submenu.wav \
+                $WORK_DIR/submenu-processed.wav fade t $FADE $TIME $FADE
+                rm -f $WORK_DIR/submenu.wav
+                cp  $WORK_DIR/submenu-processed.wav $WORK_DIR/submenu.wav
+            fi
             BGAUDIO_CMD3=(ffmpeg -i $WORK_DIR/submenu.wav \
             $AUDIO_OPTS -y $WORK_DIR/submenu.$AUDIO_EXT)
-            echo "Running "${BGAUDIO_CMD3[@]}"" >> "$LOG_FILE.tmp" 2>&1
-            if "${BGAUDIO_CMD3[@]}" >> "$LOG_FILE.tmp" 2>&1; then
-                cleanlog 3
-            else
-                cleanlog 3
-                sorry_msg
-                exit 1
+            if [ -e $WORK_DIR/submenu.$AUDIO_EXT ]; then # if file exists do nothing
+                :
+            else 
+                echo "Running "${BGAUDIO_CMD3[@]}"" >> "$LOG_FILE.tmp" 2>&1
+                if "${BGAUDIO_CMD3[@]}" >> "$LOG_FILE.tmp" 2>&1; then
+                    cleanlog 3
+                else
+                    cleanlog 3
+                    sorry_msg
+                    exit 1
+                fi
             fi
-            cp -v $WORK_DIR/submenu.$AUDIO_EXT $WORK_DIR/menu$s.$AUDIO_EXT
         fi
+        # copy the final file for each submenu if only 1 supplied
+        "${COPY_AC3[@]}"
         echo
         echo "Multiplexing video and audio together"
         S=$((s + 1))
@@ -1351,6 +1382,8 @@ if $SUB_MENU; then
             sorry_msg
             exit 1
         fi
+        # remove wav to save space
+        rm -fv $WORK_DIR/menu$s.wav
     done
 fi
 
@@ -1584,16 +1617,16 @@ rm -fr $WORK_DIR/animenu/*.jpg
 OUTPUT="main menu background audio"
 if [ -n "$BG_AUDIO" ]; then
     TIME=$(ffmpeg -i "$BG_AUDIO" 2>&1|awk '/Duration/ {print $2}')
-    echo "Running ffmpeg -i "BG_AUDIO" 2>&1|awk '/Duration/ {print $2}'"
+    echo "Running ffmpeg -i "BG_AUDIO" 2>&1|awk '/Duration/ {print $2}'" #debug
     TIME=${TIME/,/}
-    echo "BG_AUDIO is $BG_AUDIO and TIME is $TIME"
+    echo "BG_AUDIO is $BG_AUDIO and TIME is $TIME" # debug
 else
     TIME=`vid_length "$WORK_DIR/intro.m2v"`
 fi
-if [ -z "$BG_AUDIO" ]; then # if no audio supplied, then use silence
+if [ -z "$BG_AUDIO" ]; then # no audio supplied: use silence
     cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
     -s - $WORK_DIR/intro.wav  trim 0 $TIME
-else # convert the supplied background audio to wav then dvd/svcd format
+else # audio supplied: convert to wav then later to dvd/svcd format
     BGAUDIO_CMD=(ffmpeg -i "$BG_AUDIO" -ar 48000 -ac 2 -acodec pcm_s16le -y \
     -t $TIME $WORK_DIR/intro.wav)
     yecho
