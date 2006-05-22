@@ -57,7 +57,7 @@ See the animenu manual page ('man animenu') for additional documentation.
 EOF`
 
 WORK_DIR="$(abspath "animenu-work")"
-ANIMENU_LOG="`pwd`/animenu.log"
+LOG_FILE="`pwd`/animenu.log"
 OUT_PREFIX=""
 TV_STANDARD=ntsc
 ANI_MENU_LENGTH=20
@@ -77,8 +77,6 @@ SUB_MENU=false
 ANI_SUB_MENU=false
 FANCY_TITLE=false
 CHAPTERS=6
-TITLE_FONT=""
-THUMB_FONT=""
 BG_AUDIO=""
 BG_PIC=""
 ANI_BG=""
@@ -96,7 +94,6 @@ SUB_MENU_FEATHER=false
 IMG_FMT=jpg
 SM_IMG_FMT=jpg  # submenu image format
 KEEP_FILES=false
-THUMB_FONTSIZE=""
 THUMB_SHAPE=""
 
 SCRIPT_START_TIME=`date +%s`
@@ -104,6 +101,25 @@ SCRIPT_START_TIME=`date +%s`
 ##############################################################################
 #                                 Functions                                  #
 ##############################################################################
+
+# Y-echo: echo to two places at once (stdout and logfile)
+# Output is preceded by the script name that produced it
+# Args: $@ == any text string
+# If no args are given, echo a separator bar
+# Why echo when you can yecho?
+yecho()
+{
+    if test $# -eq 0; then
+        printf "\n%s\n\n" "$SEPARATOR"
+        # If logfile exists, copy output to it (with pretty formatting)
+        test -e "$LOG_FILE" && \
+            printf "%s\n%s %s\n%s\n" "$ME" "$ME" "$SEPARATOR" "$ME" >> "$LOG_FILE"
+    else
+        echo "$@"
+        test -e "$LOG_FILE" && \
+            printf "%s %s\n" "$ME" "$@" >> "$LOG_FILE"
+    fi
+}
 
 # Print script name, usage notes, and optional error message, then exit.
 # Args: $@ == text string containing error message
@@ -117,39 +133,51 @@ usage_error ()
 
 
 function cleanlog()
-# process $ANIMENU_LOG.tmp variously - eg. ffmpeg's output is ugly without this
+# process $LOG_FILE.tmp variously - eg. ffmpeg's output is ugly without this
 {
     FOLD="fold -bs"
     NO_CR="tr -d '\r'"
     RELINE="{s/$SED_VAR/\n$SED_VAR/g}"
-    TMP_LOG="$ANIMENU_LOG.tmp"
+    TMP_LOG="$LOG_FILE.tmp"
     NOSPACE="tr -s ' '"
 
     case "$1" in
         1 )
-            $FOLD $TMP_LOG >> $ANIMENU_LOG
-            echo >> $ANIMENU_LOG
+            $FOLD $TMP_LOG >> $LOG_FILE
+            echo >> $LOG_FILE
             ;;
         2 )
-            $NO_CR < $TMP_LOG | $FOLD >> $ANIMENU_LOG
-            echo >> $ANIMENU_LOG
+            $NO_CR < $TMP_LOG | $FOLD >> $LOG_FILE
+            echo >> $LOG_FILE
             ;;
         3 )
-            $NO_CR < $TMP_LOG | sed $RELINE | $FOLD >> $ANIMENU_LOG
-            echo >> $ANIMENU_LOG
+            $NO_CR < $TMP_LOG | sed $RELINE | $FOLD >> $LOG_FILE
+            echo >> $LOG_FILE
             ;;
         4 )
-            $NOSPACE < $TMP_LOG | $FOLD >> $ANIMENU_LOG
+            $NOSPACE < $TMP_LOG | $FOLD >> $LOG_FILE
             ;;
     esac
-    rm -f $ANIMENU_LOG.tmp
+    rm -f $LOG_FILE.tmp
+}
+
+function get_font()
+{
+    # If there's a filename extension, find the absolute path
+    if echo "$1" | grep -q '\...*$'; then
+        echo $(abspath "$1")
+    # Otherwise, use the literal name
+    else
+        echo "$1"
+    fi
+    # TODO: Check for font availability?
 }
 
 function sorry_msg()
 {
-    echo -e "Oops . . .Something went wrong."
-    echo "There was a problem creating the $OUTPUT."
-    echo "Please check the log at $ANIMENU_LOG"
+    yecho -e "Oops . . .Something went wrong."
+    yecho "There was a problem creating the $OUTPUT."
+    echo "Please check the log at $LOG_FILE"
 }
 
 function vid_length()
@@ -160,9 +188,9 @@ function vid_length()
 
 function cleanup()
 {
-    echo
+    yecho "Cleaning up..."
     if $KEEPFILES; then
-        echo "Keeping temporary files in $WORK_DIR"
+        yecho "Keeping temporary files in $WORK_DIR"
     else
         rm -rf "$WORK_DIR"
     fi
@@ -184,27 +212,21 @@ function format_seconds()
 }
 
 
-function confirm_msg()
+function confirm_preview()
 {
     printf "%s\n" "$LINE"
-    echo
-    echo "Your current font arrangement is: "
-    echo "menu title font: $TITLE_FONT at size $TITLE_FONT_SIZE "
-    echo "thumb font: $THUMB_FONT at size $THUMB_FONTSIZE"
-    echo
-    echo "If you are happy with your preview, type 'yes' to continue: "
-    echo
+    echo "If you are happy with the preview, type 'yes' to continue: "
     read input
     echo
     if [ ! -z "$input" -a "$input" = 'yes' ]; then
-        echo "Preview OK, continuing."
-        echo
+        yecho "Preview OK, continuing."
+        yecho
     else
+        yecho "Preview not OK, exiting."
+        yecho
         echo "If titles do not fit, or look bad, then -menu-font, -menu-fontsize"
         echo "-thumbfont and -thumb-fontsize are options to consider"
         echo "For other fine-tuning options, see 'man animenu'."
-        echo
-        echo "Exiting from animenu."
         exit 0
     fi
     printf "%s\n" "$LINE"
@@ -346,34 +368,24 @@ while test $# -gt 0; do
             shift
             VMGM_TITLE="$1"
             ;;
-        "-thumb-fontsize" )
-            shift
-            THUMB_FONTSIZE="$1"
-            ;;
         "-menu-font" )
             shift
-            # If there's a filename extension, find the absolute path
-            if echo "$1" | grep -q '\...*$'; then
-                TITLE_FONT="$(abspath "$1")"
-            else
-                TITLE_FONT="$1"
-            fi
+            MENU_FONT="$(get_font "$1")"
             ;;
         "-menu-fontsize" )
             shift
-            TITLE_FONT_SIZE="$1"
+            MENU_FONTSIZE="$1"
             ;;
         "-fancy" )
             FANCY_TITLE=:
             ;;
         "-thumb-font" )
             shift
-            # If there's a filename extension, find the absolute path
-            if echo "$1" | grep -q '\...*$'; then
-                THUMB_FONT="$(abspath "$1")"
-            else
-                THUMB_FONT="$1"
-            fi
+            THUMB_FONT="$(get_font "$1")"
+            ;;
+        "-thumb-fontsize" )
+            shift
+            THUMB_FONTSIZE="$1"
             ;;
         "-seek" )
             shift
@@ -383,6 +395,13 @@ while test $# -gt 0; do
     esac
     $DO_SHIFT && shift
 done
+
+echo
+
+##############################################################################
+#                      Sanity checks and preliminaries                       #
+##############################################################################
+
 # Make sure equal, nonzero number of titles and files were provided
 if test ${#VIDS[@]} -eq 0 || test ${#TITLES[@]} -eq 0; then
     usage_error "Please provide at least one file and one title."
@@ -390,28 +409,41 @@ elif test ${#VIDS[@]} -ne ${#TITLES[@]}; then
     usage_error "Please give the same number of files as titles."
 fi
 
-# Error if -out was not provided
+# Make sure -out was provided
 if test -z "$OUT_PREFIX"; then
     usage_error "Please provide an output name with -out"
+else
+    OUT_DIR="$(abspath "$OUT_PREFIX")"
+    MENU_FILE="animenu.mpg"
 fi
-OUT_DIR="$(abspath "$OUT_PREFIX")"
-MENU_FILE="animenu.mpg"
+
+# Make sure titles have no more than 12 characters
+for ((i=0; i<${#TITLES[@]}; i++)); do
+    val=${#TITLES[i]}
+    [ -z "$MAX_VAL" ] || ((val > MAX_VAL)) && MAX_VAL=$val && key=$i
+done
+if [ $MAX_VAL -gt 12 ]; then
+    echo -e "Sorry, maximum number of characters you can use for a title is 12"
+    echo -e "The title \"${TITLES[key]}\" is too long"
+    exit 1
+fi
+
 
 # If output directory already exists, print a message and exit
-
 if test -d "$OUT_DIR"; then
     echo "Output directory \"$OUT_DIR\" already exists."
     echo "Please use a different -out name, or (re)move the existing directory."
     exit 0
 fi
+
 # Clean out any existing WORK_DIR
 if test -d "$WORK_DIR"; then
     echo "Removing existing files in \"$WORK_DIR\""
     rm -rf "$WORK_DIR"
 fi
 mkdir -pv "$WORK_DIR"
-# mv any existing animenu.log to a new name to keep its size reasonable
-if test -f $ANIMENU_LOG; then
+# Move any existing animenu.log to a new name to avoid overlap
+if test -f $LOG_FILE; then
     echo "Moving $(pwd)/animenu.log to $(pwd)/animenu-$(date +%s).log"
     mv $(pwd)/animenu.log $(pwd)/animenu-$(date +%s).log
 fi
@@ -420,40 +452,55 @@ if [ ${#SM_AUDIO[@]} -eq 1 ]; then
     SM_AUDIO_FILE=${SM_AUDIO[0]}
 fi
 echo "SM_AUDIO_FILE is $SM_AUDIO_FILE"
-# Try to find a default font that is available
-if [ -z "$TITLE_FONT" ]; then
-    if convert -size 50x20 xc:none -font Helvetica -gravity Center \
-    -draw "text 0,0 'test'" $WORK_DIR/font.png; then
-        TITLE_FONT="Helvetica"
-        THUMB_FONT="Helvetica"
-    elif convert -size 200x100 xc:none -font helvetica -gravity Center \
-    -draw "text 0,0 'test'" $WORK_DIR/font.png; then
-        TITLE_FONT="helvetica"
-        THUMB_FONT="helvetica"
-    fi
-fi
-
 rm -f "$WORK_DIR/font.png"
-
 for i in "${VIDS[@]}"; do
     VID_ARRAY=( "${VID_ARRAY[@]}" "$(abspath "$i")" )
 done
+V_ARRAY_TOTAL=${#VID_ARRAY[@]}
+NUM_VIDS=$(($V_ARRAY_TOTAL - 1))
 
-# do everything in $WORK_DIR
-cd $WORK_DIR
+##############################################################################
+# Font defaults
+##############################################################################
 
-# make sure titles have no more than 12 characters
-for ((i=0; i<${#TITLES[@]}; i++)); do
-    val=${#TITLES[i]}
-    [ -z "$MAX_VAL" ] || ((val > MAX_VAL)) && MAX_VAL=$val && key=$i
-done
+# Menu title font size
+test $TARGET = "dvd" && : ${MENU_FONTSIZE:="40"}
+test $TARGET = "svcd" && : ${MENU_FONTSIZE:="32"}
+# Thumbnail title font size
+# PTSIZE=(30 36 42 42 42 42 48 48 48 48 48 48 54 54 54 54 54 54 54 54 \
+# 54 54 54 54 54 54 54 54 54 54)
+THUMB_FONTSIZE_ARRAY=(18 16 14 14 12 12 12 12 12 11 11 11 11 11 11 11 11 11 \
+11 11 11 11 11 11 11 11 11 11)
+: ${THUMB_FONTSIZE:=${THUMB_FONTSIZE_ARRAY[NUM_VIDS]}}
 
-if [ $MAX_VAL -gt 12 ]; then
-    echo -e "Sorry, maximum number of characters you can use for a title is 12"
-    echo -e "The title \"${TITLES[key]}\" is too long"
-    exit 1
+# See if "Helvetica" or "helvetica" are available as default fonts
+if convert -size 50x20 xc:none -font Helvetica -gravity Center \
+-draw "text 0,0 'test'" $WORK_DIR/font.png; then
+    DEFAULT_FONT="Helvetica"
+elif convert -size 200x100 xc:none -font helvetica -gravity Center \
+-draw "text 0,0 'test'" $WORK_DIR/font.png; then
+    DEFAULT_FONT="helvetica"
 fi
+: ${MENU_FONT:=$DEFAULT_FONT}
+: ${THUMB_FONT:=$DEFAULT_FONT}
 
+
+# Some user feedback
+yecho
+yecho "Including the following videos:"
+for ((i=0; i<${#TITLES[@]}; i++)); do
+    yecho "  $i: \"${TITLES[i]}\" (${VIDS[i]})"
+done
+yecho
+yecho "Current font settings: "
+yecho "  -menu-font $MENU_FONT"
+yecho "  -menu-fontsize $MENU_FONTSIZE"
+yecho "  -thumb-font $THUMB_FONT"
+yecho "  -thumb-fontsize $THUMB_FONTSIZE"
+yecho
+
+
+# TODO: Merge these globals with the ones up top
 NTSC_SVCD_VIDSIZE="480x480"
 PAL_SVCD_VIDSIZE="560x576"
 NTSC_DVD_VIDSIZE="720x480"
@@ -470,12 +517,6 @@ SVCD_INTRO_SIZE="240x240"
 #DVD_INTRO_SIZE="360x240"
 SVCD_MPLEX_FORMAT=4
 DVD_MPLEX_FORMAT=8
-SVCD_TITLE_FONT_SIZE=32
-DVD_TITLE_FONT_SIZE=40
-# PTSIZE=(30 36 42 42 42 42 48 48 48 48 48 48 54 54 54 54 54 54 54 54 \
-# 54 54 54 54 54 54 54 54 54 54)
-THUMB_FONTSIZE_ARRAY=(18 16 14 14 12 12 12 12 12 11 11 11 11 11 11 11 11 11 \
-11 11 11 11 11 11 11 11 11 11)
 #DVD_GEO_ARRAY=(360x240 270x180 210x140 210x140 192x128 192x128 144x96 144x96 \
 #144x96 120x80 120x80 120x80 96x64 96x64 96x64 96x64 96x64 96x64 96x64 96x64 \
 #72x48 72x48 72x48 72x48 72x48 72x48 72x48 72x48 72x48 72x48)
@@ -489,26 +530,21 @@ SVCD_GEO_ARRAY=(240x240 180x180 120x120 120x120 120x120 120x120 96x96 96x96 \
 #4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5)
 TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5)
-
-
-V_ARRAY_TOTAL=${#VID_ARRAY[@]}
 A_ARRAY_TOTAL=${#TITLES[@]}
-FILES=$(($V_ARRAY_TOTAL - 1))
-if  [ -n "$THUMB_FONTSIZE" ]; then
-    THUMB_FONTSIZE=$THUMB_FONTSIZE
-else
-    THUMB_FONTSIZE=${THUMB_FONTSIZE_ARRAY[FILES]}
-fi
-# set up our log file
+
+# Do everything in $WORK_DIR
+echo "Doing all work in directory: $WORK_DIR"
+cd $WORK_DIR
+
 PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
 printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
 "tovid suite's animenu - log for `date`" \
-"$PATTERN" >> $ANIMENU_LOG
+"$PATTERN" >> $LOG_FILE
 
 # create_dirs
 echo
 echo "Creating pics directories..."
-for ((i=0; i<=FILES; i++)); do
+for ((i=0; i<=NUM_VIDS; i++)); do
     mkdir -pv "$WORK_DIR/pics/$i"
 done
 if $MENU_FADE; then mkdir -v $WORK_DIR/bg; fi
@@ -538,11 +574,6 @@ if  [ $TARGET = "dvd" ]; then
         VIDSIZE=$PAL_DVD_VIDSIZE
         FRAME_RATE=25
     fi
-    if [ -z $TITLE_FONT_SIZE ]; then
-        TITLE_FONT_SIZE=$DVD_TITLE_FONT_SIZE
-    else
-        TITLE_FONT_SIZE=$TITLE_FONT_SIZE
-    fi
 elif [ $TARGET = "svcd" ]; then
     AUDIO_EXT=$SVCD_AUDIO_EXT
     AUDIO_OPTS=$SVCD_AUDIO_OPTS
@@ -558,14 +589,8 @@ elif [ $TARGET = "svcd" ]; then
         VIDSIZE=$PAL_SVCD_VIDSIZE
         FRAME_RATE=25
     fi
-
-    if [ -z $TITLE_FONT_SIZE ]; then
-        TITLE_FONT_SIZE=$SVCD_TITLE_FONT_SIZE
-    else
-        TITLE_FONT_SIZE=$TITLE_FONT_SIZE
-    fi
 fi
-INTRO_SIZE="${GEO_ARRAY[FILES]}"
+INTRO_SIZE="${GEO_ARRAY[NUM_VIDS]}"
 ###############################################################################
 #     generate title_txt png, and template.png needed for all operations       #
 ###############################################################################
@@ -680,7 +705,7 @@ if $FANCY_TITLE; then
     -size 512x1 xc:"#08447B" -compose Overlay -composite "$GRADIENT"
     echo "Creating a transparent png with the title on it"
 
-    convert -font "$TITLE_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
+    convert -font "$MENU_FONT" -pointsize $MENU_FONTSIZE -size 620x \
     -gravity Center caption:"\"$VMGM_TITLE\""  -negate  \( +clone \
     -shade 110x45 -normalize \
     $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
@@ -690,8 +715,8 @@ if $FANCY_TITLE; then
     -matte  -compose In  -composite miff:- |
      convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png
 else
-    CMD="convert -size 620x100 xc:none -font \"$TITLE_FONT\" 
-        -pointsize $TITLE_FONT_SIZE 
+    CMD="convert -size 620x100 xc:none -font \"$MENU_FONT\" 
+        -pointsize $MENU_FONTSIZE 
         -fill black -draw \"gravity center text 2,2 '$VMGM_TITLE'\" 
         -stroke grey -strokewidth 1 
         -fill '#CDC0B0' -stroke gray 
@@ -730,18 +755,18 @@ if $MIST; then
     $WORK_DIR/pics/template.png
 fi
 # generate images for montage and title and resize them
-for ((i=0; i<=FILES; i++)) ; do
+for ((i=0; i<=NUM_VIDS; i++)) ; do
     FFMPEG_CMD=(ffmpeg -i "${VID_ARRAY[i]}" $SEEK -vframes 1 \
     -s $INTRO_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
-    printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
-    echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $ANIMENU_LOG
+    printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
+    echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $LOG_FILE
     SED_VAR="frame="
-    if "${FFMPEG_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1;then
+    if "${FFMPEG_CMD[@]}" >> $LOG_FILE.tmp 2>&1;then
         cleanlog 3
     else
         cleanlog 3
         OUTPUT="There was a problem creating images from the video.\n \
-        Please see the output of $ANIMENU_LOG"
+        Please see the output of $LOG_FILE"
         SORRY_MSG=$OUTPUT
         sorry_msg
         exit 1
@@ -780,21 +805,21 @@ echo "Creating and displaying a preview of the main menu."
 echo "(Press 'q' or ESC in the preview window to close it.)"
 
 if $TRANSPARENT; then
-    montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[FILES]} \
-    -geometry ${GEO_ARRAY[FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
+    montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_VIDS]} \
+    -geometry ${GEO_ARRAY[NUM_VIDS]}+5+5 -background none -bordercolor "#444744" miff:- |
     composite -dissolve $DISSOLVE \
     -gravity north -geometry +0+50 - \
     $WORK_DIR/pics/template.png -background none miff:- |
     convert - $WORK_DIR/title_txt.png  \
     -gravity south -geometry +0+55 -composite miff:- |display
 else # Not transparent
-    montage ${PICS[@]} -tile ${TILE_ARRAY[FILES]} \
-    -geometry ${GEO_ARRAY[FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
+    montage ${PICS[@]} -tile ${TILE_ARRAY[NUM_VIDS]} \
+    -geometry ${GEO_ARRAY[NUM_VIDS]}+5+5 -background none -bordercolor "#444744" miff:- |
     convert $WORK_DIR/pics/template.png \
     $WORK_DIR/title_txt.png  -gravity south -geometry +0+55 -composite \
     -  -gravity north -geometry +0+50 -composite miff:- | display
 fi
-confirm_msg
+confirm_preview
 
 unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
 ###############################################################################
@@ -822,7 +847,7 @@ for i in ${!VID_ARRAY[@]}; do
     fi
     V_LENGTH="$(awk '/Video stream:/{print $10}'<<<"${mencoder_stats[i]}")"
     FPS="$(awk '/VIDEO:/ {print $6}' <<<"${mencoder_stats[i]}")"
-    printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
+    printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
     echo -e "Stats for" "${VID_ARRAY[i]}" "\n" \
     "video codec:   " \
     "$VCODEC" "\n" \
@@ -833,7 +858,7 @@ for i in ${!VID_ARRAY[@]}; do
     "audio bitrate: " \
     "$A_BR" " kbps" "\n" \
     "video length:  " \
-    "$V_LENGTH" " seconds" "\n" |tee -a $ANIMENU_LOG
+    "$V_LENGTH" " seconds" "\n" |tee -a $LOG_FILE
 done
 echo
 echo $SEPARATOR
@@ -891,20 +916,20 @@ fi
 # extract images from the provided background video
 echo
 echo "Creating images from each video for the main menu"
-for ((i=0; i<=FILES; i++)) ; do
+for ((i=0; i<=NUM_VIDS; i++)) ; do
     echo "Working on "${VID_ARRAY[$i]}""
     CREATE_IMG_CMD=(ffmpeg -i "${VID_ARRAY[$i]}"  $SEEK -vframes $FRAMES \
     -s "$INTRO_SIZE" "$WORK_DIR/pics/$i/%d.$IMG_FMT")
-    printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
-    echo -e "\nRunning: ${CREATE_IMG_CMD[@]}\n" | fold -bs >> $ANIMENU_LOG
+    printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
+    echo -e "\nRunning: ${CREATE_IMG_CMD[@]}\n" | fold -bs >> $LOG_FILE
 
     SED_VAR="frame="
-    if "${CREATE_IMG_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1;then
+    if "${CREATE_IMG_CMD[@]}" >> $LOG_FILE.tmp 2>&1;then
         cleanlog 3
     else
         cleanlog 3
         OUTPUT="There was a problem creating images from the video.\n \
-        Please see the output of $ANIMENU_LOG"
+        Please see the output of $LOG_FILE"
         SORRY_MSG=$OUTPUT
         sorry_msg
         exit 1
@@ -936,18 +961,18 @@ convert -size 1x512 gradient: -rotate 90 +matte \
 echo
 echo "Creating the highlight and selection PNGs for the main menu"
 echo
-GEO="${GEO_ARRAY[FILES]/x/,}"
-SELECT_CMD="-size "${GEO_ARRAY[FILES]}+5+5" xc:none -fill none +antialias \
+GEO="${GEO_ARRAY[NUM_VIDS]/x/,}"
+SELECT_CMD="-size "${GEO_ARRAY[NUM_VIDS]}+5+5" xc:none -fill none +antialias \
 -stroke '#DE7F7C' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
-HIGHLIGHT_CMD="-size "${GEO_ARRAY[FILES]}+5+5" xc:none -fill none +antialias \
+HIGHLIGHT_CMD="-size "${GEO_ARRAY[NUM_VIDS]}+5+5" xc:none -fill none +antialias \
 -stroke '#188DF6' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
 eval convert "$SELECT_CMD" -colors 3 "$WORK_DIR/Selectx1.png"
 eval convert "$HIGHLIGHT_CMD" -colors 3 "$WORK_DIR/Highlightx1.png"
 
 for button in Select Highlight; do
     montage -background none \
-    $(for ((i=0; i<=FILES; i++)); do echo $WORK_DIR/${button}x1.png;done) \
-    -tile ${TILE_ARRAY[FILES]} -geometry ${GEO_ARRAY[FILES]}+5+5 \
+    $(for ((i=0; i<=NUM_VIDS; i++)); do echo $WORK_DIR/${button}x1.png;done) \
+    -tile ${TILE_ARRAY[NUM_VIDS]} -geometry ${GEO_ARRAY[NUM_VIDS]}+5+5 \
     -bordercolor none -mattecolor transparent miff:- |
     convert  -colors 3 -size 720x480 xc:none - -gravity north -geometry +0+50 \
     -composite  "$WORK_DIR/${button}.png"
@@ -1122,7 +1147,7 @@ if $SUB_MENU; then
     for i in ${!VID_ARRAY[@]}; do
         echo
         echo "Creating a transparent title PNG"
-        convert -font "$TITLE_FONT" -pointsize $TITLE_FONT_SIZE -size 620x \
+        convert -font "$MENU_FONT" -pointsize $MENU_FONTSIZE -size 620x \
         -gravity Center caption:"\"${TITLES[i]}\"" -negate \( +clone -blur 0x8 \
         -shade 110x45 -normalize $GRADIENT -fx 'v.p{g*v.w,0}' \) +matte +swap \
         -compose CopyOpacity -composite  \
@@ -1156,17 +1181,17 @@ if $SUB_MENU; then
         CMD=${cmd[@]}
         TCODE_CMD=(transcode -q 0 -i "${VID_ARRAY[i]}" -o "${PICS_OUT[@]}" \
         -f $FRAME_RATE -Z ${GEO_ARRAY[CHAPTERS - 1]},fast -J cut="$CMD" -y $SM_IMG_FMT,null)
-        printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
+        printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
         echo "Creating chapter images for "${VID_ARRAY[i]}""
 
-        echo "Running  "${TCODE_CMD[@]}"" >> $ANIMENU_LOG
+        echo "Running  "${TCODE_CMD[@]}"" >> $LOG_FILE
         echo "Running  "${TCODE_CMD[@]}""
-        if "${TCODE_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
+        if "${TCODE_CMD[@]}" >> $LOG_FILE.tmp 2>&1; then
             cleanlog 1
         else
             cleanlog 1
             OUTPUT="There was a problem creating images from the video.\n \
-            Please see the output of $ANIMENU_LOG"
+            Please see the output of $LOG_FILE"
             SORRY_MSG=$OUTPUT
             sorry_msg
             exit 1
@@ -1241,7 +1266,7 @@ if $SUB_MENU; then
         ENC_CMD1=(ffmpeg   -f yuv4mpegpipe -i - -r $FRAME_RATE -s $VIDSIZE \
         -tvstd $TV_STANDARD $FFMPEG_OPTS -y $WORK_DIR/menu$i.m2v)
         echo "Running "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}""
-        if "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
+        if "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}" >> $LOG_FILE.tmp 2>&1; then
             cleanlog 3
         else
             cleanlog 3
@@ -1251,7 +1276,7 @@ if $SUB_MENU; then
         rm -f $WORK_DIR/animenu/*.$IMG_FMT
     done    
     unset ENC_CMD1
-    for ((s=0; s<=FILES; s++)); do
+    for ((s=0; s<=NUM_VIDS; s++)); do
         # create audio background for either animated or plain submenus
         echo
         echo "Creating an audio background"
@@ -1276,12 +1301,12 @@ if $SUB_MENU; then
             BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
             $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
         fi
-        echo "Running "${BGAUDIO_CMD[@]}"" >> "$ANIMENU_LOG.tmp" 2>&1
+        echo "Running "${BGAUDIO_CMD[@]}"" >> "$LOG_FILE.tmp" 2>&1
         cleanlog 1
         if [ -e $WORK_DIR/submenu.wav ]; then
             unset BGAUDIO_CMD
         fi 
-        if "${BGAUDIO_CMD[@]}" >> "$ANIMENU_LOG.tmp" 2>&1; then
+        if "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then
             cleanlog 3
         else
             cleanlog 3
@@ -1290,9 +1315,9 @@ if $SUB_MENU; then
         fi
 # FIXME
         if "$SUBMENU_AUDIO" && [[ ! "${SM_AUDIO[s]}" = "none" && -z "$SM_AUDIO_FILE" ]]; then
-            echo "Running "${BGAUDIO_CMD2[@]}"" >> "$ANIMENU_LOG.tmp" 2>&1
+            echo "Running "${BGAUDIO_CMD2[@]}"" >> "$LOG_FILE.tmp" 2>&1
             cleanlog 1
-            if "${BGAUDIO_CMD2[@]}" >> "$ANIMENU_LOG.tmp" 2>&1; then
+            if "${BGAUDIO_CMD2[@]}" >> "$LOG_FILE.tmp" 2>&1; then
                 cleanlog 3
             else
                 cleanlog 3
@@ -1304,8 +1329,8 @@ if $SUB_MENU; then
         if [ -n "$SM_AUDIO_FILE" ]; then
             BGAUDIO_CMD3=(ffmpeg -i $WORK_DIR/submenu.wav \
             $AUDIO_OPTS -y $WORK_DIR/submenu.$AUDIO_EXT)
-            echo "Running "${BGAUDIO_CMD3[@]}"" >> "$ANIMENU_LOG.tmp" 2>&1
-            if "${BGAUDIO_CMD3[@]}" >> "$ANIMENU_LOG.tmp" 2>&1; then
+            echo "Running "${BGAUDIO_CMD3[@]}"" >> "$LOG_FILE.tmp" 2>&1
+            if "${BGAUDIO_CMD3[@]}" >> "$LOG_FILE.tmp" 2>&1; then
                 cleanlog 3
             else
                 cleanlog 3
@@ -1319,10 +1344,10 @@ if $SUB_MENU; then
         S=$((s + 1))
         MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/menu$S.mpg \
         $WORK_DIR/menu$s.$AUDIO_EXT $WORK_DIR/menu$s.m2v)
-        printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
-        echo "Running: "${MPLEX_CMD[@]}"" >> $ANIMENU_LOG.tmp
+        printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
+        echo "Running: "${MPLEX_CMD[@]}"" >> $LOG_FILE.tmp
         cleanlog 1
-        if "${MPLEX_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
+        if "${MPLEX_CMD[@]}" >> $LOG_FILE.tmp 2>&1; then
             cleanlog 1
         else
             cleanlog 1
@@ -1345,7 +1370,7 @@ if $FEATHER; then
 else
     FILL="#C6C6C6"
 fi
-for ((i=0; i<=FILES; i++)); do
+for ((i=0; i<=NUM_VIDS; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT) )
     echo "Working on images from ${VID_ARRAY[i]}"
@@ -1398,9 +1423,9 @@ if [ -n "$ANI_BG" ]; then
     echo "ANI_BG is $ANI_BG"
     FFMPEG_CMD=(ffmpeg -i "$ANI_BG" $SEEK -vframes $FRAMES \
     -s "$VIDSIZE" "$WORK_DIR/bg/%d.jpg")
-    printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
-    echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $ANIMENU_LOG
-    if "${FFMPEG_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
+    printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
+    echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $LOG_FILE
+    if "${FFMPEG_CMD[@]}" >> $LOG_FILE.tmp 2>&1; then
         cleanlog 3
     else
         cleanlog 3
@@ -1443,8 +1468,8 @@ if "$MENU_FADE" && ! "$STATIC"; then
         ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $((frame + 1)).$IMG_FMT) )
         BG_PIC=$(find $WORK_DIR/bg -name $(($frame + 1)).jpg)
         # create the montage from the images in each video dir
-        MONTAGE_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
-        -geometry ${GEO_ARRAY[FILES]}+5+5 -background none)
+        MONTAGE_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_VIDS]} \
+        -geometry ${GEO_ARRAY[NUM_VIDS]}+5+5 -background none)
         #  dissolve the finished montages onto the background
         MONTAGE_CMD2=(composite -dissolve $S -gravity north \
         -geometry +0+50 - $WORK_DIR/bg/$(($frame + 1)).jpg -background none)
@@ -1476,8 +1501,8 @@ else # Don't do menu fade
          for (( count=1; count<=$MAX_ANI_LENGTH; count++)); do
             echo -en "\b${sp:o++%${#sp}:1}"
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
-            IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
-            -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:-)
+            IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_VIDS]} \
+            -geometry ${GEO_ARRAY[NUM_VIDS]}+5+5 -background none miff:-)
             IM_CMD2=(composite -dissolve $DISSOLVE \
             -gravity north -geometry +0+50 - \
             $WORK_DIR/pics/template.jpg -background none miff:-)
@@ -1502,8 +1527,8 @@ else # Don't do menu fade
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
 
             # make final montages and composite onto grey background with title
-            IM_CMD0=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[FILES]} \
-            -geometry ${GEO_ARRAY[FILES]}+5+5 -background none miff:-)
+            IM_CMD0=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_VIDS]} \
+            -geometry ${GEO_ARRAY[NUM_VIDS]}+5+5 -background none miff:-)
             IM_CMD1=(convert $WORK_DIR/pics/template.jpg \
             -  -gravity north -geometry +0+50 -composite miff:-)
             IM_CMD2=(convert $WORK_DIR/bg/$count.jpg \
@@ -1545,9 +1570,9 @@ ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p "${JPEG2YUV_OPTS[@]}" -L 1 -b1 \
 -j "$PICS_IN")
 ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
 -tvstd $TV_STANDARD $FFMPEG_OPTS -y $WORK_DIR/intro.m2v)
-printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
+printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
 echo "Running "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}""
-if "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
+if "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" >> $LOG_FILE.tmp 2>&1; then
     cleanlog 3
 else
     cleanlog 3
@@ -1574,9 +1599,9 @@ if [ -z "$BG_AUDIO" ]; then # if no audio supplied, then use silence
 else # convert the supplied background audio to wav then dvd/svcd format
     BGAUDIO_CMD=(ffmpeg -i "$BG_AUDIO" -ar 48000 -ac 2 -acodec pcm_s16le -y \
     -t $TIME $WORK_DIR/intro.wav)
-    printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
-    echo "Running "${BGAUDIO_CMD[@]}"" >> $ANIMENU_LOG.tmp 2>&1
-    if "${BGAUDIO_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
+    printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
+    echo "Running "${BGAUDIO_CMD[@]}"" >> $LOG_FILE.tmp 2>&1
+    if "${BGAUDIO_CMD[@]}" >> $LOG_FILE.tmp 2>&1; then
         cleanlog 3
     else
         cleanlog 3
@@ -1602,7 +1627,7 @@ unset TIME
 # convert to proper audio format
 BGAUDIO_CMD=(ffmpeg -i $WORK_DIR/intro.wav \
 $AUDIO_OPTS -y $WORK_DIR/intro.$AUDIO_EXT)
-if "${BGAUDIO_CMD[@]}" >> $ANIMENU_LOG.tmp 2>&1; then
+if "${BGAUDIO_CMD[@]}" >> $LOG_FILE.tmp 2>&1; then
     cleanlog 3
     else
     cleanlog 3
@@ -1616,10 +1641,10 @@ echo "Multiplexing main menu audio and video together"
 # mplex main menu audio and video together
 INTRO_MPLEX_CMD="mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/intro.mpg \
 $WORK_DIR/intro.$AUDIO_EXT $WORK_DIR/intro.m2v"
-echo -e "\nRunning: $INTRO_MPLEX_CMD\n" >> $ANIMENU_LOG.tmp 
+echo -e "\nRunning: $INTRO_MPLEX_CMD\n" >> $LOG_FILE.tmp 
 cleanlog 1
-printf "%s\n\n" "$LINE" "$LINE" >> $ANIMENU_LOG
-if ${INTRO_MPLEX_CMD[@]} >> $ANIMENU_LOG.tmp 2>&1; then
+printf "%s\n\n" "$LINE" "$LINE" >> $LOG_FILE
+if ${INTRO_MPLEX_CMD[@]} >> $LOG_FILE.tmp 2>&1; then
     cleanlog 1
 else
     cleanlog 1
