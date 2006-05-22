@@ -188,10 +188,6 @@ function confirm_msg()
 {
     printf "%s\n" "$LINE"
     echo
-    echo "If you want to fine tune your menu, then please see 'man animenu'"
-    echo "if titles do not fit, or look bad, then -menu-font, -menu-fontsize"
-    echo "-thumbfont and -thumb-fontsize are options to consider"
-    echo
     echo "Your current font arrangement is: "
     echo "menu title font: $TITLE_FONT at size $TITLE_FONT_SIZE "
     echo "thumb font: $THUMB_FONT at size $THUMB_FONTSIZE"
@@ -201,8 +197,14 @@ function confirm_msg()
     read input
     echo
     if [ ! -z "$input" -a "$input" = 'yes' ]; then
-        :
+        echo "Preview OK, continuing."
+        echo
     else
+        echo "If titles do not fit, or look bad, then -menu-font, -menu-fontsize"
+        echo "-thumbfont and -thumb-fontsize are options to consider"
+        echo "For other fine-tuning options, see 'man animenu'."
+        echo
+        echo "Exiting from animenu."
         exit 0
     fi
     printf "%s\n" "$LINE"
@@ -773,6 +775,10 @@ for i in "${!PICS[@]}"; do
         "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
     fi
 done
+
+echo "Creating and displaying a preview of the main menu."
+echo "(Press 'q' or ESC in the preview window to close it.)"
+
 if $TRANSPARENT; then
     montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[FILES]} \
     -geometry ${GEO_ARRAY[FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
@@ -781,15 +787,14 @@ if $TRANSPARENT; then
     $WORK_DIR/pics/template.png -background none miff:- |
     convert - $WORK_DIR/title_txt.png  \
     -gravity south -geometry +0+55 -composite miff:- |display
-    confirm_msg
 else # Not transparent
     montage ${PICS[@]} -tile ${TILE_ARRAY[FILES]} \
     -geometry ${GEO_ARRAY[FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
     convert $WORK_DIR/pics/template.png \
     $WORK_DIR/title_txt.png  -gravity south -geometry +0+55 -composite \
     -  -gravity north -geometry +0+50 -composite miff:- | display
-    confirm_msg
 fi
+confirm_msg
 
 unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
 ###############################################################################
@@ -1523,8 +1528,8 @@ else # Don't do menu fade
 fi
 
 echo
-echo "converting images to video stream & encoding to dvd complient m2v video"
-# convert images to video stream and encode to dvd complient m2v
+echo "Converting images to video stream and encoding to DVD-compliant format"
+# convert images to video stream and encode to dvd compliant m2v
 if $STATIC; then
     JPEG2YUV_OPTS=(-n 1 -l 60)
     PICS_IN="$WORK_DIR/animenu/1.jpg"
