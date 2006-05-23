@@ -752,7 +752,7 @@ if $FANCY_TITLE; then
     convert -size 1x512 gradient: -rotate 90 +matte \
     -fx '3.5u^3 - 5.05u^2 + 2.05u + 0.3' \
     -size 512x1 xc:"#08447B" -compose Overlay -composite "$GRADIENT"
-    echo "Creating a transparent png with the title on it"
+    echo "Creating a fancy blue title image"
 
     convert -font "$MENU_FONT" -pointsize $MENU_FONTSIZE -size 620x \
     -gravity Center caption:"\"$VMGM_TITLE\""  -negate  \( +clone \
@@ -764,17 +764,15 @@ if $FANCY_TITLE; then
     -matte  -compose In  -composite miff:- |
      convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png
 else
-    CMD="convert -size 620x100 xc:none -font \"$MENU_FONT\" 
-        -pointsize $MENU_FONTSIZE 
-        -fill black -draw \"gravity center text 2,2 '$VMGM_TITLE'\" 
-        -stroke grey -strokewidth 1 
-        -fill '#CDC0B0' -stroke gray 
-        -draw \"gravity center text 1,1 '$VMGM_TITLE'\" miff:- |
-        convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png"
-    yecho "Creating a plain white title with the following command:"
-    yecho $CMD|sed 's/    */ /g'
+    yecho "Creating a plain off-white title image"
     yecho "(Use the -fancy option for a fancier dark blue title)"
-    cmd_exec "$CMD"
+    convert -size 620x100 xc:none -font "$MENU_FONT" \
+    -pointsize $MENU_FONTSIZE \
+    -fill black -draw "gravity center text 2,2 \"$VMGM_TITLE\"" \
+    -stroke grey -strokewidth 1 \
+    -fill '#CDC0B0' -stroke gray \
+    -draw "gravity center text 1,1 \"$VMGM_TITLE\"" miff:- | \
+    convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png
 fi
 
 if $MIST; then
@@ -1013,8 +1011,8 @@ SELECT_CMD="-size "${GEO_ARRAY[NUM_FILES]}+5+5" xc:none -fill none +antialias \
 -stroke '#DE7F7C' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
 HIGHLIGHT_CMD="-size "${GEO_ARRAY[NUM_FILES]}+5+5" xc:none -fill none +antialias \
 -stroke '#188DF6' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
-cmd_exec convert "$SELECT_CMD" -colors 3 "$WORK_DIR/Selectx1.png"
-cmd_exec convert "$HIGHLIGHT_CMD" -colors 3 "$WORK_DIR/Highlightx1.png"
+cmd_exec "convert $SELECT_CMD -colors 3 $WORK_DIR/Selectx1.png"
+cmd_exec "convert $HIGHLIGHT_CMD -colors 3 $WORK_DIR/Highlightx1.png"
 
 for button in Select Highlight; do
     montage -background none \
