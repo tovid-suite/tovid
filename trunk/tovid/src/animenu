@@ -93,6 +93,7 @@ SUB_MENU_FEATHER=false
 IMG_FMT=jpg
 SM_IMG_FMT=jpg  # submenu image format
 KEEP_FILES=false
+DEBUG=: # Debugging on for initial release
 THUMB_SHAPE=""
 
 SCRIPT_START_TIME=`date +%s`
@@ -105,7 +106,7 @@ SCRIPT_START_TIME=`date +%s`
 # Output is preceded by the script name that produced it
 # Args: $@ == any text string
 # If no args are given, echo a separator bar
-# Why echo when you can yecho?
+# Use yecho if you want output to go to the logfile
 yecho()
 {
     if test $# -eq 0; then
@@ -118,6 +119,20 @@ yecho()
         test -e "$LOG_FILE" && \
             printf "%s %s\n" "$ME" "$@" >> "$LOG_FILE"
     fi
+}
+
+# ******************************************************************************
+# Execute the given command-line string, with appropriate stream redirection
+# Args: $@ == text string contianing complete command-line
+# ******************************************************************************
+cmd_exec()
+{
+    if $DEBUG; then
+        eval "$@" 2>&1 | tee -a "$LOG_FILE" &
+    else
+        eval "$@" >> "$LOG_FILE" 2>&1 &
+    fi
+    #PIDS="$PIDS $!"
 }
 
 # Print script name, usage notes, and optional error message, then exit.
@@ -176,7 +191,7 @@ function sorry_msg()
 {
     yecho -e "Oops . . .Something went wrong."
     yecho "There was a problem creating the $OUTPUT."
-    echo "Please check the log at $LOG_FILE"
+    yecho "Please check the log at $LOG_FILE"
 }
 
 function vid_length()
@@ -246,7 +261,7 @@ trap 'cleanup; exit 13' TERM INT
 # EXECUTION BEGINS HERE
 # ***********************************
 
-echo $"$SCRIPT_NAME"
+yecho $"$SCRIPT_NAME"
 
 while test $# -gt 0; do
     DO_SHIFT=:
@@ -255,7 +270,7 @@ while test $# -gt 0; do
             shift
             # Hackish list-parsing
             while test $# -gt 0 && test ${1:0:1} != "-"; do
-                FILES=( "${FILES[@]}" "$1" )
+                FILES=("${FILES[@]}" "$1")
                 shift
             done
             # Don't skip past the next argument
@@ -265,7 +280,7 @@ while test $# -gt 0; do
             shift
             # Hackish list-parsing
             IFS="";while test $# -gt 0 && test ${1:0:1} != "-"; do
-                TITLES=( "${TITLES[@]}" "$1" )
+                TITLES=("${TITLES[@]}" "$1")
                 shift
             done
             # Don't skip past the next argument
@@ -278,6 +293,9 @@ while test $# -gt 0; do
             ;;
         "-keepfiles" )
             KEEP_FILES=:
+            ;;
+        "-debug" )
+            DEBUG=:
             ;;
         "-ntsc" )
             TV_STANDARD=ntsc
@@ -395,8 +413,6 @@ while test $# -gt 0; do
     $DO_SHIFT && shift
 done
 
-echo
-
 ##############################################################################
 #                      Sanity checks and preliminaries                       #
 ##############################################################################
@@ -459,10 +475,12 @@ if test ${#VIDS[@]} -ne ${#SM_AUDIO[@]} && [ ${#SM_AUDIO[@]} -ne 1 ]; then
 fi
 echo "SM_AUDIO_FILE is $SM_AUDIO_FILE"
 rm -f "$WORK_DIR/font.png"
+# Get absolute pathnames of all files
 for i in "${FILES[@]}"; do
-    VID_ARRAY=( "${VID_ARRAY[@]}" "$(abspath "$i")" )
+    IN_FILES=("${IN_FILES[@]}" "$(abspath "$i")")
 done
-V_ARRAY_TOTAL=${#VID_ARRAY[@]}
+V_ARRAY_TOTAL=${#IN_FILES[@]}
+# (Length of array) - 1
 NUM_FILES=$(($V_ARRAY_TOTAL - 1))
 
 # create_dirs
@@ -478,6 +496,53 @@ if $ANI_SUB_MENU; then
     done
 fi
 
+# Check input files for compliance; offer to tovid-encode non-compliant files
+FILES_TO_ENCODE=
+for ((i=0; i<=NUM_FILES; i++)); do
+    TEST_FILE=${IN_FILES[i]}
+    yecho "Checking $TEST_FILE for compliance..."
+    # TODO: Check for PAL/NTSC compliance
+    # If video matches the target format, append to NEW_IN_FILES
+    if test $TARGET = "dvd" && idvid -is dvd "$TEST_FILE"; then
+        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE")
+    elif test $TARGET = "svcd" && idvid -is svcd "$TEST_FILE"; then
+        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE")
+    # Video needs to be re-encoded; use a .enc filename in NEW_IN_FILES
+    else
+        FILES_TO_ENCODE[i]="$TEST_FILE"
+        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE.enc.mpg")
+    fi
+done
+if test "${#FILES_TO_ENCODE[@]}" -gt 1; then
+    TGT_CAPS=$(echo $TARGET | tr a-z A-Z)
+    yecho
+    yecho "Encode input files"
+    yecho
+    yecho "Some of the -files you provided are not $TGT_CAPS-compliant:"
+    for i in "${FILES_TO_ENCODE[@]}"; do
+        test -n "$i" && yecho "  $i"
+    done
+    yecho "I can encode them for you, but it may take a long time."
+    yecho "Encoding will ensure that your disc is fully compliant;"
+    yecho "you may skip this, but your disc may not be playable."
+    yecho "Please type 'yes' if you want the files to be encoded:"
+    read ENCODE
+    if test -n "$ENCODE" && test "$ENCODE" = 'yes'; then
+        yecho
+        yecho "Converting files to $TGT_CAPS format with 'tovid':"
+        for i in "${FILES_TO_ENCODE[@]}"; do
+            tovid -$TV_STANDARD -$TARGET -in $i -out $i.enc
+            wait
+        done
+        # Replace IN_FILES with NEW_IN_FILES (with .enc extension)
+        IN_FILES=${NEW_IN_FILES[@]}
+    else
+        yecho
+        yecho "Not re-encoding. I'll proceed with menu generation, but"
+        yecho "your authored disc will not be fully $TGT_CAPS-compliant."
+        yecho
+    fi
+fi
 
 ##############################################################################
 # Font defaults
@@ -509,7 +574,7 @@ fi
 yecho
 yecho "Including the following videos:"
 for ((i=0; i<${#TITLES[@]}; i++)); do
-    yecho "  \"${TITLES[i]}\" (${VID_ARRAY[i]})"
+    yecho "  \"${TITLES[i]}\" (${IN_FILES[i]})"
 done
 yecho "Current font settings: "
 yecho "  -menu-font $MENU_FONT"
@@ -706,11 +771,10 @@ else
         -fill '#CDC0B0' -stroke gray 
         -draw \"gravity center text 1,1 '$VMGM_TITLE'\" miff:- |
         convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png"
-    echo "Creating a plain white title with the following command:"
-    echo $CMD|sed 's/    */ /g'
-    echo "(Use the -fancy option for a fancier dark blue title)"
-    echo
-    eval $CMD
+    yecho "Creating a plain white title with the following command:"
+    yecho $CMD|sed 's/    */ /g'
+    yecho "(Use the -fancy option for a fancier dark blue title)"
+    cmd_exec "$CMD"
 fi
 
 if $MIST; then
@@ -730,7 +794,7 @@ if $MIST; then
 fi
 
 ###############################################################################
-#      generate a basic preview of the main menu      #
+#      generate a basic preview of the main menu                              #
 ###############################################################################
 if $MIST; then
     # overlay white.png onto the background
@@ -740,7 +804,7 @@ if $MIST; then
 fi
 # generate images for montage and title and resize them
 for ((i=0; i<=NUM_FILES; i++)) ; do
-    FFMPEG_CMD=(ffmpeg -i "${VID_ARRAY[i]}" $SEEK -vframes 1 \
+    FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" $SEEK -vframes 1 \
     -s $INTRO_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
     echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $LOG_FILE
     SED_VAR="frame="
@@ -809,16 +873,16 @@ unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
 #             get information about videos and store in an array              #
 ###############################################################################
 
-for i in ${!VID_ARRAY[@]}; do
-    echo "Getting stats on "${VID_ARRAY[i]}""
+for i in ${!IN_FILES[@]}; do
+    echo "Getting stats on "${IN_FILES[i]}""
     mencoder_stats=( "${mencoder_stats[@]}" \
-    "$(mencoder -quiet "${VID_ARRAY[i]}" -oac pcm -ovc copy -o /dev/null 2>&1)" )
+    "$(mencoder -quiet "${IN_FILES[i]}" -oac pcm -ovc copy -o /dev/null 2>&1)" )
 done
 echo
 echo $SEPARATOR
 echo
 # put in the log file in case anyone is interested
-for i in ${!VID_ARRAY[@]}; do
+for i in ${!IN_FILES[@]}; do
     VCODEC="$(awk '/VIDEO:/ {gsub(/\[|\]/, ""); print $2}' \
     <<< "${mencoder_stats[i]}")"
     V_BR="$(awk '/Video stream:/{print $3}'<<<"${mencoder_stats[i]}")"
@@ -831,7 +895,7 @@ for i in ${!VID_ARRAY[@]}; do
     V_LENGTH="$(awk '/Video stream:/{print $10}'<<<"${mencoder_stats[i]}")"
     FPS="$(awk '/VIDEO:/ {print $6}' <<<"${mencoder_stats[i]}")"
     yecho
-    echo -e "Stats for" "${VID_ARRAY[i]}" "\n" \
+    echo -e "Stats for" "${IN_FILES[i]}" "\n" \
     "video codec:   " \
     "$VCODEC" "\n" \
     "video bitrate: " "$V_BR" "kbps" "\n" \
@@ -867,7 +931,7 @@ if $ANI_SUB_MENU && [ $MIN_VAL -lt $(((340 * CHAPTERS) / 30)) ]; then
     echo -n "Sorry, the shortest length video must be greater than "
     echo "$(((340 * CHAPTERS) / 30)) seconds"
     echo "to use animated submenus."
-    echo "${VID_ARRAY[min_key]} is only $MIN_VAL seconds long"
+    echo "${IN_FILES[min_key]} is only $MIN_VAL seconds long"
     exit 1
 fi 
 # allow animated menus of length of longest video
@@ -900,8 +964,8 @@ fi
 echo
 echo "Creating images from each video for the main menu"
 for ((i=0; i<=NUM_FILES; i++)) ; do
-    echo "Working on "${VID_ARRAY[$i]}""
-    CREATE_IMG_CMD=(ffmpeg -i "${VID_ARRAY[$i]}"  $SEEK -vframes $FRAMES \
+    echo "Working on "${IN_FILES[$i]}""
+    CREATE_IMG_CMD=(ffmpeg -i "${IN_FILES[$i]}"  $SEEK -vframes $FRAMES \
     -s "$INTRO_SIZE" "$WORK_DIR/pics/$i/%d.$IMG_FMT")
     yecho
     echo -e "\nRunning: ${CREATE_IMG_CMD[@]}\n" | fold -bs >> $LOG_FILE
@@ -949,8 +1013,8 @@ SELECT_CMD="-size "${GEO_ARRAY[NUM_FILES]}+5+5" xc:none -fill none +antialias \
 -stroke '#DE7F7C' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
 HIGHLIGHT_CMD="-size "${GEO_ARRAY[NUM_FILES]}+5+5" xc:none -fill none +antialias \
 -stroke '#188DF6' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
-eval convert "$SELECT_CMD" -colors 3 "$WORK_DIR/Selectx1.png"
-eval convert "$HIGHLIGHT_CMD" -colors 3 "$WORK_DIR/Highlightx1.png"
+cmd_exec convert "$SELECT_CMD" -colors 3 "$WORK_DIR/Selectx1.png"
+cmd_exec convert "$HIGHLIGHT_CMD" -colors 3 "$WORK_DIR/Highlightx1.png"
 
 for button in Select Highlight; do
     montage -background none \
@@ -1002,8 +1066,8 @@ for len in ${CHAPT_INTERVALS[@]}; do
     unset L chapt_intervals cmd
 done
 # debug chapters
-for i in ${!VID_ARRAY[@]}; do
-    echo -e "Chapters for "${VID_ARRAY[i]}" are: \n${CHAPT_ARRAY[i++]}\n"
+for i in ${!IN_FILES[@]}; do
+    echo -e "Chapters for "${IN_FILES[i]}" are: \n${CHAPT_ARRAY[i++]}\n"
 done
 # make xml files, and run dvdauthor and spumux
 if $MENU_FADE; then
@@ -1104,9 +1168,9 @@ echo "$POST"
 fi)    
     </menus>
     <titles>
-$(for i in ${!VID_ARRAY[@]}; do
+$(for i in ${!IN_FILES[@]}; do
     echo -e "      <pgc>"
-    echo -ne "        <vob file=\"${VID_ARRAY[i]}\""
+    echo -ne "        <vob file=\"${IN_FILES[i]}\""
     echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
     echo -e "        <post>call vmgm menu 1;</post>"
     echo -e "      </pgc>"
@@ -1127,7 +1191,7 @@ if $SUB_MENU; then
     echo "Building submenus"
     echo $SEPARATOR
     echo "Creating images for each chapter"
-    for i in ${!VID_ARRAY[@]}; do
+    for i in ${!IN_FILES[@]}; do
         echo
         echo "Creating a transparent title PNG"
         convert -font "$MENU_FONT" -pointsize $MENU_FONTSIZE -size 620x \
@@ -1162,10 +1226,10 @@ if $SUB_MENU; then
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
         CMD=${cmd[@]}
-        TCODE_CMD=(transcode -q 0 -i "${VID_ARRAY[i]}" -o "${PICS_OUT[@]}" \
+        TCODE_CMD=(transcode -q 0 -i "${IN_FILES[i]}" -o "${PICS_OUT[@]}" \
         -f $FRAME_RATE -Z ${GEO_ARRAY[CHAPTERS - 1]},fast -J cut="$CMD" -y $SM_IMG_FMT,null)
         yecho
-        echo "Creating chapter images for "${VID_ARRAY[i]}""
+        echo "Creating chapter images for "${IN_FILES[i]}""
 
         echo "Running  "${TCODE_CMD[@]}"" >> $LOG_FILE
         echo "Running  "${TCODE_CMD[@]}""
@@ -1196,7 +1260,7 @@ if $SUB_MENU; then
                 find $WORK_DIR/animenu/$a/ -name chapt\*.$SM_IMG_FMT|tail -n 20|xargs rm
             done
             echo
-            echo "Making montage images for  "${VID_ARRAY[i]}""
+            echo "Making montage images for  "${IN_FILES[i]}""
 
             o=1; sp="/-|-\|";  echo -n ' '
             for ((a=1; a<300; a++)); do
@@ -1222,7 +1286,7 @@ if $SUB_MENU; then
         else # not $ANI_SUB_MENU
 
             echo
-            echo "Making montage images for  "${VID_ARRAY[i]}""
+            echo "Making montage images for  "${IN_FILES[i]}""
             # just use $CHAPTERS number of images
             imgs=( $(find $WORK_DIR -name chapt000\*.$SM_IMG_FMT|head -n $CHAPTERS) )
             # create frames for the chapter thumbs
@@ -1243,7 +1307,7 @@ if $SUB_MENU; then
         fi
 
         echo
-        echo "Converting chapter montages of "${VID_ARRAY[i]}" to m2v video format"
+        echo "Converting chapter montages of "${IN_FILES[i]}" to m2v video format"
         IMG_STREAM_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p \
         "${JPEG2YUV_OPTS[@]}" -L 1 -b 1  -j "${PICS_IN[@]}")
         ENC_CMD1=(ffmpeg   -f yuv4mpegpipe -i - -r $FRAME_RATE -s $VIDSIZE \
@@ -1263,7 +1327,7 @@ if $SUB_MENU; then
         # create audio background for either animated or plain submenus
         echo
         echo "Creating an audio background"
-        echo "Working on submenu audio for "${VID_ARRAY[s]}""
+        echo "Working on submenu audio for "${IN_FILES[s]}""
         OUTPUT="background audio"
         if $SUBMENU_AUDIO; then
             if [ "${SM_AUDIO[s]}" = "none" ]; then # user asked for silence
@@ -1391,7 +1455,7 @@ fi
 for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT) )
-    echo "Working on images from ${VID_ARRAY[i]}"
+    echo "Working on images from ${IN_FILES[i]}"
     o=1; sp="/-|-\|";  echo -n ' '
 
     for pic in "${PICS[@]}"; do
