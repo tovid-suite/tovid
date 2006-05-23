@@ -614,6 +614,7 @@ DIMY4=$((DIMY / 2))
 DIMX4=$((DIMX / 2))
 DIMY5=$((DIMY / 3))
 DIMX5=$((DIMX4 / 3))
+BLUR_CMD=(convert - -blur 0x$BLUR -channel RGBA +matte miff:-)
 if [ -n "$THUMB_SHAPE" ]; then
     convert -size $INTRO_SIZE xc:none -fill white -stroke none \
     -draw "rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2" $WORK_DIR/feather_orig.png
@@ -624,10 +625,7 @@ if test "$THUMB_SHAPE" = "normal"; then
     THUMB_MASK=$WORK_DIR/feather_mask.png
     convert -size $INTRO_SIZE xc:black -fill white \
     -draw "Rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2," +matte -compose CopyOpacity miff:- |
-    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
-    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
-    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
-    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
+    "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" |
     convert - -evaluate subtract 50% -normalize $THUMB_MASK
 fi
 if $FEATHER; then
@@ -648,10 +646,7 @@ if test "$THUMB_SHAPE" = "oval"; then
     convert -size $INTRO_SIZE xc:black -fill white \
     -draw "RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3" \
     +matte -compose CopyOpacity miff:- |
-    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
-    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
-    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
-    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
+    "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" |
     convert - -evaluate subtract 50% -normalize $THUMB_MASK
 fi
 
@@ -669,10 +664,7 @@ if test "$THUMB_SHAPE" = "egg"; then
     convert -size $INTRO_SIZE xc:black -fill white \
     -draw "circle $DIMY4,$DIMX4 $DIMY5,$DIMX5" \
     +matte -compose CopyOpacity miff:- |
-    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
-    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
-    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
-    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
+    "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" |
     convert - -evaluate subtract 50% -normalize - $THUMB_MASK
 fi
 
@@ -686,10 +678,7 @@ if test "$THUMB_SHAPE" = "cloud"; then
     -draw "circle 160,160 200,200" \
     -draw "circle 240,160 280,200" \
     +matte -compose CopyOpacity  miff:- |
-    convert -blur 0x$BLUR - miff:- |
-    convert -blur 0x$BLUR - miff:- |
-    convert -blur 0x$BLUR - miff:- |
-    convert -blur 0x$BLUR - miff:- |
+    "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" |
     convert -resize $INTRO_SIZE! - $THUMB_MASK
 fi
 
@@ -753,7 +742,6 @@ fi
 for ((i=0; i<=NUM_FILES; i++)) ; do
     FFMPEG_CMD=(ffmpeg -i "${VID_ARRAY[i]}" $SEEK -vframes 1 \
     -s $INTRO_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
-    yecho
     echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $LOG_FILE
     SED_VAR="frame="
     if "${FFMPEG_CMD[@]}" >> $LOG_FILE.tmp 2>&1;then
@@ -1569,7 +1557,7 @@ else # Don't do menu fade
             -gravity south -geometry +0+55 -composite \
             $WORK_DIR/animenu/$count.jpg )
             if $MIST && ! $STATIC; then
-                "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
+                "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
             elif "$MIST" && "$STATIC"; then
                 "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
             elif ! "$MIST" && "$STATIC"; then
