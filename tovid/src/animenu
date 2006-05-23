@@ -1007,13 +1007,19 @@ echo
 echo "Creating the highlight and selection PNGs for the main menu"
 echo
 GEO="${GEO_ARRAY[NUM_FILES]/x/,}"
-SELECT_CMD="-size "${GEO_ARRAY[NUM_FILES]}+5+5" xc:none -fill none +antialias \
--stroke '#DE7F7C' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
-HIGHLIGHT_CMD="-size "${GEO_ARRAY[NUM_FILES]}+5+5" xc:none -fill none +antialias \
--stroke '#188DF6' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
-cmd_exec "convert $SELECT_CMD -colors 3 $WORK_DIR/Selectx1.png"
-cmd_exec "convert $HIGHLIGHT_CMD -colors 3 $WORK_DIR/Highlightx1.png"
+(
+cat  <<EOF
+rectangle 0,0 $GEO
+EOF
+)  > $WORK_DIR/draw_file
 
+convert -size "${GEO_ARRAY[NUM_FILES]}+5+5"  xc:none \
+-fill none +antialias -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file \
+-colors 3 "$WORK_DIR/Selectx1.png"
+convert -size "${GEO_ARRAY[NUM_FILES]}+5+5" xc:none \
+-fill none +antialias -stroke '#188DF6' -strokewidth 4 -draw @draw_file \
+-colors 3 "$WORK_DIR/Highlightx1.png"
+rm -f draw_file
 for button in Select Highlight; do
     montage -background none \
     $(for ((i=0; i<=NUM_FILES; i++)); do echo $WORK_DIR/${button}x1.png;done) \
@@ -1027,12 +1033,17 @@ if $SUB_MENU; then
     echo
     echo "Creating the highlight and selection PNGs for the submenus"
     GEO="${GEO_ARRAY[CHAPTERS - 1]/x/,}"
-    SELECT_CMD="-size "${GEO_ARRAY[CHAPTERS - 1]}+5+5" xc:none -fill none \
-    +antialias -stroke '#DE7F7C' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
-    HIGHLIGHT_CMD="-size "${GEO_ARRAY[CHAPTERS - 1]}+5+5" xc:none -fill none \
-    +antialias -stroke '#188DF6' -strokewidth 4 -draw 'rectangle 0,0 $GEO'"
-    eval convert "$SELECT_CMD" -colors 3 "$WORK_DIR/Submenu_Selectx1.png"
-    eval convert "$HIGHLIGHT_CMD" -colors 3 "$WORK_DIR/Submenu_Highlightx1.png"
+(
+cat  <<EOF
+rectangle 0,0 $GEO
+EOF
+)  > $WORK_DIR/draw_file
+    convert -size "${GEO_ARRAY[CHAPTERS - 1]}+5+5" xc:none -fill none \
+    +antialias -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file \
+    -colors 3 "$WORK_DIR/Submenu_Selectx1.png"
+    convert -size "${GEO_ARRAY[CHAPTERS - 1]}+5+5" xc:none -fill none \
+    +antialias -stroke '#188DF6' -strokewidth 4 -draw @draw_file \
+    -colors 3 "$WORK_DIR/Submenu_Highlightx1.png"
     for button in Select Highlight; do
         montage -background none \
         $(for ((i=0; i<CHAPTERS; i++)); do
