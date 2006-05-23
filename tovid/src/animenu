@@ -965,7 +965,6 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
     echo "Working on "${IN_FILES[$i]}""
     CREATE_IMG_CMD=(ffmpeg -i "${IN_FILES[$i]}"  $SEEK -vframes $FRAMES \
     -s "$INTRO_SIZE" "$WORK_DIR/pics/$i/%d.$IMG_FMT")
-    yecho
     echo -e "\nRunning: ${CREATE_IMG_CMD[@]}\n" | fold -bs >> $LOG_FILE
 
     SED_VAR="frame="
@@ -1196,13 +1195,12 @@ fi
 
 # do submenu 1st for debug purposes
 if $SUB_MENU; then
-    echo $SEPARATOR
-    echo "Building submenus"
-    echo $SEPARATOR
-    echo "Creating images for each chapter"
+    yecho
+    yecho "Building submenus"
+    yecho
+    yecho "Creating images for each chapter"
     for i in ${!IN_FILES[@]}; do
-        echo
-        echo "Creating a transparent title PNG"
+        yecho "Creating a transparent title PNG"
         convert -font "$MENU_FONT" -pointsize $MENU_FONTSIZE -size 620x \
         -gravity Center caption:"\"${TITLES[i]}\"" -negate \( +clone -blur 0x8 \
         -shade 110x45 -normalize $GRADIENT -fx 'v.p{g*v.w,0}' \) +matte +swap \
@@ -1238,10 +1236,10 @@ if $SUB_MENU; then
         TCODE_CMD=(transcode -q 0 -i "${IN_FILES[i]}" -o "${PICS_OUT[@]}" \
         -f $FRAME_RATE -Z ${GEO_ARRAY[CHAPTERS - 1]},fast -J cut="$CMD" -y $SM_IMG_FMT,null)
         yecho
-        echo "Creating chapter images for "${IN_FILES[i]}""
+        yecho "Creating chapter images for "${IN_FILES[i]}""
 
-        echo "Running  "${TCODE_CMD[@]}"" >> $LOG_FILE
-        echo "Running  "${TCODE_CMD[@]}""
+        yecho "Running  "${TCODE_CMD[@]}"" >> $LOG_FILE
+        yecho "Running  "${TCODE_CMD[@]}""
         if "${TCODE_CMD[@]}" >> $LOG_FILE.tmp 2>&1; then
             cleanlog 1
         else
@@ -1294,8 +1292,8 @@ if $SUB_MENU; then
  
         else # not $ANI_SUB_MENU
 
-            echo
-            echo "Making montage images for  "${IN_FILES[i]}""
+            yecho
+            yecho "Making montage images for  "${IN_FILES[i]}""
             # just use $CHAPTERS number of images
             imgs=( $(find $WORK_DIR -name chapt000\*.$SM_IMG_FMT|head -n $CHAPTERS) )
             # create frames for the chapter thumbs
@@ -1315,13 +1313,13 @@ if $SUB_MENU; then
             "${IM_CMD[@]}" | "${IM_CMD2[@]}"
         fi
 
-        echo
-        echo "Converting chapter montages of "${IN_FILES[i]}" to m2v video format"
+        yecho
+        yecho "Converting chapter montages of "${IN_FILES[i]}" to m2v video format"
         IMG_STREAM_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p \
         "${JPEG2YUV_OPTS[@]}" -L 1 -b 1  -j "${PICS_IN[@]}")
         ENC_CMD1=(ffmpeg   -f yuv4mpegpipe -i - -r $FRAME_RATE -s $VIDSIZE \
         -tvstd $TV_STANDARD $FFMPEG_OPTS -y $WORK_DIR/menu$i.m2v)
-        echo "Running "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}""
+        yecho "Running "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}""
         if "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}" >> $LOG_FILE.tmp 2>&1; then
             cleanlog 3
         else
@@ -1334,9 +1332,9 @@ if $SUB_MENU; then
     unset ENC_CMD1
     for ((s=0; s<=NUM_FILES; s++)); do
         # create audio background for either animated or plain submenus
-        echo
-        echo "Creating an audio background"
-        echo "Working on submenu audio for "${IN_FILES[s]}""
+        yecho
+        yecho "Creating an audio background"
+        yecho "Working on submenu audio for "${IN_FILES[s]}""
         OUTPUT="background audio"
         if $SUBMENU_AUDIO; then
             if [ "${SM_AUDIO[s]}" = "none" ]; then # user asked for silence
@@ -1368,7 +1366,7 @@ if $SUB_MENU; then
             :
         elif "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then #run command
             cleanlog 3
-        echo "Running "${BGAUDIO_CMD[@]}"" >> "$LOG_FILE.tmp" 2>&1
+        yecho "Running "${BGAUDIO_CMD[@]}"" >> "$LOG_FILE.tmp" 2>&1
         cleanlog 1
         else
             cleanlog 3
@@ -1428,13 +1426,13 @@ if $SUB_MENU; then
         fi
         # copy the final file for each submenu if only 1 supplied
         "${COPY_AC3[@]}"
-        echo
-        echo "Multiplexing video and audio together"
+        yecho
+        yecho "Multiplexing video and audio together"
+        yecho
         S=$((s + 1))
         MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -b 230 -o $WORK_DIR/menu$S.mpg \
         $WORK_DIR/menu$s.$AUDIO_EXT $WORK_DIR/menu$s.m2v)
-        yecho
-        echo "Running: "${MPLEX_CMD[@]}"" >> $LOG_FILE.tmp
+        yecho "Running: "${MPLEX_CMD[@]}"" >> $LOG_FILE.tmp
         cleanlog 1
         if "${MPLEX_CMD[@]}" >> $LOG_FILE.tmp 2>&1; then
             cleanlog 1
@@ -1451,11 +1449,10 @@ fi
 ##############################################################################
 #                      Work on main menu                                     #
 ##############################################################################
-echo $SEPARATOR
-echo "Building main menu"
-echo $SEPARATOR
-echo
-echo "Adding title to images and resizing"
+yecho
+yecho "Building main menu"
+yecho
+yecho "Adding title to images and resizing"
 if $FEATHER; then
     FILL="#161514"
 else
@@ -1464,7 +1461,7 @@ fi
 for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT) )
-    echo "Working on images from ${IN_FILES[i]}"
+    yecho "Working on images from ${IN_FILES[i]}"
     o=1; sp="/-|-\|";  echo -n ' '
 
     for pic in "${PICS[@]}"; do
