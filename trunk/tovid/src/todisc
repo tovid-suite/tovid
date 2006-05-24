@@ -1,8 +1,8 @@
 #!/bin/bash
-ME="[animenu]:"
+ME="[todisc]:"
 . tovid-init
 
-# animenu
+# todisc
 # Part of the tovid suite
 # =======================
 # A bash script for generating a DVD with animated thumbnail menus
@@ -37,7 +37,7 @@ ME="[animenu]:"
 
 SCRIPT_NAME=`cat << EOF
 --------------------------------
-animenu
+todisc
 Generate a DVD filesystem with animated thumbnail menus
 Part of the tovid suite, version $TOVID_VERSION
 $BUILD_OPTIONS
@@ -47,17 +47,17 @@ EOF`
 
 USAGE=`cat << EOF
 Usage:
-    animenu [OPTIONS] \\\\
+    todisc [OPTIONS] \\\\
       -files File1.mpg File2.mpg ... \\\\
       -titles "Title 1" "Title 2" ... \\\\
       -out OUT_PREFIX
 Input files must be MPEG, and the number of -files and -titles must be equal. 
-See the animenu manual page ('man animenu') for additional documentation.
+See the todisc manual page ('man todisc') for additional documentation.
 
 EOF`
 
-WORK_DIR="$(abspath "animenu-work")"
-LOG_FILE="`pwd`/animenu.log"
+WORK_DIR="$(abspath "todisc-work")"
+LOG_FILE="`pwd`/todisc.log"
 OUT_PREFIX=""
 TV_STANDARD=ntsc
 ANI_MENU_LENGTH=20
@@ -195,12 +195,12 @@ runtime_error()
     # Uncomment if needed later
     #killsubprocs
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    yecho "animenu encountered an error:"
+    yecho "todisc encountered an error:"
     yecho "    $@"
     echo "Check the contents of $LOG_FILE to see what went wrong."
     # TODO: Uncomment once -debug is actually implemented
     #if $DEBUG; then :; else
-    #    echo "Run animenu again with the -debug option to produce more verbose"
+    #    echo "Run todisc again with the -debug option to produce more verbose"
     #    echo "output, if the log file doesn't give you enough information."
     #fi
     #echo " "
@@ -259,7 +259,7 @@ function confirm_preview()
         yecho "     (to adjust the main title)"
         echo "    -thumbfont and -thumb-fontsize"
         echo "If you get black frames, then look at the -seek option"
-        echo "For other fine-tuning options, see 'man animenu'."
+        echo "For other fine-tuning options, see 'man todisc'."
         exit 0
     fi
     yecho
@@ -478,10 +478,10 @@ if test -d "$WORK_DIR"; then
     rm -rf "$WORK_DIR"
 fi
 mkdir -pv "$WORK_DIR"
-# Move any existing animenu.log to a new name to avoid overlap
+# Move any existing todisc.log to a new name to avoid overlap
 if test -f $LOG_FILE; then
-    echo "Moving $(pwd)/animenu.log to $(pwd)/animenu-$(date +%s).log"
-    mv $(pwd)/animenu.log $(pwd)/animenu-$(date +%s).log
+    echo "Moving $(pwd)/todisc.log to $(pwd)/todisc-$(date +%s).log"
+    mv $(pwd)/todisc.log $(pwd)/todisc-$(date +%s).log
 fi
 # allow user to only specify one audio file for all submenus
 if [ ${#SM_AUDIO[@]} -eq 1 ]; then
@@ -641,7 +641,7 @@ TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4
 
 PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
 printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
-"tovid suite's animenu - log for `date`" \
+"tovid suite's todisc - log for `date`" \
 "$PATTERN" >> $LOG_FILE
 
 # Do everything in $WORK_DIR
@@ -1103,7 +1103,7 @@ for i in ${!IN_FILES[@]}; do
 done
 # make xml files, and run dvdauthor and spumux
 if $MENU_FADE; then
-    . animenu-fade-routine
+    . todisc-fade-routine
     END_TIME=$(format_seconds $THUMBS_FADE_OUT_END_TIME)
     END=" end=\"$END_TIME\""
     START=$(format_seconds $THUMBS_FADE_IN_START_TIME)
@@ -1559,7 +1559,7 @@ if "$MENU_FADE" && ! "$STATIC"; then
 
     o=1; sp="/-|-\|";  echo -n ' '  # initialize spinner
     for ((frame=0; frame<ANI_MENU_END_FRAME; frame++)); do
-        # set dissolve vars from animenu-fade-routine functions
+        # set dissolve vars from todisc-fade-routine functions
         BC=$(get_title_opacity)
         B=$(awk -F ':' '{print $1'}<<<$BC)
         C=$(awk -F ':' '{print $2'}<<<$BC)
@@ -1775,9 +1775,9 @@ HHMMSS=`format_time $SCRIPT_TOT_TIME`
 
 cleanup
 echo $SEPARATOR
-echo "animenu took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
+echo "todisc took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
 echo $SEPARATOR
 echo "Your new DVD should be in $OUT_DIR"
 echo
-echo "Thanks for using animenu."
+echo "Thanks for using todisc."
 
