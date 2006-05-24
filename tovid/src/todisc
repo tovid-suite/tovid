@@ -563,7 +563,7 @@ if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
             yecho
         done
         # Replace IN_FILES with NEW_IN_FILES (with .enc extension)
-        IN_FILES=${NEW_IN_FILES[@]}
+        IN_FILES=(${NEW_IN_FILES[@]})
     else
         yecho
         yecho "Not re-encoding. I'll proceed with menu generation, but"
