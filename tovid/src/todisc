@@ -616,20 +616,6 @@ yecho
 
 
 # TODO: Merge these globals with the ones up top
-NTSC_SVCD_VIDSIZE="480x480"
-PAL_SVCD_VIDSIZE="560x576"
-NTSC_DVD_VIDSIZE="720x480"
-PAL_DVD_VIDSIZE="720x576"
-DVD_AUDIO_EXT=ac3
-SVCD_AUDIO_EXT=mp2
-DVD_SAMPLERATE="48000"
-SVCD_SAMPLERATE="44100"
-DVD_AUDIO_OPTS="-ab 224 -ar 48000 -ac 2 -acodec $DVD_AUDIO_EXT"
-SVCD_AUDIO_OPTS="-ab 224 -ar 44100 -ac 2 -acodec $SVCD_AUDIO_EXT"
-SVCD_FFMPEG_OPTS="-b 2200 -minrate 2200 -maxrate 2200 -bufsize 230 -aspect 4:3"
-DVD_FFMPEG_OPTS="-b 8000  -maxrate 9000 -bufsize 230  -aspect 4:3"
-SVCD_MPLEX_FORMAT=4
-DVD_MPLEX_FORMAT=8
 DVD_GEO_ARRAY=(320x240 272x204 192x144 192x144 184x138 184x138 144x108 144x108 \
 120x90 120x90 120x90 120x90 96x72 96x72 96x72 96x72 96x72 96x72 96x72 96x72 \
 72x54 72x54 72x54 72x54 72x54 72x54 72x54 72x54 72x54 72x54)
@@ -650,34 +636,33 @@ cd $WORK_DIR
 
 echo  
 if  [ $TARGET = "dvd" ]; then
-    AUDIO_EXT=$DVD_AUDIO_EXT
-    AUDIO_OPTS=$DVD_AUDIO_OPTS
-    SAMPLERATE=$DVD_SAMPLERATE
-    MPLEX_FORMAT=$DVD_MPLEX_FORMAT
+    AUDIO_EXT="ac3"
+    SAMPLERATE="48000"
+    MPLEX_FORMAT="8"
     GEO_ARRAY=("${DVD_GEO_ARRAY[@]}")
-    FFMPEG_OPTS=$DVD_FFMPEG_OPTS
+    FFMPEG_OPTS="-b 8000  -maxrate 9000 -bufsize 230  -aspect 4:3"
     if [ $TV_STANDARD = ntsc ]; then
-        VIDSIZE=$NTSC_DVD_VIDSIZE
+        VIDSIZE="720x480"
         FRAME_RATE=29.970
     elif [ $TV_STANDARD = pal ]; then
-        VIDSIZE=$PAL_DVD_VIDSIZE
+        VIDSIZE="720x576"
         FRAME_RATE=25
     fi
 elif [ $TARGET = "svcd" ]; then
-    AUDIO_EXT=$SVCD_AUDIO_EXT
-    AUDIO_OPTS=$SVCD_AUDIO_OPTS
-    SAMPLERATE=$SVCD_SAMPLERATE
-    MPLEX_FORMAT=$SVCD_MPLEX_FORMAT
+    AUDIO_EXT="mp2"
+    SAMPLERATE="44100"
+    MPLEX_FORMAT="4"
     GEO_ARRAY=("${SVCD_GEO_ARRAY[@]}")
-    FFMPEG_OPTS=$SVCD_FFMPEG_OPTS
+    FFMPEG_OPTS="-b 2200 -minrate 2200 -maxrate 2200 -bufsize 230 -aspect 4:3"
     if [ $TV_STANDARD = ntsc ]; then
-        VIDSIZE=$NTSC_SVCD_VIDSIZE
+        VIDSIZE="480x480"
         FRAME_RATE=29.970
     elif [ $TV_STANDARD = pal ]; then
-        VIDSIZE=$PAL_SVCD_VIDSIZE
+        VIDSIZE="480x576"
         FRAME_RATE=25
     fi
 fi
+AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
 THUMB_SIZE="${GEO_ARRAY[NUM_FILES]}"
 ###############################################################################
 #     generate title_txt png, and template.png needed for all operations       #
