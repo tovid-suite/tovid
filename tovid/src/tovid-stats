@@ -30,14 +30,21 @@ from libtovid.utils import pretty_dict
 if __name__ == '__main__':
     args = sys.argv[1:]
     if len(args) == 0:
-        print "Usage: tovid-stats COMMANDS"
-        print "where COMMANDS may be:"
+        print "This script gathers statistics from your ~/.tovid/stats.tovid"
+        print "file, and can display summary information or average values."
+        print " "
+        print "Usage:"
+        print "    tovid-stats COMMANDS"
+        print "COMMANDS may be any of:"
         print "    -count FIELD"
         print "        Count total for each distinct value of FIELD"
         print "    -average FIELD_1 [by FIELD_2]"
         print "        Average FIELD_1, optionally sorted by FIELD_2"
         print "FIELD may be any of the following:"
-        print fields
+        for field in fields:
+            print "    %s" % field
+        print "You may include multiple commands, for example:"
+        print "    tovid-stats -count cpu_speed -average avg_bitrate by tvsys"
         sys.exit(0)
 
     # Open and read tovid stat file
