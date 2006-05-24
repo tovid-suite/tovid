@@ -488,8 +488,9 @@ if [ ${#SM_AUDIO[@]} -eq 1 ]; then
     SM_AUDIO_FILE=${SM_AUDIO[0]}
 fi
 # if more than one audio file for submenu make sure they equal video #
-if test ${#VIDS[@]} -ne ${#SM_AUDIO[@]} && [ ${#SM_AUDIO[@]} -ne 1 ]; then
-    usage_error "Please give the same number of submenu audios as videos."
+if test ${#FILES[@]} -ne ${#SM_AUDIO[@]} && [ ${#SM_AUDIO[@]} -ne 1 ]; then
+    usage_error "Please give the same number of submenu audios as videos.
+    You gave ${#FILES[@]} video files and ${#SM_AUDIO[@]} audio files"
 fi
 echo "SM_AUDIO_FILE is $SM_AUDIO_FILE"
 rm -f "$WORK_DIR/font.png"
