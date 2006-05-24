@@ -20,7 +20,9 @@ fields = [\
     'gop_maxsize',
     'encoding_time',   # SCRIPT_TOT_TIME
     'cpu_model',
-    'cpu_speed']
+    'cpu_speed',
+    'in_vcodec',
+    'in_acodec']
 
 class Statlist:
     """A list of VidStats that may be queried with a simple database-like
@@ -51,6 +53,30 @@ class Statlist:
         print "Read %s lines from %s" % (len(self.records), filename)
         print "Skipped %s lines because they contained empty fields." % skipped
 
+    def unique(self, field):
+        """Return a list of unique values of the given field."""
+        unique_values = []
+        for record in self.records:
+            if record[field] not in unique_values:
+                unique_values.append(record[field])
+        return unique_values
+
+    def count_unique(self, field):
+        """Count the occurrences of each unique value of the given field.
+        Return a dictionary of unique values and the number of occurrences
+        of each."""
+        counts = {}
+        # Go through all records and total up occurrences of each value
+        for record in self.records:
+            value = record[field]
+            if value is None or value == '':
+                pass
+            elif value not in counts:
+                counts[value] = 1
+            else:
+                counts[value] += 1
+        return counts
+        
     def average(self, attribute):
         """Calculate the average value for a given numeric VidStat attribute.
         For example, average('bitrate') returns the average overall bitrate of
