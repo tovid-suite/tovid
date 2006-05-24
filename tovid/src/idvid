@@ -47,7 +47,10 @@ Where OPTIONS may be any of the following:
 
     -terse      Suitable for parsing
     -verbose    Also use ffmpeg and tcprobe
-    -fast       Skip 
+    -fast       Skip lengthy playing time estimation
+    -is [vcd|svcd|dvd]
+        Print nothing. Return shell-true (0) if the first
+        file matches the given format, false (1) otherwise.
 
 See the idvid manual page ('man idvid') for additional documentation.
 
@@ -77,6 +80,7 @@ A_NONCOMPLIANT=""
 V_NONCOMPLIANT=""
 A_NONE=""
 V_TV=""
+MATCH_FORMAT=""
 mkdir -p "$STAT_DIR"
 touch "$STAT_FILE"
 
@@ -248,9 +252,12 @@ idvid_main ()
             ;;
     esac
 
+    # If just matching, don't print out anything yet
+    if test -n "$MATCH_FORMAT"; then
+        :
     # Print out identifying information, either in terse form
     # or in human-readable form
-    if $TERSE; then
+    elif $TERSE; then
         echo "ID_VIDEO_WIDTH=$ID_VIDEO_WIDTH"
         echo "ID_VIDEO_HEIGHT=$ID_VIDEO_HEIGHT"
         echo "V_DURATION=$V_DURATION"
@@ -464,8 +471,42 @@ idvid_main ()
     fi
 
 
+    # If just checking compliance, print "yes" or "no" and exit with
+    # the appropriate return code.
+    if test -n "$MATCH_FORMAT"; then
+        MATCH=false
+        case "$MATCH_FORMAT" in
+            "vcd" )
+                if test -n "$A_VCD1" || test -n "$A_VCD2"; then
+                    if test -n "$V_VCD";
+                    then MATCH=:
+                    fi
+                fi
+                ;;
+            "svcd" )
+                if test -n "$V_SVCD" && test -n "$A_SVCD";
+                then MATCH=:
+                fi
+                ;;
+            "dvd" )
+                if test -n "$V_DVD" && test -n "$A_DVD";
+                then MATCH=:
+                fi
+                ;;
+            * )
+                echo "Sorry, can only match vcd, svcd, or dvd."
+                ;;
+        esac
+        rm -rf "$TMP_DIR"
+        if $MATCH; then
+            exit 0
+        else
+            exit 1
+        fi
+        
+        
     # Print out compliance information
-    if $TERSE; then
+    elif $TERSE; then
         test -n "$A_VCD1" && echo "A_VCD1_OK=:"
         test -n "$A_VCD2" && echo "A_VCD2_OK=:"
         test -n "$A_SVCD" && echo "A_SVCD_OK=:"
@@ -546,6 +587,12 @@ while test $# -gt 0; do
         "-terse" ) TERSE=: ;;
         "-verbose" ) VERBOSE=: ;;
         "-fast" ) FAST=: ;;
+        "-is" )
+            shift
+            MATCH_FORMAT="$1"
+            TERSE=:
+            FAST=:
+            ;;
         * )
             idvid_main "$1"
             ;;
