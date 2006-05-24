@@ -24,7 +24,6 @@
 
 # List the source files for each shell script
 sh_bin = \
-	src/animenu \
 	src/idvid \
 	src/makedvd \
 	src/makemenu \
@@ -33,6 +32,7 @@ sh_bin = \
 	src/makexml \
 	src/postproc \
 	src/previd \
+	src/todisc \
 	src/tovid \
 	src/tovid-batch \
 	src/tovid-init \
