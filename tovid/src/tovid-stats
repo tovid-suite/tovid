@@ -24,21 +24,48 @@ prediction is then based on the average for each format.
 
 import os
 import sys
-from libtovid.stats import Statlist
+from libtovid.stats import Statlist, fields
+from libtovid.utils import pretty_dict
 
 if __name__ == '__main__':
+    args = sys.argv[1:]
+    if len(args) == 0:
+        print "Usage: tovid-stats COMMANDS"
+        print "where COMMANDS may be:"
+        print "    -count FIELD"
+        print "        Count total for each distinct value of FIELD"
+        print "    -average FIELD_1 [by FIELD_2]"
+        print "        Average FIELD_1, optionally sorted by FIELD_2"
+        print "FIELD may be any of the following:"
+        print fields
+        sys.exit(0)
+
+    # Open and read tovid stat file
     statfile = os.path.expanduser('~/.tovid/stats.tovid')
     tempfile = os.path.expanduser('~/.tovid/stats.tovid.csv')
+    # Only use lines beginning with "
     os.system('cat "%s" | grep \'^\"\' > "%s"' % (statfile, tempfile))
     statlist = Statlist()
     statlist.read_csv(tempfile)
     os.remove(tempfile)
 
-    print "Average bitrate"
-    print statlist.average('avg_bitrate')
-    print "Average bitrates by format"
-    print statlist.average_by('avg_bitrate', 'format')
-    print "Average bitrates by TV system"
-    print statlist.average_by('avg_bitrate', 'tvsys')
-    print "Average encoding time by CPU speed"
-    print statlist.average_by('encoding_time', 'cpu_speed')
+    # Parse command-line
+    while args:
+        arg = args.pop(0)
+        if arg == '-count':
+            field = args.pop(0)
+            print "Total occurrences of each distinct %s:" % field
+            print pretty_dict(statlist.count_unique(field))
+        elif arg == '-average':
+            avg_field = args.pop(0)
+            if args and args[0] == 'by':
+                args.pop(0)
+                by_field = args.pop(0)
+                print "Average %s, sorted by %s:" % \
+                        (avg_field, by_field)
+                print pretty_dict(statlist.average_by(avg_field, by_field))
+            else:
+                print "Average %s:" % avg_field
+                print statlist.average(avg_field)
+
+
