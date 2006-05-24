@@ -1397,7 +1397,7 @@ if $SUB_MENU; then
             if $AUDIO_FADE; then
                 echo -e "Running:
                 sox $WORK_DIR/menu$s.wav \
-                $WORK_DIR/menu$s-processed.wav fade t $FADE $FADETIME $FADE" |
+                $WORK_DIR/menu$s-processed.wav fade t $FADE $TIME $FADE" |
                 sed 's/    */ /g'|sed -e "s/^ *//"
 
                 sox -q $WORK_DIR/menu$s.wav \
@@ -1714,10 +1714,9 @@ unset BGAUDIO_CMD
 if $AUDIO_FADE; then
     echo -e "Running:
     sox $WORK_DIR/intro.wav \
-    $WORK_DIR/intro-processed.wav fade t $FADE $(awk 'BEGIN { printf("'"$LENGTH"'" - "'"$FADE"'") "\n" ; exit  }') $FADE"
-    FADETIME=$(awk 'BEGIN { printf("'"$TIME"'" - "'"$FADE"'") "\n" ; exit  }')
+    $WORK_DIR/intro-processed.wav fade t $FADE $TIME $FADE"
     sox $WORK_DIR/intro.wav \
-    $WORK_DIR/intro-processed.wav fade t $FADE $FADETIME $FADE
+    $WORK_DIR/intro-processed.wav fade t $FADE $TIME $FADE
     rm $WORK_DIR/intro.wav
     mv $WORK_DIR/intro-processed.wav $WORK_DIR/intro.wav
 fi
