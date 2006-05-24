@@ -846,7 +846,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
 done
 PICS=( "${PICS[@]}" \
 $(find $WORK_DIR/ -maxdepth 1 -name \*preview\*.$IMG_FMT) )
-for i in "${!PICS[@]}"; do
+for ((i=0; i<${#PICS[@]}; i++)); do
     if $FEATHER; then
         composite -compose CopyOpacity $THUMB_MASK +matte \
         "${PICS[i]}" miff:- |
@@ -898,7 +898,7 @@ unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
 #             get information about videos and store in an array              #
 ###############################################################################
 
-for i in ${!IN_FILES[@]}; do
+for ((i=0; i<${#IN_FILES[@]}; i++)); do
     echo "Getting stats on "${IN_FILES[i]}""
     mencoder_stats=( "${mencoder_stats[@]}" \
     "$(mencoder -quiet "${IN_FILES[i]}" -oac pcm -ovc copy -o /dev/null 2>&1)" )
@@ -907,7 +907,7 @@ echo
 echo $SEPARATOR
 echo
 # put in the log file in case anyone is interested
-for i in ${!IN_FILES[@]}; do
+for ((i=0; i<${#IN_FILES[@]}; i++)); do
     VCODEC="$(awk '/VIDEO:/ {gsub(/\[|\]/, ""); print $2}' \
     <<< "${mencoder_stats[i]}")"
     V_BR="$(awk '/Video stream:/{print $3}'<<<"${mencoder_stats[i]}")"
@@ -935,12 +935,12 @@ done
 echo
 echo $SEPARATOR
 
-for i in ${!mencoder_stats[@]}; do
+for ((i=0; i<${#mencoder_stats[@]}; i++)); do
     VID_LEN=( ${VID_LEN[@]}  "$(awk '/Video stream:/{print $10}' \
     <<<"${mencoder_stats[i]}")" )
 done
 
-for i in ${!VID_LEN[@]}; do
+for ((i=0; i<${#VID_LEN[@]}; i++)); do
     NEW_LENGTH=( ${NEW_LENGTH[@]}   ${VID_LEN[i]%.*} )
 done
 # find out longest video and shortest video 
@@ -1083,7 +1083,7 @@ fi
 
 # make appropriate chapter lengths for each video
 # get chapter lengths by dividing by $CHAPTERS, then getting running totals
-for i in ${!NEW_LENGTH[@]}; do
+for ((i=0; i<${#NEW_LENGTH[@]}; i++)); do
   CHAPT_INTERVALS=( ${CHAPT_INTERVALS[@]} $(( ${NEW_LENGTH[i]} / $CHAPTERS)) )
 done
 
@@ -1098,7 +1098,7 @@ for len in ${CHAPT_INTERVALS[@]}; do
     unset L chapt_intervals cmd
 done
 # debug chapters
-for i in ${!IN_FILES[@]}; do
+for ((i=0; i<${#IN_FILES[@]}; i++)); do
     echo -e "Chapters for "${IN_FILES[i]}" are: \n${CHAPT_ARRAY[i++]}\n"
 done
 # make xml files, and run dvdauthor and spumux
@@ -1200,7 +1200,7 @@ echo "$POST"
 fi)    
     </menus>
     <titles>
-$(for i in ${!IN_FILES[@]}; do
+$(for ((i=0; i<${#IN_FILES[@]}; i++)); do
     echo -e "      <pgc>"
     echo -ne "        <vob file=\"${IN_FILES[i]}\""
     echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
@@ -1223,7 +1223,7 @@ if $SUB_MENU; then
     yecho "Building submenus"
     yecho
     yecho "Creating images for each chapter"
-    for i in ${!IN_FILES[@]}; do
+    for ((i=0; i<${#IN_FILES[@]}; i++)); do
         yecho "Creating a transparent title PNG"
         convert -font "$MENU_FONT" -pointsize $MENU_FONTSIZE -size 620x \
         -gravity Center caption:"\"${TITLES[i]}\"" -negate \( +clone -blur 0x8 \
@@ -1251,7 +1251,7 @@ if $SUB_MENU; then
         counts=$((${CHAPT_INTERVALS[i]} * 30))
         CUT=( 0 $(running_total <<<  $(for ((a=0; a<CHAPTERS ; a++)); \
         do echo -n "$counts ";done)) )
-        for c in ${!CUT[@]}; do
+        for ((c=0; c<${#CUT[@]}; c++)); do
             cmd[c]=$((${CUT[c]}))-$((${CUT[c]} + CUT_TIME))
         done
         key=$((${#cmd[@]} - 1))
