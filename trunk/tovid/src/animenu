@@ -187,11 +187,27 @@ function get_font()
     # TODO: Check for font availability?
 }
 
-function sorry_msg()
+# ******************************************************************************
+# Print out a runtime error specified as an argument, and exit
+# ******************************************************************************
+runtime_error()
 {
-    yecho -e "Oops . . .Something went wrong."
-    yecho "There was a problem creating the $OUTPUT."
-    yecho "Please check the log at $LOG_FILE"
+    # Uncomment if needed later
+    #killsubprocs
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    yecho "animenu encountered an error:"
+    yecho "    $@"
+    echo "Check the contents of $LOG_FILE to see what went wrong."
+    # TODO: Uncomment once -debug is actually implemented
+    #if $DEBUG; then :; else
+    #    echo "Run animenu again with the -debug option to produce more verbose"
+    #    echo "output, if the log file doesn't give you enough information."
+    #fi
+    #echo " "
+    echo "See the tovid website ($TOVID_HOME_PAGE) for what to do next."
+    echo "Sorry for the inconvenience!"
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    exit 1
 }
 
 function vid_length()
@@ -238,8 +254,10 @@ function confirm_preview()
     else
         yecho "Preview not OK, exiting."
         yecho
-        echo "If titles do not fit, or look bad, then -menu-font, -menu-fontsize"
-        echo "-thumbfont and -thumb-fontsize are options to consider"
+        yecho "Some configuration options to try, if things look bad:"
+        yecho "   -menu-font and -menu-fontsize"
+        yecho "     (to adjust the main title)"
+        echo "    -thumbfont and -thumb-fontsize"
         echo "If you get black frames, then look at the -seek option"
         echo "For other fine-tuning options, see 'man animenu'."
         exit 0
@@ -478,6 +496,7 @@ rm -f "$WORK_DIR/font.png"
 # Get absolute pathnames of all files
 for i in "${FILES[@]}"; do
     IN_FILES=("${IN_FILES[@]}" "$(abspath "$i")")
+    echo "Adding: $i"
 done
 V_ARRAY_TOTAL=${#IN_FILES[@]}
 # (Length of array) - 1
@@ -497,7 +516,6 @@ if $ANI_SUB_MENU; then
 fi
 
 # Check input files for compliance; offer to tovid-encode non-compliant files
-FILES_TO_ENCODE=
 for ((i=0; i<=NUM_FILES; i++)); do
     TEST_FILE=${IN_FILES[i]}
     yecho "Checking $TEST_FILE for compliance..."
@@ -513,15 +531,18 @@ for ((i=0; i<=NUM_FILES; i++)); do
         NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE.enc.mpg")
     fi
 done
-if test "${#FILES_TO_ENCODE[@]}" -gt 1; then
+
+if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
     TGT_CAPS=$(echo $TARGET | tr a-z A-Z)
     yecho
     yecho "Encode input files"
     yecho
     yecho "Some of the -files you provided are not $TGT_CAPS-compliant:"
+    yecho " "
     for i in "${FILES_TO_ENCODE[@]}"; do
         test -n "$i" && yecho "  $i"
     done
+    yecho " "
     yecho "I can encode them for you, but it may take a long time."
     yecho "Encoding will ensure that your disc is fully compliant;"
     yecho "you may skip this, but your disc may not be playable."
@@ -529,10 +550,17 @@ if test "${#FILES_TO_ENCODE[@]}" -gt 1; then
     read ENCODE
     if test -n "$ENCODE" && test "$ENCODE" = 'yes'; then
         yecho
-        yecho "Converting files to $TGT_CAPS format with 'tovid':"
+        yecho "Converting files to $TGT_CAPS format with 'tovid'"
         for i in "${FILES_TO_ENCODE[@]}"; do
+            yecho "Converting: $i"
+            countdown
             tovid -$TV_STANDARD -$TARGET -in $i -out $i.enc
             wait
+            # See if output file exists
+            if ! test -f "$i.enc.mpg"; then
+                runtime_error "Couldn't encode file: $i"
+            fi
+            yecho
         done
         # Replace IN_FILES with NEW_IN_FILES (with .enc extension)
         IN_FILES=${NEW_IN_FILES[@]}
@@ -572,6 +600,8 @@ fi
 
 # Some user feedback
 yecho
+yecho "Disc title: \"$VMGM_TITLE\""
+yecho "  (adjust with -menu-title)"
 yecho "Including the following videos:"
 for ((i=0; i<${#TITLES[@]}; i++)); do
     yecho "  \"${TITLES[i]}\" (${IN_FILES[i]})"
@@ -810,10 +840,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
         cleanlog 3
     else
         cleanlog 3
-        OUTPUT="There was a problem creating images from the video.\n \
-        Please see the output of $LOG_FILE"
-        SORRY_MSG=$OUTPUT
-        sorry_msg
+        runtime_error "Problem creating images from the video."
         exit 1
     fi
 done
@@ -972,10 +999,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
         cleanlog 3
     else
         cleanlog 3
-        OUTPUT="There was a problem creating images from the video.\n \
-        Please see the output of $LOG_FILE"
-        SORRY_MSG=$OUTPUT
-        sorry_msg
+        runtime_error "Problem creating images from the video."
         exit 1
     fi
 
@@ -1244,10 +1268,7 @@ if $SUB_MENU; then
             cleanlog 1
         else
             cleanlog 1
-            OUTPUT="There was a problem creating images from the video.\n \
-            Please see the output of $LOG_FILE"
-            SORRY_MSG=$OUTPUT
-            sorry_msg
+            runtime_error "Problem creating images from the video."
             exit 1
         fi
         unset TCODE_CMD
@@ -1324,8 +1345,7 @@ if $SUB_MENU; then
             cleanlog 3
         else
             cleanlog 3
-            sorry_msg
-            exit 1
+            runtime_error
         fi
         rm -f $WORK_DIR/animenu/*.$IMG_FMT
     done    
@@ -1335,7 +1355,6 @@ if $SUB_MENU; then
         yecho
         yecho "Creating an audio background"
         yecho "Working on submenu audio for "${IN_FILES[s]}""
-        OUTPUT="background audio"
         if $SUBMENU_AUDIO; then
             if [ "${SM_AUDIO[s]}" = "none" ]; then # user asked for silence
                 TIME=`vid_length "$WORK_DIR/menu$s.m2v"`
@@ -1370,8 +1389,7 @@ if $SUB_MENU; then
         cleanlog 1
         else
             cleanlog 3
-            sorry_msg
-            exit 1
+            runtime_error
         fi
         # convert to DVD/SVCD format as long as "none" is not called for
         if "$SUBMENU_AUDIO" && [[ ! "${SM_AUDIO[s]}" = "none" && -z "$SM_AUDIO_FILE" ]]; then
@@ -1392,8 +1410,7 @@ if $SUB_MENU; then
                 cleanlog 3
             else
                 cleanlog 3
-                sorry_msg
-                exit 1
+                runtime_error
             fi
             unset TIME
         fi
@@ -1419,8 +1436,7 @@ if $SUB_MENU; then
                     cleanlog 3
                 else
                     cleanlog 3
-                    sorry_msg
-                    exit 1
+                    runtime_error
                 fi
             fi
         fi
@@ -1438,8 +1454,7 @@ if $SUB_MENU; then
             cleanlog 1
         else
             cleanlog 1
-            sorry_msg
-            exit 1
+            runtime_error
         fi
         # remove wav to save space
         rm -fv $WORK_DIR/menu$s.wav
@@ -1517,15 +1532,14 @@ if [ -n "$ANI_BG" ]; then
         cleanlog 3
     else
         cleanlog 3
-        OUTPUT="the images from the background video"
-        sorry_msg
-        exit 1
+        runtime_error "Problem creating images from the background video"
     fi
 fi
 unset FFMPEG_CMD
 if "$MENU_FADE" && ! "$STATIC"; then
-    echo
-    echo "making final montages and compositing onto background with title"
+    yecho
+    yecho "Making final montages and compositing onto background with title"
+    yecho
     if [ -z "$ANI_BG" ]; then
         for ((frame=0; frame<=ANI_MENU_END_FRAME; frame++)); do
             # copy template for fade out beginning and end frames
@@ -1664,15 +1678,13 @@ if "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" >> $LOG_FILE.tmp 2>&1; then
     cleanlog 3
 else
     cleanlog 3
-    sorry_msg
-    exit 1
+    runtime_error
 fi
 echo
 echo "Cleaning up montage images"
 rm -fr $WORK_DIR/animenu/*.jpg
 
 # create audio background for the main menu
-OUTPUT="main menu background audio"
 if [ -n "$BG_AUDIO" ]; then
     TIME=$(ffmpeg -i "$BG_AUDIO" 2>&1|awk '/Duration/ {print $2}')
     echo "Running ffmpeg -i "BG_AUDIO" 2>&1|awk '/Duration/ {print $2}'" #debug
@@ -1693,8 +1705,7 @@ else # audio supplied: convert to wav then later to dvd/svcd format
         cleanlog 3
     else
         cleanlog 3
-        sorry_msg
-        exit 1
+        runtime_error
     fi
 fi
 
@@ -1719,8 +1730,7 @@ if "${BGAUDIO_CMD[@]}" >> $LOG_FILE.tmp 2>&1; then
     cleanlog 3
     else
     cleanlog 3
-    sorry_msg
-    exit 1
+    runtime_error
 fi
 unset BGAUDIO_CMD
 
@@ -1736,8 +1746,7 @@ if ${INTRO_MPLEX_CMD[@]} >> $LOG_FILE.tmp 2>&1; then
     cleanlog 1
 else
     cleanlog 1
-    sorry_msg
-    exit 1
+    runtime_error
 fi
 
 echo
