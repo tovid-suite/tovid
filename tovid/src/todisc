@@ -70,11 +70,10 @@ VMGM_TITLE="My Video Collection"
 SPUMUX_XML="$WORK_DIR/spumux.xml"
 SUBMENU_SPUMUX_XML="$WORK_DIR/submenu_spumux.xml"
 DVDAUTHOR_XML="$WORK_DIR/dvdauthor.xml"
-GRADIENT="$WORK_DIR/aqua_gradient.png"
 STATIC=false
 SUB_MENU=false
 ANI_SUB_MENU=false
-FANCY_TITLE=false
+TITLE_COLOUR="#CDC0B0"
 CHAPTERS=6
 BG_AUDIO=""
 BG_PIC=""
@@ -363,6 +362,10 @@ while test $# -gt 0; do
             FEATHER=:
             IMG_FMT=png
             ;;
+        "-title-colour" )
+            shift
+            TITLE_COLOUR="$1"
+            ;;
         "-transparency" )
             shift
             TRANSPARENT=:
@@ -410,9 +413,6 @@ while test $# -gt 0; do
         "-menu-fontsize" )
             shift
             MENU_FONTSIZE="$1"
-            ;;
-        "-fancy" )
-            FANCY_TITLE=:
             ;;
         "-thumb-font" )
             shift
@@ -628,7 +628,6 @@ DVD_AUDIO_OPTS="-ab 224 -ar 48000 -ac 2 -acodec $DVD_AUDIO_EXT"
 SVCD_AUDIO_OPTS="-ab 224 -ar 44100 -ac 2 -acodec $SVCD_AUDIO_EXT"
 SVCD_FFMPEG_OPTS="-b 2200 -minrate 2200 -maxrate 2200 -bufsize 230 -aspect 4:3"
 DVD_FFMPEG_OPTS="-b 8000  -maxrate 9000 -bufsize 230  -aspect 4:3"
-SVCD_INTRO_SIZE="240x240"
 SVCD_MPLEX_FORMAT=4
 DVD_MPLEX_FORMAT=8
 DVD_GEO_ARRAY=(320x240 272x204 192x144 192x144 184x138 184x138 144x108 144x108 \
@@ -656,7 +655,6 @@ if  [ $TARGET = "dvd" ]; then
     SAMPLERATE=$DVD_SAMPLERATE
     MPLEX_FORMAT=$DVD_MPLEX_FORMAT
     GEO_ARRAY=("${DVD_GEO_ARRAY[@]}")
-    INTRO_SIZE=$DVD_INTRO_SIZE
     FFMPEG_OPTS=$DVD_FFMPEG_OPTS
     if [ $TV_STANDARD = ntsc ]; then
         VIDSIZE=$NTSC_DVD_VIDSIZE
@@ -671,7 +669,6 @@ elif [ $TARGET = "svcd" ]; then
     SAMPLERATE=$SVCD_SAMPLERATE
     MPLEX_FORMAT=$SVCD_MPLEX_FORMAT
     GEO_ARRAY=("${SVCD_GEO_ARRAY[@]}")
-    INTRO_SIZE=$SVCD_INTRO_SIZE
     FFMPEG_OPTS=$SVCD_FFMPEG_OPTS
     if [ $TV_STANDARD = ntsc ]; then
         VIDSIZE=$NTSC_SVCD_VIDSIZE
@@ -681,7 +678,7 @@ elif [ $TARGET = "svcd" ]; then
         FRAME_RATE=25
     fi
 fi
-INTRO_SIZE="${GEO_ARRAY[NUM_FILES]}"
+THUMB_SIZE="${GEO_ARRAY[NUM_FILES]}"
 ###############################################################################
 #     generate title_txt png, and template.png needed for all operations       #
 ###############################################################################
@@ -698,8 +695,8 @@ fi
 if $MENU_FADE || $FEATHER; then
     convert -size $VIDSIZE xc:"#161514" "$WORK_DIR/black.jpg"
 fi
-DIMY=$(echo $INTRO_SIZE|cut -f1 -dx)
-DIMX=$(echo $INTRO_SIZE|cut -f2 -dx)
+DIMY=$(echo $THUMB_SIZE|cut -f1 -dx)
+DIMX=$(echo $THUMB_SIZE|cut -f2 -dx)
 DIMY1=$((DIMY / 20))
 DIMX1=$((DIMX / 20))
 DIMY2=$((DIMY - DIMY1))
@@ -712,14 +709,14 @@ DIMY5=$((DIMY / 3))
 DIMX5=$((DIMX4 / 3))
 BLUR_CMD=(convert - -blur 0x$BLUR -channel RGBA +matte miff:-)
 if [ -n "$THUMB_SHAPE" ]; then
-    convert -size $INTRO_SIZE xc:none -fill white -stroke none \
+    convert -size $THUMB_SIZE xc:none -fill white -stroke none \
     -draw "rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2" $WORK_DIR/feather_orig.png
     convert $WORK_DIR/feather_orig.png -channel RGBA \
     -blur 0x60 $WORK_DIR/feather_mask2.png
 fi
 if test "$THUMB_SHAPE" = "normal"; then
     THUMB_MASK=$WORK_DIR/feather_mask.png
-    convert -size $INTRO_SIZE xc:black -fill white \
+    convert -size $THUMB_SIZE xc:black -fill white \
     -draw "Rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2," +matte -compose CopyOpacity miff:- |
     "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" |
     convert - -evaluate subtract 50% -normalize $THUMB_MASK
@@ -732,14 +729,14 @@ fi
 if test "$THUMB_SHAPE" = "oval"; then
     THUMB_MASK=$WORK_DIR/oval_mask.png
     echo "Running:
-    convert -size $INTRO_SIZE xc:black -fill white \
+    convert -size $THUMB_SIZE xc:black -fill white \
     -draw "RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3" \
     +matte -compose CopyOpacity miff:- |
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
     convert - -evaluate subtract 50% -normalize $THUMB_MASK" |
     sed 's/    */ /g'|sed -e "s/^ *//" 
     echo
-    convert -size $INTRO_SIZE xc:black -fill white \
+    convert -size $THUMB_SIZE xc:black -fill white \
     -draw "RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3" \
     +matte -compose CopyOpacity miff:- |
     "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" |
@@ -750,14 +747,14 @@ if test "$THUMB_SHAPE" = "egg"; then
     THUMB_MASK=$WORK_DIR/egg_mask.png
     echo "Running:
 
-    convert -size $INTRO_SIZE xc:black -fill white \
+    convert -size $THUMB_SIZE xc:black -fill white \
     -draw "circle $DIMY4,$DIMX4 $DIMY5,$DIMX5" \
     +matte -compose CopyOpacity miff:- |
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
     convert - -evaluate subtract 50% -normalize $THUMB_MASK" |
     sed 's/    */ /g'|sed -e "s/^ *//"
     echo
-    convert -size $INTRO_SIZE xc:black -fill white \
+    convert -size $THUMB_SIZE xc:black -fill white \
     -draw "circle $DIMY4,$DIMX4 $DIMY5,$DIMX5" \
     +matte -compose CopyOpacity miff:- |
     "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" |
@@ -775,36 +772,24 @@ if test "$THUMB_SHAPE" = "cloud"; then
     -draw "circle 240,160 280,200" \
     +matte -compose CopyOpacity  miff:- |
     "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" |
-    convert -resize $INTRO_SIZE! - $THUMB_MASK
+    convert -resize $THUMB_SIZE! - $THUMB_MASK
 fi
 
 
-if $FANCY_TITLE; then
-    convert -size 1x512 gradient: -rotate 90 +matte \
-    -fx '3.5u^3 - 5.05u^2 + 2.05u + 0.3' \
-    -size 512x1 xc:"#08447B" -compose Overlay -composite "$GRADIENT"
-    echo "Creating a fancy blue title image"
-
-    convert -font "$MENU_FONT" -pointsize $MENU_FONTSIZE -size 620x \
-    -gravity Center caption:"\"$VMGM_TITLE\""  -negate  \( +clone \
-    -shade 110x45 -normalize \
-    $GRADIENT  -fx 'v.p{g*v.w,0}' \)  +matte +swap \
-    -compose CopyOpacity -composite  \
-    \( +clone -fx A +matte -shade 0x90 -normalize -negate \
-    -evaluate multiply .4 -negate +clone  -compose Multiply -composite \) \
-    -matte  -compose In  -composite miff:- |
-     convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png
+yecho "Creating a title image"
+if [ -n $BG_PIC ]; then
+    STROKE=none
 else
-    yecho "Creating a plain off-white title image"
-    yecho "(Use the -fancy option for a fancier dark blue title)"
-    convert -size 620x100 xc:none -font "$MENU_FONT" \
-    -pointsize $MENU_FONTSIZE \
-    -fill black -draw "gravity center text 2,2 \"$VMGM_TITLE\"" \
-    -stroke grey -strokewidth 1 \
-    -fill '#CDC0B0' -stroke gray \
-    -draw "gravity center text 1,1 \"$VMGM_TITLE\"" miff:- | \
-    convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png
+    STROKE=gray
 fi
+convert -size 620x100 xc:none -font "$MENU_FONT" \
+-pointsize $MENU_FONTSIZE \
+-fill black -draw "gravity center text 2,2 \"$VMGM_TITLE\"" \
+-stroke "$STROKE" -strokewidth 1 \
+-fill "$TITLE_COLOUR" -stroke "$STROKE" \
+-draw "gravity center text 1,1 \"$VMGM_TITLE\"" miff:- | \
+convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png
+
 
 if $MIST; then
     # make a white png for misted background effect, only for user's bg
@@ -834,7 +819,7 @@ fi
 # generate images for montage and title and resize them
 for ((i=0; i<=NUM_FILES; i++)) ; do
     FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" $SEEK -vframes 1 \
-    -s $INTRO_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
+    -s $THUMB_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
     echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $LOG_FILE
     SED_VAR="frame="
     if "${FFMPEG_CMD[@]}" >> $LOG_FILE.tmp 2>&1;then
@@ -860,11 +845,11 @@ for ((i=0; i<${#PICS[@]}; i++)); do
     IM_CMD1=(montage "${PICS[i]}" -geometry +4+4 -compose Copy  \
     -background  none -fill "$FILL" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
     -title "${TITLES[i]}")
-    IM_CMD2=(convert -resize $INTRO_SIZE! -)
+    IM_CMD2=(convert -resize $THUMB_SIZE! -)
     IM_CMD3=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png - )
     IM_CMD4=(convert -background none -frame 5x5 \
     -bordercolor "#444744" -)
-    IM_CMD5=(convert -resize $INTRO_SIZE! - "${PICS[i]}")
+    IM_CMD5=(convert -resize $THUMB_SIZE! - "${PICS[i]}")
     if $FEATHER; then
         "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
         "${IM_CMD3[@]}" miff:- | "${IM_CMD5[@]}"
@@ -992,7 +977,7 @@ echo "Creating images from each video for the main menu"
 for ((i=0; i<=NUM_FILES; i++)) ; do
     echo "Working on "${IN_FILES[$i]}""
     CREATE_IMG_CMD=(ffmpeg -i "${IN_FILES[$i]}"  $SEEK -vframes $FRAMES \
-    -s "$INTRO_SIZE" "$WORK_DIR/pics/$i/%d.$IMG_FMT")
+    -s "$THUMB_SIZE" "$WORK_DIR/pics/$i/%d.$IMG_FMT")
     echo -e "\nRunning: ${CREATE_IMG_CMD[@]}\n" | fold -bs >> $LOG_FILE
 
     SED_VAR="frame="
@@ -1018,11 +1003,6 @@ done
     fi
 
 echo
-echo "Creating a gradient image for fancy titling"
-convert -size 1x512 gradient: -rotate 90 +matte \
--fx '3.5u^3 - 5.05u^2 + 2.05u + 0.3' \
--size 512x1 xc:"#08447B" -compose Overlay -composite "$GRADIENT"
-
 
 ##############################################################################
 #                     spumux and dvdauthor stuff                             #
@@ -1488,14 +1468,14 @@ for ((i=0; i<=NUM_FILES; i++)); do
         IM_CMD2=(montage -  -geometry +4+4 -compose Copy -background none \
         -fill "$FILL" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}")
 
-        IM_CMD2b=(convert -resize $INTRO_SIZE! -)
+        IM_CMD2b=(convert -resize $THUMB_SIZE! -)
         IM_CMD2c=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -) 
         
         IM_CMD3=(montage -geometry +4+4 -background '#161514' \
         -fill '#C6C6C6' -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}" "$pic")
         IM_CMD4=(convert -background '#161514' -frame 5x5 \
         -bordercolor none -mattecolor "#444744" -)
-        IM_CMD5=(convert -resize $INTRO_SIZE! - $pic)
+        IM_CMD5=(convert -resize $THUMB_SIZE! - $pic)
         if $FEATHER; then
 #            "${IM_CMD0[@]}" miff:- | "${IM_CMD2[@]}" miff:- | "${IM_CMD1[@]}" miff:- |
             "${IM_CMD0[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
