@@ -488,7 +488,7 @@ if [ ${#SM_AUDIO[@]} -eq 1 ]; then
     SM_AUDIO_FILE=${SM_AUDIO[0]}
 fi
 # if more than one audio file for submenu make sure they equal video #
-if test ${#FILES[@]} -ne ${#SM_AUDIO[@]} && [ ${#SM_AUDIO[@]} -ne 1 ]; then
+if [[ $SM_AUDIO &&  ${#FILES[@]} -ne ${#SM_AUDIO[@]} &&  ${#SM_AUDIO[@]} -ne 1 ]]; then
     usage_error "Please give the same number of submenu audios as videos.
     You gave ${#FILES[@]} video files and ${#SM_AUDIO[@]} audio files"
 fi
@@ -1397,7 +1397,7 @@ if $SUB_MENU; then
             if $AUDIO_FADE; then
                 echo -e "Running:
                 sox $WORK_DIR/menu$s.wav \
-                $WORK_DIR/menu$s-processed.wav fade t $FADE $TIME $FADE" |
+                $WORK_DIR/menu$s-processed.wav fade t $FADE $FADETIME $FADE" |
                 sed 's/    */ /g'|sed -e "s/^ *//"
 
                 sox -q $WORK_DIR/menu$s.wav \
@@ -1714,10 +1714,10 @@ unset BGAUDIO_CMD
 if $AUDIO_FADE; then
     echo -e "Running:
     sox $WORK_DIR/intro.wav \
-    $WORK_DIR/intro-processed.wav fade t $FADE $TIME $FADE"
-
+    $WORK_DIR/intro-processed.wav fade t $FADE $(awk 'BEGIN { printf("'"$LENGTH"'" - "'"$FADE"'") "\n" ; exit  }') $FADE"
+    FADETIME=$(awk 'BEGIN { printf("'"$TIME"'" - "'"$FADE"'") "\n" ; exit  }')
     sox $WORK_DIR/intro.wav \
-    $WORK_DIR/intro-processed.wav fade t $FADE $TIME $FADE
+    $WORK_DIR/intro-processed.wav fade t $FADE $FADETIME $FADE
     rm $WORK_DIR/intro.wav
     mv $WORK_DIR/intro-processed.wav $WORK_DIR/intro.wav
 fi
