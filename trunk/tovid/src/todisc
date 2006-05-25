@@ -358,7 +358,7 @@ while test $# -gt 0; do
             shift
             BLUR="$1"
             ;;
-        "-title-colour" | -title-color )
+        "-title-colour" | "-title-color" )
             shift
             TITLE_COLOUR="$1"
             ;;
@@ -1188,14 +1188,13 @@ if $SUB_MENU; then
     yecho "Creating images for each chapter"
     for ((i=0; i<${#IN_FILES[@]}; i++)); do
         yecho "Creating a transparent title PNG"
-        convert -font "$MENU_FONT" -pointsize $MENU_FONTSIZE -size 620x \
-        -gravity Center caption:"\"${TITLES[i]}\"" -negate \( +clone -blur 0x8 \
-        -shade 110x45 -normalize $GRADIENT -fx 'v.p{g*v.w,0}' \) +matte +swap \
-        -compose CopyOpacity -composite  \
-        \( +clone -fx A +matte -blur 0x2 -shade 0x90 -normalize \
-        -blur 0x2 -negate -evaluate multiply .4 -negate +clone \
-        -compose Multiply -composite \) -matte -compose In  -composite miff:- |
-        convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title${i}_txt.png
+		convert -size 620x100 xc:none -font "$MENU_FONT" \
+		-pointsize $MENU_FONTSIZE \
+		-fill black -draw "gravity center text 2,2 \"${TITLES[i]}\"" \
+		-stroke "$STROKE" -strokewidth 1 \
+		-fill "$TITLE_COLOUR" -stroke "$STROKE" \
+		-draw "gravity center text 1,1 \"${TITLES[i]}\"" miff:- | \
+		convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title${i}_txt.png
 
         # which is harmless as they get removed, but needs to be tweaked         
         if $ANI_SUB_MENU; then
