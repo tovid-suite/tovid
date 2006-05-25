@@ -94,7 +94,7 @@ SM_IMG_FMT=jpg  # submenu image format
 KEEP_FILES=false
 DEBUG=: # Debugging on for initial release
 THUMB_SHAPE=""
-SEEK=1
+SEEK="-ss 1"
 FADE=1
 
 SCRIPT_START_TIME=`date +%s`
@@ -292,7 +292,7 @@ while test $# -gt 0; do
                 FILES=("${FILES[@]}" "$1")
                 shift
             done
-            # Don't skip past the next argument
+            # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
             ;;
         "-titles" )
@@ -302,7 +302,7 @@ while test $# -gt 0; do
                 TITLES=("${TITLES[@]}" "$1")
                 shift
             done
-            # Don't skip past the next argument
+            # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
             unset IFS
             ;;
@@ -379,8 +379,10 @@ while test $# -gt 0; do
                 SM_AUDIO=( "${SM_AUDIO[@]}" "$1" )
                 shift
             done
-            # Don't skip past the next argument
-            if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
+            # Do not skip past the next argument
+            if test $# -gt 0 && test ${1:0:1} = "-";then
+                DO_SHIFT=false
+            fi
             SUBMENU_AUDIO=:
             ;;
         "-chapters" )
@@ -425,8 +427,8 @@ while test $# -gt 0; do
             ;;
         "-seek" )
             shift
-            SEEK="$1"
-            SEEK="-ss $SEEK"
+            SEEK_VAL="$1"
+            SEEK="-ss $SEEK_VAL"
             ;;
     esac
     $DO_SHIFT && shift
@@ -664,9 +666,11 @@ elif [ $TARGET = "svcd" ]; then
 fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
 THUMB_SIZE="${GEO_ARRAY[NUM_FILES]}"
+
 ###############################################################################
 #     generate title_txt png, and template.png needed for all operations       #
 ###############################################################################
+
 echo "BG_PIC is "$BG_PIC""
 if [ -z "$BG_PIC" ]; then
     echo
@@ -760,7 +764,6 @@ if test "$THUMB_SHAPE" = "cloud"; then
     convert -resize $THUMB_SIZE! - $THUMB_MASK
 fi
 
-
 yecho "Creating a title image"
 if [ -z "$BG_PIC" ]; then
     STROKE=none
@@ -804,7 +807,7 @@ fi
 for ((i=0; i<=NUM_FILES; i++)) ; do
     FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" $SEEK -vframes 1 \
     -s $THUMB_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
-    echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $LOG_FILE
+    echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> $LOG_FILE
     SED_VAR="frame="
     if "${FFMPEG_CMD[@]}" >> $LOG_FILE.tmp 2>&1;then
         cleanlog 3
@@ -960,7 +963,7 @@ echo
 echo "Creating images from each video for the main menu"
 for ((i=0; i<=NUM_FILES; i++)) ; do
     echo "Working on "${IN_FILES[$i]}""
-    CREATE_IMG_CMD=(ffmpeg -i "${IN_FILES[$i]}"  $SEEK -vframes $FRAMES \
+    CREATE_IMG_CMD=(ffmpeg -i "${IN_FILES[$i]}"  "$SEEK" -vframes $FRAMES \
     -s "$THUMB_SIZE" "$WORK_DIR/pics/$i/%d.$IMG_FMT")
     echo -e "\nRunning: ${CREATE_IMG_CMD[@]}\n" | fold -bs >> $LOG_FILE
 
@@ -1483,7 +1486,7 @@ done
 if [ -n "$ANI_BG" ]; then
     # extract images from the provided video
     echo "ANI_BG is $ANI_BG"
-    FFMPEG_CMD=(ffmpeg -i "$ANI_BG" $SEEK -vframes $FRAMES \
+    FFMPEG_CMD=(ffmpeg -i "$ANI_BG" "$SEEK" -vframes $FRAMES \
     -s "$VIDSIZE" "$WORK_DIR/bg/%d.jpg")
     yecho
     echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $LOG_FILE
