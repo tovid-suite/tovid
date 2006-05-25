@@ -340,7 +340,6 @@ while test $# -gt 0; do
         "-bgimage" )
             shift
             BG_PIC="$(abspath "$1")"
-            MIST=: 
             ;;
         "-menu-fade" )
             MENU_FADE=:
@@ -348,7 +347,6 @@ while test $# -gt 0; do
         "-bgvideo" )
             shift
             ANI_BG="$(abspath "$1")"
-            MIST=: 
             ;;
         "-thumb-shape" )
             shift
@@ -362,9 +360,12 @@ while test $# -gt 0; do
             FEATHER=:
             IMG_FMT=png
             ;;
-        "-title-colour" )
+        "-title-colour" | -title-color )
             shift
             TITLE_COLOUR="$1"
+            ;;
+        "-text-mist" )
+            MIST=:
             ;;
         "-transparency" )
             shift
@@ -492,8 +493,6 @@ if [[ $SM_AUDIO &&  ${#FILES[@]} -ne ${#SM_AUDIO[@]} &&  ${#SM_AUDIO[@]} -ne 1 ]
     usage_error "Please give the same number of submenu audios as videos.
     You gave ${#FILES[@]} video files and ${#SM_AUDIO[@]} audio files"
 fi
-echo "SM_AUDIO_FILE is $SM_AUDIO_FILE"
-rm -f "$WORK_DIR/font.png"
 # Get absolute pathnames of all files
 for i in "${FILES[@]}"; do
     IN_FILES=("${IN_FILES[@]}" "$(abspath "$i")")
@@ -597,6 +596,7 @@ elif convert -size 200x100 xc:none -font helvetica -gravity Center \
 fi
 : ${MENU_FONT:=$DEFAULT_FONT}
 : ${THUMB_FONT:=$DEFAULT_FONT}
+rm -f "$WORK_DIR/font.png"
 
 
 # Some user feedback
@@ -762,7 +762,7 @@ fi
 
 
 yecho "Creating a title image"
-if [ -n $BG_PIC ]; then
+if [ -z "$BG_PIC" ]; then
     STROKE=none
 else
     STROKE=gray
@@ -774,7 +774,6 @@ convert -size 620x100 xc:none -font "$MENU_FONT" \
 -fill "$TITLE_COLOUR" -stroke "$STROKE" \
 -draw "gravity center text 1,1 \"$VMGM_TITLE\"" miff:- | \
 convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png
-
 
 if $MIST; then
     # make a white png for misted background effect, only for user's bg
