@@ -354,11 +354,9 @@ while test $# -gt 0; do
             FEATHER=:
             IMG_FMT=png
             ;;
-        "-feather" )
+        "-blur" )
             shift
             BLUR="$1"
-            FEATHER=:
-            IMG_FMT=png
             ;;
         "-title-colour" | -title-color )
             shift
@@ -667,7 +665,7 @@ THUMB_SIZE="${GEO_ARRAY[NUM_FILES]}"
 ###############################################################################
 #     generate title_txt png, and template.png needed for all operations       #
 ###############################################################################
-
+echo "BG_PIC is "$BG_PIC""
 if [ -z "$BG_PIC" ]; then
     echo
     echo "Creating a black background"
@@ -1433,11 +1431,6 @@ yecho
 yecho "Building main menu"
 yecho
 yecho "Adding title to images and resizing"
-if $FEATHER; then
-    FILL="#161514"
-else
-    FILL="#C6C6C6"
-fi
 for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT) )
