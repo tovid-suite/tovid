@@ -963,7 +963,7 @@ echo
 echo "Creating images from each video for the main menu"
 for ((i=0; i<=NUM_FILES; i++)) ; do
     echo "Working on "${IN_FILES[$i]}""
-    CREATE_IMG_CMD=(ffmpeg -i "${IN_FILES[$i]}"  "$SEEK" -vframes $FRAMES \
+    CREATE_IMG_CMD=(ffmpeg -i "${IN_FILES[$i]}"  $SEEK -vframes $FRAMES \
     -s "$THUMB_SIZE" "$WORK_DIR/pics/$i/%d.$IMG_FMT")
     echo -e "\nRunning: ${CREATE_IMG_CMD[@]}\n" | fold -bs >> $LOG_FILE
 
@@ -1067,7 +1067,7 @@ for len in ${CHAPT_INTERVALS[@]}; do
 done
 # debug chapters
 for ((i=0; i<${#IN_FILES[@]}; i++)); do
-    echo -e "Chapters for "${IN_FILES[i]}" are: \n${CHAPT_ARRAY[i++]}\n"
+    echo -e "Chapters for "${IN_FILES[i]}" are: \n${CHAPT_ARRAY[i]}\n"
 done
 # make xml files, and run dvdauthor and spumux
 if $MENU_FADE; then
@@ -1486,7 +1486,7 @@ done
 if [ -n "$ANI_BG" ]; then
     # extract images from the provided video
     echo "ANI_BG is $ANI_BG"
-    FFMPEG_CMD=(ffmpeg -i "$ANI_BG" "$SEEK" -vframes $FRAMES \
+    FFMPEG_CMD=(ffmpeg -i "$ANI_BG" $SEEK -vframes $FRAMES \
     -s "$VIDSIZE" "$WORK_DIR/bg/%d.jpg")
     yecho
     echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $LOG_FILE
