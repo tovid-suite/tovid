@@ -345,6 +345,7 @@ while test $# -gt 0; do
             ;;
         "-menu-fade" )
             MENU_FADE=:
+            AUDIO_FADE=:
             ;;
         "-bgvideo" )
             shift
@@ -1316,7 +1317,7 @@ if $SUB_MENU; then
         fi
         rm -f $WORK_DIR/animenu/*.$IMG_FMT
     done    
-    unset ENC_CMD1
+    unset IMG_STREAM_CMD1 ENC_CMD1
     for ((s=0; s<=NUM_FILES; s++)); do
         # create audio background for either animated or plain submenus
         yecho
