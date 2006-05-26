@@ -798,7 +798,7 @@ convert -size 620x100 xc:none -font "$MENU_FONT" \
 -stroke "$STROKE" -strokewidth 1 \
 -fill "$TITLE_COLOUR" -stroke "$STROKE" \
 -draw "gravity center text 1,1 \"$VMGM_TITLE\"" miff:- | \
-convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png
+convert -trim +repage - -blur 0x0.4 $WORK_DIR/title_txt.png
 "
 
 convert -size 620x100 xc:none -font "$MENU_FONT" \
@@ -807,7 +807,7 @@ convert -size 620x100 xc:none -font "$MENU_FONT" \
 -stroke "$STROKE" -strokewidth 1 \
 -fill "$TITLE_COLOUR" -stroke "$STROKE" \
 -draw "gravity center text 1,1 \"$VMGM_TITLE\"" miff:- | \
-convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png
+convert -trim +repage - -blur 0x0.4 $WORK_DIR/title_txt.png
 
 if $MIST; then
     # make a white png for misted background effect, only for user's bg
@@ -1231,7 +1231,7 @@ if $SUB_MENU; then
 		-stroke "$STROKE" -strokewidth 1 \
 		-fill "$TITLE_COLOUR" -stroke "$STROKE" \
 		-draw "gravity center text 1,1 \"${TITLES[i]}\"" miff:- | \
-		convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title${i}_txt.png
+		convert -trim +repage - -blur 0x0.4 $WORK_DIR/title${i}_txt.png
 
         # which is harmless as they get removed, but needs to be tweaked         
         if $ANI_SUB_MENU; then
@@ -1242,15 +1242,14 @@ if $SUB_MENU; then
 
         else  # not animated submenu
             JPEG2YUV_OPTS=(-n 1 -l 60)
-            PICS_IN=($WORK_DIR/submenu.$SM_IMG_FMT)
-            PICS_OUT=($WORK_DIR/chapt)
+            PICS_IN=($WORK_DIR/${i}-submenu.$SM_IMG_FMT)
+            PICS_OUT=($WORK_DIR/${i}-chapt)
             CUT_TIME=1
         fi    
         CUT_START=$(awk 'BEGIN { printf("'"$FRAME_RATE"'" * "'"$SEEK_VAL"'") "\n" ; exit  }')
-        CUT_START=${CUT_START/%.*}
-        echo "CUT_START is $CUT_START"
+        CUT_START=${CUT_START%.*}
         counts=$(awk 'BEGIN { printf("'"${CHAPT_INTERVALS[i]}"'" * "'"$FRAME_RATE"'") "\n" ; exit  }')
-        counts=${counts/%.*}
+        counts=${counts%.*}
         CUT=( $CUT_START $(running_total <<<  $(for ((a=0; a<CHAPTERS ; a++)); \
         do echo -n "$counts ";done)) )
         for ((c=0; c<${#CUT[@]}; c++)); do
@@ -1292,7 +1291,6 @@ if $SUB_MENU; then
             echo
             echo "Making montage images for  "${IN_FILES[i]}""
 
-#            o=1; sp="/-|-\|";  echo -n ' '
             o=1; sp="/-\|/-\|";  echo -n ' '
             for ((a=1; a<300; a++)); do
                 echo -en "\b${sp:o++%${#sp}:1}"
@@ -1319,20 +1317,25 @@ if $SUB_MENU; then
             yecho
             yecho "Making montage images for  "${IN_FILES[i]}""
             # just use $CHAPTERS number of images
-            imgs=( $(find $WORK_DIR -name chapt000\*.$SM_IMG_FMT|head -n $CHAPTERS) )
+            imgs=( $(find $WORK_DIR -name ${i}-chapt000\*.$SM_IMG_FMT|head -n $CHAPTERS) )
             # create frames for the chapter thumbs
             for PIC in "${imgs[@]}"; do
                 echo -en "\b${sp:o++%${#sp}:1}"
                 convert -background '#141614' -frame 5x5 \
                 -bordercolor none -mattecolor "#444744" "$PIC" miff:- |
                 convert -resize "${GEO_ARRAY[CHAPTERS - 1]}"! - "$PIC"
+            echo "Running convert -background '#141614' -frame 5x5 \
+-bordercolor none -mattecolor '#444744' "$PIC" miff:- |
+convert -resize "${GEO_ARRAY[CHAPTERS - 1]}"! - "$PIC"
+"
             done
+
             IM_CMD=(montage "${imgs[@]}" -tile ${TILE_ARRAY[CHAPTERS -1]} -geometry \
             ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -background '#141614' miff:-)
             IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
             $WORK_DIR/title${i}_txt.png  -gravity south -geometry +0+55 \
             -composite - -gravity north -geometry +0+50 -composite \
-            $WORK_DIR/submenu.$SM_IMG_FMT)
+            $WORK_DIR/${i}-submenu.$SM_IMG_FMT)
             echo "Running "${IM_CMD[@]}" | "${IM_CMD2[@]}""
             "${IM_CMD[@]}" | "${IM_CMD2[@]}"
         fi
@@ -1417,7 +1420,7 @@ if $SUB_MENU; then
             fi
             unset TIME
         fi
-        # if "1" audio file, then convert it if it hasn't been done yet
+        # if "1" audio file, then convert it if it has not been done yet
         if [[ -n "$SM_AUDIO_FILE" && ! -e $WORK_DIR/submenu-processed.wav ]]; then 
             if $AUDIO_FADE; then
                 echo -e "Running:
@@ -1475,7 +1478,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT) )
     yecho "Working on images from ${IN_FILES[i]}"
-    o=1; sp="/-|-\|";  echo -n ' '
+    o=1; sp="/-\|/-\|";  echo -n ' '
 
     for pic in "${PICS[@]}"; do
         echo -en "\b${sp:o++%${#sp}:1}"
@@ -1555,7 +1558,7 @@ if "$MENU_FADE" && ! "$STATIC"; then
         $WORK_DIR/bg/$(($frame + 1)).jpg
     done
 
-    o=1; sp="/-|-\|";  echo -n ' '  # initialize spinner
+    o=1; sp="/-\|/-\|";  echo -n ' '  # initialize spinner
     for ((frame=0; frame<ANI_MENU_END_FRAME; frame++)); do
         # set dissolve vars from todisc-fade-routine functions
         BC=$(get_title_opacity)
@@ -1595,9 +1598,9 @@ if "$MENU_FADE" && ! "$STATIC"; then
     for ((i=ANI_MENU_END_FRAME; i<ANI_MENU_END_FRAME+6; i++)); do
         cp $WORK_DIR/black.jpg $WORK_DIR/animenu/$i.jpg
     done
-else # Don't do menu fade
+else # Do not do menu fade
     if $TRANSPARENT; then
-         o=1; sp="/-|-\|";  echo -n ' '  # initialize spinner
+         o=1; sp="/-\|/-\|";  echo -n ' '  # initialize spinner
          for (( count=1; count<=$MAX_ANI_LENGTH; count++)); do
             echo -en "\b${sp:o++%${#sp}:1}"
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
@@ -1621,7 +1624,7 @@ else # Don't do menu fade
     else # Not transparent
         echo
         echo "making final montages and compositing onto background with title"
-        o=1; sp="/-|-\|";  echo -n ' '  # initialize spinner
+        o=1; sp="/-\|/-\|";  echo -n ' '  # initialize spinner
         for (( count=1; count <=FRAMES; count++)); do
             echo -en "\b${sp:o++%${#sp}:1}"
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
