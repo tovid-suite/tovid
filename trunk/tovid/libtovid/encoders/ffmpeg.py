@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # ffmpeg.py
 
-__all__ = ['encode']
+__all__ = ['get_script']
 
 import logging
 
@@ -9,16 +9,21 @@ from libtovid.cli import Script
 
 log = logging.getLogger('ffmpeg.py')
 
-def encode(infile, options):
-    """Encode infile (a MultimediaFile) with ffmpeg, using the given options."""
+def get_script(infile, options):
+    """Return a Script to encode infile (a MediaFile) with ffmpeg, using
+    the given options (an OptionDict)."""
+
+    script = Script('ffmpeg')
+
+    # Build the ffmpeg command as a string
     cmd = 'ffmpeg'
     cmd += ' -i "%s"' % infile.filename
     if options['format'] in ['vcd', 'svcd', 'dvd']:
         cmd += ' -tvstd %s' % options['tvsys']
-        cmd += ' -target %s-%s' % (options['format'], options['tvsys'])
-    cmd += ' -r %g' % options['fps']
+        cmd += ' -target %s-%s' % \
+                (options['format'], options['tvsys'])
+    cmd += ' -r %s' % options['fps']
     cmd += ' -ar %s' % options['samprate']
-
     # Convert scale/expand to ffmpeg's padding system
     if options['scale']:
         cmd += ' -s %sx%s' % options['scale']
@@ -35,10 +40,8 @@ def encode(infile, options):
         cmd += ' -aspect 16:9'
     else:
         cmd += ' -aspect 4:3'
-
     cmd += ' -o "%s"' % options['out']
 
-    script = Script('ffmpeg_encode')
     script.append(cmd)
     script.run()
     return script

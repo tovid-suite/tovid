@@ -9,7 +9,7 @@ simple interface for building command-lines, spawning subprocesses, and reading
 output from them.
 """
 
-__all__ = ['Command', 'verify_app']
+__all__ = ['Command', 'Script', 'verify_app']
 
 # From standard library
 import os
@@ -101,9 +101,13 @@ class Command:
 
 class Script:
     """An executable shell script."""
-    def __init__(self, name):
+    def __init__(self, name, locals={}):
+        """Create a script, with optional local variables and values.
+        Any variables named in locals may then be used by script
+        commands using the shell $var_name syntax."""
+        self.commands = []
         self.name = name
-        self.lines = []
+        self.locals = locals
         # Set up logging
         self.log = logging.getLogger('Script.%s' % self.name)
         self.log.setLevel(logging.DEBUG)
@@ -112,12 +116,24 @@ class Script:
     def append(self, command):
         """Append the given command to the end of the script."""
         assert isinstance(command, str)
-        self.lines.append(command)
+        self.commands.append(command)
 
     def prepend(self, command):
         """Prepend the given command at the beginning of the script."""
         assert isinstance(command, str)
-        self.lines.insert(0, command)
+        self.commands.insert(0, command)
+
+    def text(self):
+        """Return the text of the script."""
+        text = '#!/bin/sh\n'
+        text += 'cat %s\n' % self.script_file
+        # TODO: 
+        for var, value in self.locals.iteritems():
+            text += '%s=%s\n' % (var, value)
+        for cmd in self.commands:
+            text += '%s\n' % cmd
+        text += 'exit\n'
+        return text
 
     def run(self):
         """Write the script, execute it, and remove it."""
@@ -137,16 +153,8 @@ class Script:
         os.chmod(self.script_file, S_IREAD|S_IWRITE|S_IEXEC)
         # Write the script to the temporary script file
         script = file(self.script_file, 'w')
-        script.write('#!/bin/sh\n')
-        script.write('# %s\n' % self.name)
-        script.write('cat %s\n' % self.script_file)
-        for line in self.lines:
-            script.write('%s\n' % line)
-        script.write('\n')
+        script.write(self.text())
         script.close()
-
-class Backend:
-    """"""
 
 def verify_app(appname):
     """If appname is not in the user's path, print a error and exit."""
