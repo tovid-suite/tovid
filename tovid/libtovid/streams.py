@@ -8,34 +8,30 @@ from libtovid.standards import *
 
 class VideoStream:
     def __init__(self):
-        self.spec = {
-            'codec': '',
-            'width': 0,
-            'height': 0,
-            'fps': 0,
-            'bitrate': 0
-            }
+        self.codec = ''
+        self.width = 0
+        self.height = 0
+        self.fps = 0
+        self.bitrate = 0
 
     def display(self):
-        print "Video:"
-        print "      Codec: %s" % self.spec['codec']
-        print "      Width: %s" % self.spec['width']
-        print "     Height: %s" % self.spec['height']
-        print "  Framerate: %s" % self.spec['fps']
-        print "    Bitrate: %s" % self.spec['bitrate']
+        print "Video stream:"
+        print "      Codec: %s" % self.codec
+        print "      Width: %s" % self.width
+        print "     Height: %s" % self.height
+        print "  Framerate: %s" % self.fps
+        print "    Bitrate: %s" % self.bitrate
 
 class AudioStream:
     def __init__(self):
-        self.spec = {
-            'codec': '',
-            'bitrate': 0,
-            'channels': 0,
-            'samprate': 0
-            }
+        self.codec = ''
+        self.bitrate = 0
+        self.channels = 0
+        self.samprate = 0
 
     def display(self):
-        print "Audio:"
-        print "          Codec: %s" % self.spec['codec']
-        print "        Bitrate: %s" % self.spec['bitrate']
-        print "       Channels: %s" % self.spec['channels']
-        print "  Sampling rate: %s" % self.spec['samprate']
+        print "Audio stream:"
+        print "          Codec: %s" % self.codec
+        print "        Bitrate: %s" % self.bitrate
+        print "       Channels: %s" % self.channels
+        print "  Sampling rate: %s" % self.samprate

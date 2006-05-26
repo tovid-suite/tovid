@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # mencoder.py
 
-__all__ = ['encode']
+__all__ = ['get_script']
 
 import logging
 
@@ -9,9 +9,13 @@ from libtovid.cli import Script
 
 log = logging.getLogger('mencoder.py')
 
-def encode(infile, options):
-    """Return a Script to encode infile (a MultimediaFile) with mencoder,
-    using the given options."""
+def get_script(infile, options):
+    """Return a Script to encode infile (a MediaFile) with mencoder,
+    using the given options (an OptionDict)."""
+
+    script = Script('mencoder')
+
+    # Build the mencoder command as a string
     cmd = 'mencoder'
     cmd += ' "%s" -o "%s"' % (infile.filename, options['out'])
     cmd += ' -oac lavc -ovc lavc -of mpeg'
@@ -69,8 +73,7 @@ def encode(infile, options):
             vfilter += ',expand=%s:%s' % options['expand']
         cmd += ' -vf ' + vfilter
 
-    # Create the Script, and add the single command to it
-    script = Script('mencoder_encode')
+    # Add the one long command to the Script and run it
     script.append(cmd)
     script.run()
     return script
