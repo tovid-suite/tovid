@@ -37,7 +37,7 @@ if __name__ == '__main__':
         print "    tovid-stats COMMANDS"
         print "COMMANDS may be any of:"
         print "    -count FIELD"
-        print "        Count total for each distinct value of FIELD"
+        print "        Count total occurrences of distinct values in FIELD"
         print "    -average FIELD_1 [by FIELD_2]"
         print "        Average FIELD_1, optionally sorted by FIELD_2"
         print "FIELD may be any of the following:"
