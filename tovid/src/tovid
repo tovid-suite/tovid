@@ -897,7 +897,7 @@ case "$TGT_RES" in
         # KVCD, x3, or x3a?
         if test "$TGT_RES" = "KVCDx3"; then
             TGT_WIDTH="528"
-        else:
+        else
             TGT_WIDTH="544"
         fi
 
