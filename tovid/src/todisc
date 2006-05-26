@@ -74,6 +74,7 @@ STATIC=false
 SUB_MENU=false
 ANI_SUB_MENU=false
 TITLE_COLOUR="#CDC0B0"
+STROKE=""
 CHAPTERS=6
 BG_AUDIO=""
 BG_PIC=""
@@ -95,6 +96,8 @@ KEEP_FILES=false
 DEBUG=: # Debugging on for initial release
 THUMB_SHAPE=""
 SEEK="-ss 1"
+SEEK_VAL=1
+CUT_START=30
 FADE=1
 
 SCRIPT_START_TIME=`date +%s`
@@ -365,6 +368,10 @@ while test $# -gt 0; do
             shift
             TITLE_COLOUR="$1"
             ;;
+        "-stroke-colour" | "-stroke-color" )
+            shift
+            STROKE="$1"
+            ;;
         "-text-mist" )
             MIST=:
             ;;
@@ -454,13 +461,13 @@ else
     usage_error "Please provide an output name with -out"
 fi
 
-# Make sure titles have no more than 12 characters
+# Make sure thumb labels have no more than 12 characters
 for ((i=0; i<${#TITLES[@]}; i++)); do
     val=${#TITLES[i]}
-    [ -z "$MAX_VAL" ] || ((val > MAX_VAL)) && MAX_VAL=$val && key=$i
+    [ -z "$MAX_CHARS" ] || ((val > MAX_CHARS)) && MAX_CHARS=$val && key=$i
 done
-if [ $MAX_VAL -gt 12 ]; then
-    echo -e "Sorry, titles can only be 12 characters in length."
+if [ $MAX_CHARS -gt 12 ]; then
+    echo -e "Sorry, thumb labels can only be 12 characters in length."
     echo "\"${TITLES[key]}\" is too long; please use a shorter title."
     exit 1
 fi
@@ -510,6 +517,11 @@ yecho "Creating pics directories..."
 for ((i=0; i<=NUM_FILES; i++)); do
     mkdir -pv "$WORK_DIR/pics/$i"
 done
+# prevent user from using mutually exclusive options
+if $STATIC; then
+    AUDIO_FADE=false
+    MENU_FADE=false
+fi
 if $MENU_FADE; then mkdir -v $WORK_DIR/bg; fi
 mkdir -v "$WORK_DIR/animenu"
 if $ANI_SUB_MENU; then
@@ -615,6 +627,11 @@ yecho "  -menu-font $MENU_FONT"
 yecho "  -menu-fontsize $MENU_FONTSIZE"
 yecho "  -thumb-font $THUMB_FONT"
 yecho "  -thumb-fontsize $THUMB_FONTSIZE"
+yecho "Current menu settings: "
+yecho "  -menu-length $ANI_MENU_LENGTH seconds"
+if $SUB_MENU; then
+    yecho "  -submenu-length $ANI_SUBMENU_LENGTH seconds"
+fi
 yecho
 
 
@@ -672,7 +689,6 @@ THUMB_SIZE="${GEO_ARRAY[NUM_FILES]}"
 #     generate title_txt png, and template.png needed for all operations       #
 ###############################################################################
 
-echo "BG_PIC is "$BG_PIC""
 if [ -z "$BG_PIC" ]; then
     echo
     echo "Creating a black background"
@@ -769,8 +785,22 @@ yecho "Creating a title image"
 if [ -z "$BG_PIC" ]; then
     STROKE=none
 else
-    STROKE=gray
+    if [ -z "$STROKE" ]; then
+        STROKE=gray
+    else
+        STROKE=$STROKE
+    fi
 fi
+echo "Running
+convert -size 620x100 xc:none -font "$MENU_FONT" \
+-pointsize $MENU_FONTSIZE \
+-fill black -draw "gravity center text 2,2 \"$VMGM_TITLE\"" \
+-stroke "$STROKE" -strokewidth 1 \
+-fill "$TITLE_COLOUR" -stroke "$STROKE" \
+-draw "gravity center text 1,1 \"$VMGM_TITLE\"" miff:- | \
+convert -trim +repage - -blur 0.4x0.4 $WORK_DIR/title_txt.png
+"
+
 convert -size 620x100 xc:none -font "$MENU_FONT" \
 -pointsize $MENU_FONTSIZE \
 -fill black -draw "gravity center text 2,2 \"$VMGM_TITLE\"" \
@@ -1024,6 +1054,7 @@ done
 if $SUB_MENU; then
     echo
     echo "Creating the highlight and selection PNGs for the submenus"
+    echo
     GEO="${GEO_ARRAY[CHAPTERS - 1]/x/,}"
 (
 cat  <<EOF
@@ -1215,9 +1246,12 @@ if $SUB_MENU; then
             PICS_OUT=($WORK_DIR/chapt)
             CUT_TIME=1
         fi    
-
-        counts=$((${CHAPT_INTERVALS[i]} * 30))
-        CUT=( 0 $(running_total <<<  $(for ((a=0; a<CHAPTERS ; a++)); \
+        CUT_START=$(awk 'BEGIN { printf("'"$FRAME_RATE"'" * "'"$SEEK_VAL"'") "\n" ; exit  }')
+        CUT_START=${CUT_START/%.*}
+        echo "CUT_START is $CUT_START"
+        counts=$(awk 'BEGIN { printf("'"${CHAPT_INTERVALS[i]}"'" * "'"$FRAME_RATE"'") "\n" ; exit  }')
+        counts=${counts/%.*}
+        CUT=( $CUT_START $(running_total <<<  $(for ((a=0; a<CHAPTERS ; a++)); \
         do echo -n "$counts ";done)) )
         for ((c=0; c<${#CUT[@]}; c++)); do
             cmd[c]=$((${CUT[c]}))-$((${CUT[c]} + CUT_TIME))
@@ -1258,7 +1292,8 @@ if $SUB_MENU; then
             echo
             echo "Making montage images for  "${IN_FILES[i]}""
 
-            o=1; sp="/-|-\|";  echo -n ' '
+#            o=1; sp="/-|-\|";  echo -n ' '
+            o=1; sp="/-\|/-\|";  echo -n ' '
             for ((a=1; a<300; a++)); do
                 echo -en "\b${sp:o++%${#sp}:1}"
                 for ((b=0; b<CHAPTERS; b++)); do
@@ -1317,7 +1352,7 @@ if $SUB_MENU; then
         fi
         rm -f $WORK_DIR/animenu/*.$IMG_FMT
     done    
-    unset IMG_STREAM_CMD1 ENC_CMD1
+    unset IMG_STREAM_CMD1 ENC_CMD1 JPEG2YUV_OPTS
     for ((s=0; s<=NUM_FILES; s++)); do
         # create audio background for either animated or plain submenus
         yecho
@@ -1647,19 +1682,17 @@ echo
 echo "Cleaning up montage images"
 rm -fr $WORK_DIR/animenu/*.jpg
 
-# create audio background for the main menu
-if $STATIC; then
-    TIME=$(ffmpeg -i "$BG_AUDIO" 2>&1|awk '/Duration/ {print $2}')
-    TIME=${TIME/,/}
-else
-    TIME=`vid_length "$WORK_DIR/intro.m2v"`
+TIME=$(vid_length "$WORK_DIR/intro.m2v")
+if ! $STATIC; then
+    SEEK_CMD="-t $TIME"
 fi
+# create audio background for the main menu
 if [ -z "$BG_AUDIO" ]; then # no audio supplied: use silence
     cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
     -s - $WORK_DIR/intro.wav  trim 0 $TIME
 else # audio supplied: convert to wav then later to dvd/svcd format
     BGAUDIO_CMD=(ffmpeg -i "$BG_AUDIO" -ar 48000 -ac 2 -acodec pcm_s16le -y \
-    -t $TIME $WORK_DIR/intro.wav)
+    $SEEK_CMD $WORK_DIR/intro.wav)
     yecho
     echo "Running "${BGAUDIO_CMD[@]}"" >> $LOG_FILE.tmp 2>&1
     if "${BGAUDIO_CMD[@]}" >> $LOG_FILE.tmp 2>&1; then
