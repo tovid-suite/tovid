@@ -8,7 +8,11 @@ todisc: Create a DVD with animated menus
 
 == Description ==
 
-todisc is a command-line script for creating a DVD filesystem with animated or static thumbnail menus.
+todisc is a command-line script for creating a DVD filesystem with animated
+thumbnail menus, from a list of multimedia video files and their titles.
+It supports submenus for chapter breaks, configurable menu style, animated
+backgrounds and transparency effects. It can automatically convert non-compliant
+input files to the target format.
 
 
 == Usage ==
@@ -27,9 +31,9 @@ For example:
      -out Season_one
 ```
 
-The number of '''-files''' and '''-titles''' must be equal
-If the input files are not mpeg, there will be an interactive option to encode them with tovid
-Titles may have a maximum of 12 characters
+The number of **-files** and **-titles** must be equal. If the input files are
+not mpeg, you will have the option to auto-encode them with **tovid**. Due to
+font size constraints, titles may have a maximum of 12 characters.
 
 == Options ==
 
