@@ -26,7 +26,7 @@ notes" for your program. But OptionDict is more than that--it also stores a
 value for each option, and a simple method for getting and setting those values.
 To see a complete list of options and values:
 
-    >>> useropts.data
+    >>> useropts
     {'width': 8.5, 'height': 11.0}
 
 Note that the default values have been filled in for you. To get and set
@@ -42,10 +42,10 @@ Need to set a bunch of options at once? You can override values by giving a
 string, list, or dictionary of options and values:
 
     >>> useropts.override('width 4.0 height 2.0')    # String of options
-    >>> useropts.data
+    >>> useropts
     {'width': '4.0', 'height': '2.0'}
     >>> useropts.override({'width': 3.0})            # Dictionary of options
-    >>> useropts.data
+    >>> useropts
     {'width': 3.0, 'height': '2.0'}
 
 Any preceding '-'s before option names are ignored. To parse command-line
@@ -178,10 +178,11 @@ class OptionDict(dict):
     """An indexed collection (dictionary) of user-configurable options."""
     def __init__(self, options=[]):
         """Create an option dictionary using the given list of Options."""
-        self.data = {}
+        dict.__init__(self)
+        # Keep a copy of the original Option definitions
         self.defdict = {}
         for opt in options:
-            self.data[opt.name] = copy(opt.default)
+            self[opt.name] = copy(opt.default)
             self.defdict[opt.name] = opt
 
     def override(self, custom):
@@ -191,7 +192,7 @@ class OptionDict(dict):
         # If custom is a string or list, turn it into a dictionary
         if custom.__class__ == str or custom.__class__ == list:
             custom = self._parse(custom)
-        self.data.update(custom)
+        self.update(custom)
 
     def usage(self):
         """Return a string containing usage notes for all option definitions."""
@@ -202,13 +203,7 @@ class OptionDict(dict):
 
     def __getitem__(self, key):
         """Return the value indexed by key, or None if not present."""
-        if key in self.data:
-            return self.data[key]
-        else:
-            return None
-
-    def __setitem__(self, key, value):
-        self.data[key] = value
+        return dict.get(self, key, None)
 
     def _parse(self, options):
         """Parse a string or list of options, returning a dictionary of those

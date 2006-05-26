@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # filetypes.py
 
-__all__ = ['MultimediaFile']
+__all__ = ['MediaFile', 'mplayer_identify']
 
 # From standard library
 import os
@@ -13,29 +13,28 @@ from libtovid.streams import VideoStream, AudioStream
 
 log = logging.getLogger('libtovid.filetypes')
 
-class MultimediaFile:
+class MediaFile:
     "A file containing video and/or audio streams"
     def __init__(self, filename):
-        self.filename = filename
-        # If the file exists, get specs from it
-        self.get_specs()
+        self.filename = os.path.abspath(filename)
+        # If the file exists, identify it
+        if os.path.exists(self.filename):
+            self.audio, self.video = mplayer_identify(self.filename)
+        else:
+            log.error("Couldn't find file: %s" % filename)
 
     def display(self):
-        log.info("File: %s" % self.filename)
+        log.info("MediaFile: %s" % self.filename)
         # Print video stream info
         if self.video:
             self.video.display()
         else:
-            log.info("No video stream")
+            print "No video stream"
         # Print audio stream info
         if self.audio:
             self.audio.display()
         else:
-            log.info("No audio stream")
-
-    def get_specs(self):
-        """Get information about the audio/video streams in the file."""
-        self.audio, self.video = mplayer_identify(self.filename)
+            print "No audio stream"
 
 
 def mplayer_identify(filename):
@@ -58,47 +57,45 @@ def mplayer_identify(filename):
     # Check for existence of streams
     if 'ID_VIDEO_ID' in mp_dict:
         video = VideoStream()
-        v_spec = video.spec
     if 'ID_AUDIO_ID' in mp_dict:
         audio = AudioStream()
-        a_spec = audio.spec
     # Parse the dictionary and set appropriate values
     for left, right in mp_dict.iteritems():
         log.debug('%s = %s' % (left, right))
         if video:
             if left == "ID_VIDEO_WIDTH":
-                v_spec['width'] = int(right)
+                video.width = int(right)
             elif left == "ID_VIDEO_HEIGHT":
-                v_spec['height'] = int(right)
+                video.height = int(right)
             elif left == "ID_VIDEO_FPS":
-                v_spec['fps'] = float(right)
+                video.fps = float(right)
             elif left == "ID_VIDEO_FORMAT":
-                v_spec['codec'] = right
+                video.codec = right
             elif left == "ID_VIDEO_BITRATE":
-                v_spec['bitrate'] = int(right) / 1000
+                video.bitrate = int(right) / 1000
         if audio:
             if left == "ID_AUDIO_CODEC":
-                a_spec['codec'] = right
+                audio.codec = right
             elif left == "ID_AUDIO_FORMAT":
-                a_spec['format'] = right
+                audio.format = right
             elif left == "ID_AUDIO_BITRATE":
-                a_spec['bitrate'] = int(right) / 1000
+                audio.bitrate = int(right) / 1000
             elif left == "ID_AUDIO_RATE":
-                a_spec['samprate'] = int(right)
+                audio.samprate = int(right)
             elif left == "ID_AUDIO_NCH":
-                a_spec['channels'] = right
+                audio.channels = right
     # Fix mplayer's audio codec naming for ac3 and mp2
     if audio:
-        if a_spec['format'] == "8192":
-            a_spec['codec'] = "ac3"
-        elif a_spec['format'] == "80":
-            a_spec['codec'] = "mp2"
+        if audio.format == "8192":
+            audio.codec = "ac3"
+        elif audio.format == "80":
+            audio.codec = "mp2"
     # Fix mplayer's video codec naming for mpeg1 and mpeg2
     if video:
-        if v_spec['codec'] == "0x10000001":
-            v_spec['codec'] = "mpeg1"
-        elif v_spec['codec'] == "0x10000002":
-            v_spec['codec'] = "mpeg2"
+        if video.codec == "0x10000001":
+            video.codec = "mpeg1"
+        elif video.codec == "0x10000002":
+            video.codec = "mpeg2"
     return (audio, video)
 
 
@@ -106,9 +103,9 @@ def mplayer_identify(filename):
 if __name__ == '__main__':
     # If no arguments were provided, print usage notes
     if len(sys.argv) == 1:
-        print "Usage: Filetypes.py FILE"
+        print "Usage: filetypes.py FILE"
     else:
-        print "Creating a MultimediaFile object from file: %s" % sys.argv[1]
-        infile = MultimediaFile(sys.argv[1])
+        print "Creating a MediaFile object from file: %s" % sys.argv[1]
+        infile = MediaFile(sys.argv[1])
         infile.display()
 

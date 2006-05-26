@@ -9,7 +9,7 @@ import string
 import logging
 
 import libtovid
-from libtovid.cli import Command, verify_app
+from libtovid.cli import Script, verify_app
 
 log = logging.getLogger('libtovid.thumbmenu')
 

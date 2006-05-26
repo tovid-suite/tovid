@@ -11,8 +11,11 @@ import logging
 from libtovid.opts import Option, OptionDict
 from libtovid.standards import get_resolution
 from libtovid.utils import ratio_to_float
+# TODO: Remove explicit dependency on encoder modules; generalize the
+# encoder backend so the Video class doesn't have to know about specific
+# encoders.
 from libtovid.encoders import mencoder, ffmpeg, mpeg2enc
-from libtovid.filetypes import MultimediaFile
+from libtovid.filetypes import MediaFile
 
 log = logging.getLogger('libtovid.video')
 
@@ -23,7 +26,7 @@ class Video:
     target format and TV system, and any other argument that may be passed to
     the 'pytovid' command-line script.
     """
-    # Dictionary of valid options with documentation
+    # List of valid Video options with documentation
     optiondefs = [
         Option('in', 'FILENAME', None,
             """Input video file, in any format."""),
@@ -108,14 +111,18 @@ class Video:
         # TODO: Possibly eliminate code repetition w/ Disc & Menu by adding
         # a base class and inheriting
         self.options = OptionDict(self.optiondefs)
+        print "Video.__init__: before override:"
+        print self.options
         self.options.override(custom_options)
+        print "Video.__init__: after override:"
+        print self.options
         self.parent = None
         self.children = []
 
 
     def preproc(self):
         """Do preprocessing common to all backends."""
-        self.infile = MultimediaFile(self.options['in'])
+        self.infile = MediaFile(self.options['in'])
         
         width, height = get_resolution(self.options['format'], self.options['tvsys'])
         # Convert aspect (ratio) to a floating-point value
@@ -197,19 +204,21 @@ class Video:
         standard."""
         self.preproc()
         method = self.options['method']
+        # Decide which encoding module (from libtovid.encoders) to load
         if method == 'mpeg2enc':
-            log.info("generate(): Encoding with mpeg2enc")
-            mpeg2enc.encode(self.infile, self.options)
+            encoder = mpeg2enc
         elif method == 'mencoder':
-            log.info("generate(): Encoding with mencoder")
-            mencoder.encode(self.infile, self.options)
+            encoder = mencoder
         elif method == 'ffmpeg':
-            log.info("generate(): Encoding with ffmpeg")
-            ffmpeg.encode(self.infile, self.options)
+            encoder = ffmpeg
         else:
             log.info("The '%s' encoder is not yet supported." % method)
             log.info("Perhaps you'd like to write a backend for it? :-)")
             sys.exit()
+        log.info("generate(): Encoding with %s" % method)
+        # Get the script from the appropriate encoder module and run it
+        script = encoder.get_script(self.infile, self.options)
+        script.run()
 
 if __name__ == '__main__':
     vid = Video(sys.argv[1:])

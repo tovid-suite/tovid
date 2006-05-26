@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # mpeg2enc.py
 
-__all__ = ['encode']
+__all__ = ['get_script']
 
 import os
 import logging
@@ -26,10 +26,12 @@ abitrate
 vbitrate
 """
 
-def encode(infile, options):
-    """Encode infile with mpeg2enc, using the given options.
-    infile is a MultimediaFile; options is a dictionary."""
+def get_script(infile, options):
+    """Return a script to encode infile (a MediaFile) with mpeg2enc,
+    using the given options (an OptionDict)."""
     log.warn("This encoder is very experimental, and may not work.")
+
+    script = Script('mpeg2enc', options)
 
     outname = options['out']
     # YUV raw video FIFO, for piping video from mplayer to mpeg2enc
@@ -51,7 +53,6 @@ def encode(infile, options):
         videofile = '%s.m1v' % outname
     else:
         videofile = '%s.m2v' % outname
-    script = Script('mpeg2enc_encode')
     # Do audio
     script.append(encode_audio(infile, audiofile, options))
     # Do video
@@ -59,7 +60,6 @@ def encode(infile, options):
     script.append(encode_video(infile, yuvfile, videofile, options))
     # Combine audio and video
     script.append(mplex_streams(videofile, audiofile, outname, options))
-    script.run()
     return script
     
 def rip_video(infile, yuvfile, options):
@@ -140,7 +140,7 @@ def encode_audio(infile, audiofile, options):
     else:
         cmd += ' -f s16le -i /dev/zero -t 4'
     cmd += ' -ac 2 -ab 224'
-    cmd += ' -ar %s' % (options['samprate'])
+    cmd += ' -ar %s' % options['samprate']
     cmd += ' -acodec %s' % acodec
     cmd += ' -y "%s"' % audiofile
     return cmd
