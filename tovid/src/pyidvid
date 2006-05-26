@@ -4,8 +4,12 @@
 import sys
 import os
 
-import libtovid
-from libtovid.filetypes import MultimediaFile
+import logging
+from libtovid.filetypes import MediaFile
+
+log = logging.getLogger('libtovid')
+log.setLevel(logging.DEBUG)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 if __name__ == '__main__':
     # If no arguments were provided, print usage notes
@@ -14,6 +18,6 @@ if __name__ == '__main__':
     else:
         for file in sys.argv[1:]:
             print "Identifying file: %s" % sys.argv[1]
-            infile = MultimediaFile(file)
+            infile = MediaFile(file)
             infile.display()
 
