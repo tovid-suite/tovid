@@ -361,7 +361,7 @@ for CUR_TITLE in "${TITLES[@]}"
 do
   echo "$CUR_TITLE"
   # If "back" was listed, create a back button
-  if test $CUR_TITLE = "back" || test $CUR_TITLE = "Back" ; then
+  if test "$CUR_TITLE" = "back" || test "$CUR_TITLE" = "Back" ; then
     BACK_BUTTON="y"
   else
     # Escape quotes in title
