@@ -553,78 +553,81 @@ EOF`
 echo "$SCRIPTNAME"
 
 if test $# -lt 1; then
-  usage_error "Please provide at least one video to author, and the name of an output file to use."
+    usage_error "Please provide at least one video to author, and the name of an output file to use."
 fi
 
 while test $# -gt 1; do
-  # Format and overwriting options
-  if test "$1" = "-dvd"; then
-    XML_FORMAT="dvd"
-  elif test "$1" = "-vcd"; then
-    XML_FORMAT="vcd" 
-  elif test "$1" = "-svcd"; then
-    XML_FORMAT="svcd"
-  elif test "$1" = "-overwrite"; then
-    OVERWRITE=:
-  # Menus and video titles
-  elif test "$1" = "-topmenu"; then
+    case "$1" in
+        # Format and overwriting options
+        "-dvd" ) XML_FORMAT="dvd" ;;
+        "-vcd" ) XML_FORMAT="vcd" ;;
+        "-svcd" ) XML_FORMAT="svcd" ;;
+        "-overwrite" ) OVERWRITE=: ;;
+        # Menus and video titles
+        "-topmenu" )
+            shift
+            if ! $HAVE_TOP_MENU; then
+              checkExistence "$1"
+              addTopMenu "$1"
+            else
+              usage_error "Please specify only one -topmenu option. If you would like to have multiple menus, please use the -menu option."
+            fi
+            ;;
+        "-menu" )
+            if $FORCE_TITLESETS; then
+              usage_error "You can not use -titlesets with -menu. Please use -topmenu instead."
+            fi
+            shift
+            HAVE_MENU=:
+            FIRST_TITLE=:
+            checkExistence "$1"
+            closeTitleset
+            addMenu "$1"
+            ;;
+        "-slides" )
+            STILL_TITLES=:
+            FIRST_TITLE=:
+            ;;
+        "-group" )
+            MAKE_GROUP=:
+            CUR_VIDEO=0
+            ;;
+        "-endgroup" )
+            if $MAKE_GROUP; then
+                TS_TITLES=`cat << EOF
+                $TS_TITLES
+                __POST_CMD__
+                </pgc>
+                EOF`
+            fi
+            MAKE_GROUP=false
+            CUR_VIDEO=0
+            ;;
+        "-chapters" )
+            MAKE_CHAPTERS=:
+            shift
+            CHAPTER_INTERVAL=$1
+            if test "$CHAPTER_INTERVAL" -lt "0" || \
+               test "$CHAPTER_INTERVAL" -gt "9999";
+            then
+               usage_error "Please use a -chapters interval between 0 and 9999."
+            fi
+            ;;
+        "-nochapters" )
+            MAKE_CHAPTERS=:
+            ;;
+        "-titlesets" )
+            if $HAVE_MENU; then
+              usage_error "You can not use -titlesets with -menu. Please use -topmenu instead."
+            fi
+            FORCE_TITLESETS=:
+            echo "Creation of titlesets forced ..."
+        * )
+            checkExistence "$1"
+            addTitle "$1"
+    esac
+    # Get the next argument
     shift
-    if ! $HAVE_TOP_MENU; then
-      checkExistence "$1"
-      addTopMenu "$1"
-    else
-      usage_error "You can only have one top menu. Please specify only one -topmenu option. If you would like to have multiple menus, please use the -menu option."
-    fi
-  elif test "$1" = "-menu"; then
-    if $FORCE_TITLESETS; then
-      usage_error "You can not use -titlesets with -menu. Please use -topmenu instead."
-    fi
-    shift
-    HAVE_MENU=:
-    FIRST_TITLE=:
-    checkExistence "$1"
-    closeTitleset
-    addMenu "$1"
-  elif test "$1" = "-slides"; then
-    STILL_TITLES=:
-    FIRST_TITLE=:
-  elif test "$1" = "-group"; then
-    MAKE_GROUP=:
-    CUR_VIDEO=0
-  elif test "$1" = "-endgroup"; then
-    if $MAKE_GROUP; then
-      TS_TITLES=`cat << EOF
-       $TS_TITLES
-       __POST_CMD__
-    </pgc>
-EOF`
-       MAKE_GROUP=false
-    fi
-    MAKE_GROUP=false
-    CUR_VIDEO=0
-  elif test "$1" = "-chapters" ; then
-    MAKE_CHAPTERS=:
-    shift
-    CHAPTER_INTERVAL=$1
-    if test "$CHAPTER_INTERVAL" -lt "0" || test "$CHAPTER_INTERVAL" -gt "9999" 
-    then
-       usage_error "Please use a -chapters interval between 0 and 9999."
-    fi
-  elif test "$1" = "-nochapters" ; then
-    MAKE_CHAPTERS=:
-  elif test "$1" = "-titlesets" ; then
-    if $HAVE_MENU; then
-      usage_error "You can not use -titlesets with -menu. Please use -topmenu instead."
-    fi
-    FORCE_TITLESETS=:
-    echo "Creation of titlesets forced ..."
-  else
-    checkExistence "$1"
-    addTitle "$1"
-  fi
-
-  # Get the next argument
-  shift
 done
 
 # Last argument should be the name of the output file
