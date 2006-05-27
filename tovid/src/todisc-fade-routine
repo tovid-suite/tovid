@@ -44,7 +44,7 @@ FRAME_RATE=$FRAME_RATE
 # user-defined variables....
  
 ANI_MENU_LENGTH=$ANI_MENU_LENGTH
-DISSOLVE_LIMIT=$DISSOLVE
+DISSOLVE_LIMIT=$OPACITY
 
 # ##############
 # New variables!
