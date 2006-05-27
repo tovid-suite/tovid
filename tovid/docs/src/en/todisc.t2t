@@ -67,18 +67,21 @@ font size constraints, titles may have a maximum of 12 characters.
      A mask is used on the thumbs to produce one of several shapes.  Choose one of "normal", "oval", "cloud" or "egg"
 : -blur
      The amount of feather blur to apply to the thumb-shape.  Default is 5 which will more or less keep the shape and produce a small amount of transparency at the edges.  Choose values between 1 and 10, where 10 will produce quite a bit of transparency and blur away a good deal of the shape's edges
-: -title-colour | -title-color
-     Colour to use for the main menu title
-: -stroke-colour | -stroke-color
-     Outline colour for the main menu font
+: -title-color | -title-colour
+     Color to use for the main menu title.  For list of supported colors do: convert -list color.
+     HTML notation may be used "#ff0000". See: http://www.imagemagick.org/script/color.php
+: -stroke-color | -stroke-colour
+     Outline color for the main menu font. Use "none" for transparent outline (see -title-color)
 : -text-mist
      Put a semi-transparent misted background behind the title text, just slightly larger than the text area
-: -audio
+: -bgaudio
      An audio file for the main menu background
 : -submenu-audio NUM
      List of files for submenu backgrounds. If one file is given, then it will be used for all submenus.  Else the number given must equal the number of chapters, though the keyword "none" may be used for silence
 : -menu-audio-fade
      Number of sec to fade given menu audio in and out (default: one second)
+: -submenu-audio-fade
+     Number of sec to fade given submenu audio in and out (default: one second)
 : -chapters NUM
      The number of submenu chapters for each video (default: 6)
 : -seek
