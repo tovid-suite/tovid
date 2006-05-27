@@ -85,5 +85,5 @@ font size constraints, titles may have a maximum of 12 characters.
 : -chapters NUM
      The number of submenu chapters for each video (default: 6)
 : -seek
-     For main menu only - seek to N seconds (may be float) before generating jpegs
+     Seek to N seconds (may be float) before generating jpegs (main AND submenus)
 
