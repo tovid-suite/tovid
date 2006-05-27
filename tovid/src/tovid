@@ -186,7 +186,7 @@ QUIET=false
 KEEPFILES=false
 
 # Make note of when encoding starts, to determine total time later.
-SCRIPT_START_TIME=`date +%s`
+SCRIPT_START_TIME=$(date +%s)
 
 
 # ******************************************************************************
@@ -291,7 +291,7 @@ killsubprocs()
 check_disk_space()
 {
     # Determine space available in current directory (in MB)
-    AVAIL_SPACE=`df -mP . | awk 'NR != 1 {print $4;}'`
+    AVAIL_SPACE=$(df -mP . | awk 'NR != 1 {print $4;}')
     # Rough estimates of KB/sec for different formats
     K_PER_SEC=200
     test x"$TGT_RES" = x"VCD" && K_PER_SEC=172
@@ -303,12 +303,12 @@ check_disk_space()
     # If video length is unknown, guess needed space
     # based on original file size
     if test x"$V_DURATION" = x"0"; then
-        CUR_SIZE=`du -c -k \"$IN_FILE\" | awk 'END{print $1}'`
-        NEED_SPACE=`expr $CUR_SIZE \* 2`
+        CUR_SIZE=$(du -c -k \"$IN_FILE\" | awk 'END{print $1}')
+        NEED_SPACE=$(expr $CUR_SIZE \* 2)
         yecho  "The encoding process will require about"
     # Estimate space based as kbps * duration
     else
-        NEED_SPACE=`expr $V_DURATION \* $K_PER_SEC \/ 500`
+        NEED_SPACE=$(expr $V_DURATION \* $K_PER_SEC \/ 500)
         yecho "The encoding process is estimated to require $NEED_SPACE MB of disk space."
     fi
 
@@ -409,12 +409,12 @@ get_args()
                 ;;
             "-safe" )
                 shift
-                SAFE_AREA=`echo $1 | sed 's/%//g'`
+                SAFE_AREA=$(echo $1 | sed 's/%//g')
                 ;;
             "-filters" )
                 shift
                 # Parse comma-separated values
-                for FILTER in `echo "$1" | sed 's/,/ /g'`; do
+                for FILTER in $(echo "$1" | sed 's/,/ /g'); do
                     case "$FILTER" in
                         "none" )
                             DO_DENOISE=false
@@ -480,7 +480,7 @@ get_args()
             "-subtitles" )
                 shift
                 if test -e "$1"; then
-                    SUBTITLES="-sub \"`abspath $1`\""
+                    SUBTITLES="-sub \"$(abspath \"$1\")\""
                     DO_SUBS=:
                 else
                     yecho "Cannot find subtitle file $1."
@@ -505,13 +505,13 @@ get_args()
             "-in" )
                 shift
                 # Get a full pathname for the infile
-                IN_FILE=`abspath "$1"`
+                IN_FILE=$(abspath "$1")
                 ;;
             "-out" )
                 shift
                 OUT_PREFIX="$1"
                 # Use full pathname with extension (mpg)
-                OUT_FILENAME="`abspath \"$1\"`.mpg"
+                OUT_FILENAME="$(abspath \"$1\").mpg"
                 ;;
 
             # Null option; ignored.
@@ -533,7 +533,7 @@ get_args()
                 ;;
 
             # If the option wasn't recognized, exit with an error
-            * )
+            "*" )
                 usage_error "Unrecognized command-line option '$1'"
                 ;;
             esac
@@ -550,13 +550,13 @@ get_args()
         # check that a config file exists and is readable
         if test -r "$CONFIG_FILE"; then
             # Make sure file is a tovid config file
-            CONFIG_TYPE=`head -n 1 "$CONFIG_FILE"`
+            CONFIG_TYPE=$(head -n 1 "$CONFIG_FILE")
             if test x"$CONFIG_TYPE" != x"tovid"; then
                 yecho "$CONFIG_FILE is not a valid tovid configuration file."
                 yecho "Skipping $CONFIG_FILE"
             else
                 READING_CONFIG=:
-                CONFIG_ARGS=`grep '^-' $CONFIG_FILE | tr '\n' ' '`
+                CONFIG_ARGS=$(grep '^-' $CONFIG_FILE | tr '\n' ' ')
                 yecho "Using config file $CONFIG_FILE, containing the following options:"
                 if test -n "$CONFIG_ARGS"; then
                     yecho "$CONFIG_ARGS"
@@ -703,7 +703,7 @@ if test -e "$OUT_PREFIX.$VID_SUF" || test -e "$OUT_FILENAME" || test -e "$OUT_PR
 fi
 
 # Create a unique temporary directory
-TMP_DIR=`mktemp -d ${WORKING_DIR}/tovid-temp.XXXXXX`
+TMP_DIR=$(mktemp -d ${WORKING_DIR}/tovid-temp.XXXXXX)
 # Files to use for temporarily storing video info and encoding progress
 SCRATCH_FILE="${TMP_DIR}/tovid.scratch"
 LOG_FILE="${TMP_DIR}/tovid.log"
@@ -829,7 +829,7 @@ case "$TGT_RES" in
         fi
         AUD_SUF="mp2"
         # -quality gives bitrates from 400-4000 kbps
-        DEFAULT_BR=`expr $VID_QUALITY \* 4000 \/ 10`
+        DEFAULT_BR=$(expr $VID_QUALITY \* 4000 \/ 10)
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 2 -b $VID_BITRATE -V 230 -K kvcd -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 8 -d"
         MUX_OPTS="-V -f 5 -b 350 -r 10800"
@@ -847,7 +847,7 @@ case "$TGT_RES" in
         fi
         AUD_SUF="ac3"
         # -quality gives bitrates from 400-4000 kbps
-        DEFAULT_BR=`expr $VID_QUALITY \* 4000 \/ 10`
+        DEFAULT_BR=$(expr $VID_QUALITY \* 4000 \/ 10)
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -K hi-res"
@@ -865,7 +865,7 @@ case "$TGT_RES" in
         fi
         AUD_SUF="mp2"
         # -quality gives bitrates from 260-2600 kbps
-        DEFAULT_BR=`expr $VID_QUALITY \* 2600 \/ 10`
+        DEFAULT_BR=$(expr $VID_QUALITY \* 2600 \/ 10)
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 4 -b $VID_BITRATE -K hi-res"
@@ -884,7 +884,7 @@ case "$TGT_RES" in
         fi
         AUD_SUF="ac3"
         # -quality gives bitrates from 600-6000 kbps
-        DEFAULT_BR=`expr $VID_QUALITY \* 6000 \/ 10`
+        DEFAULT_BR=$(expr $VID_QUALITY \* 6000 \/ 10)
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -K hi-res"
@@ -909,7 +909,7 @@ case "$TGT_RES" in
         fi
         AUD_SUF="mp2"
         # -quality gives bitrates from 400-4000 kbps
-        DEFAULT_BR=`expr $VID_QUALITY \* 4000 \/ 10`
+        DEFAULT_BR=$(expr $VID_QUALITY \* 4000 \/ 10)
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
 
@@ -935,7 +935,7 @@ case "$TGT_RES" in
         fi
         AUD_SUF="ac3"
         # -quality gives bitrates from 980-9800 kbps
-        DEFAULT_BR=`expr $VID_QUALITY \* 9800 \/ 10`
+        DEFAULT_BR=$(expr $VID_QUALITY \* 9800 \/ 10)
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 10"
@@ -987,7 +987,7 @@ yecho
 
 # Set nonvideo bitrate
 # Formula: Sum of all nonvideo bitrates + 1% of total bitrate
-NONVIDEO_BITRATE=`expr \( 101 \* $AUD_BITRATE \+ $VID_BITRATE \) \/ 100`
+NONVIDEO_BITRATE=$(expr \( 101 \* $AUD_BITRATE \+ $VID_BITRATE \) \/ 100)
 
 # Put available mplayer -vf filters into temp file
 mplayer -vf help > "$SCRATCH_FILE" 2>&1
@@ -1027,7 +1027,7 @@ if $DEINTERLACE; then
 fi
 
 # Default quantization
-QUANT=`expr 13 \- $VID_QUALITY`
+QUANT=$(expr 13 \- $VID_QUALITY)
 
 # mpeg2enc encoding quality options
 # Don't use -q for VCD (since -q implies variable bitrate)
@@ -1075,7 +1075,7 @@ fi
 # Do fast encoding if requested. Sacrifice quality for encoding speed.
 # NOT IMPLEMENTED IN COMMAND-LINE YET!
 if $FAST_ENCODING; then
-    QUANT=`expr $QUANT \+ 4`
+    QUANT=$(expr $QUANT \+ 4)
     MPEG2_QUALITY="-4 4 -2 4 -q $QUANT"
 fi
 
@@ -1109,7 +1109,7 @@ if test x"$IN_FILE_TYPE" = x"file"; then
     yecho "Probing video for information. This may take several minutes..."
 
     # Get an MD5sum of the input file for statistics
-    IN_FILE_MD5=`md5sum "$IN_FILE" | awk '{print $1}'`
+    IN_FILE_MD5=$(md5sum "$IN_FILE" | awk '{print $1}')
 
     # Assume nothing is compliant unless idvid says so
     # (these will be overridden by idvid for compliant A/V)
@@ -1125,7 +1125,7 @@ if test x"$IN_FILE_TYPE" = x"file"; then
     
     # Sneaky but simple way to set some variables via 'idvid'.
     # Exit on failure.
-    if eval `idvid -terse "$IN_FILE"`; then :; else
+    if eval $(idvid -terse "$IN_FILE"); then :; else
         runtime_error "Could not identify source video: $IN_FILE"
     fi
 
@@ -1166,7 +1166,7 @@ if test x"$IN_FILE_TYPE" = x"file"; then
 
     yecho "Analysis of file $IN_FILE:"
     yecho "  $ID_VIDEO_WIDTH x $ID_VIDEO_HEIGHT pixels, $ID_VIDEO_FPS fps"
-    yecho "  Duration (best guess): `format_time $V_DURATION` (HH:MM:SS)"
+    yecho "  Duration (best guess): $(format_time $V_DURATION) (HH:MM:SS)"
     yecho "  $ID_VIDEO_FORMAT video with $ID_AUDIO_CODEC audio"
 
     # If no audio stream present, need to generate one later
@@ -1226,9 +1226,9 @@ yecho "  $VID_BITRATE kbits/sec video, $AUD_BITRATE kbits/sec audio"
 # OVERRIDES AUTO-DETECTED ASPECT RATIO!
 if test -n "$ASPECT_RATIO"; then
     yecho "Using explicitly provided aspect ratio of $ASPECT_RATIO"
-    PLAY_WIDTH=`echo $ASPECT_RATIO | awk -F ':' '{print $1}'`
-    PLAY_HEIGHT=`echo $ASPECT_RATIO | awk -F ':' '{print $2}'`
-    V_ASPECT_WIDTH=`expr $PLAY_WIDTH \* 100 \/ $PLAY_HEIGHT`
+    PLAY_WIDTH=$(echo $ASPECT_RATIO | awk -F ':' '{print $1}')
+    PLAY_HEIGHT=$(echo $ASPECT_RATIO | awk -F ':' '{print $2}')
+    V_ASPECT_WIDTH=$(expr $PLAY_WIDTH \* 100 \/ $PLAY_HEIGHT)
 else
     # Set human-readable aspect ratio string
     # (i.e., format '133' as '1.33:1', etc.)
@@ -1260,29 +1260,29 @@ if test "$V_ASPECT_WIDTH" -eq "$TGT_ASPECT_WIDTH"; then
 elif test "$V_ASPECT_WIDTH" -gt "$TGT_ASPECT_WIDTH"; then
     yecho "Letterboxing vertically"
     INNER_WIDTH=$TGT_WIDTH
-    INNER_HEIGHT=`expr $TGT_HEIGHT \* $TGT_ASPECT_WIDTH \/ $V_ASPECT_WIDTH`
+    INNER_HEIGHT=$(expr $TGT_HEIGHT \* $TGT_ASPECT_WIDTH \/ $V_ASPECT_WIDTH)
 # Otherwise, use full height, and letterbox horizontally
 else
     yecho "Letterboxing horizontally"
-    INNER_WIDTH=`expr $TGT_WIDTH \* $V_ASPECT_WIDTH \/ $TGT_ASPECT_WIDTH`
+    INNER_WIDTH=$(expr $TGT_WIDTH \* $V_ASPECT_WIDTH \/ $TGT_ASPECT_WIDTH)
     INNER_HEIGHT=$TGT_HEIGHT
 fi
 
 if test $SAFE_AREA -lt 100; then
     yecho "Using a safe area of ${SAFE_AREA}%"
     # Reduce inner size to fit within safe area
-    INNER_WIDTH=`expr $INNER_WIDTH \* $SAFE_AREA \/ 100`
-    INNER_HEIGHT=`expr $INNER_HEIGHT \* $SAFE_AREA \/ 100`
+    INNER_WIDTH=$(expr $INNER_WIDTH \* $SAFE_AREA \/ 100)
+    INNER_HEIGHT=$(expr $INNER_HEIGHT \* $SAFE_AREA \/ 100)
 fi
 
 # Round down inner width and height to nearest multiple of 16
 # for optimal encoding
-INNER_WIDTH=`expr $INNER_WIDTH \- \( $INNER_WIDTH \% 16 \)`
-INNER_HEIGHT=`expr $INNER_HEIGHT \- \( $INNER_HEIGHT \% 16 \)`
+INNER_WIDTH=$(expr $INNER_WIDTH \- \( $INNER_WIDTH \% 16 \))
+INNER_HEIGHT=$(expr $INNER_HEIGHT \- \( $INNER_HEIGHT \% 16 \))
 
 # Round height back up if possible. Gives slightly more picture space.
-if test `expr $INNER_HEIGHT \+ 16` -le $TGT_HEIGHT; then
-    INNER_HEIGHT=`expr $INNER_HEIGHT \+ 16`
+if test $(expr $INNER_HEIGHT \+ 16) -le $TGT_HEIGHT; then
+    INNER_HEIGHT=$(expr $INNER_HEIGHT \+ 16)
 fi
 
 # ******************************************************************************
@@ -1364,8 +1364,8 @@ if $USE_FFMPEG; then
     # Padding, for any letterboxing to be done
     FF_VPAD=""
     FF_HPAD=""
-    FF_VPIX=`expr \( $TGT_HEIGHT \- $INNER_HEIGHT \) \/ 2`
-    FF_HPIX=`expr \( $TGT_WIDTH \- $INNER_WIDTH \) \/ 2`
+    FF_VPIX=$(expr \( $TGT_HEIGHT \- $INNER_HEIGHT \) \/ 2)
+    FF_HPIX=$(expr \( $TGT_WIDTH \- $INNER_WIDTH \) \/ 2)
     test "$FF_VPIX" -ne 0 && FF_VPAD="-padtop $FF_VPIX -padbottom $FF_VPIX"
     test "$FF_HPIX" -ne 0 && FF_HPAD="-padleft $FF_HPIX -padright $FF_HPIX"
 
@@ -1561,13 +1561,13 @@ fi
 # ******************************************************************************
 # ******************************************************************************
 
-AUDIO_SIZE=`du -c -b "$OUT_PREFIX.$AUD_SUF" | awk 'END{print $1}'`
-VIDEO_SIZE=`du -c -b "$OUT_PREFIX.$VID_SUF" | awk 'END{print $1}'`
+AUDIO_SIZE=$(du -c -b "$OUT_PREFIX.$AUD_SUF" | awk 'END{print $1}')
+VIDEO_SIZE=$(du -c -b "$OUT_PREFIX.$VID_SUF" | awk 'END{print $1}')
 # Total size of streams so far (in MBytes)
-STREAM_SIZE=`expr \( $AUDIO_SIZE \+ $VIDEO_SIZE \) \/ 1000000`
+STREAM_SIZE=$(expr \( $AUDIO_SIZE \+ $VIDEO_SIZE \) \/ 1000000)
 # If it will exceed disc size, add '%d' field to allow mplex to split the output
 if test $STREAM_SIZE -gt $DISC_SIZE; then
-    OUT_FILENAME=`echo "$OUT_FILENAME" | sed -e 's/\.mpg$/.%d.mpg/'`
+    OUT_FILENAME=$(echo "$OUT_FILENAME" | sed -e 's/\.mpg$/.%d.mpg/')
 fi
 
 
@@ -1604,17 +1604,18 @@ fi
 # ******************************************************************************
 
 # Get total size of all output files
-cd `dirname $OUT_FILENAME`
-FINAL_SIZE=`du -c -k "$OUT_PREFIX"*.mpg | awk 'END{print $1}'`
+cd $(dirname $OUT_FILENAME)
+FINAL_SIZE=$(du -c -k "$OUT_PREFIX"*.mpg | awk 'END{print $1}')
 test -z $FINAL_SIZE && FINAL_SIZE=0
 
 if $FAKE; then
     :
 else
     yecho "Output files:"
-    for OUTFILE in `ls -1 $OUT_PREFIX.mpg $OUT_PREFIX.[0-9].mpg 2>/dev/null`; do
+    for OUTFILE in $(ls -1 $OUT_PREFIX.mpg $OUT_PREFIX.[0-9].mpg 2>/dev/null);
+    do
         echo "$OUTFILE"
-        OUTSIZE=`du -h "$OUTFILE" | awk 'END{print $1}'`
+        OUTSIZE=$(du -h "$OUTFILE" | awk 'END{print $1}')
         echo "    $OUTFILE ($OUTSIZE)"
     done
 fi
@@ -1648,6 +1649,8 @@ $SCRIPT_NAME
     time spent encoding, in seconds (SCRIPT_TOT_TIME)
     CPU model of host machine (CPU_MODEL)
     CPU speed in MHz (CPU_SPEED)
+    Input file video codec (ID_VIDEO_FORMAT)
+    Input file audio codec (ID_AUDIO_CODEC)
     serial or parallel encoding (ENCODING_MODE)
     MD5sum of the input file (IN_FILE_MD5)
     Width in pixels of input file (ID_VIDEO_WIDTH)
@@ -1666,17 +1669,17 @@ EOF`
 fi
 
 # Gather some statistics...
-SCRIPT_END_TIME=`date +%s`
-SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
-HHMMSS=`format_time $SCRIPT_TOT_TIME`
+SCRIPT_END_TIME=$(date +%s)
+SCRIPT_TOT_TIME=$(expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME)
+HHMMSS=$(format_time $SCRIPT_TOT_TIME)
 # Avoid dividing by zero (+1 in denominator, since accuracy isn't that important)
-FINAL_BITRATE=`expr $FINAL_SIZE \/ \( $V_DURATION \+ 1 \)`
+FINAL_BITRATE=$(expr $FINAL_SIZE \/ \( $V_DURATION \+ 1 \))
 # Get average/peak bitrates from mplex
-AVG_BITRATE=`grep 'Average bit-rate' "$LOG_FILE" | awk '{print $6}'`
-PEAK_BITRATE=`grep 'Peak bit-rate' "$LOG_FILE" | awk '{print $6}'`
+AVG_BITRATE=$(grep 'Average bit-rate' "$LOG_FILE" | awk '{print $6}')
+PEAK_BITRATE=$(grep 'Peak bit-rate' "$LOG_FILE" | awk '{print $6}')
 # Convert to kbits/sec
-test -n $AVG_BITRATE && AVG_BITRATE=`expr $AVG_BITRATE \/ 1000`
-test -n $PEAK_BITRATE && PEAK_BITRATE=`expr $PEAK_BITRATE \/ 1000`
+test -n $AVG_BITRATE && AVG_BITRATE=$(expr $AVG_BITRATE \/ 1000)
+test -n $PEAK_BITRATE && PEAK_BITRATE=$(expr $PEAK_BITRATE \/ 1000)
 
 # Final statistics string (pretty-printed)
 FINAL_STATS_PRETTY=`cat << EOF
