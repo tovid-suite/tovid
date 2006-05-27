@@ -82,7 +82,7 @@ ANI_BG=""
 SUBMENU_AUDIO=false
 SM_AUDIO_FADE=:
 AUDIO_FADE=:
-DISSOLVE=100
+OPACITY=100
 MENU_FADE=false
 TRANSPARENT=false
 PREVIEW=:
@@ -397,10 +397,10 @@ while test $# -gt 0; do
         "-text-mist" )
             MIST=:
             ;;
-        "-transparency" )
+        "-opacity" )
             shift
             TRANSPARENT=:
-            DISSOLVE="$1"
+            OPACITY="$1"
             ;;
         "-chapters" )
             shift
@@ -917,7 +917,7 @@ echo "(Press 'q' or ESC in the preview window to close it.)"
 if $TRANSPARENT; then
     montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
     -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
-    composite -dissolve $DISSOLVE \
+    composite -dissolve $OPACITY \
     -gravity north -geometry +0+50 - \
     $WORK_DIR/pics/template.png -background none miff:- |
     convert - $WORK_DIR/title_txt.png  \
@@ -1637,7 +1637,7 @@ else # Do not do menu fade
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
             -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none miff:-)
-            IM_CMD2=(composite -dissolve $DISSOLVE \
+            IM_CMD2=(composite -dissolve $OPACITY \
             -gravity north -geometry +0+50 - \
             $WORK_DIR/pics/template.jpg -background none miff:-)
             IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+45 \
