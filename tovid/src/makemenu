@@ -244,7 +244,7 @@ while test $# -gt 0; do
                 "left" ) TEXT_ALIGN="northwest" ;;
                 "right" ) TEXT_ALIGN="northeast" ;;
                 "center" ) TEXT_ALIGN="north" ;;
-                * ) TEXT_ALIGN="$1"
+                * ) TEXT_ALIGN=$(echo "$1" | tr A-Z a-z)
             esac
             ;;
         "-debug" )
@@ -258,8 +258,7 @@ while test $# -gt 0; do
         # Assume anything in quotes is a video title
         ""*"" )
             echo "Adding title $1"
-            NUM_TITLES=`expr $NUM_TITLES \+ 1`
-            TITLES[$NUM_TITLES]="$1"
+            TITLES=("${TITLES[@]}" "$1")
             ;;
         * )
             usage_error "Unrecognized command-line option: $1"
@@ -270,13 +269,15 @@ while test $# -gt 0; do
     shift
 done
 
-# If output prefix was not provided, exit with error
-if test -z $OUT_PREFIX; then
-    usage_error "Please provide an output prefix with the -out option."
-fi
+NUM_TITLES=${#TITLES[@]}
 # If no titles were provided, exit with error
 if test $NUM_TITLES -eq 0; then
     usage_error "Please provide at least one title string, enclosed in double-quotes."
+fi
+
+# If output prefix was not provided, exit with error
+if test -z $OUT_PREFIX; then
+    usage_error "Please provide an output prefix with the -out option."
 fi
 
 # Use appropriate settings for DVD
@@ -345,39 +346,52 @@ if test -z $USE_TITLE_FONT ; then
 fi
 
 TITLE_TEXT=""
-# Start text at top of image
-CUR_Y=0
-NEXT_Y=$TITLE_SPACING
 # Y-offset for spumux button XML
 BUTTON_YOFFSET=`expr \( $HEIGHT \- $FG_HEIGHT \) \/ 2`
 let "BUTTON_X1=$SPUMUX_BUTTON_PAD"
 let "BUTTON_X2=$WIDTH-$SPUMUX_BUTTON_PAD"
 CUR_BUTTON_NUM="1"
 
+# For southern alignments, reverse order of titles (so they will
+# be added properly by ImageMagick)
+if test "${TEXT_ALIGN:0:5}" = "south"; then REVERSE=:; else REVERSE=false; fi
+if $REVERSE; then
+    CUR_Y=$(expr \( $NUM_TITLES \- 1 \) \* $TITLE_SPACING)
+    NEXT_Y=$(expr $CUR_Y \- $TITLE_SPACING)
+else
+    CUR_Y=0
+    NEXT_Y=$TITLE_SPACING
+fi
+
 # Concatenate the titles together with newlines to prepare for
 # drawing on background image
 echo "Adding $NUM_TITLES titles to the menu:"
-for CUR_TITLE in "${TITLES[@]}"
-do
-  echo "$CUR_TITLE"
-  # If "back" was listed, create a back button
-  if test "$CUR_TITLE" = "back" || test "$CUR_TITLE" = "Back" ; then
-    BACK_BUTTON="y"
-  else
-    # Escape quotes in title
-    CUR_TITLE=${CUR_TITLE//"'"/"\'"}
-    # If using (S)VCD, enumerate titles
-    if test $RES = "vcd" ; then
-      TITLE_TEXT=$( echo "$TITLE_TEXT text 0,$CUR_Y '$CUR_BUTTON_NUM. $CUR_TITLE'" )
+for ((i=0; i<$NUM_TITLES; i++)); do
+    echo "${TITLES[i]}"
+    # If "back" was listed, create a back button
+    if test "${TITLES[i]}" = "back" || test "${TITLES[i]}" = "Back" ; then
+        BACK_BUTTON="y"
     else
-      TITLE_TEXT=$( echo "$TITLE_TEXT text 15,$CUR_Y '$CUR_TITLE'" )
-      BUTTON_TEXT=$( echo "$BUTTON_TEXT text 0,$CUR_Y '>'" )
+        # Escape quotes in title
+        CUR_TITLE=${CUR_TITLE//"'"/"\'"}
+        # Enumerate (S)VCD titles
+        if test $RES = "vcd" ; then
+            POS_TEXT="text 0,$CUR_Y '$CUR_BUTTON_NUM. ${TITLES[i]}'"
+        # Use a highlight cursor for DVD titles
+        else
+            POS_TEXT="text 15,$CUR_Y '${TITLES[i]}'"
+            BUTTON_TEXT="$BUTTON_TEXT text 0,$CUR_Y '>'"
+        fi
+        TITLE_TEXT="$TITLE_TEXT $POS_TEXT"
+        add_button "button${CUR_BUTTON_NUM}" $BUTTON_X1 $CUR_Y $BUTTON_X2 $NEXT_Y
+        CUR_Y=$NEXT_Y
+        if $REVERSE; then
+            NEXT_Y=$(expr $NEXT_Y \- $TITLE_SPACING)
+        else
+            NEXT_Y=$(expr $NEXT_Y \+ $TITLE_SPACING)
+        fi
+        ((CUR_BUTTON_NUM++))
     fi
-    add_button "button${CUR_BUTTON_NUM}" $BUTTON_X1 $CUR_Y $BUTTON_X2 $NEXT_Y
-    CUR_Y=$NEXT_Y
-    NEXT_Y=`expr $NEXT_Y \+ $TITLE_SPACING`
-    (( CUR_BUTTON_NUM++ ))
-  fi
 done
 
 # If there was a "back", add it at the end
@@ -386,11 +400,12 @@ if test -n "$BACK_BUTTON" ; then
     CUR_Y=$NEXT_Y
     NEXT_Y=`expr $NEXT_Y \+ $TITLE_SPACING`
     if test $RES = "vcd" ; then
-        TITLE_TEXT=$( echo "$TITLE_TEXT text 15,$CUR_Y '$CUR_BUTTON_NUM. Back'" )
+        POS_TEXT="text 15,$CUR_Y '$CUR_BUTTON_NUM. Back'"
     else
-        TITLE_TEXT=$( echo "$TITLE_TEXT text 0,$CUR_Y 'Back'" )
+        POS_TEXT="text 0,$CUR_Y 'Back'"
         BUTTON_TEXT=$( echo "$BUTTON_TEXT text 0,$CUR_Y '<'" )
     fi
+    TITLE_TEXT="$TITLE_TEXT $POS_TEXT"
     add_button "back" $BUTTON_X1 $CUR_Y $BUTTON_X2 $NEXT_Y
 fi
 
