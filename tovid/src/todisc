@@ -97,7 +97,6 @@ DEBUG=: # Debugging on for initial release
 THUMB_SHAPE=""
 SEEK="-ss 1"
 SEEK_VAL=1
-CUT_START=30
 FADE=1
 
 SCRIPT_START_TIME=`date +%s`
@@ -243,6 +242,11 @@ function format_seconds()
     mr=((hr-hd)*60); md=(sprintf("%02d", mr))
     s=((mr-md)*60); sd=(sprintf("%02d", s))
     t=(sprintf("%02d:%02d:%06.3f" ,hd,md,s)); print t}' <<< $1
+}
+
+function awk_math()
+{
+    awk -v A=$1 -v B=$2 'BEGIN { printf("%d\n", (A*B)); }'
 }
 
 
@@ -971,15 +975,14 @@ if $ANI_SUB_MENU && [ $MIN_VAL -lt $(((340 * CHAPTERS) / 30)) ]; then
     exit 1
 fi 
 # allow animated menus of length of longest video
-MAX_ANI_LENGTH=$(awk -v fr=$FRAME_RATE -v al=$ANI_MENU_LENGTH 'BEGIN { printf("%d\n", (fr*al)); }')
+MAX_ANI_LENGTH=$(awk_math $FRAME_RATE $ANI_MENU_LENGTH)
 MAX_VAL_FRAMES="$(($MAX_VAL * 30))"
 if [ $MAX_VAL_FRAMES -lt $MAX_ANI_LENGTH ]; then
     MAX_ANI_LENGTH=$MAX_VAL_FRAMES
 fi
 # if submenu selected, translate seconds of submenu length into # of frames
 if $ANI_SUB_MENU; then
-    ANI_SUBMENU_FRAMES=$(awk -v fr=$FRAME_RATE -v sml=$ANI_SUBMENU_LENGTH \
-    'BEGIN { printf("%d\n", (fr*sml)); }')
+    ANI_SUBMENU_FRAMES=$(awk_math $FRAME_RATE $ANI_SUBMENU_LENGTH)
 fi
 
 ANI_FRAMES=$MAX_ANI_LENGTH
@@ -1252,10 +1255,8 @@ if $SUB_MENU; then
             PICS_OUT=($WORK_DIR/${i}-chapt)
             CUT_TIME=1
         fi    
-        CUT_START=$(awk 'BEGIN { printf("'"$FRAME_RATE"'" * "'"$SEEK_VAL"'") "\n" ; exit  }')
-        CUT_START=${CUT_START%.*}
-        counts=$(awk 'BEGIN { printf("'"${CHAPT_INTERVALS[i]}"'" * "'"$FRAME_RATE"'") "\n" ; exit  }')
-        counts=${counts%.*}
+        CUT_START=$(awk_math $FRAME_RATE $SEEK_VAL)
+        counts=$(awk_math ${CHAPT_INTERVALS[i]} $FRAME_RATE)
         CUT=( $CUT_START $(running_total <<<  $(for ((a=0; a<CHAPTERS ; a++)); \
         do echo -n "$counts ";done)) )
         for ((c=0; c<${#CUT[@]}; c++)); do
