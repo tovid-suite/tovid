@@ -848,13 +848,13 @@ if $MIST; then
     Y=$(identify $WORK_DIR/title_txt.png |awk '{print $3}'|cut -dx -f1)
     X=$(identify $WORK_DIR/title_txt.png |awk '{print $3}'|cut -dx -f2)
     # add 10 pixels to width and height compared to title text png
-    y=$((Y + 20))
-    x=$((X + 20))
-    newX=$(($X + 10))
-    newY=$(($Y + 10))
+    y=$((Y + 40))
+    x=$((X + 40))
+    newX=$(($X + 30))
+    newY=$(($Y + 30))
     DIM=${y}x${x}
     convert -size $DIM xc:none -fill white -stroke none \
-    -draw "rectangle 5,10 $newY,$newX" $WORK_DIR/white_orig.png
+    -draw "rectangle 10,10 $newY,$newX" $WORK_DIR/white_orig.png
     convert $WORK_DIR/white_orig.png -channel RGBA -blur 0x4 $WORK_DIR/white.png
     unset X Y x y
 fi
@@ -926,7 +926,7 @@ else # Not transparent
     montage ${PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
     -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
     convert $WORK_DIR/pics/template.png \
-    $WORK_DIR/title_txt.png  -gravity south -geometry +0+55 -composite \
+    $WORK_DIR/title_txt.png  -gravity south -geometry +0+65 -composite \
     -  -gravity north -geometry +0+50 -composite miff:- | display
 fi
 confirm_preview
