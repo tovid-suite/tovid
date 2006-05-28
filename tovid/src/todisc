@@ -78,7 +78,7 @@ STROKE=""
 CHAPTERS=6
 BG_AUDIO=""
 BG_PIC=""
-ANI_BG=""
+BG_VIDEO=""
 SUBMENU_AUDIO=false
 SM_AUDIO_FADE=:
 AUDIO_FADE=:
@@ -94,7 +94,7 @@ SUB_MENU_FEATHER=false
 IMG_FMT=jpg
 SM_IMG_FMT=jpg  # submenu image format
 KEEP_FILES=false
-DEBUG=: # Debugging on for initial release
+DEBUG=false
 THUMB_SHAPE=""
 SEEK="-ss 1"
 SEEK_VAL=1
@@ -128,15 +128,22 @@ yecho()
 # ******************************************************************************
 # Execute the given command-line string, with appropriate stream redirection
 # Args: $@ == text string contianing complete command-line
+# Returns: Exit status of the subprocess
+# To filter/prettify the subprocess output before writing it to the log file,
+# set the LOG_FILTER variable before calling this function, to e.g.
+#    LOG_FILTER="sed 's/\r/\r\n/g'"    # Replace LF with CR/LF
 # ******************************************************************************
 cmd_exec()
 {
     if $DEBUG; then
-        eval "$@" 2>&1 | tee -a "$LOG_FILE" &
+        # Display all output, and also write it to the log
+        eval "$@" 2>&1 | ${LOG_FILTER:=cat} | tee -a "$LOG_FILE"
     else
-        eval "$@" >> "$LOG_FILE" 2>&1 &
+        # Just write that junk to the log
+        eval "$@" 2>&1 | ${LOG_FILTER:=cat} >> "$LOG_FILE"
     fi
-    #PIDS="$PIDS $!"
+    # Return exit status
+    return $?
 }
 
 # Print script name, usage notes, and optional error message, then exit.
@@ -203,10 +210,10 @@ runtime_error()
     yecho "    $@"
     echo "Check the contents of $LOG_FILE to see what went wrong."
     # TODO: Uncomment once -debug is actually implemented
-    #if $DEBUG; then :; else
-    #    echo "Run todisc again with the -debug option to produce more verbose"
-    #    echo "output, if the log file doesn't give you enough information."
-    #fi
+    if $DEBUG; then :; else
+        echo "Run todisc again with the -debug option to produce more verbose"
+        echo "output, if the log file doesn't give you enough information."
+    fi
     #echo " "
     echo "See the tovid website ($TOVID_HOME_PAGE) for what to do next."
     echo "Sorry for the inconvenience!"
@@ -374,7 +381,7 @@ while test $# -gt 0; do
             ;;
         "-bgvideo" )
             shift
-            ANI_BG="$(abspath "$1")"
+            BG_VIDEO="$(abspath "$1")"
             ;;
         "-thumb-shape" )
             shift
@@ -553,7 +560,7 @@ if [ $FADE = 0 ]; then
 elif [ $SM_AUDIO_FADE = 0 ]; then
     SM_AUDIO_FADE=false
 fi
-if $MENU_FADE; then mkdir -v $WORK_DIR/bg; fi
+if $MENU_FADE || test -n "$BG_VIDEO"; then mkdir -v $WORK_DIR/bg; fi
 mkdir -v "$WORK_DIR/animenu"
 if $ANI_SUB_MENU; then
     for ((i=0; i<CHAPTERS; i++)); do
@@ -1504,6 +1511,22 @@ fi
 yecho
 yecho "Building main menu"
 yecho
+if [ -n "$BG_VIDEO" ]; then
+    yecho "Getting background video from $BG_VIDEO"
+    FFMPEG_CMD="ffmpeg -i \"$BG_VIDEO\" $SEEK -vframes $FRAMES \
+    -s $VIDSIZE \"$WORK_DIR/bg/%d.jpg\""
+    yecho "Extracting/resizing background images with the following command:"
+    yecho "$FFMPEG_CMD"
+    # Filter ffmpeg output
+    LOG_FILTER="sed s/\\r/\\r\\n/g"
+    # Run command and check for failure
+    if ! cmd_exec "$FFMPEG_CMD"; then
+        runtime_error "Problem creating images from the background video"
+    fi
+fi
+unset FFMPEG_CMD
+
+yecho
 yecho "Adding title to images and resizing"
 for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
@@ -1553,26 +1576,11 @@ for ((i=0; i<=NUM_FILES; i++)); do
    fi
 done
 
-if [ -n "$ANI_BG" ]; then
-    # extract images from the provided video
-    echo "ANI_BG is $ANI_BG"
-    FFMPEG_CMD=(ffmpeg -i "$ANI_BG" $SEEK -vframes $FRAMES \
-    -s "$VIDSIZE" "$WORK_DIR/bg/%d.jpg")
-    yecho
-    echo -e "\nRunning: ${FFMPEG_CMD[@]}\n" | fold -bs >> $LOG_FILE
-    if "${FFMPEG_CMD[@]}" >> $LOG_FILE.tmp 2>&1; then
-        cleanlog 3
-    else
-        cleanlog 3
-        runtime_error "Problem creating images from the background video"
-    fi
-fi
-unset FFMPEG_CMD
+yecho
+yecho "Making final montages and compositing onto background with title"
+yecho
 if "$MENU_FADE" && ! "$STATIC"; then
-    yecho
-    yecho "Making final montages and compositing onto background with title"
-    yecho
-    if [ -z "$ANI_BG" ]; then
+    if [ -z "$BG_VIDEO" ]; then
         for ((frame=0; frame<=ANI_MENU_END_FRAME; frame++)); do
             # copy template for fade out beginning and end frames
             cp $WORK_DIR/pics/template.jpg $WORK_DIR/bg/$(($frame + 1)).jpg
@@ -1653,8 +1661,6 @@ else # Do not do menu fade
             rm -f ${ANI_PICS[@]}
         done
     else # Not transparent
-        echo
-        echo "making final montages and compositing onto background with title"
         o=1; sp="/-\|/-\|";  echo -n ' '  # initialize spinner
         for (( count=1; count <=FRAMES; count++)); do
             echo -en "\b${sp:o++%${#sp}:1}"
