@@ -1738,7 +1738,9 @@ else # audio supplied: convert to wav then later to dvd/svcd format
 fi
 
 unset BGAUDIO_CMD
-if $AUDIO_FADE && ! $STATIC; then
+if $AUDIO_FADE; then
+    TIME=$(ffmpeg -i "$WORK_DIR/intro.wav" 2>&1|awk '/Duration/ {print $2}')
+    TIME=${TIME/,/}
     echo "Running: "
     echo "sox $WORK_DIR/intro.wav $WORK_DIR/intro-processed.wav fade t \
     $FADE $TIME $FADE"
