@@ -131,7 +131,7 @@ yecho()
 
 # ******************************************************************************
 # Execute the given command-line string, with appropriate stream redirection
-# Args: $@ == text string contianing complete command-line
+# Args: $@ == text string containing complete command-line
 # Returns: Exit status of the subprocess
 # To filter/prettify the subprocess output before writing it to the log file,
 # set the LOG_FILTER variable before calling this function, to e.g.
@@ -350,11 +350,17 @@ while test $# -gt 0; do
             shift
             OUT_PREFIX="$1"
             ;;
+        "-debug" )
+            DEBUG=:
+            ;;
         "-keepfiles" )
             KEEP_FILES=:
             ;;
-        "-debug" )
-            DEBUG=:
+        "-dvd" )
+            TARGET=dvd
+            ;;
+        "-svcd" )
+            TARGET=svcd
             ;;
         "-ntsc" )
             TV_STANDARD=ntsc
@@ -362,6 +368,7 @@ while test $# -gt 0; do
         "-pal" )
             TV_STANDARD=pal
             ;;
+        # Menu control options
         "-menu-length" )
             shift
             ANI_MENU_LENGTH="$1"
@@ -369,12 +376,6 @@ while test $# -gt 0; do
         "-submenu-length" )
             shift
             ANI_SUBMENU_LENGTH="$1"
-            ;;
-        "-dvd" )
-            TARGET=dvd
-            ;;
-        "-svcd" )
-            TARGET=svcd
             ;;
         "-static" )
             STATIC=:
@@ -424,7 +425,7 @@ while test $# -gt 0; do
             shift
             MIST_BLUR="$1"
             ;;
-        "-mist-color" |"-mist-colour" )
+        "-text-mist-color" |"-text-mist-colour" )
             shift
             MIST_COLOUR="$1"
             ;;
