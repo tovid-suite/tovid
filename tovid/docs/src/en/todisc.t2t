@@ -107,6 +107,6 @@ font size constraints, titles may have a maximum of 12 characters.
 : -svcd
      Super VideoCD-compatible output
 : -ntsc
-     720x480 output, compatible with DVD standard (default)
+     720x480 output, compatible with NTSC standard (default)
 : -pal
-     480x576 output, compatible with Super VideoCD standard
+     480x576 output, compatible with PAL standard
