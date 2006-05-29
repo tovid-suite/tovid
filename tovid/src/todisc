@@ -74,6 +74,10 @@ STATIC=false
 SUB_MENU=false
 ANI_SUB_MENU=false
 TITLE_COLOUR="#CDC0B0"
+THUMB_BG_COLOUR=white
+THUMB_TEXT_COLOUR=""
+MIST_COLOUR=white
+MIST_BLUR=60
 STROKE=""
 CHAPTERS=6
 BG_AUDIO=""
@@ -401,8 +405,24 @@ while test $# -gt 0; do
             shift
             STROKE="$1"
             ;;
+        "-thumb-text-colour" | "-thumb-text-color" )
+            shift
+            THUMB_TEXT_COLOUR="$1"
+            ;;
         "-text-mist" )
             MIST=:
+            ;;
+        "-text-mist-opacity" )
+            shift
+            MIST_BLUR="$1"
+            ;;
+        "-mist-color" |"-mist-colour" )
+            shift
+            MIST_COLOUR="$1"
+            ;;
+        "-thumb-mist-color" |"-thumb-mist-colour" )
+            shift
+            THUMB_BG_COLOUR="$1"
             ;;
         "-opacity" )
             shift
@@ -754,7 +774,8 @@ DIMY5=$((DIMY / 3))
 DIMX5=$((DIMX4 / 3))
 BLUR_CMD=(convert - -blur 0x$BLUR -channel RGBA +matte miff:-)
 if [ -n "$THUMB_SHAPE" ]; then
-    convert -size $THUMB_SIZE xc:none -fill white -stroke none \
+    # make a mask for the mist if called for
+    convert -size $THUMB_SIZE xc:none -fill  $THUMB_BG_COLOUR -stroke none \
     -draw "rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2" $WORK_DIR/feather_orig.png
     convert $WORK_DIR/feather_orig.png -channel RGBA \
     -blur 0x60 $WORK_DIR/feather_mask2.png
@@ -766,22 +787,25 @@ if test "$THUMB_SHAPE" = "normal"; then
     "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" |
     convert - -evaluate subtract 50% -normalize $THUMB_MASK
 fi
-if $FEATHER; then
-    FILL="#161514"
-else
-    FILL="#C6C6C6"
+if [ -z $THUMB_TEXT_COLOUR ]; then
+    if $FEATHER; then
+        THUMB_TEXT_COLOUR="#161514"
+    else
+        THUMB_TEXT_COLOUR="#C6C6C6"
+    fi
 fi
+
 if test "$THUMB_SHAPE" = "oval"; then
     THUMB_MASK=$WORK_DIR/oval_mask.png
     echo "Running:
-    convert -size $THUMB_SIZE xc:black -fill white \
+    convert -size $THUMB_SIZE xc:black -fill white
     -draw "RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3" \
     +matte -compose CopyOpacity miff:- |
     convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
     convert - -evaluate subtract 50% -normalize $THUMB_MASK" |
     sed 's/    */ /g'|sed -e "s/^ *//" 
     echo
-    convert -size $THUMB_SIZE xc:black -fill white \
+    convert -size $THUMB_SIZE xc:black -fill white
     -draw "RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3" \
     +matte -compose CopyOpacity miff:- |
     "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" |
@@ -823,13 +847,10 @@ fi
 yecho "Creating a title image"
 if [ -z "$BG_PIC" ]; then
     STROKE=none
-else
-    if [ -z "$STROKE" ]; then
-        STROKE=gray
-    else
-        STROKE=$STROKE
-    fi
+elif [ -z "$STROKE" ]; then
+    STROKE=gray
 fi
+
 echo "Running
 convert -size 620x100 xc:none -font "$MENU_FONT" \
 -pointsize $MENU_FONTSIZE \
@@ -858,7 +879,7 @@ if $MIST; then
     newX=$(($X + 30))
     newY=$(($Y + 30))
     DIM=${y}x${x}
-    convert -size $DIM xc:none -fill white -stroke none \
+    convert -size $DIM xc:none -fill $MIST_COLOUR -stroke none \
     -draw "rectangle 10,10 $newY,$newX" $WORK_DIR/white_orig.png
     convert $WORK_DIR/white_orig.png -channel RGBA -blur 0x4 $WORK_DIR/white.png
     unset X Y x y
@@ -869,7 +890,7 @@ fi
 ###############################################################################
 if $MIST; then
     # overlay white.png onto the background
-    composite -dissolve 30 -gravity south -geometry +0+45 \
+    composite -dissolve $MIST_BLUR -gravity south -geometry +0+45 \
     $WORK_DIR/white.png $WORK_DIR/pics/template.png \
     $WORK_DIR/pics/template.png
 fi
@@ -900,7 +921,7 @@ for ((i=0; i<${#PICS[@]}; i++)); do
     # using a mask just on the frame portion would be even better
     # www.cit.gu.edu.au/~anthony/info/graphics/imagemagick.hints 1/4 down
     IM_CMD1=(montage "${PICS[i]}" -geometry +4+4 -compose Copy  \
-    -background  none -fill "$FILL" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
+    -background  none -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
     -title "${TITLES[i]}")
     IM_CMD2=(convert -resize $THUMB_SIZE! -)
     IM_CMD3=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png - )
@@ -923,16 +944,16 @@ if $TRANSPARENT; then
     montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
     -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
     composite -dissolve $OPACITY \
-    -gravity north -geometry +0+50 - \
+    -gravity north -geometry +0+45 - \
     $WORK_DIR/pics/template.png -background none miff:- |
     convert - $WORK_DIR/title_txt.png  \
-    -gravity south -geometry +0+55 -composite miff:- |display
+    -gravity south -geometry +0+65 -composite miff:- |display
 else # Not transparent
     montage ${PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
     -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
     convert $WORK_DIR/pics/template.png \
     $WORK_DIR/title_txt.png  -gravity south -geometry +0+65 -composite \
-    -  -gravity north -geometry +0+50 -composite miff:- | display
+    -  -gravity north -geometry +0+45 -composite miff:- | display
 fi
 confirm_preview
 
@@ -1085,7 +1106,7 @@ for button in Select Highlight; do
     $(for ((i=0; i<=NUM_FILES; i++)); do echo $WORK_DIR/${button}x1.png;done) \
     -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 \
     -bordercolor none -mattecolor transparent miff:- |
-    convert  -colors 3 -size 720x480 xc:none - -gravity north -geometry +0+50 \
+    convert  -colors 3 -size 720x480 xc:none - -gravity north -geometry +0+45 \
     -composite  "$WORK_DIR/${button}.png"
 done
 
@@ -1114,7 +1135,7 @@ EOF
         -bordercolor none -mattecolor transparent miff:- |
 
         convert  -colors 3 -size 720x480 xc:none  - \
-        -gravity north -geometry +0+50  \
+        -gravity north -geometry +0+45  \
         -composite  $WORK_DIR/Submenu_${button}.png
     done
 fi
@@ -1339,7 +1360,7 @@ if $SUB_MENU; then
                 -mattecolor '#161514' -background '#161514' miff:-)
                 IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
                 $WORK_DIR/title${i}_txt.png  -gravity south \
-                -geometry +0+55 -composite -  -gravity north -geometry +0+50 \
+                -geometry +0+55 -composite -  -gravity north -geometry +0+45 \
                 -composite $WORK_DIR/animenu/$a.$SM_IMG_FMT)
  
                 "${IM_CMD[@]}" | "${IM_CMD2[@]}"
@@ -1366,7 +1387,7 @@ if $SUB_MENU; then
             ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -background '#141614' miff:-)
             IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
             $WORK_DIR/title${i}_txt.png  -gravity south -geometry +0+55 \
-            -composite - -gravity north -geometry +0+50 -composite \
+            -composite - -gravity north -geometry +0+45 -composite \
             $WORK_DIR/${i}-submenu.$SM_IMG_FMT)
 #            echo "Running "${IM_CMD[@]}" | "${IM_CMD2[@]}""
             "${IM_CMD[@]}" | "${IM_CMD2[@]}"
@@ -1521,6 +1542,17 @@ if [ -n "$BG_VIDEO" ]; then
     if ! cmd_exec "$FFMPEG_CMD"; then
         runtime_error "Problem creating images from the background video"
     fi
+    # make sure there are enough pics to make a bg video 
+    IMAGES=( "${IMAGES[@]}" \
+    $(find $WORK_DIR/bg -maxdepth 1 -name \*[1-9]\*.jpg) )
+    last_pic=${#IMAGES[@]}
+    next_pic=$(($last_pic + 1))
+    if [ $last_pic -lt $MAX_ANI_LENGTH ]; then
+        for ((l=next_pic; l<=MAX_ANI_LENGTH; l++)); do
+            cp $WORK_DIR/bg/${last_pic}.jpg $WORK_DIR/bg/$l.jpg
+        done
+    fi
+    unset IMAGES PICS last_pic next_pic
 fi
 unset FFMPEG_CMD
 
@@ -1538,7 +1570,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
         "$pic")
         IM_CMD1=(convert -trim +repage -)
         IM_CMD2=(montage -  -geometry +4+4 -compose Copy -background none \
-        -fill "$FILL" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}")
+        -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}")
 
         IM_CMD2b=(convert -resize $THUMB_SIZE! -)
         IM_CMD2c=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -) 
@@ -1589,7 +1621,7 @@ if $MENU_FADE && ! $STATIC; then
         composite -dissolve $D $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.jpg \
         $WORK_DIR/bg/$(($frame + 1)).jpg
     done
-    for ((frame=BACKGROUND_FADE_OUT_START_FRAME; frame<=BACKGROUND_FADE_OUT_END_FRAME; frame++)); do
+    for ((frame=BACKGROUND_FADE_OUT_START_FRAME; frame<BACKGROUND_FADE_OUT_END_FRAME; frame++)); do
         D=`get_bg_opacity`
         composite -dissolve $D $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.jpg \
         $WORK_DIR/bg/$(($frame + 1)).jpg
@@ -1612,12 +1644,12 @@ if $MENU_FADE && ! $STATIC; then
         -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none)
         #  dissolve the finished montages onto the background
         MONTAGE_CMD2=(composite -dissolve $S -gravity north \
-        -geometry +0+50 - $WORK_DIR/bg/$(($frame + 1)).jpg -background none)
+        -geometry +0+45 - $WORK_DIR/bg/$(($frame + 1)).jpg -background none)
         # if MIST is called for, this dissolves the mist onto the background
         MONTAGE_CMD3=(composite -dissolve $B -gravity south -geometry +0+45 \
         $WORK_DIR/white.png -)
         # finally, we dissolve the title onto the MIST (or plain background)
-        MONTAGE_CMD4=(composite -dissolve $C -gravity south -geometry +0+55 \
+        MONTAGE_CMD4=(composite -dissolve $C -gravity south -geometry +0+65 \
         $WORK_DIR/title_txt.png - -background none $WORK_DIR/animenu/$(($frame + 1)).jpg)
         # pipe all of above commands if using MIST
         if $MIST; then
@@ -1644,12 +1676,12 @@ else # Do not do menu fade
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
             -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none miff:-)
             IM_CMD2=(composite -dissolve $OPACITY \
-            -gravity north -geometry +0+50 - \
+            -gravity north -geometry +0+45 - \
             $WORK_DIR/pics/template.jpg -background none miff:-)
             IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+45 \
             $WORK_DIR/white.png - miff:-)
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
-            -gravity south -geometry +0+55 -composite \
+            -gravity south -geometry +0+65 -composite \
             $WORK_DIR/animenu/$count.jpg )
             if $MIST; then
                 "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
@@ -1668,19 +1700,23 @@ else # Do not do menu fade
             IM_CMD0=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
             -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none miff:-)
             IM_CMD1=(convert $WORK_DIR/pics/template.jpg \
-            -  -gravity north -geometry +0+50 -composite miff:-)
+            -  -gravity north -geometry +0+45 -composite miff:-)
             IM_CMD2=(convert $WORK_DIR/bg/$count.jpg \
-            -  -gravity north -geometry +0+50 -composite miff:-)
+            -  -gravity north -geometry +0+45 -composite miff:-)
             IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+45 \
             $WORK_DIR/white.png - miff:-)
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
-            -gravity south -geometry +0+55 -composite \
+            -gravity south -geometry +0+65 -composite \
             $WORK_DIR/animenu/$count.jpg )
             if $MIST && ! $STATIC; then
                 "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
-            elif "$MIST" && "$STATIC"; then
+            elif $MIST && ! $STATIC && test -n "$BG_VIDEO"; then
+                "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
+            elif ! $MIST && ! $STATIC && test -n "$BG_VIDEO"; then
+                "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}"
+            elif $MIST && $STATIC; then
                 "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
-            elif ! "$MIST" && "$STATIC"; then
+            elif ! $MIST && $STATIC; then
                 "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}"   
             else
                 "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}"
