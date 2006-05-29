@@ -523,11 +523,10 @@ if test -d "$WORK_DIR"; then
     rm -rf "$WORK_DIR"
 fi
 mkdir -pv "$WORK_DIR"
-# Move any existing todisc.log to a new name to avoid overlap
-if test -f $LOG_FILE; then
-    echo "Moving $(pwd)/todisc.log to $(pwd)/todisc-$(date +%s).log"
-    mv $(pwd)/todisc.log $(pwd)/todisc-$(date +%s).log
-fi
+
+# Remove any existing log file
+test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
+
 # allow user to only specify one audio file for all submenus
 if [ ${#SM_AUDIO[@]} -eq 1 ]; then
     SM_AUDIO_FILE=${SM_AUDIO[0]}
@@ -584,7 +583,6 @@ for ((i=0; i<=NUM_FILES; i++)); do
         NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE.enc.mpg")
     fi
 done
-
 if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
     TGT_CAPS=$(echo $TARGET | tr a-z A-Z)
     yecho
@@ -1579,7 +1577,7 @@ done
 yecho
 yecho "Making final montages and compositing onto background with title"
 yecho
-if "$MENU_FADE" && ! "$STATIC"; then
+if $MENU_FADE && ! $STATIC; then
     if [ -z "$BG_VIDEO" ]; then
         for ((frame=0; frame<=ANI_MENU_END_FRAME; frame++)); do
             # copy template for fade out beginning and end frames
