@@ -596,61 +596,6 @@ if $ANI_SUB_MENU; then
     done
 fi
 
-# Check input files for compliance; offer to tovid-encode non-compliant files
-for ((i=0; i<=NUM_FILES; i++)); do
-    TEST_FILE=${IN_FILES[i]}
-    yecho "Checking $TEST_FILE for compliance..."
-    # TODO: Check for PAL/NTSC compliance
-    # If video matches the target format, append to NEW_IN_FILES
-    if test $TARGET = "dvd" && idvid -is dvd "$TEST_FILE"; then
-        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE")
-    elif test $TARGET = "svcd" && idvid -is svcd "$TEST_FILE"; then
-        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE")
-    # Video needs to be re-encoded; use a .enc filename in NEW_IN_FILES
-    else
-        FILES_TO_ENCODE[i]="$TEST_FILE"
-        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE.enc.mpg")
-    fi
-done
-if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
-    TGT_CAPS=$(echo $TARGET | tr a-z A-Z)
-    yecho
-    yecho "Encode input files"
-    yecho
-    yecho "Some of the -files you provided are not $TGT_CAPS-compliant:"
-    yecho " "
-    for i in "${FILES_TO_ENCODE[@]}"; do
-        test -n "$i" && yecho "  $i"
-    done
-    yecho " "
-    yecho "I can encode them for you, but it may take a long time."
-    yecho "Encoding will ensure that your disc is fully compliant;"
-    yecho "you may skip this, but your disc may not be playable."
-    yecho "Please type 'yes' if you want the files to be encoded:"
-    read ENCODE
-    if test -n "$ENCODE" && test "$ENCODE" = 'yes'; then
-        yecho
-        yecho "Converting files to $TGT_CAPS format with 'tovid'"
-        for i in "${FILES_TO_ENCODE[@]}"; do
-            yecho "Converting: $i"
-            countdown
-            tovid -$TV_STANDARD -$TARGET -in $i -out $i.enc
-            wait
-            # See if output file exists
-            if ! test -f "$i.enc.mpg"; then
-                runtime_error "Couldn't encode file: $i"
-            fi
-            yecho
-        done
-        # Replace IN_FILES with NEW_IN_FILES (with .enc extension)
-        IN_FILES=("${NEW_IN_FILES[@]}")
-    else
-        yecho
-        yecho "Not re-encoding. I'll proceed with menu generation, but"
-        yecho "your authored disc will not be fully $TGT_CAPS-compliant."
-        yecho
-    fi
-fi
 
 ##############################################################################
 # Font defaults
@@ -662,10 +607,18 @@ test $TARGET = "svcd" && : ${MENU_FONTSIZE:="32"}
 # Thumbnail title font size
 # PTSIZE=(30 36 42 42 42 42 48 48 48 48 48 48 54 54 54 54 54 54 54 54 \
 # 54 54 54 54 54 54 54 54 54 54)
-THUMB_FONTSIZE_ARRAY=(14 14 14 14 12 12 12 12 11 11 11 11 11 11 11 11 11 11 \
-11 11 11 11 11 11 11 11 11 11)
-: ${THUMB_FONTSIZE:=${THUMB_FONTSIZE_ARRAY[NUM_FILES]}}
-
+# If user defined a font size, use it
+if test -n "$THUMB_FONTSIZE"; then
+    :
+# Otherwise, use a default, based on the number of thumbnails
+elif test "$NUM_FILES" -lt 5; then
+    THUMB_FONTSIZE=14
+elif test "$NUM_FILES" -lt 9; then
+    THUMB_FONTSIZE=12
+else
+    THUMB_FONTSIZE=11
+fi
+    
 # See if "Helvetica" or "helvetica" are available as default fonts
 if convert -size 50x20 xc:none -font Helvetica -gravity Center \
 -draw "text 0,0 'test'" $WORK_DIR/font.png; then
@@ -674,8 +627,9 @@ elif convert -size 200x100 xc:none -font helvetica -gravity Center \
 -draw "text 0,0 'test'" $WORK_DIR/font.png; then
     DEFAULT_FONT="helvetica"
 fi
-: ${MENU_FONT:=$DEFAULT_FONT}
-: ${THUMB_FONT:=$DEFAULT_FONT}
+# If user didn't specify fonts, use default
+test -z "$MENU_FONT" && MENU_FONT=$DEFAULT_FONT
+test -z "$THUMB_FONT" && THUMB_FONT=$DEFAULT_FONT
 rm -f "$WORK_DIR/font.png"
 
 
@@ -999,6 +953,64 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
 done
 echo
 echo $SEPARATOR
+
+# TODO: Merge this with the above stat-output stuff (check for compliance at
+# the same time)
+# Check input files for compliance; offer to tovid-encode non-compliant files
+for ((i=0; i<=NUM_FILES; i++)); do
+    TEST_FILE=${IN_FILES[i]}
+    yecho "Checking \"$TEST_FILE\" for compliance..."
+    # TODO: Check for PAL/NTSC compliance
+    # If video matches the target format, append to NEW_IN_FILES
+    if test $TARGET = "dvd" && idvid -is dvd "$TEST_FILE"; then
+        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE")
+    elif test $TARGET = "svcd" && idvid -is svcd "$TEST_FILE"; then
+        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE")
+    # Video needs to be re-encoded; use a .enc filename in NEW_IN_FILES
+    else
+        FILES_TO_ENCODE[i]="$TEST_FILE"
+        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE.enc.mpg")
+    fi
+done
+if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
+    TGT_CAPS=$(echo $TARGET | tr a-z A-Z)
+    yecho
+    yecho "Encode input files"
+    yecho
+    yecho "Some of the -files you provided are not $TGT_CAPS-compliant:"
+    yecho " "
+    for i in "${FILES_TO_ENCODE[@]}"; do
+        test -n "$i" && yecho "  $i"
+    done
+    yecho " "
+    yecho "I can encode them for you, but it may take a long time."
+    yecho "Encoding will ensure that your disc is fully compliant;"
+    yecho "you may skip this, but your disc may not be playable."
+    yecho "Please type 'yes' if you want the files to be encoded:"
+    read ENCODE
+    if test -n "$ENCODE" && test "$ENCODE" = 'yes'; then
+        yecho
+        yecho "Converting files to $TGT_CAPS format with 'tovid'"
+        for i in "${FILES_TO_ENCODE[@]}"; do
+            yecho "Converting: $i"
+            countdown
+            tovid -$TV_STANDARD -$TARGET -in $i -out $i.enc
+            wait
+            # See if output file exists
+            if ! test -f "$i.enc.mpg"; then
+                runtime_error "Couldn't encode file: $i"
+            fi
+            yecho
+        done
+        # Replace IN_FILES with NEW_IN_FILES (with .enc extension)
+        IN_FILES=("${NEW_IN_FILES[@]}")
+    else
+        yecho
+        yecho "Not re-encoding. I'll proceed with menu generation, but"
+        yecho "your authored disc will not be fully $TGT_CAPS-compliant."
+        yecho
+    fi
+fi
 
 for ((i=0; i<${#mencoder_stats[@]}; i++)); do
     VID_LEN=( ${VID_LEN[@]}  "$(awk '/Video stream:/{print $10}' \
