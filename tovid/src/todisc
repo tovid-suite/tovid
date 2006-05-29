@@ -1636,7 +1636,6 @@ if $MENU_FADE && ! $STATIC; then
         composite -dissolve $D $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.jpg \
         $WORK_DIR/bg/$(($frame + 1)).jpg
     done
-@
     for ((frame=0; frame<ANI_MENU_END_FRAME; frame++)); do
         # set dissolve vars from todisc-fade-routine functions
         BC=$(get_title_opacity)
