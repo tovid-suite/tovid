@@ -298,6 +298,14 @@ function confirm_preview()
 #    yecho
 }
 
+# Set $SPINNER to the current spinner character (indexed by global $SP)
+SP=0
+function spin()
+{
+    SPIN_CHARS=".oOo"
+    SPINNER="${SPIN_CHARS:SP++%${#SPIN_CHARS}:1}"
+}
+
 ##############################################################################
 #                          	End of functions                                 #
 ##############################################################################
@@ -1556,16 +1564,18 @@ if [ -n "$BG_VIDEO" ]; then
 fi
 unset FFMPEG_CMD
 
+
 yecho
 yecho "Adding title to images and resizing"
 for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT) )
     yecho "Working on images from ${IN_FILES[i]}"
-    o=1; sp="/-\|/-\|";  echo -n ' '
-
     for pic in "${PICS[@]}"; do
-        echo -en "\b${sp:o++%${#sp}:1}"
+        spin
+        # TODO: More descriptive message about what this loop is doing
+        echo -en "\r$SPINNER Working..."
+        
         IM_CMD0=(composite -compose CopyOpacity $THUMB_MASK +matte \
         "$pic")
         IM_CMD1=(convert -trim +repage -)
@@ -1626,8 +1636,7 @@ if $MENU_FADE && ! $STATIC; then
         composite -dissolve $D $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.jpg \
         $WORK_DIR/bg/$(($frame + 1)).jpg
     done
-
-    o=1; sp="/-\|/-\|";  echo -n ' '  # initialize spinner
+@
     for ((frame=0; frame<ANI_MENU_END_FRAME; frame++)); do
         # set dissolve vars from todisc-fade-routine functions
         BC=$(get_title_opacity)
@@ -1635,7 +1644,9 @@ if $MENU_FADE && ! $STATIC; then
         C=$(awk -F ':' '{print $2'}<<<$BC)
         S=$(get_thumb_opacity)
 
-        echo -en "\b${sp:o++%${#sp}:1}" # start spinner
+        spin
+        # TODO: More descriptive message about what this loop is doing
+        echo -en "\r$SPINNER Working..."
 
         ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $((frame + 1)).$IMG_FMT) )
         BG_PIC=$(find $WORK_DIR/bg -name $(($frame + 1)).jpg)
@@ -1669,9 +1680,12 @@ if $MENU_FADE && ! $STATIC; then
     done
 else # Do not do menu fade
     if $TRANSPARENT; then
-         o=1; sp="/-\|/-\|";  echo -n ' '  # initialize spinner
-         for (( count=1; count<=$MAX_ANI_LENGTH; count++)); do
-            echo -en "\b${sp:o++%${#sp}:1}"
+        for (( count=1; count<=$MAX_ANI_LENGTH; count++)); do
+
+            spin
+            # TODO: More descriptive message about what this loop is doing
+            echo -en "\r$SPINNER Working..."
+
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
             -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none miff:-)
@@ -1698,9 +1712,11 @@ else # Do not do menu fade
             rm -f ${ANI_PICS[@]}
         done
     else # Not transparent
-        o=1; sp="/-\|/-\|";  echo -n ' '  # initialize spinner
         for (( count=1; count <=FRAMES; count++)); do
-            echo -en "\b${sp:o++%${#sp}:1}"
+            spin
+            # TODO: More descriptive message about what this loop is doing
+            echo -en "\r$SPINNER Working..."
+
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
 
             # make final montages and composite onto grey background with title
