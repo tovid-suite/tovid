@@ -775,7 +775,7 @@ DIMX5=$((DIMX4 / 3))
 BLUR_CMD=(convert - -blur 0x$BLUR -channel RGBA +matte miff:-)
 if [ -n "$THUMB_SHAPE" ]; then
     # make a mask for the mist if called for
-    convert -size $THUMB_SIZE xc:none -fill  $THUMB_BG_COLOUR -stroke none \
+    convert -size $THUMB_SIZE xc:none -fill  "$THUMB_BG_COLOUR" -stroke none \
     -draw "rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2" $WORK_DIR/feather_orig.png
     convert $WORK_DIR/feather_orig.png -channel RGBA \
     -blur 0x60 $WORK_DIR/feather_mask2.png
@@ -1678,13 +1678,20 @@ else # Do not do menu fade
             IM_CMD2=(composite -dissolve $OPACITY \
             -gravity north -geometry +0+45 - \
             $WORK_DIR/pics/template.jpg -background none miff:-)
+            IM_CMD2b=(composite -dissolve $OPACITY \
+            -gravity north -geometry +0+45 - \
+            $WORK_DIR/bg/$count.jpg -background none miff:-)
             IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+45 \
             $WORK_DIR/white.png - miff:-)
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
             -gravity south -geometry +0+65 -composite \
             $WORK_DIR/animenu/$count.jpg )
             if $MIST; then
+                if test -n "$BG_VIDEO"; then
+                    "${IM_CMD1[@]}" | "${IM_CMD2b[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
+                else
                 "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
+                fi
             else
                 "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}"
             fi
