@@ -788,13 +788,6 @@ if [ -n "$THUMB_SHAPE" ]; then
     convert $WORK_DIR/feather_orig.png -channel RGBA \
     -blur 0x60 $WORK_DIR/feather_mask2.png
 fi
-if test "$THUMB_SHAPE" = "normal"; then
-    THUMB_MASK=$WORK_DIR/feather_mask.png
-    convert -size $THUMB_SIZE xc:black -fill white \
-    -draw "Rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2," +matte -compose CopyOpacity miff:- |
-    "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" |
-    convert - -evaluate subtract 50% -normalize $THUMB_MASK
-fi
 if [ -z $THUMB_TEXT_COLOUR ]; then
     if $FEATHER; then
         THUMB_TEXT_COLOUR="#161514"
@@ -802,52 +795,54 @@ if [ -z $THUMB_TEXT_COLOUR ]; then
         THUMB_TEXT_COLOUR="#C6C6C6"
     fi
 fi
+if test "$THUMB_SHAPE" = "normal"; then
+    THUMB_MASK=$WORK_DIR/feather_mask.png
+    yecho "Creating normal mask with the following command:"
+    MASK_CMD="convert -size $THUMB_SIZE xc:black -fill white \
+    -draw \"Rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2,\" \
+    +matte -compose CopyOpacity miff:- | \
+    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
+    convert - -evaluate subtract 50% -normalize $THUMB_MASK"
+    # TODO (if desired): move this 'sed' line to a separate function for
+    # cleaning up excess spaces in a multi-line command.
+    #    sed 's/    */ /g'|sed -e "s/^ *//" 
 
-if test "$THUMB_SHAPE" = "oval"; then
+elif test "$THUMB_SHAPE" = "oval"; then
     THUMB_MASK=$WORK_DIR/oval_mask.png
+    yecho "Creating oval mask with the following command:"
     MASK_CMD="convert -size $THUMB_SIZE xc:black -fill white \
     -draw \"RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3\" \
     +matte -compose CopyOpacity miff:- | \
-    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
-    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
+    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
     convert - -evaluate subtract 50% -normalize $THUMB_MASK"
-    # sed 's/    */ /g'|sed -e "s/^ *//" 
-    yecho "Creating oval mask with the following command:"
-    yecho "$MASK_CMD"
-    cmd_exec "$MASK_CMD"
-fi
 
-if test "$THUMB_SHAPE" = "egg"; then
+elif test "$THUMB_SHAPE" = "egg"; then
     THUMB_MASK=$WORK_DIR/egg_mask.png
-    echo "Running:
+    yecho "Creating egg-shaped mask with the following command:"
+    MASK_CMD="convert -size $THUMB_SIZE xc:black -fill white \
+    -draw \"circle $DIMY4,$DIMX4 $DIMY5,$DIMX5\" \
+    +matte -compose CopyOpacity miff:- | \
+    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
+    convert - -evaluate subtract 50% -normalize - $THUMB_MASK"
 
-    convert -size $THUMB_SIZE xc:black -fill white \
-    -draw "circle $DIMY4,$DIMX4 $DIMY5,$DIMX5" \
-    +matte -compose CopyOpacity miff:- |
-    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
-    convert - -evaluate subtract 50% -normalize $THUMB_MASK" |
-    sed 's/    */ /g'|sed -e "s/^ *//"
-    echo
-    convert -size $THUMB_SIZE xc:black -fill white \
-    -draw "circle $DIMY4,$DIMX4 $DIMY5,$DIMX5" \
-    +matte -compose CopyOpacity miff:- |
-    "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" |
-    convert - -evaluate subtract 50% -normalize - $THUMB_MASK
-fi
-
-if test "$THUMB_SHAPE" = "cloud"; then
+elif test "$THUMB_SHAPE" = "cloud"; then
     THUMB_MASK=$WORK_DIR/cloud_mask.png
-    convert -size 320x240 xc:none -fill white \
-    -draw "circle 80,80 120,120" \
-    -draw "circle 160,80 200,120" \
-    -draw "circle 240,80 280,120" \
-    -draw "circle 80,160 120,200" \
-    -draw "circle 160,160 200,200" \
-    -draw "circle 240,160 280,200" \
-    +matte -compose CopyOpacity  miff:- |
-    "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" |
-    convert -resize $THUMB_SIZE! - $THUMB_MASK
+    yecho "Creating cloud-shaped mask with the following command:"
+    MASK_CMD="convert -size 320x240 xc:none -fill white \
+    -draw \"circle 80,80 120,120\" \
+    -draw \"circle 160,80 200,120\" \
+    -draw \"circle 240,80 280,120\" \
+    -draw \"circle 80,160 120,200\" \
+    -draw \"circle 160,160 200,200\" \
+    -draw \"circle 240,160 280,200\" \
+    +matte -compose CopyOpacity  miff:- | \
+    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
+    convert -resize $THUMB_SIZE! - $THUMB_MASK"
 fi
+
+# Print and execute the thumb-shape mask command
+yecho "$MASK_CMD"
+cmd_exec "$MASK_CMD"
 
 yecho "Creating a title image"
 if [ -z "$BG_PIC" ]; then
