@@ -31,6 +31,11 @@
 # Mostly written by  Joe "Mac North" Friedrichsen:
 
 
+# Inputs to this script (environment variables):
+FRAME_RATE=29.97
+OPACITY=100
+ANI_MENU_LENGTH=20
+
 # get things in order
 # ##########################
 # Define variable limits....
@@ -166,14 +171,13 @@ get_thumb_opacity ()
 }
     
 # example usage
-# while [[ $frame -le $ANI_MENU_END_FRAME ]]; do
-#        BC=$(get_title_opacity)
-#        B=$(awk -F ':' '{print $1'}<<<$BC)
-#        C=$(awk -F ':' '{print $2'}<<<$BC)
-#        S=$(get_thumb_opacity)
-#        time=$(echo "scale=2; $frame / $FRAME_RATE" | bc)s
-#        echo "$frame ($time) | BG: $DD mist: $BB text: $CC montage: $SS" 
- 
-#        get stuff did
-#        let frame=frame+1
-# done
+#while [[ $frame -le $ANI_MENU_END_FRAME ]]; do
+#    BG=$(get_bg_opacity)
+#    MIST_TEXT=$(get_title_opacity)
+#    MIST=$(awk -F ':' '{print $1'}<<<$MIST_TEXT)
+#    TEXT=$(awk -F ':' '{print $2'}<<<$MIST_TEXT)
+#    MONTAGE=$(get_thumb_opacity)
+#    time=$(echo "scale=2; $frame / $FRAME_RATE" | bc)s
+#    echo "$frame ($time) | BG: $BG mist: $MIST text: $TEXT montage: $MONTAGE"
+#    ((frame++))
+#done
