@@ -471,8 +471,8 @@ idvid_main ()
     fi
 
 
-    # If just checking compliance, print "yes" or "no" and exit with
-    # the appropriate return code.
+    # If just checking compliance, look for a match and exit with the
+    # appropriate return code (0: compliant, 1: not compliant)
     if test -n "$MATCH_FORMAT"; then
         MATCH=false
         case "$MATCH_FORMAT" in
