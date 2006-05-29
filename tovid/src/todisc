@@ -805,19 +805,16 @@ fi
 
 if test "$THUMB_SHAPE" = "oval"; then
     THUMB_MASK=$WORK_DIR/oval_mask.png
-    echo "Running:
-    convert -size $THUMB_SIZE xc:black -fill white
-    -draw "RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3" \
-    +matte -compose CopyOpacity miff:- |
-    convert - -blur 0x$BLUR -channel RGBA +matte miff:- |
-    convert - -evaluate subtract 50% -normalize $THUMB_MASK" |
-    sed 's/    */ /g'|sed -e "s/^ *//" 
-    echo
-    convert -size $THUMB_SIZE xc:black -fill white
-    -draw "RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3" \
-    +matte -compose CopyOpacity miff:- |
-    "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" | "${BLUR_CMD[@]}" |
-    convert - -evaluate subtract 50% -normalize $THUMB_MASK
+    MASK_CMD="convert -size $THUMB_SIZE xc:black -fill white \
+    -draw \"RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3\" \
+    +matte -compose CopyOpacity miff:- | \
+    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
+    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
+    convert - -evaluate subtract 50% -normalize $THUMB_MASK"
+    # sed 's/    */ /g'|sed -e "s/^ *//" 
+    yecho "Creating oval mask with the following command:"
+    yecho "$MASK_CMD"
+    cmd_exec "$MASK_CMD"
 fi
 
 if test "$THUMB_SHAPE" = "egg"; then
