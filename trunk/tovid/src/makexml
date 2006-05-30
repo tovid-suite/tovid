@@ -46,7 +46,7 @@ $TOVID_HOME_PAGE
 EOF`
 
 USAGE=`cat << EOF
-Usage:  makexml [OPTIONS] {video1.mpg video2.mpg ...} {OUT_PREFIX}
+Usage:  makexml [OPTIONS] {video1.mpg video2.mpg ...} -out OUT_PREFIX
 
 Common OPTIONS:
 
@@ -59,11 +59,11 @@ providing the name of a menu .mpg:
 
     makexml -menu menu1.mpg \\\\
         video1.mpg video2.mpg video3.mpg \\\\
-        mydisc
+        -out mydisc
     makexml -topmenu topmenu.mpg \\\\
         -menu submenu1.mpg vid1.mpg vid2.mpg vid3.mpg \\\\
         -menu submenu2.mpg vid4.mpg vid5.mpg vid6.mpg \\\\
-        mydisc2
+        -out mydisc2
 
 See the makexml manual page ('man makexml') for additional documentation.
 
@@ -290,39 +290,45 @@ EOF`
     fi 
 
     # Generate the chapters tag
-    CMD="idvid -terse \"$1\""
-    echo "Calculating the duration of the video using the following command:"
-    echo $CMD
-    echo "This may take a few minutes, so please be patient..."
-    DURATION=`eval $CMD | grep DURATION | awk -F '=' '{print $2}'`
-    echo $DURATION | awk '{hh=int($1/3600);mm=int(($1-hh*3600)/60);ss=$1-hh*3600-mm*60;\
-        printf "The duration of the video is %02d:%02d:%02d\n",hh,mm,ss}'
+    # If file exists, get duration and add appropriate chapter breaks
+    if test -e "$1"; then
+        CMD="idvid -terse \"$1\""
+        echo "Calculating the duration of the video using the following command:"
+        echo $CMD
+        echo "This may take a few minutes, so please be patient..."
+        DURATION=`eval $CMD | grep DURATION | awk -F '=' '{print $2}'`
+        echo $DURATION | awk '{hh=int($1/3600);mm=int(($1-hh*3600)/60);ss=$1-hh*3600-mm*60;\
+            printf "The duration of the video is %02d:%02d:%02d\n",hh,mm,ss}'
 
-    if ! $MAKE_CHAPTERS; then
-      CHAPTER_INTERVAL="5"
+        if ! $MAKE_CHAPTERS; then
+          CHAPTER_INTERVAL="5"
+        fi
+
+        CHAPTERS=`echo $DURATION $CHAPTER_INTERVAL | \
+           awk '{dur=$1;\
+                    iv=$2*60;\
+                    if (iv==0){\
+                       printf "0";\
+                       exit\
+                    }\
+                    cur=0;\
+                    i=0;\
+                    while(cur<dur){\
+                       if(i>0){\
+                          printf ","\
+                       }\
+                       i++;\
+                       hh=int(cur/3600);\
+                       mm=int((cur-hh*3600)/60);\
+                       ss=cur-hh*3600-mm*60;\
+                       printf "%02d:%02d:%02d",hh,mm,ss;
+                       cur+=iv\
+                    }\
+                }'`
+    # If file doesn't exist, use 0 chapters
+    else
+        CHAPTERS="0"
     fi
-
-    CHAPTERS=`echo $DURATION $CHAPTER_INTERVAL | \
-       awk '{dur=$1;\
-                iv=$2*60;\
-                if (iv==0){\
-                   printf "0";\
-                   exit\
-                }\
-                cur=0;\
-                i=0;\
-                while(cur<dur){\
-                   if(i>0){\
-                      printf ","\
-                   }\
-                   i++;\
-                   hh=int(cur/3600);\
-                   mm=int((cur-hh*3600)/60);\
-                   ss=cur-hh*3600-mm*60;\
-                   printf "%02d:%02d:%02d",hh,mm,ss;
-                   cur+=iv\
-                }\
-            }'`
 
     # Generate the XML for the title itself, appending to existing titles
     if $MAKE_GROUP; then
@@ -556,8 +562,12 @@ if test $# -lt 1; then
     usage_error "Please provide at least one video to author, and the name of an output file to use."
 fi
 
-while test $# -gt 1; do
+while test $# -gt 0; do
     case "$1" in
+        "-out" )
+            shift
+            OUT_PREFIX="$1"
+            ;;
         # Format and overwriting options
         "-dvd" ) XML_FORMAT="dvd" ;;
         "-vcd" ) XML_FORMAT="vcd" ;;
@@ -567,8 +577,8 @@ while test $# -gt 1; do
         "-topmenu" )
             shift
             if ! $HAVE_TOP_MENU; then
-              checkExistence "$1"
-              addTopMenu "$1"
+                checkExistence "$1"
+                addTopMenu "$1"
             else
               usage_error "Please specify only one -topmenu option. If you would like to have multiple menus, please use the -menu option."
             fi
@@ -622,20 +632,33 @@ while test $# -gt 1; do
             fi
             FORCE_TITLESETS=:
             echo "Creation of titlesets forced ..."
+            ;;
         * )
             checkExistence "$1"
             addTitle "$1"
+            ;;
     esac
     # Get the next argument
     shift
 done
 
 # Last argument should be the name of the output file
-if test $# -ne 1 ; then
-  usage_error "Please provide a name for the output file (the .xml extension will be added)"
-else
-  OUT_PREFIX="$1"
+if test -z "$OUT_PREFIX"; then
+    usage_error "Please provide an output filename with -out."
 fi
+
+# See if selected output file exists. If so, confirm for overwrite.
+if test -e $OUT_PREFIX.xml ; then
+    echo $SEPARATOR
+    echo "The output file you specified: $OUT_PREFIX.xml already exists."
+    if $OVERWRITE; then
+        echo "Overwriting existing file."
+    else
+        echo "Please re-run the script with the -overwrite option to overwrite."
+        exit 1
+    fi
+fi
+
 
 # Close current titleset
 closeTitleset
@@ -722,18 +745,6 @@ $PBC_XML
 </pbc>
 </videocd>
 EOF`
-fi
-
-# See if selected output file exists. If so, confirm for overwrite.
-if test -e $OUT_PREFIX.xml ; then
-  echo $SEPARATOR
-  echo "The output file you specified: $OUT_PREFIX.xml already exists."
-  if $OVERWRITE; then
-    echo "Overwriting existing file."
-  else
-    echo "If you would like to overwrite, please re-run the script with the -overwrite option."
-    exit 1
-  fi
 fi
 
 # Remove blank lines and write final result to output file
