@@ -117,9 +117,9 @@ font size constraints, titles may have a maximum of 12 characters.
 : -thumb-shape [normal|oval|cloud|egg]
     Apply a shaped transparency mask to thumbnail videos
 : -blur NUM
-    The amount of feather blur to apply to the thumb-shape.  Default is 5 which
+    The amount of feather blur to apply to the thumb-shape.  Default is 5.0 which
     will more or less keep the shape and produce a small amount of transparency
-    at the edges.  Choose values between 1 and 10, where 10 will produce quite a
+    at the edges.  Choose float or integer values between 0.1 and 10.0, where 10 will produce quite a
     bit of transparency and blur away a good deal of the shape's edges.
 : -thumb-font FONT
     Display thumbnail titles in the given font.
