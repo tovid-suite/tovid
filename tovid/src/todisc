@@ -141,10 +141,10 @@ cmd_exec()
 {
     if $DEBUG; then
         # Display all output, and also write it to the log
-        eval "$@" 2>&1 | ${LOG_FILTER:=cat} | tee -a "$LOG_FILE"
+        eval "$@" 2>&1 | ${LOG_FILTER=cat} | tee -a "$LOG_FILE"
     else
         # Just write that junk to the log
-        eval "$@" 2>&1 | ${LOG_FILTER:=cat} >> "$LOG_FILE"
+        eval "$@" 2>&1 | ${LOG_FILTER=cat} >> "$LOG_FILE"
     fi
     # Return exit status
     return $?
@@ -799,32 +799,28 @@ fi
 yecho "$MASK_CMD"
 cmd_exec "$MASK_CMD"
 
-yecho "Creating a title image"
 if [ -z "$BG_PIC" ]; then
     STROKE=none
 elif [ -z "$STROKE" ]; then
     STROKE=gray
 fi
 
-echo "Running
-convert -size 620x100 xc:none -font "$MENU_FONT" \
--pointsize $MENU_FONTSIZE \
+# Trying greycat's suggestion for echoing a command before running
+echo "Creating a title image with the following command:"
+set -x
+(convert -size 620x100 xc:none \
+-font "$MENU_FONT" -pointsize $MENU_FONTSIZE \
 -fill black -draw "gravity center text 2,2 \"$VMGM_TITLE\"" \
--stroke "$STROKE" -strokewidth 1 \
--fill "$TITLE_COLOUR" -stroke "$STROKE" \
--draw "gravity center text 1,1 \"$VMGM_TITLE\"" miff:- | \
-convert -trim +repage - -blur 0x0.4 $WORK_DIR/title_txt.png
-"
+-fill "$TITLE_COLOUR" -stroke $STROKE -strokewidth 1 \
+-draw "gravity center text 1,1 \"$VMGM_TITLE\"" \
+miff:- | convert -trim +repage - -blur 0x0.4 $WORK_DIR/title_txt.png)
+exec 8>&2 2>/dev/null
+set +x
+exec 2>&8
 
-convert -size 620x100 xc:none -font "$MENU_FONT" \
--pointsize $MENU_FONTSIZE \
--fill black -draw "gravity center text 2,2 \"$VMGM_TITLE\"" \
--stroke "$STROKE" -strokewidth 1 \
--fill "$TITLE_COLOUR" -stroke "$STROKE" \
--draw "gravity center text 1,1 \"$VMGM_TITLE\"" miff:- | \
-convert -trim +repage - -blur 0x0.4 $WORK_DIR/title_txt.png
 
 if $MIST; then
+    yecho "Creating mist effect"
     # make a white png for misted background effect, only for user's bg
     Y=$(identify $WORK_DIR/title_txt.png |awk '{print $3}'|cut -dx -f1)
     X=$(identify $WORK_DIR/title_txt.png |awk '{print $3}'|cut -dx -f2)
@@ -850,6 +846,7 @@ if $MIST; then
     $WORK_DIR/pics/template.png
 fi
 # generate images for montage and title and resize them
+yecho "Generating images for montage"
 for ((i=0; i<=NUM_FILES; i++)) ; do
     FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" $SEEK -vframes 1 \
     -s $THUMB_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
@@ -963,11 +960,14 @@ for ((i=0; i<=NUM_FILES; i++)); do
     # TODO: Check for PAL/NTSC compliance
     # If video matches the target format, append to NEW_IN_FILES
     if test $TARGET = "dvd" && idvid -is dvd "$TEST_FILE"; then
+        yecho "  Already DVD format! No encoding necessary."
         NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE")
     elif test $TARGET = "svcd" && idvid -is svcd "$TEST_FILE"; then
+        yecho "  Already SVCD format! No encoding necessary."
         NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE")
     # Video needs to be re-encoded; use a .enc filename in NEW_IN_FILES
     else
+        yecho "  Not compliant; needs to be encoded."
         FILES_TO_ENCODE[i]="$TEST_FILE"
         NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE.enc.mpg")
     fi
