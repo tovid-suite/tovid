@@ -1,4 +1,30 @@
 #! /usr/bin/env python
+# pytodisc-fade
+# Helper script for determining fade opacities
+# (to replace todisc-fade-routine)
+
+"""Command-line options:
+    
+Declarative:
+    -start SECS
+    -end SECS
+    -length SECS
+    -fps NUM
+
+Inquisitive:
+    -numframes
+        Return total number of frames ((end - start) * fps)
+    -getopacity FRAME
+        Get the opacity of frame number FRAME
+
+Calling from todisc:
+    
+FADE_OPTS="-start 0 -end $ANI_MENU_LENGTH -length 0.7 -fps $FRAME_RATE"
+NUM_FRAMES=$(pytodisc-fade $FADE_OPTS -numframes)
+for ((frame=0; frame<=NUM_FRAMES; frame++)); do
+  ...
+done
+"""
 
 class Fade:
     def __init__(self, length=1.0, start=0.0, end=30.0, fps=29.97):
@@ -35,7 +61,6 @@ dissolve_limit = 60   # 0-100 possible
 
 bg_fade = Fade(0.7, 0.0, menu_length)
 title_fade = Fade(1.0, 1.0, 29.0)
-mist_fade = Fade(
 thumb_fade = Fade(1.0, 3.5, 27.5)
  
  
@@ -124,3 +149,4 @@ while frame <= animenu_end_frame:
         (time, DD, BB, CC, SS)
 
     frame = frame + 1
+

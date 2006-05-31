@@ -22,7 +22,11 @@ fields = [\
     'cpu_model',
     'cpu_speed',
     'in_vcodec',
-    'in_acodec']
+    'in_acodec',
+    'encoding_mode',
+    'in_md5',
+    'in_width',
+    'in_height']
 
 class Statlist:
     """A list of VidStats that may be queried with a simple database-like
