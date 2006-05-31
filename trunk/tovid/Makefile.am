@@ -33,6 +33,7 @@ sh_bin = \
 	src/postproc \
 	src/previd \
 	src/todisc \
+	src/todisc-fade-routine \
 	src/tovid \
 	src/tovid-batch \
 	src/tovid-init \

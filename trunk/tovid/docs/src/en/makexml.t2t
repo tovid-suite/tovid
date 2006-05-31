@@ -16,11 +16,15 @@ or DVD file structure and navigation hierarchy in the format expected by
 
 ==Usage==
 
-**makexml** [ //OPTIONS// ] //VIDEOS// //OUTFILE//
+**makexml** [ //OPTIONS// ] //VIDEOS// -out //OUTFILE//
 
 For example:
 
-: ``makexml -menu MainMenu.mpg Season1.mpg Season2.mpg Featurettes.mpg MyDisc``
+```
+$ makexml -menu MainMenu.mpg \
+    Season1.mpg Season2.mpg Featurettes.mpg \
+    -out MyDisc
+```
 
 
 ==Options==
@@ -92,16 +96,35 @@ component to generate the menu, this should all be handled for you.
 
 ==Examples==
 
-: ``makexml -dvd title-1.mpg title-2.mpg title-3.mpg My_DVD``
-    Make a DVD without a menu. Title 1, 2, and 3 will play in sequnce.
+Make a DVD without a menu. Title 1, 2, and 3 will play in sequnce:
 
-: ``makexml -dvd -group chapter-1.mpg chapter-2.mpg chapter-3.mpg -end-group My_DVD``
-    Make a DVD without a menu. Chapters 1, 2, 3 will be in the same title, and
-    pressing the remote's <next> and <prev> buttons will navigate the chapters.
+```
+$ makexml -dvd title-1.mpg title-2.mpg title-3.mpg -out My_DVD
+```
 
-: ``makexml -dvd -menu main_menu.mpg -chapters 3 movie-1.mpg -chapters 10 movie-2.mpg My_DVD``
-    Make a DVD with a main menu that points to two movies. movie-1.mpg will
-    be divided into 3 minute chapters, and movie-2 will have 7 minute chapters.
+Make a DVD without a menu, and three chapters, in separate video files,
+grouped into a single title:
+
+```
+$ makexml -dvd \
+    -group \
+        chapter-1.mpg \
+        chapter-2.mpg \
+        chapter-3.mpg \
+    -end-group \
+    -out My_DVD
+```
+
+Make a DVD with a main menu that points to two movies, with movie-1.mpg
+divided into 3-minute chapters, and movie-2.mpg into 10-minute chapters:
+
+```
+$ makexml -dvd \
+    -menu main_menu.mpg \
+    -chapters 3 movie-1.mpg \
+    -chapters 10 movie-2.mpg \
+    -out My_DVD
+```
 
 
 ==See also==
