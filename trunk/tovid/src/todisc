@@ -900,13 +900,15 @@ if $TRANSPARENT; then
     -gravity north -geometry +0+45 - \
     $WORK_DIR/pics/template.png -background none miff:- |
     convert - $WORK_DIR/title_txt.png  \
-    -gravity south -geometry +0+65 -composite miff:- |display
+    -gravity south -geometry +0+65 -composite $WORK_DIR/preview.png
+    display $WORK_DIR/preview.png
 else # Not transparent
     montage ${PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
     -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
     convert $WORK_DIR/pics/template.png \
     $WORK_DIR/title_txt.png  -gravity south -geometry +0+65 -composite \
-    -  -gravity north -geometry +0+45 -composite miff:- | display
+    -  -gravity north -geometry +0+45 -composite $WORK_DIR/preview.png
+    display $WORK_DIR/preview.png
 fi
 confirm_preview
 
@@ -1100,7 +1102,6 @@ echo
 ##############################################################################
 echo
 echo "Creating the highlight and selection PNGs for the main menu"
-#echo
 GEO="${GEO_ARRAY[NUM_FILES]/x/,}"
 (
 cat  <<EOF
@@ -1362,9 +1363,8 @@ if $SUB_MENU; then
             echo
             echo "Making montage images for  "${IN_FILES[i]}""
 
-            o=1; sp="/-\|/-\|";  echo -n ' '
             for ((a=1; a<300; a++)); do
-                echo -en "\b${sp:o++%${#sp}:1}"
+                spin "Working..."
                 for ((b=0; b<CHAPTERS; b++)); do
                     IMGS=( "${IMGS[@]}" $(find $WORK_DIR/animenu/$b \
                     -name \*.$SM_IMG_FMT|head -n $a|sed  -n -e "$a p") )
@@ -1403,7 +1403,6 @@ if $SUB_MENU; then
             $WORK_DIR/title${i}_txt.png  -gravity south -geometry +0+55 \
             -composite - -gravity north -geometry +0+45 -composite \
             $WORK_DIR/${i}-submenu.$SM_IMG_FMT)
-#            echo "Running "${IM_CMD[@]}" | "${IM_CMD2[@]}""
             "${IM_CMD[@]}" | "${IM_CMD2[@]}"
         fi
 
