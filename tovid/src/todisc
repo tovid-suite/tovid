@@ -1386,7 +1386,7 @@ if $SUB_MENU; then
         else # not $ANI_SUB_MENU
 
             yecho
-            yecho "Making montage images for  "${IN_FILES[i]}""
+            yecho "Making montage images for "${IN_FILES[i]}""
             # just use $CHAPTERS number of images
             imgs=( $(find $WORK_DIR -name ${i}-chapt000\*.$SM_IMG_FMT|head -n $CHAPTERS) )
             # create frames for the chapter thumbs
@@ -1575,6 +1575,7 @@ yecho "Adding title to images and resizing"
 for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT) )
+    echo
     yecho "Working on images from ${IN_FILES[i]}"
     for pic in "${PICS[@]}"; do
 
