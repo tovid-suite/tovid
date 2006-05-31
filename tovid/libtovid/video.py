@@ -15,7 +15,7 @@ from libtovid.utils import ratio_to_float
 # encoder backend so the Video class doesn't have to know about specific
 # encoders.
 from libtovid.encoders import mencoder, ffmpeg, mpeg2enc
-from libtovid.filetypes import MediaFile
+from libtovid.media import MediaFile
 
 log = logging.getLogger('libtovid.video')
 

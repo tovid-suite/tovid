@@ -1,20 +1,33 @@
 #! /usr/bin/env python
-# filetypes.py
+# media.py
 
-__all__ = ['MediaFile', 'mplayer_identify']
+"""This module provides classes and functions for retrieving and storing
+information about video, audio, and multimedia files.
+
+The primary intended interface is the MediaFile class. To use it, do like so:
+
+    >>> infile = MediaFile("/pub/video/test/bb.avi")
+
+The given file (bb.avi) is automatically identified with mplayer, and its
+vital statistics stored in MediaFile attributes. The easiest way to see the
+result is:
+
+    >>> infile.display()
+
+
+"""
+__all__ = ['VideoStream', 'AudioStream', 'MediaFile', 'mplayer_identify']
 
 # From standard library
 import os
 import sys
 import logging
 import commands
-# From libtovid
-from libtovid.streams import VideoStream, AudioStream
 
-log = logging.getLogger('libtovid.filetypes')
+log = logging.getLogger('libtovid.media')
 
 class MediaFile:
-    "A file containing video and/or audio streams"
+    """Stores information about a file containing video and/or audio streams."""
     def __init__(self, filename):
         self.filename = os.path.abspath(filename)
         # If the file exists, identify it
@@ -24,17 +37,61 @@ class MediaFile:
             log.error("Couldn't find file: %s" % filename)
 
     def display(self):
-        log.info("MediaFile: %s" % self.filename)
-        # Print video stream info
-        if self.video:
-            self.video.display()
-        else:
-            print "No video stream"
+        print "=============================="
+        print "MediaFile: %s" % self.filename
+        print "=============================="
         # Print audio stream info
         if self.audio:
             self.audio.display()
         else:
             print "No audio stream"
+        # Print video stream info
+        if self.video:
+            self.video.display()
+        else:
+            print "No video stream"
+
+
+class AudioStream:
+    """Stores information about an audio stream."""
+    def __init__(self):
+        self.filename = ''
+        self.codec = ''
+        self.bitrate = 0
+        self.channels = 0
+        self.samprate = 0
+
+    def display(self):
+        print "Audio stream"
+        print "----------------------"
+        print "     Filename: %s" % self.filename
+        print "        Codec: %s" % self.codec
+        print "      Bitrate: %s" % self.bitrate
+        print "     Channels: %s" % self.channels
+        print "Sampling rate: %s" % self.samprate
+        print "----------------------"
+
+
+class VideoStream:
+    """Stores information about a video stream."""
+    def __init__(self):
+        self.filename = ''
+        self.codec = ''
+        self.width = 0
+        self.height = 0
+        self.fps = 0
+        self.bitrate = 0
+
+    def display(self):
+        print "Video stream:"
+        print "----------------------"
+        print "   Filename: %s" % self.filename
+        print "      Codec: %s" % self.codec
+        print "      Width: %s" % self.width
+        print "     Height: %s" % self.height
+        print "  Framerate: %s" % self.fps
+        print "    Bitrate: %s" % self.bitrate
+        print "----------------------"
 
 
 def mplayer_identify(filename):
@@ -103,7 +160,7 @@ def mplayer_identify(filename):
 if __name__ == '__main__':
     # If no arguments were provided, print usage notes
     if len(sys.argv) == 1:
-        print "Usage: filetypes.py FILE"
+        print "Usage: media.py FILE"
     else:
         print "Creating a MediaFile object from file: %s" % sys.argv[1]
         infile = MediaFile(sys.argv[1])

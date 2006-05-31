@@ -115,7 +115,7 @@ SCRIPT_START_TIME=`date +%s`
 # Args: $@ == any text string
 # If no args are given, echo a separator bar
 # Use yecho if you want output to go to the logfile
-yecho()
+function yecho()
 {
     if test $# -eq 0; then
         printf "\n%s\n\n" "$SEPARATOR"
@@ -137,22 +137,16 @@ yecho()
 # set the LOG_FILTER variable before calling this function, to e.g.
 #    LOG_FILTER="sed 's/\r/\r\n/g'"    # Replace LF with CR/LF
 # ******************************************************************************
-cmd_exec()
+function cmd_exec()
 {
-    if $DEBUG; then
-        # Display all output, and also write it to the log
-        eval "$@" 2>&1 | ${LOG_FILTER=cat} | tee -a "$LOG_FILE"
-    else
-        # Just write that junk to the log
-        eval "$@" 2>&1 | ${LOG_FILTER=cat} >> "$LOG_FILE"
-    fi
+    eval "$@" 2>&1 | ${LOG_FILTER=cat} >> "$LOG_FILE"
     # Return exit status
     return $?
 }
 
 # Print script name, usage notes, and optional error message, then exit.
 # Args: $@ == text string containing error message
-usage_error ()
+function usage_error ()
 {
     printf "%s\n" "$USAGE"
     printf "%s\n" "$SEPARATOR"
@@ -161,8 +155,8 @@ usage_error ()
 }
 
 
-function cleanlog()
 # process $LOG_FILE.tmp variously - eg. ffmpeg's output is ugly without this
+function cleanlog()
 {
     FOLD="fold -bs"
     NO_CR="tr -d '\r'"
@@ -286,28 +280,35 @@ function confirm_preview()
         yecho
     else
         yecho "Preview not OK, exiting."
-        yecho
-        yecho "Some configuration options to try, if things look bad:"
-        yecho "   -menu-font and -menu-fontsize"
-        yecho "     (to adjust the main title)"
-        yecho "    -thumbfont and -thumb-fontsize"
-        yecho "If you get black frames, then look at the -seek option"
-        yecho "For other fine-tuning options, see 'man todisc'."
+        echo
+        echo "Some configuration options to try, if things look bad:"
+        echo "Color:"
+        echo "  -title-color"
+        echo "  -thumb-text-color"
+        echo "Fonts:"
+        echo "  -menu-font and -menu-fontsize"
+        echo "  (to adjust the main title)"
+        echo "    -thumbfont and -thumb-fontsize"
+        echo "If you get black frames, then look at the -seek option"
+        echo "For other fine-tuning options, see 'man todisc'."
         exit 0
     fi
 #    yecho
 }
 
-# Set $SPINNER to the current spinner character (indexed by global $SP)
+# Display (echo) a spinner with a message
 SP=0
 function spin()
 {
     SPIN_CHARS=".oOo"
     SPINNER="${SPIN_CHARS:SP++%${#SPIN_CHARS}:1}"
+    # Print spaces to overwrite previous line
+    echo -ne "\r                                                             "
+    echo -ne "\r$SPINNER $@ "
 }
 
 ##############################################################################
-#                          	End of functions                                 #
+#                           End of functions                                 #
 ##############################################################################
 
 trap 'cleanup; exit 13' TERM INT
@@ -320,7 +321,9 @@ trap 'cleanup; exit 13' TERM INT
 # EXECUTION BEGINS HERE
 # ***********************************
 
-yecho $"$SCRIPT_NAME"
+echo $"$SCRIPT_NAME"
+yecho "todisc command-line used:"
+yecho "$@"
 
 while test $# -gt 0; do
     DO_SHIFT=:
@@ -805,18 +808,15 @@ elif [ -z "$STROKE" ]; then
     STROKE=gray
 fi
 
-# Trying greycat's suggestion for echoing a command before running
 echo "Creating a title image with the following command:"
-set -x
-(convert -size 620x100 xc:none \
--font "$MENU_FONT" -pointsize $MENU_FONTSIZE \
--fill black -draw "gravity center text 2,2 \"$VMGM_TITLE\"" \
--fill "$TITLE_COLOUR" -stroke $STROKE -strokewidth 1 \
--draw "gravity center text 1,1 \"$VMGM_TITLE\"" \
-miff:- | convert -trim +repage - -blur 0x0.4 $WORK_DIR/title_txt.png)
-exec 8>&2 2>/dev/null
-set +x
-exec 2>&8
+CMD="convert -size 620x100 xc:none \
+-font \"$MENU_FONT\" -pointsize $MENU_FONTSIZE \
+-fill black -draw 'gravity center text 2,2 \"$VMGM_TITLE\"' \
+-fill \"$TITLE_COLOUR\" -stroke $STROKE -strokewidth 1 \
+-draw 'gravity center text 1,1 \"$VMGM_TITLE\"' \
+miff:- | convert -trim +repage - -blur 0x0.4 $WORK_DIR/title_txt.png"
+yecho "$CMD"
+cmd_exec "$CMD"
 
 
 if $MIST; then
@@ -850,7 +850,8 @@ yecho "Generating images for montage"
 for ((i=0; i<=NUM_FILES; i++)) ; do
     FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" $SEEK -vframes 1 \
     -s $THUMB_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
-    echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> $LOG_FILE
+    spin "... ${IN_FILES[i]}"
+    cmd_exec "${FFMPEG_CMD[@]}"
     SED_VAR="frame="
     if "${FFMPEG_CMD[@]}" >> $LOG_FILE.tmp 2>&1;then
         cleanlog 3
@@ -1297,13 +1298,13 @@ if $SUB_MENU; then
     yecho "Creating images for each chapter"
     for ((i=0; i<${#IN_FILES[@]}; i++)); do
         yecho "Creating a transparent title PNG"
-		convert -size 620x100 xc:none -font "$MENU_FONT" \
-		-pointsize $MENU_FONTSIZE \
-		-fill black -draw "gravity center text 2,2 \"${TITLES[i]}\"" \
-		-stroke "$STROKE" -strokewidth 1 \
-		-fill "$TITLE_COLOUR" -stroke "$STROKE" \
-		-draw "gravity center text 1,1 \"${TITLES[i]}\"" miff:- | \
-		convert -trim +repage - -blur 0x0.4 $WORK_DIR/title${i}_txt.png
+        convert -size 620x100 xc:none -font "$MENU_FONT" \
+        -pointsize $MENU_FONTSIZE \
+        -fill black -draw "gravity center text 2,2 \"${TITLES[i]}\"" \
+        -stroke "$STROKE" -strokewidth 1 \
+        -fill "$TITLE_COLOUR" -stroke "$STROKE" \
+        -draw "gravity center text 1,1 \"${TITLES[i]}\"" miff:- | \
+        convert -trim +repage - -blur 0x0.4 $WORK_DIR/title${i}_txt.png
 
         # which is harmless as they get removed, but needs to be tweaked         
         if $ANI_SUB_MENU; then
@@ -1577,9 +1578,9 @@ for ((i=0; i<=NUM_FILES; i++)); do
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT) )
     yecho "Working on images from ${IN_FILES[i]}"
     for pic in "${PICS[@]}"; do
-        spin
+
         # TODO: More descriptive message about what this loop is doing
-        echo -en "\r$SPINNER Working..."
+        spin "Working..."
         
         IM_CMD0=(composite -compose CopyOpacity $THUMB_MASK +matte \
         "$pic")
@@ -1648,9 +1649,8 @@ if $MENU_FADE && ! $STATIC; then
         C=$(awk -F ':' '{print $2'}<<<$BC)
         S=$(get_thumb_opacity)
 
-        spin
         # TODO: More descriptive message about what this loop is doing
-        echo -en "\r$SPINNER Working..."
+        spin "Working..."
 
         ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $((frame + 1)).$IMG_FMT) )
         BG_PIC=$(find $WORK_DIR/bg -name $(($frame + 1)).jpg)
@@ -1686,9 +1686,8 @@ else # Do not do menu fade
     if $TRANSPARENT; then
         for (( count=1; count<=$MAX_ANI_LENGTH; count++)); do
 
-            spin
             # TODO: More descriptive message about what this loop is doing
-            echo -en "\r$SPINNER Working..."
+            spin "Working..."
 
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
@@ -1717,9 +1716,9 @@ else # Do not do menu fade
         done
     else # Not transparent
         for (( count=1; count <=FRAMES; count++)); do
-            spin
+
             # TODO: More descriptive message about what this loop is doing
-            echo -en "\r$SPINNER Working..."
+            spin "Working..."
 
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
 

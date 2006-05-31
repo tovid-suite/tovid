@@ -18,17 +18,17 @@ input files to the target format.
 == Usage ==
 
 ```
-todisc [OPTIONS] \
-   -files <file list> -titles <title list>
-   -out OUT_PREFIX
+ todisc [OPTIONS] \
+    -files <file list> -titles <title list>
+    -out OUT_PREFIX
 ```
 
 For example:
 
 ```
  $ todisc -files File1.mpg File2.mpg File3.mpg \
-     -titles "Episode 1" "Episode 2" "Episode 3" \
-     -out Season_one
+      -titles "Episode 1" "Episode 2" "Episode 3" \
+      -out Season_one
 ```
 
 The number of **-files** and **-titles** must be equal. If the input files are

@@ -257,7 +257,7 @@ runtime_error()
 
 # ******************************************************************************
 # Execute the given command-line string, with appropriate stream redirection
-# Args: $@ == text string contianing complete command-line
+# Args: $@ == text string containing complete command-line
 # ******************************************************************************
 cmd_exec()
 {
@@ -281,7 +281,7 @@ cmd_exec()
 killsubprocs()
 {
     yecho "Encode stopped, killing all sub processes"
-    eval "kill $PIDS"
+    kill $PIDS
 }    
 
 
@@ -511,7 +511,7 @@ get_args()
                 shift
                 OUT_PREFIX="$1"
                 # Use full pathname with extension (mpg)
-                OUT_FILENAME="$(abspath \"$1\").mpg"
+                OUT_FILENAME=$(abspath "$1").mpg
                 ;;
 
             # Null option; ignored.
@@ -560,7 +560,7 @@ get_args()
                 yecho "Using config file $CONFIG_FILE, containing the following options:"
                 if test -n "$CONFIG_ARGS"; then
                     yecho "$CONFIG_ARGS"
-                    eval get_args "$CONFIG_ARGS"
+                    get_args "$CONFIG_ARGS"
                 else
                     yecho "(none)"
                 fi
@@ -624,7 +624,11 @@ goodbye()
 # ******************************************************************************
 # ******************************************************************************
 
-yecho "$@"
+if ! $QUIET; then
+    printf "%s\n" "$SCRIPT_NAME"
+    yecho "tovid command-line used:"
+    yecho "$@"
+fi
 get_args "$@"
 
 # ******************************************************************************
@@ -648,8 +652,6 @@ if type mpeg2enc >/dev/null; then :; else
     echo "    http://mjpeg.sourceforge.net/"
     exit 1
 fi
-
-$QUIET || printf "%s\n" "$SCRIPT_NAME"
 
 # ******************************************************************************
 # Sanity checks. Make sure input file exists, and see if we're going
