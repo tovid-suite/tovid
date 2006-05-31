@@ -77,7 +77,7 @@ TITLE_COLOUR="#CDC0B0"
 THUMB_BG_COLOUR=white
 THUMB_TEXT_COLOUR=""
 MIST_COLOUR=white
-MIST_BLUR=60
+MIST_OPACITY=60
 STROKE=""
 CHAPTERS=6
 BG_AUDIO=""
@@ -426,7 +426,7 @@ while test $# -gt 0; do
             ;;
         "-text-mist-opacity" )
             shift
-            MIST_BLUR="$1"
+            MIST_OPACITY="$1"
             ;;
         "-text-mist-color" |"-text-mist-colour" )
             shift
@@ -746,7 +746,7 @@ if [ -n "$THUMB_SHAPE" ]; then
     convert $WORK_DIR/feather_orig.png -channel RGBA \
     -blur 0x60 $WORK_DIR/feather_mask2.png
 fi
-if [ -z $THUMB_TEXT_COLOUR ]; then
+if [ -z "$THUMB_TEXT_COLOUR" ]; then
     if $FEATHER; then
         THUMB_TEXT_COLOUR="#161514"
     else
@@ -841,7 +841,7 @@ fi
 ###############################################################################
 if $MIST; then
     # overlay white.png onto the background
-    composite -dissolve $MIST_BLUR -gravity south -geometry +0+45 \
+    composite -dissolve $MIST_OPACITY -gravity south -geometry +0+45 \
     $WORK_DIR/white.png $WORK_DIR/pics/template.png \
     $WORK_DIR/pics/template.png
 fi
