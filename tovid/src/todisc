@@ -850,7 +850,7 @@ yecho "Generating images for montage"
 for ((i=0; i<=NUM_FILES; i++)) ; do
     FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" $SEEK -vframes 1 \
     -s $THUMB_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
-    spin "... ${IN_FILES[i]}"
+    echo "Working on  ${IN_FILES[i]} . . ."
     cmd_exec "${FFMPEG_CMD[@]}"
     SED_VAR="frame="
     if "${FFMPEG_CMD[@]}" >> $LOG_FILE.tmp 2>&1;then
@@ -1320,9 +1320,8 @@ if $SUB_MENU; then
             PICS_OUT=($WORK_DIR/${i}-chapt)
             CUT_TIME=1
         fi    
-        CUT_START=$(awk_math $FRAME_RATE times $SEEK_VAL)
         counts=$(awk_math ${CHAPT_INTERVALS[i]} times $FRAME_RATE)
-        CUT=( $CUT_START $(running_total <<<  $(for ((a=0; a<CHAPTERS ; a++)); \
+        CUT=( 30 $(running_total <<<  $(for ((a=0; a<CHAPTERS ; a++)); \
         do echo -n "$counts ";done)) )
         for ((c=0; c<${#CUT[@]}; c++)); do
             cmd[c]=$((${CUT[c]}))-$((${CUT[c]} + CUT_TIME))
