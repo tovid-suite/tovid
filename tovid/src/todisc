@@ -68,7 +68,6 @@ FRAME_RATE=29.970  # when -ntsc and -pal options added put in body in if block
 VID_SIZE=720x480
 VMGM_TITLE="My Video Collection"
 SPUMUX_XML="$WORK_DIR/spumux.xml"
-SUBMENU_SPUMUX_XML="$WORK_DIR/submenu_spumux.xml"
 DVDAUTHOR_XML="$WORK_DIR/dvdauthor.xml"
 STATIC=false
 SUB_MENU=false
@@ -79,7 +78,6 @@ THUMB_TEXT_COLOUR=""
 MIST_COLOUR=white
 MIST_OPACITY=60
 STROKE=""
-CHAPTERS=6
 BG_AUDIO=""
 BG_PIC=""
 BG_VIDEO=""
@@ -115,7 +113,7 @@ SCRIPT_START_TIME=`date +%s`
 # Args: $@ == any text string
 # If no args are given, echo a separator bar
 # Use yecho if you want output to go to the logfile
-function yecho()
+yecho()
 {
     if test $# -eq 0; then
         printf "\n%s\n\n" "$SEPARATOR"
@@ -137,16 +135,22 @@ function yecho()
 # set the LOG_FILTER variable before calling this function, to e.g.
 #    LOG_FILTER="sed 's/\r/\r\n/g'"    # Replace LF with CR/LF
 # ******************************************************************************
-function cmd_exec()
+cmd_exec()
 {
-    eval "$@" 2>&1 | ${LOG_FILTER=cat} >> "$LOG_FILE"
+    if $DEBUG; then
+        # Display all output, and also write it to the log
+        eval "$@" 2>&1 | ${LOG_FILTER:=cat} | tee -a "$LOG_FILE"
+    else
+        # Just write that junk to the log
+        eval "$@" 2>&1 | ${LOG_FILTER:=cat} >> "$LOG_FILE"
+    fi
     # Return exit status
     return $?
 }
 
 # Print script name, usage notes, and optional error message, then exit.
 # Args: $@ == text string containing error message
-function usage_error ()
+usage_error ()
 {
     printf "%s\n" "$USAGE"
     printf "%s\n" "$SEPARATOR"
@@ -155,8 +159,8 @@ function usage_error ()
 }
 
 
-# process $LOG_FILE.tmp variously - eg. ffmpeg's output is ugly without this
 function cleanlog()
+# process $LOG_FILE.tmp variously - eg. ffmpeg's output is ugly without this
 {
     FOLD="fold -bs"
     NO_CR="tr -d '\r'"
@@ -208,7 +212,9 @@ runtime_error()
     yecho "    $@"
     echo "Check the contents of $LOG_FILE to see what went wrong."
     # TODO: Uncomment once -debug is actually implemented
-    if $DEBUG; then :; else
+    if $DEBUG; then
+        : 
+    else
         echo "Run todisc again with the -debug option to produce more verbose"
         echo "output, if the log file doesn't give you enough information."
     fi
@@ -280,35 +286,28 @@ function confirm_preview()
         yecho
     else
         yecho "Preview not OK, exiting."
-        echo
-        echo "Some configuration options to try, if things look bad:"
-        echo "Color:"
-        echo "  -title-color"
-        echo "  -thumb-text-color"
-        echo "Fonts:"
-        echo "  -menu-font and -menu-fontsize"
-        echo "  (to adjust the main title)"
-        echo "    -thumbfont and -thumb-fontsize"
-        echo "If you get black frames, then look at the -seek option"
-        echo "For other fine-tuning options, see 'man todisc'."
+        yecho
+        yecho "Some configuration options to try, if things look bad:"
+        yecho "   -menu-font and -menu-fontsize"
+        yecho "     (to adjust the main title)"
+        yecho "    -thumbfont and -thumb-fontsize"
+        yecho "If you get black frames, then look at the -seek option"
+        yecho "For other fine-tuning options, see 'man todisc'."
         exit 0
     fi
 #    yecho
 }
 
-# Display (echo) a spinner with a message
+# Set $SPINNER to the current spinner character (indexed by global $SP)
 SP=0
 function spin()
 {
     SPIN_CHARS=".oOo"
     SPINNER="${SPIN_CHARS:SP++%${#SPIN_CHARS}:1}"
-    # Print spaces to overwrite previous line
-    echo -ne "\r                                                             "
-    echo -ne "\r$SPINNER $@ "
 }
 
 ##############################################################################
-#                           End of functions                                 #
+#                          	End of functions                                 #
 ##############################################################################
 
 trap 'cleanup; exit 13' TERM INT
@@ -321,9 +320,7 @@ trap 'cleanup; exit 13' TERM INT
 # EXECUTION BEGINS HERE
 # ***********************************
 
-echo $"$SCRIPT_NAME"
-yecho "todisc command-line used:"
-yecho "$@"
+yecho $"$SCRIPT_NAME"
 
 while test $# -gt 0; do
     DO_SHIFT=:
@@ -443,7 +440,15 @@ while test $# -gt 0; do
             ;;
         "-chapters" )
             shift
-            CHAPTERS="$1"
+            # Hackish list-parsing
+            while test $# -gt 0 && test ${1:0:1} != "-"; do
+                CHAPTERS=( "${CHAPTERS[@]}" "$1" ) 
+                shift
+            done
+            # Do not skip past the next argument
+            if test $# -gt 0 && test ${1:0:1} = "-";then
+                DO_SHIFT=false
+            fi
             ;;
         "-bgaudio" )
             shift
@@ -577,6 +582,26 @@ V_ARRAY_TOTAL=${#IN_FILES[@]}
 # (Length of array) - 1
 NUM_FILES=$(($V_ARRAY_TOTAL - 1))
 
+# allow user to specify one # of chapters for all videos
+if [ ${#CHAPTERS[@]} -eq 1 ]; then
+    for ((i=0; i<=NUM_FILES; i++)); do
+        CHAPTERS[i]=${CHAPTERS[0]}
+    done
+fi
+# if more than value for CHAPTERS, make sure they equal video #
+if [[ $SUB_MENU &&  ${#FILES[@]} -ne ${#CHAPTERS[@]} &&  ${#CHAPTERS[@]} -ne 1 ]]; then
+    usage_error "Please give the same number of submenu audios as videos.
+    You gave ${#FILES[@]} video files and ${#CHAPTERS[@]} chapter values"
+fi
+# find out longest chapter value (number of chapters) 
+if $SUB_MENU; then
+    for ((i=0; i<${#CHAPTERS[@]}; i++)); do
+        chapt_val=${CHAPTERS[i]}
+        [ -z "$MAX_CHAPTERS" ] || ((chapt_val > MAX_CHAPTERS)) && MAX_CHAPTERS=$chapt_val && max_chapt_key=$i
+        [ -z "$MIN_CHAPTERS" ]  || ((chapt_val < MIN_VAL)) && MIN_CHAPTERS=$chapt_val && min_chapt_key=$i
+    done
+fi
+
 # create_dirs
 yecho "Creating pics directories..."
 for ((i=0; i<=NUM_FILES; i++)); do
@@ -594,11 +619,66 @@ fi
 if $MENU_FADE || test -n "$BG_VIDEO"; then mkdir -v $WORK_DIR/bg; fi
 mkdir -v "$WORK_DIR/animenu"
 if $ANI_SUB_MENU; then
-    for ((i=0; i<CHAPTERS; i++)); do
+    for ((i=0; i<MAX_CHAPTERS; i++)); do
         mkdir -v "$WORK_DIR/animenu/$i"
     done
 fi
 
+# Check input files for compliance; offer to tovid-encode non-compliant files
+for ((i=0; i<=NUM_FILES; i++)); do
+    TEST_FILE=${IN_FILES[i]}
+    yecho "Checking $TEST_FILE for compliance..."
+    # TODO: Check for PAL/NTSC compliance
+    # If video matches the target format, append to NEW_IN_FILES
+    if test $TARGET = "dvd" && idvid -is dvd "$TEST_FILE"; then
+        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE")
+    elif test $TARGET = "svcd" && idvid -is svcd "$TEST_FILE"; then
+        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE")
+    # Video needs to be re-encoded; use a .enc filename in NEW_IN_FILES
+    else
+        FILES_TO_ENCODE[i]="$TEST_FILE"
+        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE.enc.mpg")
+    fi
+done
+if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
+    TGT_CAPS=$(echo $TARGET | tr a-z A-Z)
+    yecho
+    yecho "Encode input files"
+    yecho
+    yecho "Some of the -files you provided are not $TGT_CAPS-compliant:"
+    yecho " "
+    for i in "${FILES_TO_ENCODE[@]}"; do
+        test -n "$i" && yecho "  $i"
+    done
+    yecho " "
+    yecho "I can encode them for you, but it may take a long time."
+    yecho "Encoding will ensure that your disc is fully compliant;"
+    yecho "you may skip this, but your disc may not be playable."
+    yecho "Please type 'yes' if you want the files to be encoded:"
+    read ENCODE
+    if test -n "$ENCODE" && test "$ENCODE" = 'yes'; then
+        yecho
+        yecho "Converting files to $TGT_CAPS format with 'tovid'"
+        for i in "${FILES_TO_ENCODE[@]}"; do
+            yecho "Converting: $i"
+            countdown
+            tovid -$TV_STANDARD -$TARGET -in $i -out $i.enc
+            wait
+            # See if output file exists
+            if ! test -f "$i.enc.mpg"; then
+                runtime_error "Couldn't encode file: $i"
+            fi
+            yecho
+        done
+        # Replace IN_FILES with NEW_IN_FILES (with .enc extension)
+        IN_FILES=("${NEW_IN_FILES[@]}")
+    else
+        yecho
+        yecho "Not re-encoding. I'll proceed with menu generation, but"
+        yecho "your authored disc will not be fully $TGT_CAPS-compliant."
+        yecho
+    fi
+fi
 
 ##############################################################################
 # Font defaults
@@ -610,18 +690,10 @@ test $TARGET = "svcd" && : ${MENU_FONTSIZE:="32"}
 # Thumbnail title font size
 # PTSIZE=(30 36 42 42 42 42 48 48 48 48 48 48 54 54 54 54 54 54 54 54 \
 # 54 54 54 54 54 54 54 54 54 54)
-# If user defined a font size, use it
-if test -n "$THUMB_FONTSIZE"; then
-    :
-# Otherwise, use a default, based on the number of thumbnails
-elif test "$NUM_FILES" -lt 5; then
-    THUMB_FONTSIZE=14
-elif test "$NUM_FILES" -lt 9; then
-    THUMB_FONTSIZE=12
-else
-    THUMB_FONTSIZE=11
-fi
-    
+THUMB_FONTSIZE_ARRAY=(14 14 14 14 12 12 12 12 11 11 11 11 11 11 11 11 11 11 \
+11 11 11 11 11 11 11 11 11 11)
+: ${THUMB_FONTSIZE:=${THUMB_FONTSIZE_ARRAY[NUM_FILES]}}
+
 # See if "Helvetica" or "helvetica" are available as default fonts
 if convert -size 50x20 xc:none -font Helvetica -gravity Center \
 -draw "text 0,0 'test'" $WORK_DIR/font.png; then
@@ -630,9 +702,8 @@ elif convert -size 200x100 xc:none -font helvetica -gravity Center \
 -draw "text 0,0 'test'" $WORK_DIR/font.png; then
     DEFAULT_FONT="helvetica"
 fi
-# If user didn't specify fonts, use default
-test -z "$MENU_FONT" && MENU_FONT=$DEFAULT_FONT
-test -z "$THUMB_FONT" && THUMB_FONT=$DEFAULT_FONT
+: ${MENU_FONT:=$DEFAULT_FONT}
+: ${THUMB_FONT:=$DEFAULT_FONT}
 rm -f "$WORK_DIR/font.png"
 
 
@@ -656,7 +727,7 @@ if $ANI_SUB_MENU; then
 fi
 yecho "  -seek $SEEK_VAL second(s)"
 yecho "  -menu-audio-fade $FADE second(s)"
-yecho "  -chapters $CHAPTERS"
+yecho "  -chapters ${CHAPTERS[@]}"
 yecho
 
 
@@ -710,6 +781,21 @@ fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
 THUMB_SIZE="${GEO_ARRAY[NUM_FILES]}"
 
+# spumux and dvdauthor vars
+START="00:00:00.0"
+MAIN_POST="        <post> jump cell 1; </post>"
+if $MENU_FADE; then
+    . todisc-fade-routine
+    END_TIME=$(format_seconds $THUMBS_FADE_OUT_END_TIME)
+    END=" end=\"$END_TIME\""
+    START=$(format_seconds $THUMBS_FADE_IN_START_TIME)
+    POST="<post> jump cell 1; </post>"
+elif $STATIC; then
+    PAUSE_TIME="inf"
+fi
+if [ "$PAUSE_TIME" = "inf" ]; then
+    unset MAIN_POST
+fi
 ###############################################################################
 #     generate title_txt png, and template.png needed for all operations       #
 ###############################################################################
@@ -802,25 +888,32 @@ fi
 yecho "$MASK_CMD"
 cmd_exec "$MASK_CMD"
 
+yecho "Creating a title image"
 if [ -z "$BG_PIC" ]; then
     STROKE=none
 elif [ -z "$STROKE" ]; then
     STROKE=gray
 fi
 
-echo "Creating a title image with the following command:"
-CMD="convert -size 620x100 xc:none \
--font \"$MENU_FONT\" -pointsize $MENU_FONTSIZE \
--fill black -draw 'gravity center text 2,2 \"$VMGM_TITLE\"' \
--fill \"$TITLE_COLOUR\" -stroke $STROKE -strokewidth 1 \
--draw 'gravity center text 1,1 \"$VMGM_TITLE\"' \
-miff:- | convert -trim +repage - -blur 0x0.4 $WORK_DIR/title_txt.png"
-yecho "$CMD"
-cmd_exec "$CMD"
+echo "Running
+convert -size 620x100 xc:none -font "$MENU_FONT" \
+-pointsize $MENU_FONTSIZE \
+-fill black -draw "gravity center text 2,2 \"$VMGM_TITLE\"" \
+-stroke "$STROKE" -strokewidth 1 \
+-fill "$TITLE_COLOUR" -stroke "$STROKE" \
+-draw "gravity center text 1,1 \"$VMGM_TITLE\"" miff:- | \
+convert -trim +repage - -blur 0x0.4 $WORK_DIR/title_txt.png
+"
 
+convert -size 620x100 xc:none -font "$MENU_FONT" \
+-pointsize $MENU_FONTSIZE \
+-fill black -draw "gravity center text 2,2 \"$VMGM_TITLE\"" \
+-stroke "$STROKE" -strokewidth 1 \
+-fill "$TITLE_COLOUR" -stroke "$STROKE" \
+-draw "gravity center text 1,1 \"$VMGM_TITLE\"" miff:- | \
+convert -trim +repage - -blur 0x0.4 $WORK_DIR/title_txt.png
 
 if $MIST; then
-    yecho "Creating mist effect"
     # make a white png for misted background effect, only for user's bg
     Y=$(identify $WORK_DIR/title_txt.png |awk '{print $3}'|cut -dx -f1)
     X=$(identify $WORK_DIR/title_txt.png |awk '{print $3}'|cut -dx -f2)
@@ -846,12 +939,10 @@ if $MIST; then
     $WORK_DIR/pics/template.png
 fi
 # generate images for montage and title and resize them
-yecho "Generating images for montage"
 for ((i=0; i<=NUM_FILES; i++)) ; do
     FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" $SEEK -vframes 1 \
     -s $THUMB_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
-    echo "Working on  ${IN_FILES[i]} . . ."
-    cmd_exec "${FFMPEG_CMD[@]}"
+    echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> $LOG_FILE
     SED_VAR="frame="
     if "${FFMPEG_CMD[@]}" >> $LOG_FILE.tmp 2>&1;then
         cleanlog 3
@@ -900,15 +991,13 @@ if $TRANSPARENT; then
     -gravity north -geometry +0+45 - \
     $WORK_DIR/pics/template.png -background none miff:- |
     convert - $WORK_DIR/title_txt.png  \
-    -gravity south -geometry +0+65 -composite $WORK_DIR/preview.png
-    display $WORK_DIR/preview.png
+    -gravity south -geometry +0+65 -composite miff:- |display
 else # Not transparent
     montage ${PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
     -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
     convert $WORK_DIR/pics/template.png \
     $WORK_DIR/title_txt.png  -gravity south -geometry +0+65 -composite \
-    -  -gravity north -geometry +0+45 -composite $WORK_DIR/preview.png
-    display $WORK_DIR/preview.png
+    -  -gravity north -geometry +0+45 -composite miff:- | display
 fi
 confirm_preview
 
@@ -954,67 +1043,6 @@ done
 echo
 echo $SEPARATOR
 
-# TODO: Merge this with the above stat-output stuff (check for compliance at
-# the same time)
-# Check input files for compliance; offer to tovid-encode non-compliant files
-for ((i=0; i<=NUM_FILES; i++)); do
-    TEST_FILE=${IN_FILES[i]}
-    yecho "Checking \"$TEST_FILE\" for compliance..."
-    # TODO: Check for PAL/NTSC compliance
-    # If video matches the target format, append to NEW_IN_FILES
-    if test $TARGET = "dvd" && idvid -is dvd "$TEST_FILE"; then
-        yecho "  Already DVD format! No encoding necessary."
-        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE")
-    elif test $TARGET = "svcd" && idvid -is svcd "$TEST_FILE"; then
-        yecho "  Already SVCD format! No encoding necessary."
-        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE")
-    # Video needs to be re-encoded; use a .enc filename in NEW_IN_FILES
-    else
-        yecho "  Not compliant; needs to be encoded."
-        FILES_TO_ENCODE[i]="$TEST_FILE"
-        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE.enc.mpg")
-    fi
-done
-if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
-    TGT_CAPS=$(echo $TARGET | tr a-z A-Z)
-    yecho
-    yecho "Encode input files"
-    yecho
-    yecho "Some of the -files you provided are not $TGT_CAPS-compliant:"
-    yecho " "
-    for i in "${FILES_TO_ENCODE[@]}"; do
-        test -n "$i" && yecho "  $i"
-    done
-    yecho " "
-    yecho "I can encode them for you, but it may take a long time."
-    yecho "Encoding will ensure that your disc is fully compliant;"
-    yecho "you may skip this, but your disc may not be playable."
-    yecho "Please type 'yes' if you want the files to be encoded:"
-    read ENCODE
-    if test -n "$ENCODE" && test "$ENCODE" = 'yes'; then
-        yecho
-        yecho "Converting files to $TGT_CAPS format with 'tovid'"
-        for i in "${FILES_TO_ENCODE[@]}"; do
-            yecho "Converting: $i"
-            countdown
-            tovid -$TV_STANDARD -$TARGET -in $i -out $i.enc
-            wait
-            # See if output file exists
-            if ! test -f "$i.enc.mpg"; then
-                runtime_error "Couldn't encode file: $i"
-            fi
-            yecho
-        done
-        # Replace IN_FILES with NEW_IN_FILES (with .enc extension)
-        IN_FILES=("${NEW_IN_FILES[@]}")
-    else
-        yecho
-        yecho "Not re-encoding. I'll proceed with menu generation, but"
-        yecho "your authored disc will not be fully $TGT_CAPS-compliant."
-        yecho
-    fi
-fi
-
 for ((i=0; i<${#mencoder_stats[@]}; i++)); do
     VID_LEN=( ${VID_LEN[@]}  "$(awk '/Video stream:/{print $10}' \
     <<<"${mencoder_stats[i]}")" )
@@ -1032,13 +1060,15 @@ for ((i=0; i<${#NEW_LENGTH[@]}; i++)); do
     fi
 done
 # if shortest is less than 340 frames * $CHAPTERS then no animated submenu
-if $ANI_SUB_MENU && [ $MIN_VAL -lt $(((340 * CHAPTERS) / 30)) ]; then
-    echo -n "Sorry, the shortest length video must be greater than "
-    echo "$(((340 * CHAPTERS) / 30)) seconds"
-    echo "to use animated submenus."
-    echo "${IN_FILES[min_key]} is only $MIN_VAL seconds long"
-    exit 1
-fi 
+for ((i=0; i<NUM_FILES; i++)); do
+    if $ANI_SUB_MENU && [ $MIN_VAL -lt $(((340 * ${CHAPTERS[i]}) / 30)) ]; then
+        echo -n "Sorry, the shortest length video must be greater than "
+        echo "$(((340 * ${CHAPTERS[i]})) / 30)) seconds"
+        echo "to use animated submenus."
+        echo "${IN_FILES[min_key]} is only $MIN_VAL seconds long"
+        exit 1
+    fi 
+done
 # allow animated menus of length of longest video
 MAX_ANI_LENGTH=$(awk_math $FRAME_RATE times $ANI_MENU_LENGTH)
 MAX_VAL_FRAMES="$(($MAX_VAL * 30))"
@@ -1103,6 +1133,7 @@ echo
 echo
 echo "Creating the highlight and selection PNGs for the main menu"
 GEO="${GEO_ARRAY[NUM_FILES]/x/,}"
+
 (
 cat  <<EOF
 rectangle 0,0 $GEO
@@ -1126,70 +1157,66 @@ for button in Select Highlight; do
 done
 
 if $SUB_MENU; then
-    echo
-    echo "Creating the highlight and selection PNGs for the submenus"
-    echo
-    GEO="${GEO_ARRAY[CHAPTERS - 1]/x/,}"
+    for ((s=0; s<=NUM_FILES; s++)); do
+        echo
+        echo "Creating the highlight and selection PNGs for submenu $((s + 1))"
+        echo
+        C=$((${CHAPTERS[s]} - 1))
+        GEO="${GEO_ARRAY[C]/x/,}"
 (
 cat  <<EOF
 rectangle 0,0 $GEO
 EOF
-)  > $WORK_DIR/draw_file
-    convert -size "${GEO_ARRAY[CHAPTERS - 1]}+5+5" xc:none -fill none \
-    +antialias -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file \
-    -colors 3 "$WORK_DIR/Submenu_Selectx1.png"
-    convert -size "${GEO_ARRAY[CHAPTERS - 1]}+5+5" xc:none -fill none \
-    +antialias -stroke '#188DF6' -strokewidth 4 -draw @draw_file \
-    -colors 3 "$WORK_DIR/Submenu_Highlightx1.png"
-    for button in Select Highlight; do
-        montage -background none \
-        $(for ((i=0; i<CHAPTERS; i++)); do
-        echo $WORK_DIR/Submenu_${button}x1.png;done) \
-        -tile ${TILE_ARRAY[CHAPTERS - 1]} \
-        -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 \
-        -bordercolor none -mattecolor transparent miff:- |
+)  > $WORK_DIR/draw_file${s}
+        convert -size "${GEO_ARRAY[C]}+5+5" xc:none -fill none \
+        +antialias -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file${s} \
+        -colors 3 "$WORK_DIR/Submenu${s}_Selectx1.png"
+        convert -size "${GEO_ARRAY[C]}+5+5" xc:none -fill none \
+        +antialias -stroke '#188DF6' -strokewidth 4 -draw @draw_file${s} \
+        -colors 3 "$WORK_DIR/Submenu${s}_Highlightx1.png"
+        for button in Select Highlight; do
+            montage -background none \
+            $(for ((i=0; i<=C; i++)); do
+            echo $WORK_DIR/Submenu${s}_${button}x1.png;done) \
+            -tile ${TILE_ARRAY[C]} \
+            -geometry ${GEO_ARRAY[C]}+5+5 \
+            -bordercolor none -mattecolor transparent miff:- |
 
-        convert  -colors 3 -size 720x480 xc:none  - \
-        -gravity north -geometry +0+45  \
-        -composite  $WORK_DIR/Submenu_${button}.png
+            convert  -colors 3 -size 720x480 xc:none  - \
+            -gravity north -geometry +0+45  \
+            -composite  $WORK_DIR/Submenu${s}_${button}.png
+        done
+        # make appropriate chapter lengths for each video
+        # get chapter lengths by dividing by $CHAPTERS, then getting running totals
+        CHAPT_INTERVALS=( ${CHAPT_INTERVALS[@]} "$(awk_math ${NEW_LENGTH[s]} by ${CHAPTERS[s]} float)" )
+        # and format in HH:MM:SS
+        L=( ${L[@]} $(for ((i=1; i<=${CHAPTERS[s]}; i++)) ; do echo "${CHAPT_INTERVALS[s]}";done) )
+        chapt_intervals=$(running_total <<< ${L[@]})
+        chapters="$(for c in $chapt_intervals; do echo $(format_seconds $c); done)"
+        chapters="00:00:00.000 $chapters"
+        CHAPTS=$(for i in $chapters; do echo -n $i,;done|sed 's/,$//')
+        CHAPT_ARRAY[s]="$CHAPTS"
+        unset L cmd
+        # make submenu spumux.xml
+(
+    cat <<EOF
+<subpictures>
+   <stream>
+     <spu force="yes" start="00:00:00.0"
+          highlight="$WORK_DIR/Submenu${s}_Highlight.png"
+          select="$WORK_DIR/Submenu${s}_Select.png"
+          autooutline="infer"
+          autoorder="rows"/>
+   </stream>
+ </subpictures>
+EOF
+) > "$WORK_DIR/submenu$((s + 1))_spumux.xml"
     done
 fi
-
-# make appropriate chapter lengths for each video
-# get chapter lengths by dividing by $CHAPTERS, then getting running totals
-for ((i=0; i<${#NEW_LENGTH[@]}; i++)); do
-    CHAPT_INTERVALS=( ${CHAPT_INTERVALS[@]} "$(awk_math ${NEW_LENGTH[i]} by $CHAPTERS float)" )
-done
-# and format in HH:MM:SS
-for len in ${CHAPT_INTERVALS[@]}; do
-    L=( ${L[@]} $(for ((i=1; i<CHAPTERS; i++)) ; do echo "$len";done) )
-    chapt_intervals=$(running_total <<< ${L[@]})
-    chapters="$(for c in $chapt_intervals; do echo $(format_seconds $c); done)"
-    chapters="00:00:00.000 $chapters"
-    CHAPTS=$(for i in $chapters; do echo -n $i,;done|sed 's/,$//')
-    CHAPT_ARRAY=( ${CHAPT_ARRAY[@]} $CHAPTS )
-    unset L chapt_intervals cmd
-done
 # debug chapters
-for ((i=0; i<${#IN_FILES[@]}; i++)); do
-    echo -e "Chapters for "${IN_FILES[i]}" are: \n${CHAPT_ARRAY[i]}\n"
+for ((i=0; i<=NUM_FILES; i++)); do
+    echo -e "Chapters for "${IN_FILES[i]}" are: \n"${CHAPT_ARRAY[i]}"\n"
 done
-# make xml files, and run dvdauthor and spumux
-START="00:00:00.0"
-MAIN_POST="        <post> jump cell 1; </post>"
-if $MENU_FADE; then
-    . todisc-fade-routine
-    END_TIME=$(format_seconds $THUMBS_FADE_OUT_END_TIME)
-    END=" end=\"$END_TIME\""
-    START=$(format_seconds $THUMBS_FADE_IN_START_TIME)
-    POST="<post> jump cell 1; </post>"
-elif $STATIC; then
-    PAUSE_TIME="inf"
-fi
-if [ "$PAUSE_TIME" = "inf" ]; then
-    unset MAIN_POST
-fi
-
 (
     cat <<EOF
 <subpictures>
@@ -1203,22 +1230,10 @@ fi
  </subpictures>
 EOF
 )  > "$SPUMUX_XML"
-# make submenu spumux.xml
-if $SUB_MENU; then
-(
-    cat <<EOF
-<subpictures>
-   <stream>
-     <spu force="yes" start="00:00:00.0"
-          highlight="$WORK_DIR/Submenu_Highlight.png"
-          select="$WORK_DIR/Submenu_Select.png"
-          autooutline="infer"
-          autoorder="rows"/>
-   </stream>
- </subpictures>
-EOF
-) > "$SUBMENU_SPUMUX_XML"
-fi
+        
+
+
+
 if $SUB_MENU; then
     JUMP=menu
     POST="        <post> jump cell 1; </post>"
@@ -1231,6 +1246,7 @@ if $SUB_MENU; then
 else
     JUMP=title
 fi
+
 if [ "$TARGET" = "dvd" ]; then
 # make dvdauthor.xml
 (
@@ -1261,10 +1277,8 @@ $MAIN_POST
 $(if $SUB_MENU; then
     echo -ne "      <pgc>\n"
         for ((Y=1; Y<=$V_ARRAY_TOTAL; Y++)); do
-            for ((i=1; i<=CHAPTERS; i++)); do
-                if [ -n ${CHAPT_ARRAY[i-1]} ]; then
-                    echo -e "        <button name=\"$i\">jump title $Y chapter $i;</button>"
-                fi
+            for ((g=1; g<="${CHAPTERS[Y-1]}"; g++)); do
+                echo -e "        <button name=\"$g\">jump title $Y chapter $g;</button>"
             done
             echo -e "        <vob file=\"$WORK_DIR/Menu$Y.mpg\"$PAUSE/>"
 echo "$POST"
@@ -1287,6 +1301,8 @@ done)
 EOF
 ) |sed '/^$/d' >> "$DVDAUTHOR_XML"
 fi
+
+
 ##############################################################################
 #                            Animenu stuff                                   #
 ##############################################################################
@@ -1298,14 +1314,15 @@ if $SUB_MENU; then
     yecho
     yecho "Creating images for each chapter"
     for ((i=0; i<${#IN_FILES[@]}; i++)); do
+        C=$((${CHAPTERS[i]} - 1))
         yecho "Creating a transparent title PNG"
-        convert -size 620x100 xc:none -font "$MENU_FONT" \
-        -pointsize $MENU_FONTSIZE \
-        -fill black -draw "gravity center text 2,2 \"${TITLES[i]}\"" \
-        -stroke "$STROKE" -strokewidth 1 \
-        -fill "$TITLE_COLOUR" -stroke "$STROKE" \
-        -draw "gravity center text 1,1 \"${TITLES[i]}\"" miff:- | \
-        convert -trim +repage - -blur 0x0.4 $WORK_DIR/title${i}_txt.png
+		convert -size 620x100 xc:none -font "$MENU_FONT" \
+		-pointsize $MENU_FONTSIZE \
+		-fill black -draw "gravity center text 2,2 \"${TITLES[i]}\"" \
+		-stroke "$STROKE" -strokewidth 1 \
+		-fill "$TITLE_COLOUR" -stroke "$STROKE" \
+		-draw "gravity center text 1,1 \"${TITLES[i]}\"" miff:- | \
+		convert -trim +repage - -blur 0x0.4 $WORK_DIR/title${i}_txt.png
 
         # which is harmless as they get removed, but needs to be tweaked         
         if $ANI_SUB_MENU; then
@@ -1321,7 +1338,7 @@ if $SUB_MENU; then
             CUT_TIME=1
         fi    
         counts=$(awk_math ${CHAPT_INTERVALS[i]} times $FRAME_RATE)
-        CUT=( 30 $(running_total <<<  $(for ((a=0; a<CHAPTERS ; a++)); \
+        CUT=( 30 $(running_total <<<  $(for ((a=0; a<${CHAPTERS[i]} ; a++)); \
         do echo -n "$counts ";done)) )
         for ((c=0; c<${#CUT[@]}; c++)); do
             cmd[c]=$((${CUT[c]}))-$((${CUT[c]} + CUT_TIME))
@@ -1329,8 +1346,8 @@ if $SUB_MENU; then
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
         CMD="${cmd[@]}"
-        TCODE_CMD=(transcode -q 0 -i "${IN_FILES[i]}" -o "${PICS_OUT[@]}" \
-        -f $FRAME_RATE -Z ${GEO_ARRAY[CHAPTERS - 1]},fast -J cut="$CMD" -y $SM_IMG_FMT,null)
+        TCODE_CMD=(transcode -q 1 -i "${IN_FILES[i]}" -o "${PICS_OUT[@]}" \
+        -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -J cut="$CMD" -y $SM_IMG_FMT,null)
         yecho
         yecho "Creating chapter images for "${IN_FILES[i]}""
 
@@ -1348,28 +1365,29 @@ if $SUB_MENU; then
         if $ANI_SUB_MENU; then
             # FIXME make sure $CHAPTERS number of images got created
             # move 340 images to each subdir:  $WORK_DIR/animenu/{0,1,2,3,etc}
-            for ((a=0; a<CHAPTERS; a++)); do
+            for ((a=0; a<${CHAPTERS[i]}; a++)); do
                 pics=( $(find $WORK_DIR/animenu/ -maxdepth 1 -name chapt\*.$SM_IMG_FMT|
                 head -n 340) )
                 for f in ${pics[@]}; do
                     mv $f $WORK_DIR/animenu/$a
                 done
             done
-            for ((a=0; a<CHAPTERS; a++)); do
+            for ((a=0; a<${CHAPTERS[i]}; a++)); do
                 find $WORK_DIR/animenu/$a/ -name chapt\*.$SM_IMG_FMT|head -n 20|xargs rm
                 find $WORK_DIR/animenu/$a/ -name chapt\*.$SM_IMG_FMT|tail -n 20|xargs rm
             done
             echo
             echo "Making montage images for  "${IN_FILES[i]}""
 
+            o=1; sp="/-\|/-\|";  echo -n ' '
             for ((a=1; a<300; a++)); do
-                spin "Working..."
-                for ((b=0; b<CHAPTERS; b++)); do
+                echo -en "\b${sp:o++%${#sp}:1}"
+                for ((b=0; b<${CHAPTERS[i]}; b++)); do
                     IMGS=( "${IMGS[@]}" $(find $WORK_DIR/animenu/$b \
                     -name \*.$SM_IMG_FMT|head -n $a|sed  -n -e "$a p") )
                 done
-                IM_CMD=(montage ${IMGS[@]} -tile ${TILE_ARRAY[CHAPTERS - 1]} \
-                -geometry ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -bordercolor '#161514' \
+                IM_CMD=(montage ${IMGS[@]} -tile ${TILE_ARRAY[C]} \
+                -geometry ${GEO_ARRAY[C]}+5+5 -bordercolor '#161514' \
                 -mattecolor '#161514' -background '#161514' miff:-)
                 IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
                 $WORK_DIR/title${i}_txt.png  -gravity south \
@@ -1385,23 +1403,24 @@ if $SUB_MENU; then
         else # not $ANI_SUB_MENU
 
             yecho
-            yecho "Making montage images for "${IN_FILES[i]}""
+            yecho "Making montage images for  "${IN_FILES[i]}""
             # just use $CHAPTERS number of images
-            imgs=( $(find $WORK_DIR -name ${i}-chapt000\*.$SM_IMG_FMT|head -n $CHAPTERS) )
+            imgs=( $(find $WORK_DIR -name ${i}-chapt000\*.$SM_IMG_FMT|head -n ${CHAPTERS[i]}) )
             # create frames for the chapter thumbs
             for PIC in "${imgs[@]}"; do
                 echo -en "\b${sp:o++%${#sp}:1}"
                 convert -background '#141614' -frame 5x5 \
                 -bordercolor none -mattecolor "#444744" "$PIC" miff:- |
-                convert -resize "${GEO_ARRAY[CHAPTERS - 1]}"! - "$PIC"
+                convert -resize "${GEO_ARRAY[C]}"! - "$PIC"
             done
 
-            IM_CMD=(montage "${imgs[@]}" -tile ${TILE_ARRAY[CHAPTERS -1]} -geometry \
-            ${GEO_ARRAY[CHAPTERS - 1]}+5+5 -background '#141614' miff:-)
+            IM_CMD=(montage "${imgs[@]}" -tile ${TILE_ARRAY[C]} -geometry \
+            ${GEO_ARRAY[C]}+5+5 -background '#141614' miff:-)
             IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
             $WORK_DIR/title${i}_txt.png  -gravity south -geometry +0+55 \
             -composite - -gravity north -geometry +0+45 -composite \
             $WORK_DIR/${i}-submenu.$SM_IMG_FMT)
+#            echo "Running "${IM_CMD[@]}" | "${IM_CMD2[@]}""
             "${IM_CMD[@]}" | "${IM_CMD2[@]}"
         fi
 
@@ -1577,9 +1596,9 @@ for ((i=0; i<=NUM_FILES; i++)); do
     echo
     yecho "Working on images from ${IN_FILES[i]}"
     for pic in "${PICS[@]}"; do
-
+        spin
         # TODO: More descriptive message about what this loop is doing
-        spin "Working..."
+        echo -en "\r$SPINNER Working..."
         
         IM_CMD0=(composite -compose CopyOpacity $THUMB_MASK +matte \
         "$pic")
@@ -1648,8 +1667,9 @@ if $MENU_FADE && ! $STATIC; then
         C=$(awk -F ':' '{print $2'}<<<$BC)
         S=$(get_thumb_opacity)
 
+        spin
         # TODO: More descriptive message about what this loop is doing
-        spin "Working..."
+        echo -en "\r$SPINNER Working..."
 
         ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $((frame + 1)).$IMG_FMT) )
         BG_PIC=$(find $WORK_DIR/bg -name $(($frame + 1)).jpg)
@@ -1685,8 +1705,9 @@ else # Do not do menu fade
     if $TRANSPARENT; then
         for (( count=1; count<=$MAX_ANI_LENGTH; count++)); do
 
+            spin
             # TODO: More descriptive message about what this loop is doing
-            spin "Working..."
+            echo -en "\r$SPINNER Working..."
 
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
@@ -1715,9 +1736,9 @@ else # Do not do menu fade
         done
     else # Not transparent
         for (( count=1; count <=FRAMES; count++)); do
-
+            spin
             # TODO: More descriptive message about what this loop is doing
-            spin "Working..."
+            echo -en "\r$SPINNER Working..."
 
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
 
@@ -1854,9 +1875,13 @@ fi
 
 if $SUB_MENU; then
     echo "Creating submenus"
-    for i in $(find $WORK_DIR/ -name menu[0-9]\*.mpg); do
-#        spumux "$SUBMENU_SPUMUX_XML" < $i > ${i/menu/Menu}
-        spumux "$SUBMENU_SPUMUX_XML" < $i > $(echo $i|sed 's/\(.*\)menu/\1Menu/')
+    for ((x=1; x<=V_ARRAY_TOTAL; x++)); do
+        echo "Running spumux "$WORK_DIR/submenu${x}_spumux.xml" < \
+        $WORK_DIR/menu${x}.mpg > \
+        $(echo $WORK_DIR/menu${x}.mpg|sed 's/\(.*\)menu/\1Menu/')"
+        spumux "$WORK_DIR/submenu${x}_spumux.xml" < \
+        $WORK_DIR/menu${x}.mpg > \
+        $(echo $WORK_DIR/menu${x}.mpg|sed 's/\(.*\)menu/\1Menu/')
     done
 fi
 
