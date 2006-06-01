@@ -113,7 +113,7 @@ SCRIPT_START_TIME=`date +%s`
 # Args: $@ == any text string
 # If no args are given, echo a separator bar
 # Use yecho if you want output to go to the logfile
-yecho()
+function yecho()
 {
     if test $# -eq 0; then
         printf "\n%s\n\n" "$SEPARATOR"
@@ -135,22 +135,16 @@ yecho()
 # set the LOG_FILTER variable before calling this function, to e.g.
 #    LOG_FILTER="sed 's/\r/\r\n/g'"    # Replace LF with CR/LF
 # ******************************************************************************
-cmd_exec()
+function cmd_exec()
 {
-    if $DEBUG; then
-        # Display all output, and also write it to the log
-        eval "$@" 2>&1 | ${LOG_FILTER:=cat} | tee -a "$LOG_FILE"
-    else
-        # Just write that junk to the log
-        eval "$@" 2>&1 | ${LOG_FILTER:=cat} >> "$LOG_FILE"
-    fi
+    eval "$@" 2>&1 | ${LOG_FILTER:=cat} >> "$LOG_FILE"
     # Return exit status
     return $?
 }
 
 # Print script name, usage notes, and optional error message, then exit.
 # Args: $@ == text string containing error message
-usage_error ()
+function usage_error ()
 {
     printf "%s\n" "$USAGE"
     printf "%s\n" "$SEPARATOR"
@@ -158,9 +152,8 @@ usage_error ()
     exit 1
 }
 
-
-function cleanlog()
 # process $LOG_FILE.tmp variously - eg. ffmpeg's output is ugly without this
+function cleanlog()
 {
     FOLD="fold -bs"
     NO_CR="tr -d '\r'"
@@ -211,14 +204,6 @@ runtime_error()
     yecho "todisc encountered an error:"
     yecho "    $@"
     echo "Check the contents of $LOG_FILE to see what went wrong."
-    # TODO: Uncomment once -debug is actually implemented
-    if $DEBUG; then
-        : 
-    else
-        echo "Run todisc again with the -debug option to produce more verbose"
-        echo "output, if the log file doesn't give you enough information."
-    fi
-    #echo " "
     echo "See the tovid website ($TOVID_HOME_PAGE) for what to do next."
     echo "Sorry for the inconvenience!"
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
@@ -287,23 +272,29 @@ function confirm_preview()
     else
         yecho "Preview not OK, exiting."
         yecho
-        yecho "Some configuration options to try, if things look bad:"
-        yecho "   -menu-font and -menu-fontsize"
-        yecho "     (to adjust the main title)"
-        yecho "    -thumbfont and -thumb-fontsize"
-        yecho "If you get black frames, then look at the -seek option"
-        yecho "For other fine-tuning options, see 'man todisc'."
+        echo "Some configuration options to try, if things look bad:"
+        echo "Color:"
+        echo "    -title-color"
+        echo "    -thumb-text-color"
+        echo "Fonts:"
+        echo "    -menu-font and -menu-fontsize"
+        echo "    -thumbfont and -thumb-fontsize"
+        echo "If you get black frames, then look at the -seek option"
+        echo "For other fine-tuning options, see 'man todisc'."
         exit 0
     fi
 #    yecho
 }
 
-# Set $SPINNER to the current spinner character (indexed by global $SP)
+# Display (echo) a spinner with a message
 SP=0
 function spin()
 {
     SPIN_CHARS=".oOo"
     SPINNER="${SPIN_CHARS:SP++%${#SPIN_CHARS}:1}"
+    # Print spaces to overwrite previous line
+    echo -ne "\r                                                            "
+    echo -ne "\r$SPINNER $@  "
 }
 
 ##############################################################################
@@ -690,9 +681,18 @@ test $TARGET = "svcd" && : ${MENU_FONTSIZE:="32"}
 # Thumbnail title font size
 # PTSIZE=(30 36 42 42 42 42 48 48 48 48 48 48 54 54 54 54 54 54 54 54 \
 # 54 54 54 54 54 54 54 54 54 54)
-THUMB_FONTSIZE_ARRAY=(14 14 14 14 12 12 12 12 11 11 11 11 11 11 11 11 11 11 \
-11 11 11 11 11 11 11 11 11 11)
-: ${THUMB_FONTSIZE:=${THUMB_FONTSIZE_ARRAY[NUM_FILES]}}
+# If user defined a font size, use it
+if test -n "$THUMB_FONTSIZE"; then
+    :
+# Otherwise, use a default, based on the number of thumbnails
+elif test "$NUM_FILES" -lt 5; then
+    THUMB_FONTSIZE=14
+elif test "$NUM_FILES" -lt 9; then
+    THUMB_FONTSIZE=12
+else
+    THUMB_FONTSIZE=11
+fi
+
 
 # See if "Helvetica" or "helvetica" are available as default fonts
 if convert -size 50x20 xc:none -font Helvetica -gravity Center \
@@ -702,8 +702,9 @@ elif convert -size 200x100 xc:none -font helvetica -gravity Center \
 -draw "text 0,0 'test'" $WORK_DIR/font.png; then
     DEFAULT_FONT="helvetica"
 fi
-: ${MENU_FONT:=$DEFAULT_FONT}
-: ${THUMB_FONT:=$DEFAULT_FONT}
+# If user didn't specify fonts, use default
+test -z "$MENU_FONT" && MENU_FONT=$DEFAULT_FONT
+test -z "$THUMB_FONT" && THUMB_FONT=$DEFAULT_FONT
 rm -f "$WORK_DIR/font.png"
 
 
@@ -1596,9 +1597,8 @@ for ((i=0; i<=NUM_FILES; i++)); do
     echo
     yecho "Working on images from ${IN_FILES[i]}"
     for pic in "${PICS[@]}"; do
-        spin
         # TODO: More descriptive message about what this loop is doing
-        echo -en "\r$SPINNER Working..."
+        spin "Working..."
         
         IM_CMD0=(composite -compose CopyOpacity $THUMB_MASK +matte \
         "$pic")
@@ -1667,9 +1667,8 @@ if $MENU_FADE && ! $STATIC; then
         C=$(awk -F ':' '{print $2'}<<<$BC)
         S=$(get_thumb_opacity)
 
-        spin
         # TODO: More descriptive message about what this loop is doing
-        echo -en "\r$SPINNER Working..."
+        spin "Working..."
 
         ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $((frame + 1)).$IMG_FMT) )
         BG_PIC=$(find $WORK_DIR/bg -name $(($frame + 1)).jpg)
@@ -1705,9 +1704,8 @@ else # Do not do menu fade
     if $TRANSPARENT; then
         for (( count=1; count<=$MAX_ANI_LENGTH; count++)); do
 
-            spin
             # TODO: More descriptive message about what this loop is doing
-            echo -en "\r$SPINNER Working..."
+            spin "Working..."
 
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
@@ -1736,9 +1734,9 @@ else # Do not do menu fade
         done
     else # Not transparent
         for (( count=1; count <=FRAMES; count++)); do
-            spin
+
             # TODO: More descriptive message about what this loop is doing
-            echo -en "\r$SPINNER Working..."
+            spin "Working..."
 
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
 
