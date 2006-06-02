@@ -793,8 +793,11 @@ if $MENU_FADE; then
     END=" end=\"$END_TIME\""
     START=$(format_seconds $THUMBS_FADE_IN_START_TIME)
     POST="<post> jump cell 1; </post>"
-elif $STATIC; then
-    PAUSE_TIME="inf"
+fi
+if $STATIC; then
+    VMGM_PAUSE_TIME="inf"
+else
+    VMGM_PAUSE_TIME=$PAUSE_TIME
 fi
 if [ "$PAUSE_TIME" = "inf" ]; then
     unset MAIN_POST
@@ -935,13 +938,22 @@ fi
 ###############################################################################
 #      generate a basic preview of the main menu                              #
 ###############################################################################
-if $MIST; then
-    # overlay white.png onto the background
-    composite -dissolve $MIST_OPACITY -gravity south -geometry +0+45 \
-    $WORK_DIR/white.png $WORK_DIR/pics/template.png \
-    $WORK_DIR/pics/template.png
-fi
 # generate images for montage and title and resize them
+if [ -n "$BG_VIDEO" ]; then
+    echo "Getting background video images from $BG_VIDEO"
+    FFMPEG_CMD=(ffmpeg -i "$BG_VIDEO" $SEEK -s $VIDSIZE  -vframes 1 \
+    -vcodec png -an  -f rawvideo -y "$WORK_DIR/pics/template.png")
+    echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> $LOG_FILE
+    SED_VAR="frame="
+    if "${FFMPEG_CMD[@]}" >> $LOG_FILE.tmp 2>&1;then
+        cleanlog 3
+    else
+        cleanlog 3
+        runtime_error "Problem creating images from the video."
+        exit 1
+    fi
+fi
+
 for ((i=0; i<=NUM_FILES; i++)) ; do
     FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" $SEEK -vframes 1 \
     -s $THUMB_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
@@ -955,6 +967,12 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
         exit 1
     fi
 done
+if $MIST; then
+    # overlay white.png onto the background
+    composite -dissolve $MIST_OPACITY -gravity south -geometry +0+45 \
+    $WORK_DIR/white.png $WORK_DIR/pics/template.png \
+    $WORK_DIR/pics/template.png
+fi
 PICS=( "${PICS[@]}" \
 $(find $WORK_DIR/ -maxdepth 1 -name \*preview\*.$IMG_FMT) )
 for ((i=0; i<${#PICS[@]}; i++)); do
@@ -1276,7 +1294,7 @@ $(for ((i=1; i<=$V_ARRAY_TOTAL; i++)); do
     fi
     echo -e "        <button name=\"$i\">jump $JUMP $JUMP_INC;</button>"
 done)
-        <vob file="$MENU_FILE" pause="$PAUSE_TIME"/>
+        <vob file="$MENU_FILE" pause="$VMGM_PAUSE_TIME"/>
 $MAIN_POST
       </pgc>
 $(if $SUB_MENU; then
@@ -1350,20 +1368,19 @@ if $SUB_MENU; then
         done
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
-#        CMD="${cmd[@]}"
         CMD=$(echo ${cmd[@]} |  sed 's/ /,/g;s/,$//')
         TCODE_CMD=(nice transcode -q 0 -i "${IN_FILES[i]}" -o "${PICS_OUT[@]}" \
         -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c "$CMD" -y $SM_IMG_FMT,null)
         yecho
         yecho "Creating chapter images for "${IN_FILES[i]}""
 
-        yecho "Running  "${TCODE_CMD[@]}"" >> $LOG_FILE
+        echo "Running  "${TCODE_CMD[@]}"" >> $LOG_FILE
         yecho "Running  "${TCODE_CMD[@]}""
-        "${TCODE_CMD[@]}"& >> $LOG_FILE.tmp 2>&1
+        "${TCODE_CMD[@]}" >> $LOG_FILE.tmp  2>&1 & 
         TCODE_PID="$!"
         if [ -n "$TCODE_PID" ]; then
             while ps -p $TCODE_PID >/dev/null; do
-                spin working
+                spin "Working . . ."
                 sleep .5
             done
             cleanlog 1
