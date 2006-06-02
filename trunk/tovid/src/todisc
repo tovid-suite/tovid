@@ -101,6 +101,7 @@ THUMB_SHAPE=""
 SEEK="-ss 1"
 SEEK_VAL=1
 FADE=1
+CHAPTERS=( 6 )
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -430,6 +431,7 @@ while test $# -gt 0; do
             OPACITY="$1"
             ;;
         "-chapters" )
+            unset CHAPTERS
             shift
             # Hackish list-parsing
             while test $# -gt 0 && test ${1:0:1} != "-"; do
@@ -1134,7 +1136,7 @@ echo
 echo
 echo "Creating the highlight and selection PNGs for the main menu"
 GEO="${GEO_ARRAY[NUM_FILES]/x/,}"
-
+echo
 (
 cat  <<EOF
 rectangle 0,0 $GEO
@@ -1157,11 +1159,21 @@ for button in Select Highlight; do
     -composite  "$WORK_DIR/${button}.png"
 done
 
-if $SUB_MENU; then
-    for ((s=0; s<=NUM_FILES; s++)); do
+for ((s=0; s<=NUM_FILES; s++)); do
+    # make appropriate chapter lengths for each video
+    # get chapter lengths by dividing by $CHAPTERS, then getting running totals
+    CHAPT_INTERVALS=( ${CHAPT_INTERVALS[@]} "$(awk_math ${NEW_LENGTH[s]} by ${CHAPTERS[s]} float)" )
+    # and format in HH:MM:SS
+    L=( ${L[@]} $(for ((i=1; i<=${CHAPTERS[s]}; i++)) ; do echo "${CHAPT_INTERVALS[s]}";done) )
+    chapt_intervals=$(running_total <<< ${L[@]})
+    chapters="$(for c in $chapt_intervals; do echo $(format_seconds $c); done)"
+    chapters="00:00:00.000 $chapters"
+    CHAPTS=$(for i in $chapters; do echo -n $i,;done|sed 's/,$//')
+    CHAPT_ARRAY[s]="$CHAPTS"
+    unset L cmd
+    if $SUB_MENU; then
         echo
         echo "Creating the highlight and selection PNGs for submenu $((s + 1))"
-        echo
         C=$((${CHAPTERS[s]} - 1))
         GEO="${GEO_ARRAY[C]/x/,}"
 (
@@ -1169,6 +1181,7 @@ cat  <<EOF
 rectangle 0,0 $GEO
 EOF
 )  > $WORK_DIR/draw_file${s}
+
         convert -size "${GEO_ARRAY[C]}+5+5" xc:none -fill none \
         +antialias -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file${s} \
         -colors 3 "$WORK_DIR/Submenu${s}_Selectx1.png"
@@ -1187,17 +1200,6 @@ EOF
             -gravity north -geometry +0+45  \
             -composite  $WORK_DIR/Submenu${s}_${button}.png
         done
-        # make appropriate chapter lengths for each video
-        # get chapter lengths by dividing by $CHAPTERS, then getting running totals
-        CHAPT_INTERVALS=( ${CHAPT_INTERVALS[@]} "$(awk_math ${NEW_LENGTH[s]} by ${CHAPTERS[s]} float)" )
-        # and format in HH:MM:SS
-        L=( ${L[@]} $(for ((i=1; i<=${CHAPTERS[s]}; i++)) ; do echo "${CHAPT_INTERVALS[s]}";done) )
-        chapt_intervals=$(running_total <<< ${L[@]})
-        chapters="$(for c in $chapt_intervals; do echo $(format_seconds $c); done)"
-        chapters="00:00:00.000 $chapters"
-        CHAPTS=$(for i in $chapters; do echo -n $i,;done|sed 's/,$//')
-        CHAPT_ARRAY[s]="$CHAPTS"
-        unset L cmd
         # make submenu spumux.xml
 (
     cat <<EOF
@@ -1212,9 +1214,11 @@ EOF
  </subpictures>
 EOF
 ) > "$WORK_DIR/submenu$((s + 1))_spumux.xml"
-    done
-fi
+    fi
+done
+
 # debug chapters
+echo
 for ((i=0; i<=NUM_FILES; i++)); do
     echo -e "Chapters for "${IN_FILES[i]}" are: \n"${CHAPT_ARRAY[i]}"\n"
 done
@@ -1347,7 +1351,7 @@ if $SUB_MENU; then
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
         CMD="${cmd[@]}"
-        TCODE_CMD=(transcode -q 1 -i "${IN_FILES[i]}" -o "${PICS_OUT[@]}" \
+        TCODE_CMD=(transcode -q 0 -i "${IN_FILES[i]}" -o "${PICS_OUT[@]}" \
         -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -J cut="$CMD" -y $SM_IMG_FMT,null)
         yecho
         yecho "Creating chapter images for "${IN_FILES[i]}""
@@ -1378,11 +1382,11 @@ if $SUB_MENU; then
                 find $WORK_DIR/animenu/$a/ -name chapt\*.$SM_IMG_FMT|tail -n 20|xargs rm
             done
             echo
-            echo "Making montage images for  "${IN_FILES[i]}""
+            echo "Making montage images for "${IN_FILES[i]}""
 
-            o=1; sp="/-\|/-\|";  echo -n ' '
             for ((a=1; a<300; a++)); do
-                echo -en "\b${sp:o++%${#sp}:1}"
+                echo -ne "\r                                                            "
+                echo -ne "\rProcessing "$WORK_DIR/animenu/$a.$SM_IMG_FMT"  "
                 for ((b=0; b<${CHAPTERS[i]}; b++)); do
                     IMGS=( "${IMGS[@]}" $(find $WORK_DIR/animenu/$b \
                     -name \*.$SM_IMG_FMT|head -n $a|sed  -n -e "$a p") )
@@ -1404,12 +1408,13 @@ if $SUB_MENU; then
         else # not $ANI_SUB_MENU
 
             yecho
-            yecho "Making montage images for  "${IN_FILES[i]}""
+            yecho "Making montage images for "${IN_FILES[i]}""
             # just use $CHAPTERS number of images
             imgs=( $(find $WORK_DIR -name ${i}-chapt000\*.$SM_IMG_FMT|head -n ${CHAPTERS[i]}) )
             # create frames for the chapter thumbs
             for PIC in "${imgs[@]}"; do
-                echo -en "\b${sp:o++%${#sp}:1}"
+            echo -ne "\r                                                            "
+            echo -ne "\rProcessing "$PIC"  "
                 convert -background '#141614' -frame 5x5 \
                 -bordercolor none -mattecolor "#444744" "$PIC" miff:- |
                 convert -resize "${GEO_ARRAY[C]}"! - "$PIC"
@@ -1421,7 +1426,6 @@ if $SUB_MENU; then
             $WORK_DIR/title${i}_txt.png  -gravity south -geometry +0+55 \
             -composite - -gravity north -geometry +0+45 -composite \
             $WORK_DIR/${i}-submenu.$SM_IMG_FMT)
-#            echo "Running "${IM_CMD[@]}" | "${IM_CMD2[@]}""
             "${IM_CMD[@]}" | "${IM_CMD2[@]}"
         fi
 
@@ -1561,7 +1565,6 @@ fi
 ##############################################################################
 yecho
 yecho "Building main menu"
-yecho
 if [ -n "$BG_VIDEO" ]; then
     yecho "Getting background video from $BG_VIDEO"
     FFMPEG_CMD="ffmpeg -i \"$BG_VIDEO\" $SEEK -vframes $FRAMES \
@@ -1595,11 +1598,12 @@ for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT) )
     echo
-    yecho "Working on images from ${IN_FILES[i]}"
+    yecho "Working on ${#PICS[@]} images from ${IN_FILES[i]}"
     for pic in "${PICS[@]}"; do
         # TODO: More descriptive message about what this loop is doing
-        spin "Working..."
-        
+#        spin "Working..."
+        echo -ne "\r                                                            "
+        echo -ne "\rProcessing "$pic"  "
         IM_CMD0=(composite -compose CopyOpacity $THUMB_MASK +matte \
         "$pic")
         IM_CMD1=(convert -trim +repage -)
@@ -1668,7 +1672,10 @@ if $MENU_FADE && ! $STATIC; then
         S=$(get_thumb_opacity)
 
         # TODO: More descriptive message about what this loop is doing
-        spin "Working..."
+#        spin "Working..."
+        echo -ne "\r                                                            "
+        echo -ne "\rProcessing "$WORK_DIR/animenu/$(($frame + 1)).jpg"  "
+         
 
         ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $((frame + 1)).$IMG_FMT) )
         BG_PIC=$(find $WORK_DIR/bg -name $(($frame + 1)).jpg)
@@ -1705,7 +1712,9 @@ else # Do not do menu fade
         for (( count=1; count<=$MAX_ANI_LENGTH; count++)); do
 
             # TODO: More descriptive message about what this loop is doing
-            spin "Working..."
+#            spin "Working..."
+            echo -ne "\r                                                            "
+            echo -ne "\rProcessing "$WORK_DIR/animenu/$count.jpg"  "
 
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
@@ -1736,7 +1745,9 @@ else # Do not do menu fade
         for (( count=1; count <=FRAMES; count++)); do
 
             # TODO: More descriptive message about what this loop is doing
-            spin "Working..."
+#            spin "Working..."
+            echo -ne "\r                                                            "
+            echo -ne "\rProcessing "$WORK_DIR/animenu/$count.jpg"  "
 
             ANI_PICS=$(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $count.$IMG_FMT)
 
@@ -1752,7 +1763,7 @@ else # Do not do menu fade
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
             -gravity south -geometry +0+65 -composite \
             $WORK_DIR/animenu/$count.jpg )
-            if $MIST && ! $STATIC; then
+            if $MIST && ! $STATIC && test -z "$BG_VIDEO"; then
                 "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
             elif $MIST && ! $STATIC && test -n "$BG_VIDEO"; then
                 "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
