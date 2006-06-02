@@ -1350,9 +1350,10 @@ if $SUB_MENU; then
         done
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
-        CMD="${cmd[@]}"
+#        CMD="${cmd[@]}"
+        CMD=$(echo ${cmd[@]} |  sed 's/ /,/g;s/,$//')
         TCODE_CMD=(transcode -q 0 -i "${IN_FILES[i]}" -o "${PICS_OUT[@]}" \
-        -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -J cut="$CMD" -y $SM_IMG_FMT,null)
+        -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c "$CMD" -y $SM_IMG_FMT,null)
         yecho
         yecho "Creating chapter images for "${IN_FILES[i]}""
 
