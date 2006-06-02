@@ -1352,14 +1352,20 @@ if $SUB_MENU; then
         unset cmd[key]
 #        CMD="${cmd[@]}"
         CMD=$(echo ${cmd[@]} |  sed 's/ /,/g;s/,$//')
-        TCODE_CMD=(transcode -q 0 -i "${IN_FILES[i]}" -o "${PICS_OUT[@]}" \
+        TCODE_CMD=(nice transcode -q 0 -i "${IN_FILES[i]}" -o "${PICS_OUT[@]}" \
         -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c "$CMD" -y $SM_IMG_FMT,null)
         yecho
         yecho "Creating chapter images for "${IN_FILES[i]}""
 
         yecho "Running  "${TCODE_CMD[@]}"" >> $LOG_FILE
         yecho "Running  "${TCODE_CMD[@]}""
-        if "${TCODE_CMD[@]}" >> $LOG_FILE.tmp 2>&1; then
+        "${TCODE_CMD[@]}"& >> $LOG_FILE.tmp 2>&1
+        TCODE_PID="$!"
+        if [ -n "$TCODE_PID" ]; then
+            while ps -p $TCODE_PID >/dev/null; do
+                spin working
+                sleep .5
+            done
             cleanlog 1
         else
             cleanlog 1
