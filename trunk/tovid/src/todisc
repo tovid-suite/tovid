@@ -1763,18 +1763,27 @@ else # Do not do menu fade
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
             -gravity south -geometry +0+65 -composite \
             $WORK_DIR/animenu/$count.jpg )
-            if $MIST && ! $STATIC && test -z "$BG_VIDEO"; then
-                "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
-            elif $MIST && ! $STATIC && test -n "$BG_VIDEO"; then
-                "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
-            elif ! $MIST && ! $STATIC && test -n "$BG_VIDEO"; then
-                "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}"
-            elif $MIST && $STATIC; then
-                "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
-            elif ! $MIST && $STATIC; then
-                "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}"   
-            else
-                "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}"
+
+            if $STATIC; then
+                if $MIST; then
+                    "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
+                else  # static and no MIST
+                    "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}"
+                fi
+            else # animated
+                if test -n "$BG_VIDEO"; then
+                    if $MIST; then
+                        "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
+                    else # no mist
+                        "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}"
+                    fi
+                else # no bg video
+                    if $MIST; then
+                        "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
+                    else # no mist
+                        "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}"
+                    fi
+                fi   
             fi
             rm -f ${ANI_PICS[@]}
         done
