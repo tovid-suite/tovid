@@ -1243,7 +1243,7 @@ if $SUB_MENU; then
     JUMP=menu
     POST="        <post> jump cell 1; </post>"
     if $ANI_SUB_MENU; then
-        PAUSE=" pause=\"5\""
+        PAUSE=" pause=\"$PAUSE_TIME\""
     else
         PAUSE=" pause=\"inf\""
         unset POST
