@@ -49,8 +49,8 @@ Where OPTIONS may be any of the following:
     -verbose    Also use ffmpeg and tcprobe
     -fast       Skip lengthy playing time estimation
     -is [vcd|svcd|dvd]
-        Print nothing. Return shell-true (0) if the first
-        file matches the given format, false (1) otherwise.
+        Tell whether the first file is compliant with the given
+        format; prints "true" or "false" (returns shell 0 or 1)
 
 See the idvid manual page ('man idvid') for additional documentation.
 
@@ -499,8 +499,10 @@ idvid_main ()
         esac
         rm -rf "$TMP_DIR"
         if $MATCH; then
+            echo "true"
             exit 0
         else
+            echo "false"
             exit 1
         fi
         
