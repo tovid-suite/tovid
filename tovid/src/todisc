@@ -295,7 +295,7 @@ function spin()
     SPINNER="${SPIN_CHARS:SP++%${#SPIN_CHARS}:1}"
     # Print spaces to overwrite previous line
     echo -ne "\r                                                            "
-    echo -ne "\r$SPINNER $@  "
+    echo -ne "\r$@ $SPINNER   "
 }
 
 ##############################################################################
@@ -1378,10 +1378,11 @@ if $SUB_MENU; then
         yecho "Running  "${TCODE_CMD[@]}""
         "${TCODE_CMD[@]}" >> $LOG_FILE.tmp  2>&1 & 
         TCODE_PID="$!"
+        sleep .5 # short sleep to allow 1st jpg to appear
         if [ -n "$TCODE_PID" ]; then
             while ps -p $TCODE_PID >/dev/null; do
-                spin "Working . . ."
-                sleep .5
+                sleep .5 # spinner interval
+                spin "Created $(ls $WORK_DIR/${i}-chapt*.jpg 2>/dev/null | tail -n 1) "
             done
             cleanlog 1
         else
