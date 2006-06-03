@@ -619,18 +619,18 @@ fi
 
 # Check input files for compliance; offer to tovid-encode non-compliant files
 for ((i=0; i<=NUM_FILES; i++)); do
-    TEST_FILE=${IN_FILES[i]}
-    yecho "Checking $TEST_FILE for compliance..."
+    IN_FILE=${IN_FILES[i]}
+    yecho "Checking $IN_FILE for compliance..."
     # TODO: Check for PAL/NTSC compliance
     # If video matches the target format, append to NEW_IN_FILES
-    if test $TARGET = "dvd" && idvid -is dvd "$TEST_FILE"; then
-        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE")
-    elif test $TARGET = "svcd" && idvid -is svcd "$TEST_FILE"; then
-        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE")
+    if test $TARGET = "dvd" && test $(idvid -is dvd "$IN_FILE") = "true"; then
+        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE")
+    elif test $TARGET = "svcd" && test $(idvid -is svcd "$IN_FILE") = "true"; then
+        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE")
     # Video needs to be re-encoded; use a .enc filename in NEW_IN_FILES
     else
-        FILES_TO_ENCODE[i]="$TEST_FILE"
-        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$TEST_FILE.enc.mpg")
+        FILES_TO_ENCODE[i]="$IN_FILE"
+        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE.enc.mpg")
     fi
 done
 if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
@@ -1852,6 +1852,9 @@ fi
 if [ -z "$BG_AUDIO" ]; then # no audio supplied: use silence
     cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
     -s - $WORK_DIR/intro.wav  trim 0 $TIME
+# Make sure file exists
+elif test ! -e "$BG_AUDIO"; then
+    runtime_error "Cannot find background audio file: $BG_AUDIO"
 else # audio supplied: convert to wav then later to dvd/svcd format
     BGAUDIO_CMD=(ffmpeg -i "$BG_AUDIO" -ar 48000 -ac 2 -acodec pcm_s16le -y \
     $SEEK_CMD $WORK_DIR/intro.wav)
