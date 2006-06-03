@@ -43,5 +43,4 @@ def get_script(infile, options):
     cmd += ' -o "%s"' % options['out']
 
     script.append(cmd)
-    script.run()
     return script
