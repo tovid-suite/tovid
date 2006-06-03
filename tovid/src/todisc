@@ -920,7 +920,9 @@ convert -size 620x100 xc:none -font "$MENU_FONT" \
 convert -trim +repage - -blur 0x0.4 $WORK_DIR/title_txt.png
 
 if $MIST; then
-    # make a white png for misted background effect, only for user's bg
+    echo "making a white or colored png for the misted title background"
+    echo
+    # make a white or coloured png for misted background effect, only for user's bg
     Y=$(identify $WORK_DIR/title_txt.png |awk '{print $3}'|cut -dx -f1)
     X=$(identify $WORK_DIR/title_txt.png |awk '{print $3}'|cut -dx -f2)
     # add 10 pixels to width and height compared to title text png
@@ -1618,15 +1620,13 @@ unset FFMPEG_CMD
 
 
 yecho
-yecho "Adding title to images and resizing"
+yecho "Adding title to video images and resizing"
 for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT) )
     echo
     yecho "Working on ${#PICS[@]} images from ${IN_FILES[i]}"
     for pic in "${PICS[@]}"; do
-        # TODO: More descriptive message about what this loop is doing
-#        spin "Working..."
         echo -ne "\r                                                            "
         echo -ne "\rProcessing "$pic"  "
         IM_CMD0=(composite -compose CopyOpacity $THUMB_MASK +matte \
