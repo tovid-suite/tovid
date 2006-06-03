@@ -75,5 +75,4 @@ def get_script(infile, options):
 
     # Add the one long command to the Script and run it
     script.append(cmd)
-    script.run()
     return script

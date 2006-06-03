@@ -6,7 +6,8 @@ information about video, audio, and multimedia files.
 
 The primary intended interface is the MediaFile class. To use it, do like so:
 
-    >>> infile = MediaFile("/pub/video/test/bb.avi")
+    >>> infile = MediaFile()
+    >>> infile.load("/pub/video/test/bb.avi")
 
 The given file (bb.avi) is automatically identified with mplayer, and its
 vital statistics stored in MediaFile attributes. The easiest way to see the
@@ -23,14 +24,21 @@ import os
 import sys
 import logging
 import commands
+from os.path import abspath
 
 log = logging.getLogger('libtovid.media')
 
 class MediaFile:
     """Stores information about a file containing video and/or audio streams."""
-    def __init__(self, filename):
-        self.filename = os.path.abspath(filename)
-        # If the file exists, identify it
+    def __init__(self, filename=''):
+        self.filename = abspath(filename)
+        self.audio = None
+        self.video = None
+
+    def load(self, filename):
+        """Load MediaFile attributes from given file."""
+        self.filename = abspath(filename)
+        # Make sure the file exists
         if os.path.exists(self.filename):
             self.audio, self.video = mplayer_identify(self.filename)
         else:
@@ -54,17 +62,16 @@ class MediaFile:
 
 class AudioStream:
     """Stores information about an audio stream."""
-    def __init__(self):
-        self.filename = ''
+    def __init__(self, filename=''):
+        self.filename = abspath(filename)
         self.codec = ''
         self.bitrate = 0
         self.channels = 0
         self.samprate = 0
 
     def display(self):
-        print "Audio stream"
+        print "Audio stream in %s" % self.filename
         print "----------------------"
-        print "     Filename: %s" % self.filename
         print "        Codec: %s" % self.codec
         print "      Bitrate: %s" % self.bitrate
         print "     Channels: %s" % self.channels
@@ -74,8 +81,8 @@ class AudioStream:
 
 class VideoStream:
     """Stores information about a video stream."""
-    def __init__(self):
-        self.filename = ''
+    def __init__(self, filename=''):
+        self.filename = abspath(filename)
         self.codec = ''
         self.width = 0
         self.height = 0
@@ -83,9 +90,8 @@ class VideoStream:
         self.bitrate = 0
 
     def display(self):
-        print "Video stream:"
+        print "Video stream in %s" % self.filename
         print "----------------------"
-        print "   Filename: %s" % self.filename
         print "      Codec: %s" % self.codec
         print "      Width: %s" % self.width
         print "     Height: %s" % self.height
@@ -113,9 +119,9 @@ def mplayer_identify(filename):
             mp_dict[left] = right.strip()
     # Check for existence of streams
     if 'ID_VIDEO_ID' in mp_dict:
-        video = VideoStream()
+        video = VideoStream(filename)
     if 'ID_AUDIO_ID' in mp_dict:
-        audio = AudioStream()
+        audio = AudioStream(filename)
     # Parse the dictionary and set appropriate values
     for left, right in mp_dict.iteritems():
         log.debug('%s = %s' % (left, right))
@@ -163,6 +169,7 @@ if __name__ == '__main__':
         print "Usage: media.py FILE"
     else:
         print "Creating a MediaFile object from file: %s" % sys.argv[1]
-        infile = MediaFile(sys.argv[1])
+        infile = MediaFile()
+        infile.load(sys.argv[1])
         infile.display()
 
