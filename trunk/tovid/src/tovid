@@ -635,7 +635,7 @@ get_args "$@"
 # Do all work in the working directory
 # ******************************************************************************
 $QUIET || echo "Changing to working directory: $WORKING_DIR"
-cd $WORKING_DIR
+cd "$WORKING_DIR"
 
 # ******************************************************************************
 # Make all necessary dependencies are available, to prevent errors later
@@ -705,7 +705,7 @@ if test -e "$OUT_PREFIX.$VID_SUF" || test -e "$OUT_FILENAME" || test -e "$OUT_PR
 fi
 
 # Create a unique temporary directory
-TMP_DIR=$(mktemp -d ${WORKING_DIR}/tovid-temp.XXXXXX)
+TMP_DIR=$(mktemp -d "${WORKING_DIR}/tovid-temp.XXXXXX")
 # Files to use for temporarily storing video info and encoding progress
 SCRATCH_FILE="${TMP_DIR}/tovid.scratch"
 LOG_FILE="${TMP_DIR}/tovid.log"
