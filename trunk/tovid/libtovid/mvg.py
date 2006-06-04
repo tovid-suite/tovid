@@ -83,6 +83,11 @@ class MVG:
         self.width = width
         self.height = height
 
+    def clear(self):
+        """Clear the current contents and position the cursor at line 1."""
+        self.data = [''] # Line 0 is null
+        self.cursor = 1
+
     def load(self, filename):
         """Load MVG from the given file."""
         self.clear()
@@ -108,6 +113,9 @@ class MVG:
                 print "#"
             print "%s: %s" % (line, self.data[line])
             line += 1
+        # If cursor is after the last line
+        if line == self.cursor:
+            print "#"
 
     def render(self):
         """Render the MVG image with ImageMagick, and display it."""
@@ -131,12 +139,12 @@ class MVG:
 
     def goto_end(self):
         """Move the insertion cursor to the last line in the file."""
-        self.goto(len(self.data) + 1)
+        self.goto(len(self.data))
 
-    def clear(self):
-        """Clear the current contents and position the cursor at line 1."""
-        self.data = [''] # Line 0 is null
-        self.cursor = 1
+    def remove(self, line_num):
+        """Remove the given line and position the cursor where the line was."""
+        self.data.pop(line_num)
+        self.cursor = line_num
 
     def append(self, mvg_string):
         """Append the given MVG string as the last line, and position the
