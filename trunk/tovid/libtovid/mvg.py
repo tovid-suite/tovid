@@ -15,7 +15,10 @@ interpreter:
 And do something like this:
 
     >>> from libtovid.mvg import MVG
-    >>> pic = MVG()
+    >>> pic = MVG(800, 600)
+
+This creates an image (pic) at 800x600 display resolution. (This is the
+resolution used when you call render() later).
 
 This thing is pretty low-level for the time being; MVG is, as one user has
 described it[2], the "assembly language" of vector graphics. But basically,
@@ -27,14 +30,21 @@ Now that you have an MVG object (pic), you can draw on it:
     >>> pic.fill('white')
     >>> pic.rectangle((320, 240), (520, 400))
 
-If you want to preview what you have so far, call render() with a rendering
-resolution:
+If you want to preview what you have so far, call render():
 
-    >>> pic.render(800, 600)
+    >>> pic.render()
 
 This calls convert with a -draw command and -composite miff:- | display to
 show the image. Whatever--it lets you see what the image looks like so far.
 Press 'q' or ESC to close the preview window.
+
+You can show the current MVG text contents (line-by-line) with:
+
+    >>> pic.print_lines()
+    1: fill "blue"
+    2: rectangle 0,0 800,600
+    3: fill "white"
+    4: rectangle 320,240 520,400
 
 You can keep drawing on the image, and call render() whenever you want to
 preview. There's currently no way to undo commands, though that will certainly
@@ -68,8 +78,10 @@ class MVG:
         font_family("Serif")     # Python function
 
     """
-    def __init__(self):
+    def __init__(self, width=800, height=600):
         self.clear()
+        self.width = width
+        self.height = height
 
     def load(self, filename):
         """Load MVG from the given file."""
@@ -86,17 +98,22 @@ class MVG:
             outfile.write("%s\n", line)
         outfile.close()
 
-    def display(self):
-        """Print out complete MVG text."""
-        for line in self.data:
-            print "%s" % line
+    def print_lines(self):
+        """Print out complete MVG text, with line numbers, and a # at the
+        cursor position."""
+        line = 1
+        while line < len(self.data):
+            # Put a # at the cursor position
+            if line == self.cursor:
+                print "#"
+            print "%s: %s" % (line, self.data[line])
+            line += 1
 
-    def render(self, width, height):
-        """Render the MVG image with ImageMagick at the given size, and
-        display it."""
+    def render(self):
+        """Render the MVG image with ImageMagick, and display it."""
         # TODO
-        cmd = "convert -size %sx%s " % (width, height)
-        cmd += " xc:black "
+        cmd = "convert -size %sx%s " % (self.width, self.height)
+        cmd += " xc:none "
         cmd += " -draw '%s' " % ' '.join(self.data)
         cmd += " -composite miff:- | display"
         print "Running command:"
