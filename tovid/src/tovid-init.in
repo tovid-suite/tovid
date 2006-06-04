@@ -256,7 +256,7 @@ file_output_progress()
 # Check for a group of run-time dependencies.
 # Input args: $1 = name of dependency group (eg dvd or magick or core)
 #             $2 = a quoted, space-separated list of binaries in that group
-#                  eg: "spumux dvdauthor growisofs mkisofs"
+#                  eg: "spumux dvdauthor growisofs"
 # Run-time dependencies are checked in two stages: First, tovid-init looks for
 # the required binaries and writes a full report in $TOVID_HOME/deps.list
 # From there, individual scripts can check for either an individual dependency or
@@ -548,13 +548,12 @@ convert_msg="$composite_msg"
 
 # ------------------------------------------------------------------------------
 # dvdauthor compononets
-# (note: growisofs and mkisofs are NOT distributed with dvdauthor, but for tovid's
+# (note: growisofs is NOT distributed with dvdauthor, but for tovid's
 # purposes, it fits in the same catagory, as it burns DVDs!)
-DVD_DEPS="spumux dvdauthor growisofs mkisofs"
+DVD_DEPS="spumux dvdauthor growisofs"
 spumux_msg="part of dvdauthor (dvdauthor.sf.net)"
 dvdauthor_msg="$spumux_msg"
 growisofs_msg="part of dvd+rw-tools: (fy.chalmers.se/~appro/linux/DVD+RW)"
-mkisofs_msg="part of cdrecord (cdrecord.berlios.de)"
 
 # ------------------------------------------------------------------------------
 # vcdimager components
