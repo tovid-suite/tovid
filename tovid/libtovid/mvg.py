@@ -1,11 +1,51 @@
 #! /usr/bin/env python
 # mvg.py
 
-"""Provides a Python interface for reading/writing Magick Vector Graphics (MVG).
+"""A Python interface for reading/writing Magick Vector Graphics (MVG)[1].
 
-MVG references:
-http://www.imagemagick.org/script/magick-vector-graphics.php
-http://studio.imagemagick.org/pipermail/magick-developers/2002-February/000156.html
+Run this script standalone for a demonstration:
+
+    $ python libtovid/mvg.py
+
+To build your own MVG vector image using this module, fire up your Python
+interpreter:
+
+    $ python
+
+And do something like this:
+
+    >>> from libtovid.mvg import MVG
+    >>> pic = MVG()
+
+This thing is pretty low-level for the time being; MVG is, as one user has
+described it[2], the "assembly language" of vector graphics. But basically,
+you can just call function names that resemble their MVG-syntax counterparts.
+Now that you have an MVG object (pic), you can draw on it:
+
+    >>> pic.fill('blue')
+    >>> pic.rectangle((0, 0), (800, 600))
+    >>> pic.fill('white')
+    >>> pic.rectangle((320, 240), (520, 400))
+
+If you want to preview what you have so far, call render() with a rendering
+resolution:
+
+    >>> pic.render(800, 600)
+
+This calls convert with a -draw command and -composite miff:- | display to
+show the image. Whatever--it lets you see what the image looks like so far.
+Press 'q' or ESC to close the preview window.
+
+You can keep drawing on the image, and call render() whenever you want to
+preview. There's currently no way to undo commands, though that will certainly
+be added later.
+
+Oh, by the way--this is almost totally untested, so please report bugs if/when
+you find them.
+
+References:
+[1] http://www.imagemagick.org/script/magick-vector-graphics.php
+[2] http://studio.imagemagick.org/pipermail/magick-developers/2002-February/000156.html
 """
 import sys
 import commands
