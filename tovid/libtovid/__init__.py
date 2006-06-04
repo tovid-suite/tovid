@@ -16,6 +16,7 @@ __all__ = [\
     'globals',
     'media',
     'menu',
+    'mvg',
     'opts',
     'stats',
     'standards',
