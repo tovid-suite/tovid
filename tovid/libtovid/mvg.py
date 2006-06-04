@@ -194,27 +194,32 @@ class MVG:
 # Demo
 if __name__ == '__main__':
     img = MVG()
+
+    # Start MVG file with graphic-context and viewbox
     img.push('graphic-context')
     img.viewbox((0, 0), (720, 480))
-    # Background color
+
+    # Add a background fill
     img.fill('darkblue')
     img.rectangle((0, 0), (720, 480))
 
-    # Decorative circles
+    # Some decorative circles
     img.fill('blue')
     img.circle((280, 350), (380, 450))
     img.fill('orange')
     img.circle((670, 100), (450, 200))
 
-    # White text
+    # White text in a range of sizes
     img.fill('white')
     for size in [5,10,15,20,25,30,35]:
         ypos = 100 + size * size / 5
-        img.push('graphic-context')
         img.font('Helvetica')
         img.font_size(size)
-        img.text((100,ypos), "%s pt: The quick brown fox" % size)
-        img.pop('graphic-context')
- 
+        img.text((100, ypos), "%s pt: The quick brown fox" % size)
+
+    # Close out the MVG file
+    img.pop('graphic-context')
+
+    # Display the MVG text, then show the generated image
     img.display()
     img.render(720, 480)
