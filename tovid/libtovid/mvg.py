@@ -127,7 +127,7 @@ class MVG:
         print "Running command:"
         print cmd
         print commands.getoutput(cmd)
-        
+        print "Press 'q' or ESC in the image window to close the image."
 
     def goto(self, line_num):
         """Move the insertion cursor to the start of the given line."""
@@ -213,7 +213,7 @@ class MVG:
     
     def image(self, compose, (x, y), (width, height), filename):
         # compose may be e.g. Add, Clear, Copy, Difference, Over ...
-        self.insert('image %s,%s %s,%s "%s"' % \
+        self.insert('image %s %s,%s %s,%s "%s"' % \
                     (compose, x, y, width, height, filename))
     
     def line(self, (x0, y0), (x1, y1)):
@@ -286,5 +286,5 @@ if __name__ == '__main__':
     img.pop('graphic-context')
 
     # Display the MVG text, then show the generated image
-    img.display()
-    img.render(720, 480)
+    img.print_lines()
+    img.render()
