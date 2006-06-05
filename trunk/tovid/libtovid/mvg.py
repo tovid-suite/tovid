@@ -17,8 +17,8 @@ And do something like this:
     >>> from libtovid.mvg import MVG
     >>> pic = MVG(800, 600)
 
-This creates an image (pic) at 800x600 display resolution. (This is the
-resolution used when you call render() later).
+This creates an image (pic) at 800x600 display resolution. pic has a wealth
+of draw functions, as well as a rough-and-ready editor interface (shown later).
 
 This thing is pretty low-level for the time being; MVG is, as one user has
 described it[2], the "assembly language" of vector graphics. But basically,
@@ -47,9 +47,59 @@ You can show the current MVG text contents (line-by-line) with:
     4: rectangle 320,240 520,400
     >
 
+This is where the "editor" interface comes in. Each line is numbered, and the
+current "cursor" position is shown by a '>' character. You can move the cursor
+with goto(line_number):
+
+    >>> pic.goto(3)
+    >>> pic.code()
+    1: fill "blue"
+    2: rectangle 0,0 800,600
+    > 3: fill "white"
+    4: rectangle 320,240 520,400
+
+The cursor indicates where new commands are inserted; for instance:
+
+    >>> pic.stroke('black')
+    >>> pic.stroke_width(2)
+    >>> pic.code()
+    1: fill "blue"
+    2: rectangle 0,0 800,600
+    3: stroke "black"
+    4: stroke-width 2
+    > 5: fill "white"
+    6: rectangle 320,240 520,400
+
+Notice that the two new commands were inserted (in order) at the cursor
+position. To resume appending at the end, call goto_end():
+
+    >>> pic.goto_end()
+    >>> pic.code()
+    1: fill "blue"
+    2: rectangle 0,0 800,600
+    3: stroke "black"
+    4: stroke-width 2
+    5: fill "white"
+    6: rectangle 320,240 520,400
+    >
+
+You can remove a given line number (or range of lines) with:
+
+    >>> pic.remove(3, 4)
+    >>> pic.code()
+    1: fill "blue"
+    2: rectangle 0,0 800,600
+    3: fill "white"
+    4: rectangle 320,240 520,400
+    >
+
+You can undo all insert, append, or remove operations with:
+
+    >>> pic.undo(2)
+
+
 You can keep drawing on the image, and call render() whenever you want to
-preview. There's currently no way to undo commands, though that will certainly
-be added later.
+preview.
 
 Oh, by the way--this is almost totally untested, so please report bugs if/when
 you find them.
@@ -62,7 +112,7 @@ import sys
 import commands
 
 class MVG:
-    """A Magick Vector Graphics (MVG) image file with load/save, insert/append,
+    """A Magick Vector Graphics (MVG) image with load/save, insert/append,
     and low-level drawing functions based on the MVG syntax.
 
     Drawing commands are mostly identical to their MVG counterparts, e.g.
@@ -94,14 +144,17 @@ class MVG:
         self.clear()
         infile = open(filename, 'r')
         for line in infile.readlines():
-            self.append(line)
+            cleanline = line.lstrip(' \t').rstrip(' \n\r')
+            # Convert all single-quotes to double-quotes
+            cleanline = cleanline.replace("'", '"')
+            self.append(cleanline)
         infile.close()
 
     def save(self, filename):
         """Save to the given MVG file."""
         outfile = open(filename, 'w')
         for line in self.data:
-            outfile.write("%s\n", line)
+            outfile.write("%s\n" % line)
         outfile.close()
 
     def code(self):
@@ -118,11 +171,12 @@ class MVG:
         # If cursor is after the last line
         if line == self.cursor:
             code += ">"
-        return code
+        print code
 
     def render(self):
         """Render the MVG image with ImageMagick, and display it."""
-        # TODO
+        # TODO: Write .mvg to a file and use @drawfile; command-line length
+        # is exceeded easily with the current approach
         cmd = "convert -size %sx%s " % (self.width, self.height)
         cmd += " xc:none "
         cmd += " -draw '%s' " % ' '.join(self.data)
@@ -138,16 +192,22 @@ class MVG:
             sys.exit(1)
         else:
             self.cursor = line_num
-        print self.code()
 
     def goto_end(self):
         """Move the insertion cursor to the last line in the file."""
         self.goto(len(self.data))
 
-    def remove(self, line_num):
-        """Remove the given line and position the cursor where the line was."""
-        self.history.append(['remove', line_num, self.data.pop(line_num)])
-        self.cursor = line_num
+    def remove(self, from_line, to_line=None):
+        """Remove the given line, or range of lines, and position the cursor
+        where the removed lines were."""
+        # Remove a single line
+        if not to_line:
+            to_line = from_line
+        cur_line = from_line
+        while cur_line <= to_line:
+            self.history.append(['remove', cur_line, self.data.pop(cur_line)])
+            cur_line += 1
+        self.cursor = from_line
 
     def append(self, mvg_string):
         """Append the given MVG string as the last line, and position the
@@ -161,7 +221,6 @@ class MVG:
         self.history.append(['insert', self.cursor])
         self.data.insert(self.cursor, mvg_string)
         self.cursor += 1
-        print self.code()
 
     def undo(self, steps=1):
         """Undo the given number of operations. Leave cursor at end."""
@@ -182,7 +241,7 @@ class MVG:
         if step < steps:
             print "No more to undo."
         self.goto_end()
-        
+
     """
     Draw commands
     """
@@ -254,6 +313,10 @@ class MVG:
         """Draw a rectangle from (x0, y0) to (x1, y1)."""
         self.insert('rectangle %s,%s %s,%s' % (x0, y0, x1, y1))
     
+    def stroke(self, color):
+        """Set the current stroke color."""
+        self.insert('stroke %s' % color)
+
     def stroke_width(self, width):
         """Set the current stroke width in pixels."""
         # (Pixels or points?)
