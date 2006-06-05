@@ -55,10 +55,34 @@ bin_SCRIPTS = \
 	$(py_bin)
 
 # The manpages
-man_MANS = docs/man/*.1
+man_dir = docs/man
+man_src_dir = docs/src/en
+man_MANS = $(man_dir)/*.1
+src_MANS = $(man_src_dir)/*.t2t
 
-# The manpage source
-src_MANS = docs/src/en/*.t2t
+# Make the manpages for svn users (tarball users' man pages made in dist-hook)
+#   This is a static pattern rule as seen on (TV!)
+#   http://www.gnu.org/software/make/manual/make.html#Static-Pattern
+$(man_MANS): $(man_dir)/%.1: $(man_src_dir)/%.t2t
+	txt2tags -t man -i "$<" -o "$@"
+
+# Distribute the scripts, icons, and manpage source files
+# manpages are made and packaged in the dist-hook for tarball users which
+# prevents them from having to install txt2tags to make the mans, thus
+# they aren't listed here. 
+#   NOTE: this is a bit of a hack. When 'make dist' is called, make puts
+#   the manpage source in the pre-tarball directory. After everything is 
+#   finished, the dist-hook comes into play and fresh man pages are made.
+#   We're taking advangtage of this order (make will _always_ do the hook
+#   after the action, that's why it's a 'hook'!) to ensure that the derived
+#   .1 manpages are newer than the .t2t source files. If the man sources are
+#   removed from the distributed tarball, make will try to remake the .1 pages
+#   since it always executes rules for targets without prerequisites, 
+#   thinking that it's a rule like clean: .
+EXTRA_DIST = \
+	$(bin_SCRIPTS) \
+	$(src_MANS) \
+	icons/*
 
 # Shared python libraries: libtovid and the gui
 # See lengthy comments in configure.ac
@@ -86,16 +110,11 @@ pyexecLIBTOVID_ENCODERSdir = $(pyexecdir)/libtovid/encoders
 pyexecGUI_PYTHON = libtovid/gui/*.py
 pyexecGUIdir = $(pyexecdir)/libtovid/gui
 
-# And distribute them
-EXTRA_DIST = \
-	$(bin_SCRIPTS) \
-	icons/*
-
 # src/tovid-init not needed b/c ./configure derives it from src/tovid-init.in
-# make fresh man pages
+# make fresh man pages for tarball users, esuring that they're newer than the
+#   manpage source.
 dist-hook:
 	rm -rvf $(top_distdir)/src/tovid-init
-	mkdir $(distdir)/docs
 	mkdir $(distdir)/docs/man
 	for manpage_src in $(src_MANS); do \
 	  manpage=`echo "$${manpage_src}" | sed 's/t2t/1/g'`; \
