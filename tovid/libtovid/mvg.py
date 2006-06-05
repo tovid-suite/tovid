@@ -40,11 +40,12 @@ Press 'q' or ESC to close the preview window.
 
 You can show the current MVG text contents (line-by-line) with:
 
-    >>> pic.print_lines()
+    >>> pic.code()
     1: fill "blue"
     2: rectangle 0,0 800,600
     3: fill "white"
     4: rectangle 320,240 520,400
+    >
 
 You can keep drawing on the image, and call render() whenever you want to
 preview. There's currently no way to undo commands, though that will certainly
@@ -59,7 +60,6 @@ References:
 """
 import sys
 import commands
-
 
 class MVG:
     """A Magick Vector Graphics (MVG) image file with load/save, insert/append,
@@ -87,6 +87,7 @@ class MVG:
         """Clear the current contents and position the cursor at line 1."""
         self.data = [''] # Line 0 is null
         self.cursor = 1
+        self.history = []
 
     def load(self, filename):
         """Load MVG from the given file."""
@@ -103,19 +104,21 @@ class MVG:
             outfile.write("%s\n", line)
         outfile.close()
 
-    def print_lines(self):
-        """Print out complete MVG text, with line numbers, and a # at the
-        cursor position."""
+    def code(self):
+        """Return complete MVG text with line numbers and a > at the
+        cursor position. Useful for doing interactive editing."""
+        code = ''
         line = 1
         while line < len(self.data):
-            # Put a # at the cursor position
+            # Put a > at the cursor position
             if line == self.cursor:
-                print "#"
-            print "%s: %s" % (line, self.data[line])
+                code += "> "
+            code +=  "%s: %s\n" % (line, self.data[line])
             line += 1
         # If cursor is after the last line
         if line == self.cursor:
-            print "#"
+            code += ">"
+        return code
 
     def render(self):
         """Render the MVG image with ImageMagick, and display it."""
@@ -124,10 +127,9 @@ class MVG:
         cmd += " xc:none "
         cmd += " -draw '%s' " % ' '.join(self.data)
         cmd += " -composite miff:- | display"
-        print "Running command:"
-        print cmd
-        print commands.getoutput(cmd)
+        print "Creating preview rendering."
         print "Press 'q' or ESC in the image window to close the image."
+        print commands.getoutput(cmd)
 
     def goto(self, line_num):
         """Move the insertion cursor to the start of the given line."""
@@ -136,6 +138,7 @@ class MVG:
             sys.exit(1)
         else:
             self.cursor = line_num
+        print self.code()
 
     def goto_end(self):
         """Move the insertion cursor to the last line in the file."""
@@ -143,21 +146,43 @@ class MVG:
 
     def remove(self, line_num):
         """Remove the given line and position the cursor where the line was."""
-        self.data.pop(line_num)
+        self.history.append(['remove', line_num, self.data.pop(line_num)])
         self.cursor = line_num
 
     def append(self, mvg_string):
         """Append the given MVG string as the last line, and position the
         cursor after the last line."""
-        self.data.append(mvg_string)
         self.goto_end()
+        self.insert(mvg_string)
 
     def insert(self, mvg_string):
         """Insert the given MVG string before the current line, and position
         the cursor after the inserted line."""
+        self.history.append(['insert', self.cursor])
         self.data.insert(self.cursor, mvg_string)
         self.cursor += 1
+        print self.code()
 
+    def undo(self, steps=1):
+        """Undo the given number of operations. Leave cursor at end."""
+        step = 0
+        while step < steps and len(self.history) > 0:
+            action = self.history.pop()
+            cmd = action[0]
+            line_num = action[1]
+            # Undo insertion
+            if cmd == 'insert':
+                print "Undoing insertion at line %s" % line_num
+                self.data.pop(action[1])
+            # Undo removal
+            elif cmd == 'remove':
+                print "Undoing removal at line %s" % line_num
+                self.data.insert(line_num, action[2])
+            step += 1
+        if step < steps:
+            print "No more to undo."
+        self.goto_end()
+        
     """
     Draw commands
     """
@@ -286,5 +311,5 @@ if __name__ == '__main__':
     img.pop('graphic-context')
 
     # Display the MVG text, then show the generated image
-    img.print_lines()
+    img.code()
     img.render()
