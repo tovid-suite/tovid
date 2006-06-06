@@ -976,7 +976,7 @@ if $MIST; then
     $WORK_DIR/pics/template.png
 fi
 PICS=( "${PICS[@]}" \
-$(find $WORK_DIR/ -maxdepth 1 -name \*preview\*.$IMG_FMT) )
+$(find $WORK_DIR/ -maxdepth 1 -name \*preview\*.$IMG_FMT | sort) )
 for ((i=0; i<${#PICS[@]}; i++)); do
     if $FEATHER; then
         composite -compose CopyOpacity $THUMB_MASK +matte \
