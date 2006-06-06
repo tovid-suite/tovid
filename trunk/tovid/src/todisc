@@ -604,6 +604,7 @@ done
 # prevent user from using mutually exclusive options
 if $STATIC; then
     MENU_FADE=false
+    AUDIO_FADE=false
 fi
 if [ $FADE = 0 ]; then
     AUDIO_FADE=false
