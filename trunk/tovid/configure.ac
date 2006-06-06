@@ -111,6 +111,14 @@ AM_INIT_AUTOMAKE([1.9])
 
 AM_PATH_PYTHON(2.3)
 
+
+
+
+# Check to see if this is a svn checkout and set version to revision number
+if test "$PACKAGE_VERSION" = "svn" && test -e bootstrap; then
+     VERSION="svn-r$(svn info bootstrap | grep Revision | awk '{print $2}')"
+fi
+
 AC_CONFIG_FILES([Makefile src/tovid-init])
 AC_OUTPUT
 
