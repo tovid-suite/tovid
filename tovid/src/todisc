@@ -73,16 +73,19 @@ STATIC=false
 SUB_MENU=false
 ANI_SUB_MENU=false
 TITLE_COLOUR="#CDC0B0"
+SM_TITLE_COLOUR="#CDC0B0"
 THUMB_BG_COLOUR=white
 THUMB_TEXT_COLOUR=""
 MIST_COLOUR=white
 MIST_OPACITY=60
 STROKE=""
+SUBMENU_STROKE="none"
 BG_AUDIO=""
 BG_PIC=""
 BG_VIDEO=""
 SUBMENU_AUDIO=false
 SM_AUDIO_FADE=:
+SM_FADE=1
 AUDIO_FADE=:
 OPACITY=100
 MENU_FADE=false
@@ -403,9 +406,17 @@ while test $# -gt 0; do
             shift
             TITLE_COLOUR="$1"
             ;;
+        "-submenu-title-colour" | "-submenu-title-color" )
+            shift
+            SM_TITLE_COLOUR="$1"
+            ;;
         "-stroke-colour" | "-stroke-color" )
             shift
             STROKE="$1"
+            ;;
+        "-submenu-stroke-colour" | "-submenu-stroke-color" )
+            shift
+            SUBMENU_STROKE="$1"
             ;;
         "-thumb-text-colour" | "-thumb-text-color" )
             shift
@@ -457,7 +468,11 @@ while test $# -gt 0; do
             shift
             # Hackish list-parsing
             while test $# -gt 0 && test ${1:0:1} != "-"; do
-                SM_AUDIO=( "${SM_AUDIO[@]}" "$(abspath "$1")" )
+                if [ "$1" = "none" ]; then
+                    SM_AUDIO=( "${SM_AUDIO[@]}" "$1" )
+                else
+                    SM_AUDIO=( "${SM_AUDIO[@]}" "$(abspath "$1")" )
+                fi
                 shift
             done
             # Do not skip past the next argument
@@ -730,6 +745,9 @@ if [ ! $STATIC ]; then
 fi
 if $ANI_SUB_MENU; then
     yecho "  -submenu-length $ANI_SUBMENU_LENGTH seconds"
+    if $SUBMENU_AUDIO; then
+        yecho "  -submenu-audio-fade $SM_FADE second(s)"
+    fi
 fi
 yecho "  -seek $SEEK_VAL second(s)"
 if [ ! $STATIC ]; then
@@ -1268,9 +1286,6 @@ done
  </subpictures>
 EOF
 )  > "$SPUMUX_XML"
-        
-
-
 
 if $SUB_MENU; then
     JUMP=menu
@@ -1354,13 +1369,13 @@ if $SUB_MENU; then
     for ((i=0; i<${#IN_FILES[@]}; i++)); do
         C=$((${CHAPTERS[i]} - 1))
         yecho "Creating a transparent title PNG"
-		convert -size 620x100 xc:none -font "$MENU_FONT" \
-		-pointsize $MENU_FONTSIZE \
-		-fill black -draw "gravity center text 2,2 \"${TITLES[i]}\"" \
-		-stroke "$STROKE" -strokewidth 1 \
-		-fill "$TITLE_COLOUR" -stroke "$STROKE" \
-		-draw "gravity center text 1,1 \"${TITLES[i]}\"" miff:- | \
-		convert -trim +repage - -blur 0x0.4 $WORK_DIR/title${i}_txt.png
+        convert -size 620x100 xc:none -font "$MENU_FONT" \
+        -pointsize $MENU_FONTSIZE \
+        -fill "$SM_TITLE_COLOUR" -draw "gravity center text 2,2 \"${TITLES[i]}\"" \
+        -stroke "$SUBMENU_STROKE" -strokewidth 1 \
+        -fill "$SM_TITLE_COLOUR" -stroke "$SUBMENU_STROKE" \
+        -draw "gravity center text 1,1 \"${TITLES[i]}\"" miff:- | \
+        convert -trim +repage - -blur 0x0.4 $WORK_DIR/title${i}_txt.png
 
         # which is harmless as they get removed, but needs to be tweaked         
         if $ANI_SUB_MENU; then
@@ -1396,7 +1411,7 @@ if $SUB_MENU; then
         yecho
         yecho "Creating $TOTAL_JPEGS chapter images for "${IN_FILES[i]}""
 
-#        echo "Running  "${TCODE_CMD[@]}"" >> $LOG_FILE
+        echo "Running  "${TCODE_CMD[@]}"" >> $LOG_FILE
         echo "Running  "${TCODE_CMD[@]}""
         # sleep after transcode, so the spinner picks all the jpegs up
         function run_transcode()
@@ -1512,28 +1527,36 @@ if $SUB_MENU; then
         yecho "Creating an audio background"
         yecho "Working on submenu audio for "${IN_FILES[s]}""
         if $SUBMENU_AUDIO; then
+            if ! $ANI_SUB_MENU ; then  # if static, then no trim
+                if [ -n "$SM_AUDIO_FILE" ]; then
+                    TIME=$(ffmpeg -i "$SM_AUDIO_FILE" 2>&1|
+                    awk '/Duration/ {print $2}')
+                    TIME=${TIME/,/}
+                else 
+                    TIME=$(ffmpeg -i "${SM_AUDIO[s]}" 2>&1|
+                    awk '/Duration/ {print $2}')
+                fi
+            else
+                TIME=$(vid_length "$WORK_DIR/menu$s.m2v")
+            fi
+ 
             if [ "${SM_AUDIO[s]}" = "none" ]; then # user asked for silence
-                TIME=`vid_length "$WORK_DIR/menu$s.m2v"`
+                TIME=$(vid_length "$WORK_DIR/menu$s.m2v")
                 BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
                 $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
             elif [ -n "$SM_AUDIO_FILE" ]; then # user supplied "1" audio file
                 COPY_AC3=(cp -v $WORK_DIR/submenu.$AUDIO_EXT \
                 $WORK_DIR/menu$s.$AUDIO_EXT)
-                TIME=$(ffmpeg -i "$SM_AUDIO_FILE" 2>&1|awk '/Duration/ {print $2}')
-                TIME=${TIME/,/}
-                BGAUDIO_CMD=(ffmpeg -i "$SM_AUDIO_FILE" -ar 48000 -ac 2 -acodec pcm_s16le -y \
-                $WORK_DIR/submenu.wav)
+                BGAUDIO_CMD=(ffmpeg -i "$SM_AUDIO_FILE" -t $TIME -ar 48000 \
+                -ac 2 -acodec pcm_s16le -y $WORK_DIR/submenu.wav)
             else # SM_AUDIO[s] is an audio file we will process it
-            TIME=$(ffmpeg -i "${SM_AUDIO[s]}" 2>&1|awk '/Duration/ {print $2}')
-            TIME=${TIME/,/}
-            # make seperate wavs for each supplied audio bg for each submenu 
-            BGAUDIO_CMD=(ffmpeg -i ${SM_AUDIO[s]} -ar 48000 -ac 2 -acodec pcm_s16le -y \
-            $WORK_DIR/menu$s.wav)
-            BGAUDIO_CMD2=(ffmpeg -i $WORK_DIR/menu$s.wav \
-            $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
+                # make seperate wavs for each supplied audio bg for each submenu 
+                BGAUDIO_CMD=(ffmpeg -i "${SM_AUDIO[s]}" -t $TIME -ar 48000 \
+                -ac 2 -acodec pcm_s16le -y $WORK_DIR/menu$s.wav)
+                BGAUDIO_CMD2=(ffmpeg -i $WORK_DIR/menu$s.wav \
+                $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
             fi
         else # no supplied audio for submenu so create silence
-            TIME=`vid_length "$WORK_DIR/menu$s.m2v"`
             BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
             $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
         fi
@@ -1547,8 +1570,8 @@ if $SUB_MENU; then
                 runtime_error
             fi
         fi
-        # convert to DVD/SVCD format as long as "none" is not called for
-        if "$SUBMENU_AUDIO" && [[ ! "${SM_AUDIO[s]}" = "none" && -z "$SM_AUDIO_FILE" ]]; then
+        # convert to DVD/SVCD format as long as not "none" or single audio file
+        if $SUBMENU_AUDIO && [[ ! "${SM_AUDIO[s]}" = "none" && -z "$SM_AUDIO_FILE" ]]; then
             if $SM_AUDIO_FADE; then
                 TIME=$(ffmpeg -i "$WORK_DIR/menu$s.wav" 2>&1|awk '/Duration/ {print $2}')
                 TIME=${TIME/,/}
@@ -1556,7 +1579,6 @@ if $SUB_MENU; then
                 sox $WORK_DIR/menu$s.wav \
                 $WORK_DIR/menu$s-processed.wav fade t $SM_FADE $TIME $SM_FADE" |
                 sed 's/    */ /g'|sed -e "s/^ *//"
-
                 sox -q $WORK_DIR/menu$s.wav \
                 $WORK_DIR/menu$s-processed.wav fade t $FADE $TIME $FADE
                 rm $WORK_DIR/menu$s.wav
@@ -1579,7 +1601,7 @@ if $SUB_MENU; then
                 TIME=${TIME/,/}
                 echo -e "Running:
                 sox $WORK_DIR/submenu.wav \
-                $WORK_DIR/submenu-processed.wav fade t $FADE $TIME $FADE" |sed 's/    */ /g'
+                $WORK_DIR/submenu-processed.wav fade t $SM_FADE $TIME $SM_FADE" |sed 's/    */ /g'
 
                 sox -q $WORK_DIR/submenu.wav \
                 $WORK_DIR/submenu-processed.wav fade t $FADE $TIME $FADE
@@ -1673,7 +1695,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
 
         IM_CMD2b=(convert -resize $THUMB_SIZE! -)
         IM_CMD2c=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -) 
-        
+ 
         IM_CMD3=(montage -geometry +4+4 -background '#161514' \
         -fill '#C6C6C6' -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}" "$pic")
         IM_CMD4=(convert -background '#161514' -frame 5x5 \
@@ -1713,7 +1735,7 @@ if $MENU_FADE && ! $STATIC; then
             # copy template for fade out beginning and end frames
             cp $WORK_DIR/pics/template.jpg $WORK_DIR/bg/$(($frame + 1)).jpg
         done
-    fi      
+    fi
     for ((frame=0; frame<=BACKGROUND_FADE_IN_END_FRAME; frame++)); do
         D=`get_bg_opacity`
         composite -dissolve $D $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.jpg \
@@ -1735,7 +1757,7 @@ if $MENU_FADE && ! $STATIC; then
 #        spin "Working..."
 #        echo -ne "\r                                                            "
         spin -ne "\rProcessing "$WORK_DIR/animenu/$(($frame + 1)).jpg"  "
-         
+
 
         ANI_PICS=( $(find $WORK_DIR/pics/*[0-9]* -maxdepth 1 -name $((frame + 1)).$IMG_FMT) )
         BG_PIC=$(find $WORK_DIR/bg -name $(($frame + 1)).jpg)
@@ -1853,7 +1875,7 @@ else # Do not do menu fade
             fi
             rm -f ${ANI_PICS[@]}
         done
-    fi    
+    fi
 fi
 
 echo
@@ -1886,10 +1908,14 @@ echo
 echo "Cleaning up montage images"
 rm -fr $WORK_DIR/animenu/*.jpg
 
-TIME=$(vid_length "$WORK_DIR/intro.m2v")
-if ! $STATIC; then
-    SEEK_CMD="-t $TIME"
+if $STATIC ; then  # if static, then no trim
+    TIME=$(ffmpeg -i "$BG_AUDIO" 2>&1|
+    awk '/Duration/ {print $2}')
+    TIME=${TIME/,/}
+else
+    TIME=$(vid_length "$WORK_DIR/intro.m2v")
 fi
+SEEK_CMD="-t $TIME"
 # create audio background for the main menu
 if [ -z "$BG_AUDIO" ]; then # no audio supplied: use silence
     cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
