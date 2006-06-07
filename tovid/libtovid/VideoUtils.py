@@ -23,7 +23,7 @@ def video_to_images(infile, start=0, end=0, scale=(0,0)):
     If scale is nonzero, resize.
     """
     
-    outdir = '~/tmp/%s_images' % infile
+    outdir = os.path.expanduser('~/tmp/%s_images' % infile)
     # Create output directory if it doesn't exist
     if not os.path.exists(outdir):
         log.info("Creating: %s" % outdir)

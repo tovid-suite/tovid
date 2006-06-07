@@ -81,7 +81,8 @@ class DiscOptions:
         curConfig.curDiscFormat = self.format
 
         # Use output directory
-        strCommand += "\"%s/%s\"" % (curConfig.strOutputDirectory, self.outPrefix)
+        strCommand += "-out \"%s/%s\"" % \
+                   (curConfig.strOutputDirectory, self.outPrefix)
         return strCommand
 
 

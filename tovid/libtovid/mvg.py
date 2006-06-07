@@ -107,6 +107,34 @@ you find them.
 References:
 [1] http://www.imagemagick.org/script/magick-vector-graphics.php
 [2] http://studio.imagemagick.org/pipermail/magick-developers/2002-February/000156.html
+
+
+MVG examples:
+-------------
+
+Radial gradient example
+(From http://www.linux-nantes.fr.eu.org/~fmonnier/OCaml/MVG/u.mvg.html):
+
+    push graphic-context
+      encoding "UTF-8"
+      viewbox 0 0 260 180
+      affine 1 0 0 1 0 0
+      push defs
+        push gradient 'Gradient_B' radial 130,90 130,90 125
+          gradient-units 'userSpaceOnUse'
+          stop-color '#4488ff' 0.2
+          stop-color '#ddaa44' 0.7
+          stop-color '#ee1122' 1
+        pop gradient
+      pop defs
+      push graphic-context
+        fill 'url(#Gradient_B)'
+        rectangle 0,0 260,180
+      pop graphic-context
+    pop graphic-context
+
+Pie chart example: http://www.imagemagick.org/source/piechart.mvg
+
 """
 import sys
 import commands
@@ -246,10 +274,47 @@ class MVG:
     Draw commands
     """
 
-    def circle(self, (x_center, y_center), (x_perimeter, y_perimeter)):
-        self.insert('circle %s,%s %s,%s' % \
-                    (x_center, y_center, x_perimeter, y_perimeter))
+    def affine(self, (sx, rx), (ry, sy), (tx, ty)):
+        self.insert('affine %s %s %s %s %s %s' % (sx, rx, ry, sy, tx, ty))
 
+    def arc(self, (x0, y0), (x1, y1), (a0, a1)):
+        self.insert('arc %s,%s %s,%s %s,%s' % (x0, y0, x1, y1, a0, a1))
+
+    def bezier(self, point_list):
+        # point_list = [(x0, y0), (x1, y1), ... (xn, yn)]
+        command = 'bezier'
+        for x, y in point_list:
+            command += ' %s,%s' % (x, y)
+        self.insert(command)
+        
+    def circle(self, (center_x, center_y), (perimeter_x, perimeter_y)):
+        self.insert('circle %s,%s %s,%s' % \
+                    (center_x, center_y, perimeter_x, perimeter_y))
+
+    def clip_path(self, url):
+        self.insert('clip-path url(%s)' % url)
+
+    def clip_rule(self, rule):
+        # rule in [evenodd, nonzero]
+        self.insert('clip-rule %s' % rule)
+
+    def clip_units(self, units):
+        # May be: userSpace, userSpaceOnUse, objectBoundingBox
+        self.insert('clip-units %s' % units)
+
+    def color(self, (x, y), method):
+        # method may be: point, replace, floodfill, filltoborder, reset
+        self.insert('color %s,%s %s' % (x, y, method))
+    
+    def decorate(self, decoration):
+        # decoration in [none, line-through, overline, underline]
+        self.insert('decorate %s' % decoration)
+
+    def ellipse(self, (center_x, center_y), (radius_x, radius_y),
+                (arc_start, arc_stop)):
+        self.insert('ellipse %s,%s %s,%s %s,%s' % \
+                (center_x, center_y, radius_x, radius_y, arc_start, arc_stop))
+        
     def fill(self, color):
         """Set the current fill color."""
         self.insert('fill "%s"' % color)
@@ -308,14 +373,85 @@ class MVG:
         # method may be: point, replace, floodfill, filltoborder, reset
         # (What do x, y mean?)
         self.insert('matte %s,%s %s' % (x, y, method))
+
+    def offset(self, offset):
+        self.insert('offset %s' % offset)
+
+    def opacity(self, opacity):
+        self.insert('opacity %s' % opacity)
+
+    def path(self, point_list):
+        # point_list = [(x0, y0), (x1, y1), ... (xn, yn)]
+        command = 'path'
+        for x, y in point_list:
+            command += ' %s,%s' % (x, y)
+        self.insert(command)
+
+    def point(self, (x, y)):
+        self.insert('point %s,%s' % (x, y))
+
+    def polygon(self, point_list):
+        # point_list = [(x0, y0), (x1, y1), ... (xn, yn)]
+        command = 'polygon'
+        for x, y in point_list:
+            command += ' %s,%s' % (x, y)
+        self.insert(command)
+    
+    def polyline(self, point_list):
+        # point_list = [(x0, y0), (x1, y1), ... (xn, yn)]
+        command = 'polyline'
+        for x, y in point_list:
+            command += ' %s,%s' % (x, y)
+        self.insert(command)
     
     def rectangle(self, (x0, y0), (x1, y1)):
         """Draw a rectangle from (x0, y0) to (x1, y1)."""
         self.insert('rectangle %s,%s %s,%s' % (x0, y0, x1, y1))
+        
+    def rotate(self, angle):
+        self.insert('rotate %s' % angle)
+
+    def roundrectangle(self, (x0, y0), (x1, y1), (width, height)):
+        self.insert('roundrectangle %s,%s %s,%s %s,%s' % \
+                (x0, y0, x1, y1, width, height))
+
+    def scale(self, (x, y)):
+        self.insert('scale %s,%s' % (x, y))
+
+    def skewX(self, angle):
+        self.insert('skewX %s' % angle)
     
+    def skewY(self, angle):
+        self.insert('skewY %s' % angle)
+
+    def stop_color(self, color, offset):
+        self.insert('stop-color %s %s' % (color, offset))
+        
     def stroke(self, color):
         """Set the current stroke color."""
         self.insert('stroke %s' % color)
+
+    def stroke_antialias(self, flag):
+        # flag in [0, 1]
+        self.insert('stroke-antialias %s' % flag)
+
+    def stroke_dasharray(self, array):
+        # array in [none, (numeric list)]
+        print "stroke_dasharray() not implemented yet"
+        
+    def stroke_dashoffset(self, offset):
+        self.insert('stroke-dashoffset %s' % offset)
+
+    def stroke_linecap(self, cap_type):
+        # cap_type in [butt, round, square]
+        self.insert('stroke-linecap %s' % cap_type)
+
+    def stroke_linejoin(self, join_type):
+        # join_type in [bevel, miter, round]
+        self.insert('stroke-linejoin %s' % join_type)
+
+    def stroke_opacity(self, opacity):
+        self.insert('stroke-opacity %s' % opacity)
 
     def stroke_width(self, width):
         """Set the current stroke width in pixels."""
@@ -326,6 +462,13 @@ class MVG:
         # TODO: Escape special characters in text string
         self.insert('text %s,%s "%s"' % (x, y, text_string))
     
+    def text_antialias(self, flag):
+        # flag in [0, 1]
+        self.insert('text-antialias %s' % flag)
+
+    def text_undercolor(self, color):
+        self.insert('text-undercolor %s' % color)
+
     def translate(self, (x, y)):
         self.insert('translate %s,%s' % (x, y))
     
@@ -342,6 +485,8 @@ class MVG:
         #    push('graphic-context')
         # or push('pattern', id, radial, x, y, width,height)
         self.insert('push %s' % context)
+
+
 
 
 # Demo
