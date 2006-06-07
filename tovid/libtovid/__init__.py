@@ -11,6 +11,7 @@ __all__ = [\
     'gui',
     'encoders',
     # .py files
+    'animation',
     'cli',
     'disc',
     'globals',
