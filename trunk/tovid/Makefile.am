@@ -57,8 +57,24 @@ bin_SCRIPTS = \
 # The manpages
 man_dir = docs/man
 man_src_dir = docs/src/en
-man_MANS = $(man_dir)/*.1
-src_MANS = $(man_src_dir)/*.t2t
+man_MANS = \
+	$(man_dir)/idvid.1 \
+	$(man_dir)/makedvd.1 \
+	$(man_dir)/makemenu.1 \
+	$(man_dir)/makeslides.1 \
+	$(man_dir)/makexml.1 \
+	$(man_dir)/postproc.1 \
+	$(man_dir)/todisc.1 \
+	$(man_dir)/tovid.1
+src_MANS = \
+	$(man_src_dir)/idvid.t2t \
+	$(man_src_dir)/makedvd.t2t \
+	$(man_src_dir)/makemenu.t2t \
+	$(man_src_dir)/makeslides.t2t \
+	$(man_src_dir)/makexml.t2t \
+	$(man_src_dir)/postproc.t2t \
+	$(man_src_dir)/todisc.t2t \
+	$(man_src_dir)/tovid.t2t
 
 # Make the manpages for svn users (tarball users' man pages made in dist-hook)
 #   This is a static pattern rule as seen on (TV!)
@@ -116,6 +132,9 @@ pyexecGUIdir = $(pyexecdir)/libtovid/gui
 dist-hook:
 	rm -rvf $(top_distdir)/src/tovid-init
 	mkdir $(distdir)/docs/man
+	echo $(src_MANS)
+	echo BREAK
+	echo $${src_MANS}
 	for manpage_src in $(src_MANS); do \
 	  manpage=`echo "$${manpage_src}" | sed 's/t2t/1/g'`; \
 	  txt2tags -t man -i $${manpage_src} -o $${manpage}; \
