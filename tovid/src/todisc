@@ -604,7 +604,6 @@ done
 # prevent user from using mutually exclusive options
 if $STATIC; then
     MENU_FADE=false
-    AUDIO_FADE=false
 fi
 if [ $FADE = 0 ]; then
     AUDIO_FADE=false
@@ -726,12 +725,16 @@ yecho "  -menu-fontsize $MENU_FONTSIZE"
 yecho "  -thumb-font $THUMB_FONT"
 yecho "  -thumb-fontsize $THUMB_FONTSIZE"
 yecho "Current menu settings: "
-yecho "  -menu-length $ANI_MENU_LENGTH seconds"
+if [ ! $STATIC ]; then
+    yecho "  -menu-length $ANI_MENU_LENGTH seconds"
+fi
 if $ANI_SUB_MENU; then
     yecho "  -submenu-length $ANI_SUBMENU_LENGTH seconds"
 fi
 yecho "  -seek $SEEK_VAL second(s)"
-yecho "  -menu-audio-fade $FADE second(s)"
+if [ ! $STATIC ]; then
+    yecho "  -menu-audio-fade $FADE second(s)"
+fi
 yecho "  -chapters ${CHAPTERS[@]}"
 yecho
 
@@ -976,9 +979,9 @@ if $MIST; then
     $WORK_DIR/white.png $WORK_DIR/pics/template.png \
     $WORK_DIR/pics/template.png
 fi
-# sort -n would probably work ok, but lets be sure of order with a loop
+# lets be sure of order by using a loop
 for ((i=0; i<=NUM_FILES; i++)); do
-PICS=( "${PICS[@]}" \
+    PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/ -maxdepth 1 -name ${i}-preview\*.$IMG_FMT) )
 done
 for ((i=0; i<${#PICS[@]}; i++)); do
@@ -1905,22 +1908,20 @@ else # audio supplied: convert to wav then later to dvd/svcd format
         cleanlog 3
         runtime_error
     fi
+    if $AUDIO_FADE; then  # bgaudio supplied and audio fade selected
+        TIME=$(ffmpeg -i "$WORK_DIR/intro.wav" 2>&1|awk '/Duration/ {print $2}')
+        TIME=${TIME/,/}
+        echo "Running: "
+        echo "sox $WORK_DIR/intro.wav $WORK_DIR/intro-processed.wav fade t \
+        $FADE $TIME $FADE"
+        sox $WORK_DIR/intro.wav \
+        $WORK_DIR/intro-processed.wav fade t $FADE $TIME $FADE
+        rm $WORK_DIR/intro.wav
+        mv $WORK_DIR/intro-processed.wav $WORK_DIR/intro.wav
+    fi
 fi
 
-unset BGAUDIO_CMD
-if $AUDIO_FADE; then
-    TIME=$(ffmpeg -i "$WORK_DIR/intro.wav" 2>&1|awk '/Duration/ {print $2}')
-    TIME=${TIME/,/}
-    echo "Running: "
-    echo "sox $WORK_DIR/intro.wav $WORK_DIR/intro-processed.wav fade t \
-    $FADE $TIME $FADE"
-    sox $WORK_DIR/intro.wav \
-    $WORK_DIR/intro-processed.wav fade t $FADE $TIME $FADE
-    rm $WORK_DIR/intro.wav
-    mv $WORK_DIR/intro-processed.wav $WORK_DIR/intro.wav
-fi
-
-unset TIME
+unset BGAUDIO_CMD unset TIME
 
 # convert to proper audio format
 BGAUDIO_CMD=(ffmpeg -i $WORK_DIR/intro.wav \
