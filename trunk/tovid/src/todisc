@@ -1406,7 +1406,7 @@ if $SUB_MENU; then
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
         CMD=$(echo ${cmd[@]} |  sed 's/ /,/g;s/,$//')
-        TCODE_CMD=(nice transcode --print_status $((340 * ${CHAPTERS[i]}))  -q 1 -i "${IN_FILES[i]}" -o "${PICS_OUT[@]}" \
+        TCODE_CMD=(nice transcode --print_status 340  -q 1 -i "${IN_FILES[i]}" -o "${PICS_OUT[@]}" \
         -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c "$CMD" -y $SM_IMG_FMT,null)
         yecho
         yecho "Creating $TOTAL_JPEGS chapter images for "${IN_FILES[i]}""
@@ -1512,7 +1512,7 @@ if $SUB_MENU; then
         "${JPEG2YUV_OPTS[@]}" -L 1 -b 1  -j "${PICS_IN[@]}")
         ENC_CMD1=(ffmpeg   -f yuv4mpegpipe -i - -r $FRAME_RATE -s $VIDSIZE \
         -tvstd $TV_STANDARD $FFMPEG_OPTS -y $WORK_DIR/menu$i.m2v)
-        yecho "Running "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}""
+        echo "Running "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}"" | tee -a "$LOG_FILE" 2>&1
         if "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}" >> $LOG_FILE.tmp 2>&1; then
             cleanlog 3
         else
