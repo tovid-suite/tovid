@@ -139,6 +139,7 @@ Pie chart example: http://www.imagemagick.org/source/piechart.mvg
 import sys
 import commands
 
+# TODO: Separate editor interface from MVG data structure
 class MVG:
     """A Magick Vector Graphics (MVG) image with load/save, insert/append,
     and low-level drawing functions based on the MVG syntax.
@@ -237,6 +238,10 @@ class MVG:
             cur_line += 1
         self.cursor = from_line
 
+    def extend(self, mvg):
+        """Extend self to include all data from the given MVG object."""
+        self.data.extend(mvg.data)
+
     def append(self, mvg_string):
         """Append the given MVG string as the last line, and position the
         cursor after the last line."""
@@ -270,9 +275,7 @@ class MVG:
             print "No more to undo."
         self.goto_end()
 
-    """
-    Draw commands
-    """
+    # Draw commands
 
     def affine(self, (sx, rx), (ry, sy), (tx, ty)):
         self.insert('affine %s %s %s %s %s %s' % (sx, rx, ry, sy, tx, ty))
@@ -302,7 +305,7 @@ class MVG:
         # May be: userSpace, userSpaceOnUse, objectBoundingBox
         self.insert('clip-units %s' % units)
 
-    def color(self, (x, y), method):
+    def color(self, (x, y), method='floodfill'):
         # method may be: point, replace, floodfill, filltoborder, reset
         self.insert('color %s,%s %s' % (x, y, method))
     
@@ -369,7 +372,7 @@ class MVG:
         """Draw a line from (x0, y0) to (x1, y1)."""
         self.insert('line %s,%s %s,%s' % (x0, y0, x1, y1))
     
-    def matte(self, (x, y), method):
+    def matte(self, (x, y), method='floodfill'):
         # method may be: point, replace, floodfill, filltoborder, reset
         # (What do x, y mean?)
         self.insert('matte %s,%s %s' % (x, y, method))
