@@ -153,18 +153,48 @@ def tween(keyframes):
         >>> tween(keys)
         [0, 10, 20, 30, 40, 50, 43, 36, 30, 23, 16, 10]
 
-    
+    This function can handle single-integer or (x,y) data in keyframes. An
+    example using (x,y) tweening:
+
+        >>> keys = [Keyframe(1, (20, 20)),
+        ...         Keyframe(6, (80, 20)),
+        ...         Keyframe(12, (100, 100))]
+
+    Here, a point on a two-dimensional plane starts at (20, 20), moving first
+    to the right, to (80, 20), then diagonally to (100, 100).
+
+        >>> for (x, y) in tween(keys):
+        ...     print (x, y)
+        ...
+        (20, 20)
+        (32, 20)
+        (44, 20)
+        (56, 20)
+        (68, 20)
+        (80, 20)
+        (83, 33)
+        (86, 46)
+        (90, 60)
+        (93, 73)
+        (96, 86)
+        (100, 100)
+
+    This function may support more complex data types in the future; for now
+    it is limited to using only integers or tuples of numbers.
     """
     data = []
 
     # TODO: Sort keyframes in increasing order by frame number (to ensure
     # keyframes[0] is the first frame, and keyframes[-1] is the last frame)
-    first = keyframes[0].frame
-    last = keyframes[-1].frame
+    # Make a copy of keyframes
+    import copy
+    keys = copy.deepcopy(keyframes)
+    first = keys[0].frame
+    last = keys[-1].frame
 
     # Pop off keyframes as each interval is calculated
-    left = keyframes.pop(0)
-    right = keyframes.pop(0)
+    left = keys.pop(0)
+    right = keys.pop(0)
     frame = first
     while frame <= last:
         # Left endpoint
@@ -174,9 +204,9 @@ def tween(keyframes):
         elif frame == right.frame:
             data.append(right.data)
             # Get the next interval, if it exists
-            if keyframes:
+            if keys:
                 left = right
-                right = keyframes.pop(0)
+                right = keys.pop(0)
         # Between endpoints; interpolate
         else:
             # Interpolate integers
