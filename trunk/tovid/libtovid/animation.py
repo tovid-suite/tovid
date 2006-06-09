@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 # animation.py
 
-"""Notes:
+"""
+Notes:
 
 Uses a "video canvas" (a 2D canvas for each frame)
 You can paint on the canvas with video objects
@@ -35,99 +36,34 @@ responsible for animation, frames)
 """
 
 from math import floor, sqrt
-from libtovid.mvg import MVG
-
-
-class Overlay:
-    """A visual element that may be composited onto a video canvas. May be
-    semi-transparent."""
-    # TODO: Include here information about the effects channel for the overlay
-    # (default: always-visible), how to render it (in general)
-    def __init__(self):
-        pass
-    def get_mvg(self, frame):
-        pass
-
-class Background (Overlay):
-    """An overlay that fills the available canvas space with a solid color,
-    or with an image file."""
-    def __init__(self, (width, height), color='black', filename=''):
-        self.size = (width, height)
-        self.color = color
-        self.filename = filename
-    def get_mvg(self):
-        mvg = MVG(self.size)
-        if self.filename:
-            # TODO
-            pass
-        elif self.color:
-            mvg.fill(self.color)
-            mvg.rectangle((0,0), self.size)
-        return mvg
-
-class Text (Overlay):
-    def __init__(self, (x, y), text, color='white', fontsize='20', \
-                 font='Helvetica'):
-        self.position = (x, y)
-        self.text = text
-        self.color = color
-        self.fontsize = fontsize
-        self.font = font
-    def get_mvg(self):
-        mvg = MVG()
-        mvg.fill(self.color)
-        mvg.font(self.font)
-        mvg.font_size(self.fontsize)
-        mvg.text(self.position, self.text)
-        return mvg
-
-
-class Thumbnail (Overlay):
-    def __init__(self, (x, y), (width, height), filename):
-        self.position = (x, y)
-        self.size = (width, height)
-        self.filename = filename
-    def get_mvg(self):
-        mvg = MVG()
-        mvg.image('over', self.position, self.size, self.filename)
-        return mvg
-
-
-class ThumbGrid (Overlay):
-    """A rectangular array of thumbnail images or videos."""
-    def __init__(self, file_list, columns=0, rows=0):
-        """Create a grid of images from file_list, with the given number of
-        columns and rows (use 0 to auto-layout either columns or rows, or
-        both."""
-        self.columns, self.rows = \
-            self._auto_dimension(len(file_list), columns, rows)
-        # Now we know how many columns/rows; how big are the thumbnails?
-
-    def _auto_dimension(num_items, columns, rows):
-        # Both fixed, nothing to calculate
-        if columns > 0 and rows > 0:
-            # Make sure num_items will fit (columns, rows)
-            if num_items < columns * rows:
-                return (columns, rows)
-            # Not enough room; auto-dimension both
-            else:
-                print "ThumbGrid: Can't fit %s items in (%s, %s) grid;" % \
-                      (num_items, columns, rows)
-                print "doing auto-dimensioning instead."
-                columns = rows = 0
-        # Auto-dimension to fit num_items
-        if columns == 0 and rows == 0:
-            root = int(floor(sqrt(num_items)))
-            return ((1 + num_items / root), root)
-        # Rows fixed; use enough columns to fit num_items
-        if columns == 0 and rows > 0:
-            return ((1 + num_items / rows), rows)
-        # Columns fixed; use enough rows to fit num_items
-        if rows == 0 and columns > 0:
-            return (columns, (1 + num_items / columns))
+from libtovid.mvg import Drawing
 
 
 class Keyframe:
+    """Associates a specific frame in an animation with a numeric value.
+    A Keyframe is an (x, y) pair defining a "control point" on a 2D graph:
+    
+            100 |
+                |       Keyframe(10, 50)
+           data |      *
+                |
+              0 |__________________________
+                0     10     20     30
+                        frame
+    
+    The data can represent anything you like. For instance, opacity:
+    
+            100 |* Keyframe(0, 100)
+                |       
+     opacity(%) |
+                |
+              0 |____________________* Keyframe(30, 0)
+                0     10     20     30
+                        frame
+
+    See the tween() function below for what you can do with these Keyframes,
+    once you have them.
+    """
     def __init__(self, frame, data):
         self.frame = frame
         self.data = data
@@ -229,6 +165,97 @@ def tween(keyframes):
         frame += 1
     return data
 
+
+class Overlay:
+    """A visual element that may be composited onto a video canvas. May be
+    semi-transparent."""
+    # TODO: Include here information about the effects channel for the overlay
+    # (default: always-visible), how to render it (in general)
+    def __init__(self):
+        pass
+    def get_mvg(self, frame):
+        pass
+
+class Background (Overlay):
+    """An overlay that fills the available canvas space with a solid color,
+    or with an image file."""
+    def __init__(self, (width, height), color='black', filename=''):
+        self.size = (width, height)
+        self.color = color
+        self.filename = filename
+    def get_mvg(self):
+        mvg = Drawing(self.size)
+        if self.filename:
+            # TODO
+            pass
+        elif self.color:
+            mvg.fill(self.color)
+            mvg.rectangle((0,0), self.size)
+        return mvg
+
+class Text (Overlay):
+    def __init__(self, (x, y), text, color='white', fontsize='20', \
+                 font='Helvetica'):
+        self.position = (x, y)
+        self.text = text
+        self.color = color
+        self.fontsize = fontsize
+        self.font = font
+    def get_mvg(self):
+        mvg = Drawing()
+        mvg.fill(self.color)
+        mvg.font(self.font)
+        mvg.font_size(self.fontsize)
+        mvg.text(self.position, self.text)
+        return mvg
+
+
+class Thumbnail (Overlay):
+    def __init__(self, (x, y), (width, height), filename):
+        self.position = (x, y)
+        self.size = (width, height)
+        self.filename = filename
+    def get_mvg(self):
+        mvg = Drawing()
+        mvg.image('over', self.position, self.size, self.filename)
+        return mvg
+
+
+class ThumbGrid (Overlay):
+    """A rectangular array of thumbnail images or videos."""
+    def __init__(self, file_list, columns=0, rows=0):
+        """Create a grid of images from file_list, with the given number of
+        columns and rows (use 0 to auto-layout either columns or rows, or
+        both."""
+        self.columns, self.rows = \
+            self._auto_dimension(len(file_list), columns, rows)
+        # Now we know how many columns/rows; how big are the thumbnails?
+
+    def _auto_dimension(num_items, columns, rows):
+        # Both fixed, nothing to calculate
+        if columns > 0 and rows > 0:
+            # Make sure num_items will fit (columns, rows)
+            if num_items < columns * rows:
+                return (columns, rows)
+            # Not enough room; auto-dimension both
+            else:
+                print "ThumbGrid: Can't fit %s items in (%s, %s) grid;" % \
+                      (num_items, columns, rows)
+                print "doing auto-dimensioning instead."
+                columns = rows = 0
+        # Auto-dimension to fit num_items
+        if columns == 0 and rows == 0:
+            root = int(floor(sqrt(num_items)))
+            return ((1 + num_items / root), root)
+        # Rows fixed; use enough columns to fit num_items
+        if columns == 0 and rows > 0:
+            return ((1 + num_items / rows), rows)
+        # Columns fixed; use enough rows to fit num_items
+        if rows == 0 and columns > 0:
+            return (columns, (1 + num_items / columns))
+
+
+
 class Effect:
     """A "special effect" created by keyframing MVG draw commands.
     Commands that it might make sense to keyframe:
@@ -242,7 +269,7 @@ class Effect:
 
     def get_mvg(self, frame):
         """Return an MVG object for drawing the effect at the given frame."""
-        mvg = MVG()
+        mvg = Drawing()
         for command, keylist in self.keys.iteritems():
             data = tween(frame, keylist)
             if isinstance(data, tuple):
@@ -284,7 +311,7 @@ class VideoCanvas:
         self.overlays = []
         self.mvg = []
         for frame in range(frames):
-            self.mvg.append(MVG(self.width, self.height))
+            self.mvg.append(Drawing(self.width, self.height))
 
     def add(self, overlay, effect=None):
         """Add the given Overlay to the canvas, with the given Effect."""
