@@ -3,28 +3,31 @@
 
 # TODO: Categorize/reorganize these
 
-__all__ = ['degunk', 'tokenize', 'trim', 'ratio_to_float',
+__all__ = ['escape', 'tokenize', 'trim', 'ratio_to_float',
     'pretty_dict', 'indent_level', 'get_code_lines', 'wait']
 
 # From standard library
 import os
 import sys
-import string
 import shlex
 
-def degunk(text):
-    """Strip special characters from the given string (any that might
-    cause problems when used in a filename)."""
-    trans = string.maketrans(' :;?![]()\'\"','@@@@@@@@@@@')
-    result = string.translate(text, trans)
-    result = result.replace('@','')
+def escape(text):
+    """Return a copy of the given text string with potentially problematic
+    "special" characters backslash-escaped."""
+    special_chars = ' *:;?![]()"\''
+    result = text
+    for char in special_chars:
+        result = result.replace(char, '\%s' % char)
     return result
 
-def tokenize(line):
-    """Separate a text line into tokens, returning them in a list."""
+def tokenize(line, include_chars=''):
+    """Separate a text line into tokens, returning them in a list. By default,
+    tokens are space-separated, and each token consists of [a-z], [A-Z], [0-9],
+    or any of '.:-%()/'. Additional valid token characters may be specified by
+    passing them in the include_chars string."""
     lexer = shlex.shlex(line, posix = True)
     # Rules for splitting tokens
-    lexer.wordchars = lexer.wordchars + ".:-%()/"
+    lexer.wordchars = lexer.wordchars + '.:-%()/' + include_chars
     lexer.whitespace_split = False
     # Append all tokens to a list
     tokens = []
