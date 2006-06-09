@@ -137,45 +137,73 @@ def lerp(x, (x0, y0), (x1, y1)):
     the 'y' of the given 'x'."""
     return y0 + (x - x0) * (y1 - y0) / (x1 - x0)
 
-def tween(frame, keyframes):
-    """Return the value at the given frame, interpolated along the given
-    Keyframes (listed in increasing order by frame).
-    """
-    # At endpoints and beyond, return the endpoint value
-    if frame <= keyframes[0]:
-        return keyframes[0].data
-    elif frame >= keyframes[-1]:
-        return keyframes[-1].data
+def tween(keyframes):
+    """Calculate all "in-between" frames from the given keyframes, and
+    return a list of values for all frames in sequence.
 
-    # Find which keyframe interval this frame falls in
-    while keyframes and frame >= keyframes[0].frame:
-        curkey = keyframes.pop(0)
-        # If frame falls on a keyframe, return the keyframe data
-        if frame == curkey.frame:
-            return curkey.data
-        if frame > curkey.frame:
-            left = curkey
-    right = keyframes[0]
+    For example, given three keyframes:
     
-    # Interpolate integers
-    if isinstance(left.data, int):
-        return lerp(frame, (left.frame, left.data), \
-                    (right.frame, right.data))
-    # Interpolate a tuple (x,y)
-    if isinstance(left.data, tuple):
-        # Interpolation endpoints
-        x0, y0 = left.data
-        x1, y1 = right.data
-        # Interpolate x and y separately
-        x = lerp(frame (left.frame, x0), \
-                 (right.frame, x1))
-        y = lerp(frame (left.frame, y0), \
-                 (right.frame, y1))
-        # And finally...
-        return (x, y)
+        >>> keys = [Keyframe(1, 0),
+        ...         Keyframe(6, 50),
+        ...         Keyframe(12, 10)]
+
+    The value increases from 0 to 50 over frames 1-6, then back down to 10
+    over frames 6-12:
+
+        >>> tween(keys)
+        [0, 10, 20, 30, 40, 50, 43, 36, 30, 23, 16, 10]
+
+    
+    """
+    data = []
+
+    # TODO: Sort keyframes in increasing order by frame number (to ensure
+    # keyframes[0] is the first frame, and keyframes[-1] is the last frame)
+    first = keyframes[0].frame
+    last = keyframes[-1].frame
+
+    # Pop off keyframes as each interval is calculated
+    left = keyframes.pop(0)
+    right = keyframes.pop(0)
+    frame = first
+    while frame <= last:
+        # Left endpoint
+        if frame == left.frame:
+            data.append(left.data)
+        # Right endpoint
+        elif frame == right.frame:
+            data.append(right.data)
+            # Get the next interval, if it exists
+            if keyframes:
+                left = right
+                right = keyframes.pop(0)
+        # Between endpoints; interpolate
+        else:
+            # Interpolate integers
+            if isinstance(left.data, int):
+                x0 = (left.frame, left.data)
+                y0 = (right.frame, right.data)
+                data.append(lerp(frame, x0, y0))
+            # Interpolate a tuple (x,y)
+            if isinstance(left.data, tuple):
+                # Interpolation endpoints
+                x0, y0 = left.data
+                x1, y1 = right.data
+                # Interpolate x and y separately
+                x = lerp(frame, (left.frame, x0), \
+                         (right.frame, x1))
+                y = lerp(frame, (left.frame, y0), \
+                         (right.frame, y1))
+                # And finally...
+                data.append((x, y))
+        frame += 1
+    return data
 
 class Effect:
-    """A "special effect" created by keyframing MVG draw commands."""
+    """A "special effect" created by keyframing MVG draw commands.
+    Commands that it might make sense to keyframe:
+        opacity
+    """
     def __init__(self, start, end):
         """Create an effect lasting from start to end (in frames)."""
         self.start = start
