@@ -145,13 +145,13 @@ def tween(keyframes):
                 right = keys.pop(0)
         # Between endpoints; interpolate
         else:
-            # Interpolate integers
-            if isinstance(left.data, int):
+            # Interpolate integers or floats
+            if isinstance(left.data, int) or isinstance(left.data, float):
                 x0 = (left.frame, left.data)
                 y0 = (right.frame, right.data)
                 data.append(lerp(frame, x0, y0))
             # Interpolate a tuple (x,y)
-            if isinstance(left.data, tuple):
+            elif isinstance(left.data, tuple):
                 # Interpolation endpoints
                 x0, y0 = left.data
                 x1, y1 = right.data
@@ -169,8 +169,6 @@ def tween(keyframes):
 class Overlay:
     """A visual element that may be composited onto a video canvas. May be
     semi-transparent."""
-    # TODO: Include here information about the effects channel for the overlay
-    # (default: always-visible), how to render it (in general)
     def __init__(self):
         pass
     def get_mvg(self, frame):
@@ -265,17 +263,23 @@ class Effect:
         """Create an effect lasting from start to end (in frames)."""
         self.start = start
         self.end = end
-        self.keys = {} # Keyframe lists, indexed by MVG command name
+        self.mvg_values = {} # Value lists, indexed by MVG command name
+
+    def keyframe(self, command, keyframes):
+        """Keyframe the given MVG command with the given list of Keyframes.
+        This function creates a list that may be indexed by frame number
+        to retrieve the corresponding (dependent) variable's value."""
+        self.mvg_values[command] = [None] + tween(keyframes)
 
     def get_mvg(self, frame):
         """Return an MVG object for drawing the effect at the given frame."""
         mvg = Drawing()
-        for command, keylist in self.keys.iteritems():
-            data = tween(frame, keylist)
-            if isinstance(data, tuple):
-                mvg.append('%s %s,%s' % (command, data[0], data[1]))
+        for command, values in self.mvg_values.iteritems():
+            value = values[frame]
+            if isinstance(value, tuple):
+                mvg.append('%s %f,%f' % (command, value[0], value[1]))
             else:
-                mvg.append('%s %s' % (command, data))
+                mvg.append('%s %f' % (command, value))
         return mvg
 
 
@@ -285,22 +289,25 @@ class Fade (Effect):
         """Fade in from start, for fade_length frames; hold at full
         opacity until fading out for fade_length frames before end."""
         Effect.__init__(self, start, end)
-        self.keys['opacity'] = [\
-            Keyframe(start, 0),                    # Start fading in
-            Keyframe(start + fade_length, 100),    # Fade-in done
-            Keyframe(end - fade_length, 100),      # Start fading out
-            Keyframe(end, 0)                       # Fade-out done
+        fade_curve = [\
+            Keyframe(start, 0.0),                  # Start fading in
+            Keyframe(start + fade_length, 1.0),    # Fade-in done
+            Keyframe(end - fade_length, 1.0),      # Start fading out
+            Keyframe(end, 0.0)                     # Fade-out done
             ]
+        self.keyframe('fill-opacity', fade_curve)
+
 
 class Move (Effect):
     """A movement effect, from one point to another."""
     def __init__(self, start, end, (x0, y0), (x1, y1)):
         """Move from start (x0, y0) to end (x1, y1)."""
         Effect.__init__(self, start, end)
-        self.keys['translate'] = [\
+        trans_curve = [\
             Keyframe(start, (x0, y0)),
             Keyframe(end, (x1, y1))
             ]
+        self.keyframe('translate', trans_curve)
 
 
 class VideoCanvas:
@@ -311,20 +318,22 @@ class VideoCanvas:
         self.overlays = []
         self.mvg = []
         for frame in range(frames):
-            self.mvg.append(Drawing(self.width, self.height))
+            self.mvg.append(Drawing((self.width, self.height), 'temp.mvg'))
 
     def add(self, overlay, effect=None):
         """Add the given Overlay to the canvas, with the given Effect."""
         self.overlays.append((overlay, effect))
 
-    def render(self, frame=0):
+    def render(self, frame=1):
         """Render the given frame with ImageMagick."""
         mvg = self.mvg[frame]
         mvg.clear()
         for overlay, effect in self.overlays:
+            mvg.push('graphic-context')
             if effect:
                 mvg.extend(effect.get_mvg(frame))
             mvg.extend(overlay.get_mvg())
+            mvg.pop('graphic-context')
         mvg.code()
         mvg.render()
 
@@ -337,10 +346,11 @@ class VideoCanvas:
 
 
 if __name__ == '__main__':
-    canvas = VideoCanvas(720,576,30)
-    bgd = Background((720, 576), 'blue')
+    canvas = VideoCanvas(720, 480, 90)
+    bgd = Background((720, 480), 'blue')
     canvas.add(bgd)
-    txt = Text((360,200), "Hello world")
-    move = Move(10, 20, (100,100), (200,200))
+    txt = Text((360, 240), "Hello world")
+    move = Move(0, 90, (0,0), (200,200))
+    fade = Fade(0, 90, 30)
     canvas.add(txt, move)
-    canvas.render()
+    canvas.render(1)

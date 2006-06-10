@@ -14,8 +14,8 @@ interpreter:
 
 And do something like this:
 
-    >>> from libtovid.mvg import MVG
-    >>> pic = MVG(800, 600)
+    >>> from libtovid.mvg import Drawing
+    >>> pic = Drawing(800, 600)
 
 This creates an image (pic) at 800x600 display resolution. pic has a wealth
 of draw functions, as well as a rough-and-ready editor interface (shown later).
@@ -139,28 +139,27 @@ Pie chart example: http://www.imagemagick.org/source/piechart.mvg
 import sys
 import commands
 
-# TODO: Separate editor interface from MVG data structure
-class MVG:
+class Drawing:
     """A Magick Vector Graphics (MVG) image with load/save, insert/append,
     and low-level drawing functions based on the MVG syntax.
 
-    Drawing commands are mostly identical to their MVG counterparts, e.g.
+    Drawing functions are mostly identical to their MVG counterparts, e.g.
     these two are equivalent:
 
         rectangle 100,100 200,200       # MVG command
-        rectangle((100,100), (200,200)) # Python function
+        rectangle((100,100), (200,200)) # Drawing function
 
     The only exception is MVG commands that are hyphenated. For these, use an
     underscore instead:
 
         font-family "Serif"      # MVG command
-        font_family("Serif")     # Python function
+        font_family("Serif")     # Drawing function
 
     """
-    def __init__(self, width=800, height=600):
+    def __init__(self, size=(720, 480), filename=''):
         self.clear()
-        self.width = width
-        self.height = height
+        self.size = size
+        self.filename = filename
 
     def clear(self):
         """Clear the current contents and position the cursor at line 1."""
@@ -168,114 +167,9 @@ class MVG:
         self.cursor = 1
         self.history = []
 
-    def load(self, filename):
-        """Load MVG from the given file."""
-        self.clear()
-        infile = open(filename, 'r')
-        for line in infile.readlines():
-            cleanline = line.lstrip(' \t').rstrip(' \n\r')
-            # Convert all single-quotes to double-quotes
-            cleanline = cleanline.replace("'", '"')
-            self.append(cleanline)
-        infile.close()
-
-    def save(self, filename):
-        """Save to the given MVG file."""
-        outfile = open(filename, 'w')
-        for line in self.data:
-            outfile.write("%s\n" % line)
-        outfile.close()
-
-    def code(self):
-        """Return complete MVG text with line numbers and a > at the
-        cursor position. Useful for doing interactive editing."""
-        code = ''
-        line = 1
-        while line < len(self.data):
-            # Put a > at the cursor position
-            if line == self.cursor:
-                code += "> "
-            code +=  "%s: %s\n" % (line, self.data[line])
-            line += 1
-        # If cursor is after the last line
-        if line == self.cursor:
-            code += ">"
-        print code
-
-    def render(self):
-        """Render the MVG image with ImageMagick, and display it."""
-        # TODO: Write .mvg to a file and use @drawfile; command-line length
-        # is exceeded easily with the current approach
-        cmd = "convert -size %sx%s " % (self.width, self.height)
-        cmd += " xc:none "
-        cmd += " -draw '%s' " % ' '.join(self.data)
-        cmd += " -composite miff:- | display"
-        print "Creating preview rendering."
-        print "Press 'q' or ESC in the image window to close the image."
-        print commands.getoutput(cmd)
-
-    def goto(self, line_num):
-        """Move the insertion cursor to the start of the given line."""
-        if line_num <= 0 or line_num > (len(self.data) + 1):
-            print "Can't goto line %s" % line_num
-            sys.exit(1)
-        else:
-            self.cursor = line_num
-
-    def goto_end(self):
-        """Move the insertion cursor to the last line in the file."""
-        self.goto(len(self.data))
-
-    def remove(self, from_line, to_line=None):
-        """Remove the given line, or range of lines, and position the cursor
-        where the removed lines were."""
-        # Remove a single line
-        if not to_line:
-            to_line = from_line
-        cur_line = from_line
-        while cur_line <= to_line:
-            self.history.append(['remove', cur_line, self.data.pop(cur_line)])
-            cur_line += 1
-        self.cursor = from_line
-
-    def extend(self, mvg):
-        """Extend self to include all data from the given MVG object."""
-        self.data.extend(mvg.data)
-
-    def append(self, mvg_string):
-        """Append the given MVG string as the last line, and position the
-        cursor after the last line."""
-        self.goto_end()
-        self.insert(mvg_string)
-
-    def insert(self, mvg_string):
-        """Insert the given MVG string before the current line, and position
-        the cursor after the inserted line."""
-        self.history.append(['insert', self.cursor])
-        self.data.insert(self.cursor, mvg_string)
-        self.cursor += 1
-
-    def undo(self, steps=1):
-        """Undo the given number of operations. Leave cursor at end."""
-        step = 0
-        while step < steps and len(self.history) > 0:
-            action = self.history.pop()
-            cmd = action[0]
-            line_num = action[1]
-            # Undo insertion
-            if cmd == 'insert':
-                print "Undoing insertion at line %s" % line_num
-                self.data.pop(action[1])
-            # Undo removal
-            elif cmd == 'remove':
-                print "Undoing removal at line %s" % line_num
-                self.data.insert(line_num, action[2])
-            step += 1
-        if step < steps:
-            print "No more to undo."
-        self.goto_end()
-
-    # Draw commands
+    #
+    # MVG drawing commands
+    #
 
     def affine(self, (sx, rx), (ry, sy), (tx, ty)):
         self.insert('affine %s %s %s %s %s %s' % (sx, rx, ry, sy, tx, ty))
@@ -289,7 +183,7 @@ class MVG:
         for x, y in point_list:
             command += ' %s,%s' % (x, y)
         self.insert(command)
-        
+
     def circle(self, (center_x, center_y), (perimeter_x, perimeter_y)):
         self.insert('circle %s,%s %s,%s' % \
                     (center_x, center_y, perimeter_x, perimeter_y))
@@ -489,38 +383,157 @@ class MVG:
         # or push('pattern', id, radial, x, y, width,height)
         self.insert('push %s' % context)
 
+    #
+    # Editor interface/interactive functions
+    #
+
+    def load(self, filename):
+        """Load MVG from the given file."""
+        self.clear()
+        infile = open(filename, 'r')
+        for line in infile.readlines():
+            cleanline = line.lstrip(' \t').rstrip(' \n\r')
+            # Convert all single-quotes to double-quotes
+            cleanline = cleanline.replace("'", '"')
+            self.append(cleanline)
+        infile.close()
+
+    def save(self, filename):
+        """Save to the given MVG file."""
+        outfile = open(filename, 'w')
+        for line in self.data:
+            outfile.write("%s\n" % line)
+        outfile.close()
+
+    def code(self):
+        """Return complete MVG text with line numbers and a > at the
+        cursor position. Useful for doing interactive editing."""
+        code = ''
+        line = 1
+        while line < len(self.data):
+            # Put a > at the cursor position
+            if line == self.cursor:
+                code += "> "
+            code +=  "%s: %s\n" % (line, self.data[line])
+            line += 1
+        # If cursor is after the last line
+        if line == self.cursor:
+            code += ">"
+        print code
+
+    def render(self):
+        """Render the MVG image with ImageMagick, and display it."""
+        # TODO: Write .mvg to a file and use @drawfile; command-line length
+        # is exceeded easily with the current approach
+        cmd = "convert -size %sx%s " % self.size
+        cmd += " xc:none "
+        cmd += " -draw '%s' " % ' '.join(self.data)
+        cmd += " -composite miff:- | display"
+        print "Creating preview rendering."
+        print "Press 'q' or ESC in the image window to close the image."
+        print commands.getoutput(cmd)
+
+    def goto(self, line_num):
+        """Move the insertion cursor to the start of the given line."""
+        if line_num <= 0 or line_num > (len(self.data) + 1):
+            print "Can't goto line %s" % line_num
+            sys.exit(1)
+        else:
+            self.cursor = line_num
+
+    def goto_end(self):
+        """Move the insertion cursor to the last line in the file."""
+        self.goto(len(self.data))
+
+    def append(self, mvg_string):
+        """Append the given MVG string as the last line, and position the
+        cursor after the last line."""
+        self.goto_end()
+        self.insert(mvg_string)
+
+    def insert(self, mvg_string):
+        """Insert the given MVG string before the current line, and position
+        the cursor after the inserted line."""
+        self.history.append(['insert', self.cursor])
+        self.data.insert(self.cursor, mvg_string)
+        self.cursor += 1
+
+    def remove(self, from_line, to_line=None):
+        """Remove the given line, or range of lines, and position the cursor
+        where the removed lines were."""
+        # Remove a single line
+        if not to_line:
+            to_line = from_line
+        cur_line = from_line
+        while cur_line <= to_line:
+            self.history.append(['remove', cur_line, self.data.pop(cur_line)])
+            # Data was popped, so to_line decrements
+            to_line -= 1
+        self.cursor = from_line
+
+    def extend(self, drawing):
+        """Extend self to include all data from the given MVG object, and
+        position the cursor at the end."""
+        self.data.extend(drawing.data[1:])
+        self.goto_end()
+
+    def undo(self, steps=1):
+        """Undo the given number of operations. Leave cursor at end."""
+        step = 0
+        while step < steps and len(self.history) > 0:
+            action = self.history.pop()
+            cmd = action[0]
+            line_num = action[1]
+            # Undo insertion
+            if cmd == 'insert':
+                print "Undoing insertion at line %s" % line_num
+                self.data.pop(action[1])
+            # Undo removal
+            elif cmd == 'remove':
+                print "Undoing removal at line %s" % line_num
+                self.data.insert(line_num, action[2])
+            step += 1
+        if step < steps:
+            print "No more to undo."
+        self.goto_end()
 
 
 
 # Demo
 if __name__ == '__main__':
-    img = MVG()
+    pic = Drawing((720, 480), 'drawing_test.mvg')
 
-    # Start MVG file with graphic-context and viewbox
-    img.push('graphic-context')
-    img.viewbox((0, 0), (720, 480))
+    # Start of MVG file
+    pic.push('graphic-context')
+    pic.viewbox((0, 0), (720, 480))
 
+    pic.push
     # Add a background fill
-    img.fill('darkblue')
-    img.rectangle((0, 0), (720, 480))
+    pic.fill('darkblue')
+    pic.rectangle((0, 0), (720, 480))
 
     # Some decorative circles
-    img.fill('blue')
-    img.circle((280, 350), (380, 450))
-    img.fill('orange')
-    img.circle((670, 100), (450, 200))
+    pic.fill('blue')
+    pic.circle((280, 350), (380, 450))
+    # Stroke only this circle, not any later objects
+    pic.push('graphic-context')
+    pic.stroke('black')
+    pic.stroke_width(12)
+    pic.fill('orange')
+    pic.circle((670, 100), (450, 100))
+    pic.pop('graphic-context')
 
     # White text in a range of sizes
-    img.fill('white')
-    for size in [5,10,15,20,25,30,35]:
+    pic.fill('white')
+    for size in [12,16,20,24,28,32]:
         ypos = 100 + size * size / 5
-        img.font('Helvetica')
-        img.font_size(size)
-        img.text((100, ypos), "%s pt: The quick brown fox" % size)
+        pic.font('Helvetica')
+        pic.font_size(size)
+        pic.text((100, ypos), "%s pt: The quick brown fox" % size)
 
     # Close out the MVG file
-    img.pop('graphic-context')
+    pic.pop('graphic-context')
 
     # Display the MVG text, then show the generated image
-    img.code()
-    img.render()
+    pic.code()
+    pic.render()
