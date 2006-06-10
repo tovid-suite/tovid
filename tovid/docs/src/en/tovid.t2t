@@ -91,6 +91,8 @@ Non-standard formats, playable in some DVD players:
     (528x480 NTSC, 520x576 PAL) KVCDx3 specification
 : **-kvcdx3a**
     (544x480 NTSC, 544x576 PAL) KVCDx3a specification (slightly wider)
+: **-bdvd**
+    (720x480 NTSC, 720x576 PAL) BVCD-enhanced long-playing DVD
 
 
 See [kvcd.net http://kvcd.net/] for details on the KVCD specification. Please
