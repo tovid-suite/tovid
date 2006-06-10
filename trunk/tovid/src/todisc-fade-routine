@@ -31,10 +31,11 @@
 # Mostly written by  Joe "Mac North" Friedrichsen:
 
 
-# Inputs to this script (environment variables):
-FRAME_RATE=29.97
-OPACITY=100
-ANI_MENU_LENGTH=20
+# user-defined variables....
+FRAME_RATE=${FRAME_RATE:-29.97}
+OPACITY=${OPACITY:-100}
+ANI_MENU_LENGTH=${ANI_MENU_LENGTH:-20}
+DISSOLVE_LIMIT=$OPACITY
 
 # get things in order
 # ##########################
@@ -42,14 +43,6 @@ ANI_MENU_LENGTH=20
 FADE_FLOOR=0
 FADE_CEILING=100
 MIST_CEILING=33
- 
-FRAME_RATE=$FRAME_RATE
- 
-# ##########################
-# user-defined variables....
- 
-ANI_MENU_LENGTH=$ANI_MENU_LENGTH
-DISSOLVE_LIMIT=$OPACITY
 
 # ##############
 # New variables!
