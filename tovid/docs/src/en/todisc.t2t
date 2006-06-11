@@ -127,7 +127,7 @@ font size constraints, titles may have a maximum of 12 characters.
     Opacity of thumbnail videos as a percentage (percent sign optional).
     Anything less than 100% is semi-transparent. Not recommended with dark
     backgrounds
-: -thumb-text-color COLOR (or -tumb-text-colour COLOR)
+: -thumb-text-color COLOR (or -thumb-text-colour COLOR)
      Color to use for the thumb titles (see -title-color)
 : -seek NUM
      Seek to NUM seconds before generating thumbnails (default: 1.0 seconds)
