@@ -650,6 +650,10 @@ if $ANI_SUB_MENU; then
     done
 fi
 
+# if Fading menu, and no BG IMAGE OR VIDEO, fade thumbs right in after title
+if $MENU_FADE && [[ -z "$BG_PIC" && -z "$BG_VIDEO" ]]; then
+    THUMBS_FADE_IN_START_TIME=2.5
+fi
 # Check input files for compliance; offer to tovid-encode non-compliant files
 for ((i=0; i<=NUM_FILES; i++)); do
     IN_FILE=${IN_FILES[i]}
