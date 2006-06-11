@@ -1329,7 +1329,7 @@ if [ "$TARGET" = "dvd" ]; then
 (
     cat <<EOF
 <?xml version="1.0" encoding="utf-8"?>
-<dvdauthor dest="$OUT_DIR" jumppad="1">
+<dvdauthor dest="$OUT_DIR" jumppad="0">
   <vmgm>
     <menus>
       <pgc>
