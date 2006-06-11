@@ -75,14 +75,6 @@ src_MANS = \
 	$(man_src_dir)/postproc.t2t \
 	$(man_src_dir)/todisc.t2t \
 	$(man_src_dir)/tovid.t2t
-#	$(man_src_dir)/idvid.t2t \
-#	$(man_src_dir)/makedvd.t2t \
-#	$(man_src_dir)/makemenu.t2t \
-#	$(man_src_dir)/makeslides.t2t \
-#	$(man_src_dir)/makexml.t2t \
-#	$(man_src_dir)/postproc.t2t \
-#	$(man_src_dir)/todisc.t2t \
-#	$(man_src_dir)/tovid.t2t
 
 # Make the manpages for svn users (tarball users' man pages made in dist-hook)
 #   This is a static pattern rule as seen on (TV!)
