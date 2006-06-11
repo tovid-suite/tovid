@@ -1812,7 +1812,7 @@ if $MENU_FADE && ! $STATIC; then
     done
 # copy a few black frames to make sure end frame is really "black"
     for ((i=ANI_MENU_END_FRAME; i<ANI_MENU_END_FRAME+6; i++)); do
-        cp $WORK_DIR/black.jpg $WORK_DIR/animenu/$(printf "%06d%s" $i .$IMG_FMT)
+        cp $WORK_DIR/black.jpg $WORK_DIR/animenu/$i.jpg
     done
 else # Do not do menu fade
     if $TRANSPARENT; then
