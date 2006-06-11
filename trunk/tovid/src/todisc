@@ -1866,7 +1866,7 @@ else # Do not do menu fade
 #            echo -ne "\rProcessing "$WORK_DIR/animenu/$count.jpg"  "
 #            spin -ne "\rProcessing "$WORK_DIR/animenu/$count.jpg"  "
             for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
-                ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  -name $(printf "%06d%s"  $count .jpg) ) )
+                ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  -name $(printf "%06d%s"  $count .$IMG_FMT) ) )
             done
             echo "ANI_PICS are "${ANI_PICS[@]}""
 
