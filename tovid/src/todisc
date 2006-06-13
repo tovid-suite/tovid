@@ -570,6 +570,11 @@ yecho
 yecho "Creating work directories"
 yecho
 
+# remove symlink in /tmp if there is one (shouldn't be)
+if test -h "$WORK_DIR"; then
+    echo -n "Removing existing symlink in /tmp . . . "
+    rm -fv "$WORK_DIR"
+fi
 
 # Clean out any existing WORK_DIR
 if test -d "$REAL_WORK_DIR"; then
@@ -888,8 +893,8 @@ fi
 if $MENU_FADE || $FEATHER; then
     convert -size $VIDSIZE xc:"#161514" "$WORK_DIR/black.jpg"
 fi
-DIMY=$(echo $THUMB_SIZE|cut -f1 -dx)
-DIMX=$(echo $THUMB_SIZE|cut -f2 -dx)
+DIMY=$(cut -f1 -dx <<< $THUMB_SIZE)
+DIMX=$(cut -f2 -dx <<< $THUMB_SIZE)
 DIMY1=$((DIMY / 20))
 DIMX1=$((DIMX / 20))
 DIMY2=$((DIMY - DIMY1))
@@ -1451,7 +1456,7 @@ if $SUB_MENU; then
         done
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
-        CMD=$(echo ${cmd[@]} |  sed 's/ /,/g;s/,$//')
+        CMD=$( sed 's/ /,/g;s/,$//' <<< ${cmd[@]})
         TCODE_CMD=(nice transcode --print_status 340  -q 1 -i "${IN_FILES[i]}" -o "${PICS_OUT[@]}" \
         -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c "$CMD" -y $SM_IMG_FMT,null)
         yecho
@@ -2045,10 +2050,10 @@ if $SUB_MENU; then
     for ((x=1; x<=V_ARRAY_TOTAL; x++)); do
         echo "Running spumux "$WORK_DIR/submenu${x}_spumux.xml" < \
         $WORK_DIR/menu${x}.mpg > \
-        $(echo $WORK_DIR/menu${x}.mpg|sed 's/\(.*\)menu/\1Menu/')"
+        $(sed 's/\(.*\)menu/\1Menu/' <<< $WORK_DIR/menu${x}.mpg)"|fold -bs
         spumux "$WORK_DIR/submenu${x}_spumux.xml" < \
         $WORK_DIR/menu${x}.mpg > \
-        $(echo $WORK_DIR/menu${x}.mpg|sed 's/\(.*\)menu/\1Menu/')
+        $(sed 's/\(.*\)menu/\1Menu/' <<< $WORK_DIR/menu${x}.mpg)
     done
 fi
 
