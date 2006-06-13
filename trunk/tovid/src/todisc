@@ -224,6 +224,7 @@ function vid_length()
 
 function cleanup()
 {
+    echo
     yecho "Cleaning up..."
     if $KEEP_FILES; then
         yecho "Keeping temporary files in $REAL_WORK_DIR"
@@ -289,6 +290,7 @@ function confirm_preview()
         echo "    -thumbfont and -thumb-fontsize"
         echo "If you get black frames, then look at the -seek option"
         echo "For other fine-tuning options, see 'man todisc'."
+        rm -fv /tmp/todisc-work
         exit 0
     fi
 #    yecho
@@ -813,7 +815,7 @@ echo -e "**** NOTE ****\n"
 echo "Doing all work in directory $REAL_WORK_DIR"
 echo "$WORK_DIR will be a symlink pointing to this directory"
 echo -e "\n**************"
-sleep 4
+sleep 1
 cd "$WORK_DIR"
 
 
@@ -1195,7 +1197,7 @@ fi
 echo
 echo "Creating images from each video for the main menu"
 for ((i=0; i<=NUM_FILES; i++)) ; do
-    echo "Working on "${IN_FILES[$i]}""
+    echo "Working on "${IN_FILES[i]}""
     CREATE_IMG_CMD=(ffmpeg -i "${IN_FILES[$i]}"  $SEEK -vframes $FRAMES \
     -s "$THUMB_SIZE" "$WORK_DIR/pics/$i/%06d.$IMG_FMT")
     echo -e "\nRunning: ${CREATE_IMG_CMD[@]}\n" | fold -bs >> "$LOG_FILE"
@@ -1470,7 +1472,7 @@ if $SUB_MENU; then
             while ps -p $TCODE_PID >/dev/null; do
                 sleep $SLEEP # spinner interval
             spin "Seeking in video and creating images: $(find "$JPEG_DIR" \
-            -maxdepth 1 -name $PREFIX\*chapt\*.jpg|sort|tail -n 1)" "$SPINNER  "
+            -maxdepth 1 -name $PREFIX\*chapt\*.jpg|sort|awk -F / '{ field = $NF }; END{ print field }')" "$SPINNER  "
             done
             echo
             echo "Created $(find "$JPEG_DIR" -maxdepth 1 -name $PREFIX\*chapt\*.jpg|wc -l) JPEGS"
@@ -1507,7 +1509,7 @@ if $SUB_MENU; then
             for ((a=1; a<300; a++)); do
 #                echo -ne "\r                                                            "
 #                echo -ne "\rProcessing "$WORK_DIR/animenu/$a.$SM_IMG_FMT"  "
-                spin "\rProcessing "$WORK_DIR/animenu/$a.$SM_IMG_FMT"  "
+                spin "\rProcessing "$a.$SM_IMG_FMT"  "
                 for ((b=0; b<${CHAPTERS[i]}; b++)); do
                     IMGS=( "${IMGS[@]}" $(find $WORK_DIR/animenu/$b \
                     -name \*.$SM_IMG_FMT| sort|head -n $a | sed -n -e "$a p") )
@@ -1535,7 +1537,7 @@ if $SUB_MENU; then
             sort| head -n ${CHAPTERS[i]}) )
             # create frames for the chapter thumbs
             for PIC in "${imgs[@]}"; do
-            spin "\rProcessing "$PIC"  "
+            spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$PIC")  "
                 convert -background '#141614' -frame 5x5 \
                 -bordercolor none -mattecolor "#444744" "$PIC" miff:- |
                 convert -resize "${GEO_ARRAY[C]}"! - "$PIC"
@@ -1732,7 +1734,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
     for pic in "${PICS[@]}"; do
 #        echo -ne "\r                                                            "
 #        echo -ne "\rProcessing "$pic"  "
-        spin "\rProcessing "$pic"  "
+        spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$pic")  "
         IM_CMD0=(composite -compose CopyOpacity $THUMB_MASK +matte \
         "$pic")
         IM_CMD1=(convert -trim +repage -)
@@ -1802,7 +1804,7 @@ if $MENU_FADE && ! $STATIC; then
         # TODO: More descriptive message about what this loop is doing
 #        spin "Working..."
 #        echo -ne "\r                                                            "
-        spin -ne "\rProcessing "$WORK_DIR/animenu/$(($frame + 1)).jpg"  "
+        spin  "\rProcessing "$(($frame + 1)).jpg"  "
 
 
         for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
@@ -1846,7 +1848,7 @@ else # Do not do menu fade
 #            spin "Working..."
 #            echo -ne "\r                                                            "
 #            echo -ne "\rProcessing "$WORK_DIR/animenu/$count.jpg"  "
-            spin "\rProcessing "$WORK_DIR/animenu/$count.jpg"  "
+            spin "\rProcessing "$count.jpg"  "
 
             for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
                 ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  -name $(printf "%06d%s"  $count .$IMG_FMT) ) )
@@ -1888,11 +1890,10 @@ else # Do not do menu fade
 #            spin "Working..."
 #            echo -ne "\r                                                            "
 #            echo -ne "\rProcessing "$WORK_DIR/animenu/$count.jpg"  "
-#            spin -ne "\rProcessing "$WORK_DIR/animenu/$count.jpg"  "
+            spin -ne "\rProcessing "$count.jpg"  "
             for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
                 ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  -name $(printf "%06d%s"  $count .$IMG_FMT) ) )
             done
-            echo "ANI_PICS are "${ANI_PICS[@]}""
 
             # make final montages and composite onto grey background with title
             IM_CMD0=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
