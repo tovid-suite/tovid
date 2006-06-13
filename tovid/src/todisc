@@ -714,7 +714,7 @@ if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
         for i in "${FILES_TO_ENCODE[@]}"; do
             yecho "Converting: $i"
             countdown
-            tovid -$TV_STANDARD -$TARGET -in $i -out $i.enc
+            tovid -$TV_STANDARD -$TARGET -in "$i" -out "$i.enc"
             wait
             # See if output file exists
             if ! test -f "$i.enc.mpg"; then
