@@ -612,7 +612,7 @@ if [ ${#CHAPTERS[@]} -eq 1 ]; then
         CHAPTERS[i]=${CHAPTERS[0]}
     done
 fi
-# if more than value for CHAPTERS, make sure they equal video #
+# if more than one value for CHAPTERS, make sure they equal video #
 if [[ $SUB_MENU &&  ${#FILES[@]} -ne ${#CHAPTERS[@]} &&  ${#CHAPTERS[@]} -ne 1 ]]; then
     usage_error "Please give the same number of submenu audios as videos.
     You gave ${#FILES[@]} video files and ${#CHAPTERS[@]} chapter values"
@@ -678,7 +678,7 @@ fi
 
 # Check input files for compliance; offer to tovid-encode non-compliant files
 for ((i=0; i<=NUM_FILES; i++)); do
-    IN_FILE=${IN_FILES[i]}
+    IN_FILE="${IN_FILES[i]}"
     yecho "Checking $IN_FILE for compliance..."
     # TODO: Check for PAL/NTSC compliance
     # If video matches the target format, append to NEW_IN_FILES
