@@ -193,7 +193,7 @@ file_output_progress()
         return
     fi
     FOP_OUTFILE="$1"
-    FOP_BASENAME=`basename $FOP_OUTFILE`
+    FOP_BASENAME=`basename "$FOP_OUTFILE"`
     FOP_MSG="$2"
     # A dumb little animation toggle
     FOP_FLIP=false
