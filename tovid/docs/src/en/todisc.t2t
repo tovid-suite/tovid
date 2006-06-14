@@ -123,9 +123,9 @@ font size constraints, titles may have a maximum of 12 characters.
     bit of transparency and blur away a good deal of the shape's edges.
 : -thumb-font FONT
     Display thumbnail titles in the given font.
-: -opacity [0-100]% (default 100)
-    Opacity of thumbnail videos as a percentage (percent sign optional).
-    Anything less than 100% is semi-transparent. Not recommended with dark
+: -opacity [0-100] (default 100)
+    Opacity of thumbnail videos as a percentage (no percent sign).
+    Anything less than 100(%) is semi-transparent. Not recommended with dark
     backgrounds
 : -thumb-text-color COLOR (or -thumb-text-colour COLOR)
      Color to use for the thumb titles (see -title-color)
