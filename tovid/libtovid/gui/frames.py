@@ -196,9 +196,10 @@ class MainFrame(wx.Frame):
         """Key down event handler.  Primarily used to close the app if certain keys are pressed.
         """
         key = evt.KeyCode()
-        controlDown = evt.ControlDown()
-        if ((controlDown) and ("Q" == chr(key))):
-            self.Close()
+        if (key >= 0 and key < 256):
+            controlDown = evt.ControlDown()
+            if ((controlDown) and ("Q" == chr(key))):
+                self.Close()
 
     #def OnFilePrefs(self, evt):
     #    """Open preferences window and set configuration"""
