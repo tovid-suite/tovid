@@ -304,7 +304,6 @@ function spin()
     SPINNER="${SPIN_CHARS:SP++%${#SPIN_CHARS}:1}"
     # Print spaces to overwrite previous line
     echo -ne "\r                                                            "
-#    echo -ne "\r$@ $SPINNER   "
     echo -ne "\r$@ "
 }
 
@@ -578,7 +577,7 @@ fi
 
 # Clean out any existing WORK_DIR
 if test -d "$REAL_WORK_DIR"; then
-    echo "Removing existing files in \"$WORK_DIR\""
+    echo "Removing existing files in \"$REAL_WORK_DIR\""
     rm -rf "$REAL_WORK_DIR"
 fi
 mkdir -pv "$REAL_WORK_DIR"
