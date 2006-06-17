@@ -99,8 +99,8 @@ abspath ()
 # ******************************************************************************
 verify ()
 {
-  VERIFY_VAR=$1
-  VERIFY_TEST_TYPE=$2
+  VERIFY_VAR="$1"
+  VERIFY_TEST_TYPE="$2"
   case $VERIFY_TEST_TYPE in
      "range" )
      VERIFY_LOW=`echo "$3" | awk '{ print $1 }'`
