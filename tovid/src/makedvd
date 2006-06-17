@@ -97,26 +97,34 @@ OUT_DIR="makedvd_out"
 DISC_LABEL=""
 
 # Grab DVD media information
-# Returns nothing, but sets the 'global' variabes MEDIA_INFO, DISC_STATUS, and DISC_TYPE
+# Returns nothing, but sets the 'global' variables 
+#   MEDIA_INFO, DISC_STATUS, and DISC_TYPE
 probe_media ()
 {
-  # Grad entire media info
+  # Grab entire media info
   MEDIA_INFO=`dvd+rw-mediainfo $DVDRW_DEVICE 2>&1`
- 
+
   # Extract the status (either "blank" or "complete")
   DISC_STATUS=`echo "$MEDIA_INFO" | grep "Disc status" | awk '{ print $3 }'`
 
   # Extract the disc type
   DISC_TYPE=`echo "$MEDIA_INFO" | grep "Mounted Media" | awk '{ print $4 }'`
-  if test -z $DISC_TYPE; then DISC_TYPE="no disc"; fi
+  if test -z $DISC_TYPE; then 
+     if echo "$MEDIA_INFO" | grep -q "non-DVD"; then
+        DISC_TYPE="non-DVD media"
+     else
+        DISC_TYPE="no disc"
+     fi
+  fi
 
   # Find the capcity
   DISC_CAPACITY=`echo "$MEDIA_INFO" | grep "Legacy lead-out" | awk -F '=' '{ print $2 }'`
+  if test -z $DISC_CAPACITY; then DISC_CAPACITY=0; fi
   DISC_CAPACITY=`echo "$DISC_CAPACITY / 1024 / 1024" | bc`
 
   # Define usable DVDs
-  HAVE_DVD_RW=`verify $DISC_TYPE set "DVD-RW DVD+RW"`
-  if `verify $DISC_TYPE set "DVD-R DVD+R"` && test "x$DISC_STATUS" = "xblank"
+  HAVE_DVD_RW=`verify "$DISC_TYPE" set "DVD-RW DVD+RW"`
+  if `verify "$DISC_TYPE" set "DVD-R DVD+R"` && test "x$DISC_STATUS" = "xblank"
     then HAVE_BLANK_DVD_R=:
     else HAVE_BLANK_DVD_R="false"
   fi
@@ -233,9 +241,9 @@ if $DO_AUTHOR; then
     else
         runtime_error "Could not create the DVD-Video disc structure in $OUT_DIR. Leaving $OUT_DIR for inspection."
     fi
-fi
 
 echo "Authoring completed."
+fi
 
 # If not burning, print a message and exit
 if ! $DO_BURN; then
@@ -255,7 +263,8 @@ else
     # Here's a simple way: just quit
     if test -b $DVDRW_DEVICE; then :
     else
-      echo "Couldn't find $DVDRW_DEVICE! Stopping here."
+      echo "Couldn't find $DVDRW_DEVICE! Are you sure your burner is $DVDRW_DEVICE?"
+      echo "Stopping here."
       exit 1
     fi
 
@@ -289,9 +298,7 @@ else
     echo $SEPARATOR
     echo "Found $DISC_STATUS $DISC_TYPE."
 
-    DISC_SUM=`du -s $OUT_DIR | awk -F ' ' '{print $1}'`
-    DISC_SUM=`echo "$DISC_SUM / 1024 / 1024" | bc`
-
+    DISC_SUM=`du -s -B M "$OUT_DIR" | awk '{print $1}' | tr -d M`
     if test $DISC_SUM -gt $DISC_CAPACITY; then
        echo $SEPARATOR
        echo "Cannot continue! DVD image (${DISC_SUM}MB) exceeds the DVD's capacity (${DISC_CAPACITY}MB)."
@@ -321,7 +328,7 @@ else
     else
         echo "Using disk label \"$VOLID\""
     fi
-    
+ 
     # Burn it already!
     BURN_CMD="growisofs -use-the-force-luke=dao -dvd-compat $BURN_SPEED -Z $DVDRW_DEVICE -dvd-video -V \"$VOLID\" $OUT_DIR"
     echo $SEPARATOR
