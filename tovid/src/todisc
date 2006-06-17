@@ -347,6 +347,17 @@ while test $# -gt 0; do
             if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
             unset IFS
             ;;
+        "-submenu-titles" )
+            shift
+            # Hackish list-parsing
+            IFS="";while test $# -gt 0 && test ${1:0:1} != "-"; do
+                SM_TITLES=("${SM_TITLES[@]}" "$1")
+                shift
+            done
+            # Do not skip past the next argument
+            if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
+            unset IFS
+            ;;
         "-out" )
             shift
             OUT_PREFIX="$1"
@@ -845,9 +856,11 @@ elif [ $TARGET = "svcd" ]; then
     FFMPEG_OPTS="-b 2200 -minrate 2200 -maxrate 2200 -bufsize 230 -aspect 4:3"
     if [ $TV_STANDARD = ntsc ]; then
         VIDSIZE="480x480"
+        PREVIEW_SIZE="720x480"
         FRAME_RATE=29.970
     elif [ $TV_STANDARD = pal ]; then
         VIDSIZE="480x576"
+        PREVIEW_SIZE="720x576"
         FRAME_RATE=25
     fi
 fi
@@ -1090,13 +1103,17 @@ if $TRANSPARENT; then
     -gravity north -geometry +0+45 - \
     "$WORK_DIR/pics/template.png" -background none miff:- |
     convert - "$WORK_DIR/title_txt.png"  \
-    -gravity south -geometry +0+65 -composite miff:- |display
+    -gravity south -geometry +0+65 -composite miff:- |
+    convert -resize $PREVIEW_SIZE! - $WORK_DIR/preview.png
+    display $WORK_DIR/preview.png
 else # Not transparent
     montage ${PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
     -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
     convert "$WORK_DIR/pics/template.png" \
     "$WORK_DIR/title_txt.png"  -gravity south -geometry +0+65 -composite \
-    -  -gravity north -geometry +0+45 -composite miff:- | display
+    -  -gravity north -geometry +0+45 -composite miff:- |
+    convert -resize $PREVIEW_SIZE! - $WORK_DIR/preview.png
+    display $WORK_DIR/preview.png
 fi
 confirm_preview
 
@@ -1416,15 +1433,18 @@ if $SUB_MENU; then
     yecho "Building submenus"
     yecho
     yecho "Creating images for each chapter"
+    if [ -z "$SM_TITLES" ]; then
+        SM_TITLES=("${TITLES[@]}")
+    fi
     for ((i=0; i<${#IN_FILES[@]}; i++)); do
         C=$((${CHAPTERS[i]} - 1))
         yecho "Creating a transparent title PNG"
         convert -size 620x100 xc:none -font "$MENU_FONT" \
         -pointsize $MENU_FONTSIZE \
-        -fill "$SM_TITLE_COLOUR" -draw "gravity center text 2,2 \"${TITLES[i]}\"" \
+        -fill "$SM_TITLE_COLOUR" -draw "gravity center text 2,2 \"${SM_TITLES[i]}\"" \
         -stroke "$SUBMENU_STROKE" -strokewidth 1 \
         -fill "$SM_TITLE_COLOUR" -stroke "$SUBMENU_STROKE" \
-        -draw "gravity center text 1,1 \"${TITLES[i]}\"" miff:- | \
+        -draw "gravity center text 1,1 \"${SM_TITLES[i]}\"" miff:- | \
         convert -trim +repage - -blur 0x0.4 $WORK_DIR/title${i}_txt.png
 
         # which is harmless as they get removed, but needs to be tweaked         
@@ -2055,10 +2075,22 @@ if $SUB_MENU; then
         $(sed 's/\(.*\)menu/\1Menu/' <<< $WORK_DIR/menu${x}.mpg)
     done
 fi
-
-echo "Running dvdauthor to create the DVD filesystem"
-dvdauthor -x "$DVDAUTHOR_XML"
-
+set -x
+if [ "$TARGET" = dvd ]; then
+    echo "Running dvdauthor to create the DVD filesystem"
+    dvdauthor -x "$DVDAUTHOR_XML"
+elif [ "$TARGET" = svcd ]; then
+    if $SUB_MENU; then
+        makexml -vcd -topmenu "$WORK_DIR/animenu.mpg" \
+        $(for ((x=1; x<=V_ARRAY_TOTAL; x++)); do echo \
+        "-menu $WORK_DIR/Menu${x}.mpg";done) "${IN_FILES[@]}" -out MyDisc
+        vcdxbuild MyDisc.xml
+    else
+        makexml -svcd -menu "$WORK_DIR/animenu.mpg" "${IN_FILES[@]}" -out MyDisc
+        vcdxbuild MyDisc.xml
+    fi
+fi
+set +x
 SCRIPT_END_TIME=`date +%s`
 SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
 HHMMSS=`format_time $SCRIPT_TOT_TIME`
@@ -2067,7 +2099,13 @@ cleanup
 echo $SEPARATOR
 echo "todisc took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
 echo $SEPARATOR
-echo "Your new DVD should be in $OUT_DIR"
+if [ "$TARGET" = dvd ]; then
+    echo "Your new DVD should be in $OUT_DIR"
+elif [ "$TARGET" = svcd ]; then
+    echo "Your svcd bin and cue files are ready"
+    echo "You can burn them with:"
+    echo  "cdrdao write --device /dev/hdc --driver generic-mmc videocd.cue"
+fi
 echo
 echo "Thanks for using todisc."
 
