@@ -2075,7 +2075,6 @@ if $SUB_MENU; then
         $(sed 's/\(.*\)menu/\1Menu/' <<< $WORK_DIR/menu${x}.mpg)
     done
 fi
-set -x
 if [ "$TARGET" = dvd ]; then
     echo "Running dvdauthor to create the DVD filesystem"
     dvdauthor -x "$DVDAUTHOR_XML"
@@ -2090,7 +2089,6 @@ elif [ "$TARGET" = svcd ]; then
         vcdxbuild MyDisc.xml
     fi
 fi
-set +x
 SCRIPT_END_TIME=`date +%s`
 SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
 HHMMSS=`format_time $SCRIPT_TOT_TIME`
