@@ -210,10 +210,6 @@ quit
 BC_EOF
 }
 
-GAMMA_VALUES="`init_gamma_array 1 0.1 5 0.05 0.1 | tr '\n' ' '`"
-GAMMA_ARRAY=( "$GAMMA_VALUES" )
-echo "${GAMMA_ARRAY[@]}"
-
 # example usage
 #while [[ $frame -le $ANI_MENU_END_FRAME ]]; do
 #    BG=$(get_bg_opacity)
