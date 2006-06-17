@@ -132,9 +132,6 @@ pyexecGUIdir = $(pyexecdir)/libtovid/gui
 dist-hook:
 	rm -rvf $(top_distdir)/src/tovid-init
 	mkdir $(distdir)/docs/man
-	echo $(src_MANS)
-	echo BREAK
-	echo $${src_MANS}
 	for manpage_src in $(src_MANS); do \
 	  manpage=`echo "$${manpage_src}" | sed 's/t2t/1/g'`; \
 	  txt2tags -t man -i $${manpage_src} -o $${manpage}; \
