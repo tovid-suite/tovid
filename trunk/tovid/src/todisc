@@ -598,6 +598,10 @@ ln -sfv "$REAL_WORK_DIR" /tmp/todisc-work
 # Remove any existing log file
 test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
 
+# disable submenus for svcd
+if $SUB_MENU && [ "$TARGET" = svcd ]; then
+    usage_error "Sorry, submenu disabled for svcd for now, please remove -submenu option"
+fi
 # allow user to only specify one audio file for all submenus
 if [ ${#SM_AUDIO[@]} -eq 1 ]; then
     SM_AUDIO_FILE=${SM_AUDIO[0]}
@@ -2079,16 +2083,16 @@ if [ "$TARGET" = dvd ]; then
     echo "Running dvdauthor to create the DVD filesystem"
     dvdauthor -x "$DVDAUTHOR_XML"
 elif [ "$TARGET" = svcd ]; then
-    if $SUB_MENU; then
-        makexml -vcd -topmenu "$WORK_DIR/animenu.mpg" \
-        $(for ((x=1; x<=V_ARRAY_TOTAL; x++)); do echo \
-        "-menu $WORK_DIR/Menu${x}.mpg";done) "${IN_FILES[@]}" -out MyDisc
-        vcdxbuild MyDisc.xml
-    else
-        makexml -svcd -menu "$WORK_DIR/animenu.mpg" "${IN_FILES[@]}" -out MyDisc
-        vcdxbuild MyDisc.xml
-    fi
+    makexml -svcd -menu "$WORK_DIR/animenu.mpg" "${IN_FILES[@]}" -out MyDisc
+    vcdxbuild MyDisc.xml
 fi
+#    if $SUB_MENU; then
+#        makexml -vcd -topmenu "$WORK_DIR/animenu.mpg" \
+#        $(for ((x=1; x<=V_ARRAY_TOTAL; x++)); do echo \
+#        "-menu $WORK_DIR/Menu${x}.mpg";done) "${IN_FILES[@]}" -out MyDisc
+#        vcdxbuild MyDisc.xml
+#    else
+
 SCRIPT_END_TIME=`date +%s`
 SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
 HHMMSS=`format_time $SCRIPT_TOT_TIME`
