@@ -221,3 +221,6 @@ BC_EOF
 #    echo "$frame ($time) | BG: $BG mist: $MIST text: $TEXT montage: $MONTAGE"
 #    ((frame++))
 #done
+GAMMA_VALUES="`init_gamma_array 1 0.01 5 0.01 1 | tr '\n' ' '`"
+GAMMA_ARRAY=( "$GAMMA_VALUES" )
+#echo ${GAMMA_ARRAY[@]}
