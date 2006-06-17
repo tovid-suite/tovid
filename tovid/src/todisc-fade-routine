@@ -162,7 +162,61 @@ get_thumb_opacity ()
  
   echo $S
 }
-    
+
+# Initialize a 'random' array of gamma values. There are 5 input variables:
+#   $1 = the average gamma value
+#   $2 = the magnitude of the main gamma variation (0.1 is a good start)
+#   $3 = the time before the main variation repeats itself (in seconds)
+#   $4 = the magnitude of the minor gamma variation (half of main is good)
+#   $5 = the time before the minor variation repeats itself (in seconds)
+#
+#   OUTPUT = a newline separated list of numbers
+#
+# USAGE:
+#           init_gamma_array average main_mag main_time minor_mag minor_time
+# EXAMPLE:
+#           GAMMA_VALUES="`init_gamma_array 1 0.1 5 0.05 0.1 | tr '\n' ' '`"
+#           GAMMA_ARRAY=( "$GAMMA_VALUES" )
+
+init_gamma_array ()
+{
+GAMMA_AVERAGE=$1
+GAMMA_AMPLITUDE=$2
+GAMMA_PERIOD=$3
+GAMMA_AM_AMPLITUDE=$4
+GAMMA_AM_PERIOD=$5
+
+bc -l <<BC_EOF
+pi=4*a(1);
+
+start_frame=0
+
+# Get values from standard in
+# Format:
+# echo "29.97\n 300\n 10\n .1\n 5\n .05\n .1\n" | bc -l
+frame_rate=$FRAME_RATE;
+end_frame=$ANI_MENU_END_FRAME;
+average=$GAMMA_AVERAGE;
+amplitude=$GAMMA_AMPLITUDE;
+period=$GAMMA_PERIOD;
+am_amplitude=$GAMMA_AM_AMPLITUDE;
+am_period=$GAMMA_AM_PERIOD;
+
+scale=3;
+for (i=start_frame; i <= end_frame; i++) {
+  current_frame=i;
+  x=current_frame / frame_rate;
+
+  # AM modulation
+  gamma=average + (amplitude + am_amplitude*s(x*2*pi/am_period)) * s(x*2*pi/period);
+
+  print gamma, "\n";
+}
+quit
+BC_EOF
+
+}
+
 # example usage
 #while [[ $frame -le $ANI_MENU_END_FRAME ]]; do
 #    BG=$(get_bg_opacity)
