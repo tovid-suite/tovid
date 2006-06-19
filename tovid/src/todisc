@@ -1739,7 +1739,7 @@ if [ -n "$BG_VIDEO" ]; then
     fi
     # make sure there are enough pics to make a bg video 
     IMAGES=( "${IMAGES[@]}" \
-    $(find $WORK_DIR/bg -maxdepth 1 -name \*[1-9]\*.jpg) )
+    $(find $WORK_DIR/bg -maxdepth 1 -name \*[1-9]\*.jpg|sort) )
     last_pic=${#IMAGES[@]}
     next_pic=$(($last_pic + 1))
     if [ $last_pic -lt $MAX_ANI_LENGTH ]; then
@@ -1756,7 +1756,7 @@ yecho
 yecho "Adding title to video images and resizing"
 for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
-    $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT) )
+    $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT|sort) )
     echo
     yecho "Working on ${#PICS[@]} images from ${IN_FILES[i]}"
     for pic in "${PICS[@]}"; do
@@ -1790,20 +1790,20 @@ for ((i=0; i<=NUM_FILES; i++)); do
     # make sure all animated thumbs finish at the same time 
     if ! $STATIC; then
         IMAGES=( "${IMAGES[@]}" \
-        $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT) )
+        $(find $WORK_DIR/pics/$i -maxdepth 1 -name 00\*.$IMG_FMT|sort) )
         last_pic=${#IMAGES[@]}
         next_pic=$(($last_pic + 1))
         if [ $last_pic -lt $MAX_ANI_LENGTH ]; then
             for ((l=next_pic; l<=MAX_ANI_LENGTH; l++)); do
-                cp $WORK_DIR/pics/$i/${last_pic}.$IMG_FMT $WORK_DIR/pics/$i/$l.$IMG_FMT
+                cp $WORK_DIR/pics/$i/$( printf %06d $last_pic).$IMG_FMT \
+                $WORK_DIR/pics/$i/$(printf %06d $l).$IMG_FMT
             done
         fi
         unset IMAGES PICS last_pic next_pic
    fi
 done
-
 yecho
-yecho "Making final montages and compositing onto background with title"
+yecho "Making $FRAMES final montages and compositing onto background with title"
 yecho
 if $MENU_FADE && ! $STATIC; then
     if [ -z "$BG_VIDEO" ]; then
@@ -1865,8 +1865,8 @@ if $MENU_FADE && ! $STATIC; then
         unset ANI_PICS
     done
 # copy a few black frames to make sure end frame is really "black"
-    for ((i=ANI_MENU_END_FRAME; i<ANI_MENU_END_FRAME+6; i++)); do
-        cp $WORK_DIR/black.jpg $WORK_DIR/animenu/$(printf "%06d%s" $i .$IMG_FMT)
+    for ((i=FRAMES; i<FRAMES+18; i++)); do
+        cp $WORK_DIR/black.jpg $WORK_DIR/animenu/$i.jpg
     done
 else # Do not do menu fade
     if $TRANSPARENT; then
@@ -1970,7 +1970,7 @@ if $STATIC; then
     PICS_IN="$WORK_DIR/animenu/1.jpg"
 else  # animated menu
     if $MENU_FADE; then
-        JPEG2YUV_OPTS="-n $((ANI_MENU_END_FRAME + 6))"
+        JPEG2YUV_OPTS="-n $((ANI_MENU_END_FRAME + 18))"
     else
         JPEG2YUV_OPTS="-n $ANI_FRAMES"
     fi
@@ -2086,6 +2086,9 @@ elif [ "$TARGET" = svcd ]; then
     makexml -svcd -menu "$WORK_DIR/animenu.mpg" "${IN_FILES[@]}" -out MyDisc
     vcdxbuild MyDisc.xml
 fi
+echo "Cleaning up unwanted files in $REAL_WORK_DIR"
+rm -f "$WORK_DIR"/*.png
+rm -fr $WORK_DIR/animenu $WORK_DIR/pics
 #    if $SUB_MENU; then
 #        makexml -vcd -topmenu "$WORK_DIR/animenu.mpg" \
 #        $(for ((x=1; x<=V_ARRAY_TOTAL; x++)); do echo \
