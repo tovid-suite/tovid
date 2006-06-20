@@ -26,18 +26,11 @@ frames). Think of it as "compiling" to MVG.
 Effects are applied to video objects at the canvas level (since canvas is
 responsible for animation, frames)
 
-    >>> canvas = VideoCanvas(720, 480)
-    >>> bgd = Background('/pub/video/test/bg.avi')
-    >>> canvas.add(bgd)
-    >>> title = Text((360, 100), "Quantum Leap")
-    >>> canvas.add(title)
-    >>> thumbs = ThumbGrid(3, 2, video_list)
-    >>> 
 """
 
 from math import floor, sqrt
 from libtovid.mvg import Drawing
-
+import doctest
 
 class Keyframe:
     """Associates a specific frame in an animation with a numeric value.
@@ -68,10 +61,12 @@ class Keyframe:
         self.frame = frame
         self.data = data
 
+
 def lerp(x, (x0, y0), (x1, y1)):
     """Do linear interpolation between points (x0, y0), (x1, y1), and return
     the 'y' of the given 'x'."""
     return y0 + (x - x0) * (y1 - y0) / (x1 - x0)
+
 
 def tween(keyframes):
     """Calculate all "in-between" frames from the given keyframes, and
@@ -145,170 +140,28 @@ def tween(keyframes):
                 right = keys.pop(0)
         # Between endpoints; interpolate
         else:
-            # Interpolate integers or floats
-            if isinstance(left.data, int) or isinstance(left.data, float):
-                x0 = (left.frame, left.data)
-                y0 = (right.frame, right.data)
-                data.append(lerp(frame, x0, y0))
-            # Interpolate a tuple (x,y)
-            elif isinstance(left.data, tuple):
-                # Interpolation endpoints
-                x0, y0 = left.data
-                x1, y1 = right.data
-                # Interpolate x and y separately
-                x = lerp(frame, (left.frame, x0), \
-                         (right.frame, x1))
-                y = lerp(frame, (left.frame, y0), \
-                         (right.frame, y1))
-                # And finally...
-                data.append((x, y))
+            data.append(interpolate(frame, left, right))
         frame += 1
     return data
 
 
-class Overlay:
-    """A visual element that may be composited onto a video canvas. May be
-    semi-transparent."""
-    def __init__(self):
-        pass
-    def get_mvg(self, frame):
-        pass
-
-class Background (Overlay):
-    """An overlay that fills the available canvas space with a solid color,
-    or with an image file."""
-    def __init__(self, (width, height), color='black', filename=''):
-        self.size = (width, height)
-        self.color = color
-        self.filename = filename
-    def get_mvg(self):
-        mvg = Drawing(self.size)
-        if self.filename:
-            # TODO
-            pass
-        elif self.color:
-            mvg.fill(self.color)
-            mvg.rectangle((0,0), self.size)
-        return mvg
-
-class Text (Overlay):
-    def __init__(self, (x, y), text, color='white', fontsize='20', \
-                 font='Helvetica'):
-        self.position = (x, y)
-        self.text = text
-        self.color = color
-        self.fontsize = fontsize
-        self.font = font
-    def get_mvg(self):
-        mvg = Drawing()
-        mvg.fill(self.color)
-        mvg.font(self.font)
-        mvg.font_size(self.fontsize)
-        mvg.text(self.position, self.text)
-        return mvg
-
-
-class Thumbnail (Overlay):
-    def __init__(self, (x, y), (width, height), filename):
-        self.position = (x, y)
-        self.size = (width, height)
-        self.filename = filename
-    def get_mvg(self):
-        mvg = Drawing()
-        mvg.image('over', self.position, self.size, self.filename)
-        return mvg
-
-
-class ThumbGrid (Overlay):
-    """A rectangular array of thumbnail images or videos."""
-    def __init__(self, file_list, columns=0, rows=0):
-        """Create a grid of images from file_list, with the given number of
-        columns and rows (use 0 to auto-layout either columns or rows, or
-        both."""
-        self.columns, self.rows = \
-            self._auto_dimension(len(file_list), columns, rows)
-        # Now we know how many columns/rows; how big are the thumbnails?
-
-    def _auto_dimension(num_items, columns, rows):
-        # Both fixed, nothing to calculate
-        if columns > 0 and rows > 0:
-            # Make sure num_items will fit (columns, rows)
-            if num_items < columns * rows:
-                return (columns, rows)
-            # Not enough room; auto-dimension both
-            else:
-                print "ThumbGrid: Can't fit %s items in (%s, %s) grid;" % \
-                      (num_items, columns, rows)
-                print "doing auto-dimensioning instead."
-                columns = rows = 0
-        # Auto-dimension to fit num_items
-        if columns == 0 and rows == 0:
-            root = int(floor(sqrt(num_items)))
-            return ((1 + num_items / root), root)
-        # Rows fixed; use enough columns to fit num_items
-        if columns == 0 and rows > 0:
-            return ((1 + num_items / rows), rows)
-        # Columns fixed; use enough rows to fit num_items
-        if rows == 0 and columns > 0:
-            return (columns, (1 + num_items / columns))
-
-
-
-class Effect:
-    """A "special effect" created by keyframing MVG draw commands.
-    Commands that it might make sense to keyframe:
-        opacity
-    """
-    def __init__(self, start, end):
-        """Create an effect lasting from start to end (in frames)."""
-        self.start = start
-        self.end = end
-        self.mvg_values = {} # Value lists, indexed by MVG command name
-
-    def keyframe(self, command, keyframes):
-        """Keyframe the given MVG command with the given list of Keyframes.
-        This function creates a list that may be indexed by frame number
-        to retrieve the corresponding (dependent) variable's value."""
-        self.mvg_values[command] = [None] + tween(keyframes)
-
-    def get_mvg(self, frame):
-        """Return an MVG object for drawing the effect at the given frame."""
-        mvg = Drawing()
-        for command, values in self.mvg_values.iteritems():
-            value = values[frame]
-            if isinstance(value, tuple):
-                mvg.append('%s %f,%f' % (command, value[0], value[1]))
-            else:
-                mvg.append('%s %f' % (command, value))
-        return mvg
-
-
-class Fade (Effect):
-    """A fade-in/fade-out effect, varying the opacity of an overlay."""
-    def __init__(self, start, end, fade_length=30):
-        """Fade in from start, for fade_length frames; hold at full
-        opacity until fading out for fade_length frames before end."""
-        Effect.__init__(self, start, end)
-        fade_curve = [\
-            Keyframe(start, 0.0),                  # Start fading in
-            Keyframe(start + fade_length, 1.0),    # Fade-in done
-            Keyframe(end - fade_length, 1.0),      # Start fading out
-            Keyframe(end, 0.0)                     # Fade-out done
-            ]
-        self.keyframe('fill-opacity', fade_curve)
-
-
-class Move (Effect):
-    """A movement effect, from one point to another."""
-    def __init__(self, start, end, (x0, y0), (x1, y1)):
-        """Move from start (x0, y0) to end (x1, y1)."""
-        Effect.__init__(self, start, end)
-        trans_curve = [\
-            Keyframe(start, (x0, y0)),
-            Keyframe(end, (x1, y1))
-            ]
-        self.keyframe('translate', trans_curve)
-
+def interpolate(frame, left, right):
+    """Interpolate data between left and right Keyframes at the given frame."""
+    # Interpolate integers or floats
+    if isinstance(left.data, int) or isinstance(left.data, float):
+        x0 = (left.frame, left.data)
+        y0 = (right.frame, right.data)
+        return lerp(frame, x0, y0)
+    # Interpolate a tuple (x, y, ...)
+    elif isinstance(left.data, tuple):
+        # Interpolate each dimension separately
+        dim = 0
+        result = []
+        while dim < len(left.data):
+            result.append(lerp(frame, (left.frame, left.data[dim]), \
+                 (right.frame, right.data[dim])))
+            dim += 1
+        return tuple(result)
 
 class VideoCanvas:
     def __init__(self, width=720, height=576, frames=30):
@@ -324,15 +177,14 @@ class VideoCanvas:
         """Add the given Overlay to the canvas, with the given Effect."""
         self.overlays.append((overlay, effect))
 
-    def render(self, frame=1):
-        """Render the given frame with ImageMagick."""
+    def get_mvg(self, frame=1):
+        """Get an MVG Drawing for the given frame."""
         mvg = self.mvg[frame]
         mvg.clear()
-        for overlay, effect in self.overlays:
+        for overlay in self.overlays:
+            # Save context and draw the overlay
             mvg.push('graphic-context')
-            if effect:
-                mvg.extend(effect.get_mvg(frame))
-            mvg.extend(overlay.get_mvg())
+            mvg.extend(overlay.get_mvg(frame))
             mvg.pop('graphic-context')
         mvg.code()
         mvg.render()
@@ -343,14 +195,7 @@ class VideoCanvas:
 
     def bg_video(self, filename):
         """Fill the canvas background with frames from the given video."""
-
+        pass
 
 if __name__ == '__main__':
-    canvas = VideoCanvas(720, 480, 90)
-    bgd = Background((720, 480), 'blue')
-    canvas.add(bgd)
-    txt = Text((360, 240), "Hello world")
-    move = Move(0, 90, (0,0), (200,200))
-    fade = Fade(0, 90, 30)
-    canvas.add(txt, move)
-    canvas.render(1)
+    doctest.testmod()
