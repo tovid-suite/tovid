@@ -213,8 +213,13 @@ class Drawing:
                 (center_x, center_y, radius_x, radius_y, arc_start, arc_stop))
         
     def fill(self, color):
-        """Set the current fill color."""
+        """Set the current fill color.
+        MVG/ImageMagick color usage:
+        http://www.imagemagick.org/script/color.php"""
         self.insert('fill "%s"' % color)
+    def fill_rgb(self, (r, g, b)):
+        """Fill with the given color as an RGB value."""
+        self.fill('rgb(%s, %s, %s)' % (r, g, b))
     
     def fill_opacity(self, opacity):
         # opacity may be [0.0-1.0], or [0-100]%

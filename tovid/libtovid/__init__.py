@@ -4,7 +4,7 @@
 """Provides a Python interface to the functionality of tovid.
 """
 
-__version__ = '0.26-dev'
+__version__ = '0.27-dev'
 
 __all__ = [\
     # Subdirectories
@@ -14,11 +14,13 @@ __all__ = [\
     'animation',
     'cli',
     'disc',
+    'effect',
     'globals',
     'media',
     'menu',
     'mvg',
     'opts',
+    'overlay',
     'stats',
     'standards',
     'tdl',
