@@ -410,21 +410,25 @@ class Drawing:
             outfile.write("%s\n" % line)
         outfile.close()
 
-    def code(self):
-        """Return complete MVG text with line numbers and a > at the
-        cursor position. Useful for doing interactive editing."""
+    def code(self, editing=False):
+        """Return complete MVG text for the Drawing. If editing is True, include
+        line numbers and a > at the cursor position (useful for interactive
+        editing). Otherwise, just return raw text with line breaks."""
         code = ''
-        line = 1
-        while line < len(self.data):
-            # Put a > at the cursor position
+        if editing:
+            line = 1
+            while line < len(self.data):
+                # Put a > at the cursor position
+                if line == self.cursor:
+                    code += "> "
+                code +=  "%s: %s\n" % (line, self.data[line])
+                line += 1
+            # If cursor is after the last line
             if line == self.cursor:
-                code += "> "
-            code +=  "%s: %s\n" % (line, self.data[line])
-            line += 1
-        # If cursor is after the last line
-        if line == self.cursor:
-            code += ">"
-        print code
+                code += ">"
+            print code
+        else:
+            return '\n'.join(self.data)
 
     def render(self):
         """Render the MVG image with ImageMagick, and display it."""
@@ -542,5 +546,5 @@ if __name__ == '__main__':
     pic.pop('graphic-context')
 
     # Display the MVG text, then show the generated image
-    pic.code()
+    pic.code(editing=True)
     pic.render()
