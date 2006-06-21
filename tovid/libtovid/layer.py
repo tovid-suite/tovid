@@ -1,25 +1,27 @@
 #! /usr/bin/env python
-# overlay.py
+# layer.py
+
+__all__ = ['Layer', 'Background', 'Text', 'Thumb', 'ThumbGrid']
 
 from libtovid.mvg import Drawing
 
-class Overlay:
-    """A visual element that may be composited onto a video canvas. May be
-    semi-transparent."""
+class Layer:
+    """A visual element that may be composited onto a Flipbook."""
     def __init__(self):
         pass
-    def get_mvg(self, frame):
-        pass
+    def get_mvg(self):
+        """Override this in subclasses to do the actual drawing."""
+        return Drawing()
 
-class Background (Overlay):
+
+class Background (Layer):
     """An overlay that fills the available canvas space with a solid color,
     or with an image file."""
     def __init__(self, (width, height), color='black', filename=''):
         self.size = (width, height)
         self.color = color
         self.filename = filename
-    def get_mvg(self, frame):
-        Overlay.get_mvg(self, frame)
+    def get_mvg(self):
         mvg = Drawing(self.size)
         if self.filename:
             # TODO
@@ -29,7 +31,8 @@ class Background (Overlay):
             mvg.rectangle((0,0), self.size)
         return mvg
 
-class Text (Overlay):
+
+class Text (Layer):
     """A text string, with position, size, color and font."""
     def __init__(self, (x, y), text, color='white', fontsize='20', \
                  font='Helvetica'):
@@ -38,7 +41,7 @@ class Text (Overlay):
         self.color = color
         self.fontsize = fontsize
         self.font = font
-    def get_mvg(self, frame):
+    def get_mvg(self):
         mvg = Drawing()
         mvg.fill(self.color)
         mvg.font(self.font)
@@ -47,27 +50,32 @@ class Text (Overlay):
         return mvg
 
 
-class Thumbnail (Overlay):
+class Thumb (Layer):
     """A thumbnail image, with size and positioning."""
     def __init__(self, (x, y), (width, height), filename):
         self.position = (x, y)
         self.size = (width, height)
         self.filename = filename
-    def get_mvg(self, frame):
+    def get_mvg(self):
         mvg = Drawing()
         mvg.image('over', self.position, self.size, self.filename)
         return mvg
 
 
-class ThumbGrid (Overlay):
+class ThumbGrid (Layer):
     """A rectangular array of thumbnail images or videos."""
-    def __init__(self, file_list, columns=0, rows=0):
-        """Create a grid of images from file_list, with the given number of
-        columns and rows (use 0 to auto-layout either columns or rows, or
-        both."""
+    def __init__(self, file_list, (width, height), (columns, rows)=(0, 0)):
+        """Create a grid of images from file_list, fitting with a space no
+        larger than (width, height), with the given number of columns and rows
+        Use 0 to auto-layout columns or rows, or both (default)."""
+        self.totalsize = (width, height)
+        self.file_list = file_list
         self.columns, self.rows = \
             self._auto_dimension(len(file_list), columns, rows)
         # Now we know how many columns/rows; how big are the thumbnails?
+        thumbwidth = (width - self.columns * 16) / self.columns
+        thumbheight = (height - self.rows * 16) / self.rows
+        self.thumbsize = (thumbwidth, thumbheight)
 
     def _auto_dimension(num_items, columns, rows):
         # Both fixed, nothing to calculate
@@ -91,3 +99,8 @@ class ThumbGrid (Overlay):
         # Columns fixed; use enough rows to fit num_items
         if rows == 0 and columns > 0:
             return (columns, (1 + num_items / columns))
+    def get_mvg(self):
+        mvg = Drawing()
+        for file in self.file_list:
+            mvg.image('Over', )
+        return mvg
