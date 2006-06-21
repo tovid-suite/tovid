@@ -4,62 +4,73 @@
 __all__ = ['Layer', 'Background', 'Text', 'Thumb', 'ThumbGrid']
 
 from libtovid.mvg import Drawing
+from libtovid.effect import Effect
 
 class Layer:
     """A visual element that may be composited onto a Flipbook."""
     def __init__(self):
+        self.effects = []
+    def draw_on(self, drawing, frame):
+        """Draw the layer onto the given Drawing. Override this function in
+        derived layers."""
         pass
-    def get_mvg(self):
-        """Override this in subclasses to do the actual drawing."""
-        return Drawing()
+    def draw_effects(self, drawing, frame):
+        """Draw all effects onto the given Drawing for the given frame."""
+        for effect in self.effects:
+            effect.draw_on(drawing, frame)
 
 
 class Background (Layer):
-    """An overlay that fills the available canvas space with a solid color,
-    or with an image file."""
+    """A background that fills the frame with a solid color, or an image."""
     def __init__(self, (width, height), color='black', filename=''):
+        Layer.__init__(self)
         self.size = (width, height)
         self.color = color
         self.filename = filename
-    def get_mvg(self):
-        mvg = Drawing(self.size)
+    def draw_on(self, drawing, frame):
+        drawing.push('graphic-context')
+        self.draw_effects(drawing, frame)
         if self.filename:
             # TODO
             pass
         elif self.color:
-            mvg.fill(self.color)
-            mvg.rectangle((0,0), self.size)
-        return mvg
+            drawing.fill(self.color)
+            drawing.rectangle((0,0), self.size)
+        drawing.pop('graphic-context')
 
 
 class Text (Layer):
     """A text string, with position, size, color and font."""
-    def __init__(self, (x, y), text, color='white', fontsize='20', \
+    def __init__(self, text, (x, y), color='white', fontsize='20', \
                  font='Helvetica'):
-        self.position = (x, y)
+        Layer.__init__(self)
         self.text = text
+        self.position = (x, y)
         self.color = color
         self.fontsize = fontsize
         self.font = font
-    def get_mvg(self):
-        mvg = Drawing()
-        mvg.fill(self.color)
-        mvg.font(self.font)
-        mvg.font_size(self.fontsize)
-        mvg.text(self.position, self.text)
-        return mvg
+    def draw_on(self, drawing, frame):
+        drawing.push('graphic-context')
+        self.draw_effects(drawing, frame)
+        drawing.fill(self.color)
+        drawing.font(self.font)
+        drawing.font_size(self.fontsize)
+        drawing.text(self.position, self.text)
+        drawing.pop('graphic-context')
 
 
 class Thumb (Layer):
     """A thumbnail image, with size and positioning."""
-    def __init__(self, (x, y), (width, height), filename):
+    def __init__(self, filename, (x, y), (width, height)):
+        Layer.__init__(self)
+        self.filename = filename
         self.position = (x, y)
         self.size = (width, height)
-        self.filename = filename
-    def get_mvg(self):
-        mvg = Drawing()
-        mvg.image('over', self.position, self.size, self.filename)
-        return mvg
+    def draw_on(self, drawing, frame):
+        drawing.push('graphic-context')
+        self.draw_effects(drawing, frame)
+        drawing.image('over', self.position, self.size, self.filename)
+        drawing.pop('graphic-context')
 
 
 class ThumbGrid (Layer):
@@ -68,6 +79,7 @@ class ThumbGrid (Layer):
         """Create a grid of images from file_list, fitting with a space no
         larger than (width, height), with the given number of columns and rows
         Use 0 to auto-layout columns or rows, or both (default)."""
+        Layer.__init__(self)
         self.totalsize = (width, height)
         self.file_list = file_list
         self.columns, self.rows = \
@@ -99,8 +111,9 @@ class ThumbGrid (Layer):
         # Columns fixed; use enough rows to fit num_items
         if rows == 0 and columns > 0:
             return (columns, (1 + num_items / columns))
-    def get_mvg(self):
-        mvg = Drawing()
+    def draw_on(self, drawing, frame):
+        drawing.push('graphic-context')
+        self.draw_effects(drawing, frame)
         for file in self.file_list:
-            mvg.image('Over', )
-        return mvg
+            drawing.image('Over', self.position, self.size, file)
+        drawing.pop('graphic-context')
