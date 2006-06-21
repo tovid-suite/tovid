@@ -1,39 +1,22 @@
 #! /usr/bin/env python
 # effect.py
 
+__all__ = ['Effect', 'Fade', 'Movement', 'Scale', 'Colorfade']
+
 from libtovid.mvg import Drawing
+from libtovid.animation import Keyframe, tween
 
 class Effect:
     """A "special effect" created by keyframing MVG draw commands.
-    Commands that it might make sense to keyframe:
-        fill-opacity NUM%
-        fill rgb(r, g, b) or rgba(r, g, b, a)
-        scale (x, y)
-        translate (x, y)
-
     """
     def __init__(self, start, end):
-        """Create an effect lasting from start to end (in frames)."""
+        """Create an effect lasting from start frame to end frame."""
         self.start = start
         self.end = end
-        self.mvg_values = {} # Value lists, indexed by MVG command name
-
-    def keyframe(self, command, keyframes):
-        """Keyframe the given MVG command with the given list of Keyframes.
-        This function creates a list that may be indexed by frame number
-        to retrieve the corresponding (dependent) variable's value."""
-        self.mvg_values[command] = [None] + tween(keyframes)
-
     def get_mvg(self, frame):
-        """Return a Drawing that renders the effect at the given frame."""
-        mvg = Drawing()
-        for command, values in self.mvg_values.iteritems():
-            value = values[frame]
-            if isinstance(value, tuple):
-                mvg.append('%s %f,%f' % (command, value[0], value[1]))
-            else:
-                mvg.append('%s %f' % (command, value))
-        return mvg
+        """Return a Drawing that renders the effect at the given frame.
+        Override this function in derived classes."""
+        return Drawing()
 
 
 class Fade (Effect):
@@ -42,23 +25,61 @@ class Fade (Effect):
         """Fade in from start, for fade_length frames; hold at full
         opacity until fading out for fade_length frames before end."""
         Effect.__init__(self, start, end)
-        fade_curve = [\
+        # A fill-opacity curve, something like:
+        #         ______        100%
+        #        /      \
+        # start./        \.end  0%
+        #
+        self.opacity = [None] + tween([\
             Keyframe(start, 0.0),                  # Start fading in
             Keyframe(start + fade_length, 1.0),    # Fade-in done
             Keyframe(end - fade_length, 1.0),      # Start fading out
             Keyframe(end, 0.0)                     # Fade-out done
-            ]
-        self.keyframe('fill-opacity', fade_curve)
+            ])
+    def get_mvg(self, frame):
+        mvg = Drawing()
+        mvg.fill_opacity(self.opacity[frame])
+        return mvg
 
 
-class Move (Effect):
+class Movement (Effect):
     """A movement effect, from one point to another."""
     def __init__(self, start, end, (x0, y0), (x1, y1)):
         """Move from start (x0, y0) to end (x1, y1)."""
         Effect.__init__(self, start, end)
-        trans_curve = [\
+        self.translate = [None] + tween([\
             Keyframe(start, (x0, y0)),
             Keyframe(end, (x1, y1))
-            ]
-        self.keyframe('translate', trans_curve)
+            ])
+    def get_mvg(self, frame):
+        mvg = Drawing()
+        mvg.translate(self.translate[frame])
+        return mvg
 
+
+class Scale (Effect):
+    """A Scaling effect, from one size to another."""
+    def __init__(self, start, end, (w0, h0), (w1, h1)):
+        Effect.__init__(self, start, end)
+        self.scale = [None] + tween([\
+            Keyframe(start, (w0, h0)),
+            Keyframe(end, (w1, h1))
+            ])
+    def get_mvg(self, frame):
+        mvg = Drawing()
+        mvg.scale(self.scale[frame])
+        return mvg
+
+
+class Colorfade (Effect):
+    """A color-slide effect, from one RGB color to another."""
+    def __init__(self, start, end, (r0, g0, b0), (r1, g1, b1)):
+        Effect.__init__(self, start, end)
+        self.color = [None] + tween([\
+            Keyframe(start, (r0, g0, b0)),
+            Keyframe(end, (r1, g1, b1))
+            ])
+    def get_mvg(self, frame):
+        mvg = Drawing()
+        mvg.fill_rgb(self.color[frame])
+        return mvg

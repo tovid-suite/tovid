@@ -1,35 +1,11 @@
 #! /usr/bin/env python
 # animation.py
 
+"""This module provides classes and functions for working with animation.
 """
-Notes:
-
-Uses a "video canvas" (a 2D canvas for each frame)
-You can paint on the canvas with video objects
-
-background
-thumbnail
-text
-rectangle
-
-Effects:
-
-fade-in/out (keyframe opacity)
-move (keyframe x,y coordinates)
-shrink/expand (keyframe width,height)
-colorfade (keyframe RGBA--generalize w/ fade-in/out?)
-
-A canvas stores basic object-level info; MVG-level rendering does not take
-place until preview() or render() is called (and then only for the necessary
-frames). Think of it as "compiling" to MVG.
-
-Effects are applied to video objects at the canvas level (since canvas is
-responsible for animation, frames)
-
-"""
+__all__ = ['Keyframe', 'lerp', 'interpolate', 'tween']
 
 from math import floor, sqrt
-from libtovid.mvg import Drawing
 import doctest
 
 class Keyframe:
@@ -66,6 +42,25 @@ def lerp(x, (x0, y0), (x1, y1)):
     """Do linear interpolation between points (x0, y0), (x1, y1), and return
     the 'y' of the given 'x'."""
     return y0 + (x - x0) * (y1 - y0) / (x1 - x0)
+
+
+def interpolate(frame, left, right):
+    """Interpolate data between left and right Keyframes at the given frame."""
+    # Interpolate integers or floats
+    if isinstance(left.data, int) or isinstance(left.data, float):
+        x0 = (left.frame, left.data)
+        y0 = (right.frame, right.data)
+        return lerp(frame, x0, y0)
+    # Interpolate a tuple (x, y, ...)
+    elif isinstance(left.data, tuple):
+        # Interpolate each dimension separately
+        dim = 0
+        result = []
+        while dim < len(left.data):
+            result.append(lerp(frame, (left.frame, left.data[dim]), \
+                 (right.frame, right.data[dim])))
+            dim += 1
+        return tuple(result)
 
 
 def tween(keyframes):
@@ -145,57 +140,6 @@ def tween(keyframes):
     return data
 
 
-def interpolate(frame, left, right):
-    """Interpolate data between left and right Keyframes at the given frame."""
-    # Interpolate integers or floats
-    if isinstance(left.data, int) or isinstance(left.data, float):
-        x0 = (left.frame, left.data)
-        y0 = (right.frame, right.data)
-        return lerp(frame, x0, y0)
-    # Interpolate a tuple (x, y, ...)
-    elif isinstance(left.data, tuple):
-        # Interpolate each dimension separately
-        dim = 0
-        result = []
-        while dim < len(left.data):
-            result.append(lerp(frame, (left.frame, left.data[dim]), \
-                 (right.frame, right.data[dim])))
-            dim += 1
-        return tuple(result)
-
-class VideoCanvas:
-    def __init__(self, width=720, height=576, frames=30):
-        self.width = width
-        self.height = height
-        self.frames = frames
-        self.overlays = []
-        self.mvg = []
-        for frame in range(frames):
-            self.mvg.append(Drawing((self.width, self.height), 'temp.mvg'))
-
-    def add(self, overlay, effect=None):
-        """Add the given Overlay to the canvas, with the given Effect."""
-        self.overlays.append((overlay, effect))
-
-    def get_mvg(self, frame=1):
-        """Get an MVG Drawing for the given frame."""
-        mvg = self.mvg[frame]
-        mvg.clear()
-        for overlay in self.overlays:
-            # Save context and draw the overlay
-            mvg.push('graphic-context')
-            mvg.extend(overlay.get_mvg(frame))
-            mvg.pop('graphic-context')
-        mvg.code()
-        mvg.render()
-
-    def bg_image(self, filename):
-        """Fill the canvas background with the given image."""
-        pass
-
-    def bg_video(self, filename):
-        """Fill the canvas background with frames from the given video."""
-        pass
 
 if __name__ == '__main__':
     doctest.testmod()
