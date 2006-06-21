@@ -430,11 +430,13 @@ class Drawing:
         """Render the MVG image with ImageMagick, and display it."""
         # TODO: Write .mvg to a file and use @drawfile; command-line length
         # is exceeded easily with the current approach
+        self.save(self.filename)
         cmd = "convert -size %sx%s " % self.size
         cmd += " xc:none "
-        cmd += " -draw '%s' " % ' '.join(self.data)
+        cmd += " -draw @%s " % self.filename
         cmd += " -composite miff:- | display"
         print "Creating preview rendering."
+        print cmd
         print "Press 'q' or ESC in the image window to close the image."
         print commands.getoutput(cmd)
 
