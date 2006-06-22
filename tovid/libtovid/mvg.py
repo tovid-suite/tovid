@@ -314,6 +314,8 @@ class Drawing:
         self.insert('rotate %s' % angle)
 
     def roundrectangle(self, (x0, y0), (x1, y1), (width, height)):
+        """Draw a rounded rectangle from (x0, y0) to (x1, y1), with
+        the given outer width and height."""
         self.insert('roundrectangle %s,%s %s,%s %s,%s' % \
                 (x0, y0, x1, y1, width, height))
 
@@ -333,9 +335,12 @@ class Drawing:
         """Set the current stroke color."""
         self.insert('stroke %s' % color)
 
-    def stroke_antialias(self, flag):
-        # flag in [0, 1]
-        self.insert('stroke-antialias %s' % flag)
+    def stroke_antialias(self, do_antialias):
+        """Turn stroke antialiasing on (True) or off (False)."""
+        if do_antialias:
+            self.insert('stroke-antialias 1')
+        else:
+            self.insert('stroke-antialias 0')
 
     def stroke_dasharray(self, array):
         # array in [none, (numeric list)]
@@ -345,14 +350,18 @@ class Drawing:
         self.insert('stroke-dashoffset %s' % offset)
 
     def stroke_linecap(self, cap_type):
-        # cap_type in [butt, round, square]
+        """Set the type of line-cap to use. cap_type may be 'butt', 'round',
+        or 'square'."""
         self.insert('stroke-linecap %s' % cap_type)
 
     def stroke_linejoin(self, join_type):
-        # join_type in [bevel, miter, round]
+        """Set the type of line-joining to do. join_type may be 'bevel',
+        'miter', or 'round'."""
         self.insert('stroke-linejoin %s' % join_type)
 
     def stroke_opacity(self, opacity):
+        """Set the stroke opacity. opacity may be decimal (0.0-1.0)
+        or percentage (0-100)%."""
         self.insert('stroke-opacity %s' % opacity)
 
     def stroke_width(self, width):
@@ -361,33 +370,43 @@ class Drawing:
         self.insert('stroke-width %s' % width)
     
     def text(self, (x, y), text_string):
+        """Draw the given text string at (x, y)."""
         # TODO: Escape special characters in text string
         self.insert('text %s,%s "%s"' % (x, y, text_string))
     
-    def text_antialias(self, flag):
-        # flag in [0, 1]
-        self.insert('text-antialias %s' % flag)
+    def text_antialias(self, do_antialiasing):
+        """Turn text antialiasing on (True) or off (False)."""
+        if do_antialias:
+            self.insert('text-antialias 1')
+        else:
+            self.insert('text-antialias 0')
 
     def text_undercolor(self, color):
         self.insert('text-undercolor %s' % color)
 
     def translate(self, (x, y)):
+        """Do a translation by (x, y) pixels."""
         self.insert('translate %s,%s' % (x, y))
     
     def viewbox(self, (x0, y0), (x1, y1)):
+        """Define a rectangular viewing area from (x0, y0) to (x1, y1)."""
         self.insert('viewbox %s,%s %s,%s' % (x0, y0, x1, y1))
     
-    def pop(self, context):
-        # context may be: clip-path, defs, gradient, graphic-context, pattern
-        self.insert('pop %s' % context)
-    
     def push(self, context, *args, **kwargs):
-        # context may be: clip-path, defs, gradient, graphic-context, pattern
+        """Save state, and begin a new context. context may be:
+        'clip-path', 'defs', 'gradient', 'graphic-context', or 'pattern'.
+        """
         # TODO: Accept varying arguments depending on context, e.g.
         #    push('graphic-context')
         # or push('pattern', id, radial, x, y, width,height)
         self.insert('push %s' % context)
 
+    def pop(self, context):
+        """Restore the previously push()ed context. context may be:
+        'clip-path', 'defs', 'gradient', 'graphic-context', or 'pattern'.
+        """
+        self.insert('pop %s' % context)
+    
     #
     # Editor interface/interactive functions
     #
