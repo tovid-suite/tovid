@@ -86,3 +86,4 @@ if __name__ == '__main__':
         print "Frame %s" % frame
         mvg = fade.draw_on(frame)
         mvg.code()
+

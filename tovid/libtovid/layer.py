@@ -30,12 +30,11 @@ class Background (Layer):
     def draw_on(self, drawing, frame):
         drawing.push('graphic-context')
         self.draw_effects(drawing, frame)
-        if self.filename:
-            # TODO
-            pass
+        if self.filename is not '':
+            drawing.image('over', (0, 0), self.size, self.filename)
         elif self.color:
             drawing.fill(self.color)
-            drawing.rectangle((0,0), self.size)
+            drawing.rectangle((0, 0), self.size)
         drawing.pop('graphic-context')
 
 
@@ -51,10 +50,10 @@ class Text (Layer):
         self.font = font
     def draw_on(self, drawing, frame):
         drawing.push('graphic-context')
-        self.draw_effects(drawing, frame)
         drawing.fill(self.color)
         drawing.font(self.font)
         drawing.font_size(self.fontsize)
+        self.draw_effects(drawing, frame)
         drawing.text(self.position, self.text)
         drawing.pop('graphic-context')
 
@@ -117,3 +116,4 @@ class ThumbGrid (Layer):
         for file in self.file_list:
             drawing.image('Over', self.position, self.size, file)
         drawing.pop('graphic-context')
+
