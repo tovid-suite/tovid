@@ -106,13 +106,13 @@ class Appear (Scale):
     """An "appear from nowhere" effect, quickly scaling up from a point."""
     def __init__(self, frame):
         """Appear starting at the given frame, with a 10-frame scale-in."""
-        Scale.__init__(self, start, start + 10, (0.0, 0.0), (1.0, 1.0))
+        Scale.__init__(self, frame, frame + 10, (0.0, 0.0), (1.0, 1.0))
 
 class Disappear (Scale):
     """A disappearance effect, scaling down to a point. Opposite of Appear."""
-    def __init__(self, start, end):
+    def __init__(self, frame):
         """Disappear finishing at the given frame, with a 10-frame scale-out."""
-        Scale.__init__(self, end - 10, end, (1.0, 1.0), (0.0, 0.0))
+        Scale.__init__(self, frame - 10, frame, (1.0, 1.0), (0.0, 0.0))
 
 
 # Demo
