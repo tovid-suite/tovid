@@ -13,6 +13,23 @@ class Effect:
         """Create an effect lasting from start frame to end frame."""
         self.start = start
         self.end = end
+        # List of Keyframes
+        self.keylist = []
+        # List of tweened values
+        self.data = []
+
+    def tween(self):
+        """Calculate values for all frames from the current keylist."""
+        self.data = tween(self.keylist)
+
+    def get_data(self, frame):
+        """Get data value at the given frame."""
+        if frame < self.start:
+            return self.data[0]
+        elif frame > self.end:
+            return self.data[-1]
+        else:
+            return self.data[frame - self.start]
 
     def draw_on(self, drawing, frame):
         """Draw the effect into the given Drawing, for the given frame.
@@ -33,15 +50,17 @@ class Fade (Effect):
         #
         # The tween()ed array is indexed as an offset from the start
         # frame (self.opacities[0] gives the value at the start frame)
-        self.opacities = tween([\
+        self.keylist = [\
             Keyframe(start, 0.0),                  # Start fading in
             Keyframe(start + fade_length, 1.0),    # Fade-in done
             Keyframe(end - fade_length, 1.0),      # Start fading out
             Keyframe(end, 0.0)                     # Fade-out done
-            ])
+            ]
+        self.tween()
+
     def draw_on(self, drawing, frame):
         """Draw the fade effect into the given Drawing."""
-        drawing.fill_opacity(self.opacities[frame - self.start])
+        drawing.fill_opacity(self.get_data(frame))
 
 
 class Movement (Effect):
@@ -49,30 +68,29 @@ class Movement (Effect):
     def __init__(self, start, end, (x0, y0), (x1, y1)):
         """Move from start (x0, y0) to end (x1, y1)."""
         Effect.__init__(self, start, end)
-        self.translations = tween([\
+        self.keylist = [\
             Keyframe(start, (x0, y0)),
             Keyframe(end, (x1, y1))
-            ])
+            ]
+        self.tween()
+
     def draw_on(self, drawing, frame):
         """Draw the movement effect into the given Drawing."""
-        drawing.translate(self.translations[frame - self.start])
+        drawing.translate(self.get_data(frame))
 
 
 class Scale (Effect):
     """A Scaling effect, from one size to another."""
     def __init__(self, start, end, (w0, h0), (w1, h1)):
         Effect.__init__(self, start, end)
-        self.scalings = tween([\
+        self.keylist =[\
             Keyframe(start, (w0, h0)),
             Keyframe(end, (w1, h1))
-            ])
+            ]
+        self.tween()
+
     def draw_on(self, drawing, frame):
-        if frame < self.start:
-            drawing.scale(self.scalings[0])
-        elif frame > self.end:
-            drawing.scale(self.scalings[-1])
-        else:
-            drawing.scale(self.scalings[frame - self.start])
+        drawing.scale(self.get_data(frame))
 
 
 class Colorfade (Effect):
@@ -80,19 +98,21 @@ class Colorfade (Effect):
     def __init__(self, start, end, (r0, g0, b0), (r1, g1, b1)):
         """Fade between the given RGB colors."""
         Effect.__init__(self, start, end)
-        self.colors = tween([\
+        self.keylist = [\
             Keyframe(start, (r0, g0, b0)),
             Keyframe(end, (r1, g1, b1))
-            ])
+            ]
+        self.tween()
+
     def draw_on(self, drawing, frame):
-        drawing.fill_rgb(self.colors[frame - self.start])
+        drawing.fill_rgb(self.get_data(frame))
 
 class Spectrum (Effect):
     """A full-spectrum color-fade effect between start and end frames."""
     def __init__(self, start, end):
         Effect.__init__(self, start, end)
         step = (end - start) / 6
-        keys = [\
+        self.keylist = [\
             Keyframe(start, (255, 0, 0)),
             Keyframe(start + step, (255, 0, 255)),
             Keyframe(start + step*2, (0, 0, 255)),
@@ -101,9 +121,10 @@ class Spectrum (Effect):
             Keyframe(start + step*5, (255, 255, 0)),
             Keyframe(end, (255, 0, 0))
             ]
-        self.colors = tween(keys)
+        self.tween()
+
     def draw_on(self, drawing, frame):
-        drawing.fill_rgb(self.colors[frame - self.start])
+        drawing.fill_rgb(self.data[frame - self.start])
 
 
 # Scaling effects
