@@ -71,8 +71,9 @@ class Scale (Effect):
 
 
 class Colorfade (Effect):
-    """A color-slide effect, from one RGB color to another."""
+    """A color-slide effect between an arbitrary number of RGB colors."""
     def __init__(self, start, end, (r0, g0, b0), (r1, g1, b1)):
+        """Fade between the given RGB colors."""
         Effect.__init__(self, start, end)
         self.colors = tween([\
             Keyframe(start, (r0, g0, b0)),
@@ -81,6 +82,40 @@ class Colorfade (Effect):
     def draw_on(self, drawing, frame):
         drawing.fill_rgb(self.colors[frame - self.start])
 
+class Spectrum (Effect):
+    """A full-spectrum color-fade effect between start and end frames."""
+    def __init__(self, start, end):
+        Effect.__init__(self, start, end)
+        step = (end - start) / 6
+        keys = [\
+            Keyframe(start, (255, 0, 0)),
+            Keyframe(start + step, (255, 0, 255)),
+            Keyframe(start + step*2, (0, 0, 255)),
+            Keyframe(start + step*3, (0, 255, 255)),
+            Keyframe(start + step*4, (0, 255, 0)),
+            Keyframe(start + step*5, (255, 255, 0)),
+            Keyframe(end, (255, 0, 0))
+            ]
+        self.colors = tween(keys)
+    def draw_on(self, drawing, frame):
+        drawing.fill_rgb(self.colors[frame - self.start])
+
+
+# Scaling effects
+class Appear (Scale):
+    """An "appear from nowhere" effect, quickly scaling up from a point."""
+    def __init__(self, frame):
+        """Appear starting at the given frame, with a 10-frame scale-in."""
+        Scale.__init__(self, start, start + 10, (0.0, 0.0), (1.0, 1.0))
+
+class Disappear (Scale):
+    """A disappearance effect, scaling down to a point. Opposite of Appear."""
+    def __init__(self, start, end):
+        """Disappear finishing at the given frame, with a 10-frame scale-out."""
+        Scale.__init__(self, end - 10, end, (1.0, 1.0), (0.0, 0.0))
+
+
+# Demo
 if __name__ == '__main__':
     fade = Colorfade(1, 10, (255, 128, 0), (128, 64, 255))
     print "Fading color from rgb(255, 128, 0) to rgb(128, 64, 255)"

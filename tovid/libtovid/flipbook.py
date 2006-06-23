@@ -5,7 +5,7 @@ import os
 import sys
 from libtovid.mvg import Drawing
 from libtovid.layer import Thumb, Background, Text
-from libtovid.effect import Fade, Movement
+from libtovid.effect import Fade, Movement, Spectrum
 from libtovid.VideoUtils import images_to_video
 
 class Flipbook:
@@ -57,7 +57,7 @@ class Flipbook:
             print drawing.code()
             drawing.save('%s/flip_%04d.mvg' % (tmp, frame))
             # jpeg2yuv likes frames to start at 0
-            drawing.save_jpeg('%s/%08d.jpg' % (tmp, frame - 1))
+            drawing.save_image('%s/%08d.jpg' % (tmp, frame - 1))
             frame += 1
         images_to_video(tmp, m2v_file, 'dvd', 'pal')
 
@@ -79,8 +79,9 @@ if __name__ == '__main__':
 
     # Text layer with fading and movement effects
     text = Text("The quick brown fox", (0, 0), fontsize='40')
-    text.effects.append(Fade(1, 30, 10))
-    text.effects.append(Movement(1, 30, (100, 100), (500, 300)))
+    #text.effects.append(Fade(1, 30, 10))
+    text.effects.append(Spectrum(1, 30))
+    text.effects.append(Movement(1, 30, (100, 100), (300, 300)))
     flip.add(text)
 
     # Render the final video
