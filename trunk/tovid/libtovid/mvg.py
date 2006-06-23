@@ -139,6 +139,7 @@ Pie chart example: http://www.imagemagick.org/source/piechart.mvg
 import os
 import sys
 import commands
+import Tkinter
 
 class Drawing:
     """A Magick Vector Graphics (MVG) image with load/save, insert/append,
@@ -157,7 +158,7 @@ class Drawing:
         font_family("Serif")     # Drawing function
 
     """
-    def __init__(self, size=(720, 480), filename=''):
+    def __init__(self, size=(720, 480), filename='/tmp/temp.mvg'):
         self.clear()
         self.size = size
         self.filename = filename
@@ -172,11 +173,25 @@ class Drawing:
     # MVG drawing commands
     #
 
-    def affine(self, (sx, rx), (ry, sy), (tx, ty)):
-        self.insert('affine %s %s %s %s %s %s' % (sx, rx, ry, sy, tx, ty))
+    def affine(self, scale_x, rot_x, rot_y, scale_y, translate_x, translate_y):
+        """Define a 3x3 transformation matrix:
+            
+            [ scale_x  rot_y    translate_x ]
+            [ rot_x    scale_y  translate_y ]
+            [ 0        0        1           ]
 
-    def arc(self, (x0, y0), (x1, y1), (a0, a1)):
-        self.insert('arc %s,%s %s,%s %s,%s' % (x0, y0, x1, y1, a0, a1))
+        This is scaling, rotation, and translation in a single matrix,
+        so it's a compact way to represent any transformation.
+        See [http://www.w3.org/TR/SVG11/coords.html] for more on
+        these matrices and how to use them."""
+        self.insert('affine %s %s %s %s %s %s' % \
+            (scale_x, rot_x, rot_y, scale_y, translate_x, translate_y))
+
+    def arc(self, (x0, y0), (x1, y1), (start_degrees, end_degrees)):
+        """Draw an arc from (x0, y0) to (x1, y1), with the given start and
+        end degrees."""
+        self.insert('arc %s,%s %s,%s %s,%s' % \
+                    (x0, y0, x1, y1, start_degrees, end_degrees))
 
     def bezier(self, point_list):
         # point_list = [(x0, y0), (x1, y1), ... (xn, yn)]
@@ -186,6 +201,7 @@ class Drawing:
         self.insert(command)
 
     def circle(self, (center_x, center_y), (perimeter_x, perimeter_y)):
+        """Draw a circle defined by center and perimeter points."""
         self.insert('circle %s,%s %s,%s' % \
                     (center_x, center_y, perimeter_x, perimeter_y))
 
@@ -201,11 +217,14 @@ class Drawing:
         self.insert('clip-units %s' % units)
 
     def color(self, (x, y), method='floodfill'):
-        # method may be: point, replace, floodfill, filltoborder, reset
+        """Define a coloring method. method may be 'point', 'replace',
+        'floodfill', 'filltoborder', or 'reset'.
+        (Anyone know what (x, y) are?)"""
         self.insert('color %s,%s %s' % (x, y, method))
     
     def decorate(self, decoration):
-        # decoration in [none, line-through, overline, underline]
+        """Decorate text(?) with the given style, which may be 'none',
+        'line-through', 'overline', or 'underline'."""
         self.insert('decorate %s' % decoration)
 
     def ellipse(self, (center_x, center_y), (radius_x, radius_y),
@@ -219,13 +238,15 @@ class Drawing:
         http://www.imagemagick.org/script/color.php"""
         self.insert('fill "%s"' % color)
     def fill_rgb(self, (r, g, b)):
-        """Fill with the given color as an RGB value."""
+        """Set the fill color to an RGB value."""
         self.fill('rgb(%s, %s, %s)' % (r, g, b))
     
     def fill_opacity(self, opacity):
         # opacity may be [0.0-1.0], or [0-100]%
         # TODO: Check for float (e.g. 0.7), int (eg 70), or string (eg 70%)
         # and do correct formatting
+        """Define fill opacity, from fully transparent (0.0) to fully
+        opaque (1.0)."""
         self.insert('fill-opacity %s' % opacity)
     
     def fill_rule(self, rule):
@@ -463,12 +484,22 @@ class Drawing:
         print "Press 'q' or ESC in the image window to close the image."
         print commands.getoutput(cmd)
 
-    def save_jpeg(self, jpeg_file):
-        """Render the drawing to a jpeg image."""
+    def tk_render(self):
+        """Like render(), using tkinter to display the image."""
+        root = Tkinter.Tk()
+        ppmfile = '/tmp/mvg_render.ppm'
+        self.save_image(ppmfile)
+        img = Tkinter.PhotoImage(file=ppmfile)
+        lbl = Tkinter.Label(root, image=img)
+        lbl.pack()
+        Tkinter.mainloop()
+
+    def save_image(self, img_filename):
+        """Render the drawing to a .jpg, .png or other image."""
         self.save(self.filename)
         cmd = "convert -size %sx%s " % self.size
-        cmd += "%s %s" % (self.filename, jpeg_file)
-        print "Rendering drawing to: %s" % jpeg_file
+        cmd += "%s %s" % (self.filename, img_filename)
+        print "Rendering drawing to: %s" % img_filename
         print commands.getoutput(cmd)
 
     def goto(self, line_num):
