@@ -5,7 +5,7 @@ import os
 import sys
 from libtovid.mvg import Drawing
 from libtovid.layer import Thumb, Background, Text
-from libtovid.effect import Fade, Movement, Spectrum
+from libtovid.effect import Fade, Movement, Spectrum, Appear
 from libtovid.VideoUtils import images_to_video
 
 class Flipbook:
@@ -79,10 +79,14 @@ if __name__ == '__main__':
 
     # Text layer with fading and movement effects
     text = Text("The quick brown fox", (0, 0), fontsize='40')
-    #text.effects.append(Fade(1, 30, 10))
     text.effects.append(Spectrum(1, 30))
+    text.effects.append(Fade(1, 30, 10))
     text.effects.append(Movement(1, 30, (100, 100), (300, 300)))
     flip.add(text)
+
+    text2 = Text("Hello", (100, 300), 'white', 50, 'Courier')
+    text2.effects.append(Appear(15))
+    flip.add(text2)
 
     # Render the final video
     flip.render_video('/tmp/flipbook.m2v')
