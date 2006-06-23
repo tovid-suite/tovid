@@ -136,6 +136,7 @@ Radial gradient example
 Pie chart example: http://www.imagemagick.org/source/piechart.mvg
 
 """
+import os
 import sys
 import commands
 
@@ -424,6 +425,7 @@ class Drawing:
 
     def save(self, filename):
         """Save to the given MVG file."""
+        self.filename = os.path.abspath(filename)
         outfile = open(filename, 'w')
         for line in self.data:
             outfile.write("%s\n" % line)
@@ -450,9 +452,7 @@ class Drawing:
             return '\n'.join(self.data)
 
     def render(self):
-        """Render the MVG image with ImageMagick, and display it."""
-        # TODO: Write .mvg to a file and use @drawfile; command-line length
-        # is exceeded easily with the current approach
+        """Render the .mvg with ImageMagick, and display it."""
         self.save(self.filename)
         cmd = "convert -size %sx%s " % self.size
         cmd += " xc:none "
@@ -461,6 +461,14 @@ class Drawing:
         print "Creating preview rendering."
         print cmd
         print "Press 'q' or ESC in the image window to close the image."
+        print commands.getoutput(cmd)
+
+    def save_jpeg(self, jpeg_file):
+        """Render the drawing to a jpeg image."""
+        self.save(self.filename)
+        cmd = "convert -size %sx%s " % self.size
+        cmd += "%s %s" % (self.filename, jpeg_file)
+        print "Rendering drawing to: %s" % jpeg_file
         print commands.getoutput(cmd)
 
     def goto(self, line_num):
