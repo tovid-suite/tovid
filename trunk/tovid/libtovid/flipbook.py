@@ -4,8 +4,8 @@
 import os
 import sys
 from libtovid.mvg import Drawing
-from libtovid.layer import Thumb, Background, Text
-from libtovid.effect import Fade, Movement, Spectrum, Scale
+from libtovid import layer
+from libtovid import effect
 from libtovid.VideoUtils import images_to_video
 
 class Flipbook:
@@ -64,29 +64,34 @@ class Flipbook:
 # Demo
 if __name__ == '__main__':
     print "Flipbook demo"
-    if len(sys.argv) < 3:
-        print "Usage: flipbook.py IMAGE1 IMAGE2"
+    if len(sys.argv) < 4:
+        print "Usage: flipbook.py IMAGE1 IMAGE2 VIDEO1"
         sys.exit(1)
     else:
         bgimage = os.path.abspath(sys.argv[1])
         fgimage = os.path.abspath(sys.argv[2])
+        video = os.path.abspath(sys.argv[3])
 
     flip = Flipbook()
 
     # Background image
-    bgd = Background(flip.size, filename=bgimage)
+    bgd = layer.Background(flip.size, filename=bgimage)
     flip.add(bgd)
 
     # Text layer with fading and movement effects
-    text = Text("The quick brown fox", (0, 0), fontsize='40')
-    text.effects.append(Spectrum(1, 30))
-    text.effects.append(Fade(1, 30, 10))
-    text.effects.append(Movement(1, 30, (100, 100), (300, 300)))
+    text = layer.Text("The quick brown fox", (0, 0), fontsize='40')
+    text.effects.append(effect.Spectrum(1, 30))
+    text.effects.append(effect.Fade(1, 30, 10))
+    text.effects.append(effect.Movement(1, 30, (100, 100), (300, 300)))
     flip.add(text)
 
-    pic = Background((320, 240), 'black', fgimage)
-    pic.effects.append(Scale(0, 30, (0.0, 0.0), (1.0, 1.0)))
+    pic = layer.Background((320, 240), 'black', fgimage)
+    pic.effects.append(effect.Scale(0, 30, (0.0, 0.0), (1.0, 1.0)))
     flip.add(pic)
+
+    clip = layer.VideoClip(video, (260, 200), (320, 240))
+    clip.rip_frames(0, 30)
+    flip.add(clip)
 
     # Render the final video
     flip.render_video('/tmp/flipbook.m2v')

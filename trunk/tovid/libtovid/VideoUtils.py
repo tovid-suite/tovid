@@ -11,11 +11,8 @@ __all__ = [\
 # From standard library
 import os
 import sys
-import logging
 
-log = logging.getLogger('libtovid.VideoUtils')
-
-def video_to_images(infile, start=0, end=0, scale=(0,0)):
+def video_to_images(infile, start, end, scale=(320,240)):
     """Convert a video file to a sequence of images, starting and ending at the
     given times in seconds. Returns directory name where the images are saved.
 
@@ -23,27 +20,23 @@ def video_to_images(infile, start=0, end=0, scale=(0,0)):
     If scale is nonzero, resize.
     """
     
-    outdir = os.path.expanduser('~/tmp/%s_images' % infile)
+    outdir = '/tmp/%s_frames' % os.path.basename(infile)
     # Create output directory if it doesn't exist
     if not os.path.exists(outdir):
-        log.info("Creating: %s" % outdir)
+        print "Creating: %s" % outdir
         try:
             os.mkdir(outdir)
         except:
-            log.error("Could not create: %s" % outdir)
+            print "Could not create: %s" % outdir
             sys.exit()
-    # Use mplayer to rip images
-    cmd = 'mplayer "%s" ' % infile
-    # From start to end (if given)
-    cmd += ' -ss %s ' % start
-    if end > start:
-        cmd += ' -endpos %s ' % end - start
-    # Scale if requested
-    if scale != (0, 0):
-        cmd += ' -zoom -x %s -y %s ' % scale
-    cmd += ' -vo jpeg:outdir="%s" -ao null ' % outdir
-
-    log.info("Creating image sequence from %s" % infile)
+    # Use transcode to rip frames
+    cmd = 'transcode -i "%s" ' % infile
+    # Encode from start to end frames
+    cmd += ' -c %s-%s ' % (start, end)
+    cmd += ' -y jpg,null '
+    cmd += ' -Z %sx%s ' % scale
+    cmd += ' -o %s/frame_' % outdir
+    print "Creating image sequence from %s" % infile
     print cmd
     for line in os.popen(cmd, 'r').readlines():
         print line
@@ -59,7 +52,7 @@ def images_to_video(imagedir, outfile, format, tvsys):
     """
     # Use absolute path name
     imagedir = os.path.abspath(imagedir)
-    log.info("Creating video stream from image sequence in %s" % imagedir)
+    print "Creating video stream from image sequence in %s" % imagedir
 
     # Use jpeg2yuv to stream images
     cmd = 'jpeg2yuv -I p '
@@ -79,4 +72,4 @@ def images_to_video(imagedir, outfile, format, tvsys):
 
     print cmd
     for line in os.popen(cmd, 'r').readlines():
-        log.debug(line)
+        print line

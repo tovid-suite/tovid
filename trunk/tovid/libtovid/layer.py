@@ -3,8 +3,12 @@
 
 __all__ = ['Layer', 'Background', 'Text', 'Thumb', 'ThumbGrid']
 
+import os
+import sys
+import glob
 from libtovid.mvg import Drawing
 from libtovid.effect import Effect
+from libtovid.VideoUtils import video_to_images
 
 class Layer:
     """A visual element that may be composited onto a Flipbook."""
@@ -37,6 +41,35 @@ class Background (Layer):
             drawing.rectangle((0, 0), self.size)
         drawing.pop('graphic-context')
 
+class VideoClip (Layer):
+    """A rectangular video clip with size and positioning."""
+    def __init__(self, filename, (x, y), (width, height)):
+        Layer.__init__(self)
+        self.filename = filename
+        self.position = (x, y)
+        self.size = (width, height)
+        # List of filenames of individual frames
+        self.frames = []
+
+    def rip_frames(self, start, end):
+        """Rip frames from the video file, from start to end (in seconds)."""
+        self.framedir = video_to_images(self.filename, start, end, self.size)
+        print "Frames in: %s" % self.framedir
+        # Get frame filenames
+        for frame_name in glob.glob('%s/*.jpg' % self.framedir):
+            self.frames.append(frame_name)
+        print "Frame files:"
+        print self.frames
+
+    def draw_on(self, drawing, frame):
+        drawing.push('graphic-context')
+        self.draw_effects(drawing, frame)
+        # Loop frames (modular arithmetic)
+        if frame > len(self.frames):
+            frame = frame % len(self.frames)
+        filename = self.frames[frame]
+        drawing.image('over', self.position, self.size, filename)
+        drawing.pop('graphic-context')
 
 class Text (Layer):
     """A text string, with position, size, color and font."""
