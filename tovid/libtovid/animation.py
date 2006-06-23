@@ -5,8 +5,9 @@
 """
 __all__ = ['Keyframe', 'lerp', 'interpolate', 'tween']
 
-from math import floor, sqrt
+import copy
 import doctest
+from math import floor, sqrt
 
 class Keyframe:
     """Associates a specific frame in an animation with a numeric value.
@@ -113,10 +114,11 @@ def tween(keyframes):
     # TODO: Sort keyframes in increasing order by frame number (to ensure
     # keyframes[0] is the first frame, and keyframes[-1] is the last frame)
     # Make a copy of keyframes
-    import copy
     keys = copy.deepcopy(keyframes)
     first = keys[0].frame
     last = keys[-1].frame
+    if first == last:
+        return keys[0].data
 
     # Pop off keyframes as each interval is calculated
     left = keys.pop(0)
