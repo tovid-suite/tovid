@@ -5,7 +5,7 @@ import os
 import sys
 from libtovid.mvg import Drawing
 from libtovid.layer import Thumb, Background, Text
-from libtovid.effect import Fade, Movement, Spectrum, Appear
+from libtovid.effect import Fade, Movement, Spectrum, Scale
 from libtovid.VideoUtils import images_to_video
 
 class Flipbook:
@@ -64,12 +64,12 @@ class Flipbook:
 # Demo
 if __name__ == '__main__':
     print "Flipbook demo"
-    if len(sys.argv) < 2:
-        print "Usage: flipbook.py IMAGE_FILE"
-        print "(Creates a demo using IMAGE_FILE as the background)"
+    if len(sys.argv) < 3:
+        print "Usage: flipbook.py IMAGE1 IMAGE2"
         sys.exit(1)
     else:
         bgimage = os.path.abspath(sys.argv[1])
+        fgimage = os.path.abspath(sys.argv[2])
 
     flip = Flipbook()
 
@@ -84,9 +84,9 @@ if __name__ == '__main__':
     text.effects.append(Movement(1, 30, (100, 100), (300, 300)))
     flip.add(text)
 
-    text2 = Text("Hello", (100, 300), 'white', 50, 'Courier')
-    text2.effects.append(Appear(15))
-    flip.add(text2)
+    pic = Background((320, 240), 'black', fgimage)
+    pic.effects.append(Scale(0, 30, (0.0, 0.0), (1.0, 1.0)))
+    flip.add(pic)
 
     # Render the final video
     flip.render_video('/tmp/flipbook.m2v')
