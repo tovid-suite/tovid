@@ -62,7 +62,7 @@ def images_to_video(imagedir, outfile, format, tvsys):
     log.info("Creating video stream from image sequence in %s" % imagedir)
 
     # Use jpeg2yuv to stream images
-    cmd = 'jpeg2yuv -v 0 -I p '
+    cmd = 'jpeg2yuv -I p '
     if tvsys == 'pal':
         cmd += ' -f 25.00 '
     else:
