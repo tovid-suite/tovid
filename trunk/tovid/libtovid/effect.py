@@ -67,7 +67,12 @@ class Scale (Effect):
             Keyframe(end, (w1, h1))
             ])
     def draw_on(self, drawing, frame):
-        drawing.scale(self.scalings[frame - self.start])
+        if frame < self.start:
+            drawing.scale(self.scalings[0])
+        elif frame > self.end:
+            drawing.scale(self.scalings[-1])
+        else:
+            drawing.scale(self.scalings[frame - self.start])
 
 
 class Colorfade (Effect):
