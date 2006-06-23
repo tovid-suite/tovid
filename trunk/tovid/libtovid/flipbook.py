@@ -1,9 +1,12 @@
 #! /usr/bin/env python
 # flipbook.py
 
+import os
+import sys
 from libtovid.mvg import Drawing
 from libtovid.layer import Thumb, Background, Text
 from libtovid.effect import Fade, Movement
+from libtovid.VideoUtils import images_to_video
 
 class Flipbook:
     """A collection of Drawings that together comprise an animation.
@@ -22,25 +25,56 @@ class Flipbook:
     def render(self, frame=1):
         """Render a Drawing for the given frame."""
         print "Rendering Flipbook frame %s" % frame
-        drawing = Drawing(self.size, '/tmp/flipbook.mvg')
+        # Render the drawing
+        drawing = self.drawing(frame)
+        drawing.render()
+
+    def drawing(self, frame):
+        """Get a Drawing of the given frame"""
+        drawing = Drawing(self.size)
         # Write MVG header stuff
         drawing.push('graphic-context')
         drawing.viewbox((0, 0), self.size)
         # Draw each layer
         for layer in self.layers:
             layer.draw_on(drawing, frame)
-        print drawing.code()
         drawing.pop('graphic-context')
-        # Render the drawing
-        drawing.render()
+        return drawing
+
+    def render_video(self, m2v_file):
+        """Render the flipbook to an .m2v video stream file."""
+        # TODO: Get rid of temp-dir hard-coding
+        tmp = '/tmp/flipbook'
+        try:
+            os.mkdir(tmp)
+        except:
+            print "Temp dir %s already exists, overwriting."
+        # Write each Flipbook frame as an .mvg file, then convert to .jpg
+        frame = 1
+        while frame < self.frames:
+            drawing = self.drawing(frame)
+            print "Drawing for frame: %s" % frame
+            print drawing.code()
+            drawing.save('%s/flip_%04d.mvg' % (tmp, frame))
+            # jpeg2yuv likes frames to start at 0
+            drawing.save_jpeg('%s/%08d.jpg' % (tmp, frame - 1))
+            frame += 1
+        images_to_video(tmp, m2v_file, 'dvd', 'pal')
 
 # Demo
 if __name__ == '__main__':
     print "Flipbook demo"
+    if len(sys.argv) < 2:
+        print "Usage: flipbook.py IMAGE_FILE"
+        print "(Creates a demo using IMAGE_FILE as the background)"
+        sys.exit(1)
+    else:
+        bgimage = os.path.abspath(sys.argv[1])
+
     flip = Flipbook()
 
     # Background image
-    bgd = Background(flip.size, filename='/pub/video/test/clouds.jpg')
+    bgd = Background(flip.size, filename=bgimage)
     flip.add(bgd)
 
     # Text layer with fading and movement effects
@@ -49,6 +83,7 @@ if __name__ == '__main__':
     text.effects.append(Movement(1, 30, (100, 100), (500, 300)))
     flip.add(text)
 
-    flip.render(1)
-    flip.render(5)
-    flip.render(15)
+    # Render the final video
+    flip.render_video('/tmp/flipbook.m2v')
+    print "Output in /tmp/flipbook.m2v (we hope!)"
+

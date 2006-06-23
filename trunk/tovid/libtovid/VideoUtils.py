@@ -46,21 +46,19 @@ def video_to_images(infile, start=0, end=0, scale=(0,0)):
     log.info("Creating image sequence from %s" % infile)
     print cmd
     for line in os.popen(cmd, 'r').readlines():
-        log.debug(line)
+        print line
 
     return outdir
 
 
-def images_to_video(imagedir, format, tvsys):
-    """Convert an image sequence in imagedir to an MPEG video compliant
-    with the given format and tvsys. Return filename of resulting video.
+def images_to_video(imagedir, outfile, format, tvsys):
+    """Convert an image sequence in imagedir to an .m2v video compliant
+    with the given format and tvsys.
 
     Currently supports only JPEG images.
     """
     # Use absolute path name
     imagedir = os.path.abspath(imagedir)
-    outfile = "%s/video_stream.m2v" % imagedir
-
     log.info("Creating video stream from image sequence in %s" % imagedir)
 
     # Use jpeg2yuv to stream images
@@ -69,7 +67,7 @@ def images_to_video(imagedir, format, tvsys):
         cmd += ' -f 25.00 '
     else:
         cmd += ' -f 29.970 '
-    cmd += ' -j "%s/%%08d.jpg"' % outdir
+    cmd += ' -j "%s/%%08d.jpg"' % imagedir
     # Pipe image stream into mpeg2enc to encode
     cmd += ' | mpeg2enc -v 0 -q 3 -o "%s"' % outfile
     if format == 'vcd':
@@ -82,6 +80,3 @@ def images_to_video(imagedir, format, tvsys):
     print cmd
     for line in os.popen(cmd, 'r').readlines():
         log.debug(line)
-
-    return outfile
-
