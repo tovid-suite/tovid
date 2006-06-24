@@ -280,7 +280,10 @@ function confirm_preview()
         yecho
     else
         yecho "Preview not OK, exiting."
+        echo -n "Deleting symlink in /tmp . . . "
+        rm -fv /tmp/todisc-work
         yecho
+        echo
         echo "Some configuration options to try, if things look bad:"
         echo "Color:"
         echo "    -title-color"
@@ -290,7 +293,6 @@ function confirm_preview()
         echo "    -thumbfont and -thumb-fontsize"
         echo "If you get black frames, then look at the -seek option"
         echo "For other fine-tuning options, see 'man todisc'."
-        rm -fv /tmp/todisc-work
         exit 0
     fi
 #    yecho
@@ -1047,7 +1049,7 @@ if [ -n "$BG_VIDEO" ]; then
     fi
 fi
 for ((i=0; i<=NUM_FILES; i++)) ; do
-    FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" $SEEK -vframes 1 \
+    FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" -an $SEEK -vframes 1 \
     -s $THUMB_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
     echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
     SED_VAR="frame="
@@ -1146,7 +1148,8 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
         A_BR="No audio found"
     fi
     V_LENGTH="$(awk '/Video stream:/{print $10}'<<<"${mencoder_stats[i]}")"
-    FPS="$(awk '/VIDEO:/ {print $6}' <<<"${mencoder_stats[i]}")"
+#    FPS="$(awk '/VIDEO:/ {print $6}' <<<"${mencoder_stats[i]}")"
+    FPS="$(awk ' /VIDEO/ { if ($_=="fps"); sub(/fps.*$/, ""); print $NF}' <<<"${mencoder_stats[i]}")"
     yecho
     echo -e "Stats for" "${IN_FILES[i]}" "\n" \
     "video codec:   " \
