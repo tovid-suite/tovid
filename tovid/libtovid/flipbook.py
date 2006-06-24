@@ -72,26 +72,35 @@ if __name__ == '__main__':
         fgimage = os.path.abspath(sys.argv[2])
         video = os.path.abspath(sys.argv[3])
 
-    flip = Flipbook()
+    flip = Flipbook(90)
 
     # Background image
     bgd = layer.Background(flip.size, filename=bgimage)
     flip.add(bgd)
 
-    # Text layer with fading and movement effects
-    text = layer.Text("The quick brown fox", (0, 0), fontsize='40')
-    text.effects.append(effect.Spectrum(1, 30))
-    text.effects.append(effect.Fade(1, 30, 10))
-    text.effects.append(effect.Movement(1, 30, (100, 100), (300, 300)))
-    flip.add(text)
 
-    pic = layer.Background((320, 240), 'black', fgimage)
-    pic.effects.append(effect.Scale(0, 30, (0.0, 0.0), (1.0, 1.0)))
+    # Thumbnail image with scaling effect
+    pic = layer.Thumb(fgimage, (200, 200), (320, 240))
+    pic.effects.append(effect.Scale(0, 90, (0.0, 0.0), (1.0, 1.0)))
     flip.add(pic)
 
+    # Video clip
     clip = layer.VideoClip(video, (260, 200), (320, 240))
-    clip.rip_frames(0, 30)
+    clip.rip_frames(0, 90)
+    clip.effects.append(effect.Fade(1, 90, 20))
     flip.add(clip)
+
+    # Text layer with fade, movement, and spectrum effects
+    text = layer.Text("The quick brown fox", (0, 0), fontsize=40)
+    text.effects.append(effect.Spectrum(1, 90))
+    text.effects.append(effect.Fade(30, 90, 20))
+    text.effects.append(effect.Movement(20, 70, (100, 100), (300, 300)))
+    flip.add(text)
+
+    # Textbox layer
+    textbox = layer.TextBox("The <i>quicker</i> red <b>firefox</b>", (30, 200),
+                            (600,200), color='red', fontsize=30)
+    flip.add(textbox)
 
     # Render the final video
     flip.render_video('/tmp/flipbook.m2v')
