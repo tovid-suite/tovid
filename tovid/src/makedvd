@@ -199,7 +199,7 @@ if $DO_AUTHOR; then
     fi
 
     # The dest= argument from the XML file will be the output directory
-    OUT_DIR=`grep 'dest=' $DVDAUTHOR_XML | cut -d= -f2 | tr -d '">'`
+    OUT_DIR=`grep 'dest=' $DVDAUTHOR_XML | awk -F '"' '{print $2}'`
 
     # Determine how much space will be needed for authoring, by adding up
     # the sizes of all .vobs in the XML file.
