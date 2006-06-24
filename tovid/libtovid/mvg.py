@@ -205,6 +205,10 @@ class Drawing:
         """Draw a circle defined by center and perimeter points."""
         self.insert('circle %s,%s %s,%s' % \
                     (center_x, center_y, perimeter_x, perimeter_y))
+    def circle_rad(self, (center_x, center_y), radius):
+        """Draw a circle defined by center point and radius."""
+        self.insert('circle %s,%s %s,%s' % \
+                    (center_x, center_y, center_x + radius, center_y))
 
     def clip_path(self, url):
         self.insert('clip-path url(%s)' % url)
@@ -367,7 +371,7 @@ class Drawing:
 
     def roundrectangle(self, (x0, y0), (x1, y1), (width, height)):
         """Draw a rounded rectangle from (x0, y0) to (x1, y1), with
-        the given outer width and height."""
+        a bevel size of (width, height)."""
         self.insert('roundrectangle %s,%s %s,%s %s,%s' % \
                 (x0, y0, x1, y1, width, height))
 
@@ -611,39 +615,107 @@ class Drawing:
 
 
 # Demo
+def draw_font_demo(drawing):
+    """Draw font samples on the given drawing."""
+    pic = drawing
+    # White text in a range of sizes
+    pic.push()
+    pic.fill('white')
+    for size in [12,16,20,24,28,32]:
+        ypos = size * size / 5
+        pic.font('Helvetica')
+        pic.font_size(size)
+        pic.text((10, ypos), "%s pt: The quick brown fox" % size)
+    pic.pop()
+
+def draw_shape_demo(drawing):
+    """Draw shape samples on the given drawing."""
+    pic = drawing
+    assert(isinstance(pic, Drawing))
+    # Save context
+    pic.push()
+
+    # Large orange circle with black stroke
+    pic.push()
+    pic.stroke('black')
+    pic.stroke_width(12)
+    pic.fill('orange')
+    # Circle at (500, 200), with radius 200
+    pic.circle_rad((500, 200), 200)
+    pic.pop()
+
+    # Grey-stroked blue circles
+    pic.push()
+    pic.stroke('grey')
+    pic.stroke_width(2)
+    pic.fill('#8080FF')
+    pic.circle((65, 50), (50, 50))
+    pic.fill('#2020F0')
+    pic.circle((60, 100), (50, 100))
+    pic.fill('#0000A0')
+    pic.circle((55, 150), (50, 150))
+    pic.pop()
+
+    # Semitransparent green rectangles
+    pic.push()
+    pic.translate((50, 400))
+    pic.fill('lightgreen')
+    for scale in [0.2, 0.4, 0.7, 1.1, 1.6, 2.2, 2.9, 3.7]:
+        pic.push()
+        pic.translate((scale * 70, scale * -50))
+        pic.scale((scale, scale))
+        pic.fill_opacity(scale / 5.0)
+        pic.stroke_width(scale)
+        pic.stroke('black')
+        pic.roundrectangle((-30, -30), (30, 30), (8, 8))
+        pic.pop()
+    pic.pop()
+
+    # Restore context
+    pic.pop()
+
+
+def draw_stroke_demo(drawing):
+    """Draw a stroke/strokewidth demo on the given drawing."""
+    assert(isinstance(drawing, Drawing))
+    # Save context
+    drawing.push()
+
+    for width in [1, 2, 4, 6, 8, 10, 12, 14, 16]:
+        drawing.stroke_width(width)
+        rgb = ((255 - width * 8), (120 - width * 5), 0)
+        drawing.stroke('rgb(%s,%s,%s)' % rgb)
+        offset = width * 10
+        drawing.line((0, offset), (-offset, offset))
+
+    # Restore context
+    drawing.pop()
+
 if __name__ == '__main__':
     pic = Drawing((720, 480), 'drawing_test.mvg')
 
     # Start of MVG file
-    pic.push('graphic-context')
+    pic.push()
     pic.viewbox((0, 0), (720, 480))
 
-    pic.push
     # Add a background fill
     pic.fill('darkblue')
     pic.rectangle((0, 0), (720, 480))
 
-    # Some decorative circles
-    pic.fill('blue')
-    pic.circle((280, 350), (380, 450))
-    # Stroke only this circle, not any later objects
-    pic.push('graphic-context')
-    pic.stroke('black')
-    pic.stroke_width(12)
-    pic.fill('orange')
-    pic.circle((670, 100), (450, 100))
-    pic.pop('graphic-context')
+    draw_shape_demo(pic)
 
-    # White text in a range of sizes
-    pic.fill('white')
-    for size in [12,16,20,24,28,32]:
-        ypos = 100 + size * size / 5
-        pic.font('Helvetica')
-        pic.font_size(size)
-        pic.text((100, ypos), "%s pt: The quick brown fox" % size)
+    pic.push()
+    pic.translate((80, 120))
+    draw_font_demo(pic)
+    pic.pop()
+
+    pic.push()
+    pic.translate((600, 200))
+    draw_stroke_demo(pic)
+    pic.pop()
 
     # Close out the MVG file
-    pic.pop('graphic-context')
+    pic.pop()
 
     # Display the MVG text, then show the generated image
     pic.code(editing=True)
