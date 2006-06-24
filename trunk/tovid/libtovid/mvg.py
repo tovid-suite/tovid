@@ -250,7 +250,9 @@ class Drawing:
         self.insert('fill-opacity %s' % opacity)
     
     def fill_rule(self, rule):
-        # rule may be: evenodd, nonzero
+        """Set the fill rule to one of:
+        evenodd, nonzero
+        """
         self.insert('fill-rule %s' % rule)
     
     def font(self, name):
@@ -266,26 +268,46 @@ class Drawing:
         self.insert('font-size %s' % pointsize)
     
     def font_stretch(self, stretch_type):
-        # May be e.g. normal, condensed, ultra-condensed, expanded ...
+        """Set the font stretch type to one of:
+        all, normal,
+        semi-condensed, condensed, extra-condensed, ultra-condensed,
+        semi-expanded, expanded, extra-expanded, ultra-expanded
+        """
         self.insert('font-stretch %s' % stretch_type)
     
     def font_style(self, style):
-        # May be: all, normal, italic, oblique
+        """Set the font style to one of:
+        all, normal, italic, oblique
+        """
         self.insert('font-style %s' % style)
     
     def font_weight(self, weight):
-        # May be: all, normal, bold, 100, 200, ... 800, 900
+        """Set the font weight to one of:
+        all, normal, bold, 100, 200, ... 800, 900
+        """
         self.insert('font-weight %s' % weight)
     
     def gradient_units(self, units):
-        # May be: userSpace, userSpaceOnUse, objectBoundingBox
+        """Set gradient units to one of:
+        userSpace, userSpaceOnUse, objectBoundingBox
+        """
         self.insert('gradient-units %s' % units)
     
     def gravity(self, direction):
+        """Set the gravity direction to one of:
+        NorthWest, North, NorthEast,
+        West, Center, East,
+        SouthWest, South, SouthEast
+        """
         self.insert('gravity %s' % direction)
     
     def image(self, compose, (x, y), (width, height), filename):
-        # compose may be e.g. Add, Clear, Copy, Difference, Over ...
+        """Draw an image at (x, y), scaled to the given width and height.
+        compose may be:
+            Add, Minus, Plus, Multiply, Difference, Subtract,
+            Copy, CopyRed, CopyGreen, CopyBlue, CopyOpacity,
+            Atop, Bumpmap, Clear, In, Out, Over, Xor
+        """
         self.insert('image %s %s,%s %s,%s "%s"' % \
                     (compose, x, y, width, height, filename))
     
@@ -304,25 +326,32 @@ class Drawing:
     def opacity(self, opacity):
         self.insert('opacity %s' % opacity)
 
-    def path(self, point_list):
-        # point_list = [(x0, y0), (x1, y1), ... (xn, yn)]
+    def path(self, path_data):
+        """Draw a path. path_data is a list of instructions and coordinates,
+        e.g. ['M', (100,100), 'L' (200,200), ...]
+        Instructions are M (moveto), L (lineto), A (arc), Z (close path)
+        For more on using paths (and a complete list of commands), see:
+        http://www.cit.gu.edu.au/~anthony/graphics/imagick6/draw/#paths
+        http://www.w3.org/TR/SVG/paths.html#PathDataGeneralInformation
+        """
         command = 'path'
-        for x, y in point_list:
+        for token in path_data:
             command += ' %s,%s' % (x, y)
         self.insert(command)
 
     def point(self, (x, y)):
+        """Draw a point at position (x, y)."""
         self.insert('point %s,%s' % (x, y))
 
     def polygon(self, point_list):
-        # point_list = [(x0, y0), (x1, y1), ... (xn, yn)]
+        """Draw a filled polygon defined by (x, y) points in the given list."""
         command = 'polygon'
         for x, y in point_list:
             command += ' %s,%s' % (x, y)
         self.insert(command)
     
     def polyline(self, point_list):
-        # point_list = [(x0, y0), (x1, y1), ... (xn, yn)]
+        """Draw an unfilled polygon defined by (x, y) points in the given list."""
         command = 'polyline'
         for x, y in point_list:
             command += ' %s,%s' % (x, y)
@@ -332,8 +361,9 @@ class Drawing:
         """Draw a rectangle from (x0, y0) to (x1, y1)."""
         self.insert('rectangle %s,%s %s,%s' % (x0, y0, x1, y1))
         
-    def rotate(self, angle):
-        self.insert('rotate %s' % angle)
+    def rotate(self, degrees):
+        """Rotate by the given number of degrees."""
+        self.insert('rotate %s' % degrees)
 
     def roundrectangle(self, (x0, y0), (x1, y1), (width, height)):
         """Draw a rounded rectangle from (x0, y0) to (x1, y1), with
@@ -342,6 +372,7 @@ class Drawing:
                 (x0, y0, x1, y1, width, height))
 
     def scale(self, (x, y)):
+        """Set scaling to (x, y)."""
         self.insert('scale %s,%s' % (x, y))
 
     def skewX(self, angle):
@@ -365,8 +396,17 @@ class Drawing:
             self.insert('stroke-antialias 0')
 
     def stroke_dasharray(self, array):
-        # array in [none, (numeric list)]
-        print "stroke_dasharray() not implemented yet"
+        """Set the stroke dash style, as defined by the given array. For
+        example, stroke_dasharray([5, 3]) draws dashed-line strokes with
+        (roughly) 5-pixel dashes separated by 3-pixel spaces. Pass None or
+        [] to draw solid-line strokes."""
+        if array == None or array == []:
+            self.insert('stroke-dasharray none')
+        else:
+            cmd = 'stroke-dasharray'
+            for length in array:
+                cmd += ' %s' % length
+            self.insert(cmd)
         
     def stroke_dashoffset(self, offset):
         self.insert('stroke-dashoffset %s' % offset)
