@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # layer.py
 
-__all__ = ['Layer', 'Background', 'Text', 'Thumb', 'ThumbGrid']
+__all__ = ['Layer', 'Background', 'Text', 'VideoClip', 'Thumb', 'ThumbGrid']
 
 import os
 import sys
@@ -32,14 +32,14 @@ class Background (Layer):
         self.color = color
         self.filename = filename
     def draw_on(self, drawing, frame):
-        drawing.push('graphic-context')
+        drawing.push()
         self.draw_effects(drawing, frame)
         if self.filename is not '':
             drawing.image('over', (0, 0), self.size, self.filename)
         elif self.color:
             drawing.fill(self.color)
             drawing.rectangle((0, 0), self.size)
-        drawing.pop('graphic-context')
+        drawing.pop()
 
 class VideoClip (Layer):
     """A rectangular video clip with size and positioning."""
@@ -62,18 +62,19 @@ class VideoClip (Layer):
         print self.frames
 
     def draw_on(self, drawing, frame):
-        drawing.push('graphic-context')
+        drawing.push()
         self.draw_effects(drawing, frame)
         # Loop frames (modular arithmetic)
         if frame > len(self.frames):
             frame = frame % len(self.frames)
         filename = self.frames[frame]
         drawing.image('over', self.position, self.size, filename)
-        drawing.pop('graphic-context')
+        drawing.pop()
+
 
 class Text (Layer):
-    """A text string, with position, size, color and font."""
-    def __init__(self, text, (x, y), color='white', fontsize='20', \
+    """A simple text string, with position, size, color and font."""
+    def __init__(self, text, (x, y), color='white', fontsize=20, \
                  font='Helvetica'):
         Layer.__init__(self)
         self.text = text
@@ -82,13 +83,101 @@ class Text (Layer):
         self.fontsize = fontsize
         self.font = font
     def draw_on(self, drawing, frame):
-        drawing.push('graphic-context')
+        drawing.push()
         drawing.fill(self.color)
         drawing.font(self.font)
         drawing.font_size(self.fontsize)
         self.draw_effects(drawing, frame)
         drawing.text(self.position, self.text)
-        drawing.pop('graphic-context')
+        drawing.pop()
+
+
+class TextBox (Text):
+    """A text box containing paragraphs, and support for simple formatting
+    markup in HTML-like syntax.
+    
+    Formatting elements are <p>...</p>, <b>...</b>, and <i>...</i>.
+    """
+    def __init__(self, text, (pos_x, pos_y), (width, height), color='white',
+                 fontsize=20, font='Helvetica'):
+        """Formatted text at the given position, contained in a box of the
+        given size."""
+        Text.__init__(self, text, (pos_x, pos_y), color, fontsize, font)
+        self.size = (width, height)
+        # TODO: Determine max number of characters that will fit in given
+        # width, and break marked-up text into lines (breaking at word
+        # boundaries)
+
+    def draw_on(self, drawing, frame):
+        assert(isinstance(drawing, Drawing))
+        drawing.push()
+
+        # TODO: Wrap text!
+
+        # Draw font and effects for the whole text box
+        drawing.fill(self.color)
+        drawing.font(self.font)
+        drawing.font_size(self.fontsize)
+        self.draw_effects(drawing, frame)
+
+        # Start reading text at position 0
+        # TODO: For text-wrapping purposes, cursor will be the position on
+        # the current line
+        cursor = 0
+        # Start drawing in upper left-hand corner
+        draw_loc = self.position
+        
+        finished = False
+        while not finished:
+            # Find the next tag after cursor
+            tag_start = self.text.find('<', cursor)
+            
+            # If no tag was found, draw remaining text and finish up
+            if tag_start == -1:
+                drawing.text(draw_loc, self.text[cursor:])
+                finished = True
+
+            # Otherwise, parse and render tags
+            else:
+                # Draw text from cursor up to (but not including) the '<'
+                drawing.text(draw_loc, self.text[cursor:tag_start])
+                chars_written = tag_start - cursor
+    
+                # Adjust draw_loc
+                (x, y) = draw_loc
+                # Badly-hacked horizontal positioning
+                x += int(self.fontsize / 2 * chars_written)
+                # Line-height is double fontsize (Disabled for now)
+                # y = y + 2 * self.fontsize
+                draw_loc = (x, y)
+
+                # Get the full tag <..>
+                tag_end = self.text.find('>', tag_start) + 1
+                tag = self.text[tag_start:tag_end]
+                # Position the cursor after the tag
+                cursor = tag_end
+    
+                # For any opening tag, start a new drawing context
+                if not tag.startswith('</'):
+                    drawing.push()
+    
+                print "TextBox: tag is '%s'" % tag
+
+                # Paragraph
+                if tag == '<p>':
+                    # TODO
+                    pass
+                # Bold text
+                elif tag == '<b>':
+                    drawing.font_weight('bold')
+                # Italic text
+                elif tag == '<i>':
+                    drawing.font_style('italic')
+                # For any closing tag, close the current drawing context
+                if tag.startswith('</'):
+                    drawing.pop()
+
+        drawing.pop()
 
 
 class Thumb (Layer):
@@ -99,10 +188,10 @@ class Thumb (Layer):
         self.position = (x, y)
         self.size = (width, height)
     def draw_on(self, drawing, frame):
-        drawing.push('graphic-context')
+        drawing.push()
         self.draw_effects(drawing, frame)
         drawing.image('over', self.position, self.size, self.filename)
-        drawing.pop('graphic-context')
+        drawing.pop()
 
 
 class ThumbGrid (Layer):
@@ -144,9 +233,9 @@ class ThumbGrid (Layer):
         if rows == 0 and columns > 0:
             return (columns, (1 + num_items / columns))
     def draw_on(self, drawing, frame):
-        drawing.push('graphic-context')
+        drawing.push()
         self.draw_effects(drawing, frame)
         for file in self.file_list:
             drawing.image('Over', self.position, self.size, file)
-        drawing.pop('graphic-context')
+        drawing.pop()
 

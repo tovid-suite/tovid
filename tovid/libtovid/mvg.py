@@ -168,6 +168,7 @@ class Drawing:
         self.data = [''] # Line 0 is null
         self.cursor = 1
         self.history = []
+        self.indent = 0
 
     #
     # MVG drawing commands
@@ -233,7 +234,7 @@ class Drawing:
                 (center_x, center_y, radius_x, radius_y, arc_start, arc_stop))
         
     def fill(self, color):
-        """Set the current fill color.
+        """Set the current fill color, or 'none' for transparent fill.
         MVG/ImageMagick color usage:
         http://www.imagemagick.org/script/color.php"""
         self.insert('fill "%s"' % color)
@@ -242,9 +243,6 @@ class Drawing:
         self.fill('rgb(%s, %s, %s)' % (r, g, b))
     
     def fill_opacity(self, opacity):
-        # opacity may be [0.0-1.0], or [0-100]%
-        # TODO: Check for float (e.g. 0.7), int (eg 70), or string (eg 70%)
-        # and do correct formatting
         """Define fill opacity, from fully transparent (0.0) to fully
         opaque (1.0)."""
         self.insert('fill-opacity %s' % opacity)
@@ -252,6 +250,7 @@ class Drawing:
     def fill_rule(self, rule):
         """Set the fill rule to one of:
         evenodd, nonzero
+        http://www.w3.org/TR/SVG/painting.html#FillRuleProperty
         """
         self.insert('fill-rule %s' % rule)
     
@@ -312,7 +311,8 @@ class Drawing:
                     (compose, x, y, width, height, filename))
     
     def line(self, (x0, y0), (x1, y1)):
-        """Draw a line from (x0, y0) to (x1, y1)."""
+        """Draw a line from (x0, y0) to (x1, y1). Note: Line color is defined
+        by the 'fill' command."""
         self.insert('line %s,%s %s,%s' % (x0, y0, x1, y1))
     
     def matte(self, (x, y), method='floodfill'):
@@ -385,7 +385,7 @@ class Drawing:
         self.insert('stop-color %s %s' % (color, offset))
         
     def stroke(self, color):
-        """Set the current stroke color."""
+        """Set the current stroke color, or 'none' for transparent."""
         self.insert('stroke %s' % color)
 
     def stroke_antialias(self, do_antialias):
@@ -454,7 +454,7 @@ class Drawing:
         """Define a rectangular viewing area from (x0, y0) to (x1, y1)."""
         self.insert('viewbox %s,%s %s,%s' % (x0, y0, x1, y1))
     
-    def push(self, context, *args, **kwargs):
+    def push(self, context='graphic-context', *args, **kwargs):
         """Save state, and begin a new context. context may be:
         'clip-path', 'defs', 'gradient', 'graphic-context', or 'pattern'.
         """
@@ -462,11 +462,13 @@ class Drawing:
         #    push('graphic-context')
         # or push('pattern', id, radial, x, y, width,height)
         self.insert('push %s' % context)
+        self.indent += 1
 
-    def pop(self, context):
+    def pop(self, context='graphic-context'):
         """Restore the previously push()ed context. context may be:
         'clip-path', 'defs', 'gradient', 'graphic-context', or 'pattern'.
         """
+        self.indent -= 1
         self.insert('pop %s' % context)
     
     #
@@ -564,7 +566,7 @@ class Drawing:
         """Insert the given MVG string before the current line, and position
         the cursor after the inserted line."""
         self.history.append(['insert', self.cursor])
-        self.data.insert(self.cursor, mvg_string)
+        self.data.insert(self.cursor, '  ' * self.indent + mvg_string)
         self.cursor += 1
 
     def remove(self, from_line, to_line=None):
