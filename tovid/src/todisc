@@ -1773,7 +1773,8 @@ for ((i=0; i<=NUM_FILES; i++)); do
         IM_CMD2c=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -) 
  
         IM_CMD3=(montage -geometry +4+4 -background '#161514' \
-        -fill '#C6C6C6' -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}" "$pic")
+        -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" \
+        -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}" "$pic")
         IM_CMD4=(convert -background '#161514' -frame 5x5 \
         -bordercolor none -mattecolor "#444744" -)
         IM_CMD5=(convert -resize $THUMB_SIZE! - $pic)
