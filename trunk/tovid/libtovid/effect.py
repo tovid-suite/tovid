@@ -110,7 +110,7 @@ class Fade (Effect):
     """A fade-in/fade-out effect, varying the opacity of a layer."""
     def __init__(self, start, end, fade_length=30):
         """Fade in from start, for fade_length frames; hold at full
-        opacity until fading out for fade_length frames before end."""
+        opacity, then fade out for fade_length frames before end."""
         Effect.__init__(self, start, end)
         # A fill-opacity curve, something like:
         #         ______        100%

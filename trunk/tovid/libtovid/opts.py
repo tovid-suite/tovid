@@ -12,14 +12,14 @@ In a way, this is the libtovid alternative to 'getopt'. If you're writing a
 program that needs to accept width and height values, then just create a list
 of Options with expected args, default value, and documentation:
 
-    >>> option_list = [
+    >>> options = [
     ...    Option('width', 'NUM', 8.5, 'Width of output in inches'),
     ...    Option('height', 'NUM', 11.0, 'Height of output in inches')
     ...    ]
 
 Nice enough, but it's not really useful until you create an OptionDict:
 
-    >>> useropts = OptionDict(option_list)
+    >>> useropts = OptionDict(options)
 
 Now, you can do several things. You can use useropts.usage() to display "usage
 notes" for your program. But OptionDict is more than that--it also stores a
