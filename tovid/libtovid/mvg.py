@@ -552,8 +552,8 @@ class Drawing:
         """Move the insertion cursor to the start of the given line."""
         if line_num <= 0:
             self.cursor = 1
-        elif line_num > (len(self.data) + 1):
-            self.goto(len(self.data))
+        elif line_num > len(self.data):
+            self.cursor = len(self.data)
         else:
             self.cursor = line_num
 
