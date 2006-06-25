@@ -78,6 +78,21 @@ if __name__ == '__main__':
     bgd = layer.Background(flip.size, filename=bgimage)
     flip.add(bgd)
 
+    # Text layer with fade, movement, and spectrum effects
+    text = layer.Text("The quick brown fox", (0, 0), fontsize=40)
+    text.effects.append(effect.Spectrum(1, 90))
+    text.effects.append(effect.Fade(30, 90, 20))
+    text.effects.append(effect.Movement(20, 70, (100, 100), (300, 300)))
+    flip.add(text)
+
+    # Label
+    label = layer.Label("The tovid suite", (100, 350))
+    flip.add(label)
+
+    # Textbox layer
+    textbox = layer.TextBox("The <i>quicker</i> red <b>firefox</b>", (30, 200),
+                            (600,200), color='red', fontsize=30)
+    flip.add(textbox)
 
     # Thumbnail image with scaling effect
     pic = layer.Thumb(fgimage, (200, 200), (320, 240))
@@ -89,18 +104,6 @@ if __name__ == '__main__':
     clip.rip_frames(0, 90)
     clip.effects.append(effect.Fade(1, 90, 20))
     flip.add(clip)
-
-    # Text layer with fade, movement, and spectrum effects
-    text = layer.Text("The quick brown fox", (0, 0), fontsize=40)
-    text.effects.append(effect.Spectrum(1, 90))
-    text.effects.append(effect.Fade(30, 90, 20))
-    text.effects.append(effect.Movement(20, 70, (100, 100), (300, 300)))
-    flip.add(text)
-
-    # Textbox layer
-    textbox = layer.TextBox("The <i>quicker</i> red <b>firefox</b>", (30, 200),
-                            (600,200), color='red', fontsize=30)
-    flip.add(textbox)
 
     # Render the final video
     flip.render_video('/tmp/flipbook.m2v')

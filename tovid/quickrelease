@@ -1,7 +1,6 @@
 #! /bin/bash
 # Do a "quick release" of the SVN code
 
-TARBALL="tovid-svn-`date +%Y-%m-%d`.tar.gz"
 TARGET_DIR="/home/groups/t/to/tovid/htdocs/download"
 
 if test $# -lt 1; then
@@ -13,5 +12,6 @@ fi
 ./bootstrap
 ./configure
 make dist
-mv tovid-svn.tar.gz $TARBALL
-scp $TARBALL $USERNAME@shell.sourceforge.net:$TARGET_DIR
+scp tovid-svn*.tar.gz $USERNAME@shell.sourceforge.net:$TARGET_DIR
+rm -i tovid-svn*.tar.gz
+
