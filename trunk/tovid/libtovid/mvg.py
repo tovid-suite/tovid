@@ -15,7 +15,7 @@ interpreter:
 And do something like this:
 
     >>> from libtovid.mvg import Drawing
-    >>> pic = Drawing(800, 600)
+    >>> pic = Drawing((800, 600), '/tmp/pic.mvg')
 
 This creates an image (pic) at 800x600 display resolution. pic has a wealth
 of draw functions, as well as a rough-and-ready editor interface (shown later).
@@ -498,7 +498,7 @@ class Drawing:
             outfile.write("%s\n" % line)
         outfile.close()
 
-    def code(self, editing=False):
+    def code(self, editing=True):
         """Return complete MVG text for the Drawing. If editing is True, include
         line numbers and a > at the cursor position (useful for interactive
         editing). Otherwise, just return raw text with line breaks."""
@@ -699,7 +699,7 @@ if __name__ == '__main__':
     pic.viewbox((0, 0), (720, 480))
 
     # Add a background fill
-    pic.fill('darkblue')
+    pic.fill('darkgrey')
     pic.rectangle((0, 0), (720, 480))
 
     draw_shape_demo(pic)

@@ -54,7 +54,7 @@ class Flipbook:
         while frame < self.frames:
             drawing = self.drawing(frame)
             print "Drawing for frame: %s" % frame
-            print drawing.code()
+            print drawing.code(editing=False)
             drawing.save('%s/flip_%04d.mvg' % (tmp, frame))
             # jpeg2yuv likes frames to start at 0
             drawing.save_image('%s/%08d.jpg' % (tmp, frame - 1))

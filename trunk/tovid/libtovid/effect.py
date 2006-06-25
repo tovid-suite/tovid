@@ -179,14 +179,3 @@ class Scale (Effect):
         drawing.scale(self.get_data(frame))
 
 
-
-# Demo
-if __name__ == '__main__':
-    fade = Colorfade(1, 10, (255, 128, 0), (128, 64, 255))
-    print "Fading color from rgb(255, 128, 0) to rgb(128, 64, 255)"
-    print "10-frame colorfade test:"
-    for frame in range(1, 11):
-        print "Frame %s" % frame
-        mvg = fade.draw_on(frame)
-        mvg.code()
-
