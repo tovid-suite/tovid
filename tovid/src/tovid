@@ -477,6 +477,9 @@ get_args()
                 # so subtitles can be added
                 FORCE_ENCODING=:
                 ;;
+            "-autosubs" )
+                SUBTITLES=""
+                ;;
             "-subtitles" )
                 shift
                 if test -e "$1"; then

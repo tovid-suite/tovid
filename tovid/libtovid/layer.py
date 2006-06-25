@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 # layer.py
 
-__all__ = ['Layer', 'Background', 'Text', 'VideoClip', 'Thumb', 'ThumbGrid']
+__all__ = ['Layer', 'Background', 'Text', 'Label',
+           'VideoClip', 'Thumb', 'ThumbGrid']
 
 import os
 import sys
@@ -91,7 +92,23 @@ class Text (Layer):
         drawing.text(self.position, self.text)
         drawing.pop()
 
-
+class Label (Text):
+    """A text string with a rectangular background."""
+    def __init__(self, text, (x, y), fgcolor='white', bgcolor='grey',
+                 fontsize=20, font='Nimbus Sans'):
+        Text.__init__(self, text, (x, y), fgcolor, fontsize, font)
+        self.bgcolor = bgcolor
+    def draw_on(self, drawing, frame):
+        drawing.push()
+        drawing.fill(self.bgcolor)
+        # Calculate rectangle dimensions from text size/length
+        width = self.fontsize * len(self.text)
+        height = self.fontsize * 2
+        end_rect = (self.position[0] + width, self.position[1] + height)
+        drawing.rectangle(self.position, end_rect)
+        Text.draw_on(self, drawing, frame)
+        drawing.pop()
+        
 class TextBox (Text):
     """A text box containing paragraphs, and support for simple formatting
     markup in HTML-like syntax.

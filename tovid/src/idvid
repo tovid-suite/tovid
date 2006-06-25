@@ -162,6 +162,8 @@ get_info ()
 
     # Defaults. Many of these values may be overridden by
     # mplayer's output in the 'eval' statement to follow
+    ID_VIDEO_ID=""
+    ID_AUDIO_ID=""
     ID_VIDEO_WIDTH="0"
     ID_VIDEO_HEIGHT="0"
     ID_VIDEO_FPS="0"
@@ -325,7 +327,7 @@ idvid_main ()
     fi
 
     # Check for missing audio stream (0 channels, 0 Hz)
-    if test "$ID_AUDIO_NCH" -eq "0" && test "$ID_AUDIO_RATE" -eq "0"; then
+    if test -z "$ID_AUDIO_ID"; then
         A_NONE="No audio stream present"
     fi
      
