@@ -550,9 +550,10 @@ class Drawing:
 
     def goto(self, line_num):
         """Move the insertion cursor to the start of the given line."""
-        if line_num <= 0 or line_num > (len(self.data) + 1):
-            print "Can't goto line %s" % line_num
-            sys.exit(1)
+        if line_num <= 0:
+            self.cursor = 1
+        elif line_num > (len(self.data) + 1):
+            self.goto(len(self.data))
         else:
             self.cursor = line_num
 
