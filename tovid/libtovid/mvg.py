@@ -30,72 +30,78 @@ Now that you have an MVG object (pic), you can draw on it:
     >>> pic.fill('white')
     >>> pic.rectangle((320, 240), (520, 400))
 
-If you want to preview what you have so far, call render():
+If you want to preview what you have so far, call pic.render().
 
-    >>> pic.render()
+Obviously, creating images in this way can be pretty tedious; what if you need
+to modify or remove some prior drawing commands?
 
-This calls convert with a -draw command and -composite miff:- | display to
-show the image. Whatever--it lets you see what the image looks like so far.
-Press 'q' or ESC to close the preview window.
+All drawing operations are saved in a history, allowing (theoretically)
+unlimited undo-levels. Insertions and removals are both kept in the history,
+which you can view like so:
 
-You can show the current MVG text contents (line-by-line) with:
-
-    >>> pic.code()
+    >>> pic.history
+    [['insert', 1], ['insert', 2], ['insert', 3], ['insert', 4]]
+    >>> pic.undo()
+    Undoing insertion at line 4
+    >>> pic.history
+    [['insert', 1], ['insert', 2], ['insert', 3]]
+    >>> pic.remove(3)
+    >>> pic.history
+    [['insert', 1], ['insert', 2], ['insert', 3], ['remove', 3, 'fill "white"']]
+    >>> pic.undo()
+    Undoing removal at line 3
+    >>> pic.history
+    [['insert', 1], ['insert', 2], ['insert', 3]]
+    >>> print pic.code()
     1: fill "blue"
     2: rectangle 0,0 800,600
     3: fill "white"
-    4: rectangle 320,240 520,400
     >
+
 
 This is where the "editor" interface comes in. Each line is numbered, and the
 current "cursor" position is shown by a '>' character. You can move the cursor
 with goto(line_number):
 
     >>> pic.goto(3)
-    >>> pic.code()
+    >>> print pic.code()
     1: fill "blue"
     2: rectangle 0,0 800,600
     > 3: fill "white"
-    4: rectangle 320,240 520,400
 
-The cursor indicates where new commands are inserted; for instance:
+
+The cursor indicates where new commands are inserted; any commands issued now
+are inserted before line 3:
 
     >>> pic.stroke('black')
     >>> pic.stroke_width(2)
-    >>> pic.code()
+    >>> print pic.code()
     1: fill "blue"
     2: rectangle 0,0 800,600
     3: stroke "black"
     4: stroke-width 2
     > 5: fill "white"
-    6: rectangle 320,240 520,400
+
 
 Notice that the two new commands were inserted (in order) at the cursor
 position. To resume appending at the end, call goto_end():
 
     >>> pic.goto_end()
-    >>> pic.code()
+    >>> print pic.code()
     1: fill "blue"
     2: rectangle 0,0 800,600
     3: stroke "black"
     4: stroke-width 2
     5: fill "white"
-    6: rectangle 320,240 520,400
     >
 
 You can remove a given line number (or range of lines) with:
 
     >>> pic.remove(3, 4)
-    >>> pic.code()
+    >>> print pic.code()
     1: fill "blue"
     2: rectangle 0,0 800,600
-    3: fill "white"
-    4: rectangle 320,240 520,400
-    >
-
-You can undo all insert, append, or remove operations with:
-
-    >>> pic.undo(2)
+    > 3: fill "white"
 
 
 You can keep drawing on the image, and call render() whenever you want to
@@ -112,34 +118,16 @@ References:
 MVG examples:
 -------------
 
-Radial gradient example
-(From http://www.linux-nantes.fr.eu.org/~fmonnier/OCaml/MVG/u.mvg.html):
+Radial gradient example:
+http://www.linux-nantes.fr.eu.org/~fmonnier/OCaml/MVG/u.mvg.html
 
-    push graphic-context
-      encoding "UTF-8"
-      viewbox 0 0 260 180
-      affine 1 0 0 1 0 0
-      push defs
-        push gradient 'Gradient_B' radial 130,90 130,90 125
-          gradient-units 'userSpaceOnUse'
-          stop-color '#4488ff' 0.2
-          stop-color '#ddaa44' 0.7
-          stop-color '#ee1122' 1
-        pop gradient
-      pop defs
-      push graphic-context
-        fill 'url(#Gradient_B)'
-        rectangle 0,0 260,180
-      pop graphic-context
-    pop graphic-context
-
-Pie chart example: http://www.imagemagick.org/source/piechart.mvg
+Pie chart example:
+http://www.imagemagick.org/source/piechart.mvg
 
 """
 import os
 import sys
 import commands
-import Tkinter
 
 class Drawing:
     """A Magick Vector Graphics (MVG) image with load/save, insert/append,
@@ -514,7 +502,7 @@ class Drawing:
             # If cursor is after the last line
             if line == self.cursor:
                 code += ">"
-            print code
+            return code
         else:
             return '\n'.join(self.data)
 
@@ -529,16 +517,6 @@ class Drawing:
         print cmd
         print "Press 'q' or ESC in the image window to close the image."
         print commands.getoutput(cmd)
-
-    def tk_render(self):
-        """Like render(), using tkinter to display the image."""
-        root = Tkinter.Tk()
-        ppmfile = '/tmp/mvg_render.ppm'
-        self.save_image(ppmfile)
-        img = Tkinter.PhotoImage(file=ppmfile)
-        lbl = Tkinter.Label(root, image=img)
-        lbl.pack()
-        Tkinter.mainloop()
 
     def save_image(self, img_filename):
         """Render the drawing to a .jpg, .png or other image."""
@@ -691,6 +669,8 @@ def draw_stroke_demo(drawing):
 
     # Restore context
     drawing.pop()
+
+import doctest
 
 if __name__ == '__main__':
     pic = Drawing((720, 480), 'drawing_test.mvg')
