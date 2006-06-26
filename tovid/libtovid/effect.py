@@ -28,9 +28,9 @@ class Effect:
         self.start = start
         self.end = end
         # List of Keyframes
-        self.keyframes = [Keyframe(0, 0)]
+        self.keyframes = [Keyframe(self.start, 0), Keyframe(self.end, 0)]
         # List of tweened values
-        self.data = [0]
+        self.data = tween(self.keyframes)
 
     def get_data(self, frame):
         """Get data value at the given frame."""
@@ -51,8 +51,10 @@ class Effect:
 # Copy and paste this code to create your own Effect
 # ============================================================================
 # The first line defines your effect's name. (Effect) means it inherits from
-# the base Effect class.
+# the base Effect class, and shares some properties with it.
 class MyEffect (Effect):
+    """Modify this documentation string to describe what your effect does.
+    """
     
     # The __init__ function is called whenever a MyEffect is created.
     # Make sure your __init__ takes start and end arguments; additional
@@ -61,7 +63,6 @@ class MyEffect (Effect):
     # other effects below for examples.
     def __init__(self, start, end, start_val, end_val):
         """Create a MyEffect lasting from start to end frame.
-        Modify this documentation string to describe what your effect does.
         """
         # Be sure to call this first-thing:
         Effect.__init__(self, start, end)
@@ -77,12 +78,12 @@ class MyEffect (Effect):
         # Call this afterwards, to calculate the values at all frames
         self.data = tween(self.keyframes)
 
-    # Now, override the draw_on function...
+    # The draw_on function draws the effect at a given frame
     def draw_on(self, drawing, frame):
-        # ...and use a MVG Drawing command, passing the data
-        # for the current frame. Replace 'translate' with your
-        # own drawing function (see libtovid/mvg.py for a complete list)
-        drawing.translate(self.get_data(frame))
+        # This effect varies the stroke width across a sequence of frames.
+        # Replace 'stroke_width' with your own drawing function(s)
+        # (see libtovid/mvg.py for a complete list)
+        drawing.stroke_width(self.get_data(frame))
 
     # That's it! Your effect is ready to use.
     # See libtovid/flipbook.py for examples on how to use effects
