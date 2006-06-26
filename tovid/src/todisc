@@ -387,6 +387,7 @@ while test $# -gt 0; do
             shift
             ANI_MENU_LENGTH="$1"
             ;;
+        # submenu-length disabled for now
         "-submenu-length" )
             shift
             ANI_SUBMENU_LENGTH="$1"
