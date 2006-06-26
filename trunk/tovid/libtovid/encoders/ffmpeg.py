@@ -21,7 +21,7 @@ def get_script(infile, options):
     if options['format'] in ['vcd', 'svcd', 'dvd']:
         cmd += ' -tvstd %s' % options['tvsys']
         cmd += ' -target %s-%s' % \
-                (options['format'], options['tvsys'])
+                (options['tvsys'], options['format'])
     cmd += ' -r %s' % options['fps']
     cmd += ' -ar %s' % options['samprate']
     # Convert scale/expand to ffmpeg's padding system
@@ -40,7 +40,7 @@ def get_script(infile, options):
         cmd += ' -aspect 16:9'
     else:
         cmd += ' -aspect 4:3'
-    cmd += ' -o "%s"' % options['out']
+    cmd += ' "%s"' % options['out']
 
     script.append(cmd)
     return script
