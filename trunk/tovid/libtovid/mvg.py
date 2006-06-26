@@ -600,9 +600,10 @@ class Drawing:
 
 
 
-# Demo
-def draw_font_demo(drawing):
-    """Draw font samples on the given drawing."""
+# Demo functions
+
+def draw_fontsize_demo(drawing):
+    """Draw font size samples on the given drawing."""
     assert(isinstance(drawing, Drawing))
 
     # Save context
@@ -614,11 +615,36 @@ def draw_font_demo(drawing):
         ypos = size * size / 5
         drawing.font('Helvetica')
         drawing.font_size(size)
-        drawing.text((10, ypos), "%s pt: The quick brown fox" % size)
+        drawing.text((0, ypos), "%s pt: The quick brown fox" % size)
     
     # Restore context
     drawing.pop()
 
+def draw_font_demo(drawing):
+    """Draw samples of different fonts on the given drawing."""
+    assert(isinstance(drawing, Drawing))
+
+    # Save context
+    drawing.push()
+
+    fontsize = 48
+    drawing.font_size(fontsize)
+    fonts = ['Helvetica', 'NimbusSans', 'Tahoma', 'Times']
+    ypos = 0
+    for font in fonts:
+        drawing.font(font)
+        # Transparent shadow
+        drawing.fill('darkblue')
+        drawing.fill_opacity(0.4)
+        drawing.text((3, ypos+3), font)
+        # White text
+        drawing.fill('white')
+        drawing.fill_opacity(1.0)
+        drawing.text((0, ypos), font)
+        ypos += fontsize
+
+    # Restore context
+    drawing.pop()
 
 def draw_shape_demo(drawing):
     """Draw shape samples on the given drawing."""
@@ -713,7 +739,6 @@ def draw_pattern_demo(drawing):
     
     # Restore context
     drawing.pop()
-    
 
 if __name__ == '__main__':
     drawing = Drawing((720, 480), '/tmp/drawing_test.mvg')
@@ -723,25 +748,41 @@ if __name__ == '__main__':
     drawing.viewbox((0, 0), (720, 480))
 
     # Add a background fill
+    drawing.comment("Background")
     drawing.fill('darkgrey')
     drawing.rectangle((0, 0), (720, 480))
 
-    draw_shape_demo(drawing)
-
+    # Shape demo
+    drawing.comment("Shape demo")
     drawing.push()
-    drawing.translate((80, 120))
+    draw_shape_demo(drawing)
+    drawing.pop()
+
+    # Font size demo
+    drawing.comment("Font size demo")
+    drawing.push()
+    drawing.translate((20, 20))
+    draw_fontsize_demo(drawing)
+    drawing.pop()
+
+    # Font face demo
+    drawing.comment("Font face demo")
+    drawing.push()
+    drawing.translate((20, 300))
     draw_font_demo(drawing)
     drawing.pop()
 
+    # Stroke demo
+    drawing.comment("Stroke demo")
     drawing.push()
     drawing.translate((600, 200))
     draw_stroke_demo(drawing)
     drawing.pop()
 
-    drawing.push()
-    drawing.translate((100, 300))
-    draw_pattern_demo(drawing)
-    drawing.pop()
+    #drawing.push()
+    #drawing.translate((100, 300))
+    #draw_pattern_demo(drawing)
+    #drawing.pop()
 
     # Close out the MVG file
     drawing.pop()
