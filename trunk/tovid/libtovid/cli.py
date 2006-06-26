@@ -158,8 +158,18 @@ class Script:
 
 def verify_app(appname):
     """If appname is not in the user's path, print a error and exit."""
-    app = commands.getoutput('which %s' % appname)
-    if not app:
-        log.error("Application: %s does not appear to be in your path.")
+    """ - True if app exists, 
+        - False if not """
+    env_path = os.getenv("PATH")
+    found = False
+    for i in env_path.split(":"):
+        if (os.path.exists("%s/%s" % (i, appname))):
+            found =  True
+            break
+        
+    if found == False:
+        log.error("%s not found in your PATH. Exiting.." % appname)
         sys.exit()
+        
+     
     
