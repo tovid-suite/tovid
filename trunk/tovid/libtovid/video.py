@@ -111,11 +111,7 @@ class Video:
         # TODO: Possibly eliminate code repetition w/ Disc & Menu by adding
         # a base class and inheriting
         self.options = OptionDict(self.optiondefs)
-        print "Video.__init__: before override:"
-        print self.options
         self.options.override(custom_options)
-        print "Video.__init__: after override:"
-        print self.options
         self.parent = None
         self.children = []
 
