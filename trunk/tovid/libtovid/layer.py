@@ -24,6 +24,60 @@ class Layer:
         for effect in self.effects:
             effect.draw_on(drawing, frame)
 
+# ============================================================================
+# New layer template
+# Copy and paste this code to create your own Layer
+# ============================================================================
+# Layer subclasses should define two things:
+#
+#     __init__():  How to initialize the layer with parameters
+#     draw_on():   How do draw the layer on a Drawing
+#
+# First, declare the layer class name. Include (Layer) to indicate that your
+# class is a Layer.
+class MyLayer (Layer):
+    
+    # The __init__ function is called whenever a MyLayer is created. Use
+    # parameters to allow customizing the layer's appearance or behavior.
+    # Here, we're allowing custom fill and stroke colors.
+    def __init__(self, fill_color='blue', stroke_color='black'):
+        """Draw stroked shapes using the given colors."""
+        # Initialize the base Layer class
+        Layer.__init__(self)
+        # Store the given fill and stroke color
+        self.fill_color = fill_color
+        self.stroke_color = stroke_color
+
+    # The draw_on function draws the layer at a given frame
+    def draw_on(self, drawing, frame):
+        # Make sure the drawing is really a Drawing
+        assert(isinstance(drawing, Drawing))
+
+        # Save context. This isolates any effects or style changes from any
+        # surrounding layers in the Drawing.
+        drawing.push()
+
+        # Draw the layer. You can use pretty much any commands you want here;
+        # the world is your oyster! But we'll start by using the user-set
+        # variables from __init__:
+        drawing.fill(self.fill_color)
+        drawing.stroke(self.stroke_color)
+
+        # Now, draw something, say, a couple of semitransparent rectangles
+        drawing.fill_opacity(0.6)
+        drawing.rectangle((0, 0), (50, 20))
+        drawing.rectangle((15, 12), (60, 40))
+
+        # Restore context
+        drawing.pop()
+
+    # That's it! Your layer is ready to use. See the Demo section at the end of
+    # this file for examples on how to create and render Layers using Python.
+
+# ============================================================================
+# End of new layer template
+# ============================================================================
+
 
 class Background (Layer):
     """A background that fills the frame with a solid color, or an image."""
@@ -33,6 +87,7 @@ class Background (Layer):
         self.color = color
         self.filename = filename
     def draw_on(self, drawing, frame):
+        assert(isinstance(drawing, Drawing))
         drawing.push()
         self.draw_effects(drawing, frame)
         if self.filename is not '':
@@ -63,6 +118,7 @@ class VideoClip (Layer):
         print self.frames
 
     def draw_on(self, drawing, frame):
+        assert(isinstance(drawing, Drawing))
         drawing.push()
         self.draw_effects(drawing, frame)
         # Loop frames (modular arithmetic)
@@ -84,6 +140,7 @@ class Text (Layer):
         self.fontsize = fontsize
         self.font = font
     def draw_on(self, drawing, frame):
+        assert(isinstance(drawing, Drawing))
         drawing.push()
         drawing.fill(self.color)
         drawing.font(self.font)
@@ -99,6 +156,7 @@ class Label (Text):
         Text.__init__(self, text, (x, y), fgcolor, fontsize, font)
         self.bgcolor = bgcolor
     def draw_on(self, drawing, frame):
+        assert(isinstance(drawing, Drawing))
         drawing.push()
         drawing.fill(self.bgcolor)
         # Calculate rectangle dimensions from text size/length
@@ -256,3 +314,32 @@ class ThumbGrid (Layer):
             drawing.image('Over', self.position, self.size, file)
         drawing.pop()
 
+# ============================================================================
+# Demo
+# ============================================================================
+if __name__ == '__main__':
+    # A Drawing to render Layer demos to
+    drawing = Drawing()
+    
+    # Draw a background layer
+    drawing.comment("Background layer")
+    bgd = Background(drawing.size, color='#7080A0')
+    bgd.draw_on(drawing, 1)
+
+    # Draw a text layer
+    drawing.comment("Text layer")
+    text = Text("Jackdaws love my big sphinx of quartz", (80, 60))
+    text.draw_on(drawing, 1)
+
+    # Draw template layer (overlapping semitransparent rectangles)
+    template = MyLayer('white', 'darkblue')
+    drawing.comment("MyLayer template")
+    # Scale up
+    drawing.push()
+    drawing.translate((50, 100))
+    drawing.scale((3.0, 3.0))
+    template.draw_on(drawing, 1)
+    drawing.pop()
+
+    print drawing.code()
+    drawing.render()
