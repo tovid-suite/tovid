@@ -15,22 +15,23 @@ interpreter:
 And do something like this:
 
     >>> from libtovid.mvg import Drawing
-    >>> pic = Drawing((800, 600), '/tmp/pic.mvg')
+    >>> drawing = Drawing((800, 600), '/tmp/drawing.mvg')
 
-This creates an image (pic) at 800x600 display resolution. pic has a wealth
-of draw functions, as well as a rough-and-ready editor interface (shown later).
+This creates an image (drawing) at 800x600 display resolution. Drawing has a
+wealth of draw functions, as well as a rough-and-ready editor interface (shown
+later).
 
 This thing is pretty low-level for the time being; MVG is, as one user has
 described it[2], the "assembly language" of vector graphics. But basically,
 you can just call function names that resemble their MVG-syntax counterparts.
-Now that you have an MVG object (pic), you can draw on it:
+Now that you have an MVG object (drawing), you can draw on it:
 
-    >>> pic.fill('blue')
-    >>> pic.rectangle((0, 0), (800, 600))
-    >>> pic.fill('white')
-    >>> pic.rectangle((320, 240), (520, 400))
+    >>> drawing.fill('blue')
+    >>> drawing.rectangle((0, 0), (800, 600))
+    >>> drawing.fill('white')
+    >>> drawing.rectangle((320, 240), (520, 400))
 
-If you want to preview what you have so far, call pic.render().
+If you want to preview what you have so far, call drawing.render().
 
 Obviously, creating images in this way can be pretty tedious; what if you need
 to modify or remove some prior drawing commands?
@@ -39,20 +40,20 @@ All drawing operations are saved in a history, allowing (theoretically)
 unlimited undo-levels. Insertions and removals are both kept in the history,
 which you can view like so:
 
-    >>> pic.history
+    >>> drawing.history
     [['insert', 1], ['insert', 2], ['insert', 3], ['insert', 4]]
-    >>> pic.undo()
+    >>> drawing.undo()
     Undoing insertion at line 4
-    >>> pic.history
+    >>> drawing.history
     [['insert', 1], ['insert', 2], ['insert', 3]]
-    >>> pic.remove(3)
-    >>> pic.history
+    >>> drawing.remove(3)
+    >>> drawing.history
     [['insert', 1], ['insert', 2], ['insert', 3], ['remove', 3, 'fill "white"']]
-    >>> pic.undo()
+    >>> drawing.undo()
     Undoing removal at line 3
-    >>> pic.history
+    >>> drawing.history
     [['insert', 1], ['insert', 2], ['insert', 3]]
-    >>> print pic.code()
+    >>> print drawing.code()
     1: fill "blue"
     2: rectangle 0,0 800,600
     3: fill "white"
@@ -63,8 +64,8 @@ This is where the "editor" interface comes in. Each line is numbered, and the
 current "cursor" position is shown by a '>' character. You can move the cursor
 with goto(line_number):
 
-    >>> pic.goto(3)
-    >>> print pic.code()
+    >>> drawing.goto(3)
+    >>> print drawing.code()
     1: fill "blue"
     2: rectangle 0,0 800,600
     > 3: fill "white"
@@ -73,9 +74,9 @@ with goto(line_number):
 The cursor indicates where new commands are inserted; any commands issued now
 are inserted before line 3:
 
-    >>> pic.stroke('black')
-    >>> pic.stroke_width(2)
-    >>> print pic.code()
+    >>> drawing.stroke('black')
+    >>> drawing.stroke_width(2)
+    >>> print drawing.code()
     1: fill "blue"
     2: rectangle 0,0 800,600
     3: stroke "black"
@@ -86,8 +87,8 @@ are inserted before line 3:
 Notice that the two new commands were inserted (in order) at the cursor
 position. To resume appending at the end, call goto_end():
 
-    >>> pic.goto_end()
-    >>> print pic.code()
+    >>> drawing.goto_end()
+    >>> print drawing.code()
     1: fill "blue"
     2: rectangle 0,0 800,600
     3: stroke "black"
@@ -97,8 +98,8 @@ position. To resume appending at the end, call goto_end():
 
 You can remove a given line number (or range of lines) with:
 
-    >>> pic.remove(3, 4)
-    >>> print pic.code()
+    >>> drawing.remove(3, 4)
+    >>> print drawing.code()
     1: fill "blue"
     2: rectangle 0,0 800,600
     > 3: fill "white"
@@ -596,67 +597,74 @@ class Drawing:
 # Demo
 def draw_font_demo(drawing):
     """Draw font samples on the given drawing."""
-    pic = drawing
-    # White text in a range of sizes
-    pic.push()
-    pic.fill('white')
+    assert(isinstance(drawing, Drawing))
+
+    # Save context
+    drawing.push()
+    
+    # Draw white text in a range of sizes
+    drawing.fill('white')
     for size in [12,16,20,24,28,32]:
         ypos = size * size / 5
-        pic.font('Helvetica')
-        pic.font_size(size)
-        pic.text((10, ypos), "%s pt: The quick brown fox" % size)
-    pic.pop()
+        drawing.font('Helvetica')
+        drawing.font_size(size)
+        drawing.text((10, ypos), "%s pt: The quick brown fox" % size)
+    
+    # Restore context
+    drawing.pop()
+
 
 def draw_shape_demo(drawing):
     """Draw shape samples on the given drawing."""
-    pic = drawing
-    assert(isinstance(pic, Drawing))
+    assert(isinstance(drawing, Drawing))
+
     # Save context
-    pic.push()
+    drawing.push()
 
     # Large orange circle with black stroke
-    pic.push()
-    pic.stroke('black')
-    pic.stroke_width(12)
-    pic.fill('orange')
+    drawing.push()
+    drawing.stroke('black')
+    drawing.stroke_width(12)
+    drawing.fill('orange')
     # Circle at (500, 200), with radius 200
-    pic.circle_rad((500, 200), 200)
-    pic.pop()
+    drawing.circle_rad((500, 200), 200)
+    drawing.pop()
 
     # Grey-stroked blue circles
-    pic.push()
-    pic.stroke('grey')
-    pic.stroke_width(2)
-    pic.fill('#8080FF')
-    pic.circle((65, 50), (50, 50))
-    pic.fill('#2020F0')
-    pic.circle((60, 100), (50, 100))
-    pic.fill('#0000A0')
-    pic.circle((55, 150), (50, 150))
-    pic.pop()
+    drawing.push()
+    drawing.stroke('grey')
+    drawing.stroke_width(2)
+    drawing.fill('#8080FF')
+    drawing.circle((65, 50), (50, 50))
+    drawing.fill('#2020F0')
+    drawing.circle((60, 100), (50, 100))
+    drawing.fill('#0000A0')
+    drawing.circle((55, 150), (50, 150))
+    drawing.pop()
 
     # Semitransparent green rectangles
-    pic.push()
-    pic.translate((50, 400))
-    pic.fill('lightgreen')
+    drawing.push()
+    drawing.translate((50, 400))
+    drawing.fill('lightgreen')
     for scale in [0.2, 0.4, 0.7, 1.1, 1.6, 2.2, 2.9, 3.7]:
-        pic.push()
-        pic.translate((scale * 70, scale * -50))
-        pic.scale((scale, scale))
-        pic.fill_opacity(scale / 5.0)
-        pic.stroke_width(scale)
-        pic.stroke('black')
-        pic.roundrectangle((-30, -30), (30, 30), (8, 8))
-        pic.pop()
-    pic.pop()
+        drawing.push()
+        drawing.translate((scale * 70, scale * -50))
+        drawing.scale((scale, scale))
+        drawing.fill_opacity(scale / 5.0)
+        drawing.stroke_width(scale)
+        drawing.stroke('black')
+        drawing.roundrectangle((-30, -30), (30, 30), (8, 8))
+        drawing.pop()
+    drawing.pop()
 
     # Restore context
-    pic.pop()
+    drawing.pop()
 
 
 def draw_stroke_demo(drawing):
     """Draw a stroke/strokewidth demo on the given drawing."""
     assert(isinstance(drawing, Drawing))
+
     # Save context
     drawing.push()
 
@@ -670,34 +678,63 @@ def draw_stroke_demo(drawing):
     # Restore context
     drawing.pop()
 
-import doctest
+
+def draw_pattern_demo(drawing):
+    """Draw a pattern demo on the given drawing."""
+    assert(isinstance(drawing, Drawing))
+
+    # Save context
+    drawing.push()
+
+    # Define a pattern of blue and green squares
+    drawing.push('defs')
+    drawing.push('pattern', 'squares', (10, 10), (20, 20))
+    drawing.push()
+    drawing.fill('blue'))
+    drawing.rectangle((5, 5), (15, 15))
+    drawing.pop()
+    drawing.push()
+    drawing.fill('green')
+    drawing.rectangle((10, 10), (20, 20))
+    drawing.pop()
+    drawing.pop('pattern')
+    drawing.pop('defs')
+    # Draw a rectangle filled with the pattern
+    drawing.push()
+    drawing.fill('url(#squares)')
+    drawing.rectangle((20, 20), (80, 80)
+    drawing.pop()
+    
+    # Restore context
+    drawing.pop()
+    
 
 if __name__ == '__main__':
-    pic = Drawing((720, 480), 'drawing_test.mvg')
+    drawing = Drawing((720, 480), 'drawing_test.mvg')
 
     # Start of MVG file
-    pic.push()
-    pic.viewbox((0, 0), (720, 480))
+    drawing.push()
+    drawing.viewbox((0, 0), (720, 480))
 
     # Add a background fill
-    pic.fill('darkgrey')
-    pic.rectangle((0, 0), (720, 480))
+    drawing.fill('darkgrey')
+    drawing.rectangle((0, 0), (720, 480))
 
-    draw_shape_demo(pic)
+    draw_shape_demo(drawing)
 
-    pic.push()
-    pic.translate((80, 120))
-    draw_font_demo(pic)
-    pic.pop()
+    drawing.push()
+    drawing.translate((80, 120))
+    draw_font_demo(drawing)
+    drawing.pop()
 
-    pic.push()
-    pic.translate((600, 200))
-    draw_stroke_demo(pic)
-    pic.pop()
+    drawing.push()
+    drawing.translate((600, 200))
+    draw_stroke_demo(drawing)
+    drawing.pop()
 
     # Close out the MVG file
-    pic.pop()
+    drawing.pop()
 
     # Display the MVG text, then show the generated image
-    pic.code(editing=True)
-    pic.render()
+    drawing.code(editing=True)
+    drawing.render()
