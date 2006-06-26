@@ -97,6 +97,7 @@ class Background (Layer):
             drawing.rectangle((0, 0), self.size)
         drawing.pop()
 
+
 class VideoClip (Layer):
     """A rectangular video clip with size and positioning."""
     def __init__(self, filename, (x, y), (width, height)):
@@ -149,24 +150,43 @@ class Text (Layer):
         drawing.text(self.position, self.text)
         drawing.pop()
 
+
 class Label (Text):
     """A text string with a rectangular background."""
-    def __init__(self, text, (x, y), fgcolor='white', bgcolor='grey',
+    def __init__(self, text, (x, y), color='black', bgcolor='grey',
                  fontsize=20, font='Nimbus Sans'):
-        Text.__init__(self, text, (x, y), fgcolor, fontsize, font)
+        Text.__init__(self, text, (x, y), color, fontsize, font)
         self.bgcolor = bgcolor
     def draw_on(self, drawing, frame):
         assert(isinstance(drawing, Drawing))
+
+        # Save context
         drawing.push()
-        drawing.fill(self.bgcolor)
+
         # Calculate rectangle dimensions from text size/length
-        width = self.fontsize * len(self.text)
-        height = self.fontsize * 2
-        end_rect = (self.position[0] + width, self.position[1] + height)
-        drawing.rectangle(self.position, end_rect)
+        width = self.fontsize * len(self.text) / 2
+        height = self.fontsize
+        # Padding to use around text
+        pad = self.fontsize / 3
+        # Calculate start and end points of background rectangle
+        x0, y0 = self.position
+        start = (x0 - pad, y0 - height - pad)
+        end = (x0 + width + pad, y0 + pad)
+
+        # Draw a stroked round rectangle
+        drawing.push()
+        drawing.stroke(self.color)
+        drawing.fill(self.bgcolor)
+        drawing.roundrectangle(start, end, (pad, pad))
+        drawing.pop()
+
+        # Call base Text class to draw the text
         Text.draw_on(self, drawing, frame)
+
+        # Restore context
         drawing.pop()
         
+
 class TextBox (Text):
     """A text box containing paragraphs, and support for simple formatting
     markup in HTML-like syntax.
@@ -331,15 +351,20 @@ if __name__ == '__main__':
     text = Text("Jackdaws love my big sphinx of quartz", (80, 60))
     text.draw_on(drawing, 1)
 
-    # Draw template layer (overlapping semitransparent rectangles)
+    # Draw a template layer (overlapping semitransparent rectangles)
     template = MyLayer('white', 'darkblue')
     drawing.comment("MyLayer template")
-    # Scale up
+    # Scale and translate the layer before drawing it
     drawing.push()
     drawing.translate((50, 100))
     drawing.scale((3.0, 3.0))
     template.draw_on(drawing, 1)
     drawing.pop()
+
+    # Draw a label (experimental)
+    drawing.comment("Label layer")
+    label = Label("tovid loves Linux", (300, 200))
+    label.draw_on(drawing, 1)
 
     print drawing.code()
     drawing.render()
