@@ -464,6 +464,12 @@ class Drawing:
         self.indent -= 1
         self.insert('pop %s' % context)
     
+    def comment(self, text):
+        """Add a comment to the drawing's code."""
+        # Strip newlines from comment
+        text = text.replace('\n', ' ')
+        self.insert('# %s' % text)
+
     #
     # Editor interface/interactive functions
     #
@@ -690,7 +696,7 @@ def draw_pattern_demo(drawing):
     drawing.push('defs')
     drawing.push('pattern', 'squares', (10, 10), (20, 20))
     drawing.push()
-    drawing.fill('blue'))
+    drawing.fill('blue')
     drawing.rectangle((5, 5), (15, 15))
     drawing.pop()
     drawing.push()
@@ -702,7 +708,7 @@ def draw_pattern_demo(drawing):
     # Draw a rectangle filled with the pattern
     drawing.push()
     drawing.fill('url(#squares)')
-    drawing.rectangle((20, 20), (80, 80)
+    drawing.rectangle((0, 0), (80, 80))
     drawing.pop()
     
     # Restore context
@@ -710,7 +716,7 @@ def draw_pattern_demo(drawing):
     
 
 if __name__ == '__main__':
-    drawing = Drawing((720, 480), 'drawing_test.mvg')
+    drawing = Drawing((720, 480), '/tmp/drawing_test.mvg')
 
     # Start of MVG file
     drawing.push()
@@ -732,9 +738,14 @@ if __name__ == '__main__':
     draw_stroke_demo(drawing)
     drawing.pop()
 
+    drawing.push()
+    drawing.translate((100, 300))
+    draw_pattern_demo(drawing)
+    drawing.pop()
+
     # Close out the MVG file
     drawing.pop()
 
     # Display the MVG text, then show the generated image
-    drawing.code(editing=True)
+    print drawing.code()
     drawing.render()
