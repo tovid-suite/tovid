@@ -47,7 +47,7 @@ class Effect:
         pass
 
 # ============================================================================
-# New effect template
+# New Effect template
 # Copy and paste this code to create your own Effect
 # ============================================================================
 # The first line defines your effect's name. (Effect) means it inherits from

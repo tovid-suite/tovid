@@ -3,7 +3,7 @@
 
 """This module provides classes and functions for working with animation.
 """
-__all__ = ['Keyframe', 'lerp', 'interpolate', 'tween']
+__all__ = ['Keyframe', 'lerp', 'cos_interp', 'interpolate', 'tween']
 
 import copy
 import doctest
@@ -58,28 +58,33 @@ def cos_interp(x, (x0, y0), (x1, y1)):
     return y_min + y_diff * (math.cos(x_norm) + 1) / 2.0
 
 
-def interpolate(frame, left, right):
+def interpolate(frame, left, right, method):
     """Interpolate data between left and right Keyframes at the given frame."""
+    if method == 'linear':
+        interp_func = lerp
+    elif method == 'cosine':
+        interp_func = cos_interp
     # Interpolate integers or floats
     if isinstance(left.data, int) or isinstance(left.data, float):
         x0 = (left.frame, left.data)
         y0 = (right.frame, right.data)
-        return lerp(frame, x0, y0)
+        return interp_func(frame, x0, y0)
     # Interpolate a tuple (x, y, ...)
     elif isinstance(left.data, tuple):
         # Interpolate each dimension separately
         dim = 0
         result = []
         while dim < len(left.data):
-            result.append(lerp(frame, (left.frame, left.data[dim]), \
+            result.append(interp_func(frame, (left.frame, left.data[dim]), \
                  (right.frame, right.data[dim])))
             dim += 1
         return tuple(result)
 
 
-def tween(keyframes):
+def tween(keyframes, method='linear'):
     """Calculate all "in-between" frames from the given keyframes, and
-    return a list of values for all frames in sequence.
+    return a list of values for all frames in sequence. method may be
+    'linear' or 'cosine'.
 
     For example, given three keyframes:
     
@@ -150,7 +155,7 @@ def tween(keyframes):
                 right = keys.pop(0)
         # Between endpoints; interpolate
         else:
-            data.append(interpolate(frame, left, right))
+            data.append(interpolate(frame, left, right, method))
         frame += 1
     return data
 
