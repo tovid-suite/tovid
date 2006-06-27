@@ -7,7 +7,7 @@ __all__ = ['Keyframe', 'lerp', 'interpolate', 'tween']
 
 import copy
 import doctest
-from math import floor, sqrt
+import math
 
 class Keyframe:
     """Associates a specific frame in an animation with a numeric value.
@@ -43,6 +43,19 @@ def lerp(x, (x0, y0), (x1, y1)):
     """Do linear interpolation between points (x0, y0), (x1, y1), and return
     the 'y' of the given 'x'."""
     return y0 + (x - x0) * (y1 - y0) / (x1 - x0)
+
+def cos_interp(x, (x0, y0), (x1, y1)):
+    """Do cosine-based interpolation between (x0, y0), (x1, y1) and return
+    the 'y' of the given 'x'."""
+    # Map interpolation area (domain of x) to [0, pi]
+    x_norm = math.pi * x / (x1 - x0)
+    # For y0 < y1, use upward-sloping part of the cosine curve
+    if y0 < y1:
+        x_norm += math.pi
+    # Calculate and return resulting y-value
+    y_min = min(y1, y0)
+    y_diff = abs(y1 - y0)
+    return y_min + y_diff * (math.cos(x_norm) + 1) / 2.0
 
 
 def interpolate(frame, left, right):
@@ -144,4 +157,13 @@ def tween(keyframes):
 
 
 if __name__ == '__main__':
-    doctest.testmod()
+    #doctest.testmod()
+
+    p0 = (1, 1)
+    p1 = (20, 20)
+    
+    print "Interpolation methods"
+    print "x      lerp     cos_interp"
+    for x in range(1, 21):
+        print "%s      %s       %s" % \
+              (x, lerp(x, p0, p1), cos_interp(x, p0, p1))
