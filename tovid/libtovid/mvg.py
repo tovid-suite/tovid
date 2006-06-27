@@ -31,49 +31,83 @@ Now that you have an MVG object (drawing), you can draw on it:
     >>> drawing.fill('white')
     >>> drawing.rectangle((320, 240), (520, 400))
 
-If you want to preview what you have so far, call drawing.render().
+If you want to preview what you have so far, call drawing.render(). To see
+the draw commands that have been issued so far, use drawing.code():
 
-Obviously, creating images in this way can be pretty tedious; what if you need
-to modify or remove some prior drawing commands?
-
-All drawing operations are saved in a history, allowing (theoretically)
-unlimited undo-levels. Insertions and removals are both kept in the history,
-which you can view like so:
-
-    >>> drawing.history
-    [['insert', 1], ['insert', 2], ['insert', 3], ['insert', 4]]
-    >>> drawing.undo()
-    Undoing insertion at line 4
-    >>> drawing.history
-    [['insert', 1], ['insert', 2], ['insert', 3]]
-    >>> drawing.remove(3)
-    >>> drawing.history
-    [['insert', 1], ['insert', 2], ['insert', 3], ['remove', 3, 'fill "white"']]
-    >>> drawing.undo()
-    Undoing removal at line 3
-    >>> drawing.history
-    [['insert', 1], ['insert', 2], ['insert', 3]]
     >>> print drawing.code()
     1: fill "blue"
     2: rectangle 0,0 800,600
     3: fill "white"
+    4: rectangle 320,240 520,400
     >
-
 
 This is where the "editor" interface comes in. Each line is numbered, and the
 current "cursor" position is shown by a '>' character. You can move the cursor
 with goto(line_number):
 
-    >>> drawing.goto(3)
+    >>> drawing.goto(2)
+    >>> print drawing.code()
+    1: fill "blue"
+    > 2: rectangle 0,0 800,600
+    3: fill "white"
+    4: rectangle 320,240 520,400
+
+The cursor is positioned before the given line number, ready for insertion. To
+return to the end of the file, use goto_end():
+
+    >>> drawing.goto_end()
     >>> print drawing.code()
     1: fill "blue"
     2: rectangle 0,0 800,600
-    > 3: fill "white"
+    3: fill "white"
+    4: rectangle 320,240 520,400
+    >
 
+All drawing operations are saved in a history, allowing (theoretically)
+unlimited undo-levels. You can view the history like so:
 
-The cursor indicates where new commands are inserted; any commands issued now
-are inserted before line 3:
+    >>> drawing.history
+    [['insert', 1], ['insert', 2], ['insert', 3], ['insert', 4]]
 
+Use the undo() function to undo the most recent operation (the 'insert' at
+line 4):
+
+    >>> drawing.undo()
+    Undoing insertion at line 4
+    >>> print drawing.code()
+    1: fill "blue"
+    2: rectangle 0,0 800,600
+    3: fill "white"
+    >
+    >>> drawing.history
+    [['insert', 1], ['insert', 2], ['insert', 3]]
+
+You can remove lines with the remove() function. Removals are also stored in
+the undo history:
+
+    >>> drawing.remove(3)
+    >>> print drawing.code()
+    1: fill "blue"
+    2: rectangle 0,0 800,600
+    >
+    >>> drawing.history
+    [['insert', 1], ['insert', 2], ['insert', 3], ['remove', 3, 'fill "white"']]
+
+Undo a removal like this:
+
+    >>> drawing.undo()
+    Undoing removal at line 3
+    >>> print drawing.code()
+    1: fill "blue"
+    2: rectangle 0,0 800,600
+    3: fill "white"
+    >
+    >>> drawing.history
+    [['insert', 1], ['insert', 2], ['insert', 3]]
+
+Let's return to line 3 and do some more drawing:
+
+    >>> drawing.goto(3)
     >>> drawing.stroke('black')
     >>> drawing.stroke_width(2)
     >>> print drawing.code()
@@ -96,20 +130,9 @@ position. To resume appending at the end, call goto_end():
     5: fill "white"
     >
 
-You can remove a given line number (or range of lines) with:
+You can keep drawing on the image, calling render() at any time to display the
+rendered image.
 
-    >>> drawing.remove(3, 4)
-    >>> print drawing.code()
-    1: fill "blue"
-    2: rectangle 0,0 800,600
-    > 3: fill "white"
-
-
-You can keep drawing on the image, and call render() whenever you want to
-preview.
-
-Oh, by the way--this is almost totally untested, so please report bugs if/when
-you find them.
 
 References:
 [1] http://www.imagemagick.org/script/magick-vector-graphics.php
@@ -120,12 +143,15 @@ MVG examples:
 -------------
 
 Radial gradient example:
-http://www.linux-nantes.fr.eu.org/~fmonnier/OCaml/MVG/u.mvg.html
+  http://www.linux-nantes.fr.eu.org/~fmonnier/OCaml/MVG/u.mvg.html
 
 Pie chart example:
-http://www.imagemagick.org/source/piechart.mvg
+  http://www.imagemagick.org/source/piechart.mvg
 
 """
+
+__all__ = ['Drawing']
+
 import os
 import sys
 import commands
