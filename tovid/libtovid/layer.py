@@ -1,6 +1,22 @@
 #! /usr/bin/env python
 # layer.py
 
+"""This module provides classes for drawing graphical elements on a series of
+drawings (as in a Flipbook).
+
+Layer classes are arranged in a hierarchy:
+
+    Layer (base class)
+    |-- Background
+    |-- Text
+        |-- Label
+        |-- TextBox
+    |-- VideoClip
+    |-- Thumb
+    |-- ThumbGrid
+
+"""
+
 __all__ = ['Layer', 'Background', 'Text', 'Label',
            'VideoClip', 'Thumb', 'ThumbGrid']
 
@@ -81,20 +97,21 @@ class MyLayer (Layer):
 
 class Background (Layer):
     """A background that fills the frame with a solid color, or an image."""
-    def __init__(self, (width, height), color='black', filename=''):
+    def __init__(self, color='black', filename=''):
         Layer.__init__(self)
-        self.size = (width, height)
         self.color = color
         self.filename = filename
     def draw_on(self, drawing, frame):
         assert(isinstance(drawing, Drawing))
         drawing.push()
         self.draw_effects(drawing, frame)
+        # Fill drawing with an image
         if self.filename is not '':
-            drawing.image('over', (0, 0), self.size, self.filename)
+            drawing.image('over', (0, 0), drawing.size, self.filename)
+        # Fill drawing with a solid color
         elif self.color:
             drawing.fill(self.color)
-            drawing.rectangle((0, 0), self.size)
+            drawing.rectangle((0, 0), drawing.size)
         drawing.pop()
 
 
@@ -194,7 +211,7 @@ class TextBox (Text):
     Formatting elements are <p>...</p>, <b>...</b>, and <i>...</i>.
     """
     def __init__(self, text, (pos_x, pos_y), (width, height), color='white',
-                 fontsize=20, font='Helvetica'):
+                 fontsize=20, font='Times'):
         """Formatted text at the given position, contained in a box of the
         given size."""
         Text.__init__(self, text, (pos_x, pos_y), color, fontsize, font)
@@ -334,6 +351,35 @@ class ThumbGrid (Layer):
             drawing.image('Over', self.position, self.size, file)
         drawing.pop()
 
+
+class SafeArea (Layer):
+    """Render a safe area test at a given percentage."""
+    def __init__(self, percent, color):
+        self.percent = percent
+        self.color = color
+    def draw_on(self, drawing, frame):
+        assert(isinstance(drawing, Drawing))
+        # Calculate rectangle dimensions
+        scale = float(self.percent) / 100.0
+        width, height = drawing.size
+        topleft = ((1.0 - scale) * width / 2,
+                  (1.0 - scale) * height / 2)
+        # Save context
+        drawing.push()
+        drawing.translate(topleft)
+        # Safe area box
+        drawing.fill(None)
+        drawing.stroke(self.color)
+        drawing.stroke_width(3)
+        drawing.rectangle((0, 0), (width * scale, height * scale))
+        # Label
+        drawing.fill(self.color)
+        drawing.stroke(None)
+        drawing.font_size(20)
+        drawing.text((10, 20), "%s%%" % self.percent)
+        # Restore context
+        drawing.pop()
+
 # ============================================================================
 # Demo
 # ============================================================================
@@ -343,7 +389,7 @@ if __name__ == '__main__':
     
     # Draw a background layer
     drawing.comment("Background layer")
-    bgd = Background(drawing.size, color='#7080A0')
+    bgd = Background(color='#7080A0')
     bgd.draw_on(drawing, 1)
 
     # Draw a text layer
@@ -365,6 +411,17 @@ if __name__ == '__main__':
     drawing.comment("Label layer")
     label = Label("tovid loves Linux", (300, 200))
     label.draw_on(drawing, 1)
+
+    # Draw a text box (experimental)
+    drawing.comment("TextBox layer")
+    textbox = TextBox("Some <b>bold</b> and <i>italic</i> text", 
+                      (200, 300), (200, 200))
+    textbox.draw_on(drawing, 1)
+
+    # Draw a safe area test (experimental)
+    drawing.comment("Safe area")
+    safe = SafeArea(93, 'yellow')
+    safe.draw_on(drawing, 1)
 
     print drawing.code()
     drawing.render()
