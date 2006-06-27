@@ -75,7 +75,7 @@ if __name__ == '__main__':
     flip = Flipbook(90)
 
     # Background image
-    bgd = layer.Background(flip.size, filename=bgimage)
+    bgd = layer.Background(filename=bgimage)
     flip.add(bgd)
 
     # Text layer with fade, movement, and spectrum effects

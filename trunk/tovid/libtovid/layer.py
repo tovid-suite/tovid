@@ -30,6 +30,7 @@ import glob
 import math
 from libtovid.mvg import Drawing
 from libtovid.effect import Effect
+from libtovid.animation import Keyframe, tween
 from libtovid.VideoUtils import video_to_images
 
 class Layer:
@@ -404,6 +405,67 @@ class SafeArea (Layer):
         # Restore context
         drawing.pop()
 
+class InterpolationGraph (Layer):
+    """A graph of an interpolation curve."""
+    def __init__(self, keyframes, size=(300, 100), method='linear'):
+        """Create an interpolation graph of the given keyframes, at the given
+        size, using the given interpolation method."""
+        self.keyframes = keyframes
+        self.size = size
+        self.method = method
+        # Interpolate keyframes
+        self.data = tween(keyframes, method)
+
+    def draw_on(self, drawing, frame):
+        assert(isinstance(drawing, Drawing))
+        # Save context
+        drawing.push()
+        drawing.fill(None)
+
+        # Draw axes
+        width, height = self.size
+        drawing.push()
+        drawing.stroke('grey')
+        drawing.stroke_width(3)
+        drawing.polyline([(0, 0), (0, height), (width, height)])
+        drawing.pop()
+
+        # Calculate horizontal and vertical scaling to fit the graph
+        # within the desired area
+        x_scale = float(width) / len(self.data)
+        y_scale = float(height) / max(self.data)
+
+        # Draw keyframes as dotted vertical lines
+        drawing.push()
+        drawing.stroke_dasharray([4, 4])
+        for key in self.keyframes:
+            x = key.frame * x_scale
+            # Vertical dotted line
+            drawing.fill(None)
+            drawing.stroke('red')
+            drawing.stroke_width(2)
+            drawing.line((x, 0), (x, height))
+            # Keyframe label
+            drawing.stroke(None)
+            drawing.fill('red')
+            drawing.text((x, key.data * y_scale), \
+                         "(%s,%s)" % (key.frame, key.data))
+            
+        drawing.pop()
+
+        # Create a list of (x, y) points to be graphed
+        curve = []
+        x = 1
+        while x < len(self.data):
+            curve.append((x * x_scale, self.data[x] * y_scale))
+            x += 1
+        # Draw the curve
+        drawing.stroke('blue')
+        drawing.polyline(curve)
+
+        # Restore context
+        drawing.pop()
+
 # ============================================================================
 # Demo
 # ============================================================================
@@ -461,6 +523,16 @@ if __name__ == '__main__':
         thumbs = ThumbGrid(images, (320, 250))
         thumbs.draw_on(drawing, 1)
         drawing.pop()
+
+    # Draw an interpolation graph (experimental)
+    drawing.comment("Interpolation graph")
+    drawing.push()
+    drawing.translate((340, 50))
+    # Some random keyframes to graph
+    keys = [Keyframe(1, 25), Keyframe(10, 5), Keyframe(30, 35)]
+    interp = InterpolationGraph(keys)
+    interp.draw_on(drawing, 1)
+    drawing.pop()
 
     print drawing.code()
     drawing.render()
