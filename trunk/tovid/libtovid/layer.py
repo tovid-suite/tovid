@@ -27,6 +27,7 @@ __all__ = ['Layer', 'Background', 'Text', 'Label',
 import os
 import sys
 import glob
+import math
 from libtovid.mvg import Drawing
 from libtovid.effect import Effect
 from libtovid.VideoUtils import video_to_images
@@ -183,7 +184,7 @@ class Text (Layer):
 class Label (Text):
     """A text string with a rectangular background."""
     def __init__(self, text, (x, y), color='black', bgcolor='grey',
-                 fontsize=20, font='Nimbus Sans'):
+                 fontsize=20, font='NimbusSans'):
         Text.__init__(self, text, (x, y), color, fontsize, font)
         self.bgcolor = bgcolor
     def draw_on(self, drawing, frame):
@@ -320,21 +321,29 @@ class Thumb (Layer):
 
 class ThumbGrid (Layer):
     """A rectangular array of thumbnail images or videos."""
-    def __init__(self, file_list, (width, height), (columns, rows)=(0, 0)):
-        """Create a grid of images from file_list, fitting with a space no
+    def __init__(self, files, (width, height), (columns, rows)=(0, 0),
+                  aspect=(4,3)):
+        """Create a grid of images from files, fitting with a space no
         larger than (width, height), with the given number of columns and rows
         Use 0 to auto-layout columns or rows, or both (default)."""
         Layer.__init__(self)
         self.totalsize = (width, height)
-        self.file_list = file_list
+        self.files = files
         self.columns, self.rows = \
-            self._auto_dimension(len(file_list), columns, rows)
+            self._auto_dimension(len(files), columns, rows)
         # Now we know how many columns/rows; how big are the thumbnails?
         thumbwidth = (width - self.columns * 16) / self.columns
-        thumbheight = (height - self.rows * 16) / self.rows
+        thumbheight = thumbwidth * aspect[1] / aspect[0]
         self.thumbsize = (thumbwidth, thumbheight)
+        # Calculate thumbnail positions
+        self.positions = []
+        for row in range(self.rows):
+            for column in range(self.columns):
+                x = column * (width / self.columns)
+                y = row * (height / self.rows)
+                self.positions.append((x, y))
 
-    def _auto_dimension(num_items, columns, rows):
+    def _auto_dimension(self, num_items, columns, rows):
         # Both fixed, nothing to calculate
         if columns > 0 and rows > 0:
             # Make sure num_items will fit (columns, rows)
@@ -348,7 +357,7 @@ class ThumbGrid (Layer):
                 columns = rows = 0
         # Auto-dimension to fit num_items
         if columns == 0 and rows == 0:
-            root = int(floor(sqrt(num_items)))
+            root = int(math.floor(math.sqrt(num_items)))
             return ((1 + num_items / root), root)
         # Rows fixed; use enough columns to fit num_items
         if columns == 0 and rows > 0:
@@ -357,10 +366,13 @@ class ThumbGrid (Layer):
         if rows == 0 and columns > 0:
             return (columns, (1 + num_items / columns))
     def draw_on(self, drawing, frame):
+        assert(isinstance(drawing, Drawing))
         drawing.push()
         self.draw_effects(drawing, frame)
-        for file in self.file_list:
-            drawing.image('Over', self.position, self.size, file)
+        pos = 0
+        for file in self.files:
+            drawing.image('Over', self.positions[pos], self.thumbsize, file)
+            pos += 1
         drawing.pop()
 
 
@@ -396,6 +408,12 @@ class SafeArea (Layer):
 # Demo
 # ============================================================================
 if __name__ == '__main__':
+    images = None
+    # Get arguments, if any
+    if len(sys.argv) > 1:
+        # Use all args as image filenames to ThumbGrid
+        images = sys.argv[1:]
+
     # A Drawing to render Layer demos to
     drawing = Drawing()
     
@@ -434,6 +452,15 @@ if __name__ == '__main__':
     drawing.comment("Safe area")
     safe = SafeArea(93, 'yellow')
     safe.draw_on(drawing, 1)
+
+    # Draw a thumbnail grid (if images were provided)
+    if images:
+        drawing.comment("ThumbGrid layer")
+        drawing.push()
+        drawing.translate((350, 200))
+        thumbs = ThumbGrid(images, (320, 250))
+        thumbs.draw_on(drawing, 1)
+        drawing.pop()
 
     print drawing.code()
     drawing.render()
