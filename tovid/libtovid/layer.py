@@ -14,7 +14,11 @@ Layer classes are arranged in a hierarchy:
     |-- VideoClip
     |-- Thumb
     |-- ThumbGrid
+    |-- SafeArea
 
+Each class provides (at least) an initialization function, and a draw_on
+function. For more on how to use Layers, see the Layer class definition and
+template example below.
 """
 
 __all__ = ['Layer', 'Background', 'Text', 'Label',
@@ -41,9 +45,10 @@ class Layer:
             effect.draw_on(drawing, frame)
 
 # ============================================================================
-# New layer template
-# Copy and paste this code to create your own Layer
+# Layer template
 # ============================================================================
+# Copy and paste the following code to create your own Layer.
+#
 # Layer subclasses should define two things:
 #
 #     __init__():  How to initialize the layer with parameters
@@ -52,10 +57,13 @@ class Layer:
 # First, declare the layer class name. Include (Layer) to indicate that your
 # class is a Layer.
 class MyLayer (Layer):
-    
-    # The __init__ function is called whenever a MyLayer is created. Use
-    # parameters to allow customizing the layer's appearance or behavior.
-    # Here, we're allowing custom fill and stroke colors.
+    """Overlapping semitransparent rectangles.
+    (Modify this documentation string to describe what's in your layer)"""
+
+    # Here's the class initialization function, __init__. Define here any
+    # parameters that might be used to configure your layer's behavior or
+    # appearance in some way (along with default values, if you like):
+
     def __init__(self, fill_color='blue', stroke_color='black'):
         """Draw stroked shapes using the given colors."""
         # Initialize the base Layer class
@@ -64,17 +72,21 @@ class MyLayer (Layer):
         self.fill_color = fill_color
         self.stroke_color = stroke_color
 
-    # The draw_on function draws the layer at a given frame
+    # The draw_on() function is responsible for rendering the contents of the
+    # layer onto a Drawing.
     def draw_on(self, drawing, frame):
+        """Draw MyLayer contents onto the given drawing, at the given frame
+        number."""
+
         # Make sure the drawing is really a Drawing
         assert(isinstance(drawing, Drawing))
 
-        # Save context. This isolates any effects or style changes from any
-        # surrounding layers in the Drawing.
+        # Save context. This isolates the upcoming effects or style changes
+        # from any surrounding layers in the Drawing.
         drawing.push()
 
-        # Draw the layer. You can use pretty much any commands you want here;
-        # the world is your oyster! But we'll start by using the user-set
+        # Draw the layer. You can use pretty much any Drawing commands you want
+        # here; the world is your oyster! Let's start by using the user-set
         # variables from __init__:
         drawing.fill(self.fill_color)
         drawing.stroke(self.stroke_color)
@@ -91,7 +103,7 @@ class MyLayer (Layer):
     # this file for examples on how to create and render Layers using Python.
 
 # ============================================================================
-# End of new layer template
+# End of Layer template
 # ============================================================================
 
 
