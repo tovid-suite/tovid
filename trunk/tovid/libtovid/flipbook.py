@@ -74,7 +74,7 @@ if __name__ == '__main__':
     flip = Flipbook(90)
 
     # Background image
-    bgd = layer.Background('grey')
+    bgd = layer.Background('black')
     flip.add(bgd)
 
     # Text layer with fade, movement, and spectrum effects
@@ -97,10 +97,10 @@ if __name__ == '__main__':
               Keyframe(60, 1.0),
               Keyframe(80, 0.5),
               Keyframe(90, 1.0)]
-    text4.add_effect(effect.KeyFunction(Drawing.fill_opacity, pulse))
+    text4.add_effect(effect.KeyFunction(Drawing.fill_opacity, pulse, 'cosine'))
     flip.add(text4, (20, 120))
 
-    pulse_graph = layer.InterpolationGraph(pulse)
+    pulse_graph = layer.InterpolationGraph(pulse, method='cosine')
     flip.add(pulse_graph, (20, 150))
 
     # Video clip
