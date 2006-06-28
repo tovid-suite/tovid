@@ -43,7 +43,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # TODO: PAL/NTSC frame size
-    flip = Flipbook(useropts['frames'])
+    flip = Flipbook(int(useropts['frames']))
 
     # Background color
     bgd = Background(color=useropts['bgcolor'])
@@ -53,9 +53,10 @@ if __name__ == '__main__':
     if useropts['title'] is not '':
         # TODO: Centered text! (gravity)
         title = Text(useropts['title'], fontsize=30)
-        flip.add(title, (240, 400))
+        flip.add(title, (240, 420))
     # Thumbnails
-    if useropts['thumbs'] is not []:
+    print useropts['thumbs']
+    if useropts['thumbs'] != []:
         thumbs = ThumbGrid(useropts['thumbs'], (600, 400))
         flip.add(thumbs, (60, 40))
 
