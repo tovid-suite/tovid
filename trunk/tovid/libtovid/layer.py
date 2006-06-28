@@ -22,7 +22,7 @@ template example below.
 """
 
 __all__ = ['Layer', 'Background', 'Text', 'Label',
-           'VideoClip', 'Thumb', 'ThumbGrid']
+           'VideoClip', 'Thumb', 'ThumbGrid', 'SafeArea', 'InterpolationGraph']
 
 import os
 import sys
@@ -37,6 +37,9 @@ class Layer:
     """A visual element that may be composited onto a Flipbook."""
     def __init__(self):
         self.effects = []
+    def add_effect(self, effect):
+        assert isinstance(effect, Effect)
+        self.effects.append(effect)
     def draw_on(self, drawing, frame):
         """Draw the layer onto the given Drawing. Override this function in
         derived layers."""
@@ -81,7 +84,7 @@ class MyLayer (Layer):
         number."""
 
         # Make sure the drawing is really a Drawing
-        assert(isinstance(drawing, Drawing))
+        assert isinstance(drawing, Drawing)
 
         # Save context. This isolates the upcoming effects or style changes
         # from any surrounding layers in the Drawing.
@@ -116,7 +119,7 @@ class Background (Layer):
         self.color = color
         self.filename = filename
     def draw_on(self, drawing, frame):
-        assert(isinstance(drawing, Drawing))
+        assert isinstance(drawing, Drawing)
         drawing.push()
         self.draw_effects(drawing, frame)
         # Fill drawing with an image
@@ -130,11 +133,10 @@ class Background (Layer):
 
 
 class VideoClip (Layer):
-    """A rectangular video clip with size and positioning."""
-    def __init__(self, filename, (x, y), (width, height)):
+    """A rectangular video clip, scaled to the given size."""
+    def __init__(self, filename, (width, height)):
         Layer.__init__(self)
         self.filename = filename
-        self.position = (x, y)
         self.size = (width, height)
         # List of filenames of individual frames
         self.frames = []
@@ -150,46 +152,45 @@ class VideoClip (Layer):
         print self.frames
 
     def draw_on(self, drawing, frame):
-        assert(isinstance(drawing, Drawing))
+        assert isinstance(drawing, Drawing)
         drawing.push()
         self.draw_effects(drawing, frame)
         # Loop frames (modular arithmetic)
         if frame > len(self.frames):
             frame = frame % len(self.frames)
         filename = self.frames[frame]
-        drawing.image('over', self.position, self.size, filename)
+        drawing.image('over', (0, 0), self.size, filename)
         drawing.pop()
 
 
 class Text (Layer):
-    """A simple text string, with position, size, color and font."""
-    def __init__(self, text, (x, y), color='white', fontsize=20, \
+    """A simple text string, with size, color and font."""
+    def __init__(self, text, color='white', fontsize=20, \
                  font='Helvetica'):
         Layer.__init__(self)
         self.text = text
-        self.position = (x, y)
         self.color = color
         self.fontsize = fontsize
         self.font = font
     def draw_on(self, drawing, frame):
-        assert(isinstance(drawing, Drawing))
+        assert isinstance(drawing, Drawing)
         drawing.push()
         drawing.fill(self.color)
         drawing.font(self.font)
         drawing.font_size(self.fontsize)
         self.draw_effects(drawing, frame)
-        drawing.text(self.position, self.text)
+        drawing.text((0, 0), self.text)
         drawing.pop()
 
 
 class Label (Text):
     """A text string with a rectangular background."""
-    def __init__(self, text, (x, y), color='black', bgcolor='grey',
+    def __init__(self, text, color='black', bgcolor='grey',
                  fontsize=20, font='NimbusSans'):
-        Text.__init__(self, text, (x, y), color, fontsize, font)
+        Text.__init__(self, text, color, fontsize, font)
         self.bgcolor = bgcolor
     def draw_on(self, drawing, frame):
-        assert(isinstance(drawing, Drawing))
+        assert isinstance(drawing, Drawing)
 
         # Save context
         drawing.push()
@@ -200,9 +201,8 @@ class Label (Text):
         # Padding to use around text
         pad = self.fontsize / 3
         # Calculate start and end points of background rectangle
-        x0, y0 = self.position
-        start = (x0 - pad, y0 - height - pad)
-        end = (x0 + width + pad, y0 + pad)
+        start = (-pad, -height - pad)
+        end = (width + pad, pad)
 
         # Draw a stroked round rectangle
         drawing.push()
@@ -224,18 +224,17 @@ class TextBox (Text):
     
     Formatting elements are <p>...</p>, <b>...</b>, and <i>...</i>.
     """
-    def __init__(self, text, (pos_x, pos_y), (width, height), color='white',
+    def __init__(self, text, (width, height), color='white',
                  fontsize=20, font='Times'):
-        """Formatted text at the given position, contained in a box of the
-        given size."""
-        Text.__init__(self, text, (pos_x, pos_y), color, fontsize, font)
+        """Formatted text contained in a box of the given size."""
+        Text.__init__(self, text, color, fontsize, font)
         self.size = (width, height)
         # TODO: Determine max number of characters that will fit in given
         # width, and break marked-up text into lines (breaking at word
         # boundaries)
 
     def draw_on(self, drawing, frame):
-        assert(isinstance(drawing, Drawing))
+        assert isinstance(drawing, Drawing)
         drawing.push()
 
         # TODO: Wrap text!
@@ -251,7 +250,7 @@ class TextBox (Text):
         # the current line
         cursor = 0
         # Start drawing in upper left-hand corner
-        draw_loc = self.position
+        draw_loc = (0, 0)
         
         finished = False
         while not finished:
@@ -306,15 +305,14 @@ class TextBox (Text):
 
 class Thumb (Layer):
     """A thumbnail image, with size and positioning."""
-    def __init__(self, filename, (x, y), (width, height)):
+    def __init__(self, filename, (width, height)):
         Layer.__init__(self)
         self.filename = filename
-        self.position = (x, y)
         self.size = (width, height)
     def draw_on(self, drawing, frame):
         drawing.push()
         self.draw_effects(drawing, frame)
-        drawing.image('over', self.position, self.size, self.filename)
+        drawing.image('over', (0, 0), self.size, self.filename)
         drawing.pop()
 
 
@@ -365,7 +363,7 @@ class ThumbGrid (Layer):
         if rows == 0 and columns > 0:
             return (columns, (1 + num_items / columns))
     def draw_on(self, drawing, frame):
-        assert(isinstance(drawing, Drawing))
+        assert isinstance(drawing, Drawing)
         drawing.push()
         self.draw_effects(drawing, frame)
         pos = 0
@@ -381,7 +379,7 @@ class SafeArea (Layer):
         self.percent = percent
         self.color = color
     def draw_on(self, drawing, frame):
-        assert(isinstance(drawing, Drawing))
+        assert isinstance(drawing, Drawing)
         # Calculate rectangle dimensions
         scale = float(self.percent) / 100.0
         width, height = drawing.size
@@ -405,6 +403,7 @@ class SafeArea (Layer):
 
 
 class InterpolationGraph (Layer):
+    # TODO: Support graphing of tuple data
     """A graph of an interpolation curve."""
     def __init__(self, keyframes, size=(300, 100), method='linear'):
         """Create an interpolation graph of the given keyframes, at the given
@@ -416,7 +415,10 @@ class InterpolationGraph (Layer):
         self.data = tween(keyframes, method)
 
     def draw_on(self, drawing, frame):
-        assert(isinstance(drawing, Drawing))
+        assert isinstance(drawing, Drawing)
+        # TODO: Separate scaling hackery into a more generalized
+        # transformation system
+
         # Save context
         drawing.push()
         drawing.fill(None)
@@ -430,26 +432,9 @@ class InterpolationGraph (Layer):
         drawing.pop()
 
         # Calculate horizontal and vertical scaling to fit the graph
-        # within the desired area
+        # within the desired area.
         x_scale = float(width) / len(self.data)
         y_scale = float(height) / max(self.data)
-
-        # Draw keyframes as dotted vertical lines
-        drawing.push()
-        drawing.stroke_dasharray([4, 4])
-        for key in self.keyframes:
-            x = key.frame * x_scale
-            # Vertical dotted line
-            drawing.fill(None)
-            drawing.stroke('red')
-            drawing.stroke_width(2)
-            drawing.line((x, 0), (x, height))
-            # Keyframe label
-            drawing.stroke(None)
-            drawing.fill('red')
-            drawing.text((x, height - key.data * y_scale), \
-                         "(%s,%s)" % (key.frame, key.data))
-        drawing.pop()
 
         # Create a list of (x, y) points to be graphed
         curve = []
@@ -459,9 +444,34 @@ class InterpolationGraph (Layer):
             curve.append(point)
             x += 1
         # Draw the curve
-        drawing.stroke('blue')
+        drawing.stroke('lightblue')
         drawing.polyline(curve)
 
+        # Draw Keyframes as dotted vertical lines
+        drawing.push()
+        drawing.stroke_dasharray([4, 4])
+        # Vertical dotted lines
+        drawing.fill(None)
+        drawing.stroke('red')
+        drawing.stroke_width(2)
+        for key in self.keyframes:
+            x = int(key.frame * x_scale)
+            drawing.line((x, 0), (x, height))
+
+        # Draw Keyframe labels
+        drawing.stroke(None)
+        drawing.fill('white')
+        for key in self.keyframes:
+            x = key.frame * x_scale
+            drawing.text((x, height - key.data * y_scale - 3), \
+                         "(%s,%s)" % (key.frame, key.data))
+        drawing.pop()
+
+        # Draw a yellow dot for current frame
+        drawing.stroke(None)
+        drawing.fill('yellow')
+        pos = (frame * x_scale, height - self.data[frame-1] * y_scale)
+        drawing.circle_rad(pos, 2)
         # Restore context
         drawing.pop()
 
@@ -485,8 +495,11 @@ if __name__ == '__main__':
 
     # Draw a text layer
     drawing.comment("Text layer")
-    text = Text("Jackdaws love my big sphinx of quartz", (80, 60))
+    drawing.push()
+    drawing.translate((80, 60))
+    text = Text("Jackdaws love my big sphinx of quartz")
     text.draw_on(drawing, 1)
+    drawing.pop()
 
     # Draw a template layer (overlapping semitransparent rectangles)
     template = MyLayer('white', 'darkblue')
@@ -500,14 +513,19 @@ if __name__ == '__main__':
 
     # Draw a label (experimental)
     drawing.comment("Label layer")
-    label = Label("tovid loves Linux", (300, 200))
+    drawing.push()
+    drawing.translate((300, 200))
+    label = Label("tovid loves Linux")
     label.draw_on(drawing, 1)
+    drawing.pop()
 
     # Draw a text box (experimental)
     drawing.comment("TextBox layer")
-    textbox = TextBox("Some <b>bold</b> and <i>italic</i> text", 
-                      (200, 300), (200, 200))
+    drawing.push()
+    drawing.translate((60, 300))
+    textbox = TextBox("Some <b>bold</b> and <i>italic</i> text", (200, 200))
     textbox.draw_on(drawing, 1)
+    drawing.pop()
 
     # Draw a safe area test (experimental)
     drawing.comment("Safe area")
@@ -526,12 +544,12 @@ if __name__ == '__main__':
     # Draw an interpolation graph (experimental)
     drawing.comment("Interpolation graph")
     drawing.push()
-    drawing.translate((340, 50))
+    drawing.translate((60, 340))
     # Some random keyframes to graph
     keys = [Keyframe(1, 25), Keyframe(10, 5), Keyframe(30, 35),
-            Keyframe(40, 0), Keyframe(45, 20), Keyframe(60, 40)]
+            Keyframe(40, 35), Keyframe(45, 20), Keyframe(60, 40)]
     interp = InterpolationGraph(keys, method="cosine")
-    interp.draw_on(drawing, 1)
+    interp.draw_on(drawing, 25)
     drawing.pop()
 
     print drawing.code()

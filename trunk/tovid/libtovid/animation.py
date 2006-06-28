@@ -39,14 +39,29 @@ class Keyframe:
         self.data = data
 
 
+# Interpolation algorithms
+
 def lerp(x, (x0, y0), (x1, y1)):
     """Do linear interpolation between points (x0, y0), (x1, y1), and return
-    the 'y' of the given 'x'."""
+    the 'y' of the given 'x'.
+
+    This form of interpolation simply connects two points with a straight
+    line. Blunt, but effective."""
     return y0 + (x - x0) * (y1 - y0) / (x1 - x0)
 
 def cos_interp(x, (x0, y0), (x1, y1)):
     """Do cosine-based interpolation between (x0, y0), (x1, y1) and return
-    the 'y' of the given 'x'."""
+    the 'y' of the given 'x'.
+
+    Essentially, a crude alternative to polynomial spline interpolation; this
+    method transitions between two values by matching a segment of the cosine
+    curve [0, pi] (for decreasing value) or [pi, 0] (for increasing value) to
+    the interval between the given points.
+
+    It should give smoother results at
+    inflection points than linear interpolation, but will result in "ripple"
+    effects if keyframes are too dense or many.   
+    """
     # Map interpolation area (domain of x) to [0, pi]
     x_norm = math.pi * (x - x0) / (x1 - x0)
     # For y0 < y1, use upward-sloping part of the cosine curve
@@ -59,7 +74,10 @@ def cos_interp(x, (x0, y0), (x1, y1)):
 
 
 def interpolate(frame, left, right, method):
-    """Interpolate data between left and right Keyframes at the given frame."""
+    """Interpolate data between left and right Keyframes at the given frame,
+    using the given interpolation method ('linear' or 'cosine'). Return the
+    value at the given frame."""
+    # Use the appropriate interpolation function
     if method == 'linear':
         interp_func = lerp
     elif method == 'cosine':
@@ -86,7 +104,7 @@ def tween(keyframes, method='linear'):
     return a list of values for all frames in sequence. method may be
     'linear' or 'cosine'.
 
-    For example, given three keyframes:
+    For example, let's define three keyframes:
     
         >>> keys = [Keyframe(1, 0),
         ...         Keyframe(6, 50),
