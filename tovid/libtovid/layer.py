@@ -120,6 +120,7 @@ class Background (Layer):
         self.filename = filename
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
+        drawing.comment("Background Layer")
         drawing.push()
         self.draw_effects(drawing, frame)
         # Fill drawing with an image
@@ -153,6 +154,7 @@ class VideoClip (Layer):
 
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
+        drawing.comment("VideoClip Layer")
         drawing.push()
         self.draw_effects(drawing, frame)
         # Loop frames (modular arithmetic)
@@ -174,6 +176,7 @@ class Text (Layer):
         self.font = font
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
+        drawing.comment("Text Layer")
         drawing.push()
         drawing.fill(self.color)
         drawing.font(self.font)
@@ -192,6 +195,7 @@ class Label (Text):
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
 
+        drawing.comment("Label Layer")
         # Save context
         drawing.push()
 
@@ -235,6 +239,7 @@ class TextBox (Text):
 
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
+        drawing.comment("TextBox Layer")
         drawing.push()
 
         # TODO: Wrap text!
@@ -310,6 +315,8 @@ class Thumb (Layer):
         self.filename = filename
         self.size = (width, height)
     def draw_on(self, drawing, frame):
+        assert isinstance(drawing, Drawing)
+        drawing.comment("Thumb Layer")
         drawing.push()
         self.draw_effects(drawing, frame)
         drawing.image('over', (0, 0), self.size, self.filename)
@@ -364,6 +371,7 @@ class ThumbGrid (Layer):
             return (columns, (1 + num_items / columns))
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
+        drawing.comment("ThumbGrid Layer")
         drawing.push()
         self.draw_effects(drawing, frame)
         pos = 0
@@ -385,6 +393,7 @@ class SafeArea (Layer):
         width, height = drawing.size
         topleft = ((1.0 - scale) * width / 2,
                   (1.0 - scale) * height / 2)
+        drawing.comment("SafeArea Layer")
         # Save context
         drawing.push()
         drawing.translate(topleft)
@@ -419,6 +428,7 @@ class InterpolationGraph (Layer):
         # TODO: Separate scaling hackery into a more generalized
         # transformation system
 
+        drawing.comment("InterpolationGraph Layer")
         # Save context
         drawing.push()
         drawing.fill(None)
@@ -444,7 +454,8 @@ class InterpolationGraph (Layer):
             curve.append(point)
             x += 1
         # Draw the curve
-        drawing.stroke('lightblue')
+        drawing.stroke('blue')
+        drawing.stroke_width(2)
         drawing.polyline(curve)
 
         # Draw Keyframes as dotted vertical lines

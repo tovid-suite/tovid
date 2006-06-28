@@ -494,7 +494,7 @@ class Drawing:
         """Add a comment to the drawing's code."""
         # Strip newlines from comment
         text = text.replace('\n', ' ')
-        self.insert('\n# %s' % text)
+        self.insert('# %s' % text)
 
     #
     # Editor interface/interactive functions
