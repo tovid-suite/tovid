@@ -78,8 +78,10 @@ class MyEffect (Effect):
         # Call this afterwards, to calculate the values at all frames
         self.data = tween(self.keyframes)
 
-    # The draw_on function draws the effect at a given frame
+    # The draw_on function draws the effect onto a Drawing at the given frame
     def draw_on(self, drawing, frame):
+        # First, it's good to make sure we really have a Drawing class
+        assert isinstance(drawing, Drawing)
         # This effect varies the stroke width across a sequence of frames.
         # Replace 'stroke_width' with your own drawing function(s)
         # (see libtovid/mvg.py for a complete list)
@@ -105,6 +107,7 @@ class Movement (Effect):
 
     def draw_on(self, drawing, frame):
         """Draw the movement effect into the given Drawing."""
+        assert isinstance(drawing, Drawing)
         drawing.translate(self.get_data(frame))
 
 class Fade (Effect):
@@ -130,6 +133,7 @@ class Fade (Effect):
 
     def draw_on(self, drawing, frame):
         """Draw the fade effect into the given Drawing."""
+        assert isinstance(drawing, Drawing)
         drawing.fill_opacity(self.get_data(frame))
 
 class Colorfade (Effect):
@@ -144,7 +148,9 @@ class Colorfade (Effect):
         self.data = tween(self.keyframes)
 
     def draw_on(self, drawing, frame):
+        assert isinstance(drawing, Drawing)
         drawing.fill_rgb(self.get_data(frame))
+
 
 class Spectrum (Effect):
     """A full-spectrum color-fade effect between start and end frames."""
@@ -163,6 +169,7 @@ class Spectrum (Effect):
         self.data = tween(self.keyframes)
 
     def draw_on(self, drawing, frame):
+        assert isinstance(drawing, Drawing)
         drawing.fill_rgb(self.data[frame - self.start])
 
 
@@ -177,6 +184,33 @@ class Scale (Effect):
         self.data = tween(self.keyframes)
 
     def draw_on(self, drawing, frame):
+        assert isinstance(drawing, Drawing)
         drawing.scale(self.get_data(frame))
 
 
+class KeyFunction (Effect):
+    """A keyframed effect on an arbitrary Drawing function."""
+    def __init__(self, draw_function, keyframes, method='linear'):
+        """Create an effect using the given Drawing function, with values
+        determined by the given list of Keyframes. For example:
+
+            KeyFunction(Drawing.stroke_width,
+                        [Keyframe(1, 1), Keyframe(30, 12)])
+
+        This says to vary the stroke width from 1 (at frame 1) to 12 (at
+        frame 30).
+
+        method defines an interpolation method to use between keyframes,
+        and may be either 'linear' or 'cosine'. 
+        """
+        # Call base constructor with start and end frames
+        Effect.__init__(self, keyframes[0].frame, keyframes[-1].frame)
+        # TODO: Make sure a valid function name is given
+        self.draw_function = draw_function
+        self.keyframes = keyframes
+        # Tween keyframes using the given interpolation method
+        self.data = tween(self.keyframes, method)
+
+    def draw_on(self, drawing, frame):
+        assert isinstance(drawing, Drawing)
+        self.draw_function(drawing, self.get_data(frame))

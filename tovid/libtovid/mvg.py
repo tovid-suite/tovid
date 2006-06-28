@@ -494,7 +494,7 @@ class Drawing:
         """Add a comment to the drawing's code."""
         # Strip newlines from comment
         text = text.replace('\n', ' ')
-        self.insert('# %s' % text)
+        self.insert('\n# %s' % text)
 
     #
     # Editor interface/interactive functions
@@ -601,6 +601,7 @@ class Drawing:
     def extend(self, drawing):
         """Extend self to include all data from the given MVG object, and
         position the cursor at the end."""
+        assert isinstance(drawing, Drawing)
         self.data.extend(drawing.data[1:])
         self.goto_end()
 
@@ -630,7 +631,7 @@ class Drawing:
 
 def draw_fontsize_demo(drawing):
     """Draw font size samples on the given drawing."""
-    assert(isinstance(drawing, Drawing))
+    assert isinstance(drawing, Drawing)
 
     # Save context
     drawing.push()
@@ -648,7 +649,7 @@ def draw_fontsize_demo(drawing):
 
 def draw_font_demo(drawing):
     """Draw samples of different fonts on the given drawing."""
-    assert(isinstance(drawing, Drawing))
+    assert isinstance(drawing, Drawing)
 
     # Save context
     drawing.push()
@@ -674,7 +675,7 @@ def draw_font_demo(drawing):
 
 def draw_shape_demo(drawing):
     """Draw shape samples on the given drawing."""
-    assert(isinstance(drawing, Drawing))
+    assert isinstance(drawing, Drawing)
 
     # Save context
     drawing.push()
@@ -721,7 +722,7 @@ def draw_shape_demo(drawing):
 
 def draw_stroke_demo(drawing):
     """Draw a stroke/strokewidth demo on the given drawing."""
-    assert(isinstance(drawing, Drawing))
+    assert isinstance(drawing, Drawing)
 
     # Save context
     drawing.push()
@@ -739,7 +740,7 @@ def draw_stroke_demo(drawing):
 
 def draw_pattern_demo(drawing):
     """Draw a pattern demo on the given drawing."""
-    assert(isinstance(drawing, Drawing))
+    assert isinstance(drawing, Drawing)
 
     # Save context
     drawing.push()
