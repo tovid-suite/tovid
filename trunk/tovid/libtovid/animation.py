@@ -48,7 +48,7 @@ def cos_interp(x, (x0, y0), (x1, y1)):
     """Do cosine-based interpolation between (x0, y0), (x1, y1) and return
     the 'y' of the given 'x'."""
     # Map interpolation area (domain of x) to [0, pi]
-    x_norm = math.pi * x / (x1 - x0)
+    x_norm = math.pi * (x - x0) / (x1 - x0)
     # For y0 < y1, use upward-sloping part of the cosine curve
     if y0 < y1:
         x_norm += math.pi
