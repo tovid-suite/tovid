@@ -46,14 +46,15 @@ class Flipbook:
         drawing.pop()
         return drawing
 
-    def render_video(self, m2v_file):
+    def render_video(self, out_prefix):
         """Render the flipbook to an .m2v video stream file."""
         # TODO: Get rid of temp-dir hard-coding
-        tmp = '/tmp/flipbook'
+        tmp = "%s_frames" % out_prefix
+        m2v_file = "%s.m2v" % out_prefix
         try:
             os.mkdir(tmp)
         except:
-            print "Temp dir %s already exists, overwriting."
+            print "Temp dir %s already exists, overwriting." % tmp
         # Write each Flipbook frame as an .mvg file, then convert to .jpg
         frame = 1
         while frame < self.frames:
@@ -65,6 +66,7 @@ class Flipbook:
             drawing.save_image('%s/%08d.jpg' % (tmp, frame - 1))
             frame += 1
         images_to_video(tmp, m2v_file, 'dvd', 'pal')
+        print "Output file is: %s" % m2v_file
 
 
 def draw_text_demo(flipbook):
@@ -124,6 +126,5 @@ if __name__ == '__main__':
     #flip.add(clip, (260, 200))
     
     # Render the final video
-    flip.render_video('/tmp/flipbook.m2v')
-    print "Output in /tmp/flipbook.m2v (we hope!)"
+    flip.render_video('/tmp/flipbook')
 
