@@ -382,7 +382,7 @@ class ThumbGrid (Layer):
 
 
 class SafeArea (Layer):
-    """Render a safe area test at a given percentage."""
+    """Render a safe area box at a given percentage."""
     def __init__(self, percent, color):
         self.percent = percent
         self.color = color
@@ -500,12 +500,10 @@ if __name__ == '__main__':
     drawing = Drawing()
     
     # Draw a background layer
-    drawing.comment("Background layer")
     bgd = Background(color='#7080A0')
     bgd.draw_on(drawing, 1)
 
     # Draw a text layer
-    drawing.comment("Text layer")
     drawing.push()
     drawing.translate((80, 60))
     text = Text("Jackdaws love my big sphinx of quartz")
@@ -514,7 +512,6 @@ if __name__ == '__main__':
 
     # Draw a template layer (overlapping semitransparent rectangles)
     template = MyLayer('white', 'darkblue')
-    drawing.comment("MyLayer template")
     # Scale and translate the layer before drawing it
     drawing.push()
     drawing.translate((50, 100))
@@ -523,7 +520,6 @@ if __name__ == '__main__':
     drawing.pop()
 
     # Draw a label (experimental)
-    drawing.comment("Label layer")
     drawing.push()
     drawing.translate((300, 200))
     label = Label("tovid loves Linux")
@@ -531,7 +527,6 @@ if __name__ == '__main__':
     drawing.pop()
 
     # Draw a text box (experimental)
-    drawing.comment("TextBox layer")
     drawing.push()
     drawing.translate((60, 300))
     textbox = TextBox("Some <b>bold</b> and <i>italic</i> text", (200, 200))
@@ -539,13 +534,11 @@ if __name__ == '__main__':
     drawing.pop()
 
     # Draw a safe area test (experimental)
-    drawing.comment("Safe area")
     safe = SafeArea(93, 'yellow')
     safe.draw_on(drawing, 1)
 
     # Draw a thumbnail grid (if images were provided)
     if images:
-        drawing.comment("ThumbGrid layer")
         drawing.push()
         drawing.translate((350, 200))
         thumbs = ThumbGrid(images, (320, 250))

@@ -67,28 +67,23 @@ class Flipbook:
         images_to_video(tmp, m2v_file, 'dvd', 'pal')
 
 
-# Demo
-if __name__ == '__main__':
-    print "Flipbook demo"
-
-    flip = Flipbook(90)
-
+def draw_text_demo(flipbook):
+    """Draw a demonstration of Text layers with various effects."""
     # Background image
     bgd = layer.Background('black')
-    flip.add(bgd)
+    flipbook.add(bgd)
 
-    # Text layer with fade, movement, and spectrum effects
     text1 = layer.Text("Spectrum effect demo")
     text1.add_effect(effect.Spectrum(1, 90))
-    flip.add(text1, (20, 30))
+    flipbook.add(text1, (20, 30))
 
     text2 = layer.Text("Fade effect demo")
     text2.add_effect(effect.Fade(30, 90, 20))
-    flip.add(text2, (20, 60))
+    flipbook.add(text2, (20, 60))
 
     text3 = layer.Text("Movement effect demo")
     text3.add_effect(effect.Movement(20, 70, (0, 0), (20, 5)))
-    flip.add(text3, (20, 90))
+    flipbook.add(text3, (20, 90))
 
     # Keyframed opacity demos, using both linear and cosine interpolation
     pulse = [Keyframe(1, 0.2),
@@ -110,11 +105,17 @@ if __name__ == '__main__':
     text_linear.add_effect(fade_linear)
     text_cosine.add_effect(fade_cosine)
     # Add layers to the flipbook
-    flip.add(text_linear, (20, 120))
-    flip.add(graph_linear, (20, 150))
-    flip.add(text_cosine, (320, 120))
-    flip.add(graph_cosine, (320, 150))
+    flipbook.add(text_linear, (20, 120))
+    flipbook.add(graph_linear, (20, 150))
+    flipbook.add(text_cosine, (320, 120))
+    flipbook.add(graph_cosine, (320, 150))
 
+# Demo
+if __name__ == '__main__':
+    
+    flip = Flipbook(90)
+
+    draw_text_demo(flip)
 
     # Video clip
     #clip = layer.VideoClip(video, (320, 240))
