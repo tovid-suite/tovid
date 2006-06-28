@@ -287,8 +287,6 @@ class TextBox (Text):
                 if not tag.startswith('</'):
                     drawing.push()
     
-                print "TextBox: tag is '%s'" % tag
-
                 # Paragraph
                 if tag == '<p>':
                     # TODO
@@ -405,6 +403,7 @@ class SafeArea (Layer):
         # Restore context
         drawing.pop()
 
+
 class InterpolationGraph (Layer):
     """A graph of an interpolation curve."""
     def __init__(self, keyframes, size=(300, 100), method='linear'):
@@ -448,16 +447,16 @@ class InterpolationGraph (Layer):
             # Keyframe label
             drawing.stroke(None)
             drawing.fill('red')
-            drawing.text((x, key.data * y_scale), \
+            drawing.text((x, height - key.data * y_scale), \
                          "(%s,%s)" % (key.frame, key.data))
-            
         drawing.pop()
 
         # Create a list of (x, y) points to be graphed
         curve = []
         x = 1
-        while x < len(self.data):
-            curve.append((x * x_scale, self.data[x] * y_scale))
+        while x <= len(self.data):
+            point = (int(x * x_scale), int(height - self.data[x-1] * y_scale))
+            curve.append(point)
             x += 1
         # Draw the curve
         drawing.stroke('blue')
@@ -530,7 +529,7 @@ if __name__ == '__main__':
     drawing.translate((340, 50))
     # Some random keyframes to graph
     keys = [Keyframe(1, 25), Keyframe(10, 5), Keyframe(30, 35)]
-    interp = InterpolationGraph(keys)
+    interp = InterpolationGraph(keys, method="cosine")
     interp.draw_on(drawing, 1)
     drawing.pop()
 
