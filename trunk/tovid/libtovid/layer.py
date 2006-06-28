@@ -528,7 +528,8 @@ if __name__ == '__main__':
     drawing.push()
     drawing.translate((340, 50))
     # Some random keyframes to graph
-    keys = [Keyframe(1, 25), Keyframe(10, 5), Keyframe(30, 35)]
+    keys = [Keyframe(1, 25), Keyframe(10, 5), Keyframe(30, 35),
+            Keyframe(40, 0), Keyframe(45, 20), Keyframe(60, 40)]
     interp = InterpolationGraph(keys, method="cosine")
     interp.draw_on(drawing, 1)
     drawing.pop()
