@@ -95,6 +95,7 @@ def encode_video(infile, yuvfile, videofile, options):
     # corresp. to $VID_BITRATE, $MPEG2_QUALITY, $DISC_SIZE, etc.
     # Missing options (compared to tovid)
     # -S 700 -B 247 -b 2080 -v 0 -4 2 -2 1 -q 5 -H -o FILE
+    
     cmd = 'mpeg2enc'
     # TV system
     if options['tvsys'] == 'pal':
@@ -117,11 +118,15 @@ def encode_video(infile, yuvfile, videofile, options):
     cmd += ' -o "%s"' % videofile
 
     # Adjust framerate if necessary
-    if infile.video.spec['fps'] != options['fps']:
-        log.info("Adjusting framerate")
-        yuvcmd = 'yuvfps -r %s' % float_to_ratio(options['fps'])
-        cmd = yuvcmd + ' | ' + cmd
-
+    # FIXME: Can infile.video None?
+    if infile.video != None:
+        if infile.video.spec['fps'] != options['fps']:
+            log.info("Adjusting framerate")
+            yuvcmd = 'yuvfps -r %s' % float_to_ratio(options['fps'])
+            cmd = yuvcmd + ' | ' + cmd
+    else:
+        pass
+    
     # Pipe the .yuv file into mpeg2enc
     catcmd = 'cat "%s" | ' % yuvfile
     return catcmd + cmd
