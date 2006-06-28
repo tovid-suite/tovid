@@ -90,18 +90,31 @@ if __name__ == '__main__':
     text3.add_effect(effect.Movement(20, 70, (0, 0), (20, 5)))
     flip.add(text3, (20, 90))
 
-    text4 = layer.Text("Keyframed fill opacity demo", color='lightgreen')
+    # Keyframed opacity demos, using both linear and cosine interpolation
     pulse = [Keyframe(1, 0.2),
               Keyframe(20, 1.0),
               Keyframe(40, 0.2),
               Keyframe(60, 1.0),
               Keyframe(80, 0.5),
               Keyframe(90, 1.0)]
-    text4.add_effect(effect.KeyFunction(Drawing.fill_opacity, pulse, 'cosine'))
-    flip.add(text4, (20, 120))
+    # Text Layers
+    text_linear = layer.Text("Keyframed opacity (linear)", color='lightgreen')
+    text_cosine = layer.Text("Keyframed opacity (cosine)", color='lightgreen')
+    # Effects
+    fade_linear = effect.KeyFunction(Drawing.fill_opacity, pulse, 'linear')
+    fade_cosine = effect.KeyFunction(Drawing.fill_opacity, pulse, 'cosine')
+    # Graph of the keyframe effects
+    graph_linear = layer.InterpolationGraph(pulse, method='linear')
+    graph_cosine = layer.InterpolationGraph(pulse, method='cosine')
+    # Add effects to the text layers
+    text_linear.add_effect(fade_linear)
+    text_cosine.add_effect(fade_cosine)
+    # Add layers to the flipbook
+    flip.add(text_linear, (20, 120))
+    flip.add(graph_linear, (20, 150))
+    flip.add(text_cosine, (320, 120))
+    flip.add(graph_cosine, (320, 150))
 
-    pulse_graph = layer.InterpolationGraph(pulse, method='cosine')
-    flip.add(pulse_graph, (20, 150))
 
     # Video clip
     #clip = layer.VideoClip(video, (320, 240))
