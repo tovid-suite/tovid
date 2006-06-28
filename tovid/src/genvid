@@ -53,7 +53,7 @@ if __name__ == '__main__':
     if useropts['title'] is not '':
         # TODO: Centered text! (gravity)
         title = Text(useropts['title'], fontsize=30)
-        flip.add(title, (280, 80))
+        flip.add(title, (240, 400))
     # Thumbnails
     if useropts['thumbs'] is not []:
         thumbs = ThumbGrid(useropts['thumbs'], (600, 400))
