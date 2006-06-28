@@ -19,6 +19,7 @@ class Flipbook:
         self.size = size
         self.layers = []
         self.drawings = []
+        print "Flipbook.__init__() frames = %s" % frames
 
     def add(self, layer, position=(0, 0)):
         """Add a Layer to the flipbook."""
@@ -51,15 +52,16 @@ class Flipbook:
         # TODO: Get rid of temp-dir hard-coding
         tmp = "%s_frames" % out_prefix
         m2v_file = "%s.m2v" % out_prefix
-        try:
-            os.mkdir(tmp)
-        except:
+        if os.path.exists(tmp):
             print "Temp dir %s already exists, overwriting." % tmp
+            os.system('rm -rf %s' % tmp)
+        os.mkdir(tmp)
+
         # Write each Flipbook frame as an .mvg file, then convert to .jpg
         frame = 1
-        while frame < self.frames:
+        while frame <= self.frames:
+            print "Drawing frame %s of %s" % (frame, self.frames)
             drawing = self.drawing(frame)
-            print "Drawing for frame: %s" % frame
             print drawing.code(editing=False)
             drawing.save('%s/flip_%04d.mvg' % (tmp, frame))
             # jpeg2yuv likes frames to start at 0

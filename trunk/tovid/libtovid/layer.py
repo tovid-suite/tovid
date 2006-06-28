@@ -330,6 +330,7 @@ class ThumbGrid (Layer):
         """Create a grid of images from files, fitting with a space no
         larger than (width, height), with the given number of columns and rows
         Use 0 to auto-layout columns or rows, or both (default)."""
+        assert files != []
         Layer.__init__(self)
         self.totalsize = (width, height)
         self.files = files
