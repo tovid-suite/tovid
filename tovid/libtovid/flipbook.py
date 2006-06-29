@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 # flipbook.py
 
+__all__ = ['Flipbook']
+
 import os
 import sys
 from libtovid.animation import Keyframe
@@ -19,7 +21,6 @@ class Flipbook:
         self.size = size
         self.layers = []
         self.drawings = []
-        print "Flipbook.__init__() frames = %s" % frames
 
     def add(self, layer, position=(0, 0)):
         """Add a Layer to the flipbook."""
