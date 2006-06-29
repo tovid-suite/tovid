@@ -239,7 +239,7 @@ class OptionDict(dict):
                         log.error('"%s" option expects one or more arguments ' \
                                 '(got keyword "%s")' % (opt, next))
                     # Until the next keyword is reached, add to list
-                    while next and next.lstrip('-') not in self.defdict:
+                    while options and next.lstrip('-') not in self.defdict:
                         # Ignore any surrounding [ , , ]
                         arglist.append(next.lstrip('[').rstrip(',]'))
                         next = options.pop(0)
