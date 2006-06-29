@@ -26,7 +26,6 @@ __all__ = [\
     'standards',
     'tdl',
     'textmenu',
-    'thumbmenu',
     'utils',
     'video']
 
