@@ -37,7 +37,7 @@ import os
 import sys
 import glob
 import math
-from libtovid.utils import file_type
+from libtovid.utils import get_file_type
 from libtovid.mvg import Drawing
 from libtovid.effect import Effect
 from libtovid.animation import Keyframe, tween
@@ -323,7 +323,9 @@ class Thumb (Layer):
     def __init__(self, filename, (width, height)):
         Layer.__init__(self)
         self.filename = filename
+        self.filetype = get_type(filename)
         self.size = (width, height)
+
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
         drawing.comment("Thumb Layer")
