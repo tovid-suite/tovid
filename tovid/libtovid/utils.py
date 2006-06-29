@@ -7,7 +7,7 @@ __all__ = [\
     'escape',
     'float_to_ratio',
     'get_code_lines',
-    'get_type',
+    'get_file_type',
     'indent_level',
     'pretty_dict',
     'ratio_to_float',
@@ -141,7 +141,7 @@ def wait(seconds):
     print "Resuming in %s seconds..." % seconds
     os.system('sleep %ss' % seconds)
 
-def get_type(filename):
+def get_file_type(filename):
     """Return 'image', 'audio', or 'video', if the given filename appears to be
     any of those types; otherwise, return None. Determined by file's mimetype,
     which is based on filename extension, so possibly inaccurate. Will return
