@@ -15,7 +15,6 @@ import logging
 # From libtovid
 from libtovid.opts import Option, OptionDict
 import textmenu
-import thumbmenu
 
 log = logging.getLogger('libtovid.menu')
 
@@ -116,8 +115,7 @@ class Menu:
         # TODO: Raise exceptions
         # Generate a menu of the appropriate format
         if self.options['thumbnails']:
-            log.info('Generating a menu with thumbnail videos...')
-            thumbmenu.generate(self.options)
+            log.error("Not implemented yet. Meanwhile, try 'genvid'.")
         else:
             log.info('Generating a DVD menu with text titles...')
             textmenu.generate(self.options)
