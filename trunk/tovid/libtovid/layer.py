@@ -323,7 +323,7 @@ class Thumb (Layer):
     def __init__(self, filename, (width, height)):
         Layer.__init__(self)
         self.filename = filename
-        self.filetype = get_type(filename)
+        self.filetype = get_file_type(filename)
         self.size = (width, height)
 
     def draw_on(self, drawing, frame):
