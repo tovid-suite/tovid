@@ -263,7 +263,7 @@ else
     # Here's a simple way: just quit
     if test -b $DVDRW_DEVICE; then :
     else
-      echo "Couldn't find $DVDRW_DEVICE! Are you sure your burner is $DVDRW_DEVICE?"
+      precho "Couldn't find $DVDRW_DEVICE! Are you sure your burner is $DVDRW_DEVICE? Specify your burner with '-device /path/to/burner'."
       echo "Stopping here."
       exit 1
     fi
