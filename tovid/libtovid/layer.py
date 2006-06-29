@@ -21,13 +21,23 @@ function. For more on how to use Layers, see the Layer class definition and
 template example below.
 """
 
-__all__ = ['Layer', 'Background', 'Text', 'Label',
-           'VideoClip', 'Thumb', 'ThumbGrid', 'SafeArea', 'InterpolationGraph']
+__all__ = [\
+    'Layer',
+    'Background',
+    'Text',
+    'Label',
+    'VideoClip',
+    'Thumb',
+    'ThumbGrid',
+    'SafeArea',
+    'InterpolationGraph'
+]
 
 import os
 import sys
 import glob
 import math
+from libtovid.utils import file_type
 from libtovid.mvg import Drawing
 from libtovid.effect import Effect
 from libtovid.animation import Keyframe, tween
@@ -304,9 +314,9 @@ class TextBox (Text):
                 # For any closing tag, close the current drawing context
                 if tag.startswith('</'):
                     drawing.pop()
-
         drawing.pop()
 
+    
 
 class Thumb (Layer):
     """A thumbnail image, with size and positioning."""
@@ -322,7 +332,6 @@ class Thumb (Layer):
         drawing.image('over', (0, 0), self.size, self.filename)
         drawing.pop()
 
-
 class ThumbGrid (Layer):
     """A rectangular array of thumbnail images or videos."""
     def __init__(self, files, (width, height), (columns, rows)=(0, 0),
@@ -334,6 +343,7 @@ class ThumbGrid (Layer):
         Layer.__init__(self)
         self.totalsize = (width, height)
         self.files = files
+        # Auto-dimension (using desired rows/columns, if given)
         self.columns, self.rows = \
             self._auto_dimension(len(files), columns, rows)
         # Now we know how many columns/rows; how big are the thumbnails?
@@ -370,6 +380,7 @@ class ThumbGrid (Layer):
         # Columns fixed; use enough rows to fit num_items
         if rows == 0 and columns > 0:
             return (columns, (1 + num_items / columns))
+
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
         drawing.comment("ThumbGrid Layer")
