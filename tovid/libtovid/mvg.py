@@ -694,11 +694,11 @@ def draw_shape_demo(drawing):
     drawing.stroke('grey')
     drawing.stroke_width(2)
     drawing.fill('#8080FF')
-    drawing.circle((65, 50), (50, 50))
+    drawing.circle_rad((65, 50), 15)
     drawing.fill('#2020F0')
-    drawing.circle((60, 100), (50, 100))
+    drawing.circle_rad((60, 100), 10)
     drawing.fill('#0000A0')
-    drawing.circle((55, 150), (50, 150))
+    drawing.circle_rad((55, 150), 5)
     drawing.pop()
 
     # Semitransparent green rectangles
