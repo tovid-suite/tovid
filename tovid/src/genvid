@@ -6,7 +6,7 @@ import sys
 from libtovid.opts import Option, OptionDict
 from libtovid.flipbook import Flipbook
 from libtovid.effect import Movement, Fade, Colorfade, Spectrum, Scale
-from libtovid.layer import Background, Text, Thumb, ThumbGrid, VideoClip
+from libtovid.layer import Background, Text, ThumbGrid, VideoClip
 
 # Valid command-line options to this script
 options = [\
@@ -42,7 +42,7 @@ if __name__ == '__main__':
         print "Please provide an output prefix with -out"
         sys.exit(1)
 
-    # TODO: PAL/NTSC frame size
+    # TODO: PAL/NTSC frame size and fps
     flip = Flipbook(int(useropts['frames']))
 
     # Background color
