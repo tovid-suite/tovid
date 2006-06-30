@@ -81,6 +81,8 @@ def draw_text_demo(flipbook):
     text1 = layer.Text("Spectrum effect demo")
     text1.add_effect(effect.Spectrum(1, 90))
     flipbook.add(text1, (20, 30))
+    flipbook.add(text1, (25, 35))
+    flipbook.add(text1, (30, 40))
 
     text2 = layer.Text("Fade effect demo")
     text2.add_effect(effect.Fade(30, 90, 20))
