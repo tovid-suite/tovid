@@ -12,7 +12,7 @@ Layer classes are arranged in a hierarchy:
         |-- Label
         |-- TextBox
     |-- VideoClip
-    |-- Thumb
+    |-- Image
     |-- ThumbGrid
     |-- SafeArea
 
@@ -27,7 +27,7 @@ __all__ = [\
     'Text',
     'Label',
     'VideoClip',
-    'Thumb',
+    'Image',
     'ThumbGrid',
     'SafeArea',
     'InterpolationGraph'
@@ -37,6 +37,7 @@ import os
 import sys
 import glob
 import math
+import commands
 from libtovid.utils import get_file_type
 from libtovid.mvg import Drawing
 from libtovid.effect import Effect
@@ -44,20 +45,42 @@ from libtovid.animation import Keyframe, tween
 from libtovid.VideoUtils import video_to_images
 
 class Layer:
-    """A visual element that may be composited onto a Flipbook."""
+    """A visual element, or a composition of visual elements."""
     def __init__(self):
         self.effects = []
+        self.sublayers = []
     def add_effect(self, effect):
         assert isinstance(effect, Effect)
         self.effects.append(effect)
+    def add_sublayer(self, layer, position=(0, 0)):
+        """Add the given Layer as a sublayer of this one, at the given position.
+        Sublayers are drawn in the order they are added; each sublayer may have
+        its own effects, but parent Layer's effects apply to all sublayers.
+        """
+        assert isinstance(layer, Layer)
+        self.sublayers.append((layer, position))
     def draw_on(self, drawing, frame):
         """Draw the layer onto the given Drawing. Override this function in
         derived layers."""
-        pass
+        assert isinstance(drawing, Drawing)
     def draw_effects(self, drawing, frame):
         """Draw all effects onto the given Drawing for the given frame."""
+        assert isinstance(drawing, Drawing)
+        if self.effects is not []:
+            drawing.comment("Drawing effects")
         for effect in self.effects:
             effect.draw_on(drawing, frame)
+    def draw_sublayers(self, drawing, frame):
+        """Draw all sublayers onto the given Drawing for the given frame."""
+        assert isinstance(drawing, Drawing)
+        if self.sublayers != []:
+            drawing.comment("Drawing sublayers")
+            for sublayer, position in self.sublayers:
+                drawing.push()
+                drawing.translate(position)
+                sublayer.draw_on(drawing, frame)
+                drawing.pop()
+
 
 # ============================================================================
 # Layer template
@@ -140,6 +163,46 @@ class Background (Layer):
         elif self.color:
             drawing.fill(self.color)
             drawing.rectangle((0, 0), drawing.size)
+        drawing.pop()
+
+
+class Image (Layer):
+    """A rectangular image, scaled to the given size."""
+    def __init__(self, filename, (width, height)):
+        Layer.__init__(self)
+        self.size = (width, height)
+        # Remember original image filename
+        self.original_filename = filename
+        # Prescale image file
+        self.prescaled_filename = self._prescale(filename)
+
+    def __del__(self):
+        """Clean up temporary files."""
+        os.remove(self.prescaled_filename)
+
+    def _prescale(self, filename):
+        """Convert and rescale the image to the target size, to save time in
+        compositing."""
+        dir, base = os.path.split(filename)
+        if dir is not '':
+            scaled_filename = "%s/tmp_%s" % (dir, base)
+        else:
+            scaled_filename = "tmp_%s" % base
+        cmd = 'convert -size %sx%s' % self.size
+        cmd += ' %s' % filename
+        cmd += ' -resize %sx%s' % self.size
+        cmd += ' %s' % scaled_filename
+        print "Prescaling Image: '%s' to temporary file: '%s'" % \
+              (filename, scaled_filename)
+        print commands.getoutput(cmd)
+        return scaled_filename
+
+    def draw_on(self, drawing, frame):
+        assert isinstance(drawing, Drawing)
+        drawing.comment("Image Layer")
+        drawing.push()
+        self.draw_effects(drawing, frame)
+        drawing.image('over', (0, 0), self.size, self.prescaled_filename)
         drawing.pop()
 
 
@@ -318,22 +381,6 @@ class TextBox (Text):
 
     
 
-class Thumb (Layer):
-    """A thumbnail image, with size and positioning."""
-    def __init__(self, filename, (width, height)):
-        Layer.__init__(self)
-        self.filename = filename
-        self.filetype = get_file_type(filename)
-        self.size = (width, height)
-
-    def draw_on(self, drawing, frame):
-        assert isinstance(drawing, Drawing)
-        drawing.comment("Thumb Layer")
-        drawing.push()
-        self.draw_effects(drawing, frame)
-        drawing.image('over', (0, 0), self.size, self.filename)
-        drawing.pop()
-
 class ThumbGrid (Layer):
     """A rectangular array of thumbnail images or videos."""
     def __init__(self, files, (width, height), (columns, rows)=(0, 0),
@@ -343,24 +390,36 @@ class ThumbGrid (Layer):
         Use 0 to auto-layout columns or rows, or both (default)."""
         assert files != []
         Layer.__init__(self)
-        self.totalsize = (width, height)
-        self.files = files
+        self.size = (width, height)
+        print "Creating a thumbnail grid of %s media files" % len(files)
         # Auto-dimension (using desired rows/columns, if given)
         self.columns, self.rows = \
-            self._auto_dimension(len(files), columns, rows)
-        # Now we know how many columns/rows; how big are the thumbnails?
-        thumbwidth = (width - self.columns * 16) / self.columns
-        thumbheight = thumbwidth * aspect[1] / aspect[0]
-        self.thumbsize = (thumbwidth, thumbheight)
+            self._fit_items(len(files), columns, rows)
+        # Calculate thumbnail size, keeping aspect
+        w = (width - self.columns * 16) / self.columns
+        h = w * aspect[1] / aspect[0]
+        thumbsize = (w, h)
+
         # Calculate thumbnail positions
-        self.positions = []
+        positions = []
         for row in range(self.rows):
             for column in range(self.columns):
                 x = column * (width / self.columns)
                 y = row * (height / self.rows)
-                self.positions.append((x, y))
+                positions.append((x, y))
+        # Determine types of files and create a list of Images and VideoClips
+        for file, position in zip(files, positions):
+            filetype = get_file_type(file)
+            if filetype == 'video':
+                print "Adding video thumbnail of '%s' at (%s, %s)" % \
+                      (file, position[0], position[1])
+                self.add_sublayer(VideoClip(file, thumbsize), position)
+            elif filetype == 'image':
+                print "Adding image thumbnail of '%s' at (%s, %s)" % \
+                      (file, position[0], position[1])
+                self.add_sublayer(Image(file, thumbsize), position)
 
-    def _auto_dimension(self, num_items, columns, rows):
+    def _fit_items(self, num_items, columns, rows):
         # Both fixed, nothing to calculate
         if columns > 0 and rows > 0:
             # Make sure num_items will fit (columns, rows)
@@ -388,10 +447,7 @@ class ThumbGrid (Layer):
         drawing.comment("ThumbGrid Layer")
         drawing.push()
         self.draw_effects(drawing, frame)
-        pos = 0
-        for file in self.files:
-            drawing.image('Over', self.positions[pos], self.thumbsize, file)
-            pos += 1
+        self.draw_sublayers(drawing, frame)
         drawing.pop()
 
 
