@@ -198,7 +198,7 @@ class MainFrame(wx.Frame):
         key = evt.KeyCode()
         if (key >= 0 and key < 256):
             controlDown = evt.ControlDown()
-            if ((controlDown) and ("Q" == chr(key))):
+            if controlDown and "Q" == chr(key):
                 self.Close()
 
     #def OnFilePrefs(self, evt):
