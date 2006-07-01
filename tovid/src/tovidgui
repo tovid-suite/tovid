@@ -36,11 +36,10 @@ except ImportError:
     print "Sorry, 'tovidgui' will not work."
     sys.exit()
 
-from libtovid.gui.frames import MainFrame
+from libtovid.gui.frames import TovidFrame
 
 TovidGUI = wx.PySimpleApp()
-#frame = TovidFrame(None, wx.ID_ANY, "tovid GUI")
 #frame = MiniEditorFrame(None, wx.ID_ANY, "tovid GUI")
-frame = MainFrame(None, wx.ID_ANY, "tovid GUI")
+frame = TovidFrame(None, wx.ID_ANY, "tovid GUI")
 frame.Show(True)
 TovidGUI.MainLoop()
