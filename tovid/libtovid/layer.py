@@ -42,16 +42,18 @@ from libtovid.utils import get_file_type
 from libtovid.mvg import Drawing
 from libtovid.effect import Effect
 from libtovid.animation import Keyframe, tween
-from libtovid.VideoUtils import video_to_images
+from libtovid.media import MediaFile
 
 class Layer:
     """A visual element, or a composition of visual elements."""
     def __init__(self):
         self.effects = []
         self.sublayers = []
+
     def add_effect(self, effect):
         assert isinstance(effect, Effect)
         self.effects.append(effect)
+
     def add_sublayer(self, layer, position=(0, 0)):
         """Add the given Layer as a sublayer of this one, at the given position.
         Sublayers are drawn in the order they are added; each sublayer may have
@@ -59,17 +61,20 @@ class Layer:
         """
         assert isinstance(layer, Layer)
         self.sublayers.append((layer, position))
+
     def draw_on(self, drawing, frame):
         """Draw the layer onto the given Drawing. Override this function in
         derived layers."""
         assert isinstance(drawing, Drawing)
+
     def draw_effects(self, drawing, frame):
         """Draw all effects onto the given Drawing for the given frame."""
         assert isinstance(drawing, Drawing)
-        if self.effects is not []:
+        if self.effects != []:
             drawing.comment("Drawing effects")
-        for effect in self.effects:
-            effect.draw_on(drawing, frame)
+            for effect in self.effects:
+                effect.draw_on(drawing, frame)
+
     def draw_sublayers(self, drawing, frame):
         """Draw all sublayers onto the given Drawing for the given frame."""
         assert isinstance(drawing, Drawing)
@@ -211,22 +216,27 @@ class VideoClip (Layer):
     def __init__(self, filename, (width, height)):
         Layer.__init__(self)
         self.filename = filename
+        self.mediafile = MediaFile(filename)
         self.size = (width, height)
         # List of filenames of individual frames
         self.frames = []
+        self.rip_frames(1, 120)
 
     def rip_frames(self, start, end):
-        """Rip frames from the video file, from start to end (in seconds)."""
-        self.framedir = video_to_images(self.filename, start, end, self.size)
-        print "Frames in: %s" % self.framedir
-        # Get frame filenames
-        for frame_name in glob.glob('%s/*.jpg' % self.framedir):
-            self.frames.append(frame_name)
-        print "Frame files:"
-        print self.frames
+        """Rip frames from the video file, from start to end frames."""
+        print "VideoClip: Ripping frames %s to %s" % (start, end)
+        self.mediafile.rip_frames([start, end])
+        self.frames.extend(self.mediafile.framefiles)
 
     def draw_on(self, drawing, frame):
+        """Draw ripped video frames to the given drawing. For now, it's
+        necessary to call rip_frames() before calling this function.
+        Video is looped.
+        """
         assert isinstance(drawing, Drawing)
+        if len(self.frames) == 0:
+            print "VideoClip error: need to call rip_frames() before drawing."
+            sys.exit(1)
         drawing.comment("VideoClip Layer")
         drawing.push()
         self.draw_effects(drawing, frame)
@@ -381,6 +391,26 @@ class TextBox (Text):
 
     
 
+class Thumb (Layer):
+    """A thumbnail image or video."""
+    def __init__(self, filename, (width, height)):
+        Layer.__init__(self)
+        self.filename = filename
+        self.size = (width, height)
+        # Determine whether file is a video or image, and create the
+        # appropriate sublayer
+        filetype = get_file_type(filename)
+        if filetype == 'video':
+            self.add_sublayer(VideoClip(filename, self.size))
+        elif filetype == 'image':
+            self.add_sublayer(Image(filename, self.size))
+
+    def draw_on(self, drawing, frame):
+        assert isinstance(drawing, Drawing)
+        self.draw_effects(drawing, frame)
+        self.draw_sublayers(drawing, frame)
+
+
 class ThumbGrid (Layer):
     """A rectangular array of thumbnail images or videos."""
     def __init__(self, files, (width, height), (columns, rows)=(0, 0),
@@ -407,17 +437,9 @@ class ThumbGrid (Layer):
                 x = column * (width / self.columns)
                 y = row * (height / self.rows)
                 positions.append((x, y))
-        # Determine types of files and create a list of Images and VideoClips
+        # Add Thumb sublayers
         for file, position in zip(files, positions):
-            filetype = get_file_type(file)
-            if filetype == 'video':
-                print "Adding video thumbnail of '%s' at (%s, %s)" % \
-                      (file, position[0], position[1])
-                self.add_sublayer(VideoClip(file, thumbsize), position)
-            elif filetype == 'image':
-                print "Adding image thumbnail of '%s' at (%s, %s)" % \
-                      (file, position[0], position[1])
-                self.add_sublayer(Image(file, thumbsize), position)
+            self.add_sublayer(Thumb(file, thumbsize), position)
 
     def _fit_items(self, num_items, columns, rows):
         # Both fixed, nothing to calculate
@@ -433,6 +455,7 @@ class ThumbGrid (Layer):
                 columns = rows = 0
         # Auto-dimension to fit num_items
         if columns == 0 and rows == 0:
+            # TODO: Take aspect ratio into consideration to find an optimal fit
             root = int(math.floor(math.sqrt(num_items)))
             return ((1 + num_items / root), root)
         # Rows fixed; use enough columns to fit num_items
