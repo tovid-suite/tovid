@@ -85,7 +85,7 @@ class TovidFrame(wx.Frame):
         wx.EVT_MENU(self, ID_MENU_HELP_ABOUT, self.OnAbout)
         wx.EVT_MENU(self, ID_MENU_LANG_EN, self.OnLang)
         wx.EVT_MENU(self, ID_MENU_LANG_DE, self.OnLang)
-        self.Bind(wx.EVT_KEY_UP, self.OnKeyDown)
+        self.Bind(wx.EVT_KEY_UP, self.OnKeyUp)
 
         # Build menubar
         self.menubar.Append(self.menuFile, "&File")
@@ -192,8 +192,8 @@ class TovidFrame(wx.Frame):
         elif evt.GetId() == ID_MENU_LANG_DE:
             self.curConfig.UseLanguage('de')
 
-    def OnKeyDown(self, evt):
-        """Key down event handler.  Primarily used to close the app if certain keys are pressed.
+    def OnKeyUp(self, evt):
+        """Key up event handler.  Primarily used to close the app if certain keys are pressed.
         """
         key = evt.KeyCode()
         if (key >= 0 and key < 256):
@@ -319,37 +319,29 @@ class TodiscFrame(wx.Frame):
         # begin wxGlade: MyFrame.__init__
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
-        self.notebook_1 = wx.Notebook(self, wx.ID_ANY, style=0)
-        self.nbDebug = wx.Panel(self.notebook_1, wx.ID_ANY)
-        self.nbThumbnails = wx.Panel(self.notebook_1, wx.ID_ANY)
-        self.nbMenus = wx.Panel(self.notebook_1, wx.ID_ANY)
-        self.nbPlaylist = wx.Panel(self.notebook_1, wx.ID_ANY)
-        self.szAudioInfoBox_staticbox = wx.StaticBox(self.nbPlaylist, wx.ID_ANY, _("Audio"))
-        self.szVideoInfoBox_staticbox = wx.StaticBox(self.nbPlaylist, wx.ID_ANY, _("Video Information"))
-        self.szMistOpacity_staticbox = wx.StaticBox(self.nbMenus, wx.ID_ANY, _("Text Mist Opacity"))
-        self.szMainMenuBox_staticbox = wx.StaticBox(self.nbMenus, wx.ID_ANY, _("Main Menu"))
-        self.szBackgroundBox_staticbox = wx.StaticBox(self.nbMenus, wx.ID_ANY, _("Background"))
-        self.szAudioFadeBox_staticbox = wx.StaticBox(self.nbMenus, wx.ID_ANY, _("Audio Fade"))
-        self.szMenuAnim_staticbox = wx.StaticBox(self.nbMenus, wx.ID_ANY, _("Menu Animations"))
-        self.szSubmenuBox_staticbox = wx.StaticBox(self.nbMenus, wx.ID_ANY, _("Submenus"))
-        self.szBlur_staticbox = wx.StaticBox(self.nbThumbnails, wx.ID_ANY, _("Blur"))
-        self.szOpacity_staticbox = wx.StaticBox(self.nbThumbnails, wx.ID_ANY, _("Opacity"))
-        self.szDebugBox_staticbox = wx.StaticBox(self.nbDebug, wx.ID_ANY, _("Debug Flags"))
-        self.szTitleInfoBox_staticbox = wx.StaticBox(self.nbPlaylist, wx.ID_ANY, _("Title"))
         
         # Menu Bar
         self.mbMain = wx.MenuBar()
         self.SetMenuBar(self.mbMain)
         wxglade_tmp_menu = wx.Menu()
-        wxglade_tmp_menu.Append(0, _("E&xit"), "mnExit", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(ID_MENU_FILE_EXIT, _("E&xit"), "mnExit", wx.ITEM_NORMAL)
         self.mbMain.Append(wxglade_tmp_menu, _("&File"))
         wxglade_tmp_menu = wx.Menu()
-        wxglade_tmp_menu.Append(1, _("&Advanced"), "mnAdvanced", wx.ITEM_CHECK)
+        wxglade_tmp_menu.Append(ID_MENU_VIEW_ADVANCED, _("&Advanced"), "mnAdvanced", wx.ITEM_CHECK)
         self.mbMain.Append(wxglade_tmp_menu, _("&View"))
         wxglade_tmp_menu = wx.Menu()
-        wxglade_tmp_menu.Append(2, _("&About"), "mnAbout", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(ID_MENU_HELP_ABOUT, _("&About"), "mnAbout", wx.ITEM_NORMAL)
         self.mbMain.Append(wxglade_tmp_menu, _("&Help"))
         # Menu Bar end
+        
+        self.notebook_1 = wx.Notebook(self, wx.ID_ANY, style=0)
+        #
+        # Playlist tab
+        #
+        self.nbPlaylist = wx.Panel(self.notebook_1, wx.ID_ANY)
+        self.szVideoInfoBox_staticbox = wx.StaticBox(self.nbPlaylist, wx.ID_ANY, _("Video Information"))
+        self.szTitleInfoBox_staticbox = wx.StaticBox(self.nbPlaylist, wx.ID_ANY, _("Title"))
+        self.szAudioInfoBox_staticbox = wx.StaticBox(self.nbPlaylist, wx.ID_ANY, _("Audio"))
         self.discFormat = wx.RadioBox(self.nbPlaylist, wx.ID_ANY, _("Disc Format"), choices=[_("DVD"), _("SVCD")], majorDimension=1, style=wx.RA_SPECIFY_ROWS)
         self.videoFormat = wx.RadioBox(self.nbPlaylist, wx.ID_ANY, _("Video Format"), choices=[_("NTSC"), _("PAL")], majorDimension=1, style=wx.RA_SPECIFY_ROWS)
         self.submenus = wx.CheckBox(self.nbPlaylist, wx.ID_ANY, _("Create submenus?"))
@@ -370,6 +362,16 @@ class TodiscFrame(wx.Frame):
         self.lblOut = wx.StaticText(self.nbPlaylist, wx.ID_ANY, _("Output"))
         self.out = wx.TextCtrl(self.nbPlaylist, wx.ID_ANY, "")
         self.btnOut = wx.Button(self.nbPlaylist, wx.ID_ANY, _("Choose"))
+        #
+        # Menus tab
+        #
+        self.nbMenus = wx.Panel(self.notebook_1, wx.ID_ANY)
+        self.szMistOpacity_staticbox = wx.StaticBox(self.nbMenus, wx.ID_ANY, _("Text Mist Opacity"))
+        self.szMainMenuBox_staticbox = wx.StaticBox(self.nbMenus, wx.ID_ANY, _("Main Menu"))
+        self.szBackgroundBox_staticbox = wx.StaticBox(self.nbMenus, wx.ID_ANY, _("Background"))
+        self.szAudioFadeBox_staticbox = wx.StaticBox(self.nbMenus, wx.ID_ANY, _("Audio Fade"))
+        self.szMenuAnim_staticbox = wx.StaticBox(self.nbMenus, wx.ID_ANY, _("Menu Animations"))
+        self.szSubmenuBox_staticbox = wx.StaticBox(self.nbMenus, wx.ID_ANY, _("Submenus"))
         self.lblMenuTitle = wx.StaticText(self.nbMenus, wx.ID_ANY, _("Title:"))
         self.menu_title = wx.TextCtrl(self.nbMenus, wx.ID_ANY, "")
         self.lblMenuFont = wx.StaticText(self.nbMenus, wx.ID_ANY, _("Title Font:"))
@@ -411,6 +413,12 @@ class TodiscFrame(wx.Frame):
         self.btnSubmenuTitleColor = wx.Button(self.nbMenus, wx.ID_ANY, _("Default"))
         self.lblSubmenuStrokeColor = wx.StaticText(self.nbMenus, wx.ID_ANY, _("Stroke Color:"))
         self.btnSubmenuStrokeColor = wx.Button(self.nbMenus, wx.ID_ANY, _("Default"))
+        #
+        # Thumbnails tab
+        #
+        self.nbThumbnails = wx.Panel(self.notebook_1, wx.ID_ANY)
+        self.szBlur_staticbox = wx.StaticBox(self.nbThumbnails, wx.ID_ANY, _("Blur"))
+        self.szOpacity_staticbox = wx.StaticBox(self.nbThumbnails, wx.ID_ANY, _("Opacity"))
         self.thumb_shape = wx.RadioBox(self.nbThumbnails, wx.ID_ANY, _("Feather Shape"), choices=[_("None"), _("Normal"), _("Oval"), _("Cloud"), _("Egg")], majorDimension=1, style=wx.RA_SPECIFY_ROWS)
         self.lblThumbTitleFont = wx.StaticText(self.nbThumbnails, wx.ID_ANY, _("Thumb Font:"))
         self.thumb_font = wx.Button(self.nbThumbnails, wx.ID_ANY, _("Default"))
@@ -424,6 +432,11 @@ class TodiscFrame(wx.Frame):
         self.opacity = wx.Slider(self.nbThumbnails, wx.ID_ANY, 100, 0, 100, style=wx.SL_HORIZONTAL|wx.SL_AUTOTICKS|wx.SL_LABELS)
         self.lblSeek = wx.StaticText(self.nbThumbnails, wx.ID_ANY, _("Seconds to seek before generating thumbs:"))
         self.seek = wx.SpinCtrl(self.nbThumbnails, wx.ID_ANY, "", min=0, max=100, style=wx.TE_RIGHT)
+        #
+        # Debug tab
+        #
+        self.nbDebug = wx.Panel(self.notebook_1, wx.ID_ANY)
+        self.szDebugBox_staticbox = wx.StaticBox(self.nbDebug, wx.ID_ANY, _("Debug Flags"))
         self.debug = wx.CheckBox(self.nbDebug, wx.ID_ANY, _("Turn on debug logging?"))
         self.keepfiles = wx.CheckBox(self.nbDebug, wx.ID_ANY, _("Keep files when finished?"))
         
@@ -641,6 +654,7 @@ class TodiscFrame(wx.Frame):
         szDebug.Add(szDebugBox, 0, wx.EXPAND, 0)
         self.nbDebug.SetAutoLayout(True)
         self.nbDebug.SetSizer(szDebug)
+        self.nbDebug.Hide()
         szDebug.Fit(self.nbDebug)
         szDebug.SetSizeHints(self.nbDebug)
         szDebug.AddGrowableRow(1)
@@ -668,24 +682,55 @@ class TodiscFrame(wx.Frame):
         # end wxGlade
 
     def __do_events(self):
-        #
-        # setup navigation buttons
-        #
-        self.Bind(wx.EVT_KEY_UP, self.OnKeyDown)
+        """ Setup event handling for widgets
+        """
+        # global events
+        self.Bind(wx.EVT_KEY_UP, self.app_OnKeyUp)
+        # menu events
+        wx.EVT_MENU(self, ID_MENU_FILE_EXIT, self.Close)
+        wx.EVT_MENU(self, ID_MENU_VIEW_ADVANCED, self.menu_SetAdvancedView)
+        # button events
         wx.EVT_BUTTON(self, self.btnPrevious.GetId(), self.btnPrevious_OnClick)
         wx.EVT_BUTTON(self, self.btnNext.GetId(), self.btnNext_OnClick)
         wx.EVT_BUTTON(self, self.btnFinish.GetId(), self.btnFinish_OnClick)
 
     def btnPrevious_OnClick(self, evt):
-        return
+        """ Event handler for clicking of '< Previous' button
+        """
+        currPage = self.notebook_1.GetSelection()
+        if (currPage > 0):
+            self.notebook_1.SetSelection(currPage - 1)
 
     def btnNext_OnClick(self, evt):
-        return
+        """ Event handler for clicking on the 'Next >' button
+        """
+        currPage = self.notebook_1.GetSelection()
+        if (currPage < self.notebook_1.GetPageCount()):
+            self.notebook_1.SetSelection(currPage + 1)
 
     def btnFinish_OnClick(self, evt):
+        """ Event handler for clicking on the 'Finish' button
+        """
         return
 
-    def OnKeyDown(self, evt):
+    def menu_OnAbout(self, evt):
+        """Display a dialog showing information about todiscgui.
+        """
+        strAbout = "You are using the todisc GUI, version 0.27,\n" \
+          "part of the tovid video disc authoring suite.\n\n" \
+          "For more information and documentation, please\n" \
+          "visit the tovid web site:\n\n" \
+          "http://tovid.org/"
+        dlgAbout = wx.MessageDialog(self, strAbout, "About todisc GUI", wx.OK)
+        dlgAbout.ShowModal()
+
+    def menu_SetAdvancedView(self, evt):
+        if (evt.IsChecked()):
+            self.notebook_1.GetPage(self.notebook_1.GetPageCount() - 1).Show()
+        else:
+            self.notebook_1.GetPage(self.notebook_1.GetPageCount() - 1).Hide()
+
+    def app_OnKeyUp(self, evt):
         """Key down event handler.  Primarily used to close the app if certain keys are pressed.
         """
         key = evt.KeyCode()
