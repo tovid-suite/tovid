@@ -48,7 +48,8 @@ py_bin = \
 	src/pymakemenu \
 	src/pymakexml \
 	src/tovidgui \
-	src/tovid-stats
+	src/tovid-stats \
+	src/todiscgui
 
 # Specify the scripts to make and install.
 bin_SCRIPTS = \
