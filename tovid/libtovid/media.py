@@ -34,15 +34,123 @@ class MediaFile:
         self.filename = abspath(filename)
         self.audio = None
         self.video = None
+        self.framefiles = []
+        # TODO: Replace hard-coded temp dir
+        self.use_tempdir('/tmp')
+
+    def use_tempdir(self, directory):
+        """Use the given directory for storing temporary files (such as ripped
+        video frames, video or audio streams, etc.) Directory is created if it
+        doesn't already exist."""
+        self.tempdir = os.path.abspath(directory)
+        if not os.path.exists(self.tempdir):
+            os.mkdir(self.tempdir)
 
     def load(self, filename):
-        """Load MediaFile attributes from given file."""
+        """Load the given file and identify it."""
         self.filename = abspath(filename)
         # Make sure the file exists
         if os.path.exists(self.filename):
             self.audio, self.video = mplayer_identify(self.filename)
         else:
             log.error("Couldn't find file: %s" % filename)
+
+    def add_frames(self, framefiles):
+        """Add the given list of frame files to the current media file."""
+        # For now, just add to end (support more controlled insertions later)
+        self.framefiles.extend(framefiles)
+
+    def rip_frames(self, frames='all', scale=(0, 0)):
+        """Rip video frames from the current file and save them as separate
+        image files. Optionally specify which frames to rip, like so:
+
+        All frames (default):   frames='all'
+        Frame 15 only:          frames=15
+        Frames 30 through 90:   frames=[30, 90]
+
+        If scale is nonzero, resize frames before saving as images.
+        """
+        # TODO: Fully support arbitrary frame ranges, like [1, 30, 60, 90] etc.
+        if frames == 'all':
+            self._rip_frames(1, -1, scale)
+        if isinstance(frames, int):
+            self._rip_frames(frames, frames, scale)
+        elif isinstance(frames, list):
+            # If frame range list length isn't a multiple of 2, raise error
+            if len(frames) % 2 > 0:
+                raise ValueError("Frame range may only have two values.")
+            # Step through frame list and rip each interval
+            i = 0
+            while i < len(frames):
+                self._rip_frames(frames[i], frames[i+1], scale)
+                i += 2
+
+    def _rip_frames(self, start, end=-1, scale=(0, 0)):
+        """Convert a video file to a sequence of images, starting and ending at
+        the given frames. If end is negative, convert from start onwards. If
+        scale is nonzero, resize. Add the ripped image filenames to framefiles.
+    
+        Don't call this function; call rip_frames() instead.
+        """
+        basename = os.path.basename(self.filename)
+        outdir = '%s/%s_frames' % (self.tempdir, basename)
+        try:
+            os.mkdir(outdir)
+        except:
+            print "Temp directory: %s already exists. Overwriting." % outdir
+
+        # Use transcode to rip frames
+        cmd = 'transcode -i "%s" ' % self.filename
+        # Encode from start to end frames
+        cmd += ' -c %s-%s ' % (start, end)
+        cmd += ' -y jpg,null '
+        # If scale is nonzero, resize
+        if scale != (0, 0):
+            cmd += ' -Z %sx%s ' % scale
+        cmd += ' -o %s/frame_' % outdir
+        print "Creating image sequence from %s" % self.filename
+        print cmd
+        print commands.getoutput(cmd)
+        # Remember ripped image filenames
+        frame = start
+        end_reached = False
+        while not end_reached:
+            framefile = '%s/frame_%06d.jpg' % (outdir, frame)
+            if os.path.exists(framefile):
+                self.framefiles.append(framefile)
+            else:
+                end_reached = True #, apparently
+            frame += 1
+    
+    def encode(self, imagedir, outfile, format, tvsys):
+        """Convert an image sequence in imagedir to an .m2v video compliant
+        with the given format and tvsys.
+    
+        Currently supports only JPEG images.
+        """
+        # Use absolute path name
+        imagedir = os.path.abspath(imagedir)
+        print "Creating video stream from image sequence in %s" % imagedir
+    
+        # Use jpeg2yuv to stream images
+        cmd = 'jpeg2yuv -I p '
+        if tvsys == 'pal':
+            cmd += ' -f 25.00 '
+        else:
+            cmd += ' -f 29.970 '
+        cmd += ' -j "%s/%%08d.jpg"' % imagedir
+        # Pipe image stream into mpeg2enc to encode
+        cmd += ' | mpeg2enc -v 0 -q 3 -o "%s"' % outfile
+        if format == 'vcd':
+            cmd += ' --format 1 '
+        elif format == 'svcd':
+            cmd += ' --format 4 '
+        else:
+            cmd += ' --format 8 '
+    
+        print cmd
+        for line in os.popen(cmd, 'r').readlines():
+            print line
 
     def display(self):
         print "=============================="
