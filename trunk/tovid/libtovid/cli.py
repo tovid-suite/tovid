@@ -162,8 +162,9 @@ def verify_app(appname):
         - False if not """
     env_path = os.getenv("PATH")
     found = False
-    for i in env_path.split(":"):
-        if (os.path.exists("%s/%s" % (i, appname))):
+    for dir in env_path.split(":"):
+        if (os.path.exists("%s/%s" % (dir, appname))):
+            log.info("Found %s/%s" % (dir, appname))
             found =  True
             break
         
