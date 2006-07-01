@@ -9,7 +9,7 @@ from libtovid.animation import Keyframe
 from libtovid.mvg import Drawing
 from libtovid import layer
 from libtovid import effect
-from libtovid.VideoUtils import images_to_video
+from libtovid.media import MediaFile
 
 class Flipbook:
     """A collection of Drawings that together comprise an animation.
@@ -68,7 +68,8 @@ class Flipbook:
             # jpeg2yuv likes frames to start at 0
             drawing.save_image('%s/%08d.jpg' % (tmp, frame - 1))
             frame += 1
-        images_to_video(tmp, m2v_file, 'dvd', 'pal')
+        video = MediaFile(m2v_file)
+        video.encode(tmp, m2v_file, 'dvd', 'pal')
         print "Output file is: %s" % m2v_file
 
 
@@ -120,7 +121,7 @@ def draw_text_demo(flipbook):
 # Demo
 if __name__ == '__main__':
     
-    flip = Flipbook(90)
+    flip = Flipbook(10)
 
     draw_text_demo(flip)
 
