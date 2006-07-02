@@ -47,9 +47,11 @@ Usage: postproc [OPTIONS] {input file} {output file}
 Where OPTIONS may be any of the following:
 
   -audiodelay NUM    Delay audio by NUM milliseconds
+  -normalize         Normalize the audio
+  -gain NUM[dB]      Apply a gain of NUM (add dB for decibel gain)
   -shrink NUM        Shrink video by factor NUM (1.0 - 2.0)
-  -parallel            Run all processes in parallel (can save time)
-  -debug               Keep a log of actions and output
+  -parallel          Run all processes in parallel (can save time)
+  -debug             Keep a log of actions and output
 
 See the postproc manual page ('man postproc') for additional documentation.
 
@@ -61,6 +63,8 @@ SEPARATOR="========================================================="
 TMP_FILE="postproc.fileinfo.$PPID"
 AUDIO_DELAY=""
 SHRINK_FACTOR=""
+DO_NORM=false
+AUDIO_GAIN=""
 DO_SHRINK=false
 MUX_OPTS=""
 DEBUG=false
@@ -87,7 +91,8 @@ usage_error ()
 cleanup ()
 {
     echo "Cleaning up..."
-    rm -fv video_shrink video_dump audio_dump
+    rm -fv video_shrink video_dump audio_dump normed_audio
+
 }
 
 
@@ -117,6 +122,14 @@ while test ${1:0:1} = "-"; do
             mkfifo video_shrink
             BACKGR="&"
             ;;
+	"-normalize" )
+	    DO_NORM=:
+	    ;;
+	"-gain" )
+	    shift
+	    AUDIO_GAIN="--gain=$1"
+	    DO_NORM=:
+	    ;;
         "-debug" )
             DEBUG=:
             ;;
@@ -137,22 +150,29 @@ OUT_FILE="$1"
 
 echo $SEPARATOR
 
+if $DO_NORM && $PARALLEL; then
+   echo "Cannot normalize audio in parallel mode! Turning off -parallel."
+   PARALLEL=false
+   cleanup
+fi
+
 # Figure out what format it is. 44.1khz audio can be VCD or SVCD,
 # 48khz audio is DVD.
-mplayer -vo null -ao null -frames 0 -identify "$IN_FILE" 2>/dev/null | \
-  grep "^ID_" > $TMP_FILE
-AUD_SAMPRATE=$( grep 'ID_AUDIO_RATE' $TMP_FILE | sed -e 's/ID_AUDIO_RATE=//' )
-VID_WIDTH=$( grep 'ID_VIDEO_WIDTH' $TMP_FILE | sed -e 's/ID_VIDEO_WIDTH=//' )
+echo "Gathering file information. This may take a while."
+if eval $(idvid -terse "$IN_FILE"); then :; else
+    echo "Could not identify source video: $IN_FILE"
+    exit 1
+fi
 
-if test $AUD_SAMPRATE -eq "48000"; then
+if test $ID_AUDIO_RATE -eq "48000"; then
     MUX_OPTS="-V -f 8"
     VIDEO_FORMAT="DVD"
-elif test $AUD_SAMPRATE -eq "44100"; then
+elif test $ID_AUD_RATE -eq "44100"; then
     # VCD is 352 wide, SVCD is 480 wide
-    if test $VID_WIDTH -eq "352"; then
+    if test $ID_VIDEO_WIDTH -eq "352"; then
         MUX_OPTS="-f 1"
         VIDEO_FORMAT="VCD"
-    elif test $VID_WIDTH -eq "480"; then
+    elif test $ID_VIDEO_WIDTH -eq "480"; then
         MUX_OPTS="-V -f 4"
         VIDEO_FORMAT="SVCD"
     fi
@@ -161,7 +181,11 @@ fi
 echo "Dumping audio and video streams with the following commands:"
 
 # Dump audio and video
-AUDIO_DUMP="mplayer \"$IN_FILE\" -quiet -dumpaudio -dumpfile audio_dump"
+if $DO_NORM; then
+    AUDIO_DUMP="mplayer -quiet -vc null -vo null -ao pcm:waveheader:file=audio_dump \"$IN_FILE\""
+else
+    AUDIO_DUMP="mplayer \"$IN_FILE\" -quiet -dumpaudio -dumpfile audio_dump"
+fi
 VIDEO_DUMP="mplayer \"$IN_FILE\" -quiet -dumpvideo -dumpfile video_dump"
 VID_STREAM="video_dump"
 
@@ -169,11 +193,33 @@ echo "$AUDIO_DUMP"
 echo "$VIDEO_DUMP"
 # Should always be safe to put audio decode in the background
 eval $AUDIO_DUMP > $TMP_FILE 2>&1 &
-eval $VIDEO_DUMP > $TMP_FILE 2>&1 $BACKGR
+eval $VIDEO_DUMP >> $TMP_FILE 2>&1 $BACKGR
 
 # Let the audio process finish if not in parallel mode (should always finish 
 # before video, so this is just precautionary)
 $PARALLEL || wait
+
+# Normalize/gain
+if $DO_NORM; then
+   AUDIO_NORM="normalize $AUDIO_GAIN audio_dump"
+   
+   echo "Normalizing audio/applying gain with the following command:"
+   echo "$AUDIO_NORM"
+   eval $AUDIO_NORM
+
+   # Re-encode audio
+   mv -v audio_dump normed_audio
+   AUDIO_BITRATE=`expr $ID_AUDIO_BITRATE / 1000`
+   AUDIO_ENC="ffmpeg -i normed_audio -vn -ab $AUDIO_BITRATE -ar $ID_AUDIO_RATE"
+   AUDIO_ENC="$AUDIO_ENC -ac $ID_AUDIO_NCH -acodec $ID_AUDIO_CODEC"
+   AUDIO_ENC="$AUDIO_ENC -y audio_dump.$ID_AUDIO_CODEC"
+
+   echo "Encoding the normalized/gained audio stream with the following command:"
+   echo "$AUDIO_ENC"
+   eval $AUDIO_ENC
+
+   mv -v audio_dump.$ID_AUDIO_CODEC audio_dump
+fi
 
 # Shrink, if requested
 if $DO_SHRINK; then
@@ -209,7 +255,7 @@ echo $SEPARATOR
 echo "Multiplexing audio and video streams with the following command:"
 MPLEX_CMD="mplex $VID_STREAM audio_dump -o \"$OUT_FILE\" $MUX_OPTS $AUDIO_DELAY"
 echo "$MPLEX_CMD"
-eval $MPLEX_CMD > $TMP_FILE 2>&1
+eval $MPLEX_CMD >> $TMP_FILE 2>&1
 
 # For parallel, compare infile and outfile sizes
 if $PARALLEL; then
