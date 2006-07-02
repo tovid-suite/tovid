@@ -571,8 +571,9 @@ tcrequant_msg="$tcprobe_msg"
 
 # ------------------------------------------------------------------------------
 # Plugin tools
-PLUGIN_DEPS="sox"
+PLUGIN_DEPS="sox normalize"
 sox_msg="swiss army knife for sound (sox.sf.net)"
+normalize_msg="wave gain and normalization (normalize.nongnu.org)"
 
 # Construct an array of each dependency group's members. Conveniently holds
 # ALL of tovid's run-time dependencies (echo ${DEP_GROUP_MEMBERS[@]}).
@@ -580,7 +581,7 @@ DEP_GROUP_MEMBERS=([0]="$CORE_DEPS" [1]="$MAGICK_DEPS" [2]="$DVD_DEPS" [3]="$VCD
 
 # Comments describing each group of dependencies. Note the leading '#' isn't
 # necessary as this file isn't sourced, but it helps with readability.
-DEP_GROUP_COMMENTS=([0]="# core" [1]="# magick (needed to make menus and slideshows)" [2]="# dvd (needed to make DVD menus and burn DVDs)" [3]="# vcd (needed to burn (S)VCDs)" [4]="# transcode (needed for animated menus)" [5]="# plugins (needed for other specific tests)")
+DEP_GROUP_COMMENTS=([0]="# core" [1]="# magick (needed to make menus and slideshows)" [2]="# dvd (needed to make DVD menus and burn DVDs)" [3]="# vcd (needed to burn (S)VCDs)" [4]="# transcode (needed for animated menus)" [5]="# plugins (needed for other specific tasks)")
 
 # Check for deps and write the list file.
 echo "# tovid version: $TOVID_VERSION" >> "${DEP_LIST_FILE}"
