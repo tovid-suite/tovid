@@ -1470,11 +1470,6 @@ else
     # When normalizing, we need a wave file.
     if $DO_NORM; then
         rm -f "$AUDIO_WAV"
-        # Use a FIFO in parallel mode
-        if $PARALLEL; then 
-             mkfifo "$AUDIO_WAV"
-        fi
-
         AUDIO_IN_FILE=$AUDIO_WAV
 
         AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null -ao pcm:waveheader:file=$AUDIO_WAV \"$IN_FILE\""
@@ -1486,11 +1481,8 @@ else
 
         cmd_exec "$AUDIO_CMD"
 
-        # For parallel encoding, nothing more to do right now
-        if $FAKE || $PARALLEL; then
+        if $FAKE; then
             :
-        # If not in parallel mode, show .wav-ripping progress,
-        # and wait for successful completion.
         else
             file_output_progress "$AUDIO_WAV" "Creating wav of audio stream"
             wait
@@ -1501,8 +1493,8 @@ else
             fi
         fi
 
-    # Normalize the wave file.
-    normalize $AUDIO_GAIN $AUDIO_WAV
+        # Normalize the wave file.
+        normalize $AUDIO_GAIN $AUDIO_WAV
     fi
 
     AUDIO_ENC="$PRIORITY ffmpeg"
