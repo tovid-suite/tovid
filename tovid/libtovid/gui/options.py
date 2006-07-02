@@ -344,7 +344,7 @@ class VideoOptions:
         strCommand += "%s " % self.addoptions
 
         strCommand += "-in \"%s\" " % self.inFile
-        strCommand += "-out \"%s/%s\" " % (curConfig.strOutputDirectory, self.outPrefix)
+        strCommand += "-out \"%s/%s\"" % (curConfig.strOutputDirectory, self.outPrefix)
         return strCommand
 
     def SetDiscFormat(self, format):
