@@ -73,33 +73,32 @@ class Flipbook:
         print "Output file is: %s" % m2v_file
 
 
-def draw_text_demo(flipbook):
+def draw_text_demo(flipbook, last_frame):
     """Draw a demonstration of Text layers with various effects."""
+    assert isinstance(flipbook, Flipbook)
     # Background image
     bgd = layer.Background('black')
     flipbook.add(bgd)
 
     text1 = layer.Text("Spectrum effect demo")
-    text1.add_effect(effect.Spectrum(1, 90))
+    text1.add_effect(effect.Spectrum(1, last_frame))
     flipbook.add(text1, (20, 30))
-    flipbook.add(text1, (25, 35))
-    flipbook.add(text1, (30, 40))
 
     text2 = layer.Text("Fade effect demo")
-    text2.add_effect(effect.Fade(30, 90, 20))
+    text2.add_effect(effect.Fade(1, last_frame, last_frame / 4))
     flipbook.add(text2, (20, 60))
 
     text3 = layer.Text("Movement effect demo")
-    text3.add_effect(effect.Movement(20, 70, (0, 0), (20, 5)))
+    text3.add_effect(effect.Movement(1, last_frame, (0, 0), (300, 50)))
     flipbook.add(text3, (20, 90))
 
     # Keyframed opacity demos, using both linear and cosine interpolation
     pulse = [Keyframe(1, 0.2),
-              Keyframe(20, 1.0),
-              Keyframe(40, 0.2),
-              Keyframe(60, 1.0),
-              Keyframe(80, 0.5),
-              Keyframe(90, 1.0)]
+              Keyframe(last_frame * 2/10, 1.0),
+              Keyframe(last_frame * 4/10, 0.2),
+              Keyframe(last_frame * 6/10, 1.0),
+              Keyframe(last_frame * 8/10, 0.5),
+              Keyframe(last_frame, 1.0)]
     # Text Layers
     text_linear = layer.Text("Keyframed opacity (linear)", color='lightgreen')
     text_cosine = layer.Text("Keyframed opacity (cosine)", color='lightgreen')
@@ -113,17 +112,20 @@ def draw_text_demo(flipbook):
     text_linear.add_effect(fade_linear)
     text_cosine.add_effect(fade_cosine)
     # Add layers to the flipbook
-    flipbook.add(text_linear, (20, 120))
-    flipbook.add(graph_linear, (20, 150))
-    flipbook.add(text_cosine, (320, 120))
-    flipbook.add(graph_cosine, (320, 150))
+    flipbook.add(text_linear, (20, 150))
+    flipbook.add(graph_linear, (20, 180))
+    flipbook.add(text_cosine, (340, 150))
+    flipbook.add(graph_cosine, (340, 180))
 
 # Demo
 if __name__ == '__main__':
-    
-    flip = Flipbook(10)
+    if len(sys.argv) > 1:
+        frames = int(sys.argv[1])
+    else:
+        frames = 90
+    flip = Flipbook(frames)
 
-    draw_text_demo(flip)
+    draw_text_demo(flip, frames)
 
     # Video clip
     #clip = layer.VideoClip(video, (320, 240))
