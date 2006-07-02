@@ -132,3 +132,14 @@ font size constraints, titles may have a maximum of 12 characters.
 : -seek NUM
      Seek to NUM seconds before generating thumbnails (default: 1.0 seconds)
 
+
+==See also==
+
+**idvid**(1), **makedvd**(1), **makemenu**(1), **makeslides**(1), 
+**makexml**(1), **postproc**(1), **tovid**(1), **todisc**(1)
+
+
+==Contact==
+
+For further assistance, contact information, forum and IRC links,
+please refer to the [tovid homepage http://tovid.org/].
