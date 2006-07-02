@@ -506,8 +506,9 @@ class SafeArea (Layer):
 
 class InterpolationGraph (Layer):
     # TODO: Support graphing of tuple data
-    """A graph of an interpolation curve."""
-    def __init__(self, keyframes, size=(300, 100), method='linear'):
+    """A graph of an interpolation curve, defined by a list of Keyframes and
+    an interpolation method."""
+    def __init__(self, keyframes, size=(240, 80), method='linear'):
         """Create an interpolation graph of the given keyframes, at the given
         size, using the given interpolation method."""
         self.keyframes = keyframes
@@ -517,41 +518,47 @@ class InterpolationGraph (Layer):
         self.data = tween(keyframes, method)
 
     def draw_on(self, drawing, frame):
+        """Draw the interpolation graph, including frame/value axes,
+        keyframes, and the interpolation curve."""
         assert isinstance(drawing, Drawing)
-        # TODO: Separate scaling hackery into a more generalized
-        # transformation system
+        # Calculate maximum extents of the graph
+        width, height = self.size
+        x_scale = float(width) / len(self.data)
+        y_scale = float(height) / max(self.data)
 
         drawing.comment("InterpolationGraph Layer")
+
         # Save context
         drawing.push()
         drawing.fill(None)
 
         # Draw axes
-        width, height = self.size
+        drawing.comment("Axes of graph")
         drawing.push()
         drawing.stroke('grey')
         drawing.stroke_width(3)
         drawing.polyline([(0, 0), (0, height), (width, height)])
         drawing.pop()
 
-        # Calculate horizontal and vertical scaling to fit the graph
-        # within the desired area.
-        x_scale = float(width) / len(self.data)
-        y_scale = float(height) / max(self.data)
-
         # Create a list of (x, y) points to be graphed
         curve = []
         x = 1
         while x <= len(self.data):
+            # y increases downwards; subtract from height to give a standard
+            # Cartesian-oriented graph (so y increases upwards)
             point = (int(x * x_scale), int(height - self.data[x-1] * y_scale))
             curve.append(point)
             x += 1
+        drawing.comment("Interpolation curve")
+        drawing.push()
         # Draw the curve
         drawing.stroke('blue')
         drawing.stroke_width(2)
         drawing.polyline(curve)
+        drawing.pop()
 
         # Draw Keyframes as dotted vertical lines
+        drawing.comment("Keyframes and labels")
         drawing.push()
         drawing.stroke_dasharray([4, 4])
         # Vertical dotted lines
@@ -561,21 +568,24 @@ class InterpolationGraph (Layer):
         for key in self.keyframes:
             x = int(key.frame * x_scale)
             drawing.line((x, 0), (x, height))
-
         # Draw Keyframe labels
         drawing.stroke(None)
         drawing.fill('white')
         for key in self.keyframes:
-            x = key.frame * x_scale
-            drawing.text((x, height - key.data * y_scale - 3), \
-                         "(%s,%s)" % (key.frame, key.data))
+            x = int(key.frame * x_scale)
+            y = int(height - key.data * y_scale - 3)
+            drawing.text((x, y), "(%s,%s)" % (key.frame, key.data))
         drawing.pop()
 
         # Draw a yellow dot for current frame
+        drawing.comment("Current frame marker")
+        drawing.push()
         drawing.stroke(None)
         drawing.fill('yellow')
         pos = (frame * x_scale, height - self.data[frame-1] * y_scale)
         drawing.circle_rad(pos, 2)
+        drawing.pop()
+
         # Restore context
         drawing.pop()
 
