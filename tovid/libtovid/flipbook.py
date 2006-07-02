@@ -1,6 +1,59 @@
 #! /usr/bin/env python
 # flipbook.py
 
+"""This module provides the Flipbook class.
+
+Run this module standalone for a demonstration:
+
+    $ python libtovid/flipbook.py
+
+Much like a paper flipbook made of many individual drawings, the Flipbook class
+has a collection of Drawing objects (from libtovid/mvg.py) that, when displayed
+in sequence, make up an animation or video.
+
+To create a Flipbook with 90 frames, at 720x480 resolution, do:
+
+    >>> flipbook = Flipbook(90, (720, 480))
+
+All drawing upon a Flipbook is achieved through the use of layers
+(libtovid/layer.py). To use them, first import the layer module:
+
+    >>> from libtovid import layer
+
+You can add layers to a Flipbook on-the-fly:
+
+    >>> flipbook.add(layer.Background('black'))
+    >>> flipbook.add(layer.Text("Hello, world"))
+
+Or, create layers separately before adding them to the Flipbook:
+
+    >>> text = Text("Elephant talk")
+    >>> flipbook.add(text)
+
+This latter approach is useful if you plan to apply animation effects to the
+Layer. For this, effects classes (libtovid/effect.py) may be applied. First,
+import:
+
+    >>> from libtovid import effect
+
+Now, say we want the text "Elephant talk" to move across the screen, say from
+(100, 100) to (500, 100) over the course of the first 90 frames. The
+effect.Movement class does the trick:
+
+    >>> text.add_effect(effect.Movement(1, 90, (100, 100), (500, 100)))
+
+You can preview a specific frame of the Flipbook by calling render():
+
+    >>> flipbook.render(50)
+
+Or, you can generate all frames and create an .m2v video stream file by calling
+render_video():
+
+    >>> flipbook.render_video('/tmp/flipbook')
+
+See the demo below for more on what's possible with Flipbooks.
+"""
+
 __all__ = ['Flipbook']
 
 import os
