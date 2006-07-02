@@ -203,15 +203,14 @@ letterboxing or anamorphic scaling.
     Normalize the volume of the audio. Useful if the audio is too quiet or too
     loud, or you want to make volume consistent for a bunch of videos.
 
+: **-gain** //NUM//[dB]
+    Apply a gain of //NUM// to the audio; use //NUM//dB for a decibel gain.
+
 : **-abitrate** //NUM//
     Encode audio at //NUM// kilobits per second.  Reasonable values include
     128, 224, and 384. The default is 224 kbits/sec, good enough for most
     encodings. The value must be within the allowable range for the chosen disc
     format; Ignored for VCD, which must be 224.
-
-: **-nowav**
-    Skip the intermediate .wav-ripping step, and encode the audio stream
-    directly with ffmpeg (this may cure some audio encoding or sync problems).
 
 
 ===Other options===

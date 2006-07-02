@@ -116,10 +116,14 @@ USE_FIFO=:
 # Audio defaults
 AUD_SUF="ac3"
 VID_SUF="m2v"
+# Audio .wav output filename
+AUDIO_WAV="audiodump.wav"
 # Audio bitrate (for ac3 or mp2)
 AUD_BITRATE="224"
 # Don't generate an empty audio stream
 GENERATE_AUDIO=false
+# Gain used when adjusting audio (-gain)
+AUDIO_GAIN=""
 
 
 # Assume audio and video need to be re-encoded
@@ -366,9 +370,18 @@ get_args()
             "-bdvd" )     TGT_RES="BDVD" ;;
 
             # Other options
-            "-normalize" )  DO_NORM=: ;;
+            "-normalize" )  
+                DO_NORM=:
+                assert_dep normalize "'normalize' not found or installed! You cannot use -normalize."
+                ;;
+	    "-gain" )
+	        shift 
+		AUDIO_GAIN="--gain=$1"
+		DO_NORM=:
+	        ;;
             "-overwrite" ) OVERWRITE=: ;;
-            # Aspect ratio
+            
+	    # Aspect ratio
             "-aspect" )
                 shift
                 # Make sure aspect follows expected formatting (INT:INT)
@@ -536,7 +549,7 @@ get_args()
                 ;;
 
             # If the option wasn't recognized, exit with an error
-            "*" )
+            * )
                 usage_error "Unrecognized command-line option '$1'"
                 ;;
             esac
@@ -587,10 +600,12 @@ cleanup()
         yecho "Keeping temporary files:"
         yecho "  $OUT_PREFIX.$VID_SUF"
         yecho "  $OUT_PREFIX.$AUD_SUF"
+        yecho "  $AUDIO_WAV"
     else
         yecho "Removing temporary files..."
         rm -fv "$OUT_PREFIX.$VID_SUF"
         rm -fv "$OUT_PREFIX.$AUD_SUF"
+        rm -fv "$AUDIO_WAV"
     fi
 
     # Remove log/temp files, unless debugging was enabled
@@ -1420,6 +1435,11 @@ fi
 
 yecho
 
+if $PARALLEL && $DO_NORM; then
+    yecho "Cannot normalize audio in parallel mode! Turning off -parallel."
+    PARALLEL=false
+fi
+
 if $PARALLEL; then
     rm -f "$OUT_PREFIX.$AUD_SUF"
     mkfifo "$OUT_PREFIX.$AUD_SUF"
@@ -1428,6 +1448,8 @@ fi
 
 # If audio is already in the chosen output format, do not re-encode.
 if ! $FORCE_ENCODING && $AUDIO_OK; then
+    yecho "Found compliant audio and dumping the stream."
+    precho "This sometimes causes errors when multiplexing; add '-force' to the tovid command line to re-encode if multiplexing fails."
     yecho "Copying the existing audio stream with the following command:"
     AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$OUT_PREFIX.$AUD_SUF\""
     yecho "$AUDIO_CMD"
@@ -1439,9 +1461,50 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
         file_output_progress "$OUT_PREFIX.$AUD_SUF" "Copying compliant audio stream"
         wait
     fi
-    
+
 # Re-encode audio
 else
+
+    AUDIO_IN_FILE=$IN_FILE
+
+    # When normalizing, we need a wave file.
+    if $DO_NORM; then
+        rm -f "$AUDIO_WAV"
+        # Use a FIFO in parallel mode
+        if $PARALLEL; then 
+             mkfifo "$AUDIO_WAV"
+        fi
+
+        AUDIO_IN_FILE=$AUDIO_WAV
+
+        AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null -ao pcm:waveheader:file=$AUDIO_WAV \"$IN_FILE\""
+
+        # Generate or dump audio
+        yecho "Normalizing the audio stream."
+        yecho "Creating WAV of audio stream with the following command:"
+        yecho "$AUDIO_CMD"
+
+        cmd_exec "$AUDIO_CMD"
+
+        # For parallel encoding, nothing more to do right now
+        if $FAKE || $PARALLEL; then
+            :
+        # If not in parallel mode, show .wav-ripping progress,
+        # and wait for successful completion.
+        else
+            file_output_progress "$AUDIO_WAV" "Creating wav of audio stream"
+            wait
+
+            # Make sure the audio stream exists before proceeding
+            if test ! -f $AUDIO_WAV; then
+                    runtime_error "Could not extract audio from original video"
+            fi
+        fi
+
+    # Normalize the wave file.
+    normalize $AUDIO_GAIN $AUDIO_WAV
+    fi
+
     AUDIO_ENC="$PRIORITY ffmpeg"
 
     if $GENERATE_AUDIO; then
@@ -1450,7 +1513,7 @@ else
         yecho "Generating a silent audio stream with the following command:"
     else
         # Encode audio stream directly from the input file
-        AUDIO_ENC="$AUDIO_ENC -i \"$IN_FILE\""
+        AUDIO_ENC="$AUDIO_ENC -i \"$AUDIO_IN_FILE\""
         yecho "Encoding audio stream to $AUD_SUF with the following command:"
     fi
     AUDIO_ENC="$AUDIO_ENC -vn -ab $AUD_BITRATE -ar $SAMPRATE -ac 2"
@@ -1470,7 +1533,7 @@ else
         if test -f "$OUT_PREFIX.$AUD_SUF"; then
             yecho "Audio encoding finished successfully."
         else
-            runtime_error "There was a problem with encoding the WAV audio to $AUD_SUF format."
+            runtime_error "There was a problem with encoding the audio to $AUD_SUF format."
         fi
     fi # If ! $PARALLEL
 
