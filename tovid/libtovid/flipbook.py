@@ -11,12 +11,16 @@ Much like a paper flipbook made of many individual drawings, the Flipbook class
 has a collection of Drawing objects (from libtovid/mvg.py) that, when displayed
 in sequence, make up an animation or video.
 
+To use this module interactively, run 'python' from the command-line, and do:
+
+    >>> from libtovid.flipbook import Flipbook
+
 To create a Flipbook with 90 frames, at 720x480 resolution, do:
 
     >>> flipbook = Flipbook(90, (720, 480))
 
 All drawing upon a Flipbook is achieved through the use of layers
-(libtovid/layer.py). To use them, first import the layer module:
+(libtovid/layer.py). To use them, import the layer module:
 
     >>> from libtovid import layer
 
@@ -101,7 +105,7 @@ class Flipbook:
         drawing.pop()
         return drawing
 
-    def render_video(self, out_prefix):
+    def render_video(self, out_prefix, format, tvsys):
         """Render the flipbook to an .m2v video stream file."""
         # TODO: Get rid of temp-dir hard-coding
         tmp = "%s_frames" % out_prefix
@@ -122,7 +126,7 @@ class Flipbook:
             drawing.save_image('%s/%08d.jpg' % (tmp, frame - 1))
             frame += 1
         video = MediaFile(m2v_file)
-        video.encode(tmp, m2v_file, 'dvd', 'pal')
+        video.encode_frames(tmp, m2v_file, format, tvsys)
         print "Output file is: %s" % m2v_file
 
 
@@ -176,7 +180,7 @@ if __name__ == '__main__':
         frames = int(sys.argv[1])
     else:
         frames = 90
-    flip = Flipbook(frames)
+    flip = Flipbook(frames, (720, 480))
 
     draw_text_demo(flip, frames)
 
@@ -187,5 +191,5 @@ if __name__ == '__main__':
     #flip.add(clip, (260, 200))
     
     # Render the final video
-    flip.render_video('/tmp/flipbook')
+    flip.render_video('/tmp/flipbook', 'dvd', 'ntsc')
 
