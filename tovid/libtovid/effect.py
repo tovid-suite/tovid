@@ -12,13 +12,22 @@ Effect classes are arranged in a (currently) simple hierarchy:
     |-- Colorfade
     |-- Spectrum
     |-- Scale
+    \-- KeyFunction
 
 """
 
-__all__ = ['Effect', 'Movement', 'Fade', 'Colorfade', 'Spectrum', 'Scale']
+__all__ = [\
+    'Effect',
+    'Movement',
+    'Fade',
+    'Colorfade',
+    'Spectrum',
+    'Scale',
+    'KeyFunction'
+]
 
 from libtovid.mvg import Drawing
-from libtovid.animation import Keyframe, tween
+from libtovid.animation import Keyframe, Tween
 
 class Effect:
     """A "special effect" created by keyframing an MVG command along
@@ -29,17 +38,7 @@ class Effect:
         self.end = end
         # List of Keyframes
         self.keyframes = [Keyframe(self.start, 0), Keyframe(self.end, 0)]
-        # List of tweened values
-        self.data = tween(self.keyframes)
-
-    def get_data(self, frame):
-        """Get data value at the given frame."""
-        if frame < self.start:
-            return self.data[0]
-        elif frame > self.end:
-            return self.data[-1]
-        else:
-            return self.data[frame - self.start]
+        self.tween = Tween(self.keyframes)
 
     def draw_on(self, drawing, frame):
         """Draw the effect into the given Drawing, for the given frame.
@@ -76,7 +75,7 @@ class MyEffect (Effect):
             ]
 
         # Call this afterwards, to calculate the values at all frames
-        self.data = tween(self.keyframes)
+        self.tween = Tween(self.keyframes)
 
     # The draw_on function draws the effect onto a Drawing at the given frame
     def draw_on(self, drawing, frame):
@@ -85,7 +84,7 @@ class MyEffect (Effect):
         # This effect varies the stroke width across a sequence of frames.
         # Replace 'stroke_width' with your own drawing function(s)
         # (see libtovid/mvg.py for a complete list)
-        drawing.stroke_width(self.get_data(frame))
+        drawing.stroke_width(self.tween[frame])
 
     # That's it! Your effect is ready to use.
     # See libtovid/flipbook.py for examples on how to use effects
@@ -103,12 +102,12 @@ class Movement (Effect):
             Keyframe(start, (x0, y0)),
             Keyframe(end, (x1, y1))
             ]
-        self.data = tween(self.keyframes)
+        self.tween = Tween(self.keyframes)
 
     def draw_on(self, drawing, frame):
         """Draw the movement effect into the given Drawing."""
         assert isinstance(drawing, Drawing)
-        drawing.translate(self.get_data(frame))
+        drawing.translate(self.tween[frame])
 
 class Fade (Effect):
     """A fade-in/fade-out effect, varying the opacity of a layer."""
@@ -121,20 +120,18 @@ class Fade (Effect):
         #        /      \
         # start./        \.end  0%
         #
-        # The tween()ed array is indexed as an offset from the start
-        # frame (self.opacities[0] gives the value at the start frame)
         self.keyframes = [\
             Keyframe(start, 0.0),                  # Start fading in
             Keyframe(start + fade_length, 1.0),    # Fade-in done
             Keyframe(end - fade_length, 1.0),      # Start fading out
             Keyframe(end, 0.0)                     # Fade-out done
             ]
-        self.data = tween(self.keyframes)
+        self.tween = Tween(self.keyframes)
 
     def draw_on(self, drawing, frame):
         """Draw the fade effect into the given Drawing."""
         assert isinstance(drawing, Drawing)
-        drawing.fill_opacity(self.get_data(frame))
+        drawing.fill_opacity(self.tween[frame])
 
 class Colorfade (Effect):
     """A color-slide effect between an arbitrary number of RGB colors."""
@@ -145,11 +142,11 @@ class Colorfade (Effect):
             Keyframe(start, (r0, g0, b0)),
             Keyframe(end, (r1, g1, b1))
             ]
-        self.data = tween(self.keyframes)
+        self.tween = Tween(self.keyframes)
 
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
-        drawing.fill_rgb(self.get_data(frame))
+        drawing.fill_rgb(self.tween[frame])
 
 
 class Spectrum (Effect):
@@ -166,11 +163,11 @@ class Spectrum (Effect):
             Keyframe(start + step*5, (255, 255, 0)),
             Keyframe(end, (255, 0, 0))
             ]
-        self.data = tween(self.keyframes)
+        self.tween = Tween(self.keyframes)
 
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
-        drawing.fill_rgb(self.data[frame - self.start])
+        drawing.fill_rgb(self.tween[frame])
 
 
 class Scale (Effect):
@@ -181,11 +178,11 @@ class Scale (Effect):
             Keyframe(start, (w0, h0)),
             Keyframe(end, (w1, h1))
             ]
-        self.data = tween(self.keyframes)
+        self.tween = Tween(self.keyframes)
 
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
-        drawing.scale(self.get_data(frame))
+        drawing.scale(self.tween[frame])
 
 
 class KeyFunction (Effect):
@@ -200,8 +197,8 @@ class KeyFunction (Effect):
         This says to vary the stroke width from 1 (at frame 1) to 12 (at
         frame 30).
 
-        method defines an interpolation method to use between keyframes,
-        and may be either 'linear' or 'cosine'. 
+        The 'method' argument defines an interpolation method to use between
+        keyframes, and may be either 'linear' or 'cosine'. 
         """
         # Call base constructor with start and end frames
         Effect.__init__(self, keyframes[0].frame, keyframes[-1].frame)
@@ -209,8 +206,8 @@ class KeyFunction (Effect):
         self.draw_function = draw_function
         self.keyframes = keyframes
         # Tween keyframes using the given interpolation method
-        self.data = tween(self.keyframes, method)
+        self.tween = Tween(self.keyframes, method)
 
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
-        self.draw_function(drawing, self.get_data(frame))
+        self.draw_function(drawing, self.tween[frame])
