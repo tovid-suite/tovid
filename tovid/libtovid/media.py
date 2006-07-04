@@ -122,11 +122,12 @@ class MediaFile:
                 end_reached = True #, apparently
             frame += 1
     
-    def encode(self, imagedir, outfile, format, tvsys):
+    def encode_frames(self, imagedir, outfile, format, tvsys):
         """Convert an image sequence in imagedir to an .m2v video compliant
         with the given format and tvsys.
     
-        Currently supports only JPEG images.
+        Currently supports only JPEG images; input images must already be at
+        the desired target resolution.
         """
         # Use absolute path name
         imagedir = os.path.abspath(imagedir)
@@ -139,6 +140,9 @@ class MediaFile:
         else:
             cmd += ' -f 29.970 '
         cmd += ' -j "%s/%%08d.jpg"' % imagedir
+
+        # TODO: Scale to correct target size using yuvscaler or similar
+        
         # Pipe image stream into mpeg2enc to encode
         cmd += ' | mpeg2enc -v 0 -q 3 -o "%s"' % outfile
         if format == 'vcd':
