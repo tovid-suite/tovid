@@ -219,14 +219,14 @@ class VideoClip (Layer):
         self.mediafile = MediaFile(filename)
         self.size = (width, height)
         # List of filenames of individual frames
-        self.frames = []
+        self.framefiles = []
         self.rip_frames(1, 120)
 
     def rip_frames(self, start, end):
         """Rip frames from the video file, from start to end frames."""
         print "VideoClip: Ripping frames %s to %s" % (start, end)
         self.mediafile.rip_frames([start, end])
-        self.frames.extend(self.mediafile.framefiles)
+        self.framefiles.extend(self.mediafile.framefiles)
 
     def draw_on(self, drawing, frame):
         """Draw ripped video frames to the given drawing. For now, it's
@@ -234,16 +234,16 @@ class VideoClip (Layer):
         Video is looped.
         """
         assert isinstance(drawing, Drawing)
-        if len(self.frames) == 0:
+        if len(self.framefiles) == 0:
             print "VideoClip error: need to call rip_frames() before drawing."
             sys.exit(1)
         drawing.comment("VideoClip Layer")
         drawing.push()
         self.draw_effects(drawing, frame)
         # Loop frames (modular arithmetic)
-        if frame > len(self.frames):
-            frame = frame % len(self.frames)
-        filename = self.frames[frame]
+        if frame >= len(self.framefiles):
+            frame = frame % len(self.framefiles)
+        filename = self.framefiles[frame]
         drawing.image('over', (0, 0), self.size, filename)
         drawing.pop()
 
@@ -406,7 +406,7 @@ class Thumb (Layer):
             self.add_sublayer(VideoClip(filename, self.size))
         elif filetype == 'image':
             self.add_sublayer(Image(filename, self.size))
-        self.add_sublayer(Label(self.title), (0, 0))
+        self.add_sublayer(Label(self.title, fontsize=15), (0, 0))
 
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
