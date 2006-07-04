@@ -75,10 +75,9 @@ class TextMenu:
         # Generate default blue-black gradient background
         # TODO: Implement -background
         cmd = 'convert'
-        cmd += ' -size %sx%s ' % self.options['expand']
+        cmd += ' -size %sx%s' % self.options['expand']
         cmd += ' gradient:blue-black'
-        cmd += ' -gravity center -matte'
-        cmd += self.bg_canvas
+        cmd += ' -gravity center -matte %s' % self.bg_canvas
         self.script.append(cmd)
     
     def draw_background_layer(self):
