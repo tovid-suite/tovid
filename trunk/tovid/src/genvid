@@ -6,12 +6,16 @@ import sys
 from libtovid.opts import Option, OptionDict
 from libtovid.flipbook import Flipbook
 from libtovid.effect import Movement, Fade, Colorfade, Spectrum, Scale
-from libtovid.layer import Background, Text, ThumbGrid, VideoClip
+from libtovid import layer
 
 # Valid command-line options to this script
 options = [\
     Option('out', 'FILE', None,
            """Use the given output file prefix (.m2v added automatically)"""),
+    Option('format', '[vcd|svcd|dvd]', 'dvd',
+           """Output in the given video disc format."""),
+    Option('tvsys', '[pal|ntsc]', 'ntsc',
+           """Output for given TV system."""),
     Option('frames', 'NUM', 30,
            """Generate NUM frames total"""),
     Option('bgcolor', 'COLOR', 'black',
@@ -19,7 +23,10 @@ options = [\
     Option('title', 'TEXT', '',
            """Display the given title text"""),
     Option('thumbs', 'FILE[,FILE...]', [],
-           """Create thumbnail images of the given list of images""")
+           """Create thumbnail images of the given list of images"""),
+    Option('test', '[safe|fonts]', 'all',
+           """Render a screen-test video, for gauging the safe area or font
+           capabilities of your TV or monitor.""")
     ]
 
 # Main function
@@ -42,22 +49,35 @@ if __name__ == '__main__':
         print "Please provide an output prefix with -out"
         sys.exit(1)
 
-    # TODO: PAL/NTSC frame size and fps
-    flip = Flipbook(int(useropts['frames']))
+    # TODO: VCD/SVCD support
+    if useropts['tvsys'] == 'pal':
+        flip = Flipbook(int(useropts['frames']), (720, 576))
+    elif useropts['tvsys'] == 'ntsc':
+        flip = Flipbook(int(useropts['frames']), (720, 480))
 
     # Background color
-    bgd = Background(color=useropts['bgcolor'])
+    bgd = layer.Background(color=useropts['bgcolor'])
     flip.add(bgd)
 
     # Title string
     if useropts['title'] is not '':
         # TODO: Centered text! (gravity)
-        title = Text(useropts['title'], fontsize=30)
+        title = layer.Text(useropts['title'], fontsize=30)
         flip.add(title, (240, 420))
     # Thumbnails
-    print useropts['thumbs']
     if useropts['thumbs'] != []:
-        thumbs = ThumbGrid(useropts['thumbs'], (600, 400))
+        thumbs = layer.ThumbGrid(useropts['thumbs'], (600, 400))
         flip.add(thumbs, (60, 40))
 
-    flip.render_video(useropts['out'])
+ 
+    # Test safe area or fonts
+    if 'safe' in useropts['test']:
+        flip.add(layer.SafeArea(90, 'red'))
+        flip.add(layer.SafeArea(80, 'blue'))
+        flip.add(layer.SafeArea(70, 'green'))
+        flip.add(layer.SafeArea(60, 'yellow'))
+    if 'fonts' in useropts['test']:
+        pass
+    
+    # Render the .m2v video
+    flip.render_video(useropts['out'], useropts['format'], useropts['tvsys'])
