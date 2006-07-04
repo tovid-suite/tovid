@@ -578,9 +578,11 @@ class Drawing:
         self.goto_end()
         self.insert(mvg_string)
 
-    def insert(self, mvg_string):
-        """Insert the given MVG string before the current line, and position
-        the cursor after the inserted line."""
+    def insert(self, mvg_string, at_line=0):
+        """Insert the given MVG string before the given line number (0 for the
+        current line), and position the cursor after the inserted line."""
+        if at_line > 0:
+            self.goto(at_line)
         self.history.append(['insert', self.cursor])
         self.data.insert(self.cursor, '  ' * self.indent + mvg_string)
         self.cursor += 1
