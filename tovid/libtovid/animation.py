@@ -2,7 +2,58 @@
 # animation.py
 
 """This module provides classes and functions for working with animation.
+Two classes are provided:
+
+    Keyframe: A frame with a specific data value
+    Tween:    A data sequence interpolated from Keyframes
+
+The data being interpolated may represent color, opacity, location, or anything
+else that can be described numerically. Keyframe data may be scalar (single
+integers or decimal values) or vector (tuples such as (x, y) coordinates or
+(r, g, b) color values).
+
+For example, let's define three keyframes:
+
+    >>> keys = [Keyframe(1, 0),
+    ...         Keyframe(6, 50),
+    ...         Keyframe(12, 10)]
+
+The value increases from 0 to 50 over frames 1-6, then back down to 10
+over frames 6-12. The values at intermediate frames (2-5 and 7-11) can be
+interpolated or "tweened" automatically, using the Tween class:
+
+    >>> tween = Tween(keys)
+    >>> tween.data
+    [0, 10, 20, 30, 40, 50, 43, 36, 30, 23, 16, 10]
+
+Another example using tweening of (x, y) coordinates:
+
+    >>> keys = [Keyframe(1, (20, 20)),
+    ...         Keyframe(6, (80, 20)),
+    ...         Keyframe(12, (100, 100))]
+
+Here, a point on a two-dimensional plane starts at (20, 20), moving first
+to the right, to (80, 20), then diagonally to (100, 100).
+
+    >>> tween = Tween(keys)
+    >>> for (x, y) in tween.data:
+    ...     print (x, y)
+    ...
+    (20, 20)
+    (32, 20)
+    (44, 20)
+    (56, 20)
+    (68, 20)
+    (80, 20)
+    (83, 33)
+    (86, 46)
+    (90, 60)
+    (93, 73)
+    (96, 86)
+    (100, 100)
+
 """
+
 __all__ = ['Keyframe', 'lerp', 'cos_interp', 'interpolate', 'tween']
 
 import copy
@@ -11,7 +62,7 @@ import math
 
 class Keyframe:
     """Associates a specific frame in an animation with a numeric value.
-    A Keyframe is an (x, y) pair defining a "control point" on a 2D graph:
+    A Keyframe is a (frame, data) pair defining a "control point" on a graph:
     
             100 |
                 |       Keyframe(10, 50)
@@ -78,11 +129,12 @@ def interpolate(frame, left, right, method):
     """Interpolate data between left and right Keyframes at the given frame,
     using the given interpolation method ('linear' or 'cosine'). Return the
     value at the given frame."""
+    assert isinstance(left, Keyframe) and isinstance(right, Keyframe)
     # Use the appropriate interpolation function
-    if method == 'linear':
-        interp_func = lerp
-    elif method == 'cosine':
+    if method == 'cosine':
         interp_func = cos_interp
+    else: # method == 'linear'
+        interp_func = lerp
     # Interpolate integers or floats
     if isinstance(left.data, int) or isinstance(left.data, float):
         x0 = (left.frame, left.data)
@@ -103,47 +155,6 @@ def interpolate(frame, left, right, method):
 class Tween:
     """Stores a list of keyframes and their corresponding interpolation over
     the course of a given frame interval.
-
-    For example, let's define three keyframes:
-    
-        >>> keys = [Keyframe(1, 0),
-        ...         Keyframe(6, 50),
-        ...         Keyframe(12, 10)]
-
-    The value increases from 0 to 50 over frames 1-6, then back down to 10
-    over frames 6-12:
-
-        >>> tween(keys)
-        [0, 10, 20, 30, 40, 50, 43, 36, 30, 23, 16, 10]
-
-    This function can handle single-integer or (x,y) data in keyframes. An
-    example using (x,y) tweening:
-
-        >>> keys = [Keyframe(1, (20, 20)),
-        ...         Keyframe(6, (80, 20)),
-        ...         Keyframe(12, (100, 100))]
-
-    Here, a point on a two-dimensional plane starts at (20, 20), moving first
-    to the right, to (80, 20), then diagonally to (100, 100).
-
-        >>> for (x, y) in tween(keys):
-        ...     print (x, y)
-        ...
-        (20, 20)
-        (32, 20)
-        (44, 20)
-        (56, 20)
-        (68, 20)
-        (80, 20)
-        (83, 33)
-        (86, 46)
-        (90, 60)
-        (93, 73)
-        (96, 86)
-        (100, 100)
-
-    This function may support more complex data types in the future; for now
-    it is limited to using only integers or tuples of numbers.
     """
     def __init__(self, keyframes, method='linear'):
         """Create an in-between sequence from the given list of keyframes,
