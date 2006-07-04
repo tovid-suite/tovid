@@ -1,20 +1,17 @@
 #! /usr/bin/env python
 # layer.py
 
-"""This module provides classes for drawing graphical elements on a series of
-drawings (as in a Flipbook).
+"""This module provides the Layer class and several of its derivatives. A Layer
+is a graphical overlay that may be composited onto an image canvas.
 
-Layer classes are arranged in a hierarchy:
+Run this script standalone for a demonstration:
 
-    Layer (base class)
-    |-- Background
-    |-- Text
-        |-- Label
-        |-- TextBox
-    |-- VideoClip
-    |-- Image
-    |-- ThumbGrid
-    |-- SafeArea
+    $ python libtovid/layer.py
+
+Layer subclasses may combine many graphical elements, including other Layers,
+into a single interface for customizing and drawing those elements. Layers may
+exhibit animation, through the use of keyframed drawing commands, or through
+use of the Effect class (and its subclasses, as defined in libtovid/effect.py).
 
 Each class provides (at least) an initialization function, and a draw_on
 function. For more on how to use Layers, see the Layer class definition and
@@ -28,6 +25,7 @@ __all__ = [\
     'Label',
     'VideoClip',
     'Image',
+    'Thumb',
     'ThumbGrid',
     'SafeArea',
     'InterpolationGraph'
@@ -35,17 +33,19 @@ __all__ = [\
 
 import os
 import sys
-import glob
 import math
 import commands
 from libtovid.utils import get_file_type
 from libtovid.mvg import Drawing
 from libtovid.effect import Effect
-from libtovid.animation import Keyframe, tween
+from libtovid.animation import Keyframe, Tween
 from libtovid.media import MediaFile
 
 class Layer:
-    """A visual element, or a composition of visual elements."""
+    """A visual element, or a composition of visual elements. Conceptually
+    similar to a layer in the GIMP or Photoshop, plus support for animation
+    effects and sub-Layers.
+    """
     def __init__(self):
         self.effects = []
         self.sublayers = []
@@ -57,7 +57,7 @@ class Layer:
     def add_sublayer(self, layer, position=(0, 0)):
         """Add the given Layer as a sublayer of this one, at the given position.
         Sublayers are drawn in the order they are added; each sublayer may have
-        its own effects, but parent Layer's effects apply to all sublayers.
+        its own effects, but the parent Layer's effects apply to all sublayers.
         """
         assert isinstance(layer, Layer)
         self.sublayers.append((layer, position))
@@ -269,6 +269,7 @@ class Text (Layer):
         drawing.pop()
 
 
+
 class Label (Text):
     """A text string with a rectangular background."""
     def __init__(self, text, color='black', bgcolor='grey',
@@ -393,10 +394,11 @@ class TextBox (Text):
 
 class Thumb (Layer):
     """A thumbnail image or video."""
-    def __init__(self, filename, (width, height)):
+    def __init__(self, filename, (width, height), title=''):
         Layer.__init__(self)
         self.filename = filename
         self.size = (width, height)
+        self.title = title or os.path.basename(filename)
         # Determine whether file is a video or image, and create the
         # appropriate sublayer
         filetype = get_file_type(filename)
@@ -404,6 +406,7 @@ class Thumb (Layer):
             self.add_sublayer(VideoClip(filename, self.size))
         elif filetype == 'image':
             self.add_sublayer(Image(filename, self.size))
+        self.add_sublayer(Label(self.title), (0, 0))
 
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
@@ -413,11 +416,13 @@ class Thumb (Layer):
 
 class ThumbGrid (Layer):
     """A rectangular array of thumbnail images or videos."""
-    def __init__(self, files, (width, height), (columns, rows)=(0, 0),
-                  aspect=(4,3)):
-        """Create a grid of images from files, fitting with a space no
-        larger than (width, height), with the given number of columns and rows
-        Use 0 to auto-layout columns or rows, or both (default)."""
+    def __init__(self, files, (width, height)=(600, 400),
+                 (columns, rows)=(0, 0), aspect=(4,3)):
+        """Create a grid of thumbnail images or videos from a list of files,
+        fitting in a space no larger than the given size, with the given number
+        of columns and rows. Use 0 to auto-layout columns or rows, or both 
+        (default).
+        """
         assert files != []
         Layer.__init__(self)
         self.size = (width, height)
@@ -439,6 +444,7 @@ class ThumbGrid (Layer):
                 positions.append((x, y))
         # Add Thumb sublayers
         for file, position in zip(files, positions):
+            title = os.path.basename(file)
             self.add_sublayer(Thumb(file, thumbsize), position)
 
     def _fit_items(self, num_items, columns, rows):
@@ -475,10 +481,12 @@ class ThumbGrid (Layer):
 
 
 class SafeArea (Layer):
-    """Render a safe area box at a given percentage."""
+    """Render a safe area box at a given percentage.
+    """
     def __init__(self, percent, color):
         self.percent = percent
         self.color = color
+        
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
         # Calculate rectangle dimensions
@@ -515,16 +523,17 @@ class InterpolationGraph (Layer):
         self.size = size
         self.method = method
         # Interpolate keyframes
-        self.data = tween(keyframes, method)
+        self.tween = Tween(keyframes, method)
 
     def draw_on(self, drawing, frame):
         """Draw the interpolation graph, including frame/value axes,
         keyframes, and the interpolation curve."""
         assert isinstance(drawing, Drawing)
+        data = self.tween.data
         # Calculate maximum extents of the graph
         width, height = self.size
-        x_scale = float(width) / len(self.data)
-        y_scale = float(height) / max(self.data)
+        x_scale = float(width) / len(data)
+        y_scale = float(height) / max(data)
 
         drawing.comment("InterpolationGraph Layer")
 
@@ -543,10 +552,10 @@ class InterpolationGraph (Layer):
         # Create a list of (x, y) points to be graphed
         curve = []
         x = 1
-        while x <= len(self.data):
+        while x <= len(self.tween.data):
             # y increases downwards; subtract from height to give a standard
             # Cartesian-oriented graph (so y increases upwards)
-            point = (int(x * x_scale), int(height - self.data[x-1] * y_scale))
+            point = (int(x * x_scale), int(height - data[x-1] * y_scale))
             curve.append(point)
             x += 1
         drawing.comment("Interpolation curve")
@@ -582,7 +591,7 @@ class InterpolationGraph (Layer):
         drawing.push()
         drawing.stroke(None)
         drawing.fill('yellow')
-        pos = (frame * x_scale, height - self.data[frame-1] * y_scale)
+        pos = (frame * x_scale, height - data[frame-1] * y_scale)
         drawing.circle_rad(pos, 2)
         drawing.pop()
 
