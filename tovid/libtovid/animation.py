@@ -31,7 +31,7 @@ class Keyframe:
                 0     10     20     30
                         frame
 
-    See the tween() function below for what you can do with these Keyframes,
+    See the Tween class below for what you can do with these Keyframes,
     once you have them.
     """
     def __init__(self, frame, data):
@@ -55,16 +55,15 @@ def cos_interp(x, (x0, y0), (x1, y1)):
 
     Essentially, a crude alternative to polynomial spline interpolation; this
     method transitions between two values by matching a segment of the cosine
-    curve [0, pi] (for decreasing value) or [pi, 0] (for increasing value) to
-    the interval between the given points.
+    curve [0, pi] (for decreasing value) or [pi, 2*pi] (for increasing value)
+    to the interval between the given points.
 
-    It should give smoother results at
-    inflection points than linear interpolation, but will result in "ripple"
-    effects if keyframes are too dense or many.   
+    It gives smoother results at inflection points than linear interpolation, 
+    but will result in "ripple" effects if keyframes are too dense or many.   
     """
     # Map interpolation area (domain of x) to [0, pi]
     x_norm = math.pi * (x - x0) / (x1 - x0)
-    # For y0 < y1, use upward-sloping part of the cosine curve
+    # For y0 < y1, use upward-sloping part of the cosine curve [pi, 2*pi]
     if y0 < y1:
         x_norm += math.pi
     # Calculate and return resulting y-value
@@ -72,6 +71,8 @@ def cos_interp(x, (x0, y0), (x1, y1)):
     y_diff = abs(y1 - y0)
     return y_min + y_diff * (math.cos(x_norm) + 1) / 2.0
 
+
+# Single-interval interpolation function
 
 def interpolate(frame, left, right, method):
     """Interpolate data between left and right Keyframes at the given frame,
@@ -99,10 +100,9 @@ def interpolate(frame, left, right, method):
         return tuple(result)
 
 
-def tween(keyframes, method='linear'):
-    """Calculate all "in-between" frames from the given keyframes, and
-    return a list of values for all frames in sequence. method may be
-    'linear' or 'cosine'.
+class Tween:
+    """Stores a list of keyframes and their corresponding interpolation over
+    the course of a given frame interval.
 
     For example, let's define three keyframes:
     
@@ -145,38 +145,69 @@ def tween(keyframes, method='linear'):
     This function may support more complex data types in the future; for now
     it is limited to using only integers or tuples of numbers.
     """
-    data = []
+    def __init__(self, keyframes, method='linear'):
+        """Create an in-between sequence from the given list of keyframes,
+        using the given interpolation method (which may be 'linear' or 
+        'cosine')."""
+        assert isinstance(keyframes[0], Keyframe)
+        self.keyframes = keyframes
+        self.data = []
+        self._tween(method)
 
-    # TODO: Sort keyframes in increasing order by frame number (to ensure
-    # keyframes[0] is the first frame, and keyframes[-1] is the last frame)
-    # Make a copy of keyframes
-    keys = copy.deepcopy(keyframes)
-    first = keys[0].frame
-    last = keys[-1].frame
-    if first == last:
-        return keys[0].data
+    def _tween(self, method):
+        """Perform in-betweening calculation on the current keyframes and
+        fill self.data with tweened values, indexed by frame number.
+        """
+        self.data = []
+        # TODO: Sort keyframes in increasing order by frame number (to ensure
+        # keyframes[0] is the first frame, and keyframes[-1] is the last frame)
+        # Make a copy of keyframes
+        keys = copy.deepcopy(self.keyframes)
+        self.start = keys[0].frame
+        self.end = keys[-1].frame
+        first = self.start
+        last = self.end
+        
+        # If keyframe interval is empty, use constant data from first keyframe
+        if first == last:
+            self.data = keys[0].data
+            return
+    
+        # Pop off keyframes as each interval is calculated
+        left = keys.pop(0)
+        right = keys.pop(0)
+        frame = first
+        while frame <= last:
+            # Left endpoint
+            if frame == left.frame:
+                self.data.append(left.data)
+            # Right endpoint
+            elif frame == right.frame:
+                self.data.append(right.data)
+                # Get the next interval, if it exists
+                if keys:
+                    left = right
+                    right = keys.pop(0)
+            # Between endpoints; interpolate
+            else:
+                self.data.append(interpolate(frame, left, right, method))
+            frame += 1
 
-    # Pop off keyframes as each interval is calculated
-    left = keys.pop(0)
-    right = keys.pop(0)
-    frame = first
-    while frame <= last:
-        # Left endpoint
-        if frame == left.frame:
-            data.append(left.data)
-        # Right endpoint
-        elif frame == right.frame:
-            data.append(right.data)
-            # Get the next interval, if it exists
-            if keys:
-                left = right
-                right = keys.pop(0)
-        # Between endpoints; interpolate
+    def __getitem__(self, frame):
+        """Return the interpolated data at the given frame. Frame numbers
+        outside the keyframed region have the same values as those at the
+        corresponding endpoints.
+        """
+        # If data is a single value, frame is irrelevant
+        if not isinstance(self.data, list):
+            return self.data
+        # Otherwise, return the value for the given frame, extending endpoints
+        elif frame < self.start:
+            return self.data[0]
+        elif frame > self.end:
+            return self.data[-1]
         else:
-            data.append(interpolate(frame, left, right, method))
-        frame += 1
-    return data
-
+            return self.data[frame - self.start]
 
 
 if __name__ == '__main__':
