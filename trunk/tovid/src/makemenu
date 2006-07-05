@@ -580,7 +580,7 @@ if test -e "$OUT_PREFIX.mpg"; then
     else
         echo "You can use this menu on a DVD disc by invoking:"
         echo
-        echo "  makexml -dvd -menu $OUT_PREFIX.mpg <title 1> <title 2> ... <output name>"
+        precho "  makexml -dvd -menu $OUT_PREFIX.mpg <title 1> <title 2> ... -out <output name>"
     fi
 
     echo
