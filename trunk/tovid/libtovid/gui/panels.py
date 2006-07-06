@@ -2082,6 +2082,8 @@ class PlaylistTabPanel(wx.Panel):
         
         self.SetAutoLayout(True)
         self.SetSizer(szPlaylist)
+        
+        wx.EVT_CHECKBOX(self, self.submenus.GetId(), self.submenus_OnClick)
 
     def EnableSubmenus(self):
         self.submenu_title.Enable()
@@ -2094,6 +2096,14 @@ class PlaylistTabPanel(wx.Panel):
         self.submenu_audio.Disable()
         self.subaudio_all.Disable()
         self.btnAudio.Disable()
+
+    def submenus_OnClick(self, evt):
+        if (evt.IsChecked()):
+            self.EnableSubmenus()
+            self.GetParent().GetParent().nbMenus.EnableSubmenus()
+        else:
+            self.DisableSubmenus()
+            self.GetParent().GetParent().nbMenus.DisableSubmenus()
 
 class MenuTabPanel(wx.Panel):
     def __init__(self, parent, id):
