@@ -341,7 +341,8 @@ class VideoOptions:
             (self.tvsys, self.format, self.aspect)
 
         # Append other options
-        strCommand += "%s " % self.addoptions
+        if self.addoptions:
+            strCommand += "%s " % self.addoptions
 
         strCommand += "-in \"%s\" " % self.inFile
         strCommand += "-out \"%s/%s\"" % (curConfig.strOutputDirectory, self.outPrefix)

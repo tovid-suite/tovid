@@ -52,8 +52,7 @@ if __name__ == '__main__':
     tempfile = os.path.expanduser('~/.tovid/stats.tovid.csv')
     # Only use lines beginning with "
     os.system('cat "%s" | grep \'^\"\' > "%s"' % (statfile, tempfile))
-    statlist = Statlist()
-    statlist.read_csv(tempfile)
+    statlist = Statlist(tempfile)
     os.remove(tempfile)
 
     # Parse command-line
@@ -61,8 +60,10 @@ if __name__ == '__main__':
         arg = args.pop(0)
         if arg == '-count':
             field = args.pop(0)
-            print "Total occurrences of each distinct %s:" % field
-            print pretty_dict(statlist.count_unique(field))
+            counts = statlist.count_unique(field)
+            print "Total occurrences of each distinct value of '%s':" % field
+            print pretty_dict(counts)
+            print "Total of %s distinct values" % len(counts)
         elif arg == '-average':
             avg_field = args.pop(0)
             if args and args[0] == 'by':

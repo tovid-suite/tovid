@@ -285,7 +285,7 @@ cmd_exec()
 killsubprocs()
 {
     yecho "Encode stopped, killing all sub processes"
-    kill $PIDS
+    test -n "$PIDS" && kill $PIDS
 }    
 
 
@@ -371,17 +371,19 @@ get_args()
 
             # Other options
             "-normalize" )  
-                DO_NORM=:
                 assert_dep normalize "'normalize' not found or installed! You cannot use -normalize."
+                DO_NORM=:
                 ;;
-	    "-gain" )
-	        shift 
-		AUDIO_GAIN="--gain=$1"
-		DO_NORM=:
-	        ;;
-            "-overwrite" ) OVERWRITE=: ;;
-            
-	    # Aspect ratio
+            "-gain" )
+                shift 
+                AUDIO_GAIN="--gain=$1"
+                DO_NORM=:
+                ;;
+            "-overwrite" )
+                OVERWRITE=:
+                ;;
+                
+            # Aspect ratio
             "-aspect" )
                 shift
                 # Make sure aspect follows expected formatting (INT:INT)
@@ -549,7 +551,7 @@ get_args()
                 ;;
 
             # If the option wasn't recognized, exit with an error
-            * )
+            "*" )
                 usage_error "Unrecognized command-line option '$1'"
                 ;;
             esac

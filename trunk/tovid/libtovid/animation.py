@@ -222,7 +222,7 @@ class Tween:
 
 
 if __name__ == '__main__':
-    #doctest.testmod()
+    doctest.testmod(verbose=True)
 
     p0 = (1, 1)
     p1 = (20, 20)
