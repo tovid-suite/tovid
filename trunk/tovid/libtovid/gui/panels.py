@@ -2011,6 +2011,8 @@ class PlaylistTabPanel(wx.Panel):
         self.videoFormat.SetSelection(0)
         self.files.SetMinSize((414, 225))
         self.btnAddVideo.SetDefault()
+        self.btnRemoveVideo.Disable()
+        self.DisableSubmenus()
         
         szFormats = wx.FlexGridSizer(1, 2, 0, 5)
         szFormats.Add(self.discFormat, 0, wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL, 0)
@@ -2081,6 +2083,18 @@ class PlaylistTabPanel(wx.Panel):
         self.SetAutoLayout(True)
         self.SetSizer(szPlaylist)
 
+    def EnableSubmenus(self):
+        self.submenu_title.Enable()
+        self.submenu_audio.Enable()
+        self.subaudio_all.Enable()
+        self.btnAudio.Enable()
+
+    def DisableSubmenus(self):
+        self.submenu_title.Disable()
+        self.submenu_audio.Disable()
+        self.subaudio_all.Disable()
+        self.btnAudio.Disable()
+
 class MenuTabPanel(wx.Panel):
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
@@ -2142,6 +2156,8 @@ class MenuTabPanel(wx.Panel):
         self.static.SetValue(1)
         self.lblSubmenuTitleColor.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
         self.lblSubmenuStrokeColor.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
+        self.btnTextMistColor.Disable()
+        self.DisableSubmenus()
         
         szMenuTitle = wx.FlexGridSizer(1, 2, 0, 5)
         szMenuTitle.Add(self.lblMenuTitle, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
@@ -2246,12 +2262,25 @@ class MenuTabPanel(wx.Panel):
         self.SetAutoLayout(True)
         self.SetSizer(szMenus)
 
+    def EnableSubmenus(self):
+        self.submenu_audio_fade.Enable()
+        self.ani_submenus.Enable()
+        self.btnSubmenuTitleColor.Enable()
+        self.btnSubmenuStrokeColor.Enable()
+
+    def DisableSubmenus(self):
+        self.submenu_audio_fade.Disable()
+        self.ani_submenus.Disable()
+        self.btnSubmenuTitleColor.Disable()
+        self.btnSubmenuStrokeColor.Disable()
+
 class ThumbnailTabPanel(wx.Panel):
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
+        self.feather_thumbs = wx.CheckBox(self, wx.ID_ANY, _("Feather thumbnails?"))
         self.szBlur_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Blur"))
         self.szOpacity_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Opacity"))
-        self.thumb_shape = wx.RadioBox(self, wx.ID_ANY, _("Feather Shape"), choices=[_("None"), _("Normal"), _("Oval"), _("Cloud"), _("Egg")], majorDimension=1, style=wx.RA_SPECIFY_ROWS)
+        self.thumb_shape = wx.RadioBox(self, wx.ID_ANY, _("Feather Shape"), choices=[_("Normal"), _("Oval"), _("Cloud"), _("Egg")], majorDimension=1, style=wx.RA_SPECIFY_ROWS)
         self.lblThumbTitleFont = wx.StaticText(self, wx.ID_ANY, _("Thumb Font:"))
         self.thumb_font = wx.Button(self, wx.ID_ANY, _("Default"))
         self.lblThumbTitleSize = wx.StaticText(self, wx.ID_ANY, _("Thumb Font Size:"))
@@ -2266,6 +2295,7 @@ class ThumbnailTabPanel(wx.Panel):
         self.seek = wx.SpinCtrl(self, wx.ID_ANY, "", min=0, max=100, style=wx.TE_RIGHT)
         
         self.thumb_shape.SetSelection(0)
+        self.thumb_shape.Disable()
         
         szThumbFont = wx.FlexGridSizer(2, 4, 5, 5)
         szThumbFont.Add(self.lblThumbTitleFont, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
@@ -2295,6 +2325,7 @@ class ThumbnailTabPanel(wx.Panel):
         szSeek.AddGrowableCol(0)
         
         szThumbnails = wx.FlexGridSizer(5, 1, 7, 0)
+        szThumbnails.Add(self.feather_thumbs, 0, wx.ADJUST_MINSIZE, 0)
         szThumbnails.Add(szThumbShape, 1, wx.EXPAND, 0)
         szThumbnails.Add(szBlur, 0, wx.EXPAND, 0)
         szThumbnails.Add(szOpacity, 0, wx.EXPAND, 0)
