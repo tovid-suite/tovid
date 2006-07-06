@@ -29,10 +29,13 @@ fields = [\
     'in_height']
 
 class Statlist:
-    """A list of VidStats that may be queried with a simple database-like
+    """A list of statistics that may be queried with a simple database-like
     interface."""
-    def __init__(self):
-        stats = []
+    def __init__(self, filename=''):
+        """Create a Statlist, reading from the given filename."""
+        self.records = []
+        if filename is not '':
+            self.read_csv(filename)
 
     def read_csv(self, filename):
         """Import stats from a CSV (comma-delimited quoted text) file."""
@@ -41,15 +44,19 @@ class Statlist:
         csv_reader = csv.DictReader(statfile, fields, skipinitialspace=True)
         skipped = 0
         for line in csv_reader:
-            # Format values and append
+            # Convert some string and numeric fields
             try:
                 line['format'] = str.lower(line['format'] or '')
                 line['tvsys'] = str.lower(line['tvsys'] or '')
                 line['length'] = int(line['length'] or 0)
                 line['avg_bitrate'] = int(line['avg_bitrate'] or 0)
+                line['tgt_bitrate'] = int(line['tgt_bitrate'] or 0)
+                line['peak_bitrate'] = int(line['peak_bitrate'] or 0)
                 line['encoding_time'] = int(line['encoding_time'] or 0)
+            # If conversion failed, just skip this line
             except ValueError:
                 skipped += 1
+            # Conversion worked; append to current records
             else:
                 self.records.append(line)
 

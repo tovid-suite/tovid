@@ -313,15 +313,20 @@ class Drawing:
     
     def gravity(self, direction):
         """Set the gravity direction to one of:
-        NorthWest, North, NorthEast,
-        West, Center, East,
-        SouthWest, South, SouthEast
+        
+            NorthWest, North, NorthEast,
+            West, Center, East,
+            SouthWest, South, SouthEast
+            
+        Note: gravity is known to affect text and images; it does not affect
+        points, lines, circles, rectangles, roundrectangles, polylines or
+        polygons.
         """
         self.insert('gravity %s' % direction)
     
     def image(self, compose, (x, y), (width, height), filename):
-        """Draw an image at (x, y), scaled to the given width and height.
-        compose may be:
+        """Draw an image centered at (x, y), scaled to the given width and
+        height. compose may be:
             Add, Minus, Plus, Multiply, Difference, Subtract,
             Copy, CopyRed, CopyGreen, CopyBlue, CopyOpacity,
             Atop, Bumpmap, Clear, In, Out, Over, Xor
@@ -347,7 +352,7 @@ class Drawing:
 
     def path(self, path_data):
         """Draw a path. path_data is a list of instructions and coordinates,
-        e.g. ['M', (100,100), 'L' (200,200), ...]
+        e.g. ['M', (100,100), 'L', (200,200), ...]
         Instructions are M (moveto), L (lineto), A (arc), Z (close path)
         For more on using paths (and a complete list of commands), see:
         http://www.cit.gu.edu.au/~anthony/graphics/imagick6/draw/#paths
@@ -355,7 +360,10 @@ class Drawing:
         """
         command = 'path'
         for token in path_data:
-            command += ' %s,%s' % (x, y)
+            if isinstance(token, tuple):
+                command += ' %s,%s' % token
+            else:
+                command += ' %s' % token
         self.insert(command)
 
     def point(self, (x, y)):
@@ -384,11 +392,11 @@ class Drawing:
         """Rotate by the given number of degrees."""
         self.insert('rotate %s' % degrees)
 
-    def roundrectangle(self, (x0, y0), (x1, y1), (width, height)):
+    def roundrectangle(self, (x0, y0), (x1, y1), (bevel_width, bevel_height)):
         """Draw a rounded rectangle from (x0, y0) to (x1, y1), with
-        a bevel size of (width, height)."""
+        a bevel size of (bevel_width, bevel_height)."""
         self.insert('roundrectangle %s,%s %s,%s %s,%s' % \
-                (x0, y0, x1, y1, width, height))
+                (x0, y0, x1, y1, bevel_width, bevel_height))
 
     def scale(self, (x, y)):
         """Set scaling to (x, y)."""
@@ -451,7 +459,7 @@ class Drawing:
         self.insert('stroke-width %s' % width)
     
     def text(self, (x, y), text_string):
-        """Draw the given text string at (x, y)."""
+        """Draw the given text string, with lower-left corner at (x, y)."""
         # TODO: Escape special characters in text string
         self.insert('text %s,%s "%s"' % (x, y, text_string))
     
