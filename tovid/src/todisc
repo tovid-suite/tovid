@@ -291,6 +291,7 @@ function confirm_preview()
         echo "Fonts:"
         echo "    -menu-font and -menu-fontsize"
         echo "    -thumbfont and -thumb-fontsize"
+        echo "(or reduce thumb title lengths)"
         echo "If you get black frames, then look at the -seek option"
         echo "For other fine-tuning options, see 'man todisc'."
         exit 0
@@ -550,7 +551,8 @@ done
 if test ${#FILES[@]} -eq 0 || test ${#TITLES[@]} -eq 0; then
     usage_error "Please provide at least one file and one title."
 elif test ${#FILES[@]} -ne ${#TITLES[@]}; then
-    usage_error "Please give the same number of files as titles."
+    usage_error "Please give the same number of files as titles.
+    You gave ${#FILES[@]} files and ${#TITLES[@]} titles"
 fi
 
 # Make sure -out was provided
@@ -566,8 +568,8 @@ for ((i=0; i<${#TITLES[@]}; i++)); do
     val=${#TITLES[i]}
     [ -z "$MAX_CHARS" ] || ((val > MAX_CHARS)) && MAX_CHARS=$val && key=$i
 done
-if [ $MAX_CHARS -gt 12 ]; then
-    echo -e "Sorry, thumb labels can only be 12 characters in length."
+if test ${#TITLES[@]} -gt 6 && test $MAX_CHARS -gt 120 ; then 
+    echo -e "Sorry, thumb labels can only be 12 characters in length for this arrangement."
     echo "\"${TITLES[key]}\" is too long; please use a shorter title."
     exit 1
 fi
@@ -1088,7 +1090,7 @@ for ((i=0; i<${#PICS[@]}; i++)); do
     -title "${TITLES[i]}")
     IM_CMD2=(convert -resize $THUMB_SIZE! -)
     IM_CMD3=(composite -gravity center -compose DstOver "$WORK_DIR/feather_mask2.png" - )
-    IM_CMD4=(convert -background none -frame 5x5 \
+    IM_CMD4=(convert -background none -frame 3x3 \
     -bordercolor "#444744" -)
     IM_CMD5=(convert -resize $THUMB_SIZE! - "${PICS[i]}")
     if $FEATHER; then
@@ -1570,7 +1572,7 @@ if $SUB_MENU; then
             # create frames for the chapter thumbs
             for PIC in "${imgs[@]}"; do
             spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$PIC")  "
-                convert -background '#141614' -frame 5x5 \
+                convert -background '#141614' -frame 3x3 \
                 -bordercolor none -mattecolor "#444744" "$PIC" miff:- |
                 convert -resize "${GEO_ARRAY[C]}"! - "$PIC"
             done
@@ -1779,7 +1781,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
         IM_CMD3=(montage -geometry +4+4 -background '#161514' \
         -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" \
         -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}" "$pic")
-        IM_CMD4=(convert -background '#161514' -frame 5x5 \
+        IM_CMD4=(convert -background '#161514' -frame 3x3 \
         -bordercolor none -mattecolor "#444744" -)
         IM_CMD5=(convert -resize $THUMB_SIZE! - $pic)
         if $FEATHER; then
