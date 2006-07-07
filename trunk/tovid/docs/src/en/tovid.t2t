@@ -204,9 +204,11 @@ letterboxing or anamorphic scaling.
     is useful if the audio is too quiet or too loud, or you want to make 
     volume consistent for a bunch of videos.
 
-: **-gain** //NUM//[dB]
-    Instead of analyzing and normalizing, apply a gain of ''NUM'' to the audio 
-    directly; use ''NUM''dB for a decibel gain.
+: **-amplitude** //NUM//[dB]
+    In addition to analyzing and normalizing, apply the gain to the audio 
+    such that the 'average' (RMS) sound level is //NUM//, 0.0 being silent 
+    and 1.0 being full scale. Use //NUM//dB for a decibel gain below full
+    scale (the default wihout -amplitude is -12dB).
 
 : **-abitrate** //NUM//
     Encode audio at //NUM// kilobits per second.  Reasonable values include

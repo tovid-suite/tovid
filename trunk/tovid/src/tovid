@@ -122,8 +122,8 @@ AUDIO_WAV="audiodump.wav"
 AUD_BITRATE="224"
 # Don't generate an empty audio stream
 GENERATE_AUDIO=false
-# Gain used when adjusting audio (-gain)
-AUDIO_GAIN=""
+# Amplitude used when adjusting audio (-amplitude)
+AUDIO_AMPLITUDE=""
 
 
 # Assume audio and video need to be re-encoded
@@ -374,9 +374,9 @@ get_args()
                 assert_dep normalize "'normalize' not found or installed! You cannot use -normalize."
                 DO_NORM=:
                 ;;
-            "-gain" )
+            "-amplitude" )
                 shift 
-                AUDIO_GAIN="--gain=$1"
+                AUDIO_AMPLITUDE="--amplitude=$1"
                 DO_NORM=:
                 ;;
             "-overwrite" )
@@ -1496,7 +1496,7 @@ else
         fi
 
         # Normalize the wave file.
-        normalize $AUDIO_GAIN $AUDIO_WAV
+        normalize $AUDIO_AMPLITUDE $AUDIO_WAV
     fi
 
     AUDIO_ENC="$PRIORITY ffmpeg"
