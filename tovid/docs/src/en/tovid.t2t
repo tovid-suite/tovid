@@ -208,7 +208,7 @@ letterboxing or anamorphic scaling.
     In addition to analyzing and normalizing, apply the gain to the audio 
     such that the 'average' (RMS) sound level is //NUM//, 0.0 being silent 
     and 1.0 being full scale. Use //NUM//dB for a decibel gain below full
-    scale (the default wihout -amplitude is -12dB).
+    scale (the default without -amplitude is -12dB).
 
 : **-abitrate** //NUM//
     Encode audio at //NUM// kilobits per second.  Reasonable values include
