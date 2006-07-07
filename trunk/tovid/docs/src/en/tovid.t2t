@@ -185,8 +185,8 @@ letterboxing or anamorphic scaling.
 : **-filters** {none,denoise,contrast,all} (default none)
     Apply post-processing filters to enhance the video. If your input video is
     very high quality, use 'none'. If your input video is grainy, use 'denoise';
-    if it looks washed out or faded, use 'contrast'. You can use multiple filters
-    separated by commas. To apply all filters, use 'all'.
+    if it looks washed out or faded, use 'contrast'. You can use multiple 
+    filters separated by commas. To apply all filters, use 'all'.
 
 : **-fps** //RATIO//
     Force input video to be interpreted as //RATIO// frames per second.  May be
@@ -200,15 +200,18 @@ letterboxing or anamorphic scaling.
 ===Audio stream options===
 
 : **-normalize**
-    Analyze the audio stream and then normalize the volume of the audio. This 
-    is useful if the audio is too quiet or too loud, or you want to make 
-    volume consistent for a bunch of videos.
+    Analyze the audio stream and then normalize the volume of the audio. 
+    This is useful if the audio is too quiet or too loud, or you want to 
+    make volume consistent for a bunch of videos. Similar to running 
+    normalize without any parameters. The default is -12dB average level 
+    with 0dB gain.
 
 : **-amplitude** //NUM//[dB]
     In addition to analyzing and normalizing, apply the gain to the audio 
-    such that the 'average' (RMS) sound level is //NUM//, 0.0 being silent 
-    and 1.0 being full scale. Use //NUM//dB for a decibel gain below full
-    scale (the default without -amplitude is -12dB).
+    such that the 'average' (RMS) sound level is //NUM//. Valid values 
+    range 0.0 - 1.0, with 0.0 being silent and 1.0 being full scale. Use 
+    //NUM//dB for a decibel gain below full scale (the default without 
+    -amplitude is -12dB).
 
 : **-abitrate** //NUM//
     Encode audio at //NUM// kilobits per second.  Reasonable values include
