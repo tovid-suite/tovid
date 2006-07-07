@@ -638,13 +638,6 @@ if __name__ == '__main__':
     label.draw_on(drawing, 1)
     drawing.pop()
 
-    # Draw a text box (experimental)
-    drawing.push()
-    drawing.translate((60, 300))
-    textbox = TextBox("Some <b>bold</b> and <i>italic</i> text", (200, 200))
-    textbox.draw_on(drawing, 1)
-    drawing.pop()
-
     # Draw a safe area test (experimental)
     safe = SafeArea(93, 'yellow')
     safe.draw_on(drawing, 1)
@@ -652,7 +645,7 @@ if __name__ == '__main__':
     # Draw a thumbnail grid (if images were provided)
     if images:
         drawing.push()
-        drawing.translate((350, 200))
+        drawing.translate((350, 300))
         thumbs = ThumbGrid(images, (320, 250))
         thumbs.draw_on(drawing, 1)
         drawing.pop()
