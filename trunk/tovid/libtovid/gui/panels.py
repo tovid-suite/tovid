@@ -2003,13 +2003,13 @@ class PlaylistTabPanel(wx.Panel):
         self.lblSubmenuAudio = wx.StaticText(self, wx.ID_ANY, _("Audio for Submenu"))
         self.submenu_audio = wx.TextCtrl(self, wx.ID_ANY, "")
         self.subaudio_all = wx.CheckBox(self, wx.ID_ANY, _("Use for all submenu audio?"))
-        self.btnAudio = wx.Button(self, wx.ID_ANY, _("Choose"))
+        self.btnAudio = wx.Button(self, wx.ID_ANY, _("Browse"))
         self.btnAddVideo = wx.Button(self, wx.ID_ANY, _("Add Video"))
         self.btnRemoveVideo = wx.Button(self, wx.ID_ANY, _("Remove Video"))
         self.static_line_4 = wx.StaticLine(self, wx.ID_ANY)
         self.lblOut = wx.StaticText(self, wx.ID_ANY, _("Output"))
         self.out = wx.TextCtrl(self, wx.ID_ANY, "")
-        self.btnOut = wx.Button(self, wx.ID_ANY, _("Choose"))
+        self.btnOut = wx.Button(self, wx.ID_ANY, _("Browse"))
         
         self.discFormat.SetSelection(0)
         self.videoFormat.SetSelection(0)
@@ -2088,6 +2088,7 @@ class PlaylistTabPanel(wx.Panel):
         self.SetSizer(szPlaylist)
         
         wx.EVT_CHECKBOX(self, self.submenus.GetId(), self.submenus_OnClick)
+        wx.EVT_BUTTON(self, self.btnOut.GetId(), self.btnOut_OnClick)
 
     def EnableSubmenus(self):
         self.submenu_title.Enable()
@@ -2108,6 +2109,11 @@ class PlaylistTabPanel(wx.Panel):
         else:
             self.DisableSubmenus()
             self.GetParent().GetParent().nbMenus.DisableSubmenus()
+
+    def btnOut_OnClick(self, evt):
+        dlgFile = wx.DirDialog(None)
+        if (dlgFile.ShowModal() == wx.ID_OK):
+            self.out.SetValue(dlgFile.GetPath())
 
 class MenuTabPanel(wx.Panel):
     def __init__(self, parent, id):
@@ -2134,23 +2140,23 @@ class MenuTabPanel(wx.Panel):
         self.text_mist = wx.CheckBox(self, wx.ID_ANY, _("Use text mist?"))
         self.lblTextMistColor = wx.StaticText(self, wx.ID_ANY, _("Text Mist Color:"))
         self.btnTextMistColor = wx.Button(self, wx.ID_ANY, _("Default"))
-        self.opacity_copy = wx.Slider(self, wx.ID_ANY, 100, 0, 100, style=wx.SL_HORIZONTAL|wx.SL_AUTOTICKS|wx.SL_LABELS)
+        self.opacity = wx.Slider(self, wx.ID_ANY, 100, 0, 100, style=wx.SL_HORIZONTAL|wx.SL_AUTOTICKS|wx.SL_LABELS)
         self.lblBgAudio = wx.StaticText(self, wx.ID_ANY, _("Background Audio"))
         self.bgaudio = wx.TextCtrl(self, wx.ID_ANY, "")
-        self.btnBgAudio = wx.Button(self, wx.ID_ANY, _("Choose"))
+        self.btnBgAudio = wx.Button(self, wx.ID_ANY, _("Browse"))
         self.lblBgImage = wx.StaticText(self, wx.ID_ANY, _("Background Image"))
         self.bgimage = wx.TextCtrl(self, wx.ID_ANY, "")
-        self.btnBgImage = wx.Button(self, wx.ID_ANY, _("Choose"))
+        self.btnBgImage = wx.Button(self, wx.ID_ANY, _("Browse"))
         self.lblBgVideo = wx.StaticText(self, wx.ID_ANY, _("Background Video"))
         self.bgvideo = wx.TextCtrl(self, wx.ID_ANY, "")
-        self.btnBgVideo = wx.Button(self, wx.ID_ANY, _("Choose"))
+        self.btnBgVideo = wx.Button(self, wx.ID_ANY, _("Browse"))
         self.lblMenuAudioFade = wx.StaticText(self, wx.ID_ANY, _("Menu:"))
         self.menu_audio_fade = wx.SpinCtrl(self, wx.ID_ANY, "", min=0, max=100)
         self.lblSubmenuAudioFade = wx.StaticText(self, wx.ID_ANY, _("Submenu:"))
         self.submenu_audio_fade = wx.SpinCtrl(self, wx.ID_ANY, "", min=0, max=100)
         self.static = wx.CheckBox(self, wx.ID_ANY, _("Animate menus?"))
-        self.lblMenuLength_copy = wx.StaticText(self, wx.ID_ANY, _("Menu animation length:"))
-        self.menu_length_copy = wx.SpinCtrl(self, wx.ID_ANY, "", min=0, max=100)
+        self.lblMenuLength = wx.StaticText(self, wx.ID_ANY, _("Menu animation length:"))
+        self.menu_length = wx.SpinCtrl(self, wx.ID_ANY, "", min=0, max=100)
         self.lblLoop = wx.StaticText(self, wx.ID_ANY, _("Menu pause length:"))
         self.loop = wx.SpinCtrl(self, wx.ID_ANY, "", min=0, max=100)
         self.static_line_1 = wx.StaticLine(self, wx.ID_ANY)
@@ -2196,7 +2202,7 @@ class MenuTabPanel(wx.Panel):
         szTextMist.AddGrowableCol(1)
         
         szMistOpacity = wx.StaticBoxSizer(self.szMistOpacity_staticbox, wx.VERTICAL)
-        szMistOpacity.Add(self.opacity_copy, 0, wx.EXPAND, 0)
+        szMistOpacity.Add(self.opacity, 0, wx.EXPAND, 0)
         
         szMainMenuBox = wx.StaticBoxSizer(self.szMainMenuBox_staticbox, wx.VERTICAL)
         szMainMenuBox.Add(szMenuTitle, 0, wx.EXPAND, 0)
@@ -2232,11 +2238,11 @@ class MenuTabPanel(wx.Panel):
         szAudioFadeBox = wx.StaticBoxSizer(self.szAudioFadeBox_staticbox, wx.HORIZONTAL)
         szAudioFadeBox.Add(szAudioFade, 1, wx.EXPAND, 0)
         
-        szMenuLength_copy = wx.FlexGridSizer(1, 2, 0, 0)
-        szMenuLength_copy.Add(self.lblMenuLength_copy, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
-        szMenuLength_copy.Add(self.menu_length_copy, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
-        szMenuLength_copy.AddGrowableCol(0)
-        szMenuLength_copy.AddGrowableCol(1)
+        szMenuLength = wx.FlexGridSizer(1, 2, 0, 0)
+        szMenuLength.Add(self.lblMenuLength, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szMenuLength.Add(self.menu_length, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
+        szMenuLength.AddGrowableCol(0)
+        szMenuLength.AddGrowableCol(1)
         
         szLoop = wx.GridSizer(1, 2, 0, 0)
         szLoop.Add(self.lblLoop, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
@@ -2244,7 +2250,7 @@ class MenuTabPanel(wx.Panel):
         
         szSubmenus = wx.FlexGridSizer(10, 1, 5, 0)
         szSubmenus.Add(self.static, 0, wx.ADJUST_MINSIZE, 0)
-        szSubmenus.Add(szMenuLength_copy, 1, wx.EXPAND, 0)
+        szSubmenus.Add(szMenuLength, 1, wx.EXPAND, 0)
         szSubmenus.Add(szLoop, 1, wx.EXPAND, 0)
         szSubmenus.Add(self.static_line_1, 0, wx.EXPAND, 0)
         szSubmenus.Add(self.ani_submenus, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
@@ -2275,6 +2281,9 @@ class MenuTabPanel(wx.Panel):
         
         self.SetAutoLayout(True)
         self.SetSizer(szMenus)
+        
+        wx.EVT_CHECKBOX(self, self.static.GetId(), self.static_OnClick)
+        wx.EVT_CHECKBOX(self, self.text_mist.GetId(), self.text_mist_OnClick)
 
     def EnableSubmenus(self):
         self.submenu_audio_fade.Enable()
@@ -2287,6 +2296,20 @@ class MenuTabPanel(wx.Panel):
         self.ani_submenus.Disable()
         self.btnSubmenuTitleColor.Disable()
         self.btnSubmenuStrokeColor.Disable()
+
+    def static_OnClick(self, evt):
+        if (evt.IsChecked()):
+            self.menu_length.Enable()
+            self.loop.Enable()
+        else:
+            self.menu_length.Disable()
+            self.loop.Disable()
+
+    def text_mist_OnClick(self, evt):
+        if (evt.IsChecked()):
+            self.btnTextMistColor.Enable()
+        else:
+            self.btnTextMistColor.Disable()
 
 class ThumbnailTabPanel(wx.Panel):
     def __init__(self, parent, id):
@@ -2350,6 +2373,14 @@ class ThumbnailTabPanel(wx.Panel):
         
         self.SetAutoLayout(True)
         self.SetSizer(szThumbnails)
+        
+        wx.EVT_CHECKBOX(self, self.feather_thumbs.GetId(), self.feather_thumbs_OnClick)
+
+    def feather_thumbs_OnClick(self, evt):
+        if (evt.IsChecked()):
+            self.thumb_shape.Enable()
+        else:
+            self.thumb_shape.Disable()
 
 class DebugTabPanel(wx.Panel):
     def __init__(self, parent, id):
