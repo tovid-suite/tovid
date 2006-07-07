@@ -377,14 +377,13 @@ class TodiscFrame(wx.Frame):
         szFrame.Add(self.notebook_1, 1, wx.EXPAND, 0)
         szFrame.Add(szNav, 1, wx.ALIGN_RIGHT, 0)
         
-        self.SetAutoLayout(True)
-        self.SetSizer(szFrame)
-        
         szFrame.Fit(self)
         szFrame.SetSizeHints(self)
         szFrame.AddGrowableRow(0)
         szFrame.AddGrowableCol(0)
         
+        self.SetAutoLayout(True)
+        self.SetSizer(szFrame)
         self.Layout()
         self.Centre()
         
