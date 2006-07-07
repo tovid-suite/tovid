@@ -48,7 +48,7 @@ Where OPTIONS may be any of the following:
 
   -audiodelay NUM    Delay audio by NUM milliseconds
   -normalize         Normalize the audio
-  -gain NUM[dB]      Apply a gain of NUM (add dB for decibel gain)
+  -amplitudeNUM[dB]  Apply a gain of NUM (0 - 1.0, add dB for decibel gain)
   -shrink NUM        Shrink video by factor NUM (1.0 - 2.0)
   -parallel          Run all processes in parallel (can save time)
   -debug             Keep a log of actions and output
@@ -64,7 +64,7 @@ TMP_FILE="postproc.fileinfo.$PPID"
 AUDIO_DELAY=""
 SHRINK_FACTOR=""
 DO_NORM=false
-AUDIO_GAIN=""
+AUDIO_AMPLITUDE=""
 DO_SHRINK=false
 MUX_OPTS=""
 DEBUG=false
@@ -125,9 +125,9 @@ while test ${1:0:1} = "-"; do
 	"-normalize" )
 	    DO_NORM=:
 	    ;;
-	"-gain" )
+	"-amplitude" )
 	    shift
-	    AUDIO_GAIN="--gain=$1"
+	    AUDIO_AMPLITUDE="--amplitude=$1"
 	    DO_NORM=:
 	    ;;
         "-debug" )
@@ -201,7 +201,7 @@ $PARALLEL || wait
 
 # Normalize/gain
 if $DO_NORM; then
-   AUDIO_NORM="normalize $AUDIO_GAIN audio_dump"
+   AUDIO_NORM="normalize $AUDIO_AMPLITUDE audio_dump"
    
    echo "Normalizing audio/applying gain with the following command:"
    echo "$AUDIO_NORM"
