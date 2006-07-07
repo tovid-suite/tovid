@@ -17,6 +17,10 @@ from libtovid.disc import Disc
 from libtovid.menu import Menu
 from libtovid.video import Video
 
+__all__ = ["AuthorFilesTaskPanel", "DiscLayoutPanel", "EncodingPanel", "BurnDiscPanel",\
+           "CommandOutputPanel", "DiscPanel", "GuidePanel", "HidablePanel", "MenuPanel",\
+           "VideoPanel", "PlaylistTabPanel", "MenuTabPanel", "ThumbnailTabPanel", "DebugTabPanel"]
+
 class AuthorFilesTaskPanel(wx.Panel):
     """A three-step interface for authoring video files to disc.
     Uses DiscLayoutPanel, EncodingPanel, and BurnDiscPanel."""
