@@ -653,7 +653,7 @@ if $SUB_MENU; then
     done
 fi
 # if -bgvideo selected, but also -static, exit with error message
-if [[ -n "$BG_VIDEO" &&  $STATIC ]]; then
+if test -n "$BG_VIDEO" &&  $STATIC; then
     usage_error "You can not use -bgvideo with a static menu"
 fi
 # if -bgvideo selected, but not -bgaudio, see if he wants to use bgvideo's
