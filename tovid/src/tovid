@@ -598,7 +598,7 @@ cleanup()
 {
     cd "$WORKING_DIR"
     yecho "Cleaning up..."
-    rm -fv stream.yuv
+    rm -fv "$YUV_STREAM"
     if $KEEPFILES; then
         yecho "Keeping temporary files:"
         yecho "  $VIDEO_STREAM"
@@ -660,17 +660,8 @@ get_args "$@"
 # ******************************************************************************
 
 # Check for presence of mplayer and mpeg2enc
-assert_dep mplayer 'no mplayer'
-assert_dep mmplayer 'no mmplayer, foo'
-assert_dep mmpeg2enc 'no mmpeg2enc, foo'
-
-# Can't do -subtitles with -ffmpeg; if both were used, print error and exit
-# TODO: Support subtitles in ffmpeg!
-if $USE_FFMPEG && $DO_SUBS; then
-    usage_error "Sorry, -subtitles is not currently supported with -ffmpeg."
-fi
-
-
+# assert_dep mplayer 'No mplayer!'
+# assert_dep mpeg2enc 'No mpeg2enc!'
 if type mplayer >/dev/null; then :; else
     echo "$ME It looks like you don't have mplayer installed. I need mplayer"
     echo "for playing and encoding video. You can get mplayer from:"
@@ -683,6 +674,14 @@ if type mpeg2enc >/dev/null; then :; else
     echo "    http://mjpeg.sourceforge.net/"
     exit 1
 fi
+
+
+# Can't do -subtitles with -ffmpeg; if both were used, print error and exit
+# TODO: Support subtitles in ffmpeg!
+if $USE_FFMPEG && $DO_SUBS; then
+    usage_error "Sorry, -subtitles is not currently supported with -ffmpeg."
+fi
+
 
 # Make sure '-in FILE' was provided on the command-line
 if test -z "$IN_FILE"; then
@@ -723,11 +722,11 @@ else
 fi
 
 # If output file(s) exist, prompt for overwrite
-if test -e "$VIDEO_STREAM" || test -e "$OUT_FILENAME" || test -e "$AUDIO_STREAM"; then
-    yecho "It looks like some files already exist with prefix: $OUT_PREFIX"
+if test -e "$OUT_FILENAME"; then
+    yecho "Output file already exists: $OUT_FILENAME"
     if $OVERWRITE; then
-        yecho "Removing existing files..."
-        rm -fv "$VIDEO_STREAM" "$OUT_FILENAME" "$AUDIO_STREAM"
+        yecho "Overwriting existing file..."
+        rm -fv "$OUT_FILENAME"
     else
         exit_with_error "If you would like to overwrite the existing files, please re-run the script with the 'overwrite' option."
     fi
@@ -756,7 +755,9 @@ echo "$ME $0 $@" >> "$LOG_FILE"
 echo "$ME Version $TOVID_VERSION" >> "$LOG_FILE"
 
 # Full pathnames for A/V streams and output file
+AUDIO_WAV="$TMP_DIR/audio.wav"
 AUDIO_STREAM="$TMP_DIR/audio.$AUD_SUF"
+YUV_STREAM="$TMP_DIR/video.yuv"
 VIDEO_STREAM="$TMP_DIR/video.$VID_SUF"
 OUT_FILENAME="$OUT_PREFIX.mpg"
 
@@ -1498,9 +1499,10 @@ else
     # When normalizing, we need a wave file.
     if $DO_NORM; then
         rm -f "$AUDIO_WAV"
-        AUDIO_IN_FILE=$AUDIO_WAV
+        AUDIO_IN_FILE="$AUDIO_WAV"
 
-        AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null -ao pcm:waveheader:file=$AUDIO_WAV \"$IN_FILE\""
+        AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null -ao
+        pcm:waveheader:file=\"$AUDIO_WAV\" \"$IN_FILE\""
 
         # Generate or dump audio
         yecho "Normalizing the audio stream."
@@ -1516,13 +1518,13 @@ else
             wait
 
             # Make sure the audio stream exists before proceeding
-            if test ! -f $AUDIO_WAV; then
+            if test ! -f "$AUDIO_WAV"; then
                     runtime_error "Could not extract audio from original video"
             fi
         fi
 
         # Normalize the wave file.
-        normalize $AUDIO_AMPLITUDE $AUDIO_WAV
+        normalize $AUDIO_AMPLITUDE "$AUDIO_WAV"
     fi
 
     AUDIO_ENC="$PRIORITY ffmpeg"
@@ -1565,8 +1567,8 @@ fi # encode audio
 
 yecho
 
-# Remove stream.yuv
-rm -f stream.yuv
+# Remove yuv stream
+rm -f "$YUV_STREAM"
 if $PARALLEL; then
     rm -f "$VIDEO_STREAM"
     mkfifo "$VIDEO_STREAM"
@@ -1594,10 +1596,10 @@ else
 
     # Normal one-pass encoding, with mplayer piped into the mjpegtools
     if $USE_FIFO; then
-        mkfifo stream.yuv
+        mkfifo "$YUV_STREAM"
     fi
-    VID_PLAY_CMD="$PRIORITY $MPLAYER -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg${YUV4MPEG_ILACE} ${VF_PRE} ${VID_FILTER} ${VID_SCALE} ${VF_POST} \"$IN_FILE\" $MPLAYER_OPTS"
-    VID_ENC_CMD="cat stream.yuv | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
+    VID_PLAY_CMD="$PRIORITY $MPLAYER -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} ${VF_PRE} ${VID_FILTER} ${VID_SCALE} ${VF_POST} \"$IN_FILE\" $MPLAYER_OPTS"
+    VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
     yecho $VID_PLAY_CMD
     yecho $VID_ENC_CMD
     # Start encoding
@@ -1607,7 +1609,7 @@ else
 
 
     if $USE_FIFO; then
-        file_output_progress stream.yuv "Ripping raw uncompressed video stream"
+        file_output_progress "$YUV_STREAM" "Ripping raw uncompressed video stream"
     fi
     
 
