@@ -512,6 +512,58 @@ class SafeArea (Layer):
         drawing.pop()
 
 
+class Scatterplot (Layer):
+    """A 2D scatterplot of data."""
+    def __init__(self, xy_dict, size=(240, 80)):
+        """Create a scatterplot using data in xy_dict, a dictionary of
+        lists of y-values, indexed by x-value."""
+        self.xy_dict = xy_dict
+        self.size = size
+
+    def draw_on(self, drawing, frame):
+        """Draw the scatterplot."""
+        assert isinstance(drawing, Drawing)
+        width, height = self.size
+        x_vals = self.xy_dict.keys()
+        max_y = 0
+        for x in x_vals:
+            largest = max(self.xy_dict[x])
+            if largest > max_y:
+                max_y = largest
+        x_scale = float(width) / max(x_vals)
+        y_scale = float(height) / max_y
+        print "x,y scale: %s, %s" % (x_scale, y_scale)
+        
+        drawing.comment("Scatterplot Layer")
+        
+        # Save context
+        drawing.push()
+        drawing.fill(None)
+        
+        # Draw axes
+        drawing.comment("Axes of scatterplot")
+        drawing.push()
+        drawing.stroke('black')
+        drawing.stroke_width(3)
+        drawing.polyline([(0, 0), (0, height), (width, height)])
+        drawing.pop()
+        
+        # Plot all y-values for each x (as small circles)
+        drawing.comment("Scatterplot data")
+        drawing.push()
+        drawing.stroke(None)
+        drawing.fill('red')
+        #drawing.fill_opacity(0.2)
+        for x in x_vals:
+            for y in self.xy_dict[x]:
+                point = (int(x * x_scale), int(height - y * y_scale))
+                drawing.circle_rad(point, 3)
+        drawing.pop()
+        
+        # Restore context
+        drawing.pop()
+        
+
 class InterpolationGraph (Layer):
     # TODO: Support graphing of tuple data
     """A graph of an interpolation curve, defined by a list of Keyframes and
