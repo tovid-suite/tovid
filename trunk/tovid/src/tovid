@@ -663,21 +663,8 @@ get_args "$@"
 # ******************************************************************************
 
 # Check for presence of mplayer and mpeg2enc
-# assert_dep mplayer 'No mplayer!'
-# assert_dep mpeg2enc 'No mpeg2enc!'
-if type mplayer >/dev/null; then :; else
-    echo "$ME It looks like you don't have mplayer installed. I need mplayer"
-    echo "for playing and encoding video. You can get mplayer from:"
-    echo "    http://www.mplayerhq.hu/"
-    exit 1
-fi
-if type mpeg2enc >/dev/null; then :; else
-    echo "$ME It looks like you don't have mjpegtools installed. I need mjpegtools"
-    echo "for encoding video and audio. You can get mjpegtools from:"
-    echo "    http://mjpeg.sourceforge.net/"
-    exit 1
-fi
-
+assert_dep mplayer "mplayer is needed for identifying and encoding video."
+assert_dep mpeg2enc "mpeg2enc is needed for encoding MPEG video."
 
 # Can't do -subtitles with -ffmpeg; if both were used, print error and exit
 # TODO: Support subtitles in ffmpeg!
