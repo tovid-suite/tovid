@@ -1,30 +1,20 @@
 #! /usr/bin/env python
 # tovid-stats
 
-"""Predict the approximate encoded output size of a video stream.
-
-Inputs:
-    Multimedia video file (.avi, .mov, .mpg or whatever)
-
-Desired outputs:
-    Video stream size estimate for each format, ex.:
-        VCD: 15MB
-        SVCD: 25MB
-        DVD: 50MB
-        Half-DVD: 35MB
-        ...
-    Or, a single size estimate for a specific format, e.g.:
-        $ vidsizeguess -dvd -ntsc Video.avi
-        50263741
-
-Current implementation works by reading your ~/.tovid/stats.tovid file,
-containing statistics on all videos you've encoded with tovid. Output size
-prediction is then based on the average for each format.
+"""Print statistical summaries of videos encoded with tovid, from data stored
+in ~/.tovid/stats.tovid.
 """
+
+# TODO:
+#   * Output size, per minute of video, by format/bitrate/quantization
+#   * Encoding time/min by format
+#   * Encoding time/min by CPU speed
+
+# TODO: Consider graphing (via layer.py)
 
 import os
 import sys
-from libtovid.stats import Statlist, fields
+from libtovid import stats
 from libtovid.utils import pretty_dict
 
 if __name__ == '__main__':
@@ -40,8 +30,10 @@ if __name__ == '__main__':
         print "        Count total occurrences of distinct values in FIELD"
         print "    -average FIELD_1 [by FIELD_2]"
         print "        Average FIELD_1, optionally sorted by FIELD_2"
-        print "FIELD may be any of the following:"
-        for field in fields:
+        print "    -list FIELD_1 by FIELD_2"
+        print "        Show all values of FIELD_1, organized by FIELD_2"
+        print "FIELDs may be any of the following:"
+        for field in stats.fields:
             print "    %s" % field
         print "You may include multiple commands, for example:"
         print "    tovid-stats -count cpu_speed -average avg_bitrate by tvsys"
@@ -52,7 +44,7 @@ if __name__ == '__main__':
     tempfile = os.path.expanduser('~/.tovid/stats.tovid.csv')
     # Only use lines beginning with "
     os.system('cat "%s" | grep \'^\"\' > "%s"' % (statfile, tempfile))
-    statlist = Statlist(tempfile)
+    statlist = stats.Statlist(tempfile)
     os.remove(tempfile)
 
     # Parse command-line
@@ -69,11 +61,22 @@ if __name__ == '__main__':
             if args and args[0] == 'by':
                 args.pop(0)
                 by_field = args.pop(0)
-                print "Average %s, sorted by %s:" % \
-                        (avg_field, by_field)
+                print "Average %s, sorted by %s:" % (avg_field, by_field)
                 print pretty_dict(statlist.average_by(avg_field, by_field))
             else:
                 print "Average %s:" % avg_field
                 print statlist.average(avg_field)
 
-
+        # Useful -list arguments:
+        #    -list avg_bitrate by tgt_bitrate
+        #    -list peak_bitrate by tgt_bitrate
+        
+        elif arg == '-list':
+            list_field = args.pop(0)
+            if args and args[0] == 'by':
+                args.pop(0)
+                by_field = args.pop(0)
+                print "List of %ss by by %s:" % (list_field, by_field)
+                print pretty_dict(statlist.list_by(list_field, by_field, True))
+            else:
+                print "Please use -list with a 'by' clause."
