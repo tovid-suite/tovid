@@ -16,6 +16,8 @@ import os
 import sys
 from libtovid import stats
 from libtovid.utils import pretty_dict
+from libtovid.layer import Scatterplot
+from libtovid.mvg import Drawing
 
 if __name__ == '__main__':
     args = sys.argv[1:]
@@ -32,6 +34,8 @@ if __name__ == '__main__':
         print "        Average FIELD_1, optionally sorted by FIELD_2"
         print "    -list FIELD_1 by FIELD_2"
         print "        Show all values of FIELD_1, organized by FIELD_2"
+        print "    -plot FIELD_1 by FIELD_2"
+        print "        Like -list, but show a scatterplot image of the data."
         print "FIELDs may be any of the following:"
         for field in stats.fields:
             print "    %s" % field
@@ -80,3 +84,19 @@ if __name__ == '__main__':
                 print pretty_dict(statlist.list_by(list_field, by_field, True))
             else:
                 print "Please use -list with a 'by' clause."
+
+        elif arg == '-plot':
+            list_field = args.pop(0)
+            if args and args[0] == 'by':
+                args.pop(0)
+                by_field = args.pop(0)
+                print "Generating a scatterplot of %ss by %s" % \
+                      (list_field, by_field)
+                xy_values = statlist.list_by(list_field, by_field, True)
+                scatterplot = Scatterplot(xy_values, (640, 480))
+                drawing = Drawing((720, 576))
+                drawing.fill('white')
+                drawing.rectangle((0, 0), (720, 576))
+                drawing.translate((40, 48))
+                scatterplot.draw_on(drawing, 0)
+                drawing.render()
