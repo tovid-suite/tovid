@@ -568,7 +568,7 @@ for ((i=0; i<${#TITLES[@]}; i++)); do
     val=${#TITLES[i]}
     [ -z "$MAX_CHARS" ] || ((val > MAX_CHARS)) && MAX_CHARS=$val && key=$i
 done
-if test ${#TITLES[@]} -gt 6 && test $MAX_CHARS -gt 120 ; then 
+if test ${#TITLES[@]} -gt 6 && test $MAX_CHARS -gt 12 ; then 
     echo -e "Sorry, thumb labels can only be 12 characters in length for this arrangement."
     echo "\"${TITLES[key]}\" is too long; please use a shorter title."
     exit 1
@@ -705,22 +705,22 @@ for ((i=0; i<=NUM_FILES; i++)); do
     yecho "Checking $IN_FILE for compliance..."
     # TODO: Check for PAL/NTSC compliance
     # If video matches the target format, append to NEW_IN_FILES
-    if mencoder -oac pcm -ovc copy -o /dev/null   "$IN_FILE" &>/dev/null; then
-        if test $TARGET = "dvd" && test "$(idvid -is dvd "$IN_FILE")" = "true"; then
-            NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE")
-        elif test $TARGET = "svcd" && test "$(idvid -is svcd "$IN_FILE")" = "true"; then
-            NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE")
-        # Video needs to be re-encoded; use a .enc filename in NEW_IN_FILES
+    if test -e "$IN_FILE"; then
+        if mencoder -oac pcm -ovc copy -o /dev/null "$IN_FILE" &>/dev/null; then
+            if test $TARGET = "dvd" && test "$(idvid -is dvd "$IN_FILE")" = "true"; then
+                NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE")
+            elif test $TARGET = "svcd" && test "$(idvid -is svcd "$IN_FILE")" = "true"; then
+                NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE")
+            # Video needs to be re-encoded; use a .enc filename in NEW_IN_FILES
+            else
+                FILES_TO_ENCODE[i]="$IN_FILE"
+                NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE.enc.mpg")
+            fi
         else
-            FILES_TO_ENCODE[i]="$IN_FILE"
-            NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE.enc.mpg")
+            usage_error ""$IN_FILE" is not a video file"
         fi
     else
-        if test -e "$IN_FILE"; then
-            usage_error ""$IN_FILE" is not a video file"
-        else
-            usage_error ""$IN_FILE" does not exist"
-        fi
+        usage_error ""$IN_FILE" does not exist"
     fi
 done
 if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
