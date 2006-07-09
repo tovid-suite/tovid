@@ -713,62 +713,6 @@ for ((i=0; i<=NUM_FILES; i++)); do
     fi
 done
 echo        
-# Check input files for compliance; offer to tovid-encode non-compliant files
-for ((i=0; i<=NUM_FILES; i++)); do
-    IN_FILE="${IN_FILES[i]}"
-    yecho "Checking $IN_FILE for compliance..."
-    # TODO: Check for PAL/NTSC compliance
-    # If video matches the target format, append to NEW_IN_FILES
-    if test $TARGET = "dvd" && test "$(idvid -is dvd "$IN_FILE")" = "true"; then
-        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE")
-    elif test $TARGET = "svcd" && test "$(idvid -is svcd "$IN_FILE")" = "true"; then
-        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE")
-    # Video needs to be re-encoded; use a .enc filename in NEW_IN_FILES
-    else
-        FILES_TO_ENCODE[i]="$IN_FILE"
-        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE.enc.mpg")
-    fi
-done
-if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
-    TGT_CAPS=$(echo $TARGET | tr a-z A-Z)
-    yecho
-    yecho "Encode input files"
-    yecho
-    yecho "Some of the -files you provided are not $TGT_CAPS-compliant:"
-    yecho " "
-    for i in "${FILES_TO_ENCODE[@]}"; do
-        test -n "$i" && yecho "  $i"
-    done
-    yecho " "
-    yecho "I can encode them for you, but it may take a long time."
-    yecho "Encoding will ensure that your disc is fully compliant;"
-    yecho "you may skip this, but your disc may not be playable."
-    yecho "Please type 'yes' if you want the files to be encoded:"
-    read ENCODE
-    if test -n "$ENCODE" && test "$ENCODE" = 'yes'; then
-        yecho
-        yecho "Converting files to $TGT_CAPS format with 'tovid'"
-        for i in "${FILES_TO_ENCODE[@]}"; do
-            yecho "Converting: $i"
-            countdown
-            tovid -$TV_STANDARD -$TARGET -in "$i" -out "$i.enc"
-            wait
-            # See if output file exists
-            if ! test -f "$i.enc.mpg"; then
-                runtime_error "Couldn't encode file: $i"
-            fi
-            yecho
-        done
-        # Replace IN_FILES with NEW_IN_FILES (with .enc extension)
-        IN_FILES=("${NEW_IN_FILES[@]}")
-    else
-        yecho
-        yecho "Not re-encoding. I'll proceed with menu generation, but"
-        yecho "your authored disc will not be fully $TGT_CAPS-compliant."
-        yecho
-    fi
-fi
-
 ##############################################################################
 # Font defaults
 ##############################################################################
@@ -1145,10 +1089,68 @@ fi
 confirm_preview
 
 unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
+
 ###############################################################################
-#             get information about videos and store in an array              #
+#             get information about input videos                              #
 ###############################################################################
 
+# Check input files for compliance; offer to tovid-encode non-compliant files
+for ((i=0; i<=NUM_FILES; i++)); do
+    IN_FILE="${IN_FILES[i]}"
+    yecho "Checking $IN_FILE for compliance..."
+    # TODO: Check for PAL/NTSC compliance
+    # If video matches the target format, append to NEW_IN_FILES
+    if test $TARGET = "dvd" && test "$(idvid -is dvd "$IN_FILE")" = "true"; then
+        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE")
+    elif test $TARGET = "svcd" && test "$(idvid -is svcd "$IN_FILE")" = "true"; then
+        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE")
+    # Video needs to be re-encoded; use a .enc filename in NEW_IN_FILES
+    else
+        FILES_TO_ENCODE[i]="$IN_FILE"
+        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE.enc.mpg")
+    fi
+done
+if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
+    TGT_CAPS=$(echo $TARGET | tr a-z A-Z)
+    yecho
+    yecho "Encode input files"
+    yecho
+    yecho "Some of the -files you provided are not $TGT_CAPS-compliant:"
+    yecho " "
+    for i in "${FILES_TO_ENCODE[@]}"; do
+        test -n "$i" && yecho "  $i"
+    done
+    yecho " "
+    yecho "I can encode them for you, but it may take a long time."
+    yecho "Encoding will ensure that your disc is fully compliant;"
+    yecho "you may skip this, but your disc may not be playable."
+    yecho "Please type 'yes' if you want the files to be encoded:"
+    read ENCODE
+    if test -n "$ENCODE" && test "$ENCODE" = 'yes'; then
+        yecho
+        yecho "Converting files to $TGT_CAPS format with 'tovid'"
+        for i in "${FILES_TO_ENCODE[@]}"; do
+            yecho "Converting: $i"
+            countdown
+            tovid -$TV_STANDARD -$TARGET -in "$i" -out "$i.enc"
+            wait
+            # See if output file exists
+            if ! test -f "$i.enc.mpg"; then
+                runtime_error "Couldn't encode file: $i"
+            fi
+            yecho
+        done
+        # Replace IN_FILES with NEW_IN_FILES (with .enc extension)
+        IN_FILES=("${NEW_IN_FILES[@]}")
+    else
+        yecho
+        yecho "Not re-encoding. I'll proceed with menu generation, but"
+        yecho "your authored disc will not be fully $TGT_CAPS-compliant."
+        yecho
+    fi
+fi
+
+# Store info about input files in an array
 for ((i=0; i<${#IN_FILES[@]}; i++)); do
     echo "Getting stats on "${IN_FILES[i]}""
     mencoder_stats=( "${mencoder_stats[@]}" \
