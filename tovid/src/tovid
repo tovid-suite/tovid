@@ -447,6 +447,9 @@ get_args()
                         "denoise" )
                             DO_DENOISE=:
                             ;;
+                        "deblock" )
+                            DO_DEBLOCK=:
+                            ;;
                     esac
                 done
                 ;;
@@ -1501,8 +1504,7 @@ else
         rm -f "$AUDIO_WAV"
         AUDIO_IN_FILE="$AUDIO_WAV"
 
-        AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null -ao
-        pcm:waveheader:file=\"$AUDIO_WAV\" \"$IN_FILE\""
+        AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null -ao pcm:waveheader:file=\"$AUDIO_WAV\" \"$IN_FILE\""
 
         # Generate or dump audio
         yecho "Normalizing the audio stream."
