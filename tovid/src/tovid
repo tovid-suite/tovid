@@ -700,7 +700,7 @@ fi
 if test -d "$OUT_PREFIX"; then
     exit_with_error "Error: The specified output file is a directory.  A filename must be specified."
 # If output prefix is a base name only, put output in OUTPUT_DIR
-elif test "$OUT_PREFIX" = $(basename "$OUT_PREFIX"); then
+elif test "$OUT_PREFIX" = "$(basename "$OUT_PREFIX")"; then
     OUT_PREFIX="$OUTPUT_DIR/$OUT_PREFIX"
 # Otherwise, use the full qualified pathname
 else
