@@ -596,17 +596,7 @@ echo "# summary" >> $DEP_LIST_FILE
 echo "have: $DEP_SUMMARY" >> $DEP_LIST_FILE
 fi
 
-# Quit and complain if ANY dependency is missing. So far, all dependencies are
-# required, none are optional.
-#if grep "MISSING" $DEP_LIST_FILE 
-#then
-#  echo
-#  echo "Missing required dependencies!"
-#  echo "Install them and run 'tovid-init -refresh-deps'"
-#  echo "Exiting..."
-#  exit 1
-#fi
-
+# Quit and complain if ANY core dependency is missing.
 assert_dep_group "core" "You are missing tovid CORE dependencies!"
 
 BUILD_OPTIONS=`tail -n 1 $DEP_LIST_FILE | sed s/have/with/`
