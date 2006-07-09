@@ -29,6 +29,17 @@ options = [\
            capabilities of your TV or monitor.""")
     ]
 
+# TODO: Write a backend to allow genvid to create a video sequence displaying
+# statistics about a video or videos (via 'idvid'), and for rendering something
+# equivalent to an "about this disc" still-image, i.e.
+#     "This disc was generated on 2006-07-04, by tovid version 0.27"
+# along with, i.e.
+#     101 - The Tick vs. The Idea Men.mpg
+#         303MB, 720x480, 9000kbps, 00h:20m:54s
+#     102 - The Tick vs. Chairface Chippendale.mpg
+#         234MB, 720x480, 9000kbps, 00h:19m:16s
+#     ...
+
 # Main function
 if __name__ == '__main__':
     # Fill useropts with default values
