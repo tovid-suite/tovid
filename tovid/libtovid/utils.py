@@ -108,9 +108,13 @@ def tokenize(line, include_chars=''):
     return tokens
 
 def pretty_dict(dict):
-    """Return a pretty-printed dictionary, with one line for each key."""
+    """Return a pretty-printed dictionary, with one line for each key.
+    Keys are printed in sorted ascending order."""
     result = ''
-    for key, value in dict.iteritems():
+    keys = dict.keys()
+    keys.sort()
+    for key in keys:
+        value = dict[key]
         # For boolean options, print Trues and omit Falses
         if value.__class__ == bool:
             if value == True:
