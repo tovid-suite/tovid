@@ -1732,15 +1732,18 @@ $SCRIPT_NAME
     MD5sum of the input file (IN_FILE_MD5)
     Width in pixels of input file (ID_VIDEO_WIDTH)
     Height in pixels of input file (ID_VIDEO_HEIGHT)
-    Total size of audio and video streams (STREAM_SIZE)
+    Quantization level used (QUANT)
+    Total kilobytes of output per minute of video (KB_PER_MIN)
+    Total encoding time per minute of video (ENC_PER_MIN)
     ===================================================
 
     Values are stored as comma-separated quoted strings, for ease of
     portability. To import these stats into a spreadsheet or database,
     simply remove these comments from the file.
 
-"TOVID_VERSION", "OUT_FILENAME", "V_DURATION", "TGT_RES", "TVSYS", "FINAL_SIZE", "VID_BITRATE", "AVG_BITRATE", "PEAK_BITRATE", "GOP_MINSIZE", "GOP_MAXSIZE", "SCRIPT_TOT_TIME", "CPU_MODEL", "CPU_SPEED", "ID_VIDEO_FORMAT", "ID_AUDIO_CODEC", "ENCODING_MODE", "IN_FILE_MD5", "ID_VIDEO_WIDTH", "ID_VIDEO_HEIGHT"
+"TOVID_VERSION", "OUT_FILENAME", "V_DURATION", "TGT_RES", "TVSYS", "FINAL_SIZE", "VID_BITRATE", "AVG_BITRATE", "PEAK_BITRATE", "GOP_MINSIZE", "GOP_MAXSIZE", "SCRIPT_TOT_TIME", "CPU_MODEL", "CPU_SPEED", "ID_VIDEO_FORMAT", "ID_AUDIO_CODEC", "ENCODING_MODE", "IN_FILE_MD5", "ID_VIDEO_WIDTH", "ID_VIDEO_HEIGHT", "QUANT", "KB_PER_MIN", "ENC_PER_MIN"
 EOF`
+
 
     $QUIET || printf "%s\n" "$STAT_FILE_HEADER" > "$STAT_FILE"
 fi
@@ -1757,6 +1760,8 @@ PEAK_BITRATE=$(grep 'Peak bit-rate' "$LOG_FILE" | awk '{print $6}')
 # Convert to kbits/sec
 test -n $AVG_BITRATE && AVG_BITRATE=$(expr $AVG_BITRATE \/ 1000)
 test -n $PEAK_BITRATE && PEAK_BITRATE=$(expr $PEAK_BITRATE \/ 1000)
+KB_PER_MIN=$(expr $FINAL_SIZE \* 60 \/ $V_DURATION)
+ENC_PER_MIN=$(expr $SCRIPT_TOT_TIME \* 60 \/ $V_DURATION)
 
 # Final statistics string (pretty-printed)
 FINAL_STATS_PRETTY=`cat << EOF
@@ -1775,9 +1780,8 @@ EOF`
 
 # Final statistics (comma-delimited quoted strings)
 FINAL_STATS_FORMATTED=`cat << EOF
-"$TOVID_VERSION", "$OUT_FILENAME", "$V_DURATION", "$TGT_RES", "$TVSYS", "$FINAL_SIZE", "$VID_BITRATE", "$AVG_BITRATE", "$PEAK_BITRATE", "$GOP_MINSIZE", "$GOP_MAXSIZE", "$SCRIPT_TOT_TIME", "$CPU_MODEL", "$CPU_SPEED", "$ID_VIDEO_FORMAT", "$ID_AUDIO_CODEC", "$ENCODING_MODE", "$IN_FILE_MD5", "$ID_VIDEO_WIDTH", "$ID_VIDEO_HEIGHT"
+"$TOVID_VERSION", "$OUT_FILENAME", "$V_DURATION", "$TGT_RES", "$TVSYS", "$FINAL_SIZE", "$VID_BITRATE", "$AVG_BITRATE", "$PEAK_BITRATE", "$GOP_MINSIZE", "$GOP_MAXSIZE", "$SCRIPT_TOT_TIME", "$CPU_MODEL", "$CPU_SPEED", "$ID_VIDEO_FORMAT", "$ID_AUDIO_CODEC", "$ENCODING_MODE", "$IN_FILE_MD5", "$ID_VIDEO_WIDTH", "$ID_VIDEO_HEIGHT", "$QUANT", "$KB_PER_MIN", "$ENC_PER_MIN"
 EOF`
-
 
 $FAKE || printf "%s\n" "$FINAL_STATS_FORMATTED" >> "$STAT_FILE"
 
