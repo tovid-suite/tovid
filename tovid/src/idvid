@@ -48,9 +48,12 @@ Where OPTIONS may be any of the following:
     -terse      Suitable for parsing
     -verbose    Also use ffmpeg and tcprobe
     -fast       Skip lengthy playing time estimation
-    -is [vcd|svcd|dvd]
+    -isformat [vcd|svcd|dvd]
         Tell whether the first file is compliant with the given
         format; prints "true" or "false" (returns shell 0 or 1)
+    -istvsys [pal|ntsc]
+        Tell whether the file is compliant with the given TV system.
+        Ignored if -isformat is present.
 
 See the idvid manual page ('man idvid') for additional documentation.
 
@@ -81,6 +84,7 @@ V_NONCOMPLIANT=""
 A_NONE=""
 V_TV=""
 MATCH_FORMAT=""
+MATCH_TVSYS=""
 mkdir -p "$STAT_DIR"
 touch "$STAT_FILE"
 
@@ -255,7 +259,7 @@ idvid_main ()
     esac
 
     # If just matching, don't print out anything yet
-    if test -n "$MATCH_FORMAT"; then
+    if test -n "$MATCH_FORMAT" || test -n "$MATCH_TVSYS"; then
         :
     # Print out identifying information, either in terse form
     # or in human-readable form
@@ -475,30 +479,36 @@ idvid_main ()
 
     # If just checking compliance, look for a match and exit with the
     # appropriate return code (0: compliant, 1: not compliant)
-    if test -n "$MATCH_FORMAT"; then
+    if test -n "$MATCH_FORMAT" || test -n "$MATCH_TVSYS"; then
         MATCH=false
-        case "$MATCH_FORMAT" in
-            "vcd" )
-                if test -n "$A_VCD1" || test -n "$A_VCD2"; then
-                    if test -n "$V_VCD";
+        if test -n "$MATCH_FORMAT"; then
+            case "$MATCH_FORMAT" in
+                "vcd" )
+                    if test -n "$A_VCD1" || test -n "$A_VCD2"; then
+                        if test -n "$V_VCD";
+                        then MATCH=:
+                        fi
+                    fi
+                    ;;
+                "svcd" )
+                    if test -n "$V_SVCD" && test -n "$A_SVCD";
                     then MATCH=:
                     fi
-                fi
-                ;;
-            "svcd" )
-                if test -n "$V_SVCD" && test -n "$A_SVCD";
-                then MATCH=:
-                fi
-                ;;
-            "dvd" )
-                if test -n "$V_DVD" && test -n "$A_DVD";
-                then MATCH=:
-                fi
-                ;;
-            * )
-                echo "Sorry, can only match vcd, svcd, or dvd."
-                ;;
-        esac
+                    ;;
+                "dvd" )
+                    if test -n "$V_DVD" && test -n "$A_DVD";
+                    then MATCH=:
+                    fi
+                    ;;
+            esac
+        elif test -n "$MATCH_TVSYS"; then
+            if test "$MATCH_TVSYS" = "ntsc" && test "$V_TV" = "NTSC"; then
+                MATCH=:
+            elif test "$MATCH_TVSYS" = "pal" && test "$V_TV" = "PAL"; then
+                MATCH=:
+            fi
+        fi
+    
         rm -rf "$TMP_DIR"
         if $MATCH; then
             echo "true"
@@ -591,9 +601,15 @@ while test $# -gt 0; do
         "-terse" ) TERSE=: ;;
         "-verbose" ) VERBOSE=: ;;
         "-fast" ) FAST=: ;;
-        "-is" )
+        "-isformat" )
             shift
             MATCH_FORMAT="$1"
+            TERSE=:
+            FAST=:
+            ;;
+        "-istvsys" )
+            shift
+            MATCH_TVSYS="$1"
             TERSE=:
             FAST=:
             ;;
