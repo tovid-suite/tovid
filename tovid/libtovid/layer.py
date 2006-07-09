@@ -534,7 +534,6 @@ class Scatterplot (Layer):
                 max_y = largest
         x_scale = float(width) / max(x_vals)
         y_scale = float(height) / max_y
-        print "x,y scale: %s, %s" % (x_scale, y_scale)
         
         drawing.comment("Scatterplot Layer")
         
