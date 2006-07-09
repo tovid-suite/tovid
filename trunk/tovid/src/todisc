@@ -656,22 +656,6 @@ fi
 if test -n "$BG_VIDEO" &&  $STATIC; then
     usage_error "You can not use -bgvideo with a static menu"
 fi
-# if -bgvideo selected, but not -bgaudio, see if he wants to use bgvideo's
-if [[ -n "$BG_VIDEO" && -z "$BG_AUDIO" ]]; then
-    if ! mencoder -quiet "$BG_VIDEO" -oac pcm -ovc copy -frames 0 -o /dev/null 2>&1|grep Audio 2>&1 >/dev/null; then
-        :
-    else
-        echo "You selected -bgvideo but not -bgaudio"
-        echo "If you want to use the audio from "$BG_VIDEO" please type: yes"
-        read bgaudio
-        if [ ! -z "$bgaudio" -a "$bgaudio" = "yes" ]; then
-            BG_AUDIO="$BG_VIDEO"
-            echo "Using audio from "$BG_VIDEO""
-        else
-            echo "No audio selected, will use silence for main menu"
-        fi
-    fi
-fi
 # create_dirs
 yecho "Creating pics directories..."
 for ((i=0; i<=NUM_FILES; i++)); do
@@ -1091,8 +1075,25 @@ confirm_preview
 unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
 
 ###############################################################################
-#             get information about input videos                              #
+#   get information about input videos, and some post preview preliminaries   #
 ###############################################################################
+
+# if -bgvideo selected, but not -bgaudio, see if he wants to use bgvideo's
+if [[ -n "$BG_VIDEO" && -z "$BG_AUDIO" ]]; then
+    if ! mencoder -quiet "$BG_VIDEO" -oac pcm -ovc copy -frames 0 -o /dev/null 2>&1|grep Audio 2>&1 >/dev/null; then
+        :
+    else
+        echo "You selected -bgvideo but not -bgaudio"
+        echo "If you want to use the audio from "$BG_VIDEO" please type: yes"
+        read bgaudio
+        if [ ! -z "$bgaudio" -a "$bgaudio" = "yes" ]; then
+            BG_AUDIO="$BG_VIDEO"
+            echo "Using audio from "$BG_VIDEO""
+        else
+            echo "No audio selected, will use silence for main menu"
+        fi
+    fi
+fi
 
 # Check input files for compliance; offer to tovid-encode non-compliant files
 for ((i=0; i<=NUM_FILES; i++)); do
