@@ -197,25 +197,19 @@ class BurnDiscPanel(wx.Panel):
         self.parent = parent
         self.device = "/dev/dvdrw"
         self.doAuthor = True
-        self.doImage = True
         self.doBurn = False
 
         self.txtHeading = HeadingText(self, wx.ID_ANY, "Author and burn")
 
         self.chkDoAuthor = wx.CheckBox(self, wx.ID_ANY, "Author disc structure")
-        self.chkDoImage = wx.CheckBox(self, wx.ID_ANY, "Create disc image (.iso)")
         self.chkDoBurn = wx.CheckBox(self, wx.ID_ANY, "Burn disc")
         self.chkDoAuthor.SetToolTipString("Create the disc filesystem " \
                 "hierarchy using dvdauthor")
-        self.chkDoImage.SetToolTipString("Create an .iso image of the " \
-                "disc before burning")
-        self.chkDoBurn.SetToolTipString("Burn the image to the selected " \
+        self.chkDoBurn.SetToolTipString("Burn a disc in the selected " \
                 "device")
         self.chkDoAuthor.SetValue(self.doAuthor)
-        self.chkDoImage.SetValue(self.doImage)
         self.chkDoBurn.SetValue(self.doBurn)
         wx.EVT_CHECKBOX(self, self.chkDoAuthor.GetId(), self.OnDoAuthor)
-        wx.EVT_CHECKBOX(self, self.chkDoImage.GetId(), self.OnDoImage)
         wx.EVT_CHECKBOX(self, self.chkDoBurn.GetId(), self.OnDoBurn)
 
         self.lblDiscDevice = wx.StaticText(self, wx.ID_ANY, "Burn to device:")
@@ -226,8 +220,6 @@ class BurnDiscPanel(wx.Panel):
         self.sizBurn = wx.FlexGridSizer(4, 2, 8, 8)
         self.sizBurn.Add((2, 2))
         self.sizBurn.Add(self.chkDoAuthor, 0, wx.EXPAND)
-        self.sizBurn.Add((2, 2))
-        self.sizBurn.Add(self.chkDoImage, 0, wx.EXPAND)
         self.sizBurn.Add((2, 2))
         self.sizBurn.Add(self.chkDoBurn, 0, wx.EXPAND)
         self.sizBurn.Add(self.lblDiscDevice, 0, wx.EXPAND)
@@ -252,9 +244,6 @@ class BurnDiscPanel(wx.Panel):
     def OnDoAuthor(self, evt):
         self.doAuthor = evt.Checked()
         
-    def OnDoImage(self, evt):
-        self.doImage = evt.Checked()
-
     def OnDoBurn(self, evt):
         self.doBurn = evt.Checked()
 
@@ -278,8 +267,6 @@ class BurnDiscPanel(wx.Panel):
         # Construct authoring/imaging/burning options
         if self.doAuthor:
             makedvdOptions += "-author "
-        if self.doImage:
-            makedvdOptions += "-image "
         if self.doBurn:
             makedvdOptions += "-burn "
 
@@ -310,7 +297,10 @@ class BurnDiscPanel(wx.Panel):
             msgError.ShowModal()
         # Show success message and enable burning
         else:
-            strSuccess = "Done burning the disc."
+            if self.doBurn:
+                strSuccess = "Done burning the disc."
+            else:
+                strSuccess = "Done authoring the disc."
             msgSuccess = wx.MessageDialog(self, strSuccess, "Success!",
                 wx.ICON_INFORMATION | wx.OK)
             msgSuccess.ShowModal()
