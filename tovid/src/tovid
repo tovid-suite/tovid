@@ -373,11 +373,13 @@ get_args()
             "-normalize" )  
                 assert_dep normalize "'normalize' not found or installed! You cannot use -normalize."
                 DO_NORM=:
+		FORCE_ENCODING=:
                 ;;
             "-amplitude" )
                 shift 
                 AUDIO_AMPLITUDE="--amplitude=$1"
                 DO_NORM=:
+		FORCE_ENCODING=:
                 ;;
             "-overwrite" )
                 OVERWRITE=:
