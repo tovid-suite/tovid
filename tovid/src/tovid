@@ -662,10 +662,6 @@ get_args "$@"
 #
 # ******************************************************************************
 
-# Check for presence of mplayer and mpeg2enc
-assert_dep mplayer "mplayer is needed for identifying and encoding video."
-assert_dep mpeg2enc "mpeg2enc is needed for encoding MPEG video."
-
 # Can't do -subtitles with -ffmpeg; if both were used, print error and exit
 # TODO: Support subtitles in ffmpeg!
 if $USE_FFMPEG && $DO_SUBS; then
