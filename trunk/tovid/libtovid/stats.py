@@ -26,7 +26,9 @@ fields = [\
     'encoding_mode',
     'in_md5',
     'in_width',
-    'in_height']
+    'in_height',
+    'quant'
+    ]
 
 class Statlist:
     """A list of statistics that may be queried with a simple database-like
@@ -104,17 +106,26 @@ class Statlist:
         """Return a dictionary of averages of an attribute, indexed by another
         attribute. For example, average_by('bitrate', 'format') returns average
         bitrates for each format."""
-        # Create a dictionary of value-lists, indexed by by_attribute
-        values = {}
-        for record in self.records:
-            byval = record[by_attribute]
-            if not values.has_key(byval):
-                values[byval] = []
-            values[byval].append(record[attribute])
+        values_by = self.list_by(attribute, by_attribute)
         # Calculate averages for each value-list
         averages = {}
-        if len(values) > 0:
-            for key, samples in values.iteritems():
+        if len(values_by) > 0:
+            for key, samples in values_by.iteritems():
                 averages[key] = float(sum(samples) / len(samples))
         return averages
 
+    def list_by(self, attribute, by_attribute, sort_lists=False):
+        """Return a dictionary of lists of values of the given attribute,
+        indexed by another attribute. If sort_lists is True, sort all lists."""
+        # Create a dictionary of value-lists, indexed by by_attribute
+        values_by = {}        
+        for record in self.records:
+            byval = record[by_attribute]
+            if not values_by.has_key(byval):
+                values_by[byval] = []
+            values_by[byval].append(record[attribute])
+        if sort_lists:
+            for index in values_by.iterkeys():
+                values_by[index].sort()
+        return values_by
+    
