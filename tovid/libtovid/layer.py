@@ -514,11 +514,13 @@ class SafeArea (Layer):
 
 class Scatterplot (Layer):
     """A 2D scatterplot of data."""
-    def __init__(self, xy_dict, size=(240, 80)):
+    def __init__(self, xy_dict, size=(240, 80), x_label='', y_label=''):
         """Create a scatterplot using data in xy_dict, a dictionary of
         lists of y-values, indexed by x-value."""
         self.xy_dict = xy_dict
         self.size = size
+        self.x_label = x_label
+        self.y_label = y_label
 
     def draw_on(self, drawing, frame):
         """Draw the scatterplot."""
@@ -547,13 +549,30 @@ class Scatterplot (Layer):
         drawing.stroke_width(3)
         drawing.polyline([(0, 0), (0, height), (width, height)])
         drawing.pop()
-        
+
+        # Axis labels
+        drawing.comment("Axis labels")
+        drawing.push()
+        drawing.fill('blue')
+        drawing.text((width / 2, height + 30), self.x_label)
+        drawing.text((-30, 0), max_y)
+        drawing.text((width, height + 15), max(x_vals))
+        drawing.push()
+        drawing.translate((-25, height / 2))
+        drawing.rotate(90)
+        drawing.text((0, 0), self.y_label)
+        drawing.pop()
+        #for x in x_vals:
+        #    axis_pos = (int(x * x_scale), height + 15)
+        #    drawing.text(axis_pos, "%s" % x)
+        drawing.pop()
+
         # Plot all y-values for each x (as small circles)
         drawing.comment("Scatterplot data")
         drawing.push()
         drawing.stroke(None)
         drawing.fill('red')
-        #drawing.fill_opacity(0.2)
+        drawing.fill_opacity(0.2)
         for x in x_vals:
             for y in self.xy_dict[x]:
                 point = (int(x * x_scale), int(height - y * y_scale))

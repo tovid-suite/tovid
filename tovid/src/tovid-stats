@@ -93,7 +93,8 @@ if __name__ == '__main__':
                 print "Generating a scatterplot of %ss by %s" % \
                       (list_field, by_field)
                 xy_values = statlist.list_by(list_field, by_field, True)
-                scatterplot = Scatterplot(xy_values, (640, 480))
+                scatterplot = Scatterplot(xy_values, (640, 480), \
+                                          by_field, list_field)
                 drawing = Drawing((720, 576))
                 drawing.fill('white')
                 drawing.rectangle((0, 0), (720, 576))
