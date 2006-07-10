@@ -532,7 +532,13 @@ class Scatterplot (Layer):
             largest = max(self.xy_dict[x])
             if largest > max_y:
                 max_y = largest
-        x_scale = float(width) / max(x_vals)
+        # For numeric x, scale by maximum x-value
+        if isinstance(x_vals[0], int) or isinstance(x_vals[0], float):
+            x_scale = float(width) / max(x_vals)
+        # For string x, scale by number of x-values
+        else:
+            x_scale = float(width) / len(x_vals)
+        # Scale y according to maximum value
         y_scale = float(height) / max_y
         
         drawing.comment("Scatterplot Layer")
@@ -553,10 +559,23 @@ class Scatterplot (Layer):
         drawing.comment("Axis labels")
         drawing.push()
         drawing.fill('blue')
-        drawing.text((width / 2, height + 30), self.x_label)
-        drawing.text((-30, 0), max_y)
-        drawing.text((width, height + 15), max(x_vals))
+        drawing.comment("X axis labels")
         drawing.push()
+        #drawing.text((width, height + 15), max(x_vals))
+        i = 0
+        while i < len(x_vals):
+            drawing.push()
+            drawing.translate((i * x_scale, height + 15))
+            drawing.rotate(30)
+            drawing.text((0, 0), x_vals[i])
+            drawing.pop()
+            i += 1
+        drawing.font_size(20)
+        drawing.text((width / 2, height + 40), self.x_label)
+        drawing.pop()
+        drawing.comment("Y axis labels")
+        drawing.push()
+        drawing.text((-30, 0), max_y)
         drawing.translate((-25, height / 2))
         drawing.rotate(90)
         drawing.text((0, 0), self.y_label)
@@ -573,8 +592,13 @@ class Scatterplot (Layer):
         drawing.fill('red')
         drawing.fill_opacity(0.2)
         for x in x_vals:
+            if isinstance(x, int) or isinstance(x, float):
+                x_coord = x * x_scale
+            else:
+                x_coord = x_vals.index(x) * x_scale
+            # Plot all y-values for this x
             for y in self.xy_dict[x]:
-                point = (int(x * x_scale), int(height - y * y_scale))
+                point = (x_coord, int(height - y * y_scale))
                 drawing.circle_rad(point, 3)
         drawing.pop()
         
