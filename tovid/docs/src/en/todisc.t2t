@@ -36,8 +36,11 @@ not mpeg, you will have the option to auto-encode them with **tovid**.
 
 The **-titles** arguments should be double-quoted, with special characters
 (like ", !, *, &, ?) backslash-escaped. If any of your titles are longer than
-about 12 characters, they may be chopped off; to remedy this, you can include
+about 12 characters (for more than 6 videos), they may be chopped off; to remedy this, you can include
 '\n' within a title string to break the title into several lines.
+
+The '\n' trick may not always look good though, the best solution for long titles is to
+use -submenu-titles, where the titles for the same video can be very long.
 
 == Options ==
 
