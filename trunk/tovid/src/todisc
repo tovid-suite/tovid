@@ -568,15 +568,17 @@ else
     usage_error "Please provide an output name with -out"
 fi
 
-# Make sure thumb labels have no more than 12 characters
+# Warn if thumb labels have more than 12 characters
 for ((i=0; i<${#TITLES[@]}; i++)); do
     val=${#TITLES[i]}
     [ -z "$MAX_CHARS" ] || ((val > MAX_CHARS)) && MAX_CHARS=$val && key=$i
 done
 if test ${#TITLES[@]} -gt 6 && test $MAX_CHARS -gt 12 ; then 
-    echo -e "Sorry, thumb labels can only be 12 characters in length for this arrangement."
-    echo "\"${TITLES[key]}\" is too long; please use a shorter title."
-    exit 1
+    yecho
+    yecho "WARNING! Some titles are longer than 12 characters; they may be chopped off."
+    yecho
+    #echo "\"${TITLES[key]}\" is too long; please use a shorter title."
+    #exit 1
 fi
 
 # If output directory already exists, print a message and exit
