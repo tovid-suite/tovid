@@ -30,6 +30,19 @@ fields = [\
     'quant'
     ]
 
+int_fields = [\
+    'length',
+    'avg_bitrate',
+    'tgt_bitrate',
+    'peak_bitrate',
+    'encoding_time',
+    'final_size',
+    'cpu_speed',
+    'in_width',
+    'in_height',
+    'quant'
+    ]
+
 class Statlist:
     """A list of statistics that may be queried with a simple database-like
     interface."""
@@ -44,27 +57,20 @@ class Statlist:
         self.records = []
         statfile = open(filename, 'r')
         csv_reader = csv.DictReader(statfile, fields, skipinitialspace=True)
-        skipped = 0
         for line in csv_reader:
             # Convert some string and numeric fields
-            try:
-                line['format'] = str.lower(line['format'] or '')
-                line['tvsys'] = str.lower(line['tvsys'] or '')
-                line['length'] = int(line['length'] or 0)
-                line['avg_bitrate'] = int(line['avg_bitrate'] or 0)
-                line['tgt_bitrate'] = int(line['tgt_bitrate'] or 0)
-                line['peak_bitrate'] = int(line['peak_bitrate'] or 0)
-                line['encoding_time'] = int(line['encoding_time'] or 0)
-            # If conversion failed, just skip this line
-            except ValueError:
-                skipped += 1
-            # Conversion worked; append to current records
-            else:
-                self.records.append(line)
+            line['format'] = str.lower("%s" % line['format'])
+            line['tvsys'] = str.lower("%s" % line['tvsys'])
+            for field in int_fields:
+                try:
+                    num = int("%s" % line[field])
+                except ValueError, TypeError:
+                    num = 0
+                line[field] = num
+            self.records.append(line)
 
         statfile.close()
         print "Read %s lines from %s" % (len(self.records), filename)
-        print "Skipped %s lines because they contained empty fields." % skipped
 
     def unique(self, field):
         """Return a list of unique values of the given field."""
@@ -96,7 +102,9 @@ class Statlist:
         all videos in the list."""
         values = []
         for record in self.records:
-            values.append(record[attribute])
+            # Only append non-zero values
+            if record[attribute] != 0:
+                values.append(record[attribute])
         if len(values) > 0:
             return float(sum(values) / len(values))
         else:
@@ -111,7 +119,10 @@ class Statlist:
         averages = {}
         if len(values_by) > 0:
             for key, samples in values_by.iteritems():
-                averages[key] = float(sum(samples) / len(samples))
+                try:
+                    averages[key] = float(sum(samples) / len(samples))
+                except ZeroDivisionError:
+                    averages[key] = 0.0
         return averages
 
     def list_by(self, attribute, by_attribute, sort_lists=False):
@@ -123,7 +134,9 @@ class Statlist:
             byval = record[by_attribute]
             if not values_by.has_key(byval):
                 values_by[byval] = []
-            values_by[byval].append(record[attribute])
+            # Only include non-zero values
+            if record[attribute] != 0:
+                values_by[byval].append(record[attribute])
         if sort_lists:
             for index in values_by.iterkeys():
                 values_by[index].sort()

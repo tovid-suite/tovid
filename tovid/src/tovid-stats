@@ -46,8 +46,8 @@ if __name__ == '__main__':
     # Open and read tovid stat file
     statfile = os.path.expanduser('~/.tovid/stats.tovid')
     tempfile = os.path.expanduser('~/.tovid/stats.tovid.csv')
-    # Only use lines beginning with "
-    os.system('cat "%s" | grep \'^\"\' > "%s"' % (statfile, tempfile))
+    # Only use lines beginning with " (and not header line)
+    os.system('cat "%s" | grep \'^\"[^T]\' > "%s"' % (statfile, tempfile))
     statlist = stats.Statlist(tempfile)
     os.remove(tempfile)
 
