@@ -107,6 +107,7 @@ SEEK="-ss 1"
 SEEK_VAL=1
 FADE=1
 CHAPTERS=( 6 )
+TOVID_OPTS=""
 
 SCRIPT_START_TIME=`date +%s`
 
