@@ -32,8 +32,12 @@ For example:
 ```
 
 The number of **-files** and **-titles** must be equal. If the input files are
-not mpeg, you will have the option to auto-encode them with **tovid**. Due to
-font size constraints, titles may have a maximum of 12 characters.
+not mpeg, you will have the option to auto-encode them with **tovid**.
+
+The **-titles** arguments should be double-quoted, with special characters
+(like ", !, *, &, ?) backslash-escaped. If any of your titles are longer than
+about 12 characters, they may be chopped off; to remedy this, you can include
+'\n' within a title string to break the title into several lines.
 
 == Options ==
 
@@ -85,9 +89,11 @@ font size constraints, titles may have a maximum of 12 characters.
     so pick one of appropriate aspect ratio/resolution
 : -menu-title
     Title for the root menu - may be longer than thumbnail labels
-: -menu-font
-    Font to use for titles: use for example either: "Arial" , or
-    "/full/path/to/arial.ttf" (default: imagemagick default font)
+: -menu-font FONT
+    Font to use for titles, either by ImageMagick font name (ex., "Arial") or
+    explicit pathname (ex., "/full/path/to/arial.ttf"). To see a complete
+    list of acceptable ImageMagick font names, run **convert -list type**, and
+    refer to the leftmost column.
 : -menu-fontsize
     Font size for main menu - best to -preview if you use this
 : -menu-fade
@@ -95,7 +101,7 @@ font size constraints, titles may have a maximum of 12 characters.
     mist if called for), then the menu thumbs.  The fadeout is in reverse order
 : -title-color COLOR (or -title-colour COLOR)
     Color to use for the main menu title.  For list of supported colors do:
-    convert -list color.  HTML notation may be used: "#ff0000". See:
+    **convert -list** color.  HTML notation may be used: "#ff0000". See:
     http://www.imagemagick.org/script/color.php
 : -stroke-color COLOR (or -stroke-colour COLOR)
     Outline color for the main menu font. Use "none" for transparent outline
