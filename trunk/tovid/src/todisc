@@ -559,7 +559,12 @@ elif test ${#FILES[@]} -ne ${#TITLES[@]}; then
     usage_error "Please give the same number of files as titles.
     You gave ${#FILES[@]} files and ${#TITLES[@]} titles"
 fi
-
+if [ -n "$SM_TITLES" ]; then
+    if test ${#SM_TITLES[@]} -ne ${#TITLES[@]}; then
+    usage_error "Please give the same number of submenu titles as titles.
+    You gave ${#SM_TITLES[@]} submenu titles and ${#TITLES[@]} titles"
+    fi
+fi
 # Make sure -out was provided
 if test -n "$OUT_PREFIX"; then
     OUT_DIR="$(abspath "$OUT_PREFIX")"
