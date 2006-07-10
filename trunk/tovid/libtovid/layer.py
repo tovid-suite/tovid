@@ -533,7 +533,8 @@ class Scatterplot (Layer):
             if largest > max_y:
                 max_y = largest
         # For numeric x, scale by maximum x-value
-        if isinstance(x_vals[0], int) or isinstance(x_vals[0], float):
+        x_is_num = isinstance(x_vals[0], int) or isinstance(x_vals[0], float)
+        if x_is_num:
             x_scale = float(width) / max(x_vals)
         # For string x, scale by number of x-values
         else:
@@ -565,7 +566,10 @@ class Scatterplot (Layer):
         i = 0
         while i < len(x_vals):
             drawing.push()
-            drawing.translate((i * x_scale, height + 15))
+            if x_is_num:
+                drawing.translate((x_vals[i] * x_scale, height + 15))
+            else:
+                drawing.translate((i * x_scale, height + 15))
             drawing.rotate(30)
             drawing.text((0, 0), x_vals[i])
             drawing.pop()
@@ -591,15 +595,17 @@ class Scatterplot (Layer):
         drawing.stroke(None)
         drawing.fill('red')
         drawing.fill_opacity(0.2)
-        for x in x_vals:
-            if isinstance(x, int) or isinstance(x, float):
-                x_coord = x * x_scale
+        i = 0
+        while i < len(x_vals):
+            if x_is_num:
+                x_coord = x_vals[i] * x_scale
             else:
-                x_coord = x_vals.index(x) * x_scale
+                x_coord = i * x_scale
             # Plot all y-values for this x
-            for y in self.xy_dict[x]:
+            for y in self.xy_dict[x_vals[i]]:
                 point = (x_coord, int(height - y * y_scale))
                 drawing.circle_rad(point, 3)
+            i += 1
         drawing.pop()
         
         # Restore context
