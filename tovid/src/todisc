@@ -539,6 +539,10 @@ while test $# -gt 0; do
             SEEK_VAL="$1"
             SEEK="-ss $SEEK_VAL"
             ;;
+        "-tovidopts" )
+            shift
+            TOVID_OPTS="$1"
+            ;;
     esac
     $DO_SHIFT && shift
 done
@@ -683,7 +687,7 @@ if $MENU_FADE && [[ -z "$BG_PIC" && -z "$BG_VIDEO" ]]; then
     THUMBS_FADE_IN_START_TIME=2.5
 fi
 echo 
-echo "Checking if input files are video files"
+echo "Verifying that input files are video files"
 for ((i=0; i<=NUM_FILES; i++)); do
     IN_FILE="${IN_FILES[i]}"
     if test -e "$IN_FILE"; then
@@ -1100,15 +1104,14 @@ for ((i=0; i<=NUM_FILES; i++)); do
     IN_FILE="${IN_FILES[i]}"
     yecho "Checking $IN_FILE for compliance..."
     # TODO: Check for PAL/NTSC compliance
-    # If video matches the target format, append to NEW_IN_FILES
-    if test $TARGET = "dvd" && test "$(idvid -is dvd "$IN_FILE")" = "true"; then
-        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE")
-    elif test $TARGET = "svcd" && test "$(idvid -is svcd "$IN_FILE")" = "true"; then
-        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE")
-    # Video needs to be re-encoded; use a .enc filename in NEW_IN_FILES
+    # If video matches the target format and TV standard, append to ENC_IN_FILES
+    if test "$(idvid -isformat $TARGET "$IN_FILE")" = "true" && \
+       test "$(idvid -istvsys $TV_STANDARD "$IN_FILE")" = "true"; then
+        ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE")
+    # Video needs to be re-encoded; use a .enc filename in ENC_IN_FILES
     else
         FILES_TO_ENCODE[i]="$IN_FILE"
-        NEW_IN_FILES=("${NEW_IN_FILES[@]}" "$IN_FILE.enc.mpg")
+        ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE.enc.mpg")
     fi
 done
 if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
@@ -1133,7 +1136,7 @@ if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
         for i in "${FILES_TO_ENCODE[@]}"; do
             yecho "Converting: $i"
             countdown
-            tovid -$TV_STANDARD -$TARGET -in "$i" -out "$i.enc"
+            tovid -$TV_STANDARD -$TARGET -in "$i" -out "$i.enc" $TOVID_OPTS
             wait
             # See if output file exists
             if ! test -f "$i.enc.mpg"; then
@@ -1141,8 +1144,8 @@ if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
             fi
             yecho
         done
-        # Replace IN_FILES with NEW_IN_FILES (with .enc extension)
-        IN_FILES=("${NEW_IN_FILES[@]}")
+        # Replace IN_FILES with ENC_IN_FILES (with .enc extension)
+        IN_FILES=("${ENC_IN_FILES[@]}")
     else
         yecho
         yecho "Not re-encoding. I'll proceed with menu generation, but"
