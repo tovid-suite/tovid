@@ -58,6 +58,9 @@ font size constraints, titles may have a maximum of 12 characters.
     The desired animated main menu length in seconds
 : -submenu-length
     The disired animated submenu length in seconds
+: -submenu-stroke-colo[u]r
+: -submenu-title-colo[u]r
+: -submenu-titles
 : -chapters NUM
     The number of submenu chapters for each video (default: 6)
 : -loop
@@ -114,6 +117,10 @@ font size constraints, titles may have a maximum of 12 characters.
 
 === Thumbnail style ===
 
+: -opacity [0-100] (default 100)
+    Opacity of thumbnail videos as a percentage (no percent sign).
+    Anything less than 100(%) is semi-transparent. Not recommended with dark
+    backgrounds
 : -thumb-shape [normal|oval|cloud|egg]
     Apply a shaped transparency mask to thumbnail videos
 : -blur NUM
@@ -123,10 +130,10 @@ font size constraints, titles may have a maximum of 12 characters.
     bit of transparency and blur away a good deal of the shape's edges.
 : -thumb-font FONT
     Display thumbnail titles in the given font.
-: -opacity [0-100] (default 100)
-    Opacity of thumbnail videos as a percentage (no percent sign).
-    Anything less than 100(%) is semi-transparent. Not recommended with dark
-    backgrounds
+: -thumb-fontsize POINTS
+    Font size to use for thumbnail titles
+: -thumb-mist-colo[u]r
+    Color of mist behind thumbnails
 : -thumb-text-color COLOR (or -thumb-text-colour COLOR)
      Color to use for the thumb titles (see -title-color)
 : -seek NUM
