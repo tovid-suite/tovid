@@ -553,13 +553,7 @@ get_args()
                 KEEPFILES=:
                 ;;
 
-            # If the option wasn't recognized, exit with an error
-            "*" )
-                usage_error "Unrecognized command-line option '$1'"
-                ;;
-            * )
-                echo "Ignoring option '$1'"
-                ;;
+            # Ignore unexpected options
             esac
 
         # Get next argument
