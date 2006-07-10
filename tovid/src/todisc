@@ -1117,10 +1117,11 @@ for ((i=0; i<=NUM_FILES; i++)); do
 done
 if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
     TGT_CAPS=$(echo $TARGET | tr a-z A-Z)
+    TV_STND_CAPS=$(echo $TV_STANDARD | tr a-z A-Z)
     yecho
     yecho "Encode input files"
     yecho
-    yecho "Some of the -files you provided are not $TGT_CAPS-compliant:"
+    yecho "Some of the -files you provided are not $TV_STND_CAPS $TGT_CAPS-compliant:"
     yecho " "
     for i in "${FILES_TO_ENCODE[@]}"; do
         test -n "$i" && yecho "  $i"
