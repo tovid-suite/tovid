@@ -361,6 +361,7 @@ class TodiscFrame(wx.Frame):
         # Create navigation buttons
         #
         self.btnPrevious = wx.Button(self, wx.ID_ANY, _("< Previous"))
+        self.btnPrevious.Disable()
         self.btnNext = wx.Button(self, wx.ID_ANY, _("Next >"))
         self.btnFinish = wx.Button(self, wx.ID_ANY, _("Finish"))
         #
@@ -404,13 +405,26 @@ class TodiscFrame(wx.Frame):
         currPage = self.notebook_1.GetSelection()
         if (currPage > 0):
             self.notebook_1.SetSelection(currPage - 1)
+            if (not self.btnNext.IsEnabled()):
+                self.btnNext.Enable()
+            if (currPage - 1 == 0):
+                self.btnPrevious.Disable()
+        elif (self.btnPrevious.IsEnabled()):
+            self.btnPrevious.Disable()
 
     def btnNext_OnClick(self, evt):
         """ Event handler for clicking on the 'Next >' button
         """
-        currPage = self.notebook_1.GetSelection()
+        currPage = self.notebook_1.GetSelection() + 1
         if (currPage < self.notebook_1.GetPageCount()):
-            self.notebook_1.SetSelection(currPage + 1)
+            if (self.notebook_1.GetPage(currPage).IsEnabled()):
+                self.notebook_1.SetSelection(currPage)
+                if (not self.btnPrevious.IsEnabled()):
+                    self.btnPrevious.Enable()
+                if (currPage + 1 == self.notebook_1.GetPageCount()):
+                    self.btnNext.Disable()
+        elif (self.btnNext.IsEnabled()):
+            self.btnNext.Disable()
 
     def btnFinish_OnClick(self, evt):
         """ Event handler for clicking on the 'Finish' button

@@ -2078,6 +2078,9 @@ class PlaylistTabPanel(wx.Panel):
         self.SetSizer(szPlaylist)
         
         wx.EVT_CHECKBOX(self, self.submenus.GetId(), self.submenus_OnClick)
+        wx.EVT_BUTTON(self, self.btnAddVideo.GetId(), self.btnAddVideo_OnClick)
+        wx.EVT_BUTTON(self, self.btnRemoveVideo.GetId(), self.btnRemoveVideo_OnClick)
+        wx.EVT_BUTTON(self, self.btnAudio.GetId(), self.btnAudio_OnClick)
         wx.EVT_BUTTON(self, self.btnOut.GetId(), self.btnOut_OnClick)
 
     def EnableSubmenus(self):
@@ -2099,6 +2102,23 @@ class PlaylistTabPanel(wx.Panel):
         else:
             self.DisableSubmenus()
             self.GetParent().GetParent().nbMenus.DisableSubmenus()
+
+    def btnAddVideo_OnClick(self, evt):
+        dlgFile = wx.FileDialog(None)
+        if (dlgFile.ShowModal() == wx.ID_OK):
+            self.files.Append(dlgFile.GetPath())
+            if (not self.btnRemoveVideo.IsEnabled()):
+                self.btnRemoveVideo.Enable()
+
+    def btnRemoveVideo_OnClick(self, evt):
+        self.files.Delete(self.files.GetSelection())
+        if (self.files.GetCount() == 0):
+            self.btnRemoveVideo.Disable()
+
+    def btnAudio_OnClick(self, evt):
+        dlgFile = wx.FileDialog(None)
+        if (dlgFile.ShowModal() == wx.ID_OK):
+            self.submenu_audio.SetValue(dlgFile.GetPath())
 
     def btnOut_OnClick(self, evt):
         dlgFile = wx.DirDialog(None)
