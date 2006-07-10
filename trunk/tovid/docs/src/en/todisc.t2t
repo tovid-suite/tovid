@@ -57,10 +57,14 @@ font size constraints, titles may have a maximum of 12 characters.
 : -menu-length
     The desired animated main menu length in seconds
 : -submenu-length
-    The disired animated submenu length in seconds
+    The disired animated submenu length in seconds (*disabled for now*)
 : -submenu-stroke-colo[u]r
+    The colo[u]r for the submenu font outline (stroke)
 : -submenu-title-colo[u]r
+    The fill colo[u]r used for submenu title fonts
 : -submenu-titles
+    You can supple a list of titles here for submenus without the length
+    restrictions found in thumb titles.  Must equal number of videos.
 : -chapters NUM
     The number of submenu chapters for each video (default: 6)
 : -loop
