@@ -1977,6 +1977,20 @@ class VideoPanel(wx.Panel):
 class PlaylistTabPanel(wx.Panel):
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
+        # todisc options controlled by this panel, and default values
+        # (as a dictionary of option/value pairs)
+        self.todisc_opts = {\
+            # Disc format
+            'dvd': True,
+            'svcd': False,
+            # Video format
+            'ntsc': True,
+            'pal': False,
+            'submenus': False,
+            'chapters': 6,
+            'menu-title': "My Video Collection",
+            'out': ''
+            }
         self.szVideoInfoBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Video Information"))
         self.szTitleInfoBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Title"))
         self.szAudioInfoBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Audio"))
@@ -2099,9 +2113,11 @@ class PlaylistTabPanel(wx.Panel):
         if (evt.IsChecked()):
             self.EnableSubmenus()
             self.GetParent().GetParent().nbMenus.EnableSubmenus()
+            self.todisc_opts['submenus'] = True
         else:
             self.DisableSubmenus()
             self.GetParent().GetParent().nbMenus.DisableSubmenus()
+            self.todisc_opts['submenus'] = False
 
     def btnAddVideo_OnClick(self, evt):
         dlgFile = wx.FileDialog(None)
