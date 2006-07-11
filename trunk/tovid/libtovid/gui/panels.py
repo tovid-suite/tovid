@@ -1974,21 +1974,41 @@ class VideoPanel(wx.Panel):
         else:
             print "VideoPanel.SetDiscTVSystem: Unknown format %s" % format
 
+# ************************************************************************
+#
+# todiscgui panels
+#
+# Note: Each panel stores a subset of todisc command-line options in a
+# todisc_opts dictionary; GUI events should set dictionary items appropriately.
+#
+# todisc options that do not have GUI controls yet:
+#
+#    -debug
+#    -keepfiles
+#    -submenu-length
+#    -loop
+#    -menu-fontsize
+#    -tovidopts
+#    -thumb-fontsize
+#
+# ************************************************************************
+
 class PlaylistTabPanel(wx.Panel):
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
         # todisc options controlled by this panel, and default values
         # (as a dictionary of option/value pairs)
         self.todisc_opts = {\
-            # Disc format
             'dvd': True,
             'svcd': False,
-            # Video format
             'ntsc': True,
             'pal': False,
             'submenus': False,
             'chapters': 6,
-            'menu-title': "My Video Collection",
+            'files': [],
+            'titles': [],
+            'submenu-titles': [],
+            'submenu-audio': None,
             'out': ''
             }
         self.szVideoInfoBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Video Information"))
@@ -2150,8 +2170,24 @@ class MenuTabPanel(wx.Panel):
         self.todisc_opts = {\
             'menu-title': "My Video Collection",
             'menu-font': wx.FontData(),
-            'title-colour': None
+            'title-colour': None,
+            'stroke-color': None,
+            'menu-fade': None,
+            'text-mist': None,
+            'text-mist-color': None,
+            'text-mist-opacity': None,
+            'bgaudio': None,
+            'bgimage': None,
+            'bgvideo': None,
+            'menu-audio-fade': None,
+            'submenu-audio-fade': None,
+            'static': None,
+            'menu-length': None,
+            'ani-submenus': None,
+            'submenu-title-color': None,
+            'submenu-stroke-color': None
             }
+
         self.szMistOpacity_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Text Mist Opacity"))
         self.szMainMenuBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Main Menu"))
         self.szBackgroundBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Background"))
@@ -2366,6 +2402,16 @@ class MenuTabPanel(wx.Panel):
 
 class ThumbnailTabPanel(wx.Panel):
     def __init__(self, parent, id):
+        self.todisc_opts = {\
+            'thumb-shape': None,
+            'thumb-font': None,
+            'thumb-text-color': None, 
+            'thumb-mist-color': None, 
+            'blur': None, 
+            'opacity': None, 
+            'seek': None
+            }
+
         wx.Panel.__init__(self, parent, id)
         self.feather_thumbs = wx.CheckBox(self, wx.ID_ANY, _("Feather thumbnails?"))
         self.szBlur_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Blur"))
