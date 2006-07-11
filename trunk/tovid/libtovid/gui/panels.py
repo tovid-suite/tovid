@@ -2000,11 +2000,11 @@ class PlaylistTabPanel(wx.Panel):
         self.lblChapters = wx.StaticText(self, wx.ID_ANY, _("Chapters per video:"))
         self.chapters = wx.SpinCtrl(self, wx.ID_ANY, "6", min=0, max=100, style=wx.TE_RIGHT)
         self.files = wx.ListBox(self, wx.ID_ANY, choices=[])
-        self.lblTitle = wx.StaticText(self, wx.ID_ANY, _("Main Title:"))
+        self.lblTitle = wx.StaticText(self, wx.ID_ANY, _("Video Thumb Title:"))
         self.title = wx.TextCtrl(self, wx.ID_ANY, "")
-        self.lblSubmenuTitle = wx.StaticText(self, wx.ID_ANY, _("Submenu Title:"))
+        self.lblSubmenuTitle = wx.StaticText(self, wx.ID_ANY, _("Video Submenu Title:"))
         self.submenu_title = wx.TextCtrl(self, wx.ID_ANY, "")
-        self.lblSubmenuAudio = wx.StaticText(self, wx.ID_ANY, _("Audio for Submenu"))
+        self.lblSubmenuAudio = wx.StaticText(self, wx.ID_ANY, _("Audio for Submenu:"))
         self.submenu_audio = wx.TextCtrl(self, wx.ID_ANY, "")
         self.subaudio_all = wx.CheckBox(self, wx.ID_ANY, _("Use for all submenu audio?"))
         self.btnAudio = wx.Button(self, wx.ID_ANY, _("Browse"))
@@ -2032,7 +2032,7 @@ class PlaylistTabPanel(wx.Panel):
         szChapters.Add(self.lblChapters, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szChapters.Add(self.chapters, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
         
-        szTitleInfo = wx.FlexGridSizer(4, 2, 5, 5)
+        szTitleInfo = wx.FlexGridSizer(2, 2, 5, 5)
         szTitleInfo.Add(self.lblTitle, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szTitleInfo.Add(self.title, 0, wx.EXPAND, 0)
         szTitleInfo.Add(self.lblSubmenuTitle, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
@@ -2140,10 +2140,18 @@ class PlaylistTabPanel(wx.Panel):
         dlgFile = wx.DirDialog(None)
         if (dlgFile.ShowModal() == wx.ID_OK):
             self.out.SetValue(dlgFile.GetPath())
+            self.tovid_opts['out'] = dlgFile.GetPath()
 
 class MenuTabPanel(wx.Panel):
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
+        # todisc options controlled by this panel, and default values
+        # (as a dictionary of option/value pairs)
+        self.todisc_opts = {\
+            'menu-title': "My Video Collection",
+            'menu-font': wx.FontData(),
+            'title-colour': None
+            }
         self.szMistOpacity_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Text Mist Opacity"))
         self.szMainMenuBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Main Menu"))
         self.szBackgroundBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Background"))
@@ -2154,18 +2162,16 @@ class MenuTabPanel(wx.Panel):
         self.menu_title = wx.TextCtrl(self, wx.ID_ANY, "")
         self.lblMenuFont = wx.StaticText(self, wx.ID_ANY, _("Title Font:"))
         self.btnMenuFont = wx.Button(self, wx.ID_ANY, _("Default"))
-        self.lblMenuFontSize = wx.StaticText(self, wx.ID_ANY, _("Font Size:"))
-        self.menu_fontsize = wx.SpinCtrl(self, wx.ID_ANY, "", min=0, max=100)
         self.lblTitleColor = wx.StaticText(self, wx.ID_ANY, _("Title Color:"))
-        self.btnTitleColor = wx.Button(self, wx.ID_ANY, _("Default"))
+        self.btnTitleColor = wx.Button(self, wx.ID_ANY, _("Choose"))
         self.lblStrokeColor = wx.StaticText(self, wx.ID_ANY, _("Stroke Color:"))
-        self.btnStrokeColor = wx.Button(self, wx.ID_ANY, _("Default"))
+        self.btnStrokeColor = wx.Button(self, wx.ID_ANY, _("Choose"))
         self.static_line_3 = wx.StaticLine(self, wx.ID_ANY)
         self.menu_fade = wx.CheckBox(self, wx.ID_ANY, _("Use menu fade?"))
         self.static_line_2 = wx.StaticLine(self, wx.ID_ANY)
         self.text_mist = wx.CheckBox(self, wx.ID_ANY, _("Use text mist?"))
         self.lblTextMistColor = wx.StaticText(self, wx.ID_ANY, _("Text Mist Color:"))
-        self.btnTextMistColor = wx.Button(self, wx.ID_ANY, _("Default"))
+        self.btnTextMistColor = wx.Button(self, wx.ID_ANY, _("Choose"))
         self.opacity = wx.Slider(self, wx.ID_ANY, 100, 0, 100, style=wx.SL_HORIZONTAL|wx.SL_AUTOTICKS|wx.SL_LABELS)
         self.lblBgAudio = wx.StaticText(self, wx.ID_ANY, _("Background Audio"))
         self.bgaudio = wx.TextCtrl(self, wx.ID_ANY, "")
@@ -2188,13 +2194,12 @@ class MenuTabPanel(wx.Panel):
         self.static_line_1 = wx.StaticLine(self, wx.ID_ANY)
         self.ani_submenus = wx.CheckBox(self, wx.ID_ANY, _("Animate submenus?"))
         self.lblSubmenuTitleColor = wx.StaticText(self, wx.ID_ANY, _("Title Color:"))
-        self.btnSubmenuTitleColor = wx.Button(self, wx.ID_ANY, _("Default"))
+        self.btnSubmenuTitleColor = wx.Button(self, wx.ID_ANY, _("Choose"))
         self.lblSubmenuStrokeColor = wx.StaticText(self, wx.ID_ANY, _("Stroke Color:"))
-        self.btnSubmenuStrokeColor = wx.Button(self, wx.ID_ANY, _("Default"))
+        self.btnSubmenuStrokeColor = wx.Button(self, wx.ID_ANY, _("Choose"))
         
         self.lblMenuTitle.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
         self.lblMenuFont.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
-        self.lblMenuFontSize.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
         self.lblTitleColor.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
         self.lblStrokeColor.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
         self.lblBgAudio.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
@@ -2213,12 +2218,12 @@ class MenuTabPanel(wx.Panel):
         szTitleFont = wx.FlexGridSizer(2, 4, 0, 5)
         szTitleFont.Add(self.lblMenuFont, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
         szTitleFont.Add(self.btnMenuFont, 0, wx.ADJUST_MINSIZE, 0)
-        szTitleFont.Add(self.lblMenuFontSize, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
-        szTitleFont.Add(self.menu_fontsize, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
+#        szTitleFont.Add(self.lblMenuFontSize, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
+#        szTitleFont.Add(self.menu_fontsize, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
         szTitleFont.Add(self.lblTitleColor, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
         szTitleFont.Add(self.btnTitleColor, 0, wx.ADJUST_MINSIZE, 0)
         szTitleFont.Add(self.lblStrokeColor, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
-        szTitleFont.Add(self.btnStrokeColor, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
+        szTitleFont.Add(self.btnStrokeColor, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szTitleFont.AddGrowableCol(1)
         
         szTextMist = wx.FlexGridSizer(1, 3, 0, 5)
@@ -2308,8 +2313,11 @@ class MenuTabPanel(wx.Panel):
         self.SetAutoLayout(True)
         self.SetSizer(szMenus)
         
-        wx.EVT_CHECKBOX(self, self.static.GetId(), self.static_OnClick)
+        wx.EVT_BUTTON(self, self.btnMenuFont.GetId(), self.btnMenuFont_OnClick)
+        wx.EVT_BUTTON(self, self.btnTitleColor.GetId(), self.btnTitleColor_OnClick)
+        wx.EVT_BUTTON(self, self.btnStrokeColor.GetId(), self.btnStrokeColor_OnClick)
         wx.EVT_CHECKBOX(self, self.text_mist.GetId(), self.text_mist_OnClick)
+        wx.EVT_CHECKBOX(self, self.static.GetId(), self.static_OnClick)
 
     def EnableSubmenus(self):
         self.submenu_audio_fade.Enable()
@@ -2323,6 +2331,31 @@ class MenuTabPanel(wx.Panel):
         self.btnSubmenuTitleColor.Disable()
         self.btnSubmenuStrokeColor.Disable()
 
+    def btnMenuFont_OnClick(self, evt):
+        dlgFont = wx.FontDialog(None, wx.FontData())
+        if (dlgFont.ShowModal() == wx.ID_OK):
+            font = dlgFont.GetFontData().GetChosenFont()
+            self.todisc_opts['menu-font'] = font.GetFaceName()
+            self.todisc_opts['menu-fontsize'] = font.GetPointSize()
+            self.btnMenuFont.SetLabel(font.GetFaceName())
+
+    def btnTitleColor_OnClick(self, evt):
+        dlgColour = wx.ColourDialog(None, self.todisc_opts['title-colour'])
+        if (dlgColour.ShowModal() == wx.ID_OK):
+            self.todisc_opts['title-colour'] = dlgColour.GetColourData()
+
+    def btnStrokeColor_OnClick(self, evt):
+        dlgColour = wx.ColourDialog(None)
+        if (dlgColour.ShowModal() == wx.ID_OK):
+            colour = dlgColour.GetColourData().GetColour()
+            self.todisc_opts['stroke-colour'] = colour
+
+    def text_mist_OnClick(self, evt):
+        if (evt.IsChecked()):
+            self.btnTextMistColor.Enable()
+        else:
+            self.btnTextMistColor.Disable()
+
     def static_OnClick(self, evt):
         if (evt.IsChecked()):
             self.menu_length.Enable()
@@ -2330,12 +2363,6 @@ class MenuTabPanel(wx.Panel):
         else:
             self.menu_length.Disable()
             self.loop.Disable()
-
-    def text_mist_OnClick(self, evt):
-        if (evt.IsChecked()):
-            self.btnTextMistColor.Enable()
-        else:
-            self.btnTextMistColor.Disable()
 
 class ThumbnailTabPanel(wx.Panel):
     def __init__(self, parent, id):
@@ -2346,12 +2373,10 @@ class ThumbnailTabPanel(wx.Panel):
         self.thumb_shape = wx.RadioBox(self, wx.ID_ANY, _("Feather Shape"), choices=[_("Normal"), _("Oval"), _("Cloud"), _("Egg")], majorDimension=1, style=wx.RA_SPECIFY_ROWS)
         self.lblThumbTitleFont = wx.StaticText(self, wx.ID_ANY, _("Thumb Font:"))
         self.thumb_font = wx.Button(self, wx.ID_ANY, _("Default"))
-        self.lblThumbTitleSize = wx.StaticText(self, wx.ID_ANY, _("Thumb Font Size:"))
-        self.thumb_font_size = wx.SpinCtrl(self, wx.ID_ANY, "", min=0, max=100)
         self.lblThumbTitleColor = wx.StaticText(self, wx.ID_ANY, _("Thumb Font Color:"))
-        self.thumb_text_color = wx.Button(self, wx.ID_ANY, _("Default"))
+        self.thumb_text_color = wx.Button(self, wx.ID_ANY, _("Choose"))
         self.lblThumbTitleMistColor = wx.StaticText(self, wx.ID_ANY, _("Thumb Mist Color:"))
-        self.thumb_mist_color = wx.Button(self, wx.ID_ANY, _("Default"))
+        self.thumb_mist_color = wx.Button(self, wx.ID_ANY, _("Choose"))
         self.blur = wx.Slider(self, wx.ID_ANY, 5, 0, 10, style=wx.SL_HORIZONTAL|wx.SL_AUTOTICKS|wx.SL_LABELS)
         self.opacity = wx.Slider(self, wx.ID_ANY, 100, 0, 100, style=wx.SL_HORIZONTAL|wx.SL_AUTOTICKS|wx.SL_LABELS)
         self.lblSeek = wx.StaticText(self, wx.ID_ANY, _("Seconds to seek before generating thumbs:"))
@@ -2363,8 +2388,6 @@ class ThumbnailTabPanel(wx.Panel):
         szThumbFont = wx.FlexGridSizer(2, 4, 5, 5)
         szThumbFont.Add(self.lblThumbTitleFont, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
         szThumbFont.Add(self.thumb_font, 0, wx.ADJUST_MINSIZE, 0)
-        szThumbFont.Add(self.lblThumbTitleSize, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
-        szThumbFont.Add(self.thumb_font_size, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
         szThumbFont.Add(self.lblThumbTitleColor, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
         szThumbFont.Add(self.thumb_text_color, 0, wx.ADJUST_MINSIZE, 0)
         szThumbFont.Add(self.lblThumbTitleMistColor, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
