@@ -1812,14 +1812,13 @@ for ((i=0; i<=NUM_FILES; i++)); do
 #        echo -ne "\r                                                            "
 #        echo -ne "\rProcessing "$pic"  "
         spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$pic")  "
-        IM_CMD0=(composite -compose CopyOpacity $THUMB_MASK +matte \
+        IM_CMD=(composite -compose CopyOpacity $THUMB_MASK +matte \
         "$pic")
-        IM_CMD1=(convert -trim +repage -)
-        IM_CMD2=(montage -  -geometry +4+4 -compose Copy -background none \
+        IM_CMD0=(montage -  -geometry +4+4 -compose Copy -background none \
         -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}")
 
-        IM_CMD2b=(convert -resize $THUMB_SIZE! -)
-        IM_CMD2c=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -) 
+        IM_CMD1=(convert -resize $THUMB_SIZE! -)
+        IM_CMD2=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -) 
  
         IM_CMD3=(montage -geometry +4+4 -background '#161514' \
         -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" \
@@ -1828,9 +1827,9 @@ for ((i=0; i<=NUM_FILES; i++)); do
         -bordercolor none -mattecolor "#444744" -)
         IM_CMD5=(convert -resize $THUMB_SIZE! - $pic)
         if $FEATHER; then
-            "${IM_CMD0[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
-            "${IM_CMD2b[@]}" miff:- |"${IM_CMD2c[@]}" miff:- |
-            "${IM_CMD1[@]}" miff:- | "${IM_CMD5[@]}"
+            "${IM_CMD[@]}" miff:- | "${IM_CMD0[@]}" miff:- |
+            "${IM_CMD1[@]}" miff:- |"${IM_CMD2[@]}" miff:- |
+            "${IM_CMD5[@]}"
         else
             "${IM_CMD3[@]}" miff:- | "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
         fi
