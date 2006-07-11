@@ -429,6 +429,29 @@ class TodiscFrame(wx.Frame):
     def btnFinish_OnClick(self, evt):
         """ Event handler for clicking on the 'Finish' button
         """
+        # Collect todisc options from all three panels
+        todisc_opts = {}
+        todisc_opts.update(self.nbPlaylist.todisc_opts)
+        todisc_opts.update(self.nbMenus.todisc_opts)
+        todisc_opts.update(self.nbThumbnails.todisc_opts)
+        # Build a todisc command-line
+        cmd = 'todisc '
+        for opt, arg in todisc_opts.iteritems():
+            # For booleans, use '-opt' (if True)
+            if arg in [True, False]:
+                if arg:
+                    cmd += '-%s ' % opt
+            # For lists, use '-opt "first" "second" ...'
+            elif isinstance(arg, list):
+                if len(arg) > 0:
+                    cmd += '-%s ' % opt
+                    for item in arg:
+                        cmd += '"%s" ' % item
+            # For all others, '-opt arg'
+            elif arg is not None:
+                cmd += '-%s %s ' % (opt, arg)
+        print "Would run the following todisc command:"
+        print cmd
         return
 
     def menu_OnAbout(self, evt):
