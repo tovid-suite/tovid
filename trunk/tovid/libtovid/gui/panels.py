@@ -2011,29 +2011,63 @@ class PlaylistTabPanel(wx.Panel):
             'submenu-audio': None,
             'out': ''
             }
-        self.szVideoInfoBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Video Information"))
-        self.szTitleInfoBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Title"))
-        self.szAudioInfoBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Audio"))
-        self.discFormat = wx.RadioBox(self, wx.ID_ANY, _("Disc Format"), choices=[_("DVD"), _("SVCD")], majorDimension=1, style=wx.RA_SPECIFY_ROWS)
-        self.videoFormat = wx.RadioBox(self, wx.ID_ANY, _("Video Format"), choices=[_("NTSC"), _("PAL")], majorDimension=1, style=wx.RA_SPECIFY_ROWS)
+        self.szVideoInfoBox_staticbox = \
+            wx.StaticBox(self, wx.ID_ANY, _("Video Information"))
+        self.szTitleInfoBox_staticbox = \
+            wx.StaticBox(self, wx.ID_ANY, _("Title"))
+        self.szAudioInfoBox_staticbox = \
+            wx.StaticBox(self, wx.ID_ANY, _("Audio"))
+        self.discFormat = \
+            wx.RadioBox(self, wx.ID_ANY, _("Disc Format"),
+                        choices=[_("DVD"), _("SVCD")],
+                        majorDimension=1,
+                        style=wx.RA_SPECIFY_ROWS)
+        self.videoFormat = \
+            wx.RadioBox(self, wx.ID_ANY, _("Video Format"),
+                        choices=[_("NTSC"), _("PAL")],
+                        majorDimension=1,
+                        style=wx.RA_SPECIFY_ROWS)
+
+        # Submenus checkbox
         self.submenus = wx.CheckBox(self, wx.ID_ANY, _("Create submenus?"))
-        self.lblChapters = wx.StaticText(self, wx.ID_ANY, _("Chapters per video:"))
-        self.chapters = wx.SpinCtrl(self, wx.ID_ANY, "6", min=0, max=100, style=wx.TE_RIGHT)
+        wx.EVT_CHECKBOX(self, self.submenus.GetId(), self.submenus_OnClick)
+
+        self.lblChapters = \
+            wx.StaticText(self, wx.ID_ANY, _("Chapters per video:"))
+        self.chapters = \
+            wx.SpinCtrl(self, wx.ID_ANY, "6", min=0, max=100,
+                        style=wx.TE_RIGHT)
         self.files = wx.ListBox(self, wx.ID_ANY, choices=[])
-        self.lblTitle = wx.StaticText(self, wx.ID_ANY, _("Video Thumb Title:"))
+        self.lblTitle = \
+            wx.StaticText(self, wx.ID_ANY, _("Video Thumb Title:"))
         self.title = wx.TextCtrl(self, wx.ID_ANY, "")
-        self.lblSubmenuTitle = wx.StaticText(self, wx.ID_ANY, _("Video Submenu Title:"))
+        self.lblSubmenuTitle = \
+            wx.StaticText(self, wx.ID_ANY, _("Video Submenu Title:"))
         self.submenu_title = wx.TextCtrl(self, wx.ID_ANY, "")
-        self.lblSubmenuAudio = wx.StaticText(self, wx.ID_ANY, _("Audio for Submenu:"))
+        self.lblSubmenuAudio = \
+            wx.StaticText(self, wx.ID_ANY, _("Audio for Submenu:"))
         self.submenu_audio = wx.TextCtrl(self, wx.ID_ANY, "")
-        self.subaudio_all = wx.CheckBox(self, wx.ID_ANY, _("Use for all submenu audio?"))
+        self.subaudio_all = \
+            wx.CheckBox(self, wx.ID_ANY, _("Use for all submenu audio?"))
+
         self.btnAudio = wx.Button(self, wx.ID_ANY, _("Browse"))
+        wx.EVT_BUTTON(self, self.btnAudio.GetId(), self.btnAudio_OnClick)
+
+        # "Add Video" button
         self.btnAddVideo = wx.Button(self, wx.ID_ANY, _("Add Video"))
+        wx.EVT_BUTTON(self, self.btnAddVideo.GetId(), self.btnAddVideo_OnClick)
+        # "Remove Video" button
         self.btnRemoveVideo = wx.Button(self, wx.ID_ANY, _("Remove Video"))
+        wx.EVT_BUTTON(self, self.btnRemoveVideo.GetId(), \
+                      self.btnRemoveVideo_OnClick)
+
         self.static_line_4 = wx.StaticLine(self, wx.ID_ANY)
         self.lblOut = wx.StaticText(self, wx.ID_ANY, _("Output"))
+
+        # Output file textbox and browse button
         self.out = wx.TextCtrl(self, wx.ID_ANY, "")
         self.btnOut = wx.Button(self, wx.ID_ANY, _("Browse"))
+        wx.EVT_BUTTON(self, self.btnOut.GetId(), self.btnOut_OnClick)
         
         self.discFormat.SetSelection(0)
         self.videoFormat.SetSelection(0)
@@ -2043,35 +2077,44 @@ class PlaylistTabPanel(wx.Panel):
         self.DisableSubmenus()
         
         szFormats = wx.FlexGridSizer(1, 2, 0, 5)
-        szFormats.Add(self.discFormat, 0, wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL, 0)
-        szFormats.Add(self.videoFormat, 0, wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL, 0)
+        szFormats.Add(self.discFormat, 0,
+                      wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL, 0)
+        szFormats.Add(self.videoFormat, 0,
+                      wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL, 0)
         szFormats.AddGrowableCol(0)
         szFormats.AddGrowableCol(1)
         
         szChapters = wx.GridSizer(1, 2, 0, 0)
-        szChapters.Add(self.lblChapters, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szChapters.Add(self.lblChapters, 0,
+                       wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szChapters.Add(self.chapters, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
         
         szTitleInfo = wx.FlexGridSizer(2, 2, 5, 5)
-        szTitleInfo.Add(self.lblTitle, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szTitleInfo.Add(self.lblTitle, 0,
+                        wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szTitleInfo.Add(self.title, 0, wx.EXPAND, 0)
-        szTitleInfo.Add(self.lblSubmenuTitle, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szTitleInfo.Add(self.lblSubmenuTitle, 0,
+                        wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szTitleInfo.Add(self.submenu_title, 0, wx.EXPAND, 0)
         szTitleInfo.AddGrowableCol(1)
         
-        szTitleInfoBox = wx.StaticBoxSizer(self.szTitleInfoBox_staticbox, wx.VERTICAL)
+        szTitleInfoBox = \
+            wx.StaticBoxSizer(self.szTitleInfoBox_staticbox, wx.VERTICAL)
         szTitleInfoBox.Add(szTitleInfo, 1, wx.EXPAND, 0)
         
         szAudioInfo = wx.FlexGridSizer(1, 2, 5, 5)
-        szAudioInfo.Add(self.lblSubmenuAudio, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szAudioInfo.Add(self.lblSubmenuAudio, 0,
+                        wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szAudioInfo.Add(self.submenu_audio, 0, wx.EXPAND, 0)
         szAudioInfo.AddGrowableCol(1)
         
         szAudioOptions = wx.GridSizer(1, 2, 0, 5)
-        szAudioOptions.Add(self.subaudio_all, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
-        szAudioOptions.Add(self.btnAudio, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
-        
-        szAudioInfoBox = wx.StaticBoxSizer(self.szAudioInfoBox_staticbox, wx.VERTICAL)
+        szAudioOptions.Add(self.subaudio_all, 0,
+                           wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szAudioOptions.Add(self.btnAudio, 0,
+                           wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
+        szAudioInfoBox = \
+            wx.StaticBoxSizer(self.szAudioInfoBox_staticbox, wx.VERTICAL)
         szAudioInfoBox.Add(szAudioInfo, 1, wx.EXPAND, 0)
         szAudioInfoBox.Add(szAudioOptions, 1, wx.EXPAND, 0)
         
@@ -2082,7 +2125,8 @@ class PlaylistTabPanel(wx.Panel):
         szVideoInfo.AddGrowableRow(0)
         szVideoInfo.AddGrowableCol(0)
         
-        szVideoInfoBox = wx.StaticBoxSizer(self.szVideoInfoBox_staticbox, wx.VERTICAL)
+        szVideoInfoBox = \
+            wx.StaticBoxSizer(self.szVideoInfoBox_staticbox, wx.VERTICAL)
         szVideoInfoBox.Add(szVideoInfo, 0, wx.EXPAND, 0)
         
         szVidButtons = wx.BoxSizer(wx.HORIZONTAL)
@@ -2097,7 +2141,8 @@ class PlaylistTabPanel(wx.Panel):
         
         szPlaylist = wx.FlexGridSizer(7, 1, 7, 0)
         szPlaylist.Add(szFormats, 0, wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL, 0)
-        szPlaylist.Add(self.submenus, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szPlaylist.Add(self.submenus, 0,
+                       wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szPlaylist.Add(szChapters, 1, wx.EXPAND, 0)
         szPlaylist.Add(szVideoInfoBox, 1, wx.EXPAND, 0)
         szPlaylist.Add(szVidButtons, 1, wx.EXPAND, 0)
@@ -2111,11 +2156,6 @@ class PlaylistTabPanel(wx.Panel):
         self.SetAutoLayout(True)
         self.SetSizer(szPlaylist)
         
-        wx.EVT_CHECKBOX(self, self.submenus.GetId(), self.submenus_OnClick)
-        wx.EVT_BUTTON(self, self.btnAddVideo.GetId(), self.btnAddVideo_OnClick)
-        wx.EVT_BUTTON(self, self.btnRemoveVideo.GetId(), self.btnRemoveVideo_OnClick)
-        wx.EVT_BUTTON(self, self.btnAudio.GetId(), self.btnAudio_OnClick)
-        wx.EVT_BUTTON(self, self.btnOut.GetId(), self.btnOut_OnClick)
 
     def EnableSubmenus(self):
         self.submenu_title.Enable()
@@ -2188,12 +2228,18 @@ class MenuTabPanel(wx.Panel):
             'submenu-stroke-color': None
             }
 
-        self.szMistOpacity_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Text Mist Opacity"))
-        self.szMainMenuBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Main Menu"))
-        self.szBackgroundBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Background"))
-        self.szAudioFadeBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Audio Fade"))
-        self.szMenuAnim_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Menu Animations"))
-        self.szSubmenuBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Submenus"))
+        self.szMistOpacity_staticbox = \
+            wx.StaticBox(self, wx.ID_ANY, _("Text Mist Opacity"))
+        self.szMainMenuBox_staticbox = \
+            wx.StaticBox(self, wx.ID_ANY, _("Main Menu"))
+        self.szBackgroundBox_staticbox = \
+            wx.StaticBox(self, wx.ID_ANY, _("Background"))
+        self.szAudioFadeBox_staticbox = \
+            wx.StaticBox(self, wx.ID_ANY, _("Audio Fade"))
+        self.szMenuAnim_staticbox = \
+            wx.StaticBox(self, wx.ID_ANY, _("Menu Animations"))
+        self.szSubmenuBox_staticbox = \
+            wx.StaticBox(self, wx.ID_ANY, _("Submenus"))
         self.lblMenuTitle = wx.StaticText(self, wx.ID_ANY, _("Title:"))
         self.menu_title = wx.TextCtrl(self, wx.ID_ANY, "")
         self.lblMenuFont = wx.StaticText(self, wx.ID_ANY, _("Title Font:"))
@@ -2206,9 +2252,12 @@ class MenuTabPanel(wx.Panel):
         self.menu_fade = wx.CheckBox(self, wx.ID_ANY, _("Use menu fade?"))
         self.static_line_2 = wx.StaticLine(self, wx.ID_ANY)
         self.text_mist = wx.CheckBox(self, wx.ID_ANY, _("Use text mist?"))
-        self.lblTextMistColor = wx.StaticText(self, wx.ID_ANY, _("Text Mist Color:"))
+        self.lblTextMistColor = \
+            wx.StaticText(self, wx.ID_ANY, _("Text Mist Color:"))
         self.btnTextMistColor = wx.Button(self, wx.ID_ANY, _("Choose"))
-        self.opacity = wx.Slider(self, wx.ID_ANY, 100, 0, 100, style=wx.SL_HORIZONTAL|wx.SL_AUTOTICKS|wx.SL_LABELS)
+        self.opacity = \
+            wx.Slider(self, wx.ID_ANY, 100, 0, 100,
+                      style=wx.SL_HORIZONTAL|wx.SL_AUTOTICKS|wx.SL_LABELS)
         self.lblBgAudio = wx.StaticText(self, wx.ID_ANY, _("Background Audio"))
         self.bgaudio = wx.TextCtrl(self, wx.ID_ANY, "")
         self.btnBgAudio = wx.Button(self, wx.ID_ANY, _("Browse"))
@@ -2220,99 +2269,133 @@ class MenuTabPanel(wx.Panel):
         self.btnBgVideo = wx.Button(self, wx.ID_ANY, _("Browse"))
         self.lblMenuAudioFade = wx.StaticText(self, wx.ID_ANY, _("Menu:"))
         self.menu_audio_fade = wx.SpinCtrl(self, wx.ID_ANY, "", min=0, max=100)
-        self.lblSubmenuAudioFade = wx.StaticText(self, wx.ID_ANY, _("Submenu:"))
-        self.submenu_audio_fade = wx.SpinCtrl(self, wx.ID_ANY, "", min=0, max=100)
+        self.lblSubmenuAudioFade = \
+            wx.StaticText(self, wx.ID_ANY, _("Submenu:"))
+        self.submenu_audio_fade = \
+            wx.SpinCtrl(self, wx.ID_ANY, "", min=0, max=100)
         self.static = wx.CheckBox(self, wx.ID_ANY, _("Animate menus?"))
-        self.lblMenuLength = wx.StaticText(self, wx.ID_ANY, _("Menu animation length:"))
+        self.lblMenuLength = \
+            wx.StaticText(self, wx.ID_ANY, _("Menu animation length:"))
         self.menu_length = wx.SpinCtrl(self, wx.ID_ANY, "", min=0, max=100)
         self.lblLoop = wx.StaticText(self, wx.ID_ANY, _("Menu pause length:"))
         self.loop = wx.SpinCtrl(self, wx.ID_ANY, "", min=0, max=100)
         self.static_line_1 = wx.StaticLine(self, wx.ID_ANY)
         self.ani_submenus = wx.CheckBox(self, wx.ID_ANY, _("Animate submenus?"))
-        self.lblSubmenuTitleColor = wx.StaticText(self, wx.ID_ANY, _("Title Color:"))
+        self.lblSubmenuTitleColor = \
+            wx.StaticText(self, wx.ID_ANY, _("Title Color:"))
         self.btnSubmenuTitleColor = wx.Button(self, wx.ID_ANY, _("Choose"))
-        self.lblSubmenuStrokeColor = wx.StaticText(self, wx.ID_ANY, _("Stroke Color:"))
+        self.lblSubmenuStrokeColor = \
+            wx.StaticText(self, wx.ID_ANY, _("Stroke Color:"))
         self.btnSubmenuStrokeColor = wx.Button(self, wx.ID_ANY, _("Choose"))
         
-        self.lblMenuTitle.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
-        self.lblMenuFont.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
-        self.lblTitleColor.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
-        self.lblStrokeColor.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
-        self.lblBgAudio.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
-        self.lblBgImage.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
+        self.lblMenuTitle.SetFont(\
+            wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
+        self.lblMenuFont.SetFont(\
+            wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
+        self.lblTitleColor.SetFont(\
+            wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
+        self.lblStrokeColor.SetFont(\
+            wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
+        self.lblBgAudio.SetFont(\
+            wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
+        self.lblBgImage.SetFont(\
+            wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
         self.static.SetValue(1)
-        self.lblSubmenuTitleColor.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
-        self.lblSubmenuStrokeColor.SetFont(wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
+        self.lblSubmenuTitleColor.SetFont(\
+            wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
+        self.lblSubmenuStrokeColor.SetFont(\
+            wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
         self.btnTextMistColor.Disable()
         self.DisableSubmenus()
         
         szMenuTitle = wx.FlexGridSizer(1, 2, 0, 5)
-        szMenuTitle.Add(self.lblMenuTitle, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szMenuTitle.Add(self.lblMenuTitle, 0,
+                        wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szMenuTitle.Add(self.menu_title, 0, wx.EXPAND, 0)
         szMenuTitle.AddGrowableCol(1)
         
         szTitleFont = wx.FlexGridSizer(2, 4, 0, 5)
-        szTitleFont.Add(self.lblMenuFont, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
+        szTitleFont.Add(self.lblMenuFont, 0,
+                        wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
         szTitleFont.Add(self.btnMenuFont, 0, wx.ADJUST_MINSIZE, 0)
 #        szTitleFont.Add(self.lblMenuFontSize, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
 #        szTitleFont.Add(self.menu_fontsize, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
-        szTitleFont.Add(self.lblTitleColor, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
+        szTitleFont.Add(self.lblTitleColor, 0,
+                        wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
         szTitleFont.Add(self.btnTitleColor, 0, wx.ADJUST_MINSIZE, 0)
-        szTitleFont.Add(self.lblStrokeColor, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
-        szTitleFont.Add(self.btnStrokeColor, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szTitleFont.Add(self.lblStrokeColor, 0,
+                        wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
+        szTitleFont.Add(self.btnStrokeColor, 0,
+                        wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szTitleFont.AddGrowableCol(1)
         
         szTextMist = wx.FlexGridSizer(1, 3, 0, 5)
-        szTextMist.Add(self.text_mist, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
-        szTextMist.Add(self.lblTextMistColor, 0, wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 0)
+        szTextMist.Add(self.text_mist, 0,
+                       wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szTextMist.Add(self.lblTextMistColor, 0,
+                       wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 0)
         szTextMist.Add(self.btnTextMistColor, 0, wx.ADJUST_MINSIZE, 0)
         szTextMist.AddGrowableCol(1)
         
-        szMistOpacity = wx.StaticBoxSizer(self.szMistOpacity_staticbox, wx.VERTICAL)
+        szMistOpacity = \
+            wx.StaticBoxSizer(self.szMistOpacity_staticbox, wx.VERTICAL)
         szMistOpacity.Add(self.opacity, 0, wx.EXPAND, 0)
         
-        szMainMenuBox = wx.StaticBoxSizer(self.szMainMenuBox_staticbox, wx.VERTICAL)
+        szMainMenuBox = \
+            wx.StaticBoxSizer(self.szMainMenuBox_staticbox, wx.VERTICAL)
         szMainMenuBox.Add(szMenuTitle, 0, wx.EXPAND, 0)
-        szMainMenuBox.Add(szTitleFont, 1, wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL, 0)
+        szMainMenuBox.Add(szTitleFont, 1,
+                          wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL, 0)
         szMainMenuBox.Add(self.static_line_3, 0, wx.EXPAND, 0)
-        szMainMenuBox.Add(self.menu_fade, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szMainMenuBox.Add(self.menu_fade, 0,
+                          wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szMainMenuBox.Add(self.static_line_2, 0, wx.EXPAND, 0)
         szMainMenuBox.Add(szTextMist, 0, wx.EXPAND, 0)
         szMainMenuBox.Add(szMistOpacity, 0, wx.EXPAND, 0)
         
         szBackground = wx.FlexGridSizer(3, 3, 5, 5)
-        szBackground.Add(self.lblBgAudio, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szBackground.Add(self.lblBgAudio, 0,
+                         wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szBackground.Add(self.bgaudio, 0, wx.EXPAND, 0)
         szBackground.Add(self.btnBgAudio, 0, wx.ADJUST_MINSIZE, 0)
-        szBackground.Add(self.lblBgImage, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szBackground.Add(self.lblBgImage, 0,
+                         wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szBackground.Add(self.bgimage, 0, wx.EXPAND, 0)
         szBackground.Add(self.btnBgImage, 0, wx.ADJUST_MINSIZE, 0)
-        szBackground.Add(self.lblBgVideo, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szBackground.Add(self.lblBgVideo, 0,
+                         wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szBackground.Add(self.bgvideo, 0, wx.EXPAND, 0)
         szBackground.Add(self.btnBgVideo, 0, wx.ADJUST_MINSIZE, 0)
         szBackground.AddGrowableCol(1)
         
-        szBackgroundBox = wx.StaticBoxSizer(self.szBackgroundBox_staticbox, wx.VERTICAL)
+        szBackgroundBox = \
+            wx.StaticBoxSizer(self.szBackgroundBox_staticbox, wx.VERTICAL)
         szBackgroundBox.Add(szBackground, 1, wx.EXPAND, 0)
         
         szAudioFade = wx.FlexGridSizer(1, 4, 0, 5)
-        szAudioFade.Add(self.lblMenuAudioFade, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szAudioFade.Add(self.lblMenuAudioFade, 0,
+                        wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szAudioFade.Add(self.menu_audio_fade, 0, wx.ADJUST_MINSIZE, 0)
-        szAudioFade.Add(self.lblSubmenuAudioFade, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szAudioFade.Add(self.lblSubmenuAudioFade, 0,
+                        wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szAudioFade.Add(self.submenu_audio_fade, 0, wx.ADJUST_MINSIZE, 0)
         szAudioFade.AddGrowableCol(1)
         
-        szAudioFadeBox = wx.StaticBoxSizer(self.szAudioFadeBox_staticbox, wx.HORIZONTAL)
+        szAudioFadeBox = \
+            wx.StaticBoxSizer(self.szAudioFadeBox_staticbox, wx.HORIZONTAL)
         szAudioFadeBox.Add(szAudioFade, 1, wx.EXPAND, 0)
         
         szMenuLength = wx.FlexGridSizer(1, 2, 0, 0)
-        szMenuLength.Add(self.lblMenuLength, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
-        szMenuLength.Add(self.menu_length, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
+        szMenuLength.Add(self.lblMenuLength, 0,
+                         wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szMenuLength.Add(self.menu_length, 0,
+                         wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
         szMenuLength.AddGrowableCol(0)
         szMenuLength.AddGrowableCol(1)
         
         szLoop = wx.GridSizer(1, 2, 0, 0)
-        szLoop.Add(self.lblLoop, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szLoop.Add(self.lblLoop, 0,
+                   wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szLoop.Add(self.loop, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
         
         szSubmenus = wx.FlexGridSizer(10, 1, 5, 0)
@@ -2320,20 +2403,24 @@ class MenuTabPanel(wx.Panel):
         szSubmenus.Add(szMenuLength, 1, wx.EXPAND, 0)
         szSubmenus.Add(szLoop, 1, wx.EXPAND, 0)
         szSubmenus.Add(self.static_line_1, 0, wx.EXPAND, 0)
-        szSubmenus.Add(self.ani_submenus, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
+        szSubmenus.Add(self.ani_submenus, 0,
+                       wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szSubmenus.AddGrowableCol(0)
         
         szMenuAnim = wx.StaticBoxSizer(self.szMenuAnim_staticbox, wx.VERTICAL)
         szMenuAnim.Add(szSubmenus, 1, wx.EXPAND, 0)
         
         szSubmenuColor = wx.FlexGridSizer(1, 4, 0, 7)
-        szSubmenuColor.Add(self.lblSubmenuTitleColor, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
+        szSubmenuColor.Add(self.lblSubmenuTitleColor, 0,
+                           wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
         szSubmenuColor.Add(self.btnSubmenuTitleColor, 0, wx.ADJUST_MINSIZE, 0)
-        szSubmenuColor.Add(self.lblSubmenuStrokeColor, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
+        szSubmenuColor.Add(self.lblSubmenuStrokeColor, 0,
+                           wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
         szSubmenuColor.Add(self.btnSubmenuStrokeColor, 0, wx.ADJUST_MINSIZE, 0)
         szSubmenuColor.AddGrowableCol(1)
         
-        szSubmenuBox = wx.StaticBoxSizer(self.szSubmenuBox_staticbox, wx.HORIZONTAL)
+        szSubmenuBox = \
+            wx.StaticBoxSizer(self.szSubmenuBox_staticbox, wx.HORIZONTAL)
         szSubmenuBox.Add(szSubmenuColor, 1, wx.EXPAND, 0)
         
         szMenus = wx.FlexGridSizer(5, 1, 7, 0)
@@ -2350,8 +2437,10 @@ class MenuTabPanel(wx.Panel):
         self.SetSizer(szMenus)
         
         wx.EVT_BUTTON(self, self.btnMenuFont.GetId(), self.btnMenuFont_OnClick)
-        wx.EVT_BUTTON(self, self.btnTitleColor.GetId(), self.btnTitleColor_OnClick)
-        wx.EVT_BUTTON(self, self.btnStrokeColor.GetId(), self.btnStrokeColor_OnClick)
+        wx.EVT_BUTTON(self, self.btnTitleColor.GetId(),
+                      self.btnTitleColor_OnClick)
+        wx.EVT_BUTTON(self, self.btnStrokeColor.GetId(),
+                      self.btnStrokeColor_OnClick)
         wx.EVT_CHECKBOX(self, self.text_mist.GetId(), self.text_mist_OnClick)
         wx.EVT_CHECKBOX(self, self.static.GetId(), self.static_OnClick)
 
