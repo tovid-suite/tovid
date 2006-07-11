@@ -434,6 +434,7 @@ class TodiscFrame(wx.Frame):
         todisc_opts.update(self.nbPlaylist.todisc_opts)
         todisc_opts.update(self.nbMenus.todisc_opts)
         todisc_opts.update(self.nbThumbnails.todisc_opts)
+        # TODO: Verify required options (-files, -titles, -out)
         # Build a todisc command-line
         cmd = 'todisc '
         for opt, arg in todisc_opts.iteritems():
