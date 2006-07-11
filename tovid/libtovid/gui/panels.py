@@ -2038,18 +2038,27 @@ class PlaylistTabPanel(wx.Panel):
             wx.SpinCtrl(self, wx.ID_ANY, "6", min=0, max=100,
                         style=wx.TE_RIGHT)
         self.files = wx.ListBox(self, wx.ID_ANY, choices=[])
+
+        # Thumb title
         self.lblTitle = \
             wx.StaticText(self, wx.ID_ANY, _("Video Thumb Title:"))
         self.title = wx.TextCtrl(self, wx.ID_ANY, "")
+        #wx.EVT_TEXT(self, self.title.GetId(), self.title_OnEdit)
+
+        # Submenu title
         self.lblSubmenuTitle = \
             wx.StaticText(self, wx.ID_ANY, _("Video Submenu Title:"))
         self.submenu_title = wx.TextCtrl(self, wx.ID_ANY, "")
+        #wx.EVT_TEXT(self, self.submenu_title.GetId(), self.submenu_title_OnEdit)
+
+        # Submenu audio
         self.lblSubmenuAudio = \
             wx.StaticText(self, wx.ID_ANY, _("Audio for Submenu:"))
         self.submenu_audio = wx.TextCtrl(self, wx.ID_ANY, "")
+        #wx.EVT_TEXT(self, self.submenu_audio.GetId(), self.submenu_audio_OnEdit)
         self.subaudio_all = \
             wx.CheckBox(self, wx.ID_ANY, _("Use for all submenu audio?"))
-
+        #wx.EVT_BUTTON(self, self.subaudio_all.GetId(), self.subaudio_all_OnClick)
         self.btnAudio = wx.Button(self, wx.ID_ANY, _("Browse"))
         wx.EVT_BUTTON(self, self.btnAudio.GetId(), self.btnAudio_OnClick)
 
@@ -2240,8 +2249,12 @@ class MenuTabPanel(wx.Panel):
             wx.StaticBox(self, wx.ID_ANY, _("Menu Animations"))
         self.szSubmenuBox_staticbox = \
             wx.StaticBox(self, wx.ID_ANY, _("Submenus"))
+        
+        # Main menu title
         self.lblMenuTitle = wx.StaticText(self, wx.ID_ANY, _("Title:"))
         self.menu_title = wx.TextCtrl(self, wx.ID_ANY, "")
+        #wx.EVT_TEXT(self, self.menu_title.GetId(), self.menu_title_OnEdit)
+        
         self.lblMenuFont = wx.StaticText(self, wx.ID_ANY, _("Title Font:"))
         self.btnMenuFont = wx.Button(self, wx.ID_ANY, _("Default"))
         self.lblTitleColor = wx.StaticText(self, wx.ID_ANY, _("Title Color:"))
@@ -2258,15 +2271,25 @@ class MenuTabPanel(wx.Panel):
         self.opacity = \
             wx.Slider(self, wx.ID_ANY, 100, 0, 100,
                       style=wx.SL_HORIZONTAL|wx.SL_AUTOTICKS|wx.SL_LABELS)
+
+        # Background audio
         self.lblBgAudio = wx.StaticText(self, wx.ID_ANY, _("Background Audio"))
         self.bgaudio = wx.TextCtrl(self, wx.ID_ANY, "")
+        wx.EVT_TEXT(self, self.bgaudio.GetId(), self.bgaudio_OnEdit)
         self.btnBgAudio = wx.Button(self, wx.ID_ANY, _("Browse"))
+
+        # Background image
         self.lblBgImage = wx.StaticText(self, wx.ID_ANY, _("Background Image"))
         self.bgimage = wx.TextCtrl(self, wx.ID_ANY, "")
+        wx.EVT_TEXT(self, self.bgimage.GetId(), self.bgimage_OnEdit)
         self.btnBgImage = wx.Button(self, wx.ID_ANY, _("Browse"))
+
+        # Background video
         self.lblBgVideo = wx.StaticText(self, wx.ID_ANY, _("Background Video"))
         self.bgvideo = wx.TextCtrl(self, wx.ID_ANY, "")
+        wx.EVT_TEXT(self, self.bgvideo.GetId(), self.bgvideo_OnEdit)
         self.btnBgVideo = wx.Button(self, wx.ID_ANY, _("Browse"))
+
         self.lblMenuAudioFade = wx.StaticText(self, wx.ID_ANY, _("Menu:"))
         self.menu_audio_fade = wx.SpinCtrl(self, wx.ID_ANY, "", min=0, max=100)
         self.lblSubmenuAudioFade = \
@@ -2488,7 +2511,15 @@ class MenuTabPanel(wx.Panel):
         else:
             self.menu_length.Disable()
             self.loop.Disable()
+    def bgaudio_OnEdit(self, evt):
+        self.todisc_opts['bgaudio'] = self.bgaudio.GetValue()
 
+    def bgimage_OnEdit(self, evt):
+        self.todisc_opts['bgimage'] = self.bgimage.GetValue()
+
+    def bgvideo_OnEdit(self, evt):
+        self.todisc_opts['bgvideo'] = self.bgvideo.GetValue()
+    
 class ThumbnailTabPanel(wx.Panel):
     def __init__(self, parent, id):
         self.todisc_opts = {\
