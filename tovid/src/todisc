@@ -955,23 +955,15 @@ elif [ -z "$STROKE" ]; then
     STROKE=gray
 fi
 
-echo "Running
-convert -size 620x100 xc:none -font "$MENU_FONT" \
--pointsize $MENU_FONTSIZE \
--fill black -draw "gravity center text 2,2 \"$VMGM_TITLE\"" \
--stroke "$STROKE" -strokewidth 1 \
--fill "$TITLE_COLOUR" -stroke "$STROKE" \
--draw "gravity center text 1,1 \"$VMGM_TITLE\"" miff:- | \
-convert -trim +repage - -blur 0x0.4 "$WORK_DIR/title_txt.png"
-"
+# make a title image
+TITLE_CMD=(convert  -size 620x100 xc:none -font "$MENU_FONT"  -pointsize $MENU_FONTSIZE \
+-fill black -strokewidth 1 -stroke $STROKE -gravity east  -annotate +0+0 "$VMGM_TITLE" \
+-fill "$TITLE_COLOUR" -stroke "$STROKE" -annotate +0+0 "$VMGM_TITLE")
+TITLE_CMD1=(convert - -trim +repage -blur 0x0.4 "$WORK_DIR/title_txt.png")
 
-convert -size 620x100 xc:none -font "$MENU_FONT" \
--pointsize $MENU_FONTSIZE \
--fill black -draw "gravity center text 2,2 \"$VMGM_TITLE\"" \
--stroke "$STROKE" -strokewidth 1 \
--fill "$TITLE_COLOUR" -stroke "$STROKE" \
--draw "gravity center text 1,1 \"$VMGM_TITLE\"" miff:- | \
-convert -trim +repage - -blur 0x0.4 "$WORK_DIR/title_txt.png"
+echo "Running "${TITLE_CMD[@]}" miff:- | \
+"${TITLE_CMD1[@]}"" | fold -bs >> "$LOG_FILE"
+"${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}"
 
 if $MIST; then
     echo "Making a white or colored png for the misted title background"
