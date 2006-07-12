@@ -122,8 +122,10 @@ One solution for this is to use -submenus and -submenu-titles "Long title one"
     chapters, though the keyword "none" may be used for silence
 : -menu-audio-fade
     Number of sec to fade given menu audio in and out (default: 1.0 seconds)
+    If you use -menu-audio-fade 0 then the audio will not be faded.
 : -submenu-audio-fade
     Number of sec to fade given submenu audio in and out (default: 1.0 seconds)
+    See -menu-audio-fade
 
 
 === Thumbnail style ===
