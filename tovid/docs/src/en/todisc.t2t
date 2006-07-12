@@ -35,15 +35,27 @@ The number of **-files** and **-titles** must be equal. If the input files are
 not mpeg, you will have the option to auto-encode them with **tovid**.
 
 The **-titles** arguments should be double-quoted, with special characters
-(like ", !, *, &, ?) backslash-escaped. If any of your titles are longer than
-about 12 characters (for more than 6 videos), they may be chopped off.
-One solution for this is to use -submenus and -submenu-titles "Long title one"
-"Long title 2", etc,  where the title for the same video can be very long.
+(like ", !, *, &, ?) backslash-escaped. These titles are used for labeling
+thumbnails on the main menu. At present, thumbnail labels can only show about
+12 characters (depending on what **-thumb-font** and **-thumb-fontsize** you
+use). If your titles are too long to fit in the label area, you may try using
+submenus, which can display longer titles:
 
-The **-menu-title** argument (described below under "Menu Style") can be 
-more than one line if you use \n in the title, but you would probably need to
-make the font size smaller ( option -menu-fontsize )
-Example: todisc . . . -menu-title "A\nMultilined\nTitle" -menu-fontsize 24
+```
+ $ todisc -submenus \
+          -files file1.mpg file2.mpg ... \
+          -titles "Short 1" "Short 2" \
+          -submenu-titles "Long Title One" "Long Title Two" \
+          -out foo
+```
+
+The **-menu-title** argument (described below under "Menu Style") can include
+a **\n** to indicate a line break (creating a multi-line title). You may need
+to decrease font size with the **-menu-fontsize** option. For example:
+
+```
+ $ todisc ... -menu-title "A\nMultilined\nTitle" -menu-fontsize 24
+```
 
 == Options ==
 
