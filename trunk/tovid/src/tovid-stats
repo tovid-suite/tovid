@@ -19,6 +19,18 @@ from libtovid.utils import pretty_dict
 from libtovid.layer import Scatterplot
 from libtovid.mvg import Drawing
 
+tovid_statfile = os.path.expanduser("~/.tovid/stats.tovid")
+
+def get_statlist(statfile):
+    # Open and read tovid stat file
+    statfile = os.path.abspath(statfile)
+    tempfile = "%s.csv" % statfile
+    # Only use lines beginning with " (and not header line)
+    os.system('cat "%s" | grep \'^\"[^T]\' > "%s"' % (statfile, tempfile))
+    statlist = stats.Statlist(tempfile)
+    os.remove(tempfile)
+    return statlist
+
 if __name__ == '__main__':
     args = sys.argv[1:]
     if len(args) == 0:
@@ -43,13 +55,7 @@ if __name__ == '__main__':
         print "    tovid-stats -count cpu_speed -average avg_bitrate by tvsys"
         sys.exit(0)
 
-    # Open and read tovid stat file
-    statfile = os.path.expanduser('~/.tovid/stats.tovid')
-    tempfile = os.path.expanduser('~/.tovid/stats.tovid.csv')
-    # Only use lines beginning with " (and not header line)
-    os.system('cat "%s" | grep \'^\"[^T]\' > "%s"' % (statfile, tempfile))
-    statlist = stats.Statlist(tempfile)
-    os.remove(tempfile)
+    statlist = get_statlist(tovid_statfile)
 
     # Parse command-line
     while args:
@@ -101,3 +107,20 @@ if __name__ == '__main__':
                 drawing.translate((40, 48))
                 scatterplot.draw_on(drawing, 0)
                 drawing.render()
+
+
+def required_MB(format, tvsys, vbitrate, quant, seconds=1):
+# Not working yet
+    """Return the approximate number of Megabytes required to encode
+    a video to the given format and tvsys, at the given video bitrate
+    (in kbps) and quantization, for the given number of seconds. By default,
+    returns MB per second of video.
+    """
+    statlist = get_statlist(tovid_statfile)
+    
+    # Determine final output size per second
+    for record in statlist.records:
+        if record['format'] == format and record['tvsys'] == tvsys and \
+           record['tgt_bitrate'] == vbitrate:
+            matches.append(record)
+
