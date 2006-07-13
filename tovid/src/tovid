@@ -1546,7 +1546,9 @@ if $USE_FFMPEG; then
     
     FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" \
         $FF_QUANT $FF_BITRATE $FF_TARGET $FF_FPS \
-        $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT \"$OUT_FILENAME\""
+        $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT"
+    $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
+    FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\""
     yecho "Encoding video and audio with the following command:"
     yecho "$FF_ENC_CMD"
 
@@ -1793,6 +1795,6 @@ else
     runtime_error "There was a problem multiplexing the audio and video together."
 fi
 
-write_stats
+$FAKE || write_stats
 cleanup
 goodbye
