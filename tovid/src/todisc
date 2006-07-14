@@ -1002,6 +1002,7 @@ if [ -n "$BG_VIDEO" ]; then
     fi
 fi
 for ((i=0; i<=NUM_FILES; i++)) ; do
+    echo "[$i of $NUM_FILES] Seeking to $SEEK_VAL seconds in ${IN_FILES[i]}"
     FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" -an $SEEK -vframes 1 \
     -s $THUMB_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
     echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
