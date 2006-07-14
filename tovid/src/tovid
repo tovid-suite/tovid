@@ -677,7 +677,7 @@ $SCRIPT_NAME
     Height in pixels of input file (ID_VIDEO_HEIGHT)
     Quantization level used (QUANT)
     Total kilobytes of output per minute of video (KB_PER_MIN)
-    Total encoding time per minute of video (ENC_PER_MIN)
+    Ratio of encoding time to video length (ENC_TIME_RATIO)
     Encoding backend used (ffmpeg or mpeg2enc) (BACKEND)
     ===================================================
 
@@ -685,7 +685,7 @@ $SCRIPT_NAME
     portability. To import these stats into a spreadsheet or database,
     simply remove these comments from the file.
 
-"TOVID_VERSION", "OUT_FILENAME", "V_DURATION", "TGT_RES", "TVSYS", "FINAL_SIZE", "VID_BITRATE", "AVG_BITRATE", "PEAK_BITRATE", "GOP_MINSIZE", "GOP_MAXSIZE", "SCRIPT_TOT_TIME", "CPU_MODEL", "CPU_SPEED", "ID_VIDEO_FORMAT", "ID_AUDIO_CODEC", "ENCODING_MODE", "IN_FILE_MD5", "ID_VIDEO_WIDTH", "ID_VIDEO_HEIGHT", "QUANT", "KB_PER_MIN", "ENC_PER_MIN", "BACKEND"
+"TOVID_VERSION", "OUT_FILENAME", "V_DURATION", "TGT_RES", "TVSYS", "FINAL_SIZE", "VID_BITRATE", "AVG_BITRATE", "PEAK_BITRATE", "GOP_MINSIZE", "GOP_MAXSIZE", "SCRIPT_TOT_TIME", "CPU_MODEL", "CPU_SPEED", "ID_VIDEO_FORMAT", "ID_AUDIO_CODEC", "ENCODING_MODE", "IN_FILE_MD5", "ID_VIDEO_WIDTH", "ID_VIDEO_HEIGHT", "QUANT", "KB_PER_MIN", "ENC_TIME_RATIO", "BACKEND"
 EOF`
 
 
@@ -705,7 +705,7 @@ EOF`
     test -n $AVG_BITRATE && AVG_BITRATE=$(expr $AVG_BITRATE \/ 1000)
     test -n $PEAK_BITRATE && PEAK_BITRATE=$(expr $PEAK_BITRATE \/ 1000)
     KB_PER_MIN=$(expr $FINAL_SIZE \* 60 \/ $V_DURATION)
-    ENC_PER_MIN=$(expr $SCRIPT_TOT_TIME \* 60 \/ $V_DURATION)
+    ENC_TIME_RATIO=$(echo "scale = 2; $SCRIPT_TOT_TIME \/ $V_DURATION" | bc)
     if $USE_FFMPEG; then
         BACKEND="ffmpeg"
     else
@@ -729,7 +729,7 @@ EOF`
 
     # Final statistics (comma-delimited quoted strings)
     FINAL_STATS_FORMATTED=`cat << EOF
-    "$TOVID_VERSION", "$OUT_FILENAME", "$V_DURATION", "$TGT_RES", "$TVSYS", "$FINAL_SIZE", "$VID_BITRATE", "$AVG_BITRATE", "$PEAK_BITRATE", "$GOP_MINSIZE", "$GOP_MAXSIZE", "$SCRIPT_TOT_TIME", "$CPU_MODEL", "$CPU_SPEED", "$ID_VIDEO_FORMAT", "$ID_AUDIO_CODEC", "$ENCODING_MODE", "$IN_FILE_MD5", "$ID_VIDEO_WIDTH", "$ID_VIDEO_HEIGHT", "$QUANT", "$KB_PER_MIN", "$ENC_PER_MIN", "$BACKEND"
+    "$TOVID_VERSION", "$OUT_FILENAME", "$V_DURATION", "$TGT_RES", "$TVSYS", "$FINAL_SIZE", "$VID_BITRATE", "$AVG_BITRATE", "$PEAK_BITRATE", "$GOP_MINSIZE", "$GOP_MAXSIZE", "$SCRIPT_TOT_TIME", "$CPU_MODEL", "$CPU_SPEED", "$ID_VIDEO_FORMAT", "$ID_AUDIO_CODEC", "$ENCODING_MODE", "$IN_FILE_MD5", "$ID_VIDEO_WIDTH", "$ID_VIDEO_HEIGHT", "$QUANT", "$KB_PER_MIN", "$ENC_TIME_RATIO", "$BACKEND"
 EOF`
 
     $FAKE || printf "%s\n" "$FINAL_STATS_FORMATTED" >> "$STAT_FILE"
