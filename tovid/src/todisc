@@ -729,7 +729,6 @@ if $MENU_FADE && [[ -z "$BG_PIC" && -z "$BG_VIDEO" ]]; then
 fi
 # translate SEEK into frames for transcode
 SEEK_FRAMES=$(awk_math $SEEK_VAL times $FRAME_RATE)
-echo "SEEK_FRAMES are $SEEK_FRAMES"
 echo 
 echo "Verifying that input files are video files"
 for ((i=0; i<=NUM_FILES; i++)); do
@@ -1089,7 +1088,7 @@ fi
 # create the preview images
 for ((i=0; i<=NUM_FILES; i++)) ; do
     # use a nav_seek file if long seek
-    if [ $SEEK_VAL -gt 60 ]; then
+    if [ $SEEK_VAL -gt 450 ]; then
         NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
         yecho "Creating a nav_seek log with tcdemux to speed up seeking"
         yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
@@ -1477,19 +1476,35 @@ echo
 echo "Creating images from each video for the main menu"
 for ((i=0; i<=NUM_FILES; i++)) ; do
     echo "Working on "${IN_FILES[i]}""
-    CREATE_IMG_CMD=(ffmpeg -i "${IN_FILES[$i]}"  $SEEK -vframes $FRAMES \
-    -s "$THUMB_SIZE" "$WORK_DIR/pics/$i/%06d.$IMG_FMT")
-    echo -e "\nRunning: ${CREATE_IMG_CMD[@]}\n" | fold -bs >> "$LOG_FILE"
-
-    SED_VAR="frame="
-    if "${CREATE_IMG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
-        cleanlog 3
-    else
-        cleanlog 3
-        runtime_error "Problem creating images from the video."
-        exit 1
+    # use a nav_seek file and transcode if long seek
+    if [ $SEEK_VAL -gt 450 ]; then
+        if [ -z "$WORK_DIR/nav${i}_log" ]; then
+            NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
+            yecho "Creating a nav_seek log with tcdemux to speed up seeking"
+            yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
+            "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
+            NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
+        fi
     fi
-
+    TRANSCODE_CMD2=(nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
+    -c $SEEK_FRAMES-$((SEEK_FRAMES + $FRAMES)) $NAVSEEK \
+    -o "$WORK_DIR/pics/$i/" -f $FRAME_RATE  -Z $THUMB_SIZE $EXPORT)
+    echo "Running  "${TRANSCODE_CMD2[@]}"" >> "$LOG_FILE"
+    echo "Running  "${TRANSCODE_CMD2[@]}""
+    "${TRANSCODE_CMD2[@]}" >> "$LOG_FILE" 2>&1
+    
+#        CREATE_IMG_CMD=(ffmpeg -i "${IN_FILES[$i]}"  $SEEK -vframes $FRAMES \
+#        -s "$THUMB_SIZE" "$WORK_DIR/pics/$i/%06d.$IMG_FMT")
+#        echo -e "\nRunning: ${CREATE_IMG_CMD[@]}\n" | fold -bs >> "$LOG_FILE"
+#
+#        SED_VAR="frame="
+#        if "${CREATE_IMG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
+#            cleanlog 3
+#        else
+#            cleanlog 3
+#            runtime_error "Problem creating images from the video."
+#            exit 1
+#        fi
 done
 # create the pics for background image
     if [ -z "$BG_PIC" ]; then
@@ -1721,7 +1736,7 @@ if $SUB_MENU; then
             "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
         fi
         TCODE_CMD=(nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
-        --nav_seek "$WORK_DIR/nav${i}_log" -o "${PICS_OUT[@]}" \
+        $NAVSEEK -o "${PICS_OUT[@]}" \
         -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c "$CMD" -y $SM_IMG_FMT,null)
         yecho
         yecho "Creating $TOTAL_JPEGS chapter images for "${IN_FILES[i]}""
@@ -2007,7 +2022,7 @@ yecho
 yecho "Adding title to video images and resizing"
 for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
-    $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[1-9]\*.$IMG_FMT|sort) )
+    $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[0-9]\*.$IMG_FMT|sort) )
     echo
     yecho "Working on ${#PICS[@]} images from ${IN_FILES[i]}"
     for pic in "${PICS[@]}"; do
@@ -2130,7 +2145,7 @@ else # Do not do menu fade
             spin "\rProcessing "$count.jpg"  "
 
             for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
-                ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  -name $(printf "%06d%s"  $count .$IMG_FMT) ) )
+                ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  -name $(printf "%06d%s"  $((count - 1)) .$IMG_FMT) ) )
             done
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
             -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none miff:-)
@@ -2171,9 +2186,8 @@ else # Do not do menu fade
 #            echo -ne "\rProcessing "$WORK_DIR/animenu/$count.jpg"  "
             spin -ne "\rProcessing "$count.jpg"  "
             for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
-                ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  -name $(printf "%06d%s"  $count .$IMG_FMT) ) )
+                ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  -name $(printf "%06d%s"  $((count - 1))  .$IMG_FMT) ) )
             done
-
             # make final montages and composite onto grey background with title
             IM_CMD0=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
             -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none miff:-)
@@ -2191,7 +2205,8 @@ else # Do not do menu fade
                 if $MIST; then
                     "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
                 else  # static and no MIST
-                    "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}"
+                    echo "running "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}""
+                    "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}" >> "$LOG_FILE"
                 fi
             else # animated
                 if test -n "$BG_VIDEO"; then
