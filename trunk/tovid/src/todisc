@@ -1691,7 +1691,11 @@ if $SUB_MENU; then
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
         CMD=$( sed 's/ /,/g;s/,$//' <<< ${cmd[@]})
-        TCODE_CMD=(nice transcode --print_status 340  -q 1 -i "${IN_FILES[i]}" -o "${PICS_OUT[@]}" \
+        NAVSEEK_CMD=(nice tcdemux -f 29.970  -W -i  "${IN_FILES[i]}") 
+        yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
+        "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
+        TCODE_CMD=(nice transcode --nav_seek "$WORK_DIR/nav${i}_log" \
+        --print_status 340  -q 1 -i "${IN_FILES[i]}" -o "${PICS_OUT[@]}" \
         -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c "$CMD" -y $SM_IMG_FMT,null)
         yecho
         yecho "Creating $TOTAL_JPEGS chapter images for "${IN_FILES[i]}""
