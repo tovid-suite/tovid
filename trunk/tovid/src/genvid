@@ -62,10 +62,13 @@ if __name__ == '__main__':
 
     # TODO: VCD/SVCD support
     if useropts['tvsys'] == 'pal':
-        flip = Flipbook(int(useropts['frames']), (720, 576))
+        flip = Flipbook(useropts['frames'], (720, 576))
     elif useropts['tvsys'] == 'ntsc':
-        flip = Flipbook(int(useropts['frames']), (720, 480))
-
+        flip = Flipbook(useropts['frames'], (720, 480))
+    else:
+        print "-tvsys must be 'pal' or 'ntsc'"
+        sys.exit(1)
+        
     # Background color
     bgd = layer.Background(color=useropts['bgcolor'])
     flip.add(bgd)
