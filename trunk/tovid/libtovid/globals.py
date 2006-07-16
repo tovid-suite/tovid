@@ -30,7 +30,7 @@ class Config:
             if len(argval) == 2:
                 left, right = argval
                 if left == 'WORKING_DIR':
-                    if right[0] == '~':
+                    if right.startswith('~'):
                         self.workdir = os.path.expanduser(right)
                     else:
                         self.workdir = os.path.abspath(right)
