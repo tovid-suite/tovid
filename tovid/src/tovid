@@ -725,7 +725,7 @@ EOF`
     Peak bitrate:    $PEAK_BITRATE kbits/sec
     Took $HHMMSS to encode on $CPU_MODEL $CPU_SPEED mhz
     -----------------------------------------
-    EOF`
+EOF`
 
     # Final statistics (comma-delimited quoted strings)
     FINAL_STATS_FORMATTED=`cat << EOF
