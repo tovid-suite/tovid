@@ -9,7 +9,7 @@ from libtovid.effect import Movement, Fade, Colorfade, Spectrum, Scale
 from libtovid import layer
 
 # Valid command-line options to this script
-options = [\
+cli_opts = [\
     Option('out', 'FILE', None,
            """Use the given output file prefix (.m2v added automatically)"""),
     Option('format', '[vcd|svcd|dvd]', 'dvd',
@@ -43,7 +43,7 @@ options = [\
 # Main function
 if __name__ == '__main__':
     # Fill useropts with default values
-    useropts = OptionDict(options)
+    useropts = OptionDict(cli_opts)
 
     # Print usage notes if not enough arguments were given
     if len(sys.argv) < 3:
