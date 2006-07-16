@@ -28,13 +28,61 @@ from os.path import abspath
 
 log = logging.getLogger('libtovid.media')
 
+def rip_frames(video_file, out_dir, frames='all', size=(0, 0)):
+    """Convert a video file to a sequence of images, save them in the
+    given output directory, and return a list of frame image files.
+    Rips all frames, a selected frame, or a range:
+
+    All frames (default):   frames='all'
+    Frame 15 only:          frames=15
+    Frames 30 through 90:   frames=[30, 90]
+
+    If size is nonzero, images are saved at the specified resolution.
+    """
+    frame_files = []
+    video_file = os.path.abspath(video_file)
+    try:
+        os.mkdir(out_dir)
+    except:
+        print "Temp directory: %s already exists. Overwriting." % out_dir
+
+    # Use transcode to rip frames
+    cmd = 'transcode -i "%s" ' % video_file
+    # Resize
+    if size != (0, 0):
+        cmd += ' -Z %sx%s ' % size
+    # Encode selected frames
+    if frames == 'all':
+        pass
+    elif isinstance(frames, int):
+        cmd += ' -c %s-%s ' % (frames, frames)
+    elif isinstance(frames, list):
+        cmd += ' -c %s-%s ' % (frames[0], frames[-1])
+    cmd += ' -y jpg,null '
+    cmd += ' -o %s/frame_' % out_dir
+    print "Creating image sequence from %s" % video_file
+    print cmd
+    print commands.getoutput(cmd)
+    # Remember ripped image filenames
+    frame = start
+    end_reached = False
+    while not end_reached:
+        framefile = '%s/frame_%06d.jpg' % (out_dir, frame)
+        if os.path.exists(framefile):
+            frame_files.append(framefile)
+        else:
+            end_reached = True #, apparently
+        frame += 1
+    return frame_files
+
+
 class MediaFile:
     """Stores information about a file containing video and/or audio streams."""
     def __init__(self, filename=''):
         self.filename = abspath(filename)
         self.audio = None
         self.video = None
-        self.framefiles = []
+        self.frame_files = []
         # TODO: Replace hard-coded temp dir
         self.use_tempdir('/tmp')
 
@@ -55,12 +103,12 @@ class MediaFile:
         else:
             log.error("Couldn't find file: %s" % filename)
 
-    def add_frames(self, framefiles):
+    def add_frames(self, frame_files):
         """Add the given list of frame files to the current media file."""
         # For now, just add to end (support more controlled insertions later)
-        self.framefiles.extend(framefiles)
+        self.frame_files.extend(frame_files)
 
-    def rip_frames(self, frames='all', scale=(0, 0)):
+    def rip_frames(self, frames='all', size=(0, 0)):
         """Rip video frames from the current file and save them as separate
         image files. Optionally specify which frames to rip, like so:
 
@@ -68,60 +116,11 @@ class MediaFile:
         Frame 15 only:          frames=15
         Frames 30 through 90:   frames=[30, 90]
 
-        If scale is nonzero, resize frames before saving as images.
+        If size is nonzero, save images at the specified resolution.
         """
-        # TODO: Fully support arbitrary frame ranges, like [1, 30, 60, 90] etc.
-        if frames == 'all':
-            self._rip_frames(1, -1, scale)
-        if isinstance(frames, int):
-            self._rip_frames(frames, frames, scale)
-        elif isinstance(frames, list):
-            # If frame range list length isn't a multiple of 2, raise error
-            if len(frames) % 2 > 0:
-                raise ValueError("Frame range may only have two values.")
-            # Step through frame list and rip each interval
-            i = 0
-            while i < len(frames):
-                self._rip_frames(frames[i], frames[i+1], scale)
-                i += 2
+        self.frame_files = rip_frames(self.filename, self.tempdir, frames, size)
 
-    def _rip_frames(self, start, end=-1, scale=(0, 0)):
-        """Convert a video file to a sequence of images, starting and ending at
-        the given frames. If end is negative, convert from start onwards. If
-        scale is nonzero, resize. Add the ripped image filenames to framefiles.
-    
-        Don't call this function; call rip_frames() instead.
-        """
-        basename = os.path.basename(self.filename)
-        outdir = '%s/%s_frames' % (self.tempdir, basename)
-        try:
-            os.mkdir(outdir)
-        except:
-            print "Temp directory: %s already exists. Overwriting." % outdir
 
-        # Use transcode to rip frames
-        cmd = 'transcode -i "%s" ' % self.filename
-        # Encode from start to end frames
-        cmd += ' -c %s-%s ' % (start, end)
-        cmd += ' -y jpg,null '
-        # If scale is nonzero, resize
-        if scale != (0, 0):
-            cmd += ' -Z %sx%s ' % scale
-        cmd += ' -o %s/frame_' % outdir
-        print "Creating image sequence from %s" % self.filename
-        print cmd
-        print commands.getoutput(cmd)
-        # Remember ripped image filenames
-        frame = start
-        end_reached = False
-        while not end_reached:
-            framefile = '%s/frame_%06d.jpg' % (outdir, frame)
-            if os.path.exists(framefile):
-                self.framefiles.append(framefile)
-            else:
-                end_reached = True #, apparently
-            frame += 1
-    
     def encode_frames(self, imagedir, outfile, format, tvsys):
         """Convert an image sequence in imagedir to an .m2v video compliant
         with the given format and tvsys.
