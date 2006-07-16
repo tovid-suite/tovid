@@ -29,9 +29,9 @@ from os.path import abspath
 log = logging.getLogger('libtovid.media')
 
 def rip_frames(video_file, out_dir, frames='all', size=(0, 0)):
-    """Convert a video file to a sequence of images, save them in the
-    given output directory, and return a list of frame image files.
-    Rips all frames, a selected frame, or a range:
+    """Convert a multimedia video file to a sequence of images, save them in
+    the given output directory, and return a list of frame image files.  Rips
+    all frames, a selected frame, or a range:
 
     All frames (default):   frames='all'
     Frame 15 only:          frames=15
