@@ -176,6 +176,7 @@ class Drawing:
     def __init__(self, size=(720, 480), filename='/tmp/temp.mvg'):
         self.clear()
         self.size = size
+        self.width, self.height = size
         self.filename = filename
 
     def clear(self):
