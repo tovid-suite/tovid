@@ -676,7 +676,7 @@ class InterpolationGraph (Layer):
         drawing.stroke_width(2)
         for key in self.keyframes:
             x = int(key.frame * x_scale)
-            #drawing.line((x, 0), (x, height))
+            drawing.line((x, 0), (x, height))
         # Draw Keyframe labels
         drawing.stroke(None)
         drawing.fill('white')
@@ -700,20 +700,22 @@ class InterpolationGraph (Layer):
 
 class ColorBars (Layer):
     """SMPTE color bars"""
-    def __init__(self):
+    def __init__(self, size):
         Layer.__init__(self)
+        self.size = size
 
     def draw_on(self, drawing, frame=1):
         # Video-black background
         drawing.fill_rgb((16, 16, 16))
-        drawing.rectangle((0, 0), drawing.size)
+        drawing.rectangle((0, 0), self.size)
 
         drawing.comment("SMPTE color bars")
         drawing.push()
+        drawing.scale(self.size)
         # Top 67% of picture: Color bars at 75% amplitude
         top = 0
-        bottom = int(0.67 * drawing.height)
-        x_inc = drawing.width / 7
+        bottom = 2.0 / 3
+        x_inc = 1.0 / 7
         drawing.fill_rgb((191, 191, 191))
         drawing.rectangle((0, top), (x_inc, bottom))
         drawing.fill_rgb((191, 191, 0))
@@ -727,10 +729,10 @@ class ColorBars (Layer):
         drawing.fill_rgb((191, 0, 0))
         drawing.rectangle((x_inc*5, top), (x_inc*6, bottom))
         drawing.fill_rgb((0, 0, 191))
-        drawing.rectangle((x_inc*6, top), (drawing.width, bottom))
+        drawing.rectangle((x_inc*6, top), (1.0, bottom))
         # Next 8% of picture: Reverse blue bars
-        top = bottom + 1
-        bottom = int(0.75 * drawing.height)
+        top = bottom
+        bottom = 0.75
         drawing.fill_rgb((0, 0, 191))
         drawing.rectangle((0, top), (x_inc, bottom))
         drawing.fill_rgb((16, 16, 16))
@@ -744,18 +746,20 @@ class ColorBars (Layer):
         drawing.fill_rgb((16, 16, 16))
         drawing.rectangle((x_inc*5, top), (x_inc*6, bottom))
         drawing.fill_rgb((191, 191, 191))
-        drawing.rectangle((x_inc*6, top), (drawing.width, bottom))
+        drawing.rectangle((x_inc*6, top), (1.0, bottom))
         # Lower 25%: Pluge signal
-        top = bottom + 1
-        bottom = drawing.height
-        x_inc = drawing.width / 6
+        top = bottom
+        bottom = 1.0
+        x_inc = 1.0 / 6
+        drawing.fill_rgb((16, 16, 16))
+        drawing.rectangle((0, top), (1.0, bottom))
         drawing.fill_rgb((0, 29, 66))
         drawing.rectangle((0, top), (x_inc, bottom))
         drawing.fill_rgb((255, 255, 255))
         drawing.rectangle((x_inc, top), (x_inc*2, bottom))
         drawing.fill_rgb((44, 0, 92))
         drawing.rectangle((x_inc*2, top), (x_inc*3, bottom))
-
+        # Sub- and super- black narrow bars
         drawing.fill_rgb((7, 7, 7))
         drawing.rectangle((x_inc*4, top), (x_inc*4.33, bottom))
         drawing.fill_rgb((16, 16, 16))
@@ -782,8 +786,11 @@ if __name__ == '__main__':
     bgd = Background(color='#7080A0')
     bgd.draw_on(drawing, 1)
 
-    bars = ColorBars()
+    bars = ColorBars((320, 240))
+    drawing.push()
+    drawing.translate((320, 200))
     bars.draw_on(drawing, 1)
+    drawing.pop()
 
     # Draw a text layer
     drawing.push()
