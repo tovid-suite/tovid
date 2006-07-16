@@ -1483,9 +1483,9 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
             yecho "Creating a nav_seek log with tcdemux to speed up seeking"
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
             "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
-            NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
         fi
     fi
+    NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
     TRANSCODE_CMD2=(nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
     -c $SEEK_FRAMES-$((SEEK_FRAMES + $FRAMES)) $NAVSEEK \
     -o "$WORK_DIR/pics/$i/" -f $FRAME_RATE  -Z $THUMB_SIZE $EXPORT)
@@ -1505,6 +1505,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
 #            runtime_error "Problem creating images from the video."
 #            exit 1
 #        fi
+unset TRANSCODE_CMD2
 done
 # create the pics for background image
     if [ -z "$BG_PIC" ]; then
