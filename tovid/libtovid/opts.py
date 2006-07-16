@@ -229,7 +229,12 @@ class OptionDict(dict):
                 # One arg
                 elif expected_args == 1:
                     arg = options.pop(0)
-                    custom[opt] = arg
+                    # Convert string, int, and float to proper type
+                    argtype = self.defdict[opt].default.__class__
+                    if argtype in [str, int, float]:
+                        custom[opt] = argtype(arg)
+                    else:
+                        custom[opt] = arg
                 # Comma-separated list of args
                 elif expected_args < 0:
                     arglist = []
