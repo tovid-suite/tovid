@@ -219,14 +219,14 @@ class VideoClip (Layer):
         self.mediafile = MediaFile(filename)
         self.size = (width, height)
         # List of filenames of individual frames
-        self.framefiles = []
+        self.frame_files = []
         self.rip_frames(1, 120)
 
     def rip_frames(self, start, end):
         """Rip frames from the video file, from start to end frames."""
         print "VideoClip: Ripping frames %s to %s" % (start, end)
         self.mediafile.rip_frames([start, end])
-        self.framefiles.extend(self.mediafile.framefiles)
+        self.frame_files.extend(self.mediafile.frame_files)
 
     def draw_on(self, drawing, frame):
         """Draw ripped video frames to the given drawing. For now, it's
@@ -234,16 +234,16 @@ class VideoClip (Layer):
         Video is looped.
         """
         assert isinstance(drawing, Drawing)
-        if len(self.framefiles) == 0:
+        if len(self.frame_files) == 0:
             print "VideoClip error: need to call rip_frames() before drawing."
             sys.exit(1)
         drawing.comment("VideoClip Layer")
         drawing.push()
         self.draw_effects(drawing, frame)
         # Loop frames (modular arithmetic)
-        if frame >= len(self.framefiles):
-            frame = frame % len(self.framefiles)
-        filename = self.framefiles[frame]
+        if frame >= len(self.frame_files):
+            frame = frame % len(self.frame_files)
+        filename = self.frame_files[frame-1]
         drawing.image('over', (0, 0), self.size, filename)
         drawing.pop()
 
@@ -676,7 +676,7 @@ class InterpolationGraph (Layer):
         drawing.stroke_width(2)
         for key in self.keyframes:
             x = int(key.frame * x_scale)
-            drawing.line((x, 0), (x, height))
+            #drawing.line((x, 0), (x, height))
         # Draw Keyframe labels
         drawing.stroke(None)
         drawing.fill('white')
@@ -698,6 +698,73 @@ class InterpolationGraph (Layer):
         # Restore context
         drawing.pop()
 
+class ColorBars (Layer):
+    """SMPTE color bars"""
+    def __init__(self):
+        Layer.__init__(self)
+
+    def draw_on(self, drawing, frame=1):
+        # Video-black background
+        drawing.fill_rgb((16, 16, 16))
+        drawing.rectangle((0, 0), drawing.size)
+
+        drawing.comment("SMPTE color bars")
+        drawing.push()
+        # Top 67% of picture: Color bars at 75% amplitude
+        top = 0
+        bottom = int(0.67 * drawing.height)
+        x_inc = drawing.width / 7
+        drawing.fill_rgb((191, 191, 191))
+        drawing.rectangle((0, top), (x_inc, bottom))
+        drawing.fill_rgb((191, 191, 0))
+        drawing.rectangle((x_inc, top), (x_inc*2, bottom))
+        drawing.fill_rgb((0, 191, 191))
+        drawing.rectangle((x_inc*2, top), (x_inc*3, bottom))
+        drawing.fill_rgb((0, 191, 0))
+        drawing.rectangle((x_inc*3, top), (x_inc*4, bottom))
+        drawing.fill_rgb((191, 0, 191))
+        drawing.rectangle((x_inc*4, top), (x_inc*5, bottom))
+        drawing.fill_rgb((191, 0, 0))
+        drawing.rectangle((x_inc*5, top), (x_inc*6, bottom))
+        drawing.fill_rgb((0, 0, 191))
+        drawing.rectangle((x_inc*6, top), (drawing.width, bottom))
+        # Next 8% of picture: Reverse blue bars
+        top = bottom + 1
+        bottom = int(0.75 * drawing.height)
+        drawing.fill_rgb((0, 0, 191))
+        drawing.rectangle((0, top), (x_inc, bottom))
+        drawing.fill_rgb((16, 16, 16))
+        drawing.rectangle((x_inc, top), (x_inc*2, bottom))
+        drawing.fill_rgb((191, 0, 191))
+        drawing.rectangle((x_inc*2, top), (x_inc*3, bottom))
+        drawing.fill_rgb((16, 16, 16))
+        drawing.rectangle((x_inc*3, top), (x_inc*4, bottom))
+        drawing.fill_rgb((0, 191, 191))
+        drawing.rectangle((x_inc*4, top), (x_inc*5, bottom))
+        drawing.fill_rgb((16, 16, 16))
+        drawing.rectangle((x_inc*5, top), (x_inc*6, bottom))
+        drawing.fill_rgb((191, 191, 191))
+        drawing.rectangle((x_inc*6, top), (drawing.width, bottom))
+        # Lower 25%: Pluge signal
+        top = bottom + 1
+        bottom = drawing.height
+        x_inc = drawing.width / 6
+        drawing.fill_rgb((0, 29, 66))
+        drawing.rectangle((0, top), (x_inc, bottom))
+        drawing.fill_rgb((255, 255, 255))
+        drawing.rectangle((x_inc, top), (x_inc*2, bottom))
+        drawing.fill_rgb((44, 0, 92))
+        drawing.rectangle((x_inc*2, top), (x_inc*3, bottom))
+
+        drawing.fill_rgb((7, 7, 7))
+        drawing.rectangle((x_inc*4, top), (x_inc*4.33, bottom))
+        drawing.fill_rgb((16, 16, 16))
+        drawing.rectangle((x_inc*4.33, top), (x_inc*4.66, bottom))
+        drawing.fill_rgb((24, 24, 24))
+        drawing.rectangle((x_inc*4.66, top), (x_inc*5, bottom))
+        drawing.pop()
+
+
 # ============================================================================
 # Demo
 # ============================================================================
@@ -714,6 +781,9 @@ if __name__ == '__main__':
     # Draw a background layer
     bgd = Background(color='#7080A0')
     bgd.draw_on(drawing, 1)
+
+    bars = ColorBars()
+    bars.draw_on(drawing, 1)
 
     # Draw a text layer
     drawing.push()
