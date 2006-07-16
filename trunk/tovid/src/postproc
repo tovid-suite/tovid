@@ -102,6 +102,11 @@ cleanup ()
 
 echo "$SCRIPT_NAME"
 
+# Make sure there are at least two arguments (infile and outfile)
+if test $# -lt 2; then
+  usage_error "Error: Please provide an input filename and an output filename."
+fi
+
 while test ${1:0:1} = "-"; do
     case "$1" in
         "-audiodelay" )
@@ -139,10 +144,6 @@ while test ${1:0:1} = "-"; do
     shift
 done
 
-# Make sure at least two arguments remain (infile and outfile)
-if test $# -lt 2; then
-  usage_error "Error: Please provide an input filename and an output filename."
-fi
 
 IN_FILE="$1"
 shift
