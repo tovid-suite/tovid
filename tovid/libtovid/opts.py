@@ -62,7 +62,7 @@ import textwrap
 import logging
 import doctest
 # From libtovid
-from libtovid.utils import trim, tokenize
+from libtovid.utils import trim, tokenize, pretty_dict
 
 log = logging.getLogger('libtovid.opts')
 
@@ -233,21 +233,18 @@ class OptionDict(dict):
                 # Comma-separated list of args
                 elif expected_args < 0:
                     arglist = []
-                    next = options.pop(0)
-                    # If next is a keyword in defs, print error
-                    if next in self.defdict:
-                        log.error('"%s" option expects one or more arguments ' \
-                                '(got keyword "%s")' % (opt, next))
-                    # Until the next keyword is reached, add to list
-                    while options and next.lstrip('-') not in self.defdict:
-                        # Ignore any surrounding [ , , ]
-                        arglist.append(next.lstrip('[').rstrip(',]'))
+                    # Until the next keyword (or end of args), add to list
+                    while options and options[0].lstrip('-') not in self.defdict:
                         next = options.pop(0)
-                    # Put the last token back
-                    options.insert(0, next)
+                        arglist.append(next.lstrip('[').rstrip(',]'))
+                    # Put the last token back if necessary
+                    if next.lstrip('-') in self.defdict:
+                        options.insert(0, next)
                     custom[opt] = arglist
         return custom
     
+    def __str__(self):
+        return pretty_dict(self)
 
 if __name__ == '__main__':
     doctest.testmod(verbose=True)
