@@ -431,7 +431,7 @@ class CommandOutputPanel(wx.Panel):
         if self.process is not None and self.pid != 0:
             stream = self.process.GetInputStream()
             if stream.CanRead():
-                self.txtOut.AppendText(stream.read())
+                self.txtOut.AppendText(unicode(stream.read(), errors='ignore'))
             
     def StartNextProcess(self):
         """Start the next process in the queue."""
@@ -468,10 +468,7 @@ class CommandOutputPanel(wx.Panel):
         # Print any remaining output
         stream = self.process.GetInputStream()
         if stream.CanRead():
-            try:
-                self.txtOut.AppendText(unicode(stream.read())
-            except UnicodeDecodeError:
-                pass
+            self.txtOut.AppendText(unicode(stream.read(), errors='ignore'))
         self.process.Destroy()
         self.process = None
         # If there are more commands in the queue, start the next one
