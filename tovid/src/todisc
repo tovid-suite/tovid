@@ -1095,7 +1095,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
         length=( ${length[@]} $("${NAVSEEK_CMD[@]}" 2>&1 |tee "$WORK_DIR/nav${i}_log"  |awk '/detected/ {print $2}') )
         echo "length is ${length[i]}"
         sleep 5
-#        "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
+        "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
         NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
     fi
     echo "[$i of $NUM_FILES] Seeking to $SEEK_VAL seconds in ${IN_FILES[i]}"
@@ -1492,14 +1492,14 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
     echo "Working on "${IN_FILES[i]}""
     # use a nav_seek file and transcode if long seek
     if [ $SEEK_VAL -gt 450 ]; then
-        if [ -z "$WORK_DIR/nav${i}_log" ]; then
+        NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
+        if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
             NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
             yecho "Creating a nav_seek log with tcdemux to speed up seeking"
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
             "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
         fi
     fi
-    NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
     TRANSCODE_CMD2=(nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
     -c $SEEK_FRAMES-$((SEEK_FRAMES + $FRAMES)) $NAVSEEK \
     -o "$WORK_DIR/pics/$i/" -f $FRAME_RATE  -Z $THUMB_SIZE $EXPORT)
@@ -1746,10 +1746,11 @@ if $SUB_MENU; then
         CMD=$( sed 's/ /,/g;s/,$//' <<< ${cmd[@]})
         # create a nav_seek log with tcdemux if not already present
         NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
-        if [ -z "$WORK_DIR/nav${i}_log" ]; then
+        if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
             "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
         fi
+        NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
         TCODE_CMD=(nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
         $NAVSEEK -o "${PICS_OUT[@]}" \
         -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c "$CMD" -y $SM_IMG_FMT,null)
@@ -1834,6 +1835,8 @@ if $SUB_MENU; then
             # just use $CHAPTERS number of images
             imgs=( $(find $WORK_DIR/ -name ${i}-chapt000\*.$SM_IMG_FMT |
             sort| head -n ${CHAPTERS[i]}) )
+            echo "imgs are "${imgs[@]}""
+            sleep 5
             # create frames for the chapter thumbs
             for PIC in "${imgs[@]}"; do
             spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$PIC")  "
