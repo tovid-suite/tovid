@@ -330,7 +330,7 @@ else
     fi
  
     # Burn it already!
-    BURN_CMD="growisofs -use-the-force-luke=dao -dvd-compat $BURN_SPEED -Z $DVDRW_DEVICE -dvd-video -V \"$VOLID\" $OUT_DIR"
+    BURN_CMD="growisofs -use-the-force-luke=dao -dvd-compat $BURN_SPEED -Z $DVDRW_DEVICE -dvd-video -V \"$VOLID\" \"$OUT_DIR\""
     echo $SEPARATOR
     echo "Burning with growisofs $GROWISOFS_VER using the following command:"
     echo "$BURN_CMD"
