@@ -468,7 +468,10 @@ class CommandOutputPanel(wx.Panel):
         # Print any remaining output
         stream = self.process.GetInputStream()
         if stream.CanRead():
-            self.txtOut.AppendText(stream.read())
+            try:
+                self.txtOut.AppendText(unicode(stream.read())
+            except UnicodeDecodeError:
+                pass
         self.process.Destroy()
         self.process = None
         # If there are more commands in the queue, start the next one
