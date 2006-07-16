@@ -1105,7 +1105,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
 
     FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" -an $SEEK -vframes 1 \
     -s $THUMB_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
-    echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
+    echo -e "\nRunning: "${TRANSCODE_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
     SED_VAR="frame="
 #    if "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
     if "${TRANSCODE_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
