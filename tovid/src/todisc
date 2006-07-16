@@ -1092,7 +1092,10 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
         NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
         yecho "Creating a nav_seek log with tcdemux to speed up seeking"
         yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
-        "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
+        length=( ${length[@]} $("${NAVSEEK_CMD[@]}" 2>&1 |tee "$WORK_DIR/nav${i}_log"  |awk '/detected/ {print $2}') )
+        echo "length is ${length[i]}"
+        sleep 5
+#        "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
         NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
     fi
     echo "[$i of $NUM_FILES] Seeking to $SEEK_VAL seconds in ${IN_FILES[i]}"
@@ -1380,8 +1383,11 @@ fi
 # Store info about input files in an array
 for ((i=0; i<${#IN_FILES[@]}; i++)); do
     echo "Getting stats on "${IN_FILES[i]}""
+    if [ $SEEK_VAL -gt 450 ]; then
+        STATS_FRAMES="-frames 1"
+    fi
     mencoder_stats=( "${mencoder_stats[@]}" \
-    "$(mencoder -quiet "${IN_FILES[i]}" -oac pcm -ovc copy -o /dev/null 2>&1)" )
+    "$(mencoder -quiet "${IN_FILES[i]}" -oac pcm -ovc copy $STATS_FRAMES -o /dev/null 2>&1)" )
 done
 #echo
 #echo $SEPARATOR
@@ -1397,7 +1403,11 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
     if [ -z "$A_BR" ]; then
         A_BR="No audio found"
     fi
-    V_LENGTH="$(awk '/Video stream:/{print $10}'<<<"${mencoder_stats[i]}")"
+    if [ $SEEK_VAL -gt 450 ]; then
+        V_LENGTH=$(awk_math ${length[i]} by 60 float)
+    else
+        V_LENGTH="$(awk '/Video stream:/{print $10}'<<<"${mencoder_stats[i]}")"
+    fi
 #    FPS="$(awk '/VIDEO:/ {print $6}' <<<"${mencoder_stats[i]}")"
     FPS="$(awk ' /VIDEO/ { if ($_=="fps"); sub(/fps.*$/, ""); print $NF}' <<<"${mencoder_stats[i]}")"
     yecho
@@ -1417,8 +1427,12 @@ echo
 echo $SEPARATOR
 
 for ((i=0; i<${#mencoder_stats[@]}; i++)); do
-    VID_LEN=( ${VID_LEN[@]}  "$(awk '/Video stream:/{print $10}' \
-    <<<"${mencoder_stats[i]}")" )
+    if [ $SEEK_VAL -gt 450 ]; then
+        VID_LEN=( ${VID_LEN[@]}  $(awk_math ${length[i]} by 60 float) )
+    else
+        VID_LEN=( ${VID_LEN[@]}  "$(awk '/Video stream:/{print $10}' \
+        <<<"${mencoder_stats[i]}")" )
+    fi
 done
 
 for ((i=0; i<${#VID_LEN[@]}; i++)); do
