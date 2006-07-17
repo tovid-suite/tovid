@@ -102,13 +102,13 @@ DISC_LABEL=""
 probe_media ()
 {
   # Grab entire media info
-  MEDIA_INFO=`dvd+rw-mediainfo $DVDRW_DEVICE 2>&1`
+  MEDIA_INFO=$(dvd+rw-mediainfo $DVDRW_DEVICE 2>&1)
 
   # Extract the status (either "blank" or "complete")
-  DISC_STATUS=`echo "$MEDIA_INFO" | grep "Disc status" | awk '{ print $3 }'`
+  DISC_STATUS=$(echo "$MEDIA_INFO" | grep "Disc status" | awk '{ print $3 }')
 
   # Extract the disc type
-  DISC_TYPE=`echo "$MEDIA_INFO" | grep "Mounted Media" | awk '{ print $4 }'`
+  DISC_TYPE=$(echo "$MEDIA_INFO" | grep "Mounted Media" | awk '{ print $4 }')
   if test -z $DISC_TYPE; then 
      if echo "$MEDIA_INFO" | grep -q "non-DVD"; then
         DISC_TYPE="non-DVD media"
@@ -118,13 +118,14 @@ probe_media ()
   fi
 
   # Find the capcity
-  DISC_CAPACITY=`echo "$MEDIA_INFO" | grep "Legacy lead-out" | awk -F '=' '{ print $2 }'`
+  DISC_CAPACITY=$(echo "$MEDIA_INFO" | grep "Legacy lead-out" | \
+                  awk -F '=' '{print $2}')
   if test -z $DISC_CAPACITY; then DISC_CAPACITY=0; fi
-  DISC_CAPACITY=`echo "$DISC_CAPACITY / 1024 / 1024" | bc`
+  DISC_CAPACITY=$(echo "$DISC_CAPACITY / 1024 / 1024" | bc)
 
   # Define usable DVDs
-  HAVE_DVD_RW=`verify "$DISC_TYPE" set "DVD-RW DVD+RW"`
-  if `verify "$DISC_TYPE" set "DVD-R DVD+R"` && test "x$DISC_STATUS" = "xblank"
+  HAVE_DVD_RW=$(verify "$DISC_TYPE" set "DVD-RW DVD+RW")
+  if $(verify "$DISC_TYPE" set "DVD-R DVD+R") && test "x$DISC_STATUS" = "xblank"
     then HAVE_BLANK_DVD_R=:
     else HAVE_BLANK_DVD_R="false"
   fi
@@ -167,13 +168,23 @@ while test $# -gt 1; do
     shift
 done
 
-DISC_NAME=`abspath "$1"`
+DISC_NAME=$(abspath "$1")
 
 # See what kind of file we're working with, and do the right thing
 # Author an XML file
 if echo "$DISC_NAME" | grep -q -i '\.xml$'; then
     DVDAUTHOR_XML="$DISC_NAME"
     DO_AUTHOR=:
+    # Make sure the XML file exists
+    if test ! -f "$DVDAUTHOR_XML"; then
+        echo "Could not open file: $DVDAUTHOR_XML"
+        exit 1
+    else
+        echo "Authoring disc from file: $DVDAUTHOR_XML"
+    fi
+    # The dest= argument from the XML file will be the output directory
+    OUT_DIR=$(grep 'dest=' "$DVDAUTHOR_XML" | awk -F '"' '{print $2}')
+    echo "Putting output in directory: ./$OUT_DIR/"
 # Burn a directory containing a VIDEO_TS subfolder
 elif test -d "$DISC_NAME"; then
     if test -d "$DISC_NAME/VIDEO_TS"; then
@@ -190,34 +201,24 @@ test -z $DISC_LABEL && DISC_LABEL="UNTITLED_DVD"
 
 # Authoring
 if $DO_AUTHOR; then
-    # Make sure the XML file exists
-    if test ! -f "$DVDAUTHOR_XML"; then
-        echo "Could not open file: $DVDAUTHOR_XML"
-        exit 1
-    else
-        echo "Authoring disc from file: $DVDAUTHOR_XML"
-    fi
-
-    # The dest= argument from the XML file will be the output directory
-    OUT_DIR=`grep 'dest=' $DVDAUTHOR_XML | awk -F '"' '{print $2}'`
-
     # Determine how much space will be needed for authoring, by adding up
     # the sizes of all .vobs in the XML file.
-    NUM_VOBS=`grep vob "$DVDAUTHOR_XML" | wc -l`
-    VOB_LIST=`grep vob "$DVDAUTHOR_XML" | awk -F '"' '{ print $2 }' | tr '\n' ':'`
+    NUM_VOBS=$(grep vob "$DVDAUTHOR_XML" | wc -l)
+    VOB_LIST=$(grep vob "$DVDAUTHOR_XML" | \
+               awk -F '"' '{ print $2 }' | tr '\n' ':')
     i=1
     DISC_SUM=0
     while test $i -le $NUM_VOBS; do
-      VOB=`echo "$VOB_LIST" | awk -F ':' '{ print $'$i' }'`
-      VOB_SIZE=`du -B M "$VOB" | awk -F ' ' '{print $1}' | tr -d M`
-      DISC_SUM=`expr $VOB_SIZE \+ $DISC_SUM`
-      i=`expr $i \+ 1`
+      VOB=$(echo "$VOB_LIST" | awk -F ':' '{ print $'$i' }')
+      VOB_SIZE=$(du -B M "$VOB" | awk -F ' ' '{print $1}' | tr -d M)
+      DISC_SUM=$(expr $VOB_SIZE \+ $DISC_SUM)
+      i=$(expr $i \+ 1)
     done
-    AVAIL_SPACE=`df -B M -P . | awk 'NR != 1 {print $4;}' | tr -d M`
+    AVAIL_SPACE=$(df -B M -P . | awk 'NR != 1 {print $4;}' | tr -d M)
 
     if test $DISC_SUM -gt $AVAIL_SPACE; then
        echo $SEPARATOR
-       precho "Cannot continue! ${DISC_SUM}MB needed, but only ${AVAIL_SPACE}MB in `pwd`"
+       precho "Cannot continue! ${DISC_SUM}MB needed, but only ${AVAIL_SPACE}MB in $(pwd)"
        echo "Exiting..."
        exit 1
     fi
@@ -268,7 +269,8 @@ else
       exit 1
     fi
 
-    GROWISOFS_VER=`growisofs -version | grep version | awk '{ print $6 }' | sed 's/,//g'`
+    GROWISOFS_VER=$(growisofs -version | grep version | \
+                    awk '{ print $6 }' | sed 's/,//g')
 
     # Make sure there is a blank disc to write to
     probe_media
@@ -286,7 +288,7 @@ else
         # is good, but how?
         echo "Found $DISC_STATUS $DISC_TYPE. Please insert a usable DVD into $DVDRW_DEVICE."
         for COUNTER in 5 4 3 2 1; do
-          printf "Trying again in %2s seconds...\r" `expr $COUNTER \* $TIME_SCALE`
+          printf "Trying again in %2s seconds...\r" $(expr $COUNTER \* $TIME_SCALE)
           sleep ${TIME_SCALE}s
         done
         echo
@@ -298,7 +300,7 @@ else
     echo $SEPARATOR
     echo "Found $DISC_STATUS $DISC_TYPE."
 
-    DISC_SUM=`du -s -B M "$OUT_DIR" | awk '{print $1}' | tr -d M`
+    DISC_SUM=$(du -s -B M "$OUT_DIR" | awk '{print $1}' | tr -d M)
     if test $DISC_SUM -gt $DISC_CAPACITY; then
        echo $SEPARATOR
        echo "Cannot continue! DVD image (${DISC_SUM}MB) exceeds the DVD's capacity (${DISC_CAPACITY}MB)."
@@ -319,9 +321,9 @@ else
     fi
     
     # Extract a valid volume ID
-    VOLID=`echo "$DISC_LABEL" | tr a-z A-Z`
+    VOLID=$(echo "$DISC_LABEL" | tr a-z A-Z)
     # Make sure we have a valid VOLID at this point...can't be too long
-    VALID_VOLID=`echo $VOLID | awk '{ print substr($0, 0, 32) }'`
+    VALID_VOLID=$(echo $VOLID | awk '{ print substr($0, 0, 32) }')
     if test $VOLID != $VALID_VOLID; then
         echo "Disk label is too long. Truncating to $VALID_VOLID"
         VOLID=$VALID_VOLID
