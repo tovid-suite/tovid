@@ -5,21 +5,45 @@
 standards. Any data about widely-published standards should be defined here,
 for use by all libtovid modules."""
 
+__all__ = ['VideoStandard', 'AudioStandard']
+
 # TODO: This module needs major cleanup, ruthless code-culling and
 # overall simplification.
 
-__all__ = ['VideoStandard', 'AudioStandard']
+import doctest
 
 def get_resolution(format, tvsys):
-    """Get the pixel resolution (x,y) for the given format and TV system."""
+    """Return the pixel resolution (x,y) for the given format and TV system.
+    For example:
+
+        >>> get_resolution('dvd', 'pal')
+        (720, 576)
+        >>> get_resolution('half-dvd', 'ntsc')
+        (352, 480) 
+    """
     width = match_std(std_widths, [format])
     height = match_std(std_heights, [format, tvsys])
     return (width, height)
 
 def get_codec(format, tvsys):
+    """Return the codec used by the given format and TV system. For example:
+    
+        >>> get_codec('vcd', 'ntsc')
+        mpeg1
+        >>> get_codec('svcd', 'ntsc')
+        mpeg2
+    """
     return match_std(std_codecs, [format])
 
 def get_fps(format, tvsys):
+    """Return the number of frames per second for the given format and TV
+    system. For example:
+    
+        >>> get_fps('dvd', 'ntsc')
+        29.97
+        >>> get_fps('dvd', 'pal')
+        25.00
+    """
     return match_std(std_fpss, [tvsys])
 
 
@@ -45,7 +69,6 @@ std_fpss = {
     25.00: ['pal'],
     29.97: ['ntsc']
 }
-
 
 def match_std(defs, keywords):
     """Find values in defs by matching associated keywords."""
@@ -246,3 +269,5 @@ def matchAudioStandard(keywords):
     return None
         
 
+if __name__ == '__main__':
+    doctest.testmod(verbose=True)
