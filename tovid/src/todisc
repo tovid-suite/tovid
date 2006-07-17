@@ -750,7 +750,9 @@ if $ANI_SUB_MENU; then
         mkdir -v "$REAL_WORK_DIR/animenu/$i"
     done
 fi
-
+if $SUB_MENUS; then
+    mkdir -v "$REAL_WORK_DIR/submenu"
+fi
 # if Fading menu, and no BG IMAGE OR VIDEO, fade thumbs right in after title
 if $MENU_FADE && [[ -z "$BG_PIC" && -z "$BG_VIDEO" ]]; then
     THUMBS_FADE_IN_START_TIME=2.5
@@ -1122,8 +1124,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
         yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
         length=( ${length[@]} $("${NAVSEEK_CMD[@]}" 2>&1 |tee "$WORK_DIR/nav${i}_log"  |awk '/detected/ {print $2}') )
         echo "length is ${length[i]}"
-        sleep 5
-        "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
+#        "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
         NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
     fi
     echo "[$i of $NUM_FILES] Seeking to $SEEK_VAL seconds in ${IN_FILES[i]}"
@@ -1769,7 +1770,7 @@ if $SUB_MENU; then
         else  # not animated submenu
             JPEG2YUV_OPTS=(-n 1 -l 60)
             PICS_IN=($WORK_DIR/${i}-submenu.$SM_IMG_FMT)
-            PICS_OUT=($WORK_DIR/${i}-chapt)
+            PICS_OUT=($WORK_DIR/submenu/)
             CUT_TIME=1
             JPEG_DIR="$WORK_DIR/"
             SLEEP=.5
@@ -1784,23 +1785,35 @@ if $SUB_MENU; then
         done
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
-        CMD=$( sed 's/ /,/g;s/,$//' <<< ${cmd[@]})
+#        CMD=$( sed 's/ /,/g;s/,$//' <<< ${cmd[@]})
         # create a nav_seek log with tcdemux if not already present
         NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
         if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
-            "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
+            "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log"
         fi
         NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
-        TCODE_CMD=(nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
-        $NAVSEEK -o "${PICS_OUT[@]}" \
-        -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c "$CMD" -y $SM_IMG_FMT,null)
+        for t in "${cmd[@]}"; do
+            echo
+            echo "Running nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
+            $NAVSEEK -o $WORK_DIR/submenu/ \
+            -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null
+            " | sed 's/    */ /g'|sed -e "s/^ *//"|tee -a "$LOG_FILE"
+            nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
+            $NAVSEEK -o $WORK_DIR/submenu/ \
+            -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t \
+            -y $SM_IMG_FMT,null >> "$LOG_FILE" 2>&1
+            echo
+            mv -v $WORK_DIR/submenu/000000.$SM_IMG_FMT \
+            $WORK_DIR/submenu/$(printf "%08d%s\n" ${t%-*} .$SM_IMG_FMT)
+        done
         yecho
         yecho "Creating $TOTAL_JPEGS chapter images for "${IN_FILES[i]}""
 
-        echo "Running  "${TCODE_CMD[@]}"" >> "$LOG_FILE"
-        echo "Running  "${TCODE_CMD[@]}""
+#        echo "Running  "${TCODE_CMD[@]}"" >> "$LOG_FILE"
+#        echo "Running  "${TCODE_CMD[@]}""
         # sleep after transcode, so the spinner picks all the jpegs up
+:<<UNUSED
         function run_transcode()
         {
             "${TCODE_CMD[@]}" >> "$LOG_FILE.tmp"  2>&1
@@ -1824,7 +1837,7 @@ if $SUB_MENU; then
             exit 1
         fi
         unset TCODE_CMD cmd
-
+UNUSED
         if $ANI_SUB_MENU; then
             # FIXME make sure $CHAPTERS number of images got created
             # move 340 images to each subdir:  $WORK_DIR/animenu/{0,1,2,3,etc}
@@ -1874,9 +1887,8 @@ if $SUB_MENU; then
             yecho
             yecho "Making montage images for "${IN_FILES[i]}""
             # just use $CHAPTERS number of images
-            imgs=( $(find $WORK_DIR/ -name ${i}-chapt000\*.$SM_IMG_FMT |
+            imgs=( $(find $WORK_DIR/submenu -name \*.$SM_IMG_FMT |
             sort| head -n ${CHAPTERS[i]}) )
-            echo "imgs are "${imgs[@]}""
             sleep 5
             # create frames for the chapter thumbs
             for PIC in "${imgs[@]}"; do
@@ -1918,6 +1930,8 @@ if $SUB_MENU; then
             runtime_error  \
             "The submenu video (m2v) does not appear to have been created"
         fi
+        # clean out submenu dir of images
+        rm -fv $WORK_DIR/submenu/*
     done    
     unset IMG_STREAM_CMD1 ENC_CMD1 JPEG2YUV_OPTS
     for ((s=0; s<=NUM_FILES; s++)); do
