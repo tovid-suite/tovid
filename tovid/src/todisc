@@ -111,6 +111,7 @@ SEEK_VAL=1
 FADE=1
 CHAPTERS=( 6 )
 TOVID_OPTS=""
+CHAIN_VIDEOS=false
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -413,6 +414,20 @@ while test $# -gt 0; do
             PAUSE_TIME="$1"
             STATIC_LOOP=:
             ;;
+        "-chain-videos" )
+            shift
+            # Hackish list-parsing
+            while test $# -gt 0 && test ${1:0:1} != "-"; do
+                chains_in=( "${chains_in[@]}" "$1" ) 
+                post_play=${chains_in[@]}
+                shift
+            done
+            # Do not skip past the next argument
+            if test $# -gt 0 && test ${1:0:1} = "-";then
+                DO_SHIFT=false
+            fi
+            CHAIN_VIDEOS=:
+            ;;
         "-bgvideo" )
             shift
             BG_VIDEO="$(abspath "$1")"
@@ -661,7 +676,20 @@ if [[ $SM_AUDIO &&  ${#FILES[@]} -ne ${#SM_AUDIO[@]} &&  ${#SM_AUDIO[@]} -ne 1 ]
     usage_error "Please give the same number of submenu audios as videos.
     You gave ${#FILES[@]} video files and ${#SM_AUDIO[@]} audio files"
 fi
+# make sure args to -chain-vidoes equals number of videos
+#if [[ $CHAIN_VIDEOS &&  ${#FILES[@]} -ne ${#POST_PLAY[@]} ]]; then
+#    usage_error "Please give the same number of args to -chain-video as videos.
+#    You gave ${#FILES[@]} video files and ${#POST_PLAY[@]} arguments
+#    Usage example: -chain-videos chain break chain chain
+#    'chain' will jump to the next title, 'break' will return to main menu" 
+#fi
 # Get absolute pathnames of all files
+# make an array of possible vars for dvdauthor post calls
+if $CHAIN_VIDEO; then
+    for i in $post_play; do
+        POST_PLAY[i-1]=chain
+    done
+fi
 for i in "${FILES[@]}"; do
     IN_FILES=("${IN_FILES[@]}" "$(abspath "$i")")
     echo "Adding: $i"
@@ -1634,7 +1662,6 @@ if $SUB_MENU; then
 else
     JUMP=title
 fi
-
 if [ "$TARGET" = "dvd" ]; then
 # make dvdauthor.xml
 (
@@ -1680,7 +1707,21 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
     echo -e "      <pgc>"
     echo -ne "        <vob file=\"${IN_FILES[i]}\""
     echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
-    echo -e "        <post>call vmgm menu 1;</post>"
+    if $CHAIN_VIDEOS; then
+        if [ ${POST_PLAY[i]} = "chain" ]; then
+            if [ $i -lt $NUM_FILES ]; then
+                echo -e "        <post>jump title $((i + 2)) chapter 1;</post>"
+            elif [ $i -eq $NUM_FILES ]; then
+                echo -e "        <post>jump title 1 chapter 1;</post>"
+            else
+                echo -e "        <post>call vmgm menu 1;</post>"
+            fi
+        else
+            echo -e "        <post>call vmgm menu 1;</post>"
+        fi
+    else
+        echo -e "        <post>call vmgm menu 1;</post>"
+    fi
     echo -e "      </pgc>"
 done)
     </titles>
