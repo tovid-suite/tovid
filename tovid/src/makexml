@@ -608,7 +608,7 @@ while test $# -gt 0; do
                 $TS_TITLES
                 __POST_CMD__
                 </pgc>
-                EOF`
+EOF`
             fi
             MAKE_GROUP=false
             CUR_VIDEO=0
