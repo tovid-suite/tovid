@@ -717,7 +717,6 @@ if $SUB_MENU; then
         [ -z "$MIN_CHAPTERS" ]  || ((chapt_val < MIN_VAL)) && MIN_CHAPTERS=$chapt_val && min_chapt_key=$i
     done
 fi
-echo "MAX_CHAPTERS are $MAX_CHAPTERS"
 # do not let user use -chapters 0 (-chapters 5 0 6)
 if $SUB_MENU; then
     for ((i=0; i<${#CHAPTERS[@]}; i++)); do
@@ -751,7 +750,7 @@ if $ANI_SUB_MENU; then
         mkdir -v "$REAL_WORK_DIR/animenu/$i"
     done
 fi
-if $SUB_MENU; then
+if $SUB_MENU && ! $ANI_SUB_MENU; then
     mkdir -v "$REAL_WORK_DIR/submenu"
 fi
 # if Fading menu, and no BG IMAGE OR VIDEO, fade thumbs right in after title
@@ -1121,6 +1120,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
     # use a nav_seek file if long seek
     if [ $SEEK_VAL -gt 450 ]; then
         NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
+        yecho
         yecho "Creating a nav_seek log with tcdemux to speed up seeking"
         yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
         length=( ${length[@]} $("${NAVSEEK_CMD[@]}" 2>&1 |tee "$WORK_DIR/nav${i}_log"  |awk '/detected/ {print $2}') )
@@ -1417,6 +1417,7 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
         NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
         STATS_FRAMES="-frames 1"
         if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
+            yecho
             yecho "Creating a nav_seek log with tcdemux to speed up seeking"
             NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
@@ -1469,7 +1470,7 @@ echo $SEPARATOR
 
 for ((i=0; i<${#mencoder_stats[@]}; i++)); do
     if [ -e "$WORK_DIR/nav${i}_log" ]; then
-        VID_LEN=( ${VID_LEN[@]}  $(awk_math ${length[i]} by 60 float) )
+        VID_LEN=( ${VID_LEN[@]}  $(awk_math ${length[i]} by $FRAME_RATE float) )
     else
         VID_LEN=( ${VID_LEN[@]}  "$(awk '/Video stream:/{print $10}' \
         <<<"${mencoder_stats[i]}")" )
@@ -1536,6 +1537,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
         NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
         if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
             NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
+            yecho
             yecho "Creating a nav_seek log with tcdemux to speed up seeking"
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
             "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
@@ -1822,12 +1824,17 @@ if $SUB_MENU; then
                 mv $WORK_DIR/submenu/000000.$SM_IMG_FMT \
                 $WORK_DIR/submenu/$(printf "%08d%s\n" ${t%-*} .$SM_IMG_FMT)
             elif $ANI_SUB_MENU; then
-                echo "moving images to new filenames so they won't be overwritten"
+                echo "renaming images by frame number"
                 echo
-                u=${t/*-} 
+                u=${t/*-}; v=${t/-*}
                 for ((n=0; n<340; n++)); do
-                    mv $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
-                    $WORK_DIR/animenu/$(printf "%08d%s\n" $((n+u)) .jpg)
+                    if [ $v -eq 30 ]; then
+                        mv -v $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
+                        $WORK_DIR/animenu/$(printf "%08d%s\n" $((n+30)) .jpg)
+                    else
+                        mv -v $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
+                        $WORK_DIR/animenu/$(printf "%08d%s\n" $((n+v)) .jpg)
+                    fi
                 done
             fi
         done
