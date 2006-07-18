@@ -35,6 +35,6 @@ if __name__ == '__main__':
         useropts.override(sys.argv[1:])
         for file in useropts['files']:
             print "Identifying file: %s" % file
-            infile = MediaFile()
-            infile.load(file)
+            infile = MediaFile(file)
+            infile.load()
             infile.display()
