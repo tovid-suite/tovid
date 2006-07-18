@@ -1829,10 +1829,10 @@ if $SUB_MENU; then
                 u=${t/*-}; v=${t/-*}
                 for ((n=0; n<340; n++)); do
                     if [ $v -eq 30 ]; then
-                        mv -v $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
+                        mv $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
                         $WORK_DIR/animenu/$(printf "%08d%s\n" $((n+30)) .jpg)
                     else
-                        mv -v $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
+                        mv $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
                         $WORK_DIR/animenu/$(printf "%08d%s\n" $((n+v)) .jpg)
                     fi
                 done
