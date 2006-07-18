@@ -3,14 +3,53 @@
 
 """This module defines functions for retrieving information about multimedia
 standards. Any data about widely-published standards should be defined here,
-for use by all libtovid modules."""
+for use by all libtovid modules.
 
-__all__ = ['VideoStandard', 'AudioStandard']
+   >>> standards.is_compliant('foo.mpg' 'dvd', 'ntsc')
+   True
+   >>> standards.compliance('foo.mpg')
+   ['dvd', 'ntsc']
+   
+"""
+
+__all__ = [\
+    'get_resolution',
+    'get_codec',
+    'get_fps',
+    'VideoStandard',
+    'AudioStandard']
 
 # TODO: This module needs major cleanup, ruthless code-culling and
 # overall simplification.
 
 import doctest
+from libtovid.media import VideoStream, AudioStream
+
+# Dictionaries of standard attributes for easy lookup
+format_size = {\
+    'vcd':
+        {'pal': (352, 288), 'ntsc': (352, 240)},
+    'dvd-vcd':
+        {'pal': (352, 288), 'ntsc': (352, 240)},
+    'svcd':
+        {'pal': (480, 576), 'ntsc': (480, 480)},
+    'half-dvd':
+        {'pal': (352, 576), 'ntsc': (352, 480)},
+    'dvd':
+        {'pal': (720, 576), 'ntsc': (720, 480)}
+    }
+format_bitrate = {\
+    'vcd': 1152,
+    'svcd': (0, 2600),
+    'dvd-vcd': (0, 9800),
+    'half-dvd': (0, 9800),
+    'dvd': (0, 9800)
+    }
+tvstd_fps = {\
+    'pal': 25.00,
+    'ntsc': 29.97,
+    'ntscfilm': 23.976
+    }
 
 def get_resolution(format, tvsys):
     """Return the pixel resolution (x,y) for the given format and TV system.
@@ -19,11 +58,10 @@ def get_resolution(format, tvsys):
         >>> get_resolution('dvd', 'pal')
         (720, 576)
         >>> get_resolution('half-dvd', 'ntsc')
-        (352, 480) 
+        (352, 480)
     """
-    width = match_std(std_widths, [format])
-    height = match_std(std_heights, [format, tvsys])
-    return (width, height)
+    return valid_resolutions[format][tvsys]
+
 
 def get_codec(format, tvsys):
     """Return the codec used by the given format and TV system. For example:
@@ -33,7 +71,11 @@ def get_codec(format, tvsys):
         >>> get_codec('svcd', 'ntsc')
         mpeg2
     """
-    return match_std(std_codecs, [format])
+    if format == 'vcd':
+        return 'mpeg1'
+    else:
+        return 'mpeg2'
+    
 
 def get_fps(format, tvsys):
     """Return the number of frames per second for the given format and TV
@@ -44,71 +86,47 @@ def get_fps(format, tvsys):
         >>> get_fps('dvd', 'pal')
         25.00
     """
-    return match_std(std_fpss, [tvsys])
+    return tvstd_fps[tvsys]
 
 
-# Standard format/tvsystem definitions, indexed by value.  Each value
-# corresponds to a list of matching standards (vcd/svcd/dvd) or TV systems
-# (pal/ntsc) by keyword.
-std_widths = {
-    352: ['vcd', 'dvd-vcd', 'half-dvd'],
-    480: ['pal', 'svcd'],
-    720: ['dvd']
-}
-std_heights = {
-    240: ['ntsc', 'vcd', 'dvd-vcd'],
-    288: ['pal', 'vcd', 'dvd-vcd'],
-    480: ['ntsc', 'half-dvd', 'svcd', 'dvd'],
-    576: ['pal', 'half-dvd', 'svcd', 'dvd']
-}
-std_codecs = {
-    'mpeg1': ['vcd'],
-    'mpeg2': ['svcd', 'dvd-vcd', 'half-dvd', 'dvd']
-}
-std_fpss = {
-    25.00: ['pal'],
-    29.97: ['ntsc']
-}
+def get_bitrate_range(format):
+    """Return the range (min, max) of valid bitrates for the given format.
+    For example:
 
-def match_std(defs, keywords):
-    """Find values in defs by matching associated keywords."""
-    for value in defs:
-        # Make sure all keywords match
-        match = True
-        for key in keywords:
-            # Unmatched keyword?
-            if key not in defs[value]:
-                match = False
-                break
-        # All keywords matched?
-        if match:
-            return value
+        >>> get_bitrate_range('dvd')
+        (0, 9800)
+        >>> get_bitrate_range('vcd')
+        (1152, 1152)
+    """
+    return format_bitrate[format]
 
-    print "Couldn't match %s in %s" % (keywords, defs)
-    return None
+
+def is_compliant(filename, format, tvsys):
+    """Return True if the given file is compliant with the given format and
+    TV system, False otherwise.
+    """
+    pass
+
+def compliance(filename):
+    """Return standards-compliance information about the given file, as a list
+    of keywords."""
+    pass
 
 
 def validate_specs(video, audio):
     """Return a list of audio and video standards matched by the given specs."""
+    assert isinstance(video, VideoStream)
+    assert isinstance(audio, AudioStream)
+    # Find any standards matching video's width and height
     width = video.width
     height = video.height
-    if width == 352:
-        if height == 240: res = 'ntsc vcd'
-        elif height == 288: res = 'pal vcd'
-        elif height == 480: res = 'ntsc half'
-        elif height == 576: res = 'pal half'
-    elif width == 480:
-        if height == 480: res = 'ntsc svcd'
-        elif height == 576: res = 'pal svcd'
-    elif width == 528:
-        if height == 480: res = 'ntsc kvcdx3'
-        elif height == 576: res = 'pal kvcdx3'
-    elif width == 544:
-        if height == 480: res = 'ntsc kvcdx3a'
-        elif height == 576: res = 'pal kvcdx3a'
-    elif width in [704, 720]:
-        if height == 480: res = 'ntsc dvd'
-        elif height == 576: res = 'pal dvd'
+    if width in std_widths:
+        if height in std_heights:
+            # Find all formats matching both width and height
+            formats = filter(lambda x:x not in std_widths[width],
+                             std_heights[height])
+            print "Matching %sx%s resolution:" % (width, height)
+            print formats
 
 
 def video_is_valid(vstream, vstandard):
@@ -229,45 +247,6 @@ AudioStandardList = [
     #AudioStandard(["dvd"], "mp2", 48000, 5.1, (32, 1536)),
 ] # End of AudioList
 
-
-
-
-# Find the first standard in VideoStandardList
-# matching all keywords in a list
-def matchVideoStandard(keywords):
-    for vstd in VideoStandardList:
-        match = True
-        # Check if all keywords are contained in vstd.keywords
-        for word in keywords:
-            if word not in vstd.keywords:
-                match = False
-
-        # If a match was found, return this vstd
-        if match:
-            return vstd
-
-    # If no match, None is returned
-    return None
-
-
-
-# Find the first standard in AudioStandardList
-# matching all keywords in a list
-def matchAudioStandard(keywords):
-    for astd in AudioStandardList:
-        match = True
-        # Check if all keywords are contained in astd.keywords
-        for word in keywords:
-            if word not in astd.keywords:
-                match = False
-
-        # If a match was found, return this astd
-        if match:
-            return astd
-
-    # If no match, None is returned
-    return None
-        
 
 if __name__ == '__main__':
     doctest.testmod(verbose=True)
