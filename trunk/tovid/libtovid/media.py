@@ -46,9 +46,11 @@ class MediaFile:
         if not os.path.exists(self.tempdir):
             os.mkdir(self.tempdir)
 
-    def load(self, filename):
-        """Load the given file and identify it."""
-        self.filename = abspath(filename)
+    def load(self, filename=''):
+        """Load the given file and identify it. If filename is not provided,
+        load self.filename."""
+        if filename is not '':
+            self.filename = abspath(filename)
         # Make sure the file exists
         if os.path.exists(self.filename):
             self.audio, self.video = mplayer_identify(self.filename)
