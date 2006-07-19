@@ -1309,9 +1309,9 @@ if $SHOWCASE; then
     fi
 elif $TRANSPARENT; then
     montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
-    -geometry ${GEO_ARRAY[NUM_FILES]}+5+5 -background none -bordercolor "#444744" miff:- |
+    -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none -bordercolor "#444744" miff:- |
     composite -dissolve $OPACITY \
-    -gravity west -geometry +0+45 - \
+    -gravity north -geometry +0+45 - \
     "$WORK_DIR/pics/template.png" -background none miff:- |
     convert - "$WORK_DIR/title_txt.png"  \
     -gravity south -geometry +0+65 -composite "$WORK_DIR/preview.jpg"
@@ -1423,7 +1423,6 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
             length=( ${length[@]} $("${NAVSEEK_CMD[@]}" 2>&1 |
             tee "$WORK_DIR/nav${i}_log"  |awk '/detected/ {print $2}') )
-            echo "length[@] is ${length[@]}"
 #            "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
         fi
     fi
@@ -1829,10 +1828,10 @@ if $SUB_MENU; then
                 u=${t/*-}; v=${t/-*}
                 for ((n=0; n<340; n++)); do
                     if [ $v -eq 30 ]; then
-                        mv $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
+                        mv  $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
                         $WORK_DIR/animenu/$(printf "%08d%s\n" $((n+30)) .jpg)
                     else
-                        mv $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
+                        mv  $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
                         $WORK_DIR/animenu/$(printf "%08d%s\n" $((n+v)) .jpg)
                     fi
                 done
@@ -1857,8 +1856,7 @@ if $SUB_MENU; then
                     sort|tail -n 20|xargs rm -f
                 done
                 # clean up left over pics in animenu/ dir
-                echo "Cleaning up leftover pics in $REAL_WORK_DIR/animenu"
-                rm -f $WORK_DIR/animenu/*.$SM_IMG_FMT
+#                rm -f $WORK_DIR/animenu/*.$SM_IMG_FMT
             fi
 
 #        echo "Running  "${TCODE_CMD[@]}"" >> "$LOG_FILE"
@@ -1908,7 +1906,6 @@ UNUSED
                 $WORK_DIR/title${i}_txt.png  -gravity south \
                 -geometry +0+55 -composite -  -gravity north -geometry +0+45 \
                 -composite $WORK_DIR/animenu/$a.$SM_IMG_FMT)
- 
                 "${IM_CMD[@]}" | "${IM_CMD2[@]}"
                 unset IMGS
             done
@@ -1922,7 +1919,6 @@ UNUSED
             # just use $CHAPTERS number of images
             imgs=( $(find $WORK_DIR/submenu -name \*.$SM_IMG_FMT |
             sort| head -n ${CHAPTERS[i]}) )
-            sleep 5
             # create frames for the chapter thumbs
             for PIC in "${imgs[@]}"; do
             spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$PIC")  "
@@ -1963,8 +1959,11 @@ UNUSED
             runtime_error  \
             "The submenu video (m2v) does not appear to have been created"
         fi
-        # clean out submenu dir of images
+        # clean out submenu dirs of images
+        echo "Cleaning up leftover pics in $REAL_WORK_DIR/animenu"
         rm -fv $WORK_DIR/submenu/*
+        find $WORK_DIR/animenu/[0-9]/ -type f -exec rm -fv {} \;
+        find $WORK_DIR/animenu/ -maxdepth 1 -type f -exec rm -fv {} \;
     done    
     unset IMG_STREAM_CMD1 ENC_CMD1 JPEG2YUV_OPTS
     for ((s=0; s<=NUM_FILES; s++)); do
