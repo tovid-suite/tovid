@@ -1131,7 +1131,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
         NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
     fi
     echo "[$i of $NUM_FILES] Seeking to $SEEK_VAL seconds in ${IN_FILES[i]}"
-    TRANSCODE_CMD=(transcode -q 0 -i "${IN_FILES[i]}" \
+    TRANSCODE_CMD=(transcode -q 0 -x mpeg2 -i "${IN_FILES[i]}" \
     -c $SEEK_FRAMES-$((SEEK_FRAMES + 1)) $NAVSEEK \
     -o $WORK_DIR/${i}-preview -f 29.970  -Z $THUMB_SIZE $EXPORT)
 
