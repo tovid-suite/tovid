@@ -57,7 +57,7 @@ See the todisc manual page ('man todisc') for additional documentation.
 EOF`
 CUR_DIR="$(abspath "$(pwd)")"
 REAL_WORK_DIR="$CUR_DIR/todisc-work"
-WORK_DIR="/tmp/todisc-work"
+WORK_DIR="/tmp/todisc-$(date +%s)"
 LOG_FILE="$(abspath "todisc.log")"
 OUT_PREFIX=""
 TV_STANDARD=ntsc
@@ -239,7 +239,7 @@ function cleanup()
         rm -rf "$REAL_WORK_DIR"
     fi
     echo -n "Removing the symlink in /tmp . . . "
-    rm -fv /tmp/todisc-work
+    rm -fv "$WORK_DIR"
 }
 
 function running_total ()
@@ -288,7 +288,7 @@ function confirm_preview()
     else
         yecho "Preview not OK, exiting."
         echo -n "Deleting symlink in /tmp . . . "
-        rm -fv /tmp/todisc-work
+        rm -fv "$WORK_DIR"
         yecho
         echo
         echo "Some configuration options to try, if things look bad:"
@@ -660,7 +660,7 @@ if test -d "$REAL_WORK_DIR"; then
 fi
 mkdir -pv "$REAL_WORK_DIR"
 # link WORK_DIR to /tmp for easy solution to spaces, illegal chars bugs
-ln -sfv "$REAL_WORK_DIR" /tmp/todisc-work
+ln -sfv "$REAL_WORK_DIR" "$WORK_DIR"
 
 # Remove any existing log file
 test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
@@ -1131,7 +1131,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
         NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
     fi
     echo "[$i of $NUM_FILES] Seeking to $SEEK_VAL seconds in ${IN_FILES[i]}"
-    TRANSCODE_CMD=(transcode -q 0 -x mpeg2 -i "${IN_FILES[i]}" \
+    TRANSCODE_CMD=(transcode -q 0 -i "${IN_FILES[i]}" \
     -c $SEEK_FRAMES-$((SEEK_FRAMES + 1)) $NAVSEEK \
     -o $WORK_DIR/${i}-preview -f 29.970  -Z $THUMB_SIZE $EXPORT)
 
@@ -2166,7 +2166,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
     if ! $STATIC; then
         IMAGES=( "${IMAGES[@]}" \
         $(find $WORK_DIR/pics/$i -maxdepth 1 -name 00\*.$IMG_FMT|sort) )
-        last_pic=${#IMAGES[@]}
+        last_pic=$(( ${#IMAGES[@]} - 1 ))
         next_pic=$(($last_pic + 1))
         if [ $last_pic -lt $MAX_ANI_LENGTH ]; then
             for ((l=next_pic; l<=MAX_ANI_LENGTH; l++)); do
