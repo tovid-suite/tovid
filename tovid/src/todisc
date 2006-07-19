@@ -1962,8 +1962,8 @@ UNUSED
         # clean out submenu dirs of images
         echo "Cleaning up leftover pics in $REAL_WORK_DIR/animenu"
         rm -fv $WORK_DIR/submenu/*
-        find $WORK_DIR/animenu/[0-9]/ -type f -exec rm -fv {} \;
-        find $WORK_DIR/animenu/ -maxdepth 1 -type f -exec rm -fv {} \;
+        find $WORK_DIR/animenu/[0-9]/ -type f -exec rm -f {} \;
+        find $WORK_DIR/animenu/ -maxdepth 1 -type f -exec rm -f {} \;
     done    
     unset IMG_STREAM_CMD1 ENC_CMD1 JPEG2YUV_OPTS
     for ((s=0; s<=NUM_FILES; s++)); do
