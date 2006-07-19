@@ -2245,7 +2245,7 @@ if $MENU_FADE && ! $STATIC; then
     done
 else # Do not do menu fade
     if $TRANSPARENT; then
-        for (( count=1; count<=$MAX_ANI_LENGTH; count++)); do
+        for (( count=1; count<=$FRAMES; count++)); do
 
             # TODO: More descriptive message about what this loop is doing
 #            spin "Working..."
