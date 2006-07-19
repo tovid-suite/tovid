@@ -223,7 +223,9 @@ runtime_error()
 
 function vid_length()
 {
-    mencoder "$1" -quiet -ovc copy -oac pcm -o /dev/null |
+    yecho "Running mencoder "$1" -quiet -ovc copy -oac pcm -o /dev/null |
+    awk '/Video stream/ {print $10}'" >> "$LOG_FILE"
+    mencoder "$1" -quiet -ovc copy -oac pcm -o /dev/null 2>>"$LOG_FILE" |
     awk '/Video stream/ {print $10}'
 }
 
@@ -1962,8 +1964,10 @@ UNUSED
         # clean out submenu dirs of images
         echo "Cleaning up leftover pics in $REAL_WORK_DIR/animenu"
         rm -fv $WORK_DIR/submenu/*
-        find $WORK_DIR/animenu/[0-9]/ -type f -exec rm -f {} \;
         find $WORK_DIR/animenu/ -maxdepth 1 -type f -exec rm -f {} \;
+        if $ANI_SUB_MENU; then
+            find $WORK_DIR/animenu/[0-9]/ -type f -exec rm -f {} \;
+        fi
     done    
     unset IMG_STREAM_CMD1 ENC_CMD1 JPEG2YUV_OPTS
     for ((s=0; s<=NUM_FILES; s++)); do
