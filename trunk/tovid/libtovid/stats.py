@@ -27,7 +27,10 @@ fields = [\
     'in_md5',
     'in_width',
     'in_height',
-    'quant'
+    'quant',
+    'kbpm',
+    'enc_time_ratio',
+    'backend'
     ]
 
 int_fields = [\
@@ -141,4 +144,15 @@ class Statlist:
             for index in values_by.iterkeys():
                 values_by[index].sort()
         return values_by
+    
+    def get_matching(self, attribute, value):
+        """Return a list of records where the given attribute equals the given
+        value. Records are field-indexed dictionaries of values.
+        """
+        # List of matching records
+        matches = []
+        for record in self.records:
+            if record[attribute] == value:
+                matches.append(record)
+        return matches
     
