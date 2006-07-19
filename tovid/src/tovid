@@ -625,7 +625,7 @@ cleanup()
 write_stats()
 {
     # Get total size of all output files
-    cd $(dirname $OUT_FILENAME)
+    cd $(dirname "$OUT_FILENAME")
     FINAL_SIZE=$(du -c -k "$OUT_PREFIX"*.mpg | awk 'END{print $1}')
     test -z $FINAL_SIZE && FINAL_SIZE=0
 
@@ -705,7 +705,7 @@ EOF`
     test -n $AVG_BITRATE && AVG_BITRATE=$(expr $AVG_BITRATE \/ 1000)
     test -n $PEAK_BITRATE && PEAK_BITRATE=$(expr $PEAK_BITRATE \/ 1000)
     KB_PER_MIN=$(expr $FINAL_SIZE \* 60 \/ $V_DURATION)
-    ENC_TIME_RATIO=$(echo "scale = 2; $SCRIPT_TOT_TIME \/ $V_DURATION" | bc)
+    ENC_TIME_RATIO=$(echo "scale = 2; $SCRIPT_TOT_TIME / $V_DURATION" | bc)
     if $USE_FFMPEG; then
         BACKEND="ffmpeg"
     else

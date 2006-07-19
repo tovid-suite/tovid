@@ -26,7 +26,7 @@ def get_statlist(statfile):
     statfile = os.path.abspath(statfile)
     tempfile = "%s.csv" % statfile
     # Only use lines beginning with " (and not header line)
-    os.system('cat "%s" | grep \'^\"[^T]\' > "%s"' % (statfile, tempfile))
+    os.system('cat "%s" | grep \'^ *\"[^T]\' > "%s"' % (statfile, tempfile))
     statlist = stats.Statlist(tempfile)
     os.remove(tempfile)
     return statlist
@@ -48,6 +48,8 @@ if __name__ == '__main__':
         print "        Show all values of FIELD_1, organized by FIELD_2"
         print "    -plot FIELD_1 by FIELD_2"
         print "        Like -list, but show a scatterplot image of the data."
+        print "    -match FIELD VALUE"
+        print "        Print statistics records where FIELD is VALUE"
         print "FIELDs may be any of the following:"
         for field in stats.fields:
             print "    %s" % field
@@ -107,6 +109,21 @@ if __name__ == '__main__':
                 drawing.translate((40, 48))
                 scatterplot.draw_on(drawing, 0)
                 drawing.render()
+        elif arg == '-match':
+            field = args.pop(0)
+            value = args.pop(0)
+            if field in stats.int_fields:
+                value = int(value)
+            print "Finding statistics records where %s is %s" % (field, value)
+            matches = statlist.get_matching(field, value)
+            for match in matches:
+                print "Matching record:"
+                print pretty_dict(match)
+            if matches == []:
+                print "No matches found."
+            else:
+                print "Found %s records where %s is %s." % \
+                      (len(matches), field, value)
 
 
 def required_MB(format, tvsys, vbitrate, quant, seconds=1):
