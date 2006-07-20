@@ -2441,7 +2441,7 @@ if "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then
     runtime_error
 fi
 unset BGAUDIO_CMD
-
+rm -fv "$WORK_DIR/intro.wav"
 echo
 echo "Multiplexing main menu audio and video together"
 # mplex main menu audio and video together
@@ -2486,7 +2486,8 @@ elif [ "$TARGET" = svcd ]; then
 fi
 echo "Cleaning up unwanted files in $REAL_WORK_DIR"
 rm -f "$WORK_DIR"/*.png
-rm -fr $WORK_DIR/animenu $WORK_DIR/pics
+find "$WORK_DIR"/ -name '*.jpg' ! -name preview.jpg -exec rm -f {} \;
+rm -frv "$WORK_DIR/animenu" "$WORK_DIR/pics" "$WORK_DIR/submenu"
 #    if $SUB_MENU; then
 #        makexml -vcd -topmenu "$WORK_DIR/animenu.mpg" \
 #        $(for ((x=1; x<=V_ARRAY_TOTAL; x++)); do echo \
