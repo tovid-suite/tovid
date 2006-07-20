@@ -50,9 +50,15 @@ For example:
     problems if they occur. This option also leaves the log file (with a .log
     extension) in the directory after encoding finishes.
 : **-refresh-deps**
-    Regenerate the dependency list. tovid uses $HOME/.tovid/dependency.list to 
+    Regenerate the dependency list. tovid uses $HOME/.tovid/dependency.list to
     determine which of its dependencies are installed. If you install dependencies
     after tovid, use this option to make tovid aware of the newly installed ones.
+: **-ffmpeg**
+    Use ffmpeg for video encoding, instead of mplayer/mpeg2enc. Try this if
+    you have any problems with the default encoding method. Using this option,
+    encoding will be considerably faster. Works with **-vcd**, **-svcd**, and
+    **-dvd**.
+
 
 
 ===Television standards===
@@ -131,7 +137,7 @@ letterboxing or anamorphic scaling.
 
 ===Video stream options===
 
-: **-quality** //NUM// (EXPERIMENTAL)
+: **-quality** //NUM//
     Desired output quality, on a scale of 1 to 10, with 10 giving the best
     quality at the expense of a larger output file. Output size can vary by
     approximately a factor of 4 (that is, -quality 1 output can be 25% the size
@@ -256,11 +262,6 @@ letterboxing or anamorphic scaling.
     this if you want to add specific video filters (documented in the mplayer
     manual page). Overriding some options will cause encoding to fail, so use
     this with caution!
-
-: **-ffmpeg** (EXPERIMENTAL)
-    Use ffmpeg for video encoding, instead of mplayer/mpeg2enc.  Encoding will
-    be noticeably faster; (S)VCD and DVD are supported, but KVCD/KDVD is not
-    fully supported yet.
 
 : **-nofifo** (EXPERIMENTAL)
     Do not use a FIFO pipe for video encoding. If you are getting "Broken pipe"
