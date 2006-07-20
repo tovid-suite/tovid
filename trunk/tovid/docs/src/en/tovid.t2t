@@ -145,18 +145,16 @@ letterboxing or anamorphic scaling.
     Maximum bitrate to use for video (in kbits/sec). Must be within allowable
     limits for the given format. Overrides default values. Ignored for VCD.
 
-: **-interlaced** (EXPERIMENTAL)
+: **-interlaced**
     Do interlaced encoding of the input video. Use this option if your video is
     interlaced, and you want to preserve as much picture quality as possible.
     Ignored for VCD.
 
-: **-deinterlace** (DEPRECATED)
-    Use this option if your source video is interlaced. You can usually tell if
-    you can see a bunch of horizontal lines when you pause the video during
-    playback. If you have recorded a video from TV or your VCR, it may be
-    interlaced. Use this option to convert to progressive (non-interlaced)
-    video. This option is DEPRECATED, and will probably be ditched in favor of
-    interlaced encoding, which is better in almost every way.
+: **-deinterlace**
+    Converting interlaced source video into progressive output video. Because
+    deinterlacing works by averaging fields together, some picture quality is
+    invariably lost. Uses an adaptive kernel deinterlacer (kerndeint), or,
+    if that's not available, the libavcodec deinterlacer (lavcdeint).
 
 : **-mkvsub** //LANG// (EXPERIMENTAL)
     Attempt to encode an integrated subtitle stream (such as may be found in
@@ -182,7 +180,7 @@ letterboxing or anamorphic scaling.
     resolution, and pad the edges with a black border. Use this if some of the
     picture is cut off when played on your TV.  The percent sign is optional.
 
-: **-filters** {none,denoise,contrast,all} (default none)
+: **-filters** {none,denoise,deblock,contrast,all} (default none)
     Apply post-processing filters to enhance the video. If your input video is
     very high quality, use 'none'. If your input video is grainy, use 'denoise';
     if it looks washed out or faded, use 'contrast'. You can use multiple 
