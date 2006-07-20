@@ -97,8 +97,6 @@ SAFE_AREA=100
 YUVDENOISE=""
 # No vidfilter yet
 VID_FILTER=""
-VF_PRE=""
-VF_POST=""
 # High priority encoding
 PRIORITY="nice -n 0"
 # No deinterlacing
@@ -427,6 +425,10 @@ get_args()
             "-safe" )
                 shift
                 SAFE_AREA=$(echo $1 | sed 's/%//g')
+                ;;
+            "-crop" )
+                shift
+                CROP="$1"
                 ;;
             "-filters" )
                 shift
@@ -1155,6 +1157,11 @@ else
     SPP_AVAIL=false
 fi
 
+# Crop, if requested
+if test -n "$CROP"; then
+    VID_FILTER="$VID_FILTER,crop=$CROP"
+fi
+
 # Set up deinterlacing, if requested.
 # Use the best deinterlacer available, and
 # fall back to others if not available in the user's
@@ -1166,10 +1173,10 @@ if $DEINTERLACE; then
         #VID_FILTER="-vf pp=md"
     # See if adaptive kernel deinterlacer is available
     if grep -q "^ *kerndeint " "$SCRATCH_FILE"; then
-        VID_FILTER="-vf kerndeint"
+        VID_FILTER="$VID_FILTER,kerndeint"
     # Finally, try lavcdeint
     elif grep -q "^ *lavcdeint " "$SCRATCH_FILE"; then
-        VID_FILTER="-vf lavcdeint"
+        VID_FILTER="$VID_FILTER,lavcdeint"
     # Nothing available - print a warning
     else
         yecho "I can't find any deinterlacing options to use. No deinterlacing"
@@ -1197,10 +1204,10 @@ fi
 if $DO_DENOISE; then
     # If high-quality 3D denoising is available, use it
     if grep -q "^ *hqdn3d " "$SCRATCH_FILE"; then
-        VID_FILTER="$VID_FILTER -vf-add hqdn3d"
+        VID_FILTER="$VID_FILTER,hqdn3d"
     # Otherwise, use normal 3D denoising
     elif grep -q "^ *denoise3d " "$SCRATCH_FILE"; then
-        VID_FILTER="$VID_FILTER -vf-add denoise3d"
+        VID_FILTER="$VID_FILTER,denoise3d"
     # If all else fails, use yuvdenoise (if available)
     elif type -p yuvdenoise; then
         YUVDENOISE="yuvdenoise |"
@@ -1210,16 +1217,16 @@ if $DO_DENOISE; then
 fi
 if $DO_CONTRAST; then
     if $PP_AVAIL; then
-        VID_FILTER="$VID_FILTER -vf-add pp=al:f"
+        VID_FILTER="$VID_FILTER,pp=al:f"
     else
         yecho "Unable to find a suitable contrast-enhancement filter. Skipping."
     fi
 fi
 if $DO_DEBLOCK; then
     if $PP_AVAIL; then
-        VID_FILTER="$VID_FILTER -vf-add pp=hb/vb"
+        VID_FILTER="$VID_FILTER,pp=hb/vb"
     elif $SPP_AVAIL; then
-        VID_FILTER="$VID_FILTER -vf-add spp"
+        VID_FILTER="$VID_FILTER,spp"
     else
         yecho "Unable to find a suitable deblocking filter. Skipping."
     fi
@@ -1382,9 +1389,8 @@ if test -n "$ASPECT_RATIO"; then
     PLAY_WIDTH=$(echo $ASPECT_RATIO | awk -F ':' '{print $1}')
     PLAY_HEIGHT=$(echo $ASPECT_RATIO | awk -F ':' '{print $2}')
     V_ASPECT_WIDTH=$(expr $PLAY_WIDTH \* 100 \/ $PLAY_HEIGHT)
+# Auto-detected aspect ratio
 else
-    # Set human-readable aspect ratio string
-    # (i.e., format '133' as '1.33:1', etc.)
     ASPECT_RATIO="$V_ASPECT_WIDTH:100"
     yecho "Using auto-detected aspect ratio of $ASPECT_RATIO (override with -aspect)"
 fi
@@ -1400,6 +1406,14 @@ else
     TGT_ASPECT_WIDTH=133
     FF_ASPECT="-aspect 4:3"
     ASPECT_FMT="--aspect 2"
+fi
+
+# If cropping, crop values override input video resolution for the
+# purposes of knowing when scaling is needed
+if test -n "$CROP"; then
+    yecho "Cropping with (W:H:X:Y): $CROP"
+    ID_VIDEO_WIDTH=$(echo $CROP | awk -F ':' '{print $1}')
+    ID_VIDEO_HEIGHT=$(echo $CROP | awk -F ':' '{print $2}')
 fi
 
 # Determine width/height to scale to, maintaining aspect
@@ -1470,37 +1484,34 @@ else
     ADJUST_FPS="yuvfps -r $TGT_FPSRATIO $VERBOSE |"
 fi
 
-VID_SCALE=""
 # Scale to the target inner size
 if test $ID_VIDEO_WIDTH != $INNER_WIDTH || test $ID_VIDEO_HEIGHT != $INNER_HEIGHT; then
     yecho "Scaling picture to $INNER_WIDTH x $INNER_HEIGHT"
-    VID_SCALE="-vf-add scale=$INNER_WIDTH:$INNER_HEIGHT"
-fi
-# Expand to the target outer size
-if test $INNER_WIDTH != $TGT_WIDTH || test $INNER_HEIGHT != $TGT_HEIGHT; then
-    yecho "Centering picture against a $TGT_WIDTH x $TGT_HEIGHT black background"
-    VID_SCALE="$VID_SCALE -vf-add expand=$TGT_WIDTH:$TGT_HEIGHT"
+    VID_FILTER="$VID_FILTER,scale=$INNER_WIDTH:$INNER_HEIGHT"
 fi
 
-
-# Tell mplayer and mpeg2enc to do interlaced encoding, if requested
-# (except for VCD, which doesn't support it)
+# Do interlaced encoding for everything but VCD (which doesn't support it)
 if $INTERLACED && test "$TGT_RES" != "VCD"; then
-
     # Unneeded, and possibly harmful?
     # MPEG2_FMT="$MPEG2_FMT --interlace-mode 1"
 
-    # If video filters are being applied, need to deinterleave/reinterlave
-    if test -n $VID_FILTER || test -n $VID_SCALE; then
-        VF_PRE="-vf-pre il=d:d"
-        VF_POST="-vf-add il=i:i"
+    # Apply deinterleave/reinterleave filters, if needed
+    if test -n "$VID_FILTER"; then
+        VID_FILTER="il=d:d,$VID_FILTER,il=i:i"
     fi
-
     YUV4MPEG_ILACE=":interlaced"
-
     # Add the ilpack video filter
     #VF_POST="$VF_POST -vf-add ilpack"
 fi
+
+# Expand to the target outer size
+if test $INNER_WIDTH != $TGT_WIDTH || test $INNER_HEIGHT != $TGT_HEIGHT; then
+    yecho "Centering picture against a $TGT_WIDTH x $TGT_HEIGHT black background"
+    VID_FILTER="$VID_FILTER,expand=$TGT_WIDTH:$TGT_HEIGHT"
+fi
+
+# Remove extraneous commas from filter command
+VID_FILTER=$(echo "$VID_FILTER" | sed 's/,,/,/g')
 
 
 # ******************************************************************************
@@ -1713,7 +1724,7 @@ else
     if $USE_FIFO; then
         mkfifo "$YUV_STREAM"
     fi
-    VID_PLAY_CMD="$PRIORITY $MPLAYER -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} ${VF_PRE} ${VID_FILTER} ${VID_SCALE} ${VF_POST} \"$IN_FILE\" $MPLAYER_OPTS"
+    VID_PLAY_CMD="$PRIORITY $MPLAYER -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} -vf ${VID_FILTER} $MPLAYER_OPTS \"$IN_FILE\""
     VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
     yecho $VID_PLAY_CMD
     yecho $VID_ENC_CMD
