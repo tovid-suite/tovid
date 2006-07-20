@@ -1143,20 +1143,20 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
     -s $THUMB_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
     echo -e "\nRunning: "${TRANSCODE_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
     SED_VAR="frame="
-#    if "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
     if $NOASK; then
-        CMD="${FFMPEG_CMD[@]}"
+        CMD=( "${FFMPEG_CMD[@]}" )
     else
-        CMD="${TRANSCODE_CMD[@]}"
+        CMD=( "${TRANSCODE_CMD[@]}" )
     fi
         
-    if $CMD >> "$LOG_FILE.tmp" 2>&1;then
+    if "${CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
         cleanlog 3
     else
         cleanlog 3
         runtime_error "Problem creating images from the video."
         exit 1
     fi
+    unset CMD
 done
 if $MIST; then
     # overlay white.png onto the background
