@@ -1079,7 +1079,7 @@ fi
 # generate images for montage and title and resize them
 if [ -n "$BG_VIDEO" ]; then
     echo "Getting background video images from $BG_VIDEO"
-    FFMPEG_CMD=(ffmpeg -i "$BG_VIDEO" $SEEK -s $VIDSIZE  -vframes 1 \
+    FFMPEG_CMD=(ffmpeg -i "$BG_VIDEO" -s $VIDSIZE  -vframes 1 \
     -vcodec png -an  -f rawvideo -y "$WORK_DIR/pics/template.png")
     echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
     SED_VAR="frame="
@@ -1130,21 +1130,27 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
         yecho "Creating a nav_seek log with tcdemux to speed up seeking"
         yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
         length=( ${length[@]} $("${NAVSEEK_CMD[@]}" 2>&1 |tee "$WORK_DIR/nav${i}_log"  |awk '/detected/ {print $2}') )
-        echo "length is ${length[i]}"
-#        "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
         NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
     fi
-    echo "[$i of $NUM_FILES] Seeking to $SEEK_VAL seconds in ${IN_FILES[i]}"
+    if ! $NOASK; then
+        echo "[$i of $NUM_FILES] Seeking to $SEEK_VAL seconds in ${IN_FILES[i]}"
+    fi
     TRANSCODE_CMD=(transcode -q 0 -i "${IN_FILES[i]}" \
     -c $SEEK_FRAMES-$((SEEK_FRAMES + 1)) $NAVSEEK \
     -o $WORK_DIR/${i}-preview -f 29.970  -Z $THUMB_SIZE $EXPORT)
 
-    FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" -an $SEEK -vframes 1 \
+    FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" -an -ss 1 -vframes 1 \
     -s $THUMB_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
     echo -e "\nRunning: "${TRANSCODE_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
     SED_VAR="frame="
 #    if "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
-    if "${TRANSCODE_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
+    if $NOASK; then
+        CMD="${FFMPEG_CMD[@]}"
+    else
+        CMD="${TRANSCODE_CMD[@]}"
+    fi
+        
+    if $CMD >> "$LOG_FILE.tmp" 2>&1;then
         cleanlog 3
     else
         cleanlog 3
@@ -1249,9 +1255,10 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
         "${BUTTON_CMD5[@]}"
     fi
 done
-
-echo "Creating and displaying a preview of the main menu."
-echo "(Press 'q' or ESC in the preview window to close it.)"
+if ! $NOASK; then
+    echo "Creating and displaying a preview of the main menu."
+    echo "(Press 'q' or ESC in the preview window to close it.)"
+fi
 if [ "$BUTTON_STYLE" = "rect" ]; then
     for button in Select Highlight; do
         montage -background none \
@@ -1311,7 +1318,6 @@ if $SHOWCASE; then
         display "$WORK_DIR/preview.jpg"
         yecho
         yecho "*** Sorry, showcase is preview only right now, exiting ***"
-        exit 0
     fi
 elif $TRANSPARENT; then
     montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
@@ -2113,7 +2119,7 @@ yecho
 yecho "Building main menu"
 if [ -n "$BG_VIDEO" ]; then
     yecho "Getting background video from $BG_VIDEO"
-    FFMPEG_CMD="ffmpeg -i \"$BG_VIDEO\" $SEEK -vframes $FRAMES \
+    FFMPEG_CMD="ffmpeg -i \"$BG_VIDEO\" -vframes $FRAMES \
     -s $VIDSIZE \"$WORK_DIR/bg/%d.jpg\""
     yecho "Extracting/resizing background images with the following command:"
     yecho "$FFMPEG_CMD"
