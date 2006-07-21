@@ -61,7 +61,12 @@ for link in /tmp/todisc-*; do
     [ -h "$link" ] && { WORK_DIR=/tmp/todisc-$(date +%s); continue; }
 done
 CUR_DIR="$(abspath "$(pwd)")"
+# make unique REAL_WORK_DIR
 REAL_WORK_DIR="$CUR_DIR/todisc-work"
+for dir in "$REAL_WORK_DIR"*; do
+    [ -d "$dir" ] && { REAL_WORK_DIR="$(pwd)"/todisc-work$((NUM++))
+    continue; }
+done
 LOG_FILE="$(abspath "todisc.log")"
 OUT_PREFIX=""
 TV_STANDARD=ntsc
