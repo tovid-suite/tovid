@@ -90,6 +90,7 @@ function tempdir()
 {
     NUM=0
     BASENAME="$1"
+    TEMPDIR="$BASENAME.$NUM"
     for dir in "${BASENAME}*"; do
         test -d "$dir" && { TEMPDIR=$BASENAME.$((NUM++)); continue; }
     done
