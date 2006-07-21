@@ -86,8 +86,8 @@ usage_error ()
 # Args: (name, x0, y0, x1, y1)
 add_button ()
 {
-    BTN_Y0=`expr $3 \+ $BUTTON_YOFFSET`
-    BTN_Y1=`expr $5 \+ $BUTTON_YOFFSET`
+    BTN_Y0=$(expr $3 \+ $BUTTON_YOFFSET)
+    BTN_Y1=$(expr $5 \+ $BUTTON_YOFFSET)
     SPUMUX_BUTTONS=`cat << EOF
 $SPUMUX_BUTTONS
   <button name="$1" x0="$2" y0="$BTN_Y0" x1="$4" y1="$BTN_Y1" />
@@ -224,7 +224,7 @@ while test $# -gt 0; do
         "-fontsize" )
             shift
             TITLE_SIZE="$1"
-            TITLE_SPACING=`expr $TITLE_SIZE \* 5 \/ 4`
+            TITLE_SPACING=$(expr $TITLE_SIZE \* 5 \/ 4)
             ;;
         "-textcolor" )
             shift
@@ -294,8 +294,8 @@ else
     test $TVSYS = "ntsc" && HEIGHT="240"
     test $TVSYS = "pal" && HEIGHT="288"
     # Reduce font size and spacing
-    TITLE_SIZE=`expr $TITLE_SIZE \/ 2`  
-    TITLE_SPACING=`expr $TITLE_SPACING \/ 2`  
+    TITLE_SIZE=$(expr $TITLE_SIZE \/ 2)  
+    TITLE_SPACING=$(expr $TITLE_SPACING \/ 2)  
 fi
 
 # Set audio stream format
@@ -320,11 +320,11 @@ fi
 
 # Use a foreground canvas the size of the background minus safe area
 if test -n $SAFE_AREA; then
-    FG_WIDTH=`expr $WIDTH \* 4 \/ 5`
-    FG_HEIGHT=`expr $HEIGHT \* 4 \/ 5`
+    FG_WIDTH=$(expr $WIDTH \* 4 \/ 5)
+    FG_HEIGHT=$(expr $HEIGHT \* 4 \/ 5)
 else
-    FG_WIDTH=`expr $WIDTH \- 10`
-    FG_HEIGHT=`expr $HEIGHT \- 10`
+    FG_WIDTH=$(expr $WIDTH \- 10)
+    FG_HEIGHT=$(expr $HEIGHT \- 10)
 fi
 
 # Check to see if the given font name is available in ImageMagick
@@ -347,7 +347,7 @@ fi
 
 TITLE_TEXT=""
 # Y-offset for spumux button XML
-BUTTON_YOFFSET=`expr \( $HEIGHT \- $FG_HEIGHT \) \/ 2`
+BUTTON_YOFFSET=$(expr \( $HEIGHT \- $FG_HEIGHT \) \/ 2)
 let "BUTTON_X1=$SPUMUX_BUTTON_PAD"
 let "BUTTON_X2=$WIDTH-$SPUMUX_BUTTON_PAD"
 CUR_BUTTON_NUM="1"
@@ -398,7 +398,7 @@ done
 if test -n "$BACK_BUTTON" ; then
     # Leave an empty line
     CUR_Y=$NEXT_Y
-    NEXT_Y=`expr $NEXT_Y \+ $TITLE_SPACING`
+    NEXT_Y=$(expr $NEXT_Y \+ $TITLE_SPACING)
     if test $RES = "vcd" ; then
         POS_TEXT="text 15,$CUR_Y '$CUR_BUTTON_NUM. Back'"
     else
@@ -436,7 +436,7 @@ if test -z $BG_AUDIO ; then
         -t 4 -acodec $ASUF -y \"$OUT_PREFIX.$ASUF\""
     echo $AUDIO_CMD
     eval $AUDIO_CMD
-    VID_LENGTH=`expr 4 \* $FPS \/ 100`
+    VID_LENGTH=$(expr 4 \* $FPS \/ 100)
 # Otherwise, convert provided audio to the target format
 else
     echo "Converting \"$BG_AUDIO\" to $ASUF with the following command:"
@@ -448,13 +448,13 @@ else
     VID_LENGTH=$(mplayer -quiet -identify -frames 0 -vo null -ao null \
         "$BG_AUDIO" 2>&1 | grep '^ID_LENGTH' | awk -F '=' '{print $2}' | \
         sed -e "s/\.[0-9]*//g")
-    VID_LENGTH=`expr $VID_LENGTH \* $FPS \/ 100`
+    VID_LENGTH=$(expr $VID_LENGTH \* $FPS \/ 100)
 fi
 
 # Make sure VID_LENGTH is nonzero
 if test $VID_LENGTH -eq 0 ; then
     # Use 30 seconds as a sensible default
-    VID_LENGTH=`expr 30 \* $FPS \/ 100`
+    VID_LENGTH=$(expr 30 \* $FPS \/ 100)
 fi
 
 # Add text titles to a blank image the size of the foreground canvas

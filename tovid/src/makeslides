@@ -136,8 +136,8 @@ convert $VERBOSE_IM -size ${WIDTH}x${HEIGHT} xc:black $BLACK_BG
 # Process remaining arguments as image filenames
 while test $# -gt 0; do
   CUR_IMAGE=$1
-  EXT=`echo "$CUR_IMAGE" | awk -F '.' '{ print $NF }'`
-  FILENAME=`basename "$CUR_IMAGE" ."$EXT"`
+  EXT=$(echo "$CUR_IMAGE" | awk -F '.' '{ print $NF }')
+  FILENAME=$(basename "$CUR_IMAGE" ."$EXT")
   if $VERBOSE; then echo $SEPARATOR; fi
   
   echo "Processing image: $CUR_IMAGE -> $FILENAME.mpg"
