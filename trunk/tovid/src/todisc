@@ -55,9 +55,13 @@ Input files must be MPEG, and the number of -files and -titles must be equal.
 See the todisc manual page ('man todisc') for additional documentation.
 
 EOF`
+# check if symlink in /tmp exists and use time stamped link if so
+WORK_DIR="/tmp/todisc-work"
+for link in /tmp/todisc-*; do
+    [ -h "$link" ] && { WORK_DIR=/tmp/todisc-$(date +%s); continue; }
+done
 CUR_DIR="$(abspath "$(pwd)")"
 REAL_WORK_DIR="$CUR_DIR/todisc-work"
-WORK_DIR="/tmp/todisc-$(date +%s)"
 LOG_FILE="$(abspath "todisc.log")"
 OUT_PREFIX=""
 TV_STANDARD=ntsc
