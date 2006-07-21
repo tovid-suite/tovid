@@ -73,12 +73,28 @@ TOVID_FORUMS="http://www.createphpbb.com/tovid/"
 # call the function like this:
 #     RETURN_VALUE=`abspath "$FILENAME"`
 # ******************************************************************************
-abspath ()
+function abspath()
 {
     DIR=`dirname "$1"`
     BASE=`basename "$1"`
     ABS_PATH="`cd \"$DIR\" && pwd || echo \"$DIR\"`/$BASE"
     echo "$ABS_PATH"
+}
+
+# ******************************************************************************
+# Create a unique temporary directory and return its name
+# Input args: $1 = Base name (i.e., "work_dir")
+# Return value is echoed to stdout (i.e., "work_dir.3")
+# ******************************************************************************
+function tempdir()
+{
+    NUM=0
+    BASENAME="$1"
+    for dir in "${BASENAME}*"; do
+        test -d "$dir" && { TEMPDIR=$BASENAME.$((NUM++)); continue; }
+    done
+    mkdir "$TEMPDIR"
+    echo "$TEMPDIR"
 }
 
 # ******************************************************************************
@@ -97,7 +113,7 @@ abspath ()
 # ex: verify $CMD_LN_OPT range "0 10"
 #     will return ":" (true) if 0 <= $CMD_LN_OPT <= 10
 # ******************************************************************************
-verify ()
+function verify()
 {
   VERIFY_VAR="$1"
   VERIFY_TEST_TYPE="$2"
@@ -131,7 +147,7 @@ verify ()
 # Print a pretty (wrapped) notice message.
 # Args: $@ == text string containing the message 
 # ******************************************************************************
-precho()
+function precho()
 {
   echo -e "$@" | fold -s -w ${COLUMNS:-80}
 }
@@ -140,7 +156,7 @@ precho()
 # Print error message, then exit.
 # Args: $@ == text string containing error message 
 # ******************************************************************************
-exit_with_error()
+function exit_with_error()
 {
     echo $@
     exit 1
@@ -152,7 +168,7 @@ exit_with_error()
 # call the function like this:
 #     RETURN_VALUE=`format_time $NUM_SECONDS`
 # ******************************************************************************
-format_time()
+function format_time()
 {
     HMS_HOURS=`expr $1 / 3600`
     HMS_MINS=`expr \( $1 % 3600 \) / 60`
@@ -172,7 +188,7 @@ format_time()
 # as a "return value", call the function like this:
 #     RETURN_VALUE=`unformat_time $TIME_STRING`
 # ******************************************************************************
-unformat_time()
+function unformat_time()
 {
     HMS_HOURS=`echo $1 | awk -F ':' '{print $1}'`
     HMS_MINS=`echo $1 | awk -F ':' '{print $2}'`
@@ -187,7 +203,7 @@ unformat_time()
 # Args: $1 = name of file to monitor
 #       $2 = a short message to display, such as "Encoding video"
 # ******************************************************************************
-file_output_progress()
+function file_output_progress()
 {
     if $FAKE; then
         return
@@ -272,7 +288,7 @@ file_output_progress()
 # -refresh-deps to tovid-init from a prompt, then tovid-init will re-check and 
 # re-write the file.
 # ******************************************************************************
-check_dep_group()
+function check_dep_group()
 {
 #save_IFS=$IFS
 #IFS=' '
@@ -317,7 +333,7 @@ if $GROUP_PASS; then DEP_SUMMARY="$DEP_SUMMARY$group_name "; fi
 #             dependencies for
 #
 # ******************************************************************************
-assert_dep_group ()
+function assert_dep_group ()
 {
 DEP_TO_CHECK="$1"
 DEP_MESSAGE="$2"
@@ -342,7 +358,7 @@ fi
 #                  dependencies for
 # 
 # ******************************************************************************
-assert_dep ()
+function assert_dep ()
 {
 DEP_TO_CHECK="$1"
 DEP_MESSAGE="$2"
@@ -363,7 +379,7 @@ fi
 # Countdown 5 seconds, then return
 # TODO: Take argument # of seconds
 # ******************************************************************************
-countdown()
+function countdown()
 {
     for _CNTR in 5 4 3 2 1; do
         echo -n -e " in $_CNTR seconds...\r"
