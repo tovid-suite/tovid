@@ -82,8 +82,8 @@ fi
 for FILE in "$@"; do
     echo $SEPARATOR
     if test -e "$FILE"; then
-       EXT=`echo "$FILE" | awk -F '.' '{ print $NF }'`
-       FILENAME=`basename "$FILE" ."$EXT"`
+       EXT=$(echo "$FILE" | awk -F '.' '{ print $NF }')
+       FILENAME=$(basename "$FILE" ."$EXT")
        TOVID_CMD="tovid $TOVID_ARGS -in \"$FILE\" -out \"$FILENAME.tovid_encoded\""
        precho $TOVID_CMD
        eval $TOVID_CMD

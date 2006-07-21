@@ -56,8 +56,8 @@ FRAMES_PER_STEP=4
 INFILE=""
 OUTFILE=""
 
-TMP_DIR=`mktemp -d previd-temp.XXXXXX`
-CWD=`pwd`
+TMP_DIR=$(tempdir previd)
+CWD=$(pwd)
 # Make temp dir absolute
 TMP_DIR="${CWD}/${TMP_DIR}"
 LOG_FILE="${TMP_DIR}/previd.log"
@@ -97,7 +97,7 @@ while test $# -gt 0; do
 		"-x" )
 			shift
 			WIDTH="$1"
-			if test `expr $WIDTH % 16` -ne 0; then
+			if test $(expr $WIDTH % 16) -ne 0; then
 				echo "-x must be a multiple of 16"
                                 rm -rf $TMP_DIR
 				exit 1
@@ -107,7 +107,7 @@ while test $# -gt 0; do
 		"-y" )
 			shift
 			HEIGHT="$1"
-			if test `expr $HEIGHT % 16` -ne 0; then
+			if test $(expr $HEIGHT % 16) -ne 0; then
 				echo "-y must be a multiple of 16"
                                 rm -rf $TMP_DIR
 				exit 1
@@ -156,14 +156,14 @@ eval "$GEN_JPEG_CMD"
 
 printf "%s\n" "$SEPARATOR"
 echo "Creating symbolic links to get the multiple frames..."
-FRAMECOUNT=`ls -l $TMP_DIR/*.jpg|wc -l`
+FRAMECOUNT=$(ls -l $TMP_DIR/*.jpg|wc -l)
 FN=0
-for i in `seq 1 $FRAMECOUNT`; do
-	FI=`printf "%08d" $i`
-	for j in `seq 1 $FRAMES_PER_STEP`; do
-		FN=`expr $FN + 1`
-		FND=`printf "%08d" $FN`
-		`ln -s ${TMP_DIR}/$FI.jpg ${TMP_DIR}/out.$FND.jpg`
+for i in $(seq 1 $FRAMECOUNT); do
+	FI=$(printf "%08d" $i)
+	for j in $(seq 1 $FRAMES_PER_STEP); do
+		FN=$(expr $FN + 1)
+		FND=$(printf "%08d" $FN)
+		$(ln -s ${TMP_DIR}/$FI.jpg ${TMP_DIR}/out.$FND.jpg)
 	done
 done
 

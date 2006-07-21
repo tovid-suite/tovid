@@ -50,7 +50,7 @@ precho $"$WELCOME"
 echo $SEPARATOR
 
 # Make sure tovid is in the path
-if ! test -x `which tovid`; then
+if ! test -x $(which tovid); then
   precho "Oops! I can't find tovid in your path. Before you use this script, please install the tovid suite by running the 'configure' script from the directory where you unzipped tovid."
   exit 1
 fi
@@ -92,7 +92,7 @@ echo "   vcd       Video CD format        352x240 NTSC, 352x288 PAL"
 echo "   svcd      Super Video CD format  480x480 NTSC, 480x576 PAL"
 
 VIDFORMAT="none"
-until `verify $VIDFORMAT set "dvd half-dvd dvd-vcd vcd svcd"`
+until $(verify $VIDFORMAT set "dvd half-dvd dvd-vcd vcd svcd")
 do
   echo "Please enter one of the formats listed (dvd, half-dvd, dvd-vcd, vcd, svcd)."
   echo -n "format: "
@@ -105,7 +105,7 @@ echo "Step 3 of 7:"
 precho "Do you want the video to be NTSC or PAL? If you live in the Americas or Japan, you probably want NTSC; if you live in Europe, Australia, or New Zealand, you probably want PAL."
 
 TVSYS="none"
-until `verify $TVSYS set "ntsc pal"`
+until $(verify $TVSYS set "ntsc pal")
 do
   echo "Please use lowercase (ntsc, pal)."
   echo -n "ntsc or pal: "
@@ -122,7 +122,7 @@ echo "   panavision  If your video is theatrical wide-screen (2.35:1 aspect rati
 precho "If you choose wide or panavision, the video will be 'letterboxed' to fit a standard TV screen. Most TV programs are 'full'; many movies are 'wide', and some movies are 'panavision' (if they look very wide and skinny)."
 
 ASPECT="none"
-until `verify $ASPECT set "full wide panavision"`
+until $(verify $ASPECT set "full wide panavision")
 do
 echo "Please enter one of the screen formats listed (full, wide, panavision)."
 echo -n "screen format: "
@@ -135,7 +135,7 @@ echo "Step 5 of 7:"
 precho "In some videos, the volume may be too quiet or too loud. You can fix this by normalizing the audio."
 
 NORMALIZE="none"
-until `verify $NORMALIZE set "n N y Y yes Yes"`
+until $(verify $NORMALIZE set "n N y Y yes Yes")
 do
 echo -n "normalize audio (default yes) [y/n]? "
 read NORMALIZE
