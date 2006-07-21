@@ -71,12 +71,12 @@ TOVID_FORUMS="http://www.createphpbb.com/tovid/"
 # Return the full, absolute pathname of a given file or directory
 # Echoes result to stdout, so in order to use the output as a "return value",
 # call the function like this:
-#     RETURN_VALUE=`abspath "$FILENAME"`
+#     RETURN_VALUE=$(abspath "$FILENAME")
 # ******************************************************************************
 function abspath()
 {
-    DIR=`dirname "$1"`
-    BASE=`basename "$1"`
+    DIR=$(dirname "$1")
+    BASE=$(basename "$1")
     ABS_PATH="`cd \"$DIR\" && pwd || echo \"$DIR\"`/$BASE"
     echo "$ABS_PATH"
 }
@@ -120,8 +120,8 @@ function verify()
   VERIFY_TEST_TYPE="$2"
   case $VERIFY_TEST_TYPE in
      "range" )
-     VERIFY_LOW=`echo "$3" | awk '{ print $1 }'`
-     VERIFY_HIGH=`echo "$3" | awk '{ print $2 }'`
+     VERIFY_LOW=$(echo "$3" | awk '{ print $1 }')
+     VERIFY_HIGH=$(echo "$3" | awk '{ print $2 }')
 
      if test $VERIFY_LOW -le $VERIFY_VAR && \
         test $VERIFY_HIGH -ge $VERIFY_VAR
@@ -167,13 +167,13 @@ function exit_with_error()
 # Take an integer number of seconds and format it as hours:minutes:seconds
 # Echoes result to stdout, so in order to use the output as a "return value",
 # call the function like this:
-#     RETURN_VALUE=`format_time $NUM_SECONDS`
+#     RETURN_VALUE=$(format_time $NUM_SECONDS)
 # ******************************************************************************
 function format_time()
 {
-    HMS_HOURS=`expr $1 / 3600`
-    HMS_MINS=`expr \( $1 % 3600 \) / 60`
-    HMS_SECS=`expr $1 % 3600 % 60`
+    HMS_HOURS=$(expr $1 / 3600)
+    HMS_MINS=$(expr \( $1 % 3600 \) / 60)
+    HMS_SECS=$(expr $1 % 3600 % 60)
 
     test "$HMS_HOURS" -lt 10 && HMS_HOURS="0${HMS_HOURS}"
     test "$HMS_MINS" -lt 10 && HMS_MINS="0${HMS_MINS}"
@@ -187,14 +187,14 @@ function format_time()
 # format it as an integer number of seconds. Fractional seconds
 # are truncated. Result is echoed to stdout, so to use the output
 # as a "return value", call the function like this:
-#     RETURN_VALUE=`unformat_time $TIME_STRING`
+#     RETURN_VALUE=$(unformat_time $TIME_STRING)
 # ******************************************************************************
 function unformat_time()
 {
-    HMS_HOURS=`echo $1 | awk -F ':' '{print $1}'`
-    HMS_MINS=`echo $1 | awk -F ':' '{print $2}'`
-    HMS_SECS=`echo $1 | awk -F ':' '{print $3}'`
-    TOT_SECONDS=`expr $HMS_HOURS \* 3600 + $HMS_MINS \* 60 + $HMS_SECS`
+    HMS_HOURS=$(echo $1 | awk -F ':' '{print $1}')
+    HMS_MINS=$(echo $1 | awk -F ':' '{print $2}')
+    HMS_SECS=$(echo $1 | awk -F ':' '{print $3}')
+    TOT_SECONDS=$(expr $HMS_HOURS \* 3600 + $HMS_MINS \* 60 + $HMS_SECS)
     echo $TOT_SECONDS
 }
 
@@ -210,7 +210,7 @@ function file_output_progress()
         return
     fi
     FOP_OUTFILE="$1"
-    FOP_BASENAME=`basename "$FOP_OUTFILE"`
+    FOP_BASENAME=$(basename "$FOP_OUTFILE")
     FOP_MSG="$2"
     # A dumb little animation toggle
     FOP_FLIP=false
@@ -229,7 +229,7 @@ function file_output_progress()
         fi
         printf "Waiting $CUR_TIME seconds for output file \"$FOP_BASENAME\" to appear...\r"
         sleep 1s
-        CUR_TIME=`expr $CUR_TIME - 1`
+        CUR_TIME=$(expr $CUR_TIME - 1)
     done
 
     printf "\n"
@@ -241,7 +241,7 @@ function file_output_progress()
     
     # File size in bytes
     FOP_LAST_SIZE=0
-    FOP_CUR_SIZE=`du -b "$FOP_OUTFILE" | awk '{print $1}'`
+    FOP_CUR_SIZE=$(du -b "$FOP_OUTFILE" | awk '{print $1}')
     
     # Keep looping until outfile stops getting bigger
     while test "$FOP_CUR_SIZE" -gt "$FOP_LAST_SIZE"; do
@@ -255,7 +255,7 @@ function file_output_progress()
         fi
 
         # Display completion status
-        FOP_CUR_MB=`expr 1 + $FOP_CUR_SIZE / 1048576`
+        FOP_CUR_MB=$(expr 1 + $FOP_CUR_SIZE / 1048576)
         printf "    %s %s: %s MB written to %s        \r" \
             "$ANIM_STR" "$FOP_MSG" "$FOP_CUR_MB" "$FOP_BASENAME"
 
@@ -264,7 +264,7 @@ function file_output_progress()
         sleep ${SLEEP_TIME-"1s"}
 
         FOP_LAST_SIZE=$FOP_CUR_SIZE 
-        FOP_CUR_SIZE=`du -b "$FOP_OUTFILE" | awk '{print $1}'`
+        FOP_CUR_SIZE=$(du -b "$FOP_OUTFILE" | awk '{print $1}')
     done
     printf "\n\n"
 }
@@ -299,26 +299,26 @@ dep_list="$2"
 
 GROUP_PASS=:
 for DEP in $dep_list; do
-  HAVE_DEP=`which -a $DEP`
-  NUM_DEP=`echo "$HAVE_DEP" | wc -l`
+  HAVE_DEP=$(which -a $DEP)
+  NUM_DEP=$(echo "$HAVE_DEP" | wc -l)
   if test -z "$HAVE_DEP"; then
      DEP_STATUS="MISSING"
-     DEP_MSG=$`echo ${DEP}_msg`
-     DEP_MSG=`eval echo $DEP_MSG`
+     DEP_MSG=$$(echo ${DEP}_msg)
+     DEP_MSG=$(eval echo $DEP_MSG)
      GROUP_PASS=false
   elif test "$NUM_DEP" -eq 1; then
      DEP_STATUS="ok"
      DEP_MSG="$HAVE_DEP"
   else
      DEP_STATUS="ok, using"
-     FOUND_DEPS=`echo -n "$HAVE_DEP" | tr '\n' ' '`
-     DEP_MSG=`which $DEP`
+     FOUND_DEPS=$(echo -n "$HAVE_DEP" | tr '\n' ' ')
+     DEP_MSG=$(which $DEP)
      for FOUND_DEP in ${FOUND_DEPS[@]}; do
-         DEP_MSG=`echo "$DEP_MSG"; printf "  %-11s %+9s  %s" " " " " "found: $FOUND_DEP"`
+         DEP_MSG=$(echo "$DEP_MSG"; printf "  %-11s %+9s  %s" " " " " "found: $FOUND_DEP")
      done
   fi
   printf "  %-11s %+9s: %s\n" "$DEP" "$DEP_STATUS" "$DEP_MSG" >> $DEP_LIST_FILE
-  j=`expr $j \+ 1`
+  j=$(expr $j \+ 1)
 done
 
 echo >> $DEP_LIST_FILE
@@ -364,7 +364,7 @@ function assert_dep ()
 DEP_TO_CHECK="$1"
 DEP_MESSAGE="$2"
 
-MISSING_DEP=`grep "$DEP_TO_CHECK" "$DEP_LIST_FILE"`
+MISSING_DEP=$(grep "$DEP_TO_CHECK" "$DEP_LIST_FILE")
 
 if grep -q "$DEP_TO_CHECK.*MISSING" "$DEP_LIST_FILE"; then
     echo "$DEP_MESSAGE"
@@ -415,13 +415,13 @@ fi
 # Platform-specific initialization
 # Determines host platform and configures things accordingly
 # ******************************************************************************
-KERNEL=`uname`
+KERNEL=$(uname)
 if test "$KERNEL" = "Linux"; then
     # Linux should have /proc/cpuinfo
-    CPU_MODEL=`cat /proc/cpuinfo | grep -i "model name" | awk -F ":" '{print $2}'`
-    CPU_SPEED=`cat /proc/cpuinfo | grep -i mhz | awk '{print $4}'`
+    CPU_MODEL=$(cat /proc/cpuinfo | grep -i "model name" | awk -F ":" '{print $2}')
+    CPU_SPEED=$(cat /proc/cpuinfo | grep -i mhz | awk '{print $4}')
     # Test for multiple CPUs. If they are available, try to use them.
-    if test `cat /proc/cpuinfo | grep processor | wc -l` -ge "2"; then
+    if test $(cat /proc/cpuinfo | grep processor | wc -l) -ge "2"; then
         MULTIPLE_CPUS=:
     else
         MULTIPLE_CPUS=false
@@ -482,7 +482,7 @@ OUTPUT_DIR=$PWD
 
 # If prefs file exists, read it
 if test -f $USER_PREFS; then
-    eval `grep -v ^# $USER_PREFS`
+    eval $(grep -v ^# $USER_PREFS)
 # Otherwise, create a default prefs file
 else
     PREFS_CONTENTS=`cat << EOF
@@ -499,7 +499,7 @@ fi
 # ******************************************************************************
 
 DEP_LIST_FILE=$TOVID_HOME/dependency.list
-DEP_LIST_VERSION=`grep "tovid version" $DEP_LIST_FILE | awk -F ': ' '{ print $2 }'`
+DEP_LIST_VERSION=$(grep "tovid version" $DEP_LIST_FILE | awk -F ': ' '{ print $2 }')
 
 if $REFRESH_DEPS || test "$DEP_LIST_VERSION" != "$TOVID_VERSION" ; then
   echo "Removing old dependency list file..."
@@ -606,7 +606,7 @@ i=0
 for dep_group in ${DEP_GROUPS[@]}; do
   echo "${DEP_GROUP_COMMENTS[$i]}" >> "${DEP_LIST_FILE}"
   check_dep_group "$dep_group" "${DEP_GROUP_MEMBERS[$i]}"
-  i=`expr $i \+ 1`
+  i=$(expr $i \+ 1)
 done
 
 echo "# summary" >> $DEP_LIST_FILE
@@ -616,6 +616,6 @@ fi
 # Quit and complain if ANY core dependency is missing.
 assert_dep_group "core" "You are missing tovid CORE dependencies!"
 
-BUILD_OPTIONS=`tail -n 1 $DEP_LIST_FILE | sed s/have/with/`
+BUILD_OPTIONS=$(tail -n 1 $DEP_LIST_FILE | sed s/have/with/)
 
 # End tovid-init

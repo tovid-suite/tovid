@@ -72,7 +72,7 @@ EOF`
 TERSE=false
 VERBOSE=false
 FAST=false
-TMP_DIR=`mktemp -d idvid-temp.XXXXXX`
+TMP_DIR=$(tempdir idvid)
 SCRATCH_FILE="$TMP_DIR/idvid.scratch"
 STAT_DIR=$TOVID_HOME
 STAT_FILE="$STAT_DIR/stats.idvid"
@@ -184,26 +184,26 @@ get_info ()
     # Source mplayer's output to set relevant variables
     # (ID_V(ideo), ID_A(udio), and ID_L(ength))
     # Grep out special characters ()[
-    eval `cat "$SCRATCH_FILE" | grep "^ID_[VAL]" | grep -v "[()\[]"`
+    eval $(cat "$SCRATCH_FILE" | grep "^ID_[VAL]" | grep -v "[()\[]")
     
-    ID_VIDEO_FRAMES=`grep 'length:' "$SCRATCH_FILE" | \
-        awk -F ' ' '{print $2}'`
+    ID_VIDEO_FRAMES=$(grep 'length:' "$SCRATCH_FILE" | \
+        awk -F ' ' '{print $2}')
     test -z $ID_VIDEO_FRAMES && ID_VIDEO_FRAMES="0"
 
     # Infer aspect ratio by what mplayer uses for playback
-    MPLAYER_RES=`grep '^VO:' "$SCRATCH_FILE" | \
-        sed -e "s/..*=> *//g" -e "s/ .*$//g"`
-    PLAY_WIDTH=`echo $MPLAYER_RES | awk -F 'x' '{print $1}'`
-    PLAY_HEIGHT=`echo $MPLAYER_RES | awk -F 'x' '{print $2}'`
+    MPLAYER_RES=$(grep '^VO:' "$SCRATCH_FILE" | \
+        sed -e "s/..*=> *//g" -e "s/ .*$//g")
+    PLAY_WIDTH=$(echo $MPLAYER_RES | awk -F 'x' '{print $1}')
+    PLAY_HEIGHT=$(echo $MPLAYER_RES | awk -F 'x' '{print $2}')
     # Fix nulls
     if test -z "$PLAY_WIDTH" || test -z "$PLAY_HEIGHT"; then
         PLAY_WIDTH="100"
         PLAY_HEIGHT="100"
     fi
 
-    V_ASPECT_WIDTH=`expr $PLAY_WIDTH \* 100 \/ $PLAY_HEIGHT`
-    V_ASPECT_RATIO=`echo $V_ASPECT_WIDTH | \
-        sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g'`
+    V_ASPECT_WIDTH=$(expr $PLAY_WIDTH \* 100 \/ $PLAY_HEIGHT)
+    V_ASPECT_RATIO=$(echo $V_ASPECT_WIDTH | \
+        sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g')
 
     # If doing -fast identification, skip "accurate" length determination
     if $FAST; then
@@ -211,14 +211,14 @@ get_info ()
     else
         # Determine duration by playing the video into /dev/null and doing
         # tons of filtering. Time consuming, but presumably more accurate.
-        V_DURATION="`LC_ALL=C mencoder -ovc frameno -oac copy -noskiplimit \
+        V_DURATION="$(LC_ALL=C mencoder -ovc frameno -oac copy -noskiplimit \
             \"$INFILE\" -o /dev/null 2>/dev/null \
             | tr '\r' '\n' | grep \"^Pos:\" | tail -n 1 \
-            | sed s/\"Pos:\"// | awk -- '{print $1}' | sed s/[.][0-9]s//`"
+            | sed s/\"Pos:\"// | awk -- '{print $1}' | sed s/[.][0-9]s//)"
     fi
     
     # Use mplayer-reported length as a last resort (truncate floating-point)
-    test -z $V_DURATION && V_DURATION=`echo $ID_LENGTH | sed 's/\.[0-9]*//'`
+    test -z $V_DURATION && V_DURATION=$(echo $ID_LENGTH | sed 's/\.[0-9]*//')
 
     # Mplayer reports ac3 and mp2 incorrectly, so refer to numeric codes
     test "$ID_AUDIO_FORMAT" = "8192" && ID_AUDIO_CODEC="ac3"
@@ -283,7 +283,7 @@ idvid_main ()
         echo "             Height: $ID_VIDEO_HEIGHT pixels"
         echo "       Aspect ratio: $V_ASPECT_RATIO"
         echo "             Frames: $ID_VIDEO_FRAMES"
-        echo "           Duration: `format_time $V_DURATION` hours/mins/secs"
+        echo "           Duration: $(format_time $V_DURATION) hours/mins/secs"
         echo "          Framerate: $ID_VIDEO_FPS frames per second"
         echo "       Video format: $ID_VIDEO_FORMAT"
         echo "       Audio format: $ID_AUDIO_CODEC"
@@ -588,9 +588,9 @@ EOF`
 # ===========================
 
 # See what programs are available for doing identification
-MPLAYER=`type -p mplayer`
-FFMPEG=`type -p ffmpeg`
-TCPROBE=`type -p tcprobe`
+MPLAYER=$(type -p mplayer)
+FFMPEG=$(type -p ffmpeg)
+TCPROBE=$(type -p tcprobe)
 
 if test $# -eq 0; then
     usage_error "Please provide the name of at least one video file."

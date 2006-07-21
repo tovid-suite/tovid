@@ -296,7 +296,7 @@ EOF`
         echo "Calculating the duration of the video using the following command:"
         echo $CMD
         echo "This may take a few minutes, so please be patient..."
-        DURATION=`eval $CMD | grep DURATION | awk -F '=' '{print $2}'`
+        DURATION=$(eval $CMD | grep DURATION | awk -F '=' '{print $2}')
         echo $DURATION | awk '{hh=int($1/3600);mm=int(($1-hh*3600)/60);ss=$1-hh*3600-mm*60;\
             printf "The duration of the video is %02d:%02d:%02d\n",hh,mm,ss}'
 
