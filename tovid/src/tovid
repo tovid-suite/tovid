@@ -698,15 +698,13 @@ EOF`
     SCRIPT_END_TIME=$(date +%s)
     SCRIPT_TOT_TIME=$(expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME)
     HHMMSS=$(format_time $SCRIPT_TOT_TIME)
-    # Avoid dividing by zero by adding 1 to denominator
-    FINAL_BITRATE=$(expr $FINAL_SIZE \/ \( $V_DURATION \+ 1 \))
     # Get average/peak bitrates from mplex
     AVG_BITRATE=$(grep 'Average bit-rate' "$LOG_FILE" | awk '{print $6}')
     PEAK_BITRATE=$(grep 'Peak bit-rate' "$LOG_FILE" | awk '{print $6}')
     # Convert to kbits/sec
     test -n $AVG_BITRATE && AVG_BITRATE=$(expr $AVG_BITRATE \/ 1000)
     test -n $PEAK_BITRATE && PEAK_BITRATE=$(expr $PEAK_BITRATE \/ 1000)
-    KB_PER_MIN=$(expr $FINAL_SIZE \* 60 \/ $V_DURATION)
+    KB_PER_MIN=$(expr $FINAL_SIZE \* 60 \/ $V_DURATION \+ 1)
     ENC_TIME_RATIO=$(echo "scale = 2; $SCRIPT_TOT_TIME / $V_DURATION" | bc)
     if $USE_FFMPEG; then
         BACKEND="ffmpeg"
@@ -849,7 +847,7 @@ cd "$WORKING_DIR"
 
 # Create a unique temporary directory, named after the given -out name
 OUTNAME=$(basename "$OUT_PREFIX")
-TMP_DIR=$(mktemp -d "$WORKING_DIR/$OUTNAME.XXXXXX")
+TMP_DIR=$(tempdir "$WORKING_DIR/$OUTNAME")
 # Files to use for temporarily storing video info and encoding progress
 SCRATCH_FILE="$TMP_DIR/tovid.scratch"
 LOG_FILE="$TMP_DIR/tovid.log"
@@ -1511,7 +1509,7 @@ if test $INNER_WIDTH != $TGT_WIDTH || test $INNER_HEIGHT != $TGT_HEIGHT; then
 fi
 
 # Remove extraneous commas from filter command
-VID_FILTER=$(echo "$VID_FILTER" | sed 's/,,/,/g')
+VID_FILTER=$(echo "$VID_FILTER" | sed -e 's/,,/,/g' -e 's/^,//')
 
 
 # ******************************************************************************
