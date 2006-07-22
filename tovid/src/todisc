@@ -1133,7 +1133,7 @@ fi
 # create the preview images
 for ((i=0; i<=NUM_FILES; i++)) ; do
     # use a nav_seek file if long seek
-    if [ $SEEK_VAL -gt 450 ]; then
+    if [ $SEEK_VAL -gt 0 ]; then
 #        yecho "Creating a nav_seek log with tcdemux to speed up seeking"
         NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
         run_navseek()
