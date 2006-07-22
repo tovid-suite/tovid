@@ -191,9 +191,9 @@ function format_time()
 # ******************************************************************************
 function unformat_time()
 {
-    HMS_HOURS=$(echo $1 | awk -F ':' '{print $1}')
-    HMS_MINS=$(echo $1 | awk -F ':' '{print $2}')
-    HMS_SECS=$(echo $1 | awk -F ':' '{print $3}')
+    HMS_HOURS=$(awk -F ':' '{print $1}' <<< $1)
+    HMS_MINS=$(awk -F ':' '{print $2}' <<< $1)
+    HMS_SECS=$(awk -F ':' '{print $3}' <<< $1)
     TOT_SECONDS=$(expr $HMS_HOURS \* 3600 + $HMS_MINS \* 60 + $HMS_SECS)
     echo $TOT_SECONDS
 }
@@ -303,7 +303,7 @@ for DEP in $dep_list; do
   NUM_DEP=$(echo "$HAVE_DEP" | wc -l)
   if test -z "$HAVE_DEP"; then
      DEP_STATUS="MISSING"
-     DEP_MSG=$$(echo ${DEP}_msg)
+     DEP_MSG=$(echo ${DEP}_msg)
      DEP_MSG=$(eval echo $DEP_MSG)
      GROUP_PASS=false
   elif test "$NUM_DEP" -eq 1; then
@@ -418,10 +418,10 @@ fi
 KERNEL=$(uname)
 if test "$KERNEL" = "Linux"; then
     # Linux should have /proc/cpuinfo
-    CPU_MODEL=$(cat /proc/cpuinfo | grep -i "model name" | awk -F ":" '{print $2}')
-    CPU_SPEED=$(cat /proc/cpuinfo | grep -i mhz | awk '{print $4}')
+    CPU_MODEL=$(awk -F ":" '/model name/ {print $2}' /proc/cpuinfo)
+    CPU_SPEED=$(awk 'BEGIN { IGNORECASE = 1 } /MHz/ { print $4 }' /proc/cpuinfo)
     # Test for multiple CPUs. If they are available, try to use them.
-    if test $(cat /proc/cpuinfo | grep processor | wc -l) -ge "2"; then
+    if test $(grep processor /proc/cpuinfo | wc -l) -ge "2"; then
         MULTIPLE_CPUS=:
     else
         MULTIPLE_CPUS=false
@@ -499,7 +499,7 @@ fi
 # ******************************************************************************
 
 DEP_LIST_FILE=$TOVID_HOME/dependency.list
-DEP_LIST_VERSION=$(grep "tovid version" $DEP_LIST_FILE | awk -F ': ' '{ print $2 }')
+DEP_LIST_VERSION=$( awk -F ': ' '/tovid version/ { print $2 }' $DEP_LIST_FILE)
 
 if $REFRESH_DEPS || test "$DEP_LIST_VERSION" != "$TOVID_VERSION" ; then
   echo "Removing old dependency list file..."
@@ -604,9 +604,9 @@ DEP_GROUP_COMMENTS=([0]="# core" [1]="# magick (needed to make menus and slidesh
 echo "# tovid version: $TOVID_VERSION" >> "${DEP_LIST_FILE}"
 i=0
 for dep_group in ${DEP_GROUPS[@]}; do
-  echo "${DEP_GROUP_COMMENTS[$i]}" >> "${DEP_LIST_FILE}"
-  check_dep_group "$dep_group" "${DEP_GROUP_MEMBERS[$i]}"
-  i=$(expr $i \+ 1)
+  echo "${DEP_GROUP_COMMENTS[i]}" >> "${DEP_LIST_FILE}"
+  check_dep_group "$dep_group" "${DEP_GROUP_MEMBERS[i]}"
+  let i=i+1
 done
 
 echo "# summary" >> $DEP_LIST_FILE
