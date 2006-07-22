@@ -1134,13 +1134,25 @@ fi
 for ((i=0; i<=NUM_FILES; i++)) ; do
     # use a nav_seek file if long seek
     if [ $SEEK_VAL -gt 450 ]; then
+#        yecho "Creating a nav_seek log with tcdemux to speed up seeking"
         NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
-        yecho
-        yecho "Creating a nav_seek log with tcdemux to speed up seeking"
-        yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
-        length=( ${length[@]} $("${NAVSEEK_CMD[@]}" 2>&1 |tee "$WORK_DIR/nav${i}_log"  |awk '/detected/ {print $2}') )
-        NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
+        run_navseek()
+        {   
+            yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
+            "${NAVSEEK_CMD[@]}" 2>&1 > "$WORK_DIR/nav${i}_log"
+        }   
+
+        run_navseek &
+        NS_PID="$!"
+        if [ -n "$NS_PID" ]; then
+            while ps -p $NS_PID >/dev/null; do
+                sleep .5 # spinner interval
+                spin "Creating a nav_seek log for "${IN_FILES[i]}": $SPINNER"
+            done
+        fi
+        length=( ${length[@]} $(( $(awk  '{ field = $2 }; END{ print field }'  "$WORK_DIR/nav${i}_log") + 1)) )
     fi
+    NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
     if ! $NOASK; then
         echo "[$i of $NUM_FILES] Seeking to $SEEK_VAL seconds in ${IN_FILES[i]}"
     fi
@@ -1167,6 +1179,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
     fi
     unset CMD
 done
+
 if $MIST; then
     # overlay white.png onto the background
     if $SHOWCASE; then
