@@ -243,8 +243,10 @@ function cleanup()
 {
     echo
     yecho "Cleaning up..."
-    TCPIDS=$(awk -F"=" '/pid=/ {print $2}' "$WORK_DIR/tc_pids" | cut -f1 -d')'|sort|uniq)
-    kill -9  $TCPIDS 
+    if test -e "$WORK_DIR/tc_pids"; then
+        TCPIDS=$(awk -F"=" '/pid=/ {print $2}' "$WORK_DIR/tc_pids" | cut -f1 -d')'|sort|uniq)
+        kill -9  $TCPIDS  2> /dev/null
+    fi
     if $KEEP_FILES; then
         yecho "Keeping temporary files in $REAL_WORK_DIR"
     else
@@ -701,22 +703,6 @@ fi
 #    'chain' will jump to the next title, 'break' will return to main menu" 
 #fi
 # Get absolute pathnames of all files
-# make an array of possible vars for dvdauthor post calls
-if $CHAIN_VIDEO; then
-    for i in $post_play; do
-        if [[ $i = *-* ]]; then
-            for ((i=${j/-*}; i<${j/*-}; i++)); do
-                POST_PLAY[i-1]=chain
-            done
-        elif [ -z "$post_play" ]; then
-            for ((i=0; i<NUM_FILES; i++)); do
-                POST_PLAY[i-1]=chain
-            done
-        else
-            POST_PLAY[i-1]=chain
-        fi
-    done
-fi
 for i in "${FILES[@]}"; do
     IN_FILES=("${IN_FILES[@]}" "$(abspath "$i")")
     echo "Adding: $i"
@@ -725,6 +711,31 @@ V_ARRAY_TOTAL=${#IN_FILES[@]}
 # (Length of array) - 1
 NUM_FILES=$(($V_ARRAY_TOTAL - 1))
 
+# make an array of possible vars for dvdauthor post calls
+if $CHAIN_VIDEOS; then
+    if [ -z "$post_play" ]; then
+        for ((i=0; i<NUM_FILES; i++)); do
+                POST_PLAY[i]=chain
+            done
+    else
+        for j in $post_play; do
+            if [[ $j = *-* ]]; then
+                for ((i=${j/-*}; i<=${j/*-}; i++)); do
+                    POST_PLAY[i-1]=chain
+                done
+            elif [[ $j != *[^0-9]* ]]; then
+                POST_PLAY[j-1]=chain
+            fi
+        done
+    fi
+    echo
+    for ((n=0; n<=NUM_FILES; n++)); do
+        if [ "${POST_PLAY[n]}" = "chain" ]; then
+            echo "video $((n+1)) will be chained with video $((n+2))"
+        fi
+    done
+    echo
+fi
 # allow user to specify one # of chapters for all videos
 if [ ${#CHAPTERS[@]} -eq 1 ]; then
     for ((i=0; i<=NUM_FILES; i++)); do
@@ -757,6 +768,7 @@ if test -n "$BG_VIDEO" &&  $STATIC; then
     usage_error "You can not use -bgvideo with a static menu"
 fi
 # create_dirs
+echo
 yecho "Creating pics directories..."
 for ((i=0; i<=NUM_FILES; i++)); do
     mkdir -pv "$REAL_WORK_DIR/pics/$i"
@@ -1600,7 +1612,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
             function run_transcode()
             {
                 "${TRANSCODE_CMD2[@]}" >> "$LOG_FILE.tmp"  2>&1
-                sleep 3
+                sleep 1
             }
             run_transcode &
             TRANSCODE_PID="$!"
@@ -1877,7 +1889,7 @@ if $SUB_MENU; then
             function run_transcode()
             {
                 "${TCODE_CMD[@]}" >> "$LOG_FILE.tmp"  2>&1
-                sleep 3
+                sleep 1
             }
             run_transcode &
             TCODE_PID="$!"
