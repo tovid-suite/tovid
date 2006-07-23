@@ -243,7 +243,8 @@ function cleanup()
 {
     echo
     yecho "Cleaning up..."
-    killall -q tcdemux 
+    TCPIDS=$(awk -F"=" '/pid=/ {print $2}' "$WORK_DIR/tc_pids" | cut -f1 -d')'|sort|uniq)
+    kill -9  $TCPIDS 
     if $KEEP_FILES; then
         yecho "Keeping temporary files in $REAL_WORK_DIR"
     else
@@ -703,7 +704,17 @@ fi
 # make an array of possible vars for dvdauthor post calls
 if $CHAIN_VIDEO; then
     for i in $post_play; do
-        POST_PLAY[i-1]=chain
+        if [[ $i = *-* ]]; then
+            for ((i=${j/-*}; i<${j/*-}; i++)); do
+                POST_PLAY[i-1]=chain
+            done
+        elif [ -z "$post_play" ]; then
+            for ((i=0; i<NUM_FILES; i++)); do
+                POST_PLAY[i-1]=chain
+            done
+        else
+            POST_PLAY[i-1]=chain
+        fi
     done
 fi
 for i in "${FILES[@]}"; do
@@ -1136,11 +1147,11 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
     # use a nav_seek file if long seek
     if [ $SEEK_VAL -gt 450 ]; then
         NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
-        NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
+        NAVSEEK_CMD=(nice tcdemux -d 24 -f $FRAME_RATE -W -i "${IN_FILES[i]}")
         run_navseek()
         {   
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
-           "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log" 2>&1
+           "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "$WORK_DIR/nav${i}_log"
         }   
 
         run_navseek &
@@ -1178,7 +1189,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
         runtime_error "Problem creating images from the video."
         exit 1
     fi
-    unset CMD
+    unset CMD NAVSEEK_CMD
 done
 
 if $MIST; then
@@ -1456,11 +1467,11 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
         STATS_FRAMES="-frames 1"
         if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
             NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
-            NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
+            NAVSEEK_CMD=(nice tcdemux -d 24 -f $FRAME_RATE -W -i "${IN_FILES[i]}")
             run_navseek()
             {
                 yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
-                "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log" 2>&1
+                "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "$WORK_DIR/nav${i}_log"
             }
 
             run_navseek &
@@ -1845,10 +1856,10 @@ if $SUB_MENU; then
         unset cmd[key]
 #        CMD=$( sed 's/ /,/g;s/,$//' <<< ${cmd[@]})
         # create a nav_seek log with tcdemux if not already present
-        NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
+        NAVSEEK_CMD=(nice tcdemux -d 24 -f $FRAME_RATE -W -i "${IN_FILES[i]}")
         if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
-            "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log"
+            "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "$WORK_DIR/nav${i}_log"
         fi
         NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
         yecho
