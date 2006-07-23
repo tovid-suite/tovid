@@ -57,8 +57,8 @@ See the todisc manual page ('man todisc') for additional documentation.
 EOF`
 # check if symlink in /tmp exists and use time stamped link if so
 WORK_DIR="/tmp/todisc-work"
-for link in /tmp/todisc-*; do
-    [ -h "$link" ] && { WORK_DIR=/tmp/todisc-$(date +%s); continue; }
+for link in $(find /tmp -name todisc-work\* -type l); do
+    [ -h "$link" ] && { WORK_DIR=/tmp/todisc-work$((NUM++)); continue; }
 done
 CUR_DIR="$(abspath "$(pwd)")"
 # make unique REAL_WORK_DIR
@@ -243,6 +243,7 @@ function cleanup()
 {
     echo
     yecho "Cleaning up..."
+    killall -q tcdemux 
     if $KEEP_FILES; then
         yecho "Keeping temporary files in $REAL_WORK_DIR"
     else
@@ -1133,13 +1134,13 @@ fi
 # create the preview images
 for ((i=0; i<=NUM_FILES; i++)) ; do
     # use a nav_seek file if long seek
-    if [ $SEEK_VAL -gt 0 ]; then
-#        yecho "Creating a nav_seek log with tcdemux to speed up seeking"
+    if [ $SEEK_VAL -gt 450 ]; then
+        NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
         NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
         run_navseek()
         {   
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
-            "${NAVSEEK_CMD[@]}" 2>&1 > "$WORK_DIR/nav${i}_log"
+           "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log" 2>&1
         }   
 
         run_navseek &
@@ -1152,8 +1153,8 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
         fi
         length=( ${length[@]} $(( $(awk  '{ field = $2 }; END{ print field }'  "$WORK_DIR/nav${i}_log") + 1)) )
     fi
-    NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
     if ! $NOASK; then
+        echo
         echo "[$i of $NUM_FILES] Seeking to $SEEK_VAL seconds in ${IN_FILES[i]}"
     fi
     TRANSCODE_CMD=(transcode -q 0 -i "${IN_FILES[i]}" \
@@ -1204,9 +1205,6 @@ for ((i=0; i<${#PICS[@]}; i++)); do
         convert -trim +repage -  "${PICS[i]}"
     fi
 
-    # **if horizontal lines in frames, try montage "${JPGS[i]}" -blur 0x.3**
-    # using a mask just on the frame portion would be even better
-    # www.cit.gu.edu.au/~anthony/info/graphics/imagemagick.hints 1/4 down
     IM_CMD1=(montage "${PICS[i]}" -geometry +4+4 -compose Copy  \
     -background  none -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
     -title "${TITLES[i]}")
@@ -1236,7 +1234,6 @@ rectangle 0,0 $GEO
 EOF
 )  > "$WORK_DIR/draw_file"
 fi
-
 # command constructions for -button-shape options
 for ((t=0; t<${#TITLES[@]}; t++)); do
     if $FEATHER; then FRAME=0; else FRAME=3x3;fi
@@ -1458,18 +1455,31 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
         NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
         STATS_FRAMES="-frames 1"
         if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
-            yecho
-            yecho "Creating a nav_seek log with tcdemux to speed up seeking"
+            NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
             NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
-            yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
-            length=( ${length[@]} $("${NAVSEEK_CMD[@]}" 2>&1 |
-            tee "$WORK_DIR/nav${i}_log"  |awk '/detected/ {print $2}') )
-#            "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
-        fi
-    fi
+            run_navseek()
+            {
+                yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
+                "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log" 2>&1
+            }
+
+            run_navseek &
+            NS_PID="$!"
+            if [ -n "$NS_PID" ]; then
+                while ps -p $NS_PID >/dev/null; do
+                    sleep .5 # spinner interval
+                    spin "Creating a nav_seek log for "${IN_FILES[i]}": $SPINNER"
+                done
+            fi
+            length=( ${length[@]} $(( $(awk '{ field = $2 }; END{ print field }' \
+            "$WORK_DIR/nav${i}_log") + 1)) )
+        fi 
+    echo
     echo "Getting stats on "${IN_FILES[i]}""
     mencoder_stats=( "${mencoder_stats[@]}" \
-    "$(mencoder -quiet "${IN_FILES[i]}" -oac pcm -ovc copy $STATS_FRAMES -o /dev/null 2>&1)" )
+    "$(mencoder -quiet "${IN_FILES[i]}" -oac pcm -ovc copy \
+    $STATS_FRAMES -o /dev/null 2>&1)" )
+    fi
 done
 #echo
 #echo $SEPARATOR
@@ -1569,40 +1579,36 @@ fi
 ###############################################################################
 # extract images from the provided background video
 echo
-echo "Creating images from each video for the main menu"
+echo "Creating $FRAMES images from each video for the main menu"
 for ((i=0; i<=NUM_FILES; i++)) ; do
     echo "Working on "${IN_FILES[i]}""
-    # use a nav_seek file and transcode if long seek
-    if [[ $SEEK_VAL -gt 450 || $SUB_MENU ]]; then
-        NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
-        if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
-            NAVSEEK_CMD=(nice tcdemux -f $FRAME_RATE -W -i "${IN_FILES[i]}")
-            yecho
-            yecho "Creating a nav_seek log with tcdemux to speed up seeking"
-            yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
-            "${NAVSEEK_CMD[@]}"  > "$WORK_DIR/nav${i}_log"
-        fi
-    fi
     TRANSCODE_CMD2=(nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
     -c $SEEK_FRAMES-$((SEEK_FRAMES + $FRAMES)) $NAVSEEK \
     -o "$WORK_DIR/pics/$i/" -f $FRAME_RATE  -Z $THUMB_SIZE $EXPORT)
-    echo "Running  "${TRANSCODE_CMD2[@]}"" >> "$LOG_FILE"
-    echo "Running  "${TRANSCODE_CMD2[@]}""
-    "${TRANSCODE_CMD2[@]}" >> "$LOG_FILE" 2>&1
-    
-#        CREATE_IMG_CMD=(ffmpeg -i "${IN_FILES[$i]}"  $SEEK -vframes $FRAMES \
-#        -s "$THUMB_SIZE" "$WORK_DIR/pics/$i/%06d.$IMG_FMT")
-#        echo -e "\nRunning: ${CREATE_IMG_CMD[@]}\n" | fold -bs >> "$LOG_FILE"
-#
-#        SED_VAR="frame="
-#        if "${CREATE_IMG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
-#            cleanlog 3
-#        else
-#            cleanlog 3
-#            runtime_error "Problem creating images from the video."
-#            exit 1
-#        fi
-unset TRANSCODE_CMD2
+
+            function run_transcode()
+            {
+                "${TRANSCODE_CMD2[@]}" >> "$LOG_FILE.tmp"  2>&1
+                sleep 3
+            }
+            run_transcode &
+            TRANSCODE_PID="$!"
+            sleep .5 # short sleep to allow 1st jpg to appear
+            if [ -n "$TRANSCODE_PID" ]; then
+                while ps -p $TRANSCODE_PID >/dev/null; do
+                    sleep .5 # spinner interval
+                spin "Seeking in video and creating images: $(find $WORK_DIR/pics/$i \
+            -maxdepth 1 -name \*.jpg|sort|awk -F / '{ field = $NF }; END{ print field }')" 
+                done
+                echo
+                echo "Created $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*.jpg|wc -l) JPEGS of $FRAMES"
+                cleanlog 1
+            else
+                cleanlog 1
+                runtime_error "Problem creating images from the video."
+                exit 1
+            fi
+            unset TRANSCODE_CMD2 run_transcode
 done
 # create the pics for background image
     if [ -z "$BG_PIC" ]; then
@@ -1678,7 +1684,6 @@ EOF
 ) > "$WORK_DIR/submenu$((s + 1))_spumux.xml"
     fi
 done
-
 # debug chapters
 echo
 for ((i=0; i<=NUM_FILES; i++)); do
@@ -1735,7 +1740,7 @@ if [ "$TARGET" = "dvd" ]; then
       <pgc>
 $(for ((i=1; i<=$V_ARRAY_TOTAL; i++)); do
     if $SUB_MENU; then
-        JUMP_INC=$(($i + 1))
+        JUMP_INC=$((i + 1))
     else
         JUMP_INC=$i
     fi
@@ -1786,7 +1791,6 @@ EOF
 ) |sed '/^$/d' >> "$DVDAUTHOR_XML"
 fi
 
-
 ##############################################################################
 #                            Animenu stuff                                   #
 ##############################################################################
@@ -1826,7 +1830,7 @@ if $SUB_MENU; then
             PICS_IN=($WORK_DIR/${i}-submenu.$SM_IMG_FMT)
             PICS_OUT=($WORK_DIR/submenu/)
             CUT_TIME=1
-            JPEG_DIR="$WORK_DIR/"
+            JPEG_DIR="$WORK_DIR/submenu"
             SLEEP=.5
             TOTAL_JPEGS=${CHAPTERS[i]}
             PREFIX=${i}-
@@ -1853,12 +1857,35 @@ if $SUB_MENU; then
         for t in "${cmd[@]}"; do
             echo "Running nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
             $NAVSEEK -o $WORK_DIR/submenu/ \
-            -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null
-            " | sed 's/    */ /g'|sed -e "s/^ *//"|tee -a "$LOG_FILE"
-            nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
+            -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null" |
+            sed 's/    */ /g'|sed -e "s/^ *//"|tee -a "$LOG_FILE"
+
+            TCODE_CMD=(nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
             $NAVSEEK -o "${PICS_OUT[@]}" \
-            -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t \
-            -y $SM_IMG_FMT,null >> "$LOG_FILE" 2>&1
+            -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null)
+            function run_transcode()
+            {
+                "${TCODE_CMD[@]}" >> "$LOG_FILE.tmp"  2>&1
+                sleep 3
+            }
+            run_transcode &
+            TCODE_PID="$!"
+            sleep .5 # short sleep to allow 1st jpg to appear
+            if [ -n "$TCODE_PID" ]; then
+                while ps -p $TCODE_PID >/dev/null; do
+                    sleep $SLEEP # spinner interval
+                spin "Seeking in video and creating images: $(find "$JPEG_DIR" \
+            -maxdepth 1 -name \*.jpg|sort|awk -F / '{ field = $NF }; END{ print field }')" 
+                done
+                echo
+                echo "Created $(find "$JPEG_DIR" -maxdepth 1 -name \*.jpg|wc -l) JPEGS of $TOTAL_JPEGS"
+                cleanlog 1
+            else
+                cleanlog 1
+                runtime_error "Problem creating images from the video."
+                exit 1
+            fi
+            unset TCODE_CMD cmd run_transcode
             if ! $ANI_SUB_MENU ; then
                 echo
                 mv $WORK_DIR/submenu/000000.$SM_IMG_FMT \
@@ -1900,41 +1927,11 @@ if $SUB_MENU; then
 #                rm -f $WORK_DIR/animenu/*.$SM_IMG_FMT
             fi
 
-#        echo "Running  "${TCODE_CMD[@]}"" >> "$LOG_FILE"
-#        echo "Running  "${TCODE_CMD[@]}""
-        # sleep after transcode, so the spinner picks all the jpegs up
-:<<UNUSED
-        function run_transcode()
-        {
-            "${TCODE_CMD[@]}" >> "$LOG_FILE.tmp"  2>&1
-            sleep 3
-        }
-        run_transcode &
-        TCODE_PID="$!"
-        sleep .5 # short sleep to allow 1st jpg to appear
-        if [ -n "$TCODE_PID" ]; then
-            while ps -p $TCODE_PID >/dev/null; do
-                sleep $SLEEP # spinner interval
-            spin "Seeking in video and creating images: $(find "$JPEG_DIR" \
-            -maxdepth 1 -name $PREFIX\*chapt\*.jpg|sort|awk -F / '{ field = $NF }; END{ print field }')" "$SPINNER  "
-            done
-            echo
-            echo "Created $(find "$JPEG_DIR" -maxdepth 1 -name $PREFIX\*chapt\*.jpg|wc -l) JPEGS"
-            cleanlog 1
-        else
-            cleanlog 1
-            runtime_error "Problem creating images from the video."
-            exit 1
-        fi
-        unset TCODE_CMD cmd
-UNUSED
         if $ANI_SUB_MENU; then
             echo
             echo "Making 300 montage images for "${IN_FILES[i]}""
 
             for ((a=1; a<300; a++)); do
-#                echo -ne "\r                                                            "
-#                echo -ne "\rProcessing "$WORK_DIR/animenu/$a.$SM_IMG_FMT"  "
                 spin "\rProcessing "$a.$SM_IMG_FMT"  "
                 for ((b=0; b<${CHAPTERS[i]}; b++)); do
                     IMGS=( "${IMGS[@]}" $(find $WORK_DIR/animenu/$b \
@@ -2165,7 +2162,6 @@ if [ -n "$BG_VIDEO" ]; then
 fi
 unset FFMPEG_CMD
 
-
 yecho
 yecho "Adding title to video images and resizing"
 for ((i=0; i<=NUM_FILES; i++)); do
@@ -2174,17 +2170,13 @@ for ((i=0; i<=NUM_FILES; i++)); do
     echo
     yecho "Working on ${#PICS[@]} images from ${IN_FILES[i]}"
     for pic in "${PICS[@]}"; do
-#        echo -ne "\r                                                            "
-#        echo -ne "\rProcessing "$pic"  "
         spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$pic")  "
         IM_CMD=(composite -compose CopyOpacity $THUMB_MASK +matte \
         "$pic")
         IM_CMD0=(montage -  -geometry +4+4 -compose Copy -background none \
         -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}")
-
         IM_CMD1=(convert -resize $THUMB_SIZE! -)
         IM_CMD2=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -) 
- 
         IM_CMD3=(montage -geometry +4+4 -background '#161514' \
         -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" \
         -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}" "$pic")
@@ -2243,11 +2235,7 @@ if $MENU_FADE && ! $STATIC; then
         C=$(awk -F ':' '{print $2'}<<<$BC)
         S=$(get_thumb_opacity)
 
-        # TODO: More descriptive message about what this loop is doing
-#        spin "Working..."
-#        echo -ne "\r                                                            "
         spin  "\rProcessing "$(($frame + 1)).jpg"  "
-
 
         for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
             ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  -name $(printf "%06d%s"  $((frame + 1)) .$IMG_FMT) ) )
@@ -2267,9 +2255,6 @@ if $MENU_FADE && ! $STATIC; then
         $WORK_DIR/title_txt.png - -background none $WORK_DIR/animenu/$(($frame + 1)).jpg)
         # pipe all of above commands if using MIST
         if $MIST; then
-            # debug echo only
-#            echo "Running "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |"
-#            echo  ""${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD4[@]}""
             "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
             "${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD4[@]}"
         else  # no mist: pipe all commands but the mist command
@@ -2285,11 +2270,6 @@ if $MENU_FADE && ! $STATIC; then
 else # Do not do menu fade
     if $TRANSPARENT; then
         for (( count=1; count<=$FRAMES; count++)); do
-
-            # TODO: More descriptive message about what this loop is doing
-#            spin "Working..."
-#            echo -ne "\r                                                            "
-#            echo -ne "\rProcessing "$WORK_DIR/animenu/$count.jpg"  "
             spin "\rProcessing "$count.jpg"  "
 
             for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
@@ -2327,11 +2307,6 @@ else # Do not do menu fade
     else # Not transparent
          C=$((${CHAPTERS[s]} - 1))
         for (( count=1; count <=FRAMES; count++)); do
-
-            # TODO: More descriptive message about what this loop is doing
-#            spin "Working..."
-#            echo -ne "\r                                                            "
-#            echo -ne "\rProcessing "$WORK_DIR/animenu/$count.jpg"  "
             spin -ne "\rProcessing "$count.jpg"  "
             for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
                 ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  -name $(printf "%06d%s"  $((count - 1))  .$IMG_FMT) ) )
