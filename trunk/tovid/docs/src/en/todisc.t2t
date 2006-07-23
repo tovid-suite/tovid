@@ -101,6 +101,10 @@ to decrease font size with the **-menu-fontsize** option. For example:
 : -noask
     Skip all interactive questions.  No preview, no reencoding option, no interactive
     option to use bgvideo for bgaudio.
+: -tovidopts "OPTIONS"
+    Pass the given string of options to 'tovid', if it is called upon to
+    re-encode your non-compliant videos. Be sure to include the double-quotes
+    around your list of options!
 
 === Menu style ===
 
@@ -178,10 +182,6 @@ to decrease font size with the **-menu-fontsize** option. For example:
      Color to use for the thumb titles (see -title-color)
 : -seek NUM
      Seek to NUM seconds before generating thumbnails (default: 1.0 seconds)
-: -tovidopts "OPTIONS"
-    Pass the given string of options to 'tovid', if it is called upon to
-    re-encode your non-compliant videos. Be sure to include the double-quotes
-    around your list of options!
 
 
 ==See also==
