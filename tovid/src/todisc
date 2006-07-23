@@ -1128,7 +1128,7 @@ if $SHOWCASE; then
     if [ -n "$SHOWCASE_VIDEO" ]; then
         echo "Getting background video images from $SHOWCASE_VIDEO"
         FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" $SEEK -s 432x288  -vframes 1 \
-        -vcodec png -an  -f rawvideo -y "$WORK_DIR/showcase_img.jpg")
+        -vcodec png -an  -f rawvideo -y "$WORK_DIR/showcase_img.png")
         echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
         SED_VAR="frame="
         if "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
@@ -1138,9 +1138,9 @@ if $SHOWCASE; then
             runtime_error "Problem creating images from the video."
             exit 1
         fi
-        echo "Running convert "$WORK_DIR/showcase_img.jpg" -mattecolor gray"
+        echo "Running convert "$WORK_DIR/showcase_img.png" -mattecolor gray"
         echo "-frame 5x5 "$WORK_DIR/showcase_img.jpg""
-        convert "$WORK_DIR/showcase_img.jpg" -mattecolor gray -frame 5x5 \
+        convert "$WORK_DIR/showcase_img.png" -mattecolor gray -frame 5x5 \
         "$WORK_DIR/showcase_img.jpg"
     elif [ -n "$SHOWCASE_IMG" ]; then
         echo "Running convert -resize 432x288! "$SHOWCASE_IMG" "$WORK_DIR/showcase_img.jpg""
@@ -1621,10 +1621,10 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
                 while ps -p $TRANSCODE_PID >/dev/null; do
                     sleep .5 # spinner interval
                 spin "Seeking in video and creating images: $(find $WORK_DIR/pics/$i \
-            -maxdepth 1 -name \*.jpg|sort|awk -F / '{ field = $NF }; END{ print field }')" 
+            -maxdepth 1 -name \*.$IMG_FMT|sort|awk -F / '{ field = $NF }; END{ print field }')" 
                 done
                 echo
-                echo "Created $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*.jpg|wc -l) JPEGS of $FRAMES"
+                echo "Created $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*.$IMG_FMT|wc -l) images of $FRAMES"
                 cleanlog 1
             else
                 cleanlog 1
