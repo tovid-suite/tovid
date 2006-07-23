@@ -93,7 +93,14 @@ to decrease font size with the **-menu-fontsize** option. For example:
     Pause in seconds at end of menu.  Use "inf" if you wish indefinate pause.
     (Note: you can not use inf with -menu-fade as you will get a black screen
     at the end)  Default: "inf" for static menu, 10.0 seconds for animated
-
+: -chain-videos NUM | N1-NN
+    Without options this will chain all videos together so they play sequentially
+    without returning to the main menu, except for the last, which will return.
+    You can also specify which videos you want to behave this way by number or by
+    a range.  ( ie. -chain-videos 1 2 4-6 )
+: -noask
+    Skip all interactive questions.  No preview, no reencoding option, no interactive
+    option to use bgvideo for bgaudio.
 
 === Menu style ===
 
