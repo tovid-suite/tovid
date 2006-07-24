@@ -57,7 +57,7 @@ See the todisc manual page ('man todisc') for additional documentation.
 EOF`
 # check if symlink in /tmp exists and use time stamped link if so
 WORK_DIR="/tmp/todisc-work"
-for link in $(find /tmp -name todisc-work\* -type l); do
+for link in $(find /tmp -maxdepth 1 -name todisc-work\* -type l); do
     [ -h "$link" ] && { WORK_DIR=/tmp/todisc-work$((NUM++)); continue; }
 done
 CUR_DIR="$(abspath "$(pwd)")"
@@ -108,7 +108,7 @@ PAUSE_TIME=10
 STATIC_LOOP=false
 MIST=false
 FEATHER=false
-BLUR=5
+BLUR=4
 SUB_MENU_FEATHER=false
 IMG_FMT=jpg
 SM_IMG_FMT=jpg  # submenu image format
