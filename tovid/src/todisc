@@ -1274,9 +1274,10 @@ if $SHOWCASE; then
         sc_thumb_title_cmd=( "${sc_thumb_title_cmd[@]}" "${THUMBTITLES_ARRAY[i]}"  \
     "$WORK_DIR/thumb_title${i}.png")
     done
-    echo "Running convert  -size 720x480 "$WORK_DIR/pics/template.png" \
+    echo "Running
+    convert  -size 720x480 "$WORK_DIR/pics/template.png" \
     ${sc_thumb_title_cmd[@]} -page +210+400 "$WORK_DIR/title_txt.png" \
-    -mosaic "$WORK_DIR/pics/template.png" "
+    -mosaic "$WORK_DIR/pics/template.png" "| sed "s/    */ /g;s/^ *//"|fold -bs
     convert -size 720x480 "$WORK_DIR/pics/template.png" \
     ${sc_thumb_title_cmd[@]} -mosaic "$WORK_DIR/pics/template.png"
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
@@ -1372,7 +1373,7 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
         "${BUTTON_CMD5[@]}"
     fi
 done
-if ! $NOASK; then
+if ! $NOASK && ! $SHOWCASE; then
     echo "Creating and displaying a preview of the main menu."
     echo "(Press 'q' or ESC in the preview window to close it.)"
 fi
@@ -1431,8 +1432,9 @@ if $SHOWCASE; then
         echo "Running
         convert  -size 720x480 "$WORK_DIR/pics/template.png" \
         ${sc_cmd[@]} -page +210+55 "$WORK_DIR/showcase_img.png" \
-        -mosaic "$WORK_DIR/preview.jpg"
-        "
+        -mosaic "$WORK_DIR/preview.jpg" "|sed "s/    */ /g;s/^ *//"|fold -bs
+        echo "Creating and displaying a preview of the main menu."
+        echo "(Press 'q' or ESC in the preview window to close it.)"
         convert  -size 720x480 "$WORK_DIR/pics/template.png" \
         ${sc_cmd[@]} -page +240+55 "$WORK_DIR/showcase_img.png" \
         -mosaic "$WORK_DIR/preview.jpg"
