@@ -896,8 +896,8 @@ SVCD_GEO_ARRAY=(240x240 180x180 120x120 120x120 120x120 120x120 96x96 96x96 \
 96x96 80x80 80x80 80x80 64x64 64x64 64x64 64x64 64x64 64x64 64x64 64x64 \
 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48)
 TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4
-4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5)
-SHOWCASE_THUMB_ARRAY=("+86+196" "+86+140 +86+240" "+86+100 +86+196 +86+292" \
+4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5 6x6)
+SHOWCASE_THUMB_ARRAY=("+86+196" "+86+140 +86+240" "+86+75 +86+175 +86+275" \
 "+86+68 +86+148 +86+228 +86+308" "+86+68 +86+131 +86+194 +86+257 +86+320")
 #SHOWCASE_THUMBTITLES_ARRAY=("+$j+176" "+$j+125 +$j+225" \
 #"+$j+80 +$j+176 +$j+272" "+$j+55 +$j+141 +$j+221 +$j+301" \
@@ -956,15 +956,19 @@ if $SHOWCASE; then
     if [ ${BLUR/.*} -ge 2 ]; then
         BLUR=2.0
     fi
-    if [ $V_ARRAY_TOTAL -ge 5 ]; then
-        THUMB_SIZE="${GEO_ARRAY[30]}"
-    elif [ $V_ARRAY_TOTAL -lt 3 ]; then
-        THUMB_SIZE="${GEO_ARRAY[11]}"
-    elif
-        [ $THUMB_BG_COLOUR = "none" ]; then
-        THUMB_SIZE="${GEO_ARRAY[29]}"
-    else
-        THUMB_SIZE="${GEO_ARRAY[30]}"
+    if [ $V_ARRAY_TOTAL -lt 3 ]; then
+        THUMB_SIZE="120x90"
+    elif [ $V_ARRAY_TOTAL -eq 3 ]; then
+        THUMB_SIZE="96x72"
+    elif [ $V_ARRAY_TOTAL -eq 4 ]; then
+        if
+            [ $THUMB_BG_COLOUR = "none" ]; then
+                THUMB_SIZE="80x60"
+        else
+            THUMB_SIZE="60x40"
+        fi
+    elif [ $V_ARRAY_TOTAL -eq 5 ]; then
+        THUMB_SIZE="60x40"
     fi
 fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
@@ -1124,7 +1128,7 @@ if $SHOWCASE; then
         f=$(( ${THUMB_SIZE/x*} / 2 ))
         j=$(( $((f +86)) - $((tt_dim / 2)) ))
         SHOWCASE_THUMBTITLES_ARRAY=("+$j+176" 
-        "+$j+125 +$j+225" "+$j+80 +$j+176 +$j+272" \
+        "+$j+125 +$j+225" "+$j+58 +$j+158 +$j+258" \
         "+$j+53 +$j+133 +$j+213 +$j+293" \
         "+$j+53 +$j+116 +$j+179 +$j+242 +$j+305")
         # find out the array of title png -pages for this arrangement
