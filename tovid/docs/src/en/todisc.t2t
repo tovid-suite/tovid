@@ -79,7 +79,7 @@ to decrease font size with the **-menu-fontsize** option. For example:
 : -menu-length
     The desired animated main menu length in seconds
 : -submenu-length
-    The disired animated submenu length in seconds (*disabled for now*)
+    The desired animated submenu length in seconds (*disabled for now*)
 : -submenu-stroke-colo[u]r
     The colo[u]r for the submenu font outline (stroke)
 : -submenu-title-colo[u]r
@@ -90,7 +90,7 @@ to decrease font size with the **-menu-fontsize** option. For example:
 : -chapters NUM
     The number of submenu chapters for each video (default: 6)
 : -loop
-    Pause in seconds at end of menu.  Use "inf" if you wish indefinate pause.
+    Pause in seconds at end of menu.  Use "inf" if you wish indefinite pause.
     (Note: you can not use inf with -menu-fade as you will get a black screen
     at the end)  Default: "inf" for static menu, 10.0 seconds for animated
 : -chain-videos NUM | N1-NN
