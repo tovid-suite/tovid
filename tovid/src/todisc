@@ -289,7 +289,6 @@ else
 fi
 }
 
-
 function confirm_preview()
 {
     yecho
@@ -463,7 +462,12 @@ while test $# -gt 0; do
             PLACEMENT=west
             SHOWCASE=:
             ;;
-
+        "-rotate" )
+            shift
+            ROTATE_DEGREES="$1"
+            ROTATE="-rotate $ROTATE_DEGREES"
+            IMG_FMT=png
+            ;;
         "-thumb-shape" )
             shift
             THUMB_SHAPE="$1"
@@ -890,19 +894,11 @@ SVCD_GEO_ARRAY=(240x240 180x180 120x120 120x120 120x120 120x120 96x96 96x96 \
 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48)
 TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5)
+SHOWCASE_THUMB_ARRAY=("" "+86+140 +86+240" "+86+100 +86+196 +86+292" \
+"+86+68 +86+148 +86+228 +86+308")
+SHOWCASE_THUMBTITLES_ARRAY=("" "" "+55+80 +55+176 +55+272" \
+"+55+53 +55+133 +55+213 +55+293")
 
-if $SHOWCASE; then
-    TILE_ARRAY[NUM_FILES]=1x${V_ARRAY_TOTAL}
-    if [ "$V_ARRAY_TOTAL" = 2 ]; then
-        SC_GEO=20
-    elif [ "$V_ARRAY_TOTAL" = 3 ]; then
-        SC_GEO=15
-    elif [ "$V_ARRAY_TOTAL" = 4 ]; then
-        SC_GEO=5
-    else
-        SC_GEO=5
-    fi
-fi
 PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
 printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
 "tovid suite's todisc - log for `date`" \
@@ -947,16 +943,30 @@ elif [ $TARGET = "svcd" ]; then
         FRAME_RATE=25
     fi
 fi
-AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
+THUMB_SIZE="${GEO_ARRAY[NUM_FILES]}"
 if $SHOWCASE; then
+    if [ -z ${BLUR/.*} ]; then
+        BLUR=0.${BLUR/*.}
+    fi
+    if [ ${BLUR/.*} -ge 2 ]; then
+        BLUR=2.0
+    fi
     if [ $V_ARRAY_TOTAL -ge 5 ]; then
         THUMB_SIZE="${GEO_ARRAY[29]}"
     else
-        THUMB_SIZE="${GEO_ARRAY[15]}"
+        THUMB_SIZE="${GEO_ARRAY[29]}"
     fi
-else
-    THUMB_SIZE="${GEO_ARRAY[NUM_FILES]}"
+    if [ "$V_ARRAY_TOTAL" = 2 ]; then
+        SC_GEO=20
+    elif [ "$V_ARRAY_TOTAL" = 3 ]; then
+        SC_GEO=15
+    elif [ "$V_ARRAY_TOTAL" = 4 ]; then
+        SC_GEO=5
+    else
+        SC_GEO=5
+    fi
 fi
+AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
 # spumux and dvdauthor vars
 START="00:00:00.0"
 MAIN_POST="        <post> jump cell 1; </post>"
@@ -1088,6 +1098,41 @@ echo "Running "${TITLE_CMD[@]}" miff:- | \
 "${TITLE_CMD1[@]}"" | fold -bs >> "$LOG_FILE"
 "${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}"
 
+# make thumb titles if $SHOWCASE
+if $SHOWCASE; then
+    for ((i=0; i<=NUM_FILES; i++)); do
+        unset tt_dim ts_dim j
+        THUMB_TITLE_CMD=(convert  -size 320x50 xc:none \
+        -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
+        -fill black -strokewidth 1 -stroke $STROKE -gravity center  \
+        -annotate +0+0 "${TITLES[i]}" \
+        -fill $THUMB_TEXT_COLOUR -stroke "$STROKE" \
+        -annotate +0+0 "${TITLES[i]}")
+        TT_CMD1=(convert - -trim +repage "$WORK_DIR/thumb_title${i}.png")
+        echo "Running "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}"" \
+        |fold -bs >> "$LOG_FILE"
+        "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}"
+        
+        # find out dimension of the thumb title png
+        tt_dim=$(identify "$WORK_DIR/thumb_title${i}.png"|awk '{print $3}')
+        #extract just the left side ( X demension )
+        tt_dim=${tt_dim/x*}
+        # find out the array of thumb picture -pages for this arrangement
+        SHOWCASE_THUMB_PAGES=( ${SHOWCASE_THUMB_ARRAY[NUM_FILES]} )
+        #extract just the x dimension of the THUMB_SIZE
+        ts_dim=${THUMB_SIZE/x*} 
+        f=$((ts_dim / 2)) # half of thumb X length
+        g=$((tt_dim / 2)) # half of thumb_title.png X length
+        h=$((86 + f))     # add X start geometry to thumb X length
+        j=$((h - g))      # final start position of title so its centered
+        SHOWCASE_THUMBTITLES_ARRAY=("" "" "+55+80 +55+176 +55+272" \
+        "+$j+53 +$j+133 +$j+213 +$j+293")
+        # find out the array of title png -pages for this arrangement
+        SC_THUMBTITLES=( ${SHOWCASE_THUMBTITLES_ARRAY[NUM_FILES]} )
+        SHOWCASE_PAGES[i]="-page ${SHOWCASE_THUMB_PAGES[i]}"
+        THUMBTITLES_ARRAY[i]="-page ${SC_THUMBTITLES[i]}"
+        done
+fi
 if $MIST; then
     echo "Making a white or colored png for the misted title background"
     echo
@@ -1127,7 +1172,7 @@ fi
 if $SHOWCASE; then
     if [ -n "$SHOWCASE_VIDEO" ]; then
         echo "Getting background video images from $SHOWCASE_VIDEO"
-        FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" $SEEK -s 432x288  -vframes 1 \
+        FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" $SEEK -s 384x288  -vframes 1 \
         -vcodec png -an  -f rawvideo -y "$WORK_DIR/showcase_img.png")
         echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
         SED_VAR="frame="
@@ -1140,11 +1185,15 @@ if $SHOWCASE; then
         fi
         echo "Running convert "$WORK_DIR/showcase_img.png" -mattecolor gray"
         echo "-frame 5x5 "$WORK_DIR/showcase_img.jpg""
-        convert "$WORK_DIR/showcase_img.png" -mattecolor gray -frame 5x5 \
+        convert "$WORK_DIR/showcase_img.png" -mattecolor gray -frame 5x5 \ 
         "$WORK_DIR/showcase_img.jpg"
+#        convert "$WORK_DIR/showcase_img.png" "$WORK_DIR/showcase_img.jpg"
     elif [ -n "$SHOWCASE_IMG" ]; then
-        echo "Running convert -resize 432x288! "$SHOWCASE_IMG" "$WORK_DIR/showcase_img.jpg""
-        convert -resize 432x288! "$SHOWCASE_IMG" -mattecolor gray -frame 5x5 "$WORK_DIR/showcase_img.jpg"
+        echo "Running convert -resize 384x288! "$SHOWCASE_IMG" "$WORK_DIR/showcase_img.jpg""
+#        convert -resize 384x288! "$SHOWCASE_IMG" -mattecolor gray -frame 5x5 "$WORK_DIR/showcase_img.jpg"
+        convert -resize 384x288! "$SHOWCASE_IMG" -mattecolor gray -frame 5x5 miff:- |
+        convert -background none $ROTATE - miff:-| convert - -resize 384x288! miff:- |
+        convert - -resize 384x288! "$WORK_DIR/showcase_img.png"
     fi
 fi
 # transcode makes it harder to switch between PNG and JPEG for output
@@ -1203,7 +1252,21 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
     fi
     unset CMD NAVSEEK_CMD
 done
-
+# overlay menu title and thumb titles on template
+if $SHOWCASE; then
+    for ((i=0; i<=NUM_FILES; i++)); do
+        sc_thumb_title_cmd=( "${sc_thumb_title_cmd[@]}" "${THUMBTITLES_ARRAY[i]}"  \
+    "$WORK_DIR/thumb_title${i}.png")
+    done
+    echo "sc_thumb_title_cmd is ${sc_thumb_title_cmd[@]}"
+    echo "Running convert  -size 720x480 "$WORK_DIR/pics/template.png" \
+    ${sc_thumb_title_cmd[@]} -page +210+400 "$WORK_DIR/title_txt.png" \
+    -mosaic "$WORK_DIR/pics/template.png" "
+    convert -size 720x480 "$WORK_DIR/pics/template.png" \
+    ${sc_thumb_title_cmd[@]} -mosaic "$WORK_DIR/pics/template.png"
+    convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
+    -gravity south -geometry +0+55 -composite "$WORK_DIR/pics/template.png"
+fi    
 if $MIST; then
     # overlay white.png onto the background
     if $SHOWCASE; then
@@ -1227,7 +1290,8 @@ for ((i=0; i<${#PICS[@]}; i++)); do
         "${PICS[i]}" miff:- |
         convert -trim +repage -  "${PICS[i]}"
     fi
-
+    IM_CMD=(convert -background none -frame 3x3 -bordercolor "#444744" "${PICS[i]}")
+    IM_CMD0=(composite -gravity center -compose DstOver "$WORK_DIR/feather_mask2.png" "${PICS[i]}")
     IM_CMD1=(montage "${PICS[i]}" -geometry +4+4 -compose Copy  \
     -background  none -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
     -title "${TITLES[i]}")
@@ -1237,11 +1301,19 @@ for ((i=0; i<${#PICS[@]}; i++)); do
     -bordercolor "#444744" -)
     IM_CMD5=(convert -resize $THUMB_SIZE! - "${PICS[i]}")
     if $FEATHER; then
-        "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
-        "${IM_CMD3[@]}" miff:- | "${IM_CMD5[@]}"
-    else
-        "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
-        "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
+        if $SHOWCASE; then
+            "${IM_CMD0[@]}" miff:- | "${IM_CMD5[@]}"
+        else  # feather, but not showcase
+            "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
+            "${IM_CMD3[@]}" miff:- | "${IM_CMD5[@]}"
+        fi
+    else  # not feather
+        if $SHOWCASE; then
+            "${IM_CMD0[@]}" miff:- | "${IM_CMD5[@]}"
+        else # not feather and not showcase
+            "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
+            "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
+        fi
     fi
 done
 ##############################################################################
@@ -1350,16 +1422,18 @@ for button in Select Highlight; do
 done
 if $SHOWCASE; then
     if [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
-        montage ${PICS[@]} -tile 1x${V_ARRAY_TOTAL} \
-        -geometry ${THUMB_SIZE}+5+$SC_GEO -background none -bordercolor "#444744" miff:- |
-        convert "$WORK_DIR/pics/template.png" \
-        "$WORK_DIR/title_txt.png"  -gravity south -geometry +70+65 -composite \
-        -  -gravity northwest -geometry +45+45 -composite miff:- |
-        convert - "$WORK_DIR/showcase_img.jpg" -gravity center -geometry +70-40 -composite \
-        -gravity north -geometry +45+45 -composite  "$WORK_DIR/preview.jpg"
+        for ((i=0; i<=NUM_FILES; i++)); do
+            sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_PAGES[i]} "${PICS[i]}")
+        done
+        echo "Running
+        convert  -size 720x480 "$WORK_DIR/pics/template.png" \
+        ${sc_cmd[@]} -page +210+55 "$WORK_DIR/showcase_img.png" \
+        -mosaic "$WORK_DIR/preview.jpg"
+        "
+        convert  -size 720x480 "$WORK_DIR/pics/template.png" \
+        ${sc_cmd[@]} -page +240+55 "$WORK_DIR/showcase_img.png" \
+        -mosaic "$WORK_DIR/preview.jpg"
         display "$WORK_DIR/preview.jpg"
-        yecho
-        yecho "*** Sorry, showcase is preview only right now, exiting ***"
     fi
 elif $TRANSPARENT; then
     montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
@@ -2505,7 +2579,7 @@ elif [ "$TARGET" = svcd ]; then
     vcdxbuild MyDisc.xml
 fi
 echo "Cleaning up unwanted files in $REAL_WORK_DIR"
-rm -f "$WORK_DIR"/*.png
+find "$WORK_DIR"/ -name '*.png' ! -name Highlight.png ! -name Select.png -exec rm -f {} \;
 find "$WORK_DIR"/ -name '*.jpg' ! -name preview.jpg -exec rm -f {} \;
 rm -frv "$WORK_DIR/animenu" "$WORK_DIR/pics" "$WORK_DIR/submenu"
 #    if $SUB_MENU; then
