@@ -96,7 +96,7 @@ component to generate the menu, this should all be handled for you.
 
 ==Examples==
 
-Make a DVD without a menu. Title 1, 2, and 3 will play in sequnce:
+Make a DVD without a menu. Title 1, 2, and 3 will play in sequence:
 
 ```
 $ makexml -dvd title-1.mpg title-2.mpg title-3.mpg -out My_DVD
