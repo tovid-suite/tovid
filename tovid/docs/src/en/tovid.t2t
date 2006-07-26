@@ -145,7 +145,7 @@ letterboxing or anamorphic scaling.
 
     At present, this option affects both output bitrate and quantization (but
     may, in the future, affect other quality/size-related attributes). Use
-    -vbitrate if you want to explicitly provide a maximium bitrate.
+    -vbitrate if you want to explicitly provide a maximum bitrate.
 
 : **-vbitrate** //NUM//
     Maximum bitrate to use for video (in kbits/sec). Must be within allowable
@@ -245,7 +245,7 @@ letterboxing or anamorphic scaling.
     longer.  The default is high priority.
 
 : **-discsize** //NUM//
-    Sets the desired target DVD/CD-R size to //NUM// mebibytes (2^20).  Default
+    Sets the desired target DVD/CD-R size to //NUM// megabytes (2^20).  Default
     is 700 for CD, 4300 for DVD. Use higher values at your own risk. Use 650 or
     lower if you plan to burn to smaller-capacity CDs.
 
