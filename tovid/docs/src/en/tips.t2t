@@ -55,7 +55,7 @@ to display a grayscale representation of the difference between
 IMAGE_1 and IMAGE_2, with lighter areas indicating greater difference.
 The -normalize`` option is useful for images that are very similar.
 Use this to get a quick visualization of image quality, in particular the
-degredation and artifacts that are often introduced during conversion to another
+degradation and artifacts that are often introduced during conversion to another
 image format.
 
 Newer versions of ImageMagick include the compare
