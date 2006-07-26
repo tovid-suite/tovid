@@ -894,10 +894,10 @@ SVCD_GEO_ARRAY=(240x240 180x180 120x120 120x120 120x120 120x120 96x96 96x96 \
 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48)
 TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5)
-SHOWCASE_THUMB_ARRAY=("" "+86+140 +86+240" "+86+100 +86+196 +86+292" \
-"+86+68 +86+148 +86+228 +86+308")
-SHOWCASE_THUMBTITLES_ARRAY=("" "" "+55+80 +55+176 +55+272" \
-"+55+53 +55+133 +55+213 +55+293")
+SHOWCASE_THUMB_ARRAY=("+86+196" "+86+140 +86+240" "+86+100 +86+196 +86+292" \
+"+86+68 +86+156 +86+236 +86+316")
+SHOWCASE_THUMBTITLES_ARRAY=("+55+176" "+55+125 +55+225" "+55+80 +55+176 +55+272" \
+"+55+55 +55+141 +55+221 +55+301")
 
 PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
 printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
@@ -953,6 +953,8 @@ if $SHOWCASE; then
     fi
     if [ $V_ARRAY_TOTAL -ge 5 ]; then
         THUMB_SIZE="${GEO_ARRAY[29]}"
+    elif [ $V_ARRAY_TOTAL -lt 3 ]; then
+        THUMB_SIZE="${GEO_ARRAY[11]}"
     else
         THUMB_SIZE="${GEO_ARRAY[29]}"
     fi
@@ -1090,7 +1092,7 @@ fi
 
 # make a title image
 TITLE_CMD=(convert  -size 620x100 xc:none -font "$MENU_FONT"  -pointsize $MENU_FONTSIZE \
--fill black -strokewidth 1 -stroke $STROKE -gravity center  -annotate +0+0 "$VMGM_TITLE" \
+-fill black -strokewidth 1 -stroke $STROKE -gravity center  -annotate +1+0 "$VMGM_TITLE" \
 -fill "$TITLE_COLOUR" -stroke "$STROKE" -annotate +0+0 "$VMGM_TITLE")
 TITLE_CMD1=(convert - -trim +repage -blur 0x0.4 "$WORK_DIR/title_txt.png")
 
@@ -1102,11 +1104,11 @@ echo "Running "${TITLE_CMD[@]}" miff:- | \
 if $SHOWCASE; then
     for ((i=0; i<=NUM_FILES; i++)); do
         unset tt_dim ts_dim j
-        THUMB_TITLE_CMD=(convert  -size 320x50 xc:none \
+        THUMB_TITLE_CMD=(convert  -size 320x100 xc:none \
         -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
-        -fill black -strokewidth 1 -stroke $STROKE -gravity center  \
-        -annotate +0+0 "${TITLES[i]}" \
-        -fill $THUMB_TEXT_COLOUR -stroke "$STROKE" \
+        -fill black -strokewidth 1 -gravity center  \
+        -annotate +1+0 "${TITLES[i]}" \
+        -fill $THUMB_TEXT_COLOUR  \
         -annotate +0+0 "${TITLES[i]}")
         TT_CMD1=(convert - -trim +repage "$WORK_DIR/thumb_title${i}.png")
         echo "Running "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}"" \
@@ -1125,8 +1127,8 @@ if $SHOWCASE; then
         g=$((tt_dim / 2)) # half of thumb_title.png X length
         h=$((86 + f))     # add X start geometry to thumb X length
         j=$((h - g))      # final start position of title so its centered
-        SHOWCASE_THUMBTITLES_ARRAY=("" "" "+55+80 +55+176 +55+272" \
-        "+$j+53 +$j+133 +$j+213 +$j+293")
+        SHOWCASE_THUMBTITLES_ARRAY=("+$j+176" \
+        "+$j+125 +$j+225" "+$j+80 +$j+176 +$j+272" "+$j+55 +$j+141 +$j+221 +$j+301")
         # find out the array of title png -pages for this arrangement
         SC_THUMBTITLES=( ${SHOWCASE_THUMBTITLES_ARRAY[NUM_FILES]} )
         SHOWCASE_PAGES[i]="-page ${SHOWCASE_THUMB_PAGES[i]}"
@@ -1265,7 +1267,7 @@ if $SHOWCASE; then
     convert -size 720x480 "$WORK_DIR/pics/template.png" \
     ${sc_thumb_title_cmd[@]} -mosaic "$WORK_DIR/pics/template.png"
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
-    -gravity south -geometry +0+55 -composite "$WORK_DIR/pics/template.png"
+    -gravity south -geometry +0+65 -composite "$WORK_DIR/pics/template.png"
 fi    
 if $MIST; then
     # overlay white.png onto the background
@@ -1309,7 +1311,7 @@ for ((i=0; i<${#PICS[@]}; i++)); do
         fi
     else  # not feather
         if $SHOWCASE; then
-            "${IM_CMD0[@]}" miff:- | "${IM_CMD5[@]}"
+            "${IM_CMD[@]}" miff:- | "${IM_CMD5[@]}"
         else # not feather and not showcase
             "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
             "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
@@ -1434,6 +1436,7 @@ if $SHOWCASE; then
         ${sc_cmd[@]} -page +240+55 "$WORK_DIR/showcase_img.png" \
         -mosaic "$WORK_DIR/preview.jpg"
         display "$WORK_DIR/preview.jpg"
+        confirm_preview
     fi
 elif $TRANSPARENT; then
     montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
