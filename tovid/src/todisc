@@ -142,9 +142,9 @@ function yecho()
         test -e "$LOG_FILE" && \
             printf "%s\n%s %s\n%s\n" "$ME" "$ME" "$SEPARATOR" "$ME" >> "$LOG_FILE"
     else
-        echo "$@"
+        echo "$@" | sed "s/    */ /g;s/^ *//"|fold -bs
         test -e "$LOG_FILE" && \
-            printf "%s %s\n" "$ME" "$@" >> "$LOG_FILE"
+            printf "%s %s\n" "$ME" "$@" | sed "s/    */ /g;s/^ *//"|fold -bs >> "$LOG_FILE"
     fi
 }
 
@@ -200,6 +200,10 @@ function cleanlog()
             ;;
     esac
     rm -f "$LOG_FILE.tmp"
+}
+function format_output()
+{
+    sed "s/    */ /g;s/^ *//"|fold -bs
 }
 
 function get_font()
@@ -467,6 +471,9 @@ while test $# -gt 0; do
             ROTATE_DEGREES="$1"
             ROTATE="-rotate $ROTATE_DEGREES"
             IMG_FMT=png
+            ;;
+        "-smallthumbs" )
+            SMALLTHUMBS=:
             ;;
         "-thumb-shape" )
             shift
@@ -824,9 +831,7 @@ echo
 # Menu title font size
 test $TARGET = "dvd" && : ${MENU_FONTSIZE:="40"}
 test $TARGET = "svcd" && : ${MENU_FONTSIZE:="32"}
-if $SHOWCASE; then
-    MENU_FONTSIZE=30
-fi
+test $SHOWCASE && : ${MENU_FONTSIZE:="26"}
 # Thumbnail title font size
 # PTSIZE=(30 36 42 42 42 42 48 48 48 48 48 48 54 54 54 54 54 54 54 54 \
 # 54 54 54 54 54 54 54 54 54 54)
@@ -961,11 +966,10 @@ if $SHOWCASE; then
     elif [ $V_ARRAY_TOTAL -eq 3 ]; then
         THUMB_SIZE="96x72"
     elif [ $V_ARRAY_TOTAL -eq 4 ]; then
-        if
-            [ $THUMB_BG_COLOUR = "none" ]; then
-                THUMB_SIZE="80x60"
-        else
+        if $SMALL_FONTSIZE; then
             THUMB_SIZE="60x40"
+        else
+            THUMB_SIZE="80x60"
         fi
     elif [ $V_ARRAY_TOTAL -eq 5 ]; then
         THUMB_SIZE="60x40"
@@ -2083,7 +2087,7 @@ if $SUB_MENU; then
         "${JPEG2YUV_OPTS[@]}" -L 1 -b 1  -j "${PICS_IN[@]}")
         ENC_CMD1=(ffmpeg   -f yuv4mpegpipe -i - -r $FRAME_RATE -s $VIDSIZE \
         -tvstd $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/menu$i.m2v")
-        echo "Running "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}"" | tee -a "$LOG_FILE" 2>&1
+        echo "Running "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}""|format_output | tee -a "$LOG_FILE" 2>&1
         if "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}" >> "$LOG_FILE.tmp" 2>&1; then
             cleanlog 3
         else
@@ -2473,7 +2477,7 @@ ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p "${JPEG2YUV_OPTS[@]}" -L 1 -b1 \
 ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
 -tvstd $TV_STANDARD $FFMPEG_OPTS -y $WORK_DIR/intro.m2v)
 yecho
-echo "Running "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}""
+echo "Running "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}"" |format_output
 if "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" >> "$LOG_FILE.tmp" 2>&1; then
     cleanlog 3
 else
