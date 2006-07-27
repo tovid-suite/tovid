@@ -916,7 +916,7 @@ TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5 6x6)
 SHOWCASE_THUMB_ARRAY=("+86+166" "+86+110 +86+240" "+86+65 +86+175 +86+275" \
 "+86+68 +86+148 +86+228 +86+308" "+86+68 +86+131 +86+194 +86+257 +86+320")
-SHOWCASE_TITLES_ARRAY=("+$j+146" "+$j+93 +$j+223" "+$j+58 +$j+158 +$j+258" \
+SHOWCASE_TITLES_ARRAY=("+$j+146" "+$j+93 +$j+223" "+$j+48 +$j+158 +$j+258" \
 "+$j+53 +$j+133 +$j+213 +$j+293" "+$j+53 +$j+116 +$j+179 +$j+242 +$j+305")
 
 PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
@@ -1142,7 +1142,7 @@ if $SHOWCASE; then
         f=$(( ${THUMB_SIZE/x*} / 2 ))
         j=$(( $((f + 86)) - $((tt_dim / 2)) ))
         SHOWCASE_TITLES_ARRAY=("+$j+146" 
-        "+$j+93 +$j+223" "+$j+58 +$j+158 +$j+258" \
+        "+$j+93 +$j+223" "+$j+48 +$j+158 +$j+258" \
         "+$j+53 +$j+133 +$j+213 +$j+293" \
         "+$j+53 +$j+116 +$j+179 +$j+242 +$j+305")
         # find out the array of title png -pages for this arrangement
