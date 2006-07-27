@@ -473,6 +473,9 @@ while test $# -gt 0; do
             ROTATE="-rotate $ROTATE_DEGREES"
             IMG_FMT=png
             ;;
+        "-wave" )
+            WAVE="-wave 10x128"
+            ;;
         "-smallthumbs" )
             SMALLTHUMBS=:
             ;;
@@ -839,7 +842,15 @@ test $SHOWCASE && : ${MENU_FONTSIZE:="26"}
 # If user defined a font size, use it
 if test -n "$THUMB_FONTSIZE"; then
     :
-# Otherwise, use a default, based on the number of thumbnails
+# Otherwise, use a default, based on thumbnails number and type
+elif $SHOWCASE; then
+    if test "$NUM_FILES" -lt 2; then
+        THUMB_FONTSIZE=20
+    elif  test "$NUM_FILES" -eq 2; then
+        THUMB_FONTSIZE=18
+    elif  test "$NUM_FILES" -ge 3; then
+        THUMB_FONTSIZE=16
+    fi
 elif test "$NUM_FILES" -lt 5; then
     THUMB_FONTSIZE=14
 elif test "$NUM_FILES" -lt 9; then
@@ -903,12 +914,10 @@ SVCD_GEO_ARRAY=(240x240 180x180 120x120 120x120 120x120 120x120 96x96 96x96 \
 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48)
 TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5 6x6)
-SHOWCASE_THUMB_ARRAY=("+86+196" "+86+140 +86+240" "+86+75 +86+175 +86+275" \
+SHOWCASE_THUMB_ARRAY=("+86+166" "+86+110 +86+240" "+86+65 +86+175 +86+275" \
 "+86+68 +86+148 +86+228 +86+308" "+86+68 +86+131 +86+194 +86+257 +86+320")
-#SHOWCASE_THUMBTITLES_ARRAY=("+$j+176" "+$j+125 +$j+225" \
-#"+$j+80 +$j+176 +$j+272" "+$j+55 +$j+141 +$j+221 +$j+301" \
-#"+$j+55 +$j+120 +$j+170 +$j+220 +$j+270")
-
+SHOWCASE_TITLES_ARRAY=("+$j+146" "+$j+93 +$j+223" "+$j+58 +$j+158 +$j+258" \
+"+$j+53 +$j+133 +$j+213 +$j+293" "+$j+53 +$j+116 +$j+179 +$j+242 +$j+305")
 
 PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
 printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
@@ -1131,13 +1140,13 @@ if $SHOWCASE; then
         SHOWCASE_THUMB_PAGES=( ${SHOWCASE_THUMB_ARRAY[NUM_FILES]} )
         # thumb pos plus 1/2 (X dim) of thumbsize, less 1/2 title X dim
         f=$(( ${THUMB_SIZE/x*} / 2 ))
-        j=$(( $((f +86)) - $((tt_dim / 2)) ))
-        SHOWCASE_THUMBTITLES_ARRAY=("+$j+176" 
-        "+$j+125 +$j+225" "+$j+58 +$j+158 +$j+258" \
+        j=$(( $((f + 86)) - $((tt_dim / 2)) ))
+        SHOWCASE_TITLES_ARRAY=("+$j+146" 
+        "+$j+93 +$j+223" "+$j+58 +$j+158 +$j+258" \
         "+$j+53 +$j+133 +$j+213 +$j+293" \
         "+$j+53 +$j+116 +$j+179 +$j+242 +$j+305")
         # find out the array of title png -pages for this arrangement
-        SC_THUMBTITLES=( ${SHOWCASE_THUMBTITLES_ARRAY[NUM_FILES]} )
+        SC_THUMBTITLES=( ${SHOWCASE_TITLES_ARRAY[NUM_FILES]} )
         SHOWCASE_PAGES[i]="-page ${SHOWCASE_THUMB_PAGES[i]}"
         THUMBTITLES_ARRAY[i]="-page ${SC_THUMBTITLES[i]}"
         done
@@ -1193,15 +1202,16 @@ if $SHOWCASE; then
             exit 1
         fi
         echo "Running convert "$WORK_DIR/showcase_img.png" -mattecolor gray"
-        echo "-frame 5x5 "$WORK_DIR/showcase_img.jpg""
+        echo "-frame 5x5 "$WORK_DIR/showcase_img.jpg"" |format_output
         convert "$WORK_DIR/showcase_img.png" -mattecolor gray -frame 5x5 \ 
         "$WORK_DIR/showcase_img.jpg"
 #        convert "$WORK_DIR/showcase_img.png" "$WORK_DIR/showcase_img.jpg"
     elif [ -n "$SHOWCASE_IMG" ]; then
-        echo "Running convert -resize 384x288! "$SHOWCASE_IMG" "$WORK_DIR/showcase_img.jpg""
+        echo "Running convert -resize 384x288! "$SHOWCASE_IMG" \
+        "$WORK_DIR/showcase_img.jpg"" |format_output
 #        convert -resize 384x288! "$SHOWCASE_IMG" -mattecolor gray -frame 5x5 "$WORK_DIR/showcase_img.jpg"
         convert -resize 384x288! "$SHOWCASE_IMG" -mattecolor gray -frame 5x5 miff:- |
-        convert -background none $ROTATE - miff:-| convert - -resize 384x288! miff:- |
+        convert -background none $ROTATE $WAVE - miff:-| convert - -resize 384x288! miff:- |
         convert - -resize 384x288! "$WORK_DIR/showcase_img.png"
     fi
 fi
@@ -1279,10 +1289,10 @@ if $SHOWCASE; then
         sc_thumb_title_cmd=( "${sc_thumb_title_cmd[@]}" "${THUMBTITLES_ARRAY[i]}"  \
     "$WORK_DIR/thumb_title${i}.png")
     done
-    echo "Running
+    echo "Running:
     convert  -size 720x480 "$WORK_DIR/pics/template.png" \
     ${sc_thumb_title_cmd[@]} -page +210+400 "$WORK_DIR/title_txt.png" \
-    -mosaic "$WORK_DIR/pics/template.png" "| sed "s/    */ /g;s/^ *//"|fold -bs
+    -mosaic "$WORK_DIR/pics/template.png" "| format_output
     convert -size 720x480 "$WORK_DIR/pics/template.png" \
     ${sc_thumb_title_cmd[@]} -mosaic "$WORK_DIR/pics/template.png"
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
@@ -1434,7 +1444,7 @@ if $SHOWCASE; then
         for ((i=0; i<=NUM_FILES; i++)); do
             sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_PAGES[i]} "${PICS[i]}")
         done
-        echo "Running
+        echo "Running:
         convert  -size 720x480 "$WORK_DIR/pics/template.png" \
         ${sc_cmd[@]} -page +210+55 "$WORK_DIR/showcase_img.png" \
         -mosaic "$WORK_DIR/preview.jpg" "|sed "s/    */ /g;s/^ *//"|fold -bs
