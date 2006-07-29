@@ -123,6 +123,7 @@ TOVID_OPTS=""
 CHAIN_VIDEOS=false
 NOASK=false
 SMALL_FONTSIZE=false
+SC_FRAMESTYLE=none
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -335,6 +336,13 @@ function spin()
     echo -ne "\r$@ "
 }
 
+get_framed_pics()
+{
+mplayer -vo $VOUT \
+-vf expand=-5:-5,rectangle=384:288,rectangle=382:286,rectangle=380:284,rectangle=378:282 \
+-ao null -zoom -x 384 -y 288  -ss 0:0:01 -frames $FRAMES "$1"
+}
+
 ##############################################################################
 #                          	End of functions                                 #
 ##############################################################################
@@ -478,6 +486,9 @@ while test $# -gt 0; do
             ;;
         "-smallthumbs" )
             SMALLTHUMBS=:
+            ;;
+        "-showcase-framestyle" )
+            SC_FRAMESTYLE="glass"
             ;;
         "-thumb-shape" )
             shift
@@ -1206,22 +1217,32 @@ fi
 if $SHOWCASE; then
     if [ -n "$SHOWCASE_VIDEO" ]; then
         echo "Getting background video images from $SHOWCASE_VIDEO"
-        FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" $SEEK -s 384x288  -vframes 1 \
-        -vcodec png -an  -f rawvideo -y "$WORK_DIR/showcase_img.png")
-        echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
-        SED_VAR="frame="
-        if "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
-            cleanlog 3
-        else
-            cleanlog 3
-            runtime_error "Problem creating images from the video."
-            exit 1
-        fi
+        if [ "$SC_FRAMESTYLE" = glass ]; then
+            OUTDIR="$WORK_DIR/showcase"
+            OUT="$WORK_DIR/showcase_img.png"
+            VOUT=png; FRAMES=1
+            get_framed_pics "$SHOWCASE_VIDEO"   
+            echo "Using mplayer to get framed images from the showcase video"
+            mv -v "$WORK_DIR"/000*.png "$OUT"
+        elif [ "$SC_FRAMESTYLE" = none ]; then
+            FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" $SEEK -s 384x288  -vframes 1 \
+            -vcodec png -an  -f rawvideo -y "$WORK_DIR/showcase_img.png")
+            echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
+            SED_VAR="frame="
+            if "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
+                cleanlog 3
+            else
+                cleanlog 3
+                runtime_error "Problem creating images from the video."
+                exit 1
+            fi
+        
         echo "Running convert "$WORK_DIR/showcase_img.png" -mattecolor gray"
         echo "-frame 5x5 "$WORK_DIR/showcase_img.jpg"" |format_output
         convert "$WORK_DIR/showcase_img.png" -mattecolor gray -frame 5x5 miff:- |
         convert -background none $ROTATE $WAVE - miff:-|
         convert - -resize 384x288! "$WORK_DIR/showcase_img.png" 
+    fi
 #        "$WORK_DIR/showcase_img.jpg"
 #        convert "$WORK_DIR/showcase_img.png" "$WORK_DIR/showcase_img.jpg"
     elif [ -n "$SHOWCASE_IMG" ]; then
@@ -2304,35 +2325,53 @@ if [ -n "$BG_VIDEO" ]; then
 fi
 if [ -n "$SHOWCASE_VIDEO" ]; then
     echo "Getting showcase video images from $SHOWCASE_VIDEO"
-    FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -s 384x288  -vframes $FRAMES \
-    -an  -y "$WORK_DIR/showcase/%d.png")
-    echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
-    SED_VAR="frame="
-    if "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
-        cleanlog 3
-    else
-        cleanlog 3
-        runtime_error "Problem creating images from the video."
-        exit 1
+    if [ "$SC_FRAMESTYLE" = "glass" ]; then
+        get_framed_pics "$SHOWCASE_VIDEO"
+        for ((i=0; i<$FRAMES; i++)); do
+            mv -v "$WORK_DIR"/$(printf "%08d%s"  $i .png) \
+            "$WORK_DIR"/showcase/$(printf "%06d%s"  $i .png) 
+        done
+    elif [ "$SC_FRAMESTYLE" = "none" ]; then
+        FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -s 384x288  -vframes $FRAMES \
+        -an  -y "$WORK_DIR/showcase/%d.png")
+        echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
+        SED_VAR="frame="
+        if "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
+            cleanlog 3
+        else
+            cleanlog 3
+            runtime_error "Problem creating images from the video."
+            exit 1
+        fi
     fi
     for ((i=0; i<$FRAMES; i++)); do
-        SC_PICS=( ${SC_PICS[@]} $(find $WORK_DIR/showcase -maxdepth 1 -name $i.png) )
+        SC_PICS=( ${SC_PICS[@]} $(find $WORK_DIR/showcase -maxdepth 1  -name $(printf "%06d%s"  $i .png) ) )
     done
-    for pic in "${SC_PICS[@]}"; do
-        spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$pic") of $FRAMES  "
-        convert -resize 384x288! "$pic" -mattecolor gray -frame 5x5 miff:- |
-        convert -background none $ROTATE $WAVE - miff:-| convert - -resize 384x288! miff:- |
-        convert - -resize 384x288! "$pic"
-    done
+    if [[ "$SC_FRAMESTYLE" = "glass" && -z "$ROTATE" ]]; then
+        :
+    else
+        for pic in "${SC_PICS[@]}"; do
+            spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$pic") of $FRAMES  "
+            SC_CMD=(convert -resize 384x288! "$pic" -mattecolor gray -frame 5x5)
+            SC_CMD1=(convert "$pic" -background none $ROTATE $WAVE -)
+            SC_CMD2=(convert -background none $ROTATE $WAVE -)
+            SC_CMD3=(convert - -resize 384x288! "$pic")
+            # if glass and either wave or rotate
+            if [[ "$SC_FRAMESTYLE" = "glass" && -n "$WAVE" || -n "$ROTATE" ]]; then
+                "${SC_CMD1[@]}" miff:- | "${SC_CMD2[@]}" miff:- | "${SC_CMD3[@]}"
+            # if glass and neither wave or rotate
+            elif [[ "$SC_FRAMESTYLE" = "glass" && -z "$WAVE" || -z "$ROTATE" ]]; then
+                :
+            else # not glass
+                  "${SC_CMD[@]}" miff:- | "${SC_CMD2[@]}" miff:- | "${SC_CMD3[@]}"
+            fi
+        done
+    fi
 fi
 unset FFMPEG_CMD pic
 
 yecho
-if $SHOWCASE; then
-    yecho "Processing video images"
-else
-    yecho "Adding title to video images and resizing"
-fi
+yecho "Adding title to video images and resizing"
 for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[0-9]\*.$IMG_FMT|sort) )
@@ -2429,11 +2468,11 @@ if $MENU_FADE && ! $STATIC; then
         ${sc_cmd[@]} -page +240+55 "$WORK_DIR/showcase_img.png" \
         -mosaic $WORK_DIR/animenu/$(($frame + 1)).jpg)
         MONTAGE_CMD0=(convert  -size 720x480 "$WORK_DIR/pics/template.png" \
-        ${sc_cmd[@]} -page +240+55 "$WORK_DIR/showcase/$(($frame + 1)).png" \
+        ${sc_cmd[@]} -page +240+55 "$WORK_DIR"/showcase/$(printf "%06d%s"  $(($frame + 1)) .png) \
         -mosaic $WORK_DIR/animenu/$(($frame + 1)).jpg)
         MONTAGE_CMD01=(convert  -size 720x480 xc:none -background none \
-        ${sc_cmd[@]} -page +240+55 "$WORK_DIR/showcase/$(($frame + 1)).png" \
-        -mosaic)
+        ${sc_cmd[@]} -page +240+55 \
+        "$WORK_DIR"/showcase/$(printf "%06d%s"  $(($frame + 1)) .png) -mosaic)
         MONTAGE_CMD02=(convert -size 720x480 -background none \
         - ${sc_thumb_title_cmd[@]} -mosaic)
         MONTAGE_CMD1=(montage "${ANI_PICS[@]}" -tile ${TILE_ARRAY[NUM_FILES]} \
