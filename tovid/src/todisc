@@ -789,6 +789,9 @@ if $SUB_MENU; then
         fi
     done
 fi
+if $SHOWCASE && ! $MENU_FADE; then #FIXME temporary only
+    usage_error "Sorry, showcase is only working with -menu-fade temporarily"
+fi
 # if -bgvideo selected, but also -static, exit with error message
 if test -n "$BG_VIDEO" &&  $STATIC; then
     usage_error "You can not use -bgvideo with a static menu"
