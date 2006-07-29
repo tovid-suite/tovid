@@ -2331,12 +2331,12 @@ if [ -n "$SHOWCASE_VIDEO" ]; then
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
         get_framed_pics "$SHOWCASE_VIDEO"
         for ((i=0; i<$FRAMES; i++)); do
-            mv -v "$WORK_DIR"/$(printf "%08d%s"  $i .png) \
+            mv "$WORK_DIR"/$(printf "%08d%s"  $i .png) \
             "$WORK_DIR"/showcase/$(printf "%06d%s"  $i .png) 
         done
     elif [ "$SC_FRAMESTYLE" = "none" ]; then
         FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -s 384x288  -vframes $FRAMES \
-        -an  -y "$WORK_DIR/showcase/%d.png")
+        -an  -y "$WORK_DIR/showcase/%06d.png")
         echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
         SED_VAR="frame="
         if "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
@@ -2360,10 +2360,10 @@ if [ -n "$SHOWCASE_VIDEO" ]; then
             SC_CMD2=(convert -background none $ROTATE $WAVE -)
             SC_CMD3=(convert - -resize 384x288! "$pic")
             # if glass and either wave or rotate
-            if [[ "$SC_FRAMESTYLE" = "glass" && -n "$WAVE" || -n "$ROTATE" ]]; then
+            if [ "$SC_FRAMESTYLE" = "glass" ] && [[ -n "$WAVE" || -n "$ROTATE" ]]; then
                 "${SC_CMD1[@]}" miff:- | "${SC_CMD2[@]}" miff:- | "${SC_CMD3[@]}"
             # if glass and neither wave or rotate
-            elif [[ "$SC_FRAMESTYLE" = "glass" && -z "$WAVE" || -z "$ROTATE" ]]; then
+            elif [ "$SC_FRAMESTYLE" = "glass" ] && [[ -z "$WAVE" || -z "$ROTATE" ]]; then
                 :
             else # not glass
                   "${SC_CMD[@]}" miff:- | "${SC_CMD2[@]}" miff:- | "${SC_CMD3[@]}"
