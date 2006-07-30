@@ -92,7 +92,7 @@ to decrease font size with the **-menu-fontsize** option. For example:
 : -loop
     Pause in seconds at end of menu.  Use "inf" if you wish indefinite pause.
     (Note: you can not use inf with -menu-fade as you will get a black screen
-    at the end)  Default: "inf" for static menu, 10.0 seconds for animated
+    at the end)  (default: "inf" for static menu, 10.0 seconds for animated)
 : -chain-videos NUM | N1-NN
     Without options this will chain all videos together so they play sequentially
     without returning to the main menu, except for the last, which will return.
@@ -116,6 +116,26 @@ to decrease font size with the **-menu-fontsize** option. For example:
 : -bgvideo
     Menu background video - again, needs to be resized to 720x480 or 720x576,
     so pick one of appropriate aspect ratio/resolution
+: -showcase-image IMAGE.  see -bgimage
+    A different montage of images for the menu: small thumbnails go on left,
+    and a larger image in the centre. 
+: -showcase-video VIDEO
+    see -showcase-image.  In this case the larger thumb will be the supplied
+    video, which will be animated.
+: -rotate DEGREES
+    Rotate the showcase-image|video clockwise by DEGREES.
+    (default: if used without options, the rotate will be 5 degrees)
+: -wave GEOMETRY
+    Wave effect for showcase-image|video.  Alters thumbs along a sine wave using
+    GEOMETRY. (default: if used without options, the wave arg will be-20x556, which
+    produces a gentle wave with a small amount of distortion.
+    See: http://www.cit.gu.edu.au/~anthony/graphics/imagick6/distorts/#wave if you want
+    to try other values
+: -showcase-framestyle  none|glass
+    "none" will use the default frame method, using convert -frame
+    "glass" will use mplayer to make frames, which gives an interesting animated
+    effect to the frames, and can be much faster ( especially if you don't use -rotate or
+    -wave as thumbs will not need to be processed again after mplayer spits them out. 
 : -menu-title
     Title for the root menu - may be longer than thumbnail labels
     Also if you use \n in the title, you can use multi line titles, but you
