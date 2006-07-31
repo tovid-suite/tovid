@@ -239,10 +239,8 @@ runtime_error()
 
 function vid_length()
 {
-    yecho "Running mencoder "$1" -quiet -ovc copy -oac pcm -o /dev/null |
-    awk '/Video stream/ {print $10}'" >> "$LOG_FILE"
-    mencoder "$1" -quiet -ovc copy -oac pcm -o /dev/null 2>>"$LOG_FILE" |
-    awk '/Video stream/ {print $10}'
+    yecho "Running mencoder "$1" -quiet -ovc copy -oac pcm -o /dev/null | awk '/Video stream/ {print $10}'" >> "$LOG_FILE"
+    mencoder "$1" -quiet -ovc copy -oac pcm -o /dev/null 2>>"$LOG_FILE" | awk '/Video stream/ {print $10}'
 }
 
 function cleanup()
