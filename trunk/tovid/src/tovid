@@ -1499,7 +1499,9 @@ if test $INNER_WIDTH != $TGT_WIDTH || test $INNER_HEIGHT != $TGT_HEIGHT; then
 fi
 
 # Remove extraneous commas from filter command
-VID_FILTER=$(echo "$VID_FILTER" | sed -e 's/,,/,/g' -e 's/^,//')
+if test -n "$VID_FILTER"; then
+    VID_FILTER="-vf $(echo "$VID_FILTER" | sed -e 's/,,/,/g' -e 's/^,//')"
+fi
 
 
 # ******************************************************************************
@@ -1708,7 +1710,7 @@ else
     if $USE_FIFO; then
         mkfifo "$YUV_STREAM"
     fi
-    VID_PLAY_CMD="$PRIORITY $MPLAYER -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} -vf ${VID_FILTER} $MPLAYER_OPTS \"$IN_FILE\""
+    VID_PLAY_CMD="$PRIORITY $MPLAYER -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\""
     VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
     yecho $VID_PLAY_CMD
     yecho $VID_ENC_CMD
