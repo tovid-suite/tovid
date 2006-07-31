@@ -99,7 +99,7 @@ YUVDENOISE=""
 VID_FILTER=""
 # High priority encoding
 PRIORITY="nice -n 0"
-# No deinterlacing
+# Don't do deinterlacing
 DEINTERLACE=false
 # Don't do interlaced encoding
 INTERLACED=false
@@ -328,10 +328,6 @@ get_args()
     # Parse all arguments
     while test $# -gt 0; do
         case "$1" in
-            "-v" | "-version" )
-                echo "$TOVID_VERSION"
-                exit 0
-                ;;
         
             # Use config file?
             "-config" )
@@ -469,8 +465,7 @@ get_args()
                     PRIORITY="nice -n 10"
                 fi
                 ;;
-            "-deinterlace" )
-                # Use median deinterlacer (reasonably good quality)
+            "-deinterlace" | "-progressive" )
                 DEINTERLACE=:
                 ;;
             "-interlaced" )
@@ -754,6 +749,13 @@ goodbye()
 # ******************************************************************************
 # ******************************************************************************
 
+# Print version number only, if requested
+if test "$1" = "-v" || test "$1" = "-version"; then
+    echo "$TOVID_VERSION"
+    exit 0
+fi
+
+# Print complete 'tovid' command-line that was used
 if ! $QUIET; then
     printf "%s\n" "$SCRIPT_NAME"
     yecho "tovid command-line used:"
