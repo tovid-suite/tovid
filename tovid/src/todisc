@@ -682,6 +682,9 @@ done
 if test ${#FILES[@]} -gt 30; then
     usage_error "Sorry, a maximum of 30 videos (thumbs) is supported
     You gave ${#FILES[@]} videos as input"
+elif test $SHOWCASE && test  ${#FILES[@]} -gt 5; then
+    usage_error "Sorry, a maximum of 5 titles is allowed for showcase
+    You gave ${#FILES[@]} videos as input"
 fi
 
 # If output directory already exists, print a message and exit
