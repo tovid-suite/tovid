@@ -482,7 +482,8 @@ while test $# -gt 0; do
             ;;
         "-wave" )
             shift
-            if test -z "$1"; then
+            WAVE=$1
+            if [ "$WAVE" = default ]; then
                 WAVE="-wave -20x556"
             else
                 WAVE="-wave $1"
@@ -2629,7 +2630,6 @@ else # Do not do menu fade
                         "${IM_CMD01[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                        "${IM_CMD03[@]}" miff:- |  "${IM_CMD3[@]}" |  "${IM_CMD4[@]}"
                     else # showcase, mist showcase-video, not bgvideo
-                        echo "Running "${IM_CMD01[@]}" miff:- | "${IM_CMD02[@]}" "
                         "${IM_CMD01[@]}" miff:- | "${IM_CMD02[@]}" "$WORK_DIR/animenu/$count.jpg"
                     fi
                 elif $SHOWCASE && [ -n "$SHOWCASE_IMG" ]; then # showcase, mist, showcase-image
