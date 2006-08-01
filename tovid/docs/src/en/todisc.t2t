@@ -118,10 +118,10 @@ to decrease font size with the **-menu-fontsize** option. For example:
     so pick one of appropriate aspect ratio/resolution
 : -showcase-image IMAGE.  see -bgimage
     A different montage of images for the menu: small thumbnails go on left,
-    and a larger image in the centre. 
+    and a larger image in the centre. Maximum of 5 videos.
 : -showcase-video VIDEO
     see -showcase-image.  In this case the larger thumb will be the supplied
-    video, which will be animated.
+    video, which will be animated.  Maximum of 5 videos.
 : -rotate DEGREES
     Rotate the showcase-image|video clockwise by DEGREES.
     (default: if used without options, the rotate will be 5 degrees)
