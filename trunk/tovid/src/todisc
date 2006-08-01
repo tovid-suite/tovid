@@ -2587,9 +2587,8 @@ if $MENU_FADE && ! $STATIC; then
     done
 else # Do not do menu fade
     if $TRANSPARENT; then
-        for (( count=1; count<$FRAMES; count++)); do
+        for (( count=1; count<=$FRAMES; count++)); do
             spin "\rProcessing "$count.jpg"  "
-
             for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
                 ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  -name $(printf "%06d%s"  $((count - 1)) .$IMG_FMT) ) )
             done
@@ -2678,7 +2677,7 @@ else # Do not do menu fade
         done
     else # Not transparent
          C=$((${CHAPTERS[s]} - 1))
-        for (( count=1; count <FRAMES; count++)); do
+        for (( count=1; count <=FRAMES; count++)); do
             spin -ne "\rProcessing "$count.jpg"  "
             for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
                 ANI_PICS=( "${ANI_PICS[@]}" \
