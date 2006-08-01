@@ -125,9 +125,10 @@ to decrease font size with the **-menu-fontsize** option. For example:
 : -rotate DEGREES
     Rotate the showcase-image|video clockwise by DEGREES.
     (default: if used without options, the rotate will be 5 degrees)
-: -wave GEOMETRY
+: -wave default|GEOMETRY
     Wave effect for showcase-image|video.  Alters thumbs along a sine wave using
-    GEOMETRY. (default: if used without options, the wave arg will be-20x556, which
+    GEOMETRY. (default: no wave)
+    "default" will produce a wave arg of -20x556, which
     produces a gentle wave with a small amount of distortion.
     See: http://www.cit.gu.edu.au/~anthony/graphics/imagick6/distorts/#wave if you want
     to try other values
