@@ -800,6 +800,10 @@ fi
 # if -bgvideo selected, but also -static, exit with error message
 if test -n "$BG_VIDEO" &&  $STATIC; then
     usage_error "You can not use -bgvideo with a static menu"
+elif test -n "$SHOWCASE_VIDEO" && $STATIC; then
+    usage_error "You can not use -showcase-video with a static menu"
+elif [ "$SC_FRAMESTYLE" = "glass" ] && $STATIC; then
+    usage_error "You can not use -showcase-framestyle glass with a static menu"
 fi
 # create_dirs
 echo
@@ -939,7 +943,7 @@ TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4
 SHOWCASE_THUMB_ARRAY=("+86+166" "+86+110 +86+240" "+86+65 +86+175 +86+275" \
 "+86+68 +86+148 +86+228 +86+308" "+86+68 +86+131 +86+194 +86+257 +86+320")
 SHOWCASE_TITLES_XARRAY=("146" "93 223" "48 158 258" \
-"53 133 213 293" "53 116 179 242 305")
+"50 130 210 290" "53 116 179 242 305")
 
 PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
 printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
@@ -1521,8 +1525,10 @@ if $SHOWCASE; then
         ${sc_cmd[@]} -page +240+85 "$WORK_DIR/showcase_img.png" \
         -mosaic "$WORK_DIR/preview.jpg"
         unset sc_cmd PICS
-        display "$WORK_DIR/preview.jpg"
-        confirm_preview
+        if ! $NOASK; then
+            display "$WORK_DIR/preview.jpg"
+            confirm_preview
+        fi
     fi
 elif $TRANSPARENT; then
     montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
@@ -1783,7 +1789,7 @@ if [ "$SC_FRAMESTYLE" = "glass" ]; then
         echo
         for ((p=1; p<=$FRAMES; p++)); do
             mv  "$WORK_DIR"/$(printf "%08d%s" $p .png) \
-        $WORK_DIR/pics/$i/$(printf "%06d%s" $p .png)
+        $WORK_DIR/pics/$i/$(printf "%06d%s" $p .png) 2>/dev/null
         done
     done
 else
@@ -2377,7 +2383,7 @@ if [ -n "$SHOWCASE_VIDEO" ]; then
         get_framed_pics "$SHOWCASE_VIDEO"  >> "$LOG_FILE" 2>&1
         for ((i=1; i<=$FRAMES; i++)); do
             mv  "$WORK_DIR"/$(printf "%08d%s"  $i .png) \
-            "$WORK_DIR"/showcase/$(printf "%06d%s"  $i .png) 
+            "$WORK_DIR"/showcase/$(printf "%06d%s"  $i .png) 2>/dev/null
         done
     elif [ "$SC_FRAMESTYLE" = "none" ]; then
         FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -s 384x256  -vframes $FRAMES \
@@ -2589,9 +2595,17 @@ else # Do not do menu fade
     if $TRANSPARENT; then
         for (( count=1; count<=$FRAMES; count++)); do
             spin "\rProcessing "$count.jpg"  "
-            for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
-                ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  -name $(printf "%06d%s"  $((count - 1)) .$IMG_FMT) ) )
-            done
+            if $STATIC; then # use preview images as its easier here
+                for ((i=0; i<=NUM_FILES; i++)); do
+                    ANI_PICS=( "${ANI_PICS[@]}" \
+                    $(find $WORK_DIR/ -maxdepth 1 -name ${i}-preview\*.$IMG_FMT) )
+                done
+            else
+                for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
+                    ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  \
+                    -name $(printf "%06d%s"  $((count - 1)) .$IMG_FMT) ) )
+                done
+            fi
             for ((f=0; f<${#ANI_PICS[@]}; f++)); do
                 sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_PAGES[f]} "${ANI_PICS[f]}")
             done
