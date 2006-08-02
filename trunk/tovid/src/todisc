@@ -1433,30 +1433,42 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     -title "${TITLES[t]}" -compose CopyOpacity)
     BUTTON_CMD2=(convert -mattecolor none -background none \
     -bordercolor none -frame 3x3 -)
-    BUTTON_CMD3=(convert - -resize ${GEO_ARRAY[NUM_FILES]}! +antialias)
-    BUTTON_CMD4=(convert -size "${GEO_ARRAY[NUM_FILES]}+5+5"  xc:none \
+    BUTTON_CMD3=(convert - -resize ${THUMB_SIZE}! +antialias)
+    BUTTON_CMD4=(convert -size "${THUMB_SIZE}+5+5"  xc:none \
     -fill none +antialias -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file \
     -colors 3 "$WORK_DIR/Selectx1.png")
-    BUTTON_CMD5=(convert -size "${GEO_ARRAY[NUM_FILES]}+5+5" xc:none \
+    BUTTON_CMD5=(convert -size "${THUMB_SIZE}+5+5" xc:none \
     -fill none +antialias -stroke '#188DF6' -strokewidth 4 -draw @draw_file \
     -colors 3 "$WORK_DIR/Highlightx1.png")
     
     if [ "$BUTTON_STYLE" = "text" ]; then
-        if $FEATHER; then
-            "${BUTTON_CMD[@]}" miff:- | "${BUTTON_CMD3[@]}" \
-            "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
-            "${BUTTON_CMD1[@]}" miff:- | "${BUTTON_CMD3[@]}" \
-            "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
+        if $SHOWCASE; then
+            if $FEATHER; then
+                :
+            else
+                :
+            fi
         else
-            "${BUTTON_CMD[@]}" miff:- | "${BUTTON_CMD2[@]}" miff:- |
-            "${BUTTON_CMD3[@]}" \
-            "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
-            "${BUTTON_CMD1[@]}" miff:- | "${BUTTON_CMD2[@]}" miff:- |
-            "${BUTTON_CMD3[@]}" "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
+            if $FEATHER; then
+                "${BUTTON_CMD[@]}" miff:- | "${BUTTON_CMD3[@]}" \
+                "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
+                "${BUTTON_CMD1[@]}" miff:- | "${BUTTON_CMD3[@]}" \
+                "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
+            else
+                "${BUTTON_CMD[@]}" miff:- | "${BUTTON_CMD2[@]}" miff:- |
+                "${BUTTON_CMD3[@]}" \
+                "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
+                "${BUTTON_CMD1[@]}" miff:- | "${BUTTON_CMD2[@]}" miff:- |
+                "${BUTTON_CMD3[@]}" "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
+            fi
         fi
     elif [ $BUTTON_STYLE = "rect" ]; then
-        "${BUTTON_CMD4[@]}"
-        "${BUTTON_CMD5[@]}"
+        if $SHOWCASE; then
+            :
+        else
+            "${BUTTON_CMD4[@]}"
+            "${BUTTON_CMD5[@]}"
+        fi
     fi
 done
 if ! $NOASK && ! $SHOWCASE; then
@@ -1465,51 +1477,65 @@ if ! $NOASK && ! $SHOWCASE; then
 fi
 if [ "$BUTTON_STYLE" = "rect" ]; then
     for button in Select Highlight; do
-        montage -background none \
-        $(for ((i=0; i<=NUM_FILES; i++)); do echo $WORK_DIR/${button}x1.png;done) \
+        if $SHOWCASE; then
+            :
+        else
+            montage -background none \
+            $(for ((i=0; i<=NUM_FILES; i++)); do echo $WORK_DIR/${button}x1.png;done) \
+            -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}+10+4 \
+            -bordercolor none -mattecolor transparent miff:- |
+            convert  -colors 3 -size 720x480 xc:none - -gravity north -geometry +0+45 \
+            -composite  "$WORK_DIR/${button}.png"
+            BUTTON_DIM=$(identify "$WORK_DIR/Highlightx1.png" |awk '{print $3}')
+            convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
+            fake_montage=( $WORK_DIR/Highlightx1.png $(for ((i=0; i<NUM_FILES-1; i++)); do
+            echo $WORK_DIR/empty-button.png; done))
+            montage -background none ${fake_montage[@]} \
+            -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
+            -bordercolor none -mattecolor transparent miff:- |
+            convert  -size 720x480 xc:none - -gravity north -geometry +0+45 \
+            -composite "$WORK_DIR/fake_montage.png"
+        fi
+    done
+elif [ "$BUTTON_STYLE" = "text" ]; then
+    if $SHOWCASE; then
+        :
+    else
+        select_buttons=( ${select_buttons[@]} \
+        $(find $WORK_DIR/ -name 00\*select.png |sort) )
+        highlight_buttons=( ${highlight_buttons[@]} \
+        $(find $WORK_DIR/ -name 00\*highlight.png |sort) ) 
+        montage -background none ${select_buttons[@]} \
         -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
         -bordercolor none -mattecolor transparent miff:- |
-        convert  -colors 3 -size 720x480 xc:none - -gravity north -geometry +0+45 \
-        -composite  "$WORK_DIR/${button}.png"
-    done
-    BUTTON_DIM=$(identify "$WORK_DIR/Highlightx1.png" |awk '{print $3}')
-    convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
-    fake_montage=( $WORK_DIR/Highlightx1.png $(for ((i=0; i<NUM_FILES-1; i++)); do
-    echo $WORK_DIR/empty-button.png; done))
-    montage -background none ${fake_montage[@]} \
-    -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
-    -bordercolor none -mattecolor transparent miff:- |
-    convert  -size 720x480 xc:none - -gravity north -geometry +0+45 \
-    -composite "$WORK_DIR/fake_montage.png"
-elif [ "$BUTTON_STYLE" = "text" ]; then
-    select_buttons=( ${select_buttons[@]} $(find $WORK_DIR/ -name 00\*select.png |sort) )
-    highlight_buttons=( ${highlight_buttons[@]} $(find $WORK_DIR/ -name 00\*highlight.png |sort) ) 
-    montage -background none ${select_buttons[@]} \
-    -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
-    -bordercolor none -mattecolor transparent miff:- |
-    convert  -size 720x480 xc:none - -gravity north -geometry +0+45 \
-    -composite "$WORK_DIR/Select.png"
-    montage -background none ${highlight_buttons[@]} \
-    -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
-    -bordercolor none -mattecolor transparent miff:- |
-    convert  -size 720x480 xc:none - -gravity north -geometry +0+45 \
-    -composite "$WORK_DIR/Highlight.png"
-
-
+        convert  -size 720x480 xc:none - -gravity north -geometry +0+45 \
+        -composite "$WORK_DIR/Select.png"
+        montage -background none ${highlight_buttons[@]} \
+        -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
+        -bordercolor none -mattecolor transparent miff:- |
+        convert  -size 720x480 xc:none - -gravity north -geometry +0+45 \
+        -composite "$WORK_DIR/Highlight.png"
+    fi
     BUTTON_DIM=$(identify $WORK_DIR/000000-highlight.png |awk '{print $3}')
     convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
     fake_montage=( $WORK_DIR/000000-highlight.png $(for ((i=0; i<NUM_FILES-1; i++)); do 
     echo $WORK_DIR/empty-button.png; done))
-    montage -background none ${fake_montage[@]} \
-    -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
-    -bordercolor none -mattecolor transparent miff:- |
-    convert  -size 720x480 xc:none - -gravity north -geometry +0+45 \
-    -composite "$WORK_DIR/fake_montage.png"
+    if $SHOWCASE; then
+        :
+    else
+        montage -background none ${fake_montage[@]} \
+        -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
+        -bordercolor none -mattecolor transparent miff:- |
+        convert  -size 720x480 xc:none - -gravity north -geometry +0+45 \
+        -composite "$WORK_DIR/fake_montage.png"
+    fi
 fi
 # this reduces colours so spumux is happy
-for button in Select Highlight; do
-    mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
-done
+if ! $SHOWCASE; then
+    for button in Select Highlight; do
+        mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
+    done
+fi
 if $SHOWCASE; then
     if [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
         for ((i=0; i<=NUM_FILES; i++)); do
@@ -1530,21 +1556,24 @@ if $SHOWCASE; then
             confirm_preview
         fi
     fi
-elif $TRANSPARENT; then
-    montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
-    -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none -bordercolor "#444744" miff:- |
-    composite -dissolve $OPACITY \
-    -gravity north -geometry +0+45 - \
-    "$WORK_DIR/pics/template.png" -background none miff:- |
-    convert - "$WORK_DIR/title_txt.png"  \
-    -gravity south -geometry +0+65 -composite "$WORK_DIR/preview.jpg"
-else # Not transparent or showcase
-    montage ${PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
-    -geometry ${GEO_ARRAY[NUM_FILES]}+10+4  -background none -bordercolor "#444744" miff:- |
-    convert "$WORK_DIR/pics/template.png" \
-    "$WORK_DIR/title_txt.png"  -gravity south -geometry +0+65 -composite \
-    -  -gravity north -geometry +0+45 -composite "$WORK_DIR/preview.jpg"
-    
+else
+
+    if $TRANSPARENT; then
+        montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
+        -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none -bordercolor "#444744" miff:- |
+        composite -dissolve $OPACITY \
+        -gravity north -geometry +0+45 - \
+        "$WORK_DIR/pics/template.png" -background none miff:- |
+        convert - "$WORK_DIR/title_txt.png"  \
+        -gravity south -geometry +0+65 -composite "$WORK_DIR/preview.jpg"
+    else # Not transparent
+        montage ${PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
+        -geometry ${GEO_ARRAY[NUM_FILES]}+10+4  -background none -bordercolor "#444744" miff:- |
+        convert "$WORK_DIR/pics/template.png" \
+        "$WORK_DIR/title_txt.png"  -gravity south -geometry +0+65 -composite \
+        -  -gravity north -geometry +0+45 -composite "$WORK_DIR/preview.jpg"
+        
+    fi
 fi
 # make the fake montage with highlighted 1st button and display it
 if ! $SHOWCASE; then
@@ -2841,6 +2870,7 @@ else
 fi
 
 echo
+if ! $SHOWCASE; then
 echo "Running spumux to create the main menu"
 spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE"
 if test -f "$MENU_FILE"; then
@@ -2848,7 +2878,7 @@ if test -f "$MENU_FILE"; then
 else
     echo "Menu file $MENU_FILE is missing!"
 fi
-
+fi
 if $SUB_MENU; then
     echo "Creating submenus"
     for ((x=1; x<=V_ARRAY_TOTAL; x++)); do
@@ -2862,10 +2892,22 @@ if $SUB_MENU; then
 fi
 if [ "$TARGET" = dvd ]; then
     echo "Running dvdauthor to create the DVD filesystem"
+    if ! $SHOWCASE; then #FIXME remove when showcase spumux done
     dvdauthor -x "$DVDAUTHOR_XML"
+    else
+    echo -e "\n***Sorry DVD creation for showcase* styles not finished yet***"
+    cp -v $WORK_DIR/intro.mpg /tmp/animenu.mpg
+    echo -e "You can watch your menu:  "$REAL_WORK_DIR/../animenu.mpg"\n"
+    fi
 elif [ "$TARGET" = svcd ]; then
+    if ! $SHOWCASE; then #FIXME remove when showcase spumux done
     makexml -svcd -menu "$WORK_DIR/animenu.mpg" "${IN_FILES[@]}" -out MyDisc
     vcdxbuild MyDisc.xml
+    else
+    echo -e "\n***Sorry SVCD creation for showcase* styles not finished yet***"
+    cp -v $WORK_DIR/intro.mpg /tmp/animenu.mpg
+    echo -e "You can watch your menu:  /tmp/animenu.mpg\n"
+    fi
 fi
 echo "Cleaning up unwanted files in $REAL_WORK_DIR"
 find "$WORK_DIR"/ -name '*.png' ! -name Highlight.png ! -name Select.png -exec rm -f {} \;
@@ -2886,12 +2928,14 @@ cleanup
 echo $SEPARATOR
 echo "todisc took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
 echo $SEPARATOR
+if ! $SHOWCASE; then
 if [ "$TARGET" = dvd ]; then
     echo "Your new DVD should be in $OUT_DIR"
 elif [ "$TARGET" = svcd ]; then
     echo "Your svcd bin and cue files are ready"
     echo "You can burn them with:"
     echo  "cdrdao write --device /dev/hdc --driver generic-mmc videocd.cue"
+fi
 fi
 echo
 echo "Thanks for using todisc."
