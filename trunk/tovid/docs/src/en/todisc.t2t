@@ -66,7 +66,7 @@ to decrease font size with the **-menu-fontsize** option. For example:
 : -dvd
     DVD-compatible output (default)
 : -svcd
-    Super VideoCD-compatible output
+    Super VideoCD-compatible output: *this is currently broken for -showcase-*
 : -ntsc
     720x480 output, compatible with NTSC standard (default)
 : -pal
@@ -204,6 +204,13 @@ to decrease font size with the **-menu-fontsize** option. For example:
      Color to use for the thumb titles (see -title-color)
 : -seek NUM
      Seek to NUM seconds before generating thumbnails (default: 1.0 seconds)
+: -tile3x1
+     Use a montage tile of 3x1 instead of the usual 2x2 for 3 videos
+     ie.  [movie1] [movie2] [movie3] instead of
+     [movie1] [movie2]
+     [movie3]
+     This option only comes into play if the number of videos supplied equals 3
+     Otherwise it will be silently ignored
 
 
 ==See also==
