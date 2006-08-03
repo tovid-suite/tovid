@@ -124,6 +124,7 @@ NOASK=false
 SMALL_FONTSIZE=false
 SC_FRAMESTYLE=none
 THUMB_FRAME="-frame 3x3"
+THREExONE=false
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -445,6 +446,9 @@ while test $# -gt 0; do
             MENU_FADE=:
             AUDIO_FADE=:
             ;;
+        "-tile3x1" )
+            THREExONE=:
+            ;;
         "-loop" )
             shift
             PAUSE_TIME="$1"
@@ -735,13 +739,6 @@ if [[ $SM_AUDIO &&  ${#FILES[@]} -ne ${#SM_AUDIO[@]} &&  ${#SM_AUDIO[@]} -ne 1 ]
     usage_error "Please give the same number of submenu audios as videos.
     You gave ${#FILES[@]} video files and ${#SM_AUDIO[@]} audio files"
 fi
-# make sure args to -chain-vidoes equals number of videos
-#if [[ $CHAIN_VIDEOS &&  ${#FILES[@]} -ne ${#POST_PLAY[@]} ]]; then
-#    usage_error "Please give the same number of args to -chain-video as videos.
-#    You gave ${#FILES[@]} video files and ${#POST_PLAY[@]} arguments
-#    Usage example: -chain-videos chain break chain chain
-#    'chain' will jump to the next title, 'break' will return to main menu" 
-#fi
 # Get absolute pathnames of all files
 for i in "${FILES[@]}"; do
     IN_FILES=("${IN_FILES[@]}" "$(abspath "$i")")
@@ -782,6 +779,7 @@ if [ ${#CHAPTERS[@]} -eq 1 ]; then
         CHAPTERS[i]=${CHAPTERS[0]}
     done
 fi
+    
 # if more than one value for CHAPTERS, make sure they equal video #
 if [[ $SUB_MENU &&  ${#FILES[@]} -ne ${#CHAPTERS[@]} &&  ${#CHAPTERS[@]} -ne 1 ]]; then
     usage_error "Please give the same number of submenu audios as videos.
@@ -1021,9 +1019,14 @@ if $SHOWCASE; then
         THUMB_SIZE="${GEO_ARRAY[30]}"
     fi
 fi
+# allow specifically setting the geometry for 3 videos to 1x3 page
+if $THREExONE && [ $V_ARRAY_TOTAL -eq 3 ]; then
+    TILE_ARRAY[2]=3x1
+fi
 # don't use frame for showcase-framestyle glass
 if [ "$SC_FRAMESTYLE" = "glass" ]; then
     unset THUMB_FRAME
+fi
 #FIXME temporary till non transparent menus for -showcase* are done separately
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
@@ -1277,7 +1280,7 @@ if $SHOWCASE; then
         echo "-frame 5x5 "$WORK_DIR/showcase_img.jpg"" |format_output
         convert "$WORK_DIR/showcase_img.png" -mattecolor gray $THUMB_FRAME miff:- |
         convert -background none $ROTATE $WAVE - miff:-|
-        convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png" 
+        convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
     fi
 #        "$WORK_DIR/showcase_img.jpg"
 #        convert "$WORK_DIR/showcase_img.png" "$WORK_DIR/showcase_img.jpg"
@@ -1388,10 +1391,6 @@ for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/ -maxdepth 1 -name ${i}-preview\*.$IMG_FMT) )
 done
-# don't use frame for showcase-framestyle glass
-if [ "$SC_FRAMESTYLE" = "glass" ]; then
-    unset THUMB_FRAME
-fi 
 for ((i=0; i<${#PICS[@]}; i++)); do
     if $FEATHER; then
         composite -compose CopyOpacity $THUMB_MASK +matte \
@@ -1574,6 +1573,10 @@ elif [ "$BUTTON_STYLE" = "text" ]; then
         -bordercolor none -mattecolor transparent miff:- |
         convert  -size 720x480 xc:none - -gravity north -geometry +0+45 \
         -composite "$WORK_DIR/Highlight.png"
+        BUTTON_DIM=$(identify "$WORK_DIR/000000-highlight.png" |awk '{print $3}')
+        convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
+        fake_montage=( $WORK_DIR/000000-highlight.png $(for ((i=0; i<NUM_FILES-1; i++)); do
+        echo $WORK_DIR/empty-button.png; done))
     fi
     if $SHOWCASE; then
         convert  -size 720x480 xc:none -background none \
@@ -1624,7 +1627,6 @@ else
         convert "$WORK_DIR/pics/template.png" \
         "$WORK_DIR/title_txt.png"  -gravity south -geometry +0+65 -composite \
         -  -gravity north -geometry +0+45 -composite "$WORK_DIR/preview.jpg"
-        
     fi
 fi
 # make the fake montage with highlighted 1st button and display it
