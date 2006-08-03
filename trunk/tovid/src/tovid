@@ -104,6 +104,7 @@ DEINTERLACE=false
 # Don't do interlaced encoding
 INTERLACED=false
 YUV4MPEG_ILACE=""
+FF_ILACE=""
 # Don't do any filtering by default
 DO_DENOISE=false
 DO_CONTRAST=false
@@ -1172,6 +1173,8 @@ if $DEINTERLACE; then
         yecho "Encoding will resume in 5 seconds..."
         sleep 5s
     fi
+    # Deinterlacing for ffmpeg
+    FF_ILACE="-deinterlace"
 fi
 
 # Default quantization
@@ -1184,6 +1187,8 @@ if test "$TGT_RES" = "VCD"; then
     FF_QUANT=""
 else
     MPEG2_QUALITY="--reduction-4x4 2 --reduction-2x2 1 -q $QUANT"
+    # Use lower qscale
+    QUANT=$(expr $QUANT - 2)
     FF_QUANT="-qscale $QUANT"
 fi
 
@@ -1490,6 +1495,8 @@ if $INTERLACED && test "$TGT_RES" != "VCD"; then
     YUV4MPEG_ILACE=":interlaced"
     # Add the ilpack video filter
     #VF_POST="$VF_POST -vf-add ilpack"
+    # Interlacing for ffmpeg
+    FF_ILACE="-interlace"
 fi
 
 # Expand to the target outer size
@@ -1516,7 +1523,7 @@ if $USE_FFMPEG; then
 
     FF_SIZE="-s ${INNER_WIDTH}x${INNER_HEIGHT}"
     FF_FPS="-r $TGT_FPS"
-    FF_BITRATE="-b $VID_BITRATE -ab $AUD_BITRATE"
+    FF_BITRATE="-maxrate $VID_BITRATE -ab $AUD_BITRATE"
     FF_SAMPRATE="-ar $SAMPRATE"
 
     # Padding, for any letterboxing to be done
@@ -1546,7 +1553,7 @@ if $USE_FFMPEG; then
     esac
     
     FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" \
-        $FF_QUANT $FF_BITRATE $FF_TARGET $FF_FPS \
+        $FF_QUANT $FF_BITRATE $FF_TARGET $FF_FPS $FF_ILACE \
         $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
     FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\""
