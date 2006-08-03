@@ -255,7 +255,8 @@ function cleanup()
     if $KEEP_FILES; then
         yecho "Keeping temporary files in $REAL_WORK_DIR"
     else
-        rm -rfv "$REAL_WORK_DIR"
+        yecho "Removing $REAL_WORK_DIR"
+        rm -rf "$REAL_WORK_DIR"
     fi
     echo -n "Removing the symlink in /tmp . . . "
     rm -fv "$WORK_DIR"
@@ -339,6 +340,7 @@ function spin()
     echo -ne "\r$@ "
 }
 
+#EXPAND="expand=-6:-6,"
 get_framed_pics()
 {
 mplayer -ss 5 -vo $VOUT -noconsolecontrols \
@@ -1019,6 +1021,9 @@ if $SHOWCASE; then
         THUMB_SIZE="${GEO_ARRAY[30]}"
     fi
 fi
+# don't use frame for showcase-framestyle glass
+if [ "$SC_FRAMESTYLE" = "glass" ]; then
+    unset THUMB_FRAME
 #FIXME temporary till non transparent menus for -showcase* are done separately
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
@@ -1270,7 +1275,7 @@ if $SHOWCASE; then
             fi
         echo "Running convert "$WORK_DIR/showcase_img.png" -mattecolor gray"
         echo "-frame 5x5 "$WORK_DIR/showcase_img.jpg"" |format_output
-        convert "$WORK_DIR/showcase_img.png" -mattecolor gray -frame 5x5 miff:- |
+        convert "$WORK_DIR/showcase_img.png" -mattecolor gray $THUMB_FRAME miff:- |
         convert -background none $ROTATE $WAVE - miff:-|
         convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png" 
     fi
@@ -1331,13 +1336,14 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
     else
         CMD=( "${TRANSCODE_CMD[@]}" )
     fi
-    VOUT="png:z=7"; FRAMES=1
+    VOUT="png:z=7"; FRAMES=30
     FRAME_SIZE=$THUMB_SIZE
     D=1
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
         get_framed_pics "${IN_FILES[i]}"  >> "$LOG_FILE" 2>&1
-        mv -fv $WORK_DIR/$(printf "%08d%s"  1 .png) \
+        mv -fv $WORK_DIR/$(printf "%08d%s"  25 .png) \
         $WORK_DIR/${i}-preview.$IMG_FMT
+        rm -f "$WORK_DIR"/00000*.png
     elif 
     [ "$SC_FRAMESTYLE" = "none" ]; then
         if "${CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
@@ -1382,6 +1388,10 @@ for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/ -maxdepth 1 -name ${i}-preview\*.$IMG_FMT) )
 done
+# don't use frame for showcase-framestyle glass
+if [ "$SC_FRAMESTYLE" = "glass" ]; then
+    unset THUMB_FRAME
+fi 
 for ((i=0; i<${#PICS[@]}; i++)); do
     if $FEATHER; then
         composite -compose CopyOpacity $THUMB_MASK +matte \
