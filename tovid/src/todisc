@@ -255,7 +255,7 @@ function cleanup()
     if $KEEP_FILES; then
         yecho "Keeping temporary files in $REAL_WORK_DIR"
     else
-        rm -rf "$REAL_WORK_DIR"
+        rm -rfv "$REAL_WORK_DIR"
     fi
     echo -n "Removing the symlink in /tmp . . . "
     rm -fv "$WORK_DIR"
@@ -307,6 +307,10 @@ function confirm_preview()
         yecho "Preview not OK, exiting."
         echo -n "Deleting symlink in /tmp . . . "
         rm -fv "$WORK_DIR"
+        if ! $KEEP_FILES; then
+            echo -n "Deleting "$REAL_WORK_DIR" . . . "
+            rm -fr "$REAL_WORK_DIR"
+        fi
         yecho
         echo
         echo "Some configuration options to try, if things look bad:"
@@ -859,9 +863,9 @@ echo
 ##############################################################################
 
 # Menu title font size
+if $SHOWCASE && test -z "$MENU_FONTSIZE"; then MENU_FONTSIZE="26"; fi
 test $TARGET = "dvd" && : ${MENU_FONTSIZE:="40"}
 test $TARGET = "svcd" && : ${MENU_FONTSIZE:="32"}
-test $SHOWCASE && : ${MENU_FONTSIZE:="26"}
 # Thumbnail title font size
 # PTSIZE=(30 36 42 42 42 42 48 48 48 48 48 48 54 54 54 54 54 54 54 54 \
 # 54 54 54 54 54 54 54 54 54 54)
@@ -940,10 +944,10 @@ SVCD_GEO_ARRAY=(240x240 180x180 120x120 120x120 120x120 120x120 96x96 96x96 \
 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48)
 TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5 6x6)
-SHOWCASE_THUMB_ARRAY=("+86+166" "+86+110 +86+240" "+86+65 +86+175 +86+275" \
+SHOWCASE_THUMB_ARRAY=("+86+166" "+86+110 +86+240" "+86+75 +86+175 +86+275" \
 "+86+68 +86+148 +86+228 +86+308" "+86+68 +86+131 +86+194 +86+257 +86+320")
-SHOWCASE_TITLES_XARRAY=("146" "93 223" "48 158 258" \
-"50 130 210 290" "53 116 179 242 305")
+SHOWCASE_TITLES_XARRAY=("144" "88 218" "54 154 254" \
+"50 130 210 290" "49 112 175 238 301")
 
 PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
 printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
@@ -966,6 +970,7 @@ if  [ $TARGET = "dvd" ]; then
     MPLEX_FORMAT="8"
     GEO_ARRAY=("${DVD_GEO_ARRAY[@]}")
     FFMPEG_OPTS="-b 8000  -maxrate 9000 -bufsize 230  -aspect 4:3"
+    SHOWCASE_SIZE=384x256
     if [ $TV_STANDARD = ntsc ]; then
         VIDSIZE="720x480"
         FRAME_RATE=29.970
@@ -979,13 +984,14 @@ elif [ $TARGET = "svcd" ]; then
     MPLEX_FORMAT="4"
     GEO_ARRAY=("${SVCD_GEO_ARRAY[@]}")
     FFMPEG_OPTS="-b 2200 -minrate 2200 -maxrate 2200 -bufsize 230 -aspect 4:3"
+    SHOWCASE_SIZE=256x256
     if [ $TV_STANDARD = ntsc ]; then
         VIDSIZE="480x480"
-        PREVIEW_SIZE="720x480"
+        PREVIEW_SIZE="480x480"
         FRAME_RATE=29.970
     elif [ $TV_STANDARD = pal ]; then
         VIDSIZE="480x576"
-        PREVIEW_SIZE="720x576"
+        PREVIEW_SIZE="480x576"
         FRAME_RATE=25
     fi
 fi
@@ -998,17 +1004,17 @@ if $SHOWCASE; then
         BLUR=2.0
     fi
     if [ $V_ARRAY_TOTAL -lt 3 ]; then
-        THUMB_SIZE="120x90"
+        THUMB_SIZE="${GEO_ARRAY[10]}"
     elif [ $V_ARRAY_TOTAL -eq 3 ]; then
-        THUMB_SIZE="96x72"
+        THUMB_SIZE="${GEO_ARRAY[13]}"
     elif [ $V_ARRAY_TOTAL -eq 4 ]; then
         if $SMALL_FONTSIZE; then
-            THUMB_SIZE="60x40"
+            THUMB_SIZE="${GEO_ARRAY[30]}"
         else
-            THUMB_SIZE="80x60"
+            THUMB_SIZE="${GEO_ARRAY[23]}"
         fi
     elif [ $V_ARRAY_TOTAL -eq 5 ]; then
-        THUMB_SIZE="60x40"
+        THUMB_SIZE="${GEO_ARRAY[30]}"
     fi
 fi
 #FIXME temporary till non transparent menus for -showcase* are done separately
@@ -1234,7 +1240,7 @@ if $SHOWCASE; then
             OUTDIR="$WORK_DIR/showcase"
             OUT="$WORK_DIR/showcase_img.png"
             VOUT="png:z=7"; FRAMES=10
-            FRAME_SIZE=384x256
+            FRAME_SIZE=$SHOWCASE_SIZE
             get_framed_pics "$SHOWCASE_VIDEO" >> "$LOG_FILE" 2>&1
             echo "Using mplayer to get framed images from the showcase video"
             echo "Running: mplayer -vo $VOUT \
@@ -1247,9 +1253,9 @@ if $SHOWCASE; then
             rm -f "$WORK_DIR"/00000*.png
             convert "$WORK_DIR/showcase_img.png" \
             -background none $ROTATE $WAVE miff:-|
-            convert - -resize 384x256! "$WORK_DIR/showcase_img.png"
+            convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
         elif [ "$SC_FRAMESTYLE" = "none" ]; then
-            FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" $SEEK -s 384x256  -vframes 1 \
+            FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" $SEEK -s $SHOWCASE_SIZE  -vframes 1 \
             -vcodec png -an  -f rawvideo -y "$WORK_DIR/showcase_img.png")
             echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
             SED_VAR="frame="
@@ -1264,17 +1270,17 @@ if $SHOWCASE; then
         echo "-frame 5x5 "$WORK_DIR/showcase_img.jpg"" |format_output
         convert "$WORK_DIR/showcase_img.png" -mattecolor gray -frame 5x5 miff:- |
         convert -background none $ROTATE $WAVE - miff:-|
-        convert - -resize 384x256! "$WORK_DIR/showcase_img.png" 
+        convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png" 
     fi
 #        "$WORK_DIR/showcase_img.jpg"
 #        convert "$WORK_DIR/showcase_img.png" "$WORK_DIR/showcase_img.jpg"
     elif [ -n "$SHOWCASE_IMG" ]; then
-        echo "Running convert -resize 384x256! "$SHOWCASE_IMG" \
+        echo "Running convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" \
         "$WORK_DIR/showcase_img.jpg"" |format_output
-#        convert -resize 384x256! "$SHOWCASE_IMG" -mattecolor gray -frame 5x5 "$WORK_DIR/showcase_img.jpg"
-        convert -resize 384x256! "$SHOWCASE_IMG" -mattecolor gray -frame 5x5 miff:- |
+#        convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" -mattecolor gray -frame 5x5 "$WORK_DIR/showcase_img.jpg"
+        convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" -mattecolor gray -frame 5x5 miff:- |
         convert -background none $ROTATE $WAVE - miff:-|
-        convert - -resize 384x256! "$WORK_DIR/showcase_img.png"
+        convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
     fi
 fi
 # transcode makes it harder to switch between PNG and JPEG for output
@@ -1446,14 +1452,16 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     -stroke '#188DF6' -strokewidth 4 -draw @draw_file "$WORK_DIR/Highlightx1.png")
     BUTTON_CMD8=(convert -size 320x100 xc:none \
     -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
-    -fill none -stroke '#188DF6' -gravity center  \
+    -fill '#188DF6' -stroke none -gravity center  \
     -annotate +0+0 "${TITLES[i]}" \
     -fill '#188DF6' -stroke '#188DF6' -strokewidth 1 \
     -annotate +1+1 "${TITLES[t]}")
-
-    BUTTON_CMD9=(convert  -size 320x100 xc:none \
-    -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE -fill '#DE7F7C' \
-    -gravity center  -annotate +0+0 "${TITLES[t]}")
+    BUTTON_CMD9=(convert -size 320x100 xc:none \
+    -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
+    -fill '#DE7F7C' -stroke none -gravity center  \
+    -annotate +0+0 "${TITLES[i]}" \
+    -fill '#DE7F7C' -stroke '#DE7F7C' -strokewidth 1 \
+    -annotate +1+1 "${TITLES[t]}")
     BUTTON_CMD10=(convert - -trim +repage)
     
     if [ "$BUTTON_STYLE" = "text" ]; then
@@ -2440,14 +2448,14 @@ if [ -n "$SHOWCASE_VIDEO" ]; then
     echo "Getting showcase video images from $SHOWCASE_VIDEO"
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
         D=2
-        FRAME_SIZE=384x256
+        FRAME_SIZE=$SHOWCASE_SIZE
         get_framed_pics "$SHOWCASE_VIDEO"  >> "$LOG_FILE" 2>&1
         for ((i=1; i<=$FRAMES; i++)); do
             mv  "$WORK_DIR"/$(printf "%08d%s"  $i .png) \
             "$WORK_DIR"/showcase/$(printf "%06d%s"  $i .png) 2>/dev/null
         done
     elif [ "$SC_FRAMESTYLE" = "none" ]; then
-        FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -s 384x256  -vframes $FRAMES \
+        FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -s $SHOWCASE_SIZE  -vframes $FRAMES \
         -an  -y "$WORK_DIR/showcase/%06d.png")
         echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
         SED_VAR="frame="
@@ -2467,10 +2475,10 @@ if [ -n "$SHOWCASE_VIDEO" ]; then
     else
         for pic in "${SC_PICS[@]}"; do
             spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$pic") of $FRAMES  "
-            SC_CMD=(convert -resize 384x256! "$pic" -mattecolor gray -frame 5x5)
+            SC_CMD=(convert -resize $SHOWCASE_SIZE! "$pic" -mattecolor gray -frame 5x5)
             SC_CMD1=(convert "$pic" -background none $ROTATE $WAVE)
             SC_CMD2=(convert -background none $ROTATE $WAVE -)
-            SC_CMD3=(convert - -resize 384x256! "$pic")
+            SC_CMD3=(convert - -resize $SHOWCASE_SIZE! "$pic")
             # if glass and either wave or rotate
             if [ "$SC_FRAMESTYLE" = "glass" ] && [[ -n "$WAVE" || -n "$ROTATE" ]]; then
                 "${SC_CMD1[@]}" miff:- | "${SC_CMD2[@]}" miff:- | "${SC_CMD3[@]}"
