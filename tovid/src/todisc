@@ -1011,7 +1011,7 @@ if $SHOWCASE; then
         THUMB_SIZE="60x40"
     fi
 fi
-#FIXME temporary till I get non transparent menus working with -showcase*
+#FIXME temporary till non transparent menus for -showcase* are done separately
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
 # spumux and dvdauthor vars
@@ -1412,7 +1412,7 @@ done
 echo
 echo "Creating the highlight and selection PNGs for the main menu"
 if [ "$BUTTON_STYLE" = "rect" ]; then
-    GEO="${GEO_ARRAY[NUM_FILES]/x/,}"
+    GEO="${THUMB_SIZE/x/,}"
 (
 cat  <<EOF
 rectangle 0,0 $GEO
@@ -1440,14 +1440,29 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     BUTTON_CMD5=(convert -size "${THUMB_SIZE}+5+5" xc:none \
     -fill none +antialias -stroke '#188DF6' -strokewidth 4 -draw @draw_file \
     -colors 3 "$WORK_DIR/Highlightx1.png")
+    BUTTON_CMD6=(convert -size ${THUMB_SIZE} xc:none +antialias -fill none \
+    -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file "$WORK_DIR/Selectx1.png")
+    BUTTON_CMD7=(convert -size ${THUMB_SIZE} xc:none +antialias -fill none \
+    -stroke '#188DF6' -strokewidth 4 -draw @draw_file "$WORK_DIR/Highlightx1.png")
+    BUTTON_CMD8=(convert -size 320x100 xc:none \
+    -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
+    -fill none -stroke '#188DF6' -gravity center  \
+    -annotate +0+0 "${TITLES[i]}" \
+    -fill '#188DF6' -stroke '#188DF6' -strokewidth 1 \
+    -annotate +1+1 "${TITLES[t]}")
+
+    BUTTON_CMD9=(convert  -size 320x100 xc:none \
+    -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE -fill '#DE7F7C' \
+    -gravity center  -annotate +0+0 "${TITLES[t]}")
+    BUTTON_CMD10=(convert - -trim +repage)
     
     if [ "$BUTTON_STYLE" = "text" ]; then
         if $SHOWCASE; then
-            if $FEATHER; then
-                :
-            else
-                :
-            fi
+            echo "Running "${BUTTON_CMD9[@]}" miff:- |  "${BUTTON_CMD10[@]}""
+            "${BUTTON_CMD8[@]}" miff:- |  "${BUTTON_CMD10[@]}" \
+            "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
+            "${BUTTON_CMD9[@]}" miff:- |  "${BUTTON_CMD10[@]}" \
+            "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
         else
             if $FEATHER; then
                 "${BUTTON_CMD[@]}" miff:- | "${BUTTON_CMD3[@]}" \
@@ -1464,7 +1479,8 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
         fi
     elif [ $BUTTON_STYLE = "rect" ]; then
         if $SHOWCASE; then
-            :
+                "${BUTTON_CMD6[@]}"
+                "${BUTTON_CMD7[@]}"
         else
             "${BUTTON_CMD4[@]}"
             "${BUTTON_CMD5[@]}"
@@ -1478,7 +1494,19 @@ fi
 if [ "$BUTTON_STYLE" = "rect" ]; then
     for button in Select Highlight; do
         if $SHOWCASE; then
-            :
+            unset sc_spumux_cmd fake_montage_cmd
+            BUTTON_DIM=$(identify "$WORK_DIR/Highlightx1.png" |awk '{print $3}')
+            convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
+            fake_montage=( $WORK_DIR/Highlightx1.png $(for ((i=0; i<NUM_FILES-1; i++)); do
+            echo $WORK_DIR/empty-button.png; done))
+            for ((i=0; i<=NUM_FILES; i++)); do
+                fake_montage_cmd=( ${fake_montage_cmd[@]} ${SHOWCASE_PAGES[i]} "${fake_montage[i]}")
+                sc_spumux_cmd=( ${sc_spumux_cmd[@]} ${SHOWCASE_PAGES[i]} "$WORK_DIR/${button}x1.png" )
+            done
+            convert  -size 720x480 xc:none -background none \
+            ${fake_montage_cmd[@]} -mosaic "$WORK_DIR/fake_montage.png"
+            convert  -size 720x480 xc:none -background none \
+            ${sc_spumux_cmd[@]} -mosaic "$WORK_DIR/${button}.png"
         else
             montage -background none \
             $(for ((i=0; i<=NUM_FILES; i++)); do echo $WORK_DIR/${button}x1.png;done) \
@@ -1499,7 +1527,18 @@ if [ "$BUTTON_STYLE" = "rect" ]; then
     done
 elif [ "$BUTTON_STYLE" = "text" ]; then
     if $SHOWCASE; then
-        :
+        select_buttons=( ${select_buttons[@]} \
+        $(find $WORK_DIR/ -name 00\*select.png |sort) )
+        highlight_buttons=( ${highlight_buttons[@]} \
+        $(find $WORK_DIR/ -name 00\*highlight.png |sort) )
+        for ((i=0; i<=NUM_FILES; i++)); do
+            sc_select_cmd=(${sc_select_cmd[@]} ${THUMBTITLES_ARRAY[i]} "${select_buttons[i]}")
+            sc_highlight_cmd=(${sc_highlight_cmd[@]} ${THUMBTITLES_ARRAY[i]} "${highlight_buttons[i]}")
+        done
+        convert -colors 3 -size 720x480 xc:none -background none \
+        ${sc_highlight_cmd[@]} -mosaic "$WORK_DIR/Highlight.png"
+        convert  -colors 3 -size 720x480 xc:none -background none \
+        ${sc_select_cmd[@]} -mosaic "$WORK_DIR/Select.png"
     else
         select_buttons=( ${select_buttons[@]} \
         $(find $WORK_DIR/ -name 00\*select.png |sort) )
@@ -1516,12 +1555,10 @@ elif [ "$BUTTON_STYLE" = "text" ]; then
         convert  -size 720x480 xc:none - -gravity north -geometry +0+45 \
         -composite "$WORK_DIR/Highlight.png"
     fi
-    BUTTON_DIM=$(identify $WORK_DIR/000000-highlight.png |awk '{print $3}')
-    convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
-    fake_montage=( $WORK_DIR/000000-highlight.png $(for ((i=0; i<NUM_FILES-1; i++)); do 
-    echo $WORK_DIR/empty-button.png; done))
     if $SHOWCASE; then
-        :
+        convert  -size 720x480 xc:none -background none \
+        ${THUMBTITLES_ARRAY[0]} $WORK_DIR/000000-highlight.png \
+        -mosaic "$WORK_DIR/fake_montage.png"
     else
         montage -background none ${fake_montage[@]} \
         -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
@@ -1531,13 +1568,12 @@ elif [ "$BUTTON_STYLE" = "text" ]; then
     fi
 fi
 # this reduces colours so spumux is happy
-if ! $SHOWCASE; then
-    for button in Select Highlight; do
-        mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
-    done
-fi
+for button in Select Highlight; do
+    mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
+done
 if $SHOWCASE; then
     if [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
+        unset sc_cmd
         for ((i=0; i<=NUM_FILES; i++)); do
             sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_PAGES[i]} "${PICS[i]}")
         done
@@ -1551,10 +1587,6 @@ if $SHOWCASE; then
         ${sc_cmd[@]} -page +240+85 "$WORK_DIR/showcase_img.png" \
         -mosaic "$WORK_DIR/preview.jpg"
         unset sc_cmd PICS
-        if ! $NOASK; then
-            display "$WORK_DIR/preview.jpg"
-            confirm_preview
-        fi
     fi
 else
 
@@ -1576,14 +1608,14 @@ else
     fi
 fi
 # make the fake montage with highlighted 1st button and display it
-if ! $SHOWCASE; then
-    composite -gravity Center "$WORK_DIR/preview.jpg" "$WORK_DIR/fake_montage.png" \
-    -compose DstOver "$WORK_DIR/preview.jpg"
+#if ! $SHOWCASE; then
+composite -gravity Center "$WORK_DIR/preview.jpg" "$WORK_DIR/fake_montage.png" \
+-compose DstOver "$WORK_DIR/preview.jpg"
     if ! $NOASK; then
         display "$WORK_DIR/preview.jpg"
         confirm_preview
     fi
-fi
+#fi
 # copy the template back if using $MENU_FADE
 if $MENU_FADE; then
     rm -v "$WORK_DIR/pics/template.png"
@@ -2870,15 +2902,15 @@ else
 fi
 
 echo
-if ! $SHOWCASE; then
-echo "Running spumux to create the main menu"
+#if ! $SHOWCASE; then
+#echo "Running spumux to create the main menu"
 spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE"
 if test -f "$MENU_FILE"; then
     echo "Menu file $MENU_FILE created"
 else
     echo "Menu file $MENU_FILE is missing!"
 fi
-fi
+#fi
 if $SUB_MENU; then
     echo "Creating submenus"
     for ((x=1; x<=V_ARRAY_TOTAL; x++)); do
@@ -2892,27 +2924,17 @@ if $SUB_MENU; then
 fi
 if [ "$TARGET" = dvd ]; then
     echo "Running dvdauthor to create the DVD filesystem"
-    if ! $SHOWCASE; then #FIXME remove when showcase spumux done
     dvdauthor -x "$DVDAUTHOR_XML"
-    else
-    echo -e "\n***Sorry DVD creation for showcase* styles not finished yet***"
-    cp -v $WORK_DIR/intro.mpg /tmp/animenu.mpg
-    echo -e "You can watch your menu:  "$REAL_WORK_DIR/../animenu.mpg"\n"
-    fi
 elif [ "$TARGET" = svcd ]; then
-    if ! $SHOWCASE; then #FIXME remove when showcase spumux done
     makexml -svcd -menu "$WORK_DIR/animenu.mpg" "${IN_FILES[@]}" -out MyDisc
     vcdxbuild MyDisc.xml
-    else
-    echo -e "\n***Sorry SVCD creation for showcase* styles not finished yet***"
-    cp -v $WORK_DIR/intro.mpg /tmp/animenu.mpg
-    echo -e "You can watch your menu:  /tmp/animenu.mpg\n"
-    fi
 fi
 echo "Cleaning up unwanted files in $REAL_WORK_DIR"
 find "$WORK_DIR"/ -name '*.png' ! -name Highlight.png ! -name Select.png -exec rm -f {} \;
 find "$WORK_DIR"/ -name '*.jpg' ! -name preview.jpg -exec rm -f {} \;
 rm -frv "$WORK_DIR/animenu" "$WORK_DIR/pics" "$WORK_DIR/submenu"
+echo "Removing the link in /tmp"
+rm -fv "$WORK_DIR"
 #    if $SUB_MENU; then
 #        makexml -vcd -topmenu "$WORK_DIR/animenu.mpg" \
 #        $(for ((x=1; x<=V_ARRAY_TOTAL; x++)); do echo \
@@ -2928,14 +2950,12 @@ cleanup
 echo $SEPARATOR
 echo "todisc took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
 echo $SEPARATOR
-if ! $SHOWCASE; then
 if [ "$TARGET" = dvd ]; then
     echo "Your new DVD should be in $OUT_DIR"
 elif [ "$TARGET" = svcd ]; then
     echo "Your svcd bin and cue files are ready"
     echo "You can burn them with:"
     echo  "cdrdao write --device /dev/hdc --driver generic-mmc videocd.cue"
-fi
 fi
 echo
 echo "Thanks for using todisc."
