@@ -341,7 +341,7 @@ function spin()
 
 get_framed_pics()
 {
-mplayer -ss 5 -vo $VOUT \
+mplayer -ss 5 -vo $VOUT -noconsolecontrols \
 -vf ${EXPAND}rectangle=${FRAME_SIZE/x*}:${FRAME_SIZE/*x},rectangle=$(( ${FRAME_SIZE/x*} - D )):$(( ${FRAME_SIZE/*x} - D)),rectangle=$(( ${FRAME_SIZE/x*} - $((D * 2)) )):$(( ${FRAME_SIZE/*x} - $((D * 2)) )),rectangle=$(( ${FRAME_SIZE/x*} - $((D * 3)) )):$(( ${FRAME_SIZE/*x} - $((D * 3)) )) \
 -ao null -zoom -x ${FRAME_SIZE/x*} -y ${FRAME_SIZE/*x}  -frames $FRAMES "$1"
 }
@@ -808,6 +808,8 @@ elif test -n "$SHOWCASE_VIDEO" && $STATIC; then
     usage_error "You can not use -showcase-video with a static menu"
 elif [ "$SC_FRAMESTYLE" = "glass" ] && $STATIC; then
     usage_error "You can not use -showcase-framestyle glass with a static menu"
+elif test -n "$SHOWCASE_VIDEO" && test -n "$SHOWCASE_IMG"; then
+    usage_error "You can not use -showcase-video AND -showcase-image"
 fi
 # create_dirs
 echo
