@@ -69,17 +69,17 @@ class Keyframe:
            data |      *
                 |
               0 |__________________________
-                0     10     20     30
+                1     10     20     30
                         frame
     
     The data can represent anything you like. For instance, opacity:
     
-            100 |* Keyframe(0, 100)
+            100 |* Keyframe(1, 100)
                 |       
      opacity(%) |
                 |
               0 |____________________* Keyframe(30, 0)
-                0     10     20     30
+                1     10     20     30
                         frame
 
     See the Tween class below for what you can do with these Keyframes,
@@ -124,17 +124,39 @@ def cos_interp(x, (x0, y0), (x1, y1)):
 
 
 # Single-interval interpolation function
-
 def interpolate(frame, left, right, method):
     """Interpolate data between left and right Keyframes at the given frame,
     using the given interpolation method ('linear' or 'cosine'). Return the
-    value at the given frame."""
+    value at the given frame.
+    
+    The left and right Keyframes mark the endpoints of the curve to be
+    interpolated. For example, if a value changes from 50 to 80 over the
+    course of frames 1 to 30:
+
+        >>> left = Keyframe(1, 50)
+        >>> right = Keyframe(30, 80)
+    
+    Then, the value at frame 10 can be interpolated as follows:
+    
+        >>> interpolate(10, left, right, 'linear')
+        59
+        >>> interpolate(10, left, right, 'cosine')
+        56.582194019564263
+
+    """
     assert isinstance(left, Keyframe) and isinstance(right, Keyframe)
+    # At or beyond endpoints, return endpoint value
+    if frame <= left.frame:
+        return left.data
+    elif frame >= right.frame:
+        return right.data
+
     # Use the appropriate interpolation function
     if method == 'cosine':
         interp_func = cos_interp
     else: # method == 'linear'
         interp_func = lerp
+
     # Interpolate integers or floats
     if isinstance(left.data, int) or isinstance(left.data, float):
         x0 = (left.frame, left.data)
@@ -188,26 +210,36 @@ class Tween:
         left = keys.pop(0)
         right = keys.pop(0)
         frame = first
+        # Interpolate until the last frame is reached
         while frame <= last:
-            # Left endpoint
-            if frame == left.frame:
-                self.data.append(left.data)
-            # Right endpoint
-            elif frame == right.frame:
-                self.data.append(right.data)
-                # Get the next interval, if it exists
-                if keys:
-                    left = right
-                    right = keys.pop(0)
-            # Between endpoints; interpolate
-            else:
-                self.data.append(interpolate(frame, left, right, method))
+            self.data.append(interpolate(frame, left, right, method))
+            # Get the next interval, if it exists
+            if frame == right.frame and len(keys) > 0:
+                left = right
+                right = keys.pop(0)
             frame += 1
 
     def __getitem__(self, frame):
-        """Return the interpolated data at the given frame. Frame numbers
-        outside the keyframed region have the same values as those at the
-        corresponding endpoints.
+        """Return the interpolated data at the given frame. This allows
+        accessing a tweened value with subscripting by frame number:
+        
+            >>> keys = [Keyframe(1, 1), Keyframe(30, 50)]
+            >>> tween = Tween(keys)
+            >>> tween[1]
+            1
+            >>> tween[30]
+            50
+            >>> tween[21]
+            34
+
+        Frame numbers outside the keyframed region have the same values as
+        those at the corresponding endpoints:
+        
+            >>> tween[0]
+            1
+            >>> tween[105]
+            50
+
         """
         # If data is a single value, frame is irrelevant
         if not isinstance(self.data, list):
