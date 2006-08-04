@@ -38,7 +38,7 @@ For example:
 ==Basic options==
 
 : **-v**, **-version**
-    Print tovid version number only
+    Print tovid version number only, then exit.
 : **-quiet**
     Reduce output to the console.
 : **-fake**
@@ -46,9 +46,7 @@ For example:
     that would be executed. Useful in debugging; have tovid give you the
     commands, and run them manually.
 : **-debug**
-    Print extra debugging information to the log file. Useful in diagnosing
-    problems if they occur. This option also leaves the log file (with a .log
-    extension) in the directory after encoding finishes.
+    Print extra debugging information on standard output.
 : **-refresh-deps**
     Regenerate the dependency list. tovid uses $HOME/.tovid/dependency.list to
     determine which of its dependencies are installed. If you install dependencies
@@ -149,15 +147,22 @@ letterboxing or anamorphic scaling.
 
 : **-vbitrate** //NUM//
     Maximum bitrate to use for video (in kbits/sec). Must be within allowable
-    limits for the given format. Overrides default values. Ignored for VCD.
+    limits for the given format. Overrides default values. Ignored for VCD,
+    which must be constant bitrate.
 
 : **-interlaced**
     Do interlaced encoding of the input video. Use this option if your video is
     interlaced, and you want to preserve as much picture quality as possible.
-    Ignored for VCD.
+    Ignored for VCD, which doesn't support it.
 
-: **-deinterlace**
-    Converting interlaced source video into progressive output video. Because
+    You can tell your source video is interlaced by playing it, and pausing
+    during a scene with horizontal motion; if you see a "comb" effect at the
+    edges of objects in the scene, you have interlaced video. Use this option
+    to encode it properly. If you would prefer to have output in progressive
+    format, use **-deinterlace**.
+
+: **-deinterlace**, **-progressive**
+    Convert interlaced source video into progressive output video. Because
     deinterlacing works by averaging fields together, some picture quality is
     invariably lost. Uses an adaptive kernel deinterlacer (kerndeint), or,
     if that's not available, the libavcodec deinterlacer (lavcdeint).
