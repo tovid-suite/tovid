@@ -692,7 +692,7 @@ done
 if test ${#FILES[@]} -gt 30; then
     usage_error "Sorry, a maximum of 30 videos (thumbs) is supported
     You gave ${#FILES[@]} videos as input"
-elif test $SHOWCASE && test  ${#FILES[@]} -gt 5; then
+elif $SHOWCASE && test  ${#FILES[@]} -gt 5; then
     usage_error "Sorry, a maximum of 5 titles is allowed for showcase
     You gave ${#FILES[@]} videos as input"
 fi
@@ -1118,6 +1118,9 @@ elif test "$THUMB_SHAPE" = "oval"; then
     +matte -compose CopyOpacity miff:- | \
     ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
+    MASK_HILITE_CMD="convert -size $THUMB_SIZE xc:none \
+    -draw \"RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3\" \
+    -negate  -channel A -gaussian 0x8 $WORK_DIR/oval_highlight.png"
 
 elif test "$THUMB_SHAPE" = "egg"; then
     THUMB_MASK="$WORK_DIR/egg_mask.png"
@@ -1249,7 +1252,7 @@ if $SHOWCASE; then
             D=2
             OUTDIR="$WORK_DIR/showcase"
             OUT="$WORK_DIR/showcase_img.png"
-            VOUT="png:z=7"; FRAMES=10
+            VOUT="png:z=7"; FRAMES=30
             FRAME_SIZE=$SHOWCASE_SIZE
             get_framed_pics "$SHOWCASE_VIDEO" >> "$LOG_FILE" 2>&1
             echo "Using mplayer to get framed images from the showcase video"
@@ -1259,7 +1262,7 @@ if $SHOWCASE; then
             format_output | tee -a "$LOG_FILE"
             echo
             
-            mv -v "$WORK_DIR"/00000009.png "$OUT"
+            mv -v "$WORK_DIR"/00000025.png "$OUT"
             rm -f "$WORK_DIR"/00000*.png
             convert "$WORK_DIR/showcase_img.png" \
             -background none $ROTATE $WAVE miff:-|
@@ -2504,8 +2507,19 @@ if [ -n "$SHOWCASE_VIDEO" ]; then
             fi
         done
     fi
+    # make sure showcase video finishes at the time time as other menu items
+    IMAGES=( $(find $WORK_DIR/showcase -maxdepth 1 -name 00\*.$IMG_FMT|sort) )
+    last_pic=$(( ${#IMAGES[@]} - 1 ))
+    next_pic=$(($last_pic + 1))
+    if [ $last_pic -lt $MAX_ANI_LENGTH ]; then
+        for ((l=next_pic; l<=MAX_ANI_LENGTH; l++)); do
+            cp $WORK_DIR/showcase/$( printf %06d $last_pic).$IMG_FMT \
+            $WORK_DIR/showcase/$(printf %06d $l).$IMG_FMT
+        done
+    fi
+
 fi
-unset FFMPEG_CMD pic
+unset IMAGES last_pic next_pic FFMPEG_CMD pic
 
 yecho
 if [ ! "$SC_FRAMESTYLE" = "glass" ]; then
