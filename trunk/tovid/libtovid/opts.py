@@ -223,10 +223,10 @@ class OptionDict(dict):
                 if self.defdict[opt].alias:
                     key, value = self.defdict[opt].alias
                     custom[key] = value
-                # No args
+                # No args; toggle a flag
                 elif expected_args == 0:
-                    custom[opt] = True
-                # One arg
+                    custom[opt] = not custom[opt]
+                # One arg; assign a value
                 elif expected_args == 1:
                     arg = options.pop(0)
                     # Convert string, int, and float to proper type
@@ -238,11 +238,12 @@ class OptionDict(dict):
                 # Comma-separated list of args
                 elif expected_args < 0:
                     arglist = []
-                    # Until the next keyword (or end of args), add to list
+                    # Until next option keyword (or end of args), add to list
                     while options and options[0].lstrip('-') not in self.defdict:
                         next = options.pop(0)
+                        # Ignore [ , ] in Python list syntax
                         arglist.append(next.lstrip('[').rstrip(',]'))
-                    # Put the last token back if necessary
+                    # Put the last token back if it was an option keyword
                     if next.lstrip('-') in self.defdict:
                         options.insert(0, next)
                     custom[opt] = arglist
