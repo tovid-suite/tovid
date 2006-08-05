@@ -1344,7 +1344,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
     fi
     VOUT="png:z=7"; FRAMES=30
     FRAME_SIZE=$THUMB_SIZE
-    D=1
+    D=2
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
         get_framed_pics "${IN_FILES[i]}"  >> "$LOG_FILE" 2>&1
         mv -fv $WORK_DIR/$(printf "%08d%s"  25 .png) \
@@ -1432,10 +1432,14 @@ done
 echo
 echo "Creating the highlight and selection PNGs for the main menu"
 if [ "$BUTTON_STYLE" = "rect" ]; then
-    GEO="${THUMB_SIZE/x/,}"
+    GEOx=${THUMB_SIZE/x*}
+    GEOy=${THUMB_SIZE/*x}
+    GEOx=$((GEOx - 3))
+    GEOy=$((GEOy - 3))
+    GEO="$GEOx,$GEOy"
 (
 cat  <<EOF
-rectangle 0,0 $GEO
+rectangle 2,2 $GEO
 EOF
 )  > "$WORK_DIR/draw_file"
 fi
@@ -1460,9 +1464,9 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     BUTTON_CMD5=(convert -size "${THUMB_SIZE}+5+5" xc:none \
     -fill none +antialias -stroke '#188DF6' -strokewidth 4 -draw @draw_file \
     -colors 3 "$WORK_DIR/Highlightx1.png")
-    BUTTON_CMD6=(convert -size ${THUMB_SIZE} xc:none +antialias -fill none \
+    BUTTON_CMD6=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
     -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file "$WORK_DIR/Selectx1.png")
-    BUTTON_CMD7=(convert -size ${THUMB_SIZE} xc:none +antialias -fill none \
+    BUTTON_CMD7=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
     -stroke '#188DF6' -strokewidth 4 -draw @draw_file "$WORK_DIR/Highlightx1.png")
     BUTTON_CMD8=(convert -size 320x100 xc:none \
     -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
@@ -1633,14 +1637,14 @@ else
     fi
 fi
 # make the fake montage with highlighted 1st button and display it
-#if ! $SHOWCASE; then
-composite -gravity Center "$WORK_DIR/preview.jpg" "$WORK_DIR/fake_montage.png" \
--compose DstOver "$WORK_DIR/preview.jpg"
-    if ! $NOASK; then
-        display "$WORK_DIR/preview.jpg"
-        confirm_preview
-    fi
-#fi
+#composite -gravity Center "$WORK_DIR/preview.jpg" "$WORK_DIR/fake_montage.png" \
+#-compose DstOver "$WORK_DIR/preview.jpg"
+composite -compose Over "$WORK_DIR/fake_montage.png" "$WORK_DIR/preview.jpg" \
+"$WORK_DIR/preview.jpg"
+if ! $NOASK; then
+    display "$WORK_DIR/preview.jpg"
+    confirm_preview
+fi
 # copy the template back if using $MENU_FADE
 if $MENU_FADE; then
     rm -v "$WORK_DIR/pics/template.png"
@@ -2466,6 +2470,7 @@ if [ -n "$SHOWCASE_VIDEO" ]; then
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
         D=2
         FRAME_SIZE=$SHOWCASE_SIZE
+        VOUT="png:z=7"
         get_framed_pics "$SHOWCASE_VIDEO"  >> "$LOG_FILE" 2>&1
         for ((i=1; i<=$FRAMES; i++)); do
             mv  "$WORK_DIR"/$(printf "%08d%s"  $i .png) \
