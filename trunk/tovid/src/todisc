@@ -1429,14 +1429,19 @@ done
 ##############################################################################
 #                 create button layer for spumux                             #
 ##############################################################################
-echo
-echo "Creating the highlight and selection PNGs for the main menu"
-if [ "$BUTTON_STYLE" = "rect" ]; then
-    GEOx=${THUMB_SIZE/x*}
-    GEOy=${THUMB_SIZE/*x}
+get_button_geo()
+{
+    GEOx=${MENU_BUTTON_SIZE/x*}
+    GEOy=${MENU_BUTTON_SIZE/*x}
     GEOx=$((GEOx - 3))
     GEOy=$((GEOy - 3))
     GEO="$GEOx,$GEOy"
+}
+echo
+echo "Creating the highlight and selection PNGs for the main menu"
+if [ "$BUTTON_STYLE" = "rect" ]; then
+MENU_BUTTON_SIZE=$THUMB_SIZE
+get_button_geo
 (
 cat  <<EOF
 rectangle 2,2 $GEO
@@ -1885,7 +1890,8 @@ if [ "$SC_FRAMESTYLE" = "glass" ]; then
 else
     for ((i=0; i<=NUM_FILES; i++)) ; do
         echo "Working on "${IN_FILES[i]}""
-        TRANSCODE_CMD2=(nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
+        TRANSCODE_CMD2=(nice transcode --print_status 340 \
+        --write_pid /tmp/tcode.pid -q 1 -i "${IN_FILES[i]}" \
         -c $SEEK_FRAMES-$((SEEK_FRAMES + $FRAMES)) $NAVSEEK \
         -o "$WORK_DIR/pics/$i/" -f $FRAME_RATE  -Z $THUMB_SIZE $EXPORT)
 
@@ -1895,8 +1901,8 @@ else
                     sleep 1
                 }
                 run_transcode &
-                TRANSCODE_PID="$!"
-                sleep .5 # short sleep to allow 1st jpg to appear
+                sleep 1 # short sleep to allow 1st jpg to appear
+                TRANSCODE_PID="$(cat /tmp/tcode.pid)"
                 if [ -n "$TRANSCODE_PID" ]; then
                     while ps -p $TRANSCODE_PID >/dev/null; do
                         sleep .5 # spinner interval
@@ -1948,10 +1954,11 @@ for ((s=0; s<=NUM_FILES; s++)); do
         echo
         echo "Creating the highlight and selection PNGs for submenu $((s + 1))"
         C=$((${CHAPTERS[s]} - 1))
-        GEO="${GEO_ARRAY[C]/x/,}"
+        MENU_BUTTON_SIZE="${GEO_ARRAY[C]}"
+        get_button_geo
 (
 cat  <<EOF
-rectangle 0,0 $GEO
+rectangle 2,2 $GEO
 EOF
 )  > $WORK_DIR/draw_file${s}
 
