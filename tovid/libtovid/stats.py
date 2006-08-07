@@ -4,6 +4,7 @@
 """Classes and functions for dealing with video statistics."""
 
 import csv
+import sys
 
 # Order of fields in stats.tovid
 fields = [\
@@ -43,7 +44,8 @@ int_fields = [\
     'cpu_speed',
     'in_width',
     'in_height',
-    'quant'
+    'quant',
+    'kbpm'
     ]
 
 class Statlist:
@@ -103,6 +105,11 @@ class Statlist:
         """Calculate the average value for a given numeric VidStat attribute.
         For example, average('bitrate') returns the average overall bitrate of
         all videos in the list."""
+        # Error if attribute is non-numeric
+        if attribute not in int_fields:
+            print "Can't average %s: not defined as a numeric field"
+            sys.exit()
+            
         values = []
         for record in self.records:
             # Only append non-zero values
@@ -117,6 +124,11 @@ class Statlist:
         """Return a dictionary of averages of an attribute, indexed by another
         attribute. For example, average_by('bitrate', 'format') returns average
         bitrates for each format."""
+        # Error if attribute is non-numeric
+        if attribute not in int_fields:
+            print "Can't average %s: not defined as a numeric field"
+            sys.exit()
+
         values_by = self.list_by(attribute, by_attribute)
         # Calculate averages for each value-list
         averages = {}
