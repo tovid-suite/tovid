@@ -2080,7 +2080,7 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
     echo -ne "        <vob file=\"${IN_FILES[i]}\""
     echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
     if $CHAIN_VIDEOS; then
-        if [ ${POST_PLAY[i]} = "chain" ]; then
+        if [ "${POST_PLAY[i]}" = "chain" ]; then
             if [ $i -lt $NUM_FILES ]; then
                 echo -e "        <post>jump title $((i + 2)) chapter 1;</post>"
             elif [ $i -eq $NUM_FILES ]; then
