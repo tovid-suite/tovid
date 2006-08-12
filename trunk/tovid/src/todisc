@@ -127,6 +127,7 @@ THUMB_FRAME="-frame 3x3"
 SC_FRAME="-frame 3x3"
 THREExONE=false
 PLAYALL=false
+TEXTMENU=false
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -163,7 +164,7 @@ function yecho()
 # ******************************************************************************
 function cmd_exec()
 {
-    eval "$@" 2>&1 | ${LOG_FILTER:=cat} >> "$LOG_FILE"
+    eval "$@" 2>&1 | ${LOG_FILTER:=cat} # >> "$LOG_FILE"
     # Return exit status
     return $?
 }
@@ -227,7 +228,7 @@ function get_font()
 # ******************************************************************************
 # Print out a runtime error specified as an argument, and exit
 # ******************************************************************************
-runtime_error()
+function runtime_error()
 {
     # Uncomment if needed later
     #killsubprocs
@@ -344,11 +345,47 @@ function spin()
 }
 
 #EXPAND="expand=-6:-6,"
-get_framed_pics()
+function get_framed_pics()
 {
 mplayer -ss 5 -vo $VOUT -noconsolecontrols \
 -vf ${EXPAND}rectangle=${FRAME_SIZE/x*}:${FRAME_SIZE/*x},rectangle=$(( ${FRAME_SIZE/x*} - D )):$(( ${FRAME_SIZE/*x} - D)),rectangle=$(( ${FRAME_SIZE/x*} - $((D * 2)) )):$(( ${FRAME_SIZE/*x} - $((D * 2)) )),rectangle=$(( ${FRAME_SIZE/x*} - $((D * 3)) )):$(( ${FRAME_SIZE/*x} - $((D * 3)) )) \
 -ao null -zoom -x ${FRAME_SIZE/x*} -y ${FRAME_SIZE/*x}  -frames $FRAMES "$1"
+}
+
+# Create a text-only menu, using makemenu/makexml
+function make_textmenu()
+{
+    # Assemble and run makemenu command
+    MENU_OUT="${OUT_PREFIX}_menu"
+    MAKEMENU="makemenu"
+    for ((i=0; i<${#TITLES[@]}; i++)); do
+        MAKEMENU="$MAKEMENU \"${TITLES[i]}\""
+    done
+    MAKEMENU="$MAKEMENU -textcolor \"$TITLE_COLOUR\""
+    test -n "$BG_PIC" && MAKEMENU="$MAKEMENU -background \"$BG_PIC\""
+    test -n "$MENU_FONT" && MAKEMENU="$MAKEMENU -font \"$MENU_FONT\""
+    test -n "$MENU_FONTSIZE" && MAKEMENU="$MAKEMENU -fontsize \"$MENU_FONTSIZE\""
+    MAKEMENU="$MAKEMENU -out $MENU_OUT"
+
+    echo "Running the following makemenu command:"
+    echo $MAKEMENU
+    cmd_exec "$MAKEMENU"
+
+    # Assemble and run makexml command
+    MAKEXML="makexml -menu $MENU_OUT.mpg -out $OUT_PREFIX"
+    for ((i=0; i<${#FILES[@]}; i++)); do
+        MAKEXML="$MAKEXML \"${FILES[i]}\""
+    done
+    MAKEXML="$MAKEXML -out $OUT_PREFIX"
+    echo "Running the following makexml command:"
+    echo $MAKEXML
+    cmd_exec "$MAKEXML"
+
+    # Assemble and run makedvd command
+    MAKEDVD="makedvd -author ${OUT_PREFIX}.xml"
+    echo "Running the following makedvd command:"
+    echo $MAKEDVD
+    cmd_exec "$MAKEXML"
 }
 
 ##############################################################################
@@ -401,6 +438,9 @@ while test $# -gt 0; do
             # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
             unset IFS
+            ;;
+        "-textmenu" )
+            TEXTMENU=:
             ;;
         "-out" )
             shift
@@ -707,6 +747,12 @@ if test -d "$OUT_DIR"; then
     echo "Output directory \"$OUT_DIR\" already exists."
     echo "Please use a different -out name, or (re)move the existing directory."
     exit 1
+fi
+
+# Do text-only menu if requested
+if $TEXTMENU; then
+    make_textmenu
+    exit
 fi
 
 yecho
