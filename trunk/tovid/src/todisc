@@ -124,7 +124,9 @@ NOASK=false
 SMALL_FONTSIZE=false
 SC_FRAMESTYLE=none
 THUMB_FRAME="-frame 3x3"
+SC_FRAME="-frame 3x3"
 THREExONE=false
+PLAYALL=false
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -467,6 +469,9 @@ while test $# -gt 0; do
                 DO_SHIFT=false
             fi
             CHAIN_VIDEOS=:
+            ;;
+        "-playall" )
+            PLAYALL=:
             ;;
         "-bgvideo" )
             shift
@@ -1025,13 +1030,16 @@ if $THREExONE && [ $V_ARRAY_TOTAL -eq 3 ]; then
 fi
 # don't use frame for showcase-framestyle glass
 if [ "$SC_FRAMESTYLE" = "glass" ]; then
-    unset THUMB_FRAME
+    unset SC_FRAME
 fi
 #FIXME temporary till non transparent menus for -showcase* are done separately
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
 # spumux and dvdauthor vars
 START="00:00:00.0"
+if $PLAYALL; then
+    MAIN_PRE="        <pre> g4=0; </pre>"
+fi
 MAIN_POST="        <post> jump cell 1; </post>"
 if $MENU_FADE; then
     . todisc-fade-routine
@@ -1167,6 +1175,19 @@ echo "Running "${TITLE_CMD[@]}" miff:- | \
 "${TITLE_CMD1[@]}"" | fold -bs >> "$LOG_FILE"
 "${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}"
 
+# make a PLAYALL button if called for
+if $PLAYALL; then
+    PLAYALL_BTN_CMD=(convert -size 100x100 xc:none \
+    -font "$MENU_FONT" -pointsize 22 \
+    -fill black -stroke black -gravity center  \
+    -annotate +0+0 "Play All" \
+    -fill "$TITLE_COLOUR" -stroke "$STROKE" -strokewidth 1 \
+    -annotate +1+1 "Play All")
+    TRIM_CMD=(convert - -background none -rotate -30 -trim +repage "$WORK_DIR/PLAYALL.png")
+    "${PLAYALL_BTN_CMD[@]}" miff:- | "${TRIM_CMD[@]}"|fold -bs >> "$LOG_FILE"
+    ADD_PLAYALL="$WORK_DIR/PLAYALL.png -gravity SouthEast -geometry +45+45 -composite"
+fi
+
 # make thumb titles if $SHOWCASE
 if $SHOWCASE; then
     for ((i=0; i<=NUM_FILES; i++)); do
@@ -1281,7 +1302,7 @@ if $SHOWCASE; then
             fi
         echo "Running convert "$WORK_DIR/showcase_img.png" -mattecolor gray"
         echo "-frame 5x5 "$WORK_DIR/showcase_img.jpg"" |format_output
-        convert "$WORK_DIR/showcase_img.png" -mattecolor gray $THUMB_FRAME miff:- |
+        convert "$WORK_DIR/showcase_img.png" -mattecolor gray $SC_FRAME miff:- |
         convert -background none $ROTATE $WAVE - miff:-|
         convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
     fi
@@ -1291,7 +1312,7 @@ if $SHOWCASE; then
         echo "Running convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" \
         "$WORK_DIR/showcase_img.jpg"" |format_output
 #        convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" -mattecolor gray -frame 5x5 "$WORK_DIR/showcase_img.jpg"
-        convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" -mattecolor gray -frame 5x5 miff:- |
+        convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" -mattecolor gray $SC_FRAME miff:- |
         convert -background none $ROTATE $WAVE - miff:-|
         convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
     fi
@@ -1389,6 +1410,12 @@ if $SHOWCASE; then
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
     -gravity south -geometry +0+65 -composite "$WORK_DIR/pics/template.png"
 fi    
+if $PLAYALL; then
+    convert "$WORK_DIR/pics/template.png" "$WORK_DIR/PLAYALL.png" \
+    -gravity SouthEast -geometry +45+45 -composite "$WORK_DIR/pics/template.png"
+    convert "$WORK_DIR/pics/template.png" "$WORK_DIR/PLAYALL.png" \
+    -gravity SouthEast -geometry +45+45 -composite "$WORK_DIR/pics/template.jpg"
+fi
 # lets be sure of order by using a loop
 for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
@@ -1449,6 +1476,17 @@ EOF
 )  > "$WORK_DIR/draw_file"
 fi
 # command constructions for -button-shape options
+if $PLAYALL; then
+    for BUTTON in 188DF6 DE7F7C; do
+        convert -size 100x100 xc:none -font "$MENU_FONT" -pointsize 22 \
+        -fill "#${BUTTON}" -stroke none -gravity center \
+        -annotate +0+0 "Play All" \
+        -fill "#${BUTTON}" -stroke none -strokewidth 1  \
+        -annotate +1+1 "Play All" miff:- | convert  - -background none -rotate -30 \
+        -trim +repage $WORK_DIR/${BUTTON}_playall.png
+    done
+fi
+
 for ((t=0; t<${#TITLES[@]}; t++)); do
     if $FEATHER; then FRAME=0; else FRAME=3x3;fi
     BUTTON_SIZE=$THUMB_SIZE
@@ -1602,6 +1640,13 @@ elif [ "$BUTTON_STYLE" = "text" ]; then
         -composite "$WORK_DIR/fake_montage.png"
     fi
 fi
+if $PLAYALL; then
+    convert -gravity SouthEast -geometry +45+45 "$WORK_DIR/Select.png" \
+    "$WORK_DIR/DE7F7C_playall.png" -composite "$WORK_DIR/Select.png"
+    convert -gravity SouthEast -geometry +45+45 "$WORK_DIR/Highlight.png" \
+    "$WORK_DIR/188DF6_playall.png" -composite "$WORK_DIR/Highlight.png"
+fi
+
 # this reduces colours so spumux is happy
 for button in Select Highlight; do
     mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
@@ -1646,6 +1691,10 @@ fi
 #-compose DstOver "$WORK_DIR/preview.jpg"
 composite -compose Over "$WORK_DIR/fake_montage.png" "$WORK_DIR/preview.jpg" \
 "$WORK_DIR/preview.jpg"
+if $PLAYALL; then
+convert -gravity SouthEast -geometry +45+45 "$WORK_DIR/preview.jpg" \
+"$WORK_DIR/PLAYALL.png" -composite "$WORK_DIR/preview.jpg"
+fi
 if ! $NOASK; then
     display "$WORK_DIR/preview.jpg"
     confirm_preview
@@ -1927,14 +1976,13 @@ fi
         echo "Creating a black background"
         BG_PIC="$WORK_DIR/pics/template.jpg"
         convert  -size $VIDSIZE xc:"#161514" "$BG_PIC"
-        cp "$BG_PIC" "$WORK_DIR/submenu_template.jpg"
+        convert  -size $VIDSIZE xc:"#161514" "$WORK_DIR/submenu_template.jpg"
     else
         convert -resize $VIDSIZE! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
         convert -size $VIDSIZE xc:"#161514" "$WORK_DIR/submenu_template.jpg"
     fi
 
 echo
-
 # chapters and submenu xml stuff
 
 for ((s=0; s<=NUM_FILES; s++)); do
@@ -2058,7 +2106,11 @@ $(for ((i=1; i<=$V_ARRAY_TOTAL; i++)); do
     fi
     echo -e "        <button name=\"$i\">jump $JUMP $JUMP_INC;</button>"
 done)
+$(if $PLAYALL; then
+    echo -e "        <button name=\"$((V_ARRAY_TOTAL + 1))\">g4=1; jump title 1 chapter 1;</button>"
+fi)
         <vob file="$MENU_FILE" pause="$VMGM_PAUSE_TIME"/>
+$MAIN_PRE
 $MAIN_POST
       </pgc>
 $(if $SUB_MENU; then
@@ -2082,17 +2134,32 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
     if $CHAIN_VIDEOS; then
         if [ "${POST_PLAY[i]}" = "chain" ]; then
             if [ $i -lt $NUM_FILES ]; then
-                echo -e "        <post>jump title $((i + 2)) chapter 1;</post>"
+                CHAIN_PP="jump title $((i + 2)) chapter 1"
             elif [ $i -eq $NUM_FILES ]; then
-                echo -e "        <post>jump title 1 chapter 1;</post>"
+                CHAIN_PP="jump title 1 chapter 1"
+            else
+                CHAIN_PP="call vmgm menu 1"
+            fi
+        else
+            CHAIN_PP="call vmgm menu 1"
+        fi
+        if $PLAYALL; then
+            if [ $i -lt $NUM_FILES ]; then
+                echo -e "        <post>if (g4==1) jump title $((i+2)) chapter 1; $CHAIN_PP;</post>"
+            else
+                echo -e "        <post>call vmgm menu 1;</post>"
+            fi
+        fi
+    else
+        if $PLAYALL; then
+            if [ $i -lt $NUM_FILES ]; then
+                echo -e "        <post>if (g4==1) jump title $((i+2)) chapter 1; call vmgm menu 1;</post>"
             else
                 echo -e "        <post>call vmgm menu 1;</post>"
             fi
         else
             echo -e "        <post>call vmgm menu 1;</post>"
         fi
-    else
-        echo -e "        <post>call vmgm menu 1;</post>"
     fi
     echo -e "      </pgc>"
 done)
@@ -2100,8 +2167,9 @@ done)
   </titleset>
 </dvdauthor> 
 EOF
-) |sed '/^$/d' >> "$DVDAUTHOR_XML"
+) |sed '/^ *$/d' >> "$DVDAUTHOR_XML"
 fi
+
 
 ##############################################################################
 #                            Animenu stuff                                   #
@@ -2504,7 +2572,7 @@ if [ -n "$SHOWCASE_VIDEO" ]; then
     else
         for pic in "${SC_PICS[@]}"; do
             spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$pic") of $FRAMES  "
-            SC_CMD=(convert -resize $SHOWCASE_SIZE! "$pic" -mattecolor gray -frame 5x5)
+            SC_CMD=(convert -resize $SHOWCASE_SIZE! "$pic" -mattecolor gray $SC_FRAME)
             SC_CMD1=(convert "$pic" -background none $ROTATE $WAVE)
             SC_CMD2=(convert -background none $ROTATE $WAVE -)
             SC_CMD3=(convert - -resize $SHOWCASE_SIZE! "$pic")
@@ -2668,6 +2736,8 @@ if $MENU_FADE && ! $STATIC; then
         # finally, we dissolve the title onto the MIST (or plain background)
         MONTAGE_CMD4=(composite -dissolve $C -gravity south -geometry +0+65 \
         $WORK_DIR/title_txt.png - -background none $WORK_DIR/animenu/$(($frame + 1)).jpg)
+        MONTAGE_CMD5=(composite -dissolve $S -gravity SouthEast -geometry +45+45 \
+        $WORK_DIR/PLAYALL.png - -background none)
         # pipe all of above commands if using MIST
         if $MIST; then
             if $SHOWCASE; then
@@ -2679,8 +2749,14 @@ if $MENU_FADE && ! $STATIC; then
                     "${MONTAGE_CMD[@]}"
                 fi
             else
-                "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
-                "${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD4[@]}"
+                if $PLAYALL; then
+                    "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
+                    "${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD5[@]}" miff:- |
+                    "${MONTAGE_CMD4[@]}"
+                else
+                    "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
+                    "${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD4[@]}"
+                fi
             fi
         else  # no mist: pipe all commands but the mist command
             if $SHOWCASE; then
@@ -2690,8 +2766,13 @@ if $MENU_FADE && ! $STATIC; then
                     "${MONTAGE_CMD[@]}"
                 fi
             else
-                "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
-                "${MONTAGE_CMD4[@]}"
+                if $PLAYALL; then
+                    "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
+                    "${MONTAGE_CMD5[@]}" miff:- | "${MONTAGE_CMD4[@]}"
+                else
+                    "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
+                    "${MONTAGE_CMD4[@]}"
+                fi
             fi
         fi
         unset ANI_PICS sc_cmd
@@ -2747,7 +2828,9 @@ else # Do not do menu fade
             IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+45 \
             $WORK_DIR/white.png - miff:-)
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
-            -gravity south -geometry +0+65 -composite \
+            -gravity south -geometry +0+65 -composite $ADD_PLAYALL \
+            $WORK_DIR/animenu/$count.jpg )
+            IM_CMD5=(convert - -gravity SouthEast -geometry +45+45 $WORK_DIR/PLAYALL.png \
             $WORK_DIR/animenu/$count.jpg )
             if $MIST; then
                 if $SHOWCASE && [ -n "$SHOWCASE_VIDEO" ]; then # showcase, mist, showcase-video
@@ -2816,7 +2899,7 @@ else # Do not do menu fade
             IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+45 \
             $WORK_DIR/white.png - miff:-)
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
-            -gravity south -geometry +0+65 -composite \
+            -gravity south -geometry +0+65 -composite $ADD_PLAYALL \
             $WORK_DIR/animenu/$count.jpg )
 
             if $STATIC; then
