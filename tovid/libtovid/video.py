@@ -6,7 +6,6 @@ __all__ = ['Video']
 # From standard library
 import sys
 from copy import copy
-import logging
 # From libtovid
 from libtovid.opts import Option, OptionDict
 from libtovid.standards import get_resolution
@@ -16,8 +15,9 @@ from libtovid.utils import ratio_to_float
 # encoders.
 from libtovid.encoders import mencoder, ffmpeg, mpeg2enc
 from libtovid.media import MediaFile
+from libtovid.log import Log
 
-log = logging.getLogger('libtovid.video')
+log = Log('libtovid.video')
 
 class Video:
     """A video title for (optional) inclusion on a video disc.

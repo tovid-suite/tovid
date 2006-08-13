@@ -14,15 +14,14 @@ __all__ = ['Command', 'Script', 'verify_app']
 # From standard library
 import os
 import sys
-import logging
 import tempfile
 import commands
 from stat import S_IREAD, S_IWRITE, S_IEXEC
 from signal import SIGKILL
 # From libtovid
-#from libtovid.log import Log
+from libtovid.log import Log
 
-log = logging.getLogger('libtovid.cli')
+log = Log('libtovid.cli')
 
 class Command:
     """A command-line app with arguments, and process control."""
@@ -108,10 +107,6 @@ class Script:
         self.commands = []
         self.name = name
         self.locals = locals
-        # Set up logging
-        self.log = logging.getLogger('Script.%s' % self.name)
-        self.log.setLevel(logging.DEBUG)
-        self.log.addHandler(logging.StreamHandler(sys.stdout))
 
     def append(self, command):
         """Append the given command to the end of the script."""
@@ -148,7 +143,6 @@ class Script:
     def _prepare(self):
         """Write the script to a temporary file and prepare it for execution."""
         fd, self.script_file = tempfile.mkstemp('.sh', self.name)
-        #fd, self.log_file = tempfile.mkstemp('.log', self.name)
         # Make script file executable
         os.chmod(self.script_file, S_IREAD|S_IWRITE|S_IEXEC)
         # Write the script to the temporary script file

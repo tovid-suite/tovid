@@ -28,6 +28,7 @@ __all__ = [\
     'Thumb',
     'ThumbGrid',
     'SafeArea',
+    'Scatterplot',
     'InterpolationGraph'
 ]
 
@@ -108,7 +109,7 @@ class MyLayer (Layer):
     # appearance in some way (along with default values, if you like):
 
     def __init__(self, fill_color='blue', stroke_color='black'):
-        """Draw stroked shapes using the given colors."""
+        """Create a MyLayer using the given fill and stroke colors."""
         # Initialize the base Layer class
         Layer.__init__(self)
         # Store the given fill and stroke color
@@ -121,7 +122,7 @@ class MyLayer (Layer):
         """Draw MyLayer contents onto the given drawing, at the given frame
         number."""
 
-        # Make sure the drawing is really a Drawing
+        # Make sure the drawing is a Drawing object
         assert isinstance(drawing, Drawing)
 
         # Save context. This isolates the upcoming effects or style changes
@@ -429,7 +430,7 @@ class ThumbGrid (Layer):
         print "Creating a thumbnail grid of %s media files" % len(files)
         # Auto-dimension (using desired rows/columns, if given)
         self.columns, self.rows = \
-            self._fit_items(len(files), columns, rows)
+            self._fit_items(len(files), columns, rows, aspect)
         # Calculate thumbnail size, keeping aspect
         w = (width - self.columns * 16) / self.columns
         h = w * aspect[1] / aspect[0]
@@ -447,7 +448,7 @@ class ThumbGrid (Layer):
             title = os.path.basename(file)
             self.add_sublayer(Thumb(file, thumbsize), position)
 
-    def _fit_items(self, num_items, columns, rows):
+    def _fit_items(self, num_items, columns, rows, aspect=(4, 3)):
         # Both fixed, nothing to calculate
         if columns > 0 and rows > 0:
             # Make sure num_items will fit (columns, rows)
@@ -479,7 +480,7 @@ class ThumbGrid (Layer):
         self.draw_sublayers(drawing, frame)
         drawing.pop()
 
-
+    
 class SafeArea (Layer):
     """Render a safe area box at a given percentage.
     """
@@ -529,7 +530,7 @@ class Scatterplot (Layer):
         x_vals = self.xy_dict.keys()
         max_y = 0
         for x in x_vals:
-            largest = max(self.xy_dict[x])
+            largest = max(self.xy_dict[x] or [0])
             if largest > max_y:
                 max_y = largest
         # For numeric x, scale by maximum x-value
@@ -601,6 +602,8 @@ class Scatterplot (Layer):
                 x_coord = x_vals[i] * x_scale
             else:
                 x_coord = i * x_scale
+            # Shift x over slightly
+            x_coord += 10
             # Plot all y-values for this x
             for y in self.xy_dict[x_vals[i]]:
                 point = (x_coord, int(height - y * y_scale))

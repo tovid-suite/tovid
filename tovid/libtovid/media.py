@@ -22,11 +22,11 @@ __all__ = ['VideoStream', 'AudioStream', 'MediaFile', 'mplayer_identify']
 # From standard library
 import os
 import sys
-import logging
 import commands
 from os.path import abspath
+from libtovid.log import Log
 
-log = logging.getLogger('libtovid.media')
+log = Log('libtovid.media')
 
 class MediaFile:
     """Stores information about a file containing video and/or audio streams."""
@@ -228,9 +228,9 @@ def mplayer_identify(filename):
 
 
 def rip_frames(filename, out_dir, frames='all', size=(0, 0)):
-    """Convert a video file to a sequence of images, save them in the given
-    output directory, and return a list of frame image files.  Rips all
-    frames, a selected frame, or a range:
+    """Extract frame images from a video file, saving in the given output
+    directory, and return a list of frame image files. Rips all frames, a
+    selected frame, or a range:
 
     All frames (default):   frames='all'
     Frame 15 only:          frames=15
@@ -245,6 +245,9 @@ def rip_frames(filename, out_dir, frames='all', size=(0, 0)):
     except:
         print "Temp directory: %s already exists. Overwriting." % out_dir
 
+    # TODO: use tcdemux to generate a nav index, like:
+    # tcdemux -f 29.970 -W -i "$FILE" > "$NAVFILE"
+    
     # Use transcode to rip frames
     cmd = 'transcode -i "%s" ' % video_file
     # Resize

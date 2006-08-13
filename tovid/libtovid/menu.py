@@ -10,13 +10,14 @@ __all__ = ['Menu']
 import sys
 import os
 from copy import copy
-import logging
 
 # From libtovid
 from libtovid.opts import Option, OptionDict
-import textmenu
+from libtovid import textmenu
+from libtovid.flipbook import Flipbook
+from libtovid.log import Log
 
-log = logging.getLogger('libtovid.menu')
+log = Log('libtovid.menu')
 
 class Menu:
     """A menu for navigating the titles on a video disc.
@@ -120,3 +121,16 @@ class Menu:
             log.info('Generating a DVD menu with text titles...')
             textmenu.generate(self.options)
 
+
+
+class MenuTemplate (Flipbook):
+    def __init__(self, title='', links={}):
+        """Create a menu template, with the given title and a given dictionary
+        of label/target pairs, for example:
+        
+            >>> links = {'Episode 1': '/pub/video/ep1.mpg',
+                         'Episode 2': '/pub/video/ep2.mpg'}
+            >>> temp = MenuTemplate("Main menu", links)
+        
+        """
+        
