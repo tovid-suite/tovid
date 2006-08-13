@@ -4,13 +4,11 @@
 import sys
 import os
 
-import logging
 from libtovid.opts import Option, OptionDict
 from libtovid.media import MediaFile
+from libtovid.log import Log
 
-log = logging.getLogger('libtovid')
-log.setLevel(logging.DEBUG)
-log.addHandler(logging.StreamHandler(sys.stdout))
+log = Log('pyidvid')
 
 # Command-line options
 cli_opts = [\
