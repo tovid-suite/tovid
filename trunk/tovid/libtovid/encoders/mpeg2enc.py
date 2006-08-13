@@ -4,12 +4,12 @@
 __all__ = ['get_script']
 
 import os
-import logging
 
 from libtovid.cli import Script
 from libtovid.utils import float_to_ratio
+from libtovid.log import Log
 
-log = logging.getLogger('libtovid.encoders.mpeg2enc')
+log = Log('libtovid.encoders.mpeg2enc')
 
 """options used by encoders:
 format
@@ -27,7 +27,7 @@ vbitrate
 """
 
 def get_script(infile, options):
-    """Return a script to encode infile (a MediaFile) with mpeg2enc,
+    """Return a Script to encode infile (a MediaFile) with mpeg2enc,
     using the given options (an OptionDict)."""
     log.warn("This encoder is very experimental, and may not work.")
 

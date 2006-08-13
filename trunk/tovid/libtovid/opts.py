@@ -59,12 +59,12 @@ import re
 import sys
 from copy import copy
 import textwrap
-import logging
 import doctest
 # From libtovid
 from libtovid.utils import trim, tokenize, pretty_dict
+from libtovid.log import Log
 
-log = logging.getLogger('libtovid.opts')
+log = Log('libtovid.opts')
 
 class Option:
     """A command-line-style option, expected argument formatting, default value,

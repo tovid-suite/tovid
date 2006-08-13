@@ -3,11 +3,10 @@
 
 __all__ = ['get_script']
 
-import logging
-
 from libtovid.cli import Script
+from libtovid.log import Log
 
-log = logging.getLogger('mencoder.py')
+log = Log('libtovid.encoders.mencoder')
 
 def get_script(infile, options):
     """Return a Script to encode infile (a MediaFile) with mencoder,
