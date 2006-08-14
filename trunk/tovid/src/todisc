@@ -1728,7 +1728,7 @@ if $SHOWCASE; then
     sc_width=${sc_size/x*}
     sc_xpage=$(( 360 - $((sc_width / 2)) ))
     if [ ${#V_ARRAY_TOTAL[@]} -le 5 ]; then
-        SC_IMG_PAGE="-page +$sc_xpage+85"
+        SC_IMG_PAGE="-page +240+85"
     elif [ ${#V_ARRAY_TOTAL[@]} -gt 5 ]; then
         SC_IMG_PAGE="-page +$sc_xpage+100"
     fi
