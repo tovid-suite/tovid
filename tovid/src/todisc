@@ -179,7 +179,15 @@ function usage_error ()
     rm -rf "$REAL_WORK_DIR" "$WORK_DIR"
     exit 1
 }
-
+function titlesafe_error()
+{
+    echo "********* WARNING *********"
+    yecho "thumb title is $1 pixels from screen edge"
+    yecho "Part of the title may not be visible on your tv screen"
+    yecho "Consider using a smaller -thumb-fontsize, or shortening \"${TITLES[i]}\""
+    echo "****************************"
+    sleep 3
+}
 # process $LOG_FILE.tmp variously - eg. ffmpeg's output is ugly without this
 function cleanlog()
 {
@@ -1284,13 +1292,13 @@ if $SHOWCASE; then
         f=$(( ${THUMB_SIZE/x*} / 2 ))
         j=$(( $((f + ${PAGE_STARTPOS[i]})) - $((tt_dim / 2)) ))
         k=( ${k[@]} "$j" )
+        l=$((j + tt_dim))
         if [ $j -lt 48 ]; then
-            echo "********* WARNING *********"
-            yecho "thumb title is $j pixels from screen edge"
-            yecho "Part of the title may not be visible on your tv screen"
-            yecho "Consider using a smaller -thumb-fontsize, or shortening \"${TITLES[i]}\""
-            echo "****************************"
-            sleep 3
+            off_left=$j
+            titlesafe_error $off_left
+        elif [ $l -gt 672 ]; then
+            off_right=$((720 - l))
+            titlesafe_error $off_right
         fi
     done
     # make array of SHOWCASE_PAGES for thumbs and THUMBTITLES_ARRAY for titles
@@ -1727,12 +1735,11 @@ if $SHOWCASE; then
     sc_size=$(identify "$WORK_DIR/showcase_img.png"|awk '{print $3}')
     sc_width=${sc_size/x*}
     sc_xpage=$(( 360 - $((sc_width / 2)) ))
-    if [ ${#V_ARRAY_TOTAL[@]} -le 5 ]; then
+    if [ $V_ARRAY_TOTAL -le 5 ]; then
         SC_IMG_PAGE="-page +240+85"
-    elif [ ${#V_ARRAY_TOTAL[@]} -gt 5 ]; then
+    elif [ $V_ARRAY_TOTAL -gt 5 ]; then
         SC_IMG_PAGE="-page +$sc_xpage+100"
     fi
-    echo "SC_IMG_PAGE is $SC_IMG_PAGE"
     if [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
         unset sc_cmd
         for ((i=0; i<=NUM_FILES; i++)); do
