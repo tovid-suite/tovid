@@ -187,8 +187,8 @@ function addMenu ()
 
     # Generate XML for the button linking to this titleset menu from the top menu
     TOP_MENU_BUTTONS=`cat << EOF
-  $TOP_MENU_BUTTONS\
-    <button>jump titleset $CUR_TS menu;<\/button>
+  $TOP_MENU_BUTTONS
+    <button>jump titleset $CUR_TS menu;</button>
 EOF`
 
     # Generate XML for the menu header, with a placeholder for
@@ -210,8 +210,8 @@ EOF`
 
     # Generate XML for the button linking to this menu from the top menu
     TOP_MENU_BUTTONS=`cat << EOF
-$TOP_MENU_BUTTONS\
-    <select ref="select-menu-$CUR_TS"\/>
+$TOP_MENU_BUTTONS
+    <select ref="select-menu-$CUR_TS"/>
 EOF`
 
     # Generate XML for the segment item
@@ -275,16 +275,16 @@ function addTitle ()
     if ! $FORCE_TITLESETS; then
       if test $CUR_VIDEO -lt 2; then
         MENU_BUTTONS=`cat << EOF
-$MENU_BUTTONS\
-        <button>jump title $CUR_TITLE;<\/button>
+$MENU_BUTTONS
+        <button>jump title $CUR_TITLE;</button>
 EOF`
       fi
     else
       # Add a button for the current titleset to the top menu 
       if test $CUR_VIDEO -le 1; then
         TOP_MENU_BUTTONS=`cat << EOF
-$TOP_MENU_BUTTONS\
-        <button>jump titleset $CUR_TS menu;<\/button>
+$TOP_MENU_BUTTONS
+        <button>jump titleset $CUR_TS menu;</button>
 EOF`
       fi
     fi 
@@ -387,8 +387,8 @@ EOF`
       # jump to this slideshow. Only the first slide gets a button.
       if $FIRST_TITLE; then
         MENU_BUTTONS=`cat << EOF
-$MENU_BUTTONS\
-    <select ref="play-title-$CUR_TITLE"\/>
+$MENU_BUTTONS
+    <select ref="play-title-$CUR_TITLE"/>
 EOF`
       fi
 
@@ -423,8 +423,8 @@ EOF`
       # Generate XML for the selection (menu) "buttons" that will
       # jump to this playlist (title)
       MENU_BUTTONS=`cat << EOF
-$MENU_BUTTONS\
-    <select ref="play-title-$CUR_TITLE"\/>
+$MENU_BUTTONS
+    <select ref="play-title-$CUR_TITLE"/>
 EOF`
 
       # Generate XML for the sequence item
@@ -467,14 +467,14 @@ function closeTitleset ()
     # Give each menu a button linking back to the top menu, if there is one
     if $HAVE_TOP_MENU; then
       MENU_BUTTONS=`cat << EOF
-$MENU_BUTTONS\
-      <button>jump vmgm menu;<\/button>
+$MENU_BUTTONS
+        <button>jump vmgm menu;</button>
 
 EOF`
     fi
 
     # Fill in titleset menu buttons
-    MENU_XML=$( echo "$MENU_XML" | sed -e "s/__MENU_BUTTONS__/$MENU_BUTTONS/g" )
+    MENU_XML=$(awk -v var="$MENU_BUTTONS" '{gsub(/__MENU_BUTTONS__/, var, $0); print}' <<< "$MENU_XML")
 
     # Fill in the POST command. If there is a menu to jump back to, use that;
     # otherwise, do not insert a POST command.
@@ -528,9 +528,9 @@ EOF`
 
     # Fill in menu title selections ("buttons")
     # and remove any remaining __NEXT_TITLE__s
-    SELECTION_XML=$( echo "$SELECTION_XML" | sed -e "s/__MENU_BUTTONS__/$MENU_BUTTONS/g" \
-      -e "s/__NEXT_TITLE__//g" )
-    PLAYLIST_XML=$( echo "$PLAYLIST_XML" | sed -e "s/__NEXT_TITLE__//g" )
+    SELECTION_XML=$(awk -v var="$MENU_BUTTONS" \
+    '{gsub(/__MENU_BUTTONS__/, var); gsub(/__NEXT_TITLE__/, ""); print}' <<< "$SELECTION_XML")
+    PLAYLIST_XML=$(awk '{gsub(/__NEXT_TITLE__/, ""); print}' <<< "$PLAYLIST_XML")
 
     # Append new PBC menus/playlists to PBC_XML
     PBC_XML=`cat << EOF
@@ -678,7 +678,8 @@ fi
 closeTitleset
 
 # Fill in top menu buttons
-TOP_MENU_XML=$( echo "$TOP_MENU_XML" | sed -e "s/__TOP_MENU_BUTTONS__/$TOP_MENU_BUTTONS/g" )
+TOP_MENU_XML=$(awk -v var="$TOP_MENU_BUTTONS" \
+'{gsub(/__TOP_MENU_BUTTONS__/, var, $0); print}' <<< "$TOP_MENU_XML")
 
 # If there is a top menu with no other menus, print an error and
 # a suggestion that user specify -menu instead of -topmenu
