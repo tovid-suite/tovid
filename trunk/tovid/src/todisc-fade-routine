@@ -223,4 +223,7 @@ BC_EOF
 #done
 GAMMA_VALUES="`init_gamma_array 1 0.01 5 0.01 1 | tr '\n' ' '`"
 GAMMA_ARRAY=( "$GAMMA_VALUES" )
-#echo ${GAMMA_ARRAY[@]}
+CURVE_VARS=${CURVE_VARS:-"20 10 5 10 1"}
+CURVE_VALUES="`init_gamma_array  $CURVE_VARS | tr '\n' ' '`"
+CURVE_ARRAY=( $CURVE_VALUES )
+
