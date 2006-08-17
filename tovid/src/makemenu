@@ -473,7 +473,8 @@ MAGICK_CMD="convert -size ${FG_WIDTH}x${FG_HEIGHT} xc:none +antialias \
     -font \"$USE_TITLE_FONT\" -weight bold -pointsize $TITLE_SIZE \
     -fill \"$HIGHLIGHT_COLOR\" -draw \"gravity $TEXT_ALIGN $BUTTON_TEXT\" \
     -type Palette -colors 3 \
-    png8:$FG_HIGHLIGHT"
+    $FG_HIGHLIGHT"
+    #png8:$FG_HIGHLIGHT"
 echo $SEPARATOR
 echo "Creating the highlighted titles with the following command:"
 echo $"$MAGICK_CMD"
@@ -484,7 +485,8 @@ MAGICK_CMD="convert -size ${FG_WIDTH}x${FG_HEIGHT} xc:none +antialias \
     -font \"$USE_TITLE_FONT\" -weight bold -pointsize $TITLE_SIZE \
     -fill \"$SELECT_COLOR\" -draw \"gravity $TEXT_ALIGN $BUTTON_TEXT\" \
     -type Palette -colors 3 \
-    png8:$FG_SELECTION"
+    $FG_SELECTION"
+    #png8:$FG_SELECTION"
 echo $SEPARATOR
 echo "Creating the selection titles with the following command:"
 echo $"$MAGICK_CMD"
@@ -500,7 +502,8 @@ eval $MAGICK_CMD
 
 # Composite highlight canvas with transparent background
 MAGICK_CMD="composite -compose Src -gravity center \
-    $FG_HIGHLIGHT $BG_CANVAS png8:\"$OUT_PREFIX.hi.png\""
+    $FG_HIGHLIGHT $BG_CANVAS \"$OUT_PREFIX.hi.png\""
+    #$FG_HIGHLIGHT $BG_CANVAS png8:\"$OUT_PREFIX.hi.png\""
 echo $SEPARATOR
 echo "Compositing highlighted titles with the following command:"
 echo $"$MAGICK_CMD"
@@ -508,7 +511,8 @@ eval $MAGICK_CMD
 
 # Composite highlight canvas with transparent background
 MAGICK_CMD="composite -compose Src -gravity center \
-    $FG_SELECTION $BG_CANVAS png8:\"$OUT_PREFIX.sel.png\""
+    $FG_SELECTION $BG_CANVAS \"$OUT_PREFIX.sel.png\""
+    #$FG_SELECTION $BG_CANVAS png8:\"$OUT_PREFIX.sel.png\""
 echo $SEPARATOR
 echo "Compositing selection titles with the following command:"
 echo $"$MAGICK_CMD"
