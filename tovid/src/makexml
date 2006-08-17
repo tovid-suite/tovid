@@ -116,6 +116,17 @@ CUR_VIDEO=0
 declare -i CHAPTER_INTERVAL
 
 # ==========================================================
+# Backslash-escape the given special character (and any EOLs)
+# Usage:
+#    sed_prep "$TEXT" /
+#    echo $TEXT | sed "s/PATTERN/$(sed_prep "$REPLACEMENT" /)/"
+function sedprep ()
+{
+    delim=${2:-/}
+    echo "$1" |sed -e 's/[\&'"$delim"']/\\&/g' -e '$!s,$,\\,';
+}
+
+# ==========================================================
 # Check for the existence of a file and print an error if it
 # does not exist in the current directory
 # Args: $1 = file to look for
@@ -474,7 +485,8 @@ EOF`
     fi
 
     # Fill in titleset menu buttons
-    MENU_XML=$(awk -v var="$MENU_BUTTONS" '{gsub(/__MENU_BUTTONS__/, var, $0); print}' <<< "$MENU_XML")
+    MENU_XML=$(echo "$MENU_XML" | \
+        sed -e "s/__MENU_BUTTONS__/$(sedprep "$MENU_BUTTONS" /)/g")
 
     # Fill in the POST command. If there is a menu to jump back to, use that;
     # otherwise, do not insert a POST command.
@@ -528,9 +540,10 @@ EOF`
 
     # Fill in menu title selections ("buttons")
     # and remove any remaining __NEXT_TITLE__s
-    SELECTION_XML=$(awk -v var="$MENU_BUTTONS" \
-    '{gsub(/__MENU_BUTTONS__/, var); gsub(/__NEXT_TITLE__/, ""); print}' <<< "$SELECTION_XML")
-    PLAYLIST_XML=$(awk '{gsub(/__NEXT_TITLE__/, ""); print}' <<< "$PLAYLIST_XML")
+    SELECTION_XML=$(echo "$SELECTION_XML" | \
+        sed -e "s/__MENU_BUTTONS__/$(sedprep "$MENU_BUTTONS" /)/g" \
+        sed -e "s/__NEXT_TITLE__//g")
+    PLAYLIST_XML=$(echo "$PLAYLIST_XML" | sed -e "s/__NEXT_TITLE__//g")
 
     # Append new PBC menus/playlists to PBC_XML
     PBC_XML=`cat << EOF
@@ -678,8 +691,8 @@ fi
 closeTitleset
 
 # Fill in top menu buttons
-TOP_MENU_XML=$(awk -v var="$TOP_MENU_BUTTONS" \
-'{gsub(/__TOP_MENU_BUTTONS__/, var, $0); print}' <<< "$TOP_MENU_XML")
+TOP_MENU_XML=$(echo "$TOP_MENU_XML" | \
+    sed -e "s/__TOP_MENU_BUTTONS__/$(sedprep "$TOP_MENU_BUTTONS" /)/g")
 
 # If there is a top menu with no other menus, print an error and
 # a suggestion that user specify -menu instead of -topmenu
