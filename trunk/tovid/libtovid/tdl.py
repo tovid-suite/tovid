@@ -5,14 +5,11 @@ __all__ = ['element_classes']
 
 # From standard library
 import sys
-import copy
-import shlex
 # From libtovid
-from libtovid.utils import tokenize, trim, pretty_dict, get_code_lines, indent_level
+from libtovid.utils import tokenize, pretty_dict, get_code_lines, indent_level
 from libtovid.video import Video
 from libtovid.menu import Menu
 from libtovid.disc import Disc
-from libtovid.opts import Option
 from libtovid.log import Log
 
 log = Log('tdl')
@@ -92,6 +89,7 @@ class Project:
 # See http://docs.python.org/lib/module-unittest.html
 
 if __name__ == '__main__':
+    # TODO: this is broken since 'parse' does not exist anymore
     elems = parse(sys.argv[1])
     for elem in elems:
         print "%s %s" % (elem.__class__, elem.options['out'])
