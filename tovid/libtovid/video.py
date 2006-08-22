@@ -5,7 +5,6 @@ __all__ = ['Video']
 
 # From standard library
 import sys
-from copy import copy
 # From libtovid
 from libtovid.opts import Option, OptionDict
 from libtovid.standards import get_resolution
@@ -138,11 +137,11 @@ class Video:
             expand = False
         # If aspect is wider than target, letterbox vertically
         elif src_aspect > target_aspect:
-            scale = (width, height * dvd_aspect / src_aspect)
+            scale = (width, height * target_aspect / src_aspect)
             expand = (width, height)
         # Otherwise (rare), letterbox horizontally
         else:
-            scale = (width * src_aspect / dvd_aspect, height)
+            scale = (width * src_aspect / target_aspect, height)
             expand = (width, height)
         # If infile is already the correct size, don't scale
         if self.infile.video:
