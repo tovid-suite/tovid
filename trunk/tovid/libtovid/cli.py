@@ -199,11 +199,17 @@ class Pipe(object):
         self.first = first
         self.after = after
     
+    def read_from(self, filename):
+        raise TypeError("Piped programs cannot read from other places.")
+
     def __repr__(self):
         return "Pipe(%r, %r)" % (self.first, self.after)
     
     def __str__(self):
         return "%s | %s" % (self.first, self.after)
+
+    def __getattr__(self, attr):
+        return getattr(self.after, attr)
 
 class Arg(object):
     """An object used for creating commands used on shell scripts.
@@ -241,7 +247,7 @@ class Arg(object):
         self.arg += " %s" % " ".join(map(enc_arg, others))
         return self
 
-    def addraw(self, raw):
+    def add_raw(self, raw):
         """the 'raw' argument must be a string and will be stripped of
         extra whitechars. Returns itself."""
         self.arg += " %s" % raw.strip()
@@ -255,21 +261,22 @@ class Arg(object):
         if other.stdin is not None:
             raise TypeError("Cannot pipe if input of other process is redirected to a file.")
         
-        # TODO: make sure the other's stdout is not mixed with the generated
-        # stdout
-        return Arg("%s | %s" % (str(self), str(other)))
+        return Pipe(self, other)
 
     def to_bg(self):
         """Makes this command run in background, returns itself."""
         return Bg(self)
 
     def read_from(self, filename):
+        """makes the process read from a file"""
         self.stdin = filename
 
     def write_to(self, filename):
+        """makes the process write to a file"""
         self.stdout = filename
 
     def errors_to(self, filename):
+        """makes the process write error stream to a file"""
         self.stderr = filename
 
     def __str__(self):
