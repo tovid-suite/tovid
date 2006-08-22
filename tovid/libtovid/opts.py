@@ -56,7 +56,6 @@ __all__ = ['Option', 'OptionDict']
 
 # From standard library
 import re
-import sys
 from copy import copy
 import textwrap
 import doctest
