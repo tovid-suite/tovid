@@ -125,12 +125,6 @@ SPUMUX_BUTTONS=""
 SPUMUX_BUTTON_PAD=1
 # No "back" button
 BACK_BUTTON=""
-# Temporary files
-BG_CANVAS="makemenu.bg_canvas.$PPID.png"
-FG_CANVAS="makemenu.fg_canvas.$PPID.png"
-FG_HIGHLIGHT="makemenu.fg_highlight.$PPID.png"
-FG_SELECTION="makemenu.fg_selection.$PPID.png"
-BG_SILENCE="makemenu.bg_silence.$PPID"
 # NTSC DVD
 SAMPRATE="48000"
 ASUF="ac3"
@@ -152,6 +146,7 @@ REDIR="/dev/null"
 # Not doing debugging
 DEBUG=false
 OUT_PREFIX=""
+LOG_FILE="makemenu.log"
 
 # ***********************************
 # EXECUTION BEGINS HERE
@@ -249,7 +244,7 @@ while test $# -gt 0; do
             ;;
         "-debug" )
             DEBUG=:
-            REDIR="makemenu.log"
+            REDIR="$LOG_FILE"
             ;;
         "-out" )
             shift
@@ -276,9 +271,24 @@ if test $NUM_TITLES -eq 0; then
 fi
 
 # If output prefix was not provided, exit with error
-if test -z $OUT_PREFIX; then
+if test -z "$OUT_PREFIX"; then
     usage_error "Please provide an output prefix with the -out option."
 fi
+
+OUT_FILENAME="$OUT_PREFIX.mpg"
+# Temporary directory named after the given -out prefix
+OUTNAME=$(basename "$OUT_PREFIX")
+TMP_DIR=$(tempdir "$WORKING_DIR/$OUTNAME")
+echo "Storing temporary files in $TMP_DIR"
+BG_CANVAS="$TMP_DIR/bg_canvas.png"
+FG_CANVAS="$TMP_DIR/fg_canvas.png"
+FG_HIGHLIGHT="$TMP_DIR/fg_highlight.png"
+FG_SELECTION="$TMP_DIR/fg_selection.png"
+MENU_PPM="$TMP_DIR/menu.ppm"
+MENU_MPEG="$TMP_DIR/menu.mpg"
+SPUMUX_XML="$TMP_DIR/menu_buttons.xml"
+SELECT_PNG="$TMP_DIR/select.png"
+HIGHLIGHT_PNG="$TMP_DIR/highlight.png"
 
 # Use appropriate settings for DVD
 if test $RES = "dvd"; then
@@ -305,7 +315,8 @@ else
     ASUF="mp2"
 fi
 
-
+VIDEO_STREAM="$TMP_DIR/video.$VSUF"
+AUDIO_STREAM="$TMP_DIR/audio.$ASUF"
 
 # Make sure there are 9 or fewer titles for VCD
 if test "$RES" = "vcd" && test "$NUM_TITLES" -gt 9; then
@@ -433,7 +444,7 @@ eval $BG_CMD
 if test -z $BG_AUDIO ; then
     echo "Creating 4-second silent $ASUF audio with the following command:"
     AUDIO_CMD="ffmpeg -f s16le -i /dev/zero -ac 2 -ar $SAMPRATE -ab 224 \
-        -t 4 -acodec $ASUF -y \"$OUT_PREFIX.$ASUF\""
+        -t 4 -acodec $ASUF -y \"$AUDIO_STREAM\""
     echo $AUDIO_CMD
     eval $AUDIO_CMD
     VID_LENGTH=$(expr 4 \* $FPS \/ 100)
@@ -441,7 +452,7 @@ if test -z $BG_AUDIO ; then
 else
     echo "Converting \"$BG_AUDIO\" to $ASUF with the following command:"
     AUDIO_CMD="ffmpeg -i \"$BG_AUDIO\" -ac 2 -ar $SAMPRATE -ab 224 \
-        -acodec $ASUF -y \"$OUT_PREFIX.$ASUF\""
+        -acodec $ASUF -y \"$AUDIO_STREAM\""
     echo $AUDIO_CMD
     eval $AUDIO_CMD
     # Calculate video length from length of audio sample
@@ -494,7 +505,7 @@ eval $MAGICK_CMD
 
 # Composite foreground canvas onto background
 MAGICK_CMD="composite -compose Over -gravity center \
-    $FG_CANVAS $BG_CANVAS -depth 8 \"$OUT_PREFIX.ppm\""
+    $FG_CANVAS $BG_CANVAS -depth 8 \"$MENU_PPM\""
 echo $SEPARATOR
 echo "Compositing foreground canvas over background with the following command:"
 echo $"$MAGICK_CMD"
@@ -502,17 +513,18 @@ eval $MAGICK_CMD
 
 # Composite highlight canvas with transparent background
 MAGICK_CMD="composite -compose Src -gravity center \
-    $FG_HIGHLIGHT $BG_CANVAS \"$OUT_PREFIX.hi.png\""
-    #$FG_HIGHLIGHT $BG_CANVAS png8:\"$OUT_PREFIX.hi.png\""
+    $FG_HIGHLIGHT $BG_CANVAS \"$HIGHLIGHT_PNG\""
+    #$FG_HIGHLIGHT $BG_CANVAS png8:\"$HIGHLIGHT_PNG\""
 echo $SEPARATOR
 echo "Compositing highlighted titles with the following command:"
 echo $"$MAGICK_CMD"
 eval $MAGICK_CMD
 
+
 # Composite highlight canvas with transparent background
 MAGICK_CMD="composite -compose Src -gravity center \
-    $FG_SELECTION $BG_CANVAS \"$OUT_PREFIX.sel.png\""
-    #$FG_SELECTION $BG_CANVAS png8:\"$OUT_PREFIX.sel.png\""
+    $FG_SELECTION $BG_CANVAS \"$SELECT_PNG\""
+    #$FG_SELECTION $BG_CANVAS png8:\"$SELECT_PNG\""
 echo $SEPARATOR
 echo "Compositing selection titles with the following command:"
 echo $"$MAGICK_CMD"
@@ -521,8 +533,8 @@ eval $MAGICK_CMD
 # Make video of specified length from PPM background image
 echo $SEPARATOR
 echo "Converting to video with the following command:"
-VIDEO_CMD="ppmtoy4m $PPM_OPTS -n $VID_LENGTH -r \"$OUT_PREFIX.ppm\" 2>>$REDIR | \
-  mpeg2enc -a 2 $MPEG2ENC_FMT $MPEG2ENC_SYS -o \"$OUT_PREFIX.$VSUF\" >> $REDIR 2>&1"
+VIDEO_CMD="ppmtoy4m $PPM_OPTS -n $VID_LENGTH -r \"$MENU_PPM\" 2>>$REDIR | \
+  mpeg2enc -a 2 $MPEG2ENC_FMT $MPEG2ENC_SYS -o \"$VIDEO_STREAM\" >> $REDIR 2>&1"
 echo $VIDEO_CMD
 echo "This may take a while..."
 eval $VIDEO_CMD
@@ -531,28 +543,28 @@ eval $VIDEO_CMD
 # Multiplex audio and video
 echo $SEPARATOR
 echo "Multiplexing video and audio with the following command:"
-MPLEX_CMD="mplex $MPLEX_OPTS $MPEG2ENC_FMT -o \"$OUT_PREFIX.temp.mpg\" \
-  \"$OUT_PREFIX.$VSUF\" \"$OUT_PREFIX.$ASUF\" >> $REDIR 2>&1"
+MPLEX_CMD="mplex $MPLEX_OPTS $MPEG2ENC_FMT -o \"$MENU_MPEG\" \
+  \"$VIDEO_STREAM\" \"$AUDIO_STREAM\" >> $REDIR 2>&1"
 echo $MPLEX_CMD
 eval $MPLEX_CMD
 
 # For DVD, create spumux XML
 if test "$RES" = "dvd"; then
 
-  SPUMUX_XML=`cat << EOF
+(cat << EOF
 <subpictures>
   <stream>
   <spu force="yes" start="00:00:00.00"
-       highlight="$OUT_PREFIX.hi.png"
-       select="$OUT_PREFIX.sel.png"
+       highlight="$HIGHLIGHT_PNG"
+       select="$SELECT_PNG"
        autooutline="infer">
   </spu>
   </stream>
 </subpictures>
-EOF`
-    echo $"$SPUMUX_XML" > "$OUT_PREFIX.xml"
+EOF
+) > "$SPUMUX_XML"
     wait
-    SPUMUX_CMD="spumux \"$OUT_PREFIX.xml\" < \"$OUT_PREFIX.temp.mpg\" > \"$OUT_PREFIX.mpg\" 2>>$REDIR"
+    SPUMUX_CMD="spumux \"$SPUMUX_XML\" < \"$MENU_MPEG\" > \"$OUT_FILENAME\" 2>>$REDIR"
     echo $SEPARATOR
     echo "Multiplexing menu selection highlight and menu with the following command:"
     echo $SPUMUX_CMD
@@ -560,31 +572,29 @@ EOF`
 
 # Rename the output menu for VCD and SVCD
 else
-    mv "$OUT_PREFIX.temp.mpg" "$OUT_PREFIX.mpg"
+    mv "$MENU_MPEG" "$OUT_FILENAME"
 fi
 
 echo $SEPARATOR
 if $DEBUG; then
-    echo "Leaving temporary files in place"
+    echo "Leaving temporary files in $TMP_DIR"
+    echo "Debugging log saved to $LOG_FILE"
 else
     echo "Cleaning up..."
-    rm -fv $BG_CANVAS $FG_CANVAS $FG_HIGHLIGHT $FG_SELECTION \
-        "$OUT_PREFIX.hi.png" "$OUT_PREFIX.sel.png" "$OUT_PREFIX.$VSUF" \
-        "$OUT_PREFIX.$ASUF" "$OUT_PREFIX.ppm" \
-        "$OUT_PREFIX.temp.mpg" "$OUT_PREFIX.xml"
+    rm -rfv "$TMP_DIR"
 fi
 
 echo $SEPARATOR
-if test -e "$OUT_PREFIX.mpg"; then
-    echo "Done. Your completed menu should be in the file $OUT_PREFIX.mpg."
+if test -e "$OUT_FILENAME"; then
+    echo "Done. Your completed menu should be in the file $OUT_FILENAME."
     if test "$RES" = "vcd"; then
         echo "You can use this menu on an (S)VCD or VCD disc by invoking:"
         echo
-        echo "  makexml -vcd -menu $OUT_PREFIX.mpg <title 1> <title 2> ... <output name>"
+        echo "  makexml -vcd -menu $OUT_FILENAME <title 1> <title 2> ... <output name>"
     else
         echo "You can use this menu on a DVD disc by invoking:"
         echo
-        precho "  makexml -dvd -menu $OUT_PREFIX.mpg <title 1> <title 2> ... -out <output name>"
+        precho "  makexml -dvd -menu $OUT_FILENAME <title 1> <title 2> ... -out <output name>"
     fi
 
     echo
