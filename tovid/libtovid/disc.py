@@ -3,10 +3,6 @@
 
 __all__ = ['Disc']
 
-# From standard library
-import string
-import sys
-from copy import copy
 # From libtovid
 from libtovid.opts import Option, OptionDict
 
