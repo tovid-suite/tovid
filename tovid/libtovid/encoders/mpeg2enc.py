@@ -145,7 +145,7 @@ def encode_audio(infile, audiofile, options):
     # Otherwise, generate 4-second silence
     else:
         cmd.add('-f', 's16le', '-i', '/dev/zero', '-t', '4')
-    cmd.addraw('-ac 2 -ab 224')
+    cmd.add_raw('-ac 2 -ab 224')
     cmd.add('-ar', options['samprate'])
     cmd.add('-acodec', acodec)
     cmd.add('-y', audiofile)
@@ -156,15 +156,15 @@ def mplex_streams(vstream, astream, outfile, options):
     cmd = Arg('mplex')
     format = options['format']
     if format == 'vcd':
-        cmd.addraw('-f 1')
+        cmd.add_raw('-f 1')
     elif format == 'dvd-vcd':
-        cmd.addraw('-V -f 8')
+        cmd.add_raw('-V -f 8')
     elif format == 'svcd':
-        cmd.addraw('-V -f 4 -b 230')
+        cmd.add_raw('-V -f 4 -b 230')
     elif format == 'half-dvd':
-        cmd.addraw('-V -f 8 -b 300')
+        cmd.add_raw('-V -f 8 -b 300')
     elif format == 'dvd':
-        cmd.addraw('-V -f 8 -b 400')
+        cmd.add_raw('-V -f 8 -b 400')
     # elif format == 'kvcd':
     #   cmd += ' -V -f 5 -b 350 -r 10800 '
     cmd.add(vstream, astream, '-o', outfile)
