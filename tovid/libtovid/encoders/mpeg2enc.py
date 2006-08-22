@@ -5,7 +5,7 @@ __all__ = ['get_script']
 
 import os
 
-from libtovid.cli import Script
+from libtovid.cli import Script, Arg
 from libtovid.utils import float_to_ratio
 from libtovid.log import Log
 
@@ -67,26 +67,26 @@ def rip_video(infile, yuvfile, options):
     # TODO: Custom mplayer options, subtitles, interlacing,
     # corresp.  to $MPLAYER_OPT, $SUBTITLES, $VF_PRE/POST, $YUV4MPEG_ILACE,
     # etc.
-    cmd = 'mplayer'
-    cmd += ' "%s"' % infile.filename
-    cmd += ' -vo yuv4mpeg:file=%s' % yuvfile
-    cmd += ' -nosound -benchmark -noframedrop'
+    cmd = Arg('mplayer')
+    cmd.add(infile.filename)
+    cmd.add('-vo', 'yuv4mpeg:file=%s' % yuvfile)
+    cmd.add('-nosound', '-benchmark', '-noframedrop')
     # TODO: Support subtitles. For now, use default tovid behavior.
-    cmd += ' -noautosub'
+    cmd.add('-noautosub')
     if options['scale']:
-        cmd += ' -vf scale=%s:%s' % options['scale']
+        cmd.add('-vf', 'scale=%s:%s' % options['scale'])
     if options['expand']:
-        cmd += ' -vf-add expand=%s:%s' % options['expand']
+        cmd.add('-vf-add', 'expand=%s:%s' % options['expand'])
     # Filters
     filters = options['filters']
     if 'denoise' in filters:
-        cmd += ' -vf-add hqdn3d'
+        cmd.add('-vf-add', 'hqdn3d')
     if 'contrast' in filters:
-        cmd += ' -vf-add pp=al:f'
+        cmd.add('-vf-add', 'pp=al:f')
     if 'deblock' in filters:
-        cmd += ' -vf-add pp=hb/vb'
+        cmd.add('-vf-add', 'pp=hb/vb')
     # Background ripping
-    return cmd + ' &'
+    return str(cmd.to_bg())
 
 
 def encode_video(infile, yuvfile, videofile, options):
@@ -96,40 +96,41 @@ def encode_video(infile, yuvfile, videofile, options):
     # Missing options (compared to tovid)
     # -S 700 -B 247 -b 2080 -v 0 -4 2 -2 1 -q 5 -H -o FILE
     
-    cmd = 'mpeg2enc'
+    cmd = Arg('mpeg2enc')
     # TV system
     if options['tvsys'] == 'pal':
-        cmd += ' -F 3 -n p'
+        cmd.add('-F', '3', '-n', 'p')
     elif options['tvsys'] == 'ntsc':
-        cmd += ' -F 4 -n n'
+        cmd.add('-F', '4', '-n', 'n')
     # Format
     format = options['format']
     if format == 'vcd':
-        cmd += ' -f 1'
+        cmd.add('-f', '1')
     elif format == 'svcd':
-        cmd += ' -f 4'
+        cmd.add('-f', '4')
     elif 'dvd' in format:
-        cmd += ' -f 8'
+        cmd.add('-f', '8')
     # Aspect ratio
     if options['widescreen']:
-        cmd += ' -a 3'
+        cmd.add('-a', '3')
     else:
-        cmd += ' -a 2'
-    cmd += ' -o "%s"' % videofile
+        cmd.add('-a', '2')
+    cmd.add('-o', videofile)
 
     # Adjust framerate if necessary
     # FIXME: Can infile.video None?
     if infile.video != None:
         if infile.video.spec['fps'] != options['fps']:
             log.info("Adjusting framerate")
-            yuvcmd = 'yuvfps -r %s' % float_to_ratio(options['fps'])
-            cmd = yuvcmd + ' | ' + cmd
+            yuvcmd = Arg('yuvfps')
+            yuvcmd.add('-r', float_to_ratio(options['fps']))
+            cmd = cmd.pipe(yuvcmd)
     else:
         pass
     
     # Pipe the .yuv file into mpeg2enc
-    catcmd = 'cat "%s" | ' % yuvfile
-    return catcmd + cmd
+    cmd.read_from(yuvfile)
+    return str(cmd)
 
 def encode_audio(infile, audiofile, options):
     """Encode the audio stream in infile to the target format."""
@@ -137,34 +138,34 @@ def encode_audio(infile, audiofile, options):
         acodec = 'mp2'
     else:
         acodec = 'ac3'
-    cmd = 'ffmpeg '
+    cmd = Arg('ffmpeg')
     # If infile was provided, encode it
     if infile:
-        cmd += ' -i "%s"' % infile.filename
+        cmd.add('-i', infile.filename)
     # Otherwise, generate 4-second silence
     else:
-        cmd += ' -f s16le -i /dev/zero -t 4'
-    cmd += ' -ac 2 -ab 224'
-    cmd += ' -ar %s' % options['samprate']
-    cmd += ' -acodec %s' % acodec
-    cmd += ' -y "%s"' % audiofile
-    return cmd
+        cmd.add('-f', 's16le', '-i', '/dev/zero', '-t', '4')
+    cmd.addraw('-ac 2 -ab 224')
+    cmd.add('-ar', options['samprate'])
+    cmd.add('-acodec', acodec)
+    cmd.add('-y', audiofile)
+    return str(cmd)
 
 def mplex_streams(vstream, astream, outfile, options):
     """Multiplex the audio and video streams."""
-    cmd = 'mplex'
+    cmd = Arg('mplex')
     format = options['format']
     if format == 'vcd':
-        cmd += ' -f 1'
+        cmd.addraw('-f 1')
     elif format == 'dvd-vcd':
-        cmd += ' -V -f 8'
+        cmd.addraw('-V -f 8')
     elif format == 'svcd':
-        cmd += ' -V -f 4 -b 230'
+        cmd.addraw('-V -f 4 -b 230')
     elif format == 'half-dvd':
-        cmd += ' -V -f 8 -b 300'
+        cmd.addraw('-V -f 8 -b 300')
     elif format == 'dvd':
-        cmd += ' -V -f 8 -b 400'
+        cmd.addraw('-V -f 8 -b 400')
     # elif format == 'kvcd':
     #   cmd += ' -V -f 5 -b 350 -r 10800 '
-    cmd += ' "%s" "%s" -o "%s"' % (vstream, astream, outfile)
-    return cmd
+    cmd.add(vstream, astream, '-o', outfile)
+    return str(cmd)
