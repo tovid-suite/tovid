@@ -109,13 +109,11 @@ class Script:
 
     def append(self, command):
         """Append the given command to the end of the script."""
-        assert isinstance(command, str)
-        self.commands.append(command)
+        self.commands.append(str(command))
 
     def prepend(self, command):
         """Prepend the given command at the beginning of the script."""
-        assert isinstance(command, str)
-        self.commands.insert(0, command)
+        self.commands.insert(0, str(command))
 
     def text(self):
         """Return the text of the script."""
