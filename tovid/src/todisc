@@ -632,17 +632,9 @@ while test $# -gt 0; do
             fi
             ;;
         "-subtitles" )
-            SUBTITLES=:
             shift
-            # Hackish list-parsing
-            while test $# -gt 0 && test ${1:0:1} != "-"; do
-                SUBS_ARRAY=( $1 ) 
-                shift
-            done
-            # Do not skip past the next argument
-            if test $# -gt 0 && test ${1:0:1} = "-";then
-                DO_SHIFT=false
-            fi
+            SUBS_ARRAY=( $1 ) 
+            SUBTITLES=:
             ;;
         "-bgaudio" )
             shift
