@@ -7,7 +7,8 @@ __all__ = ['Disc']
 from libtovid.opts import Option, OptionDict
 
 class Disc:
-    """A video disc containing video titles and optional menus."""
+    """A video disc containing video titles and optional menus.
+    """
     # List of valid options with documentation
     optiondefs = [
         Option('out', 'NAME', None,

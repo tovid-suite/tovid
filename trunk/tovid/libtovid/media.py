@@ -24,14 +24,19 @@ import os
 import sys
 import commands
 from os.path import abspath
+# From libtovid
 from libtovid.log import Log
+from libtovid import standards
 
 log = Log('libtovid.media')
 
 class MediaFile:
     """Stores information about a file containing video and/or audio streams."""
-    def __init__(self, filename):
-        self.filename = abspath(filename)
+    def __init__(self, filename=''):
+        if filename is not '':
+            self.filename = abspath(filename)
+        else:
+            self.filename = ''
         self.audio = None
         self.video = None
         self.frame_files = []
@@ -88,10 +93,7 @@ class MediaFile:
     
         # Use jpeg2yuv to stream images
         cmd = 'jpeg2yuv -I p '
-        if tvsys == 'pal':
-            cmd += ' -f 25.00 '
-        else:
-            cmd += ' -f 29.970 '
+        cmd += ' -f %.3f ' % standards.get_fps(format, tvsys)
         cmd += ' -j "%s/%%08d.jpg"' % imagedir
 
         # TODO: Scale to correct target size using yuvscaler or similar
