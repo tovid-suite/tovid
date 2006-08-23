@@ -194,18 +194,20 @@ while test $# -gt 0; do
             ;;
         "-audio" )
             shift
-            if test -z $BG_AUDIO ; then
-              BG_AUDIO=$1
+            # Make sure file exists
+            if test -f "$1"; then
+                BG_AUDIO=$1
             else
-              usage_error "Please specify only one -audio option."
+                usage_error "Can't find background audio file: $1"
             fi
             ;;
         "-background" )
             shift
-            if test -z $BG_IMAGE ; then
-              BG_IMAGE=$1
+            # Make sure file exists
+            if test -f "$1"; then
+                BG_IMAGE=$1
             else
-              usage_error "Please specify only one -background option."
+                usage_error "Can't find background image file: $1"
             fi
             ;;
         "-overwrite" ) OVERWRITE="y" ;;
