@@ -131,6 +131,7 @@ TEXTMENU=false
 THUMBS_3D=false
 RAISE="-raise 8x8"
 SUBTITLES=false
+AUDIOLANG=false
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -635,6 +636,11 @@ while test $# -gt 0; do
             shift
             SUBS_ARRAY=( $1 ) 
             SUBTITLES=:
+            ;;
+        "-audio-lang" )
+            shift
+            AUDIO_LANG="$1" 
+            AUDIOLANG=:
             ;;
         "-bgaudio" )
             shift
@@ -2294,6 +2300,9 @@ echo "$POST"
 fi)    
     </menus>
     <titles>
+$(if $AUDIOLANG; then
+        echo -e "      <audio lang=\"$AUDIO_LANG\"/>"
+fi)
 $(if $SUBTITLES; then
     for ((s=0; s<${#SUBS_ARRAY[@]}; s++)); do
         echo -e "      <subpicture lang=\"${SUBS_ARRAY[s]}\"/>"
