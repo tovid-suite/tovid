@@ -26,7 +26,7 @@ __all__ = [\
     'KeyFunction'
 ]
 
-from libtovid.mvg import Drawing
+from libtovid.renderers.mvg_render import Drawing
 from libtovid.animation import Keyframe, Tween
 
 class Effect:
@@ -83,7 +83,7 @@ class MyEffect (Effect):
         assert isinstance(drawing, Drawing)
         # This effect varies the stroke width across a sequence of frames.
         # Replace 'stroke_width' with your own drawing function(s)
-        # (see libtovid/mvg.py for a complete list)
+        # (see libtovid/renderers/mvg_render.py for a complete list)
         drawing.stroke_width(self.tween[frame])
 
     # That's it! Your effect is ready to use.

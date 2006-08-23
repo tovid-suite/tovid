@@ -8,8 +8,8 @@ Run this module standalone for a demonstration:
     $ python libtovid/flipbook.py
 
 Much like a paper flipbook made of many individual drawings, the Flipbook class
-has a collection of Drawing objects (from libtovid/mvg.py) that, when displayed
-in sequence, make up an animation or video.
+has a collection of Drawing objects (from libtovid/renderers/mvg_render.py) that,
+when displayed in sequence, make up an animation or video.
 
 To use this module interactively, run 'python' from the command-line, and do:
 
@@ -63,7 +63,7 @@ __all__ = ['Flipbook']
 import os
 import sys
 from libtovid.animation import Keyframe
-from libtovid.mvg import Drawing
+from libtovid.renderers.mvg_render import Drawing
 from libtovid import layer
 from libtovid import effect
 from libtovid.media import MediaFile
