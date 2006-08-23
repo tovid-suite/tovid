@@ -234,8 +234,10 @@ get_info ()
 # in terse or human-readable form
 idvid_main ()
 {
-    if test -e "$1"; then
+    # Accept regular filenames, or URI-style pathnames (like dvd://, http://)
+    if test -e "$1" || expr "$1" : ".*:\/\/" >/dev/null; then
         get_info "$1"
+    # Otherwise, file not found error.
     else
         echo "Could not find file: $1"
         rm -rf "$TMP_DIR"
