@@ -1,17 +1,24 @@
 import tempfile
 import xml.dom
 import os
+
 from cli import Script, Arg
+from opts import Option, OptionDict
+from media import MediaFile
 
 dom = xml.dom.getDOMImplementation()
 
 def mktempname(*args, **kwargs):
+    """Generates a temporary filename. Same args and kwargs
+    as mkstemp."""
     fd, fname = tempfile.mkstemp(*args, **kwargs)
     os.close(fd)
     return fname
 
 def mktempstream(*args, **kwargs):
-    return open(mktempname(*args, **kwargs), "+w")
+    """Generates a file object, it's not removed after being closed.
+    Same args and kwargs as mkstemp."""
+    return open(mktempname(*args, **kwargs), "w")
 
 VALID_TAGS = {
     'filename': None,
@@ -22,7 +29,7 @@ VALID_TAGS = {
     'vertical-alignment': 'bottom',
     'left-margin': '60',
     'right-margin': '60',
-    'subtitles-fps': '25',
+    'subtitle-fps': '25',
     'movie-fps': None,
     'movie-width': None,
     'movie-height': None,
@@ -37,63 +44,100 @@ def create_xml(opts):
     root.appendChild(stream)
     
     textsub = doc.createElement("textsub")
+    stream.appendChild(textsub)
     
     for key in VALID_TAGS:
         try:
-            textsub.setAttribute(key, opts[key])
+            textsub.setAttribute(key, str(opts[key]))
         except KeyError:
             default = VALID_TAGS[key]
             if default is None:
                 raise
             # set the default value
-            textsub.setAttribute(key, default)
+            textsub.setAttribute(key, str(default))
             
     return doc.toprettyxml()
 
-def spumux(xmlopts, stream=0):
+def spumux(movie_filename, xmlopts, stream=0):
     """
     Runs a script from the command line
     """
-    filename = xmlopts['filename']
+    sub_filename = xmlopts['filename']
     data = create_xml(xmlopts)
     
     
     fd = mktempstream(suffix=".xml")
-    try:
-        fd.write(data)
-        fd.close()
-    except:
-        # remove temp file and raise error
-        os.unkink(fd)
-        raise
+    fd.write(data)
+    fd.close()
     
     # make sure the temporary mpeg is created on the same directory
-    base_dir = os.path.dirname(filename)
+    base_dir = os.path.dirname(movie_filename)
     tmp_mpg = mktempname(suffix=".mpg", dir=base_dir)
     
-    script = Script()
+    script = Script('subtitles')
+    
+    script.append(Arg('cat').add(fd.name))
     
     # spumux -s0 < in > out
-    cmd = Arg('spumux').add("-s").add(stream)
-    cmd.read_from(filename)
+    cmd = Arg('spumux').add("-s%s" % stream).add(fd.name)
+    cmd.read_from(movie_filename)
     cmd.write_to(tmp_mpg)
-    script.append(cmd)
     
     # remove old file
-    script.append(Arg('rm').add('-f', filename))
+    cmd = cmd.if_done(Arg('rm').add('-f', movie_filename))
     
     # rename temporary file to new file
-    script.append(Arg('mv').add(tmp_mpg, filename))
-    
+    cmd = cmd.if_done(Arg('mv').add(tmp_mpg, movie_filename))
+    script.append(cmd)
     script.run()
 
-def generate(options):
-    """generate the subtitles from the following options"""
-    infile = options['in']
+    os.unlink(fd.name)
+
+def add_subs(infile, subs, opts={}):
+    """
+    Adds subtitles to a certain MPEG.
+    infile must be a MediaFile.
+    """
+    assert isinstance(infile, MediaFile)
+    
     xmlopts = {
-        'movie-fps': options['fps'],
+        'movie-fps': infile.video.fps,
         'movie-width': infile.video.width,
         'movie-height': infile.video.height,
-        'filename': options['out'],
     }
-    spumux(xmlopts)
+    
+    xmlopts.update(opts)
+    
+    for stream, sub_filename in enumerate(subs):
+        xmlopts['filename'] = sub_filename
+        spumux(infile.filename, xmlopts, stream)
+
+class Subtitles(object):
+
+    optiondefs = [
+        Option("subs", 'STRING [, STRING ...]', [],
+        """One file means one language. You'll need to know the order of the
+        supplied subtitles when you add support for it on `todisc`."""),
+        Option('in', 'STRING', None,
+            """Input video file, in any format. This file will be altered
+            (inplace)."""),
+    ]
+
+    def __init__(self, custom_options):
+        """Initialize Subtitles with a string or list of options."""
+        self.options = OptionDict(self.optiondefs)
+        self.options.override(custom_options)
+        
+
+    def generate(self):
+        """generate the subtitles from the following options"""
+        infile = MediaFile(self.options['in'])
+        infile.load()
+        if infile.video is None:
+            raise ValueError("Could not identify video file.")
+        add_subs(infile, self.options['subs'])
+
+if __name__ == '__main__':
+    import sys
+    subs = Subtitles(sys.argv[1:])
+    subs.generate()
