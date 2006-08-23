@@ -128,6 +128,9 @@ SC_FRAME="-frame 3x3"
 THREExONE=false
 PLAYALL=false
 TEXTMENU=false
+THUMBS_3D=false
+RAISE="-raise 8x8"
+SUBTITLES=false
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -568,6 +571,9 @@ while test $# -gt 0; do
             shift
             BUTTON_STYLE="$1"
             ;;
+        "-3dthumbs" )
+            THUMBS_3D=:
+            ;;
         "-blur" )
             shift
             BLUR="$1"
@@ -618,6 +624,19 @@ while test $# -gt 0; do
             # Hackish list-parsing
             while test $# -gt 0 && test ${1:0:1} != "-"; do
                 CHAPTERS=( "${CHAPTERS[@]}" "$1" ) 
+                shift
+            done
+            # Do not skip past the next argument
+            if test $# -gt 0 && test ${1:0:1} = "-";then
+                DO_SHIFT=false
+            fi
+            ;;
+        "-subtitles" )
+            SUBTITLES=:
+            shift
+            # Hackish list-parsing
+            while test $# -gt 0 && test ${1:0:1} != "-"; do
+                SUBS_ARRAY=( $1 ) 
                 shift
             done
             # Do not skip past the next argument
@@ -1171,6 +1190,13 @@ DIMX4=$((DIMX / 2))
 DIMY5=$((DIMY / 3))
 DIMX5=$((DIMX4 / 3))
 BLUR_CMD=(convert - -blur 0x$BLUR -channel RGBA +matte miff:-)
+if $THUMBS_3D && [ "$THUMB_SHAPE" = "normal" ]; then
+    MASK_DIM="0,0 $DIMY,$DIMX"
+    BLUR_CMD=(convert - miff:-)
+else
+    MASK_DIM="$DIMY1,$DIMY1 $DIMY2,$DIMX2"
+fi
+
 if [ -n "$THUMB_SHAPE" ]; then
     # make a mask for the mist if called for
     convert -size $THUMB_SIZE xc:none -fill  "$THUMB_BG_COLOUR" -stroke none \
@@ -1250,8 +1276,8 @@ TITLE_CMD=(convert  -size 620x100 xc:none -font "$MENU_FONT"  -pointsize $MENU_F
 -fill "$TITLE_COLOUR" -stroke "$STROKE" -strokewidth 1 -annotate +1+1 "$VMGM_TITLE")
 TITLE_CMD1=(convert - -trim +repage -blur 0x0.4 "$WORK_DIR/title_txt.png")
 
-echo "Running "${TITLE_CMD[@]}" miff:- | \
-"${TITLE_CMD1[@]}"" | fold -bs >> "$LOG_FILE"
+echo "Running "${TITLE_CMD[@]}" miff:- |
+"${TITLE_CMD1[@]}"" | format_output|tee -a "$LOG_FILE"
 "${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}"
 
 # make a PLAYALL button if called for
@@ -1310,6 +1336,7 @@ if $SHOWCASE; then
     done 
 fi
 if $MIST; then
+    echo
     echo "Making a white or colored png for the misted title background"
     echo
     # make a white or coloured png for misted background effect, only for user's bg
@@ -1431,10 +1458,12 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
     fi
     TRANSCODE_CMD=(transcode -q 1 -i "${IN_FILES[i]}" \
     -c $SEEK_FRAMES-$((SEEK_FRAMES + 1)) $NAVSEEK \
-    -o $WORK_DIR/${i}-preview -f 29.970  -Z $THUMB_SIZE $EXPORT)
+    -o $WORK_DIR/pics/$i/ -f 29.970  -Z $THUMB_SIZE $EXPORT)
+#   -o $WORK_DIR/${i}-preview -f 29.970  -Z $THUMB_SIZE $EXPORT)
 
     FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" -an -ss 1 -vframes 1 \
-    -s $THUMB_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
+    -s $THUMB_SIZE $WORK_DIR/pics/$i/%06d.$IMG_FMT)
+#    -s $THUMB_SIZE $WORK_DIR/${i}-preview%d.$IMG_FMT)
     echo -e "\nRunning: "${TRANSCODE_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
     SED_VAR="frame="
     if $NOASK; then
@@ -1448,7 +1477,8 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
         get_framed_pics "${IN_FILES[i]}"  >> "$LOG_FILE" 2>&1
         mv -fv $WORK_DIR/$(printf "%08d%s"  25 .png) \
-        $WORK_DIR/${i}-preview.$IMG_FMT
+        $WORK_DIR/pics/$i/$(printf "%06d%s"  0 .png).$IMG_FMT
+#        $WORK_DIR/${i}-preview.$IMG_FMT
         rm -f "$WORK_DIR"/00000*.png
     elif 
     [ "$SC_FRAMESTYLE" = "none" ]; then
@@ -1464,7 +1494,8 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
 done
 # overlay menu title and thumb titles on template
 if $MIST; then
-    # overlay white.png onto the background
+    # overlay white.png onto background (not sure this is repeated below :P )
+    # FIXME
     if $SHOWCASE; then
         composite -dissolve $MIST_OPACITY -gravity south -geometry +0+45 \
         "$WORK_DIR/white.png" "$WORK_DIR/pics/template.png" \
@@ -1478,7 +1509,7 @@ fi
 if $SHOWCASE; then
     for ((i=0; i<=NUM_FILES; i++)); do
         sc_thumb_title_cmd=( "${sc_thumb_title_cmd[@]}" "${THUMBTITLES_ARRAY[i]}"  \
-    "$WORK_DIR/thumb_title${i}.png")
+        "$WORK_DIR/thumb_title${i}.png")
     done
     echo "Running:
     convert  -size 720x480 "$WORK_DIR/pics/template.png"
@@ -1498,14 +1529,46 @@ fi
 # lets be sure of order by using a loop
 for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
-    $(find $WORK_DIR/ -maxdepth 1 -name ${i}-preview\*.$IMG_FMT) )
+    $(find $WORK_DIR/pics/$i/  -maxdepth 1 -name 000\*.$IMG_FMT) )
+#    $(find $WORK_DIR/ -maxdepth 1 -name ${i}-preview\*.$IMG_FMT) )
 done
 for ((i=0; i<${#PICS[@]}; i++)); do
     if $FEATHER; then
-        composite -compose CopyOpacity $THUMB_MASK +matte \
-        "${PICS[i]}" miff:- |
-        convert -trim +repage -  "${PICS[i]}"
+        if $THUMBS_3D && [ "$THUMB_SHAPE" != "normal" ]; then
+        CURVE_VARS="5 3 5 1 1"
+        . /work/svn/tovid/src/todisc-fade-routine
+        fi
+        PVIEW_CMD=(composite -compose CopyOpacity $THUMB_MASK +matte \
+        "${PICS[i]}")
+        PVIEW_CMD0=(convert "${PICS[i]}" $RAISE)
+        PVIEW_CMD1=(convert - $RAISE)
+        PVIEW_CMD2=(convert - \( +clone -fx A +matte  -blur 0x12  -shade 110x0 -normalize \
+        -sigmoidal-contrast 16,$(awk_math ${CURVE_ARRAY[i]} plus 80)% \
+        -evaluate Multiply .5 -roll +5+0 +clone \
+        -compose Screen -composite \) -matte  -compose In  -composite)
+        PVIEW_CMD2b=(convert - -write mpr:${i}img -fx A  +matte \
+        -blur 0x$(awk_math 6.9 plus .${CURVE_ARRAY[i]/.} float) \
+        -shade $(awk_math 115 plus ${CURVE_ARRAY[i]})x30 -normalize mpr:${i}img -compose \
+        Overlay -composite mpr:${i}img  -matte  -compose Dst_In -composite)
+        PVIEW_CMD3=(convert -trim +repage - "${PICS[i]}")
+        if $THUMBS_3D; then
+            if [ "$THUMB_SHAPE" != "normal" ]; then
+#               CURVE_VARS="12 10 5 10 1"
+#                "${PVIEW_CMD[@]}" miff:- |  "${PVIEW_CMD2b[@]}" miff:- |
+                "${PVIEW_CMD[@]}" miff:- |
+                "${PVIEW_CMD2b[@]}" miff:- |
+                "${PVIEW_CMD3[@]}"
+            else # "normal" shape will use -raise for 3d effect
+                echo "Running
+                "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD3[@]}"
+                "|format_output
+                "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD3[@]}"
+            fi
+        else # not 3D
+            "${PVIEW_CMD[@]}" miff:- | "${PVIEW_CMD3[@]}"
+        fi
     fi
+
     IM_CMD=(convert -background none $THUMB_FRAME -bordercolor "#444744" "${PICS[i]}")
     IM_CMD0=(composite -gravity center -compose DstOver "$WORK_DIR/feather_mask2.png" "${PICS[i]}")
     IM_CMD1=(montage "${PICS[i]}" -geometry +4+4 -compose Copy  \
@@ -1735,8 +1798,12 @@ if $SHOWCASE; then
     sc_size=$(identify "$WORK_DIR/showcase_img.png"|awk '{print $3}')
     sc_width=${sc_size/x*}
     sc_xpage=$(( 360 - $((sc_width / 2)) ))
+    sc_palette=$((720 - 86 - ${THUMB_SIZE/x*}))
+    sc_palette=$(( $((86 + ${THUMB_SIZE/x*})) + $((sc_palette / 2))))
+    sc_xpage2=$((sc_palette - $((sc_width / 2)) ))
     if [ $V_ARRAY_TOTAL -le 5 ]; then
-        SC_IMG_PAGE="-page +240+85"
+#        SC_IMG_PAGE="-page +240+85"
+        SC_IMG_PAGE="-page +$sc_xpage2+85"
     elif [ $V_ARRAY_TOTAL -gt 5 ]; then
         SC_IMG_PAGE="-page +$sc_xpage+100"
     fi
@@ -2235,6 +2302,11 @@ echo "$POST"
 fi)    
     </menus>
     <titles>
+$(if $SUBTITLES; then
+    for ((s=0; s<${#SUBS_ARRAY[@]}; s++)); do
+        echo -e "      <subpicture lang=\"${SUBS_ARRAY[s]}\"/>"
+    done
+fi)
 $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
     echo -e "      <pgc>"
     echo -ne "        <vob file=\"${IN_FILES[i]}\""
@@ -2717,14 +2789,25 @@ if [ ! "$SC_FRAMESTYLE" = "glass" ]; then
         yecho "Adding title to video images and resizing"
     fi
 fi
+
 for ((i=0; i<=NUM_FILES; i++)); do
+    x=0; y=0
+    if $FEATHER && $THUMBS_3D && [ "$THUMB_SHAPE" != "normal" ]; then
+        unset CURVE_ARRAY CURVE_VALUES CURVE_VARS
+        CURVE_VARS="5 3 5 1 1"
+        . /work/svn/tovid/src/todisc-fade-routine "3 5 5 1 1"
+    fi
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[0-9]\*.$IMG_FMT|sort) )
     echo
     yecho "Working on ${#PICS[@]} images from ${IN_FILES[i]}"
     for pic in "${PICS[@]}"; do
+        unset IM_CMD6
         IM_CMD=(composite -compose CopyOpacity $THUMB_MASK +matte \
         "$pic")
+        IM_CMD00=(convert - -write mpr:${i}rosey -fx A  +matte -blur 0x7  -shade 130x30 \
+        -normalize mpr:${i}rosey -compose Overlay -composite mpr:${i}rosey  -matte  -compose Dst_In \
+        -composite)
         IM_CMD0=(montage -  -geometry +4+4 -compose Copy -background none \
         -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}")
         IM_CMD01=(convert -background '#161514' -frame 3x3 \
@@ -2737,10 +2820,23 @@ for ((i=0; i<=NUM_FILES; i++)); do
         IM_CMD4=(convert -background '#161514' -frame 3x3 \
         -bordercolor none -mattecolor "#444744" -)
         IM_CMD5=(convert -resize $THUMB_SIZE! - $pic)
+        IM_CMD6=(convert - -write mpr:img${i} -fx A  +matte \
+        -blur 0x$(awk_math 7 plus .${CURVE_ARRAY[y++]/.} float)  \
+        -shade $(awk_math 115 plus ${CURVE_ARRAY[x++]} float)x30 -normalize mpr:img${i} \
+        -compose Overlay -composite mpr:img${i} -matte -compose Dst_In -composite)
+        IM_CMD7=(convert -trim +repage - )
         if $FEATHER; then
-            spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$pic")  "
+            spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$pic") "
             if $SHOWCASE; then
-                "${IM_CMD[@]}" miff:- | "${IM_CMD2[@]}" miff:- |"${IM_CMD5[@]}"
+                if $THUMBS_3D; then
+                    if [ "$THUMB_SHAPE" != "normal" ]; then # normal has $RAISE
+                        "${IM_CMD[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
+                        "${IM_CMD6[@]}" miff:- |  "${IM_CMD7[@]}" miff:- |
+                        "${IM_CMD5[@]}"
+                    fi
+                else
+                    "${IM_CMD[@]}" miff:- | "${IM_CMD2[@]}" miff:- |"${IM_CMD5[@]}"
+                fi
             else
                 "${IM_CMD[@]}" miff:- | "${IM_CMD0[@]}" miff:- |
                 "${IM_CMD1[@]}" miff:- |"${IM_CMD2[@]}" miff:- |
@@ -2759,9 +2855,8 @@ for ((i=0; i<=NUM_FILES; i++)); do
                 "${IM_CMD3[@]}" miff:- | "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
             fi
         fi
-        unset PICS IM_CMD0 IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
+        unset PICS IM_CMD0 IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5 IM_CMD6 x y
     done
-
     # make sure all animated thumbs finish at the same time 
     if ! $STATIC; then
         IMAGES=( "${IMAGES[@]}" \
