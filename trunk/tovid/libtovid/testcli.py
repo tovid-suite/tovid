@@ -105,5 +105,18 @@ class TestArg(unittest.TestCase):
         self.assertArg("foo", a)
         self.assertArg("foo &", b)
 
+    def test_and(self):
+        a = cli.Arg("a")
+        b = cli.Arg("b")
+        c = a.if_done(b)
+        assert c is not a
+        assert c is not b
+        self.assertArg("a && b", c)
+
+        d = cli.Arg("d")
+        e = c.if_done(d)
+        
+        self.assertArg("(a && b) && c", e)
+
 if __name__ == '__main__':
     unittest.main()

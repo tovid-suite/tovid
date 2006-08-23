@@ -121,7 +121,8 @@ class Script:
         text += 'cat %s\n' % self.script_file
         # TODO: 
         for var, value in self.locals.iteritems():
-            text += '# %s=%s\n' % (var, value)
+            # make sure no ifens appear in variables
+            text += '%s=%s\n' % (var.replace("-", "_"), enc_arg(value))
         for cmd in self.commands:
             text += '%s\n' % cmd
         text += 'exit\n'
@@ -209,6 +210,60 @@ class Pipe(object):
     def __getattr__(self, attr):
         return getattr(self.after, attr)
 
+
+class InfixOper(object):
+    """Represents the bash '&&', which means that the next command
+    will only be run if the first one was run successfully."""
+
+    OPER = None
+
+    def __init__(self, first, after):
+        self.first = first
+        self.after = after
+
+    def if_done(self, other):
+        """Creates a new object that represents the chainned processes"""
+        return And(self, other)
+    
+    def if_failed(self, other):
+        return Or(self, other)
+
+    def __repr__(self):
+        return "%s(%r, %r)" % (type(self).__name__, self.first, self.after)
+    
+    def __str__(self):
+        return "%s %s %s" % (group(self.first), self.OPER, group(self.after))
+
+    def __getattr__(self, attr):
+        return getattr(self.after, attr)
+
+
+
+class NoBg(InfixOper):
+    def __init__(self, first, after):
+        if isinstance(first, Bg) or isinstance(after, Bg):
+            raise TypeError("May not run 'if_done' commands with backgrounded process")
+
+        super(NoBg, self).__init__(first, after)
+
+def group(arg):
+    if isinstance(arg, Arg):
+        return str(arg)
+    else:
+        return "(%s)" % arg
+
+class And(NoBg):
+    """Represents the bash '&&' other, which means that the next command
+    will only be run if the first one was run successfully."""
+
+    OPER = "&&"
+
+class Or(NoBg):
+    """Represents the bash '||' operator, which means that the next command
+    will only be run if the first one was not run successfully."""
+
+    OPER = "||"
+
 class Arg(object):
     """An object used for creating commands used on shell scripts.
     It encodes the arguments automagically. Examples::
@@ -276,6 +331,13 @@ class Arg(object):
     def errors_to(self, filename):
         """makes the process write error stream to a file"""
         self.stderr = filename
+
+    def if_done(self, other):
+        """Creates a new object that represents the chainned processes"""
+        return And(self, other)
+    
+    def if_failed(self, other):
+        return Or(self, other)
 
     def __str__(self):
         ret = self.arg
