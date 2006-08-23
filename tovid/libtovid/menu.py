@@ -16,6 +16,7 @@ from libtovid.opts import Option, OptionDict
 from libtovid import textmenu
 from libtovid.flipbook import Flipbook
 from libtovid.log import Log
+from libtovid import standards
 
 log = Log('libtovid.menu')
 
@@ -80,20 +81,9 @@ class Menu:
         self.children = []
 
     def preproc(self):
-        if self.options['format'] == 'dvd':
-            width = 720
-            samprate = 48000
-            if self.options['tvsys'] == 'ntsc':
-                height = 480
-            else:
-                height = 576
-        else:
-            width = 352
-            samprate = 44100
-            if self.options['tvsys'] == 'ntsc':
-                height = 240
-            else:
-                height = 288
+        width, height = standards.get_resolution(self.options['format'],
+                                                 self.options['tvsys'])
+        samprate = standards.get_samprate(self.options['format'])
 
         # Make sure number of thumbs and titles match
         if self.options['thumbnails']:
