@@ -43,10 +43,10 @@ string, list, or dictionary of options and values:
 
     >>> useropts.override('width 4.0 height 2.0')    # String of options
     >>> useropts
-    {'width': '4.0', 'height': '2.0'}
+    {'width': 4.0, 'height': 2.0}
     >>> useropts.override({'width': 3.0})            # Dictionary of options
     >>> useropts
-    {'width': 3.0, 'height': '2.0'}
+    {'width': 3.0, 'height': 2.0}
 
 Any preceding '-'s before option names are ignored. To parse command-line
 options given to your script, call update() with the list of arguments from

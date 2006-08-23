@@ -10,6 +10,7 @@ __all__ = [\
     # Subdirectories
     'gui',
     'encoders',
+    'renderers',
     # .py files
     'animation',
     'cli',
@@ -20,7 +21,6 @@ __all__ = [\
     'layer',
     'media',
     'menu',
-    'mvg',
     'opts',
     'stats',
     'standards',

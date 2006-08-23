@@ -18,7 +18,7 @@ __all__ = [\
     'AudioStandard']
 
 import doctest
-from libtovid.media import VideoStream, AudioStream
+from os.path import abspath
 
 
 def get_resolution(format, tvsys):
@@ -50,9 +50,9 @@ def get_vcodec(format):
     """Return the video codec used by the given format. For example:
     
         >>> get_vcodec('vcd')
-        mpeg1
+        'mpeg1'
         >>> get_vcodec('svcd')
-        mpeg2
+        'mpeg2'
     """
     if format == 'vcd':
         return 'mpeg1'
@@ -65,7 +65,7 @@ def get_acodec(format):
     example:
     
         >>> get_acodec('vcd')
-        mp2
+        'mp2'
         >>> get_acodec('dvd')
         ['ac3', 'mp2', 'pcm']
     """
@@ -82,14 +82,14 @@ def get_samprate(format):
         return 48000
     
 
-def get_fps(format, tvsys):
+def get_fps(tvsys):
     """Return the number of frames per second for the given TV system. For
     example:
     
         >>> get_fps('ntsc')
-        29.97
+        29.969999999999999
         >>> get_fps('pal')
-        25.00
+        25.0
     """
     # Valid frames per second, by TV system
     fps = {\
@@ -128,7 +128,7 @@ def get_abitrate(format):
         >>> get_abitrate('vcd')
         224
         >>> get_abitrate('dvd')
-        (32, 1536)
+        (320, 1536)
     """
     if format == 'vcd':
         return 224
@@ -152,6 +152,49 @@ def compliance(filename):
     of keywords."""
     # TODO
     pass
+
+
+
+
+class AudioStream:
+    """Stores information about an audio stream."""
+    def __init__(self, filename=''):
+        self.filename = abspath(filename)
+        self.codec = ''
+        self.bitrate = 0
+        self.channels = 0
+        self.samprate = 0
+
+    def display(self):
+        print "Audio stream in %s" % self.filename
+        print "----------------------"
+        print "        Codec: %s" % self.codec
+        print "      Bitrate: %s" % self.bitrate
+        print "     Channels: %s" % self.channels
+        print "Sampling rate: %s" % self.samprate
+        print "----------------------"
+
+
+class VideoStream:
+    """Stores information about a video stream."""
+    def __init__(self, filename=''):
+        self.filename = abspath(filename)
+        self.codec = ''
+        self.width = 0
+        self.height = 0
+        self.fps = 0
+        self.bitrate = 0
+
+    def display(self):
+        print "Video stream in %s" % self.filename
+        print "----------------------"
+        print "      Codec: %s" % self.codec
+        print "      Width: %s" % self.width
+        print "     Height: %s" % self.height
+        print "  Framerate: %s" % self.fps
+        print "    Bitrate: %s" % self.bitrate
+        print "----------------------"
+
 
 
 

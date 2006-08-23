@@ -125,6 +125,9 @@ pyexecLIBTOVIDdir = $(pyexecdir)/libtovid
 pyexecLIBTOVID_ENCODERS_PYTHON = libtovid/encoders/*.py
 pyexecLIBTOVID_ENCODERSdir = $(pyexecdir)/libtovid/encoders
 
+pyexecLIBTOVID_RENDERERS_PYTHON = libtovid/renderers/*.py
+pyexecLIBTOVID_RENDERERSdir = $(pyexecdir)/libtovid/renderers
+
 pyexecGUI_PYTHON = libtovid/gui/*.py
 pyexecGUIdir = $(pyexecdir)/libtovid/gui
 
@@ -143,6 +146,7 @@ dist-hook:
 # After uninstalling tovid, remove the python module directories
 uninstall-hook:
 	rmdir $(pyexecLIBTOVID_ENCODERSdir)
+	rmdir $(pyexecLIBTOVID_RENDERERSdir)
 	rmdir $(pyexecGUIdir)
 	rmdir $(pyexecLIBTOVIDdir)
 

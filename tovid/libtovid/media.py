@@ -17,7 +17,7 @@ result is:
 
 
 """
-__all__ = ['VideoStream', 'AudioStream', 'MediaFile', 'mplayer_identify']
+__all__ = ['MediaFile', 'mplayer_identify']
 
 # From standard library
 import os
@@ -93,7 +93,7 @@ class MediaFile:
     
         # Use jpeg2yuv to stream images
         cmd = 'jpeg2yuv -I p '
-        cmd += ' -f %.3f ' % standards.get_fps(format, tvsys)
+        cmd += ' -f %.3f ' % standards.get_fps(tvsys)
         cmd += ' -j "%s/%%08d.jpg"' % imagedir
 
         # TODO: Scale to correct target size using yuvscaler or similar
@@ -127,46 +127,6 @@ class MediaFile:
             print "No video stream"
 
 
-class AudioStream:
-    """Stores information about an audio stream."""
-    def __init__(self, filename=''):
-        self.filename = abspath(filename)
-        self.codec = ''
-        self.bitrate = 0
-        self.channels = 0
-        self.samprate = 0
-
-    def display(self):
-        print "Audio stream in %s" % self.filename
-        print "----------------------"
-        print "        Codec: %s" % self.codec
-        print "      Bitrate: %s" % self.bitrate
-        print "     Channels: %s" % self.channels
-        print "Sampling rate: %s" % self.samprate
-        print "----------------------"
-
-
-class VideoStream:
-    """Stores information about a video stream."""
-    def __init__(self, filename=''):
-        self.filename = abspath(filename)
-        self.codec = ''
-        self.width = 0
-        self.height = 0
-        self.fps = 0
-        self.bitrate = 0
-
-    def display(self):
-        print "Video stream in %s" % self.filename
-        print "----------------------"
-        print "      Codec: %s" % self.codec
-        print "      Width: %s" % self.width
-        print "     Height: %s" % self.height
-        print "  Framerate: %s" % self.fps
-        print "    Bitrate: %s" % self.bitrate
-        print "----------------------"
-
-
 def mplayer_identify(filename):
     """Identify the given video file using mplayer, and return a tuple
     (audio, video) of AudioStream and VideoStream. None is returned for
@@ -186,9 +146,9 @@ def mplayer_identify(filename):
             mp_dict[left] = right.strip()
     # Check for existence of streams
     if 'ID_VIDEO_ID' in mp_dict:
-        video = VideoStream(filename)
+        video = standards.VideoStream(filename)
     if 'ID_AUDIO_ID' in mp_dict:
-        audio = AudioStream(filename)
+        audio = standards.AudioStream(filename)
     # Parse the dictionary and set appropriate values
     for left, right in mp_dict.iteritems():
         log.debug('%s = %s' % (left, right))
