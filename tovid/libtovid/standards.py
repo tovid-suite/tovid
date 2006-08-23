@@ -13,6 +13,7 @@ __all__ = [\
     'get_vcodec',
     'get_acodec',
     'get_fps',
+    'get_samprate',
     'VideoStandard',
     'AudioStandard']
 

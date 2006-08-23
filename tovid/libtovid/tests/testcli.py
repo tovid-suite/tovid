@@ -1,5 +1,9 @@
-import cli
 import unittest
+# Fetch in subdir
+import sys
+sys.path.insert(0, '..')
+# Get modules to test
+import cli
 
 
 class TestArg(unittest.TestCase):

@@ -258,6 +258,7 @@ class Drawing:
         MVG/ImageMagick color usage:
         http://www.imagemagick.org/script/color.php"""
         self.insert('fill "%s"' % color)
+
     def fill_rgb(self, (r, g, b)):
         """Set the fill color to an RGB value."""
         self.fill('rgb(%s, %s, %s)' % (r, g, b))
@@ -331,6 +332,10 @@ class Drawing:
             Add, Minus, Plus, Multiply, Difference, Subtract,
             Copy, CopyRed, CopyGreen, CopyBlue, CopyOpacity,
             Atop, Bumpmap, Clear, In, Out, Over, Xor
+
+        See: 
+            http://www.imagemagick.org/script/magick-vector-graphics.php
+        under 'image', for more ops.
         """
         self.insert('image %s %s,%s %s,%s "%s"' % \
                     (compose, x, y, width, height, filename))
@@ -464,7 +469,7 @@ class Drawing:
         # TODO: Escape special characters in text string
         self.insert('text %s,%s "%s"' % (x, y, text_string))
     
-    def text_antialias(self, do_antialiasing):
+    def text_antialias(self, do_antialias):
         """Turn text antialiasing on (True) or off (False)."""
         if do_antialias:
             self.insert('text-antialias 1')
@@ -552,7 +557,7 @@ class Drawing:
         """Render the .mvg with ImageMagick, and display it."""
         self.save(self.filename)
         cmd = "convert -size %sx%s " % self.size
-        cmd += " xc:none "
+        cmd += " xc:none " # Transparent (=none) canvas image
         cmd += " -draw @%s " % self.filename
         cmd += " -composite miff:- | display"
         print "Creating preview rendering."

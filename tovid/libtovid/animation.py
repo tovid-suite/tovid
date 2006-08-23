@@ -180,8 +180,24 @@ class Tween:
     """
     def __init__(self, keyframes, method='linear'):
         """Create an in-between sequence from the given list of keyframes,
-        using the given interpolation method (which may be 'linear' or 
-        'cosine')."""
+        using the given interpolation method.
+
+            >>> keyframes = [Keyframe(1, (0,0)), Keyframe(25, (25,25))]
+            >>> tween = Tween(keyframes)
+
+        Then, call 'tween[frame]' to fetch a value:
+
+            >>> tween[3]
+            (2, 2)
+            >>> tween[15]
+            (14, 14)
+
+        Interpolation method can be:
+            linear
+            cosine -- smooth tweening
+
+        See effects.py for implementation examples.
+        """
         assert isinstance(keyframes[0], Keyframe)
         self.keyframes = keyframes
         self.data = []
