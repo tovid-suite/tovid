@@ -26,7 +26,7 @@ __all__ = [\
     'KeyFunction'
 ]
 
-from libtovid.renderers.mvg_render import Drawing
+from libtovid.render.mvg import Drawing
 from libtovid.animation import Keyframe, Tween
 
 class Effect:

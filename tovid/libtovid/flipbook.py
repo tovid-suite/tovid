@@ -63,7 +63,7 @@ __all__ = ['Flipbook']
 import os
 import sys
 from libtovid.animation import Keyframe
-from libtovid.renderers.mvg_render import Drawing
+from libtovid.render.mvg import Drawing
 from libtovid import layer
 from libtovid import effect
 from libtovid.media import MediaFile
