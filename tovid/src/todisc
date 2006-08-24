@@ -577,6 +577,7 @@ while test $# -gt 0; do
             THUMBS_3D=:
             RAISE="-raise 8x8"
             THUMB_FRAME=""
+            BLUR=0.1
             ;;
         "-blur" )
             shift
@@ -1531,10 +1532,8 @@ fi
 for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i/  -maxdepth 1 -name 000\*.$IMG_FMT) )
-#    $(find $WORK_DIR/ -maxdepth 1 -name ${i}-preview\*.$IMG_FMT) )
 done
 for ((i=0; i<${#PICS[@]}; i++)); do
-    if $FEATHER; then
         if $THUMBS_3D && [ "$THUMB_SHAPE" != "normal" ]; then
         CURVE_VARS="5 3 5 1 1"
         . /work/svn/tovid/src/todisc-fade-routine
@@ -1543,40 +1542,39 @@ for ((i=0; i<${#PICS[@]}; i++)); do
         "${PICS[i]}")
         PVIEW_CMD0=(convert "${PICS[i]}" $RAISE)
         PVIEW_CMD1=(convert - $RAISE)
-        PVIEW_CMD2=(convert - \( +clone -fx A +matte  -blur 0x12  -shade 110x0 -normalize \
-        -sigmoidal-contrast 16,$(awk_math ${CURVE_ARRAY[i]} plus 80)% \
-        -evaluate Multiply .5 -roll +5+0 +clone \
-        -compose Screen -composite \) -matte  -compose In  -composite)
-        PVIEW_CMD2b=(convert - -write mpr:${i}img -fx A  +matte \
+        PVIEW_CMD2=(convert - -write mpr:${i}img -fx A  +matte \
         -blur 0x$(awk_math 6.9 plus .${CURVE_ARRAY[i]/.} float) \
         -shade $(awk_math 115 plus ${CURVE_ARRAY[i]})x30 -normalize mpr:${i}img -compose \
         Overlay -composite mpr:${i}img  -matte  -compose Dst_In -composite)
         PVIEW_CMD3=(convert -trim +repage - "${PICS[i]}")
-        if $THUMBS_3D; then
-            if $SHOWCASE; then
-                if [ "$THUMB_SHAPE" != "normal" ]; then
-                    "${PVIEW_CMD[@]}" miff:- |
-                    "${PVIEW_CMD2b[@]}" miff:- |
-                    "${PVIEW_CMD3[@]}"
-                else # normal thumbshape
-                    "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD1[@]}" miff:- |
-                    "${PVIEW_CMD3[@]}"
+        if $FEATHER; then
+            if $THUMBS_3D; then
+                if $SHOWCASE; then
+                    if [ "$THUMB_SHAPE" != "normal" ]; then
+                        "${PVIEW_CMD[@]}" miff:- |
+                        "${PVIEW_CMD2[@]}" miff:- |
+                        "${PVIEW_CMD3[@]}"
+                    else # normal thumbshape
+                        "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD1[@]}" miff:- |
+                        "${PVIEW_CMD3[@]}"
+                    fi
+                else  # not $SHOWCASE
+                    if [ "$THUMB_SHAPE" != "normal" ]; then
+                        "${PVIEW_CMD[@]}" miff:- |
+                        "${PVIEW_CMD2[@]}" "${PICS[i]}"
+                    else # normal thumbshape
+                        echo "Running
+                        "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD3[@]}"
+                        "|format_output
+                        "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD3[@]}"
+                    fi
                 fi
-            else  # not $SHOWCASE
-                if [ "$THUMB_SHAPE" != "normal" ]; then
-                    "${PVIEW_CMD[@]}" miff:- |
-                    "${PVIEW_CMD2b[@]}" "${PICS[i]}"
-                else # normal thumbshape
-                    echo "Running
-                    "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD3[@]}"
-                    "|format_output
-                    "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD3[@]}"
-                fi
+            else # not 3D
+                "${PVIEW_CMD[@]}" miff:- | "${PVIEW_CMD3[@]}"
             fi
-        else # not 3D
-            "${PVIEW_CMD[@]}" miff:- | "${PVIEW_CMD3[@]}"
+        else # not FEATHER
+            "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD3[@]}"
         fi
-    fi
 
     IM_CMD=(convert -background none $THUMB_FRAME -bordercolor "#444744" $RAISE "${PICS[i]}")
     IM_CMD0=(composite -gravity center -compose DstOver "$WORK_DIR/feather_mask2.png" "${PICS[i]}")
@@ -1811,7 +1809,6 @@ if $SHOWCASE; then
     sc_palette=$(( $((86 + ${THUMB_SIZE/x*})) + $((sc_palette / 2))))
     sc_xpage2=$((sc_palette - $((sc_width / 2)) ))
     if [ $V_ARRAY_TOTAL -le 5 ]; then
-#        SC_IMG_PAGE="-page +240+85"
         SC_IMG_PAGE="-page +$sc_xpage2+85"
     elif [ $V_ARRAY_TOTAL -gt 5 ]; then
         SC_IMG_PAGE="-page +$sc_xpage+100"
@@ -2817,9 +2814,6 @@ for ((i=0; i<=NUM_FILES; i++)); do
     for ((p=0; p<${#PICS[@]}; p++)); do
         unset IM_CMD6
         IM_CMD=(composite -compose CopyOpacity $THUMB_MASK +matte "${PICS[p]}")
-        IM_CMD00=(convert - -write mpr:${i}rosey -fx A  +matte -blur 0x7  -shade 130x30 \
-        -normalize mpr:${i}rosey -compose Overlay -composite mpr:${i}rosey  -matte  -compose Dst_In \
-        -composite)
         IM_CMD0=(montage -  -geometry +4+4 -compose Copy -background none \
         -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}")
         IM_CMD01=(convert -background '#161514' -frame 3x3 \
