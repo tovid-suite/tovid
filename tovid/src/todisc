@@ -129,7 +129,8 @@ THREExONE=false
 PLAYALL=false
 TEXTMENU=false
 THUMBS_3D=false
-RAISE="-raise 8x8"
+RAISE=""
+CURVE_UPDATE=""
 SUBTITLES=false
 AUDIOLANG=false
 
@@ -274,7 +275,7 @@ function cleanup()
         yecho "Removing $REAL_WORK_DIR"
         rm -rf "$REAL_WORK_DIR"
     fi
-    echo -n "Removing the symlink in /tmp . . . "
+    echo "Removing the symlink in /tmp . . . "
     rm -fv "$WORK_DIR"
 }
 
@@ -574,6 +575,8 @@ while test $# -gt 0; do
             ;;
         "-3dthumbs" )
             THUMBS_3D=:
+            RAISE="-raise 8x8"
+            THUMB_FRAME=""
             ;;
         "-blur" )
             shift
@@ -1188,7 +1191,7 @@ DIMX4=$((DIMX / 2))
 DIMY5=$((DIMY / 3))
 DIMX5=$((DIMX4 / 3))
 BLUR_CMD=(convert - -blur 0x$BLUR -channel RGBA +matte miff:-)
-if $THUMBS_3D && [ "$THUMB_SHAPE" = "normal" ]; then
+if $THUMBS_3D && $SHOWCASE && [ "$THUMB_SHAPE" = "normal" ]; then
     MASK_DIM="0,0 $DIMY,$DIMX"
     BLUR_CMD=(convert - miff:-)
 else
@@ -1213,7 +1216,7 @@ if test "$THUMB_SHAPE" = "normal"; then
     THUMB_MASK="$WORK_DIR/feather_mask.png"
     yecho "Creating normal mask with the following command:"
     MASK_CMD="convert -size $THUMB_SIZE xc:black -fill white \
-    -draw \"Rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2,\" \
+    -draw \"Rectangle $MASK_DIM\" \
     +matte -compose CopyOpacity miff:- | \
     ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
@@ -1550,24 +1553,32 @@ for ((i=0; i<${#PICS[@]}; i++)); do
         Overlay -composite mpr:${i}img  -matte  -compose Dst_In -composite)
         PVIEW_CMD3=(convert -trim +repage - "${PICS[i]}")
         if $THUMBS_3D; then
-            if [ "$THUMB_SHAPE" != "normal" ]; then
-#               CURVE_VARS="12 10 5 10 1"
-#                "${PVIEW_CMD[@]}" miff:- |  "${PVIEW_CMD2b[@]}" miff:- |
-                "${PVIEW_CMD[@]}" miff:- |
-                "${PVIEW_CMD2b[@]}" miff:- |
-                "${PVIEW_CMD3[@]}"
-            else # "normal" shape will use -raise for 3d effect
-                echo "Running
-                "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD3[@]}"
-                "|format_output
-                "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD3[@]}"
+            if $SHOWCASE; then
+                if [ "$THUMB_SHAPE" != "normal" ]; then
+                    "${PVIEW_CMD[@]}" miff:- |
+                    "${PVIEW_CMD2b[@]}" miff:- |
+                    "${PVIEW_CMD3[@]}"
+                else # normal thumbshape
+                    "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD1[@]}" miff:- |
+                    "${PVIEW_CMD3[@]}"
+                fi
+            else  # not $SHOWCASE
+                if [ "$THUMB_SHAPE" != "normal" ]; then
+                    "${PVIEW_CMD[@]}" miff:- |
+                    "${PVIEW_CMD2b[@]}" "${PICS[i]}"
+                else # normal thumbshape
+                    echo "Running
+                    "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD3[@]}"
+                    "|format_output
+                    "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD3[@]}"
+                fi
             fi
         else # not 3D
             "${PVIEW_CMD[@]}" miff:- | "${PVIEW_CMD3[@]}"
         fi
     fi
 
-    IM_CMD=(convert -background none $THUMB_FRAME -bordercolor "#444744" "${PICS[i]}")
+    IM_CMD=(convert -background none $THUMB_FRAME -bordercolor "#444744" $RAISE "${PICS[i]}")
     IM_CMD0=(composite -gravity center -compose DstOver "$WORK_DIR/feather_mask2.png" "${PICS[i]}")
     IM_CMD1=(montage "${PICS[i]}" -geometry +4+4 -compose Copy  \
     -background  none -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
@@ -2724,15 +2735,17 @@ fi
 if [ -n "$SHOWCASE_VIDEO" ]; then
     echo "Getting showcase video images from $SHOWCASE_VIDEO"
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
+        FIND_FRAMES=$((FRAMES + 1)) # unfortunately mplayer starts at 1 not 0
         D=2
         FRAME_SIZE=$SHOWCASE_SIZE
         VOUT="png:z=7"
         get_framed_pics "$SHOWCASE_VIDEO"  >> "$LOG_FILE" 2>&1
-        for ((i=1; i<=$FRAMES; i++)); do
+        for ((i=1; i<=$FIND_FRAMES; i++)); do
             mv  "$WORK_DIR"/$(printf "%08d%s"  $i .png) \
             "$WORK_DIR"/showcase/$(printf "%06d%s"  $i .png) 2>/dev/null
         done
     elif [ "$SC_FRAMESTYLE" = "none" ]; then
+        FIND_FRAMES=FRAMES # ffmpeg starts at 0
         FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -s $SHOWCASE_SIZE  -vframes $FRAMES \
         -an  -y "$WORK_DIR/showcase/%06d.png")
         echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
@@ -2792,7 +2805,6 @@ if [ ! "$SC_FRAMESTYLE" = "glass" ]; then
 fi
 
 for ((i=0; i<=NUM_FILES; i++)); do
-    x=0; y=0
     if $FEATHER && $THUMBS_3D && [ "$THUMB_SHAPE" != "normal" ]; then
         unset CURVE_ARRAY CURVE_VALUES CURVE_VARS
         CURVE_VARS="5 3 5 1 1"
@@ -2802,48 +2814,72 @@ for ((i=0; i<=NUM_FILES; i++)); do
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[0-9]\*.$IMG_FMT|sort) )
     echo
     yecho "Working on ${#PICS[@]} images from ${IN_FILES[i]}"
-    for pic in "${PICS[@]}"; do
+    for ((p=0; p<${#PICS[@]}; p++)); do
         unset IM_CMD6
-        IM_CMD=(composite -compose CopyOpacity $THUMB_MASK +matte \
-        "$pic")
+        IM_CMD=(composite -compose CopyOpacity $THUMB_MASK +matte "${PICS[p]}")
         IM_CMD00=(convert - -write mpr:${i}rosey -fx A  +matte -blur 0x7  -shade 130x30 \
         -normalize mpr:${i}rosey -compose Overlay -composite mpr:${i}rosey  -matte  -compose Dst_In \
         -composite)
         IM_CMD0=(montage -  -geometry +4+4 -compose Copy -background none \
         -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}")
         IM_CMD01=(convert -background '#161514' -frame 3x3 \
-        -bordercolor none -mattecolor "#444744" "$pic")
+        -bordercolor none -mattecolor "#444744" "${PICS[p]}")
+        IM_CMD02=(convert "${PICS[p]}" $RAISE)
+        IM_CMD03=(composite -compose CopyOpacity $THUMB_MASK +matte -)
         IM_CMD1=(convert -resize $THUMB_SIZE! -)
         IM_CMD2=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -) 
         IM_CMD3=(montage -geometry +4+4 -background '#161514' \
         -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" \
-        -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}" "$pic")
+        -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}" "${PICS[p]}")
         IM_CMD4=(convert -background '#161514' -frame 3x3 \
         -bordercolor none -mattecolor "#444744" -)
-        IM_CMD5=(convert -resize $THUMB_SIZE! - $pic)
-        IM_CMD6=(convert - -write mpr:img${i} -fx A  +matte \
-        -blur 0x$(awk_math 7 plus .${CURVE_ARRAY[y++]/.} float)  \
-        -shade $(awk_math 115 plus ${CURVE_ARRAY[x++]} float)x30 -normalize mpr:img${i} \
-        -compose Overlay -composite mpr:img${i} -matte -compose Dst_In -composite)
+        IM_CMD5=(convert -resize $THUMB_SIZE! - "${PICS[p]}")
+        IM_CMD6=(convert - -write mpr:img${p} -fx A  +matte \
+        -blur 0x$(awk_math 7 plus .${CURVE_ARRAY[p]/.} float)  \
+        -shade $(awk_math 115 plus ${CURVE_ARRAY[p]} float)x30 -normalize mpr:img${p} \
+        -compose Overlay -composite mpr:img${p} -matte -compose Dst_In -composite)
         IM_CMD7=(convert -trim +repage - )
+        if $FEATHER &&  [ "$THUMB_SHAPE" != "normal" ]; then # debug FIXME
+            CURVE_UPDATE="with -blur 0x$(awk_math 7 plus .${CURVE_ARRAY[p]/.} float)  \
+            -shade $(awk_math 115 plus ${CURVE_ARRAY[p]} float)x30"
+        fi
         if $FEATHER; then
-            spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$pic") "
+            spin "\rProcessing $(awk -F / '{ print $NF }' <<< "${PICS[p]}") \
+            $(echo $CURVE_UPDATE | format_output) " # debug FIXME
             if $SHOWCASE; then
                 if $THUMBS_3D; then
                     if [ "$THUMB_SHAPE" != "normal" ]; then # normal has $RAISE
                         "${IM_CMD[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
                         "${IM_CMD6[@]}" miff:- |  "${IM_CMD7[@]}" miff:- |
                         "${IM_CMD5[@]}"
+                    else # normal thumbshape, with feather and 3D
+                        "${IM_CMD02[@]}" miff:- | "${IM_CMD03[@]}" miff:- |
+                        "${IM_CMD2[@]}" miff:- |"${IM_CMD7[@]}" miff:- |
+                        "${IM_CMD5[@]}"
+
                     fi
                 else
                     "${IM_CMD[@]}" miff:- | "${IM_CMD2[@]}" miff:- |"${IM_CMD5[@]}"
                 fi
-            else
-                "${IM_CMD[@]}" miff:- | "${IM_CMD0[@]}" miff:- |
-                "${IM_CMD1[@]}" miff:- |"${IM_CMD2[@]}" miff:- |
-                "${IM_CMD5[@]}"
+            else # not SHOWCASE
+                if $THUMBS_3D; then
+                    if [ "$THUMB_SHAPE" != "normal" ]; then
+                        "${IM_CMD[@]}" miff:- | "${IM_CMD6[@]}" miff:- |
+                        "${IM_CMD1[@]}" miff:- |"${IM_CMD0[@]}" miff:- |
+                        "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
+                        "${IM_CMD5[@]}"
+                    else
+                        "${IM_CMD02[@]}" miff:- | "${IM_CMD0[@]}" miff:- |
+                        "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
+                        "${IM_CMD5[@]}"
+                    fi
+                else # not 3D
+                    "${IM_CMD[@]}" miff:- | "${IM_CMD0[@]}" miff:- |
+                    "${IM_CMD1[@]}" miff:- |"${IM_CMD2[@]}" miff:- |
+                    "${IM_CMD5[@]}"
+                fi
             fi
-        else
+        else # not FEATHER
             if $SHOWCASE; then # showcase but not feather
                 if [ "$SC_FRAMESTYLE" = "glass" ]; then
                     :
@@ -2856,7 +2892,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
                 "${IM_CMD3[@]}" miff:- | "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
             fi
         fi
-        unset PICS IM_CMD0 IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5 IM_CMD6 x y
+        unset IM_CMD0 IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5 IM_CMD6
     done
     # make sure all animated thumbs finish at the same time 
     if ! $STATIC; then
@@ -2870,8 +2906,9 @@ for ((i=0; i<=NUM_FILES; i++)); do
                 $WORK_DIR/pics/$i/$(printf %06d $l).$IMG_FMT
             done
         fi
-        unset IMAGES PICS last_pic next_pic
-   fi
+        unset IMAGES last_pic next_pic
+    fi
+    unset PICS
 done
 yecho
 yecho "Making $FRAMES final montages and compositing onto background with title"
@@ -2986,20 +3023,20 @@ if $MENU_FADE && ! $STATIC; then
         cp $WORK_DIR/black.jpg $WORK_DIR/animenu/$i.jpg
     done
 else # Do not do menu fade
-    if $TRANSPARENT; then
+    if $TRANSPARENT; then # non transparent -showcase-* uses this block too
         for (( count=1; count<=$FRAMES; count++)); do
             spin "\rProcessing "$count.jpg"  "
-            if $STATIC; then # use preview images as its easier here
-                for ((i=0; i<=NUM_FILES; i++)); do
-                    ANI_PICS=( "${ANI_PICS[@]}" \
-                    $(find $WORK_DIR/ -maxdepth 1 -name ${i}-preview\*.$IMG_FMT) )
-                done
-            else
+#            if $STATICS; then # use preview images as its easier (DISABLED)
+#                for ((i=0; i<=NUM_FILES; i++)); do
+#                    ANI_PICS=( "${ANI_PICS[@]}" \
+#                    $(find $WORK_DIR/ -maxdepth 1 -name ${i}-preview\*.$IMG_FMT) )
+#                done
+#            else
                 for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
                     ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  \
                     -name $(printf "%06d%s"  $((count - 1)) .$IMG_FMT) ) )
                 done
-            fi
+#            fi
             for ((f=0; f<${#ANI_PICS[@]}; f++)); do
                 sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_PAGES[f]} "${ANI_PICS[f]}")
             done
@@ -3083,7 +3120,7 @@ else # Do not do menu fade
             rm -f ${ANI_PICS[@]}
             unset ANI_PICS sc_cmd
         done
-    else # Not transparent
+    else # Not transparent (non transparent showcase uses transparent block ^^
          C=$((${CHAPTERS[s]} - 1))
         for (( count=1; count <=FRAMES; count++)); do
             spin -ne "\rProcessing "$count.jpg"  "
@@ -3277,6 +3314,7 @@ SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
 HHMMSS=`format_time $SCRIPT_TOT_TIME`
 
 cleanup
+echo
 echo $SEPARATOR
 echo "todisc took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
 echo $SEPARATOR
