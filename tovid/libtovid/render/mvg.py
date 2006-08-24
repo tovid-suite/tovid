@@ -5,7 +5,7 @@
 
 Run this script standalone for a demonstration:
 
-    $ python libtovid/mvg.py
+    $ python libtovid/render/mvg.py
 
 To build your own MVG vector image using this module, fire up your Python
 interpreter:
@@ -14,7 +14,7 @@ interpreter:
 
 And do something like this:
 
-    >>> from libtovid.mvg import Drawing
+    >>> from libtovid.render.mvg import Drawing
     >>> drawing = Drawing((800, 600), '/tmp/drawing.mvg')
 
 This creates an image (drawing) at 800x600 display resolution. Drawing has a

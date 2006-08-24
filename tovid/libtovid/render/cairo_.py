@@ -7,7 +7,10 @@
 
 Run this script standalone for a demonstration:
 
-    $ python libtovid/cairo.py
+    $ python libtovid/render/cairo_.py
+
+Please note the leading '_' after 'cairo'. This is to prevent conflicts with
+the 'official' cairo binding class.
 
 To build your own Cairo vector image using this module, fire up your Python
 interpreter:
@@ -16,7 +19,7 @@ interpreter:
 
 And do something like this:
 
-    >>> from libtovid.cairo import Drawing
+    >>> from libtovid.render.cairo_ import Drawing
     >>> drawing = Drawing((800, 600))
 
 This creates an image (drawing) at 800x600 display resolution. Drawing has a
@@ -56,12 +59,6 @@ class Drawing:
 
         rectangle 100,100 200,200       # MVG command
         rectangle((100,100), (200,200)) # Drawing function
-
-    The only exception is MVG commands that are hyphenated. For these, use an
-    underscore instead:
-
-        font-family "Serif"      # MVG command
-        font_family("Serif")     # Drawing function
 
     """
     def __init__(self, size=(720, 480)):
