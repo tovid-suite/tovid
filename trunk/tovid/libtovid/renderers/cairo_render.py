@@ -38,14 +38,6 @@ rendered image.
 References:
 [1] http://www.cairegraphics.org
 
-Cairo examples:
--------------
-Radial gradient example:
-  http://www.linux-nantes.fr.eu.org/~fmonnier/OCaml/MVG/u.mvg.html
-
-Pie chart example:
-  http://www.imagemagick.org/source/piechart.mvg
-
 """
 
 __all__ = ['Drawing']
