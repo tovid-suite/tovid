@@ -8,7 +8,7 @@ __all__ = [\
     # Subdirectories
     'gui',
     'encoders',
-    'renderers',
+    'render',
     # .py files
     'animation',
     'cli',

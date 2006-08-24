@@ -37,7 +37,7 @@ import sys
 import math
 import commands
 from libtovid.utils import get_file_type
-from libtovid.renderers.mvg_render import Drawing
+from libtovid.render.mvg import Drawing
 from libtovid.effect import Effect
 from libtovid.animation import Keyframe, Tween
 from libtovid.media import MediaFile

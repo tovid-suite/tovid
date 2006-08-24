@@ -4,7 +4,7 @@ import math
 import sys
 sys.path.insert(0, '..')
 # Get modules to test
-from renderers.cairo_render import Drawing
+from render.cairo import Drawing
 
 
 class TestCairoRenderer(unittest.TestCase):
