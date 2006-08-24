@@ -2,5 +2,5 @@
 # __init__.py
 
 __all__ = [\
-    "cairo",
+    "cairo_",
     "mvg"]
