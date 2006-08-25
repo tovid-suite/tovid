@@ -1,0 +1,29 @@
+#! /usr/bin/env python
+# pytovid
+
+__doc__ = \
+"""Convert a video into an (S)VCD/DVD-compliant MPEG (to replace the 'tovid'
+shell script).
+"""
+
+import sys
+#from libtovid import wingdbstub # For debugging in Wing IDE
+from libtovid.video import Video
+from libtovid.log import Log
+
+log = Log('pytovid')
+
+if __name__ == '__main__':
+    """Create a Video with provided options and generate it."""
+    # If no arguments were provided, print usage notes
+    # TODO: Proper argument verification
+    if len(sys.argv) < 5:
+        print 'Usage: pytovid [options] -in FILE -out NAME'
+        print 'Where [options] may be any of the following:'
+        print Video().options.usage()
+        print 'Please provide an input file (-in) and output name (-out).'
+        sys.exit()
+
+    args = sys.argv[1:]
+    vid = Video(args)
+    vid.generate()

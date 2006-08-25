@@ -1,0 +1,38 @@
+#! /usr/bin/env python
+# pyidvid
+
+import sys
+import os
+
+from libtovid.opts import Option, OptionDict
+from libtovid.media import MediaFile
+from libtovid.log import Log
+
+log = Log('pyidvid')
+
+# Command-line options
+cli_opts = [\
+    Option('verbose', '[terse|normal|all]', 'normal',
+           """Verbosity level. 'terse' prints short output suitable for
+           parsing, and nothing else; 'normal' displays summarized stats
+           in plain English; 'all' prints all output from subprocesses
+           along with normal summary stats."""),
+    Option('files', 'FILE[,FILE...]', [],
+           """A list of multimedia video files to identify.""")
+    ]
+    
+if __name__ == '__main__':
+    useropts = OptionDict(cli_opts)
+    # If no arguments were provided, print usage notes
+    if len(sys.argv) < 3:
+        print "Usage: pyidvid [OPTIONS] -files FILE ..."
+        print "where OPTIONS may be:"
+        print useropts.usage()
+        sys.exit(1)
+    else:
+        useropts.override(sys.argv[1:])
+        for file in useropts['files']:
+            print "Identifying file: %s" % file
+            infile = MediaFile(file)
+            infile.load()
+            infile.display()

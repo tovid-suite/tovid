@@ -1,0 +1,51 @@
+idvid manual
+
+
+==Name==
+
+idvid: Identify video files
+
+
+==Description==
+
+idvid identifies each multimedia video file in a
+list, and reports its compliance with video disc standards such as VCD,
+SVCD, and DVD.
+
+
+==Usage==
+
+**idvid** [ //OPTIONS// ] //VIDEO_FILE(s)//
+
+For example:
+
+```
+$ idvid foo.avi
+$ idvid videos/*.mpg
+```
+
+
+==Options==
+
+: **-terse**
+    Print raw video characteristics, no formatting. Helpful when
+    calling from other scripts.
+
+: **-verbose**
+    Print extra information from mplayer, tcprobe, and ffmpeg.
+
+: **-fast**
+    Don't do lengthy play-time estimation; report length as reported
+    by mplayer (possibly inaccurate). Results in faster execution.
+
+
+==See also==
+
+**idvid**(1), **makedvd**(1), **makemenu**(1), **makeslides**(1), 
+**makexml**(1), **postproc**(1), **tovid**(1), **todisc**(1)
+
+
+==Contact==
+
+For further assistance, contact information, forum and IRC links,
+please refer to the [tovid homepage http://tovid.org/].

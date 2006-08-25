@@ -1,0 +1,34 @@
+#! /bin/sh
+#  Make a new distribution tarball for tovid
+#  !! Change the version number in configure.ac and in setuplib  !!
+
+WKG_DIR=`pwd`
+
+echo "Running aclocal, automake, and autoconf..."
+if ./bootstrap && ./configure; then :
+else
+   echo "Uf. Couldn't configure the package. Read above for clues."
+   exit 1
+fi
+
+echo "Refreshing the man pages..."
+cd docs
+if ./docmake man; then :
+else
+   echo "Uf. Couldn't make the new manpages. Read above for clues."
+   exit 1
+fi
+cd $WKG_DIR
+
+echo "Making distribution .tar.gz..."
+if make dist
+then 
+    echo
+    echo "Great! You now have a shiny new tarball"
+    echo
+else 
+    echo "Uf. Problem making the tarball. Read above for clues."
+    exit 1
+fi
+
+exit 0

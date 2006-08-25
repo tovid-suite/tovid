@@ -1,0 +1,158 @@
+tovid python port
+
+Things tovid does:
+
+	Identify arbitrary videos and make note of spec-compliant ones
+	Convert arbitrary videos to spec-compliant MPEG
+	Create spec-compliant MPEG menus
+	Generate spec-compliant (S)VCD/DVD authoring structure
+	Burn CD/DVD disc with spec-compliant video disc image
+
+Reusable tasks:
+	Parsing command-line options
+		Options map one-to-one to particular settings, defining:
+			Output specification (format, tvsys, bitrates)
+			Alterations (safe, filters, normalize)
+			Execution behavior (debug, priority, parallel, ffmpeg)
+	Converting a video stream into MPEG
+		Based on an output specification
+		With the application of filters
+	Ripping and converting an audio stream
+		Based on an output specification
+		With the application of filters
+	Multiplexing audio and video streams
+		Based on an output specification
+	Converting an image or images into a video stream
+
+Reusable objects:
+	Video stream profile
+		Resolution
+		Frame rate
+		Codec
+		Bitrate
+		Number of frames
+	Audio stream profile
+		Codec
+		Bitrate
+		Sampling rate
+		Number of channels
+		Duration (ms) 
+	Multimedia file profile
+		Video stream profile(s)
+		Audio stream profile(s)
+
+(How to use a generic specification as a template for comparing an existing
+video stream profile to the spec? i.e., how to define valid values or ranges
+of values for DVD, VCD, etc.?)
+
+
+tovid
+-----
+
+Standards-compliance definition:
+(lookup target format based on CLI restrictions)
+
+-ntsc           NTSC format video (USA, Americas) (default)
+-ntscfilm       NTSC-film format video
+-pal            PAL format video (Europe and others)
+-dvd            (720x480 NTSC, 720x576 PAL) DVD-compatible output (default)
+-half-dvd       (352x480 NTSC, 352x576 PAL) Half-D1-compatible output
+-svcd           (480x480 NTSC, 480x576 PAL) Super VideoCD-compatible output
+-dvd-vcd        (352x240 NTSC, 352x288 PAL) VCD-on-DVD output
+-vcd            (352x240 NTSC, 352x288 PAL) VideoCD-compatible output
+-kvcdx3/-kvcd   (528x480 NTSC, 520x576 PAL) KVCDx3 long-playing VCD
+-kvcdx3a/-ksvcd (544x480 NTSC, 544x576 PAL) KVCDx3A long-playing VCD
+-kdvd           (720x480 NTSC, 720x576 PAL) KDVD long-playing DVD
+
+Further output restrictions:
+
+Pre-encoding:
+-filters {none,denoise,contrast,all} (default none)
+-normalize
+-subtitles FILE
+-safe PERCENT
+-deinterlace (DEPRECATED)
+-mplayeropts "OPTIONS"
+
+Encoding:
+-type {live|animation|bw}
+-vbitrate NUM
+-abitrate NUM
+-interlaced (EXPERIMENTAL)
+
+Post-encoding:
+-discsize NUM
+
+
+Input file interpretation:
+(override auto-detected Video/AudioSpec values in infile)
+
+-full           Same as -aspect 4:3
+-wide           Same as -aspect 16:9
+-panavision     Same as -aspect 235:100
+-aspect WIDTH:HEIGHT
+-fps RATIO
+
+
+
+Execution behavior:
+
+-ffmpeg
+-nofifo
+-parallel
+-update SECS
+-overwrite
+-debug
+-priority {low|medium|high}
+-force
+
+
+Others:
+
+-config FILE      Include command-line options contained in FILE
+-version          Print out the tovid version number and exit
+-help             Print out all usage information, including advanced options
+
+
+Parsing and TDL
+
+	The TDL structure is a framework for generalized attribute/value
+	representation; TDL serves as the "common format" between a
+	frontend and a backend.
+
+		Using TDL Elements in a GUI:
+			A GUI could build an interface on the fly for any
+			ElementDef. Create checkboxes for all boolean options,
+			text boxes for unary options, and listboxes for
+			list options. Use documentation string for tooltip.
+
+			Can build a generalized GUI engine for this that would
+			work with any language implementation similar to TDL.
+
+Implementing tovid/makemenu/makexml
+
+	A Project encapsulates all user-customizable info, generally
+	read from a TDL file. Videos, menus, and discs are typically
+	described.
+
+	tovid:
+		Frontend: Takes standard tovid options, and adjusts formatting so they
+		comprise a Project.
+
+		Backend: Performs equivalent of encode_videos(project); seeks Video
+		elements, encodes to target format.
+	
+	makemenu:
+		Frontend: Takes standard makemenu options and formats them as a
+		Project.
+
+		Backend: Does generate_menus(project); seeks Menu elements and
+		generates them.
+	
+	makexml:
+		Backend: Does generate_dvdauthor_xml(project), or something like it.
+		Finds any Disc elements in the project, does any necessary inspection
+		of its content (for setting 'nopanscan', pal/ntsc, or other
+		title-specific options), and writes (possibly also authors) the XML.
+
+	

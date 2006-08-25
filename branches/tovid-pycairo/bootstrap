@@ -1,0 +1,44 @@
+#! /bin/sh
+
+# Call this script after editing configure.ac or Makefile.am
+# then:
+# $ ./configure
+# $ ./setup.sh
+
+# Copyright (C) 2005 Joe Friedrichsen <friedrij@users.berlios.de>
+# 
+# This program is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License 
+# as published by the Free Software Foundation; either 
+# version 2 of the License, or (at your option) any later 
+# version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+make distclean
+
+rm -rvf "autom4te.cache"
+rm -rvf aclocal.m4 config.log config.status configure \
+        Makefile Makefile.in
+
+if aclocal \
+   && automake --gnu --add-missing \
+   && autoconf
+then
+   echo
+   echo "Done. You may now do ./configure && su -c \"make install\""
+   echo
+else
+   echo "Uf. Autotools error. Read above for clues."
+   exit 1
+fi
+
+exit 0
+
