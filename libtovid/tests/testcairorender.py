@@ -104,7 +104,21 @@ class TestCairoRenderer(unittest.TestCase):
         # This one okay, because control points will be the same as the
         # specified points.
         self.d.bezier(pts)
-            
+
+    def test_polyschlaft(self):
+        """Test polyline and polygon"""
+        self.d.polygon([(0,0),
+                        (100, 0),
+                        (100, 100),
+                        (0, 100),
+                        (0,0)])
+        self.d.polyline([(0,0),
+                        (100, 0),
+                        (100, 100),
+                        (0, 100),
+                        (0,0)])
+
+
     def test_draw_funcs(self):
         """Test drive drawing functions
 
@@ -134,6 +148,8 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.stroke_linejoin('bevel')
         self.d.stroke_linejoin('round')
 
+        self.d.stroke_opacity(1.0)
+
     def test_scale_translate(self):
         self.d.push()
         self.d.translate((-200, 0))
@@ -154,7 +170,15 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.color_stroke('rgb(2,3,4)', 0.5)
         self.d.color_text('hsl(0,25%,80%)')
         self.d.color_fill('black')
-        
+        assert self.d._getrgb((255,255,255)) == (255,255,255)
+        assert self.d._getrgb('red') == (255,0,0)
+
+    def test_operator(self):
+        self.assertRaises(KeyError, self.d.operator, 'bad_arg')
+        l = "clear,source,over,in,out,atop,dest,dest_over,dest_in,dest_out,dest_atop,xor,add,saturate".split(',')
+        # Test all methods
+        for method in l:
+            self.d.operator(method)
         
     def test_fill_funcs(self):
         self.assertRaises(KeyError, self.d.fill_rule, 'invalid')
@@ -162,6 +186,7 @@ class TestCairoRenderer(unittest.TestCase):
         # Don't feed it a tuple, but a 'color' now...
         self.d.color_fill('rgb(25,25,25)', 0.5)
         self.d.fill()
+        self.d.fill_opacity(1.0)
 
     def test_font_stuff(self):
         self.d.font('Times')
@@ -174,6 +199,7 @@ class TestCairoRenderer(unittest.TestCase):
 
     def test_text_stuff(self):
         self.assertRaises(TypeError, self.d.text, (15, 15), "This isn't a Unicode é string")
+        self.d.text_opacity(1.0)
         self.d.text((15, 15), u"This is a Unicode é string")
 
     def test_antialias_stuff(self):

@@ -26,7 +26,7 @@ __all__ = [\
     'KeyFunction'
 ]
 
-from libtovid.render.mvg import Drawing
+from libtovid.render.cairo_ import Drawing
 from libtovid.animation import Keyframe, Tween
 
 class Effect:
@@ -131,7 +131,7 @@ class Fade (Effect):
     def draw_on(self, drawing, frame):
         """Draw the fade effect into the given Drawing."""
         assert isinstance(drawing, Drawing)
-        drawing.fill_opacity(self.tween[frame])
+        drawing.color_all(None, self.tween[frame])
 
 class Colorfade (Effect):
     """A color-slide effect between an arbitrary number of RGB colors."""
@@ -146,7 +146,7 @@ class Colorfade (Effect):
 
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
-        drawing.fill_rgb(self.tween[frame])
+        drawing.color_all(self.tween[frame])
 
 
 class Spectrum (Effect):
@@ -167,7 +167,7 @@ class Spectrum (Effect):
 
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
-        drawing.fill_rgb(self.tween[frame])
+        drawing.color_all(self.tween[frame])
 
 
 class Scale (Effect):

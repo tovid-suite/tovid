@@ -37,7 +37,8 @@ import sys
 import math
 import commands
 from libtovid.utils import get_file_type
-from libtovid.render.mvg import Drawing
+# Temporarily use local classes: (add libtovid. later)
+from libtovid.render.cairo_ import Drawing
 from libtovid.effect import Effect
 from libtovid.animation import Keyframe, Tween
 from libtovid.media import MediaFile
@@ -132,13 +133,15 @@ class MyLayer (Layer):
         # Draw the layer. You can use pretty much any Drawing commands you want
         # here; the world is your oyster! Let's start by using the user-set
         # variables from __init__:
-        drawing.fill(self.fill_color)
-        drawing.stroke(self.stroke_color)
+        drawing.color_fill(self.fill_color, 0.6)
+        drawing.color_stroke(self.stroke_color)
+        drawing.stroke_width(1)
 
         # Now, draw something, say, a couple of semitransparent rectangles
-        drawing.fill_opacity(0.6)
         drawing.rectangle((0, 0), (50, 20))
+        drawing.fill_n_stroke()
         drawing.rectangle((15, 12), (60, 40))
+        drawing.fill_n_stroke()
 
         # Restore context
         drawing.pop()
@@ -151,12 +154,18 @@ class MyLayer (Layer):
 # ============================================================================
 
 
+
+#####            #####
+##### Background #####
+#####            #####
+
 class Background (Layer):
     """A background that fills the frame with a solid color, or an image."""
     def __init__(self, color='black', filename=''):
         Layer.__init__(self)
         self.color = color
         self.filename = filename
+        
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
         drawing.comment("Background Layer")
@@ -167,9 +176,15 @@ class Background (Layer):
             drawing.image('over', (0, 0), drawing.size, self.filename)
         # Fill drawing with a solid color
         elif self.color:
-            drawing.fill(self.color)
+            drawing.color_fill(self.color)
             drawing.rectangle((0, 0), drawing.size)
+            drawing.fill()
         drawing.pop()
+
+
+#####       #####
+##### Image #####
+#####       #####
 
 
 class Image (Layer):
@@ -212,6 +227,11 @@ class Image (Layer):
         drawing.pop()
 
 
+#####           #####
+##### VideoClip #####
+#####           #####
+
+
 class VideoClip (Layer):
     """A rectangular video clip, scaled to the given size."""
     def __init__(self, filename, (width, height)):
@@ -249,8 +269,17 @@ class VideoClip (Layer):
         drawing.pop()
 
 
+
+
+#####      #####
+##### Text #####
+#####      #####
+
 class Text (Layer):
-    """A simple text string, with size, color and font."""
+    """A simple text string, with size, color and font.
+
+    text -- UTF8 encoded string.
+    """
     def __init__(self, text, color='white', fontsize=20, \
                  font='Helvetica'):
         Layer.__init__(self)
@@ -262,7 +291,7 @@ class Text (Layer):
         assert isinstance(drawing, Drawing)
         drawing.comment("Text Layer")
         drawing.push()
-        drawing.fill(self.color)
+        drawing.color_all(self.color)
         drawing.font(self.font)
         drawing.font_size(self.fontsize)
         self.draw_effects(drawing, frame)
@@ -271,9 +300,13 @@ class Text (Layer):
 
 
 
+#####       #####
+##### Label #####
+#####       #####
+
 class Label (Text):
     """A text string with a rectangular background."""
-    def __init__(self, text, color='black', bgcolor='grey',
+    def __init__(self, text, color='black', bgcolor='#999',
                  fontsize=20, font='NimbusSans'):
         Text.__init__(self, text, color, fontsize, font)
         self.bgcolor = bgcolor
@@ -295,9 +328,11 @@ class Label (Text):
 
         # Draw a stroked round rectangle
         drawing.push()
-        drawing.stroke(self.color)
-        drawing.fill(self.bgcolor)
+        drawing.color_stroke(self.color)
+        drawing.color_fill(self.bgcolor)
+        drawing.stroke_width(1)
         drawing.roundrectangle(start, end, (pad, pad))
+        drawing.fill_n_stroke()
         drawing.pop()
 
         # Call base Text class to draw the text
@@ -305,7 +340,12 @@ class Label (Text):
 
         # Restore context
         drawing.pop()
-        
+
+
+#####         #####
+##### TextBox #####
+#####         #####
+
 
 class TextBox (Text):
     """A text box containing paragraphs, and support for simple formatting
@@ -393,6 +433,11 @@ class TextBox (Text):
 
     
 
+#####       #####
+##### Thumb #####
+#####       #####
+
+
 class Thumb (Layer):
     """A thumbnail image or video."""
     def __init__(self, filename, (width, height), title=''):
@@ -413,6 +458,12 @@ class Thumb (Layer):
         assert isinstance(drawing, Drawing)
         self.draw_effects(drawing, frame)
         self.draw_sublayers(drawing, frame)
+
+
+
+#####           #####
+##### ThumbGrid #####
+#####           #####
 
 
 class ThumbGrid (Layer):
@@ -480,6 +531,11 @@ class ThumbGrid (Layer):
         self.draw_sublayers(drawing, frame)
         drawing.pop()
 
+
+
+#####          #####
+##### SafeArea #####
+#####          #####
     
 class SafeArea (Layer):
     """Render a safe area box at a given percentage.
@@ -500,18 +556,22 @@ class SafeArea (Layer):
         drawing.push()
         drawing.translate(topleft)
         # Safe area box
-        drawing.fill(None)
-        drawing.stroke(self.color)
+        drawing.color_stroke(self.color)
         drawing.stroke_width(3)
         drawing.rectangle((0, 0), (width * scale, height * scale))
+        drawing.stroke()
         # Label
-        drawing.fill(self.color)
-        drawing.stroke(None)
-        drawing.font_size(20)
-        drawing.text((10, 20), "%s%%" % self.percent)
+        drawing.color_text(self.color)
+        drawing.font_size(18)
+        drawing.text((10, 20), u"%s%%" % self.percent)
         # Restore context
         drawing.pop()
 
+
+
+#####             #####
+##### Scatterplot #####
+#####             #####
 
 class Scatterplot (Layer):
     """A 2D scatterplot of data."""
@@ -554,7 +614,7 @@ class Scatterplot (Layer):
         drawing.push()
         drawing.stroke('black')
         drawing.stroke_width(3)
-        drawing.polyline([(0, 0), (0, height), (width, height)])
+        drawing.polyline([(0, 0), (0, height), (width, height)], False)
         drawing.pop()
 
         # Axis labels
@@ -615,6 +675,11 @@ class Scatterplot (Layer):
         drawing.pop()
         
 
+
+#####                    #####
+##### InterpolationGraph #####
+#####                    #####
+
 class InterpolationGraph (Layer):
     # TODO: Support graphing of tuple data
     """A graph of an interpolation curve, defined by a list of Keyframes and
@@ -642,14 +707,15 @@ class InterpolationGraph (Layer):
 
         # Save context
         drawing.push()
-        drawing.fill(None)
+#        drawing.fill(None)
 
         # Draw axes
         drawing.comment("Axes of graph")
         drawing.push()
-        drawing.stroke('grey')
+        drawing.color_stroke('#ccc')
         drawing.stroke_width(3)
-        drawing.polyline([(0, 0), (0, height), (width, height)])
+        drawing.polyline([(0, 0), (0, height), (width, height)], False)
+        drawing.stroke()
         drawing.pop()
 
         # Create a list of (x, y) points to be graphed
@@ -664,9 +730,10 @@ class InterpolationGraph (Layer):
         drawing.comment("Interpolation curve")
         drawing.push()
         # Draw the curve
-        drawing.stroke('blue')
+        drawing.color_stroke('blue')
         drawing.stroke_width(2)
-        drawing.polyline(curve)
+        drawing.polyline(curve, False)
+        drawing.stroke()
         drawing.pop()
 
         # Draw Keyframes as dotted vertical lines
@@ -674,32 +741,40 @@ class InterpolationGraph (Layer):
         drawing.push()
         #drawing.stroke_dasharray([4, 4])
         # Vertical dotted lines
-        drawing.fill(None)
-        drawing.stroke('red')
+#        drawing.fill(None)
+        drawing.color_stroke('red')
         drawing.stroke_width(2)
         for key in self.keyframes:
             x = int(key.frame * x_scale)
             drawing.line((x, 0), (x, height))
         # Draw Keyframe labels
-        drawing.stroke(None)
-        drawing.fill('white')
+        drawing.color_text('white')
         for key in self.keyframes:
             x = int(key.frame * x_scale)
             y = int(height - key.data * y_scale - 3)
-            drawing.text((x, y), "(%s,%s)" % (key.frame, key.data))
+            drawing.text((x, y), u"(%s,%s)" % (key.frame, key.data))
         drawing.pop()
 
         # Draw a yellow dot for current frame
         drawing.comment("Current frame marker")
         drawing.push()
-        drawing.stroke(None)
-        drawing.fill('yellow')
+        drawing.color_fill('yellow')
         pos = (frame * x_scale, height - data[frame-1] * y_scale)
         drawing.circle_rad(pos, 2)
+        drawing.fill()
         drawing.pop()
 
         # Restore context
         drawing.pop()
+
+
+
+
+
+
+#####           #####
+##### ColorBars #####
+#####           #####
 
 class ColorBars (Layer):
     """SMPTE color bars"""
@@ -709,7 +784,9 @@ class ColorBars (Layer):
 
     def draw_on(self, drawing, frame=1):
         # Video-black background
-        drawing.fill_rgb((16, 16, 16))
+        drawing.auto_fill(True)
+
+        drawing.color_fill((16, 16, 16))
         drawing.rectangle((0, 0), self.size)
 
         drawing.comment("SMPTE color bars")
@@ -719,58 +796,60 @@ class ColorBars (Layer):
         top = 0
         bottom = 2.0 / 3
         x_inc = 1.0 / 7
-        drawing.fill_rgb((191, 191, 191))
+        drawing.color_fill((191, 191, 191))
         drawing.rectangle((0, top), (x_inc, bottom))
-        drawing.fill_rgb((191, 191, 0))
+        drawing.fill()
+        drawing.color_fill((191, 191, 0))
         drawing.rectangle((x_inc, top), (x_inc*2, bottom))
-        drawing.fill_rgb((0, 191, 191))
+        drawing.color_fill((0, 191, 191))
         drawing.rectangle((x_inc*2, top), (x_inc*3, bottom))
-        drawing.fill_rgb((0, 191, 0))
+        drawing.color_fill((0, 191, 0))
         drawing.rectangle((x_inc*3, top), (x_inc*4, bottom))
-        drawing.fill_rgb((191, 0, 191))
+        drawing.color_fill((191, 0, 191))
         drawing.rectangle((x_inc*4, top), (x_inc*5, bottom))
-        drawing.fill_rgb((191, 0, 0))
+        drawing.color_fill((191, 0, 0))
         drawing.rectangle((x_inc*5, top), (x_inc*6, bottom))
-        drawing.fill_rgb((0, 0, 191))
+        drawing.color_fill((0, 0, 191))
         drawing.rectangle((x_inc*6, top), (1.0, bottom))
         # Next 8% of picture: Reverse blue bars
         top = bottom
         bottom = 0.75
-        drawing.fill_rgb((0, 0, 191))
+        drawing.color_fill((0, 0, 191))
         drawing.rectangle((0, top), (x_inc, bottom))
-        drawing.fill_rgb((16, 16, 16))
+        drawing.color_fill((16, 16, 16))
         drawing.rectangle((x_inc, top), (x_inc*2, bottom))
-        drawing.fill_rgb((191, 0, 191))
+        drawing.color_fill((191, 0, 191))
         drawing.rectangle((x_inc*2, top), (x_inc*3, bottom))
-        drawing.fill_rgb((16, 16, 16))
+        drawing.color_fill((16, 16, 16))
         drawing.rectangle((x_inc*3, top), (x_inc*4, bottom))
-        drawing.fill_rgb((0, 191, 191))
+        drawing.color_fill((0, 191, 191))
         drawing.rectangle((x_inc*4, top), (x_inc*5, bottom))
-        drawing.fill_rgb((16, 16, 16))
+        drawing.color_fill((16, 16, 16))
         drawing.rectangle((x_inc*5, top), (x_inc*6, bottom))
-        drawing.fill_rgb((191, 191, 191))
+        drawing.color_fill((191, 191, 191))
         drawing.rectangle((x_inc*6, top), (1.0, bottom))
         # Lower 25%: Pluge signal
         top = bottom
         bottom = 1.0
         x_inc = 1.0 / 6
-        drawing.fill_rgb((16, 16, 16))
+        drawing.color_fill((16, 16, 16))
         drawing.rectangle((0, top), (1.0, bottom))
-        drawing.fill_rgb((0, 29, 66))
+        drawing.color_fill((0, 29, 66))
         drawing.rectangle((0, top), (x_inc, bottom))
-        drawing.fill_rgb((255, 255, 255))
+        drawing.color_fill((255, 255, 255))
         drawing.rectangle((x_inc, top), (x_inc*2, bottom))
-        drawing.fill_rgb((44, 0, 92))
+        drawing.color_fill((44, 0, 92))
         drawing.rectangle((x_inc*2, top), (x_inc*3, bottom))
         # Sub- and super- black narrow bars
-        drawing.fill_rgb((7, 7, 7))
+        drawing.color_fill((7, 7, 7))
         drawing.rectangle((x_inc*4, top), (x_inc*4.33, bottom))
-        drawing.fill_rgb((16, 16, 16))
+        drawing.color_fill((16, 16, 16))
         drawing.rectangle((x_inc*4.33, top), (x_inc*4.66, bottom))
-        drawing.fill_rgb((24, 24, 24))
+        drawing.color_fill((24, 24, 24))
         drawing.rectangle((x_inc*4.66, top), (x_inc*5, bottom))
         drawing.pop()
 
+        drawing.auto_fill(False)
 
 # ============================================================================
 # Demo
@@ -783,7 +862,7 @@ if __name__ == '__main__':
         images = sys.argv[1:]
 
     # A Drawing to render Layer demos to
-    drawing = Drawing()
+    drawing = Drawing() # default size
     
     # Draw a background layer
     bgd = Background(color='#7080A0')
@@ -798,7 +877,7 @@ if __name__ == '__main__':
     # Draw a text layer
     drawing.push()
     drawing.translate((80, 60))
-    text = Text("Jackdaws love my big sphinx of quartz")
+    text = Text(u"Jackdaws love my big sphinx of quartz")
     text.draw_on(drawing, 1)
     drawing.pop()
 
@@ -814,7 +893,7 @@ if __name__ == '__main__':
     # Draw a label (experimental)
     drawing.push()
     drawing.translate((300, 200))
-    label = Label("tovid loves Linux")
+    label = Label(u"tovid loves Linux")
     label.draw_on(drawing, 1)
     drawing.pop()
 
@@ -841,5 +920,5 @@ if __name__ == '__main__':
     interp.draw_on(drawing, 25)
     drawing.pop()
 
-    print drawing.code()
-    drawing.render()
+    print "Output to /tmp/my.png"
+    drawing.save_png('/tmp/my.png')
