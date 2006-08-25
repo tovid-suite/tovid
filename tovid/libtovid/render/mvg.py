@@ -155,6 +155,7 @@ __all__ = ['Drawing']
 import os
 import sys
 import commands
+import time
 
 class Drawing:
     """A Magick Vector Graphics (MVG) image with load/save, insert/append,
@@ -565,6 +566,15 @@ class Drawing:
         print "Press 'q' or ESC in the image window to close the image."
         print commands.getoutput(cmd)
 
+    def render_png(self, filename):
+        cmd = "convert -size %sx%s " % self.size
+        cmd += " xc:none " # Transparent (=none) canvas image
+        cmd += " -draw @%s " % self.filename
+        cmd += " %s" % filename
+        print "Rendering to PNG file %s" % filename
+        print cmd
+        print commands.getoutput(cmd)
+        
     def save_image(self, img_filename):
         """Render the drawing to a .jpg, .png or other image."""
         self.save(self.filename)
@@ -784,6 +794,8 @@ def draw_pattern_demo(drawing):
     drawing.pop()
 
 if __name__ == '__main__':
+    mytime = time.time() # Benchmark
+    
     drawing = Drawing((720, 480), '/tmp/drawing_test.mvg')
 
     # Start of MVG file
@@ -832,4 +844,5 @@ if __name__ == '__main__':
 
     # Display the MVG text, then show the generated image
     print drawing.code()
-    drawing.render()
+    drawing.render_png('/tmp/mvg.jpg')
+    print "SECONDS: %f" % (time.time() - mytime)
