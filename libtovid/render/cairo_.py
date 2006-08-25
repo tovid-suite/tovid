@@ -121,6 +121,8 @@ class Drawing:
         be called. Make sure to set the color first, unless you like
         the defaults.
 
+        Auto-fill default to being disabled.
+
         In fact, cairo::fill_preserve() will be called, so that you can
         stroke it after.
         """
@@ -132,6 +134,8 @@ class Drawing:
         After calls to strokable elements, stroke() will automatically
         be called. Make sure to set the color first, unless you like
         the defaults.
+
+        Auto-stroke default to being disabled.
 
         In fact, cairo::stroke_preserve() will be called, so that you can
         fill it after.
@@ -262,6 +266,7 @@ class Drawing:
         # distance between x1y1, and x2y2
         rad = sqrt( (perimeter_x - center_x) ** 2 +
                     (perimeter_y - center_y) ** 2 )
+        self.cr.new_path()
         self.cr.arc(center_x, center_y, rad, 0, 2*pi)
 
         self._go_auto_all()
@@ -290,13 +295,20 @@ class Drawing:
     #    (Anyone know what (x, y) are?)"""
     #    self.insert('color %s,%s %s' % (x, y, method))
 
+    def _getrgb(self, color):
+        """Wrapper around ImageColor, to support (r,g,b) tuple as well"""
+        if isinstance(color, tuple):
+            return color
+        else:
+            return ImageColor.getrgb(color)
+            
     def color_fill(self, color, opacity=1.0):
         """Define color for fill() operations
 
         This module uses ImageColor to translate 'color' into RGB values:
 
-        The ImageColor module supports the following string formats:
-
+        You can use the following formats to specify color:
+        * (red, green, blue) python tuple, with colors ranging from 0 to 255.
         * Hexadecimal color specifiers, given as '#rgb' or '#rrggbb'.
           For example, '#ff0000' specifies pure red.
         * RGB functions, given as 'rgb(red, green, blue)' where the colour
@@ -313,28 +325,51 @@ class Drawing:
           standard colour names, based on the colors supported by the X
           Window system and most web browsers. Colour names are case
           insensitive. For example, 'red' and 'Red' both specify pure red.
+        * None to modify only opacity.
+
+        opacity -- 0.0 to 1.0, or None, to leave opacity untouched.
         """
-        (r,g,b) = ImageColor.getrgb(color)
-        self.fill_rgb = (r / 255.0, g / 255.0, b / 255.0)
-        self.fill_alpha = opacity
+        if color is not None:
+            (r,g,b) = self._getrgb(color)
+            self.fill_rgb = (r / 255.0, g / 255.0, b / 255.0)
+        if opacity is not None:
+            self.fill_alpha = opacity
+        self._go_fill_color()
         
     def color_stroke(self, color, opacity=1.0):
         """Define color for line stroke() operations.
 
         See color_fill() for details on how to specify 'color'
         """
-        (r,g,b) = ImageColor.getrgb(color)
-        self.stroke_rgb = (r / 255.0, g / 255.0, b / 255.0)
-        self.stroke_alpha = opacity
+        if color is not None:
+            (r,g,b) = self._getrgb(color)
+            self.stroke_rgb = (r / 255.0, g / 255.0, b / 255.0)
+        if opacity is not None:
+            self.stroke_alpha = opacity
+
+        self._go_stroke_color()
 
     def color_text(self, color, opacity=1.0):
         """Define color for text() operations.
 
         See color_fill() for details on how to specify 'color'
+        """ 
+        if color is not None:
+            (r,g,b) = self._getrgb(color)
+            self.text_rgb = (r / 255.0, g / 255.0, b / 255.0)
+        if opacity is not None:
+            self.text_alpha = opacity
+        self._go_text_color()
+
+    def color_all(self, color, opacity=1.0):
+        """Define all three color_stroke(), color_fill(), color_text()
+        in one single shot.
+
+        See color_fill() for details on how to specify 'color'
         """
-        (r,g,b) = ImageColor.getrgb(color)
-        self.text_rgb = (r / 255.0, g / 255.0, b / 255.0)
-        self.text_alpha = opacity
+        self.color_stroke(color, opacity)
+        self.color_fill(color, opacity)
+        self.color_text(color, opacity)
 
     def _go_stroke_color(self):
         r,g,b = self.stroke_rgb
@@ -360,35 +395,12 @@ class Drawing:
     #    self.insert('ellipse %s,%s %s,%s %s,%s' % \
     #            (center_x, center_y, radius_x, radius_y, arc_start, arc_stop))
 
-
-   #def source_rgb(self, (r,g,b)):
-   #     """Set the source color for the next drawing operations.
-   #
-   #     If you want to add transparency, use source_rgba() instead.
-   #     """
-   #     self.rgb = (r,g,b)
-   #     self.cr.set_source_rgb(r/255.0, g/255.0, b/255.0)
-
-    #def source_rgba(self, (r,g,b), a):
-    #    """Set the source color and opacity for the next drawing
-    #    operations.
-    #    """
-    #    self.rgb = (r,g,b)
-    #    self.cr.set_source_rgba(r/255.0, g/255.0, b/255.0, a)
-
-    #def opacity(self, opacity):
-    #    """Set the opacity of the next operations.
-    #
-    #    It's basically just a shorthand to source_rgba() using the
-    #    latest used colors."""
-    #    self.source_rgba(self.rgb, opacity)
-
-    #def fill_opacity(self, opacity):
-    #    """Define fill opacity, from fully transparent (0.0) to fully
-    #    opaque (1.0).
-    #
-    #    Alias for opacity()."""
-    #    self.opacity(opacity)
+    def fill_opacity(self, opacity):
+        """Define fill opacity, from fully transparent (0.0) to fully
+        opaque (1.0).
+    
+        Alias for color_fill(None, opacity)."""
+        self.color_fill(None, opacity)
     
     def fill(self):
         """Fill the current (closed) path with the color_fill()-set color.
@@ -412,10 +424,6 @@ class Drawing:
         self.fill()
         self.stroke()
         
-    #def fill_rgb(self, (r, g, b)):
-    #    """Set the fill color to an RGB value."""
-    #    self.fill('rgb(%s, %s, %s)' % (r, g, b))
-    
     def fill_rule(self, rule):
         """Set the fill rule to one of:
         
@@ -444,7 +452,6 @@ class Drawing:
               'bold': cairo.FONT_WEIGHT_BOLD}
         self.cr.select_font_face(name, sl[slant], wg[weight])
 
-    
     #def font_family(self, family):
     #    """Set the current font, by family name."""
     #    self.cr.select_font_face(family)
@@ -526,30 +533,65 @@ class Drawing:
     #    """
     #    self.insert('gravity %s' % direction)
     
-    def image(self, compose, (x, y), (width, height), filename):
+    def image(self, (x, y), (width, height), source):
         """Draw an image centered at (x, y), scaled to the given width and
-        height. compose may be:
-            Add, Minus, Plus, Multiply, Difference, Subtract,
-            Copy, CopyRed, CopyGreen, CopyBlue, CopyOpacity,
-            Atop, Bumpmap, Clear, In, Out, Over, Xor
+        height.
 
-        See: 
-            http://www.imagemagick.org/script/magick-vector-graphics.php
-        under 'image', for more ops.
+        source -- a .png filename (quicker and alpha present),
+                  a cairo.ImageSurface object, which is even better,
+                  a file object
+                  a filename - any file supported by python-imaging,
+                               a.k.a PIL [1]
+
+        Ref:
+          [1] http://www.pythonware.com/library/pil/handbook/formats.htm
+
+
+        You can apply some operator() to manipulation how the image is going
+        to show up. See operator()
         """
         # Create new image
-        # Enable compose/operator mode
-        self.insert('image %s %s,%s %s,%s "%s"' % \
-                    (compose, x, y, width, height, filename))
+        im = None
+        if isinstance(source, cairo.ImageSurface):
+            im = source
+        elif isinstance(source, str) and source.endswith('.png'):
+            im = cairo.ImageSurface.create_from_png(source)
+        else:
+            mim = Image.open(source)
+            f = StringIO()
+            mim.save(f, 'PNG')
+            del(mim)
+            f.seek(0)
+            im = cairo.ImageSurface.create_from_png(f)
+            f.close()
+            del(f)
+
+        # Centering and scaling algo
+        add_x, add_y = (0, 0)
+        dw = float(width) / float(im.get_width())
+        dh = float(height) / float(im.get_height())
+        if (dw > dh):
+            scal = dh
+            add_x = (width - dh * float(im.get_width())) / 2
+        else:
+            scal = dw
+            add_y = (height - dw * float(im.get_height())) / 2
+        self.push()
+        self.translate((x + add_x, y + add_y))
+        self.scale((scal, scal))
+        self.cr.set_source_surface(im)
+        self.cr.paint()
+        self.pop()
     
     def line(self, (x0, y0), (x1, y1)):
         """Draw a line from (x0, y0) to (x1, y1).
 
-        The line appearence will depend on stroke_width(), stroke_linecap()
-        stroke_antialias(), stroke_linejoin(), stroke_opacity().
+        The line appearence will depend on color_stroke(), stroke_width(),
+        stroke_linecap(), stroke_antialias(), stroke_linejoin().
 
         The color will depend on the color_stroke()-set value.
         """
+        self.cr.new_path()
         self.cr.save()
         self._go_stroke_color()
         self.cr.move_to(x0, y0)
@@ -612,29 +654,39 @@ class Drawing:
     #    """Draw a point at position (x, y)"""
     #    self.insert('point %s,%s' % (x, y))
 
-    def polygon(self, pt_list):
+    def polygon(self, pt_list, close_path=True):
         """Draw a polygon defined by (x, y) points in the given list.
-
-        The appearence of the polygon will depend on the stroke_* family
-        of functions. Use color_stroke() and color_fill() to change colors.
-        """
-        
-    
-    def polyline(self, pt_list):
-        """Draw an unfilled polygon defined by (x, y) points in the given list.
 
             pt_list = [(x0, y0),
                        (x1, y1),
                        (x2, y2)]
+
+        The appearence of the polygon will depend on the stroke_* family
+        of functions. Use color_stroke() and color_fill() to change colors.
+
+        Draw strokes and filling yourself, with fill(), stroke(), and
+        fill_n_stroke().
         """
+        nlist = []
+        for tup in pt_list:
+            nlist.append([tup])
+            
+        self.bezier(nlist, False, close_path)
         
-        command = 'polyline'
-        for x, y in point_list:
-            command += ' %s,%s' % (x, y)
-        self.insert(command)
+    
+    def polyline(self, pt_list, close_path=True):
+        """Draw a polygon defined by (x, y) points in the given list.
+
+        This is a short- (or long-) hand for polygon. In Cairo, you draw
+        your filling (fill()), or strokes (stroke()) yourself, so
+        having polyline and polygon is basiclly useless.
+        """
+        self.polygon(pt_list, close_path)
+
     
     def rectangle(self, (x0, y0), (x1, y1)):
         """Draw a rectangle from (x0, y0) to (x1, y1)."""
+        self.cr.new_path()
         self.cr.rectangle(x0, y0,
                           x1 - x0, y1 - y0)
         
@@ -642,6 +694,7 @@ class Drawing:
 
     def rectangle_size(self, (x, y), (w, h)):
         """Draw a "w x h" rectangle from top-left corner x,y"""
+        self.cr.new_path()
         self.cr.rectangle(x, y, w, h)
         
         self._go_auto_all()
@@ -669,7 +722,7 @@ class Drawing:
         bh = bevel_height
         # Add bezier points...
         # Top left corner:
-        tl1 = [(x0, y0 + bh), (0,0), (0,+bh)]
+        tl1 = [(x0, y0 + bh), (0,0), (0,0)]
         tl2 = [(x0 + bw, y0), (0,0), (-bw,0)]
         tr1 = [(x1 - bw, y0), (0,0), (-bw,0)]
         tr2 = [(x1, y0 + bh), (0,0), (0,-bw)]
@@ -677,9 +730,10 @@ class Drawing:
         br2 = [(x1 - bw, y1), (0,0), (+bw,0)]
         bl1 = [(x0 + bw, y1), (0,0), (+bw,0)]
         bl2 = [(x0, y1 - bh), (0,0), (0,+bh)]
+        end = [(x0, y0 + bh), (0,0), (0,0)]
         # Call in relative mode bezier control points.
-        mylst = [tl1, tl2, tr1, tr2, br1, br2, bl1, bl2]
-        self.bezier(mylst, True, True)
+        mylst = [tl1, tl2, tr1, tr2, br1, br2, bl1, bl2, end]
+        self.bezier(mylst, True)
         
 
     def scale(self, (dx, dy)):
@@ -784,10 +838,14 @@ class Drawing:
                'round': cairo.LINE_JOIN_ROUND}
         self.cr.set_line_join(dic[join_type])
 
-    #def stroke_opacity(self, opacity):
-    #    """Set the stroke opacity. opacity may be decimal (0.0-1.0)
-    #    or percentage (0-100)%."""
-    #    self.insert('stroke-opacity %s' % opacity)
+    def stroke_opacity(self, opacity):
+        """Set the stroke opacity.
+
+            opacity -- 0.0 = transparent, 1.0 = opaque
+
+        Alias for color_stroke(None, opacity)
+        """
+        self.color_stroke(None, opacity)
 
     def stroke_width(self, width):
         """Set the current stroke width in pixels."""
@@ -809,7 +867,8 @@ class Drawing:
         #       at the tips of our fingers :P woah!
         #
         if not isinstance(text_string, unicode):
-            raise TypeError, "You must provide a unicode string as second argument"
+            text_string = unicode(text_string.decode('latin-1'))
+
         self.cr.save()
         self.cr.move_to(x, y)
         r,g,b = self.text_rgb
@@ -824,6 +883,15 @@ class Drawing:
         else:
             self.insert('text-antialias 0')
 
+    def text_opacity(self, opacity):
+        """Set the text opacity.
+
+            opacity -- 0.0 = transparent, 1.0 = opaque
+
+        Alias for color_text(None, opacity)
+        """
+        self.color_text(None, opacity)
+
     #def text_undercolor(self, color):
     #    self.insert('text-undercolor %s' % color)
 
@@ -834,8 +902,11 @@ class Drawing:
         self.cr.set_matrix(m)
     
     def viewbox(self, (x0, y0), (x1, y1)):
-        """Define a rectangular viewing area from (x0, y0) to (x1, y1)."""
-        self.insert('viewbox %s,%s %s,%s' % (x0, y0, x1, y1))
+        """Define a rectangular viewing area from (x0, y0) to (x1, y1).
+
+        Unused in Cairo context, yet?!
+        """
+        #self.insert('viewbox %s,%s %s,%s' % (x0, y0, x1, y1))
     
     def push(self, context='graphic-context', *args, **kwargs):
         """Save state, and begin a new context.
@@ -903,7 +974,7 @@ class Drawing:
         del(im)
         f.close()
 
-    def render(self, filename):
+    def render(self, filename='/tmp/my.png'):
         """Render the .mvg with ImageMagick, and display it."""
         self.surface.write_to_png(filename)
         #
@@ -1026,8 +1097,8 @@ def draw_shape_demo(drawing):
     # Large orange circle with black stroke
     drawing.push()
     drawing.color_stroke('black')
-    drawing.stroke_width(12)
     drawing.color_fill('orange')
+    drawing.stroke_width(12)
     # Circle at (500, 200), with radius 200
     drawing.circle_rad((500, 200), 200)
     drawing.fill_n_stroke()

@@ -198,7 +198,7 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.font_rotate(0)
 
     def test_text_stuff(self):
-        self.assertRaises(TypeError, self.d.text, (15, 15), "This isn't a Unicode é string")
+        self.d.text((15, 15), "This isn't a Unicode é string")
         self.d.text_opacity(1.0)
         self.d.text((15, 15), u"This is a Unicode é string")
 
@@ -226,7 +226,7 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.stroke_width(2)
         self.d.circle_rad((250, 250), 80)
 
-        self.d.render()
+        self.d.render('/tmp/my.png')
 
         
         
