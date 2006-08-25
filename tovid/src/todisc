@@ -2820,13 +2820,16 @@ for ((i=0; i<=NUM_FILES; i++)); do
         -bordercolor none -mattecolor "#444744" "${PICS[p]}")
         IM_CMD02=(convert "${PICS[p]}" $RAISE)
         IM_CMD03=(composite -compose CopyOpacity $THUMB_MASK +matte -)
+        IM_CMD04=(montage - -geometry +4+4 -background '#444744' \
+        -mattecolor "#444744" -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" \
+        -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}")
         IM_CMD1=(convert -resize $THUMB_SIZE! -)
         IM_CMD2=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -) 
-        IM_CMD3=(montage -geometry +4+4 -background '#161514' \
+        IM_CMD3=(montage -geometry +4+4 -background '#444744' \
         -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" \
         -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}" "${PICS[p]}")
-        IM_CMD4=(convert -background '#161514' -frame 3x3 \
-        -bordercolor none -mattecolor "#444744" -)
+        IM_CMD4=(convert -background none -frame 3x3 \
+        -bordercolor "#444744" -)
         IM_CMD5=(convert -resize $THUMB_SIZE! - "${PICS[p]}")
         IM_CMD6=(convert - -write mpr:img${p} -fx A  +matte \
         -blur 0x$(awk_math 7 plus .${CURVE_ARRAY[p]/.} float)  \
@@ -2878,12 +2881,18 @@ for ((i=0; i<=NUM_FILES; i++)); do
                 if [ "$SC_FRAMESTYLE" = "glass" ]; then
                     :
                 else
-                    spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$pic")  "
+                    spin "\rProcessing $(awk -F / '{ print $NF }' <<< "${PICS[p]}")  "
                     "${IM_CMD01[@]}" miff:- | "${IM_CMD5[@]}"
                 fi 
             else # not showcase or feather
-                spin "\rProcessing $(awk -F / '{ print $NF }' <<< "$pic")  "
-                "${IM_CMD3[@]}" miff:- | "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
+                spin "\rProcessing $(awk -F / '{ print $NF }' <<< "${PICS[p]}")  "
+                if $THUMBS_3D; then
+                    "${IM_CMD02[@]}" miff:- |"${IM_CMD04[@]}" miff:- |
+                    "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
+                else         
+                    "${IM_CMD3[@]}" miff:- | "${IM_CMD4[@]}" miff:- |
+                    "${IM_CMD5[@]}"
+                fi
             fi
         fi
         unset IM_CMD0 IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5 IM_CMD6
