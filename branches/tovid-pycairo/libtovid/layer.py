@@ -173,7 +173,7 @@ class Background (Layer):
         self.draw_effects(drawing, frame)
         # Fill drawing with an image
         if self.filename is not '':
-            drawing.image('over', (0, 0), drawing.size, self.filename)
+            drawing.image((0, 0), drawing.size, self.filename)
         # Fill drawing with a solid color
         elif self.color:
             drawing.color_fill(self.color)
@@ -223,7 +223,7 @@ class Image (Layer):
         drawing.comment("Image Layer")
         drawing.push()
         self.draw_effects(drawing, frame)
-        drawing.image('over', (0, 0), self.size, self.prescaled_filename)
+        drawing.image((0, 0), self.size, self.prescaled_filename)
         drawing.pop()
 
 
@@ -241,6 +241,7 @@ class VideoClip (Layer):
         self.size = (width, height)
         # List of filenames of individual frames
         self.frame_files = []
+        # TODO: be able to change hardcoded default values
         self.rip_frames(1, 120)
 
     def rip_frames(self, start, end):
@@ -265,7 +266,7 @@ class VideoClip (Layer):
         if frame >= len(self.frame_files):
             frame = frame % len(self.frame_files)
         filename = self.frame_files[frame-1]
-        drawing.image('over', (0, 0), self.size, filename)
+        drawing.image((0, 0), self.size, filename)
         drawing.pop()
 
 

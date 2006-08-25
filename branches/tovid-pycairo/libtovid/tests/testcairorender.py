@@ -201,6 +201,7 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.text((15, 15), "This isn't a Unicode é string")
         self.d.text_opacity(1.0)
         self.d.text((15, 15), u"This is a Unicode é string")
+        self.d.text_extents(u"This is a Unicode é string")
 
     def test_antialias_stuff(self):
         self.d.stroke_antialias(True)

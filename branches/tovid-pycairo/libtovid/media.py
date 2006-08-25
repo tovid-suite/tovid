@@ -217,10 +217,12 @@ def rip_frames(filename, out_dir, frames='all', size=(0, 0)):
         cmd += ' -Z %sx%s ' % size
     # Encode selected frames
     if frames == 'all':
-        pass
+        start = 0
     elif isinstance(frames, int):
         cmd += ' -c %s-%s ' % (frames, frames)
+        start = frames
     elif isinstance(frames, list):
+        start = frames[0]
         cmd += ' -c %s-%s ' % (frames[0], frames[-1])
     cmd += ' -y jpg,null '
     cmd += ' -o %s/frame_' % out_dir
