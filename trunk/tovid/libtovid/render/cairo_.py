@@ -70,6 +70,7 @@ __all__ = ['Drawing']
 
 import os
 import sys
+import time
 import commands
 from math import pi, sqrt
 from StringIO import StringIO # for JPG export
@@ -902,9 +903,9 @@ class Drawing:
         del(im)
         f.close()
 
-    def render(self):
+    def render(self, filename):
         """Render the .mvg with ImageMagick, and display it."""
-        self.surface.write_to_png('/tmp/my.png')
+        self.surface.write_to_png(filename)
         #
         # To do the final rendering, and output to .jpg, we can:
         #from StringIO import StringIO
@@ -1086,41 +1087,43 @@ def draw_stroke_demo(drawing):
     drawing.pop()
 
 
-def draw_pattern_demo(drawing):
-    """Draw a pattern demo on the given drawing."""
-    assert isinstance(drawing, Drawing)
-
-    # Save context
-    drawing.push()
-
-    # Define a pattern of blue and green squares
-    drawing.push('defs')
-    drawing.push('pattern', 'squares', (10, 10), (20, 20))
-    
-    drawing.push()
-    drawing.color_fill('blue')
-    drawing.rectangle((5, 5), (15, 15))
-    drawing.stroke()
-    drawing.pop()
-    
-    drawing.push()
-    drawing.color_fill('green')
-    drawing.rectangle((10, 10), (20, 20))
-    drawing.stroke()
-    drawing.pop()
-    
-    drawing.pop('pattern')
-    drawing.pop('defs')
-    # Draw a rectangle filled with the pattern
-    drawing.push()
-    #drawing.color_fill('url(#squares)')
-    drawing.rectangle((0, 0), (80, 80))
-    drawing.pop()
-    
-    # Restore context
-    drawing.pop()
+#def draw_pattern_demo(drawing):
+#    """Draw a pattern demo on the given drawing."""
+#    assert isinstance(drawing, Drawing)
+#
+#    # Save context
+#    drawing.push()
+#
+#    # Define a pattern of blue and green squares
+#    drawing.push('defs')
+#    drawing.push('pattern', 'squares', (10, 10), (20, 20))
+#    
+#    drawing.push()
+#    drawing.color_fill('blue')
+#    drawing.rectangle((5, 5), (15, 15))
+#    drawing.stroke()
+#    drawing.pop()
+#    
+#    drawing.push()
+#    drawing.color_fill('green')
+#    drawing.rectangle((10, 10), (20, 20))
+#    drawing.stroke()
+#    drawing.pop()
+#    
+#    drawing.pop('pattern')
+#    drawing.pop('defs')
+#    # Draw a rectangle filled with the pattern
+#    drawing.push()
+#    #drawing.color_fill('url(#squares)')
+#    drawing.rectangle((0, 0), (80, 80))
+#    drawing.pop()
+#    
+#    # Restore context
+#    drawing.pop()
 
 if __name__ == '__main__':
+    mytime = time.time() # Benchmark
+    
     drawing = Drawing((720, 480))
 
     # Start a new
@@ -1165,10 +1168,9 @@ if __name__ == '__main__':
     # Close out the Cairo rendering...
     drawing.pop()
 
-    drawing.render()
-    os.system("display /tmp/my.png")
-    # Display the MVG text, then show the generated image
-    #print drawing.code()
+    drawing.save_jpg('/tmp/cairo.jpg')
 
-
+    print "SECONDS: %f" % (time.time() - mytime)
+    
+    #os.system("display /tmp/cairo.png")
 
