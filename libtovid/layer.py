@@ -288,11 +288,30 @@ class Text (Layer):
         self.color = color
         self.fontsize = fontsize
         self.font = font
+
+    def extents(self, drawing):
+        """Get text extents with the specifies fonts, etc.."""
+        drawing.push()
+        drawing.font(self.font)
+        drawing.font_size(self.fontsize)
+        ex = drawing.text_extents(self.text)
+        drawing.pop()
+
+        return ex
+
+    def center(self, drawing, (x,y)):
+        """Returns the (x,y) required for this text to be centered at the
+        given point."""
+        
+        (dx, dy, w, h, ax, ay) = self.extents(drawing)
+
+        return (x - w/2, y + h/2) 
+    
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
-        drawing.comment("Text Layer")
+
         drawing.push()
-        drawing.color_all(self.color)
+        drawing.color_text(self.color)
         drawing.font(self.font)
         drawing.font_size(self.fontsize)
         self.draw_effects(drawing, frame)
@@ -306,21 +325,26 @@ class Text (Layer):
 #####       #####
 
 class Label (Text):
-    """A text string with a rectangular background."""
-    def __init__(self, text, color='black', bgcolor='#999',
+    """A text string with a rectangular background.
+
+    You can access Text's extents() function from within here too."""
+    def __init__(self, text, color='white', bgcolor='#555',
                  fontsize=20, font='NimbusSans'):
         Text.__init__(self, text, color, fontsize, font)
         self.bgcolor = bgcolor
+
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
+
+        (dx, dy, w, h, ax, ay) = self.extents(drawing)
 
         drawing.comment("Label Layer")
         # Save context
         drawing.push()
 
         # Calculate rectangle dimensions from text size/length
-        width = self.fontsize * len(self.text) / 2
-        height = self.fontsize
+        width = w
+        height = h
         # Padding to use around text
         pad = self.fontsize / 3
         # Calculate start and end points of background rectangle
@@ -329,8 +353,8 @@ class Label (Text):
 
         # Draw a stroked round rectangle
         drawing.push()
-        drawing.color_stroke(self.color)
-        drawing.color_fill(self.bgcolor)
+        drawing.color_stroke('black')
+        drawing.color_fill(self.bgcolor, 0.3)
         drawing.stroke_width(1)
         drawing.roundrectangle(start, end, (pad, pad))
         drawing.fill_n_stroke()
@@ -453,12 +477,17 @@ class Thumb (Layer):
             self.add_sublayer(VideoClip(filename, self.size))
         elif filetype == 'image':
             self.add_sublayer(Image(filename, self.size))
-        self.add_sublayer(Label(self.title, fontsize=15), (0, 0))
+        self.lbl = Label(self.title, fontsize=15)
+        self.add_sublayer(self.lbl, (0, 0))
 
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
+        drawing.push()
         self.draw_effects(drawing, frame)
+        (dx, dy, w, h, ax, ay) = self.lbl.extents(drawing)
+        drawing.translate((0, h))
         self.draw_sublayers(drawing, frame)
+        drawing.pop()
 
 
 
