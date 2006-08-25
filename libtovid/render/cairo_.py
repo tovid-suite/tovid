@@ -73,7 +73,6 @@ import sys
 import time
 import commands
 from math import pi, sqrt
-from StringIO import StringIO # for JPG export
 import cairo
 import Image      # for JPG export
 import ImageColor # for getrgb, getcolor
@@ -558,7 +557,7 @@ class Drawing:
             im = cairo.ImageSurface.create_from_png(source)
         else:
             mim = Image.open(source)
-            f = StringIO()
+            f = open('/tmp/export.png', 'wb+')
             mim.save(f, 'PNG')
             del(mim)
             f.seek(0)
@@ -859,9 +858,29 @@ class Drawing:
             text_string -- utf8 encoded text string
 
         The text's color depends on the value set with color_text().
+
+        Returned value:
+            (x_bearing, y_bearing, width, height, x_advance, y_advance)
+        where:
+            x_bearing -- the horizontal distance from the origin to the
+                         leftmost part of the glyphs as drawn. Positive
+                         if the glyphs lie entirely to the right of the
+                         origin.
+            y_bearing -- the vertical distance from the origin to the topmost
+                         part of the glyphs as drawn. Positive only if the
+                         glyphs lie completely below the origin; will usually
+                         be negative.
+            width -- width of the glyphs as drawn
+            height -- height of the glyphs as drawn
+            x_advance -- distance to advance in the X direction after drawing
+                         these glyphs
+            y_advance -- distance to advance in the Y direction after drawing
+                         these glyphs. Will typically be zero except for
+                         vertical text layout as found in East-Asian languages.
+            
+        See:
+            http://www.cairographics.org/manual/cairo-Scaled-Fonts.html#cairo-text-extents-t
         """
-        # TODO: Escape special characters in text string
-        #
         # NOTE: It will be possible to use pangocairo wrapper around
         #       the cairo class, for all the text-related stuff! hey Pango
         #       at the tips of our fingers :P woah!
@@ -873,9 +892,29 @@ class Drawing:
         self.cr.move_to(x, y)
         r,g,b = self.text_rgb
         self.cr.set_source_rgba(r, g, b, self.text_alpha)
+        retval = self.cr.text_extents(text_string)
         self.cr.show_text(text_string)
         self.cr.restore()
+
+        return retval
     
+    def text_extents(self, text_string):
+        """Returns the dimensions of the to-be-drawn text.
+
+        Call this before calling text() if you want to place it well,
+        according to the dimensions of the text rectangle to be drawn.
+
+        See text()'s return value for details.
+
+        Returns:
+            (x_bearing, y_bearing, width, height, x_advance, y_advance)
+        """
+        if not isinstance(text_string, unicode):
+            text_string = unicode(text_string.decode('latin-1'))
+
+        return self.cr.text_extents(text_string)
+      
+
     def text_antialias(self, do_antialias):
         """Turn text antialiasing on (True) or off (False)."""
         if do_antialias:
@@ -966,7 +1005,7 @@ class Drawing:
     def save_jpg(self, filename):
         """Saves current drawing to JPG, losing alpha channel information."""
         
-        f = StringIO()
+        f = open('/tmp/export.png', 'wb+')
         self.surface.write_to_png(f)
         f.seek(0)
         im = Image.open(f)
@@ -977,25 +1016,9 @@ class Drawing:
     def render(self, filename='/tmp/my.png'):
         """Render the .mvg with ImageMagick, and display it."""
         self.surface.write_to_png(filename)
-        #
-        # To do the final rendering, and output to .jpg, we can:
-        #from StringIO import StringIO
-        #import Image
-        #
-        #f = StringIO()
-        #self.surface.write_to_png(f)
-        #f.seek(0)
-        #im = Image.open(f)
-        #im.save('output.jpg')
-        #f.close()
-        #
-        # This removes transparency however.
-        #
         # TODO: when rendering series of .png, we can make a PNGLIST
         #       that would be ready for importation as a video in
         #       Cinelerra, the video editing suite.
-        
-        #print commands.getoutput("display /tmp/my.png")
 
     def save_image(self, img_filename):
         """Render the drawing to a .jpg, .png or other image."""
@@ -1239,9 +1262,7 @@ if __name__ == '__main__':
     # Close out the Cairo rendering...
     drawing.pop()
 
+    print "Output to: /tmp/cairo.jpg"
     drawing.save_jpg('/tmp/cairo.jpg')
-
     print "SECONDS: %f" % (time.time() - mytime)
-    
-    #os.system("display /tmp/cairo.png")
 
