@@ -13,7 +13,6 @@ class TestCairoDraws(unittest.TestCase):
     
     def setUp(self):
         """Set up a new drawing"""
-        print self
         self.d = Drawing((640, 480))
 
     def tearDown(self):
@@ -22,17 +21,6 @@ class TestCairoDraws(unittest.TestCase):
         os.system("display /tmp/my.png")
         del(self.d)
         
-    def _test_defunc_cmds(self):
-        """Test commands that should send an assertion error"""
-        self.assertRaises(AssertionError, self.d.goto, 1)
-        self.assertRaises(AssertionError, self.d.goto_end)
-        self.assertRaises(AssertionError, self.d.append, 'str')
-        self.assertRaises(AssertionError, self.d.insert, 'str')
-        self.assertRaises(AssertionError, self.d.remove, 1)
-        self.assertRaises(AssertionError, self.d.extend, self.d)
-        self.assertRaises(AssertionError, self.d.undo)
-        self.assert_(self.d.code() == '')
-
     def txt(self, txt):
         #self.d.rectangle_size((15, 445), (610, 20))
         self.d.push()
@@ -45,9 +33,28 @@ class TestCairoDraws(unittest.TestCase):
         self.d.text((15, 460), txt)
         self.d.pop()
 
-#    def test_font_rotate(self):
-#        self.d.source_r
+    ################ Tests start here ###########
 
+    def test_image_load(self):
+        """Draws an image into the buffer"""
+        self.txt("Four red circles (first black bg), in a line, always bigger.")
+        # Save a temp image to disk...
+        im = Drawing((50,50))
+        im.stroke_width(5)
+        im.color_stroke('red')
+        im.circle_rad((25,25), 20)
+        im.stroke()
+        im.circle_rad((25,25), 10)
+        im.save_jpg('/tmp/img.jpg')
+        im.save_png('/tmp/img.png')
+
+        # Load it with the image() function.
+        self.d.image((5,5), (25, 25), '/tmp/img.jpg')
+        self.d.image((50, 50), (35,35), '/tmp/img.png')
+        self.d.image((100, 100), (50, 50), '/tmp/img.png')
+        self.d.rectangle_size((150, 150), (150, 100))
+        self.d.stroke()
+        self.d.image((150, 150), (150, 100), im.surface)
 
     def test_circle_stroke_fill(self):
         """Test whether the stroke goes over the fill and vice-versa"""
@@ -81,11 +88,12 @@ class TestCairoDraws(unittest.TestCase):
         """Test bezier points placement to make a round rectangle."""
         self.txt(u"We should see here a round rectangle")
 
-        self.d.stroke_width(10)
-        self.d.color_fill('red')
+        self.d.stroke_width(1)
+        self.d.color_fill('red', 0.5)
+        self.d.color_stroke('black')
         self.d.roundrectangle((20, 20), (400, 400), (20, 20))
-        self.d.fill()
-        
+        self.d.fill_n_stroke()
+
 
     def test_scaling(self):
         """Test the scale() and scale_centered() functions."""
@@ -116,94 +124,6 @@ class TestCairoDraws(unittest.TestCase):
         self.d.color_stroke('green')
         self.d.circle_rad((100, 100), 30)
         self.d.pop()
-
-
-            
-    def _test_draw_funcs(self):
-        """Test drive drawing functions
-
-        We still need to verify the output visually to make sure it's okay
-        """
-        # bezier is tested in test_bezier()
-        self.d.stroke_width(5)
-        
-        self.d.affine(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
-        self.d.arc((25,25), 15, (0, 270))
-        self.d.arc_rad((125, 125), 50, (0, 1))
-        self.d.circle((55, 55), (100, 50))
-        self.d.circle_rad((250, 250), 20)
-        
-        self.d.line((25,25), (125,125))
-        self.d.line((125,125), (55,55))
-        self.d.line((55,55), (250,250))
-
-
-    def _test_stroke_styles(self):
-        self.assertRaises(KeyError, self.d.stroke_linecap, 'gurda')
-        self.d.stroke_linecap('butt')
-        self.d.stroke_linecap('round')
-        self.d.stroke_linecap('square')
-
-        self.assertRaises(KeyError, self.d.stroke_linejoin, 'pou')
-        self.d.stroke_linejoin('miter')
-        self.d.stroke_linejoin('bevel')
-        self.d.stroke_linejoin('round')
-
-        self.d.scale((2, 2))
-
-    def _test_push_n_rotate(self):
-        self.d.push()
-        self.d.rotate(180)
-        self.d.rotate_deg(180)
-        self.d.rotate_rad(math.pi)
-        self.d.pop()
-
-    def _test_set_color(self):
-        self.d.source_color('#112233')
-        self.d.source_rgb((1,2,3))
-        self.d.source_rgba((1,2,3), 0.9)
-        self.d.opacity(0.8)
-        
-    def _test_fill_funcs(self):
-        self.d.fill_opacity(0.8)
-        self.assertRaises(KeyError, self.d.fill_rule, 'invalid')
-        self.d.fill_rule('evenodd')
-
-    def _test_font_stuff(self):
-        self.d.font('Times')
-        self.d.font_family('')
-        self.d.font_family()
-        self.d.font_size(24)
-        self.d.font_stretch(2.0)
-        self.d.font_stretch(2.0, 2.0)
-        self.d.font_rotate(90)
-        self.assertRaises(KeyError, self.d.font_slant, 'invalid_key')
-        self.d.font_slant('italic')
-        self.assertRaises(KeyError, self.d.font_weight, 'invalid_key')
-        self.d.font_weight('bold')
-
-    def _test_antialias_stuff(self):
-        self.d.stroke_antialias(True)
-        self.assert_(self.d.cr.get_antialias() == cairo.ANTIALIAS_GRAY)
-        self.d.stroke_antialias(False)
-        self.assert_(self.d.cr.get_antialias() == cairo.ANTIALIAS_NONE)
-        
-    def _test_dash_stuff(self):
-        self.d.stroke_dash([1.0, 2.0, 3.0], 1.0)
-        self.d.stroke_dasharray([1.0, 2.0, 3.0])
-        self.d.stroke_dashoffset(5.0)
-
-    def _test_render(self):
-        """Test drive rendering mechanism"""
-        self.d.stroke_width(8)
-        self.d.circle((250, 250), (300, 300))
-        self.d.stroke_width(2)
-        self.d.circle_rad((250, 250), 80)
-
-        self.d.render()
-
-        
-        
 
 
 if __name__ == '__main__':

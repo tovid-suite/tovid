@@ -63,7 +63,7 @@ __all__ = ['Flipbook']
 import os
 import sys
 from libtovid.animation import Keyframe
-from libtovid.render.mvg import Drawing
+from libtovid.render.cairo_ import Drawing
 from libtovid import layer
 from libtovid import effect
 from libtovid.media import MediaFile
@@ -120,10 +120,8 @@ class Flipbook:
         while frame <= self.frames:
             print "Drawing frame %s of %s" % (frame, self.frames)
             drawing = self.drawing(frame)
-            print drawing.code(editing=False)
-            drawing.save('%s/flip_%04d.mvg' % (tmp, frame))
             # jpeg2yuv likes frames to start at 0
-            drawing.save_image('%s/%08d.jpg' % (tmp, frame - 1))
+            drawing.save_jpg('%s/%08d.jpg' % (tmp, frame - 1))
             frame += 1
         video = MediaFile(m2v_file)
         video.encode_frames(tmp, m2v_file, format, tvsys)
@@ -137,15 +135,15 @@ def draw_text_demo(flipbook, last_frame):
     bgd = layer.Background('black')
     flipbook.add(bgd)
 
-    text1 = layer.Text("Spectrum effect demo")
+    text1 = layer.Text(u"Spectrum effect demo")
     text1.add_effect(effect.Spectrum(1, last_frame))
     flipbook.add(text1, (20, 30))
 
-    text2 = layer.Text("Fade effect demo")
+    text2 = layer.Text(u"Fade effect demo")
     text2.add_effect(effect.Fade(1, last_frame, last_frame / 4))
     flipbook.add(text2, (20, 60))
 
-    text3 = layer.Text("Movement effect demo")
+    text3 = layer.Text(u"Movement effect demo")
     text3.add_effect(effect.Movement(1, last_frame, (0, 0), (300, 50)))
     flipbook.add(text3, (20, 90))
 
@@ -160,8 +158,8 @@ def draw_text_demo(flipbook, last_frame):
     text_linear = layer.Text("Keyframed opacity (linear)", color='lightgreen')
     text_cosine = layer.Text("Keyframed opacity (cosine)", color='lightgreen')
     # Effects
-    fade_linear = effect.KeyFunction(Drawing.fill_opacity, pulse, 'linear')
-    fade_cosine = effect.KeyFunction(Drawing.fill_opacity, pulse, 'cosine')
+    fade_linear = effect.KeyFunction(Drawing.text_opacity, pulse, 'linear')
+    fade_cosine = effect.KeyFunction(Drawing.text_opacity, pulse, 'cosine')
     # Graph of the keyframe effects
     graph_linear = layer.InterpolationGraph(pulse, method='linear')
     graph_cosine = layer.InterpolationGraph(pulse, method='cosine')
