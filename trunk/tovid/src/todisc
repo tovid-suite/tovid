@@ -1014,14 +1014,14 @@ yecho
 
 
 # TODO: Merge these globals with the ones up top
-DVD_GEO_ARRAY=(320x240 272x204 192x144 192x144 184x138 184x138 144x108 144x108 \
+DVD_GEO_ARRAY=(320x240 272x204 192x144 192x144 184x138 184x138 136x102 136x102 \
 120x90 120x90 120x90 120x90 96x72 96x72 96x72 96x72 96x72 96x72 96x72 96x72 \
 80x60 80x60 80x60 80x60 80x60 80x60 80x60 80x60 80x60 80x60 60x40 40x30)
 SVCD_GEO_ARRAY=(240x240 180x180 120x120 120x120 120x120 120x120 96x96 96x96 \
 96x96 80x80 80x80 80x80 64x64 64x64 64x64 64x64 64x64 64x64 64x64 64x64 \
 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48)
-TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4
-4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5 6x6)
+TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4 \
+4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5 6x6 6x6)
 SHOWCASE_THUMB_ARRAY=("+86+166" "+86+110 +86+240" "+86+75 +86+175 +86+275" \
 "+86+68 +86+148 +86+228 +86+308" "+86+68 +86+131 +86+194 +86+257 +86+320" \
 "+86+75 +86+175 +86+275 +538+75 +538+175 +538+275" \
@@ -1113,12 +1113,16 @@ if $SHOWCASE; then
         THUMB_SIZE="${GEO_ARRAY[30]}"
     fi
 fi
-if [ $V_ARRAY_TOTAL -le 5 ]; then
-    SHOWCASE_SIZE=384x256
-    AUTOORDER="rows"
+if $SHOWCASE; then
+    if [ $V_ARRAY_TOTAL -le 5 ]; then
+        SHOWCASE_SIZE=384x256
+        AUTOORDER="rows"
+    else
+        SHOWCASE_SIZE=288x216
+        AUTOORDER="columns"
+    fi
 else
-    SHOWCASE_SIZE=288x216
-    AUTOORDER="columns"
+    AUTOORDER="rows"
 fi
 # allow specifically setting the geometry for 3 videos to 1x3 page
 if $THREExONE && [ $V_ARRAY_TOTAL -eq 3 ]; then
@@ -2805,6 +2809,8 @@ for ((i=0; i<=NUM_FILES; i++)); do
         -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}" "${PICS[p]}")
         IM_CMD4=(convert -background none -frame 3x3 \
         -bordercolor "#444744" -)
+        IM_CMD4b=(convert -background none -frame 3x3 \
+        -bordercolor none -)
         IM_CMD5=(convert -resize $THUMB_SIZE! - "${PICS[p]}")
         IM_CMD6=(convert - -write mpr:img${p} -fx A  +matte \
         -blur 0x$(awk_math 7 plus .${CURVE_ARRAY[p]/.} float)  \
@@ -2857,13 +2863,17 @@ for ((i=0; i<=NUM_FILES; i++)); do
                     :
                 else
                     spin "\rProcessing $(awk -F / '{ print $NF }' <<< "${PICS[p]}")  "
-                    "${IM_CMD01[@]}" miff:- | "${IM_CMD5[@]}"
+                    if $THUMBS_3D; then
+                        "${IM_CMD02[@]}" miff:- | "${IM_CMD5[@]}"
+                    else
+                        "${IM_CMD01[@]}" miff:- | "${IM_CMD5[@]}"
+                    fi
                 fi 
             else # not showcase or feather
                 spin "\rProcessing $(awk -F / '{ print $NF }' <<< "${PICS[p]}")  "
                 if $THUMBS_3D; then
                     "${IM_CMD02[@]}" miff:- |"${IM_CMD04[@]}" miff:- |
-                    "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
+                    "${IM_CMD4b[@]}" miff:- | "${IM_CMD5[@]}"
                 else         
                     "${IM_CMD3[@]}" miff:- | "${IM_CMD4[@]}" miff:- |
                     "${IM_CMD5[@]}"
