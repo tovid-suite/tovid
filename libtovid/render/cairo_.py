@@ -1,7 +1,9 @@
 #! /usr/bin/env python
 # -=- encoding: latin-1 -=-
 # cairo.py
-
+#
+# Cairo backend, by Alexandre Bourget <wackysalut@bourget.cc>
+#
 
 """A Python interface to the Cairo library.
 

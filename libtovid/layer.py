@@ -597,6 +597,21 @@ class SafeArea (Layer):
         # Restore context
         drawing.pop()
 
+class TitleSafeArea (SafeArea):
+    """Use the standard Title-safe area of 80%"""
+    def __init__(self, color):
+        SafeArea.__init__(self, 80, color)
+
+    def draw_on(self, drawing, frame):
+        SafeArea.draw_on(self, drawing, frame)
+
+class ActionSafeArea (SafeArea):
+    """Use the standard Action-safe area of 90%"""
+    def __init__(self, color):
+        SafeArea.__init__(self, 90, color)
+
+    def draw_on(self, drawing, frame):
+        SafeArea.draw_on(self, drawing, frame)
 
 
 #####             #####
@@ -930,6 +945,13 @@ if __name__ == '__main__':
     # Draw a safe area test (experimental)
     safe = SafeArea(93, 'yellow')
     safe.draw_on(drawing, 1)
+
+    # Draw standard areas:
+    #asafe = ActionSafeArea('red')
+    #asafe.draw_on(drawing, 1)
+    #
+    #tsafe = TitleSafeArea('green')
+    #tsafe.draw_on(drawing, 1)
 
     # Draw a thumbnail grid (if images were provided)
     if images:
