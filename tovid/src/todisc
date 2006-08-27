@@ -133,6 +133,7 @@ RAISE=""
 CURVE_UPDATE=""
 SUBTITLES=false
 AUDIOLANG=false
+USER_BSTYLE=false
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -572,6 +573,7 @@ while test $# -gt 0; do
         "-button-style" )
             shift
             BUTTON_STYLE="$1"
+            USER_BSTYLE=:
             ;;
         "-3dthumbs" )
             THUMBS_3D=:
@@ -1292,7 +1294,7 @@ if $PLAYALL; then
     -annotate +1+1 "Play All")
     TRIM_CMD=(convert - -background none -rotate -30 -trim +repage "$WORK_DIR/PLAYALL.png")
     "${PLAYALL_BTN_CMD[@]}" miff:- | "${TRIM_CMD[@]}"|fold -bs >> "$LOG_FILE"
-    ADD_PLAYALL="$WORK_DIR/PLAYALL.png -gravity SouthEast -geometry +45+45 -composite"
+    ADD_PLAYALL="$WORK_DIR/PLAYALL.png -gravity SouthEast -geometry +55+55 -composite"
 fi
 
 # make thumb titles if $SHOWCASE
@@ -1511,9 +1513,9 @@ if $SHOWCASE; then
 fi    
 if $PLAYALL; then
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/PLAYALL.png" \
-    -gravity SouthEast -geometry +45+45 -composite "$WORK_DIR/pics/template.png"
+    -gravity SouthEast -geometry +55+55 -composite "$WORK_DIR/pics/template.png"
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/PLAYALL.png" \
-    -gravity SouthEast -geometry +45+45 -composite "$WORK_DIR/pics/template.jpg"
+    -gravity SouthEast -geometry +55+55 -composite "$WORK_DIR/pics/template.jpg"
 fi
 # lets be sure of order by using a loop
 for ((i=0; i<=NUM_FILES; i++)); do
@@ -1602,6 +1604,9 @@ get_button_geo()
 }
 echo
 echo "Creating the highlight and selection PNGs for the main menu"
+if ! $USER_BSTYLE && $SHOWCASE; then
+    BUTTON_STYLE="text"
+fi
 if [ "$BUTTON_STYLE" = "rect" ]; then
 MENU_BUTTON_SIZE=$THUMB_SIZE
 get_button_geo
@@ -1623,6 +1628,7 @@ if $PLAYALL; then
     done
 fi
 
+PNG_IS_DONE=false
 for ((t=0; t<${#TITLES[@]}; t++)); do
     if $FEATHER; then FRAME=0; else FRAME=3x3;fi
     BUTTON_SIZE=$THUMB_SIZE
@@ -1663,12 +1669,11 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     
     if [ "$BUTTON_STYLE" = "text" ]; then
         if $SHOWCASE; then
-            echo "Running "${BUTTON_CMD9[@]}" miff:- |  "${BUTTON_CMD10[@]}""
             "${BUTTON_CMD8[@]}" miff:- |  "${BUTTON_CMD10[@]}" \
             "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
             "${BUTTON_CMD9[@]}" miff:- |  "${BUTTON_CMD10[@]}" \
             "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
-        else
+        else # not showcase
             if $FEATHER; then
                 "${BUTTON_CMD[@]}" miff:- | "${BUTTON_CMD3[@]}" \
                 "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
@@ -1683,14 +1688,17 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
             fi
         fi
     elif [ $BUTTON_STYLE = "rect" ]; then
-        if $SHOWCASE; then
+        if  ! $PNG_IS_DONE; then
+            if $SHOWCASE; then
                 "${BUTTON_CMD6[@]}"
                 "${BUTTON_CMD7[@]}"
-        else
-            "${BUTTON_CMD4[@]}"
-            "${BUTTON_CMD5[@]}"
+            else
+                "${BUTTON_CMD4[@]}"
+                "${BUTTON_CMD5[@]}"
+            fi
         fi
     fi
+    PNG_IS_DONE=:
 done
 if ! $NOASK && ! $SHOWCASE; then
     echo "Creating and displaying a preview of the main menu."
@@ -1777,9 +1785,9 @@ elif [ "$BUTTON_STYLE" = "text" ]; then
     fi
 fi
 if $PLAYALL; then
-    convert -gravity SouthEast -geometry +45+45 "$WORK_DIR/Select.png" \
+    convert -gravity SouthEast -geometry +55+55 "$WORK_DIR/Select.png" \
     "$WORK_DIR/DE7F7C_playall.png" -composite "$WORK_DIR/Select.png"
-    convert -gravity SouthEast -geometry +45+45 "$WORK_DIR/Highlight.png" \
+    convert -gravity SouthEast -geometry +55+55 "$WORK_DIR/Highlight.png" \
     "$WORK_DIR/188DF6_playall.png" -composite "$WORK_DIR/Highlight.png"
 fi
 
@@ -1858,7 +1866,7 @@ fi
 composite -compose Over "$WORK_DIR/fake_montage.png" "$WORK_DIR/preview.jpg" \
 "$WORK_DIR/preview.jpg"
 if $PLAYALL; then
-convert -gravity SouthEast -geometry +45+45 "$WORK_DIR/preview.jpg" \
+convert -gravity SouthEast -geometry +55+55 "$WORK_DIR/preview.jpg" \
 "$WORK_DIR/PLAYALL.png" -composite "$WORK_DIR/preview.jpg"
 fi
 if ! $NOASK; then
@@ -1871,7 +1879,6 @@ if $MENU_FADE; then
     cp -v "$WORK_DIR/pics/template.bk.png" "$WORK_DIR/pics/template.png"
 fi
 unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
-
 
 ###############################################################################
 #   get information about input videos, and some post preview preliminaries   #
@@ -2966,7 +2973,7 @@ if $MENU_FADE && ! $STATIC; then
         MONTAGE_CMD4=(composite -dissolve $C -gravity south -geometry +0+65 \
         $WORK_DIR/title_txt.png - -background none $WORK_DIR/animenu/$(($frame + 1)).jpg)
         if $PLAYALL; then
-            MONTAGE_CMD5=(composite -dissolve $S -gravity SouthEast -geometry +45+45 \
+            MONTAGE_CMD5=(composite -dissolve $S -gravity SouthEast -geometry +55+55 \
             $WORK_DIR/PLAYALL.png - -background none)
         else
             MONTAGE_CMD5=(convert -)
