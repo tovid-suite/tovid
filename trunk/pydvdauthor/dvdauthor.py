@@ -159,6 +159,10 @@ class Titleset:
         """
         self.audio_langs.append(_verify_lang(lang))
 
+    def _render(self):
+        """Render the XML portion for this Titleset"""
+        pass
+
 
 class VMGM(Titleset):
     """Represent the VMGM menu structure on the DVD.
@@ -203,6 +207,12 @@ class VMGM(Titleset):
         that exists.
         """
         self.subpictures.append(_verify_lang(lang))
+
+    def _render(self):
+        """Render the XML portion for this VMGM struct"""
+        pass
+
+        
 
 class Title:
     """Represent a Title on the DVD. This includes one or more .vob (or .mpg)
@@ -266,6 +276,31 @@ class Title:
         """
         self.post_cmds = commands
 
+    def _render(self):
+        """Render the XML portion for this Title"""
+        xml =  "<!-- Title: %s -->" % self.name
+        
+        # Deal with head
+        add = ''
+        if self.entry != None:
+            add += ' entry="%s"' % self.entry
+        if self.pause != None:
+            add += ' pause="%s"' % self.pause
+        xml +=  "<pgc%s>\n" % add
+        
+        # Deal with pre commands
+        if self.pre_cmds:
+            xml += "  <pre> %s </pre>\n" % _xmlentities(self.pre_cmds)
+        # Deal with all vob files
+        xml += "  <vob file=\"%s\" />\n"
+        # Deal with all buttons if they exist
+        xml += "  <button %s> %s </button>\n"
+        # Deal with post commands
+        xml += "  <post> %s </post>\n"
+        # Just add it!
+        xml += "</pgc>\n"
+
+        return _indent(6, xml)
 
 
 class Menu(Title):
@@ -317,17 +352,34 @@ class Menu(Title):
                 self.buttons.append([button, commands])
 
 
+    def _render(self):
+        """Render the XML portion for this Menu"""
+        pass
+
+
 ###
 ### Helper functions
 ###
 
+
+def _xmlentities(text):
+    """Escape all characters from the incoming text that would break the
+    xml syntax, like >, <, etc...
+    """
+    return text
+
+def _indent(level, text):
+    """Indents each line by 'level' spaces"""
+    for ln in text.splitlines():
+        new_text += (' ' * level) + text + "\n"
+    return new_text
 
 
 def _gen_id():
     """Generates a random ID, which will be used in the commands strings
     for 'jump' and 'call' cross-referencing.
     """
-    return "ID:%08x" % random.randint(0, 65535*65535)
+    return "[ID:%08x]" % random.randint(0, 65535*65535)
 
 
 def _verify_lang(lang):

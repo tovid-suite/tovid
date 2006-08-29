@@ -160,5 +160,10 @@ class TestDvdauthor(unittest.TestCase):
 
         self.assert_(self.disc.vmgm != None)
 
+    def test_xmlentities(self):
+        text = 'hello>'
+        newtext = dvdauthor._xmlentities(text)
+        self.assert_(text != newtext)
+
 if __name__ == '__main__':
     unittest.main()
