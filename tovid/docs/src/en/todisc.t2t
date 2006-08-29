@@ -248,9 +248,10 @@ to decrease font size with the **-menu-fontsize** option. For example:
 : -subtitles "lang1 lang2 . . ."
     This allows selectable subtitles in the DVD, assuming you have optional subtitles
     muxed into your videos
-: -audio-lang "lang"
+: -audio-lang "channel"
     This is untested as yet
-    "lang" is the default language to use in a multitrack (multi-language) mpeg
+    "lang" is the track number to use in a multitrack (multi-language) mpeg
+    Usually something like -audio-lang 1  ( 1st track is 0, 2nd is 1 . . . etc )
 
 ==See also==
 
