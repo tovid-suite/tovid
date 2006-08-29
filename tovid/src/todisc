@@ -125,6 +125,7 @@ SMALL_FONTSIZE=false
 SC_FRAMESTYLE=none
 THUMB_FRAME="-frame 3x3"
 SC_FRAME="-frame 3x3"
+SHOWCASE_VIDEO=""
 THREExONE=false
 PLAYALL=false
 TEXTMENU=false
@@ -531,7 +532,7 @@ while test $# -gt 0; do
             shift
             BG_VIDEO="$(abspath "$1")"
             ;;
-        "-showcase-video" ) # preview only atm
+        "-showcase-video" )
             shift
             SHOWCASE_VIDEO="$(abspath "$1")"
             IMG_FMT=png
@@ -887,8 +888,8 @@ if test -n "$BG_VIDEO" &&  $STATIC; then
     usage_error "You can not use -bgvideo with a static menu"
 elif test -n "$SHOWCASE_VIDEO" && $STATIC; then
     usage_error "You can not use -showcase-video with a static menu"
-elif [ "$SC_FRAMESTYLE" = "glass" ] && $STATIC; then
-    usage_error "You can not use -showcase-framestyle glass with a static menu"
+#elif [ "$SC_FRAMESTYLE" = "glass" ] && $STATIC; then
+#    usage_error "You can not use -showcase-framestyle glass with a static menu"
 elif test -n "$SHOWCASE_VIDEO" && test -n "$SHOWCASE_IMG"; then
     usage_error "You can not use -showcase-video AND -showcase-image"
 fi
@@ -1131,8 +1132,11 @@ if $THREExONE && [ $V_ARRAY_TOTAL -eq 3 ]; then
     TILE_ARRAY[2]=3x1
 fi
 # don't use frame for showcase-framestyle glass
-if [ "$SC_FRAMESTYLE" = "glass" ]; then
+if [[ "$SC_FRAMESTYLE" = "glass" && -n "$SHOWCASE_VIDEO" ]] ; then
     unset SC_FRAME
+fi
+if $SHOWCASE; then
+    THUMB_BG_COLOUR="none"
 fi
 #FIXME temporary till non transparent menus for -showcase* are done separately
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
@@ -1140,8 +1144,14 @@ AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
 # spumux and dvdauthor vars
 START="00:00:00.0"
 if $PLAYALL; then
-    MAIN_PRE="        <pre> g4=0; </pre>"
+    PLAYALL_PRE="g4=0;"
 fi
+if $AUDIOLANG; then
+    AUDIO_PRE="audio=$AUDIO_LANG;"
+fi
+MAIN_PRE="        <pre> $PLAYALL_PRE $AUDIO_PRE </pre>"
+
+
 MAIN_POST="        <post> jump cell 1; </post>"
 if $MENU_FADE; then
     . todisc-fade-routine
@@ -1525,7 +1535,7 @@ done
 for ((i=0; i<${#PICS[@]}; i++)); do
         if $THUMBS_3D && [ "$THUMB_SHAPE" != "normal" ]; then
         CURVE_VARS="5 3 5 1 1"
-        . /work/svn/tovid/src/todisc-fade-routine
+        . todisc-fade-routine
         fi
         PVIEW_CMD=(composite -compose CopyOpacity $THUMB_MASK +matte \
         "${PICS[i]}")
@@ -2296,9 +2306,6 @@ echo "$POST"
 fi)    
     </menus>
     <titles>
-$(if $AUDIOLANG; then
-        echo -e "      <audio lang=\"$AUDIO_LANG\"/>"
-fi)
 $(if $SUBTITLES; then
     for ((s=0; s<${#SUBS_ARRAY[@]}; s++)); do
         echo -e "      <subpicture lang=\"${SUBS_ARRAY[s]}\"/>"
@@ -2791,7 +2798,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
     if $FEATHER && $THUMBS_3D && [ "$THUMB_SHAPE" != "normal" ]; then
         unset CURVE_ARRAY CURVE_VALUES CURVE_VARS
         CURVE_VARS="5 3 5 1 1"
-        . /work/svn/tovid/src/todisc-fade-routine "3 5 5 1 1"
+        . todisc-fade-routine "3 5 5 1 1"
     fi
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[0-9]\*.$IMG_FMT|sort) )
