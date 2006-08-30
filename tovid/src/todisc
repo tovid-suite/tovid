@@ -646,7 +646,7 @@ while test $# -gt 0; do
             ;;
         "-audio-lang" )
             shift
-            AUDIO_LANG="$1" 
+            AUDIO_LANG=( $1 ) 
             AUDIOLANG=:
             ;;
         "-bgaudio" )
@@ -925,6 +925,11 @@ fi
 if $MENU_FADE && [[ -z "$BG_PIC" && -z "$BG_VIDEO" ]]; then
     THUMBS_FADE_IN_START_TIME=2.5
 fi
+# if more than one value for AUDIO_LANG, make sure they equal video #
+if [[ $AUDIOLANG &&  ${#FILES[@]} -ne ${#AUDIO_LANG[@]} &&  ${#AUDIO_LANG[@]} -ne 1 ]]; then
+    usage_error "Please give the same number of audio channels as videos.
+    You gave ${#FILES[@]} video files and ${#AUDIO_LANG[@]} audio channel values"
+fi
 # translate SEEK into frames for transcode
 SEEK_FRAMES=$(awk_math $SEEK_VAL times $FRAME_RATE)
 echo 
@@ -1146,12 +1151,21 @@ START="00:00:00.0"
 if $PLAYALL; then
     PLAYALL_PRE="g4=0;"
 fi
+
 if $AUDIOLANG; then
-    AUDIO_PRE="audio=$AUDIO_LANG;"
+    # if only one -audio-lang value, then use for all videos
+        for ((i=0; i<=NUM_FILES; i++)); do
+            if [ ${#AUDIO_LANG[@]} -eq 1 ]; then
+                AUDIO_PRE[i]="audio=${AUDIO_LANG[0]};"
+            else
+                AUDIO_PRE[i]="audio=${AUDIO_LANG[i]};"
+            fi
+        done
+    for ((i=0; i<=NUM_FILES; i++)); do # create audio tag for dvdauthor
+        VOB_PRE[i]="        <pre> ${AUDIO_PRE[i]} </pre>"
+    done
 fi
-MAIN_PRE="        <pre> $PLAYALL_PRE $AUDIO_PRE </pre>"
-
-
+MAIN_PRE="        <pre> $PLAYALL_PRE  </pre>"
 MAIN_POST="        <post> jump cell 1; </post>"
 if $MENU_FADE; then
     . todisc-fade-routine
@@ -1888,6 +1902,7 @@ if $MENU_FADE; then
     rm -v "$WORK_DIR/pics/template.png"
     cp -v "$WORK_DIR/pics/template.bk.png" "$WORK_DIR/pics/template.png"
 fi
+rm -fv "${PICS[@]}"
 unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
 
 ###############################################################################
@@ -2313,6 +2328,9 @@ $(if $SUBTITLES; then
 fi)
 $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
     echo -e "      <pgc>"
+    if $AUDIOLANG; then
+        echo "${VOB_PRE[i]}"
+    fi
     echo -ne "        <vob file=\"${IN_FILES[i]}\""
     echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
     if $CHAIN_VIDEOS; then
@@ -2894,6 +2912,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
                 fi
             fi
         fi
+        if $STATIC; then unset PICS; fi
         unset IM_CMD0 IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5 IM_CMD6
     done
     # make sure all animated thumbs finish at the same time 
