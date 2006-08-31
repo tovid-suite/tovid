@@ -1,5 +1,8 @@
-#!/usr/bin/python
+ #!/usr/bin/python
 # -=- encoding: latin-1 -=-
+# License: GPL
+# Author: Alexandre Bourget <wackysalut@bourget.cc>
+# Copyright: 2006
 
 """Module that implements a set of classes which aid in creation of a valid
 dvdauthor-formatted .xml file.
@@ -9,10 +12,8 @@ Object tree layout:
 Disc
  |-- VMGM
  |    `-- Menu(s)
- |         `-- Button(s)
  `-- Titleset(s)
       |-- Menu(s)
-      |    `-- Button(s)
       `-- Title(s)
 
 Adding a Titleset in the Disc object, or adding a Button to a Menu is done
@@ -22,17 +23,17 @@ in a consistent manner across the different object types. For example:
 
     Titleset.add_menu(Menu)
 
-    Menu.add_button(Button)
-
+    Menu.add_video_file('myfile.mpg')
+    
 etc.
 
 Note that a VMGM menu is a subclass of a Titleset (more restricted), and a
-Menu object is a subclass of a Title, extended only by the fact that it can have
-buttons.
+Menu object is a subclass of a Title, extended only by the fact that it can
+have buttons.
 
-You must be aware of the inner restrictions of `commands` inside a Menu or a Title
-object. These are restrictions imposed by the dvdauthor software itself. Read the
-man pages for more details.
+You must be aware of the inner restrictions of `commands` inside a Menu or a
+Title object. These are restrictions imposed by the dvdauthor software itself.
+Read the man pages for more details.
 
 Cross-referencing is done with IDs. Each object, be it Titleset, Menu, Title or
 VMGM, has it's own randomly-generated ID (stored in object.id). You must use these
@@ -41,13 +42,16 @@ in the commands to jump from a title to another, or when you call a menu. Ex:
   command = "jump titleset %s title %s" % (mytitleset.id, thistitle.id)
 
 When rendering, the engine will replace the IDs with the actual number values of
-the menus or titles you specified. This enables dynamic creation of DVD, without
-the worry of falling in a "what's that number ?'" hell.
+the menus or titles you specified. This enables dynamic creation of DVD, and even
+'menu driven interactive DVD', without having to worry of the references if you
+change the order of your story, or insert a new title/titleset somewhere.
 """
 
-import random
+import random # for random()
+import cgi    # for escape()
+import os     # for system()
 
-
+__all__ = ['Disc', 'VMGM', 'Titleset', 'Title', 'Menu']
   
 class Disc:
     """dvdauthor XML file generator.
@@ -74,17 +78,78 @@ class Disc:
 
         output_dir -- specifies where to output the project
         """
-        pass
+        add = ''
+        if self.jumppad:
+            add += ' jumppad="yes"'
+        xml = '<dvdauthor dest="%s"%s>\n' % (output_dir, add)
 
-    def dvdauthor_execute(self, output_dir):
+        # Deal with VMGM
+        if self.vmgm:
+            xml += _indent(2, self.vmgm._render())
+        # Deal with Titlesets
+        for titleset in self.titlesets:
+            xml += _indent(2, titleset._render())
+
+        xml += '</dvdauthor>\n'
+
+        xml = self._check_crossref(xml)
+
+        return xml
+
+    def _check_crossref(self, xml):
+        """This functions scans the .xml file for any IDs, in the form:
+        [ID:xxxxxxxx] and replaces it with the position of the title or
+        titleset, for buttons referencing.
+        """
+        # TODO: Eventually, this could return a full location, in the form:
+        #   titleset 2 title 1
+        #   vmgm menu 2
+        # so we could use: "jump %s" % menu2.id
+        # and everything would be solved.
+        # but this doesn't help if we want to jump to the title1 no matter
+        # which titleset we're in.
+
+        for i in range(0, len(self.titlesets)):
+            t = self.titlesets[i]
+            xml = xml.replace(t.id, str(i+1))
+
+            for j in range(0, len(t.menus)):
+                m = t.menus[j]
+                xml = xml.replace(m.id, str(j+1))
+            for j in range(0, len(t.titles)):
+                l = t.titles[j]
+                xml = xml.replace(l.id, str(j+1))
+
+        if self.vmgm:
+            v = self.vmgm
+            
+            for j in range(0, len(v.menus)):
+                m = t.menus[j]
+                xml = xml.replace(m.id, str(j+1))
+            for j in range(0, len(v.titles)):
+                l = t.titles[j]
+                xml = xml.replace(l.id, str(j+1))
+            
+        # Check if any unresolved IDs still exist, if so, raise error.
+        if xml.find('[ID:') != -1:
+            raise Exception, "Unresolved menu reference in commands parsing. Have you added all your titles/menus to titlesets/vmgm structs ?"
+
+        return xml
+
+    def dvdauthor_execute(self, output_dir,
+                          xml_file='/tmp/dvdauthor.xml'):
         """Writes the XML file to disk and run dvdauthor on it to produce the
         desired output.
 
         output_dir -- specifies where to output the project
+        xml_file -- specifies the location of the output xml file
 
         This function calls render_xml()
         """
-        pass
+        f = open(xml_file, 'w')
+        f.write(self.render_xml(output_dir))
+        f.close()
+        os.system('dvdauthor -x "%s"' % xml_file)
 
     def set_jumppad(self, jumppad=True):
         """Set dvdauthor jumpad tag.
@@ -125,8 +190,10 @@ class Titleset:
         self.id = _gen_id()
         self.name = name
         self.menus = []
-        self.titles = []
+        self.titles = []      # shouldn't change if we're a VMGM
         self.audio_langs = []
+        self.subpictures = [] # shouldn't change if we're a Titleset
+        self.menulang = None  # shouldn't change if we're a Titleset
     
     def add_menu(self, menu):
         """Add a menu to the Titleset.
@@ -140,6 +207,9 @@ class Titleset:
             angle
             ptt
         """
+        entries = [None, 'root', 'subtitle', 'audio', 'angle', 'ptt']
+        if menu.entry not in entries:
+            raise AttributeError, "Menu should have entry in the following: root, subtitle, audio, angle, ptt. Not: %s" % menu.entry
         self.menus.append(menu)
 
     def add_title(self, title):
@@ -159,9 +229,56 @@ class Titleset:
         """
         self.audio_langs.append(_verify_lang(lang))
 
-    def _render(self):
+    def _render(self, block='titleset'):
         """Render the XML portion for this Titleset"""
-        pass
+        xml = '<!-- %s: %s -->\n' % (self.__class__, self.name)
+
+        xml += '<%s>\n' % block
+
+        if len(self.menus):
+            # Deal with MENUS blocks, and language-code
+            add = ''
+            if self.menulang:
+                add += ' lang="%s"' % self.menulang
+            xml += '  <menus%s>\n' % add
+
+            # Deal with the video block
+            #           '    <video />'
+            # Deal with audio language block(s)
+            for audio_lang in self.audio_langs:
+                xml += '    <audio lang="%s" />\n' % audio_lang
+            # Deal with subpictures blocks
+            for subpicture in self.subpictures:
+                xml += '    <subpicture lang="%s" />\n' % subpicture
+            # List all menus
+            for menu in self.menus:
+                xml += _indent(4, menu._render())
+
+            xml += '  </menus>\n'
+
+
+        if len(self.titles):
+            # Deal with TITLES blocks
+            xml += '  <titles>\n'
+            
+            # Deal with the video block
+            #           '    <video />'
+            # Deal with audio language block(s)
+            for audio_lang in self.audio_langs:
+                xml += '    <audio lang="%s" />\n' % audio_lang
+            # Deal with subpictures blocks
+            # `--> UNUSED by dvdauthor docs ?
+            #for subpicture in self.subpictures:
+            #    xml += '    <subpicture lang="%s" />\n' % subpicture
+            # List all titles
+            for title in self.titles:
+                xml += _indent(4, title._render())
+
+            xml += '  </titles>\n'
+
+        xml += '</%s>\n' % block
+
+        return xml
 
 
 class VMGM(Titleset):
@@ -174,17 +291,15 @@ class VMGM(Titleset):
     that cannot have the same values.
     """
     
-    def __init__(self, name=None):
+    def __init__(self, name=None, lang=None):
         """Create the VMGM menu instance (top level menu) for the DVD.
 
         name -- Just a name for you to remember. It will be inserted as a comment
                 in the .XML file
         """
         Titleset.__init__(self, name)
-        # We don't need this for VMGM, since there are no titles in there, only
-        # menus.
-        del(self.titles)
-        self.subpictures = []
+        self.menulang = _verify_lang(lang)
+        self.id = 'vmgm' # no need for a fancy id, since there is only one VMGM
 
     def add_menu(self, menu):
         """Add a menu to the VMGM top-level menu.
@@ -194,7 +309,14 @@ class VMGM(Titleset):
 
             title
         """
-        pass
+        entries = [None, 'title']
+        if menu.entry not in entries:
+            raise AttributeError, "Title should have entry = 'title', or None. Not: %s" % menu.entry
+        self.menus.append(menu)
+
+    def add_title(self, title):
+        """You shouldn't add a title to a VMGM menu."""
+        raise(NotImplementedError, "You shouldn't call add_title() on a VMGM object. VMGM menu sets don't have titles.")
 
     def add_subpicture_lang(self, lang):
         """Add the language definitions for the subtitles in the videos.
@@ -205,12 +327,17 @@ class VMGM(Titleset):
 
         Validation is done in the function call to ensure you specify something
         that exists.
+
+        NOTE: I still don't know if this is valid only for VMGM. Could someone
+              point me to some documentation ?
         """
         self.subpictures.append(_verify_lang(lang))
 
     def _render(self):
         """Render the XML portion for this VMGM struct"""
-        pass
+        # Use the Titleset rendering engine, which does the job for both
+        # of us (VMGM and Titleset)
+        return Titleset._render(self, 'vmgm')
 
         
 
@@ -238,6 +365,8 @@ class Title:
         self.cells = []
         self.pre_cmds = None
         self.post_cmds = None
+        self.entry = None # shouldn't change if we're still a Title obj.
+        self.buttons = [] # idem.
 
     def add_video_file(self, file, chapters=None, pause=None):
         """Add a .vob (or .mpg) file to the Title.
@@ -278,7 +407,7 @@ class Title:
 
     def _render(self):
         """Render the XML portion for this Title"""
-        xml =  "<!-- Title: %s -->" % self.name
+        xml =  "<!-- %s: %s -->\n" % (self.__class__, self.name)
         
         # Deal with head
         add = ''
@@ -291,16 +420,31 @@ class Title:
         # Deal with pre commands
         if self.pre_cmds:
             xml += "  <pre> %s </pre>\n" % _xmlentities(self.pre_cmds)
+            
         # Deal with all vob files
-        xml += "  <vob file=\"%s\" />\n"
+        for videofile in self.videofiles:
+            add = ''
+            if videofile['chapters'] != None:
+                add += ' chapters="%s"' % videofile['chapters']
+            if videofile['pause'] != None:
+                add += ' pause="%s"' % videofile['pause']
+            xml += "  <vob file=\"%s\"%s />\n" % (videofile['file'], add)
+            
         # Deal with all buttons if they exist
-        xml += "  <button %s> %s </button>\n"
+        for button in self.buttons:
+            add = ''
+            if button[0] != None:
+                add += ' name="%s"' % button[0]
+            xml += "  <button%s> %s </button>\n" % (add,
+                                                    _xmlentities(button[1]))
         # Deal with post commands
-        xml += "  <post> %s </post>\n"
+        if self.post_cmds:
+            xml += "  <post> %s </post>\n" % _xmlentities(self.post_cmds)
+
         # Just add it!
         xml += "</pgc>\n"
 
-        return _indent(6, xml)
+        return xml
 
 
 class Menu(Title):
@@ -323,6 +467,9 @@ class Menu(Title):
         Title.__init__(self, name, pause)
         # TODO: deal with entry only here, because Title doesn't have anything
         #       to do with entry points.
+        entries = [None, 'root', 'subtitle', 'audio', 'angle', 'ptt', 'title']
+        if entry not in entries:
+            raise KeyError, "entry must be one of: root, subtitle, audio, angle, ptt, title"
         self.entry = entry
         self.buttons = []
     
@@ -354,7 +501,7 @@ class Menu(Title):
 
     def _render(self):
         """Render the XML portion for this Menu"""
-        pass
+        return Title._render(self)
 
 
 ###
@@ -366,12 +513,13 @@ def _xmlentities(text):
     """Escape all characters from the incoming text that would break the
     xml syntax, like >, <, etc...
     """
-    return text
+    return cgi.escape(text)
 
 def _indent(level, text):
     """Indents each line by 'level' spaces"""
+    new_text = ''
     for ln in text.splitlines():
-        new_text += (' ' * level) + text + "\n"
+        new_text += (' ' * level) + ln + "\n"
     return new_text
 
 
@@ -379,16 +527,27 @@ def _gen_id():
     """Generates a random ID, which will be used in the commands strings
     for 'jump' and 'call' cross-referencing.
     """
+    # This ID won't be transformed by the _xmlentities() func, so we're okay
+    # with it :)
     return "[ID:%08x]" % random.randint(0, 65535*65535)
 
 
 def _verify_lang(lang):
+    if lang == None:
+        return None
+    
     nlang = lang.upper()
     if not language_codes.has_key(nlang):
         raise KeyError, "Language codes must be one in the list found at: "\
               "http://sunsite.berkeley.edu/amher/iso_639.html"
 
     return (lang.lower(), language_codes[nlang])
+
+
+
+
+############################### DATA ################################
+
 
 ###
 ### Language codes definitions, from:

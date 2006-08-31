@@ -2,6 +2,7 @@
 # -=- encoding: latin-1 -=-
 import unittest
 import dvdauthor
+from pprint import pprint
 
 class TestDvdauthor(unittest.TestCase):
     """Test the pydvdauthor module"""
@@ -26,6 +27,30 @@ class TestDvdauthor(unittest.TestCase):
         # Create a men
         menu1 = dvdauthor.Menu('Main menu example')
         vmgm.add_menu(menu1)
+
+    def test_vmgm_badmenu(self):
+        vmgm = dvdauthor.VMGM('top-level')
+        titleset = dvdauthor.Titleset('titleset')
+        
+        # Bad entry point for a VMGM menu.
+        menu_root = dvdauthor.Menu('This menu', 'root')
+        menu_title = dvdauthor.Menu('Title menu', 'title')
+
+        # Check invalid values
+        # VMGM: title only
+        self.assertRaises(AttributeError, vmgm.add_menu, menu_root)
+        # Titleset: root|subtitle|audio|angle|ptt
+        self.assertRaises(AttributeError, titleset.add_menu, menu_title)
+
+        # Check valid values
+        vmgm.add_menu(menu_title)
+        titleset.add_menu(menu_root)
+
+    def test_vmgm_add_title(self):
+        vmgm = dvdauthor.VMGM('top-level')
+        title = dvdauthor.Title('this title')
+        self.assertRaises(NotImplementedError, vmgm.add_title, title)
+
 
     def test_ids(self):
         """Make sure everything sets an ID"""
@@ -163,7 +188,82 @@ class TestDvdauthor(unittest.TestCase):
     def test_xmlentities(self):
         text = 'hello>'
         newtext = dvdauthor._xmlentities(text)
-        self.assert_(text != newtext)
+        self.assert_(text != newtext, "dvdauthor._xmlentities() should replace > and other characters")
+
+    def test_menu_entry(self):
+        self.assertRaises(KeyError, dvdauthor.Menu, 'create this menu', 'bad_entry_point')
+
+    def _test_childobj_render(self):
+        title = dvdauthor.Title('This is my title')
+        title.add_video_file('/tmp/ahuh.mpg', '0:50', 'inf')
+        title.add_video_file('/tmp/ahuh1.mpg', None, '14')
+        title.add_video_file('/tmp/gogo.mpg')
+        print "XML output:"
+        print(title._render())
+
+        menu = dvdauthor.Menu('This is a Menu', 'root')
+        menu.add_video_file('/tmp/ahuh.mpg', '0:50', 'inf')
+        menu.set_button_commands('jump cell 1')
+        menu.set_button_commands('jump cell 2', 'bigbutton')
+        print "XML output:"
+        print(menu._render())
+
+        titleset = dvdauthor.Titleset('This is a Titleset')
+        titleset.add_menu(menu)
+        titleset.add_title(title)
+        print "XML output:"
+        print(titleset._render())
+
+    def test_full_layout(self):
+        # Big blocks
+        
+        disc = dvdauthor.Disc('This is my whole DISC!')
+        
+        vmgm = dvdauthor.VMGM('This is a VMGM menu')
+
+        titleset1 = dvdauthor.Titleset('This is my first Titleset')
+        titleset2 = dvdauthor.Titleset('This is my second Titleset')
+
+        disc.set_vmgm(vmgm)
+        disc.add_titleset(titleset1)
+        disc.add_titleset(titleset2)
+
+        title1 = dvdauthor.Title('This is a title')
+        title2 = dvdauthor.Title('This is a second title')
+        title3 = dvdauthor.Title('This is my third title')
+
+        menu1 = dvdauthor.Menu('This is a first menu')
+        menu2 = dvdauthor.Menu('This is a second menu')
+        menu3 = dvdauthor.Menu('This is a third menu, in fact the VMGM one')
+
+        titleset1.add_menu(menu1) 
+        titleset1.add_title(title1)
+        titleset2.add_menu(menu2)
+        titleset2.add_title(title2)
+        titleset2.add_title(title3)
+
+        vmgm.add_menu(menu3)
+
+        
+
+        menu2.set_post_commands('jump titleset %s title %s' % (titleset2.id,
+                                                               title2.id)
+                                )
+
+        title1.add_video_file('/tmp/title1_video1.mpg')
+        title2.add_video_file('/tmp/title2_video1.mpg')
+        title3.add_video_file('/tmp/title3_video1.mpg')
+
+        # Test add video files after adding the menu to the Titleset
+        menu1.add_video_file('/tmp/menu1_video1.mpg')
+        menu2.add_video_file('/tmp/menu2_video1.mpg')
+        menu1.add_video_file('/tmp/menu1_video2.mpg')
+
+        self.assert_(len(titleset1.menus[0].videofiles) == 2)
+
+        print "XML output:"
+        print(disc.render_xml('/tmp/output-dir'))
+        
 
 if __name__ == '__main__':
     unittest.main()
