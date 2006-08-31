@@ -282,12 +282,13 @@ class Text (Layer):
     text -- UTF8 encoded string.
     """
     def __init__(self, text, color='white', fontsize=20, \
-                 font='Helvetica'):
+                 font='Helvetica', centered=False):
         Layer.__init__(self)
         self.text = text
         self.color = color
         self.fontsize = fontsize
         self.font = font
+        self.centered = centered
 
     def extents(self, drawing):
         """Get text extents with the specifies fonts, etc.."""
@@ -299,14 +300,6 @@ class Text (Layer):
 
         return ex
 
-    def center(self, drawing, (x,y)):
-        """Returns the (x,y) required for this text to be centered at the
-        given point."""
-        
-        (dx, dy, w, h, ax, ay) = self.extents(drawing)
-
-        return (x - w/2, y + h/2) 
-    
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
 
@@ -315,7 +308,7 @@ class Text (Layer):
         drawing.font(self.font)
         drawing.font_size(self.fontsize)
         self.draw_effects(drawing, frame)
-        drawing.text((0, 0), self.text)
+        drawing.text((0, 0), self.text, self.centered)
         drawing.pop()
 
 
