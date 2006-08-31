@@ -2,7 +2,6 @@
 # -=- encoding: latin-1 -=-
 import unittest
 import dvdauthor
-from pprint import pprint
 
 class TestDvdauthor(unittest.TestCase):
     """Test the pydvdauthor module"""
@@ -163,7 +162,7 @@ class TestDvdauthor(unittest.TestCase):
         menu = dvdauthor.Menu('this is a Menu')
         cmd1 = 'jump cell 1'
         menu.set_button_commands(cmd1, None)
-        cmd2 = 'jump cell 2'
+        cmd2 = 'jump cell 2<'
         menu.set_button_commands(cmd2, None)
         cmd3 = 'jump cell 3'
         menu.set_button_commands(cmd3, 'MyButton')
@@ -214,6 +213,31 @@ class TestDvdauthor(unittest.TestCase):
         print "XML output:"
         print(titleset._render())
 
+    def test_unused_menu(self):
+        disc = dvdauthor.Disc('This is Disc')
+        vmgm = dvdauthor.VMGM('Menu')
+        disc.set_vmgm(vmgm)
+
+        menu1 = dvdauthor.Menu('My menu')
+        menu2 = dvdauthor.Menu('Unused')
+        
+        vmgm.add_menu(menu1)
+
+        menu1.set_post_commands('jump f:%s' % menu2.id)
+
+        # Check for 'not having video files added'
+        self.assertRaises(ValueError, disc.render_xml, '/tmp/output')
+
+        menu1.add_video_file('/tmp/menu.mpg')
+        menu2.add_video_file('/tmp/menu2.mpg')
+
+        # Check for not having cleared references
+        self.assertRaises(ReferenceError, disc.render_xml, '/tmp/output-dir')
+
+        # Cleared references
+        vmgm.add_menu(menu2)
+        disc.render_xml('/tmp/output-dir')
+
     def test_full_layout(self):
         # Big blocks
         
@@ -235,6 +259,7 @@ class TestDvdauthor(unittest.TestCase):
         menu1 = dvdauthor.Menu('This is a first menu')
         menu2 = dvdauthor.Menu('This is a second menu')
         menu3 = dvdauthor.Menu('This is a third menu, in fact the VMGM one')
+        menu4 = dvdauthor.Menu('This is an unused menu')
 
         titleset1.add_menu(menu1) 
         titleset1.add_title(title1)
@@ -244,12 +269,8 @@ class TestDvdauthor(unittest.TestCase):
 
         vmgm.add_menu(menu3)
 
-        
-
         menu2.set_post_commands('jump titleset %s title %s' % (titleset2.id,
-                                                               title2.id)
-                                )
-
+                                                               title2.id))
         title1.add_video_file('/tmp/title1_video1.mpg')
         title2.add_video_file('/tmp/title2_video1.mpg')
         title3.add_video_file('/tmp/title3_video1.mpg')
@@ -258,8 +279,19 @@ class TestDvdauthor(unittest.TestCase):
         menu1.add_video_file('/tmp/menu1_video1.mpg')
         menu2.add_video_file('/tmp/menu2_video1.mpg')
         menu1.add_video_file('/tmp/menu1_video2.mpg')
+        menu3.add_video_file('/tmp/menu3_video1.mpg')
+
+        menu3.set_button_commands('jump f:%s' % title2.id)
+        menu3.set_button_commands('jump f:%s' % menu4.id,
+                                  'mybutton') # Unused menu that will break
 
         self.assert_(len(titleset1.menus[0].videofiles) == 2)
+
+        self.assertRaises(ReferenceError, disc.render_xml, '/tmp-output-dir')
+
+        # Resolv unused menu
+        menu3.set_button_commands('jump f:%s' % title1.id,
+                                  'mybutton')
 
         print "XML output:"
         print(disc.render_xml('/tmp/output-dir'))

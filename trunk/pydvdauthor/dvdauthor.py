@@ -45,6 +45,18 @@ When rendering, the engine will replace the IDs with the actual number values of
 the menus or titles you specified. This enables dynamic creation of DVD, and even
 'menu driven interactive DVD', without having to worry of the references if you
 change the order of your story, or insert a new title/titleset somewhere.
+
+Note you can also use a short form, which will expand to the full location of the
+menu/title:
+
+  command = "jump f:%s" %(mytitle.id)
+
+which will be expanded to:
+
+  "jump titleset 2 title 1"
+
+depending on where it's placed in the Disc hierarchy. Note the 'f:' in front of '%s',
+which stands for 'full addressing'.
 """
 
 import random # for random()
@@ -100,6 +112,8 @@ class Disc:
         """This functions scans the .xml file for any IDs, in the form:
         [ID:xxxxxxxx] and replaces it with the position of the title or
         titleset, for buttons referencing.
+
+        See set_pre_commands() for more information.
         """
         # TODO: Eventually, this could return a full location, in the form:
         #   titleset 2 title 1
@@ -115,24 +129,28 @@ class Disc:
 
             for j in range(0, len(t.menus)):
                 m = t.menus[j]
+                xml = xml.replace('f:%s' % m.id,
+                                  "titleset %d menu %d" % (i+1, j+1))
                 xml = xml.replace(m.id, str(j+1))
             for j in range(0, len(t.titles)):
                 l = t.titles[j]
+                xml = xml.replace('f:%s' % l.id,
+                                  "titleset %d title %d" % (i+1, j+1))
                 xml = xml.replace(l.id, str(j+1))
 
         if self.vmgm:
             v = self.vmgm
             
             for j in range(0, len(v.menus)):
-                m = t.menus[j]
+                m = v.menus[j]
+                xml = xml.replace('f:%s' % m.id,
+                                  "vmgm menu %d" % (j+1))
                 xml = xml.replace(m.id, str(j+1))
-            for j in range(0, len(v.titles)):
-                l = t.titles[j]
-                xml = xml.replace(l.id, str(j+1))
+            # No titles in a VMGM
             
         # Check if any unresolved IDs still exist, if so, raise error.
         if xml.find('[ID:') != -1:
-            raise Exception, "Unresolved menu reference in commands parsing. Have you added all your titles/menus to titlesets/vmgm structs ?"
+            raise ReferenceError, "Unresolved menu reference in commands parsing. Have you added all your titles/menus to titlesets/vmgm structs ?"
 
         return xml
 
@@ -394,7 +412,9 @@ class Title:
         See dvdauthor's man page for a detailed explanation of the language
         used herein.
 
-        commands -- this should be an array 
+        commands -- this is a string which contains commands and optionally
+                    location IDs (menu.id, title.id, titleset.id). Check module's
+                    documentation for example or the test suite.
         """
         self.pre_cmds = commands
 
@@ -407,6 +427,10 @@ class Title:
 
     def _render(self):
         """Render the XML portion for this Title"""
+
+        if not len(self.videofiles):
+            raise ValueError, 'VideoFiles needed for menu named: "%s"' % self.name
+        
         xml =  "<!-- %s: %s -->\n" % (self.__class__, self.name)
         
         # Deal with head
