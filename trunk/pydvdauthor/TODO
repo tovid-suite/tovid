@@ -1,0 +1,3 @@
+* Full replacement of the "titleset NO title NO" when rendering XML
+* Implement and document 'cell' usage. Where is the documentation of
+  that thing ?
