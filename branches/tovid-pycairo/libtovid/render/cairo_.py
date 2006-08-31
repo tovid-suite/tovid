@@ -853,11 +853,13 @@ class Drawing:
         # (Pixels or points?)
         self.cr.set_line_width(width)
     
-    def text(self, (x, y), text_string):
+    def text(self, (x, y), text_string, centered=False):
         """Draw the given text string.
 
             (x, y) -- lower-left corner position
             text_string -- utf8 encoded text string
+            centered -- if True, text_string will be centered at the
+                        given (x, y) coordinates.
 
         The text's color depends on the value set with color_text().
 
@@ -891,14 +893,16 @@ class Drawing:
             text_string = unicode(text_string.decode('latin-1'))
 
         self.cr.save()
+        self._go_text_color()
+        (dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
+        if centered:
+            x = x - w / 2
+            y = y + h / 2
         self.cr.move_to(x, y)
-        r,g,b = self.text_rgb
-        self.cr.set_source_rgba(r, g, b, self.text_alpha)
-        retval = self.cr.text_extents(text_string)
         self.cr.show_text(text_string)
         self.cr.restore()
 
-        return retval
+        return (dx, dy, w, h, ax, ay)
     
     def text_extents(self, text_string):
         """Returns the dimensions of the to-be-drawn text.
