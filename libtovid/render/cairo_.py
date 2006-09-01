@@ -1268,7 +1268,13 @@ if __name__ == '__main__':
     # Close out the Cairo rendering...
     drawing.pop()
 
-    print "Output to: /tmp/cairo.jpg"
-    drawing.save_jpg('/tmp/cairo.jpg')
+    # Test JPG output
+    #print "Output to: /tmp/cairo.jpg"
+    #drawing.save_jpg('/tmp/cairo.jpg')
+    
+    # Test PNG output
+    print "Output to: /tmp/cairo.png"
+    drawing.save_png('/tmp/cairo.png')
+    
     print "SECONDS: %f" % (time.time() - mytime)
 

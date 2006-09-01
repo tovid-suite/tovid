@@ -220,6 +220,8 @@ get_info ()
     # Use mplayer-reported length as a last resort (truncate floating-point)
     test -z $V_DURATION && V_DURATION=$(echo $ID_LENGTH | sed 's/\.[0-9]*//')
 
+    # TODO: WARN if video is less than one second!
+
     # Mplayer reports ac3 and mp2 incorrectly, so refer to numeric codes
     test "$ID_AUDIO_FORMAT" = "8192" && ID_AUDIO_CODEC="ac3"
     test "$ID_AUDIO_FORMAT" = "80" && ID_AUDIO_CODEC="mp2"
