@@ -17,7 +17,7 @@ result is:
 
 
 """
-__all__ = ['MediaFile', 'mplayer_identify']
+__all__ = ['MediaFile', 'mplayer_identify', 'AudioStream', 'VideoStream']
 
 # From standard library
 import os
@@ -30,6 +30,47 @@ from libtovid import standards
 
 log = Log('libtovid.media')
 
+
+class AudioStream:
+    """Stores information about an audio stream."""
+    def __init__(self, filename=''):
+        self.filename = abspath(filename)
+        self.codec = ''
+        self.bitrate = 0
+        self.channels = 0
+        self.samprate = 0
+
+    def display(self):
+        print "Audio stream(s) in %s" % self.filename
+        print "----------------------"
+        print "        Codec: %s" % self.codec
+        print "      Bitrate: %s" % self.bitrate
+        print "     Channels: %s" % self.channels
+        print "Sampling rate: %s" % self.samprate
+        print "----------------------"
+
+
+class VideoStream:
+    """Stores information about a video stream."""
+    def __init__(self, filename=''):
+        self.filename = abspath(filename)
+        self.codec = ''
+        self.width = 0
+        self.height = 0
+        self.fps = 0
+        self.bitrate = 0
+
+    def display(self):
+        print "Video stream in %s" % self.filename
+        print "----------------------"
+        print "      Codec: %s" % self.codec
+        print "      Width: %s" % self.width
+        print "     Height: %s" % self.height
+        print "  Framerate: %s" % self.fps
+        print "    Bitrate: %s" % self.bitrate
+        print "----------------------"
+
+
 class MediaFile:
     """Stores information about a file containing video and/or audio streams."""
     def __init__(self, filename=''):
@@ -39,6 +80,7 @@ class MediaFile:
             self.filename = ''
         self.audio = None
         self.video = None
+        self.length = 0.0
         self.frame_files = []
         # TODO: Replace hard-coded temp dir
         self.use_tempdir('/tmp')
@@ -58,7 +100,8 @@ class MediaFile:
             self.filename = abspath(filename)
         # Make sure the file exists
         if os.path.exists(self.filename):
-            self.audio, self.video = mplayer_identify(self.filename)
+            self.length, self.audio_num, self.audio, self.video = \
+                         mplayer_identify(self.filename)
         else:
             log.error("Couldn't find file: %s" % filename)
 
@@ -80,7 +123,7 @@ class MediaFile:
         self.frame_files = rip_frames(self.filename, self.tempdir, frames, size)
 
 
-    def encode_frames(self, imagedir, outfile, format, tvsys):
+    def encode_frames(self, imagedir, outfile, format, tvsys, ):
         """Convert an image sequence in imagedir to an .m2v video compliant
         with the given format and tvsys.
     
@@ -115,6 +158,9 @@ class MediaFile:
         print "=============================="
         print "MediaFile: %s" % self.filename
         print "=============================="
+        print "Audio channels: %d" % self.audio_num
+        print "Stream length: %f secs" % self.length
+        print "=============================="
         # Print audio stream info
         if self.audio:
             self.audio.display()
@@ -132,7 +178,9 @@ def mplayer_identify(filename):
     (audio, video) of AudioStream and VideoStream. None is returned for
     nonexistent audio or video streams."""
     audio = None
+    audio_num = 0
     video = None
+    length = 0.0
     mp_dict = {}
     # Use mplayer 
     cmd = 'mplayer "%s"' % filename
@@ -144,11 +192,13 @@ def mplayer_identify(filename):
             left, right = line.split('=')
             # Add entry to dictionary (stripping whitespace from argument)
             mp_dict[left] = right.strip()
+            if left == 'ID_AUDIO_ID':
+                audio_num += 1
     # Check for existence of streams
     if 'ID_VIDEO_ID' in mp_dict:
-        video = standards.VideoStream(filename)
+        video = VideoStream(filename)
     if 'ID_AUDIO_ID' in mp_dict:
-        audio = standards.AudioStream(filename)
+        audio = AudioStream(filename)
     # Parse the dictionary and set appropriate values
     for left, right in mp_dict.iteritems():
         log.debug('%s = %s' % (left, right))
@@ -174,6 +224,8 @@ def mplayer_identify(filename):
                 audio.samprate = int(right)
             elif left == "ID_AUDIO_NCH":
                 audio.channels = right
+        if left == 'ID_LENGTH':
+            length = float(right)
     # Fix mplayer's audio codec naming for ac3 and mp2
     if audio:
         if audio.format == "8192":
@@ -186,7 +238,7 @@ def mplayer_identify(filename):
             video.codec = "mpeg1"
         elif video.codec == "0x10000002":
             video.codec = "mpeg2"
-    return (audio, video)
+    return (length, audio_num, audio, video)
 
 
 def rip_frames(filename, out_dir, frames='all', size=(0, 0)):

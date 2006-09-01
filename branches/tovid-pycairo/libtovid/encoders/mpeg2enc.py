@@ -8,6 +8,8 @@ import os
 from libtovid.cli import Script, Arg
 from libtovid.utils import float_to_ratio
 from libtovid.log import Log
+from libtovid.encoders.common import *
+import libtovid.standards
 
 log = Log('libtovid.encoders.mpeg2enc')
 
@@ -44,6 +46,7 @@ def get_script(infile, options):
     
     # Filenames for intermediate streams (ac3/m2v etc.)
     # Appropriate suffix for audio stream
+    # TODO: use standards
     if options['format'] in ['vcd', 'svcd']:
         audiofile = '%s.mpa' % outname
     else:
@@ -95,13 +98,16 @@ def encode_video(infile, yuvfile, videofile, options):
     # corresp. to $VID_BITRATE, $MPEG2_QUALITY, $DISC_SIZE, etc.
     # Missing options (compared to tovid)
     # -S 700 -B 247 -b 2080 -v 0 -4 2 -2 1 -q 5 -H -o FILE
-    
+
+    # Arguments to the mpeg2enc command.
     cmd = Arg('mpeg2enc')
+    
     # TV system
     if options['tvsys'] == 'pal':
         cmd.add('-F', '3', '-n', 'p')
     elif options['tvsys'] == 'ntsc':
         cmd.add('-F', '4', '-n', 'n')
+
     # Format
     format = options['format']
     if format == 'vcd':
@@ -110,11 +116,14 @@ def encode_video(infile, yuvfile, videofile, options):
         cmd.add('-f', '4')
     elif 'dvd' in format:
         cmd.add('-f', '8')
+        
     # Aspect ratio
     if options['widescreen']:
         cmd.add('-a', '3')
     else:
         cmd.add('-a', '2')
+
+    # Output filename
     cmd.add('-o', videofile)
 
     # Adjust framerate if necessary
@@ -132,24 +141,6 @@ def encode_video(infile, yuvfile, videofile, options):
     cmd.read_from(yuvfile)
     return str(cmd)
 
-def encode_audio(infile, audiofile, options):
-    """Encode the audio stream in infile to the target format."""
-    if options['format'] in ['vcd', 'svcd']:
-        acodec = 'mp2'
-    else:
-        acodec = 'ac3'
-    cmd = Arg('ffmpeg')
-    # If infile was provided, encode it
-    if infile:
-        cmd.add('-i', infile.filename)
-    # Otherwise, generate 4-second silence
-    else:
-        cmd.add('-f', 's16le', '-i', '/dev/zero', '-t', '4')
-    cmd.add_raw('-ac 2 -ab 224')
-    cmd.add('-ar', options['samprate'])
-    cmd.add('-acodec', acodec)
-    cmd.add('-y', audiofile)
-    return str(cmd)
 
 def mplex_streams(vstream, astream, outfile, options):
     """Multiplex the audio and video streams."""
