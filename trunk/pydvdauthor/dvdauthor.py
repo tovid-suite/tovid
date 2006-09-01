@@ -4,6 +4,8 @@
 # Author: Alexandre Bourget <wackysalut@bourget.cc>
 # Copyright: 2006
 
+version = '0.1'
+
 """Module that implements a set of classes which aid in creation of a valid
 dvdauthor-formatted .xml file.
 
