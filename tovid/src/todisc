@@ -926,7 +926,7 @@ if $MENU_FADE && [[ -z "$BG_PIC" && -z "$BG_VIDEO" ]]; then
     THUMBS_FADE_IN_START_TIME=2.5
 fi
 # if more than one value for AUDIO_LANG, make sure they equal video #
-if [[ $AUDIOLANG &&  ${#FILES[@]} -ne ${#AUDIO_LANG[@]} &&  ${#AUDIO_LANG[@]} -ne 1 ]]; then
+if $AUDIOLANG &&  [[ ${#FILES[@]} -ne ${#AUDIO_LANG[@]} &&  ${#AUDIO_LANG[@]} -ne 1 ]]; then
     usage_error "Please give the same number of audio channels as videos.
     You gave ${#FILES[@]} video files and ${#AUDIO_LANG[@]} audio channel values"
 fi
@@ -1423,7 +1423,7 @@ if $SHOWCASE; then
             -background none $ROTATE $WAVE miff:-|
             convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
         elif [ "$SC_FRAMESTYLE" = "none" ]; then
-            FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" $SEEK -s $SHOWCASE_SIZE  -vframes 1 \
+            FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -ss 1 -s $SHOWCASE_SIZE  -vframes 1 \
             -vcodec png -an  -f rawvideo -y "$WORK_DIR/showcase_img.png")
             echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
             SED_VAR="frame="
@@ -1990,7 +1990,7 @@ fi
 # Store info about input files in an array
 for ((i=0; i<${#IN_FILES[@]}; i++)); do
     # use a nav_seek file and transcode if long seek
-    if [[ $SEEK_VAL -gt 450 || $SUB_MENU ]]; then
+    if [ $SEEK_VAL -gt 450 ] || $SUB_MENU ; then
         NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
         STATS_FRAMES="-frames 1"
         if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
