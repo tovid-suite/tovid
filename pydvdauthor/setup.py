@@ -11,7 +11,7 @@ setup(name="python-dvdauthor",
       maintainer="Alexandre Bourget",
       maintainer_email="wackysalut@bourget.cc",
       description='Python module for object-oriented dvdauthor .xml file creation',
-      url="http://",
+      url="http://tovid.wikia.com",
       license='GPL',
       py_modules=["dvdauthor"],
       )
