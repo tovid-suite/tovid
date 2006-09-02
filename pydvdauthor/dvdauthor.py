@@ -1,10 +1,8 @@
- #!/usr/bin/python
+#! /usr/bin/env python
 # -=- encoding: latin-1 -=-
 # License: GPL
 # Author: Alexandre Bourget <wackysalut@bourget.cc>
 # Copyright: 2006
-
-version = '0.1'
 
 """Module that implements a set of classes which aid in creation of a valid
 dvdauthor-formatted .xml file.
@@ -38,7 +36,7 @@ Title object. These are restrictions imposed by the dvdauthor software itself.
 Read the man pages for more details.
 
 Cross-referencing is done with IDs. Each object, be it Titleset, Menu, Title or
-VMGM, has it's own randomly-generated ID (stored in object.id). You must use these
+VMGM, has its own randomly-generated ID (stored in object.id). You must use these
 in the commands to jump from a title to another, or when you call a menu. Ex:
 
   command = "jump titleset %s title %s" % (mytitleset.id, thistitle.id)
@@ -60,6 +58,8 @@ which will be expanded to:
 depending on where it's placed in the Disc hierarchy. Note the 'f:' in front of '%s',
 which stands for 'full addressing'.
 """
+
+version = '0.1'
 
 import random # for random()
 import cgi    # for escape()
