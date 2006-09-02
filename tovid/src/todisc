@@ -135,6 +135,7 @@ CURVE_UPDATE=""
 SUBTITLES=false
 AUDIOLANG=false
 USER_BSTYLE=false
+SHOWCASE_SEEK_VAL=1
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -362,7 +363,7 @@ function spin()
 #EXPAND="expand=-6:-6,"
 function get_framed_pics()
 {
-mplayer -ss 5 -vo $VOUT -noconsolecontrols \
+mplayer -ss $MPLAYER_SEEK_VAL -vo $VOUT -noconsolecontrols \
 -vf ${EXPAND}rectangle=${FRAME_SIZE/x*}:${FRAME_SIZE/*x},rectangle=$(( ${FRAME_SIZE/x*} - D )):$(( ${FRAME_SIZE/*x} - D)),rectangle=$(( ${FRAME_SIZE/x*} - $((D * 2)) )):$(( ${FRAME_SIZE/*x} - $((D * 2)) )),rectangle=$(( ${FRAME_SIZE/x*} - $((D * 3)) )):$(( ${FRAME_SIZE/*x} - $((D * 3)) )) \
 -ao null -zoom -x ${FRAME_SIZE/x*} -y ${FRAME_SIZE/*x}  -frames $FRAMES "$1"
 }
@@ -563,7 +564,8 @@ while test $# -gt 0; do
             SMALLTHUMBS=:
             ;;
         "-showcase-framestyle" )
-            SC_FRAMESTYLE="glass"
+            shift
+            SC_FRAMESTYLE="$1"
             ;;
         "-thumb-shape" )
             shift
@@ -709,9 +711,13 @@ while test $# -gt 0; do
             ;;
         "-seek" )
             shift
-            SEEK_VAL="$1"
-            SEEK="-ss $SEEK_VAL"
+            SEEK_VAL=( $1 )
             ;;
+        "-showcase-seek" )
+            shift
+            SHOWCASE_SEEK_VAL="$1"
+            ;;
+
         "-tovidopts" )
             shift
             TOVID_OPTS="$1"
@@ -794,7 +800,7 @@ yecho
 # remove symlink in /tmp if there is one (shouldn't be)
 if test -h "$WORK_DIR"; then
     echo -n "Removing existing symlink in /tmp . . . "
-    rm -fv /tmp/todisc-work*
+    rm -fv "$WORK_DIR"
 fi
 
 # Clean out any existing WORK_DIR
@@ -930,8 +936,18 @@ if $AUDIOLANG &&  [[ ${#FILES[@]} -ne ${#AUDIO_LANG[@]} &&  ${#AUDIO_LANG[@]} -n
     usage_error "Please give the same number of audio channels as videos.
     You gave ${#FILES[@]} video files and ${#AUDIO_LANG[@]} audio channel values"
 fi
-# translate SEEK into frames for transcode
-SEEK_FRAMES=$(awk_math $SEEK_VAL times $FRAME_RATE)
+# if only one seek value, then use for all videos
+if [ ${#SEEK_VAL[@]} -eq 1 ]; then
+    for ((i=0; i<=NUM_FILES; i++)); do
+        SEEK_VAL[i]=${SEEK_VAL[0]}
+        SEEK[i]="-ss ${SEEK_VAL[i]}" # create seek value for each video
+    done
+fi
+#create seek value for each video
+for ((i=0; i<=NUM_FILES; i++)); do
+    # translate SEEK_VAL into frames for transcode
+    SEEK_FRAMES[i]=$(awk_math ${SEEK_VAL[i]} times $FRAME_RATE)
+done
 echo 
 echo "Verifying that input files are video files"
 for ((i=0; i<=NUM_FILES; i++)); do
@@ -1013,11 +1029,14 @@ if $ANI_SUB_MENU; then
         yecho "  -submenu-audio-fade $SM_FADE second(s)"
     fi
 fi
-yecho "  -seek $SEEK_VAL second(s)"
+for ((i=0; i<=NUM_FILES; i++)); do
+    echo -n "Video $((i+1)):"
+    echo -n "  -seek ${SEEK_VAL[i]} second(s)"
+    echo "  -chapters ${CHAPTERS[i]}"
+done
 if [ ! $STATIC ]; then
     yecho "  -menu-audio-fade $FADE second(s)"
 fi
-yecho "  -chapters ${CHAPTERS[@]}"
 yecho
 
 
@@ -1409,13 +1428,14 @@ if $SHOWCASE; then
             OUT="$WORK_DIR/showcase_img.png"
             VOUT="png:z=7"; FRAMES=30
             FRAME_SIZE=$SHOWCASE_SIZE
-            get_framed_pics "$SHOWCASE_VIDEO" >> "$LOG_FILE" 2>&1
+            MPLAYER_SEEK_VAL=$SHOWCASE_SEEK_VAL
             echo "Using mplayer to get framed images from the showcase video"
-            echo "Running: mplayer -vo $VOUT \
+            echo "Running: mplayer -ss $MPLAYER_SEEK_VAL -vo $VOUT \
             -vf expand=-5:-5,rectangle=384:256,rectangle=382:254,rectangle=380:252,rectangle=378:250 \
             -ao null -zoom -x 384 -y 256  -ss 0:0:05 -frames $FRAMES "$SHOWCASE_VIDEO"" |
             format_output | tee -a "$LOG_FILE"
             echo
+            get_framed_pics "$SHOWCASE_VIDEO" >> "$LOG_FILE" 2>&1
             
             mv -v "$WORK_DIR"/00000025.png "$OUT"
             rm -f "$WORK_DIR"/00000*.png
@@ -1423,8 +1443,9 @@ if $SHOWCASE; then
             -background none $ROTATE $WAVE miff:-|
             convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
         elif [ "$SC_FRAMESTYLE" = "none" ]; then
-            FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -ss 1 -s $SHOWCASE_SIZE  -vframes 1 \
-            -vcodec png -an  -f rawvideo -y "$WORK_DIR/showcase_img.png")
+            FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -ss $SHOWCASE_SEEK_VAL \
+            -s $SHOWCASE_SIZE  -vframes 1 -vcodec png -an -f rawvideo -y \
+            "$WORK_DIR/showcase_img.png")
             echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
             SED_VAR="frame="
             if "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
@@ -1458,8 +1479,8 @@ fi
 # create the preview images
 for ((i=0; i<=NUM_FILES; i++)) ; do
     # use a nav_seek file if long seek
-    if [ $SEEK_VAL -gt 450 ]; then
-        NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
+    if [ ${SEEK_VAL[i]} -gt 450 ]; then
+        NAVSEEK[i]="--nav_seek "$WORK_DIR/nav${i}_log""
         NAVSEEK_CMD=(nice tcdemux -d 24 -f $FRAME_RATE -W -i "${IN_FILES[i]}")
         run_navseek()
         {   
@@ -1479,31 +1500,31 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
     fi
     if ! $NOASK; then
         echo
-        echo "[$i of $NUM_FILES] Seeking to $SEEK_VAL seconds in ${IN_FILES[i]}"
+        echo "[$i of $NUM_FILES] Seeking to ${SEEK_VAL[i]} seconds in ${IN_FILES[i]}"
     fi
     TRANSCODE_CMD=(transcode -q 1 -i "${IN_FILES[i]}" \
-    -c $SEEK_FRAMES-$((SEEK_FRAMES + 1)) $NAVSEEK \
+    -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + 1)) ${NAVSEEK[i]} \
     -o $WORK_DIR/pics/$i/ -f 29.970  -Z $THUMB_SIZE $EXPORT)
 
-    FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" -an -ss 1 -vframes 1 \
+    FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" -an -ss ${SEEK_VAL[i]} -vframes 1 \
     -s $THUMB_SIZE $WORK_DIR/pics/$i/%06d.$IMG_FMT)
-    echo -e "\nRunning: "${TRANSCODE_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
     SED_VAR="frame="
     if $NOASK; then
         CMD=( "${FFMPEG_CMD[@]}" )
     else
         CMD=( "${TRANSCODE_CMD[@]}" )
     fi
+    echo -e "\nRunning: "${CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
     VOUT="png:z=7"; FRAMES=30
     FRAME_SIZE=$THUMB_SIZE
     D=2
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
+        MPLAYER_SEEK_VAL=${SEEK_VAL[i]}
         get_framed_pics "${IN_FILES[i]}"  >> "$LOG_FILE" 2>&1
-        mv -fv $WORK_DIR/$(printf "%08d%s"  25 .png) \
-        $WORK_DIR/pics/$i/$(printf "%06d%s"  0 .png).$IMG_FMT
+        mv -fv $WORK_DIR/$(printf "%08d%s"  25 .$IMG_FMT) \
+        $WORK_DIR/pics/$i/$(printf "%06d%s"  0 .$IMG_FMT)
         rm -f "$WORK_DIR"/00000*.png
-    elif 
-    [ "$SC_FRAMESTYLE" = "none" ]; then
+    elif [ "$SC_FRAMESTYLE" = "none" ]; then
         if "${CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
             cleanlog 3
         else
@@ -1990,11 +2011,10 @@ fi
 # Store info about input files in an array
 for ((i=0; i<${#IN_FILES[@]}; i++)); do
     # use a nav_seek file and transcode if long seek
-    if [ $SEEK_VAL -gt 450 ] || $SUB_MENU ; then
-        NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
+    if [ ${SEEK_VAL[i]} -gt 450 ] || $SUB_MENU; then
         STATS_FRAMES="-frames 1"
         if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
-            NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
+            NAVSEEK[i]="--nav_seek "$WORK_DIR/nav${i}_log""
             NAVSEEK_CMD=(nice tcdemux -d 24 -f $FRAME_RATE -W -i "${IN_FILES[i]}")
             run_navseek()
             {
@@ -2013,12 +2033,14 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
             length=( ${length[@]} $(( $(awk '{ field = $2 }; END{ print field }' \
             "$WORK_DIR/nav${i}_log") + 1)) )
         fi 
-    echo
-    echo "Getting stats on "${IN_FILES[i]}""
-    mencoder_stats=("${mencoder_stats[@]}" \
-    "$(mencoder -quiet "${IN_FILES[i]}" -oac pcm -ovc copy \
-    $STATS_FRAMES -o /dev/null 2>&1)")
+    else
+        echo
+        echo "Getting stats on "${IN_FILES[i]}""
+        mencoder_stats=("${mencoder_stats[@]}" \
+        "$(mencoder -quiet "${IN_FILES[i]}" -oac pcm -ovc copy \
+        $STATS_FRAMES -o /dev/null 2>&1)")
     fi
+    unset NAVSEEK_CMD
 done
 # put in the log file in case anyone is interested
 for ((i=0; i<${#IN_FILES[@]}; i++)); do
@@ -2076,12 +2098,12 @@ done
 # if animated submenu check if videos are long enough for the # of chapters
 if $ANI_SUB_MENU; then
     for ((i=0; i<=NUM_FILES; i++)); do
-        S=$(awk_math $SEEK_VAL times $FRAME_RATE)
+        S=$(awk_math ${SEEK_VAL[i]} times $FRAME_RATE)
         F=$(awk_math  "${CHAPTERS[i]}" times 340 )
         V=$(awk_math "${VID_LEN[i]}" times $FRAME_RATE)
         if [ $((V - S)) -le $F ] ; then
             echo "Sorry, you can not use ${CHAPTERS[i]} chapters for ${IN_FILES[i]}"
-            echo "The maximum number for this video (using a -seek of $SEEK_VAL):"
+            echo "The maximum number for this video (using a -seek of ${SEEK_VAL[i]}):"
             echo "$(awk_math $((V - S)) by 340) chapters" 
             exit 1
         fi 
@@ -2090,7 +2112,7 @@ if $ANI_SUB_MENU; then
 fi
 # allow animated menus of length of longest video
 MAX_ANI_LENGTH=$(awk_math $FRAME_RATE times $ANI_MENU_LENGTH)
-MAX_VAL_FRAMES="$(($MAX_VAL * 30))"
+MAX_VAL_FRAMES="$((MAX_VAL * 30))"
 if [ $MAX_VAL_FRAMES -lt $MAX_ANI_LENGTH ]; then
     MAX_ANI_LENGTH=$MAX_VAL_FRAMES
 fi
@@ -2123,6 +2145,7 @@ if [ "$SC_FRAMESTYLE" = "glass" ]; then
         echo "Using mplayer to get framed images from "${IN_FILES[i]}""
         OUT=$WORK_DIR/pics/$i
         echo "Working on "${IN_FILES[i]}""
+        MPLAYER_SEEK_VAL=${SEEK_VAL[i]}
         get_framed_pics "${IN_FILES[i]}"   >> "$LOG_FILE" 2>&1
         echo
         for ((p=1; p<=$FRAMES; p++)); do
@@ -2135,7 +2158,7 @@ else
         echo "Working on "${IN_FILES[i]}""
         TRANSCODE_CMD2=(nice transcode --print_status 340 \
         --write_pid /tmp/tcode.pid -q 1 -i "${IN_FILES[i]}" \
-        -c $SEEK_FRAMES-$((SEEK_FRAMES + $FRAMES)) $NAVSEEK \
+        -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + $FRAMES)) ${NAVSEEK[i]} \
         -o "$WORK_DIR/pics/$i/" -f $FRAME_RATE  -Z $THUMB_SIZE $EXPORT)
 
                 function run_transcode()
@@ -2431,18 +2454,18 @@ if $SUB_MENU; then
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
             "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "$WORK_DIR/nav${i}_log"
         fi
-        NAVSEEK="--nav_seek "$WORK_DIR/nav${i}_log""
+        NAVSEEK[i]}="--nav_seek "$WORK_DIR/nav${i}_log""
         yecho
         yecho "Creating $TOTAL_JPEGS chapter images for "${IN_FILES[i]}""
         yecho
         for t in "${cmd[@]}"; do
             echo "Running nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
-            $NAVSEEK -o $WORK_DIR/submenu/ \
+            ${NAVSEEK[i]} -o $WORK_DIR/submenu/ \
             -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null" |
             sed 's/    */ /g'|sed -e "s/^ *//"|tee -a "$LOG_FILE"
 
             TCODE_CMD=(nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
-            $NAVSEEK -o "${PICS_OUT[@]}" \
+            ${NAVSEEK[i]} -o "${PICS_OUT[@]}" \
             -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null)
             function run_transcode()
             {
@@ -2747,6 +2770,7 @@ if [ -n "$SHOWCASE_VIDEO" ]; then
         D=2
         FRAME_SIZE=$SHOWCASE_SIZE
         VOUT="png:z=7"
+        MPLAYER_SEEK_VAL=$SHOWCASE_SEEK_VAL
         get_framed_pics "$SHOWCASE_VIDEO"  >> "$LOG_FILE" 2>&1
         for ((i=1; i<=$FIND_FRAMES; i++)); do
             mv  "$WORK_DIR"/$(printf "%08d%s"  $i .png) \
@@ -2754,8 +2778,8 @@ if [ -n "$SHOWCASE_VIDEO" ]; then
         done
     elif [ "$SC_FRAMESTYLE" = "none" ]; then
         FIND_FRAMES=FRAMES # ffmpeg starts at 0
-        FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -s $SHOWCASE_SIZE  -vframes $FRAMES \
-        -an  -y "$WORK_DIR/showcase/%06d.png")
+        FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -ss $SHOWCASE_SEEK_VAL \
+        -s $SHOWCASE_SIZE -vframes $FRAMES -an -y "$WORK_DIR/showcase/%06d.png")
         echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
         SED_VAR="frame="
         if "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
@@ -2780,7 +2804,7 @@ if [ -n "$SHOWCASE_VIDEO" ]; then
             SC_CMD3=(convert - -resize $SHOWCASE_SIZE! "$pic")
             # if glass and either wave or rotate
             if [ "$SC_FRAMESTYLE" = "glass" ] && [[ -n "$WAVE" || -n "$ROTATE" ]]; then
-                "${SC_CMD1[@]}" miff:- | "${SC_CMD2[@]}" miff:- | "${SC_CMD3[@]}"
+                "${SC_CMD1[@]}" miff:- | "${SC_CMD3[@]}"
             # if glass and neither wave or rotate
             elif [ "$SC_FRAMESTYLE" = "glass" ] && [[ -z "$WAVE" || -z "$ROTATE" ]]; then
                 :
