@@ -1,5 +1,6 @@
-#!/usr/bin/python
+#! /usr/bin/env python
 # -=- encoding: latin-1 -=-
+
 import unittest
 import dvdauthor
 
@@ -192,26 +193,26 @@ class TestDvdauthor(unittest.TestCase):
     def test_menu_entry(self):
         self.assertRaises(KeyError, dvdauthor.Menu, 'create this menu', 'bad_entry_point')
 
-    def _test_childobj_render(self):
+    def _test_childobj_xml(self):
         title = dvdauthor.Title('This is my title')
         title.add_video_file('/tmp/ahuh.mpg', '0:50', 'inf')
         title.add_video_file('/tmp/ahuh1.mpg', None, '14')
         title.add_video_file('/tmp/gogo.mpg')
         print "XML output:"
-        print(title._render())
+        print title._xml()
 
         menu = dvdauthor.Menu('This is a Menu', 'root')
         menu.add_video_file('/tmp/ahuh.mpg', '0:50', 'inf')
         menu.set_button_commands('jump cell 1')
         menu.set_button_commands('jump cell 2', 'bigbutton')
         print "XML output:"
-        print(menu._render())
+        print menu._xml()
 
         titleset = dvdauthor.Titleset('This is a Titleset')
         titleset.add_menu(menu)
         titleset.add_title(title)
         print "XML output:"
-        print(titleset._render())
+        print titleset._xml()
 
     def test_unused_menu(self):
         disc = dvdauthor.Disc('This is Disc')
@@ -226,17 +227,17 @@ class TestDvdauthor(unittest.TestCase):
         menu1.set_post_commands('jump f:%s' % menu2.id)
 
         # Check for 'not having video files added'
-        self.assertRaises(ValueError, disc.render_xml, '/tmp/output')
+        self.assertRaises(ValueError, disc.xml, '/tmp/output')
 
         menu1.add_video_file('/tmp/menu.mpg')
         menu2.add_video_file('/tmp/menu2.mpg')
 
         # Check for not having cleared references
-        self.assertRaises(ReferenceError, disc.render_xml, '/tmp/output-dir')
+        self.assertRaises(ReferenceError, disc.xml, '/tmp/output-dir')
 
         # Cleared references
         vmgm.add_menu(menu2)
-        disc.render_xml('/tmp/output-dir')
+        disc.xml('/tmp/output-dir')
 
     def test_full_layout(self):
         # Big blocks
@@ -287,14 +288,14 @@ class TestDvdauthor(unittest.TestCase):
 
         self.assert_(len(titleset1.menus[0].videofiles) == 2)
 
-        self.assertRaises(ReferenceError, disc.render_xml, '/tmp-output-dir')
+        self.assertRaises(ReferenceError, disc.xml, '/tmp-output-dir')
 
         # Resolv unused menu
         menu3.set_button_commands('jump f:%s' % title1.id,
                                   'mybutton')
 
         print "XML output:"
-        print(disc.render_xml('/tmp/output-dir'))
+        print disc.xml('/tmp/output-dir')
         
 
 if __name__ == '__main__':
