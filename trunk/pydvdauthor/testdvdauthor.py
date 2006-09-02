@@ -123,16 +123,16 @@ class TestDvdauthor(unittest.TestCase):
         self.assert_(y == (x+1), "VMGM.add_subpicture_lang() should add "\
                      "the audio_lang to self.subpictures")
 
-    def test_add_videofile(self):
+    def test_add_video_file(self):
         title = dvdauthor.Title('This is my Title')
 
-        x = len(title.videofiles)
+        x = len(title.video_files)
         title.add_video_file('thisfile.mpg')
-        y = len(title.videofiles)
+        y = len(title.video_files)
 
         # Make sure it's really added.
         self.assert_(y == (x+1), "Title.add_video_file() should add "\
-                     "the file,chapters,pause to self.videofiles")
+                     "the file,chapters,pause to self.video_files")
 
     def test_add_cell(self):
         title = dvdauthor.Title('This is my Title')
@@ -286,7 +286,7 @@ class TestDvdauthor(unittest.TestCase):
         menu3.set_button_commands('jump f:%s' % menu4.id,
                                   'mybutton') # Unused menu that will break
 
-        self.assert_(len(titleset1.menus[0].videofiles) == 2)
+        self.assert_(len(titleset1.menus[0].video_files) == 2)
 
         self.assertRaises(ReferenceError, disc.xml, '/tmp-output-dir')
 
