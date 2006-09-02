@@ -388,7 +388,7 @@ class Title:
         self.entry = None # shouldn't change if we're still a Title obj.
         self.buttons = [] # idem.
 
-    def add_video_files(self, file, chapters=None, pause=None):
+    def add_video_file(self, file, chapters=None, pause=None):
         """Add a .vob (or .mpg) file to the Title.
         """
         self.video_files.append({'file': file, 'chapters': chapters,
