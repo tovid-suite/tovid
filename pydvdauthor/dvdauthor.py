@@ -87,7 +87,7 @@ class Disc:
         """Add the Titleset"""
         self.titlesets.append(titleset)
 
-    def render_xml(self, output_dir):
+    def xml(self, output_dir='dvd'):
         """Return XML file as a string
 
         output_dir -- specifies where to output the project
@@ -99,10 +99,10 @@ class Disc:
 
         # Deal with VMGM
         if self.vmgm:
-            xml += _indent(2, self.vmgm._render())
+            xml += _indent(2, self.vmgm._xml())
         # Deal with Titlesets
         for titleset in self.titlesets:
-            xml += _indent(2, titleset._render())
+            xml += _indent(2, titleset._xml())
 
         xml += '</dvdauthor>\n'
 
@@ -164,10 +164,10 @@ class Disc:
         output_dir -- specifies where to output the project
         xml_file -- specifies the location of the output xml file
 
-        This function calls render_xml()
+        This function calls xml()
         """
         f = open(xml_file, 'w')
-        f.write(self.render_xml(output_dir))
+        f.write(self.xml(output_dir))
         f.close()
         os.system('dvdauthor -x "%s"' % xml_file)
 
@@ -249,8 +249,8 @@ class Titleset:
         """
         self.audio_langs.append(_verify_lang(lang))
 
-    def _render(self, block='titleset'):
-        """Render the XML portion for this Titleset"""
+    def _xml(self, block='titleset'):
+        """Return the dvdauthor XML string for this Titleset."""
         xml = '<!-- %s: %s -->\n' % (self.__class__, self.name)
 
         xml += '<%s>\n' % block
@@ -272,7 +272,7 @@ class Titleset:
                 xml += '    <subpicture lang="%s" />\n' % subpicture
             # List all menus
             for menu in self.menus:
-                xml += _indent(4, menu._render())
+                xml += _indent(4, menu._xml())
 
             xml += '  </menus>\n'
 
@@ -292,7 +292,7 @@ class Titleset:
             #    xml += '    <subpicture lang="%s" />\n' % subpicture
             # List all titles
             for title in self.titles:
-                xml += _indent(4, title._render())
+                xml += _indent(4, title._xml())
 
             xml += '  </titles>\n'
 
@@ -353,11 +353,11 @@ class VMGM(Titleset):
         """
         self.subpictures.append(_verify_lang(lang))
 
-    def _render(self):
-        """Render the XML portion for this VMGM struct"""
+    def _xml(self):
+        """Return the dvdauthor XML string for this VMGM."""
         # Use the Titleset rendering engine, which does the job for both
         # of us (VMGM and Titleset)
-        return Titleset._render(self, 'vmgm')
+        return Titleset._xml(self, 'vmgm')
 
         
 
@@ -381,17 +381,17 @@ class Title:
         self.id = _gen_id()
         self.name = name
         self.pause = pause
-        self.videofiles = []
+        self.video_files = []
         self.cells = []
         self.pre_cmds = None
         self.post_cmds = None
         self.entry = None # shouldn't change if we're still a Title obj.
         self.buttons = [] # idem.
 
-    def add_video_file(self, file, chapters=None, pause=None):
+    def add_video_files(self, file, chapters=None, pause=None):
         """Add a .vob (or .mpg) file to the Title.
         """
-        self.videofiles.append({'file': file, 'chapters': chapters,
+        self.video_files.append({'file': file, 'chapters': chapters,
                                 'pause': pause})
 
     def add_cell(self, start_stamp, end_stamp, chapter=False, program=False,
@@ -427,11 +427,11 @@ class Title:
         """
         self.post_cmds = commands
 
-    def _render(self):
-        """Render the XML portion for this Title"""
+    def _xml(self):
+        """Return the dvdauthor XML string for this Title."""
 
-        if not len(self.videofiles):
-            raise ValueError, 'VideoFiles needed for menu named: "%s"' % self.name
+        if not len(self.video_files):
+            raise ValueError, 'VideoFiles needed for Title named: "%s"' % self.name
         
         xml =  "<!-- %s: %s -->\n" % (self.__class__, self.name)
         
@@ -448,7 +448,7 @@ class Title:
             xml += "  <pre> %s </pre>\n" % _xmlentities(self.pre_cmds)
             
         # Deal with all vob files
-        for videofile in self.videofiles:
+        for videofile in self.video_files:
             add = ''
             if videofile['chapters'] != None:
                 add += ' chapters="%s"' % videofile['chapters']
@@ -480,14 +480,14 @@ class Menu(Title):
 
     def __init__(self, name=None, entry=None, pause=None):
         """Create a Menu instance.
-
+        
         name -- Just a name for you to remember. It will be inserted as a comment
                 in the .XML file
         entry -- one of:
                       root, subtitle, audio, angle, ptt
-                 if you intent to add it to a Titleset object, or one of:
+                 if you intend to add it to a Titleset object, or one of:
                       title
-                 if you intent to add it to a VMGM object.
+                 if you intend to add it to a VMGM object.
         pause -- See the Title.__init__() documentation
         """
         Title.__init__(self, name, pause)
@@ -525,9 +525,9 @@ class Menu(Title):
                 self.buttons.append([button, commands])
 
 
-    def _render(self):
-        """Render the XML portion for this Menu"""
-        return Title._render(self)
+    def _xml(self):
+        """Return the dvdauthor XML string for this Menu."""
+        return Title._xml(self)
 
 
 ###
@@ -536,16 +536,15 @@ class Menu(Title):
 
 
 def _xmlentities(text):
-    """Escape all characters from the incoming text that would break the
-    xml syntax, like >, <, etc...
-    """
+    """Return the given text with <, >, and & characters escaped (replaced
+    by corresponding SGML entities)."""
     return cgi.escape(text)
 
-def _indent(level, text):
-    """Indents each line by 'level' spaces"""
+def _indent(spaces, text):
+    """Indents each line in the text by the given number of spaces"""
     new_text = ''
-    for ln in text.splitlines():
-        new_text += (' ' * level) + ln + "\n"
+    for line in text.splitlines():
+        new_text += (' ' * spaces) + line + "\n"
     return new_text
 
 
@@ -574,8 +573,6 @@ def _verify_lang(lang):
 
 ############################### DATA ################################
 
-
-###
 ### Language codes definitions, from:
 ### http://sunsite.berkeley.edu/amher/iso_639.html
 ###
