@@ -220,8 +220,13 @@ to decrease font size with the **-menu-fontsize** option. For example:
     Color of mist behind thumbnails
 : -thumb-text-color COLOR (or -thumb-text-colour COLOR)
      Color to use for the thumb titles (see -title-color)
-: -seek NUM
+: -seek NUM | "NUM1 NUM2 NUM3 . . ."
      Seek to NUM seconds before generating thumbnails (default: 1.0 seconds)
+     If a quoted string of values matching the number of videos is used, then
+     each video can use a different seek value
+: -showcase-seek NUM
+     Seek to NUM seconds before generating thumbnails for showcase video
+     (default: 1.0 seconds)
 : -tile3x1
      Use a montage tile of 3x1 instead of the usual 2x2 for 3 videos
      ie.  [movie1] [movie2] [movie3] instead of
