@@ -240,63 +240,67 @@ class TestDvdauthor(unittest.TestCase):
         disc.xml('/tmp/output-dir')
 
     def test_full_layout(self):
-        # Big blocks
-        
+        """Test a complete disc project with titlesets and menus."""
+        # The disc
         disc = dvdauthor.Disc('This is my whole DISC!')
         
-        vmgm = dvdauthor.VMGM('This is a VMGM menu')
-
-        titleset1 = dvdauthor.Titleset('This is my first Titleset')
-        titleset2 = dvdauthor.Titleset('This is my second Titleset')
-
+        # Top-level menu with two buttons
+        topmenu = dvdauthor.Menu('Top Menu')
+        topmenu.add_video_file('/tmp/topmenu.mpg')
+        # The VMGM containing the top-level menu
+        vmgm = dvdauthor.VMGM('Video Manager menu (VMGM)')
+        vmgm.add_menu(topmenu)
+        # Two titlesets to be included on disc
+        titleset1 = dvdauthor.Titleset('First Titleset')
+        titleset2 = dvdauthor.Titleset('Second Titleset')
+        
+        # Add the VMGM and titlesets to the disc
         disc.set_vmgm(vmgm)
         disc.add_titleset(titleset1)
         disc.add_titleset(titleset2)
-
-        title1 = dvdauthor.Title('This is a title')
-        title2 = dvdauthor.Title('This is a second title')
-        title3 = dvdauthor.Title('This is my third title')
-
-        menu1 = dvdauthor.Menu('This is a first menu')
-        menu2 = dvdauthor.Menu('This is a second menu')
-        menu3 = dvdauthor.Menu('This is a third menu, in fact the VMGM one')
-        menu4 = dvdauthor.Menu('This is an unused menu')
-
+        
+        # A menu consisting of two video files
+        menu1 = dvdauthor.Menu('First Menu')
+        menu1.add_video_file('/tmp/menu1A.mpg')
+        menu1.add_video_file('/tmp/menu1B.mpg')
+        # A title that will be included on the disc
+        title1 = dvdauthor.Title('First Title')
+        title1.add_video_file('/tmp/title1.mpg')
+        # Add menu and title to the first titleset
         titleset1.add_menu(menu1) 
         titleset1.add_title(title1)
+        
+        # Two more titles to be included on the disc
+        title2 = dvdauthor.Title('Second Title')
+        title2.add_video_file('/tmp/title2.mpg')
+        title3 = dvdauthor.Title('Third Title')
+        title3.add_video_file('/tmp/title3.mpg')
+        # A menu with 'post' commands
+        menu2 = dvdauthor.Menu('Second Menu')
+        menu2.set_post_commands('jump titleset %s title %s' % (titleset2.id,
+                                                               title2.id))
+        menu2.add_video_file('/tmp/menu2.mpg')
+        # Add menu and titles to second titleset
         titleset2.add_menu(menu2)
         titleset2.add_title(title2)
         titleset2.add_title(title3)
 
-        vmgm.add_menu(menu3)
+        # An unused menu
+        menu3 = dvdauthor.Menu('Third (unused) Menu')
 
-        menu2.set_post_commands('jump titleset %s title %s' % (titleset2.id,
-                                                               title2.id))
-        title1.add_video_file('/tmp/title1_video1.mpg')
-        title2.add_video_file('/tmp/title2_video1.mpg')
-        title3.add_video_file('/tmp/title3_video1.mpg')
-
-        # Test add video files after adding the menu to the Titleset
-        menu1.add_video_file('/tmp/menu1_video1.mpg')
-        menu2.add_video_file('/tmp/menu2_video1.mpg')
-        menu1.add_video_file('/tmp/menu1_video2.mpg')
-        menu3.add_video_file('/tmp/menu3_video1.mpg')
-
-        menu3.set_button_commands('jump f:%s' % title2.id)
-        menu3.set_button_commands('jump f:%s' % menu4.id,
-                                  'mybutton') # Unused menu that will break
-
+        # Add jump commands to top menu
+        topmenu.set_button_commands('jump f:%s' % title2.id)
+        topmenu.set_button_commands('jump f:%s' % menu3.id,
+                                    'mybutton') # Unused menu that will break
+        
         self.assert_(len(titleset1.menus[0].video_files) == 2)
-
         self.assertRaises(ReferenceError, disc.xml, '/tmp-output-dir')
 
-        # Resolv unused menu
-        menu3.set_button_commands('jump f:%s' % title1.id,
-                                  'mybutton')
+        # Resolve unused menu
+        topmenu.set_button_commands('jump f:%s' % title1.id, 'mybutton')
 
         print "XML output:"
         print disc.xml('/tmp/output-dir')
-        
 
 if __name__ == '__main__':
     unittest.main()

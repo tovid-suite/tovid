@@ -36,18 +36,19 @@ Title object. These are restrictions imposed by the dvdauthor software itself.
 Read the man pages for more details.
 
 Cross-referencing is done with IDs. Each object, be it Titleset, Menu, Title or
-VMGM, has its own randomly-generated ID (stored in object.id). You must use these
-in the commands to jump from a title to another, or when you call a menu. Ex:
+VMGM, has its own randomly-generated ID (stored in object.id). You must use
+these in the commands to jump from a title to another, or when you call a menu,
+for example:
 
   command = "jump titleset %s title %s" % (mytitleset.id, thistitle.id)
 
 When rendering, the engine will replace the IDs with the actual number values of
-the menus or titles you specified. This enables dynamic creation of DVD, and even
-'menu driven interactive DVD', without having to worry of the references if you
-change the order of your story, or insert a new title/titleset somewhere.
+the menus or titles you specified. This enables dynamic creation of DVD, and
+even 'menu driven interactive DVD', without having to worry of the references
+if you change the order of your story, or insert a new title/titleset somewhere.
 
-Note you can also use a short form, which will expand to the full location of the
-menu/title:
+Note you can also use a short form, which will expand to the full location of
+the menu/title:
 
   command = "jump f:%s" %(mytitle.id)
 
@@ -55,8 +56,8 @@ which will be expanded to:
 
   "jump titleset 2 title 1"
 
-depending on where it's placed in the Disc hierarchy. Note the 'f:' in front of '%s',
-which stands for 'full addressing'.
+depending on where it's placed in the Disc hierarchy. Note the 'f:' in front of
+'%s', which stands for 'full addressing'.
 """
 
 version = '0.1'
@@ -74,8 +75,8 @@ class Disc:
     def __init__(self, name=None):
         """Highest level object, which includes all others.
 
-        name -- Just a name for you to remember. It will be inserted as a comment
-                in the .XML file
+        name -- Just a name for you to remember. It will be inserted as a
+                comment in the .XML file
         """
         self.id = _gen_id()
         self.titlesets = []
@@ -204,8 +205,8 @@ class Titleset:
     def __init__(self, name=None):
         """Create a Titleset instance.
 
-        name -- Just a name for you to remember. It will be inserted as a comment
-                in the .XML file
+        name -- Just a name for you to remember. It will be inserted as a
+                comment in the .XML file
         """
         self.id = _gen_id()
         self.name = name
@@ -307,15 +308,15 @@ class VMGM(Titleset):
     Note that this is just a container for menus, and has not itself video files
     associated.
 
-    Differences with the Titleset and the 'entry' fields in the Menus it includes
-    that cannot have the same values.
+    Differences with the Titleset and the 'entry' fields in the Menus it
+    includes that cannot have the same values.
     """
     
     def __init__(self, name=None, lang=None):
         """Create the VMGM menu instance (top level menu) for the DVD.
 
-        name -- Just a name for you to remember. It will be inserted as a comment
-                in the .XML file
+        name -- Just a name for you to remember. It will be inserted as a
+                comment in the .XML file
         """
         Titleset.__init__(self, name)
         self.menulang = _verify_lang(lang)
@@ -369,10 +370,10 @@ class Title:
     def __init__(self, name=None, pause=None):
         """Create a Title instance.
 
-        name -- Just a name for you to remember. It will be inserted as a comment
-                in the .XML file
-        pause -- = None, if you don't want the video to pause after having played
-                   all the .vob (or .mpg) files in the Title
+        name -- Just a name for you to remember. It will be inserted as a
+                comment in the .XML file
+        pause -- = None, if you don't want the video to pause after having
+                   played all the .vob (or .mpg) files in the Title
                  = 1 to 254, in seconds, if you want to pause for that number
                    of seconds after the Title
                  = 'inf', if you want to pause indefinitely, or until someone
@@ -415,8 +416,8 @@ class Title:
         used herein.
 
         commands -- this is a string which contains commands and optionally
-                    location IDs (menu.id, title.id, titleset.id). Check module's
-                    documentation for example or the test suite.
+                    location IDs (menu.id, title.id, titleset.id). Check
+                    module's documentation for example or the test suite.
         """
         self.pre_cmds = commands
 
@@ -431,7 +432,8 @@ class Title:
         """Return the dvdauthor XML string for this Title."""
 
         if not len(self.video_files):
-            raise ValueError, 'VideoFiles needed for Title named: "%s"' % self.name
+            raise ValueError, 'VideoFiles needed for Title named: "%s"' % \
+                  self.name
         
         xml =  "<!-- %s: %s -->\n" % (self.__class__, self.name)
         
@@ -481,8 +483,8 @@ class Menu(Title):
     def __init__(self, name=None, entry=None, pause=None):
         """Create a Menu instance.
         
-        name -- Just a name for you to remember. It will be inserted as a comment
-                in the .XML file
+        name -- Just a name for you to remember. It will be inserted as a
+                comment in the .XML file
         entry -- one of:
                       root, subtitle, audio, angle, ptt
                  if you intend to add it to a Titleset object, or one of:
