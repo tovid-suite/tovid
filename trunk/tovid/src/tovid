@@ -816,18 +816,6 @@ else
     OUT_PREFIX=$(abspath "$OUT_PREFIX")
 fi
 
-# If output file(s) exist, prompt for overwrite
-if test -e "$OUT_FILENAME"; then
-    yecho "Output file already exists: $OUT_FILENAME"
-    if $OVERWRITE; then
-        yecho "Overwriting existing file..."
-        rm -fv "$OUT_FILENAME"
-    else
-        exit_with_error "If you would like to overwrite the existing files, please re-run the script with the 'overwrite' option."
-    fi
-fi
-
-
 # ******************************************************************************
 #
 # Execution setup; change to work directory, create tempdir and log file(s)
@@ -855,6 +843,17 @@ AUDIO_STREAM="$TMP_DIR/audio.$AUD_SUF"
 YUV_STREAM="$TMP_DIR/video.yuv"
 VIDEO_STREAM="$TMP_DIR/video.$VID_SUF"
 OUT_FILENAME="$OUT_PREFIX.mpg"
+
+# If output file(s) exist, prompt for overwrite
+if test -e "$OUT_FILENAME"; then
+    yecho "Output file already exists: $OUT_FILENAME"
+    if $OVERWRITE; then
+        yecho "Overwriting existing file..."
+        rm -f "$OUT_FILENAME"
+    else
+        exit_with_error "If you would like to overwrite the existing files, please re-run the script with the 'overwrite' option."
+    fi
+fi
 
 
 
