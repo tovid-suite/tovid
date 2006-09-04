@@ -136,6 +136,7 @@ SUBTITLES=false
 AUDIOLANG=false
 USER_BSTYLE=false
 SHOWCASE_SEEK_VAL=1
+NO_SC_THUMB=false
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -544,6 +545,9 @@ while test $# -gt 0; do
             SHOWCASE_IMG="$(abspath "$1")"
             IMG_FMT=png
             SHOWCASE=:
+            ;;
+        "-no-showcase-thumb" )
+            NO_SC_THUMB=:
             ;;
         "-rotate" )
             shift
@@ -1419,7 +1423,7 @@ if [ -n "$BG_VIDEO" ]; then
         exit 1
     fi
 fi
-if $SHOWCASE; then
+if $SHOWCASE && ! $NO_SC_THUMB; then
     if [ -n "$SHOWCASE_VIDEO" ]; then
         echo "Getting background video images from $SHOWCASE_VIDEO"
         if [[ "$SC_FRAMESTYLE" = "glass" && -n "$SHOWCASE_VIDEO" ]]; then
@@ -1841,18 +1845,22 @@ for button in Select Highlight; do
     mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
 done
 if $SHOWCASE; then
-    # find out where to put the showcase image/video
-    sc_size=$(identify "$WORK_DIR/showcase_img.png"|awk '{print $3}')
-    sc_width=${sc_size/x*}
-    sc_xpage=$(( 360 - $((sc_width / 2)) ))
-    sc_palette=$((720 - 86 - ${THUMB_SIZE/x*}))
-    sc_palette=$(( $((86 + ${THUMB_SIZE/x*})) + $((sc_palette / 2))))
-    sc_xpage2=$((sc_palette - $((sc_width / 2)) ))
-    if [ $V_ARRAY_TOTAL -le 5 ]; then
-        SC_IMG_PAGE="-page +$sc_xpage2+85"
-    elif [ $V_ARRAY_TOTAL -gt 5 ]; then
-        SC_IMG_PAGE="-page +$sc_xpage+100"
+    if ! $NO_SC_THUMB; then
+        # find out where to put the showcase image/video
+        sc_size=$(identify "$WORK_DIR/showcase_img.png"|awk '{print $3}')
+        sc_width=${sc_size/x*}
+        sc_xpage=$(( 360 - $((sc_width / 2)) ))
+        sc_palette=$((720 - 86 - ${THUMB_SIZE/x*}))
+        sc_palette=$(( $((86 + ${THUMB_SIZE/x*})) + $((sc_palette / 2))))
+        sc_xpage2=$((sc_palette - $((sc_width / 2)) ))
+        if [ $V_ARRAY_TOTAL -le 5 ]; then
+            SC_IMG_PAGE="-page +$sc_xpage2+85"
+        elif [ $V_ARRAY_TOTAL -gt 5 ]; then
+            SC_IMG_PAGE="-page +$sc_xpage+100"
+        fi
+        SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
     fi
+    if $NO_SC_THUMB; then unset SC_IMG_CMD; fi
     if [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
         unset sc_cmd
         for ((i=0; i<=NUM_FILES; i++)); do
@@ -1864,7 +1872,7 @@ if $SHOWCASE; then
         fi
         if $TRANSPARENT; then
             IM_CMD0=(convert  -size 720x480 xc:none -background none \
-                ${sc_cmd[@]} $SC_IMG_PAGE "$WORK_DIR/showcase_img.png" -mosaic)
+            ${sc_cmd[@]} $SC_IMG_CMD -mosaic)
             IM_CMD1=(convert -size 720x480 -background none \
                 - ${sc_thumb_title_cmd[@]} -mosaic)
             IM_CMD2=(composite -size 720x480 -background none \
@@ -1881,10 +1889,10 @@ if $SHOWCASE; then
         else
             echo "Running:
             convert  -size 720x480 "$WORK_DIR/pics/template.png"
-            ${sc_cmd[@]} $SC_IMG_PAGE "$WORK_DIR/showcase_img.png" \
+            ${sc_cmd[@]} $SC_IMG_CMD \
             -mosaic "$WORK_DIR/preview.jpg" "|sed "s/    */ /g;s/^ *//"|fold -bs
             convert  -size 720x480 "$WORK_DIR/pics/template.png" \
-            ${sc_cmd[@]} $SC_IMG_PAGE "$WORK_DIR/showcase_img.png" \
+            ${sc_cmd[@]} $SC_IMG_CMD \
             -mosaic "$WORK_DIR/preview.jpg"
         fi
         unset sc_cmd PICS IM_CMD05 IM_CMD04 IM_CMD03 IM_CMD4
@@ -2033,13 +2041,12 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
             length=( ${length[@]} $(( $(awk '{ field = $2 }; END{ print field }' \
             "$WORK_DIR/nav${i}_log") + 1)) )
         fi 
-    else
-        echo
-        echo "Getting stats on "${IN_FILES[i]}""
-        mencoder_stats=("${mencoder_stats[@]}" \
-        "$(mencoder -quiet "${IN_FILES[i]}" -oac pcm -ovc copy \
-        $STATS_FRAMES -o /dev/null 2>&1)")
     fi
+    echo
+    echo "Getting stats on "${IN_FILES[i]}""
+    mencoder_stats=("${mencoder_stats[@]}" \
+    "$(mencoder -quiet "${IN_FILES[i]}" -oac pcm -ovc copy \
+    $STATS_FRAMES -o /dev/null 2>&1)")
     unset NAVSEEK_CMD
 done
 # put in the log file in case anyone is interested
@@ -2454,7 +2461,7 @@ if $SUB_MENU; then
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
             "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "$WORK_DIR/nav${i}_log"
         fi
-        NAVSEEK[i]}="--nav_seek "$WORK_DIR/nav${i}_log""
+        NAVSEEK[i]="--nav_seek "$WORK_DIR/nav${i}_log""
         yecho
         yecho "Creating $TOTAL_JPEGS chapter images for "${IN_FILES[i]}""
         yecho
@@ -2763,7 +2770,7 @@ if [ -n "$BG_VIDEO" ]; then
     fi
     unset IMAGES PICS last_pic next_pic
 fi
-if [ -n "$SHOWCASE_VIDEO" ]; then
+if [ -n "$SHOWCASE_VIDEO" ] && ! $NO_SC_THUMB; then
     echo "Getting showcase video images from $SHOWCASE_VIDEO"
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
         FIND_FRAMES=$((FRAMES + 1)) # unfortunately mplayer starts at 1 not 0
@@ -2991,18 +2998,21 @@ if $MENU_FADE && ! $STATIC; then
             for ((i=0; i<${#ANI_PICS[@]}; i++)); do
                 sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_PAGES[i]} "${ANI_PICS[i]}")
             done
+            if ! $NO_SC_THUMB; then
+                SC_VIDEO_CMD="$SC_IMG_PAGE \
+                "$WORK_DIR"/showcase/$(printf "%06d%s"  $(($frame + 1)) .png)"
+            else
+                unset SC_VIDEO_CMD
+            fi
         fi
         BG_PIC=$(find $WORK_DIR/bg -name $(($frame + 1)).jpg)
         # create the montage from the images in each video dir
         MONTAGE_CMD=(convert  -size 720x480 -background none \
-        ${sc_cmd[@]} $SC_IMG_PAGE "$WORK_DIR/showcase_img.png" \
-        -mosaic)
+        ${sc_cmd[@]} $SC_IMG_CMD -mosaic)
         MONTAGE_CMD0=(convert  -size 720x480 "$WORK_DIR/pics/template.png" \
-        ${sc_cmd[@]} $SC_IMG_PAGE "$WORK_DIR"/showcase/$(printf "%06d%s"  $(($frame + 1)) .png) \
-        -mosaic $WORK_DIR/animenu/$(($frame + 1)).jpg)
+        ${sc_cmd[@]} $SC_VIDEO_CMD -mosaic $WORK_DIR/animenu/$(($frame + 1)).jpg)
         MONTAGE_CMD01=(convert  -size 720x480 xc:none -background none \
-        ${sc_cmd[@]} $SC_IMG_PAGE \
-        "$WORK_DIR"/showcase/$(printf "%06d%s"  $(($frame + 1)) .png) -mosaic)
+        ${sc_cmd[@]} $SC_VIDEO_CMD -mosaic)
         MONTAGE_CMD02=(convert -size 720x480 -background none \
         - ${sc_thumb_title_cmd[@]} -mosaic)
         MONTAGE_CMD1=(montage "${ANI_PICS[@]}" -tile ${TILE_ARRAY[NUM_FILES]} \
@@ -3078,24 +3088,29 @@ else # Do not do menu fade
             for ((f=0; f<${#ANI_PICS[@]}; f++)); do
                 sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_PAGES[f]} "${ANI_PICS[f]}")
             done
+            if ! $NO_SC_THUMB; then
+                SC_VIDEO_CMD="$SC_IMG_PAGE \
+                "$WORK_DIR"/showcase/$(printf "%06d%s"  $count .png)"
+            else
+                unset SC_VIDEO_CMD
+            fi
+
             IM_CMD0=(convert  -size 720x480 "$WORK_DIR/pics/template.png" \
-            ${sc_cmd[@]} $SC_IMG_PAGE "$WORK_DIR/showcase_img.png" -mosaic)
+            ${sc_cmd[@]} $SC_IMG_PAGE -mosaic)
             IM_CMD01=(convert  -size 720x480 xc:none -background none \
-            ${sc_cmd[@]} $SC_IMG_PAGE \
-            "$WORK_DIR"/showcase/$(printf "%06d%s"  $(($count + 1)) .png) -mosaic)
+            ${sc_cmd[@]} $SC_VIDEO_CMD -mosaic)
             # dissolve piped images onto bgimage
             IM_CMD02=(composite \
             -gravity NorthWest  -dissolve $OPACITY - $WORK_DIR/pics/template.png)
             # dissolve piped images onto bgvideo
             IM_CMD03=(composite -size 720x480 -background none \
-            -gravity NorthWest  -dissolve $OPACITY - $WORK_DIR/bg/$(($count + 1)).jpg \
+            -gravity NorthWest  -dissolve $OPACITY - $WORK_DIR/bg/$count.jpg \
             -background none)
             # dissolve titles onto bgvideo
             IM_CMD04=(convert -size 720x480 -background none \
             - ${sc_thumb_title_cmd[@]} -mosaic)
             IM_CMD05=(convert  -size 720x480 xc:none -background none \
-            ${sc_cmd[@]} $SC_IMG_PAGE "$WORK_DIR/showcase_img.png" -mosaic)
-
+            ${sc_cmd[@]} $SC_IMG_PAGE -mosaic)
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
             -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none miff:-)
             IM_CMD2=(composite -dissolve $OPACITY \
