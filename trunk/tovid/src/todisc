@@ -341,7 +341,7 @@ function confirm_preview()
         echo "    -thumb-text-color"
         echo "Fonts:"
         echo "    -menu-font and -menu-fontsize"
-        echo "    -thumbfont and -thumb-fontsize"
+        echo "    -thumb-font and -thumb-fontsize"
         echo "(or reduce thumb title lengths)"
         echo "If you get black frames, then look at the -seek option"
         echo "For other fine-tuning options, see 'man todisc'."
