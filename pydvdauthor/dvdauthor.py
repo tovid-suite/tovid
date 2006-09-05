@@ -7,14 +7,33 @@
 """Module that implements a set of classes which aid in creation of a valid
 dvdauthor-formatted .xml file.
 
-Object tree layout:
+A dvdauthor .xml file describes the contents and playback behavior of a DVD.
+The MPEG video files to be included, as well as any interactive menus, are
+included here. (See the dvdauthor manual page for its full capabilities.) A
+typical .xml file looks something like this:
 
-Disc
- |-- VMGM
- |    `-- Menu(s)
- `-- Titleset(s)
-      |-- Menu(s)
-      `-- Title(s)
+    <dvdauthor>
+        <vmgm>
+            <menus> ... </menus>
+        </vmgm>
+        <titleset>
+            <menus> ... </menus>
+            <titles> ... </titles>
+        </titleset>
+    </dvdauthor>
+
+The purpose of this module is to encapsulate dvdauthor's XML syntax into Python
+classes, and make it easier to create such .xml files automatically.
+
+Using this module's classes, the above XML becomes:
+
+    Disc
+    |-- VMGM
+    |   `-- Menu(s)
+    `-- Titleset(s)
+        |-- Menu(s)
+        `-- Title(s)
+
 
 Adding a Titleset in the Disc object, or adding a Button to a Menu is done
 in a consistent manner across the different object types. For example:
@@ -58,6 +77,15 @@ which will be expanded to:
 
 depending on where it's placed in the Disc hierarchy. Note the 'f:' in front of
 '%s', which stands for 'full addressing'.
+
+Notes
+
+* Consider having Disc() construct mandatory parts automatically (discs must
+    have one VMGM section, and at least one titleset.) That way, user can get
+    a basic "empty disc" just by calling Disc().
+* Title() and Menu() constructors could take a video_files argument (string or
+    list of strings). 
+
 """
 
 version = '0.1'
