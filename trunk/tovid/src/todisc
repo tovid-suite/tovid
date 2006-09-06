@@ -1581,7 +1581,7 @@ for ((i=0; i<${#PICS[@]}; i++)); do
         PVIEW_CMD0=(convert "${PICS[i]}" $RAISE)
         PVIEW_CMD1=(convert - $RAISE)
         PVIEW_CMD2=(convert - -write mpr:${i}img -fx A  +matte \
-        -blur 0x$(awk_math 6.9 plus .${CURVE_ARRAY[i]/.} float) \
+        -blur 0x$( printf  "%.2f" $(awk_math 6.9 plus .${CURVE_ARRAY[i]/.} float) ) \
         -shade $(awk_math 115 plus ${CURVE_ARRAY[i]})x30 -normalize mpr:${i}img -compose \
         Overlay -composite mpr:${i}img  -matte  -compose Dst_In -composite)
         PVIEW_CMD3=(convert -trim +repage - "${PICS[i]}")
@@ -2621,18 +2621,18 @@ if $SUB_MENU; then
         yecho
         yecho "Creating an audio background"
         yecho "Working on submenu audio for "${IN_FILES[s]}""
-        if $SUBMENU_AUDIO; then
+        if $SUBMENU_AUDIO; then # user supplied audio file for ths video
             if ! $ANI_SUB_MENU ; then  # if static, then no trim
-                if [ -n "$SM_AUDIO_FILE" ]; then
+                if [ -n "$SM_AUDIO_FILE" ]; then # one audio file for all menus
                     TIME=$(ffmpeg -i "$SM_AUDIO_FILE" 2>&1|
                     awk '/Duration/ {print $2}')
                     TIME=${TIME/,/}
-                else 
+                else # audio will be different for each menu
                     TIME=$(ffmpeg -i "${SM_AUDIO[s]}" 2>&1|
                     awk '/Duration/ {print $2}')
                     TIME=${TIME/,/}
                 fi
-            else
+            else # if animated, get time from video instead of the audio file
                 TIME=$(vid_length "$WORK_DIR/menu$s.m2v")
             fi
  
@@ -2876,13 +2876,13 @@ for ((i=0; i<=NUM_FILES; i++)); do
         -bordercolor none -)
         IM_CMD5=(convert -resize $THUMB_SIZE! - "${PICS[p]}")
         IM_CMD6=(convert - -write mpr:img${p} -fx A  +matte \
-        -blur 0x$(awk_math 7 plus .${CURVE_ARRAY[p]/.} float)  \
+        -blur 0x$( printf "%.2f" $(awk_math 7 plus .${CURVE_ARRAY[p]/.} float) )  \
         -shade $(awk_math 115 plus ${CURVE_ARRAY[p]} float)x30 -normalize mpr:img${p} \
         -compose Overlay -composite mpr:img${p} -matte -compose Dst_In -composite)
         IM_CMD7=(convert -trim +repage - )
         if $FEATHER &&  [ "$THUMB_SHAPE" != "normal" ]; then # debug FIXME
-            CURVE_UPDATE="with -blur 0x$(awk_math 7 plus .${CURVE_ARRAY[p]/.} float)  \
-            -shade $(awk_math 115 plus ${CURVE_ARRAY[p]} float)x30"
+            CURVE_UPDATE="with -blur 0x$( printf  "%.2f" $(awk_math 7 plus .${CURVE_ARRAY[p]/.} float) ) \
+            -shade $( printf "%.2f" $(awk_math 115 plus ${CURVE_ARRAY[p]} float) )x30"
         fi
         if $FEATHER; then
             spin "\rProcessing $(awk -F / '{ print $NF }' <<< "${PICS[p]}") \
