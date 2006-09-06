@@ -193,7 +193,7 @@ class TestDvdauthor(unittest.TestCase):
     def test_menu_entry(self):
         self.assertRaises(KeyError, dvdauthor.Menu, 'create this menu', 'bad_entry_point')
 
-    def _test_childobj_xml(self):
+    def test_childobj_xml(self):
         title = dvdauthor.Title('This is my title')
         title.add_video_file('/tmp/ahuh.mpg', '0:50', 'inf')
         title.add_video_file('/tmp/ahuh1.mpg', None, '14')
@@ -238,6 +238,15 @@ class TestDvdauthor(unittest.TestCase):
         # Cleared references
         vmgm.add_menu(menu2)
         disc.xml('/tmp/output-dir')
+
+    def test_title_init_add_vf(self):
+        title = dvdauthor.Title('Test', video_files = ['/tmp/video1.mpg',
+                                                       '/tmp/video2.mpg'])
+        menu = dvdauthor.Menu('Test menu', video_files = '/tmp/video3.mpg')
+
+        print title._xml()
+        print menu._xml()
+        
 
     def test_full_layout(self):
         """Test a complete disc project with titlesets and menus."""

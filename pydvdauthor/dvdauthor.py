@@ -83,8 +83,6 @@ Notes
 * Consider having Disc() construct mandatory parts automatically (discs must
     have one VMGM section, and at least one titleset.) That way, user can get
     a basic "empty disc" just by calling Disc().
-* Title() and Menu() constructors could take a video_files argument (string or
-    list of strings). 
 
 """
 
@@ -395,7 +393,7 @@ class Title:
     files.
     """
 
-    def __init__(self, name=None, pause=None):
+    def __init__(self, name=None, pause=None, video_files=[]):
         """Create a Title instance.
 
         name -- Just a name for you to remember. It will be inserted as a
@@ -406,6 +404,8 @@ class Title:
                    of seconds after the Title
                  = 'inf', if you want to pause indefinitely, or until someone
                    presses the 'Next' button on the DVD remote control.
+        video_files -- Array of strings (or string) containing the
+                       video files for this Title.
         """
         self.id = _gen_id()
         self.name = name
@@ -416,6 +416,13 @@ class Title:
         self.post_cmds = None
         self.entry = None # shouldn't change if we're still a Title obj.
         self.buttons = [] # idem.
+
+        # Add video files if specified.
+        if isinstance(video_files, str):
+            self.add_video_file(video_files)
+        elif isinstance(video_files, list):
+            for x in video_files:
+                self.add_video_file(x)
 
     def add_video_file(self, file, chapters=None, pause=None):
         """Add a .vob (or .mpg) file to the Title.
@@ -508,7 +515,7 @@ class Menu(Title):
     files.
     """
 
-    def __init__(self, name=None, entry=None, pause=None):
+    def __init__(self, name=None, entry=None, pause=None, video_files=[]):
         """Create a Menu instance.
         
         name -- Just a name for you to remember. It will be inserted as a
@@ -519,8 +526,10 @@ class Menu(Title):
                       title
                  if you intend to add it to a VMGM object.
         pause -- See the Title.__init__() documentation
+        video_files -- Array of strings (or string) containing the
+                       video files for this Menu.
         """
-        Title.__init__(self, name, pause)
+        Title.__init__(self, name, pause, video_files)
         # TODO: deal with entry only here, because Title doesn't have anything
         #       to do with entry points.
         entries = [None, 'root', 'subtitle', 'audio', 'angle', 'ptt', 'title']
