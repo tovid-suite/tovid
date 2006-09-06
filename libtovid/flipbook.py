@@ -93,7 +93,8 @@ class Flipbook:
     def drawing(self, frame):
         """Get a Drawing of the given frame"""
         drawing = Drawing(self.size)
-        # Write MVG header stuff
+        # Commented out until Cairo can do it ? Is it needed ?
+        # The drawing is new, do you need to specify the viewbox ?
         drawing.push()
         drawing.viewbox((0, 0), self.size)
         # Draw each layer
@@ -124,7 +125,7 @@ class Flipbook:
             drawing.save_jpg('%s/%08d.jpg' % (tmp, frame - 1))
             frame += 1
         video = MediaFile(m2v_file)
-        video.encode_frames(tmp, m2v_file, format, tvsys)
+        video.encode_frames(tmp, 'jpg', m2v_file, format, tvsys)
         print "Output file is: %s" % m2v_file
 
 
@@ -149,17 +150,17 @@ def draw_text_demo(flipbook, last_frame):
 
     # Keyframed opacity demos, using both linear and cosine interpolation
     pulse = [Keyframe(1, 0.2),
-              Keyframe(last_frame * 2/10, 1.0),
-              Keyframe(last_frame * 4/10, 0.2),
-              Keyframe(last_frame * 6/10, 1.0),
-              Keyframe(last_frame * 8/10, 0.5),
-              Keyframe(last_frame, 1.0)]
+             Keyframe(last_frame * 2/10, 1.0),
+             Keyframe(last_frame * 4/10, 0.2),
+             Keyframe(last_frame * 6/10, 1.0),
+             Keyframe(last_frame * 8/10, 0.5),
+             Keyframe(last_frame, 1.0)]
     # Text Layers
     text_linear = layer.Text("Keyframed opacity (linear)", color='lightgreen')
     text_cosine = layer.Text("Keyframed opacity (cosine)", color='lightgreen')
     # Effects
-    fade_linear = effect.KeyFunction(Drawing.text_opacity, pulse, 'linear')
-    fade_cosine = effect.KeyFunction(Drawing.text_opacity, pulse, 'cosine')
+    fade_linear = effect.KeyFunction(Drawing.opacity, pulse, 'linear')
+    fade_cosine = effect.KeyFunction(Drawing.opacity, pulse, 'cosine')
     # Graph of the keyframe effects
     graph_linear = layer.InterpolationGraph(pulse, method='linear')
     graph_cosine = layer.InterpolationGraph(pulse, method='cosine')

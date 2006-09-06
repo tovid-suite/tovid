@@ -123,21 +123,30 @@ class MediaFile:
         self.frame_files = rip_frames(self.filename, self.tempdir, frames, size)
 
 
-    def encode_frames(self, imagedir, outfile, format, tvsys, ):
+    def encode_frames(self, imagedir, file_type, outfile, format, tvsys):
         """Convert an image sequence in imagedir to an .m2v video compliant
         with the given format and tvsys.
     
-        Currently supports only JPEG images; input images must already be at
-        the desired target resolution.
+        Currently supports JPEG and PNG images; input images must already be
+        at the desired target resolution.
+
+        file_type -- one of 'jpg', 'png'
         """
         # Use absolute path name
         imagedir = os.path.abspath(imagedir)
         print "Creating video stream from image sequence in %s" % imagedir
     
-        # Use jpeg2yuv to stream images
-        cmd = 'jpeg2yuv -I p '
+        # Use jpeg2yuv/png2yuv to stream images
+        if file_type == 'jpg':
+            cmd = 'jpeg2yuv '
+        elif file_type == 'png':
+            cmd = 'png2yuv '
+        else:
+            raise ValueError, "File_type '%s' isn't currently supported to "\
+                  "render video from still frames" % file_type
+        cmd += ' -Ip '
         cmd += ' -f %.3f ' % standards.get_fps(tvsys)
-        cmd += ' -j "%s/%%08d.jpg"' % imagedir
+        cmd += ' -j "%s/%%08d.%s"' % (imagedir, file_type)
 
         # TODO: Scale to correct target size using yuvscaler or similar
         
