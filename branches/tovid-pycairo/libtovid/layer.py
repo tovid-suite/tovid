@@ -189,13 +189,16 @@ class Background (Layer):
 
 class Image (Layer):
     """A rectangular image, scaled to the given size."""
-    def __init__(self, filename, (width, height)):
+    def __init__(self, filename, (width, height), position=(0,0)):
         Layer.__init__(self)
         self.size = (width, height)
         # Remember original image filename
         self.original_filename = filename
         # Prescale image file
         self.prescaled_filename = self._prescale(filename)
+        # Set (x,y) position
+        assert(isinstance(position, tuple))
+        self.position = position
 
     def __del__(self):
         """Clean up temporary files."""
@@ -223,7 +226,7 @@ class Image (Layer):
         drawing.comment("Image Layer")
         drawing.push()
         self.draw_effects(drawing, frame)
-        drawing.image((0, 0), self.size, self.prescaled_filename)
+        drawing.image(self.position, self.size, self.prescaled_filename)
         drawing.pop()
 
 
@@ -233,8 +236,12 @@ class Image (Layer):
 
 
 class VideoClip (Layer):
-    """A rectangular video clip, scaled to the given size."""
-    def __init__(self, filename, (width, height)):
+    """A rectangular video clip, scaled to the given size.
+
+    TODO: num_frames should accept a range [first, end], an int (1-INT) and
+    rip frames accordingly. For now, it only accepts an INT for the range 1-INT
+    """
+    def __init__(self, filename, (width, height), position=(0,0), num_frames=120):
         Layer.__init__(self)
         self.filename = filename
         self.mediafile = MediaFile(filename)
@@ -242,7 +249,10 @@ class VideoClip (Layer):
         # List of filenames of individual frames
         self.frame_files = []
         # TODO: be able to change hardcoded default values
-        self.rip_frames(1, 120)
+        self.rip_frames(1, num_frames)
+        # Set (x,y) position
+        assert(isinstance(position, tuple))
+        self.position = position
 
     def rip_frames(self, start, end):
         """Rip frames from the video file, from start to end frames."""
@@ -253,6 +263,7 @@ class VideoClip (Layer):
     def draw_on(self, drawing, frame):
         """Draw ripped video frames to the given drawing. For now, it's
         necessary to call rip_frames() before calling this function.
+        
         Video is looped.
         """
         assert isinstance(drawing, Drawing)
@@ -266,7 +277,7 @@ class VideoClip (Layer):
         if frame >= len(self.frame_files):
             frame = frame % len(self.frame_files)
         filename = self.frame_files[frame-1]
-        drawing.image((0, 0), self.size, filename)
+        drawing.image(self.position, self.size, filename)
         drawing.pop()
 
 
@@ -281,7 +292,7 @@ class Text (Layer):
 
     text -- UTF8 encoded string.
     """
-    def __init__(self, text, color='white', fontsize=20, \
+    def __init__(self, text, position=(0,0), color='white', fontsize=20, \
                  font='Helvetica', centered=False):
         Layer.__init__(self)
         self.text = text
@@ -289,6 +300,10 @@ class Text (Layer):
         self.fontsize = fontsize
         self.font = font
         self.centered = centered
+        # Set (x,y) position
+        assert(isinstance(position, tuple))
+        self.position = position
+        
 
     def extents(self, drawing):
         """Get text extents with the specifies fonts, etc.."""
@@ -303,12 +318,14 @@ class Text (Layer):
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
 
+        # Drop in debugger
+        #import pdb; pdb.set_trace()
         drawing.push()
         drawing.color_text(self.color)
+        self.draw_effects(drawing, frame)
         drawing.font(self.font)
         drawing.font_size(self.fontsize)
-        self.draw_effects(drawing, frame)
-        drawing.text((0, 0), self.text, self.centered)
+        drawing.text(self.position, self.text, self.centered)
         drawing.pop()
 
 
@@ -321,10 +338,14 @@ class Label (Text):
     """A text string with a rectangular background.
 
     You can access Text's extents() function from within here too."""
-    def __init__(self, text, color='white', bgcolor='#555',
+    def __init__(self, text, position=(0,0), color='white', bgcolor='#555',
                  fontsize=20, font='NimbusSans'):
-        Text.__init__(self, text, color, fontsize, font)
+        Text.__init__(self, text, position, color, fontsize, font)
         self.bgcolor = bgcolor
+        # Set (x,y) position
+        assert(isinstance(position, tuple))
+        self.position = position
+
 
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
@@ -372,13 +393,16 @@ class TextBox (Text):
     Formatting elements are <p>...</p>, <b>...</b>, and <i>...</i>.
     """
     def __init__(self, text, (width, height), color='white',
-                 fontsize=20, font='Times'):
+                 fontsize=20, font='Times', position=(0,0)):
         """Formatted text contained in a box of the given size."""
-        Text.__init__(self, text, color, fontsize, font)
+        Text.__init__(self, text, position, color, fontsize, font)
         self.size = (width, height)
         # TODO: Determine max number of characters that will fit in given
         # width, and break marked-up text into lines (breaking at word
         # boundaries)
+        # Set (x,y) position
+        assert(isinstance(position, tuple))
+        self.position = position
 
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
@@ -398,7 +422,7 @@ class TextBox (Text):
         # the current line
         cursor = 0
         # Start drawing in upper left-hand corner
-        draw_loc = (0, 0)
+        draw_loc = self.position
         
         finished = False
         while not finished:
@@ -458,20 +482,25 @@ class TextBox (Text):
 
 class Thumb (Layer):
     """A thumbnail image or video."""
-    def __init__(self, filename, (width, height), title=''):
+    def __init__(self, filename, (width, height), position=(0,0), title=''):
         Layer.__init__(self)
         self.filename = filename
         self.size = (width, height)
         self.title = title or os.path.basename(filename)
+        # Set (x,y) position
+        assert(isinstance(position, tuple))
+        self.position = position
+
         # Determine whether file is a video or image, and create the
         # appropriate sublayer
         filetype = get_file_type(filename)
         if filetype == 'video':
-            self.add_sublayer(VideoClip(filename, self.size))
+            self.add_sublayer(VideoClip(filename, self.size, self.position))
         elif filetype == 'image':
-            self.add_sublayer(Image(filename, self.size))
+            self.add_sublayer(Image(filename, self.size, self.position))
         self.lbl = Label(self.title, fontsize=15)
-        self.add_sublayer(self.lbl, (0, 0))
+        self.add_sublayer(self.lbl, self.position)
+        
 
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
@@ -815,21 +844,28 @@ class InterpolationGraph (Layer):
 #####           #####
 
 class ColorBars (Layer):
-    """SMPTE color bars"""
-    def __init__(self, size):
+    """SMPTE color bars
+    
+    size -- (width, height) tuple
+    """
+    def __init__(self, size, position=(0,0)):
         Layer.__init__(self)
         self.size = size
+        # Set (x,y) position
+        assert(isinstance(position, tuple))
+        self.position = position
 
     def draw_on(self, drawing, frame=1):
         # Video-black background
         drawing.auto_fill(True)
 
         drawing.color_fill((16, 16, 16))
-        drawing.rectangle((0, 0), self.size)
+        drawing.rectangle(self.position, self.size)
 
         drawing.comment("SMPTE color bars")
         drawing.push()
         drawing.scale(self.size)
+        drawing.translate(self.position)
         # Top 67% of picture: Color bars at 75% amplitude
         top = 0
         bottom = 2.0 / 3
@@ -906,11 +942,13 @@ if __name__ == '__main__':
     bgd = Background(color='#7080A0')
     bgd.draw_on(drawing, 1)
 
-    bars = ColorBars((320, 240))
-    drawing.push()
-    drawing.translate((320, 200))
+    bars = ColorBars((320, 240), (320, 200))
     bars.draw_on(drawing, 1)
-    drawing.pop()
+
+
+    # Draw a text layer, with position.
+    text = Text(u"Jackdaws love my big sphinx of quartz", position=(82, 62), color='#bbb')
+    text.draw_on(drawing, 1)
 
     # Draw a text layer
     drawing.push()
@@ -918,6 +956,7 @@ if __name__ == '__main__':
     text = Text(u"Jackdaws love my big sphinx of quartz")
     text.draw_on(drawing, 1)
     drawing.pop()
+
 
     # Draw a template layer (overlapping semitransparent rectangles)
     template = MyLayer('white', 'darkblue')

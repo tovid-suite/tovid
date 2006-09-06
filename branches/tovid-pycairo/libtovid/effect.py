@@ -19,6 +19,7 @@ Effect classes are arranged in a (currently) simple hierarchy:
 __all__ = [\
     'Effect',
     'Movement',
+    'Translate',
     'Fade',
     'Colorfade',
     'Spectrum',
@@ -30,8 +31,8 @@ from libtovid.render.cairo_ import Drawing
 from libtovid.animation import Keyframe, Tween
 
 class Effect:
-    """A "special effect" created by keyframing an MVG command along
-    the given frame interval."""
+    """A "special effect" created by keyframing a Cairo drawing command
+    along the given frame interval."""
     def __init__(self, start, end):
         """Create an effect lasting from start frame to end frame."""
         self.start = start
@@ -109,29 +110,55 @@ class Movement (Effect):
         assert isinstance(drawing, Drawing)
         drawing.translate(self.tween[frame])
 
+class Translate (Movement):
+    """Translates the layer to some relative (x,y) coordinates"""
+    def __init__(self, start, end, (dx, dy)):
+        Movement.__init__(self, start, end, (0,0), (dx, dy))
+        
+
 class Fade (Effect):
-    """A fade-in/fade-out effect, varying the opacity of a layer."""
-    def __init__(self, start, end, fade_length=30):
+    """A fade-in/fade-out effect, varying the opacity of a layer.
+    """
+    def __init__(self, start, end, fade_length=30, keyframes=None,
+                 method='linear'):
         """Fade in from start, for fade_length frames; hold at full
-        opacity, then fade out for fade_length frames before end."""
+        opacity, then fade out for fade_length frames before end.
+
+        fade_length -- num of frames to fade-in from start, and num of
+                       frames to fade-out before end. Everything in-between
+                       is at full opacity.
+        keyframes -- a set of Keyframe() objects, determining the fading
+                     curve. Values of the Keyframe() must be floats ranging
+                     from 0.0 to 1.0 (setting opacity).
+        method -- linear, cosine
+
+        """
         Effect.__init__(self, start, end)
         # A fill-opacity curve, something like:
         #         ______        100%
         #        /      \
         # start./        \.end  0%
         #
-        self.keyframes = [\
-            Keyframe(start, 0.0),                  # Start fading in
-            Keyframe(start + fade_length, 1.0),    # Fade-in done
-            Keyframe(end - fade_length, 1.0),      # Start fading out
-            Keyframe(end, 0.0)                     # Fade-out done
-            ]
-        self.tween = Tween(self.keyframes)
+        if not isinstance(keyframes, list):
+            self.keyframes = [\
+                Keyframe(start, 0.0),                  # Start fading in
+                Keyframe(start + fade_length, 1.0),    # Fade-in done
+                Keyframe(end - fade_length, 1.0),      # Start fading out
+                Keyframe(end, 0.0)                     # Fade-out done
+                ]
+        else:
+            self.keyframes = keyframes
+
+        print "Keyframes:"
+        for x in self.keyframes:
+            print "   frame: %d - data:" % x.frame, x.data
+
+        self.tween = Tween(self.keyframes, method)
 
     def draw_on(self, drawing, frame):
         """Draw the fade effect into the given Drawing."""
         assert isinstance(drawing, Drawing)
-        drawing.color_all(None, self.tween[frame])
+        drawing.opacity(self.tween[frame])
 
 class Colorfade (Effect):
     """A color-slide effect between an arbitrary number of RGB colors."""
@@ -167,6 +194,7 @@ class Spectrum (Effect):
 
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
+        print "Drawing spectrum frame: ", self.tween[frame]
         drawing.color_all(self.tween[frame])
 
 

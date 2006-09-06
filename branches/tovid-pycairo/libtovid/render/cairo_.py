@@ -96,7 +96,6 @@ class Drawing:
                                      self.height)
         self.cr = cairo.Context(self.surface)
         # Default values
-        self.rgb = (0, 0, 0)
         self.family = 'sans'
         # Default dash array
         self.dash_array = []
@@ -108,9 +107,13 @@ class Drawing:
         self.fill_alpha = 0.0
         self.stroke_rgb = (0, 0, 0)
         self.stroke_alpha = 1.0
+        # Overall opacity
+        self.opacity_mask = 1.0
         # Automatic behavior (auto_fill, auto_stroke)
         self.auto_fill_val = False
         self.auto_stroke_val = False
+        # Push/pop stack
+        self.stack = []
 
     #
     # Setup commands (auto-stuff)
@@ -302,7 +305,8 @@ class Drawing:
             return color
         else:
             return ImageColor.getrgb(color)
-            
+
+
     def color_fill(self, color, opacity=1.0):
         """Define color for fill() operations
 
@@ -330,11 +334,15 @@ class Drawing:
 
         opacity -- 0.0 to 1.0, or None, to leave opacity untouched.
         """
+        print "Called color_fill() with:", color, opacity
+
         if color is not None:
             (r,g,b) = self._getrgb(color)
             self.fill_rgb = (r / 255.0, g / 255.0, b / 255.0)
         if opacity is not None:
             self.fill_alpha = opacity
+            
+        # Call this when needed, in other functions
         self._go_fill_color()
         
     def color_stroke(self, color, opacity=1.0):
@@ -342,24 +350,31 @@ class Drawing:
 
         See color_fill() for details on how to specify 'color'
         """
+        print "Called color_stroke() with:", color, opacity
+
         if color is not None:
             (r,g,b) = self._getrgb(color)
             self.stroke_rgb = (r / 255.0, g / 255.0, b / 255.0)
         if opacity is not None:
             self.stroke_alpha = opacity
 
+        # Call this when needed, in other functions
         self._go_stroke_color()
 
     def color_text(self, color, opacity=1.0):
         """Define color for text() operations.
 
         See color_fill() for details on how to specify 'color'
-        """ 
+        """
+        print "Called color_text() with:", color, opacity
+
         if color is not None:
             (r,g,b) = self._getrgb(color)
             self.text_rgb = (r / 255.0, g / 255.0, b / 255.0)
         if opacity is not None:
             self.text_alpha = opacity
+
+        # Call this when needed, in other functions
         self._go_text_color()
 
     def color_all(self, color, opacity=1.0):
@@ -374,15 +389,19 @@ class Drawing:
 
     def _go_stroke_color(self):
         r,g,b = self.stroke_rgb
-        self.cr.set_source_rgba(r,g,b, self.stroke_alpha)
+        # We NEEDED to specify float() here, and for how long have I searched ?
+        print "SET STROKE_COLOR: %f, %f, %f, alpha: %f" % (r,g,b, float(self.stroke_alpha * self.opacity_mask))
+        self.cr.set_source_rgba(r,g,b, float(self.stroke_alpha * self.opacity_mask))
 
     def _go_text_color(self):
         r,g,b = self.text_rgb
-        self.cr.set_source_rgba(r,g,b, self.text_alpha)
+        print "SET TEXT_COLOR: %f, %f, %f, alpha: %f" % (r,g,b, float(self.text_alpha * self.opacity_mask))
+        self.cr.set_source_rgba(r,g,b, float(self.text_alpha * self.opacity_mask))
 
     def _go_fill_color(self):
         r,g,b = self.fill_rgb
-        self.cr.set_source_rgba(r,g,b, self.fill_alpha)
+        print "SET FILL_COLOR: %f, %f, %f, alpha: %f" % (r,g,b, float(self.fill_alpha * self.opacity_mask))        
+        self.cr.set_source_rgba(r,g,b, float(self.fill_alpha * self.opacity_mask))
 
     #def decorate(self, decoration):
     #    """Decorate text(?) with the given style, which may be 'none',
@@ -547,7 +566,6 @@ class Drawing:
         Ref:
           [1] http://www.pythonware.com/library/pil/handbook/formats.htm
 
-
         You can apply some operator() to manipulation how the image is going
         to show up. See operator()
         """
@@ -607,6 +625,18 @@ class Drawing:
 
     #def offset(self, offset):
     #    self.insert('offset %s' % offset)
+
+    def opacity(self, opacity=1.0):
+        """Sets global opacity for the next functions
+    
+        opacity -- ranges from 0.0 (transparent) to 1.0 (fully opaque)
+    
+        NOTE: Make sure to call opacity() before you call any color(),
+        functions, because in certain situations, it might not be applied
+        correctly.
+        """
+        self.opacity_mask = opacity
+        
 
     def operator(self, operator='clear'):
         """Set the operator mode.
@@ -892,7 +922,8 @@ class Drawing:
         if not isinstance(text_string, unicode):
             text_string = unicode(text_string.decode('latin-1'))
 
-        self.cr.save()
+
+        self.push()
         self._go_text_color()
         (dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
         if centered:
@@ -900,7 +931,7 @@ class Drawing:
             y = y + h / 2
         self.cr.move_to(x, y)
         self.cr.show_text(text_string)
-        self.cr.restore()
+        self.pop()
 
         return (dx, dy, w, h, ax, ay)
     
@@ -921,12 +952,13 @@ class Drawing:
         return self.cr.text_extents(text_string)
       
 
-    def text_antialias(self, do_antialias):
-        """Turn text antialiasing on (True) or off (False)."""
-        if do_antialias:
-            self.insert('text-antialias 1')
-        else:
-            self.insert('text-antialias 0')
+    # Old MVG stuff, TODO: Implement using Cairo
+    #def text_antialias(self, do_antialias):
+    #    """Turn text antialiasing on (True) or off (False)."""
+    #    if do_antialias:
+    #        self.insert('text-antialias 1')
+    #    else:
+    #        self.insert('text-antialias 0')
 
     def text_opacity(self, opacity):
         """Set the text opacity.
@@ -959,20 +991,39 @@ class Drawing:
         Applies to MVG only, unused here:
             context may be: 'clip-path', 'defs', 'gradient', 'graphic-context', or 'pattern'.
         """
+        # Save local context
+        self.stack.append({'tr': self.text_rgb,
+                         'ta': self.text_alpha,
+                         'fr': self.fill_rgb,
+                         'fa': self.fill_alpha,
+                         'sr': self.stroke_rgb,
+                         'sa': self.stroke_alpha,
+                         'op': self.opacity_mask,
+                         'afv': self.auto_fill_val,
+                         'asv': self.auto_stroke_val})
+        # Save Cairo context
         self.cr.save()
-        #self.cr.push_group()
 
     def pop(self, context='graphic-context'):
         """Restore the previously push()ed context.
 
-        The rest of this doc isn't true, but only valid for MVG:
-
-            Context may be: 'clip-path', 'defs', 'gradient', 'graphic-context', or 'pattern'.
+        context is deprecated, as it was used with MVG only.
         """
+        # Restore local context
+        st = self.stack.pop()
+        self.text_rgb = st['tr']
+        self.text_alpha = st['ta']
+        self.fill_rgb = st['fr']
+        self.fill_alpha = st['fa']
+        self.stroke_rgb = st['sr']
+        self.stroke_alpha = st['sa']
+        self.opacity_mask = st['op']
+        self.auto_fill_val = st['afv']
+        self.auto_stroke_val = st['asv']
+
+        # Restore Cairo context
         self.cr.restore()
-        #self.cr.pop_group_to_source()
-        #self.cr.paint()
-        # Check pop_group_to_source() ?!
+
     
     def comment(self, text):
         """Add a comment to the drawing's code.

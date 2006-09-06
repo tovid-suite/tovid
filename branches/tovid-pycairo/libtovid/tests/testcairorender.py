@@ -229,7 +229,11 @@ class TestCairoRenderer(unittest.TestCase):
 
         self.d.render('/tmp/my.png')
 
-        
+
+    # We don't have opacity now...
+    def test_opacity(self):
+        self.d.opacity(0.5)
+        self.d.opacity(1.0)
         
 
 
