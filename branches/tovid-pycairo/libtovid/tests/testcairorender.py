@@ -166,13 +166,25 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.rotate_rad(math.pi)
         self.d.pop()
 
-    def test_set_color(self):
-        self.d.color_stroke('rgb(2,3,4)', 0.5)
-        self.d.color_text('hsl(0,25%,80%)')
+    def test_colors(self):
         self.d.color_fill('black')
         assert self.d._getrgb((255,255,255)) == (255,255,255)
         assert self.d._getrgb('red') == (255,0,0)
+        assert self.d._getrgb('rgb(2,3,4)') == (2, 3, 4)
+        self.d._getrgb('hsl(0,25%,80%)')        
 
+    def test_new_fill_n_stroke(self):
+        # Check that the new fill and stroke accept colors.
+        self.d.fill('rgb(255,255,255)', 1.0)
+
+        # We use these also for the 'text' function.
+        self.d.text((10,50), 'ahuh')
+
+        # When we call fill() and stroke() with no parameters, the last used
+        # parameters are applied.
+        self.d.fill()
+        self.d.stroke()
+        
     def test_operator(self):
         self.assertRaises(KeyError, self.d.operator, 'bad_arg')
         l = "clear,source,over,in,out,atop,dest,dest_over,dest_in,dest_out,dest_atop,xor,add,saturate".split(',')
