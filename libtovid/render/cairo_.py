@@ -14,6 +14,10 @@ Run this script standalone for a demonstration:
 Please note the leading '_' after 'cairo'. This is to prevent conflicts with
 the 'official' cairo binding class.
 
+To start off with Cairo, read:
+
+    http://tortall.net/mu/wiki/CairoTutorial
+
 To build your own Cairo vector image using this module, fire up your Python
 interpreter:
 
@@ -334,8 +338,6 @@ class Drawing:
 
         opacity -- 0.0 to 1.0, or None, to leave opacity untouched.
         """
-        print "Called color_fill() with:", color, opacity
-
         if color is not None:
             (r,g,b) = self._getrgb(color)
             self.fill_rgb = (r / 255.0, g / 255.0, b / 255.0)
@@ -350,8 +352,6 @@ class Drawing:
 
         See color_fill() for details on how to specify 'color'
         """
-        print "Called color_stroke() with:", color, opacity
-
         if color is not None:
             (r,g,b) = self._getrgb(color)
             self.stroke_rgb = (r / 255.0, g / 255.0, b / 255.0)
@@ -366,8 +366,6 @@ class Drawing:
 
         See color_fill() for details on how to specify 'color'
         """
-        print "Called color_text() with:", color, opacity
-
         if color is not None:
             (r,g,b) = self._getrgb(color)
             self.text_rgb = (r / 255.0, g / 255.0, b / 255.0)
@@ -390,17 +388,14 @@ class Drawing:
     def _go_stroke_color(self):
         r,g,b = self.stroke_rgb
         # We NEEDED to specify float() here, and for how long have I searched ?
-        print "SET STROKE_COLOR: %f, %f, %f, alpha: %f" % (r,g,b, float(self.stroke_alpha * self.opacity_mask))
         self.cr.set_source_rgba(r,g,b, float(self.stroke_alpha * self.opacity_mask))
 
     def _go_text_color(self):
         r,g,b = self.text_rgb
-        print "SET TEXT_COLOR: %f, %f, %f, alpha: %f" % (r,g,b, float(self.text_alpha * self.opacity_mask))
         self.cr.set_source_rgba(r,g,b, float(self.text_alpha * self.opacity_mask))
 
     def _go_fill_color(self):
         r,g,b = self.fill_rgb
-        print "SET FILL_COLOR: %f, %f, %f, alpha: %f" % (r,g,b, float(self.fill_alpha * self.opacity_mask))        
         self.cr.set_source_rgba(r,g,b, float(self.fill_alpha * self.opacity_mask))
 
     #def decorate(self, decoration):
