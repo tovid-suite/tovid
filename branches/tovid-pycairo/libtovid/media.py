@@ -139,14 +139,18 @@ class MediaFile:
         # Use jpeg2yuv/png2yuv to stream images
         if file_type == 'jpg':
             cmd = 'jpeg2yuv '
+            cmd += ' -Ip '
+            cmd += ' -f %.3f ' % standards.get_fps(tvsys)
+            cmd += ' -j "%s/%%08d.%s"' % (imagedir, file_type)
         elif file_type == 'png':
-            cmd = 'png2yuv '
+            cmd = 'ls %s/*.png | ' % imagedir
+            cmd += 'xargs -n1 pngtopnm |'
+            cmd = 'png2yuv -Ip -f %.3f ' % standards.get_fps(tvsys)
+            cmd += ' -j "%s/%%08d.png"' % (imagedir)
+#            cmd += 'pnmtoy4m -Ip -F %s %s/*.png' % standards.get_fpsratio(tvsys)
         else:
             raise ValueError, "File_type '%s' isn't currently supported to "\
                   "render video from still frames" % file_type
-        cmd += ' -Ip '
-        cmd += ' -f %.3f ' % standards.get_fps(tvsys)
-        cmd += ' -j "%s/%%08d.%s"' % (imagedir, file_type)
 
         # TODO: Scale to correct target size using yuvscaler or similar
         

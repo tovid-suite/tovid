@@ -8,10 +8,13 @@ Effect classes are arranged in a (currently) simple hierarchy:
 
     Effect (base class)
     |-- Movement
+    |   \-- Translate
     |-- Fade
+    |   \-- FadeInOut
     |-- Colorfade
     |-- Spectrum
     |-- Scale
+    |-- Whirl
     \-- KeyFunction
 
 """
@@ -21,9 +24,11 @@ __all__ = [\
     'Movement',
     'Translate',
     'Fade',
+    'FadeInOut'
     'Colorfade',
     'Spectrum',
     'Scale',
+    'Whirl'
     'KeyFunction'
 ]
 
@@ -41,10 +46,18 @@ class Effect:
         self.keyframes = [Keyframe(self.start, 0), Keyframe(self.end, 0)]
         self.tween = Tween(self.keyframes)
 
-    def draw_on(self, drawing, frame):
-        """Draw the effect into the given Drawing, for the given frame.
-        Override this function in derived classes."""
+    def apply_before(self, drawing, frame):
+        """Called before the layer is painted
+        Override this function in derived classes.
+        """
         pass
+
+    def apply_after(self, drawing, frame):
+        """Called after the layer is painted
+        Override this function in derived classes.
+        """
+        pass
+
 
 # ============================================================================
 # New Effect template
@@ -78,13 +91,32 @@ class MyEffect (Effect):
         # Call this afterwards, to calculate the values at all frames
         self.tween = Tween(self.keyframes)
 
-    # The draw_on function draws the effect onto a Drawing at the given frame
-    def draw_on(self, drawing, frame):
+    # NOTE: no need to check if drawing is a 'Drawing'. It's checked on
+    # call.
+    def apply_before(self, drawing, frame):
+        """Undocumented"""
+        # This is called when rendering effects, before the layer is
+        # drawn.
+        drawing.save() # for example
+
+    def apply_after(self, drawing, frame):
+        """Undocumented"""
+        # This is called when 
+        drawing.restore() # for example
+
+    # Example funThe draw_on function draws the effect onto a Drawing at the given frame
+    def draw_this(self, drawing, frame):
+        """Undocumented"""
+        # Example function that can be called when drawing a layer.
+        # The Layer must know that his particular effect requires the
+        # calling of this function, or to add special parameters, or to
+        # draw between items in the layer.
+        
         # First, it's good to make sure we really have a Drawing class
         assert isinstance(drawing, Drawing)
+        
         # This effect varies the stroke width across a sequence of frames.
         # Replace 'stroke_width' with your own drawing function(s)
-        # (see libtovid/renderers/mvg_render.py for a complete list)
         drawing.stroke_width(self.tween[frame])
 
     # That's it! Your effect is ready to use.
@@ -105,10 +137,12 @@ class Movement (Effect):
             ]
         self.tween = Tween(self.keyframes)
 
-    def draw_on(self, drawing, frame):
-        """Draw the movement effect into the given Drawing."""
-        assert isinstance(drawing, Drawing)
+    def apply_before(self, drawing, frame):
+        drawing.save()
         drawing.translate(self.tween[frame])
+
+    def apply_after(self, drawing, frame):
+        drawing.restore()
 
 class Translate (Movement):
     """Translates the layer to some relative (x,y) coordinates"""
@@ -117,10 +151,9 @@ class Translate (Movement):
         
 
 class Fade (Effect):
-    """A fade-in/fade-out effect, varying the opacity of a layer.
+    """A generic fade effect, varying the opacity of a layer.
     """
-    def __init__(self, start, end, fade_length=30, keyframes=None,
-                 method='linear'):
+    def __init__(self, keyframes, method='linear'):
         """Fade in from start, for fade_length frames; hold at full
         opacity, then fade out for fade_length frames before end.
 
@@ -133,33 +166,54 @@ class Fade (Effect):
         method -- linear, cosine
 
         """
-        Effect.__init__(self, start, end)
         # A fill-opacity curve, something like:
         #         ______        100%
         #        /      \
         # start./        \.end  0%
         #
-        if not isinstance(keyframes, list):
-            self.keyframes = [\
+        if isinstance(keyframes, list):
+            if not isinstance(keyframes[0], Keyframe):
+                raise ValueError, "Must be a list of Keyframe objects"
+            self.keyframes = keyframes
+        else:
+            raise ValueError, "List of Keyframe objects required"
+
+        self.tween = Tween(self.keyframes, method)
+        
+
+    def apply_before(self, drawing, frame):
+        """Called before drawing on a layer"""
+        drawing.push_group()
+
+    def apply_after(self, drawing, frame):
+        """Called after darwing on a layer"""
+        drawing.pop_group_to_source()
+        drawing.paint_with_alpha(self.tween[frame])
+
+class FadeInOut(Fade):
+    def __init__(self, start, end, fade_length=30):
+        """Fade in from start, for fade_length frames; hold at full
+        opacity, then fade out for fade_length frames before end.
+
+        fade_length -- num of frames to fade-in from start, and num of
+                       frames to fade-out before end. Everything in-between
+                       is at full opacity.
+        """
+        # A fill-opacity curve, something like:
+        #         ______        100%
+        #        /      \
+        # start./        \.end  0%
+        #
+        self.keyframes = [\
                 Keyframe(start, 0.0),                  # Start fading in
                 Keyframe(start + fade_length, 1.0),    # Fade-in done
                 Keyframe(end - fade_length, 1.0),      # Start fading out
                 Keyframe(end, 0.0)                     # Fade-out done
                 ]
-        else:
-            self.keyframes = keyframes
 
-        print "Keyframes:"
-        for x in self.keyframes:
-            print "   frame: %d - data:" % x.frame, x.data
+        self.tween = Tween(self.keyframes)
 
-        self.tween = Tween(self.keyframes, method)
-
-    def draw_on(self, drawing, frame):
-        """Draw the fade effect into the given Drawing."""
-        assert isinstance(drawing, Drawing)
-        drawing.opacity(self.tween[frame])
-
+    
 class Colorfade (Effect):
     """A color-slide effect between an arbitrary number of RGB colors."""
     def __init__(self, start, end, (r0, g0, b0), (r1, g1, b1)):
@@ -171,9 +225,13 @@ class Colorfade (Effect):
             ]
         self.tween = Tween(self.keyframes)
 
-    def draw_on(self, drawing, frame):
-        assert isinstance(drawing, Drawing)
-        drawing.color_all(self.tween[frame])
+    def apply_before(self, drawing, frame):
+        """Set source color"""
+        drawing.set_source(self.tween[frame])
+
+    def apply_after(self, drawing, frame):
+        pass
+
 
 
 class Spectrum (Effect):
@@ -182,20 +240,18 @@ class Spectrum (Effect):
         Effect.__init__(self, start, end)
         step = (end - start) / 6
         self.keyframes = [\
-            Keyframe(start, (255, 0, 0)),
-            Keyframe(start + step, (255, 0, 255)),
-            Keyframe(start + step*2, (0, 0, 255)),
-            Keyframe(start + step*3, (0, 255, 255)),
-            Keyframe(start + step*4, (0, 255, 0)),
-            Keyframe(start + step*5, (255, 255, 0)),
-            Keyframe(end, (255, 0, 0))
+            Keyframe(start, (1.0, 0, 0)),
+            Keyframe(start + step, (1.0, 0, 1.0)),
+            Keyframe(start + step*2, (0, 0, 1.0)),
+            Keyframe(start + step*3, (0, 1.0, 1.0)),
+            Keyframe(start + step*4, (0, 1.0, 0)),
+            Keyframe(start + step*5, (1.0, 1.0, 0)),
+            Keyframe(end, (1.0, 0, 0))
             ]
         self.tween = Tween(self.keyframes)
 
-    def draw_on(self, drawing, frame):
-        assert isinstance(drawing, Drawing)
-        print "Drawing spectrum frame: ", self.tween[frame]
-        drawing.color_all(self.tween[frame])
+    def apply_before(self, drawing, frame):
+        drawing.set_source(self.tween[frame])
 
 
 class Scale (Effect):
@@ -208,10 +264,48 @@ class Scale (Effect):
             ]
         self.tween = Tween(self.keyframes)
 
-    def draw_on(self, drawing, frame):
-        assert isinstance(drawing, Drawing)
+
+    def apply_before(self, drawing, frame):
+        drawing.save()
         drawing.scale(self.tween[frame])
 
+    def apply_after(self, drawing, frame):
+        drawing.restore()
+
+
+class Whirl(Effect):
+    """Rotates an object a number of times.
+    """
+    def __init__(self, keyframes, center=(0,0), method='linear', units='deg'):
+        """Create a Whirl effect
+        
+        method -- 'linear' or 'cosine', for passing from one angle to another
+                  Pass from one angle to another
+        units -- 'deg' or 'rad', the unit used in the Keyframes
+        """
+        if units != 'deg' and units != 'rad':
+            raise ValueError, "units must be 'rad' (radians) or 'deg' (degrees)"
+        self.units = units
+        
+        if not isinstance(center, tuple):
+            raise ValueError, "center must be a two-value tuple"
+        self.center = center
+
+        self.keyframes = keyframes
+        self.tween = Tween(self.keyframes, method)
+
+    def apply_before(self, drawing, frame):
+        drawing.save()
+        # how to center the thing ? so you give a rotation point ?
+        drawing.translate(self.center)
+        if self.units is 'deg':
+            drawing.rotate_deg(self.tween[frame])
+        elif self.units is 'rad':
+            drawing.rotate_rad(self.tween[frame])
+
+    def apply_after(self, drawing, frame):
+        drawing.translate((- self.center[0], - self.center[1]))
+        drawing.restore()
 
 class KeyFunction (Effect):
     """A keyframed effect on an arbitrary Drawing function."""
@@ -236,6 +330,9 @@ class KeyFunction (Effect):
         # Tween keyframes using the given interpolation method
         self.tween = Tween(self.keyframes, method)
 
-    def draw_on(self, drawing, frame):
-        assert isinstance(drawing, Drawing)
+    def apply_before(self, drawing, frame):
+        drawing.save()
         self.draw_function(drawing, self.tween[frame])
+
+    def apply_after(self, drawing, frame):
+        drawing.restore()

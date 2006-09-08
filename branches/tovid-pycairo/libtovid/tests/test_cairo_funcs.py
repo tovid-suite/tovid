@@ -22,17 +22,6 @@ class TestCairoRenderer(unittest.TestCase):
         """Blank test"""
         pass
 
-    def test_defunc_cmds(self):
-        """Test commands that should send an assertion error"""
-        self.assertRaises(AssertionError, self.d.goto, 1)
-        self.assertRaises(AssertionError, self.d.goto_end)
-        self.assertRaises(AssertionError, self.d.append, 'str')
-        self.assertRaises(AssertionError, self.d.insert, 'str')
-        self.assertRaises(AssertionError, self.d.remove, 1)
-        self.assertRaises(AssertionError, self.d.extend, self.d)
-        self.assertRaises(AssertionError, self.d.undo)
-        self.assert_(self.d.code() == '')
-        
     def test_bezier(self):
         """Test bezier points checker"""
         pts = [[(1,1), (1,1), (1,1)],
@@ -148,43 +137,40 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.stroke_linejoin('bevel')
         self.d.stroke_linejoin('round')
 
-        self.d.stroke_opacity(1.0)
 
     def test_scale_translate(self):
-        self.d.push()
+        self.d.save()
         self.d.translate((-200, 0))
         self.d.scale((1.5, 1.5))  # Scaling is done from (0,0) as reference.
         self.d.scale_centered((50, 50), (1.5, 1.5))
         self.d.circle_rad((500, 100), 50) # same radius as others
         self.d.stroke()
-        self.d.pop()
+        self.d.restore()
 
     def test_push_n_rotate(self):
-        self.d.push()
+        self.d.save()
         self.d.rotate(180)
         self.d.rotate_deg(180)
         self.d.rotate_rad(math.pi)
-        self.d.pop()
+        self.d.restore()
 
     def test_colors(self):
-        self.d.color_fill('black')
-        assert self.d._getrgb((255,255,255)) == (255,255,255)
-        assert self.d._getrgb('red') == (255,0,0)
-        assert self.d._getrgb('rgb(2,3,4)') == (2, 3, 4)
-        self.d._getrgb('hsl(0,25%,80%)')        
+        self.d.set_source('black')
 
     def test_new_fill_n_stroke(self):
         # Check that the new fill and stroke accept colors.
-        self.d.fill('rgb(255,255,255)', 1.0)
+        self.d.set_source('rgb(255,255,255)', 1.0)
 
         # We use these also for the 'text' function.
         self.d.text((10,50), 'ahuh')
+        self.d.text_path((10, 1000), 'ahuh')
+        self.d.fill('blue')
 
         # When we call fill() and stroke() with no parameters, the last used
         # parameters are applied.
         self.d.fill()
         self.d.stroke()
-        
+
     def test_operator(self):
         self.assertRaises(KeyError, self.d.operator, 'bad_arg')
         l = "clear,source,over,in,out,atop,dest,dest_over,dest_in,dest_out,dest_atop,xor,add,saturate".split(',')
@@ -196,9 +182,7 @@ class TestCairoRenderer(unittest.TestCase):
         self.assertRaises(KeyError, self.d.fill_rule, 'invalid')
         self.d.fill_rule('evenodd')
         # Don't feed it a tuple, but a 'color' now...
-        self.d.color_fill('rgb(25,25,25)', 0.5)
         self.d.fill()
-        self.d.fill_opacity(1.0)
 
     def test_font_stuff(self):
         self.d.font('Times')
@@ -211,7 +195,6 @@ class TestCairoRenderer(unittest.TestCase):
 
     def test_text_stuff(self):
         self.d.text((15, 15), "This isn't a Unicode é string")
-        self.d.text_opacity(1.0)
         self.d.text((15, 15), u"This is a Unicode é string")
         self.d.text_extents(u"This is a Unicode é string")
 
@@ -242,11 +225,6 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.render('/tmp/my.png')
 
 
-    # We don't have opacity now...
-    def test_opacity(self):
-        self.d.opacity(0.5)
-        self.d.opacity(1.0)
-        
 
 
 if __name__ == '__main__':
