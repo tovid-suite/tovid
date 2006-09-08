@@ -47,6 +47,25 @@ def get_resolution(format, tvsys):
     return valid_size[format][tvsys]
 
 
+def get_scaling(format, tvsys):
+    """Return the (x,y) scaling factor for images to look right, for each
+    aspect ratio. ?!
+
+    TODO: Please update PAL values."""
+    valid_scaling = {\
+        'vcd':
+            {'pal': (1.0, 1.0), 'ntsc': (352 / 320., 1.0)},
+        'dvd-vcd':
+            {'pal': (1.0, 1.0), 'ntsc': (352 / 320., 1.0)},
+        'svcd':
+            {'pal': (1.0, 1.0), 'ntsc': (480 / 640., 1.0)},
+        'half-dvd':
+            {'pal': (1.0, 1.0), 'ntsc': (352 / 640., 1.0)},
+        'dvd':
+            {'pal': (1.0, 1.0), 'ntsc': (720 / 640., 1.0)},
+        }
+    return valid_scaling[format][tvsys]
+
 def get_vcodec(format):
     """Return the video codec used by the given format. For example:
     

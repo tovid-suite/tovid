@@ -5,13 +5,14 @@
 
 echo "Running UnitTests..."
 
-python testcli.py
-python testmenu.py
-python testmedia.py
-python testcairorender.py
-python testeffect.py
-python testflipbook.py
-python testlayer.py
+python test_cli.py
+python test_menu.py
+python test_media.py
+python test_cairo_funcs.py
+python test_cairo_newfuncs.py
+python test_effect.py
+python test_flipbook.py
+python test_layer.py
 
 echo "Running interactive tests..."
-python testcairodraws.py
+python test_cairo_drawings.py

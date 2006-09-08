@@ -23,15 +23,14 @@ class TestCairoDraws(unittest.TestCase):
         
     def txt(self, txt):
         #self.d.rectangle_size((15, 445), (610, 20))
-        self.d.push()
-        self.d.color_stroke('black')
-        self.d.color_fill('black', 0.3)
+        self.d.save()
         self.d.roundrectangle((10, 440), (620, 470), (5, 5))
-        self.d.fill_n_stroke()
-        self.d.color_text('white')
+        self.d.stroke('black')
+        self.d.fill('black', 0.3)
         self.d.font_size(16)
+        self.d.set_source('white') 
         self.d.text((15, 460), txt)
-        self.d.pop()
+        self.d.restore()
 
     ################ Tests start here ###########
 
@@ -41,10 +40,10 @@ class TestCairoDraws(unittest.TestCase):
         # Save a temp image to disk...
         im = Drawing((50,50))
         im.stroke_width(5)
-        im.color_stroke('red')
         im.circle_rad((25,25), 20)
-        im.stroke()
+        im.stroke('red')
         im.circle_rad((25,25), 10)
+        im.stroke()
         im.save_jpg('/tmp/img.jpg')
         im.save_png('/tmp/img.png')
 
@@ -60,28 +59,28 @@ class TestCairoDraws(unittest.TestCase):
         """Test whether the stroke goes over the fill and vice-versa"""
         self.txt(u"Red circle filled with white-50%")
         # Set colors
-        self.d.color_fill('white', 0.5)
-        self.d.color_stroke('red', 1.0)
+        fc = self.d.create_source('white', 0.5) # fill color
+        sc = self.d.create_source('red', 1.0)   # stroke color
         # Set width
         self.d.stroke_width(15)
 
         # Define a circle (left-most)
         self.d.circle_rad((100, 100), 50)
-        self.d.stroke()
-        self.d.fill()
+        self.d.stroke(sc)
+        self.d.fill(fc)
 
         # Define a second circle (centered)
         self.d.circle_rad((300, 100), 50)
-        self.d.fill()
-        self.d.stroke()
+        self.d.fill(fc)
+        self.d.stroke(sc)
 
         # Define a third circle (rightmost), and scale+translate it.
-        self.d.push()
+        self.d.save()
         self.d.translate((-200, 0))
         self.d.scale((1.5, 1.5))  # Scaling is done from (0,0) as reference.
         self.d.circle_rad((500, 100), 50) # same radius as others
-        self.d.stroke()
-        self.d.pop()
+        self.d.stroke(sc)
+        self.d.restore()
         
         
     def test_round_rectangle(self):
@@ -89,10 +88,9 @@ class TestCairoDraws(unittest.TestCase):
         self.txt(u"We should see here a round rectangle")
 
         self.d.stroke_width(1)
-        self.d.color_fill('red', 0.5)
-        self.d.color_stroke('black')
-        self.d.roundrectangle((20, 20), (400, 400), (20, 20))
-        self.d.fill_n_stroke()
+        self.d.roundrectangle((20, 20), (400, 400), (20, 20)) 
+        self.d.fill('red', 0.5)
+        self.d.stroke('black')
 
 
     def test_scaling(self):
@@ -103,27 +101,27 @@ class TestCairoDraws(unittest.TestCase):
         self.d.auto_stroke(True)
 
         # Black circle
-        self.d.push()
+        self.d.save()
         self.d.stroke_width(10)
-        self.d.color_stroke('black')
         self.d.circle_rad((100, 100), 30)
-        self.d.pop()
+        self.d.stroke('black')
+        self.d.restore()
 
         # Red circle
-        self.d.push()
+        self.d.save()
         self.d.stroke_width(10)
         self.d.scale((2.0, 2.0))
-        self.d.color_stroke('red')
         self.d.circle_rad((100, 100), 30)
-        self.d.pop()
+        self.d.stroke('red')
+        self.d.restore()
 
         # Green circle
-        self.d.push()
+        self.d.save()
         self.d.stroke_width(10)
         self.d.scale_centered((100, 100), (2.0, 2.0))
-        self.d.color_stroke('green')
         self.d.circle_rad((100, 100), 30)
-        self.d.pop()
+        self.d.stroke('green')
+        self.d.restore()
 
 
 if __name__ == '__main__':
