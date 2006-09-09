@@ -104,10 +104,10 @@ class Flipbook:
         Mostly for debugging."""
         print "Rendering Flipbook frame %s" % frame
         # Render the drawing
-        drawing = self.drawing(frame)
+        drawing = self.get_drawing(frame)
         drawing.render()
 
-    def drawing(self, frame):
+    def get_drawing(self, frame):
         """Get a Drawing of the given frame"""
         drawing = Drawing(standards.get_resolution(self.format, self.tvsys))
         # Set scaling to cope with aspect ratios:
@@ -139,7 +139,7 @@ class Flipbook:
         frame = 1
         while frame <= self.frames:
             print "Drawing frame %s of %s" % (frame, self.frames)
-            drawing = self.drawing(frame)
+            drawing = self.get_drawing(frame)
             # jpeg2yuv likes frames to start at 0
             drawing.save_png('%s/%08d.png' % (tmp, frame - 1))
             frame += 1

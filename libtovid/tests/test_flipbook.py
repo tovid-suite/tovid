@@ -5,10 +5,10 @@ import sys
 sys.path.insert(0, '..')
 # Get modules to test
 from render.cairo_ import Drawing
-from flipbook import Flipbook
-from media import MediaFile
-import layer
-import standards
+from libtovid.flipbook import Flipbook
+from libtovid.media import MediaFile
+from libtovid import layer
+from libtovid import standards
 
 class TestFlipbook(unittest.TestCase):
     """Test the Flipbook class"""
@@ -16,7 +16,7 @@ class TestFlipbook(unittest.TestCase):
     def test_save_an_image(self):
         # Save image to /tmp/save_image.[png|jpg]
         d = Drawing((250, 250))
-        d.color_stroke('red')
+        #d.color_stroke('red')
         d.stroke_width(10)
         d.circle_rad((125,125), 120)
         d.stroke()
@@ -26,19 +26,21 @@ class TestFlipbook(unittest.TestCase):
     
     def test_flip_save_video(self):
         """First test drive for Flipbook"""
-        size = standards.get_resolution('dvd', 'ntsc')
-        fb = Flipbook(10, size)
+        #size = standards.get_resolution('dvd', 'ntsc')
+        fb = Flipbook(10, 'dvd', 'ntsc')
 
-        thumb = layer.Thumb('/tmp/save_image.png', (100,100), 'My image')
+        thumb = layer.Thumb('/tmp/save_image.png', (100,100), (250, 250),
+                            'My image')
         fb.add(thumb)
         # Export '/tmp/testclip.m2v' ...
-        fb.render_video('/tmp/testflip', 'dvd', 'ntsc')
+        #fb.render_video('/tmp/testflip', 'dvd', 'ntsc')
+        fb.render_video('/tmp/testflip')
 
     def test_flip_video_in(self):
         """Try the ThumbGrid"""
         global VIDEO_FILE
-        size = standards.get_resolution('dvd', 'ntsc')
-        fb = Flipbook(20, size)
+        #size = standards.get_resolution('dvd', 'ntsc')
+        fb = Flipbook(20, 'dvd', 'ntsc')
 
         # Add frames
         mf = MediaFile()
@@ -55,7 +57,8 @@ class TestFlipbook(unittest.TestCase):
 
         fb.add(thumbgrid)
 
-        fb.render_video('/tmp/finalvideo', 'dvd', 'ntsc')
+        #fb.render_video('/tmp/finalvideo', 'dvd', 'ntsc')
+        fb.render_video('/tmp/finalvideo')
         
 global VIDEO_FILE
 
