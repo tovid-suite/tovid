@@ -120,7 +120,7 @@ class MediaFile:
 
         If size is nonzero, save images at the specified resolution.
         """
-        self.frame_files = rip_frames(self.filename, self.tempdir, frames, size)
+        self.frame_files = do_rip_frames(self.filename, self.tempdir, frames, size)
 
 
     def encode_frames(self, imagedir, file_type, outfile, format, tvsys):
@@ -254,7 +254,7 @@ def mplayer_identify(filename):
     return (length, audio_num, audio, video)
 
 
-def rip_frames(filename, out_dir, frames='all', size=(0, 0)):
+def do_rip_frames(filename, out_dir, frames='all', size=(0, 0)):
     """Extract frame images from a video file, saving in the given output
     directory, and return a list of frame image files. Rips all frames, a
     selected frame, or a range:
@@ -267,10 +267,13 @@ def rip_frames(filename, out_dir, frames='all', size=(0, 0)):
     """
     frame_files = []
     video_file = os.path.abspath(filename)
+    my_out_dir = out_dir + '/' + os.path.basename(filename) + '_media_rip'
     try:
-        os.mkdir(out_dir)
+        os.mkdir(my_out_dir)
     except:
-        print "Temp directory: %s already exists. Overwriting." % out_dir
+        print "Temp directory: %s already exists. Overwriting." % my_out_dir
+        os.system('rm -rf "%s"' % my_out_dir)
+        os.mkdir(my_out_dir)
 
     # TODO: use tcdemux to generate a nav index, like:
     # tcdemux -f 29.970 -W -i "$FILE" > "$NAVFILE"
@@ -290,7 +293,7 @@ def rip_frames(filename, out_dir, frames='all', size=(0, 0)):
         start = frames[0]
         cmd += ' -c %s-%s ' % (frames[0], frames[-1])
     cmd += ' -y jpg,null '
-    cmd += ' -o %s/frame_' % out_dir
+    cmd += ' -o %s/frame_' % my_out_dir
     print "Creating image sequence from %s" % video_file
     print cmd
     print commands.getoutput(cmd)
@@ -298,7 +301,7 @@ def rip_frames(filename, out_dir, frames='all', size=(0, 0)):
     frame = start
     end_reached = False
     while not end_reached:
-        framefile = '%s/frame_%06d.jpg' % (out_dir, frame)
+        framefile = '%s/frame_%06d.jpg' % (my_out_dir, frame)
         if os.path.exists(framefile):
             frame_files.append(framefile)
         else:
