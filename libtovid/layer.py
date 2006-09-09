@@ -211,7 +211,10 @@ class Image (Layer):
 
     def __del__(self):
         """Clean up temporary files."""
-        os.remove(self.prescaled_filename)
+        try:
+            os.remove(self.prescaled_filename)
+        except:
+            pass
 
     def _prescale(self, filename):
         """Convert and rescale the image to the target size, to save time in
@@ -230,7 +233,7 @@ class Image (Layer):
         print commands.getoutput(cmd)
         return scaled_filename
 
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
         drawing.save()
         drawing.image(self.position, self.size, self.prescaled_filename)
@@ -267,7 +270,7 @@ class VideoClip (Layer):
         self.mediafile.rip_frames([start, end])
         self.frame_files.extend(self.mediafile.frame_files)
 
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         """Draw ripped video frames to the given drawing. For now, it's
         necessary to call rip_frames() before calling this function.
         
@@ -320,7 +323,7 @@ class Text (Layer):
 
         return ex
 
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
 
         # Drop in debugger
@@ -351,7 +354,7 @@ class Label (Text):
         self.position = position
 
 
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
 
         (dx, dy, w, h, ax, ay) = self.extents(drawing)
@@ -406,7 +409,7 @@ class TextBox (Text):
         assert(isinstance(position, tuple))
         self.position = position
 
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
         drawing.save()
 
@@ -502,7 +505,7 @@ class Thumb (Layer):
         self.add_sublayer(self.lbl, self.position)
         
 
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
         drawing.save()
         (dx, dy, w, h, ax, ay) = self.lbl.extents(drawing)
@@ -574,7 +577,7 @@ class ThumbGrid (Layer):
         if rows == 0 and columns > 0:
             return (columns, (1 + num_items / columns))
 
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
         drawing.save()
         self.draw_sublayers(drawing, frame)
@@ -593,7 +596,7 @@ class SafeArea (Layer):
         self.percent = percent
         self.color = color
         
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
         # Calculate rectangle dimensions
         scale = float(self.percent) / 100.0
@@ -619,7 +622,7 @@ class TitleSafeArea (SafeArea):
     def __init__(self, color):
         SafeArea.__init__(self, 80, color)
 
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         SafeArea.draw_on(self, drawing, frame)
 
 class ActionSafeArea (SafeArea):
