@@ -1180,11 +1180,19 @@ class Drawing:
         f.close()
 
     def render(self, filename='/tmp/my.png'):
-        """Render the .mvg with ImageMagick, and display it."""
+        """Render the Drawing to a given filename."""
+        print "rendering Drawing to file: %s" % filename
         self.surface.write_to_png(filename)
         # TODO: when rendering series of .png, we can make a PNGLIST
         #       that would be ready for importation as a video in
         #       Cinelerra, the video editing suite.
+        
+    def display(self):
+        """Render and display the Drawing."""
+        png_file = '/tmp/drawing.png'
+        self.render(png_file)
+        print commands.getoutput('display %s' % png_file)
+        
 
     def save_image(self, img_filename):
         """Render the drawing to a .jpg, .png or other image."""
