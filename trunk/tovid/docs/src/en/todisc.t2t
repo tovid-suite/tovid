@@ -41,7 +41,7 @@ At present there are 2 display arrangements or "templates":
     1. -showcase-image IMAGE and -showcase-video VIDEO will produce an arrangement
 with small buttons on the side and the showcase image/video in the centre.
 
-    2. If you don't use -showcase-* arguement, then thumbs will be centred, and of
+    2. If you don't use -showcase-* argument, then thumbs will be centred, and of
 course there will be no extra image in the centre.
 
 The **-titles** arguments should be double-quoted, with special characters
