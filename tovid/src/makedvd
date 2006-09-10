@@ -99,36 +99,43 @@ DISC_LABEL=""
 # Grab DVD media information
 # Returns nothing, but sets the 'global' variables 
 #   MEDIA_INFO, DISC_STATUS, and DISC_TYPE
-probe_media ()
+function probe_media ()
 {
-  # Grab entire media info
-  MEDIA_INFO=$(dvd+rw-mediainfo $DVDRW_DEVICE 2>&1)
+    # Grab entire media info
+    MEDIA_INFO=$(dvd+rw-mediainfo $DVDRW_DEVICE 2>&1)
 
-  # Extract the status (either "blank" or "complete")
-  DISC_STATUS=$(echo "$MEDIA_INFO" | grep "Disc status" | awk '{ print $3 }')
+    # Extract the status (either "blank" or "complete")
+    DISC_STATUS=$(echo "$MEDIA_INFO" | grep "Disc status" | awk '{ print $3 }')
 
-  # Extract the disc type
-  DISC_TYPE=$(echo "$MEDIA_INFO" | grep "Mounted Media" | awk '{ print $4 }')
-  if test -z $DISC_TYPE; then 
-     if echo "$MEDIA_INFO" | grep -q "non-DVD"; then
-        DISC_TYPE="non-DVD media"
-     else
-        DISC_TYPE="no disc"
-     fi
-  fi
+    # Extract the disc type
+    DISC_TYPE=$(echo "$MEDIA_INFO" | grep "Mounted Media" | awk '{ print $4 }')
+    if test -z $DISC_TYPE; then 
+        if echo "$MEDIA_INFO" | grep -q "non-DVD"; then
+            DISC_TYPE="non-DVD media"
+        else
+            DISC_TYPE="no disc"
+        fi
+    fi
 
-  # Find the capcity
-  DISC_CAPACITY=$(echo "$MEDIA_INFO" | grep "Legacy lead-out" | \
-                  awk -F '=' '{print $2}')
-  if test -z $DISC_CAPACITY; then DISC_CAPACITY=0; fi
-  DISC_CAPACITY=$(echo "$DISC_CAPACITY / 1024 / 1024" | bc)
+    # Get disc capacity (in 2KB blocks)
+    DISC_CAPACITY=$(echo "$MEDIA_INFO" | grep "Free Blocks" | \
+                    awk -F '*|:' ' {print $2}')
+    if test -n $DISC_CAPACITY; then
+        DISC_CAPACITY=$(expr $DISC_CAPACITY \* 2048)
+    else
+        DISC_CAPACITY=0
+    fi
+    DISC_CAPACITY=$(echo "$DISC_CAPACITY / 1024 / 1024" | bc)
 
-  # Define usable DVDs
-  HAVE_DVD_RW=$(verify "$DISC_TYPE" set "DVD-RW DVD+RW")
-  if $(verify "$DISC_TYPE" set "DVD-R DVD+R") && test "x$DISC_STATUS" = "xblank"
-    then HAVE_BLANK_DVD_R=:
-    else HAVE_BLANK_DVD_R="false"
-  fi
+    # Define usable DVDs
+    HAVE_DVD_RW=$(verify "$DISC_TYPE" set "DVD-RW DVD+RW")
+    if $(verify "$DISC_TYPE" set "DVD-R DVD+R") && \
+        test "$DISC_STATUS" = "blank";
+    then
+        HAVE_BLANK_DVD_R=:
+    else
+        HAVE_BLANK_DVD_R="false"
+    fi
 }
 
 
@@ -184,12 +191,29 @@ if echo "$DISC_NAME" | grep -q -i '\.xml$'; then
     fi
     # The dest= argument from the XML file will be the output directory
     OUT_DIR=$(grep 'dest=' "$DVDAUTHOR_XML" | awk -F '"' '{print $2}')
-    echo "Putting output in directory: ./$OUT_DIR/"
+    # Remove existing files in outdir
+    if test -d "$OUT_DIR"; then
+        echo "Removing existing files in ./$OUT_DIR/"
+        rm -rf "$OUT_DIR"
+    fi
+    echo "Putting output in ./$OUT_DIR/"
 # Burn a directory containing a VIDEO_TS subfolder
-elif test -d "$DISC_NAME"; then
-    if test -d "$DISC_NAME/VIDEO_TS"; then
-        DO_BURN=:
-        OUT_DIR="$DISC_NAME"
+else
+    if test -d "$DISC_NAME"; then
+        # Ensure that it looks like a DVD folder
+        if test -d "$DISC_NAME/VIDEO_TS"; then
+            DO_BURN=:
+            OUT_DIR="$DISC_NAME"
+        else
+            runtime_error "Authored structure directory is not of correct format."
+            echo "Exiting..."
+            exit 1
+        fi
+    else
+        runtime_error "Authored structure directory does not exist."
+        echo "Exiting..."
+        exit 1
+
     fi
 fi
 
@@ -300,6 +324,22 @@ else
     echo $SEPARATOR
     echo "Found $DISC_STATUS $DISC_TYPE."
 
+    # complete DVD+/-RW need explicit blanking
+    # a bug report for tkDVD points out that -use-the-force-luke=tty is req'd to
+    # burn to complete +/-RW discs:
+    # http://savannah.nongnu.org/bugs/index.php?func=detailitem&item_id=10751
+    # but this support is still spotty (works for grepper and his +RW, but not 
+    # friedrij and his -RW)
+    if test "$DISC_STATUS" = "complete" && $HAVE_DVD_RW; then 
+      echo $SEPARATOR
+      echo "The disc in $DVDRW_DEVICE already has a DVD Video filesystem on it."
+      echo "Blanking $DISC_TYPE with the following command:"
+      echo "dvd+rw-format -blank $DVDRW_DEVICE"
+      dvd+rw-format -blank $DVDRW_DEVICE
+      # Re-probe media for new free space
+      probe_media
+    fi
+
     DISC_SUM=$(du -s -B M "$OUT_DIR" | awk '{print $1}' | tr -d M)
     if test $DISC_SUM -gt $DISC_CAPACITY; then
        echo $SEPARATOR
@@ -308,17 +348,6 @@ else
        exit 1
     fi
 
-    # complete DVD+/-RW need explicit blanking
-    # a bug report for tkDVD points out that -use-the-force-luke=tty is req'd to
-    # burn to complete +/-RW discs:
-    # http://savannah.nongnu.org/bugs/index.php?func=detailitem&item_id=10751
-    # but this support is still spotty (works for grepper and his +RW, but not 
-    # friedrij and his -RW)
-    if test "x$DISC_STATUS" = "xcomplete"; then 
-      echo $SEPARATOR
-      echo "Found $DISC_STATUS $DISC_TYPE in $DVDRW_DEVICE. Blanking..."
-      dvd+rw-format -blank $DVDRW_DEVICE
-    fi
     
     # Extract a valid volume ID
     VOLID=$(echo "$DISC_LABEL" | tr a-z A-Z)
