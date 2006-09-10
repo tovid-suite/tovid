@@ -131,7 +131,6 @@ function probe_media ()
         DISC_CAPACITY=0
     fi
     DISC_CAPACITY=$(echo "$DISC_CAPACITY / 1024 / 1024" | bc)
-    echo "DISC_CAPACITY is "$DISC_CAPACITY"" # sleep 10
 
     # Define usable DVDs
     HAVE_DVD_RW=$(verify "$DISC_TYPE" set "DVD-RW DVD+RW")
