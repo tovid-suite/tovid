@@ -967,13 +967,13 @@ class Drawing:
         # (Pixels or points?)
         self.cr.set_line_width(width)
     
-    def text(self, (x, y), text_string, centered=False):
+    def text(self, (x, y), text_string, align='left'):
         """Draw the given text string.
 
             (x, y) -- lower-left corner position
             text_string -- utf8 encoded text string
-            centered -- if True, text_string will be centered at the
-                        given (x, y) coordinates.
+            align -- 'left', 'center', 'right'. This only changes the
+                     alignment in 'x', and 'y' stays the baseline.
 
         Set the text's color with set_source() before calling text().
 
@@ -1008,9 +1008,13 @@ class Drawing:
 
         self.save()
         (dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
-        if centered:
+        if align == 'right':
+            x = x - w
+        elif align == 'center':
             x = x - w / 2
-            y = y + h / 2
+
+        assert align != False and align != True, "DEPRECATION WARNING: third parameter should now be 'align' as one of: 'left', 'right', 'center'. True and False are obsolete."
+
         self.cr.move_to(x, y)
         self.cr.show_text(text_string)
         self.restore()

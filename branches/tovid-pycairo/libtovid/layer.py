@@ -301,13 +301,13 @@ class Text (Layer):
     text -- UTF8 encoded string.
     """
     def __init__(self, text, position=(0,0), color='white', fontsize=20, \
-                 font='Helvetica', centered=False):
+                 font='Helvetica', align='left'):
         Layer.__init__(self)
         self.text = text
         self.color = color
         self.fontsize = fontsize
         self.font = font
-        self.centered = centered
+        self.align = align
         # Set (x,y) position
         assert(isinstance(position, tuple))
         self.position = position
@@ -332,7 +332,7 @@ class Text (Layer):
         drawing.font_size(self.fontsize)
         if self.color is not None:
             drawing.set_source(self.color)
-        drawing.text(self.position, self.text, self.centered)
+        drawing.text(self.position, self.text, self.align)
         drawing.restore()
 
 
