@@ -1081,6 +1081,14 @@ class Drawing:
         """
         self.cry('Use fill_opacity instead')
 
+
+    def new_gradient(self, (x0,y0), (x1,y1)):
+        """Return a LinearGradient object, initialized with the current
+        context."""
+        grad = cairo.LinearGradient(x0,y0,x1,y1)
+        grad.set_matrix(self.cr.get_matrix())
+        return grad
+
     def translate(self, (dx, dy)):
         """Do a translation by (x, y) pixels."""
         m = self.cr.get_matrix()
