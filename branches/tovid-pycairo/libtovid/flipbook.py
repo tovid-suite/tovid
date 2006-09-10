@@ -167,12 +167,23 @@ def draw_text_demo(flipbook, last_frame):
     text3.add_effect(effect.Movement(1, last_frame, (0, 0), (300, 50)))
     flipbook.add(text3, (20, 90))
 
-    text4 = layer.Text(u"Whirl effect demo", color=None)
+    text4 = layer.Text(u"Whirl effect demo", color=None, align='center')
     k = [Keyframe(0, 0),
-         Keyframe(last_frame, 360)]
+         Keyframe(30, 0),
+         Keyframe(40, 15),
+         Keyframe(45, -10),
+         Keyframe(50, 10),
+         Keyframe(55, -2),
+         Keyframe(60, 0)]
     text4.add_effect(effect.Whirl(k, center=(25, 10), units='deg'))
     text4.add_effect(effect.Colorfade(1, last_frame, (1.0,0,0), (0, 1.0, 0)))
     flipbook.add(text4, (340, 350))
+
+    text5 = layer.Text(u'Whirl effect demo2 ', color='white', align="center")
+    k2 = [Keyframe(0,0),
+          Keyframe(last_frame, 720)]
+    text5.add_effect(effect.Whirl(k2, center=(25, 10), units='deg'))
+    flipbook.add(text5, (450, 400))
 
     # Keyframed opacity demos, using both linear and cosine interpolation
     pulse = [Keyframe(1, 0.2),
