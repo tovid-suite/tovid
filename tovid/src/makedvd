@@ -88,6 +88,8 @@ runtime_error ()
 DO_AUTHOR=false
 # Burn the image to disc?
 DO_BURN=false
+HAVE_DVD_MINUS_RW=false
+HAVE_DVD_PLUS_RW=false
 
 # Guess for the device
 DVD_SIZE_MB=4300
@@ -105,10 +107,10 @@ function probe_media ()
     MEDIA_INFO=$(dvd+rw-mediainfo $DVDRW_DEVICE 2>&1)
 
     # Extract the status (either "blank" or "complete")
-    DISC_STATUS=$(echo "$MEDIA_INFO" | grep "Disc status" | awk '{ print $3 }')
+    DISC_STATUS=$(awk '/Disc status/ {print $3}' <<< "$MEDIA_INFO")
 
     # Extract the disc type
-    DISC_TYPE=$(echo "$MEDIA_INFO" | grep "Mounted Media" | awk '{ print $4 }')
+    DISC_TYPE=$(awk '/Mounted Media/ {print $4}' <<< "$MEDIA_INFO")
     if test -z $DISC_TYPE; then 
         if echo "$MEDIA_INFO" | grep -q "non-DVD"; then
             DISC_TYPE="non-DVD media"
@@ -118,17 +120,27 @@ function probe_media ()
     fi
 
     # Get disc capacity (in 2KB blocks)
-    DISC_CAPACITY=$(echo "$MEDIA_INFO" | grep "Free Blocks" | \
-                    awk -F '*|:' ' {print $2}')
+    if [[ "$DISC_TYPE" = *RW ]]; then
+        DISC_CAPACITY=$(awk -F '*|:' '/Track Size/ {print $2}' <<< "$MEDIA_INFO")
+    else
+        DISC_CAPACITY=$(awk -F '*|:' '/Free Blocks/ {print $2}' <<< "$MEDIA_INFO")
+    fi
     if test -n $DISC_CAPACITY; then
         DISC_CAPACITY=$(expr $DISC_CAPACITY \* 2048)
     else
         DISC_CAPACITY=0
     fi
     DISC_CAPACITY=$(echo "$DISC_CAPACITY / 1024 / 1024" | bc)
+    echo "DISC_CAPACITY is "$DISC_CAPACITY"" # sleep 10
 
     # Define usable DVDs
     HAVE_DVD_RW=$(verify "$DISC_TYPE" set "DVD-RW DVD+RW")
+    if [[ "$DISC_TYPE" = *+RW ]]; then
+        HAVE_DVD_PLUS_RW=:
+    elif [[ "$DISC_TYPE" = *-RW ]]; then
+        HAVE_DVD_MINUS_RW=:
+    fi
+    
     if $(verify "$DISC_TYPE" set "DVD-R DVD+R") && \
         test "$DISC_STATUS" = "blank";
     then
@@ -330,7 +342,7 @@ else
     # http://savannah.nongnu.org/bugs/index.php?func=detailitem&item_id=10751
     # but this support is still spotty (works for grepper and his +RW, but not 
     # friedrij and his -RW)
-    if test "$DISC_STATUS" = "complete" && $HAVE_DVD_RW; then 
+    if test "$DISC_STATUS" = "complete" && $HAVE_DVD_MINUS_RW; then 
       echo $SEPARATOR
       echo "The disc in $DVDRW_DEVICE already has a DVD Video filesystem on it."
       echo "Blanking $DISC_TYPE with the following command:"
