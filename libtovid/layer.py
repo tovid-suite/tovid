@@ -197,46 +197,27 @@ class Background (Layer):
 
 
 class Image (Layer):
-    """A rectangular image, scaled to the given size."""
-    def __init__(self, filename, (width, height), position=(0,0)):
+    """A rectangular image, scaled to the given size.
+
+    image_source -- can be anything cairo::Drawing::image() can accept.
+                    See documentation.
+    """
+    def __init__(self, image_source, (width, height), position=(0,0)):
         Layer.__init__(self)
         self.size = (width, height)
-        # Remember original image filename
-        self.original_filename = filename
-        # Prescale image file
-        self.prescaled_filename = self._prescale(filename)
-        # Set (x,y) position
+        self.image_source = image_source
         assert(isinstance(position, tuple))
         self.position = position
 
-    def __del__(self):
-        """Clean up temporary files."""
-        try:
-            os.remove(self.prescaled_filename)
-        except:
-            pass
-
-    def _prescale(self, filename):
-        """Convert and rescale the image to the target size, to save time in
-        compositing."""
-        dir, base = os.path.split(filename)
-        if dir is not '':
-            scaled_filename = "%s/tmp_%s" % (dir, base)
-        else:
-            scaled_filename = "tmp_%s" % base
-        cmd = 'convert -size %sx%s' % self.size
-        cmd += ' %s' % filename
-        cmd += ' -resize %sx%s' % self.size
-        cmd += ' %s' % scaled_filename
-        print "Prescaling Image: '%s' to temporary file: '%s'" % \
-              (filename, scaled_filename)
-        print commands.getoutput(cmd)
-        return scaled_filename
 
     def draw_on(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
         drawing.save()
-        drawing.image(self.position, self.size, self.prescaled_filename)
+        # Save the source for future calls to draw_on, so no further
+        # processing will be necessary. And other effects can be done
+        # without interferring with the original source.
+        self.image_source = drawing.image(self.position, self.size,
+                                          self.image_source)
         drawing.restore()
 
 

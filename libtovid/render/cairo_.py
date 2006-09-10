@@ -523,7 +523,7 @@ class Drawing:
     
     def image(self, (x, y), (width, height), source):
         """Draw an image centered at (x, y), scaled to the given width and
-        height.
+        height. Return the corresponding cairo.ImageSurface object.
 
         source -- a .png filename (quicker and alpha present),
                   a cairo.ImageSurface object, which is even better,
@@ -569,6 +569,8 @@ class Drawing:
         self.cr.set_source_surface(im)
         self.cr.paint()
         self.restore()
+
+        return im
     
     def line(self, (x0, y0), (x1, y1)):
         """Set new path as a line from (x0, y0) to (x1, y1).
