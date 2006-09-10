@@ -34,6 +34,7 @@ class TestCairoDraws(unittest.TestCase):
 
     ################ Tests start here ###########
 
+class TestImageLoad(TestCairoDraws):
     def test_image_load(self):
         """Draws an image into the buffer"""
         self.txt("Four red circles (first black bg), in a line, always bigger.")
@@ -55,6 +56,7 @@ class TestCairoDraws(unittest.TestCase):
         self.d.stroke()
         self.d.image((150, 150), (150, 100), im.surface)
 
+class TestCircleStrokeFill(TestCairoDraws):
     def test_circle_stroke_fill(self):
         """Test whether the stroke goes over the fill and vice-versa"""
         self.txt(u"Red circle filled with white-50%")
@@ -82,7 +84,7 @@ class TestCairoDraws(unittest.TestCase):
         self.d.stroke(sc)
         self.d.restore()
         
-        
+class TestRoundRectangle(TestCairoDraws):        
     def test_round_rectangle(self):
         """Test bezier points placement to make a round rectangle."""
         self.txt(u"We should see here a round rectangle")
@@ -92,7 +94,17 @@ class TestCairoDraws(unittest.TestCase):
         self.d.fill('red', 0.5)
         self.d.stroke('black')
 
+class TestTextAlign(TestCairoDraws):
+    def test_text_align(self):
+        """Test the different align="" values for .text()"""
+        self.txt(u"Tries align='left', 'center' and 'right'")
+        self.d.set_source('white')
+        self.d.font_size(18)
+        self.d.text((320, 100), 'Placed at (320, 100), aligned: left', align='left')
+        self.d.text((320, 150), 'Placed at (320, 150), aligned: center', align='center')
+        self.d.text((320, 200), 'Placed at (320, 200), aligned: right', align='right')
 
+class TestScaling(TestCairoDraws):
     def test_scaling(self):
         """Test the scale() and scale_centered() functions."""
         self.txt(u"Three circles. Red: scaled from (0,0), green, "\
