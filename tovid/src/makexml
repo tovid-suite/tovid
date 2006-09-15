@@ -677,7 +677,7 @@ fi
 # See if selected output file exists. If so, confirm for overwrite.
 if test -e $OUT_PREFIX.xml ; then
     echo $SEPARATOR
-    echo "The output file you specified: $OUT_PREFIX.xml already exists."
+    echo "*** The output file you specified: $OUT_PREFIX.xml already exists."
     if $OVERWRITE; then
         echo "Overwriting existing file."
     else
