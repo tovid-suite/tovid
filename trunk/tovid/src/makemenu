@@ -254,7 +254,6 @@ while test $# -gt 0; do
             ;;
         # Assume anything in quotes is a video title
         ""*"" )
-            echo "Adding title $1"
             TITLES=("${TITLES[@]}" "$1")
             ;;
         * )
