@@ -142,7 +142,7 @@ get_info ()
     fi
     # Identify video using tcprobe
     if test -n "$TCPROBE"; then
-        if $VERBOSE; then
+        if $VERBOSE || [[ ${INFILE##*.} = "mpg" || ${INFILE##*.} = "MPG" ]]; then
             echo $SEPARATOR
             echo "Identifying video with tcprobe..."
             echo $SEPARATOR
@@ -202,8 +202,12 @@ get_info ()
     fi
 
     V_ASPECT_WIDTH=$(expr $PLAY_WIDTH \* 100 \/ $PLAY_HEIGHT)
-    V_ASPECT_RATIO=$(echo $V_ASPECT_WIDTH | \
+    if grep -q "aspect ratio" "$SCRATCH_FILE"; then
+        V_ASPECT_RATIO=$(awk '/aspect ratio/ {print $3}'  "$SCRATCH_FILE")
+    else
+        V_ASPECT_RATIO=$(echo $V_ASPECT_WIDTH | \
         sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g')
+    fi
 
     # If doing -fast identification, skip "accurate" length determination
     if $FAST; then
