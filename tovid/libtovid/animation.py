@@ -86,12 +86,15 @@ class Keyframe:
     once you have them.
     """
     def __init__(self, frame, data):
+        """Create a keyframe, associating a given frame with some data.
+        The data may be an integer, floating-point value, or a tuple like
+        (x, y) or (r, g, b).
+        """
         self.frame = frame
         self.data = data
 
 
 # Interpolation algorithms
-
 def lerp(x, (x0, y0), (x1, y1)):
     """Do linear interpolation between points (x0, y0), (x1, y1), and return
     the 'y' of the given 'x'.
@@ -112,7 +115,7 @@ def cos_interp(x, (x0, y0), (x1, y1)):
     It gives smoother results at inflection points than linear interpolation, 
     but will result in "ripple" effects if keyframes are too dense or many.   
     """
-    # Map interpolation area (domain of x) to [0, pi]
+    # Map the interpolation area (domain of x) to [0, pi]
     x_norm = math.pi * (x - x0) / (x1 - x0)
     # For y0 < y1, use upward-sloping part of the cosine curve [pi, 2*pi]
     if y0 < y1:
@@ -175,31 +178,39 @@ def interpolate(frame, left, right, method):
 
 
 class Tween:
-    """Stores a list of keyframes and their corresponding interpolation over
-    the course of a given frame interval.
+    """An "in-between" sequence, calculated by interpolating the data in a
+    list of keyframes according to a given interpolation method.
+    
+    First, define some keyframes:
+    
+        >>> keyframes = [Keyframe(1, 1), Keyframe(10, 25)]
+    
+    At frame 1, the value is 1; at frame 10, the value is 25. To get an
+    interpolation of the data between these two keyframes, use:
+    
+        >>> tween = Tween(keyframes)
+
+    Now, retrieve the interpolated data all at once:
+    
+        >>> tween.data
+        [1, 3, 6, 9, 11, 14, 17, 19, 22, 25]
+    
+    Or by using array notation, indexed by frame number:
+    
+        >>> tween[3]
+        6
+        >>> tween[8]
+        19
     """
     def __init__(self, keyframes, method='linear'):
-        """Create an in-between sequence from the given list of keyframes,
-        using the given interpolation method.
-
-            >>> keyframes = [Keyframe(1, (0,0)), Keyframe(25, (25,25))]
-            >>> tween = Tween(keyframes)
-
-        Then, call 'tween[frame]' to fetch a value:
-
-            >>> tween[3]
-            (2, 2)
-            >>> tween[15]
-            (14, 14)
-
-        Interpolation method can be:
-            linear
-            cosine -- smooth tweening
+        """Create an in-between sequence from a list of keyframes. The
+        interpolation method can be 'linear' or 'cosine'.
 
         See effects.py for implementation examples.
         """
         assert isinstance(keyframes[0], Keyframe)
         self.keyframes = keyframes
+        self.method = method
         self.data = []
         self._tween(method)
 
