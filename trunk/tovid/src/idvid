@@ -142,7 +142,7 @@ get_info ()
     fi
     # Identify video using tcprobe
     if test -n "$TCPROBE"; then
-        if $VERBOSE || [[ ${INFILE##*.} = "mpg" || ${INFILE##*.} = "MPG" ]]; then
+        if $VERBOSE ; then
             echo $SEPARATOR
             echo "Identifying video with tcprobe..."
             echo $SEPARATOR
