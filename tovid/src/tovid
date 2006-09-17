@@ -368,7 +368,6 @@ get_args()
             "-normalize" )  
                 assert_dep normalize "'normalize' not found or installed! You cannot use -normalize."
                 DO_NORM=:
-                FORCE_ENCODING=:
                 ;;
             "-amplitude" )
                 shift 
@@ -1327,6 +1326,7 @@ if test "$IN_FILE_TYPE" = "file"; then
         GENERATE_AUDIO=:
     fi
 
+    if $DO_NORM; then AUDIO_OK=false; fi
     # If both audio and video are OK, stop now - there's no need to convert.
     if ! $FORCE_ENCODING && $AUDIO_OK && $VIDEO_OK; then
         # Create a symbolic link in place of the output file
