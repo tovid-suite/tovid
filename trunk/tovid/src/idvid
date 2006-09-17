@@ -190,24 +190,28 @@ get_info ()
         awk -F ' ' '{print $2}')
     test -z $ID_VIDEO_FRAMES && ID_VIDEO_FRAMES="0"
 
-    # Infer aspect ratio by what mplayer uses for playback
-    MPLAYER_RES=$(grep '^VO:' "$SCRATCH_FILE" | \
-        sed -e "s/..*=> *//g" -e "s/ .*$//g")
-    PLAY_WIDTH=$(echo $MPLAYER_RES | awk -F 'x' '{print $1}')
-    PLAY_HEIGHT=$(echo $MPLAYER_RES | awk -F 'x' '{print $2}')
-    # Fix nulls
-    if test -z "$PLAY_WIDTH" || test -z "$PLAY_HEIGHT"; then
-        PLAY_WIDTH="100"
-        PLAY_HEIGHT="100"
-    fi
 
-    V_ASPECT_WIDTH=$(expr $PLAY_WIDTH \* 100 \/ $PLAY_HEIGHT)
+    # If tcprobe reports an aspect ratio, use that
     if grep -q "aspect ratio" "$SCRATCH_FILE"; then
-        V_ASPECT_RATIO=$(awk '/aspect ratio/ {print $3}'  "$SCRATCH_FILE")
+        RATIO=$(awk '/aspect ratio/ {print $3}'  "$SCRATCH_FILE")
+        V_ASPECT_WIDTH=$(expr ${RATIO%:*} \* 100 \/ ${RATIO#*:})
+    # Otherwise, infer from mplayer
     else
-        V_ASPECT_RATIO=$(echo $V_ASPECT_WIDTH | \
-        sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g')
+        # Infer aspect ratio from width/height of mplayer playback
+        MPLAYER_RES=$(grep '^VO:' "$SCRATCH_FILE" | \
+            sed -e "s/..*=> *//g" -e "s/ .*$//g")
+        PLAY_WIDTH=$(echo $MPLAYER_RES | awk -F 'x' '{print $1}')
+        PLAY_HEIGHT=$(echo $MPLAYER_RES | awk -F 'x' '{print $2}')
+        # Fix nulls
+        if test -z "$PLAY_WIDTH" || test -z "$PLAY_HEIGHT"; then
+            PLAY_WIDTH="100"
+            PLAY_HEIGHT="100"
+        fi
+        V_ASPECT_WIDTH=$(expr $PLAY_WIDTH \* 100 \/ $PLAY_HEIGHT)
     fi
+    # Normalized aspect ratio
+    V_ASPECT_RATIO=$(echo $V_ASPECT_WIDTH | \
+    sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g')
 
     # If doing -fast identification, skip "accurate" length determination
     if $FAST; then
