@@ -217,10 +217,11 @@ get_info ()
     if $FAST; then
         :
     else
+        echo "Streaming video into /dev/null..."
         # Determine duration by playing the video into /dev/null and doing
         # tons of filtering. Time consuming, but presumably more accurate.
         V_DURATION="$(LC_ALL=C mencoder -ovc frameno -oac copy -noskiplimit \
-            \"$INFILE\" -o /dev/null 2>/dev/null \
+            "$INFILE" -o /dev/null 2>/dev/null \
             | tr '\r' '\n' | grep \"^Pos:\" | tail -n 1 \
             | sed s/\"Pos:\"// | awk -- '{print $1}' | sed s/[.][0-9]s//)"
     fi
