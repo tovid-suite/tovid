@@ -373,7 +373,6 @@ get_args()
                 shift 
                 AUDIO_AMPLITUDE="--amplitude=$1"
                 DO_NORM=:
-                FORCE_ENCODING=:
                 ;;
             "-overwrite" )
                 OVERWRITE=:
