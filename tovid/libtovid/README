@@ -9,16 +9,12 @@ This directory contains the Python source code of libtovid. libtovid provides a
 Python interface to the major functionality of the tovid suite--generating
 menus, encoding videos, and authoring (S)VCD and DVD discs.
 
-As of this writing (2006-02-23), the current state of libtovid is:
-
-    Partly working, but very incomplete
-
 Most of the modules are in a state of flux, as the developers try to hammer out
 the most logical structure. All are welcome to study and contribute to the code
-(GNU GPL licensed); comments on the code's readability are also strongly
+(it's GNU GPL licensed); comments on the code's readability are also strongly
 encouraged. A stated goal of the libtovid project is this:
 
-    Source code should make sense to users
+    Source code should make sense to users.
 
 Maybe not all; programming isn't for everybody. Maybe not even most. But the
 strength of open source is most fully exercised when many people get involved,
