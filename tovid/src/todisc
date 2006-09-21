@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 ME="[todisc]:"
 . tovid-init
 
@@ -405,6 +405,14 @@ function make_textmenu()
     cmd_exec "$MAKEDVD"
 }
 
+function confirm_dep()
+{
+    if ! $(which $1 > /dev/null 2>&1); then
+        yecho "$1 is not installed, please install it to use this program"
+        exit 1
+    fi
+}
+
 ##############################################################################
 #                          	End of functions                                 #
 ##############################################################################
@@ -769,8 +777,8 @@ if test ${#TITLES[@]} -gt 6 && test $MAX_CHARS -gt 12 ; then
 fi
 # disallow spaces in thumb titles for text button style
 for ((i=0; i<${#TITLES[@]}; i++)); do
-    if grep "  " <<< "${TITLES[i]}" >/dev/null; then
-        echo "Sorry, a maximum of one consecutive space is allowed in titles"
+    if grep "  " <<< "${TITLES[i]}" >/dev/null && [ "$BUTTON_STYLE" = "text" ]; then
+        echo "Sorry, a maximum of one consecutive space is allowed in titles for text buttons"
         echo "\"${TITLES[i]}\" has more than one consecutive space in it"
         exit 1
     fi
@@ -796,6 +804,9 @@ if $TEXTMENU; then
     make_textmenu
     exit
 fi
+
+# double check sox is installed, as the consequence of not having it is ugly
+confirm_dep sox
 
 yecho
 yecho "Creating work directories"
@@ -2880,7 +2891,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
         -shade $(awk_math 115 plus ${CURVE_ARRAY[p]} float)x30 -normalize mpr:img${p} \
         -compose Overlay -composite mpr:img${p} -matte -compose Dst_In -composite)
         IM_CMD7=(convert -trim +repage - )
-        if $FEATHER &&  [ "$THUMB_SHAPE" != "normal" ]; then # debug FIXME
+        if $FEATHER &&  [ "$THUMB_SHAPE" != "normal" ] && $THUMBS_3D; then # debug FIXME
             CURVE_UPDATE="with -blur 0x$( printf  "%.2f" $(awk_math 7 plus .${CURVE_ARRAY[p]/.} float) ) \
             -shade $( printf "%.2f" $(awk_math 115 plus ${CURVE_ARRAY[p]} float) )x30"
         fi
