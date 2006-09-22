@@ -408,7 +408,8 @@ function make_textmenu()
 function confirm_dep()
 {
     if ! $(which $1 > /dev/null 2>&1); then
-        yecho "$1 is not installed, please install it to use this program"
+        yecho "The program $1 is not installed, please install it to use todisc"
+        yecho "The $1 homepage is $2"
         exit 1
     fi
 }
@@ -554,8 +555,11 @@ while test $# -gt 0; do
             IMG_FMT=png
             SHOWCASE=:
             ;;
-        "-no-showcase-thumb" )
+        "-showcase-no-thumb" )
             NO_SC_THUMB=:
+            SHOWCASE=:
+            IMG_FMT=png
+            SHOWCASE_IMG="dummy"
             ;;
         "-rotate" )
             shift
@@ -806,7 +810,7 @@ if $TEXTMENU; then
 fi
 
 # double check sox is installed, as the consequence of not having it is ugly
-confirm_dep sox
+confirm_dep sox "http://sox.sourceforge.net/"
 
 yecho
 yecho "Creating work directories"
@@ -1158,9 +1162,9 @@ fi
 if $SHOWCASE; then
     if [ $V_ARRAY_TOTAL -le 5 ]; then
         SHOWCASE_SIZE=384x256
-        AUTOORDER="rows"
+        AUTOORDER="rows"       # spumux var
     else
-        SHOWCASE_SIZE=288x216
+        SHOWCASE_SIZE=288x216  # smaller showcase thumb because we have 2 rows
         AUTOORDER="columns"
     fi
 else
@@ -1175,7 +1179,7 @@ if [[ "$SC_FRAMESTYLE" = "glass" && -n "$SHOWCASE_VIDEO" ]] ; then
     unset SC_FRAME
 fi
 if $SHOWCASE; then
-    THUMB_BG_COLOUR="none"
+    THUMB_BG_COLOUR="none"   # mist backgrounds look a bit funny with showcase
 fi
 #FIXME temporary till non transparent menus for -showcase* are done separately
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
@@ -1267,7 +1271,7 @@ if [ -n "$THUMB_SHAPE" ]; then
     -blur 0x60 "$WORK_DIR/feather_mask2.png"
 fi
 if [ -z "$THUMB_TEXT_COLOUR" ]; then
-    if $FEATHER; then
+    if $FEATHER && ! $SHOWCASE; then    # dark font unless feather or showcase
         THUMB_TEXT_COLOUR="#161514"
     else
         THUMB_TEXT_COLOUR="#C6C6C6"
