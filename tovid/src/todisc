@@ -598,7 +598,6 @@ while test $# -gt 0; do
             THUMBS_3D=:
             RAISE="-raise 8x8"
             THUMB_FRAME=""
-            BLUR=0.1
             ;;
         "-blur" )
             shift
@@ -1170,6 +1169,12 @@ if $SHOWCASE; then
 else
     AUTOORDER="rows"
 fi
+
+# default of no blur if using 3D thumbs
+if $THUMBS_3D; then
+    BLUR=0.1
+fi
+
 # allow specifically setting the geometry for 3 videos to 1x3 page
 if $THREExONE && [ $V_ARRAY_TOTAL -eq 3 ]; then
     TILE_ARRAY[2]=3x1
