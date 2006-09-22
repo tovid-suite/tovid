@@ -266,22 +266,32 @@ class BurnDiscPanel(wx.Panel):
 
         # Construct authoring/imaging/burning options
         if self.doAuthor:
-            makedvdOptions += "-author "
+            if curConfig.curDiscFormat == 'vcd' or \
+               curConfig.curDiscFormat == 'svcd':
+                strAuthorCmd = "makevcd -device %s %s %s.xml" % \
+                  (self.device, makedvdOptions, curConfig.strOutputXMLFile)
+            else:
+                strAuthorCmd = "makedvd -device %s %s %s.xml" % \
+                  (self.device, makedvdOptions, curConfig.strOutputXMLFile)
+
+            #self.btnStart.Enable(False)
+            self.panCmdList.Enable(True)
+            self.panCmdList.Execute(strAuthorCmd)
+            self.panCmdList.Start()
+
         if self.doBurn:
-            makedvdOptions += "-burn "
-
-        if curConfig.curDiscFormat == 'vcd' or \
-           curConfig.curDiscFormat == 'svcd':
-            strAuthorCmd = "makevcd -device %s %s %s.xml" % \
+            if curConfig.curDiscFormat == 'vcd' or \
+               curConfig.curDiscFormat == 'svcd':
+                strAuthorCmd = "makevcd -device %s %s %s" % \
                 (self.device, makedvdOptions, curConfig.strOutputXMLFile)
-        else:
-            strAuthorCmd = "makedvd -device %s %s %s.xml" % \
+            else:
+                strAuthorCmd = "makedvd -device %s %s %s" % \
                 (self.device, makedvdOptions, curConfig.strOutputXMLFile)
-
-        #self.btnStart.Enable(False)
-        self.panCmdList.Enable(True)
-        self.panCmdList.Execute(strAuthorCmd)
-        self.panCmdList.Start()
+ 
+            #self.btnStart.Enable(False)
+            self.panCmdList.Enable(True)
+            self.panCmdList.Execute(strAuthorCmd)
+            self.panCmdList.Start()
 
     def ProcessingDone(self, errorOccurred):
         """Signify that disc burning is done."""
