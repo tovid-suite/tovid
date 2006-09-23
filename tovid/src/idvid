@@ -217,7 +217,6 @@ get_info ()
     if $FAST; then
         :
     else
-        echo "Streaming video into /dev/null..."
         # Determine duration by playing the video into /dev/null and doing
         # tons of filtering. Time consuming, but presumably more accurate.
         V_DURATION="$(LC_ALL=C mencoder -ovc frameno -oac copy -noskiplimit \
