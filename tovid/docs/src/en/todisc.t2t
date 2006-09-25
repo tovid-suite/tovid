@@ -46,11 +46,21 @@ course there will be no extra image in the centre.
 
 The **-titles** arguments should be double-quoted, with special characters
 (like ", !, *, &, ?) backslash-escaped. These titles are used for labeling
-thumbnails on the main menu. At present, thumbnail labels can only show about
-12 characters (depending on the number of thumbs, and  what **-thumb-font** and
-**-thumb-fontsize** you use).
+thumbnails on the main menu.
+
+For the -showcase-* template/style:
+
+this style can use much longer titles, particularly if you use:
+"-showcase-title-align west".
+In addition, "-showcase-no-thumb" will eliminate the thumb in
+the centre of the menu, which will give even more space for titles.
+
+For the default template/style thumbnail labels:
+
+this style can only show about 12 characters (depending on the number of thumbs,
+and what **-thumb-font** and **-thumb-fontsize** you use).
 If your titles are too long to fit in the label area, you may try using
-submenus, which can display longer titles:
+submenus, which can display longer titles, for example:
 
 ```
  $ todisc -submenus \
@@ -178,7 +188,7 @@ to decrease font size with the **-menu-fontsize** option. For example:
     to try other values
 : -showcase-framestyle  none|glass
     For -showcase-* style template only
-    "none" will use the default frame method, using convert -frame
+    "none" will use the default frame method, using "convert -frame . . ."
     "glass" will use mplayer to make frames, which gives an interesting animated
     effect to the frames, and can be much faster ( especially if you don't use -rotate or
     -wave as thumbs will not need to be processed again after mplayer spits them out
@@ -227,6 +237,15 @@ to decrease font size with the **-menu-fontsize** option. For example:
 : -showcase-seek NUM
      Seek to NUM seconds before generating thumbnails for showcase video
      (default: 1.0 seconds)
+: -showcase-titles-align west|east (default: centre [center])
+     The default is to center the text above the thumbnails.
+     This option will align the titles either to the left (west) or right (east).
+     Aligning west gives more space to the titles.  Aligning east also does so, and
+     as well will let you use \n in your titles to achieve multi line titles.
+: -showcase-no-thumb
+     Do not use a showcase image or video for the showcase style.  This will allow a
+     background video or image show through better, and will give more space for long
+     titles using the -showcase-titles-align west|east options.     
 : -tile3x1
      Use a montage tile of 3x1 instead of the usual 2x2 for 3 videos
      ie.  [movie1] [movie2] [movie3] instead of
