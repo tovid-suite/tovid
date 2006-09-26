@@ -137,6 +137,9 @@ AUDIOLANG=false
 USER_BSTYLE=false
 SHOWCASE_SEEK_VAL=1
 NO_SC_THUMB=false
+SC_TITLE_ALIGN="centre"
+THUMB_TITLE_ALIGN="center"
+EAST_ALIGN=false
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -418,7 +421,7 @@ function confirm_dep()
 #                          	End of functions                                 #
 ##############################################################################
 
-trap 'cleanup; exit 13' TERM INT
+#trap 'cleanup; exit 13' TERM INT
 
 ###############################################################################
 #       Process arguments to the script, set up VARS and WORK_DIR             #
@@ -560,6 +563,10 @@ while test $# -gt 0; do
             SHOWCASE=:
             IMG_FMT=png
             SHOWCASE_IMG="dummy"
+            ;;
+        "-showcase-titles-align" )
+            shift
+            SC_TITLE_ALIGN="$1"
             ;;
         "-rotate" )
             shift
@@ -961,6 +968,11 @@ if [ ${#SEEK_VAL[@]} -eq 1 ]; then
         SEEK[i]="-ss ${SEEK_VAL[i]}" # create seek value for each video
     done
 fi
+# make sure if more than one seek value, they equal the number of video
+if [[ ${#FILES[@]} -ne ${#SEEK_VAL[@]} &&  ${#SEEK_VAL[@]} -ne 1 ]]; then
+    usage_error "Please give the same number of seek times as videos, or just use one value.
+    You gave ${#FILES[@]} video files and ${#SEEK_VAL[@]} seek times"
+fi
 #create seek value for each video
 for ((i=0; i<=NUM_FILES; i++)); do
     # translate SEEK_VAL into frames for transcode
@@ -1030,7 +1042,11 @@ yecho "Disc title: \"$VMGM_TITLE\""
 yecho "  (adjust with -menu-title)"
 yecho "Including the following videos:"
 for ((i=0; i<${#TITLES[@]}; i++)); do
-    yecho "  \"${TITLES[i]}\" (${IN_FILES[i]})"
+    if [[ ${#TITLES[i]} -gt 35 ]]; then # don't echo long titles AND filenames
+        yecho "${IN_FILES[i]}"
+    else
+        yecho "  \"${TITLES[i]}\" (${IN_FILES[i]})"
+    fi
 done
 yecho "Current font settings: "
 yecho "  -menu-font $MENU_FONT"
@@ -1067,38 +1083,23 @@ SVCD_GEO_ARRAY=(240x240 180x180 120x120 120x120 120x120 120x120 96x96 96x96 \
 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48)
 TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4 \
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5 6x6 6x6)
-SHOWCASE_THUMB_ARRAY=("+86+166" "+86+110 +86+240" "+86+75 +86+175 +86+275" \
-"+86+68 +86+148 +86+228 +86+308" "+86+68 +86+131 +86+194 +86+257 +86+320" \
-"+86+75 +86+175 +86+275 +538+75 +538+175 +538+275" \
-"+86+68 +86+148 +86+228 +86+308 +554+68 +554+148 +554+228" \
-"+86+68 +86+148 +86+228 +86+308 +554+68 +554+148 +554+228 +554+308" \
-"+86+68 +86+131 +86+194 +86+257 +86+320 +574+68 +574+131 +574+194 +574+257"
-"+86+68 +86+131 +86+194 +86+257 +86+320 +574+68 +574+131 +574+194 +574+257 +574+320")
-SHOWCASE_TITLES_XARRAY=("144" "88 218" "54 154 254" \
+SHOWCASE_THUMB_Y_ARRAY=("166" "110 240" "75 175 275" "68 148 228 308" \
+"68 131 194 257 320" "75 175 275 75 175 275" "68 148 228 308 68 148 228" \
+"68 148 228 308 68 148 228 308" "68 131 194 257 320 68 131 194 257" \
+"68 131 194 257 320 68 131 194 257 320")
+SHOWCASE_TITLES_Y_ARRAY=("144" "88 218" "54 154 254" \
 "50 130 210 290" "49 112 175 238 301" "54 154 254 54 154 254" \
 "50 130 210 290 50 130 210" "50 130 210 290 50 130 210 290" \
 "49 112 175 238 301 49 112 175 238" \
 "49 112 175 238 301 49 112 175 238 301")
-PAGE_STARTPOS_ARRAY=("86" "86 86" "86 86 86" "86 86 86 86" \
+SHOWCASE_THUMB_X_ARRAY=("86" "86 86" "86 86 86" "86 86 86 86" \
 "86 86 86 86 86" "86 86 86 538 538 538" "86 86 86 86 554 554 554" \
 "86 86 86 86 554 554 554 554" "86 86 86 86 86 574 574 574 574" \
 "86 86 86 86 86 574 574 574 574 574")
-PAGE_STARTPOS=( ${PAGE_STARTPOS_ARRAY[NUM_FILES]} )
-PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
-printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
-"tovid suite's todisc - log for `date`" \
-"$PATTERN" >> "$LOG_FILE"
-
-# Do everything in $WORK_DIR
-echo -e "**** NOTE ****\n"
-echo "Doing all work in directory $REAL_WORK_DIR"
-echo "$WORK_DIR will be a symlink pointing to this directory"
-echo -e "\n**************"
-sleep 1
-cd "$WORK_DIR"
-
-
-echo  
+SHOWCASE_THUMB_X_ARRAY=( ${SHOWCASE_THUMB_X_ARRAY[NUM_FILES]} )
+SHOWCASE_THUMB_Y_ARRAY=( ${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]} )
+SHOWCASE_TITLES_X_ARRAY=( ${SHOWCASE_THUMB_X_ARRAY[@]} )
+SHOWCASE_TITLES_Y_ARRAY=( ${SHOWCASE_TITLES_Y_ARRAY[NUM_FILES]} )
 if  [ $TARGET = "dvd" ]; then
     AUDIO_EXT="ac3"
     SAMPLERATE="48000"
@@ -1160,7 +1161,11 @@ if $SHOWCASE; then
 fi
 if $SHOWCASE; then
     if [ $V_ARRAY_TOTAL -le 5 ]; then
-        SHOWCASE_SIZE=384x256
+        if [[ $SC_TITLE_ALIGN = *st ]]; then
+            SHOWCASE_SIZE=288x216  # smaller to allow for titles
+        else
+            SHOWCASE_SIZE=384x256
+        fi
         AUTOORDER="rows"       # spumux var
     else
         SHOWCASE_SIZE=288x216  # smaller showcase thumb because we have 2 rows
@@ -1169,6 +1174,50 @@ if $SHOWCASE; then
 else
     AUTOORDER="rows"
 fi
+if [ "$SC_TITLE_ALIGN" = "west" ]; then
+    THUMB_TITLE_ALIGN="west"
+    for ((i=0; i<=NUM_FILES; i++)); do
+        if [ $NUM_FILES -ge 5 ]; then
+            SHOWCASE_THUMB_X_ARRAY[i]=$((${SHOWCASE_THUMB_X_ARRAY[i]} - 36))
+            SHOWCASE_TITLES_X_ARRAY[i]=$((${SHOWCASE_TITLES_X_ARRAY[i]} - 36))
+        fi
+        if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
+            EAST_ALIGN=true # align titles *after* the thumbs if multiline
+        fi
+        if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 86 ]; then
+            SHOWCASE_THUMB_X_ARRAY[i]=360
+            SHOWCASE_TITLES_X_ARRAY[i]=${SHOWCASE_THUMB_X_ARRAY[i]}
+        fi
+    done
+    if $EAST_ALIGN; then SC_TITLE_ALIGN=east; fi # override unuseable supplied opt
+fi
+if [ "$SC_TITLE_ALIGN" = "east" ]; then
+    THUMB_TITLE_ALIGN="west"
+    for ((i=0; i<=NUM_FILES; i++)); do
+        if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 86 ]; then
+            SHOWCASE_THUMB_X_ARRAY[i]=360
+        fi
+        SHOWCASE_TITLES_X_ARRAY[i]=$(( ${SHOWCASE_THUMB_X_ARRAY[i]} + ${THUMB_SIZE/x*} + 5 ))
+        SHOWCASE_TITLES_Y_ARRAY[i]=$(( ${SHOWCASE_TITLES_Y_ARRAY[i]} + 18 ))
+    done
+fi
+# find out the array of showcase thumb "-page"'s for this arrangement
+for ((i=0; i<=NUM_FILES; i++)); do
+    SHOWCASE_THUMB_PAGES_ARRAY[i]=+${SHOWCASE_THUMB_X_ARRAY[i]}+${SHOWCASE_THUMB_Y_ARRAY[i]}
+done
+
+PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
+printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
+"tovid suite's todisc - log for `date`" \
+"$PATTERN" >> "$LOG_FILE"
+
+# Do everything in $WORK_DIR
+echo -e "**** NOTE ****\n"
+echo "Doing all work in directory $REAL_WORK_DIR"
+echo "$WORK_DIR will be a symlink pointing to this directory"
+echo -e "\n**************"
+sleep 1
+cd "$WORK_DIR"
 
 # default of no blur if using 3D thumbs
 if $THUMBS_3D; then
@@ -1368,9 +1417,9 @@ fi
 if $SHOWCASE; then
     for ((i=0; i<=NUM_FILES; i++)); do
         unset tt_dim ts_dim j
-        THUMB_TITLE_CMD=(convert  -size 320x100 xc:none \
+        THUMB_TITLE_CMD=(convert  -size 620x300 xc:none \
         -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
-        -fill black -stroke black -gravity center  \
+        -fill black -stroke black -gravity $THUMB_TITLE_ALIGN  \
         -annotate +0+0 "${TITLES[i]}" \
         -fill $THUMB_TEXT_COLOUR  -stroke "$STROKE" -strokewidth 1 \
         -annotate +1+1 "${TITLES[i]}")
@@ -1379,30 +1428,35 @@ if $SHOWCASE; then
         |fold -bs >> "$LOG_FILE"
         "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}"
         
-        # find out dimension of the thumb title png
+        # find out dimension of the thumb title png (for align centre situation)
         tt_dim=$(identify "$WORK_DIR/thumb_title${i}.png"|awk '{print $3}')
         # get just X demension to help determine final title pos below
         tt_dim=${tt_dim/x*}
-        # find out the array of thumb picture -pages for this arrangement
-        SHOWCASE_THUMB_PAGES=( ${SHOWCASE_THUMB_ARRAY[NUM_FILES]} )
         # thumb pos plus 1/2 (X dim) of thumbsize, less 1/2 title X dim
-        f=$(( ${THUMB_SIZE/x*} / 2 ))
-        j=$(( $((f + ${PAGE_STARTPOS[i]})) - $((tt_dim / 2)) ))
-        k=( ${k[@]} "$j" )
-        l=$((j + tt_dim))
-        if [ $j -lt 48 ]; then
-            off_left=$j
-            titlesafe_error $off_left
-        elif [ $l -gt 672 ]; then
-            off_right=$((720 - l))
-            titlesafe_error $off_right
+        if [ "$SC_TITLE_ALIGN" = "centre" ]; then
+            f=$(( ${THUMB_SIZE/x*} / 2 ))
+            j=$(( $((f + ${SHOWCASE_THUMB_X_ARRAY[i]})) - $((tt_dim / 2)) ))
+            k=( ${k[@]} "$j" )
+            l=$((j + tt_dim))
+            if [ $j -lt 48 ]; then
+                off_left=$j
+                titlesafe_error $off_left
+            elif [ $l -gt 672 ]; then
+                off_right=$((720 - l))
+                titlesafe_error $off_right
+            fi
         fi
     done
     # make array of SHOWCASE_PAGES for thumbs and THUMBTITLES_ARRAY for titles
+    # use preset values unless doing centre align for titles
     for ((i=0; i<=NUM_FILES; i++)); do
-        SC_THUMBTITLES=( ${SHOWCASE_TITLES_XARRAY[NUM_FILES]} )
-        SHOWCASE_TITLES_ARRAY[i]=+${k[i]}+${SC_THUMBTITLES[i]}
-        SHOWCASE_PAGES[i]="-page ${SHOWCASE_THUMB_PAGES[i]}"
+        if [ "$SC_TITLE_ALIGN" != "centre" ]; then
+            SHOWCASE_TITLES_ARRAY[i]=+${SHOWCASE_TITLES_X_ARRAY[i]}+${SHOWCASE_TITLES_Y_ARRAY[i]}
+        else
+            SHOWCASE_TITLES_ARRAY[i]=+${k[i]}+${SHOWCASE_TITLES_Y_ARRAY[i]}
+        fi
+
+        SHOWCASE_THUMB_PAGES[i]="-page ${SHOWCASE_THUMB_PAGES_ARRAY[i]}"
         THUMBTITLES_ARRAY[i]="-page ${SHOWCASE_TITLES_ARRAY[i]}"
     done 
 fi
@@ -1676,6 +1730,11 @@ echo "Creating the highlight and selection PNGs for the main menu"
 if ! $USER_BSTYLE && $SHOWCASE; then
     BUTTON_STYLE="text"
 fi
+for ((i=0; i<=NUM_FILES; i++)); do
+    if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
+        BUTTON_STYLE=rect # multiline titles not suitable for text buttons
+    fi
+done
 if [ "$BUTTON_STYLE" = "rect" ]; then
 MENU_BUTTON_SIZE=$THUMB_SIZE
 get_button_geo
@@ -1722,15 +1781,15 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file "$WORK_DIR/Selectx1.png")
     BUTTON_CMD7=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
     -stroke '#188DF6' -strokewidth 4 -draw @draw_file "$WORK_DIR/Highlightx1.png")
-    BUTTON_CMD8=(convert -size 320x100 xc:none \
+    BUTTON_CMD8=(convert -size 620x300 xc:none \
     -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
-    -fill '#188DF6' -stroke none -gravity center  \
+    -fill '#188DF6' -stroke none -gravity $THUMB_TITLE_ALIGN  \
     -annotate +0+0 "${TITLES[i]}" \
     -fill '#188DF6' -stroke '#188DF6' -strokewidth 1 \
     -annotate +1+1 "${TITLES[t]}")
-    BUTTON_CMD9=(convert -size 320x100 xc:none \
+    BUTTON_CMD9=(convert -size 620x300 xc:none \
     -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
-    -fill '#DE7F7C' -stroke none -gravity center  \
+    -fill '#DE7F7C' -stroke none -gravity $THUMB_TITLE_ALIGN  \
     -annotate +0+0 "${TITLES[i]}" \
     -fill '#DE7F7C' -stroke '#DE7F7C' -strokewidth 1 \
     -annotate +1+1 "${TITLES[t]}")
@@ -1782,8 +1841,8 @@ if [ "$BUTTON_STYLE" = "rect" ]; then
             fake_montage=( $WORK_DIR/Highlightx1.png $(for ((i=0; i<NUM_FILES-1; i++)); do
             echo $WORK_DIR/empty-button.png; done))
             for ((i=0; i<=NUM_FILES; i++)); do
-                fake_montage_cmd=( ${fake_montage_cmd[@]} ${SHOWCASE_PAGES[i]} "${fake_montage[i]}")
-                sc_spumux_cmd=( ${sc_spumux_cmd[@]} ${SHOWCASE_PAGES[i]} "$WORK_DIR/${button}x1.png" )
+                fake_montage_cmd=( ${fake_montage_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "${fake_montage[i]}")
+                sc_spumux_cmd=( ${sc_spumux_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "$WORK_DIR/${button}x1.png" )
             done
             convert  -size 720x480 xc:none -background none \
             ${fake_montage_cmd[@]} -mosaic "$WORK_DIR/fake_montage.png"
@@ -1874,7 +1933,11 @@ if $SHOWCASE; then
         sc_palette=$(( $((86 + ${THUMB_SIZE/x*})) + $((sc_palette / 2))))
         sc_xpage2=$((sc_palette - $((sc_width / 2)) ))
         if [ $V_ARRAY_TOTAL -le 5 ]; then
-            SC_IMG_PAGE="-page +$sc_xpage2+85"
+            if [[ $SC_TITLE_ALIGN = *st ]]; then
+                SC_IMG_PAGE="-page +360+100"
+            else
+                SC_IMG_PAGE="-page +$sc_xpage2+85"
+            fi
         elif [ $V_ARRAY_TOTAL -gt 5 ]; then
             SC_IMG_PAGE="-page +$sc_xpage+100"
         fi
@@ -1884,7 +1947,7 @@ if $SHOWCASE; then
     if [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
         unset sc_cmd
         for ((i=0; i<=NUM_FILES; i++)); do
-            sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_PAGES[i]} "${PICS[i]}")
+            sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "${PICS[i]}")
         done
         if ! $NOASK; then
             echo "Creating and displaying a preview of the main menu."
@@ -2239,8 +2302,8 @@ for ((s=0; s<=NUM_FILES; s++)); do
     chapters="$(for c in $chapt_intervals; do echo $(format_seconds $c); done)"
     chapters="00:00:00.000 $chapters"
     if [ ${CHAPTERS[s]} = 1 ]; then chapters="00:00:00.000"; fi
-    CHAPTS=$(for i in $chapters; do echo -n $i,;done|sed 's/,$//')
-    CHAPT_ARRAY[s]="$CHAPTS"
+    CHAPTS=$(for i in $chapters; do echo -n $i,;done)
+    CHAPT_ARRAY[s]="${CHAPTS%?}" # %? to remove trailing ','
     unset L cmd
     if $SUB_MENU; then
         echo
@@ -2439,7 +2502,7 @@ if $SUB_MENU; then
     for ((i=0; i<${#IN_FILES[@]}; i++)); do
         C=$((${CHAPTERS[i]} - 1))
         yecho "Creating a transparent title PNG"
-        convert -size 620x100 xc:none -font "$MENU_FONT" \
+        convert -size 620x300 xc:none -font "$MENU_FONT" \
         -pointsize $MENU_FONTSIZE \
         -fill "$SM_TITLE_COLOUR" -draw "gravity center text 2,2 \"${SM_TITLES[i]}\"" \
         -stroke "$SUBMENU_STROKE" -strokewidth 1 \
@@ -3016,7 +3079,7 @@ if $MENU_FADE && ! $STATIC; then
         done
         if $SHOWCASE; then
             for ((i=0; i<${#ANI_PICS[@]}; i++)); do
-                sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_PAGES[i]} "${ANI_PICS[i]}")
+                sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "${ANI_PICS[i]}")
             done
             if ! $NO_SC_THUMB; then
                 SC_VIDEO_CMD="$SC_IMG_PAGE \
@@ -3106,7 +3169,7 @@ else # Do not do menu fade
                 -name $(printf "%06d%s"  $((count - 1)) .$IMG_FMT) ) )
             done
             for ((f=0; f<${#ANI_PICS[@]}; f++)); do
-                sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_PAGES[f]} "${ANI_PICS[f]}")
+                sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_THUMB_PAGES[f]} "${ANI_PICS[f]}")
             done
             if ! $NO_SC_THUMB; then
                 SC_VIDEO_CMD="$SC_IMG_PAGE \
