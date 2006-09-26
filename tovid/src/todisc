@@ -1177,7 +1177,7 @@ fi
 if [ "$SC_TITLE_ALIGN" = "west" ]; then
     THUMB_TITLE_ALIGN="west"
     for ((i=0; i<=NUM_FILES; i++)); do
-        if [ $NUM_FILES -ge 5 ]; then
+        if [ $i -lt 5 ]; then
             SHOWCASE_THUMB_X_ARRAY[i]=$((${SHOWCASE_THUMB_X_ARRAY[i]} - 36))
             SHOWCASE_TITLES_X_ARRAY[i]=$((${SHOWCASE_TITLES_X_ARRAY[i]} - 36))
         fi
@@ -1194,6 +1194,10 @@ fi
 if [ "$SC_TITLE_ALIGN" = "east" ]; then
     THUMB_TITLE_ALIGN="west"
     for ((i=0; i<=NUM_FILES; i++)); do
+        if [ $i -lt 5 ]; then
+            SHOWCASE_THUMB_X_ARRAY[i]=$((${SHOWCASE_THUMB_X_ARRAY[i]} - 36))
+            SHOWCASE_TITLES_X_ARRAY[i]=$((${SHOWCASE_TITLES_X_ARRAY[i]} - 36))
+        fi
         if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 86 ]; then
             SHOWCASE_THUMB_X_ARRAY[i]=360
         fi
