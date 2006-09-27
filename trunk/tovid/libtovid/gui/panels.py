@@ -268,10 +268,10 @@ class BurnDiscPanel(wx.Panel):
         if self.doAuthor:
             if curConfig.curDiscFormat == 'vcd' or \
                curConfig.curDiscFormat == 'svcd':
-                strAuthorCmd = "makevcd -device %s %s %s.xml" % \
+                strAuthorCmd = "makevcd -device %s %s \"%s.xml\"" % \
                   (self.device, makedvdOptions, curConfig.strOutputXMLFile)
             else:
-                strAuthorCmd = "makedvd -device %s %s %s.xml" % \
+                strAuthorCmd = "makedvd -device %s %s \"%s.xml\"" % \
                   (self.device, makedvdOptions, curConfig.strOutputXMLFile)
 
             #self.btnStart.Enable(False)
@@ -282,10 +282,10 @@ class BurnDiscPanel(wx.Panel):
         if self.doBurn:
             if curConfig.curDiscFormat == 'vcd' or \
                curConfig.curDiscFormat == 'svcd':
-                strAuthorCmd = "makevcd -device %s %s %s" % \
+                strAuthorCmd = "makevcd -device %s %s \"%s\"" % \
                 (self.device, makedvdOptions, curConfig.strOutputXMLFile)
             else:
-                strAuthorCmd = "makedvd -device %s %s %s" % \
+                strAuthorCmd = "makedvd -device %s %s \"%s\"" % \
                 (self.device, makedvdOptions, curConfig.strOutputXMLFile)
  
             #self.btnStart.Enable(False)
