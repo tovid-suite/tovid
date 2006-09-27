@@ -432,17 +432,17 @@ fi
 # one (blue-black gradient)
 if test -z "$BG_IMAGE"; then
     BG_CMD="convert -size ${WIDTH}x${HEIGHT} gradient:blue-black \
-        -gravity center -matte $BG_CANVAS"
+        -gravity center -matte \"$BG_CANVAS\""
 # Otherwise, scale/crop the provided image
 else
-    BG_CMD="convert \"$BG_IMAGE\" $SCALECROP -matte $BG_CANVAS"
+    BG_CMD="convert \"$BG_IMAGE\" $SCALECROP -matte \"$BG_CANVAS\""
 fi
 echo "Creating the background canvas with the following command:"
 echo $"$BG_CMD"
 eval $BG_CMD
 
 # If no background audio was provided, generate 4 seconds of silence
-if test -z $BG_AUDIO ; then
+if test -z "$BG_AUDIO"; then
     echo "Creating 4-second silent $ASUF audio with the following command:"
     AUDIO_CMD="ffmpeg -f s16le -i /dev/zero -ac 2 -ar $SAMPRATE -ab 224 \
         -t 4 -acodec $ASUF -y \"$AUDIO_STREAM\""
@@ -485,8 +485,7 @@ MAGICK_CMD="convert -size ${FG_WIDTH}x${FG_HEIGHT} xc:none +antialias \
     -font \"$USE_TITLE_FONT\" -weight bold -pointsize $TITLE_SIZE \
     -fill \"$HIGHLIGHT_COLOR\" -draw \"gravity $TEXT_ALIGN $BUTTON_TEXT\" \
     -type Palette -colors 3 \
-    $FG_HIGHLIGHT"
-    #png8:$FG_HIGHLIGHT"
+    \"$FG_HIGHLIGHT\""
 echo $SEPARATOR
 echo "Creating the highlighted titles with the following command:"
 echo $"$MAGICK_CMD"
@@ -497,8 +496,7 @@ MAGICK_CMD="convert -size ${FG_WIDTH}x${FG_HEIGHT} xc:none +antialias \
     -font \"$USE_TITLE_FONT\" -weight bold -pointsize $TITLE_SIZE \
     -fill \"$SELECT_COLOR\" -draw \"gravity $TEXT_ALIGN $BUTTON_TEXT\" \
     -type Palette -colors 3 \
-    $FG_SELECTION"
-    #png8:$FG_SELECTION"
+    \"$FG_SELECTION\""
 echo $SEPARATOR
 echo "Creating the selection titles with the following command:"
 echo $"$MAGICK_CMD"
@@ -506,7 +504,7 @@ eval $MAGICK_CMD
 
 # Composite foreground canvas onto background
 MAGICK_CMD="composite -compose Over -gravity center \
-    $FG_CANVAS $BG_CANVAS -depth 8 \"$MENU_PPM\""
+    \"$FG_CANVAS\" \"$BG_CANVAS\" -depth 8 \"$MENU_PPM\""
 echo $SEPARATOR
 echo "Compositing foreground canvas over background with the following command:"
 echo $"$MAGICK_CMD"
@@ -514,8 +512,7 @@ eval $MAGICK_CMD
 
 # Composite highlight canvas with transparent background
 MAGICK_CMD="composite -compose Src -gravity center \
-    $FG_HIGHLIGHT $BG_CANVAS \"$HIGHLIGHT_PNG\""
-    #$FG_HIGHLIGHT $BG_CANVAS png8:\"$HIGHLIGHT_PNG\""
+    \"$FG_HIGHLIGHT\" \"$BG_CANVAS\" \"$HIGHLIGHT_PNG\""
 echo $SEPARATOR
 echo "Compositing highlighted titles with the following command:"
 echo $"$MAGICK_CMD"
@@ -524,8 +521,7 @@ eval $MAGICK_CMD
 
 # Composite highlight canvas with transparent background
 MAGICK_CMD="composite -compose Src -gravity center \
-    $FG_SELECTION $BG_CANVAS \"$SELECT_PNG\""
-    #$FG_SELECTION $BG_CANVAS png8:\"$SELECT_PNG\""
+    \"$FG_SELECTION\" \"$BG_CANVAS\" \"$SELECT_PNG\""
 echo $SEPARATOR
 echo "Compositing selection titles with the following command:"
 echo $"$MAGICK_CMD"
