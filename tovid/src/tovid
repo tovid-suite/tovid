@@ -597,17 +597,8 @@ cleanup()
     if $KEEPFILES; then
         yecho "Keeping temporary files in $TMP_DIR"
     else
-        yecho
-        yecho "Do you want to keep the temporary files that were created ?"
-        yecho "Please type \"yes\", or else they will be deleted"
-        read input # would someone really type "yes" with quotes? (probably )
-        echo
-        if [[ ! -z "$input" && "$input" = "yes" || "$input" = \"yes\" ]]; then
-            yecho "Keeping temporary files in $TMP_DIR"
-        else
-            yecho "Removing temporary files..."
-            rm -rfv "$TMP_DIR"
-        fi
+        yecho "Removing temporary files..."
+        rm -rfv "$TMP_DIR"
     fi
 }
 
