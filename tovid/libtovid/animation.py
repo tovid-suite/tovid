@@ -146,6 +146,13 @@ def interpolate(frame, left, right, method):
         >>> interpolate(10, left, right, 'cosine')
         56.582194019564263
 
+    For frames outside the keyframe interval, the corresponding endpoint value
+    is returned:
+    
+        >>> interpolate(0, left, right, 'linear')
+        50
+        >>> interpolate(40, left, right, 'linear')
+        80
     """
     assert isinstance(left, Keyframe) and isinstance(right, Keyframe)
     # At or beyond endpoints, return endpoint value
@@ -162,9 +169,9 @@ def interpolate(frame, left, right, method):
 
     # Interpolate integers or floats
     if isinstance(left.data, int) or isinstance(left.data, float):
-        x0 = (left.frame, left.data)
-        y0 = (right.frame, right.data)
-        return interp_func(frame, x0, y0)
+        p0 = (left.frame, left.data)
+        p1 = (right.frame, right.data)
+        return interp_func(frame, p0, p1)
     # Interpolate a tuple (x, y, ...)
     elif isinstance(left.data, tuple):
         # Interpolate each dimension separately
@@ -212,9 +219,9 @@ class Tween:
         self.keyframes = keyframes
         self.method = method
         self.data = []
-        self._tween(method)
+        self._tween()
 
-    def _tween(self, method):
+    def _tween(self):
         """Perform in-betweening calculation on the current keyframes and
         fill self.data with tweened values, indexed by frame number.
         """
@@ -239,7 +246,8 @@ class Tween:
         frame = first
         # Interpolate until the last frame is reached
         while frame <= last:
-            self.data.append(interpolate(frame, left, right, method))
+            value = interpolate(frame, left, right, self.method)
+            self.data.append(value)
             # Get the next interval, if it exists
             if frame == right.frame and len(keys) > 0:
                 left = right
@@ -264,9 +272,8 @@ class Tween:
         
             >>> tween[0]
             1
-            >>> tween[105]
+            >>> tween[100]
             50
-
         """
         # If data is a single value, frame is irrelevant
         if not isinstance(self.data, list):
