@@ -549,7 +549,9 @@ get_args()
                 KEEPFILES=:
                 ;;
 
-            # Ignore unexpected options
+            "*" )
+                usage_error "Unrecognized command-line option: '$1'"
+
             esac
 
         # Get next argument
@@ -684,8 +686,8 @@ EOF`
     AVG_BITRATE=$(grep 'Average bit-rate' "$LOG_FILE" | awk '{print $6}')
     PEAK_BITRATE=$(grep 'Peak bit-rate' "$LOG_FILE" | awk '{print $6}')
     # Convert to kbits/sec
-    test -n $AVG_BITRATE && AVG_BITRATE=$(expr $AVG_BITRATE \/ 1000)
-    test -n $PEAK_BITRATE && PEAK_BITRATE=$(expr $PEAK_BITRATE \/ 1000)
+    test -n "$AVG_BITRATE" && AVG_BITRATE=$(expr $AVG_BITRATE \/ 1000)
+    test -n "$PEAK_BITRATE" && PEAK_BITRATE=$(expr $PEAK_BITRATE \/ 1000)
     KB_PER_MIN=$(expr $FINAL_SIZE \* 60 \/ $V_DURATION \+ 1)
     ENC_TIME_RATIO=$(echo "scale = 2; $SCRIPT_TOT_TIME / $V_DURATION" | bc)
     if $USE_FFMPEG; then
@@ -1793,7 +1795,7 @@ if $PARALLEL; then
 fi
 
 wait
-if test -n $?; then
+if test -n "$?"; then
     yecho "Multiplexing finished successfully"
 else
     runtime_error "There was a problem multiplexing the audio and video together."
