@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/usr/bin/env bash
 ME="[tovid]:"
 . tovid-init
 
@@ -90,7 +90,7 @@ TGT_RES="DVD"
 TVSYS="NTSC"
 BASETVSYS="NTSC"
 ASPECT_RATIO=""
-V_ASPECT_WIDTH=""
+V_ASPECT_WIDTH=133
 # 100% safe area
 SAFE_AREA=100
 # Don't use yuvdenoise
