@@ -5,7 +5,13 @@
 standards, including functions for determining the appropriate resolution,
 video and audio codec, fps, and bitrates for a given format.
 
-Known formats include VCD, SVCD, DVD, Half-DVD, and VCD-on-DVD.
+Known formats include:
+    vcd
+    svcd
+    dvd
+    half-dvd
+    dvd-vcd
+
 """
 
 __all__ = [\
@@ -125,18 +131,19 @@ def get_abitrate(format):
     second) for the given format, or a single value for constant-bitrate
     formats. For example:
     
+        >>> get_abitrate('dvd')
+        (32, 1536)
         >>> get_abitrate('vcd')
         224
-        >>> get_abitrate('dvd')
-        (320, 1536)
     """
     if format == 'vcd':
         return 224
     elif format == 'svcd':
         return (32, 384)
     else:
-        return (320, 1536)
+        return (32, 1536)
         
+
 
 
 def is_compliant(filename, format, tvsys):
