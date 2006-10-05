@@ -17,7 +17,7 @@ import sys
 from libtovid import stats
 from libtovid.utils import pretty_dict
 from libtovid.layer import Scatterplot
-from libtovid.mvg import Drawing
+from libtovid.render.mvg import Drawing
 
 tovid_statfile = os.path.expanduser("~/.tovid/stats.tovid")
 
