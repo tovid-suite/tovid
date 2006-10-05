@@ -73,7 +73,7 @@ class Menu:
                 """Add the listed effects to the thumbnails.""")
     ]
 
-    def __init__(self, custom_options=[]):
+    def __init__(self, custom_options=None):
         """Initialize Menu with a string or list of options."""
         self.options = OptionDict(self.optiondefs)
         self.options.override(custom_options)
@@ -110,17 +110,3 @@ class Menu:
         else:
             log.info('Generating a DVD menu with text titles...')
             textmenu.generate(self.options)
-
-
-
-class MenuTemplate (Flipbook):
-    def __init__(self, title='', links={}):
-        """Create a menu template, with the given title and a given dictionary
-        of label/target pairs, for example:
-        
-            >>> links = {'Episode 1': '/pub/video/ep1.mpg',
-                         'Episode 2': '/pub/video/ep2.mpg'}
-            >>> temp = MenuTemplate("Main menu", links)
-        
-        """
-        
