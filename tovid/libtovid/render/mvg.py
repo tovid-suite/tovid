@@ -560,7 +560,7 @@ class Drawing:
         cmd = "convert -size %sx%s " % self.size
         cmd += " xc:none " # Transparent (=none) canvas image
         cmd += " -draw @%s " % self.filename
-        cmd += " -composite miff:- | display"
+        cmd += " miff:- | display"
         print "Creating preview rendering."
         print cmd
         print "Press 'q' or ESC in the image window to close the image."
