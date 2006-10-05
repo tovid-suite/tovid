@@ -10,9 +10,9 @@ automatically. Simply create a Log instance with a name and logging level:
 
     >>> log = Log('MyApp', 'info')
 
-The logging level determines output verbosity. Use "info" for normal program
-output, "debug" for debugging messages, "error" for important error messages,
-and so on:
+The logging level determines output verbosity. Use "info" to display normal
+program output, as well as anything of higher importance. A "debug" level will
+also log debugging messages; "error" will only log errors, etc.
 
     >>> log.info("Starting app...")
     Starting app...
@@ -64,30 +64,30 @@ class Log:
         # TODO: Add an interface for file logging
 
     def setLevel(self, level):
-        """Set log verbosity level to one of 'debug', 'info', 'warning',
+        """Set logging level to one of 'debug', 'info', 'warning',
         'error', or 'critical'."""
         assert level in levels
         self.level = level
         self.logger.setLevel(levels[level])
 
     def debug(self, message):
-        """Log a debugging message (low priority)."""
+        """Log a debugging (low priority) message."""
         self.logger.debug(message)
         
     def info(self, message):
-        """Log an informational message (normal priority)."""
+        """Log an informational (normal priority) message."""
         self.logger.info(message)
 
     def warning(self, message):
-        """Log a warning message (medium priority)."""
+        """Log a warning (medium priority) message."""
         self.logger.warning(message)
 
     def error(self, message):
-        """Log an error message (high priority)."""
+        """Log an error (high priority) message."""
         self.logger.error(message)
 
     def critical(self, message):
-        """Log a critical message (highest priority)."""
+        """Log a critical (highest priority) message."""
         self.logger.critical(message)
 
 if __name__ == '__main__':
