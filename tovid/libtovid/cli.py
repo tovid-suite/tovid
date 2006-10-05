@@ -9,7 +9,17 @@ simple interface for building command-lines, spawning subprocesses, and reading
 output from them.
 """
 
-__all__ = ['Command', 'Script', 'verify_app']
+__all__ = [\
+    'Script',
+    'And',
+    'Or',
+    'Arg',
+    'Bg',
+    'NoBg',
+    'InfixOper',
+    'Pipe',
+    'verify_app'
+    ]
 
 # From standard library
 import os
@@ -22,90 +32,20 @@ from libtovid.log import Log
 
 log = Log('libtovid.cli')
 
-class Command:
-    """A command-line app with arguments, and process control."""
-    def __init__(self, command, purpose=''):
-        """Create a Command with the given command-line string. Optionally
-        include a brief description of the command's purpose.
-
-        The command string should begin with the name of the application to
-        invoke, followed by that application's arguments. For example:
-
-            >>> cmd = Command('ls -l /usr', "List contents of /usr")
-
-        Then, to execute the command, call:
-
-            >>> cmd.run()
-        
-        """
-        self.command = command
-        self.purpose = purpose
-        self.childpid = None
-        # All lines of output from the command
-        self.output = []
-
-    def append(self, args):
-        """Append the given string of arguments to the end of the command."""
-        if not isinstance(args, str):
-            raise TypeError, "Command.append() can only take strings."
-        self.command += ' ' + args
-
-    def prepend(self, args):
-        """Prepend the given string of arguments."""
-        self.command = args + ' ' + self.command
-
-    def run(self, wait=True):
-        log.info(self.purpose)
-        log.info(self.command)
-        try:
-            self._run(wait)
-        except KeyboardInterrupt:
-            print "Process interrupted. Exiting..."
-            self.kill()
-            sys.exit()
-
-    def _run(self, wait):
-        """Execute the command and return its exit status. Optionally wait for
-        execution to finish."""
-        fd, self.tempfile = tempfile.mkstemp()
-        # Fork a child process to run the command and log output
-        pid = os.fork()
-        if pid == 0: # Child
-            log.debug("Writing command output to temporary file %s" %
-                      self.tempfile)
-            cmd = "%s > %s 2>&1" % (self.command, self.tempfile)
-            status = os.system(cmd)
-            sys.exit()
-        else: # Parent
-            self.childpid = pid
-            if wait:
-                os.waitpid(self.childpid, 0)
-                self.get_output()
-
-    def get_output(self):
-        """Retrive output from the temp file and store locally."""
-        file = open(self.tempfile, 'r')
-        for line in file.readlines():
-            self.output.append(line.rstrip('\r\n '))
-        file.close()
-        for line in self.output:
-            log.info(line)
-        os.remove(self.tempfile)
-
-    def kill(self):
-        """Kill all processes spawned by this Command."""
-        if self.childpid:
-            os.kill(self.childpid, SIGKILL)
-
 class Script:
     """An executable shell script."""
-    def __init__(self, name, locals={}):
+    def __init__(self, name, locals=None):
         """Create a script, with optional local variables and values.
         Any variables named in locals may then be used by script
-        commands using the shell $var_name syntax."""
+        commands using the shell $var_name syntax.
+        
+            name:   Name of the script, as a string
+            locals: Dictionary of name/value pairs for local variables
+            
+        """
         self.commands = []
         self.name = name
-        self.locals = locals
+        self.locals = locals or {}
 
     def append(self, command):
         """Append the given command to the end of the script."""
