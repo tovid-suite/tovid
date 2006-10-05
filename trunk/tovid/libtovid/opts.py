@@ -175,14 +175,15 @@ class Option:
 
 class OptionDict(dict):
     """An indexed collection (dictionary) of user-configurable options."""
-    def __init__(self, options=[]):
+    def __init__(self, options=None):
         """Create an option dictionary using the given list of Options."""
         dict.__init__(self)
         # Keep a copy of the original Option definitions
         self.defdict = {}
-        for opt in options:
-            self[opt.name] = copy(opt.default)
-            self.defdict[opt.name] = opt
+        if options:
+            for opt in options:
+                self[opt.name] = copy(opt.default)
+                self.defdict[opt.name] = opt
 
     def override(self, custom):
         """Override the option dictionary with custom options. options may be
@@ -191,7 +192,8 @@ class OptionDict(dict):
         # If custom is a string or list, turn it into a dictionary
         if custom.__class__ == str or custom.__class__ == list:
             custom = self._parse(custom)
-        self.update(custom)
+        if custom:
+            self.update(custom)
 
     def usage(self):
         """Return a string containing usage notes for all option definitions."""

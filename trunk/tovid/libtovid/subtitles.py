@@ -1,3 +1,6 @@
+#! /usr/bin/env python
+# subtitles.py
+
 import tempfile
 import xml.dom
 import os
@@ -93,7 +96,7 @@ def spumux(movie_filename, xmlopts, stream=0):
 
     os.unlink(fd.name)
 
-def add_subs(infile, subs, opts={}):
+def add_subs(infile, subs, opts=None):
     """
     Adds subtitles to a certain MPEG.
     infile must be a MediaFile.
@@ -106,13 +109,14 @@ def add_subs(infile, subs, opts={}):
         'movie-height': infile.video.height,
     }
     
-    xmlopts.update(opts)
+    if opts:
+        xmlopts.update(opts)
     
     for stream, sub_filename in enumerate(subs):
         xmlopts['filename'] = sub_filename
         spumux(infile.filename, xmlopts, stream)
 
-class Subtitles(object):
+class Subtitles:
 
     optiondefs = [
         Option("subs", 'STRING [, STRING ...]', [],
@@ -123,7 +127,7 @@ class Subtitles(object):
             (inplace)."""),
     ]
 
-    def __init__(self, custom_options):
+    def __init__(self, custom_options=None):
         """Initialize Subtitles with a string or list of options."""
         self.options = OptionDict(self.optiondefs)
         self.options.override(custom_options)
