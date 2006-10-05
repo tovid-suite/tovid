@@ -5,6 +5,7 @@ __all__ = ['Disc']
 
 # From libtovid
 from libtovid.opts import Option, OptionDict
+#import dvdauthor
 
 class Disc:
     """A video disc containing video titles and optional menus.
@@ -21,7 +22,7 @@ class Disc:
             """Use MENUNAME for the top-level menu on the disc.""")
     ]
 
-    def __init__(self, custom_options=[]):
+    def __init__(self, custom_options=None):
         """Initialize Disc with a string or list of options."""
         self.options = OptionDict(self.optiondefs)
         self.options.override(custom_options)
@@ -76,7 +77,22 @@ class Disc:
         # pbc + selections
         xml += '</videocd>'
     
-    
+    def _dvd_disc_xml(self):
+        """Write disc XML using pydvdauthor backend.
+        NOT FUNCTIONAL YET."""
+        disc = dvdauthor.Disc(self.name)
+        # If there's a topmenu, write vmgm-level XML for it
+        if len(self.children) == 1:
+            topmenu = self.children[0]
+            vmgm = dvdauthor.VMGM()
+            menu = dvdauthor.Menu()
+            menu.video_files.append(topmenu['out'])
+            vmgm.add_menu(menu)
+            for submenu in topmenu.children:
+                # TODO: Link to submenus properly
+                menu.set_button_commands('jump f:%s' % sub.id)
+                pass
+        
     def dvd_disc_xml(self):
         """Return a string containing dvdauthor XML for this disc."""
         xml = '<dvdauthor dest="%s">\n' % self.name.replace(' ', '_')
@@ -88,10 +104,8 @@ class Disc:
             xml += '    <video />\n'
             xml += '    <pgc entry="title">\n'
             xml += '      <vob file="%s" />\n' % topmenu['out']
-            # TODO: Add buttons for each submenu
-            # <button>jump titleset N menu;</button>
             num = 1
-            for submenus in topmenu.children:
+            for submenu in topmenu.children:
                 xml += '      <button>jump titleset %d menu;</button>\n' % num
                 num += 1
             xml += '    </pgc>\n'
