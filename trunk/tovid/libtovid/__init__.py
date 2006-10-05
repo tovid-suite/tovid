@@ -17,6 +17,7 @@ __all__ = [\
     'flipbook',
     'globals',
     'layer',
+    'log',
     'media',
     'menu',
     'opts',
