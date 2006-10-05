@@ -105,7 +105,7 @@ class Video:
             tool.""")
     ]
 
-    def __init__(self, custom_options=[]):
+    def __init__(self, custom_options=None):
         """Initialize Video with a string, list, or dictionary of options."""
         # TODO: Possibly eliminate code repetition w/ Disc & Menu by adding
         # a base class and inheriting
