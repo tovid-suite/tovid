@@ -140,6 +140,7 @@ NO_SC_THUMB=false
 SC_TITLE_ALIGN="centre"
 THUMB_TITLE_ALIGN="center"
 EAST_ALIGN=false
+MULTILINE_TITLE=false
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -182,12 +183,13 @@ function cmd_exec()
 }
 
 # Print script name, usage notes, and optional error message, then exit.
-# Args: $@ == text string containing error message
+# Args: $@ == text string(s) containing error message and help
 function usage_error ()
 {
-    printf "%s\n" "$USAGE"
-    printf "%s\n" "$SEPARATOR"
-    printf "*** %s\n" "$@"
+    MESSAGE=( "$@" )
+    printf "%s\n%s\n%s\n\n" "$USAGE" "$SEPARATOR" "***"
+    for ((i=0; i<$#; i++)) ; do printf "%s" "${MESSAGE[i]}"; done |fold -bs
+    printf "\n\n%s\n" "***"
     rm -rf "$REAL_WORK_DIR" "$WORK_DIR"
     exit 1
 }
@@ -421,7 +423,7 @@ function confirm_dep()
 #                          	End of functions                                 #
 ##############################################################################
 
-#trap 'cleanup; exit 13' TERM INT
+trap 'cleanup; exit 13' TERM INT
 
 ###############################################################################
 #       Process arguments to the script, set up VARS and WORK_DIR             #
@@ -774,25 +776,29 @@ else
 fi
 
 # Warn if thumb labels have more than 12 characters
-for ((i=0; i<${#TITLES[@]}; i++)); do
-    val=${#TITLES[i]}
-    [ -z "$MAX_CHARS" ] || ((val > MAX_CHARS)) && MAX_CHARS=$val && key=$i
-done
-if test ${#TITLES[@]} -gt 6 && test $MAX_CHARS -gt 12 ; then 
-    yecho
-    yecho "WARNING! Some titles are longer than 12 characters; they may be chopped off."
-    yecho
-    #echo "\"${TITLES[key]}\" is too long; please use a shorter title."
-    #exit 1
+if ! $SHOWCASE; then
+    for ((i=0; i<${#TITLES[@]}; i++)); do
+        val=${#TITLES[i]}
+        [ -z "$MAX_CHARS" ] || ((val > MAX_CHARS)) && MAX_CHARS=$val && key=$i
+    done
+    if test ${#TITLES[@]} -gt 6 && test $MAX_CHARS -gt 12 ; then 
+        yecho
+        yecho "WARNING! Some titles are longer than 12 characters; they may be chopped off."
+        yecho
+        #echo "\"${TITLES[key]}\" is too long; please use a shorter title."
+        #exit 1
+    fi
 fi
 # disallow spaces in thumb titles for text button style
-for ((i=0; i<${#TITLES[@]}; i++)); do
-    if grep "  " <<< "${TITLES[i]}" >/dev/null && [ "$BUTTON_STYLE" = "text" ]; then
-        echo "Sorry, a maximum of one consecutive space is allowed in titles for text buttons"
-        echo "\"${TITLES[i]}\" has more than one consecutive space in it"
-        exit 1
-    fi
-done
+if [ "$BUTTON_STYLE" = "text" ]; then
+    for ((i=0; i<${#TITLES[@]}; i++)); do
+        if grep "  " <<< "${TITLES[i]}" >/dev/null; then
+            echo "Sorry, a maximum of one consecutive space is allowed in titles for text buttons"
+            echo "\"${TITLES[i]}\" has more than one consecutive space in it"
+            exit 1
+        fi
+    done
+fi
 # set a maximum # of videos
 if test ${#FILES[@]} -gt 30; then
     usage_error "Sorry, a maximum of 30 videos (thumbs) is supported
@@ -934,7 +940,7 @@ done
 if $STATIC; then
     MENU_FADE=false
 fi
-if [ $FADE = 0 ]; then
+if [ $FADE = 0 ]; then # in case user thinks he needs to specify 0 for fade
     AUDIO_FADE=false
 elif [ $SM_AUDIO_FADE = 0 ]; then
     SM_AUDIO_FADE=false
@@ -1041,11 +1047,18 @@ yecho
 yecho "Disc title: \"$VMGM_TITLE\""
 yecho "  (adjust with -menu-title)"
 yecho "Including the following videos:"
+# don't echo all of long or multiline titles AND files
 for ((i=0; i<${#TITLES[@]}; i++)); do
-    if [[ ${#TITLES[i]} -gt 35 ]]; then # don't echo long titles AND filenames
-        yecho "${IN_FILES[i]}"
-    else
-        yecho "  \"${TITLES[i]}\" (${IN_FILES[i]})"
+    if [[ ${#TITLES[i]} -gt 35 || $(echo -e "${TITLES[i]}" |wc -l) -gt 1 ]]; then
+        TITLE[i]=$(sed 's/^  *//'<<<${TITLES[i]//\\n/ }) # remove spaces and \n
+        TITLE[i]=${TITLE[i]:0:35} # cut down to 35 characters maximum
+        if [ ${#TITLES[i]} -gt 35 ]; then
+            echo "  \"${TITLE[i]}...\" (${IN_FILES[i]})" # "..." if truncated
+        else
+            echo "  \"${TITLE[i]}\" (${IN_FILES[i]})"
+        fi
+    else # echo titles "as is"
+        echo "  \"${TITLES[i]}\" (${IN_FILES[i]})"
     fi
 done
 yecho "Current font settings: "
@@ -1159,6 +1172,7 @@ if $SHOWCASE; then
         THUMB_SIZE="${GEO_ARRAY[30]}"
     fi
 fi
+# some choices needed for different title alignments
 if $SHOWCASE; then
     if [ $V_ARRAY_TOTAL -le 5 ]; then
         if [[ $SC_TITLE_ALIGN = *st ]]; then
@@ -1170,6 +1184,14 @@ if $SHOWCASE; then
     else
         SHOWCASE_SIZE=288x216  # smaller showcase thumb because we have 2 rows
         AUTOORDER="columns"
+        if [[ "$SC_TITLE_ALIGN" = *st ]] && [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
+            usage_error "Sorry maximum 5 videos for -showcase-titles-align" \
+            "east/west when used with a showcase thumb. Either remove the " \
+            "-showcase-titles-align switch (and use shorter titles if needed), " \
+            "or remove the showcase image/video by using -showcase-no-thumb. " \
+            "Perhaps use -bgimage IMAGE or -bgvideo VIDEO instead of " \
+            "-showcase-image|video."
+        fi
     fi
 else
     AUTOORDER="rows"
@@ -1183,13 +1205,13 @@ if [ "$SC_TITLE_ALIGN" = "west" ]; then
         fi
         if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
             EAST_ALIGN=true # align titles *after* the thumbs if multiline
+            SC_TITLE_ALIGN=east # override unuseable supplied opt
         fi
         if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 86 ]; then
             SHOWCASE_THUMB_X_ARRAY[i]=360
             SHOWCASE_TITLES_X_ARRAY[i]=${SHOWCASE_THUMB_X_ARRAY[i]}
         fi
     done
-    if $EAST_ALIGN; then SC_TITLE_ALIGN=east; fi # override unuseable supplied opt
 fi
 if [ "$SC_TITLE_ALIGN" = "east" ]; then
     THUMB_TITLE_ALIGN="west"
@@ -1238,6 +1260,24 @@ if [[ "$SC_FRAMESTYLE" = "glass" && -n "$SHOWCASE_VIDEO" ]] ; then
 fi
 if $SHOWCASE; then
     THUMB_BG_COLOUR="none"   # mist backgrounds look a bit funny with showcase
+fi
+if ! $USER_BSTYLE && $SHOWCASE; then # text is better than rect for "none" bg
+    BUTTON_STYLE="text"
+fi
+for ((i=0; i<=NUM_FILES; i++)); do
+    if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
+        MULTILINE_TITLE=:
+        if $FEATHER && [ $THUMB_SHAPE != "normal" ]; then
+            # multiline titles not suitable for text buttons
+            BUTTON_STYLE="text-rect"
+        else
+            BUTTON_STYLE="rect"
+        fi
+    fi
+done
+# transparent border around text so rect spumux outline can fit
+if  $MULTILINE_TITLE && [[ $SC_TITLE_ALIGN = "east" ]]; then
+    TEXT_BORDER="-bordercolor Transparent -border 8x8"
 fi
 #FIXME temporary till non transparent menus for -showcase* are done separately
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
@@ -1329,8 +1369,8 @@ if [ -n "$THUMB_SHAPE" ]; then
     -blur 0x60 "$WORK_DIR/feather_mask2.png"
 fi
 if [ -z "$THUMB_TEXT_COLOUR" ]; then
-    if $FEATHER && ! $SHOWCASE; then    # dark font unless feather or showcase
-        THUMB_TEXT_COLOUR="#161514"
+    if $FEATHER && ! $SHOWCASE &&  [ $THUMB_BG_COLOUR != none ]; then
+        THUMB_TEXT_COLOUR="#161514" # dark font for misted backgrounds
     else
         THUMB_TEXT_COLOUR="#C6C6C6"
     fi
@@ -1386,7 +1426,6 @@ fi
 # Print and execute the thumb-shape mask command
 yecho "$MASK_CMD"
 cmd_exec "$MASK_CMD"
-
 yecho "Creating a title image"
 if [[ -z "$BG_PIC" && -z "$BG_VIDEO" ]]; then
     STROKE=none
@@ -1420,23 +1459,28 @@ fi
 # make thumb titles if $SHOWCASE
 if $SHOWCASE; then
     for ((i=0; i<=NUM_FILES; i++)); do
-        unset tt_dim ts_dim j
+        unset ts_dim j
         THUMB_TITLE_CMD=(convert  -size 620x300 xc:none \
         -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
         -fill black -stroke black -gravity $THUMB_TITLE_ALIGN  \
         -annotate +0+0 "${TITLES[i]}" \
         -fill $THUMB_TEXT_COLOUR  -stroke "$STROKE" -strokewidth 1 \
         -annotate +1+1 "${TITLES[i]}")
-        TT_CMD1=(convert - -trim +repage "$WORK_DIR/thumb_title${i}.png")
+        TT_CMD1=(convert - -trim +repage $TEXT_BORDER "$WORK_DIR/thumb_title${i}.png")
         echo "Running "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}"" \
         |fold -bs >> "$LOG_FILE"
         "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}"
         
         # find out dimension of the thumb title png (for align centre situation)
-        tt_dim=$(identify "$WORK_DIR/thumb_title${i}.png"|awk '{print $3}')
+        TT_DIM=( ${TT_DIM[@]} $(identify "$WORK_DIR/thumb_title${i}.png"|awk '{print $3}') )
+        # get widest png for use later for alignment use
+        for ((w=0; w<${#TT_DIM[@]}; w++)); do
+            val=${TT_DIM[w]/x*}
+            [ -z "$MAX_LEN" ] || ((val > MAX_LEN)) && MAX_LEN=$val
+        done
         # get just X demension to help determine final title pos below
-        tt_dim=${tt_dim/x*}
-        # thumb pos plus 1/2 (X dim) of thumbsize, less 1/2 title X dim
+        tt_dim=${TT_DIM[i]/x*}
+        # thumb pos plus 1/2 (X dim) of thumbsize, less 1/2 (X dim) of title size
         if [ "$SC_TITLE_ALIGN" = "centre" ]; then
             f=$(( ${THUMB_SIZE/x*} / 2 ))
             j=$(( $((f + ${SHOWCASE_THUMB_X_ARRAY[i]})) - $((tt_dim / 2)) ))
@@ -1518,7 +1562,7 @@ if $SHOWCASE && ! $NO_SC_THUMB; then
             format_output | tee -a "$LOG_FILE"
             echo
             get_framed_pics "$SHOWCASE_VIDEO" >> "$LOG_FILE" 2>&1
-            
+
             mv -v "$WORK_DIR"/00000025.png "$OUT"
             rm -f "$WORK_DIR"/00000*.png
             convert "$WORK_DIR/showcase_img.png" \
@@ -1637,7 +1681,7 @@ if $SHOWCASE; then
     ${sc_thumb_title_cmd[@]} -mosaic "$WORK_DIR/pics/template.png"
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
     -gravity south -geometry +0+65 -composite "$WORK_DIR/pics/template.png"
-fi    
+fi
 if $PLAYALL; then
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/PLAYALL.png" \
     -gravity SouthEast -geometry +55+55 -composite "$WORK_DIR/pics/template.png"
@@ -1731,22 +1775,25 @@ get_button_geo()
 }
 echo
 echo "Creating the highlight and selection PNGs for the main menu"
-if ! $USER_BSTYLE && $SHOWCASE; then
-    BUTTON_STYLE="text"
-fi
-for ((i=0; i<=NUM_FILES; i++)); do
-    if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
-        BUTTON_STYLE=rect # multiline titles not suitable for text buttons
-    fi
-done
 if [ "$BUTTON_STYLE" = "rect" ]; then
-MENU_BUTTON_SIZE=$THUMB_SIZE
-get_button_geo
+    MENU_BUTTON_SIZE=$THUMB_SIZE
+    get_button_geo
 (
 cat  <<EOF
 rectangle 2,2 $GEO
 EOF
 )  > "$WORK_DIR/draw_file"
+fi
+if [ $BUTTON_STYLE = "text-rect" ]; then
+    for ((i=0; i<=NUM_FILES; i++)); do
+        MENU_BUTTON_SIZE=${TT_DIM[i]}
+        get_button_geo
+(
+cat <<EOF
+rectangle 1,1 $GEO
+EOF
+)  > "$WORK_DIR/draw_file${i}"
+    done
 fi
 # command constructions for -button-shape options
 if $PLAYALL; then
@@ -1762,6 +1809,7 @@ fi
 
 PNG_IS_DONE=false
 for ((t=0; t<${#TITLES[@]}; t++)); do
+    unset BUTTON_CMD6b BUTTON_CMD7b
     if $FEATHER; then FRAME=0; else FRAME=3x3;fi
     BUTTON_SIZE=$THUMB_SIZE
     BUTTON_CMD=(montage -size $THUMB_SIZE xc:none -geometry +4+4 \
@@ -1783,8 +1831,14 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     -colors 3 "$WORK_DIR/Highlightx1.png")
     BUTTON_CMD6=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
     -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file "$WORK_DIR/Selectx1.png")
+    BUTTON_CMD6b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
+    -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file${t} \
+    "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)")
     BUTTON_CMD7=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
     -stroke '#188DF6' -strokewidth 4 -draw @draw_file "$WORK_DIR/Highlightx1.png")
+    BUTTON_CMD7b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
+    -stroke '#188DF6' -strokewidth 4 -draw @draw_file${t} \
+    "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)")
     BUTTON_CMD8=(convert -size 620x300 xc:none \
     -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
     -fill '#188DF6' -stroke none -gravity $THUMB_TITLE_ALIGN  \
@@ -1798,7 +1852,7 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     -fill '#DE7F7C' -stroke '#DE7F7C' -strokewidth 1 \
     -annotate +1+1 "${TITLES[t]}")
     BUTTON_CMD10=(convert - -trim +repage)
-    
+
     if [ "$BUTTON_STYLE" = "text" ]; then
         if $SHOWCASE; then
             "${BUTTON_CMD8[@]}" miff:- |  "${BUTTON_CMD10[@]}" \
@@ -1829,8 +1883,11 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
                 "${BUTTON_CMD5[@]}"
             fi
         fi
+    elif [ $BUTTON_STYLE = "text-rect" ]; then
+        "${BUTTON_CMD6b[@]}"
+        "${BUTTON_CMD7b[@]}"
     fi
-    PNG_IS_DONE=:
+    PNG_IS_DONE=: # don't loop over creating same png
 done
 if ! $NOASK && ! $SHOWCASE; then
     echo "Creating and displaying a preview of the main menu."
@@ -1870,7 +1927,7 @@ if [ "$BUTTON_STYLE" = "rect" ]; then
             -composite "$WORK_DIR/fake_montage.png"
         fi
     done
-elif [ "$BUTTON_STYLE" = "text" ]; then
+elif [[ "$BUTTON_STYLE" = *text* ]]; then
     if $SHOWCASE; then
         select_buttons=( ${select_buttons[@]} \
         $(find $WORK_DIR/ -name 00\*select.png |sort) )
@@ -1945,6 +2002,7 @@ if $SHOWCASE; then
         elif [ $V_ARRAY_TOTAL -gt 5 ]; then
             SC_IMG_PAGE="-page +$sc_xpage+100"
         fi
+# FIXME for $SC_TITLE_ALIGN = *st add the title width plus spacing "$MAX_LEN" is widest title
         SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
     fi
     if $NO_SC_THUMB; then unset SC_IMG_CMD; fi
@@ -1953,10 +2011,6 @@ if $SHOWCASE; then
         for ((i=0; i<=NUM_FILES; i++)); do
             sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "${PICS[i]}")
         done
-        if ! $NOASK; then
-            echo "Creating and displaying a preview of the main menu."
-            echo "(Press 'q' or ESC in the preview window to close it.)"
-        fi
         if $TRANSPARENT; then
             IM_CMD0=(convert  -size 720x480 xc:none -background none \
             ${sc_cmd[@]} $SC_IMG_CMD -mosaic)
@@ -2001,6 +2055,10 @@ else
         "$WORK_DIR/title_txt.png"  -gravity south -geometry +0+65 -composite \
         -  -gravity north -geometry +0+45 -composite "$WORK_DIR/preview.jpg"
     fi
+fi
+if ! $NOASK; then
+    echo "Creating and displaying a preview of the main menu."
+    echo "(Press 'q' or ESC in the preview window to close it.)"
 fi
 # make the fake montage with highlighted 1st button and display it
 composite -compose Over "$WORK_DIR/fake_montage.png" "$WORK_DIR/preview.jpg" \
@@ -3183,7 +3241,7 @@ else # Do not do menu fade
             fi
 
             IM_CMD0=(convert  -size 720x480 "$WORK_DIR/pics/template.png" \
-            ${sc_cmd[@]} $SC_IMG_PAGE -mosaic)
+            ${sc_cmd[@]} $SC_IMG_CMD -mosaic)
             IM_CMD01=(convert  -size 720x480 xc:none -background none \
             ${sc_cmd[@]} $SC_VIDEO_CMD -mosaic)
             # dissolve piped images onto bgimage
