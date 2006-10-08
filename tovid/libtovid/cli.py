@@ -13,7 +13,7 @@ __all__ = [\
     'Script',
     'And',
     'Or',
-    'Arg',
+    'Command',
     'Bg',
     'NoBg',
     'InfixOper',
@@ -25,6 +25,7 @@ __all__ = [\
 import os
 import sys
 import tempfile
+import doctest
 from stat import S_IREAD, S_IWRITE, S_IEXEC
 from signal import SIGKILL
 # From libtovid
@@ -59,9 +60,8 @@ class Script:
         """Return the text of the script."""
         text = '#!/bin/sh\n'
         text += 'cat %s\n' % self.script_file
-        # TODO: 
+        # Write local variable definitions
         for var, value in self.locals.iteritems():
-            # make sure no ifens appear in variables
             text += '%s=%s\n' % (var.replace("-", "_"), enc_arg(value))
         for cmd in self.commands:
             text += '%s\n' % cmd
@@ -89,46 +89,49 @@ class Script:
         script.close()
 
 def verify_app(appname):
-    """If appname is not in the user's path, print a error and exit."""
+    """If appname is not found in the user's $PATH, print an error and exit."""
     """ - True if app exists, 
         - False if not """
-    env_path = os.getenv("PATH")
+    path = os.getenv("PATH")
     found = False
-    for dir in env_path.split(":"):
-        if (os.path.exists("%s/%s" % (dir, appname))):
+    for dir in path.split(":"):
+        if os.path.exists("%s/%s" % (dir, appname)):
             log.info("Found %s/%s" % (dir, appname))
-            found =  True
+            found = True
             break
         
-    if found == False:
-        log.error("%s not found in your PATH. Exiting.." % appname)
+    if not found:
+        log.error("%s not found in your PATH. Exiting." % appname)
         sys.exit()
-        
-     
+
+
 def enc_arg(arg):
-    """Converts it to a string and encodes an argument making it safe 
-    from special bash characters"""
+    """Convert an argument to a string, and do any necessary quoting so
+    that bash will treat the string as a single argument."""
     arg = str(arg)
-    for special_char in '# "\'\\&|<>()':
-        if special_char in arg:
-            return '"%s"' % arg.replace('\\', '\\\\').replace('"', '\\"')
+    # If the argument contains special characters, enclose it in single
+    # quotes to preserve the literal meaning of those characters. Any
+    # contained single-quotes must be specially escaped, though.
+    for char in ' #"\'\\&|<>()[]!?*':
+        if char in arg:
+            return "'%s'" % arg.replace("'", "'\\''")
+    # No special characters found; use literal string
     return arg
+
 
 class Bg(object):
     """
-    This makes sure there is only one 'Arg' in backgrond.
+    This makes sure there is only one Command in backgrond.
     """
-    def __init__(self, arg):
-        if not isinstance(arg, Arg):
-            raise TypeError("must be an Arg")
-            
-        self.arg = arg
+    def __init__(self, command):
+        assert isinstance(command, Command)
+        self.command = command
     
     def __str__(self):
-        return str(self.arg) + " &"
+        return str(self.command) + " &"
     
-    def __repr__(self):
-        return "Bg(%r)" % self.arg
+    #def __repr__(self):
+    #    return "Bg(%r)" % self.command
 
 class Pipe(object):
     """Represents a pipe object, makes sure no extra operations
@@ -141,8 +144,8 @@ class Pipe(object):
     def read_from(self, filename):
         raise TypeError("Piped programs cannot read from other places.")
 
-    def __repr__(self):
-        return "Pipe(%r, %r)" % (self.first, self.after)
+    #def __repr__(self):
+    #    return "Pipe(%r, %r)" % (self.first, self.after)
     
     def __str__(self):
         return "%s | %s" % (self.first, self.after)
@@ -162,14 +165,14 @@ class InfixOper(object):
         self.after = after
 
     def if_done(self, other):
-        """Creates a new object that represents the chainned processes"""
+        """Creates a new object that represents the chained processes"""
         return And(self, other)
     
     def if_failed(self, other):
         return Or(self, other)
 
-    def __repr__(self):
-        return "%s(%r, %r)" % (type(self).__name__, self.first, self.after)
+    #def __repr__(self):
+    #    return "%s(%r, %r)" % (type(self).__name__, self.first, self.after)
     
     def __str__(self):
         return "%s %s %s" % (group(self.first), self.OPER, group(self.after))
@@ -186,68 +189,62 @@ class NoBg(InfixOper):
 
         super(NoBg, self).__init__(first, after)
 
-def group(arg):
-    if isinstance(arg, Arg):
-        return str(arg)
+def group(command):
+    if isinstance(command, Command):
+        return str(command)
     else:
-        return "(%s)" % arg
+        return "(%s)" % command
 
 class And(NoBg):
     """Represents the bash '&&' other, which means that the next command
     will only be run if the first one was run successfully."""
-
     OPER = "&&"
 
 class Or(NoBg):
     """Represents the bash '||' operator, which means that the next command
     will only be run if the first one was not run successfully."""
-
     OPER = "||"
 
-class Arg(object):
-    """An object used for creating commands used on shell scripts.
+class Command(object):
+    """An object used for creating commands used in shell scripts.
     It encodes the arguments automagically. Examples::
 
-        >>> Arg('echo')
-        Arg('echo')
-        >>> echo = Arg('echo')
+        >>> Command('echo')
+        Command('echo')
+        >>> echo = Command('echo')
         >>> echo.add('foo', 'bar')
         >>> echo
-        Arg('echo foo bar')
-        >>> Arg("echo") + 'foo and bar'
-        Arg('echo "foo and bar"')
-        >>> echo = Arg("echo").add('foo and bar')
+        Command('echo foo bar')
+        >>> Command("echo") + 'foo and bar'
+        Command('echo "foo and bar"')
+        >>> echo = Command("echo").add('foo and bar')
         >>> echo
-        Arg('echo "foo and bar"')
+        Command('echo "foo and bar"')
         >>> echo += "baz"
-        Arg('echo "foo and bar" baz')
+        Command('echo "foo and bar" baz')
         >>> str(echo)
         'echo "foo and bar" baz'
         
     """
-    def __init__(self, arg="", stdin=None, stdout=None, stderr=None):
-        self.arg = arg
+    def __init__(self, command="", stdin=None, stdout=None, stderr=None):
+        self.command = command
         self.stdin = stdin
         self.stdout = stdout
         self.stderr = stderr
 
-    def __add__(self, other):
-        return Arg(self.arg + " %s" % enc_arg(other))
-    
-    def add(self, *others):
-        """Adds a number of strings, each argument is a command argument
-        and will be encoded as such. This method returns the 'self'"""
-        self.arg += " %s" % " ".join(map(enc_arg, others))
-        return self
+    def add(self, *args):
+        """Append some string arguments to the command, escaping special
+        characters and doing any necessary quoting."""
+        for arg in args:
+            self.command += " %s" % enc_arg(arg)
 
-    def add_raw(self, raw):
-        """the 'raw' argument must be a string and will be stripped of
-        extra whitechars. Returns itself."""
-        self.arg += " %s" % raw.strip()
-        return self
+    def add_raw(self, raw_string):
+        """Append a raw (literal) string to the command, without any special
+        processing."""
+        self.command += " %s" % raw_string
 
     def pipe(self, other):
-        """Creates a new Arg object which results on the pipe between this
+        """Creates a new Command object which results on the pipe between this
         and the other program."""
         if self.stdout is not None:
             raise TypeError("Cannot pipe if output was redirected to a file.")
@@ -273,14 +270,17 @@ class Arg(object):
         self.stderr = filename
 
     def if_done(self, other):
-        """Creates a new object that represents the chainned processes"""
+        """Creates a new object that represents the chained processes"""
         return And(self, other)
     
     def if_failed(self, other):
         return Or(self, other)
 
     def __str__(self):
-        ret = self.arg
+        """Return a string representation of the Command, with appropriate
+        redirection tokens.
+        """
+        ret = self.command
         if self.stdin is not None:
             ret += " < %s" % enc_arg(self.stdin)
         if self.stdout is not None:
@@ -290,7 +290,10 @@ class Arg(object):
             
         return ret
 
-    def __repr__(self):
-        return "Arg(%r, %r, %r, %r)" % (self.arg, self.stdin, self.stdout,
-                                        self.stderr)
-      
+    #def __repr__(self):
+    #    """Return a Python code representation of the Command."""
+    #    return "Command(%r, %r, %r, %r)" % (self.command, self.stdin, self.stdout,
+    #                                    self.stderr)
+
+if __name__ == '__main__':
+    doctest.testmod(verbose=True)
