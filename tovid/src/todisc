@@ -1184,13 +1184,12 @@ if $SHOWCASE; then
     else
         SHOWCASE_SIZE=288x216  # smaller showcase thumb because we have 2 rows
         AUTOORDER="columns"
-        if [[ "$SC_TITLE_ALIGN" = *st ]] && [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
-            usage_error "Sorry maximum 5 videos for -showcase-titles-align" \
-            "east/west when used with a showcase thumb. Either remove the " \
-            "-showcase-titles-align switch (and use shorter titles if needed), " \
-            "or remove the showcase image/video by using -showcase-no-thumb. " \
-            "Perhaps use -bgimage IMAGE or -bgvideo VIDEO instead of " \
-            "-showcase-image|video."
+        if [[ "$SC_TITLE_ALIGN" = *st ]] && [[ "$SHOWCASE_IMG" || "$SHOWCASE_VIDEO" ]]; then
+            usage_error "Sorry, there is no room for the showcase thumb " \
+            "if you use more than 5 videos with -showcase-titles-align east|west. " \
+            "Either remove the \"-showcase-titles-align $SC_TITLE_ALIGN\" or remove the " \
+            "showcase image/video by using -showcase-no-thumb. " " " \
+            "Consider using -bgimage or -bgvideo instead of a showcase thumb."
         fi
     fi
 else
@@ -1471,13 +1470,11 @@ if $SHOWCASE; then
         |fold -bs >> "$LOG_FILE"
         "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}"
         
-        # find out dimension of the thumb title png (for align centre situation)
+        # find out dimension of the thumb title png
         TT_DIM=( ${TT_DIM[@]} $(identify "$WORK_DIR/thumb_title${i}.png"|awk '{print $3}') )
         # get widest png for use later for alignment use
-        for ((w=0; w<${#TT_DIM[@]}; w++)); do
-            val=${TT_DIM[w]/x*}
-            [ -z "$MAX_LEN" ] || ((val > MAX_LEN)) && MAX_LEN=$val
-        done
+        val=${TT_DIM[i]/x*}
+        [ -z "$MAX_LEN" ] || ((val > MAX_LEN)) && MAX_LEN=$val
         # get just X demension to help determine final title pos below
         tt_dim=${TT_DIM[i]/x*}
         # thumb pos plus 1/2 (X dim) of thumbsize, less 1/2 (X dim) of title size
@@ -1989,7 +1986,7 @@ if $SHOWCASE; then
         # find out where to put the showcase image/video
         sc_size=$(identify "$WORK_DIR/showcase_img.png"|awk '{print $3}')
         sc_width=${sc_size/x*}
-        sc_xpage=$(( 360 - $((sc_width / 2)) ))
+        sc_xpage=$(( 360 - $((sc_width / 2)) )) # for -gt 5 videos
         sc_palette=$((720 - 86 - ${THUMB_SIZE/x*}))
         sc_palette=$(( $((86 + ${THUMB_SIZE/x*})) + $((sc_palette / 2))))
         sc_xpage2=$((sc_palette - $((sc_width / 2)) ))
@@ -3318,7 +3315,7 @@ else # Do not do menu fade
             rm -f ${ANI_PICS[@]}
             unset ANI_PICS sc_cmd
         done
-    else # Not transparent (non transparent showcase uses transparent block ^^
+    else # Not transparent (non transparent showcase uses transparent block ^^)
          C=$((${CHAPTERS[s]} - 1))
         for (( count=1; count <=FRAMES; count++)); do
             spin -ne "\rProcessing "$count.jpg"  "
