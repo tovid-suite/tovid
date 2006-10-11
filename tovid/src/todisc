@@ -1187,7 +1187,7 @@ if $SHOWCASE; then
         if [[ "$SC_TITLE_ALIGN" = *st ]] && [[ "$SHOWCASE_IMG" || "$SHOWCASE_VIDEO" ]]; then
             usage_error "Sorry, there is no room for the showcase thumb " \
             "if you use more than 5 videos with -showcase-titles-align east|west. " \
-            "Either remove the \"-showcase-titles-align $SC_TITLE_ALIGN\" or remove the " \
+            "Either remove the -showcase-titles-align switch or remove the " \
             "showcase image/video by using -showcase-no-thumb. " " " \
             "Consider using -bgimage or -bgvideo instead of a showcase thumb."
         fi
@@ -1213,7 +1213,7 @@ if [ "$SC_TITLE_ALIGN" = "west" ]; then
     done
 fi
 if [ "$SC_TITLE_ALIGN" = "east" ]; then
-    THUMB_TITLE_ALIGN="west"
+    THUMB_TITLE_ALIGN="west" # align titles left to allow longer titles
     for ((i=0; i<=NUM_FILES; i++)); do
         if [ $i -lt 5 ]; then
             SHOWCASE_THUMB_X_ARRAY[i]=$((${SHOWCASE_THUMB_X_ARRAY[i]} - 36))
@@ -1987,19 +1987,31 @@ if $SHOWCASE; then
         sc_size=$(identify "$WORK_DIR/showcase_img.png"|awk '{print $3}')
         sc_width=${sc_size/x*}
         sc_xpage=$(( 360 - $((sc_width / 2)) )) # for -gt 5 videos
-        sc_palette=$((720 - 86 - ${THUMB_SIZE/x*}))
-        sc_palette=$(( $((86 + ${THUMB_SIZE/x*})) + $((sc_palette / 2))))
+        if [ $MAX_LEN -ge ${THUMB_SIZE/x*} ]; then
+            htmb=$(( ${THUMB_SIZE/x*} / 2 )) ; htle=$((MAX_LEN / 2))
+            [ "$SC_TITLE_ALIGN" = "centre" ] && T=$(( htmb + htle )) || T=$((MAX_LEN + 5))
+        else
+            [ "$SC_TITLE_ALIGN" = "centre" ] &&  T=${THUMB_SIZE/x*}
+        fi
+        # add the thumb size if east align; for west align use MAX_LEN only
+        [ "$SC_TITLE_ALIGN" = "east" ] && TS=${THUMB_SIZE/x*} || TS=0
+        sc_palette=$((720 - ${SHOWCASE_THUMB_X_ARRAY[0]} - 50 - T))
+        # sc_palette is for centre align
+        sc_palette=$(( ( ${SHOWCASE_THUMB_X_ARRAY[0]} + T) + (sc_palette / 2)))
+        # sc_palette2 is for east and west align
+        sc_palette2=$(( 720 - (${SHOWCASE_THUMB_X_ARRAY[0]} + TS + T + sc_width + 50) ))
         sc_xpage2=$((sc_palette - $((sc_width / 2)) ))
+        sc_xpage3=$(( sc_palette2 / 2 ))
+        sc_xpage3=$(( ${SHOWCASE_THUMB_X_ARRAY[0]} + $TS + 5 + T + sc_xpage3 ))
         if [ $V_ARRAY_TOTAL -le 5 ]; then
             if [[ $SC_TITLE_ALIGN = *st ]]; then
-                SC_IMG_PAGE="-page +360+100"
+                SC_IMG_PAGE="-page +$sc_xpage3+85"
             else
                 SC_IMG_PAGE="-page +$sc_xpage2+85"
             fi
         elif [ $V_ARRAY_TOTAL -gt 5 ]; then
             SC_IMG_PAGE="-page +$sc_xpage+100"
         fi
-# FIXME for $SC_TITLE_ALIGN = *st add the title width plus spacing "$MAX_LEN" is widest title
         SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
     fi
     if $NO_SC_THUMB; then unset SC_IMG_CMD; fi
