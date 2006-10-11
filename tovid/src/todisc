@@ -1199,8 +1199,8 @@ if [ "$SC_TITLE_ALIGN" = "west" ]; then
     THUMB_TITLE_ALIGN="west"
     for ((i=0; i<=NUM_FILES; i++)); do
         if [ $i -lt 5 ]; then
-            SHOWCASE_THUMB_X_ARRAY[i]=$((${SHOWCASE_THUMB_X_ARRAY[i]} - 36))
-            SHOWCASE_TITLES_X_ARRAY[i]=$((${SHOWCASE_TITLES_X_ARRAY[i]} - 36))
+            SHOWCASE_THUMB_X_ARRAY[i]=50
+            SHOWCASE_TITLES_X_ARRAY[i]=50
         fi
         if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
             EAST_ALIGN=true # align titles *after* the thumbs if multiline
@@ -1216,8 +1216,8 @@ if [ "$SC_TITLE_ALIGN" = "east" ]; then
     THUMB_TITLE_ALIGN="west" # align titles left to allow longer titles
     for ((i=0; i<=NUM_FILES; i++)); do
         if [ $i -lt 5 ]; then
-            SHOWCASE_THUMB_X_ARRAY[i]=$((${SHOWCASE_THUMB_X_ARRAY[i]} - 36))
-            SHOWCASE_TITLES_X_ARRAY[i]=$((${SHOWCASE_TITLES_X_ARRAY[i]} - 36))
+            SHOWCASE_THUMB_X_ARRAY[i]=50
+            SHOWCASE_TITLES_X_ARRAY[i]=50
         fi
         if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 86 ]; then
             SHOWCASE_THUMB_X_ARRAY[i]=360
@@ -1983,7 +1983,7 @@ for button in Select Highlight; do
 done
 if $SHOWCASE; then
     if ! $NO_SC_THUMB; then
-        # find out where to put the showcase image/video
+        # find out where to put the showcase image/video in the X axis
         sc_size=$(identify "$WORK_DIR/showcase_img.png"|awk '{print $3}')
         sc_width=${sc_size/x*}
         sc_xpage=$(( 360 - $((sc_width / 2)) )) # for -gt 5 videos
@@ -2003,14 +2003,23 @@ if $SHOWCASE; then
         sc_xpage2=$((sc_palette - $((sc_width / 2)) ))
         sc_xpage3=$(( sc_palette2 / 2 ))
         sc_xpage3=$(( ${SHOWCASE_THUMB_X_ARRAY[0]} + $TS + 5 + T + sc_xpage3 ))
+        # find out where to put the showcase image in the Y axis
+        Y1=${SHOWCASE_THUMB_Y_ARRAY[0]}; Y2=${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]}
+        echo "Y1 is $Y1 and Y2 is $Y2"
+        Y_SPACE=$(( (Y2 - Y1) + ${THUMB_SIZE/*x} ))
+        sc_height=${sc_size/*x}
+        Y_SPACE=$(( Y_SPACE - sc_height ))
+        SC_Y=$(( Y_SPACE / 2))
+        echo "SC_Y is $SC_Y"
+        SC_Y=$(( ${SHOWCASE_THUMB_Y_ARRAY[0]} + SC_Y ))
         if [ $V_ARRAY_TOTAL -le 5 ]; then
             if [[ $SC_TITLE_ALIGN = *st ]]; then
-                SC_IMG_PAGE="-page +$sc_xpage3+85"
+                SC_IMG_PAGE="-page +$sc_xpage3+$SC_Y"
             else
-                SC_IMG_PAGE="-page +$sc_xpage2+85"
+                SC_IMG_PAGE="-page +$sc_xpage2+$SC_Y"
             fi
         elif [ $V_ARRAY_TOTAL -gt 5 ]; then
-            SC_IMG_PAGE="-page +$sc_xpage+100"
+            SC_IMG_PAGE="-page +$sc_xpage+$SC_Y"
         fi
         SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
     fi
