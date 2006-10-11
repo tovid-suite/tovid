@@ -141,6 +141,7 @@ SC_TITLE_ALIGN="centre"
 THUMB_TITLE_ALIGN="center"
 EAST_ALIGN=false
 MULTILINE_TITLE=false
+SAFE_AREA=50
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -498,6 +499,11 @@ while test $# -gt 0; do
         "-pal" )
             TV_STANDARD=pal
             ;;
+        "-showcase-safe-area" )
+            shift
+            SAFE_AREA="$1"
+            ;;
+        # submenu-length disabled for now
         # Menu control options
         "-menu-length" )
             shift
@@ -1199,14 +1205,14 @@ if [ "$SC_TITLE_ALIGN" = "west" ]; then
     THUMB_TITLE_ALIGN="west"
     for ((i=0; i<=NUM_FILES; i++)); do
         if [ $i -lt 5 ]; then
-            SHOWCASE_THUMB_X_ARRAY[i]=50
-            SHOWCASE_TITLES_X_ARRAY[i]=50
+            SHOWCASE_THUMB_X_ARRAY[i]=$SAFE_AREA
+            SHOWCASE_TITLES_X_ARRAY[i]=$SAFE_AREA
         fi
         if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
             EAST_ALIGN=true # align titles *after* the thumbs if multiline
             SC_TITLE_ALIGN=east # override unuseable supplied opt
         fi
-        if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 86 ]; then
+        if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 360 ]; then
             SHOWCASE_THUMB_X_ARRAY[i]=360
             SHOWCASE_TITLES_X_ARRAY[i]=${SHOWCASE_THUMB_X_ARRAY[i]}
         fi
@@ -1216,10 +1222,10 @@ if [ "$SC_TITLE_ALIGN" = "east" ]; then
     THUMB_TITLE_ALIGN="west" # align titles left to allow longer titles
     for ((i=0; i<=NUM_FILES; i++)); do
         if [ $i -lt 5 ]; then
-            SHOWCASE_THUMB_X_ARRAY[i]=50
-            SHOWCASE_TITLES_X_ARRAY[i]=50
+            SHOWCASE_THUMB_X_ARRAY[i]=$SAFE_AREA
+            SHOWCASE_TITLES_X_ARRAY[i]=$SAFE_AREA
         fi
-        if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 86 ]; then
+        if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 360 ]; then
             SHOWCASE_THUMB_X_ARRAY[i]=360
         fi
         SHOWCASE_TITLES_X_ARRAY[i]=$(( ${SHOWCASE_THUMB_X_ARRAY[i]} + ${THUMB_SIZE/x*} + 5 ))
@@ -1995,11 +2001,11 @@ if $SHOWCASE; then
         fi
         # add the thumb size if east align; for west align use MAX_LEN only
         [ "$SC_TITLE_ALIGN" = "east" ] && TS=${THUMB_SIZE/x*} || TS=0
-        sc_palette=$((720 - ${SHOWCASE_THUMB_X_ARRAY[0]} - 50 - T))
+        sc_palette=$((720 - ${SHOWCASE_THUMB_X_ARRAY[0]} - SAFE_AREA - T))
         # sc_palette is for centre align
         sc_palette=$(( ( ${SHOWCASE_THUMB_X_ARRAY[0]} + T) + (sc_palette / 2)))
         # sc_palette2 is for east and west align
-        sc_palette2=$(( 720 - (${SHOWCASE_THUMB_X_ARRAY[0]} + TS + T + sc_width + 50) ))
+        sc_palette2=$(( 720 - (${SHOWCASE_THUMB_X_ARRAY[0]} + TS + T + sc_width + SAFE_AREA) ))
         sc_xpage2=$((sc_palette - $((sc_width / 2)) ))
         sc_xpage3=$(( sc_palette2 / 2 ))
         sc_xpage3=$(( ${SHOWCASE_THUMB_X_ARRAY[0]} + $TS + 5 + T + sc_xpage3 ))
