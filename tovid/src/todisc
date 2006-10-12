@@ -1192,7 +1192,7 @@ if $SHOWCASE; then
     else
         SHOWCASE_SIZE=288x216  # smaller showcase thumb because we have 2 rows
         AUTOORDER="columns"
-        if [[ "$SC_TITLE_ALIGN" = *st ]] && [[ "$SHOWCASE_IMG" || "$SHOWCASE_VIDEO" ]]; then
+        if ! $NO_SC_THUMB [[ "$SC_TITLE_ALIGN" = *st ]] && [[ "$SHOWCASE_IMG" || "$SHOWCASE_VIDEO" ]]; then
             usage_error "Sorry, there is no room for the showcase thumb " \
             "if you use more than 5 videos with -showcase-titles-align east|west. " \
             "Either remove the -showcase-titles-align switch or remove the " \
