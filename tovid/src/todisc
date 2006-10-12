@@ -141,6 +141,7 @@ SC_TITLE_ALIGN="centre"
 THUMB_TITLE_ALIGN="center"
 EAST_ALIGN=false
 MULTILINE_TITLE=false
+SAFE_AREA=50
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -497,6 +498,11 @@ while test $# -gt 0; do
             ;;
         "-pal" )
             TV_STANDARD=pal
+            ;;
+        "-showcase-safe-area" )
+            shift
+            SAFE_AREA="$1"
+            let SAFE_OFFSET=86-SAFE_AREA
             ;;
         # submenu-length disabled for now
         # Menu control options
@@ -1185,15 +1191,12 @@ if $SHOWCASE; then
     else
         SHOWCASE_SIZE=288x216  # smaller showcase thumb because we have 2 rows
         AUTOORDER="columns"
-        if [[ "$SC_TITLE_ALIGN" = *st ]] ; then
-            if [[ "$SHOWCASE_IMG" || "$SHOWCASE_VIDEO" ]] \
-            && [[ "$SHOWCASE_IMG" != "dummy" && "$SHOWCASE_VIDEO" != "dummy" ]]; then
-                usage_error "Sorry, there is no room for the showcase thumb " \
-                "if you use more than 5 videos with -showcase-titles-align " \
-                "east|west. Either remove the -showcase-titles-align switch or " \
-                "remove the showcase image/video with '-showcase-no-thumb'. " \
-                "Consider using -bgimage or -bgvideo instead of a showcase thumb."
-            fi
+        if [[ "$SC_TITLE_ALIGN" = *st ]] && [[ "$SHOWCASE_IMG" || "$SHOWCASE_VIDEO" ]]; then
+            usage_error "Sorry, there is no room for the showcase thumb " \
+            "if you use more than 5 videos with -showcase-titles-align east|west. " \
+            "Either remove the -showcase-titles-align switch or remove the " \
+            "showcase image/video by using -showcase-no-thumb. " " " \
+            "Consider using -bgimage or -bgvideo instead of a showcase thumb."
         fi
     fi
 else
@@ -1203,14 +1206,14 @@ if [ "$SC_TITLE_ALIGN" = "west" ]; then
     THUMB_TITLE_ALIGN="west"
     for ((i=0; i<=NUM_FILES; i++)); do
         if [ $i -lt 5 ]; then
-            SHOWCASE_THUMB_X_ARRAY[i]=$((${SHOWCASE_THUMB_X_ARRAY[i]} - 36))
-            SHOWCASE_TITLES_X_ARRAY[i]=$((${SHOWCASE_TITLES_X_ARRAY[i]} - 36))
+            SHOWCASE_THUMB_X_ARRAY[i]=$(( ${SHOWCASE_THUMB_X_ARRAY[i]} - SAFE_OFFSET ))
+            SHOWCASE_TITLES_X_ARRAY[i]=$(( ${SHOWCASE_TITLES_X_ARRAY[i]} - SAFE_OFFSET ))
         fi
         if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
             EAST_ALIGN=true # align titles *after* the thumbs if multiline
             SC_TITLE_ALIGN=east # override unuseable supplied opt
         fi
-        if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -ge 360 ]; then
+        if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 360 ]; then
             SHOWCASE_THUMB_X_ARRAY[i]=360
             SHOWCASE_TITLES_X_ARRAY[i]=${SHOWCASE_THUMB_X_ARRAY[i]}
         fi
@@ -1220,10 +1223,10 @@ if [ "$SC_TITLE_ALIGN" = "east" ]; then
     THUMB_TITLE_ALIGN="west" # align titles left to allow longer titles
     for ((i=0; i<=NUM_FILES; i++)); do
         if [ $i -lt 5 ]; then
-            SHOWCASE_THUMB_X_ARRAY[i]=$((${SHOWCASE_THUMB_X_ARRAY[i]} - 36))
-            SHOWCASE_TITLES_X_ARRAY[i]=$((${SHOWCASE_TITLES_X_ARRAY[i]} - 36))
+            SHOWCASE_THUMB_X_ARRAY[i]=$(( ${SHOWCASE_THUMB_X_ARRAY[i]} - SAFE_OFFSET ))
+            SHOWCASE_TITLES_X_ARRAY[i]=$(( ${SHOWCASE_TITLES_X_ARRAY[i]} - SAFE_OFFSET ))
         fi
-        if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -ge 360 ]; then
+        if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 360 ]; then
             SHOWCASE_THUMB_X_ARRAY[i]=360
         fi
         SHOWCASE_TITLES_X_ARRAY[i]=$(( ${SHOWCASE_THUMB_X_ARRAY[i]} + ${THUMB_SIZE/x*} + 5 ))
@@ -1999,11 +2002,11 @@ if $SHOWCASE; then
         fi
         # add the thumb size if east align; for west align use MAX_LEN only
         [ "$SC_TITLE_ALIGN" = "east" ] && TS=${THUMB_SIZE/x*} || TS=0
-        sc_palette=$((720 - ${SHOWCASE_THUMB_X_ARRAY[0]} - 50 - T))
+        sc_palette=$((720 - ${SHOWCASE_THUMB_X_ARRAY[0]} - SAFE_AREA - T))
         # sc_palette is for centre align
         sc_palette=$(( ( ${SHOWCASE_THUMB_X_ARRAY[0]} + T) + (sc_palette / 2)))
         # sc_palette2 is for east and west align
-        sc_palette2=$(( 720 - (${SHOWCASE_THUMB_X_ARRAY[0]} + TS + T + sc_width + 50) ))
+        sc_palette2=$(( 720 - (${SHOWCASE_THUMB_X_ARRAY[0]} + TS + T + sc_width + SAFE_AREA) ))
         sc_xpage2=$((sc_palette - $((sc_width / 2)) ))
         sc_xpage3=$(( sc_palette2 / 2 ))
         sc_xpage3=$(( ${SHOWCASE_THUMB_X_ARRAY[0]} + $TS + 5 + T + sc_xpage3 ))
