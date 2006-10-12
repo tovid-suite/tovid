@@ -3,12 +3,20 @@
 
 """This module provides an interface for running command-line applications.
 
-Most of tovid's work is done by calling external applications (mplayer,
-mpeg2enc, ffmpeg...) with usually lengthy command-lines. The Command class is a
-simple interface for building command-lines, spawning subprocesses, and reading
-output from them.
+
 """
 
+"""
+Requirements (+: met, -: unmet):
+
++ Construct command lines by appending/inserting formatted text
+- Pipe commands to other commands
+- Print out commands before they are executed
++ Execute commands in foreground or background
+- Capture or log output of commands
+- Check exit status of commands
+
+"""
 __all__ = [\
     'Script',
     'And',
@@ -26,6 +34,7 @@ import os
 import sys
 import tempfile
 import doctest
+import subprocess
 from stat import S_IREAD, S_IWRITE, S_IEXEC
 from signal import SIGKILL
 # From libtovid
@@ -207,42 +216,49 @@ class Or(NoBg):
 
 class Command(object):
     """An object used for creating commands used in shell scripts.
-    It encodes the arguments automagically. Examples::
-
-        >>> Command('echo')
-        Command('echo')
-        >>> echo = Command('echo')
-        >>> echo.add('foo', 'bar')
-        >>> echo
-        Command('echo foo bar')
-        >>> Command("echo") + 'foo and bar'
-        Command('echo "foo and bar"')
-        >>> echo = Command("echo").add('foo and bar')
-        >>> echo
-        Command('echo "foo and bar"')
-        >>> echo += "baz"
-        Command('echo "foo and bar" baz')
-        >>> str(echo)
-        'echo "foo and bar" baz'
-        
     """
-    def __init__(self, command="", stdin=None, stdout=None, stderr=None):
+    def __init__(self, command, *args):
+        """Create a Command that will run a given program with the given
+        arguments.
+            command: A string containing the name of a program to execute
+            args:    Arguments to supply the command with
+        For example:
+        
+            >>> cmd = Command('echo', 'Hello world')
+            
+        """
         self.command = command
-        self.stdin = stdin
-        self.stdout = stdout
-        self.stderr = stderr
+        self.args = []
+        for arg in args:
+            self.args.append(arg)
+        self.proc = None
+        self.bg = False
 
     def add(self, *args):
-        """Append some string arguments to the command, escaping special
-        characters and doing any necessary quoting."""
+        """Append arguments to the command. The arguments to this function
+        directly correspond to individual arguments to append to the command.
+        """
         for arg in args:
-            self.command += " %s" % enc_arg(arg)
+            self.args.append(arg)
 
-    def add_raw(self, raw_string):
-        """Append a raw (literal) string to the command, without any special
-        processing."""
-        self.command += " %s" % raw_string
+    def run(self):
+        """Execute the command."""
+        self.proc = subprocess.Popen([self.command] + self.args)
+        if not self.bg:
+            self.proc.wait()
 
+    def __str__(self):
+        """Return a string representation of the Command.
+        """
+        ret = self.command
+        for arg in self.args:
+            ret += " %s" % enc_arg(arg)
+        if self.bg:
+            ret += " &"
+        return ret
+
+
+    # Deprecated(?) functions
     def pipe(self, other):
         """Creates a new Command object which results on the pipe between this
         and the other program."""
@@ -275,25 +291,6 @@ class Command(object):
     
     def if_failed(self, other):
         return Or(self, other)
-
-    def __str__(self):
-        """Return a string representation of the Command, with appropriate
-        redirection tokens.
-        """
-        ret = self.command
-        if self.stdin is not None:
-            ret += " < %s" % enc_arg(self.stdin)
-        if self.stdout is not None:
-            ret += " > %s" % enc_arg(self.stdout)
-        if self.stderr is not None:
-            ret += " 2> %s" % enc_arg(self.stderr)
-            
-        return ret
-
-    #def __repr__(self):
-    #    """Return a Python code representation of the Command."""
-    #    return "Command(%r, %r, %r, %r)" % (self.command, self.stdin, self.stdout,
-    #                                    self.stderr)
 
 if __name__ == '__main__':
     doctest.testmod(verbose=True)
