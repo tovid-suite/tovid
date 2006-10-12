@@ -139,9 +139,10 @@ SHOWCASE_SEEK_VAL=1
 NO_SC_THUMB=false
 SC_TITLE_ALIGN="centre"
 THUMB_TITLE_ALIGN="center"
-EAST_ALIGN=false
+ALIGN_OVERRIDE=false
 MULTILINE_TITLE=false
-SAFE_AREA=50
+SAFE_AREA=50 # undocumented: you can set this from CLI with -showcase-safe-area
+SAFE_OFFSET=36
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -1210,8 +1211,8 @@ if [ "$SC_TITLE_ALIGN" = "west" ]; then
             SHOWCASE_TITLES_X_ARRAY[i]=$(( ${SHOWCASE_TITLES_X_ARRAY[i]} - SAFE_OFFSET ))
         fi
         if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
-            EAST_ALIGN=true # align titles *after* the thumbs if multiline
             SC_TITLE_ALIGN=east # override unuseable supplied opt
+            ALIGN_OVERRIDE=:
         fi
         if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 360 ]; then
             SHOWCASE_THUMB_X_ARRAY[i]=360
@@ -1222,7 +1223,7 @@ fi
 if [ "$SC_TITLE_ALIGN" = "east" ]; then
     THUMB_TITLE_ALIGN="west" # align titles left to allow longer titles
     for ((i=0; i<=NUM_FILES; i++)); do
-        if [ $i -lt 5 ]; then
+        if [ $i -lt 5 ] && ! $ALIGN_OVERRIDE; then
             SHOWCASE_THUMB_X_ARRAY[i]=$(( ${SHOWCASE_THUMB_X_ARRAY[i]} - SAFE_OFFSET ))
             SHOWCASE_TITLES_X_ARRAY[i]=$(( ${SHOWCASE_TITLES_X_ARRAY[i]} - SAFE_OFFSET ))
         fi
@@ -1487,7 +1488,7 @@ if $SHOWCASE; then
         # thumb pos plus 1/2 (X dim) of thumbsize, less 1/2 (X dim) of title size
         if [ "$SC_TITLE_ALIGN" = "centre" ]; then
             f=$(( ${THUMB_SIZE/x*} / 2 ))
-            j=$(( $((f + ${SHOWCASE_THUMB_X_ARRAY[i]})) - $((tt_dim / 2)) ))
+            j=$(( (f + ${SHOWCASE_THUMB_X_ARRAY[i]}) - (tt_dim / 2) ))
             k=( ${k[@]} "$j" )
             l=$((j + tt_dim))
             if [ $j -lt 48 ]; then
@@ -2012,12 +2013,10 @@ if $SHOWCASE; then
         sc_xpage3=$(( ${SHOWCASE_THUMB_X_ARRAY[0]} + $TS + 5 + T + sc_xpage3 ))
         # find out where to put the showcase image in the Y axis
         Y1=${SHOWCASE_THUMB_Y_ARRAY[0]}; Y2=${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]}
-        echo "Y1 is $Y1 and Y2 is $Y2"
         Y_SPACE=$(( (Y2 - Y1) + ${THUMB_SIZE/*x} ))
         sc_height=${sc_size/*x}
         Y_SPACE=$(( Y_SPACE - sc_height ))
         SC_Y=$(( Y_SPACE / 2))
-        echo "SC_Y is $SC_Y"
         SC_Y=$(( ${SHOWCASE_THUMB_Y_ARRAY[0]} + SC_Y ))
         if [ $V_ARRAY_TOTAL -le 5 ]; then
             if [[ $SC_TITLE_ALIGN = *st ]]; then
