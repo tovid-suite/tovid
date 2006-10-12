@@ -3,7 +3,7 @@
 
 __all__ = ['get_script']
 
-from libtovid.cli import Script, Arg
+from libtovid.cli import Script, Command
 from libtovid.log import Log
 
 log = Log('libtovid.encoders.mencoder')
@@ -15,7 +15,7 @@ def get_script(infile, options):
     script = Script('mencoder')
 
     # Build the mencoder command as a string
-    cmd = Arg('mencoder')
+    cmd = Command('mencoder')
     cmd.add(infile.filename, '-o', options['out'])
     cmd.add('-oac', 'lavc', '-ovc', 'lavc', '-of', 'mpeg')
     # Format
