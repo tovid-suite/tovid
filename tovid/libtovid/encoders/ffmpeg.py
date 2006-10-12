@@ -3,7 +3,7 @@
 
 __all__ = ['get_script']
 
-from libtovid.cli import Script, Arg
+from libtovid.cli import Script, Command
 from libtovid.log import Log
 
 log = Log('libtovid.encoders.ffmpeg')
@@ -15,7 +15,7 @@ def get_script(infile, options):
     script = Script('ffmpeg')
 
     # Build the ffmpeg command as a string
-    cmd = Arg('ffmpeg')
+    cmd = Command('ffmpeg')
     cmd.add('-i', infile.filename)
     if options['format'] in ['vcd', 'svcd', 'dvd']:
         cmd.add('-tvstd', options['tvsys'])
