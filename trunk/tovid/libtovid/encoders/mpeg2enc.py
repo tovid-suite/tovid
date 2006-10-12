@@ -5,7 +5,7 @@ __all__ = ['get_script']
 
 import os
 
-from libtovid.cli import Script, Arg
+from libtovid.cli import Script, Command
 from libtovid.utils import float_to_ratio
 from libtovid.log import Log
 
@@ -67,7 +67,7 @@ def rip_video(infile, yuvfile, options):
     # TODO: Custom mplayer options, subtitles, interlacing,
     # corresp.  to $MPLAYER_OPT, $SUBTITLES, $VF_PRE/POST, $YUV4MPEG_ILACE,
     # etc.
-    cmd = Arg('mplayer')
+    cmd = Command('mplayer')
     cmd.add(infile.filename)
     cmd.add('-vo', 'yuv4mpeg:file=%s' % yuvfile)
     cmd.add('-nosound', '-benchmark', '-noframedrop')
@@ -96,7 +96,7 @@ def encode_video(infile, yuvfile, videofile, options):
     # Missing options (compared to tovid)
     # -S 700 -B 247 -b 2080 -v 0 -4 2 -2 1 -q 5 -H -o FILE
     
-    cmd = Arg('mpeg2enc')
+    cmd = Command('mpeg2enc')
     # TV system
     if options['tvsys'] == 'pal':
         cmd.add('-F', '3', '-n', 'p')
@@ -122,7 +122,7 @@ def encode_video(infile, yuvfile, videofile, options):
     if infile.video != None:
         if infile.video.spec['fps'] != options['fps']:
             log.info("Adjusting framerate")
-            yuvcmd = Arg('yuvfps')
+            yuvcmd = Command('yuvfps')
             yuvcmd.add('-r', float_to_ratio(options['fps']))
             cmd = cmd.pipe(yuvcmd)
     else:
@@ -138,7 +138,7 @@ def encode_audio(infile, audiofile, options):
         acodec = 'mp2'
     else:
         acodec = 'ac3'
-    cmd = Arg('ffmpeg')
+    cmd = Command('ffmpeg')
     # If infile was provided, encode it
     if infile:
         cmd.add('-i', infile.filename)
@@ -153,7 +153,7 @@ def encode_audio(infile, audiofile, options):
 
 def mplex_streams(vstream, astream, outfile, options):
     """Multiplex the audio and video streams."""
-    cmd = Arg('mplex')
+    cmd = Command('mplex')
     format = options['format']
     if format == 'vcd':
         cmd.add_raw('-f 1')
