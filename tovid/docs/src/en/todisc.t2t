@@ -176,6 +176,13 @@ to decrease font size with the **-menu-fontsize** option. For example:
 
 ==Menu Style==
 
+: -button-style rect|text|rect-text
+    The style of button that you will see when you play the DVD.
+    "rect" draws a rectangle around the thumb when you select it
+    in the DVD player.  "text" highlights the thumb title text, and "text-rect"
+    draws a rectangle around the title text.  "text-rect" is only used for multiline
+    titles in the showcase-* template.  "text-rect" is  used by default if you use -3dthumbs
+    with showcase-* and multiline titles, as the others are not suitable for this arrangement.
 : -rotate DEGREES
     Rotate the showcase-image|video clockwise by DEGREES.
     (default: if used without options, the rotate will be 5 degrees)
