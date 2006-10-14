@@ -144,25 +144,6 @@ def get_abitrate(format):
         return (32, 1536)
         
 
-
-
-def is_compliant(filename, format, tvsys):
-    """Return True if the given file is compliant with the given format and
-    TV system, False otherwise.
-    """
-    # TODO
-    pass
-
-
-def compliance(filename):
-    """Return standards-compliance information about the given file, as a list
-    of keywords."""
-    # TODO
-    pass
-
-
-
-
 class AudioStream:
     """Stores information about an audio stream."""
     def __init__(self, filename=''):
