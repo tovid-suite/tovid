@@ -10,8 +10,8 @@
 Requirements (+: met, -: unmet):
 
 + Construct command lines by appending/inserting formatted text
-- Pipe commands to other commands
-- Print out commands before they are executed
++ Pipe commands to other commands
++ Print out commands before they are executed
 + Execute commands in foreground or background
 - Capture or log output of commands
 - Check exit status of commands
@@ -34,7 +34,7 @@ import os
 import sys
 import tempfile
 import doctest
-import subprocess
+from subprocess import Popen, PIPE
 from stat import S_IREAD, S_IWRITE, S_IEXEC
 from signal import SIGKILL
 # From libtovid
@@ -128,6 +128,103 @@ def enc_arg(arg):
     return arg
 
 
+class Command(object):
+    """An executable command-line statement with support for capturing output
+    and piping to other commands.
+    """
+    def __init__(self, program, *args):
+        """Create a Command that will run a given program with the given
+        arguments.
+        
+            program: A string containing the name of a program to execute
+            args:    Individual arguments to supply the command with
+        
+        For example:
+        
+            >>> cmd = Command('echo', 'Hello world')
+            
+        """
+        self.program = program
+        self.args = []
+        for arg in args:
+            self.args.append(arg)
+        self.proc = None
+        self.pipe = None
+        self.output = ''
+
+    def add(self, *args):
+        """Append arguments to the command. The arguments to this function
+        directly correspond to individual arguments to append to the command.
+        Arguments are converted to string form, and special shell characters
+        are handled automatically, so there is no need to escape them.
+        """
+        for arg in args:
+            self.args.append(str(arg))
+
+    def run(self, stdin=None):
+        """Execute the command.
+            stdin: File object to read input from
+        """
+        log.info("Running: " + str(self))
+        self.output = ''
+        self.proc = Popen([self.program] + self.args,
+                    stdin=stdin, stdout=PIPE)
+        # Run piped-to command if it exists
+        if isinstance(self.pipe, Command):
+            self.pipe.run(self.proc.stdout)
+    
+    def get_output(self):
+        """Wait for the command to finish executing, and return a string
+        containing the command's output. Returns an empty string if the
+        command has not been run() yet.
+        """
+        if self.output is '' and self.proc is not None:
+            self.output = self.proc.communicate()[0]
+        return self.output
+    
+    def __str__(self):
+        """Return a string representation of the Command.
+        """
+        ret = self.program
+        for arg in self.args:
+            ret += " %s" % enc_arg(arg)
+        return ret
+
+    def pipe_to(self, command):
+        """Pipe the output of this Command into another Command.
+            command: A Command to pipe to, or None to disable piping
+        """
+        if command:
+            assert isinstance(command, Command)
+        self.pipe = command
+
+
+    # Deprecated(?) functions
+
+    def to_bg(self):
+        """Makes this command run in background, returns itself."""
+        return Bg(self)
+
+    def read_from(self, filename):
+        """makes the process read from a file"""
+        self.stdin = filename
+
+    def write_to(self, filename):
+        """makes the process write to a file"""
+        self.stdout = filename
+
+    def errors_to(self, filename):
+        """makes the process write error stream to a file"""
+        self.stderr = filename
+
+    def if_done(self, other):
+        """Creates a new object that represents the chained processes"""
+        return And(self, other)
+    
+    def if_failed(self, other):
+        return Or(self, other)
+
+# Deprecated(?) classes
 class Bg(object):
     """
     This makes sure there is only one Command in backgrond.
@@ -214,83 +311,6 @@ class Or(NoBg):
     will only be run if the first one was not run successfully."""
     OPER = "||"
 
-class Command(object):
-    """An object used for creating commands used in shell scripts.
-    """
-    def __init__(self, command, *args):
-        """Create a Command that will run a given program with the given
-        arguments.
-            command: A string containing the name of a program to execute
-            args:    Arguments to supply the command with
-        For example:
-        
-            >>> cmd = Command('echo', 'Hello world')
-            
-        """
-        self.command = command
-        self.args = []
-        for arg in args:
-            self.args.append(arg)
-        self.proc = None
-        self.bg = False
-
-    def add(self, *args):
-        """Append arguments to the command. The arguments to this function
-        directly correspond to individual arguments to append to the command.
-        """
-        for arg in args:
-            self.args.append(arg)
-
-    def run(self):
-        """Execute the command."""
-        self.proc = subprocess.Popen([self.command] + self.args)
-        if not self.bg:
-            self.proc.wait()
-
-    def __str__(self):
-        """Return a string representation of the Command.
-        """
-        ret = self.command
-        for arg in self.args:
-            ret += " %s" % enc_arg(arg)
-        if self.bg:
-            ret += " &"
-        return ret
-
-
-    # Deprecated(?) functions
-    def pipe(self, other):
-        """Creates a new Command object which results on the pipe between this
-        and the other program."""
-        if self.stdout is not None:
-            raise TypeError("Cannot pipe if output was redirected to a file.")
-        if other.stdin is not None:
-            raise TypeError("Cannot pipe if input of other process is redirected to a file.")
-        
-        return Pipe(self, other)
-
-    def to_bg(self):
-        """Makes this command run in background, returns itself."""
-        return Bg(self)
-
-    def read_from(self, filename):
-        """makes the process read from a file"""
-        self.stdin = filename
-
-    def write_to(self, filename):
-        """makes the process write to a file"""
-        self.stdout = filename
-
-    def errors_to(self, filename):
-        """makes the process write error stream to a file"""
-        self.stderr = filename
-
-    def if_done(self, other):
-        """Creates a new object that represents the chained processes"""
-        return And(self, other)
-    
-    def if_failed(self, other):
-        return Or(self, other)
 
 if __name__ == '__main__':
     doctest.testmod(verbose=True)
