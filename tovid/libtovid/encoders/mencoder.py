@@ -74,6 +74,6 @@ def get_script(infile, options):
             vfilter += ',expand=%s:%s' % options['expand']
         cmd.add('-vf', vfilter)
 
-    # Add the one long command to the Script and run it
-    script.append(str(cmd))
+    # Add the Command to the Script
+    script.append(cmd)
     return script
