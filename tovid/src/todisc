@@ -873,7 +873,7 @@ for i in "${FILES[@]}"; do
     echo "Adding: $i"
 done
 V_ARRAY_TOTAL=${#IN_FILES[@]}
-NUM_FILES=$(($V_ARRAY_TOTAL - 1))
+NUM_FILES=$((V_ARRAY_TOTAL - 1))
 
 # make an array of possible vars for dvdauthor post calls
 if $CHAIN_VIDEOS; then
@@ -1278,7 +1278,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
             # multiline titles not suitable for text buttons
             BUTTON_STYLE="text-rect"
         else
-            BUTTON_STYLE="rect"
+            [ $BUTTON_STYLE != "text-rect" ] && BUTTON_STYLE="rect"
         fi
     fi
 done
@@ -1994,7 +1994,7 @@ if $SHOWCASE; then
         # find out where to put the showcase image/video in the X axis
         sc_size=$(identify "$WORK_DIR/showcase_img.png"|awk '{print $3}')
         sc_width=${sc_size/x*}
-        sc_xpage=$(( 360 - $((sc_width / 2)) )) # for -gt 5 videos
+        sc_xpage=$(( 360 - (sc_width / 2) )) # for -gt 5 videos
         if [ $MAX_LEN -ge ${THUMB_SIZE/x*} ]; then
             htmb=$(( ${THUMB_SIZE/x*} / 2 )) ; htle=$((MAX_LEN / 2))
             [ "$SC_TITLE_ALIGN" = "centre" ] && T=$(( htmb + htle )) || T=$((MAX_LEN + 5))
@@ -2620,7 +2620,7 @@ if $SUB_MENU; then
         CUT=( 30 $(running_total <<<  $(for ((a=0; a<${CHAPTERS[i]} ; a++)); \
         do echo -n "$counts ";done)) )
         for ((c=0; c<${#CUT[@]}; c++)); do
-            cmd[c]=$((${CUT[c]}))-$((${CUT[c]} + CUT_TIME))
+            cmd[c]=${CUT[c]}-$(( ${CUT[c]} + CUT_TIME))
         done
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
