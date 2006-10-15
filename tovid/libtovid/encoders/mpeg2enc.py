@@ -85,8 +85,9 @@ def rip_video(infile, yuvfile, options):
         cmd.add('-vf-add', 'pp=al:f')
     if 'deblock' in filters:
         cmd.add('-vf-add', 'pp=hb/vb')
-    # Background ripping
-    return str(cmd.to_bg())
+    # Do ripping in background
+    cmd.bg = True
+    return str(cmd)
 
 
 def encode_video(infile, yuvfile, videofile, options):
@@ -119,7 +120,7 @@ def encode_video(infile, yuvfile, videofile, options):
 
     # Adjust framerate if necessary
     # FIXME: Can infile.video None?
-    if infile.video != None:
+    if infile.video:
         if infile.video.spec['fps'] != options['fps']:
             log.info("Adjusting framerate")
             yuvcmd = Command('yuvfps')

@@ -9,8 +9,11 @@ from libtovid.log import Log
 log = Log('libtovid.encoders.ffmpeg')
 
 def get_script(infile, options):
-    """Return a Script to encode infile (a MediaFile) with ffmpeg, using
-    the given options (an OptionDict)."""
+    """Return a Script to encode infile with ffmpeg, using
+    the given options.
+        infile:  A MediaFile, loaded with an input file
+        options: An OptionDict containing user customizations
+    """
 
     script = Script('ffmpeg')
 
