@@ -4,6 +4,8 @@
 """This module provides functions for loading and saving tovid preferences from
 an INI-style configuration file."""
 
+# TODO: Finish writing this module
+
 __all__ = ['load', 'save']
 
 import os

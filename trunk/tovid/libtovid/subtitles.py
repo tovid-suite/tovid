@@ -5,7 +5,7 @@ import tempfile
 import xml.dom
 import os
 
-from cli import Script, Arg
+from cli import Script, Command
 from opts import Option, OptionDict
 from media import MediaFile
 
@@ -79,18 +79,18 @@ def spumux(movie_filename, xmlopts, stream=0):
     
     script = Script('subtitles')
     
-    script.append(Arg('cat').add(fd.name))
+    script.append(Command('cat').add(fd.name))
     
     # spumux -s0 < in > out
-    cmd = Arg('spumux').add("-s%s" % stream).add(fd.name)
+    cmd = Command('spumux').add("-s%s" % stream).add(fd.name)
     cmd.read_from(movie_filename)
     cmd.write_to(tmp_mpg)
     
     # remove old file
-    cmd = cmd.if_done(Arg('rm').add('-f', movie_filename))
+    cmd = cmd.if_done(Command('rm').add('-f', movie_filename))
     
     # rename temporary file to new file
-    cmd = cmd.if_done(Arg('mv').add(tmp_mpg, movie_filename))
+    cmd = cmd.if_done(Command('mv').add(tmp_mpg, movie_filename))
     script.append(cmd)
     script.run()
 

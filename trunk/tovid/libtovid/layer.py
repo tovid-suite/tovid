@@ -44,7 +44,7 @@ from libtovid.media import MediaFile
 
 class Layer:
     """A visual element, or a composition of visual elements. Conceptually
-    similar to a layer in the GIMP or Photoshop, plus support for animation
+    similar to a layer in the GIMP or Photoshop, with support for animation
     effects and sub-Layers.
     """
     def __init__(self):

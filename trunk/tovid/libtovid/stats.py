@@ -34,6 +34,7 @@ fields = [\
     'backend'
     ]
 
+# Integer numeric fields
 int_fields = [\
     'length',
     'avg_bitrate',
