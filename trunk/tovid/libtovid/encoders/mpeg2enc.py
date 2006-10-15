@@ -29,9 +29,9 @@ vbitrate
 def get_script(infile, options):
     """Return a Script to encode infile (a MediaFile) with mpeg2enc,
     using the given options (an OptionDict)."""
-    log.warn("This encoder is very experimental, and may not work.")
+    log.warning("This encoder is very experimental, and may not work.")
 
-    script = Script('mpeg2enc', options)
+    script = Script('mpeg2enc')
 
     outname = options['out']
     # YUV raw video FIFO, for piping video from mplayer to mpeg2enc
@@ -87,7 +87,7 @@ def rip_video(infile, yuvfile, options):
         cmd.add('-vf-add', 'pp=hb/vb')
     # Do ripping in background
     cmd.bg = True
-    return str(cmd)
+    return cmd
 
 
 def encode_video(infile, yuvfile, videofile, options):
@@ -96,7 +96,6 @@ def encode_video(infile, yuvfile, videofile, options):
     # corresp. to $VID_BITRATE, $MPEG2_QUALITY, $DISC_SIZE, etc.
     # Missing options (compared to tovid)
     # -S 700 -B 247 -b 2080 -v 0 -4 2 -2 1 -q 5 -H -o FILE
-    
     cmd = Command('mpeg2enc')
     # TV system
     if options['tvsys'] == 'pal':
@@ -125,48 +124,48 @@ def encode_video(infile, yuvfile, videofile, options):
             log.info("Adjusting framerate")
             yuvcmd = Command('yuvfps')
             yuvcmd.add('-r', float_to_ratio(options['fps']))
-            cmd = cmd.pipe(yuvcmd)
+            cmd.pipe_to(yuvcmd)
     else:
         pass
-    
-    # Pipe the .yuv file into mpeg2enc
-    cmd.read_from(yuvfile)
-    return str(cmd)
+    cat = Command('cat')
+    cat.add(yuvfile)
+    cat.pipe_to(cmd)
+    return cat
 
 def encode_audio(infile, audiofile, options):
     """Encode the audio stream in infile to the target format."""
+    cmd = Command('ffmpeg')
     if options['format'] in ['vcd', 'svcd']:
         acodec = 'mp2'
     else:
         acodec = 'ac3'
-    cmd = Command('ffmpeg')
     # If infile was provided, encode it
     if infile:
         cmd.add('-i', infile.filename)
     # Otherwise, generate 4-second silence
     else:
         cmd.add('-f', 's16le', '-i', '/dev/zero', '-t', '4')
-    cmd.add_raw('-ac 2 -ab 224')
+    cmd.add('-ac', '2', '-ab', '224')
     cmd.add('-ar', options['samprate'])
     cmd.add('-acodec', acodec)
     cmd.add('-y', audiofile)
-    return str(cmd)
+    return cmd
 
 def mplex_streams(vstream, astream, outfile, options):
     """Multiplex the audio and video streams."""
     cmd = Command('mplex')
     format = options['format']
     if format == 'vcd':
-        cmd.add_raw('-f 1')
+        cmd.add('-f', '1')
     elif format == 'dvd-vcd':
-        cmd.add_raw('-V -f 8')
+        cmd.add('-V', '-f', '8')
     elif format == 'svcd':
-        cmd.add_raw('-V -f 4 -b 230')
+        cmd.add('-V', '-f', '4', '-b', '230')
     elif format == 'half-dvd':
-        cmd.add_raw('-V -f 8 -b 300')
+        cmd.add('-V', '-f', '8', '-b', '300')
     elif format == 'dvd':
-        cmd.add_raw('-V -f 8 -b 400')
+        cmd.add('-V', '-f', '8', '-b', '400')
     # elif format == 'kvcd':
     #   cmd += ' -V -f 5 -b 350 -r 10800 '
     cmd.add(vstream, astream, '-o', outfile)
-    return str(cmd)
+    return cmd
