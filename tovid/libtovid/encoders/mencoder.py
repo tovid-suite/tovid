@@ -16,8 +16,11 @@ def get_script(infile, options):
 
     # Build the mencoder command as a string
     cmd = Command('mencoder')
-    cmd.add(infile.filename, '-o', options['out'])
-    cmd.add('-oac', 'lavc', '-ovc', 'lavc', '-of', 'mpeg')
+    cmd.add(infile.filename,
+            '-o', options['out'],
+            '-oac', 'lavc',
+            '-ovc', 'lavc',
+            '-of', 'mpeg')
     # Format
     cmd.add('-mpegopts')
     
@@ -29,8 +32,8 @@ def get_script(infile, options):
     # Audio settings
     # Adjust sampling rate
     # TODO: Don't resample unless needed
-    cmd.add('-srate', options['samprate'])
-    cmd.add('-af', 'lavcresample=%s' % options['samprate'])
+    cmd.add('-srate', options['samprate'],
+            '-af', 'lavcresample=%s' % options['samprate'])
 
     # Video codec
     if options['format'] == 'vcd':

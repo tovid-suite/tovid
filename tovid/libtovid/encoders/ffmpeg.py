@@ -21,12 +21,11 @@ def get_script(infile, options):
     cmd = Command('ffmpeg')
     cmd.add('-i', infile.filename)
     if options['format'] in ['vcd', 'svcd', 'dvd']:
-        cmd.add('-tvstd', options['tvsys'])
-        cmd.add('-target', '%s-%s' % \
-                (options['tvsys'], options['format']))
+        cmd.add('-tvstd', options['tvsys'],
+                '-target', '%s-%s' % (options['tvsys'], options['format']))
     
-    cmd.add('-r', options['fps'])
-    cmd.add('-ar', options['samprate'])
+    cmd.add('-r', options['fps'],
+            '-ar', options['samprate'])
     # Convert scale/expand to ffmpeg's padding system
     if options['scale']:
         cmd.add('-s', '%sx%s' % options['scale'])
@@ -36,11 +35,9 @@ def get_script(infile, options):
         h_pad = (e_width - s_width) / 2
         v_pad = (e_height - s_height) / 2
         if h_pad > 0:
-            cmd.add('-padleft', h_pad)
-            cmd.add('-padright', h_pad)
+            cmd.add('-padleft', h_pad, '-padright', h_pad)
         if v_pad > 0:
-            cmd.add('-padtop', v_pad)
-            cmd.add('-padbottom', v_pad)
+            cmd.add('-padtop', v_pad, '-padbottom', v_pad)
     if options['widescreen']:
         cmd.add('-aspect', '16:9')
     else:
