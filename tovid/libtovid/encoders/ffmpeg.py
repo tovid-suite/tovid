@@ -48,5 +48,5 @@ def get_script(infile, options):
     
     cmd.add(options['out'])
 
-    script.append(str(cmd))
+    script.append(cmd)
     return script
