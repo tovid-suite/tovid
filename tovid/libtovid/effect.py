@@ -24,7 +24,7 @@ __all__ = [\
     'Spectrum',
     'Scale',
     'KeyFunction'
-]
+    ]
 
 from libtovid.render.mvg import Drawing
 from libtovid.animation import Keyframe, Tween
