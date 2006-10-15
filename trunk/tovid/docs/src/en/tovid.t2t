@@ -137,13 +137,13 @@ letterboxing or anamorphic scaling.
 
 : **-quality** //NUM//
     Desired output quality, on a scale of 1 to 10, with 10 giving the best
-    quality at the expense of a larger output file. Output size can vary by
-    approximately a factor of 4 (that is, -quality 1 output can be 25% the size
-    of -quality 10 output). Your results may vary.
+    quality at the expense of a larger output file. Default is 8. Output size
+    can vary by approximately a factor of 4 (that is, **-quality 1** output
+    can be 1/4 the size of **-quality 10** output). Your results may vary.
 
     At present, this option affects both output bitrate and quantization (but
     may, in the future, affect other quality/size-related attributes). Use
-    -vbitrate if you want to explicitly provide a maximum bitrate.
+    **-vbitrate** if you want to explicitly provide a maximum bitrate.
 
 : **-vbitrate** //NUM//
     Maximum bitrate to use for video (in kbits/sec). Must be within allowable
@@ -171,6 +171,8 @@ letterboxing or anamorphic scaling.
     Attempt to encode an integrated subtitle stream (such as may be found in
     Matroska .mkv files) in the given language code (eng, jpn, etc.) May work
     for other formats.
+: **-autosubs**
+    Automatically include subtitle files with the same name as the input video.
 
 : **-subtitles** //FILE//
     Get subtitles from //FILE// and encode them into the video.  WARNING: This
@@ -194,7 +196,7 @@ letterboxing or anamorphic scaling.
 : **-filters** {none,denoise,deblock,contrast,all} (default none)
     Apply post-processing filters to enhance the video. If your input video is
     very high quality, use 'none'. If your input video is grainy, use 'denoise';
-    if it looks washed out or faded, use 'contrast'. You can use multiple 
+    if it looks washed out or faded, use 'contrast'. You can use multiple
     filters separated by commas. To apply all filters, use 'all'.
 
 : **-fps** //RATIO//
@@ -250,17 +252,22 @@ letterboxing or anamorphic scaling.
     longer.  The default is high priority.
 
 : **-discsize** //NUM//
-    Sets the desired target DVD/CD-R size to //NUM// mebibytes (2^20).  Default
-    is 700 for CD, 4300 for DVD. Use higher values at your own risk. Use 650 or
-    lower if you plan to burn to smaller-capacity CDs.
+    When encoding, tovid automatically splits the output file into several
+    pieces if it exceeds the size of the target media. This option sets the
+    desired target DVD/CD-R size to //NUM// mebibytes (MiB, 2^20). By default,
+    splitting occurs at 700 for CD, 4300 for DVD. Use higher values at your
+    own risk. Use 650 or lower if you plan to burn to smaller-capacity CDs.
 
 : **-parallel**
-    Will perform encode/rip processes in parallel using named pipes. Maximizes
-    CPU utilization and minimizes disk usage.
+    Perform ripping, encoding, and multiplexing processes in parallel using
+    named pipes. Maximizes CPU utilization and minimizes disk usage. Note that
+    this option simply does more tasks simultaneously, in order to make better
+    use of available CPU cycles; it's unrelated to multi-CPU processing (which
+    is done automatically anyway). Has no effect when **-ffmpeg** is used.
 
 : **-update** //SECS//
     Print status updates at intervals of //SECS// seconds. This affects how
-    regularly the progress-meter is updated. The default is once per second
+    regularly the progress-meter is updated. The default is once per second.
 
 : **-mplayeropts** **"**//OPTIONS//**"**
     Append //OPTIONS// to the mplayer command run during video encoding.  Use
@@ -282,7 +289,7 @@ letterboxing or anamorphic scaling.
 
 ==See also==
 
-**idvid**(1), **makedvd**(1), **makemenu**(1), **makeslides**(1), 
+**idvid**(1), **makedvd**(1), **makemenu**(1), **makeslides**(1),
 **makexml**(1), **postproc**(1), **tovid**(1), **todisc**(1)
 
 
