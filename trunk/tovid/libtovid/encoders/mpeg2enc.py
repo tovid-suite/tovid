@@ -145,10 +145,11 @@ def encode_audio(infile, audiofile, options):
     # Otherwise, generate 4-second silence
     else:
         cmd.add('-f', 's16le', '-i', '/dev/zero', '-t', '4')
-    cmd.add('-ac', '2', '-ab', '224')
-    cmd.add('-ar', options['samprate'])
-    cmd.add('-acodec', acodec)
-    cmd.add('-y', audiofile)
+    cmd.add('-ac', '2',
+            '-ab', '224',
+            '-ar', options['samprate'],
+            '-acodec', acodec,
+            '-y', audiofile)
     return cmd
 
 def mplex_streams(vstream, astream, outfile, options):
