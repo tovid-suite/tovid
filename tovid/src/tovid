@@ -837,13 +837,7 @@ rm -f "$SCRATCH_FILE" "$LOG_FILE"
 echo "$ME $0 $@" >> "$LOG_FILE"
 echo "$ME Version $TOVID_VERSION" >> "$LOG_FILE"
 
-# Full pathnames for A/V streams and output file
-AUDIO_WAV="$TMP_DIR/audio.wav"
-AUDIO_STREAM="$TMP_DIR/audio.$AUD_SUF"
-YUV_STREAM="$TMP_DIR/video.yuv"
-VIDEO_STREAM="$TMP_DIR/video.$VID_SUF"
 OUT_FILENAME="$OUT_PREFIX.mpg"
-
 # If output file(s) exist, prompt for overwrite
 if test -e "$OUT_FILENAME"; then
     yecho "Output file already exists: $OUT_FILENAME"
@@ -1119,6 +1113,11 @@ case "$TGT_RES" in
 
 esac # End resolution
 
+# Full pathnames for A/V streams and output file
+AUDIO_WAV="$TMP_DIR/audio.wav"
+AUDIO_STREAM="$TMP_DIR/audio.$AUD_SUF"
+YUV_STREAM="$TMP_DIR/video.yuv"
+VIDEO_STREAM="$TMP_DIR/video.$VID_SUF"
 
 # ******************************************************************************
 #
