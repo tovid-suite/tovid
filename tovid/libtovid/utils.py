@@ -25,7 +25,7 @@ import mimetypes
 def escape(text):
     """Return a copy of the given text string with potentially problematic
     "special" characters backslash-escaped."""
-    special_chars = ' #*:;?![]()"\'\\'
+    special_chars = '\\ #*:;?![]()"\''
     result = text
     for char in special_chars:
         result = result.replace(char, '\%s' % char)
