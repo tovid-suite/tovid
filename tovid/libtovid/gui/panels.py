@@ -752,12 +752,12 @@ class DiscLayoutPanel(wx.Panel):
                 parentOpts = self.discTree.GetPyData(curParent)
                 # Get the text of the item as it was before it the change
                 curText = self.discTree.GetItemText(curItem)
-                # find the title to change
-                for title in parentOpts.titles:
+                # find the title index to change
+                for titleIndex in range(len(parentOpts.titles)):
                     # compare title with old text
-                    if title == curText:
+                    if parentOpts.titles[titleIndex] == curText:
                         # item found, change it
-                        title = evt.GetLabel()
+                        parentOpts.titles[titleIndex] = evt.GetLabel()
                         # get out of the loop
                         break
 
