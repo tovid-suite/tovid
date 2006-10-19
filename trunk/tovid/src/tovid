@@ -1299,7 +1299,7 @@ if test "$IN_FILE_TYPE" = "file"; then
     fi
 
     # Check for compliance in existing video
-    if test "$TGT_RES" = "VCD"; then
+    if test "$TGT_RES" = "VCD" || test "$TGT_RES" = "KVCD"; then
         $A_VCD1_OK || $A_VCD2_OK && AUDIO_OK=:
         $V_VCD_OK && test "$V_RES" = "${BASETVSYS}_VCD" && VIDEO_OK=:
         
