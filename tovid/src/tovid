@@ -1601,8 +1601,8 @@ fi
 
 # if a certain audio channel is asked for, find out the -aid
 if test -n "$AUDIO_TRACK"; then
-    AIDS=( ${ID_AUDIO_TRACKS/,/ } )
-    MP_AUDIOTRACK=${AIDS[AUDIO_TRACK-1]}
+    AIDS=( ${ID_AUDIO_TRACKS//,/ } )
+    (( ${#AIDS[@]} > 1 )) && MP_AUDIOTRACK=${AIDS[AUDIO_TRACK-1]}
     if test -n "$MP_AUDIOTRACK"; then # make sure the channel exists
         MP_AUDIOTRACK_CMD="-aid $MP_AUDIOTRACK"
     fi # FIXME exit if user's channel not found, or warning message w/o exit ?
