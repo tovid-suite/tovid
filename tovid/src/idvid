@@ -178,6 +178,7 @@ get_info ()
     ID_AUDIO_BITRATE="0"
     ID_AUDIO_RATE="0"
     ID_AUDIO_NCH="0"
+    ID_AUDIO_CHANNELS=""
     V_ASPECT_RATIO="1:1"
     ID_LENGTH="0"
 
@@ -190,7 +191,11 @@ get_info ()
         awk -F ' ' '{print $2}')
     test -z $ID_VIDEO_FRAMES && ID_VIDEO_FRAMES="0"
 
-
+    # find ou what audio channels are available
+    # this is useful for -aid for mplayer, and eg. -map 0:2:0:1  for ffmpeg
+    CHANNELS="$(awk -F= '/ID_AUDIO_ID/ {print $2}' "$SCRATCH_FILE")"
+    CHANNELS="${CHANNELS//$'\n'/ }"
+    ID_AUDIO_CHANNELS=${CHANNELS/ /,}
     # If tcprobe reports an aspect ratio, use that
     if grep -q "aspect ratio" "$SCRATCH_FILE"; then
         RATIO=$(awk '/aspect ratio/ {print $3}'  "$SCRATCH_FILE")
@@ -283,6 +288,7 @@ idvid_main ()
         echo "ID_VIDEO_BITRATE=$ID_VIDEO_BITRATE"
         echo "ID_AUDIO_BITRATE=$ID_AUDIO_BITRATE"
         echo "ID_AUDIO_NCH=$ID_AUDIO_NCH"
+        echo "ID_AUDIO_CHANNELS=$ID_AUDIO_CHANNELS"
         echo "ID_AUDIO_RATE=$ID_AUDIO_RATE"
         echo "V_ASPECT_WIDTH=$V_ASPECT_WIDTH"
         echo "ID_VIDEO_FRAMES=$ID_VIDEO_FRAMES"
