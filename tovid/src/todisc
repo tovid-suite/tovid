@@ -1126,7 +1126,7 @@ if  [ $TARGET = "dvd" ]; then
     SAMPLERATE="48000"
     MPLEX_FORMAT="8"
     GEO_ARRAY=("${DVD_GEO_ARRAY[@]}")
-    FFMPEG_OPTS="-b 8000  -maxrate 9000 -bufsize 230  -aspect 4:3"
+    FFMPEG_OPTS="-b 8000k  -maxrate 9000k -bufsize 1792k  -aspect 4:3"
     SHOWCASE_SIZE=384x256
     if [ $TV_STANDARD = ntsc ]; then
         VIDSIZE="720x480"
@@ -1388,6 +1388,7 @@ if test "$THUMB_SHAPE" = "normal"; then
     MASK_CMD="convert -size $THUMB_SIZE xc:black -fill white \
     -draw \"Rectangle $MASK_DIM\" \
     +matte -compose CopyOpacity miff:- | \
+    convert - -bordercolor none -border 8x8 miff:- |
     ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
     # TODO (if desired): move this 'sed' line to a separate function for
@@ -1400,6 +1401,7 @@ elif test "$THUMB_SHAPE" = "oval"; then
     MASK_CMD="convert -size $THUMB_SIZE xc:black -fill white \
     -draw \"RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3\" \
     +matte -compose CopyOpacity miff:- | \
+    convert - -bordercolor none -border 6x6 miff:- |
     ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
     MASK_HILITE_CMD="convert -size $THUMB_SIZE xc:none \
@@ -1415,18 +1417,15 @@ elif test "$THUMB_SHAPE" = "egg"; then
     ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
 
-elif test "$THUMB_SHAPE" = "cloud"; then
-    THUMB_MASK="$WORK_DIR/cloud_mask.png"
-    yecho "Creating cloud-shaped mask with the following command:"
-    MASK_CMD="convert -size 320x240 xc:none -fill white \
-    -draw \"circle 80,80 120,120\" \
-    -draw \"circle 160,80 200,120\" \
-    -draw \"circle 240,80 280,120\" \
-    -draw \"circle 80,160 120,200\" \
-    -draw \"circle 160,160 200,200\" \
-    -draw \"circle 240,160 280,200\" \
-    +matte -compose CopyOpacity  miff:- | \
-    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
+elif test "$THUMB_SHAPE" = "plectrum"; then
+    THUMB_MASK="$WORK_DIR/plectrum_mask.png"
+    yecho "Creating plectrum-shaped mask with the following command:"
+    MASK_CMD="convert -size 200x200 xc:none -fill white \
+    -draw 'circle 100,100 150,150' miff:- |
+    convert -background none -wave -50x456 - miff:- |
+    convert - -bordercolor none -border 3x3 -trim +repage miff:- |
+    convert - -bordercolor none -border 18x18 miff:- |
+    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
 fi
 
@@ -1894,10 +1893,10 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     fi
     PNG_IS_DONE=: # don't loop over creating same png
 done
-if ! $NOASK && ! $SHOWCASE; then
-    echo "Creating and displaying a preview of the main menu."
-    echo "(Press 'q' or ESC in the preview window to close it.)"
-fi
+#if ! $NOASK && ! $SHOWCASE; then
+#    echo "Creating and displaying a preview of the main menu."
+#    echo "(Press 'q' or ESC in the preview window to close it.)"
+#fi
 if [ "$BUTTON_STYLE" = "rect" ]; then
     for button in Select Highlight; do
         if $SHOWCASE; then
