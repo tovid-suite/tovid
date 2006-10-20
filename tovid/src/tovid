@@ -1600,13 +1600,12 @@ if $PARALLEL; then
 fi
 
 # if a certain audio channel is asked for, find out the -aid
-# FIXME this should probably be done by idvid so we can just do AIDS=( $ID_AUDIO_CHANNELS )
 if test -n "$AUDIO_CHANNEL"; then
-    AIDS=( $(mplayer -v -frames 0 "$IN_FILE" 2>&1 | awk '/Found audio stream/ {print $NF}') )
+    AIDS=( ${ID_AUDIO_CHANNELS/,/ } )
     MP_AUDIOCHAN=${AIDS[AUDIO_CHANNEL-1]}
     if test -n "$MP_AUDIOCHAN"; then # make sure the channel exists
         MP_AUDIOCHAN_CMD="-aid $MP_AUDIOCHAN"
-    fi # FIXME exit if user's channel not found, or error message w/o exit ?
+    fi # FIXME exit if user's channel not found, or warning message w/o exit ?
 fi
 # If audio is already in the chosen output format, do not re-encode.
 if ! $FORCE_ENCODING && $AUDIO_OK; then
