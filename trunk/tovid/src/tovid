@@ -955,7 +955,7 @@ case "$TGT_RES" in
         AUD_SUF="mp2"
         # Explicitly set audio/video bitrates
         AUD_BITRATE="224"
-        VID_BITRATE="1150"
+        VID_BITRATE="1152"
         MPEG2_FMT="-f 1 -K hi-res"
         MUX_OPTS="-f 1"
         VID_SUF="m1v"
@@ -1527,7 +1527,7 @@ if $USE_FFMPEG; then
 
     FF_SIZE="-s ${INNER_WIDTH}x${INNER_HEIGHT}"
     FF_FPS="-r $TGT_FPS"
-    FF_BITRATE="-maxrate $VID_BITRATE -ab $AUD_BITRATE"
+    FF_BITRATE="-maxrate ${VID_BITRATE}k -ab ${AUD_BITRATE}k"
     FF_SAMPRATE="-ar $SAMPRATE"
 
     # Padding, for any letterboxing to be done
@@ -1557,7 +1557,7 @@ if $USE_FFMPEG; then
     esac
     
     FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" \
-        $FF_QUANT $FF_BITRATE $FF_TARGET $FF_FPS $FF_ILACE \
+        $FF_TARGET $FF_QUANT $FF_BITRATE $FF_FPS $FF_ILACE \
         $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
     FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\""
