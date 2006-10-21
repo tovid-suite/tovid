@@ -195,7 +195,7 @@ get_info ()
     # this is useful for -aid for mplayer, and eg. -map 0:2:0:1  for ffmpeg
     TRACKS="$(awk -F= '/ID_AUDIO_ID/ {print $2}' "$SCRATCH_FILE")"
     TRACKS="${TRACKS//$'\n'/ }"
-    ID_AUDIO_TRACKS=${TRACKS/ /,}
+    ID_AUDIO_TRACKS=${TRACKS// /,}
     # If tcprobe reports an aspect ratio, use that
     if grep -q "aspect ratio" "$SCRATCH_FILE"; then
         RATIO=$(awk '/aspect ratio/ {print $3}'  "$SCRATCH_FILE")
