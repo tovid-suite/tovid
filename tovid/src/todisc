@@ -539,14 +539,14 @@ while test $# -gt 0; do
             shift
             # Hackish list-parsing
             while test $# -gt 0 && test ${1:0:1} != "-"; do
-                chains_in=( "${chains_in[@]}" "$1" ) 
-                post_play=${chains_in[@]}
+                chains_in="$chains_in $1" 
                 shift
             done
             # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-";then
                 DO_SHIFT=false
             fi
+            post_play=${chains_in//,/ }
             CHAIN_VIDEOS=:
             ;;
         "-playall" )
@@ -665,23 +665,41 @@ while test $# -gt 0; do
             shift
             # Hackish list-parsing
             while test $# -gt 0 && test ${1:0:1} != "-"; do
-                CHAPTERS=( "${CHAPTERS[@]}" "$1" ) 
+                CHAPTERS="$CHAPTERS $1" 
                 shift
             done
             # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-";then
                 DO_SHIFT=false
             fi
+            CHAPTERS=( ${CHAPTERS//,/ } )
             ;;
         "-subtitles" )
             shift
-            SUBS_ARRAY=( $1 ) 
+            # Hackish list-parsing
             SUBTITLES=:
+            while test $# -gt 0 && test ${1:0:1} != "-"; do
+            SUBS="$SUBS $1"
+                shift
+            done
+            # Do not skip past the next argument
+            if test $# -gt 0 && test ${1:0:1} = "-";then
+                DO_SHIFT=false
+            fi
+            SUBS_ARRAY=( ${SUBS//,/ } )
             ;;
         "-audio-lang" )
             shift
-            AUDIO_LANG=( $1 ) 
-            AUDIOLANG=:
+            # Hackish list-parsing
+            while test $# -gt 0 && test ${1:0:1} != "-"; do
+            AUDIO_LANG="$AUDIO_LANG $1"
+                shift
+            done
+            # Do not skip past the next argument
+            if test $# -gt 0 && test ${1:0:1} = "-";then
+                DO_SHIFT=false
+            fi
+            AUDIO_LANG=( ${AUDIO_LANG//,/ } )
             ;;
         "-bgaudio" )
             shift
@@ -743,7 +761,17 @@ while test $# -gt 0; do
             ;;
         "-seek" )
             shift
-            SEEK_VAL=( $1 )
+            # Hackish list-parsing
+            unset SEEK_VAL
+            while test $# -gt 0 && test ${1:0:1} != "-"; do
+            SEEK_VAL="$SEEK_VAL $1"
+                shift
+            done
+            # Do not skip past the next argument
+            if test $# -gt 0 && test ${1:0:1} = "-";then
+                DO_SHIFT=false
+            fi
+            SEEK_VAL=( ${SEEK_VAL//,/ } )
             ;;
         "-showcase-seek" )
             shift
@@ -761,7 +789,6 @@ done
 ##############################################################################
 #                      Sanity checks and preliminaries                       #
 ##############################################################################
-
 # Make sure equal, nonzero number of titles and files were provided
 if test ${#FILES[@]} -eq 0 || test ${#TITLES[@]} -eq 0; then
     usage_error "Please provide at least one file and one title."
@@ -895,7 +922,11 @@ if $CHAIN_VIDEOS; then
     echo
     for ((n=0; n<=NUM_FILES; n++)); do
         if [ "${POST_PLAY[n]}" = "chain" ]; then
-            echo "video $((n+1)) will be chained with video $((n+2))"
+            if [ $n -lt $NUM_FILES ]; then
+                echo "video $((n+1)) will be chained with video $((n+2))"
+            else
+                echo "video $((n+1)) will be chained with video 1"
+            fi
         fi
     done
     echo
@@ -1140,7 +1171,7 @@ elif [ $TARGET = "svcd" ]; then
     SAMPLERATE="44100"
     MPLEX_FORMAT="4"
     GEO_ARRAY=("${SVCD_GEO_ARRAY[@]}")
-    FFMPEG_OPTS="-b 2200 -minrate 2200 -maxrate 2200 -bufsize 230 -aspect 4:3"
+    FFMPEG_OPTS="-b 2200k -minrate 2200k -maxrate 2200k -bufsize 1792k -aspect 4:3"
     SHOWCASE_SIZE=256x256
     if [ $TV_STANDARD = ntsc ]; then
         VIDSIZE="480x480"
@@ -2533,13 +2564,8 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
     echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
     if $CHAIN_VIDEOS; then
         if [ "${POST_PLAY[i]}" = "chain" ]; then
-            if [ $i -lt $NUM_FILES ]; then
-                CHAIN_PP="jump title $((i + 2)) chapter 1"
-            elif [ $i -eq $NUM_FILES ]; then
-                CHAIN_PP="jump title 1 chapter 1"
-            else
-                CHAIN_PP="call vmgm menu 1"
-            fi
+            (( i < NUM_FILES )) && CHAIN_PP="jump title $((i + 2)) chapter 1"
+            (( i == NUM_FILES )) && CHAIN_PP="jump title 1 chapter 1"
         else
             CHAIN_PP="call vmgm menu 1"
         fi
@@ -2549,6 +2575,8 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
             else
                 echo -e "        <post>call vmgm menu 1;</post>"
             fi
+        else
+            echo -e "        <post>$CHAIN_PP;</post>"
         fi
     else
         if $PLAYALL; then
