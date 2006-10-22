@@ -118,8 +118,8 @@ declare -i CHAPTER_INTERVAL
 # ==========================================================
 # Backslash-escape the given special character (and any EOLs)
 # Usage:
-#    sed_prep "$TEXT" /
-#    echo $TEXT | sed "s/PATTERN/$(sed_prep "$REPLACEMENT" /)/"
+#    sedprep "$TEXT" /
+#    echo $TEXT | sed "s/PATTERN/$(sedprep "$REPLACEMENT" /)/"
 function sedprep ()
 {
     delim=${2:-/}
@@ -541,8 +541,7 @@ EOF`
     # Fill in menu title selections ("buttons")
     # and remove any remaining __NEXT_TITLE__s
     SELECTION_XML=$(echo "$SELECTION_XML" | \
-        sed -e "s/__MENU_BUTTONS__/$(sedprep "$MENU_BUTTONS" /)/g" \
-        sed -e "s/__NEXT_TITLE__//g")
+        sed -e "s/__MENU_BUTTONS__/$(sedprep "$MENU_BUTTONS" /)/g" -e "s/__NEXT_TITLE__//g")
     PLAYLIST_XML=$(echo "$PLAYLIST_XML" | sed -e "s/__NEXT_TITLE__//g")
 
     # Append new PBC menus/playlists to PBC_XML
