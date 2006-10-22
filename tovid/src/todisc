@@ -143,6 +143,7 @@ ALIGN_OVERRIDE=false
 MULTILINE_TITLE=false
 SAFE_AREA=50 # undocumented: you can set this from CLI with -showcase-safe-area
 SAFE_OFFSET=36
+PREVIEW_SIZE=720x540
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -1171,15 +1172,13 @@ elif [ $TARGET = "svcd" ]; then
     SAMPLERATE="44100"
     MPLEX_FORMAT="4"
     GEO_ARRAY=("${SVCD_GEO_ARRAY[@]}")
-    FFMPEG_OPTS="-b 2200k -minrate 2200k -maxrate 2200k -bufsize 1792k -aspect 4:3"
+    FFMPEG_OPTS="-b 2200k -minrate 2200k -maxrate 2200k -bufsize 112KiB -aspect 4:3"
     SHOWCASE_SIZE=256x256
     if [ $TV_STANDARD = ntsc ]; then
         VIDSIZE="480x480"
-        PREVIEW_SIZE="480x480"
         FRAME_RATE=29.970
     elif [ $TV_STANDARD = pal ]; then
         VIDSIZE="480x576"
-        PREVIEW_SIZE="480x576"
         FRAME_RATE=25
     fi
 fi
@@ -1709,10 +1708,10 @@ if $SHOWCASE; then
         "$WORK_DIR/thumb_title${i}.png")
     done
     echo "Running:
-    convert  -size 720x480 "$WORK_DIR/pics/template.png"
+    convert  -size $VIDSIZE "$WORK_DIR/pics/template.png"
     ${sc_thumb_title_cmd[@]} -page +210+400 "$WORK_DIR/title_txt.png" \
     -mosaic "$WORK_DIR/pics/template.png" "| format_output
-    convert -size 720x480 "$WORK_DIR/pics/template.png" \
+    convert -size $VIDSIZE "$WORK_DIR/pics/template.png" \
     ${sc_thumb_title_cmd[@]} -mosaic "$WORK_DIR/pics/template.png"
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
     -gravity south -geometry +0+65 -composite "$WORK_DIR/pics/template.png"
@@ -1940,16 +1939,16 @@ if [ "$BUTTON_STYLE" = "rect" ]; then
                 fake_montage_cmd=( ${fake_montage_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "${fake_montage[i]}")
                 sc_spumux_cmd=( ${sc_spumux_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "$WORK_DIR/${button}x1.png" )
             done
-            convert  -size 720x480 xc:none -background none \
+            convert  -size $VIDSIZE xc:none -background none \
             ${fake_montage_cmd[@]} -mosaic "$WORK_DIR/fake_montage.png"
-            convert  -size 720x480 xc:none -background none \
+            convert  -size $VIDSIZE xc:none -background none \
             ${sc_spumux_cmd[@]} -mosaic "$WORK_DIR/${button}.png"
         else
             montage -background none \
             $(for ((i=0; i<=NUM_FILES; i++)); do echo $WORK_DIR/${button}x1.png;done) \
             -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}+10+4 \
             -bordercolor none -mattecolor transparent miff:- |
-            convert  -colors 3 -size 720x480 xc:none - -gravity north -geometry +0+45 \
+            convert  -colors 3 -size $VIDSIZE xc:none - -gravity north -geometry +0+45 \
             -composite  "$WORK_DIR/${button}.png"
             BUTTON_DIM=$(identify "$WORK_DIR/Highlightx1.png" |awk '{print $3}')
             convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
@@ -1958,7 +1957,7 @@ if [ "$BUTTON_STYLE" = "rect" ]; then
             montage -background none ${fake_montage[@]} \
             -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
             -bordercolor none -mattecolor transparent miff:- |
-            convert  -size 720x480 xc:none - -gravity north -geometry +0+45 \
+            convert  -size $VIDSIZE xc:none - -gravity north -geometry +0+45 \
             -composite "$WORK_DIR/fake_montage.png"
         fi
     done
@@ -1972,9 +1971,9 @@ elif [[ "$BUTTON_STYLE" = *text* ]]; then
             sc_select_cmd=(${sc_select_cmd[@]} ${THUMBTITLES_ARRAY[i]} "${select_buttons[i]}")
             sc_highlight_cmd=(${sc_highlight_cmd[@]} ${THUMBTITLES_ARRAY[i]} "${highlight_buttons[i]}")
         done
-        convert -colors 3 -size 720x480 xc:none -background none \
+        convert -colors 3 -size $VIDSIZE xc:none -background none \
         ${sc_highlight_cmd[@]} -mosaic "$WORK_DIR/Highlight.png"
-        convert  -colors 3 -size 720x480 xc:none -background none \
+        convert  -colors 3 -size $VIDSIZE xc:none -background none \
         ${sc_select_cmd[@]} -mosaic "$WORK_DIR/Select.png"
     else
         select_buttons=( ${select_buttons[@]} \
@@ -1984,12 +1983,12 @@ elif [[ "$BUTTON_STYLE" = *text* ]]; then
         montage -background none ${select_buttons[@]} \
         -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
         -bordercolor none -mattecolor transparent miff:- |
-        convert  -size 720x480 xc:none - -gravity north -geometry +0+45 \
+        convert  -size $VIDSIZE xc:none - -gravity north -geometry +0+45 \
         -composite "$WORK_DIR/Select.png"
         montage -background none ${highlight_buttons[@]} \
         -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
         -bordercolor none -mattecolor transparent miff:- |
-        convert  -size 720x480 xc:none - -gravity north -geometry +0+45 \
+        convert  -size $VIDSIZE xc:none - -gravity north -geometry +0+45 \
         -composite "$WORK_DIR/Highlight.png"
         BUTTON_DIM=$(identify "$WORK_DIR/000000-highlight.png" |awk '{print $3}')
         convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
@@ -1997,14 +1996,14 @@ elif [[ "$BUTTON_STYLE" = *text* ]]; then
         echo $WORK_DIR/empty-button.png; done))
     fi
     if $SHOWCASE; then
-        convert  -size 720x480 xc:none -background none \
+        convert  -size $VIDSIZE xc:none -background none \
         ${THUMBTITLES_ARRAY[0]} $WORK_DIR/000000-highlight.png \
         -mosaic "$WORK_DIR/fake_montage.png"
     else
         montage -background none ${fake_montage[@]} \
         -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
         -bordercolor none -mattecolor transparent miff:- |
-        convert  -size 720x480 xc:none - -gravity north -geometry +0+45 \
+        convert  -size $VIDSIZE xc:none - -gravity north -geometry +0+45 \
         -composite "$WORK_DIR/fake_montage.png"
     fi
 fi
@@ -2033,11 +2032,11 @@ if $SHOWCASE; then
         fi
         # add the thumb size if east align; for west align use MAX_LEN only
         [ "$SC_TITLE_ALIGN" = "east" ] && TS=${THUMB_SIZE/x*} || TS=0
-        sc_palette=$((720 - ${SHOWCASE_THUMB_X_ARRAY[0]} - SAFE_AREA - T))
+        sc_palette=$((${VIDSIZE%x*} - ${SHOWCASE_THUMB_X_ARRAY[0]} - SAFE_AREA - T))
         # sc_palette is for centre align
         sc_palette=$(( ( ${SHOWCASE_THUMB_X_ARRAY[0]} + T) + (sc_palette / 2)))
         # sc_palette2 is for east and west align
-        sc_palette2=$(( 720 - (${SHOWCASE_THUMB_X_ARRAY[0]} + TS + T + sc_width + SAFE_AREA) ))
+        sc_palette2=$(( ${VIDSIZE%x*} - (${SHOWCASE_THUMB_X_ARRAY[0]} + TS + T + sc_width + SAFE_AREA) ))
         sc_xpage2=$((sc_palette - $((sc_width / 2)) ))
         sc_xpage3=$(( sc_palette2 / 2 ))
         sc_xpage3=$(( ${SHOWCASE_THUMB_X_ARRAY[0]} + $TS + 5 + T + sc_xpage3 ))
@@ -2066,11 +2065,11 @@ if $SHOWCASE; then
             sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "${PICS[i]}")
         done
         if $TRANSPARENT; then
-            IM_CMD0=(convert  -size 720x480 xc:none -background none \
+            IM_CMD0=(convert  -size $VIDSIZE xc:none -background none \
             ${sc_cmd[@]} $SC_IMG_CMD -mosaic)
-            IM_CMD1=(convert -size 720x480 -background none \
+            IM_CMD1=(convert -size $VIDSIZE -background none \
                 - ${sc_thumb_title_cmd[@]} -mosaic)
-            IM_CMD2=(composite -size 720x480 -background none \
+            IM_CMD2=(composite -size $VIDSIZE -background none \
                 -gravity NorthWest  -dissolve $OPACITY - "$WORK_DIR/pics/template.png" \
                 -background none)
             IM_CMD3=(convert - $WORK_DIR/title_txt.png  \
@@ -2083,10 +2082,10 @@ if $SHOWCASE; then
             "${IM_CMD2[@]}" miff:- | "${IM_CMD3[@]}"
         else
             echo "Running:
-            convert  -size 720x480 "$WORK_DIR/pics/template.png"
+            convert  -size $VIDSIZE "$WORK_DIR/pics/template.png"
             ${sc_cmd[@]} $SC_IMG_CMD \
             -mosaic "$WORK_DIR/preview.jpg" "|sed "s/    */ /g;s/^ *//"|fold -bs
-            convert  -size 720x480 "$WORK_DIR/pics/template.png" \
+            convert  -size $VIDSIZE "$WORK_DIR/pics/template.png" \
             ${sc_cmd[@]} $SC_IMG_CMD \
             -mosaic "$WORK_DIR/preview.jpg"
         fi
@@ -2122,7 +2121,7 @@ convert -gravity SouthEast -geometry +55+55 "$WORK_DIR/preview.jpg" \
 "$WORK_DIR/PLAYALL.png" -composite "$WORK_DIR/preview.jpg"
 fi
 if ! $NOASK; then
-    display "$WORK_DIR/preview.jpg"
+    convert -resize $PREVIEW_SIZE! "$WORK_DIR/preview.jpg" miff:- | display -
     confirm_preview
 fi
 # copy the template back if using $MENU_FADE
@@ -2447,7 +2446,7 @@ EOF
             -geometry ${GEO_ARRAY[C]}+5+5 \
             -bordercolor none -mattecolor transparent miff:- |
 
-            convert  -colors 3 -size 720x480 xc:none  - \
+            convert  -colors 3 -size $VIDSIZE xc:none  - \
             -gravity north -geometry +0+45  \
             -composite  $WORK_DIR/Submenu${s}_${button}.png
         done
@@ -3203,23 +3202,23 @@ if $MENU_FADE && ! $STATIC; then
         fi
         BG_PIC=$(find $WORK_DIR/bg -name $(($frame + 1)).jpg)
         # create the montage from the images in each video dir
-        MONTAGE_CMD=(convert  -size 720x480 -background none \
+        MONTAGE_CMD=(convert  -size $VIDSIZE -background none \
         ${sc_cmd[@]} $SC_IMG_CMD -mosaic)
-        MONTAGE_CMD0=(convert  -size 720x480 "$WORK_DIR/pics/template.png" \
+        MONTAGE_CMD0=(convert  -size $VIDSIZE "$WORK_DIR/pics/template.png" \
         ${sc_cmd[@]} $SC_VIDEO_CMD -mosaic $WORK_DIR/animenu/$(($frame + 1)).jpg)
-        MONTAGE_CMD01=(convert  -size 720x480 xc:none -background none \
+        MONTAGE_CMD01=(convert  -size $VIDSIZE xc:none -background none \
         ${sc_cmd[@]} $SC_VIDEO_CMD -mosaic)
-        MONTAGE_CMD02=(convert -size 720x480 -background none \
+        MONTAGE_CMD02=(convert -size $VIDSIZE -background none \
         - ${sc_thumb_title_cmd[@]} -mosaic)
         MONTAGE_CMD1=(montage "${ANI_PICS[@]}" -tile ${TILE_ARRAY[NUM_FILES]} \
         -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none)
         #  dissolve the finished montages onto the background
         MONTAGE_CMD2=(composite -dissolve $S -gravity north \
         -geometry +0+45 - $WORK_DIR/bg/$(($frame + 1)).jpg -background none)
-        MONTAGE_CMD2b=(composite -size 720x480 -background none \
+        MONTAGE_CMD2b=(composite -size $VIDSIZE -background none \
         -gravity NorthWest  -dissolve $S - $WORK_DIR/bg/$(($frame + 1)).jpg \
         -background none  $WORK_DIR/animenu/$(($frame + 1)).jpg)
-        MONTAGE_CMD2c=(composite -size 720x480 -background none \
+        MONTAGE_CMD2c=(composite -size $VIDSIZE -background none \
         -gravity NorthWest  -dissolve $S - $WORK_DIR/bg/$(($frame + 1)).jpg \
         -background none)
         # if MIST is called for, this dissolves the mist onto the background
@@ -3291,21 +3290,21 @@ else # Do not do menu fade
                 unset SC_VIDEO_CMD
             fi
 
-            IM_CMD0=(convert  -size 720x480 "$WORK_DIR/pics/template.png" \
+            IM_CMD0=(convert  -size $VIDSIZE "$WORK_DIR/pics/template.png" \
             ${sc_cmd[@]} $SC_IMG_CMD -mosaic)
-            IM_CMD01=(convert  -size 720x480 xc:none -background none \
+            IM_CMD01=(convert  -size $VIDSIZE xc:none -background none \
             ${sc_cmd[@]} $SC_VIDEO_CMD -mosaic)
             # dissolve piped images onto bgimage
             IM_CMD02=(composite \
             -gravity NorthWest  -dissolve $OPACITY - $WORK_DIR/pics/template.png)
             # dissolve piped images onto bgvideo
-            IM_CMD03=(composite -size 720x480 -background none \
+            IM_CMD03=(composite -size $VIDSIZE -background none \
             -gravity NorthWest  -dissolve $OPACITY - $WORK_DIR/bg/$count.jpg \
             -background none)
             # dissolve titles onto bgvideo
-            IM_CMD04=(convert -size 720x480 -background none \
+            IM_CMD04=(convert -size $VIDSIZE -background none \
             - ${sc_thumb_title_cmd[@]} -mosaic)
-            IM_CMD05=(convert  -size 720x480 xc:none -background none \
+            IM_CMD05=(convert  -size $VIDSIZE xc:none -background none \
             ${sc_cmd[@]} $SC_IMG_PAGE -mosaic)
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
             -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none miff:-)
@@ -3542,7 +3541,7 @@ if [ "$TARGET" = dvd ]; then
     dvdauthor -x "$DVDAUTHOR_XML"
 elif [ "$TARGET" = svcd ]; then
     makexml -svcd -menu "$WORK_DIR/animenu.mpg" "${IN_FILES[@]}" -out MyDisc
-    vcdxbuild MyDisc.xml
+    vcdxbuild -p -v MyDisc.xml
 fi
 echo "Cleaning up unwanted files in $REAL_WORK_DIR"
 find "$WORK_DIR"/ -name '*.png' ! -name Highlight.png ! -name Select.png -exec rm -f {} \;
