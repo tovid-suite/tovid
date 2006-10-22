@@ -3541,7 +3541,7 @@ if [ "$TARGET" = dvd ]; then
     dvdauthor -x "$DVDAUTHOR_XML"
 elif [ "$TARGET" = svcd ]; then
     makexml -svcd -menu "$WORK_DIR/animenu.mpg" "${IN_FILES[@]}" -out MyDisc
-    vcdxbuild -p -v MyDisc.xml
+    vcdxbuild -b ../videocd.bin -c ../videocd.cue  MyDisc.xml
 fi
 echo "Cleaning up unwanted files in $REAL_WORK_DIR"
 find "$WORK_DIR"/ -name '*.png' ! -name Highlight.png ! -name Select.png -exec rm -f {} \;
