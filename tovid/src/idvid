@@ -90,7 +90,7 @@ touch "$STAT_FILE"
 
 # Print usage notes and optional error message, then exit.
 # Args: $@ == text string containing error message
-usage_error ()
+function usage_error ()
 {
   printf "%s\n" "$USAGE"
   echo "$SEPARATOR"
@@ -101,7 +101,7 @@ usage_error ()
 
 # Get video information from available utilities
 # Args: $1 = filename to identify
-get_info ()
+function get_info ()
 {
     # Start with a clean scratch file
     rm -f "$SCRATCH_FILE"
@@ -191,9 +191,12 @@ get_info ()
         awk -F ' ' '{print $2}')
     test -z $ID_VIDEO_FRAMES && ID_VIDEO_FRAMES="0"
 
-    # find ou what audio channels are available
+    # find out what audio channels are available
     # this is useful for -aid for mplayer, and eg. -map 0:2:0:1  for ffmpeg
-    TRACKS="$(awk -F= '/ID_AUDIO_ID/ {print $2}' "$SCRATCH_FILE")"
+    #TRACKS="$(awk -F= '/ID_AUDIO_ID/ {print $2}' "$SCRATCH_FILE")"
+    #TRACKS="${TRACKS//$'\n'/ }"
+    #ID_AUDIO_TRACKS=${TRACKS// /,}
+    TRACKS="$(awk -F[#[] '/Audio:/ {print $2}' "$SCRATCH_FILE")"
     TRACKS="${TRACKS//$'\n'/ }"
     ID_AUDIO_TRACKS=${TRACKS// /,}
     # If tcprobe reports an aspect ratio, use that
@@ -245,7 +248,7 @@ get_info ()
 # Main idvid function. Calls get_info to gather video information
 # about a file passed as the argument, and prints everything out
 # in terse or human-readable form
-idvid_main ()
+function idvid_main ()
 {
     # Accept regular filenames, or URI-style pathnames (like dvd://, http://)
     if test -e "$1" || expr "$1" : ".*:\/\/" >/dev/null; then
@@ -397,7 +400,7 @@ idvid_main ()
     # Test for VCD/DVD-VCD MPEG1 compliance
     if test "$ID_VIDEO_FORMAT" = "MPEG1" && test "$ID_VIDEO_BITRATE" -le "1856000"; then
         # VCD compliance
-        if test "$ID_VIDEO_BITRATE" = "1152000"; then
+        if test "$ID_VIDEO_BITRATE" -le "1152000"; then
             # NTSC
             if test "$V_RES" = "NTSC_VCD"; then
                 V_TV="NTSC"
