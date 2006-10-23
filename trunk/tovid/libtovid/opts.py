@@ -243,7 +243,8 @@ class OptionDict(dict):
                     while options and options[0].lstrip('-') not in self.defdict:
                         next = options.pop(0)
                         # Ignore [ , ] in Python list syntax
-                        arglist.append(next.lstrip('[').rstrip(',]'))
+                        if next not in "[,]":
+                            arglist.append(next)
                     # Put the last token back if it was an option keyword
                     if next.lstrip('-') in self.defdict:
                         options.insert(0, next)
