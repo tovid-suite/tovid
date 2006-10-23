@@ -18,14 +18,8 @@ Requirements (+: met, -: unmet):
 
 """
 __all__ = [\
-    'Script',
-    'And',
-    'Or',
     'Command',
-    'Bg',
-    'NoBg',
-    'InfixOper',
-    'Pipe',
+    'Script',
     'verify_app'
     ]
 
