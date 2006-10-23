@@ -207,6 +207,10 @@ letterboxing or anamorphic scaling.
     releases. (Hint: To convert a decimal like 23.976 to an integer ratio, just
     multiply by 1000, i.e. 23976:1000)
 
+: **-crop** //WIDTH//://HEIGHT//://X//://Y//
+    Crop a portion of the video //WIDTH// by //HEIGHT// in size, with the
+    top-left corner at //X//, //Y//.
+
 
 ===Audio stream options===
 
@@ -229,6 +233,10 @@ letterboxing or anamorphic scaling.
     128, 224, and 384. The default is 224 kbits/sec, good enough for most
     encodings. The value must be within the allowable range for the chosen disc
     format; Ignored for VCD, which must be 224.
+
+: **-audiotrack** //NUM//
+    Encode the given audio track, if the input video has multiple audio tracks.
+    //NUM// is //1// for the first track, //2// for the second, etc.
 
 
 ===Other options===
@@ -267,7 +275,8 @@ letterboxing or anamorphic scaling.
 
 : **-update** //SECS//
     Print status updates at intervals of //SECS// seconds. This affects how
-    regularly the progress-meter is updated. The default is once per second.
+    regularly the progress-meter is updated. The default is once every five
+    seconds.
 
 : **-mplayeropts** **"**//OPTIONS//**"**
     Append //OPTIONS// to the mplayer command run during video encoding.  Use
