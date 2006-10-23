@@ -191,6 +191,8 @@ KEEPFILES=false
 # Make note of when encoding starts, to determine total time later.
 SCRIPT_START_TIME=$(date +%s)
 
+# Trap Ctrl-C and TERM to clean up child processes
+trap 'killsubprocs; exit 13' TERM INT
 
 # ******************************************************************************
 # ******************************************************************************
@@ -210,7 +212,7 @@ SCRIPT_START_TIME=$(date +%s)
 # If no args are given, echo a separator bar
 # Why echo when you can yecho?
 # ******************************************************************************
-yecho()
+function yecho()
 {
     if test $# -eq 0; then
         printf "\n%s\n\n" "$SEPARATOR"
@@ -228,7 +230,7 @@ yecho()
 # Print usage notes and optional error message, then exit.
 # Args: $@ == text string containing error message 
 # ******************************************************************************
-usage_error()
+function usage_error()
 {
     printf "%s\n" "$USAGE"
     printf "%s\n" "$SEPARATOR"
@@ -239,7 +241,7 @@ usage_error()
 # ******************************************************************************
 # Print out a runtime error specified as an argument, and exit
 # ******************************************************************************
-runtime_error()
+function runtime_error()
 {
     killsubprocs
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
@@ -262,7 +264,7 @@ runtime_error()
 # Execute the given command-line string, with appropriate stream redirection
 # Args: $@ == text string containing complete command-line
 # ******************************************************************************
-cmd_exec()
+function cmd_exec()
 {
     if $FAKE; then
         yecho
@@ -281,7 +283,7 @@ cmd_exec()
 # ******************************************************************************
 # Kill child processes
 # ******************************************************************************
-killsubprocs()
+function killsubprocs()
 {
     yecho "Encode stopped, killing all sub processes"
     test -n "$PIDS" && kill $PIDS
@@ -291,7 +293,7 @@ killsubprocs()
 # ******************************************************************************
 # Estimate whether there is enough disk space to encode
 # ******************************************************************************
-check_disk_space()
+function check_disk_space()
 {
     # Determine space available in current directory (in MB)
     AVAIL_SPACE=$(df -mP . | awk 'NR != 1 {print $4;}')
@@ -324,7 +326,7 @@ check_disk_space()
 # Read all command-line arguments, and read any arguments included in the
 # default configuration file (if it exists)
 # ******************************************************************************
-get_args()
+function get_args()
 {
     # Parse all arguments
     while test $# -gt 0; do
@@ -392,7 +394,7 @@ get_args()
             "-full" ) ASPECT_RATIO="4:3" ;;
             "-panavision" ) ASPECT_RATIO="235:100" ;;
             "-debug" )
-                VERBOSE="-v 1"
+                #VERBOSE="-v 1"
                 DEBUG=:
                 ;;
             "-force" ) FORCE_ENCODING=: ;;
@@ -518,7 +520,6 @@ get_args()
             "-audiotrack" )
                 shift
                 AUDIO_TRACK="$1"
-                AUDIO_TRACK_CMD="-map 0:$AUDIO_TRACK:0:1"
                 ;;
             "-ffmpeg" )
                 USE_FFMPEG=:
@@ -596,7 +597,7 @@ get_args()
 # ******************************************************************************
 # Clean up temporary files
 # ******************************************************************************
-cleanup()
+function cleanup()
 {
     cd "$WORKING_DIR"
     yecho "Cleaning up..."
@@ -613,7 +614,7 @@ cleanup()
 # ******************************************************************************
 # Gather and write statistics on the encoded video
 # ******************************************************************************
-write_stats()
+function write_stats()
 {
     # Get total size of all output files
     cd $(dirname "$OUT_FILENAME")
@@ -732,7 +733,7 @@ EOF`
 # ******************************************************************************
 # Print a completion message and exit
 # ******************************************************************************
-goodbye()
+function goodbye()
 {
     yecho
     yecho "Done!"
@@ -1599,12 +1600,14 @@ if $PARALLEL; then
     mkfifo "$AUDIO_STREAM"
 fi
 
-# if a certain audio channel is asked for, find out the -aid
+# Rip a specific audio track number
 if test -n "$AUDIO_TRACK"; then
+    yecho "Encoding audio track $AUDIO_TRACK"
     AIDS=( ${ID_AUDIO_TRACKS//,/ } )
-    (( ${#AIDS[@]} > 1 )) && MP_AUDIOTRACK=${AIDS[AUDIO_TRACK-1]}
-    if test -n "$MP_AUDIOTRACK"; then # make sure the channel exists
-        MP_AUDIOTRACK_CMD="-aid $MP_AUDIOTRACK"
+    (( ${#AIDS[@]} > 1 )) && AUDIO_ID=${AIDS[AUDIO_TRACK-1]}
+    if test -n "$AUDIO_ID"; then # make sure the channel exists
+        #MP_AUDIOTRACK_CMD="-aid $MP_AUDIOTRACK"
+        AUDIO_MAP="-map ${AUDIO_ID//./:}:0:1"
     fi # FIXME exit if user's channel not found, or warning message w/o exit ?
 fi
 # If audio is already in the chosen output format, do not re-encode.
@@ -1612,7 +1615,8 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     yecho "Found compliant audio and dumping the stream."
     precho "This sometimes causes errors when multiplexing; add '-force' to the tovid command line to re-encode if multiplexing fails."
     yecho "Copying the existing audio stream with the following command:"
-    AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" $MP_AUDIOTRACK_CMD -dumpaudio -dumpfile \"$AUDIO_STREAM\""
+    # TODO: Use desired AUDIOTRACK
+    AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
     yecho "$AUDIO_CMD"
     cmd_exec "$AUDIO_CMD"
 
@@ -1631,7 +1635,8 @@ else
         rm -f "$AUDIO_WAV"
         AUDIO_IN_FILE="$AUDIO_WAV"
 
-        AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null $MP_AUDIOTRACK_CMD -ao pcm:waveheader:file=\"$AUDIO_WAV\" \"$IN_FILE\""
+        #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null $MP_AUDIOTRACK_CMD -ao pcm:waveheader:file=\"$AUDIO_WAV\" \"$IN_FILE\""
+        AUDIO_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $AUDIO_MAP -ar $SAMPRATE -ac 2 -acodec pcm_s16le -y \"$AUDIO_WAV\""
 
         # Generate or dump audio
         yecho "Normalizing the audio stream."
@@ -1667,7 +1672,7 @@ else
     fi
     AUDIO_ENC="$AUDIO_ENC -vn -ab $AUD_BITRATE -ar $SAMPRATE -ac 2"
     if ! $DO_NORM; then
-        AUDIO_ENC="$AUDIO_ENC $AUDIO_TRACK_CMD"
+        AUDIO_ENC="$AUDIO_ENC $AUDIO_MAP"
     fi
     AUDIO_ENC="$AUDIO_ENC -acodec $AUD_SUF -y \"$AUDIO_STREAM\""
     yecho "$AUDIO_ENC"
