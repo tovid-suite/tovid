@@ -4,9 +4,7 @@
 __all__ = ['generate']
 
 from libtovid.cli import Script, verify_app
-from libtovid.log import Log
-
-log = Log('libtovid.textmenu')
+from libtovid import log
 
 def generate(options):
     """Generate a menu with selectable text titles."""

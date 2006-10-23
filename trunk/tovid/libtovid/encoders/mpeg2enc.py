@@ -7,9 +7,7 @@ import os
 
 from libtovid.cli import Script, Command
 from libtovid.utils import float_to_ratio
-from libtovid.log import Log
-
-log = Log('libtovid.encoders.mpeg2enc')
+from libtovid import log
 
 """options used by encoders:
 format

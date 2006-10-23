@@ -17,7 +17,6 @@ __all__ = [\
     'flipbook',
     'globals',
     'layer',
-    'log',
     'media',
     'menu',
     'opts',
@@ -28,4 +27,11 @@ __all__ = [\
     'utils',
     'video']
 
+import sys
+import logging
 
+
+# Global logger
+log = logging.getLogger('libtovid')
+log.setLevel(logging.DEBUG)
+log.addHandler(logging.StreamHandler(sys.stdout))
