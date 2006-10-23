@@ -14,7 +14,7 @@ def get_script(infile, options):
 
     script = Script('mencoder')
 
-    # Build the mencoder command as a string
+    # Build the mencoder command
     cmd = Command('mencoder')
     cmd.add(infile.filename,
             '-o', options['out'],

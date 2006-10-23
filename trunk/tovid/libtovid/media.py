@@ -15,8 +15,8 @@ result is:
 
     >>> infile.display()
 
-
 """
+
 __all__ = ['MediaFile', 'mplayer_identify']
 
 # From standard library
