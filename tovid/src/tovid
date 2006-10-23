@@ -187,6 +187,8 @@ FAKE=false
 QUIET=false
 # Keep the intermediate files (.wav|.mp2|.ac3|.m2v|.m1v)
 KEEPFILES=false
+AUDIO_TRACK=""
+AUDIO_MAP=""
 
 # Make note of when encoding starts, to determine total time later.
 SCRIPT_START_TIME=$(date +%s)
@@ -1616,7 +1618,8 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     precho "This sometimes causes errors when multiplexing; add '-force' to the tovid command line to re-encode if multiplexing fails."
     yecho "Copying the existing audio stream with the following command:"
     # TODO: Use desired AUDIOTRACK
-    AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
+    #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
+    AUDIO_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" -vn -acodec copy $AUDIO_MAP \"$AUDIO_STREAM\""
     yecho "$AUDIO_CMD"
     cmd_exec "$AUDIO_CMD"
 
