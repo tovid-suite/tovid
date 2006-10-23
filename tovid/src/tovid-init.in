@@ -400,9 +400,6 @@ function countdown()
 
 REFRESH_DEPS=false
 
-# Trap Ctrl-C and TERM to clean up child processes
-trap 'killsubprocs; exit 13' TERM INT
-
 # ******************************************************************************
 # Read command-line arguments.
 # NOTE: cannot check for bad ones here b/c other scripts' options will pass thru
