@@ -25,10 +25,8 @@ import sys
 import commands
 from os.path import abspath
 # From libtovid
-from libtovid.log import Log
+from libtovid import log
 from libtovid import standards
-
-log = Log('libtovid.media')
 
 class MediaFile:
     """Stores information about a file containing video and/or audio streams."""

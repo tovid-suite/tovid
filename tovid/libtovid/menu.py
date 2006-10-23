@@ -15,10 +15,8 @@ from copy import copy
 from libtovid.opts import Option, OptionDict
 from libtovid import textmenu
 from libtovid.flipbook import Flipbook
-from libtovid.log import Log
+from libtovid import log
 from libtovid import standards
-
-log = Log('libtovid.menu')
 
 class Menu:
     """A menu for navigating the titles on a video disc.
