@@ -29,9 +29,7 @@ import sys
 import doctest
 from subprocess import Popen, PIPE
 # From libtovid
-from libtovid.log import Log
-
-log = Log('libtovid.cli')
+from libtovid import log
 
 class Command(object):
     """An executable command-line statement with support for capturing output

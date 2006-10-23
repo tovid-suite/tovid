@@ -61,9 +61,7 @@ import textwrap
 import doctest
 # From libtovid
 from libtovid.utils import trim, tokenize, pretty_dict
-from libtovid.log import Log
-
-log = Log('libtovid.opts')
+from libtovid import log
 
 class Option:
     """A command-line-style option, expected argument formatting, default value,

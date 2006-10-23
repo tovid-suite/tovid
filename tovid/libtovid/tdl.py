@@ -10,9 +10,7 @@ from libtovid.utils import tokenize, pretty_dict, get_code_lines, indent_level
 from libtovid.video import Video
 from libtovid.menu import Menu
 from libtovid.disc import Disc
-from libtovid.log import Log
-
-log = Log('tdl')
+from libtovid import log
 
 element_classes = {
     'Disc':  Disc,

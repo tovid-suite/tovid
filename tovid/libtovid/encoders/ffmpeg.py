@@ -4,9 +4,7 @@
 __all__ = ['get_script']
 
 from libtovid.cli import Script, Command
-from libtovid.log import Log
-
-log = Log('libtovid.encoders.ffmpeg')
+from libtovid import log
 
 def get_script(infile, options):
     """Return a Script to encode infile with ffmpeg, using
