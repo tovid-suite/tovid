@@ -17,7 +17,7 @@ def get_script(infile, options):
 
     script = Script('ffmpeg')
 
-    # Build the ffmpeg command as a string
+    # Build the ffmpeg command
     cmd = Command('ffmpeg')
     cmd.add('-i', infile.filename)
     if options['format'] in ['vcd', 'svcd', 'dvd']:
