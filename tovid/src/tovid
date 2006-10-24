@@ -1609,7 +1609,7 @@ if test -n "$AUDIO_TRACK"; then
     (( ${#AIDS[@]} > 1 )) && AUDIO_ID=${AIDS[AUDIO_TRACK-1]}
     if test -n "$AUDIO_ID"; then # make sure the channel exists
         #MP_AUDIOTRACK_CMD="-aid $MP_AUDIOTRACK"
-        AUDIO_MAP="-map ${AUDIO_ID//./:}:0:1"
+        AUDIO_MAP="-map ${AUDIO_ID//./:}"
     fi # FIXME exit if user's channel not found, or warning message w/o exit ?
 fi
 # If audio is already in the chosen output format, do not re-encode.
