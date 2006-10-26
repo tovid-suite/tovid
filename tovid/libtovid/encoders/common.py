@@ -8,10 +8,8 @@ __all__ = ['encode_audio']
 
 # Imports
 from libtovid.cli import Script, Command
-from libtovid.log import Log
+from libtovid import log
 import math
-
-log = Log('libtovid.encoders.common')
 
 
 # Functions
