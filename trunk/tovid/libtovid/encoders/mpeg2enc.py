@@ -5,11 +5,9 @@ __all__ = ['get_script']
 
 import os
 
-from libtovid.cli import Script, Command, Pipe
+from libtovid.cli import Script, Command
 from libtovid.utils import float_to_ratio
 from libtovid import log
-from libtovid.encoders.common import *
-import libtovid.standards
 
 """options used by encoders:
 format
@@ -44,7 +42,6 @@ def get_script(infile, options):
     
     # Filenames for intermediate streams (ac3/m2v etc.)
     # Appropriate suffix for audio stream
-    # TODO: use standards
     if options['format'] in ['vcd', 'svcd']:
         audiofile = '%s.mpa' % outname
     else:
@@ -97,38 +94,61 @@ def encode_video(infile, yuvfile, videofile, options):
     # corresp. to $VID_BITRATE, $MPEG2_QUALITY, $DISC_SIZE, etc.
     # Missing options (compared to tovid)
     # -S 700 -B 247 -b 2080 -v 0 -4 2 -2 1 -q 5 -H -o FILE
-    cat = Command('cat', yuvfile)
-    mpeg2enc = Command('mpeg2enc')
-    
+    cmd = Command('mpeg2enc')
     # TV system
     if options['tvsys'] == 'pal':
-        mpeg2enc.add('-F', '3', '-n', 'p')
+        cmd.add('-F', '3', '-n', 'p')
     elif options['tvsys'] == 'ntsc':
-        mpeg2enc.add('-F', '4', '-n', 'n')
-
+        cmd.add('-F', '4', '-n', 'n')
     # Format
     format = options['format']
     if format == 'vcd':
-        mpeg2enc.add('-f', '1')
+        cmd.add('-f', '1')
     elif format == 'svcd':
-        mpeg2enc.add('-f', '4')
+        cmd.add('-f', '4')
     elif 'dvd' in format:
-        mpeg2enc.add('-f', '8')
-        
+        cmd.add('-f', '8')
     # Aspect ratio
     if options['widescreen']:
-        mpeg2enc.add('-a', '3')
+        cmd.add('-a', '3')
     else:
-        mpeg2enc.add('-a', '2')
-    mpeg2enc.add('-o', videofile)
+        cmd.add('-a', '2')
+    cmd.add('-o', videofile)
 
     # Adjust framerate if necessary
-    if infile.video.fps != options['fps']:
-        log.info("Adjusting framerate")
-        yuvfps = Command('yuvfps', '-r', float_to_ratio(options['fps']))
-        return Pipe(cat, yuvfps, mpeg2enc)
+    # FIXME: Can infile.video None?
+    if infile.video:
+        if infile.video.spec['fps'] != options['fps']:
+            log.info("Adjusting framerate")
+            yuvcmd = Command('yuvfps')
+            yuvcmd.add('-r', float_to_ratio(options['fps']))
+            cmd.pipe_to(yuvcmd)
     else:
-        return Pipe(cat, mpeg2enc)
+        pass
+    cat = Command('cat')
+    cat.add(yuvfile)
+    cat.pipe_to(cmd)
+    return cat
+
+def encode_audio(infile, audiofile, options):
+    """Encode the audio stream in infile to the target format."""
+    cmd = Command('ffmpeg')
+    if options['format'] in ['vcd', 'svcd']:
+        acodec = 'mp2'
+    else:
+        acodec = 'ac3'
+    # If infile was provided, encode it
+    if infile:
+        cmd.add('-i', infile.filename)
+    # Otherwise, generate 4-second silence
+    else:
+        cmd.add('-f', 's16le', '-i', '/dev/zero', '-t', '4')
+    cmd.add('-ac', '2',
+            '-ab', '224',
+            '-ar', options['samprate'],
+            '-acodec', acodec,
+            '-y', audiofile)
+    return cmd
 
 def mplex_streams(vstream, astream, outfile, options):
     """Multiplex the audio and video streams."""
