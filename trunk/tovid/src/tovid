@@ -1532,6 +1532,7 @@ fi
 # set up VARS for -audiotrack encoding, if selected
 #
 # ******************************************************************************
+
 if test -n "$AUDIO_TRACK"; then
     AIDS=( ${ID_AUDIO_TRACKS//,/ } )
     for key in ${!AUDIO_TRACK[@]}; do # check if enough tracks for user's selection(s)
@@ -1539,7 +1540,7 @@ if test -n "$AUDIO_TRACK"; then
         [ -z "$MAX_KEY" ] || ((val > MAX_KEY)) && MAX_KEY=$val && max_key=$key
     done
     if (( $MAX_KEY > ${#AIDS[@]} )); then
-        usage_error "There doesn't seem to be a audio track ${AUDIO_TRACK[key]}"
+        usage_error "There doesn't seem to be an audio track ${AUDIO_TRACK[key]}"
     fi
     unset AUDIO_STREAM
     for i in ${!AUDIO_TRACK[@]}; do
@@ -1554,21 +1555,6 @@ if test -n "$AUDIO_TRACK"; then
     FF_AUDIO_MAP="-map 0:0 $AUDIO_MAP"
     unset NEW_AUDIO[${#NEW_AUDIO[@]}-1]}
 fi
-# DEBUG -remove when happy
-#echo "
-#AUDIO_ID is ${AUDIO_ID[@]}
-#AUDIO_MAP is ${AUDIO_MAP[@]}
-#FF_AUDIO_MAP is ${FF_AUDIO_MAP[@]}
-#AUDIO_STREAM is ${AUDIO_STREAM[@]}
-#NEW_AUDIO is ${NEW_AUDIO[@]}
-#AUDIO_WAV is ${AUDIO_WAV[@]}
-#" | fold -bs|sed 's/    */ /g'|sed -e "s/^ *//"
-#echo "Running the following fake command:
-#ffmpeg -i $INPUT_FILE -target ntsc-dvd -qscale 3 -maxrate 7840k 
-#-ab 224k -r 29.970 -s 720x480 -aspect 16:9 -ab 224k
-#${AUDIO_MAP[@]} $OUT_FILENAME
-#${NEW_AUDIO[@]}" | fold -bs|sed 's/    */ /g'|sed -e "s/^ *//"
-
 
 # ******************************************************************************
 #
@@ -1658,7 +1644,6 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     yecho "Found compliant audio and dumping the stream."
     precho "This sometimes causes errors when multiplexing; add '-force' to the tovid command line to re-encode if multiplexing fails."
     yecho "Copying the existing audio stream with the following command:"
-    # TODO: Use desired AUDIOTRACK
     #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
     AUDIO_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" -vn -acodec copy $AUDIO_MAP ${AUDIO_STREAM[@]}"
     yecho "$AUDIO_CMD"
