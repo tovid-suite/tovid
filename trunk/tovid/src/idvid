@@ -196,7 +196,7 @@ function get_info ()
     #TRACKS="$(awk -F= '/ID_AUDIO_ID/ {print $2}' "$SCRATCH_FILE")"
     #TRACKS="${TRACKS//$'\n'/ }"
     #ID_AUDIO_TRACKS=${TRACKS// /,}
-    TRACKS="$(awk -F[#[] '/Audio:/ {print $2}' "$SCRATCH_FILE")"
+    TRACKS="$(awk -F[#[\(] '/Audio:/ {print $2}' "$SCRATCH_FILE")"
     TRACKS="${TRACKS//$'\n'/ }"
     ID_AUDIO_TRACKS=${TRACKS// /,}
     # If tcprobe reports an aspect ratio, use that
