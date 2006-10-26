@@ -1554,6 +1554,7 @@ if test -n "$AUDIO_TRACK"; then
     
     FF_AUDIO_MAP="-map 0:0 $AUDIO_MAP"
     unset NEW_AUDIO[${#NEW_AUDIO[@]}-1]}
+    ((${#AUDIO_TRACK[@]} > 1)) && OUTPUT_FILES="each file" && s=s
 fi
 
 # ******************************************************************************
@@ -1650,7 +1651,7 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     cmd_exec "$AUDIO_CMD"
 
     if ! $FAKE && ! $PARALLEL; then
-        file_output_progress "$AUDIO_STREAM" "Copying compliant audio stream"
+        file_output_progress "$AUDIO_STREAM" "Copying compliant audio stream${s}" "$OUTPUT_FILES"
         wait
     fi
 
@@ -1667,14 +1668,14 @@ else
         AUDIO_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $AUDIO_MAP -ar $SAMPRATE -ac 2 -acodec pcm_s16le -y ${AUDIO_WAV[@]}"
 
         # Generate or dump audio
-        yecho "Normalizing the audio stream."
-        yecho "Creating WAV of audio stream with the following command:"
+        yecho "Normalizing the audio stream${s}."
+        yecho "Creating WAV${s} of the audio stream${s} with the following command:"
         yecho "$AUDIO_CMD"
 
         cmd_exec "$AUDIO_CMD"
 
         if ! $FAKE; then
-            file_output_progress "$AUDIO_WAV" "Creating wav of audio stream"
+            file_output_progress "$AUDIO_WAV" "Creating wav${s} of the audio stream${s}" "$OUTPUT_FILES"
             wait
 
             # Make sure the audio stream exists before proceeding
@@ -1712,7 +1713,7 @@ else
     # If not in parallel mode, show output progress
     # and wait for successful completion
     else
-        file_output_progress "$AUDIO_STREAM" "Encoding audio to $AUD_SUF"
+        file_output_progress "$AUDIO_STREAM" "Encoding audio to $AUD_SUF" "$OUTPUT_FILES"
         wait
 
         if test -f "$AUDIO_STREAM"; then
