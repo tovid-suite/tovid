@@ -107,7 +107,7 @@ to decrease font size with the **-menu-fontsize** option. For example:
 : -bgvideo
     Menu background video - again, needs to be resized to 720x480 or 720x576,
     so pick one of appropriate aspect ratio/resolution
-: -showcase-image IMAGE.  see -bgimage
+: -showcase-image IMAGE.  see -bgimage regarding aspect ratio
     A different montage of images for the menu: small thumbnails go on left,
     and a larger image in the centre. Maximum of 10 videos
 : -showcase-video VIDEO
@@ -138,7 +138,7 @@ to decrease font size with the **-menu-fontsize** option. For example:
 
 == Thumbnail style ==
 
-: -thumb-shape [normal|oval|cloud|egg]
+: -thumb-shape [normal|oval|plectrum|egg]
     Apply a shaped transparency mask to thumbnail videos
 : -3dthumbs
     This will give an illusion of 3D to the thumbnails: dynamic lighting on 
@@ -176,11 +176,11 @@ to decrease font size with the **-menu-fontsize** option. For example:
 
 ==Menu Style==
 
-: -button-style rect|text|rect-text
+: -button-style rect|text|text-rect
     The style of button that you will see when you play the DVD.
     "rect" draws a rectangle around the thumb when you select it
     in the DVD player.  "text" highlights the thumb title text, and "text-rect"
-    draws a rectangle around the title text.  "text-rect" is only used for multiline
+    draws a rectangle around the title text.  "text-rect" is ONLY used for multiline
     titles in the showcase-* template.  "text-rect" is  used by default if you use -3dthumbs
     with showcase-* and multiline titles, as the others are not suitable for this arrangement.
 : -rotate DEGREES
