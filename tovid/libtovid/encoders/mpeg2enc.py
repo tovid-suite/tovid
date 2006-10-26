@@ -5,7 +5,7 @@ __all__ = ['get_script']
 
 import os
 
-from libtovid.cli import Script, Command
+from libtovid.cli import Script, Command, Pipe
 from libtovid.utils import float_to_ratio
 from libtovid import log
 
@@ -94,41 +94,35 @@ def encode_video(infile, yuvfile, videofile, options):
     # corresp. to $VID_BITRATE, $MPEG2_QUALITY, $DISC_SIZE, etc.
     # Missing options (compared to tovid)
     # -S 700 -B 247 -b 2080 -v 0 -4 2 -2 1 -q 5 -H -o FILE
-    cmd = Command('mpeg2enc')
+    cat = Command('cat', yuvfile)
+    mpeg2enc = Command('mpeg2enc')
     # TV system
     if options['tvsys'] == 'pal':
-        cmd.add('-F', '3', '-n', 'p')
+        mpeg2enc.add('-F', '3', '-n', 'p')
     elif options['tvsys'] == 'ntsc':
-        cmd.add('-F', '4', '-n', 'n')
+        mpeg2enc.add('-F', '4', '-n', 'n')
     # Format
     format = options['format']
     if format == 'vcd':
-        cmd.add('-f', '1')
+        mpeg2enc.add('-f', '1')
     elif format == 'svcd':
-        cmd.add('-f', '4')
+        mpeg2enc.add('-f', '4')
     elif 'dvd' in format:
-        cmd.add('-f', '8')
+        mpeg2enc.add('-f', '8')
     # Aspect ratio
     if options['widescreen']:
-        cmd.add('-a', '3')
+        mpeg2enc.add('-a', '3')
     else:
-        cmd.add('-a', '2')
-    cmd.add('-o', videofile)
+        mpeg2enc.add('-a', '2')
+    mpeg2enc.add('-o', videofile)
 
     # Adjust framerate if necessary
-    # FIXME: Can infile.video None?
-    if infile.video:
-        if infile.video.spec['fps'] != options['fps']:
-            log.info("Adjusting framerate")
-            yuvcmd = Command('yuvfps')
-            yuvcmd.add('-r', float_to_ratio(options['fps']))
-            cmd.pipe_to(yuvcmd)
+    if infile.video.fps != options['fps']:
+        log.info("Adjusting framerate")
+        yuvfps = Command('yuvfps', '-r', float_to_ratio(options['fps']))
+        return Pipe(cat, yuvfps, mpeg2enc)
     else:
-        pass
-    cat = Command('cat')
-    cat.add(yuvfile)
-    cat.pipe_to(cmd)
-    return cat
+        return Pipe(cat, mpeg2enc)
 
 def encode_audio(infile, audiofile, options):
     """Encode the audio stream in infile to the target format."""
