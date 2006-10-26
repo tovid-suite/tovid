@@ -211,6 +211,11 @@ function file_output_progress()
     fi
     FOP_OUTFILE="$1"
     FOP_BASENAME=$(basename "$FOP_OUTFILE")
+    if test -n "$3"; then
+        FOP_BASENAME_NAME="$3"
+    else
+        FOP_BASENAME_NAME="$FOP_BASENAME"
+    fi
     FOP_MSG="$2"
     # A dumb little animation toggle
     FOP_FLIP=false
@@ -227,7 +232,7 @@ function file_output_progress()
             sleep 3s
             break
         fi
-        printf "Waiting $CUR_TIME seconds for output file \"$FOP_BASENAME\" to appear...\r"
+        printf "Waiting $CUR_TIME seconds for output file \"$FOP_BASENAME_NAME\" to appear...\r"
         sleep 1s
         CUR_TIME=$(expr $CUR_TIME - 1)
     done
@@ -257,7 +262,7 @@ function file_output_progress()
         # Display completion status
         FOP_CUR_MB=$(expr 1 + $FOP_CUR_SIZE / 1048576)
         printf "    %s %s: %s MB written to %s        \r" \
-            "$ANIM_STR" "$FOP_MSG" "$FOP_CUR_MB" "$FOP_BASENAME"
+            "$ANIM_STR" "$FOP_MSG" "$FOP_CUR_MB" "$FOP_BASENAME_NAME"
 
         # Doze a bit to let the file size increase
         # (SLEEP_TIME defaults to 1s if unset)
