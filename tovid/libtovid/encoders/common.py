@@ -7,7 +7,7 @@
 __all__ = ['encode_audio']
 
 # Imports
-from libtovid.cli import Script, Command, Pipe
+from libtovid.cli import Script, Command
 from libtovid.log import Log
 import math
 
