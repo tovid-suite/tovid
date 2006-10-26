@@ -66,6 +66,7 @@ from libtovid.animation import Keyframe
 from libtovid.render.cairo_ import Drawing
 from libtovid import layer, effect, standards
 from libtovid.media import MediaFile
+from libtovid.encoders import common
 
 class Flipbook:
     """A collection of Drawings that together comprise an animation.
@@ -146,6 +147,7 @@ class Flipbook:
         video = MediaFile(m2v_file)
         video.encode_frames(tmp, 'png', m2v_file, self.format, self.tvsys)
         print "Output file is: %s" % m2v_file
+        encoders.encode_audio(video, None, [])
 
 
 def draw_text_demo(flipbook, last_frame):
@@ -228,4 +230,7 @@ if __name__ == '__main__':
     
     # Render the final video
     flip.render_video('/tmp/flipbook')
+
+    print "To create demo video (for distribution), run:"
+    print """cat /tmp/flipbook.m2v /tmp/flipbook.m2v /tmp/flipbook.m2v /tmp/flipbook.m2v /tmp/flipbook.m2v | ffmpeg2theora --aspect 4:3 --title "libtovid Flipbook demo (flipbook.py)" -o /dev/stdout - > FlipbookDemo.ogm """
 
