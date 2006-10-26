@@ -30,8 +30,8 @@ __all__ = [\
 import sys
 import logging
 
-
 # Global logger
 log = logging.getLogger('libtovid')
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler(sys.stdout))
+# TODO: Support logging to a file with a different severity level
