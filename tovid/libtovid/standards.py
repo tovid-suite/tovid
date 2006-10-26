@@ -118,7 +118,7 @@ def get_vbitrate(format):
     """
     # Valid video bitrates, indexed by format
     valid_bitrates = {\
-        'vcd': 1152,
+        'vcd': 1150,
         'svcd': (0, 2600),
         'dvd-vcd': (0, 9800),
         'half-dvd': (0, 9800),
