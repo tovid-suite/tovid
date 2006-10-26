@@ -19,6 +19,7 @@ Requirements (+: met, -: unmet):
 """
 __all__ = [\
     'Command',
+    'Pipe',
     'Script',
     'verify_app'
     ]
@@ -27,11 +28,12 @@ __all__ = [\
 import os
 import sys
 import doctest
+import subprocess
 from subprocess import Popen, PIPE
 # From libtovid
 from libtovid import log
 
-class Command(object):
+class Command (object):
     """An executable command-line statement with support for capturing output
     and piping to other commands.
     """
@@ -52,7 +54,6 @@ class Command(object):
         for arg in args:
             self.args.append(arg)
         self.proc = None
-        self.pipe = None
         self.output = ''
         self.bg = False
 
@@ -65,52 +66,68 @@ class Command(object):
         for arg in args:
             self.args.append(str(arg))
 
-    def run(self, stdin=None):
+    def run(self, stdin=None, stdout=PIPE, stderr=None):
         """Execute the command.
             stdin: File object to read input from
         """
         self.output = ''
         self.proc = Popen([self.program] + self.args,
-                    stdin=stdin, stdout=PIPE)
-        # Run piped-to command if it exists
-        if isinstance(self.pipe, Command):
-            self.pipe.run(self.proc.stdout)
+                    stdin=stdin, stdout=stdout, stderr=stderr)
         if not self.bg:
             self.proc.wait()
     
     def get_output(self):
         """Wait for the command to finish executing, and return a string
-        containing the command's output. If this command is piped into another,
-        return that command's output instead. Returns an empty string if the
+        containing the command's output. Returns an empty string if the
         command has not been run yet.
         """
-        if self.pipe:
-            return self.pipe.get_output()
         if self.output is '' and self.proc is not None:
             self.output = self.proc.communicate()[0]
         return self.output
-    
-    def pipe_to(self, command):
-        """Pipe the output of this Command into another Command.
-            command: A Command to pipe to, or None to disable piping
-        """
-        if command:
-            assert isinstance(command, Command)
-        self.pipe = command
 
     def __str__(self):
-        """Return a string representation of the Command, including any
-        piped-to Commands.
+        """Return a string representation of the Command.
         """
         ret = self.program
         for arg in self.args:
             ret += " %s" % enc_arg(arg)
-        if self.pipe:
-            ret += " | %s" % self.pipe
         return ret
 
 
-class Script:
+class Pipe (Command):
+    """A command pipeline."""
+    def __init__(self, *commands):
+        """Create a pipeline using the given Commands."""
+        log.debug("Creating Pipe")
+        self.commands = []
+        for command in commands:
+            log.debug("Adding Command to Pipe: %s" % command)
+            assert isinstance(command, Command)
+            self.commands.append(command)
+
+    def run(self):
+        """Execute the command pipeline."""
+        prev_out=None
+        for command in self.commands:
+            log.debug("Running Command: %s" % command)
+            log.debug("Getting input from %s" % prev_out)
+            command.run(stdin=prev_out)
+            prev_out = command.proc.stdout
+    
+    def get_output(self):
+        """Wait for the pipeline to finish executing, and return a string
+        containing the output of the last command in the pipeline.
+        """
+        last = self.commands[-1]
+        return last.get_output()
+
+    def __str__(self):
+        """Return a string representation of the command pipeline."""
+        strings = [str(command) for command in self.commands]
+        return ' | '.join(strings)
+
+
+class Script (object):
     """A sequence of Commands to be executed."""
     def __init__(self, name):
         """Create a script with the given name.
