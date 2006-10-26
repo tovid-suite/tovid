@@ -5,6 +5,8 @@ __all__ = ['get_script']
 
 from libtovid.cli import Script, Command
 from libtovid import log
+from libtovid.encoders.common import *
+import libtovid.standards
 
 def get_script(infile, options):
     """Return a Script to encode infile (a MediaFile) with mencoder,
@@ -27,11 +29,30 @@ def get_script(infile, options):
     else:
         cmd.add('format=dvd')
     
-    # Audio settings
-    # Adjust sampling rate
-    # TODO: Don't resample unless needed
-    cmd.add('-srate', options['samprate'],
-            '-af', 'lavcresample=%s' % options['samprate'])
+    # TODO: this assumes we only have ONE audio track.
+    if infile.audio:
+        # Audio settings
+        # Adjust sampling rate
+        # TODO: Don't resample unless needed
+        needed_samprate = standards.get_samprate(options['format'])
+        if needed_samprate != infile.audio.samprate:
+            log.info("Resampling needed to achieve %d Hz" % needed_samprate)
+            cmd.add('-srate', options['samprate'])
+            cmd.add('-af', 'lavcresample=%s' % options['samprate'])
+        else:
+            log.info("No resampling needed, already at %d Hz" % needed_samprate)
+        
+    else:
+        log.info("No audio file, generating silence of %f seconds." % infile.length)
+        # Generate silence.
+        if options['format'] in ['vcd', 'svcd']:
+            audiofile = '%s.mpa' % options['out']
+        else:
+            audiofile = '%s.ac3' % options['out']
+        script.append(encode_audio(infile, audiofile, options))
+        # TODO: make this work, it,s still not adding the ac3 file correctly.
+        cmd.add('-audiofile', audiofile)
+        
 
     # Video codec
     if options['format'] == 'vcd':

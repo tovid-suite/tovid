@@ -37,7 +37,8 @@ import sys
 import math
 import commands
 from libtovid.utils import get_file_type
-from libtovid.render.mvg import Drawing
+# Temporarily use local classes: (add libtovid. later)
+from libtovid.render.cairo_ import Drawing
 from libtovid.effect import Effect
 from libtovid.animation import Keyframe, Tween
 from libtovid.media import MediaFile
@@ -68,24 +69,34 @@ class Layer:
         derived layers."""
         assert isinstance(drawing, Drawing)
 
-    def draw_effects(self, drawing, frame):
-        """Draw all effects onto the given Drawing for the given frame."""
-        assert isinstance(drawing, Drawing)
-        if self.effects != []:
-            drawing.comment("Drawing effects")
-            for effect in self.effects:
-                effect.draw_on(drawing, frame)
+    def apply_effects_before(self, drawing, frame):
+        for effect in self.effects:
+            # Call effect.apply_after() and effect.apply_before()
+            effect.apply_before(drawing, frame)
+
+    def apply_effects_after(self, drawing, frame):
+        reveffects = self.effects
+        reveffects.reverse()
+        
+        for effect in reveffects:
+            # Call effect.apply_after() and effect.apply_before()
+            effect.apply_after(drawing, frame)
+    
+#    def draw_effects(self, drawing, frame):
+#        """Draw all effects onto the given Drawing for the given frame."""
+#        assert isinstance(drawing, Drawing)
+#        for effect in self.effects:
+#            # Call effect.apply_after() and effect.apply_before()
+#            effect.draw_on(drawing, frame)
 
     def draw_sublayers(self, drawing, frame):
         """Draw all sublayers onto the given Drawing for the given frame."""
         assert isinstance(drawing, Drawing)
-        if self.sublayers != []:
-            drawing.comment("Drawing sublayers")
-            for sublayer, position in self.sublayers:
-                drawing.push()
-                drawing.translate(position)
-                sublayer.draw_on(drawing, frame)
-                drawing.pop()
+        for sublayer, position in self.sublayers:
+            drawing.save()
+            drawing.translate(position)
+            sublayer.draw_on(drawing, frame)
+            drawing.restore()
 
 
 # ============================================================================
@@ -127,21 +138,25 @@ class MyLayer (Layer):
 
         # Save context. This isolates the upcoming effects or style changes
         # from any surrounding layers in the Drawing.
-        drawing.push()
+        drawing.save()
 
         # Draw the layer. You can use pretty much any Drawing commands you want
         # here; the world is your oyster! Let's start by using the user-set
         # variables from __init__:
-        drawing.fill(self.fill_color)
-        drawing.stroke(self.stroke_color)
+        fc = drawing.create_source(self.fill_color, 0.6)
+        sc = drawing.create_source(self.stroke_color)
+        drawing.stroke_width(1)
 
         # Now, draw something, say, a couple of semitransparent rectangles
-        drawing.fill_opacity(0.6)
         drawing.rectangle((0, 0), (50, 20))
+        drawing.fill(fc)
+        drawing.stroke(sc)
         drawing.rectangle((15, 12), (60, 40))
+        drawing.fill(fc)
+        drawing.stroke(sc)
 
         # Restore context
-        drawing.pop()
+        drawing.restore()
 
     # That's it! Your layer is ready to use. See the Demo section at the end of
     # this file for examples on how to create and render Layers using Python.
@@ -151,77 +166,84 @@ class MyLayer (Layer):
 # ============================================================================
 
 
+
+#####            #####
+##### Background #####
+#####            #####
+
 class Background (Layer):
     """A background that fills the frame with a solid color, or an image."""
     def __init__(self, color='black', filename=''):
         Layer.__init__(self)
         self.color = color
         self.filename = filename
+        
     def draw_on(self, drawing, frame):
         assert isinstance(drawing, Drawing)
-        drawing.comment("Background Layer")
-        drawing.push()
-        self.draw_effects(drawing, frame)
+        drawing.save()
         # Fill drawing with an image
         if self.filename is not '':
-            drawing.image('over', (0, 0), drawing.size, self.filename)
+            drawing.image((0, 0), drawing.size, self.filename)
         # Fill drawing with a solid color
         elif self.color:
-            drawing.fill(self.color)
             drawing.rectangle((0, 0), drawing.size)
-        drawing.pop()
+            drawing.fill(self.color)
+        drawing.restore()
+
+
+#####       #####
+##### Image #####
+#####       #####
 
 
 class Image (Layer):
-    """A rectangular image, scaled to the given size."""
-    def __init__(self, filename, (width, height)):
+    """A rectangular image, scaled to the given size.
+
+    image_source -- can be anything cairo::Drawing::image() can accept.
+                    See documentation.
+    """
+    def __init__(self, image_source, (width, height), position=(0,0)):
         Layer.__init__(self)
         self.size = (width, height)
-        # Remember original image filename
-        self.original_filename = filename
-        # Prescale image file
-        self.prescaled_filename = self._prescale(filename)
+        self.image_source = image_source
+        assert(isinstance(position, tuple))
+        self.position = position
 
-    def __del__(self):
-        """Clean up temporary files."""
-        os.remove(self.prescaled_filename)
 
-    def _prescale(self, filename):
-        """Convert and rescale the image to the target size, to save time in
-        compositing."""
-        dir, base = os.path.split(filename)
-        if dir is not '':
-            scaled_filename = "%s/tmp_%s" % (dir, base)
-        else:
-            scaled_filename = "tmp_%s" % base
-        cmd = 'convert -size %sx%s' % self.size
-        cmd += ' %s' % filename
-        cmd += ' -resize %sx%s' % self.size
-        cmd += ' %s' % scaled_filename
-        print "Prescaling Image: '%s' to temporary file: '%s'" % \
-              (filename, scaled_filename)
-        print commands.getoutput(cmd)
-        return scaled_filename
-
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
-        drawing.comment("Image Layer")
-        drawing.push()
-        self.draw_effects(drawing, frame)
-        drawing.image('over', (0, 0), self.size, self.prescaled_filename)
-        drawing.pop()
+        drawing.save()
+        # Save the source for future calls to draw_on, so no further
+        # processing will be necessary. And other effects can be done
+        # without interferring with the original source.
+        self.image_source = drawing.image(self.position, self.size,
+                                          self.image_source)
+        drawing.restore()
+
+
+#####           #####
+##### VideoClip #####
+#####           #####
 
 
 class VideoClip (Layer):
-    """A rectangular video clip, scaled to the given size."""
-    def __init__(self, filename, (width, height)):
+    """A rectangular video clip, scaled to the given size.
+
+    TODO: num_frames should accept a range [first, end], an int (1-INT) and
+    rip frames accordingly. For now, it only accepts an INT for the range 1-INT
+    """
+    def __init__(self, filename, (width, height), position=(0,0), num_frames=120):
         Layer.__init__(self)
         self.filename = filename
         self.mediafile = MediaFile(filename)
         self.size = (width, height)
         # List of filenames of individual frames
         self.frame_files = []
-        self.rip_frames(1, 120)
+        # TODO: be able to change hardcoded default values
+        self.rip_frames(1, num_frames)
+        # Set (x,y) position
+        assert(isinstance(position, tuple))
+        self.position = position
 
     def rip_frames(self, start, end):
         """Rip frames from the video file, from start to end frames."""
@@ -229,64 +251,101 @@ class VideoClip (Layer):
         self.mediafile.rip_frames([start, end])
         self.frame_files.extend(self.mediafile.frame_files)
 
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         """Draw ripped video frames to the given drawing. For now, it's
         necessary to call rip_frames() before calling this function.
+        
         Video is looped.
         """
         assert isinstance(drawing, Drawing)
         if len(self.frame_files) == 0:
             print "VideoClip error: need to call rip_frames() before drawing."
             sys.exit(1)
-        drawing.comment("VideoClip Layer")
-        drawing.push()
-        self.draw_effects(drawing, frame)
+        drawing.save()
         # Loop frames (modular arithmetic)
         if frame >= len(self.frame_files):
             frame = frame % len(self.frame_files)
         filename = self.frame_files[frame-1]
-        drawing.image('over', (0, 0), self.size, filename)
-        drawing.pop()
+        drawing.image(self.position, self.size, filename)
+        drawing.restore()
 
+
+
+
+#####      #####
+##### Text #####
+#####      #####
 
 class Text (Layer):
-    """A simple text string, with size, color and font."""
-    def __init__(self, text, color='white', fontsize=20, \
-                 font='Helvetica'):
+    """A simple text string, with size, color and font.
+
+    text -- UTF8 encoded string.
+    """
+    def __init__(self, text, position=(0,0), color='white', fontsize=20, \
+                 font='Helvetica', align='left'):
         Layer.__init__(self)
         self.text = text
         self.color = color
         self.fontsize = fontsize
         self.font = font
-    def draw_on(self, drawing, frame):
-        assert isinstance(drawing, Drawing)
-        drawing.comment("Text Layer")
-        drawing.push()
-        drawing.fill(self.color)
+        self.align = align
+        # Set (x,y) position
+        assert(isinstance(position, tuple))
+        self.position = position
+        
+
+    def extents(self, drawing):
+        """Get text extents with the specifies fonts, etc.."""
+        drawing.save()
         drawing.font(self.font)
         drawing.font_size(self.fontsize)
-        self.draw_effects(drawing, frame)
-        drawing.text((0, 0), self.text)
-        drawing.pop()
+        ex = drawing.text_extents(self.text)
+        drawing.restore()
 
+        return ex
 
-
-class Label (Text):
-    """A text string with a rectangular background."""
-    def __init__(self, text, color='black', bgcolor='grey',
-                 fontsize=20, font='NimbusSans'):
-        Text.__init__(self, text, color, fontsize, font)
-        self.bgcolor = bgcolor
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
 
-        drawing.comment("Label Layer")
+        # Drop in debugger
+        drawing.save()
+        drawing.font(self.font)
+        drawing.font_size(self.fontsize)
+        if self.color is not None:
+            drawing.set_source(self.color)
+        drawing.text(self.position, self.text, self.align)
+        drawing.restore()
+
+
+
+#####       #####
+##### Label #####
+#####       #####
+
+class Label (Text):
+    """A text string with a rectangular background.
+
+    You can access Text's extents() function from within here too."""
+    def __init__(self, text, position=(0,0), color='white', bgcolor='#555',
+                 fontsize=20, font='NimbusSans'):
+        Text.__init__(self, text, position, color, fontsize, font)
+        self.bgcolor = bgcolor
+        # Set (x,y) position
+        assert(isinstance(position, tuple))
+        self.position = position
+
+
+    def draw_on(self, drawing, frame=1):
+        assert isinstance(drawing, Drawing)
+
+        (dx, dy, w, h, ax, ay) = self.extents(drawing)
+
         # Save context
-        drawing.push()
+        drawing.save()
 
         # Calculate rectangle dimensions from text size/length
-        width = self.fontsize * len(self.text) / 2
-        height = self.fontsize
+        width = w
+        height = h
         # Padding to use around text
         pad = self.fontsize / 3
         # Calculate start and end points of background rectangle
@@ -294,18 +353,24 @@ class Label (Text):
         end = (width + pad, pad)
 
         # Draw a stroked round rectangle
-        drawing.push()
-        drawing.stroke(self.color)
-        drawing.fill(self.bgcolor)
+        drawing.save()
+        drawing.stroke_width(1)
         drawing.roundrectangle(start, end, (pad, pad))
-        drawing.pop()
+        drawing.stroke('black')
+        drawing.fill(self.bgcolor, 0.3)
+        drawing.restore()
 
         # Call base Text class to draw the text
         Text.draw_on(self, drawing, frame)
 
         # Restore context
-        drawing.pop()
-        
+        drawing.restore()
+
+
+#####         #####
+##### TextBox #####
+#####         #####
+
 
 class TextBox (Text):
     """A text box containing paragraphs, and support for simple formatting
@@ -314,18 +379,20 @@ class TextBox (Text):
     Formatting elements are <p>...</p>, <b>...</b>, and <i>...</i>.
     """
     def __init__(self, text, (width, height), color='white',
-                 fontsize=20, font='Times'):
+                 fontsize=20, font='Times', position=(0,0)):
         """Formatted text contained in a box of the given size."""
-        Text.__init__(self, text, color, fontsize, font)
+        Text.__init__(self, text, position, color, fontsize, font)
         self.size = (width, height)
         # TODO: Determine max number of characters that will fit in given
         # width, and break marked-up text into lines (breaking at word
         # boundaries)
+        # Set (x,y) position
+        assert(isinstance(position, tuple))
+        self.position = position
 
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
-        drawing.comment("TextBox Layer")
-        drawing.push()
+        drawing.save()
 
         # TODO: Wrap text!
 
@@ -333,14 +400,13 @@ class TextBox (Text):
         drawing.fill(self.color)
         drawing.font(self.font)
         drawing.font_size(self.fontsize)
-        self.draw_effects(drawing, frame)
 
         # Start reading text at position 0
         # TODO: For text-wrapping purposes, cursor will be the position on
         # the current line
         cursor = 0
         # Start drawing in upper left-hand corner
-        draw_loc = (0, 0)
+        draw_loc = self.position
         
         finished = False
         while not finished:
@@ -374,7 +440,7 @@ class TextBox (Text):
     
                 # For any opening tag, start a new drawing context
                 if not tag.startswith('</'):
-                    drawing.push()
+                    drawing.save()
     
                 # Paragraph
                 if tag == '<p>':
@@ -388,31 +454,51 @@ class TextBox (Text):
                     drawing.font_style('italic')
                 # For any closing tag, close the current drawing context
                 if tag.startswith('</'):
-                    drawing.pop()
-        drawing.pop()
+                    drawing.restore()
+        drawing.restore()
 
     
 
+#####       #####
+##### Thumb #####
+#####       #####
+
+
 class Thumb (Layer):
     """A thumbnail image or video."""
-    def __init__(self, filename, (width, height), title=''):
+    def __init__(self, filename, (width, height), position=(0,0), title=''):
         Layer.__init__(self)
         self.filename = filename
         self.size = (width, height)
         self.title = title or os.path.basename(filename)
+        # Set (x,y) position
+        assert(isinstance(position, tuple))
+        self.position = position
+
         # Determine whether file is a video or image, and create the
         # appropriate sublayer
         filetype = get_file_type(filename)
         if filetype == 'video':
-            self.add_sublayer(VideoClip(filename, self.size))
+            self.add_sublayer(VideoClip(filename, self.size, self.position))
         elif filetype == 'image':
-            self.add_sublayer(Image(filename, self.size))
-        self.add_sublayer(Label(self.title, fontsize=15), (0, 0))
+            self.add_sublayer(Image(filename, self.size, self.position))
+        self.lbl = Label(self.title, fontsize=15)
+        self.add_sublayer(self.lbl, self.position)
+        
 
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
-        self.draw_effects(drawing, frame)
+        drawing.save()
+        (dx, dy, w, h, ax, ay) = self.lbl.extents(drawing)
+        drawing.translate((0, h))
         self.draw_sublayers(drawing, frame)
+        drawing.restore()
+
+
+
+#####           #####
+##### ThumbGrid #####
+#####           #####
 
 
 class ThumbGrid (Layer):
@@ -472,14 +558,17 @@ class ThumbGrid (Layer):
         if rows == 0 and columns > 0:
             return (columns, (1 + num_items / columns))
 
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
-        drawing.comment("ThumbGrid Layer")
-        drawing.push()
-        self.draw_effects(drawing, frame)
+        drawing.save()
         self.draw_sublayers(drawing, frame)
-        drawing.pop()
+        drawing.restore()
 
+
+
+#####          #####
+##### SafeArea #####
+#####          #####
     
 class SafeArea (Layer):
     """Render a safe area box at a given percentage.
@@ -488,33 +577,53 @@ class SafeArea (Layer):
         self.percent = percent
         self.color = color
         
-    def draw_on(self, drawing, frame):
+    def draw_on(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
         # Calculate rectangle dimensions
         scale = float(self.percent) / 100.0
         width, height = drawing.size
         topleft = ((1.0 - scale) * width / 2,
                   (1.0 - scale) * height / 2)
-        drawing.comment("SafeArea Layer")
         # Save context
-        drawing.push()
+        drawing.save()
         drawing.translate(topleft)
         # Safe area box
-        drawing.fill(None)
-        drawing.stroke(self.color)
         drawing.stroke_width(3)
         drawing.rectangle((0, 0), (width * scale, height * scale))
+        drawing.stroke(self.color)
         # Label
-        drawing.fill(self.color)
-        drawing.stroke(None)
-        drawing.font_size(20)
-        drawing.text((10, 20), "%s%%" % self.percent)
+        drawing.font_size(18)
+        drawing.set_source(self.color)
+        drawing.text((10, 20), u"%s%%" % self.percent)
         # Restore context
-        drawing.pop()
+        drawing.restore()
 
+class TitleSafeArea (SafeArea):
+    """Use the standard Title-safe area of 80%"""
+    def __init__(self, color):
+        SafeArea.__init__(self, 80, color)
+
+    def draw_on(self, drawing, frame=1):
+        SafeArea.draw_on(self, drawing, frame)
+
+class ActionSafeArea (SafeArea):
+    """Use the standard Action-safe area of 90%"""
+    def __init__(self, color):
+        SafeArea.__init__(self, 90, color)
+
+    def draw_on(self, drawing, frame):
+        SafeArea.draw_on(self, drawing, frame)
+
+
+#####             #####
+##### Scatterplot #####
+#####             #####
 
 class Scatterplot (Layer):
-    """A 2D scatterplot of data."""
+    """A 2D scatterplot of data.
+
+    Untested since MVG move.
+    """
     def __init__(self, xy_dict, size=(240, 80), x_label='', y_label=''):
         """Create a scatterplot using data in xy_dict, a dictionary of
         lists of y-values, indexed by x-value."""
@@ -543,56 +652,53 @@ class Scatterplot (Layer):
         # Scale y according to maximum value
         y_scale = float(height) / max_y
         
-        drawing.comment("Scatterplot Layer")
         
         # Save context
-        drawing.push()
+        drawing.save()
         drawing.fill(None)
         
         # Draw axes
-        drawing.comment("Axes of scatterplot")
-        drawing.push()
-        drawing.stroke('black')
+        #->comment("Axes of scatterplot")
+        drawing.save()
         drawing.stroke_width(3)
-        drawing.polyline([(0, 0), (0, height), (width, height)])
-        drawing.pop()
+        drawing.polyline([(0, 0), (0, height), (width, height)], False)
+        drawing.stroke('black')
+        drawing.restore()
 
         # Axis labels
-        drawing.comment("Axis labels")
-        drawing.push()
-        drawing.fill('blue')
-        drawing.comment("X axis labels")
-        drawing.push()
-        #drawing.text((width, height + 15), max(x_vals))
+        drawing.save()
+        drawing.set_source('blue')
+        drawing.save()
+        drawing.text((width, height + 15), str(max(x_vals)))
         i = 0
         while i < len(x_vals):
-            drawing.push()
+            drawing.save()
             if x_is_num:
                 drawing.translate((x_vals[i] * x_scale, height + 15))
             else:
                 drawing.translate((i * x_scale, height + 15))
             drawing.rotate(30)
             drawing.text((0, 0), x_vals[i])
-            drawing.pop()
+            drawing.restore()
             i += 1
         drawing.font_size(20)
         drawing.text((width / 2, height + 40), self.x_label)
-        drawing.pop()
-        drawing.comment("Y axis labels")
-        drawing.push()
+        drawing.restore()
+        #->comment("Y axis labels")
+        drawing.save()
         drawing.text((-30, 0), max_y)
         drawing.translate((-25, height / 2))
         drawing.rotate(90)
         drawing.text((0, 0), self.y_label)
-        drawing.pop()
+        drawing.restore()
         #for x in x_vals:
         #    axis_pos = (int(x * x_scale), height + 15)
         #    drawing.text(axis_pos, "%s" % x)
-        drawing.pop()
+        drawing.restore()
 
         # Plot all y-values for each x (as small circles)
-        drawing.comment("Scatterplot data")
-        drawing.push()
+        #->comment("Scatterplot data")
+        drawing.save()
         drawing.stroke(None)
         drawing.fill('red')
         drawing.fill_opacity(0.2)
@@ -609,11 +715,16 @@ class Scatterplot (Layer):
                 point = (x_coord, int(height - y * y_scale))
                 drawing.circle_rad(point, 3)
             i += 1
-        drawing.pop()
+        drawing.restore()
         
         # Restore context
-        drawing.pop()
+        drawing.restore()
         
+
+
+#####                    #####
+##### InterpolationGraph #####
+#####                    #####
 
 class InterpolationGraph (Layer):
     # TODO: Support graphing of tuple data
@@ -622,6 +733,8 @@ class InterpolationGraph (Layer):
     def __init__(self, keyframes, size=(240, 80), method='linear'):
         """Create an interpolation graph of the given keyframes, at the given
         size, using the given interpolation method."""
+        Layer.__init__(self)
+                
         self.keyframes = keyframes
         self.size = size
         self.method = method
@@ -638,19 +751,18 @@ class InterpolationGraph (Layer):
         x_scale = float(width) / len(data)
         y_scale = float(height) / max(data)
 
-        drawing.comment("InterpolationGraph Layer")
+        #->drawing.comment("InterpolationGraph Layer")
 
         # Save context
-        drawing.push()
-        drawing.fill(None)
+        drawing.save()
 
         # Draw axes
-        drawing.comment("Axes of graph")
-        drawing.push()
-        drawing.stroke('grey')
+        #->drawing.comment("Axes of graph")
+        drawing.save()
         drawing.stroke_width(3)
-        drawing.polyline([(0, 0), (0, height), (width, height)])
-        drawing.pop()
+        drawing.polyline([(0, 0), (0, height), (width, height)], False)
+        drawing.stroke('#ccc')
+        drawing.restore()
 
         # Create a list of (x, y) points to be graphed
         curve = []
@@ -661,116 +773,130 @@ class InterpolationGraph (Layer):
             point = (int(x * x_scale), int(height - data[x-1] * y_scale))
             curve.append(point)
             x += 1
-        drawing.comment("Interpolation curve")
-        drawing.push()
+        drawing.save()
         # Draw the curve
-        drawing.stroke('blue')
         drawing.stroke_width(2)
-        drawing.polyline(curve)
-        drawing.pop()
+        drawing.polyline(curve, False)
+        drawing.stroke('blue')
+        drawing.restore()
 
         # Draw Keyframes as dotted vertical lines
-        drawing.comment("Keyframes and labels")
-        drawing.push()
+        #->drawing.comment("Keyframes and labels")
+        drawing.save()
         #drawing.stroke_dasharray([4, 4])
         # Vertical dotted lines
-        drawing.fill(None)
-        drawing.stroke('red')
+        drawing.set_source('red')
         drawing.stroke_width(2)
         for key in self.keyframes:
             x = int(key.frame * x_scale)
             drawing.line((x, 0), (x, height))
+            drawing.stroke('red')
+            
         # Draw Keyframe labels
-        drawing.stroke(None)
-        drawing.fill('white')
+        drawing.set_source('white')
         for key in self.keyframes:
             x = int(key.frame * x_scale)
             y = int(height - key.data * y_scale - 3)
-            drawing.text((x, y), "(%s,%s)" % (key.frame, key.data))
-        drawing.pop()
+            drawing.text((x, y), u"(%s,%s)" % (key.frame, key.data))
+
+        drawing.restore()
 
         # Draw a yellow dot for current frame
-        drawing.comment("Current frame marker")
-        drawing.push()
-        drawing.stroke(None)
-        drawing.fill('yellow')
+        #->drawing.comment("Current frame marker")
+        drawing.save()
         pos = (frame * x_scale, height - data[frame-1] * y_scale)
         drawing.circle_rad(pos, 2)
-        drawing.pop()
+        drawing.fill('yellow')
+        drawing.restore()
 
         # Restore context
-        drawing.pop()
+        drawing.restore()
+
+
+
+
+
+
+#####           #####
+##### ColorBars #####
+#####           #####
 
 class ColorBars (Layer):
-    """SMPTE color bars"""
-    def __init__(self, size):
+    """SMPTE color bars
+    
+    size -- (width, height) tuple
+    """
+    def __init__(self, size, position=(0,0)):
         Layer.__init__(self)
         self.size = size
+        # Set (x,y) position
+        assert(isinstance(position, tuple))
+        self.position = position
 
     def draw_on(self, drawing, frame=1):
-        # Video-black background
-        drawing.fill_rgb((16, 16, 16))
-        drawing.rectangle((0, 0), self.size)
 
-        drawing.comment("SMPTE color bars")
-        drawing.push()
+        drawing.save()
+        drawing.translate(self.position)
         drawing.scale(self.size)
+        # Video-black background
+        drawing.rectangle((0,0), (1,1))
+        drawing.fill('rgb(16, 16, 16)')
+
         # Top 67% of picture: Color bars at 75% amplitude
         top = 0
         bottom = 2.0 / 3
         x_inc = 1.0 / 7
-        drawing.fill_rgb((191, 191, 191))
         drawing.rectangle((0, top), (x_inc, bottom))
-        drawing.fill_rgb((191, 191, 0))
+        drawing.fill('rgb(191, 191, 191)')
         drawing.rectangle((x_inc, top), (x_inc*2, bottom))
-        drawing.fill_rgb((0, 191, 191))
+        drawing.fill('rgb(191, 191, 0)')
         drawing.rectangle((x_inc*2, top), (x_inc*3, bottom))
-        drawing.fill_rgb((0, 191, 0))
+        drawing.fill('rgb(0, 191, 191)')
         drawing.rectangle((x_inc*3, top), (x_inc*4, bottom))
-        drawing.fill_rgb((191, 0, 191))
+        drawing.fill('rgb(0, 191, 0)')
         drawing.rectangle((x_inc*4, top), (x_inc*5, bottom))
-        drawing.fill_rgb((191, 0, 0))
+        drawing.fill('rgb(191, 0, 191)')
         drawing.rectangle((x_inc*5, top), (x_inc*6, bottom))
-        drawing.fill_rgb((0, 0, 191))
+        drawing.fill('rgb(191, 0, 0)')
         drawing.rectangle((x_inc*6, top), (1.0, bottom))
+        drawing.fill('rgb(0, 0, 191)')
         # Next 8% of picture: Reverse blue bars
         top = bottom
         bottom = 0.75
-        drawing.fill_rgb((0, 0, 191))
         drawing.rectangle((0, top), (x_inc, bottom))
-        drawing.fill_rgb((16, 16, 16))
+        drawing.fill('rgb(0, 0, 191)')
         drawing.rectangle((x_inc, top), (x_inc*2, bottom))
-        drawing.fill_rgb((191, 0, 191))
+        drawing.fill('rgb(16, 16, 16)')
         drawing.rectangle((x_inc*2, top), (x_inc*3, bottom))
-        drawing.fill_rgb((16, 16, 16))
+        drawing.fill('rgb(191, 0, 191)')
         drawing.rectangle((x_inc*3, top), (x_inc*4, bottom))
-        drawing.fill_rgb((0, 191, 191))
+        drawing.fill('rgb(16, 16, 16)')
         drawing.rectangle((x_inc*4, top), (x_inc*5, bottom))
-        drawing.fill_rgb((16, 16, 16))
+        drawing.fill('rgb(0, 191, 191)')
         drawing.rectangle((x_inc*5, top), (x_inc*6, bottom))
-        drawing.fill_rgb((191, 191, 191))
+        drawing.fill('rgb(16, 16, 16)')
         drawing.rectangle((x_inc*6, top), (1.0, bottom))
+        drawing.fill('rgb(191, 191, 191)')
         # Lower 25%: Pluge signal
         top = bottom
         bottom = 1.0
         x_inc = 1.0 / 6
-        drawing.fill_rgb((16, 16, 16))
         drawing.rectangle((0, top), (1.0, bottom))
-        drawing.fill_rgb((0, 29, 66))
+        drawing.fill('rgb(16, 16, 16)')
         drawing.rectangle((0, top), (x_inc, bottom))
-        drawing.fill_rgb((255, 255, 255))
+        drawing.fill('rgb(0, 29, 66)')
         drawing.rectangle((x_inc, top), (x_inc*2, bottom))
-        drawing.fill_rgb((44, 0, 92))
+        drawing.fill('rgb(255, 255, 255)')
         drawing.rectangle((x_inc*2, top), (x_inc*3, bottom))
+        drawing.fill('rgb(44, 0, 92)')
         # Sub- and super- black narrow bars
-        drawing.fill_rgb((7, 7, 7))
         drawing.rectangle((x_inc*4, top), (x_inc*4.33, bottom))
-        drawing.fill_rgb((16, 16, 16))
+        drawing.fill('rgb(7, 7, 7)')
         drawing.rectangle((x_inc*4.33, top), (x_inc*4.66, bottom))
-        drawing.fill_rgb((24, 24, 24))
+        drawing.fill('rgb(16, 16, 16)')
         drawing.rectangle((x_inc*4.66, top), (x_inc*5, bottom))
-        drawing.pop()
-
+        drawing.fill('rgb(24, 24, 24)')
+        drawing.restore()
 
 # ============================================================================
 # Demo
@@ -783,63 +909,71 @@ if __name__ == '__main__':
         images = sys.argv[1:]
 
     # A Drawing to render Layer demos to
-    drawing = Drawing()
+    drawing = Drawing() # default size
     
     # Draw a background layer
     bgd = Background(color='#7080A0')
     bgd.draw_on(drawing, 1)
 
-    bars = ColorBars((320, 240))
-    drawing.push()
-    drawing.translate((320, 200))
+    bars = ColorBars((320, 240), (320, 200))
     bars.draw_on(drawing, 1)
-    drawing.pop()
+
+    # Draw a text layer, with position.
+    text = Text(u"Jackdaws love my big sphinx of quartz", position=(82, 62), color='#bbb')
+    text.draw_on(drawing, 1)
 
     # Draw a text layer
-    drawing.push()
+    drawing.save()
     drawing.translate((80, 60))
-    text = Text("Jackdaws love my big sphinx of quartz")
+    text = Text(u"Jackdaws love my big sphinx of quartz")
     text.draw_on(drawing, 1)
-    drawing.pop()
+    drawing.restore()
+
 
     # Draw a template layer (overlapping semitransparent rectangles)
     template = MyLayer('white', 'darkblue')
     # Scale and translate the layer before drawing it
-    drawing.push()
+    drawing.save()
     drawing.translate((50, 100))
     drawing.scale((3.0, 3.0))
     template.draw_on(drawing, 1)
-    drawing.pop()
+    drawing.restore()
 
     # Draw a label (experimental)
-    drawing.push()
+    drawing.save()
     drawing.translate((300, 200))
-    label = Label("tovid loves Linux")
+    label = Label(u"tovid loves Linux")
     label.draw_on(drawing, 1)
-    drawing.pop()
+    drawing.restore()
 
     # Draw a safe area test (experimental)
     safe = SafeArea(93, 'yellow')
     safe.draw_on(drawing, 1)
 
+    # Draw standard areas:
+    #asafe = ActionSafeArea('red')
+    #asafe.draw_on(drawing, 1)
+    #
+    #tsafe = TitleSafeArea('green')
+    #tsafe.draw_on(drawing, 1)
+
     # Draw a thumbnail grid (if images were provided)
     if images:
-        drawing.push()
+        drawing.save()
         drawing.translate((350, 300))
         thumbs = ThumbGrid(images, (320, 250))
         thumbs.draw_on(drawing, 1)
-        drawing.pop()
+        drawing.restore()
 
     # Draw an interpolation graph (experimental)
-    drawing.comment("Interpolation graph")
-    drawing.push()
+    drawing.save()
     drawing.translate((60, 340))
     # Some random keyframes to graph
     keys = [Keyframe(1, 25), Keyframe(10, 5), Keyframe(30, 35),
             Keyframe(40, 35), Keyframe(45, 20), Keyframe(60, 40)]
     interp = InterpolationGraph(keys, method="cosine")
     interp.draw_on(drawing, 25)
-    drawing.pop()
+    drawing.restore()
 
-    print drawing.code()
-    drawing.render()
+    print "Output to /tmp/my.png"
+    drawing.save_png('/tmp/my.png')

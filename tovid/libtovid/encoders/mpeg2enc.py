@@ -8,6 +8,8 @@ import os
 from libtovid.cli import Script, Command, Pipe
 from libtovid.utils import float_to_ratio
 from libtovid import log
+from libtovid.encoders.common import *
+import libtovid.standards
 
 """options used by encoders:
 format
@@ -42,6 +44,7 @@ def get_script(infile, options):
     
     # Filenames for intermediate streams (ac3/m2v etc.)
     # Appropriate suffix for audio stream
+    # TODO: use standards
     if options['format'] in ['vcd', 'svcd']:
         audiofile = '%s.mpa' % outname
     else:
@@ -96,11 +99,13 @@ def encode_video(infile, yuvfile, videofile, options):
     # -S 700 -B 247 -b 2080 -v 0 -4 2 -2 1 -q 5 -H -o FILE
     cat = Command('cat', yuvfile)
     mpeg2enc = Command('mpeg2enc')
+    
     # TV system
     if options['tvsys'] == 'pal':
         mpeg2enc.add('-F', '3', '-n', 'p')
     elif options['tvsys'] == 'ntsc':
         mpeg2enc.add('-F', '4', '-n', 'n')
+
     # Format
     format = options['format']
     if format == 'vcd':
@@ -109,6 +114,7 @@ def encode_video(infile, yuvfile, videofile, options):
         mpeg2enc.add('-f', '4')
     elif 'dvd' in format:
         mpeg2enc.add('-f', '8')
+        
     # Aspect ratio
     if options['widescreen']:
         mpeg2enc.add('-a', '3')
@@ -123,26 +129,6 @@ def encode_video(infile, yuvfile, videofile, options):
         return Pipe(cat, yuvfps, mpeg2enc)
     else:
         return Pipe(cat, mpeg2enc)
-
-def encode_audio(infile, audiofile, options):
-    """Encode the audio stream in infile to the target format."""
-    cmd = Command('ffmpeg')
-    if options['format'] in ['vcd', 'svcd']:
-        acodec = 'mp2'
-    else:
-        acodec = 'ac3'
-    # If infile was provided, encode it
-    if infile:
-        cmd.add('-i', infile.filename)
-    # Otherwise, generate 4-second silence
-    else:
-        cmd.add('-f', 's16le', '-i', '/dev/zero', '-t', '4')
-    cmd.add('-ac', '2',
-            '-ab', '224',
-            '-ar', options['samprate'],
-            '-acodec', acodec,
-            '-y', audiofile)
-    return cmd
 
 def mplex_streams(vstream, astream, outfile, options):
     """Multiplex the audio and video streams."""

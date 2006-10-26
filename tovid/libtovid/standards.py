@@ -19,6 +19,7 @@ __all__ = [\
     'get_vcodec',
     'get_acodec',
     'get_fps',
+    'get_fpsratio',
     'get_samprate',
     'VideoStandard',
     'AudioStandard']
@@ -51,6 +52,25 @@ def get_resolution(format, tvsys):
         }
     return valid_size[format][tvsys]
 
+
+def get_scaling(format, tvsys):
+    """Return the (x,y) scaling factor for images to look right, for each
+    aspect ratio. ?!
+
+    TODO: Please update PAL values."""
+    valid_scaling = {\
+        'vcd':
+            {'pal': (1.0, 1.0), 'ntsc': (352 / 320., 1.0)},
+        'dvd-vcd':
+            {'pal': (1.0, 1.0), 'ntsc': (352 / 320., 1.0)},
+        'svcd':
+            {'pal': (1.0, 1.0), 'ntsc': (480 / 640., 1.0)},
+        'half-dvd':
+            {'pal': (1.0, 1.0), 'ntsc': (352 / 640., 1.0)},
+        'dvd':
+            {'pal': (1.0, 1.0), 'ntsc': (720 / 640., 1.0)},
+        }
+    return valid_scaling[format][tvsys]
 
 def get_vcodec(format):
     """Return the video codec used by the given format. For example:
@@ -99,9 +119,26 @@ def get_fps(tvsys):
     """
     # Valid frames per second, by TV system
     fps = {\
-        'pal': 25.00,
+        'pal': 25.0,
         'ntsc': 29.97,
-        'ntscfilm': 23.976
+        'ntscfilm': 23.976,
+        }
+    return fps[tvsys]
+
+def get_fpsratio(tvsys):
+    """Return the number of frames per second for the given TV system, in the
+    ratio form. For example:
+    
+        >>> get_fpsratio('ntsc')
+        '30000:1001'
+        >>> get_fpsratio('pal')
+        '25:1'
+    """
+    # Valid frames per second, by TV system
+    fps = {\
+        'pal': '25:1',
+        'ntsc': '30000:1001',
+        'ntscfilm': '24000:1001',
         }
     return fps[tvsys]
 
@@ -144,44 +181,6 @@ def get_abitrate(format):
         return (32, 1536)
         
 
-class AudioStream:
-    """Stores information about an audio stream."""
-    def __init__(self, filename=''):
-        self.filename = abspath(filename)
-        self.codec = ''
-        self.bitrate = 0
-        self.channels = 0
-        self.samprate = 0
-
-    def display(self):
-        print "Audio stream in %s" % self.filename
-        print "----------------------"
-        print "        Codec: %s" % self.codec
-        print "      Bitrate: %s" % self.bitrate
-        print "     Channels: %s" % self.channels
-        print "Sampling rate: %s" % self.samprate
-        print "----------------------"
-
-
-class VideoStream:
-    """Stores information about a video stream."""
-    def __init__(self, filename=''):
-        self.filename = abspath(filename)
-        self.codec = ''
-        self.width = 0
-        self.height = 0
-        self.fps = 0
-        self.bitrate = 0
-
-    def display(self):
-        print "Video stream in %s" % self.filename
-        print "----------------------"
-        print "      Codec: %s" % self.codec
-        print "      Width: %s" % self.width
-        print "     Height: %s" % self.height
-        print "  Framerate: %s" % self.fps
-        print "    Bitrate: %s" % self.bitrate
-        print "----------------------"
 
 
 
@@ -274,6 +273,7 @@ AudioStandardList = [
     AudioStandard(["dvd", "ac3"], "ac3", 48000, 2, (32, 1536)),
     AudioStandard(["dvd", "mp2"], "mp2", 48000, 2, (32, 1536)),
     AudioStandard(["dvd", "pcm"], "pcm", 48000, 2, (32, 1536))
+
     # 5.1-channel audio
     #AudioStandard(["dvd"], "ac3", 48000, 5.1, (32, 1536))
     #AudioStandard(["dvd"], "mp2", 48000, 5.1, (32, 1536)),

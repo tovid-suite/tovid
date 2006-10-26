@@ -22,17 +22,6 @@ class TestCairoRenderer(unittest.TestCase):
         """Blank test"""
         pass
 
-    def test_defunc_cmds(self):
-        """Test commands that should send an assertion error"""
-        self.assertRaises(AssertionError, self.d.goto, 1)
-        self.assertRaises(AssertionError, self.d.goto_end)
-        self.assertRaises(AssertionError, self.d.append, 'str')
-        self.assertRaises(AssertionError, self.d.insert, 'str')
-        self.assertRaises(AssertionError, self.d.remove, 1)
-        self.assertRaises(AssertionError, self.d.extend, self.d)
-        self.assertRaises(AssertionError, self.d.undo)
-        self.assert_(self.d.code() == '')
-        
     def test_bezier(self):
         """Test bezier points checker"""
         pts = [[(1,1), (1,1), (1,1)],
@@ -104,7 +93,21 @@ class TestCairoRenderer(unittest.TestCase):
         # This one okay, because control points will be the same as the
         # specified points.
         self.d.bezier(pts)
-            
+
+    def test_polyschlaft(self):
+        """Test polyline and polygon"""
+        self.d.polygon([(0,0),
+                        (100, 0),
+                        (100, 100),
+                        (0, 100),
+                        (0,0)])
+        self.d.polyline([(0,0),
+                        (100, 0),
+                        (100, 100),
+                        (0, 100),
+                        (0,0)])
+
+
     def test_draw_funcs(self):
         """Test drive drawing functions
 
@@ -134,33 +137,51 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.stroke_linejoin('bevel')
         self.d.stroke_linejoin('round')
 
+
     def test_scale_translate(self):
-        self.d.push()
+        self.d.save()
         self.d.translate((-200, 0))
         self.d.scale((1.5, 1.5))  # Scaling is done from (0,0) as reference.
         self.d.scale_centered((50, 50), (1.5, 1.5))
         self.d.circle_rad((500, 100), 50) # same radius as others
         self.d.stroke()
-        self.d.pop()
+        self.d.restore()
 
     def test_push_n_rotate(self):
-        self.d.push()
+        self.d.save()
         self.d.rotate(180)
         self.d.rotate_deg(180)
         self.d.rotate_rad(math.pi)
-        self.d.pop()
+        self.d.restore()
 
-    def test_set_color(self):
-        self.d.color_stroke('rgb(2,3,4)', 0.5)
-        self.d.color_text('hsl(0,25%,80%)')
-        self.d.color_fill('black')
-        
+    def test_colors(self):
+        self.d.set_source('black')
+
+    def test_new_fill_n_stroke(self):
+        # Check that the new fill and stroke accept colors.
+        self.d.set_source('rgb(255,255,255)', 1.0)
+
+        # We use these also for the 'text' function.
+        self.d.text((10,50), 'ahuh')
+        self.d.text_path((10, 1000), 'ahuh')
+        self.d.fill('blue')
+
+        # When we call fill() and stroke() with no parameters, the last used
+        # parameters are applied.
+        self.d.fill()
+        self.d.stroke()
+
+    def test_operator(self):
+        self.assertRaises(KeyError, self.d.operator, 'bad_arg')
+        l = "clear,source,over,in,out,atop,dest,dest_over,dest_in,dest_out,dest_atop,xor,add,saturate".split(',')
+        # Test all methods
+        for method in l:
+            self.d.operator(method)
         
     def test_fill_funcs(self):
         self.assertRaises(KeyError, self.d.fill_rule, 'invalid')
         self.d.fill_rule('evenodd')
         # Don't feed it a tuple, but a 'color' now...
-        self.d.color_fill('rgb(25,25,25)', 0.5)
         self.d.fill()
 
     def test_font_stuff(self):
@@ -173,8 +194,9 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.font_rotate(0)
 
     def test_text_stuff(self):
-        self.assertRaises(TypeError, self.d.text, (15, 15), "This isn't a Unicode é string")
+        self.d.text((15, 15), "This isn't a Unicode é string")
         self.d.text((15, 15), u"This is a Unicode é string")
+        self.d.text_extents(u"This is a Unicode é string")
 
     def test_antialias_stuff(self):
         self.d.stroke_antialias(True)
@@ -200,10 +222,9 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.stroke_width(2)
         self.d.circle_rad((250, 250), 80)
 
-        self.d.render()
+        self.d.render('/tmp/my.png')
 
-        
-        
+
 
 
 if __name__ == '__main__':

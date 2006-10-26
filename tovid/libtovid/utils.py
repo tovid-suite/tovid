@@ -153,8 +153,11 @@ def get_file_type(filename):
     """
     type, encoding = mimetypes.guess_type(filename)
     # Get the base type (the part before '/')
+    basetype = None
     if type:
         basetype = type[0:type.find('/')]
+
+    print "Base type: %s" % type
     if basetype in ['image', 'audio', 'video']:
         return basetype
     else:

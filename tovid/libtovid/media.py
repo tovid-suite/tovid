@@ -16,8 +16,7 @@ result is:
     >>> infile.display()
 
 """
-
-__all__ = ['MediaFile', 'mplayer_identify']
+__all__ = ['MediaFile', 'mplayer_identify', 'AudioStream', 'VideoStream']
 
 # From standard library
 import os
@@ -28,6 +27,47 @@ from os.path import abspath
 from libtovid import log
 from libtovid import standards
 
+
+class AudioStream:
+    """Stores information about an audio stream."""
+    def __init__(self, filename=''):
+        self.filename = abspath(filename)
+        self.codec = ''
+        self.bitrate = 0
+        self.channels = 0
+        self.samprate = 0
+
+    def display(self):
+        print "Audio stream(s) in %s" % self.filename
+        print "----------------------"
+        print "        Codec: %s" % self.codec
+        print "      Bitrate: %s" % self.bitrate
+        print "     Channels: %s" % self.channels
+        print "Sampling rate: %s" % self.samprate
+        print "----------------------"
+
+
+class VideoStream:
+    """Stores information about a video stream."""
+    def __init__(self, filename=''):
+        self.filename = abspath(filename)
+        self.codec = ''
+        self.width = 0
+        self.height = 0
+        self.fps = 0
+        self.bitrate = 0
+
+    def display(self):
+        print "Video stream in %s" % self.filename
+        print "----------------------"
+        print "      Codec: %s" % self.codec
+        print "      Width: %s" % self.width
+        print "     Height: %s" % self.height
+        print "  Framerate: %s" % self.fps
+        print "    Bitrate: %s" % self.bitrate
+        print "----------------------"
+
+
 class MediaFile:
     """Stores information about a file containing video and/or audio streams."""
     def __init__(self, filename=''):
@@ -37,6 +77,7 @@ class MediaFile:
             self.filename = ''
         self.audio = None
         self.video = None
+        self.length = 0.0
         self.frame_files = []
         # TODO: Replace hard-coded temp dir
         self.use_tempdir('/tmp')
@@ -56,7 +97,8 @@ class MediaFile:
             self.filename = abspath(filename)
         # Make sure the file exists
         if os.path.exists(self.filename):
-            self.audio, self.video = mplayer_identify(self.filename)
+            self.length, self.audio_num, self.audio, self.video = \
+                         mplayer_identify(self.filename)
         else:
             log.error("Couldn't find file: %s" % filename)
 
@@ -75,24 +117,48 @@ class MediaFile:
 
         If size is nonzero, save images at the specified resolution.
         """
-        self.frame_files = rip_frames(self.filename, self.tempdir, frames, size)
+        self.frame_files = do_rip_frames(self.filename, self.tempdir, frames, size)
+
+    def add_audio_to_video(self, video_file, audio_file=None):
+        """Multiplex some audio to a specified video file.
+
+        audio_file -- a filename. Silence will be added if None
+        """
+
+        return
 
 
-    def encode_frames(self, imagedir, outfile, format, tvsys):
+    def encode_frames(self, imagedir, file_type, outfile, format, tvsys):
         """Convert an image sequence in imagedir to an .m2v video compliant
         with the given format and tvsys.
     
-        Currently supports only JPEG images; input images must already be at
-        the desired target resolution.
+        Currently supports JPEG and PNG images; input images must already be
+        at the desired target resolution.
+
+        file_type -- one of 'jpg', 'png'
         """
         # Use absolute path name
         imagedir = os.path.abspath(imagedir)
         print "Creating video stream from image sequence in %s" % imagedir
+
+        # TODO: transfer this job to Video() in video.py
+        # it's encoding, and should use an encoding backend.
     
-        # Use jpeg2yuv to stream images
-        cmd = 'jpeg2yuv -I p '
-        cmd += ' -f %.3f ' % standards.get_fps(tvsys)
-        cmd += ' -j "%s/%%08d.jpg"' % imagedir
+        # Use jpeg2yuv/png2yuv to stream images
+        if file_type == 'jpg':
+            cmd = 'jpeg2yuv '
+            cmd += ' -Ip '
+            cmd += ' -f %.3f ' % standards.get_fps(tvsys)
+            cmd += ' -j "%s/%%08d.%s"' % (imagedir, file_type)
+        elif file_type == 'png':
+            cmd = 'ls %s/*.png | ' % imagedir
+            cmd += 'xargs -n1 pngtopnm |'
+            cmd = 'png2yuv -Ip -f %.3f ' % standards.get_fps(tvsys)
+            cmd += ' -j "%s/%%08d.png"' % (imagedir)
+#            cmd += 'pnmtoy4m -Ip -F %s %s/*.png' % standards.get_fpsratio(tvsys)
+        else:
+            raise ValueError, "File_type '%s' isn't currently supported to "\
+                  "render video from still frames" % file_type
 
         # TODO: Scale to correct target size using yuvscaler or similar
         
@@ -113,6 +179,9 @@ class MediaFile:
         print "=============================="
         print "MediaFile: %s" % self.filename
         print "=============================="
+        print "Audio channels: %d" % self.audio_num
+        print "Stream length: %f secs" % self.length
+        print "=============================="
         # Print audio stream info
         if self.audio:
             self.audio.display()
@@ -130,7 +199,9 @@ def mplayer_identify(filename):
     (audio, video) of AudioStream and VideoStream. None is returned for
     nonexistent audio or video streams."""
     audio = None
+    audio_num = 0
     video = None
+    length = 0.0
     mp_dict = {}
     # Use mplayer 
     cmd = 'mplayer "%s"' % filename
@@ -142,11 +213,13 @@ def mplayer_identify(filename):
             left, right = line.split('=')
             # Add entry to dictionary (stripping whitespace from argument)
             mp_dict[left] = right.strip()
+            if left == 'ID_AUDIO_ID':
+                audio_num += 1
     # Check for existence of streams
     if 'ID_VIDEO_ID' in mp_dict:
-        video = standards.VideoStream(filename)
+        video = VideoStream(filename)
     if 'ID_AUDIO_ID' in mp_dict:
-        audio = standards.AudioStream(filename)
+        audio = AudioStream(filename)
     # Parse the dictionary and set appropriate values
     for left, right in mp_dict.iteritems():
         log.debug('%s = %s' % (left, right))
@@ -172,6 +245,8 @@ def mplayer_identify(filename):
                 audio.samprate = int(right)
             elif left == "ID_AUDIO_NCH":
                 audio.channels = right
+        if left == 'ID_LENGTH':
+            length = float(right)
     # Fix mplayer's audio codec naming for ac3 and mp2
     if audio:
         if audio.format == "8192":
@@ -184,10 +259,10 @@ def mplayer_identify(filename):
             video.codec = "mpeg1"
         elif video.codec == "0x10000002":
             video.codec = "mpeg2"
-    return (audio, video)
+    return (length, audio_num, audio, video)
 
 
-def rip_frames(filename, out_dir, frames='all', size=(0, 0)):
+def do_rip_frames(filename, out_dir, frames='all', size=(0, 0)):
     """Extract frame images from a video file, saving in the given output
     directory, and return a list of frame image files. Rips all frames, a
     selected frame, or a range:
@@ -200,10 +275,13 @@ def rip_frames(filename, out_dir, frames='all', size=(0, 0)):
     """
     frame_files = []
     video_file = os.path.abspath(filename)
+    my_out_dir = out_dir + '/' + os.path.basename(filename) + '_media_rip'
     try:
-        os.mkdir(out_dir)
+        os.mkdir(my_out_dir)
     except:
-        print "Temp directory: %s already exists. Overwriting." % out_dir
+        print "Temp directory: %s already exists. Overwriting." % my_out_dir
+        os.system('rm -rf "%s"' % my_out_dir)
+        os.mkdir(my_out_dir)
 
     # TODO: use tcdemux to generate a nav index, like:
     # tcdemux -f 29.970 -W -i "$FILE" > "$NAVFILE"
@@ -215,13 +293,15 @@ def rip_frames(filename, out_dir, frames='all', size=(0, 0)):
         cmd += ' -Z %sx%s ' % size
     # Encode selected frames
     if frames == 'all':
-        pass
+        start = 0
     elif isinstance(frames, int):
         cmd += ' -c %s-%s ' % (frames, frames)
+        start = frames
     elif isinstance(frames, list):
+        start = frames[0]
         cmd += ' -c %s-%s ' % (frames[0], frames[-1])
     cmd += ' -y jpg,null '
-    cmd += ' -o %s/frame_' % out_dir
+    cmd += ' -o %s/frame_' % my_out_dir
     print "Creating image sequence from %s" % video_file
     print cmd
     print commands.getoutput(cmd)
@@ -229,7 +309,7 @@ def rip_frames(filename, out_dir, frames='all', size=(0, 0)):
     frame = start
     end_reached = False
     while not end_reached:
-        framefile = '%s/frame_%06d.jpg' % (out_dir, frame)
+        framefile = '%s/frame_%06d.jpg' % (my_out_dir, frame)
         if os.path.exists(framefile):
             frame_files.append(framefile)
         else:
