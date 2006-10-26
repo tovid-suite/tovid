@@ -40,6 +40,8 @@ def get_script(infile, options):
         cmd.add('-aspect', '16:9')
     else:
         cmd.add('-aspect', '4:3')
+    # Overwrite existing output files
+    cmd.add('-y')
     
     cmd.add(options['out'])
 
