@@ -122,6 +122,14 @@ class MediaFile:
         """
         self.frame_files = do_rip_frames(self.filename, self.tempdir, frames, size)
 
+    def add_audio_to_video(self, video_file, audio_file=None):
+        """Multiplex some audio to a specified video file.
+
+        audio_file -- a filename. Silence will be added if None
+        """
+
+        return
+
 
     def encode_frames(self, imagedir, file_type, outfile, format, tvsys):
         """Convert an image sequence in imagedir to an .m2v video compliant
@@ -135,6 +143,9 @@ class MediaFile:
         # Use absolute path name
         imagedir = os.path.abspath(imagedir)
         print "Creating video stream from image sequence in %s" % imagedir
+
+        # TODO: transfer this job to Video() in video.py
+        # it's encoding, and should use an encoding backend.
     
         # Use jpeg2yuv/png2yuv to stream images
         if file_type == 'jpg':
