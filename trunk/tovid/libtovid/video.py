@@ -116,6 +116,7 @@ class Video:
     def preproc(self):
         """Do preprocessing common to all backends."""
         self.infile = MediaFile(self.options['in'])
+        # Load info about the video.
         self.infile.load()
         
         width, height = get_resolution(self.options['format'], self.options['tvsys'])
