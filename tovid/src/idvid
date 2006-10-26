@@ -192,11 +192,11 @@ function get_info ()
     test -z $ID_VIDEO_FRAMES && ID_VIDEO_FRAMES="0"
 
     # find out what audio channels are available
-    # this is useful for -aid for mplayer, and eg. -map 0:2:0:1  for ffmpeg
+    # this is useful for -aid for mplayer, and eg. -map 0:2  for ffmpeg
     #TRACKS="$(awk -F= '/ID_AUDIO_ID/ {print $2}' "$SCRATCH_FILE")"
     #TRACKS="${TRACKS//$'\n'/ }"
     #ID_AUDIO_TRACKS=${TRACKS// /,}
-    TRACKS="$(awk -F[#[\(] '/Audio:/ {print $2}' "$SCRATCH_FILE")"
+    TRACKS="$(awk -F'[#[(:]' '/Audio:/ {print $2}' "$SCRATCH_FILE")"
     TRACKS="${TRACKS//$'\n'/ }"
     ID_AUDIO_TRACKS=${TRACKS// /,}
     # If tcprobe reports an aspect ratio, use that
