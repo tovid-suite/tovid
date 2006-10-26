@@ -332,6 +332,7 @@ function get_args()
 {
     # Parse all arguments
     while test $# -gt 0; do
+        DO_SHIFT=:
         case "$1" in
         
             # Use config file?
@@ -521,7 +522,16 @@ function get_args()
                 ;;
             "-audiotrack" )
                 shift
-                AUDIO_TRACK="$1"
+                # Hackish list-parsing
+                while test $# -gt 0 && test ${1:0:1} != "-"; do
+                    AUDIO_TRACK="$AUDIO_TRACK $1"
+                    shift
+                done
+                # Do not skip past the next argument
+                if test $# -gt 0 && test ${1:0:1} = "-";then
+                    DO_SHIFT=false
+                fi
+                AUDIO_TRACK=( ${AUDIO_TRACK//,/ } )
                 ;;
             "-ffmpeg" )
                 USE_FFMPEG=:
@@ -563,7 +573,7 @@ function get_args()
             esac
 
         # Get next argument
-        shift
+        $DO_SHIFT && shift
     done
 
     # Read in the config file, but only if a config
@@ -1517,6 +1527,48 @@ if test -n "$VID_FILTER"; then
     VID_FILTER="-vf $(echo "$VID_FILTER" | sed -e 's/,,/,/g' -e 's/^,//')"
 fi
 
+# ******************************************************************************
+#
+# set up VARS for -audiotrack encoding, if selected
+#
+# ******************************************************************************
+if test -n "$AUDIO_TRACK"; then
+    AIDS=( ${ID_AUDIO_TRACKS//,/ } )
+    for key in ${!AUDIO_TRACK[@]}; do # check if enough tracks for user's selection(s)
+        val=${AUDIO_TRACK[key]}
+        [ -z "$MAX_KEY" ] || ((val > MAX_KEY)) && MAX_KEY=$val && max_key=$key
+    done
+    if (( $MAX_KEY > ${#AIDS[@]} )); then
+        usage_error "There doesn't seem to be a audio track ${AUDIO_TRACK[key]}"
+    fi
+    unset AUDIO_STREAM
+    for i in ${!AUDIO_TRACK[@]}; do
+        track="${AUDIO_TRACK[i]}"
+        AUDIO_ID[i]="${AIDS[track-1]}"
+        AUDIO_MAP="$AUDIO_MAP -map ${AUDIO_ID[i]//./:}"
+        AUDIO_STREAM[i]="$TMP_DIR/audio${i}.$AUD_SUF"
+        NEW_AUDIO[i]="-acodec ac3 -ab 224k  -newaudio"
+        AUDIO_WAV[i]="$TMP_DIR/audio${i}.wav"
+    done
+    
+    FF_AUDIO_MAP="-map 0:0 $AUDIO_MAP"
+    unset NEW_AUDIO[${#NEW_AUDIO[@]}-1]}
+fi
+# DEBUG -remove when happy
+#echo "
+#AUDIO_ID is ${AUDIO_ID[@]}
+#AUDIO_MAP is ${AUDIO_MAP[@]}
+#FF_AUDIO_MAP is ${FF_AUDIO_MAP[@]}
+#AUDIO_STREAM is ${AUDIO_STREAM[@]}
+#NEW_AUDIO is ${NEW_AUDIO[@]}
+#AUDIO_WAV is ${AUDIO_WAV[@]}
+#" | fold -bs|sed 's/    */ /g'|sed -e "s/^ *//"
+#echo "Running the following fake command:
+#ffmpeg -i $INPUT_FILE -target ntsc-dvd -qscale 3 -maxrate 7840k 
+#-ab 224k -r 29.970 -s 720x480 -aspect 16:9 -ab 224k
+#${AUDIO_MAP[@]} $OUT_FILENAME
+#${NEW_AUDIO[@]}" | fold -bs|sed 's/    */ /g'|sed -e "s/^ *//"
+
 
 # ******************************************************************************
 #
@@ -1530,7 +1582,7 @@ if $USE_FFMPEG; then
 
     FF_SIZE="-s ${INNER_WIDTH}x${INNER_HEIGHT}"
     FF_FPS="-r $TGT_FPS"
-    FF_BITRATE="-maxrate ${VID_BITRATE}k -ab ${AUD_BITRATE}k"
+    FF_BITRATE="-maxrate ${VID_BITRATE}kib -ab ${AUD_BITRATE}kib -ac 2"
     FF_SAMPRATE="-ar $SAMPRATE"
 
     # Padding, for any letterboxing to be done
@@ -1561,9 +1613,9 @@ if $USE_FFMPEG; then
     
     FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" \
         $FF_TARGET $FF_QUANT $FF_BITRATE $FF_FPS $FF_ILACE \
-        $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT"
+        $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT $FF_AUDIO_MAP"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
-    FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\""
+    FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\" ${NEW_AUDIO[@]}"
     yecho "Encoding video and audio with the following command:"
     yecho "$FF_ENC_CMD"
 
@@ -1602,24 +1654,13 @@ if $PARALLEL; then
     mkfifo "$AUDIO_STREAM"
 fi
 
-# Rip a specific audio track number
-if test -n "$AUDIO_TRACK"; then
-    yecho "Encoding audio track $AUDIO_TRACK"
-    AIDS=( ${ID_AUDIO_TRACKS//,/ } )
-    (( ${#AIDS[@]} > 1 )) && AUDIO_ID=${AIDS[AUDIO_TRACK-1]}
-    if test -n "$AUDIO_ID"; then # make sure the channel exists
-        #MP_AUDIOTRACK_CMD="-aid $MP_AUDIOTRACK"
-        AUDIO_MAP="-map ${AUDIO_ID//./:}"
-    fi # FIXME exit if user's channel not found, or warning message w/o exit ?
-fi
-# If audio is already in the chosen output format, do not re-encode.
 if ! $FORCE_ENCODING && $AUDIO_OK; then
     yecho "Found compliant audio and dumping the stream."
     precho "This sometimes causes errors when multiplexing; add '-force' to the tovid command line to re-encode if multiplexing fails."
     yecho "Copying the existing audio stream with the following command:"
     # TODO: Use desired AUDIOTRACK
     #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
-    AUDIO_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" -vn -acodec copy $AUDIO_MAP \"$AUDIO_STREAM\""
+    AUDIO_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" -vn -acodec copy $AUDIO_MAP ${AUDIO_STREAM[@]}"
     yecho "$AUDIO_CMD"
     cmd_exec "$AUDIO_CMD"
 
@@ -1635,11 +1676,10 @@ else
 
     # When normalizing, we need a wave file.
     if $DO_NORM; then
-        rm -f "$AUDIO_WAV"
-        AUDIO_IN_FILE="$AUDIO_WAV"
+        rm -f "$TMP_DIR/audio*.wav"
 
         #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null $MP_AUDIOTRACK_CMD -ao pcm:waveheader:file=\"$AUDIO_WAV\" \"$IN_FILE\""
-        AUDIO_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $AUDIO_MAP -ar $SAMPRATE -ac 2 -acodec pcm_s16le -y \"$AUDIO_WAV\""
+        AUDIO_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $AUDIO_MAP -ar $SAMPRATE -ac 2 -acodec pcm_s16le -y ${AUDIO_WAV[@]}"
 
         # Generate or dump audio
         yecho "Normalizing the audio stream."
@@ -1659,7 +1699,7 @@ else
         fi
 
         # Normalize the wave file.
-        $FAKE || normalize $AUDIO_AMPLITUDE "$AUDIO_WAV"
+        $FAKE || normalize $AUDIO_AMPLITUDE "${AUDIO_WAV[@]}"
     fi
 
     AUDIO_ENC="$PRIORITY ffmpeg"
@@ -1677,7 +1717,7 @@ else
     if ! $DO_NORM; then
         AUDIO_ENC="$AUDIO_ENC $AUDIO_MAP"
     fi
-    AUDIO_ENC="$AUDIO_ENC -acodec $AUD_SUF -y \"$AUDIO_STREAM\""
+    AUDIO_ENC="$AUDIO_ENC -acodec $AUD_SUF -y ${AUDIO_STREAM[@]}"
     yecho "$AUDIO_ENC"
     cmd_exec "$AUDIO_ENC"
 
@@ -1800,7 +1840,7 @@ if ! $FAKE; then
 fi
 
 
-MPLEX_CMD="mplex $MUX_OPTS -o \"$OUT_FILENAME\" \"$VIDEO_STREAM\" \"$AUDIO_STREAM\""
+MPLEX_CMD="mplex $MUX_OPTS -o \"$OUT_FILENAME\" \"$VIDEO_STREAM\" ${AUDIO_STREAM[@]}"
 yecho "Multiplexing audio and video together with the following command:"
 yecho $MPLEX_CMD
 
