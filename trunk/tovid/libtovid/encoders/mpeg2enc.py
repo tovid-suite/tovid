@@ -116,15 +116,11 @@ def encode_video(infile, yuvfile, videofile, options):
     cmd.add('-o', videofile)
 
     # Adjust framerate if necessary
-    # FIXME: Can infile.video None?
-    if infile.video:
-        if infile.video.spec['fps'] != options['fps']:
-            log.info("Adjusting framerate")
-            yuvcmd = Command('yuvfps')
-            yuvcmd.add('-r', float_to_ratio(options['fps']))
-            cmd.pipe_to(yuvcmd)
-    else:
-        pass
+    if infile.video.fps != options['fps']:
+        log.info("Adjusting framerate")
+        yuvcmd = Command('yuvfps')
+        yuvcmd.add('-r', float_to_ratio(options['fps']))
+        cmd.pipe_to(yuvcmd)
     cat = Command('cat')
     cat.add(yuvfile)
     cat.pipe_to(cmd)
