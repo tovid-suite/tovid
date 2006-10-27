@@ -134,7 +134,6 @@ VIDEO_OK=false
 OVERWRITE=false
 # Print minimal debugging info
 VERBOSE="-v 0"
-DEBUG=false
 
 # File to use for saving video statistics
 STAT_DIR=$HOME/.tovid
@@ -250,10 +249,6 @@ function runtime_error()
     yecho "tovid encountered an error during encoding:"
     yecho "    $@"
     echo "Check the contents of $LOG_FILE to see what went wrong."
-    if $DEBUG; then :; else
-        echo "Run tovid again with the -debug option to produce more verbose"
-        echo "output, if the log file doesn't give you enough information."
-    fi
     echo " "
     echo "See the tovid website ($TOVID_HOME_PAGE) for what to do next."
     echo "Sorry for the inconvenience!"
@@ -273,8 +268,6 @@ function cmd_exec()
         yecho "    [Fake mode is on; command would be executed here]"
         yecho
         return
-    elif $DEBUG; then
-        eval "$@" 2>&1 | tee -a "$LOG_FILE" &
     else
         eval "$@" >> "$LOG_FILE" 2>&1 &
     fi
@@ -396,10 +389,6 @@ function get_args()
             "-wide" ) ASPECT_RATIO="16:9" ;;
             "-full" ) ASPECT_RATIO="4:3" ;;
             "-panavision" ) ASPECT_RATIO="235:100" ;;
-            "-debug" )
-                #VERBOSE="-v 1"
-                DEBUG=:
-                ;;
             "-force" ) FORCE_ENCODING=: ;;
             "-fps" )
                 shift
@@ -1257,7 +1246,7 @@ fi
 yecho "Converting $IN_FILE to compliant $TVSYS $TGT_RES format"
 yecho "Saving to $OUT_FILENAME"
 yecho "Storing log and temporary files in $TMP_DIR"
-$DEBUG && yecho "Run 'tail -f $LOG_FILE' in another terminal to monitor the log"
+yecho "Run 'tail -f $LOG_FILE' in another terminal to monitor the log"
 
 # If multiple CPUs are available, do multithreading in mpeg2enc
 if $MULTIPLE_CPUS; then
