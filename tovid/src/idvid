@@ -205,7 +205,22 @@ function get_info ()
         A_CODECS=("${A_CODECS[@]}" "$(echo $CUR_CHAN | \
             sed -r 's/.*Audio: ([^,]+),.*/\1/')")
     done
-    TRACKS="${TRACKS//$'\n'/ }"
+    tracks=( $TRACKS )
+    if (( ${#tracks[@]} > 1 )); then
+        for i in ${tracks[@]}; do
+            map_cmd=( ${map_cmd[@]} -map $i )
+            wavs=( "${wavs[@]}" "$TMP_DIR/$i.wav" )
+        done
+        test_tracks=( "$(ffmpeg -i "$INFILE" -ss 2 -t 1 ${map_cmd[@]} -y ${wavs[@]} 2>&1)" )
+        echo "${test_tracks[@]}" >> "$SCRATCH_FILE"
+        if grep -q Unsupported <<< "${test_tracks[@]}"; then
+            discard=$(awk '/Unsupported/ { print $NF }' <<< "${test_tracks[@]}")
+            discard="${discard/\#}"
+            TRACKS=$(grep -v "$discard" <<< "$TRACKS")
+        fi
+        rm -f "${wavs[@]}"
+    fi
+    TRACKS=${TRACKS//$'\n'/ }
     ID_AUDIO_TRACKS=${TRACKS// /,}
 
     # If tcprobe reports an aspect ratio, use that
