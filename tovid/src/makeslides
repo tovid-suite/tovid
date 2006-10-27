@@ -46,11 +46,9 @@ Usage: makeslides [OPTIONS] {IMAGES}
 
 Where OPTIONS are any of the following:
 
-  -ntsc            (default)
-  -ntscfilm        Generate NTSC (704x480) output
-  -pal             Generate PAL (704x576) output
-
-  -verbose
+  -ntsc      Generate NTSC (704x480) output (default)
+  -pal       Generate PAL (704x576) output
+  -verbose   Print extra output from subprocesses
 
   IMAGES is a single image or list of images to be
     converted to still MPEGs. The output names will
@@ -104,20 +102,20 @@ while test x"${1:0:1}" = "x-"; do
      "-pal" )
         HEIGHT="576"
         PPM_OPTS="-S $CHROMA_MODE -A 59:54 -F 25:1"
-	;;
+        ;;
      "-ntsc" | "-ntscfilm" )
         HEIGHT="480"
         PPM_OPTS="-S $CHROMA_MODE -A 10:11 -F 30000:1001"
-	;;
+        ;;
      "-verbose" )
         VERBOSE_MPEG2ENC="-v 1"
-	VERBOSE_PPM="-v 1"
-	VERBOSE_IM="-verbose"
-	VERBOSE=:
-	;;
+        VERBOSE_PPM="-v 1"
+        VERBOSE_IM="-verbose"
+        VERBOSE=:
+        ;;
      * )
         usage_error "Error: Unrecognized command-line option $1"
-	;;
+        ;;
   esac
 
   # Get next argument
