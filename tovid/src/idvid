@@ -192,13 +192,22 @@ function get_info ()
     test -z $ID_VIDEO_FRAMES && ID_VIDEO_FRAMES="0"
 
     # find out what audio channels are available
-    # this is useful for -aid for mplayer, and eg. -map 0:2  for ffmpeg
-    #TRACKS="$(awk -F= '/ID_AUDIO_ID/ {print $2}' "$SCRATCH_FILE")"
-    #TRACKS="${TRACKS//$'\n'/ }"
-    #ID_AUDIO_TRACKS=${TRACKS// /,}
-    TRACKS="$(awk -F'[#[(:]' '/Audio:/ {print $2}' "$SCRATCH_FILE")"
+    TRACKS=$(grep "Audio:" "$SCRATCH_FILE" | \
+        sed -r 's/.*Stream #([0-9]\.[0-9]+).*/\1/')
+    A_TRACKS=(${TRACKS//$'\n'/ })
+    # Loop through available tracks and get specs on each
+    for ((i=0; i<${#A_TRACKS[@]}; i++)); do
+        CUR_CHAN=$(grep "Stream #${A_TRACKS[i]}" "$SCRATCH_FILE")
+        A_SAMPRATES=("${A_SAMPRATES[@]}" "$(echo $CUR_CHAN | \
+            sed -r 's/.* ([0-9]+) Hz.*/\1/')") 
+        A_BITRATES=("${A_BITRATES[@]}" "$(echo $CUR_CHAN | \
+            sed -r 's/.* ([0-9]+) kb\/s.*/\1/')") 
+        A_CODECS=("${A_CODECS[@]}" "$(echo $CUR_CHAN | \
+            sed -r 's/.*Audio: ([^,]+),.*/\1/')")
+    done
     TRACKS="${TRACKS//$'\n'/ }"
     ID_AUDIO_TRACKS=${TRACKS// /,}
+
     # If tcprobe reports an aspect ratio, use that
     if grep -q "aspect ratio" "$SCRATCH_FILE"; then
         RATIO=$(awk '/aspect ratio/ {print $3}'  "$SCRATCH_FILE")
@@ -307,11 +316,18 @@ function idvid_main ()
         echo "           Duration: $(format_time $V_DURATION) hours/mins/secs"
         echo "          Framerate: $ID_VIDEO_FPS frames per second"
         echo "       Video format: $ID_VIDEO_FORMAT"
-        echo "       Audio format: $ID_AUDIO_CODEC"
         echo "      Video bitrate: $ID_VIDEO_BITRATE bits per second"
-        echo "      Audio bitrate: $ID_AUDIO_BITRATE bits per second"
-        echo "     Audio channels: $ID_AUDIO_NCH channels"
-        echo "Audio sampling rate: $ID_AUDIO_RATE Hz"
+        # Multiple audio track info
+        for ((i=0; i<${#A_TRACKS[@]}; i++)); do
+            echo "Audio track ${A_TRACKS[i]//0./}:"   
+            echo "              Codec: ${A_CODECS[i]}"
+            echo "            Bitrate: ${A_BITRATES[i]}000 bits per second"
+            echo "      Sampling rate: ${A_SAMPRATES[i]} Hz"
+        done
+        #echo "       Audio format: $ID_AUDIO_CODEC"
+        #echo "      Audio bitrate: $ID_AUDIO_BITRATE bits per second"
+        #echo "     Audio channels: $ID_AUDIO_NCH channels"
+        #echo "Audio sampling rate: $ID_AUDIO_RATE Hz"
         echo $SEPARATOR
     fi
     
