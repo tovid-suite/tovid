@@ -1536,12 +1536,12 @@ if test -n "$AUDIO_TRACK"; then
     if (( $MAX_KEY > ${#AIDS[@]} )); then
         usage_error "There doesn't seem to be an audio track ${AUDIO_TRACK[key]}"
     fi
-    unset AUDIO_STREAM
+    unset AUDIO_STREAM AUDIO_WAV
     for i in ${!AUDIO_TRACK[@]}; do
         track="${AUDIO_TRACK[i]}"
         AUDIO_ID[i]="${AIDS[track-1]}"
         AUDIO_MAP="$AUDIO_MAP -map ${AUDIO_ID[i]//./:}"
-        AUDIO_STREAM[i]="$TMP_DIR/audio${i}.$AUD_SUF"
+        AUDIO_STREAM=( "${AUDIO_STREAM[@]}" "/home/robert/dir with spaces/audio${i}.$AUD_SUF" )
         NEW_AUDIO[i]="-acodec ac3 -ab 224k  -newaudio"
         AUDIO_WAV[i]="$TMP_DIR/audio${i}.wav"
     done
@@ -1639,12 +1639,21 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     precho "This sometimes causes errors when multiplexing; add '-force' to the tovid command line to re-encode if multiplexing fails."
     yecho "Copying the existing audio stream with the following command:"
     #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
-    AUDIO_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" -vn -acodec copy $AUDIO_MAP ${AUDIO_STREAM[@]}"
-    yecho "$AUDIO_CMD"
-    cmd_exec "$AUDIO_CMD"
-
+    function run_audio_cmd()
+    {
+        if $DEBUG; then
+            $PRIORITY ffmpeg -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${AUDIO_STREAM[@]}" |
+            tee -a "$LOG_FILE" 2>&1
+        else
+             printf "\"%s\"\n" "${AUDIO_STREAM[@]}"
+            $PRIORITY ffmpeg -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${AUDIO_STREAM[@]}" \
+            >> "$LOG_FILE" 2>&1
+        fi
+    }
+    run_audio_cmd &
+    PIDS="$PIDS $!"
     if ! $FAKE && ! $PARALLEL; then
-        file_output_progress "$AUDIO_STREAM" "Copying compliant audio stream${s}" "$OUTPUT_FILES"
+#        file_output_progress "$AUDIO_STREAM" "Copying compliant audio stream${s}" "$OUTPUT_FILES"
         wait
     fi
 
@@ -1656,16 +1665,16 @@ else
     # When normalizing, we need a wave file.
     if $DO_NORM; then
         rm -f "$TMP_DIR/audio*.wav"
+        AUDIO_IN_FILE="${AUDIO_WAV[@]}"
 
         #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null $MP_AUDIOTRACK_CMD -ao pcm:waveheader:file=\"$AUDIO_WAV\" \"$IN_FILE\""
-        AUDIO_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $AUDIO_MAP -ar $SAMPRATE -ac 2 -acodec pcm_s16le -y ${AUDIO_WAV[@]}"
+        AUDIO_CMD=( $PRIORITY ffmpeg -i "$IN_FILE" $AUDIO_MAP -ar $SAMPRATE -ac 2 -acodec pcm_s16le -y "${AUDIO_WAV[@]}" )
 
         # Generate or dump audio
         yecho "Normalizing the audio stream${s}."
         yecho "Creating WAV${s} of the audio stream${s} with the following command:"
-        yecho "$AUDIO_CMD"
-
-        cmd_exec "$AUDIO_CMD"
+        yecho ${AUDIO_CMD[@]}
+        "${AUDIO_CMD[@]}" >> "$LOG_FILE" 2>&1
 
         if ! $FAKE; then
             file_output_progress "$AUDIO_WAV" "Creating wav${s} of the audio stream${s}" "$OUTPUT_FILES"
@@ -1681,24 +1690,25 @@ else
         $FAKE || normalize $AUDIO_AMPLITUDE "${AUDIO_WAV[@]}"
     fi
 
-    AUDIO_ENC="$PRIORITY ffmpeg"
+    AUDIO_ENC=( $PRIORITY ffmpeg )
 
     if $GENERATE_AUDIO; then
         # Read input from /dev/zero to generate a silent audio file
-        AUDIO_ENC="$AUDIO_ENC -f s16le -i /dev/zero -t $V_DURATION"
+        AUDIO_ENC=( "${AUDIO_ENC[@]}" -f s16le -i /dev/zero -t $V_DURATION )
         yecho "Generating a silent audio stream with the following command:"
     else
         # Encode audio stream directly from the input file
-        AUDIO_ENC="$AUDIO_ENC -i \"$AUDIO_IN_FILE\""
+        AUDIO_ENC=( "${AUDIO_ENC[@]}" -i "$AUDIO_IN_FILE" )
         yecho "Encoding audio stream to $AUD_SUF with the following command:"
     fi
-    AUDIO_ENC="$AUDIO_ENC -vn -ab $AUD_BITRATE -ar $SAMPRATE -ac 2"
+    AUDIO_ENC=( "${AUDIO_ENC[@]}" -vn -ab $AUD_BITRATE -ar $SAMPRATE -ac 2 )
     if ! $DO_NORM; then
-        AUDIO_ENC="$AUDIO_ENC $AUDIO_MAP"
+        AUDIO_ENC=( "${AUDIO_ENC[@]}" $AUDIO_MAP )
     fi
-    AUDIO_ENC="$AUDIO_ENC -acodec $AUD_SUF -y ${AUDIO_STREAM[@]}"
+    AUDIO_ENC=( "${AUDIO_ENC[@]}" -acodec $AUD_SUF -y "${AUDIO_STREAM[@]}" )
+     printf "\"%s\"\n" "${AUDIO_ENC[@]}"
+    "${AUDIO_ENC[@]}" >> "$LOG_FILE" 2>&1
     yecho "$AUDIO_ENC"
-    cmd_exec "$AUDIO_ENC"
 
     # For parallel, nothing else to do right now
     if $FAKE || $PARALLEL; then
@@ -1819,11 +1829,12 @@ if ! $FAKE; then
 fi
 
 
-MPLEX_CMD="mplex $MUX_OPTS -o \"$OUT_FILENAME\" \"$VIDEO_STREAM\" ${AUDIO_STREAM[@]}"
+MPLEX_CMD=( mplex $MUX_OPTS -o "$OUT_FILENAME" "$VIDEO_STREAM" "${AUDIO_STREAM[@]}" )
 yecho "Multiplexing audio and video together with the following command:"
-yecho $MPLEX_CMD
+#yecho ${MPLEX_CMD[@]}
+printf "\"%s\"\n" "${MPLEX_CMD[@]}"
 
-cmd_exec "$MPLEX_CMD"
+"${MPLEX_CMD[@]}" >> "$LOG_FILE" 2>&1
 
 # Parallel encoding doesn't enter the progress
 # loop until multiplexing begins.
