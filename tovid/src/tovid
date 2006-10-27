@@ -1645,7 +1645,6 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
             $PRIORITY ffmpeg -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${AUDIO_STREAM[@]}" |
             tee -a "$LOG_FILE" 2>&1
         else
-             printf "\"%s\"\n" "${AUDIO_STREAM[@]}"
             $PRIORITY ffmpeg -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${AUDIO_STREAM[@]}" \
             >> "$LOG_FILE" 2>&1
         fi
@@ -1706,7 +1705,6 @@ else
         AUDIO_ENC=( "${AUDIO_ENC[@]}" $AUDIO_MAP )
     fi
     AUDIO_ENC=( "${AUDIO_ENC[@]}" -acodec $AUD_SUF -y "${AUDIO_STREAM[@]}" )
-     printf "\"%s\"\n" "${AUDIO_ENC[@]}"
     "${AUDIO_ENC[@]}" >> "$LOG_FILE" 2>&1
     yecho "$AUDIO_ENC"
 
@@ -1832,7 +1830,6 @@ fi
 MPLEX_CMD=( mplex $MUX_OPTS -o "$OUT_FILENAME" "$VIDEO_STREAM" "${AUDIO_STREAM[@]}" )
 yecho "Multiplexing audio and video together with the following command:"
 #yecho ${MPLEX_CMD[@]}
-printf "\"%s\"\n" "${MPLEX_CMD[@]}"
 
 "${MPLEX_CMD[@]}" >> "$LOG_FILE" 2>&1
 
