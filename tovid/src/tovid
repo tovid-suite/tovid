@@ -1339,6 +1339,7 @@ if test "$IN_FILE_TYPE" = "file"; then
     fi
 
     if $DO_NORM; then AUDIO_OK=false; fi
+    [[ "$AUDIO_TRACK" ]] && AUDIO_OK=false
     # If both audio and video are OK, stop now - there's no need to convert.
     if ! $FORCE_ENCODING && $AUDIO_OK && $VIDEO_OK; then
         # Create a symbolic link in place of the output file
@@ -1541,7 +1542,8 @@ if test -n "$AUDIO_TRACK"; then
         track="${AUDIO_TRACK[i]}"
         AUDIO_ID[i]="${AIDS[track-1]}"
         AUDIO_MAP="$AUDIO_MAP -map ${AUDIO_ID[i]//./:}"
-        AUDIO_STREAM=( "${AUDIO_STREAM[@]}" "/home/robert/dir with spaces/audio${i}.$AUD_SUF" )
+        AUDIO_WAV_MAP=( "${AUDIO_WAV_MAP[@]}" -map $i:0 )
+        AUDIO_STREAM=( "${AUDIO_STREAM[@]}" "${TMP_DIR}/audio${i}.$AUD_SUF" )
         NEW_AUDIO[i]="-acodec ac3 -ab 224k  -newaudio"
         AUDIO_WAV[i]="$TMP_DIR/audio${i}.wav"
     done
@@ -1641,18 +1643,13 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
     function run_audio_cmd()
     {
-        if $DEBUG; then
-            $PRIORITY ffmpeg -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${AUDIO_STREAM[@]}" |
-            tee -a "$LOG_FILE" 2>&1
-        else
-            $PRIORITY ffmpeg -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${AUDIO_STREAM[@]}" \
-            >> "$LOG_FILE" 2>&1
-        fi
+        $PRIORITY ffmpeg -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${AUDIO_STREAM[@]}" \
+        >> "$LOG_FILE" 2>&1
     }
     run_audio_cmd &
     PIDS="$PIDS $!"
     if ! $FAKE && ! $PARALLEL; then
-#        file_output_progress "$AUDIO_STREAM" "Copying compliant audio stream${s}" "$OUTPUT_FILES"
+        file_output_progress "$AUDIO_STREAM" "Copying compliant audio stream${s}" "$OUTPUT_FILES"
         wait
     fi
 
@@ -1663,8 +1660,13 @@ else
 
     # When normalizing, we need a wave file.
     if $DO_NORM; then
+        unset AUDIO_IN_FILE
         rm -f "$TMP_DIR/audio*.wav"
-        AUDIO_IN_FILE="${AUDIO_WAV[@]}"
+        for i in ${!AUDIO_TRACK[@]}; do
+            AUDIO_IN_FILE=( "${AUDIO_IN_FILE[@]}" -i "${AUDIO_WAV[i]}")
+        done
+        unset AUDIO_IN_FILE[0]
+        AUDIO_IN_FILE[1]="${AUDIO_WAV[0]}"
 
         #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null $MP_AUDIOTRACK_CMD -ao pcm:waveheader:file=\"$AUDIO_WAV\" \"$IN_FILE\""
         AUDIO_CMD=( $PRIORITY ffmpeg -i "$IN_FILE" $AUDIO_MAP -ar $SAMPRATE -ac 2 -acodec pcm_s16le -y "${AUDIO_WAV[@]}" )
@@ -1673,7 +1675,7 @@ else
         yecho "Normalizing the audio stream${s}."
         yecho "Creating WAV${s} of the audio stream${s} with the following command:"
         yecho ${AUDIO_CMD[@]}
-        "${AUDIO_CMD[@]}" >> "$LOG_FILE" 2>&1
+        "${AUDIO_CMD[@]}" >> "$LOG_FILE" 2>&1 &
 
         if ! $FAKE; then
             file_output_progress "$AUDIO_WAV" "Creating wav${s} of the audio stream${s}" "$OUTPUT_FILES"
@@ -1697,16 +1699,16 @@ else
         yecho "Generating a silent audio stream with the following command:"
     else
         # Encode audio stream directly from the input file
-        AUDIO_ENC=( "${AUDIO_ENC[@]}" -i "$AUDIO_IN_FILE" )
+        AUDIO_ENC=( "${AUDIO_ENC[@]}" -i "${AUDIO_IN_FILE[@]}" )
         yecho "Encoding audio stream to $AUD_SUF with the following command:"
     fi
     AUDIO_ENC=( "${AUDIO_ENC[@]}" -vn -ab $AUD_BITRATE -ar $SAMPRATE -ac 2 )
-    if ! $DO_NORM; then
-        AUDIO_ENC=( "${AUDIO_ENC[@]}" $AUDIO_MAP )
-    fi
-    AUDIO_ENC=( "${AUDIO_ENC[@]}" -acodec $AUD_SUF -y "${AUDIO_STREAM[@]}" )
-    "${AUDIO_ENC[@]}" >> "$LOG_FILE" 2>&1
-    yecho "$AUDIO_ENC"
+    ! $DO_NORM && AUDIO_ENC=( "${AUDIO_ENC[@]}" $AUDIO_MAP )
+    AUDIO_ENC=( "${AUDIO_ENC[@]}" -acodec $AUD_SUF)
+    $DO_NORM && AUDIO_ENC=( "${AUDIO_ENC[@]}" "${AUDIO_WAV_MAP[@]}" )
+    AUDIO_ENC=( "${AUDIO_ENC[@]}" -y "${AUDIO_STREAM[@]}" )
+    "${AUDIO_ENC[@]}" >> "$LOG_FILE" 2>&1 &
+    yecho "${AUDIO_ENC[@]}"
 
     # For parallel, nothing else to do right now
     if $FAKE || $PARALLEL; then
@@ -1831,7 +1833,7 @@ MPLEX_CMD=( mplex $MUX_OPTS -o "$OUT_FILENAME" "$VIDEO_STREAM" "${AUDIO_STREAM[@
 yecho "Multiplexing audio and video together with the following command:"
 #yecho ${MPLEX_CMD[@]}
 
-"${MPLEX_CMD[@]}" >> "$LOG_FILE" 2>&1
+"${MPLEX_CMD[@]}" >> "$LOG_FILE" 2>&1 &
 
 # Parallel encoding doesn't enter the progress
 # loop until multiplexing begins.
