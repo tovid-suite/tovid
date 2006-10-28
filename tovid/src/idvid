@@ -191,37 +191,54 @@ function get_info ()
         awk -F ' ' '{print $2}')
     test -z $ID_VIDEO_FRAMES && ID_VIDEO_FRAMES="0"
 
-    # find out what audio channels are available
-    TRACKS=$(grep "Audio:" "$SCRATCH_FILE" | \
-        sed -r 's/.*Stream #([0-9]\.[0-9]+).*/\1/')
-    A_TRACKS=(${TRACKS//$'\n'/ })
-    # Loop through available tracks and get specs on each
-    for ((i=0; i<${#A_TRACKS[@]}; i++)); do
-        CUR_CHAN=$(grep "Stream #${A_TRACKS[i]}" "$SCRATCH_FILE")
-        A_SAMPRATES=("${A_SAMPRATES[@]}" "$(echo $CUR_CHAN | \
-            sed -r 's/.* ([0-9]+) Hz.*/\1/')") 
-        A_BITRATES=("${A_BITRATES[@]}" "$(echo $CUR_CHAN | \
-            sed -r 's/.* ([0-9]+) kb\/s.*/\1/')") 
-        A_CODECS=("${A_CODECS[@]}" "$(echo $CUR_CHAN | \
-            sed -r 's/.*Audio: ([^,]+),.*/\1/')")
-    done
-    tracks=( $TRACKS )
-    if (( ${#tracks[@]} > 1 )); then
-        for i in ${tracks[@]}; do
-            map_cmd=( ${map_cmd[@]} -map $i )
-            wavs=( "${wavs[@]}" "$TMP_DIR/$i.wav" )
-        done
-        test_tracks=( "$(ffmpeg -i "$INFILE" -ss 2 -t 1 ${map_cmd[@]} -y ${wavs[@]} 2>&1)" )
-        echo "${test_tracks[@]}" >> "$SCRATCH_FILE"
-        if grep -q Unsupported <<< "${test_tracks[@]}"; then
-            discard=$(awk '/Unsupported/ { print $NF }' <<< "${test_tracks[@]}")
-            discard="${discard/\#}"
-            TRACKS=$(grep -v "$discard" <<< "$TRACKS")
+    # Find out what audio channels are available
+    if test -n "$ID_AUDIO_ID"; then
+        AUDIO_INFO=$(grep "Audio:" "$SCRATCH_FILE")
+        A_TRACKS=$(sed -r 's/.*Stream #([0-9]\.[0-9]+).*/\1/' <<< "$AUDIO_INFO")
+        A_TRACKS=(${A_TRACKS//$'\n'/ })
+        # Get hexadecimal track IDs, if present
+        if grep -q "\[0x[0-9a-fA-F]*]" <<< $AUDIO_INFO; then
+            HEX_TRACKS=$(sed -r 's/.*\[0x([0-9a-fA-F]*)].*/\1/' <<< "$AUDIO_INFO")
+            HEX_TRACKS=(${HEX_TRACKS//$'\n'/ })
+            USE_HEX_TRACKS=:
+        else
+            USE_HEX_TRACKS=false
         fi
-        rm -f "${wavs[@]}"
-    fi
-    TRACKS=${TRACKS//$'\n'/ }
-    ID_AUDIO_TRACKS=${TRACKS// /,}
+        # Loop through available tracks and get specs on each
+        for ((i=0; i<${#A_TRACKS[@]}; i++)); do
+            CUR_CHAN=$(grep "Stream #${A_TRACKS[i]}" <<< "$AUDIO_INFO")
+            A_SAMPRATES=("${A_SAMPRATES[@]}" "$(echo $CUR_CHAN | \
+                sed -r 's/.* ([0-9]+) Hz.*/\1/')") 
+            A_BITRATES=("${A_BITRATES[@]}" "$(echo $CUR_CHAN | \
+                sed -r 's/.* ([0-9]+) kb\/s.*/\1/')") 
+            A_CODECS=("${A_CODECS[@]}" "$(echo $CUR_CHAN | \
+                sed -r 's/.*Audio: ([^,]+),.*/\1/')")
+            if $USE_HEX_TRACKS; then
+                MP_TRACKNUM=$((16#${HEX_TRACKS[i]}))
+            else
+                MP_TRACKNUM=$i
+            fi
+            A_HEX_TRACKS=("${A_HEX_TRACKS[@]}" "$MP_TRACKNUM")
+        done
+
+        tracks=( $A_TRACKS[@] )
+        if (( ${#tracks[@]} > 1 )); then
+            for i in ${tracks[@]}; do
+                map_cmd=( ${map_cmd[@]} -map $i )
+                wavs=( "${wavs[@]}" "$TMP_DIR/$i.wav" )
+            done
+            test_tracks=( "$(ffmpeg -i "$INFILE" -ss 2 -t 1 ${map_cmd[@]} -y ${wavs[@]} 2>&1)" )
+            echo "${test_tracks[@]}" >> "$SCRATCH_FILE"
+            if grep -q Unsupported <<< "${test_tracks[@]}"; then
+                discard=$(awk '/Unsupported/ { print $NF }' <<< "${test_tracks[@]}")
+                discard="${discard/\#}"
+                A_TRACKS=$(grep -v "$discard" <<< "$A_TRACKS")
+            fi
+            rm -f "${wavs[@]}"
+        fi
+        #A_TRACKS=${A_TRACKS//$'\n'/ }
+        ID_AUDIO_TRACKS=${A_TRACKS[@]// /,}
+    fi # if test -n "$ID_AUDIO_ID"
 
     # If tcprobe reports an aspect ratio, use that
     if grep -q "aspect ratio" "$SCRATCH_FILE"; then
@@ -334,7 +351,9 @@ function idvid_main ()
         echo "      Video bitrate: $ID_VIDEO_BITRATE bits per second"
         # Multiple audio track info
         for ((i=0; i<${#A_TRACKS[@]}; i++)); do
-            echo "Audio track ${A_TRACKS[i]//0./}:"   
+            echo "---------------------------"
+            echo "Audio track ${A_TRACKS[i]} (AID ${A_HEX_TRACKS[i]}):"
+            echo "---------------------------"
             echo "              Codec: ${A_CODECS[i]}"
             echo "            Bitrate: ${A_BITRATES[i]}000 bits per second"
             echo "      Sampling rate: ${A_SAMPRATES[i]} Hz"
