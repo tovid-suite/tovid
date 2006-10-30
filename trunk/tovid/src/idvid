@@ -242,10 +242,8 @@ function get_info ()
         fi
         TRACKS=${TRACKS//$'\n'/ }
         TRACKS=${TRACKS//  / }
-        TRACKS=${TRACKS// /,}
+        ID_AUDIO_TRACKS=${TRACKS// /,}
     fi # if test -n "$ID_AUDIO_ID"
-    TRACKS=${TRACKS//$'\n'/ }
-    ID_AUDIO_TRACKS=${TRACKS// /,}
 
     # If tcprobe reports an aspect ratio, use that
     if grep -q "aspect ratio" "$SCRATCH_FILE"; then
@@ -357,13 +355,16 @@ function idvid_main ()
         echo "       Video format: $ID_VIDEO_FORMAT"
         echo "      Video bitrate: $ID_VIDEO_BITRATE bits per second"
         # Multiple audio track info
+        for t in $discard; do A_CODECS[${t##*.}-1]=": *** Unsupported ***"; done
         for ((i=0; i<${#A_TRACKS[@]}; i++)); do
             echo "---------------------------"
             echo "Audio track ${A_TRACKS[i]} (AID ${A_HEX_TRACKS[i]}):"
             echo "---------------------------"
             echo "              Codec: ${A_CODECS[i]}"
-            echo "            Bitrate: ${A_BITRATES[i]}000 bits per second"
-            echo "      Sampling rate: ${A_SAMPRATES[i]} Hz"
+            if [[ $i -ne $((${t##*.}-1)) ]]; then
+                echo "            Bitrate: ${A_BITRATES[i]}000 bits per second"
+                echo "      Sampling rate: ${A_SAMPRATES[i]} Hz"
+            fi
         done
         #echo "       Audio format: $ID_AUDIO_CODEC"
         #echo "      Audio bitrate: $ID_AUDIO_BITRATE bits per second"
