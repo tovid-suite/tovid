@@ -1339,7 +1339,7 @@ if $AUDIOLANG; then
         VOB_PRE[i]="        <pre> ${AUDIO_PRE[i]} </pre>"
     done
 fi
-MAIN_PRE="        <pre> $PLAYALL_PRE  </pre>"
+$PLAYALL && MAIN_PRE="        <pre> $PLAYALL_PRE  </pre>"
 MAIN_POST="        <post> jump cell 1; </post>"
 if $MENU_FADE; then
     . todisc-fade-routine
