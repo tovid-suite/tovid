@@ -701,6 +701,7 @@ while test $# -gt 0; do
                 DO_SHIFT=false
             fi
             AUDIO_LANG=( ${AUDIO_LANG//,/ } )
+            AUDIOLANG=:
             ;;
         "-bgaudio" )
             shift
