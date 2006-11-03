@@ -257,7 +257,7 @@ while test $# -gt 0; do
             TITLES=("${TITLES[@]}" "$1")
             ;;
         * )
-            usage_error "Unrecognized command-line option: $1"
+            test -n "$1" && usage_error "Unrecognized command-line option: $1"
             ;;
     esac
 
