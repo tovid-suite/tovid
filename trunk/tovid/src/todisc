@@ -137,16 +137,18 @@ AUDIOLANG=false
 USER_BSTYLE=false
 SHOWCASE_SEEK_VAL=1
 NO_SC_THUMB=false
-SC_TITLE_ALIGN="centre"
-THUMB_TITLE_ALIGN="center"
+SC_TITLE_ALIGN=centre
+THUMB_TITLE_ALIGN=center
 ALIGN_OVERRIDE=false
 MULTILINE_TITLE=false
 SAFE_AREA=50 # undocumented: you can set this from CLI with -showcase-safe-area
 SAFE_OFFSET=36
 PREVIEW_SIZE=720x540
-NOPANSCAN=false
-NOLETTERBOX=false
-
+ASPECT_RATIO=4:3
+ASPECT_ARG=all
+WIDE_SCREEN=false
+WIDESCREEN=\"nopanscan\"
+WIDESCREEN_ARG=all
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -504,15 +506,42 @@ while test $# -gt 0; do
             TV_STANDARD=pal
             ;;
         "-aspect" )
+            unset ASPECT ASPECT_ARG
             shift
-            ASPECT="$1"
-            ASPECT="aspect=\"$ASPECT\""
+            # Hackish list-parsing
+            while test $# -gt 0 && test ${1:0:1} != "-"; do
+                ASPECT_ARGS="$ASPECT_ARGS $1" 
+                shift
+            done
+            # Do not skip past the next argument
+            if test $# -gt 0 && test ${1:0:1} = "-";then
+                DO_SHIFT=false
+            fi
+            ASPECT_ARG=$(awk '{print $2}' <<<"$ASPECT_ARGS")
+            ASPECT=$(awk '{print $1}' <<<"$ASPECT_ARGS")
+            if [[ "$ASPECT_ARG" = all || "$ASPECT_ARG" = menu || -z "$ASPECT_ARG" ]]; then
+                ASPECT_RATIO=$ASPECT
+                M_ASPECT="aspect=\"$ASPECT\""
+            fi
+            if [[ "$ASPECT_ARG" = all || "$ASPECT_ARG" = video || -z "$ASPECT_ARG" ]]; then
+                V_ASPECT="aspect=\"$ASPECT\""
+            fi
             ;;
-        "-nopanscan" )
-            NOPANSCAN=:
-            ;;
-        "-noletterbox" )
-            NOLETTERBOX=:
+        "-widescreen" )
+            unset WIDESCREEN WIDESCREEN_ARG
+            shift
+            # Hackish list-parsing
+            while test $# -gt 0 && test ${1:0:1} != "-"; do
+                WIDESCREEN_ARGS="$WIDESCREEN_ARGS $1" 
+                shift
+            done
+            # Do not skip past the next argument
+            if test $# -gt 0 && test ${1:0:1} = "-";then
+                DO_SHIFT=false
+            fi
+            WIDESCREEN=$(awk '{print $1}' <<<"$WIDESCREEN_ARGS")
+            WIDESCREEN_ARG=$(awk '{print $2}' <<<"$WIDESCREEN_ARGS")
+            WIDE_SCREEN=:
             ;;
         "-showcase-safe-area" )
             shift
@@ -1172,7 +1201,7 @@ if  [ $TARGET = "dvd" ]; then
     SAMPLERATE="48000"
     MPLEX_FORMAT="8"
     GEO_ARRAY=("${DVD_GEO_ARRAY[@]}")
-    FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 230KiB  -aspect 4:3"
+    FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 230KiB  -aspect $ASPECT_RATIO"
     SHOWCASE_SIZE=384x256
     if [ $TV_STANDARD = ntsc ]; then
         VIDSIZE="720x480"
@@ -1186,7 +1215,7 @@ elif [ $TARGET = "svcd" ]; then
     SAMPLERATE="44100"
     MPLEX_FORMAT="4"
     GEO_ARRAY=("${SVCD_GEO_ARRAY[@]}")
-    FFMPEG_OPTS="-b 2200k -minrate 2200k -maxrate 2200k -bufsize 112KiB -aspect 4:3"
+    FFMPEG_OPTS="-b 2200k -minrate 2200k -maxrate 2200k -bufsize 112KiB -aspect $ASPECT_RATIO"
     SHOWCASE_SIZE=256x256
     if [ $TV_STANDARD = ntsc ]; then
         VIDSIZE="480x480"
@@ -1334,14 +1363,15 @@ fi
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
 # spumux and dvdauthor vars
-$NOPANSCAN && $NOLETTERBOX && usage_error "You can not use both -nopanscan and -noletterbox"
-if $NOPANSCAN; then
-    WIDESCREEN="<video widescreen=\"nopanscan\" ${ASPECT}/>"
-elif $NOLETTERBOX; then
-    WIDESCREEN="<video widescreen=\"noletterbox\" ${ASPECT}/>"
+if $WIDE_SCREEN && [[ -n "$V_ASPECT" ]]; then
+    TITLES_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $V_ASPECT/>"
 fi
-if [[ "$ASPECT" ]] &&  ! $NOPANSCAN && ! $NOLETTERBOX; then
-        WIDESCREEN="<video ${ASPECT}/>"
+if $WIDE_SCREEN && [[ -n "$M_ASPECT" ]]; then
+    M_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $M_ASPECT/>"
+fi
+if [[ -n "$V_ASPECT" || -n "$M_ASPECT" ]] &&  ! $WIDE_SCREEN; then
+        V_VIDEO_TAG="<video $V_ASPECT/>"
+        M_VIDEO_TAG="<video $M_ASPECT/>"
 fi
 START="00:00:00.0"
 if $PLAYALL; then
@@ -2542,6 +2572,7 @@ if [ "$TARGET" = "dvd" ]; then
   </vmgm>
   <titleset>
     <menus>
+      $M_VIDEO_TAG
       <pgc>
 $(for ((i=1; i<=$V_ARRAY_TOTAL; i++)); do
     if $SUB_MENU; then
@@ -2572,7 +2603,7 @@ echo "$POST"
 fi)    
     </menus>
     <titles>
-      $WIDESCREEN
+      $TITLES_VIDEO_TAG
 $(if $SUBTITLES; then
     for ((s=0; s<${#SUBS_ARRAY[@]}; s++)); do
         echo -e "      <subpicture lang=\"${SUBS_ARRAY[s]}\"/>"
