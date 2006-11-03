@@ -561,7 +561,7 @@ function get_args()
                 KEEPFILES=:
                 ;;
 
-            "*" )
+            * )
                 usage_error "Unrecognized command-line option: '$1'"
 
             esac
