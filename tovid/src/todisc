@@ -144,6 +144,8 @@ MULTILINE_TITLE=false
 SAFE_AREA=50 # undocumented: you can set this from CLI with -showcase-safe-area
 SAFE_OFFSET=36
 PREVIEW_SIZE=720x540
+NOPANSCAN=false
+NOLETTERBOX=false
 
 SCRIPT_START_TIME=`date +%s`
 
@@ -500,6 +502,17 @@ while test $# -gt 0; do
             ;;
         "-pal" )
             TV_STANDARD=pal
+            ;;
+        "-aspect" )
+            shift
+            ASPECT="$1"
+            ASPECT="aspect=\"$ASPECT\""
+            ;;
+        "-nopanscan" )
+            NOPANSCAN=:
+            ;;
+        "-noletterbox" )
+            NOLETTERBOX=:
             ;;
         "-showcase-safe-area" )
             shift
@@ -1321,6 +1334,15 @@ fi
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
 # spumux and dvdauthor vars
+$NOPANSCAN && $NOLETTERBOX && usage_error "You can not use both -nopanscan and -noletterbox"
+if $NOPANSCAN; then
+    WIDESCREEN="<video widescreen=\"nopanscan\" ${ASPECT}/>"
+elif $NOLETTERBOX; then
+    WIDESCREEN="<video widescreen=\"noletterbox\" ${ASPECT}/>"
+fi
+if [[ "$ASPECT" ]] &&  ! $NOPANSCAN && ! $NOLETTERBOX; then
+        WIDESCREEN="<video ${ASPECT}/>"
+fi
 START="00:00:00.0"
 if $PLAYALL; then
     PLAYALL_PRE="g4=0;"
@@ -2550,6 +2572,7 @@ echo "$POST"
 fi)    
     </menus>
     <titles>
+      $WIDESCREEN
 $(if $SUBTITLES; then
     for ((s=0; s<${#SUBS_ARRAY[@]}; s++)); do
         echo -e "      <subpicture lang=\"${SUBS_ARRAY[s]}\"/>"
