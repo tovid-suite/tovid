@@ -110,7 +110,7 @@ PBC_XML=""
 PLAYLIST_XML=""
 
 MAKE_GROUP=false
-MAKE_CHAPTERS=false
+MAKE_CHAPTERS=:
 FORCE_TITLESETS=false
 CUR_VIDEO=0
 declare -i CHAPTER_INTERVAL
@@ -155,7 +155,7 @@ function addTopMenu ()
     # the titleset menu buttons (to be replaced later by sed)
     TOP_MENU_XML=`cat << EOF
   <menus>
-  <video />
+  <video widescreen="nopanscan" />
   <pgc entry="title">
   <vob file="$1" />
 __TOP_MENU_BUTTONS__
@@ -206,7 +206,7 @@ EOF`
     # the video segment buttons (to be replaced later by sed)
     MENU_XML=`cat << EOF
   <menus>
-    <video />
+    <video widescreen="nopanscan" />
     <pgc entry="root">
       <vob file="$1" />
 __MENU_BUTTONS__
@@ -302,7 +302,7 @@ EOF`
 
     # Generate the chapters tag
     # If file exists, get duration and add appropriate chapter breaks
-    if test -e "$1"; then
+    if test -e "$1" && $MAKE_CHAPTERS; then
         CMD="idvid -terse \"$1\""
         echo "Calculating the duration of the video using the following command:"
         echo $CMD
@@ -310,10 +310,6 @@ EOF`
         DURATION=$(eval $CMD | grep DURATION | awk -F '=' '{print $2}')
         echo $DURATION | awk '{hh=int($1/3600);mm=int(($1-hh*3600)/60);ss=$1-hh*3600-mm*60;\
             printf "The duration of the video is %02d:%02d:%02d\n",hh,mm,ss}'
-
-        if ! $MAKE_CHAPTERS; then
-          CHAPTER_INTERVAL="5"
-        fi
 
         CHAPTERS=`echo $DURATION $CHAPTER_INTERVAL | \
            awk '{dur=$1;\
@@ -336,7 +332,7 @@ EOF`
                        cur+=iv\
                     }\
                 }'`
-    # If file doesn't exist, use 0 chapters
+    # If file doesn't exist, or -nochapters was passed, use 0 chapters
     else
         CHAPTERS="0"
     fi
@@ -506,6 +502,7 @@ $ALL_MENU_XML
 <titleset>
 $MENU_XML
   <titles>
+    <video widescreen="nopanscan" />
 $TS_TITLES
   </titles>
 </titleset>
@@ -523,6 +520,7 @@ $ALL_MENU_XML
     </pgc>
   </menus>
   <titles>
+    <video widescreen="nopanscan" />
 $TS_TITLES
   </titles>
 </titleset>
