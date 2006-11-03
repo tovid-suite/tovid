@@ -358,7 +358,7 @@ function idvid_main ()
         for t in $discard; do A_CODECS[${t##*.}-1]=": *** Unsupported ***"; done
         for ((i=0; i<${#A_TRACKS[@]}; i++)); do
             echo "---------------------------"
-            echo "Audio track ${A_TRACKS[i]} (AID ${A_HEX_TRACKS[i]}):"
+            echo "Audio track $((i+1)) (Stream ${A_TRACKS[i]}, AID ${A_HEX_TRACKS[i]}):"
             echo "---------------------------"
             echo "              Codec: ${A_CODECS[i]}"
             if [[ $i -ne $((${t##*.}-1)) ]]; then
