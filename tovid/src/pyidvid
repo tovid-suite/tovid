@@ -6,9 +6,7 @@ import os
 
 from libtovid.opts import Option, OptionDict
 from libtovid.media import MediaFile
-from libtovid.log import Log
-
-log = Log('pyidvid')
+from libtovid import log
 
 # Command-line options
 cli_opts = [\

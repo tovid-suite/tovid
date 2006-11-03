@@ -8,9 +8,7 @@ script).
 
 import sys
 from libtovid.menu import Menu
-from libtovid.log import Log
-
-log = Log('pymakemenu')
+from libtovid import log
 
 if __name__ == '__main__':
     """Create a Menu with provided options and generate it."""
