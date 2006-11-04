@@ -147,8 +147,9 @@ PREVIEW_SIZE=720x540
 ASPECT_RATIO=4:3
 ASPECT_ARG=all
 WIDE_SCREEN=false
-WIDESCREEN=\"nopanscan\"
+WIDESCREEN="nopanscan"
 WIDESCREEN_ARG=all
+WIDESCREEN_ARGS=""
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -539,8 +540,13 @@ while test $# -gt 0; do
             if test $# -gt 0 && test ${1:0:1} = "-";then
                 DO_SHIFT=false
             fi
-            WIDESCREEN=$(awk '{print $1}' <<<"$WIDESCREEN_ARGS")
-            WIDESCREEN_ARG=$(awk '{print $2}' <<<"$WIDESCREEN_ARGS")
+            if [[ -n "$WIDESCREEN_ARGS" ]]; then
+                WIDESCREEN=$(awk '{print $1}' <<<"$WIDESCREEN_ARGS")
+                WIDESCREEN_ARG=$(awk '{print $2}' <<<"$WIDESCREEN_ARGS")
+            else
+                WIDESCREEN=nopanscan
+                WIDESCREEN_ARG=all
+            fi
             WIDE_SCREEN=:
             ;;
         "-showcase-safe-area" )
@@ -1363,15 +1369,21 @@ fi
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
 # spumux and dvdauthor vars
-if $WIDE_SCREEN && [[ -n "$V_ASPECT" ]]; then
-    TITLES_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $V_ASPECT/>"
-fi
-if $WIDE_SCREEN && [[ -n "$M_ASPECT" ]]; then
-    M_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $M_ASPECT/>"
+if $WIDE_SCREEN; then
+    if [[ -n "$V_ASPECT" ]]; then
+        TITLES_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $V_ASPECT/>"
+    fi
+    if [[ -n "$M_ASPECT" ]]; then
+        MENU_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $M_ASPECT/>"
+    fi
+    if [[ -z "$WIDESCREEN_ARGS" ]]; then
+        MENU_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $M_ASPECT/>"
+        TITLES_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $V_ASPECT/>"
+    fi
 fi
 if [[ -n "$V_ASPECT" || -n "$M_ASPECT" ]] &&  ! $WIDE_SCREEN; then
-        V_VIDEO_TAG="<video $V_ASPECT/>"
-        M_VIDEO_TAG="<video $M_ASPECT/>"
+        TITLES_VIDEO_TAG="<video $V_ASPECT/>"
+        MENU_VIDEO_TAG="<video $M_ASPECT/>"
 fi
 START="00:00:00.0"
 if $PLAYALL; then
@@ -2572,7 +2584,7 @@ if [ "$TARGET" = "dvd" ]; then
   </vmgm>
   <titleset>
     <menus>
-      $M_VIDEO_TAG
+      $MENU_VIDEO_TAG
       <pgc>
 $(for ((i=1; i<=$V_ARRAY_TOTAL; i++)); do
     if $SUB_MENU; then
