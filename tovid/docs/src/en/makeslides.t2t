@@ -14,15 +14,13 @@ makeslides: Convert images into still-frame MPEG video for (S)VCD
 ==Options==
 
 : **-ntsc** (default)
-
-: **-ntscfilm**
         Generate NTSC (704x480) output
 
 : **-pal**
         Generate PAL (704x576) output
 
 : **-verbose**
-        Print extra process information
+        Print extra output from subprocesses
 
 
 //IMAGES// is a single image or list of images to be
