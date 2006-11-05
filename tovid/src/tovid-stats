@@ -107,7 +107,7 @@ if __name__ == '__main__':
                 drawing.fill('white')
                 drawing.rectangle((0, 0), (720, 576))
                 drawing.translate((40, 48))
-                scatterplot.draw_on(drawing, 0)
+                scatterplot.draw(drawing, 0)
                 drawing.render()
         elif arg == '-match':
             field = args.pop(0)
