@@ -426,20 +426,6 @@ function confirm_dep()
     fi
 }
 
-function get_args()
-{
-    unset x ARGS_ARRAY
-    shift
-    # Hackish list-parsing
-    while test $# -gt 0 && test ${1:0:1} != "-"; do
-        ARGS_ARRAY[x++]="$1" 
-        shift
-    done
-    # Do not skip past the next argument
-    if test $# -gt 0 && test ${1:0:1} = "-";then
-        DO_SHIFT=false
-    fi
-}
 ##############################################################################
 #                          	End of functions                                 #
 ##############################################################################
@@ -567,7 +553,6 @@ while test $# -gt 0; do
             SAFE_AREA="$1"
             let SAFE_OFFSET=86-SAFE_AREA
             ;;
-        # submenu-length disabled for now
         # Menu control options
         "-menu-length" )
             shift
@@ -599,12 +584,10 @@ while test $# -gt 0; do
             ;;
         "-chain-videos" )
             shift
-            # Hackish list-parsing
             while test $# -gt 0 && test ${1:0:1} != "-"; do
                 chains_in="$chains_in $1" 
                 shift
             done
-            # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-";then
                 DO_SHIFT=false
             fi
@@ -725,12 +708,10 @@ while test $# -gt 0; do
         "-chapters" )
             unset CHAPTERS
             shift
-            # Hackish list-parsing
             while test $# -gt 0 && test ${1:0:1} != "-"; do
                 CHAPTERS="$CHAPTERS $1" 
                 shift
             done
-            # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-";then
                 DO_SHIFT=false
             fi
@@ -738,13 +719,11 @@ while test $# -gt 0; do
             ;;
         "-subtitles" )
             shift
-            # Hackish list-parsing
             SUBTITLES=:
             while test $# -gt 0 && test ${1:0:1} != "-"; do
             SUBS="$SUBS $1"
                 shift
             done
-            # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-";then
                 DO_SHIFT=false
             fi
@@ -752,12 +731,10 @@ while test $# -gt 0; do
             ;;
         "-audio-lang" )
             shift
-            # Hackish list-parsing
             while test $# -gt 0 && test ${1:0:1} != "-"; do
             AUDIO_LANG="$AUDIO_LANG $1"
                 shift
             done
-            # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-";then
                 DO_SHIFT=false
             fi
@@ -775,7 +752,6 @@ while test $# -gt 0; do
             ;;
         "-submenu-audio" )
             shift
-            # Hackish list-parsing
             while test $# -gt 0 && test ${1:0:1} != "-"; do
                 if [ "$1" = "none" ]; then
                     SM_AUDIO=( "${SM_AUDIO[@]}" "$1" )
@@ -784,7 +760,6 @@ while test $# -gt 0; do
                 fi
                 shift
             done
-            # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-";then
                 DO_SHIFT=false
             fi
@@ -824,13 +799,11 @@ while test $# -gt 0; do
             ;;
         "-seek" )
             shift
-            # Hackish list-parsing
             unset SEEK_VAL
             while test $# -gt 0 && test ${1:0:1} != "-"; do
             SEEK_VAL="$SEEK_VAL $1"
                 shift
             done
-            # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-";then
                 DO_SHIFT=false
             fi
