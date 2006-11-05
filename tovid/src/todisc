@@ -285,6 +285,8 @@ function cleanup()
         TCPIDS=$(awk -F"=" '/pid=/ {print $2}' "$WORK_DIR/tc_pids" | cut -f1 -d')'|sort|uniq)
         kill -9  $TCPIDS  2> /dev/null
     fi
+    if kill -0 $TCODE_PID 2> /dev/null; then kill -9  $TCODE_PID  2> /dev/null; fi
+    if kill -0 $TRANSCODE_PID 2> /dev/null; then kill -9  $TRANSCODE_PID 2> /dev/null; fi
     if $KEEP_FILES; then
         yecho "Keeping temporary files in $REAL_WORK_DIR"
     else
@@ -2689,8 +2691,8 @@ if $SUB_MENU; then
             -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null" |
             sed 's/    */ /g'|sed -e "s/^ *//"|tee -a "$LOG_FILE"
 
-            TCODE_CMD=(nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
-            ${NAVSEEK[i]} -o "${PICS_OUT[@]}" \
+            TCODE_CMD=(nice transcode --print_status 340 --write_pid /tmp/tcode.pid \
+            -q 1 -i "${IN_FILES[i]}"   ${NAVSEEK[i]} -o "${PICS_OUT[@]}" \
             -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null)
             function run_transcode()
             {
@@ -2698,8 +2700,8 @@ if $SUB_MENU; then
                 sleep 1
             }
             run_transcode &
-            TCODE_PID="$!"
             sleep .5 # short sleep to allow 1st jpg to appear
+            TCODE_PID=$(cat /tmp/tcode.pid)
             if [ -n "$TCODE_PID" ]; then
                 while ps -p $TCODE_PID >/dev/null; do
                     sleep $SLEEP # spinner interval
