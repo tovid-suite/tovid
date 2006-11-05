@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -=- encoding: latin-1 -=-
-# cairo_.py
+# drawing.py
 #
 # Cairo backend, by Alexandre Bourget <wackysalut@bourget.cc>
 #
@@ -9,7 +9,7 @@
 
 Run this script standalone for a demonstration:
 
-    $ python libtovid/render/cairo_.py
+    $ python libtovid/render/cairo.py
 
 Please note the leading '_' after 'cairo'. This is to prevent conflicts with
 the 'official' cairo binding class.
@@ -25,7 +25,7 @@ interpreter:
 
 And do something like this:
 
-    >>> from libtovid.render.cairo_ import Drawing
+    >>> from libtovid.render.drawing import Drawing
     >>> drawing = Drawing((800, 600))
 
 This creates an image (drawing) at 800x600 display resolution. Drawing has a
