@@ -5,7 +5,7 @@ import sys
 import os
 sys.path.insert(0, '..')
 # Get modules to test
-from render.cairo_ import Drawing
+from libtovid.render.drawing import Drawing
 from libtovid.flipbook import Flipbook
 from libtovid.media import MediaFile
 from libtovid import layer

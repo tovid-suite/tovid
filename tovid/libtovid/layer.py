@@ -38,7 +38,7 @@ import math
 import commands
 from libtovid.utils import get_file_type
 # Temporarily use local classes: (add libtovid. later)
-from libtovid.render.cairo_ import Drawing
+from libtovid.render.drawing import Drawing
 from libtovid.effect import Effect
 from libtovid.animation import Keyframe, Tween
 from libtovid.media import MediaFile
