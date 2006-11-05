@@ -119,9 +119,7 @@ class Flipbook:
             drawing.save()
             drawing.translate(position)
             # Apply effects and draw
-            layer.apply_effects_before(drawing, frame)
-            layer.draw_on(drawing, frame)
-            layer.apply_effects_after(drawing, frame)
+            layer.draw_with_effects(drawing, frame)
             drawing.restore()
 
         return drawing
@@ -161,9 +159,9 @@ def draw_text_demo(flipbook, last_frame):
     text1.add_effect(effect.Spectrum(1, last_frame))
     flipbook.add(text1, (20, 30))
 
-    text2 = layer.Text(u"FadeInOut effect demo")
-    text2.add_effect(effect.FadeInOut(1, last_frame, last_frame / 4))
-    flipbook.add(text2, (20, 60))
+    #text2 = layer.Text(u"FadeInOut effect demo")
+    #text2.add_effect(effect.FadeInOut(1, last_frame, last_frame / 4))
+    #flipbook.add(text2, (20, 60))
 
     text3 = layer.Text(u"Movement effect demo")
     text3.add_effect(effect.Movement(1, last_frame, (0, 0), (300, 50)))

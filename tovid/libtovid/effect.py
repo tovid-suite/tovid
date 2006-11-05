@@ -46,17 +46,25 @@ class Effect:
         self.keyframes = [Keyframe(self.start, 0), Keyframe(self.end, 0)]
         self.tween = Tween(self.keyframes)
 
-    def apply_before(self, drawing, frame):
-        """Called before the layer is painted
-        Override this function in derived classes.
-        """
-        pass
+    def pre_draw(self, drawing, frame):
+        """Set up effect elements that must be applied before drawing a Layer.
 
-    def apply_after(self, drawing, frame):
-        """Called after the layer is painted
-        Override this function in derived classes.
+            drawing: The Drawing to apply effects to
+            frame:   The frame for which to render the effect
+
+        Extend this function in derived classes.
         """
-        pass
+        drawing.save()
+
+    def post_draw(self, drawing, frame):
+        """Finalize effect elements after a Layer is drawn.
+
+            drawing: The Drawing to apply effects to
+            frame:   The frame for which to render the effect
+
+        Extend this function in derived classes.
+        """
+        drawing.restore()
 
 
 # ============================================================================
@@ -91,21 +99,7 @@ class MyEffect (Effect):
         # Call this afterwards, to calculate the values at all frames
         self.tween = Tween(self.keyframes)
 
-    # NOTE: no need to check if drawing is a 'Drawing'. It's checked on
-    # call.
-    def apply_before(self, drawing, frame):
-        """Undocumented"""
-        # This is called when rendering effects, before the layer is
-        # drawn.
-        drawing.save() # for example
-
-    def apply_after(self, drawing, frame):
-        """Undocumented"""
-        # This is called when 
-        drawing.restore() # for example
-
-    # Example funThe draw_on function draws the effect onto a Drawing at the given frame
-    def draw_this(self, drawing, frame):
+    def draw(self, drawing, frame):
         """Undocumented"""
         # Example function that can be called when drawing a layer.
         # The Layer must know that his particular effect requires the
@@ -118,6 +112,26 @@ class MyEffect (Effect):
         # This effect varies the stroke width across a sequence of frames.
         # Replace 'stroke_width' with your own drawing function(s)
         drawing.stroke_width(self.tween[frame])
+
+    # Effect rendering occurs in two phases: pre_draw and post_draw.
+    # These functions are already defined in the Effect base class; extend
+    # them to do your effect rendering.
+    def pre_draw(self, drawing, frame):
+        """Do preliminary effect rendering."""
+        # Always call the base class pre_draw first:
+        Effect.pre_draw(self, drawing, frame)
+        
+        # This effect varies the stroke width across a sequence of frames.
+        # Replace 'stroke_width' with your own drawing function(s)
+        drawing.stroke_width(self.tween[frame])
+
+    # Extend post_draw to do any post-rendering cleanup you need to do. Most
+    # of the time, you won't need to extend this, but if you do, be sure to
+    # call the base class post_draw at the end:
+    def post_draw(self, drawing, frame):
+        """Do post-drawing cleanup."""
+        # Post-drawing cleanup here
+        Effect.post_draw(self, drawing, frame)
 
     # That's it! Your effect is ready to use.
     # See libtovid/flipbook.py for examples on how to use effects
@@ -137,11 +151,11 @@ class Movement (Effect):
             ]
         self.tween = Tween(self.keyframes)
 
-    def apply_before(self, drawing, frame):
+    def pre_draw(self, drawing, frame):
         drawing.save()
         drawing.translate(self.tween[frame])
 
-    def apply_after(self, drawing, frame):
+    def post_draw(self, drawing, frame):
         drawing.restore()
 
 class Translate (Movement):
@@ -181,12 +195,13 @@ class Fade (Effect):
         self.tween = Tween(self.keyframes, method)
         
 
-    def apply_before(self, drawing, frame):
+    def pre_draw(self, drawing, frame):
         """Called before drawing on a layer"""
         drawing.push_group()
 
-    def apply_after(self, drawing, frame):
-        """Called after darwing on a layer"""
+    def post_draw(self, drawing, frame):
+        """Called after drawing on a layer"""
+        assert isinstance(drawing, Drawing)
         drawing.pop_group_to_source()
         drawing.paint_with_alpha(self.tween[frame])
 
@@ -225,11 +240,11 @@ class Colorfade (Effect):
             ]
         self.tween = Tween(self.keyframes)
 
-    def apply_before(self, drawing, frame):
+    def pre_draw(self, drawing, frame):
         """Set source color"""
         drawing.set_source(self.tween[frame])
 
-    def apply_after(self, drawing, frame):
+    def post_draw(self, drawing, frame):
         pass
 
 
@@ -250,7 +265,7 @@ class Spectrum (Effect):
             ]
         self.tween = Tween(self.keyframes)
 
-    def apply_before(self, drawing, frame):
+    def pre_draw(self, drawing, frame):
         drawing.set_source(self.tween[frame])
 
 
@@ -265,11 +280,11 @@ class Scale (Effect):
         self.tween = Tween(self.keyframes)
 
 
-    def apply_before(self, drawing, frame):
+    def pre_draw(self, drawing, frame):
         drawing.save()
         drawing.scale(self.tween[frame])
 
-    def apply_after(self, drawing, frame):
+    def post_draw(self, drawing, frame):
         drawing.restore()
 
 
@@ -294,7 +309,7 @@ class Whirl(Effect):
         self.keyframes = keyframes
         self.tween = Tween(self.keyframes, method)
 
-    def apply_before(self, drawing, frame):
+    def pre_draw(self, drawing, frame):
         drawing.save()
         # how to center the thing ? so you give a rotation point ?
         drawing.translate(self.center)
@@ -303,7 +318,7 @@ class Whirl(Effect):
         elif self.units is 'rad':
             drawing.rotate_rad(self.tween[frame])
 
-    def apply_after(self, drawing, frame):
+    def post_draw(self, drawing, frame):
         drawing.translate((- self.center[0], - self.center[1]))
         drawing.restore()
 
@@ -330,9 +345,9 @@ class KeyFunction (Effect):
         # Tween keyframes using the given interpolation method
         self.tween = Tween(self.keyframes, method)
 
-    def apply_before(self, drawing, frame):
+    def pre_draw(self, drawing, frame):
         drawing.save()
         self.draw_function(drawing, self.tween[frame])
 
-    def apply_after(self, drawing, frame):
+    def post_draw(self, drawing, frame):
         drawing.restore()

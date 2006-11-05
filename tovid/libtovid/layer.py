@@ -13,7 +13,7 @@ into a single interface for customizing and drawing those elements. Layers may
 exhibit animation, through the use of keyframed drawing commands, or through
 use of the Effect class (and its subclasses, as defined in libtovid/effect.py).
 
-Each class provides (at least) an initialization function, and a draw_on
+Each class provides (at least) an initialization function, and a draw
 function. For more on how to use Layers, see the Layer class definition and
 template example below.
 """
@@ -49,13 +49,25 @@ class Layer:
     effects and sub-Layers.
     """
     def __init__(self):
+        """Initialize the layer. Extend this in derived classes to accept
+        configuration settings for drawing the layer; call this function
+        from any derived __init__ functions."""
         self.effects = []
         self.sublayers = []
 
-    def add_effect(self, effect):
-        assert isinstance(effect, Effect)
-        self.effects.append(effect)
+    #
+    # Derived-class interface
+    #
+    
+    def draw(self, drawing, frame):
+        """Draw the layer and all sublayers onto the given Drawing. Override
+        this function in derived layers."""
+        assert isinstance(drawing, Drawing)
 
+    #
+    # Sublayer and effect interface
+    #
+    
     def add_sublayer(self, layer, position=(0, 0)):
         """Add the given Layer as a sublayer of this one, at the given position.
         Sublayers are drawn in the order they are added; each sublayer may have
@@ -64,39 +76,39 @@ class Layer:
         assert isinstance(layer, Layer)
         self.sublayers.append((layer, position))
 
-    def draw_on(self, drawing, frame):
-        """Draw the layer onto the given Drawing. Override this function in
-        derived layers."""
-        assert isinstance(drawing, Drawing)
-
-    def apply_effects_before(self, drawing, frame):
-        for effect in self.effects:
-            # Call effect.apply_after() and effect.apply_before()
-            effect.apply_before(drawing, frame)
-
-    def apply_effects_after(self, drawing, frame):
-        reveffects = self.effects
-        reveffects.reverse()
-        
-        for effect in reveffects:
-            # Call effect.apply_after() and effect.apply_before()
-            effect.apply_after(drawing, frame)
-    
-#    def draw_effects(self, drawing, frame):
-#        """Draw all effects onto the given Drawing for the given frame."""
-#        assert isinstance(drawing, Drawing)
-#        for effect in self.effects:
-#            # Call effect.apply_after() and effect.apply_before()
-#            effect.draw_on(drawing, frame)
-
     def draw_sublayers(self, drawing, frame):
         """Draw all sublayers onto the given Drawing for the given frame."""
         assert isinstance(drawing, Drawing)
         for sublayer, position in self.sublayers:
             drawing.save()
             drawing.translate(position)
-            sublayer.draw_on(drawing, frame)
+            sublayer.draw(drawing, frame)
             drawing.restore()
+
+    def add_effect(self, effect):
+        """Add the given Effect to this Layer. A Layer may have multiple effects
+        applied to it; all effects apply to the current layer, and all sublayers.
+        """
+        assert isinstance(effect, Effect)
+        self.effects.append(effect)
+
+    def draw_with_effects(self, drawing, frame):
+        """Render the entire layer, with all effects applied.
+        
+            drawing: A Drawing object to draw the Layer on
+            frame:   The frame number that is being drawn
+            
+        """
+        # Do preliminary effect rendering
+        for effect in self.effects:
+            effect.pre_draw(drawing, frame)
+        # Draw the layer and sublayers
+        self.draw(drawing, frame)
+        # Close out effect rendering, in reverse (nested) order
+        for effect in reversed(self.effects):
+            effect.post_draw(drawing, frame)
+
+
 
 
 # ============================================================================
@@ -107,7 +119,7 @@ class Layer:
 # Layer subclasses should define two things:
 #
 #     __init__():  How to initialize the layer with parameters
-#     draw_on():   How do draw the layer on a Drawing
+#     draw():   How do draw the layer on a Drawing
 #
 # First, declare the layer class name. Include (Layer) to indicate that your
 # class is a Layer.
@@ -117,37 +129,44 @@ class MyLayer (Layer):
 
     # Here's the class initialization function, __init__. Define here any
     # parameters that might be used to configure your layer's behavior or
-    # appearance in some way (along with default values, if you like):
+    # appearance in some way (along with default values, if you like). Here,
+    # we're allowing configuration of the fill and stroke colors, with default
+    # values of 'blue' and 'black', respectively:
 
     def __init__(self, fill_color='blue', stroke_color='black'):
-        """Create a MyLayer using the given fill and stroke colors."""
-        # Initialize the base Layer class
+        """Create a MyLayer with the given fill and stroke colors."""
+        # Initialize the base Layer class. Always do this.
         Layer.__init__(self)
-        # Store the given fill and stroke color
+        # Store the given colors, for later use
         self.fill_color = fill_color
         self.stroke_color = stroke_color
 
-    # The draw_on() function is responsible for rendering the contents of the
-    # layer onto a Drawing.
-    def draw_on(self, drawing, frame):
+    # The draw() function is responsible for rendering the contents of the
+    # layer onto a Drawing. It will use the configuration given to __init__
+    # (in this case, fill and stroke colors) to render something onto a Drawing
+    # associated with a particular frame number:
+
+    def draw(self, drawing, frame):
         """Draw MyLayer contents onto the given drawing, at the given frame
         number."""
 
-        # Make sure the drawing is a Drawing object
+        # For safety's sake, make sure you really have a Drawing object:
         assert isinstance(drawing, Drawing)
 
-        # Save context. This isolates the upcoming effects or style changes
-        # from any surrounding layers in the Drawing.
+        # Then, save the drawing context. This isolates any upcoming effects or
+        # style changes from messing up the surrounding layers in the Drawing.
         drawing.save()
 
-        # Draw the layer. You can use pretty much any Drawing commands you want
-        # here; the world is your oyster! Let's start by using the user-set
-        # variables from __init__:
+        # Get a Cairo pattern source for the fill and stroke colors
+        # (TODO: Make this easier, or use a simpler example)
         fc = drawing.create_source(self.fill_color, 0.6)
         sc = drawing.create_source(self.stroke_color)
+
+        # And a good default stroke width of 1, say:
         drawing.stroke_width(1)
 
-        # Now, draw something, say, a couple of semitransparent rectangles
+        # Now, draw something. Here, a couple of pretty semitransparent
+        # rectangles, using the fill and stroke color patterns created earlier:
         drawing.rectangle((0, 0), (50, 20))
         drawing.fill(fc)
         drawing.stroke(sc)
@@ -155,7 +174,7 @@ class MyLayer (Layer):
         drawing.fill(fc)
         drawing.stroke(sc)
 
-        # Restore context
+        # Be sure to restore the drawing context afterwards:
         drawing.restore()
 
     # That's it! Your layer is ready to use. See the Demo section at the end of
@@ -178,7 +197,7 @@ class Background (Layer):
         self.color = color
         self.filename = filename
         
-    def draw_on(self, drawing, frame):
+    def draw(self, drawing, frame):
         assert isinstance(drawing, Drawing)
         drawing.save()
         # Fill drawing with an image
@@ -210,10 +229,10 @@ class Image (Layer):
         self.position = position
 
 
-    def draw_on(self, drawing, frame=1):
+    def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
         drawing.save()
-        # Save the source for future calls to draw_on, so no further
+        # Save the source for future calls to draw, so no further
         # processing will be necessary. And other effects can be done
         # without interferring with the original source.
         self.image_source = drawing.image(self.position, self.size,
@@ -251,7 +270,7 @@ class VideoClip (Layer):
         self.mediafile.rip_frames([start, end])
         self.frame_files.extend(self.mediafile.frame_files)
 
-    def draw_on(self, drawing, frame=1):
+    def draw(self, drawing, frame=1):
         """Draw ripped video frames to the given drawing. For now, it's
         necessary to call rip_frames() before calling this function.
         
@@ -304,7 +323,7 @@ class Text (Layer):
 
         return ex
 
-    def draw_on(self, drawing, frame=1):
+    def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
 
         # Drop in debugger
@@ -335,7 +354,7 @@ class Label (Text):
         self.position = position
 
 
-    def draw_on(self, drawing, frame=1):
+    def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
 
         (dx, dy, w, h, ax, ay) = self.extents(drawing)
@@ -361,7 +380,7 @@ class Label (Text):
         drawing.restore()
 
         # Call base Text class to draw the text
-        Text.draw_on(self, drawing, frame)
+        Text.draw(self, drawing, frame)
 
         # Restore context
         drawing.restore()
@@ -390,7 +409,7 @@ class TextBox (Text):
         assert(isinstance(position, tuple))
         self.position = position
 
-    def draw_on(self, drawing, frame=1):
+    def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
         drawing.save()
 
@@ -486,7 +505,7 @@ class Thumb (Layer):
         self.add_sublayer(self.lbl, self.position)
         
 
-    def draw_on(self, drawing, frame=1):
+    def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
         drawing.save()
         (dx, dy, w, h, ax, ay) = self.lbl.extents(drawing)
@@ -529,6 +548,7 @@ class ThumbGrid (Layer):
                 x = column * (width / self.columns)
                 y = row * (height / self.rows)
                 positions.append((x, y))
+
         # Add Thumb sublayers
         for file, position in zip(files, positions):
             title = os.path.basename(file)
@@ -558,7 +578,7 @@ class ThumbGrid (Layer):
         if rows == 0 and columns > 0:
             return (columns, (1 + num_items / columns))
 
-    def draw_on(self, drawing, frame=1):
+    def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
         drawing.save()
         self.draw_sublayers(drawing, frame)
@@ -577,7 +597,7 @@ class SafeArea (Layer):
         self.percent = percent
         self.color = color
         
-    def draw_on(self, drawing, frame=1):
+    def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
         # Calculate rectangle dimensions
         scale = float(self.percent) / 100.0
@@ -603,16 +623,16 @@ class TitleSafeArea (SafeArea):
     def __init__(self, color):
         SafeArea.__init__(self, 80, color)
 
-    def draw_on(self, drawing, frame=1):
-        SafeArea.draw_on(self, drawing, frame)
+    def draw(self, drawing, frame=1):
+        SafeArea.draw(self, drawing, frame)
 
 class ActionSafeArea (SafeArea):
     """Use the standard Action-safe area of 90%"""
     def __init__(self, color):
         SafeArea.__init__(self, 90, color)
 
-    def draw_on(self, drawing, frame):
-        SafeArea.draw_on(self, drawing, frame)
+    def draw(self, drawing, frame):
+        SafeArea.draw(self, drawing, frame)
 
 
 #####             #####
@@ -632,7 +652,7 @@ class Scatterplot (Layer):
         self.x_label = x_label
         self.y_label = y_label
 
-    def draw_on(self, drawing, frame):
+    def draw(self, drawing, frame):
         """Draw the scatterplot."""
         assert isinstance(drawing, Drawing)
         width, height = self.size
@@ -741,7 +761,7 @@ class InterpolationGraph (Layer):
         # Interpolate keyframes
         self.tween = Tween(keyframes, method)
 
-    def draw_on(self, drawing, frame):
+    def draw(self, drawing, frame):
         """Draw the interpolation graph, including frame/value axes,
         keyframes, and the interpolation curve."""
         assert isinstance(drawing, Drawing)
@@ -833,7 +853,7 @@ class ColorBars (Layer):
         assert(isinstance(position, tuple))
         self.position = position
 
-    def draw_on(self, drawing, frame=1):
+    def draw(self, drawing, frame=1):
 
         drawing.save()
         drawing.translate(self.position)
@@ -913,20 +933,20 @@ if __name__ == '__main__':
     
     # Draw a background layer
     bgd = Background(color='#7080A0')
-    bgd.draw_on(drawing, 1)
+    bgd.draw(drawing, 1)
 
     bars = ColorBars((320, 240), (320, 200))
-    bars.draw_on(drawing, 1)
+    bars.draw(drawing, 1)
 
     # Draw a text layer, with position.
     text = Text(u"Jackdaws love my big sphinx of quartz", position=(82, 62), color='#bbb')
-    text.draw_on(drawing, 1)
+    text.draw(drawing, 1)
 
     # Draw a text layer
     drawing.save()
     drawing.translate((80, 60))
     text = Text(u"Jackdaws love my big sphinx of quartz")
-    text.draw_on(drawing, 1)
+    text.draw(drawing, 1)
     drawing.restore()
 
 
@@ -936,33 +956,33 @@ if __name__ == '__main__':
     drawing.save()
     drawing.translate((50, 100))
     drawing.scale((3.0, 3.0))
-    template.draw_on(drawing, 1)
+    template.draw(drawing, 1)
     drawing.restore()
 
     # Draw a label (experimental)
     drawing.save()
     drawing.translate((300, 200))
     label = Label(u"tovid loves Linux")
-    label.draw_on(drawing, 1)
+    label.draw(drawing, 1)
     drawing.restore()
 
     # Draw a safe area test (experimental)
     safe = SafeArea(93, 'yellow')
-    safe.draw_on(drawing, 1)
+    safe.draw(drawing, 1)
 
     # Draw standard areas:
     #asafe = ActionSafeArea('red')
-    #asafe.draw_on(drawing, 1)
+    #asafe.draw(drawing, 1)
     #
     #tsafe = TitleSafeArea('green')
-    #tsafe.draw_on(drawing, 1)
+    #tsafe.draw(drawing, 1)
 
     # Draw a thumbnail grid (if images were provided)
     if images:
         drawing.save()
         drawing.translate((350, 300))
         thumbs = ThumbGrid(images, (320, 250))
-        thumbs.draw_on(drawing, 1)
+        thumbs.draw(drawing, 1)
         drawing.restore()
 
     # Draw an interpolation graph (experimental)
@@ -972,7 +992,7 @@ if __name__ == '__main__':
     keys = [Keyframe(1, 25), Keyframe(10, 5), Keyframe(30, 35),
             Keyframe(40, 35), Keyframe(45, 20), Keyframe(60, 40)]
     interp = InterpolationGraph(keys, method="cosine")
-    interp.draw_on(drawing, 25)
+    interp.draw(drawing, 25)
     drawing.restore()
 
     print "Output to /tmp/my.png"
