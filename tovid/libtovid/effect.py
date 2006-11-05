@@ -32,7 +32,7 @@ __all__ = [\
     'KeyFunction'
     ]
 
-from libtovid.render.cairo_ import Drawing
+from libtovid.render.drawing import Drawing
 from libtovid.animation import Keyframe, Tween
 
 class Effect:
