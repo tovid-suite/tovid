@@ -13,7 +13,7 @@
 #  - Layers in layer.py, to put something in your canvas
 #  - Effects in effect.py, for several effects, which you can extend
 #  - Flipbook for animation
-#  - cairo_ module for drawing primitives
+#  - Drawing module in drawing.py for drawing primitives
 #  - Video in video.py, if you want to deal with videos and convert them
 #      `-> is that true ?
 #  - Tween and Keyframe in animation.py, for key-framing
