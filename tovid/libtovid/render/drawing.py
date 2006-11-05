@@ -99,7 +99,7 @@ class Drawing:
     """
     def __init__(self, size=(720, 480)):
         # Use self.size and self.width + self.height instead of
-        # calling the cairo functions, because actualy values
+        # calling the cairo functions, because actually values
         # can change according to base_scaling, when dealing with
         # different aspect ratios.
         self.size = size
@@ -127,12 +127,12 @@ class Drawing:
         # Push/pop stack
         self.stack = []
 
-    def cry(self, mstr = ''):
-        """Just complain about deprecated functions
+    def cry(self, message = ''):
+        """Raise an error and print a deprecation message.
 
         Calls to this functions should all be removed before releasing.
         """
-        raise AssertionError, "Use of deprecated function. %s" % mstr
+        raise AssertionError, "Use of deprecated function. %s" % message
 
     #
     # Setup commands (auto-stuff)

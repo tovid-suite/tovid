@@ -22,6 +22,7 @@ __all__ = [\
     'Layer',
     'Background',
     'Text',
+    'TextBox',
     'Label',
     'VideoClip',
     'Image',
@@ -29,7 +30,8 @@ __all__ = [\
     'ThumbGrid',
     'SafeArea',
     'Scatterplot',
-    'InterpolationGraph'
+    'InterpolationGraph',
+    'ColorBars'
 ]
 
 import os
@@ -618,22 +620,6 @@ class SafeArea (Layer):
         # Restore context
         drawing.restore()
 
-class TitleSafeArea (SafeArea):
-    """Use the standard Title-safe area of 80%"""
-    def __init__(self, color):
-        SafeArea.__init__(self, 80, color)
-
-    def draw(self, drawing, frame=1):
-        SafeArea.draw(self, drawing, frame)
-
-class ActionSafeArea (SafeArea):
-    """Use the standard Action-safe area of 90%"""
-    def __init__(self, color):
-        SafeArea.__init__(self, 90, color)
-
-    def draw(self, drawing, frame):
-        SafeArea.draw(self, drawing, frame)
-
 
 #####             #####
 ##### Scatterplot #####
@@ -969,13 +955,6 @@ if __name__ == '__main__':
     # Draw a safe area test (experimental)
     safe = SafeArea(93, 'yellow')
     safe.draw(drawing, 1)
-
-    # Draw standard areas:
-    #asafe = ActionSafeArea('red')
-    #asafe.draw(drawing, 1)
-    #
-    #tsafe = TitleSafeArea('green')
-    #tsafe.draw(drawing, 1)
 
     # Draw a thumbnail grid (if images were provided)
     if images:

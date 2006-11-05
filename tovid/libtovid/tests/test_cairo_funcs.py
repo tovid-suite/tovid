@@ -194,7 +194,7 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.font_rotate(0)
 
     def test_text_stuff(self):
-        self.d.text((15, 15), "This isn't a Unicode é string")
+        self.d.text((15, 15), "This isn't a Unicode string")
         self.d.text((15, 15), u"This is a Unicode é string")
         self.d.text_extents(u"This is a Unicode é string")
 
