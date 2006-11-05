@@ -236,7 +236,10 @@ letterboxing or anamorphic scaling.
 
 : **-audiotrack** //NUM//
     Encode the given audio track, if the input video has multiple audio tracks.
-    //NUM// is //1// for the first track, //2// for the second, etc.
+    //NUM// is //1// for the first track, //2// for the second, etc. You may
+    also provide a list of tracks, separated by spaces or commas, for example
+    **-audiotrack 3,1,2**. Use **idvid** on your source video to determine which
+    audio tracks it contains.
 
 
 ===Other options===
