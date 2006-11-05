@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# test_layer.py
+
 import unittest
 import math
 # Fetch in subdir
@@ -23,23 +26,18 @@ class TestLayer(unittest.TestCase):
                              (600, 400))
         print "Creating a SafeArea Layer"
         safe_area = layer.SafeArea(93, 'yellow')
-        print "Creating a TitleSafeArea Layer"
-        title_safe_area = layer.TitleSafeArea('yellow')
-        print "Creating an ActionSafeArea Layer"
-        action_safe_area = layer.ActionSafeArea('white')
         print "Creating an InterpolationGraph Layer"
         keys = [Keyframe(0, 0), Keyframe(90, 100)]
         interpolation_graph = layer.InterpolationGraph(keys)
         print "Creating a ColorBars Layer"
-        color_bars = layer.ColorBars((320, 240), (50, 50)) # At a given pos.
+        color_bars = layer.ColorBars((320, 240), (150, 150))
 
         # Test drawing
         pic = Drawing()
-        thumb.draw_on(pic, 1)
-        thumb_grid.draw_on(pic, 1)
-        safe_area.draw_on(pic, 1)
-        title_safe_area.draw_on(pic, 1)
-        action_safe_area.draw_on(pic, 1)
+        thumb.draw(pic, 1)
+        thumb_grid.draw(pic, 1)
+        safe_area.draw(pic, 1)
+        color_bars.draw(pic, 1)
         pic.display()
 
 if __name__ == '__main__':
