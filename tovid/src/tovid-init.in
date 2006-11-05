@@ -73,7 +73,7 @@ TOVID_FORUMS="http://www.createphpbb.com/tovid/"
 # call the function like this:
 #     RETURN_VALUE=$(abspath "$FILENAME")
 # ******************************************************************************
-function abspath()
+abspath()
 {
     DIR=$(dirname "$1")
     BASE=$(basename "$1")
@@ -86,7 +86,7 @@ function abspath()
 # Input args: $1 = Base name (i.e., "work_dir")
 # Return value is echoed to stdout (i.e., "work_dir.3")
 # ******************************************************************************
-function tempdir()
+tempdir()
 {
     NUM=0
     BASENAME="$1"
@@ -114,33 +114,31 @@ function tempdir()
 # ex: verify $CMD_LN_OPT range "0 10"
 #     will return ":" (true) if 0 <= $CMD_LN_OPT <= 10
 # ******************************************************************************
-function verify()
+verify()
 {
-  VERIFY_VAR="$1"
-  VERIFY_TEST_TYPE="$2"
-  case $VERIFY_TEST_TYPE in
-     "range" )
-     VERIFY_LOW=$(echo "$3" | awk '{ print $1 }')
-     VERIFY_HIGH=$(echo "$3" | awk '{ print $2 }')
+    VERIFY_VAR="$1"
+    VERIFY_TEST_TYPE="$2"
+    case $VERIFY_TEST_TYPE in
+    "range" )
+        VERIFY_LOW=$(echo "$3" | awk '{ print $1 }')
+        VERIFY_HIGH=$(echo "$3" | awk '{ print $2 }')
+        if test $VERIFY_LOW -le $VERIFY_VAR && \
+        test $VERIFY_HIGH -ge $VERIFY_VAR; then
+            echo ":"
+        else
+            echo "false"
+        fi 
+        ;;
 
-     if test $VERIFY_LOW -le $VERIFY_VAR && \
-        test $VERIFY_HIGH -ge $VERIFY_VAR
-     then
-        echo ":"
-     else
-        echo "false"
-     fi 
-     ;;
+    "set" )
+        VERIFY_SET="$3"
 
-     "set" )
-     VERIFY_SET="$3"
-
-     if echo "$VERIFY_SET" | grep -w "$VERIFY_VAR" >> /dev/null 2>&1; then
-         echo ":"
-     else
-         echo "false"
-     fi
-     ;;
+        if echo "$VERIFY_SET" | grep -q -w "$VERIFY_VAR"; then
+            echo ":"
+        else
+            echo "false"
+        fi
+        ;;
   esac
 }
 
@@ -148,16 +146,16 @@ function verify()
 # Print a pretty (wrapped) notice message.
 # Args: $@ == text string containing the message 
 # ******************************************************************************
-function precho()
+precho()
 {
-  echo -e "$@" | fold -s -w ${COLUMNS:-80}
+    echo -e "$@" | fold -s -w ${COLUMNS:-80}
 }
 
 # ******************************************************************************
 # Print error message, then exit.
 # Args: $@ == text string containing error message 
 # ******************************************************************************
-function exit_with_error()
+exit_with_error()
 {
     echo $@
     exit 1
@@ -169,7 +167,7 @@ function exit_with_error()
 # call the function like this:
 #     RETURN_VALUE=$(format_time $NUM_SECONDS)
 # ******************************************************************************
-function format_time()
+format_time()
 {
     HMS_HOURS=$(expr $1 / 3600)
     HMS_MINS=$(expr \( $1 % 3600 \) / 60)
@@ -189,11 +187,11 @@ function format_time()
 # as a "return value", call the function like this:
 #     RETURN_VALUE=$(unformat_time $TIME_STRING)
 # ******************************************************************************
-function unformat_time()
+unformat_time()
 {
-    HMS_HOURS=$(awk -F ':' '{print $1}' <<< $1)
-    HMS_MINS=$(awk -F ':' '{print $2}' <<< $1)
-    HMS_SECS=$(awk -F ':' '{print $3}' <<< $1)
+    HMS_HOURS=$(echo $1 | awk -F ':' '{print $1}')
+    HMS_MINS=$(echo $1 | awk -F ':' '{print $2}')
+    HMS_SECS=$(echo $1 | awk -F ':' '{print $3}')
     TOT_SECONDS=$(expr $HMS_HOURS \* 3600 + $HMS_MINS \* 60 + $HMS_SECS)
     echo $TOT_SECONDS
 }
@@ -204,7 +202,7 @@ function unformat_time()
 # Args: $1 = name of file to monitor
 #       $2 = a short message to display, such as "Encoding video"
 # ******************************************************************************
-function file_output_progress()
+file_output_progress()
 {
     if $FAKE; then
         return
@@ -294,42 +292,42 @@ function file_output_progress()
 # -refresh-deps to tovid-init from a prompt, then tovid-init will re-check and 
 # re-write the file.
 # ******************************************************************************
-function check_dep_group()
+check_dep_group()
 {
-#save_IFS=$IFS
-#IFS=' '
+    #save_IFS=$IFS
+    #IFS=' '
 
-group_name="$1"
-dep_list="$2"
+    group_name="$1"
+    dep_list="$2"
 
-GROUP_PASS=:
-for DEP in $dep_list; do
-  HAVE_DEP=$(which -a $DEP)
-  NUM_DEP=$(echo "$HAVE_DEP" | wc -l)
-  if test -z "$HAVE_DEP"; then
-     DEP_STATUS="MISSING"
-     DEP_MSG=$(echo ${DEP}_msg)
-     DEP_MSG=$(eval echo $DEP_MSG)
-     GROUP_PASS=false
-  elif test "$NUM_DEP" -eq 1; then
-     DEP_STATUS="ok"
-     DEP_MSG="$HAVE_DEP"
-  else
-     DEP_STATUS="ok, using"
-     FOUND_DEPS=$(echo -n "$HAVE_DEP" | tr '\n' ' ')
-     DEP_MSG=$(which $DEP)
-     for FOUND_DEP in ${FOUND_DEPS[@]}; do
-         DEP_MSG=$(echo "$DEP_MSG"; printf "  %-11s %+9s  %s" " " " " "found: $FOUND_DEP")
-     done
-  fi
-  printf "  %-11s %+9s: %s\n" "$DEP" "$DEP_STATUS" "$DEP_MSG" >> $DEP_LIST_FILE
-  j=$(expr $j \+ 1)
-done
+    GROUP_PASS=:
+    for DEP in $dep_list; do
+        HAVE_DEP=$(which -a $DEP)
+        NUM_DEP=$(echo "$HAVE_DEP" | wc -l)
+        if test -z "$HAVE_DEP"; then
+            DEP_STATUS="MISSING"
+            DEP_MSG=$(echo ${DEP}_msg)
+            DEP_MSG=$(eval echo $DEP_MSG)
+            GROUP_PASS=false
+        elif test "$NUM_DEP" -eq 1; then
+            DEP_STATUS="ok"
+            DEP_MSG="$HAVE_DEP"
+        else
+            DEP_STATUS="ok, using"
+            FOUND_DEPS=$(echo -n "$HAVE_DEP" | tr '\n' ' ')
+            DEP_MSG=$(which $DEP)
+            for FOUND_DEP in $FOUND_DEPS; do
+                DEP_MSG=$(echo "$DEP_MSG"; printf "  %-11s %+9s  %s" " " " " "found: $FOUND_DEP")
+            done
+        fi
+        printf "  %-11s %+9s: %s\n" "$DEP" "$DEP_STATUS" "$DEP_MSG" >> $DEP_LIST_FILE
+        j=$(expr $j \+ 1)
+    done
 
-echo >> $DEP_LIST_FILE
-if $GROUP_PASS; then DEP_SUMMARY="$DEP_SUMMARY$group_name "; fi
+    echo >> $DEP_LIST_FILE
+    $GROUP_PASS && DEP_SUMMARY="$DEP_SUMMARY$group_name "
 
-#IFS=$save_IFS
+    #IFS=$save_IFS
 }
 
 # ******************************************************************************
@@ -339,22 +337,22 @@ if $GROUP_PASS; then DEP_SUMMARY="$DEP_SUMMARY$group_name "; fi
 #             dependencies for
 #
 # ******************************************************************************
-function assert_dep_group ()
+assert_dep_group()
 {
-DEP_TO_CHECK="$1"
-DEP_MESSAGE="$2"
+    DEP_TO_CHECK="$1"
+    DEP_MESSAGE="$2"
 
-MISSING_DEPS=`cat $DEP_LIST_FILE | tr '\n' '\t' | awk -F "# $DEP_TO_CHECK" '{ print $2 }' | \
-              awk -F '\t\t#' '{ print $1 }' | tr '\t' '\n' | grep "MISSING"`
+    MISSING_DEPS=`cat $DEP_LIST_FILE | tr '\n' '\t' | awk -F "# $DEP_TO_CHECK" '{ print $2 }' | \
+                  awk -F '\t\t#' '{ print $1 }' | tr '\t' '\n' | grep "MISSING"`
 
-if ! grep -q "have.*$DEP_TO_CHECK" $DEP_LIST_FILE; then
-    echo "$DEP_MESSAGE"
-    echo
-    echo "$MISSING_DEPS"
-    echo
-    precho "Please install the above MISSING dependencies, run 'tovid -refresh-deps', and try again."
-    exit 1;
-fi
+    if ! grep -q "have.*$DEP_TO_CHECK" $DEP_LIST_FILE; then
+        echo "$DEP_MESSAGE"
+        echo
+        echo "$MISSING_DEPS"
+        echo
+        precho "Please install the above MISSING dependencies, run 'tovid -refresh-deps', and try again."
+        exit 1;
+    fi
 }
 
 # ******************************************************************************
@@ -364,28 +362,28 @@ fi
 #                  dependencies for
 # 
 # ******************************************************************************
-function assert_dep ()
+assert_dep()
 {
-DEP_TO_CHECK="$1"
-DEP_MESSAGE="$2"
+    DEP_TO_CHECK="$1"
+    DEP_MESSAGE="$2"
 
-MISSING_DEP=$(grep "$DEP_TO_CHECK" "$DEP_LIST_FILE")
+    MISSING_DEP=$(grep "$DEP_TO_CHECK" "$DEP_LIST_FILE")
 
-if grep -q "$DEP_TO_CHECK.*MISSING" "$DEP_LIST_FILE"; then
-    echo "$DEP_MESSAGE"
-    echo
-    echo "$MISSING_DEP"
-    echo
-    precho "Please install the above MISSING dependency, run 'tovid -refresh-deps', and try again."
-    exit 1;
-fi
+    if grep -q "$DEP_TO_CHECK.*MISSING" "$DEP_LIST_FILE"; then
+        echo "$DEP_MESSAGE"
+        echo
+        echo "$MISSING_DEP"
+        echo
+        precho "Please install the above MISSING dependency, run 'tovid -refresh-deps', and try again."
+        exit 1;
+    fi
 }
 
 # ******************************************************************************
 # Countdown 5 seconds, then return
 # TODO: Take argument # of seconds
 # ******************************************************************************
-function countdown()
+countdown()
 {
     for _CNTR in 5 4 3 2 1; do
         echo -n -e " in $_CNTR seconds...\r"
@@ -410,7 +408,7 @@ REFRESH_DEPS=false
 # NOTE: cannot check for bad ones here b/c other scripts' options will pass thru
 # here when tovid-init is sourced. Must be very hands off.
 if test x"$1" = x"-refresh-deps"; then
-   REFRESH_DEPS=:
+    REFRESH_DEPS=:
 fi
 
 # ******************************************************************************
@@ -438,17 +436,15 @@ fi
 # ******************************************************************************
 
 # Make home!
-if test -d "$TOVID_HOME"; then :
-else
-  mkdir "$TOVID_HOME"
+if ! test -d "$TOVID_HOME"; then
+    mkdir "$TOVID_HOME"
 fi
 
 # Config file configuration and creation
 CONFIG_FILE=$TOVID_HOME/tovid.config
 
-if test -f $CONFIG_FILE; then :
-else
-  CONFIG_CONTENTS=`cat << EOF
+if ! test -f $CONFIG_FILE; then
+    CONFIG_CONTENTS=`cat << EOF
 tovid
 # Sample tovid configuration file
 # Each line may have one or more tovid options
@@ -472,7 +468,7 @@ tovid
 #-ntsc
 #-ntscfilm
 EOF`
-  printf "$CONFIG_CONTENTS\n" > "$CONFIG_FILE"
+    printf "$CONFIG_CONTENTS\n" > "$CONFIG_FILE"
 fi
 
 # Working directory configuration
@@ -501,16 +497,14 @@ fi
 # ******************************************************************************
 
 DEP_LIST_FILE=$TOVID_HOME/dependency.list
-DEP_LIST_VERSION=$( awk -F ': ' '/tovid version/ { print $2 }' $DEP_LIST_FILE)
+DEP_LIST_VERSION=$(awk -F ': ' '/tovid version/ { print $2 }' $DEP_LIST_FILE)
 
-if $REFRESH_DEPS || test "$DEP_LIST_VERSION" != "$TOVID_VERSION" ; then
-  echo "Removing old dependency list file..."
-  rm -fv $DEP_LIST_FILE
+if $REFRESH_DEPS || test "$DEP_LIST_VERSION" != "$TOVID_VERSION"; then
+    echo "Removing old dependency list file..."
+    rm -fv $DEP_LIST_FILE
 fi
 
-if ! test -f $DEP_LIST_FILE
-then
-  echo "Generating dependency list file..."
+
 # Adding (or removing) dependencies:
 # (1) Does it belong to an existing group? If so, then add it to the list in
 #     [GROUP]_DEPS. If not, you'll need to add a new group. (keep reading...)
@@ -530,89 +524,91 @@ then
 # (5) Add a comment that describes the new dependency group to the
 #     DEP_GROUP_COMMENTS array. (eg add [5]="# needed to have a fish fry")
 
-# List all the dependency groups. When every member of one group is found,
-# the name of the group will be added to the summary section of $DEP_LIST_FILE
-# for group grepping a la: if ! grep "have.*foo" $DEP_LIST_FILE; then exit 1; fi
-DEP_GROUPS=(core magick dvd vcd transcode plugins)
+if ! test -f $DEP_LIST_FILE; then
+    echo "Generating dependency list file..."
+    # List all the dependency groups. When every member of one group is found,
+    # the name of the group will be added to the summary section of $DEP_LIST_FILE
+    # for group grepping a la: if ! grep "have.*foo" $DEP_LIST_FILE; then exit 1; fi
+    DEP_GROUPS=(core magick dvd vcd transcode plugins)
 
-# ******************************************************************************
-# Required Dependencies 
-# ******************************************************************************
-CORE_DEPS="grep sed md5sum mplayer mencoder mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv ffmpeg"
-grep_msg="a GNU utility (www.gnu.org/software/grep)"
-sed_msg="a GNU utility (directory.fsf.org/GNU/sed.html)"
-md5sum_msg="a GNU utility (www.gnu.org/software/coreutils)"
-mplayer_msg="part of mplayer (www.mplayerhq.hu)"
-mencoder_msg="$mplayer_msg"
-mplex_msg="part of mjpegtools (mjpeg.sf.net}"
-mpeg2enc_msg="$mplex_msg"
-yuvfps_msg="$mplex_msg"
-yuvdenoise_msg="$mplex_msg"
-ppmtoy4m_msg="$mplex_msg"
-mp2enc_msg="$mplex_msg"
-jpeg2yuv_msg="$mplex_msg"
-ffmpeg_msg="a video encoding utility (ffmpeg.sf.net)"
+    # ******************************************************************************
+    # Required Dependencies 
+    # ******************************************************************************
+    CORE_DEPS="grep sed md5sum mplayer mencoder mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv ffmpeg"
+    grep_msg="a GNU utility (www.gnu.org/software/grep)"
+    sed_msg="a GNU utility (directory.fsf.org/GNU/sed.html)"
+    md5sum_msg="a GNU utility (www.gnu.org/software/coreutils)"
+    mplayer_msg="part of mplayer (www.mplayerhq.hu)"
+    mencoder_msg="$mplayer_msg"
+    mplex_msg="part of mjpegtools (mjpeg.sf.net}"
+    mpeg2enc_msg="$mplex_msg"
+    yuvfps_msg="$mplex_msg"
+    yuvdenoise_msg="$mplex_msg"
+    ppmtoy4m_msg="$mplex_msg"
+    mp2enc_msg="$mplex_msg"
+    jpeg2yuv_msg="$mplex_msg"
+    ffmpeg_msg="a video encoding utility (ffmpeg.sf.net)"
 
-# ******************************************************************************
-# Optional Dependencies (not quite optional yet...)
-# ******************************************************************************
-# Optional dependencies are grouped according to the functionality they bring
-# to tovid: menu creation, DVD creation, (S)VCD creation, and post-processing.
+    # ******************************************************************************
+    # Optional Dependencies (not quite optional yet...)
+    # ******************************************************************************
+    # Optional dependencies are grouped according to the functionality they bring
+    # to tovid: menu creation, DVD creation, (S)VCD creation, and post-processing.
 
-# ------------------------------------------------------------------------------
-# ImageMagick components
-MAGICK_DEPS="composite convert"
-composite_msg="part of ImageMagick (www.imagemagick.org)"
-convert_msg="$composite_msg"
+    # ------------------------------------------------------------------------------
+    # ImageMagick components
+    MAGICK_DEPS="composite convert"
+    composite_msg="part of ImageMagick (www.imagemagick.org)"
+    convert_msg="$composite_msg"
 
-# ------------------------------------------------------------------------------
-# dvdauthor compononets
-# (note: growisofs is NOT distributed with dvdauthor, but for tovid's
-# purposes, it fits in the same catagory, as it burns DVDs!)
-DVD_DEPS="spumux dvdauthor growisofs"
-spumux_msg="part of dvdauthor (dvdauthor.sf.net)"
-dvdauthor_msg="$spumux_msg"
-growisofs_msg="part of dvd+rw-tools: (fy.chalmers.se/~appro/linux/DVD+RW)"
+    # ------------------------------------------------------------------------------
+    # dvdauthor compononets
+    # (note: growisofs is NOT distributed with dvdauthor, but for tovid's
+    # purposes, it fits in the same catagory, as it burns DVDs!)
+    DVD_DEPS="spumux dvdauthor growisofs"
+    spumux_msg="part of dvdauthor (dvdauthor.sf.net)"
+    dvdauthor_msg="$spumux_msg"
+    growisofs_msg="part of dvd+rw-tools: (fy.chalmers.se/~appro/linux/DVD+RW)"
 
-# ------------------------------------------------------------------------------
-# vcdimager components
-# (note: cdrdao is NOT distributed with vcdimager, but for tovid's
-# purposes, it fits in the same catagory, as it burns (S)VCDs!)
-VCD_DEPS="vcdxbuild cdrdao"
-vcdxbuild_msg="part of vcdimager (www.vcdimager.org)"
-cdrdao_msg="a standalone package (cdrdao.sf.net)"
+    # ------------------------------------------------------------------------------
+    # vcdimager components
+    # (note: cdrdao is NOT distributed with vcdimager, but for tovid's
+    # purposes, it fits in the same catagory, as it burns (S)VCDs!)
+    VCD_DEPS="vcdxbuild cdrdao"
+    vcdxbuild_msg="part of vcdimager (www.vcdimager.org)"
+    cdrdao_msg="a standalone package (cdrdao.sf.net)"
 
-# ------------------------------------------------------------------------------
-# transcode components
-TRANSCODE_DEPS="tcprobe tcrequant"
-tcprobe_msg="part of transcode (www.transcoding.org)"
-tcrequant_msg="$tcprobe_msg"
+    # ------------------------------------------------------------------------------
+    # transcode components
+    TRANSCODE_DEPS="tcprobe tcrequant"
+    tcprobe_msg="part of transcode (www.transcoding.org)"
+    tcrequant_msg="$tcprobe_msg"
 
-# ------------------------------------------------------------------------------
-# Plugin tools
-PLUGIN_DEPS="sox normalize"
-sox_msg="swiss army knife for sound (sox.sf.net)"
-normalize_msg="wave gain and normalization (normalize.nongnu.org)"
+    # ------------------------------------------------------------------------------
+    # Plugin tools
+    PLUGIN_DEPS="sox normalize"
+    sox_msg="swiss army knife for sound (sox.sf.net)"
+    normalize_msg="wave gain and normalization (normalize.nongnu.org)"
 
-# Construct an array of each dependency group's members. Conveniently holds
-# ALL of tovid's run-time dependencies (echo ${DEP_GROUP_MEMBERS[@]}).
-DEP_GROUP_MEMBERS=([0]="$CORE_DEPS" [1]="$MAGICK_DEPS" [2]="$DVD_DEPS" [3]="$VCD_DEPS" [4]="$TRANSCODE_DEPS" [5]="$PLUGIN_DEPS")
+    # Construct an array of each dependency group's members. Conveniently holds
+    # ALL of tovid's run-time dependencies (echo ${DEP_GROUP_MEMBERS[@]}).
+    DEP_GROUP_MEMBERS=("$CORE_DEPS" "$MAGICK_DEPS" "$DVD_DEPS" "$VCD_DEPS" "$TRANSCODE_DEPS" "$PLUGIN_DEPS")
 
-# Comments describing each group of dependencies. Note the leading '#' isn't
-# necessary as this file isn't sourced, but it helps with readability.
-DEP_GROUP_COMMENTS=([0]="# core" [1]="# magick (needed to make menus and slideshows)" [2]="# dvd (needed to make DVD menus and burn DVDs)" [3]="# vcd (needed to burn (S)VCDs)" [4]="# transcode (needed for animated menus)" [5]="# plugins (needed for other specific tasks)")
+    # Comments describing each group of dependencies. Note the leading '#' isn't
+    # necessary as this file isn't sourced, but it helps with readability.
+    DEP_GROUP_COMMENTS=("# core" "# magick (needed to make menus and slideshows)" "# dvd (needed to make DVD menus and burn DVDs)" "# vcd (needed to burn (S)VCDs)" "# transcode (needed for animated menus)" "# plugins (needed for other specific tasks)")
 
-# Check for deps and write the list file.
-echo "# tovid version: $TOVID_VERSION" >> "${DEP_LIST_FILE}"
-i=0
-for dep_group in ${DEP_GROUPS[@]}; do
-  echo "${DEP_GROUP_COMMENTS[i]}" >> "${DEP_LIST_FILE}"
-  check_dep_group "$dep_group" "${DEP_GROUP_MEMBERS[i]}"
-  let i=i+1
-done
+    # Check for deps and write the list file.
+    echo "# tovid version: $TOVID_VERSION" >> "${DEP_LIST_FILE}"
+    i=0
+    for dep_group in $DEP_GROUPS[@]; do
+      echo "$DEP_GROUP_COMMENTS[$i]" >> "${DEP_LIST_FILE}"
+      check_dep_group "$dep_group" "$DEP_GROUP_MEMBERS[$i]"
+      let i=i+1
+    done
 
-echo "# summary" >> $DEP_LIST_FILE
-echo "have: $DEP_SUMMARY" >> $DEP_LIST_FILE
+    echo "# summary" >> $DEP_LIST_FILE
+    echo "have: $DEP_SUMMARY" >> $DEP_LIST_FILE
 fi
 
 # Quit and complain if ANY core dependency is missing.
