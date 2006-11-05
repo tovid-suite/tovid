@@ -149,7 +149,6 @@ ASPECT_ARG=all
 WIDE_SCREEN=false
 WIDESCREEN="nopanscan"
 WIDESCREEN_ARG=all
-WIDESCREEN_ARGS=""
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -427,6 +426,20 @@ function confirm_dep()
     fi
 }
 
+function get_args()
+{
+    unset x ARGS_ARRAY
+    shift
+    # Hackish list-parsing
+    while test $# -gt 0 && test ${1:0:1} != "-"; do
+        ARGS_ARRAY[x++]="$1" 
+        shift
+    done
+    # Do not skip past the next argument
+    if test $# -gt 0 && test ${1:0:1} = "-";then
+        DO_SHIFT=false
+    fi
+}
 ##############################################################################
 #                          	End of functions                                 #
 ##############################################################################
@@ -448,6 +461,7 @@ while test $# -gt 0; do
     case "$1" in
         "-files" )
             shift
+            OIFS=$IFS;IFS=""
             # Hackish list-parsing
             while test $# -gt 0 && test ${1:0:1} != "-"; do
                 FILES=("${FILES[@]}" "$1")
@@ -455,28 +469,27 @@ while test $# -gt 0; do
             done
             # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
+            IFS=$OIFS
             ;;
         "-titles" )
             shift
-            # Hackish list-parsing
-            IFS="";while test $# -gt 0 && test ${1:0:1} != "-"; do
+            OIFS=$IFS;IFS=""
+            while test $# -gt 0 && test ${1:0:1} != "-"; do
                 TITLES=("${TITLES[@]}" "$1")
                 shift
             done
-            # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
-            unset IFS
+            IFS=$OIFS
             ;;
         "-submenu-titles" )
             shift
-            # Hackish list-parsing
-            IFS="";while test $# -gt 0 && test ${1:0:1} != "-"; do
+            OIFS=$IFS;IFS=""
+            while test $# -gt 0 && test ${1:0:1} != "-"; do
                 SM_TITLES=("${SM_TITLES[@]}" "$1")
                 shift
             done
-            # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
-            unset IFS
+            IFS=$OIFS
             ;;
         "-textmenu" )
             TEXTMENU=:
@@ -507,19 +520,21 @@ while test $# -gt 0; do
             TV_STANDARD=pal
             ;;
         "-aspect" )
-            unset ASPECT ASPECT_ARG
+            unset ASPECT ASPECT_ARG x
             shift
-            # Hackish list-parsing
             while test $# -gt 0 && test ${1:0:1} != "-"; do
-                ASPECT_ARGS="$ASPECT_ARGS $1" 
+                ASPECT_ARGS[x++]="$1" 
                 shift
             done
-            # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-";then
                 DO_SHIFT=false
             fi
-            ASPECT_ARG=$(awk '{print $2}' <<<"$ASPECT_ARGS")
-            ASPECT=$(awk '{print $1}' <<<"$ASPECT_ARGS")
+            if [[ ${#ASPECT_ARGS[@]} -gt 0 ]]; then
+                ASPECT=${ASPECT_ARGS[0]}
+            fi
+            if [[ ${#ASPECT_ARGS[@]} -gt 1 ]]; then
+                ASPECT_ARG=${ASPECT_ARGS[1]}
+            fi
             if [[ "$ASPECT_ARG" = all || "$ASPECT_ARG" = menu || -z "$ASPECT_ARG" ]]; then
                 ASPECT_RATIO=$ASPECT
                 M_ASPECT="aspect=\"$ASPECT\""
@@ -529,25 +544,23 @@ while test $# -gt 0; do
             fi
             ;;
         "-widescreen" )
-            unset WIDESCREEN WIDESCREEN_ARG
+            WIDE_SCREEN=:
+            unset WIDESCREEN WIDESCREEN_ARG x
             shift
-            # Hackish list-parsing
             while test $# -gt 0 && test ${1:0:1} != "-"; do
-                WIDESCREEN_ARGS="$WIDESCREEN_ARGS $1" 
+                WIDESCREEN_ARGS[x++]="$1"
                 shift
             done
-            # Do not skip past the next argument
             if test $# -gt 0 && test ${1:0:1} = "-";then
                 DO_SHIFT=false
             fi
-            if [[ -n "$WIDESCREEN_ARGS" ]]; then
-                WIDESCREEN=$(awk '{print $1}' <<<"$WIDESCREEN_ARGS")
-                WIDESCREEN_ARG=$(awk '{print $2}' <<<"$WIDESCREEN_ARGS")
-            else
-                WIDESCREEN=nopanscan
-                WIDESCREEN_ARG=all
-            fi
             WIDE_SCREEN=:
+            if [[ ${#WIDESCREEN_ARGS[@]} -gt 0 ]]; then
+                WIDESCREEN=${WIDESCREEN_ARGS[0]}
+            else
+                WIDESCREEN=nopanscan; WS_ARG=all
+            fi
+            if [[ ${#WIDESCREEN_ARGS[@]} -gt 1 ]]; then WS_ARG=${WIDESCREEN_ARGS[1]};fi
             ;;
         "-showcase-safe-area" )
             shift
@@ -1370,20 +1383,31 @@ if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
 # spumux and dvdauthor vars
 if $WIDE_SCREEN; then
-    if [[ -n "$V_ASPECT" ]]; then
+    if [[ "$WS_ARG" = all || "$WS_ARG" = video ]]; then
         TITLES_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $V_ASPECT/>"
+        TITLES_VIDEO_TAG="$(sed 's/ \/>/\/>/' <<< ${TITLES_VIDEO_TAG})"
     fi
-    if [[ -n "$M_ASPECT" ]]; then
+    if [[ "$WS_ARG" = all || "$WS_ARG" = menu ]]; then
         MENU_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $M_ASPECT/>"
+        MENU_VIDEO_TAG="$(sed 's/ \/>/\/>/' <<< ${MENU_VIDEO_TAG})"
     fi
-    if [[ -z "$WIDESCREEN_ARGS" ]]; then
+    if [ ${#WIDESCREEN_ARGS[@]} -lt 1 ]; then
         MENU_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $M_ASPECT/>"
+        MENU_VIDEO_TAG="$(sed 's/ \/>/\/>/' <<< ${MENU_VIDEO_TAG})"
         TITLES_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $V_ASPECT/>"
+        TITLES_VIDEO_TAG="$(sed 's/ \/>/\/>/' <<< ${TITLES_VIDEO_TAG})"
     fi
 fi
 if [[ -n "$V_ASPECT" || -n "$M_ASPECT" ]] &&  ! $WIDE_SCREEN; then
-        TITLES_VIDEO_TAG="<video $V_ASPECT/>"
+    TITLES_VIDEO_TAG="<video $V_ASPECT/>"
+    MENU_VIDEO_TAG="<video $M_ASPECT/>"
+fi
+if [[ -n "$M_ASPECT" ]] && [[ "$WS_ARG" = video ]]; then
         MENU_VIDEO_TAG="<video $M_ASPECT/>"
+        MENU_VIDEO_TAG="$(sed 's/ \/>/\/>/' <<< ${MENU_VIDEO_TAG})"
+elif [[ -n "$V_ASPECT" ]] && [[ "$WS_ARG" = menu ]]; then
+        TITLES_VIDEO_TAG="<video $V_ASPECT/>"
+        TITLES_VIDEO_TAG="$(sed 's/ \/>/\/>/' <<< ${TITLES_VIDEO_TAG})"
 fi
 START="00:00:00.0"
 if $PLAYALL; then
