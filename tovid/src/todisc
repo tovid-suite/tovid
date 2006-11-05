@@ -426,6 +426,20 @@ function confirm_dep()
     fi
 }
 
+function get_args()
+{
+    unset x ARGS_ARRAY
+    # Hackish list-parsing
+    while test $# -gt 0 && test ${1:0:1} != "-"; do
+        ARGS_ARRAY[x++]="$1"
+        shift
+    done
+    # Do not skip past the next argument
+    if test $# -gt 0 && test ${1:0:1} = "-";then
+        DO_SHIFT=false
+    fi
+}
+
 ##############################################################################
 #                          	End of functions                                 #
 ##############################################################################
@@ -447,34 +461,21 @@ while test $# -gt 0; do
     case "$1" in
         "-files" )
             shift
-            OIFS=$IFS;IFS=""
-            # Hackish list-parsing
-            while test $# -gt 0 && test ${1:0:1} != "-"; do
-                FILES=("${FILES[@]}" "$1")
-                shift
-            done
-            # Do not skip past the next argument
-            if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
-            IFS=$OIFS
+            get_args "$@"
+            FILES=( "${ARGS_ARRAY[@]}" )
             ;;
         "-titles" )
             shift
+            get_args "$@"
             OIFS=$IFS;IFS=""
-            while test $# -gt 0 && test ${1:0:1} != "-"; do
-                TITLES=("${TITLES[@]}" "$1")
-                shift
-            done
-            if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
+            TITLES=( "${ARGS_ARRAY[@]}" )
             IFS=$OIFS
             ;;
         "-submenu-titles" )
             shift
+            get_args "$@"
             OIFS=$IFS;IFS=""
-            while test $# -gt 0 && test ${1:0:1} != "-"; do
-                SM_TITLES=("${SM_TITLES[@]}" "$1")
-                shift
-            done
-            if test $# -gt 0 && test ${1:0:1} = "-"; then DO_SHIFT=false; fi
+            SM_TITLES=( "${ARGS_ARRAY[@]}" )
             IFS=$OIFS
             ;;
         "-textmenu" )
@@ -506,15 +507,10 @@ while test $# -gt 0; do
             TV_STANDARD=pal
             ;;
         "-aspect" )
-            unset ASPECT ASPECT_ARG x
+            unset ASPECT ASPECT_ARG
             shift
-            while test $# -gt 0 && test ${1:0:1} != "-"; do
-                ASPECT_ARGS[x++]="$1" 
-                shift
-            done
-            if test $# -gt 0 && test ${1:0:1} = "-";then
-                DO_SHIFT=false
-            fi
+            get_args "$@"
+            ASPECT_ARGS=( ${ARGS_ARRAY[@]} )
             if [[ ${#ASPECT_ARGS[@]} -gt 0 ]]; then
                 ASPECT=${ASPECT_ARGS[0]}
             fi
@@ -531,22 +527,14 @@ while test $# -gt 0; do
             ;;
         "-widescreen" )
             WIDE_SCREEN=:
-            unset WIDESCREEN WIDESCREEN_ARG x
+            unset WIDESCREEN WIDESCREEN_ARG
             shift
-            while test $# -gt 0 && test ${1:0:1} != "-"; do
-                WIDESCREEN_ARGS[x++]="$1"
-                shift
-            done
-            if test $# -gt 0 && test ${1:0:1} = "-";then
-                DO_SHIFT=false
-            fi
+            get_args "$@"
+            WIDESCREEN_ARGS=( ${ARGS_ARRAY[@]} )
             WIDE_SCREEN=:
-            if [[ ${#WIDESCREEN_ARGS[@]} -gt 0 ]]; then
-                WIDESCREEN=${WIDESCREEN_ARGS[0]}
-            else
-                WIDESCREEN=nopanscan; WS_ARG=all
-            fi
-            if [[ ${#WIDESCREEN_ARGS[@]} -gt 1 ]]; then WS_ARG=${WIDESCREEN_ARGS[1]};fi
+            (( ${#WIDESCREEN_ARGS[@]} > 0)) && WIDESCREEN=${WIDESCREEN_ARGS[0]} || \
+            WIDESCREEN=nopanscan; WS_ARG=all
+            (( ${#WIDESCREEN_ARGS[@]} > 1)) && WS_ARG=${WIDESCREEN_ARGS[1]}
             ;;
         "-showcase-safe-area" )
             shift
@@ -584,13 +572,8 @@ while test $# -gt 0; do
             ;;
         "-chain-videos" )
             shift
-            while test $# -gt 0 && test ${1:0:1} != "-"; do
-                chains_in="$chains_in $1" 
-                shift
-            done
-            if test $# -gt 0 && test ${1:0:1} = "-";then
-                DO_SHIFT=false
-            fi
+            get_args "$@"
+            chains_in="${ARGS_ARRAY[@]}" 
             post_play=${chains_in//,/ }
             CHAIN_VIDEOS=:
             ;;
@@ -708,36 +691,21 @@ while test $# -gt 0; do
         "-chapters" )
             unset CHAPTERS
             shift
-            while test $# -gt 0 && test ${1:0:1} != "-"; do
-                CHAPTERS="$CHAPTERS $1" 
-                shift
-            done
-            if test $# -gt 0 && test ${1:0:1} = "-";then
-                DO_SHIFT=false
-            fi
+            get_args "$@"
+            CHAPTERS="${ARGS_ARRAY[@]}" 
             CHAPTERS=( ${CHAPTERS//,/ } )
             ;;
         "-subtitles" )
             shift
             SUBTITLES=:
-            while test $# -gt 0 && test ${1:0:1} != "-"; do
-            SUBS="$SUBS $1"
-                shift
-            done
-            if test $# -gt 0 && test ${1:0:1} = "-";then
-                DO_SHIFT=false
-            fi
+            get_args "$@"
+            SUBS="${ARGS_ARRAY[@]}"
             SUBS_ARRAY=( ${SUBS//,/ } )
             ;;
         "-audio-lang" )
             shift
-            while test $# -gt 0 && test ${1:0:1} != "-"; do
-            AUDIO_LANG="$AUDIO_LANG $1"
-                shift
-            done
-            if test $# -gt 0 && test ${1:0:1} = "-";then
-                DO_SHIFT=false
-            fi
+            get_args "$@"
+            AUDIO_LANG="${ARGS_ARRAY[@]}"
             AUDIO_LANG=( ${AUDIO_LANG//,/ } )
             AUDIOLANG=:
             ;;
@@ -752,17 +720,14 @@ while test $# -gt 0; do
             ;;
         "-submenu-audio" )
             shift
-            while test $# -gt 0 && test ${1:0:1} != "-"; do
-                if [ "$1" = "none" ]; then
-                    SM_AUDIO=( "${SM_AUDIO[@]}" "$1" )
+            get_args "$@"
+            for i in ${!ARGS_ARRAY[@]}; do
+                if [ ${ARGS_ARRAY[i]} = "none" ]; then
+                    SM_AUDIO=( "${SM_AUDIO[@]}" "${ARGS_ARRAY[i]}" )
                 else
-                    SM_AUDIO=( "${SM_AUDIO[@]}" "$(abspath "$1")" )
+                    SM_AUDIO=( "${SM_AUDIO[@]}" "$(abspath "${ARGS_ARRAY[i]}")" )
                 fi
-                shift
             done
-            if test $# -gt 0 && test ${1:0:1} = "-";then
-                DO_SHIFT=false
-            fi
             SUBMENU_AUDIO=:
             ;;
         "-submenu-audio-fade" )
@@ -800,20 +765,14 @@ while test $# -gt 0; do
         "-seek" )
             shift
             unset SEEK_VAL
-            while test $# -gt 0 && test ${1:0:1} != "-"; do
-            SEEK_VAL="$SEEK_VAL $1"
-                shift
-            done
-            if test $# -gt 0 && test ${1:0:1} = "-";then
-                DO_SHIFT=false
-            fi
+            get_args "$@"
+            SEEK_VAL="${ARGS_ARRAY[@]}"
             SEEK_VAL=( ${SEEK_VAL//,/ } )
             ;;
         "-showcase-seek" )
             shift
             SHOWCASE_SEEK_VAL="$1"
             ;;
-
         "-tovidopts" )
             shift
             TOVID_OPTS="$1"
