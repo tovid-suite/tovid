@@ -283,10 +283,13 @@ function cleanup()
     yecho "Cleaning up..."
     if test -e "$WORK_DIR/tc_pids"; then
         TCPIDS=$(awk -F"=" '/pid=/ {print $2}' "$WORK_DIR/tc_pids" | cut -f1 -d')'|sort|uniq)
-        kill -9  $TCPIDS  2> /dev/null
+        for i in $TCPIDS; do
+            if  kill -0 $i 2> /dev/null; then kill -9 $i 2> /dev/null;fi
+        done
     fi
     if kill -0 $TCODE_PID 2> /dev/null; then kill -9  $TCODE_PID  2> /dev/null; fi
     if kill -0 $TRANSCODE_PID 2> /dev/null; then kill -9  $TRANSCODE_PID 2> /dev/null; fi
+    if kill -0 $NS_PID 2> /dev/null; then kill -9 $NS_PID 2> /dev/null; fi
     if $KEEP_FILES; then
         yecho "Keeping temporary files in $REAL_WORK_DIR"
     else
@@ -2396,7 +2399,7 @@ else
                 }
                 run_transcode &
                 sleep 1 # short sleep to allow 1st jpg to appear
-                TRANSCODE_PID="$(cat /tmp/tcode.pid)"
+                TRANSCODE_PID=$(</tmp/tcode.pid)
                 if [ -n "$TRANSCODE_PID" ]; then
                     while ps -p $TRANSCODE_PID >/dev/null; do
                         sleep .5 # spinner interval
@@ -2701,7 +2704,7 @@ if $SUB_MENU; then
             }
             run_transcode &
             sleep .5 # short sleep to allow 1st jpg to appear
-            TCODE_PID=$(cat /tmp/tcode.pid)
+            TCODE_PID=$(</tmp/tcode.pid)
             if [ -n "$TCODE_PID" ]; then
                 while ps -p $TCODE_PID >/dev/null; do
                     sleep $SLEEP # spinner interval
