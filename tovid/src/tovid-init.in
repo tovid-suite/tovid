@@ -73,7 +73,7 @@ TOVID_FORUMS="http://www.createphpbb.com/tovid/"
 # call the function like this:
 #     RETURN_VALUE=$(abspath "$FILENAME")
 # ******************************************************************************
-abspath()
+function abspath()
 {
     DIR=$(dirname "$1")
     BASE=$(basename "$1")
@@ -86,7 +86,7 @@ abspath()
 # Input args: $1 = Base name (i.e., "work_dir")
 # Return value is echoed to stdout (i.e., "work_dir.3")
 # ******************************************************************************
-tempdir()
+function tempdir()
 {
     NUM=0
     BASENAME="$1"
@@ -114,7 +114,7 @@ tempdir()
 # ex: verify $CMD_LN_OPT range "0 10"
 #     will return ":" (true) if 0 <= $CMD_LN_OPT <= 10
 # ******************************************************************************
-verify()
+function verify()
 {
     VERIFY_VAR="$1"
     VERIFY_TEST_TYPE="$2"
@@ -146,7 +146,7 @@ verify()
 # Print a pretty (wrapped) notice message.
 # Args: $@ == text string containing the message 
 # ******************************************************************************
-precho()
+function precho()
 {
     echo -e "$@" | fold -s -w ${COLUMNS:-80}
 }
@@ -155,7 +155,7 @@ precho()
 # Print error message, then exit.
 # Args: $@ == text string containing error message 
 # ******************************************************************************
-exit_with_error()
+function exit_with_error()
 {
     echo $@
     exit 1
@@ -167,7 +167,7 @@ exit_with_error()
 # call the function like this:
 #     RETURN_VALUE=$(format_time $NUM_SECONDS)
 # ******************************************************************************
-format_time()
+function format_time()
 {
     HMS_HOURS=$(expr $1 / 3600)
     HMS_MINS=$(expr \( $1 % 3600 \) / 60)
@@ -187,11 +187,11 @@ format_time()
 # as a "return value", call the function like this:
 #     RETURN_VALUE=$(unformat_time $TIME_STRING)
 # ******************************************************************************
-unformat_time()
+function unformat_time()
 {
-    HMS_HOURS=$(echo $1 | awk -F ':' '{print $1}')
-    HMS_MINS=$(echo $1 | awk -F ':' '{print $2}')
-    HMS_SECS=$(echo $1 | awk -F ':' '{print $3}')
+    HMS_HOURS=$(awk -F ':' '{print $1}' <<< $1)
+    HMS_MINS=$(awk -F ':' '{print $2}' <<< $1)
+    HMS_SECS=$(awk -F ':' '{print $3}' <<< $1)
     TOT_SECONDS=$(expr $HMS_HOURS \* 3600 + $HMS_MINS \* 60 + $HMS_SECS)
     echo $TOT_SECONDS
 }
@@ -202,7 +202,7 @@ unformat_time()
 # Args: $1 = name of file to monitor
 #       $2 = a short message to display, such as "Encoding video"
 # ******************************************************************************
-file_output_progress()
+function file_output_progress()
 {
     if $FAKE; then
         return
@@ -292,7 +292,7 @@ file_output_progress()
 # -refresh-deps to tovid-init from a prompt, then tovid-init will re-check and 
 # re-write the file.
 # ******************************************************************************
-check_dep_group()
+function check_dep_group()
 {
     #save_IFS=$IFS
     #IFS=' '
@@ -337,7 +337,7 @@ check_dep_group()
 #             dependencies for
 #
 # ******************************************************************************
-assert_dep_group()
+function assert_dep_group()
 {
     DEP_TO_CHECK="$1"
     DEP_MESSAGE="$2"
@@ -362,7 +362,7 @@ assert_dep_group()
 #                  dependencies for
 # 
 # ******************************************************************************
-assert_dep()
+function assert_dep()
 {
     DEP_TO_CHECK="$1"
     DEP_MESSAGE="$2"
@@ -383,7 +383,7 @@ assert_dep()
 # Countdown 5 seconds, then return
 # TODO: Take argument # of seconds
 # ******************************************************************************
-countdown()
+function countdown()
 {
     for _CNTR in 5 4 3 2 1; do
         echo -n -e " in $_CNTR seconds...\r"
@@ -592,18 +592,18 @@ if ! test -f $DEP_LIST_FILE; then
 
     # Construct an array of each dependency group's members. Conveniently holds
     # ALL of tovid's run-time dependencies (echo ${DEP_GROUP_MEMBERS[@]}).
-    DEP_GROUP_MEMBERS=("$CORE_DEPS" "$MAGICK_DEPS" "$DVD_DEPS" "$VCD_DEPS" "$TRANSCODE_DEPS" "$PLUGIN_DEPS")
+    DEP_GROUP_MEMBERS=([0]="$CORE_DEPS" [1]="$MAGICK_DEPS" [2]="$DVD_DEPS" [3]="$VCD_DEPS" [4]="$TRANSCODE_DEPS" [5]="$PLUGIN_DEPS")
 
     # Comments describing each group of dependencies. Note the leading '#' isn't
     # necessary as this file isn't sourced, but it helps with readability.
-    DEP_GROUP_COMMENTS=("# core" "# magick (needed to make menus and slideshows)" "# dvd (needed to make DVD menus and burn DVDs)" "# vcd (needed to burn (S)VCDs)" "# transcode (needed for animated menus)" "# plugins (needed for other specific tasks)")
+    DEP_GROUP_COMMENTS=([0]="# core" [1]="# magick (needed to make menus and slideshows)" [2]="# dvd (needed to make DVD menus and burn DVDs)" [3]="# vcd (needed to burn (S)VCDs)" [4]="# transcode (needed for animated menus)" [5]="# plugins (needed for other specific tasks)")
 
     # Check for deps and write the list file.
     echo "# tovid version: $TOVID_VERSION" >> "${DEP_LIST_FILE}"
     i=0
-    for dep_group in $DEP_GROUPS[@]; do
-      echo "$DEP_GROUP_COMMENTS[$i]" >> "${DEP_LIST_FILE}"
-      check_dep_group "$dep_group" "$DEP_GROUP_MEMBERS[$i]"
+    for dep_group in ${DEP_GROUPS[@]}; do
+      echo "${DEP_GROUP_COMMENTS[i]}" >> "${DEP_LIST_FILE}"
+      check_dep_group "$dep_group" "${DEP_GROUP_MEMBERS[i]}"
       let i=i+1
     done
 
