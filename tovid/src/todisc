@@ -3595,10 +3595,13 @@ echo "todisc took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
 echo $SEPARATOR
 if [ "$TARGET" = dvd ]; then
     echo "Your new DVD should be in $OUT_DIR"
+    echo "You can preview them in gxine with this command:"
+    echo "    gxine dvd:/$OUT_DIR"
+    echo "If you're satisfied with the results, you can burn a disc with:"
+    echo "    makedvd -burn $OUT_DIR"
 elif [ "$TARGET" = svcd ]; then
-    echo "Your svcd bin and cue files are ready"
-    echo "You can burn them with:"
-    echo  "cdrdao write --device /dev/hdc --driver generic-mmc videocd.cue"
+    echo "Your svcd bin and cue files are ready. You can burn them with:"
+    echo "    cdrdao write --device /dev/hdc --driver generic-mmc videocd.cue"
 fi
 echo
 echo "Thanks for using todisc."
