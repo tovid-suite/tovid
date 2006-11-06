@@ -17,7 +17,7 @@ import sys
 from libtovid import stats
 from libtovid.utils import pretty_dict
 from libtovid.layer import Scatterplot
-from libtovid.render.mvg import Drawing
+from libtovid.render.drawing import Drawing
 
 tovid_statfile = os.path.expanduser("~/.tovid/stats.tovid")
 
@@ -107,7 +107,7 @@ if __name__ == '__main__':
                 drawing.fill('white')
                 drawing.rectangle((0, 0), (720, 576))
                 drawing.translate((40, 48))
-                scatterplot.draw(drawing, 0)
+                scatterplot.draw(drawing, 1)
                 drawing.render()
         elif arg == '-match':
             field = args.pop(0)
