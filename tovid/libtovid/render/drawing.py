@@ -1006,7 +1006,7 @@ class Drawing:
         #       at the tips of our fingers :P woah!
         #
         if not isinstance(text_string, unicode):
-            text_string = unicode(text_string.decode('latin-1'))
+            text_string = unicode(str(text_string).decode('latin-1'))
 
         self.save()
         (dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
