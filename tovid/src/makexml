@@ -790,7 +790,7 @@ if test $XML_FORMAT = "dvd" ; then
     echo "    makedvd $OUT_PREFIX.xml"
 else
     echo "You can create the (S)VCD .bin and .cue files by running the command:"
-    echo "  vcdxbuild $OUT_PREFIX.xml"
+    echo "    vcdxbuild $OUT_PREFIX.xml"
 fi
 
 echo "Thanks for using makexml!"
