@@ -707,7 +707,7 @@ class Scatterplot (Layer):
         drawing.save()
         drawing.stroke(None)
         drawing.fill('red')
-        drawing.fill_opacity(0.2)
+        drawing.set_fill_opacity(0.2)
         i = 0
         while i < len(x_vals):
             if x_is_num:
