@@ -160,7 +160,7 @@ test_tovid()
         OUTFILE="$DEFAULT_OUTFILE"
         rm -f "$OUTFILE"
     fi
-    CMD="tovid $@ -debug -overwrite -out $OUTFILE"
+    CMD="tovid $@ -overwrite -out $OUTFILE"
     yecho $CMD
     if $DEBUG; then
         eval "$CMD" | tee -a "$LOG_FILE"
