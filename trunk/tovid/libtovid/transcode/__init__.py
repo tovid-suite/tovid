@@ -2,6 +2,5 @@
 # __init__.py
 
 __all__ = [\
-    "ffmpeg",
-    "mencoder",
-    "mpeg2enc"]
+    "encoders",
+    "subtitles"]
