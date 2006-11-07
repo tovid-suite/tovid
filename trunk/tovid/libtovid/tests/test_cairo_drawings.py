@@ -1,10 +1,13 @@
+#! /usr/bin/env python
+# test_cairo_drawings.py
+
 import unittest
 import math
 # Fetch in subdir
 import sys
 sys.path.insert(0, '..')
 # Get modules to test
-from render.drawing import Drawing
+from libtovid.render.drawing import Drawing
 import cairo
 import os
 

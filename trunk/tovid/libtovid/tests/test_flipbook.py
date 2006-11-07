@@ -1,3 +1,6 @@
+#! /usr/bin/env python
+# test_flipbook.py
+
 import unittest
 import math
 # Fetch in subdir
@@ -6,9 +9,9 @@ import os
 sys.path.insert(0, '..')
 # Get modules to test
 from libtovid.render.drawing import Drawing
-from libtovid.flipbook import Flipbook
+from libtovid.render.flipbook import Flipbook
+from libtovid.render import layer
 from libtovid.media import MediaFile
-from libtovid import layer
 from libtovid import standards
 
 class TestFlipbook(unittest.TestCase):
