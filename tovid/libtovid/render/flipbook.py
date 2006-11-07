@@ -62,11 +62,10 @@ __all__ = ['Flipbook']
 
 import os
 import sys
-from libtovid.animation import Keyframe
+from libtovid.render.animation import Keyframe
 from libtovid.render.drawing import Drawing
-from libtovid import layer, effect, standards
+from libtovid.render import layer, effect, standards
 from libtovid.media import MediaFile
-from libtovid.encoders import common
 
 class Flipbook:
     """A collection of Drawings that together comprise an animation.

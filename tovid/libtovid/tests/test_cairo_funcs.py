@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+# test_cairo_funcs.py
 # -=- encoding: latin-1 -=-
 
 import unittest
@@ -6,7 +8,7 @@ import math
 import sys
 sys.path.insert(0, '..')
 # Get modules to test
-from render.drawing import Drawing
+from libtovid.render.drawing import Drawing
 import cairo
 
 class TestCairoRenderer(unittest.TestCase):
@@ -195,8 +197,8 @@ class TestCairoRenderer(unittest.TestCase):
 
     def test_text_stuff(self):
         self.d.text((15, 15), "This isn't a Unicode string")
-        self.d.text((15, 15), u"This is a Unicode é string")
-        self.d.text_extents(u"This is a Unicode é string")
+        self.d.text((15, 15), u"This is a Unicode Ã© string")
+        self.d.text_extents(u"This is a Unicode Ã© string")
 
     def test_antialias_stuff(self):
         self.d.stroke_antialias(True)

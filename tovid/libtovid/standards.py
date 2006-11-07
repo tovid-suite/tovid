@@ -21,12 +21,33 @@ __all__ = [\
     'get_fps',
     'get_fpsratio',
     'get_samprate',
+    'Target',
     'VideoStandard',
     'AudioStandard']
 
 import doctest
 from os.path import abspath
 
+
+def get_target(format, tvsys):
+    """Return a Target for the given format and tvsys."""
+    target = Target(format, tvsys)
+    target.scale = get_resolution(format, tvsys)
+    target.samprate = get_samprate(format)
+    target.fps = get_fps(tvsys)
+    
+class Target(object):
+    """Describes an encoding target."""
+    def __init__(self, format='dvd', tvsys='ntsc'):
+        self.format = format
+        self.tvsys = tvsys
+        self.abitrate = 224
+        self.vbitrate = 9800
+        self.scale = (720, 480)
+        self.expand = None
+        self.samprate = 48000
+        self.fps = 29.97
+        self.widescreen = False
 
 def get_resolution(format, tvsys):
     """Return the pixel resolution (x,y) for the given format and TV system.

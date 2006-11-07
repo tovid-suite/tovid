@@ -2,7 +2,7 @@
 # -=- encoding: latin-1 -=-
 
 import unittest
-from libtovid import dvdauthor
+from libtovid.layout import dvdauthor
 
 class TestDvdauthor(unittest.TestCase):
     """Test the pydvdauthor module"""

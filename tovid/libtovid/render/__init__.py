@@ -2,5 +2,9 @@
 # __init__.py
 
 __all__ = [\
+    #"mvg"     # obsolete
+    "animation",
     "drawing",
-    "mvg"]
+    "effect",
+    "flipbook", 
+    "layer"]

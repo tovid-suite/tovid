@@ -1,9 +1,12 @@
+#! /usr/bin/env python
+# test_media.py
+
 import unittest
 # Fetch in subdir
 import sys
 sys.path.insert(0, '..')
 # Get modules to test
-import media
+from libtovid import media
 
 
 class TestMedia(unittest.TestCase):

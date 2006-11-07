@@ -152,6 +152,7 @@ class Video:
                 log.debug('Infile resolution matches target resolution.')
                 log.debug('No scaling will be done.')
         # TODO: Calculate safe area
+
         # Other commonly-used values
         if 'dvd' in self.options['format']:
             samprate = 48000

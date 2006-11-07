@@ -1,10 +1,13 @@
+#! /usr/bin/env python
+# test_menu.py
+
 import unittest
 # Fetch in subdir
 import sys
 sys.path.insert(0, '..')
 # Get modules to test
-import menu
-import standards
+from libtovid.layout import menu
+from libtovid import standards
 
 
 class TestMenu(unittest.TestCase):
