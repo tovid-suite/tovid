@@ -233,10 +233,14 @@ function yecho()
 # ******************************************************************************
 function usage_error()
 {
-    printf "%s\n" "$USAGE"
-    printf "%s\n" "$SEPARATOR"
-    printf "*** Usage error: %s\n" "$@"
-    exit 1
+    if ! $REFRESH_DEPS; then
+        printf "%s\n" "$USAGE"
+        printf "%s\n" "$SEPARATOR"
+        printf "*** Usage error: %s\n" "$@"
+        exit 1
+    else
+        exit 0
+    fi
 }
 
 # ******************************************************************************
@@ -560,7 +564,6 @@ function get_args()
             "-keepfiles" )
                 KEEPFILES=:
                 ;;
-
             * )
                 test -n "$1" && usage_error "Unrecognized command-line option: '$1'"
 
@@ -1693,7 +1696,7 @@ else
         fi
 
         # Normalize the wave file.
-        $FAKE || normalize $AUDIO_AMPLITUDE "${AUDIO_WAV[@]}"
+        $FAKE || $NORMALIZE $AUDIO_AMPLITUDE "${AUDIO_WAV[@]}"
     fi
 
     AUDIO_ENC=( $PRIORITY ffmpeg )
