@@ -1,9 +1,12 @@
+#! /usr/bin/env python
+# test_cli.py
+
 import unittest
 # Fetch in subdir
 import sys
 sys.path.insert(0, '..')
 # Get modules to test
-import cli
+from libtovid import cli
 
 
 class TestArg(unittest.TestCase):

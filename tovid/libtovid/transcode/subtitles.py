@@ -5,9 +5,9 @@ import tempfile
 import xml.dom
 import os
 
-from cli import Script, Command
-from opts import Option, OptionDict
-from media import MediaFile
+from libtovid.cli import Script, Command
+from libtovid.opts import Option, OptionDict
+from libtovid.media import MediaFile
 
 dom = xml.dom.getDOMImplementation()
 

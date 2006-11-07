@@ -33,7 +33,7 @@ __all__ = [\
     ]
 
 from libtovid.render.drawing import Drawing
-from libtovid.animation import Keyframe, Tween
+from libtovid.render.animation import Keyframe, Tween
 
 class Effect:
     """A "special effect" created by keyframing a Cairo drawing command

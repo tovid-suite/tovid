@@ -41,8 +41,8 @@ import commands
 from libtovid.utils import get_file_type
 # Temporarily use local classes: (add libtovid. later)
 from libtovid.render.drawing import Drawing
-from libtovid.effect import Effect
-from libtovid.animation import Keyframe, Tween
+from libtovid.render.effect import Effect
+from libtovid.render.animation import Keyframe, Tween
 from libtovid.media import MediaFile
 
 class Layer:

@@ -1,3 +1,6 @@
+#! /usr/bin/env python
+# test_effect.py
+
 import unittest
 import math
 # Fetch in subdir
@@ -5,7 +8,7 @@ import sys
 sys.path.insert(0, '..')
 # Get modules to test
 from render.drawing import Drawing
-import effect
+from libtovid.render import effect
 from libtovid.animation import Keyframe
 
 class TestEffect(unittest.TestCase):

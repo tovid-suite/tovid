@@ -8,8 +8,8 @@ import sys
 sys.path.insert(0, '..')
 # Get modules to test
 from libtovid.render.drawing import Drawing
-from libtovid import layer
-from libtovid.animation import Keyframe
+from libtovid.render import layer
+from libtovid.render.animation import Keyframe
 
 class TestLayer(unittest.TestCase):
     """Test the Layer class"""

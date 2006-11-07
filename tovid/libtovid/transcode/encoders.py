@@ -2,10 +2,10 @@
 # encoders.py
 
 __all__ = [\
-    "get_encoder",
-    "ffmpeg_encoder",
-    "mencoder_encoder",
-    "mpeg2enc_encoder"]
+    'get_encoder',
+    'ffmpeg_encoder',
+    'mencoder_encoder',
+    'mpeg2enc_encoder']
 
 import os
 
@@ -253,14 +253,6 @@ def rip_video(infile, yuvfile, options):
         cmd.add('-vf', 'scale=%s:%s' % options['scale'])
     if options['expand']:
         cmd.add('-vf-add', 'expand=%s:%s' % options['expand'])
-    # Filters
-    filters = options['filters']
-    if 'denoise' in filters:
-        cmd.add('-vf-add', 'hqdn3d')
-    if 'contrast' in filters:
-        cmd.add('-vf-add', 'pp=al:f')
-    if 'deblock' in filters:
-        cmd.add('-vf-add', 'pp=hb/vb')
     # Do ripping in background
     cmd.bg = True
     return cmd
