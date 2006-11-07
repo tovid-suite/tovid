@@ -586,7 +586,17 @@ if ! test -f $DEP_LIST_FILE; then
 
     # ------------------------------------------------------------------------------
     # Plugin tools
-    PLUGIN_DEPS="sox normalize"
+    # debian based distros install normalize as
+    # "normalize-audio" rather than "normalize"
+    if ! which normalize >/dev/null; then
+        if which normalize-audio > /dev/null; then
+            NORMALIZE="normalize-audio"
+        fi
+    else
+        NORMALIZE="normalize"
+    fi
+    PLUGIN_DEPS="sox $NORMALIZE"
+
     sox_msg="swiss army knife for sound (sox.sf.net)"
     normalize_msg="wave gain and normalization (normalize.nongnu.org)"
 
