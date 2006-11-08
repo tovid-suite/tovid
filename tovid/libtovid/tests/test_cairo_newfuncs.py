@@ -1,6 +1,6 @@
 #! /usr/bin/env python
-# test_cairo_newfuncs.py
 # -=- encoding: latin-1 -=-
+# test_cairo_newfuncs.py
 
 import unittest
 import math

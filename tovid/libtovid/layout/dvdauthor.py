@@ -1,6 +1,6 @@
 #! /usr/bin/env python
-# dvdauthor.py
 # -=- encoding: latin-1 -=-
+# dvdauthor.py
 # License: GPL
 # Author: Alexandre Bourget <wackysalut@bourget.cc>
 # Copyright: 2006
