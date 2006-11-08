@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 # -=- encoding: latin-1 -=-
+# test_dvdauthor.py
 
 import unittest
 from libtovid.layout import dvdauthor
