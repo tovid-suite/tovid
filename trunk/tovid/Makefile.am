@@ -121,13 +121,15 @@ EXTRA_DIST = \
 #                          (CAPS are not required, but helps readability)
 pyexecLIBTOVID_PYTHON = libtovid/*.py
 pyexecLIBTOVIDdir = $(pyexecdir)/libtovid
-
-pyexecLIBTOVID_ENCODERS_PYTHON = libtovid/encoders/*.py
-pyexecLIBTOVID_ENCODERSdir = $(pyexecdir)/libtovid/encoders
-
-pyexecLIBTOVID_RENDER_PYTHON = libtovid/render/*.py
-pyexecLIBTOVID_RENDERdir = $(pyexecdir)/libtovid/render
-
+# Submodules
+pyexecTRANSCODE_PYTHON = libtovid/transcode/*.py
+pyexecTRANSCODEdir = $(pyexecdir)/libtovid/transcode
+pyexecRENDER_PYTHON = libtovid/render/*.py
+pyexecRENDERdir = $(pyexecdir)/libtovid/render
+pyexecLAYOUT_PYTHON = libtovid/layout/*.py
+pyexecLAYOUTdir = $(pyexecdir)/libtovid/layout
+pyexecTEMPLATES_PYTHON = libtovid/templates/*.py
+pyexecTEMPLATESdir = $(pyexecdir)/libtovid/templates
 pyexecGUI_PYTHON = libtovid/gui/*.py
 pyexecGUIdir = $(pyexecdir)/libtovid/gui
 
@@ -136,7 +138,7 @@ pyexecGUIdir = $(pyexecdir)/libtovid/gui
 #   manpage source.
 dist-hook:
 	rm -rvf $(top_distdir)/src/tovid-init
-	mkdir $(distdir)/docs/man
+	mkdir -p $(distdir)/docs/man
 	for manpage_src in $(src_MANS); do \
 	  manpage=`echo "$${manpage_src}" | sed 's/t2t/1/g'`; \
 	  txt2tags -t man -i $${manpage_src} -o $${manpage}; \
