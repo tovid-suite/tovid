@@ -82,55 +82,74 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 class DVD(object):
     """A DVD disc, with functions to manipulate its contents."""
     def __init__(self, title='Untitled disc', tvsys='ntsc'):
-        print "Creating a DVD entitled: '%s'" % title
+        print "DVD: Creating a DVD entitled: '%s'" % title
         self.videos = []
         
     def add_videos(self, directory):
-        print "Adding videos in %s" % directory
+        print "DVD: Adding videos in %s" % directory
         for filename in ["First.mpg", "Second.mpg", "Third.mpg"]:
             title = filename.rstrip('.mpg')
             self.videos.append(Video(filename, title))
             
     def quality(self, level):
-        print "Using %s quality video encoding" % level
+        print "DVD: Using %s quality video encoding" % level
+        for video in self.videos:
+            video.quality = level
         
     def thumb_menu(self, background):
-        print "Creating a thumbnail menu with background image %s" % background
+        print "DVD: Using a thumbnail menu with background image %s" % background
+        self.menu = Menu('DVD', 'Thumbnails')
+        self.menu.add_videos(self.videos)
+        self.menu.set_background(background)
         
     def transcode(self, author=False):
-        print "Encoding videos..."
+        print "DVD: Encoding videos..."
         for video in self.videos:
             video.encode('dvd', 'ntsc')
             
-        print "Generating menus..."
-        menu = Menu('DVD', 'Thumbnails')
-        menu.add_titles(['Video 1', 'Video 2', 'Video 3'])
+        if hasattr(self, 'menu'):
+            print "DVD: Generating menus..."
+            self.menu.render()
         
         if author:
-            print "Authoring disc..."
-        print "DVD finished transcoding"
+            self.author()
+        print "DVD: Finished transcoding"
+    
+    def author(self):
+        print "DVD: Authoring..."
+        
     def preview(self):
-        print "Previewing DVD..."
+        print "DVD: Previewing..."
         
     def burn(self, speed=2, device='/dev/dvdrw'):
-        print "Burning DVD at speed %s on device %s" % (speed, device)
+        print "DVD: Burning at speed %s on device %s" % (speed, device)
+
 
 class Menu(object):
     """A VCD or DVD menu."""
-    def __init__(self, format='dvd', style='Text', titles=[]):
-        print "Creating a " + format + " " + style + " Menu with %s titles" %\
-              len(titles)
+    def __init__(self, format='dvd', style='Text', videos=[]):
+        print "Menu: Creating a %s %s menu with %s videos" % \
+              (format, style, len(videos))
+        self.videos = videos
 
-    def add_titles(self, titles):
-        print "Adding %s titles to the menu" % len(titles)
+    def add_videos(self, videos):
+        print "Menu: Adding %s Videos" % len(videos)
+        self.videos.extend(videos)
+        
+    def set_background(self, background):
+        print "Menu: Adding background image '%s'" % background
+        self.background = background
+        
+    def render(self):
+        print "Menu: Rendering..."
+
 
 class Video(object):
     """A video for inclusion on a video disc."""
     def __init__(self, filename='', title=''):
-        print "Creating a Video entitled '%s' from file '%s'" %\
+        print "Video: Creating a video entitled '%s' from file '%s'" %\
               (title, filename)
 
     def encode(self, format, tvsys):
-        print "Encoding Video to compliant %s %s format." %\
+        print "Video: Encoding to compliant %s %s format." %\
               (format.upper(), tvsys.upper())
-        
