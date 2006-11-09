@@ -504,6 +504,15 @@ if $REFRESH_DEPS || test "$DEP_LIST_VERSION" != "$TOVID_VERSION"; then
     rm -fv $DEP_LIST_FILE
 fi
 
+# debian based distros install normalize as
+# "normalize-audio" rather than "normalize"
+if ! which normalize >/dev/null; then
+    if which normalize-audio > /dev/null; then
+        NORMALIZE="normalize-audio"
+    fi
+else
+    NORMALIZE="normalize"
+fi
 
 # Adding (or removing) dependencies:
 # (1) Does it belong to an existing group? If so, then add it to the list in
@@ -586,15 +595,6 @@ if ! test -f $DEP_LIST_FILE; then
 
     # ------------------------------------------------------------------------------
     # Plugin tools
-    # debian based distros install normalize as
-    # "normalize-audio" rather than "normalize"
-    if ! which normalize >/dev/null; then
-        if which normalize-audio > /dev/null; then
-            NORMALIZE="normalize-audio"
-        fi
-    else
-        NORMALIZE="normalize"
-    fi
     PLUGIN_DEPS="sox $NORMALIZE"
 
     sox_msg="swiss army knife for sound (sox.sf.net)"
