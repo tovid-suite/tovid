@@ -725,6 +725,9 @@ EOF`
     Took $HHMMSS to encode on $CPU_MODEL $CPU_SPEED mhz
     -----------------------------------------
 EOF`
+if ( $USE_FFMPEG && ! $DO_NORM ) || ! $USE_FFMPEG; then
+    FINAL_STATS_PRETTY=$(sed '/Average/d;/Peak/d;/^ *$/d'  <<< "$FINAL_STATS_PRETTY")
+fi
 
     # Final statistics (comma-delimited quoted strings)
     FINAL_STATS_FORMATTED=`cat << EOF
@@ -1573,7 +1576,7 @@ if $USE_FFMPEG; then
 
     FF_SIZE="-s ${INNER_WIDTH}x${INNER_HEIGHT}"
     FF_FPS="-r $TGT_FPS"
-    FF_BITRATE="-maxrate ${VID_BITRATE}kib -ab ${AUD_BITRATE}kib -ac 2"
+    FF_BITRATE="-maxrate ${VID_BITRATE}k -ab ${AUD_BITRATE}k -ac 2"
     FF_SAMPRATE="-ar $SAMPRATE"
 
     # Padding, for any letterboxing to be done
@@ -1697,6 +1700,7 @@ else
 
         # Normalize the wave file.
         $FAKE || $NORMALIZE $AUDIO_AMPLITUDE "${AUDIO_WAV[@]}"
+        yecho
     fi
 
     AUDIO_ENC=( $PRIORITY ffmpeg )
@@ -1839,7 +1843,7 @@ fi
 
 MPLEX_CMD=( mplex $MUX_OPTS -o "$OUT_FILENAME" "$VIDEO_STREAM" "${AUDIO_STREAM[@]}" )
 yecho "Multiplexing audio and video together with the following command:"
-#yecho ${MPLEX_CMD[@]}
+yecho ${MPLEX_CMD[@]}
 
 "${MPLEX_CMD[@]}" >> "$LOG_FILE" 2>&1 &
 
