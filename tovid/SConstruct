@@ -1,0 +1,69 @@
+# SCons build/install file for tovid
+
+"""What it needs to do:
+
+* Build tovid-init from tovid-init.in
+* Install tovid suite bash scripts from src/
+* Install libtovid Python modules from libtovid/
+* Build and install manpages from doc/src/LANG
+
+"""
+import SCons
+
+# Bash scripts in src/, should be installed in a location like
+# /usr/bin or /usr/local/bin
+bash_scripts = Split("""
+    src/idvid
+    src/makedvd
+    src/makemenu
+    src/makeslides
+    src/makevcd
+    src/makexml
+    src/postproc
+    src/todisc
+    src/todisc-fade-routine
+    src/todiscgui
+    src/tovid
+    src/tovid-batch
+    src/tovid-init
+    src/tovid-interactive
+    src/tovid-stats
+    src/tovid-test
+    src/tovidgui
+    """)
+
+# Python modules in libtovid/, should be installed in a system-wide Python
+# module repository like /usr/local/lib/python2.4/site-packages/
+
+# If possible, install these in a Pythonic (like distutils) way; all the
+# modules to be installed are recursively defined in the __all__ list in
+# libtovid/__init__.py.
+libtovid_modules = Split("""
+    libtovid/__init__.py
+    libtovid/cli.py
+    libtovid/config.py
+    libtovid/media.py
+    libtovid/opts.py
+    libtovid/standards.py
+    libtovid/stats.py
+    
+    libtovid/layout/disc.py
+    libtovid/layout/dvdauthor.py
+    libtovid/layout/menu.py
+    libtovid/layout/tdl.py
+    libtovid/layout/video.py
+    
+    libtovid/render/__init__.py
+    libtovid/render/animation.py
+    libtovid/render/drawing.py
+    libtovid/render/effect.py
+    libtovid/render/flipbook.py
+    libtovid/render/layer.py
+    libtovid/render/mvg.py
+    
+    libtovid/transcode/__init__.py
+    libtovid/transcode/encoders.py
+    libtovid/transcode/subtitles.py
+    """)
+
+# TODO: Install
