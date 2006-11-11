@@ -959,7 +959,7 @@ fi
 
 # Default quality 8, if not set by user
 : ${VID_QUALITY:=8}
-
+$USE_FFMPEG && ((VID_QUALITY > 9)) && VID_QUALITY=9
 # Set resolution and frame rate according to format and TV system
 case "$TGT_RES" in
     # VCD
@@ -1096,6 +1096,7 @@ case "$TGT_RES" in
         AUD_SUF="ac3"
         # -quality gives bitrates from 980-9800 kbps
         DEFAULT_BR=$(expr $VID_QUALITY \* 9800 \/ 10)
+        $USE_FFMPEG && DEFAULT_BR=$(expr $VID_QUALITY \* 9000 \/ 10)
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 10"
@@ -1576,7 +1577,7 @@ if $USE_FFMPEG; then
 
     FF_SIZE="-s ${INNER_WIDTH}x${INNER_HEIGHT}"
     FF_FPS="-r $TGT_FPS"
-    FF_BITRATE="-maxrate ${VID_BITRATE}k -ab ${AUD_BITRATE}k -ac 2"
+    FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k -ac 2"
     FF_SAMPRATE="-ar $SAMPRATE"
 
     # Padding, for any letterboxing to be done
@@ -1606,7 +1607,7 @@ if $USE_FFMPEG; then
     esac
     
     FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" \
-        $FF_TARGET $FF_QUANT $FF_BITRATE $FF_FPS $FF_ILACE \
+        $FF_TARGET $FF_BITRATE $FF_FPS $FF_ILACE \
         $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT $FF_AUDIO_MAP"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
     FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\" ${NEW_AUDIO[@]}"
