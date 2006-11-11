@@ -147,8 +147,10 @@ dist-hook:
 
 # After uninstalling tovid, remove the python module directories
 uninstall-hook:
-	rmdir $(pyexecLIBTOVID_ENCODERSdir)
-	rmdir $(pyexecLIBTOVID_RENDERdir)
+	rmdir $(pyexecTRANSCODEdir)
+	rmdir $(pyexecRENDERdir)
+	rmdir $(pyexecLAYOUTdir)
+	rmdir $(pyexecTEMPLATESdir)
 	rmdir $(pyexecGUIdir)
 	rmdir $(pyexecLIBTOVIDdir)
 
