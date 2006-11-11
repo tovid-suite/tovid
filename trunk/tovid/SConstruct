@@ -66,4 +66,26 @@ libtovid_modules = Split("""
     libtovid/transcode/subtitles.py
     """)
 
+
 # TODO: Install
+
+
+
+
+env = Environment()
+
+# manpages
+import glob
+EnglishMans = glob.glob("docs/src/en/*.t2t")
+#EspanolMans = glob.glob("docs/src/es/*.t2t")
+ManPages = EnglishMans #+ EspanolMans
+
+ManBuilder = Builder(action = [['txt2tags', '-t', 'man', 
+            '--infile=$SOURCE', 
+            '--outfile=$TARGET']],
+         suffix = "1")
+
+env.Append(BUILDERS = {'Man' : ManBuilder})
+
+for man_name in ManPages:
+    env.Man(man_name)
