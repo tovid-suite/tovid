@@ -959,6 +959,7 @@ fi
 
 # Default quality 8, if not set by user
 : ${VID_QUALITY:=8}
+#$USE_FFMPEG && : ${VID_QUALITY:=8} || ${VID_QUALITY:=6}
 # Set resolution and frame rate according to format and TV system
 case "$TGT_RES" in
     # VCD
@@ -1095,7 +1096,7 @@ case "$TGT_RES" in
         AUD_SUF="ac3"
         # -quality gives bitrates from 980-9800 kbps
         DEFAULT_BR=$(expr $VID_QUALITY \* 9800 \/ 10)
-        $USE_FFMPEG && DEFAULT_BR=$(expr $VID_QUALITY \* 8100 \/ 10)
+        $USE_FFMPEG && DEFAULT_BR=$(expr $VID_QUALITY \* 9000 \/ 10)
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 10"
@@ -1571,12 +1572,11 @@ fi
 # ******************************************************************************
 
 if $USE_FFMPEG; then
-    yecho
-    yecho "Using ffmpeg to encode audio and video."
-
+    FF_BITRATE="-b ${VID_BITRATE}k"
     FF_SIZE="-s ${INNER_WIDTH}x${INNER_HEIGHT}"
+    FF_CODEC="-f mpeg1video"
+    FF_BUFSIZE="-bufsize 224kib"
     FF_FPS="-r $TGT_FPS"
-    FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k -ac 2"
     FF_SAMPRATE="-ar $SAMPRATE"
 
     # Padding, for any letterboxing to be done
@@ -1604,7 +1604,12 @@ if $USE_FFMPEG; then
             FF_TARGET="$FF_TARGET-dvd"
             ;;
     esac
-    
+fi    
+if $USE_FFMPEG && ! $DO_NORM; then
+    yecho
+    yecho "Using ffmpeg to encode audio and video."
+
+    FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k -ac 2"
     FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" \
         $FF_TARGET $FF_BITRATE $FF_FPS $FF_ILACE \
         $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT $FF_AUDIO_MAP"
@@ -1781,14 +1786,18 @@ else
         mkfifo "$YUV_STREAM"
     fi
     VID_PLAY_CMD="$PRIORITY $MPLAYER -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\""
-    VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
-    yecho $VID_PLAY_CMD
+    if $USE_FFMPEG ; then
+        VID_ENC_CMD="ffmpeg -i \"$IN_FILE\"  -an $FF_TARGET $FF_CODEC $FF_BITRATE $FF_BUFSIZE $FF_ILACE $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT -y \"$VIDEO_STREAM\""
+    else
+        VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
+    fi
+
+    if ! $USE_FFMPEG; then
+        yecho $VID_PLAY_CMD
+        cmd_exec "$VID_PLAY_CMD"
+    fi
     yecho $VID_ENC_CMD
     # Start encoding
-
-
-    cmd_exec "$VID_PLAY_CMD"
-
 
     if $USE_FIFO; then
         file_output_progress "$YUV_STREAM" "Ripping raw uncompressed video stream"
