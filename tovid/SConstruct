@@ -1,4 +1,4 @@
-# SCons build/install file for tovid
+# tovid SCons build/install file
 
 """What it needs to do:
 
@@ -27,6 +27,13 @@ import glob
 import sys
 from os import sep   # OS-dependent pathname separator
 
+# Get SCons environment
+env = Environment()
+
+# Ensure that Python 2.4 is available
+# (needed by cli.py for the 'subprocess' module)
+env.EnsurePythonVersion(2, 4)
+
 # -----------------------------------------------------------------------
 # Installation directories
 # -----------------------------------------------------------------------
@@ -43,74 +50,64 @@ python_dest = sep.join([prefix, 'lib', 'python2.4', 'site-packages'])
 # -----------------------------------------------------------------------
 
 # Bash scripts in src/ to be installed to script_dest
-bash_scripts = Split("""
-    src/idvid
-    src/makedvd
-    src/makemenu
-    src/makeslides
-    src/makevcd
-    src/makexml
-    src/postproc
-    src/todisc
-    src/todisc-fade-routine
-    src/todiscgui
-    src/tovid
-    src/tovid-batch
-    src/tovid-init
-    src/tovid-interactive
-    src/tovid-stats
-    src/tovid-test
-    src/tovidgui
-    """)
+bash_scripts = [\
+    'idvid'
+    'makedvd',
+    'makemenu',
+    'makeslides',
+    'makevcd',
+    'makexml',
+    'postproc',
+    'todisc',
+    'todisc-fade-routine',
+    'todiscgui',
+    'tovid',
+    'tovid-batch',
+    'tovid-init',
+    'tovid-interactive',
+    'tovid-stats',
+    'tovid-test',
+    'tovidgui']
+
 
 # Python modules in libtovid/ to be installed to python_dest
 # If possible, install these in a Pythonic (like distutils) way; all the
 # modules to be installed are recursively defined in the __all__ list in
 # libtovid/__init__.py.
-libtovid_modules = Split("""
-    libtovid/__init__.py
-    libtovid/cli.py
-    libtovid/config.py
-    libtovid/media.py
-    libtovid/opts.py
-    libtovid/standards.py
-    libtovid/stats.py
+libtovid_modules = [\
+    '__init__.py',
+    'cli.py',
+    'config.py',
+    'media.py',
+    'opts.py',
+    'standards.py',
+    'stats.py',
     
-    libtovid/layout/disc.py
-    libtovid/layout/dvdauthor.py
-    libtovid/layout/menu.py
-    libtovid/layout/tdl.py
-    libtovid/layout/video.py
+    'layout/disc.py',
+    'layout/dvdauthor.py',
+    'layout/menu.py',
+    'layout/tdl.py',
+    'layout/video.py',
     
-    libtovid/render/__init__.py
-    libtovid/render/animation.py
-    libtovid/render/drawing.py
-    libtovid/render/effect.py
-    libtovid/render/flipbook.py
-    libtovid/render/layer.py
-    libtovid/render/mvg.py
+    #'render/__init__.py',
+    'render/animation.py',
+    'render/drawing.py',
+    'render/effect.py',
+    'render/flipbook.py',
+    'render/layer.py',
+    'render/mvg.py',
     
-    libtovid/transcode/__init__.py
-    libtovid/transcode/encoders.py
-    libtovid/transcode/subtitles.py
-    """)
-
-
-# Get SCons environment
-env = Environment()
-
-# Ensure that Python 2.4 is available
-# (needed by cli.py for the 'subprocess' module)
-env.EnsurePythonVersion(2, 4)
-
+    #'transcode/__init__.py',
+    'transcode/encoders.py',
+    'transcode/subtitles.py']
 
 # -----------------------------------------------------------------------
 # Building manpages
 # -----------------------------------------------------------------------
 
-doc_src_en = glob.glob("docs/src/en/*.t2t")
-doc_src_es = glob.glob("docs/src/es/*.t2t")
-doc_src = doc_src_en #+ doc_src_es
+man_src_en = glob.glob(sep.join(['docs', 'src', 'en', '*.t2t']))
+man_src_es = glob.glob(sep.join(['docs', 'src', 'es', '*.t2t']))
+man_src = man_src_en #+ doc_src_es
 
 # Manual page build rule, using txt2tags
 ManBuilder = Builder(action = [['txt2tags', '-t', 'man', 
@@ -118,17 +115,22 @@ ManBuilder = Builder(action = [['txt2tags', '-t', 'man',
             '--outfile=$TARGET']],
          suffix = "1")
 
-env.Append(BUILDERS = {'Man' : ManBuilder})
+env.Append(BUILDERS = {'Man': ManBuilder})
 
 # Build each manpage
-for doc in doc_src:
-    env.Man(doc)
-
+for manpage in man_src:
+    env.Man(manpage)
 
 # -----------------------------------------------------------------------
 # Installing bash scripts
 # -----------------------------------------------------------------------
 
-env.Install(dir = script_dest, source = bash_scripts)
-env.Alias('install', [script_dest])
+env.Install(dir = script_dest,
+            source = ['src' + sep + file for file in bash_scripts])
+src_dir = ['src' + sep + file for file in bash_scripts]
+
+env.Install(dir = python_dest + sep + 'libtovid',
+            source = ['libtovid' + sep + file for file in libtovid_modules])
+
+env.Alias('install', [python_dest])
 
