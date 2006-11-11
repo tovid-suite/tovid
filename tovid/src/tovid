@@ -959,7 +959,6 @@ fi
 
 # Default quality 8, if not set by user
 : ${VID_QUALITY:=8}
-$USE_FFMPEG && ((VID_QUALITY > 9)) && VID_QUALITY=9
 # Set resolution and frame rate according to format and TV system
 case "$TGT_RES" in
     # VCD
@@ -1096,7 +1095,7 @@ case "$TGT_RES" in
         AUD_SUF="ac3"
         # -quality gives bitrates from 980-9800 kbps
         DEFAULT_BR=$(expr $VID_QUALITY \* 9800 \/ 10)
-        $USE_FFMPEG && DEFAULT_BR=$(expr $VID_QUALITY \* 9000 \/ 10)
+        $USE_FFMPEG && DEFAULT_BR=$(expr $VID_QUALITY \* 8100 \/ 10)
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 10"
