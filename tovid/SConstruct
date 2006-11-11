@@ -2,16 +2,47 @@
 
 """What it needs to do:
 
+Targets:
+  build ('scons' with no arguments)
+  install
+  uninstall (equivalent to '-c install')
+  dist
+
+To build:
 * Build tovid-init from tovid-init.in
+* Build manpages from doc/src/LANG sources
+
+To install:
 * Install tovid suite bash scripts from src/
 * Install libtovid Python modules from libtovid/
-* Build and install manpages from doc/src/LANG
+* Install manpages built from doc/src/LANG sources
+
+To distribute:
+* Build
+* Create tovid-VERSION.tar.gz
 
 """
-import SCons
 
-# Bash scripts in src/, should be installed in a location like
-# /usr/bin or /usr/local/bin
+import glob
+import sys
+from os import sep   # OS-dependent pathname separator
+
+# -----------------------------------------------------------------------
+# Installation directories
+# -----------------------------------------------------------------------
+
+# These are kind of a hack until we can figure a platform-independent
+# approach to determining correct install locations
+prefix = sep.join([sys.prefix, 'local'])        # /usr/local
+script_dest = sep.join([prefix, 'bin'])         # /usr/local/bin
+man_dest = sep.join([prefix, 'man', 'man1'])    # /usr/local/man/man1
+python_dest = sep.join([prefix, 'lib', 'python2.4', 'site-packages'])
+
+# -----------------------------------------------------------------------
+# Source files to build/install
+# -----------------------------------------------------------------------
+
+# Bash scripts in src/ to be installed to script_dest
 bash_scripts = Split("""
     src/idvid
     src/makedvd
@@ -32,9 +63,7 @@ bash_scripts = Split("""
     src/tovidgui
     """)
 
-# Python modules in libtovid/, should be installed in a system-wide Python
-# module repository like /usr/local/lib/python2.4/site-packages/
-
+# Python modules in libtovid/ to be installed to python_dest
 # If possible, install these in a Pythonic (like distutils) way; all the
 # modules to be installed are recursively defined in the __all__ list in
 # libtovid/__init__.py.
@@ -67,19 +96,23 @@ libtovid_modules = Split("""
     """)
 
 
-# TODO: Install
-
-
-
-
+# Get SCons environment
 env = Environment()
 
-# manpages
-import glob
-EnglishMans = glob.glob("docs/src/en/*.t2t")
-#EspanolMans = glob.glob("docs/src/es/*.t2t")
-ManPages = EnglishMans #+ EspanolMans
+# Ensure that Python 2.4 is available
+# (needed by cli.py for the 'subprocess' module)
+env.EnsurePythonVersion(2, 4)
 
+
+# -----------------------------------------------------------------------
+# Building manpages
+# -----------------------------------------------------------------------
+
+doc_src_en = glob.glob("docs/src/en/*.t2t")
+doc_src_es = glob.glob("docs/src/es/*.t2t")
+doc_src = doc_src_en #+ doc_src_es
+
+# Manual page build rule, using txt2tags
 ManBuilder = Builder(action = [['txt2tags', '-t', 'man', 
             '--infile=$SOURCE', 
             '--outfile=$TARGET']],
@@ -87,5 +120,15 @@ ManBuilder = Builder(action = [['txt2tags', '-t', 'man',
 
 env.Append(BUILDERS = {'Man' : ManBuilder})
 
-for man_name in ManPages:
-    env.Man(man_name)
+# Build each manpage
+for doc in doc_src:
+    env.Man(doc)
+
+
+# -----------------------------------------------------------------------
+# Installing bash scripts
+# -----------------------------------------------------------------------
+
+env.Install(dir = script_dest, source = bash_scripts)
+env.Alias('install', [script_dest])
+
