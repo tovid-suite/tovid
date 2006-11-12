@@ -100,7 +100,7 @@ def mencoder_encode(infile, outfile, target):
         # Audio settings
         # Adjust sampling rate
         # TODO: Don't resample unless needed
-        needed_samprate = standards.get_samprate(target.format)
+        needed_samprate = target.samprate
         if needed_samprate != infile.audio.samprate:
             log.info("Resampling needed to achieve %d Hz" % needed_samprate)
             cmd.add('-srate', target.samprate)
@@ -172,7 +172,7 @@ def mencoder_encode(infile, outfile, target):
 # --------------------------------------------------------------------------
 
 
-def mepg2enc_encode(infile, outfile, target):
+def mpeg2enc_encode(infile, outfile, target):
     """Use mplayer|yuvfps|mpeg2enc to encode infile (a MediaFile) to the
     given output filename, using the given Target.
     """
@@ -190,7 +190,7 @@ def mepg2enc_encode(infile, outfile, target):
     # Filenames for intermediate streams (ac3/m2v etc.)
     # Appropriate suffix for audio stream
     if target.format in ['vcd', 'svcd']:
-        audiofile = '%s.mpa' % outname
+        audiofile = '%s.mp2' % outname
     else:
         audiofile = '%s.ac3' % outname
     # Appropriate suffix for video stream

@@ -28,11 +28,10 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg'):
 
     # Get an appropriate encoding target
     target = get_target(format, tvsys)
-    
     target = correct_aspect(media_in, target) # TODO: Allow overriding aspect?
     
+    # Get the appropriate encoding backend and encode
     encoder = encoders.get_encoder(method)
-    # Do the encoding
     encoder(media_in, outfile, target)
 
 

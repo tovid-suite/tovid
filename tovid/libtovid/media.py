@@ -56,7 +56,7 @@ class VideoStream:
         self.height = 0
         self.fps = 0
         self.bitrate = 0
-        self.aspect = '1:1'
+        self.aspect = '4:3'
 
     def display(self):
         print "Video stream in %s" % self.filename
@@ -70,6 +70,7 @@ class VideoStream:
         print "----------------------"
 
 
+# TODO: Separate frame-ripping and frame-encoding from MediaFile
 class MediaFile:
     """Stores information about a file containing video and/or audio streams."""
     def __init__(self, filename=''):
@@ -200,6 +201,7 @@ def mplayer_identify(filename):
     """Identify the given video file using mplayer, and return a tuple
     (audio, video) of AudioStream and VideoStream. None is returned for
     nonexistent audio or video streams."""
+    # TODO: Infer aspect ratio
     audio = None
     audio_num = 0
     video = None
