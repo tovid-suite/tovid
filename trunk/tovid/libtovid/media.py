@@ -56,15 +56,17 @@ class VideoStream:
         self.height = 0
         self.fps = 0
         self.bitrate = 0
+        self.aspect = '1:1'
 
     def display(self):
         print "Video stream in %s" % self.filename
         print "----------------------"
-        print "      Codec: %s" % self.codec
-        print "      Width: %s" % self.width
-        print "     Height: %s" % self.height
-        print "  Framerate: %s" % self.fps
-        print "    Bitrate: %s" % self.bitrate
+        print "       Codec: %s" % self.codec
+        print "       Width: %s" % self.width
+        print "      Height: %s" % self.height
+        print "   Framerate: %s" % self.fps
+        print "     Bitrate: %s" % self.bitrate
+        print "Aspect ratio: %s" % self.aspect
         print "----------------------"
 
 

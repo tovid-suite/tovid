@@ -194,8 +194,8 @@ class Statlist:
             show_records:   Number of record to show, or range of numbers
             show_fields:    List of fields, by name as shown in FIELDS
         """
+        # Remember field sizes (character widths)
         size = {}
-        
         # Create field headings
         heading = ''
         for field in show_fields:
