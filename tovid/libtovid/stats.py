@@ -1,13 +1,22 @@
 #! /usr/bin/env python
 # stats.py
 
-"""Classes and functions for dealing with video statistics."""
+"""Classes and functions for dealing with video statistics.
+
+Future interface ideas:
+
+* Display certain records, or a range of records (records 1-10; last 15 records;
+  records with a certain field (or any field) matching given text/regexp
+* Display formatted output of all records, or a selection of records,
+  with control over which fields are displayed
+
+"""
 
 import csv
 import sys
 
 # Order of fields in stats.tovid
-fields = [\
+FIELDS = [\
     'tovid_version',
     'final_name',
     'length',          # a.k.a. CUR_LENGTH
@@ -62,7 +71,7 @@ class Statlist:
         """Import stats from a CSV (comma-delimited quoted text) file."""
         self.records = []
         statfile = open(filename, 'r')
-        csv_reader = csv.DictReader(statfile, fields, skipinitialspace=True)
+        csv_reader = csv.DictReader(statfile, FIELDS, skipinitialspace=True)
         for line in csv_reader:
             # Convert some string and numeric fields
             line['format'] = str.lower("%s" % line['format'])
@@ -169,3 +178,40 @@ class Statlist:
                 matches.append(record)
         return matches
     
+    def length(self, field):
+        """Return the length of the longest record in the given field, or the
+        width of the field name itself, whichever is greater."""
+        longest = len(field)
+        for record in self.records:
+            cur_len = len(str(record[field]))
+            if cur_len > longest:
+                longest = cur_len
+        return longest
+    
+    def show(self, show_records='all', show_fields=FIELDS):
+        """Print records matching given criteria, showing only the given fields.
+        
+            show_records:   Number of record to show, or range of numbers
+            show_fields:    List of fields, by name as shown in FIELDS
+        """
+        size = {}
+        
+        # Print field headings
+        heading = ''
+        for field in show_fields:
+            if field in FIELDS:
+                size[field] = self.length(field)
+                heading += "%s " % str.ljust(field, size[field])
+            else:
+                print "Error: field '%s' does not exist" % field
+                sys.exit()
+        print heading
+        
+        # Print fields from matching records
+        for record in self.records:
+            # TODO: support show_records
+            line = ''
+            for field in show_fields:
+                line += "%s " % str.ljust(str(record[field]), size[field])
+            print line
+ 
