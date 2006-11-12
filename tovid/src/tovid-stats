@@ -16,8 +16,8 @@ import os
 import sys
 from libtovid import stats
 from libtovid.utils import pretty_dict
-from libtovid.layer import Scatterplot
 from libtovid.render.drawing import Drawing
+from libtovid.render.layer import Scatterplot
 
 tovid_statfile = os.path.expanduser("~/.tovid/stats.tovid")
 
@@ -50,8 +50,10 @@ if __name__ == '__main__':
         print "        Like -list, but show a scatterplot image of the data."
         print "    -match FIELD VALUE"
         print "        Print statistics records where FIELD is VALUE"
+        print "    -show "FIELD [FIELD]..."
+        print "        Format and display the given fields for all records"
         print "FIELDs may be any of the following:"
-        for field in stats.fields:
+        for field in stats.FIELDS:
             print "    %s" % field
         print "You may include multiple commands, for example:"
         print "    tovid-stats -count cpu_speed -average avg_bitrate by tvsys"
@@ -109,6 +111,7 @@ if __name__ == '__main__':
                 drawing.translate((40, 48))
                 scatterplot.draw(drawing, 1)
                 drawing.render()
+    
         elif arg == '-match':
             field = args.pop(0)
             value = args.pop(0)
@@ -125,6 +128,9 @@ if __name__ == '__main__':
                 print "Found %s records where %s is %s." % \
                       (len(matches), field, value)
 
+        elif arg == '-show':
+            fields = args.pop(0)
+            statlist.show('all', fields.split(' '))
 
 def required_MB(format, tvsys, vbitrate, quant, seconds=1):
 # Not working yet
