@@ -35,6 +35,7 @@ def get_target(format, tvsys):
     target.scale = get_resolution(format, tvsys)
     target.samprate = get_samprate(format)
     target.fps = get_fps(tvsys)
+    return target
     
 class Target(object):
     """Describes an encoding target."""

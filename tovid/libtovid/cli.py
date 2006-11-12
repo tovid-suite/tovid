@@ -69,6 +69,7 @@ class Command(object):
         """Execute the command.
             stdin: File object to read input from
         """
+        print "Running: %s" % self
         self.output = ''
         self.proc = Popen([self.program] + self.args,
                     stdin=stdin, stdout=PIPE)
