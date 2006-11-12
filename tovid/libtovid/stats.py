@@ -196,7 +196,7 @@ class Statlist:
         """
         size = {}
         
-        # Print field headings
+        # Create field headings
         heading = ''
         for field in show_fields:
             if field in FIELDS:
@@ -206,7 +206,6 @@ class Statlist:
                 print "Error: field '%s' does not exist" % field
                 sys.exit()
         print heading
-        
         # Print fields from matching records
         for record in self.records:
             # TODO: support show_records
@@ -214,4 +213,6 @@ class Statlist:
             for field in show_fields:
                 line += "%s " % str.ljust(str(record[field]), size[field])
             print line
+        # Print heading at end too
+        print heading
  
