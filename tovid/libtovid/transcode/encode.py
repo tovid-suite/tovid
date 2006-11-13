@@ -1,0 +1,514 @@
+#! /usr/bin/env python
+# encode.py
+
+__all__ = [\
+    'encode',
+    'get_encoder',
+    'ffmpeg_encode',
+    'mencoder_encode',
+    'mpeg2enc_encode']
+
+import os
+import math
+import copy
+from libtovid.cli import Command
+from libtovid.utils import float_to_ratio, ratio_to_float
+from libtovid.transcode import rip
+from libtovid.media import load_profile, MediaFile
+from libtovid.standards import standard_profile
+from libtovid import log
+
+
+# --------------------------------------------------------------------------
+#
+# Primary interface
+#
+# --------------------------------------------------------------------------
+
+def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg'):
+    """Encode a multimedia file according to a target profile, saving the
+    encoded file to outfile.
+    
+        infile:  Input filename
+        outfile: Desired output filename (.mpg implied)
+        format:  One of 'vcd', 'svcd', 'dvd' (case-insensitive)
+        tvsys:   One of 'ntsc', 'pal' (case-insensitive)
+        method:  Encoding backend: 'ffmpeg', 'mencoder', or 'mpeg2enc'
+
+    """
+    source = load_profile(infile)
+    # Add .mpg to outfile if not already present
+    if not outfile.endswith('.mpg'):
+        outfile += '.mpg'
+    # Get an appropriate encoding profile
+    target = standard_profile(format, tvsys)
+    target = correct_aspect(source, target) # TODO: Allow overriding aspect?
+    target.filename = outfile
+    
+    # Get the appropriate encoding backend and encode
+    encoder = get_encoder(method)
+    encoder(source, target)
+
+def get_encoder(backend):
+    """Get an encoding function."""
+    if backend == 'ffmpeg':
+        return ffmpeg_encode
+    elif backend == 'mencoder':
+        return mencoder_encode
+    elif backend == 'mpeg2enc':
+        return mpeg2enc_encode
+
+# TODO: Move/integrate correct_aspect to libtovid/media.py
+def correct_aspect(source, target, aspect='auto'):
+    """Return a MediaFile with corrected aspect ratio for encoding the given
+    MediaFile. Input file aspect ratio may be overridden.
+
+        source:  Input MediaFile
+        target:  Output MediaFile
+        aspect:  Aspect ratio to assume for input file (e.g., '4:3', '16:9')
+                 or 'auto' to use autodetection
+
+    """
+    assert isinstance(source, MediaFile)
+    assert isinstance(target, MediaFile)
+    # Make a copy of the provided Profile
+    target = copy.copy(target)
+    
+    # Convert aspect (ratio) to a floating-point value
+    src_aspect = ratio_to_float('4:3')
+    if aspect is not 'auto':
+        src_aspect = ratio_to_float(aspect)
+    else:
+        src_aspect = ratio_to_float(source.aspect)
+    
+    # Use anamorphic widescreen for any video 16:9 or wider
+    # (Only DVD supports this)
+    if src_aspect >= 1.7 and target.format == 'dvd':
+        target_aspect = 16.0/9.0
+        widescreen = True
+    else:
+        target_aspect = 4.0/3.0
+        widescreen = False
+
+    width, height = target.scale
+    # If aspect matches target, no letterboxing is necessary
+    # (Match within a tolerance of 0.05)
+    if abs(src_aspect - target_aspect) < 0.05:
+        scale = (width, height)
+        expand = False
+    # If aspect is wider than target, letterbox vertically
+    elif src_aspect > target_aspect:
+        scale = (width, int(height * target_aspect / src_aspect))
+        expand = (width, height)
+    # Otherwise (rare), letterbox horizontally
+    else:
+        scale = (int(width * src_aspect / target_aspect), height)
+        expand = (width, height)
+
+    # If input file is already the correct size, don't scale
+    if scale == source.scale:
+        scale = False
+        log.debug('Infile resolution matches target resolution.')
+        log.debug('No scaling will be done.')
+
+    # Final scaling/expansion for correct aspect ratio display
+    target.scale = scale
+    target.expand = expand
+    target.widescreen = widescreen
+    return target
+
+
+
+# --------------------------------------------------------------------------
+#
+# ffmpeg backend
+#
+# --------------------------------------------------------------------------
+
+def ffmpeg_encode(source, target):
+    """Encode a multimedia video using ffmpeg.
+
+        source:  Profile of source video (input)
+        target:  Profile of target video (output)
+    
+    """
+    # Build the ffmpeg command
+    cmd = Command('ffmpeg')
+    cmd.add('-i', source.filename)
+    if target.format in ['vcd', 'svcd', 'dvd']:
+        cmd.add('-tvstd', target.tvsys,
+                '-target', '%s-%s' % (target.tvsys, target.format))
+    
+    cmd.add('-r', target.fps,
+            '-ar', target.samprate)
+    # Convert scale/expand to ffmpeg's padding system
+    if target.scale:
+        cmd.add('-s', '%sx%s' % target.scale)
+    if target.expand:
+        e_width, e_height = target.expand
+        s_width, s_height = target.scale
+        h_pad = (e_width - s_width) / 2
+        v_pad = (e_height - s_height) / 2
+        if h_pad > 0:
+            cmd.add('-padleft', h_pad, '-padright', h_pad)
+        if v_pad > 0:
+            cmd.add('-padtop', v_pad, '-padbottom', v_pad)
+    if target.widescreen:
+        cmd.add('-aspect', '16:9')
+    else:
+        cmd.add('-aspect', '4:3')
+    # Overwrite existing output files
+    cmd.add('-y')
+    cmd.add(target.filename)
+    
+    # Run the command to do the encoding
+    cmd.run()
+
+
+
+# --------------------------------------------------------------------------
+#
+# mencoder backend
+#
+# --------------------------------------------------------------------------
+
+def mencoder_encode(source, target):
+    """Encode a multimedia video using mencoder.
+
+        source:  Profile of source video (input)
+        target:  Profile of target video (output)
+    
+    """
+
+    # Build the mencoder command
+    cmd = Command('mencoder')
+    cmd.add(source.filename,
+            '-o', target.filename,
+            '-oac', 'lavc',
+            '-ovc', 'lavc',
+            '-of', 'mpeg')
+    # Format
+    cmd.add('-mpegopts')
+    
+    if target.format in ['vcd', 'svcd']:
+        cmd.add('format=x%s' % target.format)
+    else:
+        cmd.add('format=dvd')
+    
+    # TODO: this assumes we only have ONE audio track.
+    if source.has_audio(): # Always True, until Profile.has_audio() is fixed
+        # Audio settings
+        # Adjust sampling rate
+        # TODO: Don't resample unless needed
+        if source.samprate != target.samprate:
+            log.info("Resampling needed to achieve %d Hz" % target.samprate)
+            cmd.add('-srate', target.samprate)
+            cmd.add('-af', 'lavcresample=%s' % target.samprate)
+        else:
+            log.info("No resampling needed, already at %d Hz" % target.samprate)
+        
+    else:
+        log.info("No audio file, generating silence of %f seconds." % \
+                 source.length)
+        # Generate silence.
+        if target.format in ['vcd', 'svcd']:
+            audiofile = '%s.mpa' % target.filename
+        else:
+            audiofile = '%s.ac3' % target.filename
+        encode_audio(source, audiofile, target)
+        # TODO: make this work, it,s still not adding the ac3 file correctly.
+        cmd.add('-audiofile', audiofile)
+        
+
+    # Video codec
+    if target.format == 'vcd':
+        lavcopts = 'vcodec=mpeg1video'
+    else:
+        lavcopts = 'vcodec=mpeg2video'
+    # Audio codec
+    if target.format in ['vcd', 'svcd']:
+        lavcopts += ':acodec=mp2'
+    else:
+        lavcopts += ':acodec=ac3'
+    lavcopts += ':abitrate=%s:vbitrate=%s' % \
+            (target.abitrate, target.vbitrate)
+    # Maximum video bitrate
+    lavcopts += ':vrc_maxrate=%s' % target.vbitrate
+    if target.format == 'vcd':
+        lavcopts += ':vrc_buf_size=327'
+    elif target.format == 'svcd':
+        lavcopts += ':vrc_buf_size=917'
+    else:
+        lavcopts += ':vrc_buf_size=1835'
+    # Set appropriate target aspect
+    if target.widescreen:
+        lavcopts += ':aspect=16/9'
+    else:
+        lavcopts += ':aspect=4/3'
+    # Put all lavcopts together
+    cmd.add('-lavcopts', lavcopts)
+
+    # FPS
+    if target.tvsys == 'pal':
+        cmd.add('-ofps', '25/1')
+    elif target.tvsys == 'ntsc':
+        cmd.add('-ofps', '30000/1001') # ~= 29.97
+
+    # Scale/expand to fit target frame
+    if target.scale:
+        vfilter = 'scale=%s:%s' % target.scale
+        # Expand is not done unless also scaling
+        if target.expand:
+            vfilter += ',expand=%s:%s' % target.expand
+        cmd.add('-vf', vfilter)
+
+    # Run the command to do the encoding
+    cmd.run()
+
+# --------------------------------------------------------------------------
+#
+# mpeg2enc backend
+#
+# --------------------------------------------------------------------------
+
+
+def mpeg2enc_encode(source, target):
+    """Encode a multimedia video using mplayer|yuvfps|mpeg2enc.
+    
+        source:  Profile of source video (input)
+        target:  Profile of target video (output)
+
+    """
+    log.warning("This encoder is very experimental, and may not work.")
+
+    outname = target.filename
+    # YUV raw video FIFO, for piping video from mplayer to mpeg2enc
+    yuvfile = '%s.yuv' % outname
+    try:
+        os.remove(yuvfile)
+    except:
+        pass
+    os.mkfifo(yuvfile)
+    
+    # Filenames for intermediate streams (ac3/m2v etc.)
+    # Appropriate suffix for audio stream
+    if target.format in ['vcd', 'svcd']:
+        audiofile = '%s.mp2' % outname
+    else:
+        audiofile = '%s.ac3' % outname
+    # Appropriate suffix for video stream
+    if target.format == 'vcd':
+        videofile = '%s.m1v' % outname
+    else:
+        videofile = '%s.m2v' % outname
+    # Do audio
+    encode_audio(source, audiofile, target)
+    # Do video
+    rip.rip_video(source, yuvfile, target)
+    encode_video(source, yuvfile, videofile, target)
+    # Combine audio and video
+    mplex_streams(videofile, audiofile, target)
+
+
+def encode_audio(source, audiofile, target):
+    """Encode the audio stream in a source file to a target format, saving
+    to the given filename.
+
+        source:    Input MediaFile
+        audiofile: Filename for encoded audio
+        target:    Output MediaFile
+
+    If no audio is present in the source file, encode silence.
+    """
+    cmd = Command('ffmpeg')
+    if target.format in ['vcd', 'svcd']:
+        acodec = 'mp2'
+    else:
+        acodec = 'ac3'
+
+    # If source has audio, encode it
+    if source.has_audio(): # Always True until Profile.has_audio() is fixed
+        cmd.add('-i', source.filename)
+    # Otherwise, generate 4-second silence
+    else:
+        # Add silence the length of source length
+        ln = source.length
+        if ln < 4:
+            # Minimum 4 secs :)
+            ln = 4.0
+        cmd.add('-f', 's16le', '-i', '/dev/zero', '-t', '%f' % ln)
+    cmd.add_raw('-vn -ac 2 -ab 224')
+    cmd.add('-ar', target.samprate)
+    cmd.add('-acodec', acodec)
+    cmd.add('-y', audiofile)
+    # Run the command to encode the audio
+    cmd.run()
+
+
+def encode_video(source, yuvfile, videofile, target):
+    """Encode a yuv4mpeg stream to an MPEG video stream.
+    
+        source:    Input MediaFile
+        yuvfile:   Filename of .yuv stream coming from mplayer
+        videofile: Filename of .m[1|2]v to write encoded video stream to
+        target:    Output MediaFile
+        
+    """
+    # TODO: Control over quality (bitrate/quantization) and disc split size,
+    # corresp. to $VID_BITRATE, $MPEG2_QUALITY, $DISC_SIZE, etc.
+    # Missing options (compared to tovid)
+    # -S 700 -B 247 -b 2080 -v 0 -4 2 -2 1 -q 5 -H -o FILE
+    cmd = Command('mpeg2enc')
+    # TV system
+    if target.tvsys == 'pal':
+        cmd.add('-F', '3', '-n', 'p')
+    elif target.tvsys == 'ntsc':
+        cmd.add('-F', '4', '-n', 'n')
+    # Format
+    format = target.format
+    if format == 'vcd':
+        cmd.add('-f', '1')
+    elif format == 'svcd':
+        cmd.add('-f', '4')
+    elif 'dvd' in format:
+        cmd.add('-f', '8')
+    # Aspect ratio
+    if target.widescreen:
+        cmd.add('-a', '3')
+    else:
+        cmd.add('-a', '2')
+    cmd.add('-o', videofile)
+
+    # Adjust framerate if necessary
+    if source.fps != target.fps:
+        log.info("Adjusting framerate")
+        yuvcmd = Command('yuvfps')
+        yuvcmd.add('-r', float_to_ratio(target.fps))
+        cmd.pipe_to(yuvcmd)
+    cat = Command('cat')
+    cat.add(yuvfile)
+    cat.pipe_to(cmd)
+    # Run the pipeline to encode the video stream
+    cat.run()
+
+def encode_audio(source, audiofile, target):
+    """Encode an audio stream to AC3 or MP2 format.
+    
+        source:    Input MediaFile
+        audiofile: File to put encoded audio in
+        target:    Output MediaFile
+        
+    """
+    cmd = Command('ffmpeg')
+    if target.format in ['vcd', 'svcd']:
+        acodec = 'mp2'
+    else:
+        acodec = 'ac3'
+    # If source file has audio, encode it
+    if source.has_audio():
+        cmd.add('-i', source.filename)
+    # Otherwise, generate 4-second silence
+    else:
+        cmd.add('-f', 's16le', '-i', '/dev/zero', '-t', '4')
+    # Add other necessary qualifiers
+    cmd.add('-ac', '2',
+            '-ab', '224',
+            '-ar', target.samprate,
+            '-acodec', acodec,
+            '-y', audiofile)
+    # Run the command to encode the audio
+    cmd.run()
+
+def mplex_streams(vstream, astream, target):
+    """Multiplex audio and video stream files to the given target.
+    
+        vstream:  Filename of MPEG video stream
+        astream:  Filename of MP2/AC3 audio stream
+        target:   Profile of output file
+        
+    """
+    cmd = Command('mplex')
+    format = target.format
+    if format == 'vcd':
+        cmd.add('-f', '1')
+    elif format == 'dvd-vcd':
+        cmd.add('-V', '-f', '8')
+    elif format == 'svcd':
+        cmd.add('-V', '-f', '4', '-b', '230')
+    elif format == 'half-dvd':
+        cmd.add('-V', '-f', '8', '-b', '300')
+    elif format == 'dvd':
+        cmd.add('-V', '-f', '8', '-b', '400')
+    # elif format == 'kvcd':
+    #   cmd += ' -V -f 5 -b 350 -r 10800 '
+    cmd.add(vstream, astream, '-o', target.filename)
+    # Run the command to multiplex the streams
+    cmd.run()
+
+# --------------------------------------------------------------------------
+#
+# Frame encoder
+#
+# --------------------------------------------------------------------------
+
+def encode_frames(imagedir, outfile, target):
+    """Convert an image sequence in the given directory to match a target
+    MediaFile, putting the output stream in outfile.
+
+        imagedir:  Directory containing images (and only images)
+        outfile:   Name of output file (MPEG video stream)
+        target:    MediaFile to write encoded video to
+        
+    Currently supports JPG and PNG images; input images must already be
+    at the desired target resolution.
+    """
+    # Use absolute path name
+    imagedir = os.path.abspath(imagedir)
+    print "Creating video stream from image sequence in %s" % imagedir
+    # Determine image type
+    images = glob.glob(imagedir)
+    extension = images[0][-3:]
+    if extension not in ['jpg', 'png']:
+        raise ValueError, "Image format '%s' isn't currently supported to "\
+              "render video from still frames" % extension
+    # Make sure remaining image files have the same extension
+    for img in images:
+        if not img.endswith(extension):
+            raise RuntimeWarning, "%s does not have a .%s extension" %\
+                  (img, extension)
+
+    # Use jpeg2yuv/png2yuv to stream images
+    if extension == 'jpg':
+        cmd = Command('jpeg2yuv')
+        cmd.add('-Ip',
+                '-f', '%.3f' % target.fps,
+                '-j', '%s/%%08d.%s' % (imagedir, extension))
+    elif extension == 'png':
+        ls = Command('ls', '%s/*.png' % imagedir)
+        xargs = Command('xargs', '-n1', 'pngtopnm')
+        png2yuv = Command('png2yuv')
+        png2yuv.add('-Ip',
+                    '-f', '%.3f' % target.fps,
+                    '-j', '%s/%%08d.png' % (imagedir))
+        ls.pipe_to(xargs)
+        xargs.pipe_to(png2yuv)
+        cmd = ls
+        #cmd += 'pnmtoy4m -Ip -F %s %s/*.png' % standards.get_fpsratio(tvsys)
+
+    # TODO: Scale to correct target size using yuvscaler or similar
+    
+    # Pipe image stream into mpeg2enc to encode
+    mpeg2enc = Command('mpeg2enc')
+    mpeg2enc.add('-v', '0',
+                 '-q' '3',
+                 '-o' '%s' % outfile)
+    if target.format == 'vcd':
+        mpeg2enc.add('--format 1')
+    elif target.format == 'svcd':
+        mpeg2enc.add('--format 4')
+    else:
+        mpeg2enc.add('--format 8')
+
+    cmd.pipe_to(mpeg2enc)
+    cmd.run()
+
