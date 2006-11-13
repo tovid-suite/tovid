@@ -25,25 +25,19 @@
 __all__ = [\
     # Subdirectories
     'gui',
-    'encoders',
+    'layout',
     'render',
+    'templates',
+    'tests',
+    'transcode',
     # .py files
-    'animation',
     'cli',
-    'disc',
-    'effect',
-    'flipbook',
-    'globals',
-    'layer',
+    'config',
     'media',
-    'menu',
     'opts',
-    'stats',
     'standards',
-    'tdl',
-    'textmenu',
-    'utils',
-    'video']
+    'stats',
+    'utils',]
 
 import sys
 import logging
