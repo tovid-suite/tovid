@@ -700,6 +700,12 @@ EOF`
     # Get average/peak bitrates from mplex
     AVG_BITRATE=$(grep 'Average bit-rate' "$LOG_FILE" | awk '{print $6}')
     PEAK_BITRATE=$(grep 'Peak bit-rate' "$LOG_FILE" | awk '{print $6}')
+    if $USE_FFMPEG && ! $DO_NORM; then
+        bitrates=$(awk -F= '/^frame=/ {gsub("kbits/s", ""); printf "%d000\n", $6}' "$LOG_FILE")
+        bitrates=$(sort -un <<< "$bitrates")
+        AVG_BITRATE=$(awk '{t+=$0} END{printf "%d\n", t/NR}' <<< "$bitrates")
+        PEAK_BITRATE=$(sort -n <<< "$bitrates"|tail -n 1)
+    fi
     # Convert to kbits/sec
     test -n "$AVG_BITRATE" && AVG_BITRATE=$(expr $AVG_BITRATE \/ 1000)
     test -n "$PEAK_BITRATE" && PEAK_BITRATE=$(expr $PEAK_BITRATE \/ 1000)
@@ -725,9 +731,6 @@ EOF`
     Took $HHMMSS to encode on $CPU_MODEL $CPU_SPEED mhz
     -----------------------------------------
 EOF`
-if ( $USE_FFMPEG && ! $DO_NORM ) || ! $USE_FFMPEG; then
-    FINAL_STATS_PRETTY=$(sed '/Average/d;/Peak/d;/^ *$/d'  <<< "$FINAL_STATS_PRETTY")
-fi
 
     # Final statistics (comma-delimited quoted strings)
     FINAL_STATS_FORMATTED=`cat << EOF
@@ -1611,7 +1614,7 @@ if $USE_FFMPEG && ! $DO_NORM; then
 
     FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k -ac 2"
     FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" \
-        $FF_TARGET $FF_BITRATE $FF_FPS $FF_ILACE \
+        $FF_TARGET $FF_BITRATE $FF_QUANT $FF_FPS $FF_ILACE \
         $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT $FF_AUDIO_MAP"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
     FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\" ${NEW_AUDIO[@]}"
@@ -1781,13 +1784,13 @@ if ! $FORCE_ENCODING && $VIDEO_OK; then
 else
     yecho "Encoding video stream with the following commands:"
 
-    # Normal one-pass encoding, with mplayer piped into the mjpegtools
+    # Normal one-pass encoding, with mplayer piped into the mjpegtools, or using ffmpeg
     if $USE_FIFO; then
         mkfifo "$YUV_STREAM"
     fi
-    VID_PLAY_CMD="$PRIORITY $MPLAYER -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\""
+    VID_PLAY_CMD="$PRIORITY $MPLAYER -noconsolecontrols -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\""
     if $USE_FFMPEG ; then
-        VID_ENC_CMD="ffmpeg -i \"$IN_FILE\"  -an $FF_TARGET $FF_CODEC $FF_BITRATE $FF_BUFSIZE $FF_ILACE $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT -y \"$VIDEO_STREAM\""
+        VID_ENC_CMD="ffmpeg -i \"$IN_FILE\"  -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ILACE $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT -y \"$VIDEO_STREAM\""
     else
         VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
     fi
@@ -1803,9 +1806,8 @@ else
         file_output_progress "$YUV_STREAM" "Ripping raw uncompressed video stream"
     fi
     
-
+    LOG_FILTER="$CRLF"
     cmd_exec "$VID_ENC_CMD"
-
 
     # For parallel encoding, nothing further yet
     if $FAKE || $PARALLEL; then
