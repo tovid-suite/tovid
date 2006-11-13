@@ -15,6 +15,7 @@ Known formats include:
 """
 
 __all__ = [\
+    'standard_profile',
     'get_resolution',
     'get_vcodec',
     'get_acodec',
@@ -27,28 +28,30 @@ __all__ = [\
 
 import doctest
 from os.path import abspath
+from libtovid.media import MediaFile
 
-
-def get_target(format, tvsys):
-    """Return a Target for the given format and tvsys."""
-    target = Target(format, tvsys)
-    target.scale = get_resolution(format, tvsys)
-    target.samprate = get_samprate(format)
-    target.fps = get_fps(tvsys)
-    return target
-    
-class Target(object):
-    """Describes an encoding target."""
-    def __init__(self, format='dvd', tvsys='ntsc'):
-        self.format = format
-        self.tvsys = tvsys
-        self.abitrate = 224
-        self.vbitrate = 9800
-        self.scale = (720, 480)
-        self.expand = None
-        self.samprate = 48000
-        self.fps = 29.97
-        self.widescreen = False
+def standard_profile(format, tvsys):
+    """Return a MediaFile compliant with the given format and tvsys.
+    """
+    profile = MediaFile('', format, tvsys)
+    # Set valid video attributes
+    profile.vcodec = get_vcodec(format)
+    profile.scale = get_resolution(format, tvsys)
+    profile.fps = get_fps(tvsys)
+    # Set valid audio attributes
+    profile.acodec = get_acodec(format)
+    profile.samprate = get_samprate(format)
+    # TODO: How to handle default bitrates? These functions return a range.
+    #profile.vbitrate = get_vbitrate(format)[1]
+    #profile.abitrate = get_abitrate(format)[1]
+    profile.abitrate = 224
+    if format == 'vcd':
+        profile.vbitrate = 1150
+    elif format == 'svcd':
+        profile.vbitrate = 2600
+    else:
+        profile.vbitrate = 6000
+    return profile
 
 def get_resolution(format, tvsys):
     """Return the pixel resolution (x,y) for the given format and TV system.
@@ -167,17 +170,12 @@ def get_fpsratio(tvsys):
 
 def get_vbitrate(format):
     """Return the range (min, max) of valid video bitrates (in kilobits per
-    second) for the given format, or a single value for constant-bitrate
-    formats. For example:
-
-        >>> get_vbitrate('dvd')
-        (0, 9800)
-        >>> get_vbitrate('vcd')
-        1152
+    second) for the given format. min and max are the same for constant-bitrate
+    formats.
     """
     # Valid video bitrates, indexed by format
     valid_bitrates = {\
-        'vcd': 1150,
+        'vcd': (1150, 1150),
         'svcd': (0, 2600),
         'dvd-vcd': (0, 9800),
         'half-dvd': (0, 9800),
@@ -187,22 +185,16 @@ def get_vbitrate(format):
 
 def get_abitrate(format):
     """Return the range (min, max) of valid audio bitrates (in kilobits per
-    second) for the given format, or a single value for constant-bitrate
-    formats. For example:
-    
-        >>> get_abitrate('dvd')
-        (32, 1536)
-        >>> get_abitrate('vcd')
-        224
+    second) for the given format. min and max are the same for constant-bitrate
+    formats.
     """
     if format == 'vcd':
-        return 224
+        return (224, 224)
     elif format == 'svcd':
         return (32, 384)
     else:
         return (32, 1536)
         
-
 
 
 

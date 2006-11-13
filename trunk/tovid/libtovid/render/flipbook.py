@@ -66,6 +66,7 @@ from libtovid.render.animation import Keyframe
 from libtovid.render.drawing import Drawing
 from libtovid.render import layer, effect, standards
 from libtovid.media import MediaFile
+from libtovid.transcode import encode
 
 class Flipbook:
     """A collection of Drawings that together comprise an animation.
@@ -91,8 +92,6 @@ class Flipbook:
         self.width = int(w / dx)
         self.height = int(h / dy)
         self.size = (self.width, self.height)
-        
-        
 
     def add(self, layer, position=(0, 0)):
         """Add a Layer to the flipbook."""
@@ -142,9 +141,10 @@ class Flipbook:
             drawing.save_png('%s/%08d.png' % (tmp, frame - 1))
             frame += 1
         video = MediaFile(m2v_file)
-        video.encode_frames(tmp, 'png', m2v_file, self.format, self.tvsys)
+        
+        encode.encode_frames(tmp, m2v_file, self.format, self.tvsys)
         print "Output file is: %s" % m2v_file
-        encoders.encode_audio(video, None, [])
+        encode.encode_audio(video, None, [])
 
 
 def draw_text_demo(flipbook, last_frame):
