@@ -41,7 +41,7 @@ def rip_video(source, yuvfile, target):
     cmd.add('-noautosub')
     if target.scale:
         cmd.add('-vf', 'scale=%s:%s' % target.scale)
-    if target.expand:
+    if target.expand > target.scale:
         cmd.add('-vf-add', 'expand=%s:%s' % target.expand)
     # Do ripping in background
     cmd.bg = True
@@ -49,22 +49,22 @@ def rip_video(source, yuvfile, target):
     cmd.run()
 
 
-def rip_frames(mediafile, out_dir, frames='all', size=(0, 0)):
-    """Extract frame images from a video file and return a list of frame image
+def rip_frames(media, out_dir, frames='all', size=(0, 0)):
+    """Extract frame images from a MediaFile and return a list of frame image
     files.
     
-        mediafile: MediaFile to extract images from
-        out_dir:   Directory where output images should be stored; images
-                   are saved in a subdirectory of out_dir named after the
-                   input filename
-        frames:    Which frames to rip: 'all' for all frames, 15 to rip frame
-                   15; [30, 90] to rip frames 30 through 90, etc.
-        size:      Resolution of frame images (default: original size), used
-                   for prescaling
+        media:    MediaFile to extract images from
+        out_dir:  Directory where output images should be stored; images
+                  are saved in a subdirectory of out_dir named after the
+                  input filename
+        frames:   Which frames to rip: 'all' for all frames, 15 to rip frame
+                  15; [30, 90] to rip frames 30 through 90, etc.
+        size:     Resolution of frame images (default: original size), used
+                  for prescaling
         
     """
     frame_files = []
-    video_file = os.path.abspath(mediafile.filename)
+    video_file = os.path.abspath(media.filename)
     my_out_dir = os.path.abspath(out_dir)
     try:
         os.mkdir(my_out_dir)

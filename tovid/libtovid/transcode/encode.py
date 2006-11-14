@@ -14,8 +14,7 @@ import copy
 from libtovid.cli import Command
 from libtovid.utils import float_to_ratio, ratio_to_float
 from libtovid.transcode import rip
-from libtovid.media import load_profile, MediaFile
-from libtovid.standards import standard_profile
+from libtovid.media import *
 from libtovid import log
 
 
@@ -36,13 +35,14 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg'):
         method:  Encoding backend: 'ffmpeg', 'mencoder', or 'mpeg2enc'
 
     """
-    source = load_profile(infile)
+    source = load_media(infile)
     # Add .mpg to outfile if not already present
     if not outfile.endswith('.mpg'):
         outfile += '.mpg'
-    # Get an appropriate encoding profile
-    target = standard_profile(format, tvsys)
-    target = correct_aspect(source, target) # TODO: Allow overriding aspect?
+    # Get an appropriate encoding target
+    target = standard_media(format, tvsys)
+    # TODO: User-defined aspect ratio; hardcoded 4:3 for now
+    target = correct_aspect(source, target, '4:3')
     target.filename = outfile
     
     # Get the appropriate encoding backend and encode
@@ -57,65 +57,6 @@ def get_encoder(backend):
         return mencoder_encode
     elif backend == 'mpeg2enc':
         return mpeg2enc_encode
-
-# TODO: Move/integrate correct_aspect to libtovid/media.py
-def correct_aspect(source, target, aspect='auto'):
-    """Return a MediaFile with corrected aspect ratio for encoding the given
-    MediaFile. Input file aspect ratio may be overridden.
-
-        source:  Input MediaFile
-        target:  Output MediaFile
-        aspect:  Aspect ratio to assume for input file (e.g., '4:3', '16:9')
-                 or 'auto' to use autodetection
-
-    """
-    assert isinstance(source, MediaFile)
-    assert isinstance(target, MediaFile)
-    # Make a copy of the provided Profile
-    target = copy.copy(target)
-    
-    # Convert aspect (ratio) to a floating-point value
-    src_aspect = ratio_to_float('4:3')
-    if aspect is not 'auto':
-        src_aspect = ratio_to_float(aspect)
-    else:
-        src_aspect = ratio_to_float(source.aspect)
-    
-    # Use anamorphic widescreen for any video 16:9 or wider
-    # (Only DVD supports this)
-    if src_aspect >= 1.7 and target.format == 'dvd':
-        target_aspect = 16.0/9.0
-        widescreen = True
-    else:
-        target_aspect = 4.0/3.0
-        widescreen = False
-
-    width, height = target.scale
-    # If aspect matches target, no letterboxing is necessary
-    # (Match within a tolerance of 0.05)
-    if abs(src_aspect - target_aspect) < 0.05:
-        scale = (width, height)
-        expand = False
-    # If aspect is wider than target, letterbox vertically
-    elif src_aspect > target_aspect:
-        scale = (width, int(height * target_aspect / src_aspect))
-        expand = (width, height)
-    # Otherwise (rare), letterbox horizontally
-    else:
-        scale = (int(width * src_aspect / target_aspect), height)
-        expand = (width, height)
-
-    # If input file is already the correct size, don't scale
-    if scale == source.scale:
-        scale = False
-        log.debug('Infile resolution matches target resolution.')
-        log.debug('No scaling will be done.')
-
-    # Final scaling/expansion for correct aspect ratio display
-    target.scale = scale
-    target.expand = expand
-    target.widescreen = widescreen
-    return target
 
 
 
@@ -144,7 +85,7 @@ def ffmpeg_encode(source, target):
     # Convert scale/expand to ffmpeg's padding system
     if target.scale:
         cmd.add('-s', '%sx%s' % target.scale)
-    if target.expand:
+    if target.expand > target.scale:
         e_width, e_height = target.expand
         s_width, s_height = target.scale
         h_pad = (e_width - s_width) / 2
@@ -258,7 +199,7 @@ def mencoder_encode(source, target):
     if target.scale:
         vfilter = 'scale=%s:%s' % target.scale
         # Expand is not done unless also scaling
-        if target.expand:
+        if target.expand > target.scale:
             vfilter += ',expand=%s:%s' % target.expand
         cmd.add('-vf', vfilter)
 
@@ -384,7 +325,8 @@ def encode_video(source, yuvfile, videofile, target):
         log.info("Adjusting framerate")
         yuvcmd = Command('yuvfps')
         yuvcmd.add('-r', float_to_ratio(target.fps))
-        cmd.pipe_to(yuvcmd)
+        yuvcmd.pipe_to(cmd)
+        cmd = yuvcmd
     cat = Command('cat')
     cat.add(yuvfile)
     cat.pipe_to(cmd)
