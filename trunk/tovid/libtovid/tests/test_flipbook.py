@@ -47,8 +47,7 @@ class TestFlipbook(unittest.TestCase):
         fb = Flipbook(20, 'dvd', 'ntsc')
 
         # Add frames
-        mf = MediaFile()
-        mf.load('/tmp/testflip.m2v')
+        mf = load_media('/tmp/testflip.m2v')
         mf.rip_frames([0, 10])
 
         # Add a video also

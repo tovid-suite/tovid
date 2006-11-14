@@ -140,11 +140,9 @@ class Flipbook:
             # jpeg2yuv likes frames to start at 0
             drawing.save_png('%s/%08d.png' % (tmp, frame - 1))
             frame += 1
-        video = MediaFile(m2v_file)
-        
+        # Encode the frames to an .m2v file
         encode.encode_frames(tmp, m2v_file, self.format, self.tvsys)
         print "Output file is: %s" % m2v_file
-        encode.encode_audio(video, None, [])
 
 
 def draw_text_demo(flipbook, last_frame):

@@ -96,6 +96,7 @@ def spumux(movie_filename, xmlopts, stream=0):
 
     os.unlink(fd.name)
 
+
 def add_subs(infile, subs, opts=None):
     """
     Adds subtitles to a certain MPEG.
@@ -104,9 +105,9 @@ def add_subs(infile, subs, opts=None):
     assert isinstance(infile, MediaFile)
     
     xmlopts = {
-        'movie-fps': infile.video.fps,
-        'movie-width': infile.video.width,
-        'movie-height': infile.video.height,
+        'movie-fps': infile.fps,
+        'movie-width': infile.width,
+        'movie-height': infile.height,
     }
     
     if opts:
@@ -116,8 +117,8 @@ def add_subs(infile, subs, opts=None):
         xmlopts['filename'] = sub_filename
         spumux(infile.filename, xmlopts, stream)
 
-class Subtitles:
 
+class Subtitles(object):
     optiondefs = [
         Option("subs", 'STRING [, STRING ...]', [],
         """One file means one language. You'll need to know the order of the
@@ -135,10 +136,7 @@ class Subtitles:
 
     def generate(self):
         """generate the subtitles from the following options"""
-        infile = MediaFile(self.options['in'])
-        infile.load()
-        if infile.video is None:
-            raise ValueError("Could not identify video file.")
+        infile = load_media(self.options['in'])
         add_subs(infile, self.options['subs'])
 
 if __name__ == '__main__':

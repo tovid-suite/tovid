@@ -64,12 +64,14 @@ if __name__ == '__main__':
     # Parse command-line
     while args:
         arg = args.pop(0)
+        
         if arg == '-count':
             field = args.pop(0)
             counts = statlist.count_unique(field)
             print "Total occurrences of each distinct value of '%s':" % field
             print pretty_dict(counts)
             print "Total of %s distinct values" % len(counts)
+            
         elif arg == '-average':
             avg_field = args.pop(0)
             if args and args[0] == 'by':
