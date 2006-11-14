@@ -1,10 +1,13 @@
 #! /bin/bash
 # Do a "quick release" of the SVN code
 
-TARGET_DIR="/home/groups/t/to/tovid/htdocs/download"
+TARGET_DIR="/home/groups/t/to/tovid/htdocs/download/quick_releases"
 
 if test $# -lt 1; then
-    echo "Usage: quickrelease USERNAME"
+    echo "quickrelease: Create and upload a tovid 'quick release' (SVN .tar.gz)"
+    echo "Usage:"
+    echo "    quickrelease USERNAME"
+    echo "where USERNAME is your sourceforge.net username."
     exit
 else
     USERNAME=$1
