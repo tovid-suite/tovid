@@ -44,6 +44,7 @@ from libtovid.render.drawing import Drawing
 from libtovid.render.effect import Effect
 from libtovid.render.animation import Keyframe, Tween
 from libtovid.media import MediaFile
+from libtovid.transcode import rip
 
 class Layer:
     """A visual element, or a composition of visual elements. Conceptually
@@ -269,8 +270,7 @@ class VideoClip (Layer):
     def rip_frames(self, start, end):
         """Rip frames from the video file, from start to end frames."""
         print "VideoClip: Ripping frames %s to %s" % (start, end)
-        self.mediafile.rip_frames([start, end])
-        self.frame_files.extend(self.mediafile.frame_files)
+        self.frame_files = rip.rip_frames(self.mediafile, '/tmp', [start, end])
 
     def draw(self, drawing, frame=1):
         """Draw ripped video frames to the given drawing. For now, it's

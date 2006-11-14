@@ -15,7 +15,6 @@ Known formats include:
 """
 
 __all__ = [\
-    'standard_profile',
     'get_resolution',
     'get_vcodec',
     'get_acodec',
@@ -27,31 +26,6 @@ __all__ = [\
     'AudioStandard']
 
 import doctest
-from os.path import abspath
-from libtovid.media import MediaFile
-
-def standard_profile(format, tvsys):
-    """Return a MediaFile compliant with the given format and tvsys.
-    """
-    profile = MediaFile('', format, tvsys)
-    # Set valid video attributes
-    profile.vcodec = get_vcodec(format)
-    profile.scale = get_resolution(format, tvsys)
-    profile.fps = get_fps(tvsys)
-    # Set valid audio attributes
-    profile.acodec = get_acodec(format)
-    profile.samprate = get_samprate(format)
-    # TODO: How to handle default bitrates? These functions return a range.
-    #profile.vbitrate = get_vbitrate(format)[1]
-    #profile.abitrate = get_abitrate(format)[1]
-    profile.abitrate = 224
-    if format == 'vcd':
-        profile.vbitrate = 1150
-    elif format == 'svcd':
-        profile.vbitrate = 2600
-    else:
-        profile.vbitrate = 6000
-    return profile
 
 def get_resolution(format, tvsys):
     """Return the pixel resolution (x,y) for the given format and TV system.
