@@ -85,6 +85,10 @@ READING_CONFIG=false
 # Don't use ffmpeg
 USE_FFMPEG=false
 
+# Running from gui
+FROM_GUI=false
+NOASK=false
+
 # NTSC DVD full-screen by default
 TGT_RES="DVD"
 TVSYS="NTSC"
@@ -537,6 +541,14 @@ function get_args()
             "-nofifo" )
                 USE_FIFO=false
                 ;;
+            # used internally by tovidgui only
+            "-from-gui" )
+                FROM_GUI=:
+                ;;
+            # don't prompt for file deletion
+            "-noask" )
+                NOASK=:
+                ;;
             "-in" )
                 shift
                 # Get a full pathname for the infile
@@ -614,8 +626,19 @@ function cleanup()
     if $KEEPFILES; then
         yecho "Keeping temporary files in $TMP_DIR"
     else
-        yecho "Removing temporary files..."
-        rm -rfv "$TMP_DIR"
+        if ! $FROM_GUI && ! $NOASK; then
+            yecho
+            yecho "Do you want to keep the temporary files that were created ?"
+            yecho "Please type \"yes\", or else they will be deleted"
+            read input # would someone really type "yes" with quotes? (probably )
+            echo
+            if [[ ! -z "$input" && "$input" = "yes" || "$input" = \"yes\" ]]; then
+                yecho "Keeping temporary files in $TMP_DIR"
+            else
+                yecho "Removing temporary files..."
+                rm -rfv "$TMP_DIR"
+            fi
+        fi
     fi
 }
 
@@ -803,6 +826,8 @@ if $USE_FFMPEG && $DO_SUBS; then
     usage_error "Sorry, -subtitles is not currently supported with -ffmpeg."
 fi
 
+# make sure we are not running from the gui and set some options
+! $FROM_GUI && NOCONSOLE_CONTROLS="-noconsolecontrols"
 
 # Make sure '-in FILE' was provided on the command-line
 if test -z "$IN_FILE"; then
@@ -1581,6 +1606,8 @@ if $USE_FFMPEG; then
     FF_BUFSIZE="-bufsize 224kib"
     FF_FPS="-r $TGT_FPS"
     FF_SAMPRATE="-ar $SAMPRATE"
+    # try to get -quality 9 between quality 8 and 10 !
+    ((VID_QUALITY == 9)) && FF_ADD_ARGS="-trell 0"
 
     # Padding, for any letterboxing to be done
     FF_VPAD=""
@@ -1614,7 +1641,7 @@ if $USE_FFMPEG && ! $DO_NORM; then
 
     FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k -ac 2"
     FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" \
-        $FF_TARGET $FF_BITRATE $FF_QUANT $FF_FPS $FF_ILACE \
+        $FF_TARGET $FF_BITRATE $FF_QUANT $FF_ADD_ARGS $FF_FPS $FF_ILACE \
         $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT $FF_AUDIO_MAP"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
     FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\" ${NEW_AUDIO[@]}"
@@ -1788,7 +1815,7 @@ else
     if $USE_FIFO; then
         mkfifo "$YUV_STREAM"
     fi
-    VID_PLAY_CMD="$PRIORITY $MPLAYER -noconsolecontrols -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\""
+    VID_PLAY_CMD="$PRIORITY $MPLAYER $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\""
     if $USE_FFMPEG ; then
         VID_ENC_CMD="ffmpeg -i \"$IN_FILE\"  -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ILACE $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT -y \"$VIDEO_STREAM\""
     else
