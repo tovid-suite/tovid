@@ -192,9 +192,8 @@ function get_info ()
     test -z $ID_VIDEO_FRAMES && ID_VIDEO_FRAMES="0"
 
     # ffmpeg has a better concept of the actual bitrate than mplayer
-    ID_VIDEO_BITRATE=$(awk -F: '{gsub("kb/s", "")};  /bitrate:/ {print $6}' "$SCRATCH_FILE")
+    ID_VIDEO_BITRATE=$(awk -F: '{gsub("kb/s", "")};  /bitrate:/ {print $6*1000}' "$SCRATCH_FILE")
     ID_VIDEO_BITRATE=$(sed -e 's/^ *//' <<< "$ID_VIDEO_BITRATE")
-    ID_VIDEO_BITRATE=$((ID_VIDEO_BITRATE * 1000))
 
     # Find out what audio channels are available
     if test -n "$ID_AUDIO_ID"; then
