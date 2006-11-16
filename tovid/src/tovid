@@ -1240,7 +1240,7 @@ else
     # Use lower qscale
     QUANT=$(expr $QUANT - 2)
     FF_QUANT="-qscale $QUANT"
-    ((QUANT == 2)) && FF_QUANT="-qscale 2.4"
+    ((QUANT == 2)) && FF_QUANT="-qscale 2.3"
 fi
 
 # Apply requested postprocessing filters, or
@@ -1292,7 +1292,7 @@ fi
 yecho "Converting $IN_FILE to compliant $TVSYS $TGT_RES format"
 yecho "Saving to $OUT_FILENAME"
 yecho "Storing log and temporary files in $TMP_DIR"
-yecho "Run 'tail -f $LOG_FILE' in another terminal to monitor the log"
+yecho "Run 'tail -f \"$LOG_FILE\"' in another terminal to monitor the log"
 
 # If multiple CPUs are available, do multithreading in mpeg2enc
 if $MULTIPLE_CPUS; then
@@ -1818,7 +1818,7 @@ else
     fi
     VID_PLAY_CMD="$PRIORITY $MPLAYER $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\""
     if $USE_FFMPEG ; then
-        VID_ENC_CMD="ffmpeg -i \"$IN_FILE\"  -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ILACE $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT -y \"$VIDEO_STREAM\""
+        VID_ENC_CMD="ffmpeg -i \"$IN_FILE\"  -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_ILACE $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT -y \"$VIDEO_STREAM\""
     else
         VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
     fi
