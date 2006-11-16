@@ -1240,6 +1240,7 @@ else
     # Use lower qscale
     QUANT=$(expr $QUANT - 2)
     FF_QUANT="-qscale $QUANT"
+    ((QUANT == 2)) && FF_QUANT="-qscale 2.4"
 fi
 
 # Apply requested postprocessing filters, or
