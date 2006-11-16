@@ -74,6 +74,7 @@ VERBOSE=false
 FAST=false
 TMP_DIR=$(tempdir idvid)
 SCRATCH_FILE="$TMP_DIR/idvid.scratch"
+TABLE="$TMP_DIR/table"
 STAT_DIR=$TOVID_HOME
 STAT_FILE="$STAT_DIR/stats.idvid"
 NTSC_FPS=""
@@ -85,6 +86,8 @@ A_NONE=""
 V_TV=""
 MATCH_FORMAT=""
 MATCH_TVSYS=""
+TABULAR=false
+ID_FILES=""
 mkdir -p "$STAT_DIR"
 touch "$STAT_FILE"
 
@@ -108,11 +111,8 @@ function get_info ()
 
     INFILE="$1"
 
-    if $TERSE; then :;
-    else
-        printf "%s\n" "$SCRIPT_NAME"
-        echo "Gathering video information. This may take several minutes,"
-        echo "so please be patient..."
+    if ! $TERSE; then
+        echo "Analyzing file: '$INFILE'. This may take several minutes..."
     fi
 
     # Identify video using mplayer
@@ -152,7 +152,7 @@ function get_info ()
         fi
     fi
 
-    # Exit if the file couldn't be identified
+    # Print a message if the file couldn't be identified
     if grep -q "^ID_" "$SCRATCH_FILE"; then :;
     else
         if $TERSE; then
@@ -160,8 +160,8 @@ function get_info ()
         else
             echo "Could not identify file: $INFILE"
         fi
-        rm -rf "$TMP_DIR"
-        exit 1
+        #rm -rf "$TMP_DIR"
+        #exit 1
     fi
 
     # Defaults. Many of these values may be overridden by
@@ -346,6 +346,8 @@ function idvid_main ()
         echo "ID_AUDIO_RATE=$ID_AUDIO_RATE"
         echo "V_ASPECT_WIDTH=$V_ASPECT_WIDTH"
         echo "ID_VIDEO_FRAMES=$ID_VIDEO_FRAMES"
+    elif $TABULAR; then
+        echo "$INFILE ${ID_VIDEO_WIDTH}x${ID_VIDEO_HEIGHT} $ID_VIDEO_BITRATE $ID_AUDIO_BITRATE" >> "$TABLE"
     else
         echo $SEPARATOR
         echo "               File: $INFILE"
@@ -359,14 +361,14 @@ function idvid_main ()
         echo "      Video bitrate: $ID_VIDEO_BITRATE bits per second"
         # Multiple audio track info
         for t in $discard; do A_CODECS[${t##*.}-1]=": *** Unsupported ***"; done
-        for ((i=0; i<${#A_TRACKS[@]}; i++)); do
+        for ((j=0; j<${#A_TRACKS[@]}; j++)); do
             echo "---------------------------"
-            echo "Audio track $((i+1)) (Stream ${A_TRACKS[i]}, AID ${A_HEX_TRACKS[i]}):"
+            echo "Audio track $((i+1)) (Stream ${A_TRACKS[j]}, AID ${A_HEX_TRACKS[j]}):"
             echo "---------------------------"
-            echo "              Codec: ${A_CODECS[i]}"
+            echo "              Codec: ${A_CODECS[j]}"
             if [[ $i -ne $((${t##*.}-1)) ]]; then
-                echo "            Bitrate: ${A_BITRATES[i]}000 bits per second"
-                echo "      Sampling rate: ${A_SAMPRATES[i]} Hz"
+                echo "            Bitrate: ${A_BITRATES[j]}000 bits per second"
+                echo "      Sampling rate: ${A_SAMPRATES[j]} Hz"
             fi
         done
         #echo "       Audio format: $ID_AUDIO_CODEC"
@@ -613,6 +615,8 @@ function idvid_main ()
         test -n "$V_DVD" && echo "V_DVD_OK=:"
         test -n "$V_RES" && echo "V_RES=$V_RES"
         test -n "$V_TV" && echo "V_TV=$V_TV"
+    elif $TABULAR; then
+        :
     else
         echo "Audio is compliant with the following formats:"
         test -n "$A_VCD1" && echo "  $A_VCD1"
@@ -674,6 +678,8 @@ MPLAYER=$(type -p mplayer)
 FFMPEG=$(type -p ffmpeg)
 TCPROBE=$(type -p tcprobe)
 
+printf "%s\n" "$SCRIPT_NAME"
+
 if test $# -eq 0; then
     usage_error "Please provide the name of at least one video file."
 fi
@@ -683,6 +689,7 @@ while test $# -gt 0; do
         "-terse" ) TERSE=: ;;
         "-verbose" ) VERBOSE=: ;;
         "-fast" ) FAST=: ;;
+        "-tabular" ) TABULAR=: ;;
         "-isformat" )
             shift
             MATCH_FORMAT="$1"
@@ -696,12 +703,26 @@ while test $# -gt 0; do
             FAST=:
             ;;
         * )
-            idvid_main "$1"
+            ID_FILES=( ${ID_FILES[@]} "$1" )
             ;;
     esac
     shift
 done
 
-rm -rf "$TMP_DIR"
+# Column header for tabular output
+if $TABULAR; then
+    echo "-------- ---------- -------- --------" >> "$TABLE"
+    echo "Filename Resolution VBitrate ABitrate" >> "$TABLE"
+    echo "-------- ---------- -------- --------" >> "$TABLE"
+fi
 
+for ((k=0; k<${#ID_FILES[@]}; k++)); do
+    idvid_main "${ID_FILES[k]}"
+done
+
+if $TABULAR; then
+    column -t "$TABLE"
+fi
+
+rm -rf "$TMP_DIR"
 exit 0
