@@ -678,7 +678,6 @@ MPLAYER=$(type -p mplayer)
 FFMPEG=$(type -p ffmpeg)
 TCPROBE=$(type -p tcprobe)
 
-printf "%s\n" "$SCRIPT_NAME"
 
 if test $# -eq 0; then
     usage_error "Please provide the name of at least one video file."
@@ -708,6 +707,8 @@ while test $# -gt 0; do
     esac
     shift
 done
+
+$TERSE || printf "%s\n" "$SCRIPT_NAME"
 
 # Column header for tabular output
 if $TABULAR; then
