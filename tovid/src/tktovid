@@ -4,6 +4,7 @@
 """A Tkinter graphical user interface for tovid."""
 
 from Tkinter import *
+import tkFileDialog
 
 class FormatFrame(Frame):
     """A frame containing controls suitable for setting disc format
@@ -57,6 +58,28 @@ class TvsysFrame(Frame):
     def changeTvsys(self):
         print "TV system: %s" % self.tvsys.get()
 
+class FileListFrame(Frame):
+    """A frame containing a list of filenames, and controls to add or delete
+    files from the list.
+    """
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.grid()
+        self.drawWidgets()
+        
+    def drawWidgets(self):
+        self.fileList = Listbox(self, width=30)
+        self.fileList.grid()    
+        self.btnAdd = Button(self, text="Add files...", command=self.addFiles)
+        self.btnAdd.grid()
+    
+    def addFiles(self):
+        files = tkFileDialog.askopenfilenames(parent=self, title='Add files')
+        print "Adding %s files to the file list" % len(files)
+        for file in files:
+            self.fileList.insert(END, file)
+            
+
 class Application(Frame):
     def __init__(self, master=None):
         Frame.__init__(self, master)
@@ -68,6 +91,8 @@ class Application(Frame):
         self.format.grid(row=0, column=0)
         self.tvsys = TvsysFrame(self)
         self.tvsys.grid(row=0, column=1, sticky=NW)
+        self.filelist = FileListFrame(self)
+        self.filelist.grid(columnspan=2)
         
         self.quitButton = Button(self, text="Quit", command=self.quit)
         self.quitButton.grid()
