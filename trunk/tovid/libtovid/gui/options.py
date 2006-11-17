@@ -345,7 +345,7 @@ class VideoOptions:
             strCommand += "%s " % self.addoptions
 
         strCommand += "-in \"%s\" " % self.inFile
-        strCommand += "-out \"%s/%s\"" % (curConfig.strOutputDirectory, self.outPrefix)
+        strCommand += "-out \"%s/%s\" " % (curConfig.strOutputDirectory, self.outPrefix)
         strCommand += "-from-gui"
         return strCommand
 
