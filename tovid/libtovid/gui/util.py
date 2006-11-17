@@ -3,9 +3,9 @@
 
 import threading, wx
 from libtovid.gui.constants import id_dict
-from libtovid.disc import Disc
-from libtovid.menu import Menu
-from libtovid.video import Video
+from libtovid import Disc
+from libtovid import Menu
+from libtovid import Video
 
 __all__ = ["_", "ID_to_text", "text_to_ID", "element_to_options", "VER_GetFirstChild", 
             "VideoStatSeeker"]

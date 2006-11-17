@@ -21,7 +21,7 @@ import traceback
 try:
     import wxversion
     if wxversion.checkInstalled('2.6'):
-        wxversion.select('2.6')
+        wxversion.select('2.6-unicode')
     else:
         print "tovidgui requires wxPython 2.6; please install or upgrade wxPython."
         sys.exit()

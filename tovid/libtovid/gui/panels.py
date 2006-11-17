@@ -13,9 +13,9 @@ from libtovid.gui.icons import MenuIcon, SlideIcon, VideoIcon, DiscIcon
 from libtovid.gui.options import DiscOptions, MenuOptions, VideoOptions
 from libtovid.gui import util
 from libtovid.gui.util import _, VER_GetFirstChild, VideoStatSeeker, element_to_options
-from libtovid.disc import Disc
-from libtovid.menu import Menu
-from libtovid.video import Video
+from libtovid import Disc
+from libtovid import Menu
+from libtovid import Video
 
 __all__ = ["AuthorFilesTaskPanel", "DiscLayoutPanel", "EncodingPanel", "BurnDiscPanel",\
            "CommandOutputPanel", "DiscPanel", "GuidePanel", "HidablePanel", "MenuPanel",\
