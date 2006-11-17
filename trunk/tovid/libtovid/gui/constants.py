@@ -1,3 +1,6 @@
+"""Identifiers for something or another.
+"""
+
 # Identifier for command-panel timer
 ID_CMD_TIMER = 101
 # Identifiers for output-format radio buttons

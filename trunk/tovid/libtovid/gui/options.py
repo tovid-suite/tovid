@@ -7,9 +7,9 @@ import os
 import wx
 
 import libtovid
-from libtovid.disc import Disc
-from libtovid.menu import Menu
-from libtovid.video import Video
+from libtovid import Disc
+from libtovid import Menu
+from libtovid import Video
 from libtovid.gui.constants import *
 from libtovid.gui.configs import TovidConfig
 from libtovid.gui.util import _
