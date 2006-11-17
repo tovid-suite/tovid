@@ -1,0 +1,78 @@
+#! /usr/bin/env python
+# tktovid
+
+"""A Tkinter graphical user interface for tovid."""
+
+from Tkinter import *
+
+class FormatFrame(Frame):
+    """A frame containing controls suitable for setting disc format
+    (VCD, SVCD, DVD, etc.)"""
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.rbFormat = {}         # Radiobuttons, indexed by format name
+        self.format = StringVar()  # Currently selected format
+        self.grid()    
+        self.drawWidgets()
+
+    def drawWidgets(self):
+        # Label
+        self.label = Label(self, text="Disc format")
+        self.label.grid()
+        # Radio buttons
+        for format in ['DVD', 'VCD', 'SVCD', 'Half-DVD', 'DVD-VCD']:
+            self.rbFormat[format] =\
+                Radiobutton(self,
+                            text = format,
+                            value = format,
+                            variable = self.format,
+                            command = self.changeFormat)
+            self.rbFormat[format].grid(sticky=NW)
+    def changeFormat(self):
+        print "Disc format: %s" % self.format.get()
+
+class TvsysFrame(Frame):
+    """A frame containing controls suitable for setting TV system (PAL, NTSC).
+    """
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.rbTvsys = {}         # Radiobuttons, indexed by tvsys name
+        self.tvsys = StringVar()  # Currently selected tvsys
+        self.grid()
+        self.drawWidgets()
+
+    def drawWidgets(self):
+        # Label
+        self.label = Label(self, text="TV system")
+        self.label.grid()
+        # Radio buttons
+        for tvsys in ['PAL', 'NTSC']:
+            self.rbTvsys[tvsys] =\
+                Radiobutton(self,
+                            text = tvsys,
+                            value = tvsys,
+                            variable = self.tvsys,
+                            command = self.changeTvsys)
+            self.rbTvsys[tvsys].grid(sticky=NW)
+    def changeTvsys(self):
+        print "TV system: %s" % self.tvsys.get()
+
+class Application(Frame):
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.grid()
+        self.drawWidgets()
+        
+    def drawWidgets(self):
+        self.format = FormatFrame(self)
+        self.format.grid(row=0, column=0)
+        self.tvsys = TvsysFrame(self)
+        self.tvsys.grid(row=0, column=1, sticky=NW)
+        
+        self.quitButton = Button(self, text="Quit", command=self.quit)
+        self.quitButton.grid()
+        
+if __name__ == '__main__':
+    app = Application()
+    app.master.title("tktovid")
+    app.mainloop()
