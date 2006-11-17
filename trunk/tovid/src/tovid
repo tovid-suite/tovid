@@ -989,7 +989,6 @@ fi
 #: ${VID_QUALITY:=8}
 
 $USE_FFMPEG && : ${VID_QUALITY:=9} ||: ${VID_QUALITY:=8}
-echo VID_QUALITY is $VID_QUALITY
 # Set resolution and frame rate according to format and TV system
 case "$TGT_RES" in
     # VCD
