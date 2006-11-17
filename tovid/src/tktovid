@@ -68,17 +68,25 @@ class FileListFrame(Frame):
         self.drawWidgets()
         
     def drawWidgets(self):
-        self.fileList = Listbox(self, width=30)
-        self.fileList.grid()    
-        self.btnAdd = Button(self, text="Add files...", command=self.addFiles)
-        self.btnAdd.grid()
+        self.fileList = Listbox(self, width=30, selectmode=EXTENDED)
+        self.fileList.grid(columnspan=2)
+        self.btnAdd = Button(self, text="Add...", command=self.addFiles)
+        self.btnAdd.grid(row=1, column=0)
+        self.btnDelete = Button(self, text="Remove", command=self.deleteFiles)
+        self.btnDelete.grid(row=1, column=1)
     
     def addFiles(self):
         files = tkFileDialog.askopenfilenames(parent=self, title='Add files')
-        print "Adding %s files to the file list" % len(files)
         for file in files:
+            print "Adding '%s' to the file list" % file
             self.fileList.insert(END, file)
-            
+
+    def deleteFiles(self):
+        selection = self.fileList.curselection()
+        # Using reverse order prevents reflow from messing up indexing
+        for line in reversed(selection):
+            print "Removing '%s' from list" % self.fileList.get(line)
+            self.fileList.delete(line)
 
 class Application(Frame):
     def __init__(self, master=None):
