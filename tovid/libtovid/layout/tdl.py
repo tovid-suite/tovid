@@ -7,9 +7,9 @@ __all__ = ['element_classes']
 import sys
 # From libtovid
 from libtovid.utils import tokenize, pretty_dict, get_code_lines, indent_level
-from libtovid.video import Video
-from libtovid.menu import Menu
-from libtovid.disc import Disc
+from libtovid import Video
+from libtovid import Menu
+from libtovid import Disc
 from libtovid import log
 
 element_classes = {

@@ -1,16 +1,24 @@
-# ###################################################################
-# ###################################################################
-#
-#
-#                         GUI CONFIGURATION
-#
-#
-# ###################################################################
-# ###################################################################
-__doc__ = \
-"""This library provides a Python interface to the GUI of tovid.
+"""A wxPython GUI interface to tovid.
+
+This GUI module has the following sub-modules:
+    configs --
+    constants --
+    controls --
+    dialogs --
+    frames --
+    icons --
+    options --
+    panels --
+    util --
 """
 
-__all__ = ["configs", "constants",
-            "controls", "dialogs", "frames", "icons", "options", "panels",
-            "util"]
+__all__ = [
+    "configs", 
+    "constants",
+    "controls", 
+    "dialogs", 
+    "frames", 
+    "icons", 
+    "options", 
+    "panels",
+    "util"]

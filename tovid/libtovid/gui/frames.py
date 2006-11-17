@@ -5,7 +5,7 @@ import os
 import wx
 
 import libtovid
-from libtovid.tdl import Project
+from libtovid.layout.tdl import Project
 from libtovid.gui.configs import TovidConfig
 from libtovid.gui.constants import *
 from libtovid.gui.icons import AppIcon
