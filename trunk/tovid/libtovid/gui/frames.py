@@ -5,7 +5,6 @@ import os
 import wx
 
 import libtovid
-from libtovid.layout.tdl import Project
 from libtovid.gui.configs import TovidConfig
 from libtovid.gui.constants import *
 from libtovid.gui.icons import AppIcon
@@ -39,13 +38,6 @@ class TovidFrame(wx.Frame):
         #self.menuFile.Append(ID_MENU_FILE_PREFS, "&Preferences",
         #    "Configuration settings for tovid GUI")
         #self.menuFile.AppendSeparator()
-        # TODO: Re-enable save/open
-        # Commented out for the 0.26 release; not working
-        #self.menuFile.Append(ID_MENU_FILE_OPEN, "&Open project",
-        #        "Open an existing TDL text file (EXPERIMENTAL)")
-        #self.menuFile.Append(ID_MENU_FILE_SAVE, "&Save project",
-        #        "Save this project as a TDL text file (EXPERIMENTAL)")
-        #self.menuFile.AppendSeparator()
         self.menuFile.Append(ID_MENU_FILE_EXIT, "E&xit",
                 "Exit tovid GUI")
 
@@ -77,8 +69,6 @@ class TovidFrame(wx.Frame):
         # Menu events
         # TODO: Re-enable save/open
         # Commented out for the 0.26 release; not working
-        #wx.EVT_MENU(self, ID_MENU_FILE_SAVE, self.OnFileSave)
-        #wx.EVT_MENU(self, ID_MENU_FILE_OPEN, self.OnFileOpen)
         #wx.EVT_MENU(self, ID_MENU_FILE_PREFS, self.OnFilePrefs)
         wx.EVT_MENU(self, ID_MENU_FILE_EXIT, self.OnExit)
         wx.EVT_MENU(self, ID_MENU_VIEW_SHOWGUIDE, self.OnShowGuide)
@@ -123,33 +113,6 @@ class TovidFrame(wx.Frame):
         #    0, wx.EXPAND)
         self.sizMain.Add(self.sizTask, 5, wx.EXPAND)
         self.SetSizer(self.sizMain)
-
-    def OnFileSave(self, evt):
-        """Save the current project to a TDL file."""
-        outFileDialog = wx.FileDialog(self, _("Select a save location"),
-            self.dirname, "", "*.tdl", wx.SAVE)
-        if outFileDialog.ShowModal() == wx.ID_OK:
-            # Remember current directory
-            self.dirname = outFileDialog.GetDirectory()
-            # Open a file for writing
-            outFile = open(outFileDialog.GetPath(), 'w')
-            
-            elements = self.panAuthorFiles.GetElements()
-            for element in elements:
-                outFile.write(element.to_string())
-
-            outFile.close()
-    
-    def OnFileOpen(self, evt):
-        inFileDialog = wx.FileDialog(self, _("Choose a TDL file to open"),
-            self.dirname, "", "*.tdl", wx.OPEN)
-        if inFileDialog.ShowModal() == wx.ID_OK:
-            self.dirname = inFileDialog.GetDirectory()
-            proj = Project()
-            proj.load_file(inFileDialog.GetPath())
-            self.panAuthorFiles.SetElements(proj.topitems)
-
-        inFileDialog.Destroy()
 
     def OnExit(self, evt):
         """Exit the GUI and close all windows."""

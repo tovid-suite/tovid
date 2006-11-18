@@ -7,8 +7,13 @@ from libtovid import Disc
 from libtovid import Menu
 from libtovid import Video
 
-__all__ = ["_", "ID_to_text", "text_to_ID", "element_to_options", "VER_GetFirstChild", 
-            "VideoStatSeeker"]
+__all__ = [\
+    '_',
+    'ID_to_text',
+    'text_to_ID',
+    'VER_GetFirstChild',
+    'VideoStatSeeker']
+
 # Hack until gettext works
 def _(str):
     return str
@@ -27,21 +32,6 @@ def text_to_ID(txt):
                 return id
     print "text_to_ID: Couldn't match '%s'. Returning 0." % txt
     return 0
-
-def element_to_options(element):
-    from libtovid.gui.options import DiscOptions, MenuOptions, VideoOptions
-    """Takes a TDL element and returns a DiscOptions, MenuOptions,
-    or VideoOptions object filled with appropriate values.
-    """
-    if isinstance(element, Disc):
-        opts = DiscOptions()
-    elif isinstance(element, Menu):
-        opts = MenuOptions()
-    else: # if isinstance(element, Video):
-        opts = VideoOptions()
-
-    opts.fromElement(element)
-    return opts
 
 # wx.TreeCtrl.GetFirstChild workaround
 def VER_GetFirstChild(obj, item):
