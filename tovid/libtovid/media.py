@@ -30,8 +30,9 @@ class MediaFile(object):
     """A multimedia video file, and its vital statistics.
     """
     def __init__(self, filename='', format='dvd', tvsys='ntsc'):
+        log.debug("MediaFile(%s, %s, %s)" % (filename, format, tvsys))
         # TODO: Set attributes to match given format and tvsys
-        self.filename = filename
+        self.filename = os.path.abspath(filename)
         self.format = format
         self.tvsys = tvsys
         self.length = 0
@@ -84,6 +85,7 @@ def load_media(filename):
         filename:  Name of a multimedia video file
         
     """
+    log.debug("load_media(%s)" % filename)
     # TODO: Raise an exception if the file couldn't be identified
     # TODO: Infer aspect ratio
     media = MediaFile(filename)
@@ -109,7 +111,6 @@ def load_media(filename):
         has_audio = True
     # Parse the dictionary and set appropriate values
     for left, right in mp_dict.iteritems():
-        log.debug('%s = %s' % (left, right))
         if left == "ID_VIDEO_WIDTH":
             media.scale = (int(right), media.scale[1])
         elif left == "ID_VIDEO_HEIGHT":
@@ -153,6 +154,7 @@ def standard_media(format, tvsys):
         tvsys:   TV system ('pal' or 'ntsc')
 
     """
+    log.debug("standard_media(%s, %s)" % (format, tvsys))
     media = MediaFile('', format, tvsys)
     # Set valid video attributes
     media.vcodec = standards.get_vcodec(format)

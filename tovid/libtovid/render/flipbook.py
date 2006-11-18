@@ -64,7 +64,8 @@ import os
 import sys
 from libtovid.render.animation import Keyframe
 from libtovid.render.drawing import Drawing
-from libtovid.render import layer, effect, standards
+from libtovid.render import layer, effect
+from libtovid import standards
 from libtovid.media import MediaFile
 from libtovid.transcode import encode
 
