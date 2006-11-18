@@ -26,8 +26,6 @@
 # - Effects in effect.py, for several effects, which you can extend
 # - Flipbook for animation
 # - Drawing module in drawing.py for drawing primitives
-# - Video in video.py, if you want to deal with videos and convert them
-#     `-> is that true ?
 # - Tween and Keyframe in animation.py, for key-framing
 #
 #
@@ -46,7 +44,7 @@ __all__ = [\
     'cli',
     'media',
     'opts',
-    'standards',
+    'standard',
     'stats',
     'utils',]
 

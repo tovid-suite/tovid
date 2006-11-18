@@ -13,10 +13,10 @@ from copy import copy
 
 # From libtovid
 from libtovid.opts import Option, OptionDict
-from libtovid import textmenu
+from libtovid.templates import textmenu
 from libtovid.layout.flipbook import Flipbook
 from libtovid import log
-from libtovid import standards
+from libtovid import standard
 
 class Menu:
     """A menu for navigating the titles on a video disc.
@@ -79,9 +79,9 @@ class Menu:
         self.children = []
 
     def preproc(self):
-        width, height = standards.get_resolution(self.options['format'],
-                                                 self.options['tvsys'])
-        samprate = standards.get_samprate(self.options['format'])
+        width, height = standard.resolution(self.options['format'],
+                                            self.options['tvsys'])
+        samprate = standard.samprate(self.options['format'])
 
         # Make sure number of thumbs and titles match
         if self.options['thumbnails']:
