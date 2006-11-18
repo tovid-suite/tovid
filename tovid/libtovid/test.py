@@ -17,16 +17,21 @@ additional self-testing procedures, such as comprehensive unit tests.
 """
 
 import os
+import glob
 
+
+mod_render = glob.glob('render/*.py')
+mod_layout = glob.glob('layout/*.py')
+mod_transcode = glob.glob('transcode/*.py')
 modules = [\
     'cli.py',
-    'config.py',
     'media.py',
     'opts.py',
     'standards.py',
     'stats.py',
-    'utils.py']
+    'utils.py'] + mod_render + mod_layout + mod_transcode
+
 
 for mod in modules:
     print "Testing: %s" % mod
-    os.system('python %s -v' % mod)
+    os.system('python %s' % mod)
