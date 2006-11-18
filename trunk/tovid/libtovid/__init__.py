@@ -44,7 +44,6 @@ __all__ = [\
     'transcode',
     # .py files
     'cli',
-    'config',
     'media',
     'opts',
     'standards',
