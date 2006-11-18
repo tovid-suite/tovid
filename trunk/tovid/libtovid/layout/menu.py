@@ -14,7 +14,7 @@ from copy import copy
 # From libtovid
 from libtovid.opts import Option, OptionDict
 from libtovid import textmenu
-from libtovid.flipbook import Flipbook
+from libtovid.layout.flipbook import Flipbook
 from libtovid import log
 from libtovid import standards
 
