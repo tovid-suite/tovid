@@ -4,26 +4,18 @@
 """This module defines functions for retrieving information about multimedia
 standards, including functions for determining the appropriate resolution,
 video and audio codec, fps, and bitrates for a given format.
-
-Known formats include:
-    vcd
-    svcd
-    dvd
-    half-dvd
-    dvd-vcd
-
 """
 
 __all__ = [\
-    'get_resolution',
-    'get_vcodec',
+    'get_abitrate',
     'get_acodec',
     'get_fps',
     'get_fpsratio',
+    'get_resolution',
     'get_samprate',
-    'Target',
-    'VideoStandard',
-    'AudioStandard']
+    'get_scaling',
+    'get_vbitrate',
+    'get_vcodec']
 
 import doctest
 
@@ -70,6 +62,7 @@ def get_scaling(format, tvsys):
             {'pal': (1.0, 1.0), 'ntsc': (720 / 640., 1.0)},
         }
     return valid_scaling[format][tvsys]
+
 
 def get_vcodec(format):
     """Return the video codec used by the given format. For example:
@@ -124,6 +117,7 @@ def get_fps(tvsys):
         }
     return fps[tvsys]
 
+
 def get_fpsratio(tvsys):
     """Return the number of frames per second for the given TV system, in the
     ratio form. For example:
@@ -157,6 +151,7 @@ def get_vbitrate(format):
         }
     return valid_bitrates[format]
 
+
 def get_abitrate(format):
     """Return the range (min, max) of valid audio bitrates (in kilobits per
     second) for the given format. min and max are the same for constant-bitrate
@@ -168,104 +163,6 @@ def get_abitrate(format):
         return (32, 384)
     else:
         return (32, 1536)
-        
-
-
-
-
-# Currently unused stuff...
-class VideoStandard:
-    def __init__(self, keywords = [], codec = "",
-                  resolution = (0, 0), fps = 0, bitrateRange = (0, 0)):
-        self.keywords = keywords 
-        self.codec = codec
-        self.width, self.height = resolution
-        self.fps = fps
-        self.minBitrate, self.maxBitrate = bitrateRange
-
-    def display(self):
-        print "=========== Video standard ============="
-        print "Keywords: %s" % self.keywords
-        print "Codec: %s" % self.codec
-        print "Width: %s" % self.width
-        print "Height: %s" % self.height
-        print "FPS: %s" % self.fps
-        print "Minimum bitrate: %s" % self.minBitrate
-        print "Maximum bitrate: %s" % self.maxBitrate
-
-
-class AudioStandard:
-    def __init__(self, keywords = [], codec = "",
-                  samprate = 0, channels = 0, bitrateRange = (0, 0)):
-        self.keywords = keywords 
-        self.codec = codec
-        self.samprate = samprate
-        self.channels = channels
-        self.minBitrate, self.maxBitrate = bitrateRange
-
-    def display(self):
-        print "=========== Audio standard ============="
-        print "Keywords: %s" % self.keywords
-        print "Codec: %s" % self.codec
-        print "Sampling rate: %s" % self.samprate
-        print "Minimum bitrate: %s" % self.minBitrate
-        print "Maximum bitrate: %s" % self.maxBitrate
-
-
-VideoStandardList = [
-    # VideoStandard([keywords], codec, (width, height), fps, (minBitrate, maxBitrate))
-
-    # VCD standard formats
-    VideoStandard(["vcd", "pal"], "mpeg1", (352, 288), 25.00, (1152, 1152)),
-    VideoStandard(["vcd", "ntsc"], "mpeg1", (352, 240), 29.97, (1152, 1152)),
-    VideoStandard(["vcd", "ntsc", "ntscfilm"], "mpeg1", (352, 240), 23.976, (1152, 1152)),
-
-    # SVCD standard formats
-    VideoStandard(["svcd" , "pal"], "mpeg2", (480, 576), 25.00, (0, 2600)),
-    VideoStandard(["svcd" , "ntsc"], "mpeg2", (480, 480), 29.97, (0, 2600)),
-    VideoStandard(["svcd" , "ntsc", "ntscfilm"], "mpeg2", (480, 480), 23.976, (0, 2600)),
-
-    # DVD standard formats
-    VideoStandard(["dvd", "pal"], "mpeg2", (720, 576), 25.00, (0, 9800)),
-    VideoStandard(["dvd", "ntsc"], "mpeg2", (720, 480), 29.97, (0, 9800)),
-    VideoStandard(["dvd", "ntsc", "ntscfilm"], "mpeg2", (720, 480), 23.976, (0, 9800)),
-
-    VideoStandard(["half-dvd", "pal"], "mpeg2", (352, 576), 25.00, (0, 9800)),
-    VideoStandard(["half-dvd", "ntsc"], "mpeg2", (352, 480), 29.97, (0, 9800)),
-    VideoStandard(["half-dvd", "ntsc", "ntscfilm"], "mpeg2", (352, 480), 23.976, (0, 9800)),
-    VideoStandard(["dvd-vcd", "pal"], "mpeg2", (352, 288), 25.00, (0, 9800)),
-    VideoStandard(["dvd-vcd", "ntsc"], "mpeg2", (352, 240), 29.97, (0, 9800)),
-    VideoStandard(["dvd-vcd", "ntsc", "ntscfilm"], "mpeg2", (352, 240), 23.976, (0, 9800)),
-
-    # KVCDX3 standard formats
-    VideoStandard(["kvcdx3", "pal"], "mpeg2", (528, 576), 25.00, (0, 9800)),
-    VideoStandard(["kvcdx3", "ntsc"], "mpeg2", (528, 480), 29.97, (0, 9800)),
-    VideoStandard(["kvcdx3", "ntsc", "ntscfilm"], "mpeg2", (528, 480), 23.976, (0, 9800))
-] # End of VideoList
-
-# ===========================================================
-# List of defined audio standards
-# ===========================================================
-AudioStandardList = [
-    # AudioStandard([keywords], codec, samprate, channels, (minBitrate, maxBitrate))
-
-    # VCD standard formats
-    AudioStandard(["vcd", "pal"], "mp2", 44100, 2, (224, 224)),
-    AudioStandard(["vcd", "ntsc"], "mp2", 44100, 2, (224, 224)),
-
-    # SVCD standard formats
-    AudioStandard(["svcd", "pal"], "mp2", 44100, 2, (32, 384)),
-    AudioStandard(["svcd", "ntsc"], "mp2", 44100, 2, (32, 384)),
-
-    # DVD standard formats
-    AudioStandard(["dvd", "ac3"], "ac3", 48000, 2, (32, 1536)),
-    AudioStandard(["dvd", "mp2"], "mp2", 48000, 2, (32, 1536)),
-    AudioStandard(["dvd", "pcm"], "pcm", 48000, 2, (32, 1536))
-
-    # 5.1-channel audio
-    #AudioStandard(["dvd"], "ac3", 48000, 5.1, (32, 1536))
-    #AudioStandard(["dvd"], "mp2", 48000, 5.1, (32, 1536)),
-] # End of AudioList
 
 
 if __name__ == '__main__':
