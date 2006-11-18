@@ -1,10 +1,16 @@
 #! /usr/bin/env python
 # tktovid
 
-"""A Tkinter graphical user interface for tovid."""
+"""A Tkinter graphical user interface for tovid. Highly experimental."""
 
 from Tkinter import *
 import tkFileDialog
+
+# ============================
+#
+# Frames for grouping controls
+#
+# ============================
 
 class FormatFrame(Frame):
     """A frame containing controls suitable for setting disc format
@@ -29,8 +35,11 @@ class FormatFrame(Frame):
                             variable = self.format,
                             command = self.changeFormat)
             self.rbFormat[format].grid(sticky=NW)
+    
     def changeFormat(self):
+        """Event handler called when format radio buttons are clicked."""
         print "Disc format: %s" % self.format.get()
+
 
 class TvsysFrame(Frame):
     """A frame containing controls suitable for setting TV system (PAL, NTSC).
@@ -55,7 +64,9 @@ class TvsysFrame(Frame):
                             variable = self.tvsys,
                             command = self.changeTvsys)
             self.rbTvsys[tvsys].grid(sticky=NW)
+    
     def changeTvsys(self):
+        """Event handler called when TV system radio buttons are clicked."""
         print "TV system: %s" % self.tvsys.get()
 
 class FileListFrame(Frame):
@@ -64,29 +75,73 @@ class FileListFrame(Frame):
     """
     def __init__(self, master=None):
         Frame.__init__(self, master)
+        self.curtitle = StringVar()  # Text of the currently selected title
         self.grid()
         self.drawWidgets()
         
     def drawWidgets(self):
-        self.fileList = Listbox(self, width=30, selectmode=EXTENDED)
-        self.fileList.grid(columnspan=2)
+        # List box and add/remove buttons
+        self.lblFiles = Label(self, text="Files")
+        self.lblFiles.grid(row=0, column=0, columnspan=2)
+        self.listFiles = Listbox(self, width=30, selectmode=EXTENDED)
+        self.listFiles.grid(row=1, column=0, columnspan=2)
         self.btnAdd = Button(self, text="Add...", command=self.addFiles)
-        self.btnAdd.grid(row=1, column=0)
+        self.btnAdd.grid(row=2, column=0, sticky=E+W)
         self.btnDelete = Button(self, text="Remove", command=self.deleteFiles)
-        self.btnDelete.grid(row=1, column=1)
-    
+        self.btnDelete.grid(row=2, column=1, sticky=E+W)
+        # Title list box
+        self.lblTitles = Label(self, text="Titles")
+        self.lblTitles.grid(row=0, column=3)
+        self.listTitles = Listbox(self, width=30)
+        self.listTitles.bind('<ButtonRelease-1>', self.selectTitle)
+        self.listTitles.grid(row=1, column=3)
+        self.entryTitle = Entry(self, width=30, textvariable=self.curtitle)
+        self.entryTitle.bind('<Return>', self.setTitle)
+        self.entryTitle.grid(row=2, column=3)
+
+    def selectTitle(self, event=None):
+        """Event handler when a title in the title list is selected."""
+        current = self.listTitles.curselection()[0]
+        self.curtitle.set(self.listTitles.get(current))
+        
+    def setTitle(self, event=None):
+        """Event handler when Enter is pressed after editing a title."""
+        selection = self.listTitles.curselection()[0]
+        newtitle = self.curtitle.get()
+        print "Setting title to '%s'" % newtitle
+        self.listTitles.delete(selection)
+        self.listTitles.insert(selection, newtitle)
+        
     def addFiles(self):
+        """Event handler for adding files to the list box"""
         files = tkFileDialog.askopenfilenames(parent=self, title='Add files')
         for file in files:
             print "Adding '%s' to the file list" % file
-            self.fileList.insert(END, file)
+            self.listFiles.insert(END, file)
+            # Add a dummy title (with pathname removed)
+            title = file.split('/')[-1]
+            self.listTitles.insert(END, title)
 
     def deleteFiles(self):
-        selection = self.fileList.curselection()
+        """Event handler for deleting files from the list box"""
+        selection = self.listFiles.curselection()
         # Using reverse order prevents reflow from messing up indexing
         for line in reversed(selection):
-            print "Removing '%s' from list" % self.fileList.get(line)
-            self.fileList.delete(line)
+            print "Removing '%s' from the file list" % self.listFiles.get(line)
+            self.listFiles.delete(line)
+            self.listTitles.delete(line)
+    
+    def getFiles(self):
+        """Return a list of the files in the list box."""
+        print self.listFiles.get(FIRST, LAST)
+
+
+
+# ============================
+#
+# Main application window
+#
+# ============================
 
 class Application(Frame):
     def __init__(self, master=None):
@@ -104,7 +159,14 @@ class Application(Frame):
         
         self.quitButton = Button(self, text="Quit", command=self.quit)
         self.quitButton.grid()
-        
+
+
+# ============================
+#
+# Entry point
+#
+# ============================
+
 if __name__ == '__main__':
     app = Application()
     app.master.title("tktovid")
