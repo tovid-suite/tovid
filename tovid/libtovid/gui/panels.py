@@ -12,7 +12,7 @@ from libtovid.gui.dialogs import FontChooserDialog
 from libtovid.gui.icons import MenuIcon, SlideIcon, VideoIcon, DiscIcon
 from libtovid.gui.options import DiscOptions, MenuOptions, VideoOptions
 from libtovid.gui import util
-from libtovid.gui.util import _, VER_GetFirstChild, VideoStatSeeker, element_to_options
+from libtovid.gui.util import _, VER_GetFirstChild, VideoStatSeeker
 from libtovid import Disc
 from libtovid import Menu
 from libtovid import Video
@@ -82,23 +82,7 @@ class AuthorFilesTaskPanel(wx.Panel):
         self.sizMain.Add(wx.StaticLine(self, wx.ID_ANY, style = wx.LI_HORIZONTAL),
             0, wx.EXPAND)
         self.sizMain.Add(self.sizTask, 1, wx.EXPAND)
-
         self.SetSizer(self.sizMain)
-
-
-    def SetElements(self, topitems):
-        """Load the given list of TDL Elements into the GUI,
-        replacing the current project."""
-        self.panDiscLayout.SetElements(topitems)
-
-
-    def GetElements(self):
-        """Return a list of TDL elements representing the current project."""
-        # Hackery: Call GetAllCommands so the disc item will
-        # be updated (and thus, topmenu can be saved correctly)
-        self.panDiscLayout.GetAllCommands()
-        return self.panDiscLayout.GetElements()
-
 
     def EncodeOK(self, ok):
         """Indicate whether it's okay to begin encoding."""
@@ -1064,58 +1048,6 @@ class DiscLayoutPanel(wx.Panel):
         # Append root command
         commands.append(strDiscCmd)
         return commands
-
-    def GetElements(self):
-        refs = self.discTree.GetReferenceList(self.rootItem)
-        for item in refs:
-            print item.title
-
-        # Set discOpts, so topmenu will be included
-        discOpts = self.discTree.GetPyData(self.rootItem)
-        discOpts.SetLayout(refs)
-        # Append each element in disc
-        elements = []
-        for curitem in refs:
-            elements.append(curitem.toElement())
-        print "DiscLayoutPanel.GetElements(): elements:"
-        for elem in elements:
-            print elem.to_string()
-        return elements
-
-    def SetElements(self, topitems):
-        # Empty existing tree
-        self.discTree.DeleteAllItems()
-        
-        # Append root-level elements
-        for parent in topitems:
-            self.rootItem = self.discTree.AddRoot(parent.name, self.idxIconDisc)
-            opts = element_to_options(parent)
-            self.discTree.SetPyData(self.rootItem, opts)
-            # Append second-level elements (top-level menus)
-            for child in parent.children:
-                childitem = self.AddElement(child, self.rootItem)
-                # Append third-level elements (videos)
-                for grandchild in child.children:
-                    grandchilditem = self.AddElement(grandchild, childitem)
-                    # This is getting redundant...
-                    # TODO: Better algorithm (possibly recursive)
-                    for greatgrandchild in grandchild.children:
-                        self.AddElement(greatgrandchild, grandchilditem)
-            # HACK: Stop after the first top item (Disc element)
-            break
-                    
-    def AddElement(self, element, parent):
-        """Add a TDL element to the tree, under the given parent item,
-        and return the new item ID."""
-        item = self.discTree.AppendItem(parent,
-                element.name, self.GetIcon(element))
-        # Convert element into [Disc|Menu|Video]Options
-        opts = element_to_options(element)
-        # Store Options in the tree
-        self.discTree.SetPyData(item, opts)
-        # Ensure visibility
-        self.discTree.EnsureVisible(item)
-        return item
 
     def GetIcon(self, element):
         if isinstance(element, Disc):

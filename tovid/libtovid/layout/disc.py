@@ -3,6 +3,7 @@
 
 __all__ = ['Disc']
 
+import doctest
 # From libtovid
 from libtovid.opts import Option, OptionDict
 #import dvdauthor
@@ -163,14 +164,5 @@ class Disc:
 
 # ===========================================================
 # Self-test; executed when this script is run standalone
-"""
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print "Please supply the name of a .tdl file."
-        sys.exit()
-
-    proj = tdl.Project()
-    proj.load_file(sys.argv[1])
-
-    write_dvdauthor_xml(proj)
-"""
+    doctest.testmod(verbose=True)
