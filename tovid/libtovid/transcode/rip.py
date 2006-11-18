@@ -20,7 +20,10 @@ __all__ = [\
     'rip_video',
     'rip_frames']
 
+import os
+import glob
 from libtovid.cli import Command
+from libtovid import log
 
 def rip_video(source, yuvfile, target):
     """Rip video to the given yuv4mpeg file.
@@ -63,22 +66,20 @@ def rip_frames(media, out_dir, frames='all', size=(0, 0)):
                   for prescaling
         
     """
-    frame_files = []
-    video_file = os.path.abspath(media.filename)
-    my_out_dir = os.path.abspath(out_dir)
+    out_dir = os.path.abspath(out_dir)
     try:
-        os.mkdir(my_out_dir)
+        os.mkdir(out_dir)
     except:
-        print "Temp directory: %s already exists. Overwriting." % my_out_dir
-        os.system('rm -rf "%s"' % my_out_dir)
-        os.mkdir(my_out_dir)
+        log.warn("Temp directory: %s already exists. Overwriting." % out_dir)
+        os.system('rm -rf "%s"' % out_dir)
+        os.mkdir(out_dir)
 
     # TODO: use tcdemux to generate a nav index, like:
     # tcdemux -f 29.970 -W -i "$FILE" > "$NAVFILE"
     
     # Use transcode to rip frames
     cmd = Command('transcode',
-                  '-i', '%s' % video_file)
+                  '-i', '%s' % media.filename)
     # Resize
     if size != (0, 0):
         cmd.add('-Z', '%sx%s' % size)
@@ -92,18 +93,9 @@ def rip_frames(media, out_dir, frames='all', size=(0, 0)):
         start = frames[0]
         cmd.add('-c', '%s-%s' % (frames[0], frames[-1]))
     cmd.add('-y', 'jpg,null')
-    cmd.add('-o', '%s/frame_' % my_out_dir)
-    print "Creating image sequence from %s" % video_file
+    cmd.add('-o', '%s/frame_' % out_dir)
+    log.info("Creating image sequence from %s" % media.filename)
     cmd.run()
 
-    # Remember ripped image filenames
-    frame = start
-    end_reached = False
-    while not end_reached:
-        framefile = '%s/frame_%06d.jpg' % (my_out_dir, frame)
-        if os.path.exists(framefile):
-            frame_files.append(framefile)
-        else:
-            end_reached = True #, apparently
-        frame += 1
-    return frame_files
+    # Return a list of ripped files
+    return glob.glob('%s/frame_*.jpg' % out_dir)

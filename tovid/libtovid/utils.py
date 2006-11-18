@@ -20,6 +20,7 @@ __all__ = [\
 import os
 import sys
 import shlex
+import doctest
 import mimetypes
 
 def escape(text):
@@ -72,7 +73,7 @@ def ratio_to_float(ratio):
         
         >>> ratio_to_float('4:3')
         1.33333
-        >>>
+        
     """
     values = ratio.split(':', 1)
     if len(values) == 2:
@@ -162,3 +163,6 @@ def get_file_type(filename):
         return basetype
     else:
         return None
+
+if __name__ == '__main__':
+    doctest.testmod(verbose=True)
