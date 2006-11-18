@@ -986,9 +986,8 @@ else
 fi
 
 # Default quality 8 (or 9 for ffmpeg), if not set by user
-#: ${VID_QUALITY:=8}
+: ${VID_QUALITY:=8}
 
-$USE_FFMPEG && : ${VID_QUALITY:=9} ||: ${VID_QUALITY:=8}
 # Set resolution and frame rate according to format and TV system
 case "$TGT_RES" in
     # VCD
@@ -1240,8 +1239,8 @@ else
     MPEG2_QUALITY="--reduction-4x4 2 --reduction-2x2 1 -q $QUANT"
     # Use lower qscale
     QUANT=$(expr $QUANT - 2)
-    FF_QUANT="-qscale $QUANT"
-    ((QUANT == 2)) && FF_QUANT="-qscale 2.3"
+    FF_QUANT="-qmin $QUANT -qmax 31"
+    ((QUANT == 2)) && FF_QUANT="-qmin 2 -qmax 31"
 fi
 
 # Apply requested postprocessing filters, or
@@ -1643,7 +1642,7 @@ if $USE_FFMPEG && ! $DO_NORM; then
 
     FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k -ac 2"
     FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" \
-        $FF_TARGET $FF_BITRATE $FF_QUANT $FF_ADD_ARGS $FF_FPS $FF_ILACE \
+        $FF_TARGET $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_FPS $FF_ILACE \
         $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT $FF_AUDIO_MAP"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
     FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\" ${NEW_AUDIO[@]}"
