@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# standards.py
+# standard.py
 
 """This module defines functions for retrieving information about multimedia
 standards, including functions for determining the appropriate resolution,
@@ -7,25 +7,25 @@ video and audio codec, fps, and bitrates for a given format.
 """
 
 __all__ = [\
-    'get_abitrate',
-    'get_acodec',
-    'get_fps',
-    'get_fpsratio',
-    'get_resolution',
-    'get_samprate',
-    'get_scaling',
-    'get_vbitrate',
-    'get_vcodec']
+    'abitrate',
+    'acodec',
+    'fps',
+    'fpsratio',
+    'resolution',
+    'samprate',
+    'scaling',
+    'vbitrate',
+    'vcodec']
 
 import doctest
 
-def get_resolution(format, tvsys):
+def resolution(format, tvsys):
     """Return the pixel resolution (x,y) for the given format and TV system.
     For example:
 
-        >>> get_resolution('dvd', 'pal')
+        >>> resolution('dvd', 'pal')
         (720, 576)
-        >>> get_resolution('half-dvd', 'ntsc')
+        >>> resolution('half-dvd', 'ntsc')
         (352, 480)
     """
     # Valid resolutions, indexed by format and tvsys
@@ -44,7 +44,7 @@ def get_resolution(format, tvsys):
     return valid_size[format][tvsys]
 
 
-def get_scaling(format, tvsys):
+def scaling(format, tvsys):
     """Return the (x,y) scaling factor for images to look right, for each
     aspect ratio. ?!
 
@@ -64,12 +64,12 @@ def get_scaling(format, tvsys):
     return valid_scaling[format][tvsys]
 
 
-def get_vcodec(format):
+def vcodec(format):
     """Return the video codec used by the given format. For example:
     
-        >>> get_vcodec('vcd')
+        >>> vcodec('vcd')
         'mpeg1'
-        >>> get_vcodec('svcd')
+        >>> vcodec('svcd')
         'mpeg2'
     """
     if format == 'vcd':
@@ -78,13 +78,13 @@ def get_vcodec(format):
         return 'mpeg2'
 
 
-def get_acodec(format):
+def acodec(format):
     """Return the audio codec (or codecs) supported by the given format. For
     example:
     
-        >>> get_acodec('vcd')
+        >>> acodec('vcd')
         'mp2'
-        >>> get_acodec('dvd')
+        >>> acodec('dvd')
         ['ac3', 'mp2', 'pcm']
     """
     if format in ['vcd', 'svcd']:
@@ -92,7 +92,7 @@ def get_acodec(format):
     else:
         return ['ac3', 'mp2', 'pcm']
     
-def get_samprate(format):
+def samprate(format):
     """Return the audio sampling rate used by the given format."""
     if format in ['vcd', 'svcd']:
         return 44100
@@ -100,13 +100,13 @@ def get_samprate(format):
         return 48000
     
 
-def get_fps(tvsys):
+def fps(tvsys):
     """Return the number of frames per second for the given TV system. For
     example:
     
-        >>> get_fps('ntsc')
+        >>> fps('ntsc')
         29.969999999999999
-        >>> get_fps('pal')
+        >>> fps('pal')
         25.0
     """
     # Valid frames per second, by TV system
@@ -118,13 +118,13 @@ def get_fps(tvsys):
     return fps[tvsys]
 
 
-def get_fpsratio(tvsys):
+def fpsratio(tvsys):
     """Return the number of frames per second for the given TV system, in the
     ratio form. For example:
     
-        >>> get_fpsratio('ntsc')
+        >>> fpsratio('ntsc')
         '30000:1001'
-        >>> get_fpsratio('pal')
+        >>> fpsratio('pal')
         '25:1'
     """
     # Valid frames per second, by TV system
@@ -136,7 +136,7 @@ def get_fpsratio(tvsys):
     return fps[tvsys]
 
 
-def get_vbitrate(format):
+def vbitrate(format):
     """Return the range (min, max) of valid video bitrates (in kilobits per
     second) for the given format. min and max are the same for constant-bitrate
     formats.
@@ -152,7 +152,7 @@ def get_vbitrate(format):
     return valid_bitrates[format]
 
 
-def get_abitrate(format):
+def abitrate(format):
     """Return the range (min, max) of valid audio bitrates (in kilobits per
     second) for the given format. min and max are the same for constant-bitrate
     formats.

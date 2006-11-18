@@ -15,9 +15,9 @@ To use this module interactively, run 'python' from the command-line, and do:
 
     >>> from libtovid.flipbook import Flipbook
 
-To create a Flipbook with 90 frames, at 720x480 resolution, do:
+To create a Flipbook 10 seconds long at 720x480 resolution, do:
 
-    >>> flipbook = Flipbook(90, (720, 480))
+    >>> flipbook = Flipbook(10, (720, 480))
 
 All drawing upon a Flipbook is achieved through the use of layers
 (libtovid/layer.py). To use them, import the layer module:
@@ -65,31 +65,31 @@ import sys
 from libtovid.render.animation import Keyframe
 from libtovid.render.drawing import Drawing
 from libtovid.render import layer, effect
-from libtovid import standards
+from libtovid import standard
 from libtovid.media import MediaFile
 from libtovid.transcode import encode
 
 class Flipbook:
     """A collection of Drawings that together comprise an animation.
     """
-    def __init__(self, frames, format, tvsys):
-        """Create a flipbook of the given length in frames, at the given
+    def __init__(self, seconds, format, tvsys):
+        """Create a flipbook of the given length in seconds, at the given
         resolution.
 
-        frames -- number of frames at the standard's framerate.
-        format -- one of 'dvd', 'dvd-vcd', etc.. look in the standards
-                  module.
-        tvsys -- one of 'ntsc', 'pal', etc.. look in the standards module.
+            seconds: Length of flipbook playback in seconds
+            format:  'dvd', 'vcd', 'svcd', 'dvd-vcd', or 'half-dvd'
+            tvsys:   'ntsc' or 'pal'
         """
-        self.frames = frames
+        self.seconds = seconds
+        self.frames = seconds * standard.fps(tvsys)
         # TODO: We'll need aspect ratio here.. 4:3 or 16:9 anamorphic ?
         self.format = format
         self.tvsys = tvsys
         self.layers = []
         self.drawings = []
 
-        w, h = standards.get_resolution(format, tvsys)
-        dx, dy = standards.get_scaling(format, tvsys)
+        w, h = standard.resolution(format, tvsys)
+        dx, dy = standard.scaling(format, tvsys)
         self.width = int(w / dx)
         self.height = int(h / dy)
         self.size = (self.width, self.height)
@@ -109,9 +109,9 @@ class Flipbook:
 
     def get_drawing(self, frame):
         """Get a Drawing of the given frame"""
-        drawing = Drawing(standards.get_resolution(self.format, self.tvsys))
+        drawing = Drawing(standard.resolution(self.format, self.tvsys))
         # Set scaling to cope with aspect ratios:
-        drawing.base_scaling(standards.get_scaling(self.format, self.tvsys))
+        drawing.base_scaling(standard.scaling(self.format, self.tvsys))
         
         # Draw each layer
         for layer, position in self.layers:
@@ -211,10 +211,10 @@ def draw_text_demo(flipbook, last_frame):
 # Demo
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        frames = int(sys.argv[1])
+        seconds = int(sys.argv[1])
     else:
-        frames = 90
-    flip = Flipbook(frames, 'dvd', 'ntsc')
+        seconds = 3
+    flip = Flipbook(seconds, 'dvd', 'ntsc')
 
     draw_text_demo(flip, frames)
 

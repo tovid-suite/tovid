@@ -27,7 +27,7 @@ modules = [\
     'cli.py',
     'media.py',
     'opts.py',
-    'standards.py',
+    'standard.py',
     'stats.py',
     'utils.py'] + mod_render + mod_layout + mod_transcode
 

@@ -22,7 +22,7 @@ import commands
 # From libtovid
 from libtovid import log
 from libtovid.cli import Command
-from libtovid import standards
+from libtovid import standard
 from utils import ratio_to_float
 
 
@@ -157,16 +157,16 @@ def standard_media(format, tvsys):
     log.debug("standard_media(%s, %s)" % (format, tvsys))
     media = MediaFile('', format, tvsys)
     # Set valid video attributes
-    media.vcodec = standards.get_vcodec(format)
-    media.scale = standards.get_resolution(format, tvsys)
+    media.vcodec = standard.vcodec(format)
+    media.scale = standard.resolution(format, tvsys)
     media.expand = media.scale
-    media.fps = standards.get_fps(tvsys)
+    media.fps = standard.fps(tvsys)
     # Set valid audio attributes
-    media.acodec = standards.get_acodec(format)
-    media.samprate = standards.get_samprate(format)
+    media.acodec = standard.acodec(format)
+    media.samprate = standard.samprate(format)
     # TODO: How to handle default bitrates? These functions return a range.
-    #media.vbitrate = standards.get_vbitrate(format)[1]
-    #media.abitrate = standards.get_abitrate(format)[1]
+    #media.vbitrate = standard.vbitrate(format)[1]
+    #media.abitrate = standard.abitrate(format)[1]
     media.abitrate = 224
     if format == 'vcd':
         media.vbitrate = 1150

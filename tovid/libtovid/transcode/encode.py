@@ -435,7 +435,7 @@ def encode_frames(imagedir, outfile, target):
         ls.pipe_to(xargs)
         xargs.pipe_to(png2yuv)
         cmd = ls
-        #cmd += 'pnmtoy4m -Ip -F %s %s/*.png' % standards.get_fpsratio(tvsys)
+        #cmd += 'pnmtoy4m -Ip -F %s %s/*.png' % standard.fpsratio(tvsys)
 
     # TODO: Scale to correct target size using yuvscaler or similar
     

@@ -7,7 +7,7 @@ import os
 
 from libtovid.cli import Script, Command
 from libtovid.opts import Option, OptionDict
-from libtovid.media import MediaFile
+from libtovid.media import load_media
 
 dom = xml.dom.getDOMImplementation()
 

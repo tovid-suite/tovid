@@ -12,7 +12,7 @@ from libtovid.render.drawing import Drawing
 from libtovid.render.flipbook import Flipbook
 from libtovid.render import layer
 from libtovid.media import MediaFile
-from libtovid import standards
+from libtovid import standard
 
 class TestFlipbook(unittest.TestCase):
     """Test the Flipbook class"""
@@ -33,7 +33,7 @@ class TestFlipbook(unittest.TestCase):
     
     def test_flip_save_video(self):
         """First test drive for Flipbook"""
-        fb = Flipbook(10, 'dvd', 'ntsc')
+        fb = Flipbook(1, 'dvd', 'ntsc')
 
         thumb = layer.Thumb('/tmp/save_image.png', (100,100), (250, 250),
                             'My image')
@@ -44,7 +44,7 @@ class TestFlipbook(unittest.TestCase):
     def test_flip_video_in(self):
         """Try the ThumbGrid"""
         global VIDEO_FILE
-        fb = Flipbook(20, 'dvd', 'ntsc')
+        fb = Flipbook(2, 'dvd', 'ntsc')
 
         # Add frames
         mf = load_media('/tmp/testflip.m2v')
