@@ -569,6 +569,7 @@ function get_args()
                 AUDIO_SYNC="$1"
                 MPLEX_ASYNC="-O -${AUDIO_SYNC}"
                 ASYNC="-async $AUDIO_SYNC"
+                FORCE_ENCODING=:
                 ;;
             "-out" )
                 shift
@@ -1658,7 +1659,7 @@ if $USE_FFMPEG; then
             ;;
     esac
 fi    
-if $USE_FFMPEG && ! $DO_NORM; then
+if $USE_FFMPEG && ! $DO_NORM && ! $SLICE && ! [[ "$AUDIO_SYNC" ]] ; then
     yecho
     yecho "Using ffmpeg to encode audio and video."
 
