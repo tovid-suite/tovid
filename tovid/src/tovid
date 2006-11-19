@@ -192,6 +192,7 @@ QUIET=false
 KEEPFILES=false
 AUDIO_TRACK=""
 AUDIO_MAP=""
+SLICE=false
 
 # Make note of when encoding starts, to determine total time later.
 SCRIPT_START_TIME=$(date +%s)
@@ -549,16 +550,30 @@ function get_args()
             "-noask" )
                 NOASK=:
                 ;;
+            # seek in video before starting encode (ffmpeg)
+            "-slice" )
+                shift
+                CLIP="$1"
+                SLICE=:
+                CLIP_SEEK="-ss ${CLIP/-*}"
+                [[ "$CLIP" = *-* ]] && CLIP_LENGTH="${CLIP/*-}"
+                USE_FFMPEG=:  # for now only ffmpeg works with it
+                ;;
             "-in" )
                 shift
                 # Get a full pathname for the infile
                 IN_FILE=$(abspath "$1")
                 ;;
+            "-async" )
+                shift
+                AUDIO_SYNC="$1"
+                MPLEX_ASYNC="-O -${AUDIO_SYNC}"
+                ASYNC="-async $AUDIO_SYNC"
+                ;;
             "-out" )
                 shift
                 OUT_PREFIX="$1"
                 ;;
-
             # Null option; ignored.
             "-" )
                 ;;
@@ -1373,6 +1388,13 @@ if test "$IN_FILE_TYPE" = "file"; then
     yecho "  Duration (best guess): $(format_time $V_DURATION) (HH:MM:SS)"
     yecho "  $ID_VIDEO_FORMAT video with $ID_AUDIO_CODEC audio"
 
+# if only a clip of video is to be encoded, set some ffmpeg vars
+if $SLICE && [[ "$CLIP_LENGTH" ]]; then
+    FF_LENGTH="-t $CLIP_LENGTH"
+    FRAMES=$(echo "scale = 2; $ID_VIDEO_FPS * $CLIP_LENGTH" | bc)
+    MP_FRAMES="-frames ${FRAMES%.*}"
+fi
+
     # If no audio stream present, need to generate one later
     if $A_NOAUDIO; then
         AUDIO_OK=false
@@ -1604,11 +1626,11 @@ if $USE_FFMPEG; then
     FF_BITRATE="-b ${VID_BITRATE}k"
     FF_SIZE="-s ${INNER_WIDTH}x${INNER_HEIGHT}"
     FF_CODEC="-f mpeg1video"
-    FF_BUFSIZE="-bufsize 224kib"
     FF_FPS="-r $TGT_FPS"
     FF_SAMPRATE="-ar $SAMPRATE"
     # try to get -quality 9 between quality 8 and 10 !
     ((VID_QUALITY == 9)) && FF_ADD_ARGS="-trell 0"
+    [[ $TARGET = "DVD-VCD" ]] && FF_ADD_ARGS="$FF_ADD_ARGS -g 12" # experiment FIXME 
 
     # Padding, for any letterboxing to be done
     FF_VPAD=""
@@ -1641,7 +1663,7 @@ if $USE_FFMPEG && ! $DO_NORM; then
     yecho "Using ffmpeg to encode audio and video."
 
     FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k -ac 2"
-    FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" \
+    FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $CLIP_SEEK $FF_LENGTH $ASYNC \
         $FF_TARGET $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_FPS $FF_ILACE \
         $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT $FF_AUDIO_MAP"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
@@ -1716,7 +1738,7 @@ else
         AUDIO_IN_FILE[1]="${AUDIO_WAV[0]}"
 
         #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null $MP_AUDIOTRACK_CMD -ao pcm:waveheader:file=\"$AUDIO_WAV\" \"$IN_FILE\""
-        AUDIO_CMD=( $PRIORITY ffmpeg -i "$IN_FILE" $AUDIO_MAP -ar $SAMPRATE -ac 2 -acodec pcm_s16le -y "${AUDIO_WAV[@]}" )
+        AUDIO_CMD=( $PRIORITY ffmpeg -i "$IN_FILE" $CLIP_SEEK $FF_LENGTH $AUDIO_MAP -ar $SAMPRATE -ac 2 -acodec pcm_s16le -y "${AUDIO_WAV[@]}" )
 
         # Generate or dump audio
         yecho "Normalizing the audio stream${s}."
@@ -1751,7 +1773,7 @@ else
         yecho "Encoding audio stream to $AUD_SUF with the following command:"
     fi
     AUDIO_ENC=( "${AUDIO_ENC[@]}" -vn -ab $AUD_BITRATE -ar $SAMPRATE -ac 2 )
-    ! $DO_NORM && AUDIO_ENC=( "${AUDIO_ENC[@]}" $AUDIO_MAP )
+    ! $DO_NORM && AUDIO_ENC=( "${AUDIO_ENC[@]}" $CLIP_SEEK $FF_LENGTH $AUDIO_MAP )
     AUDIO_ENC=( "${AUDIO_ENC[@]}" -acodec $AUD_SUF)
     $DO_NORM && AUDIO_ENC=( "${AUDIO_ENC[@]}" "${AUDIO_WAV_MAP[@]}" )
     AUDIO_ENC=( "${AUDIO_ENC[@]}" -y "${AUDIO_STREAM[@]}" )
@@ -1816,9 +1838,9 @@ else
     if $USE_FIFO; then
         mkfifo "$YUV_STREAM"
     fi
-    VID_PLAY_CMD="$PRIORITY $MPLAYER $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\""
+    VID_PLAY_CMD="$PRIORITY $MPLAYER $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\" $CLIP_SEEK $MP_FRAMES"
     if $USE_FFMPEG ; then
-        VID_ENC_CMD="ffmpeg -i \"$IN_FILE\"  -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_ILACE $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT -y \"$VIDEO_STREAM\""
+        VID_ENC_CMD="ffmpeg -i \"$IN_FILE\" $CLIP_SEEK $FF_LENGTH -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_ILACE $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT -y \"$VIDEO_STREAM\""
     else
         VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
     fi
@@ -1880,7 +1902,7 @@ if ! $FAKE; then
 fi
 
 
-MPLEX_CMD=( mplex $MUX_OPTS -o "$OUT_FILENAME" "$VIDEO_STREAM" "${AUDIO_STREAM[@]}" )
+MPLEX_CMD=( mplex $MUX_OPTS $MPLEX_ASYNC -o "$OUT_FILENAME" "$VIDEO_STREAM" "${AUDIO_STREAM[@]}" )
 yecho "Multiplexing audio and video together with the following command:"
 yecho ${MPLEX_CMD[@]}
 
