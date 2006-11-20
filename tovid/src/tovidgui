@@ -1,4 +1,8 @@
 #! /usr/bin/env python
+# tovidgui
+
+"""A wxPython frontend for the tovid suite.
+"""
 
 # tovid GUI
 # ===============
@@ -12,7 +16,7 @@
 #   http://www.gnu.org/copyleft/gpl.html
 #
 # No guarantees of any kind are associated with use of this software.
-#
+
 
 import sys
 import traceback
