@@ -555,7 +555,7 @@ function get_args()
                 shift
                 CLIP="$1"
                 SLICE=:
-                CLIP_SEEK="-ss ${CLIP/-*}"
+                CLIP_SEEK="${CLIP/-*}"
                 [[ "$CLIP" = *-* ]] && CLIP_LENGTH="${CLIP/*-}"
                 USE_FFMPEG=:  # for now only ffmpeg works with it
                 ;;
@@ -1390,11 +1390,21 @@ if test "$IN_FILE_TYPE" = "file"; then
     yecho "  $ID_VIDEO_FORMAT video with $ID_AUDIO_CODEC audio"
 
 # if only a clip of video is to be encoded, set some ffmpeg vars
-if $SLICE && [[ "$CLIP_LENGTH" ]]; then
-    FF_LENGTH="-t $CLIP_LENGTH"
-    FRAMES=$(echo "scale = 2; $ID_VIDEO_FPS * $CLIP_LENGTH" | bc)
-    MP_FRAMES="-frames ${FRAMES%.*}"
+if $SLICE; then
+    if [[ "$CLIP_SEEK" = *:* ]]; then
+        CLIP_SEEK="$(unformat_time $CLIP_SEEK)"
+    else
+        CLIP_SEEK="$CLIP_SEEK"
+    fi
+    if [[ "$CLIP_LENGTH" ]]; then
+        [[ "$CLIP_LENGTH" = *:* ]] && CLIP_LENGTH=$(unformat_time $CLIP_LENGTH)
+        FF_LENGTH=$((CLIP_LENGTH - CLIP_SEEK))
+        FF_LENGTH="-t $FF_LENGTH"
+    fi
+    CLIP_SEEK="-ss $CLIP_SEEK"
 fi
+#    FRAMES=$(echo "scale = 2; $ID_VIDEO_FPS * $CLIP_LENGTH" | bc)
+#    MP_FRAMES="-frames ${FRAMES%.*}"
 
     # If no audio stream present, need to generate one later
     if $A_NOAUDIO; then
