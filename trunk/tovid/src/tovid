@@ -740,7 +740,7 @@ EOF`
     # Get average/peak bitrates from mplex
     AVG_BITRATE=$(grep 'Average bit-rate' "$LOG_FILE" | awk '{print $6}')
     PEAK_BITRATE=$(grep 'Peak bit-rate' "$LOG_FILE" | awk '{print $6}')
-    if $USE_FFMPEG && ! $DO_NORM; then
+    if $USE_FFMPEG && ! $DO_NORM && ! $VIDEO_OK; then
         bitrates=$(awk -F= '/^frame=/ {gsub("kbits/s", ""); printf "%d000\n", $6}' "$LOG_FILE")
         bitrates=$(sort -un <<< "$bitrates")
         AVG_BITRATE=$(awk '{t+=$0} END{printf "%d\n", t/NR}' <<< "$bitrates")
@@ -1721,12 +1721,15 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     yecho "Found compliant audio and dumping the stream."
     precho "This sometimes causes errors when multiplexing; add '-force' to the tovid command line to re-encode if multiplexing fails."
     yecho "Copying the existing audio stream with the following command:"
-    "$PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${AUDIO_STREAM[@]}" >> "$LOG_FILE" 2>&1"
+    AUDIO_CMD="$PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${AUDIO_STREAM[@]}""
+    yecho "$AUDIO_CMD"
     #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
     function run_audio_cmd()
     {
-        $PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy \
-        $AUDIO_MAP "${AUDIO_STREAM[@]}" >> "$LOG_FILE" 2>&1
+        LOG_FILTER="$CRLF"
+        cmd_exec "$AUDIO_CMD"
+        #$PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy \
+        #$AUDIO_MAP "${AUDIO_STREAM[@]}" >> "$LOG_FILE" 2>&1
     }
     run_audio_cmd &
     PIDS="$PIDS $!"
@@ -1835,6 +1838,7 @@ if ! $FORCE_ENCODING && $VIDEO_OK; then
 
 
     # Copy the video stream
+    LOG_FILTER="$CRLF"
     cmd_exec "$VID_COPY_CMD"
 
 
