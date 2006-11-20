@@ -1321,6 +1321,23 @@ fi
 
 yecho
 
+# if only a clip of video is to be encoded, set some ffmpeg vars
+if $SLICE; then
+    if [[ "$CLIP_SEEK" = *:* ]]; then
+        CLIP_SEEK="$(unformat_time $CLIP_SEEK)"
+    else
+        CLIP_SEEK="$CLIP_SEEK"
+    fi
+    if [[ "$CLIP_ENDTIME" ]]; then
+        [[ "$CLIP_ENDTIME" = *:* ]] && CLIP_ENDTIME=$(unformat_time $CLIP_ENDTIME)
+        CLIP_LENGTH=$((CLIP_ENDTIME - CLIP_SEEK))
+        FF_LENGTH="-t $CLIP_LENGTH"
+    fi
+    CLIP_SEEK="-ss $CLIP_SEEK"
+fi
+#    FRAMES=$(echo "scale = 2; $ID_VIDEO_FPS * $CLIP_ENDTIME" | bc)
+#    MP_FRAMES="-frames ${FRAMES%.*}"
+
 
 # Probe for width, height, frame rate, and duration
 # (only for locally-accessible infiles, not URI-addressed infiles)
@@ -1390,22 +1407,6 @@ if test "$IN_FILE_TYPE" = "file"; then
     yecho "  Duration (best guess): $(format_time $V_DURATION) (HH:MM:SS)"
     yecho "  $ID_VIDEO_FORMAT video with $ID_AUDIO_CODEC audio"
 
-# if only a clip of video is to be encoded, set some ffmpeg vars
-if $SLICE; then
-    if [[ "$CLIP_SEEK" = *:* ]]; then
-        CLIP_SEEK="$(unformat_time $CLIP_SEEK)"
-    else
-        CLIP_SEEK="$CLIP_SEEK"
-    fi
-    if [[ "$CLIP_ENDTIME" ]]; then
-        [[ "$CLIP_ENDTIME" = *:* ]] && CLIP_ENDTIME=$(unformat_time $CLIP_ENDTIME)
-        CLIP_LENGTH=$((CLIP_ENDTIME - CLIP_SEEK))
-        FF_LENGTH="-t $CLIP_LENGTH"
-    fi
-    CLIP_SEEK="-ss $CLIP_SEEK"
-fi
-#    FRAMES=$(echo "scale = 2; $ID_VIDEO_FPS * $CLIP_ENDTIME" | bc)
-#    MP_FRAMES="-frames ${FRAMES%.*}"
 
     # If no audio stream present, need to generate one later
     if $A_NOAUDIO; then
@@ -1670,7 +1671,7 @@ if $USE_FFMPEG; then
             ;;
     esac
 fi    
-if $USE_FFMPEG && ! $DO_NORM && ! $SLICE && ! [[ "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; then
+if $USE_FFMPEG && ! $DO_NORM && ! [[ "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; then
     yecho
     yecho "Using ffmpeg to encode audio and video."
 
