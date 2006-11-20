@@ -8,6 +8,7 @@ bitrates.
 The load_media function returns a MediaFile filled with attributes from a
 provided filename.
 """
+
 __all__ = [\
     'MediaFile',
     'load_media',
@@ -18,12 +19,11 @@ __all__ = [\
 import os
 import sys
 import copy
-import commands
 # From libtovid
 from libtovid import log
 from libtovid.cli import Command
 from libtovid import standard
-from utils import ratio_to_float
+from libtovid.utils import ratio_to_float
 
 
 class MediaFile(object):

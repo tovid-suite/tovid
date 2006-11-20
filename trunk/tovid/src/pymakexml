@@ -7,8 +7,22 @@ __doc__ = \
 """
 
 import sys
+from libtovid.opts import Option, OptionDict
+from libtovid.layout.disc import Disc
 
-from libtovid.disc import Disc
+# List of valid options with documentation
+OPTION_DEFS = [
+    Option('out', 'NAME', None,
+        """Output prefix or disc name."""),
+    Option('format', 'vcd|svcd|dvd', 'dvd',
+        """Create a disc of the specified format."""),
+    Option('tvsys', 'pal|ntsc', 'ntsc',
+        """Make the disc for the specified TV system."""),
+    Option('topmenu', 'MENUNAME', None,
+        """Use MENUNAME for the top-level menu on the disc.""")
+]
+
+options = OptionDict(OPTION_DEFS)
 
 if __name__ == '__main__':
     """Create a Disc with the given options and generate the XML for it."""
@@ -17,10 +31,11 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         print "Usage: pymakexml [options] vid1.mpg vid2.mpg ... -out NAME"
         print "Where [options] may be any of the following:"
-        print Disc().options.usage()
+        print options.usage()
         print "Please provide an output name with -out."
         sys.exit()
 
-    args = sys.argv[1:]
+    options.override(sys.argv[1:])
+    
     disc = Disc(args)
     disc.generate()

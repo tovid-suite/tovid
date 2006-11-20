@@ -6,7 +6,6 @@
 import os
 import sys
 import glob
-# Get tdl
 import libtovid
 from libtovid import gui
 from libtovid import encode
