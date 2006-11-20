@@ -16,8 +16,8 @@ cli_opts = [\
            """Output in the given video disc format."""),
     Option('tvsys', '[pal|ntsc]', 'ntsc',
            """Output for given TV system."""),
-    Option('frames', 'NUM', 30,
-           """Generate NUM frames total"""),
+    Option('seconds', 'NUM', 10,
+           """Number of seconds of output video"""),
     Option('bgcolor', 'COLOR', 'black',
            """Use the given background color"""),
     Option('title', 'TEXT', '',
@@ -62,9 +62,9 @@ if __name__ == '__main__':
 
     # TODO: VCD/SVCD support
     if useropts['tvsys'].lower() == 'pal':
-        flip = Flipbook(useropts['frames'], (720, 576))
+        flip = Flipbook(useropts['seconds'], (720, 576))
     elif useropts['tvsys'].lower() == 'ntsc':
-        flip = Flipbook(useropts['frames'], (720, 480))
+        flip = Flipbook(useropts['seconds'], (720, 480))
     else:
         print "-tvsys must be 'pal' or 'ntsc'"
         sys.exit(1)

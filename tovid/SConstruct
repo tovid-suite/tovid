@@ -80,13 +80,12 @@ libtovid_modules = [\
     'config.py',
     'media.py',
     'opts.py',
-    'standards.py',
+    'standard.py',
     'stats.py',
     
     'layout/disc.py',
     'layout/dvdauthor.py',
     'layout/menu.py',
-    'layout/tdl.py',
     'layout/video.py',
     
     #'render/__init__.py',

@@ -4,38 +4,64 @@
 __all__ = ['Disc']
 
 import doctest
-# From libtovid
+from copy import copy
 from libtovid.opts import Option, OptionDict
-#import dvdauthor
+from libtovid.layout.menu import Menu
+from libtovid.layout.video import Video
+#from libtovid.layout import dvdauthor
+
+"""
+Some ideas:
+
+dvd = Disc('dvd', 'ntsc', 'My disc')
+# TODO: Allow Video format/tvsys to inherit from Disc?
+v1 = Video('dvd', 'ntsc', '/pub/foo1.avi')
+v2 = Video('dvd', 'ntsc', '/pub/bar2.mov')
+videos = [v1, v2]
+menu = Menu(videos, 'dvd', 'ntsc', Style(font='helvetica', color='yellow'))
+ts = Titleset(videos, menu)
+dvd.addTitleset(ts)
+v3 = Video('half-dvd', 'ntsc', '/pub/baz3.mpg')
+topmenu = Menu([ts, v3], 'dvd', 'ntsc', Style(font='times', color='blue'))
+dvd.addMenu(topmenu)
+"""
+
+class Titleset:
+    def __init__(self, videos, menu=None):
+        """Create a Titleset containing the given Videos.
+        
+            videos: A list of Videos to include in the titleset
+            menu:   A Menu associated with the given Videos, or None
+    
+        """
+        self.videos = videos
+        self.menu = menu
 
 class Disc:
     """A video disc containing video titles and optional menus.
     """
-    # List of valid options with documentation
-    optiondefs = [
-        Option('out', 'NAME', None,
-            """Output prefix or disc name."""),
-        Option('format', 'vcd|svcd|dvd', 'dvd',
-            """Create a disc of the specified format."""),
-        Option('tvsys', 'pal|ntsc', 'ntsc',
-            """Make the disc for the specified TV system."""),
-        Option('topmenu', 'MENUNAME', None,
-            """Use MENUNAME for the top-level menu on the disc.""")
-    ]
-
-    def __init__(self, custom_options=None):
-        """Initialize Disc with a string or list of options."""
-        self.options = OptionDict(self.optiondefs)
-        self.options.override(custom_options)
+    def __init__(self, format, tvsys, title='', video_files=[]):
+        """Create a Disc with the given properties.
+        
+            format:      'vcd', 'svcd', or 'dvd'
+            tvsys:       'pal' or 'ntsc'
+            title:       String containing the title of the disc
+            video_files: List of filenames of videos to include on the disc
+        """
+        self.format = format
+        self.tvsys = tvsys
+        self.title = title
+        self.video_files = video_files
+        # TODO: Remove these(?)
         self.parent = None
         self.children = []
-
+    
     def generate(self):
         """Write dvdauthor or vcdimager XML for the element, to
         the file specified by the disc's 'out' option."""
-        if self.options['format'] == 'dvd':
+        if self.format == 'dvd':
             xml = self.dvd_disc_xml()
-        elif self.options['format'] in ['vcd', 'svcd']:
+        elif self.format in ['vcd', 'svcd']:
             xml = self.vcd_disc_xml()
         outfile = open(self.options['out'], 'w')
         outfile.write(xml)
@@ -77,23 +103,7 @@ class Disc:
         # sequence-items
         # pbc + selections
         xml += '</videocd>'
-    
-    def _dvd_disc_xml(self):
-        """Write disc XML using pydvdauthor backend.
-        NOT FUNCTIONAL YET."""
-        disc = dvdauthor.Disc(self.name)
-        # If there's a topmenu, write vmgm-level XML for it
-        if len(self.children) == 1:
-            topmenu = self.children[0]
-            vmgm = dvdauthor.VMGM()
-            menu = dvdauthor.Menu()
-            menu.video_files.append(topmenu['out'])
-            vmgm.add_menu(menu)
-            for submenu in topmenu.children:
-                # TODO: Link to submenus properly
-                menu.set_button_commands('jump f:%s' % sub.id)
-                pass
-        
+
     def dvd_disc_xml(self):
         """Return a string containing dvdauthor XML for this disc."""
         xml = '<dvdauthor dest="%s">\n' % self.name.replace(' ', '_')

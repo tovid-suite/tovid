@@ -184,7 +184,7 @@ class Menu(object):
     def render(self):
         print "Menu: Rendering..."
 
-    
+
 class Video(object):
     """A video for inclusion on a video disc."""
     def __init__(self, filename='', title=''):

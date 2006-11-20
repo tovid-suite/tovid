@@ -30,6 +30,6 @@ if __name__ == '__main__':
     else:
         useropts.override(sys.argv[1:])
         for file in useropts['files']:
-            print "Identifying file: %s" % file
+            log.info("Identifying file: %s" % file)
             infile = load_media(file)
             print infile
