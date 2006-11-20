@@ -1,7 +1,10 @@
+#! /usr/bin/env python
+# __init__.py
+
 """A wxPython GUI interface to tovid.
 
 This GUI module has the following sub-modules:
-    configs --
+    configs -- 
     constants --
     controls --
     dialogs --
