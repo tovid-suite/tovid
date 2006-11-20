@@ -316,7 +316,7 @@ function check_disk_space()
 
     # If video length is unknown, guess needed space
     # based on original file size
-    [[ "$SLICE" ]] && VIDEO_DURATION=$CLIP_LENGTH || VIDEO_DURATION=$V_DURATION
+    $SLICE && VIDEO_DURATION=$CLIP_LENGTH || VIDEO_DURATION=$V_DURATION
     if test "$VIDEO_DURATION" = "0"; then
         CUR_SIZE=$(du -c -k \"$IN_FILE\" | awk 'END{print $1}')
         NEED_SPACE=$(expr $CUR_SIZE \* 2)
@@ -1670,7 +1670,7 @@ if $USE_FFMPEG; then
             ;;
     esac
 fi    
-if $USE_FFMPEG && ! $DO_NORM && ! $SLICE && ! [[ "$AUDIO_SYNC" ]] ; then
+if $USE_FFMPEG && ! $DO_NORM && ! $SLICE && ! [[ "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; then
     yecho
     yecho "Using ffmpeg to encode audio and video."
 
