@@ -316,13 +316,14 @@ function check_disk_space()
 
     # If video length is unknown, guess needed space
     # based on original file size
-    if test "$V_DURATION" = "0"; then
+    [[ "$SLICE" ]] && VIDEO_DURATION=$CLIP_LENGTH || VIDEO_DURATION=$V_DURATION
+    if test "$VIDEO_DURATION" = "0"; then
         CUR_SIZE=$(du -c -k \"$IN_FILE\" | awk 'END{print $1}')
         NEED_SPACE=$(expr $CUR_SIZE \* 2)
         yecho  "The encoding process will require about"
     # Estimate space based as kbps * duration
     else
-        NEED_SPACE=$(expr $V_DURATION \* $K_PER_SEC \/ 500)
+        NEED_SPACE=$(expr $VIDEO_DURATION \* $K_PER_SEC \/ 500)
         yecho "The encoding process is estimated to require $NEED_SPACE MB of disk space."
     fi
 
@@ -556,7 +557,7 @@ function get_args()
                 CLIP="$1"
                 SLICE=:
                 CLIP_SEEK="${CLIP/-*}"
-                [[ "$CLIP" = *-* ]] && CLIP_LENGTH="${CLIP/*-}"
+                [[ "$CLIP" = *-* ]] && CLIP_ENDTIME="${CLIP/*-}"
                 USE_FFMPEG=:  # for now only ffmpeg works with it
                 ;;
             "-in" )
@@ -1396,14 +1397,14 @@ if $SLICE; then
     else
         CLIP_SEEK="$CLIP_SEEK"
     fi
-    if [[ "$CLIP_LENGTH" ]]; then
-        [[ "$CLIP_LENGTH" = *:* ]] && CLIP_LENGTH=$(unformat_time $CLIP_LENGTH)
-        FF_LENGTH=$((CLIP_LENGTH - CLIP_SEEK))
-        FF_LENGTH="-t $FF_LENGTH"
+    if [[ "$CLIP_ENDTIME" ]]; then
+        [[ "$CLIP_ENDTIME" = *:* ]] && CLIP_ENDTIME=$(unformat_time $CLIP_ENDTIME)
+        CLIP_LENGTH=$((CLIP_ENDTIME - CLIP_SEEK))
+        FF_LENGTH="-t $CLIP_LENGTH"
     fi
     CLIP_SEEK="-ss $CLIP_SEEK"
 fi
-#    FRAMES=$(echo "scale = 2; $ID_VIDEO_FPS * $CLIP_LENGTH" | bc)
+#    FRAMES=$(echo "scale = 2; $ID_VIDEO_FPS * $CLIP_ENDTIME" | bc)
 #    MP_FRAMES="-frames ${FRAMES%.*}"
 
     # If no audio stream present, need to generate one later
@@ -1720,11 +1721,12 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     yecho "Found compliant audio and dumping the stream."
     precho "This sometimes causes errors when multiplexing; add '-force' to the tovid command line to re-encode if multiplexing fails."
     yecho "Copying the existing audio stream with the following command:"
+    "$PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${AUDIO_STREAM[@]}" >> "$LOG_FILE" 2>&1"
     #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
     function run_audio_cmd()
     {
-        $PRIORITY ffmpeg -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${AUDIO_STREAM[@]}" \
-        >> "$LOG_FILE" 2>&1
+        $PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy \
+        $AUDIO_MAP "${AUDIO_STREAM[@]}" >> "$LOG_FILE" 2>&1
     }
     run_audio_cmd &
     PIDS="$PIDS $!"
@@ -1749,7 +1751,7 @@ else
         AUDIO_IN_FILE[1]="${AUDIO_WAV[0]}"
 
         #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null $MP_AUDIOTRACK_CMD -ao pcm:waveheader:file=\"$AUDIO_WAV\" \"$IN_FILE\""
-        AUDIO_CMD=( $PRIORITY ffmpeg -i "$IN_FILE" $CLIP_SEEK $FF_LENGTH $AUDIO_MAP -ar $SAMPRATE -ac 2 -acodec pcm_s16le -y "${AUDIO_WAV[@]}" )
+        AUDIO_CMD=( $PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" $AUDIO_MAP -ar $SAMPRATE -ac 2 -acodec pcm_s16le -y "${AUDIO_WAV[@]}" )
 
         # Generate or dump audio
         yecho "Normalizing the audio stream${s}."
