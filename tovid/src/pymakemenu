@@ -7,8 +7,65 @@ script).
 """
 
 import sys
-from libtovid.menu import Menu
+from libtovid.opts import Option, OptionDict
+from libtovid.layout.menu import Menu
 from libtovid import log
+
+# Dictionary of valid options with documentation
+OPTION_DEFS = [\
+    Option('out', 'NAME', None,
+        """Output prefix or menu name."""),
+
+    Option('titles', '"TITLE" [, "TITLE"]', [],
+        """Comma-separated list of quoted titles; these are the titles that
+        will be displayed (and linked) from the menu."""),
+
+    Option('format', 'vcd|svcd|dvd', 'dvd',
+        """Generate a menu compliant with the specified disc format"""),
+    Option('tvsys', 'pal|ntsc', 'ntsc',
+        """Make the menu for the specified TV system"""),
+    Option('background', 'IMAGE', None,
+        """Use IMAGE (in most any graphic format) as a background."""),
+    Option('audio', 'AUDIOFILE', None,
+        """Use AUDIOFILE for background music while the menu plays."""),
+    Option('font', 'FONTNAME', 'Helvetica',
+        """Use FONTNAME for the menu text."""),
+    Option('fontsize', 'NUM', '24',
+        """Use a font size of NUM pixels."""),
+    Option('align', 'west|north|east|south|center', 'northwest'),
+    Option('textcolor', 'COLOR', 'white',
+        """Color of menu text. COLOR may be a hexadecimal triplet (#RRGGBB or
+        #RGB), or a color name from 'convert -list color."""),
+    Option('highlightcolor', 'COLOR', 'red',
+        """Color of menu highlights."""),
+    Option('selectcolor', 'COLOR', 'green',
+        """Color of menu selections."""),
+
+    # Thumbnail menus and effects
+    Option('thumbnails', 'FILE [, FILE ...]', [],
+        """Create thumbnails of the provided list of video files, which
+        should correspond to the given -titles list."""),
+    Option('choices', '[list|thumbnails]', 'list',
+            """Display links as a list of titles, or as a grid of labeled
+            thumbnail videos."""),
+    Option('border', 'NUM', '0',
+            """Add a border of NUM pixels around thumbnails."""),
+    Option('effects', 'shadow|round|glass [, ...]', [],
+            """Add the listed effects to the thumbnails.""")
+]
+
+options = OptionDict(OPTION_DEFS)
+
+class Style(object):
+    """Contains style attributes, including font, color, and alignment."""
+    def __init__(self, font='helvetica', fontsize=12, textcolor='white',
+                 highlightcolor='green', selectcolor='red', align='center'):
+        self.font = font
+        self.fontsize = fontsize
+        self.textcolor = textcolor
+        self.highlightcolor = highlightcolor
+        self.selectcolor = selectcolor
+        self.align = align
 
 if __name__ == '__main__':
     """Create a Menu with provided options and generate it."""
@@ -17,10 +74,18 @@ if __name__ == '__main__':
     if len(sys.argv) < 3:
         print 'Usage: pymakemenu [options] -out NAME'
         print 'Where [options] may be any of the following:'
-        print Menu().options.usage()
+        print options.usage()
         print 'Please provide an output name (-out).'
         sys.exit()
-
-    args = sys.argv[1:]
-    menu = Menu(args)
+    options.override(sys.argv[1:])
+    # Create the style
+    style = Style(options['font'],
+                  options['fontsize'],
+                  options['textcolor'],
+                  options['highlightcolor'],
+                  options['selectcolor'],
+                  options['align'])
+    # Create the menu
+    menu = Menu(options['format'], options['tvsys'], style,
+                options['titles'], options['thumbnails'])
     menu.generate()

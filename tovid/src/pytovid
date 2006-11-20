@@ -12,7 +12,7 @@ from libtovid.transcode import encode
 from libtovid import log
 
 # List of valid command-line options, with documentation
-OPTION_DEFS = [
+OPTION_DEFS = [\
     Option('in', 'FILENAME', None,
         """Input video file, in any format."""),
     Option('out', 'NAME', None,
