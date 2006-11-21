@@ -7,15 +7,15 @@
 tkinter widgets variable names shall use a prefix describing widget type, and
 camel-case for remaining words, i.e.
 
-    fra: Frame
-    mnu: Menu
-    lbl: Label
-    btn: Button
-    ent: Entry
-    lst: Listbox
-    chk: Checkbox
-    rb:  Radiobutton
-    var: Control variables (Variable, StringVar, IntVar, DoubleVar)
+    fraFoo: Frame
+    mnuFoo: Menu
+    lblFoo: Label
+    btnFoo: Button
+    entFoo: Entry
+    lstFoo: Listbox
+    chkFoo: Checkbox
+    rbFoo:  Radiobutton
+    varFoo: Control variable (Variable, StringVar, IntVar, DoubleVar)
 
 """
 
@@ -41,6 +41,7 @@ class FormatFrame(Frame):
         self.drawWidgets()
 
     def drawWidgets(self):
+        """Draw all the widgets in this frame."""
         # Label
         self.lbl = Label(self, text="Disc format:")
         self.lbl.pack(side=LEFT)
@@ -59,7 +60,8 @@ class FormatFrame(Frame):
         """Event handler called when format radio buttons are clicked."""
         print "Disc format: %s" % self.varFormat.get()
         
-    def getOptions(self):        
+    def getOptions(self):
+        """Return todisc options for this frame."""
         return " -%s" % str(self.varFormat.get()).lower()
 
 
@@ -74,6 +76,7 @@ class TvsysFrame(Frame):
         self.drawWidgets()
 
     def drawWidgets(self):
+        """Draw all the widgets in this frame."""
         # Label
         self.label = Label(self, text="TV system:")
         self.label.pack(side=LEFT)
@@ -111,6 +114,7 @@ class FileListFrame(Frame):
         self.drawWidgets()
 
     def drawWidgets(self):
+        """Draw all the widgets in this frame."""
         # List box and add/remove buttons
         self.lblFiles = Label(self, text="Files")
         self.lblFiles.grid(row=0, column=0, columnspan=2, sticky=W)
@@ -166,6 +170,7 @@ class FileListFrame(Frame):
             self.lstTitles.delete(line)
 
     def getOptions(self):
+        """Return todisc options for this frame."""
         files = self.varFiles.get()
         titles = self.varTitles.get()
         if len(files) != len(titles):
@@ -190,6 +195,7 @@ class BackgroundsFrame(Frame):
         self.drawWidgets()
     
     def drawWidgets(self):
+        """Draw all the widgets in this frame."""
         self.lblHeading = Label(self, text="Menu backgrounds")
         self.lblHeading.pack(side=TOP, anchor=W)
         # BG image
@@ -242,13 +248,14 @@ class BackgroundsFrame(Frame):
             self.varAudio.set(filename)
     
     def getOptions(self):
+        """Return todisc options for this frame."""
         opts = ""
         if self.varImage.get():
             opts += " -bgimage '%s'" % self.varImage.get()
         if self.varVideo.get():
             opts += " -bgvideo '%s'" % self.varVideo.get()
         if self.varAudio.get():
-            opts += " -bgvideo '%s'" % self.varAudio.get()
+            opts += " -bgaudio '%s'" % self.varAudio.get()
         return opts
 
 
@@ -261,6 +268,7 @@ class OutfileFrame(Frame):
         self.drawWidgets()
     
     def drawWidgets(self):
+        """Draw all the widgets in this frame."""
         self.lblOutfile = Label(self, text="Output file:")
         self.lblOutfile.pack(side=LEFT)
         self.entOutfile = Entry(self, width=40, textvariable=self.varOutfile)
@@ -269,12 +277,14 @@ class OutfileFrame(Frame):
         self.btnBrowse.pack(side=LEFT)
         
     def onBrowse(self):
+        """Set the output filename from a filename browser."""
         filename = asksaveasfilename(parent=self, title="Select output file")
         if filename:
             print "Output file: %s" % filename
             self.varOutfile.set(filename)
 
     def getOptions(self):
+        """Return todisc options for this frame."""
         outfile = self.varOutfile.get()
         if not outfile:
             print "WARNING: No output file selected"
@@ -290,6 +300,7 @@ class TitleFrame(Frame):
         self.drawWidgets()
         
     def drawWidgets(self):
+        """Draw all the widgets in this frame."""
         self.lblTitle = Label(self, text="Menu title:")
         self.lblTitle.pack(side=LEFT)
         self.entTitle = Entry(self, width=30, textvariable=self.varTitle)
@@ -297,6 +308,7 @@ class TitleFrame(Frame):
         self.varTitle.set("My video collection")
 
     def getOptions(self):
+        """Return todisc options for this frame."""
         title = self.varTitle.get()
         if title:
             return " -menu-title '%s'" % title
@@ -311,11 +323,13 @@ class MiscOptionsFrame(Frame):
         self.drawWidgets()
     
     def drawWidgets(self):
+        """Draw all the widgets in this frame."""
         self.chkStatic = Checkbutton(self, text="Static menus",
                                      variable=self.varStatic)
         self.chkStatic.pack()
 
     def getOptions(self):
+        """Return todisc options for this frame."""
         opts = ""
         if self.varStatic.get():
             opts += " -static"
@@ -335,6 +349,7 @@ class Application(Frame):
         self.drawWidgets()
         
     def drawWidgets(self):
+        """Draw all the widgets in this frame."""
         self.title = TitleFrame(self)
         self.title.pack(side=TOP, anchor=W)
         
@@ -366,6 +381,7 @@ class Application(Frame):
         self.btnQuit.pack(side=RIGHT)
 
     def getCommand(self):
+        """Return the complete todisc command."""
         cmd = "todisc "
         cmd += self.title.getOptions()
         cmd += self.filelist.getOptions()
@@ -377,9 +393,11 @@ class Application(Frame):
         return cmd
 
     def showCommand(self):
+        """Show the todisc command that would be run."""
         print self.getCommand()
 
     def runCommand(self):
+        """Run the todisc command."""
         cmd = self.getCommand()
         print "Running command:"
         print cmd
