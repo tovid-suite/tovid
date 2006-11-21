@@ -112,7 +112,6 @@ SUB_MENU_FEATHER=false
 IMG_FMT=jpg
 SM_IMG_FMT=jpg  # submenu image format
 KEEP_FILES=false
-DEBUG=false
 THUMB_SHAPE=""
 SEEK="-ss 1"
 SEEK_VAL=1
@@ -288,6 +287,7 @@ function cleanup()
         done
     fi
     if kill -0 $TCODE_PID 2> /dev/null; then kill -9  $TCODE_PID  2> /dev/null; fi
+    if kill -0 $(</tmp/tcode.pid)  2> /dev/null; then kill -9 $(</tmp/tcode.pid)  2> /dev/null; fi
     if kill -0 $TRANSCODE_PID 2> /dev/null; then kill -9  $TRANSCODE_PID 2> /dev/null; fi
     if kill -0 $NS_PID 2> /dev/null; then kill -9 $NS_PID 2> /dev/null; fi
     if $KEEP_FILES; then
@@ -489,9 +489,6 @@ while test $# -gt 0; do
         "-out" )
             shift
             OUT_PREFIX="$1"
-            ;;
-        "-debug" )
-            DEBUG=:
             ;;
         "-noask" )
             NOASK=:
@@ -1023,6 +1020,13 @@ for ((i=0; i<=NUM_FILES; i++)); do
     # translate SEEK_VAL into frames for transcode
     SEEK_FRAMES[i]=$(awk_math ${SEEK_VAL[i]} times $FRAME_RATE)
 done
+# var for dcdemux and the navigation log
+if [[ $TV_STANDARD = ntsc ]]; then
+    TCDEMUX_MODE=2
+elif [[ $TV_STANDARD = pal ]]; then
+    TCDEMUX_MODE=1
+fi
+TCDEMUX_MODE="-M $TCDEMUX_MODE"
 echo 
 echo "Verifying that input files are video files"
 for ((i=0; i<=NUM_FILES; i++)); do
@@ -1667,7 +1671,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
     # use a nav_seek file if long seek
     if [ ${SEEK_VAL[i]} -gt 450 ]; then
         NAVSEEK[i]="--nav_seek "$WORK_DIR/nav${i}_log""
-        NAVSEEK_CMD=(nice tcdemux -d 24 -f $FRAME_RATE -W -i "${IN_FILES[i]}")
+        NAVSEEK_CMD=(nice tcdemux -d 24 $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
         run_navseek()
         {   
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
@@ -1688,7 +1692,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
         echo
         echo "[$i of $NUM_FILES] Seeking to ${SEEK_VAL[i]} seconds in ${IN_FILES[i]}"
     fi
-    TRANSCODE_CMD=(transcode -q 1 -i "${IN_FILES[i]}" \
+    TRANSCODE_CMD=(transcode -q 1 --write_pid /tmp/tcode.pid -i "${IN_FILES[i]}" \
     -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + 1)) ${NAVSEEK[i]} \
     -o $WORK_DIR/pics/$i/ -f 29.970  -Z $THUMB_SIZE $EXPORT)
 
@@ -2247,7 +2251,7 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
         STATS_FRAMES="-frames 1"
         if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
             NAVSEEK[i]="--nav_seek "$WORK_DIR/nav${i}_log""
-            NAVSEEK_CMD=(nice tcdemux -d 24 -f $FRAME_RATE -W -i "${IN_FILES[i]}")
+            NAVSEEK_CMD=(nice tcdemux -d 24 $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
             run_navseek()
             {
                 yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
@@ -2679,7 +2683,7 @@ if $SUB_MENU; then
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
         # create a nav_seek log with tcdemux if not already present
-        NAVSEEK_CMD=(nice tcdemux -d 24 -f $FRAME_RATE -W -i "${IN_FILES[i]}")
+        NAVSEEK_CMD=(nice tcdemux -d 24 $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
         if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
             "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "$WORK_DIR/nav${i}_log"
