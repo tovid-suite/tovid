@@ -568,8 +568,8 @@ function get_args()
                 ;;
             "-async" )
                 shift
-                AUDIO_SYNC="$1"
-                MPLEX_ASYNC="-O -${AUDIO_SYNC}"
+                AUDIO_SYNC=$(awk '{print -$1}' <<< "$@")
+                MPLEX_ASYNC="-O $AUDIO_SYNC"
                 ASYNC="-async $AUDIO_SYNC"
                 FORCE_ENCODING=:
                 ;;
