@@ -48,6 +48,7 @@ py_bin = \
 	src/pymakemenu \
 	src/pymakexml \
 	src/ripframes \
+	src/tktodisc \
 	src/tovidgui \
 	src/tovid-stats \
 	src/todiscgui
