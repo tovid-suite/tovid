@@ -193,6 +193,7 @@ KEEPFILES=false
 AUDIO_TRACK=""
 AUDIO_MAP=""
 SLICE=false
+ASYNC=""
 
 # Make note of when encoding starts, to determine total time later.
 SCRIPT_START_TIME=$(date +%s)
@@ -1368,17 +1369,23 @@ if test "$IN_FILE_TYPE" = "file"; then
     fi
 
     # Check for available space and prompt if it's not enough
-    check_disk_space
-    if test "$AVAIL_SPACE" -lt "$NEED_SPACE"; then
-        yecho "Available: $AVAIL_SPACE, needed: $NEED_SPACE"
-        echo "It doesn't look like you have enough space to encode this video."
-        echo "Of course, I could be wrong. Do you want to proceed anyway? (y/n)"
-        read PROCEED
-        if test "$PROCEED" != "y"; then
-            cleanup
-            exit 0
+    # not needed if using ffmpeg to encode video and audio "at once"
+    if ($USE_FFMPEG && (! $DO_NORM || ! [[ $ASYNC ]])) || $PARALLEL; then
+        :
+    else
+        check_disk_space
+        if test "$AVAIL_SPACE" -lt "$NEED_SPACE"; then
+            yecho "Available: $AVAIL_SPACE, needed: $NEED_SPACE"
+            echo "It doesn't look like you have enough space to encode this video."
+            echo "Of course, I could be wrong. Do you want to proceed anyway? (y/n)"
+            read PROCEED
+            if test "$PROCEED" != "y"; then
+                cleanup
+                exit 0
+            fi
         fi
-    fi
+   fi
+
 
     # Check for compliance in existing video
     if test "$TGT_RES" = "VCD" || test "$TGT_RES" = "KVCD"; then
