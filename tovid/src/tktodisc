@@ -115,30 +115,42 @@ class FileListFrame(Frame):
 
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
+        # Scrollbar to control both listboxes
+        self.scrollbar = Scrollbar(self, orient=VERTICAL)
+        self.scrollbar.grid(row=1, column=3, sticky=N+S)
+        self.scrollbar.config(command=self.scroll)
         # List box and add/remove buttons
         self.lblFiles = Label(self, text="Files")
         self.lblFiles.grid(row=0, column=0, columnspan=2, sticky=W)
         self.lstFiles = Listbox(self, width=30, selectmode=EXTENDED,
-                                 listvariable=self.varFiles)
+                                listvariable=self.varFiles,
+                                yscrollcommand=self.scrollbar.set)
+        self.lstFiles.bind('<ButtonRelease-1>', self.selectListitem)
         self.lstFiles.grid(row=1, column=0, columnspan=2)
         self.btnAdd = Button(self, text="Add...", command=self.addFiles)
         self.btnAdd.grid(row=2, column=0, sticky=E+W)
-        self.btnDelete = Button(self, text="Remove",
-                                   command=self.deleteFiles)
-        self.btnDelete.grid(row=2, column=1, sticky=E+W)
+        self.btnRemove = Button(self, text="Remove",
+                                   command=self.removeFiles)
+        self.btnRemove.grid(row=2, column=1, sticky=E+W)
         # Title list box
         self.lblTitles = Label(self, text="Titles")
-        self.lblTitles.grid(row=0, column=3, sticky=W)
-        self.lstTitles = Listbox(self, width=30, listvariable=self.varTitles)
-        self.lstTitles.bind('<ButtonRelease-1>', self.selectTitle)
-        self.lstTitles.grid(row=1, column=3)
+        self.lblTitles.grid(row=0, column=2, sticky=W)
+        self.lstTitles = Listbox(self, width=30, listvariable=self.varTitles,
+                                 yscrollcommand=self.scrollbar.set)
+        self.lstTitles.bind('<ButtonRelease-1>', self.selectListitem)
+        self.lstTitles.grid(row=1, column=2)
         self.entTitle = Entry(self, width=30, textvariable=self.curtitle)
         self.entTitle.bind('<Return>', self.setTitle)
-        self.entTitle.grid(row=2, column=3)
+        self.entTitle.grid(row=2, column=2)
 
-    def selectTitle(self, event=None):
-        """Event handler when a title in the title list is selected."""
-        selected = self.lstTitles.curselection()
+    def scroll(self, *args):
+        apply(self.lstFiles.yview, args)
+        apply(self.lstTitles.yview, args)
+        
+    def selectListitem(self, event=None):
+        """Event handler when a filename or title in the list is selected."""
+        selected = self.lstFiles.curselection() \
+                 or self.lstTitles.curselection()
         if len(selected) > 0:
             self.curindex = selected[0]
             self.curtitle.set(self.lstTitles.get(self.curindex))
@@ -160,9 +172,10 @@ class FileListFrame(Frame):
             title = file.split('/')[-1]
             self.lstTitles.insert(END, title)
 
-    def deleteFiles(self):
-        """Event handler for deleting files from the list box"""
-        selection = self.lstFiles.curselection()
+    def removeFiles(self):
+        """Event handler for removing files from the list box"""
+        selection = self.lstFiles.curselection() \
+                  or self.lstTitles.curselection()
         # Using reverse order prevents reflow from messing up indexing
         for line in reversed(selection):
             print "Removing '%s' from the file list" % self.lstFiles.get(line)
@@ -197,37 +210,31 @@ class BackgroundsFrame(Frame):
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
         self.lblHeading = Label(self, text="Menu backgrounds")
-        self.lblHeading.pack(side=TOP, anchor=W)
+        self.lblHeading.grid(row=0, columnspan=3, sticky=W)
         # BG image
-        fraImage = Frame(self)
-        self.lblImage = Label(fraImage, text="BG image")
-        self.lblImage.pack(side=LEFT)
-        self.entImage = Entry(fraImage, width=40, textvariable=self.varImage)
-        self.entImage.pack(side=LEFT)
-        self.btnImage = Button(fraImage, text="Browse...",
+        self.lblImage = Label(self, text="BG image")
+        self.lblImage.grid(row=1, column=0)
+        self.entImage = Entry(self, width=40, textvariable=self.varImage)
+        self.entImage.grid(row=1, column=1)
+        self.btnImage = Button(self, text="Browse...",
                                command=self.browseImage)
-        self.btnImage.pack(side=LEFT)
-        fraImage.pack(side=TOP)
+        self.btnImage.grid(row=1, column=2)
         # BG video
-        fraVideo = Frame(self)
-        self.lblVideo = Label(fraVideo, text="BG video")
-        self.lblVideo.pack(side=LEFT)
-        self.entVideo = Entry(fraVideo, width=40, textvariable=self.varVideo)
-        self.entVideo.pack(side=LEFT)
-        self.btnVideo = Button(fraVideo, text="Browse...",
+        self.lblVideo = Label(self, text="BG video")
+        self.lblVideo.grid(row=2, column=0)
+        self.entVideo = Entry(self, width=40, textvariable=self.varVideo)
+        self.entVideo.grid(row=2, column=1, sticky=E+W)
+        self.btnVideo = Button(self, text="Browse...",
                                command=self.browseVideo)
-        self.btnVideo.pack(side=LEFT)
-        fraVideo.pack(side=TOP)
+        self.btnVideo.grid(row=2, column=2)
         # BG audio
-        fraAudio = Frame(self)
-        self.lblAudio = Label(fraAudio, text="BG audio")
-        self.lblAudio.pack(side=LEFT)
-        self.entAudio = Entry(fraAudio, width=40, textvariable=self.varAudio)
-        self.entAudio.pack(side=LEFT)
-        self.btnAudio = Button(fraAudio, text="Browse...",
+        self.lblAudio = Label(self, text="BG audio")
+        self.lblAudio.grid(row=3, column=0)
+        self.entAudio = Entry(self, width=40, textvariable=self.varAudio)
+        self.entAudio.grid(row=3, column=1)
+        self.btnAudio = Button(self, text="Browse...",
                                command=self.browseAudio)
-        self.btnAudio.pack(side=LEFT)
-        fraAudio.pack(side=TOP)
+        self.btnAudio.grid(row=3, column=2)
 
     def browseImage(self):
         filename = askopenfilename(parent=self, title="Select image file")
@@ -350,46 +357,46 @@ class Application(Frame):
         
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
-        self.title = TitleFrame(self)
-        self.title.pack(side=TOP, anchor=W)
+        self.fraTitle = TitleFrame(self)
+        self.fraTitle.grid()
         
-        self.filelist = FileListFrame(self)
-        self.filelist.pack(side=TOP)
+        self.fraFileList = FileListFrame(self)
+        self.fraFileList.grid()
 
-        self.format = FormatFrame(self)
-        self.format.pack(side=TOP, anchor=W)
+        self.fraFormat = FormatFrame(self)
+        self.fraFormat.grid()
 
-        self.tvsys = TvsysFrame(self)
-        self.tvsys.pack(side=TOP, anchor=W)
+        self.fraTvsys = TvsysFrame(self)
+        self.fraTvsys.grid()
 
-        self.backgrounds = BackgroundsFrame(self)
-        self.backgrounds.pack(side=TOP, anchor=W)
+        self.fraBackgrounds = BackgroundsFrame(self)
+        self.fraBackgrounds.grid(sticky=W)
         
-        self.misc = MiscOptionsFrame(self)
-        self.misc.pack(side=TOP)
+        self.fraMisc = MiscOptionsFrame(self)
+        self.fraMisc.grid()
 
-        self.outfile = OutfileFrame(self)
-        self.outfile.pack(side=TOP, anchor=W)
+        self.fraOutfile = OutfileFrame(self)
+        self.fraOutfile.grid()
 
         self.btnCommand = Button(self, text="Show todisc command",
                                  command=self.showCommand)
-        self.btnCommand.pack(side=LEFT)
+        self.btnCommand.grid()
         self.btnRun = Button(self, text="Run todisc command",
                              command=self.runCommand)
-        self.btnRun.pack(side=LEFT)
+        self.btnRun.grid()
         self.btnQuit = Button(self, text="Quit", command=self.quit)
-        self.btnQuit.pack(side=RIGHT)
+        self.btnQuit.grid()
 
     def getCommand(self):
         """Return the complete todisc command."""
         cmd = "todisc "
-        cmd += self.title.getOptions()
-        cmd += self.filelist.getOptions()
-        cmd += self.format.getOptions()
-        cmd += self.tvsys.getOptions()
-        cmd += self.backgrounds.getOptions()
-        cmd += self.misc.getOptions()
-        cmd += self.outfile.getOptions()
+        cmd += self.fraTitle.getOptions()
+        cmd += self.fraFileList.getOptions()
+        cmd += self.fraFormat.getOptions()
+        cmd += self.fraTvsys.getOptions()
+        cmd += self.fraBackgrounds.getOptions()
+        cmd += self.fraMisc.getOptions()
+        cmd += self.fraOutfile.getOptions()
         return cmd
 
     def showCommand(self):
@@ -413,5 +420,5 @@ class Application(Frame):
 
 if __name__ == '__main__':
     app = Application()
-    app.master.title("tktodisc")
+    app.master.title("tktodisc: A todisc GUI")
     app.mainloop()
