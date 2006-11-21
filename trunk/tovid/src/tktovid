@@ -6,14 +6,21 @@
 """Note on notation:
 tkinter widgets variable names shall use a prefix describing widget type, and
 camel-case for remaining words, i.e.
-    labelFoo for Label
-    buttonFoo for Button
-    listFoo for Listbox
-    entryFoo for Entry
+
+    fra: Frame
+    mnu: Menu
+    lbl: Label
+    btn: Button
+    ent: Entry
+    lst: Listbox
+    chk: Checkbox
+    rb:  Radiobutton
+    var: Control variables (Variable, StringVar, IntVar, DoubleVar)
+
 """
 
 from Tkinter import *
-import tkFileDialog
+from tkFileDialog import *
 
 # ============================
 #
@@ -33,8 +40,8 @@ class FormatFrame(Frame):
 
     def drawWidgets(self):
         # Label
-        self.label = Label(self, text="Disc format")
-        self.label.grid()
+        self.lbl = Label(self, text="Disc format:")
+        self.lbl.pack(side=LEFT)
         # Radio buttons
         for format in ['DVD', 'VCD', 'SVCD']:
             self.rbFormat[format] =\
@@ -43,7 +50,7 @@ class FormatFrame(Frame):
                             value = format,
                             variable = self.varFormat,
                             command = self.changeFormat)
-            self.rbFormat[format].grid(sticky=NW)
+            self.rbFormat[format].pack(side=LEFT)
         self.varFormat.set('DVD')
         
     def changeFormat(self):
@@ -51,7 +58,7 @@ class FormatFrame(Frame):
         print "Disc format: %s" % self.varFormat.get()
         
     def getOptions(self):        
-        return "-%s " % str(self.varFormat.get()).lower()
+        return " -%s" % str(self.varFormat.get()).lower()
 
 
 class TvsysFrame(Frame):
@@ -66,8 +73,8 @@ class TvsysFrame(Frame):
 
     def drawWidgets(self):
         # Label
-        self.label = Label(self, text="TV system")
-        self.label.grid()
+        self.label = Label(self, text="TV system:")
+        self.label.pack(side=LEFT)
         # Radio buttons
         for tvsys in ['NTSC', 'PAL']:
             self.rbTvsys[tvsys] =\
@@ -76,7 +83,7 @@ class TvsysFrame(Frame):
                             value = tvsys,
                             variable = self.varTvsys,
                             command = self.changeTvsys)
-            self.rbTvsys[tvsys].grid(sticky=NW)
+            self.rbTvsys[tvsys].pack(side=LEFT)
         self.varTvsys.set('NTSC')
     
     def changeTvsys(self):
@@ -84,31 +91,8 @@ class TvsysFrame(Frame):
         print "TV system: %s" % self.varTvsys.get()
         
     def getOptions(self):
-        return "-%s " % str(self.varTvsys.get()).lower()
+        return " -%s" % str(self.varTvsys.get()).lower()
 
-
-class OutfileFrame(Frame):
-    """A frame containing an output-file text entry/browser box."""
-    def __init__(self, master=None):
-        Frame.__init__(self, master)
-        self.filename = StringVar() # Current output filename
-        self.grid()
-        self.drawWidgets()
-    
-    def drawWidgets(self):
-        self.labelOutfile = Label(self, text="Output file:")
-        self.labelOutfile.pack(side=LEFT)
-        self.entryOutfile = Entry(self, width=20, textvariable=self.filename)
-        self.entryOutfile.pack(side=LEFT)
-        self.buttonBrowse = Button(self, text="Browse...",
-                                   command=self.onBrowse)
-        self.buttonBrowse.pack(side=LEFT)
-        
-    def onBrowse(self):
-        pass
-
-    def getOptions(self):
-        return "-out %s" % self.filename.get()
 
 
 class FileListFrame(Frame):
@@ -126,62 +110,157 @@ class FileListFrame(Frame):
 
     def drawWidgets(self):
         # List box and add/remove buttons
-        self.labelFiles = Label(self, text="Files")
-        self.labelFiles.grid(row=0, column=0, columnspan=2, sticky=W)
-        self.listFiles = Listbox(self, width=30, selectmode=EXTENDED,
+        self.lblFiles = Label(self, text="Files")
+        self.lblFiles.grid(row=0, column=0, columnspan=2, sticky=W)
+        self.lstFiles = Listbox(self, width=30, selectmode=EXTENDED,
                                  listvariable=self.files)
-        self.listFiles.grid(row=1, column=0, columnspan=2)
-        self.buttonAdd = Button(self, text="Add...", command=self.addFiles)
-        self.buttonAdd.grid(row=2, column=0, sticky=E+W)
-        self.buttonDelete = Button(self, text="Remove",
+        self.lstFiles.grid(row=1, column=0, columnspan=2)
+        self.btnAdd = Button(self, text="Add...", command=self.addFiles)
+        self.btnAdd.grid(row=2, column=0, sticky=E+W)
+        self.btnDelete = Button(self, text="Remove",
                                    command=self.deleteFiles)
-        self.buttonDelete.grid(row=2, column=1, sticky=E+W)
+        self.btnDelete.grid(row=2, column=1, sticky=E+W)
         # Title list box
-        self.labelTitles = Label(self, text="Titles")
-        self.labelTitles.grid(row=0, column=3, sticky=W)
-        self.listTitles = Listbox(self, width=30, listvariable=self.titles)
-        self.listTitles.bind('<ButtonRelease-1>', self.selectTitle)
-        self.listTitles.grid(row=1, column=3)
-        self.entryTitle = Entry(self, width=30, textvariable=self.curtitle)
-        self.entryTitle.bind('<Return>', self.setTitle)
-        self.entryTitle.grid(row=2, column=3)
+        self.lblTitles = Label(self, text="Titles")
+        self.lblTitles.grid(row=0, column=3, sticky=W)
+        self.lstTitles = Listbox(self, width=30, listvariable=self.titles)
+        self.lstTitles.bind('<ButtonRelease-1>', self.selectTitle)
+        self.lstTitles.grid(row=1, column=3)
+        self.entTitle = Entry(self, width=30, textvariable=self.curtitle)
+        self.entTitle.bind('<Return>', self.setTitle)
+        self.entTitle.grid(row=2, column=3)
 
     def selectTitle(self, event=None):
         """Event handler when a title in the title list is selected."""
-        selected = self.listTitles.curselection()
+        selected = self.lstTitles.curselection()
         if len(selected) > 0:
             self.curindex = selected[0]
-            self.curtitle.set(self.listTitles.get(self.curindex))
+            self.curtitle.set(self.lstTitles.get(self.curindex))
 
     def setTitle(self, event=None):
         """Event handler when Enter is pressed after editing a title."""
         newtitle = self.curtitle.get()
         print "Setting title to '%s'" % newtitle
-        self.listTitles.delete(self.curindex)
-        self.listTitles.insert(self.curindex, newtitle)
+        self.lstTitles.delete(self.curindex)
+        self.lstTitles.insert(self.curindex, newtitle)
         
     def addFiles(self):
         """Event handler for adding files to the list box"""
-        files = tkFileDialog.askopenfilenames(parent=self, title='Add files')
+        files = askopenfilenames(parent=self, title='Add files')
         for file in files:
             print "Adding '%s' to the file list" % file
-            self.listFiles.insert(END, file)
+            self.lstFiles.insert(END, file)
             # Add a dummy title (with pathname removed)
             title = file.split('/')[-1]
-            self.listTitles.insert(END, title)
+            self.lstTitles.insert(END, title)
 
     def deleteFiles(self):
         """Event handler for deleting files from the list box"""
-        selection = self.listFiles.curselection()
+        selection = self.lstFiles.curselection()
         # Using reverse order prevents reflow from messing up indexing
         for line in reversed(selection):
-            print "Removing '%s' from the file list" % self.listFiles.get(line)
-            self.listFiles.delete(line)
-            self.listTitles.delete(line)
+            print "Removing '%s' from the file list" % self.lstFiles.get(line)
+            self.lstFiles.delete(line)
+            self.lstTitles.delete(line)
 
     def getOptions(self):
-        return "-files '%s' -titles '%s' " % \
+        return " -files '%s' -titles '%s'" % \
              ("' '".join(self.files.get()), "' '".join(self.titles.get()))
+
+
+class BackgroundsFrame(Frame):
+    """Widgets for setting background image, video and audio"""
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.varImage = StringVar()
+        self.varVideo = StringVar()
+        self.varAudio = StringVar()
+        self.grid()
+        self.drawWidgets()
+    
+    def drawWidgets(self):
+        self.lblHeading = Label(self, text="Menu backgrounds")
+        self.lblHeading.pack(side=TOP, anchor=W)
+        # BG image
+        fraImage = Frame(self)
+        self.lblImage = Label(fraImage, text="BG image")
+        self.lblImage.pack(side=LEFT)
+        self.entImage = Entry(fraImage, width=30, textvariable=self.varImage)
+        self.entImage.pack(side=LEFT)
+        self.btnImage = Button(fraImage, text="Browse...",
+                               command=self.browseImage)
+        self.btnImage.pack(side=LEFT)
+        fraImage.pack(side=TOP)
+        # BG video
+        fraVideo = Frame(self)
+        self.lblVideo = Label(fraVideo, text="BG video")
+        self.lblVideo.pack(side=LEFT)
+        self.entVideo = Entry(fraVideo, width=30, textvariable=self.varVideo)
+        self.entVideo.pack(side=LEFT)
+        self.btnVideo = Button(fraVideo, text="Browse...",
+                               command=self.browseVideo)
+        self.btnVideo.pack(side=LEFT)
+        fraVideo.pack(side=TOP)
+        # BG audio
+        fraAudio = Frame(self)
+        self.lblAudio = Label(fraAudio, text="BG audio")
+        self.lblAudio.pack(side=LEFT)
+        self.entAudio = Entry(fraAudio, width=30, textvariable=self.varAudio)
+        self.entAudio.pack(side=LEFT)
+        self.btnAudio = Button(fraAudio, text="Browse...",
+                               command=self.browseAudio)
+        self.btnAudio.pack(side=LEFT)
+        fraAudio.pack(side=TOP)
+
+    def browseImage(self):
+        filename = askopenfilename(parent=self, title="Select image file")
+        print "Background image: %s" % filename
+        self.varImage.set(filename)
+
+    def browseVideo(self):
+        filename = askopenfilename(parent=self, title="Select video file")
+        print "Background video: %s" % filename
+        self.varVideo.set(filename)
+
+    def browseAudio(self):
+        filename = askopenfilename(parent=self, title="Select audio file")
+        print "Background audio: %s" % filename
+        self.varAudio.set(filename)
+    
+    def getOptions(self):
+        opts = ""
+        if self.varImage.get():
+            opts += " -bgimage '%s'" % self.varImage.get()
+        if self.varVideo.get():
+            opts += " -bgvideo '%s'" % self.varVideo.get()
+        if self.varAudio.get():
+            opts += " -bgvideo '%s'" % self.varAudio.get()
+        return opts
+
+
+class OutfileFrame(Frame):
+    """A frame containing an output-file text entry/browser box."""
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.filename = StringVar() # Current output filename
+        self.grid()
+        self.drawWidgets()
+    
+    def drawWidgets(self):
+        self.lblOutfile = Label(self, text="Output file:")
+        self.lblOutfile.pack(side=LEFT)
+        self.entOutfile = Entry(self, width=40, textvariable=self.filename)
+        self.entOutfile.pack(side=LEFT)
+        self.btnBrowse = Button(self, text="Browse...", command=self.onBrowse)
+        self.btnBrowse.pack(side=LEFT)
+        
+    def onBrowse(self):
+        filename = asksaveasfilename(parent=self, title="Select output file")
+        print "Output file: %s" % filename
+        self.filename.set(filename)
+
+    def getOptions(self):
+        return " -out '%s'" % self.filename.get()
 
 
 # ============================
@@ -198,28 +277,32 @@ class Application(Frame):
         
     def drawWidgets(self):
         self.filelist = FileListFrame(self)
-        self.filelist.grid(row=0, column=0)
-
-        self.outfile = OutfileFrame(self)
-        self.outfile.grid(row=1, column=0, sticky=EW)
+        self.filelist.pack(side=TOP)
 
         self.format = FormatFrame(self)
-        self.format.grid(row=0, column=1, sticky=N)
+        self.format.pack(side=TOP, anchor=W)
 
         self.tvsys = TvsysFrame(self)
-        self.tvsys.grid(row=0, column=2, sticky=N)
-        
-        self.buttonCommand = Button(self, text="Print command",
+        self.tvsys.pack(side=TOP, anchor=W)
+
+        self.backgrounds = BackgroundsFrame(self)
+        self.backgrounds.pack(side=TOP, anchor=W)
+
+        self.outfile = OutfileFrame(self)
+        self.outfile.pack(side=TOP, anchor=W)
+
+        self.btnCommand = Button(self, text="Print command",
                                     command=self.showCommand)
-        self.buttonCommand.grid()
-        self.buttonQuit = Button(self, text="Quit", command=self.quit)
-        self.buttonQuit.grid()
+        self.btnCommand.pack()
+        self.btnQuit = Button(self, text="Quit", command=self.quit)
+        self.btnQuit.pack()
 
     def showCommand(self):
         cmd = "todisc "
+        cmd += self.filelist.getOptions()
         cmd += self.format.getOptions()
         cmd += self.tvsys.getOptions()
-        cmd += self.filelist.getOptions()
+        cmd += self.backgrounds.getOptions()
         cmd += self.outfile.getOptions()
         print cmd
 
