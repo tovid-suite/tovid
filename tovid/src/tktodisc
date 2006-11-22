@@ -133,7 +133,8 @@ class FileListFrame(Frame):
         # List box and add/remove buttons
         self.lblFiles = Label(self, text="Files")
         self.lblFiles.grid(row=0, column=0, columnspan=2, sticky=W)
-        self.lstFiles = Listbox(self, width=30, selectmode=EXTENDED,
+        self.lstFiles = Listbox(self, width=30, background='white',
+                                selectmode=EXTENDED,
                                 listvariable=self.varFiles,
                                 yscrollcommand=self.scrollbar.set)
         self.lstFiles.bind('<ButtonRelease-1>', self.selectListitem)
@@ -146,11 +147,13 @@ class FileListFrame(Frame):
         # Title list box
         self.lblTitles = Label(self, text="Titles")
         self.lblTitles.grid(row=0, column=2, sticky=W)
-        self.lstTitles = Listbox(self, width=30, listvariable=self.varTitles,
+        self.lstTitles = Listbox(self, width=30, background='white',
+                                 listvariable=self.varTitles,
                                  yscrollcommand=self.scrollbar.set)
         self.lstTitles.bind('<ButtonRelease-1>', self.selectListitem)
         self.lstTitles.grid(row=1, column=2)
-        self.entTitle = Entry(self, width=30, textvariable=self.curtitle)
+        self.entTitle = Entry(self, width=30, background='white',
+                              textvariable=self.curtitle)
         self.entTitle.bind('<Return>', self.setTitle)
         self.entTitle.grid(row=2, column=2)
 
@@ -225,7 +228,8 @@ class BackgroundsFrame(Frame):
         # BG image
         self.lblImage = Label(self, text="Image:")
         self.lblImage.grid(row=1, column=0)
-        self.entImage = Entry(self, width=40, textvariable=self.varImage)
+        self.entImage = Entry(self, width=40, background='white',
+                              textvariable=self.varImage)
         self.entImage.grid(row=1, column=1)
         self.btnImage = Button(self, text="Browse...",
                                command=self.browseImage)
@@ -233,7 +237,8 @@ class BackgroundsFrame(Frame):
         # BG video
         self.lblVideo = Label(self, text="Video:")
         self.lblVideo.grid(row=2, column=0)
-        self.entVideo = Entry(self, width=40, textvariable=self.varVideo)
+        self.entVideo = Entry(self, width=40, background='white',
+                              textvariable=self.varVideo)
         self.entVideo.grid(row=2, column=1, sticky=E+W)
         self.btnVideo = Button(self, text="Browse...",
                                command=self.browseVideo)
@@ -241,7 +246,8 @@ class BackgroundsFrame(Frame):
         # BG audio
         self.lblAudio = Label(self, text="Audio:")
         self.lblAudio.grid(row=3, column=0)
-        self.entAudio = Entry(self, width=40, textvariable=self.varAudio)
+        self.entAudio = Entry(self, width=40, background='white',
+                              textvariable=self.varAudio)
         self.entAudio.grid(row=3, column=1)
         self.btnAudio = Button(self, text="Browse...",
                                command=self.browseAudio)
@@ -289,7 +295,8 @@ class OutfileFrame(Frame):
         """Draw all the widgets in this frame."""
         self.lblOutfile = Label(self, text="Output file:")
         self.lblOutfile.pack(side=LEFT)
-        self.entOutfile = Entry(self, width=40, textvariable=self.varOutfile)
+        self.entOutfile = Entry(self, width=40, background='white',
+                                textvariable=self.varOutfile)
         self.entOutfile.pack(side=LEFT)
         self.btnBrowse = Button(self, text="Browse...", command=self.onBrowse)
         self.btnBrowse.pack(side=LEFT)
@@ -321,7 +328,8 @@ class TitleFrame(Frame):
         """Draw all the widgets in this frame."""
         self.lblTitle = Label(self, text="Menu title:")
         self.lblTitle.pack(side=LEFT)
-        self.entTitle = Entry(self, width=30, textvariable=self.varTitle)
+        self.entTitle = Entry(self, width=30, background='white',
+                              textvariable=self.varTitle)
         self.entTitle.pack(side=LEFT)
         self.varTitle.set("My video collection")
 
@@ -354,7 +362,8 @@ class MiscOptionsFrame(Frame):
         self.chkSubmenus.grid(columnspan=2, sticky=W)
         self.lblCustom = Label(self, text="Custom todisc options:")
         self.lblCustom.grid(row=2, column=0)
-        self.entCustom = Entry(self, width=40, textvariable=self.varCustom)
+        self.entCustom = Entry(self, width=40, background='white',
+                               textvariable=self.varCustom)
         self.entCustom.grid(row=2, column=1)
         
     def getOptions(self):
