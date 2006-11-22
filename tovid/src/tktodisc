@@ -4,6 +4,7 @@
 """A Tkinter graphical user interface for tovid. Highly experimental."""
 
 """Note on notation:
+
 tkinter widgets variable names shall use a prefix describing widget type, and
 camel-case for remaining words, i.e.
 
@@ -17,6 +18,16 @@ camel-case for remaining words, i.e.
     rbFoo:  Radiobutton
     varFoo: Control variable (Variable, StringVar, IntVar, DoubleVar)
 
+Ideas for later:
+
+"Browse" Button, opens a file dialog (load or save) and sets a control variable
+
+Use dictionaries for accessing Widgets inside of classes, i.e.
+    self.lblTitles --> self.lbl['Titles']
+    self.entTitles --> self.ent['Titles']
+This may simplify automated widget-instantiation later.
+
+    
 """
 
 import os
@@ -200,19 +211,19 @@ class FileListFrame(Frame):
 class BackgroundsFrame(Frame):
     """Widgets for setting background image, video and audio"""
     def __init__(self, master=None):
-        Frame.__init__(self, master)
+        Frame.__init__(self, master, borderwidth=1, relief=SUNKEN)
         self.varImage = StringVar()
         self.varVideo = StringVar()
         self.varAudio = StringVar()
         self.grid()
         self.drawWidgets()
-    
+
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
         self.lblHeading = Label(self, text="Menu backgrounds")
         self.lblHeading.grid(row=0, columnspan=3, sticky=W)
         # BG image
-        self.lblImage = Label(self, text="BG image")
+        self.lblImage = Label(self, text="Image:")
         self.lblImage.grid(row=1, column=0)
         self.entImage = Entry(self, width=40, textvariable=self.varImage)
         self.entImage.grid(row=1, column=1)
@@ -220,7 +231,7 @@ class BackgroundsFrame(Frame):
                                command=self.browseImage)
         self.btnImage.grid(row=1, column=2)
         # BG video
-        self.lblVideo = Label(self, text="BG video")
+        self.lblVideo = Label(self, text="Video:")
         self.lblVideo.grid(row=2, column=0)
         self.entVideo = Entry(self, width=40, textvariable=self.varVideo)
         self.entVideo.grid(row=2, column=1, sticky=E+W)
@@ -228,7 +239,7 @@ class BackgroundsFrame(Frame):
                                command=self.browseVideo)
         self.btnVideo.grid(row=2, column=2)
         # BG audio
-        self.lblAudio = Label(self, text="BG audio")
+        self.lblAudio = Label(self, text="Audio:")
         self.lblAudio.grid(row=3, column=0)
         self.entAudio = Entry(self, width=40, textvariable=self.varAudio)
         self.entAudio.grid(row=3, column=1)
@@ -326,22 +337,34 @@ class MiscOptionsFrame(Frame):
     def __init__(self, master=None):
         Frame.__init__(self, master)
         self.grid()
-        self.varStatic = BooleanVar()  # Static menus
+        self.varStatic = BooleanVar()    # Static menus
+        self.varSubmenus = BooleanVar()  # Create submenus
+        self.varCustom = StringVar()     # Custom todisc options
         self.drawWidgets()
     
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
         self.chkStatic = Checkbutton(self, text="Static menus",
                                      variable=self.varStatic)
-        self.chkStatic.pack()
-
+        self.chkStatic.grid(sticky=W)
+        self.chkSubmenus = Checkbutton(self, text="Create submenus",
+                                       variable=self.varSubmenus)
+        self.chkSubmenus.grid(sticky=W)
+        self.lblCustom = Label(self, text="Custom todisc options:")
+        self.lblCustom.grid(row=2, column=0)
+        self.entCustom = Entry(self, width=40, textvariable=self.varCustom)
+        self.entCustom.grid(row=2, column=1)
+        
     def getOptions(self):
         """Return todisc options for this frame."""
         opts = ""
         if self.varStatic.get():
             opts += " -static"
+        if self.varSubmenus.get():
+            opts += " -submenus"
+        opts += " %s" % self.varCustom.get()
         return opts
-    
+
 
 # ============================
 #
@@ -358,25 +381,25 @@ class Application(Frame):
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
         self.fraTitle = TitleFrame(self)
-        self.fraTitle.grid()
+        self.fraTitle.grid(sticky=W)
         
         self.fraFileList = FileListFrame(self)
-        self.fraFileList.grid()
+        self.fraFileList.grid(sticky=W)
 
         self.fraFormat = FormatFrame(self)
-        self.fraFormat.grid()
+        self.fraFormat.grid(sticky=W)
 
         self.fraTvsys = TvsysFrame(self)
-        self.fraTvsys.grid()
+        self.fraTvsys.grid(sticky=W)
 
         self.fraBackgrounds = BackgroundsFrame(self)
         self.fraBackgrounds.grid(sticky=W)
         
         self.fraMisc = MiscOptionsFrame(self)
-        self.fraMisc.grid()
+        self.fraMisc.grid(sticky=W)
 
         self.fraOutfile = OutfileFrame(self)
-        self.fraOutfile.grid()
+        self.fraOutfile.grid(sticky=W)
 
         self.btnCommand = Button(self, text="Show todisc command",
                                  command=self.showCommand)
