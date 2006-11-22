@@ -452,10 +452,7 @@ awk 'END{print NR}' "$LOG_FILE"
  
 function check_stall()
 {
-    echo "Running check_stall"
     newlines=$(get_line_count)
-    echo "newlines are $newlines"
-    echo "TCODE_PID is $TCODE_PID"
     TCODE_PID=$(</tmp/tcode.pid)
     while ps -p $(</tmp/tcode.pid) >/dev/null; do
         # Check for transcode output every 5 seconds
