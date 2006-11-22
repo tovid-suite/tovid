@@ -344,12 +344,14 @@ class MiscOptionsFrame(Frame):
     
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
-        self.chkStatic = Checkbutton(self, text="Static menus",
+        self.chkStatic = Checkbutton(self,
+                                     text="Static menus (takes less time)",
                                      variable=self.varStatic)
-        self.chkStatic.grid(sticky=W)
-        self.chkSubmenus = Checkbutton(self, text="Create submenus",
+        self.chkStatic.grid(columnspan=2, sticky=W)
+        self.chkSubmenus = Checkbutton(self,
+                                       text="Create submenus (takes more time)",
                                        variable=self.varSubmenus)
-        self.chkSubmenus.grid(sticky=W)
+        self.chkSubmenus.grid(columnspan=2, sticky=W)
         self.lblCustom = Label(self, text="Custom todisc options:")
         self.lblCustom.grid(row=2, column=0)
         self.entCustom = Entry(self, width=40, textvariable=self.varCustom)
@@ -401,14 +403,16 @@ class Application(Frame):
         self.fraOutfile = OutfileFrame(self)
         self.fraOutfile.grid(sticky=W)
 
-        self.btnCommand = Button(self, text="Show todisc command",
+        fraButtons = Frame(self)
+        self.btnCommand = Button(fraButtons, text="Show todisc command",
                                  command=self.showCommand)
-        self.btnCommand.grid()
-        self.btnRun = Button(self, text="Run todisc command",
+        self.btnCommand.pack(side=LEFT)
+        self.btnRun = Button(fraButtons, text="Run todisc command",
                              command=self.runCommand)
-        self.btnRun.grid()
-        self.btnQuit = Button(self, text="Quit", command=self.quit)
-        self.btnQuit.grid()
+        self.btnRun.pack(side=LEFT)
+        self.btnQuit = Button(fraButtons, text="Quit", command=self.quit)
+        self.btnQuit.pack(side=LEFT)
+        fraButtons.grid()
 
     def getCommand(self):
         """Return the complete todisc command."""
