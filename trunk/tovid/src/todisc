@@ -148,6 +148,7 @@ ASPECT_ARG=all
 WIDE_SCREEN=false
 WIDESCREEN="nopanscan"
 WIDESCREEN_ARG=all
+FROM_GUI=false
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -197,7 +198,7 @@ function usage_error ()
     for ((i=0; i<$#; i++)) ; do printf "%s" "${MESSAGE[i]}"; done |fold -bs
     printf "\n\n%s\n" "***"
     rm -rf "$REAL_WORK_DIR" "$WORK_DIR"
-    exit 1
+    $FROM_GUI && exit_from_gui || exit 1
 }
 function titlesafe_error()
 {
@@ -267,7 +268,7 @@ function runtime_error()
     echo "See the tovid website ($TOVID_HOME_PAGE) for what to do next."
     echo "Sorry for the inconvenience!"
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    exit 1
+    $FROM_GUI && exit_from_gui || exit 1
 }
 
 function vid_length()
@@ -298,6 +299,7 @@ function cleanup()
     fi
     echo "Removing the symlink in /tmp . . . "
     rm -fv "$WORK_DIR"
+    $FROM_GUI && exit_from_gui
 }
 
 function running_total ()
@@ -427,7 +429,7 @@ function confirm_dep()
     if ! $(which $1 > /dev/null 2>&1); then
         yecho "The program $1 is not installed, please install it to use todisc"
         yecho "The $1 homepage is $2"
-        exit 1
+        $FROM_GUI && exit_from_gui || exit 1
     fi
 }
 
@@ -463,12 +465,26 @@ function check_stall()
         ((newlines == lines)) && sleep 30 && newlines=$(get_line_count)
         # If still no new lines, kill transcode
         if ((newlines == lines)); then
-            echo "transcode appears to be stalled"
-            echo "We are going to send transcode a HUP and hope for the best"
+            echo; echo
+            echo "*** transcode appears to be stalled ***"
+            echo "*** We are going to send transcode a HUP and hope for the best ***"
             sleep 5
             $(kill -0 $TCODE_PID > /dev/null 2>&1) && kill -HUP $TCODE_PID
+            echo
         fi
     done
+}
+function exit_from_gui()
+{
+    yecho
+    echo "Please press the 'Enter' key to close this terminal: "
+    read input
+    echo
+#    if [ ! -z "$input" -a "$input" = "exit" ]; then
+#        yecho "exiting."
+#        yecho
+	exit
+#    fi
 }
 ##############################################################################
 #                          	End of functions                                 #
@@ -804,6 +820,9 @@ while test $# -gt 0; do
             shift
             TOVID_OPTS="$1"
             ;;
+        "-from-gui" )
+            FROM_GUI=:
+            ;;
     esac
     $DO_SHIFT && shift
 done
@@ -852,7 +871,7 @@ if [ "$BUTTON_STYLE" = "text" ]; then
         if grep "  " <<< "${TITLES[i]}" >/dev/null; then
             echo "Sorry, a maximum of one consecutive space is allowed in titles for text buttons"
             echo "\"${TITLES[i]}\" has more than one consecutive space in it"
-            exit 1
+            $FROM_GUI && exit_from_gui || exit 1
         fi
     done
 fi
@@ -869,13 +888,13 @@ fi
 if test -d "$OUT_DIR"; then
     echo "Output directory \"$OUT_DIR\" already exists."
     echo "Please use a different -out name, or (re)move the existing directory."
-    exit 1
+    $FROM_GUI && exit_from_gui || exit 1
 fi
 
 # Do text-only menu if requested
 if $TEXTMENU; then
     make_textmenu
-    exit
+    $FROM_GUI && exit_from_gui || exit
 fi
 
 # double check sox is installed, as the consequence of not having it is ugly
@@ -1626,7 +1645,7 @@ if [ -n "$BG_VIDEO" ]; then
     else
         cleanlog 3
         runtime_error "Problem creating images from the video."
-        exit 1
+        $FROM_GUI && exit_from_gui || exit 1
     fi
 fi
 if $SHOWCASE && ! $NO_SC_THUMB; then
@@ -1663,7 +1682,7 @@ if $SHOWCASE && ! $NO_SC_THUMB; then
             else
                 cleanlog 3
                 runtime_error "Problem creating images from the video."
-                exit 1
+                $FROM_GUI && exit_from_gui || exit 1
             fi
             echo "Running convert "$WORK_DIR/showcase_img.png" -mattecolor gray"
             echo "$SC_FRAME "$WORK_DIR/showcase_img.jpg"" |format_output
@@ -1728,6 +1747,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
     VOUT="png:z=7"; FRAMES=30
     FRAME_SIZE=$THUMB_SIZE
     D=2
+    (
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
         MPLAYER_SEEK_VAL=${SEEK_VAL[i]}
         get_framed_pics "${IN_FILES[i]}"  >> "$LOG_FILE" 2>&1
@@ -1740,9 +1760,11 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
         else
             cleanlog 3
             runtime_error "Problem creating images from the video."
-            exit 1
+            $FROM_GUI && exit_from_gui || exit 1
         fi
     fi
+    )
+    [[ "$SC_FRAMESTYLE" = "none" && ! $NOASK ]] && check_stall &
     unset CMD NAVSEEK_CMD rectangle
 done
 # overlay menu title and thumb titles on template
@@ -2139,7 +2161,7 @@ if $SHOWCASE; then
             ${sc_cmd[@]} $SC_IMG_CMD \
             -mosaic "$WORK_DIR/preview.jpg"
         fi
-        unset sc_cmd PICS IM_CMD05 IM_CMD04 IM_CMD03 IM_CMD4
+        unset sc_cmd IM_CMD05 IM_CMD04 IM_CMD03 IM_CMD4
     fi
 else
 
@@ -2360,7 +2382,7 @@ if $ANI_SUB_MENU; then
             echo "Sorry, you can not use ${CHAPTERS[i]} chapters for ${IN_FILES[i]}"
             echo "The maximum number for this video (using a -seek of ${SEEK_VAL[i]}):"
             echo "$(awk_math $((V - S)) by 340) chapters" 
-            exit 1
+            $FROM_GUI && exit_from_gui || exit 1
         fi 
         unset V F
     done
@@ -2424,6 +2446,7 @@ else
                 run_transcode &
                 sleep 1 # short sleep to allow 1st jpg to appear
                 TRANSCODE_PID=$(</tmp/tcode.pid)
+                check_stall &
                 if [ -n "$TRANSCODE_PID" ]; then
                     while ps -p $TRANSCODE_PID >/dev/null; do
                         sleep .5 # spinner interval
@@ -2436,7 +2459,7 @@ else
                 else
                     cleanlog 1
                     runtime_error "Problem creating images from the video."
-                    exit 1
+                    $FROM_GUI && exit_from_gui || exit 1
                 fi
                 unset TRANSCODE_CMD2 run_transcode
     done
@@ -2743,7 +2766,7 @@ if $SUB_MENU; then
             else
                 cleanlog 1
                 runtime_error "Problem creating images from the video."
-                exit 1
+                $FROM_GUI && exit_from_gui || exit 1
             fi
             ) 
             unset TCODE_CMD cmd run_transcode
@@ -3044,7 +3067,7 @@ if [ -n "$SHOWCASE_VIDEO" ] && ! $NO_SC_THUMB; then
         else
             cleanlog 3
             runtime_error "Problem creating images from the video."
-            exit 1
+            $FROM_GUI && exit_from_gui || exit 1
         fi
     fi
     for ((i=0; i<$FRAMES; i++)); do
@@ -3614,8 +3637,7 @@ rm -fv "$WORK_DIR"
 SCRIPT_END_TIME=`date +%s`
 SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
 HHMMSS=`format_time $SCRIPT_TOT_TIME`
-
-cleanup
+! $FROM_GUI && cleanup
 echo
 echo $SEPARATOR
 echo "todisc took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
@@ -3632,4 +3654,4 @@ elif [ "$TARGET" = svcd ]; then
 fi
 echo
 echo "Thanks for using todisc."
-
+$FROM_GUI && cleanup
