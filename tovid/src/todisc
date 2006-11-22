@@ -445,6 +445,34 @@ function get_args()
     fi
 }
 
+function get_line_count()
+{
+awk 'END{print NR}' "$LOG_FILE"
+}
+ 
+function check_stall()
+{
+    echo "Running check_stall"
+    newlines=$(get_line_count)
+    echo "newlines are $newlines"
+    echo "TCODE_PID is $TCODE_PID"
+    TCODE_PID=$(</tmp/tcode.pid)
+    while ps -p $(</tmp/tcode.pid) >/dev/null; do
+        # Check for transcode output every 5 seconds
+        sleep 10
+        lines=$newlines
+        newlines=$(get_line_count)
+        # If no new output, sleep 30s and check again
+        ((newlines == lines)) && sleep 30 && newlines=$(get_line_count)
+        # If still no new lines, kill transcode
+        if ((newlines == lines)); then
+            echo "transcode appears to be stalled"
+            echo "We are going to send transcode a HUP and hope for the best"
+            sleep 5
+            $(kill -0 $TCODE_PID > /dev/null 2>&1) && kill -HUP $TCODE_PID
+        fi
+    done
+}
 ##############################################################################
 #                          	End of functions                                 #
 ##############################################################################
@@ -1021,12 +1049,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
     SEEK_FRAMES[i]=$(awk_math ${SEEK_VAL[i]} times $FRAME_RATE)
 done
 # var for dcdemux and the navigation log
-if [[ $TV_STANDARD = ntsc ]]; then
-    TCDEMUX_MODE=2
-elif [[ $TV_STANDARD = pal ]]; then
-    TCDEMUX_MODE=1
-fi
-TCDEMUX_MODE="-M $TCDEMUX_MODE"
+TCDEMUX_MODE="-M 0"
 echo 
 echo "Verifying that input files are video files"
 for ((i=0; i<=NUM_FILES; i++)); do
@@ -1671,7 +1694,7 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
     # use a nav_seek file if long seek
     if [ ${SEEK_VAL[i]} -gt 450 ]; then
         NAVSEEK[i]="--nav_seek "$WORK_DIR/nav${i}_log""
-        NAVSEEK_CMD=(nice tcdemux -d 24 $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
+        NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
         run_navseek()
         {   
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
@@ -2251,7 +2274,7 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
         STATS_FRAMES="-frames 1"
         if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
             NAVSEEK[i]="--nav_seek "$WORK_DIR/nav${i}_log""
-            NAVSEEK_CMD=(nice tcdemux -d 24 $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
+            NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
             run_navseek()
             {
                 yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
@@ -2683,7 +2706,7 @@ if $SUB_MENU; then
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
         # create a nav_seek log with tcdemux if not already present
-        NAVSEEK_CMD=(nice tcdemux -d 24 $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
+        NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
         if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
             yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
             "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "$WORK_DIR/nav${i}_log"
@@ -2709,6 +2732,8 @@ if $SUB_MENU; then
             run_transcode &
             sleep .5 # short sleep to allow 1st jpg to appear
             TCODE_PID=$(</tmp/tcode.pid)
+            check_stall &
+            (
             if [ -n "$TCODE_PID" ]; then
                 while ps -p $TCODE_PID >/dev/null; do
                     sleep $SLEEP # spinner interval
@@ -2723,6 +2748,7 @@ if $SUB_MENU; then
                 runtime_error "Problem creating images from the video."
                 exit 1
             fi
+            ) 
             unset TCODE_CMD cmd run_transcode
             if ! $ANI_SUB_MENU ; then
                 echo
