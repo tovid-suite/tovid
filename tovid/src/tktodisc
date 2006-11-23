@@ -35,6 +35,8 @@ from Tkinter import *
 from tkFileDialog import *
 from tkMessageBox import askyesno
 
+DEFAULT_TERMINAL='xterm -si -sb -e'
+
 # ============================
 #
 # Frames for grouping controls
@@ -108,7 +110,6 @@ class TvsysFrame(Frame):
         
     def getOptions(self):
         return " -%s" % str(self.varTvsys.get()).lower()
-
 
 
 class FileListFrame(Frame):
@@ -222,6 +223,34 @@ class FileListFrame(Frame):
              ("' '".join(files), "' '".join(titles))
 
 
+class BrowseButton(Button):
+    """A "Browse" button that opens a file browser for loading/saving a file."""
+    def __init__(self, master=None, type='load', textvariable=None,
+                 title="Select a file"):
+        """Create a file-browser button.
+        
+            master:       Widget to use as master
+            type:         What kind of file dialog to use ('load' or 'save')
+            title:        Text to display in the titlebar of the file dialog
+            textvariable: A StringVar to store selected filename(s)
+        """ 
+        Button.__init__(self, master, text="Browse...", command=self.onClick)
+        self.type = type
+        self.title = title
+        self.textvariable = textvariable
+        
+    def onClick(self, event=None):
+        """Event handler when button is pressed"""
+        if self.type == 'load':
+            filename = askopenfilename(parent=self, title=self.title)
+        elif self.type == 'save':
+            filename = asksaveasfilename(parent=self, title=self.title)
+        else:
+            raise ValueError, "Browse button type must be 'load' or 'save'"
+        if filename and self.textvariable:
+            self.textvariable.set(filename)
+
+
 class BackgroundsFrame(Frame):
     """Widgets for setting background image, video and audio"""
     def __init__(self, master=None):
@@ -242,8 +271,8 @@ class BackgroundsFrame(Frame):
         self.entImage = Entry(self, width=40, background='white',
                               textvariable=self.varImage)
         self.entImage.grid(row=1, column=1)
-        self.btnImage = Button(self, text="Browse...",
-                               command=self.browseImage)
+        self.btnImage = BrowseButton(self, 'load', self.varImage,
+                                     "Select an image file")
         self.btnImage.grid(row=1, column=2)
         # BG video
         self.lblVideo = Label(self, text="Video:")
@@ -251,8 +280,8 @@ class BackgroundsFrame(Frame):
         self.entVideo = Entry(self, width=40, background='white',
                               textvariable=self.varVideo)
         self.entVideo.grid(row=2, column=1, sticky=E+W)
-        self.btnVideo = Button(self, text="Browse...",
-                               command=self.browseVideo)
+        self.btnVideo = BrowseButton(self, 'load', self.varVideo,
+                                     "Select a video file")
         self.btnVideo.grid(row=2, column=2)
         # BG audio
         self.lblAudio = Label(self, text="Audio:")
@@ -260,27 +289,9 @@ class BackgroundsFrame(Frame):
         self.entAudio = Entry(self, width=40, background='white',
                               textvariable=self.varAudio)
         self.entAudio.grid(row=3, column=1)
-        self.btnAudio = Button(self, text="Browse...",
-                               command=self.browseAudio)
+        self.btnAudio = BrowseButton(self, 'load', self.varAudio,
+                                     "Select an audio file")
         self.btnAudio.grid(row=3, column=2)
-
-    def browseImage(self):
-        filename = askopenfilename(parent=self, title="Select image file")
-        if filename:
-            print "Background image:", filename
-            self.varImage.set(filename)
-
-    def browseVideo(self):
-        filename = askopenfilename(parent=self, title="Select video file")
-        if filename:
-            print "Background video:", filename
-            self.varVideo.set(filename)
-
-    def browseAudio(self):
-        filename = askopenfilename(parent=self, title="Select audio file")
-        if filename:
-            print "Background audio:", filename
-            self.varAudio.set(filename)
     
     def getOptions(self):
         """Return todisc options for this frame."""
@@ -309,15 +320,9 @@ class OutfileFrame(Frame):
         self.entOutfile = Entry(self, width=40, background='white',
                                 textvariable=self.varOutfile)
         self.entOutfile.pack(side=LEFT)
-        self.btnBrowse = Button(self, text="Browse...", command=self.onBrowse)
-        self.btnBrowse.pack(side=LEFT)
-        
-    def onBrowse(self):
-        """Set the output filename from a filename browser."""
-        filename = asksaveasfilename(parent=self, title="Select output file")
-        if filename:
-            print "Output file: %s" % filename
-            self.varOutfile.set(filename)
+        self.btnOutfile = BrowseButton(self, 'save', self.varOutfile,
+                                       "Select an output name")
+        self.btnOutfile.pack(side=LEFT)
 
     def getOptions(self):
         """Return todisc options for this frame."""
@@ -349,6 +354,7 @@ class TitleFrame(Frame):
         title = self.varTitle.get()
         if title:
             return " -menu-title '%s'" % title
+
 
 class MiscOptionsFrame(Frame):
     """A frame containing miscellaneous options"""
@@ -394,7 +400,7 @@ class TerminalFrame(Frame):
     def __init__(self, master=None):
         Frame.__init__(self, master)
         self.varTerminal = StringVar()  # Terminal program with arguments
-        self.varTerminal.set('xterm -e')
+        self.varTerminal.set(DEFAULT_TERMINAL)
         self.grid()
         self.drawWidgets()
     
@@ -479,7 +485,11 @@ class Application(Frame):
         print cmd
         # Verify with user
         if askyesno(message="Run todisc now?"):
-            os.system('%s %s' % (term, cmd))
+            status = os.system('%s %s' % (term, cmd))
+            print "todisc exit status: %s" % status
+            # 0 if 'no' to preview
+            
+
 
 # ============================
 #
