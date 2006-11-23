@@ -130,7 +130,7 @@ class FileListFrame(Frame):
         self.scrollbar = Scrollbar(self, orient=VERTICAL)
         self.scrollbar.grid(row=1, column=3, sticky=N+S)
         self.scrollbar.config(command=self.scroll)
-        # List box and add/remove buttons
+        # File list box and add/remove buttons
         self.lblFiles = Label(self, text="Files")
         self.lblFiles.grid(row=0, column=0, columnspan=2, sticky=W)
         self.lstFiles = Listbox(self, width=30, background='white',
@@ -144,7 +144,7 @@ class FileListFrame(Frame):
         self.btnRemove = Button(self, text="Remove",
                                    command=self.removeFiles)
         self.btnRemove.grid(row=2, column=1, sticky=E+W)
-        # Title list box
+        # Title list box and editing field
         self.lblTitles = Label(self, text="Titles")
         self.lblTitles.grid(row=0, column=2, sticky=W)
         self.lstTitles = Listbox(self, width=30, background='white',
@@ -159,6 +159,7 @@ class FileListFrame(Frame):
         self.entTitle.grid(row=2, column=2)
 
     def scroll(self, *args):
+        """Event handler when scrollbar is moved."""
         apply(self.lstFiles.yview, args)
         apply(self.lstTitles.yview, args)
         
@@ -168,7 +169,7 @@ class FileListFrame(Frame):
         self.curtitle.set(self.lstTitles.get(self.curindex))
 
     def dragListitem(self, event):
-        """Event handler when a filename or title is dragged."""
+        """Event handler to move a file/title to another position in the list"""
         loc = self.lstFiles.nearest(event.y)
         if loc != self.curindex:
             file = self.lstFiles.get(self.curindex)
@@ -463,6 +464,7 @@ class Application(Frame):
         cmd += self.fraBackgrounds.getOptions()
         cmd += self.fraMisc.getOptions()
         cmd += self.fraOutfile.getOptions()
+        cmd += " -from-gui"
         return cmd
 
     def showCommand(self):
@@ -477,7 +479,7 @@ class Application(Frame):
         print cmd
         # Verify with user
         if askyesno(message="Run todisc now?"):
-            os.system("%s %s" % (term, cmd))
+            os.system('%s %s' % (term, cmd))
 
 # ============================
 #
