@@ -134,10 +134,10 @@ class FileListFrame(Frame):
         self.lblFiles = Label(self, text="Files")
         self.lblFiles.grid(row=0, column=0, columnspan=2, sticky=W)
         self.lstFiles = Listbox(self, width=30, background='white',
-                                selectmode=EXTENDED,
                                 listvariable=self.varFiles,
                                 yscrollcommand=self.scrollbar.set)
-        self.lstFiles.bind('<ButtonRelease-1>', self.selectListitem)
+        self.lstFiles.bind('<Button-1>', self.selectListitem)
+        self.lstFiles.bind('<B1-Motion>', self.dragListitem)
         self.lstFiles.grid(row=1, column=0, columnspan=2)
         self.btnAdd = Button(self, text="Add...", command=self.addFiles)
         self.btnAdd.grid(row=2, column=0, sticky=E+W)
@@ -150,7 +150,8 @@ class FileListFrame(Frame):
         self.lstTitles = Listbox(self, width=30, background='white',
                                  listvariable=self.varTitles,
                                  yscrollcommand=self.scrollbar.set)
-        self.lstTitles.bind('<ButtonRelease-1>', self.selectListitem)
+        self.lstTitles.bind('<Button-1>', self.selectListitem)
+        self.lstTitles.bind('<B1-Motion>', self.dragListitem)
         self.lstTitles.grid(row=1, column=2)
         self.entTitle = Entry(self, width=30, background='white',
                               textvariable=self.curtitle)
@@ -161,15 +162,24 @@ class FileListFrame(Frame):
         apply(self.lstFiles.yview, args)
         apply(self.lstTitles.yview, args)
         
-    def selectListitem(self, event=None):
+    def selectListitem(self, event):
         """Event handler when a filename or title in the list is selected."""
-        selected = self.lstFiles.curselection() \
-                 or self.lstTitles.curselection()
-        if len(selected) > 0:
-            self.curindex = selected[0]
-            self.curtitle.set(self.lstTitles.get(self.curindex))
+        self.curindex = self.lstFiles.nearest(event.y)
+        self.curtitle.set(self.lstTitles.get(self.curindex))
 
-    def setTitle(self, event=None):
+    def dragListitem(self, event):
+        """Event handler when a filename or title is dragged."""
+        loc = self.lstFiles.nearest(event.y)
+        if loc != self.curindex:
+            file = self.lstFiles.get(self.curindex)
+            title = self.lstTitles.get(self.curindex)
+            self.lstFiles.delete(self.curindex)
+            self.lstTitles.delete(self.curindex)
+            self.lstFiles.insert(loc, file)
+            self.lstTitles.insert(loc, title)
+            self.curindex = loc
+
+    def setTitle(self, event):
         """Event handler when Enter is pressed after editing a title."""
         newtitle = self.curtitle.get()
         print "Setting title to '%s'" % newtitle
@@ -377,6 +387,23 @@ class MiscOptionsFrame(Frame):
         return opts
 
 
+class TerminalFrame(Frame):
+    """A frame with controls for setting and configuring the preferred terminal
+    program."""
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.varTerminal = StringVar()  # Terminal program with arguments
+        self.varTerminal.set('xterm -e')
+        self.grid()
+        self.drawWidgets()
+    
+    def drawWidgets(self):
+        self.lblTerminal = Label(self, text="Terminal program:")
+        self.lblTerminal.pack(side=LEFT)
+        self.entTerminal = Entry(self, background='white',
+                                 textvariable=self.varTerminal)
+        self.entTerminal.pack(side=LEFT)
+
 # ============================
 #
 # Main application window
@@ -412,6 +439,9 @@ class Application(Frame):
         self.fraOutfile = OutfileFrame(self)
         self.fraOutfile.grid(sticky=W)
 
+        self.fraTerminal = TerminalFrame(self)
+        self.fraTerminal.grid(sticky=W)
+
         fraButtons = Frame(self)
         self.btnCommand = Button(fraButtons, text="Show todisc command",
                                  command=self.showCommand)
@@ -442,11 +472,12 @@ class Application(Frame):
     def runCommand(self):
         """Run the todisc command."""
         cmd = self.getCommand()
+        term = self.fraTerminal.varTerminal.get()
         print "Running command:"
         print cmd
         # Verify with user
         if askyesno(message="Run todisc now?"):
-            os.system(cmd)
+            os.system("%s %s" % (term, cmd))
 
 # ============================
 #
