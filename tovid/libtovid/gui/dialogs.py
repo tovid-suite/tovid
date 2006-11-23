@@ -24,7 +24,8 @@ class FontChooserDialog(wx.Dialog):
 
         # Construct a list of fonts. Always list "Default" first.
         strFontChoices = []
-        strFontChoices.extend(self.curConfig.strAvailFonts)
+        strFontChoices.extend(self.curConfig.wx_IM_FontMap.keys())
+        strFontChoices.sort()
         strFontChoices.insert(0, "Default")
 
         # List of fonts, label and sample of selected font
@@ -61,7 +62,7 @@ class FontChooserDialog(wx.Dialog):
 
         # If there are very few (<6) fonts available,
         # show a message telling how to get more
-        if len(self.curConfig.strAvailFonts) < 6:
+        if len(self.curConfig.wx_IM_FontMap.keys()) < 6:
             dlgGetMoreFonts = wx.MessageDialog(self,
                 "You have less than six fonts to choose from. See the\n"
                 "tovid documentation (http://tovid.org/)\n"

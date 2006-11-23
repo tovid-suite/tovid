@@ -193,7 +193,9 @@ class MenuOptions:
 
         # Append font
         if self.font.GetFaceName() != "":
-            strCommand += "-font \"%s\" " % self.font.GetFaceName()
+            wx_FontName = self.font.GetFaceName()
+            IM_FontName = curConfig.wx_IM_FontMap[wx_FontName] 
+            strCommand += "-font \"%s\" " % IM_FontName
 
         # Append video/still titles
         for title in range(len(self.titles)):
