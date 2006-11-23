@@ -1,3 +1,0 @@
-*.desktop usr/share/applications
-BVC usr/bin
-data/ usr/share/BVC
