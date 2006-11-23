@@ -31,15 +31,10 @@ class TovidConfig:
     statusBar = None
 
     def __init__(self):
-        self.__dict__ = self.__shared_state
-    
-        # Initialize class data if needed
-#        if self.isInitialized == False:
-#            self.ConfigInit()
-    
-#    def ConfigInit(self):
         """Initialize "static" class data.
         The real initialization function, only called once."""
+   
+        self.__dict__ = self.__shared_state
         self.isInitialized = True
         self.ConfigAvailFonts()
         #self.InitLocales()
