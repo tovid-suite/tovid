@@ -114,7 +114,7 @@ SM_IMG_FMT=jpg  # submenu image format
 KEEP_FILES=false
 THUMB_SHAPE=""
 SEEK="-ss 1"
-SEEK_VAL=1
+SEEK_VAL=2
 FADE=1
 CHAPTERS=( 6 )
 TOVID_OPTS=""
@@ -455,21 +455,20 @@ awk 'END{print NR}' "$LOG_FILE"
 function check_stall()
 {
     newlines=$(get_line_count)
-    TCODE_PID=$(</tmp/tcode.pid)
     while ps -p $(</tmp/tcode.pid) >/dev/null; do
-        # Check for transcode output every 5 seconds
+        # Check for transcode output every 10 seconds
         sleep 10
         lines=$newlines
         newlines=$(get_line_count)
-        # If no new output, sleep 30s and check again
-        ((newlines == lines)) && sleep 30 && newlines=$(get_line_count)
-        # If still no new lines, kill transcode
+        # If no new output, sleep 20s and check again
+        ((newlines == lines)) && sleep 20 && newlines=$(get_line_count)
+        # If still no new lines, send a HUP signal to transcode
         if ((newlines == lines)); then
             echo; echo
             echo "*** transcode appears to be stalled ***"
             echo "*** We are going to send transcode a HUP and hope for the best ***"
             sleep 5
-            $(kill -0 $TCODE_PID > /dev/null 2>&1) && kill -HUP $TCODE_PID
+            $(kill -0 $(</tmp/tcode.pid) > /dev/null 2>&1) && kill -HUP $(</tmp/tcode.pid)
             echo
         fi
     done
@@ -1065,7 +1064,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
     SEEK_FRAMES[i]=$(awk_math ${SEEK_VAL[i]} times $FRAME_RATE)
 done
 # var for dcdemux and the navigation log
-TCDEMUX_MODE="-M 0"
+#TCDEMUX_MODE="-M 0"
 echo 
 echo "Verifying that input files are video files"
 for ((i=0; i<=NUM_FILES; i++)); do
@@ -2193,7 +2192,8 @@ convert -gravity SouthEast -geometry +55+55 "$WORK_DIR/preview.jpg" \
 "$WORK_DIR/PLAYALL.png" -composite "$WORK_DIR/preview.jpg"
 fi
 if ! $NOASK; then
-    convert -resize $PREVIEW_SIZE! "$WORK_DIR/preview.jpg" miff:- | display -
+    convert -resize $PREVIEW_SIZE! "$WORK_DIR/preview.jpg" miff:- |
+    display -title "todisc preview - close window to continue" -
     confirm_preview
 fi
 # copy the template back if using $MENU_FADE
