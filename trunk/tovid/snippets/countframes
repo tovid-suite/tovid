@@ -1,5 +1,0 @@
-#!/bin/bash
-
-# Script to count the number of frames in a video
-
-mplayer "$1" -nosound -benchmark -noframedrop -noautosub -vo null

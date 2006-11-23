@@ -1,5 +1,0 @@
-#!/bin/bash
-while [ $# -ge 1 ]; do
-  sox "$1" -t wav -r 44100 -w -c 2 "$1.wav"
-  shift
-done
