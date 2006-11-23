@@ -17,7 +17,7 @@ class TovidConfig:
     # Has Config been initialized yet?
     isInitialized = False
     # Will contain fonts available in both WX and IM
-    strAvailFonts = []
+    wx_IM_FontMap = {}
     # Target output directory for encoded files and finished disc
     strOutputDirectory = "/tmp"
     # XML filename used for makexml output
@@ -34,10 +34,10 @@ class TovidConfig:
         self.__dict__ = self.__shared_state
     
         # Initialize class data if needed
-        if self.isInitialized == False:
-            self.ConfigInit()
+#        if self.isInitialized == False:
+#            self.ConfigInit()
     
-    def ConfigInit(self):
+#    def ConfigInit(self):
         """Initialize "static" class data.
         The real initialization function, only called once."""
         self.isInitialized = True
@@ -47,31 +47,6 @@ class TovidConfig:
     def ConfigAvailFonts(self):
         """Determine fonts that are available in both wx.Python and
         ImageMagick."""
-        # Find out what fonts are available in ImageMagick
-        #strIMFonts = []
-        #fIMOutput = os.popen("convert -list type | grep -v \"^$\|^Name\|^Path:\|^--\" | sort", 'r')
-        # Read ImageMagick's output and append to strIMFonts
-        #curLine = fIMOutput.readline().strip('\n ')
-        #while curLine != "":
-        #    strIMFonts.append(curLine)
-        #    curLine=fIMOutput.readline().strip('\n ')
-    
-        #fIMOutput.close()
-    
-        # Get fonts available to wx.Python
-        #enuWXFonts = wx.FontEnumerator()
-        #enuWXFonts.EnumerateFacenames()
-        #strWXFonts = enuWXFonts.GetFacenames()
-        #strWXFonts.sort()
-    
-        # For each font in wx.Python, see if it's also available in
-        # ImageMagick. If so, append it to a new list
-        #for wxfont in range(len(strWXFonts)):
-        #    for im in range(len(strIMFonts)):
-        #        if strIMFonts[im].find(strWXFonts[wxfont]) != -1:
-        #            self.strAvailFonts.append(strWXFonts[wxfont])
-        #            break
-   
         # Find the shared fonts between ImageMagick and wx.Python
         ###########################################################
         # IM and wx store their available fonts differently, so we need a 
@@ -105,7 +80,8 @@ class TovidConfig:
         #     we don't want. We only want the font_name, which is the 
         #     first word on each line.
         IM_lines = os.popen("convert -list type").readlines()
-        font_name_re = re.compile("^[\w-]+")    # match [a-zA-Z_-] at least once
+        IM_lines = [unicode(line) for line in IM_lines]
+        font_name_re = re.compile("^[\w-]+")   # match [a-zA-Z_-] at least once
         IM_fonts = [font_name_re.search(line).group() 
             for line in IM_lines if hasattr(font_name_re.search(line), 'group')]
 
@@ -138,7 +114,6 @@ class TovidConfig:
         #    intersection.
         shared_fonts = set(WX_dict.keys()).intersection(set(IM_dict.keys()))
         shared_fonts = list(shared_fonts)
-        shared_fonts.sort()
 
         # 5. Make a dictionary that maps wx fonts to IM fonts. Using the common
         #    keys, build a dictionary that maps original wx font names to 
@@ -148,9 +123,9 @@ class TovidConfig:
         WX_IM_dict = dict( [(WX_dict[font], IM_dict[font]) 
             for font in shared_fonts] )
 
-        # hack for hope!
-        self.strAvailFonts = WX_IM_dict.values()
-        self.strAvailFonts.sort()
+        # Add IM's 'default' font, and return the font map
+        WX_IM_dict['Default'] = 'default'
+        self.wx_IM_FontMap = WX_IM_dict
 
     def UseLanguage(self, lang):
         self.trans[ lang ].install()
