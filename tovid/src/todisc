@@ -459,8 +459,9 @@ awk 'END{print NR}' "$LOG_FILE"
  
 function check_stall()
 {
+    PIDOF_TRANSCODE=$(</tmp/tcode.pid)
     newlines=$(stat_logfile)
-    while ps -p $(</tmp/tcode.pid) >/dev/null; do
+    while ps -p $PIDOF_TRANSCODE >/dev/null; do
         # Check for transcode output every 10 seconds
         sleep 10
         age=$newage
@@ -468,12 +469,12 @@ function check_stall()
         # If no new output, sleep 20s and check again
         [[ $newage = $age ]] && sleep 20 && newage=$(stat_logfile)
         # If still no new lines, send a HUP signal to transcode
-        if [[ $newage == $age ]]; then
-            echo; echo
+        if [[ $newage == $age ]] && kill -0 $PIDOF_TRANSCODE > /dev/null 2>&1; then
+            echo
             echo "*** transcode appears to be stalled ***"
             echo "*** We are going to send transcode a HUP and hope for the best ***"
             sleep 5
-            $(kill -0 $(</tmp/tcode.pid) > /dev/null 2>&1) && kill -HUP $(</tmp/tcode.pid)
+            $(kill -0 $PIDOF_TRANSCODE > /dev/null 2>&1) && kill -HUP $PIDOF_TRANSCODE
             echo
         fi
     done
@@ -2438,7 +2439,7 @@ if [ "$SC_FRAMESTYLE" = "glass" ]; then
 else
     for ((i=0; i<=NUM_FILES; i++)) ; do
         echo "Working on "${IN_FILES[i]}""
-        TRANSCODE_CMD2=(nice transcode --print_status 340 \
+        TRANSCODE_CMD2=(nice transcode --print_status 10 \
         --write_pid /tmp/tcode.pid -q 1 -i "${IN_FILES[i]}" \
         -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + $FRAMES)) ${NAVSEEK[i]} \
         -o "$WORK_DIR/pics/$i/" -f $FRAME_RATE  -Z $THUMB_SIZE $EXPORT)
@@ -2741,12 +2742,12 @@ if $SUB_MENU; then
         yecho "Creating $TOTAL_JPEGS chapter images for "${IN_FILES[i]}""
         yecho
         for t in "${cmd[@]}"; do
-            echo "Running nice transcode --print_status 340 -q 1 -i "${IN_FILES[i]}" \
+            echo "Running nice transcode --print_status 10 -q 1 -i "${IN_FILES[i]}" \
             ${NAVSEEK[i]} -o $WORK_DIR/submenu/ \
             -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null" |
             sed 's/    */ /g'|sed -e "s/^ *//"|tee -a "$LOG_FILE"
 
-            TCODE_CMD=(nice transcode --print_status 340 --write_pid /tmp/tcode.pid \
+            TCODE_CMD=(nice transcode --print_status 10 --write_pid /tmp/tcode.pid \
             -q 1 -i "${IN_FILES[i]}"   ${NAVSEEK[i]} -o "${PICS_OUT[@]}" \
             -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null)
             function run_transcode()
@@ -2796,12 +2797,12 @@ if $SUB_MENU; then
                 # move 340 images to each subdir:  $WORK_DIR/animenu/{0,1,2,3,etc}
                 echo "moving images into subdirectories"
                 for ((a=0; a<${CHAPTERS[i]}; a++)); do
-                    pics=( $(find $WORK_DIR/animenu/ -maxdepth 1 -name 00\*.$SM_IMG_FMT |
-                    sort|head -n 340) )
+                    pics=( $(find $WORK_DIR/animenu/ -maxdepth 1 -name 00\*.$SM_IMG_FMT | sort|head -n 340) )
                     echo "${pics[@]}" >> "$WORK_DIR/pics.log"
                     for f in ${pics[@]}; do
-                        mv $f $WORK_DIR/animenu/$a
+                        mv "$f" $WORK_DIR/animenu/$a
                     done
+                    unset pics
                 done
                 for ((a=0; a<${CHAPTERS[i]}; a++)); do
                     find $WORK_DIR/animenu/$a/ -name 00\*.$SM_IMG_FMT |
