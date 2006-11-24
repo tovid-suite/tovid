@@ -447,6 +447,11 @@ function get_args()
     fi
 }
 
+function stat_logfile()
+{
+     awk '/Modify/ {print $3}' <<< "$(stat "$LOG_FILE")"
+}
+
 function get_line_count()
 {
 awk 'END{print NR}' "$LOG_FILE"
@@ -454,16 +459,16 @@ awk 'END{print NR}' "$LOG_FILE"
  
 function check_stall()
 {
-    newlines=$(get_line_count)
+    newlines=$(stat_logfile)
     while ps -p $(</tmp/tcode.pid) >/dev/null; do
         # Check for transcode output every 10 seconds
         sleep 10
-        lines=$newlines
-        newlines=$(get_line_count)
+        age=$newage
+        newage=$(stat_logfile)
         # If no new output, sleep 20s and check again
-        ((newlines == lines)) && sleep 20 && newlines=$(get_line_count)
+        [[ $newage = $age ]] && sleep 20 && newage=$(stat_logfile)
         # If still no new lines, send a HUP signal to transcode
-        if ((newlines == lines)); then
+        if [[ $newage == $age ]]; then
             echo; echo
             echo "*** transcode appears to be stalled ***"
             echo "*** We are going to send transcode a HUP and hope for the best ***"
@@ -1754,10 +1759,10 @@ for ((i=0; i<=NUM_FILES; i++)) ; do
         $WORK_DIR/pics/$i/$(printf "%06d%s"  0 .$IMG_FMT)
         rm -f "$WORK_DIR"/00000*.png
     elif [ "$SC_FRAMESTYLE" = "none" ]; then
-        if "${CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
-            cleanlog 3
+        if "${CMD[@]}" >> "$LOG_FILE" 2>&1;then
+            : #cleanlog 3
         else
-            cleanlog 3
+            #cleanlog 3
             runtime_error "Problem creating images from the video."
             $FROM_GUI && exit_from_gui || exit 1
         fi
@@ -2440,7 +2445,7 @@ else
 
                 function run_transcode()
                 {
-                    "${TRANSCODE_CMD2[@]}" >> "$LOG_FILE.tmp"  2>&1
+                    "${TRANSCODE_CMD2[@]}" >> "$LOG_FILE"  2>&1
                     sleep 1
                 }
                 run_transcode &
@@ -2455,9 +2460,9 @@ else
                     done
                     echo
                     echo "Created $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*.$IMG_FMT|wc -l) images of $FRAMES"
-                    cleanlog 1
+                    #cleanlog 1
                 else
-                    cleanlog 1
+                    #cleanlog 1
                     runtime_error "Problem creating images from the video."
                     $FROM_GUI && exit_from_gui || exit 1
                 fi
@@ -2746,14 +2751,13 @@ if $SUB_MENU; then
             -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null)
             function run_transcode()
             {
-                "${TCODE_CMD[@]}" >> "$LOG_FILE.tmp"  2>&1
+                "${TCODE_CMD[@]}" >> "$LOG_FILE"  2>&1
                 sleep 1
             }
             run_transcode &
             sleep .5 # short sleep to allow 1st jpg to appear
             TCODE_PID=$(</tmp/tcode.pid)
             check_stall &
-            (
             if [ -n "$TCODE_PID" ]; then
                 while ps -p $TCODE_PID >/dev/null; do
                     sleep $SLEEP # spinner interval
@@ -2762,13 +2766,12 @@ if $SUB_MENU; then
                 done
                 echo
                 echo "Created $(find "$JPEG_DIR" -maxdepth 1 -name \*.jpg|wc -l) JPEGS of $TOTAL_JPEGS"
-                cleanlog 1
+                #cleanlog 1
             else
-                cleanlog 1
+                #cleanlog 1
                 runtime_error "Problem creating images from the video."
                 $FROM_GUI && exit_from_gui || exit 1
             fi
-            ) 
             unset TCODE_CMD cmd run_transcode
             if ! $ANI_SUB_MENU ; then
                 echo
