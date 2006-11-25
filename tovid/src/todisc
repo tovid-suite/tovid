@@ -2797,7 +2797,7 @@ if $SUB_MENU; then
                 # move 340 images to each subdir:  $WORK_DIR/animenu/{0,1,2,3,etc}
                 echo "moving images into subdirectories"
                 for ((a=0; a<${CHAPTERS[i]}; a++)); do
-                    pics=( $(find $WORK_DIR/animenu/ -maxdepth 1 -name 00\*.$SM_IMG_FMT | sort|head -n 340) )
+                    pics=( $(find $WORK_DIR/animenu/ -maxdepth 1 -name 00\*.$SM_IMG_FMT | sort 2>/dev/null|head -n 340 2>/dev/null) )
                     echo "${pics[@]}" >> "$WORK_DIR/pics.log"
                     for f in ${pics[@]}; do
                         mv "$f" $WORK_DIR/animenu/$a
@@ -2822,7 +2822,7 @@ if $SUB_MENU; then
                 spin "\rProcessing "$a.$SM_IMG_FMT"  "
                 for ((b=0; b<${CHAPTERS[i]}; b++)); do
                     IMGS=( "${IMGS[@]}" $(find $WORK_DIR/animenu/$b \
-                    -name \*.$SM_IMG_FMT| sort|head -n $a | sed -n -e "$a p") )
+                    -name \*.$SM_IMG_FMT| sort 2>/dev/null | head -n $a | sed -n -e "$a p") )
                 done
                 IM_CMD=(montage ${IMGS[@]} -tile ${TILE_ARRAY[C]} \
                 -geometry ${GEO_ARRAY[C]}+5+5 -bordercolor '#161514' \
