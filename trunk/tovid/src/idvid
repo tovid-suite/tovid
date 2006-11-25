@@ -685,6 +685,7 @@ if test $# -eq 0; then
 fi
 
 while test $# -gt 0; do
+    DO_SHIFT=:
     case "$1" in
         "-terse" ) TERSE=: ;;
         "-verbose" ) VERBOSE=: ;;
@@ -703,10 +704,12 @@ while test $# -gt 0; do
             FAST=:
             ;;
         * )
-            ID_FILES=( ${ID_FILES[@]} "$1" )
+            get_listargs "$@"
+            ID_FILES=("${ARGS_ARRAY[@]}")
+            echo "${ID_FILES[@]}"
             ;;
     esac
-    shift
+    $DO_SHIFT && shift
 done
 
 $TERSE || printf "%s\n" "$SCRIPT_NAME"
