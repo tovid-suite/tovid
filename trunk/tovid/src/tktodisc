@@ -219,6 +219,9 @@ class FileListFrame(Frame):
             print "WARNING: No input files selected"
         if len(titles) == 0:
             print "WARNING: No input titles selected"
+        # Escape apostrophes in filenames and titles
+        files = [file.replace("'", "\\'") for file in files]
+        titles = [title.replace("'", "\\'") for title in titles]
         return " -files '%s' -titles '%s'" % \
              ("' '".join(files), "' '".join(titles))
 
@@ -238,7 +241,7 @@ class BrowseButton(Button):
         self.type = type
         self.title = title
         self.textvariable = textvariable
-        
+
     def onClick(self, event=None):
         """Event handler when button is pressed"""
         if self.type == 'load':
