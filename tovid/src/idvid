@@ -364,10 +364,10 @@ function idvid_main ()
         for t in $discard; do A_CODECS[${t##*.}-1]=": *** Unsupported ***"; done
         for ((j=0; j<${#A_TRACKS[@]}; j++)); do
             echo "---------------------------"
-            echo "Audio track $((i+1)) (Stream ${A_TRACKS[j]}, AID ${A_HEX_TRACKS[j]}):"
+            echo "Audio track $((j+1)) (Stream ${A_TRACKS[j]}, AID ${A_HEX_TRACKS[j]}):"
             echo "---------------------------"
             echo "              Codec: ${A_CODECS[j]}"
-            if [[ $i -ne $((${t##*.}-1)) ]]; then
+            if [[ $j -ne $((${t##*.}-1)) ]]; then
                 echo "            Bitrate: ${A_BITRATES[j]}000 bits per second"
                 echo "      Sampling rate: ${A_SAMPRATES[j]} Hz"
             fi
