@@ -51,7 +51,7 @@ thumbnails on the main menu.
 For the -showcase-* template/style:
 
 this style can use much longer titles, particularly if you use:
-"-showcase-title-align west".
+"-showcase-titles-align west".
 In addition, "-showcase-no-thumb" will eliminate the thumb in
 the centre of the menu, which will give even more space for titles.
 
