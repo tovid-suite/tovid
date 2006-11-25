@@ -433,20 +433,6 @@ function confirm_dep()
     fi
 }
 
-function get_args()
-{
-    unset x ARGS_ARRAY
-    # Hackish list-parsing
-    while test $# -gt 0 && test ${1:0:1} != "-"; do
-        ARGS_ARRAY[x++]="$1"
-        shift
-    done
-    # Do not skip past the next argument
-    if test $# -gt 0 && test ${1:0:1} = "-";then
-        DO_SHIFT=false
-    fi
-}
-
 function stat_logfile()
 {
      awk '/Modify/ {print $3}' <<< "$(stat "$LOG_FILE")"
@@ -512,19 +498,19 @@ while test $# -gt 0; do
     case "$1" in
         "-files" )
             shift
-            get_args "$@"
+            get_listargs "$@"
             FILES=( "${ARGS_ARRAY[@]}" )
             ;;
         "-titles" )
             shift
-            get_args "$@"
+            get_listargs "$@"
             OIFS=$IFS;IFS=""
             TITLES=( "${ARGS_ARRAY[@]}" )
             IFS=$OIFS
             ;;
         "-submenu-titles" )
             shift
-            get_args "$@"
+            get_listargs "$@"
             OIFS=$IFS;IFS=""
             SM_TITLES=( "${ARGS_ARRAY[@]}" )
             IFS=$OIFS
@@ -557,7 +543,7 @@ while test $# -gt 0; do
         "-aspect" )
             unset ASPECT ASPECT_ARG
             shift
-            get_args "$@"
+            get_listargs "$@"
             ASPECT_ARGS=( ${ARGS_ARRAY[@]} )
             if [[ ${#ASPECT_ARGS[@]} -gt 0 ]]; then
                 ASPECT=${ASPECT_ARGS[0]}
@@ -577,7 +563,7 @@ while test $# -gt 0; do
             WIDE_SCREEN=:
             unset WIDESCREEN WIDESCREEN_ARG
             shift
-            get_args "$@"
+            get_listargs "$@"
             WIDESCREEN_ARGS=( ${ARGS_ARRAY[@]} )
             WIDE_SCREEN=:
             (( ${#WIDESCREEN_ARGS[@]} > 0)) && WIDESCREEN=${WIDESCREEN_ARGS[0]} || \
@@ -620,7 +606,7 @@ while test $# -gt 0; do
             ;;
         "-chain-videos" )
             shift
-            get_args "$@"
+            get_listargs "$@"
             chains_in="${ARGS_ARRAY[@]}" 
             post_play=${chains_in//,/ }
             CHAIN_VIDEOS=:
@@ -739,20 +725,20 @@ while test $# -gt 0; do
         "-chapters" )
             unset CHAPTERS
             shift
-            get_args "$@"
+            get_listargs "$@"
             CHAPTERS="${ARGS_ARRAY[@]}" 
             CHAPTERS=( ${CHAPTERS//,/ } )
             ;;
         "-subtitles" )
             shift
             SUBTITLES=:
-            get_args "$@"
+            get_listargs "$@"
             SUBS="${ARGS_ARRAY[@]}"
             SUBS_ARRAY=( ${SUBS//,/ } )
             ;;
         "-audio-lang" )
             shift
-            get_args "$@"
+            get_listargs "$@"
             AUDIO_LANG="${ARGS_ARRAY[@]}"
             AUDIO_LANG=( ${AUDIO_LANG//,/ } )
             AUDIOLANG=:
@@ -768,7 +754,7 @@ while test $# -gt 0; do
             ;;
         "-submenu-audio" )
             shift
-            get_args "$@"
+            get_listargs "$@"
             for i in ${!ARGS_ARRAY[@]}; do
                 if [ ${ARGS_ARRAY[i]} = "none" ]; then
                     SM_AUDIO=( "${SM_AUDIO[@]}" "${ARGS_ARRAY[i]}" )
@@ -813,7 +799,7 @@ while test $# -gt 0; do
         "-seek" )
             shift
             unset SEEK_VAL
-            get_args "$@"
+            get_listargs "$@"
             SEEK_VAL="${ARGS_ARRAY[@]}"
             SEEK_VAL=( ${SEEK_VAL//,/ } )
             ;;
