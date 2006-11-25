@@ -198,6 +198,25 @@ function unformat_time()
 
 
 # ******************************************************************************
+# Read a space-separated list of arguments, stopping before the next option
+# beginning with '-'. After running, ARGS_ARRAY contains the resulting list.
+# ******************************************************************************
+function get_listargs()
+{
+    unset x ARGS_ARRAY
+    # Hackish list-parsing
+    while test $# -gt 0 && test ${1:0:1} != "-"; do
+        ARGS_ARRAY[x++]="$1"
+        shift
+    done
+    # Do not skip past the next argument
+    if test $# -gt 0 && test ${1:0:1} = "-";then
+        DO_SHIFT=false
+    fi
+}
+
+
+# ******************************************************************************
 # Display a progress meter showing MB written to a file
 # Args: $1 = name of file to monitor
 #       $2 = a short message to display, such as "Encoding video"
