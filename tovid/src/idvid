@@ -226,7 +226,6 @@ function get_info ()
         done
 
         tracks=( ${TRACKS[@]} )
-        cp -v "$SCRATCH_FILE" ~/scratch_file.txt
         if (( ${#tracks[@]} > 0 )); then
             for i in ${tracks[@]}; do
                 map_cmd=( ${map_cmd[@]} -map $i )
