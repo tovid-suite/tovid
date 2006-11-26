@@ -348,7 +348,7 @@ function idvid_main ()
         echo "ID_VIDEO_FRAMES=$ID_VIDEO_FRAMES"
     elif $TABULAR; then
         FILE_SIZE=$(du -h "$INFILE" | awk '{print $1}')
-        echo "$INFILE $FILE_SIZE ${ID_VIDEO_WIDTH}x${ID_VIDEO_HEIGHT} $ID_VIDEO_BITRATE $ID_AUDIO_BITRATE" >> "$TABLE"
+        echo "'$INFILE' $FILE_SIZE ${ID_VIDEO_WIDTH}x${ID_VIDEO_HEIGHT} $ID_VIDEO_BITRATE $ID_AUDIO_BITRATE" >> "$TABLE"
     else
         echo $SEPARATOR
         echo "               File: $INFILE"
@@ -684,8 +684,8 @@ if test $# -eq 0; then
     usage_error "Please provide the name of at least one video file."
 fi
 
+unset x
 while test $# -gt 0; do
-    DO_SHIFT=:
     case "$1" in
         "-terse" ) TERSE=: ;;
         "-verbose" ) VERBOSE=: ;;
@@ -704,12 +704,10 @@ while test $# -gt 0; do
             FAST=:
             ;;
         * )
-            get_listargs "$@"
-            ID_FILES=("${ARGS_ARRAY[@]}")
-            echo "${ID_FILES[@]}"
+            ID_FILES[x++]="$1"
             ;;
     esac
-    $DO_SHIFT && shift
+    shift
 done
 
 $TERSE || printf "%s\n" "$SCRIPT_NAME"
