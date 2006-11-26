@@ -226,7 +226,8 @@ function get_info ()
         done
 
         tracks=( ${TRACKS[@]} )
-        if (( ${#tracks[@]} > 1 )); then
+        cp -v "$SCRATCH_FILE" ~/scratch_file.txt
+        if (( ${#tracks[@]} > 0 )); then
             for i in ${tracks[@]}; do
                 map_cmd=( ${map_cmd[@]} -map $i )
                 wavs=( "${wavs[@]}" "$TMP_DIR/$i.wav" )
@@ -240,8 +241,8 @@ function get_info ()
                 for t in $discard; do
                     TRACKS=$(sed {s/$t//} <<< "$TRACKS")
                 done
-                for tr in ${TRACKS[@]}; do
-                    key=$((${tr##*.}-1))
+                for y in ${tracks[@]}; do
+                    key=$((${y##*.}-1))
                     tracks[key]=""
                 done
             fi
