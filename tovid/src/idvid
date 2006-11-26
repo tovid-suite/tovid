@@ -348,7 +348,7 @@ function idvid_main ()
         echo "ID_VIDEO_FRAMES=$ID_VIDEO_FRAMES"
     elif $TABULAR; then
         FILE_SIZE=$(du -h "$INFILE" | awk '{print $1}')
-        echo "'$INFILE' $FILE_SIZE ${ID_VIDEO_WIDTH}x${ID_VIDEO_HEIGHT} $ID_VIDEO_BITRATE $ID_AUDIO_BITRATE" >> "$TABLE"
+        echo "$INFILE||$FILE_SIZE||${ID_VIDEO_WIDTH}x${ID_VIDEO_HEIGHT}||$ID_VIDEO_BITRATE||$ID_AUDIO_BITRATE" >> "$TABLE"
     else
         echo $SEPARATOR
         echo "               File: $INFILE"
@@ -684,7 +684,7 @@ if test $# -eq 0; then
     usage_error "Please provide the name of at least one video file."
 fi
 
-unset x
+x=0
 while test $# -gt 0; do
     case "$1" in
         "-terse" ) TERSE=: ;;
@@ -714,9 +714,9 @@ $TERSE || printf "%s\n" "$SCRIPT_NAME"
 
 # Column header for tabular output
 if $TABULAR; then
-    echo "-------- ---- ---------- -------- --------" >> "$TABLE"
-    echo "Filename Size Resolution VBitrate ABitrate" >> "$TABLE"
-    echo "-------- ---- ---------- -------- --------" >> "$TABLE"
+    echo "--------||----||----------||--------||--------" >> "$TABLE"
+    echo "Filename||Size||Resolution||VBitrate||ABitrate" >> "$TABLE"
+    echo "--------||----||----------||--------||--------" >> "$TABLE"
 fi
 
 for ((k=0; k<${#ID_FILES[@]}; k++)); do
@@ -724,7 +724,7 @@ for ((k=0; k<${#ID_FILES[@]}; k++)); do
 done
 
 if $TABULAR; then
-    column -t "$TABLE"
+    column -s "||" -t "$TABLE"
 fi
 
 rm -rf "$TMP_DIR"
