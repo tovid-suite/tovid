@@ -240,6 +240,10 @@ function get_info ()
                 for t in $discard; do
                     TRACKS=$(sed {s/$t//} <<< "$TRACKS")
                 done
+                for tr in ${TRACKS[@]}; do
+                    key=$((${tr##*.}-1))
+                    tracks[key]=""
+                done
             fi
             rm -f "${wavs[@]}"
         fi
@@ -327,7 +331,7 @@ function idvid_main ()
             ;;
     esac
 
-    # If just matching, don't print out anything yet
+    # If just matching, do not print out anything yet
     if test -n "$MATCH_FORMAT" || test -n "$MATCH_TVSYS"; then
         :
     # Print out identifying information, either in terse form
@@ -367,7 +371,7 @@ function idvid_main ()
             echo "Audio track $((j+1)) (Stream ${A_TRACKS[j]}, AID ${A_HEX_TRACKS[j]}):"
             echo "---------------------------"
             echo "              Codec: ${A_CODECS[j]}"
-            if [[ $j -ne $((${t##*.}-1)) ]]; then
+            if [[ -n ${tracks[j]} ]]; then
                 echo "            Bitrate: ${A_BITRATES[j]}000 bits per second"
                 echo "      Sampling rate: ${A_SAMPRATES[j]} Hz"
             fi
