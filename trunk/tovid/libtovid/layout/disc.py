@@ -1,6 +1,10 @@
 #! /usr/bin/env python
 # disc.py
 
+"""This module provides a Python interface for creating, customizing, and
+authoring a video disc.
+"""
+
 __all__ = ['Disc']
 
 import doctest

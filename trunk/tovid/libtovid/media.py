@@ -98,7 +98,7 @@ def load_media(filename):
                   '-ao', 'null',
                   '-frames', '1',
                   '-channels', '6')
-    cmd.run()
+    cmd.run(capture=True)
     # Look for mplayer's "ID_..." lines and include each assignment in mp_dict
     for line in cmd.get_output().splitlines():
         if line.startswith("ID_"):
