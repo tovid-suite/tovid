@@ -38,6 +38,10 @@ $ idvid videos/*.mpg
     Don't do lengthy play-time estimation; report length as reported
     by mplayer (possibly inaccurate). Results in faster execution.
 
+: **-tabular**
+    Display output in a table format for easier comparison. Most useful
+    when identifying multiple video files.
+
 
 ==See also==
 
