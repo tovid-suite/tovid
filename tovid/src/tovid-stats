@@ -5,13 +5,6 @@
 in ~/.tovid/stats.tovid.
 """
 
-# TODO:
-#   * Output size, per minute of video, by format/bitrate/quantization
-#   * Encoding time/min by format
-#   * Encoding time/min by CPU speed
-
-# TODO: Consider graphing (via layer.py)
-
 import os
 import sys
 from libtovid import stats
@@ -19,47 +12,67 @@ from libtovid.utils import pretty_dict
 from libtovid.render.drawing import Drawing
 from libtovid.render.layer import Scatterplot
 
-tovid_statfile = os.path.expanduser("~/.tovid/stats.tovid")
+USAGE = \
+"""This script gathers statistics from your ~/.tovid/stats.tovid"
+file, and can display summary information or average values."
+
+Usage:
+    tovid-stats COMMANDS
+COMMANDS may be any of:
+    -count FIELD
+        Count total occurrences of distinct values in FIELD
+    -average FIELD_1 [by FIELD_2]
+        Average FIELD_1, optionally sorted by FIELD_2
+    -list FIELD_1 by FIELD_2
+        Show all values of FIELD_1, organized by FIELD_2
+    -plot FIELD_1 by FIELD_2
+        Like -list, but show a scatterplot image of the data.
+    -match FIELD VALUE
+        Only display records where FIELD is VALUE. This option can be used
+        to filter the results of subsequent options.
+    -show 'FIELD [FIELD]...'
+        Format and display the given fields for all records
+FIELDs may be any of the following:
+"""
+for field in stats.FIELDS:
+    USAGE += "    %s\n" % field
+USAGE += \
+"""You may include multiple commands, for example:
+
+    tovid-stats -count cpu_speed -average avg_bitrate by tvsys
+
+To filter results, use the -match option. For example, to show the filename
+and output size of all SVCD-format encodings, do:
+
+    tovid-stats -match format svcd -show 'final_name final_size'
+
+Use multiple -match options to filter further, i.e.:
+
+    tovid-stats -match format dvd -match tvsys pal [-show etc.]
+"""
+
+STATFILE = os.path.expanduser("~/.tovid/stats.tovid")
 
 def get_statlist(statfile):
+    """Return a Statlist, created from the given tovid stats file.
+    """
     # Open and read tovid stat file
     statfile = os.path.abspath(statfile)
     tempfile = "%s.csv" % statfile
     # Only use lines beginning with " (and not header line)
     os.system('cat "%s" | grep \'^ *\"[^T]\' > "%s"' % (statfile, tempfile))
-    statlist = stats.Statlist(tempfile)
+    statlist = stats.Statlist(filename=tempfile)
     os.remove(tempfile)
     return statlist
 
 if __name__ == '__main__':
     args = sys.argv[1:]
     if len(args) == 0:
-        print "This script gathers statistics from your ~/.tovid/stats.tovid"
-        print "file, and can display summary information or average values."
-        print " "
-        print "Usage:"
-        print "    tovid-stats COMMANDS"
-        print "COMMANDS may be any of:"
-        print "    -count FIELD"
-        print "        Count total occurrences of distinct values in FIELD"
-        print "    -average FIELD_1 [by FIELD_2]"
-        print "        Average FIELD_1, optionally sorted by FIELD_2"
-        print "    -list FIELD_1 by FIELD_2"
-        print "        Show all values of FIELD_1, organized by FIELD_2"
-        print "    -plot FIELD_1 by FIELD_2"
-        print "        Like -list, but show a scatterplot image of the data."
-        print "    -match FIELD VALUE"
-        print "        Print statistics records where FIELD is VALUE"
-        print "    -show 'FIELD [FIELD]...'"
-        print "        Format and display the given fields for all records"
-        print "FIELDs may be any of the following:"
-        for field in stats.FIELDS:
-            print "    %s" % field
-        print "You may include multiple commands, for example:"
-        print "    tovid-stats -count cpu_speed -average avg_bitrate by tvsys"
+        print USAGE
         sys.exit(0)
 
-    statlist = get_statlist(tovid_statfile)
+    # Get stats from the default tovid stat file
+    statlist = get_statlist(STATFILE)
 
     # Parse command-line
     while args:
@@ -121,9 +134,11 @@ if __name__ == '__main__':
                 value = int(value)
             print "Finding statistics records where %s is %s" % (field, value)
             matches = statlist.get_matching(field, value)
-            for match in matches:
-                print "Matching record:"
-                print pretty_dict(match)
+            # Change the statlist to contain only the matched records
+            statlist = stats.Statlist(records=matches)
+            #for match in matches:
+            #    print "Matching record:"
+            #    print pretty_dict(match)
             if matches == []:
                 print "No matches found."
             else:
@@ -141,7 +156,7 @@ def required_MB(format, tvsys, vbitrate, quant, seconds=1):
     (in kbps) and quantization, for the given number of seconds. By default,
     returns MB per second of video.
     """
-    statlist = get_statlist(tovid_statfile)
+    statlist = get_statlist(STATFILE)
     
     # Determine final output size per second
     for record in statlist.records:
