@@ -5,7 +5,7 @@ import tempfile
 import xml.dom
 import os
 
-from libtovid.cli import Script, Command
+from libtovid.cli import Command
 from libtovid.opts import Option, OptionDict
 from libtovid.media import load_media
 
@@ -66,35 +66,31 @@ def spumux(movie_filename, xmlopts, stream=0):
     Runs a script from the command line
     """
     sub_filename = xmlopts['filename']
-    data = create_xml(xmlopts)
-    
-    
-    fd = mktempstream(suffix=".xml")
-    fd.write(data)
-    fd.close()
+    xmldata = create_xml(xmlopts)
+    print "spumux XML file:"
+    print xmldata
+    xmlfile = mktempstream(suffix=".xml")
+    xmlfile.write(xmldata)
+    xmlfile.close()
     
     # make sure the temporary mpeg is created on the same directory
     base_dir = os.path.dirname(movie_filename)
     tmp_mpg = mktempname(suffix=".mpg", dir=base_dir)
     
-    script = Script('subtitles')
-    
-    script.append(Command('cat').add(fd.name))
-    
     # spumux -s0 < in > out
-    cmd = Command('spumux').add("-s%s" % stream).add(fd.name)
-    cmd.read_from(movie_filename)
-    cmd.write_to(tmp_mpg)
+    spumux = Command('spumux', '-s%s' % stream, xmlfile.name)
+    # TODO: Find a more elegant way to do stream redirection
+    stream_in = open(movie_filename)
+    stream_out = open(tmp_mpg)
+    spumux._run_redir(stream_in, stream_out)
+    spumux.wait()
     
-    # remove old file
-    cmd = cmd.if_done(Command('rm').add('-f', movie_filename))
-    
-    # rename temporary file to new file
-    cmd = cmd.if_done(Command('mv').add(tmp_mpg, movie_filename))
-    script.append(cmd)
-    script.run()
-
-    os.unlink(fd.name)
+    # Remove old file
+    os.remove(movie_filename)
+    # Rename temporary file to new file
+    os.rename(tmp_mpg, movie_filename)
+    # Remove the XML file
+    os.remove(xmlfile.name)
 
 
 def add_subs(infile, subs, opts=None):
