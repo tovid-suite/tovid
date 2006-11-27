@@ -11,7 +11,7 @@ __all__ = [\
 import os
 import math
 import copy
-from libtovid.cli import Command
+from libtovid.cli import Command, Pipe
 from libtovid.utils import float_to_ratio, ratio_to_float
 from libtovid.transcode import rip
 from libtovid.media import *
@@ -104,7 +104,6 @@ def ffmpeg_encode(source, target):
     
     # Run the command to do the encoding
     cmd.run()
-
 
 
 # --------------------------------------------------------------------------
@@ -299,39 +298,45 @@ def encode_video(source, yuvfile, videofile, target):
     # corresp. to $VID_BITRATE, $MPEG2_QUALITY, $DISC_SIZE, etc.
     # Missing options (compared to tovid)
     # -S 700 -B 247 -b 2080 -v 0 -4 2 -2 1 -q 5 -H -o FILE
-    cmd = Command('mpeg2enc')
+    pipe = Pipe(cmd)
+
+    # Feed the .yuv file into the pipeline
+    cat = Command('cat', yuvfile)
+    pipe.add(cat)
+
+    # Adjust framerate if necessary by piping through yuvfps
+    if source.fps != target.fps:
+        log.info("Adjusting framerate")
+        yuvfps = Command('yuvfps')
+        yuvfps.add('-r', float_to_ratio(target.fps))
+        pipe.add(yuvfps)
+
+    # Encode the resulting .yuv stream by piping into mpeg2enc
+    mpeg2enc = Command('mpeg2enc')
     # TV system
     if target.tvsys == 'pal':
-        cmd.add('-F', '3', '-n', 'p')
+        mpeg2enc.add('-F', '3', '-n', 'p')
     elif target.tvsys == 'ntsc':
-        cmd.add('-F', '4', '-n', 'n')
+        mpeg2enc.add('-F', '4', '-n', 'n')
     # Format
     format = target.format
     if format == 'vcd':
-        cmd.add('-f', '1')
+        mpeg2enc.add('-f', '1')
     elif format == 'svcd':
-        cmd.add('-f', '4')
+        mpeg2enc.add('-f', '4')
     elif 'dvd' in format:
-        cmd.add('-f', '8')
+        mpeg2enc.add('-f', '8')
     # Aspect ratio
     if target.widescreen:
-        cmd.add('-a', '3')
+        mpeg2enc.add('-a', '3')
     else:
-        cmd.add('-a', '2')
-    cmd.add('-o', videofile)
-
-    # Adjust framerate if necessary
-    if source.fps != target.fps:
-        log.info("Adjusting framerate")
-        yuvcmd = Command('yuvfps')
-        yuvcmd.add('-r', float_to_ratio(target.fps))
-        yuvcmd.pipe_to(cmd)
-        cmd = yuvcmd
-    cat = Command('cat')
-    cat.add(yuvfile)
-    cat.pipe_to(cmd)
+        mpeg2enc.add('-a', '2')
+    mpeg2enc.add('-o', videofile)
+    pipe.add(mpeg2enc)
+    
     # Run the pipeline to encode the video stream
-    cat.run()
+    pipe.run()
+
 
 def encode_audio(source, audiofile, target):
     """Encode an audio stream to AC3 or MP2 format.
@@ -419,12 +424,15 @@ def encode_frames(imagedir, outfile, target):
             raise RuntimeWarning, "%s does not have a .%s extension" %\
                   (img, extension)
 
+    pipe = Pipe()
+
     # Use jpeg2yuv/png2yuv to stream images
     if extension == 'jpg':
-        cmd = Command('jpeg2yuv')
-        cmd.add('-Ip',
-                '-f', '%.3f' % target.fps,
-                '-j', '%s/%%08d.%s' % (imagedir, extension))
+        jpeg2yuv = Command('jpeg2yuv')
+        jpeg2yuv.add('-Ip',
+                     '-f', '%.3f' % target.fps,
+                     '-j', '%s/%%08d.%s' % (imagedir, extension))
+        pipe.add(jpeg2yuv)
     elif extension == 'png':
         ls = Command('ls', '%s/*.png' % imagedir)
         xargs = Command('xargs', '-n1', 'pngtopnm')
@@ -432,9 +440,7 @@ def encode_frames(imagedir, outfile, target):
         png2yuv.add('-Ip',
                     '-f', '%.3f' % target.fps,
                     '-j', '%s/%%08d.png' % (imagedir))
-        ls.pipe_to(xargs)
-        xargs.pipe_to(png2yuv)
-        cmd = ls
+        pipe.add(ls, xargs, png2yuv)
         #cmd += 'pnmtoy4m -Ip -F %s %s/*.png' % standard.fpsratio(tvsys)
 
     # TODO: Scale to correct target size using yuvscaler or similar
@@ -450,7 +456,7 @@ def encode_frames(imagedir, outfile, target):
         mpeg2enc.add('--format 4')
     else:
         mpeg2enc.add('--format 8')
+    pipe.add(mpeg2enc)
 
-    cmd.pipe_to(mpeg2enc)
-    cmd.run()
+    pipe.run()
 
