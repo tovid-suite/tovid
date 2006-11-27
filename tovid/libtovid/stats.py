@@ -14,6 +14,7 @@ Future interface ideas:
 
 import csv
 import sys
+from copy import copy
 
 # Order of fields in stats.tovid
 FIELDS = [\
@@ -61,11 +62,18 @@ int_fields = [\
 class Statlist:
     """A list of statistics that may be queried with a simple database-like
     interface."""
-    def __init__(self, filename=''):
-        """Create a Statlist, reading from the given filename."""
-        self.records = []
-        if filename is not '':
-            self.read_csv(filename)
+    def __init__(self, records=None, filename=''):
+        """Create a Statlist, using the given list of records, or by reading
+        from the given filename (CSV text).
+        """
+        # Use provided records, if any
+        if records:
+            self.records = copy(records)
+        # Otherwise, read from any provided filename
+        else:
+            self.records = []
+            if filename is not '':
+                self.read_csv(filename)
 
     def read_csv(self, filename):
         """Import stats from a CSV (comma-delimited quoted text) file."""
