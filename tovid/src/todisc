@@ -2783,6 +2783,7 @@ if $SUB_MENU; then
                 # move 340 images to each subdir:  $WORK_DIR/animenu/{0,1,2,3,etc}
                 echo "moving images into subdirectories"
                 for ((a=0; a<${CHAPTERS[i]}; a++)); do
+                    # 2>/dev/null to work around perplexing spawned xterm bug
                     pics=( $(find $WORK_DIR/animenu/ -maxdepth 1 -name 00\*.$SM_IMG_FMT | sort 2>/dev/null|head -n 340 2>/dev/null) )
                     echo "${pics[@]}" >> "$WORK_DIR/pics.log"
                     for f in ${pics[@]}; do
@@ -3606,7 +3607,10 @@ if $SUB_MENU; then
 fi
 if [ "$TARGET" = dvd ]; then
     echo "Running dvdauthor to create the DVD filesystem"
-    dvdauthor -x "$DVDAUTHOR_XML"
+    dvdauthor -x "$DVDAUTHOR_XML" >> "$LOG_FILE"
+    if [[ $? -ne 0 ]]; then
+        runtime_error "There was a problem creating the DVD structure"
+    fi
 elif [ "$TARGET" = svcd ]; then
     makexml -svcd -menu "$WORK_DIR/animenu.mpg" "${IN_FILES[@]}" -out MyDisc
     vcdxbuild -b ../videocd.bin -c ../videocd.cue  MyDisc.xml
