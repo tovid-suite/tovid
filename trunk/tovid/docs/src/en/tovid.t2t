@@ -241,6 +241,10 @@ letterboxing or anamorphic scaling.
     **-audiotrack 3,1,2**. Use **idvid** on your source video to determine which
     audio tracks it contains.
 
+: **-async** //NUM//
+    Adjust audio synchronization by //NUM// seconds.
+
+
 
 ===Other options===
 
@@ -297,6 +301,9 @@ letterboxing or anamorphic scaling.
     and video streams are kept (eg the .ac3 and .m2v files for an NTSC DVD).
     This doesn't work with -parallel because the intermediate files are named
     pipes, and not real files.
+
+: **-slice** //START//-//END//
+    Encode a segment from //START// to //END// (in seconds).
 
 
 ==See also==
