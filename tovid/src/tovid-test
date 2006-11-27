@@ -57,11 +57,12 @@ OPTIONS may be any of the following:
     -basic   Test VCD, SVCD, and DVD (Default)
     -dvd     Test DVD-compatible formats
     -all     Test all formats that tovid supports
+    -ffmpeg  Test the ffmpeg backend
     -keep    Keep all output files
 
 The input file may be any video file. Output
 and logging go into a temporary directory
-with a name like "tovid-test.3peFka".
+with a name like "tovid-test.1".
 EOF`
 
 KEEP_OUTPUT=false
@@ -100,6 +101,9 @@ get_args()
                 # Test the DVD-compatible formats
                 TEST_FORMATS="dvd half-dvd dvd-vcd kdvd bdvd"
                 ;;
+            "-ffmpeg" )
+                # Test the ffmpeg backend
+                TEST_FFMPEG=:
             "-cd" )
                 # Test the CD-compatible formats
                 TEST_FORMATS="vcd svcd"
@@ -161,6 +165,7 @@ test_tovid()
         rm -f "$OUTFILE"
     fi
     CMD="tovid $@ -overwrite -out $OUTFILE"
+    $TEST_FFMPEG && CMD="$CMD -ffmpeg"
     yecho $CMD
     if $DEBUG; then
         eval "$CMD" | tee -a "$LOG_FILE"
