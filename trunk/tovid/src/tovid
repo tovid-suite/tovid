@@ -297,6 +297,7 @@ function killsubprocs()
 {
     yecho "Encode stopped, killing all sub processes"
     test -n "$PIDS" && kill $PIDS
+    yecho "Keeping temporary files used during encoding in $TMP_DIR"
 }    
 
 
@@ -1469,18 +1470,20 @@ yecho "  $VID_BITRATE kbits/sec video, $AUD_BITRATE kbits/sec audio"
 #
 # ******************************************************************************
 
+AUTO_ASPECT_RATIO="$V_ASPECT_WIDTH:100"
 # If user supplied an aspect ratio, use that; normalize the value with
 # respect to 100 (i.e., 4:3 becomes normalized to 133:100, or simply 133)
 # OVERRIDES AUTO-DETECTED ASPECT RATIO!
 if test -n "$ASPECT_RATIO"; then
-    yecho "Using explicitly provided aspect ratio of $ASPECT_RATIO"
+    yecho "Using explicitly provided aspect ratio $ASPECT_RATIO"
+    yecho "Overriding auto-detected aspect ratio $AUTO_ASPECT_RATIO"
     PLAY_WIDTH=$(echo $ASPECT_RATIO | awk -F ':' '{print $1}')
     PLAY_HEIGHT=$(echo $ASPECT_RATIO | awk -F ':' '{print $2}')
     V_ASPECT_WIDTH=$(expr $PLAY_WIDTH \* 100 \/ $PLAY_HEIGHT)
 # Auto-detected aspect ratio
 else
-    ASPECT_RATIO="$V_ASPECT_WIDTH:100"
-    yecho "Using auto-detected aspect ratio of $ASPECT_RATIO (override with -aspect)"
+    yecho "Using auto-detected aspect ratio $AUTO_ASPECT_RATIO (override with -aspect)"
+    ASPECT_RATIO=$AUTO_ASPECT_RATIO
 fi
 
 
@@ -1840,8 +1843,8 @@ fi
 
 # If existing video is OK, skip video encoding and just copy the stream
 if ! $FORCE_ENCODING && $VIDEO_OK; then
-    yecho "Copying existing video stream with the following command:"
     VID_COPY_CMD="mencoder -of rawvideo -nosound -ovc copy \"$IN_FILE\" -o \"$VIDEO_STREAM\""
+    yecho "Copying existing video stream with the following command:"
     yecho "$VID_COPY_CMD"
 
 
@@ -1857,8 +1860,6 @@ if ! $FORCE_ENCODING && $VIDEO_OK; then
         wait
     fi
 else
-    yecho "Encoding video stream with the following commands:"
-
     # Normal one-pass encoding, with mplayer piped into the mjpegtools, or using ffmpeg
     if $USE_FIFO; then
         mkfifo "$YUV_STREAM"
@@ -1869,6 +1870,8 @@ else
     else
         VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
     fi
+
+    yecho "Encoding video stream with the following commands:"
 
     if ! $USE_FFMPEG; then
         yecho $VID_PLAY_CMD
