@@ -3607,8 +3607,8 @@ if $SUB_MENU; then
 fi
 if [ "$TARGET" = dvd ]; then
     echo "Running dvdauthor to create the DVD filesystem"
-    dvdauthor -x "$DVDAUTHOR_XML" >> "$LOG_FILE"
-    if [[ $? -ne 0 ]]; then
+    dvdauthor -x "$DVDAUTHOR_XML" 2>&1 | tee -a "$LOG_FILE"
+    if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
         runtime_error "There was a problem creating the DVD structure"
     fi
 elif [ "$TARGET" = svcd ]; then
