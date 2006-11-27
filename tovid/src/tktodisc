@@ -20,8 +20,6 @@ camel-case for remaining words, i.e.
 
 Ideas for later:
 
-"Browse" Button, opens a file dialog (load or save) and sets a control variable
-
 Use dictionaries for accessing Widgets inside of classes, i.e.
     self.lblTitles --> self.lbl['Titles']
     self.entTitles --> self.ent['Titles']
@@ -33,9 +31,8 @@ This may simplify automated widget-instantiation later.
 import os
 from Tkinter import *
 from tkFileDialog import *
-from tkMessageBox import askyesno
-
-DEFAULT_TERMINAL='xterm -si -sb -e'
+from tkMessageBox import *
+from libtovid.cli import Command
 
 # ============================
 #
@@ -73,9 +70,10 @@ class FormatFrame(Frame):
         """Event handler called when format radio buttons are clicked."""
         print "Disc format: %s" % self.varFormat.get()
         
-    def getOptions(self):
-        """Return todisc options for this frame."""
-        return " -%s" % str(self.varFormat.get()).lower()
+    def setOptions(self, command):
+        """Add relevant todisc options to the given Command."""
+        format = str(self.varFormat.get()).lower()
+        command.add('-%s' % format)
 
 
 class TvsysFrame(Frame):
@@ -108,8 +106,9 @@ class TvsysFrame(Frame):
         """Event handler called when TV system radio buttons are clicked."""
         print "TV system: %s" % self.varTvsys.get()
         
-    def getOptions(self):
-        return " -%s" % str(self.varTvsys.get()).lower()
+    def setOptions(self, command):
+        tvsys = str(self.varTvsys.get()).lower()
+        command.add('-%s' % tvsys)
 
 
 class FileListFrame(Frame):
@@ -208,8 +207,8 @@ class FileListFrame(Frame):
             self.lstFiles.delete(line)
             self.lstTitles.delete(line)
 
-    def getOptions(self):
-        """Return todisc options for this frame."""
+    def setOptions(self, command):
+        """Add relevant todisc options to the given Command."""
         files = self.varFiles.get()
         titles = self.varTitles.get()
         if len(files) != len(titles):
@@ -219,11 +218,12 @@ class FileListFrame(Frame):
             print "WARNING: No input files selected"
         if len(titles) == 0:
             print "WARNING: No input titles selected"
-        # Escape apostrophes in filenames and titles
-        files = [file.replace("'", "\\'") for file in files]
-        titles = [title.replace("'", "\\'") for title in titles]
-        return " -files '%s' -titles '%s'" % \
-             ("' '".join(files), "' '".join(titles))
+        command.add('-files')
+        for file in files:
+            command.add(file)
+        command.add('-titles')
+        for title in titles:
+            command.add(title)
 
 
 class BrowseButton(Button):
@@ -296,16 +296,14 @@ class BackgroundsFrame(Frame):
                                      "Select an audio file")
         self.btnAudio.grid(row=3, column=2)
     
-    def getOptions(self):
-        """Return todisc options for this frame."""
-        opts = ""
+    def setOptions(self, command):
+        """Add relevant todisc options to the given Command."""
         if self.varImage.get():
-            opts += " -bgimage '%s'" % self.varImage.get()
+            command.add('-bgimage', self.varImage.get())
         if self.varVideo.get():
-            opts += " -bgvideo '%s'" % self.varVideo.get()
+            command.add('-bgvideo', self.varVideo.get())
         if self.varAudio.get():
-            opts += " -bgaudio '%s'" % self.varAudio.get()
-        return opts
+            command.add('-bgaudio', self.varAudio.get())
 
 
 class OutfileFrame(Frame):
@@ -327,12 +325,12 @@ class OutfileFrame(Frame):
                                        "Select an output name")
         self.btnOutfile.pack(side=LEFT)
 
-    def getOptions(self):
-        """Return todisc options for this frame."""
+    def setOptions(self, command):
+        """Add relevant todisc options to the given Command."""
         outfile = self.varOutfile.get()
         if not outfile:
             print "WARNING: No output file selected"
-        return " -out '%s'" % outfile
+        command.add('-out', outfile)
 
 
 class TitleFrame(Frame):
@@ -352,11 +350,11 @@ class TitleFrame(Frame):
         self.entTitle.pack(side=LEFT)
         self.varTitle.set("My video collection")
 
-    def getOptions(self):
-        """Return todisc options for this frame."""
+    def setOptions(self, command):
+        """Add relevant todisc options to the given Command."""
         title = self.varTitle.get()
         if title:
-            return " -menu-title '%s'" % title
+            command.add('-menu-title', title)
 
 
 class MiscOptionsFrame(Frame):
@@ -386,33 +384,18 @@ class MiscOptionsFrame(Frame):
                                textvariable=self.varCustom)
         self.entCustom.grid(row=2, column=1)
         
-    def getOptions(self):
-        """Return todisc options for this frame."""
-        opts = ""
+    def setOptions(self, command):
+        """Add relevant todisc options to the given Command."""
         if self.varStatic.get():
-            opts += " -static"
+            command.add('-static')
         if self.varSubmenus.get():
-            opts += " -submenus"
-        opts += " %s" % self.varCustom.get()
-        return opts
+            command.add('-submenus')
+        # Hack alert: Splitting on ' ' may not work in some cases
+        if self.varCustom.get():
+            custom = self.varCustom.get().split(' ')
+            for opt in custom:
+                command.add(opt)
 
-
-class TerminalFrame(Frame):
-    """A frame with controls for setting and configuring the preferred terminal
-    program."""
-    def __init__(self, master=None):
-        Frame.__init__(self, master)
-        self.varTerminal = StringVar()  # Terminal program with arguments
-        self.varTerminal.set(DEFAULT_TERMINAL)
-        self.grid()
-        self.drawWidgets()
-    
-    def drawWidgets(self):
-        self.lblTerminal = Label(self, text="Terminal program:")
-        self.lblTerminal.pack(side=LEFT)
-        self.entTerminal = Entry(self, background='white',
-                                 textvariable=self.varTerminal)
-        self.entTerminal.pack(side=LEFT)
 
 # ============================
 #
@@ -449,9 +432,6 @@ class Application(Frame):
         self.fraOutfile = OutfileFrame(self)
         self.fraOutfile.grid(sticky=W)
 
-        self.fraTerminal = TerminalFrame(self)
-        self.fraTerminal.grid(sticky=W)
-
         fraButtons = Frame(self)
         self.btnCommand = Button(fraButtons, text="Show todisc command",
                                  command=self.showCommand)
@@ -465,15 +445,15 @@ class Application(Frame):
 
     def getCommand(self):
         """Return the complete todisc command."""
-        cmd = "todisc "
-        cmd += self.fraTitle.getOptions()
-        cmd += self.fraFileList.getOptions()
-        cmd += self.fraFormat.getOptions()
-        cmd += self.fraTvsys.getOptions()
-        cmd += self.fraBackgrounds.getOptions()
-        cmd += self.fraMisc.getOptions()
-        cmd += self.fraOutfile.getOptions()
-        cmd += " -from-gui"
+        cmd = Command('todisc')
+        self.fraTitle.setOptions(cmd)
+        self.fraFileList.setOptions(cmd)
+        self.fraFormat.setOptions(cmd)
+        self.fraTvsys.setOptions(cmd)
+        self.fraBackgrounds.setOptions(cmd)
+        self.fraMisc.setOptions(cmd)
+        self.fraOutfile.setOptions(cmd)
+        #cmd.add('-from-gui')
         return cmd
 
     def showCommand(self):
@@ -483,16 +463,15 @@ class Application(Frame):
     def runCommand(self):
         """Run the todisc command."""
         cmd = self.getCommand()
-        term = self.fraTerminal.varTerminal.get()
         print "Running command:"
         print cmd
         # Verify with user
         if askyesno(message="Run todisc now?"):
-            status = os.system('%s %s' % (term, cmd))
-            print "todisc exit status: %s" % status
-            # 0 if 'no' to preview
-            
-
+            try:
+                cmd.run()
+                showinfo(message="todisc finished running!")
+            except KeyboardInterrupt:
+                showerror(message="todisc was interrupted!")
 
 # ============================
 #
