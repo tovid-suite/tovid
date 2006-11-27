@@ -2,23 +2,23 @@
 # cli.py
 
 """This module provides an interface for running command-line applications.
+Two primary classes are provided:
 
+    Command:  For constructing and executing command-line commands
+    Pipe:     For piping commands together
+    
+Commands are constructed by specifying a program to run, and each separate
+argument to pass to that program. Arguments are used in a platform-independent
+way, so there is no need to escape shell-specific characters or do any quoting
+of arguments.
 
+Commands may be executed in the foreground or background; they can print their
+output on standard output, or capture it in a string variable.
 """
 
-"""
-Requirements (+: met, -: unmet):
-
-+ Construct command lines by appending/inserting formatted text
-+ Pipe commands to other commands
-+ Print out commands before they are executed
-+ Execute commands in foreground or background
-- Capture or log output of commands
-- Check exit status of commands
-
-"""
 __all__ = [\
     'Command',
+    'Pipe',
     'Script',
     'verify_app'
     ]
@@ -27,13 +27,14 @@ __all__ = [\
 import os
 import sys
 import doctest
+import signal
 from subprocess import Popen, PIPE
 # From libtovid
 from libtovid import log
 
 class Command(object):
-    """An executable command-line statement with support for capturing output
-    and piping to other commands.
+    """A command-line statement, consisting of a program and its arguments,
+    with support for various modes of execution.
     """
     def __init__(self, program, *args):
         """Create a Command that will run a given program with the given
@@ -50,65 +51,128 @@ class Command(object):
         self.program = program
         self.args = []
         for arg in args:
-            self.args.append(arg)
+            self.add(arg)
         self.proc = None
-        self.pipe = None
         self.output = ''
-        self.bg = False
 
     def add(self, *args):
-        """Append arguments to the command. The arguments to this function
-        directly correspond to individual arguments to append to the command.
-        Arguments are converted to string form, and special shell characters
-        are handled automatically, so there is no need to escape them.
+        """Append one or more arguments to the command. Each argument passed
+        to this function is converted to string form, and treated as a single
+        argument in the command. No special quoting or escaping of argument
+        contents is necessary.
         """
         for arg in args:
             self.args.append(str(arg))
-
-    def run(self, stdin=None):
-        """Execute the command.
-            stdin: File object to read input from
-        """
-        log.debug("Running: %s" % self)
-        self.output = ''
-        self.proc = Popen([self.program] + self.args,
-                    stdin=stdin, stdout=PIPE)
-        # Run piped-to command if it exists
-        if isinstance(self.pipe, Command):
-            self.pipe.run(self.proc.stdout)
-        if not self.bg:
-            self.proc.wait()
     
+    def run(self, capture=False, background=False):
+        """Run the command and capture or display output.
+        
+            capture:    False to show command output on stdout,
+                        True to capture output for retrieval by get_output()
+            background: False to wait for command to finish running,
+                        True to run process in the background
+        """
+        if capture:
+            self._run_redir(None, PIPE)
+        else:
+            self._run_redir(None, None)
+        if not background:
+            self.wait()
+    
+    def wait(self):
+        """Wait for the command to finish running; handle keyboard interrupts.
+        """
+        if not isinstance(self.proc, Popen):
+            return
+        try:
+            self.proc.wait()
+        except KeyboardInterrupt:
+            log.debug("Trying to SIGTERM pid: %s" % self.proc.pid)
+            os.kill(self.proc.pid, signal.SIGTERM)
+            raise KeyboardInterrupt
+
     def get_output(self):
         """Wait for the command to finish executing, and return a string
         containing the command's output. If this command is piped into another,
         return that command's output instead. Returns an empty string if the
         command has not been run yet.
         """
-        if self.pipe:
-            return self.pipe.get_output()
         if self.output is '' and self.proc is not None:
             self.output = self.proc.communicate()[0]
         return self.output
-    
-    def pipe_to(self, command):
-        """Pipe the output of this Command into another Command.
-            command: A Command to pipe to, or None to disable piping
+
+    def _run_redir(self, stdin=None, stdout=None):
+        """Internal function; execute the command using the given stream
+        redirections.
+        
+            stdin:  File object to read input from (None for regular stdin)
+            stdout: File object to write output to (None for regular stdout)
         """
-        if command:
-            assert isinstance(command, Command)
-        self.pipe = command
+        log.debug("Running: %s" % self)
+        self.output = ''
+        self.proc = Popen([self.program] + self.args,
+                          stdin=stdin, stdout=stdout)
 
     def __str__(self):
-        """Return a string representation of the Command, including any
-        piped-to Commands.
+        """Return a string representation of the Command, as it would look if
+        run in a command-line shell.
         """
         ret = self.program
         for arg in self.args:
             ret += " %s" % enc_arg(arg)
-        if self.pipe:
-            ret += " | %s" % self.pipe
         return ret
+
+
+class Pipe(object):
+    """A series of Commands, each having its output piped into the next.
+    """
+    def __init__(self, *commands):
+        """Create a new Pipe containing all the given Commands."""
+        self.commands = []
+        for cmd in commands:
+            self.add(cmd)
+        self.proc = None
+    
+    def add(self, *commands):
+        """Append the given commands to the end of the pipeline."""
+        for cmd in commands:
+            self.commands.append(cmd)
+
+    def run(self, capture=False):
+        """Run all Commands in the pipeline, doing appropriate stream
+        redirection for piping.
+        
+            capture:    False to show pipeline output on stdout,
+                        True to capture output for retrieval by get_output()
+        
+        """
+        log.debug("Running: %s" % self)
+        self.output = ''
+        prev_stdout = None
+        # Run each command, piping to the next
+        for cmd in self.commands:
+            # If this is not the last command, pipe into the next one
+            if cmd != self.commands[-1]:
+                cmd._run_redir(prev_stdout, PIPE)
+                prev_stdout = cmd.proc.stdout
+            # Last command in pipeline; direct output appropriately
+            else:
+                if capture:
+                    cmd._run_redir(prev_stdout, PIPE)
+                else:
+                    cmd._run_redir(prev_stdout, None)
+
+    def get_output(self):
+        """Wait for the pipeline to finish executing, and return a string
+        containing the output from the last command in the pipeline.
+        """
+        return self.commands[-1].get_output()
+
+    def __str__(self):
+        """Return a string representation of the Pipe.
+        """
+        commands = [str(cmd) for cmd in self.commands]
+        return ' | '.join(commands)
 
 
 class Script:
