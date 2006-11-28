@@ -14,7 +14,29 @@ of arguments.
 
 Commands may be executed in the foreground or background; they can print their
 output on standard output, or capture it in a string variable.
+
+For example:
+
+    >>> echo = Command('echo', "Hello world")
+    >>> echo.run()
+    Hello world
+
+Commands may be connected together with pipes:
+
+    >>> sed = Command('sed', 's/world/nurse/')
+    >>> pipe = Pipe(echo, sed)
+    >>> pipe.run()
+    Hello nurse
+
+Command output may be captured and retrieved later with get_output():
+
+    >>> echo.run(capture=True)
+    >>> echo.get_output()
+    'Hello world\\n'
+
 """
+# Note: Some of the run() tests above will fail doctest.testmod(), since output
+# from Command subprocesses is not seen as real output by doctest. Fix this?
 
 __all__ = [\
     'Command',
@@ -87,17 +109,16 @@ class Command(object):
         try:
             self.proc.wait()
         except KeyboardInterrupt:
-            log.debug("Trying to SIGTERM pid: %s" % self.proc.pid)
             os.kill(self.proc.pid, signal.SIGTERM)
             raise KeyboardInterrupt
 
     def get_output(self):
-        """Wait for the command to finish executing, and return a string
+        """Wait for the command to finish running, and return a string
         containing the command's output. If this command is piped into another,
         return that command's output instead. Returns an empty string if the
         command has not been run yet.
         """
-        if self.output is '' and self.proc is not None:
+        if self.output is '' and isinstance(self.proc, Popen):
             self.output = self.proc.communicate()[0]
         return self.output
 
@@ -108,7 +129,6 @@ class Command(object):
             stdin:  File object to read input from (None for regular stdin)
             stdout: File object to write output to (None for regular stdout)
         """
-        log.debug("Running: %s" % self)
         self.output = ''
         self.proc = Popen([self.program] + self.args,
                           stdin=stdin, stdout=stdout)
@@ -146,7 +166,6 @@ class Pipe(object):
                         True to capture output for retrieval by get_output()
         
         """
-        log.debug("Running: %s" % self)
         self.output = ''
         prev_stdout = None
         # Run each command, piping to the next
