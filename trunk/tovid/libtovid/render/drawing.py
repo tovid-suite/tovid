@@ -76,6 +76,34 @@ References:
 
 """
 
+"""Interface ideas:
+
+Strip drawing interface to the minimal set of features needed by tovid apps.
+e.g.:
+
+Text rendering (font, size, fill, placement)
+Image rendering (size, mask, placement)
+Basic shape rendering (lines, rectangles, circles, polygons)
+Translation (scaling, rotation)
+
+Thin glue between Drawing and Layer.
+
+Use a dictionary for specifying gradient color stops (instead of repeated
+calls to add_color_stop_rgba)
+
+grad1 = {0: 'red', 1: 'blue'}
+grad2 = {0.0: 'transparent',
+         0.5: '#00FF0080',
+         1.0: 'green'}
+
+drawing.gradient('linear', grad1)
+drawing.gradient('radial', grad2)
+
+(plus additional coordinate information as needed)
+
+
+"""
+
 __all__ = ['Drawing']
 
 import os
@@ -109,9 +137,6 @@ class Drawing:
         self.cr = cairo.Context(self.surface)
         # Default values
         self.family = 'sans'
-        # Default dash array
-        self.dash_array = []
-        self.dash_offset = 0.0
         # Default colors..
         self.text_rgb = (0, 0, 0)
         self.text_alpha = 1.0
@@ -304,81 +329,6 @@ class Drawing:
 
     # TODO: add clip stuff...
 
-    def _getrgb(self, color):
-        """Wrapper around ImageColor, to support (r,g,b) tuple as well
-
-        Deals with str and tuple objects.
-        """
-        self.cry()
-
-    def color_fill(self, color, opacity=1.0):
-        """Define color for fill() operations
-
-        This module uses ImageColor to translate 'color' into RGB values:
-
-        DEPRECATED, see fill()
-        
-        opacity -- 0.0 to 1.0, or None, to leave opacity untouched.
-        """
-
-        self.cry()
-                
-    def color_stroke(self, color, opacity=1.0):
-        """Define color for line stroke() operations.
-
-        See color_fill() for details on how to specify 'color'
-        """
-        self.cry()
-        
-
-    def color_text(self, color, opacity=1.0):
-        """Define color for text() operations.
-
-        See color_fill() for details on how to specify 'color'
-        """
-        self.cry()
-        
-    def color_all(self, color, opacity=1.0):
-        """Define all three color_stroke(), color_fill(), color_text()
-        in one single shot.
-
-        See color_fill() for details on how to specify 'color'
-        """
-        self.cry()
-
-    def _go_stroke_color(self):
-        self.cry()
-        
-        r,g,b = self.stroke_rgb
-        self.cr.set_source_rgba(r,g,b, float(self.stroke_alpha * self.global_opacity))
-
-    def _go_text_color(self):
-        self.cry()
-        
-        r,g,b = self.text_rgb
-        self.cr.set_source_rgba(r,g,b, float(self.text_alpha * self.global_opacity))
-
-    def _go_fill_color(self):
-        self.cry()
-        
-        r,g,b = self.fill_rgb
-        self.cr.set_source_rgba(r,g,b, float(self.fill_alpha * self.global_opacity))
-
-    #def decorate(self, decoration):
-    #    """Decorate text(?) with the given style, which may be 'none',
-    #    'line-through', 'overline', or 'underline'."""
-    #    self.insert('decorate %s' % decoration)
-
-    #def ellipse(self, (center_x, center_y), (radius_x, radius_y),
-    #            (arc_start, arc_stop)):
-    #    # Draw arc, transform matrix, etc...
-    #    
-    #    self.insert('ellipse %s,%s %s,%s %s,%s' % \
-    #            (center_x, center_y, radius_x, radius_y, arc_start, arc_stop))
-
-    def fill_opacity(self, opacity):
-        self.cry()
-
     def set_fill_opacity(self, opacity):
         """Define fill opacity, from fully transparent (0.0) to fully
         opaque (1.0).
@@ -404,14 +354,6 @@ class Drawing:
         # Optionally set opacity level, and save it.
         self.cr.fill_preserve()
 
-    def fill_n_stroke(self):
-        """Combines fill() and stroke() commands in a single call.
-
-        fill() is called first so that the outline drawn by stroke() will
-        not appear over the filling.
-        """
-        self.cry()
-        
     def fill_rule(self, rule):
         """Set the fill rule to one of:
         
@@ -668,8 +610,7 @@ class Drawing:
                        (x1, y1),
                        (x2, y2)]
 
-        Draw strokes and filling yourself, with fill(), stroke(), and
-        fill_n_stroke().
+        Draw strokes and filling yourself, with fill() and stroke().
         """
         nlist = []
         for tup in pt_list:
@@ -773,9 +714,8 @@ class Drawing:
          
         """
         mysource = self.create_source(source, opacity)
-
         self.cr.set_source(mysource)
-            
+
     def create_source(self, source, opacity=None):
         """Return a source pattern (solid, gradient, image surface)
         with anything fed into it.
@@ -914,24 +854,7 @@ class Drawing:
 
         would alternate between 5 pixels on, and 3 pixels off.
         """
-        self.dash_array = array
-        self.dash_offset = offset
         self.cr.set_dash(array, offset)
-        
-
-    def stroke_dasharray(self, array):
-        """Shorthand for stroke_dash(), except it doesn't change the offset.
-
-        DEPRECATED: you should use stroke_dash() instead.
-        """
-        self.stroke_dash(array, self.dash_offset)
-        
-    def stroke_dashoffset(self, offset):
-        """Shorthand for stroke_dash(), except it leaves the dash_array
-        untouched.
-
-        DEPRECATED: you should use stroke_dash() instead."""
-        self.stroke_dash(self.dash_array, offset)
 
     def stroke_linecap(self, cap_type):
         """Set the type of line-cap to use (line edges).
@@ -952,16 +875,12 @@ class Drawing:
                'round': cairo.LINE_JOIN_ROUND}
         self.cr.set_line_join(dic[join_type])
 
-    def stroke_opacity(self, opacity):
-        self.cry()
-
     def set_stroke_opacity(self, opacity):
         """Define stroke opacity, from fully transparent (0.0) to fully
         opaque (1.0).
 
         NOTE: this doesn't paint anything on the canvas.
         """
-        self.cry()
         self.stroke_alpha = opacity
 
     def stroke_width(self, width):
@@ -1015,8 +934,6 @@ class Drawing:
         elif align == 'center':
             x = x - w / 2
 
-        assert align != False and align != True, "DEPRECATION WARNING: third parameter should now be 'align' as one of: 'left', 'right', 'center'. True and False are obsolete."
-
         self.cr.move_to(x, y)
         self.cr.show_text(text_string)
         self.restore()
@@ -1064,24 +981,6 @@ class Drawing:
         return self.cr.text_extents(text_string)
       
 
-    # Old MVG stuff, TODO: Implement using Cairo
-    #def text_antialias(self, do_antialias):
-    #    """Turn text antialiasing on (True) or off (False)."""
-    #    if do_antialias:
-    #        self.insert('text-antialias 1')
-    #    else:
-    #        self.insert('text-antialias 0')
-
-    def text_opacity(self, opacity):
-        """Set the text opacity.
-
-            opacity -- 0.0 = transparent, 1.0 = opaque
-
-        Alias for color_text(None, opacity)
-        """
-        self.cry('Use fill_opacity instead')
-
-
     def new_gradient(self, (x0,y0), (x1,y1)):
         """Return a LinearGradient object, initialized with the current
         context."""
@@ -1095,9 +994,6 @@ class Drawing:
         m.translate(dx, dy)
         self.cr.set_matrix(m)
     
-    def push(self):
-        self.cry()
-
     def push_group(self):
         """Temporarily redirects drawing to an intermediate surface
         known as a group.
@@ -1135,9 +1031,6 @@ class Drawing:
         # Save Cairo context
         self.cr.save()
 
-    def pop(self):
-        self.cry()
-
     def restore(self):
         """Restore the previously save()'d context.
 
@@ -1162,19 +1055,6 @@ class Drawing:
     #
     # Editor interface/interactive functions
     #
-
-    def load(self, filename):
-        """DEPRECATED: Load MVG from the given file.
-
-        Unused in Cairo backend"""
-        self.cry()
-
-
-    def code(self, editing=True):
-        """Return complete MVG text for the Drawing.
-        
-        NOTE: Unused in Cairo context"""
-        self.cry()
 
     def save_png(self, filename):
         """Saves current drawing to PNG, keeping alpha channel intact.
@@ -1215,9 +1095,6 @@ class Drawing:
         cmd += "%s %s" % (self.filename, img_filename)
         print "Rendering drawing to: %s" % img_filename
         print commands.getoutput(cmd)
-
-
-
 
 # Demo functions
 
