@@ -214,8 +214,6 @@ class TestCairoRenderer(unittest.TestCase):
             
     def test_dash_stuff(self):
         self.d.stroke_dash([1.0, 2.0, 3.0], 1.0)
-        self.d.stroke_dasharray([1.0, 2.0, 3.0])
-        self.d.stroke_dashoffset(5.0)
 
     def test_render(self):
         """Test drive rendering mechanism"""
