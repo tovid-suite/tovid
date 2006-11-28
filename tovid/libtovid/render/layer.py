@@ -787,9 +787,7 @@ class InterpolationGraph (Layer):
         drawing.restore()
 
         # Draw Keyframes as dotted vertical lines
-        #->drawing.comment("Keyframes and labels")
         drawing.save()
-        #drawing.stroke_dasharray([4, 4])
         # Vertical dotted lines
         drawing.set_source('red')
         drawing.stroke_width(2)
