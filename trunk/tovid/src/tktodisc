@@ -355,6 +355,8 @@ class TitleFrame(Frame):
         title = self.varTitle.get()
         if title:
             command.add('-menu-title', title)
+        else:
+            command.add('-menu-title', ' ')
 
 
 class MiscOptionsFrame(Frame):
