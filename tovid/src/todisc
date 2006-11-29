@@ -1754,76 +1754,78 @@ elif [ $IMG_FMT = "png" ]; then
 fi
     
 # create the preview images
-for ((i=0; i<=NUM_FILES; i++)) ; do
-    # use a nav_seek file if long seek
-    if [ ${SEEK_VAL[i]} -gt 450 ]; then
-        NAVSEEK[i]="--nav_seek "$WORK_DIR/nav${i}_log""
-        NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
-        run_navseek()
-        {   
-            yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
-           "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "$WORK_DIR/nav${i}_log"
-        }   
+if ! $NO_THUMBS; then
+    for ((i=0; i<=NUM_FILES; i++)) ; do
+        # use a nav_seek file if long seek
+        if [ ${SEEK_VAL[i]} -gt 450 ]; then
+            NAVSEEK[i]="--nav_seek "$WORK_DIR/nav${i}_log""
+            NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
+            run_navseek()
+            {   
+                yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
+               "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "$WORK_DIR/nav${i}_log"
+            }   
 
-        run_navseek &
-        NS_PID="$!"
-        if [ -n "$NS_PID" ]; then
-            while ps -p $NS_PID >/dev/null; do
-                sleep .5 # spinner interval
-                spin "Creating a nav_seek log for "${IN_FILES[i]}": $SPINNER"
-            done
-        fi
-        length=( ${length[@]} $(( $(awk  '{ field = $2 }; END{ print field }'  "$WORK_DIR/nav${i}_log") + 1)) )
-    fi
-    if ! $NOASK; then
-        echo
-        echo "[$i of $NUM_FILES] Seeking to ${SEEK_VAL[i]} seconds in ${IN_FILES[i]}"
-    fi
-    
-    TRANSCODE_CMD=(transcode -q 1 --write_pid /tmp/tcode.pid -i "${IN_FILES[i]}" \
-    -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + 1)) ${NAVSEEK[i]} \
-    -o $WORK_DIR/pics/$i/ -f 29.970  -Z $THUMB_SIZE $EXPORT)
-    FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" -an -ss ${SEEK_VAL[i]} -vframes 1 \
-    -s $THUMB_SIZE $WORK_DIR/pics/$i/%06d.$IMG_FMT)
-    if $NOASK; then
-        CMD=( "${FFMPEG_CMD[@]}" )
-    else
-        CMD=( "${TRANSCODE_CMD[@]}" )
-    fi
-    function run_transcode()
-    {
-        "${TRANSCODE_CMD[@]}" >> "$LOG_FILE" 2>&1
-    }
-
-    SED_VAR="frame="
-    echo -e "\nRunning: "${CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
-    VOUT="png:z=7"; FRAMES=30
-    FRAME_SIZE=$THUMB_SIZE
-    D=2
-    
-    if [ "$SC_FRAMESTYLE" = "glass" ]; then
-        MPLAYER_SEEK_VAL=${SEEK_VAL[i]}
-        get_framed_pics "${IN_FILES[i]}"  >> "$LOG_FILE" 2>&1
-        mv -fv $WORK_DIR/$(printf "%08d%s"  25 .$IMG_FMT) \
-        $WORK_DIR/pics/$i/$(printf "%06d%s"  0 .$IMG_FMT)
-        rm -f "$WORK_DIR"/00000*.png
-    elif [ "$SC_FRAMESTYLE" = "none" ]; then
-        if $NO_ASK; then
-            if "${FFMPEG_CMD[@]}" >> "$LOG_FILE" 2>&1;then
-                : #cleanlog 3
-            else
-                #cleanlog 3
-                runtime_error "Problem creating images from the video."
-                $FROM_GUI && exit_from_gui || exit 1
+            run_navseek &
+            NS_PID="$!"
+            if [ -n "$NS_PID" ]; then
+                while ps -p $NS_PID >/dev/null; do
+                    sleep .5 # spinner interval
+                    spin "Creating a nav_seek log for "${IN_FILES[i]}": $SPINNER"
+                done
             fi
-        else
-            run_transcode &
+            length=( ${length[@]} $(( $(awk  '{ field = $2 }; END{ print field }'  "$WORK_DIR/nav${i}_log") + 1)) )
         fi
-    fi
-    
-    [[ "$SC_FRAMESTYLE" = "none" && ! $NOASK ]] && check_stall &
-    unset NAVSEEK_CMD rectangle run_transcode FFMPEG_CMD TRANSCODE_CMD
-done
+        if ! $NOASK; then
+            echo
+            echo "[$i of $NUM_FILES] Seeking to ${SEEK_VAL[i]} seconds in ${IN_FILES[i]}"
+        fi
+        
+        TRANSCODE_CMD=(transcode -q 1 --write_pid /tmp/tcode.pid -i "${IN_FILES[i]}" \
+        -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + 1)) ${NAVSEEK[i]} \
+        -o $WORK_DIR/pics/$i/ -f 29.970  -Z $THUMB_SIZE $EXPORT)
+        FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" -an -ss ${SEEK_VAL[i]} -vframes 1 \
+        -s $THUMB_SIZE $WORK_DIR/pics/$i/%06d.$IMG_FMT)
+        if $NOASK; then
+            CMD=( "${FFMPEG_CMD[@]}" )
+        else
+            CMD=( "${TRANSCODE_CMD[@]}" )
+        fi
+        function run_transcode()
+        {
+            "${TRANSCODE_CMD[@]}" >> "$LOG_FILE" 2>&1
+        }
+
+        SED_VAR="frame="
+        echo -e "\nRunning: "${CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
+        VOUT="png:z=7"; FRAMES=30
+        FRAME_SIZE=$THUMB_SIZE
+        D=2
+        
+        if [ "$SC_FRAMESTYLE" = "glass" ]; then
+            MPLAYER_SEEK_VAL=${SEEK_VAL[i]}
+            get_framed_pics "${IN_FILES[i]}"  >> "$LOG_FILE" 2>&1
+            mv -fv $WORK_DIR/$(printf "%08d%s"  25 .$IMG_FMT) \
+            $WORK_DIR/pics/$i/$(printf "%06d%s"  0 .$IMG_FMT)
+            rm -f "$WORK_DIR"/00000*.png
+        elif [ "$SC_FRAMESTYLE" = "none" ]; then
+            if $NO_ASK; then
+                if "${FFMPEG_CMD[@]}" >> "$LOG_FILE" 2>&1;then
+                    : #cleanlog 3
+                else
+                    #cleanlog 3
+                    runtime_error "Problem creating images from the video."
+                    $FROM_GUI && exit_from_gui || exit 1
+                fi
+            else
+                run_transcode &
+            fi
+        fi
+        
+        [[ "$SC_FRAMESTYLE" = "none" && ! $NOASK ]] && check_stall &
+        unset NAVSEEK_CMD rectangle run_transcode FFMPEG_CMD TRANSCODE_CMD
+    done
+fi
 # overlay menu title and thumb titles on template
 if $MIST; then
     # overlay white.png onto background
