@@ -1381,6 +1381,8 @@ done
 if [[ $BUTTON_STYLE = text-rect ]]; then
     TEXT_BORDER="-bordercolor Transparent -border 8x8"
 fi
+# place menu title lower if not text mist
+$MIST && title_pos=65 || title_pos=50
 #FIXME temporary till non transparent menus for -showcase* are done separately
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
@@ -1841,7 +1843,7 @@ if $SHOWCASE; then
     convert -size $VIDSIZE "$WORK_DIR/pics/template.png" \
     ${sc_thumb_title_cmd[@]} -mosaic "$WORK_DIR/pics/template.png"
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
-    -gravity south -geometry +0+65 -composite "$WORK_DIR/pics/template.png"
+    -gravity south -geometry +0+${title_pos} -composite "$WORK_DIR/pics/template.png"
 fi
 if $PLAYALL; then
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/PLAYALL.png" \
@@ -2204,7 +2206,7 @@ if $SHOWCASE; then
                 -gravity NorthWest  -dissolve $OPACITY - "$WORK_DIR/pics/template.png" \
                 -background none)
             IM_CMD3=(convert - $WORK_DIR/title_txt.png  \
-                -gravity south -geometry +0+65 -composite "$WORK_DIR/preview.jpg" )
+                -gravity south -geometry +0+${title_pos} -composite "$WORK_DIR/preview.jpg" )
             echo "Running
             "${IM_CMD0[@]}" miff:- | "${IM_CMD1[@]}" miff:- |
             "${IM_CMD2[@]}" miff:- | "${IM_CMD3[@]}"
@@ -2231,12 +2233,12 @@ else # not showcase
         -gravity north -geometry +0+45 - \
         "$WORK_DIR/pics/template.png" -background none miff:- |
         convert - "$WORK_DIR/title_txt.png"  \
-        -gravity south -geometry +0+65 -composite "$WORK_DIR/preview.jpg"
+        -gravity south -geometry +0+${title_pos} -composite "$WORK_DIR/preview.jpg"
     else # Not transparent
         montage ${PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
         -geometry ${GEO_ARRAY[NUM_FILES]}+10+4  -background none -bordercolor "#444744" miff:- |
         convert "$WORK_DIR/pics/template.png" \
-        "$WORK_DIR/title_txt.png"  -gravity south -geometry +0+65 -composite \
+        "$WORK_DIR/title_txt.png"  -gravity south -geometry +0+${title_pos} -composite \
         -  -gravity north -geometry +0+45 -composite "$WORK_DIR/preview.jpg"
     fi
 fi
@@ -3365,7 +3367,7 @@ if $MENU_FADE && ! $STATIC; then
         MONTAGE_CMD3=(composite -dissolve $B -gravity south -geometry +0+45 \
         $WORK_DIR/white.png -)
         # finally, we dissolve the title onto the MIST (or plain background)
-        MONTAGE_CMD4=(composite -dissolve $C -gravity south -geometry +0+65 \
+        MONTAGE_CMD4=(composite -dissolve $C -gravity south -geometry +0+${title_pos} \
         $WORK_DIR/title_txt.png - -background none $WORK_DIR/animenu/$(($frame + 1)).jpg)
         if $PLAYALL; then
             MONTAGE_CMD5=(composite -dissolve $S -gravity SouthEast -geometry +55+55 \
@@ -3458,7 +3460,7 @@ else # Do not do menu fade
             IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+45 \
             $WORK_DIR/white.png - miff:-)
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
-            -gravity south -geometry +0+65 -composite $ADD_PLAYALL \
+            -gravity south -geometry +0+${title_pos} -composite $ADD_PLAYALL \
             $WORK_DIR/animenu/$count.jpg )
             if $MIST; then
                 if $SHOWCASE && [ -n "$SHOWCASE_VIDEO" ]; then # showcase, mist, showcase-video
@@ -3527,7 +3529,7 @@ else # Do not do menu fade
             IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+45 \
             $WORK_DIR/white.png - miff:-)
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
-            -gravity south -geometry +0+65 -composite $ADD_PLAYALL \
+            -gravity south -geometry +0+${title_pos} -composite $ADD_PLAYALL \
             $WORK_DIR/animenu/$count.jpg )
 
             if $STATIC; then
