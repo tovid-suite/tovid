@@ -86,7 +86,7 @@ log.addHandler(stdout)
 #
 # Without further ado, I give you:
 
-class Disc(object):
+class Disc (object):
     """A video disc, with functions to manipulate its contents."""
     def __init__(self, format='dvd', title='Untitled disc', tvsys='ntsc'):
         print "Disc: Creating %s entitled: '%s'" % (type.upper(), title)
@@ -134,23 +134,23 @@ class Disc(object):
         print "Disc: Burning at speed %s on device %s" % (speed, device)
 
 # Three different Disc formats:
-class VCD(Disc):
+class VCD (Disc):
     """A Video CD"""
     def __init__(title='Untitled VCD', tvsys='ntsc'):
         Disc.__init__('vcd', title, tvsys)
 
-class SVCD(Disc):
+class SVCD (Disc):
     """A Super Video CD"""
     def __init__(title='Untitled SVCD', tvsys='ntsc'):
         Disc.__init__('svcd', title, tvsys)
 
-class DVD(Disc):
+class DVD (Disc):
     """A DVD"""
     def __init__(title='Untitled DVD', tvsys='ntsc'):
         Disc.__init__('dvd', title, tvsys)
 
 
-class Menu(object):
+class Menu (object):
     """A video disc menu.
     
         >>> menu = Menu('dvd', 'thumb', videos)
@@ -185,7 +185,7 @@ class Menu(object):
         print "Menu: Rendering..."
 
 
-class Video(object):
+class Video (object):
     """A video for inclusion on a video disc."""
     def __init__(self, filename='', title=''):
         print "Video: Creating a video entitled '%s' from file '%s'" %\

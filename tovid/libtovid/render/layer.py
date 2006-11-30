@@ -45,6 +45,7 @@ from libtovid.render.effect import Effect
 from libtovid.render.animation import Keyframe, Tween
 from libtovid.media import MediaFile
 from libtovid.transcode import rip
+from libtovid import log
 
 class Layer:
     """A visual element, or a composition of visual elements. Conceptually
@@ -173,7 +174,7 @@ class MyLayer (Layer):
         drawing.rectangle((0, 0), (50, 20))
         drawing.fill(fc)
         drawing.stroke(sc)
-        drawing.rectangle((15, 12), (60, 40))
+        drawing.rectangle((15, 12), (45, 28))
         drawing.fill(fc)
         drawing.stroke(sc)
 
@@ -202,6 +203,7 @@ class Background (Layer):
         
     def draw(self, drawing, frame):
         assert isinstance(drawing, Drawing)
+        log.debug("Drawing Background")
         drawing.save()
         # Fill drawing with an image
         if self.filename is not '':
@@ -234,6 +236,7 @@ class Image (Layer):
 
     def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
+        log.debug("Drawing Image")
         drawing.save()
         # Save the source for future calls to draw, so no further
         # processing will be necessary. And other effects can be done
@@ -279,6 +282,7 @@ class VideoClip (Layer):
         Video is looped.
         """
         assert isinstance(drawing, Drawing)
+        log.debug("Drawing VideoClip")
         if len(self.frame_files) == 0:
             print "VideoClip error: need to call rip_frames() before drawing."
             sys.exit(1)
@@ -327,14 +331,14 @@ class Text (Layer):
 
     def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
-
+        log.debug("Drawing Text")
         # Drop in debugger
         drawing.save()
         drawing.font(self.font)
         drawing.font_size(self.fontsize)
         if self.color is not None:
             drawing.set_source(self.color)
-        drawing.text(self.position, self.text, self.align)
+        drawing.text(self.text, self.position, self.align)
         drawing.restore()
 
 
@@ -358,7 +362,7 @@ class Label (Text):
 
     def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
-
+        log.debug("Drawing Label")
         (dx, dy, w, h, ax, ay) = self.extents(drawing)
 
         # Save context
@@ -413,6 +417,7 @@ class TextBox (Text):
 
     def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
+        log.debug("Drawing TextBox")
         drawing.save()
 
         # TODO: Wrap text!
@@ -436,13 +441,13 @@ class TextBox (Text):
             
             # If no tag was found, draw remaining text and finish up
             if tag_start == -1:
-                drawing.text(draw_loc, self.text[cursor:])
+                drawing.text(self.text[cursor:], draw_loc)
                 finished = True
 
             # Otherwise, parse and render tags
             else:
                 # Draw text from cursor up to (but not including) the '<'
-                drawing.text(draw_loc, self.text[cursor:tag_start])
+                drawing.text(self.text[cursor:tag_start], draw_loc)
                 chars_written = tag_start - cursor
     
                 # Adjust draw_loc
@@ -509,6 +514,7 @@ class Thumb (Layer):
 
     def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
+        log.debug("Drawing Thumb")
         drawing.save()
         (dx, dy, w, h, ax, ay) = self.lbl.extents(drawing)
         drawing.translate((0, h))
@@ -534,7 +540,6 @@ class ThumbGrid (Layer):
         assert files != []
         Layer.__init__(self)
         self.size = (width, height)
-        print "Creating a thumbnail grid of %s media files" % len(files)
         # Auto-dimension (using desired rows/columns, if given)
         self.columns, self.rows = \
             self._fit_items(len(files), columns, rows, aspect)
@@ -582,6 +587,7 @@ class ThumbGrid (Layer):
 
     def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
+        log.debug("Drawing ThumbGrid")
         drawing.save()
         self.draw_sublayers(drawing, frame)
         drawing.restore()
@@ -601,6 +607,7 @@ class SafeArea (Layer):
         
     def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
+        log.debug("Drawing SafeArea")
         # Calculate rectangle dimensions
         scale = float(self.percent) / 100.0
         width, height = drawing.size
@@ -616,7 +623,7 @@ class SafeArea (Layer):
         # Label
         drawing.font_size(18)
         drawing.set_source(self.color)
-        drawing.text((10, 20), u"%s%%" % self.percent)
+        drawing.text(u"%s%%" % self.percent, (10, 20))
         # Restore context
         drawing.restore()
 
@@ -641,6 +648,7 @@ class Scatterplot (Layer):
     def draw(self, drawing, frame):
         """Draw the scatterplot."""
         assert isinstance(drawing, Drawing)
+        log.debug("Drawing Scatterplot")
         width, height = self.size
         x_vals = self.xy_dict.keys()
         max_y = 0
@@ -675,7 +683,7 @@ class Scatterplot (Layer):
         drawing.save()
         drawing.set_source('blue')
         drawing.save()
-        drawing.text((width, height + 15), str(max(x_vals)))
+        drawing.text(str(max(x_vals)), (width, height + 15))
         i = 0
         while i < len(x_vals):
             drawing.save()
@@ -684,22 +692,22 @@ class Scatterplot (Layer):
             else:
                 drawing.translate((i * x_scale, height + 15))
             drawing.rotate(30)
-            drawing.text((0, 0), x_vals[i])
+            drawing.text(x_vals[i], (0, 0))
             drawing.restore()
             i += 1
         drawing.font_size(20)
-        drawing.text((width / 2, height + 40), self.x_label)
+        drawing.text(self.x_label, (width / 2, height + 40))
         drawing.restore()
         #->comment("Y axis labels")
         drawing.save()
-        drawing.text((-30, 0), max_y)
+        drawing.text(max_y, (-30, 0))
         drawing.translate((-25, height / 2))
         drawing.rotate(90)
-        drawing.text((0, 0), self.y_label)
+        drawing.text(self.y_label, (0, 0))
         drawing.restore()
         #for x in x_vals:
         #    axis_pos = (int(x * x_scale), height + 15)
-        #    drawing.text(axis_pos, "%s" % x)
+        #    drawing.text("%s" % x, axis_pos)
         drawing.restore()
 
         # Plot all y-values for each x (as small circles)
@@ -751,6 +759,7 @@ class InterpolationGraph (Layer):
         """Draw the interpolation graph, including frame/value axes,
         keyframes, and the interpolation curve."""
         assert isinstance(drawing, Drawing)
+        log.debug("Drawing InterpolationGraph")
         data = self.tween.data
         # Calculate maximum extents of the graph
         width, height = self.size
@@ -801,7 +810,7 @@ class InterpolationGraph (Layer):
         for key in self.keyframes:
             x = int(key.frame * x_scale)
             y = int(height - key.data * y_scale - 3)
-            drawing.text((x, y), u"(%s,%s)" % (key.frame, key.data))
+            drawing.text(u"(%s,%s)" % (key.frame, key.data), (x, y))
 
         drawing.restore()
 
@@ -838,7 +847,8 @@ class ColorBars (Layer):
         self.position = position
 
     def draw(self, drawing, frame=1):
-
+        assert isinstance(drawing, Drawing)
+        log.debug("Drawing ColorBars")
         drawing.save()
         drawing.translate(self.position)
         drawing.scale(self.size)
@@ -850,55 +860,59 @@ class ColorBars (Layer):
         top = 0
         bottom = 2.0 / 3
         x_inc = 1.0 / 7
-        drawing.rectangle((0, top), (x_inc, bottom))
+        size = (x_inc, bottom)
+        drawing.rectangle((0, top), size)
         drawing.fill('rgb(191, 191, 191)')
-        drawing.rectangle((x_inc, top), (x_inc*2, bottom))
+        drawing.rectangle((x_inc, top), size)
         drawing.fill('rgb(191, 191, 0)')
-        drawing.rectangle((x_inc*2, top), (x_inc*3, bottom))
+        drawing.rectangle((x_inc*2, top), size)
         drawing.fill('rgb(0, 191, 191)')
-        drawing.rectangle((x_inc*3, top), (x_inc*4, bottom))
+        drawing.rectangle((x_inc*3, top), size)
         drawing.fill('rgb(0, 191, 0)')
-        drawing.rectangle((x_inc*4, top), (x_inc*5, bottom))
+        drawing.rectangle((x_inc*4, top), size)
         drawing.fill('rgb(191, 0, 191)')
-        drawing.rectangle((x_inc*5, top), (x_inc*6, bottom))
+        drawing.rectangle((x_inc*5, top), size)
         drawing.fill('rgb(191, 0, 0)')
-        drawing.rectangle((x_inc*6, top), (1.0, bottom))
+        drawing.rectangle((x_inc*6, top), size)
         drawing.fill('rgb(0, 0, 191)')
         # Next 8% of picture: Reverse blue bars
         top = bottom
         bottom = 0.75
-        drawing.rectangle((0, top), (x_inc, bottom))
+        size = (x_inc, bottom)
+        drawing.rectangle((0, top), size)
         drawing.fill('rgb(0, 0, 191)')
-        drawing.rectangle((x_inc, top), (x_inc*2, bottom))
+        drawing.rectangle((x_inc, top), size)
         drawing.fill('rgb(16, 16, 16)')
-        drawing.rectangle((x_inc*2, top), (x_inc*3, bottom))
+        drawing.rectangle((x_inc*2, top), size)
         drawing.fill('rgb(191, 0, 191)')
-        drawing.rectangle((x_inc*3, top), (x_inc*4, bottom))
+        drawing.rectangle((x_inc*3, top), size)
         drawing.fill('rgb(16, 16, 16)')
-        drawing.rectangle((x_inc*4, top), (x_inc*5, bottom))
+        drawing.rectangle((x_inc*4, top), size)
         drawing.fill('rgb(0, 191, 191)')
-        drawing.rectangle((x_inc*5, top), (x_inc*6, bottom))
+        drawing.rectangle((x_inc*5, top), size)
         drawing.fill('rgb(16, 16, 16)')
-        drawing.rectangle((x_inc*6, top), (1.0, bottom))
+        drawing.rectangle((x_inc*6, top), size)
         drawing.fill('rgb(191, 191, 191)')
         # Lower 25%: Pluge signal
         top = bottom
         bottom = 1.0
         x_inc = 1.0 / 6
-        drawing.rectangle((0, top), (1.0, bottom))
+        # TODO: Replace rectangle_() with new rectangle() function
+        # (width, height instead of end coordinates)
+        drawing.rectangle_((0, top), (1.0, bottom))
         drawing.fill('rgb(16, 16, 16)')
-        drawing.rectangle((0, top), (x_inc, bottom))
+        drawing.rectangle_((0, top), (x_inc, bottom))
         drawing.fill('rgb(0, 29, 66)')
-        drawing.rectangle((x_inc, top), (x_inc*2, bottom))
+        drawing.rectangle_((x_inc, top), (x_inc*2, bottom))
         drawing.fill('rgb(255, 255, 255)')
-        drawing.rectangle((x_inc*2, top), (x_inc*3, bottom))
+        drawing.rectangle_((x_inc*2, top), (x_inc*3, bottom))
         drawing.fill('rgb(44, 0, 92)')
         # Sub- and super- black narrow bars
-        drawing.rectangle((x_inc*4, top), (x_inc*4.33, bottom))
+        drawing.rectangle_((x_inc*4, top), (x_inc*4.33, bottom))
         drawing.fill('rgb(7, 7, 7)')
-        drawing.rectangle((x_inc*4.33, top), (x_inc*4.66, bottom))
+        drawing.rectangle_((x_inc*4.33, top), (x_inc*4.66, bottom))
         drawing.fill('rgb(16, 16, 16)')
-        drawing.rectangle((x_inc*4.66, top), (x_inc*5, bottom))
+        drawing.rectangle_((x_inc*4.66, top), (x_inc*5, bottom))
         drawing.fill('rgb(24, 24, 24)')
         drawing.restore()
 

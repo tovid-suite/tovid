@@ -54,7 +54,7 @@ from subprocess import Popen, PIPE
 # From libtovid
 from libtovid import log
 
-class Command(object):
+class Command (object):
     """A command-line statement, consisting of a program and its arguments,
     with support for various modes of execution.
     """
@@ -143,7 +143,7 @@ class Command(object):
         return ret
 
 
-class Pipe(object):
+class Pipe (object):
     """A series of Commands, each having its output piped into the next.
     """
     def __init__(self, *commands):
