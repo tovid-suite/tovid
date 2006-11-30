@@ -3343,7 +3343,8 @@ if $MENU_FADE && ! $STATIC; then
                 unset SC_VIDEO_CMD
             fi
         fi
-        $NO_THUMBS && unset sc_cmd; ! $NO_THUMBS && MOSAIC="-mosaic"
+        $NO_THUMBS && unset sc_cmd
+        ! $NO_THUMBS && MOSAIC="-mosaic"
         BG_PIC=$(find $WORK_DIR/bg -name $(($frame + 1)).jpg)
         # create the montage from the images in each video dir
         MONTAGE_CMD=(convert  -size $VIDSIZE -background none \
@@ -3427,13 +3428,10 @@ else # Do not do menu fade
             for ((f=0; f<${#ANI_PICS[@]}; f++)); do
                 sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_THUMB_PAGES[f]} "${ANI_PICS[f]}")
             done
-            if ! $NO_SC_THUMB; then
-                SC_VIDEO_CMD="$SC_IMG_PAGE \
-                "$WORK_DIR"/showcase/$(printf "%06d%s"  $count .png)"
-            else
-                unset SC_VIDEO_CMD
-            fi
-            $NO_THUMBS && unset sc_cmd SC_IMG_CMD #FIXME
+            SC_VIDEO_CMD="$SC_IMG_PAGE \
+            "$WORK_DIR"/showcase/$(printf "%06d%s"  $count .png)"
+            $NO_THUMBS && unset sc_cmd SC_IMG_CMD SC_VIDEO_CMD #FIXME
+
 
             IM_CMD0=(convert  -size $VIDSIZE "$WORK_DIR/pics/template.png" \
             ${sc_cmd[@]} $SC_IMG_CMD -mosaic)
