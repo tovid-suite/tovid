@@ -164,7 +164,7 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.set_source('rgb(255,255,255)', 1.0)
 
         # We use these also for the 'text' function.
-        self.d.text((10,50), 'ahuh')
+        self.d.text('ahuh', (10,50))
         self.d.text_path((10, 1000), 'ahuh')
         self.d.fill('blue')
 
@@ -196,8 +196,8 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.font_rotate(0)
 
     def test_text_stuff(self):
-        self.d.text((15, 15), "This isn't a Unicode string")
-        self.d.text((15, 15), u"This is a Unicode é string")
+        self.d.text("This isn't a Unicode string", (15, 15))
+        self.d.text(u"This is a Unicode é string", (15, 15))
         self.d.text_extents(u"This is a Unicode é string")
 
     def test_antialias_stuff(self):

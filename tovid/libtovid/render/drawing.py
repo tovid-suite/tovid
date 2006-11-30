@@ -46,7 +46,7 @@ Main difference with the MVG backend. Example MVG usage:
     >>> drawing.fill('blue')
     >>> drawing.rectangle((0, 0), (800, 600))
     >>> drawing.fill('white')
-    >>> drawing.rectangle((320, 240), (520, 400))
+    >>> drawing.rectangle((320, 240), (200, 100))
 
 Example Cairo usage:
 
@@ -54,7 +54,7 @@ Example Cairo usage:
     >>> drawing.rectangle((0, 0), (800, 600))
     >>> drawing.fill()
     >>> drawing.set_source(1, 1, 0.5)
-    >>> drawing.rectangle((320, 240), (520, 400))
+    >>> drawing.rectangle((320, 240), (200, 100))
     >>> drawing.stroke('white')
 
 Notice how you set the colors first in Cairo, and that you call the fill() and
@@ -110,12 +110,44 @@ import os
 import sys
 import time
 import commands
+from copy import copy
 from math import pi, sqrt
 import cairo
 import Image      # for JPG export
 import ImageColor # for getrgb, getcolor
 
-class Drawing:
+class Style (object):
+    """Stores style attributes of drawn objects.
+    """
+    def __init__(self):
+        # Stroke attributes
+        self.stroke = (0, 0, 0)       # stroke color for shapes or text
+        self.stroke_alpha = 0         # opaque
+        self.stroke_width = 2         # units?
+        self.stroke_pattern = [0, 1]  # on/off pattern from 0.0-1.0
+        # Fill attributes
+        self.fill = (0, 0, 0)         # fill color for shapes or text
+        self.fill_alpha = 1           # transparent
+        # TODO (where gradient is transparent, rgba shows through)
+        self.fill_gradient = None
+        # Font attributes
+        self.font = 'sans'
+        self.font_size = 12           # points
+        self.font_stretch = (1, 1)    # x, y scaling
+
+    def set(self, **kwargs):
+        """Convenience function for setting named style attributes.
+        Call with named arguments matching class attribute names, i.e.
+        
+            style.set(stroke='red', fill='blue', fill_alpha=0.5)
+        
+        No validity-checking of argument values is done. Use appropriate values.
+        """
+        for name, value in kwargs.iteritems():
+            if hasattr(self, name):
+                setattr(self, name, value)
+
+class Drawing (object):
     """A Cairo image context, ready to be drawn.
 
     Drawing functions are mostly identical to their MVG counterparts, e.g.
@@ -135,33 +167,17 @@ class Drawing:
         self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.width,
                                      self.height)
         self.cr = cairo.Context(self.surface)
-        # Default values
-        self.family = 'sans'
-        # Default colors..
-        self.text_rgb = (0, 0, 0)
-        self.text_alpha = 1.0
-        self.fill_rgb = (0, 0, 0)
-        self.fill_alpha = 0.0
-        self.stroke_rgb = (0, 0, 0)
-        self.stroke_alpha = 1.0
-        # Overall opacity
-        self.global_opacity = 1.0
+        self.style = Style()
         # Automatic behavior (auto_fill, auto_stroke)
         self.auto_fill_val = False
         self.auto_stroke_val = False
         # Push/pop stack
         self.stack = []
 
-    def cry(self, message = ''):
-        """Raise an error and print a deprecation message.
+    ###
+    ### Setup commands (auto-stuff)
+    ###
 
-        Calls to this functions should all be removed before releasing.
-        """
-        raise AssertionError, "Use of deprecated function. %s" % message
-
-    #
-    # Setup commands (auto-stuff)
-    #
     def auto_fill(self, value=True):
         """Sets the auto-fill behavior to ON. Accepts a bool value.
 
@@ -196,7 +212,7 @@ class Drawing:
         See auto_fill()"""
         if self.auto_fill_val:
             self.fill()
-            
+
     def _go_auto_stroke(self):
         """Stroke the path if auto_stroke is enabled.
 
@@ -208,9 +224,10 @@ class Drawing:
         """Run all the auto_fill and auto_stroke commands if enabled"""
         self._go_auto_fill()
         self._go_auto_stroke()
-    #
-    # Cairo drawing commands
-    #
+
+    ###
+    ### Cairo drawing commands
+    ###
 
     def affine(self, scale_x, rot_x, rot_y, scale_y, translate_x, translate_y):
         """Define a 3x3 transformation matrix:
@@ -297,7 +314,6 @@ class Drawing:
         # Move to the first x,y in the first point
         self.cr.new_path()
         self.cr.move_to(pt_list[0][0][0], pt_list[0][0][1])
-
         for pt in pt_list:
             self.cr.curve_to(pt[2][0], pt[2][1],
                              pt[0][0], pt[0][1],
@@ -305,7 +321,6 @@ class Drawing:
                              )
         if close_path:
             self.cr.close_path()
-
         self._go_auto_all()
 
     def circle(self, (center_x, center_y), (perimeter_x, perimeter_y)):
@@ -316,16 +331,13 @@ class Drawing:
                     (perimeter_y - center_y) ** 2 )
         self.cr.new_path()
         self.cr.arc(center_x, center_y, rad, 0, 2*pi)
-
         self._go_auto_all()
-                    
+
     def circle_rad(self, (center_x, center_y), radius):
         """Draw a circle defined by center point and radius."""
         self.cr.new_path()
         self.cr.arc(center_x, center_y, radius, 0, 2*pi)
-
         self._go_auto_all()
-
 
     # TODO: add clip stuff...
 
@@ -335,7 +347,7 @@ class Drawing:
     
         NOTE: this doesn't paint anything on the canvas.
         """
-        self.fill_alpha = opacity
+        self.style.fill_alpha = opacity
     
     def fill(self, source=None, opacity=None):
         """Fill the current (closed) path with an optionally given color.
@@ -397,11 +409,6 @@ class Drawing:
         > 1.0 -- strench
         < 1.0 -- shrink
 
-        In MVG, these values are used:
-
-            all, normal, semi-condensed, condensed, extra-condensed,
-            ultra-condensed, semi-expanded, expanded, extra-expanded,
-            ultra-expanded
         """
         m = self.cr.get_font_matrix()
         m.scale(x, y)
@@ -480,39 +487,38 @@ class Drawing:
         to show up. See operator()
         """
         # Create new image
-        im = None
         if isinstance(source, cairo.ImageSurface):
-            im = source
+            img = source
+        # PNG files can be added directly
         elif isinstance(source, str) and source.endswith('.png'):
-            im = cairo.ImageSurface.create_from_png(source)
+            img = cairo.ImageSurface.create_from_png(source)
+        # Other formats must be converted to PNG
         else:
-            mim = Image.open(source)
-            f = open('/tmp/export.png', 'wb+')
-            mim.save(f, 'PNG')
-            del(mim)
-            f.seek(0)
-            im = cairo.ImageSurface.create_from_png(f)
-            f.close()
-            del(f)
+            infile = Image.open(source)
+            outfile = open('/tmp/export.png', 'wb+')
+            infile.save(outfile, 'PNG')
+            outfile.seek(0)
+            img = cairo.ImageSurface.create_from_png(outfile)
+            outfile.close()
 
-        # Centering and scaling algo
+        # Centering and scaling
         add_x, add_y = (0, 0)
-        dw = float(width) / float(im.get_width())
-        dh = float(height) / float(im.get_height())
+        dw = float(width) / float(img.get_width())
+        dh = float(height) / float(img.get_height())
         if (dw > dh):
             scal = dh
-            add_x = (width - dh * float(im.get_width())) / 2
+            add_x = (width - dh * float(img.get_width())) / 2
         else:
             scal = dw
-            add_y = (height - dw * float(im.get_height())) / 2
+            add_y = (height - dw * float(img.get_height())) / 2
         self.save()
         self.translate((x + add_x, y + add_y))
         self.scale((scal, scal))
-        self.cr.set_source_surface(im)
+        self.cr.set_source_surface(img)
         self.cr.paint()
         self.restore()
 
-        return im
+        return img
     
     def line(self, (x0, y0), (x1, y1)):
         """Set new path as a line from (x0, y0) to (x1, y1).
@@ -531,17 +537,6 @@ class Drawing:
     #def offset(self, offset):
     #    self.insert('offset %s' % offset)
 
-    def opacity(self, opacity=1.0):
-        """Sets global opacity for the next functions
-    
-        opacity -- ranges from 0.0 (transparent) to 1.0 (fully opaque)
-    
-        NOTE: Make sure to call opacity() before you call any color(),
-        functions, because in certain situations, it might not be applied
-        correctly.
-        """
-        self.global_opacity = opacity
-        
 
     def operator(self, operator='clear'):
         """Set the operator mode.
@@ -568,7 +563,7 @@ class Drawing:
                'saturate': cairo.OPERATOR_SATURATE,
                }
         self.cr.set_operator(ops[operator])
-               
+
     def paint(self):
         """Paint the current source everywhere within the current clip
         region."""
@@ -629,15 +624,15 @@ class Drawing:
         self.polygon(pt_list, close_path)
 
     
-    def rectangle(self, (x0, y0), (x1, y1)):
+    def rectangle_(self, (x0, y0), (x1, y1)):
         """Draw a rectangle from (x0, y0) to (x1, y1)."""
         self.cr.new_path()
         self.cr.rectangle(x0, y0,
                           x1 - x0, y1 - y0)
-        
+
         self._go_auto_all() # Draw or not
 
-    def rectangle_size(self, (x, y), (w, h)):
+    def rectangle(self, (x, y), (w, h)):
         """Draw a "w x h" rectangle from top-left corner x,y"""
         self.cr.new_path()
         self.cr.rectangle(x, y, w, h)
@@ -737,8 +732,7 @@ class Drawing:
                                       b / 255.0, alpha)
         
         elif isinstance(source, tuple):
-            if len(source) != 3:
-                raise ValueError, "Color must be specified as a 3 floats tuple, each ranging from 0.0 to 1.0"
+            assert len(source) == 3
             (r,g,b) = source
             alpha = 1.0
             if opacity is not None:
@@ -881,18 +875,18 @@ class Drawing:
 
         NOTE: this doesn't paint anything on the canvas.
         """
-        self.stroke_alpha = opacity
+        self.style.stroke_alpha = opacity
 
     def stroke_width(self, width):
         """Set the current stroke width in pixels."""
         # (Pixels or points?)
         self.cr.set_line_width(width)
     
-    def text(self, (x, y), text_string, align='left'):
+    def text(self, text_string, (x, y), align='left'):
         """Draw the given text string.
 
-            (x, y) -- lower-left corner position
             text_string -- utf8 encoded text string
+            (x, y) -- lower-left corner position
             align -- 'left', 'center', 'right'. This only changes the
                      alignment in 'x', and 'y' stays the baseline.
 
@@ -926,18 +920,15 @@ class Drawing:
         #
         if not isinstance(text_string, unicode):
             text_string = unicode(str(text_string).decode('latin-1'))
-
         self.save()
         (dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
         if align == 'right':
             x = x - w
         elif align == 'center':
             x = x - w / 2
-
         self.cr.move_to(x, y)
         self.cr.show_text(text_string)
         self.restore()
-
         return (dx, dy, w, h, ax, ay)
 
     def text_path(self, (x,y), text_string, centered=False):
@@ -954,14 +945,12 @@ class Drawing:
         """
         if not isinstance(text_string, unicode):
             text_string = unicode(text_string.decode('latin-1'))
-
         (dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
         if centered:
             x = x - w / 2
             y = y + h / 2
         self.cr.move_to(x, y)
         self.cr.text_path(text_string)
-
         return (dx, dy, w, h, ax, ay)
     
     def text_extents(self, text_string):
@@ -977,9 +966,7 @@ class Drawing:
         """
         if not isinstance(text_string, unicode):
             text_string = unicode(text_string.decode('latin-1'))
-
         return self.cr.text_extents(text_string)
-      
 
     def new_gradient(self, (x0,y0), (x1,y1)):
         """Return a LinearGradient object, initialized with the current
@@ -989,7 +976,7 @@ class Drawing:
         return grad
 
     def translate(self, (dx, dy)):
-        """Do a translation by (x, y) pixels."""
+        """Do a translation by (dx, dy) pixels."""
         m = self.cr.get_matrix()
         m.translate(dx, dy)
         self.cr.set_matrix(m)
@@ -1019,15 +1006,7 @@ class Drawing:
         This was called push() before.
         """
         # Save local context
-        self.stack.append({'tr': self.text_rgb,
-                         'ta': self.text_alpha,
-                         'fr': self.fill_rgb,
-                         'fa': self.fill_alpha,
-                         'sr': self.stroke_rgb,
-                         'sa': self.stroke_alpha,
-                         'go': self.global_opacity,
-                         'afv': self.auto_fill_val,
-                         'asv': self.auto_stroke_val})
+        self.stack.append(copy(self.style))
         # Save Cairo context
         self.cr.save()
 
@@ -1037,31 +1016,21 @@ class Drawing:
         This was called pop() before.
         """
         # Restore local context
-        st = self.stack.pop()
-        self.text_rgb = st['tr']
-        self.text_alpha = st['ta']
-        self.fill_rgb = st['fr']
-        self.fill_alpha = st['fa']
-        self.stroke_rgb = st['sr']
-        self.stroke_alpha = st['sa']
-        self.global_opacity = st['go']
-        self.auto_fill_val = st['afv']
-        self.auto_stroke_val = st['asv']
-
+        self.style = self.stack.pop()
         # Restore Cairo context
         self.cr.restore()
 
-    
-    #
-    # Editor interface/interactive functions
-    #
+
+    ###
+    ### Editor interface/interactive functions
+    ###
 
     def save_png(self, filename):
         """Saves current drawing to PNG, keeping alpha channel intact.
 
         This is the quickest, since Cairo itself exports directly to .png"""
         self.surface.write_to_png(filename)
-        
+
     def save_jpg(self, filename):
         """Saves current drawing to JPG, losing alpha channel information."""
         
@@ -1086,7 +1055,6 @@ class Drawing:
         png_file = '/tmp/drawing.png'
         self.render(png_file)
         print commands.getoutput('display %s' % png_file)
-        
 
     def save_image(self, img_filename):
         """Render the drawing to a .jpg, .png or other image."""
@@ -1096,7 +1064,10 @@ class Drawing:
         print "Rendering drawing to: %s" % img_filename
         print commands.getoutput(cmd)
 
-# Demo functions
+
+###
+### Demo functions
+###
 
 def draw_fontsize_demo(drawing):
     """Draw font size samples on the given drawing."""
@@ -1112,7 +1083,7 @@ def draw_fontsize_demo(drawing):
         ypos = size * size / 5
         drawing.font('Helvetica')
         drawing.font_size(size)
-        drawing.text((0, ypos), u"%s pt: The quick brown fox" % size)
+        drawing.text(u"%s pt: The quick brown fox" % size, (0, ypos))
     
     # Restore context
     drawing.restore()
@@ -1132,10 +1103,10 @@ def draw_font_demo(drawing):
         drawing.font(font)
         # Transparent shadow
         drawing.set_source('darkblue', 0.4)
-        drawing.text((3, ypos+3), font)
+        drawing.text(font, (3, ypos+3))
         # White text
         drawing.set_source('white', 1.0)
-        drawing.text((0, ypos), font)
+        drawing.text(font, (0, ypos))
         ypos += fontsize
 
     # Restore context
@@ -1159,6 +1130,17 @@ def draw_shape_demo(drawing):
 
     # Grey-stroked blue circles
     drawing.save()
+    # TODO:
+    # All circles have the same stroke width and color (and, in other cases,
+    # might all have the same fill style as well). A simpler interface is
+    # called for, e.g.:
+    # drawing.set_style(fill='#8080FF', stroke='#777', stroke_width=2)
+    # drawing.circle_rad((65, 50), 15)
+    # drawing.circle_rad((65, 100), 10)
+    # drawing.circle_rad((65, 150), 5)
+    # drawing.set_style(fill='black') # stroke stays the same as before
+    # drawing.rectangle((40, 30), (50, 150))
+    
     drawing.stroke_width(2)
     drawing.circle_rad((65, 50), 15)
     drawing.fill('#8080FF')
@@ -1189,7 +1171,6 @@ def draw_shape_demo(drawing):
 
     # Restore context
     drawing.restore()
-
 
 def draw_stroke_demo(drawing):
     """Draw a stroke/strokewidth demo on the given drawing."""

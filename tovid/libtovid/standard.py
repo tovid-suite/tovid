@@ -85,13 +85,14 @@ def acodec(format):
         >>> acodec('vcd')
         'mp2'
         >>> acodec('dvd')
-        ['ac3', 'mp2', 'pcm']
+        'ac3'
     """
     if format in ['vcd', 'svcd']:
         return 'mp2'
     else:
-        return ['ac3', 'mp2', 'pcm']
-    
+        return 'ac3'
+
+
 def samprate(format):
     """Return the audio sampling rate used by the given format."""
     if format in ['vcd', 'svcd']:

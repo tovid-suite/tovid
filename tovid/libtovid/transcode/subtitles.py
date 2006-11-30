@@ -114,7 +114,7 @@ def add_subs(infile, subs, opts=None):
         spumux(infile.filename, xmlopts, stream)
 
 
-class Subtitles(object):
+class Subtitles (object):
     optiondefs = [
         Option("subs", 'STRING [, STRING ...]', [],
         """One file means one language. You'll need to know the order of the
