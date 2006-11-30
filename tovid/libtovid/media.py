@@ -5,8 +5,25 @@
 a profile of attributes including resolution, audio and video codecs and
 bitrates.
 
-The load_media function returns a MediaFile filled with attributes from a
-provided filename.
+Two functions are also provided:
+
+    load_media(filename)
+        Return a MediaFile filled with attributes from the given file
+    standard_media(format, tvsys)
+        Return a MediaFile profile matching the given format and TV system
+
+These can be used for getting source and target MediaFiles for encoding via
+one of the backends in libtovid.transcode.encode. For example:
+
+    >>> dvd = standard_media('dvd', 'ntsc')
+    >>> print dvd
+    Filename:
+    Format: DVD
+    TVsys: NTSC
+    Length: 0 seconds
+    Video: 720x480 29.97fps 4:3 mpeg2 6000kbps
+    Audio: ac3 224kbps 48000hz 2-channel
+
 """
 
 __all__ = [\
@@ -26,17 +43,19 @@ from libtovid import standard
 from libtovid.utils import ratio_to_float
 
 
-class MediaFile(object):
+class MediaFile (object):
     """A multimedia video file, and its vital statistics.
     """
     def __init__(self, filename='', format='dvd', tvsys='ntsc'):
         log.debug("MediaFile(%s, %s, %s)" % (filename, format, tvsys))
         # TODO: Set attributes to match given format and tvsys
-        self.filename = os.path.abspath(filename)
+        self.filename = filename
         self.format = format
         self.tvsys = tvsys
         self.length = 0
         # TODO: Support multiple audio and video tracks
+        self.has_audio = False
+        self.has_video = False
         # Audio attributes
         self.acodec = 'ac3'
         self.abitrate = 224
@@ -53,10 +72,6 @@ class MediaFile(object):
         self.fps = 29.97
         self.aspect = '4:3'
         self.widescreen = False
-
-        # Check is there is audio/video inside
-        self.has_audio = None
-        self.has_video = None
 
     def __str__(self):
         """Return a string representation of the MediaFile suitable for
@@ -113,7 +128,7 @@ def load_media(filename):
         media.has_audio = True
     else:
         media.has_audio = False
-        
+
     # Parse the dictionary and set appropriate values
     for left, right in mp_dict.iteritems():
         if left == "ID_VIDEO_WIDTH":
