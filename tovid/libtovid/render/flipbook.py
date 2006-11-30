@@ -66,7 +66,7 @@ from libtovid.render.animation import Keyframe
 from libtovid.render.drawing import Drawing
 from libtovid.render import layer, effect
 from libtovid import standard
-from libtovid.media import MediaFile
+from libtovid.media import MediaFile, standard_media, load_media
 from libtovid.transcode import encode
 
 class Flipbook:
@@ -81,7 +81,7 @@ class Flipbook:
             tvsys:   'ntsc' or 'pal'
         """
         self.seconds = seconds
-        self.frames = seconds * standard.fps(tvsys)
+        self.frames = round(seconds * standard.fps(tvsys))
         # TODO: We'll need aspect ratio here.. 4:3 or 16:9 anamorphic ?
         self.format = format
         self.tvsys = tvsys
@@ -128,6 +128,10 @@ class Flipbook:
         # TODO: Get rid of temp-dir hard-coding
         tmp = "%s_frames" % out_prefix
         m2v_file = "%s.m2v" % out_prefix
+
+        #self.encode_flipbook(tmp, m2v_file)
+        #sys.exit();
+
         if os.path.exists(tmp):
             print "Temp dir %s already exists, overwriting." % tmp
             os.system('rm -rf %s' % tmp)
@@ -141,14 +145,35 @@ class Flipbook:
             # jpeg2yuv likes frames to start at 0
             drawing.save_png('%s/%08d.png' % (tmp, frame - 1))
             frame += 1
+
+        self.encode_flipbook(tmp, m2v_file)
+
+        
+    def encode_flipbook(self, tmpdir, m2v_file):
+        
         # Encode the frames to an .m2v file
-        encode.encode_frames(tmp, m2v_file, self.format, self.tvsys)
+        encode.encode_frames(tmpdir, m2v_file, self.format, self.tvsys)
         print "Output file is: %s" % m2v_file
 
+        vidonly = load_media(m2v_file)
 
-def draw_text_demo(flipbook, last_frame):
+        outvid = MediaFile('/tmp/flipbook.mpg', self.format, self.tvsys)
+
+        print "Running audio encoder..."
+        encode.encode_audio(vidonly, '/tmp/flipbook.ac3', outvid)
+
+        print "Mplex..."
+        encode.mplex_streams('/tmp/flipbook.m2v', '/tmp/flipbook.ac3', outvid)
+
+        print "Output: /tmp/flipbook.mpg"
+
+
+def draw_text_demo(flipbook):
     """Draw a demonstration of Text layers with various effects."""
     assert isinstance(flipbook, Flipbook)
+
+    last_frame = flipbook.frames
+    
     # Background image
     bgd = layer.Background('black')
     flipbook.add(bgd)
@@ -216,7 +241,7 @@ if __name__ == '__main__':
         seconds = 3
     flip = Flipbook(seconds, 'dvd', 'ntsc')
 
-    draw_text_demo(flip, frames)
+    draw_text_demo(flip)
 
     # Video clip
     #clip = layer.VideoClip(video, (320, 240))
