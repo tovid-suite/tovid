@@ -11,10 +11,12 @@ __all__ = [\
 import os
 import math
 import copy
+import glob
 from libtovid.cli import Command, Pipe
 from libtovid.utils import float_to_ratio, ratio_to_float
 from libtovid.transcode import rip
 from libtovid.media import *
+from libtovid.standard import fps
 from libtovid import log
 
 
@@ -136,7 +138,7 @@ def mencoder_encode(source, target):
         cmd.add('format=dvd')
     
     # TODO: this assumes we only have ONE audio track.
-    if source.has_audio(): # Always True, until Profile.has_audio() is fixed
+    if source.has_audio: # Always True, until Profile.has_audio() is fixed
         # Audio settings
         # Adjust sampling rate
         # TODO: Don't resample unless needed
@@ -267,7 +269,7 @@ def encode_audio(source, audiofile, target):
         acodec = 'ac3'
 
     # If source has audio, encode it
-    if source.has_audio(): # Always True until Profile.has_audio() is fixed
+    if source.has_audio: # Always True until Profile.has_audio() is fixed
         cmd.add('-i', source.filename)
     # Otherwise, generate 4-second silence
     else:
@@ -352,7 +354,7 @@ def encode_audio(source, audiofile, target):
     else:
         acodec = 'ac3'
     # If source file has audio, encode it
-    if source.has_audio():
+    if source.has_audio:
         cmd.add('-i', source.filename)
     # Otherwise, generate 4-second silence
     else:
@@ -398,13 +400,13 @@ def mplex_streams(vstream, astream, target):
 #
 # --------------------------------------------------------------------------
 
-def encode_frames(imagedir, outfile, target):
+def encode_frames(imagedir, outfile, format, tvsys):
     """Convert an image sequence in the given directory to match a target
     MediaFile, putting the output stream in outfile.
 
         imagedir:  Directory containing images (and only images)
-        outfile:   Name of output file (MPEG video stream)
-        target:    MediaFile to write encoded video to
+        outfile:   Filename for output.
+        tvsys:     TVsys desired for output (to deal with FPS)
         
     Currently supports JPG and PNG images; input images must already be
     at the desired target resolution.
@@ -413,7 +415,7 @@ def encode_frames(imagedir, outfile, target):
     imagedir = os.path.abspath(imagedir)
     print "Creating video stream from image sequence in %s" % imagedir
     # Determine image type
-    images = glob.glob(imagedir)
+    images = glob.glob("%s/*" % imagedir)
     extension = images[0][-3:]
     if extension not in ['jpg', 'png']:
         raise ValueError, "Image format '%s' isn't currently supported to "\
@@ -430,17 +432,18 @@ def encode_frames(imagedir, outfile, target):
     if extension == 'jpg':
         jpeg2yuv = Command('jpeg2yuv')
         jpeg2yuv.add('-Ip',
-                     '-f', '%.3f' % target.fps,
+                     '-f', '%.3f' % fps(tvsys),
                      '-j', '%s/%%08d.%s' % (imagedir, extension))
         pipe.add(jpeg2yuv)
     elif extension == 'png':
-        ls = Command('ls', '%s/*.png' % imagedir)
-        xargs = Command('xargs', '-n1', 'pngtopnm')
+        #ls = Command('sh', '-c', 'ls %s/*.png' % imagedir)
+        #xargs = Command('xargs', '-n1', 'pngtopnm')
         png2yuv = Command('png2yuv')
         png2yuv.add('-Ip',
-                    '-f', '%.3f' % target.fps,
+                    '-f', '%.3f' % fps(tvsys),
                     '-j', '%s/%%08d.png' % (imagedir))
-        pipe.add(ls, xargs, png2yuv)
+        pipe.add(png2yuv)
+        #pipe.add(ls, xargs, png2yuv)
         #cmd += 'pnmtoy4m -Ip -F %s %s/*.png' % standard.fpsratio(tvsys)
 
     # TODO: Scale to correct target size using yuvscaler or similar
@@ -450,13 +453,14 @@ def encode_frames(imagedir, outfile, target):
     mpeg2enc.add('-v', '0',
                  '-q' '3',
                  '-o' '%s' % outfile)
-    if target.format == 'vcd':
-        mpeg2enc.add('--format 1')
-    elif target.format == 'svcd':
-        mpeg2enc.add('--format 4')
+    if format == 'vcd':
+        mpeg2enc.add('--format', '1')
+    elif format == 'svcd':
+        mpeg2enc.add('--format', '4')
     else:
-        mpeg2enc.add('--format 8')
+        mpeg2enc.add('--format', '8')
     pipe.add(mpeg2enc)
 
-    pipe.run()
+    pipe.run(capture=True)
+    pipe.get_output() # and wait :)
 
