@@ -890,9 +890,9 @@ elif $SHOWCASE && test  ${#FILES[@]} -gt $file_max; then
 fi
 
 # If output directory already exists, print a message and exit
-if test -d "$OUT_DIR"; then
-    echo "Output directory \"$OUT_DIR\" already exists."
-    echo "Please use a different -out name, or (re)move the existing directory."
+if test -e "$OUT_DIR"; then
+    echo "A file or directory named\"$OUT_DIR\" already exists."
+    echo "Please use a different -out name, or (re)move the existing file or directory."
     $FROM_GUI && exit_from_gui || exit 1
 fi
 
