@@ -54,10 +54,9 @@ class MediaFile(object):
         self.aspect = '4:3'
         self.widescreen = False
 
-    def has_audio(self):
-        """Return True if this MediaFile contains audio."""
-        # TODO
-        return True
+        # Check is there is audio/video inside
+        self.has_audio = None
+        self.has_video = None
 
     def __str__(self):
         """Return a string representation of the MediaFile suitable for
@@ -104,11 +103,17 @@ def load_media(filename):
         if line.startswith("ID_"):
             left, right = line.split('=')
             mp_dict[left] = right.strip()
+            
     # Check for existence of streams
     if 'ID_VIDEO_ID' in mp_dict:
-        has_video = True
+        media.has_video = True
+    else:
+        media.has_video = False
     if 'ID_AUDIO_ID' in mp_dict:
-        has_audio = True
+        media.has_audio = True
+    else:
+        media.has_audio = False
+        
     # Parse the dictionary and set appropriate values
     for left, right in mp_dict.iteritems():
         if left == "ID_VIDEO_WIDTH":
@@ -135,9 +140,9 @@ def load_media(filename):
             media.length = float(right)
     media.expand = media.scale
     # Fix mplayer's audio codec naming for ac3 and mp2
-    if audio_format == "8192":
+    if media.acodec == "8192":
         media.acodec = "ac3"
-    elif audio_format == "80":
+    elif media.acodec == "80":
         media.acodec = "mp2"
     # Fix mplayer's video codec naming for mpeg1 and mpeg2
     if media.vcodec == "0x10000001":

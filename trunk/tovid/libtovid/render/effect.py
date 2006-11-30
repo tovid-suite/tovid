@@ -268,6 +268,9 @@ class Spectrum (Effect):
     def pre_draw(self, drawing, frame):
         drawing.set_source(self.tween[frame])
 
+    def post_draw(self, drawing, frame):
+        pass
+
 
 class Scale (Effect):
     """A Scaling effect, from one size to another."""
