@@ -32,7 +32,7 @@ class TestCairoDraws(unittest.TestCase):
         self.d.fill('black', 0.3)
         self.d.font_size(16)
         self.d.set_source('white') 
-        self.d.text((15, 460), txt)
+        self.d.text(txt, (15, 460))
         self.d.restore()
 
     ################ Tests start here ###########
@@ -103,9 +103,12 @@ class TestTextAlign(TestCairoDraws):
         self.txt(u"Tries align='left', 'center' and 'right'")
         self.d.set_source('white')
         self.d.font_size(18)
-        self.d.text((320, 100), 'Placed at (320, 100), aligned: left', align='left')
-        self.d.text((320, 150), 'Placed at (320, 150), aligned: center', align='center')
-        self.d.text((320, 200), 'Placed at (320, 200), aligned: right', align='right')
+        self.d.text('Placed at (320, 100), aligned: left',
+                    (320, 100), align='left')
+        self.d.text('Placed at (320, 150), aligned: center',
+                    (320, 150), align='center')
+        self.d.text('Placed at (320, 200), aligned: right',
+                    (320, 200), align='right')
 
 class TestScaling(TestCairoDraws):
     def test_scaling(self):

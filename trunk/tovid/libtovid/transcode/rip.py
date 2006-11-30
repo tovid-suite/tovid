@@ -46,10 +46,8 @@ def rip_video(source, yuvfile, target):
         cmd.add('-vf', 'scale=%s:%s' % target.scale)
     if target.expand > target.scale:
         cmd.add('-vf-add', 'expand=%s:%s' % target.expand)
-    # Do ripping in background
-    cmd.bg = True
     # Run the command to rip the video
-    cmd.run()
+    cmd.run(background=True)
 
 
 def rip_frames(media, out_dir, frames='all', size=(0, 0)):

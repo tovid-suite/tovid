@@ -1,6 +1,28 @@
 #! /usr/bin/env python
 # encode.py
 
+"""This module provides several video-encoding backends. It provides one
+high-level function:
+
+    encode(infile, outfile, format, tvsys, method)
+
+For example:
+
+    encode('/video/foo.avi', '/video/bar.mpg', 'dvd', 'ntsc', 'mencoder')
+
+This will encode '/video/foo.avi' to NTSC DVD form using mencoder, saving
+the result as '/video/bar.mpg'.
+
+Each backend implements a top-level function:
+
+    ffmpeg_encode(source, target)
+    mencoder_encode(source, target)
+    mpeg2enc_encode(source, target)
+
+The source and target are MediaFile objects from libtovid.media, containing
+profiles of the input and output videos.
+"""
+
 __all__ = [\
     'encode',
     'get_encoder',
@@ -131,14 +153,13 @@ def mencoder_encode(source, target):
             '-of', 'mpeg')
     # Format
     cmd.add('-mpegopts')
-    
     if target.format in ['vcd', 'svcd']:
         cmd.add('format=x%s' % target.format)
     else:
         cmd.add('format=dvd')
     
     # TODO: this assumes we only have ONE audio track.
-    if source.has_audio: # Always True, until Profile.has_audio() is fixed
+    if source.has_audio:
         # Audio settings
         # Adjust sampling rate
         # TODO: Don't resample unless needed
@@ -160,7 +181,6 @@ def mencoder_encode(source, target):
         encode_audio(source, audiofile, target)
         # TODO: make this work, it,s still not adding the ac3 file correctly.
         cmd.add('-audiofile', audiofile)
-        
 
     # Video codec
     if target.format == 'vcd':
@@ -168,10 +188,7 @@ def mencoder_encode(source, target):
     else:
         lavcopts = 'vcodec=mpeg2video'
     # Audio codec
-    if target.format in ['vcd', 'svcd']:
-        lavcopts += ':acodec=mp2'
-    else:
-        lavcopts += ':acodec=ac3'
+    lavcopts += ':acodec=%s' % target.acodec
     lavcopts += ':abitrate=%s:vbitrate=%s' % \
             (target.abitrate, target.vbitrate)
     # Maximum video bitrate
@@ -263,13 +280,9 @@ def encode_audio(source, audiofile, target):
     If no audio is present in the source file, encode silence.
     """
     cmd = Command('ffmpeg')
-    if target.format in ['vcd', 'svcd']:
-        acodec = 'mp2'
-    else:
-        acodec = 'ac3'
 
     # If source has audio, encode it
-    if source.has_audio: # Always True until Profile.has_audio() is fixed
+    if source.has_audio:
         cmd.add('-i', source.filename)
     # Otherwise, generate 4-second silence
     else:
@@ -281,7 +294,7 @@ def encode_audio(source, audiofile, target):
         cmd.add('-f', 's16le', '-i', '/dev/zero', '-t', '%f' % ln)
     cmd.add_raw('-vn -ac 2 -ab 224')
     cmd.add('-ar', target.samprate)
-    cmd.add('-acodec', acodec)
+    cmd.add('-acodec', target.acodec)
     cmd.add('-y', audiofile)
     # Run the command to encode the audio
     cmd.run()
@@ -300,7 +313,7 @@ def encode_video(source, yuvfile, videofile, target):
     # corresp. to $VID_BITRATE, $MPEG2_QUALITY, $DISC_SIZE, etc.
     # Missing options (compared to tovid)
     # -S 700 -B 247 -b 2080 -v 0 -4 2 -2 1 -q 5 -H -o FILE
-    pipe = Pipe(cmd)
+    pipe = Pipe()
 
     # Feed the .yuv file into the pipeline
     cat = Command('cat', yuvfile)
@@ -349,10 +362,6 @@ def encode_audio(source, audiofile, target):
         
     """
     cmd = Command('ffmpeg')
-    if target.format in ['vcd', 'svcd']:
-        acodec = 'mp2'
-    else:
-        acodec = 'ac3'
     # If source file has audio, encode it
     if source.has_audio:
         cmd.add('-i', source.filename)
@@ -363,10 +372,11 @@ def encode_audio(source, audiofile, target):
     cmd.add('-ac', '2',
             '-ab', '224',
             '-ar', target.samprate,
-            '-acodec', acodec,
+            '-acodec', target.acodec,
             '-y', audiofile)
     # Run the command to encode the audio
     cmd.run()
+
 
 def mplex_streams(vstream, astream, target):
     """Multiplex audio and video stream files to the given target.

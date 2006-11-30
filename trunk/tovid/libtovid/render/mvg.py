@@ -465,7 +465,7 @@ class Drawing:
         # (Pixels or points?)
         self.insert('stroke-width %s' % width)
     
-    def text(self, (x, y), text_string):
+    def text(self, text_string, (x, y)):
         """Draw the given text string, with lower-left corner at (x, y)."""
         # TODO: Escape special characters in text string
         self.insert('text %s,%s "%s"' % (x, y, text_string))
@@ -668,7 +668,7 @@ def draw_fontsize_demo(drawing):
         ypos = size * size / 5
         drawing.font('Helvetica')
         drawing.font_size(size)
-        drawing.text((0, ypos), "%s pt: The quick brown fox" % size)
+        drawing.text("%s pt: The quick brown fox" % size, (0, ypos))
     
     # Restore context
     drawing.pop()
@@ -689,11 +689,11 @@ def draw_font_demo(drawing):
         # Transparent shadow
         drawing.fill('darkblue')
         drawing.fill_opacity(0.4)
-        drawing.text((3, ypos+3), font)
+        drawing.text(font, (3, ypos+3))
         # White text
         drawing.fill('white')
         drawing.fill_opacity(1.0)
-        drawing.text((0, ypos), font)
+        drawing.text(font, (0, ypos))
         ypos += fontsize
 
     # Restore context
