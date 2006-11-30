@@ -637,7 +637,7 @@ while test $# -gt 0; do
             SHOWCASE=:
             IMG_FMT=png
             SHOWCASE_IMG="dummy"
-            OPACITY=1
+            #OPACITY=1
             ;;
         "-no-thumbs" )
             NO_THUMBS=:
@@ -853,8 +853,8 @@ else
     usage_error "Please provide an output name with -out"
 fi
 # menu fade not supported currently for -no-thumbs
-$MENU_FADE && $NO_THUMBS && \
-usage_error "Sorry, menu fade is not supported currently for -no-thumbs"
+#$MENU_FADE && $NO_THUMBS && \
+#usage_error "Sorry, menu fade is not supported currently for -no-thumbs" #FIXME uncomment
 # Warn if thumb labels have more than 12 characters
 if ! $SHOWCASE; then
     for ((i=0; i<${#TITLES[@]}; i++)); do
@@ -1382,7 +1382,9 @@ if [[ $BUTTON_STYLE = text-rect ]]; then
     TEXT_BORDER="-bordercolor Transparent -border 8x8"
 fi
 # place menu title lower if not text mist
+mist_pos=45
 $MIST && title_pos=65 || title_pos=50
+#title_pos=65
 #FIXME temporary till non transparent menus for -showcase* are done separately
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
@@ -1564,7 +1566,8 @@ elif [ -z "$STROKE" ]; then
 fi
 
 # make a title image
-! [[ -z ${STR// /} || -z $STR ]] && TRIM_CMD="-trim +repage -blur 0x0.4 "
+#! [[ -z ${STR// /} || -z $STR ]] && TRIM_CMD="-trim +repage -blur 0x0.4 "
+TRIM_CMD="-trim +repage -blur 0x0.4"
 TITLE_CMD=(convert  -size 620x100 xc:none -font "$MENU_FONT"  -pointsize $MENU_FONTSIZE \
 -fill black -stroke black -gravity center  -annotate +0+0 "$VMGM_TITLE"
 -fill "$TITLE_COLOUR" -stroke "$STROKE" -strokewidth 1 -annotate +1+1 "$VMGM_TITLE")
@@ -1829,7 +1832,7 @@ fi
 # overlay menu title and thumb titles on template
 if $MIST; then
     # overlay white.png onto background
-    composite -dissolve $MIST_OPACITY -gravity south -geometry +0+45 \
+    composite -dissolve $MIST_OPACITY -gravity south -geometry +0+${mist_pos} \
     "$WORK_DIR/white.png" "$WORK_DIR/pics/template.png" \
     "$WORK_DIR/pics/template.png"
 fi
@@ -3350,11 +3353,13 @@ if $MENU_FADE && ! $STATIC; then
         MONTAGE_CMD=(convert  -size $VIDSIZE -background none \
         ${sc_cmd[@]} $SC_IMG_CMD $MOSAIC)
         MONTAGE_CMD0=(convert  -size $VIDSIZE "$WORK_DIR/pics/template.png" \
-        ${sc_cmd[@]} $SC_VIDEO_CMD -mosaic $WORK_DIR/animenu/$(($frame + 1)).jpg)
+        ${sc_cmd[@]} $SC_VIDEO_CMD $MOSAIC $WORK_DIR/animenu/$(($frame + 1)).jpg)
         MONTAGE_CMD01=(convert  -size $VIDSIZE xc:none -background none \
-        ${sc_cmd[@]} $SC_VIDEO_CMD -mosaic)
+        ${sc_cmd[@]} $SC_VIDEO_CMD $MOSAIC)
         MONTAGE_CMD02=(convert -size $VIDSIZE -background none \
         - ${sc_thumb_title_cmd[@]} -mosaic)
+        MONTAGE_CMD03=(convert -size $VIDSIZE -background none \
+        ${sc_thumb_title_cmd[@]} -mosaic)
         MONTAGE_CMD1=(montage "${ANI_PICS[@]}" -tile ${TILE_ARRAY[NUM_FILES]} \
         -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none)
         #  dissolve the finished montages onto the background
@@ -3367,7 +3372,7 @@ if $MENU_FADE && ! $STATIC; then
         -gravity NorthWest  -dissolve $S - $WORK_DIR/bg/$(($frame + 1)).jpg \
         -background none)
         # if MIST is called for, this dissolves the mist onto the background
-        MONTAGE_CMD3=(composite -dissolve $B -gravity south -geometry +0+45 \
+        MONTAGE_CMD3=(composite -dissolve $B -gravity south -geometry +0+${mist_pos} \
         $WORK_DIR/white.png -)
         # finally, we dissolve the title onto the MIST (or plain background)
         MONTAGE_CMD4=(composite -dissolve $C -gravity south -geometry +0+${title_pos} \
@@ -3378,6 +3383,8 @@ if $MENU_FADE && ! $STATIC; then
         else
             MONTAGE_CMD5=(convert -)
         fi
+        $NO_THUMBS && unset MONTAGE_CMD
+        $NO_THUMBS && MONTAGE_CMD=( "${MONTAGE_CMD03[@]}" )
         # pipe all of above commands if using MIST
         if $MIST; then
             if $SHOWCASE; then
@@ -3457,7 +3464,7 @@ else # Do not do menu fade
             IM_CMD2b=(composite -dissolve $OPACITY \
             -gravity north -geometry +0+45 - \
             $WORK_DIR/bg/$count.jpg -background none miff:-)
-            IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+45 \
+            IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+${mist_pos} \
             $WORK_DIR/white.png - miff:-)
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
             -gravity south -geometry +0+${title_pos} -composite $ADD_PLAYALL \
@@ -3526,7 +3533,7 @@ else # Do not do menu fade
             -  -gravity north -geometry +0+45 -composite miff:-)
             IM_CMD2=(convert $WORK_DIR/bg/$count.jpg \
             -  -gravity north -geometry +0+45 -composite miff:-)
-            IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+45 \
+            IM_CMD3=(composite -dissolve 30 -gravity south -geometry +0+${mist_pos} \
             $WORK_DIR/white.png - miff:-)
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
             -gravity south -geometry +0+${title_pos} -composite $ADD_PLAYALL \
