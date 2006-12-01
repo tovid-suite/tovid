@@ -466,6 +466,15 @@ function check_stall()
         fi
     done
 }
+function check_filetype()
+{
+    if [[ $(file "$1") = *image* ]]; then
+        TYPE=image
+    elif mencoder -endpos 2 -oac pcm -ovc copy  "$1" -o /dev/null  >/dev/null 2>&1; then
+        TYPE=video
+    else TYPE=unknown
+    fi
+}
 function exit_from_gui()
 {
     yecho
@@ -869,6 +878,22 @@ if ! $SHOWCASE; then
         #exit 1
     fi
 fi
+# if a multiline title, then make sure all titles have 2 lines #FIXME
+# haven't figured out how to get mulitline title to dispaly using -title yet though
+#if ! $SHOWCASE; then
+#    for i in ${!TITLES[@]}; do 
+#        if [[ ${TITLES[i]} = *\n* ]]; then
+#            ML=true
+#        fi
+#    done
+#    if $ML; then
+#        for i in ${!TITLES[@]}; do
+#            if [[ ! ${TITLES[i]} = "*\n*" ]]; then
+#                TITLES[i]="${TITLES[i]}\n"
+#            fi
+#        done
+#    fi
+#fi
 # disallow spaces in thumb titles for text button style
 if [ "$BUTTON_STYLE" = "text" ]; then
     for ((i=0; i<${#TITLES[@]}; i++)); do
@@ -1006,15 +1031,15 @@ if $SUB_MENU; then
     done
 fi
 # if -bgvideo selected, but also -static, exit with error message
-if test -n "$BG_VIDEO" &&  $STATIC; then
-    usage_error "You can not use -bgvideo with a static menu"
-elif test -n "$SHOWCASE_VIDEO" && $STATIC; then
-    usage_error "You can not use -showcase-video with a static menu"
+#if test -n "$BG_VIDEO" &&  $STATIC; then
+#    usage_error "You can not use -bgvideo with a static menu"
+#elif test -n "$SHOWCASE_VIDEO" && $STATIC; then
+#    usage_error "You can not use -showcase-video with a static menu"
 #elif [ "$SC_FRAMESTYLE" = "glass" ] && $STATIC; then
 #    usage_error "You can not use -showcase-framestyle glass with a static menu"
-elif test -n "$SHOWCASE_VIDEO" && test -n "$SHOWCASE_IMG"; then
-    usage_error "You can not use -showcase-video AND -showcase-image"
-fi
+#elif test -n "$SHOWCASE_VIDEO" && test -n "$SHOWCASE_IMG"; then
+#    usage_error "You can not use -showcase-video AND -showcase-image"
+#fi
 # create_dirs
 echo
 yecho "Creating pics directories..."
@@ -1575,7 +1600,7 @@ TITLE_CMD1=(convert - $TRIM_CMD  "$WORK_DIR/title_txt.png")
 
 echo "Running "${TITLE_CMD[@]}" miff:- |
 "${TITLE_CMD1[@]}"" | format_output|tee -a "$LOG_FILE"
-"${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}"
+"${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}" 2>/dev/null
 
 # make a PLAYALL button if called for
 if $PLAYALL; then
