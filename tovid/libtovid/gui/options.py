@@ -85,6 +85,73 @@ class DiscOptions:
                    (curConfig.strOutputDirectory, self.outPrefix)
         return strCommand
 
+    def DiscNameOK(self, panel):
+        """"Ensure there are no problems with the disc name"""
+        # Get global configuration (for output directory)
+        curConfig = TovidConfig()
+        # Use output filename based on disc title
+        self.outPrefix = self.title.replace(' ', '_')
+
+        # Save output filename in global Config
+        discName = "%s/%s.xml" % (curConfig.strOutputDirectory, self.outPrefix) 
+        
+	#If specified, check whether it exists
+	if os.path.exists(discName) == True:
+            #If exists, check whether it is a file or directory
+	    if os.path.isfile(discName) == True:
+                msgDiscFileExistsDlg = wx.MessageDialog(panel, \
+	            "A file needs to be created based on the disc name.\n" \
+	            "But, this file (based on the disc name) already exists.\n"\
+	            "The file is: %s\n\n" \
+                    "Do you want to continue?\n"
+	            "This will overwrite this existing file." % (discName),
+                    "Existing Disc Name File",
+                wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
+                response = msgDiscFileExistsDlg.ShowModal()
+                msgDiscFileExistsDlg.Destroy()
+                if response != wx.ID_YES:
+                    return False
+            else:   
+                msgDiscFolderExistsDlg = wx.MessageDialog(panel, \
+	            "A file needs to be created based on the disc name.\n" \
+	            "But, a directory with the same name already exists.\n" \
+	            "This directory is: %s\n\n" \
+	            "Please either rename/remove the directory or " \
+                    "change the disc name!" % (discName),
+                    "Existing Directory",
+                    wx.OK | wx.ICON_ERROR)
+                msgDiscFolderExistsDlg.ShowModal()
+                msgDiscFolderExistsDlg.Destroy()
+                return False   
+
+        #ICheck whether contains problematic characters
+        if discName.find("'") > -1 or discName.find("\"") > -1 or discName.find("$") > -1 :
+
+            #If so, give option of going back or trying anyway
+            #NB, it is not just Python files that need fixing. 
+            #Many lines throughout makemenu do aswell.
+            msgDiscNameErrorDlg = wx.MessageDialog(panel, \
+                "For technical reasons, currently apostrophes, double quotes\n"\
+                "and $ signs may cause problems when in the disc name.\n" \
+                "The disc name is: %s\n\n" \
+                "Do you want to return to rename the disc?\n" \
+                "NB, continuing (i.e. No) is very unlikely to work!" % (self.title),
+                "Problematic character in Disc Name",
+                wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
+            response = msgDiscNameErrorDlg.ShowModal()
+            msgDiscNameErrorDlg.Destroy()
+       
+            if response != wx.ID_NO:
+                return False   
+        #If get this far, file is OK
+        return True
+
+    def RelevantFilesAreOK(self, panel):
+        """Check the disc options for errors detectable before encoding"""
+	if self.DiscNameOK(panel) == False:
+            return False
+        return True
+
 
 class MenuOptions:
     """Options related to generating a menu"""
@@ -229,6 +296,160 @@ class MenuOptions:
         self.font = opts.font
         self.alignment = opts.alignment
 
+    def AudioFileOK(self, panel):
+        """Check for any errors associated with the audio file"""
+        #First check if Audio File is specified
+        audioFile = self.audio
+        if audioFile == "":
+            return True
+        
+        #If specified, check whether it exists
+        if os.path.isfile(audioFile) == False:
+            msgAudioFileMissingDlg = wx.MessageDialog(panel, \
+                    "A menu has an audio file that does not appear to exist.\n" \
+                    "The file is: %s\n\n" \
+                    "Please choose another audio file." % (audioFile),
+                    "Missing Audio File",
+                    wx.OK | wx.ICON_ERROR)
+            msgAudioFileMissingDlg.ShowModal()
+            msgAudioFileMissingDlg.Destroy()
+            return False
+
+        #If exists, check whether contains problematic characters
+        if audioFile.find("'") > -1 or audioFile.find("\"") > -1 or audioFile.find("$") > -1 :
+
+            #If so, give option of going back or trying anyway
+            #NB, it is not just Python files that need fixing. 
+            #Many lines throughout e.g. makemenu do aswell.
+            msgAudioErrorDlg = wx.MessageDialog(panel, \
+                "For technical reasons, currently apostrophes, double quotes\n" \
+                "and $ signs may cause problems in files associated with menus.\n" \
+                "One audio file contains at least one of these characters.\n"
+                "This audio file is: %s\n\n" \
+                "Do you want to return to rename / choose another audio file?\n" \
+                "NB, continuing (i.e. No) is very unlikely to work!" % (audioFile),
+                "Problematic character in Audio File",
+                wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
+            response = msgAudioErrorDlg.ShowModal()
+            msgAudioErrorDlg.Destroy()
+       
+            if response != wx.ID_NO:
+                return False   
+        #If get this far, file is OK
+        return True
+
+    def ImageFileOK(self, panel):
+        """Check for any errors associated with the image file"""
+        #First check if Image File is specified
+        imageFile = self.background
+        if imageFile == "":
+            return True
+        
+        #If specified, check whether it exists
+        if os.path.isfile(imageFile) == False:
+            msgImageFileMissingDlg = wx.MessageDialog(panel, \
+                    "A menu has an image file that does not appear to exist.\n" \
+                    "The file is: %s\n\n" \
+                    "Please choose another image file." % (imageFile),
+                    "Missing Image File",
+                    wx.OK | wx.ICON_ERROR)
+            msgImageFileMissingDlg.ShowModal()
+            msgImageFileMissingDlg.Destroy()
+            return False
+
+        #If exists, check whether contains problematic characters
+        if imageFile.find("'") > -1 or imageFile.find("\"") > -1 or imageFile.find("$") > -1 :
+
+            #If so, give option of going back or trying anyway
+            #NB, it is not just Python files that need fixing. 
+            #Many lines throughout e.g. makemenu do aswell.
+            msgImageErrorDlg = wx.MessageDialog(panel, \
+                "For technical reasons, currently apostrophes, double quotes\n" \
+                "and $ signs may cause problems in files associated with menus.\n" \
+                "One image file contains at least one of these characters.\n"
+                "This image file is: %s\n\n" \
+                "Do you want to return to rename / choose another image file?\n" \
+                "NB, continuing (i.e. No) is very unlikely to work!" % (imageFile),
+                "Problematic character in Image File",
+                wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
+            response = msgImageErrorDlg.ShowModal()
+            msgImageErrorDlg.Destroy()
+       
+            if response != wx.ID_NO:
+                return False   
+        #If get this far, file is OK
+        return True
+
+    def OutputFileOK(self, panel):
+        """Check for any errors associated with the output file"""
+        # Get global configuration (for output directory)
+        curConfig = TovidConfig()
+
+        #First check if Image File is specified
+        outputFile = "%s/%s.mpg" % (curConfig.strOutputDirectory, self.outPrefix)
+        
+	#If specified, check whether it exists
+        if os.path.exists(outputFile) == True:
+            #If exists, check whether it is a file or directory
+            if os.path.isfile(outputFile) == True:
+                msgOutputFileMissingDlg = wx.MessageDialog(panel, \
+                    "A file with the same name as a menu output file already exists.\n" \
+                    "This file is: %s\n\n" \
+                    "Do you want to continue?\n"
+                    "This will overwrite this existing file." % (outputFile),
+                    "Existing Menu Output File",
+                    wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
+                response = msgOutputFileMissingDlg.ShowModal()
+                msgOutputFileMissingDlg.Destroy()
+                if response != wx.ID_YES:
+                    return False   
+            else:   
+                msgOutputFolderExistsDlg = wx.MessageDialog(panel, \
+                    "A file needs to be created based on a menu name.\n" \
+                    "But, a directory with the same name already exists.\n" \
+                    "This directory is: %s\n\n" \
+                    "Please either rename/remove the directory or " \
+                    "change the menu name!" % (outputFile),
+                    "Existing Directory",
+                    wx.OK | wx.ICON_ERROR)
+                msgOutputFolderExistsDlg.ShowModal()
+                msgOutputFolderExistsDlg.Destroy()
+                return False   
+
+
+        #Check whether output file contains problematic characters
+        if outputFile.find("'") > -1 or outputFile.find("\"") > -1 or outputFile.find("$") > -1 :
+
+            #If so, give option of going back or trying anyway
+            #NB, it is not just Python files that need fixing. 
+            #Many lines throughout e.g. makemenu do aswell.
+            msgMenuNameErrorDlg = wx.MessageDialog(panel, \
+                "For technical reasons, currently apostrophes, double quotes\n" \
+                "and $ signs may cause problems in the name of menus.\n" \
+                "One menu name contains at least one of these characters.\n"
+                "This menu name is: %s\n\n" \
+                "Do you want to return to rename this menu?\n" \
+                "NB, continuing (i.e. No) is very unlikely to work!" % (outputFile),
+                "Problematic character in Menu Name",
+                wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
+            response = msgMenuNameErrorDlg.ShowModal()
+            msgMenuNameErrorDlg.Destroy()
+       
+            if response != wx.ID_NO:
+                return False   
+        #If get this far, file is OK
+        return True
+
+    def RelevantFilesAreOK(self, panel):
+        """Check the menu options for any errors detectable before encoding"""
+        if self.AudioFileOK(panel) == False:
+            return False
+        if self.ImageFileOK(panel) == False:
+            return False
+        if self.OutputFileOK(panel) == False:
+            return False
+        return True
+
 
 class SlideOptions:
     """Options related to generating a slideshow"""
@@ -270,6 +491,10 @@ class SlideOptions:
         # Copy opts into self
         self.format = opts.format
         self.tvsys = opts.tvsys
+
+    def RelevantFilesAreOK(self, panel):
+        """Check the slide options for any errors detectable before encoding"""
+        return True
 
 class VideoOptions:
     """Options related to encoding a video"""
@@ -377,3 +602,122 @@ class VideoOptions:
         self.aspect = opts.aspect
         self.addoptions = opts.addoptions
 
+
+    def VideoFileOK(self, panel):
+        """Check the video options for any errors detectable before encoding"""
+        #First check if Video File is specified
+        videoFile = self.inFile
+        
+        #Check whether it exists
+        if os.path.isfile(videoFile) == False:
+            msgVideoFileMissingDlg = wx.MessageDialog(panel, \
+                    "A Video does not appear to exist.\n" \
+                    "The file is: %s\n\n" \
+                    "Please choose another video file." % (videoFile),
+                    "Missing Video File",
+                    wx.OK | wx.ICON_ERROR)
+            msgVideoFileMissingDlg.ShowModal()
+            msgVideoFileMissingDlg.Destroy()
+            return False
+
+        #If exists, check whether contains problematic characters
+        if videoFile.find("'") > -1 or \
+           videoFile.find("\"") > -1 or \
+           videoFile.find("$") > -1 :
+
+            #If so, give option of going back or trying anyway
+            msgVideoErrorDlg = wx.MessageDialog(panel, \
+                "For technical reasons, currently apostrophes, double quotes\n" \
+                "and $ signs may cause problems in the file name of videos.\n" \
+                "One video file contains at least one of these characters.\n"
+                "This video file is: %s\n\n" \
+                "Do you want to return and rename / choose another video file?\n" \
+                "NB, continuing (i.e. No) is very unlikely to work!" % (videoFile),
+                "Problematic character in Video File",
+                wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
+            response = msgVideoErrorDlg.ShowModal()
+            msgVideoErrorDlg.Destroy()
+       
+            if response != wx.ID_NO:
+                return False   
+        return True
+
+    def VideoOutputOK(self, panel):
+        """Check the video output for any errors detectable before encoding"""
+        # Get global configuration (for output directory)
+        curConfig = TovidConfig()
+
+        videoOutput = "%s/%s.mpg" % (curConfig.strOutputDirectory, self.outPrefix)
+
+        #Check whether it is none null (as this gives an error)
+        if self.outPrefix == "":
+            msgDiscFileExistsDlg = wx.MessageDialog(panel, \
+                    "Please enter a valid name (i.e. not empty) for each Video.", 
+                    "Missing Video Name",
+                    wx.OK | wx.ICON_ERROR)
+            msgDiscFileExistsDlg.ShowModal()
+            msgDiscFileExistsDlg.Destroy()
+            return False
+
+        #Check whether output already exists
+        #If specified, check whether it exists
+        if os.path.exists(videoOutput) == True:
+            #If exists, check whether it is a file or directory
+            if os.path.isfile(videoOutput) == True:
+                msgVideoOutputExistsErrorDlg = wx.MessageDialog(panel, \
+                    "This program converts the video files into the correct format,\n" \
+                    "and saves these resultant files with names based on the entered values.\n\n" \
+                    "One of these output files already exists.\n" \
+                    "This output file is: %s\n\n" \
+                    "Do you want to overwrite this file?" % (videoOutput),
+                    "Problematic character in Video Output Filename",
+                    wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
+                response = msgVideoOutputExistsErrorDlg.ShowModal()
+                msgVideoOutputExistsErrorDlg.Destroy()
+       
+                if response != wx.ID_YES:
+                    return False   
+            else:   
+                msgVideoOutputFolderExistsDlg = wx.MessageDialog(panel, \
+                    "A file needs to be created based on the video name.\n" \
+                    "But, a directory with the same name already exists.\n" \
+                    "This directory is: %s\n\n" \
+                    "Please either rename/remove the directory or " \
+                    "change the menu name!" % (videoOutput),
+                    "Existing Directory",
+                    wx.OK | wx.ICON_ERROR)
+                msgVideoOutputFolderExistsDlg.ShowModal()
+                msgVideoOutputFolderExistsDlg.Destroy()
+                return False   
+
+        #Check whether the output file contains problematic characters
+        if videoOutput.find("'") > -1 or videoOutput.find("\"") > -1 or videoOutput.find("$") > -1 :
+
+            #If so, give option of going back or trying anyway
+            #NB, it is not just Python files that need fixing. 
+            #Many lines throughout e.g. makemenu do aswell.
+            msgVideoOutputErrorDlg = wx.MessageDialog(panel, \
+                "This program converts the video files into the correct format,\n" \
+                "and saves these resultant files with names based on the entered values.\n\n" \
+                "For technical reasons, currently apostrophes, double quotes\n" \
+                "and $ signs may cause problems when in these filenames.\n" \
+                "One output file contains at least one of these characters.\n"
+                "This output video file is: %s\n\n" \
+                "Do you want to return to modify these values?\n" \
+                "NB, continuing (i.e. No) is very unlikely to work!" % (videoOutput),
+                "Problematic character in Video Output Filename",
+                wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
+            response = msgVideoOutputErrorDlg.ShowModal()
+            msgVideoOutputErrorDlg.Destroy()
+       
+            if response != wx.ID_NO:
+                return False   
+        return True
+
+    def RelevantFilesAreOK(self, panel):
+        """Check the video options for any errors detectable before encoding"""
+        if self.VideoFileOK(panel) == False:
+            return False
+        if self.VideoOutputOK(panel) == False:
+            return False
+        return True
