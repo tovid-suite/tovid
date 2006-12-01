@@ -98,6 +98,7 @@ class AuthorFilesTaskPanel(wx.Panel):
         else:
             self.btnBurn.Enable(False)
 
+       
     def OnLayout(self, evt):
         """Display controls for doing disc layout."""
         # Set buttons
@@ -126,6 +127,18 @@ class AuthorFilesTaskPanel(wx.Panel):
         self.curConfig.panGuide.SetTask(ID_TASK_GETTING_STARTED)
 
     def OnEncode(self, evt):
+
+
+        # Abort encoding if detected an error
+        if self.btnLayout.GetValue() == True:
+            CanContinue = self.panDiscLayout.PerformSanityCheckOnFiles(self)
+            if CanContinue == False: 
+                # Set buttons
+                self.btnLayout.SetValue(True)
+                self.btnEncode.SetValue(False)
+                self.btnBurn.SetValue(False)
+                return
+
         """Display controls for encoding."""
         # Set buttons
         self.btnLayout.SetValue(False)
@@ -1028,6 +1041,50 @@ class DiscLayoutPanel(wx.Panel):
                     curItem.CopyFrom(opts)
                     countItems += 1
         return countItems
+
+    def PerformSanityCheckOnFiles(self, panel):
+	"""Check for invalid characters in filenames etc"""       
+        # Get references for all items
+        refs = self.discTree.GetReferenceList(self.rootItem)
+        for curItem in refs:
+            if curItem.RelevantFilesAreOK(panel) == False:
+                return False
+
+            #Check that no other references have same output name as this one
+            if curItem.type == ID_DISC:
+                #No possibility of duplication
+                continue;
+            elif curItem.type == ID_MENU:
+                outputFileName = "%s" % (curItem.outPrefix)
+            elif curItem.type == ID_VIDEO:
+                outputFileName = "%s" % (curItem.outPrefix)
+            elif curItem.type == ID_SLIDE:
+                continue;
+            sameNameCount = 0
+            for otherItem in refs:
+                if otherItem.type == ID_DISC:
+                    #No possibility of duplication
+                    continue;
+                elif otherItem.type == ID_MENU:
+                    otherOutputFileName = "%s" % (otherItem.outPrefix)
+                elif otherItem.type == ID_VIDEO:
+                    otherOutputFileName = "%s" % (otherItem.outPrefix)
+                elif otherItem.type == ID_SLIDE:
+                    continue;
+                if otherOutputFileName == outputFileName:
+                    sameNameCount = sameNameCount + 1
+                if sameNameCount > 1:
+                    msgImageFileMissingDlg = wx.MessageDialog(panel, \
+                       "Two menus or videos have been given the same label.\n" \
+	               "Currently, this is not allowed.\n" \
+                       "This label is: %s\n\n" \
+	               "Please choose unique names." % (outputFileName),
+                       "Duplicate labels",
+                       wx.OK | wx.ICON_ERROR)
+                    msgImageFileMissingDlg.ShowModal()
+                    msgImageFileMissingDlg.Destroy()
+                    return False;
+        return True
 
     def GetAllCommands(self):
         """Return an array of strings containing all encoding commands to be
