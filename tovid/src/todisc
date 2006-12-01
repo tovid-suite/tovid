@@ -469,6 +469,7 @@ function check_stall()
 function check_filetype()
 {
     if [[ $(file "$1") = *image* ]]; then
+#    if file "$1" |grep image; then
         TYPE=image
     elif mencoder -endpos 2 -oac pcm -ovc copy  "$1" -o /dev/null  >/dev/null 2>&1; then
         TYPE=video
@@ -509,7 +510,9 @@ while test $# -gt 0; do
         "-files" )
             shift
             get_listargs "$@"
-            FILES=( "${ARGS_ARRAY[@]}" )
+            for f in  ${!ARGS_ARRAY[@]}; do
+                FILES[f]="$(abspath ${ARGS_ARRAY[f]})"
+            done
             ;;
         "-titles" )
             shift
@@ -629,6 +632,10 @@ while test $# -gt 0; do
             shift
             BG_VIDEO="$(abspath "$1")"
             ;;
+        "-background" )
+            shift
+            BACKGROUND="$(abspath "$1")"
+            ;;
         "-showcase-video" )
             shift
             SHOWCASE_VIDEO="$(abspath "$1")"
@@ -647,6 +654,16 @@ while test $# -gt 0; do
             IMG_FMT=png
             SHOWCASE_IMG="dummy"
             #OPACITY=1
+            ;;
+        "-showcase" )
+            shift
+            get_listargs "$@"
+            unset f
+            for f in  ${!ARGS_ARRAY[@]}; do
+                SHOWCASE_FILE[f]="$(abspath ${ARGS_ARRAY[f]})"
+            done
+            SHOWCASE=:
+            IMG_FMT=png
             ;;
         "-no-thumbs" )
             NO_THUMBS=:
@@ -951,7 +968,33 @@ ln -sfv "$REAL_WORK_DIR" "$WORK_DIR"
 
 # Remove any existing log file
 test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
-
+# check file type of background file and assign to BG_VIDEO or BG_IMAGE
+if [[ -n $BACKGROUND ]]; then
+    check_filetype "$BACKGROUND"
+    if [[ $TYPE = image ]]; then
+        BG_PIC="$BACKGROUND"
+    elif [[ $TYPE = video ]]; then
+        BG_VIDEO="$BACKGROUND"
+    else
+        usage_error "Sorry, can not identify "$BACKGROUND""
+    fi
+fi
+# if $SHOWCASE, find out if using SHOWCASE_VIDEO or SHOWCASE_IMG or NO_SC_THUMB
+if $SHOWCASE; then 
+    if [[ -n ${SHOWCASE_FILE[@]} ]]; then
+        check_filetype "${SHOWCASE_FILE[@]}"
+        if [[ $TYPE = image ]]; then
+            SHOWCASE_IMG="${SHOWCASE_FILE[@]}"
+        elif [[ $TYPE = video ]]; then
+            SHOWCASE_VIDEO="${SHOWCASE_FILE[@]}"
+        else
+            usage_error "Sorry, can not identify "${SHOWCASE_FILE[@]}""
+        fi
+    else
+        NO_SC_THUMB=:
+        SHOWCASE_IMG="dummy"
+    fi
+fi
 # disable submenus for svcd
 if $SUB_MENU && [ "$TARGET" = svcd ]; then
     usage_error "Sorry, submenu disabled for svcd for now, please remove -submenu option"
