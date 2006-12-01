@@ -645,7 +645,12 @@ function cleanup()
     if $KEEPFILES; then
         yecho "Keeping temporary files in $TMP_DIR"
     else
-        if ! $FROM_GUI && ! $NOASK; then
+        # Remove tempdir without prompting
+        if $FROM_GUI || $NOASK; then
+            yecho "Removing temporary files..."
+            rm -rfv "$TMP_DIR"
+        # Prompt for removal of tempdir
+        else
             yecho
             yecho "Do you want to keep the temporary files that were created ?"
             yecho "Please type \"yes\", or else they will be deleted"
