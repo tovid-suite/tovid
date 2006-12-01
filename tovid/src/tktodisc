@@ -56,7 +56,7 @@ class FormatFrame(Frame):
         self.lbl = Label(self, text="Disc format:")
         self.lbl.pack(side=LEFT)
         # Radio buttons
-        for format in ['DVD', 'VCD', 'SVCD']:
+        for format in ['DVD', 'SVCD']:
             self.rbFormat[format] =\
                 Radiobutton(self,
                             text = format,
