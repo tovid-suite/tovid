@@ -1,7 +1,12 @@
-"""Tools for laying out discs
+#! /usr/bin/env python
+# __init__.py
+
+"""This module provides an interface for structuring the content of video discs.
 """
 
-all = ['disc',
-    'dvdauthor.py',
-    'menu.py',
-    'video.py']
+all = [\
+    'disc',
+    'dvdauthor',
+    'menu',
+    'video',
+    'vcdimager']
