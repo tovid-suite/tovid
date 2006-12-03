@@ -81,7 +81,7 @@ class Flipbook:
             tvsys:   'ntsc' or 'pal'
         """
         self.seconds = seconds
-        self.frames = round(seconds * standard.fps(tvsys))
+        self.frames = int(seconds * standard.fps(tvsys))
         # TODO: We'll need aspect ratio here.. 4:3 or 16:9 anamorphic ?
         self.format = format
         self.tvsys = tvsys
@@ -129,9 +129,6 @@ class Flipbook:
         tmp = "%s_frames" % out_prefix
         m2v_file = "%s.m2v" % out_prefix
 
-        #self.encode_flipbook(tmp, m2v_file)
-        #sys.exit();
-
         if os.path.exists(tmp):
             print "Temp dir %s already exists, overwriting." % tmp
             os.system('rm -rf %s' % tmp)
@@ -145,10 +142,8 @@ class Flipbook:
             # jpeg2yuv likes frames to start at 0
             drawing.save_png('%s/%08d.png' % (tmp, frame - 1))
             frame += 1
-
         self.encode_flipbook(tmp, m2v_file)
 
-        
     def encode_flipbook(self, tmpdir, m2v_file):
         
         # Encode the frames to an .m2v file
