@@ -19,9 +19,6 @@ class Menu:
         self.format = format
         self.tvsys = tvsys
         self.style = style
-        # TODO: Remove(?)
-        self.parent = None
-        self.children = []
 
     def generate(self, outfile):
         """Generate the Menu, saving to outfile."""
