@@ -48,7 +48,6 @@ SCRIPT_NAME=`cat << EOF
 tovid 
 DVD and (S)VCD video conversion script
 Version $TOVID_VERSION
-$BUILD_OPTIONS
 $TOVID_HOME_PAGE
 --------------------------------
 EOF`
@@ -381,7 +380,7 @@ function get_args()
 
             # Other options
             "-normalize" )  
-                assert_dep normalize "'normalize' not found or installed! You cannot use -normalize."
+                assert_dep $NORMALIZE "'normalize' not found or installed! You cannot use -normalize."
                 DO_NORM=:
                 ;;
             "-amplitude" )

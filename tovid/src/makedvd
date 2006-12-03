@@ -35,7 +35,6 @@ SCRIPTNAME=`cat << EOF
 makedvd
 A script to create a DVD-Video file structure and burn it to DVD
 Part of the tovid suite, version $TOVID_VERSION
-$BUILD_OPTIONS
 $TOVID_HOME_PAGE
 --------------------------------
 EOF`
@@ -154,7 +153,7 @@ function probe_media ()
 # EXECUTION BEGINS HERE
 echo $"$SCRIPTNAME"
 
-assert_dep_group "dvd" "You are missing dependencies required for burning DVDs!"
+assert_dep_group "$dvd" "You are missing dependencies required for burning DVDs!"
 
 if test $# -lt 1; then
     usage_error "Please provide a filename (.xml, or dvd filesystem folder)"
