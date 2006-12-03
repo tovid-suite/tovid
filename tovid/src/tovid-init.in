@@ -292,111 +292,80 @@ function file_output_progress()
 }
 
 # ******************************************************************************
-# Check for a group of run-time dependencies.
-# Input args: $1 = name of dependency group (eg dvd or magick or core)
-#             $2 = a quoted, space-separated list of binaries in that group
-#                  eg: "spumux dvdauthor growisofs"
-# Run-time dependencies are checked in two stages: First, tovid-init looks for
-# the required binaries and writes a full report in $TOVID_HOME/deps.list
-# From there, individual scripts can check for either an individual dependency or
-# for a group of dependencies with one line:
-#   individual binary case:
-#     if ! grep "foo.*ok" $DEP_LIST_FILE; then exit 1; fi
-#   group case:
-#     if ! grep "have.*foo" $DEP_LIST_FILE; then exit 1; fi
-#     (DEP_GROUPS below holds the current list of dependency group)
+# Check to see if a dependency group exists, quit if missing
+# Input args: 
+#    $1 = dependency group to check for; note that this can be a globally
+#         defined group (below), or a space-separated list of executables
+#    $2 = Descriptive message about why the user needs the dependencies
 #
-# Other details: tovid-init skips checking for dependencies if the file 
-# $DEP_FILE_LIST exists (saves a few redudancies). However, if a user passes 
-# -refresh-deps to tovid-init from a prompt, then tovid-init will re-check and 
-# re-write the file.
-# ******************************************************************************
-function check_dep_group()
-{
-    #save_IFS=$IFS
-    #IFS=' '
-
-    group_name="$1"
-    dep_list="$2"
-
-    GROUP_PASS=:
-    for DEP in $dep_list; do
-        HAVE_DEP=$(which -a $DEP)
-        NUM_DEP=$(echo "$HAVE_DEP" | wc -l)
-        if test -z "$HAVE_DEP"; then
-            DEP_STATUS="MISSING"
-            DEP_MSG=$(echo ${DEP}_msg)
-            DEP_MSG=$(eval echo $DEP_MSG)
-            GROUP_PASS=false
-        elif test "$NUM_DEP" -eq 1; then
-            DEP_STATUS="ok"
-            DEP_MSG="$HAVE_DEP"
-        else
-            DEP_STATUS="ok, using"
-            FOUND_DEPS=$(echo -n "$HAVE_DEP" | tr '\n' ' ')
-            DEP_MSG=$(which $DEP)
-            for FOUND_DEP in $FOUND_DEPS; do
-                DEP_MSG=$(echo "$DEP_MSG"; printf "  %-11s %+9s  %s" " " " " "found: $FOUND_DEP")
-            done
-        fi
-        printf "  %-11s %+9s: %s\n" "$DEP" "$DEP_STATUS" "$DEP_MSG" >> $DEP_LIST_FILE
-        j=$(expr $j \+ 1)
-    done
-
-    echo >> $DEP_LIST_FILE
-    $GROUP_PASS && DEP_SUMMARY="$DEP_SUMMARY$group_name "
-
-    #IFS=$save_IFS
-}
-
-# ******************************************************************************
-# Check to see if a dependency group is in the dependency file, quit if missing
-# Input args: $1 = dependency group to check for
-#             $2 = Descriptive message about what the user needs the 
-#             dependencies for
+# Ex:   assert_dep_group "$dvd" "You cannot make DVDs without these!"
+#       assert_dep_group "rice sake fish" "You cannot make dinner!"
 #
 # ******************************************************************************
 function assert_dep_group()
 {
-    DEP_TO_CHECK="$1"
-    DEP_MESSAGE="$2"
+    DEPS="$1"
+    HELP="$2"
 
-    MISSING_DEPS=`cat $DEP_LIST_FILE | tr '\n' '\t' | awk -F "# $DEP_TO_CHECK" '{ print $2 }' | \
-                  awk -F '\t\t#' '{ print $1 }' | tr '\t' '\n' | grep "MISSING"`
+    # Determine if any group member is missing
+    NO_GROUP=false
+    for dep in $DEPS; do
+        find_dep "$dep"
+        if ! $FOUND; then
+            NO_GROUP=:
+        fi
+    done
 
-    if ! grep -q "have.*$DEP_TO_CHECK" $DEP_LIST_FILE; then
-        echo "$DEP_MESSAGE"
+    # Quit if any group member is missing
+    if $NO_GROUP; then
         echo
-        echo "$MISSING_DEPS"
-        echo
-        precho "Please install the above MISSING dependencies, run 'tovid -refresh-deps', and try again."
-        exit 1;
+        precho "$HELP $DEP_ERROR_MSG"
+        exit 1
     fi
 }
 
 # ******************************************************************************
-# Check to see if a dependency is in the dependency file, quit if missing
-# Input args: $1 = dependency to check for
-#             $2 = Descriptive message about what the user needs the 
-#                  dependencies for
+# Check to see if a dependency exists, quit if missing
+# Input args: 
+#   $1 = dependency to check for
+#   $2 = descriptive message about why the user needs the dependencies
 # 
+# Ex:   assert_dep mpeg2enc "You need this to encode video."
+#       assert_dep chopsticks "You need this tool to eat."
 # ******************************************************************************
 function assert_dep()
 {
-    DEP_TO_CHECK="$1"
-    DEP_MESSAGE="$2"
+    DEP="$1"
+    HELP="$2"
+    find_dep "$DEP"
 
-    MISSING_DEP=$(grep "$DEP_TO_CHECK" "$DEP_LIST_FILE")
-
-    if grep -q "$DEP_TO_CHECK.*MISSING" "$DEP_LIST_FILE"; then
-        echo "$DEP_MESSAGE"
-        echo
-        echo "$MISSING_DEP"
-        echo
-        precho "Please install the above MISSING dependency, run 'tovid -refresh-deps', and try again."
-        exit 1;
+    # Quit if missing
+    if ! $FOUND; then
+        echo 
+        echo "$HELP $DEP_ERROR_MSG" 
+        echo "exit 1"
     fi
 }
+
+
+# ******************************************************************************
+# Check to see if a dependency can be found in the user's $PATH, complain 
+#   when missing.
+# This is a support function for assert_dep() and assert_dep_group(). 
+#   Not meant for use at-large.
+# Input args:  $1 = the dependency to find
+# 
+# ******************************************************************************
+function find_dep()
+{
+    FOUND=:
+    DEP="$1"
+    if ! which $DEP >> /dev/null 2>&1; then
+        printf "%-13s %s\n" "  $DEP" "MISSING!"
+        FOUND=false
+    fi
+}
+
 
 # ******************************************************************************
 # Countdown 5 seconds, then return
@@ -419,16 +388,6 @@ function countdown()
 #
 # ******************************************************************************
 # ******************************************************************************
-
-REFRESH_DEPS=false
-
-# ******************************************************************************
-# Read command-line arguments.
-# NOTE: cannot check for bad ones here b/c other scripts' options will pass thru
-# here when tovid-init is sourced. Must be very hands off.
-if test x"$1" = x"-refresh-deps"; then
-    REFRESH_DEPS=:
-fi
 
 # ******************************************************************************
 # Platform-specific initialization
@@ -515,134 +474,60 @@ fi
 # Check for run-time dependencies
 # ******************************************************************************
 
-DEP_LIST_FILE=$TOVID_HOME/dependency.list
-DEP_LIST_VERSION=$(awk -F ': ' '/tovid version/ { print $2 }' $DEP_LIST_FILE)
+    DEP_ERROR_MSG="Please install the above MISSING dependencies and try again. See tovid.wikia.com/wiki/Tovid_dependencies or tovid.org for help."
 
-if $REFRESH_DEPS || test "$DEP_LIST_VERSION" != "$TOVID_VERSION"; then
-    echo "Removing old dependency list file..."
-    rm -fv $DEP_LIST_FILE
-fi
-
-# debian based distros install normalize as
-# "normalize-audio" rather than "normalize"
-if ! which normalize >/dev/null; then
-    if which normalize-audio > /dev/null; then
-        NORMALIZE="normalize-audio"
+    # debian based distros install normalize as
+    # "normalize-audio" rather than "normalize"
+    if ! which normalize >/dev/null; then
+        if which normalize-audio > /dev/null; then
+            NORMALIZE="normalize-audio"
+        fi
+    else
+        NORMALIZE="normalize"
     fi
-else
-    NORMALIZE="normalize"
-fi
 
-# Adding (or removing) dependencies:
-# (1) Does it belong to an existing group? If so, then add it to the list in
-#     [GROUP]_DEPS. If not, you'll need to add a new group. (keep reading...)
-# (2) Add a help message if you want, and when tovid-init cannot find the
-#     dependency, it will add this message to DEP_LIST_FILE. If you added 
-#     "bar" to CORE_DEPS, then make a new string called "bar_msg". 
-#     There, you're done!
-#
-# Adding (or removing) a dependency group:
-# (1) Add another group name to DEP_GROUPS (eg add "fish")
-# (2) Poplulate that group with a new space-separated string of binaries to 
-#     look for (eg make FISH_DEPS="carp tuna salmon")
-# (3) Add help messages for those new dependencies (so carp_msg, tuna_msg, and
-#     salmon_msg)
-# (4) Add the new dependency string of binaries to the DEP_GROUP_MEMBERS array.
-#     (eg add [5]="$FISH_DEPS").
-# (5) Add a comment that describes the new dependency group to the
-#     DEP_GROUP_COMMENTS array. (eg add [5]="# needed to have a fish fry")
+    # Adding (or removing) dependencies:
+    # Does the dependency belong to an existing depdency group below?
+    #   Yes: add the dependency to the list.
+    #   No:  add another group and fill it with members.
 
-if ! test -f $DEP_LIST_FILE; then
-    echo "Generating dependency list file..."
-    # List all the dependency groups. When every member of one group is found,
-    # the name of the group will be added to the summary section of $DEP_LIST_FILE
-    # for group grepping a la: if ! grep "have.*foo" $DEP_LIST_FILE; then exit 1; fi
-    DEP_GROUPS=(core magick dvd vcd transcode plugins)
-
-    # ******************************************************************************
+    # *************************************************************************
     # Required Dependencies 
-    # ******************************************************************************
-    CORE_DEPS="grep sed md5sum mplayer mencoder mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv ffmpeg"
-    grep_msg="a GNU utility (www.gnu.org/software/grep)"
-    sed_msg="a GNU utility (directory.fsf.org/GNU/sed.html)"
-    md5sum_msg="a GNU utility (www.gnu.org/software/coreutils)"
-    mplayer_msg="part of mplayer (www.mplayerhq.hu)"
-    mencoder_msg="$mplayer_msg"
-    mplex_msg="part of mjpegtools (mjpeg.sf.net}"
-    mpeg2enc_msg="$mplex_msg"
-    yuvfps_msg="$mplex_msg"
-    yuvdenoise_msg="$mplex_msg"
-    ppmtoy4m_msg="$mplex_msg"
-    mp2enc_msg="$mplex_msg"
-    jpeg2yuv_msg="$mplex_msg"
-    ffmpeg_msg="a video encoding utility (ffmpeg.sf.net)"
+    # *************************************************************************
+    core="grep sed md5sum mplayer mencoder mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv ffmpeg"
 
-    # ******************************************************************************
-    # Optional Dependencies (not quite optional yet...)
-    # ******************************************************************************
-    # Optional dependencies are grouped according to the functionality they bring
-    # to tovid: menu creation, DVD creation, (S)VCD creation, and post-processing.
+    # *************************************************************************
+    # Optional Dependencies
+    # *************************************************************************
+    # Optional dependencies are grouped according to the functionality they 
+    # bring to tovid: menu creation, DVD creation, (S)VCD creation, and 
+    # post-processing.
 
-    # ------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # ImageMagick components
-    MAGICK_DEPS="composite convert"
-    composite_msg="part of ImageMagick (www.imagemagick.org)"
-    convert_msg="$composite_msg"
+    magick="composite convert"
 
-    # ------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # dvdauthor compononets
     # (note: growisofs is NOT distributed with dvdauthor, but for tovid's
     # purposes, it fits in the same catagory, as it burns DVDs!)
-    DVD_DEPS="spumux dvdauthor growisofs"
-    spumux_msg="part of dvdauthor (dvdauthor.sf.net)"
-    dvdauthor_msg="$spumux_msg"
-    growisofs_msg="part of dvd+rw-tools: (fy.chalmers.se/~appro/linux/DVD+RW)"
+    dvd="spumux dvdauthor growisofs"
 
-    # ------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # vcdimager components
     # (note: cdrdao is NOT distributed with vcdimager, but for tovid's
     # purposes, it fits in the same catagory, as it burns (S)VCDs!)
-    VCD_DEPS="vcdxbuild cdrdao"
-    vcdxbuild_msg="part of vcdimager (www.vcdimager.org)"
-    cdrdao_msg="a standalone package (cdrdao.sf.net)"
+    vcd="vcdxbuild cdrdao"
 
-    # ------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # transcode components
-    TRANSCODE_DEPS="tcprobe tcrequant"
-    tcprobe_msg="part of transcode (www.transcoding.org)"
-    tcrequant_msg="$tcprobe_msg"
+    transcode="tcprobe tcrequant"
 
-    # ------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # Plugin tools
-    PLUGIN_DEPS="sox $NORMALIZE"
+    plugins="sox $NORMALIZE"
 
-    sox_msg="swiss army knife for sound (sox.sf.net)"
-    normalize_msg="wave gain and normalization (normalize.nongnu.org)"
-
-    # Construct an array of each dependency group's members. Conveniently holds
-    # ALL of tovid's run-time dependencies (echo ${DEP_GROUP_MEMBERS[@]}).
-    DEP_GROUP_MEMBERS=([0]="$CORE_DEPS" [1]="$MAGICK_DEPS" [2]="$DVD_DEPS" [3]="$VCD_DEPS" [4]="$TRANSCODE_DEPS" [5]="$PLUGIN_DEPS")
-
-    # Comments describing each group of dependencies. Note the leading '#' isn't
-    # necessary as this file isn't sourced, but it helps with readability.
-    DEP_GROUP_COMMENTS=([0]="# core" [1]="# magick (needed to make menus and slideshows)" [2]="# dvd (needed to make DVD menus and burn DVDs)" [3]="# vcd (needed to burn (S)VCDs)" [4]="# transcode (needed for animated menus)" [5]="# plugins (needed for other specific tasks)")
-
-    # Check for deps and write the list file.
-    echo "# tovid version: $TOVID_VERSION" >> "${DEP_LIST_FILE}"
-    i=0
-    for dep_group in ${DEP_GROUPS[@]}; do
-      echo "${DEP_GROUP_COMMENTS[i]}" >> "${DEP_LIST_FILE}"
-      check_dep_group "$dep_group" "${DEP_GROUP_MEMBERS[i]}"
-      let i=i+1
-    done
-
-    echo "# summary" >> $DEP_LIST_FILE
-    echo "have: $DEP_SUMMARY" >> $DEP_LIST_FILE
-fi
-
-# Quit and complain if ANY core dependency is missing.
-assert_dep_group "core" "You are missing tovid CORE dependencies!"
-
-BUILD_OPTIONS=$(tail -n 1 $DEP_LIST_FILE | sed s/have/with/)
+    # Quit and complain if ANY core dependency is missing.
+    assert_dep_group "$core" "You are missing CORE tovid dependencies!"
 
 # End tovid-init

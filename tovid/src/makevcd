@@ -35,7 +35,6 @@ SCRIPTNAME=`cat << EOF
 makevcd
 A script to create cue/bin files for a (S)VCD and burn them to a CD
 Part of the tovid suite, version $TOVID_VERSION
-$BUILD_OPTIONS
 $TOVID_HOME_PAGE
 --------------------------------
 EOF`
@@ -95,7 +94,7 @@ BURN_SPEED=12
 # EXECUTION BEGINS HERE
 echo $"$SCRIPTNAME"
 
-assert_dep_group "vcd" "You are missing dependencies required to image and burn (S)VCDs!"
+assert_dep_group "$vcd" "You are missing dependencies required to image and burn (S)VCDs!"
 
 while test x"${1:0:1}" = "x-"; do
     case "$1" in
