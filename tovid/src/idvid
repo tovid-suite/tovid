@@ -35,6 +35,7 @@ SCRIPT_NAME=`cat << EOF
 idvid 
 Video identification script
 Part of the tovid suite, version $TOVID_VERSION
+$BUILD_OPTIONS
 $TOVID_HOME_PAGE
 --------------------------------
 EOF`
@@ -226,24 +227,30 @@ function get_info ()
 
         tracks=( ${TRACKS[@]} )
         if (( ${#tracks[@]} > 0 )); then
-            for i in ${tracks[@]}; do
-                map_cmd=( ${map_cmd[@]} -map $i )
+            for i in ${!tracks[@]}; do
+                map_cmd[i]="-map ${tracks[i]}"
                 wavs=( "${wavs[@]}" "$TMP_DIR/$i.wav" )
             done
-            test_tracks=( "$(ffmpeg -i "$INFILE" -ss 2 -t 1 ${map_cmd[@]} -y ${wavs[@]} 2>&1)" )
+            for r in ${!tracks[@]}; do
+                test_tracks[r]="$(ffmpeg -i "$INFILE" -ss 2 -t 1 ${map_cmd[r]} -y ${wavs[r]} 2>&1)"
+                if grep -q Unsupported <<< "${test_tracks[r]}"; then
+                    TRACKS[r]="Unsupported"
+                fi
+            done
+            #test_tracks=( "$(ffmpeg -i "$INFILE" -ss 2 -t 1 ${map_cmd[@]} -y ${wavs[@]} 2>&1)" )
             echo "${test_tracks[@]}" >> "$SCRATCH_FILE"
-            if grep -q Unsupported <<< "${test_tracks[@]}"; then
-                discard=$(awk '/Unsupported/ { print $NF }' <<< "${test_tracks[@]}")
-                discard="${discard/\#}"
-                # loop through in case there's more than one unsupported channel
-                for t in $discard; do
-                    TRACKS=$(sed {s/$t//} <<< "$TRACKS")
-                done
-                for y in ${tracks[@]}; do
-                    key=$((${y##*.}-1))
-                    tracks[key]=""
-                done
-            fi
+#            if grep -q Unsupported <<< "${test_tracks[@]}"; then
+#                discard=$(awk '/Unsupported/ { print $NF }' <<< "${test_tracks[@]}")
+#                discard="${discard/\#}"
+#                # loop through in case there's more than one unsupported channel
+#                for t in $discard; do
+#                    TRACKS=$(sed {s/$t//} <<< "$TRACKS")
+#                done
+#                for y in ${tracks[@]}; do
+#                    key=$((${y##*.}-1))
+#                    tracks[key]=""
+#                done
+#            fi
             rm -f "${wavs[@]}"
         fi
         TRACKS=${TRACKS//$'\n'/ }
@@ -364,13 +371,15 @@ function idvid_main ()
         echo "       Video format: $ID_VIDEO_FORMAT"
         echo "      Video bitrate: $ID_VIDEO_BITRATE bits per second"
         # Multiple audio track info
-        for t in $discard; do A_CODECS[${t##*.}-1]=": *** Unsupported ***"; done
+        for t in ${!TRACKS[@]}; do
+            [[ ${TRACKS[t]} = *Unsupported* ]] && A_CODECS[t]=": *** Unsupported ***"
+            done
         for ((j=0; j<${#A_TRACKS[@]}; j++)); do
             echo "---------------------------"
             echo "Audio track $((j+1)) (Stream ${A_TRACKS[j]}, AID ${A_HEX_TRACKS[j]}):"
             echo "---------------------------"
             echo "              Codec: ${A_CODECS[j]}"
-            if [[ -n ${tracks[j]} ]]; then
+            if [[ ${TRACKS[j]} != Unsupported ]]; then
                 echo "            Bitrate: ${A_BITRATES[j]}000 bits per second"
                 echo "      Sampling rate: ${A_SAMPRATES[j]} Hz"
             fi
