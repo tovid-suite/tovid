@@ -342,8 +342,8 @@ function assert_dep()
     # Quit if missing
     if ! $FOUND; then
         echo 
-        echo "$HELP $DEP_ERROR_MSG" 
-        echo "exit 1"
+        precho "$HELP $DEP_ERROR_MSG" 
+        "exit 1"
     fi
 }
 
