@@ -54,7 +54,12 @@ to the right, to (80, 20), then diagonally to (100, 100).
 
 """
 
-__all__ = ['Keyframe', 'lerp', 'cos_interp', 'interpolate', 'tween']
+__all__ = [\
+    'Keyframe',
+    'lerp',
+    'cos_interp',
+    'interpolate',
+    'tween']
 
 import copy
 import doctest
