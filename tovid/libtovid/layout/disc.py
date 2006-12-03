@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 # disc.py
 
+# TODO: Merge with dvdauthor.py
+
 """This module provides a Python interface for creating, customizing, and
 authoring a video disc.
 """
@@ -28,6 +30,25 @@ dvd.addTitleset(ts)
 v3 = Video('half-dvd', 'ntsc', '/pub/baz3.mpg')
 topmenu = Menu([ts, v3], 'dvd', 'ntsc', Style(font='times', color='blue'))
 dvd.addMenu(topmenu)
+
+Consider creating a Disc/Menu/Video/Titleset hierarchy structure that can
+be authored by passing it to one of several functions, say
+    get_dvdauthor_xml(disc)
+    get_vcdimager_xml(disc)
+Or even:
+    author(disc)
+where the appropriate format is inferred, get_?_xml() is called, and the
+appropriate program run to produce a ready-to-burn directory or image.
+
+Minimal disc structure requirements:
+
+A disc may contain one of the following structure hierarchies:
+
+* Flat videos that play one after the other
+* Videos accessible through a menu that appears when the disc is inserted
+* Groups of videos, each with their own menu, with submenus accessible through
+  a top-level (VMGM) menu
+
 """
 
 class Titleset:
@@ -56,9 +77,6 @@ class Disc:
         self.tvsys = tvsys
         self.title = title
         self.video_files = video_files
-        # TODO: Remove these(?)
-        self.parent = None
-        self.children = []
     
     def generate(self):
         """Write dvdauthor or vcdimager XML for the element, to
@@ -73,43 +91,17 @@ class Disc:
 
     # ===========================================================
     # Disc XML generators
-    
-    def vcd_disc_xml(self):
-        xml = """<?xml version="1.0"?>
-        <!DOCTYPE videocd PUBLIC "-//GNU/DTD VideoCD//EN"
-          "http://www.gnu.org/software/vcdimager/videocd.dtd">
-        <videocd xmlns="http://www.gnu.org/software/vcdimager/1.0/"
-        """
-        # format == vcd|svcd, version=1.0 (svcd) | 2.0 (vcd)
-        format = self.options['format']
-        if format == 'vcd':
-            version = "2.0"
-        else:
-            version = "1.0"
-        xml += 'class="%s" version="%s">\n' % (format, version)
-    
-        if format == 'svcd':
-            xml += '<option name="update scan offsets" value="true" />'
-    
-        xml += """<info>
-          <album-id>VIDEO_DISC</album-id>
-          <volume-count>1</volume-count>
-          <volume-number>1</volume-number>
-          <restriction>0</restriction>
-        </info>
-        <pvd>
-          <volume-id>VIDEO_DISC</volume-id>
-          <system-id>CD-RTOS CD-BRIDGE</system-id>
-        </pvd>
-        """
-        # TODO:
-        # segment-items
-        # sequence-items
-        # pbc + selections
-        xml += '</videocd>'
 
     def dvd_disc_xml(self):
-        """Return a string containing dvdauthor XML for this disc."""
+        """Return a string containing dvdauthor XML for this disc.
+        
+            name (self.name)
+            children (self.children)
+            topmenu (self.children[0])
+            outfile (topmenu['out'])
+            topmenu.children
+            
+        """
         xml = '<dvdauthor dest="%s">\n' % self.name.replace(' ', '_')
         xml += '<vmgm>\n'
         # If there's a topmenu, write vmgm-level XML for it
@@ -142,7 +134,11 @@ class Disc:
     # Menu XML generators
     
     def dvd_menu_xml(self, menu):
-        """Return a string containing dvdauthor XML for the given Menu."""
+        """Return a string containing dvdauthor XML for the given Menu.
+
+            menu['out']
+            menu.children
+        """
         xml = '<menus>\n'
         xml += '  <video />\n'
         xml += '  <pgc entry="root">\n'
@@ -162,8 +158,11 @@ class Disc:
     # Video XML generators
     
     def dvd_video_xml(self, video):
-        """Return a string containing dvdauthor XML for the given Video."""
-    
+        """Return a string containing dvdauthor XML for the given Video.
+
+            video['chapters']
+            video['out']
+        """
         chap_str = '0'
         for chap in video['chapters']:
             chap_str += ',' + chap
