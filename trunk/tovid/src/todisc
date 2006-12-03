@@ -40,7 +40,6 @@ SCRIPT_NAME=`cat << EOF
 todisc
 Generate a DVD filesystem with animated thumbnail menus
 Part of the tovid suite, version $TOVID_VERSION
-$BUILD_OPTIONS
 $TOVID_HOME_PAGE
 --------------------------------
 EOF`
