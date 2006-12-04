@@ -40,6 +40,7 @@ SCRIPT_NAME=`cat << EOF
 todisc
 Generate a DVD filesystem with animated thumbnail menus
 Part of the tovid suite, version $TOVID_VERSION
+$BUILD_OPTIONS
 $TOVID_HOME_PAGE
 --------------------------------
 EOF`
@@ -510,7 +511,7 @@ while test $# -gt 0; do
             shift
             get_listargs "$@"
             for f in  ${!ARGS_ARRAY[@]}; do
-                FILES[f]="$(abspath ${ARGS_ARRAY[f]})"
+                FILES[f]="$(abspath "${ARGS_ARRAY[f]}")"
             done
             ;;
         "-titles" )
@@ -628,31 +629,20 @@ while test $# -gt 0; do
             PLAYALL=:
             ;;
         "-bgvideo" )
-            shift
-            BG_VIDEO="$(abspath "$1")"
+            usage_error "-bgvideo This option has been removed. See: -background"
             ;;
         "-background" )
             shift
             BACKGROUND="$(abspath "$1")"
             ;;
         "-showcase-video" )
-            shift
-            SHOWCASE_VIDEO="$(abspath "$1")"
-            IMG_FMT=png
-            SHOWCASE=:
+            usage_error "-showcase-video This option has been removed. See: -showcase"
             ;;
-        "-showcase-image" ) # preview only atm
-            shift
-            SHOWCASE_IMG="$(abspath "$1")"
-            IMG_FMT=png
-            SHOWCASE=:
+        "-showcase-image" )
+            usage_error "-showcase-image This option has been removed. See: -showcase"
             ;;
         "-showcase-no-thumb" )
-            NO_SC_THUMB=:
-            SHOWCASE=:
-            IMG_FMT=png
-            SHOWCASE_IMG="dummy"
-            #OPACITY=1
+            usage_error "-showcase-no-thumb This option has been removed. See: -showcase"
             ;;
         "-showcase" )
             shift
@@ -780,8 +770,7 @@ while test $# -gt 0; do
             AUDIOLANG=:
             ;;
         "-bgaudio" )
-            shift
-            BG_AUDIO="$(abspath "$1")"
+            usage_error "-bgaudio This option has been removed. See: -background"
             ;;
         "-menu-audio-fade" )
             shift
@@ -1149,7 +1138,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
             usage_error "Sorry, $IN_FILE is not a video file"
         fi
     else
-        usage_error "Sorry, $IN_FILE does not exist"
+        usage_error "Sorry, "$IN_FILE" does not exist"
     fi
 done
 echo        
@@ -2363,66 +2352,67 @@ if ! $NOASK; then
 fi
 
 # Check input files for compliance; offer to tovid-encode non-compliant files
-for ((i=0; i<=NUM_FILES; i++)); do
-    IN_FILE="${IN_FILES[i]}"
-    yecho "Checking $IN_FILE for compliance..."
-    # TODO: Check for PAL/NTSC compliance
-    # If video matches the target format and TV standard, append to ENC_IN_FILES
-    if test "$(idvid -isformat $TARGET "$IN_FILE")" = "true" && \
-       test "$(idvid -istvsys $TV_STANDARD "$IN_FILE")" = "true"; then
-        ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE")
-    # Video needs to be re-encoded; use a .enc filename in ENC_IN_FILES
-    else
-        FILES_TO_ENCODE[i]="$IN_FILE"
-        ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE.enc.mpg")
-    fi
-done
-if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
-    TGT_CAPS=$(echo $TARGET | tr a-z A-Z)
-    TV_STND_CAPS=$(echo $TV_STANDARD | tr a-z A-Z)
-    yecho
-    yecho "Encode input files"
-    yecho
-    yecho "Some of the -files you provided are not $TV_STND_CAPS $TGT_CAPS-compliant:"
-    yecho " "
-    for i in "${FILES_TO_ENCODE[@]}"; do
-        test -n "$i" && yecho "  $i"
+if ! $NOASK; then
+    for ((i=0; i<=NUM_FILES; i++)); do
+        IN_FILE="${IN_FILES[i]}"
+        yecho "Checking $IN_FILE for compliance..."
+        # TODO: Check for PAL/NTSC compliance
+        # If video matches the target format and TV standard, append to ENC_IN_FILES
+        if test "$(idvid -isformat $TARGET "$IN_FILE")" = "true" && \
+           test "$(idvid -istvsys $TV_STANDARD "$IN_FILE")" = "true"; then
+            ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE")
+        # Video needs to be re-encoded; use a .enc filename in ENC_IN_FILES
+        else
+            FILES_TO_ENCODE[i]="$IN_FILE"
+            ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE.enc.mpg")
+        fi
     done
-    yecho " "
-    if $NOASK; then
-        echo "Converting files to $TV_STND_CAPS $TGT_CAPS-compliant format."
-        echo "(This may take a long time)"
-        ENCODE="yes"
-    else
+    if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
+        TGT_CAPS=$(echo $TARGET | tr a-z A-Z)
+        TV_STND_CAPS=$(echo $TV_STANDARD | tr a-z A-Z)
+        yecho
+        yecho "Encode input files"
+        yecho
+        yecho "Some of the -files you provided are not $TV_STND_CAPS $TGT_CAPS-compliant:"
+        yecho " "
+        for i in "${FILES_TO_ENCODE[@]}"; do
+            test -n "$i" && yecho "  $i"
+        done
+        yecho " "
         yecho "I can encode them for you, but it may take a long time."
         yecho "Encoding will ensure that your disc is fully compliant;"
         yecho "you may skip this, but your disc may not be playable."
         yecho "Please type 'yes' if you want the files to be encoded:"
         read ENCODE
-    fi
-    if test -n "$ENCODE" && test "$ENCODE" = 'yes'; then
-        yecho
-        yecho "Converting files to $TGT_CAPS format with 'tovid'"
-        for i in "${FILES_TO_ENCODE[@]}"; do
-            yecho "Converting: $i"
-            countdown
-            tovid -$TV_STANDARD -$TARGET -in "$i" -out "$i.enc" $TOVID_OPTS
-            wait
-            # See if output file exists
-            if ! test -f "$i.enc.mpg"; then
-                runtime_error "Could not encode file: $i"
-            fi
+        if test -n "$ENCODE" && test "$ENCODE" = 'yes'; then
             yecho
-        done
-        # Replace IN_FILES with ENC_IN_FILES (with .enc extension)
-        IN_FILES=("${ENC_IN_FILES[@]}")
-    else
-        yecho
-        yecho "Not re-encoding. I will proceed with menu generation, but"
-        yecho "your authored disc will not be fully $TGT_CAPS-compliant."
-        yecho
+            yecho "Converting files to $TGT_CAPS format with 'tovid'"
+            for i in "${FILES_TO_ENCODE[@]}"; do
+                yecho "Converting: $i"
+                countdown
+                tovid -$TV_STANDARD -$TARGET -in "$i" -out "$i.enc" $TOVID_OPTS
+                wait
+                # See if output file exists
+                if ! test -f "$i.enc.mpg"; then
+                    runtime_error "Could not encode file: $i"
+                fi
+                yecho
+            done
+            # Replace IN_FILES with ENC_IN_FILES (with .enc extension)
+            IN_FILES=("${ENC_IN_FILES[@]}")
+        else
+            yecho
+            yecho "Not re-encoding. I will proceed with menu generation, but"
+            yecho "your authored disc will not be fully $TGT_CAPS-compliant."
+            yecho
+        fi
     fi
 fi
+# symlink IN_FILES in $WORK_DIR to solve some quoting issues for dvdauthor
+
+for i in ${!IN_FILES[@]}; do
+    (cd "$REAL_WORK_DIR" &&  ln -sv "${IN_FILES[i]}" $i.mpg)
+done
 
 # Store info about input files in an array
 for ((i=0; i<${#IN_FILES[@]}; i++)); do
@@ -2773,7 +2763,7 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
     if $AUDIOLANG; then
         echo "${VOB_PRE[i]}"
     fi
-    echo -ne "        <vob file=\"${IN_FILES[i]}\""
+    echo -ne "        <vob file=\"$REAL_WORK_DIR/$i.mpg\""
     echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
     if $CHAIN_VIDEOS; then
         if [ "${POST_PLAY[i]}" = "chain" ]; then
