@@ -528,7 +528,7 @@ while test $# -gt 0; do
             SM_TITLES=( "${ARGS_ARRAY[@]}" )
             IFS=$OIFS
             ;;
-        "-textmenu" )
+        "-use-makemenu" )
             TEXTMENU=:
             ;;
         "-out" )
@@ -652,7 +652,7 @@ while test $# -gt 0; do
             SHOWCASE=:
             IMG_FMT=png
             ;;
-        "-no-thumbs" )
+        "-textmenu" )
             NO_THUMBS=:
             SHOWCASE=:
             NO_SC_THUMB=:
@@ -865,9 +865,6 @@ if test -n "$OUT_PREFIX"; then
 else
     usage_error "Please provide an output name with -out"
 fi
-# menu fade not supported currently for -no-thumbs
-#$MENU_FADE && $NO_THUMBS && \
-#usage_error "Sorry, menu fade is not supported currently for -no-thumbs" #FIXME uncomment
 # Warn if thumb labels have more than 12 characters
 if ! $SHOWCASE; then
     for ((i=0; i<${#TITLES[@]}; i++)); do
@@ -1255,7 +1252,7 @@ SHOWCASE_THUMB_X_ARRAY=( ${SHOWCASE_THUMB_X_ARRAY[NUM_FILES]} )
 SHOWCASE_THUMB_Y_ARRAY=( ${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]} )
 SHOWCASE_TITLES_X_ARRAY=( ${SHOWCASE_THUMB_X_ARRAY[@]} )
 SHOWCASE_TITLES_Y_ARRAY=( ${SHOWCASE_TITLES_Y_ARRAY[NUM_FILES]} )
-SPLIT=10 # max number of text only titles in one column (-no-thumbs)
+SPLIT=10 # max number of text only titles in one column (-textmenu)
 if $NO_THUMBS; then
     if [[ $NUM_FILES -gt 9 ]]; then
         SPLIT=$((V_TOTAL / 2))
