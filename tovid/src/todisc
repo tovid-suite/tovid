@@ -602,8 +602,7 @@ while test $# -gt 0; do
             STATIC=:
             ;;
         "-bgimage" )
-            shift
-            BG_PIC="$(abspath "$1")"
+            usage_error "-bgvideo This option has been removed. See: -background"
             ;;
         "-menu-fade" )
             MENU_FADE=:
