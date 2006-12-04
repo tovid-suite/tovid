@@ -479,8 +479,8 @@ fi
     # debian based distros install normalize as
     # "normalize-audio" rather than "normalize"
     NORMALIZE="normalize"
-    if ! which normalize >/dev/null; then
-        if which normalize-audio > /dev/null; then
+    if ! which normalize > /dev/null 2>&1; then
+        if which normalize-audio > /dev/null 2>&1; then
             NORMALIZE="normalize-audio"
         fi
     fi
