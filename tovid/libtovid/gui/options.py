@@ -95,16 +95,16 @@ class DiscOptions:
         # Save output filename in global Config
         discName = "%s/%s.xml" % (curConfig.strOutputDirectory, self.outPrefix) 
         
-	#If specified, check whether it exists
-	if os.path.exists(discName) == True:
+        #If specified, check whether it exists
+        if os.path.exists(discName) == True:
             #If exists, check whether it is a file or directory
-	    if os.path.isfile(discName) == True:
+            if os.path.isfile(discName) == True:
                 msgDiscFileExistsDlg = wx.MessageDialog(panel, \
-	            "A file needs to be created based on the disc name.\n" \
-	            "But, this file (based on the disc name) already exists.\n"\
-	            "The file is: %s\n\n" \
+                    "A file needs to be created based on the disc name.\n" \
+                    "But, this file (based on the disc name) already exists.\n"\
+                    "The file is: %s\n\n" \
                     "Do you want to continue?\n"
-	            "This will overwrite this existing file." % (discName),
+                    "This will overwrite this existing file." % (discName),
                     "Existing Disc Name File",
                 wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
                 response = msgDiscFileExistsDlg.ShowModal()
@@ -113,10 +113,10 @@ class DiscOptions:
                     return False
             else:   
                 msgDiscFolderExistsDlg = wx.MessageDialog(panel, \
-	            "A file needs to be created based on the disc name.\n" \
-	            "But, a directory with the same name already exists.\n" \
-	            "This directory is: %s\n\n" \
-	            "Please either rename/remove the directory or " \
+                    "A file needs to be created based on the disc name.\n" \
+                    "But, a directory with the same name already exists.\n" \
+                    "This directory is: %s\n\n" \
+                    "Please either rename/remove the directory or " \
                     "change the disc name!" % (discName),
                     "Existing Directory",
                     wx.OK | wx.ICON_ERROR)
@@ -148,7 +148,7 @@ class DiscOptions:
 
     def RelevantFilesAreOK(self, panel):
         """Check the disc options for errors detectable before encoding"""
-	if self.DiscNameOK(panel) == False:
+        if self.DiscNameOK(panel) == False:
             return False
         return True
 
@@ -388,7 +388,7 @@ class MenuOptions:
         #First check if Image File is specified
         outputFile = "%s/%s.mpg" % (curConfig.strOutputDirectory, self.outPrefix)
         
-	#If specified, check whether it exists
+        #If specified, check whether it exists
         if os.path.exists(outputFile) == True:
             #If exists, check whether it is a file or directory
             if os.path.isfile(outputFile) == True:
