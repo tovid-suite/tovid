@@ -478,12 +478,11 @@ fi
 
     # debian based distros install normalize as
     # "normalize-audio" rather than "normalize"
+    NORMALIZE="normalize"
     if ! which normalize >/dev/null; then
         if which normalize-audio > /dev/null; then
             NORMALIZE="normalize-audio"
         fi
-    else
-        NORMALIZE="normalize"
     fi
 
     # Adding (or removing) dependencies:
