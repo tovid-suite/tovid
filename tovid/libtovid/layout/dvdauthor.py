@@ -93,7 +93,13 @@ import random # for random()
 import cgi    # for escape()
 import os     # for system()
 
-__all__ = ['Disc', 'VMGM', 'Titleset', 'Title', 'Menu']
+__all__ = [\
+    'Disc',
+    'VMGM',
+    'Titleset',
+    'Title',
+    'Menu',
+    'get_xml']
   
 class Disc:
     """dvdauthor XML file generator.
@@ -303,7 +309,6 @@ class Titleset:
                 xml += _indent(4, menu._xml())
 
             xml += '  </menus>\n'
-
 
         if len(self.titles):
             # Deal with TITLES blocks
@@ -609,6 +614,72 @@ def _verify_lang(lang):
     return (lang.lower(), language_codes[nlang])
 
 
+###
+### Old interface from disc.py, needs to be merged with the above somehow
+###
+
+def get_xml(disc):
+    """Return a string containing dvdauthor XML for this disc.
+    """
+    xml = '<dvdauthor dest="%s">\n' % disc.name.replace(' ', '_')
+    xml += '<vmgm>\n'
+    # If there's a topmenu, write vmgm-level XML for it
+    if disc.topmenu:
+        xml += '  <menus>\n'
+        xml += '    <video />\n'
+        xml += '    <pgc entry="title">\n'
+        xml += '      <vob file="%s" />\n' % disc.topmenu.filename
+        num = 1
+        for submenu in disc.menus:
+            xml += '      <button>jump titleset %d menu;</button>\n' % num
+            num += 1
+        xml += '    </pgc>\n'
+
+    xml += '</vmgm>\n'
+    # TODO: add titlesets for each submenu
+    for menu in disc.menus:
+        xml += '<titleset>\n'
+        xml += dvd_menu_xml(menu)
+        for video in menu.videos:
+            xml += dvd_video_xml(video)
+        xml += '</titleset>\n'
+        
+    xml += '</dvdauthor>\n'
+    return xml
+
+
+def dvd_menu_xml(menu):
+    """Return a string containing dvdauthor XML for the given Menu.
+    """
+    xml = '<menus>\n'
+    xml += '  <video />\n'
+    xml += '  <pgc entry="root">\n'
+    xml += '  <vob file="%s" />\n' % menu.filename
+    # For each child ('titles' target), add a button
+    num = 1
+    for video in menu.videos:
+        xml += '    <button>jump title %d;</button>\n' % num
+        num += 1
+    xml += '    <button>jump vmgm menu;</button>\n'
+    xml += '  </pgc>\n'
+    xml += '</menus>\n'
+    return xml
+
+
+def dvd_video_xml(video):
+    """Return a string containing dvdauthor XML for the given Video.
+    """
+    chap_str = '0'
+    for chap in video.chapters:
+        chap_str += ',' + chap
+
+    xml = '  <pgc>\n'
+    xml += '    <vob file="%s" chapters="%s" />\n' % \
+            (video.filename, chap_str)
+    xml += '    <post>call menu;</post>\n'
+    xml += '  </pgc>\n'
+    return xml
+    
 
 
 ############################### DATA ################################
@@ -616,140 +687,141 @@ def _verify_lang(lang):
 ### Language codes definitions, from:
 ### http://sunsite.berkeley.edu/amher/iso_639.html
 ###
-language_codes = {'AA': 'AFAR',
-                  'AB': 'ABKHAZIAN',
-                  'AF': 'AFRIKAANS',
-                  'AM': 'AMHARIC',
-                  'AR': 'ARABIC',
-                  'AS': 'ASSAMESE',
-                  'AY': 'AYMARA',
-                  'AZ': 'AZERBAIJANI',
-                  'BA': 'BASHKIR',
-                  'BE': 'BYELORUSSIAN',
-                  'BG': 'BULGARIAN',
-                  'BH': 'BIHARI',
-                  'BI': 'BISLAMA',
-                  'BN': 'BENGALI;BANGLA',
-                  'BO': 'TIBETAN',
-                  'BR': 'BRETON',
-                  'CA': 'CATALAN',
-                  'CO': 'CORSICAN',
-                  'CS': 'CZECH',
-                  'CY': 'WELSH',
-                  'DA': 'DANISH',
-                  'DE': 'GERMAN',
-                  'DZ': 'BHUTANI',
-                  'EL': 'GREEK',
-                  'EN': 'ENGLISH',
-                  'EO': 'ESPERANTO',
-                  'ES': 'SPANISH',
-                  'ET': 'ESTONIAN',
-                  'EU': 'BASQUE',
-                  'FA': 'PERSIAN (farsi)',
-                  'FI': 'FINNISH',
-                  'FJ': 'FIJI',
-                  'FO': 'FAROESE',
-                  'FR': 'FRENCH',
-                  'FY': 'FRISIAN',
-                  'GA': 'IRISH',
-                  'GD': 'SCOTS GAELIC',
-                  'GL': 'GALICIAN',
-                  'GN': 'GUARANI',
-                  'GU': 'GUJARATI',
-                  'HA': 'HAUSA',
-                  'HI': 'HINDI',
-                  'HR': 'CROATIAN',
-                  'HU': 'HUNGARIAN',
-                  'HY': 'ARMENIAN',
-                  'IA': 'INTERLINGUA',
-                  'IE': 'INTERLINGUE',
-                  'IK': 'INUPIAK',
-                  'IN': 'INDONESIAN',
-                  'IS': 'ICELANDIC',
-                  'IT': 'ITALIAN',
-                  'IW': 'HEBREW',
-                  'JA': 'JAPANESE',
-                  'JI': 'YIDDISH',
-                  'JV': 'JAVANESE',
-                  'KA': 'GEORGIAN',
-                  'KK': 'KAZAKH',
-                  'KL': 'GREENLANDIC',
-                  'KM': 'CAMBODIAN',
-                  'KN': 'KANNADA',
-                  'KO': 'KOREAN',
-                  'KS': 'KASHMIRI',
-                  'KU': 'KURDISH',
-                  'KY': 'KIRGHIZ',
-                  'LA': 'LATIN',
-                  'LN': 'LINGALA',
-                  'LO': 'LAOTHIAN',
-                  'LT': 'LITHUANIAN',
-                  'LV': 'LATVIAN;LETTISH',
-                  'MG': 'MALAGASY',
-                  'MI': 'MAORI',
-                  'MK': 'MACEDONIAN',
-                  'ML': 'MALAYALAM',
-                  'MN': 'MONGOLIAN',
-                  'MO': 'MOLDAVIAN',
-                  'MR': 'MARATHI',
-                  'MS': 'MALAY',
-                  'MT': 'MALTESE',
-                  'MY': 'BURMESE',
-                  'NA': 'NAURU',
-                  'NE': 'NEPALI',
-                  'NL': 'DUTCH',
-                  'NO': 'NORWEGIAN',
-                  'OC': 'OCCITAN',
-                  'OM': 'AFAN (OROMO',
-                  'OR': 'ORIYA',
-                  'PA': 'PUNJABI',
-                  'PL': 'POLISH',
-                  'PS': 'PASHTO;PUSHTO',
-                  'PT': 'PORTUGUESE',
-                  'QU': 'QUECHUA',
-                  'RM': 'RHAETO-ROMANCE',
-                  'RN': 'KURUNDI',
-                  'RO': 'ROMANIAN',
-                  'RU': 'RUSSIAN',
-                  'RW': 'KINYARWANDA',
-                  'SA': 'SANSKRIT',
-                  'SD': 'SINDHI',
-                  'SG': 'SANGHO',
-                  'SH': 'SERBO-CROATIAN',
-                  'SI': 'SINGHALESE',
-                  'SK': 'SLOVAK',
-                  'SL': 'SLOVENIAN',
-                  'SM': 'SAMOAN',
-                  'SN': 'SHONA',
-                  'SO': 'SOMALI',
-                  'SQ': 'ALBANIAN',
-                  'SR': 'SERBIAN',
-                  'SS': 'SISWATI',
-                  'ST': 'SESOTHO',
-                  'SU': 'SUNDANESE',
-                  'SV': 'SWEDISH',
-                  'SW': 'SWAHILI',
-                  'TA': 'TAMIL',
-                  'TE': 'TELUGU',
-                  'TG': 'TAJIK',
-                  'TH': 'THAI',
-                  'TI': 'TIGRINYA',
-                  'TK': 'TURKMEN',
-                  'TL': 'TAGALOG',
-                  'TN': 'SETSWANA',
-                  'TO': 'TONGA',
-                  'TR': 'TURKISH',
-                  'TS': 'TSONGA',
-                  'TT': 'TATAR',
-                  'TW': 'TWI',
-                  'UK': 'UKRAINIAN',
-                  'UR': 'URDU',
-                  'UZ': 'UZBEK',
-                  'VI': 'VIETNAMESE',
-                  'VO': 'VOLAPUK',
-                  'WO': 'WOLOF',
-                  'XH': 'XHOSA',
-                  'YO': 'YORUBA',
-                  'ZH': 'CHINESE',
-                  'ZU': 'ZULU'}
+language_codes = {\
+    'AA': 'AFAR',
+    'AB': 'ABKHAZIAN',
+    'AF': 'AFRIKAANS',
+    'AM': 'AMHARIC',
+    'AR': 'ARABIC',
+    'AS': 'ASSAMESE',
+    'AY': 'AYMARA',
+    'AZ': 'AZERBAIJANI',
+    'BA': 'BASHKIR',
+    'BE': 'BYELORUSSIAN',
+    'BG': 'BULGARIAN',
+    'BH': 'BIHARI',
+    'BI': 'BISLAMA',
+    'BN': 'BENGALI;BANGLA',
+    'BO': 'TIBETAN',
+    'BR': 'BRETON',
+    'CA': 'CATALAN',
+    'CO': 'CORSICAN',
+    'CS': 'CZECH',
+    'CY': 'WELSH',
+    'DA': 'DANISH',
+    'DE': 'GERMAN',
+    'DZ': 'BHUTANI',
+    'EL': 'GREEK',
+    'EN': 'ENGLISH',
+    'EO': 'ESPERANTO',
+    'ES': 'SPANISH',
+    'ET': 'ESTONIAN',
+    'EU': 'BASQUE',
+    'FA': 'PERSIAN (farsi)',
+    'FI': 'FINNISH',
+    'FJ': 'FIJI',
+    'FO': 'FAROESE',
+    'FR': 'FRENCH',
+    'FY': 'FRISIAN',
+    'GA': 'IRISH',
+    'GD': 'SCOTS GAELIC',
+    'GL': 'GALICIAN',
+    'GN': 'GUARANI',
+    'GU': 'GUJARATI',
+    'HA': 'HAUSA',
+    'HI': 'HINDI',
+    'HR': 'CROATIAN',
+    'HU': 'HUNGARIAN',
+    'HY': 'ARMENIAN',
+    'IA': 'INTERLINGUA',
+    'IE': 'INTERLINGUE',
+    'IK': 'INUPIAK',
+    'IN': 'INDONESIAN',
+    'IS': 'ICELANDIC',
+    'IT': 'ITALIAN',
+    'IW': 'HEBREW',
+    'JA': 'JAPANESE',
+    'JI': 'YIDDISH',
+    'JV': 'JAVANESE',
+    'KA': 'GEORGIAN',
+    'KK': 'KAZAKH',
+    'KL': 'GREENLANDIC',
+    'KM': 'CAMBODIAN',
+    'KN': 'KANNADA',
+    'KO': 'KOREAN',
+    'KS': 'KASHMIRI',
+    'KU': 'KURDISH',
+    'KY': 'KIRGHIZ',
+    'LA': 'LATIN',
+    'LN': 'LINGALA',
+    'LO': 'LAOTHIAN',
+    'LT': 'LITHUANIAN',
+    'LV': 'LATVIAN;LETTISH',
+    'MG': 'MALAGASY',
+    'MI': 'MAORI',
+    'MK': 'MACEDONIAN',
+    'ML': 'MALAYALAM',
+    'MN': 'MONGOLIAN',
+    'MO': 'MOLDAVIAN',
+    'MR': 'MARATHI',
+    'MS': 'MALAY',
+    'MT': 'MALTESE',
+    'MY': 'BURMESE',
+    'NA': 'NAURU',
+    'NE': 'NEPALI',
+    'NL': 'DUTCH',
+    'NO': 'NORWEGIAN',
+    'OC': 'OCCITAN',
+    'OM': 'AFAN (OROMO',
+    'OR': 'ORIYA',
+    'PA': 'PUNJABI',
+    'PL': 'POLISH',
+    'PS': 'PASHTO;PUSHTO',
+    'PT': 'PORTUGUESE',
+    'QU': 'QUECHUA',
+    'RM': 'RHAETO-ROMANCE',
+    'RN': 'KURUNDI',
+    'RO': 'ROMANIAN',
+    'RU': 'RUSSIAN',
+    'RW': 'KINYARWANDA',
+    'SA': 'SANSKRIT',
+    'SD': 'SINDHI',
+    'SG': 'SANGHO',
+    'SH': 'SERBO-CROATIAN',
+    'SI': 'SINGHALESE',
+    'SK': 'SLOVAK',
+    'SL': 'SLOVENIAN',
+    'SM': 'SAMOAN',
+    'SN': 'SHONA',
+    'SO': 'SOMALI',
+    'SQ': 'ALBANIAN',
+    'SR': 'SERBIAN',
+    'SS': 'SISWATI',
+    'ST': 'SESOTHO',
+    'SU': 'SUNDANESE',
+    'SV': 'SWEDISH',
+    'SW': 'SWAHILI',
+    'TA': 'TAMIL',
+    'TE': 'TELUGU',
+    'TG': 'TAJIK',
+    'TH': 'THAI',
+    'TI': 'TIGRINYA',
+    'TK': 'TURKMEN',
+    'TL': 'TAGALOG',
+    'TN': 'SETSWANA',
+    'TO': 'TONGA',
+    'TR': 'TURKISH',
+    'TS': 'TSONGA',
+    'TT': 'TATAR',
+    'TW': 'TWI',
+    'UK': 'UKRAINIAN',
+    'UR': 'URDU',
+    'UZ': 'UZBEK',
+    'VI': 'VIETNAMESE',
+    'VO': 'VOLAPUK',
+    'WO': 'WOLOF',
+    'XH': 'XHOSA',
+    'YO': 'YORUBA',
+    'ZH': 'CHINESE',
+    'ZU': 'ZULU'}
 

@@ -3,10 +3,8 @@
 
 __all__ = ['Video']
 
-import sys
 import doctest
 from libtovid.transcode import encode
-from libtovid import log
 
 class Video:
     """A video title for (optional) inclusion on a video disc."""
