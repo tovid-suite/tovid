@@ -1042,14 +1042,11 @@ class DiscLayoutPanel(wx.Panel):
                     countItems += 1
         return countItems
 
-    def PerformSanityCheckOnFiles(self, panel):
-        """Check for invalid characters in filenames etc"""       
+    def CheckForNoDuplicateOutputFiles(self, panel):
+        """Check for when two files have same output name"""       
         # Get references for all items
         refs = self.discTree.GetReferenceList(self.rootItem)
         for curItem in refs:
-            if curItem.RelevantFilesAreOK(panel) == False:
-                return False
-
             #Check that no other references have same output name as this one
             if curItem.type == ID_DISC:
                 #No possibility of duplication
@@ -1084,6 +1081,53 @@ class DiscLayoutPanel(wx.Panel):
                     msgImageFileMissingDlg.ShowModal()
                     msgImageFileMissingDlg.Destroy()
                     return False;
+        return True
+
+    def CheckMenuCountLimitsNotExceeded(self, panel):
+        """Ensure the menu limit is not exceeded"""    
+        MAX_BUTTONS_ON_DVD_MENU = 36
+        MAX_BUTTONS_ON_SVCD_MENU = 9
+
+        # Get all items in tree
+        items = self.discTree.GetItemList(self.rootItem)
+        for curItem in items:
+            curOpts = self.discTree.GetPyData(curItem)
+            if curOpts.type == ID_MENU:
+                #Need to check there are not too many items in menu
+                menuCount = self.discTree.GetChildrenCount(curItem, False)
+                tooManyButtonsOnMenu = False
+                if self.discFormat == 'dvd' and menuCount > MAX_BUTTONS_ON_DVD_MENU:
+                    tooManyButtonsOnMenu = True
+                elif self.discFormat in [ 'vcd', 'svcd' ] and menuCount > MAX_BUTTONS_ON_SVCD_MENU:
+                    tooManyButtonsOnMenu = True
+
+                if tooManyButtonsOnMenu == True:
+                    msgTooManyButtonsDlg = wx.MessageDialog(panel, \
+                       "The number of buttons that can be on a menu is limited.\n" \
+                       "For DVDs, this limit is %s.\n" \
+                       "For (S)VCDs, this limit is %s\n\n" \
+                       "Currently, a menu has %s.\n" \
+                       "Please correct this." \
+                            % (MAX_BUTTONS_ON_DVD_MENU, MAX_BUTTONS_ON_SVCD_MENU, menuCount),
+                       "Too many buttons on menu",
+                       wx.OK | wx.ICON_ERROR)
+                    msgTooManyButtonsDlg.ShowModal()
+                    msgTooManyButtonsDlg.Destroy()
+                    return False;
+        return True
+
+    def PerformSanityCheckOnFiles(self, panel):
+        """Check for invalid characters in filenames etc"""       
+        # Get references for all items
+        refs = self.discTree.GetReferenceList(self.rootItem)
+        for curItem in refs:
+            if curItem.RelevantFilesAreOK(panel) == False:
+                return False
+        if self.CheckMenuCountLimitsNotExceeded(panel) == False:
+            return False
+        if self.CheckForNoDuplicateOutputFiles(panel) == False:
+            return False
+
         return True
 
     def GetAllCommands(self):
