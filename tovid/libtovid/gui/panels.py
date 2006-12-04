@@ -1043,7 +1043,7 @@ class DiscLayoutPanel(wx.Panel):
         return countItems
 
     def PerformSanityCheckOnFiles(self, panel):
-	"""Check for invalid characters in filenames etc"""       
+        """Check for invalid characters in filenames etc"""       
         # Get references for all items
         refs = self.discTree.GetReferenceList(self.rootItem)
         for curItem in refs:
@@ -1076,9 +1076,9 @@ class DiscLayoutPanel(wx.Panel):
                 if sameNameCount > 1:
                     msgImageFileMissingDlg = wx.MessageDialog(panel, \
                        "Two menus or videos have been given the same label.\n" \
-	               "Currently, this is not allowed.\n" \
+                       "Currently, this is not allowed.\n" \
                        "This label is: %s\n\n" \
-	               "Please choose unique names." % (outputFileName),
+                       "Please choose unique names." % (outputFileName),
                        "Duplicate labels",
                        wx.OK | wx.ICON_ERROR)
                     msgImageFileMissingDlg.ShowModal()
