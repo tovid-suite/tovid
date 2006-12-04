@@ -87,8 +87,6 @@ Notes
 
 """
 
-version = '0.1'
-
 import random # for random()
 import cgi    # for escape()
 import os     # for system()
@@ -232,9 +230,7 @@ class Titleset:
     Note that this is just a container for menus and titles, and has not itself
     video files associated. It's the way the DVD structure works. Read on about
     official DVD specs to learn more.
-  
     """
-
     def __init__(self, name=None):
         """Create a Titleset instance.
 
@@ -392,7 +388,6 @@ class VMGM(Titleset):
         # of us (VMGM and Titleset)
         return Titleset._xml(self, 'vmgm')
 
-        
 
 class Title:
     """Represent a Title on the DVD. This includes one or more .vob (or .mpg)
@@ -569,7 +564,6 @@ class Menu(Title):
             if not nowset:
                 self.buttons.append([button, commands])
 
-
     def _xml(self):
         """Return the dvdauthor XML string for this Menu."""
         return Title._xml(self)
@@ -578,7 +572,6 @@ class Menu(Title):
 ###
 ### Helper functions
 ###
-
 
 def _xmlentities(text):
     """Return the given text with <, >, and & characters escaped (replaced
@@ -592,7 +585,6 @@ def _indent(spaces, text):
         new_text += (' ' * spaces) + line + "\n"
     return new_text
 
-
 def _gen_id():
     """Generates a random ID, which will be used in the commands strings
     for 'jump' and 'call' cross-referencing.
@@ -600,7 +592,6 @@ def _gen_id():
     # This ID won't be transformed by the _xmlentities() func, so we're okay
     # with it :)
     return "[ID:%08x]" % random.randint(0, 65535*65535)
-
 
 def _verify_lang(lang):
     if lang == None:
@@ -636,7 +627,6 @@ def get_xml(disc):
         xml += '    </pgc>\n'
 
     xml += '</vmgm>\n'
-    # TODO: add titlesets for each submenu
     for menu in disc.menus:
         xml += '<titleset>\n'
         xml += dvd_menu_xml(menu)
