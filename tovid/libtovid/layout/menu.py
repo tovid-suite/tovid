@@ -8,6 +8,16 @@ from libtovid import media
 
 class Menu:
     """A menu for navigating the titles on a video disc.
+    
+    Needed for encoding/generation:
+        menu title
+        output name
+        format/tvsys
+        video filenames
+        video titles
+        style
+    Needed for authoring:
+        videos
     """
     def __init__(self, videos, format, tvsys, style):
         """Create a menu linking to the given Videos."""
