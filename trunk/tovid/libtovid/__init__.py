@@ -88,9 +88,10 @@ log.addHandler(stdout)
 
 class Disc (object):
     """A video disc, with functions to manipulate its contents."""
-    def __init__(self, format='dvd', title='Untitled disc', tvsys='ntsc'):
+    def __init__(self, title='Untitled disc', format='dvd', tvsys='ntsc'):
         print "Disc: Creating %s entitled: '%s'" % (type.upper(), title)
         self.format = format
+        self.tvsys = tvsys
         self.title = title
         self.videos = []
     
@@ -137,17 +138,17 @@ class Disc (object):
 class VCD (Disc):
     """A Video CD"""
     def __init__(title='Untitled VCD', tvsys='ntsc'):
-        Disc.__init__('vcd', title, tvsys)
+        Disc.__init__('vcd', tvsys, title)
 
 class SVCD (Disc):
     """A Super Video CD"""
     def __init__(title='Untitled SVCD', tvsys='ntsc'):
-        Disc.__init__('svcd', title, tvsys)
+        Disc.__init__('svcd', tvsys, title)
 
 class DVD (Disc):
     """A DVD"""
     def __init__(title='Untitled DVD', tvsys='ntsc'):
-        Disc.__init__('dvd', title, tvsys)
+        Disc.__init__('dvd', tvsys, title)
 
 
 class Menu (object):

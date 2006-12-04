@@ -1,14 +1,10 @@
 #! /usr/bin/env python
 # menu.py
 
-"""This module provides menu encapsulation and MPEG generation.
-"""
-
 __all__ = ['Menu']
 
-from libtovid import log
+import doctest
 from libtovid import media
-# from libtovid.templates import textmenu
 
 class Menu:
     """A menu for navigating the titles on a video disc.
@@ -28,3 +24,7 @@ class Menu:
         width, height = target.scale
         target.scale = (int(width * 0.9), int(height * 0.9))
         # TODO: Generate menu, using target as output
+
+
+if __name__ == '__main__':
+    doctest.testmod(verbose=True)
