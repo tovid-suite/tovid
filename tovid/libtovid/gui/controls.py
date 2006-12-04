@@ -225,6 +225,29 @@ class FlexTreeCtrl(wx.TreeCtrl):
         # Return the results
         return refs
 
+    def GetItemList(self, topItem):
+        """Returns a list of all Items in the branch descending from topItem."""
+        # If topItem is not OK, just return
+        if not topItem.IsOk():
+            return
+        items = []
+        # Append topItem's data
+        items.append(topItem)
+        # Recursively append children
+        child, cookie = VER_GetFirstChild(self, topItem)
+        while child.IsOk():
+            # If item has children, recurse
+            if self.ItemHasChildren(child):
+                grandchildren = self.GetItemList(child)
+                items.extend(grandchildren)
+            # Otherwise, just append this item
+            else:
+                items.append(child)
+
+            # Get the next child
+            child, cookie = self.GetNextChild(topItem, cookie)
+        # Return the results
+        return items
 
 class HeadingText(wx.StaticText):
     """A large, bold static text control to use for headings"""
