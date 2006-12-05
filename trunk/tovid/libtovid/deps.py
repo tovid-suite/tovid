@@ -15,9 +15,9 @@ In practice:
         deps.require(deps.core)
     except deps.MissingError:
         print "Exiting..."
-        sys.ext(1)
+        sys.exit(1)
 
-deps.core is an internal dictionary tovid's core dependencies,
+deps.core is an internal dictionary of tovid's core dependencies,
 where the keys are the names, and the values are brief 
 descriptions with URLs.
 
@@ -69,7 +69,7 @@ core = {
     "ppmtoy4m":     "part of mjpegtools (mjpeg.sf.net)",
     "mp2enc":       "part of mjpegtools (mjpeg.sf.net)",
     "jpeg2yuv":     "part of mjpegtools (mjpeg.sf.net)",
-    "ffmpeg":       "a video encoding utility (ffmpeg.sf.net)"      }
+    "ffmpeg":       "a video encoding utility (ffmpeg.mplayerhq.hu)"      }
 all.update(core)
 
 magick = {
@@ -132,9 +132,9 @@ def require(dep,
     a 'MissingError' exception if not.
     
     Keyword arguments:
-    dep  -- the dependencies for. OK types: dict, list, str. For dicts,
-            the keys are used as names; for lists, the members; and for
-            a string, words separated by spaces.
+    dep  -- the dependencies to assert. OK types: dict, list, str. 
+            For dicts, the keys are used as names; for lists, the 
+            members; and for a string, words separated by spaces.
     help -- a description about why the dependencies are needed,
     url  -- a short description of the dep, and its homepage
 
