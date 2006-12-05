@@ -180,6 +180,8 @@ class AuthorFilesTaskPanel(wx.Panel):
         self.panBurnDisc.Show()
         self.sizTask.Layout()
         self.curPanel = self.panBurnDisc
+        # Generate the default commandlist
+        self.panBurnDisc.SetCommands()
         # Set appropriate guide text
         self.curConfig.panGuide.SetTask(ID_TASK_BURN_DISC)
 
@@ -240,9 +242,11 @@ class BurnDiscPanel(wx.Panel):
     
     def OnDoAuthor(self, evt):
         self.doAuthor = evt.Checked()
+        self.SetCommands()
         
     def OnDoBurn(self, evt):
         self.doBurn = evt.Checked()
+        self.SetCommands()
 
     def OnSetDevice(self, evt):
         """Use the selected device."""
@@ -250,8 +254,6 @@ class BurnDiscPanel(wx.Panel):
 
     def OnStart(self, evt):
         """Begin authoring and burning the disc."""
-        # Get global config (for XML filename and format)
-        curConfig = TovidConfig()
 
         msgWarning = wx.MessageDialog(self,
             "Disc burning is still experimental in this release,\n" \
@@ -259,36 +261,11 @@ class BurnDiscPanel(wx.Panel):
             "Experimental feature", wx.ICON_INFORMATION | wx.OK)
         msgWarning.ShowModal()
 
-        makedvdOptions = ""
-
-        # Construct authoring/imaging/burning options
-        if self.doAuthor:
-            if curConfig.curDiscFormat == 'vcd' or \
-               curConfig.curDiscFormat == 'svcd':
-                strAuthorCmd = "makevcd -device %s %s \"%s.xml\"" % \
-                  (self.device, makedvdOptions, curConfig.strOutputXMLFile)
-            else:
-                strAuthorCmd = "makedvd -device %s %s \"%s.xml\"" % \
-                  (self.device, makedvdOptions, curConfig.strOutputXMLFile)
-
-            #self.btnStart.Enable(False)
-            self.panCmdList.Enable(True)
-            self.panCmdList.Execute(strAuthorCmd)
-            self.panCmdList.Start()
-
-        if self.doBurn:
-            if curConfig.curDiscFormat == 'vcd' or \
-               curConfig.curDiscFormat == 'svcd':
-                strAuthorCmd = "makevcd -device %s %s \"%s\"" % \
-                (self.device, makedvdOptions, curConfig.strOutputXMLFile)
-            else:
-                strAuthorCmd = "makedvd -device %s %s \"%s\"" % \
-                (self.device, makedvdOptions, curConfig.strOutputXMLFile)
- 
-            #self.btnStart.Enable(False)
-            self.panCmdList.Enable(True)
-            self.panCmdList.Execute(strAuthorCmd)
-            self.panCmdList.Start()
+        #Disable button to prevent e.g. double clicks
+        self.btnStart.Enable(False)
+        #Clear any previous errors from previous attempts at burning
+        self.panCmdList.errorOccurred = False
+        self.panCmdList.Start()
 
     def ProcessingDone(self, errorOccurred):
         """Signify that disc burning is done."""
@@ -311,8 +288,43 @@ class BurnDiscPanel(wx.Panel):
             msgSuccess = wx.MessageDialog(self, strSuccess, "Success!",
                 wx.ICON_INFORMATION | wx.OK)
             msgSuccess.ShowModal()
+        self.btnStart.Enable(True)
 
+    def SetCommands(self):
+        """Set command-list to be executed based on Author and Burn boxes."""
+        self.panCmdList.Clear()
 
+        makedvdOptions = ""
+
+        # Get global config (for XML filename and format)
+        curConfig = TovidConfig()
+
+        # Construct authoring/imaging/burning options
+        if self.doAuthor:
+            if curConfig.curDiscFormat == 'vcd' or \
+               curConfig.curDiscFormat == 'svcd':
+                strAuthorCmd = "makevcd -device %s %s \"%s.xml\"" % \
+                  (self.device, makedvdOptions, curConfig.strOutputXMLFile)
+            else:
+                strAuthorCmd = "makedvd -device %s %s \"%s.xml\"" % \
+                  (self.device, makedvdOptions, curConfig.strOutputXMLFile)
+
+            #self.btnStart.Enable(False)
+            self.panCmdList.Enable(True)
+            self.panCmdList.Execute(strAuthorCmd)
+
+        if self.doBurn:
+            if curConfig.curDiscFormat == 'vcd' or \
+               curConfig.curDiscFormat == 'svcd':
+                strAuthorCmd = "makevcd -device %s %s \"%s\"" % \
+                (self.device, makedvdOptions, curConfig.strOutputXMLFile)
+            else:
+                strAuthorCmd = "makedvd -device %s %s \"%s\"" % \
+                (self.device, makedvdOptions, curConfig.strOutputXMLFile)
+ 
+            #self.btnStart.Enable(False)
+            self.panCmdList.Enable(True)
+            self.panCmdList.Execute(strAuthorCmd)
 
 # ===================================================================
 class CommandOutputPanel(wx.Panel):
@@ -361,6 +373,11 @@ class CommandOutputPanel(wx.Panel):
         self.btnSaveLog.SetToolTipString(_("Save the output log to a file"))
         wx.EVT_BUTTON(self, self.btnSaveLog.GetId(), self.OnSaveLog)
 
+        # Save as script button
+        self.btnSaveAsScript = wx.Button(self, wx.ID_ANY, _("Save as script"))
+        self.btnSaveAsScript.SetToolTipString(_("Save the commands as a script file"))
+        wx.EVT_BUTTON(self, self.btnSaveAsScript.GetId(), self.OnSaveAsScript)
+
         # Keep track of who parent is
         self.parent = parent
 
@@ -383,6 +400,7 @@ class CommandOutputPanel(wx.Panel):
         self.sizControl.Add(self.lblFontSize, 0, wx.EXPAND | wx.ALIGN_RIGHT)
         self.sizControl.Add(self.cboFontSize, 0, wx.EXPAND | wx.ALIGN_RIGHT)
         self.sizControl.Add(self.btnSaveLog, 0, wx.EXPAND)
+        self.sizControl.Add(self.btnSaveAsScript, 0, wx.EXPAND)
         # Main sizer
         self.sizMain = wx.BoxSizer(wx.VERTICAL)
         self.sizMain.Add(self.sizCurCmd, 0, wx.EXPAND | wx.BOTTOM, 6)
@@ -420,6 +438,38 @@ class CommandOutputPanel(wx.Panel):
                     _("The log could not be saved to ") + outFile + \
                     _("Maybe you don't have write permission to the given file?"),
                     _("Log not saved"), wx.OK | wx.ICON_INFORMATION)
+
+            dlgAck.ShowModal()
+            outFileDlg.Destroy()
+
+    def OnSaveAsScript(self, evt):
+        """Save commands as a script."""
+        # Prompt for a filename
+        outFileDlg = wx.FileDialog(self, _("Choose a filename to save to"),
+            "", "", "*.*", wx.SAVE | wx.OVERWRITE_PROMPT)
+        if outFileDlg.ShowModal() == wx.ID_OK:
+            outFile = outFileDlg.GetPath()
+            commandList = "#!/usr/bin/env bash\n"
+            success = True
+            for eachCommand in self.strCmdQueue:
+                commandList = commandList + eachCommand + "\n"
+            try:
+                output = open(outFile,'w')
+                output.writelines(commandList)
+            except IOError:
+                success = False
+            else:
+                output.close()
+            os.chmod(outFile,0755)
+            if success:
+                dlgAck = wx.MessageDialog(self,
+                    _("The commands were successfully saved to: \n") + outFile,
+                    _("Script saved"), wx.OK | wx.ICON_INFORMATION)
+            else:
+                dlgAck = wx.MessageDialog(self,
+                    _("The commands could not be saved to:\n") + outFile + "\n" + \
+                    _("Maybe you don't have write permission to the given file?"),
+                    _("Script not saved"), wx.OK | wx.ICON_INFORMATION)
 
             dlgAck.ShowModal()
             outFileDlg.Destroy()
@@ -520,7 +570,7 @@ class CommandOutputPanel(wx.Panel):
             # Start the idle timer (1s interval)
             self.idleTimer.Start(1000)
         else:
-            self.parent.ProcessingDone()
+            self.parent.ProcessingDone(self.errorOccurred)
 
     def Stop(self):
         """Stop processing and return current process to queue."""
