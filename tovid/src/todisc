@@ -1504,6 +1504,8 @@ if $STATIC; then
 else
     VMGM_PAUSE_TIME=$PAUSE_TIME
 fi
+# pausing a faded menu gives a long a period of unselectable thumbs so we use 0
+$MENU_FADE && VMGM_PAUSE_TIME=0
 if [ "$PAUSE_TIME" = "inf" ]; then
     unset MAIN_POST
 fi
