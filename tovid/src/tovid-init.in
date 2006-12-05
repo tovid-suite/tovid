@@ -298,11 +298,11 @@ function file_output_progress()
 #         defined group (below), or a space-separated list of executables
 #    $2 = Descriptive message about why the user needs the dependencies
 #
-# Ex:   assert_dep_group "$dvd" "You cannot make DVDs without these!"
-#       assert_dep_group "rice sake fish" "You cannot make dinner!"
+# Ex:   assert_dep "$dvd" "You cannot make DVDs without these!"
+#       assert_dep "rice sake fish" "You cannot make dinner!"
 #
 # ******************************************************************************
-function assert_dep_group()
+function assert_dep()
 {
     DEPS="$1"
     HELP="$2"
@@ -310,8 +310,8 @@ function assert_dep_group()
     # Determine if any group member is missing
     NO_GROUP=false
     for dep in $DEPS; do
-        find_dep "$dep"
-        if ! $FOUND; then
+        if ! which $dep >> /dev/null 2>&1; then
+            printf "%-13s %s\n" "  $dep" "MISSING!"
             NO_GROUP=:
         fi
     done
@@ -321,48 +321,6 @@ function assert_dep_group()
         echo
         precho "$HELP $DEP_ERROR_MSG"
         exit 1
-    fi
-}
-
-# ******************************************************************************
-# Check to see if a dependency exists, quit if missing
-# Input args: 
-#   $1 = dependency to check for
-#   $2 = descriptive message about why the user needs the dependencies
-# 
-# Ex:   assert_dep mpeg2enc "You need this to encode video."
-#       assert_dep chopsticks "You need this tool to eat."
-# ******************************************************************************
-function assert_dep()
-{
-    DEP="$1"
-    HELP="$2"
-    find_dep "$DEP"
-
-    # Quit if missing
-    if ! $FOUND; then
-        echo 
-        precho "$HELP $DEP_ERROR_MSG" 
-        "exit 1"
-    fi
-}
-
-
-# ******************************************************************************
-# Check to see if a dependency can be found in the user's $PATH, complain 
-#   when missing.
-# This is a support function for assert_dep() and assert_dep_group(). 
-#   Not meant for use at-large.
-# Input args:  $1 = the dependency to find
-# 
-# ******************************************************************************
-function find_dep()
-{
-    FOUND=:
-    DEP="$1"
-    if ! which $DEP >> /dev/null 2>&1; then
-        printf "%-13s %s\n" "  $DEP" "MISSING!"
-        FOUND=false
     fi
 }
 
@@ -527,6 +485,6 @@ fi
     plugins="sox $NORMALIZE"
 
     # Quit and complain if ANY core dependency is missing.
-    assert_dep_group "$core" "You are missing CORE tovid dependencies!"
+    assert_dep "$core" "You are missing CORE tovid dependencies!"
 
 # End tovid-init
