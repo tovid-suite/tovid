@@ -116,7 +116,7 @@ while test ${1:0:1} = "-"; do
             shift
             DO_SHRINK=:
             SHRINK_FACTOR="$1"
-            assert_dep_group "$transcode" "You are missing dependencies required for shrinking video!"
+            assert_dep "$transcode" "You are missing dependencies required for shrinking video!"
             ;;
         "-parallel" )
             PARALLEL=:

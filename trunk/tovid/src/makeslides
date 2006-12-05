@@ -91,7 +91,7 @@ VERBOSE="false"
 
 echo $"$SCRIPTNAME"
 
-assert_dep_group "$magick" "You are missing dependencies required for making VCD stills!"
+assert_dep "$magick" "You are missing dependencies required for making VCD stills!"
 
 if test $# -eq 0; then usage_error "*** Please specify at least one image."; fi
 
