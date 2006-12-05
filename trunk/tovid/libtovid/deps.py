@@ -1,4 +1,6 @@
 #! /usr/bin/env python
+# deps.py
+
 """Check for run-time dependencies.
 
 For example:    deps.require(deps.core)
@@ -8,12 +10,12 @@ For example:    deps.require(deps.core)
     Run deps.py from a prompt for further examples.
 
 In practice:
-                try:
-                    deps.require(deps.core)
-                except deps.MissingError:
-                    print "Exiting..."
-                    sys.ext(1)
 
+    try:
+        deps.require(deps.core)
+    except deps.MissingError:
+        print "Exiting..."
+        sys.ext(1)
 
 deps.core is an internal dictionary tovid's core dependencies,
 where the keys are the names, and the values are brief 
@@ -31,8 +33,7 @@ Provided dictionaries:
 If you don't want to use a provided dictionary, you can specify
 which dependencies to check for with a string or list:
 
-                deps.require("more less cat")
-
+    deps.require("more less cat")
 
 require also provides ways to print custom URLs and help when it
 cannot find dependencies. See help(deps.require) or keep reading.
@@ -135,9 +136,7 @@ def require(dep,
             the keys are used as names; for lists, the members; and for
             a string, words separated by spaces.
     help -- a description about why the dependencies are needed,
-            (default: "You need this to finish what you were doing.")
-    url  -- a short description of the dep, and it's homepage
-            (default: "oops")
+    url  -- a short description of the dep, and its homepage
 
     NB: url may be stored in one of the internal dependency dictionaries.
         In this case, the url is automatically taken from the dictionary
