@@ -153,7 +153,7 @@ function probe_media ()
 # EXECUTION BEGINS HERE
 echo $"$SCRIPTNAME"
 
-assert_dep_group "$dvd" "You are missing dependencies required for burning DVDs!"
+assert_dep "$dvd" "You are missing dependencies required for burning DVDs!"
 
 if test $# -lt 1; then
     usage_error "Please provide a filename (.xml, or dvd filesystem folder)"
