@@ -114,8 +114,7 @@ def __have_dep(dependency):
     """Returns 'True' if 'dependency' exists, 'False' if not."""
     which_try = subprocess.Popen(['which', dependency],
                 stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-    found_success = which_try.wait()
-    if found_success == 0:
+    if which_try.wait() == 0:
         return True
     else:
         return False
