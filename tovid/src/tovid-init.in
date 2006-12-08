@@ -78,6 +78,7 @@ function abspath()
     DIR=$(dirname "$1")
     BASE=$(basename "$1")
     ABS_PATH="`cd \"$DIR\" && pwd || echo \"$DIR\"`/$BASE"
+    #ABS_PATH=$(cd "$DIR" && pwd || echo "$DIR")/$BASE
     echo "$ABS_PATH"
 }
 
@@ -205,12 +206,12 @@ function get_listargs()
 {
     unset x ARGS_ARRAY
     # Hackish list-parsing
-    while test $# -gt 0 && test ${1:0:1} != "-"; do
+    while test $# -gt 0 && test x"${1:0:1}" != x"-"; do
         ARGS_ARRAY[x++]="$1"
         shift
     done
     # Do not skip past the next argument
-    if test $# -gt 0 && test ${1:0:1} = "-";then
+    if test $# -gt 0 && test x"${1:0:1}" = x"-";then
         DO_SHIFT=false
     fi
 }
