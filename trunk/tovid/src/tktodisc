@@ -25,7 +25,19 @@ Use dictionaries for accessing Widgets inside of classes, i.e.
     self.entTitles --> self.ent['Titles']
 This may simplify automated widget-instantiation later.
 
-    
+Allow user to edit the regular expression used to filter titles out of
+filenames (or do a field-formatting approach: %number_-_%title.%ext)
+
+Implement an in-place edit in the title listbox
+
+TODO:
+
+Multiple selection, select-all in file/title listbox (context menu?)
+
+Popup warnings for missing fields (-files/-titles, -out) before running todisc
+
+Disc usage total after adding files to listbox
+
 """
 
 import os
@@ -118,8 +130,9 @@ class FileListFrame(Frame):
     def __init__(self, master=None):
         Frame.__init__(self, master)
         self.curtitle = StringVar()  # Text of the currently selected title
-        self.varFiles = Variable()      # List of current files
-        self.varTitles = Variable()     # List of current titles
+        self.varFiles = Variable()   # List of current files
+        self.varTitles = Variable()  # List of current titles
+        self.varUsage = StringVar()  # String describing current space usage
         self.curindex = 0
         self.grid()
         self.drawWidgets()
@@ -138,6 +151,7 @@ class FileListFrame(Frame):
                                 yscrollcommand=self.scrollbar.set)
         self.lstFiles.bind('<Button-1>', self.selectListitem)
         self.lstFiles.bind('<B1-Motion>', self.dragListitem)
+        self.lstFiles.bind('<ButtonRelease-1>', self.onDrop)
         self.lstFiles.grid(row=1, column=0, columnspan=2)
         self.btnAdd = Button(self, text="Add...", command=self.addFiles)
         self.btnAdd.grid(row=2, column=0, sticky=E+W)
@@ -152,11 +166,16 @@ class FileListFrame(Frame):
                                  yscrollcommand=self.scrollbar.set)
         self.lstTitles.bind('<Button-1>', self.selectListitem)
         self.lstTitles.bind('<B1-Motion>', self.dragListitem)
+        self.lstTitles.bind('<ButtonRelease-1>', self.onDrop)
         self.lstTitles.grid(row=1, column=2)
         self.entTitle = Entry(self, width=30, background='white',
                               textvariable=self.curtitle)
         self.entTitle.bind('<Return>', self.setTitle)
         self.entTitle.grid(row=2, column=2)
+        # Disc usage total
+        self.lblUsage = Label(self, textvariable=self.varUsage)
+        self.lblUsage.grid(row=3, column=0, columnspan=2, sticky=W)
+        self.updateUsage()
 
     def scroll(self, *args):
         """Event handler when scrollbar is moved."""
@@ -164,10 +183,18 @@ class FileListFrame(Frame):
         apply(self.lstTitles.yview, args)
         
     def selectListitem(self, event):
-        """Event handler when a filename or title in the list is selected."""
+        """Event handler when a filename or title in the list is selected.
+        Set the title box for editing and change the mouse cursor."""
         self.curindex = self.lstFiles.nearest(event.y)
         self.curtitle.set(self.lstTitles.get(self.curindex))
-
+        self.config(cursor="double_arrow")
+    
+    def onDrop(self, event):
+        """Event handler called when an item is "dropped" (mouse-release).
+        Change the mouse cursor back to the default arrow.
+        """
+        self.config(cursor="")
+    
     def dragListitem(self, event):
         """Event handler to move a file/title to another position in the list"""
         loc = self.lstFiles.nearest(event.y)
@@ -196,6 +223,20 @@ class FileListFrame(Frame):
             # Add a dummy title (with pathname removed)
             title = file.split('/')[-1]
             self.lstTitles.insert(END, title)
+        self.updateUsage()
+
+    def getUsage(self):
+        """Return the total size, in bytes, consumed by the current list
+        of files."""
+        total = 0
+        for file in self.varFiles.get():
+            total += os.path.getsize(file)
+        return total
+    
+    def updateUsage(self):
+        """Update the disc space usage label."""
+        usage = self.getUsage() / (1024 * 1024)
+        self.varUsage.set("%s MB used" % usage)
 
     def removeFiles(self):
         """Event handler for removing files from the list box"""
@@ -206,7 +247,8 @@ class FileListFrame(Frame):
             print "Removing '%s' from the file list" % self.lstFiles.get(line)
             self.lstFiles.delete(line)
             self.lstTitles.delete(line)
-
+        self.updateUsage()
+    
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
         files = self.varFiles.get()
