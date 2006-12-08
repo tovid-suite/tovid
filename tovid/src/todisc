@@ -2845,8 +2845,12 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
     if $AUDIOLANG; then
         echo "${VOB_PRE[i]}"
     fi
-    echo -ne "        <vob file=\"$REAL_WORK_DIR/$i.mpg\""
-    echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
+    if ! $GROUPING; then
+        echo -ne "        <vob file=\"$REAL_WORK_DIR/$i.mpg\""
+        echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
+    else
+        echo -e "        <vob file=\"$REAL_WORK_DIR/$i.mpg\"/>"
+    fi
     if [[ ${ADD2GROUP[i]} ]]; then
         for f in ${ADD2GROUP[i]}; do
             echo -e "        <vob file=\"$f\"/>"
