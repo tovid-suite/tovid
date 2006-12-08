@@ -1046,6 +1046,8 @@ for g in ${!GROUP[@]}; do
     # the add2group array only contains videos for "key"(s) specified
     add2group[key-1]="$(awk '{ $1 = ""; print }' <<< ${GROUP[g]})"
 done
+echo "add2group is ${add2group[@]}"
+echo "add2group[2] is ${add2group[2]}"
 # get abspath of the new group videos that will be added to the xml
 for i in ${!add2group[@]}; do
     for j in ${add2group[i]}; do
@@ -1417,7 +1419,7 @@ if [ "$SC_TITLE_ALIGN" = "west" ]; then
         fi
     done
 fi
-if [ "$SC_TITLE_ALIGN" = "east" ]; then
+if $SHOWCASE && [ "$SC_TITLE_ALIGN" = "east" ]; then
     THUMB_TITLE_ALIGN="west" # align titles left to allow longer titles
     for ((i=0; i<=NUM_FILES; i++)); do
         if [ $i -lt $LEFT_MAX ] && ! $ALIGN_OVERRIDE; then
@@ -1723,7 +1725,7 @@ if $SHOWCASE; then
         TT_CMD1=(convert - -trim +repage $TEXT_BORDER "$WORK_DIR/thumb_title${i}.png")
         echo "Running "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}"" \
         |fold -bs >> "$LOG_FILE"
-        "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}"
+        "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}" 2> /dev/null
         
         # find out dimension of the thumb title png
         TT_DIM=( ${TT_DIM[@]} $(identify "$WORK_DIR/thumb_title${i}.png"|awk '{print $3}') )
@@ -2184,8 +2186,8 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
                 "${BUTTON_CMD6[@]}"
                 "${BUTTON_CMD7[@]}"
             else
-                "${BUTTON_CMD4[@]}"
-                "${BUTTON_CMD5[@]}"
+                "${BUTTON_CMD4[@]}" 2> /dev/null
+                "${BUTTON_CMD5[@]}" 2> /dev/null
             fi
         fi
     elif [ $BUTTON_STYLE = "text-rect" ]; then
@@ -2845,7 +2847,7 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
     if $AUDIOLANG; then
         echo "${VOB_PRE[i]}"
     fi
-    if ! $GROUPING; then
+    if ! [[ ${add2group[i]} ]]; then
         echo -ne "        <vob file=\"$REAL_WORK_DIR/$i.mpg\""
         echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
     else
@@ -3820,8 +3822,10 @@ else
     runtime_error
 fi
 
-echo
-spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE"
+yecho
+yecho "Running spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE""
+spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE" 2>> "$LOG_FILE"
+yecho
 if test -f "$MENU_FILE"; then
     echo "Menu file $MENU_FILE created"
 else
@@ -3830,12 +3834,12 @@ fi
 if $SUB_MENU; then
     echo "Creating submenus"
     for ((x=1; x<=V_TOTAL; x++)); do
-        echo "Running spumux "$WORK_DIR/submenu${x}_spumux.xml" < \
+        yecho "Running spumux "$WORK_DIR/submenu${x}_spumux.xml" < \
         $WORK_DIR/menu${x}.mpg > \
         $(sed 's/\(.*\)menu/\1Menu/' <<< $WORK_DIR/menu${x}.mpg)"|fold -bs
         spumux "$WORK_DIR/submenu${x}_spumux.xml" < \
         $WORK_DIR/menu${x}.mpg > \
-        $(sed 's/\(.*\)menu/\1Menu/' <<< $WORK_DIR/menu${x}.mpg)
+        $(sed 's/\(.*\)menu/\1Menu/' <<< $WORK_DIR/menu${x}.mpg) 2>> "$LOG_FILE"
     done
 fi
 if [ "$TARGET" = dvd ]; then
