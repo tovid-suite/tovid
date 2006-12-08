@@ -1783,6 +1783,18 @@ if $SHOWCASE; then
                 SHOWCASE_TITLES_Y_ARRAY[d]=$(( ${SHOWCASE_TITLES_Y_ARRAY[d]} + $avail_palette ))
             done
         fi
+        if [[ $BUTTON_GRAVITY = *east* ]]; then
+            east_offset=$(( ( ${VIDSIZE/x*} - 45 ) - MAX_LEN ))
+            for ((d=0; d<=NUM_FILES; d++)); do
+                if ((${#SHOWCASE_TITLES_X_ARRAY[@]} <= SPLIT)) ; then
+                    SHOWCASE_TITLES_X_ARRAY[d]=$east_offset
+                else
+                    if [ ${SHOWCASE_TITLES_X_ARRAY[d]} -ge 360 ]; then
+                        SHOWCASE_TITLES_X_ARRAY[d]=$east_offset
+                    fi
+                fi
+            done
+        fi
         unset MAX_VAL val max_key
     fi
     # make array of SHOWCASE_PAGES for thumbs and THUMBTITLES_ARRAY for titles
@@ -2697,6 +2709,11 @@ for ((s=0; s<=NUM_FILES; s++)); do
     # make appropriate chapter lengths for each video
     # get chapter lengths by dividing by $CHAPTERS, then getting running totals
     CHAPT_INTERVALS=( ${CHAPT_INTERVALS[@]} "$(awk_math ${VID_LEN[s]} by ${CHAPTERS[s]} float)" )
+    # TODO if GROUPING, then get chapter intervals for sucessive grouped files starting at
+    # the 2nd chapter, not 0.0:0.0:0.0
+    # then go through each "group chapter array, adding the value of the length of the 1st 
+    # video in the "group" to the values for the 2nd video, and adding the length of the 2nd
+    # video to the values for the 3rd, etc
     # and format in HH:MM:SS
     L=( ${L[@]} $(for ((i=1; i<=${CHAPTERS[s]}; i++)) ; do echo "${CHAPT_INTERVALS[s]}";done) )
     chapt_intervals=$(running_total <<< ${L[@]})
