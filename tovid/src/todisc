@@ -2915,7 +2915,7 @@ if $SUB_MENU; then
         -stroke "$SUBMENU_STROKE" -strokewidth 1 \
         -fill "$SM_TITLE_COLOUR" -stroke "$SUBMENU_STROKE" \
         -draw "gravity center text 1,1 \"${SM_TITLES[i]}\"" miff:- | \
-        convert -trim +repage - -blur 0x0.4 $WORK_DIR/title${i}_txt.png
+        convert -trim +repage - -blur 0x0.4 $WORK_DIR/title${i}_txt.png 2>/dev/null
 
         # which is harmless as they get removed, but needs to be tweaked         
         if $ANI_SUB_MENU; then
