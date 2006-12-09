@@ -5,6 +5,7 @@ import os
 import re
 import gettext
 import wx
+import locale
 
 __all__ = ["TovidConfig"]
 class TovidConfig:
@@ -29,6 +30,8 @@ class TovidConfig:
     panGuide = None
     # Reference to the status bar
     statusBar = None
+    # The user's locale/system encoding information
+    cur_lang_code, cur_encoding = locale.getdefaultlocale()
 
     def __init__(self):
         """Initialize "static" class data.
@@ -75,7 +78,7 @@ class TovidConfig:
         #     we don't want. We only want the font_name, which is the 
         #     first word on each line.
         IM_lines = os.popen("convert -list type").readlines()
-        IM_lines = [unicode(line) for line in IM_lines]
+        IM_lines = [unicode(line, cur_encoding) for line in IM_lines]
         font_name_re = re.compile("^[\w-]+")   # match [a-zA-Z_-] at least once
         IM_fonts = [font_name_re.search(line).group() 
             for line in IM_lines if hasattr(font_name_re.search(line), 'group')]
