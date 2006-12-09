@@ -680,8 +680,6 @@ while test $# -gt 0; do
             TEXTMENU=:
             NO_THUMBS=:
             SHOWCASE=:
-            NO_SC_THUMB=:
-            SHOWCASE_IMG="dummy"
             IMG_FMT=png
             SC_TITLE_ALIGN=west
             ;;
@@ -1392,7 +1390,7 @@ if $SHOWCASE; then
     else
         SHOWCASE_SIZE=288x216  # smaller showcase thumb because we have 2 rows
         AUTOORDER="columns"
-        if ! $NO_SC_THUMB && [[ "$SC_TITLE_ALIGN" = *st ]] && [[ "$SHOWCASE_IMG" || "$SHOWCASE_VIDEO" ]]; then
+        if ! $NO_SC_THUMB && ! $TEXTMENU && [[ "$SC_TITLE_ALIGN" = *st ]] && [[ "$SHOWCASE_IMG" || "$SHOWCASE_VIDEO" ]]; then
             usage_error "Sorry, there is no room for the showcase thumb " \
             "if you use more than 5 videos with -showcase-titles-align east|west. " \
             "Either remove the -showcase-titles-align switch or remove the " \
@@ -2709,11 +2707,16 @@ for ((s=0; s<=NUM_FILES; s++)); do
     # make appropriate chapter lengths for each video
     # get chapter lengths by dividing by $CHAPTERS, then getting running totals
     CHAPT_INTERVALS=( ${CHAPT_INTERVALS[@]} "$(awk_math ${VID_LEN[s]} by ${CHAPTERS[s]} float)" )
-    # TODO if GROUPING, then get chapter intervals for sucessive grouped files starting at
+    # <TODO if GROUPING, then get chapter intervals for sucessive grouped files starting at
     # the 2nd chapter, not 0.0:0.0:0.0
     # then go through each "group chapter array, adding the value of the length of the 1st 
     # video in the "group" to the values for the 2nd video, and adding the length of the 2nd
     # video to the values for the 3rd, etc
+    # for making chapter thumbs for the group is more tricky
+    # feed these chapter points to transcode in a loop to transcode as usual, but output
+    # to different subdirs.  Then rename according to framenumber, moving all to the same subdir
+    # then follow same procedure as usual in moving into chapter subdirs for final montages
+    # /TODO>
     # and format in HH:MM:SS
     L=( ${L[@]} $(for ((i=1; i<=${CHAPTERS[s]}; i++)) ; do echo "${CHAPT_INTERVALS[s]}";done) )
     chapt_intervals=$(running_total <<< ${L[@]})
