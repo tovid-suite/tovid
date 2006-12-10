@@ -376,11 +376,14 @@ function get_args()
 
             # Other options
             "-normalize" )  
-                assert_dep $NORMALIZE "'normalize' not found or installed! You cannot use -normalize."
                 DO_NORM=:
                 shift
                 get_listargs "$@"
-                [[ ${ARGS_ARRAY[@]} ]] && DO_NORM=false && VOLUME="-vol ${ARGS_ARRAY[@]}"
+                if [[ ${ARGS_ARRAY[@]} ]]; then
+                    DO_NORM=false && VOLUME="-vol ${ARGS_ARRAY[@]}"
+                else
+                    assert_dep $NORMALIZE "'normalize' not found or installed! You cannot use -normalize."
+                fi
                 ;;
             "-amplitude" )
                 shift 
@@ -865,7 +868,8 @@ else
 fi
 
 if $DO_NORM && $SLICE; then
-    usage_error "Please use a volume argument for -normalize if using slice"
+    [[ $AUDIO_AMPLITUDE ]] && add_msg="instead of -amplitude"
+    usage_error "Please use -normalize with a VOLUME argument $add_msg if using -slice"
 fi
 
 # Make sure infile exists
