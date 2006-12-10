@@ -154,8 +154,10 @@ TEXTMENU=false
 GROUPING=false
 TEXT_Y_START=50
 BUTTON_GRAVITY=north
-BUTTON_GEOMETRY=+0+45
+XGEO=0
+YGEO=45
 USER_GRAVITY=false
+USER_GEO=false
 TITLE_GRAVITY=south
 SPACER=15
 SCRIPT_START_TIME=`date +%s`
@@ -609,7 +611,11 @@ while test $# -gt 0; do
             ;;
         "-align" )
             shift
-            BUTTON_GRAVITY="$1"
+            get_listargs "$@"
+            ALIGN_ARGS=( ${ARGS_ARRAY[@]} )
+            BUTTON_GRAVITY=${ALIGN_ARGS[0]}
+            (( ${#ALIGN_ARGS[@]} > 1 )) && BUTTON_GEO=${ALIGN_ARGS[1]} && USER_GEO=:
+            XGEO=${BUTTON_GEO/x*}; YGEO=${BUTTON_GEO/*x}
             USER_GRAVITY=:
             ;;
         # Menu control options
@@ -680,6 +686,8 @@ while test $# -gt 0; do
             TEXTMENU=:
             NO_THUMBS=:
             SHOWCASE=:
+#            NO_SC_THUMB=:
+#            SHOWCASE_IMG="dummy"
             IMG_FMT=png
             SC_TITLE_ALIGN=west
             ;;
@@ -1044,8 +1052,6 @@ for g in ${!GROUP[@]}; do
     # the add2group array only contains videos for "key"(s) specified
     add2group[key-1]="$(awk '{ $1 = ""; print }' <<< ${GROUP[g]})"
 done
-echo "add2group is ${add2group[@]}"
-echo "add2group[2] is ${add2group[2]}"
 # get abspath of the new group videos that will be added to the xml
 for i in ${!add2group[@]}; do
     for j in ${add2group[i]}; do
@@ -1054,13 +1060,11 @@ for i in ${!add2group[@]}; do
         fi
     done
 done
-#echo "ADD2GROUP is "${ADD2GROUP[@]}"" #FIXME
-#for i in ${!FILES[@]}; do
-#    echo "ADD2GROUP[$i] is "${ADD2GROUP[i]}""
-#done #FIXME
 # if montage gravity is south, move menu-title to north; east west need +45+45
 [[ $BUTTON_GRAVITY = *south* ]] && TITLE_GRAVITY=north
-[[ $BUTTON_GRAVITY = *east* || $BUTTON_GRAVITY = *west* ]] && BUTTON_GEOMETRY="+45+45" 
+if [[ $BUTTON_GRAVITY = *east* || $BUTTON_GRAVITY = *west* ]]; then
+    ! $USER_GEO &&  XGEO=45 && YGEO=45
+fi 
 # make an array of possible vars for dvdauthor post calls
 if $CHAIN_VIDEOS; then
     if [ -z "$post_play" ]; then
@@ -2231,7 +2235,7 @@ if [ "$BUTTON_STYLE" = "rect" ]; then
             $(for ((i=0; i<=NUM_FILES; i++)); do echo $WORK_DIR/${button}x1.png;done) \
             -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}+10+4 \
             -bordercolor none -mattecolor transparent miff:- |
-            convert  -colors 3 -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry $BUTTON_GEOMETRY \
+            convert  -colors 3 -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
             -composite  "$WORK_DIR/${button}.png"
             BUTTON_DIM=$(identify "$WORK_DIR/Highlightx1.png" |awk '{print $3}')
             convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
@@ -2240,7 +2244,7 @@ if [ "$BUTTON_STYLE" = "rect" ]; then
             montage -background none ${fake_montage[@]} \
             -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
             -bordercolor none -mattecolor transparent miff:- |
-            convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry $BUTTON_GEOMETRY \
+            convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
             -composite "$WORK_DIR/fake_montage.png"
         fi
     done
@@ -2266,12 +2270,12 @@ elif [[ "$BUTTON_STYLE" = *text* ]]; then
         montage -background none ${select_buttons[@]} \
         -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
         -bordercolor none -mattecolor transparent miff:- |
-        convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry $BUTTON_GEOMETRY \
+        convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
         -composite "$WORK_DIR/Select.png"
         montage -background none ${highlight_buttons[@]} \
         -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
         -bordercolor none -mattecolor transparent miff:- |
-        convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry $BUTTON_GEOMETRY \
+        convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
         -composite "$WORK_DIR/Highlight.png"
         BUTTON_DIM=$(identify "$WORK_DIR/000000-highlight.png" |awk '{print $3}')
         convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
@@ -2286,7 +2290,7 @@ elif [[ "$BUTTON_STYLE" = *text* ]]; then
         montage -background none ${fake_montage[@]} \
         -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
         -bordercolor none -mattecolor transparent miff:- |
-        convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry $BUTTON_GEOMETRY \
+        convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
         -composite "$WORK_DIR/fake_montage.png"
     fi
 fi
@@ -2302,10 +2306,11 @@ for button in Select Highlight; do
     mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
 done
 if $SHOWCASE; then
-    if ! $NO_SC_THUMB; then
-        # find out where to put the showcase image/video in the X axis
-        sc_size=$(identify "$WORK_DIR/showcase_img.png"|awk '{print $3}')
-        sc_width=${sc_size/x*}
+    # find out where to put the showcase image/video in the X axis
+    sc_size=$(identify "$WORK_DIR/showcase_img.png"|awk '{print $3}')
+    sc_width=${sc_size/x*}
+    sc_height=${sc_size/*x}
+    if ! $NO_SC_THUMB && ! $TEXT_MENU; then
         sc_xpage=$(( 360 - (sc_width / 2) )) # for -gt 5 videos
         if [[ $MAX_LEN -ge ${THUMB_SIZE/x*} ]]; then
             htmb=$(( ${THUMB_SIZE/x*} / 2 )) ; htle=$((MAX_LEN / 2))
@@ -2326,7 +2331,6 @@ if $SHOWCASE; then
         # find out where to put the showcase image in the Y axis
         Y1=${SHOWCASE_THUMB_Y_ARRAY[0]}; Y2=${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]}
         Y_SPACE=$(( (Y2 - Y1) + ${THUMB_SIZE/*x} ))
-        sc_height=${sc_size/*x}
         Y_SPACE=$(( Y_SPACE - sc_height ))
         SC_Y=$(( Y_SPACE / 2))
         SC_Y=$(( ${SHOWCASE_THUMB_Y_ARRAY[0]} + SC_Y ))
@@ -2340,6 +2344,9 @@ if $SHOWCASE; then
             SC_IMG_PAGE="-page +$sc_xpage+$SC_Y"
         fi
         SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
+    elif ! $NO_SC_THUMB && $TEXT_MENU; then
+        : # FIXME allow showcase thumb with various textmenu options
+          # needs to work with 1 column and 2 columns - 2 cols must be -align east
     fi
     if $NO_SC_THUMB; then unset SC_IMG_CMD; fi
     if [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
@@ -2381,7 +2388,7 @@ else # not showcase
         montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
         -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none -bordercolor "#444744" miff:- |
         composite -dissolve $OPACITY \
-        -gravity $BUTTON_GRAVITY -geometry $BUTTON_GEOMETRY - \
+        -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
         "$WORK_DIR/pics/template.png" -background none miff:- |
         convert - "$WORK_DIR/title_txt.png"  \
         -gravity $TITLE_GRAVITY -geometry +0+${title_pos} -composite "$WORK_DIR/preview.jpg"
@@ -2390,7 +2397,7 @@ else # not showcase
         -geometry ${GEO_ARRAY[NUM_FILES]}+10+4  -background none -bordercolor "#444744" miff:- |
         convert "$WORK_DIR/pics/template.png" \
         "$WORK_DIR/title_txt.png"  -gravity $TITLE_GRAVITY -geometry +0+${title_pos} -composite \
-        -  -gravity $BUTTON_GRAVITY -geometry $BUTTON_GEOMETRY -composite "$WORK_DIR/preview.jpg"
+        -  -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} -composite "$WORK_DIR/preview.jpg"
     fi
 fi
 if ! $NOASK; then
@@ -3538,7 +3545,7 @@ if $MENU_FADE && ! $STATIC; then
         -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none)
         #  dissolve the finished montages onto the background
         MONTAGE_CMD2=(composite -dissolve $S -gravity $BUTTON_GRAVITY \
-        -geometry $BUTTON_GEOMETRY - $WORK_DIR/bg/$(($frame + 1)).jpg -background none)
+        -geometry +${XGEO}+${YGEO} - $WORK_DIR/bg/$(($frame + 1)).jpg -background none)
         MONTAGE_CMD2b=(composite -size $VIDSIZE -background none \
         -gravity NorthWest  -dissolve $S - $WORK_DIR/bg/$(($frame + 1)).jpg \
         -background none  $WORK_DIR/animenu/$(($frame + 1)).jpg)
@@ -3633,10 +3640,10 @@ else # Do not do menu fade
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
             -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none miff:-)
             IM_CMD2=(composite -dissolve $OPACITY \
-            -gravity $BUTTON_GRAVITY -geometry $BUTTON_GEOMETRY - \
+            -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
             $WORK_DIR/pics/template.jpg -background none miff:-)
             IM_CMD2b=(composite -dissolve $OPACITY \
-            -gravity $BUTTON_GRAVITY -geometry $BUTTON_GEOMETRY - \
+            -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
             $WORK_DIR/bg/$count.jpg -background none miff:-)
             IM_CMD3=(composite -dissolve 30 -gravity $TITLE_GRAVITY -geometry +0+${mist_pos} \
             $WORK_DIR/white.png - miff:-)
@@ -3704,9 +3711,9 @@ else # Do not do menu fade
             IM_CMD0=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
             -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none miff:-)
             IM_CMD1=(convert $WORK_DIR/pics/template.jpg \
-            -  -gravity $BUTTON_GRAVITY -geometry $BUTTON_GEOMETRY -composite miff:-)
+            -  -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} -composite miff:-)
             IM_CMD2=(convert $WORK_DIR/bg/$count.jpg \
-            -  -gravity $BUTTON_GRAVITY -geometry $BUTTON_GEOMETRY -composite miff:-)
+            -  -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} -composite miff:-)
             IM_CMD3=(composite -dissolve 30 -gravity $TITLE_GRAVITY -geometry +0+${mist_pos} \
             $WORK_DIR/white.png - miff:-)
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
