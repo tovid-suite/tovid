@@ -238,14 +238,10 @@ function yecho()
 # ******************************************************************************
 function usage_error()
 {
-    if ! $REFRESH_DEPS; then
-        printf "%s\n" "$USAGE"
-        printf "%s\n" "$SEPARATOR"
-        printf "*** Usage error: %s\n" "$@"
-        exit 1
-    else
-        exit 0
-    fi
+    printf "%s\n" "$USAGE"
+    printf "%s\n" "$SEPARATOR"
+    printf "*** Usage error: %s\n" "$@"
+    exit 1
 }
 
 # ******************************************************************************
@@ -382,6 +378,9 @@ function get_args()
             "-normalize" )  
                 assert_dep $NORMALIZE "'normalize' not found or installed! You cannot use -normalize."
                 DO_NORM=:
+                shift
+                get_listargs "$@"
+                [[ ${ARGS_ARRAY[@]} ]] && DO_NORM=false && VOLUME="-vol ${ARGS_ARRAY[@]}"
                 ;;
             "-amplitude" )
                 shift 
@@ -746,7 +745,7 @@ EOF`
     # Get average/peak bitrates from mplex
     AVG_BITRATE=$(grep 'Average bit-rate' "$LOG_FILE" | awk '{print $6}')
     PEAK_BITRATE=$(grep 'Peak bit-rate' "$LOG_FILE" | awk '{print $6}')
-    if $USE_FFMPEG && ! $DO_NORM && ! $VIDEO_OK; then
+    if $USE_FFMPEG && ! $VIDEO_OK; then
         bitrates=$(awk -F= '/^frame=/ {gsub("kbits/s", ""); printf "%d000\n", $6}' "$LOG_FILE")
         bitrates=$(sort -un <<< "$bitrates")
         AVG_BITRATE=$(awk '{t+=$0} END{printf "%d\n", t/NR}' <<< "$bitrates")
@@ -865,6 +864,9 @@ else
     IN_FILE_TYPE="file"
 fi
 
+if $DO_NORM && $SLICE; then
+    usage_error "Please use a volume argument for -normalize if using slice"
+fi
 
 # Make sure infile exists
 if test "$IN_FILE_TYPE" = "file"; then
@@ -1375,7 +1377,7 @@ if test "$IN_FILE_TYPE" = "file"; then
 
     # Check for available space and prompt if it's not enough
     # not needed if using ffmpeg to encode video and audio "at once"
-    if ($USE_FFMPEG && (! $DO_NORM || ! [[ $ASYNC ]])) || $PARALLEL; then
+    if ($USE_FFMPEG && ! [[ $ASYNC ]]) || $PARALLEL; then
         :
     else
         check_disk_space
@@ -1426,7 +1428,7 @@ if test "$IN_FILE_TYPE" = "file"; then
         GENERATE_AUDIO=:
     fi
 
-    if $DO_NORM; then AUDIO_OK=false; fi
+    if $DO_NORM || [[ $VOLUME ]]; then AUDIO_OK=false; fi
     [[ "$AUDIO_TRACK" ]] && AUDIO_OK=false
     # If both audio and video are OK, stop now - there's no need to convert.
     if ! $FORCE_ENCODING && $AUDIO_OK && $VIDEO_OK; then
@@ -1691,7 +1693,7 @@ if $USE_FFMPEG && ! $DO_NORM && ! [[ "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; then
 
     FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k -ac 2"
     FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $CLIP_SEEK $FF_LENGTH $ASYNC \
-        $FF_TARGET $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_FPS $FF_ILACE \
+        $VOLUME $FF_TARGET $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_FPS $FF_ILACE \
         $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT $FF_AUDIO_MAP"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
     FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\" ${NEW_AUDIO[@]}"
