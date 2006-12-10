@@ -193,7 +193,7 @@ function unformat_time()
     HMS_HOURS=$(awk -F ':' '{print $1}' <<< $1)
     HMS_MINS=$(awk -F ':' '{print $2}' <<< $1)
     HMS_SECS=$(awk -F ':' '{print $3}' <<< $1)
-    TOT_SECONDS=$(expr $HMS_HOURS \* 3600 + $HMS_MINS \* 60 + $HMS_SECS)
+    TOT_SECONDS=$(bc <<< "($HMS_HOURS * 3600) + ($HMS_MINS * 60) + $HMS_SECS")
     echo $TOT_SECONDS
 }
 
