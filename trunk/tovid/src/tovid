@@ -1336,7 +1336,7 @@ if $SLICE; then
     fi
     if [[ "$CLIP_ENDTIME" ]]; then
         [[ "$CLIP_ENDTIME" = *:* ]] && CLIP_ENDTIME=$(unformat_time $CLIP_ENDTIME)
-        CLIP_LENGTH=$((CLIP_ENDTIME - CLIP_SEEK))
+        CLIP_LENGTH=$(echo "$CLIP_ENDTIME - $CLIP_SEEK" | bc)
         FF_LENGTH="-t $CLIP_LENGTH"
     fi
     CLIP_SEEK="-ss $CLIP_SEEK"
