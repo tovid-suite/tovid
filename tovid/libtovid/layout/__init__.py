@@ -8,6 +8,7 @@ all = [\
     'Disc',
     'Menu',
     'Video',
+    'Group',
     'dvdauthor',
     'vcdimager']
 
@@ -135,3 +136,21 @@ class Video:
         """Generate (encode) the video to the given output filename."""
         encode.encode(self.infile, outfile,
                       self.format, self.tvsys, method)
+
+class Group:
+    """A group title for inclusion on a video disc.
+
+    Needed for menu generation:
+        title
+    """
+
+    def __init__(self, infile, title, format, tvsys):
+        self.infile = infile
+        self.title = title
+        self.format = format
+        self.tvsys = tvsys
+
+    def generate(self, outfile, method='ffmpeg'):
+        """Generate the group."""
+        # TODO: Fixme
+
