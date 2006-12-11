@@ -610,7 +610,7 @@ def _verify_lang(lang):
 ###
 
 def get_xml(disc):
-    """Return a string containing dvdauthor XML for this disc.
+    """Return a string containing dvdauthor XML for the given Disc.
     """
     xml = '<dvdauthor dest="%s">\n' % disc.name.replace(' ', '_')
     xml += '<vmgm>\n'
@@ -621,20 +621,27 @@ def get_xml(disc):
         xml += '    <pgc entry="title">\n'
         xml += '      <vob file="%s" />\n' % disc.topmenu.filename
         num = 1
-        for submenu in disc.menus:
-            xml += '      <button>jump titleset %d menu;</button>\n' % num
+        for titleset in disc.titlesets:
+            xml += '      <button>jump titleset %d;</button>\n' % num
             num += 1
         xml += '    </pgc>\n'
-
     xml += '</vmgm>\n'
-    for menu in disc.menus:
-        xml += '<titleset>\n'
-        xml += dvd_menu_xml(menu)
-        for video in menu.videos:
-            xml += dvd_video_xml(video)
-        xml += '</titleset>\n'
-        
+    # Write XML for each titleset
+    for titleset in disc.titlesets:
+        xml += dvd_titleset_xml(titleset)
     xml += '</dvdauthor>\n'
+    return xml
+
+
+def dvd_titleset_xml(titleset):
+    """Return a string containing dvdauthor XML for the given Titleset.
+    """
+    xml = '<titleset>\n'
+    if titleset.menu:
+        xml += dvd_menu_xml(titleset.menu)
+    for video in titleset.videos:
+        xml += dvd_video_xml(video)
+    xml += '</titleset>\n'
     return xml
 
 
@@ -662,7 +669,6 @@ def dvd_video_xml(video):
     chap_str = '0'
     for chap in video.chapters:
         chap_str += ',' + chap
-
     xml = '  <pgc>\n'
     xml += '    <vob file="%s" chapters="%s" />\n' % \
             (video.filename, chap_str)
