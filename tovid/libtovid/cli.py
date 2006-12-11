@@ -40,21 +40,16 @@ Command output may be captured and retrieved later with get_output():
 
 __all__ = [\
     'Command',
-    'Pipe',
-    'Script',
-    'verify_app'
-    ]
+    'Pipe']
 
-# From standard library
 import os
 import sys
 import doctest
 import signal
 from subprocess import Popen, PIPE
-# From libtovid
 from libtovid import log
 
-class Command (object):
+class Command:
     """A command-line statement, consisting of a program and its arguments,
     with support for various modes of execution.
     """
@@ -93,16 +88,49 @@ class Command (object):
                         True to capture output for retrieval by get_output()
             background: False to wait for command to finish running,
                         True to run process in the background
+        
+        By default, this function displays all command output, and waits
+        for the program to finish running, which is usually what you'd want.
+        Capture output if you don't want it printed immediately (and call
+        get_output() later to retrieve it).
+
+        This function does not allow special stream redirection. For that,
+        use run_redir().
         """
         if capture:
-            self._run_redir(None, PIPE)
+            self.run_redir(None, PIPE)
         else:
-            self._run_redir(None, None)
+            self.run_redir(None, None)
         if not background:
             self.wait()
-    
+
+    def run_redir(self, stdin=None, stdout=None):
+        """Execute the command using the given stream redirections.
+        
+            stdin:  Filename or File object to read input from
+                    (None for regular stdin)
+            stdout: Filename or File object to write output to
+                    (None for regular stdout)
+        
+        This function is used internally by run(); if you need to do stream
+        redirection (as bash commands like `spumux < menu.mpg > menu_subs.mpg`
+        do), use this function instead of run(), and call wait() afterwards if
+        you want.
+        """
+        # TODO: Support capturing or logging of stderr
+        self.output = ''
+        # Open files if string filenames were provided
+        if type(stdin) == str:
+            stdin = open(stdin, 'r')
+        if type(stdout) == str:
+            stdout = open(stdout, 'w')
+        self.proc = Popen([self.program] + self.args,
+                          stdin=stdin, stdout=stdout)
+
     def wait(self):
-        """Wait for the command to finish running; handle keyboard interrupts.
+        """Wait for the command to finish running. If a KeyboardInterrupt
+        occurs (user pressed Ctrl-C), kill the subprocess (and re-raise the
+        KeyboardInterrupt exception).
         """
         if not isinstance(self.proc, Popen):
             return
@@ -122,28 +150,17 @@ class Command (object):
             self.output = self.proc.communicate()[0]
         return self.output
 
-    def _run_redir(self, stdin=None, stdout=None):
-        """Internal function; execute the command using the given stream
-        redirections.
-        
-            stdin:  File object to read input from (None for regular stdin)
-            stdout: File object to write output to (None for regular stdout)
-        """
-        self.output = ''
-        self.proc = Popen([self.program] + self.args,
-                          stdin=stdin, stdout=stdout)
-
     def __str__(self):
         """Return a string representation of the Command, as it would look if
         run in a command-line shell.
         """
         ret = self.program
         for arg in self.args:
-            ret += " %s" % enc_arg(arg)
+            ret += " %s" % _enc_arg(arg)
         return ret
 
 
-class Pipe (object):
+class Pipe:
     """A series of Commands, each having its output piped into the next.
     """
     def __init__(self, *commands):
@@ -172,14 +189,14 @@ class Pipe (object):
         for cmd in self.commands:
             # If this is not the last command, pipe into the next one
             if cmd != self.commands[-1]:
-                cmd._run_redir(prev_stdout, PIPE)
+                cmd.run_redir(prev_stdout, PIPE)
                 prev_stdout = cmd.proc.stdout
             # Last command in pipeline; direct output appropriately
             else:
                 if capture:
-                    cmd._run_redir(prev_stdout, PIPE)
+                    cmd.run_redir(prev_stdout, PIPE)
                 else:
-                    cmd._run_redir(prev_stdout, None)
+                    cmd.run_redir(prev_stdout, None)
 
     def get_output(self):
         """Wait for the pipeline to finish executing, and return a string
@@ -194,40 +211,21 @@ class Pipe (object):
         return ' | '.join(commands)
 
 
-class Script:
-    """A sequence of Commands to be executed."""
-    def __init__(self, name):
-        """Create a script with the given name.
-            name:   Name of the script, as a string
-        """
-        self.name = name
-        self.commands = []
+def _enc_arg(arg):
+    """Quote an argument for proper handling of special shell characters.
+    Don't quote unless necessary. For example:
 
-    def append(self, command):
-        """Append a Command to the end of the script."""
-        assert isinstance(command, Command)
-        self.commands.append(command)
-
-    def prepend(self, command):
-        """Prepend a Command at the beginning of the script."""
-        assert isinstance(command, Command)
-        self.commands.insert(0, str(command))
-
-    def run(self):
-        """Execute all Commands in the script."""
-        log.info("Executing script: %s" % self.name)
-        for cmd in self.commands:
-            log.info("Running command: %s" % cmd)
-            cmd.run()
-
-
-def enc_arg(arg):
-    """Convert an argument to a string, and do any necessary quoting so
-    that bash will treat the string as a single argument."""
+        >>> print _enc_arg("['&&']")
+        '['\''&&'\'']'
+        >>> print _enc_arg("spam")
+        foo
+    
+    This is used internally by Command; you'd only need this if you're running
+    shell programs without using the Command class.
+    """
     arg = str(arg)
-    # If the argument contains special characters, enclose it in single
-    # quotes to preserve the literal meaning of those characters. Any
-    # contained single-quotes must be specially escaped, though.
+    # At the first sign of any special character in the argument,
+    # single-quote the whole thing and return it (escaping ' itself)
     for char in ' #"\'\\&|<>()[]!?*':
         if char in arg:
             return "'%s'" % arg.replace("'", "'\\''")
@@ -235,22 +233,13 @@ def enc_arg(arg):
     return arg
 
 
-def verify_app(appname):
-    """If appname is not found in the user's $PATH, print an error and exit."""
-    """ - True if app exists, 
-        - False if not """
-    path = os.getenv("PATH")
-    found = False
-    for dir in path.split(":"):
-        if os.path.exists("%s/%s" % (dir, appname)):
-            log.info("Found %s/%s" % (dir, appname))
-            found = True
-            break
-        
-    if not found:
-        log.error("%s not found in your PATH. Exiting." % appname)
-        sys.exit()
-
+# An idea to test...
+FAKE = False
+def fake(true_or_false):
+    """Module-level switch to turn on/off fake execution. Any Commands or
+    Pipes run while FAKE is True will not actually be executed.
+    """
+    FAKE = true_or_false
 
 if __name__ == '__main__':
     doctest.testmod(verbose=True)
