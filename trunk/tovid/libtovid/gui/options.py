@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # options.py
 
-__all__ = ["DiscOptions", "MenuOptions", "SlideOptions", "VideoOptions"]
+__all__ = ["DiscOptions", "MenuOptions", "SlideOptions", "VideoOptions", "GroupOptions"]
 
 import os
 import wx
@@ -10,6 +10,7 @@ import libtovid
 from libtovid import Disc
 from libtovid import Menu
 from libtovid import Video
+from libtovid import Group
 from libtovid.gui.constants import *
 from libtovid.gui.configs import TovidConfig
 from libtovid.gui.util import _
@@ -55,6 +56,10 @@ class DiscOptions:
 
     def GetCommand(self):
         """Return the 'makexml' command for generating XML for this disc."""
+        # Tricky part of this is know when to add -endgroup!
+        amInAGroup = False
+        videosInGroup = 0
+
         # Get global configuration (for output directory)
         curConfig = TovidConfig()
 
@@ -68,10 +73,24 @@ class DiscOptions:
                     strCommand += "-topmenu "
                 else:
                     strCommand += "-menu "
-            # Output path and encoded filename
-            strCommand += "\"%s/%s.mpg\" " % \
-                (curConfig.strOutputDirectory, curItem.outPrefix)
+            elif curItem.type == ID_GROUP:
+                strCommand += "-group "
+                amInAGroup = True
+                videosInGroup = curItem.groupMemberCount
 
+            if curItem.type != ID_GROUP:
+                # Output path and encoded filename for all but groups
+                strCommand += "\"%s/%s.mpg\" " % \
+                    (curConfig.strOutputDirectory, curItem.outPrefix)
+            if amInAGroup == True:
+                #Need to work out whether need to endgroup
+                if videosInGroup == 0:
+                    # Cannot be in a group anymore
+                    strCommand += "-endgroup "
+                    amInAGroup = False
+                else:
+                    videosInGroup = videosInGroup - 1
+                
         # Use output filename based on disc title
         self.outPrefix = self.title.replace(' ', '_')
 
@@ -152,6 +171,120 @@ class DiscOptions:
             return False
         return True
 
+class GroupOptions:
+    """Options related to encoding a group"""
+    # Type of item being encoded (menu, video, group or slides)
+    type = ID_GROUP
+    # Title of the group itself
+    title = "Untitled group"
+    # Additional command-line options
+#    addoptions = ""
+    # Duration is unknown
+    #duration = -1 
+    inFile = ""
+    outPrefix = ""
+    groupMemberCount = 0
+
+    def __init__(self, filename = ""):
+        self.inFile = filename
+        self.title = os.path.basename(filename).replace('_', ' ')
+        self.outPrefix = "%s.tovid_encoded" % self.title
+
+    def toElement(self):
+        """Convert the current options into a Group and return it."""
+        # Get global configuration (for output directory)
+        curConfig = TovidConfig()
+        # Create Group and set relevant options
+        group = Group(self.title)
+        group['tvsys'] = self.tvsys
+        group['format'] = self.format
+        group['aspect'] = self.aspect
+        group['in'] = self.inFile
+        group['group'] = "%s/%s" % (curConfig.strOutputDirectory, self.outPrefix)
+        return group
+
+    def fromElement(self, group):
+        """Load options from a Group."""
+        print "Loading Group:"
+        print group.to_string()
+        self.type = ID_GROUP
+        self.inFile = group['in']
+        self.outPrefix = group['out']
+
+
+    def GetCommand(self):
+        """Return the complete tovid command for converting this group."""
+        #No command is required for groups
+        return ""
+
+    def SetDiscFormat(self, format):
+        """Make group compliant with given disc format."""
+        #Placeholder        
+
+    def SetDiscTVSystem(self, tvsys):
+        """Make group compliant with given disc TV system."""
+        #Placeholder
+
+    def CopyFrom(self, opts):
+        """Copy the given options into this object."""
+        # If types are different, return
+        if self.type != opts.type:
+            return
+
+    def GroupOutputOK(self, panel):
+        """Check the group output for any errors detectable before encoding"""
+        # Get global configuration (for output directory)
+        curConfig = TovidConfig()
+
+        groupOutput = "%s" % (self.outPrefix)
+
+        #Check whether it is none null (as this gives an error)
+        if self.outPrefix == "":
+            msgDiscFileExistsDlg = wx.MessageDialog(panel, \
+                    "Please enter a valid name (i.e. not empty) for each Group.", 
+                    "Missing Group Name",
+                    wx.OK | wx.ICON_ERROR)
+            msgDiscFileExistsDlg.ShowModal()
+            msgDiscFileExistsDlg.Destroy()
+            return False
+
+        #Check whether the output file contains problematic characters
+        if groupOutput.find("'") > -1 or groupOutput.find("\"") > -1 or groupOutput.find("$") > -1 :
+
+            #If so, give option of going back or trying anyway
+            #NB, it is not just Python files that need fixing. 
+            #Many lines throughout e.g. makemenu do aswell.
+            msgGroupOutputErrorDlg = wx.MessageDialog(panel, \
+                "This program converts the group files into the correct format,\n" \
+                "and saves these resultant files with names based on the entered values.\n\n" \
+                "For technical reasons, currently apostrophes, double quotes\n" \
+                "and $ signs may cause problems when in these filenames.\n" \
+                "One output file contains at least one of these characters.\n"
+                "This output group file is: %s\n\n" \
+                "Do you want to return to modify these values?\n" \
+                "NB, continuing (i.e. No) is very unlikely to work!" % (groupOutput),
+                "Problematic character in Group Output Filename",
+                wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
+            response = msgGroupOutputErrorDlg.ShowModal()
+            msgGroupOutputErrorDlg.Destroy()
+       
+            if response != wx.ID_NO:
+                return False   
+        return True
+
+    def RelevantFilesAreOK(self, panel):
+        """Check the group options for any errors detectable before encoding"""
+        if self.GroupOutputOK(panel) == False:
+            return False
+        if self.groupMemberCount == 0:
+            msgEmptyGroupDlg = wx.MessageDialog(panel, \
+                    "Each Group must have at least one video.", 
+                    "Empty Group",
+                    wx.OK | wx.ICON_ERROR)
+            msgEmptyGroupDlg.ShowModal()
+            msgEmptyGroupDlg.Destroy()
+            return False
+        return True
 
 class MenuOptions:
     """Options related to generating a menu"""
