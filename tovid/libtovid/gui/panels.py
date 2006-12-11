@@ -9,16 +9,17 @@ from libtovid.gui.configs import TovidConfig
 from libtovid.gui.constants import *
 from libtovid.gui.controls import BoldToggleButton, FlexTreeCtrl, HeadingText
 from libtovid.gui.dialogs import FontChooserDialog
-from libtovid.gui.icons import MenuIcon, SlideIcon, VideoIcon, DiscIcon
-from libtovid.gui.options import DiscOptions, MenuOptions, VideoOptions
+from libtovid.gui.icons import MenuIcon, SlideIcon, VideoIcon, DiscIcon, GroupIcon
+from libtovid.gui.options import DiscOptions, MenuOptions, VideoOptions, GroupOptions
 from libtovid.gui import util
 from libtovid.gui.util import _, VER_GetFirstChild, VideoStatSeeker
 from libtovid import Disc
 from libtovid import Menu
 from libtovid import Video
+from libtovid import Group
 
 __all__ = ["AuthorFilesTaskPanel", "DiscLayoutPanel", "EncodingPanel", "BurnDiscPanel",\
-           "CommandOutputPanel", "DiscPanel", "GuidePanel", "HidablePanel", "MenuPanel",\
+           "CommandOutputPanel", "DiscPanel", "GroupPanel", "GuidePanel", "HidablePanel", "MenuPanel",\
            "VideoPanel", "PlaylistTabPanel", "MenuTabPanel", "ThumbnailTabPanel", "DebugTabPanel"]
 
 class AuthorFilesTaskPanel(wx.Panel):
@@ -595,6 +596,7 @@ class DiscLayoutPanel(wx.Panel):
         wx.Panel.__init__(self, parent, id)
 
         self.numMenus = 0   # Layout begins with no menus
+        self.numGroups = 0   # Layout begins with no groups
         self.discFormat = 'dvd'
         self.discTVSystem = 'ntsc'
         self.parent = parent
@@ -605,19 +607,22 @@ class DiscLayoutPanel(wx.Panel):
         # Buttons and their tooltips
         self.btnAddVideos = wx.Button(self, wx.ID_ANY, "Add video(s)")
         self.btnAddSlides = wx.Button(self, wx.ID_ANY, "Add slide(s)")
+        self.btnAddGroup = wx.Button(self, wx.ID_ANY, "Add group")
         self.btnAddMenu = wx.Button(self, wx.ID_ANY, "Add menu")
         self.btnMoveUp = wx.Button(self, wx.ID_ANY, "Move up")
         self.btnMoveDown = wx.Button(self, wx.ID_ANY, "Move down")
         self.btnRemove = wx.Button(self, wx.ID_ANY, "Remove")
         self.btnAddVideos.SetToolTipString("Add video files under this menu")
         self.btnAddSlides.SetToolTipString("Add still-image files under this menu")
+        self.btnAddGroup.SetToolTipString("Add group of videos under this menu")
         self.btnAddMenu.SetToolTipString("Add a navigation menu to the disc; "
             "you must add at least one navigation menu before adding any videos.")
         self.btnMoveUp.SetToolTipString("Move the current item up")
         self.btnMoveDown.SetToolTipString("Move the current item down")
         self.btnRemove.SetToolTipString("Remove the current item from the disc")
         wx.EVT_BUTTON(self, self.btnAddVideos.GetId(), self.OnAddVideos)
-        wx.EVT_BUTTON(self, self.btnAddSlides.GetId(), self.OnAddSlides)
+#        wx.EVT_BUTTON(self, self.btnAddSlides.GetId(), self.OnAddSlides)
+        wx.EVT_BUTTON(self, self.btnAddGroup.GetId(), self.OnAddGroup)
         wx.EVT_BUTTON(self, self.btnAddMenu.GetId(), self.OnAddMenu)
         wx.EVT_BUTTON(self, self.btnMoveUp.GetId(), self.OnCuritemUp)
         wx.EVT_BUTTON(self, self.btnMoveDown.GetId(), self.OnCuritemDown)
@@ -625,6 +630,7 @@ class DiscLayoutPanel(wx.Panel):
         # All buttons except AddMenu disabled to start with
         self.btnAddVideos.Enable(False)
         self.btnAddSlides.Enable(False)
+        self.btnAddGroup.Enable(False)
         self.btnMoveUp.Enable(False)
         self.btnMoveDown.Enable(False)
         self.btnRemove.Enable(False)
@@ -637,6 +643,7 @@ class DiscLayoutPanel(wx.Panel):
         self.listIcons = wx.ImageList(iconSize[0], iconSize[1])
         self.idxIconMenu = self.listIcons.Add(MenuIcon())
         self.idxIconSlide = self.listIcons.Add(SlideIcon())
+        self.idxIconGroup = self.listIcons.Add(GroupIcon())
         self.idxIconVideo = self.listIcons.Add(VideoIcon())
         self.idxIconDisc = self.listIcons.Add(DiscIcon())
         self.discTree.SetImageList(self.listIcons)
@@ -661,7 +668,7 @@ class DiscLayoutPanel(wx.Panel):
                                (self.btnRemove, 1, wx.EXPAND),
                                (self.btnMoveUp, 1, wx.EXPAND),
                                (self.btnAddVideos, 1, wx.EXPAND),
-                               (self.btnAddSlides, 1, wx.EXPAND),
+                               (self.btnAddGroup, 1, wx.EXPAND),
                                (self.btnMoveDown, 1, wx.EXPAND) ])
 
         # Outer vertical box sizer to hold tree and button-box
@@ -672,12 +679,14 @@ class DiscLayoutPanel(wx.Panel):
         # Panel to contain disc options (format, tvsys, etc.)
         self.panDisc = DiscPanel(self, wx.ID_ANY)
         self.panDisc.SetOptions(self.discTree.GetPyData(self.rootItem))
-        # Panels to contain video/menu encoding options
+        # Panels to contain video/menu/group encoding options
         self.panVideoOptions = VideoPanel(self, wx.ID_ANY)
         self.panMenuOptions = MenuPanel(self, wx.ID_ANY)
+        self.panGroupOptions = GroupPanel(self, wx.ID_ANY)
         # Hide currently-unused options panels
         self.panVideoOptions.Hide()
         self.panMenuOptions.Hide()
+        self.panGroupOptions.Hide()
         # Sizers to hold options panel (and more later?)
         self.sizOptions = wx.BoxSizer(wx.VERTICAL)
         self.sizOptions.Add(self.panDisc, 1, wx.EXPAND | wx.ALL, 8)
@@ -710,6 +719,7 @@ class DiscLayoutPanel(wx.Panel):
             self.btnRemove.Enable(False)
             self.btnAddVideos.Enable(False)
             self.btnAddSlides.Enable(False)
+            self.btnAddGroup.Enable(False)
         # Otherwise, enable usable buttons
         else:
             # Can always remove non-root items
@@ -722,14 +732,21 @@ class DiscLayoutPanel(wx.Panel):
                 self.btnMoveUp.Enable(False)
                 self.btnMoveDown.Enable(False)
             # If a non top-level menu is selected, enable the
-            # AddVideos/AddSlides buttons
+            # AddVideos/AddSlides/AddGroup buttons
             if curType == ID_MENU and curItem != self.topItem:
                 self.btnAddVideos.Enable(True)
+                #self.btnAddSlides.Enable(True)
+                self.btnAddGroup.Enable(True)
+            elif curType == ID_GROUP and curItem != self.topItem:
+                self.btnAddVideos.Enable(True)
+                self.btnAddGroup.Enable(False)
+                self.btnAddMenu.Enable(False)
                 #self.btnAddSlides.Enable(True)
             # Otherwise, disable them
             else:
                 self.btnAddVideos.Enable(False)
                 #self.btnAddSlides.Enable(False)
+                self.btnAddGroup.Enable(False)
 
         # If disc was selected, show disc options
         if curType == ID_DISC:
@@ -737,6 +754,7 @@ class DiscLayoutPanel(wx.Panel):
             self.sizOptions.Add(self.panDisc, 1, wx.EXPAND | wx.ALL, 8)
             self.panMenuOptions.Hide()
             self.panVideoOptions.Hide()
+            self.panGroupOptions.Hide()
             self.panDisc.Show()
             self.sizOptions.Layout()
 
@@ -751,6 +769,7 @@ class DiscLayoutPanel(wx.Panel):
             self.sizOptions.Add(self.panVideoOptions, 1, wx.EXPAND | wx.ALL, 8)
             self.panDisc.Hide()
             self.panMenuOptions.Hide()
+            self.panGroupOptions.Hide()
             self.panVideoOptions.Show()
             self.sizOptions.Layout()
 
@@ -774,6 +793,21 @@ class DiscLayoutPanel(wx.Panel):
             # Set appropriate guide text
             self.curConfig.panGuide.SetTask(ID_TASK_MENU_SELECTED)
 
+        # For a group, show group options
+        elif curType == ID_GROUP:
+            # Remove existing panel and show panGroupOptions
+            self.sizOptions.Remove(0)
+            self.panGroupOptions.SetOptions(curOpts)
+            self.sizOptions.Add(self.panGroupOptions, 1, wx.EXPAND | wx.ALL, 8)
+            self.panDisc.Hide()
+            self.panMenuOptions.Hide()
+            self.panVideoOptions.Hide()
+            self.panGroupOptions.Show()
+            self.sizOptions.Layout()
+
+            # Set appropriate guide text
+            self.curConfig.panGuide.SetTask(ID_TASK_GROUP_SELECTED)
+
     def OnTreeItemEdit(self, evt):
         """Update controls when a tree item's title is edited."""
         if not evt.IsEditCancelled():
@@ -790,6 +824,26 @@ class DiscLayoutPanel(wx.Panel):
                 self.panMenuOptions.SetOptions(curOpts)
             elif curOpts.type == ID_VIDEO:
                 self.panVideoOptions.SetOptions(curOpts)
+                
+                # Update the titles shown list in the menu panel
+                
+                # Get the parent menu
+                curParent = self.discTree.GetItemParent(curItem)
+                # and the options for the parent menu
+                parentOpts = self.discTree.GetPyData(curParent)
+                if parentOpts.type == ID_MENU:
+                    # Get the text of the item as it was before it the change
+                    curText = self.discTree.GetItemText(curItem)
+                    # find the title index to change
+                    for titleIndex in range(len(parentOpts.titles)):
+                        # compare title with old text
+                        if parentOpts.titles[titleIndex] == curText:
+                            # item found, change it
+                            parentOpts.titles[titleIndex] = evt.GetLabel()
+                            # get out of the loop
+                            break
+            elif curOpts.type == ID_GROUP:
+                self.panGroupOptions.SetOptions(curOpts)
                 
                 # Update the titles shown list in the menu panel
                 
@@ -863,15 +917,16 @@ class DiscLayoutPanel(wx.Panel):
         # If there are menus, but none is selected, ask user to
         # select a menu before adding videos
         elif self.numMenus > 0 and \
-             self.discTree.GetPyData(curParent).type != ID_MENU:
+             self.discTree.GetPyData(curParent).type != ID_MENU and \
+             self.discTree.GetPyData(curParent).type != ID_GROUP:
             # Show a message dialog
-            msgDlg = wx.MessageDialog(self, "Please select a menu before adding videos",
-                "No menu selected",
+            msgDlg = wx.MessageDialog(self, "Please select a menu or group before adding videos",
+                "No menu or group selected",
                 wx.OK | wx.ICON_EXCLAMATION)
             msgDlg.ShowModal()
             msgDlg.Destroy()
             return
-            
+
         # Open a file dialog for user to choose videos to add
         addFileDlg= wx.FileDialog(self, "Select video files", self.lastUsedPath,
             "", "*.*", wx.OPEN | wx.MULTIPLE)
@@ -912,8 +967,11 @@ class DiscLayoutPanel(wx.Panel):
         # Refresh the panel view of the parent menu
         self.discTree.SelectItem(curParent)
         curOpts = self.discTree.GetPyData(curParent)
-        self.panMenuOptions.SetOptions(curOpts)
-    
+
+        if self.discTree.GetPyData(curParent).type == ID_MENU:
+            self.panMenuOptions.SetOptions(curOpts)
+        elif self.discTree.GetPyData(curParent).type == ID_GROUP:
+            self.panGroupOptions.SetOptions(curOpts)    
         # Set appropriate guide text
         self.curConfig.panGuide.SetTask(ID_TASK_VIDEO_ADDED)
 
@@ -965,6 +1023,48 @@ class DiscLayoutPanel(wx.Panel):
         if self.discTree.GetCount() > 1:
             self.parent.EncodeOK(True)
 
+    def OnAddGroup(self, evt):
+        """Add group to the disc, under the currently-selected menu."""
+        self.numGroups += 1
+        curParent = self.discTree.GetSelection()
+
+        # If there are no menus yet, create one before adding
+        # the videos under it
+        if self.numMenus < 1:
+            self.OnAddMenu(wx.CommandEvent())
+
+        # If there are menus, but none is selected, ask user to
+        # select a menu before adding group
+        elif self.numMenus > 0 and \
+             self.discTree.GetPyData(curParent).type != ID_MENU:
+            # Show a message dialog
+            msgDlg = wx.MessageDialog(self, "Please select a menu before adding a group",
+                "No menu selected",
+                wx.OK | wx.ICON_EXCLAMATION)
+            msgDlg.ShowModal()
+            msgDlg.Destroy()
+            return
+
+        # New menu is appended under curParent
+        curItem = self.discTree.AppendItem(curParent,
+            "Untitled group %d" % self.numGroups, self.idxIconGroup)
+        self.discTree.SetPyData(curItem, GroupOptions("Untitled group %d" % self.numGroups))
+
+        # Refresh the current item (for empty menus, just adds the "Back" button)
+        self.RefreshItem(curItem)
+
+        # Refresh the parent to include all added group
+        self.RefreshItem(curParent)
+
+        # Expand, show, and select the new menu
+        self.discTree.EnsureVisible(curItem)
+        self.discTree.Expand(curItem)
+        self.discTree.SelectItem(curItem)
+    
+        # Set appropriate guide text
+        self.curConfig.panGuide.SetTask(ID_TASK_GROUP_ADDED)
+
+
     def OnCuritemUp(self, evt):
         """Move the currently-selected item up in the tree."""
         self.discTree.MoveItemUp()
@@ -992,7 +1092,7 @@ class DiscLayoutPanel(wx.Panel):
         # If the top item is selected, verify before deletion
         elif curItem.IsOk() and curItem == self.topItem:
             dlgConfirm = wx.MessageDialog(self,
-                "This will remove all menus and videos\n"
+                "This will remove all menus, groups and videos\n"
                 "from the disc layout. Proceed?",
                 "Confirm removal", wx.YES_NO | wx.ICON_QUESTION)
             if dlgConfirm.ShowModal() == wx.ID_YES:
@@ -1010,12 +1110,23 @@ class DiscLayoutPanel(wx.Panel):
             if self.discTree.GetPyData(curItem).type == ID_MENU:
                 dlgConfirm = wx.MessageDialog(self,
                     "This will remove the currently selected\n"
-                    "menu, along with all videos and stills\n"
+                    "menu, along with all videos, groups and stills\n"
                     "under it. Proceed?",
                     "Confirm removal", wx.YES_NO | wx.ICON_QUESTION)
                 if dlgConfirm.ShowModal() == wx.ID_NO:
                     return
                 self.numMenus -= 1
+            # If deleting a menu, confirm deletion and
+            # decrement the menu counter
+            elif self.discTree.GetPyData(curItem).type == ID_GROUP:
+                dlgConfirm = wx.MessageDialog(self,
+                    "This will remove the currently selected\n"
+                    "group, along with all videos \n"
+                    "under it. Proceed?",
+                    "Confirm removal", wx.YES_NO | wx.ICON_QUESTION)
+                if dlgConfirm.ShowModal() == wx.ID_NO:
+                    return
+                self.numGroups -= 1
             # Delete the current item
             self.discTree.Delete(curItem)
 
@@ -1076,7 +1187,13 @@ class DiscLayoutPanel(wx.Panel):
             # If this is not a top menu, add a "Back" title (link)
             if not curOpts.isTopMenu and self.numMenus > 1:
                 curOpts.titles.append("Back")
-        
+        elif curOpts.type == ID_GROUP:
+            curOpts.groupMemberCount = 0
+            curChild, cookie = VER_GetFirstChild(self.discTree, curItem)
+            while curChild.IsOk():
+                curOpts.groupMemberCount = curOpts.groupMemberCount + 1
+                curChild, cookie = self.discTree.GetNextChild(curItem, cookie)
+         
     def UseForAllItems(self, opts):
         """Use the given options for all videos/menus/slides."""
         # Get references for all items
@@ -1107,6 +1224,8 @@ class DiscLayoutPanel(wx.Panel):
                 outputFileName = "%s" % (curItem.outPrefix)
             elif curItem.type == ID_SLIDE:
                 continue;
+            elif curItem.type == ID_GROUP:
+                outputFileName = "%s" % (curItem.outPrefix)
             sameNameCount = 0
             for otherItem in refs:
                 if otherItem.type == ID_DISC:
@@ -1118,11 +1237,13 @@ class DiscLayoutPanel(wx.Panel):
                     otherOutputFileName = "%s" % (otherItem.outPrefix)
                 elif otherItem.type == ID_SLIDE:
                     continue;
+                elif otherItem.type == ID_GROUP:
+                    otherOutputFileName = "%s" % (otherItem.outPrefix)
                 if otherOutputFileName == outputFileName:
                     sameNameCount = sameNameCount + 1
                 if sameNameCount > 1:
                     msgImageFileMissingDlg = wx.MessageDialog(panel, \
-                       "Two menus or videos have been given the same label.\n" \
+                       "Two menus, groups or videos have been given the same label.\n" \
                        "Currently, this is not allowed.\n" \
                        "This label is: %s\n\n" \
                        "Please choose unique names." % (outputFileName),
@@ -1195,7 +1316,10 @@ class DiscLayoutPanel(wx.Panel):
         # Append command associated with each item
         commands = []
         for curItem in refs:
-            commands.append(curItem.GetCommand())
+            #NB, groups do not actually require commands of their own
+            curCommand = curItem.GetCommand()
+            if curCommand != "":
+                commands.append(curCommand)
         # Append root command
         commands.append(strDiscCmd)
         return commands
@@ -1205,6 +1329,8 @@ class DiscLayoutPanel(wx.Panel):
             return self.idxIconDisc
         elif isinstance(element, Menu):
             return self.idxIconMenu
+        elif isinstance(element, Group):
+            return self.idxIconGroup
         else:
             return self.idxIconVideo
 
@@ -1418,6 +1544,187 @@ class EncodingPanel(wx.Panel):
         self.btnStartStop.SetLabel("Start encoding")
         self.btnStartStop.Enable(False)
 
+class GroupPanel(wx.Panel):
+    """A panel showing controls appropriate to encoding a video."""
+    def __init__(self, parent, id):
+        wx.Panel.__init__(self, parent, id)
+
+        # Class data
+        self.curOptions = GroupOptions()
+        self.parent = parent
+
+        # File information display
+#        self.lblInFile = wx.StaticText(self, wx.ID_ANY, "Filename:")
+#        self.txtInFile = wx.StaticText(self, wx.ID_ANY, "None")
+
+        # Statix box and sizer to hold file info
+#        self.sboxFileInfo = wx.StaticBox(self, wx.ID_ANY, "Video information")
+#        self.sizFileInfo = wx.StaticBoxSizer(self.sboxFileInfo, wx.HORIZONTAL)
+#        self.sizFileInfo.Add(self.lblInFile, 0, wx.EXPAND | wx.ALL, 6)
+#        self.sizFileInfo.Add(self.txtInFile, 1, wx.EXPAND | wx.ALL, 6)
+        
+        # Radio buttons
+        # Format-selection radio buttons
+#        outFormatList = ['352x240 VCD',
+#                         '480x480 SVCD',
+#                         '720x480 DVD',
+#                         '352x480 Half-DVD',
+#                         '352x240 VCD on DVD' ]
+
+        # Aspect ratio radio buttons
+#        aspectList = ['4:3 Fullscreen TV',
+#                      '16:9 Widescreen TV',
+#                      '2.35:1 Theatrical widescreen']
+
+        # Radio boxes and tooltips
+#        self.rbResolution = wx.RadioBox(self, wx.ID_ANY, "Output resolution",
+#            wx.DefaultPosition, wx.DefaultSize,
+#            outFormatList, 1, wx.RA_SPECIFY_COLS)
+#        wx.EVT_RADIOBOX(self, self.rbResolution.GetId(), self.OnFormat)
+#        self.rbResolution.SetToolTipString("Select which resolution you want to "
+#            "encode your video in. The available resolutions are shown depending on "
+#            "whether you are making a VCD, SVCD, or DVD disc.")
+#        self.rbAspect = wx.RadioBox(self, wx.ID_ANY, "Aspect ratio of input",
+#            wx.DefaultPosition, wx.DefaultSize,
+#            aspectList, 1, wx.RA_SPECIFY_COLS)
+#        wx.EVT_RADIOBOX(self, self.rbAspect.GetId(), self.OnAspect)
+#        self.rbAspect.SetToolTipString("Select which aspect ratio the original video "
+#            "is in. If it is roughly TV-shaped, use '4:3'. If it is more than "
+#            "twice as wide as it is tall, use '2.35:1'. If it's somewhere in "
+#            "between, use '16:9'.")
+
+        # Sizer for radioboxes
+#        self.sizResAspect = wx.BoxSizer(wx.HORIZONTAL)
+#        self.sizResAspect.Add(self.rbResolution, 1, wx.EXPAND | wx.ALL)
+#        self.sizResAspect.Add(self.rbAspect, 1, wx.EXPAND | wx.ALL)
+                
+        # Direct-entry CLI option box
+#        self.lblCLIOptions = wx.StaticText(self, wx.ID_ANY, "Custom options:")
+#        self.txtCLIOptions = wx.TextCtrl(self, wx.ID_ANY, "")
+#        self.txtCLIOptions.SetToolTipString("Type custom tovid command-line "
+#            "options that you'd like to use, separated by spaces. Warning:"
+#            "Please make sure you know what you are doing!")
+#        wx.EVT_TEXT(self, self.txtCLIOptions.GetId(), self.OnCLIOptions)
+#        self.sizCLIOptions = wx.BoxSizer(wx.HORIZONTAL)
+#        self.sizCLIOptions.Add(self.lblCLIOptions, 0, wx.EXPAND | wx.ALL, 8)
+#        self.sizCLIOptions.Add(self.txtCLIOptions, 1, wx.EXPAND | wx.ALL, 8)
+
+        # Sizer to hold all encoding options
+#        self.sizEncOpts = wx.BoxSizer(wx.VERTICAL)
+#        self.sizEncOpts.Add(self.sizResAspect, 1, wx.EXPAND | wx.ALL)
+#        self.sizEncOpts.Add(self.sizCLIOptions, 0, wx.EXPAND | wx.ALL)
+
+        # Button to preview the video
+#        self.btnPreview = wx.Button(self, wx.ID_ANY, "Preview video")
+#        self.btnPreview.SetToolTipString("Play the video using mplayer")
+#        wx.EVT_BUTTON(self, self.btnPreview.GetId(), self.OnPreview)
+
+        # Button to copy video options to all videos on disc
+#        self.btnUseForAll = wx.Button(self, wx.ID_ANY,
+#            "Use these settings for all videos")
+#        self.btnUseForAll.SetToolTipString("Apply the current video"
+#            " settings, including resolution, aspect ratio, and"
+#            " custom command-line options, to all videos on the disc.")
+#        wx.EVT_BUTTON(self, self.btnUseForAll.GetId(), self.OnUseForAll)
+
+        # Group options heading
+        self.txtHeading = HeadingText(self, wx.ID_ANY, "Group options")
+
+        # Add controls to main vertical sizer
+        self.sizMain = wx.BoxSizer(wx.VERTICAL)
+        self.sizMain.Add(self.txtHeading, 0, wx.EXPAND | wx.ALL, 8)
+#        self.sizMain.Add(self.sizFileInfo, 0, wx.EXPAND | wx.ALL, 8)
+#        self.sizMain.Add(self.sizEncOpts, 1, wx.EXPAND | wx.ALL, 8)
+#        self.sizMain.Add(self.btnPreview, 0, wx.EXPAND | wx.ALL, 8)
+#        self.sizMain.Add(self.btnUseForAll, 0, wx.EXPAND | wx.ALL, 8)
+        self.SetSizer(self.sizMain)
+
+#    def OnFormat(self, evt):
+#        """Set appropriate format based on radio button selection."""
+#        # Convert integer value to text representation
+#        # (e.g., ID_FMT_DVD to 'dvd')
+#        self.curOptions.format = util.ID_to_text('format', evt.GetInt())
+
+#    def OnAspect(self, evt):
+#        """Set aspect ratio based on radio button selection."""
+#        self.curOptions.aspect = util.ID_to_text('aspect', evt.GetInt())
+
+#    def OnCLIOptions(self, evt):
+#        """Update custom CLI options when the user edits the textbox."""
+#        self.curOptions.addoptions = self.txtCLIOptions.GetValue()
+
+#    def OnUseForAll(self, evt):
+#        """Use the current video settings for all videos on disc."""
+#        countItems = self.parent.UseForAllItems(self.curOptions)
+#        # Display acknowledgement
+#        dlgAck = wx.MessageDialog(self,
+#            "The current video settings were copied to\n"
+#            "%d other videos on the disc." % countItems,
+#            "Settings copied", wx.OK | wx.ICON_INFORMATION)
+#        dlgAck.ShowModal()
+
+#    def OnPreview(self, evt):
+#        """Preview the video in mplayer."""
+#        strCommand = "gmplayer \"%s\"" % self.curOptions.inFile
+#        wx.Execute(strCommand, wx.EXEC_SYNC)
+
+
+    def SetOptions(self, groupOpts):
+        """Set control values based on the provided GroupOptions."""
+        self.curOptions = groupOpts
+
+        self.txtHeading.SetLabel("Group options: %s" % self.curOptions.title)
+#        self.txtInFile.SetLabel(self.curOptions.inFile)
+#        self.rbResolution.SetSelection(util.text_to_ID(self.curOptions.format))
+#        self.rbAspect.SetSelection(util.text_to_ID(self.curOptions.aspect))
+#        self.txtCLIOptions.SetValue(self.curOptions.addoptions)
+
+    def GetOptions(self):
+        """Return the currently-set encoding options."""
+        return self.curOptions
+
+#    def SetDiscFormat(self, format):
+#        """Enable/disable controls to suit DVD, VCD, or SVCD-compliance."""
+#        # For DVD, disable non-DVD output formats
+#        if format == 'dvd':
+#            for rbItem in [ID_FMT_DVD, ID_FMT_HALFDVD, ID_FMT_DVDVCD]:
+#                self.rbResolution.EnableItem(rbItem, True)
+#            for rbItem in [ID_FMT_SVCD, ID_FMT_VCD]:
+#                self.rbResolution.EnableItem(rbItem, False)
+#        # For VCD, enable only VCD output and disable bitrate controls
+#        elif format == 'vcd':
+#            for rbItem in range(0, 5):
+#                self.rbResolution.EnableItem(rbItem, False)
+#            self.rbResolution.EnableItem(ID_FMT_VCD, True)
+#        # For SVCD, enable only SVCD output
+#        elif format == 'svcd':
+#            for rbItem in range(0, 5):
+#                self.rbResolution.EnableItem(rbItem, False)
+#            self.rbResolution.EnableItem(ID_FMT_SVCD, True)
+#        # Unknown format?
+#        else:
+#            print "VideoPanel.SetDiscFormat: Unknown format %s" % format 
+    
+#    def SetDiscTVSystem(self, format):
+#        """Set NTSC or PAL, and show appropriate controls."""
+#        # Display NTSC resolutions in format radiobox
+#        if format in [ 'ntsc', 'ntscfilm' ]:
+#            self.rbResolution.SetItemLabel(ID_FMT_VCD, '352x240 VCD')
+#            self.rbResolution.SetItemLabel(ID_FMT_SVCD, '480x480 SVCD')
+#            self.rbResolution.SetItemLabel(ID_FMT_DVD, '720x480 DVD')
+#            self.rbResolution.SetItemLabel(ID_FMT_HALFDVD, '352x480 Half-DVD')
+#            self.rbResolution.SetItemLabel(ID_FMT_DVDVCD, '352x240 VCD on DVD')
+#        # Display PAL resolutions in format radiobox
+#        elif format == 'pal':
+#            self.rbResolution.SetItemLabel(ID_FMT_VCD, '352x288 VCD')
+#            self.rbResolution.SetItemLabel(ID_FMT_SVCD, '480x576 SVCD')
+#            self.rbResolution.SetItemLabel(ID_FMT_DVD, '720x576 DVD')
+#            self.rbResolution.SetItemLabel(ID_FMT_HALFDVD, '352x576 Half-DVD')
+#            self.rbResolution.SetItemLabel(ID_FMT_DVDVCD, '352x288 VCD on DVD')
+#        # Unknown format?
+#        else:
+#            print "VideoPanel.SetDiscTVSystem: Unknown format %s" % format
+
 
 class GuidePanel(wx.Panel):
     """A panel showing live context-sensitive help."""
@@ -1526,6 +1833,17 @@ class GuidePanel(wx.Panel):
             "When you are satisfied with the titles, menu options, and video options " \
             "for your disc, select \"2. Encode\" to proceed with encoding " \
             "and authoring your disc.")
+        self.strGroupAdded = _("One or more groups have been added to the disc. " \
+            "Notice that your groups have been added to the list of titles in " \
+            "the currently-selected menu.\n\n" \
+            "Groups are represented by a multiple film icon in the disc layout tree. " \
+            "Click on a group in the tree to view options for that group.")
+        self.strGroupSelected = _("A group is now selected. You can change the " \
+            "title of the group by clicking once on its title in the disc layout " \
+            "tree.\n\n" \
+            "When you are satisfied with the titles, menu, group and video options " \
+            "for your disc, select \"2. Encode\" to proceed with encoding " \
+            "and authoring your disc.")
         self.strPrepEncoding = _("You are now ready to begin the process of encoding " \
             "all the menus and videos you have selected for your disc.\n\n" \
             "Here, a log window displays a list of all the commands that will be " \
@@ -1569,6 +1887,12 @@ class GuidePanel(wx.Panel):
         elif curTask == ID_TASK_ENCODING_STARTED:
             self.txtHeading.SetLabel(_("Encoding started"))
             self.txtGuide.SetValue(self.strEncodingStarted)
+        elif curTask == ID_TASK_GROUP_ADDED:
+            self.txtHeading.SetLabel(_("Group added"))
+            self.txtGuide.SetValue(self.strGroupAdded)
+        elif curTask == ID_TASK_GROUP_SELECTED:
+            self.txtHeading.SetLabel(_("Video selected"))
+            self.txtGuide.SetValue(self.strGroupSelected)
 
 
 class HidablePanel(wx.Panel):
