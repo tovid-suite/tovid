@@ -12,18 +12,18 @@ ME="[idvid]:"
 #
 #
 # Copyright (C) 2005 tovid.org <http://www.tovid.org>
-# 
-# This program is free software; you can redistribute it and/or 
-# modify it under the terms of the GNU General Public License 
-# as published by the Free Software Foundation; either 
-# version 2 of the License, or (at your option) any later 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
 # version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
@@ -32,7 +32,7 @@ ME="[idvid]:"
 
 SCRIPT_NAME=`cat << EOF
 --------------------------------
-idvid 
+idvid
 Video identification script
 Part of the tovid suite, version $TOVID_VERSION
 $BUILD_OPTIONS
@@ -186,7 +186,7 @@ function get_info ()
     # (ID_V(ideo), ID_A(udio), and ID_L(ength))
     # Grep out special characters ()[
     eval $(cat "$SCRATCH_FILE" | grep "^ID_[VAL]" | grep -v "[()\[]")
-    
+
     ID_VIDEO_FRAMES=$(grep 'length:' "$SCRATCH_FILE" | \
         awk -F ' ' '{print $2}')
     test -z $ID_VIDEO_FRAMES && ID_VIDEO_FRAMES="0"
@@ -202,7 +202,7 @@ function get_info ()
         A_TRACKS=(${TRACKS//$'\n'/ })
         # Get hexadecimal track IDs, if present
         if grep -q "\[0x[0-9a-fA-F]*]" <<< $AUDIO_INFO; then
-            HEX_TRACKS=$(sed -r 's/.*\[0x([0-9a-fA-F]*)].*/\1/' <<< "$AUDIO_INFO")
+            HEX_TRACKS=$(sed -r 's/Stream .*\[0x([0-9a-fA-F]*)]:.*$/\1/' <<< "$AUDIO_INFO")
             HEX_TRACKS=(${HEX_TRACKS//$'\n'/ })
             USE_HEX_TRACKS=:
         else
@@ -212,9 +212,9 @@ function get_info ()
         for ((i=0; i<${#A_TRACKS[@]}; i++)); do
             CUR_CHAN=$(grep "Stream #${A_TRACKS[i]}" <<< "$AUDIO_INFO")
             A_SAMPRATES=("${A_SAMPRATES[@]}" "$(echo $CUR_CHAN | \
-                sed -r 's/.* ([0-9]+) Hz.*/\1/')") 
+                sed -r 's/.* ([0-9]+) Hz.*/\1/')")
             A_BITRATES=("${A_BITRATES[@]}" "$(echo $CUR_CHAN | \
-                sed -r 's/.* ([0-9]+) kb\/s.*/\1/')") 
+                sed -r 's/.* ([0-9]+) kb\/s.*/\1/')")
             A_CODECS=("${A_CODECS[@]}" "$(echo $CUR_CHAN | \
                 sed -r 's/.*Audio: ([^,]+),.*/\1/')")
             if $USE_HEX_TRACKS; then
@@ -280,7 +280,7 @@ function get_info ()
             | tr '\r' '\n' | grep \"^Pos:\" | tail -n 1 \
             | sed s/\"Pos:\"// | awk -- '{print $1}' | sed s/[.][0-9]s//)"
     fi
-    
+
     # Use mplayer-reported length as a last resort (truncate floating-point)
     test -z $V_DURATION && V_DURATION=$(echo $ID_LENGTH | sed 's/\.[0-9]*//')
 
@@ -379,7 +379,7 @@ function idvid_main ()
         #echo "Audio sampling rate: $ID_AUDIO_RATE Hz"
         echo $SEPARATOR
     fi
-    
+
     # Separate flags for each audio profile (there may be multiple matches)
     A_VCD1=""
     A_VCD2=""
@@ -420,13 +420,13 @@ function idvid_main ()
     if test -z "$ID_AUDIO_ID"; then
         A_NONE="No audio stream present"
     fi
-     
+
     # Separate flags for each video profile (there may be multiple matches)
     V_VCD=""
     V_SVCD=""
     V_DVD=""
     V_RES=""
-  
+
     # Resolution
     case "$ID_VIDEO_WIDTH" in
         "352" )
@@ -445,7 +445,7 @@ function idvid_main ()
             ;;
         "528" )
             case "$ID_VIDEO_HEIGHT" in
-                "480" ) V_RES="NTSC_KVCDX3";; 
+                "480" ) V_RES="NTSC_KVCDX3";;
                 "576" ) V_RES="PAL_KVCDX3" ;;
             esac
             ;;
@@ -462,7 +462,7 @@ function idvid_main ()
             esac
             ;;
     esac
-  
+
     # Find matching video profile(s)
     # Test for VCD/DVD-VCD MPEG1 compliance
     if test "$ID_VIDEO_FORMAT" = "MPEG1" && test "$ID_VIDEO_BITRATE" -le "1856000"; then
@@ -594,7 +594,7 @@ function idvid_main ()
                 MATCH=:
             fi
         fi
-    
+
         rm -rf "$TMP_DIR"
         if $MATCH; then
             echo "true"
@@ -603,8 +603,8 @@ function idvid_main ()
             echo "false"
             exit 1
         fi
-        
-        
+
+
     # Print out compliance information
     elif $TERSE; then
         test -n "$A_VCD1" && echo "A_VCD1_OK=:"
@@ -668,7 +668,7 @@ function idvid_main ()
 EOF`
     touch "$STAT_FILE"
     printf "%s\n" "$FINAL_STATS_FORMATTED" >> "$STAT_FILE"
-  
+
 }
 
 # ===========================

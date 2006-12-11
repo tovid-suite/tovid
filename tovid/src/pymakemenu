@@ -2,13 +2,12 @@
 # pymakemenu
 
 __doc__ = \
-"""Generate an (S)VCD/DVD menu MPEG (to replace the 'makemenu' shell
-script).
+"""Generate an (S)VCD/DVD menu MPEG (to replace the 'makemenu' shell script).
 """
 
 import sys
 from libtovid.opts import Option, OptionDict
-from libtovid.layout.menu import Menu
+from libtovid.layout import Menu
 from libtovid import log
 
 # Dictionary of valid options with documentation
@@ -54,9 +53,7 @@ OPTION_DEFS = [\
             """Add the listed effects to the thumbnails.""")
 ]
 
-options = OptionDict(OPTION_DEFS)
-
-class Style(object):
+class Style (object):
     """Contains style attributes, including font, color, and alignment."""
     def __init__(self, font='helvetica', fontsize=12, textcolor='white',
                  highlightcolor='green', selectcolor='red', align='center'):
@@ -68,7 +65,9 @@ class Style(object):
         self.align = align
 
 if __name__ == '__main__':
-    """Create a Menu with provided options and generate it."""
+    """Create a Menu with provided options and generate it.
+    """
+    options = OptionDict(OPTION_DEFS)
     # If no arguments were provided, print usage notes
     # TODO: Proper argument verification
     if len(sys.argv) < 3:

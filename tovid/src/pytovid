@@ -90,10 +90,11 @@ OPTION_DEFS = [\
         mencoder and ffmpeg methods do all encoding with the respective
         tool.""")
 ]
-options = OptionDict(OPTION_DEFS)
 
 if __name__ == '__main__':
-    """Create a Video with provided options and generate it."""
+    """Create a Video with provided options and generate it.
+    """
+    options = OptionDict(OPTION_DEFS)
     # If no arguments were provided, print usage notes
     # TODO: Proper argument verification
     if len(sys.argv) < 5:

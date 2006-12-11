@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 # tktodisc
 
-"""A Tkinter graphical user interface for tovid. Highly experimental."""
+"""A Tkinter graphical user interface for todisc.
 
-"""Note on notation:
+Note on notation:
 
 tkinter widgets variable names shall use a prefix describing widget type, and
 camel-case for remaining words, i.e.
@@ -33,10 +33,7 @@ Implement an in-place edit in the title listbox
 TODO:
 
 Multiple selection, select-all in file/title listbox (context menu?)
-
 Popup warnings for missing fields (-files/-titles, -out) before running todisc
-
-Disc usage total after adding files to listbox
 
 """
 
@@ -46,11 +43,10 @@ from tkFileDialog import *
 from tkMessageBox import *
 from libtovid.cli import Command
 
-# ============================
-#
-# Frames for grouping controls
-#
-# ============================
+
+###
+### Frames for grouping controls
+###
 
 class FormatFrame(Frame):
     """A frame containing controls suitable for setting disc format
@@ -121,7 +117,7 @@ class TvsysFrame(Frame):
     def setOptions(self, command):
         tvsys = str(self.varTvsys.get()).lower()
         command.add('-%s' % tvsys)
-
+    
 
 class FileListFrame(Frame):
     """A frame containing a list of filenames, and controls to add or delete
@@ -220,8 +216,8 @@ class FileListFrame(Frame):
         for file in files:
             print "Adding '%s' to the file list" % file
             self.lstFiles.insert(END, file)
-            # Add a dummy title (with pathname removed)
-            title = file.split('/')[-1]
+            # Add a dummy title (with pathname and extension removed)
+            title = os.path.basename(file)[0:-4]
             self.lstTitles.insert(END, title)
         self.updateUsage()
 
@@ -341,9 +337,9 @@ class BackgroundsFrame(Frame):
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
         if self.varImage.get():
-            command.add('-bgimage', self.varImage.get())
+            command.add('-background', self.varImage.get())
         if self.varVideo.get():
-            command.add('-bgvideo', self.varVideo.get())
+            command.add('-background', self.varVideo.get())
         if self.varAudio.get():
             command.add('-bgaudio', self.varAudio.get())
 
@@ -441,11 +437,9 @@ class MiscOptionsFrame(Frame):
                 command.add(opt)
 
 
-# ============================
-#
-# Main application window
-#
-# ============================
+###
+### Main application window
+###
 
 class Application(Frame):
     def __init__(self, master=None):
@@ -517,11 +511,10 @@ class Application(Frame):
             except KeyboardInterrupt:
                 showerror(message="todisc was interrupted!")
 
-# ============================
-#
-# Entry point
-#
-# ============================
+
+###
+### Entry point
+###
 
 if __name__ == '__main__':
     app = Application()
