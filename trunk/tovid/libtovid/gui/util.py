@@ -3,9 +3,6 @@
 
 import threading, wx
 from libtovid.gui.constants import id_dict
-from libtovid import Disc
-from libtovid import Menu
-from libtovid import Video
 
 __all__ = [\
     '_',
