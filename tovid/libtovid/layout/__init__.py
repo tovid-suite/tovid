@@ -2,28 +2,58 @@
 # __init__.py
 
 """This module provides an interface for structuring the content of video discs.
+"""
 
-A disc may contain:
+"""Note to developers:
 
-Videos only (one titleset with N videos)
+The layout submodule is changing fast. The video/menu/disc submodules have
+merged into this file (at least for now). I'm also considering separating
+dvdauthor.py and vcdimager.py, which will do _authoring_ based on the
+_layout_ classes defined here. I'm thinking of just moving this __init__.py
+to libtovid/layout.py, and eliminating the layout subdirectory.
 
-    ts = Titleset(videos)
-    disc.add_titleset(ts)
+The classes here represent the merging of ideas from libtovid/__init__.py
+(the 0.30 target interface mockup) and libtovid/layout/dvdauthor.py, which
+are designed as a direct implementation of dvdauthor's XML structure.
 
-Videos with a single menu (one titleset with N videos and a TS menu)
+My goal is to end up with a more general disc-structuring API with simple
+hierarchical navigation:
 
-    ts = Titleset(videos)
-    ts.add_menu()
-    disc.add_titleset(ts)
+    Disc
+        [Menu]
+        Titleset
+            [Menu]
+            Video [Video ...]
+        [Titleset]
+            ...
 
-Topmenu/submenus (N titlesets each with a menu, VMGM menu links to them)
+A Disc would be instantiated like this:
 
-    ts1 = Titleset(videos)
-    ts2 = Titleset(morevideos)
-    ts1.add_menu()
-    ts2.add_menu()
-    disc.add_titleset(ts1)
-    disc.add_titleset(ts2)
+    disc = Disc("mydvd", 'dvd', 'ntsc')
+
+This would give you a "blank" disc, which you could then add videos, menus
+etc. to. Say you have some encoded videos:
+
+    videos = [Video("foo.mpg"), Video("bar.mpg")]
+
+To have just videos on the disc, there'd be a single Titleset:
+
+    titleset = Titleset(videos)
+    disc.add_titleset(titleset)
+
+If the videos should have a menu, then the Titleset holds the menu:
+
+    menu = Menu(videos)
+    titleset.add_menu(menu)
+
+For multiple Titlesets, there'd need to be a top-level menu.
+
+    morevideos = [Video('baz.mpg'), Video('bam.mpg')]
+    menu2 = Menu(morevideos)
+    titleset2 = Titleset(morevideos)
+    titleset2.add_menu(menu2)
+    disc.add_titleset(titleset2)
+
 """
 
 all = [\
@@ -31,19 +61,9 @@ all = [\
     'Menu',
     'Video',
     'Group',
-    'dvdauthor',
-    'vcdimager']
-
-from libtovid.layout import vcdimager, dvdauthor
-
-all = [\
-    'Video',
-    'Menu',
     'Titleset',
-    'Disc',
     'dvdauthor',
     'vcdimager']
-
 
 class Video:
     """A video title for inclusion on a video disc.
@@ -66,6 +86,20 @@ class Video:
 
     def __init__(self, filename, title, format, tvsys):
         self.filename = filename
+        self.title = title
+        self.format = format
+        self.tvsys = tvsys
+
+
+class Group:
+    """A group title for inclusion on a video disc.
+
+    Needed for menu generation:
+        title
+    """
+
+    def __init__(self, infile, title, format, tvsys):
+        self.infile = infile
         self.title = title
         self.format = format
         self.tvsys = tvsys
@@ -125,21 +159,3 @@ class Disc:
         self.tvsys = tvsys
         self.topmenu = None
         self.titlesets = titlesets or []
-   
-
-class Group:
-    """A group title for inclusion on a video disc.
-
-    Needed for menu generation:
-        title
-    """
-
-    def __init__(self, infile, title, format, tvsys):
-        self.infile = infile
-        self.title = title
-        self.format = format
-        self.tvsys = tvsys
-
-    def generate(self, outfile, method='ffmpeg'):
-        """Generate the group."""
-        # TODO: Fixme
