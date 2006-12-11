@@ -151,7 +151,6 @@ class DVD (Disc):
     def __init__(title='Untitled DVD', tvsys='ntsc'):
         Disc.__init__('dvd', tvsys, title)
 
-
 class Menu (object):
     """A video disc menu.
     
@@ -196,3 +195,9 @@ class Video (object):
     def encode(self, format, tvsys):
         print "Video: Encoding to compliant %s %s format." %\
               (format.upper(), tvsys.upper())
+
+class Group (object):
+    """A group for inclusion on a video disc."""
+    def __init__(self, title=''):
+        print "Group: Creating a group entitled '%s'" % (title)
+
