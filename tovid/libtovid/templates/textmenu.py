@@ -7,18 +7,13 @@ from libtovid.cli import Command, Pipe
 from libtovid import deps
 from libtovid import log
 
-def generate(options):
-    """Generate a menu with selectable text titles."""
-    deps.require('convert composite ppmtoy4m sox ffmpeg mpeg2enc')
-    TextMenu(options)
 
-
-class TextMenu:
+class TextMenu (object):
     """Simple menu with selectable text titles. For now, basically a clone
     of the classic 'makemenu' output.
     """
     def __init__(self, target, titles, style):
-        self.options = options
+        deps.require('convert composite ppmtoy4m sox ffmpeg mpeg2enc')
         basename = target.filename
         # TODO: Store intermediate images in a temp folder
         self.bg_canvas = basename + '.bg_canvas.png'
@@ -34,7 +29,7 @@ class TextMenu:
         self.gen_video(target)
         self.gen_audio(target)
         self.gen_mpeg(target)
-        self.script.run()
+        #self.mux_subtitles(target)
 
     def build_reusables(self, target, titles):
         """Assemble some re-usable ImageMagick command snippets.
@@ -148,7 +143,7 @@ class TextMenu:
     
     def gen_video(self, target):
         """Generate a video stream (mpeg1/2) from the menu background image.
-        Corresp. to lines 495-502 of makemenu."""
+        """
         # ppmtoy4m part
         ppmtoy4m = Command('ppmtoy4m', '-S', '420mpeg2')
         if target.tvsys == 'ntsc':
