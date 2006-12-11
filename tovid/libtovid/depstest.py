@@ -3,8 +3,8 @@
 
 """Unit test for deps.py"""
 
-import deps
 import unittest
+from libtovid import deps
 
 class BadInput(unittest.TestCase):
 
