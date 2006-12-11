@@ -105,9 +105,9 @@ def fps(tvsys):
     """Return the number of frames per second for the given TV system. For
     example:
     
-        >>> fps('ntsc')
-        29.969999999999999
-        >>> fps('pal')
+        >>> print fps('ntsc')
+        29.97
+        >>> print fps('pal')
         25.0
     """
     # Valid frames per second, by TV system
@@ -120,7 +120,7 @@ def fps(tvsys):
 
 
 def fpsratio(tvsys):
-    """Return the number of frames per second for the given TV system, in the
+    """Return the number of frames per second for the given TV system, in
     ratio form. For example:
     
         >>> fpsratio('ntsc')
