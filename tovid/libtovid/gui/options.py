@@ -7,9 +7,6 @@ import os
 import wx
 
 import libtovid
-from libtovid import Disc
-from libtovid import Menu
-from libtovid import Video
 from libtovid import Group
 from libtovid.gui.constants import *
 from libtovid.gui.configs import TovidConfig
@@ -26,29 +23,6 @@ class DiscOptions:
         self.format = format
         self.tvsys = tvsys
 
-    def toElement(self):
-        """Convert the current options into a Disc and return it."""
-        disc = Disc(self.title)
-        disc['tvsys'] = self.tvsys
-        disc['format'] = self.format
-
-        # Find top menu
-        for curItem in self.optionList:
-            if curItem.type == ID_MENU:
-                if curItem.isTopMenu:
-                    disc['topmenu'] = curItem.title
-
-        return disc
-
-    def fromElement(self, disc):
-        """Load current options from a Disc."""
-        print "Loading Disc:"
-        print disc.to_string()
-        self.type = ID_DISC
-        self.title = disc.name
-        self.format = disc['format']
-        self.tvsys = disc['tvsys']
-        
     def SetLayout(self, optionList):
         """Set disc layout hierarchy, given a list of VideoOptions,
         MenuOptions, and SlideOptions."""
@@ -320,49 +294,6 @@ class MenuOptions:
         # Default font
         self.font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
             wx.FONTWEIGHT_NORMAL, False, "Default")
-
-    def toElement(self):
-        """Convert the current options into a Menu and return it."""
-        # Get global configuration (for output directory)
-        curConfig = TovidConfig()
-        # Create Menu Element and set relevant options
-        menu = Menu(self.title)
-        menu['tvsys'] = self.tvsys
-        menu['format'] = self.format
-        menu['align'] = self.alignment
-        # Image and audio backgrounds, if any
-        if self.background != "":
-            menu['background'] = self.background
-        if self.audio != "":
-            menu['audio'] = self.audio
-        menu['textcolor'] = '"#%X%X%X"' % \
-            (self.colorText.Red(), self.colorText.Green(), self.colorText.Blue())
-        # For DVD, highlight and select colors
-        if self.format == 'dvd':
-            menu['highlightcolor'] = '"#%X%X%X"' % \
-                (self.colorHi.Red(), self.colorHi.Green(), self.colorHi.Blue())
-            menu['selectcolor'] = '"#%X%X%X"' % \
-                (self.colorSel.Red(), self.colorSel.Green(), self.colorSel.Blue())
-        if self.font.GetFaceName() != "":
-            menu['font'] = self.font.GetFaceName()
-        # Convert self.titles to ordinary strings
-        strtitles = []
-        for title in self.titles: strtitles.append(str(title))
-        menu['titles'] = strtitles
-        return menu
-
-    def fromElement(self, menu):
-        """Load options from a Menu."""
-        print "Loading Menu:"
-        print element.to_string()
-        self.type = ID_MENU
-        self.tvsys = menu['tvsys']
-        self.format = menu['format']
-        self.alignment = menu['align']
-        self.background = menu['background']
-        self.audio = menu['audio']
-        self.titles = menu['titles']
-        # TODO: Find a good way to parse/assign colors and font
 
     def GetCommand(self):
         """Return the complete makemenu command to generate this menu."""
@@ -655,39 +586,6 @@ class VideoOptions:
         self.inFile = filename
         self.title = os.path.basename(filename).replace('_', ' ')
         self.outPrefix = "%s.tovid_encoded" % self.title
-
-    def toElement(self):
-        """Convert the current options into a Video and return it."""
-        # Get global configuration (for output directory)
-        curConfig = TovidConfig()
-        # Create Video and set relevant options
-        video = Video(self.title)
-        video['tvsys'] = self.tvsys
-        video['format'] = self.format
-        video['aspect'] = self.aspect
-        video['in'] = self.inFile
-        video['out'] = "%s/%s" % (curConfig.strOutputDirectory, self.outPrefix)
-        return video
-
-    def fromElement(self, video):
-        """Load options from a Video."""
-        print "Loading Video:"
-        print video.to_string()
-        self.type = ID_VIDEO
-        self.tvsys = video['tvsys']
-        self.format = video['format']
-        aspect = video['aspect']
-        if aspect in [ 'full', 'wide', 'panavision' ]:
-            self.aspect = aspect
-        elif aspect == '4:3':
-            self.aspect = 'full'
-        elif aspect == '16:9':
-            self.aspect = 'wide'
-        elif aspect == '235:100':
-            self.aspect = 'panavision'
-        self.inFile = video['in']
-        self.outPrefix = video['out']
-
 
     def GetCommand(self):
         """Return the complete tovid command for converting this video."""
