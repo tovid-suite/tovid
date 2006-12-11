@@ -446,12 +446,22 @@ class CommandOutputPanel(wx.Panel):
     def OnSaveAsScript(self, evt):
         """Save commands as a script."""
         # Prompt for a filename
+        msgExecFlagDlg = wx.MessageDialog(self, \
+                    "Commands can only be run from partitions that have\n" \
+                    "been mounted with the executable flag set. \n" \
+                    "Consequently, in order to run this script, ensure that\n" \
+                    "it is saved to an appropriate partition.", 
+                    "Warning about partitions",
+                    wx.OK | wx.ICON_ERROR)
+        msgExecFlagDlg.ShowModal()
+        msgExecFlagDlg.Destroy()
         outFileDlg = wx.FileDialog(self, _("Choose a filename to save to"),
             "", "", "*.*", wx.SAVE | wx.OVERWRITE_PROMPT)
         if outFileDlg.ShowModal() == wx.ID_OK:
             outFile = outFileDlg.GetPath()
             commandList = "#!/usr/bin/env bash\n"
             success = True
+
             for eachCommand in self.strCmdQueue:
                 commandList = commandList + eachCommand + "\n"
             try:
