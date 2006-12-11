@@ -8,7 +8,7 @@
 __all__ = []
 
 def get_xml(disc):
-    """Return vcdxbuild XML suitable for authoring the given disc.
+    """Return vcdxbuild XML suitable for authoring the given Disc.
     """
     xml = """<?xml version="1.0"?>
     <!DOCTYPE videocd PUBLIC "-//GNU/DTD VideoCD//EN"
@@ -18,13 +18,11 @@ def get_xml(disc):
     # format == vcd|svcd, version=1.0 (svcd) | 2.0 (vcd)
     assert disc.format in ['vcd', 'svcd']
     if disc.format == 'vcd':
-        version = "2.0"
+        xml += 'class="vcd" version="2.0">\n'
     elif disc.format == 'svcd':
-        version = "1.0"
-    
-    xml += 'class="%s" version="%s">\n' % (disc.format, version)
+        xml += 'class="svcd" version="1.0">\n'
 
-    if format == 'svcd':
+    if disc.format == 'svcd':
         xml += '<option name="update scan offsets" value="true" />'
 
     xml += """<info>
