@@ -572,6 +572,10 @@ class VideoOptions:
     tvsys = 'ntsc'
     # -full, -wide, or -panavision
     aspect = 'full'
+    # string 1 to 10
+    quality = "8"
+    # mpeg2enc or ffmpeg
+    encodingMethod = "mpeg2enc"
     # Additional command-line options
     addoptions = ""
     # Duration is unknown
@@ -598,6 +602,13 @@ class VideoOptions:
         strCommand += "-%s -%s -%s " % \
             (self.tvsys, self.format, self.aspect)
 
+        # Append quality
+        strCommand += "-quality %s " % self.quality
+
+        # Append encoding method if not default
+        if self.encodingMethod == "ffmpeg":
+            strCommand += "-ffmpeg "
+ 
         # Append other options
         if self.addoptions:
             strCommand += "%s " % self.addoptions
@@ -631,8 +642,9 @@ class VideoOptions:
         self.format = opts.format
         self.tvsys = opts.tvsys
         self.aspect = opts.aspect
+        self.quality = opts.quality
+        self.encodingMethod = opts.encodingMethod
         self.addoptions = opts.addoptions
-
 
     def VideoFileOK(self, panel):
         """Check the video options for any errors detectable before encoding"""
