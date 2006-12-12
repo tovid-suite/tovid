@@ -70,9 +70,32 @@ class Button:
         """
         self.attributes = {}
         if type(attributes) == dict:
+            self.set_attributes(attributes)
+                
+
+    def set_attributes(self, attributes=None, **kwargs):
+        """Set values for one or more Button attributes.
+        
+            attributes: Dictionary of attributes matching those in BUTTON_ATTRS
+            kwargs:     Set specific attributes by passing keyword arguments
+        
+        For example:
+        
+            >>> button.set_attributes({'x0': 10, 'y0': 15})
+            >>> button.set_attributes(x0=10, y0=10, x1=210, y1=60)
+
+        """
+        # TODO: Generalize/shorten this function so all XML-element classes
+        # (like Subtitle below) can use it. (base class?)
+        # Use attributes, if present
+        if type(attributes) == dict:
             for key, value in attributes.iteritems():
                 if key in BUTTON_ATTRS:
                     self.attributes[key] = value
+        # Override with provided keyword args
+        for key, value in kwargs.iteritems():
+            if key in BUTTON_ATTRS:
+                self.attributes[key] = value
 
 
 SUB_ATTRS = {
@@ -116,9 +139,8 @@ class Subtitle:
         """
         self.subtype = subtype
         self.attributes = {}
-        for key, value in attributes.iteritems():
-            if key in SUB_ATTRS[self.subtype]:
-                self.attributes[key] = value
+        if type(attributes) == dict:
+            self.set_attributes(attributes)
         self.buttons = []
 
     def add_buttons(self, buttons):
@@ -130,6 +152,24 @@ class Subtitle:
         """
         if self.subtype == 'spu':
             self.buttons.extend(buttons)
+
+    def set_attributes(self, attributes=None, **kwargs):
+        """Set values for one or more Subtitle attributes.
+        
+            attributes: Dictionary of attributes matching those in SUB_ATTRS
+            kwargs:     Set specific attributes by passing keyword arguments
+        
+        Use an underscore in place of hyphens in attribute names.
+        """
+        # Use attributes, if present
+        if type(attributes) == dict:
+            for key, value in attributes.iteritems():
+                if key in SUB_ATTRS[self.subtype]:
+                    self.attributes[key] = value
+        # Override with provided keyword args
+        for key, value in kwargs.iteritems():
+            if key in SUB_ATTRS[self.subtype]:
+                self.attributes[key] = value
 
 
 def get_xml(subtitle):

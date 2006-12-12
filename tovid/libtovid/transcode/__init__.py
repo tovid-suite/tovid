@@ -3,5 +3,4 @@
 
 __all__ = [\
     "encode",
-    "rip",
-    "subtitle"]
+    "rip"]
