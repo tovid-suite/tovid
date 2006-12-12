@@ -4,8 +4,8 @@
 """libtovid test script
 
 Execute this script to run tests on the modules in libtovid. These tests
-consist of executing each module standalone; it is presumed that each module
-to be tested contains at least the following:
+consist of executing each libtovid module standalone; it is presumed that
+each module to be tested contains at least the following:
 
     import unittest
     if __name__ == '__main__':
@@ -18,9 +18,12 @@ which runs unit tests, or:
         doctest.testmod(verbose=True)
 
 which does an automated verification of the docstrings in each module.
+
+NB -- You're going to get lots of output, so a >log.txt is advised.
 """
 
 import os
+import commands
 from glob import glob
 
 # Unit test modules
@@ -43,4 +46,8 @@ modules = mod_libtovid + mod_render + mod_author + mod_transcode
 
 for mod in modules:
     print "Testing: %s" % mod
-    os.system('python %s' % mod)
+    try:
+        print commands.getoutput('python %s' % mod)
+    except KeyboardInterrupt:
+        print "Test interrupted."
+        exit()
