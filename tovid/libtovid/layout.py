@@ -7,13 +7,10 @@
 """Note to developers:
 
 The layout submodule is changing fast. The video/menu/disc submodules have
-merged into this file (at least for now). I'm also considering separating
-dvdauthor.py and vcdimager.py, which will do _authoring_ based on the
-_layout_ classes defined here. I'm thinking of just moving this __init__.py
-to libtovid/layout.py, and eliminating the layout subdirectory.
+merged into this file, providing all disc-layout classes in one place.
 
 The classes here represent the merging of ideas from libtovid/__init__.py
-(the 0.30 target interface mockup) and libtovid/layout/dvdauthor.py, which
+(the 0.30 target interface mockup) and libtovid/author/dvdauthor.py, which
 are designed as a direct implementation of dvdauthor's XML structure.
 
 My goal is to end up with a more general disc-structuring API with simple
@@ -54,16 +51,15 @@ For multiple Titlesets, there'd need to be a top-level menu.
     titleset2.add_menu(menu2)
     disc.add_titleset(titleset2)
 
+Please direct comments to wapcaplet on the freenode.net IRC channel #tovid.
 """
 
-all = [\
+__all__ = [\
     'Disc',
     'Menu',
     'Video',
     'Group',
-    'Titleset',
-    'dvdauthor',
-    'vcdimager']
+    'Titleset']
 
 class Video:
     """A video title for inclusion on a video disc.
