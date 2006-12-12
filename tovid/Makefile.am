@@ -128,10 +128,10 @@ pyexecTRANSCODE_PYTHON = libtovid/transcode/*.py
 pyexecTRANSCODEdir = $(pyexecdir)/libtovid/transcode
 pyexecRENDER_PYTHON = libtovid/render/*.py
 pyexecRENDERdir = $(pyexecdir)/libtovid/render
-pyexecLAYOUT_PYTHON = libtovid/layout/*.py
-pyexecLAYOUTdir = $(pyexecdir)/libtovid/layout
-pyexecTEMPLATES_PYTHON = libtovid/templates/*.py
-pyexecTEMPLATESdir = $(pyexecdir)/libtovid/templates
+pyexecAUTHOR_PYTHON = libtovid/author/*.py
+pyexecAUTHORdir = $(pyexecdir)/libtovid/author
+pyexecTEMPLATE_PYTHON = libtovid/template/*.py
+pyexecTEMPLATEdir = $(pyexecdir)/libtovid/template
 pyexecGUI_PYTHON = libtovid/gui/*.py
 pyexecGUIdir = $(pyexecdir)/libtovid/gui
 
@@ -151,8 +151,8 @@ dist-hook:
 uninstall-hook:
 	rmdir $(pyexecTRANSCODEdir)
 	rmdir $(pyexecRENDERdir)
-	rmdir $(pyexecLAYOUTdir)
-	rmdir $(pyexecTEMPLATESdir)
+	rmdir $(pyexecAUTHORdir)
+	rmdir $(pyexecTEMPLATEdir)
 	rmdir $(pyexecGUIdir)
 	rmdir $(pyexecLIBTOVIDdir)
 
