@@ -2282,9 +2282,46 @@ class VideoPanel(wx.Panel):
         self.sizCLIOptions.Add(self.lblCLIOptions, 0, wx.EXPAND | wx.ALL, 8)
         self.sizCLIOptions.Add(self.txtCLIOptions, 1, wx.EXPAND | wx.ALL, 8)
 
+        #Combo boxes for extra options
+        self.lblQuality = wx.StaticText(self, wx.ID_ANY, "Quality: ")
+        self.cbQuality = wx.ComboBox(self, wx.ID_ANY, choices = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"], style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        self.cbQuality.SetToolTipString("Choose compression level: \n" \
+                                        "1 = Low quality but small files\n" \
+                                        "10 = High quality but large files")
+        wx.EVT_TEXT(self, self.cbQuality.GetId(), self.OnQualityChange)
+
+        self.cbQuality.SetValue("8")
+        self.lblQualityPlaceHolder = wx.StaticText(self, wx.ID_ANY, " ")
+
+        self.lblEncoding = wx.StaticText(self, wx.ID_ANY, "Encoding: ")
+        self.cbEncodingMethod = wx.ComboBox(self, wx.ID_ANY, choices = ["mpeg2enc", "ffmpeg"], style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        self.cbEncodingMethod.SetValue("mpeg2enc")
+        self.cbEncodingMethod.SetToolTipString("Choose encoding method: \n" \
+                                        "mpeg2enc - Generally a bit better image but slower to encode\n" \
+                                        "ffmpeg - Generally a bit worse image but faster to encode\n" \
+                                        "NB, at lower quality settings, ffmpeg may be better.")
+        wx.EVT_TEXT(self, self.cbEncodingMethod.GetId(), self.OnEncodingChange)
+        self.lblTypePlaceHolder = wx.StaticText(self, wx.ID_ANY, " ")
+
+        # Sizers for combo boxes
+        self.sizQuality = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizQuality.Add(self.lblQuality, 0, wx.EXPAND | wx.ALL)
+        self.sizQuality.Add(self.cbQuality, 0, wx.EXPAND | wx.ALL)
+        self.sizQuality.Add(self.lblQualityPlaceHolder, 1, wx.EXPAND | wx.ALL)
+
+        self.sizType = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizType.Add(self.lblEncoding, 0, wx.EXPAND | wx.ALL)
+        self.sizType.Add(self.cbEncodingMethod, 0, wx.EXPAND | wx.ALL)
+        self.sizType.Add(self.lblTypePlaceHolder, 1, wx.EXPAND | wx.ALL)
+
+        self.sizQualityType = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizQualityType.Add(self.sizQuality, 1, wx.EXPAND | wx.ALL)
+        self.sizQualityType.Add(self.sizType, 1, wx.EXPAND | wx.ALL)
+
         # Sizer to hold all encoding options
         self.sizEncOpts = wx.BoxSizer(wx.VERTICAL)
         self.sizEncOpts.Add(self.sizResAspect, 1, wx.EXPAND | wx.ALL)
+        self.sizEncOpts.Add(self.sizQualityType, 0, wx.EXPAND | wx.ALL)
         self.sizEncOpts.Add(self.sizCLIOptions, 0, wx.EXPAND | wx.ALL)
 
         # Button to preview the video
@@ -2302,6 +2339,7 @@ class VideoPanel(wx.Panel):
 
         # Video options heading
         self.txtHeading = HeadingText(self, wx.ID_ANY, "Video options")
+
 
         # Add controls to main vertical sizer
         self.sizMain = wx.BoxSizer(wx.VERTICAL)
@@ -2321,6 +2359,14 @@ class VideoPanel(wx.Panel):
     def OnAspect(self, evt):
         """Set aspect ratio based on radio button selection."""
         self.curOptions.aspect = util.ID_to_text('aspect', evt.GetInt())
+
+    def OnQualityChange(self, evt):
+        """Update quality options when the user changes the combobox."""
+        self.curOptions.quality = self.cbQuality.GetValue()
+
+    def OnEncodingChange(self, evt):
+        """Update encoding method when the user changes the combobox."""
+        self.curOptions.encodingMethod = self.cbEncodingMethod.GetValue()
 
     def OnCLIOptions(self, evt):
         """Update custom CLI options when the user edits the textbox."""
@@ -2350,6 +2396,8 @@ class VideoPanel(wx.Panel):
         self.txtInFile.SetLabel(self.curOptions.inFile)
         self.rbResolution.SetSelection(util.text_to_ID(self.curOptions.format))
         self.rbAspect.SetSelection(util.text_to_ID(self.curOptions.aspect))
+        self.cbQuality.SetValue(self.curOptions.quality)
+        self.cbEncodingMethod.SetValue(self.curOptions.encodingMethod)
         self.txtCLIOptions.SetValue(self.curOptions.addoptions)
 
     def GetOptions(self):
