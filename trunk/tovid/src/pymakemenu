@@ -7,7 +7,8 @@ __doc__ = \
 
 import sys
 from libtovid.opts import Option, OptionDict
-from libtovid.layout import Menu
+from libtovid.media import standard_media
+from libtovid.templates import *
 from libtovid import log
 
 # Dictionary of valid options with documentation
@@ -53,16 +54,6 @@ OPTION_DEFS = [\
             """Add the listed effects to the thumbnails.""")
 ]
 
-class Style (object):
-    """Contains style attributes, including font, color, and alignment."""
-    def __init__(self, font='helvetica', fontsize=12, textcolor='white',
-                 highlightcolor='green', selectcolor='red', align='center'):
-        self.font = font
-        self.fontsize = fontsize
-        self.textcolor = textcolor
-        self.highlightcolor = highlightcolor
-        self.selectcolor = selectcolor
-        self.align = align
 
 if __name__ == '__main__':
     """Create a Menu with provided options and generate it.
@@ -77,6 +68,9 @@ if __name__ == '__main__':
         print 'Please provide an output name (-out).'
         sys.exit()
     options.override(sys.argv[1:])
+    # Target MediaFile
+    target = standard_media(options['format'], options['tvsys'])
+    target.filename = options['out']
     # Create the style
     style = Style(options['font'],
                   options['fontsize'],
@@ -84,7 +78,7 @@ if __name__ == '__main__':
                   options['highlightcolor'],
                   options['selectcolor'],
                   options['align'])
-    # Create the menu
-    menu = Menu(options['format'], options['tvsys'], style,
-                options['titles'], options['thumbnails'])
+    menu = textmenu.TextMenu(target, options['titles'], style)
+    # Generate menu, saving to given output file
+    print "Generating TextMenu"
     menu.generate()
