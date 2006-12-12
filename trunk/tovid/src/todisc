@@ -525,14 +525,15 @@ while test $# -gt 0; do
             done
             ;;
         "-group" )
-            shift
-            get_listargs "$@"
+            usage_error "Sorry, -group option has been removed for now"
+#            shift
+#            get_listargs "$@"
 #            for f in  ${!ARGS_ARRAY[@]}; do
 #                group[f]="${ARGS_ARRAY[f]}"
 #            done
-            group="${ARGS_ARRAY[@]}"
-            GROUP=( "${GROUP[@]}" "$group" )
-            GROUPING=:
+#            group="${ARGS_ARRAY[@]}"
+#            GROUP=( "${GROUP[@]}" "$group" )
+#            GROUPING=:
             ;;
         "-titles" )
             shift
@@ -615,7 +616,7 @@ while test $# -gt 0; do
             ALIGN_ARGS=( ${ARGS_ARRAY[@]} )
             BUTTON_GRAVITY=${ALIGN_ARGS[0]}
             (( ${#ALIGN_ARGS[@]} > 1 )) && BUTTON_GEO=${ALIGN_ARGS[1]} && USER_GEO=:
-            XGEO=${BUTTON_GEO/x*}; YGEO=${BUTTON_GEO/*x}
+            $USER_GEO && XGEO=${BUTTON_GEO/x*} && YGEO=${BUTTON_GEO/*x}
             USER_GRAVITY=:
             ;;
         # Menu control options
