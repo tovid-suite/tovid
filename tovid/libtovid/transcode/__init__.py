@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# __init__.py
+# transcode/__init__.py
 
 __all__ = [\
     "encode",
