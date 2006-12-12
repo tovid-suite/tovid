@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# deptest.py
+# test_deps.py
 
 """Unit test for deps.py"""
 
