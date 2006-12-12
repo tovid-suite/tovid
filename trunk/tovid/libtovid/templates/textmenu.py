@@ -8,7 +8,7 @@ from libtovid import deps
 from libtovid import log
 from libtovid import subtitle
 
-class TextMenu (object):
+class TextMenu:
     """Simple menu with selectable text titles. For now, basically a clone
     of the classic 'makemenu' output.
     """
