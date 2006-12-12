@@ -38,7 +38,7 @@ __all__ = [\
     'author',
     'render',
     'template',
-    'tests',
+    'test',
     'transcode',
     # .py files
     'cli',
