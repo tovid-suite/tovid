@@ -133,6 +133,7 @@ class Command:
         KeyboardInterrupt exception).
         """
         if not isinstance(self.proc, Popen):
+            print "**** Can't wait(): Command is not running"
             return
         try:
             self.proc.wait()
@@ -175,7 +176,7 @@ class Pipe:
         for cmd in commands:
             self.commands.append(cmd)
 
-    def run(self, capture=False):
+    def run(self, capture=False, background=False):
         """Run all Commands in the pipeline, doing appropriate stream
         redirection for piping.
         
@@ -197,6 +198,9 @@ class Pipe:
                     cmd.run_redir(prev_stdout, PIPE)
                 else:
                     cmd.run_redir(prev_stdout, None)
+        # Wait for execution to finish?
+        if not background:
+            cmd.wait()
 
     def get_output(self):
         """Wait for the pipeline to finish executing, and return a string

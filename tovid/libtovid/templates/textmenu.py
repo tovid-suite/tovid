@@ -1,12 +1,12 @@
 #! /usr/bin/env python
 # textmenu.py
 
-__all__ = ['generate']
+__all__ = ['TextMenu']
 
 from libtovid.cli import Command, Pipe
 from libtovid import deps
 from libtovid import log
-
+from libtovid import subtitle
 
 class TextMenu (object):
     """Simple menu with selectable text titles. For now, basically a clone
@@ -14,24 +14,37 @@ class TextMenu (object):
     """
     def __init__(self, target, titles, style):
         deps.require('convert composite ppmtoy4m sox ffmpeg mpeg2enc')
-        basename = target.filename
-        # TODO: Store intermediate images in a temp folder
-        self.bg_canvas = basename + '.bg_canvas.png'
-        self.fg_canvas = basename + '.fg_canvas.png'
-        self.fg_highlight = basename + '.fg_highlight.png'
-        self.fg_selection = basename + '.fg_selection.png'
-        print "Creating a menu with %s titles" % len(titles)
-        self.build_reusables(target, titles)
-        self.draw_background_canvas(target)
-        self.draw_background_layer(target, style)
-        self.draw_highlight_layer(target, style)
-        self.draw_selection_layer(target, style)
-        self.gen_video(target)
-        self.gen_audio(target)
-        self.gen_mpeg(target)
-        #self.mux_subtitles(target)
+        self.target = target
+        self.titles = titles
+        self.style = style
+        self.basename = self.target.filename
+        self.bg_canvas = self.basename + '.bg_canvas.png'
+        self.fg_canvas = self.basename + '.fg_canvas.png'
+        self.fg_highlight = self.basename + '.fg_highlight.png'
+        self.fg_selection = self.basename + '.fg_selection.png'
 
-    def build_reusables(self, target, titles):
+    def generate(self):
+        # TODO: Store intermediate images in a temp folder
+        print "Creating a menu with %s titles" % len(self.titles)
+        self.build_reusables()
+        print "Drawing a background canvas..."
+        self.draw_background_canvas()
+        print "Drawing the background layer..."
+        self.draw_background_layer()
+        print "Drawing the highlight layer..."
+        self.draw_highlight_layer()
+        print "Drawing the selection layer..."
+        self.draw_selection_layer()
+        print "Generating the video stream..."
+        self.gen_video()
+        print "Generating the audio stream..."
+        self.gen_audio()
+        print "Multiplexing audio and video streams..."
+        self.gen_mpeg()
+        print "Multiplexing subtitles into .mpg..."
+        self.mux_subtitles()
+
+    def build_reusables(self):
         """Assemble some re-usable ImageMagick command snippets.
         For now, just create an ImageMagick draw command for all title text
         for placing labels and highlights.
@@ -42,12 +55,12 @@ class TextMenu (object):
         titlenum = 1        # Title number (for labeling)
         labels = ''
         buttons = ''
-        for title in titles:
+        for title in self.titles:
             print "Adding '%s'" % title
             # TODO: Escape special characters in title
             
             # For VCD, number the titles
-            if target.format == 'vcd':
+            if self.target.format == 'vcd':
                 labels += " text 0,%s '%s. %s' " % (y, titlenum, title)
             # Others use title string alone
             else:
@@ -61,32 +74,33 @@ class TextMenu (object):
         self.im_labels = labels
         self.im_buttons = buttons
     
-    def draw_background_canvas(self, target):
+    def draw_background_canvas(self):
         """Draw background canvas."""
         # Generate default blue-black gradient background
         # TODO: Implement -background
         convert = Command('convert',
-            '-size', '%sx%s' % target.expand,
+            '-size', '%sx%s' % self.target.expand,
             'gradient:blue-black',
             '-gravity', 'center',
             '-matte', self.bg_canvas)
+        print "Running:", convert
         convert.run()
     
-    def draw_background_layer(self, target, style):
+    def draw_background_layer(self):
         """Draw the background layer for the menu, including static title text.
         """
         # Draw text titles on a transparent background.
         convert = Command('convert',
-            ' -size', '%sx%s' % target.scale,
-            'xc:none', '-antialias',
-            '-font', style.font,
-            '-pointsize', style.fontsize,
-            ' -fill', style.textcolor,
+            '-size', '%sx%s' % self.target.scale,
+            'xc:none', '+antialias',
+            '-font', self.style.font,
+            '-pointsize', self.style.fontsize,
+            '-fill', self.style.textcolor,
             '-stroke', 'black',
             '-strokewidth', 3,
-            '-draw', 'gravity %s %s' % (style.align, self.im_labels),
+            '-draw', 'gravity %s %s' % (self.style.align, self.im_labels),
             '-stroke', 'none',
-            '-draw', 'gravity %s %s' % (style.align, self.im_labels),
+            '-draw', 'gravity %s %s' % (self.style.align, self.im_labels),
             self.fg_canvas)
         convert.run()
         # Composite text over background
@@ -94,20 +108,21 @@ class TextMenu (object):
             '-compose', 'Over',
             '-gravity', 'center',
             self.fg_canvas, self.bg_canvas,
-            '-depth', 8, '%s.ppm' % target.filename)
+            '-depth', 8, '%s.ppm' % self.basename)
+        print "Running:", composite
         composite.run()
     
-    def draw_highlight_layer(self, target, style):
+    def draw_highlight_layer(self):
         """Draw menu highlight layer, suitable for multiplexing."""
         # Create text layer (at safe-area size)
         convert = Command('convert',
-            '-size', '%sx%s' % target.scale,
-            'xc:none', '-antialias',
-            '-font', style.font,
+            '-size', '%sx%s' % self.target.scale,
+            'xc:none', '+antialias',
+            '-font', self.style.font,
             '-weight', 'bold',
-            '-pointsize', style.fontsize,
-            '-fill', style.highlightcolor,
-            '-draw', 'gravity %s %s' % (style.align, self.im_buttons),
+            '-pointsize', self.style.fontsize,
+            '-fill', self.style.highlightcolor,
+            '-draw', 'gravity %s %s' % (self.style.align, self.im_buttons),
             '-type', 'Palette', '-colors', 3,
             self.fg_highlight)
         convert.run()
@@ -116,20 +131,21 @@ class TextMenu (object):
             '-compose', 'Src',
             '-gravity', 'center',
             self.fg_highlight, self.bg_canvas,
-            '%s.hi.png' % target.filename)
+            '%s.hi.png' % self.basename)
+        print "Running:", composite
         composite.run()
     
-    def draw_selection_layer(self, target, style):
+    def draw_selection_layer(self):
         """Draw menu selections on a transparent background."""
         # Create text layer (at safe-area size)
         convert = Command('convert',
-            '-size', '%sx%s' % target.scale,
-            'xc:none', '-antialias',
-            '-font', style.font,
+            '-size', '%sx%s' % self.target.scale,
+            'xc:none', '+antialias',
+            '-font', self.style.font,
             '-weight', 'bold',
-            '-pointsize', style.fontsize,
-            '-fill', style.selectcolor,
-            '-draw', 'gravity %s %s' % (style.align, self.im_buttons),
+            '-pointsize', self.style.fontsize,
+            '-fill', self.style.selectcolor,
+            '-draw', 'gravity %s %s' % (self.style.align, self.im_buttons),
             '-type', 'Palette', '-colors', 3,
             self.fg_selection)
         convert.run()
@@ -138,107 +154,96 @@ class TextMenu (object):
             '-compose', 'Src',
             '-gravity', 'center',
             self.fg_selection, self.bg_canvas,
-            '%s.sel.png' % target.filename)
+            '%s.sel.png' % self.basename)
+        print "Running:", composite
         composite.run()
     
-    def gen_video(self, target):
+    def gen_video(self):
         """Generate a video stream (mpeg1/2) from the menu background image.
         """
         # ppmtoy4m part
         ppmtoy4m = Command('ppmtoy4m', '-S', '420mpeg2')
-        if target.tvsys == 'ntsc':
+        if self.target.tvsys == 'ntsc':
             ppmtoy4m.add('-A', '10:11', '-F', '30000:1001')
         else:
             ppmtoy4m.add('-A', '59:54', '-F', '25:1')
         # TODO: Remove hardcoded frame count
         ppmtoy4m.add('-n', 90)
-        ppmtoy4m.add('-r', '%s.ppm' % target.filename)
+        ppmtoy4m.add('-r', '%s.ppm' % self.basename)
     
         # mpeg2enc part
         mpeg2enc = Command('mpeg2enc', '-a', 2)
         # PAL/NTSC
-        if target.tvsys == 'ntsc':
+        if self.target.tvsys == 'ntsc':
             mpeg2enc.add('-F', 4, '-n', 'n')
         else:
             mpeg2enc.add('-F', 3, '-n', 'p')
         # Use correct format flags and filename extension
-        if target.format == 'vcd':
-            self.vstream = '%s.m1v' % target.filename
+        if self.target.format == 'vcd':
+            self.vstream = '%s.m1v' % self.basename
             mpeg2enc.add('-f', 1)
         else:
-            self.vstream = '%s.m2v' % target.filename
-            if target.format == 'dvd':
+            self.vstream = '%s.m2v' % self.basename
+            if self.target.format == 'dvd':
                 mpeg2enc.add('-f', 8)
-            elif target.format == 'svcd':
+            elif self.target.format == 'svcd':
                 mpeg2enc.add('-f', 4)
         mpeg2enc.add('-o', self.vstream)
         pipe = Pipe(ppmtoy4m, mpeg2enc)
+        print "Running:", pipe
         pipe.run()
     
-    def gen_audio(self, target):
+    def gen_audio(self):
         """Generate an audio stream (mp2/ac3) from the given audio file
         (or generate silence instead).
         """
-        if target.format in ['vcd', 'svcd']:
-            self.astream = "%s.mp2" % target.filename
+        if self.target.format in ['vcd', 'svcd']:
+            self.astream = "%s.mp2" % self.basename
         else:
-            self.astream = "%s.ac3" % target.filename
+            self.astream = "%s.ac3" % self.basename
         ffmpeg = Command('ffmpeg')
-        # TODO: Fix this
-        # If audio file was provided, encode it
-        #if self.options['audio']:
-        #    cmd += ' -i "%s"' % self.options['audio']
-        # Otherwise, generate 4-second silence
-        #else:
-        #    cmd += ' -f s16le -i /dev/zero -t 4'
+        # TODO: Support including an audio stream.
+        # For now, generate 4-second silence
+        ffmpeg.add('-f', 's16le',
+                   '-i', '/dev/zero',
+                   '-t', 4)
         ffmpeg.add('-ac', 2, '-ab', 224,
-                   '-ar', target.samprate,
-                   '-acodec', target.acodec,
+                   '-ar', self.target.samprate,
+                   '-acodec', self.target.acodec,
                    '-y',
                    self.astream)
+        print "Running:", ffmpeg
         ffmpeg.run()
     
-    def gen_mpeg(self, target):
+    def gen_mpeg(self):
         """Multiplex audio and video streams to create an mpeg.
         """
-        mplex = Command('mplex', '-o', '%s.temp.mpg' % target.filename)
+        mplex = Command('mplex', '-o', '%s.mpg' % self.basename)
         # Format flags
-        if target.format == 'vcd':
+        if self.target.format == 'vcd':
             mplex.add('-f', 1)
         else:
             # Variable bitrate
             mplex.add('-V')
-            if target.format == 'dvd':
+            if self.target.format == 'dvd':
                 mplex.add('-f', 8)
-            elif target.format == 'svcd':
+            elif self.target.format == 'svcd':
                 mplex.add('-f', 4)
         mplex.add(self.astream, self.vstream)
+        print "Running:", mplex
         mplex.run()
     
-    def mux_subtitles(self, target):
+    def mux_subtitles(self):
         """Multiplex the output video with highlight and selection
         subtitles, so the resulting menu can be navigated.
         """
-        xml =  '<subpictures>\n'
-        xml += '  <stream>\n'
-        xml += '  <spu force="yes" start="00:00:00.00"\n'
-        xml += '       highlight="%s.hi.png"\n' % target.filename
-        xml += '       select="%s.sel.png"\n' % target.filename
-        xml += '       autooutline="infer">\n'
-        xml += '  </spu>\n'
-        xml += '  </stream>\n'
-        xml += '</subpictures>\n'
-        try:
-            xmlfile = open('%s.xml' % target.filename, 'w')
-        except:
-            log.error('Could not open file "%s.xml"' % target.filename)
-        else:
-            xmlfile.write(xml)
-            xmlfile.close()
-    
-        # TODO: Make Command class (or an auxiliary class) support redirection
-        # (or, even better, do it in subtitles.py so this function can be
-        # shorter)
-        spumux = 'spumux "%s.xml" < "%s.temp.mpg" > "%s.mpg"' % \
-                (target.filename, target.filename, target.filename)
-        # TODO: Run spumux command
+        subs = subtitle.Subtitle('spu')
+        subs.set_attributes(
+            force='yes',
+            start=0,
+            highlight='%s.hi.png' % self.basename,
+            select='%s.sel.png' % self.basename,
+            autooutline='infer')
+        print "Running spumux"
+        subtitle.spumux(subs, '%s.mpg' % self.basename)
+
