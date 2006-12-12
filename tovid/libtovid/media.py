@@ -43,7 +43,7 @@ from libtovid import standard
 from libtovid.utils import ratio_to_float
 
 
-class MediaFile (object):
+class MediaFile:
     """A multimedia video file, and its vital statistics.
     """
     def __init__(self, filename='', format='dvd', tvsys='ntsc'):
