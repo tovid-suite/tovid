@@ -116,7 +116,7 @@ import cairo
 import Image      # for JPG export
 import ImageColor # for getrgb, getcolor
 
-class Style (object):
+class Style:
     """Stores style attributes of drawn objects.
     """
     def __init__(self):
@@ -147,7 +147,7 @@ class Style (object):
             if hasattr(self, name):
                 setattr(self, name, value)
 
-class Drawing (object):
+class Drawing:
     """A Cairo image context, ready to be drawn.
 
     Drawing functions are mostly identical to their MVG counterparts, e.g.
