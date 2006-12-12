@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# __init__.py
+# layout.py
 
 """This module provides an interface for structuring the content of video discs.
 """
