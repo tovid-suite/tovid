@@ -35,14 +35,15 @@
 __all__ = [\
     # Subdirectories
     'gui',
-    'layout',
+    'author',
     'render',
-    'templates',
+    'template',
     'tests',
     'transcode',
     # .py files
     'cli',
     'deps',
+    'layout'
     'media',
     'opts',
     'standard',
