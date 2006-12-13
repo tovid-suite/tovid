@@ -525,15 +525,16 @@ while test $# -gt 0; do
             done
             ;;
         "-group" )
-            usage_error "Sorry, -group option has been removed for now"
-#            shift
-#            get_listargs "$@"
-#            for f in  ${!ARGS_ARRAY[@]}; do
-#                group[f]="${ARGS_ARRAY[f]}"
-#            done
-#            group="${ARGS_ARRAY[@]}"
-#            GROUP=( "${GROUP[@]}" "$group" )
-#            GROUPING=:
+            shift
+            get_listargs "$@"
+            unset group groupkey x
+            for ((i=1; i<${#ARGS_ARRAY[@]}; i++)); do
+                grp[x++]="$(abspath "${ARGS_ARRAY[i]}")"
+            done
+            group="$(for ((b=0; b<${#grp[@]}; b++)); do echo -e "${grp[b]}"; done)"
+            groupkey=$(( ${ARGS_ARRAY[0]} - 1))
+            GROUP[groupkey]="$group"
+            GROUPING=:
             ;;
         "-titles" )
             shift
@@ -1042,26 +1043,11 @@ for i in "${FILES[@]}"; do
     IN_FILES=("${IN_FILES[@]}" "$(abspath "$i")")
     echo "Adding: $i"
 done
+
 V_TOTAL=${#IN_FILES[@]}
 NUM_FILES=$((V_TOTAL - 1))
+
 # dvdauthor stuff
-# add files that belong in groups
-for g in ${!GROUP[@]}; do
-    # find out which video number the grouping is for by getting "key"
-    key="$(awk '{print $1}' <<< "${GROUP[g]}")"
-#    echo "key is $key" FIXME
-    # the add2group array only contains videos for "key"(s) specified
-    add2group[key-1]="$(awk '{ $1 = ""; print }' <<< ${GROUP[g]})"
-done
-# get abspath of the new group videos that will be added to the xml
-for i in ${!add2group[@]}; do
-    for j in ${add2group[i]}; do
-        if [[ -n $j ]]; then
-            ADD2GROUP[i]=""${ADD2GROUP[i]}" $(abspath "$j")"
-        fi
-    done
-done
-# if montage gravity is south, move menu-title to north; east west need +45+45
 [[ $BUTTON_GRAVITY = *south* ]] && TITLE_GRAVITY=north
 if [[ $BUTTON_GRAVITY = *east* || $BUTTON_GRAVITY = *west* ]]; then
     ! $USER_GEO &&  XGEO=45 && YGEO=45
@@ -2877,16 +2863,16 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
     if $AUDIOLANG; then
         echo "${VOB_PRE[i]}"
     fi
-    if ! [[ ${add2group[i]} ]]; then
+    if ! [[ ${GROUP[i]} ]]; then
         echo -ne "        <vob file=\"$REAL_WORK_DIR/$i.mpg\""
         echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
     else
         echo -e "        <vob file=\"$REAL_WORK_DIR/$i.mpg\"/>"
     fi
-    if [[ ${ADD2GROUP[i]} ]]; then
-        for f in ${ADD2GROUP[i]}; do
+    if [[ ${GROUP[i]} ]]; then
+        while read f; do
             echo -e "        <vob file=\"$f\"/>"
-        done
+        done <<< "${GROUP[i]}"
     fi
     if $CHAIN_VIDEOS; then
         if [ "${POST_PLAY[i]}" = "chain" ]; then
