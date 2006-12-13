@@ -8,7 +8,8 @@ __doc__ = \
 
 import sys
 from libtovid.opts import Option, OptionDict
-from libtovid.layout.disc import Disc
+from libtovid.author import dvdauthor, vcdimager
+from libtovid.layout import Disc
 
 # List of valid options with documentation
 OPTION_DEFS = [
@@ -36,6 +37,9 @@ if __name__ == '__main__':
         sys.exit()
 
     options.override(sys.argv[1:])
-    
+    # TODO: Fix this. May need to add more OPTION_DEFS
     disc = Disc(args)
-    disc.generate()
+    if options['format'] == 'dvd':
+        dvdauthor.get_xml(disc)
+    else:
+        vcdimager.get_xml(disc)
