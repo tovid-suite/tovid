@@ -10,6 +10,7 @@ for menu generation, and perhaps one day also for disc layout or video encoding 
 
 __all__ = [\
     'textmenu',
+    'thumbmenu',
     'Style']
 
 class Style:

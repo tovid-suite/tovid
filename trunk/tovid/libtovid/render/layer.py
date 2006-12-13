@@ -273,7 +273,8 @@ class VideoClip (Layer):
     def rip_frames(self, start, end):
         """Rip frames from the video file, from start to end frames."""
         print "VideoClip: Ripping frames %s to %s" % (start, end)
-        self.frame_files = rip.rip_frames(self.mediafile, '/tmp', [start, end])
+        outdir = '/tmp/%s_frames' % self.filename
+        self.frame_files = rip.rip_frames(self.mediafile, outdir, [start, end])
 
     def draw(self, drawing, frame=1):
         """Draw ripped video frames to the given drawing. For now, it's
@@ -530,7 +531,7 @@ class Thumb (Layer):
 
 class ThumbGrid (Layer):
     """A rectangular array of thumbnail images or videos."""
-    def __init__(self, files, (width, height)=(600, 400),
+    def __init__(self, files, titles=None, (width, height)=(600, 400),
                  (columns, rows)=(0, 0), aspect=(4,3)):
         """Create a grid of thumbnail images or videos from a list of files,
         fitting in a space no larger than the given size, with the given number
@@ -538,6 +539,10 @@ class ThumbGrid (Layer):
         (default).
         """
         assert files != []
+        if titles:
+            assert len(files) == len(titles)
+        else:
+            titles = files
         Layer.__init__(self)
         self.size = (width, height)
         # Auto-dimension (using desired rows/columns, if given)
@@ -557,9 +562,9 @@ class ThumbGrid (Layer):
                 positions.append((x, y))
 
         # Add Thumb sublayers
-        for file, position in zip(files, positions):
+        for file, title, position in zip(files, titles, positions):
             title = os.path.basename(file)
-            self.add_sublayer(Thumb(file, thumbsize), position)
+            self.add_sublayer(Thumb(file, thumbsize, (0, 0), title), position)
 
     def _fit_items(self, num_items, columns, rows, aspect=(4, 3)):
         # Both fixed, nothing to calculate

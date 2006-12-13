@@ -40,6 +40,9 @@ cannot find dependencies. See help(deps.require) or keep reading.
 
 """
 
+__all__ = [\
+    'require']
+
 import subprocess
 import textwrap
 
