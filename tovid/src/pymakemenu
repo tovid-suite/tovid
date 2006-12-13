@@ -8,7 +8,7 @@ __doc__ = \
 import sys
 from libtovid.opts import Option, OptionDict
 from libtovid.media import standard_media
-from libtovid.templates import *
+from libtovid.template import Style, textmenu, thumbmenu
 from libtovid import log
 
 # Dictionary of valid options with documentation
@@ -45,13 +45,10 @@ OPTION_DEFS = [\
     Option('thumbnails', 'FILE [, FILE ...]', [],
         """Create thumbnails of the provided list of video files, which
         should correspond to the given -titles list."""),
-    Option('choices', '[list|thumbnails]', 'list',
-            """Display links as a list of titles, or as a grid of labeled
-            thumbnail videos."""),
     Option('border', 'NUM', '0',
-            """Add a border of NUM pixels around thumbnails."""),
+        """Add a border of NUM pixels around thumbnails."""),
     Option('effects', 'shadow|round|glass [, ...]', [],
-            """Add the listed effects to the thumbnails.""")
+        """Add the listed effects to the thumbnails.""")
 ]
 
 
@@ -78,7 +75,9 @@ if __name__ == '__main__':
                   options['highlightcolor'],
                   options['selectcolor'],
                   options['align'])
-    menu = textmenu.TextMenu(target, options['titles'], style)
-    # Generate menu, saving to given output file
-    print "Generating TextMenu"
+    if options['thumbnails'] != []:
+        menu = thumbmenu.ThumbMenu(target, options['thumbnails'],
+                                   options['titles'], style)
+    else:
+        menu = textmenu.TextMenu(target, options['titles'], style)
     menu.generate()

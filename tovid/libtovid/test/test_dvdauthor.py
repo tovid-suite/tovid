@@ -3,7 +3,7 @@
 # test_dvdauthor.py
 
 import unittest
-from libtovid.layout import dvdauthor
+from libtovid.author import dvdauthor
 
 class TestDvdauthor(unittest.TestCase):
     """Test the pydvdauthor module"""
