@@ -18,14 +18,14 @@ output on standard output, or capture it in a string variable.
 For example:
 
     >>> echo = Command('echo', "Hello world")
-    >>> echo.run()
+    >>> echo.run()                                # doctest: +SKIP
     Hello world
 
 Commands may be connected together with pipes:
 
     >>> sed = Command('sed', 's/world/nurse/')
     >>> pipe = Pipe(echo, sed)
-    >>> pipe.run()
+    >>> pipe.run()                                # doctest: +SKIP
     Hello nurse
 
 Command output may be captured and retrieved later with get_output():
@@ -36,7 +36,9 @@ Command output may be captured and retrieved later with get_output():
 
 """
 # Note: Some of the run() tests above will fail doctest.testmod(), since output
-# from Command subprocesses is not seen as real output by doctest. Fix this?
+# from Command subprocesses is not seen as real output by doctest. The current
+# workaround is to use the "doctest: +SKIP" directive (new in python 2.5).
+# For other directives see http://www.python.org/doc/lib/doctest-options.html
 
 __all__ = [\
     'Command',
@@ -219,10 +221,12 @@ def _enc_arg(arg):
     """Quote an argument for proper handling of special shell characters.
     Don't quote unless necessary. For example:
 
-        >>> print _enc_arg("['&&']")
-        '['\''&&'\'']'
         >>> print _enc_arg("spam")
-        foo
+        spam
+        >>> print _enc_arg("spam & eggs")
+        'spam & eggs'
+        >>> print _enc_arg("['&&']")
+        '['\\''&&'\\'']'
     
     This is used internally by Command; you'd only need this if you're running
     shell programs without using the Command class.
