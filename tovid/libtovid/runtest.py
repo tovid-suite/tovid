@@ -42,7 +42,7 @@ mod_libtovid = [\
 mod_author = glob('author/*.py')
 mod_render = glob('render/*.py')
 mod_transcode = glob('transcode/*.py')
-modules = mod_libtovid + mod_render + mod_author + mod_transcode
+modules = mod_test + mod_libtovid + mod_author + mod_render + mod_transcode
 
 for mod in modules:
     print "Testing: %s" % mod
