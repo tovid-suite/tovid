@@ -11,18 +11,18 @@ ME="[todisc]:"
 #
 #
 # Copyright (C) 2005 tovid.org <http://www.tovid.org>
-# 
-# This program is free software; you can redistribute it and/or 
-# modify it under the terms of the GNU General Public License 
-# as published by the Free Software Foundation; either 
-# version 2 of the License, or (at your option) any later 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
 # version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
@@ -49,7 +49,7 @@ Usage:
       -files File1.mpg File2.mpg ... \\\\
       -titles "Title 1" "Title 2" ... \\\\
       -out OUT_PREFIX
-Input files must be MPEG, and the number of -files and -titles must be equal. 
+Input files must be MPEG, and the number of -files and -titles must be equal.
 See the todisc manual page ('man todisc') for additional documentation.
 
 EOF`
@@ -453,7 +453,7 @@ function get_line_count()
 {
 awk 'END{print NR}' "$LOG_FILE"
 }
- 
+
 function check_stall()
 {
     PIDOF_TRANSCODE=$(</tmp/tcode.pid)
@@ -651,7 +651,7 @@ while test $# -gt 0; do
         "-chain-videos" )
             shift
             get_listargs "$@"
-            chains_in="${ARGS_ARRAY[@]}" 
+            chains_in="${ARGS_ARRAY[@]}"
             post_play=${chains_in//,/ }
             CHAIN_VIDEOS=:
             ;;
@@ -787,7 +787,7 @@ while test $# -gt 0; do
             unset CHAPTERS
             shift
             get_listargs "$@"
-            CHAPTERS="${ARGS_ARRAY[@]}" 
+            CHAPTERS="${ARGS_ARRAY[@]}"
             CHAPTERS=( ${CHAPTERS//,/ } )
             ;;
         "-subtitles" )
@@ -916,7 +916,7 @@ if ! $SHOWCASE; then
         val=${#TITLES[i]}
         [ -z "$MAX_CHARS" ] || ((val > MAX_CHARS)) && MAX_CHARS=$val && key=$i
     done
-    if test ${#TITLES[@]} -gt 6 && test $MAX_CHARS -gt 16 ; then 
+    if test ${#TITLES[@]} -gt 6 && test $MAX_CHARS -gt 16 ; then
         yecho
         yecho "WARNING! Some titles are longer than 16 characters; they may be chopped off."
         yecho
@@ -927,7 +927,7 @@ fi
 # if a multiline title, then make sure all titles have 2 lines #FIXME
 # haven't figured out how to get mulitline title to dispaly using -title yet though
 #if ! $SHOWCASE; then
-#    for i in ${!TITLES[@]}; do 
+#    for i in ${!TITLES[@]}; do
 #        if [[ ${TITLES[i]} = *\n* ]]; then
 #            ML=true
 #        fi
@@ -1009,7 +1009,7 @@ if [[ -n $BACKGROUND ]]; then
     fi
 fi
 # if $SHOWCASE, find out if using SHOWCASE_VIDEO or SHOWCASE_IMG or NO_SC_THUMB
-if $SHOWCASE; then 
+if $SHOWCASE; then
     if [[ -n ${SHOWCASE_FILE[@]} ]]; then
         check_filetype "${SHOWCASE_FILE[@]}"
         if [[ $TYPE = image ]]; then
@@ -1051,7 +1051,7 @@ NUM_FILES=$((V_TOTAL - 1))
 [[ $BUTTON_GRAVITY = *south* ]] && TITLE_GRAVITY=north
 if [[ $BUTTON_GRAVITY = *east* || $BUTTON_GRAVITY = *west* ]]; then
     ! $USER_GEO &&  XGEO=45 && YGEO=45
-fi 
+fi
 # make an array of possible vars for dvdauthor post calls
 if $CHAIN_VIDEOS; then
     if [ -z "$post_play" ]; then
@@ -1093,7 +1093,7 @@ if [[ $SUB_MENU &&  ${#FILES[@]} -ne ${#CHAPTERS[@]} &&  ${#CHAPTERS[@]} -ne 1 ]
     usage_error "Please give the same number of submenu audios as videos.
     You gave ${#FILES[@]} video files and ${#CHAPTERS[@]} chapter values"
 fi
-# find out longest chapter value (number of chapters) 
+# find out longest chapter value (number of chapters)
 if $SUB_MENU; then
     for ((i=0; i<${#CHAPTERS[@]}; i++)); do
         chapt_val=${CHAPTERS[i]}
@@ -1175,7 +1175,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
 done
 # var for dcdemux and the navigation log
 #TCDEMUX_MODE="-M 0"
-echo 
+echo
 echo "Verifying that input files are video files"
 for ((i=0; i<=NUM_FILES; i++)); do
     IN_FILE="${IN_FILES[i]}"
@@ -1189,7 +1189,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
         usage_error "Sorry, $IN_FILE does not exist"
     fi
 done
-echo        
+echo
 ##############################################################################
 # Font defaults
 ##############################################################################
@@ -1630,7 +1630,7 @@ if test "$THUMB_SHAPE" = "normal"; then
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
     # TODO (if desired): move this 'sed' line to a separate function for
     # cleaning up excess spaces in a multi-line command.
-    #    sed 's/    */ /g'|sed -e "s/^ *//" 
+    #    sed 's/    */ /g'|sed -e "s/^ *//"
 
 elif test "$THUMB_SHAPE" = "oval"; then
     THUMB_MASK="$WORK_DIR/oval_mask.png"
@@ -1715,7 +1715,7 @@ if $SHOWCASE; then
         echo "Running "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}"" \
         |fold -bs >> "$LOG_FILE"
         "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}" 2> /dev/null
-        
+
         # find out dimension of the thumb title png
         TT_DIM=( ${TT_DIM[@]} $(identify "$WORK_DIR/thumb_title${i}.png"|awk '{print $3}') )
         # get widest png for use later for alignment use
@@ -1755,7 +1755,7 @@ if $SHOWCASE; then
             [[ $offsets2 ]] && offsets2="$TEXT_Y_START $offsets2"
             tt_dim2=$(running_total <<< $offsets2)
         fi
-        offsets1="$TEXT_Y_START $offsets1"    
+        offsets1="$TEXT_Y_START $offsets1"
         tt_dim1=$(running_total <<< $offsets1)
         tt_dim="$tt_dim1 $tt_dim2"
         last_title=$(wc -w <<< "$tt_dim1")
@@ -1797,7 +1797,7 @@ if $SHOWCASE; then
 
         SHOWCASE_THUMB_PAGES[i]="-page ${SHOWCASE_THUMB_PAGES_ARRAY[i]}"
         THUMBTITLES_ARRAY[i]="-page ${SHOWCASE_TITLES_ARRAY[i]}"
-    done 
+    done
 fi
 if $MIST; then
     echo
@@ -1892,7 +1892,7 @@ if [ $IMG_FMT = "jpg" ]; then
 elif [ $IMG_FMT = "png" ]; then
     EXPORT="-y im -F png"
 fi
-    
+
 # create the preview images
 if ! $NO_THUMBS; then
     for ((i=0; i<=NUM_FILES; i++)) ; do
@@ -1901,10 +1901,10 @@ if ! $NO_THUMBS; then
             NAVSEEK[i]="--nav_seek "$WORK_DIR/nav${i}_log""
             NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
             run_navseek()
-            {   
+            {
                 yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
                "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "$WORK_DIR/nav${i}_log"
-            }   
+            }
 
             run_navseek &
             NS_PID="$!"
@@ -1920,7 +1920,7 @@ if ! $NO_THUMBS; then
             echo
             echo "[$i of $NUM_FILES] Seeking to ${SEEK_VAL[i]} seconds in ${IN_FILES[i]}"
         fi
-        
+
         TRANSCODE_CMD=(transcode -q 1 --write_pid /tmp/tcode.pid -i "${IN_FILES[i]}" \
         -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + 1)) ${NAVSEEK[i]} \
         -o $WORK_DIR/pics/$i/ -f 29.970  -Z $THUMB_SIZE $EXPORT)
@@ -1941,7 +1941,7 @@ if ! $NO_THUMBS; then
         VOUT="png:z=7"; FRAMES=30
         FRAME_SIZE=$THUMB_SIZE
         D=2
-        
+
         if [ "$SC_FRAMESTYLE" = "glass" ]; then
             MPLAYER_SEEK_VAL=${SEEK_VAL[i]}
             get_framed_pics "${IN_FILES[i]}"  >> "$LOG_FILE" 2>&1
@@ -1961,7 +1961,7 @@ if ! $NO_THUMBS; then
                 run_transcode &
             fi
         fi
-        
+
         [[ "$SC_FRAMESTYLE" = "none" && ! $NOASK ]] && check_stall &
         unset NAVSEEK_CMD rectangle run_transcode FFMPEG_CMD TRANSCODE_CMD
     done
@@ -2253,7 +2253,7 @@ elif [[ "$BUTTON_STYLE" = *text* ]]; then
         select_buttons=( ${select_buttons[@]} \
         $(find $WORK_DIR/ -name 00\*select.png |sort) )
         highlight_buttons=( ${highlight_buttons[@]} \
-        $(find $WORK_DIR/ -name 00\*highlight.png |sort) ) 
+        $(find $WORK_DIR/ -name 00\*highlight.png |sort) )
         montage -background none ${select_buttons[@]} \
         -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
         -bordercolor none -mattecolor transparent miff:- |
@@ -2528,7 +2528,7 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
             fi
             length=( ${length[@]} $(( $(awk '{ field = $2 }; END{ print field }' \
             "$WORK_DIR/nav${i}_log") + 1)) )
-        fi 
+        fi
     fi
     echo
     echo "Getting stats on "${IN_FILES[i]}""
@@ -2582,11 +2582,11 @@ done
 for ((i=0; i<${#VID_LEN[@]}; i++)); do
     NEW_LENGTH=( ${NEW_LENGTH[@]}   ${VID_LEN[i]%.*} )
 done
-# find out longest video and shortest video 
+# find out longest video and shortest video
 for ((i=0; i<${#NEW_LENGTH[@]}; i++)); do
     val=${NEW_LENGTH[i]}
     [ -z "$MAX_VAL" ] || ((val > MAX_VAL)) && MAX_VAL=$val && max_key=$i
-    if $ANI_SUB_MENU; then 
+    if $ANI_SUB_MENU; then
         [ -z "$MIN_VAL" ]  || ((val < MIN_VAL)) && MIN_VAL=$val && min_key=$i
     fi
 done
@@ -2599,9 +2599,9 @@ if $ANI_SUB_MENU; then
         if [ $((V - S)) -le $F ] ; then
             echo "Sorry, you can not use ${CHAPTERS[i]} chapters for ${IN_FILES[i]}"
             echo "The maximum number for this video (using a -seek of ${SEEK_VAL[i]}):"
-            echo "$(awk_math $((V - S)) by 340) chapters" 
+            echo "$(awk_math $((V - S)) by 340) chapters"
             $FROM_GUI && exit_from_gui || exit 1
-        fi 
+        fi
         unset V F
     done
 fi
@@ -2670,7 +2670,7 @@ if ! $NO_THUMBS; then
                         while ps -p $TRANSCODE_PID >/dev/null; do
                             sleep .5 # spinner interval
                         spin "Seeking in video and creating images: $(find $WORK_DIR/pics/$i \
-                    -maxdepth 1 -name \*.$IMG_FMT|sort|awk -F / '{ field = $NF }; END{ print field }')" 
+                    -maxdepth 1 -name \*.$IMG_FMT|sort|awk -F / '{ field = $NF }; END{ print field }')"
                         done
                         echo
                         echo "Created $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*.$IMG_FMT|wc -l) images of $FRAMES"
@@ -2705,7 +2705,7 @@ for ((s=0; s<=NUM_FILES; s++)); do
     CHAPT_INTERVALS=( ${CHAPT_INTERVALS[@]} "$(awk_math ${VID_LEN[s]} by ${CHAPTERS[s]} float)" )
     # <TODO if GROUPING, then get chapter intervals for sucessive grouped files starting at
     # the 2nd chapter, not 0.0:0.0:0.0
-    # then go through each "group chapter array, adding the value of the length of the 1st 
+    # then go through each "group chapter array, adding the value of the length of the 1st
     # video in the "group" to the values for the 2nd video, and adding the length of the 2nd
     # video to the values for the 3rd, etc
     # for making chapter thumbs for the group is more tricky
@@ -2849,7 +2849,7 @@ echo "$POST"
             echo "      </pgc>"
             echo "      <pgc>"
         done | sed '$d'
-fi)    
+fi)
     </menus>
     <titles>
       $TITLES_VIDEO_TAG
@@ -2905,7 +2905,7 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
 done)
     </titles>
   </titleset>
-</dvdauthor> 
+</dvdauthor>
 EOF
 ) |sed '/^ *$/d' >> "$DVDAUTHOR_XML"
 fi
@@ -2935,7 +2935,7 @@ if $SUB_MENU; then
         -draw "gravity center text 1,1 \"${SM_TITLES[i]}\"" miff:- | \
         convert -trim +repage - -blur 0x0.4 $WORK_DIR/title${i}_txt.png 2>/dev/null
 
-        # which is harmless as they get removed, but needs to be tweaked         
+        # which is harmless as they get removed, but needs to be tweaked
         if $ANI_SUB_MENU; then
             JPEG2YUV_OPTS=(-n $ANI_SUBMENU_FRAMES)
             PICS_IN=($WORK_DIR/animenu/%0d.$SM_IMG_FMT)
@@ -2954,7 +2954,7 @@ if $SUB_MENU; then
             SLEEP=.5
             TOTAL_JPEGS=${CHAPTERS[i]}
             PREFIX=${i}-
-        fi    
+        fi
         counts=$(awk_math ${CHAPT_INTERVALS[i]} times $FRAME_RATE)
         CUT=( 30 $(running_total <<<  $(for ((a=0; a<${CHAPTERS[i]} ; a++)); \
         do echo -n "$counts ";done)) )
@@ -2995,7 +2995,7 @@ if $SUB_MENU; then
                 while ps -p $TCODE_PID >/dev/null; do
                     sleep $SLEEP # spinner interval
                 spin "Seeking in video and creating images: $(find "$JPEG_DIR" \
-            -maxdepth 1 -name \*.jpg|sort|awk -F / '{ field = $NF }; END{ print field }')" 
+            -maxdepth 1 -name \*.jpg|sort|awk -F / '{ field = $NF }; END{ print field }')"
                 done
                 echo
 
@@ -3070,7 +3070,7 @@ if $SUB_MENU; then
             done
 
             unset IM_CMD IM_CMD2 d f PIC
- 
+
         else # not $ANI_SUB_MENU
 
             yecho
@@ -3108,7 +3108,7 @@ if $SUB_MENU; then
             cleanlog 3
             runtime_error
         fi
-        
+
         # check if m2v was created ok before proceeding
         if mencoder -quiet -oac pcm -ovc copy -frames 0 \
         "$WORK_DIR/menu$i.m2v" -o /dev/null &>/dev/null; then
@@ -3125,7 +3125,7 @@ if $SUB_MENU; then
         if $ANI_SUB_MENU; then
             find $WORK_DIR/animenu/[0-9]/ -type f -exec rm -f {} \;
         fi
-    done    
+    done
     unset IMG_STREAM_CMD1 ENC_CMD1 JPEG2YUV_OPTS
     for ((s=0; s<=NUM_FILES; s++)); do
         # create audio background for either animated or plain submenus
@@ -3146,7 +3146,7 @@ if $SUB_MENU; then
             else # if animated, get time from video instead of the audio file
                 TIME=$(vid_length "$WORK_DIR/menu$s.m2v")
             fi
- 
+
             if [ "${SM_AUDIO[s]}" = "none" ]; then # user asked for silence
                 TIME=$(vid_length "$WORK_DIR/menu$s.m2v")
                 BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
@@ -3157,7 +3157,7 @@ if $SUB_MENU; then
                 BGAUDIO_CMD=(ffmpeg -i "$SM_AUDIO_FILE" -t $TIME -ar 48000 \
                 -ac 2 -acodec pcm_s16le -y $WORK_DIR/submenu.wav)
             else # SM_AUDIO[s] is an audio file we will process it
-                # make seperate wavs for each supplied audio bg for each submenu 
+                # make seperate wavs for each supplied audio bg for each submenu
                 BGAUDIO_CMD=(ffmpeg -i "${SM_AUDIO[s]}" -t $TIME -ar 48000 \
                 -ac 2 -acodec pcm_s16le -y $WORK_DIR/menu$s.wav)
                 BGAUDIO_CMD2=(ffmpeg -i $WORK_DIR/menu$s.wav \
@@ -3203,7 +3203,7 @@ if $SUB_MENU; then
             unset TIME
         fi
         # if "1" audio file, then convert it if it has not been done yet
-        if [[ -n "$SM_AUDIO_FILE" && ! -e $WORK_DIR/submenu-processed.wav ]]; then 
+        if [[ -n "$SM_AUDIO_FILE" && ! -e $WORK_DIR/submenu-processed.wav ]]; then
             if $AUDIO_FADE; then
                 TIME=$(ffmpeg -i "$WORK_DIR/submenu.wav" 2>&1|awk '/Duration/ {print $2}')
                 TIME=${TIME/,/}
@@ -3220,7 +3220,7 @@ if $SUB_MENU; then
             $AUDIO_OPTS -y $WORK_DIR/submenu.$AUDIO_EXT)
             if [ -e $WORK_DIR/submenu.$AUDIO_EXT ]; then # if file exists do nothing
                 :
-            else 
+            else
                 echo "Running "${BGAUDIO_CMD3[@]}"" >> "$LOG_FILE.tmp" 2>&1
                 if "${BGAUDIO_CMD3[@]}" >> "$LOG_FILE.tmp" 2>&1; then
                     cleanlog 3
@@ -3269,7 +3269,7 @@ if [ -n "$BG_VIDEO" ]; then
     if ! cmd_exec "$FFMPEG_CMD"; then
         runtime_error "Problem creating images from the background video"
     fi
-    # make sure there are enough pics to make a bg video 
+    # make sure there are enough pics to make a bg video
     IMAGES=( "${IMAGES[@]}" \
     $(find $WORK_DIR/bg -maxdepth 1 -name \*[1-9]\*.jpg|sort) )
     last_pic=${#IMAGES[@]}
@@ -3377,7 +3377,7 @@ if ! $NO_THUMBS; then
             -mattecolor "#444744" -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" \
             -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}")
             IM_CMD1=(convert -resize $THUMB_SIZE! -)
-            IM_CMD2=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -) 
+            IM_CMD2=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -)
             IM_CMD3=(montage -geometry +4+4 -background '#444744' \
             -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" \
             -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}" "${PICS[p]}")
@@ -3442,13 +3442,13 @@ if ! $NO_THUMBS; then
                         else
                             "${IM_CMD01[@]}" miff:- | "${IM_CMD5[@]}"
                         fi
-                    fi 
+                    fi
                 else # not showcase or feather
                     spin "\rProcessing $(awk -F / '{ print $NF }' <<< "${PICS[p]}")  "
                     if $THUMBS_3D; then
                         "${IM_CMD02[@]}" miff:- |"${IM_CMD04[@]}" miff:- |
                         "${IM_CMD4b[@]}" miff:- | "${IM_CMD5[@]}"
-                    else         
+                    else
                         "${IM_CMD3[@]}" miff:- | "${IM_CMD4[@]}" miff:- |
                         "${IM_CMD5[@]}"
                     fi
@@ -3457,7 +3457,7 @@ if ! $NO_THUMBS; then
             if $STATIC; then unset PICS; fi
             unset IM_CMD0 IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5 IM_CMD6
         done
-        # make sure all animated thumbs finish at the same time 
+        # make sure all animated thumbs finish at the same time
         if ! $STATIC; then
             IMAGES=( "${IMAGES[@]}" \
             $(find $WORK_DIR/pics/$i -maxdepth 1 -name 00\*.$IMG_FMT|sort) )
@@ -3655,7 +3655,7 @@ else # Do not do menu fade
                     else # showcase, mist, showcase-image, not bgvideo
                         "${IM_CMD0[@]}" $WORK_DIR/animenu/$count.jpg
                     fi
-                elif ! $SHOWCASE; then    
+                elif ! $SHOWCASE; then
                     if test -n "$BG_VIDEO"; then
                         "${IM_CMD1[@]}" | "${IM_CMD2b[@]}" | "${IM_CMD3[@]}" | "${IM_CMD4[@]}"
                     else
@@ -3678,7 +3678,7 @@ else # Do not do menu fade
                     else # showcase, no mist, showcase-image, no bgvideo
                         "${IM_CMD0[@]}" $WORK_DIR/animenu/$count.jpg
                     fi
-                elif ! $SHOWCASE; then                     
+                elif ! $SHOWCASE; then
                     if test -n "$BG_VIDEO"; then
                         "${IM_CMD1[@]}" | "${IM_CMD2b[@]}" | "${IM_CMD4[@]}"
                     else
@@ -3730,7 +3730,7 @@ else # Do not do menu fade
                     else # no mist
                         "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}"
                     fi
-                fi   
+                fi
             fi
             unset ANI_PICS
         done
@@ -3829,7 +3829,7 @@ echo "Multiplexing main menu audio and video together"
 # mplex main menu audio and video together
 INTRO_MPLEX_CMD="mplex -V -f $MPLEX_FORMAT -o $WORK_DIR/intro.mpg \
 $WORK_DIR/intro.$AUDIO_EXT $WORK_DIR/intro.m2v"
-echo -e "\nRunning: $INTRO_MPLEX_CMD\n" >> "$LOG_FILE.tmp" 
+echo -e "\nRunning: $INTRO_MPLEX_CMD\n" >> "$LOG_FILE.tmp"
 cleanlog 1
 yecho
 if ${INTRO_MPLEX_CMD[@]} >> "$LOG_FILE.tmp" 2>&1; then
