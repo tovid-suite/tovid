@@ -274,7 +274,8 @@ class VideoClip (Layer):
         """Rip frames from the video file, from start to end frames."""
         print "VideoClip: Ripping frames %s to %s" % (start, end)
         outdir = '/tmp/%s_frames' % self.filename
-        self.frame_files = rip.rip_frames(self.mediafile, outdir, [start, end])
+        self.frame_files = rip.rip_frames(self.mediafile, outdir,
+                                          [start, end])
 
     def draw(self, drawing, frame=1):
         """Draw ripped video frames to the given drawing. For now, it's
