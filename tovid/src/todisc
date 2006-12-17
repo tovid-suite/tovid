@@ -55,7 +55,7 @@ See the todisc manual page ('man todisc') for additional documentation.
 EOF`
 # check if symlink in /tmp exists and use time stamped link if so
 WORK_DIR="/tmp/todisc-work"
-for link in $(find /tmp -maxdepth 1 -name todisc-work\* -type l); do
+for link in $(find /tmp -maxdepth 1 -name todisc-work\* -type l 2>/dev/null); do
     [ -h "$link" ] && { WORK_DIR=/tmp/todisc-work$((NUM++)); continue; }
 done
 CUR_DIR="$(abspath "$(pwd)")"
@@ -3260,7 +3260,7 @@ yecho "Building main menu"
 if [ -n "$BG_VIDEO" ]; then
     yecho "Getting background video from $BG_VIDEO"
     FFMPEG_CMD="ffmpeg -i \"$BG_VIDEO\" -ss $BG_SEEK -vframes $FRAMES \
-    -s $VIDSIZE \"$WORK_DIR/bg/%d.jpg\""
+    -s $VIDSIZE -sameq \"$WORK_DIR/bg/%d.jpg\""
     yecho "Extracting/resizing background images with the following command:"
     yecho "$FFMPEG_CMD"
     # Filter ffmpeg output
