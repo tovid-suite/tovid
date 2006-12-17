@@ -44,9 +44,8 @@ Usage: makevcd [OPTIONS] {VCDIMAGER.xml}
 
 Where OPTIONS may be any of the following:
 
-  -overwrite         Overwrite existing ISO image
-  -noburn            Author the disc image only
-  -burn              (default noburn)
+  -overwrite         Overwrite existing cue/bin image
+  -burn              (default only make image)
   -device DEVICE     (default /dev/cdrw)
   -speed NUM         (default 12)
 
@@ -77,18 +76,20 @@ usage_error ()
 runtime_error ()
 {
     killsubprocs
-    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     echo "makevcd encountered an error during the VCD creation process:"
     echo $@
     echo "See if anything in the above output helps you diagnose the"
     echo "problem, and please file a bug report containing the above"
-    echo "output. Sorry for the inconvenience!"
-    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    echo "output with http://www.tovid.org. Sorry for the inconvenience!"
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     exit 1
 }
 # Defaults
 CDRW_DEVICE="/dev/cdrw"
 BURN_SPEED=12
+OVERWRITE=false
+BURN=false
 
 # ==========================================================
 # EXECUTION BEGINS HERE
@@ -102,14 +103,22 @@ while test x"${1:0:1}" = "x-"; do
         # Get device name
         shift
         CDRW_DEVICE="$1"
-	;;
+        ;;
       "-speed" )
         shift
         BURN_SPEED=$1
-	;;
+        ;;
+      "-overwrite" )
+        shift
+        OVERWRITE=:
+        ;;
+      "-burn" )
+        shift
+        BURN=:
+        ;;
       * )
         usage_error "Error: Unrecognized command-line option $1"
-	;;
+        ;;
     esac
 
     # Get next argument
@@ -124,39 +133,66 @@ else
     VCDIMAGER_XML="$1"
 fi
 
-# Remind user to insert a CD
-echo "Please insert a blank CD-R(W) disc into your CD-recorder"
-echo "($CDRW_DEVICE) if you have not already done so."
 
-# Sanity check: Make sure given device is valid (somehow)
-# before creating the cue/bin. Give option to proceed anyway?
-# (i.e., could there be any point to proceeding?)
-# Here's a simple way: just quit
-if test -b $CDRW_DEVICE; then :
-   else
-   echo "Couldn't find $DDRW_DEVICE! Stopping here."
-   exit 1
-fi
+# Look for earlier attempts to image this VCD
+for prev_try in "$VCDIMAGER_XML.cue" "$VCDIMAGER_XML.bin"; do
+    if test -f "$prev_try"; then
+        echo "Found a previous makevcd attempt: $prev_try!"
+        if $OVERWRITE; then
+            echo -n "Removing it...  "
+            rm -fv "$prev_try"
+        else
+            echo "Use '-overwrite' to override and re-image; or"
+            echo "use '-burn' to write this existing image."
+            echo "Exiting..."
+            exit 1
+        fi
+    fi
+done
 
-# Create cue/bin
-# Warn if there isn't enough space to make cue/bin
+# Create the cue/bin image
+# TODO: Warn if there isn't enough space to make cue/bin
 VCDIMAGER_CMD="vcdxbuild -c \"$VCDIMAGER_XML.cue\" -b \
     \"$VCDIMAGER_XML.bin\" \"$VCDIMAGER_XML\""
 echo $SEPARATOR
 echo "Creating cue/bin disc image with the following command:"
 echo $VCDIMAGER_CMD
-( eval $VCDIMAGER_CMD )
-
-# Burn the disc
-CDRDAO_CMD="cdrdao write --device $CDRW_DEVICE --driver generic-mmc \
-    --speed $BURN_SPEED \"$VCDIMAGER_XML.cue\""
-echo $SEPARATOR
-echo "Burning cue/bin image to $CDRW_DEVICE with the following command:"
-echo $CDRDAO_CMD
-if eval $CDRDAO_CMD; then 
-    echo "Done. You should now have a working VCD or SVCD. Please report"
-    echo "any problems you might have to wapcaplet99@yahoo.com."
-else 
-    runtime_error "Could not burn the disc to $CDRW_DEVICE at speed $BURN_SPEED"
+if eval $VCDIMAGER_CMD; then
+    echo "Done."
+    echo "Use 'makevcd -burn $VCDIMAGER_XML' to burn your VCD."
+    echo "Thanks for using tovid!"
+else
+    runtime_error "Imaging failed, please see vcdxbuild output above."
 fi
+
+# Burn the VCD
+if $BURN; then
+    # Sanity check: Make sure given device is valid (somehow)
+    # before creating the cue/bin. Give option to proceed anyway?
+    # (i.e., could there be any point to proceeding?)
+    # Here's a simple way: just quit
+    if test -b $CDRW_DEVICE; then :
+       else
+       echo "Couldn't find $DDRW_DEVICE! Stopping here."
+       exit 1
+    fi
+
+    # Remind user to insert a CD
+    echo "Please insert a blank CD-R(W) disc into your CD-recorder"
+    echo "($CDRW_DEVICE) if you have not already done so."
+
+    # Burn the disc
+    CDRDAO_CMD="cdrdao write --device $CDRW_DEVICE --driver generic-mmc \
+        --speed $BURN_SPEED \"$VCDIMAGER_XML.cue\""
+    echo $SEPARATOR
+    echo "Burning cue/bin image to $CDRW_DEVICE with the following command:"
+    echo $CDRDAO_CMD
+    if eval $CDRDAO_CMD; then 
+        echo "Done. You should now have a working VCD or SVCD. Please report"
+        echo "any problems you might have to http://www.tovid.org."
+        echo "Thanks for using tovid!"
+    else 
+        runtime_error "Could not burn the disc to $CDRW_DEVICE at speed $BURN_SPEED."
+fi
+
 exit 0
