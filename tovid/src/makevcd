@@ -86,6 +86,7 @@ runtime_error ()
     exit 1
 }
 # Defaults
+IMAGE=:
 CDRW_DEVICE="/dev/cdrw"
 BURN_SPEED=12
 OVERWRITE=false
@@ -141,6 +142,9 @@ for prev_try in "$VCDIMAGER_XML.cue" "$VCDIMAGER_XML.bin"; do
         if $OVERWRITE; then
             echo -n "Removing it...  "
             rm -fv "$prev_try"
+        elif $BURN; then
+            echo "Will use this for burning the disc."
+            IMAGE=false
         else
             echo "Use '-overwrite' to override and re-image; or"
             echo "use '-burn' to write this existing image."
@@ -151,18 +155,19 @@ for prev_try in "$VCDIMAGER_XML.cue" "$VCDIMAGER_XML.bin"; do
 done
 
 # Create the cue/bin image
-# TODO: Warn if there isn't enough space to make cue/bin
-VCDIMAGER_CMD="vcdxbuild -c \"$VCDIMAGER_XML.cue\" -b \
-    \"$VCDIMAGER_XML.bin\" \"$VCDIMAGER_XML\""
-echo $SEPARATOR
-echo "Creating cue/bin disc image with the following command:"
-echo $VCDIMAGER_CMD
-if eval $VCDIMAGER_CMD; then
-    echo "Done."
-    echo "Use 'makevcd -burn $VCDIMAGER_XML' to burn your VCD."
-    echo "Thanks for using tovid!"
-else
-    runtime_error "Imaging failed, please see vcdxbuild output above."
+if $IMAGE; then
+    # TODO: Warn if there isn't enough space to make cue/bin
+    VCDIMAGER_CMD="vcdxbuild -c \"$VCDIMAGER_XML.cue\" -b \
+        \"$VCDIMAGER_XML.bin\" \"$VCDIMAGER_XML\""
+    echo $SEPARATOR
+    echo "Creating cue/bin disc image with the following command:"
+    echo $VCDIMAGER_CMD
+    if eval $VCDIMAGER_CMD; then
+        echo "Done."
+        echo "Use 'makevcd -burn $VCDIMAGER_XML' to burn your VCD."
+        echo "Thanks for using tovid!"
+    else
+        runtime_error "Imaging failed, please see vcdxbuild output above."
 fi
 
 # Burn the VCD
