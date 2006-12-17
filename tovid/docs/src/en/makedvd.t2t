@@ -20,11 +20,13 @@ applications, due to intense disk activity.
 ==Usage==
 
 **makedvd** [//OPTIONS//] //FILE.xml//
+
 **makedvd** [//OPTIONS//] //DVD_DIR//
 
 For example:
 
 : ``makedvd -burn MyDisc.xml``
+: ``makedvd -burn /path/to/DVD/directory``
 
 
 ==Options==
