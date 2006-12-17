@@ -62,7 +62,7 @@ class Config (ConfigParser):
     around the standard library ConfigParser. Example usage:
     
         config = libtovid.Config()
-        config.get('tovid', 'overwrite')
+        config.get('DEFAULT', 'work_dir')
         config.set('tovid', 'method', 'ffmpeg')
         config.save()
         
