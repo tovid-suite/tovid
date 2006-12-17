@@ -50,8 +50,10 @@ __all__ = [\
     'stats',
     'utils',]
 
+import os
 import sys
 import logging
+from ConfigParser import ConfigParser
 
 # Global logger
 log = logging.getLogger('libtovid')
@@ -62,6 +64,32 @@ stdout = logging.StreamHandler(sys.stdout)
 stdout.setFormatter(fmt)
 log.addHandler(stdout)
 # TODO: Support logging to a file with a different severity level
+
+
+# Configuration file reader/writer
+class Config (ConfigParser):
+    """Interface for reading/writing tovid configuration file. Just a wrapper
+    around the standard library ConfigParser. Example usage:
+    
+        config = libtovid.Config()
+        config.get('tovid', 'overwrite')
+        config.set('tovid', 'method', 'ffmpeg')
+        config.save()
+        
+    See the ConfigParser documentation for details.
+    """
+    def __init__(self):
+        """Load configuration from ~/.tovid/config."""
+        ConfigParser.__init__(self)
+        self.filename = os.path.expanduser('~/.tovid/config')
+        self.read(self.filename)
+
+    def save(self):
+        """Save the configuration to the current filename."""
+        outfile = open(self.filename, 'w')
+        outfile.write('# tovid configuration file\n\n')
+        self.write(outfile)
+        outfile.close()
 
 
 
