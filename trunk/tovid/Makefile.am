@@ -66,6 +66,7 @@ man_MANS = \
 	$(man_dir)/makedvd.1 \
 	$(man_dir)/makemenu.1 \
 	$(man_dir)/makeslides.1 \
+    $(man_dir)/makevcd.1 \
 	$(man_dir)/makexml.1 \
 	$(man_dir)/postproc.1 \
 	$(man_dir)/todisc.1 \
@@ -75,6 +76,7 @@ src_MANS = \
 	$(man_src_dir)/makedvd.t2t \
 	$(man_src_dir)/makemenu.t2t \
 	$(man_src_dir)/makeslides.t2t \
+    $(man_src_dir)/makevcd.t2t \
 	$(man_src_dir)/makexml.t2t \
 	$(man_src_dir)/postproc.t2t \
 	$(man_src_dir)/todisc.t2t \
