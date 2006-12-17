@@ -48,22 +48,12 @@ __all__ = [\
     'opts',
     'standard',
     'stats',
-    'utils',]
+    'utils']
 
 import os
 import sys
 import logging
 from ConfigParser import ConfigParser
-
-# Global logger
-log = logging.getLogger('libtovid')
-log.setLevel(logging.DEBUG)
-# Output format
-fmt = logging.Formatter("[%(levelname)s]: %(message)s")
-stdout = logging.StreamHandler(sys.stdout)
-stdout.setFormatter(fmt)
-log.addHandler(stdout)
-# TODO: Support logging to a file with a different severity level
 
 
 # Configuration file reader/writer
@@ -78,9 +68,14 @@ class Config (ConfigParser):
         
     See the ConfigParser documentation for details.
     """
+    # Dictionary of suite-wide configuration defaults
+    DEFAULTS = {
+        'work_dir': '/tmp',
+        'output_dir': '/tmp'}
+
     def __init__(self):
         """Load configuration from ~/.tovid/config."""
-        ConfigParser.__init__(self)
+        ConfigParser.__init__(self, self.DEFAULTS)
         self.filename = os.path.expanduser('~/.tovid/config')
         self.read(self.filename)
 
@@ -91,6 +86,17 @@ class Config (ConfigParser):
         self.write(outfile)
         outfile.close()
 
+
+# Global logger
+# HACK ALERT
+log = logging.getLogger('libtovid')
+log.setLevel(logging.DEBUG)
+# Output format
+fmt = logging.Formatter("[%(levelname)s]: %(message)s")
+stdout = logging.StreamHandler(sys.stdout)
+stdout.setFormatter(fmt)
+log.addHandler(stdout)
+# TODO: Support logging to a file with a different severity level
 
 
 # =========================================================================
