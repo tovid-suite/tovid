@@ -8,7 +8,7 @@ makeslides: Convert images into still-frame MPEG video for (S)VCD
 
 ==Usage==
 
-**makeslides** [-ntsc|-pal] //IMAGES//
+**makeslides** [//OPTIONS//] //IMAGES//
 
 
 ==Options==
