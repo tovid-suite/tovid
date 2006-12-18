@@ -56,7 +56,7 @@ $ makexml -menu MainMenu.mpg \
     Create a slide-show of still images
 
 
-DVD-ony options
+DVD-only options
 
 : **-group** //<file list>// **-endgroup**
     (DVD only) List of video files to include as one single title. This is useful

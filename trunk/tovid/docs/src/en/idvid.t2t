@@ -49,7 +49,7 @@ For example:
 : **-issys** [//ntsc//|//pal//]
     Check //VIDEO_FILE// for compliance with the given TV system. If 
     //VIDEO_FILE// matches the given TV system, then idvid reports "true"
-    and exits successfully. Otherwise, idvid reports "false" and exist
+    and exits successfully. Otherwise, idvid reports "false" and exits
     with status 1 (failure). IGNORED when -isformat is present.
 
 
