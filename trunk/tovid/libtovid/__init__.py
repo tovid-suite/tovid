@@ -46,6 +46,7 @@ __all__ = [\
     'layout'
     'media',
     'opts',
+    'spumux',
     'standard',
     'stats',
     'utils']
