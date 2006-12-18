@@ -12,6 +12,8 @@ __all__ = [\
     'pretty_dict',
     'ratio_to_float',
     'tokenize',
+    'temp_name',
+    'temp_file',
     'trim',
     'wait'
     ]
@@ -161,6 +163,19 @@ def get_file_type(filename):
         return basetype
     else:
         return None
+
+def temp_name(*args, **kwargs):
+    """Generates a temporary filename. Same args and kwargs
+    as mkstemp."""
+    fd, fname = tempfile.mkstemp(*args, **kwargs)
+    os.close(fd)
+    return fname
+
+def temp_file(*args, **kwargs):
+    """Generates a file object, it's not removed after being closed.
+    Same args and kwargs as mkstemp."""
+    return open(temp_name(*args, **kwargs), "w")
+
 
 if __name__ == '__main__':
     doctest.testmod(verbose=True)

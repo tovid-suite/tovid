@@ -6,7 +6,7 @@ __all__ = ['TextMenu']
 from libtovid.cli import Command, Pipe
 from libtovid import deps
 from libtovid import log
-from libtovid import subtitle
+from libtovid import spumux
 
 class TextMenu:
     """Simple menu with selectable text titles. For now, basically a clone
@@ -237,13 +237,10 @@ class TextMenu:
         """Multiplex the output video with highlight and selection
         subtitles, so the resulting menu can be navigated.
         """
-        subs = subtitle.Subtitle('spu')
-        subs.set_attributes(
-            force='yes',
-            start=0,
-            highlight='%s.hi.png' % self.basename,
-            select='%s.sel.png' % self.basename,
-            autooutline='infer')
         print "Running spumux"
-        subtitle.spumux(subs, '%s.mpg' % self.basename)
-
+        # TODO: Fix all this silly hardcoding of filenames (duplicated above)
+        menu_mpg = self.basename + '.mpg'
+        image = None
+        select = self.basename + '.sel.png'
+        highlight = self.basename + '.hi.png'
+        spumux.add_menusubs(menu_mpg, image, select, highlight)
