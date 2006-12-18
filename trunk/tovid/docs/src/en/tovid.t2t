@@ -15,8 +15,7 @@ standalone DVD player.
 
 ==Usage==
 
-**tovid** [ //OPTIONS// ] **-in** //INFILE// **-out** //OUTPREFIX//
-
+**tovid** [//OPTIONS//] **-in** //INFILE// **-out** //OUTPREFIX//
 
 Where //INFILE// is any multimedia video file, and //OUTPREFIX// is what
 you want to call the output file, minus the file extension. //OPTIONS//
@@ -47,10 +46,6 @@ For example:
     commands, and run them manually.
 : **-debug**
     Print extra debugging information on standard output.
-: **-refresh-deps**
-    Regenerate the dependency list. tovid uses $HOME/.tovid/dependency.list to
-    determine which of its dependencies are installed. If you install dependencies
-    after tovid, use this option to make tovid aware of the newly installed ones.
 : **-ffmpeg**
     Use ffmpeg for video encoding, instead of mplayer/mpeg2enc. Try this if
     you have any problems with the default encoding method. Using this option,
@@ -161,7 +156,7 @@ letterboxing or anamorphic scaling.
     to encode it properly. If you would prefer to have output in progressive
     format, use **-deinterlace**.
 
-: **-deinterlace**, **-progressive**
+: **-deinterlace** | **-progressive**
     Convert interlaced source video into progressive output video. Because
     deinterlacing works by averaging fields together, some picture quality is
     invariably lost. Uses an adaptive kernel deinterlacer (kerndeint), or,
@@ -171,6 +166,7 @@ letterboxing or anamorphic scaling.
     Attempt to encode an integrated subtitle stream (such as may be found in
     Matroska .mkv files) in the given language code (eng, jpn, etc.) May work
     for other formats.
+
 : **-autosubs**
     Automatically include subtitle files with the same name as the input video.
 
@@ -309,6 +305,14 @@ letterboxing or anamorphic scaling.
 
 : **-slice** //START//-//END//
     Encode a segment from //START// to //END// (in seconds).
+
+: **-from-gui**
+    Put tovid into a fully non-interactive state, suitable for calling from
+    a gui.
+
+: **-noask**
+    Don't ask questions when choices need to be made. Assume reasonable 
+    answers.
 
 
 ==See also==
