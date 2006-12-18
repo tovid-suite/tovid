@@ -3,7 +3,7 @@ idvid manual
 
 ==Name==
 
-idvid: Identify video files
+idvid: Identify videos, their codecs, and compliance with (S)VCD/DVD specs.
 
 
 ==Description==
@@ -15,14 +15,12 @@ SVCD, and DVD.
 
 ==Usage==
 
-**idvid** [ //OPTIONS// ] //VIDEO_FILE(s)//
+**idvid** [//OPTIONS//] //VIDEO_FILE(s)//
 
 For example:
 
-```
-$ idvid foo.avi
-$ idvid videos/*.mpg
-```
+: ``idvid foo.avi``
+: ``idvid -tabluar videos/*.mpg``
 
 
 ==Options==
@@ -41,6 +39,31 @@ $ idvid videos/*.mpg
 : **-tabular**
     Display output in a table format for easier comparison. Most useful
     when identifying multiple video files.
+
+: **-isformat** [//vcd//|//svcd//|//dvd//]
+    Check //VIDEO_FILE// for compliance with the given disc format. 
+    If //VIDEO_FILE// matches the given format, then idvid reports "true" 
+    and exits successfully. Otherwise, idvid reports "false" and exits 
+    with status 1 (failure).
+
+: **-issys** [//ntsc//|//pal//]
+    Check //VIDEO_FILE// for compliance with the given TV system. If 
+    //VIDEO_FILE// matches the given TV system, then idvid reports "true"
+    and exits successfully. Otherwise, idvid reports "false" and exist
+    with status 1 (failure). IGNORED when -isformat is present.
+
+
+==Examples==
+
+: ``idvid -verbose homevideo.avi``
+    Report everything mplayer, ffmpeg, and transcode can determine about
+    homevideo.avi.
+
+: ``idvid -isformat dvd homevideo.mpg``
+    Check to see if homevideo.mpg is compliant with the DVD standard.
+
+: ``idvid -issys pal homevideo.mpg``
+    Check to see if homevideo.mpg is compliant with PAL TV systems.
 
 
 ==See also==

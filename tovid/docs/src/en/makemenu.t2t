@@ -3,7 +3,7 @@ makemenu manual
 
 ==Name==
 
-makemenu: Create (S)VCD/DVD-compliant menus
+makemenu: Create (S)VCD/DVD-compliant text menus
 
 
 ==Description==
@@ -16,7 +16,7 @@ image or audio clip, or by using custom font and font color.
 
 ==Usage==
 
-**makemenu** [ //OPTIONS// ] //TITLES// **-out** //OUT_PREFIX//
+**makemenu** [//OPTIONS//] //TITLES// **-out** //OUT_PREFIX//
 
 For example:
 
