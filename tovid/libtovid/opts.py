@@ -1,16 +1,15 @@
 #! /usr/bin/env python
 # opts.py
 
-"""This module provides an interface for defining command-line-style "options",
-and for reading and storing their values as specified by the user. Two classes
-are provided:
+"""This module is for defining command-line-style "options", and for reading
+and storing their values as specified by the user. Two classes are provided:
 
     Option: Definition of an option, its arguments, default value, and docs
     OptionDict: An indexed collection of user-defined options
 
-In a way, this is the libtovid alternative to 'getopt'. If you're writing a
-program that needs to accept width and height values, then just create a list
-of Options with expected args, default value, and documentation:
+This is libtovid's alternative to 'getopt'. If you're writing a program that
+needs to accept width and height values, create a list of Options with expected
+arguments, default values, and documentation:
 
     >>> options = [
     ...    Option('width', 'NUM', 8.5, 'Width of output in inches'),
@@ -23,8 +22,8 @@ Nice enough, but it's not really useful until you create an OptionDict:
 
 Now, you can do several things. You can use useropts.usage() to display "usage
 notes" for your program. But OptionDict is more than that--it also stores a
-value for each option, and a simple method for getting and setting those values.
-To see a complete list of options and values:
+value for each option, and a simple way to get and set those values. To see a
+complete list of options and their values:
 
     >>> useropts
     {'width': 8.5, 'height': 11.0}
