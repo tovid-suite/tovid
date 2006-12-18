@@ -13,18 +13,18 @@ ME="[tovid]:"
 #
 #
 # Copyright (C) 2005 tovid.org <http://www.tovid.org>
-# 
-# This program is free software; you can redistribute it and/or 
-# modify it under the terms of the GNU General Public License 
-# as published by the Free Software Foundation; either 
-# version 2 of the License, or (at your option) any later 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
 # version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
@@ -45,7 +45,7 @@ ME="[tovid]:"
 
 SCRIPT_NAME=`cat << EOF
 --------------------------------
-tovid 
+tovid
 DVD and (S)VCD video conversion script
 Version $TOVID_VERSION
 $TOVID_HOME_PAGE
@@ -234,7 +234,7 @@ function yecho()
 
 # ******************************************************************************
 # Print usage notes and optional error message, then exit.
-# Args: $@ == text string containing error message 
+# Args: $@ == text string containing error message
 # ******************************************************************************
 function usage_error()
 {
@@ -293,7 +293,7 @@ function killsubprocs()
     yecho "Encode stopped, killing all sub processes"
     test -n "$PIDS" && kill $PIDS
     yecho "Keeping temporary files used during encoding in $TMP_DIR"
-}    
+}
 
 
 # ******************************************************************************
@@ -339,7 +339,7 @@ function get_args()
     while test $# -gt 0; do
         DO_SHIFT=:
         case "$1" in
-        
+
             # Use config file?
             "-config" )
                 # Read in name of config file
@@ -375,19 +375,19 @@ function get_args()
             "-bdvd" )     TGT_RES="BDVD" ;;
 
             # Other options
-            "-normalize" )  
+            "-normalize" )
                 assert_dep $NORMALIZE "'normalize' not found or installed! You cannot use -normalize."
                 DO_NORM=:
                 ;;
             "-amplitude" )
-                shift 
+                shift
                 AUDIO_AMPLITUDE="--amplitude=$1"
                 DO_NORM=:
                 ;;
             "-overwrite" )
                 OVERWRITE=:
                 ;;
-                
+
             # Aspect ratio
             "-aspect" )
                 shift
@@ -559,8 +559,7 @@ function get_args()
                 ;;
             "-in" )
                 shift
-                # Get a full pathname for the infile
-                IN_FILE=$(abspath "$1")
+                IN_FILE="$1"
                 ;;
             "-async" )
                 shift
@@ -585,7 +584,7 @@ function get_args()
             "-fake" )
                 FAKE=:
                 ;;
-            
+
             # Keep encoded files
             "-keepfiles" )
                 KEEPFILES=:
@@ -696,7 +695,7 @@ $SCRIPT_NAME
     This file contains statistics on videos encoded with 'tovid.'
     Each line shows the results of one encoded video. From left
     to right, the values are:
-    
+
     ===================================================
     tovid version number (TOVID_VERSION)
     name of output file  (OUT_FILENAME)
@@ -859,6 +858,7 @@ if expr "$IN_FILE" : ".*:\/\/" >/dev/null; then
     IN_FILE_TYPE="uri"
 else
     IN_FILE_TYPE="file"
+    IN_FILE=$(abspath "$IN_FILE")
 fi
 
 
@@ -1042,8 +1042,8 @@ case "$TGT_RES" in
         MUX_OPTS="-V -f 5 -b 350 -r 10800"
         VID_SUF="m2v"
         ;;
-        
-        
+
+
     # VCD-on-DVD
     "DVD-VCD" )
         TGT_WIDTH="352"
@@ -1171,9 +1171,9 @@ case "$TGT_RES" in
                 "\n38,42,46,53,58,62,68,78" \
                 "\n42,46,53,58,62,68,78,88" \
                 "\n46,53,58,62,68,78,88,99" \
-                "\n53,58,62,68,78,88,99,99" > "$TMP_DIR/bvcd.matrix" 
-                MPEG2_FMT="$MPEG2_FMT -K file=\"$TMP_DIR/bvcd.matrix\"" 
-                ;; 
+                "\n53,58,62,68,78,88,99,99" > "$TMP_DIR/bvcd.matrix"
+                MPEG2_FMT="$MPEG2_FMT -K file=\"$TMP_DIR/bvcd.matrix\""
+                ;;
             * )
                 MPEG2_FMT="$MPEG2_FMT -K hi-res"
                 ;;
@@ -1362,7 +1362,7 @@ if test "$IN_FILE_TYPE" = "file"; then
     V_SVCD_OK=false
     V_DVD_OK=false
     V_RES=""
-    
+
     # Override the above A_ and V_ variables by 'eval'ing the output of
     # 'idvid -terse' on the infile. Exit on failure.
     # (Yes, I know eval==evil. Deal.)
@@ -1393,7 +1393,7 @@ if test "$IN_FILE_TYPE" = "file"; then
     if test "$TGT_RES" = "VCD" || test "$TGT_RES" = "KVCD"; then
         $A_VCD1_OK || $A_VCD2_OK && AUDIO_OK=:
         $V_VCD_OK && test "$V_RES" = "${BASETVSYS}_VCD" && VIDEO_OK=:
-        
+
     elif test "$TGT_RES" = "SVCD"; then
         $A_SVCD_OK && AUDIO_OK=:
         $V_SVCD_OK && test "$V_RES" = "${BASETVSYS}_SVCD" && VIDEO_OK=:
@@ -1634,7 +1634,7 @@ if test -n "$AUDIO_TRACK"; then
         NEW_AUDIO[i]="-acodec ac3 -ab 224k  -newaudio"
         AUDIO_WAV[i]="$TMP_DIR/audio${i}.wav"
     done
-    
+
     FF_AUDIO_MAP="-map 0:0 $AUDIO_MAP"
     unset NEW_AUDIO[${#NEW_AUDIO[@]}-1]}
     ((${#AUDIO_TRACK[@]} > 1)) && OUTPUT_FILES="each file" && s=s
@@ -1654,7 +1654,7 @@ if $USE_FFMPEG; then
     FF_SAMPRATE="-ar $SAMPRATE"
     # try to get -quality 9 between quality 8 and 10 !
     ((VID_QUALITY == 9)) && FF_ADD_ARGS="-trell 0"
-    [[ $TARGET = "DVD-VCD" ]] && FF_ADD_ARGS="$FF_ADD_ARGS -g 12" # experiment FIXME 
+    [[ $TARGET = "DVD-VCD" ]] && FF_ADD_ARGS="$FF_ADD_ARGS -g 12" # experiment FIXME
 
     # Padding, for any letterboxing to be done
     FF_VPAD=""
@@ -1681,7 +1681,7 @@ if $USE_FFMPEG; then
             FF_TARGET="$FF_TARGET-dvd"
             ;;
     esac
-fi    
+fi
 if $USE_FFMPEG && ! $DO_NORM && ! [[ "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; then
     yecho
     yecho "Using ffmpeg to encode audio and video."
@@ -1884,7 +1884,7 @@ else
     if $USE_FIFO; then
         file_output_progress "$YUV_STREAM" "Ripping raw uncompressed video stream"
     fi
-    
+
     LOG_FILTER="$CRLF"
     cmd_exec "$VID_ENC_CMD"
 
