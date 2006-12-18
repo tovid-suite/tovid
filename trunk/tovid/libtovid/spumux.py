@@ -1,6 +1,17 @@
 #! /usr/bin/env python
 # spumux.py
 
+"""This module is for adding subtitles to MPEG video files using spumux.
+"""
+# Incomplete at the moment; run standalone for a brief demo.
+
+__all__ = [
+    'Element',
+    'Button',
+    'Action',
+    'SPU',
+    'Textsub']
+
 from xml.dom import getDOMImplementation
 
 class Element:
@@ -28,19 +39,17 @@ class Element:
             attributes: Dictionary of attributes and values
             kwargs:     Keyword arguments for setting specific attributes
         
-        All attributes must match those listed in ATTRIBUTES.    
+        All attributes must match those listed in ATTRIBUTES.
         """
-        # TODO: Cleanup/simplify
         # Use attributes, if present
         if type(attributes) == dict:
-            for key, value in attributes.iteritems():
-                if key in self.ATTRIBUTES:
-                    self.attributes[key] = value
-                else:
-                    raise KeyError("'%s' element has no attribute '%s'" %
-                                   (self.name, key))
+            attributes = attributes.copy()
+        else:
+            attributes = {}
         # Override with any provided keyword arguments
-        for key, value in kwargs.iteritems():
+        attributes.update(kwargs)
+        # Set all attributes, raising error on invalid attribute names
+        for key, value in attributes.iteritems():
             if key in self.ATTRIBUTES:
                 self.attributes[key] = value
             else:
@@ -123,6 +132,7 @@ class SPU (Element):
     def __init__(self, attributes=None):
         Element.__init__(self, 'spu', attributes)
 
+
 def get_xml(element):
     """Return XML for a spumux Element hierarchy"""
     dom = getDOMImplementation()
@@ -144,18 +154,14 @@ if __name__ == '__main__':
     b1.set(name='but1', down='but2')
     b2 = Button()
     b2.set(name='but2', up='but1')
-    a1 = Action()
-    a2 = Action()
     # Build hierarchy
     spu.add_child(b1)
     spu.add_child(b2)
-    spu.add_child(a1)
-    spu.add_child(a2)
     # Generate XML
     print "SPU xml:"
     print get_xml(spu)
 
     textsub = Textsub()
-    textsub.set(filename='foo.sub')
+    textsub.set(filename='foo.sub', fontsize=14.0, font="Luxi Mono")
     print "Textsub xml:"
     print get_xml(textsub)
