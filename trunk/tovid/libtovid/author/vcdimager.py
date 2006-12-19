@@ -5,7 +5,7 @@
 
 """
 
-__all__ = []
+# __all__ = []
 
 def get_xml(disc):
     """Return vcdxbuild XML suitable for authoring the given Disc.

@@ -6,7 +6,11 @@ import wx
 import libtovid
 from libtovid.gui.util import VER_GetFirstChild
 
-__all__ = ["BoldToggleButton", "FlexTreeCtrl", "HeadingText"]
+__all__ = [\
+    "BoldToggleButton",
+    "FlexTreeCtrl",
+    "HeadingText"]
+
 class BoldToggleButton(wx.ToggleButton):
     """A wx.ToggleButton with bold font"""
     def __init__(self, parent, id, label):

@@ -11,7 +11,10 @@ from libtovid.gui.icons import AppIcon
 from libtovid.gui.panels import *
 from libtovid.gui.util import _
 
-__all__ = ["TovidFrame", "MiniEditorFrame", "TodiscFrame"]
+__all__ = [\
+    "TovidFrame",
+    "MiniEditorFrame",
+    "TodiscFrame"]
 
 class TovidFrame(wx.Frame):
     """Main tovid GUI frame. Contains and manages all sub-panels.
