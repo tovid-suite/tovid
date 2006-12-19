@@ -56,8 +56,7 @@ class Command:
     with support for various modes of execution.
     """
     def __init__(self, program, *args):
-        """Create a Command that will run a given program with the given
-        arguments.
+        """Create a Command to run a program with the given arguments.
         
             program: A string containing the name of a program to execute
             args:    Individual arguments to supply the command with
@@ -100,34 +99,37 @@ class Command:
         use run_redir().
         """
         if capture:
-            self.run_redir(None, PIPE)
+            # For now, print standard error even when capturing
+            self.run_redir(None, PIPE, stderr=None)
         else:
-            self.run_redir(None, None)
+            self.run_redir(None, None, stderr=None)
         if not background:
             self.wait()
 
-    def run_redir(self, stdin=None, stdout=None):
+    def run_redir(self, stdin=None, stdout=None, stderr=None):
         """Execute the command using the given stream redirections.
         
             stdin:  Filename or File object to read input from
-                    (None for regular stdin)
             stdout: Filename or File object to write output to
-                    (None for regular stdout)
+            stderr: Filename or File object to write errors to
+        
+        Use None for regular system stdin/stdout/stderr (default behavior).
         
         This function is used internally by run(); if you need to do stream
-        redirection (as bash commands like `spumux < menu.mpg > menu_subs.mpg`
-        do), use this function instead of run(), and call wait() afterwards if
-        you want.
+        redirection (ex. `spumux < menu.mpg > menu_subs.mpg`), use this
+        function instead of run(), and call wait() afterwards if needed.
         """
-        # TODO: Support capturing or logging of stderr
         self.output = ''
         # Open files if string filenames were provided
         if type(stdin) == str:
             stdin = open(stdin, 'r')
         if type(stdout) == str:
             stdout = open(stdout, 'w')
+        if type(stderr) == str:
+            stderr = open(stderr, 'w')
+        # Run the subprocess
         self.proc = Popen([self.program] + self.args,
-                          stdin=stdin, stdout=stdout)
+                          stdin=stdin, stdout=stdout, stderr=stderr)
 
     def wait(self):
         """Wait for the command to finish running. If a KeyboardInterrupt
@@ -200,7 +202,7 @@ class Pipe:
                     cmd.run_redir(prev_stdout, PIPE)
                 else:
                     cmd.run_redir(prev_stdout, None)
-        # Wait for execution to finish?
+        # Wait for last command to finish?
         if not background:
             cmd.wait()
 
