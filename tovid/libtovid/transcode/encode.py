@@ -93,8 +93,8 @@ def get_encoder(backend):
 def ffmpeg_encode(source, target):
     """Encode a multimedia video using ffmpeg.
 
-        source:  Profile of source video (input)
-        target:  Profile of target video (output)
+        source:  Input MediaFile
+        target:  Output MediaFile
     
     """
     # Build the ffmpeg command
@@ -139,8 +139,8 @@ def ffmpeg_encode(source, target):
 def mencoder_encode(source, target):
     """Encode a multimedia video using mencoder.
 
-        source:  Profile of source video (input)
-        target:  Profile of target video (output)
+        source:  Input MediaFile
+        target:  Output MediaFile
     
     """
 
@@ -234,8 +234,8 @@ def mencoder_encode(source, target):
 def mpeg2enc_encode(source, target):
     """Encode a multimedia video using mplayer|yuvfps|mpeg2enc.
     
-        source:  Profile of source video (input)
-        target:  Profile of target video (output)
+        source:  Input MediaFile
+        target:  Output MediaFile
 
     """
     log.warning("This encoder is very experimental, and may not work.")
@@ -473,4 +473,3 @@ def encode_frames(imagedir, outfile, format, tvsys):
 
     pipe.run(capture=True)
     pipe.get_output() # and wait :)
-

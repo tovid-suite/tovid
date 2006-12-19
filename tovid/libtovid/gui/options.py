@@ -1,7 +1,12 @@
 #! /usr/bin/env python
 # options.py
 
-__all__ = ["DiscOptions", "MenuOptions", "SlideOptions", "VideoOptions", "GroupOptions"]
+__all__ = [\
+    "DiscOptions",
+    "MenuOptions",
+    "SlideOptions",
+    "VideoOptions",
+    "GroupOptions"]
 
 import os
 import wx

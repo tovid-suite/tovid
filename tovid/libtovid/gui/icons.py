@@ -3,7 +3,13 @@
 
 import zlib, cStringIO, wx
 
-__all__ = ["MenuIcon", "SlideIcon", "VideoIcon", "DiscIcon", "GroupIcon"]
+__all__ = [\
+    "MenuIcon",
+    "SlideIcon",
+    "VideoIcon",
+    "DiscIcon",
+    "GroupIcon"]
+
 # ===================================================================
 #
 # EMBEDDED ICONS

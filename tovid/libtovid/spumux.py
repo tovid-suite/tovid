@@ -5,12 +5,14 @@
 """
 # Incomplete at the moment; run standalone for a brief demo.
 
-__all__ = [
+__all__ = [\
     'Element',
     'Button',
     'Action',
     'SPU',
-    'Textsub']
+    'Textsub',
+    'add_menusubs',
+    'add_textsubs']
 
 from libtovid.utils import temp_name, temp_file
 from xml.dom import getDOMImplementation
