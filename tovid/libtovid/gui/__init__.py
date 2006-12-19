@@ -15,7 +15,7 @@ This GUI module has the following sub-modules:
     util --
 """
 
-__all__ = [
+__all__ = [\
     "configs", 
     "constants",
     "controls", 

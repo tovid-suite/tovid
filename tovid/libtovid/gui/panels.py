@@ -15,9 +15,22 @@ from libtovid.gui import util
 from libtovid.gui.util import _, VER_GetFirstChild, VideoStatSeeker
 from libtovid import Group
 
-__all__ = ["AuthorFilesTaskPanel", "DiscLayoutPanel", "EncodingPanel", "BurnDiscPanel",\
-           "CommandOutputPanel", "DiscPanel", "GroupPanel", "GuidePanel", "HidablePanel", "MenuPanel",\
-           "VideoPanel", "PlaylistTabPanel", "MenuTabPanel", "ThumbnailTabPanel", "DebugTabPanel"]
+__all__ = [\
+    "AuthorFilesTaskPanel",
+    "DiscLayoutPanel",
+    "EncodingPanel",
+    "BurnDiscPanel",
+    "CommandOutputPanel",
+    "DiscPanel",
+    "GroupPanel",
+    "GuidePanel",
+    "HidablePanel",
+    "MenuPanel",
+    "VideoPanel",
+    "PlaylistTabPanel",
+    "MenuTabPanel",
+    "ThumbnailTabPanel",
+    "DebugTabPanel"]
 
 class AuthorFilesTaskPanel(wx.Panel):
     """A three-step interface for authoring video files to disc.

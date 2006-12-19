@@ -8,7 +8,10 @@ from libtovid.gui.configs import TovidConfig
 from libtovid.gui.constants import *
 from libtovid.gui.util import _
 
-__all__ = ["FontChooserDialog", "PreferencesDialog"]
+__all__ = [\
+    "FontChooserDialog",
+    "PreferencesDialog"]
+
 class FontChooserDialog(wx.Dialog):
     """A simple font chooser"""
 
