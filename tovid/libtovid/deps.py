@@ -1,13 +1,14 @@
 #! /usr/bin/env python
 # deps.py
 
-"""Check for run-time dependencies.
+"""This module is for verifying libtovid's run-time dependencies.
+For example:
 
-For example:    deps.require(deps.core)
+    deps.require(deps.core)
 
-    will look for all of tovid's core dependencies. If any cannot be
-    found, the missing ones are printed and an exception is raised.
-    Run deps.py from a prompt for further examples.
+will look for all of tovid's core dependencies. If any cannot be found, the
+missing ones are printed and an exception is raised. Run deps.py from a prompt
+for further examples.
 
 In practice:
 
@@ -17,11 +18,10 @@ In practice:
         print "Exiting..."
         sys.exit(1)
 
-deps.core is an internal dictionary of tovid's core dependencies,
-where the keys are the names, and the values are brief 
-descriptions with URLs.
+deps.core is an internal dictionary of tovid's core dependencies, where the
+keys are the names, and the values are brief descriptions with URLs.
 
-Provided dictionaries:
+Provided dependency dictionaries:
     core      -- grep/sed/md5sum, mplayer, mencoder, mpjpegtools, ffmpeg
     magick    -- composite, convert
     dvd       -- spumux, dvdauthor, growisofs
@@ -30,14 +30,13 @@ Provided dictionaries:
     plugin    -- sox, normalize
     all       -- ALL dependencies above
     
-If you don't want to use a provided dictionary, you can specify
-which dependencies to check for with a string or list:
+If you don't want to use a provided dictionary, you can specify individual
+program names to look for:
 
     deps.require("more less cat")
 
-require also provides ways to print custom URLs and help when it
-cannot find dependencies. See help(deps.require) or keep reading.
-
+require also provides ways to print custom URLs and help when it cannot find
+dependencies. See help(deps.require) or keep reading.
 """
 
 __all__ = [\
@@ -46,15 +45,17 @@ __all__ = [\
 import subprocess
 import textwrap
 
-# =========================================================\
-# E X C E P T I O N   C L A S S E S                        |
+###
+### Exceptions
+###
 
 class DepError(Exception): pass
 class InputError(DepError): pass
 class MissingError(DepError): pass
 
-# =========================================================\
-# M O D U L E   D A T A                                    |
+###
+### Module data
+###
 
 # Dictionary format: {  "name": "dep_url"  }
 all = {}
@@ -101,11 +102,15 @@ plugin = {
     "normalize":    "wave gain and normalization (normalize.nongnu.org)" }
 all.update(plugin)
 
-__missing_dependency_message = "Please install the above MISSING dependencies and try again. See http://tovid.wikia.com/wiki/Tovid_dependencies or http://tovid.org for more help."
+__missing_dependency_message = \
+"""Please install the above MISSING dependencies and try again. See
+http://tovid.wikia.com/wiki/Tovid_dependencies or http://tovid.org
+for more help.
+"""
 
-
-# =========================================================\
-# I N T E R N A L   F U N C T I O N S                      |
+###
+### Internal functions
+###
 
 def __whych(executable):
     """Returns the stdout from "which 'executable'"."""
@@ -122,9 +127,9 @@ def __have_dep(dependency):
     else:
         return False
 
-
-# =========================================================\
-# I M P O R T A B L E   F U N C T I O N S                  |
+###
+### Exported functions
+###
 
 def require(dep, 
            help="You need these to finish what you were doing.",
@@ -133,19 +138,17 @@ def require(dep,
     """Assert that one or more dependencies exist on the system, raise
     a 'MissingError' exception if not.
     
-    Keyword arguments:
-    dep  -- the dependencies to assert. OK types: dict, list, str. 
-            For dicts, the keys are used as names; for lists, the 
-            members; and for a string, words separated by spaces.
-    help -- a description about why the dependencies are needed,
-    url  -- a short description of the dep, and its homepage
+        dep:    The dependencies to assert. OK types: dict, list, str. 
+                For dicts, the keys are used as names; for lists, the 
+                members; and for a string, words separated by spaces.
+        help:   A description about why the dependencies are needed,
+        url:    A short description of the dep, and its homepage
 
     NB: url may be stored in one of the internal dependency dictionaries.
-        In this case, the url is automatically taken from the dictionary
-        value, overriding any input specified.
-        Also, url is used for EVERY dep that doesn't have an existing
-        entry in a dictionary, so be careful when checking for more than
-        one dependency while giving a url.
+    In this case, the url is automatically taken from the dictionary value,
+    overriding any input specified. Also, url is used for EVERY dep that
+    doesn't have an existing entry in a dictionary, so be careful when
+    checking for more than one dependency while giving a url.
 
     Examples:
         require(all)
@@ -191,8 +194,9 @@ def require(dep,
         raise MissingError, "Cannot find required dependencies!"
 
 
-# =========================================================\
-# M A I N                                                  |
+###
+### Main
+###
 
 if __name__ == "__main__":
     trials = [  
