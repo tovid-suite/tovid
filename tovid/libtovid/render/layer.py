@@ -1,19 +1,19 @@
 #! /usr/bin/env python
 # layer.py
 
-"""This module provides the Layer class and several of its derivatives. A Layer
+"""This module provides a Layer class and several derivatives. A Layer
 is a graphical overlay that may be composited onto an image canvas.
 
 Run this script standalone for a demonstration:
 
     $ python libtovid/layer.py
 
-Layer subclasses may combine many graphical elements, including other Layers,
-into a single interface for customizing and drawing those elements. Layers may
+Layer subclasses may combine graphical elements, including other Layers,
+into a single interface for drawing and customizing those elements. Layers may
 exhibit animation, through the use of keyframed drawing commands, or through
 use of the Effect class (and its subclasses, as defined in libtovid/effect.py).
 
-Each class provides (at least) an initialization function, and a draw
+Each Layer subclass provides (at least) an __init__ function, and a draw
 function. For more on how to use Layers, see the Layer class definition and
 template example below.
 """
@@ -31,15 +31,13 @@ __all__ = [\
     'SafeArea',
     'Scatterplot',
     'InterpolationGraph',
-    'ColorBars'
-]
+    'ColorBars']
 
 import os
 import sys
 import math
 import commands
 from libtovid.utils import get_file_type
-# Temporarily use local classes: (add libtovid. later)
 from libtovid.render.drawing import Drawing
 from libtovid.render.effect import Effect
 from libtovid.render.animation import Keyframe, Tween
@@ -59,18 +57,18 @@ class Layer:
         self.effects = []
         self.sublayers = []
 
-    #
-    # Derived-class interface
-    #
+    ###
+    ### Derived-class interface
+    ###
     
     def draw(self, drawing, frame):
         """Draw the layer and all sublayers onto the given Drawing. Override
         this function in derived layers."""
         assert isinstance(drawing, Drawing)
 
-    #
-    # Sublayer and effect interface
-    #
+    ###
+    ### Sublayer and effect interface
+    ###
     
     def add_sublayer(self, layer, position=(0, 0)):
         """Add the given Layer as a sublayer of this one, at the given position.
@@ -111,8 +109,6 @@ class Layer:
         # Close out effect rendering, in reverse (nested) order
         for effect in reversed(self.effects):
             effect.post_draw(drawing, frame)
-
-
 
 
 # ============================================================================
@@ -157,8 +153,8 @@ class MyLayer (Layer):
         # For safety's sake, make sure you really have a Drawing object:
         assert isinstance(drawing, Drawing)
 
-        # Then, save the drawing context. This isolates any upcoming effects or
-        # style changes from messing up the surrounding layers in the Drawing.
+        # Save the drawing context. This prevents any upcoming effects or
+        # style changes from messing up surrounding layers in the Drawing.
         drawing.save()
 
         # Get a Cairo pattern source for the fill and stroke colors
@@ -166,7 +162,7 @@ class MyLayer (Layer):
         fc = drawing.create_source(self.fill_color, 0.6)
         sc = drawing.create_source(self.stroke_color)
 
-        # And a good default stroke width of 1, say:
+        # And a stroke width of 1, say:
         drawing.stroke_width(1)
 
         # Now, draw something. Here, a couple of pretty semitransparent
@@ -189,11 +185,6 @@ class MyLayer (Layer):
 # ============================================================================
 
 
-
-#####            #####
-##### Background #####
-#####            #####
-
 class Background (Layer):
     """A background that fills the frame with a solid color, or an image."""
     def __init__(self, color='black', filename=''):
@@ -213,11 +204,6 @@ class Background (Layer):
             drawing.rectangle((0, 0), drawing.size)
             drawing.fill(self.color)
         drawing.restore()
-
-
-#####       #####
-##### Image #####
-#####       #####
 
 
 class Image (Layer):
@@ -244,11 +230,6 @@ class Image (Layer):
         self.image_source = drawing.image(self.position, self.size,
                                           self.image_source)
         drawing.restore()
-
-
-#####           #####
-##### VideoClip #####
-#####           #####
 
 
 class VideoClip (Layer):
@@ -297,12 +278,6 @@ class VideoClip (Layer):
         drawing.restore()
 
 
-
-
-#####      #####
-##### Text #####
-#####      #####
-
 class Text (Layer):
     """A simple text string, with size, color and font.
 
@@ -319,7 +294,6 @@ class Text (Layer):
         # Set (x,y) position
         assert(isinstance(position, tuple))
         self.position = position
-        
 
     def extents(self, drawing):
         """Get text extents with the specifies fonts, etc.."""
@@ -328,7 +302,6 @@ class Text (Layer):
         drawing.font_size(self.fontsize)
         ex = drawing.text_extents(self.text)
         drawing.restore()
-
         return ex
 
     def draw(self, drawing, frame=1):
@@ -344,11 +317,6 @@ class Text (Layer):
         drawing.restore()
 
 
-
-#####       #####
-##### Label #####
-#####       #####
-
 class Label (Text):
     """A text string with a rectangular background.
 
@@ -360,7 +328,6 @@ class Label (Text):
         # Set (x,y) position
         assert(isinstance(position, tuple))
         self.position = position
-
 
     def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
@@ -392,11 +359,6 @@ class Label (Text):
 
         # Restore context
         drawing.restore()
-
-
-#####         #####
-##### TextBox #####
-#####         #####
 
 
 class TextBox (Text):
@@ -485,12 +447,6 @@ class TextBox (Text):
                     drawing.restore()
         drawing.restore()
 
-    
-
-#####       #####
-##### Thumb #####
-#####       #####
-
 
 class Thumb (Layer):
     """A thumbnail image or video."""
@@ -512,7 +468,6 @@ class Thumb (Layer):
             self.add_sublayer(Image(filename, self.size, self.position))
         self.lbl = Label(self.title, fontsize=15)
         self.add_sublayer(self.lbl, self.position)
-        
 
     def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
@@ -522,12 +477,6 @@ class Thumb (Layer):
         drawing.translate((0, h))
         self.draw_sublayers(drawing, frame)
         drawing.restore()
-
-
-
-#####           #####
-##### ThumbGrid #####
-#####           #####
 
 
 class ThumbGrid (Layer):
@@ -598,11 +547,6 @@ class ThumbGrid (Layer):
         self.draw_sublayers(drawing, frame)
         drawing.restore()
 
-
-
-#####          #####
-##### SafeArea #####
-#####          #####
     
 class SafeArea (Layer):
     """Render a safe area box at a given percentage.
@@ -633,10 +577,6 @@ class SafeArea (Layer):
         # Restore context
         drawing.restore()
 
-
-#####             #####
-##### Scatterplot #####
-#####             #####
 
 class Scatterplot (Layer):
     """A 2D scatterplot of data.
@@ -739,12 +679,7 @@ class Scatterplot (Layer):
         
         # Restore context
         drawing.restore()
-        
 
-
-#####                    #####
-##### InterpolationGraph #####
-#####                    #####
 
 class InterpolationGraph (Layer):
     # TODO: Support graphing of tuple data
@@ -832,20 +767,13 @@ class InterpolationGraph (Layer):
         drawing.restore()
 
 
-
-
-
-
-#####           #####
-##### ColorBars #####
-#####           #####
-
 class ColorBars (Layer):
-    """SMPTE color bars
-    
-    size -- (width, height) tuple
+    """Standard SMPTE color bars
+    (http://en.wikipedia.org/wiki/SMPTE_color_bars)
     """
     def __init__(self, size, position=(0,0)):
+        """Create color bars in a region of the given size and position.
+        """
         Layer.__init__(self)
         self.size = size
         # Set (x,y) position
@@ -922,9 +850,7 @@ class ColorBars (Layer):
         drawing.fill('rgb(24, 24, 24)')
         drawing.restore()
 
-# ============================================================================
-# Demo
-# ============================================================================
+
 if __name__ == '__main__':
     images = None
     # Get arguments, if any
