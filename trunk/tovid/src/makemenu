@@ -338,22 +338,27 @@ else
     FG_HEIGHT=$(expr $HEIGHT \- 10)
 fi
 
-# Check to see if the given font name is available in ImageMagick
-# (only return the first exact match)
-USE_TITLE_FONT=$( convert -list type | \
-    grep -m 1 "$TITLE_FONT" | awk '{print $1}' )
-# If not available, try to use something similar
-if test -z $USE_TITLE_FONT ; then
-    echo $SEPARATOR
-    echo "Font: \"$TITLE_FONT\" does not appear to be available in ImageMagick."
+if test -s "$TITLE_FONT"; then
+    # Using ttf font file for ImageMagick
+    USE_TITLE_FONT="$TITLE_FONT"
+else
+    # Check to see if the given font name is available in ImageMagick
+    # (only return the first exact match)
     USE_TITLE_FONT=$( convert -list type | \
-        grep -i -m 1 "${TITLE_FONT:0:20}" | awk '{print $1}' )
-    if test -z "$USE_TITLE_FONT"; then
-        echo "A similarly-named font was not found. Sorry!"
-        USE_TITLE_FONT="Helvetica"
+	grep -m 1 "$TITLE_FONT" | awk '{print $1}' )
+    # If not available, try to use something similar
+    if test -z $USE_TITLE_FONT ; then
+	echo $SEPARATOR
+	echo "Font: \"$TITLE_FONT\" does not appear to be either as a font file or available in ImageMagick."
+	USE_TITLE_FONT=$( convert -list type | \
+	    grep -i -m 1 "${TITLE_FONT:0:20}" | awk '{print $1}' )
+	if test -z "$USE_TITLE_FONT"; then
+	    echo "A similarly-named font was not found. Sorry!"
+	    USE_TITLE_FONT="Helvetica"
+	fi
+	echo "The font \"$USE_TITLE_FONT\" will be used instead."
+	echo $SEPARATOR
     fi
-    echo "The font \"$USE_TITLE_FONT\" will be used instead."
-    echo $SEPARATOR
 fi
 
 TITLE_TEXT=""
