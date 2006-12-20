@@ -55,7 +55,7 @@ See the todisc manual page ('man todisc') for additional documentation.
 EOF`
 # check if symlink in /tmp exists and use time stamped link if so
 WORK_DIR="/tmp/todisc-work"
-for link in $(find /tmp -maxdepth 1 -name todisc-work\* -type l 2>/dev/null); do
+for link in $(find /tmp -maxdepth 1 -name todisc-work\* -type l 2>/dev/null ); do
     [ -h "$link" ] && { WORK_DIR=/tmp/todisc-work$((NUM++)); continue; }
 done
 CUR_DIR="$(abspath "$(pwd)")"
@@ -486,6 +486,159 @@ function check_filetype()
     else TYPE=unknown
     fi
 }
+
+function get_stats()
+{
+unset IN_STATS FILES_IN
+this_set=$1
+if [[ $this_set = group ]]; then
+    unset TOT IN_STATS FILES_IN
+    TOT=${#grouping[@]} # || TOT=${#IN_FILES[@]}
+    IN_STATS=( "${group_mencoder_stats[@]}" )
+    FILES_IN=( "${grouping[@]}" )
+else
+    TOT=${#IN_FILES[@]}
+    IN_STATS=( "${mencoder_stats[@]}" )
+    FILES_IN=( "${IN_FILES[@]}" )
+fi
+
+for ((i=0; i<TOT; i++)); do
+    VCODEC="$(awk '/VIDEO:/ {gsub(/\[|\]/, ""); print $2}' \
+    <<< "${IN_STATS[i]}")"
+    V_BR="$(awk '/Video stream:/{print $3}'<<< "${IN_STATS[i]}")"
+    ACODEC="$(awk  '/Selected audio codec/ {gsub(/\[|\]/, ""); print $4}' \
+    <<< "${IN_STATS[i]}")"
+    A_BR="$(awk  '/AUDIO:/ {print $7}' <<< "${IN_STATS[i]}")"
+    if [ -z "$A_BR" ]; then
+        A_BR="No audio found"
+    fi
+    if [ -e "$WORK_DIR/nav${i}_log" ]; then
+        V_LENGTH=$(awk_math ${length[i]} by $FRAME_RATE float)
+    else
+        V_LENGTH=$(awk '/Video stream:/{print $10}'<<< "${IN_STATS[i]}")
+    fi
+    FPS="$(awk ' /VIDEO/ { if ($_=="fps"); sub(/fps.*$/, ""); print $NF}' <<<"${IN_STATS[i]}")"
+    yecho
+    if [[ $this_set = group ]] && ((i == 0)); then
+        echo; echo ". . . Grouped file stats . . ."; echo
+    yecho
+    fi
+    [[ $this_set = group ]] && echo -e "Stats for" $(readlink "${FILES_IN[i]}") "\n" || \
+    echo -e "Stats for" "${FILES_IN[i]}" "\n"
+    echo -e  \
+    " video codec:   " \
+    "$VCODEC" "\n" \
+    "video bitrate: " "$V_BR" "kbps" "\n" \
+    "framerate:     " "$FPS" "fps" "\n" \
+    "audio codec:   " \
+    "$ACODEC" "\n" \
+    "audio bitrate: " \
+    "$A_BR" " kbps" "\n" \
+    "video length:  " \
+    "$V_LENGTH" " seconds" |tee -a "$LOG_FILE"
+done
+}
+
+
+function check_compliance()
+{
+    unset FILES_TO_ENCODE ENC_IN_FILES CHECK_IN_FILES
+    group_set=false
+    if [[ $1 = group ]]; then
+        group_set=:
+        unset x a
+        CHECK_IN_FILES=( "${grouping[@]}" )
+    else
+        CHECK_IN_FILES=( "${IN_FILES[@]}" )
+    fi
+    for ((i=0; i<${#CHECK_IN_FILES[@]}; i++)); do
+        IN_FILE="${CHECK_IN_FILES[i]}"
+        $group_set && yecho "Checking "$(readlink $IN_FILE)" for compliance..."
+        ! $group_set && yecho "Checking $IN_FILE for compliance..."
+        # TODO: Check for PAL/NTSC compliance
+        # If video matches the target format and TV standard, append to ENC_IN_FILES
+        if test "$(idvid -isformat $TARGET "$IN_FILE")" = "true" && \
+           test "$(idvid -istvsys $TV_STANDARD "$IN_FILE")" = "true"; then
+            ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE")
+        # Video needs to be re-encoded; use a .enc filename in ENC_IN_FILES
+        else
+            FILES_TO_ENCODE[i]="$IN_FILE"
+            ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE.enc.mpg")
+        fi
+    done
+    if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
+        TGT_CAPS=$(echo $TARGET | tr a-z A-Z)
+        TV_STND_CAPS=$(echo $TV_STANDARD | tr a-z A-Z)
+        yecho
+        yecho "Encode input files"
+        yecho
+        yecho "Some of the -files you provided are not $TV_STND_CAPS $TGT_CAPS-compliant:"
+        yecho " "
+        for i in "${FILES_TO_ENCODE[@]}"; do
+            test -n "$i" && yecho "  $(readlink $i)"
+        done
+        yecho " "
+        if $NOASK; then
+            echo "Converting files to $TV_STND_CAPS $TGT_CAPS-compliant format."
+            echo "(This may take a long time)"
+            ENCODE="yes"
+        else
+            yecho "I can encode them for you, but it may take a long time."
+            yecho "Encoding will ensure that your disc is fully compliant;"
+            yecho "you may skip this, but your disc may not be playable."
+            yecho "Please type 'yes' if you want the files to be encoded:"
+            read ENCODE
+        fi
+        if test -n "$ENCODE" && test "$ENCODE" = 'yes'; then
+            yecho
+            yecho "Converting files to $TGT_CAPS format with 'tovid'"
+            for i in "${FILES_TO_ENCODE[@]}"; do
+                $group_set && yecho "Converting $(readlink $i)" || yecho "Converting: $i"
+                countdown
+                $group_set && IN="$(readlink "$i")" || IN="$i"
+                tovid -$TV_STANDARD -$TARGET -in "$IN" -out "$IN.enc" $TOVID_OPTS
+                wait
+                # See if output file exists
+                if ! test -f "$IN.enc.mpg"; then
+                    runtime_error "Could not encode file: $i"
+                fi
+                yecho
+            done
+            # Replace IN_FILES with ENC_IN_FILES (with .enc extension)
+            if $group_set; then
+                
+                
+                for title in "${FILES_TO_ENCODE[@]}"; do
+                    ln -sfv "$(readlink "${title}").enc.mpg" "$title"
+                done
+            else    
+                 IN_FILES=("${ENC_IN_FILES[@]}")
+            fi
+        else
+            yecho
+            yecho "Not re-encoding. I will proceed with menu generation, but"
+            yecho "your authored disc will not be fully $TGT_CAPS-compliant."
+            yecho
+        fi
+    fi
+}
+
+function mk_workdir()
+{
+    if [[ -d "$REAL_WORK_DIR" && -z ${GROUP[@]} ]]; then
+        echo "Removing existing files in \"$REAL_WORK_DIR\""
+        rm -rf "$REAL_WORK_DIR"
+    fi
+    mkdir -pv "$REAL_WORK_DIR"
+    if [[ -h "$WORK_DIR" && -z ${GROUP[@]} ]]; then
+        echo -n "Removing existing symlink in /tmp . . . "
+        rm -fv "$WORK_DIR"
+    fi
+
+    # link WORK_DIR to /tmp for easy solution to spaces, illegal chars bugs
+    [[ -z ${GROUP[@]} ]] && ln -sfv "$REAL_WORK_DIR" "$WORK_DIR"
+}
+
 function exit_from_gui()
 {
     yecho
@@ -526,14 +679,20 @@ while test $# -gt 0; do
             ;;
         "-group" )
             shift
+            mk_workdir
             get_listargs "$@"
-            unset group groupkey x
+            unset group groupkey grp x
             for ((i=1; i<${#ARGS_ARRAY[@]}; i++)); do
                 grp[x++]="$(abspath "${ARGS_ARRAY[i]}")"
             done
+            GROUP_IN_FILES=( "${GROUP_IN_FILES[@]}" "${grp[@]}" )
             group="$(for ((b=0; b<${#grp[@]}; b++)); do echo -e "${grp[b]}"; done)"
             groupkey=$(( ${ARGS_ARRAY[0]} - 1))
             GROUP[groupkey]="$group"
+            # create symlinks to ease substitution later
+            for c in ${!grp[@]}; do
+                ln -sv "${grp[c]}" $WORK_DIR/group-$((groupkey+1))-$((c+1)).mpg
+            done
             GROUPING=:
             ;;
         "-titles" )
@@ -980,20 +1139,14 @@ yecho
 yecho "Creating work directories"
 yecho
 
-# remove symlink in /tmp if there is one (should not be)
-if test -h "$WORK_DIR"; then
-    echo -n "Removing existing symlink in /tmp . . . "
-    rm -fv "$WORK_DIR"
+# create an array of grouped files. Hopefully LC_ALL=C takes care of sort issues
+if $GROUPING; then
+    LC_ALL=C grouping=( $WORK_DIR/group* )
 fi
 
 # Clean out any existing WORK_DIR
-if test -d "$REAL_WORK_DIR"; then
-    echo "Removing existing files in \"$REAL_WORK_DIR\""
-    rm -rf "$REAL_WORK_DIR"
-fi
-mkdir -pv "$REAL_WORK_DIR"
 # link WORK_DIR to /tmp for easy solution to spaces, illegal chars bugs
-ln -sfv "$REAL_WORK_DIR" "$WORK_DIR"
+! $GROUPING && mk_workdir
 
 # Remove any existing log file
 test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
@@ -2293,7 +2446,7 @@ for button in Select Highlight; do
     mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
 done
 if $SHOWCASE; then
-    if [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
+    if ! $NO_SC_THUMB; then
         # find out where to put the showcase image/video in the X axis
         sc_size=$(identify "$WORK_DIR/showcase_img.png"|awk '{print $3}')
         sc_width=${sc_size/x*}
@@ -2438,66 +2591,9 @@ if ! $NOASK; then
 fi
 
 # Check input files for compliance; offer to tovid-encode non-compliant files
-for ((i=0; i<=NUM_FILES; i++)); do
-    IN_FILE="${IN_FILES[i]}"
-    yecho "Checking $IN_FILE for compliance..."
-    # TODO: Check for PAL/NTSC compliance
-    # If video matches the target format and TV standard, append to ENC_IN_FILES
-    if test "$(idvid -isformat $TARGET "$IN_FILE")" = "true" && \
-       test "$(idvid -istvsys $TV_STANDARD "$IN_FILE")" = "true"; then
-        ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE")
-    # Video needs to be re-encoded; use a .enc filename in ENC_IN_FILES
-    else
-        FILES_TO_ENCODE[i]="$IN_FILE"
-        ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE.enc.mpg")
-    fi
-done
-if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
-    TGT_CAPS=$(echo $TARGET | tr a-z A-Z)
-    TV_STND_CAPS=$(echo $TV_STANDARD | tr a-z A-Z)
-    yecho
-    yecho "Encode input files"
-    yecho
-    yecho "Some of the -files you provided are not $TV_STND_CAPS $TGT_CAPS-compliant:"
-    yecho " "
-    for i in "${FILES_TO_ENCODE[@]}"; do
-        test -n "$i" && yecho "  $i"
-    done
-    yecho " "
-    if $NOASK; then
-        echo "Converting files to $TV_STND_CAPS $TGT_CAPS-compliant format."
-        echo "(This may take a long time)"
-        ENCODE="yes"
-    else
-        yecho "I can encode them for you, but it may take a long time."
-        yecho "Encoding will ensure that your disc is fully compliant;"
-        yecho "you may skip this, but your disc may not be playable."
-        yecho "Please type 'yes' if you want the files to be encoded:"
-        read ENCODE
-    fi
-    if test -n "$ENCODE" && test "$ENCODE" = 'yes'; then
-        yecho
-        yecho "Converting files to $TGT_CAPS format with 'tovid'"
-        for i in "${FILES_TO_ENCODE[@]}"; do
-            yecho "Converting: $i"
-            countdown
-            tovid -$TV_STANDARD -$TARGET -in "$i" -out "$i.enc" $TOVID_OPTS
-            wait
-            # See if output file exists
-            if ! test -f "$i.enc.mpg"; then
-                runtime_error "Could not encode file: $i"
-            fi
-            yecho
-        done
-        # Replace IN_FILES with ENC_IN_FILES (with .enc extension)
-        IN_FILES=("${ENC_IN_FILES[@]}")
-    else
-        yecho
-        yecho "Not re-encoding. I will proceed with menu generation, but"
-        yecho "your authored disc will not be fully $TGT_CAPS-compliant."
-        yecho
-    fi
-fi
+check_compliance
+check_compliance group
+
 # symlink IN_FILES in $WORK_DIR to solve some quoting issues for dvdauthor
 
 for i in ${!IN_FILES[@]}; do
@@ -2537,36 +2633,23 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
     $STATS_FRAMES -o /dev/null 2>&1)")
     unset NAVSEEK_CMD
 done
+if $GROUPING; then
+    echo
+    echo ". . . Getting stats on grouped files now . . ."
+    echo
+    for u in ${!grouping[@]}; do
+        echo "Getting stats on "$(readlink "${grouping[u]}")""
+        echo
+        group_mencoder_stats=( "${group_mencoder_stats[@]}" \
+        "$(mencoder -quiet "${grouping[u]}" -oac pcm -ovc copy \
+        $STATS_FRAMES -o /dev/null 2>&1)")
+    done
+fi
+
 # put in the log file in case anyone is interested
-for ((i=0; i<${#IN_FILES[@]}; i++)); do
-    VCODEC="$(awk '/VIDEO:/ {gsub(/\[|\]/, ""); print $2}' \
-    <<< "${mencoder_stats[i]}")"
-    V_BR="$(awk '/Video stream:/{print $3}'<<<"${mencoder_stats[i]}")"
-    ACODEC="$(awk  '/Selected audio codec/ {gsub(/\[|\]/, ""); print $4}' \
-    <<< "${mencoder_stats[0]}")"
-    A_BR="$(awk  '/AUDIO:/ {print $7}' <<< "${mencoder_stats[i]}")"
-    if [ -z "$A_BR" ]; then
-        A_BR="No audio found"
-    fi
-    if [ -e "$WORK_DIR/nav${i}_log" ]; then
-        V_LENGTH=$(awk_math ${length[i]} by $FRAME_RATE float)
-    else
-        V_LENGTH="$(awk '/Video stream:/{print $10}'<<<"${mencoder_stats[i]}")"
-    fi
-    FPS="$(awk ' /VIDEO/ { if ($_=="fps"); sub(/fps.*$/, ""); print $NF}' <<<"${mencoder_stats[i]}")"
-    yecho
-    echo -e "Stats for" "${IN_FILES[i]}" "\n" \
-    "video codec:   " \
-    "$VCODEC" "\n" \
-    "video bitrate: " "$V_BR" "kbps" "\n" \
-    "framerate:     " "$FPS" "fps" "\n" \
-    "audio codec:   " \
-    "$ACODEC" "\n" \
-    "audio bitrate: " \
-    "$A_BR" " kbps" "\n" \
-    "video length:  " \
-    "$V_LENGTH" " seconds" |tee -a "$LOG_FILE"
-done
+get_stats files
+echo
+$GROUPING && get_stats group
 echo
 echo $SEPARATOR
 
@@ -2870,9 +2953,9 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
         echo -e "        <vob file=\"$REAL_WORK_DIR/$i.mpg\"/>"
     fi
     if [[ ${GROUP[i]} ]]; then
-        while read f; do
-            echo -e "        <vob file=\"$f\"/>"
-        done <<< "${GROUP[i]}"
+        for mpg in $WORK_DIR/group-$((i+1))-*; do
+            echo -e "        <vob file=\"$mpg\"/>"
+        done
     fi
     if $CHAIN_VIDEOS; then
         if [ "${POST_PLAY[i]}" = "chain" ]; then
