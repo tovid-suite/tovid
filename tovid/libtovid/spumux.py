@@ -11,11 +11,17 @@ __all__ = [\
     'Action',
     'SPU',
     'Textsub',
-    'add_menusubs',
-    'add_textsubs']
+    'add_subpictures',
+    'add_subtitles']
 
 from libtovid.utils import temp_name, temp_file
 from xml.dom import getDOMImplementation
+
+
+###
+### Classes
+###
+
 
 # TODO: Move some of the xml.dom ugliness into the Element base class, then
 # hide it away somewhere...
@@ -50,7 +56,7 @@ class Element:
         
             attributes: Dictionary of attributes and values
             kwargs:     Keyword arguments for setting specific attributes
-                        NOTE: Hyphenated attribute names can't be used here
+                        (Note: Hyphenated attribute names aren't allowed here)
         
         All attributes must match those listed in ATTRIBUTES; a KeyError
         is raised for non-valid attributes.
@@ -88,12 +94,6 @@ class Element:
         for child in self.children:
             elem.appendChild(child.dom_element(document))
         return elem
-
-    def get_xml(self):
-        """Return a string containing formatted XML for the current Element.
-        """
-        # TODO
-        pass
 
 
 class Textsub (Element):
@@ -153,38 +153,11 @@ class SPU (Element):
     def __init__(self, attributes=None, **kwargs):
         Element.__init__(self, 'spu', attributes, **kwargs)
 
+
 ###
-### What a mess!
+### Internal functions
 ###
 
-def get_xml(subtitle):
-    """Returns a string containing formatted spumux XML for the given Subtitle.
-    
-        subtitle:  A Subtitle object to generate XML from
-
-    """
-    # subpictures element (top-level XML element for spumux)
-    dom = getDOMImplementation()
-    doc = dom.createDocument(None, "subpictures", None)
-    root = doc.firstChild
-    # stream element
-    stream = doc.createElement("stream")
-    root.appendChild(stream)
-    # textsub or spu element
-    sub = doc.createElement(subtitle.subtype)
-    stream.appendChild(sub)
-    # Set attributes for the textsub or spu element
-    for key, value in subtitle.attributes.iteritems():
-        sub.setAttribute(key, str(value))
-    # Add buttons for spu elements
-    if subtitle.subtype == 'spu' and subtitle.buttons:
-        for button in subtitle.buttons:
-            btn = doc.createElement('button')
-            for key, value in button.attributes.iteritems():
-                btn.setAttribute(key, str(value))
-            sub.appendChild(btn)
-    # Return formatted XML
-    return doc.toprettyxml()
 
 def get_xml(textsub_or_spu):
     """Return a string of spumux XML for the given Textsub or SPU element.
@@ -201,6 +174,7 @@ def get_xml(textsub_or_spu):
     # Return formatted XML
     return doc.toprettyxml(indent='    ')
 
+
 def get_xmlfile(textsub_or_spu):
     """Write spumux XML file for the given Textsub or SPU element, and
     return the written filename.
@@ -210,6 +184,7 @@ def get_xmlfile(textsub_or_spu):
     xmlfile.write(xmldata)
     xmlfile.close()
     return xmlfile.name
+
 
 def mux_subs(subtitle, movie_filename, stream_id=0):
     """Run spumux to multiplex the given subtitle with an .mpg file.
@@ -235,50 +210,62 @@ def mux_subs(subtitle, movie_filename, stream_id=0):
     # Remove the XML file
     os.remove(xmlfile.name)
 
+
 ###
-### Main API
+### Exported functions
 ###
 
-def add_menusubs(movie_filename, select, image=None, highlight=None):
-    """Adds PNG image subtitles to an .mpg video file to create a DVD menu.
+
+def add_subpictures(movie_filename, select, image=None, highlight=None,
+                    buttons=None):
+    """Adds PNG image subpictures to an .mpg video file to create a DVD menu.
     
         select:    Image shown as the navigational selector or "cursor"
         image:     Image shown for non-selected regions
         highlight: Image shown when "enter" is pressed
+        buttons:   List of Buttons associated with the subpicture, or
+                   None to use autodetection (autooutline=infer)
         
     All images must indexed, 4-color, transparent, non-antialiased PNG.
     Button regions are auto-inferred from the images; explicit button region
     configuration may be available in the future.
     """
-    # TODO: Support explicit button regions, actions
-    infile = load_media(movie_filename)
     attributes = {
-        'start': 0.00,
+        'start': 0,
         'force': 'yes',
-        'image': image,
         'select': select,
-        'highlight': highlight,
-        'autooutline': 'infer',
-        'outlinewidth': 10} # TODO Find a good default outlinewidth
+        'image': image,
+        'highlight': highlight}
     spu = SPU(attributes)
+    if buttons == None:
+        # TODO Find a good default outlinewidth
+        spu.set(autooutline=infer, outlinewidth=10)
+    else:
+        for button in buttons:
+            spu.add_child(button)
     mux_subs(spu, movie_filename)
 
-def add_textsubs(movie_filename, sub_filenames):
-    """Adds text subtitle files to an .mpg video file.
+
+def add_subtitles(movie_filename, sub_filenames):
+    """Adds one or more subtitle files to an .mpg video file.
     
-        movie_filename:  Name of .mpg to add subtitles to
-        sub_filenames:   Name of subtitle files to include (.sub/.srt etc.)
+        movie_filename: Name of .mpg file to add subtitles to
+        sub_filenames:  Filename or list of filenames of subtitle
+                        files to include (.sub/.srt etc.)
 
     """
     infile = load_media(movie_filename)
     width, height = infile.scale
-    # spumux textsub attributes
+    # Use attributes from movie file
     attributes = {
         'movie-fps': infile.fps,
         'movie-width': width,
         'movie-height': height}
+    # Convert sub_filenames to list if necessary
+    if type(sub_filenames) == str:
+        sub_filenames = [sub_filenames]
     # spumux each subtitle file with its own stream ID
-    for stream_id, sub_filename in enumerate(sub_files):
+    for stream_id, sub_filename in enumerate(sub_filenames):
         # <textsub attribute="value" .../>
         textsub = Textsub(attributes, filename=sub_filename)
         mux_subs(textsub, movie_filename, stream_id)

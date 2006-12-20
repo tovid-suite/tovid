@@ -243,4 +243,4 @@ class TextMenu:
         image = None
         select = self.basename + '.sel.png'
         highlight = self.basename + '.hi.png'
-        spumux.add_menusubs(menu_mpg, image, select, highlight)
+        spumux.add_subpictures(menu_mpg, image, select, highlight)
