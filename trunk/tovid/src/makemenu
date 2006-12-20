@@ -118,6 +118,8 @@ TITLE_SIZE="24"
 TEXT_ALIGN="northwest"
 # Amount of vertical spacing (pixels) between titles
 TITLE_SPACING="30"
+# Button char
+BUTTON_CHAR=">"
 # Button list for spumux XML
 SPUMUX_BUTTONS=""
 # Padding for spumux buttons (from screen left and right)
@@ -237,8 +239,8 @@ while test $# -gt 0; do
         "-align" )
             shift
             case "$1" in
-                "left" ) TEXT_ALIGN="northwest" ;;
-                "right" ) TEXT_ALIGN="northeast" ;;
+                "left" ) TEXT_ALIGN="northwest"; BUTTON_CHAR=">" ;;
+                "right" ) TEXT_ALIGN="northeast"; BUTTON_CHAR="<" ;;
                 "center" ) TEXT_ALIGN="north" ;;
                 * ) TEXT_ALIGN=$(echo "$1" | tr A-Z a-z)
             esac
@@ -396,7 +398,7 @@ for ((i=0; i<$NUM_TITLES; i++)); do
         # Use a highlight cursor for DVD titles
         else
             POS_TEXT="text 15,$CUR_Y '${TITLES[i]}'"
-            BUTTON_TEXT="$BUTTON_TEXT text 0,$CUR_Y '>'"
+            BUTTON_TEXT="$BUTTON_TEXT text 0,$CUR_Y '$BUTTON_CHAR'"
         fi
         TITLE_TEXT="$TITLE_TEXT $POS_TEXT"
         add_button "button${CUR_BUTTON_NUM}" $BUTTON_X1 $CUR_Y $BUTTON_X2 $NEXT_Y
@@ -419,7 +421,7 @@ if test -n "$BACK_BUTTON" ; then
         POS_TEXT="text 15,$CUR_Y '$CUR_BUTTON_NUM. Back'"
     else
         POS_TEXT="text 0,$CUR_Y 'Back'"
-        BUTTON_TEXT=$( echo "$BUTTON_TEXT text 0,$CUR_Y '<'" )
+        BUTTON_TEXT=$( echo "$BUTTON_TEXT text 0,$CUR_Y '$BUTTON_CHAR'" )
     fi
     TITLE_TEXT="$TITLE_TEXT $POS_TEXT"
     add_button "back" $BUTTON_X1 $CUR_Y $BUTTON_X2 $NEXT_Y
