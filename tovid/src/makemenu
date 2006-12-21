@@ -115,6 +115,7 @@ SELECT_COLOR="#F00"
 # Default title font and point size
 TITLE_FONT="helvetica"
 TITLE_SIZE="24"
+FONT_DECO="-stroke black -strokewidth 1"
 TEXT_ALIGN="northwest"
 # Amount of vertical spacing (pixels) between titles
 TITLE_SPACING="30"
@@ -223,6 +224,10 @@ while test $# -gt 0; do
             shift
             TITLE_SIZE="$1"
             TITLE_SPACING=$(expr $TITLE_SIZE \* 5 \/ 4)
+            ;;
+        "-fontdeco" )
+            shift
+            FONT_DECO="$1"
             ;;
         "-textcolor" )
             shift
@@ -476,11 +481,8 @@ if test $VID_LENGTH -eq 0 ; then
 fi
 
 # Add text titles to a blank image the size of the foreground canvas
-MAGICK_CMD="convert -size ${FG_WIDTH}x${FG_HEIGHT} xc:none -antialias \
-    -font \"$USE_TITLE_FONT\" -pointsize $TITLE_SIZE -fill \"$TEXT_COLOR\" \
-    -stroke black -strokewidth 3 -draw \"gravity $TEXT_ALIGN $TITLE_TEXT\" \
-    -stroke none -draw \"gravity $TEXT_ALIGN $TITLE_TEXT\" \
-    \"$FG_CANVAS\""
+
+MAGICK_CMD="convert -size ${FG_WIDTH}x${FG_HEIGHT} xc:none -antialias -font \"$USE_TITLE_FONT\" -pointsize $TITLE_SIZE $FONT_DECO -fill \"$TEXT_COLOR\" -draw \"gravity $TEXT_ALIGN $TITLE_TEXT\" \"$FG_CANVAS\""
 echo $SEPARATOR
 echo "Creating the foreground canvas with the following command:"
 echo $"$MAGICK_CMD"
