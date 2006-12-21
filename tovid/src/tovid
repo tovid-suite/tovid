@@ -90,6 +90,7 @@ NOASK=false
 
 # NTSC DVD full-screen by default
 TGT_RES="DVD"
+WIDTH_704=false
 TVSYS="NTSC"
 BASETVSYS="NTSC"
 ASPECT_RATIO=""
@@ -373,7 +374,8 @@ function get_args()
             "-kvcdx3a" )  TGT_RES="KVCDx3a" ;;
             "-kdvd" )     TGT_RES="KDVD" ;;
             "-bdvd" )     TGT_RES="BDVD" ;;
-            "-dvd704" )   TGT_RES="DVD704" ;;
+            # Use 704x480 for DVD resolutions?
+            "-704" )      WIDTH_704=: ;;
 
             # Other options
             "-normalize" )
@@ -1134,8 +1136,8 @@ case "$TGT_RES" in
         ;;
 
     # DVD (and KDVD/BDVD)
-    "DVD" | "KDVD" | "BDVD" | "DVD704" )
-        if test "$TGT_RES" = "DVD704"; then
+    "DVD" | "KDVD" | "BDVD" )
+        if $WIDTH_704; then
             TGT_WIDTH="704"
         else
             TGT_WIDTH="720"
