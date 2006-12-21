@@ -373,6 +373,7 @@ function get_args()
             "-kvcdx3a" )  TGT_RES="KVCDx3a" ;;
             "-kdvd" )     TGT_RES="KDVD" ;;
             "-bdvd" )     TGT_RES="BDVD" ;;
+            "-dvd704" )   TGT_RES="DVD704" ;;
 
             # Other options
             "-normalize" )
@@ -1133,8 +1134,12 @@ case "$TGT_RES" in
         ;;
 
     # DVD (and KDVD/BDVD)
-    "DVD" | "KDVD" | "BDVD" )
-        TGT_WIDTH="720"
+    "DVD" | "KDVD" | "BDVD" | "DVD704" )
+        if test "$TGT_RES" = "DVD704"; then
+            TGT_WIDTH="704"
+        else
+            TGT_WIDTH="720"
+        fi
         if test "$TVSYS" = "PAL"; then
             TGT_HEIGHT="576"
         else
