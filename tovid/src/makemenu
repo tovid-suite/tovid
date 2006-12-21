@@ -246,7 +246,7 @@ while test $# -gt 0; do
             case "$1" in
                 "left" ) TEXT_ALIGN="northwest"; BUTTON_CHAR=">" ;;
                 "right" ) TEXT_ALIGN="northeast"; BUTTON_CHAR="<" ;;
-                "center" ) TEXT_ALIGN="north" ;;
+                "center" ) TEXT_ALIGN="north"; BUTTON_CHAR="[+]" ;;
                 * ) TEXT_ALIGN=$(echo "$1" | tr A-Z a-z)
             esac
             ;;
