@@ -6,7 +6,6 @@
 # Incomplete at the moment; run standalone for a brief demo.
 
 __all__ = [\
-    'Element',
     'Button',
     'Action',
     'SPU',
@@ -15,101 +14,15 @@ __all__ = [\
     'add_subtitles']
 
 from libtovid.utils import temp_name, temp_file
-from xml.dom import getDOMImplementation
+from libtovid.xml import create_element
 
 
 ###
-### Classes
+### Spumux XML Element subclasses
 ###
 
-
-class Element (object):
-    """Base class XML element, with name and attributes.
-    
-    Valid attributes for the element are defined in class variable ATTRIBUTES.
-    Attributes may be set in the constructor, or by calling set() with a
-    dictionary and/or attribute=value keywords.
-    
-    Use add_child(element) to create a hierarchy of Elements.
-    """
-    # List of valid attributes for this element; override in derived classes
-    NAME = 'empty'
-    ATTRIBUTES = []
-    
-    def __init__(self, attributes=None, **kwargs):
-        """Create a new Element with the given attributes.
-        
-            attributes: Dictionary of attributes matching those in ATTRIBUTES
-            kwargs:     Keyword arguments for setting specific attributes
-                        NOTE: Hyphenated attribute names can't be used here
-        """
-        self.attributes = {}
-        self.children = []
-        # Set attributes from those provided
-        self.set(attributes, **kwargs)
-    
-    def set(self, attributes=None, **kwargs):
-        """Set values for one or more attributes.
-        
-            attributes: Dictionary of attributes and values
-            kwargs:     Keyword arguments for setting specific attributes
-                        (Note: Hyphenated attribute names aren't allowed here)
-        
-        All attributes must match those listed in ATTRIBUTES; a KeyError
-        is raised for non-valid attributes.
-        """
-        # Use attributes, if present (make a copy to avoid changing original)
-        if type(attributes) == dict:
-            attributes = attributes.copy()
-        else:
-            attributes = {}
-        # Override with any provided keyword arguments
-        attributes.update(kwargs)
-        # Set all attributes, raising error on invalid attribute names
-        for key, value in attributes.iteritems():
-            if key in self.ATTRIBUTES:
-                self.attributes[key] = value
-            else:
-                raise KeyError("'%s' element has no attribute '%s'" %
-                               (self.NAME, key))
-
-    def add_child(self, element):
-        """Add the given Element as a child of this Element."""
-        assert isinstance(element, Element)
-        self.children.append(element)
-
-    def dom_element(self, document):
-        """Add the Element and all its children to the given xml.dom Document.
-        Return the xml.dom Element that was added (a different Element class!)
-        """
-        elem = document.createElement(self.NAME)
-        # Set all attributes
-        for key, value in self.attributes.iteritems():
-            if value != None:
-                elem.setAttribute(key, str(value))
-        # Append all children
-        for child in self.children:
-            elem.appendChild(child.dom_element(document))
-        return elem
-
-    def __str__(self):
-        text = '<%s' % self.NAME
-        for attribute, value in self.attributes.items():
-            text += ' %s="%s"' % (attribute, value)
-        text += '/>'
-        return text
-
-
-def create_element(name, valid_attributes):
-    """Create a new XML Element class, having the given name and
-    valid attributes.
-    """
-    return type(name, (Element,),
-                {'name': name, 'ATTRIBUTES': valid_attributes})
-
-
-Textsub = create_element('textsub', [\
-    'filename',
+Textsub = create_element('textsub',
+    ['filename',
     'characterset',
     'fontsize',
     'font',
@@ -122,15 +35,16 @@ Textsub = create_element('textsub', [\
     'movie-width',
     'movie-height'])
 
-Button = create_element('button', [\
-    'name',
+Button = create_element('button',
+    ['name',
     'x0', 'y0', 'x1', 'y1',
     'up', 'down', 'left', 'right'])
 
-Action = create_element('action', ['name'])
+Action = create_element('action',
+    ['name'])
 
-SPU = create_element('spu', [\
-    'start',
+SPU = create_element('spu',
+    ['start',
     'end',
     'image',
     'highlight',
@@ -143,26 +57,21 @@ SPU = create_element('spu', [\
     'xoffset',
     'yoffset'])
 
+Subpictures = create_element('subpictures', [])
+
+Stream = create_element('stream', [])
+
 
 ###
 ### Internal functions
 ###
 
-
 def get_xml(textsub_or_spu):
-    """Return a string of spumux XML for the given Textsub or SPU element.
-    """
-    dom = getDOMImplementation()
-    # Document root with subpictures element
-    doc = dom.createDocument(None, 'subpictures', None)
-    root = doc.firstChild
-    # Add stream element
-    stream = doc.createElement("stream")
-    root.appendChild(stream)
-    # Add remaining elements (SPU or Textsub)
-    stream.appendChild(textsub_or_spu.dom_element(doc))
-    # Return formatted XML
-    return doc.toprettyxml(indent='    ')
+    subpictures = Subpictures()
+    stream = Stream()
+    subpictures.add_child(stream)
+    stream.add_child(textsub_or_spu)
+    return str(subpictures)
 
 
 def get_xmlfile(textsub_or_spu):
@@ -204,7 +113,6 @@ def mux_subs(subtitle, movie_filename, stream_id=0):
 ###
 ### Exported functions
 ###
-
 
 def add_subpictures(movie_filename, select, image=None, highlight=None,
                     buttons=None):
@@ -280,4 +188,3 @@ if __name__ == '__main__':
     textsub.set(filename='foo.sub', fontsize=14.0, font="Luxi Mono")
     print "Textsub xml:"
     print get_xml(textsub)
-
