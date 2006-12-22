@@ -1296,8 +1296,9 @@ fi
 # do not let user use -chapters 0 (-chapters 5 0 6)
 if $SUB_MENU; then
     for ((i=0; i<${#CHAPTERS[@]}; i++)); do
-        if [ ${CHAPTERS[i]} = 0 ]; then
-            usage_error "Please use -chapters 1 not -chapters 0, if you do not want chapters"
+        if ((${CHAPTERS[i]} == 0)) && [[ -z ${GROUP[i]} ]]; then
+            usage_error "Please use -chapters 1 not -chapters 0, if you do not want chapters.
+            -chapters 0 is a special case for -group videos, meaning the each video is a chapter."
         fi
     done
 fi
@@ -2841,13 +2842,8 @@ for ((s=0; s<=NUM_FILES; s++)); do
     # make appropriate chapter lengths for each video
     # get chapter lengths by dividing by $CHAPTERS, then getting running totals
     CHAPT_INTERVALS=( ${CHAPT_INTERVALS[@]} "$(awk_math ${VID_LEN[s]} by ${CHAPTERS[s]} float)" )
-    # <TODO if GROUPING, then get chapter intervals for sucessive grouped files starting at
-    # the 2nd chapter, not 0.0:0.0:0.0
-    # then go through each "group chapter array, adding the value of the length of the 1st
-    # video in the "group" to the values for the 2nd video, and adding the length of the 2nd
-    # video to the values for the 3rd, etc
-    # for making chapter thumbs for the group is more tricky
-    # feed these chapter points to transcode in a loop to transcode as usual, but output
+    # <TODO if GROUPING:  for making chapter thumbs for the group 
+    # feed group chapter points to transcode in a loop to transcode as usual, but output
     # to different subdirs.  Then rename according to framenumber, moving all to the same subdir
     # then follow same procedure as usual in moving into chapter subdirs for final montages
     # /TODO>
@@ -3006,6 +3002,9 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
         get_group_chapters $i format
         if ((${CHAPTERS[i]} == 0)); then
             echo -e "        <vob file=\"$REAL_WORK_DIR/$i.mpg\"/>"
+            for mpg in $WORK_DIR/group-$((i+1))-*; do
+                echo -e "        <vob file=\"$mpg\"/>"
+            done
         else
             echo -e "        <vob file=\"$REAL_WORK_DIR/$i.mpg\" $chpts0/>"
             for mpg in $WORK_DIR/group-$((i+1))-*; do
