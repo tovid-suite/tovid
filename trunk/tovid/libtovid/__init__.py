@@ -50,7 +50,8 @@ __all__ = [\
     'spumux',
     'standard',
     'stats',
-    'utils']
+    'utils',
+    'xml']
 
 import os
 import sys
