@@ -319,6 +319,11 @@ function running_total ()
     for (i=1; i<=NF; i++) if (s=s+$i) printf("%s ",s);printf ("\n")}'
 }
 
+function awk_total()
+{
+    awk '{for (i=1; i<=NF; i++) s=s+$i}; END{print s}'
+}
+
 function format_seconds()
 {
     awk '{
@@ -496,13 +501,17 @@ if [[ $this_set = group ]]; then
     TOT=${#grouping[@]} # || TOT=${#IN_FILES[@]}
     IN_STATS=( "${group_mencoder_stats[@]}" )
     FILES_IN=( "${grouping[@]}" )
+    NAV=group_nav
+    LENGTH=length
 else
     TOT=${#IN_FILES[@]}
     IN_STATS=( "${mencoder_stats[@]}" )
     FILES_IN=( "${IN_FILES[@]}" )
+    NAV=nav
 fi
 
 for ((i=0; i<TOT; i++)); do
+    [[ $this_set = group ]] &&  LENGTH=${group_length[i]} || LENGTH=${length[i]}
     VCODEC="$(awk '/VIDEO:/ {gsub(/\[|\]/, ""); print $2}' \
     <<< "${IN_STATS[i]}")"
     V_BR="$(awk '/Video stream:/{print $3}'<<< "${IN_STATS[i]}")"
@@ -512,8 +521,8 @@ for ((i=0; i<TOT; i++)); do
     if [ -z "$A_BR" ]; then
         A_BR="No audio found"
     fi
-    if [ -e "$WORK_DIR/nav${i}_log" ]; then
-        V_LENGTH=$(awk_math ${length[i]} by $FRAME_RATE float)
+    if [ -e "$WORK_DIR/${NAV}${i}_log" ]; then
+        V_LENGTH=$(awk_math $LENGTH by $FRAME_RATE float)
     else
         V_LENGTH=$(awk '/Video stream:/{print $10}'<<< "${IN_STATS[i]}")
     fi
@@ -538,7 +547,6 @@ for ((i=0; i<TOT; i++)); do
     "$V_LENGTH" " seconds" |tee -a "$LOG_FILE"
 done
 }
-
 
 function check_compliance()
 {
@@ -637,6 +645,53 @@ function mk_workdir()
 
     # link WORK_DIR to /tmp for easy solution to spaces, illegal chars bugs
     [[ -z ${GROUP[@]} ]] && ln -sfv "$REAL_WORK_DIR" "$WORK_DIR"
+}
+
+function get_group_chapters()
+{
+    index=$1
+    unset chapt_len_array x len remainder t
+    remainder=0
+    chapter_length=$( bc <<< "scale=3; ${GROUP_TOT_LEN[index]} / ${CHAPTERS[index]}")
+    GROUP_VIDEO_LENGTHS=( ${GROUP_VID_LENGTHS[index]} )
+
+    for len in ${GROUP_VID_LENGTHS[index]}; do
+        adjusted_length=$( bc <<< "scale=3; $len + $remainder" )
+        num_chapters=$( bc <<< "$adjusted_length / $chapter_length" )
+        if (( num_chapters > 0)); then
+            chapt_len_array=( $( for ((t=0; t<num_chapters; t++)); do
+            echo $chapter_length; done) )
+            chapt_len_array=($(bc <<< "scale=3; $chapter_length - $remainder" ) ${chapt_len_array[@]})
+            unset chapt_len_array[${#chapt_len_array[@]}-1]
+            chapter_points=$( running_total <<< ${chapt_len_array[@]} )
+            remainder=$( bc <<< "$adjusted_length % $chapter_length")
+            group_chapters[x++]=$chapter_points
+        else
+            group_chapters[x++]=""
+            remainder=$adjusted_length
+        fi
+        unset chapt_len_array t
+    done
+    unset remainder
+if [[ -n $2 && $2 = format ]]; then
+    for d in ${!group_chapters[@]}; do
+        for number in ${group_chapters[d]}; do
+            new_element="$new_element $(format_seconds $number),"
+        done
+        array[d]="$new_element"
+        unset new_element
+    done
+
+    for e in ${!array[@]}; do
+        points=$(for f in ${array[e]// /}; do echo -n $f;done)
+        [[ -z ${array[e]} ]] && unset chpts || chpts[e]="chapters=\"${points%,}\""
+        [[ -n ${array[e]} ]] && chpts[e]=${chpts[e]#,}
+        if ((e == 0)); then
+            [[ -z "$points" ]] && chpts0="chapters=\"00:00:00\"" || chpts0="chapters=\"00:00:00,${points%,}\""
+        fi
+        chpts=${chpts#,}
+    done
+fi
 }
 
 function exit_from_gui()
@@ -1083,22 +1138,6 @@ if ! $SHOWCASE; then
         #exit 1
     fi
 fi
-# if a multiline title, then make sure all titles have 2 lines #FIXME
-# haven't figured out how to get mulitline title to dispaly using -title yet though
-#if ! $SHOWCASE; then
-#    for i in ${!TITLES[@]}; do
-#        if [[ ${TITLES[i]} = *\n* ]]; then
-#            ML=true
-#        fi
-#    done
-#    if $ML; then
-#        for i in ${!TITLES[@]}; do
-#            if [[ ! ${TITLES[i]} = "*\n*" ]]; then
-#                TITLES[i]="${TITLES[i]}\n"
-#            fi
-#        done
-#    fi
-#fi
 # disallow spaces in thumb titles for text button style
 if [ "$BUTTON_STYLE" = "text" ]; then
     for ((i=0; i<${#TITLES[@]}; i++)); do
@@ -2661,7 +2700,23 @@ for ((i=0; i<${#mencoder_stats[@]}; i++)); do
         <<<"${mencoder_stats[i]}")" )
     fi
 done
-
+if $GROUPING; then
+    index=0
+    for i in "${!FILES[@]}"; do
+        if [[ ${GROUP[i]} ]]; then
+            iter=( $WORK_DIR/group-$((i+1))-* )
+            for ((t=index; t<index+${#iter[@]}; t++)); do
+                GROUP_VID_LENGTHS[i]="${GROUP_VID_LENGTHS[i]} $(awk '/Video stream:/{print $10}' \
+                <<< "${group_mencoder_stats[t]}")"
+            done
+            index=$((index+${#iter[@]}))
+            unset iter
+            GROUP_VID_LENGTHS[i]="${VID_LEN[i]} ${GROUP_VID_LENGTHS[i]}"
+            GROUP_TOT_LEN[i]=$(awk_total <<< "${GROUP_VID_LENGTHS[i]}")
+        fi
+    done    
+fi
+echo
 for ((i=0; i<${#VID_LEN[@]}; i++)); do
     NEW_LENGTH=( ${NEW_LENGTH[@]}   ${VID_LEN[i]%.*} )
 done
@@ -2942,20 +2997,24 @@ $(if $SUBTITLES; then
     done
 fi)
 $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
+    unset j
     echo -e "      <pgc>"
     if $AUDIOLANG; then
         echo "${VOB_PRE[i]}"
     fi
-    if ! [[ ${GROUP[i]} ]]; then
+    if [[ -n ${GROUP[i]} ]]; then
+        get_group_chapters $i format
+        if ((${CHAPTERS[i]} == 0)); then
+            echo -e "        <vob file=\"$REAL_WORK_DIR/$i.mpg\"/>"
+        else
+            echo -e "        <vob file=\"$REAL_WORK_DIR/$i.mpg\" $chpts0/>"
+            for mpg in $WORK_DIR/group-$((i+1))-*; do
+                echo -e "        <vob file=\"$mpg\" ${chpts[++j]}/>"
+            done
+        fi
+    else
         echo -ne "        <vob file=\"$REAL_WORK_DIR/$i.mpg\""
         echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
-    else
-        echo -e "        <vob file=\"$REAL_WORK_DIR/$i.mpg\"/>"
-    fi
-    if [[ ${GROUP[i]} ]]; then
-        for mpg in $WORK_DIR/group-$((i+1))-*; do
-            echo -e "        <vob file=\"$mpg\"/>"
-        done
     fi
     if $CHAIN_VIDEOS; then
         if [ "${POST_PLAY[i]}" = "chain" ]; then
