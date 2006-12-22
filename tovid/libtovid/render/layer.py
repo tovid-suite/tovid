@@ -296,13 +296,19 @@ class Text (Layer):
         self.position = position
 
     def extents(self, drawing):
-        """Get text extents with the specifies fonts, etc.."""
+        """Return the extents of the text as a (x0, y0, x1, y1) tuple."""
         drawing.save()
         drawing.font(self.font)
         drawing.font_size(self.fontsize)
-        ex = drawing.text_extents(self.text)
+        x_bearing, y_bearing, width, height, x_adv, y_adv = \
+                 drawing.text_extents(self.text)
         drawing.restore()
-        return ex
+        # Add current layer's position to the (x,y) bearing of extents
+        x0 = int(self.position[0] + x_bearing)
+        y0 = int(self.position[1] + y_bearing)
+        x1 = int(x0 + width)
+        y1 = int(y0 + height)
+        return (x0, y0, x1, y1)
 
     def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
