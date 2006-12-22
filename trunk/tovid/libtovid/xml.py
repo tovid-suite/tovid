@@ -6,7 +6,7 @@ __all__ = [\
     'create_element']
 
 class Element (object):
-    """Base class XML element, with name and attributes.
+    """An XML element, with name and attributes.
     
     Valid attributes for the element are defined in class variable ATTRIBUTES.
     Attributes may be set in the constructor, or by calling set() with a
@@ -14,9 +14,8 @@ class Element (object):
     
     Use add_child(element) to create a hierarchy of Elements.
     """
-    # List of valid attributes for this element; override in derived classes
-    NAME = 'empty'
-    ATTRIBUTES = []
+    NAME = 'empty'    # Element name (appears in xml tags <name>...</name>)
+    ATTRIBUTES = []   # Valid attributes for the element
     INDENT = 0
     
     def __init__(self, attributes=None, **kwargs):
@@ -63,6 +62,8 @@ class Element (object):
 
 
     def __str__(self):
+        """Return a string containing XML for the Element."""
+        # TODO: Pretty indentation
         text = '<%s' % self.NAME
         for attribute, value in self.attributes.items():
             text += ' %s="%s"' % (attribute, value)
