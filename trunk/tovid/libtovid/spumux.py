@@ -23,9 +23,7 @@ from xml.dom import getDOMImplementation
 ###
 
 
-# TODO: Move some of the xml.dom ugliness into the Element base class, then
-# hide it away somewhere...
-class Element:
+class Element (object):
     """Base class XML element, with name and attributes.
     
     Valid attributes for the element are defined in class variable ATTRIBUTES.
@@ -35,17 +33,16 @@ class Element:
     Use add_child(element) to create a hierarchy of Elements.
     """
     # List of valid attributes for this element; override in derived classes
+    NAME = 'empty'
     ATTRIBUTES = []
     
-    def __init__(self, name, attributes=None, **kwargs):
-        """Create a new Element with the given name and optional attributes.
+    def __init__(self, attributes=None, **kwargs):
+        """Create a new Element with the given attributes.
         
-            name:       Identifying name of the Element
             attributes: Dictionary of attributes matching those in ATTRIBUTES
             kwargs:     Keyword arguments for setting specific attributes
                         NOTE: Hyphenated attribute names can't be used here
         """
-        self.name = name
         self.attributes = {}
         self.children = []
         # Set attributes from those provided
@@ -74,7 +71,7 @@ class Element:
                 self.attributes[key] = value
             else:
                 raise KeyError("'%s' element has no attribute '%s'" %
-                               (self.name, key))
+                               (self.NAME, key))
 
     def add_child(self, element):
         """Add the given Element as a child of this Element."""
@@ -85,7 +82,7 @@ class Element:
         """Add the Element and all its children to the given xml.dom Document.
         Return the xml.dom Element that was added (a different Element class!)
         """
-        elem = document.createElement(self.name)
+        elem = document.createElement(self.NAME)
         # Set all attributes
         for key, value in self.attributes.iteritems():
             if value != None:
@@ -95,63 +92,56 @@ class Element:
             elem.appendChild(child.dom_element(document))
         return elem
 
+    def __str__(self):
+        text = '<%s' % self.NAME
+        for attribute, value in self.attributes.items():
+            text += ' %s="%s"' % (attribute, value)
+        text += '/>'
+        return text
 
-class Textsub (Element):
-    """Textsub element, for defining text-based subtitle overlays.
+
+def create_element(name, valid_attributes):
+    """Create a new XML Element class, having the given name and
+    valid attributes.
     """
-    ATTRIBUTES = [
-        'filename',
-        'characterset',
-        'fontsize',
-        'font',
-        'horizontal-alignment',
-        'vertical-alignment',
-        'left-margin',
-        'right-margin',
-        'subtitle-fps',
-        'movie-fps',
-        'movie-width',
-        'movie-height']
-
-    def __init__(self, attributes=None, **kwargs):
-        Element.__init__(self, 'textsub', attributes, **kwargs)
+    return type(name, (Element,),
+                {'name': name, 'ATTRIBUTES': valid_attributes})
 
 
-class Button (Element):
-    ATTRIBUTES = [
-        'name',
-        'x0', 'y0', 'x1', 'y1',
-        'up', 'down', 'left', 'right']
-    
-    def __init__(self, attributes=None, **kwargs):
-        Element.__init__(self, 'button', attributes, **kwargs)
+Textsub = create_element('textsub', [\
+    'filename',
+    'characterset',
+    'fontsize',
+    'font',
+    'horizontal-alignment',
+    'vertical-alignment',
+    'left-margin',
+    'right-margin',
+    'subtitle-fps',
+    'movie-fps',
+    'movie-width',
+    'movie-height'])
 
+Button = create_element('button', [\
+    'name',
+    'x0', 'y0', 'x1', 'y1',
+    'up', 'down', 'left', 'right'])
 
-class Action (Element):
-    ATTRIBUTES = ['name']
-    def __init__(self, attributes=None, **kwargs):
-        Element.__init__(self, 'action', attributes, **kwargs)
+Action = create_element('action', ['name'])
 
-
-class SPU (Element):
-    """SubPicture Unit element, for defining image-based subtitle overlays.
-    """
-    ATTRIBUTES = [
-        'start',
-        'end',
-        'image',
-        'highlight',
-        'select',
-        'transparent',   # color code
-        'force',         # 'yes' (force display, required for menus)
-        'autooutline',   # 'infer'
-        'outlinewidth',
-        'autoorder',     # 'rows' or 'columns'
-        'xoffset',
-        'yoffset']
-
-    def __init__(self, attributes=None, **kwargs):
-        Element.__init__(self, 'spu', attributes, **kwargs)
+SPU = create_element('spu', [\
+    'start',
+    'end',
+    'image',
+    'highlight',
+    'select',
+    'transparent',   # color code
+    'force',         # 'yes' (force display, required for menus)
+    'autooutline',   # 'infer'
+    'outlinewidth',
+    'autoorder',     # 'rows' or 'columns'
+    'xoffset',
+    'yoffset'])
 
 
 ###
@@ -170,7 +160,7 @@ def get_xml(textsub_or_spu):
     stream = doc.createElement("stream")
     root.appendChild(stream)
     # Add remaining elements (SPU or Textsub)
-    stream.appendChild(element.dom_element(doc))
+    stream.appendChild(textsub_or_spu.dom_element(doc))
     # Return formatted XML
     return doc.toprettyxml(indent='    ')
 
