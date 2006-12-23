@@ -100,6 +100,9 @@ Menu text options:
     Use specified color for menu selections (when a menu item is played
     or activated). Red (#F00) is the default color.
 
+: **-button** //BUTTONSTR//
+    Specify the string used for menu selection. Issue it after '-align'.
+    E.g., ' -align center -button "-=*=-" '
 
 Other options:
 
