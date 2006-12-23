@@ -22,7 +22,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-make distclean
+[ -e Makefile ] && make distclean
 
 rm -rvf "autom4te.cache"
 rm -rvf aclocal.m4 config.log config.status configure \
