@@ -563,8 +563,7 @@ function check_compliance()
         IN_FILE="${CHECK_IN_FILES[i]}"
         $group_set && yecho "Checking "$(readlink $IN_FILE)" for compliance..."
         ! $group_set && yecho "Checking $IN_FILE for compliance..."
-        # TODO: Check for PAL/NTSC compliance
-        # If video matches the target format and TV standard, append to ENC_IN_FILES
+        # test files with idvid script
         if test "$(idvid -isformat $TARGET "$IN_FILE")" = "true" && \
            test "$(idvid -istvsys $TV_STANDARD "$IN_FILE")" = "true"; then
             ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE")
@@ -614,8 +613,6 @@ function check_compliance()
             done
             # Replace IN_FILES with ENC_IN_FILES (with .enc extension)
             if $group_set; then
-                
-                
                 for title in "${FILES_TO_ENCODE[@]}"; do
                     ln -sfv "$(readlink "${title}").enc.mpg" "$title"
                 done
@@ -700,11 +697,7 @@ function exit_from_gui()
     echo "Please press the 'Enter' key to close this terminal: "
     read input
     echo
-#    if [ ! -z "$input" -a "$input" = "exit" ]; then
-#        yecho "exiting."
-#        yecho
 	exit
-#    fi
 }
 ##############################################################################
 #                          	End of functions                                 #
@@ -2296,7 +2289,7 @@ EOF
 )  > "$WORK_DIR/draw_file${i}"
     done
 fi
-# command constructions for -button-shape options
+# command constructions for -button-style options
 if $PLAYALL; then
     for BUTTON in 266CAE DE7F7C; do
         convert -size 100x100 xc:none -font "$MENU_FONT" -pointsize 20 \
@@ -2637,7 +2630,7 @@ check_compliance group
 # symlink IN_FILES in $WORK_DIR to solve some quoting issues for dvdauthor
 
 for i in ${!IN_FILES[@]}; do
-    (cd "$REAL_WORK_DIR" &&  ln -sv "${IN_FILES[i]}" $i.mpg)
+    (cd "$REAL_WORK_DIR" &&  ln -sv "${IN_FILES[i]}" $((i+1)).mpg) #FIXME
 done
 
 # Store info about input files in an array
@@ -3006,13 +2999,13 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
                 echo -e "        <vob file=\"$mpg\"/>"
             done
         else
-            echo -e "        <vob file=\"$REAL_WORK_DIR/$i.mpg\" $chpts0/>"
+            echo -e "        <vob file=\"$REAL_WORK_DIR/$((i+1)).mpg\" $chpts0/>"
             for mpg in $WORK_DIR/group-$((i+1))-*; do
                 echo -e "        <vob file=\"$mpg\" ${chpts[++j]}/>"
             done
         fi
     else
-        echo -ne "        <vob file=\"$REAL_WORK_DIR/$i.mpg\""
+        echo -ne "        <vob file=\"$REAL_WORK_DIR/$((i+1)).mpg\""
         echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
     fi
     if $CHAIN_VIDEOS; then
