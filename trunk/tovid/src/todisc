@@ -582,7 +582,7 @@ function check_compliance()
         yecho "Some of the -files you provided are not $TV_STND_CAPS $TGT_CAPS-compliant:"
         yecho " "
         for i in "${FILES_TO_ENCODE[@]}"; do
-            test -n "$i" && yecho "  $(readlink $i)"
+            $group_set && test -n "$i" && yecho " $(readlink $i)" || yecho " $i"
         done
         yecho " "
         if $NOASK; then
