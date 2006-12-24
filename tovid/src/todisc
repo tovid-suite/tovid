@@ -2025,7 +2025,7 @@ if [ -n "$BG_VIDEO" ]; then
 fi
 if $SHOWCASE && ! $NO_SC_THUMB; then
     if [ -n "$SHOWCASE_VIDEO" ]; then
-        echo "Getting background video images from $SHOWCASE_VIDEO"
+        echo "Getting video images from $SHOWCASE_VIDEO"
         if [[ "$SC_FRAMESTYLE" = "glass" && -n "$SHOWCASE_VIDEO" ]]; then
             D=2
             OUTDIR="$WORK_DIR/showcase"
@@ -2486,7 +2486,7 @@ if $SHOWCASE; then
         sc_width=${sc_size/x*}
         sc_height=${sc_size/*x}
     fi
-    if ! $NO_SC_THUMB && ! $TEXT_MENU; then
+    if ! $NO_SC_THUMB && ! $TEXTMENU; then
         sc_xpage=$(( 360 - (sc_width / 2) )) # for -gt 5 videos
         if [[ $MAX_LEN -ge ${THUMB_SIZE/x*} ]]; then
             htmb=$(( ${THUMB_SIZE/x*} / 2 )) ; htle=$((MAX_LEN / 2))
@@ -2494,6 +2494,7 @@ if $SHOWCASE; then
         else
             [[ "$SC_TITLE_ALIGN" = "centre" ]] &&  T=${THUMB_SIZE/x*}
         fi
+        set -x
         # add the thumb size if east align; for west align use MAX_LEN only
         [[ "$SC_TITLE_ALIGN" = "east" ]] && TS=${THUMB_SIZE/x*} || TS=0
         sc_palette=$((${VIDSIZE%x*} - ${SHOWCASE_THUMB_X_ARRAY[0]} - SAFE_AREA - T))
@@ -2520,10 +2521,11 @@ if $SHOWCASE; then
             SC_IMG_PAGE="-page +$sc_xpage+$SC_Y"
         fi
         SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
-    elif ! $NO_SC_THUMB && $TEXT_MENU; then
+    elif ! $NO_SC_THUMB && $TEXTMENU; then
         : # FIXME allow showcase thumb with various textmenu options
           # needs to work with 1 column and 2 columns - 2 cols must be -align east
     fi
+    set +x
     if $NO_SC_THUMB; then unset SC_IMG_CMD; fi
     if [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
         unset sc_cmd
