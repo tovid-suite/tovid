@@ -1210,6 +1210,11 @@ if $SHOWCASE; then
         SHOWCASE_IMG="dummy"
     fi
 fi
+if [[ $SC_FRAMESTYLE = glass ]] && [[ -z $SHOWCASE_IMG || -z $SHOWCASE_VIDEO ]]; then
+    usage_error "You must use a -showcase option for '-showcase-framestyle'
+    Either -showcase IMAGE, -showcase VIDEO or just '-showcase'"
+fi
+
 # disable submenus for svcd
 if $SUB_MENU && [ "$TARGET" = svcd ]; then
     usage_error "Sorry, submenu disabled for svcd for now, please remove -submenu option"
@@ -2494,7 +2499,6 @@ if $SHOWCASE; then
         else
             [[ "$SC_TITLE_ALIGN" = "centre" ]] &&  T=${THUMB_SIZE/x*}
         fi
-        set -x
         # add the thumb size if east align; for west align use MAX_LEN only
         [[ "$SC_TITLE_ALIGN" = "east" ]] && TS=${THUMB_SIZE/x*} || TS=0
         sc_palette=$((${VIDSIZE%x*} - ${SHOWCASE_THUMB_X_ARRAY[0]} - SAFE_AREA - T))
@@ -2525,7 +2529,6 @@ if $SHOWCASE; then
         : # FIXME allow showcase thumb with various textmenu options
           # needs to work with 1 column and 2 columns - 2 cols must be -align east
     fi
-    set +x
     if $NO_SC_THUMB; then unset SC_IMG_CMD; fi
     if [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
         unset sc_cmd
@@ -2743,9 +2746,9 @@ fi
 # allow animated menus of length of longest video
 MAX_ANI_LENGTH=$(awk_math $FRAME_RATE times $ANI_MENU_LENGTH)
 MAX_VAL_FRAMES="$((MAX_VAL * 30))"
-if [ $MAX_VAL_FRAMES -lt $MAX_ANI_LENGTH ]; then
-    MAX_ANI_LENGTH=$MAX_VAL_FRAMES
-fi
+#if [ $MAX_VAL_FRAMES -lt $MAX_ANI_LENGTH ]; then #FIXME - removed to see how it flys
+#    MAX_ANI_LENGTH=$MAX_VAL_FRAMES
+#fi
 # if submenu selected, translate seconds of submenu length into # of frames
 if $ANI_SUB_MENU; then
     ANI_SUBMENU_FRAMES=$(awk_math $FRAME_RATE times $ANI_SUBMENU_LENGTH)
@@ -3611,10 +3614,16 @@ if ! $NO_THUMBS; then
         unset PICS
     done
 fi
-yecho
-yecho "Making $FRAMES final montages and compositing onto background with title"
-yecho
+if ! $MENU_FADE; then
+    yecho
+    yecho "Making $FRAMES final montages and compositing onto background with title"
+    yecho
+fi
 if $MENU_FADE && ! $STATIC; then
+    . todisc-fade-routine
+    yecho
+    yecho "Creating background fade"
+    yecho
     if [ -z "$BG_VIDEO" ]; then
         for ((frame=0; frame<=ANI_MENU_END_FRAME; frame++)); do
             # copy template for fade out beginning and end frames
@@ -3626,6 +3635,9 @@ if $MENU_FADE && ! $STATIC; then
         composite -dissolve $D $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.jpg \
         $WORK_DIR/bg/$(($frame + 1)).jpg
     done
+    yecho
+    yecho "Making $FRAMES final montages and compositing onto background with title"
+    yecho
     for ((frame=BACKGROUND_FADE_OUT_START_FRAME; frame<BACKGROUND_FADE_OUT_END_FRAME; frame++)); do
         D=`get_bg_opacity`
         composite -dissolve $D $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.jpg \
