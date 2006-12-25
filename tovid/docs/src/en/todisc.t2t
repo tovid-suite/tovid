@@ -200,6 +200,8 @@ to decrease font size with the **-menu-fontsize** option. For example:
     "glass" will use mplayer to make frames, which gives an interesting animated
     effect to the frames, and can be much faster ( especially if you don't use -rotate or
     -wave as thumbs will not need to be processed again after mplayer spits them out
+    Note: you need to be using either -showcase-image IMAGE or -showcase-video VIDEO
+    for this framestyle to work.
 : -title-color COLOR (or -title-colour COLOR)
     Color to use for the main menu title.  For list of supported colors do:
     **convert -list** color.  HTML notation may be used: "#ff0000". See:
