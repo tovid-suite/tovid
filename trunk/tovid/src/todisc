@@ -697,6 +697,15 @@ if [[ -n $2 && $2 = format ]]; then
 fi
 }
 
+function check_with_dvdauthor()
+# usage ex. : for i in "${!IN_FILES[@]}; do
+#    if ! check_with_dvdauthor >/dev/null 2>&1; then
+#        do_something . . .
+#    rm -fr "$OUT_DIR" etc etc
+{
+    dvdauthor -o $OUT_DIR -t "$1"
+}
+
 function exit_from_gui()
 {
     yecho
@@ -983,11 +992,11 @@ while test $# -gt 0; do
             shift
             MIST_OPACITY="$1"
             ;;
-        "-text-mist-color" |"-text-mist-colour" )
+        "-text-mist-colour" |"-text-mist-color" )
             shift
             MIST_COLOUR="$1"
             ;;
-        "-thumb-mist-color" |"-thumb-mist-colour" )
+        "-thumb-mist-colour" |"-thumb-mist-color" )
             shift
             THUMB_BG_COLOUR="$1"
             ;;
@@ -1604,7 +1613,7 @@ if [ "$SC_TITLE_ALIGN" = "west" ]; then
         fi
     done
 fi
-if $SHOWCASE && [ "$SC_TITLE_ALIGN" = "east" ]; then
+if $SHOWCASE && [ "$SC_TITLE_ALIGN" = "east" ] && ! $TEXTMENU; then
     THUMB_TITLE_ALIGN="west" # align titles left to allow longer titles
     for ((i=0; i<=NUM_FILES; i++)); do
         if [ $i -lt $LEFT_MAX ] && ! $ALIGN_OVERRIDE; then
