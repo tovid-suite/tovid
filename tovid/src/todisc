@@ -1142,8 +1142,8 @@ if [ "$BUTTON_STYLE" = "text" ]; then
         fi
     done
 fi
-# set a maximum # of videos
-$NO_THUMBS && file_max=22 || file_max=10
+# set a maximum # of videos #FIXME
+$NO_THUMBS && file_max=26 || file_max=10
 if test ${#FILES[@]} -gt 30; then
     usage_error "Sorry, a maximum of 30 videos (thumbs) is supported
     You gave ${#FILES[@]} videos as input"
@@ -1390,21 +1390,20 @@ echo
 test $TARGET = "dvd" && : ${MENU_FONTSIZE:="30"}
 test $TARGET = "svcd" && : ${MENU_FONTSIZE:="26"}
 # Thumbnail title font size
-if test -n "$THUMB_FONTSIZE"; then
-    :
-# Otherwise, use a default, based on thumbnails number and type
-elif $SHOWCASE; then
-    if test "$NUM_FILES" -lt 2; then
-        THUMB_FONTSIZE=20
-    elif  test "$NUM_FILES" -eq 2; then
-        THUMB_FONTSIZE=18
-    elif  test "$NUM_FILES" -ge 3; then
-        THUMB_FONTSIZE=16
+if test -z "$THUMB_FONTSIZE"; then
+# if not -thumb-fontsize N passed, use default, based on the following:
+    if $SHOWCASE; then
+        if test "$NUM_FILES" -lt 2; then
+            THUMB_FONTSIZE=20
+        elif  test "$NUM_FILES" -eq 2; then
+            THUMB_FONTSIZE=18
+        elif  test "$NUM_FILES" -ge 3; then
+            THUMB_FONTSIZE=16
+        fi
+    else
+        THUMB_FONTSIZE=10
     fi
-else
-    THUMB_FONTSIZE=10
 fi
-
 
 # See if "Helvetica" or "helvetica" are available as default fonts
 if convert -size 50x20 xc:none -font Helvetica -gravity Center \
@@ -2906,7 +2905,7 @@ echo
 for ((i=0; i<=NUM_FILES; i++)); do
     echo -e "Chapters for "${IN_FILES[i]}" are: \n"${CHAPT_ARRAY[i]}"\n"
 done
-if [ "$BUTTON_STYLE" = "text" ]; then
+if [[ "$BUTTON_STYLE" = "text" ]] && ! $TEXTMENU; then
     OUTLINEWIDTH="\"14\""
 else
     OUTLINEWIDTH="\"6\""
