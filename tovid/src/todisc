@@ -526,6 +526,11 @@ for ((i=0; i<TOT; i++)); do
     else
         V_LENGTH=$(awk '/Video stream:/{print $10}'<<< "${IN_STATS[i]}")
     fi
+    if [[ $this_set != group ]]; then
+        if [[ ${V_LENGTH%.*} -lt ${SEEK_VAL[i]%.*} ]]; then
+            usage_error "A seek of ${SEEK_VAL[i]} seconds is too large for ${IN_FILES[i]}. The file is only $V_LENGTH seconds long"
+        fi
+    fi
     FPS="$(awk ' /VIDEO/ { if ($_=="fps"); sub(/fps.*$/, ""); print $NF}' <<<"${IN_STATS[i]}")"
     yecho
     if [[ $this_set = group ]] && ((i == 0)); then
@@ -2905,8 +2910,12 @@ echo
 for ((i=0; i<=NUM_FILES; i++)); do
     echo -e "Chapters for "${IN_FILES[i]}" are: \n"${CHAPT_ARRAY[i]}"\n"
 done
-if [[ "$BUTTON_STYLE" = "text" ]] && ! $TEXTMENU; then
-    OUTLINEWIDTH="\"14\""
+if [[ "$BUTTON_STYLE" = "text" ]]; then
+    if $TEXTMENU; then
+        OUTLINEWIDTH="\"8\""
+    else
+        OUTLINEWIDTH="\"14\""
+    fi
 else
     OUTLINEWIDTH="\"6\""
 fi
