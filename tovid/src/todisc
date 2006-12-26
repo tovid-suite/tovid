@@ -1224,7 +1224,7 @@ if $SHOWCASE; then
         SHOWCASE_IMG="dummy"
     fi
 fi
-if [[ $SC_FRAMESTYLE = glass ]] && [[ -z $SHOWCASE_IMG || -z $SHOWCASE_VIDEO ]]; then
+if [[ $SC_FRAMESTYLE = glass ]] && [[ -z $SHOWCASE_IMG && -z $SHOWCASE_VIDEO ]]; then
     usage_error "You must use a -showcase option for '-showcase-framestyle'
     Either -showcase IMAGE, -showcase VIDEO or just '-showcase'"
 fi
