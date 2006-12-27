@@ -1156,7 +1156,7 @@ if [ "$BUTTON_STYLE" = "text" ]; then
         fi
     done
 fi
-# set a maximum # of videos #FIXME
+# set a maximum # of videos
 $NO_THUMBS && file_max=26 || file_max=10
 if test ${#FILES[@]} -gt 30; then
     usage_error "Sorry, a maximum of 30 videos (thumbs) is supported
@@ -1698,8 +1698,7 @@ fi
 # place menu title lower if not text mist
 mist_pos=45
 $MIST && title_pos=65 || title_pos=50
-#title_pos=65
-#FIXME temporary till non transparent menus for -showcase* are done separately
+# easier to have non transparent showcase use the transparent block
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
 # spumux and dvdauthor vars
@@ -2539,8 +2538,10 @@ if $SHOWCASE; then
         fi
         SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
     elif ! $NO_SC_THUMB && $TEXTMENU; then
-        : # FIXME allow showcase thumb with various textmenu options
+        # FIXME allow showcase thumb with various textmenu options
           # needs to work with 1 column and 2 columns - 2 cols must be -align east
+        SC_TITLE_ALIGN="east"
+        sc_palette2=$(( ${VIDSIZE%x*} - (${SHOWCASE_TITLES_Y_ARRAY[0]} + MAX_LEN + 5) ))
     fi
     if $NO_SC_THUMB; then unset SC_IMG_CMD; fi
     if [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
@@ -2649,7 +2650,7 @@ check_compliance group
 # symlink IN_FILES in $WORK_DIR to solve some quoting issues for dvdauthor
 
 for i in ${!IN_FILES[@]}; do
-    (cd "$REAL_WORK_DIR" &&  ln -sv "${IN_FILES[i]}" $((i+1)).mpg) #FIXME
+    (cd "$REAL_WORK_DIR" &&  ln -sv "${IN_FILES[i]}" $((i+1)).mpg)
 done
 
 # Store info about input files in an array
@@ -3438,7 +3439,8 @@ if [ -n "$BG_VIDEO" ]; then
     fi
     unset IMAGES PICS last_pic next_pic
 fi
-if [ -n "$SHOWCASE_VIDEO" ] && ! $NO_SC_THUMB; then
+#if [ -n "$SHOWCASE_VIDEO" ] && ! $NO_SC_THUMB; then
+if [ -n "$SHOWCASE_FILE" ] && ! $NO_SC_THUMB; then
     echo "Getting showcase video images from $SHOWCASE_VIDEO"
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
         FIND_FRAMES=$((FRAMES + 1)) # unfortunately mplayer starts at 1 not 0
@@ -3452,7 +3454,7 @@ if [ -n "$SHOWCASE_VIDEO" ] && ! $NO_SC_THUMB; then
             "$WORK_DIR"/showcase/$(printf "%06d%s"  $i .png) 2>/dev/null
         done
     elif [ "$SC_FRAMESTYLE" = "none" ]; then
-        FIND_FRAMES=FRAMES # ffmpeg starts at 0
+        FIND_FRAMES=$FRAMES # ffmpeg starts at 0
         FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -ss $SHOWCASE_SEEK_VAL \
         -s $SHOWCASE_SIZE -vframes $FRAMES -an -y "$WORK_DIR/showcase/%06d.png")
         echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
@@ -3468,7 +3470,7 @@ if [ -n "$SHOWCASE_VIDEO" ] && ! $NO_SC_THUMB; then
     for ((i=0; i<$FRAMES; i++)); do
         SC_PICS=( ${SC_PICS[@]} $(find $WORK_DIR/showcase -maxdepth 1  -name $(printf "%06d%s"  $i .png) ) )
     done
-    if [[ "$SC_FRAMESTYLE" = "glass" && -z "$ROTATE" ]]; then
+    if [[ "$SC_FRAMESTYLE" = "glass" ]] &&  [[ -z "$ROTATE" && -z "$WAVE" ]]; then
         :
     else
         for pic in "${SC_PICS[@]}"; do
@@ -3481,7 +3483,7 @@ if [ -n "$SHOWCASE_VIDEO" ] && ! $NO_SC_THUMB; then
             if [ "$SC_FRAMESTYLE" = "glass" ] && [[ -n "$WAVE" || -n "$ROTATE" ]]; then
                 "${SC_CMD1[@]}" miff:- | "${SC_CMD3[@]}"
             # if glass and neither wave or rotate
-            elif [ "$SC_FRAMESTYLE" = "glass" ] && [[ -z "$WAVE" || -z "$ROTATE" ]]; then
+            elif [ "$SC_FRAMESTYLE" = "glass" ] && [[ -z "$WAVE" && -z "$ROTATE" ]]; then
                 :
             else # not glass
                 "${SC_CMD[@]}" miff:- | "${SC_CMD2[@]}" miff:- | "${SC_CMD3[@]}"
@@ -3492,7 +3494,7 @@ if [ -n "$SHOWCASE_VIDEO" ] && ! $NO_SC_THUMB; then
     IMAGES=( $(find $WORK_DIR/showcase -maxdepth 1 -name 00\*.$IMG_FMT|sort) )
     last_pic=$(( ${#IMAGES[@]} - 1 ))
     next_pic=$(($last_pic + 1))
-    if [ $last_pic -lt $MAX_ANI_LENGTH ]; then
+    if [ $last_pic -lt $MAX_ANI_LENGTH ] && ! $STATIC; then
         for ((l=next_pic; l<=MAX_ANI_LENGTH; l++)); do
             cp $WORK_DIR/showcase/$( printf %06d $last_pic).$IMG_FMT \
             $WORK_DIR/showcase/$(printf %06d $l).$IMG_FMT
@@ -3774,6 +3776,8 @@ else # Do not do menu fade
             done
             SC_VIDEO_CMD="$SC_IMG_PAGE \
             "$WORK_DIR"/showcase/$(printf "%06d%s"  $count .png)"
+            $STATIC && SC_VIDEO_CMD="$SC_IMG_PAGE \
+            "$WORK_DIR"/showcase_img.png" #FIXME
             $NO_THUMBS && unset sc_cmd SC_IMG_CMD SC_VIDEO_CMD #FIXME
 
 
