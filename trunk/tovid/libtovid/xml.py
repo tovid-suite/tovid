@@ -24,7 +24,7 @@ To get an XML representation of an Element:
     <video file="Brian.mpg" length="4"/>
     >>> print video2
     <video file="Judith.mpg" length="5"/>
-
+    
 """
 
 __all__ = [\
@@ -35,7 +35,7 @@ class Element (object):
     """An XML element, with name and attributes.
     
     Valid attributes for the element are defined in class variable ATTRIBUTES.
-    Attributes may be set in the constructor, or by calling set() with a
+    Attribute values may be set in the constructor, or by calling set() with a
     dictionary and/or attribute=value keywords.
     
     Use add_child(element) to create a hierarchy of Elements.
@@ -66,15 +66,11 @@ class Element (object):
         All attributes must match those listed in ATTRIBUTES; a KeyError
         is raised for non-valid attributes.
         """
-        # Use attributes, if present (make a copy to avoid changing original)
+        # Override kwargs with attributes, if provided
         if type(attributes) == dict:
-            attributes = attributes.copy()
-        else:
-            attributes = {}
-        # Override with any provided keyword arguments
-        attributes.update(kwargs)
+            kwargs.update(attributes)
         # Set all attributes, raising error on invalid attribute names
-        for key, value in attributes.iteritems():
+        for key, value in kwargs.iteritems():
             if key in self.ATTRIBUTES:
                 self.attributes[key] = value
             else:
@@ -92,6 +88,7 @@ class Element (object):
         """Return a string containing XML for the Element."""
         # TODO: Pretty indentation
         text = '<%s' % self.NAME
+        # Iterate through valid attributes so ordering is preserved
         for key in self.ATTRIBUTES:
             if key in self.attributes:
                 text += ' %s="%s"' % (key, self.attributes[key])
