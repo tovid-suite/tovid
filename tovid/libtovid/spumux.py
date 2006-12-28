@@ -8,7 +8,7 @@
 __all__ = [\
     'Button',
     'Action',
-    'SPU',
+    'Spu',
     'Textsub',
     'add_subpictures',
     'add_subtitles']
@@ -16,11 +16,9 @@ __all__ = [\
 from libtovid.utils import temp_name, temp_file
 from libtovid.xml import create_element
 
-
-###
-### Spumux XML Element subclasses
-###
-
+# spumux XML elements and valid attributes
+Subpictures = create_element('subpictures', [])
+Stream = create_element('stream', [])
 Textsub = create_element('textsub',
     ['filename',
     'characterset',
@@ -34,16 +32,14 @@ Textsub = create_element('textsub',
     'movie-fps',
     'movie-width',
     'movie-height'])
-
 Button = create_element('button',
     ['name',
-    'x0', 'y0', 'x1', 'y1',
+    'x0', 'y0', # Upper-left corner, inclusively
+    'x1', 'y1', # Lower-right corner, exclusively
     'up', 'down', 'left', 'right'])
-
 Action = create_element('action',
     ['name'])
-
-SPU = create_element('spu',
+Spu = create_element('spu',
     ['start',
     'end',
     'image',
@@ -56,10 +52,6 @@ SPU = create_element('spu',
     'autoorder',     # 'rows' or 'columns'
     'xoffset',
     'yoffset'])
-
-Subpictures = create_element('subpictures', [])
-
-Stream = create_element('stream', [])
 
 
 ###
@@ -75,7 +67,7 @@ def get_xml(textsub_or_spu):
 
 
 def get_xmlfile(textsub_or_spu):
-    """Write spumux XML file for the given Textsub or SPU element, and
+    """Write spumux XML file for the given Textsub or Spu element, and
     return the written filename.
     """
     xmldata = get_xml(textsub_or_spu)
@@ -88,7 +80,7 @@ def get_xmlfile(textsub_or_spu):
 def mux_subs(subtitle, movie_filename, stream_id=0):
     """Run spumux to multiplex the given subtitle with an .mpg file.
     
-        subtitle:       Textsub or SPU element
+        subtitle:       Textsub or Spu element
         movie_filename: Name of an .mpg file to multiplex subtitle into
         stream_id:      Stream ID number to pass to spumux
     """
@@ -125,8 +117,6 @@ def add_subpictures(movie_filename, select, image=None, highlight=None,
                    None to use autodetection (autooutline=infer)
         
     All images must indexed, 4-color, transparent, non-antialiased PNG.
-    Button regions are auto-inferred from the images; explicit button region
-    configuration may be available in the future.
     """
     attributes = {
         'start': 0,
@@ -134,7 +124,7 @@ def add_subpictures(movie_filename, select, image=None, highlight=None,
         'select': select,
         'image': image,
         'highlight': highlight}
-    spu = SPU(attributes)
+    spu = Spu(attributes)
     if buttons == None:
         # TODO Find a good default outlinewidth
         spu.set(autooutline=infer, outlinewidth=10)
@@ -172,7 +162,7 @@ def add_subtitles(movie_filename, sub_filenames):
 if __name__ == '__main__':
     print "XML demo"
     # Basic spumux XML Elements
-    spu = SPU()
+    spu = Spu()
     b1 = Button()
     b1.set(name='but1', down='but2')
     b2 = Button()
@@ -181,7 +171,7 @@ if __name__ == '__main__':
     spu.add_child(b1)
     spu.add_child(b2)
     # Generate XML
-    print "SPU xml:"
+    print "Spu xml:"
     print get_xml(spu)
 
     textsub = Textsub()
