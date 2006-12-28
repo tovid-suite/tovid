@@ -1,6 +1,30 @@
 #! /usr/bin/env python
 # xml.py
 
+"""This module is for defining XML elements and their valid attributes.
+
+To define an element 'video', which may have attributes called 'file' and
+'length', do:
+
+    >>> Video = create_element('video', ['file', 'length'])
+
+Video is now an Element class, which can be used to instantiate new video
+elements:
+
+    >>> video1 = Video(file='Brian.mpg', length=4)
+    >>> video2 = Video(file='Judith.mpg')
+
+Attributes may be changed via the set method:
+
+    >>> video2.set(length=5)
+
+To get an XML representation of an Element:
+
+    >>> print video1
+    <video file="Brian.mpg" length="4"/>
+
+"""
+
 __all__ = [\
     'Element',
     'create_element']
@@ -16,7 +40,6 @@ class Element (object):
     """
     NAME = 'empty'    # Element name (appears in xml tags <name>...</name>)
     ATTRIBUTES = []   # Valid attributes for the element
-    INDENT = 0
     
     def __init__(self, attributes=None, **kwargs):
         """Create a new Element with the given attributes.
@@ -67,8 +90,9 @@ class Element (object):
         """Return a string containing XML for the Element."""
         # TODO: Pretty indentation
         text = '<%s' % self.NAME
-        for attribute, value in self.attributes.items():
-            text += ' %s="%s"' % (attribute, value)
+        for key in self.ATTRIBUTES:
+            if key in self.attributes:
+                text += ' %s="%s"' % (key, self.attributes[key])
         if self.children:
             text += '>'
             for child in self.children:
@@ -86,3 +110,7 @@ def create_element(name, valid_attributes):
     return type(name, (Element,),
                 {'NAME': name, 'ATTRIBUTES': valid_attributes})
 
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod(verbose=True)
