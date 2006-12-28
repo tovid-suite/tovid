@@ -676,6 +676,78 @@ def dvd_video_xml(video):
     return xml
     
 
+###
+### Even more stuff that isn't used just yet...
+###
+
+from libtovid.xml import create_element
+
+# dvdauthor XML elements and valid attributes
+"""
+Dvdauthor = create_element('dvdauthor',
+    ['dest',       # Output (destination) directory
+    'jumppad'])    # 1 | on | yes
+Vmgm = create_element('vmgm', [])
+Titleset = create_element('titleset', [])
+Titles = create_element('titles', [])
+Menus = create_element('menus',
+    ['lang'])      # Language code
+Subpicture = create_element('subpicture',
+    ['lang'])      # Language code
+Video = create_element('video',
+    ['format',     # ntsc | pal
+    'aspect',      # 4:3 | 16:9
+    'resolution',  # WxH
+    'caption',     # field1 | field2
+    'widescreen']) # nopanscan | noletterbox
+Audio = create_element('audio',
+    ['format',     # mp2 | ac3 | dts | pcm
+    'channels',    # num
+    'quant',       # 16bps | 20bps | 24bps | drc
+    'dolby',       # surround
+    'samplerate',  # 48khz | 96khz
+    'lang'])
+Pgc = create_element('pgc',
+    ['entry',      # title
+    'palette',     # yuvfile | rgbfile
+    'pause'])      # seconds | inf
+Vob = create_element('vob',
+    ['file',       # filename.mpg
+    'chapters',    # chapter list
+    'pause'])      # seconds | inf
+Button = create_element('button',
+    ['name'])      # Button identifier (same as given to spumux)
+Pre = create_element('pre', [])
+Post = create_element('post', [])
+"""
+
+"""
+Hierarchy notes:
+
+dvdauthor
+    vmgm
+    titleset+
+
+vmgm
+    menus?
+
+menus
+    video?
+    audio?
+    subpicture?
+    pgc+
+
+titleset
+    menus?
+    titles
+
+titles
+    video?
+    audio?
+    pgc+
+
+"""
+
 
 ############################### DATA ################################
 

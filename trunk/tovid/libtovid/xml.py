@@ -29,7 +29,8 @@ class Element (object):
         self.children = []
         # Set attributes from those provided
         self.set(attributes, **kwargs)
-    
+
+
     def set(self, attributes=None, **kwargs):
         """Set values for one or more attributes.
         
@@ -54,6 +55,7 @@ class Element (object):
             else:
                 raise KeyError("'%s' element has no attribute '%s'" %
                                (self.NAME, key))
+
 
     def add_child(self, element):
         """Add the given Element as a child of this Element."""
