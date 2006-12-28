@@ -22,6 +22,8 @@ To get an XML representation of an Element:
 
     >>> print video1
     <video file="Brian.mpg" length="4"/>
+    >>> print video2
+    <video file="Judith.mpg" length="5"/>
 
 """
 
