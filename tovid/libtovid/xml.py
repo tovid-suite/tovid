@@ -69,16 +69,20 @@ class Element (object):
     NAME = 'empty'    # Element name (appears in xml tags <name>...</name>)
     ATTRIBUTES = []   # Valid attributes for the element
     
-    def __init__(self, attributes=None, **kwargs):
+    def __init__(self, parent=None, content='', attributes=None, **kwargs):
         """Create a new Element with the given attributes.
         
+            parent:     Parent of this Element
+            content:    Text content of the Element
             attributes: Dictionary of attributes matching those in ATTRIBUTES
             kwargs:     Keyword arguments for setting specific attributes
                         (NOTE: Hyphenated attribute names can't be used here)
         """
+        if parent:
+            parent.add_child(self)
+        self.content = content
         self.attributes = {}
         self.children = []
-        self.content = ''
         # Set attributes from those provided
         self.set(attributes, **kwargs)
 
