@@ -28,10 +28,12 @@ To get an XML representation of an Element:
 To create an Element class with no attributes, use the empty list:
 
     >>> Group = create_element('group', [])
+    >>> group = Group()
+    >>> print group
+    <group/>
 
 Elements can contain other elements, to create a hierarchy:
 
-    >>> group = Group()
     >>> group.add_child(video1)
     >>> group.add_child(video2)
     >>> print group
