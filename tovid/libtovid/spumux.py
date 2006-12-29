@@ -60,8 +60,7 @@ Spu = create_element('spu',
 
 def get_xml(textsub_or_spu):
     subpictures = Subpictures()
-    stream = Stream()
-    subpictures.add_child(stream)
+    stream = Stream(parent=subpictures)
     stream.add_child(textsub_or_spu)
     return str(subpictures)
 
@@ -163,13 +162,8 @@ if __name__ == '__main__':
     print "XML demo"
     # Basic spumux XML Elements
     spu = Spu()
-    b1 = Button()
-    b1.set(name='but1', down='but2')
-    b2 = Button()
-    b2.set(name='but2', up='but1')
-    # Build hierarchy
-    spu.add_child(b1)
-    spu.add_child(b2)
+    b1 = Button(spu, name='but1', down='but2')
+    b2 = Button(spu, name='but2', up='but1')
     # Generate XML
     print "Spu xml:"
     print get_xml(spu)
