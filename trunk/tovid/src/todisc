@@ -650,13 +650,15 @@ function mk_workdir()
 
 function get_group_chapters()
 {
+    FORMAT=false
     index=$1
+    [[ -n $2 ]] && FORMAT=:
     unset chapt_len_array x len remainder t
     remainder=0
     chapter_length=$( bc <<< "scale=3; ${GROUP_TOT_LEN[index]} / ${CHAPTERS[index]}")
     GROUP_VIDEO_LENGTHS=( ${GROUP_VID_LENGTHS[index]} )
 
-    for len in ${GROUP_VID_LENGTHS[index]}; do
+    for len in ${GROUP_VIDEO_LENGTHS[@]}; do #FIXME
         adjusted_length=$( bc <<< "scale=3; $len + $remainder" )
         num_chapters=$( bc <<< "$adjusted_length / $chapter_length" )
         if (( num_chapters > 0)); then
@@ -674,25 +676,26 @@ function get_group_chapters()
         unset chapt_len_array t
     done
     unset remainder
-if [[ -n $2 && $2 = format ]]; then
-    for d in ${!group_chapters[@]}; do
-        for number in ${group_chapters[d]}; do
-            new_element="$new_element $(format_seconds $number),"
+    if $FORMAT; then
+        echo "Running FORMAT block" >> chapters.txt
+        for d in ${!group_chapters[@]}; do
+            for number in ${group_chapters[d]}; do
+                new_element="$new_element $(format_seconds $number),"
+            done
+            array[d]="$new_element"
+            unset new_element
         done
-        array[d]="$new_element"
-        unset new_element
-    done
 
-    for e in ${!array[@]}; do
-        points=$(for f in ${array[e]// /}; do echo -n $f;done)
-        [[ -z ${array[e]} ]] && unset chpts || chpts[e]="chapters=\"${points%,}\""
-        [[ -n ${array[e]} ]] && chpts[e]=${chpts[e]#,}
-        if ((e == 0)); then
-            [[ -z "$points" ]] && chpts0="chapters=\"00:00:00\"" || chpts0="chapters=\"00:00:00,${points%,}\""
-        fi
-        chpts=${chpts#,}
-    done
-fi
+        for e in ${!array[@]}; do
+            points=$(for f in ${array[e]// /}; do echo -n $f;done)
+            [[ -z ${array[e]} ]] && unset chpts[e] || chpts[e]="chapters=\"${points%,}\""
+            [[ -n ${array[e]} ]] && chpts[e]=${chpts[e]#,}
+            if ((e == 0)); then
+                [[ -z "$points" ]] && chpts0="chapters=\"00:00:00\"" || chpts0="chapters=\"00:00:00,${points%,}\""
+            fi
+            chpts=${chpts[@]#,}
+        done
+    fi
 }
 
 function check_with_dvdauthor()
@@ -900,10 +903,10 @@ while test $# -gt 0; do
             TEXTMENU=:
             NO_THUMBS=:
             SHOWCASE=:
-#            NO_SC_THUMB=:
-#            SHOWCASE_IMG="dummy"
             IMG_FMT=png
             SC_TITLE_ALIGN=west
+#            NO_SC_THUMB=:
+#            SHOWCASE_IMG="dummy"
             ;;
         "-text-start" )
             shift
@@ -1494,9 +1497,9 @@ SHOWCASE_THUMB_X_ARRAY=( ${SHOWCASE_THUMB_X_ARRAY[NUM_FILES]} )
 SHOWCASE_THUMB_Y_ARRAY=( ${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]} )
 SHOWCASE_TITLES_X_ARRAY=( ${SHOWCASE_THUMB_X_ARRAY[@]} )
 SHOWCASE_TITLES_Y_ARRAY=( ${SHOWCASE_TITLES_Y_ARRAY[NUM_FILES]} )
-SPLIT=10 # max number of text only titles in one column (-textmenu)
+SPLIT=13 # max number of text only titles in one column (-textmenu)
 if $NO_THUMBS; then
-    if [[ $NUM_FILES -gt 9 ]]; then
+    if [[ $NUM_FILES -gt 12 ]]; then
         SPLIT=$((V_TOTAL / 2))
         [[ $(( SPLIT * 2)) -ne $V_TOTAL ]] && let SPLIT=SPLIT+1
     fi
@@ -1592,7 +1595,7 @@ if [ "$SC_TITLE_ALIGN" = "west" ]; then
             SHOWCASE_THUMB_X_ARRAY[i]=$(( ${SHOWCASE_THUMB_X_ARRAY[i]} - SAFE_OFFSET ))
             SHOWCASE_TITLES_X_ARRAY[i]=$(( ${SHOWCASE_TITLES_X_ARRAY[i]} - SAFE_OFFSET ))
         fi
-        if ! $NO_THUMBS; then
+        if ! $NO_THUMBS && ! [[ $SHOWCASE_FILE ]]; then #FIXME
             if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 360 ]; then
                 SHOWCASE_THUMB_X_ARRAY[i]=360
                 SHOWCASE_TITLES_X_ARRAY[i]=360
@@ -2173,10 +2176,10 @@ if $SHOWCASE; then
     convert  -size $VIDSIZE "$WORK_DIR/pics/template.png"
     ${sc_thumb_title_cmd[@]} -page +210+400 "$WORK_DIR/title_txt.png" \
     -mosaic "$WORK_DIR/pics/template.png" "| format_output
-    convert -size $VIDSIZE "$WORK_DIR/pics/template.png" \
-    ${sc_thumb_title_cmd[@]} -mosaic "$WORK_DIR/pics/template.png"
-    convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
-    -gravity $TITLE_GRAVITY -geometry +0+${title_pos} -composite "$WORK_DIR/pics/template.png"
+#    convert -size $VIDSIZE "$WORK_DIR/pics/template.png" \
+#    ${sc_thumb_title_cmd[@]} -mosaic "$WORK_DIR/pics/template.png"
+#    convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
+#    -gravity $TITLE_GRAVITY -geometry +0+${title_pos} -composite "$WORK_DIR/pics/template.png"
 fi
 if $PLAYALL; then
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/PLAYALL.png" \
@@ -2525,10 +2528,14 @@ if $SHOWCASE; then
         fi
         SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
     elif ! $NO_SC_THUMB && $TEXTMENU; then
+        :
         # FIXME allow showcase thumb with various textmenu options
           # needs to work with 1 column and 2 columns - 2 cols must be -align east
-        SC_TITLE_ALIGN="east"
-        sc_palette2=$(( ${VIDSIZE%x*} - (${SHOWCASE_TITLES_Y_ARRAY[0]} + MAX_LEN + 5) ))
+        #SC_TITLE_ALIGN="east"
+        #sc_palette2=$(( ${VIDSIZE%x*} - (${SHOWCASE_TITLES_Y_ARRAY[0]} + MAX_LEN + 5) ))
+        #sc_xpage2=$((sc_palette2 - $((sc_width / 2)) ))
+        #SC_IMG_PAGE="-page +$sc_xpage2+$SC_Y"
+        #SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
     fi
     if $NO_SC_THUMB; then unset SC_IMG_CMD; fi
     if [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
@@ -2703,7 +2710,7 @@ for ((i=0; i<${#mencoder_stats[@]}; i++)); do
 done
 if $GROUPING; then
     index=0
-    for i in "${!FILES[@]}"; do
+    for i in "${!IN_FILES[@]}"; do
         if [[ ${GROUP[i]} ]]; then
             iter=( $WORK_DIR/group-$((i+1))-* )
             for ((t=index; t<index+${#iter[@]}; t++)); do
