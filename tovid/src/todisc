@@ -677,7 +677,6 @@ function get_group_chapters()
     done
     unset remainder
     if $FORMAT; then
-        echo "Running FORMAT block" >> chapters.txt
         for d in ${!group_chapters[@]}; do
             for number in ${group_chapters[d]}; do
                 new_element="$new_element $(format_seconds $number),"
