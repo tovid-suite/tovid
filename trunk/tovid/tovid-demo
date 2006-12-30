@@ -145,7 +145,7 @@ YGET="youtube-dl"
 
 echo -n "   youtube-dl...   "
 get_source_file $YGET_DL_HOME $YGET
-echo "done"
+echo "done."
 
 # ========================================================================
 # Get DVD source video/images/sound
