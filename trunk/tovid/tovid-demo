@@ -97,8 +97,8 @@ GREETING=`cat << EOF
   working DVD image. (ready to burn!)
 
   I'll be downloading the latest tovid development version, some helper 
-  files, and a few videos from youtube to make the DVD. I'll convert 
-  the youtube videos, make an animated menu, and create the DVD image.
+  files, and a few videos from YouTube to make the DVD. I'll convert 
+  the YouTube videos, make an animated menu, and create the DVD image.
 
   Please be patient. . . This may take 1-2 hours.
 
@@ -112,14 +112,17 @@ echo "$GREETING"
 # ========================================================================
 # Get executables
 
+echo
+echo "Grabbing the latest scripts..."
+
 # tovid sources
 # =============
 TOVID_DL_HOME="http://svn.sourceforge.net/viewvc/*checkout*/tovid/trunk/tovid/src"
 TOVID_SRCS="idvid tovid makedvd todisc todisc-fade-routine tovid-init.in"
 
-echo
-echo "Grabbing lastest tovid sources..."
-echo "$TOVID_SRCS"
+echo     "   tovid sources:"
+echo     "      $TOVID_SRCS"
+echo -n  "      "
 for src in $TOVID_SRCS; do
     get_source_file $TOVID_DL_HOME $src
     echo -n "$src "
@@ -140,80 +143,96 @@ mv $BIN/tovid-init.in $BIN/tovid-init
 YGET_DL_HOME="http://www.arrakis.es/~rggi3/youtube-dl/"
 YGET="youtube-dl"
 
-echo
-echo "Grabbing latest youtube-dl script..."
-echo "$YGET"
+echo -n "   youtube-dl...   "
 get_source_file $YGET_DL_HOME $YGET
-echo "$YGET"
+echo "done"
 
 # ========================================================================
 # Get DVD source video/images/sound
 
+echo
+echo "Grabbing the background image and audio for the main menu..."
+
 # Menu background image
 MENU_BG_SRC="http://farm1.static.flickr.com/126/336686002_4b3cb2fa65_b_d.jpg"
 MENU_BG="sunset.jpg"
-echo
-echo "Grabbing background image for menu (cc technicolorcavalry @ flickr)..."
-echo "$MENU_BG"
+MENU_BG_STR="$MENU_BG from technicolorcavalry on flickr.com"
+printf "   %s: %-55s" "Image" "$MENU_BG_STR..."
 if ! test -f $VIDS/$MENU_BG; then
     if ! wget --quiet "$MENU_BG_SRC" -O "$VIDS/$MENU_BG"; then 
         runtime_fail "Couldn't get background image ($MENU_BG_SRC)!"
     fi
 fi
-echo "$MENU_BG"
+echo "done."
 
 # Menu audio
 MENU_AUD_SRC="http://www.paulosacramento.com.br/musicas/08-11-05-batida-urbana.mp3"
 MENU_AUD="batida-urbana.mp3"
-echo
-echo "Grabbing audio for menu (cc Paulo Sacramento @ opsound.org)..."
-echo "$MENU_AUD"
+MENU_AUD_STR="Batida Urbana by Paulo Sacramento on opsound.org"
+printf "   %s: %-55s" "Audio" "$MENU_AUD_STR..."
 if ! test -f $VIDS/$MENU_AUD; then
     if ! wget --quiet "$MENU_AUD_SRC" -O "$VIDS/$MENU_AUD"; then
         runtime_fail "Couldn't get menu audio ($MENU_AUD_SRC)!"
     fi
 fi
-echo "$MENU_AUD"
+echo done.
 
 # Demo videos
 VID_1_SRC="http://youtube.com/watch?v=7doO_S5iZP0"
 VID_1_NAME="poppin"
+VID_1_STR="Poppin' in the Streets of Korea"
 
 VID_2_SRC="http://youtube.com/watch?v=JzqumbhfxRo"
 VID_2_NAME="amateur"
+VID_2_STR="Amateur by Lasse Gjertsen"
 
 VID_3_SRC="http://youtube.com/watch?v=993H5fCQKuI"
 VID_3_NAME="caliendo"
+VID_3_STR="Frank Caliendo on David Letterman"
 
 VID_4_SRC="http://youtube.com/watch?v=v4Wy7gRGgeA"
 VID_4_NAME="monkey"
+VID_4_STR="Code Monkey music video"
 
 SRC_VIDS="$VID_1_NAME $VID_2_NAME $VID_3_NAME $VID_4_NAME"
 
 echo
-echo "Grabbing youtube videos. Give me about 12 minutes..."
-echo "$SRC_VIDS"
+echo "Grabbing 4 YouTube videos. Give me about 12 minutes..."
 
-for vid in $VID_1_SRC,$VID_1_NAME $VID_2_SRC,$VID_2_NAME $VID_3_SRC,$VID_3_NAME $VID_4_SRC,$VID_4_NAME; do
+i=1
+for vid in "$VID_1_SRC,$VID_1_NAME,$VID_1_STR" \
+           "$VID_2_SRC,$VID_2_NAME,$VID_2_STR" \
+           "$VID_3_SRC,$VID_3_NAME,$VID_3_STR" \
+           "$VID_4_SRC,$VID_4_NAME,$VID_4_STR"; do
     url=$(echo $vid | awk -F "," '{print $1}')
     name=$(echo $vid | awk -F "," '{print $2}')
+    str=$(echo $vid | awk -F ',' '{print $3}')
+    printf "   %s: %-38s" "$i" "$str..."
     get_youtube_vid $url $name
-    echo -n "$name "
+    echo "done."
+    i=$(expr $i \+ 1)
 done
-echo
 
 # ========================================================================
 # Convert the demo videos
 echo
 echo "Converting videos to DVD specification. Give me about 12 minutes..."
-echo "$SRC_VIDS"
-for src_vid in $SRC_VIDS; do
-    if ! test -f "$VIDS/$src_vid.mpg"; then
-        tovid -noask -ffmpeg -in $VIDS/$src_vid.flv -out $VIDS/$src_vid >> /dev/null
+
+i=1
+for vid in "$VID_1_SRC,$VID_1_NAME,$VID_1_STR" \
+           "$VID_2_SRC,$VID_2_NAME,$VID_2_STR" \
+           "$VID_3_SRC,$VID_3_NAME,$VID_3_STR" \
+           "$VID_4_SRC,$VID_4_NAME,$VID_4_STR"; do
+    url=$(echo $vid | awk -F "," '{print $1}')
+    name=$(echo $vid | awk -F "," '{print $2}')
+    str=$(echo $vid | awk -F ',' '{print $3}')
+    printf "   %s: %-38s" "$i" "$str..."
+    if ! test -f "$VIDS/$name.mpg"; then
+        tovid -noask -ffmpeg -in $VIDS/$name.flv -out $VIDS/$name >> /dev/null
     fi
-    echo -n "$src_vid "
+    echo "done."
+    i=$(expr $i \+ 1)
 done
-echo
 
 # ========================================================================
 # Author the disc
@@ -249,5 +268,5 @@ GOODBYE=`cat << EOF
 EOF`
 
 echo "$GOODBYE"
-rm todisc.log
+rm todisc.log >> /dev/null 2>&1
 exit 0
