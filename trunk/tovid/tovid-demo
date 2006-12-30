@@ -151,7 +151,7 @@ echo "done."
 # Get DVD source video/images/sound
 
 echo
-echo "Grabbing the background image and audio for the main menu..."
+echo "Grabbing the background image and audio for the main menu... (4MB)"
 
 # Menu background image
 MENU_BG_SRC="http://farm1.static.flickr.com/126/336686002_4b3cb2fa65_b_d.jpg"
@@ -194,10 +194,8 @@ VID_4_SRC="http://youtube.com/watch?v=v4Wy7gRGgeA"
 VID_4_NAME="monkey"
 VID_4_STR="Code Monkey music video"
 
-SRC_VIDS="$VID_1_NAME $VID_2_NAME $VID_3_NAME $VID_4_NAME"
-
 echo
-echo "Grabbing 4 YouTube videos. Give me about 12 minutes..."
+echo "Grabbing 4 YouTube videos (43MB). Give me about 12 minutes..."
 
 i=1
 for vid in "$VID_1_SRC,$VID_1_NAME,$VID_1_STR" \
@@ -252,7 +250,7 @@ PWD=`pwd`
 GOODBYE=`cat << EOF
 
 /========================== F I N I S H E D =============================\\\\
-  Well, it looks like I'm all done here. You can preview your dvd with
+  Well, it looks like I'm all done here. You can preview your dvd with:
 
         gxine dvd:/$PWD/$IMAGE
 
