@@ -2175,10 +2175,10 @@ if $SHOWCASE; then
     convert  -size $VIDSIZE "$WORK_DIR/pics/template.png"
     ${sc_thumb_title_cmd[@]} -page +210+400 "$WORK_DIR/title_txt.png" \
     -mosaic "$WORK_DIR/pics/template.png" "| format_output
-#    convert -size $VIDSIZE "$WORK_DIR/pics/template.png" \
-#    ${sc_thumb_title_cmd[@]} -mosaic "$WORK_DIR/pics/template.png"
-#    convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
-#    -gravity $TITLE_GRAVITY -geometry +0+${title_pos} -composite "$WORK_DIR/pics/template.png"
+    convert -size $VIDSIZE "$WORK_DIR/pics/template.png" \
+    ${sc_thumb_title_cmd[@]} -mosaic "$WORK_DIR/pics/template.png"
+    convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
+    -gravity $TITLE_GRAVITY -geometry +0+${title_pos} -composite "$WORK_DIR/pics/template.png"
 fi
 if $PLAYALL; then
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/PLAYALL.png" \
@@ -2915,7 +2915,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
 done
 if [[ "$BUTTON_STYLE" = "text" ]]; then
     if $TEXTMENU; then
-        OUTLINEWIDTH="\"8\""
+        OUTLINEWIDTH="\"10\""
     else
         OUTLINEWIDTH="\"14\""
     fi
