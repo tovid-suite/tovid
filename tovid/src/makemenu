@@ -102,7 +102,7 @@ BG_AUDIO=""
 TVSYS="ntsc"
 RES="dvd"
 # Use a safe area
-SAFE_AREA="y"
+SAFE_AREA=:
 # Number of titles
 NUM_TITLES=0
 # Scale up and crop non-4:3 images by default
@@ -215,7 +215,7 @@ while test $# -gt 0; do
         "-overwrite" ) OVERWRITE="y" ;;
         "-crop" ) SCALECROP="crop" ;;
         "-scale" ) SCALECROP="scale" ;;
-        "-nosafearea" ) SAFE_AREA="" ;;
+        "-nosafearea" ) SAFE_AREA=false ;;
         "-font" )
             shift
             TITLE_FONT="$1"
@@ -341,7 +341,7 @@ fi
 
 
 # Use a foreground canvas the size of the background minus safe area
-if test -n $SAFE_AREA; then
+if $SAFE_AREA; then
     FG_WIDTH=$(expr $WIDTH \* 4 \/ 5)
     FG_HEIGHT=$(expr $HEIGHT \* 4 \/ 5)
 else
