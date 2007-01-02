@@ -2,14 +2,36 @@
 # spumux.py
 
 """This module is for adding subtitles to MPEG video files using spumux.
+
+Defined here are classes corresponding to the XML elements used by spumux
+(with the same names, capitalized). Of particular interest are:
+
+    Spu: Picture-based subtitles, optionally including:
+        Button: Rectangular "selectable" regions of the picture
+        Action: Behaviors associated with buttons
+    Textsub: Text-based subtitles
+
+These are subclasses of libtovid's xml.Element class; attributes may be set
+via the Element set() method. See below for the valid attributes of each
+element, and refer to the spumux manual page for their meanings.
+
+Also defined here are two convenience functions for adding either kind of
+subtitle to an MPEG file:
+
+    add_subpictures:  Add image files (.png) with optional buttons
+    add_subtitles:    Add subtitle files (.sub, .srt, .smi etc.)
+
+Use these if you just want to add subpictures or subtitles, and don't want
+to think much about the XML internals.
 """
-# Incomplete at the moment; run standalone for a brief demo.
 
 __all__ = [\
+    'Subpictures',
+    'Stream',
+    'Textsub',
     'Button',
     'Action',
     'Spu',
-    'Textsub',
     'add_subpictures',
     'add_subtitles']
 
@@ -159,16 +181,15 @@ def add_subtitles(movie_filename, sub_filenames):
 
 
 if __name__ == '__main__':
-    print "XML demo"
-    # Basic spumux XML Elements
+    print "spumux XML examples"
+
+    print "Subpicture example:"
     spu = Spu()
     b1 = Button(spu, name='but1', down='but2')
     b2 = Button(spu, name='but2', up='but1')
-    # Generate XML
-    print "Spu xml:"
     print get_xml(spu)
 
+    print "Text subtitle example:"
     textsub = Textsub()
     textsub.set(filename='foo.sub', fontsize=14.0, font="Luxi Mono")
-    print "Textsub xml:"
     print get_xml(textsub)
