@@ -112,6 +112,18 @@ class Element (object):
         assert isinstance(element, Element)
         self.children.append(element)
 
+    def add(self, name, value):
+        """Add a simple child Element by providing its name and value.
+        
+            name:   String name of child element
+            value:  String content of child element
+        
+        This is a convenience function for creating an Element subclass,
+        setting its content, and passing it to add_child.
+        """
+        Child = create_element(name, [])
+        self.add_child(Child(content=value))
+
     def xml(self):
         """Return a string containing raw XML for the Element."""
         text = '<%s' % self.NAME
@@ -143,7 +155,7 @@ def format(xml_text):
     indent = -1
     result = ''
     text = xml_text.replace('<', '\n<').lstrip('\n')
-    for line in text.split('\n'):
+    for line in text.splitlines():
         if not line.startswith('</'):
             indent += 1
         result += '  ' * indent + line + '\n'
