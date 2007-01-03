@@ -76,7 +76,8 @@ class Element (object):
             content:    Text content of the Element
             attributes: Dictionary of attributes matching those in ATTRIBUTES
             kwargs:     Keyword arguments for setting specific attributes
-                        (NOTE: Hyphenated attribute names can't be used here)
+                        (To set hyphenated attribute names, use underscores
+                        in place of hyphens)
         """
         if parent:
             parent.add_child(self)
@@ -91,7 +92,8 @@ class Element (object):
         
             attributes: Dictionary of attributes and values
             kwargs:     Keyword arguments for setting specific attributes
-                        (Note: Hyphenated attribute names aren't allowed here)
+                        (To set hyphenated attribute names, use underscores
+                        in place of hyphens)
         
         All attributes must match those listed in ATTRIBUTES; a KeyError
         is raised for non-valid attributes.
@@ -103,6 +105,8 @@ class Element (object):
         for key, value in kwargs.iteritems():
             if key in self.ATTRIBUTES:
                 self.attributes[key] = value
+            elif key.replace('_', '-') in self.ATTRIBUTES:
+                self.attributes[key.replace('_', '-')] = value
             else:
                 raise KeyError("'%s' element has no attribute '%s'" %
                                (self.NAME, key))
@@ -112,17 +116,22 @@ class Element (object):
         assert isinstance(element, Element)
         self.children.append(element)
 
-    def add(self, name, value):
-        """Add a simple child Element by providing its name and value.
+    def add(self, name, content='', **kwargs):
+        """Add a simple child Element by providing its name and content.
+        Return the child Element that was added.
         
-            name:   String name of child element
-            value:  String content of child element
+            name:    String name of child element
+            content: String content of child element
         
         This is a convenience function for creating an Element subclass,
-        setting its content, and passing it to add_child.
+        setting its content, and passing it to add_child. To specify
+        attribute values for the child, pass them as keyword arguments.
+        All attribute names are assumed to be valid; underscores in attribute
+        names are converted to hyphens.
         """
-        Child = create_element(name, [])
-        self.add_child(Child(content=value))
+        valid_attributes = [key.replace('_', '-') for key in kwargs.keys()]
+        Child = create_element(name, valid_attributes)
+        return Child(self, content, kwargs)
 
     def xml(self):
         """Return a string containing raw XML for the Element."""
