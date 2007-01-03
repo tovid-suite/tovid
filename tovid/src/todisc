@@ -157,8 +157,11 @@ XGEO=0
 YGEO=45
 USER_GRAVITY=false
 USER_GEO=false
+USER_SPLIT=false
 TITLE_GRAVITY=south
 SPACER=15
+HIGHLIGHT_COLOUR="#DE7F7C"
+SELECT_COLOUR="#266CAE"
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -3966,7 +3969,7 @@ if $STATIC && [[ -n "$BG_AUDIO" ]]; then
     awk '/Duration/ {print $2}')
     TMP_TIME=${TIME/,/}
 else
-    TMP_TIME=$(vid_length "$WORK_DIR/intro.m2v")
+    TIME=$(vid_length "$WORK_DIR/intro.m2v")
 fi
 [[ -n "$MENU_AUDIOLENGTH" ]] && $STATIC && TIME=$MENU_AUDIOLENGTH
 TIME=${TIME:-$TMP_TIME}
