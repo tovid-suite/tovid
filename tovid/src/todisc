@@ -1027,6 +1027,10 @@ while test $# -gt 0; do
             FADE="$1"
             AUDIO_FADE=:
             ;;
+        "-menu-audiolength" )
+            shift
+            MENU_AUDIOLENGTH="$1"
+            ;;
         "-submenu-audio" )
             shift
             get_listargs "$@"
@@ -1038,6 +1042,10 @@ while test $# -gt 0; do
                 fi
             done
             SUBMENU_AUDIO=:
+            ;;
+        "-submenu-audiolength" )
+            shift
+            SUBMENU_AUDIOLENGTH="$1"
             ;;
         "-submenu-audio-fade" )
             shift
@@ -1108,7 +1116,7 @@ elif test ${#FILES[@]} -ne ${#TITLES[@]}; then
     usage_error "Please give the same number of files as titles.
     You gave ${#FILES[@]} files and ${#TITLES[@]} titles"
 fi
-if [ -n "$SM_TITLES" ]; then
+if [[ -n "$SM_TITLES" ]]; then
     if test ${#SM_TITLES[@]} -ne ${#TITLES[@]}; then
     usage_error "Please give the same number of submenu titles as titles.
     You gave ${#SM_TITLES[@]} submenu titles and ${#TITLES[@]} titles"
@@ -1339,7 +1347,7 @@ fi
 if $SUB_MENU && ! $ANI_SUB_MENU; then
     mkdir -v "$REAL_WORK_DIR/submenu"
 fi
-if [ -n "$SHOWCASE_VIDEO" ]; then
+if [[ -n "$SHOWCASE_VIDEO" ]]; then
     mkdir -v "$REAL_WORK_DIR/showcase"
 fi
 # if Fading menu, and no BG IMAGE OR VIDEO, fade thumbs right in after title
@@ -1798,7 +1806,7 @@ else
     MASK_DIM="$DIMY1,$DIMY1 $DIMY2,$DIMX2"
 fi
 
-if [ -n "$THUMB_SHAPE" ]; then
+if [[ -n "$THUMB_SHAPE" ]]; then
     # make a mask for the mist if called for
     convert -size $THUMB_SIZE xc:none -fill  "$THUMB_BG_COLOUR" -stroke none \
     -draw "rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2" "$WORK_DIR/feather_orig.png"
@@ -2015,7 +2023,7 @@ fi
 #      generate a basic preview of the main menu                              #
 ###############################################################################
 # generate images for montage and title and resize them
-if [ -n "$BG_VIDEO" ]; then
+if [[ -n "$BG_VIDEO" ]]; then
     echo "Getting background video images from $BG_VIDEO"
     FFMPEG_CMD=(ffmpeg -i "$BG_VIDEO" -s $VIDSIZE -ss $BG_SEEK -vframes 1 \
     -vcodec png -an  -f rawvideo -y "$WORK_DIR/pics/template.png")
@@ -2030,7 +2038,7 @@ if [ -n "$BG_VIDEO" ]; then
     fi
 fi
 if $SHOWCASE && ! $NO_SC_THUMB; then
-    if [ -n "$SHOWCASE_VIDEO" ]; then
+    if [[ -n "$SHOWCASE_VIDEO" ]]; then
         echo "Getting video images from $SHOWCASE_VIDEO"
         if [[ "$SC_FRAMESTYLE" = "glass" && -n "$SHOWCASE_VIDEO" ]]; then
             D=2
@@ -2071,7 +2079,7 @@ if $SHOWCASE && ! $NO_SC_THUMB; then
             convert -background none $ROTATE $WAVE - miff:-|
             convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
         fi
-    elif [ -n "$SHOWCASE_IMG" ]; then
+    elif [[ -n "$SHOWCASE_IMG" ]]; then
         echo "Running convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" \
         "$WORK_DIR/showcase_img.jpg"" |format_output
         convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" -mattecolor gray $SC_FRAME miff:- |
@@ -2101,7 +2109,7 @@ if ! $NO_THUMBS; then
 
             run_navseek &
             NS_PID="$!"
-            if [ -n "$NS_PID" ]; then
+            if [[ -n "$NS_PID" ]]; then
                 while ps -p $NS_PID >/dev/null; do
                     sleep .5 # spinner interval
                     spin "Creating a nav_seek log for "${IN_FILES[i]}": $SPINNER"
@@ -2662,7 +2670,7 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
 
             run_navseek &
             NS_PID="$!"
-            if [ -n "$NS_PID" ]; then
+            if [[ -n "$NS_PID" ]]; then
                 while ps -p $NS_PID >/dev/null; do
                     sleep .5 # spinner interval
                     spin "Creating a nav_seek log for "${IN_FILES[i]}": $SPINNER"
@@ -2811,7 +2819,7 @@ if ! $NO_THUMBS; then
                     sleep 1 # short sleep to allow 1st jpg to appear
                     TRANSCODE_PID=$(</tmp/tcode.pid)
                     check_stall &
-                    if [ -n "$TRANSCODE_PID" ]; then
+                    if [[ -n "$TRANSCODE_PID" ]]; then
                         while ps -p $TRANSCODE_PID >/dev/null; do
                             sleep .5 # spinner interval
                         spin "Seeking in video and creating images: $(find $WORK_DIR/pics/$i \
@@ -2915,7 +2923,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
 done
 if [[ "$BUTTON_STYLE" = "text" ]]; then
     if $TEXTMENU; then
-        OUTLINEWIDTH="\"10\""
+        (( THUMB_FONTSIZE < 26 )) &&  OUTLINEWIDTH="\"10\"" || OUTLINEWIDTH="\"12\""
     else
         OUTLINEWIDTH="\"14\""
     fi
@@ -3097,7 +3105,13 @@ if $SUB_MENU; then
             TOTAL_JPEGS=$((340 * ${CHAPTERS[i]}))
 
         else  # not animated submenu
-            JPEG2YUV_OPTS=(-n 1 -l 60)
+            if [[ -n "$SUBMENU_AUDIOLENGTH" ]]; then
+                SM_LOOPS=$( bc <<< "$SUBMENU_AUDIOLENGTH * $FRAME_RATE")
+                SM_LOOPS=${SM_LOOPS%.*}
+            else
+                SM_LOOPS=60
+            fi
+            JPEG2YUV_OPTS=(-n 1 -l $SM_LOOPS)
             PICS_IN=($WORK_DIR/${i}-submenu.$SM_IMG_FMT)
             PICS_OUT=($WORK_DIR/submenu/)
             CUT_TIME=1
@@ -3142,7 +3156,7 @@ if $SUB_MENU; then
             sleep .5 # short sleep to allow 1st jpg to appear
             TCODE_PID=$(</tmp/tcode.pid)
             check_stall &
-            if [ -n "$TCODE_PID" ]; then
+            if [[ -n "$TCODE_PID" ]]; then
                 while ps -p $TCODE_PID >/dev/null; do
                     sleep $SLEEP # spinner interval
                 spin "Seeking in video and creating images: $(find "$JPEG_DIR" \
@@ -3284,25 +3298,28 @@ if $SUB_MENU; then
         yecho "Creating an audio background"
         yecho "Working on submenu audio for "${IN_FILES[s]}""
         if $SUBMENU_AUDIO; then # user supplied audio file for ths video
-            if ! $ANI_SUB_MENU ; then  # if static, then no trim
-                if [ -n "$SM_AUDIO_FILE" ]; then # one audio file for all menus
-                    TIME=$(ffmpeg -i "$SM_AUDIO_FILE" 2>&1|
+            if ! $ANI_SUB_MENU ; then  # if static, see if length option given
+                [[ -n "$SUBMENU_AUDIOLENGTH" ]] && TIME=$SUBMENU_AUDIOLENGTH
+                if [[ -n "$SM_AUDIO_FILE" ]]; then # one audio file for all menus
+                    TIME_TMP=$(ffmpeg -i "$SM_AUDIO_FILE" 2>&1|
                     awk '/Duration/ {print $2}')
-                    TIME=${TIME/,/}
+                    TIME_TMP=${TIME_TMP/,/}
                 else # audio will be different for each menu
-                    TIME=$(ffmpeg -i "${SM_AUDIO[s]}" 2>&1|
+                    TIME_TMP=$(ffmpeg -i "${SM_AUDIO[s]}" 2>&1|
                     awk '/Duration/ {print $2}')
-                    TIME=${TIME/,/}
+                    TIME_TMP=${TIME_TMP/,/}
                 fi
             else # if animated, get time from video instead of the audio file
-                TIME=$(vid_length "$WORK_DIR/menu$s.m2v")
+                TIME_TMP=$(vid_length "$WORK_DIR/menu$s.m2v")
             fi
-
+            # if length option is supplied, we use that, else use $TIME_TMP
+            TIME=${TIME:-$TIME_TMP}
+            # silence only need be the length of the static menu
             if [ "${SM_AUDIO[s]}" = "none" ]; then # user asked for silence
                 TIME=$(vid_length "$WORK_DIR/menu$s.m2v")
                 BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
                 $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
-            elif [ -n "$SM_AUDIO_FILE" ]; then # user supplied "1" audio file
+            elif [[ -n "$SM_AUDIO_FILE" ]]; then # user supplied "1" audio file
                 COPY_AC3=(cp -v $WORK_DIR/submenu.$AUDIO_EXT \
                 $WORK_DIR/menu$s.$AUDIO_EXT)
                 BGAUDIO_CMD=(ffmpeg -i "$SM_AUDIO_FILE" -t $TIME -ar 48000 \
@@ -3408,7 +3425,7 @@ fi
 ##############################################################################
 yecho
 yecho "Building main menu"
-if [ -n "$BG_VIDEO" ]; then
+if [[ -n "$BG_VIDEO" ]]; then
     yecho "Getting background video from $BG_VIDEO"
     FFMPEG_CMD="ffmpeg -i \"$BG_VIDEO\" -ss $BG_SEEK -vframes $FRAMES \
     -s $VIDSIZE -sameq \"$WORK_DIR/bg/%d.jpg\""
@@ -3433,7 +3450,7 @@ if [ -n "$BG_VIDEO" ]; then
     unset IMAGES PICS last_pic next_pic
 fi
 #if [ -n "$SHOWCASE_VIDEO" ] && ! $NO_SC_THUMB; then
-if [ -n "$SHOWCASE_FILE" ] && ! $NO_SC_THUMB; then
+if [[ -n "$SHOWCASE_VIDEO" ]] && ! $NO_SC_THUMB; then
     echo "Getting showcase video images from $SHOWCASE_VIDEO"
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
         FIND_FRAMES=$((FRAMES + 1)) # unfortunately mplayer starts at 1 not 0
@@ -3460,6 +3477,7 @@ if [ -n "$SHOWCASE_FILE" ] && ! $NO_SC_THUMB; then
             exit 1
         fi
     fi
+
     for ((i=0; i<$FRAMES; i++)); do
         SC_PICS=( ${SC_PICS[@]} $(find $WORK_DIR/showcase -maxdepth 1  -name $(printf "%06d%s"  $i .png) ) )
     done
@@ -3720,7 +3738,7 @@ if $MENU_FADE && ! $STATIC; then
         # pipe all of above commands if using MIST
         if $MIST; then
             if $SHOWCASE; then
-                if [ -n "$SHOWCASE_VIDEO" ]; then
+                if [[ -n "$SHOWCASE_VIDEO" ]]; then
                     "${MONTAGE_CMD01[@]}" miff:- | "${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- | "${MONTAGE_CMD3[@]}" miff:- |
                     "${MONTAGE_CMD5[@]}" miff:- | "${MONTAGE_CMD4[@]}"
@@ -3736,7 +3754,7 @@ if $MENU_FADE && ! $STATIC; then
             fi
         else  # no mist: pipe all commands but the mist command
             if $SHOWCASE; then
-                if [ -n "$SHOWCASE_VIDEO" ]; then
+                if [[ -n "$SHOWCASE_VIDEO" ]]; then
                     "${MONTAGE_CMD01[@]}" miff:- | "${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- | "${MONTAGE_CMD5[@]}" miff:- |
                     "${MONTAGE_CMD4[@]}"
@@ -3804,14 +3822,14 @@ else # Do not do menu fade
             -gravity $TITLE_GRAVITY -geometry +0+${title_pos} -composite $ADD_PLAYALL \
             $WORK_DIR/animenu/$count.jpg )
             if $MIST; then
-                if $SHOWCASE && [ -n "$SHOWCASE_VIDEO" ]; then # showcase, mist, showcase-video
+                if $SHOWCASE && [[ -n "$SHOWCASE_VIDEO" ]]; then # showcase, mist, showcase-video
                     if test -n "$BG_VIDEO"; then # showcase, mist, showcase-video, bgvideo
                         "${IM_CMD01[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                        "${IM_CMD03[@]}" miff:- |  "${IM_CMD3[@]}" |  "${IM_CMD4[@]}"
                     else # showcase, mist showcase-video, not bgvideo
                         "${IM_CMD01[@]}" miff:- | "${IM_CMD02[@]}" "$WORK_DIR/animenu/$count.jpg"
                     fi
-                elif $SHOWCASE && [ -n "$SHOWCASE_IMG" ]; then # showcase, mist, showcase-image
+                elif $SHOWCASE && [[ -n "$SHOWCASE_IMG" ]]; then # showcase, mist, showcase-image
                     if test -n "$BG_VIDEO"; then # showcase, mist, showcase-image with bgvideo
                         "${IM_CMD05[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                         "${IM_CMD03[@]}" miff:- |"${IM_CMD3[@]}" |  "${IM_CMD4[@]}"
@@ -3826,7 +3844,7 @@ else # Do not do menu fade
                     fi
                 fi
             else # not mist
-                if $SHOWCASE && [ -n "$SHOWCASE_VIDEO" ]; then # showcase, no mist, showcase-video
+                if $SHOWCASE && [[ -n "$SHOWCASE_VIDEO" ]]; then # showcase, no mist, showcase-video
                     if test -n "$BG_VIDEO"; then # showcase, no mist, showcase-video, bgvideo
                         "${IM_CMD01[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                         "${IM_CMD03[@]}" miff:- | "${IM_CMD4[@]}"
@@ -3834,7 +3852,7 @@ else # Do not do menu fade
                         "${IM_CMD01[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                         "${IM_CMD02[@]}" miff:- | "${IM_CMD4[@]}"
                     fi
-                elif $SHOWCASE && [ -n "$SHOWCASE_IMG" ]; then # showcase, no mist, showcase-image
+                elif $SHOWCASE && [[ -n "$SHOWCASE_IMG" ]]; then # showcase, no mist, showcase-image
                     if test -n "$BG_VIDEO"; then # showcase, no mist, showcase-image with bgvideo
                         "${IM_CMD05[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                         "${IM_CMD03[@]}" miff:- | "${IM_CMD4[@]}"
@@ -3903,7 +3921,13 @@ echo
 echo "Converting images to video stream and encoding to DVD-compliant format"
 # convert images to video stream and encode to dvd compliant m2v
 if $STATIC; then
-    JPEG2YUV_OPTS=(-n 1 -l 60)
+    if [[ -n "$MENU_AUDIOLENGTH" ]]; then
+        LOOPS=$( bc <<< "$MENU_AUDIOLENGTH * $FRAME_RATE")
+        LOOPS=${LOOPS%.*}
+    else
+        LOOPS=60
+    fi
+    JPEG2YUV_OPTS=(-n 1 -l $LOOPS)
     PICS_IN="$WORK_DIR/animenu/1.jpg"
 else  # animated menu
     if $MENU_FADE; then
@@ -3935,13 +3959,16 @@ else
     echo
     runtime_error  "The menu video (m2v) does not appear to have been created"
 fi
-if $STATIC && [ -n "$BG_AUDIO" ]; then  # if static then keep bg audio length
-    TIME=$(ffmpeg -i "$BG_AUDIO" 2>&1|
+# if static then keep bg audio length (check later if bgaudio-length opt used
+if $STATIC && [[ -n "$BG_AUDIO" ]]; then
+    TMP_TIME=$(ffmpeg -i "$BG_AUDIO" 2>&1|
     awk '/Duration/ {print $2}')
-    TIME=${TIME/,/}
+    TMP_TIME=${TIME/,/}
 else
-    TIME=$(vid_length "$WORK_DIR/intro.m2v")
+    TMP_TIME=$(vid_length "$WORK_DIR/intro.m2v")
 fi
+[[ -n "$MENU_AUDIOLENGTH" ]] && $STATIC && TIME=$MENU_AUDIOLENGTH
+TIME=${TIME:-$TMP_TIME}
 BG_AUDIO_LENGTH="-t $TIME"
 # create audio background for the main menu
 if [ -z "$BG_AUDIO" ]; then # no audio supplied: use silence
@@ -3974,7 +4001,7 @@ else # audio supplied: convert to wav then later to dvd/svcd format
     fi
 fi
 
-unset BGAUDIO_CMD unset TIME
+unset BGAUDIO_CMD TIME
 
 # convert to proper audio format
 BGAUDIO_CMD=(ffmpeg -i $WORK_DIR/intro.wav \
