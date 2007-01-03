@@ -1583,7 +1583,7 @@ if $SHOWCASE; then
     else
         SHOWCASE_SIZE=288x216  # smaller showcase thumb because we have 2 rows
         AUTOORDER="columns"
-        if ! $NO_SC_THUMB && ! $TEXTMENU && [[ "$SC_TITLE_ALIGN" = *st ]] && [[ "$SHOWCASE_IMG" || "$SHOWCASE_VIDEO" ]]; then
+        if ! $NO_SC_THUMB && ! $TEXTMENU && [[ "$SC_TITLE_ALIGN" = *st ]] && [[ $SHOWCASE_FILE ]]; then
             usage_error "Sorry, there is no room for the showcase thumb " \
             "if you use more than 5 videos with -showcase-titles-align east|west. " \
             "Either remove the -showcase-titles-align switch or remove the " \
@@ -2080,11 +2080,12 @@ if $SHOWCASE && ! $NO_SC_THUMB; then
             convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
         fi
     elif [[ -n "$SHOWCASE_IMG" ]]; then
-        echo "Running convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" \
-        "$WORK_DIR/showcase_img.jpg"" |format_output
-        convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" -mattecolor gray $SC_FRAME miff:- |
-        convert -background none $ROTATE $WAVE - miff:-|
-        convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
+        echo "Running convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" miff:- | \
+        convert -background none $ROTATE $WAVE -bordercolor Transparent -border 8x8 - miff:- | \
+        convert - -trim +repage -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.jpg"" |format_output
+        convert "$SHOWCASE_IMG" -resize $SHOWCASE_SIZE! -mattecolor gray $SC_FRAME miff:- |
+        convert - -background none -bordercolor Transparent -border 8x8 $ROTATE $WAVE miff:- |
+        convert - -trim +repage -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
     fi
 fi
 # transcode makes it harder to switch between PNG and JPEG for output
