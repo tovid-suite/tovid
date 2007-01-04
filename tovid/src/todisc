@@ -1166,6 +1166,15 @@ if [ "$BUTTON_STYLE" = "text" ]; then
         fi
     done
 fi
+# allow multiline titles in submenu
+if [[ -n "$SM_TITLES" ]]; then
+    for i in ${!SM_TITLES[@]}; do
+        if [[ $(echo -e "${SM_TITLES[i]}" |wc -l) -gt 1 ]]; then
+            SM_TITLES[i]="$(echo -e  "${SM_TITLES[i]}")"
+        fi
+    done
+fi
+
 # set a maximum # of videos
 $NO_THUMBS && file_max=26 || file_max=10
 if test ${#FILES[@]} -gt 30; then
@@ -3118,9 +3127,13 @@ if $SUB_MENU; then
     yecho
     yecho "Creating images for each chapter"
     if [ -z "$SM_TITLES" ]; then
-        for i in ${!TITLES[@]}; do
-            SM_TITLES[i]="$(echo -e "${TITLES[i]}")"
-        done
+        if $MULTILINE_TITLE; then
+            for i in ${!TITLES[@]}; do
+                SM_TITLES[i]="${TITLES[i]//\\n/ }"
+            done
+        else
+            SM_TITLES=("${TITLES[@]}")
+        fi
     fi
     for ((i=0; i<${#IN_FILES[@]}; i++)); do
         C=$((${CHAPTERS[i]} - 1))
