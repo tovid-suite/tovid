@@ -34,34 +34,32 @@ For example:
 The number of **-files** and **-titles** must be equal. If the input files are
 not mpeg, you will have the option to auto-encode them with **tovid**.
 
-At present there are 2 display arrangements or "templates":
+**At present there are 3 display arrangements or "templates":**
 
-1. showcase style   2. The default style
+A. The default style B. showcase style   C. textmenu style
 
-    1. -showcase IMAGE|VIDEO will produce an arrangement with small buttons on
+    A. No extra args needed. Thumbs will be centred, and as large as space restraints allow.
+
+    B. -showcase IMAGE|VIDEO : will produce an arrangement with small buttons on
     the side and the showcase image/video in the centre.
     If no IMAGE or VIDEO argument is supplied, the central thumb will be omitted.
 
-    2. If you don't use -showcase option, then thumbs will be centred, and of
-    course there will be no extra thumb in the centre.
+    C. -textmenu : no thumbs will be made, text will be used instead.  You can
+    still make an animated menu however by using a video for the background.
+    (-background VIDEO)
 
 The **-titles** arguments should be double-quoted, with special characters
 (like ", !, *, &, ?) backslash-escaped. These titles are used for labelling
 thumbnails on the main menu, and for the submenu title for that video.
 ( see also -submenu-titles )
 
-For the -showcase template/style:
 
-this style can use much longer titles, particularly if you use:
-"-showcase-titles-align west". "-showcase-titles-align east" will allow
-titles of more than one line.
-In addition, "-showcase" without arguments will eliminate the thumb in
-the centre of the menu, which will give even more space for titles.
+The -showcase and -textmenu styles can use longer titles than the default arrangement.
+With -showcase style, use: "-showcase-titles-align west" to give more space for the title,
+or use ""-showcase-titles-align east" to allow titles of more than one line.
 
-For the default template/style thumbnail labels:
-
-this style can only show about 12 characters (depending on the number of thumbs,
-and what **-thumb-font** and **-thumb-fontsize** you use).
+The default style can only show about 16 characters (depending on the number of thumbs,
+and what **-thumb-font** and **-thumb-fontsize** is being used).
 If your titles are too long to fit in the label area, you may try using
 sub-menus, which can display longer titles, for example:
 
@@ -73,13 +71,9 @@ sub-menus, which can display longer titles, for example:
           -out foo
 ```
 
-The **-menu-title** argument (described below under "Menu Style") can include
-a **\n** to indicate a line break (creating a multi-line title). You may need
-to decrease font size with the **-menu-fontsize** option. For example:
-
-```
- $ todisc ... -menu-title "A\nMultilined\nTitle" -menu-fontsize 24
-```
+The "-align" argument will position both titles and thumbs either south, north
+east, west, southwest, northwest, southeast, northeast, subject to certain
+constraints of each arrangement.
 
 == Options ==
 
@@ -108,6 +102,14 @@ to decrease font size with the **-menu-fontsize** option. For example:
     If the provided argument is a video file, the central thumb will be animated.
     Pick a file of correct aspect ratio: ie. it should still look good when
     resized to 720x480 (PAL 720x576)
+: -textmenu NUM ( without an argument, create a textmenu out of the supplied titles
+    The optional argument specifies how many titles are in the 1st column, ie. giving
+    4 titles and using "-textmenu 2" would make 2 columns of 2 titles. The default is to
+    put all titles up to 13 in the first column before starting a second title.
+    Maximum, 2 columns and 26 titles.
+    If no video files for either -background or -showcase are supplied, the menu will be static.
+: -use-makemenu
+    This will call the other tovid menu script, "makemenu" on the titles supplied.
 : -static
     Main menu will just be static thumbs (not animated) (default: animated)
 : -background IMAGE|VIDEO
@@ -118,7 +120,12 @@ to decrease font size with the **-menu-fontsize** option. For example:
     Title for the root menu - may be longer than thumbnail labels
     Also if you use \n in the title, you can use multi line titles, but you
     would need to adjust -menu-fontsize to something smaller than default
-    See example in last paragraph above under "Usage"
+    for example:
+
+```
+    $ todisc ... -menu-title "A\nMultilined\nTitle" -menu-fontsize 24
+```
+
 : -menu-font FONT
     Font to use for titles, either by ImageMagick font name (ex., "Arial") or
     explicit pathname (ex., "/full/path/to/arial.ttf"). To see a complete
@@ -209,6 +216,10 @@ to decrease font size with the **-menu-fontsize** option. For example:
 : -stroke-color COLOR (or -stroke-colour COLOR)
     Outline color for the main menu font. Use "none" for transparent outline
     (see title-color)
+: -highlightcolor ( or -highlightcolour )
+    Color to use for the menu buttons that your dvd remote uses to navigate
+: -selectcolor ( or -selectcolour )
+    Color to use for the menu buttons that your dvd remote uses to select
 : -text-mist
     Put a semi-transparent misted background behind the title text, just
     slightly larger than the text area
@@ -216,6 +227,12 @@ to decrease font size with the **-menu-fontsize** option. For example:
     Color of the mist behind the menu text (see title-color)
 : -text-mist-opacity
     Opacity of the mist behind the menu text - see -opacity
+: -menu-audiolength
+    The length of the background audio for a static menu.  The default is to
+    use the full length of the supplied audio ( -bgaudio ).
+: -submenu-audiolength
+    The length of the background audio for a static submenu.  The default is to
+    use the full length of the supplied audio ( -bgaudio ).
 : -menu-audio-fade
     Number of sec to fade given menu audio in and out (default: 1.0 seconds)
     If you use -menu-audio-fade 0 then the audio will not be faded.
@@ -284,22 +301,33 @@ to decrease font size with the **-menu-fontsize** option. For example:
     If the tracks are 0. English 1.French, then the above would make
     French the audio language on Video1 and Video3, and English the audio language on Video2.
     You can check the mpeg with "mplayer -v . . ."
-: -aspect 4:3|16:9 videos|menu|all
+: -aspect 4:3|16:9 videos|menu|all  (default: all)
     This will output a <video aspect WIDTH:HEIGHT /> tag for the dvdauthor xml file.
     It will affect all videos in the titleset.  (effectively all videos since todisc only does
     one titleset)  The optional 2nd argument will apply this tag either to just the menu itself, 
-    just the videos, or "all". "all" is redundant, as just using "-aspect 16:9" for example will
-    use "all" by default.
-    example: -aspect 16:9 video
+    just the videos, or "all". For example:
+
+```
+    -aspect 16:9 video
+```
+
 : -widescreen nopanscan|noletterbox [nopanscan] videos|menu|all [all]
     This will output a <video widescreen=nopanscan /> tag (for example)
     for the dvdauthor xml file.  It will affect all videos in the titleset.
     Use in conjunction with -aspect if your dvd player is cropping you videos.
-    example:  -aspect 16:9 -widescreen
+    example:
+```
+    -aspect 16:9 -widescreen
+```
     The optional 2nd argument will apply this tag either to just the menu itself,
     just the videos, or "all" (both videos AND menu).  Used with a 2nd argument, "all" will
     be assumed. Used with no arguments, and "nopanscan all" will be assumed.
-    example: -widescreen nopanscan video
+    Example:
+
+```
+    -widescreen nopanscan video.
+```
+
 ==See also==
 
 **idvid**(1), **makedvd**(1), **makemenu**(1), **makeslides**(1), 
