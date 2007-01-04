@@ -902,13 +902,15 @@ while test $# -gt 0; do
             IMG_FMT=png
             ;;
         "-textmenu" )
+            shift
+            get_listargs "$@"
+            arg=${ARGS_ARRAY[0]}
+            [[ -n $arg ]] && SPLIT=$arg && USER_SPLIT=:
             TEXTMENU=:
             NO_THUMBS=:
             SHOWCASE=:
             IMG_FMT=png
             SC_TITLE_ALIGN=west
-#            NO_SC_THUMB=:
-#            SHOWCASE_IMG="dummy"
             ;;
         "-text-start" )
             shift
@@ -979,6 +981,14 @@ while test $# -gt 0; do
         "-thumb-text-colour" | "-thumb-text-color" )
             shift
             THUMB_TEXT_COLOUR="$1"
+            ;;
+        "-highlightcolour" | "-highlightcolor" )
+            shift
+            HIGHLIGHT_COLOUR="$1"
+            ;;
+        "-selectcolour" | "-selectcolor" )
+            shift
+            SELECT_COLOUR="$1"
             ;;
         "-text-mist" )
             MIST=:
@@ -1168,8 +1178,12 @@ fi
 
 # If output directory already exists, print a message and exit
 if test -e "$OUT_DIR"; then
+    echo "Cleaning up created dirs"
+    yecho
     echo "A file or directory named\"$OUT_DIR\" already exists."
     echo "Please use a different -out name, or (re)move the existing file or directory."
+    rm -rf "$REAL_WORK_DIR"
+    rm -f "$WORK_DIR"
     exit 1
 fi
 
@@ -1331,6 +1345,8 @@ yecho "Creating pics directories..."
 for ((i=0; i<=NUM_FILES; i++)); do
     mkdir -pv "$REAL_WORK_DIR/pics/$i"
 done
+# textmenu is static unless there is an animated background or showcase video
+$TEXT_MENU && [[ -z $SHOWCASE_VIDEO && -z $BG_VIDEO ]] && STATIC=:
 # prevent user from using mutually exclusive options
 if $STATIC; then
     MENU_FADE=false
@@ -1507,9 +1523,9 @@ SHOWCASE_THUMB_X_ARRAY=( ${SHOWCASE_THUMB_X_ARRAY[NUM_FILES]} )
 SHOWCASE_THUMB_Y_ARRAY=( ${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]} )
 SHOWCASE_TITLES_X_ARRAY=( ${SHOWCASE_THUMB_X_ARRAY[@]} )
 SHOWCASE_TITLES_Y_ARRAY=( ${SHOWCASE_TITLES_Y_ARRAY[NUM_FILES]} )
-SPLIT=13 # max number of text only titles in one column (-textmenu)
-if $NO_THUMBS; then
-    if [[ $NUM_FILES -gt 12 ]]; then
+! $USER_SPLIT && SPLIT=13 # max number of text only titles in one column (-textmenu)
+if $NO_THUMBS ; then
+    if [[ $NUM_FILES -gt 12 ]] && ! $USER_SPLIT; then
         SPLIT=$((V_TOTAL / 2))
         [[ $(( SPLIT * 2)) -ne $V_TOTAL ]] && let SPLIT=SPLIT+1
     fi
@@ -1631,7 +1647,6 @@ if $SHOWCASE && [ "$SC_TITLE_ALIGN" = "east" ] && ! $TEXTMENU; then
 fi
 if $USER_GRAVITY && $SHOWCASE; then
     if [[ $BUTTON_GRAVITY = *south* ]]; then
-
         Y_OFFSET=$(( ( ${VIDSIZE/*x} - 50) - ( ${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]} + ${THUMB_SIZE/*x}) ))
         for ((i=0; i<=NUM_FILES; i++)); do
             SHOWCASE_THUMB_Y_ARRAY[i]=$(( ${SHOWCASE_THUMB_Y_ARRAY[i]} + Y_OFFSET ))
@@ -1892,19 +1907,6 @@ echo "Running "${TITLE_CMD[@]}" miff:- |
 "${TITLE_CMD1[@]}"" | format_output|tee -a "$LOG_FILE"
 "${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}" 2>/dev/null
 
-# make a PLAYALL button if called for
-if $PLAYALL; then
-    PLAYALL_BTN_CMD=(convert -size 100x100 xc:none \
-    -font "$MENU_FONT" -pointsize 20 \
-    -fill black -stroke black -gravity center  \
-    -annotate +0+0 "Play All" \
-    -fill "$TITLE_COLOUR" -stroke "$STROKE" -strokewidth 1 \
-    -annotate +1+1 "Play All")
-    TRIM_CMD=(convert - -background none -rotate -30 -trim +repage "$WORK_DIR/PLAYALL.png")
-    "${PLAYALL_BTN_CMD[@]}" miff:- | "${TRIM_CMD[@]}"|fold -bs >> "$LOG_FILE"
-    ADD_PLAYALL="$WORK_DIR/PLAYALL.png -gravity SouthEast -geometry +55+55 -composite"
-fi
-
 # make thumb titles if $SHOWCASE
 if $SHOWCASE; then
     for ((i=0; i<=NUM_FILES; i++)); do
@@ -1953,25 +1955,42 @@ if $SHOWCASE; then
         # get an array of title Y positions
         offsets1=$(for ((c=0; c<NUM_FILES; c++)); do
         ((c < (LEFT_MAX-1))) && echo $(( ${TT_DIM[c]#*x} + spacer )); done)
-        if [[ $NUM_FILES -gt 9 ]]; then
+        if [[ $NUM_FILES -ge $SPLIT ]]; then
             offsets2=$(for ((d=0; d<=NUM_FILES; d++)); do
-            ((d > LEFT_MAX)) && echo $(( ${TT_DIM[d]#*x} + spacer )); done)
+            ((d >= LEFT_MAX)) && echo $(( ${TT_DIM[d]#*x} + spacer )); done)
             [[ $offsets2 ]] && offsets2="$TEXT_Y_START $offsets2"
             tt_dim2=$(running_total <<< $offsets2)
         fi
         offsets1="$TEXT_Y_START $offsets1"
         tt_dim1=$(running_total <<< $offsets1)
         tt_dim="$tt_dim1 $tt_dim2"
-        last_title=$(wc -w <<< "$tt_dim1")
         unset SHOWCASE_TITLES_Y_ARRAY
         SHOWCASE_TITLES_Y_ARRAY=( $tt_dim1 $tt_dim2 )
         # get the y position of the last title in 1st column (tt_dim1)
-        last_title_ydim=${SHOWCASE_TITLES_Y_ARRAY[last_title-1]/*x}
+        last_title_col1=$(wc -w <<< "$tt_dim1")
+        last_title_col1_ydim=${SHOWCASE_TITLES_Y_ARRAY[last_title_col1-1]/*x}
         # add the y dimension of the last title size to the above y position
-        max_y_position=$(( ${TT_DIM[last_title-1]/*x} + $last_title_ydim ))
-        avail_palette=$(( ( ${VIDSIZE/*x} - 50 ) - $max_y_position ))
+        max_y_position_col1=$(( ${TT_DIM[last_title_col1-1]/*x} + $last_title_col1_ydim ))
+        avail_palette1=$(( ( ${VIDSIZE/*x} - 50 ) - $max_y_position_col1 ))
+        # if there are 2 columns, get same data for column 2
+        if [[ -n $tt_dim2 ]]; then
+            last_title_col2=$NUM_FILES
+            last_title_col2_ydim=${SHOWCASE_TITLES_Y_ARRAY[last_title_col2]/*x}
+            max_y_position_col2=$(( ${TT_DIM[last_title_col2]/*x} + $last_title_col2_ydim ))
+            avail_palette2=$(( ( ${VIDSIZE/*x} - 50 ) - $max_y_position_col2 ))
+        fi
+        # availible space is lowest value of 2 *palette* vars ( if 2 columns)
+        if [[ -n $tt_dim2 ]] && ((max_y_position_col2 > max_y_position_col1)); then
+            avail_palette=$avail_palette2
+        else
+            avail_palette=$avail_palette1
+        fi
+        # get the height of each column for -align centre
+        palette_col1=$(( max_y_position_col1 - TEXT_Y_START))
+        palette_col2=$((max_y_position_col2 - TEXT_Y_START))
+
         # add the available palette to each title position for south alignment
-        if [[ $BUTTON_GRAVITY = *south* ]]; then
+        if [[ $BUTTON_GRAVITY = *south* ]] && ((avail_palette > 0)); then
             for ((d=0; d<=NUM_FILES; d++)); do
                 SHOWCASE_TITLES_Y_ARRAY[d]=$(( ${SHOWCASE_TITLES_Y_ARRAY[d]} + $avail_palette ))
             done
@@ -2003,6 +2022,19 @@ if $SHOWCASE; then
         THUMBTITLES_ARRAY[i]="-page ${SHOWCASE_TITLES_ARRAY[i]}"
     done
 fi
+# make a PLAYALL button if called for
+if $PLAYALL; then
+    PLAYALL_BTN_CMD=(convert -size 100x100 xc:none \
+    -font "$MENU_FONT" -pointsize 20 \
+    -fill black -stroke black -gravity center  \
+    -annotate +0+0 "Play All" \
+    -fill "$TITLE_COLOUR" -stroke "$STROKE" -strokewidth 1 \
+    -annotate +1+1 "Play All")
+    TRIM_CMD=(convert - -background none -rotate -30 -trim +repage "$WORK_DIR/PLAYALL.png")
+    "${PLAYALL_BTN_CMD[@]}" miff:- | "${TRIM_CMD[@]}"|fold -bs >> "$LOG_FILE"
+    ADD_PLAYALL="$WORK_DIR/PLAYALL.png -gravity SouthEast -geometry +55+55 -composite"
+fi
+
 if $MIST; then
     echo
     echo "Making a white or colored png for the misted title background"
@@ -2310,13 +2342,13 @@ EOF
 fi
 # command constructions for -button-style options
 if $PLAYALL; then
-    for BUTTON in 266CAE DE7F7C; do
+    for BUTTON in "$SELECT_COLOUR" "$HIGHLIGHT_COLOUR"; do
         convert -size 100x100 xc:none -font "$MENU_FONT" -pointsize 20 \
-        -fill "#${BUTTON}" -stroke none -gravity center \
+        -fill "$BUTTON" -stroke none -gravity center \
         -annotate +0+0 "Play All" \
-        -fill "#${BUTTON}" -stroke none -strokewidth 1  \
+        -fill "$BUTTON" -stroke none -strokewidth 1  \
         -annotate +1+1 "Play All" miff:- | convert  - -background none -rotate -30 \
-        -trim +repage $WORK_DIR/${BUTTON}_playall.png
+        -trim +repage $WORK_DIR/${BUTTON/\#}_playall.png
     done
 fi
 
@@ -2327,11 +2359,11 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     BUTTON_SIZE=$THUMB_SIZE
     BUTTON_CMD=(montage -size $THUMB_SIZE xc:none -geometry +4+4 \
     -background none -mattecolor none -bordercolor none -stroke none \
-    -fill '#DE7F7C' -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
+    -fill "$HIGHLIGHT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
     -title "${TITLES[t]}" -compose CopyOpacity)
     BUTTON_CMD1=(montage -size $THUMB_SIZE xc:none -geometry +4+4 \
     -background none -mattecolor none -bordercolor none -stroke none \
-    -fill '#266CAE' -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
+    -fill "$SELECT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
     -title "${TITLES[t]}" -compose CopyOpacity)
     BUTTON_CMD2=(convert -mattecolor none -background none \
     -bordercolor none -frame 3x3 -)
@@ -2340,29 +2372,29 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     -fill none +antialias -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file \
     -colors 3 "$WORK_DIR/Selectx1.png")
     BUTTON_CMD5=(convert -size "${THUMB_SIZE}+5+5" xc:none \
-    -fill none +antialias -stroke '#266CAE' -strokewidth 4 -draw @draw_file \
+    -fill none +antialias -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file \
     -colors 3 "$WORK_DIR/Highlightx1.png")
     BUTTON_CMD6=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
-    -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file "$WORK_DIR/Selectx1.png")
+    -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file "$WORK_DIR/Selectx1.png")
     BUTTON_CMD6b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
-    -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file${t} \
+    -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file${t} \
     "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)")
     BUTTON_CMD7=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
-    -stroke '#266CAE' -strokewidth 4 -draw @draw_file "$WORK_DIR/Highlightx1.png")
+    -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file "$WORK_DIR/Highlightx1.png")
     BUTTON_CMD7b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
-    -stroke '#266CAE' -strokewidth 4 -draw @draw_file${t} \
+    -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file${t} \
     "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)")
     BUTTON_CMD8=(convert -size 620x300 xc:none \
     -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
-    -fill '#266CAE' -stroke none -gravity $THUMB_TITLE_ALIGN  \
-    -annotate +0+0 "${TITLES[i]}" \
-    -fill '#266CAE' -stroke '#266CAE' -strokewidth 1 \
+    -fill $SELECT_COLOUR -stroke none -gravity $THUMB_TITLE_ALIGN  \
+    -annotate +0+0 "${TITLES[t]}" \
+    -fill $SELECT_COLOUR -stroke $SELECT_COLOUR -strokewidth 1 \
     -annotate +1+1 "${TITLES[t]}")
     BUTTON_CMD9=(convert -size 620x300 xc:none \
     -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
-    -fill '#DE7F7C' -stroke none -gravity $THUMB_TITLE_ALIGN  \
-    -annotate +0+0 "${TITLES[i]}" \
-    -fill '#DE7F7C' -stroke '#DE7F7C' -strokewidth 1 \
+    -fill $HIGHLIGHT_COLOUR -stroke none -gravity $THUMB_TITLE_ALIGN  \
+    -annotate +0+0 "${TITLES[t]}" \
+    -fill $HIGHLIGHT_COLOUR -stroke $HIGHLIGHT_COLOUR -strokewidth 1 \
     -annotate +1+1 "${TITLES[t]}")
     BUTTON_CMD10=(convert - -trim +repage)
 
@@ -2488,9 +2520,9 @@ elif [[ "$BUTTON_STYLE" = *text* ]]; then
 fi
 if $PLAYALL; then
     convert -gravity SouthEast -geometry +55+55 "$WORK_DIR/Select.png" \
-    "$WORK_DIR/DE7F7C_playall.png" -composite "$WORK_DIR/Select.png"
+    $WORK_DIR/${HIGHLIGHT_COLOUR/\#}_playall.png -composite "$WORK_DIR/Select.png"
     convert -gravity SouthEast -geometry +55+55 "$WORK_DIR/Highlight.png" \
-    "$WORK_DIR/266CAE_playall.png" -composite "$WORK_DIR/Highlight.png"
+    $WORK_DIR/${SELECT_COLOUR/\#}_playall.png -composite "$WORK_DIR/Highlight.png"
 fi
 
 # this reduces colours so spumux is happy
@@ -2541,7 +2573,8 @@ if $SHOWCASE; then
     elif ! $NO_SC_THUMB && $TEXTMENU; then
         :
         # FIXME allow showcase thumb with various textmenu options
-          # needs to work with 1 column and 2 columns - 2 cols must be -align east
+        # needs to work with 1 column and 2 columns - 2 cols must be -align east
+        #sc_xpage=$(( 360 - (sc_width / 2) )) # for -gt 5 videos
         #SC_TITLE_ALIGN="east"
         #sc_palette2=$(( ${VIDSIZE%x*} - (${SHOWCASE_TITLES_Y_ARRAY[0]} + MAX_LEN + 5) ))
         #sc_xpage2=$((sc_palette2 - $((sc_width / 2)) ))
@@ -2887,10 +2920,10 @@ EOF
 )  > $WORK_DIR/draw_file${s}
 
         convert -size "${GEO_ARRAY[C]}+5+5" xc:none -fill none \
-        +antialias -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file${s} \
+        +antialias -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file${s} \
         -colors 3 "$WORK_DIR/Submenu${s}_Selectx1.png"
         convert -size "${GEO_ARRAY[C]}+5+5" xc:none -fill none \
-        +antialias -stroke '#266CAE' -strokewidth 4 -draw @draw_file${s} \
+        +antialias -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file${s} \
         -colors 3 "$WORK_DIR/Submenu${s}_Highlightx1.png"
         for button in Select Highlight; do
             montage -background none \
