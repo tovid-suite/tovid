@@ -36,9 +36,10 @@ __all__ = [\
     'add_subtitles']
 
 from libtovid.utils import temp_name, temp_file
-from libtovid.xml import create_element
+from libtovid import xml
 
 # spumux XML elements and valid attributes
+"""
 Subpictures = create_element('subpictures', [])
 Stream = create_element('stream', [])
 Textsub = create_element('textsub',
@@ -74,15 +75,15 @@ Spu = create_element('spu',
     'autoorder',     # 'rows' or 'columns'
     'xoffset',
     'yoffset'])
-
+"""
 
 ###
 ### Internal functions
 ###
 
 def get_xml(textsub_or_spu):
-    subpictures = Subpictures()
-    stream = Stream(parent=subpictures)
+    subpictures = xml.Element('subpictures')
+    stream = subpictures.add('stream')
     stream.add_child(textsub_or_spu)
     return str(subpictures)
 
@@ -139,13 +140,12 @@ def add_subpictures(movie_filename, select, image=None, highlight=None,
         
     All images must indexed, 4-color, transparent, non-antialiased PNG.
     """
-    attributes = {
-        'start': 0,
-        'force': 'yes',
-        'select': select,
-        'image': image,
-        'highlight': highlight}
-    spu = Spu(attributes)
+    spu = xml.Element('spu')
+    spu.set(start='0',
+            force='yes',
+            select=select,
+            image=image,
+            highlight=highlight)
     if buttons == None:
         # TODO Find a good default outlinewidth
         spu.set(autooutline=infer, outlinewidth=10)
@@ -165,18 +165,18 @@ def add_subtitles(movie_filename, sub_filenames):
     """
     infile = load_media(movie_filename)
     width, height = infile.scale
-    # Use attributes from movie file
-    attributes = {
-        'movie-fps': infile.fps,
-        'movie-width': width,
-        'movie-height': height}
+
     # Convert sub_filenames to list if necessary
     if type(sub_filenames) == str:
         sub_filenames = [sub_filenames]
     # spumux each subtitle file with its own stream ID
     for stream_id, sub_filename in enumerate(sub_filenames):
         # <textsub attribute="value" .../>
-        textsub = Textsub(attributes, filename=sub_filename)
+        textsub = xml.Element('textsub')
+        textsub.set(movie_fps=infile.fps,
+                    movie_width=width,
+                    movie_height=height,
+                    filename=sub_filename)
         mux_subs(textsub, movie_filename, stream_id)
 
 
@@ -184,12 +184,14 @@ if __name__ == '__main__':
     print "spumux XML examples"
 
     print "Subpicture example:"
-    spu = Spu()
-    b1 = Button(spu, name='but1', down='but2')
-    b2 = Button(spu, name='but2', up='but1')
+    spu = xml.Element('spu')
+    spu.add('button', name='but1', down='but2')
+    spu.add('button', name='but2', up='but1')
     print get_xml(spu)
 
     print "Text subtitle example:"
-    textsub = Textsub()
-    textsub.set(filename='foo.sub', fontsize=14.0, font="Luxi Mono")
+    textsub = xml.Element('textsub')
+    textsub.set(filename='foo.sub',
+                fontsize=14.0,
+                font="Luxi Mono")
     print get_xml(textsub)

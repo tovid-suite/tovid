@@ -1,54 +1,35 @@
 #! /usr/bin/env python
 # xml.py
 
-"""This module is for defining XML elements and their valid attributes.
+"""This module is for defining XML elements and attributes, and for creating
+element hierarchies.
 
-To define an element class Video, which may have attributes called 'file'
-and 'length', do:
+To create a new element, use the Element class constructor, providing at least
+the element name:
 
-    >>> Video = create_element('video', ['file', 'length'])
+    >>> video = Element('video')
 
-Video is now an Element subclass, which can be used to instantiate new video
-elements:
+To see an XML representation of the Element:
 
-    >>> video1 = Video(file='Brian.mpg')
-    >>> video2 = Video(file='Judith.mpg')
+    >>> print video
+    <video/>
 
-Attributes may be changed via the set method:
+Since this is an empty element with no attributes yet, it's pretty boring.
+You can add or change attributes using the set method:
 
-    >>> video1.set(length=10)
+    >>> video.set(file="Brian.mpg")
+    >>> print video
+    <video file="Brian.mpg"/>
 
-To get an XML representation of an Element:
+To add children to an element, use the add method:
 
-    >>> print video1
-    <video file="Brian.mpg" length="10"/>
-    >>> print video2
-    <video file="Judith.mpg"/>
-
-To create an Element class with no attributes, use the empty list:
-
-    >>> Group = create_element('group', [])
-    >>> group = Group()
-    >>> print group
-    <group/>
-
-Elements can contain other elements, to create a hierarchy:
-
-    >>> group.add_child(video1)
-    >>> group.add_child(video2)
-    >>> print group
-    <group>
-      <video file="Brian.mpg" length="10"/>
-      <video file="Judith.mpg"/>
-    </group>
-
-An Element may also contain plain-text content:
-
-    >>> video1.content = "Always look on the bright side of life"
-    >>> print video1
-    <video file="Brian.mpg" length="10">Always look on the bright side of life
+    >>> length = video.add('length', '15')
+    >>> print video
+    <video file="Brian.mpg">
+      <length>15
+      </length>
     </video>
-
+    
 See spumux.py for additional examples.
 """
 
@@ -60,25 +41,22 @@ __all__ = [\
 class Element (object):
     """An XML element, with name and attributes.
     
-    Valid attributes for the element are defined in class variable ATTRIBUTES.
     Attribute values may be set in the constructor, or by calling set() with a
     dictionary and/or attribute=value keywords.
     
-    Use add_child(element) to create a hierarchy of Elements.
+    Use add() or add_child() to create a hierarchy of Elements.
     """
-    NAME = 'empty'    # Element name (appears in xml tags <name>...</name>)
-    ATTRIBUTES = []   # Valid attributes for the element
     
-    def __init__(self, parent=None, content='', attributes=None, **kwargs):
+    def __init__(self, name, parent=None, content='', attributes=None, **kwargs):
         """Create a new Element with the given attributes.
         
+            name:       Name of the Element
             parent:     Parent of this Element
             content:    Text content of the Element
-            attributes: Dictionary of attributes matching those in ATTRIBUTES
+            attributes: Dictionary of attributes and values
             kwargs:     Keyword arguments for setting specific attributes
-                        (To set hyphenated attribute names, use underscores
-                        in place of hyphens)
         """
+        self.name = name
         if parent:
             parent.add_child(self)
         self.content = content
@@ -92,61 +70,47 @@ class Element (object):
         
             attributes: Dictionary of attributes and values
             kwargs:     Keyword arguments for setting specific attributes
-                        (To set hyphenated attribute names, use underscores
-                        in place of hyphens)
         
-        All attributes must match those listed in ATTRIBUTES; a KeyError
-        is raised for non-valid attributes.
+        Underscores in attribute names are converted to hyphens. If you don't
+        like this behavior, please implement a workaround :-)
         """
         # Override kwargs with attributes, if provided
         if type(attributes) == dict:
             kwargs.update(attributes)
-        # Set all attributes, raising error on invalid attribute names
+        # Set attribute values; convert underscores to hyphens
         for key, value in kwargs.iteritems():
-            if key in self.ATTRIBUTES:
-                self.attributes[key] = value
-            elif key.replace('_', '-') in self.ATTRIBUTES:
-                self.attributes[key.replace('_', '-')] = value
-            else:
-                raise KeyError("'%s' element has no attribute '%s'" %
-                               (self.NAME, key))
+            key = key.replace('_', '-')
+            self.attributes[key] = value
 
     def add_child(self, element):
         """Add the given Element as a child of this Element."""
         assert isinstance(element, Element)
         self.children.append(element)
 
-    def add(self, name, content='', **kwargs):
-        """Add a simple child Element by providing its name and content.
+    def add(self, child_name, content='', **kwargs):
+        """Add a child Element by providing its name, content, and attributes.
         Return the child Element that was added.
         
-            name:    String name of child element
-            content: String content of child element
+            child_name:  String name of child element
+            content:     String content of child element
         
-        This is a convenience function for creating an Element subclass,
-        setting its content, and passing it to add_child. To specify
-        attribute values for the child, pass them as keyword arguments.
-        All attribute names are assumed to be valid; underscores in attribute
-        names are converted to hyphens.
+        This is a convenience function for creating and adding children
+        on-the-fly.
         """
-        valid_attributes = [key.replace('_', '-') for key in kwargs.keys()]
-        Child = create_element(name, valid_attributes)
-        return Child(self, content, kwargs)
+        return Element(child_name, self, content, kwargs)
 
     def xml(self):
         """Return a string containing raw XML for the Element."""
-        text = '<%s' % self.NAME
-        # Iterate through valid attributes so ordering is preserved
-        for key in self.ATTRIBUTES:
-            if key in self.attributes:
-                text += ' %s="%s"' % (key, self.attributes[key])
+        text = '<%s' % self.name
+        for key, value in self.attributes.items():
+            text += ' %s="%s"' % (key, value)
         # If children or text content are present, add them with a closing tag
-        if self.children or self.content:
+        if self.children or self.content != '':
             text += '>'
             text += str(self.content)
             for child in self.children:
                 text += child.xml()
-            text += '</%s>' % self.NAME
+            text += '</%s>' % self.name
         # No children or content; use "empty" element closing tag
         else:
             text += '/>'
@@ -171,20 +135,6 @@ def format(xml_text):
         if line.startswith('</') or line.endswith('/>'):
             indent -= 1
     return result.rstrip('\n')
-
-
-def create_element(name, valid_attributes):
-    """Create a new Element subclass.
-
-        name:              Element name
-        valid_attributes:  List of valid attribute names
-
-    Returns a subclass of Element; assign the return value of this function
-    to a variable to create your own Element subclass, which may then be used
-    to instantiate new Elements.
-    """
-    return type(name, (Element,),
-                {'NAME': name, 'ATTRIBUTES': valid_attributes})
 
 
 if __name__ == '__main__':
