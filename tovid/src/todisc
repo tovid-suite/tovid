@@ -160,8 +160,8 @@ USER_GEO=false
 USER_SPLIT=false
 TITLE_GRAVITY=south
 SPACER=15
-HIGHLIGHT_COLOUR="#DE7F7C"
-SELECT_COLOUR="#266CAE"
+SELECT_COLOUR="#DE7F7C"
+HIGHLIGHT_COLOUR="#266CAE"
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -1355,7 +1355,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
     mkdir -pv "$REAL_WORK_DIR/pics/$i"
 done
 # textmenu is static unless there is an animated background or showcase video
-$TEXT_MENU && [[ -z $SHOWCASE_VIDEO && -z $BG_VIDEO ]] && STATIC=:
+if $TEXTMENU && [[ -z $SHOWCASE_VIDEO && -z $BG_VIDEO ]]; then STATIC=:; fi #FIXME
 # prevent user from using mutually exclusive options
 if $STATIC; then
     MENU_FADE=false
@@ -2378,7 +2378,7 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     -bordercolor none -frame 3x3 -)
     BUTTON_CMD3=(convert - -resize ${THUMB_SIZE}! +antialias)
     BUTTON_CMD4=(convert -size "${THUMB_SIZE}+5+5"  xc:none \
-    -fill none +antialias -stroke '#DE7F7C' -strokewidth 4 -draw @draw_file \
+    -fill none +antialias -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file \
     -colors 3 "$WORK_DIR/Selectx1.png")
     BUTTON_CMD5=(convert -size "${THUMB_SIZE}+5+5" xc:none \
     -fill none +antialias -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file \
@@ -4019,7 +4019,7 @@ if $STATIC && [[ -n "$BG_AUDIO" ]]; then
 else
     TIME=$(vid_length "$WORK_DIR/intro.m2v")
 fi
-[[ -n "$MENU_AUDIOLENGTH" ]] && $STATIC && TIME=$MENU_AUDIOLENGTH
+if [[ -n "$MENU_AUDIOLENGTH" ]] && $STATIC; then TIME=$MENU_AUDIOLENGTH; fi
 TIME=${TIME:-$TMP_TIME}
 BG_AUDIO_LENGTH="-t $TIME"
 # create audio background for the main menu
