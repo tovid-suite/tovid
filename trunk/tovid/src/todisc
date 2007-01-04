@@ -3118,7 +3118,9 @@ if $SUB_MENU; then
     yecho
     yecho "Creating images for each chapter"
     if [ -z "$SM_TITLES" ]; then
-        SM_TITLES=("${TITLES[@]}")
+        for i in ${!TITLES[@]}; do
+            SM_TITLES[i]="$(echo -e "${TITLES[i]}")"
+        done
     fi
     for ((i=0; i<${#IN_FILES[@]}; i++)); do
         C=$((${CHAPTERS[i]} - 1))
