@@ -1611,7 +1611,7 @@ if $SHOWCASE; then
     else
         SHOWCASE_SIZE=288x216  # smaller showcase thumb because we have 2 rows
         AUTOORDER="columns"
-        if ! $NO_SC_THUMB && ! $TEXTMENU && [[ "$SC_TITLE_ALIGN" = *st ]] && [[ $SHOWCASE_FILE ]]; then
+        if ! $NO_SC_THUMB && ! $TEXTMENU && [[ "$SC_TITLE_ALIGN" = *st ]] && [[ -n $SHOWCASE_FILE ]]; then
             usage_error "Sorry, there is no room for the showcase thumb " \
             "if you use more than 5 videos with -showcase-titles-align east|west. " \
             "Either remove the -showcase-titles-align switch or remove the " \
@@ -1637,6 +1637,20 @@ if [ "$SC_TITLE_ALIGN" = "west" ]; then
             fi
         fi
     done
+fi
+# text-rect only for -align east
+if [[ $BUTTON_STYLE = text-rect ]] && ! [[ $SC_TITLE_ALIGN = east ]]; then
+    yecho "***Warning*** : text-rect buttons need to be aligned east of thumbs: \
+    by using: '-showcase-titles-align east'"
+    if [[ -n $SHOWCASE_FILE ]]; then
+        echo "However, you are using a -showcase FILE, so choosing 'text' buttons instead"
+        echo "If you wish you may use instead: '-button-style rect' - in which case exit now . . ."
+        BUTTON_STYLE=text
+    else
+        SC_TITLE_ALIGN=east
+    fi
+    yecho
+    sleep 10
 fi
 if $SHOWCASE && [ "$SC_TITLE_ALIGN" = "east" ] && ! $TEXTMENU; then
     THUMB_TITLE_ALIGN="west" # align titles left to allow longer titles
@@ -2368,11 +2382,11 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     BUTTON_SIZE=$THUMB_SIZE
     BUTTON_CMD=(montage -size $THUMB_SIZE xc:none -geometry +4+4 \
     -background none -mattecolor none -bordercolor none -stroke none \
-    -fill "$HIGHLIGHT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
+    -fill "$SELECT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
     -title "${TITLES[t]}" -compose CopyOpacity)
     BUTTON_CMD1=(montage -size $THUMB_SIZE xc:none -geometry +4+4 \
     -background none -mattecolor none -bordercolor none -stroke none \
-    -fill "$SELECT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
+    -fill "$HIGHLIGHT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
     -title "${TITLES[t]}" -compose CopyOpacity)
     BUTTON_CMD2=(convert -mattecolor none -background none \
     -bordercolor none -frame 3x3 -)
@@ -2384,26 +2398,26 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     -fill none +antialias -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file \
     -colors 3 "$WORK_DIR/Highlightx1.png")
     BUTTON_CMD6=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
-    -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file "$WORK_DIR/Selectx1.png")
+    -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file "$WORK_DIR/Selectx1.png")
     BUTTON_CMD6b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
-    -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file${t} \
+    -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file${t} \
     "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)")
     BUTTON_CMD7=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
-    -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file "$WORK_DIR/Highlightx1.png")
+    -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file "$WORK_DIR/Highlightx1.png")
     BUTTON_CMD7b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
-    -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file${t} \
+    -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file${t} \
     "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)")
     BUTTON_CMD8=(convert -size 620x300 xc:none \
-    -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
-    -fill $SELECT_COLOUR -stroke none -gravity $THUMB_TITLE_ALIGN  \
-    -annotate +0+0 "${TITLES[t]}" \
-    -fill $SELECT_COLOUR -stroke $SELECT_COLOUR -strokewidth 1 \
-    -annotate +1+1 "${TITLES[t]}")
-    BUTTON_CMD9=(convert -size 620x300 xc:none \
     -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
     -fill $HIGHLIGHT_COLOUR -stroke none -gravity $THUMB_TITLE_ALIGN  \
     -annotate +0+0 "${TITLES[t]}" \
     -fill $HIGHLIGHT_COLOUR -stroke $HIGHLIGHT_COLOUR -strokewidth 1 \
+    -annotate +1+1 "${TITLES[t]}")
+    BUTTON_CMD9=(convert -size 620x300 xc:none \
+    -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
+    -fill $SELECT_COLOUR -stroke none -gravity $THUMB_TITLE_ALIGN  \
+    -annotate +0+0 "${TITLES[t]}" \
+    -fill $SELECT_COLOUR -stroke $SELECT_COLOUR -strokewidth 1 \
     -annotate +1+1 "${TITLES[t]}")
     BUTTON_CMD10=(convert - -trim +repage)
 
