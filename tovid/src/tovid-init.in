@@ -327,6 +327,23 @@ function assert_dep()
 
 
 # ******************************************************************************
+# See what filesystem a directory is in
+# Input args:
+#   $1 = directory to find filesystem type
+# 
+# Usage:
+#   FS_TYPE=$(get_filesystem "$WORK_DIR")
+# ******************************************************************************
+function get_filesystem()
+{
+    DIRECTORY="$1"
+    PARTITION=$(df . | tail -n 1 | awk '{print $1}')
+    FILESYSTEM=$(mount | grep "$PARTITION" | awk '{print $5}')
+    echo "$FILESYSTEM"
+}
+
+
+# ******************************************************************************
 # Countdown 5 seconds, then return
 # TODO: Take argument # of seconds
 # ******************************************************************************

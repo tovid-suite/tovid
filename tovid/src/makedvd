@@ -155,6 +155,16 @@ echo $"$SCRIPTNAME"
 
 assert_dep "$dvd" "You are missing dependencies required for burning DVDs!"
 
+# Make sure we can properly author DVDs
+#   growisofs/mkisofs won't create an image if the DVD's filesystem names
+#   aren't upper case. In vfat, the top-level dirs are called "video_ts" and 
+#   "audio_ts", which aren't compliant with the DVD specs. The filenames, too.
+CURRENT_DIR="$(pwd)"
+CURRENT_FS=$(get_filesystem "$CURRENT_DIR")
+if test x"$CURRENT_FS" = "xvfat"; then
+    runtime_error "Cannot make DVDs on $CURRENT_FS filsystems. Try ext3."
+fi
+
 if test $# -lt 1; then
     usage_error "Please provide a filename (.xml, or dvd filesystem folder)"
 fi
