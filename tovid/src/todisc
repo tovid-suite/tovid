@@ -2943,10 +2943,10 @@ EOF
 )  > $WORK_DIR/draw_file${s}
 
         convert -size "${GEO_ARRAY[C]}+5+5" xc:none -fill none \
-        +antialias -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file${s} \
+        +antialias -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file${s} \
         -colors 3 "$WORK_DIR/Submenu${s}_Selectx1.png"
         convert -size "${GEO_ARRAY[C]}+5+5" xc:none -fill none \
-        +antialias -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file${s} \
+        +antialias -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file${s} \
         -colors 3 "$WORK_DIR/Submenu${s}_Highlightx1.png"
         for button in Select Highlight; do
             montage -background none \
