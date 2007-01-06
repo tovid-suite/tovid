@@ -835,6 +835,7 @@ while test $# -gt 0; do
             BUTTON_GRAVITY=${ALIGN_ARGS[0]}
             (( ${#ALIGN_ARGS[@]} > 1 )) && BUTTON_GEO=${ALIGN_ARGS[1]} && USER_GEO=:
             $USER_GEO && XGEO=${BUTTON_GEO/x*} && YGEO=${BUTTON_GEO/*x}
+            [[ $BUTTON_GRAVITY = center ]] && BUTTON_GRAVITY=centre
             USER_GRAVITY=:
             ;;
         # Menu control options
@@ -890,6 +891,11 @@ while test $# -gt 0; do
             ;;
         "-showcase-no-thumb" )
             usage_error "-showcase-no-thumb This option has been removed. See: -showcase"
+            ;;
+        "-intro" )
+            shift
+            INTRO_CLIP="$(abspath "$1")"
+            INTRO="<vob file=\"$INTRO_CLIP\"/>"
             ;;
         "-showcase" )
             shift
@@ -1278,7 +1284,7 @@ NUM_FILES=$((V_TOTAL - 1))
 # dvdauthor stuff
 [[ $BUTTON_GRAVITY = *south* ]] && TITLE_GRAVITY=north
 if [[ $BUTTON_GRAVITY = *east* || $BUTTON_GRAVITY = *west* ]]; then
-    ! $USER_GEO &&  XGEO=45 && YGEO=45
+    ! $USER_GEO &&  XGEO=45 # && YGEO=45
 fi
 # make an array of possible vars for dvdauthor post calls
 if $CHAIN_VIDEOS; then
@@ -1639,7 +1645,7 @@ if [ "$SC_TITLE_ALIGN" = "west" ]; then
     done
 fi
 # text-rect only for -align east
-if [[ $BUTTON_STYLE = text-rect ]] && ! [[ $SC_TITLE_ALIGN = east ]]; then
+if [[ $BUTTON_STYLE = text-rect ]] && ! [[ $SC_TITLE_ALIGN = east ]] && ! $TEXTMENU; then
     yecho "***Warning*** : text-rect buttons need to be aligned east of thumbs: \
     by using: '-showcase-titles-align east'"
     if [[ -n $SHOWCASE_FILE ]]; then
@@ -1993,29 +1999,38 @@ if $SHOWCASE; then
         last_title_col1=$(wc -w <<< "$tt_dim1")
         last_title_col1_ydim=${SHOWCASE_TITLES_Y_ARRAY[last_title_col1-1]/*x}
         # add the y dimension of the last title size to the above y position
-        max_y_position_col1=$(( ${TT_DIM[last_title_col1-1]/*x} + $last_title_col1_ydim ))
-        avail_palette1=$(( ( ${VIDSIZE/*x} - 50 ) - $max_y_position_col1 ))
+        SW_CORNER=$(( ${TT_DIM[last_title_col1-1]/*x} + $last_title_col1_ydim ))
+        avail_palette1=$(( ( ${VIDSIZE/*x} - 50 ) - $SW_CORNER ))
         # if there are 2 columns, get same data for column 2
         if [[ -n $tt_dim2 ]]; then
             last_title_col2=$NUM_FILES
             last_title_col2_ydim=${SHOWCASE_TITLES_Y_ARRAY[last_title_col2]/*x}
-            max_y_position_col2=$(( ${TT_DIM[last_title_col2]/*x} + $last_title_col2_ydim ))
-            avail_palette2=$(( ( ${VIDSIZE/*x} - 50 ) - $max_y_position_col2 ))
+            SE_CORNER=$(( ${TT_DIM[last_title_col2]/*x} + $last_title_col2_ydim ))
+            avail_palette2=$(( ( ${VIDSIZE/*x} - 50 ) - $SE_CORNER ))
         fi
         # availible space is lowest value of 2 *palette* vars ( if 2 columns)
-        if [[ -n $tt_dim2 ]] && ((max_y_position_col2 > max_y_position_col1)); then
+        if [[ -n $tt_dim2 ]] && ((SE_CORNER > SW_CORNER)); then
             avail_palette=$avail_palette2
         else
             avail_palette=$avail_palette1
         fi
         # get the height of each column for -align centre
-        palette_col1=$(( max_y_position_col1 - TEXT_Y_START))
-        palette_col2=$((max_y_position_col2 - TEXT_Y_START))
-
+        if [[ $BUTTON_GRAVITY = centre || $BUTTON_GRAVITY = east || $BUTTON_GRAVITY = west ]]; then
+            WEST_PALETTE=$(( SW_CORNER - TEXT_Y_START))
+            EAST_PALETTE=$((SE_CORNER - TEXT_Y_START))
+            ((WEST_PALETTE > EAST_PALETTE)) && PALETTE=$WEST_PALETTE || PALETTE=$EAST_PALETTE
+            CANVAS=$(( ${VIDSIZE/*x} - 100 ))
+            NEW_TEXT_Y_START=$(( ((CANVAS - PALETTE) / 2) + 50 ))
+            TEXT_Y_START_OFFSET=$((NEW_TEXT_Y_START - TEXT_Y_START))
+        fi
         # add the available palette to each title position for south alignment
         if [[ $BUTTON_GRAVITY = *south* ]] && ((avail_palette > 0)); then
             for ((d=0; d<=NUM_FILES; d++)); do
                 SHOWCASE_TITLES_Y_ARRAY[d]=$(( ${SHOWCASE_TITLES_Y_ARRAY[d]} + $avail_palette ))
+            done
+        elif  [[ $BUTTON_GRAVITY = centre || $BUTTON_GRAVITY = east || $BUTTON_GRAVITY = west ]]; then
+            for ((d=0; d<=NUM_FILES; d++)); do
+                SHOWCASE_TITLES_Y_ARRAY[d]=$(( ${SHOWCASE_TITLES_Y_ARRAY[d]} + $TEXT_Y_START_OFFSET ))
             done
         fi
         if [[ $BUTTON_GRAVITY = *east* ]]; then
@@ -3027,6 +3042,7 @@ if [ "$TARGET" = "dvd" ]; then
   <vmgm>
     <menus>
       <pgc>
+        $INTRO
         <post>jump titleset 1 menu;</post>
       </pgc>
     </menus>
