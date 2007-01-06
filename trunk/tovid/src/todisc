@@ -1724,6 +1724,13 @@ fi
 if ! $USER_BSTYLE && $SHOWCASE; then # text is better than rect for "none" bg
     BUTTON_STYLE="text"
 fi
+# check if user passed a usable button shape
+if [[ -n $THUMB_SHAPE ]]; then
+    ! egrep   '^round$|^oval$|^plectrum$|^normal$' <<< "$THUMB_SHAPE" >/dev/null && \
+        usage_error "Please supply and appropriate thumb shape with -thumb-shape option. You gave \"$THUMB_SHAPE\""
+fi
+            
+# use a suitable button style
 for ((i=0; i<=NUM_FILES; i++)); do
     if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
         MULTILINE_TITLE=:
