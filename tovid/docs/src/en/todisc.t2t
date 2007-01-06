@@ -239,6 +239,9 @@ constraints of each arrangement.
 : -submenu-audio-fade
     Number of sec to fade given sub-menu audio in and out (default: 1.0 seconds)
     See -menu-audio-fade
+: -intro VIDEO
+   Use a introductory video that will play before the main menu.
+   At present this must be a DVD compatible video at the correct resolution etc.
 
 
 ==Thumbnail Style==
