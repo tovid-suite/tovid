@@ -17,18 +17,18 @@ ME="[makexml]:"
 #
 #
 # Copyright (C) 2005 tovid.org <http://www.tovid.org>
-# 
-# This program is free software; you can redistribute it and/or 
-# modify it under the terms of the GNU General Public License 
-# as published by the Free Software Foundation; either 
-# version 2 of the License, or (at your option) any later 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
 # version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
@@ -264,7 +264,7 @@ function addTitle ()
   if ! $MAKE_GROUP; then
     (( CUR_TITLE++ ))
   else
-    # Grouping several videos within one title 
+    # Grouping several videos within one title
     if test $CUR_VIDEO -eq 0; then
        (( CUR_TITLE++ ))
     fi
@@ -290,14 +290,14 @@ $MENU_BUTTONS
 EOF`
       fi
     else
-      # Add a button for the current titleset to the top menu 
+      # Add a button for the current titleset to the top menu
       if test $CUR_VIDEO -le 1; then
         TOP_MENU_BUTTONS=`cat << EOF
 $TOP_MENU_BUTTONS
         <button>jump titleset $CUR_TS menu;</button>
 EOF`
       fi
-    fi 
+    fi
 
     # Generate the chapters tag
     # If file exists, get duration and add appropriate chapter breaks
@@ -530,7 +530,7 @@ EOF`
     TS_TITLES=""
     CUR_TITLE=0
     MENU_BUTTONS=""
-  
+
   # --------------------------
   # For (S)VCD
   else
@@ -671,7 +671,7 @@ if test -z "$OUT_PREFIX"; then
 fi
 
 # See if selected output file exists. If so, confirm for overwrite.
-if test -e $OUT_PREFIX.xml ; then
+if test -e "$OUT_PREFIX.xml"; then
     echo $SEPARATOR
     echo "*** The output file you specified: $OUT_PREFIX.xml already exists."
     if $OVERWRITE; then
