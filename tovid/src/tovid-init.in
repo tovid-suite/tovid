@@ -375,7 +375,7 @@ if test "$KERNEL" = "Linux"; then
     CPU_MODEL=$(awk -F ":" '/model name/ {print $2}' /proc/cpuinfo)
     CPU_SPEED=$(awk 'BEGIN { IGNORECASE = 1 } /MHz/ { print $4 }' /proc/cpuinfo)
     # Test for multiple CPUs. If they are available, try to use them.
-    if test $(grep processor /proc/cpuinfo | wc -l) -ge "2"; then
+    if test $(grep "^processor" /proc/cpuinfo | wc -l) -ge "2"; then
         MULTIPLE_CPUS=:
     else
         MULTIPLE_CPUS=false
