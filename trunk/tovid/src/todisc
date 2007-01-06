@@ -225,6 +225,7 @@ function titlesafe_error()
 # process $LOG_FILE.tmp variously - eg. output of ffmpeg is ugly without this
 function cleanlog()
 {
+    SED_VAR=${SED_VAR:-"frame="}
     FOLD="fold -bs"
     NO_CR="tr -d '\r'"
     RELINE="{s/$SED_VAR/\n$SED_VAR/g}"
@@ -4055,7 +4056,7 @@ fi
 if $STATIC && [[ -n "$BG_AUDIO" ]]; then
     TMP_TIME=$(ffmpeg -i "$BG_AUDIO" 2>&1|
     awk '/Duration/ {print $2}')
-    TMP_TIME=${TIME/,/}
+    TMP_TIME=${TMP_TIME/,/}
 else
     TIME=$(vid_length "$WORK_DIR/intro.m2v")
 fi
