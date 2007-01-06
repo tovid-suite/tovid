@@ -835,7 +835,7 @@ while test $# -gt 0; do
             BUTTON_GRAVITY=${ALIGN_ARGS[0]}
             (( ${#ALIGN_ARGS[@]} > 1 )) && BUTTON_GEO=${ALIGN_ARGS[1]} && USER_GEO=:
             $USER_GEO && XGEO=${BUTTON_GEO/x*} && YGEO=${BUTTON_GEO/*x}
-            [[ $BUTTON_GRAVITY = center ]] && BUTTON_GRAVITY=centre
+            [[ $BUTTON_GRAVITY = centre ]] && BUTTON_GRAVITY=center
             USER_GRAVITY=:
             ;;
         # Menu control options
@@ -1281,11 +1281,14 @@ done
 V_TOTAL=${#IN_FILES[@]}
 NUM_FILES=$((V_TOTAL - 1))
 
-# dvdauthor stuff
+# switch title position when appropriate so it doesn't get covered up
 [[ $BUTTON_GRAVITY = *south* ]] && TITLE_GRAVITY=north
 if [[ $BUTTON_GRAVITY = *east* || $BUTTON_GRAVITY = *west* ]]; then
-    ! $USER_GEO &&  XGEO=45 # && YGEO=45
+    ! $USER_GEO &&  XGEO=45 && YGEO=45
+    ! $SHOWCASE && TITLE_GRAVITY=north
 fi
+! $SHOWCASE && [[ $BUTTON_GRAVITY = center ]] && TITLE_GRAVITY=north
+# dvdauthor stuff
 # make an array of possible vars for dvdauthor post calls
 if $CHAIN_VIDEOS; then
     if [ -z "$post_play" ]; then
