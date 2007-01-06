@@ -894,6 +894,10 @@ fi
 # Execution setup; change to work directory, create tempdir and log file(s)
 #
 # ******************************************************************************
+# Exit with error if working directory is not writable
+if ! test -w "$WORKING_DIR"; then
+    runtime_error "Working directory $WORKING_DIR is not writable. Please run tovid from a directory that you have write permission to, or set WORKING_DIR in your ~/.tovid/preferences."
+fi
 $QUIET || echo "Changing to working directory: $WORKING_DIR"
 cd "$WORKING_DIR"
 
