@@ -6,7 +6,7 @@
 
 """Note to developers:
 
-The layout submodule is changing fast. The video/menu/disc submodules have
+The layout module is changing fast. The video/menu/disc submodules have
 merged into this file, providing all disc-layout classes in one place.
 
 The classes here represent the merging of ideas from libtovid/__init__.py
@@ -80,11 +80,12 @@ class Video:
         chapter points
     """
 
-    def __init__(self, filename, title, format, tvsys):
+    def __init__(self, filename, title='', format='', tvsys=''):
         self.filename = filename
         self.title = title
         self.format = format
         self.tvsys = tvsys
+        self.chapters = []
 
 
 class Group:
@@ -114,8 +115,9 @@ class Menu:
     Needed for authoring:
         videos
     """
-    def __init__(self, videos, format, tvsys, style):
+    def __init__(self, filename, videos, format='', tvsys='', style=None):
         """Create a menu linking to the given Videos."""
+        self.filename = filename
         self.videos = videos
         self.format = format
         self.tvsys = tvsys
@@ -125,11 +127,11 @@ class Menu:
 class Titleset:
     """A group of videos, with an optional Menu.
     """
-    def __init__(self, videos=None):
+    def __init__(self, videos=None, menu=None):
         """Create a Titleset containing the given Videos.
         """
         self.videos = videos or []
-        self.menu = None
+        self.menu = menu
     
 
 class Disc:
