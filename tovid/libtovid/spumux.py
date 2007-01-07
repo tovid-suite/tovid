@@ -40,9 +40,9 @@ from libtovid import xml
 
 # spumux XML elements and valid attributes
 """
-Subpictures = create_element('subpictures', [])
-Stream = create_element('stream', [])
-Textsub = create_element('textsub',
+subpictures
+stream
+textsub
     ['filename',
     'characterset',
     'fontsize',
@@ -54,15 +54,15 @@ Textsub = create_element('textsub',
     'subtitle-fps',
     'movie-fps',
     'movie-width',
-    'movie-height'])
-Button = create_element('button',
+    'movie-height']
+button
     ['name',
     'x0', 'y0', # Upper-left corner, inclusively
     'x1', 'y1', # Lower-right corner, exclusively
-    'up', 'down', 'left', 'right'])
-Action = create_element('action',
-    ['name'])
-Spu = create_element('spu',
+    'up', 'down', 'left', 'right']
+action
+    ['name']
+spu
     ['start',
     'end',
     'image',
@@ -74,7 +74,7 @@ Spu = create_element('spu',
     'outlinewidth',
     'autoorder',     # 'rows' or 'columns'
     'xoffset',
-    'yoffset'])
+    'yoffset']
 """
 
 ###
