@@ -608,145 +608,81 @@ def _verify_lang(lang):
 ### Old interface from disc.py, needs to be merged with the above somehow
 ###
 
-def get_xml(disc):
-    """Return a string containing dvdauthor XML for the given Disc.
-    """
-    xml = '<dvdauthor dest="%s">\n' % disc.name.replace(' ', '_')
-    xml += '<vmgm>\n'
-    # If there's a topmenu, write vmgm-level XML for it
-    if disc.topmenu:
-        xml += '  <menus>\n'
-        xml += '    <video />\n'
-        xml += '    <pgc entry="title">\n'
-        xml += '      <vob file="%s" />\n' % disc.topmenu.filename
-        num = 1
-        for titleset in disc.titlesets:
-            xml += '      <button>jump titleset %d;</button>\n' % num
-            num += 1
-        xml += '    </pgc>\n'
-    xml += '</vmgm>\n'
-    # Write XML for each titleset
-    for titleset in disc.titlesets:
-        xml += dvd_titleset_xml(titleset)
-    xml += '</dvdauthor>\n'
-    return xml
 
-
-def dvd_titleset_xml(titleset):
-    """Return a string containing dvdauthor XML for the given Titleset.
-    """
-    xml = '<titleset>\n'
-    if titleset.menu:
-        xml += dvd_menu_xml(titleset.menu)
-    for video in titleset.videos:
-        xml += dvd_video_xml(video)
-    xml += '</titleset>\n'
-    return xml
-
-
-def dvd_menu_xml(menu):
-    """Return a string containing dvdauthor XML for the given Menu.
-    """
-    xml = '<menus>\n'
-    xml += '  <video />\n'
-    xml += '  <pgc entry="root">\n'
-    xml += '  <vob file="%s" />\n' % menu.filename
-    # For each child ('titles' target), add a button
-    num = 1
-    for video in menu.videos:
-        xml += '    <button>jump title %d;</button>\n' % num
-        num += 1
-    xml += '    <button>jump vmgm menu;</button>\n'
-    xml += '  </pgc>\n'
-    xml += '</menus>\n'
-    return xml
-
-
-def dvd_video_xml(video):
-    """Return a string containing dvdauthor XML for the given Video.
-    """
-    chap_str = '0'
-    for chap in video.chapters:
-        chap_str += ',' + chap
-    xml = '  <pgc>\n'
-    xml += '    <vob file="%s" chapters="%s" />\n' % \
-            (video.filename, chap_str)
-    xml += '    <post>call menu;</post>\n'
-    xml += '  </pgc>\n'
-    return xml
-    
-
-###
-### Even more stuff that isn't used just yet...
-###
-
-from libtovid.xml import create_element
 
 # dvdauthor XML elements and valid attributes
 """
-Dvdauthor = create_element('dvdauthor',
+dvdauthor
     ['dest',       # Output (destination) directory
-    'jumppad'])    # 1 | on | yes
-Vmgm = create_element('vmgm', [])
-Titleset = create_element('titleset', [])
-Titles = create_element('titles', [])
-Menus = create_element('menus',
-    ['lang'])      # Language code
-Subpicture = create_element('subpicture',
-    ['lang'])      # Language code
-Video = create_element('video',
+    'jumppad']     # 1 | on | yes
+vmgm
+titleset
+titles
+menus
+    ['lang']       # Language code
+subpicture
+    ['lang']       # Language code
+video
     ['format',     # ntsc | pal
     'aspect',      # 4:3 | 16:9
     'resolution',  # WxH
     'caption',     # field1 | field2
-    'widescreen']) # nopanscan | noletterbox
-Audio = create_element('audio',
+    'widescreen']  # nopanscan | noletterbox
+audio
     ['format',     # mp2 | ac3 | dts | pcm
     'channels',    # num
     'quant',       # 16bps | 20bps | 24bps | drc
     'dolby',       # surround
     'samplerate',  # 48khz | 96khz
-    'lang'])
-Pgc = create_element('pgc',
+    'lang']
+pgc
     ['entry',      # title
     'palette',     # yuvfile | rgbfile
-    'pause'])      # seconds | inf
-Vob = create_element('vob',
+    'pause']       # seconds | inf
+vob
     ['file',       # filename.mpg
     'chapters',    # chapter list
-    'pause'])      # seconds | inf
-Button = create_element('button',
-    ['name'])      # Button identifier (same as given to spumux)
-Pre = create_element('pre', [])
-Post = create_element('post', [])
+    'pause']       # seconds | inf
+button
+    ['name']       # Button identifier (same as given to spumux)
+pre
+post
 """
 
-"""
-Hierarchy notes:
+from libtovid.xml import Element
+from libtovid import layout
 
-dvdauthor
-    vmgm
-    titleset+
+def get_xml(disc):
+    """Return a string containing dvdauthor XML for the given Disc.
+    """
+    assert isinstance(disc, layout.Disc)
+    root = Element('dvdauthor', dest=disc.name.replace(' ', '_'))
+    vmgm = root.add('vmgm')
+    if disc.topmenu:
+        menus = vmgm.add('menus')
+        menus.add('video')
+        pgc = menus.add('pgc', entry='title')
+        vob = pgc.add('vob', file=disc.topmenu.filename)
+        for index, titleset in enumerate(disc.titlesets):
+            vob.add('button', 'jump titleset %d;' % (index + 1))
 
-vmgm
-    menus?
+    for titleset in disc.titlesets:
+        ts = root.add('titleset')
+        if titleset.menu:
+            menus = ts.add('menus')
+            menus.add('video')
+            menus.add('pgc', entry='root')
+            vob = menus.add('vob', file=menu.filename)
+            for index, video in enumerate(menu.videos):
+                vob.add('button', 'jump title %d;' % (index + 1))
+            vob.add('button', 'jump vmgm menu;')
+        for video in titleset.videos:
+            pgc = ts.add('pgc')
+            pgc.add('vob', file=video.filename,
+                    chapters=','.join(video.chapters))
+            pgc.add('post', 'call menu;')
 
-menus
-    video?
-    audio?
-    subpicture?
-    pgc+
-
-titleset
-    menus?
-    titles
-
-titles
-    video?
-    audio?
-    pgc+
-
-"""
+    return str(root)
 
 
 ############################### DATA ################################
@@ -892,3 +828,14 @@ language_codes = {\
     'zh': 'Chinese',
     'zu': 'Zulu'}
 
+if __name__ == '__main__':
+    videos = [
+        layout.Video('video1.mpg'),
+        layout.Video('video2.mpg'),
+        layout.Video('video3.mpg')]
+    menu = layout.Menu('menu.mpg', videos, 'dvd', 'ntsc')
+    titleset = layout.Titleset(videos, menu)
+    disc = layout.Disc('dvd_test', 'dvd', 'ntsc', [titleset])
+
+    print "XML example"
+    print get_xml(disc)
