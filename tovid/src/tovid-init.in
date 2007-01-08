@@ -395,7 +395,7 @@ NUMBER_TOVIDS=$(echo $INSTALLED_TOVIDS | wc -w)
 if test $NUMBER_TOVIDS -ne 1; then
     echo "Found $NUMBER_TOVIDS installations of tovid on your system!"
     echo "I won't run until there is only one of me :)"
-    echo "Installed verions:"
+    echo "Installed versions:"
     for version in $INSTALLED_TOVIDS; do
         echo "   $version"
     done
