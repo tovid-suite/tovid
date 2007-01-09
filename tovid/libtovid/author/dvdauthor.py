@@ -13,8 +13,10 @@ def get_xml(disc):
     """Return a string containing dvdauthor XML for the given Disc.
     """
     assert isinstance(disc, Disc)
+    # Root dvdauthor element
     root = xml.Element('dvdauthor', dest=disc.name.replace(' ', '_'))
     vmgm = root.add('vmgm')
+    # Add topmenu if present
     if disc.topmenu:
         menus = vmgm.add('menus')
         menus.add('video')
@@ -22,10 +24,11 @@ def get_xml(disc):
         vob = pgc.add('vob', file=disc.topmenu.filename)
         for index, titleset in enumerate(disc.titlesets):
             vob.add('button', 'jump titleset %d;' % (index + 1))
-
+    # Add each titleset
     for titleset in disc.titlesets:
         menu = titleset.menu
         ts = root.add('titleset')
+        # Add menu if present
         if menu:
             menus = ts.add('menus')
             menus.add('video')
@@ -34,12 +37,13 @@ def get_xml(disc):
             for index, video in enumerate(menu.videos):
                 vob.add('button', 'jump title %d;' % (index + 1))
             vob.add('button', 'jump vmgm menu;')
+        # Add a pgc for each video
         for video in titleset.videos:
             pgc = ts.add('pgc')
             pgc.add('vob', file=video.filename,
                     chapters=','.join(video.chapters))
             pgc.add('post', 'call menu;')
-
+    # Return XML string
     return str(root)
 
 
