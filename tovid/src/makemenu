@@ -93,89 +93,6 @@ function cleanup()
     fi
 }
 
-# Measure the width or height of text
-# Input args:   $1 = width | height     (which dimension do you want?)
-#               $2 = "Text to measure"
-#               $3 = title | button     (is the text a title or a button?)
-# Usage:
-#   MEASUREMENT=$(get_text_measurement width "How long am I?" title)
-function get_text_measurement()
-{
-    DIMENSION_TO_GET="$1"
-    TEXT_TO_MEASURE="$2"
-    MEASUREMENT_TYPE="$3"
-
-    if test "$DIMENSION_TO_GET" = "width"; then 
-        DIM=1
-    elif test "$DIMENSION_TO_GET" = "height"; then
-        DIM=2
-    else
-        echo "Internal bug, get_text_measurement: 'width' or 'height' missing."
-        cleanup
-        exit 1
-    fi
-
-    if test "$MEASUREMENT_TYPE" = "title"; then
-        FONT_PROPS="-font $TITLE_FONT -fill $TEXT_COLOR $FONT_DECO 
-                    -antialias"
-    elif test "$MEASUREMENT_TYPE" = "button"; then
-        FONT_PROPS="-font $BUTTON_FONT -fill $SELECT_COLOR +antialias -weight bold"
-    else
-        echo "Internal bug, get_text_measurement: 'title' or 'button' missing."
-        cleanup
-        exit 1
-    fi
-
-    MEASURE_CMD="convert -size 720x200 xc:none \
-      -pointsize $TITLE_SIZE $FONT_PROPS -annotate +20+80 \"$TEXT_TO_MEASURE\" \
-      -trim +repage info: | awk '{print $'3'}' | awk -F 'x' '{print $'$DIM'}'"
-    $DEBUG && echo -e "\n\nMeasuring $DIMENSION_TO_GET:\n$MEASURE_CMD" >> $REDIR
-    if ! eval $MEASURE_CMD; then
-        echo "Couldn't measure $TEXT_TO_MEASURE!"
-        cleanup
-        exit 1
-    fi
-}
-
-
-# Draw text and trim the edges so that they touch the text
-# Input args:   $1 = "The text to draw"
-#               $2 = title | hightlight | select
-#               $3 = output_image.png
-# Usage:
-#   draw_text "Far flung jokes" title 01_title-3.png
-function draw_text()
-{
-    TEXT_TO_DRAW="$1"
-    DRAW_TYPE="$2"
-    OUTPUT_IMAGE="$3"
-
-    if test "$DRAW_TYPE" = "title"; then
-        FONT_PROPS="-font $TITLE_FONT -antialias $FONT_DECO"
-        COLOR="$TEXT_COLOR"
-    elif test "$DRAW_TYPE" = "highlight"; then
-        FONT_PROPS="-font $BUTTON_FONT +antialias -weight bold -stroke $BTN_STROKE -strokewidth 1"
-        COLOR="$HIGHLIGHT_COLOR"
-    elif test "$DRAW_TYPE" = "select"; then
-        FONT_PROPS="-font $BUTTON_FONT +antialias -weight bold -stroke $BTN_STROKE -strokewidth 1"
-        COLOR="$SELECT_COLOR"
-    else
-        echo "Internal bug, draw_text: 'title', 'highlight', 'select' missing."
-        cleanup
-        exit 1
-    fi
-
-    DRAW_CMD="convert -size 720x100 xc:none -fill $COLOR \
-        -pointsize $TITLE_SIZE $FONT_PROPS -annotate +20+80 \"$TEXT_TO_DRAW\" \
-        -trim +repage \"$OUTPUT_IMAGE\""
-    $DEBUG && echo -e "\n\nDrawing:\n$DRAW_CMD" >> $REDIR
-    if ! eval $DRAW_CMD; then
-        echo "Couldn't draw \"$TEXT_TO_DRAW\""
-        cleanup
-        exit 1
-    fi
-}
-
 
 # Initializations
 
@@ -233,9 +150,11 @@ NOASK=false
 TITLE_BOTTOM_SPACE=12
 TITLE_LEFT_SPACE=10
 
-# ***********************************
-# EXECUTION BEGINS HERE
-# ***********************************
+
+# =========================================================================\
+# E X E C U T I O N   B E G I N S   H E R E
+# 
+#
 
 echo "$SCRIPT_NAME"
 
@@ -564,8 +483,14 @@ fi
 # Set the button font with the one that was found/compatible
 BUTTON_FONT="$USE_BUTTON_FONT"
 
+# ==========================================================================\
+# M E N U   D R A W I N G
+#
+#
+
 # Measure the font's vertical height
-TILE_HEIGHT=$(get_text_measurement height A title)
+TILE_HEIGHT=$(convert -size 720x200 xc:none -fill $TEXT_COLOR -pointsize $TITLE_SIZE -font $TITLE_FONT -antialias $FONT_DECO -annotate +20+80 "Al" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $2}')
+
 let "TILE_HEIGHT=TILE_HEIGHT+TITLE_BOTTOM_SPACE"
 
 # Make text 'tiles' for each title. These will be pieced together later on. 
@@ -578,25 +503,25 @@ for ((i=0; i<$NUM_TITLES; i++)); do
         ENTRY="${j}. ${TITLES[i]}"
 
         # Get the width of text and pad it
-        TILE_WIDTH=$(get_text_measurement width "$ENTRY" title)
+        TILE_WIDTH=$(convert -size 720x200 xc:none -fill $TEXT_COLOR -pointsize $TITLE_SIZE -font $TITLE_FONT -antialias $FONT_DECO -annotate +20+80 "$ENTRY" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $1}')
         let "TILE_WIDTH=TILE_WIDTH+TITLE_LEFT_SPACE"
 
         # Draw the text, and put it on a blank tile
-        draw_text "$ENTRY" title "$TMP_DIR/01_entry-$i.png"
+        convert -size 720x100 xc:none -font $TITLE_FONT -antialias $FONT_DECO -fill $TEXT_COLOR -pointsize $TITLE_SIZE -annotate +20+80 "$ENTRY" -trim +repage "$TMP_DIR/01_entry-$i.png"
         convert -size ${TILE_WIDTH}x${TILE_HEIGHT} xc:none "$TILE_CANVAS"
         composite -compose Over -gravity north "$TMP_DIR/01_entry-${i}.png" \
             "$TILE_CANVAS" "$TMP_DIR/01_entry-${i}.png"
  
-    # Use a highlight cursor for DVD titles
+    # Use a highlight cursor for DVD titles (drawn later, for now just text)
     else
         ENTRY="${TITLES[i]}"
 
         # Get the width of the text and pad it
-        TILE_WIDTH=$(get_text_measurement width "$ENTRY" title)
+        TILE_WIDTH=$(convert -size 720x200 xc:none -fill $TEXT_COLOR -pointsize $TITLE_SIZE -font $TITLE_FONT -antialias $FONT_DECO -annotate +20+80 "$ENTRY" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $1}')
         let "TILE_WIDTH=TILE_WIDTH+TITLE_LEFT_SPACE"
 
         # Draw the text, and put it on a blank tile
-        draw_text "$ENTRY" title "$TMP_DIR/00_title-$i.png"
+        convert -size 720x100 xc:none -font $TITLE_FONT -antialias $FONT_DECO -fill $TEXT_COLOR -pointsize $TITLE_SIZE -annotate +20+80 "$ENTRY" -trim +repage "$TMP_DIR/00_title-$i.png"
         convert -size ${TILE_WIDTH}x${TILE_HEIGHT} xc:none "$TILE_CANVAS"
         composite -compose Over -gravity northeast \
             "$TMP_DIR/00_title-${i}.png" "$TILE_CANVAS" \
@@ -614,16 +539,16 @@ if test $RES = "dvd"; then
     echo "Making the DVD buttons...   "
 
     # Get the dimensions of the button
-    TILE_WIDTH=$(get_text_measurement width "$BUTTON_CHAR" button)
-    BUTTON_HEIGHT=$(get_text_measurement height "$BUTTON_CHAR" button)
+    TILE_WIDTH=$(convert -size 720x200 xc:none -fill $SELECT_COLOR -pointsize $TITLE_SIZE -font $BUTTON_FONT +antialias -weight bold -annotate +20+80 "$BUTTON_CHAR" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $1}')
+    BUTTON_HEIGHT=$(convert -size 720x200 xc:none -fill $SELECT_COLOR -pointsize $TITLE_SIZE -font $BUTTON_FONT +antialias -weight bold -annotate +20+80 "$BUTTON_CHAR" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $2}')
 
     # Find how much to pad the top of the button and make the pad
     let "BUTTON_PADDING=(TILE_HEIGHT-BUTTON_HEIGHT-TITLE_BOTTOM_SPACE)/2"
     convert -size ${TILE_WIDTH}x${BUTTON_PADDING} xc:none "$BUTTON_PAD"
 
     # Draw the buttons
-    draw_text "$BUTTON_CHAR" highlight "$HIGHLIGHT_BUTTON"
-    draw_text "$BUTTON_CHAR" select "$SELECT_BUTTON"
+    convert -size 720x100 xc:none -font $BUTTON_FONT -stroke $BTN_STROKE -strokewidth 1 +antialias -weight bold -fill $HIGHLIGHT_COLOR -pointsize $TITLE_SIZE -annotate +20+80 "$BUTTON_CHAR" -trim +repage "$HIGHLIGHT_BUTTON"
+    convert -size 720x100 xc:none -font $BUTTON_FONT -stroke $BTN_STROKE -strokewidth 1 +antialias -weight bold -fill $SELECT_COLOR -pointsize $TITLE_SIZE -annotate +20+80 "$BUTTON_CHAR" -trim +repage "$SELECT_BUTTON"
 
     # Pad the buttons so that they line up with the font's baseline
     convert -background none "$BUTTON_PAD" "$HIGHLIGHT_BUTTON" -append \
@@ -727,7 +652,12 @@ if test $RES = 'dvd'; then
         "$ACTIVE_SELECT" "$BG_CANVAS" "$SELECT_PNG"
 fi
 
-# Preview
+
+# ======================================================================\
+# P R E V I E W   &   F I N I S H
+#
+#
+
 if ! $NOASK; then
     echo "Generating preview..."
     echo "Type 'q' to close the preview window."
