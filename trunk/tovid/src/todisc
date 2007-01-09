@@ -161,6 +161,7 @@ TITLE_GRAVITY=south
 SPACER=15
 SELECT_COLOUR="#DE7F7C"
 HIGHLIGHT_COLOUR="#266CAE"
+BG_ASYNC=""
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -2732,7 +2733,27 @@ fi
 # Check input files for compliance; offer to tovid-encode non-compliant files
 check_compliance
 check_compliance group
-
+# check bgvideo and showcase VIDEO for compliance ( if present )
+tovid_reencode()
+{
+    VIDEO_IN="$1"
+    yecho "$VIDEO_IN is not complent - reencoding given slice to DVD compliant file"
+    tovid -in "$VIDEO_IN" -slice 0-$((SHOWCASE_SEEK_VAL + ANI_MENU_LENGTH)) -$TV_STANDARD \
+    -$TARGET -in "$VIDEO_IN" -out "$VIDEO_IN.enc" $TOVID_OPTS
+    # See if output file exists
+    if ! test -f "$VIDEO_IN.enc.mpg"; then
+        runtime_error "Could not encode file: $VIDEO_IN"
+    fi
+    yecho
+}
+if [[ -n $BG_VIDEO ]] && ! idvid -isformat dvd "$BG_VIDEO" >/dev/null; then 
+    tovid_reencode "$BG_VIDEO"
+    BG_VIDEO="$BG_VIDEO.enc.mpg"
+elif [[ -n $SHOWCASE_VIDEO ]]  && ! idvid -isformat dvd "$BG_VIDEO" >/dev/null; then
+    echo SHOWCASE_VIDEO is $SHOWCASE_VIDEO
+    tovid_reencode "$SHOWCASE_VIDEO"
+    SHOWCASE_VIDEO="$SHOWCASE_VIDEO.enc.mpg"
+fi
 # symlink IN_FILES in $WORK_DIR to solve some quoting issues for dvdauthor
 
 for i in ${!IN_FILES[@]}; do
@@ -3519,7 +3540,7 @@ yecho
 yecho "Building main menu"
 if [[ -n "$BG_VIDEO" ]]; then
     yecho "Getting background video from $BG_VIDEO"
-    FFMPEG_CMD="ffmpeg -i \"$BG_VIDEO\" -ss $BG_SEEK -vframes $FRAMES \
+    FFMPEG_CMD="ffmpeg -i \"$BG_VIDEO\" -ss $BG_SEEK -vframes $FRAMES $BG_ASYNC \
     -s $VIDSIZE -sameq \"$WORK_DIR/bg/%d.jpg\""
     yecho "Extracting/resizing background images with the following command:"
     yecho "$FFMPEG_CMD"
@@ -3557,7 +3578,7 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && ! $NO_SC_THUMB; then
         done
     elif [ "$SC_FRAMESTYLE" = "none" ]; then
         FIND_FRAMES=$FRAMES # ffmpeg starts at 0
-        FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -ss $SHOWCASE_SEEK_VAL \
+        FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -ss $SHOWCASE_SEEK_VAL $BG_ASYNC \
         -s $SHOWCASE_SIZE -vframes $FRAMES -an -y "$WORK_DIR/showcase/%06d.png")
         echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
         SED_VAR="frame="
@@ -3883,7 +3904,6 @@ else # Do not do menu fade
             "$WORK_DIR"/showcase_img.png" #FIXME
             $NO_THUMBS && unset sc_cmd SC_IMG_CMD SC_VIDEO_CMD #FIXME
 
-
             IM_CMD0=(convert  -size $VIDSIZE "$WORK_DIR/pics/template.png" \
             ${sc_cmd[@]} $SC_IMG_CMD -mosaic)
             IM_CMD01=(convert  -size $VIDSIZE xc:none -background none \
@@ -4051,11 +4071,11 @@ else
     echo
     runtime_error  "The menu video (m2v) does not appear to have been created"
 fi
-# if static then keep bg audio length (check later if bgaudio-length opt used
+# if static then keep bg audio length (check later if -menu-audiolength opt used
 if $STATIC && [[ -n "$BG_AUDIO" ]]; then
     TMP_TIME=$(ffmpeg -i "$BG_AUDIO" 2>&1|
     awk '/Duration/ {print $2}')
-    TMP_TIME=${TMP_TIME/,/}
+    TMP_TIME=$(awk_math ${TMP_TIME/,/} less $BG_AUDIO_SEEK float )
 else
     TIME=$(vid_length "$WORK_DIR/intro.m2v")
 fi
@@ -4070,7 +4090,9 @@ if [ -z "$BG_AUDIO" ]; then # no audio supplied: use silence
 elif test ! -e "$BG_AUDIO"; then
     runtime_error "Cannot find background audio file: $BG_AUDIO"
 else # audio supplied: convert to wav then later to dvd/svcd format
-    BGAUDIO_CMD=(ffmpeg -i "$BG_AUDIO" -ar 48000 -ac 2 -acodec pcm_s16le -y \
+    # TODO if ! $BG_AUDIOVIDEO_FILE; then  # check if same file and if so
+    # decode the audio and jpegs in one step above, and skip this block
+    BGAUDIO_CMD=(ffmpeg -i "$BG_AUDIO" -ar 48000 -ac 2 -acodec pcm_s16le -async 1 -y \
     -ss $BG_AUDIO_SEEK $BG_AUDIO_LENGTH $WORK_DIR/intro.wav)
     yecho
     echo "Running "${BGAUDIO_CMD[@]}"" >> "$LOG_FILE.tmp" 2>&1
