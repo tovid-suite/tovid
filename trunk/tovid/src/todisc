@@ -2746,11 +2746,10 @@ tovid_reencode()
     fi
     yecho
 }
-if [[ -n $BG_VIDEO ]] && ! idvid -isformat dvd "$BG_VIDEO" >/dev/null; then 
+if [[ -n $BG_VIDEO ]] && ! idvid -isformat dvd "$BG_VIDEO" >/dev/null; then
     tovid_reencode "$BG_VIDEO"
     BG_VIDEO="$BG_VIDEO.enc.mpg"
-elif [[ -n $SHOWCASE_VIDEO ]]  && ! idvid -isformat dvd "$BG_VIDEO" >/dev/null; then
-    echo SHOWCASE_VIDEO is $SHOWCASE_VIDEO
+elif [[ -n $SHOWCASE_VIDEO ]]  && ! idvid -isformat dvd "$SHOWCASE_VIDEO" >/dev/null; then
     tovid_reencode "$SHOWCASE_VIDEO"
     SHOWCASE_VIDEO="$SHOWCASE_VIDEO.enc.mpg"
 fi
