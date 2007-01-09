@@ -2,9 +2,8 @@
 # layout.py
 
 """This module provides an interface for structuring the content of video discs.
-"""
 
-"""Note to developers:
+Note to developers:
 
 The layout module is changing fast. The video/menu/disc submodules have
 merged into this file, providing all disc-layout classes in one place.
@@ -54,6 +53,18 @@ For multiple Titlesets, there'd need to be a top-level menu.
 Please direct comments to wapcaplet on the freenode.net IRC channel #tovid.
 """
 
+# TODO:
+# Orient these classes toward describing only what the authoring step needs
+# (basic high-level meta-information about each thing)
+# The idea is that these are created _after_ videos are encoded & menus are
+# generated, but before the disc is authored
+
+# Consider eliminating format/tvsys from all except Disc (maybe that too);
+# they are only meaningful for authoring if mixing pal/ntsc on the same disc
+# (and format is determined by whether the Disc is passed to vcdimager.py or
+# dvdauthor.py). Something higher-level will deal with format/tvsys instead.
+
+
 __all__ = [\
     'Disc',
     'Menu',
@@ -64,64 +75,41 @@ __all__ = [\
 class Video:
     """A video title for inclusion on a video disc.
 
-    Needed for encoding:
-        input filename
-        output name
-        format/tvsys
-    Needed for authoring:
-        output filename
-        format/tvsys
-        widescreen
-        length and/or chapter points
-    Needed for menu generation:
-        title
-        output filename (for generating thumbs)
-        widescreen
-        chapter points
+    filename
+    aspect
+    audio track language?
+    subtitle language?
+    chapters
     """
-
-    def __init__(self, filename, title='', format='', tvsys=''):
+    def __init__(self, filename, title=''):
         self.filename = filename
         self.title = title
-        self.format = format
-        self.tvsys = tvsys
         self.chapters = []
 
 
 class Group:
     """A group title for inclusion on a video disc.
 
-    Needed for menu generation:
-        title
+    list of filenames in group
+    chapters
     """
-
-    def __init__(self, infile, title, format, tvsys):
-        self.infile = infile
+    def __init__(self, filenames, title):
+        self.filenames = filenames
         self.title = title
-        self.format = format
-        self.tvsys = tvsys
 
 
 class Menu:
     """A menu for navigating the titles on a video disc.
     
-    Needed for encoding/generation:
-        menu title
-        output name
-        format/tvsys
-        video filenames
-        video titles
-        style
-    Needed for authoring:
-        videos
+    filename
+    buttons/videos
+    aspect
+    language?
     """
-    def __init__(self, filename, videos, format='', tvsys='', style=None):
+    def __init__(self, filename, videos):
         """Create a menu linking to the given Videos."""
         self.filename = filename
         self.videos = videos
-        self.format = format
-        self.tvsys = tvsys
-        self.style = style
 
 
 class Titleset:
@@ -136,13 +124,8 @@ class Titleset:
 
 class Disc:
     """A video disc containing one or more Titlesets, and an optional
-    Menu for navigating to each Titleset.
+    top Menu for navigating to each Titleset.
     
-    Needed for authoring:
-        title
-        format/tvsys
-        top menu
-        titlesets
     """
     def __init__(self, name, format, tvsys, titlesets=None):
         """Create a Disc with the given properties.
