@@ -77,20 +77,23 @@ Menu text options:
 : **-fontsize** //NUM// (default 24)
     Sets the size for the font to //NUM// pixels.
 
-: **-fontdeco** //FONTDECORATION//
+: **-fontdeco** **'**//FONTDECORATION//**'**
     Sets the font decoration method to //FONTDECORATION//. 
     It is used by the 'convert' command to generate DVD text menus.
 
-: **-align** {left|center|right}
-    Align the text at the top left, top center, or top right side of the
-    screen.  You may also substitute any "gravity" keyword allowed by
-    ImageMagick (north|south|east|west|northeast|southwest|...).
+: **-align** {**left**|**center**|**middle**|**right**}
+    Align the text at the top left, top center, very middle, or top right 
+    side of the screen. You may also substitute any "gravity" keyword 
+    allowed by ImageMagick (north|south|east|west|northeast|southwest|...).
 
 : **-textcolor** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
     Use specified color for menu text. #//RRGGBB// and #//RGB// are
     hexadecimal triplets (e.g., #FF8035). //COLORNAME// may be any of
     several hundred named colors; run 'convert -list color' to see them.
     White (#FFF) is the default color.
+
+
+DVD-only options:
 
 : **-highlightcolor** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
     Use specified color for menu highlighting. Yellow (#FF0) is the
@@ -100,9 +103,27 @@ Menu text options:
     Use specified color for menu selections (when a menu item is played
     or activated). Red (#F00) is the default color.
 
-: **-button** //BUTTONSTR//
-    Specify the string used for menu selection. Issue it after '-align'.
-    E.g., ' -align center -button "-=*=-" '
+: **-button** //BUTTON//
+    Specify the button used for menu selection. Specify either a _single_
+    character or one of the shortcuts:
+    - **play** -- Use a button shaped like 'Play' on many A/V electronics:
+        a triangle pointing to the right. (uses the font Webdings)
+    - **movie** -- Use a button shaped like an old movie projector.
+        (uses the font Webdings)
+    - **utf8** -- Use your own non-keyboard character as a button. Provide
+        only the four hex digits: eg '-button utf8 00b7'. Beware that
+        ImageMagick's utf8 characters aren't the same as those drawn in
+        character browsers like gucharmap.
+
+: **-button-font** //FONTNAME//
+    Specify a differnt font to use for the buttons. By default, the button
+    font will be inherited from the title font (see **-font**). Use this
+    option to use a different font for the buttons. The button font size is
+    inherited from **-fontsize**.
+
+: **-button-outline** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
+    Outline buttons with the specified color. 'none' is the default.
+
 
 Other options:
 
@@ -110,7 +131,7 @@ Other options:
     Print extra debugging information to the log file. Useful in
     diagnosing problems if they occur. This option also leaves
     the log file (with a .log extension) in the directory after
-    encoding finishes.
+    encoding finishes as well as all the temporary files created.
 
 : **-nosafearea**
     Do not attempt to put text inside a TV-safe viewing area. Most
@@ -119,21 +140,28 @@ Other options:
     behavior off, leaving only a tiny margin. Use at your own risk.
 
 : **-overwrite**
-    Overwrite any existing output files.
+    Overwrite any existing output menu.
+
+: **-noask**
+    Don't ask interactive questions, and assume answers that will
+    continue menu making the menu until completion.
 
 
 If the word "**back**" is given as an episode title, a "back" button for
 returning to a higher-level menu will be added at the end of the list
-of titles.
+of titles. "**Back**" //must be the last last title listed//.
 
 
 ==Examples==
 
-: ``makemenu -ntsc -vcd -align center -textcolor "#FFF" -font "Helvetica" "Episode 1" "Episode 2" "Episode 3" -out "Season-1"``
+: ``makemenu -ntsc -vcd -align center -textcolor white -font "Helvetica" "Episode 1" "Episode 2" "Episode 3" -out "Season-1"``
    Make an NTSC VCD menu with white Helvetica text containing three centered selections: Episode 1, Episode 2, and Episode 3. The finished menu will be called Season-1.mpg.
 
-: ``makemenu -ntsc -dvd -align left -textcolor "#FFF" -highlightcolor "#FF0" -selectcolor "#F00" -font "Helvetica" "Episode 1" "Episode 2" "Episode 3" -out "Main_menu"``
-   Make an NTSC DVD menu with white Helvetica text containing three left-aligned selections: Episode 1, Episode 2, and Episode 3. Items under the cursor will be highlighted yellow, and selected items will be red (before going to the selected title). The finished menu will be called Main-menu.mpg.
+: ``makemenu -ntsc -dvd -align southwest -textcolor white -highlightcolor "#5f65ff" -selectcolor "#ffac5f" -font "Kirsty" "Episode 1" "Episode 2" "Episode 3" -out "Main_menu"``
+   Make an NTSC DVD menu with white Kirsty text containing three lower-left aligned selections: Episode 1, Episode 2, and Episode 3. Items under the cursor will be highlighted a pale blue, and selected items will be a pale orange (before going to the selected title). The finished menu will be called Main-menu.mpg.
+
+: tovid.org
+    The wiki has many more screenshots of menus with the commands that generated them.
 
 
 ==Usage notes==
