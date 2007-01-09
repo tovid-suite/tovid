@@ -8,12 +8,52 @@ __all__ = ['get_xml']
 
 from libtovid import xml
 from libtovid.layout import Video, Menu, Titleset, Disc
+    
+def get_xml(disc):
+    """Return the vcdimager XML string for authoring a disc.
+    """
+    assert isinstance(disc, Disc)
+    # XML header (will be added later)
+    header = '<?xml version="1.0"?>\n'
+    header += '<!DOCTYPE videocd PUBLIC "-//GNU/DTD VideoCD//EN"\n'
+    header += '  "http://www.gnu.org/software/vcdimager/videocd.dtd">\n'
+    # Root videocd element
+    attributes = {
+        'xmlns': 'http://www.gnu.org/software/vcdimager/1.0/',
+        'class': disc.format}
+    if disc.format == 'vcd':
+        attributes['version'] = '2.0'
+    else: # SVCD
+        attributes['version'] = '1.0'
+    root = xml.Element('videocd')
+    root.set(attributes)
+    # Add info block
+    info = root.add('info')
+    info.add('album-id', 'VIDEO_DISC')
+    info.add('volume-count', '1')
+    info.add('volume-number', '1')
+    info.add('restriction', '0')
+    # Add pvd block
+    pvd = root.add('pvd')
+    pvd.add('volume-id', 'VIDEO_DISC')
+    pvd.add('system-id', 'CD-RTOS CD-BRIDGE')
+    # Add segment, sequence, and pbc...
+    segment_items = root.add('segment-items')
+    sequence_items = root.add('sequence-items')
+    pbc = root.add('pbc')
+    # ...and add titleset content to them
+    for ts_id, titleset in enumerate(disc.titlesets):
+        _add_titleset(titleset, ts_id, segment_items, sequence_items, pbc)
+    # Return XML with header prepended
+    return header + str(root)
 
-def add_titleset(titleset, ts_id, segment_items, sequence_items, pbc):
-    """Add titleset content to the XML structure."""
+
+def _add_titleset(titleset, ts_id, segment_items, sequence_items, pbc):
+    """Internal function to add titleset content to the XML structure.
+    """
     menu = titleset.menu
     videos = titleset.videos
-    # Add menu to segment_items and pbc
+    # Add menu
     if menu:
         segment_items.add('segment-item', src=menu.filename,
                           id='seg-menu-%d' % ts_id)
@@ -26,16 +66,16 @@ def add_titleset(titleset, ts_id, segment_items, sequence_items, pbc):
         for video_id in range(len(videos)):
             selection.add('select',
                           ref='play-title-%d-%d' % (ts_id, video_id))
-
-    # Add videos to sequence_items and pbc
+    # Add videos
     for video_id, video in enumerate(videos):
+        # Add sequence items
         sequence_item = sequence_items.add('sequence-item')
         sequence_item.set(id='seq-title-%d-%d' % (ts_id, video_id),
                           src=video.filename)
         # Add chapter entries
         for chapterid, chapter in enumerate(video.chapters):
             sequence_item.add('entry', chapter, id='chapter-%d' % chapterid)
-
+        # Add playlists to pbc
         playlist = pbc.add('playlist')
         playlist.set(id='play-title-%d-%d' % (ts_id, video_id))
         playlist.add('play-item', ref='seq-title-%d-%d' % (ts_id, video_id))
@@ -49,46 +89,6 @@ def add_titleset(titleset, ts_id, segment_items, sequence_items, pbc):
             if video_id < len(videos) - 1:
                 playlist.add('next',
                              ref='seq-title-%d-%d' % (ts_id, video_id+1))
-
-    
-def get_xml(disc):
-    """Return the vcdimager XML string for authoring a disc.
-    """
-    assert isinstance(disc, Disc)
-    # Root videocd element
-    attributes = {
-        'xmlns': 'http://www.gnu.org/software/vcdimager/1.0/',
-        'class': disc.format}
-    if disc.format == 'vcd':
-        attributes['version'] = '2.0'
-    else: # SVCD
-        attributes['version'] = '1.0'
-    root = xml.Element('videocd')
-    root.set(attributes)
-    
-    # info block
-    info = root.add('info')
-    info.add('album-id', 'VIDEO_DISC')
-    info.add('volume-count', '1')
-    info.add('volume-number', '1')
-    info.add('restriction', '0')
-    
-    # pvd block
-    pvd = root.add('pvd')
-    pvd.add('volume-id', 'VIDEO_DISC')
-    pvd.add('system-id', 'CD-RTOS CD-BRIDGE')
-    
-    segment_items = root.add('segment-items')
-    sequence_items = root.add('sequence-items')
-    pbc = root.add('pbc')
-    for ts_id, titleset in enumerate(disc.titlesets):
-        add_titleset(titleset, ts_id, segment_items, sequence_items, pbc)
-
-    # TODO: Proper way to include headers in libtovid.xml?
-    header = '<?xml version="1.0"?>\n'
-    header += '<!DOCTYPE videocd PUBLIC "-//GNU/DTD VideoCD//EN"\n'
-    header += '  "http://www.gnu.org/software/vcdimager/videocd.dtd">\n'
-    return header + str(root)
 
 if __name__ == '__main__':
     videos1 = [
