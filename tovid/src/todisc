@@ -307,8 +307,11 @@ function cleanup()
     if kill -0 $NS_PID 2> /dev/null; then kill -9 $NS_PID 2> /dev/null; fi
     if $KEEP_FILES; then
         yecho "Keeping temporary files in $REAL_WORK_DIR"
+        [[ -n $SUPPORT_VIDEOS ]] && yecho "Keeping ${SUPPORT_VIDEOS[@]}" && \
+            yecho "This sliced video will not work if todisc is run with different seeks so should be deleted manually"
     else
         yecho "Removing $REAL_WORK_DIR"
+        [[ -n $SUPPORT_VIDEOS ]] && yecho "Removing "${SUPPORT_VIDEOS[@]}"" && rm -f "${SUPPORT_VIDEOS[@]}"
         rm -rf "$REAL_WORK_DIR"
     fi
     echo "Removing the symlink in /tmp . . . "
@@ -557,6 +560,7 @@ done
 
 function check_compliance()
 {
+    $NOASK && NO_ASK="-noask"
     unset FILES_TO_ENCODE ENC_IN_FILES CHECK_IN_FILES
     group_set=false
     if [[ $1 = group ]]; then
@@ -611,7 +615,7 @@ function check_compliance()
                 $group_set && yecho "Converting $(readlink $i)" || yecho "Converting: $i"
                 countdown
                 $group_set && IN="$(readlink "$i")" || IN="$i"
-                tovid -$TV_STANDARD -$TARGET -in "$IN" -out "$IN.enc" $TOVID_OPTS
+                tovid $NO_ASK -$TV_STANDARD -$TARGET -in "$IN" -out "$IN.enc" $TOVID_OPTS
                 wait
                 # See if output file exists
                 if ! test -f "$IN.enc.mpg"; then
@@ -2740,20 +2744,32 @@ tovid_reencode()
     VIDEO_IN_SEEK="$2"
     $NOASK && NO_ASK="-noask"
     yecho "$VIDEO_IN is not complent - reencoding given slice to DVD compliant file"
+    yecho "if you used a long seek this will take some time and produce a large file"
+    yecho "Encoding $((VIDEO_IN_SEEK + ANI_MENU_LENGTH)) seconds of $VIDEO_IN"
+    yecho "If the file is not encoded this way there may be sync problems"
+    yecho "Do you want to continue encoding this file?, type 'yes' to do so"
+    if ! $NOASK; then
+        read response
+        if [ ! -z "$response" -a "$response" = "yes" ]; then
+            :
+        else
+            return
+        fi
+    fi
     tovid $NO_ASK -in "$VIDEO_IN" -slice 0-$((VIDEO_IN_SEEK + ANI_MENU_LENGTH)) -$TV_STANDARD \
     -$TARGET -in "$VIDEO_IN" -out "$VIDEO_IN.enc" $TOVID_OPTS
     # See if output file exists
     if ! test -f "$VIDEO_IN.enc.mpg"; then
         runtime_error "Could not encode file: $VIDEO_IN"
     fi
+    SUPPORT_VIDEOS=( "${SUPPORT_VIDEOS[@]}" "$VIDEO_IN.enc.mpg" )
+    yecho "Encoded file is "$VIDEO_IN.enc.mpg", this will be deleted when todisc is finished unless you used -keepfiles"
     yecho
 }
 if [[ -n $BG_VIDEO ]] && ! idvid -isformat dvd "$BG_VIDEO" >/dev/null; then
-    tovid_reencode "$BG_VIDEO" $BG_SEEK
-    BG_VIDEO="$BG_VIDEO.enc.mpg"
+    tovid_reencode "$BG_VIDEO" $BG_SEEK && BG_VIDEO="$BG_VIDEO.enc.mpg"
 elif [[ -n $SHOWCASE_VIDEO ]]  && ! idvid -isformat dvd "$SHOWCASE_VIDEO" >/dev/null; then
-    tovid_reencode "$SHOWCASE_VIDEO" $SHOWCASE_SEEK_VAL
-    SHOWCASE_VIDEO="$SHOWCASE_VIDEO.enc.mpg"
+    tovid_reencode "$SHOWCASE_VIDEO" $SHOWCASE_SEEK_VAL && SHOWCASE_VIDEO="$SHOWCASE_VIDEO.enc.mpg"
 fi
 # symlink IN_FILES in $WORK_DIR to solve some quoting issues for dvdauthor
 
