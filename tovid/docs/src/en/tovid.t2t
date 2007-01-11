@@ -273,6 +273,7 @@ letterboxing or anamorphic scaling.
     desired target DVD/CD-R size to //NUM// mebibytes (MiB, 2^20). By default,
     splitting occurs at 700 for CD, 4300 for DVD. Use higher values at your
     own risk. Use 650 or lower if you plan to burn to smaller-capacity CDs.
+    Doesn't work with the **-ffmpeg** option.
 
 : **-parallel**
     Perform ripping, encoding, and multiplexing processes in parallel using
