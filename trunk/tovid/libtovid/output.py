@@ -14,10 +14,11 @@ under the GNU GPL v2:
 # $Header: /home/cvsroot/gentoo-src/portage/pym/output.py,v 1.16 \
     2003/05/29 08:34:55 carpaski Exp $
 
-Slightly modified for inclusion in libtovid.
+Modified for inclusion in libtovid.
 """
 
 __all__ = [
+    'ctext',
     'bold',
     'white',
     'teal',
@@ -35,99 +36,70 @@ __all__ = [
     'red',
     'darkred']
 
-import os,sys
+codes = {
+    'reset': '\x1b[0m',
+    'bold': '\x1b[01m',
+    'teal': '\x1b[36;06m',
+    'turquoise': '\x1b[36;01m',
+    'fuscia': '\x1b[35;01m',
+    'purple': '\x1b[35;06m',
+    'blue': '\x1b[34;01m',
+    'darkblue': '\x1b[34;06m',
+    'green': '\x1b[32;01m',
+    'darkgreen': '\x1b[32;06m',
+    'yellow': '\x1b[33;01m',
+    'brown': '\x1b[33;06m',
+    'red': '\x1b[31;01m',
+    'darkred': '\x1b[31;06m'}
 
-havecolor=1
-dotitles=1
-
-codes={}
-codes["reset"]="\x1b[0m"
-codes["bold"]="\x1b[01m"
-codes["teal"]="\x1b[36;06m"
-codes["turquoise"]="\x1b[36;01m"
-codes["fuscia"]="\x1b[35;01m"
-codes["purple"]="\x1b[35;06m"
-codes["blue"]="\x1b[34;01m"
-codes["darkblue"]="\x1b[34;06m"
-codes["green"]="\x1b[32;01m"
-codes["darkgreen"]="\x1b[32;06m"
-codes["yellow"]="\x1b[33;01m"
-codes["brown"]="\x1b[33;06m"
-codes["red"]="\x1b[31;01m"
-codes["darkred"]="\x1b[31;06m"
-
-def xtermTitle(mystr):
-    if havecolor and dotitles and os.environ.has_key("TERM"):
-        myt=os.environ["TERM"]
-        if myt in ["xterm","Eterm","aterm","rxvt"]:
-            sys.stderr.write("\x1b]1;\x07\x1b]2;"+str(mystr)+"\x07")
-            sys.stderr.flush()
-
-def xtermTitleReset():
-    if havecolor and dotitles and os.environ.has_key("TERM"):
-        myt=os.environ["TERM"]
-        xtermTitle(os.environ["TERM"])
-
-def notitles():
-    "turn off title setting"
-    dotitles=0
-
-def nocolor():
-    "turn off colorization"
-    havecolor=0
-    for x in codes.keys():
-        codes[x]=""
-
-def resetColor():
-        return codes["reset"]
-
-def ctext(color,text):
-    return codes[ctext]+text+codes["reset"]
+def ctext(color, text):
+    """Return a string containing text in the given color."""
+    return codes[color] + text + codes['reset']
 
 def bold(text):
-    return codes["bold"]+text+codes["reset"]
+    return ctext('bold', text)
 
 def white(text):
     return bold(text)
 
 def teal(text):
-    return codes["teal"]+text+codes["reset"]
+    return ctext('teal', text)
 
 def turquoise(text):
-    return codes["turquoise"]+text+codes["reset"]
+    return ctext('turquoise', text)
 
 def darkteal(text):
     return turquoise(text)
 
 def fuscia(text):
-    return codes["fuscia"]+text+codes["reset"]
+    return ctext('fuscia', text)
 
 def purple(text):
-    return codes["purple"]+text+codes["reset"]
+    return ctext('purple', text)
 
 def blue(text):
-    return codes["blue"]+text+codes["reset"]
+    return ctext('blue', text)
 
 def darkblue(text):
-    return codes["darkblue"]+text+codes["reset"]
+    return ctext('darkblue', text)
 
 def green(text):
-    return codes["green"]+text+codes["reset"]
+    return ctext('green', text)
 
 def darkgreen(text):
-    return codes["darkgreen"]+text+codes["reset"]
+    return ctext('darkgreen', text)
 
 def yellow(text):
-    return codes["yellow"]+text+codes["reset"]
+    return ctext('yellow', text)
 
 def brown(text):
-    return codes["brown"]+text+codes["reset"]
+    return ctext('brown', text)
 
 def darkyellow(text):
     return brown(text)
 
 def red(text):
-    return codes["red"]+text+codes["reset"]
+    return ctext('red', text)
 
 def darkred(text):
-    return codes["darkred"]+text+codes["reset"]
+    return ctext('darkred', text)
