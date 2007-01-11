@@ -2224,6 +2224,7 @@ if ! $NO_THUMBS; then
         function run_transcode()
         {
             "${TRANSCODE_CMD[@]}" >> "$LOG_FILE" 2>&1
+            sleep 1
         }
 
         SED_VAR="frame="
@@ -2969,7 +2970,6 @@ if ! $NO_THUMBS; then
                         runtime_error "Problem creating images from the video."
                         exit 1
                     fi
-                    wait
                     unset TRANSCODE_CMD2 run_transcode
         done
     fi
@@ -3315,7 +3315,6 @@ if $SUB_MENU; then
                 runtime_error "Problem creating images from the video."
                 exit 1
             fi
-            wait
             unset TCODE_CMD cmd run_transcode
             if ! $ANI_SUB_MENU ; then
                 echo
@@ -4108,7 +4107,6 @@ if $STATIC && [[ -n "$BG_AUDIO" ]]; then
     TMP_TIME=$(ffmpeg -i "$BG_AUDIO" 2>&1|
     awk '/Duration/ {print $2}')
     TMP_TIME=$(awk_math ${TMP_TIME/,/} less $BG_AUDIO_SEEK float )
-    echo TMP_TIME is $TMP_TIME && sleep 10
 else
     MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
 fi
