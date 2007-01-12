@@ -44,10 +44,12 @@ mod_render = glob('render/*.py')
 mod_transcode = glob('transcode/*.py')
 modules = mod_test + mod_libtovid + mod_author + mod_render + mod_transcode
 
-for mod in modules:
-    print "Testing: %s" % mod
-    try:
-        print commands.getoutput('python %s' % mod)
-    except KeyboardInterrupt:
-        print "Test interrupted."
-        exit()
+if __name__ == '__main__':
+    # Execute each module
+    for mod in modules:
+        print "Testing: %s" % mod
+        try:
+            print commands.getoutput('python %s' % mod)
+        except KeyboardInterrupt:
+            print "Test interrupted."
+            exit()
