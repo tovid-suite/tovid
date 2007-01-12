@@ -157,15 +157,15 @@ def require(deps,
     """
     # Get the deps to check for: dictionary.keys(), or a list
     if type(deps) == dict:
-        deplist = deps.keys()
+        deps = deps.keys()
     elif type(deps) == str:
-        deplist = deps.split(' ')
+        deps = deps.split(' ')
     elif type(deps) != list:
-        raise InputError, "%s is not dictionary, list, or string!" % str(dep)
+        raise InputError, "%s is not dictionary, list, or string!" % str(deps)
 
     # Find the missing dependencies
     have_deps = True
-    for dep in deplist:
+    for dep in deps:
         if which(dep) == '':
             if type(deps) == dict:
                 description = deps[dep]
