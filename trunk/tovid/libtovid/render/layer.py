@@ -338,14 +338,15 @@ class Label (Text):
     def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
         log.debug("Drawing Label")
-        (dx, dy, w, h, ax, ay) = self.extents(drawing)
-
+        #(dx, dy, w, h, ax, ay) = self.extents(drawing)
+        (x0, y0, x1, y1) = self.extents(drawing)
+        
         # Save context
         drawing.save()
 
         # Calculate rectangle dimensions from text size/length
-        width = w
-        height = h
+        width = x1 - x0
+        height = y1 - y0
         # Padding to use around text
         pad = self.fontsize / 3
         # Calculate start and end points of background rectangle
@@ -818,7 +819,7 @@ class ColorBars (Layer):
         # Next 8% of picture: Reverse blue bars
         top = bottom
         bottom = 0.75
-        size = (x_inc, bottom)
+        size = (x_inc, bottom - top)
         drawing.rectangle((0, top), size)
         drawing.fill('rgb(0, 0, 191)')
         drawing.rectangle((x_inc, top), size)
@@ -871,7 +872,7 @@ if __name__ == '__main__':
     bgd = Background(color='#7080A0')
     bgd.draw(drawing, 1)
 
-    bars = ColorBars((320, 240), (320, 200))
+    bars = ColorBars((320, 240), (160, 100))
     bars.draw(drawing, 1)
 
     # Draw a text layer, with position.
