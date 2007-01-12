@@ -39,11 +39,13 @@ require also provides ways to print custom URLs and help when it cannot find
 dependencies. See help(deps.require) or keep reading.
 """
 
-__all__ = [\
+__all__ = [
+    'which',
     'require']
 
-import subprocess
+from subprocess import Popen, PIPE
 import textwrap
+from libtovid.output import red
 
 ###
 ### Exceptions
@@ -57,7 +59,7 @@ class MissingError(DepError): pass
 ### Module data
 ###
 
-# Dictionary format: {  "name": "dep_url"  }
+# Dictionary format: {"name": "description (url)"}
 all = {}
 
 core = { 
@@ -109,46 +111,32 @@ for more help.
 """
 
 ###
-### Internal functions
-###
-
-def __whych(executable):
-    """Returns the stdout from "which 'executable'"."""
-    return subprocess.Popen(['which', executable], 
-                            stdout=subprocess.PIPE).stdout.read()
-
-
-def __have_dep(dependency):
-    """Returns 'True' if 'dependency' exists, 'False' if not."""
-    which_try = subprocess.Popen(['which', dependency],
-                stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-    if which_try.wait() == 0:
-        return True
-    else:
-        return False
-
-###
 ### Exported functions
 ###
 
-def require(dep, 
-           help="You need these to finish what you were doing.",
-           url="oops"):
+def which(executable):
+    """Locate the given executable program name on the current path.
+    If found, return the full pathname; otherwise, return the empty string.
+    """
+    proc = Popen(['which', executable], stdout=PIPE, stderr=PIPE)
+    return proc.stdout.read().rstrip('\n')
+
+def require(deps, 
+            help="You need these to finish what you were doing.",
+            description="oops"):
 
     """Assert that one or more dependencies exist on the system, raise
     a 'MissingError' exception if not.
     
-        dep:    The dependencies to assert. OK types: dict, list, str. 
-                For dicts, the keys are used as names; for lists, the 
-                members; and for a string, words separated by spaces.
-        help:   A description about why the dependencies are needed,
-        url:    A short description of the dep, and its homepage
+        deps:        Names of dependencies to assert. May be a single name,
+                     a python list or space-separated string list of names,
+                     or a dictionary of the form {depname: description}.
+        help:        A help message about why the dependencies are needed
+        description: A short description of the dep, and its homepage URL
+                     (ignored if deps is a dictionary).
 
-    NB: url may be stored in one of the internal dependency dictionaries.
-    In this case, the url is automatically taken from the dictionary value,
-    overriding any input specified. Also, url is used for EVERY dep that
-    doesn't have an existing entry in a dictionary, so be careful when
-    checking for more than one dependency while giving a url.
+    If a given dependency name is found in one of the internal dictionaries,
+    (core, magick, etc.), its description is taken from there.
 
     Examples:
         require(all)
@@ -168,28 +156,27 @@ def require(dep,
 
     """
     # Get the deps to check for: dictionary.keys(), or a list
-    if type(dep) == dict:
-        dep = dep.keys()
-    elif type(dep) == str:
-        dep = dep.split(' ')
-    elif type(dep) != list:
+    if type(deps) == dict:
+        deplist = deps.keys()
+    elif type(deps) == str:
+        deplist = deps.split(' ')
+    elif type(deps) != list:
         raise InputError, "%s is not dictionary, list, or string!" % str(dep)
 
     # Find the missing dependencies
-    have_group = True
-    for d in dep:
-        if not __have_dep(d):
-            # Set the url message
-            if all.has_key(d): 
-                d_url = all[d]
-            else:
-                d_url = url
+    have_deps = True
+    for dep in deplist:
+        if which(dep) == '':
+            if type(deps) == dict:
+                description = deps[dep]
+            elif dep in all:
+                description = all[dep]
             # Tell the user which dependencies they're missing
-            print "  MISSING: %s, %s." % (d, d_url)
-            have_group = False
+            print red("MISSING:") + " %s, %s" % (dep, description)
+            have_deps = False
 
     # Having reported the missing dependencies, print the help message and quit
-    if not have_group:
+    if not have_deps:
         print "\n", textwrap.fill(help + ' ' + __missing_dependency_message, 79)
         raise MissingError, "Cannot find required dependencies!"
 
