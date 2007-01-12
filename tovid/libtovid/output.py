@@ -20,11 +20,9 @@ Modified for inclusion in libtovid.
 __all__ = [
     'ctext',
     'bold',
-    'white',
     'teal',
     'turquoise',
-    'darkteal',
-    'fuscia',
+    'pink',
     'purple',
     'blue',
     'darkblue',
@@ -32,25 +30,24 @@ __all__ = [
     'darkgreen',
     'yellow',
     'brown',
-    'darkyellow',
     'red',
     'darkred']
 
 codes = {
-    'reset': '\x1b[0m',
-    'bold': '\x1b[01m',
-    'teal': '\x1b[36;06m',
+    'reset':     '\x1b[0m',
+    'bold':      '\x1b[01m',
+    'teal':      '\x1b[36;06m',
     'turquoise': '\x1b[36;01m',
-    'fuscia': '\x1b[35;01m',
-    'purple': '\x1b[35;06m',
-    'blue': '\x1b[34;01m',
-    'darkblue': '\x1b[34;06m',
-    'green': '\x1b[32;01m',
+    'pink':      '\x1b[35;01m',
+    'purple':    '\x1b[35;06m',
+    'blue':      '\x1b[34;01m',
+    'darkblue':  '\x1b[34;06m',
+    'green':     '\x1b[32;01m',
     'darkgreen': '\x1b[32;06m',
-    'yellow': '\x1b[33;01m',
-    'brown': '\x1b[33;06m',
-    'red': '\x1b[31;01m',
-    'darkred': '\x1b[31;06m'}
+    'yellow':    '\x1b[33;01m',
+    'brown':     '\x1b[33;06m',
+    'red':       '\x1b[31;01m',
+    'darkred':   '\x1b[31;06m'}
 
 def ctext(color, text):
     """Return a string containing text in the given color."""
@@ -59,20 +56,14 @@ def ctext(color, text):
 def bold(text):
     return ctext('bold', text)
 
-def white(text):
-    return bold(text)
-
 def teal(text):
     return ctext('teal', text)
 
 def turquoise(text):
     return ctext('turquoise', text)
 
-def darkteal(text):
-    return turquoise(text)
-
-def fuscia(text):
-    return ctext('fuscia', text)
+def pink(text):
+    return ctext('pink', text)
 
 def purple(text):
     return ctext('purple', text)
@@ -94,9 +85,6 @@ def yellow(text):
 
 def brown(text):
     return ctext('brown', text)
-
-def darkyellow(text):
-    return brown(text)
 
 def red(text):
     return ctext('red', text)
