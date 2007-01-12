@@ -38,11 +38,20 @@ Popup warnings for missing fields (-files/-titles, -out) before running todisc
 """
 
 import os
-from Tkinter import *
-from tkFileDialog import *
-from tkMessageBox import *
 from libtovid.cli import Command
 
+try:
+    from Tkinter import *
+    from tkFileDialog import *
+    from tkMessageBox import *
+except:
+    import traceback
+    traceback.print_exc()
+    print "Could not import Tkinter. You may need to do the following:"
+    print "  Debian: Install 'python-tk'"
+    print "  Gentoo: Add 'tcltk' to python USE flags"
+    print "  Fedora: Install 'tkinter'"
+    sys.exit()
 
 ###
 ### Frames for grouping controls
