@@ -161,6 +161,8 @@ TITLE_GRAVITY=south
 SPACER=15
 SELECT_COLOUR="#DE7F7C"
 HIGHLIGHT_COLOUR="#266CAE"
+USER_SC_GEO=false
+USER_SAFE_AREA=false
 BG_ASYNC=""
 SCRIPT_START_TIME=`date +%s`
 
@@ -836,6 +838,7 @@ while test $# -gt 0; do
             shift
             SAFE_AREA="$1"
             let SAFE_OFFSET=86-SAFE_AREA
+            USER_SAFE_AREA=:
             ;;
         "-align" )
             shift
@@ -1126,6 +1129,11 @@ while test $# -gt 0; do
             shift
             BG_AUDIO_SEEK="$1"
             ;;
+        "-showcase-geo" )
+            shift
+            USER_SC_GEO=:
+            SHOWCASE_GEO=$1
+            ;;
         "-tovidopts" )
             shift
             TOVID_OPTS="$1"
@@ -1356,16 +1364,6 @@ if $SUB_MENU; then
         fi
     done
 fi
-# if -bgvideo selected, but also -static, exit with error message
-#if test -n "$BG_VIDEO" &&  $STATIC; then
-#    usage_error "You can not use -bgvideo with a static menu"
-#elif test -n "$SHOWCASE_VIDEO" && $STATIC; then
-#    usage_error "You can not use -showcase-video with a static menu"
-#elif [ "$SC_FRAMESTYLE" = "glass" ] && $STATIC; then
-#    usage_error "You can not use -showcase-framestyle glass with a static menu"
-#elif test -n "$SHOWCASE_VIDEO" && test -n "$SHOWCASE_IMG"; then
-#    usage_error "You can not use -showcase-video AND -showcase-image"
-#fi
 # create_dirs
 echo
 yecho "Creating pics directories..."
@@ -1486,9 +1484,6 @@ for ((i=0; i<${#TITLES[@]}; i++)); do
     if [[ ${#TITLES[i]} -gt 35 || $(echo -e "${TITLES[i]}" |wc -l) -gt 1 ]]; then
         TITLE[i]=$(sed 's/^  *//'<<<${TITLES[i]//\\n/ }) # remove spaces and \n
         TITLE[i]=${TITLE[i]:0:35} # cut down to 35 characters maximum
-        # if there is a multiline title we need to align to right of thumbs
-        SC_TITLE_ALIGN=east
-        ALIGN_OVERRIDE=:
         if [ ${#TITLES[i]} -gt 35 ]; then
             echo "  \"${TITLE[i]}...\" (${IN_FILES[i]})" # "..." if truncated
         else
@@ -1496,6 +1491,11 @@ for ((i=0; i<${#TITLES[@]}; i++)); do
         fi
     else # echo titles "as is"
         echo "  \"${TITLES[i]}\" (${IN_FILES[i]})"
+    fi
+    if [[ $(echo -e "${TITLES[i]}" |wc -l) -gt 1 ]]; then
+        # if there is a multiline title we need to align to right of thumbs
+        SC_TITLE_ALIGN=east
+        ALIGN_OVERRIDE=:
     fi
 done
 yecho "Current font settings: "
@@ -1550,8 +1550,8 @@ SHOWCASE_THUMB_X_ARRAY=( ${SHOWCASE_THUMB_X_ARRAY[NUM_FILES]} )
 SHOWCASE_THUMB_Y_ARRAY=( ${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]} )
 SHOWCASE_TITLES_X_ARRAY=( ${SHOWCASE_THUMB_X_ARRAY[@]} )
 SHOWCASE_TITLES_Y_ARRAY=( ${SHOWCASE_TITLES_Y_ARRAY[NUM_FILES]} )
-! $USER_SPLIT && SPLIT=13 # max number of text only titles in one column (-textmenu)
 if $NO_THUMBS ; then
+    ! $USER_SPLIT && SPLIT=13 # max number of text only titles in one column (-textmenu)
     if [[ $NUM_FILES -gt 12 ]] && ! $USER_SPLIT; then
         SPLIT=$((V_TOTAL / 2))
         [[ $(( SPLIT * 2)) -ne $V_TOTAL ]] && let SPLIT=SPLIT+1
@@ -1647,7 +1647,7 @@ else
     AUTOORDER="rows"
 fi
 $NO_THUMBS && LEFT_MAX=$SPLIT || LEFT_MAX=5
-if [ "$SC_TITLE_ALIGN" = "west" ]; then
+if [ "$SC_TITLE_ALIGN" = "west" ] || ($TEXTMENU && [ "$SC_TITLE_ALIGN" = "east" ]); then #FIXME
     THUMB_TITLE_ALIGN="west"
     for ((i=0; i<=NUM_FILES; i++)); do
         if [ $i -lt $LEFT_MAX ]; then
@@ -1694,7 +1694,7 @@ if $SHOWCASE && [ "$SC_TITLE_ALIGN" = "east" ] && ! $TEXTMENU; then
 fi
 if $USER_GRAVITY && $SHOWCASE; then
     if [[ $BUTTON_GRAVITY = *south* ]]; then
-        Y_OFFSET=$(( ( ${VIDSIZE/*x} - 50) - ( ${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]} + ${THUMB_SIZE/*x}) ))
+        Y_OFFSET=$(( ( ${VIDSIZE/*x} - SAFE_AREA) - ( ${SHOWCASE_THUMB_Y_ARRAY[SPLIT-1]} + ${THUMB_SIZE/*x}) ))
         for ((i=0; i<=NUM_FILES; i++)); do
             SHOWCASE_THUMB_Y_ARRAY[i]=$(( ${SHOWCASE_THUMB_Y_ARRAY[i]} + Y_OFFSET ))
             SHOWCASE_TITLES_Y_ARRAY[i]=$(( ${SHOWCASE_TITLES_Y_ARRAY[i]} + Y_OFFSET ))
@@ -1978,9 +1978,14 @@ if $SHOWCASE; then
 
         # find out dimension of the thumb title png
         TT_DIM=( ${TT_DIM[@]} $(identify "$WORK_DIR/thumb_title${i}.png"|awk '{print $3}') )
-        # get widest png for use later for alignment use
-        val=${TT_DIM[i]/x*}
-        [ -z "$WIDEST_TITLE" ] || ((val > WIDEST_TITLE)) && WIDEST_TITLE=$val
+        # get widest png in each colum for use later for alignment use
+        if ((i < SPLIT)); then
+            val=${TT_DIM[i]/x*}
+            [ -z "$WIDEST_TITLE" ] || ((val > WIDEST_TITLE)) && WIDEST_TITLE=$val
+        else
+            val2=${TT_DIM[i]/x*}
+            [ -z "$WIDEST_TITLE2" ] || ((val2 > WIDEST_TITLE2)) && WIDEST_TITLE2=$val2
+        fi
         # get just X demension to help determine final title pos below
         tt_dim=${TT_DIM[i]/x*}
         # thumb pos plus 1/2 (X dim) of thumbsize, less 1/2 (X dim) of title size
@@ -2008,35 +2013,37 @@ if $SHOWCASE; then
             offsets2=$(for ((d=0; d<=NUM_FILES; d++)); do
             ((d >= LEFT_MAX)) && echo $(( ${TT_DIM[d]#*x} + spacer )); done)
             [[ $offsets2 ]] && offsets2="$TEXT_Y_START $offsets2"
-            tt_dim2=$(running_total <<< $offsets2)
+            tt_ygeos_col2=$(running_total <<< $offsets2)
         fi
         offsets1="$TEXT_Y_START $offsets1"
-        tt_dim1=$(running_total <<< $offsets1)
-        tt_dim="$tt_dim1 $tt_dim2"
+        tt_ygeos_col1=$(running_total <<< $offsets1)
+        tt_ygeos="$tt_ygeos_col1 $tt_ygeos_col2"
         unset SHOWCASE_TITLES_Y_ARRAY
-        SHOWCASE_TITLES_Y_ARRAY=( $tt_dim1 $tt_dim2 )
-        # get the y position of the last title in 1st column (tt_dim1)
-        last_title_col1=$(wc -w <<< "$tt_dim1")
-        last_title_col1_ydim=${SHOWCASE_TITLES_Y_ARRAY[last_title_col1-1]/*x}
+        SHOWCASE_TITLES_Y_ARRAY=( $tt_ygeos_col1 $tt_ygeos_col2 )
+        # get the y position of the last title in 1st column (tt_ygeos_col1)
+        last_title_col1=$(wc -w <<< "$tt_ygeos_col1")
+        last_title_col1_ygeo=${SHOWCASE_TITLES_Y_ARRAY[last_title_col1-1]/*x}
+        last_title_col1_xgeo=${SHOWCASE_TITLES_X_ARRAY[last_title_col1-1]/x*}
         # add the y dimension of the last title size to the above y position
-        SW_CORNER=$(( ${TT_DIM[last_title_col1-1]/*x} + $last_title_col1_ydim ))
-        avail_space1=$(( ( ${VIDSIZE/*x} - 50 ) - $SW_CORNER ))
+        SW_YCORNER=$(( ${TT_DIM[last_title_col1-1]/*x} + $last_title_col1_ygeo ))
+        avail_space1=$(( ( ${VIDSIZE/*x} - SAFE_AREA ) - $SW_YCORNER ))
         # if there are 2 columns, get same data for column 2
-        if [[ -n $tt_dim2 ]]; then
+        if [[ -n $tt_ygeos_col2 ]]; then
             last_title_col2=$NUM_FILES
-            last_title_col2_ydim=${SHOWCASE_TITLES_Y_ARRAY[last_title_col2]/*x}
-            SE_CORNER=$(( ${TT_DIM[last_title_col2]/*x} + $last_title_col2_ydim ))
-            avail_space2=$(( ( ${VIDSIZE/*x} - 50 ) - $SE_CORNER ))
+            last_title_col2_ygeo=${SHOWCASE_TITLES_Y_ARRAY[last_title_col2]/*x}
+            last_title_col2_xgeo=${SHOWCASE_TITLES_Y_ARRAY[last_title_col2]/x*}
+            SE_CORNER=$(( ${TT_DIM[last_title_col2]/*x} + $last_title_col2_ygeo ))
+            avail_space2=$(( ( ${VIDSIZE/*x} - SAFE_AREA ) - $SE_CORNER ))
         fi
         # availible space is lowest value of 2 *space* vars ( if 2 columns)
-        if [[ -n $tt_dim2 ]] && ((SE_CORNER > SW_CORNER)); then
+        if [[ -n $tt_ygeos_col2 ]] && ((SE_CORNER > SW_YCORNER)); then
             avail_space=$avail_space2
         else
             avail_space=$avail_space1
         fi
         # get the height of each column for -align centre
         if [[ $BUTTON_GRAVITY = centre || $BUTTON_GRAVITY = east || $BUTTON_GRAVITY = west ]]; then
-            WEST_YSPACE=$(( SW_CORNER - TEXT_Y_START))
+            WEST_YSPACE=$(( SW_YCORNER - TEXT_Y_START))
             EAST_YSPACE=$((SE_CORNER - TEXT_Y_START))
             ((WEST_YSPACE > EAST_YSPACE)) && YSPACE=$WEST_YSPACE || YSPACE=$EAST_YSPACE
             CANVAS=$(( ${VIDSIZE/*x} - (SAFE_AREA * 2) ))
@@ -2054,8 +2061,11 @@ if $SHOWCASE; then
             done
         fi
         if [[ $BUTTON_GRAVITY = *east* ]]; then
-            east_offset=$(( ( ${VIDSIZE/x*} - 50 ) - WIDEST_TITLE ))
+            ((NUM_FILES >= SPLIT-1)) && WIDE_TITLE=$WIDEST_TITLE2 || WIDE_TITLE=$WIDEST_TITLE
+            east_offset=$(( ( ${VIDSIZE/x*} - SAFE_AREA ) - WIDE_TITLE ))
             for ((d=0; d<=NUM_FILES; d++)); do
+                [[ "$SC_TITLE_ALIGN" = "east" ]] && \
+                    east_offset=$(( ( ${VIDSIZE/x*} - SAFE_AREA ) - ${TT_DIM[d]/x*} )) #FIXME
                 if ((${#SHOWCASE_TITLES_X_ARRAY[@]} <= SPLIT)) ; then
                     SHOWCASE_TITLES_X_ARRAY[d]=$east_offset
                 else
@@ -2131,6 +2141,9 @@ if [[ -n "$BG_VIDEO" ]]; then
     fi
 fi
 if $SHOWCASE && ! $NO_SC_THUMB; then
+[[ $SC_TITLE_ALIGN = east ]] && TS=${THUMB_SIZE/x*}
+(( (WIDEST_TITLE + SAFE_AREA + TS + ${SHOWCASE_SIZE/x*}) > ( ${VIDSIZE/x*} - SAFE_AREA) )) && \
+        SHOWCASE_SIZE=288x216
     if [[ -n "$SHOWCASE_VIDEO" ]]; then
         echo "Getting video images from $SHOWCASE_VIDEO"
         if [[ "$SC_FRAMESTYLE" = "glass" && -n "$SHOWCASE_VIDEO" ]]; then
@@ -2607,6 +2620,8 @@ if $SHOWCASE; then
         SC_Y=$(( Y_SPACE / 2))
         SC_Y=$(( ${SHOWCASE_THUMB_Y_ARRAY[0]} + SC_Y ))
         [[ $V_TOTAL -gt 5 ]] && sc_xpage=$(( 360 - (sc_width / 2) ))
+        $USER_SC_GEO && sc_xpage=${SHOWCASE_GEO/x*}
+        $USER_SC_GEO && SC_Y=${SHOWCASE_GEO/*x}
         SC_IMG_PAGE="-page +$sc_xpage+$SC_Y"
         SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
     elif ! $NO_SC_THUMB && $TEXTMENU; then
