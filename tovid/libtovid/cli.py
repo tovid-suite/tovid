@@ -145,6 +145,11 @@ class Command:
             os.kill(self.proc.pid, signal.SIGTERM)
             raise KeyboardInterrupt
 
+    def done(self):
+        """Return True if the command is finished running; False otherwise.
+        Only useful if the command is run in the background."""
+        return self.proc.poll() != None
+
     def get_output(self):
         """Wait for the command to finish running, and return a string
         containing the command's output. If this command is piped into another,
