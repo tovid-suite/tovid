@@ -301,8 +301,12 @@ function cleanup()
             if  kill -0 $i 2> /dev/null; then kill -9 $i 2> /dev/null;fi
         done
     fi
+    if test -e "$WORK_DIR/tcode*.pid"; then
+        for pidfile in "$WORK_DIR/tcode*.pid"; do
+            if kill -0 $(<$pidfile); then kill -9 $(<$pidfile) 2> /dev/null; fi
+        done
+    fi
     if kill -0 $TCODE_PID 2> /dev/null; then kill -9  $TCODE_PID  2> /dev/null; fi
-    if kill -0 $(</tmp/tcode.pid)  2> /dev/null; then kill -9 $(</tmp/tcode.pid)  2> /dev/null; fi
     if kill -0 $TRANSCODE_PID 2> /dev/null; then kill -9  $TRANSCODE_PID 2> /dev/null; fi
     if kill -0 $NS_PID 2> /dev/null; then kill -9 $NS_PID 2> /dev/null; fi
     if $KEEP_FILES; then
@@ -466,7 +470,7 @@ awk 'END{print NR}' "$LOG_FILE"
 
 function check_stall()
 {
-    PIDOF_TRANSCODE=$(</tmp/tcode.pid)
+    PIDOF_TRANSCODE=$(<$WORK_DIR/tcode$i.pid)
     newlines=$(stat_logfile)
     while ps -p $PIDOF_TRANSCODE >/dev/null; do
         # Check for transcode output every 10 seconds
@@ -1556,6 +1560,12 @@ if $NO_THUMBS ; then
         ((b < SPLIT)) && SHOWCASE_TITLES_X_ARRAY[b]=86 || SHOWCASE_TITLES_X_ARRAY[b]=360
     done
 fi
+# needed to centre showcase img: col 1 will always be larger value than col 2
+if $SHOWCASE && ! $TEXTMENU; then
+    ((NUM_FILES == 5)) && SPLIT=3
+    ((NUM_FILES >= 6)) && SPLIT=4
+    ((NUM_FILES >= 8)) && SPLIT=5
+fi
 if  [ $TARGET = "dvd" ]; then
     AUDIO_EXT="ac3"
     SAMPLERATE="48000"
@@ -1616,7 +1626,7 @@ fi
 # some choices needed for different title alignments
 if $SHOWCASE; then
     if [ $V_TOTAL -le 5 ]; then
-        if [[ $SC_TITLE_ALIGN = *st ]]; then
+        if [[ $SC_TITLE_ALIGN = east ]]; then
             SHOWCASE_SIZE=288x216  # smaller to allow for titles
         else
             SHOWCASE_SIZE=384x256
@@ -1664,7 +1674,7 @@ if [[ $BUTTON_STYLE = text-rect ]] && ! [[ $SC_TITLE_ALIGN = east ]] && ! $TEXTM
         SC_TITLE_ALIGN=east
     fi
     yecho
-    sleep 10
+    sleep 5
 fi
 if $SHOWCASE && [ "$SC_TITLE_ALIGN" = "east" ] && ! $TEXTMENU; then
     THUMB_TITLE_ALIGN="west" # align titles left to allow longer titles
@@ -1970,7 +1980,7 @@ if $SHOWCASE; then
         TT_DIM=( ${TT_DIM[@]} $(identify "$WORK_DIR/thumb_title${i}.png"|awk '{print $3}') )
         # get widest png for use later for alignment use
         val=${TT_DIM[i]/x*}
-        [ -z "$MAX_LEN" ] || ((val > MAX_LEN)) && MAX_LEN=$val
+        [ -z "$WIDEST_TITLE" ] || ((val > WIDEST_TITLE)) && WIDEST_TITLE=$val
         # get just X demension to help determine final title pos below
         tt_dim=${TT_DIM[i]/x*}
         # thumb pos plus 1/2 (X dim) of thumbsize, less 1/2 (X dim) of title size
@@ -1989,11 +1999,6 @@ if $SHOWCASE; then
         fi
     done
     if $NO_THUMBS; then
-#        for ((i=0; i<${#TT_DIM[@]}; i++)); do
-#            val=${TT_DIM[i]#*x}
-#            [ -z "$MAX_VAL" ] || ((val > MAX_VAL)) && MAX_VAL=$val && max_key=$i
-#        done
-#    offsets=$(for ((i=0; i<${#SHOWCASE_TITLES_Y_ARRAY[@]}; i++)); do echo $(($MAX_VAL + 15)); done)
         # text-rect can get along with a small space between titles for spumux
         [[ $BUTTON_STYLE = text-rect ]] && spacer=10 || spacer=15
         # get an array of title Y positions
@@ -2015,33 +2020,33 @@ if $SHOWCASE; then
         last_title_col1_ydim=${SHOWCASE_TITLES_Y_ARRAY[last_title_col1-1]/*x}
         # add the y dimension of the last title size to the above y position
         SW_CORNER=$(( ${TT_DIM[last_title_col1-1]/*x} + $last_title_col1_ydim ))
-        avail_palette1=$(( ( ${VIDSIZE/*x} - 50 ) - $SW_CORNER ))
+        avail_space1=$(( ( ${VIDSIZE/*x} - 50 ) - $SW_CORNER ))
         # if there are 2 columns, get same data for column 2
         if [[ -n $tt_dim2 ]]; then
             last_title_col2=$NUM_FILES
             last_title_col2_ydim=${SHOWCASE_TITLES_Y_ARRAY[last_title_col2]/*x}
             SE_CORNER=$(( ${TT_DIM[last_title_col2]/*x} + $last_title_col2_ydim ))
-            avail_palette2=$(( ( ${VIDSIZE/*x} - 50 ) - $SE_CORNER ))
+            avail_space2=$(( ( ${VIDSIZE/*x} - 50 ) - $SE_CORNER ))
         fi
-        # availible space is lowest value of 2 *palette* vars ( if 2 columns)
+        # availible space is lowest value of 2 *space* vars ( if 2 columns)
         if [[ -n $tt_dim2 ]] && ((SE_CORNER > SW_CORNER)); then
-            avail_palette=$avail_palette2
+            avail_space=$avail_space2
         else
-            avail_palette=$avail_palette1
+            avail_space=$avail_space1
         fi
         # get the height of each column for -align centre
         if [[ $BUTTON_GRAVITY = centre || $BUTTON_GRAVITY = east || $BUTTON_GRAVITY = west ]]; then
-            WEST_PALETTE=$(( SW_CORNER - TEXT_Y_START))
-            EAST_PALETTE=$((SE_CORNER - TEXT_Y_START))
-            ((WEST_PALETTE > EAST_PALETTE)) && PALETTE=$WEST_PALETTE || PALETTE=$EAST_PALETTE
-            CANVAS=$(( ${VIDSIZE/*x} - 100 ))
-            NEW_TEXT_Y_START=$(( ((CANVAS - PALETTE) / 2) + 50 ))
+            WEST_YSPACE=$(( SW_CORNER - TEXT_Y_START))
+            EAST_YSPACE=$((SE_CORNER - TEXT_Y_START))
+            ((WEST_YSPACE > EAST_YSPACE)) && YSPACE=$WEST_YSPACE || YSPACE=$EAST_YSPACE
+            CANVAS=$(( ${VIDSIZE/*x} - (SAFE_AREA * 2) ))
+            NEW_TEXT_Y_START=$(( ((CANVAS - YSPACE) / 2) + 50 ))
             TEXT_Y_START_OFFSET=$((NEW_TEXT_Y_START - TEXT_Y_START))
         fi
-        # add the available palette to each title position for south alignment
-        if [[ $BUTTON_GRAVITY = *south* ]] && ((avail_palette > 0)); then
+        # add the available space to each title position for south alignment
+        if [[ $BUTTON_GRAVITY = *south* ]] && ((avail_space > 0)); then
             for ((d=0; d<=NUM_FILES; d++)); do
-                SHOWCASE_TITLES_Y_ARRAY[d]=$(( ${SHOWCASE_TITLES_Y_ARRAY[d]} + $avail_palette ))
+                SHOWCASE_TITLES_Y_ARRAY[d]=$(( ${SHOWCASE_TITLES_Y_ARRAY[d]} + $avail_space ))
             done
         elif  [[ $BUTTON_GRAVITY = centre || $BUTTON_GRAVITY = east || $BUTTON_GRAVITY = west ]]; then
             for ((d=0; d<=NUM_FILES; d++)); do
@@ -2049,7 +2054,7 @@ if $SHOWCASE; then
             done
         fi
         if [[ $BUTTON_GRAVITY = *east* ]]; then
-            east_offset=$(( ( ${VIDSIZE/x*} - 50 ) - MAX_LEN ))
+            east_offset=$(( ( ${VIDSIZE/x*} - 50 ) - WIDEST_TITLE ))
             for ((d=0; d<=NUM_FILES; d++)); do
                 if ((${#SHOWCASE_TITLES_X_ARRAY[@]} <= SPLIT)) ; then
                     SHOWCASE_TITLES_X_ARRAY[d]=$east_offset
@@ -2206,29 +2211,16 @@ if ! $NO_THUMBS; then
             fi
             length=( ${length[@]} $(( $(awk  '{ field = $2 }; END{ print field }'  "$WORK_DIR/nav${i}_log") + 1)) )
         fi
-        if ! $NOASK; then
+#        if ! $NOASK; then
             echo
             echo "[$i of $NUM_FILES] Seeking to ${SEEK_VAL[i]} seconds in ${IN_FILES[i]}"
-        fi
+#        fi
 
-        TRANSCODE_CMD=(transcode -q 1 --write_pid /tmp/tcode.pid -i "${IN_FILES[i]}" \
-        -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + 1)) ${NAVSEEK[i]} \
-        -o $WORK_DIR/pics/$i/ -f 29.970  -Z $THUMB_SIZE $EXPORT)
         FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" -an -ss ${SEEK_VAL[i]} -vframes 1 \
         -s $THUMB_SIZE $WORK_DIR/pics/$i/%06d.$IMG_FMT)
-        if $NOASK; then
-            CMD=( "${FFMPEG_CMD[@]}" )
-        else
-            CMD=( "${TRANSCODE_CMD[@]}" )
-        fi
-        function run_transcode()
-        {
-            "${TRANSCODE_CMD[@]}" >> "$LOG_FILE" 2>&1
-            sleep 1
-        }
-
+        CMD=( "${FFMPEG_CMD[@]}" )
         SED_VAR="frame="
-        echo -e "\nRunning: "${CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
+        ! [[ "$SC_FRAMESTYLE" = "glass" ]] && echo -e "\nRunning: "${CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
         VOUT="png:z=7"; FRAMES=30
         FRAME_SIZE=$THUMB_SIZE
         D=2
@@ -2240,22 +2232,15 @@ if ! $NO_THUMBS; then
             $WORK_DIR/pics/$i/$(printf "%06d%s"  0 .$IMG_FMT)
             rm -f "$WORK_DIR"/00000*.png
         elif [ "$SC_FRAMESTYLE" = "none" ]; then
-            if $NOASK; then
-                if "${FFMPEG_CMD[@]}" >> "$LOG_FILE" 2>&1;then
-                    : #cleanlog 3
-                else
-                    #cleanlog 3
-                    runtime_error "Problem creating images from the video."
-                    exit 1
-                fi
+            if "${FFMPEG_CMD[@]}" >> "$LOG_FILE" 2>&1;then
+                : #cleanlog 3
             else
-                run_transcode &
+                #cleanlog 3
+                runtime_error "Problem creating images from the video."
+                exit 1
             fi
         fi
 
-        if [[ "$SC_FRAMESTYLE" = "none" ]] && ! $NOASK; then
-            check_stall &
-        fi
         wait
         unset NAVSEEK_CMD rectangle run_transcode FFMPEG_CMD TRANSCODE_CMD
     done
@@ -2594,49 +2579,40 @@ if $SHOWCASE; then
         sc_height=${sc_size/*x}
     fi
     if ! $NO_SC_THUMB && ! $TEXTMENU; then
-        sc_xpage=$(( 360 - (sc_width / 2) )) # for -gt 5 videos
-        if [[ $MAX_LEN -ge ${THUMB_SIZE/x*} ]]; then
-            htmb=$(( ${THUMB_SIZE/x*} / 2 )) ; htle=$((MAX_LEN / 2))
-            [[ "$SC_TITLE_ALIGN" = "centre" ]] && T=$(( htmb + htle )) || T=$((MAX_LEN + 5))
-        else
-            [[ "$SC_TITLE_ALIGN" = "centre" ]] &&  T=${THUMB_SIZE/x*}
+        if [[ "$SC_TITLE_ALIGN" = "centre" ]]; then
+            if [[ $WIDEST_TITLE -ge ${THUMB_SIZE/x*} ]]; then
+                BUTTON_COLUMN1=$(( (${THUMB_SIZE/x*} / 2) + (WIDEST_TITLE / 2) ))
+            else
+                BUTTON_COLUMN1=${THUMB_SIZE/x*}
+            fi
+        elif [[ "$SC_TITLE_ALIGN" = "west" ]]; then
+            if [[ $WIDEST_TITLE -ge ${THUMB_SIZE/x*} ]]; then
+                BUTTON_COLUMN1=$((WIDEST_TITLE + 5))
+            else
+                BUTTON_COLUMN1=${THUMB_SIZE/x*}
+            fi
+        elif [[ "$SC_TITLE_ALIGN" = "east" ]]; then
+            BUTTON_COLUMN1=$(( ${THUMB_SIZE/x*} + WIDEST_TITLE ))
         fi
-        # add the thumb size if east align; for west align use MAX_LEN only
-        [[ "$SC_TITLE_ALIGN" = "east" ]] && TS=${THUMB_SIZE/x*} || TS=0
-        sc_palette=$((${VIDSIZE%x*} - ${SHOWCASE_THUMB_X_ARRAY[0]} - SAFE_AREA - T))
-        # sc_palette is for centre align
-        sc_palette=$(( ( ${SHOWCASE_THUMB_X_ARRAY[0]} + T) + (sc_palette / 2)))
-        # sc_palette2 is for east and west align
-        sc_palette2=$(( ${VIDSIZE%x*} - (${SHOWCASE_THUMB_X_ARRAY[0]} + TS + T + sc_width + SAFE_AREA) ))
-        sc_xpage2=$((sc_palette - $((sc_width / 2)) ))
-        sc_xpage3=$(( sc_palette2 / 2 ))
-        sc_xpage3=$(( ${SHOWCASE_THUMB_X_ARRAY[0]} + $TS + 5 + T + sc_xpage3 ))
+        sc_space=$((${VIDSIZE%x*} - \
+            ${SHOWCASE_THUMB_X_ARRAY[0]} - BUTTON_COLUMN1 - SAFE_AREA))
+        sc_xpage=$(( ${SHOWCASE_THUMB_X_ARRAY[0]} + BUTTON_COLUMN1 \
+            + (sc_space / 2) - (sc_width / 2) ))
+                 
         # find out where to put the showcase image in the Y axis
         Y1=${SHOWCASE_THUMB_Y_ARRAY[0]}; Y2=${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]}
+        ((NUM_FILES >= LEFT_MAX)) && Y2=${SHOWCASE_THUMB_Y_ARRAY[SPLIT-1]}
         Y_SPACE=$(( (Y2 - Y1) + ${THUMB_SIZE/*x} ))
         Y_SPACE=$(( Y_SPACE - sc_height ))
         SC_Y=$(( Y_SPACE / 2))
         SC_Y=$(( ${SHOWCASE_THUMB_Y_ARRAY[0]} + SC_Y ))
-        if [ $V_TOTAL -le 5 ]; then
-            if [[ $SC_TITLE_ALIGN = *st ]]; then
-                SC_IMG_PAGE="-page +$sc_xpage3+$SC_Y"
-            else
-                SC_IMG_PAGE="-page +$sc_xpage2+$SC_Y"
-            fi
-        elif [ $V_TOTAL -gt 5 ]; then
-            SC_IMG_PAGE="-page +$sc_xpage+$SC_Y"
-        fi
+        [[ $V_TOTAL -gt 5 ]] && sc_xpage=$(( 360 - (sc_width / 2) ))
+        SC_IMG_PAGE="-page +$sc_xpage+$SC_Y"
         SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
     elif ! $NO_SC_THUMB && $TEXTMENU; then
         :
         # FIXME allow showcase thumb with various textmenu options
         # needs to work with 1 column and 2 columns - 2 cols must be -align east
-        #sc_xpage=$(( 360 - (sc_width / 2) )) # for -gt 5 videos
-        #SC_TITLE_ALIGN="east"
-        #sc_palette2=$(( ${VIDSIZE%x*} - (${SHOWCASE_TITLES_Y_ARRAY[0]} + MAX_LEN + 5) ))
-        #sc_xpage2=$((sc_palette2 - $((sc_width / 2)) ))
-        #SC_IMG_PAGE="-page +$sc_xpage2+$SC_Y"
-        #SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
     fi
     if $NO_SC_THUMB; then unset SC_IMG_CMD; fi
     if [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
@@ -2810,7 +2786,7 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
             if [[ -n "$NS_PID" ]]; then
                 while ps -p $NS_PID >/dev/null; do
                     sleep .5 # spinner interval
-                    spin "Creating a nav_seek log for "${IN_FILES[i]}": $SPINNER"
+                    spin "Creating a nav_seek log for "${IN_FILES[i]/*\/}": $SPINNER"
                 done
             fi
             length=( ${length[@]} $(( $(awk '{ field = $2 }; END{ print field }' \
@@ -2943,7 +2919,7 @@ if ! $NO_THUMBS; then
         for ((i=0; i<=NUM_FILES; i++)) ; do
             echo "Working on "${IN_FILES[i]}""
             TRANSCODE_CMD2=(nice transcode --print_status 10 \
-            --write_pid /tmp/tcode.pid -q 1 -i "${IN_FILES[i]}" \
+            --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "${IN_FILES[i]}" \
             -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + $FRAMES)) ${NAVSEEK[i]} \
             -o "$WORK_DIR/pics/$i/" -f $FRAME_RATE  -Z $THUMB_SIZE $EXPORT)
 
@@ -2954,7 +2930,7 @@ if ! $NO_THUMBS; then
                     }
                     run_transcode &
                     sleep 1 # short sleep to allow 1st jpg to appear
-                    TRANSCODE_PID=$(</tmp/tcode.pid)
+                    TRANSCODE_PID=$(<$WORK_DIR/tcode$i.pid)
                     check_stall &
                     if [[ -n "$TRANSCODE_PID" ]]; then
                         while ps -p $TRANSCODE_PID >/dev/null; do
@@ -3288,7 +3264,7 @@ if $SUB_MENU; then
             -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null" |
             sed 's/    */ /g'|sed -e "s/^ *//"|tee -a "$LOG_FILE"
 
-            TCODE_CMD=(nice transcode --print_status 10 --write_pid /tmp/tcode.pid \
+            TCODE_CMD=(nice transcode --print_status 10 --write_pid $WORK_DIR/tcode$i.pid \
             -q 1 -i "${IN_FILES[i]}"   ${NAVSEEK[i]} -o "${PICS_OUT[@]}" \
             -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null)
             function run_transcode()
@@ -3298,7 +3274,7 @@ if $SUB_MENU; then
             }
             run_transcode &
             sleep .5 # short sleep to allow 1st jpg to appear
-            TCODE_PID=$(</tmp/tcode.pid)
+            TCODE_PID=$(<$WORK_DIR/tcode$i.pid)
             check_stall &
             if [[ -n "$TCODE_PID" ]]; then
                 while ps -p $TCODE_PID >/dev/null; do
