@@ -218,7 +218,7 @@ class Tween:
         """Create an in-between sequence from a list of keyframes. The
         interpolation method can be 'linear' or 'cosine'.
 
-        See effects.py for implementation examples.
+        See effect.py for implementation examples.
         """
         assert isinstance(keyframes[0], Keyframe)
         self.keyframes = keyframes
