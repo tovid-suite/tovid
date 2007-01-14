@@ -110,6 +110,7 @@ def mux_subs(subtitle, movie_filename, stream_id=0):
 ### Exported functions
 ###
 
+# TODO: Rework buttons (since Button class is gone)
 def add_subpictures(movie_filename, select, image=None, highlight=None,
                     buttons=None):
     """Adds PNG image subpictures to an .mpg video file to create a DVD menu.
