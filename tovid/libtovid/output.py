@@ -18,6 +18,7 @@ Modified for inclusion in libtovid.
 """
 
 __all__ = [
+    'color',
     'ctext',
     'bold',
     'teal',
@@ -49,9 +50,20 @@ codes = {
     'red':       '\x1b[31;01m',
     'darkred':   '\x1b[31;06m'}
 
+_do_color = True
+
+def color(do_color):
+    """Turn colored output on (True) or off (False).
+    """
+    global _do_color
+    _do_color = do_color
+
 def ctext(color, text):
     """Return a string containing text in the given color."""
-    return codes[color] + text + codes['reset']
+    if _do_color:
+        return codes[color] + text + codes['reset']
+    else:
+        return text
 
 def bold(text):
     return ctext('bold', text)
