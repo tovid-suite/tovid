@@ -3,20 +3,8 @@
 
 """This module is for adding subtitles to MPEG video files using spumux.
 
-Defined here are classes corresponding to the XML elements used by spumux
-(with the same names, capitalized). Of particular interest are:
-
-    Spu: Picture-based subtitles, optionally including:
-        Button: Rectangular "selectable" regions of the picture
-        Action: Behaviors associated with buttons
-    Textsub: Text-based subtitles
-
-These are subclasses of libtovid's xml.Element class; attributes may be set
-via the Element set() method. See below for the valid attributes of each
-element, and refer to the spumux manual page for their meanings.
-
-Also defined here are two convenience functions for adding either kind of
-subtitle to an MPEG file:
+Defined here are two functions for adding image-based or text-based subtitles
+to an MPEG file:
 
     add_subpictures:  Add image files (.png) with optional buttons
     add_subtitles:    Add subtitle files (.sub, .srt, .smi etc.)
@@ -26,12 +14,6 @@ to think much about the XML internals.
 """
 
 __all__ = [\
-    'Subpictures',
-    'Stream',
-    'Textsub',
-    'Button',
-    'Action',
-    'Spu',
     'add_subpictures',
     'add_subtitles']
 
