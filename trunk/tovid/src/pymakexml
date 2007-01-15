@@ -8,13 +8,14 @@ __doc__ = \
 
 import sys
 from libtovid.author import *
+from libtovid.output import red, green, blue
 
 HEADER = """-------------------------
 pymakexml
 Part of tovid
 http://tovid.org/
--------------------------
-"""
+-------------------------"""
+
 
 USAGE = """Usage: pymakexml [OPTIONS] {video1.mpg video2.mpg ...} -out OUTFILE[.xml]
 
@@ -53,7 +54,8 @@ if __name__ == '__main__':
     
     args = sys.argv[1:]
     disc = Disc()
-
+    outfile = None
+    
     # If no -menu option was included, create a menuless titleset
     if '-menu' not in args:
         titleset = Titleset()
@@ -81,6 +83,12 @@ if __name__ == '__main__':
             video = Video(arg)
             titleset.add(video)
 
+    # Make sure outfile was provided
+    if not outfile:
+        print USAGE
+
+    disc.name = outfile.rstrip('.xml')
+    
     # Get XML for authoring the disc
     if disc.format == 'dvd':
         xml = dvdauthor_xml(disc)
