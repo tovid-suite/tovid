@@ -138,6 +138,7 @@ def _add_titleset(titleset, ts_id, segment_items, sequence_items, pbc):
 def vcdimager_xml(disc):
     """Return the vcdimager XML string for the given Disc.
     """
+    # TODO: Support topmenu
     assert isinstance(disc, Disc)
     # XML header (will be added later)
     header = '<?xml version="1.0"?>\n'
@@ -171,7 +172,7 @@ def vcdimager_xml(disc):
     for ts_id, titleset in enumerate(disc.titlesets):
         _add_titleset(titleset, ts_id, segment_items, sequence_items, pbc)
     # Return XML with header prepended
-    return header + str(root)
+    return header + str(root) + '\n'
 
 
 def dvdauthor_xml(disc):
@@ -209,7 +210,7 @@ def dvdauthor_xml(disc):
                     chapters=','.join(video.chapters))
             pgc.add('post', 'call menu;')
     # Return XML string
-    return str(root)
+    return str(root) + '\n'
 
 
 ###
@@ -232,8 +233,8 @@ if __name__ == '__main__':
         Titleset(menu2, videos2)]
     disc = Disc('dvd_test', 'dvd', 'ntsc', titlesets)
 
-    print "dvdauthor XML example"
+    print "dvdauthor XML example:"
     print dvdauthor_xml(disc)
 
-    print "vcdimager XML example"
+    print "vcdimager XML example:"
     print vcdimager_xml(disc)
