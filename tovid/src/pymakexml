@@ -25,18 +25,18 @@ Where OPTIONS may be:
 Provide a list of .mpg video files, and they will be played back in
 sequence, for example:
 
-    pymakexml video1.mpg video2.mpg video3.mpg \
+    pymakexml video1.mpg video2.mpg video3.mpg \\
         -out mydisc
 
 You may organize several lists of videos into menus and sub-menus by
 providing the names of menu .mpg files:
 
-    pymakexml -menu menu1.mpg \
-        video1.mpg video2.mpg video3.mpg \
+    pymakexml -menu menu1.mpg \\
+        video1.mpg video2.mpg video3.mpg \\
         -out mydisc2
-    pymakexml -topmenu topmenu.mpg \
-        -menu submenu1.mpg vid1.mpg vid2.mpg vid3.mpg \
-        -menu submenu2.mpg vid4.mpg vid5.mpg vid6.mpg \
+    pymakexml -topmenu topmenu.mpg \\
+        -menu submenu1.mpg vid1.mpg vid2.mpg vid3.mpg \\
+        -menu submenu2.mpg vid4.mpg vid5.mpg vid6.mpg \\
         -out mydisc3
 
 Please provide at least one video to author, and the name of an output file.
