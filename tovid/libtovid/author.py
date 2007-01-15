@@ -198,16 +198,19 @@ def dvdauthor_xml(disc):
         if menu:
             menus = ts.add('menus')
             menus.add('video')
-            menus.add('pgc', entry='root')
-            vob = menus.add('vob', file=menu.filename)
-            for index, video in enumerate(menu.videos):
-                vob.add('button', 'jump title %d;' % (index + 1))
-            vob.add('button', 'jump vmgm menu;')
+            pgc = menus.add('pgc', entry='root')
+            vob = pgc.add('vob', file=menu.filename)
+            for index, video in enumerate(titleset.videos):
+                pgc.add('button', 'jump title %d;' % (index + 1))
+            if disc.topmenu:
+                pgc.add('button', 'jump vmgm menu;')
+        titles = ts.add('titles')
         # Add a pgc for each video
         for video in titleset.videos:
-            pgc = ts.add('pgc')
-            pgc.add('vob', file=video.filename,
-                    chapters=','.join(video.chapters))
+            pgc = titles.add('pgc')
+            vob = pgc.add('vob', file=video.filename)
+            if video.chapters:
+                vob.set(chapters=','.join(video.chapters))
             pgc.add('post', 'call menu;')
     # Return XML string
     return str(root) + '\n'
