@@ -189,7 +189,10 @@ def dvdauthor_xml(disc):
         pgc = menus.add('pgc', entry='title')
         vob = pgc.add('vob', file=disc.topmenu.filename)
         for index, titleset in enumerate(disc.titlesets):
-            vob.add('button', 'jump titleset %d;' % (index + 1))
+            if titleset.menu:
+                pgc.add('button', 'jump titleset %d menu;' % (index + 1))
+            else:
+                pgc.add('button', 'jump titleset %d;' % (index + 1))
     # Add each titleset
     for titleset in disc.titlesets:
         menu = titleset.menu
