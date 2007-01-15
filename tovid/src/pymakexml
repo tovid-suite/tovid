@@ -7,39 +7,93 @@ __doc__ = \
 """
 
 import sys
-from libtovid.opts import Option, OptionDict
-from libtovid.author import dvdauthor, vcdimager
-from libtovid.layout import Disc
+from libtovid.author import *
 
-# List of valid options with documentation
-OPTION_DEFS = [
-    Option('out', 'NAME', None,
-        """Output prefix or disc name."""),
-    Option('format', 'vcd|svcd|dvd', 'dvd',
-        """Create a disc of the specified format."""),
-    Option('tvsys', 'pal|ntsc', 'ntsc',
-        """Make the disc for the specified TV system."""),
-    Option('topmenu', 'MENUNAME', None,
-        """Use MENUNAME for the top-level menu on the disc.""")
-]
+HEADER = """-------------------------
+pymakexml
+Part of tovid
+http://tovid.org/
+-------------------------
+"""
 
-options = OptionDict(OPTION_DEFS)
+USAGE = """Usage: pymakexml [OPTIONS] {video1.mpg video2.mpg ...} -out OUTFILE[.xml]
+
+Where OPTIONS may be:
+
+    -dvd | -vcd | -svcd
+
+Provide a list of .mpg video files, and they will be played back in
+sequence, for example:
+
+    pymakexml video1.mpg video2.mpg video3.mpg \
+        -out mydisc
+
+You may organize several lists of videos into menus and sub-menus by
+providing the names of menu .mpg files:
+
+    pymakexml -menu menu1.mpg \
+        video1.mpg video2.mpg video3.mpg \
+        -out mydisc2
+    pymakexml -topmenu topmenu.mpg \
+        -menu submenu1.mpg vid1.mpg vid2.mpg vid3.mpg \
+        -menu submenu2.mpg vid4.mpg vid5.mpg vid6.mpg \
+        -out mydisc3
+
+Please provide at least one video to author, and the name of an output file.
+"""
 
 if __name__ == '__main__':
     """Create a Disc with the given options and generate the XML for it."""
-    # If no arguments were provided, print usage notes
-    # TODO: Proper argument verification
-    if len(sys.argv) < 2:
-        print "Usage: pymakexml [options] vid1.mpg vid2.mpg ... -out NAME"
-        print "Where [options] may be any of the following:"
-        print options.usage()
-        print "Please provide an output name with -out."
-        sys.exit()
+    print HEADER
 
-    options.override(sys.argv[1:])
-    # TODO: Fix this. May need to add more OPTION_DEFS
-    disc = Disc(args)
-    if options['format'] == 'dvd':
-        dvdauthor.get_xml(disc)
+    # If no args provided, print usage notes
+    if len(sys.argv) < 2:
+        print USAGE
+        exit()
+    
+    args = sys.argv[1:]
+    disc = Disc()
+
+    # If no -menu option was included, create a menuless titleset
+    if '-menu' not in args:
+        titleset = Titleset()
+        disc.titlesets.append(titleset)
+
+    # Parse command-line arguments
+    while args:
+        arg = args.pop(0)
+        if arg in ['-dvd', '-vcd', '-svcd']:
+            disc.format = arg.lstrip('-')
+        elif arg in ['-pal', '-ntsc']:
+            disc.tvsys = arg.lstrip('-')
+        elif arg == '-topmenu':
+            disc.topmenu = Menu(args.pop(0))
+        elif arg == '-menu':
+            filename = args.pop(0)
+            print "Adding menu:", filename
+            titleset = Titleset()
+            titleset.menu = Menu(filename)
+            disc.titlesets.append(titleset)
+        elif arg == '-out':
+            outfile = args.pop(0)
+        else:
+            print "Adding video:", arg
+            video = Video(arg)
+            titleset.add(video)
+
+    # Get XML for authoring the disc
+    if disc.format == 'dvd':
+        xml = dvdauthor_xml(disc)
     else:
-        vcdimager.get_xml(disc)
+        xml = vcdimager_xml(disc)
+    
+    # Write XML to the given output file
+    if not outfile.endswith('.xml'):
+        outfile = outfile + '.xml'
+    print "Writing XML to file:", outfile
+    xml_file = open(outfile, 'w')
+    xml_file.write(xml)
+    xml_file.close()
+
+    print "Done! Thanks for using pymakexml."
+    
