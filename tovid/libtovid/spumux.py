@@ -3,11 +3,10 @@
 
 """This module is for adding subtitles to MPEG video files using spumux.
 
-Defined here are two functions for adding image-based or text-based subtitles
-to an MPEG file:
+Defined here are two functions for adding subtitles to an MPEG file:
 
-    add_subpictures:  Add image files (.png) with optional buttons
-    add_subtitles:    Add subtitle files (.sub, .srt, .smi etc.)
+    add_subpictures:  Add image files (.png)
+    add_subtitles:    Add subtitle files (.sub, .srt etc.)
 
 Use these if you just want to add subpictures or subtitles, and don't want
 to think much about the XML internals.
@@ -110,18 +109,15 @@ def mux_subs(subtitle, movie_filename, stream_id=0):
 ### Exported functions
 ###
 
-# TODO: Rework buttons (since Button class is gone)
-def add_subpictures(movie_filename, select, image=None, highlight=None,
-                    buttons=None):
+def add_subpictures(movie_filename, select, image=None, highlight=None):
     """Adds PNG image subpictures to an .mpg video file to create a DVD menu.
     
         select:    Image shown as the navigational selector or "cursor"
         image:     Image shown for non-selected regions
         highlight: Image shown when "enter" is pressed
-        buttons:   List of Buttons associated with the subpicture, or
-                   None to use autodetection (autooutline=infer)
         
     All images must indexed, 4-color, transparent, non-antialiased PNG.
+    Button regions are auto-inferred.
     """
     spu = xml.Element('spu')
     spu.set(start='0',
@@ -129,12 +125,9 @@ def add_subpictures(movie_filename, select, image=None, highlight=None,
             select=select,
             image=image,
             highlight=highlight)
-    if buttons == None:
-        # TODO Find a good default outlinewidth
-        spu.set(autooutline=infer, outlinewidth=10)
-    else:
-        for button in buttons:
-            spu.add_child(button)
+    # TODO Find a good default outlinewidth
+    spu.set(autooutline=infer, outlinewidth=10)
+    # TODO: Support explicit button regions
     mux_subs(spu, movie_filename)
 
 
