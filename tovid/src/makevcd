@@ -2,7 +2,7 @@
 ME="[makevcd]:"
 . tovid-init
 
-# makevcd 
+# makevcd
 # Part of the tovid suite
 # =======================
 # A bash script for creating a VCD cue/bin set and burning it
@@ -12,18 +12,18 @@ ME="[makevcd]:"
 #
 #
 # Copyright (C) 2005 tovid.org <http://www.tovid.org>
-# 
-# This program is free software; you can redistribute it and/or 
-# modify it under the terms of the GNU General Public License 
-# as published by the Free Software Foundation; either 
-# version 2 of the License, or (at your option) any later 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
 # version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
@@ -110,7 +110,6 @@ while test x"${1:0:1}" = "x-"; do
         BURN_SPEED=$1
         ;;
       "-overwrite" )
-        shift
         OVERWRITE=:
         ;;
       "-burn" )
@@ -134,7 +133,6 @@ else
     VCDIMAGER_XML="$1"
 fi
 
-
 # Look for earlier attempts to image this VCD
 for prev_try in "$VCDIMAGER_XML.cue" "$VCDIMAGER_XML.bin"; do
     if test -f "$prev_try"; then
@@ -154,6 +152,7 @@ for prev_try in "$VCDIMAGER_XML.cue" "$VCDIMAGER_XML.bin"; do
     fi
 done
 
+
 # Create the cue/bin image
 if $IMAGE; then
     # TODO: Warn if there isn't enough space to make cue/bin
@@ -168,6 +167,7 @@ if $IMAGE; then
         echo "Thanks for using tovid!"
     else
         runtime_error "Imaging failed, please see vcdxbuild output above."
+    fi
 fi
 
 # Burn the VCD
@@ -192,12 +192,13 @@ if $BURN; then
     echo $SEPARATOR
     echo "Burning cue/bin image to $CDRW_DEVICE with the following command:"
     echo $CDRDAO_CMD
-    if eval $CDRDAO_CMD; then 
+    if eval $CDRDAO_CMD; then
         echo "Done. You should now have a working VCD or SVCD. Please report"
         echo "any problems you might have to http://www.tovid.org."
         echo "Thanks for using tovid!"
-    else 
+    else
         runtime_error "Could not burn the disc to $CDRW_DEVICE at speed $BURN_SPEED."
+    fi
 fi
 
 exit 0
