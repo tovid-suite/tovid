@@ -5,7 +5,7 @@
 
 Note on notation:
 
-tkinter widgets variable names shall use a prefix describing widget type, and
+tkinter widget variable names shall use a prefix describing widget type, and
 camel-case for remaining words, i.e.
 
     fraFoo: Frame
@@ -38,6 +38,7 @@ Popup warnings for missing fields (-files/-titles, -out) before running todisc
 """
 
 import os
+import time
 from libtovid.cli import Command
 
 try:
@@ -500,7 +501,6 @@ class Application(Frame):
         self.fraBackgrounds.setOptions(cmd)
         self.fraMisc.setOptions(cmd)
         self.fraOutfile.setOptions(cmd)
-        #cmd.add('-from-gui')
         return cmd
 
     def showCommand(self):
@@ -516,9 +516,10 @@ class Application(Frame):
         if askyesno(message="Run todisc now?"):
             try:
                 cmd.run()
-                showinfo(message="todisc finished running!")
             except KeyboardInterrupt:
                 showerror(message="todisc was interrupted!")
+            else:
+                showinfo(message="todisc finished running!")
 
 
 ###
