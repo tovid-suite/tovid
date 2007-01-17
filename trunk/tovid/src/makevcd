@@ -100,21 +100,19 @@ assert_dep "$vcd" "You are missing dependencies required to image and burn (S)VC
 
 while test x"${1:0:1}" = "x-"; do
     case "$1" in
+      "-overwrite" )
+        OVERWRITE=:
+        ;;
+      "-burn" )
+        BURN=:
+        ;;
       "-device" )
-        # Get device name
         shift
         CDRW_DEVICE="$1"
         ;;
       "-speed" )
         shift
         BURN_SPEED=$1
-        ;;
-      "-overwrite" )
-        OVERWRITE=:
-        ;;
-      "-burn" )
-        shift
-        BURN=:
         ;;
       * )
         usage_error "Error: Unrecognized command-line option $1"
