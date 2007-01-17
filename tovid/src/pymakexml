@@ -6,6 +6,7 @@ __doc__ = \
 'makexml' shell script).
 """
 
+import os
 import sys
 from libtovid.author import *
 from libtovid.output import red, green, blue
@@ -39,9 +40,13 @@ providing the names of menu .mpg files:
         -menu submenu1.mpg vid1.mpg vid2.mpg vid3.mpg \\
         -menu submenu2.mpg vid4.mpg vid5.mpg vid6.mpg \\
         -out mydisc3
+======================================================================="""
 
-Please provide at least one video to author, and the name of an output file.
-"""
+def error(message):
+    """Exit with an error message, after printing usage notes."""
+    print USAGE
+    print red("Error: ") + message
+    exit()
 
 if __name__ == '__main__':
     """Create a Disc with the given options and generate the XML for it."""
@@ -49,15 +54,16 @@ if __name__ == '__main__':
 
     # If no args provided, print usage notes
     if len(sys.argv) < 2:
-        print USAGE
-        exit()
+        error("Please provide at least one video to author,"\
+              " and the name of an output file.")
     
     args = sys.argv[1:]
     disc = Disc()
     outfile = None
+    overwrite = False
     
-    # If no -menu option was included, create a menuless titleset
     if '-menu' not in args:
+        print "No -menu option provided; creating a menuless disc."
         titleset = Titleset()
         disc.titlesets.append(titleset)
 
@@ -71,33 +77,57 @@ if __name__ == '__main__':
         elif arg == '-topmenu':
             disc.topmenu = Menu(args.pop(0))
         elif arg == '-menu':
-            filename = args.pop(0)
-            print "Adding menu:", filename
             titleset = Titleset()
-            titleset.menu = Menu(filename)
+            titleset.menu = Menu(args.pop(0))
             disc.titlesets.append(titleset)
         elif arg == '-out':
             outfile = args.pop(0)
+        elif arg == '-overwrite':
+            overwrite = True
+        elif arg.startswith('-'):
+            error("Unrecognized command-line option: %s" % arg)
+        # Assume everything else is a video
         else:
-            print "Adding video:", arg
             video = Video(arg)
             titleset.add(video)
 
     # Make sure outfile was provided
     if not outfile:
-        print USAGE
+        error("Please provide an output file with -out")
+
+    # Add .xml if necessary
+    if not outfile.endswith('.xml'):
+        outfile = outfile + '.xml'
+    
+    # Check for existing file
+    if os.path.exists(outfile):
+        if overwrite:
+            print blue("Overwriting existing file: %s" % outfile)
+        else:
+            error("File '%s' already exists." % outfile +\
+                  " Use the -overwrite option to overwrite it.")
 
     disc.name = outfile.rstrip('.xml')
     
+    # Print out disc structure
+    print
+    print "Authoring the following disc structure:"
+    print
+    if disc.topmenu:
+        print "  Top menu:", disc.topmenu.filename
+    for ts in disc.titlesets:
+        if ts.menu:
+            print "      Menu:", ts.menu.filename
+        for video in ts.videos:
+            print "          Video:", video.filename
+    print
+
     # Get XML for authoring the disc
     if disc.format == 'dvd':
         xml = dvdauthor_xml(disc)
     else:
         xml = vcdimager_xml(disc)
     
-    # Write XML to the given output file
-    if not outfile.endswith('.xml'):
-        outfile = outfile + '.xml'
     print "Writing XML to file:", outfile
     xml_file = open(outfile, 'w')
     xml_file.write(xml)
