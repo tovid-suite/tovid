@@ -30,7 +30,7 @@ To add children to an element, use the add method:
       </length>
     </video>
     
-See spumux.py for additional examples.
+See author.py and spumux.py for additional examples.
 """
 
 __all__ = [\
@@ -84,7 +84,7 @@ class Element (object):
         
             child_name:  String name of child element
             content:     String content of child element
-            kwargs:      Keyword arguments for setting attributes
+            kwargs:      Keyword arguments for setting child's attributes
         
         This is a convenience function for creating and adding children
         on-the-fly.
@@ -98,44 +98,34 @@ class Element (object):
         assert isinstance(element, Element)
         self.children.append(element)
 
-    def xml(self):
-        """Return a string containing raw (unformatted) XML for the Element."""
-        text = '<%s' % self.name
+    def open(self):
+        """Return the XML opening tag for the Element."""
+        attribs = ''
         for key, value in self.attributes.items():
-            text += ' %s="%s"' % (key, value)
-        # If the element is empty, close the tag
-        if self.content == '' and len(self.children) == 0:
-            text += '/>'
-        # Add content and/or children, followed by a normal closing tag
+            attribs += ' %s="%s"' % (key, value)
+        return '<' + self.name + attribs + '>'
+
+    def close(self):
+        """Return the XML closing tag for the Element."""
+        return '</' + self.name + '>'
+
+    def xml(self, indent_level=0):
+        """Return formatted XML for this Element and all descendants."""
+        indent = '  ' * indent_level
+        # No children; write a single line
+        if len(self.children) == 0:
+            text = indent + self.open() + self.content + self.close() + '\n'
+        # If children, write an indented block
         else:
-            text += '>'
-            text += str(self.content)
+            text = indent + self.open() + self.content + '\n'
             for child in self.children:
-                text += child.xml()
-            text += '</%s>' % self.name
+                text += child.xml(indent_level + 1)
+            text += indent + self.close() + '\n'
         return text
 
     def __str__(self):
         """Return a string containing formatted XML for the Element."""
-        return format(self.xml())
-
-
-def format(xml_text, tab_width=2):
-    """Return the given XML text string, formatted with appropriate
-    line-breaks and indentation.
-    """
-    indent = -1
-    result = ''
-    # Add newlines before each tag to facilitate splitting
-    text = xml_text.replace('<', '\n<').lstrip('\n')
-    for line in text.splitlines():
-        if not line.startswith('</'):
-            indent += 1
-        result += ' ' * tab_width * indent + line + '\n'
-        if line.startswith('</') or line.endswith('/>'):
-            indent -= 1
-    return result.rstrip('\n')
-
+        return self.xml()
 
 if __name__ == '__main__':
     import doctest
