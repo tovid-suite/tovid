@@ -12,30 +12,27 @@ the element name:
 To see an XML representation of the Element:
 
     >>> print video
-    <video/>
+    <video></video>
 
 Since this is an empty element with no attributes yet, it's pretty boring.
 You can add or change attributes using the set method:
 
     >>> video.set(file="Brian.mpg")
     >>> print video
-    <video file="Brian.mpg"/>
+    <video file="Brian.mpg"></video>
 
 To add children to an element, use the add method:
 
     >>> length = video.add('length', '15')
     >>> print video
     <video file="Brian.mpg">
-      <length>15
-      </length>
+      <length>15</length>
     </video>
     
 See author.py and spumux.py for additional examples.
 """
 
-__all__ = [\
-    'Element',
-    'format']
+__all__ = ['Element']
 
 class Element (object):
     """A named XML element having optional content, attributes, and children.
@@ -60,6 +57,10 @@ class Element (object):
         self.children = []
         # Set attributes from those provided
         self.set(attributes, **kwargs)
+
+    ###
+    ### Public functions
+    ###
 
     def set(self, attributes=None, **kwargs):
         """Set values for one or more attributes.
@@ -92,40 +93,46 @@ class Element (object):
         child = Element(child_name, content, kwargs)
         self.add_child(child)
         return child
-
+    
     def add_child(self, element):
         """Add the given Element as a child of this Element."""
         assert isinstance(element, Element)
         self.children.append(element)
 
-    def open(self):
+    def __str__(self):
+        """Return a string containing formatted XML for the Element."""
+        return self._xml().rstrip('\n')
+
+    ###
+    ### Internal functions
+    ###
+    
+    def _open(self):
         """Return the XML opening tag for the Element."""
         attribs = ''
         for key, value in self.attributes.items():
             attribs += ' %s="%s"' % (key, value)
         return '<' + self.name + attribs + '>'
 
-    def close(self):
+    def _close(self):
         """Return the XML closing tag for the Element."""
         return '</' + self.name + '>'
 
-    def xml(self, indent_level=0):
+    def _xml(self, indent_level=0):
         """Return formatted XML for this Element and all descendants."""
         indent = '  ' * indent_level
         # No children; write a single line
         if len(self.children) == 0:
-            text = indent + self.open() + self.content + self.close() + '\n'
+            text = indent + self._open() + self.content + self._close() + '\n'
         # If children, write an indented block
         else:
-            text = indent + self.open() + self.content + '\n'
+            text = indent + self._open() + self.content + '\n'
             for child in self.children:
-                text += child.xml(indent_level + 1)
-            text += indent + self.close() + '\n'
+                text += child._xml(indent_level + 1)
+            text += indent + self._close() + '\n'
         return text
 
-    def __str__(self):
-        """Return a string containing formatted XML for the Element."""
-        return self.xml()
+
 
 if __name__ == '__main__':
     import doctest
