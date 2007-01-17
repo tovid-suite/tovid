@@ -84,6 +84,7 @@ class Disc:
         self.titlesets = titlesets or []
 
 
+
 ###
 ### Internal functions
 ###
@@ -99,9 +100,11 @@ def _add_titleset(titleset, ts_id, segment_items, sequence_items, pbc):
                           id='seg-menu-%d' % ts_id)
         # Add menu to pbc
         selection = pbc.add('selection', id='select-menu-%d' % ts_id)
-        selection.add('play-item', ref='seg-menu-%d' % ts_id)
         selection.add('bsn', '1')
+        # Link back to topmenu (not sure what'll happen if there isn't one...)
+        selection.add('return', ref='select-topmenu')
         selection.add('loop', '0', jump_timing='immediate')
+        selection.add('play-item', ref='seg-menu-%d' % ts_id)
         # Navigational links to titleset videos
         for video_id in range(len(videos)):
             selection.add('select',
@@ -118,17 +121,19 @@ def _add_titleset(titleset, ts_id, segment_items, sequence_items, pbc):
         # Add playlists to pbc
         playlist = pbc.add('playlist')
         playlist.set(id='play-title-%d-%d' % (ts_id, video_id))
-        playlist.add('play-item', ref='seq-title-%d-%d' % (ts_id, video_id))
-        playlist.add('wait', '0')
-        playlist.add('return', ref='select-menu')
         # Add prev/next links if appropriate
         if 0 <= video_id < len(videos):
             if 0 < video_id:
                 playlist.add('prev',
-                             ref='seq-title-%d-%d' % (ts_id, video_id-1))
+                             ref='play-title-%d-%d' % (ts_id, video_id-1))
             if video_id < len(videos) - 1:
                 playlist.add('next',
-                             ref='seq-title-%d-%d' % (ts_id, video_id+1))
+                             ref='play-title-%d-%d' % (ts_id, video_id+1))
+        # Add a return link to the menu, if there is one
+        if menu:
+            playlist.add('return', ref='select-menu-%d' % ts_id)
+        playlist.add('wait', '0')
+        playlist.add('play-item', ref='seq-title-%d-%d' % (ts_id, video_id))
 
 
 ###
@@ -164,13 +169,26 @@ def vcdimager_xml(disc):
     pvd = root.add('pvd')
     pvd.add('volume-id', 'VIDEO_DISC')
     pvd.add('system-id', 'CD-RTOS CD-BRIDGE')
-    # Add segment, sequence, and pbc...
+
+    # Add segment, sequence, and pbc
     segment_items = root.add('segment-items')
     sequence_items = root.add('sequence-items')
     pbc = root.add('pbc')
-    # ...and add titleset content to them
+    # Add topmenu
+    if disc.topmenu:
+        segment_items.add('segment-item', src=disc.topmenu.filename,
+                          id='seg-topmenu')
+        selection = pbc.add('selection', id='select-topmenu')
+        selection.add('bsn', '1')
+        selection.add('loop', '0', jump_timing='immediate')
+        selection.add('play-item', ref='seg-topmenu')
+    # Add titlesets
     for ts_id, titleset in enumerate(disc.titlesets):
         _add_titleset(titleset, ts_id, segment_items, sequence_items, pbc)
+        # If we're doing a topmenu, add a link to the titleset menu
+        if disc.topmenu:
+            selection.add('select', ref='select-menu-%d' % ts_id)
+    
     # Return XML with header prepended
     return header + str(root) + '\n'
 
