@@ -2,8 +2,18 @@
 # pymakexml
 
 __doc__ = \
-"""Generate vcdimager/dvdauthor XML for an (S)VCD/DVD disc (to replace the
-'makexml' shell script).
+r"""Generate vcdimager/dvdauthor XML for an (S)VCD/DVD disc.
+
+Usage:
+
+    pymakexml [OPTIONS] {video1.mpg video2.mpg ...} -out OUTFILE[.xml]
+
+At minimum, provide a list of .mpg video files that will be played back in
+sequence, for example:
+
+    pymakexml video1.mpg video2.mpg video3.mpg -out mydisc
+
+See the pymakexml manual page ('man pymakexml') for options and examples.
 """
 
 import os
@@ -11,53 +21,19 @@ import sys
 from libtovid.author import *
 from libtovid.output import red, green, blue
 
-HEADER = """-------------------------
-pymakexml
-Part of tovid
-http://tovid.org/
--------------------------"""
-
-
-USAGE = """Usage: pymakexml [OPTIONS] {video1.mpg video2.mpg ...} -out OUTFILE[.xml]
-
-Where OPTIONS may be:
-
-    -dvd | -vcd | -svcd
-
-Provide a list of .mpg video files, and they will be played back in
-sequence, for example:
-
-    pymakexml video1.mpg video2.mpg video3.mpg \\
-        -out mydisc
-
-You may organize several lists of videos into menus and sub-menus by
-providing the names of menu .mpg files:
-
-    pymakexml -menu menu1.mpg \\
-        video1.mpg video2.mpg video3.mpg \\
-        -out mydisc2
-    pymakexml -topmenu topmenu.mpg \\
-        -menu submenu1.mpg vid1.mpg vid2.mpg vid3.mpg \\
-        -menu submenu2.mpg vid4.mpg vid5.mpg vid6.mpg \\
-        -out mydisc3
-
-Video chapters may be specified by including a comma-separated list
-after the video filename:
-
-    pymakexml -menu menu1.mpg \\
-        video1.mpg -chapters 1:00,5:00,10:00 \\
-        video2.mpg -chapters 3:00,8:00,15:00 \\
-        -out mydisc4
-"""
+HEADER = """----------------------------------------------
+pymakexml, part of tovid (http://tovid.org/)
+----------------------------------------------"""
 
 def error(message):
     """Exit with an error message, after printing usage notes."""
-    print USAGE
+    print __doc__
     print red("Error: ") + message
     exit()
 
+
+# Main program
 if __name__ == '__main__':
-    """Create a Disc with the given options and generate the XML for it."""
     print HEADER
 
     # If no args provided, print usage notes
@@ -79,32 +55,41 @@ if __name__ == '__main__':
     # Parse command-line arguments
     while args:
         arg = args.pop(0)
-        # Format/tvsys
+
         if arg in ['-dvd', '-vcd', '-svcd']:
             disc.format = arg.lstrip('-')
+
         elif arg in ['-pal', '-ntsc']:
             disc.tvsys = arg.lstrip('-')
+
         elif arg == '-overwrite':
             overwrite = True
+
         elif arg == '-topmenu':
             disc.topmenu = Menu(args.pop(0))
+
         elif arg == '-menu':
             titleset = Titleset()
             titleset.menu = Menu(args.pop(0))
             disc.titlesets.append(titleset)
+
         elif arg == '-chapters':
             if not video:
                 error("The -chapters option must follow a video filename.")
             chapter_list = args.pop(0)
             video.chapters = chapter_list.split(',')
+
         elif arg == '-out':
             outfile = args.pop(0)
+
         elif arg.startswith('-'):
             error("Unrecognized command-line option: %s" % arg)
-        # Assume everything else is a video
+
+        # Assume everything else is a video filename
         else:
             video = Video(arg)
             titleset.add(video)
+
 
     # Make sure outfile was provided
     if not outfile:
@@ -114,7 +99,7 @@ if __name__ == '__main__':
     if not outfile.endswith('.xml'):
         outfile = outfile + '.xml'
     
-    # Check for existing file
+    # Check for existing output file
     if os.path.exists(outfile):
         if overwrite:
             print blue("Overwriting existing file: %s" % outfile)
