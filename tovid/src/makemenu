@@ -117,6 +117,8 @@ TITLE_FONT="Helvetica"
 TITLE_SIZE="24"
 FONT_DECO="-stroke black -strokewidth 1"
 TEXT_ALIGN="northwest"
+# Default menu title settings
+MAKE_TITLE=false
 # Button char
 BUTTON_FONT=""
 BUTTON_CHAR=">"
@@ -294,6 +296,15 @@ while test $# -gt 0; do
             shift
             BUTTON_FONT="$1"
             ;;
+        "-menu-title" )
+            shift
+            MENU_TITLE="$1"
+            MAKE_TITLE=:
+            ;;
+        "-menu-title-fontsize" )
+            shift
+            MENU_TITLE_SIZE="$1"
+            ;;
         # Assume anything in quotes is a video title
         ""*"" )
             TITLES=("${TITLES[@]}" "$1")
@@ -355,6 +366,8 @@ SELECT_TEXT="$TMP_DIR/02_select-text.png"
 ACTIVE_TEXT="$TMP_DIR/03_active-text.png"
 ACTIVE_HIGHLIGHT="$TMP_DIR/03_active-highlight.png"
 ACTIVE_SELECT="$TMP_DIR/03_active-select.png"
+MENU_TITLE_TEXT="$TMP_DIR/02_menu-title.png"
+MENU_TITLE_PLACEHOLDER="$TMP_DIR/02_menu-title-placeholder.png"
 
 # Use appropriate settings for DVD
 if test $RES = "dvd"; then
@@ -566,7 +579,7 @@ if test $RES = "dvd"; then
         "$TILE_CANVAS" "$SELECT_BUTTON"
 
     # A placeholder to space the title text correctly
-    convert -size $(identify $HIGHLIGHT_BUTTON | awk '{print $3}') xc:none \
+    convert -size $(identify "$HIGHLIGHT_BUTTON" | awk '{print $3}') xc:none \
         "$BUTTON_PLACEHOLDER"
     
     # Next, join the button tiles with the title tiles:
@@ -594,11 +607,39 @@ convert -background none "$TMP_DIR/01_entry-*.png" -append "$MENU_TEXT"
 
 # Stack all DVD button lines
 if test $RES = "dvd"; then
-    echo "Creating the DVD button overlays...   "
+echo "Creating the DVD button overlays...   "
     convert -background none "$TMP_DIR/01_highlight_entry-*.png" -append \
         "$HIGHLIGHT_TEXT"
     convert -background none "$TMP_DIR/01_select_entry-*.png" -append \
         "$SELECT_TEXT"
+fi
+
+# If specified, add a menu title
+if $MAKE_TITLE; then
+    echo "Adding the menu title..."
+    
+    # Default title font size = current text size + 4
+    if test -z "$MENU_TITLE_SIZE"; then
+        let "MENU_TITLE_SIZE=TITLE_SIZE+8"
+    fi
+    
+    # Draw the menu title and pad the bottom with TILE_HEIGHT pixels
+    convert -size 720x100 xc:none -font $TITLE_FONT -antialias $FONT_DECO -fill $TEXT_COLOR -pointsize $MENU_TITLE_SIZE -annotate +20+80 "$MENU_TITLE" -trim +repage "$MENU_TITLE_TEXT"
+    convert "$MENU_TITLE_TEXT" -gravity south -background none -splice 0x$TILE_HEIGHT "$MENU_TITLE_TEXT"
+
+    # Put the menu title above the menu text (and buttons for DVDs)
+    convert -background none "$MENU_TITLE_TEXT" "$MENU_TEXT" -append \
+        "$MENU_TEXT"
+    if test $RES = "dvd"; then
+        # DVD menus need an empty placeholder for the buttons
+        convert -size $(identify "$MENU_TITLE_TEXT" | awk '{print $3}') \
+            xc:none "$MENU_TITLE_PLACEHOLDER"
+        convert -background none "$MENU_TITLE_PLACEHOLDER" "$HIGHLIGHT_TEXT" \
+            -append "$HIGHLIGHT_TEXT"
+        convert -background none "$MENU_TITLE_PLACEHOLDER" "$SELECT_TEXT" \
+            -append "$SELECT_TEXT"
+    fi
+
 fi
 
 # Put the text menus inside the safety area
