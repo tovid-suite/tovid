@@ -67,6 +67,9 @@ Menu background/audio options:
 
 Menu text options:
 
+: **-menu-title** **"**//MENU TITLE TEXT//**"**
+    Add //MENU TITLE TEXT// as a title to the menu.
+
 : **-font** //FONTNAME//
     Use //FONTNAME// for the menu text. Run 'convert -list type' to see a
     list of the fonts that you can use; choose a font name from the
@@ -76,6 +79,9 @@ Menu text options:
 
 : **-fontsize** //NUM// (default 24)
     Sets the size for the font to //NUM// pixels.
+
+: **-menu-title-fontsize** //NUM// (default **-fontsize** + 8)
+    Sets the size of the menu title.
 
 : **-fontdeco** **'**//FONTDECORATION//**'**
     Sets the font decoration method to //FONTDECORATION//. 
