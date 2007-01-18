@@ -68,6 +68,7 @@ man_MANS = \
 	$(man_dir)/makeslides.1 \
     $(man_dir)/makevcd.1 \
 	$(man_dir)/makexml.1 \
+	$(man_dir)/pymakexml.1 \
 	$(man_dir)/postproc.1 \
 	$(man_dir)/todisc.1 \
 	$(man_dir)/tovid.1
@@ -78,6 +79,7 @@ src_MANS = \
 	$(man_src_dir)/makeslides.t2t \
     $(man_src_dir)/makevcd.t2t \
 	$(man_src_dir)/makexml.t2t \
+	$(man_src_dir)/pymakexml.t2t \
 	$(man_src_dir)/postproc.t2t \
 	$(man_src_dir)/todisc.t2t \
 	$(man_src_dir)/tovid.t2t
