@@ -11,6 +11,7 @@ __all__ = [\
     'indent_level',
     'pretty_dict',
     'ratio_to_float',
+    'safe_filename',
     'tokenize',
     'temp_name',
     'temp_file',
@@ -25,10 +26,26 @@ import shlex
 import doctest
 import mimetypes
 
+# Special characters that may need escaping
+special_chars = '\\ #*:;&?!<>[]()"\''
+
+def safe_filename(filename, work_dir):
+    """Ensure the given filename is free of quirky or problematic characters.
+    If so, simply return the filename; if not, create a safe symlink in
+    work_dir to the original file, and return the symlink name.
+    """
+    safename = filename
+    for char in special_chars:
+        safename = safename.replace(char, '_')
+    if safename != filename:
+        basename = os.path.basename(safename)
+        safename = os.path.join(work_dir, basename)
+        os.symlink(filename, safename)
+    return safename
+
 def escape(text):
     """Return a copy of the given text string with potentially problematic
     "special" characters backslash-escaped."""
-    special_chars = '\\ #*:;?![]()"\''
     result = text
     for char in special_chars:
         result = result.replace(char, '\%s' % char)
@@ -143,11 +160,6 @@ def get_code_lines(filename):
     infile.close()
     return codelines
 
-def wait(seconds):
-    """Print a message and pause for the given number of seconds."""
-    print "Resuming in %s seconds..." % seconds
-    os.system('sleep %ss' % seconds)
-
 def get_file_type(filename):
     """Return 'image', 'audio', or 'video', if the given filename appears to be
     any of those types; otherwise, return None. Determined by file's mimetype,
@@ -163,6 +175,11 @@ def get_file_type(filename):
         return basetype
     else:
         return None
+    
+def temp_file(*args, **kwargs):
+    """Generates a file object, it's not removed after being closed.
+    Same args and kwargs as mkstemp."""
+    return open(temp_name(*args, **kwargs), "w")
 
 def temp_name(*args, **kwargs):
     """Generates a temporary filename. Same args and kwargs
@@ -171,10 +188,11 @@ def temp_name(*args, **kwargs):
     os.close(fd)
     return fname
 
-def temp_file(*args, **kwargs):
-    """Generates a file object, it's not removed after being closed.
-    Same args and kwargs as mkstemp."""
-    return open(temp_name(*args, **kwargs), "w")
+def wait(seconds):
+    """Print a message and pause for the given number of seconds."""
+    print "Resuming in %s seconds..." % seconds
+    os.system('sleep %ss' % seconds)
+
 
 
 if __name__ == '__main__':
