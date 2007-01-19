@@ -143,7 +143,7 @@ class TovidFrame(wx.Frame):
         
     def OnAbout(self, evt):
         """Display a dialog showing information about tovidgui."""
-        strAbout = "You are using the tovid GUI, version 0.28,\n" \
+        strAbout = "You are using the tovid GUI, version 0.30,\n" \
           "part of the tovid video disc authoring suite.\n\n" \
           "For more information and documentation, please\n" \
           "visit the tovid web site:\n\n" \
