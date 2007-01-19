@@ -112,7 +112,7 @@ MAKE_GROUP=false
 MAKE_CHAPTERS=:
 FORCE_TITLESETS=false
 CUR_VIDEO=0
-declare -i CHAPTER_INTERVAL
+CHAPTER_INTERVAL=5
 
 # ==========================================================
 # Backslash-escape the given special character (and any EOLs)
@@ -303,12 +303,12 @@ EOF`
     # If file exists, get duration and add appropriate chapter breaks
     if test -e "$1" && $MAKE_CHAPTERS; then
         CMD="idvid -terse \"$1\""
-        echo "Calculating the duration of the video using the following command:"
-        echo $CMD
-        echo "This may take a few minutes, so please be patient..."
+        echo "    Calculating the duration of the video using the following command:"
+        echo "        $CMD"
+        echo "    This may take a few minutes, so please be patient..."
         DURATION=$(eval $CMD | grep DURATION | awk -F '=' '{print $2}')
         echo $DURATION | awk '{hh=int($1/3600);mm=int(($1-hh*3600)/60);ss=$1-hh*3600-mm*60;\
-            printf "The duration of the video is %02d:%02d:%02d\n",hh,mm,ss}'
+            printf "    The duration of the video is %02d:%02d:%02d\n",hh,mm,ss}'
 
         CHAPTERS=`echo $DURATION $CHAPTER_INTERVAL | \
            awk '{dur=$1;\
@@ -680,6 +680,7 @@ if test -e "$OUT_PREFIX.xml"; then
         echo "Please re-run the script with the -overwrite option to overwrite."
         exit 1
     fi
+    echo $SEPARATOR
 fi
 
 
@@ -780,8 +781,6 @@ if $FILE_NOT_FOUND; then
   echo "The XML file was written anyway, but you might want to"
   echo "double-check to make sure you didn't make a typing mistake."
 fi
-
-echo $SEPARATOR
 
 echo "Done. The resulting XML was written to $OUT_PREFIX.xml."
 if test $XML_FORMAT = "dvd" ; then
