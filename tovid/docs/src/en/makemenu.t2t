@@ -62,7 +62,12 @@ Menu background/audio options:
 : **-audio** //AUDIOFILE//
     Use //AUDIOFILE// (in most any audio format) for background music. The
     menu will play for long enough to hear the whole audio clip. If
-    one is not provided, silence will be used.
+    one is not provided, 4 seconds of silence will be used.
+
+: **-length** //NUM//
+    Make the menu //NUM// seconds long. Useful for menus with **-audio**:
+    if you don't want the entire //AUDIOFILE// in the menu, then you can trim
+    the length of the menu with **-length**.
 
 
 Menu text options:
