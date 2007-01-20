@@ -135,8 +135,8 @@ SHOWCASE_SEEK_VAL=2
 BG_SEEK=2
 BG_AUDIO_SEEK=2
 NO_SC_THUMB=false
-NO_THUMBS=false
-SC_TITLE_ALIGN=centre
+TEXTMENU=false
+SC_TITLE_ALIGN=center
 THUMB_TITLE_ALIGN=center
 ALIGN_OVERRIDE=false
 MULTILINE_TITLE=false
@@ -148,9 +148,8 @@ ASPECT_ARG=all
 WIDE_SCREEN=false
 WIDESCREEN="nopanscan"
 WIDESCREEN_ARG=all
-TEXTMENU=false
 GROUPING=false
-TEXT_Y_START=50
+TEXT_YSTART=$SAFE_AREA
 BUTTON_GRAVITY=north
 XGEO=0
 YGEO=45
@@ -163,6 +162,9 @@ SELECT_COLOUR="#DE7F7C"
 HIGHLIGHT_COLOUR="#266CAE"
 USER_SC_GEO=false
 USER_SAFE_AREA=false
+USER_TITLE_GEO=false
+SPACER=""
+SE_YCORNER=0
 BG_ASYNC=""
 SCRIPT_START_TIME=`date +%s`
 
@@ -672,7 +674,7 @@ function get_group_chapters()
     chapter_length=$( bc <<< "scale=3; ${GROUP_TOT_LEN[index]} / ${CHAPTERS[index]}")
     GROUP_VIDEO_LENGTHS=( ${GROUP_VID_LENGTHS[index]} )
 
-    for len in ${GROUP_VIDEO_LENGTHS[@]}; do #FIXME
+    for len in ${GROUP_VIDEO_LENGTHS[@]}; do
         adjusted_length=$( bc <<< "scale=3; $len + $remainder" )
         num_chapters=$( bc <<< "$adjusted_length / $chapter_length" )
         if (( num_chapters > 0)); then
@@ -718,6 +720,11 @@ function check_with_dvdauthor()
 #    rm -fr "$OUT_DIR" etc etc
 {
     dvdauthor -o $OUT_DIR -t "$1"
+}
+
+function get_image_dim()
+{
+    identify -verbose "$1" | awk '/Geometry:/ {print $2}'
 }
 
 ##############################################################################
@@ -842,11 +849,7 @@ while test $# -gt 0; do
             ;;
         "-align" )
             shift
-            get_listargs "$@"
-            ALIGN_ARGS=( ${ARGS_ARRAY[@]} )
-            BUTTON_GRAVITY=${ALIGN_ARGS[0]}
-            (( ${#ALIGN_ARGS[@]} > 1 )) && BUTTON_GEO=${ALIGN_ARGS[1]} && USER_GEO=:
-            $USER_GEO && XGEO=${BUTTON_GEO/x*} && YGEO=${BUTTON_GEO/*x}
+            BUTTON_GRAVITY=$1
             [[ $BUTTON_GRAVITY = centre ]] && BUTTON_GRAVITY=center
             USER_GRAVITY=:
             ;;
@@ -925,18 +928,22 @@ while test $# -gt 0; do
             arg=${ARGS_ARRAY[0]}
             [[ -n $arg ]] && SPLIT=$arg && USER_SPLIT=:
             TEXTMENU=:
-            NO_THUMBS=:
             SHOWCASE=:
             IMG_FMT=png
             SC_TITLE_ALIGN=west
             ;;
         "-text-start" )
             shift
-            TEXT_Y_START=$1
+            TEXT_YSTART=$1
             ;;
         "-showcase-titles-align" )
             shift
             SC_TITLE_ALIGN="$1"
+            [[ SC_TITLE_ALIGN = centre ]] && SC_TITLE_ALIGN=center
+            ;;
+        "-title-gap" )
+            shift
+            SPACER=$1
             ;;
         "-rotate" )
             shift
@@ -1134,6 +1141,19 @@ while test $# -gt 0; do
             USER_SC_GEO=:
             SHOWCASE_GEO=$1
             ;;
+        "-menu-title-geo" )
+            USER_TITLE_GEO=:
+            shift
+            TITLE_GRAVITY=$1
+            TITLE_GRAVITY=${TITLE_GRAVITY/re/er}
+            ;;
+        "-menu-title-offset" )
+            USER_TITLE_GEO=:
+            shift
+            [[ $1 =~ \([-+][0-9]+\)\([-+][0-9]+\) ]];
+            [[ -n ${BASH_REMATCH[1]} ]] && title_xoffset=${BASH_REMATCH[1]}
+            [[ -n ${BASH_REMATCH[2]} ]] && title_yoffset=${BASH_REMATCH[2]}
+            ;;
         "-tovidopts" )
             shift
             TOVID_OPTS="$1"
@@ -1199,13 +1219,16 @@ if [[ -n "$SM_TITLES" ]]; then
 fi
 
 # set a maximum # of videos
-$NO_THUMBS && file_max=26 || file_max=10
-if test ${#FILES[@]} -gt 30; then
-    usage_error "Sorry, a maximum of 30 videos (thumbs) is supported
-    You gave ${#FILES[@]} videos as input"
-elif $SHOWCASE && test  ${#FILES[@]} -gt $file_max; then
+if $SHOWCASE; then
+    $TEXTMENU && file_max=30 || file_max=10
+    test  ${#FILES[@]} -gt $file_max && \
     usage_error "Sorry, a maximum of 10 titles is allowed for showcase
     You gave ${#FILES[@]} videos as input"
+else
+    if test ${#FILES[@]} -gt 30; then
+        usage_error "Sorry, a maximum of 30 videos (thumbs) is supported
+        You gave ${#FILES[@]} videos as input"
+    fi
 fi
 
 # If output directory already exists, print a message and exit
@@ -1371,7 +1394,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
     mkdir -pv "$REAL_WORK_DIR/pics/$i"
 done
 # textmenu is static unless there is an animated background or showcase video
-if $TEXTMENU && [[ -z $SHOWCASE_VIDEO && -z $BG_VIDEO ]]; then STATIC=:; fi #FIXME
+if $TEXTMENU && [[ -z $SHOWCASE_VIDEO && -z $BG_VIDEO ]]; then STATIC=:; fi
 # prevent user from using mutually exclusive options
 if $STATIC; then
     MENU_FADE=false
@@ -1550,18 +1573,19 @@ SHOWCASE_THUMB_X_ARRAY=( ${SHOWCASE_THUMB_X_ARRAY[NUM_FILES]} )
 SHOWCASE_THUMB_Y_ARRAY=( ${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]} )
 SHOWCASE_TITLES_X_ARRAY=( ${SHOWCASE_THUMB_X_ARRAY[@]} )
 SHOWCASE_TITLES_Y_ARRAY=( ${SHOWCASE_TITLES_Y_ARRAY[NUM_FILES]} )
-if $NO_THUMBS ; then
+if $TEXTMENU ; then
     ! $USER_SPLIT && SPLIT=13 # max number of text only titles in one column (-textmenu)
     if [[ $NUM_FILES -gt 12 ]] && ! $USER_SPLIT; then
         SPLIT=$((V_TOTAL / 2))
         [[ $(( SPLIT * 2)) -ne $V_TOTAL ]] && let SPLIT=SPLIT+1
     fi
-    for ((b=0; b<=NUM_FILES; b++)); do
-        ((b < SPLIT)) && SHOWCASE_TITLES_X_ARRAY[b]=86 || SHOWCASE_TITLES_X_ARRAY[b]=360
-    done
+#    for ((b=0; b<=NUM_FILES; b++)); do
+#        ((b < SPLIT)) && SHOWCASE_TITLES_X_ARRAY[b]=86 || SHOWCASE_TITLES_X_ARRAY[b]=360
+#    done
 fi
 # needed to centre showcase img: col 1 will always be larger value than col 2
 if $SHOWCASE && ! $TEXTMENU; then
+    ((NUM_FILES < 5)) && SPLIT=$((NUM_FILES+1))
     ((NUM_FILES == 5)) && SPLIT=3
     ((NUM_FILES >= 6)) && SPLIT=4
     ((NUM_FILES >= 8)) && SPLIT=5
@@ -1624,18 +1648,21 @@ if $SHOWCASE; then
     fi
 fi
 # some choices needed for different title alignments
-if $SHOWCASE; then
+if $SHOWCASE && ! $TEXTMENU; then
     if [ $V_TOTAL -le 5 ]; then
         if [[ $SC_TITLE_ALIGN = east ]]; then
             SHOWCASE_SIZE=288x216  # smaller to allow for titles
+            [ $TARGET = "svcd" ] && SHOWCASE_SIZE=216x216
         else
             SHOWCASE_SIZE=384x256
+            [ $TARGET = "svcd" ] && SHOWCASE_SIZE=256x256
         fi
         AUTOORDER="rows"       # spumux var
     else
         SHOWCASE_SIZE=288x216  # smaller showcase thumb because we have 2 rows
+        [ $TARGET = "svcd" ] && SHOWCASE_SIZE=216x216
         AUTOORDER="columns"
-        if ! $NO_SC_THUMB && ! $TEXTMENU && [[ "$SC_TITLE_ALIGN" = *st ]] && [[ -n $SHOWCASE_FILE ]]; then
+        if ! $NO_SC_THUMB && [[ "$SC_TITLE_ALIGN" = east ]] && [[ -n $SHOWCASE_FILE ]]; then
             usage_error "Sorry, there is no room for the showcase thumb " \
             "if you use more than 5 videos with -showcase-titles-align east|west. " \
             "Either remove the -showcase-titles-align switch or remove the " \
@@ -1646,15 +1673,15 @@ if $SHOWCASE; then
 else
     AUTOORDER="rows"
 fi
-$NO_THUMBS && LEFT_MAX=$SPLIT || LEFT_MAX=5
-if [ "$SC_TITLE_ALIGN" = "west" ] || ($TEXTMENU && [ "$SC_TITLE_ALIGN" = "east" ]); then #FIXME
-    THUMB_TITLE_ALIGN="west"
+$TEXTMENU && LEFT_MAX=$SPLIT || LEFT_MAX=5
+if [ "$SC_TITLE_ALIGN" = "west" ] || $TEXTMENU; then #FIXME
+    THUMB_TITLE_ALIGN="west" # for non TEXTMENU menu
     for ((i=0; i<=NUM_FILES; i++)); do
         if [ $i -lt $LEFT_MAX ]; then
             SHOWCASE_THUMB_X_ARRAY[i]=$(( ${SHOWCASE_THUMB_X_ARRAY[i]} - SAFE_OFFSET ))
             SHOWCASE_TITLES_X_ARRAY[i]=$(( ${SHOWCASE_TITLES_X_ARRAY[i]} - SAFE_OFFSET ))
         fi
-        if ! $NO_THUMBS && ! [[ $SHOWCASE_FILE ]]; then #FIXME
+        if ! $TEXTMENU && ! [[ $SHOWCASE_FILE ]]; then
             if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 360 ]; then
                 SHOWCASE_THUMB_X_ARRAY[i]=360
                 SHOWCASE_TITLES_X_ARRAY[i]=360
@@ -1686,25 +1713,37 @@ if $SHOWCASE && [ "$SC_TITLE_ALIGN" = "east" ] && ! $TEXTMENU; then
         if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 360 ]; then
             SHOWCASE_THUMB_X_ARRAY[i]=360
         fi
-        if ! $NO_THUMBS; then
+        if ! $TEXTMENU; then
             SHOWCASE_TITLES_X_ARRAY[i]=$(( ${SHOWCASE_THUMB_X_ARRAY[i]} + ${THUMB_SIZE/x*} + 5 ))
             SHOWCASE_TITLES_Y_ARRAY[i]=$(( ${SHOWCASE_TITLES_Y_ARRAY[i]} + 18 ))
         fi
     done
 fi
-if $USER_GRAVITY && $SHOWCASE; then
+
+if ($USER_GRAVITY && $SHOWCASE && ! $TEXTMENU) && [[ $BUTTON_GRAVITY != north ]]; then
+    SW_CORNER=$(( ${SHOWCASE_THUMB_Y_ARRAY[SPLIT-1]} + ${THUMB_SIZE/*x} ))
     if [[ $BUTTON_GRAVITY = *south* ]]; then
-        Y_OFFSET=$(( ( ${VIDSIZE/*x} - SAFE_AREA) - ( ${SHOWCASE_THUMB_Y_ARRAY[SPLIT-1]} + ${THUMB_SIZE/*x}) ))
-        for ((i=0; i<=NUM_FILES; i++)); do
-            SHOWCASE_THUMB_Y_ARRAY[i]=$(( ${SHOWCASE_THUMB_Y_ARRAY[i]} + Y_OFFSET ))
-            SHOWCASE_TITLES_Y_ARRAY[i]=$(( ${SHOWCASE_TITLES_Y_ARRAY[i]} + Y_OFFSET ))
-        done
+        Y_OFFSET=$(( ( ${VIDSIZE/*x} - SAFE_AREA) - SW_CORNER ))
+    elif [[ $BUTTON_GRAVITY = *st* ]] || [[ $BUTTON_GRAVITY = *center* ]]; then
+        COL1_HEIGHT=$(( SW_CORNER - ${SHOWCASE_TITLES_Y_ARRAY[0]} ))
+        Y_OFFSET=$(( ( ${VIDSIZE/*x} / 2) - (COL1_HEIGHT / 2) ))
+        echo "Y_OFFSET is half the vidsize y dim ( 240) - half COL1_HEIGHT ( $COL1_HEIGHT / 2 ) or $Y_OFFSET"
+        Y_OFFSET=$(( Y_OFFSET - ${SHOWCASE_TITLES_Y_ARRAY[0]} ))
+        echo "Y_OFFSET is Y_OFFSET ( $Y_OFFSET ) - SHOWCASE_TITLES_Y_ARRAY[0] ( ${SHOWCASE_TITLES_Y_ARRAY[0]} ) or $Y_OFFSET"
     fi
+    for ((i=0; i<=NUM_FILES; i++)); do
+        SHOWCASE_THUMB_Y_ARRAY[i]=$(( ${SHOWCASE_THUMB_Y_ARRAY[i]} + Y_OFFSET ))
+        SHOWCASE_TITLES_Y_ARRAY[i]=$(( ${SHOWCASE_TITLES_Y_ARRAY[i]} + Y_OFFSET ))
+    done
 fi
 
 # find out the showcase thumb "-page" array for this arrangement
 for ((i=0; i<=NUM_FILES; i++)); do
-    SHOWCASE_THUMB_PAGES_ARRAY[i]=+${SHOWCASE_THUMB_X_ARRAY[i]}+${SHOWCASE_THUMB_Y_ARRAY[i]}
+    if $TEXTMENU; then
+        SHOWCASE_THUMB_PAGES_ARRAY[i]=+${SHOWCASE_TITLES_Y_ARRAY[i]}+${SHOWCASE_TITLES_X_ARRAY[i]}
+    else
+        SHOWCASE_THUMB_PAGES_ARRAY[i]=+${SHOWCASE_THUMB_X_ARRAY[i]}+${SHOWCASE_THUMB_Y_ARRAY[i]}
+    fi
 done
 
 PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
@@ -1752,7 +1791,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
         if $FEATHER && [ $THUMB_SHAPE != "normal" ]; then
             # multiline titles not suitable for text buttons
             BUTTON_STYLE="text-rect"
-        elif $NO_THUMBS; then
+        elif $TEXTMENU; then
             BUTTON_STYLE="text-rect"
         else
             [[ $BUTTON_STYLE != "text-rect" ]] && BUTTON_STYLE="rect"
@@ -1760,13 +1799,10 @@ for ((i=0; i<=NUM_FILES; i++)); do
     fi
 done
 # transparent border around text so rect spumux outline can fit
-#if  $MULTILINE_TITLE && ([[ $SC_TITLE_ALIGN = "east" ]] || $NO_THUMBS); then
 if [[ $BUTTON_STYLE = text-rect ]]; then
     TEXT_BORDER="-bordercolor Transparent -border 8x8"
 fi
-# place menu title lower if not text mist
-mist_pos=45
-$MIST && title_pos=65 || title_pos=50
+
 # easier to have non transparent showcase use the transparent block
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
@@ -1977,7 +2013,7 @@ if $SHOWCASE; then
         "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}" 2> /dev/null
 
         # find out dimension of the thumb title png
-        TT_DIM=( ${TT_DIM[@]} $(identify "$WORK_DIR/thumb_title${i}.png"|awk '{print $3}') )
+        TT_DIM=( ${TT_DIM[@]} $(get_image_dim "$WORK_DIR/thumb_title${i}.png") )
         # get widest png in each colum for use later for alignment use
         if ((i < SPLIT)); then
             val=${TT_DIM[i]/x*}
@@ -1989,7 +2025,7 @@ if $SHOWCASE; then
         # get just X demension to help determine final title pos below
         tt_dim=${TT_DIM[i]/x*}
         # thumb pos plus 1/2 (X dim) of thumbsize, less 1/2 (X dim) of title size
-        if [ "$SC_TITLE_ALIGN" = "centre" ]; then
+        if [ "$SC_TITLE_ALIGN" = "center" ]; then
             f=$(( ${THUMB_SIZE/x*} / 2 ))
             j=$(( (f + ${SHOWCASE_THUMB_X_ARRAY[i]}) - (tt_dim / 2) ))
             k=( ${k[@]} "$j" )
@@ -2003,19 +2039,19 @@ if $SHOWCASE; then
             fi
         fi
     done
-    if $NO_THUMBS; then
+    if $TEXTMENU; then
         # text-rect can get along with a small space between titles for spumux
-        [[ $BUTTON_STYLE = text-rect ]] && spacer=10 || spacer=15
+        [[ $BUTTON_STYLE = text-rect ]] && SPACER=${SPACER:-"10"} || SPACER=${SPACER:-"15"}
         # get an array of title Y positions
         offsets1=$(for ((c=0; c<NUM_FILES; c++)); do
-        ((c < (LEFT_MAX-1))) && echo $(( ${TT_DIM[c]#*x} + spacer )); done)
+        ((c < (LEFT_MAX-1))) && echo $(( ${TT_DIM[c]#*x} + SPACER )); done)
         if [[ $NUM_FILES -ge $SPLIT ]]; then
             offsets2=$(for ((d=0; d<=NUM_FILES; d++)); do
-            ((d >= LEFT_MAX)) && echo $(( ${TT_DIM[d]#*x} + spacer )); done)
-            [[ $offsets2 ]] && offsets2="$TEXT_Y_START $offsets2"
+            ((d >= LEFT_MAX)) && echo $(( ${TT_DIM[d]#*x} + SPACER )); done)
+            [[ $offsets2 ]] && offsets2="$TEXT_YSTART $offsets2"
             tt_ygeos_col2=$(running_total <<< $offsets2)
         fi
-        offsets1="$TEXT_Y_START $offsets1"
+        offsets1="$TEXT_YSTART $offsets1"
         tt_ygeos_col1=$(running_total <<< $offsets1)
         tt_ygeos="$tt_ygeos_col1 $tt_ygeos_col2"
         unset SHOWCASE_TITLES_Y_ARRAY
@@ -2023,7 +2059,6 @@ if $SHOWCASE; then
         # get the y position of the last title in 1st column (tt_ygeos_col1)
         last_title_col1=$(wc -w <<< "$tt_ygeos_col1")
         last_title_col1_ygeo=${SHOWCASE_TITLES_Y_ARRAY[last_title_col1-1]/*x}
-        last_title_col1_xgeo=${SHOWCASE_TITLES_X_ARRAY[last_title_col1-1]/x*}
         # add the y dimension of the last title size to the above y position
         SW_YCORNER=$(( ${TT_DIM[last_title_col1-1]/*x} + $last_title_col1_ygeo ))
         avail_space1=$(( ( ${VIDSIZE/*x} - SAFE_AREA ) - $SW_YCORNER ))
@@ -2032,55 +2067,56 @@ if $SHOWCASE; then
             last_title_col2=$NUM_FILES
             last_title_col2_ygeo=${SHOWCASE_TITLES_Y_ARRAY[last_title_col2]/*x}
             last_title_col2_xgeo=${SHOWCASE_TITLES_Y_ARRAY[last_title_col2]/x*}
-            SE_CORNER=$(( ${TT_DIM[last_title_col2]/*x} + $last_title_col2_ygeo ))
-            avail_space2=$(( ( ${VIDSIZE/*x} - SAFE_AREA ) - $SE_CORNER ))
+            SE_YCORNER=$(( ${TT_DIM[last_title_col2]/*x} + $last_title_col2_ygeo ))
+            avail_space2=$(( ( ${VIDSIZE/*x} - SAFE_AREA ) - $SE_YCORNER ))
         fi
         # availible space is lowest value of 2 *space* vars ( if 2 columns)
-        if [[ -n $tt_ygeos_col2 ]] && ((SE_CORNER > SW_YCORNER)); then
+        if [[ -n $tt_ygeos_col2 ]] && ((SE_YCORNER > SW_YCORNER)); then
             avail_space=$avail_space2
         else
             avail_space=$avail_space1
         fi
         # get the height of each column for -align centre
-        if [[ $BUTTON_GRAVITY = centre || $BUTTON_GRAVITY = east || $BUTTON_GRAVITY = west ]]; then
-            WEST_YSPACE=$(( SW_YCORNER - TEXT_Y_START))
-            EAST_YSPACE=$((SE_CORNER - TEXT_Y_START))
+        if [[ $BUTTON_GRAVITY = center || $BUTTON_GRAVITY = east || $BUTTON_GRAVITY = west ]]; then
+            WEST_YSPACE=$(( SW_YCORNER - TEXT_YSTART))
+            EAST_YSPACE=$((SE_YCORNER - TEXT_YSTART))
             ((WEST_YSPACE > EAST_YSPACE)) && YSPACE=$WEST_YSPACE || YSPACE=$EAST_YSPACE
             CANVAS=$(( ${VIDSIZE/*x} - (SAFE_AREA * 2) ))
-            NEW_TEXT_Y_START=$(( ((CANVAS - YSPACE) / 2) + 50 ))
-            TEXT_Y_START_OFFSET=$((NEW_TEXT_Y_START - TEXT_Y_START))
+            NEW_TEXT_YSTART=$(( ((CANVAS - YSPACE) / 2) + SAFE_AREA ))
+            TEXT_YSTART_OFFSET=$((NEW_TEXT_YSTART - TEXT_YSTART))
         fi
         # add the available space to each title position for south alignment
         if [[ $BUTTON_GRAVITY = *south* ]] && ((avail_space > 0)); then
             for ((d=0; d<=NUM_FILES; d++)); do
                 SHOWCASE_TITLES_Y_ARRAY[d]=$(( ${SHOWCASE_TITLES_Y_ARRAY[d]} + $avail_space ))
             done
-        elif  [[ $BUTTON_GRAVITY = centre || $BUTTON_GRAVITY = east || $BUTTON_GRAVITY = west ]]; then
+        elif  [[ $BUTTON_GRAVITY = center || $BUTTON_GRAVITY = east || $BUTTON_GRAVITY = west ]]; then
             for ((d=0; d<=NUM_FILES; d++)); do
-                SHOWCASE_TITLES_Y_ARRAY[d]=$(( ${SHOWCASE_TITLES_Y_ARRAY[d]} + $TEXT_Y_START_OFFSET ))
+                SHOWCASE_TITLES_Y_ARRAY[d]=$(( ${SHOWCASE_TITLES_Y_ARRAY[d]} + $TEXT_YSTART_OFFSET ))
             done
         fi
-        if [[ $BUTTON_GRAVITY = *east* ]]; then
+            # this justifies titles to the right on the east side of the menu
             ((NUM_FILES >= SPLIT-1)) && WIDE_TITLE=$WIDEST_TITLE2 || WIDE_TITLE=$WIDEST_TITLE
-            east_offset=$(( ( ${VIDSIZE/x*} - SAFE_AREA ) - WIDE_TITLE ))
             for ((d=0; d<=NUM_FILES; d++)); do
-                [[ "$SC_TITLE_ALIGN" = "east" ]] && \
-                    east_offset=$(( ( ${VIDSIZE/x*} - SAFE_AREA ) - ${TT_DIM[d]/x*} )) #FIXME
-                if ((${#SHOWCASE_TITLES_X_ARRAY[@]} <= SPLIT)) ; then
-                    SHOWCASE_TITLES_X_ARRAY[d]=$east_offset
+                ([[ "$BUTTON_GRAVITY" = *east* ]] || [[ -n $tt_ygeos_col2 ]]) && \
+                    east_offset=$(( ( ${VIDSIZE/x*} - SAFE_AREA ) - ${TT_DIM[d]/x*} ))
+                if (($NUM_FILES < SPLIT)); then
+                    SHOWCASE_TITLES_X_ARRAY[d]=$SAFE_AREA
+                    [[ "$BUTTON_GRAVITY" = *east* ]] && SHOWCASE_TITLES_X_ARRAY[d]=$east_offset
                 else
-                    if [ ${SHOWCASE_TITLES_X_ARRAY[d]} -ge 360 ]; then
+                    if ((d >= LEFT_MAX)); then
                         SHOWCASE_TITLES_X_ARRAY[d]=$east_offset
+                    else
+                        SHOWCASE_TITLES_X_ARRAY[d]=$SAFE_AREA
                     fi
                 fi
             done
-        fi
         unset MAX_VAL val max_key
     fi
     # make array of SHOWCASE_PAGES for thumbs and THUMBTITLES_ARRAY for titles
     # use preset values unless doing centre align for titles
     for ((i=0; i<=NUM_FILES; i++)); do
-        if [ "$SC_TITLE_ALIGN" != "centre" ]; then
+        if [ "$SC_TITLE_ALIGN" != "center" ]; then
             SHOWCASE_TITLES_ARRAY[i]=+${SHOWCASE_TITLES_X_ARRAY[i]}+${SHOWCASE_TITLES_Y_ARRAY[i]}
         else
             SHOWCASE_TITLES_ARRAY[i]=+${k[i]}+${SHOWCASE_TITLES_Y_ARRAY[i]}
@@ -2102,26 +2138,57 @@ if $PLAYALL; then
     "${PLAYALL_BTN_CMD[@]}" miff:- | "${TRIM_CMD[@]}"|fold -bs >> "$LOG_FILE"
     ADD_PLAYALL="$WORK_DIR/PLAYALL.png -gravity SouthEast -geometry +55+55 -composite"
 fi
-
+if [[ -n $VMGM_TITLE ]]; then
+    TITLE_TEXT_DIM=$(get_image_dim "$WORK_DIR/title_txt.png")
+    TITLE_TEXT_XDIM=${TITLE_TEXT_DIM/x*}
+    TITLE_TEXT_YDIM=${TITLE_TEXT_DIM/*x}
+fi
 if $MIST; then
     echo
     echo "Making a white or colored png for the misted title background"
     echo
     # make a white or coloured png for misted background effect, only for user bg
-    X=$(identify "$WORK_DIR/title_txt.png" |awk '{print $3}'|cut -dx -f1)
-    Y=$(identify "$WORK_DIR/title_txt.png" |awk '{print $3}'|cut -dx -f2)
     # add 10 pixels to width and height compared to title text png
-    y=$((Y + 40))
-    x=$((X + 40))
-    newX=$(($X + 30))
-    newY=$(($Y + 30))
+    y=$((TITLE_TEXT_YDIM + 40))
+    x=$((TITLE_TEXT_XDIM + 40))
+    newX=$((TITLE_TEXT_XDIM + 30))
+    newY=$((TITLE_TEXT_YDIM + 30))
     DIM=${x}x${y}
     convert -size $DIM xc:none -fill $MIST_COLOUR -stroke none \
     -draw "rectangle 10,10 $newX,$newY" "$WORK_DIR/white_orig.png"
     convert $WORK_DIR/white_orig.png -channel RGBA -blur 0x4 "$WORK_DIR/white.png"
     unset X Y x y
 fi
-
+# offsets for placing title and mist for Y dimension
+# place menu title lower if not text mist and -title-geo is not supplied
+if $MIST; then
+    if [[ $TITLE_GRAVITY = *south* || $TITLE_GRAVITY = *north* ]]; then
+        title_yoffset=${title_yoffset:-"+65"}
+        mist_yoffset="$(( ${title_yoffset#*[-+]} - 20))"
+    else
+        title_yoffset=${title_yoffset:-"+0"}
+        mist_yoffset="$(( ${title_yoffset#*[-+]} - 0))"
+    fi
+else
+    title_yoffset=${title_yoffset:-"+50"}
+fi
+[[ ${mist_yoffset:0:1} != [+-] ]] && mist_yoffset=+${mist_yoffset}
+# offsets placing title and mist for X dimension
+if $MIST; then
+    mist_dim=$(get_image_dim "$WORK_DIR/white.png" )
+    mist_xdim=${mist_dim/x*}
+    mist_xdim_offset=$(( (mist_xdim - TITLE_TEXT_XDIM) / 2 ))
+    if [[ $TITLE_GRAVITY = *st* ]]; then
+        title_xoffset=${title_xoffset:-"+50"}
+        mist_xoffset="$( awk_math ${title_xoffset#*[-+]} less $mist_xdim_offset)"
+        [[ ${mist_xoffset:0:1} != [+-] ]] && mist_xoffset=+${mist_xoffset}
+    else
+        title_xoffset=${title_xoffset:-"+0"}
+        mist_xoffset=$title_xoffset
+    fi
+else
+        title_xoffset=${title_xoffset:-"+0"}
+fi
 ###############################################################################
 #      generate a basic preview of the main menu                              #
 ###############################################################################
@@ -2141,9 +2208,16 @@ if [[ -n "$BG_VIDEO" ]]; then
     fi
 fi
 if $SHOWCASE && ! $NO_SC_THUMB; then
-[[ $SC_TITLE_ALIGN = east ]] && TS=${THUMB_SIZE/x*}
-(( (WIDEST_TITLE + SAFE_AREA + TS + ${SHOWCASE_SIZE/x*}) > ( ${VIDSIZE/x*} - SAFE_AREA) )) && \
+[[ $SC_TITLE_ALIGN = east ]] && ! $TEXTMENU && TS="+ ${THUMB_SIZE/x*}"
+echo "$WIDEST_TITLE + $SAFE_AREA $TS + ${SHOWCASE_SIZE/x*} >  ${VIDSIZE/x*} - $SAFE_AREA"
+    if (( (WIDEST_TITLE + SAFE_AREA $TS + ${SHOWCASE_SIZE/x*}) > ( ${VIDSIZE/x*} - SAFE_AREA) )); then
+            SHOWCASE_SIZE=288x216
+            [[ $TARGET = "svcd" ]] && SHOWCASE_SIZE=216x216
+    fi
+    if $TEXTMENU && [[ -n $tt_ygeos_col2 ]]; then
         SHOWCASE_SIZE=288x216
+        [[ $TARGET = "svcd" ]] && SHOWCASE_SIZE=216x216
+    fi
     if [[ -n "$SHOWCASE_VIDEO" ]]; then
         echo "Getting video images from $SHOWCASE_VIDEO"
         if [[ "$SC_FRAMESTYLE" = "glass" && -n "$SHOWCASE_VIDEO" ]]; then
@@ -2202,7 +2276,7 @@ elif [ $IMG_FMT = "png" ]; then
 fi
 
 # create the preview images
-if ! $NO_THUMBS; then
+if ! $TEXTMENU; then
     for ((i=0; i<=NUM_FILES; i++)) ; do
         # use a nav_seek file if long seek
         if [ ${SEEK_VAL[i]} -gt 450 ]; then
@@ -2261,7 +2335,12 @@ fi
 # overlay menu title and thumb titles on template
 if $MIST; then
     # overlay white.png onto background
-    composite -dissolve $MIST_OPACITY -gravity $TITLE_GRAVITY -geometry +0+${mist_pos} \
+    echo "Running:
+    composite -dissolve $MIST_OPACITY -gravity $TITLE_GRAVITY -geometry ${mist_xoffset}${mist_yoffset} \
+    "$WORK_DIR/white.png" "$WORK_DIR/pics/template.png" \
+    "$WORK_DIR/pics/template.png"
+    " | format_output
+    composite -dissolve $MIST_OPACITY -gravity $TITLE_GRAVITY -geometry ${mist_xoffset}${mist_yoffset} \
     "$WORK_DIR/white.png" "$WORK_DIR/pics/template.png" \
     "$WORK_DIR/pics/template.png"
 fi
@@ -2277,7 +2356,8 @@ if $SHOWCASE; then
     convert -size $VIDSIZE "$WORK_DIR/pics/template.png" \
     ${sc_thumb_title_cmd[@]} -mosaic "$WORK_DIR/pics/template.png"
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
-    -gravity $TITLE_GRAVITY -geometry +0+${title_pos} -composite "$WORK_DIR/pics/template.png"
+    -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
+    -composite "$WORK_DIR/pics/template.png"
 fi
 if $PLAYALL; then
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/PLAYALL.png" \
@@ -2290,7 +2370,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i/  -maxdepth 1 -name 000\*.$IMG_FMT) )
 done
-if ! $NO_THUMBS; then
+if ! $TEXTMENU; then
     for ((i=0; i<${#PICS[@]}; i++)); do
         if $THUMBS_3D && [ "$THUMB_SHAPE" != "normal" ]; then
         CURVE_VARS="5 3 5 1 1"
@@ -2441,13 +2521,13 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)")
     BUTTON_CMD8=(convert -size 620x300 xc:none \
     -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
-    -fill $HIGHLIGHT_COLOUR -stroke none -gravity $THUMB_TITLE_ALIGN  \
+    -fill $HIGHLIGHT_COLOUR -stroke none -gravity center  \
     -annotate +0+0 "${TITLES[t]}" \
     -fill $HIGHLIGHT_COLOUR -stroke $HIGHLIGHT_COLOUR -strokewidth 1 \
     -annotate +1+1 "${TITLES[t]}")
     BUTTON_CMD9=(convert -size 620x300 xc:none \
     -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
-    -fill $SELECT_COLOUR -stroke none -gravity $THUMB_TITLE_ALIGN  \
+    -fill $SELECT_COLOUR -stroke none -gravity center  \
     -annotate +0+0 "${TITLES[t]}" \
     -fill $SELECT_COLOUR -stroke $SELECT_COLOUR -strokewidth 1 \
     -annotate +1+1 "${TITLES[t]}")
@@ -2494,10 +2574,10 @@ done
 #    echo "(Press 'q' or ESC in the preview window to close it.)"
 #fi
 if [ "$BUTTON_STYLE" = "rect" ]; then
+    BUTTON_DIM=$(get_image_dim "$WORK_DIR/Highlightx1.png")
     for button in Select Highlight; do
         if $SHOWCASE; then
             unset sc_spumux_cmd fake_montage_cmd
-            BUTTON_DIM=$(identify "$WORK_DIR/Highlightx1.png" |awk '{print $3}')
             convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
             fake_montage=( $WORK_DIR/Highlightx1.png $(for ((i=0; i<NUM_FILES-1; i++)); do
             echo $WORK_DIR/empty-button.png; done))
@@ -2516,7 +2596,6 @@ if [ "$BUTTON_STYLE" = "rect" ]; then
             -bordercolor none -mattecolor transparent miff:- |
             convert  -colors 3 -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
             -composite  "$WORK_DIR/${button}.png"
-            BUTTON_DIM=$(identify "$WORK_DIR/Highlightx1.png" |awk '{print $3}')
             convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
             fake_montage=( $WORK_DIR/Highlightx1.png $(for ((i=0; i<NUM_FILES-1; i++)); do
             echo $WORK_DIR/empty-button.png; done))
@@ -2556,7 +2635,7 @@ elif [[ "$BUTTON_STYLE" = *text* ]]; then
         -bordercolor none -mattecolor transparent miff:- |
         convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
         -composite "$WORK_DIR/Highlight.png"
-        BUTTON_DIM=$(identify "$WORK_DIR/000000-highlight.png" |awk '{print $3}')
+        BUTTON_DIM=$(get_image_dim "$WORK_DIR/000000-highlight.png")
         convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
         fake_montage=( $WORK_DIR/000000-highlight.png $(for ((i=0; i<NUM_FILES-1; i++)); do
         echo $WORK_DIR/empty-button.png; done))
@@ -2587,12 +2666,12 @@ done
 if $SHOWCASE; then
     if ! $NO_SC_THUMB; then
         # find out where to put the showcase image/video in the X axis
-        sc_size=$(identify "$WORK_DIR/showcase_img.png"|awk '{print $3}')
+        sc_size=$(get_image_dim "$WORK_DIR/showcase_img.png")
         sc_width=${sc_size/x*}
         sc_height=${sc_size/*x}
     fi
-    if ! $NO_SC_THUMB && ! $TEXTMENU; then
-        if [[ "$SC_TITLE_ALIGN" = "centre" ]]; then
+    if ! $NO_SC_THUMB; then #&& ! $TEXTMENU; then
+        if [[ "$SC_TITLE_ALIGN" = "center" ]]; then
             if [[ $WIDEST_TITLE -ge ${THUMB_SIZE/x*} ]]; then
                 BUTTON_COLUMN1=$(( (${THUMB_SIZE/x*} / 2) + (WIDEST_TITLE / 2) ))
             else
@@ -2607,27 +2686,48 @@ if $SHOWCASE; then
         elif [[ "$SC_TITLE_ALIGN" = "east" ]]; then
             BUTTON_COLUMN1=$(( ${THUMB_SIZE/x*} + WIDEST_TITLE ))
         fi
+        if ! $TEXTMENU; then
         sc_space=$((${VIDSIZE%x*} - \
             ${SHOWCASE_THUMB_X_ARRAY[0]} - BUTTON_COLUMN1 - SAFE_AREA))
         sc_xpage=$(( ${SHOWCASE_THUMB_X_ARRAY[0]} + BUTTON_COLUMN1 \
             + (sc_space / 2) - (sc_width / 2) ))
-                 
+        else
+            BUTTON_COLUMN1=$((WIDEST_TITLE + 5))
+            sc_space=$((${VIDSIZE%x*} - \
+                ${SHOWCASE_TITLES_X_ARRAY[0]} - BUTTON_COLUMN1 - SAFE_AREA))
+            sc_xpage=$(( ${SHOWCASE_TITLES_X_ARRAY[0]} + BUTTON_COLUMN1 \
+            + (sc_space / 2) - (sc_width / 2) ))
+            if [[ $BUTTON_GRAVITY = *east* ]]; then
+                BUTTON_COLUMN1=$WIDEST_TITLE
+                sc_space=$((${VIDSIZE%x*} - (SAFE_AREA * 2) - BUTTON_COLUMN1))
+                sc_xpage=$((SAFE_AREA + (sc_space / 2) - (sc_width / 2) ))
+            fi
+        fi 
         # find out where to put the showcase image in the Y axis
-        Y1=${SHOWCASE_THUMB_Y_ARRAY[0]}; Y2=${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]}
-        ((NUM_FILES >= LEFT_MAX)) && Y2=${SHOWCASE_THUMB_Y_ARRAY[SPLIT-1]}
-        Y_SPACE=$(( (Y2 - Y1) + ${THUMB_SIZE/*x} ))
-        Y_SPACE=$(( Y_SPACE - sc_height ))
-        SC_Y=$(( Y_SPACE / 2))
-        SC_Y=$(( ${SHOWCASE_THUMB_Y_ARRAY[0]} + SC_Y ))
-        [[ $V_TOTAL -gt 5 ]] && sc_xpage=$(( 360 - (sc_width / 2) ))
+        if ! $TEXTMENU; then
+            Y1=${SHOWCASE_THUMB_Y_ARRAY[0]}; Y2=${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]}
+            ((NUM_FILES >= LEFT_MAX)) && Y2=${SHOWCASE_THUMB_Y_ARRAY[SPLIT-1]}
+            Y_SPACE=$(( (Y2 - Y1) + ${THUMB_SIZE/*x} ))
+            Y_SPACE=$(( Y_SPACE - sc_height ))
+            SC_Y=$(( Y_SPACE / 2))
+            SC_Y=$(( ${SHOWCASE_THUMB_Y_ARRAY[0]} + SC_Y ))
+        else # TEXTMENU
+#            ((NUM_FILES < SPLIT)) && split=$NUM_FILES || split=$((SPLIT - 1))
+            # if there is a menu title, move the showcase thumb up or down
+            if [[ -n $VMGM_TITLE ]] && ! $USER_SC_GEO && ! $USER_TITLE_GEO; then
+                [[ $TITLE_GRAVITY = south ]] && TITLE_SPACE="- $(( (title_yoffset + TITLE_TEXT_YDIM) / 2))"
+                [[ $TITLE_GRAVITY = north ]] && TITLE_SPACE="+ $(( (title_yoffset + TITLE_TEXT_YDIM) / 2))"
+            fi    
+            Y_SPACE=${VIDSIZE#*x}
+            SC_Y=$(( (Y_SPACE / 2) - (sc_height / 2) $TITLE_SPACE ))
+        fi
+            
+        ! $TEXTMENU && [[ $V_TOTAL -gt 5 ]] && sc_xpage=$(( 360 - (sc_width / 2) ))
+        $TEXTMENU && [[ -n $tt_ygeos_col2 ]] && sc_xpage=$(( 360 - (sc_width / 2) ))
         $USER_SC_GEO && sc_xpage=${SHOWCASE_GEO/x*}
         $USER_SC_GEO && SC_Y=${SHOWCASE_GEO/*x}
         SC_IMG_PAGE="-page +$sc_xpage+$SC_Y"
         SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
-    elif ! $NO_SC_THUMB && $TEXTMENU; then
-        :
-        # FIXME allow showcase thumb with various textmenu options
-        # needs to work with 1 column and 2 columns - 2 cols must be -align east
     fi
     if $NO_SC_THUMB; then unset SC_IMG_CMD; fi
     if [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
@@ -2635,17 +2735,18 @@ if $SHOWCASE; then
         for ((i=0; i<=NUM_FILES; i++)); do
             sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "${PICS[i]}")
         done
-        $NO_THUMBS && unset sc_cmd
+        $TEXTMENU && unset sc_cmd
         if $TRANSPARENT; then
             IM_CMD0=(convert  -size $VIDSIZE xc:none -background none \
             ${sc_cmd[@]} $SC_IMG_CMD -mosaic)
             IM_CMD1=(convert -size $VIDSIZE -background none \
-                - ${sc_thumb_title_cmd[@]} -mosaic)
+            - ${sc_thumb_title_cmd[@]} -mosaic)
             IM_CMD2=(composite -size $VIDSIZE -background none \
-                -gravity NorthWest  -dissolve $OPACITY - "$WORK_DIR/pics/template.png" \
-                -background none)
+            -gravity NorthWest  -dissolve $OPACITY - "$WORK_DIR/pics/template.png" \
+            -background none)
             IM_CMD3=(convert - $WORK_DIR/title_txt.png  \
-                -gravity $TITLE_GRAVITY -geometry +0+${title_pos} -composite "$WORK_DIR/preview.jpg" )
+            -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
+            -composite "$WORK_DIR/preview.jpg" )
             echo "Running
             "${IM_CMD0[@]}" miff:- | "${IM_CMD1[@]}" miff:- |
             "${IM_CMD2[@]}" miff:- | "${IM_CMD3[@]}"
@@ -2673,7 +2774,8 @@ else # not showcase
         -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
         "$WORK_DIR/pics/template.png" -background none miff:- |
         convert - "$WORK_DIR/title_txt.png"  \
-        -gravity $TITLE_GRAVITY -geometry +0+${title_pos} -composite "$WORK_DIR/preview.jpg"
+        -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
+        -composite "$WORK_DIR/preview.jpg"
         " | fold -bs
         montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
         -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none -bordercolor "#444744" miff:- |
@@ -2681,13 +2783,14 @@ else # not showcase
         -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
         "$WORK_DIR/pics/template.png" -background none miff:- |
         convert - "$WORK_DIR/title_txt.png"  \
-        -gravity $TITLE_GRAVITY -geometry +0+${title_pos} -composite "$WORK_DIR/preview.jpg"
+        -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
+        -composite "$WORK_DIR/preview.jpg"
     else # Not transparent
         montage ${PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
         -geometry ${GEO_ARRAY[NUM_FILES]}+10+4  -background none -bordercolor "#444744" miff:- |
-        convert "$WORK_DIR/pics/template.png" \
-        "$WORK_DIR/title_txt.png"  -gravity $TITLE_GRAVITY -geometry +0+${title_pos} -composite \
-        -  -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} -composite "$WORK_DIR/preview.jpg"
+        convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png"  -gravity $TITLE_GRAVITY \
+        -geometry ${title_xoffset}${title_yoffset} -composite -  -gravity $BUTTON_GRAVITY \
+        -geometry +${XGEO}+${YGEO} -composite "$WORK_DIR/preview.jpg"
     fi
 fi
 if ! $NOASK; then
@@ -2748,7 +2851,7 @@ tovid_reencode()
     VIDEO_IN_SEEK="$2"
     $NOASK && NO_ASK="-noask"
     yecho
-    yecho "$VIDEO_IN is not compliant - re-encoding $((VIDEO_IN_SEEK + ANI_MENU_LENGTH)) second slice to DVD compliant file"
+    yecho "$VIDEO_IN is not compliant - re-encoding $(bc <<< "$VIDEO_IN_SEEK + $ANI_MENU_LENGTH") second slice to DVD compliant file"
     yecho "if you used a long seek this will take some time and produce a large file."
     yecho "But if the file is not encoded this way there may be sync problems."
     yecho "Do you want to continue encoding this file?, type 'yes' to do so"
@@ -2911,7 +3014,7 @@ fi
 #                       work on the clip title images                         #
 ###############################################################################
 # extract images from the provided background video
-if ! $NO_THUMBS; then
+if ! $TEXTMENU; then
     echo
     echo "Creating $FRAMES images from each video for the main menu"
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
@@ -3651,14 +3754,14 @@ fi
 unset IMAGES last_pic next_pic FFMPEG_CMD pic
 
 yecho
-if [[ ! "$SC_FRAMESTYLE" = "glass" && ! $NO_THUMBS ]]; then
+if [[ ! "$SC_FRAMESTYLE" = "glass" && ! $TEXTMENU ]]; then
     if $SHOWCASE; then
         yecho "Processing video images"
     else
         yecho "Adding title to video images and resizing"
     fi
 fi
-if ! $NO_THUMBS; then
+if ! $TEXTMENU; then
     for ((i=0; i<=NUM_FILES; i++)); do
         if $FEATHER && $THUMBS_3D && [ "$THUMB_SHAPE" != "normal" ]; then
             unset CURVE_ARRAY CURVE_VALUES CURVE_VARS
@@ -3696,13 +3799,13 @@ if ! $NO_THUMBS; then
             -shade $(awk_math 115 plus ${CURVE_ARRAY[p]} float)x30 -normalize mpr:img${p} \
             -compose Overlay -composite mpr:img${p} -matte -compose Dst_In -composite)
             IM_CMD7=(convert -trim +repage - )
-            if $FEATHER &&  [ "$THUMB_SHAPE" != "normal" ] && $THUMBS_3D; then # debug FIXME
+            if $FEATHER &&  [ "$THUMB_SHAPE" != "normal" ] && $THUMBS_3D; then
                 CURVE_UPDATE="with -blur 0x$( printf  "%.2f" $(awk_math 7 plus .${CURVE_ARRAY[p]/.} float) ) \
                 -shade $( printf "%.2f" $(awk_math 115 plus ${CURVE_ARRAY[p]} float) )x30"
             fi
             if $FEATHER; then
                 spin "\rProcessing $(awk -F / '{ print $NF }' <<< "${PICS[p]}") \
-                $(echo $CURVE_UPDATE | format_output) " # debug FIXME
+                $(echo $CURVE_UPDATE | format_output) "
                 if $SHOWCASE; then
                     if $THUMBS_3D; then
                         if [ "$THUMB_SHAPE" != "normal" ]; then # normal has $RAISE
@@ -3820,10 +3923,12 @@ if $MENU_FADE && ! $STATIC; then
         for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
             ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  -name $(printf "%06d%s"  $((frame + 1)) .$IMG_FMT) ) )
         done
-        if $SHOWCASE && ! $NO_THUMBS; then
-            for ((i=0; i<${#ANI_PICS[@]}; i++)); do
-                sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "${ANI_PICS[i]}")
-            done
+        if $SHOWCASE; then
+            if ! $TEXTMENU; then
+                for ((i=0; i<${#ANI_PICS[@]}; i++)); do
+                    sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "${ANI_PICS[i]}")
+                done
+            fi
             if ! $NO_SC_THUMB; then
                 SC_VIDEO_CMD="$SC_IMG_PAGE \
                 "$WORK_DIR"/showcase/$(printf "%06d%s"  $(($frame + 1)) .png)"
@@ -3831,8 +3936,8 @@ if $MENU_FADE && ! $STATIC; then
                 unset SC_VIDEO_CMD
             fi
         fi
-        $NO_THUMBS && unset sc_cmd
-        ! $NO_THUMBS && MOSAIC="-mosaic"
+        $TEXTMENU && unset sc_cmd
+        ! $TEXTMENU && MOSAIC="-mosaic"
         BG_PIC=$(find $WORK_DIR/bg -name $(($frame + 1)).jpg)
         # create the montage from the images in each video dir
         MONTAGE_CMD=(convert  -size $VIDSIZE -background none \
@@ -3857,19 +3962,20 @@ if $MENU_FADE && ! $STATIC; then
         -gravity NorthWest  -dissolve $S - $WORK_DIR/bg/$(($frame + 1)).jpg \
         -background none)
         # if MIST is called for, this dissolves the mist onto the background
-        MONTAGE_CMD3=(composite -dissolve $B -gravity $TITLE_GRAVITY -geometry +0+${mist_pos} \
-        $WORK_DIR/white.png -)
+        MONTAGE_CMD3=(composite -dissolve $B -gravity $TITLE_GRAVITY \
+        -geometry ${mist_xoffset}${mist_yoffset} $WORK_DIR/white.png -)
         # finally, we dissolve the title onto the MIST (or plain background)
-        MONTAGE_CMD4=(composite -dissolve $C -gravity $TITLE_GRAVITY -geometry +0+${title_pos} \
-        $WORK_DIR/title_txt.png - -background none $WORK_DIR/animenu/$(($frame + 1)).jpg)
+        MONTAGE_CMD4=(composite -dissolve $C -gravity $TITLE_GRAVITY -geometry \
+        ${title_xoffset}${title_yoffset} $WORK_DIR/title_txt.png - \
+        -background none $WORK_DIR/animenu/$(($frame + 1)).jpg)
         if $PLAYALL; then
             MONTAGE_CMD5=(composite -dissolve $S -gravity SouthEast -geometry +55+55 \
             $WORK_DIR/PLAYALL.png - -background none)
         else
             MONTAGE_CMD5=(convert -)
         fi
-        $NO_THUMBS && unset MONTAGE_CMD
-        $NO_THUMBS && MONTAGE_CMD=( "${MONTAGE_CMD03[@]}" )
+        $TEXTMENU && unset MONTAGE_CMD
+        $TEXTMENU && MONTAGE_CMD=( "${MONTAGE_CMD03[@]}" )
         # pipe all of above commands if using MIST
         if $MIST; then
             if $SHOWCASE; then
@@ -3923,8 +4029,8 @@ else # Do not do menu fade
             SC_VIDEO_CMD="$SC_IMG_PAGE \
             "$WORK_DIR"/showcase/$(printf "%06d%s"  $count .png)"
             $STATIC && SC_VIDEO_CMD="$SC_IMG_PAGE \
-            "$WORK_DIR"/showcase_img.png" #FIXME
-            $NO_THUMBS && unset sc_cmd SC_IMG_CMD SC_VIDEO_CMD #FIXME
+            "$WORK_DIR"/showcase_img.png"
+            $TEXTMENU && unset sc_cmd
 
             IM_CMD0=(convert  -size $VIDSIZE "$WORK_DIR/pics/template.png" \
             ${sc_cmd[@]} $SC_IMG_CMD -mosaic)
@@ -3950,10 +4056,10 @@ else # Do not do menu fade
             IM_CMD2b=(composite -dissolve $OPACITY \
             -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
             $WORK_DIR/bg/$count.jpg -background none miff:-)
-            IM_CMD3=(composite -dissolve 30 -gravity $TITLE_GRAVITY -geometry +0+${mist_pos} \
-            $WORK_DIR/white.png - miff:-)
-            IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
-            -gravity $TITLE_GRAVITY -geometry +0+${title_pos} -composite $ADD_PLAYALL \
+            IM_CMD3=(composite -dissolve 30 -gravity $TITLE_GRAVITY \
+            -geometry ${mist_xoffset}${mist_yoffset} $WORK_DIR/white.png - miff:-)
+            IM_CMD4=(convert - $WORK_DIR/title_txt.png -gravity $TITLE_GRAVITY \
+            -geometry ${title_xoffset}${title_yoffset} -composite $ADD_PLAYALL \
             $WORK_DIR/animenu/$count.jpg )
             if $MIST; then
                 if $SHOWCASE && [[ -n "$SHOWCASE_VIDEO" ]]; then # showcase, mist, showcase-video
@@ -4019,11 +4125,11 @@ else # Do not do menu fade
             -  -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} -composite miff:-)
             IM_CMD2=(convert $WORK_DIR/bg/$count.jpg \
             -  -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} -composite miff:-)
-            IM_CMD3=(composite -dissolve 30 -gravity $TITLE_GRAVITY -geometry +0+${mist_pos} \
-            $WORK_DIR/white.png - miff:-)
+            IM_CMD3=(composite -dissolve 30 -gravity $TITLE_GRAVITY \
+            -geometry ${mist_xoffset}${mist_yoffset} $WORK_DIR/white.png - miff:-)
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
-            -gravity $TITLE_GRAVITY -geometry +0+${title_pos} -composite $ADD_PLAYALL \
-            $WORK_DIR/animenu/$count.jpg )
+            -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
+            -composite $ADD_PLAYALL $WORK_DIR/animenu/$count.jpg )
 
             if $STATIC; then
                 if $MIST; then
