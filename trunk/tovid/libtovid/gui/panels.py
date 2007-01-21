@@ -2000,7 +2000,7 @@ class MenuPanel(wx.Panel):
         self.lblMenuTitle = wx.StaticText(self, wx.ID_ANY, "Menu Title:")
         self.txtMenuTitle = wx.TextCtrl(self, wx.ID_ANY)
         self.txtMenuTitle.SetToolTipString(\
-            "Enter a main title for your menu. Uncheck if you" \
+            "Enter a main title for your menu. Leave blank if you" \
             " don't want a title.")
         wx.EVT_TEXT(self, self.txtMenuTitle.GetId(), self.OnMenuTitle)
         # Image
