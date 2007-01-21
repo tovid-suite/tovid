@@ -732,13 +732,14 @@ class DiscLayoutPanel(wx.Panel):
         curType = curOpts.type
         curParent = self.discTree.GetItemParent(curItem)
 
-        # If root is selected, disable unusable buttons
+        # If root is selected, dis/enable unusable buttons
         if curItem == self.rootItem:
             self.btnMoveUp.Enable(False)
             self.btnMoveDown.Enable(False)
             self.btnRemove.Enable(False)
             self.btnAddVideos.Enable(False)
-            self.btnAddSlides.Enable(False)
+            self.btnAddMenu.Enable(True)
+            #self.btnAddSlides.Enable(False)
             self.btnAddGroup.Enable(False)
         # Otherwise, enable usable buttons
         else:
@@ -757,6 +758,7 @@ class DiscLayoutPanel(wx.Panel):
                 self.btnAddVideos.Enable(True)
                 #self.btnAddSlides.Enable(True)
                 self.btnAddGroup.Enable(True)
+                self.btnAddMenu.Enable(True)
             elif curType == ID_GROUP and curItem != self.topItem:
                 self.btnAddVideos.Enable(True)
                 self.btnAddGroup.Enable(False)
@@ -2157,7 +2159,7 @@ class MenuPanel(wx.Panel):
             wx.ALL, 8)
         # Vertical sizer putting sizTextFormat above sizDVDButtonStyle
         self.sizTextAndButtons = wx.BoxSizer(wx.VERTICAL)
-        self.sizTextAndButtons.Add(self.sizTextFormat, 1, wx.EXPAND, 0)
+        self.sizTextAndButtons.Add(self.sizTextFormat, 0, wx.EXPAND, 0)
         self.sizTextAndButtons.Add(self.sizDVDButtonStyle, 1, wx.EXPAND, 0)
 
         # List of titles in this menu ======================================\
@@ -2175,7 +2177,7 @@ class MenuPanel(wx.Panel):
 
         # Horizontal sizer holding sizTextAndButtons and sizTitles =========\
         self.sizTextTitles = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizTextTitles.Add(self.sizTextAndButtons, 1, wx.EXPAND, 0)
+        self.sizTextTitles.Add(self.sizTextAndButtons, 1, 0)
         self.sizTextTitles.Add(self.sizTitles, 1, wx.EXPAND | wx.LEFT, 10)
 
         # Menu options heading
