@@ -2209,7 +2209,6 @@ if [[ -n "$BG_VIDEO" ]]; then
 fi
 if $SHOWCASE && ! $NO_SC_THUMB; then
 [[ $SC_TITLE_ALIGN = east ]] && ! $TEXTMENU && TS="+ ${THUMB_SIZE/x*}"
-echo "$WIDEST_TITLE + $SAFE_AREA $TS + ${SHOWCASE_SIZE/x*} >  ${VIDSIZE/x*} - $SAFE_AREA"
     if (( (WIDEST_TITLE + SAFE_AREA $TS + ${SHOWCASE_SIZE/x*}) > ( ${VIDSIZE/x*} - SAFE_AREA) )); then
             SHOWCASE_SIZE=288x216
             [[ $TARGET = "svcd" ]] && SHOWCASE_SIZE=216x216
