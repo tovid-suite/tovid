@@ -276,17 +276,24 @@ class MenuOptions:
     tvsys = 'ntsc'
     # -dvd, -vcd, or -svcd
     format = 'dvd'
+    # -menu-title
+    menutitle = ""
     # -background FILE
     background = ""
     # -audio FILE
     audio = ""
+    # -length NUM
+    menulength = ""
     # -align [northwest|north|northeast]
     alignment = 'northwest'
     # Other settings
-    titles = []
+    fontsize = "24"
+    button = ">"
+    buttonOutline = wx.Colour(140, 140, 140)
     colorText = wx.Colour(255, 255, 255)
     colorHi = wx.Colour(255, 255, 0)
     colorSel = wx.Colour(255, 0, 0)
+    titles = []
     outPrefix = ""
 
     def __init__(self, format = 'dvd', tvsys = 'ntsc',
@@ -312,10 +319,14 @@ class MenuOptions:
         strCommand += "-align %s " % self.alignment
 
         # Image and audio backgrounds, if any
+        if self.menutitle != "":
+            strCommand += "-menu-title \"%s\" " % self.menutitle
         if self.background != "":
             strCommand += "-background \"%s\" " % self.background
         if self.audio != "":
             strCommand += "-audio \"%s\" " % self.audio
+        if self.menulength != "":
+            strCommand += "-length %s " % self.menulength
 
         # Append text color
         strCommand += "-textcolor \"rgb(%d,%d,%d)\" " % \
@@ -327,11 +338,19 @@ class MenuOptions:
             strCommand += "-selectcolor \"rgb(%d,%d,%d)\" " % \
                 (self.colorSel.Red(), self.colorSel.Green(), self.colorSel.Blue())
 
-        # Append font
+        # Append font and size
         if self.font.GetFaceName() != "":
             wx_FontName = self.font.GetFaceName()
             IM_FontName = curConfig.wx_IM_FontMap[wx_FontName] 
             strCommand += "-font \"%s\" " % IM_FontName
+        strCommand += "-fontsize %s " % self.fontsize
+
+        # Append button styling
+        if self.button != "":
+            strCommand += "-button \"%s\" " % self.button
+        if self.buttonOutline != "":
+            strCommand += "-button-outline \"rgb(%d,%d,%d)\" " % \
+                (self.buttonOutline.Red(), self.buttonOutline.Green(), self.buttonOutline.Blue())
 
         # Append video/still titles
         for title in range(len(self.titles)):
