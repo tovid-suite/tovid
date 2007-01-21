@@ -1997,12 +1997,17 @@ class MenuPanel(wx.Panel):
 
         # Background image/audio selection controls =======================\
         # Menu title
-        self.lblMenuTitle = wx.StaticText(self, wx.ID_ANY, "Menu Title:")
+        self.chkMenuTitle = wx.CheckBox(self, wx.ID_ANY, 
+            style=wx.ALIGN_RIGHT, label="Title?")
+        self.chkMenuTitle.SetToolTipString(\
+            "Should the menu have a main title?")
+        self.chkMenuTitle.SetValue(wx.CHK_CHECKED)
+        wx.EVT_CHECKBOX(self, self.chkMenuTitle.GetId(), self.OnMenuTitle)
         self.txtMenuTitle = wx.TextCtrl(self, wx.ID_ANY)
         self.txtMenuTitle.SetToolTipString(\
             "Enter a main title for your menu. Leave blank if you" \
             " don't want a title.")
-        wx.EVT_TEXT(self, self.txtMenuTitle.GetId(), self.OnMenuTitle)
+        wx.EVT_TEXT(self, self.txtMenuTitle.GetId(), self.OnMenuTitleGiven)
         # Image
         self.lblBGImage = wx.StaticText(self, wx.ID_ANY, "Image:")
         self.txtBGImage = wx.TextCtrl(self, wx.ID_ANY)
@@ -2037,7 +2042,7 @@ class MenuPanel(wx.Panel):
         # Group background controls together
         self.sizBGInner = wx.FlexGridSizer(4, 3, 4, 8)
         self.sizBGInner.AddMany([
-            (self.lblMenuTitle, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL),
+            (self.chkMenuTitle, 0, wx.ALIGN_RIGHT),
             (self.txtMenuTitle, 0, wx.EXPAND),
             ((0, 0), 0), 
             (self.lblBGImage, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL),
@@ -2207,6 +2212,10 @@ class MenuPanel(wx.Panel):
         self.SetSizer(self.sizMain)
 
     def OnMenuTitle(self, evt):
+        """Show/hide the menu title text box when check box is (un)checked"""
+        pass
+
+    def OnMenuTitleGiven(self, evt):
         """Set the menu's main title in curOptions whenever text is altered."""
         self.curOptions.menutitle = self.txtMenuTitle.GetValue()
 
