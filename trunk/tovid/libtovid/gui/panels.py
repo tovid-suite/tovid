@@ -896,6 +896,8 @@ class DiscLayoutPanel(wx.Panel):
         # menu after it
         if self.numMenus == 2 and self.topItem == self.rootItem:
             oldMenu, cookie = VER_GetFirstChild(self.discTree, self.topItem)
+            if oldMenu.title == "Untitled menu 1":
+                oldMenu.title = "Untitled menu 2"
             self.topItem = self.discTree.AppendItem(self.rootItem,
                 "Main menu", self.idxIconMenu)
             # Create a new top menu at the root of the tree
