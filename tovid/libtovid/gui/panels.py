@@ -627,7 +627,7 @@ class DiscLayoutPanel(wx.Panel):
         # Buttons and their tooltips
         self.btnAddVideos = wx.Button(self, wx.ID_ANY, "Add video(s)")
         self.btnAddSlides = wx.Button(self, wx.ID_ANY, "Add slide(s)")
-        self.btnAddGroup = wx.Button(self, wx.ID_ANY, "Add group")
+        self.btnAddGroup = wx.Button(self, wx.ID_ANY, "Add a group")
         self.btnAddMenu = wx.Button(self, wx.ID_ANY, "Add menu")
         self.btnMoveUp = wx.Button(self, wx.ID_ANY, "Move up")
         self.btnMoveDown = wx.Button(self, wx.ID_ANY, "Move down")
@@ -1986,92 +1986,181 @@ class MenuPanel(wx.Panel):
         self.sboxBG = wx.StaticBox(self, wx.ID_ANY, "Menu background options")
         self.sizBG = wx.StaticBoxSizer(self.sboxBG, wx.VERTICAL)
 
-        # Background image/audio selection controls
+        # Background image/audio selection controls =======================\
+        # Menu title
+        self.lblMenuTitle = wx.StaticText(self, wx.ID_ANY, "Menu Title:")
+        self.txtMenuTitle = wx.TextCtrl(self, wx.ID_ANY)
+        self.txtMenuTitle.SetToolTipString(\
+            "Enter a main title for your menu. Leave blank if you" \
+            " don't want a title.")
+        wx.EVT_TEXT(self, self.txtMenuTitle.GetId(), self.OnMenuTitle)
         # Image
         self.lblBGImage = wx.StaticText(self, wx.ID_ANY, "Image:")
         self.txtBGImage = wx.TextCtrl(self, wx.ID_ANY)
         self.txtBGImage.SetToolTipString(\
             "Type the full name of the image file you want to use in the" \
             " background of the menu, or use the browse button.")
-        self.btnBrowseBGImage = wx.Button(self, wx.ID_ANY, "Browse")
-        self.btnBrowseBGImage.SetToolTipString("Browse for an image file to "
+        self.btnBrowseBGImage = wx.Button(self, wx.ID_ANY, "Choose image...")
+        self.btnBrowseBGImage.SetToolTipString("Browse for an image file to " \
             "use for the background of the menu")
         wx.EVT_TEXT(self, self.txtBGImage.GetId(), self.OnBGImage)
         wx.EVT_BUTTON(self, self.btnBrowseBGImage.GetId(), self.OnBrowseBGImage)
         # Audio
         self.lblBGAudio = wx.StaticText(self, wx.ID_ANY, "Audio:")
         self.txtBGAudio = wx.TextCtrl(self, wx.ID_ANY)
-        self.txtBGAudio.SetToolTipString("Type the full name of the audio file "
-            "you want to play while the menu is shown, or use the browse button.")
-        self.btnBrowseBGAudio = wx.Button(self, wx.ID_ANY, "Browse")
-        self.btnBrowseBGAudio.SetToolTipString("Browse for an audio file to "
+        self.txtBGAudio.SetToolTipString(\
+            "Type the full name of the audio file " \
+            "you want to play while the menu is shown, " \
+            "or use the browse button.")
+        self.btnBrowseBGAudio = wx.Button(self, wx.ID_ANY, "Choose audio...")
+        self.btnBrowseBGAudio.SetToolTipString(\
+            "Browse for an audio file to " \
             "play while the menu is shown")
         wx.EVT_TEXT(self, self.txtBGAudio.GetId(), self.OnBGAudio)
         wx.EVT_BUTTON(self, self.btnBrowseBGAudio.GetId(), self.OnBrowseBGAudio)
-
-        # Inner sizer for background controls
-        self.sizBGInner = wx.FlexGridSizer(2, 3, 2, 8)
-        self.sizBGInner.AddMany([ (self.lblBGImage, 0, wx.ALIGN_RIGHT),
-                                   (self.txtBGImage, 0, wx.EXPAND),
-                                   (self.btnBrowseBGImage, 0, wx.EXPAND),
-                                   (self.lblBGAudio, 0, wx.ALIGN_RIGHT),
-                                   (self.txtBGAudio, 0, wx.EXPAND),
-                                   (self.btnBrowseBGAudio, 0, wx.EXPAND) ])
+        # Length
+        self.lblMenuLength = wx.StaticText(self, wx.ID_ANY, "Length (sec):")
+        self.txtMenuLength = wx.TextCtrl(self, wx.ID_ANY)
+        self.txtMenuLength.SetToolTipString(\
+            "Set the length of the menu in seconds. " \
+            "Leave blank to use the full-length of your audio file.")
+        wx.EVT_TEXT(self, self.txtMenuLength.GetId(), self.OnMenuLength)
+        # Group background controls together
+        self.sizBGInner = wx.FlexGridSizer(4, 3, 4, 8)
+        self.sizBGInner.AddMany([
+            (self.lblMenuTitle, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL),
+            (self.txtMenuTitle, 0, wx.EXPAND),
+            ((0, 0), 0), 
+            (self.lblBGImage, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL),
+            (self.txtBGImage, 1, wx.EXPAND),
+            (self.btnBrowseBGImage, 0, wx.EXPAND),
+            (self.lblBGAudio, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL),
+            (self.txtBGAudio, 1, wx.EXPAND),
+            (self.btnBrowseBGAudio, 0, wx.EXPAND), 
+            (self.lblMenuLength, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL),
+            (self.txtMenuLength, 0),
+            ((0, 0), 0) ])
         self.sizBGInner.AddGrowableCol(1)
         # Add inner sizer to outer staticbox sizer
         self.sizBG.Add(self.sizBGInner, 0, wx.EXPAND | wx.ALL, 8)
 
-        # Menu font and alignment controls
+        # Menu font and size controls =====================================\
         self.lblFontFace = wx.StaticText(self, wx.ID_ANY, "Font:")
         self.btnFontChooserDialog = wx.Button(self, wx.ID_ANY, "Default")
         self.btnFontChooserDialog.SetToolTipString(\
                 "Select a font to use for the menu text")
         wx.EVT_BUTTON(self, self.btnFontChooserDialog.GetId(), \
                 self.OnFontSelection)
-        strAlignments = ['Left', 'Center', 'Right']
-        self.rbAlignment = wx.RadioBox(self, wx.ID_ANY, "Alignment", \
-                wx.DefaultPosition, wx.DefaultSize, strAlignments, 1, \
-                wx.RA_SPECIFY_ROWS)
-        self.rbAlignment.SetToolTipString(\
-                "Select how the menu text should be aligned")
-        wx.EVT_RADIOBOX(self, self.rbAlignment.GetId(), self.OnAlignment)
+        self.lblFontSize = wx.StaticText(self, wx.ID_ANY, "Size:")
+        self.txtFontSize = wx.TextCtrl(self, wx.ID_ANY)
+        self.txtFontSize.SetToolTipString(\
+                "Specify the font size")
+        wx.EVT_TEXT(self, self.txtFontSize.GetId(), \
+                self.OnFontSize)
+        # Place font items together
         self.sizFontFace = wx.BoxSizer(wx.HORIZONTAL)
         self.sizFontFace.AddMany([\
-                (self.lblFontFace, 0, wx.ALL, 4),
-                (self.btnFontChooserDialog, 1, wx.EXPAND | wx.ALL, 4) ])
-
+                (self.lblFontFace, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4),
+                (self.btnFontChooserDialog, 3, wx.ALL, 4),
+                (self.lblFontSize, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4),
+                (self.txtFontSize, 1, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4) ])
+        # Text alignment
+        self.lblAlignment = wx.StaticText(self, wx.ID_ANY, "Alignment:")
+        strAlignments = ['Top left', 'Top center', 'Top right', \
+                         'Left', 'Middle', 'Right', \
+                         'Bottom left', 'Bottom center', 'Bottom right']
+        self.chAlignment = wx.Choice(self, wx.ID_ANY, wx.DefaultPosition, \
+                wx.DefaultSize, strAlignments, name="Alignment")
+        self.chAlignment.SetToolTipString(\
+                "Select how the menu text should be aligned")
+        wx.EVT_CHOICE(self, self.chAlignment.GetId(), self.OnAlignment)
+        # Place alignment items together
+        self.sizAlignment = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizAlignment.AddMany([ \
+                (self.lblAlignment, 0, wx.ALL| wx.ALIGN_CENTER_VERTICAL, 4),
+                (self.chAlignment, 0, wx.ALL, 4) ])
         # Menu text color controls
         self.lblTextColor = wx.StaticText(self, wx.ID_ANY, _("Text color:"))
-        self.lblHiColor = wx.StaticText(self, wx.ID_ANY, _("Highlight color:"))
-        self.lblSelColor = wx.StaticText(self, wx.ID_ANY, _("Selection color:"))
         self.btnTextColor = wx.Button(self, wx.ID_ANY, _("Choose..."))
-        self.btnHiColor = wx.Button(self, wx.ID_ANY, _("Choose..."))
-        self.btnSelColor = wx.Button(self, wx.ID_ANY, _("Choose..."))
-        # Tooltips
         self.btnTextColor.SetToolTipString(_("Choose the color used "
             "for the menu text"))
+        self.btnTextColor.SetBackgroundColour(self.curOptions.colorText)
+        wx.EVT_BUTTON(self, self.btnTextColor.GetId(), self.OnTextColor)
+        # Place text color items together
+        self.sizFontColor = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizFontColor.AddMany([ 
+            (self.lblTextColor, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL | 
+                wx.ALL, 4),
+            (self.btnTextColor, 0, wx.ALL, 4) ])
+
+        # Put menu text face/size/alignment/color controls in a static box
+        self.sboxTextFormat = wx.StaticBox(self, wx.ID_ANY, "Menu text format")
+        self.sizTextFormat = wx.StaticBoxSizer(self.sboxTextFormat, wx.VERTICAL)
+        self.sizTextFormat.AddMany([\
+          (self.sizFontFace, 0, wx.EXPAND),
+          (self.sizAlignment, 0, wx.EXPAND),
+          (self.sizFontColor, 0, wx.EXPAND) ])
+
+        # DVD buttons ======================================================\
+        # colors
+        self.lblHiColor = wx.StaticText(self, wx.ID_ANY, _("Highlight color:"))
+        self.lblSelColor = wx.StaticText(self, wx.ID_ANY, _("Selection color:"))
+        self.btnHiColor = wx.Button(self, wx.ID_ANY, _("Choose..."))
+        self.btnSelColor = wx.Button(self, wx.ID_ANY, _("Choose..."))
         self.btnHiColor.SetToolTipString(_("Choose the color used "
             "to highlight menu items as they are navigated"))
         self.btnSelColor.SetToolTipString(_("Choose the color used "
             "when a menu item is chosen or activated for playback"))
-        self.btnTextColor.SetBackgroundColour(self.curOptions.colorText)
         self.btnHiColor.SetBackgroundColour(self.curOptions.colorHi)
         self.btnSelColor.SetBackgroundColour(self.curOptions.colorSel)
-        # Events
-        wx.EVT_BUTTON(self, self.btnTextColor.GetId(), self.OnTextColor)
         wx.EVT_BUTTON(self, self.btnHiColor.GetId(), self.OnHiColor)
         wx.EVT_BUTTON(self, self.btnSelColor.GetId(), self.OnSelColor)
+        # shape
+        strButtons = ['>', '~', 'play', 'movie']
+        self.lblButton = wx.StaticText(self, wx.ID_ANY, "Button shape:")
+        self.cbButton = wx.ComboBox(self, wx.ID_ANY, value='>', \
+            style=wx.CB_DROPDOWN, choices=strButtons)
+        self.cbButton.SetToolTipString(\
+            "Choose the shape of the DVD buttons."\
+            "You may also type your own button (can only be 1 character).")
+        wx.EVT_TEXT(self, self.cbButton.GetId(), self.OnButton)
+        # outline
+        self.chkButtonOutline = wx.CheckBox(self, wx.ID_ANY, 
+            style=wx.ALIGN_RIGHT, label="Outline?")
+        self.chkButtonOutline.SetToolTipString(\
+            "Should the buttons be outlined?")
+        self.chkButtonOutline.SetValue(wx.CHK_CHECKED)
+        wx.EVT_CHECKBOX(self, self.chkButtonOutline.GetId(), 
+            self.OnButtonOutline)
+        self.btnButtonOutlineColor = wx.Button(self, wx.ID_ANY, "Color...")
+        self.btnButtonOutlineColor.SetToolTipString(\
+            "Choose a color for the button outline.")
+        wx.EVT_BUTTON(self, self.btnButtonOutlineColor.GetId(), 
+            self.OnButtonOutlineColor)
+        # Place dvd button items together
+        self.sizDVDButton = wx.FlexGridSizer(3, 2, 6, 8)
+        self.sizDVDButton.AddMany([ 
+            (self.lblHiColor, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL), 
+            (self.btnHiColor, 0, wx.EXPAND), 
+            (self.lblSelColor, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL), 
+            (self.btnSelColor, 0, wx.EXPAND), 
+            (self.lblButton, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL), 
+            (self.cbButton, 0, wx.EXPAND),
+            (self.chkButtonOutline, 0),
+            (self.btnButtonOutlineColor, 0, wx.EXPAND) ])
+        # Put DVD button controls in a static box
+        self.sboxDVDButtonStyle = wx.StaticBox(self, wx.ID_ANY, 
+            "DVD button style")
+        self.sizDVDButtonStyle = wx.StaticBoxSizer(self.sboxDVDButtonStyle, 
+            wx.VERTICAL)
+        self.sizDVDButtonStyle.Add(self.sizDVDButton, 0, 
+            wx.ALL, 8)
+        # Vertical sizer putting sizTextFormat above sizDVDButtonStyle
+        self.sizTextAndButtons = wx.BoxSizer(wx.VERTICAL)
+        self.sizTextAndButtons.Add(self.sizTextFormat, 1, wx.EXPAND, 0)
+        self.sizTextAndButtons.Add(self.sizDVDButtonStyle, 1, wx.EXPAND, 0)
 
-        # Sizer to hold color buttons
-        self.sizFontColor = wx.FlexGridSizer(3, 2, 2, 8)
-        self.sizFontColor.AddMany([ (self.lblTextColor, 0, wx.ALIGN_RIGHT),
-                                     (self.btnTextColor, 0, wx.EXPAND),
-                                     (self.lblHiColor, 0, wx.ALIGN_RIGHT),
-                                     (self.btnHiColor, 0, wx.EXPAND),
-                                     (self.lblSelColor, 0, wx.ALIGN_RIGHT),
-                                     (self.btnSelColor, 0, wx.EXPAND) ])
-
-        # List of titles in this menu
+        # List of titles in this menu ======================================\
         self.lblTitleList = wx.StaticText(self, wx.ID_ANY, 
             _("Titles shown in this menu"))
         self.lbTitles = wx.ListBox(self, wx.ID_ANY)
@@ -2083,24 +2172,16 @@ class MenuPanel(wx.Panel):
         self.sizTitles = wx.BoxSizer(wx.VERTICAL)
         self.sizTitles.AddMany([ (self.lblTitleList, 0),
                                   (self.lbTitles, 1, wx.EXPAND) ])
-    
-        # Put menu font/color controls in a static box
-        self.sboxTextFormat = wx.StaticBox(self, wx.ID_ANY, "Menu text format")
-        self.sizTextFormat = wx.StaticBoxSizer(self.sboxTextFormat, wx.VERTICAL)
-        self.sizTextFormat.AddMany([\
-                (self.sizFontFace, 0, wx.EXPAND | wx.ALL, 8),
-                (self.rbAlignment, 0, wx.EXPAND | wx.ALL, 8),
-                (self.sizFontColor, 0, wx.EXPAND | wx.ALL, 8) ])
-        
-        # Horizontal sizer holding sizTextFormat and sizTitles
+
+        # Horizontal sizer holding sizTextAndButtons and sizTitles =========\
         self.sizTextTitles = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizTextTitles.Add(self.sizTextFormat, 1, wx.EXPAND, 0)
+        self.sizTextTitles.Add(self.sizTextAndButtons, 1, wx.EXPAND, 0)
         self.sizTextTitles.Add(self.sizTitles, 1, wx.EXPAND | wx.LEFT, 10)
 
         # Menu options heading
         self.txtHeading = HeadingText(self, wx.ID_ANY, "Menu options")
 
-        # Button to copy menu options to all menus on disc
+        # Button to copy menu options to all menus on disc =================\
         self.btnUseForAll = wx.Button(self, wx.ID_ANY,
             "Use these settings for all menus")
         self.btnUseForAll.SetToolTipString("Apply the current menu settings,"
@@ -2108,7 +2189,7 @@ class MenuPanel(wx.Panel):
             " and font, to all menus on the disc.")
         wx.EVT_BUTTON(self, self.btnUseForAll.GetId(), self.OnUseForAll)
 
-        # Main sizer to hold all controls
+        # Main sizer to hold all controls ==================================\
         self.sizMain = wx.BoxSizer(wx.VERTICAL)
         self.sizMain.Add(self.txtHeading, 0, wx.EXPAND | wx.ALL, 8)
         self.sizMain.Add(self.sizBG, 0, wx.EXPAND | wx.ALL, 8)
@@ -2116,6 +2197,9 @@ class MenuPanel(wx.Panel):
         self.sizMain.Add(self.btnUseForAll, 0, wx.EXPAND | wx.ALL, 8)
         self.SetSizer(self.sizMain)
 
+    def OnMenuTitle(self, evt):
+        """Set the menu's main title in curOptions whenever text is altered."""
+        self.curOptions.menutitle = self.txtMenuTitle.GetValue()
 
     def OnBGImage(self, evt):
         """Set the background image in curOptions whenever text is altered."""
@@ -2124,6 +2208,10 @@ class MenuPanel(wx.Panel):
     def OnBGAudio(self, evt):
         """Set the background audio in curOptions whenever text is altered."""
         self.curOptions.audio = self.txtBGAudio.GetValue()
+
+    def OnMenuLength(self, evt):
+        """Set the menu length in curOptions whenever text is altered."""
+        self.curOptions.menulength = self.txtMenuLength.GetValue()
 
     def OnBrowseBGImage(self, evt):
         """Show a file dialog and set the background image."""
@@ -2142,8 +2230,9 @@ class MenuPanel(wx.Panel):
             inFileDlg.Destroy()
 
     def OnAlignment(self, evt):
-        """Set the text alignment according to the radiobox setting."""
-        self.curOptions.alignment = util.ID_to_text('alignment', evt.GetInt())
+        """Set the text alignment according to the choice box selection."""
+        self.curOptions.alignment = util.ID_to_text(\
+            'alignment', evt.GetSelection())
 
     def OnFontSelection(self, evt):
         """Show a font selection dialog and set the font."""
@@ -2156,6 +2245,10 @@ class MenuPanel(wx.Panel):
             # Button shows selected font name in selected font
             self.btnFontChooserDialog.SetFont(self.curOptions.font)
             self.btnFontChooserDialog.SetLabel(strFontName)
+
+    def OnFontSize(self, evt):
+        """Set the font size to whenever text is altered"""
+        self.curOptions.fontsize = self.txtFontSize.GetValue()
 
     def OnTextColor(self, evt):
         """Display a color dialog to select the text color."""
@@ -2184,6 +2277,30 @@ class MenuPanel(wx.Panel):
             self.curOptions.colorSel = self.curColorData.GetColour()
             self.btnSelColor.SetBackgroundColour(self.curOptions.colorSel)
 
+    def OnButton(self, evt):
+        """Set the button character whenever text is altered."""
+        self.curOptions.button = self.cbButton.GetValue()
+
+    def OnButtonOutline(self, evt):
+        """Toggle button outline controls."""
+        if self.chkButtonOutline.GetValue == True:
+            self.sizDVDButton.Show(self.btnButonOutlineColor, evt.IsChecked())
+            self.sizDVDButton.Layout()
+        else:
+            self.sizDVDButton.Show(self.btnButtonOutlineColor, evt.IsChecked())
+            self.sizDVDButton.Layout()
+            self.curOptions.buttonOutline = ""
+    
+    def OnButtonOutlineColor(self, evt):
+        """Display a color dialog to select the button outline color."""
+        self.curColorData.SetColour(self.curOptions.buttonOutline)
+        dlgColor = wx.ColourDialog(self, self.curColorData)
+        if dlgColor.ShowModal() == wx.ID_OK:
+            self.curColorData = dlgColor.GetColourData()
+            self.curOptions.buttonOutline = self.curColorData.GetColour()
+            self.btnButtonOutlineColor.SetBackgroundColour(
+                self.curOptions.buttonOutline)
+
     def OnUseForAll(self, evt):
         """Use the current menu settings for all menus on disc."""
         countItems = self.parent.UseForAllItems(self.curOptions)
@@ -2199,17 +2316,22 @@ class MenuPanel(wx.Panel):
         self.curOptions = menuOpts
 
         self.txtHeading.SetLabel("Menu options: %s" % self.curOptions.title)
+        self.txtMenuTitle.SetValue(self.curOptions.menutitle)
         self.txtBGImage.SetValue(self.curOptions.background)
         self.txtBGAudio.SetValue(self.curOptions.audio or '')
-        self.rbAlignment.SetSelection(util.text_to_ID(self.curOptions.alignment))
-        self.btnTextColor.SetBackgroundColour(self.curOptions.colorText)
-        self.btnHiColor.SetBackgroundColour(self.curOptions.colorHi)
-        self.btnSelColor.SetBackgroundColour(self.curOptions.colorSel)
+        self.txtMenuLength.SetValue(self.curOptions.menulength)
         self.btnFontChooserDialog.SetFont(self.curOptions.font)
         if self.curOptions.font.GetFaceName() == "":
             self.btnFontChooserDialog.SetLabel("Default")
         else:
             self.btnFontChooserDialog.SetLabel(self.curOptions.font.GetFaceName())
+        self.txtFontSize.SetValue(self.curOptions.fontsize)
+        self.chAlignment.SetSelection(util.text_to_ID(self.curOptions.alignment))
+        self.btnTextColor.SetBackgroundColour(self.curOptions.colorText)
+        self.btnHiColor.SetBackgroundColour(self.curOptions.colorHi)
+        self.btnSelColor.SetBackgroundColour(self.curOptions.colorSel)
+        self.cbButton.SetValue(self.curOptions.button)
+        self.btnButtonOutlineColor.SetBackgroundColour(self.curOptions.buttonOutline)
         self.lbTitles.Set(self.curOptions.titles)
 
     def GetOptions(self):
@@ -2219,15 +2341,9 @@ class MenuPanel(wx.Panel):
     def SetDiscFormat(self, format):
         """Enable/disable controls appropriate to the given disc format."""
         if format == 'dvd':
-            self.btnHiColor.Enable(True)
-            self.btnSelColor.Enable(True)
-            self.lblHiColor.Enable(True)
-            self.lblSelColor.Enable(True)
+            self.sizDVDButtonStyle.ShowItems(True)
         elif format in [ 'vcd', 'svcd' ]:
-            self.btnHiColor.Enable(False)
-            self.btnSelColor.Enable(False)
-            self.lblHiColor.Enable(False)
-            self.lblSelColor.Enable(False)
+            self.sizDVDButtonStyle.ShowItems(False)
 
 
 class VideoPanel(wx.Panel):

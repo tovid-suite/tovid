@@ -21,6 +21,12 @@ ID_ASPECT_PANA = 2
 ID_ALIGN_LEFT = 0
 ID_ALIGN_CENTER = 1
 ID_ALIGN_RIGHT = 2
+ID_ALIGN_WEST = 3
+ID_ALIGN_MIDDLE = 4
+ID_ALIGN_EAST = 5
+ID_ALIGN_SOUTHWEST = 6
+ID_ALIGN_SOUTH = 7
+ID_ALIGN_SOUTHEAST = 8
 # Identifiers for notebook tabs
 ID_NB_VIDEO = 0
 ID_NB_MENU = 1
@@ -80,8 +86,14 @@ id_dict = {
         ID_ASPECT_PANA: "panavision"
     },
     'alignment': {
-        ID_ALIGN_LEFT: "northwest",
-        ID_ALIGN_CENTER: "north",
-        ID_ALIGN_RIGHT: "northeast"
+        ID_ALIGN_LEFT:      "northwest",
+        ID_ALIGN_CENTER:    "north",
+        ID_ALIGN_RIGHT:     "northeast",
+        ID_ALIGN_WEST:      "west",
+        ID_ALIGN_MIDDLE:    "middle",
+        ID_ALIGN_EAST:      "east",
+        ID_ALIGN_SOUTHWEST: "southwest",
+        ID_ALIGN_SOUTH:     "south",
+        ID_ALIGN_SOUTHEAST: "southeast"
     }
 }
