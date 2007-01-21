@@ -758,7 +758,10 @@ class DiscLayoutPanel(wx.Panel):
                 self.btnAddVideos.Enable(True)
                 #self.btnAddSlides.Enable(True)
                 self.btnAddGroup.Enable(True)
-                self.btnAddMenu.Enable(True)
+                if self.numMenus == 1:
+                    self.btnAddMenu.Enable(True)
+                else:
+                    self.btnAddMenu.Enable(False)
             elif curType == ID_GROUP and curItem != self.topItem:
                 self.btnAddVideos.Enable(True)
                 self.btnAddGroup.Enable(False)
@@ -769,6 +772,7 @@ class DiscLayoutPanel(wx.Panel):
                 self.btnAddVideos.Enable(False)
                 #self.btnAddSlides.Enable(False)
                 self.btnAddGroup.Enable(False)
+                self.btnAddMenu.Enable(True)
 
         # If disc was selected, show disc options
         if curType == ID_DISC:
@@ -1138,8 +1142,8 @@ class DiscLayoutPanel(wx.Panel):
                 if dlgConfirm.ShowModal() == wx.ID_NO:
                     return
                 self.numMenus -= 1
-            # If deleting a menu, confirm deletion and
-            # decrement the menu counter
+            # If deleting a group, confirm deletion and
+            # decrement the group counter
             elif self.discTree.GetPyData(curItem).type == ID_GROUP:
                 dlgConfirm = wx.MessageDialog(self,
                     "This will remove the currently selected\n"
