@@ -738,7 +738,10 @@ class DiscLayoutPanel(wx.Panel):
             self.btnMoveDown.Enable(False)
             self.btnRemove.Enable(False)
             self.btnAddVideos.Enable(False)
-            self.btnAddMenu.Enable(True)
+            if self.numMenus == 0:
+                self.btnAddMenu.Enable(True)
+            else:
+                self.btnAddMenu.Enable(False)
             #self.btnAddSlides.Enable(False)
             self.btnAddGroup.Enable(False)
         # Otherwise, enable usable buttons
