@@ -842,12 +842,14 @@ while test $# -gt 0; do
             (( ${#WIDESCREEN_ARGS[@]} > 1)) && WS_ARG=${WIDESCREEN_ARGS[1]}
             ;;
         "-showcase-safe-area" )
+            ADV_OPT=( "${ADV_OPT[@]}" "$1" )
             shift
             SAFE_AREA="$1"
             let SAFE_OFFSET=86-SAFE_AREA
             USER_SAFE_AREA=:
             ;;
         "-align" )
+            ADV_OPT=( "${ADV_OPT[@]}" "$1" )
             shift
             BUTTON_GRAVITY=$1
             [[ $BUTTON_GRAVITY = centre ]] && BUTTON_GRAVITY=center
@@ -933,6 +935,7 @@ while test $# -gt 0; do
             SC_TITLE_ALIGN=west
             ;;
         "-text-start" )
+            ADV_OPT=( "${ADV_OPT[@]}" "$1" )
             shift
             TEXT_YSTART=$1
             ;;
@@ -942,6 +945,7 @@ while test $# -gt 0; do
             [[ SC_TITLE_ALIGN = centre ]] && SC_TITLE_ALIGN=center
             ;;
         "-title-gap" )
+            ADV_OPT=( "${ADV_OPT[@]}" "$1" )
             shift
             SPACER=$1
             ;;
@@ -1137,17 +1141,20 @@ while test $# -gt 0; do
             BG_AUDIO_SEEK="$1"
             ;;
         "-showcase-geo" )
+            ADV_OPT=( "${ADV_OPT[@]}" "$1" )
             shift
             USER_SC_GEO=:
             SHOWCASE_GEO=$1
             ;;
         "-menu-title-geo" )
+            ADV_OPT=( "${ADV_OPT[@]}" "$1" )
             USER_TITLE_GEO=:
             shift
             TITLE_GRAVITY=$1
             TITLE_GRAVITY=${TITLE_GRAVITY/re/er}
             ;;
         "-menu-title-offset" )
+            ADV_OPT=( "${ADV_OPT[@]}" "$1" )
             USER_TITLE_GEO=:
             shift
             [[ $1 =~ \([-+][0-9]+\)\([-+][0-9]+\) ]];
@@ -1184,6 +1191,17 @@ if test -n "$OUT_PREFIX"; then
     MENU_FILE="animenu.mpg"
 else
     usage_error "Please provide an output name with -out"
+fi
+# see if advanced options were used and give warning if so
+if [[ -n "${ADV_OPT[@]}" ]]; then
+    yecho
+    yecho "**** WARNING ****"
+    yecho "You have used the following advanced options:"
+    yecho \'"${ADV_OPT[@]}"\' | format_output
+    yecho "With these options it is possible to create a menu where things overlap or are offscreen, so please check it with the preview."
+    yecho "These are things that todisc usually tries to avoid if left on its own, so if you have problems, please leave them out."
+    yecho
+    sleep 15
 fi
 # Warn if thumb labels have more than 16 characters
 if ! $SHOWCASE; then
