@@ -1161,6 +1161,11 @@ while test $# -gt 0; do
             [[ -n ${BASH_REMATCH[1]} ]] && title_xoffset=${BASH_REMATCH[1]}
             [[ -n ${BASH_REMATCH[2]} ]] && title_yoffset=${BASH_REMATCH[2]}
             ;;
+        "-outlinewidth" )
+            ADV_OPT=( "${ADV_OPT[@]}" "$1" )
+            shift
+            OUTLINEWIDTH=\"$1\"
+            ;;
         "-tovidopts" )
             shift
             TOVID_OPTS="$1"
@@ -3169,15 +3174,17 @@ echo
 for ((i=0; i<=NUM_FILES; i++)); do
     echo -e "Chapters for "${IN_FILES[i]}" are: \n"${CHAPT_ARRAY[i]}"\n"
 done
-if [[ "$BUTTON_STYLE" = "text" ]]; then
+
+if [[ "$BUTTON_STYLE" = "text" && -z "$OUTLINEWIDTH" ]]; then
     if $TEXTMENU; then
         (( THUMB_FONTSIZE < 26 )) &&  OUTLINEWIDTH="\"10\"" || OUTLINEWIDTH="\"12\""
     else
         OUTLINEWIDTH="\"14\""
     fi
 else
-    OUTLINEWIDTH="\"6\""
+    [[ -z "$OUTLINEWIDTH" ]] && OUTLINEWIDTH="\"6\""
 fi
+echo OUTLINEWIDTH is $OUTLINEWIDTH && sleep 10
 
 (
     cat <<EOF
