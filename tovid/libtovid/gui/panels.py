@@ -626,14 +626,14 @@ class DiscLayoutPanel(wx.Panel):
         # Set up controls and sizers
         # Buttons and their tooltips
         self.btnAddVideos = wx.Button(self, wx.ID_ANY, "Add video(s)")
-        self.btnAddSlides = wx.Button(self, wx.ID_ANY, "Add slide(s)")
+        #self.btnAddSlides = wx.Button(self, wx.ID_ANY, "Add slide(s)")
         self.btnAddGroup = wx.Button(self, wx.ID_ANY, "Add a group")
         self.btnAddMenu = wx.Button(self, wx.ID_ANY, "Add menu")
         self.btnMoveUp = wx.Button(self, wx.ID_ANY, "Move up")
         self.btnMoveDown = wx.Button(self, wx.ID_ANY, "Move down")
         self.btnRemove = wx.Button(self, wx.ID_ANY, "Remove")
         self.btnAddVideos.SetToolTipString("Add video files under this menu")
-        self.btnAddSlides.SetToolTipString("Add still-image files under this menu")
+        #self.btnAddSlides.SetToolTipString("Add still-image files under this menu")
         self.btnAddGroup.SetToolTipString("Add group of videos under this menu")
         self.btnAddMenu.SetToolTipString("Add a navigation menu to the disc; "
             "you must add at least one navigation menu before adding any videos.")
@@ -649,7 +649,7 @@ class DiscLayoutPanel(wx.Panel):
         wx.EVT_BUTTON(self, self.btnRemove.GetId(), self.OnRemoveCuritem)
         # All buttons except AddMenu disabled to start with
         self.btnAddVideos.Enable(False)
-        self.btnAddSlides.Enable(False)
+        #self.btnAddSlides.Enable(False)
         self.btnAddGroup.Enable(False)
         self.btnMoveUp.Enable(False)
         self.btnMoveDown.Enable(False)
@@ -1996,14 +1996,26 @@ class MenuPanel(wx.Panel):
         self.sizBG = wx.StaticBoxSizer(self.sboxBG, wx.VERTICAL)
 
         # Background image/audio selection controls =======================\
-        # Menu title
+        ## Menu title
         self.lblMenuTitle = wx.StaticText(self, wx.ID_ANY, "Menu Title:")
         self.txtMenuTitle = wx.TextCtrl(self, wx.ID_ANY)
         self.txtMenuTitle.SetToolTipString(\
             "Enter a main title for your menu. Leave blank if you" \
             " don't want a title.")
         wx.EVT_TEXT(self, self.txtMenuTitle.GetId(), self.OnMenuTitle)
-        # Image
+        ## Menu title font size
+        self.lblMenuTitleFontSize = wx.StaticText(self, wx.ID_ANY, "Size:")
+        self.txtMenuTitleFontSize = wx.TextCtrl(self, wx.ID_ANY)
+        self.txtMenuTitleFontSize.SetToolTipString(\
+                "Specify the title's font size")
+        wx.EVT_TEXT(self, self.txtMenuTitleFontSize.GetId(), \
+                self.OnMenuTitleFontSize)
+        self.sizMenuTitleFontSize = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizMenuTitleFontSize.Add(self.lblMenuTitleFontSize, 0,
+            wx.ALIGN_CENTER_VERTICAL | wx.ALL, 4)
+        self.sizMenuTitleFontSize.Add(self.txtMenuTitleFontSize, 1, 
+            wx.EXPAND | wx.ALL, 4)
+        ## Image
         self.lblBGImage = wx.StaticText(self, wx.ID_ANY, "Image:")
         self.txtBGImage = wx.TextCtrl(self, wx.ID_ANY)
         self.txtBGImage.SetToolTipString(\
@@ -2014,7 +2026,7 @@ class MenuPanel(wx.Panel):
             "use for the background of the menu")
         wx.EVT_TEXT(self, self.txtBGImage.GetId(), self.OnBGImage)
         wx.EVT_BUTTON(self, self.btnBrowseBGImage.GetId(), self.OnBrowseBGImage)
-        # Audio
+        ## Audio
         self.lblBGAudio = wx.StaticText(self, wx.ID_ANY, "Audio:")
         self.txtBGAudio = wx.TextCtrl(self, wx.ID_ANY)
         self.txtBGAudio.SetToolTipString(\
@@ -2027,19 +2039,19 @@ class MenuPanel(wx.Panel):
             "play while the menu is shown")
         wx.EVT_TEXT(self, self.txtBGAudio.GetId(), self.OnBGAudio)
         wx.EVT_BUTTON(self, self.btnBrowseBGAudio.GetId(), self.OnBrowseBGAudio)
-        # Length
+        ## Length
         self.lblMenuLength = wx.StaticText(self, wx.ID_ANY, "Length (sec):")
         self.txtMenuLength = wx.TextCtrl(self, wx.ID_ANY)
         self.txtMenuLength.SetToolTipString(\
             "Set the length of the menu in seconds. " \
             "Leave blank to use the full-length of your audio file.")
         wx.EVT_TEXT(self, self.txtMenuLength.GetId(), self.OnMenuLength)
-        # Group background controls together
+        ## Group background controls together
         self.sizBGInner = wx.FlexGridSizer(4, 3, 4, 8)
         self.sizBGInner.AddMany([
             (self.lblMenuTitle, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL),
             (self.txtMenuTitle, 0, wx.EXPAND),
-            ((0, 0), 0), 
+            (self.sizMenuTitleFontSize), 
             (self.lblBGImage, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL),
             (self.txtBGImage, 1, wx.EXPAND),
             (self.btnBrowseBGImage, 0, wx.EXPAND),
@@ -2047,10 +2059,10 @@ class MenuPanel(wx.Panel):
             (self.txtBGAudio, 1, wx.EXPAND),
             (self.btnBrowseBGAudio, 0, wx.EXPAND), 
             (self.lblMenuLength, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL),
-            (self.txtMenuLength, 0),
+            (self.txtMenuLength, 1),
             ((0, 0), 0) ])
         self.sizBGInner.AddGrowableCol(1)
-        # Add inner sizer to outer staticbox sizer
+        ## Add inner sizer to outer staticbox sizer
         self.sizBG.Add(self.sizBGInner, 0, wx.EXPAND | wx.ALL, 8)
 
         # Menu font and size controls =====================================\
@@ -2066,7 +2078,7 @@ class MenuPanel(wx.Panel):
                 "Specify the font size")
         wx.EVT_TEXT(self, self.txtFontSize.GetId(), \
                 self.OnFontSize)
-        # Place font items together
+        ## Place font items together
         self.sizFontFace = wx.BoxSizer(wx.HORIZONTAL)
         self.sizFontFace.AddMany([\
                 (self.lblFontFace, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4),
@@ -2083,24 +2095,74 @@ class MenuPanel(wx.Panel):
         self.chAlignment.SetToolTipString(\
                 "Select how the menu text should be aligned")
         wx.EVT_CHOICE(self, self.chAlignment.GetId(), self.OnAlignment)
-        # Place alignment items together
+        ## Place alignment items together
         self.sizAlignment = wx.BoxSizer(wx.HORIZONTAL)
         self.sizAlignment.AddMany([ \
                 (self.lblAlignment, 0, wx.ALL| wx.ALIGN_CENTER_VERTICAL, 4),
                 (self.chAlignment, 0, wx.ALL, 4) ])
-        # Menu text color controls
-        self.lblTextColor = wx.StaticText(self, wx.ID_ANY, _("Text color:"))
-        self.btnTextColor = wx.Button(self, wx.ID_ANY, _("Choose..."))
-        self.btnTextColor.SetToolTipString(_("Choose the color used "
-            "for the menu text"))
-        self.btnTextColor.SetBackgroundColour(self.curOptions.colorText)
-        wx.EVT_BUTTON(self, self.btnTextColor.GetId(), self.OnTextColor)
-        # Place text color items together
-        self.sizFontColor = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizFontColor.AddMany([ 
-            (self.lblTextColor, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL | 
-                wx.ALL, 4),
-            (self.btnTextColor, 0, wx.ALL, 4) ])
+        # Menu text fill controls
+        self.lblTextFill = wx.StaticText(self, wx.ID_ANY, "Fill text with:")
+        strFillTypes = ['Color', 'Fractal', 'Gradient', 'Pattern']
+        self.chFillType = wx.Choice(self, wx.ID_ANY, wx.DefaultPosition, \
+            wx.DefaultSize, strFillTypes, name="Fill type")
+        self.chFillType.SetToolTipString("Click to choose text fill style")
+        wx.EVT_CHOICE(self, self.chFillType.GetId(), self.OnFillType)
+        ## color box 1
+        self.chkFillColor = wx.CheckBox(self, wx.ID_ANY, style=wx.ALIGN_RIGHT,
+            label="None?")
+        wx.EVT_CHECKBOX(self, self.chkFillColor.GetId(), self.OnColorNone)
+        self.btnFillColor = wx.Button(self, wx.ID_ANY, "Choose...")
+        self.btnFillColor.SetToolTipString("Choose a color")
+        self.btnFillColor.SetBackgroundColour(self.curOptions.color1)
+        self.sizFillColor1 = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizFillColor1.Add(self.btnFillColor, 1)
+        self.sizFillColor1.Add(self.chkFillColor, 0, wx.ALIGN_CENTER_VERTICAL)
+        wx.EVT_BUTTON(self, self.btnFillColor.GetId(), self.OnFillColor)
+        ## color box 2
+        self.chkFillColor2 = wx.CheckBox(self, wx.ID_ANY, style=wx.ALIGN_RIGHT,
+            label="None?")
+        wx.EVT_CHECKBOX(self, self.chkFillColor2.GetId(), self.OnColorNone)
+        self.btnFillColor2 = wx.Button(self, wx.ID_ANY, "Choose...")
+        self.btnFillColor2.SetToolTipString("Choose a color")
+        self.btnFillColor2.SetBackgroundColour(self.curOptions.color2)
+        self.sizFillColor2 = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizFillColor2.Add(self.btnFillColor2, 1)
+        self.sizFillColor2.Add(self.chkFillColor2, 0, 
+            wx.ALIGN_CENTER_VERTICAL)
+        wx.EVT_BUTTON(self, self.btnFillColor2.GetId(), self.OnFillColor2)
+        ## pattern drop box
+        self.dictPatternTypes = { 'bricks':           'bricks', 
+                                  'circles':          'circles', 
+                                  'small squares':    'crosshatch', 
+                                  'big squares':      'hs_cross', 
+                                  'crosshatching':    'hs_diagcross', 
+                                  'hexagons':         'hexagons', 
+                                  'fish scales':      'smallfishscales', 
+                                  'sawtooth lines':   'horizontalsaw', 
+                                  '45 deg lines':     'hs_bdiagonal', 
+                                  '-45 deg lines':    'hs_fdiagonal', 
+                                  'vertical lines':   'hs_vertical', 
+                                  'horizontal lines': 'hs_horizontal' }
+        liPatternTypes = self.dictPatternTypes.keys()
+        liPatternTypes.sort()
+        self.cbPattern = wx.ComboBox(self, wx.ID_ANY, style=wx.CB_DROPDOWN, 
+            value="bricks", choices=liPatternTypes, name="Pattern types")
+        self.cbPattern.SetToolTipString("Choose a pattern to fill the text " \
+            "with, or enter an ImageMagick pattern name")
+        wx.EVT_TEXT(self, self.cbPattern.GetId(), self.OnPattern)
+
+        ## Place text fill items together
+        self.sizTextFill = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizTextFill.AddMany([
+            (self.lblTextFill, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 4),
+            (self.chFillType, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 4),
+            (self.cbPattern, 1, wx.EXPAND | wx.ALL, 4),
+            (self.sizFillColor1, 1, wx.ALL, 4),
+            (self.sizFillColor2, 1, wx.ALL, 4) ])
+
+        ## Hide unselected fill controls
+        self.sizTextFill.Hide(self.sizFillColor2)
+        self.sizTextFill.Hide(self.cbPattern)
 
         # Put menu text face/size/alignment/color controls in a static box
         self.sboxTextFormat = wx.StaticBox(self, wx.ID_ANY, "Menu text format")
@@ -2108,10 +2170,10 @@ class MenuPanel(wx.Panel):
         self.sizTextFormat.AddMany([\
           (self.sizFontFace, 0, wx.EXPAND),
           (self.sizAlignment, 0, wx.EXPAND),
-          (self.sizFontColor, 0, wx.EXPAND) ])
+          (self.sizTextFill, 0, wx.EXPAND | wx.ALL, 0) ])
 
         # DVD buttons ======================================================\
-        # colors
+        ## colors
         self.lblHiColor = wx.StaticText(self, wx.ID_ANY, _("Highlight color:"))
         self.lblSelColor = wx.StaticText(self, wx.ID_ANY, _("Selection color:"))
         self.btnHiColor = wx.Button(self, wx.ID_ANY, _("Choose..."))
@@ -2124,7 +2186,7 @@ class MenuPanel(wx.Panel):
         self.btnSelColor.SetBackgroundColour(self.curOptions.colorSel)
         wx.EVT_BUTTON(self, self.btnHiColor.GetId(), self.OnHiColor)
         wx.EVT_BUTTON(self, self.btnSelColor.GetId(), self.OnSelColor)
-        # shape
+        ## shape
         strButtons = ['>', '~', 'play', 'movie']
         self.lblButton = wx.StaticText(self, wx.ID_ANY, "Button shape:")
         self.cbButton = wx.ComboBox(self, wx.ID_ANY, value='>', \
@@ -2133,7 +2195,7 @@ class MenuPanel(wx.Panel):
             "Choose the shape of the DVD buttons."\
             "You may also type your own button (can only be 1 character).")
         wx.EVT_TEXT(self, self.cbButton.GetId(), self.OnButton)
-        # outline
+        ## outline
         self.chkButtonOutline = wx.CheckBox(self, wx.ID_ANY, 
             style=wx.ALIGN_RIGHT, label="Outline?")
         self.chkButtonOutline.SetToolTipString(\
@@ -2146,8 +2208,8 @@ class MenuPanel(wx.Panel):
             "Choose a color for the button outline.")
         wx.EVT_BUTTON(self, self.btnButtonOutlineColor.GetId(), 
             self.OnButtonOutlineColor)
-        # Place dvd button items together
-        self.sizDVDButton = wx.FlexGridSizer(3, 2, 6, 8)
+        ## Place dvd button items together
+        self.sizDVDButton = wx.FlexGridSizer(4, 2, 6, 8)
         self.sizDVDButton.AddMany([ 
             (self.lblHiColor, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL), 
             (self.btnHiColor, 0, wx.EXPAND), 
@@ -2157,13 +2219,14 @@ class MenuPanel(wx.Panel):
             (self.cbButton, 0, wx.EXPAND),
             (self.chkButtonOutline, 0),
             (self.btnButtonOutlineColor, 0, wx.EXPAND) ])
-        # Put DVD button controls in a static box
+        ## Put DVD button controls in a static box
         self.sboxDVDButtonStyle = wx.StaticBox(self, wx.ID_ANY, 
             "DVD button style")
         self.sizDVDButtonStyle = wx.StaticBoxSizer(self.sboxDVDButtonStyle, 
             wx.VERTICAL)
         self.sizDVDButtonStyle.Add(self.sizDVDButton, 0, 
             wx.ALL, 8)
+
         # Vertical sizer putting sizTextFormat above sizDVDButtonStyle
         self.sizTextAndButtons = wx.BoxSizer(wx.VERTICAL)
         self.sizTextAndButtons.Add(self.sizTextFormat, 0, wx.EXPAND, 0)
@@ -2184,7 +2247,7 @@ class MenuPanel(wx.Panel):
 
         # Horizontal sizer holding sizTextAndButtons and sizTitles =========\
         self.sizTextTitles = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizTextTitles.Add(self.sizTextAndButtons, 1, 0)
+        self.sizTextTitles.Add(self.sizTextAndButtons, 2, 0)
         self.sizTextTitles.Add(self.sizTitles, 1, wx.EXPAND | wx.LEFT, 10)
 
         # Menu options heading
@@ -2209,6 +2272,10 @@ class MenuPanel(wx.Panel):
     def OnMenuTitle(self, evt):
         """Set the menu's main title in curOptions whenever text is altered."""
         self.curOptions.menutitle = self.txtMenuTitle.GetValue()
+
+    def OnMenuTitleFontSize(self, evt):
+        """Set the menu title font size whenever text is altered"""
+        self.curOptions.titlefontsize = self.txtMenuTitleFontSize.GetValue()
 
     def OnBGImage(self, evt):
         """Set the background image in curOptions whenever text is altered."""
@@ -2243,6 +2310,77 @@ class MenuPanel(wx.Panel):
         self.curOptions.alignment = util.ID_to_text(\
             'alignment', evt.GetSelection())
 
+    def OnFillType(self, evt):
+        """Set the fill type and show/hide the appropriate controls."""
+        self.fillType = util.ID_to_text('fillType', evt.GetSelection())
+        self.curOptions.fillType = self.fillType
+        # Only show the first color box for 'Color'
+        if self.fillType == "Color":
+            self.sizTextFill.Show(self.sizFillColor1)
+            self.sizTextFill.Hide(self.sizFillColor2)
+            self.sizTextFill.Hide(self.cbPattern)
+            self.btnFillColor.SetLabel("Choose...")
+            self.sizFillColor1.Show(self.chkFillColor)
+        # Show both color boxes for 'Fractal' or 'Gradient'
+        elif self.fillType == "Fractal" or self.fillType == "Gradient":
+            self.chkFillColor.SetValue(False)   # enable color 1
+            self.btnFillColor.Enable()
+            self.sizTextFill.Show(self.sizFillColor1)
+            self.sizTextFill.Show(self.sizFillColor2)
+            self.sizTextFill.Hide(self.cbPattern)
+            self.btnFillColor.SetLabel("From...")
+            self.btnFillColor2.SetLabel("To...")
+            self.sizFillColor1.Hide(self.chkFillColor)
+            self.sizFillColor2.Hide(self.chkFillColor2)
+        # Only show the pattern drop box for 'pattern'
+        elif self.fillType == "Pattern":
+            self.sizTextFill.Hide(self.sizFillColor1)
+            self.sizTextFill.Hide(self.sizFillColor2)
+            self.sizTextFill.Show(self.cbPattern)
+        else:
+            print "DEBUG: invalid FillType: %d" % evt.GetSelection()
+            print "DEBUG: selection was: %s" % selection
+
+        self.sizTextFill.Layout()
+        self.sizTextFormat.Layout()
+        self.sizTextAndButtons.Layout()
+        self.sizTextTitles.Layout()
+
+    def OnColorNone(self, evt):
+        """When checked, don't use a color box's color, but 'none' instead."""
+        if evt.GetId() == self.chkFillColor.GetId():
+            if evt.IsChecked():
+                self.btnFillColor.Enable(False)
+                self.curOptions.fillColor1 = "none"
+            else:
+                self.btnFillColor.Enable(True)
+                self.curOptions.fillColor1 = "rgb(%d,%d,%d)" % \
+                    ( self.curOptions.color1.Red(), 
+                      self.curOptions.color1.Green(), 
+                      self.curOptions.color1.Blue()   )
+
+        elif evt.GetId() == self.chkFillColor2.GetId():
+            if evt.IsChecked():
+                self.btnFillColor2.Enable(False)
+                self.curOptions.fillColor2 = "none"
+            else:
+                self.btnFillColor2.Enable(True)
+                self.curOptions.fillColor2 = "rgb(%d,%d,%d)" % \
+                    ( self.curOptions.color2.Red(), 
+                      self.curOptions.color2.Green(), 
+                      self.curOptions.color2.Blue()   )
+        else:
+            print "DEBUG: ", evt.IsChecked(), self.GetId()
+            print "DEBUG: ", self.chkFillColor.GetId(), self.chkFillColor2.GetId()
+
+    def OnPattern(self, evt):
+        """Set the patten that will fill the menu text."""
+        pattern = self.cbPattern.GetValue()
+        if pattern in self.dictPatternTypes.keys():
+            self.curOptions.pattern = self.dictPatternTypes[pattern]
+        else:
+            self.curOptions.pattern = pattern
+
     def OnFontSelection(self, evt):
         """Show a font selection dialog and set the font."""
         dlgFontChooserDialog = FontChooserDialog(self, wx.ID_ANY,
@@ -2256,17 +2394,34 @@ class MenuPanel(wx.Panel):
             self.btnFontChooserDialog.SetLabel(strFontName)
 
     def OnFontSize(self, evt):
-        """Set the font size to whenever text is altered"""
+        """Set the font size whenever text is altered"""
         self.curOptions.fontsize = self.txtFontSize.GetValue()
 
-    def OnTextColor(self, evt):
+    def OnFillColor(self, evt):
         """Display a color dialog to select the text color."""
-        self.curColorData.SetColour(self.curOptions.colorText)
+        self.curColorData.SetColour(self.curOptions.color1)
         dlgColor = wx.ColourDialog(self, self.curColorData)
         if dlgColor.ShowModal() == wx.ID_OK:
             self.curColorData = dlgColor.GetColourData()
-            self.curOptions.colorText = self.curColorData.GetColour()
-            self.btnTextColor.SetBackgroundColour(self.curOptions.colorText)
+            self.curOptions.color1 = self.curColorData.GetColour()
+            self.btnFillColor.SetBackgroundColour(self.curOptions.color1)
+            self.curOptions.fillColor1 = "rgb(%d,%d,%d)" % \
+                ( self.curOptions.color1.Red(), 
+                  self.curOptions.color1.Green(), 
+                  self.curOptions.color1.Blue()   )
+
+    def OnFillColor2(self, evt):
+        """Display a color dialog to select the second fill color."""
+        self.curColorData.SetColour(self.curOptions.color2)
+        dlgColor = wx.ColourDialog(self, self.curColorData)
+        if dlgColor.ShowModal() == wx.ID_OK:
+            self.curColorData = dlgColor.GetColourData()
+            self.curOptions.color2 = self.curColorData.GetColour()
+            self.btnFillColor2.SetBackgroundColour(self.curOptions.color2)
+            self.curOptions.fillColor2 = "rgb(%d,%d,%d)" % \
+                ( self.curOptions.color2.Red(), 
+                  self.curOptions.color2.Green(), 
+                  self.curOptions.color2.Blue()   )
 
     def OnHiColor(self, evt):
         """Display a color dialog to select the text highlight color."""
@@ -2325,10 +2480,13 @@ class MenuPanel(wx.Panel):
         self.curOptions = menuOpts
 
         self.txtHeading.SetLabel("Menu options: %s" % self.curOptions.title)
+        # Background
+        self.txtMenuTitleFontSize.SetValue(self.curOptions.titlefontsize)
         self.txtMenuTitle.SetValue(self.curOptions.menutitle)
         self.txtBGImage.SetValue(self.curOptions.background)
         self.txtBGAudio.SetValue(self.curOptions.audio or '')
         self.txtMenuLength.SetValue(self.curOptions.menulength)
+        # Menu text
         self.btnFontChooserDialog.SetFont(self.curOptions.font)
         if self.curOptions.font.GetFaceName() == "":
             self.btnFontChooserDialog.SetLabel("Default")
@@ -2336,11 +2494,15 @@ class MenuPanel(wx.Panel):
             self.btnFontChooserDialog.SetLabel(self.curOptions.font.GetFaceName())
         self.txtFontSize.SetValue(self.curOptions.fontsize)
         self.chAlignment.SetSelection(util.text_to_ID(self.curOptions.alignment))
-        self.btnTextColor.SetBackgroundColour(self.curOptions.colorText)
+        self.chFillType.SetSelection(util.text_to_ID(self.curOptions.fillType))
+        self.btnFillColor.SetBackgroundColour(self.curOptions.color1)
+        self.btnFillColor2.SetBackgroundColour(self.curOptions.color2)
+        # DVD buttons
         self.btnHiColor.SetBackgroundColour(self.curOptions.colorHi)
         self.btnSelColor.SetBackgroundColour(self.curOptions.colorSel)
         self.cbButton.SetValue(self.curOptions.button)
         self.btnButtonOutlineColor.SetBackgroundColour(self.curOptions.buttonOutline)
+        # Titles
         self.lbTitles.Set(self.curOptions.titles)
 
     def GetOptions(self):
