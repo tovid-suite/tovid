@@ -1131,6 +1131,7 @@ class DiscLayoutPanel(wx.Panel):
             dlgConfirm.Destroy()
             # Back to having 0 menus
             self.numMenus = 0
+            self.btnAddMenu.Enable(True)
 
         # Make sure the item isn't root or topItem before being deleted
         elif curItem.IsOk():
@@ -2150,7 +2151,6 @@ class MenuPanel(wx.Panel):
         self.cbPattern.SetToolTipString("Choose a pattern to fill the text " \
             "with, or enter an ImageMagick pattern name")
         wx.EVT_TEXT(self, self.cbPattern.GetId(), self.OnPattern)
-
         ## Place text fill items together
         self.sizTextFill = wx.BoxSizer(wx.HORIZONTAL)
         self.sizTextFill.AddMany([
@@ -2159,18 +2159,44 @@ class MenuPanel(wx.Panel):
             (self.cbPattern, 1, wx.EXPAND | wx.ALL, 4),
             (self.sizFillColor1, 1, wx.ALL, 4),
             (self.sizFillColor2, 1, wx.ALL, 4) ])
-
         ## Hide unselected fill controls
         self.sizTextFill.Hide(self.sizFillColor2)
         self.sizTextFill.Hide(self.cbPattern)
 
-        # Put menu text face/size/alignment/color controls in a static box
+        # Menu text outline controls
+        self.lblStrokeColor = wx.StaticText(self, wx.ID_ANY, "Text outline:")
+        self.chkStrokeColor = wx.CheckBox(self, wx.ID_ANY, style=wx.ALIGN_RIGHT,
+            label="None?")
+        wx.EVT_CHECKBOX(self, self.chkStrokeColor.GetId(), self.OnColorNone)
+        self.btnStrokeColor = wx.Button(self, wx.ID_ANY, "Choose...")
+        self.btnStrokeColor.SetToolTipString("Choose the outline color")
+        self.btnStrokeColor.SetBackgroundColour(self.curOptions.colorStroke)
+        wx.EVT_BUTTON(self, self.btnStrokeColor.GetId(), self.OnStrokeColor)
+        self.lblStrokeWidth = wx.StaticText(self, wx.ID_ANY, "Width (px):")
+        self.txtStrokeWidth = wx.TextCtrl(self, wx.ID_ANY)
+        self.txtStrokeWidth.SetToolTipString("Width of ouline in pixels")
+        wx.EVT_TEXT(self, self.txtStrokeWidth.GetId(), self.OnStrokeWidth)
+        ## Group the 'None?' checkbox and StrokeColor button
+        self.sizStrokeColor = wx.BoxSizer(wx.VERTICAL)
+        self.sizStrokeColor.Add(self.btnStrokeColor, 1, wx.EXPAND)
+        self.sizStrokeColor.Add(self.chkStrokeColor, 0, 
+            wx.ALIGN_CENTER_HORIZONTAL)
+        ## Group the text outline controls together
+        self.sizTextOutline = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizTextOutline.AddMany([
+            (self.lblStrokeColor, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 4),
+            (self.sizStrokeColor, 1, wx.ALL, 4),
+            (self.lblStrokeWidth, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 4),
+            (self.txtStrokeWidth, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 4) ])
+
+        # Put all menu text controls in a static box
         self.sboxTextFormat = wx.StaticBox(self, wx.ID_ANY, "Menu text format")
         self.sizTextFormat = wx.StaticBoxSizer(self.sboxTextFormat, wx.VERTICAL)
         self.sizTextFormat.AddMany([\
           (self.sizFontFace, 0, wx.EXPAND),
           (self.sizAlignment, 0, wx.EXPAND),
-          (self.sizTextFill, 0, wx.EXPAND | wx.ALL, 0) ])
+          (self.sizTextFill, 0, wx.EXPAND),
+          (self.sizTextOutline, 0, wx.EXPAND) ])
 
         # DVD buttons ======================================================\
         ## colors
@@ -2369,6 +2395,17 @@ class MenuPanel(wx.Panel):
                     ( self.curOptions.color2.Red(), 
                       self.curOptions.color2.Green(), 
                       self.curOptions.color2.Blue()   )
+
+        elif evt.GetId() == self.chkStrokeColor.GetId():
+            if evt.IsChecked():
+                self.btnStrokeColor.Enable(False)
+                self.curOptions.textStrokeColor = "none"
+            else:
+                self.btnStrokeColor.Enable(True)
+                self.curOptions.textStrokeColor = "rgb(%d,%d,%d)" % \
+                    ( self.curOptions.colorStroke.Red(),
+                      self.curOptions.colorStroke.Green(),
+                      self.curOptions.colorStroke.Blue()   )
         else:
             print "DEBUG: ", evt.IsChecked(), self.GetId()
             print "DEBUG: ", self.chkFillColor.GetId(), self.chkFillColor2.GetId()
@@ -2422,6 +2459,24 @@ class MenuPanel(wx.Panel):
                 ( self.curOptions.color2.Red(), 
                   self.curOptions.color2.Green(), 
                   self.curOptions.color2.Blue()   )
+
+    def OnStrokeColor(self, evt):
+        """Display a color dialog to select the text stroke color."""
+        self.curColorData.SetColour(self.curOptions.colorStroke)
+        dlgColor = wx.ColourDialog(self, self.curColorData)
+        if dlgColor.ShowModal() == wx.ID_OK:
+            self.curColorData = dlgColor.GetColourData()
+            self.curOptions.colorStroke = self.curColorData.GetColour()
+            self.btnStrokeColor.SetBackgroundColour(
+                self.curOptions.colorStroke)
+            self.curOptions.textStrokeColor = "rgb(%d,%d,%d)" % \
+                ( self.curOptions.colorStroke.Red(),
+                  self.curOptions.colorStroke.Green(),
+                  self.curOptions.colorStroke.Blue() )
+
+    def OnStrokeWidth(self, evt):
+        """Update the outline width whenever text is updated."""
+        self.curOptions.textStrokeWidth = self.txtStrokeWidth.GetValue()
 
     def OnHiColor(self, evt):
         """Display a color dialog to select the text highlight color."""
@@ -2491,12 +2546,16 @@ class MenuPanel(wx.Panel):
         if self.curOptions.font.GetFaceName() == "":
             self.btnFontChooserDialog.SetLabel("Default")
         else:
-            self.btnFontChooserDialog.SetLabel(self.curOptions.font.GetFaceName())
+            self.btnFontChooserDialog.SetLabel(
+                self.curOptions.font.GetFaceName() )
         self.txtFontSize.SetValue(self.curOptions.fontsize)
-        self.chAlignment.SetSelection(util.text_to_ID(self.curOptions.alignment))
+        self.chAlignment.SetSelection(
+            util.text_to_ID(self.curOptions.alignment))
         self.chFillType.SetSelection(util.text_to_ID(self.curOptions.fillType))
         self.btnFillColor.SetBackgroundColour(self.curOptions.color1)
         self.btnFillColor2.SetBackgroundColour(self.curOptions.color2)
+        self.btnStrokeColor.SetBackgroundColour(self.curOptions.colorStroke)
+        self.txtStrokeWidth.SetValue(self.curOptions.textStrokeWidth)
         # DVD buttons
         self.btnHiColor.SetBackgroundColour(self.curOptions.colorHi)
         self.btnSelColor.SetBackgroundColour(self.curOptions.colorSel)

@@ -290,11 +290,12 @@ class MenuOptions:
     # Menu text settings
     fontsize = "24"
     fillType = "Color"
-    fillColor1 = "rgb(255, 255, 255)"    # For fill, gradient, fractals
-    fillColor2 = "rgb(255, 255, 255)"    # For gradient and fractals
+    fillColor1 = "rgb(255,255,255)"      # For fill, gradient, fractals
+    fillColor2 = "rgb(255,255,255)"      # For gradient and fractals
     color1 = wx.Colour(255, 255, 255)    # Stores dialog box color
     color2 = wx.Colour(255, 255, 255)    # Stores dialog box color
-    textStroke = "black"
+    textStrokeColor = "rgb(0,0,0)"       # For text outline
+    colorStroke = wx.Colour(0, 0, 0)     # Stores dialog box color
     textStrokeWidth = "1"
     pattern = ""
     # Button settings
@@ -346,21 +347,23 @@ class MenuOptions:
             strCommand += "-font \"%s\" " % IM_FontName
         strCommand += "-fontsize %s " % self.fontsize
 
-        # Express text fill in ways makemenu will understand
-        fontDecoration = "-stroke %s -strokewidth %s " % \
-            (self.textStroke, self.textStrokeWidth)
-        # solid fill is simple:
+        # Express text fill and outline in ways makemenu will understand
+        # Text outline:
+        fontDecoration = "-stroke %s" % (self.textStrokeColor)
+        fontDecoration += " -strokewidth %s" % (self.textStrokeWidth)
+        # Test fill:
+        # solid is simple:
         if self.fillType == "Color":
             strCommand += "-textcolor \"%s\" " % self.fillColor1
         # fractals, gradients, and patterns get put in -fontdeco
         elif self.fillType == "Fractal":
-            fontDecoration += "-tile fractal:%s-%s" % \
+            fontDecoration += " -tile fractal:%s-%s" % \
                 (self.fillColor1, self.fillColor2)
         elif self.fillType == "Gradient":
-            fontDecoration += "-tile gradient:%s-%s" % \
+            fontDecoration += " -tile gradient:%s-%s" % \
                 (self.fillColor1, self.fillColor2)
         elif self.fillType == "Pattern":
-            fontDecoration += "-tile pattern:%s" % (self.pattern)
+            fontDecoration += " -tile pattern:%s" % (self.pattern)
         else:
             pass
         
