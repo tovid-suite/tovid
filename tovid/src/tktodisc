@@ -456,7 +456,7 @@ class Application(Frame):
         Frame.__init__(self, master)
         self.grid()
         self.drawWidgets()
-        
+
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
         self.fraTitle = TitleFrame(self)
@@ -514,19 +514,22 @@ class Application(Frame):
         print cmd
         # Verify with user
         if askyesno(message="Run todisc now?"):
+            root.iconify()
             try:
                 cmd.run()
             except KeyboardInterrupt:
                 showerror(message="todisc was interrupted!")
             else:
                 showinfo(message="todisc finished running!")
+            root.deiconify()
 
 
 ###
 ### Entry point
 ###
+root = Tk()
 
 if __name__ == '__main__':
-    app = Application()
-    app.master.title("tktodisc: A todisc GUI")
-    app.mainloop()
+    root.title("tktodisc: A todisc GUI")
+    app = Application(root)
+    root.mainloop()
