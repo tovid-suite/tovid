@@ -278,6 +278,7 @@ class MenuOptions:
     format = 'dvd'
     # -menu-title
     menutitle = ""
+    titlefontsize = "32"
     # -background FILE
     background = ""
     # -audio FILE
@@ -286,15 +287,24 @@ class MenuOptions:
     menulength = ""
     # -align [northwest|north|northeast]
     alignment = 'northwest'
-    # Other settings
+    # Menu text settings
     fontsize = "24"
+    fillType = "Color"
+    fillColor1 = "rgb(255, 255, 255)"    # For fill, gradient, fractals
+    fillColor2 = "rgb(255, 255, 255)"    # For gradient and fractals
+    color1 = wx.Colour(255, 255, 255)    # Stores dialog box color
+    color2 = wx.Colour(255, 255, 255)    # Stores dialog box color
+    textStroke = "black"
+    textStrokeWidth = "1"
+    pattern = ""
+    # Button settings
     button = ">"
     buttonOutline = wx.Colour(140, 140, 140)
-    colorText = wx.Colour(255, 255, 255)
     colorHi = wx.Colour(255, 255, 0)
     colorSel = wx.Colour(255, 0, 0)
+    # Other settings
     titles = []
-    outPrefix = ""
+    outPrefix = "bricks"
 
     def __init__(self, format = 'dvd', tvsys = 'ntsc',
         title = _("Untitled menu"), isTop = False):
@@ -321,6 +331,7 @@ class MenuOptions:
         # Image and audio backgrounds, if any
         if self.menutitle != "":
             strCommand += "-menu-title \"%s\" " % self.menutitle
+            strCommand += "-menu-title-fontsize %s " % self.titlefontsize
         if self.background != "":
             strCommand += "-background \"%s\" " % self.background
         if self.audio != "":
@@ -328,22 +339,39 @@ class MenuOptions:
         if self.menulength != "":
             strCommand += "-length %s " % self.menulength
 
-        # Append text color
-        strCommand += "-textcolor \"rgb(%d,%d,%d)\" " % \
-            (self.colorText.Red(), self.colorText.Green(), self.colorText.Blue())
-        # For DVD, append highlight and select colors
-        if self.format == 'dvd':
-            strCommand += "-highlightcolor \"rgb(%d,%d,%d)\" " % \
-                (self.colorHi.Red(), self.colorHi.Green(), self.colorHi.Blue())
-            strCommand += "-selectcolor \"rgb(%d,%d,%d)\" " % \
-                (self.colorSel.Red(), self.colorSel.Green(), self.colorSel.Blue())
-
         # Append font and size
         if self.font.GetFaceName() != "":
             wx_FontName = self.font.GetFaceName()
             IM_FontName = curConfig.wx_IM_FontMap[wx_FontName] 
             strCommand += "-font \"%s\" " % IM_FontName
         strCommand += "-fontsize %s " % self.fontsize
+
+        # Express text fill in ways makemenu will understand
+        fontDecoration = "-stroke %s -strokewidth %s " % \
+            (self.textStroke, self.textStrokeWidth)
+        # solid fill is simple:
+        if self.fillType == "Color":
+            strCommand += "-textcolor \"%s\" " % self.fillColor1
+        # fractals, gradients, and patterns get put in -fontdeco
+        elif self.fillType == "Fractal":
+            fontDecoration += "-tile fractal:%s-%s" % \
+                (self.fillColor1, self.fillColor2)
+        elif self.fillType == "Gradient":
+            fontDecoration += "-tile gradient:%s-%s" % \
+                (self.fillColor1, self.fillColor2)
+        elif self.fillType == "Pattern":
+            fontDecoration += "-tile pattern:%s" % (self.pattern)
+        else:
+            pass
+        
+        strCommand += "-fontdeco '%s' " % fontDecoration
+
+        # For DVD, append highlight and select colors
+        if self.format == 'dvd':
+            strCommand += "-highlightcolor \"rgb(%d,%d,%d)\" " % \
+                (self.colorHi.Red(), self.colorHi.Green(), self.colorHi.Blue())
+            strCommand += "-selectcolor \"rgb(%d,%d,%d)\" " % \
+                (self.colorSel.Red(), self.colorSel.Green(), self.colorSel.Blue())
 
         # Append button styling
         if self.button != "":
@@ -378,7 +406,7 @@ class MenuOptions:
         self.tvsys = opts.tvsys
         self.background = opts.background
         self.audio = opts.audio
-        self.colorText = opts.colorText
+        self.color1 = opts.color1
         self.colorHi = opts.colorHi
         self.colorSel = opts.colorSel
         self.font = opts.font

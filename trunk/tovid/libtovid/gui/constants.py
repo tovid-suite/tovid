@@ -27,6 +27,11 @@ ID_ALIGN_EAST = 5
 ID_ALIGN_SOUTHWEST = 6
 ID_ALIGN_SOUTH = 7
 ID_ALIGN_SOUTHEAST = 8
+# Identifiers for test fill types
+ID_TEXTFILL_COLOR = 0
+ID_TEXTFILL_FRACTAL = 1
+ID_TEXTFILL_GRADIENT = 2
+ID_TEXTFILL_PATTERN = 3
 # Identifiers for notebook tabs
 ID_NB_VIDEO = 0
 ID_NB_MENU = 1
@@ -95,5 +100,11 @@ id_dict = {
         ID_ALIGN_SOUTHWEST: "southwest",
         ID_ALIGN_SOUTH:     "south",
         ID_ALIGN_SOUTHEAST: "southeast"
+    },
+    'fillType': {
+        ID_TEXTFILL_COLOR:    "Color",
+        ID_TEXTFILL_FRACTAL:  "Fractal",
+        ID_TEXTFILL_GRADIENT: "Gradient",
+        ID_TEXTFILL_PATTERN:  "Pattern"
     }
 }
