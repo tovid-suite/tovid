@@ -1693,8 +1693,10 @@ if $SHOWCASE && ! $TEXTMENU; then
             "Consider using -bgimage or -bgvideo instead of a showcase thumb."
         fi
     fi
-else
+elif ! $SHOWCASE && ! $TEXTMENU; then
     AUTOORDER="rows"
+elif $TEXTMENU; then
+    AUTOORDER="columns"
 fi
 $TEXTMENU && LEFT_MAX=$SPLIT || LEFT_MAX=5
 if [ "$SC_TITLE_ALIGN" = "west" ] || $TEXTMENU; then #FIXME
@@ -3184,7 +3186,6 @@ if [[ "$BUTTON_STYLE" = "text" && -z "$OUTLINEWIDTH" ]]; then
 else
     [[ -z "$OUTLINEWIDTH" ]] && OUTLINEWIDTH="\"6\""
 fi
-echo OUTLINEWIDTH is $OUTLINEWIDTH && sleep 10
 
 (
     cat <<EOF
