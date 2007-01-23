@@ -559,6 +559,7 @@ function get_args()
                 CLIP_SEEK="${CLIP/-*}"
                 [[ "$CLIP" = *-* ]] && CLIP_ENDTIME="${CLIP/*-}"
                 USE_FFMPEG=:  # for now only ffmpeg works with it
+                FORCE_ENCODING=:
                 ;;
             "-in" )
                 shift
