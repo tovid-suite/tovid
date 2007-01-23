@@ -2199,9 +2199,53 @@ class MenuPanel(wx.Panel):
           (self.sizTextOutline, 0, wx.EXPAND) ])
 
         # DVD buttons ======================================================\
-        ## colors
-        self.lblHiColor = wx.StaticText(self, wx.ID_ANY, _("Highlight color:"))
-        self.lblSelColor = wx.StaticText(self, wx.ID_ANY, _("Selection color:"))
+        # Shape
+        strButtons = ['>', '~', 'play', 'movie']
+        self.lblButton = wx.StaticText(self, wx.ID_ANY, "Button shape:")
+        self.lblButtonPreview = wx.StaticText(self, wx.ID_ANY, "Preview:")
+        self.lblButtonExample = wx.StaticText(self, wx.ID_ANY)
+        self.lblButtonExample.SetLabel(self.curOptions.button)
+        self.lblButtonExample.SetFont(self.curOptions.buttonFont)
+        self.cbButton = wx.ComboBox(self, wx.ID_ANY, value='>', \
+            style=wx.CB_DROPDOWN, choices=strButtons)
+        self.cbButton.SetToolTipString(\
+            "Choose the shape of the DVD buttons."\
+            "You may also type your own button (can only be 1 character).")
+        wx.EVT_TEXT(self, self.cbButton.GetId(), self.OnButton)
+        ## group shape controls together
+        self.sizDVDShapes = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizDVDShapes.AddMany([ 
+            (self.lblButton, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL | \
+                wx.ALL, 4), 
+            (self.cbButton, 1, wx.EXPAND | wx.ALL, 4),
+            (self.lblButtonPreview, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 4),
+            (self.lblButtonExample, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 4) ])
+        # Font
+        self.lblButtonFont = wx.StaticText(self, wx.ID_ANY, "Font:")
+        self.chkLockButtonFont = wx.CheckBox(self, wx.ID_ANY, 
+            style=wx.ALIGN_RIGHT, label="Lock?")
+        wx.EVT_CHECKBOX(self, self.chkLockButtonFont.GetId(), 
+            self.OnLockButtonFont)
+        self.btnButtonFontChooserDialog = wx.Button(self, wx.ID_ANY, "Default")
+        self.btnButtonFontChooserDialog.SetToolTipString(\
+                "Select a font to use for the buttons")
+        wx.EVT_BUTTON(self, self.btnButtonFontChooserDialog.GetId(), \
+                self.OnButtonFontSelection)
+        ## group font controls together
+        self.sizButtonFont = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizButtonFont.AddMany([
+            (self.lblButtonFont, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 4),
+            (self.btnButtonFontChooserDialog, 1, wx.EXPAND | wx.ALL, 4),
+            (self.chkLockButtonFont, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 4) ])
+        # Colors
+        self.lblHiColor = wx.StaticText(self, wx.ID_ANY, _("Highlight:"))
+        self.lblSelColor = wx.StaticText(self, wx.ID_ANY, _("Selection:"))
+        self.chkHiColor = wx.CheckBox(self, wx.ID_ANY, style=wx.ALIGN_RIGHT,
+            label="None?")
+        self.chkSelColor = wx.CheckBox(self, wx.ID_ANY, style=wx.ALIGN_RIGHT,
+            label="None?")
+        wx.EVT_CHECKBOX(self, self.chkHiColor.GetId(), self.OnColorNone)
+        wx.EVT_CHECKBOX(self, self.chkSelColor.GetId(), self.OnColorNone)
         self.btnHiColor = wx.Button(self, wx.ID_ANY, _("Choose..."))
         self.btnSelColor = wx.Button(self, wx.ID_ANY, _("Choose..."))
         self.btnHiColor.SetToolTipString(_("Choose the color used "
@@ -2212,48 +2256,55 @@ class MenuPanel(wx.Panel):
         self.btnSelColor.SetBackgroundColour(self.curOptions.colorSel)
         wx.EVT_BUTTON(self, self.btnHiColor.GetId(), self.OnHiColor)
         wx.EVT_BUTTON(self, self.btnSelColor.GetId(), self.OnSelColor)
-        ## shape
-        strButtons = ['>', '~', 'play', 'movie']
-        self.lblButton = wx.StaticText(self, wx.ID_ANY, "Button shape:")
-        self.cbButton = wx.ComboBox(self, wx.ID_ANY, value='>', \
-            style=wx.CB_DROPDOWN, choices=strButtons)
-        self.cbButton.SetToolTipString(\
-            "Choose the shape of the DVD buttons."\
-            "You may also type your own button (can only be 1 character).")
-        wx.EVT_TEXT(self, self.cbButton.GetId(), self.OnButton)
-        ## outline
+        ## group checkboxes and color
+        self.sizDVDHighlightColor = wx.BoxSizer(wx.VERTICAL)
+        self.sizDVDHighlightColor.AddMany([
+            (self.btnHiColor, 0, wx.EXPAND),
+            (self.chkHiColor, 0, wx.ALIGN_CENTER_HORIZONTAL)  ])
+        self.sizDVDSelectColor = wx.BoxSizer(wx.VERTICAL)
+        self.sizDVDSelectColor.AddMany([
+            (self.btnSelColor, 0, wx.EXPAND),
+            (self.chkSelColor, 0, wx.ALIGN_CENTER_HORIZONTAL) ])
+        ## group highlight and selection color conttrols together
+        self.sizDVDButtonColors = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizDVDButtonColors.AddMany([
+            (self.lblHiColor, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL | \
+                wx.ALL, 4), 
+            (self.sizDVDHighlightColor, 0, wx.EXPAND | wx.ALL, 4), 
+            (self.lblSelColor, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL | \
+                wx.ALL, 4), 
+            (self.sizDVDSelectColor, 1, wx.EXPAND | wx.ALL, 4) ])
+        # Outline
+        self.lblButtonOutline = wx.StaticText(self, wx.ID_ANY, "Outline:")
         self.chkButtonOutline = wx.CheckBox(self, wx.ID_ANY, 
-            style=wx.ALIGN_RIGHT, label="Outline?")
+            style=wx.ALIGN_RIGHT, label="None?")
         self.chkButtonOutline.SetToolTipString(\
             "Should the buttons be outlined?")
-        self.chkButtonOutline.SetValue(wx.CHK_CHECKED)
         wx.EVT_CHECKBOX(self, self.chkButtonOutline.GetId(), 
-            self.OnButtonOutline)
-        self.btnButtonOutlineColor = wx.Button(self, wx.ID_ANY, "Color...")
+            self.OnColorNone)
+        self.btnButtonOutlineColor = wx.Button(self, wx.ID_ANY, "Choose...")
         self.btnButtonOutlineColor.SetToolTipString(\
             "Choose a color for the button outline.")
         wx.EVT_BUTTON(self, self.btnButtonOutlineColor.GetId(), 
             self.OnButtonOutlineColor)
-        ## Place dvd button items together
-        self.sizDVDButton = wx.FlexGridSizer(4, 2, 6, 8)
-        self.sizDVDButton.AddMany([ 
-            (self.lblHiColor, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL), 
-            (self.btnHiColor, 0, wx.EXPAND), 
-            (self.lblSelColor, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL), 
-            (self.btnSelColor, 0, wx.EXPAND), 
-            (self.lblButton, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL), 
-            (self.cbButton, 0, wx.EXPAND),
-            (self.chkButtonOutline, 0),
-            (self.btnButtonOutlineColor, 0, wx.EXPAND) ])
-        ## Put DVD button controls in a static box
+        ## group outline together
+        self.sizDVDOutline = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizDVDOutline.AddMany([ 
+            (self.lblButtonOutline, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 4),
+            (self.btnButtonOutlineColor, 1, wx.EXPAND | wx.ALL, 4),
+            (self.chkButtonOutline, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 4) ])
+        # Put DVD button controls in a static box
         self.sboxDVDButtonStyle = wx.StaticBox(self, wx.ID_ANY, 
             "DVD button style")
         self.sizDVDButtonStyle = wx.StaticBoxSizer(self.sboxDVDButtonStyle, 
             wx.VERTICAL)
-        self.sizDVDButtonStyle.Add(self.sizDVDButton, 0, 
-            wx.ALL, 8)
+        self.sizDVDButtonStyle.AddMany([
+            (self.sizDVDShapes, 0),
+            (self.sizButtonFont, 0, wx.EXPAND),
+            (self.sizDVDButtonColors, 0, wx.EXPAND),
+            (self.sizDVDOutline, 0) ])
 
-        # Vertical sizer putting sizTextFormat above sizDVDButtonStyle
+        # Vertical sizer putting sizTextFormat above sizDVDButtonStyle ====\
         self.sizTextAndButtons = wx.BoxSizer(wx.VERTICAL)
         self.sizTextAndButtons.Add(self.sizTextFormat, 0, wx.EXPAND, 0)
         self.sizTextAndButtons.Add(self.sizDVDButtonStyle, 1, wx.EXPAND, 0)
@@ -2406,6 +2457,36 @@ class MenuPanel(wx.Panel):
                     ( self.curOptions.colorStroke.Red(),
                       self.curOptions.colorStroke.Green(),
                       self.curOptions.colorStroke.Blue()   )
+        elif evt.GetId() == self.chkButtonOutline.GetId():
+            if evt.IsChecked():
+                self.btnButtonOutlineColor.Enable(False)
+                self.curOptions.buttonOutlineColor = "none"
+            else:
+                self.btnButtonOutlineColor.Enable(True)
+                self.curOptions.buttonOutlineColor = "rgb(%d,%d,%d)" % \
+                    ( self.curOptions.colorButtonOutline.Red(),
+                      self.curOptions.colorButtonOutline.Green(),
+                      self.curOptions.colorButtonOutline.Blue()   )
+        elif evt.GetId() == self.chkHiColor.GetId():
+            if evt.IsChecked():
+                self.btnHiColor.Enable(False)
+                self.curOptions.highlightColor = "none"
+            else:
+                self.btnHiColor.Enable(True)
+                self.curOptions.highlightColor = "rgb(%d,%d,%d)" % \
+                    ( self.curOptions.colorHi.Red(),
+                      self.curOptions.colorHi.Green(),
+                      self.curOptions.colorHi.Blue()   )
+        elif evt.GetId() == self.chkSelColor.GetId():
+            if evt.IsChecked():
+                self.btnSelColor.Enable(False)
+                self.curOptions.selectColor = "none"
+            else:
+                self.btnSelColor.Enable(True)
+                self.curOptions.selectColor = "rgb(%d,%d,%d)" % \
+                    ( self.curOptions.colorSel.Red(),
+                      self.curOptions.colorSel.Green(),
+                      self.curOptions.colorSel.Blue()   )
         else:
             print "DEBUG: ", evt.IsChecked(), self.GetId()
             print "DEBUG: ", self.chkFillColor.GetId(), self.chkFillColor2.GetId()
@@ -2429,10 +2510,12 @@ class MenuPanel(wx.Panel):
             # Button shows selected font name in selected font
             self.btnFontChooserDialog.SetFont(self.curOptions.font)
             self.btnFontChooserDialog.SetLabel(strFontName)
+            self.UpdateButtonFontChooserButton()
 
     def OnFontSize(self, evt):
         """Set the font size whenever text is altered"""
         self.curOptions.fontsize = self.txtFontSize.GetValue()
+        self.UpdateButtonExample()
 
     def OnFillColor(self, evt):
         """Display a color dialog to select the text color."""
@@ -2478,6 +2561,77 @@ class MenuPanel(wx.Panel):
         """Update the outline width whenever text is updated."""
         self.curOptions.textStrokeWidth = self.txtStrokeWidth.GetValue()
 
+    def OnButtonFontSelection(self, evt):
+        """Show a font selection dialog and set the font."""
+        dlgButtonFontChooserDialog = FontChooserDialog(self, wx.ID_ANY,
+            self.curOptions.font.GetFaceName())
+        if dlgButtonFontChooserDialog.ShowModal() == wx.ID_OK:
+            strFontName = \
+                dlgButtonFontChooserDialog.GetSelectedFont().GetFaceName()
+            self.curOptions.buttonFont = wx.Font(10, wx.FONTFAMILY_DEFAULT,
+                wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False, strFontName)
+            # Button shows selected font name in selected font
+            self.btnButtonFontChooserDialog.SetFont(self.curOptions.buttonFont)
+            self.btnButtonFontChooserDialog.SetLabel(\
+                self.curOptions.buttonFont.GetFaceName())
+            self.UpdateButtonExample()
+
+    def OnLockButtonFont(self, evt):
+        """Lock/unlock the -button-font chooser"""
+        if evt.IsChecked():
+            self.btnButtonFontChooserDialog.Enable(False)
+        else:
+            self.btnButtonFontChooserDialog.Enable(True)
+
+    def UpdateButtonExample(self):
+        """Redraw the button example acc to existing options' constraints"""
+        # 'play' or 'movie' buttons change font and button
+        newButton = self.curOptions.button
+        if newButton != "play" and newButton != "movie":
+            newFontName = self.curOptions.buttonFont.GetFaceName()
+        else:
+            newFontName = "Webdings"
+            if newButton == "play":
+                newButton = '4'
+            else:
+                newButton = u'\u220f'
+
+        try:
+            newFont = wx.Font(pointSize=int(self.curOptions.fontsize), 
+                          family=wx.FONTFAMILY_DEFAULT,
+                          style=wx.FONTSTYLE_NORMAL,
+                          weight=wx.FONTWEIGHT_BOLD,
+                          face=newFontName)
+        except ValueError:
+            pass
+        else:
+            self.lblButtonExample.SetLabel(newButton)
+            self.lblButtonExample.SetFont(newFont)
+            self.sizButtonFont.Layout()
+            self.sizDVDButtonStyle.Layout()
+            self.sizTextAndButtons.Layout()
+            self.sizTextTitles.Layout()
+
+    def UpdateButtonFontChooserButton(self):
+        """Change font/label of -button-font chooser acc to curOptions"""
+        # For normal buttons, follow the text font (unless locked)
+        if self.curOptions.button != "play" and self.curOptions.button != "movie":
+            if self.chkLockButtonFont.IsChecked():
+                return
+            else:
+                self.curOptions.buttonFont = self.curOptions.font
+                newFont = self.curOptions.buttonFont
+                newFontName = self.curOptions.buttonFont.GetFaceName()
+        # Otherwise, set the font name in a readable font
+        else:
+            newFont = wx.Font(12, wx.FONTFAMILY_DEFAULT,
+                wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL,
+                False, "Default")
+            newFontName = "Webdings"
+        self.btnButtonFontChooserDialog.SetLabel(newFontName)
+        self.btnButtonFontChooserDialog.SetFont(newFont)
+        self.UpdateButtonExample()
+
     def OnHiColor(self, evt):
         """Display a color dialog to select the text highlight color."""
         self.curColorData.SetColour(self.curOptions.colorHi)
@@ -2486,6 +2640,10 @@ class MenuPanel(wx.Panel):
             self.curColorData = dlgColor.GetColourData()
             self.curOptions.colorHi = self.curColorData.GetColour()
             self.btnHiColor.SetBackgroundColour(self.curOptions.colorHi)
+            self.curOptions.highlightColor = "rgb(%d,%d,%d)" % \
+                ( self.curOptions.colorHi.Red(),
+                  self.curOptions.colorHi.Green(),
+                  self.curOptions.colorHi.Blue()   )
 
     def OnSelColor(self, evt):
         """Display a color dialog to select the text selection color."""
@@ -2495,30 +2653,39 @@ class MenuPanel(wx.Panel):
             self.curColorData = dlgColor.GetColourData()
             self.curOptions.colorSel = self.curColorData.GetColour()
             self.btnSelColor.SetBackgroundColour(self.curOptions.colorSel)
+            self.curOptions.selectColor = "rgb(%d,%d,%d)" % \
+                ( self.curOptions.colorSel.Red(),
+                  self.curOptions.colorSel.Green(),
+                  self.curOptions.colorSel.Blue()   )
 
     def OnButton(self, evt):
         """Set the button character whenever text is altered."""
         self.curOptions.button = self.cbButton.GetValue()
+        # En/Disable font selection for buttons
+        if self.curOptions.button == ">" or self.curOptions.button == "~":
+            self.btnButtonFontChooserDialog.Enable(True)
+            self.chkLockButtonFont.SetValue(False)
+            self.chkLockButtonFont.Enable(True)
+        elif self.curOptions.button == "play" or self.curOptions.button == "movie":
+            self.btnButtonFontChooserDialog.Enable(False)
+            self.chkLockButtonFont.SetValue(True)
+            self.chkLockButtonFont.Enable(False)
+        self.UpdateButtonExample()
+        self.UpdateButtonFontChooserButton()
 
-    def OnButtonOutline(self, evt):
-        """Toggle button outline controls."""
-        if self.chkButtonOutline.GetValue == True:
-            self.sizDVDButton.Show(self.btnButonOutlineColor, evt.IsChecked())
-            self.sizDVDButton.Layout()
-        else:
-            self.sizDVDButton.Show(self.btnButtonOutlineColor, evt.IsChecked())
-            self.sizDVDButton.Layout()
-            self.curOptions.buttonOutline = ""
-    
     def OnButtonOutlineColor(self, evt):
         """Display a color dialog to select the button outline color."""
-        self.curColorData.SetColour(self.curOptions.buttonOutline)
+        self.curColorData.SetColour(self.curOptions.colorButtonOutline)
         dlgColor = wx.ColourDialog(self, self.curColorData)
         if dlgColor.ShowModal() == wx.ID_OK:
             self.curColorData = dlgColor.GetColourData()
-            self.curOptions.buttonOutline = self.curColorData.GetColour()
+            self.curOptions.colorButtonOutline = self.curColorData.GetColour()
             self.btnButtonOutlineColor.SetBackgroundColour(
-                self.curOptions.buttonOutline)
+                self.curOptions.colorButtonOutline)
+            self.curOptions.buttonOutlineColor = "rgb(%d,%d,%d)" % \
+                ( self.curOptions.colorButtonOutline.Red(), 
+                  self.curOptions.colorButtonOutline.Green(),
+                  self.curOptions.colorButtonOutline.Blue()   )
 
     def OnUseForAll(self, evt):
         """Use the current menu settings for all menus on disc."""
@@ -2557,10 +2724,17 @@ class MenuPanel(wx.Panel):
         self.btnStrokeColor.SetBackgroundColour(self.curOptions.colorStroke)
         self.txtStrokeWidth.SetValue(self.curOptions.textStrokeWidth)
         # DVD buttons
+        self.btnButtonFontChooserDialog.SetFont(self.curOptions.buttonFont)
+        if self.curOptions.buttonFont.GetFaceName() == "":
+            self.btnButtonFontChooserDialog.SetLabel("Default")
+        else:
+            self.btnButtonFontChooserDialog.SetLabel(
+                self.curOptions.buttonFont.GetFaceName() )
         self.btnHiColor.SetBackgroundColour(self.curOptions.colorHi)
         self.btnSelColor.SetBackgroundColour(self.curOptions.colorSel)
         self.cbButton.SetValue(self.curOptions.button)
-        self.btnButtonOutlineColor.SetBackgroundColour(self.curOptions.buttonOutline)
+        self.btnButtonOutlineColor.SetBackgroundColour(
+            self.curOptions.colorButtonOutline)
         # Titles
         self.lbTitles.Set(self.curOptions.titles)
 
