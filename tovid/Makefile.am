@@ -94,15 +94,19 @@ $(man_MANS): $(man_dir)/%.1: $(man_src_dir)/%.t2t
 # Source directories:
 icon_src_dir = icons
 # Install directories, $(datadir) == $(prefix)/share
-icondir = $(datadir)/icons
+icon_base_dir = $(datadir)/icons/hicolor
+icon128dir = $(icon_base_dir)/128x128/apps
+icon64dir = $(icon_base_dir)/64x64/apps
+icon48dir = $(icon_base_dir)/48x48/apps
+icon32dir = $(icon_base_dir)/32x32/apps
+iconSVGdir = $(icon_base_dir)/scalable/apps
 appdir = $(datadir)/applications
 # Distribute the data
-dist_icon_DATA = \
-	$(icon_src_dir)/tovid_icon_128.png \
-	$(icon_src_dir)/tovid_icon_64.png \
-	$(icon_src_dir)/tovid_icon_48.png \
-	$(icon_src_dir)/tovid_icon_32.png \
-	$(icon_src_dir)/cd.svg \
+dist_icon128_DATA = $(icon_src_dir)/tovid_icon_128.png
+dist_icon64_DATA = $(icon_src_dir)/tovid_icon_64.png 
+dist_icon48_DATA = $(icon_src_dir)/tovid_icon_48.png 
+dist_icon32_DATA = $(icon_src_dir)/tovid_icon_32.png 
+dist_iconSVG_DATA = $(icon_src_dir)/cd.svg \
 	$(icon_src_dir)/disc.svg \
 	$(icon_src_dir)/tovid.svg
 dist_app_DATA = tktodisc.desktop
