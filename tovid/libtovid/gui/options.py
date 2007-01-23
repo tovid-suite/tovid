@@ -297,15 +297,18 @@ class MenuOptions:
     textStrokeColor = "rgb(0,0,0)"       # For text outline
     colorStroke = wx.Colour(0, 0, 0)     # Stores dialog box color
     textStrokeWidth = "1"
-    pattern = ""
-    # Button settings
+    pattern = "bricks"
+    # DVD button settings
     button = ">"
-    buttonOutline = wx.Colour(140, 140, 140)
-    colorHi = wx.Colour(255, 255, 0)
-    colorSel = wx.Colour(255, 0, 0)
+    highlightColor = "rgb(255,255,0)"              # For highlight color
+    selectColor = "rgb(255,0,0)"                   # for selection color
+    colorHi = wx.Colour(255, 255, 0)               # Stores dialog box color
+    colorSel = wx.Colour(255, 0, 0)                # Stores dialog box color
+    buttonOutlineColor = "rgb(140,140,140)"        # For button outline
+    colorButtonOutline = wx.Colour(140, 140, 140)  # Stores dialog box color
     # Other settings
     titles = []
-    outPrefix = "bricks"
+    outPrefix = ""
 
     def __init__(self, format = 'dvd', tvsys = 'ntsc',
         title = _("Untitled menu"), isTop = False):
@@ -317,6 +320,8 @@ class MenuOptions:
         # Default font
         self.font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
             wx.FONTWEIGHT_NORMAL, False, "Default")
+        self.buttonFont = wx.Font(12, wx.FONTFAMILY_DEFAULT, 
+            wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False, "Default")
 
     def GetCommand(self):
         """Return the complete makemenu command to generate this menu."""
@@ -351,7 +356,7 @@ class MenuOptions:
         # Text outline:
         fontDecoration = "-stroke %s" % (self.textStrokeColor)
         fontDecoration += " -strokewidth %s" % (self.textStrokeWidth)
-        # Test fill:
+        # Text fill:
         # solid is simple:
         if self.fillType == "Color":
             strCommand += "-textcolor \"%s\" " % self.fillColor1
@@ -369,19 +374,21 @@ class MenuOptions:
         
         strCommand += "-fontdeco '%s' " % fontDecoration
 
-        # For DVD, append highlight and select colors
+        # For DVD, add button options
         if self.format == 'dvd':
-            strCommand += "-highlightcolor \"rgb(%d,%d,%d)\" " % \
-                (self.colorHi.Red(), self.colorHi.Green(), self.colorHi.Blue())
-            strCommand += "-selectcolor \"rgb(%d,%d,%d)\" " % \
-                (self.colorSel.Red(), self.colorSel.Green(), self.colorSel.Blue())
-
-        # Append button styling
-        if self.button != "":
+            # Font
+            if self.buttonFont.GetFaceName() != "":
+                wx_FontName = self.buttonFont.GetFaceName()
+                IM_FontName = curConfig.wx_IM_FontMap[wx_FontName] 
+                # Don't need button font for 'play' or 'movie', take the rest
+                if self.button != "play" and self.button != "movie":
+                    strCommand += "-button-font \"%s\" " % IM_FontName
+            # Shape
             strCommand += "-button \"%s\" " % self.button
-        if self.buttonOutline != "":
-            strCommand += "-button-outline \"rgb(%d,%d,%d)\" " % \
-                (self.buttonOutline.Red(), self.buttonOutline.Green(), self.buttonOutline.Blue())
+            # colors
+            strCommand += "-highlightcolor \"%s\" " % self.highlightColor
+            strCommand += "-selectcolor \"%s\" " % self.selectColor
+            strCommand += "-button-outline \"%s\" " % self.buttonOutlineColor
 
         # Append video/still titles
         for title in range(len(self.titles)):
