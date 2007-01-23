@@ -90,6 +90,23 @@ src_MANS = \
 $(man_MANS): $(man_dir)/%.1: $(man_src_dir)/%.t2t
 	txt2tags -t man -i "$<" -o "$@"
 
+# Shared data: icons and .desktop files
+# Source directories:
+icon_src_dir = icons
+# Install directories, $(datadir) == $(prefix)/share
+icondir = $(datadir)/icons
+appdir = $(datadir)/applications
+# Distribute the data
+dist_icon_DATA = \
+	$(icon_src_dir)/tovid_icon_128.png \
+	$(icon_src_dir)/tovid_icon_64.png \
+	$(icon_src_dir)/tovid_icon_48.png \
+	$(icon_src_dir)/tovid_icon_32.png \
+	$(icon_src_dir)/cd.svg \
+	$(icon_src_dir)/disc.svg \
+	$(icon_src_dir)/tovid.svg
+dist_app_DATA = tktodisc.desktop
+
 # Distribute the scripts, icons, and manpage source files
 # manpages are made and packaged in the dist-hook for tarball users which
 # prevents them from having to install txt2tags to make the mans, thus
