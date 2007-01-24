@@ -899,6 +899,7 @@ while test $# -gt 0; do
         "-background" )
             shift
             BACKGROUND="$(abspath "$1")"
+            ! [[ -e "$BACKGROUND" ]] && usage_error "$BACKGROUND does not exist"
             ;;
         "-showcase-video" )
             usage_error "-showcase-video This option has been removed. See: -showcase"
@@ -912,6 +913,7 @@ while test $# -gt 0; do
         "-intro" )
             shift
             INTRO_CLIP="$(abspath "$1")"
+            ! [[ -e "$INTRO_CLIP" ]] && usage_error "$INTRO_CLIP does not exist"
             INTRO="<vob file=\"$INTRO_CLIP\"/>"
             ;;
         "-showcase" )
@@ -1063,6 +1065,7 @@ while test $# -gt 0; do
         "-bgaudio" )
             shift
             BG_AUDIO="$(abspath "$1")"
+            ! [[ -e "$BG_AUDIO" ]] && usage_error "$BG_AUDIO does not exist"
             ;;
         "-menu-audio-fade" )
             shift
