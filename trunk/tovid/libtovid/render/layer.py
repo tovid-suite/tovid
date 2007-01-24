@@ -619,7 +619,6 @@ class Scatterplot (Layer):
         # Scale y according to maximum value
         y_scale = float(height) / max_y
         
-        
         # Save context
         drawing.save()
         drawing.fill(None)
@@ -666,9 +665,6 @@ class Scatterplot (Layer):
         # Plot all y-values for each x (as small circles)
         #->comment("Scatterplot data")
         drawing.save()
-        drawing.stroke(None)
-        drawing.fill('red')
-        drawing.set_fill_opacity(0.2)
         i = 0
         while i < len(x_vals):
             if x_is_num:
@@ -681,6 +677,7 @@ class Scatterplot (Layer):
             for y in self.xy_dict[x_vals[i]]:
                 point = (x_coord, int(height - y * y_scale))
                 drawing.circle(point, 3)
+                drawing.fill('red', 0.2)
             i += 1
         drawing.restore()
         
