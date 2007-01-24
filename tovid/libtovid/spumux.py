@@ -16,7 +16,7 @@ __all__ = [\
     'add_subpictures',
     'add_subtitles']
 
-from libtovid.utils import temp_name, temp_file
+from libtovid import utils
 from libtovid import xml
 
 # spumux XML elements and valid attributes
@@ -74,7 +74,7 @@ def get_xmlfile(textsub_or_spu):
     return the written filename.
     """
     xmldata = get_xml(textsub_or_spu)
-    xmlfile = temp_file(suffix=".xml")
+    xmlfile = utils.temp_file(suffix=".xml")
     xmlfile.write(xmldata)
     xmlfile.close()
     return xmlfile.name

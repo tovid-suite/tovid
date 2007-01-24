@@ -121,8 +121,8 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.affine(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
         self.d.arc((25,25), 15, (0, 270))
         self.d.arc_rad((125, 125), 50, (0, 1))
-        self.d.circle((55, 55), (100, 50))
-        self.d.circle_rad((250, 250), 20)
+        self.d.circle((55, 55), 30)
+        self.d.circle((250, 250), 20)
         
         self.d.line((25,25), (125,125))
         self.d.line((125,125), (55,55))
@@ -145,7 +145,7 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.translate((-200, 0))
         self.d.scale((1.5, 1.5))  # Scaling is done from (0,0) as reference.
         self.d.scale_centered((50, 50), (1.5, 1.5))
-        self.d.circle_rad((500, 100), 50) # same radius as others
+        self.d.circle((500, 100), 50) # same radius as others
         self.d.stroke()
         self.d.restore()
 
@@ -196,9 +196,7 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.font_rotate(0)
 
     def test_text_stuff(self):
-        self.d.text("This isn't a Unicode string", (15, 15))
-        self.d.text(u"This is a Unicode é string", (15, 15))
-        self.d.text_extents(u"This is a Unicode é string")
+        self.d.text("Test of text string", (15, 15))
 
     def test_antialias_stuff(self):
         self.d.stroke_antialias(True)
@@ -218,9 +216,9 @@ class TestCairoRenderer(unittest.TestCase):
     def test_render(self):
         """Test drive rendering mechanism"""
         self.d.stroke_width(8)
-        self.d.circle((250, 250), (300, 300))
+        self.d.circle((250, 250), 50)
         self.d.stroke_width(2)
-        self.d.circle_rad((250, 250), 80)
+        self.d.circle((250, 250), 80)
 
         self.d.render('/tmp/my.png')
 
