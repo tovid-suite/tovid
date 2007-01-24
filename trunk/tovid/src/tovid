@@ -1337,12 +1337,13 @@ yecho
 
 # if only a clip of video is to be encoded, set some ffmpeg vars
 if $SLICE; then
-    $DO_NORM && ASYNC1="-async 1"
+    $DO_NORM && [[ -z $ASYNC ]] && ASYNC1="-async 1"
     if [[ "$CLIP_SEEK" = *:* ]]; then
         CLIP_SEEK="$(unformat_time $CLIP_SEEK)"
     else
         CLIP_SEEK="$CLIP_SEEK"
     fi
+    ((${CLIP_SEEK%.*} > 0)) && [[ -z $ASYNC ]] && ASYNC1="-async 1"
     if [[ "$CLIP_ENDTIME" ]]; then
         [[ "$CLIP_ENDTIME" = *:* ]] && CLIP_ENDTIME=$(unformat_time $CLIP_ENDTIME)
         CLIP_LENGTH=$(echo "$CLIP_ENDTIME - $CLIP_SEEK" | bc)
@@ -1694,12 +1695,12 @@ if $USE_FFMPEG; then
             ;;
     esac
 fi
-if $USE_FFMPEG && ! $DO_NORM && ! [[ "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; then
+if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; then
     yecho
     yecho "Using ffmpeg to encode audio and video."
 
     FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k -ac 2"
-    FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $CLIP_SEEK $FF_LENGTH $ASYNC \
+    FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $CLIP_SEEK $FF_LENGTH $ASYNC $ASYNC1 \
         $FF_TARGET $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_FPS $FF_ILACE \
         $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT $FF_AUDIO_MAP"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
