@@ -23,9 +23,9 @@ class TestFlipbook(unittest.TestCase):
     
     def test_save_an_image(self):
         # Save image to /tmp/save_image.[png|jpg]
-        d = Drawing((250, 250))
+        d = Drawing(250, 250)
         d.stroke_width(10)
-        d.circle_rad((125,125), 120)
+        d.circle((125,125), 120)
         d.stroke('red')
         d.save_png('/tmp/save_image.png')
         d.save_jpg('/tmp/save_image.jpg')

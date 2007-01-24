@@ -13,21 +13,22 @@ __all__ = [\
     'ratio_to_float',
     'safe_filename',
     'tokenize',
-    'temp_name',
+    'temp_dir',
     'temp_file',
     'trim',
     'wait'
     ]
 
-# From standard library
 import os
 import sys
 import shlex
 import doctest
 import mimetypes
+import tempfile
 
 # Special characters that may need escaping
 special_chars = '\\ #*:;&?!<>[]()"\''
+
 
 def safe_filename(filename, work_dir):
     """Ensure the given filename is free of quirky or problematic characters.
@@ -43,6 +44,7 @@ def safe_filename(filename, work_dir):
         os.symlink(filename, safename)
     return safename
 
+
 def escape(text):
     """Return a copy of the given text string with potentially problematic
     "special" characters backslash-escaped."""
@@ -51,9 +53,11 @@ def escape(text):
         result = result.replace(char, '\%s' % char)
     return result
 
+
 def indent_level(line):
     """Return the number of leading whitespace characters in the line."""
     return len(line) - len(line.lstrip())
+
 
 def trim(text):
     """Strip leading indentation from a block of text.
@@ -84,6 +88,7 @@ def trim(text):
     # Return a string, rejoined with newlines
     return '\n'.join(trimmed)
 
+
 def ratio_to_float(ratio):
     """Convert a string expressing a numeric ratio, with X and Y parts
     separated by a colon ':', into a decimal number.
@@ -102,11 +107,13 @@ def ratio_to_float(ratio):
     else:
         raise Exception("ratio_to_float: too many values in ratio '%s'" % ratio)
 
+
 def float_to_ratio(number):
     """Convert a decimal number into an integer ratio string 'X:Y'.
     Keeps three digits of precision."""
     numerator = float(number) * 1000
     return "%g:1000" % numerator
+
 
 def tokenize(line, include_chars=''):
     """Separate a text line into tokens, returning them in a list. By default,
@@ -126,6 +133,7 @@ def tokenize(line, include_chars=''):
         else:
             tokens.append(token)
     return tokens
+
 
 def pretty_dict(dict):
     """Return a pretty-printed dictionary, with one line for each key.
@@ -149,6 +157,7 @@ def pretty_dict(dict):
             result += "    %s %s\n" % (key, value)
     return result
 
+
 def get_code_lines(filename):
     """Return a list of all lines of code in the given file.
     Whitespace and #-style comments are ignored."""
@@ -159,6 +168,7 @@ def get_code_lines(filename):
             codelines.append(line)
     infile.close()
     return codelines
+
 
 def get_file_type(filename):
     """Return 'image', 'audio', or 'video', if the given filename appears to be
@@ -175,18 +185,28 @@ def get_file_type(filename):
         return basetype
     else:
         return None
-    
-def temp_file(*args, **kwargs):
-    """Generates a file object, it's not removed after being closed.
-    Same args and kwargs as mkstemp."""
-    return open(temp_name(*args, **kwargs), "w")
 
-def temp_name(*args, **kwargs):
-    """Generates a temporary filename. Same args and kwargs
-    as mkstemp."""
-    fd, fname = tempfile.mkstemp(*args, **kwargs)
+
+def temp_dir(prefix=''):
+    """Create a unique temporary directory and return its full pathname.
+    """
+    import libtovid
+    work_dir = libtovid.Config().get('DEFAULT', 'work_dir')
+    return tempfile.mkdtemp(prefix="%s_" % prefix,
+                            dir=work_dir)
+
+
+def temp_file(prefix='', suffix=''):
+    """Create a unique temporary file and return its full pathname.
+    """
+    import libtovid
+    work_dir = libtovid.Config().get('DEFAULT', 'work_dir')
+    fd, fname = tempfile.mkstemp(prefix="%s_" % prefix,
+                                 suffix=suffix,
+                                 dir=work_dir)
     os.close(fd)
     return fname
+
 
 def wait(seconds):
     """Print a message and pause for the given number of seconds."""

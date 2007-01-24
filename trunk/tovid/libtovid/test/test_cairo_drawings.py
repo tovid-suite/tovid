@@ -44,9 +44,9 @@ class TestImageLoad(TestCairoDraws):
         # Save a temp image to disk...
         im = Drawing((50,50))
         im.stroke_width(5)
-        im.circle_rad((25,25), 20)
+        im.circle((25,25), 20)
         im.stroke('red')
-        im.circle_rad((25,25), 10)
+        im.circle((25,25), 10)
         im.stroke()
         im.save_jpg('/tmp/img.jpg')
         im.save_png('/tmp/img.png')
@@ -70,12 +70,12 @@ class TestCircleStrokeFill(TestCairoDraws):
         self.d.stroke_width(15)
 
         # Define a circle (left-most)
-        self.d.circle_rad((100, 100), 50)
+        self.d.circle((100, 100), 50)
         self.d.stroke(sc)
         self.d.fill(fc)
 
         # Define a second circle (centered)
-        self.d.circle_rad((300, 100), 50)
+        self.d.circle((300, 100), 50)
         self.d.fill(fc)
         self.d.stroke(sc)
 
@@ -83,7 +83,7 @@ class TestCircleStrokeFill(TestCairoDraws):
         self.d.save()
         self.d.translate((-200, 0))
         self.d.scale((1.5, 1.5))  # Scaling is done from (0,0) as reference.
-        self.d.circle_rad((500, 100), 50) # same radius as others
+        self.d.circle((500, 100), 50) # same radius as others
         self.d.stroke(sc)
         self.d.restore()
         
@@ -116,12 +116,10 @@ class TestScaling(TestCairoDraws):
         self.txt(u"Three circles. Red: scaled from (0,0), green, "\
                  "scaled_centered")
 
-        self.d.auto_stroke(True)
-
         # Black circle
         self.d.save()
         self.d.stroke_width(10)
-        self.d.circle_rad((100, 100), 30)
+        self.d.circle((100, 100), 30)
         self.d.stroke('black')
         self.d.restore()
 
@@ -129,7 +127,7 @@ class TestScaling(TestCairoDraws):
         self.d.save()
         self.d.stroke_width(10)
         self.d.scale((2.0, 2.0))
-        self.d.circle_rad((100, 100), 30)
+        self.d.circle((100, 100), 30)
         self.d.stroke('red')
         self.d.restore()
 
@@ -137,7 +135,7 @@ class TestScaling(TestCairoDraws):
         self.d.save()
         self.d.stroke_width(10)
         self.d.scale_centered((100, 100), (2.0, 2.0))
-        self.d.circle_rad((100, 100), 30)
+        self.d.circle((100, 100), 30)
         self.d.stroke('green')
         self.d.restore()
 
