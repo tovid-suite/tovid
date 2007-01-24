@@ -68,6 +68,7 @@ from libtovid.render import layer, effect
 from libtovid import standard
 from libtovid.media import MediaFile, standard_media, load_media
 from libtovid.transcode import encode
+from libtovid import utils
 
 class Flipbook:
     """A collection of Drawings that together comprise an animation.
@@ -82,37 +83,27 @@ class Flipbook:
         """
         self.seconds = seconds
         self.frames = int(seconds * standard.fps(tvsys))
+        self.size = standard.resolution(format, tvsys)
         # TODO: We'll need aspect ratio here.. 4:3 or 16:9 anamorphic ?
         self.format = format
         self.tvsys = tvsys
         self.layers = []
         self.drawings = []
 
-        w, h = standard.resolution(format, tvsys)
-        dx, dy = standard.scaling(format, tvsys)
-        self.width = int(w / dx)
-        self.height = int(h / dy)
-        self.size = (self.width, self.height)
-
     def add(self, layer, position=(0, 0)):
         """Add a Layer to the flipbook."""
         self.layers.append((layer, position))
 
     def render(self, frame=1):
-        """Render a Drawing for the given frame.
-
-        Mostly for debugging."""
-        print "Rendering Flipbook frame %s" % frame
-        # Render the drawing
+        """Render the given frame."""
+        filename = "/tmp/flipbook_%s.png" % frame
+        print "Rendering Flipbook frame %s to %s" % (frame, filename)
         drawing = self.get_drawing(frame)
-        drawing.render()
+        drawing.save_png(filename)
 
     def get_drawing(self, frame):
         """Get a Drawing of the given frame"""
-        drawing = Drawing(standard.resolution(self.format, self.tvsys))
-        # Set scaling to cope with aspect ratios:
-        drawing.base_scaling(standard.scaling(self.format, self.tvsys))
-        
+        drawing = Drawing(self.size[0], self.size[1])
         # Draw each layer
         for layer, position in self.layers:
             drawing.save()
@@ -120,12 +111,10 @@ class Flipbook:
             # Apply effects and draw
             layer.draw_with_effects(drawing, frame)
             drawing.restore()
-
         return drawing
 
     def render_video(self, out_prefix):
         """Render the flipbook to an .m2v video stream file."""
-        # TODO: Get rid of temp-dir hard-coding
         tmp = "%s_frames" % out_prefix
         m2v_file = "%s.m2v" % out_prefix
 
@@ -134,7 +123,6 @@ class Flipbook:
             os.system('rm -rf %s' % tmp)
         os.mkdir(tmp)
 
-        # Write each Flipbook frame as an .mvg file, then convert to .jpg
         frame = 1
         while frame <= self.frames:
             print "Drawing frame %s of %s" % (frame, self.frames)
@@ -145,7 +133,6 @@ class Flipbook:
         self.encode_flipbook(tmp, m2v_file)
 
     def encode_flipbook(self, tmpdir, m2v_file):
-        
         # Encode the frames to an .m2v file
         encode.encode_frames(tmpdir, m2v_file, self.format, self.tvsys)
         print "Output file is: %s" % m2v_file
@@ -230,6 +217,8 @@ def draw_text_demo(flipbook):
 
 # Demo
 if __name__ == '__main__':
+    start_time = time.time() # Benchmark
+
     if len(sys.argv) > 1:
         seconds = int(sys.argv[1])
     else:
@@ -247,6 +236,4 @@ if __name__ == '__main__':
     # Render the final video
     flip.render_video('/tmp/flipbook')
 
-    print "To create demo video (for distribution), run:"
-    print """cat /tmp/flipbook.m2v /tmp/flipbook.m2v /tmp/flipbook.m2v /tmp/flipbook.m2v /tmp/flipbook.m2v | ffmpeg2theora --aspect 4:3 --title "libtovid Flipbook demo (flipbook.py)" -o /dev/stdout - > FlipbookDemo.ogm """
-
+    print "Took %f seconds" % (time.time() - start_time)
