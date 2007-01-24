@@ -16,7 +16,7 @@ OPTION_DEFS = [\
     Option('out', 'NAME', None,
         """Output prefix or menu name."""),
 
-    Option('titles', '"TITLE" [, "TITLE"]', [],
+    Option('titles', '"TITLE"[, "TITLE"]', [],
         """Comma-separated list of quoted titles; these are the titles that
         will be displayed (and linked) from the menu."""),
 
@@ -42,7 +42,7 @@ OPTION_DEFS = [\
         """Color of menu selections."""),
 
     # Thumbnail menus and effects
-    Option('thumbnails', 'FILE [, FILE ...]', [],
+    Option('thumbnails', 'FILE[, FILE ...]', [],
         """Create thumbnails of the provided list of video files, which
         should correspond to the given -titles list."""),
     Option('border', 'NUM', '0',
