@@ -120,12 +120,12 @@ if __name__ == '__main__':
                 xy_values = statlist.list_by(list_field, by_field, True)
                 scatterplot = Scatterplot(xy_values, (640, 480), \
                                           by_field, list_field)
-                drawing = Drawing((720, 576))
+                drawing = Drawing(720, 576)
                 drawing.fill('white')
                 drawing.rectangle((0, 0), (720, 576))
                 drawing.translate((40, 48))
                 scatterplot.draw(drawing, 1)
-                drawing.render()
+                drawing.display()
     
         elif arg == '-match':
             field = args.pop(0)
