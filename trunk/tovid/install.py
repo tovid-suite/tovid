@@ -7,7 +7,7 @@
 import os
 import sys
 from libtovid import deps
-from libtovid import output as color
+from libtovid.output import red, green, blue
 
 if __name__ == '__main__':
     alldeps = deps.all
@@ -18,4 +18,4 @@ if __name__ == '__main__':
         except:
             pass
         else:
-            print color.green("Found:") + dep
+            print green("Found:") + dep
