@@ -198,7 +198,7 @@ class Background (Layer):
         drawing.save()
         # Fill drawing with an image
         if self.filename is not '':
-            drawing.image((0, 0), drawing.size, self.filename)
+            drawing.image((0, 0), drawing.resolution, self.filename)
         # Fill drawing with a solid color
         elif self.color:
             drawing.rectangle((0, 0), drawing.size)
@@ -480,8 +480,8 @@ class Thumb (Layer):
         assert isinstance(drawing, Drawing)
         log.debug("Drawing Thumb")
         drawing.save()
-        (dx, dy, w, h, ax, ay) = self.lbl.extents(drawing)
-        drawing.translate((0, h))
+        (x0, y0, x1, y1) = self.lbl.extents(drawing)
+        drawing.translate((0, x1-x0))
         self.draw_sublayers(drawing, frame)
         drawing.restore()
 
@@ -554,7 +554,7 @@ class ThumbGrid (Layer):
         self.draw_sublayers(drawing, frame)
         drawing.restore()
 
-    
+
 class SafeArea (Layer):
     """Render a safe area box at a given percentage.
     """
@@ -680,7 +680,7 @@ class Scatterplot (Layer):
             # Plot all y-values for this x
             for y in self.xy_dict[x_vals[i]]:
                 point = (x_coord, int(height - y * y_scale))
-                drawing.circle_rad(point, 3)
+                drawing.circle(point, 3)
             i += 1
         drawing.restore()
         
@@ -766,7 +766,7 @@ class InterpolationGraph (Layer):
         #->drawing.comment("Current frame marker")
         drawing.save()
         pos = (frame * x_scale, height - data[frame-1] * y_scale)
-        drawing.circle_rad(pos, 2)
+        drawing.circle(pos, 2)
         drawing.fill('yellow')
         drawing.restore()
 
@@ -866,17 +866,26 @@ if __name__ == '__main__':
         images = sys.argv[1:]
 
     # A Drawing to render Layer demos to
-    drawing = Drawing() # default size
+    drawing = Drawing(800, 600)
     
     # Draw a background layer
     bgd = Background(color='#7080A0')
     bgd.draw(drawing, 1)
 
-    bars = ColorBars((320, 240), (160, 100))
+    # Draw color bars
+    bars = ColorBars((320, 240), (400, 100))
     bars.draw(drawing, 1)
 
+    # Draw a label (experimental)
+    drawing.save()
+    drawing.translate((460, 200))
+    label = Label(u"tovid loves Linux")
+    label.draw(drawing, 1)
+    drawing.restore()
+
     # Draw a text layer, with position.
-    text = Text(u"Jackdaws love my big sphinx of quartz", position=(82, 62), color='#bbb')
+    text = Text(u"Jackdaws love my big sphinx of quartz",
+                (82, 62), '#bbb')
     text.draw(drawing, 1)
 
     # Draw a text layer
@@ -886,7 +895,6 @@ if __name__ == '__main__':
     text.draw(drawing, 1)
     drawing.restore()
 
-
     # Draw a template layer (overlapping semitransparent rectangles)
     template = MyLayer('white', 'darkblue')
     # Scale and translate the layer before drawing it
@@ -894,13 +902,6 @@ if __name__ == '__main__':
     drawing.translate((50, 100))
     drawing.scale((3.0, 3.0))
     template.draw(drawing, 1)
-    drawing.restore()
-
-    # Draw a label (experimental)
-    drawing.save()
-    drawing.translate((300, 200))
-    label = Label(u"tovid loves Linux")
-    label.draw(drawing, 1)
     drawing.restore()
 
     # Draw a safe area test (experimental)
@@ -917,11 +918,11 @@ if __name__ == '__main__':
 
     # Draw an interpolation graph (experimental)
     drawing.save()
-    drawing.translate((60, 340))
+    drawing.translate((60, 400))
     # Some random keyframes to graph
     keys = [Keyframe(1, 25), Keyframe(10, 5), Keyframe(30, 35),
             Keyframe(40, 35), Keyframe(45, 20), Keyframe(60, 40)]
-    interp = InterpolationGraph(keys, method="cosine")
+    interp = InterpolationGraph(keys, (400, 120), method="cosine")
     interp.draw(drawing, 25)
     drawing.restore()
 
