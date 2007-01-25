@@ -86,7 +86,7 @@ constraints of each arrangement.
 : -ntsc
     720x480 output, compatible with NTSC standard (default)
 : -pal
-    480x576 output, compatible with PAL standard
+    720x576 output, compatible with PAL standard
 : -submenus
     Create a sub-menu with chapters for each video (default: no sub-menus)
 : -ani-submenus
