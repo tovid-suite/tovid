@@ -166,6 +166,7 @@ USER_TITLE_GEO=false
 SPACER=""
 SE_YCORNER=0
 BG_ASYNC=""
+NO_WARN=false
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -796,6 +797,9 @@ while test $# -gt 0; do
         "-noask" )
             NOASK=:
             ;;
+        "-nowarn" )
+            NO_WARN=:
+            ;;
         "-keepfiles" )
             KEEP_FILES=:
             ;;
@@ -1206,7 +1210,7 @@ if ! $SHOWCASE; then
         val=${#TITLES[i]}
         [ -z "$MAX_CHARS" ] || ((val > MAX_CHARS)) && MAX_CHARS=$val && key=$i
     done
-    if test ${#TITLES[@]} -gt 6 && test $MAX_CHARS -gt 16 ; then
+    if [[ ${#TITLES[@]} -gt 6 && $MAX_CHARS -gt 16 ]] && ! $NO_WARN; then
         yecho
         yecho "WARNING! Some titles are longer than 16 characters; they may be chopped off."
         yecho
@@ -1257,7 +1261,7 @@ if test -e "$OUT_DIR"; then
     exit 1
 fi
 # see if advanced options were used and give warning if so
-if [[ -n "${ADV_OPT[@]}" ]]; then
+if [[ -n "${ADV_OPT[@]}" ]] && ! $NO_WARN; then
     yecho
     yecho "**** WARNING ****"
     yecho "You have used the following advanced options:"
@@ -4300,13 +4304,15 @@ else
 fi
 
 yecho
-yecho "Running spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE""
-spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE" 2>> "$LOG_FILE"
-yecho
-if test -f "$MENU_FILE"; then
-    echo "Menu file $MENU_FILE created"
-else
-    runtime_error "Menu file $MENU_FILE not found.  Spumux seems to have had problems"
+if [[ $TARGET != svcd ]]; then
+    yecho "Running spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE""
+    spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE" 2>> "$LOG_FILE"
+    yecho
+    if test -f "$MENU_FILE"; then
+        echo "Menu file $MENU_FILE created"
+    else
+        runtime_error "Menu file $MENU_FILE not found.  Spumux seems to have had problems"
+    fi
 fi
 if $SUB_MENU; then
     echo "Creating submenus"
@@ -4326,7 +4332,7 @@ if [ "$TARGET" = dvd ]; then
         runtime_error "There was a problem creating the DVD structure"
     fi
 elif [ "$TARGET" = svcd ]; then
-    makexml -svcd -menu "$WORK_DIR/animenu.mpg" "${IN_FILES[@]}" -out MyDisc
+    makexml -svcd -menu $WORK_DIR/intro.mpg "${IN_FILES[@]}" -out MyDisc
     vcdxbuild -b ../videocd.bin -c ../videocd.cue  MyDisc.xml
 fi
 echo "Cleaning up unwanted files in $REAL_WORK_DIR"
