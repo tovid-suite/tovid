@@ -35,7 +35,6 @@ SCRIPT_NAME=`cat << EOF
 idvid
 Video identification script
 Part of the tovid suite, version $TOVID_VERSION
-$BUILD_OPTIONS
 $TOVID_HOME_PAGE
 --------------------------------
 EOF`
@@ -192,7 +191,14 @@ function get_info ()
     test -z $ID_VIDEO_FRAMES && ID_VIDEO_FRAMES="0"
 
     # ffmpeg has a better concept of the actual bitrate than mplayer
-    ID_VIDEO_BITRATE=$(awk -F: '{gsub("kb/s", "")};  /bitrate:/ {print $6*1000}' "$SCRATCH_FILE")
+    TOTAL_AV_BITRATE=$(awk -F: '{gsub("kb/s", "")};  /bitrate:/ {print $6*1000}' "$SCRATCH_FILE")
+    VIDEO_ONLY_BITRATE=$(awk '/Video:/ {print $7*1000}' "$SCRATCH_FILE")
+    ## take the lower of the two
+    if test $TOTAL_AV_BITRATE -lt $VIDEO_ONLY_BITRATE; then
+        ID_VIDEO_BITRATE=$TOTAL_AV_BITRATE
+    else
+        ID_VIDEO_BITRATE=$VIDEO_ONLY_BITRATE
+    fi
 
     # Find out what audio channels are available
     if test -n "$ID_AUDIO_ID"; then
