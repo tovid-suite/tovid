@@ -195,13 +195,14 @@ class Background (Layer):
     def draw(self, drawing, frame):
         assert isinstance(drawing, Drawing)
         log.debug("Drawing Background")
+        width, height = drawing.size
         drawing.save()
         # Fill drawing with an image
         if self.filename is not '':
-            drawing.image((0, 0), drawing.resolution, self.filename)
+            drawing.image(0, 0, width, height, self.filename)
         # Fill drawing with a solid color
         elif self.color:
-            drawing.rectangle((0, 0), drawing.size)
+            drawing.rectangle(0, 0, width, height)
             drawing.fill(self.color)
         drawing.restore()
 
@@ -295,6 +296,7 @@ class Text (Layer):
         assert(isinstance(position, tuple))
         self.position = position
 
+    # TODO: This is gonna be pretty broken...
     def extents(self, drawing):
         """Return the extents of the text as a (x0, y0, x1, y1) tuple."""
         drawing.save()
@@ -481,7 +483,7 @@ class Thumb (Layer):
         log.debug("Drawing Thumb")
         drawing.save()
         (x0, y0, x1, y1) = self.lbl.extents(drawing)
-        drawing.translate((0, x1-x0))
+        drawing.translate(0, x1-x0)
         self.draw_sublayers(drawing, frame)
         drawing.restore()
 
@@ -787,11 +789,15 @@ class ColorBars (Layer):
     def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
         log.debug("Drawing ColorBars")
+        x, y = self.position
+        width, height = self.size
+
         drawing.save()
-        drawing.translate(self.position)
-        drawing.scale(self.size)
+        # Get to the right place and size
+        drawing.translate(x, y)
+        drawing.scale(width, height)
         # Video-black background
-        drawing.rectangle((0,0), (1,1))
+        drawing.rectangle(0, 0, 1, 1)
         drawing.fill('rgb(16, 16, 16)')
 
         # Top 67% of picture: Color bars at 75% amplitude
@@ -799,59 +805,45 @@ class ColorBars (Layer):
         bottom = 2.0 / 3
         x_inc = 1.0 / 7
         size = (x_inc, bottom)
-        drawing.rectangle((0, top), size)
-        drawing.fill('rgb(191, 191, 191)')
-        drawing.rectangle((x_inc, top), size)
-        drawing.fill('rgb(191, 191, 0)')
-        drawing.rectangle((x_inc*2, top), size)
-        drawing.fill('rgb(0, 191, 191)')
-        drawing.rectangle((x_inc*3, top), size)
-        drawing.fill('rgb(0, 191, 0)')
-        drawing.rectangle((x_inc*4, top), size)
-        drawing.fill('rgb(191, 0, 191)')
-        drawing.rectangle((x_inc*5, top), size)
-        drawing.fill('rgb(191, 0, 0)')
-        drawing.rectangle((x_inc*6, top), size)
-        drawing.fill('rgb(0, 0, 191)')
+        bars = [(0, top, x_inc, bottom, 'rgb(191, 191, 191)'),
+                (x_inc, top, x_inc, bottom, 'rgb(191, 191, 0)'),
+                (x_inc*2, top, x_inc, bottom, 'rgb(0, 191, 191)'),
+                (x_inc*3, top, x_inc, bottom, 'rgb(0, 191, 0)'),
+                (x_inc*4, top, x_inc, bottom, 'rgb(191, 0, 191)'),
+                (x_inc*5, top, x_inc, bottom, 'rgb(191, 0, 0)'),
+                (x_inc*6, top, x_inc, bottom, 'rgb(0, 0, 191)')]
+
         # Next 8% of picture: Reverse blue bars
         top = bottom
         bottom = 0.75
-        size = (x_inc, bottom - top)
-        drawing.rectangle((0, top), size)
-        drawing.fill('rgb(0, 0, 191)')
-        drawing.rectangle((x_inc, top), size)
-        drawing.fill('rgb(16, 16, 16)')
-        drawing.rectangle((x_inc*2, top), size)
-        drawing.fill('rgb(191, 0, 191)')
-        drawing.rectangle((x_inc*3, top), size)
-        drawing.fill('rgb(16, 16, 16)')
-        drawing.rectangle((x_inc*4, top), size)
-        drawing.fill('rgb(0, 191, 191)')
-        drawing.rectangle((x_inc*5, top), size)
-        drawing.fill('rgb(16, 16, 16)')
-        drawing.rectangle((x_inc*6, top), size)
-        drawing.fill('rgb(191, 191, 191)')
+        height = bottom - top
+        bars.extend([(0, top, x_inc, height, 'rgb(0, 0, 191)'),
+                (x_inc, top, x_inc, height, 'rgb(16, 16, 16)'),
+                (x_inc*2, top, x_inc, height, 'rgb(191, 0, 191)'),
+                (x_inc*3, top, x_inc, height, 'rgb(16, 16, 16)'),
+                (x_inc*4, top, x_inc, height, 'rgb(0, 191, 191)'),
+                (x_inc*5, top, x_inc, height, 'rgb(16, 16, 16)'),
+                (x_inc*6, top, x_inc, height, 'rgb(191, 191, 191)')])
+
         # Lower 25%: Pluge signal
         top = bottom
         bottom = 1.0
         x_inc = 1.0 / 6
-        # TODO: Replace rectangle_() with new rectangle() function
-        # (width, height instead of end coordinates)
-        drawing.rectangle_((0, top), (1.0, bottom))
-        drawing.fill('rgb(16, 16, 16)')
-        drawing.rectangle_((0, top), (x_inc, bottom))
-        drawing.fill('rgb(0, 29, 66)')
-        drawing.rectangle_((x_inc, top), (x_inc*2, bottom))
-        drawing.fill('rgb(255, 255, 255)')
-        drawing.rectangle_((x_inc*2, top), (x_inc*3, bottom))
-        drawing.fill('rgb(44, 0, 92)')
-        # Sub- and super- black narrow bars
-        drawing.rectangle_((x_inc*4, top), (x_inc*4.33, bottom))
-        drawing.fill('rgb(7, 7, 7)')
-        drawing.rectangle_((x_inc*4.33, top), (x_inc*4.66, bottom))
-        drawing.fill('rgb(16, 16, 16)')
-        drawing.rectangle_((x_inc*4.66, top), (x_inc*5, bottom))
-        drawing.fill('rgb(24, 24, 24)')
+        height = bottom - top
+        bars.extend([(0, top, 1.0, height, 'rgb(16, 16, 16)'),
+                (0, top, x_inc, height, 'rgb(0, 29, 66)'),
+                (x_inc, top, x_inc, height, 'rgb(255, 255, 255)'),
+                (x_inc*2, top, x_inc, height, 'rgb(44, 0, 92)'),
+                # Sub- and super- black narrow bars
+                (x_inc*4, top, 0.33, height, 'rgb(7, 7, 7)'),
+                (x_inc*4.33, top, 0.33, height,'rgb(16, 16, 16)'),
+                (x_inc*4.66, top, 0.33, height, 'rgb(24, 24, 24)')])
+
+        # Draw and fill all bars
+        for x, y, width, height, color in bars:
+            drawing.rectangle(x, y, width, height)
+            drawing.fill(color)
+
         drawing.restore()
 
 
@@ -875,7 +867,7 @@ if __name__ == '__main__':
 
     # Draw a label (experimental)
     drawing.save()
-    drawing.translate((460, 200))
+    drawing.translate(460, 200)
     label = Label(u"tovid loves Linux")
     label.draw(drawing, 1)
     drawing.restore()
@@ -887,7 +879,7 @@ if __name__ == '__main__':
 
     # Draw a text layer
     drawing.save()
-    drawing.translate((80, 60))
+    drawing.translate(80, 60)
     text = Text(u"Jackdaws love my big sphinx of quartz")
     text.draw(drawing, 1)
     drawing.restore()
@@ -896,8 +888,8 @@ if __name__ == '__main__':
     template = MyLayer('white', 'darkblue')
     # Scale and translate the layer before drawing it
     drawing.save()
-    drawing.translate((50, 100))
-    drawing.scale((3.0, 3.0))
+    drawing.translate(50, 100)
+    drawing.scale(3.0, 3.0)
     template.draw(drawing, 1)
     drawing.restore()
 
@@ -908,14 +900,14 @@ if __name__ == '__main__':
     # Draw a thumbnail grid (if images were provided)
     if images:
         drawing.save()
-        drawing.translate((350, 300))
+        drawing.translate(350, 300)
         thumbs = ThumbGrid(images, (320, 250))
         thumbs.draw(drawing, 1)
         drawing.restore()
 
     # Draw an interpolation graph (experimental)
     drawing.save()
-    drawing.translate((60, 400))
+    drawing.translate(60, 400)
     # Some random keyframes to graph
     keys = [Keyframe(1, 25), Keyframe(10, 5), Keyframe(30, 35),
             Keyframe(40, 35), Keyframe(45, 20), Keyframe(60, 40)]
