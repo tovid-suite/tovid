@@ -847,6 +847,7 @@ class ColorBars (Layer):
         drawing.restore()
 
 
+
 if __name__ == '__main__':
     images = None
     # Get arguments, if any
