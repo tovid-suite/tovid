@@ -111,40 +111,10 @@ from math import pi, sqrt
 import cairo
 import Image      # for JPG export
 import ImageColor # for getrgb, getcolor
-
-class Style:
-    """Stores style attributes of drawn objects.
-    """
-    def __init__(self):
-        # Stroke attributes
-        self.stroke = (0, 0, 0)       # stroke color for shapes or text
-        self.stroke_alpha = 0         # opaque
-        self.stroke_width = 2         # units?
-        self.stroke_pattern = [0, 1]  # on/off pattern from 0.0-1.0
-        # Fill attributes
-        self.fill = (0, 0, 0)         # fill color for shapes or text
-        self.fill_alpha = 1           # transparent
-        # TODO (where gradient is transparent, rgba shows through)
-        self.fill_gradient = None
-        # Font attributes
-        self.font = 'sans'
-        self.font_size = 12           # points
-        self.font_stretch = (1, 1)    # x, y scaling
-
-    def set(self, **kwargs):
-        """Convenience function for setting named style attributes.
-        Call with named arguments matching class attribute names, i.e.
-        
-            style.set(stroke='red', fill='blue', fill_alpha=0.5)
-        
-        No validity-checking of argument values is done. Use appropriate values.
-        """
-        for name, value in kwargs.iteritems():
-            if hasattr(self, name):
-                setattr(self, name, value)
+from libtovid import log
 
 class Drawing:
-    def __init__(self, width=800, height=600):
+    def __init__(self, width=800, height=600, aspect=(4, 3)):
         """Create a blank drawing at the given size.
         
             width, height: Dimensions of the drawable region.
@@ -154,11 +124,17 @@ class Drawing:
         aspect, it should have size (400, 300), (800, 600) or similar.
         """
         self.size = (width, height)
-        self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-        self.cr = cairo.Context(self.surface)
-        self.style = Style()
-        # Push/pop stack
-        self.stack = []
+        self.aspect = aspect
+        # Sequence of drawing commands
+        self.commands = []
+
+        # This'll catch some bugs...
+        self.cr = None
+        
+        # TODO: Move this part to rendering function(s)
+        #self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+        #self.cr = cairo.Context(self.surface)
+
 
     ###
     ### Cairo drawing commands
@@ -177,24 +153,28 @@ class Drawing:
         See [http://www.w3.org/TR/SVG11/coords.html] for more on
         these matrices and how to use them.
         """
-        mtx = cairo.Matrix(scale_x, rot_x, rot_y, scale_y,
-                           translate_x, translate_y)
-        self.cr.set_matrix(mtx)
+        def _affine():
+            mtx = cairo.Matrix(scale_x, rot_x, rot_y, scale_y,
+                               translate_x, translate_y)
+            self.cr.set_matrix(mtx)
+        self.commands.append(_affine)
 
-
-    def arc(self, (x, y), radius, (start_deg, end_deg)):
+    def arc(self, x, y, radius, start_deg, end_deg):
         """Draw an arc from (x, y), with the specified radius, starting at
         degree start_deg and ending at end_deg.
         """
-        # Convert degrees to radians
-        self.cr.arc(x, y, radius, start_deg * pi/180., end_deg * pi/180.)
+        def _arc():
+            self.cr.arc(x, y, radius, start_deg * pi/180., end_deg * pi/180.)
+        self.commands.append(_arg)
 
 
-    def arc_rad(self, (x, y), radius, (start_rad, end_rad)):
+    def arc_rad(self, x, y, radius, start_rad, end_rad):
         """Draw an arc from (x, y), with the specified radius, starting at
         radian start_rad and ending at end_rad.
         """
-        self.cr.arc(x, y, radius, start_rad, end_rad)
+        def _arc_rad():
+            self.cr.arc(x, y, radius, start_rad, end_rad)
+        self.commands.append(_arc_rad)
 
 
     # TODO: Rewrite/cleanup bezier function
@@ -248,31 +228,28 @@ class Drawing:
                 npt.append([pt[0][0] + pt[2][0], pt[0][1] + pt[2][1]])
                 points[x] = npt
                     
-        # Move to the first x,y in the first point
-        self.cr.new_path()
-        self.cr.move_to(points[0][0][0], points[0][0][1])
-        for pt in points:
-            self.cr.curve_to(pt[2][0], pt[2][1],
-                             pt[0][0], pt[0][1],
-                             pt[1][0], pt[1][1],
-                             )
-        if close_path:
-            self.cr.close_path()
+        # Define the actual drawing function
+        def _bezier():
+            # Move to the first x,y in the first point
+            self.cr.new_path()
+            self.cr.move_to(points[0][0][0], points[0][0][1])
+            for pt in points:
+                self.cr.curve_to(pt[2][0], pt[2][1],
+                                 pt[0][0], pt[0][1],
+                                 pt[1][0], pt[1][1])
+            if close_path:
+                self.cr.close_path()
+        self.commands.append(_bezier)
 
 
-    def circle(self, (center_x, center_y), radius):
+    def circle(self, center_x, center_y, radius):
         """Draw a circle defined by center point and radius."""
-        self.cr.new_path()
-        self.cr.arc(center_x, center_y, radius, 0, 2*pi)
+        def _circle():
+            self.cr.new_path()
+            self.cr.arc(center_x, center_y, radius, 0, 2*pi)
+        self.commands.append(_circle)
 
     # TODO: add clip stuff...
-
-
-    def set_fill_opacity(self, opacity):
-        """Define fill opacity, from fully transparent (0.0) to fully
-        opaque (1.0).
-        """
-        self.style.fill_alpha = opacity
 
 
     def fill(self, source=None, opacity=None):
@@ -284,8 +261,10 @@ class Drawing:
         # Optionally set fill color, and save it.
         if source is not None:
             self.set_source(source, opacity)
-        # Optionally set opacity level, and save it.
-        self.cr.fill_preserve()
+
+        def _fill():
+            self.cr.fill_preserve()
+        self.commands.append(_fill)
 
 
     def fill_rule(self, rule):
@@ -300,7 +279,9 @@ class Drawing:
         """
         tr = {'evenodd': cairo.FILL_RULE_EVEN_ODD,
               'winding': cairo.FILL_RULE_WINDING}
-        self.cr.set_fill_rule(tr[rule])
+        def _fill_rule():
+            self.cr.set_fill_rule(tr[rule])
+        self.commands.append(_fill_rule)
 
 
     def font(self, name, slant='normal', weight='normal'):
@@ -315,7 +296,9 @@ class Drawing:
               'oblique': cairo.FONT_SLANT_OBLIQUE}
         wg = {'normal': cairo.FONT_WEIGHT_NORMAL,
               'bold': cairo.FONT_WEIGHT_BOLD}
-        self.cr.select_font_face(name, sl[slant], wg[weight])
+        def _font():
+            self.cr.select_font_face(name, sl[slant], wg[weight])
+        self.commands.append(_font)
 
 
     #def font_family(self, family):
@@ -325,7 +308,9 @@ class Drawing:
 
     def font_size(self, pointsize):
         """Set the current font size in points."""
-        self.cr.set_font_size(pointsize)
+        def _font_size():
+            self.cr.set_font_size(pointsize)
+        self.commands.append(_font_size)
 
 
     def font_stretch(self, x=1.0, y=1.0):
@@ -336,19 +321,22 @@ class Drawing:
         < 1.0 -- shrink
 
         """
-        m = self.cr.get_font_matrix()
-        m.scale(x, y)
-        self.cr.set_font_matrix(m)
+        def _font_stretch():
+            m = self.cr.get_font_matrix()
+            m.scale(x, y)
+            self.cr.set_font_matrix(m)
+        self.commands.append(_font_stretch)
 
 
     def font_rotate(self, degrees):
         """Set the font rotation, in degrees.
 
         Addition to Cairo backend."""
-        m = self.cr.get_font_matrix()
-        m.rotate(degrees * pi/180.)
-        self.cr.set_font_matrix(m)
-
+        def _font_rotate():
+            m = self.cr.get_font_matrix()
+            m.rotate(degrees * pi/180.)
+            self.cr.set_font_matrix(m)
+        self.commands.append(_font_rotate)
     
     #def font_style(self, style):
     #    """Set the font style to one of:
@@ -400,8 +388,36 @@ class Drawing:
     #    """
     #    self.insert('gravity %s' % direction)
 
+    def image_surface(self, x, y, width, height, surface):
+        """Draw a given cairo.ImageSurface centered at (x, y), at the given
+        width and height.
+        """
+        # Calculate centering and scaling
+        add_x, add_y = (0, 0)
+        dw = float(width) / float(surface.get_width())
+        dh = float(height) / float(surface.get_height())
+        if (dw > dh):
+            scale = dh
+            add_x = (width - dh * float(surface.get_width())) / 2
+        else:
+            scale = dw
+            add_y = (height - dw * float(surface.get_height())) / 2
+        
+        # Save context and get the surface to right dimensions
+        self.save()
+        self.translate(x + add_x, y + add_y)
+        self.scale(scale, scale)
 
-    def image(self, (x, y), (width, height), source):
+        # Create and append the drawing function
+        def _image_surface():
+            self.cr.set_source_surface(surface)
+            self.cr.paint()
+        self.commands.append(_image_surface())
+
+        self.restore()
+    
+
+    def image(self, x, y, width, height, source):
         """Draw an image centered at (x, y), scaled to the given width and
         height. Return the corresponding cairo.ImageSurface object.
 
@@ -417,47 +433,35 @@ class Drawing:
         You can apply some operator() to manipulation how the image is going
         to show up. See operator()
         """
-        # Create new image
+        # Determine what type of source was given, and make it into
+        # a cairo.ImageSurface
         if isinstance(source, cairo.ImageSurface):
-            img = source
+            surface = source
         # PNG files can be added directly
         elif isinstance(source, str) and source.endswith('.png'):
-            img = cairo.ImageSurface.create_from_png(source)
+            surface = cairo.ImageSurface.create_from_png(source)
         # Other formats must be converted to PNG
         else:
             infile = Image.open(source)
             outfile = open('/tmp/export.png', 'wb+')
             infile.save(outfile, 'PNG')
             outfile.seek(0)
-            img = cairo.ImageSurface.create_from_png(outfile)
+            surface = cairo.ImageSurface.create_from_png(outfile)
             outfile.close()
-        # Centering and scaling
-        add_x, add_y = (0, 0)
-        dw = float(width) / float(img.get_width())
-        dh = float(height) / float(img.get_height())
-        if (dw > dh):
-            scal = dh
-            add_x = (width - dh * float(img.get_width())) / 2
-        else:
-            scal = dw
-            add_y = (height - dw * float(img.get_height())) / 2
-        self.save()
-        self.translate((x + add_x, y + add_y))
-        self.scale((scal, scal))
-        self.cr.set_source_surface(img)
-        self.cr.paint()
-        self.restore()
-        return img
+        # Let someone else do the dirty work
+        self.image_surface(x, y, width, height, img)
 
 
-    def line(self, (x0, y0), (x1, y1)):
+    def line(self, x0, y0, x1, y1):
         """Set new path as a line from (x0, y0) to (x1, y1).
 
         Don't forget to stroke()
         """
-        self.cr.new_path()
-        self.cr.move_to(x0, y0)
-        self.cr.line_to(x1, y1)
+        def _line():
+            self.cr.new_path()
+            self.cr.move_to(x0, y0)
+            self.cr.line_to(x1, y1)
+        self.commands.append(_line)
     
     #def matte(self, (x, y), method='floodfill'):
     #    # method may be: point, replace, floodfill, filltoborder, reset
@@ -477,28 +481,31 @@ class Drawing:
                             xor, add, saturate
 
         """
-        ops = {'clear': cairo.OPERATOR_CLEAR,
-               'source': cairo.OPERATOR_SOURCE,
-               'over': cairo.OPERATOR_OVER,
-               'in': cairo.OPERATOR_IN,
-               'out': cairo.OPERATOR_OUT,
-               'atop': cairo.OPERATOR_ATOP,
-               'dest': cairo.OPERATOR_DEST,
-               'dest_over': cairo.OPERATOR_DEST_OVER,
-               'dest_in': cairo.OPERATOR_DEST_IN,
-               'dest_out': cairo.OPERATOR_DEST_OUT,
-               'dest_atop': cairo.OPERATOR_DEST_ATOP,
-               'xor': cairo.OPERATOR_XOR,
-               'add': cairo.OPERATOR_ADD,
-               'saturate': cairo.OPERATOR_SATURATE,
-               }
-        self.cr.set_operator(ops[operator])
-
+        def _operator():
+            ops = {'clear': cairo.OPERATOR_CLEAR,
+                   'source': cairo.OPERATOR_SOURCE,
+                   'over': cairo.OPERATOR_OVER,
+                   'in': cairo.OPERATOR_IN,
+                   'out': cairo.OPERATOR_OUT,
+                   'atop': cairo.OPERATOR_ATOP,
+                   'dest': cairo.OPERATOR_DEST,
+                   'dest_over': cairo.OPERATOR_DEST_OVER,
+                   'dest_in': cairo.OPERATOR_DEST_IN,
+                   'dest_out': cairo.OPERATOR_DEST_OUT,
+                   'dest_atop': cairo.OPERATOR_DEST_ATOP,
+                   'xor': cairo.OPERATOR_XOR,
+                   'add': cairo.OPERATOR_ADD,
+                   'saturate': cairo.OPERATOR_SATURATE,
+                   }
+            self.cr.set_operator(ops[operator])
+        self.commands.append(_operator)
 
     def paint(self):
         """Paint the current source everywhere within the current clip
         region."""
-        self.cr.paint()
+        def _paint():
+            self.cr.paint()
+        self.commands.append(_paint)
 
 
     def paint_with_alpha(self, alpha):
@@ -507,7 +514,9 @@ class Drawing:
 
         The effect is similar to paint(), but the drawing is faded out
         using the alpha value."""
-        self.cr.paint_with_alpha(alpha)
+        def _paint_with_alpha():
+            self.cr.paint_with_alpha(alpha)
+        self.commands.append(_paint_with_alpha)
 
 
     #def path(self, path_data):
@@ -543,7 +552,6 @@ class Drawing:
         nlist = []
         for tup in points:
             nlist.append([tup])
-            
         self.bezier(nlist, False, close_path)
 
     
@@ -557,63 +565,74 @@ class Drawing:
         self.polygon(points, close_path)
 
     
-    def rectangle_(self, (x0, y0), (x1, y1)):
-        """Draw a rectangle from (x0, y0) to (x1, y1)."""
-        self.cr.new_path()
-        self.cr.rectangle(x0, y0, x1 - x0, y1 - y0)
+    def rectangle_corners(self, x0, y0, x1, y1):
+        """Draw a rectangle defined by opposite corners (x0, y0) and (x1, y1).
+        """
+        def _rectangle_corners():
+            self.cr.new_path()
+            self.cr.rectangle(x0, y0, x1-x0, y1-y0)
+        self.commands.append(_rectangle_)
 
 
-    def rectangle(self, (x, y), (w, h)):
-        """Draw a "w x h" rectangle from top-left corner x,y"""
-        self.cr.new_path()
-        self.cr.rectangle(x, y, w, h)
-
-
-    def rotate(self, degrees):
-        """Map to rotate_deg()"""
-        self.rotate_deg(degrees)
+    def rectangle(self, x, y, width, height):
+        """Draw a rectangle with top-left corner at (x, y), and (width x height)
+        in size.
+        """
+        def _rectangle():
+            self.cr.new_path()
+            self.cr.rectangle(x, y, width, height)
+        self.commands.append(_rectangle)
 
 
     def rotate_deg(self, degrees):
         """Rotate by the given number of degrees."""
-        m = self.cr.get_matrix()
-        m.rotate(degrees * pi/180.)
-        self.cr.set_matrix(m)
+        def _rotate_deg():
+            m = self.cr.get_matrix()
+            m.rotate(degrees * pi/180.)
+            self.cr.set_matrix(m)
+        self.commands.append(_rotate_deg)
+
+    # Map rotate() to rotate_deg()
+    rotate = rotate_deg
 
 
     def rotate_rad(self, rad):
         """Rotate by the given number of radians."""
-        m = self.cr.get_matrix()
-        m.rotate(rad)
-        self.cr.set_matrix(m)
+        def _rotate_rad():
+            m = self.cr.get_matrix()
+            m.rotate(rad)
+            self.cr.set_matrix(m)
+        self.commands.append(_rotate_rad)
 
 
-    def roundrectangle(self, (x0, y0), (x1, y1), (bevel_width, bevel_height)):
+    def roundrectangle(self, x0, y0, x1, y1, bevel_width, bevel_height):
         """Draw a rounded rectangle from (x0, y0) to (x1, y1), with
         a bevel size of (bevel_width, bevel_height)."""
-        bw = bevel_width
-        bh = bevel_height
-        # Add bezier points...
-        # Top left corner:
-        tl1 = [(x0, y0 + bh), (0,0), (0,0)]
-        tl2 = [(x0 + bw, y0), (0,0), (-bw,0)]
-        tr1 = [(x1 - bw, y0), (0,0), (-bw,0)]
-        tr2 = [(x1, y0 + bh), (0,0), (0,-bw)]
-        br1 = [(x1, y1 - bh), (0,0), (0,-bh)]
-        br2 = [(x1 - bw, y1), (0,0), (+bw,0)]
-        bl1 = [(x0 + bw, y1), (0,0), (+bw,0)]
-        bl2 = [(x0, y1 - bh), (0,0), (0,+bh)]
-        end = [(x0, y0 + bh), (0,0), (0,0)]
-        # Call in relative mode bezier control points.
-        mylst = [tl1, tl2, tr1, tr2, br1, br2, bl1, bl2, end]
-        self.bezier(mylst, True)
+        def _roundrectangle():
+            bw = bevel_width
+            bh = bevel_height
+            # Add bezier points...
+            # Top left corner:
+            tl1 = [(x0, y0 + bh), (0,0), (0,0)]
+            tl2 = [(x0 + bw, y0), (0,0), (-bw,0)]
+            tr1 = [(x1 - bw, y0), (0,0), (-bw,0)]
+            tr2 = [(x1, y0 + bh), (0,0), (0,-bw)]
+            br1 = [(x1, y1 - bh), (0,0), (0,-bh)]
+            br2 = [(x1 - bw, y1), (0,0), (+bw,0)]
+            bl1 = [(x0 + bw, y1), (0,0), (+bw,0)]
+            bl2 = [(x0, y1 - bh), (0,0), (0,+bh)]
+            end = [(x0, y0 + bh), (0,0), (0,0)]
+            # Call in relative mode bezier control points.
+            mylst = [tl1, tl2, tr1, tr2, br1, br2, bl1, bl2, end]
+            self.bezier(mylst, True)
+        self.commands.append(_roundrectangle)
 
 
     def set_source(self, source, opacity=None):
         """
         source -- One of the following color formats as a string or a tuple
                   (see below), another Surface or Surface-derivative object,
-                  or a Pattern object (and it's derivatives).
+                  or a Pattern object (and its derivatives).
         opacity -- Opacity ranging from 0.0 to 1.0. Defaults to None. If
                    you specify a 'string' or 'tuple' RGB-like code as
                    source, opacity defaults to 1.0
@@ -643,7 +662,9 @@ class Drawing:
          
         """
         mysource = self.create_source(source, opacity)
-        self.cr.set_source(mysource)
+        def _set_source():
+            self.cr.set_source(mysource)
+        self.commands.append(_set_source)
 
 
     def create_source(self, source, opacity=None):
@@ -656,28 +677,31 @@ class Drawing:
         """
         if isinstance(source, cairo.Pattern):
             return source
+        # A string--color name, rgb(), hsv(), or hexadecimal
         elif isinstance(source, str):
-            (r,g,b) = ImageColor.getrgb(source)
+            (r, g, b) = ImageColor.getrgb(source)
             alpha = 1.0
             if opacity is not None:
                 alpha = opacity
-                
             return cairo.SolidPattern(r / 255.0, g / 255.0,
                                       b / 255.0, alpha)
+        # An (r, g, b) tuple
         elif isinstance(source, tuple):
             assert len(source) == 3
-            (r,g,b) = source
+            (r, g, b) = source
             alpha = 1.0
             if opacity is not None:
                 alpha = opacity
-                
-            return cairo.SolidPattern(r,g,b,alpha)
+            return cairo.SolidPattern(r, g, b, alpha)
+        # A cairo Gradient
         elif isinstance(source, cairo.Gradient):
             return source
+        # A cairo Surface
         elif isinstance(source, cairo.Surface):
             return cairo.SurfacePattern(source)
         else:
-            raise TypeError, "source must be one of: str, tuple, cairo.Pattern, cairo.Gradient or cairo.Surface"
+            raise TypeError, "source must be one of: str, tuple, "\
+                  "cairo.Pattern, cairo.Gradient or cairo.Surface"
 
 
     def get_source(self):
@@ -696,29 +720,34 @@ class Drawing:
         return self.cr.get_source()
 
 
-    def scale(self, (dx, dy)):
-        """Set scaling to (dx, dy).
+    def scale(self, factor_x, factor_y):
+        """Set scaling to (factor_x, factor_y), where 1.0 means no scaling.
 
-        Note that the center point for scaling is (0,0), unless otherwise
-        specified. See scale_centered()
+        Note that the center point for scaling is (0,0); to scale from a
+        different center point, use scale_centered()
         """
-        m = self.cr.get_matrix()
-        m.scale(dx, dy)
-        self.cr.set_matrix(m)
+        def _scale():
+            m = self.cr.get_matrix()
+            m.scale(factor_x, factor_y)
+            self.cr.set_matrix(m)
+        self.commands.append(_scale)
 
 
-    def scale_centered(self, (center_x, center_y), (dx, dy)):
+    def scale_centered(self, center_x, center_y, factor_x, factor_y):
         """Set scaling to (dx, dy), where dx and dy are horizontal and
         vertical ratios (floats).
 
         scale_centered() will keep the (center_x, center_y) in the middle
         of the scaling, operating a translation in addition to scaling.
         """
-        m = self.cr.get_matrix()
-        # Ouch, we want to keep the center x,y at the same place?!
-        m.translate(-(center_x * dx - center_x), -(center_y * dy - center_y))
-        m.scale(dx, dy)
-        self.cr.set_matrix(m)
+        def _scale_centered():
+            m = self.cr.get_matrix()
+            # Ouch, we want to keep the center x,y at the same place?!
+            m.translate(-(center_x * factor_x - center_x),
+                        -(center_y * factor_y - center_y))
+            m.scale(factor_x, factor_y)
+            self.cr.set_matrix(m)
+        self.commands.append(_scale_centered)
 
 
     def stroke(self, source=None, opacity=None):
@@ -730,9 +759,10 @@ class Drawing:
         # Optionally set fill color, and save it.
         if source is not None:
             self.set_source(source, opacity)
-            
-        # Optionally set opacity level, and save it.
-        self.cr.stroke_preserve()
+
+        def _stroke():
+            self.cr.stroke_preserve()
+        self.commands.append(_stroke)
 
 
     def stroke_antialias(self, do_antialias=True):
@@ -743,10 +773,12 @@ class Drawing:
         This does not affect text. See text_antialias() for more info
         on text antialiasing.
         """
-        if do_antialias:
-            self.cr.set_antialias(cairo.ANTIALIAS_GRAY)
-        else:
-            self.cr.set_antialias(cairo.ANTIALIAS_NONE)
+        def _stroke_antialias():
+            if do_antialias:
+                self.cr.set_antialias(cairo.ANTIALIAS_GRAY)
+            else:
+                self.cr.set_antialias(cairo.ANTIALIAS_NONE)
+        self.commands.append(_stroke_antialias)
 
 
     def stroke_dash(self, array, offset=0.0):
@@ -763,7 +795,9 @@ class Drawing:
 
         alternates between 5 pixels on, and 3 pixels off.
         """
-        self.cr.set_dash(array, offset)
+        def _stroke_dash():
+            self.cr.set_dash(array, offset)
+        self.commands.append(_stroke_dash)
 
 
     def stroke_linecap(self, cap_type):
@@ -771,10 +805,12 @@ class Drawing:
 
             cap_type:  One of 'butt', 'round', or 'square'
         """
-        dic = {'butt': cairo.LINE_CAP_BUTT,
-               'round': cairo.LINE_CAP_ROUND,
-               'square': cairo.LINE_CAP_SQUARE}
-        self.cr.set_line_cap(dic[cap_type])
+        def _stroke_linecap():
+            dic = {'butt': cairo.LINE_CAP_BUTT,
+                   'round': cairo.LINE_CAP_ROUND,
+                   'square': cairo.LINE_CAP_SQUARE}
+            self.cr.set_line_cap(dic[cap_type])
+        self.commands.append(_stroke_linecap)
 
 
     def stroke_linejoin(self, join_type):
@@ -782,82 +818,45 @@ class Drawing:
 
             join_type:  One of 'bevel', 'miter', or 'round'.
         """
-        dic = {'bevel': cairo.LINE_JOIN_BEVEL,
-               'miter': cairo.LINE_JOIN_MITER,
-               'round': cairo.LINE_JOIN_ROUND}
-        self.cr.set_line_join(dic[join_type])
-
-
-    def set_stroke_opacity(self, opacity):
-        """Define stroke opacity, from fully transparent (0.0) to fully
-        opaque (1.0).
-
-        NOTE: this doesn't paint anything on the canvas.
-        """
-        self.style.stroke_alpha = opacity
+        def _stroke_linejoin():
+            dic = {'bevel': cairo.LINE_JOIN_BEVEL,
+                   'miter': cairo.LINE_JOIN_MITER,
+                   'round': cairo.LINE_JOIN_ROUND}
+            self.cr.set_line_join(dic[join_type])
+        self.commands.append(_stroke_linejoin)
 
 
     def stroke_width(self, width):
         """Set the current stroke width in pixels."""
         # (Pixels or points?)
-        self.cr.set_line_width(width)
-    
+        def _stroke_width():
+            self.cr.set_line_width(width)
+        self.commands.append(_stroke_width)
 
-    def text(self, text_string, (x, y), align='left'):
+
+    def text(self, text_string, x, y):
         """Draw the given text string.
 
-            text_string -- utf8 encoded text string
-            (x, y) -- lower-left corner position
-            align -- 'left', 'center', 'right'. This only changes the
-                     alignment in 'x', and 'y' stays the baseline.
-
+            text_string: utf8 encoded text string
+            (x, y):      lower-left corner position
+        
         Set the text's color with set_source() before calling text().
-
-        Returned value:
-            (x_bearing, y_bearing, width, height, x_advance, y_advance)
-        where:
-            x_bearing -- the horizontal distance from the origin to the
-                         leftmost part of the glyphs as drawn. Positive
-                         if the glyphs lie entirely to the right of the
-                         origin.
-            y_bearing -- the vertical distance from the origin to the topmost
-                         part of the glyphs as drawn. Positive only if the
-                         glyphs lie completely below the origin; will usually
-                         be negative.
-            width -- width of the glyphs as drawn
-            height -- height of the glyphs as drawn
-            x_advance -- distance to advance in the X direction after drawing
-                         these glyphs
-            y_advance -- distance to advance in the Y direction after drawing
-                         these glyphs. Will typically be zero except for
-                         vertical text layout as found in East-Asian languages.
-            
-        See:
-            http://www.cairographics.org/manual/cairo-Scaled-Fonts.html#cairo-text-extents-t
         """
-        # NOTE: It will be possible to use pangocairo wrapper around
-        #       the cairo class, for all the text-related stuff! hey Pango
-        #       at the tips of our fingers :P woah!
-        #
+        # Convert text to unicode
         if not isinstance(text_string, unicode):
             text_string = unicode(str(text_string).decode('latin-1'))
+
         self.save()
-        (dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
-        if align == 'right':
-            x = x - w
-        elif align == 'center':
-            x = x - w / 2
-        self.cr.move_to(x, y)
-        self.cr.show_text(text_string)
+        def _text():
+            self.cr.move_to(x, y)
+            self.cr.show_text(text_string)
+        self.commands.append(_text)
         self.restore()
-        return (dx, dy, w, h, ax, ay)
 
 
-    def text_path(self, (x,y), text_string, centered=False):
+    def text_path(self, text_string, x, y):
         """Same as text(), but sets a path and doesn't draw anything.
-
-        You can, after a call to text_path(), call stroke() or fill()
-        yourself.
+        Call stroke() or fill() yourself.
 
         Has the parameters and returns the same values as text().
 
@@ -867,13 +866,45 @@ class Drawing:
         """
         if not isinstance(text_string, unicode):
             text_string = unicode(text_string.decode('latin-1'))
-        (dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
-        if centered:
-            x = x - w / 2
-            y = y + h / 2
-        self.cr.move_to(x, y)
-        self.cr.text_path(text_string)
-        return (dx, dy, w, h, ax, ay)
+        def _text_path():
+            self.cr.move_to(x, y)
+            self.cr.text_path(text_string)
+        self.commands.append(_text_path)
+
+
+    #def text_align(self, text_string, x, y, align='left'):
+        #"""Draw the given text string.
+
+            #text_string: utf8 encoded text string
+            #(x, y):      lower-left corner position
+            #align:       'left', 'center', 'right'. This only changes the
+                         #alignment in 'x', and 'y' stays the baseline.
+
+        #Set the text's color with set_source() before calling text().
+        #"""
+        ## TODO: Somehow determine extents of text without needing self.cr
+        #(dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
+        #w = 0
+        #if align == 'right':
+            #x = x - w
+        #elif align == 'center':
+            #x = x - w / 2
+        #else: # 'left'
+            #x = x
+        ## Let text() do the drawing
+        #self.text(text_string, x, y)
+
+    #def text_path_align(self, x, y, text_string, centered=False):
+        #"""Same as text_align(), but sets a path and doesn't draw anything.
+        #Call stroke() or fill() yourself.
+        #"""
+        ## TODO: Somehow determine extents of text without needing self.cr
+        
+        #(dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
+        #if centered:
+            #x = x - w / 2
+            #y = y + h / 2
+        #self.text_path(text_string, x, y)
 
 
     def text_extents(self, text_string):
@@ -892,19 +923,13 @@ class Drawing:
         return self.cr.text_extents(text_string)
 
 
-    def new_gradient(self, (x0,y0), (x1,y1)):
-        """Return a LinearGradient object, initialized with the current
-        context."""
-        grad = cairo.LinearGradient(x0,y0,x1,y1)
-        grad.set_matrix(self.cr.get_matrix())
-        return grad
-
-
-    def translate(self, (dx, dy)):
+    def translate(self, dx, dy):
         """Do a translation by (dx, dy) pixels."""
-        m = self.cr.get_matrix()
-        m.translate(dx, dy)
-        self.cr.set_matrix(m)
+        def _translate():
+            m = self.cr.get_matrix()
+            m.translate(dx, dy)
+            self.cr.set_matrix(m)
+        self.commands.append(_translate)
 
 
     def push_group(self):
@@ -916,7 +941,9 @@ class Drawing:
         the result of any drawing to the group as a pattern, (either
         as an explicit object, or set as the source pattern).
         """
-        self.cr.push_group()
+        def _push_group():
+            self.cr.push_group()
+        self.commands.append(_push_group)
 
 
     def pop_group_to_source(self):
@@ -924,7 +951,9 @@ class Drawing:
         installs the resulting pattern as the source pattern in the current
         cairo context.
         """
-        self.cr.pop_group_to_source()
+        def _pop_group_to_source():
+            self.cr.pop_group_to_source()
+        self.commands.append(_pop_group_to_source)
 
 
     def save(self):
@@ -933,41 +962,56 @@ class Drawing:
         You can save in a nested manner, and calls to restore() will pop
         the latest saved context.
         """
-        # Save local context
-        self.stack.append(copy(self.style))
-        # Save Cairo context
-        self.cr.save()
+        def _save():
+            # Save Cairo context
+            self.cr.save()
+        self.commands.append(_save)
 
 
     def restore(self):
         """Restore the previously saved context."""
-        # Restore local context
-        self.style = self.stack.pop()
-        # Restore Cairo context
-        self.cr.restore()
+        def _restore():
+            # Restore Cairo context
+            self.cr.restore()
+        self.commands.append(_restore)
 
+
+    ###
+    ### Important function alert!
+    ###
+
+    def render(self, width, height):
+        """Render the Drawing at the given size to the current surface.
+        """
+        # Create a surface at the given size
+        self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+        self.cr = cairo.Context(self.surface)
+        # Scale from the original size
+        scale_x = float(width) / self.size[0]
+        scale_y = float(height) / self.size[1]
+        self.scale(scale_x, scale_y)
+        # Sneaky bit--scaling needs to happen before everything else
+        self.commands.insert(0, self.commands.pop(-1))
+        # Execute all draw commands
+        for command in self.commands:
+            log.debug("Rendering function: %s" % command)
+            command()
 
     ###
     ### Editor interface/interactive functions
     ###
 
-    def save_png(self, filename):
+    def save_png(self, filename, width, height):
         """Saves current drawing to PNG, keeping alpha channel intact.
 
-            resolution: (width, height) to render .png image at,
-                        or None to use the current size.
-
         This is the quickest, since Cairo itself exports directly to .png"""
+        self.render(width, height)
         print "Saving", filename
         self.surface.write_to_png(filename)
 
 
-    def save_jpg(self, filename, resolution=None):
+    def save_jpg(self, filename):
         """Saves current drawing to JPG, losing alpha channel information.
-
-            resolution: (width, height) to render .png image at,
-                        or None to use the current size.
-
         """
         f = open('/tmp/export.png', 'wb+')
         self.surface.write_to_png(f)
@@ -978,29 +1022,31 @@ class Drawing:
         f.close()
 
 
-    def render(self, filename='/tmp/my.png'):
-        """Render the Drawing to a given filename."""
-        print "rendering Drawing to file: %s" % filename
-        self.surface.write_to_png(filename)
-        # TODO: when rendering series of .png, we can make a PNGLIST
-        #       that would be ready for importation as a video in
-        #       Cinelerra, the video editing suite.
-
-
-    def display(self):
+    def display(self, width, height):
         """Render and display the Drawing."""
+        # Display image at the intended aspect ratio
         png_file = '/tmp/drawing.png'
-        self.render(png_file)
+        self.save_png(png_file, width, height)
+        print "Displaying", png_file
+        print "(press 'q' in image window to continue)"
         print commands.getoutput('display %s' % png_file)
 
 
     def save_image(self, img_filename):
-        """Render the drawing to a .jpg, .png or other image."""
-        self.save(self.filename)
-        cmd = "convert -size %sx%s " % self.resolution
-        cmd += "%s %s" % (self.filename, img_filename)
-        print "Rendering drawing to: %s" % img_filename
-        print commands.getoutput(cmd)
+        """Render drawing to a .jpg, .png or other image."""
+        log.info("Saving Drawing to %s" % img_filename)
+        if img_filename.endswith('.png'):
+            self.save_png(img_filename)
+        elif img_filename.endswith('.jpg'):
+            self.save_jpg(img_filename)
+        else:
+            log.debug("Creating temporary .png")
+            temp_png = '/tmp/%s.png' % img_filename
+            self.save_png(temp_png)
+            log.debug("Converting temporary png to %s" % img_filename)
+            cmd = "convert -size %sx%s " % self.size
+            cmd += "%s %s" % (temp_png, img_filename)
+            print commands.getoutput(cmd)
 
 
 ###
@@ -1021,7 +1067,7 @@ def draw_fontsize_demo(drawing):
         ypos = size * size / 5
         drawing.font('Helvetica')
         drawing.font_size(size)
-        drawing.text(u"%s pt: The quick brown fox" % size, (0, ypos))
+        drawing.text(u"%s pt: The quick brown fox" % size, 0, ypos)
     
     # Restore context
     drawing.restore()
@@ -1042,10 +1088,10 @@ def draw_font_demo(drawing):
         drawing.font(font)
         # Transparent shadow
         drawing.set_source('darkblue', 0.4)
-        drawing.text(font, (3, ypos+3))
+        drawing.text(font, 3, ypos+3)
         # White text
         drawing.set_source('white', 1.0)
-        drawing.text(font, (0, ypos))
+        drawing.text(font, 0, ypos)
         ypos += fontsize
 
     # Restore context
@@ -1063,7 +1109,7 @@ def draw_shape_demo(drawing):
     drawing.save()
     drawing.stroke_width(12)
     # Circle at (500, 200), with radius 200
-    drawing.circle((500, 200), 200)
+    drawing.circle(500, 200, 200)
     drawing.stroke('black')
     drawing.fill('orange')
     drawing.restore()
@@ -1082,28 +1128,30 @@ def draw_shape_demo(drawing):
     # drawing.rectangle((40, 30), (50, 150))
     
     drawing.stroke_width(2)
-    drawing.circle((65, 50), 15)
+    drawing.circle(65, 50, 15)
     drawing.fill('#8080FF')
     drawing.stroke('#777')
     
-    drawing.circle((60, 100), 10)
+    drawing.circle(60, 100, 10)
     drawing.fill('#2020F0')
     drawing.stroke('#777')
     
-    drawing.circle((55, 150), 5)
+    drawing.circle(55, 150, 5)
     drawing.fill('#0000A0')
     drawing.stroke('#777')
     drawing.restore()
 
     # Semitransparent green rectangles
     drawing.save()
-    drawing.translate((50, 400))
+    drawing.translate(50, 400)
     for scale in [0.2, 0.4, 0.7, 1.1, 1.6, 2.2, 2.9, 3.7]:
         drawing.save()
-        drawing.translate((scale * 70, scale * -50))
-        drawing.scale((scale, scale))
+        drawing.translate(scale * 70, scale * -50)
+        drawing.scale(scale, scale)
         drawing.stroke_width(scale)
-        drawing.roundrectangle((-30, -30), (30, 30), (8, 8))
+        # roundrectangle broken?
+        #drawing.roundrectangle(-30, -30, 30, 30, 8, 8)
+        drawing.rectangle(-30, -30, 30, 30)
         drawing.fill('lightgreen', scale / 5.0)
         drawing.stroke('black')
         drawing.restore()
@@ -1124,7 +1172,7 @@ def draw_stroke_demo(drawing):
         drawing.stroke_width(width)
         rgb = ((255 - width * 8), (120 - width * 5), 0)
         offset = width * 10
-        drawing.line((0, offset), (-offset, offset))
+        drawing.line(0, offset, -offset, offset)
         drawing.stroke('rgb(%s,%s,%s)' % rgb)
 
     # Restore context
@@ -1134,7 +1182,7 @@ def draw_stroke_demo(drawing):
 
 if __name__ == '__main__':
     mytime = time.time() # Benchmark
-    
+
     drawing = Drawing(720, 480)
 
     # Start a new
@@ -1144,7 +1192,7 @@ if __name__ == '__main__':
     # Add a background fill
     #->Background
     drawing.set_source('darkgray')
-    drawing.rectangle((0, 0), (720, 480))
+    drawing.rectangle(0, 0, 720, 480)
     drawing.fill()
 
     # Shape demo
@@ -1154,31 +1202,32 @@ if __name__ == '__main__':
 
     # Font size demo
     drawing.save()
-    drawing.translate((20, 20))
+    drawing.translate(20, 20)
     draw_fontsize_demo(drawing)
     drawing.restore()
 
     # Font face demo
     drawing.save()
-    drawing.translate((20, 300))
+    drawing.translate(20, 300)
     draw_font_demo(drawing)
     drawing.restore()
 
     # Stroke demo
     drawing.save()
-    drawing.translate((600, 200))
+    drawing.translate(600, 200)
     draw_stroke_demo(drawing)
     drawing.restore()
 
     # Close out the Cairo rendering...
     drawing.restore()
 
-    # Test JPG output
-    #print "Output to: /tmp/cairo.jpg"
-    #drawing.save_jpg('/tmp/cairo.jpg')
-    
-    # Test PNG output
-    drawing.save_png('/tmp/drawing.png')
-    
     print "Took %f seconds" % (time.time() - mytime)
+
+    # Render and display the Drawing at several different sizes
+    resolutions = [(720, 480), (352, 480), (352, 240)]
+    #resolutions = [(720, 480)]
+    for w, h in resolutions:
+        print "Displaying Drawing at %sx%s" % (w, h)
+        drawing.display(w, h)
+   
 
