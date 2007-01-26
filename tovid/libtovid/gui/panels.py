@@ -311,31 +311,17 @@ class BurnDiscPanel(wx.Panel):
         curConfig = TovidConfig()
 
         # Construct authoring/imaging/burning options
-        if self.doAuthor:
-            if curConfig.curDiscFormat == 'vcd' or \
-               curConfig.curDiscFormat == 'svcd':
-                strAuthorCmd = "makevcd -device %s %s \"%s.xml\"" % \
-                  (self.device, makedvdOptions, curConfig.strOutputXMLFile)
-            else:
-                strAuthorCmd = "makedvd -device %s %s \"%s.xml\"" % \
-                  (self.device, makedvdOptions, curConfig.strOutputXMLFile)
-
-            #self.btnStart.Enable(False)
-            self.panCmdList.Enable(True)
-            self.panCmdList.Execute(strAuthorCmd)
-
+        if curConfig.curDiscFormat == 'vcd' or \
+           curConfig.curDiscFormat == 'svcd':
+            strAuthorCmd = "makevcd -overwrite "
+        else:
+            strAuthorCmd = "makedvd -author "
         if self.doBurn:
-            if curConfig.curDiscFormat == 'vcd' or \
-               curConfig.curDiscFormat == 'svcd':
-                strAuthorCmd = "makevcd -device %s %s \"%s\"" % \
-                (self.device, makedvdOptions, curConfig.strOutputXMLFile)
-            else:
-                strAuthorCmd = "makedvd -device %s %s \"%s\"" % \
-                (self.device, makedvdOptions, curConfig.strOutputXMLFile)
- 
-            #self.btnStart.Enable(False)
-            self.panCmdList.Enable(True)
-            self.panCmdList.Execute(strAuthorCmd)
+            strAuthorCmd += "-burn -device %s " % (self.device)
+        strAuthorCmd += "%s.xml" % (curConfig.strOutputXMLFile)
+
+        self.panCmdList.Enable(True)
+        self.panCmdList.Execute(strAuthorCmd)
 
 # ===================================================================
 class CommandOutputPanel(wx.Panel):
