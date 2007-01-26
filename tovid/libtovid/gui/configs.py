@@ -122,7 +122,12 @@ class TovidConfig:
             for font in shared_fonts] )
 
         # Add IM's 'default' font, and return the font map
-        WX_IM_dict['Default'] = 'default'
+        if 'Bitstream Vera Sans' in WX_IM_dict.keys():
+            WX_IM_dict['Default'] = WX_IM_dict['Bitstream Vera Sans']
+        elif 'Dingbats' in WX_IM_dict.keys():
+            WX_IM_dict['Default'] = WX_IM_dict['Dingbats']
+        else:
+            WX_IM_dict['Default'] = 'Helvetica'
         self.wx_IM_FontMap = WX_IM_dict
 
     def UseLanguage(self, lang):

@@ -1998,17 +1998,17 @@ class MenuPanel(wx.Panel):
 
         # Background image/audio selection controls =======================\
         ## Menu title
-        self.lblMenuTitle = wx.StaticText(self, wx.ID_ANY, "Menu Title:")
+        self.lblMenuTitle = wx.StaticText(self, wx.ID_ANY, "Menu Header:")
         self.txtMenuTitle = wx.TextCtrl(self, wx.ID_ANY)
         self.txtMenuTitle.SetToolTipString(\
-            "Enter a main title for your menu. Leave blank if you" \
-            " don't want a title.")
+            "Enter a header for your menu. Leave blank if you" \
+            " don't want one.")
         wx.EVT_TEXT(self, self.txtMenuTitle.GetId(), self.OnMenuTitle)
         ## Menu title font size
         self.lblMenuTitleFontSize = wx.StaticText(self, wx.ID_ANY, "Size:")
         self.txtMenuTitleFontSize = wx.TextCtrl(self, wx.ID_ANY)
         self.txtMenuTitleFontSize.SetToolTipString(\
-                "Specify the title's font size")
+                "Specify the header's font size")
         wx.EVT_TEXT(self, self.txtMenuTitleFontSize.GetId(), \
                 self.OnMenuTitleFontSize)
         self.sizMenuTitleFontSize = wx.BoxSizer(wx.HORIZONTAL)
