@@ -313,9 +313,9 @@ class BurnDiscPanel(wx.Panel):
         # Construct authoring/imaging/burning options
         if curConfig.curDiscFormat == 'vcd' or \
            curConfig.curDiscFormat == 'svcd':
-            strAuthorCmd = "makevcd -overwrite "
+            strAuthorCmd = "makevcd -quiet -overwrite "
         else:
-            strAuthorCmd = "makedvd -author "
+            strAuthorCmd = "makedvd -quiet -author "
         if self.doBurn:
             strAuthorCmd += "-burn -device %s " % (self.device)
         strAuthorCmd += "%s.xml" % (curConfig.strOutputXMLFile)

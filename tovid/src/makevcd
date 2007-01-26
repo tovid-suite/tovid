@@ -86,6 +86,7 @@ runtime_error ()
     exit 1
 }
 # Defaults
+QUIET=false
 IMAGE=:
 CDRW_DEVICE="/dev/cdrw"
 BURN_SPEED=12
@@ -100,6 +101,7 @@ assert_dep "$vcd" "You are missing dependencies required to image and burn (S)VC
 
 while test x"${1:0:1}" = "x-"; do
     case "$1" in
+      "-quiet" ) QUIET=: ;;
       "-overwrite" )
         OVERWRITE=:
         ;;
@@ -161,8 +163,8 @@ if $IMAGE; then
     echo $VCDIMAGER_CMD
     if eval $VCDIMAGER_CMD; then
         echo "Done."
-        echo "Use 'makevcd -burn $VCDIMAGER_XML' to burn your VCD."
-        echo "Thanks for using tovid!"
+        $QUIET || echo "Use 'makevcd -burn $VCDIMAGER_XML' to burn your VCD."
+        $QUIET || echo "Thanks for using tovid!"
     else
         runtime_error "Imaging failed, please see vcdxbuild output above."
     fi
@@ -176,13 +178,13 @@ if $BURN; then
     # Here's a simple way: just quit
     if test -b $CDRW_DEVICE; then :
        else
-       echo "Couldn't find $DDRW_DEVICE! Stopping here."
+       echo "Couldn't find $CDRW_DEVICE! Stopping here."
        exit 1
     fi
 
     # Remind user to insert a CD
-    echo "Please insert a blank CD-R(W) disc into your CD-recorder"
-    echo "($CDRW_DEVICE) if you have not already done so."
+    $QUIET || echo "Please insert a blank CD-R(W) disc into your CD-recorder"
+    $QUIET || echo "($CDRW_DEVICE) if you have not already done so."
 
     # Burn the disc
     CDRDAO_CMD="cdrdao write --device $CDRW_DEVICE --driver generic-mmc \
@@ -191,9 +193,13 @@ if $BURN; then
     echo "Burning cue/bin image to $CDRW_DEVICE with the following command:"
     echo $CDRDAO_CMD
     if eval $CDRDAO_CMD; then
-        echo "Done. You should now have a working VCD or SVCD. Please report"
-        echo "any problems you might have to http://www.tovid.org."
-        echo "Thanks for using tovid!"
+        if ! $QUIET; then
+            echo "Done. You should now have a working VCD or SVCD. Please report"
+            echo "any problems you might have to http://www.tovid.org."
+            echo "Thanks for using tovid!"
+        else
+            echo "Done."
+        fi
     else
         runtime_error "Could not burn the disc to $CDRW_DEVICE at speed $BURN_SPEED."
     fi

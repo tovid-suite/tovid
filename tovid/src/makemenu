@@ -144,6 +144,7 @@ PPM_OPTS="-S $CHROMA_MODE -A 10:11 -F 30000:1001"
 REDIR="/dev/null"
 # Not doing debugging
 DEBUG=false
+QUIET=false
 # Don't overwrite output files
 OVERWRITE=false
 OUT_PREFIX=""
@@ -283,6 +284,9 @@ while test $# -gt 0; do
         "-debug" )
             DEBUG=:
             REDIR="$LOG_FILE"
+            ;;
+        "-quiet" )
+            QUIET=:
             ;;
         "-out" )
             shift
@@ -485,7 +489,7 @@ if test $RES = 'dvd'; then
     fi
 
 # Confirm that the button character exists in the font
-    if convert -size 720x200 xc:none -fill $HIGHLIGHT_COLOR \
+    if convert -size 720x200 xc:none -fill white \
         -font $USE_BUTTON_FONT -pointsize $TITLE_SIZE -weight bold \
         +antialias -annotate +20+80 "$BUTTON_CHAR" -trim +repage \
         -bordercolor none -border 10 info: >> /dev/null 2>&1; then :
@@ -507,7 +511,7 @@ BUTTON_FONT="$USE_BUTTON_FONT"
 #
 
 # Measure the font's vertical height
-TILE_HEIGHT=$(convert -size 720x200 xc:none -fill $TEXT_COLOR -pointsize $TITLE_SIZE -font $TITLE_FONT -antialias $FONT_DECO -annotate +20+80 "Al" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $2}')
+TILE_HEIGHT=$(convert -size 720x200 xc:none -fill white -pointsize $TITLE_SIZE -font $TITLE_FONT -antialias $FONT_DECO -annotate +20+80 "Al" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $2}')
 
 let "TILE_HEIGHT=TILE_HEIGHT+TITLE_BOTTOM_SPACE"
 
@@ -557,8 +561,8 @@ if test $RES = "dvd"; then
     echo "Making the DVD buttons...   "
 
     # Get the dimensions of the button
-    TILE_WIDTH=$(convert -size 720x200 xc:none -fill $SELECT_COLOR -pointsize $TITLE_SIZE -font $BUTTON_FONT +antialias -weight bold -annotate +20+80 "$BUTTON_CHAR" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $1}')
-    BUTTON_HEIGHT=$(convert -size 720x200 xc:none -fill $SELECT_COLOR -pointsize $TITLE_SIZE -font $BUTTON_FONT +antialias -weight bold -annotate +20+80 "$BUTTON_CHAR" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $2}')
+    TILE_WIDTH=$(convert -size 720x200 xc:none -fill white -stroke $BTN_STROKE -strokewidth 1 -pointsize $TITLE_SIZE -font $BUTTON_FONT +antialias -weight bold -annotate +20+80 "$BUTTON_CHAR" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $1}')
+    BUTTON_HEIGHT=$(convert -size 720x200 xc:none -fill white -stroke $BTN_STROKE -strokewidth 1 -pointsize $TITLE_SIZE -font $BUTTON_FONT +antialias -weight bold -annotate +20+80 "$BUTTON_CHAR" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $2}')
 
     # Find how much to pad the top of the button and make the pad
     let "BUTTON_PADDING=(TILE_HEIGHT-BUTTON_HEIGHT-TITLE_BOTTOM_SPACE)/2"
@@ -807,22 +811,26 @@ cleanup
 
 echo $SEPARATOR
 if test -s "$OUT_FILENAME"; then
-    echo "Finished! Your menu should be in the file \"$OUT_FILENAME\"."
-    if test "$RES" = "vcd"; then
-        echo "You can use this menu on an SVCD or VCD disc with:"
-        echo
-        echo "  makexml -vcd -menu \"$OUT_FILENAME\" <title 1> <title 2> ... \\"
-        echo "          <output name>"
-    else
-        echo "You can use this menu on a DVD disc with:"
-        echo
-        echo "  makexml -dvd -menu \"$OUT_FILENAME\" <title 1> <title 2> ... \\"
-        echo "          -out <output name>"
-    fi
+    if ! $QUIET; then
+        echo "Finished! Your menu should be in the file \"$OUT_FILENAME\"."
+        if test "$RES" = "vcd"; then
+            echo "You can use this menu on an SVCD or VCD disc with:"
+            echo
+            echo "  makexml -vcd -menu \"$OUT_FILENAME\" <title 1> <title 2> ... \\"
+            echo "          <output name>"
+        else
+            echo "You can use this menu on a DVD disc with:"
+            echo
+            echo "  makexml -dvd -menu \"$OUT_FILENAME\" <title 1> <title 2> ... \\"
+            echo "          -out <output name>"
+        fi
 
-    echo
-    echo "where <title N> is an MPEG video file corresponding to title N as listed"
-    echo "on your menu. Run 'makexml' without any options for more usage information."
+        echo
+        echo "where <title N> is an MPEG video file corresponding to title N as listed"
+        echo "on your menu. Run 'makexml' without any options for more usage information."
+    else
+        echo "Done!"
+    fi
 else
     echo "It looks like something went wrong, because there is no output file."
     echo "Please submit a bug report on the tovid homepage: add -debug to your"
@@ -831,6 +839,6 @@ else
     exit 1
 fi
 
-echo $SEPARATOR
-echo "Thanks for using makemenu!"
+$QUIET || echo $SEPARATOR
+$QUIET || echo "Thanks for using makemenu!"
 exit 0
