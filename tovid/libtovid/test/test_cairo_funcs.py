@@ -14,7 +14,7 @@ import cairo
 class TestCairoRenderer(unittest.TestCase):
     def setUp(self):
         """Set up a new drawing"""
-        self.d = Drawing((640, 480))
+        self.d = Drawing(640, 480)
 
     def tearDown(self):
         """Delete the drawing"""
@@ -119,14 +119,14 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.stroke_width(5)
         
         self.d.affine(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
-        self.d.arc((25,25), 15, (0, 270))
-        self.d.arc_rad((125, 125), 50, (0, 1))
-        self.d.circle((55, 55), 30)
-        self.d.circle((250, 250), 20)
+        self.d.arc(25, 25, 15, 0, 270)
+        self.d.arc_rad(125, 125, 50, 0, 1)
+        self.d.circle(55, 55, 30)
+        self.d.circle(250, 250, 20)
         
-        self.d.line((25,25), (125,125))
-        self.d.line((125,125), (55,55))
-        self.d.line((55,55), (250,250))
+        self.d.line(25, 25, 125, 125)
+        self.d.line(125, 125, 55, 55)
+        self.d.line(55, 55, 250, 250)
 
     def test_stroke_styles(self):
         self.assertRaises(KeyError, self.d.stroke_linecap, 'gurda')
@@ -142,10 +142,10 @@ class TestCairoRenderer(unittest.TestCase):
 
     def test_scale_translate(self):
         self.d.save()
-        self.d.translate((-200, 0))
-        self.d.scale((1.5, 1.5))  # Scaling is done from (0,0) as reference.
-        self.d.scale_centered((50, 50), (1.5, 1.5))
-        self.d.circle((500, 100), 50) # same radius as others
+        self.d.translate(-200, 0)
+        self.d.scale(1.5, 1.5)  # Scaling is done from (0,0) as reference.
+        self.d.scale_centered(50, 50, 1.5, 1.5)
+        self.d.circle(500, 100, 50) # same radius as others
         self.d.stroke()
         self.d.restore()
 
@@ -164,8 +164,8 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.set_source('rgb(255,255,255)', 1.0)
 
         # We use these also for the 'text' function.
-        self.d.text('ahuh', (10,50))
-        self.d.text_path((10, 1000), 'ahuh')
+        self.d.text('ahuh', 10,50)
+        self.d.text_path(10, 1000, 'ahuh')
         self.d.fill('blue')
 
         # When we call fill() and stroke() with no parameters, the last used
@@ -205,9 +205,9 @@ class TestCairoRenderer(unittest.TestCase):
         self.assert_(self.d.cr.get_antialias() == cairo.ANTIALIAS_NONE)
 
     def test_rectangle_stuff(self):
-        self.d.rectangle((20, 20), (200, 200))
-        self.d.rectangle_size((20, 20), (230, 230))
-        self.d.roundrectangle((10, 445), (610, 470), (5, 5))
+        self.d.rectangle(20, 20, 200, 200)
+        self.d.rectangle_size(20, 20, 230, 230)
+        self.d.roundrectangle(10, 445, 610, 470, 5, 5)
         
             
     def test_dash_stuff(self):
@@ -216,9 +216,9 @@ class TestCairoRenderer(unittest.TestCase):
     def test_render(self):
         """Test drive rendering mechanism"""
         self.d.stroke_width(8)
-        self.d.circle((250, 250), 50)
+        self.d.circle(250, 250, 50)
         self.d.stroke_width(2)
-        self.d.circle((250, 250), 80)
+        self.d.circle(250, 250, 80)
 
         self.d.render('/tmp/my.png')
 
