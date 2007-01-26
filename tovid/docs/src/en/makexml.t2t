@@ -37,6 +37,8 @@ $ makexml -menu MainMenu.mpg \
     Generate the XML for an SVCD disc, to be used with vcdxbuild or makevcd.
 : **-overwrite**
     Overwrite any existing output files.
+: **-quiet**
+    Limit output to essential messages.
 
 
 //VIDEOS// may be any of the following:

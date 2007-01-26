@@ -80,6 +80,7 @@ usage_error ()
   exit 1
 }
 
+QUIET=false
 # Currently-numbered titleset (must have at least 1 titleset)
 CUR_TS=1
 # Currently-numbered video title under a titleset menu (0 for no titles)
@@ -573,6 +574,9 @@ fi
 
 while test $# -gt 0; do
     case "$1" in
+        "-quiet" )
+            QUIET=:
+            ;;
         "-out" )
             shift
             OUT_PREFIX="$1"
@@ -783,15 +787,17 @@ if $FILE_NOT_FOUND; then
 fi
 
 echo "Done. The resulting XML was written to $OUT_PREFIX.xml."
-if test $XML_FORMAT = "dvd" ; then
-    echo "You can now author, image and/or burn the disc by running:"
-    echo "    makedvd $OUT_PREFIX.xml"
-else
-    echo "You can create the (S)VCD .bin and .cue files by running the command:"
-    echo "    vcdxbuild $OUT_PREFIX.xml"
-fi
 
-echo "Thanks for using makexml!"
+if ! $QUIET; then
+    if test $XML_FORMAT = "dvd" ; then
+        echo "You can now author, image and/or burn the disc by running:"
+        echo "    makedvd $OUT_PREFIX.xml"
+    else
+        echo "You can create the (S)VCD .bin and .cue files by running the command:"
+        echo "    makevcd $OUT_PREFIX.xml"
+    fi
+    echo "Thanks for using makexml!"
+fi
 
 exit 0
 

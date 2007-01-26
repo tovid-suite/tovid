@@ -798,15 +798,16 @@ function goodbye()
     yecho
     yecho "Done!"
     yecho
-    yecho "Your encoded video should be in the file(s) $OUT_FILENAME."
-    echo "You can author a disc with this video on it by running:"
-    echo "    makexml $OUT_FILENAME -out MyDisc"
-    echo "    makedvd MyDisc.xml"
-    echo "You can also use todisc or makemenu to create menus for your disc."
-    echo "See the manual pages (i.e. 'man todisc') for more information."
-    yecho "Thanks for using tovid!"
-    yecho
-
+    if ! $QUIET; then
+        yecho "Your encoded video should be in the file(s) $OUT_FILENAME."
+        echo "You can author a disc with this video on it by running:"
+        echo "    makexml $OUT_FILENAME -out MyDisc"
+        echo "    makedvd MyDisc.xml"
+        echo "You can also use todisc or makemenu to create menus for your disc."
+        echo "See the manual pages (i.e. 'man todisc') for more information."
+        yecho "Thanks for using tovid!"
+        yecho
+    fi
     exit 0
 }
 
@@ -827,13 +828,13 @@ if test "$1" = "-v" || test "$1" = "-version"; then
     exit 0
 fi
 
+printf "%s\n" "$SCRIPT_NAME"
+get_args "$@"
 # Print complete 'tovid' command-line that was used
 if ! $QUIET; then
-    printf "%s\n" "$SCRIPT_NAME"
     yecho "tovid command-line used:"
     yecho "$@"
 fi
-get_args "$@"
 
 
 # ******************************************************************************
