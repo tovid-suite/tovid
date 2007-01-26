@@ -42,8 +42,7 @@ class DiscOptions:
         # Get global configuration (for output directory)
         curConfig = TovidConfig()
 
-        strCommand = "makexml -%s " % self.format
-        strCommand += "-overwrite "
+        strCommand = "makexml -quiet -overwrite -%s " % self.format
 
         for curItem in self.optionList:
             # Prefix -topmenu or -menu if necessary
@@ -328,7 +327,7 @@ class MenuOptions:
         # Get global configuration (for output directory)
         curConfig = TovidConfig()
 
-        strCommand = "makemenu -noask -overwrite "
+        strCommand = "makemenu -noask -quiet -overwrite "
         # Append format and tvsys
         strCommand += "-%s -%s " % (self.tvsys, self.format)
         # Append alignment
@@ -659,7 +658,7 @@ class VideoOptions:
         curConfig = TovidConfig()
 
         # Always overwrite. Use better solution in future?
-        strCommand = "tovid -overwrite "
+        strCommand = "tovid -quiet -overwrite "
         # Append tvsys, format, and aspect ratio
         strCommand += "-%s -%s -%s " % \
             (self.tvsys, self.format, self.aspect)

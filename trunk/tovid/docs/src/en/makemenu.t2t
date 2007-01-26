@@ -157,6 +157,9 @@ Other options:
     Don't ask interactive questions, and assume answers that will
     continue menu making the menu until completion.
 
+: **-quiet**
+    Limit output to essential messages.
+
 
 If the word "**back**" is given as an episode title, a "back" button for
 returning to a higher-level menu will be added at the end of the list

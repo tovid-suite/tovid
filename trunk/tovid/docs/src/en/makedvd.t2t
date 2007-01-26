@@ -53,6 +53,9 @@ For example:
     name of the disc on some computer platforms. Must be <=32
     alphanumeric digits without spaces.
 
+: **-quiet**
+    Limit output to essentiall messages.
+
 
 ==Examples==
 

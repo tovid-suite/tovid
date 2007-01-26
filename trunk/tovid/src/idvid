@@ -262,8 +262,11 @@ function get_info ()
         # Infer aspect ratio from width/height of mplayer playback
         MPLAYER_RES=$(grep '^VO:' "$SCRATCH_FILE" | \
             sed -e "s/..*=> *//g" -e "s/ .*$//g")
-        PLAY_WIDTH=$(echo $MPLAYER_RES | awk -F 'x' '{print $1}')
-        PLAY_HEIGHT=$(echo $MPLAYER_RES | awk -F 'x' '{print $2}')
+        #PLAY_WIDTH=$(echo $MPLAYER_RES | awk -F 'x' '{print $1}')
+        #PLAY_HEIGHT=$(echo $MPLAYER_RES | awk -F 'x' '{print $2}')
+        # patch from ML:
+        PLAY_WIDTH=$(echo "$MPLAYER_RES" | awk -F '[x ]' 'BEGIN {wid = 0}; {if ($1 > wid) wid = $1}; END {print wid}')
+        PLAY_HEIGHT=$(echo "$MPLAYER_RES" | awk -F '[x ]' 'BEGIN {hgt = 0}; {if ($2 > hgt) hgt = $2}; END {print hgt}')
         # Fix nulls
         if test -z "$PLAY_WIDTH" || test -z "$PLAY_HEIGHT"; then
             PLAY_WIDTH="100"

@@ -42,6 +42,9 @@ For example:
 : **-speed** //NUM// (default 12)
     Burn the disc at speed //NUM//.
 
+: **-quiet**
+    Limit output to essential messages.
+
 
 ==Examples==
 

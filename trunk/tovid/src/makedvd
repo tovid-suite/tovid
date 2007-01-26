@@ -171,6 +171,7 @@ fi
 
 while test $# -gt 1; do
     case "$1" in
+        "-quiet" ) QUIET=: ;;
         "-author" ) DO_AUTHOR=: ;;
         "-burn" )   DO_BURN=: ;;
         "-device" )
@@ -220,7 +221,7 @@ if echo "$DISC_NAME" | grep -q -i '\.xml$'; then
         echo "Removing existing files in ./$OUT_DIR/"
         rm -rf "$OUT_DIR"
     fi
-    echo "Putting output in ./$OUT_DIR/"
+    $QUIET || echo "Putting output in ./$OUT_DIR/"
 # Burn a directory containing a VIDEO_TS subfolder
 else
     if test -d "$DISC_NAME"; then
@@ -279,14 +280,14 @@ if $DO_AUTHOR; then
     # Create disc structure
     DVDAUTHOR_CMD="dvdauthor -x \"$DVDAUTHOR_XML\""
     echo $SEPARATOR
-    echo "Authoring DVD-Video disc structure, estimated to require ${DISC_SUM}MB."
+    $QUIET || echo "Authoring DVD-Video disc structure, estimated to require ${DISC_SUM}MB."
     echo "Creating disc structure with the following command:"
     echo $DVDAUTHOR_CMD
     echo $SEPARATOR
 
     if eval "$DVDAUTHOR_CMD" 2>&1; then
         echo $SEPARATOR
-        echo "Disc structure successfully created in directory: $OUT_DIR."
+        $QUIET || echo "Disc structure successfully created in directory: $OUT_DIR."
     else
         runtime_error "Could not create the DVD-Video disc structure in $OUT_DIR. Leaving $OUT_DIR for inspection."
     fi
@@ -296,17 +297,21 @@ fi
 
 # If not burning, print a message and exit
 if ! $DO_BURN; then
-    echo "If you'd like to preview the disc before burning, try:"
-    echo "    gxine dvd:/$(pwd)/$OUT_DIR"
-    echo "You can burn the disc with a command like this:"
-    echo "    makedvd -burn $OUT_DIR"
+    if ! $QUIET; then
+        echo "If you'd like to preview the disc before burning, try:"
+        echo "    gxine dvd:/$(pwd)/$OUT_DIR"
+        echo "You can burn the disc with a command like this:"
+        echo "    makedvd -burn $OUT_DIR"
+    fi
 
 # Otherwise, get on with burning
 else
     # Remind user to insert a DVD, check for DVD device
-    echo $SEPARATOR
-    echo "Please insert a blank DVD+/-R(W) disc into your DVD-recorder"
-    echo "($DVDRW_DEVICE) if you have not already done so."
+    if ! $QUIET; then
+        echo $SEPARATOR
+        echo "Please insert a blank DVD+/-R(W) disc into your DVD-recorder"
+        echo "($DVDRW_DEVICE) if you have not already done so."
+    fi
 
     # Sanity check: Make sure given device is valid (somehow)
     # before creating the image. Give option to proceed anyway?
@@ -374,7 +379,6 @@ else
        exit 1
     fi
 
-
     # Extract a valid volume ID
     VOLID=$(echo "$DISC_LABEL" | tr a-z A-Z)
     # Make sure we have a valid VOLID at this point...can't be too long
@@ -383,7 +387,7 @@ else
         echo "Disk label is too long. Truncating to $VALID_VOLID"
         VOLID=$VALID_VOLID
     else
-        echo "Using disk label \"$VOLID\""
+        $QUIET || echo "Using disk label \"$VOLID\""
     fi
 
     # Burn it already!
@@ -394,14 +398,18 @@ else
     echo $SEPARATOR
     if eval "$BURN_CMD" 2>&1; then
         echo $SEPARATOR
-        echo "Done. You should now have a working DVD. Please visit"
-        echo "the tovid homepage: $TOVID_HOME_PAGE"
+        if ! $QUIET; then
+            echo "Done. You should now have a working DVD. Please visit"
+            echo "the tovid homepage: $TOVID_HOME_PAGE"
+        else
+            echo "Done."
+        fi
     else
         runtime_error "Could not burn the disc to $DVDRW_DEVICE"
     fi
 fi
 
-echo $SEPARATOR
-echo "Thanks for using makedvd!"
+$QUIET || echo $SEPARATOR
+$QUIET || echo "Thanks for using makedvd!"
 
 exit 0
