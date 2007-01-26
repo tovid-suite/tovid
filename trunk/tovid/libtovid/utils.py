@@ -15,6 +15,7 @@ __all__ = [\
     'tokenize',
     'temp_dir',
     'temp_file',
+    'to_unicode',
     'trim',
     'wait'
     ]
@@ -52,6 +53,14 @@ def escape(text):
     for char in special_chars:
         result = result.replace(char, '\%s' % char)
     return result
+
+
+def to_unicode(text):
+    """Return the given text string, converted to unicode.
+    """
+    if not isinstance(text, unicode):
+        text = unicode(str(text_string).decode('latin-1'))
+    return text
 
 
 def indent_level(line):
