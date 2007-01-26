@@ -112,7 +112,9 @@ if __name__ == '__main__':
 
         elif arg == '-plot':
             list_field = args.pop(0)
-            if args and args[0] == 'by':
+            if list_field not in stats.int_fields:
+                print "The -plot option requires a numerical field."
+            elif args and args[0] == 'by':
                 args.pop(0)
                 by_field = args.pop(0)
                 print "Generating a scatterplot of %ss by %s" % \
@@ -125,6 +127,7 @@ if __name__ == '__main__':
                 drawing.rectangle((0, 0), (720, 576))
                 drawing.translate((40, 48))
                 scatterplot.draw(drawing, 1)
+                print "Showing scatterplot. Press 'q' to close."
                 drawing.display()
     
         elif arg == '-match':

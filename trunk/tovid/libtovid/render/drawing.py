@@ -1033,7 +1033,6 @@ def render(drawing, width, height):
     surface = get_surface(width, height, 'image')
     cr = cairo.Context(surface)
     log.debug("render()--surface, cr: %s, %s" % (surface, cr))
-    print "surface is %sx%s" % (surface.get_width(), surface.get_height())
     
     # Scale from the original size
     scale_x = float(width) / drawing.size[0]
@@ -1071,11 +1070,11 @@ def display(drawing, width=0, height=0, fix_aspect=False):
     # Adjust height to fix aspect ratio if desired
     if fix_aspect:
         x, y = drawing.aspect
-        height = float(width) * y / x
+        height = width * y / x
     # Render and display a .png
     png_file = '/tmp/drawing.png'
     save_png(drawing, png_file, width, height)
-    print "Displaying", png_file
+    print "Displaying", png_file, "at %sx%s" % (width, height)
     print "(press 'q' in image window to continue)"
     print commands.getoutput('display %s' % png_file)
 
@@ -1101,6 +1100,7 @@ def save_jpg(drawing, filename):
     im.save(filename)
     del(im)
     f.close()
+
 
 def save_image(drawing, img_filename):
     """Render drawing to a .jpg, .png or other image."""
@@ -1256,19 +1256,13 @@ def draw_stroke_demo(drawing):
     drawing.restore()
 
 
+import logging
+log.setLevel(logging.INFO)
 
 if __name__ == '__main__':
     mytime = time.time() # Benchmark
 
-    # Test surface creation
-    for scale in [5, 10, 15, 20]:
-        surface = get_surface(scale * 30, scale * 20, 'image')
-        cr = cairo.Context(surface)
-        print "surface: %s" % surface
-        print "cr: %s" % cr
-
-
-    drawing = Drawing(1.0, 1.0, (4, 3))
+    drawing = Drawing(1, 1, (16, 9))
 
     # Start a new
     drawing.save()
@@ -1312,7 +1306,6 @@ if __name__ == '__main__':
     resolutions = [(352, 240), (352, 480), (720, 480)]
     #resolutions = [(720, 480)]
     for w, h in resolutions:
-        print "Displaying Drawing at %sx%s" % (w, h)
-        display(drawing, w, h)
+        display(drawing, w, h, True)
    
 
