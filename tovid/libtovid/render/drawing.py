@@ -1,108 +1,68 @@
 #! /usr/bin/env python
 # -=- encoding: latin-1 -=-
 # drawing.py
-#
-# Cairo backend, by Alexandre Bourget <wackysalut@bourget.cc>
-#
 
-# TODO: Rewrite docstring
 """A Python interface to the Cairo library.
 
 Run this script standalone for a demonstration:
 
-    $ python libtovid/render/cairo.py
+    $ python libtovid/render/drawing.py
 
-Please note the leading '_' after 'cairo'. This is to prevent conflicts with
-the 'official' cairo binding class.
-
-To start off with Cairo, read (a must!):
-
-    http://tortall.net/mu/wiki/CairoTutorial
-
-To build your own Cairo vector image using this module, fire up your Python
-interpreter:
+To use this module from your Python interpreter, run:
 
     $ python
+    >>> from libtovid.render.drawing import *
+    
+This module provides a 2D vector drawing interface in a class called Drawing.
+To use it, simply provide a resolution and aspect ratio:
 
-And do something like this:
+    >>> drawing = Drawing(800, 600, (4, 3))   # width, height, aspect
 
-    >>> from libtovid.render.drawing import Drawing
-    >>> drawing = Drawing((800, 600))
+You can now draw shapes on the drawing, fill and stroke them:
 
-This creates an image (drawing) at 800x600 display resolution. Drawing has a
-wealth of draw functions.
+    >>> drawing.circle(500, 300, 150)        # (x, y, radius)
+    >>> drawing.fill('blue', 0.8)            # color name with optional alpha
+    >>> drawing.stroke('rgb(0, 128, 255)')   # rgb values 0-255
 
-Follow the Cairo-way of drawing:
+Then add more shapes:
 
-    - Draw a shape, create a path, with several functions (text_path,
-      circle_rad, circle, rectangle, etc...)
-    - fill([color], [alpha]) or stroke([color], [alpha]) as wanted
+    >>> drawing.rectangle(25, 25, 320, 240)  # x, y, width, height
+    >>> drawing.fill('rgb(40%, 80%, 10%)')   # rgb percentages
+    >>> drawing.stroke('#FF0080', 0.5)       # rgb hex notation with an alpha
 
-You can optionally set the 'Auto-stroke' and 'Auto-fill' behavior, which
-will use the latest fill() and stroke() colors set. You can set these
-colors with calls to set_fill_color() and set_stroke_color() too.
+To see what the drawing looks like so far, do:
 
-Main difference with the MVG backend. Example MVG usage:
+    >>> display(drawing)                     # display at existing size
+    >>> display(drawing, 720, 480)           # display at different size
+    >>> display(drawing, fix_aspect=True)    # display in correct aspect ratio
 
-    >>> drawing.fill('blue')
-    >>> drawing.rectangle((0, 0), (800, 600))
-    >>> drawing.fill('white')
-    >>> drawing.rectangle((320, 240), (200, 100))
+You may then decide to add more to the drawing:
 
-Example Cairo usage:
+    >>> drawing.set_source('white')
+    >>> drawing.text("Dennis", 50, 100)      # text, x, y
 
-    >>> drawing.set_source('rgb(255,255,80)')
-    >>> drawing.rectangle((0, 0), (800, 600))
-    >>> drawing.fill()
-    >>> drawing.set_source(1, 1, 0.5)
-    >>> drawing.rectangle((320, 240), (200, 100))
-    >>> drawing.stroke('white')
+And preview again:
 
-Notice how you set the colors first in Cairo, and that you call the fill() and
-stroke() methods afterwards. This is because Cairo creates paths, and then you
-can choose to fill() them or not, and to stroke() the outline or not.
+    >>> display(drawing)
 
-Note also that MVG confuses fill() with stroke(). When calling mvg's fill(),
-you will in fact stroke the outline. [insert here how does MVG handle filling]
+Once you finish your beautiful painting, save it as a nice high-res PNG!
 
-References:
+    >>> save_png(drawing, "my.png", 1600, 1200)
+    
+Cairo references:
 
     [1] http://www.cairographics.org
     [2] http://tortall.net/mu/wiki/CairoTutorial
 
 """
 
-"""Interface ideas:
-
-Strip drawing interface to the minimal set of features needed by tovid apps.
-e.g.:
-
-Text rendering (font, size, fill, placement)
-Image rendering (size, mask, placement)
-Basic shape rendering (lines, rectangles, circles, polygons)
-Translation (scaling, rotation)
-
-Thin glue between Drawing and Layer.
-
-Use a dictionary for specifying gradient color stops (instead of repeated
-calls to add_color_stop_rgba)
-
-grad1 = {0: 'red', 1: 'blue'}
-grad2 = {0.0: 'transparent',
-         0.5: '#00FF0080',
-         1.0: 'green'}
-
-drawing.gradient('linear', grad1)
-drawing.gradient('radial', grad2)
-
-(plus additional coordinate information as needed)
-
-
-"""
-
 __all__ = [
     'Drawing',
-    'display']
+    'render',
+    'display',
+    'save_png',
+    'save_jpg',
+    'save_image']
 
 import os
 import sys
