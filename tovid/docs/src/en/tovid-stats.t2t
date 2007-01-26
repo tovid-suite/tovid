@@ -30,6 +30,7 @@ specific //FIELD// names (see below for //FIELD// names). Available //COMMANDS//
     List all values of //FIELD_1//, grouped by distinct values in //FIELD_2//.
 : **-plot** //FIELD_1// by //FIELD_2//
     Like **-list**, but display a graphical scatterplot of the results.
+    //FIELD_1// must be a numerical field.
 : **-match** //FIELD// //VALUE//
     Only display records where //FIELD// has the given //VALUE//. This option may
     be used to filter the results of subsequent commands.
@@ -70,6 +71,18 @@ cryptically named, but here's the complete list anyway:
 
 
 ==Examples==
+
+See how many times you've used each version of tovid:
+
+```
+tovid-stats -count tovid_version
+```
+
+To see a scatterplot of bitrates needed by each format:
+
+```
+tovid-stats -plot avg_bitrate by format
+```
 
 To filter results, use the -match option. For example, to show the filename
 and output size of all SVCD-format encodings, do:
