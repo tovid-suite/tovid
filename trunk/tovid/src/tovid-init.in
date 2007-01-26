@@ -311,7 +311,7 @@ function assert_dep()
     # Determine if any group member is missing
     NO_GROUP=false
     for dep in $DEPS; do
-        if ! which $dep >> /dev/null 2>&1; then
+        if ! type -a $dep >> /dev/null 2>&1; then
             printf "%-13s %s\n" "  $dep" "MISSING!"
             NO_GROUP=:
         fi
@@ -474,8 +474,8 @@ fi
     # debian based distros install normalize as
     # "normalize-audio" rather than "normalize"
     NORMALIZE="normalize"
-    if ! which normalize > /dev/null 2>&1; then
-        if which normalize-audio > /dev/null 2>&1; then
+    if ! type -a normalize > /dev/null 2>&1; then
+        if type -a normalize-audio > /dev/null 2>&1; then
             NORMALIZE="normalize-audio"
         fi
     fi
