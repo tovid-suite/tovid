@@ -112,28 +112,52 @@ import cairo
 import Image      # for JPG export
 import ImageColor # for getrgb, getcolor
 from libtovid import log
+from libtovid.utils import to_unicode
+
+def get_surface(width, height, surface_type='image'):
+    """Get a cairo surface at the given dimensions.
+    """
+    # TODO: Support other surface types
+    if surface_type == 'image':
+        return cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+
+def function_string(func):
+    """Return a formatted string describing the given function object.
+    """
+    return "%s: %s" % (func.__name__, func.func_code.co_varnames)
+
+# Drawing class notes:
+#
+# The Drawing class has a number of methods (circle, rectangle, fill, stroke
+# and many others) that need to operate on a Cairo surface. But we'd like to
+# delay execution of actually drawing on that surface--otherwise, we can't
+# easily render a given Drawing to a custom resolution.
+#
+# Closures save the day here--that is, functions without "free variables".
+# Anytime you "paint" on the Drawing, what's actually happening is a new
+# function is getting created, whose sole purpose in life is to carry out
+# that specific paint operation. These tiny, single-purpose functions are
+# then added to a list of commands (self.commands) that will actually be
+# executed at rendering-time (i.e., when you do display() or save_png).
+#
+# This not only lets us render a Drawing to different resolutions, but allows
+# the possibility of rendering to different Cairo surfaces.
 
 class Drawing:
     def __init__(self, width=800, height=600, aspect=(4, 3)):
         """Create a blank drawing at the given size.
         
             width, height: Dimensions of the drawable region.
-
-        The given size should have the intended display aspect ratio, assuming
-        "square pixels". That is, if your Drawing will be displayed at 4:3
-        aspect, it should have size (400, 300), (800, 600) or similar.
+            aspect:        Aspect ratio, as a (width, height) tuple
+            
         """
         self.size = (width, height)
         self.aspect = aspect
         # Sequence of drawing commands
         self.commands = []
-
-        # This'll catch some bugs...
-        self.cr = None
-        
-        # TODO: Move this part to rendering function(s)
-        #self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-        #self.cr = cairo.Context(self.surface)
+        # "Dummy" surface/context; should not be drawn on
+        surface = get_surface(width, height, 'image')
+        self.cr = cairo.Context(surface)
 
 
     ###
@@ -158,6 +182,7 @@ class Drawing:
                                translate_x, translate_y)
             self.cr.set_matrix(mtx)
         self.commands.append(_affine)
+
 
     def arc(self, x, y, radius, start_deg, end_deg):
         """Draw an arc from (x, y), with the specified radius, starting at
@@ -842,9 +867,7 @@ class Drawing:
         
         Set the text's color with set_source() before calling text().
         """
-        # Convert text to unicode
-        if not isinstance(text_string, unicode):
-            text_string = unicode(str(text_string).decode('latin-1'))
+        text_string = to_unicode(text_string)
 
         self.save()
         def _text():
@@ -981,11 +1004,16 @@ class Drawing:
     ###
 
     def render(self, width, height):
-        """Render the Drawing at the given size to the current surface.
+        """Render the Drawing at the given size to a new surface, and
+        return the surface.
         """
+        # Save current context
+        log.debug("Saving self.cr: %s" % self.cr)
+        save_cr = self.cr
         # Create a surface at the given size
-        self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-        self.cr = cairo.Context(self.surface)
+        surface = get_surface(width, height, 'image')
+        self.cr = cairo.Context(surface)
+        log.debug("New self.cr: %s" % self.cr)
         # Scale from the original size
         scale_x = float(width) / self.size[0]
         scale_y = float(height) / self.size[1]
@@ -994,8 +1022,11 @@ class Drawing:
         self.commands.insert(0, self.commands.pop(-1))
         # Execute all draw commands
         for command in self.commands:
-            log.debug("Rendering function: %s" % command)
+            log.debug("Rendering function: %s" % function_string(command))
             command()
+        # Restore original context
+        self.cr = save_cr
+        return surface
 
     ###
     ### Editor interface/interactive functions
@@ -1005,16 +1036,16 @@ class Drawing:
         """Saves current drawing to PNG, keeping alpha channel intact.
 
         This is the quickest, since Cairo itself exports directly to .png"""
-        self.render(width, height)
+        surface = self.render(width, height)
         print "Saving", filename
-        self.surface.write_to_png(filename)
+        surface.write_to_png(filename)
 
 
     def save_jpg(self, filename):
         """Saves current drawing to JPG, losing alpha channel information.
         """
         f = open('/tmp/export.png', 'wb+')
-        self.surface.write_to_png(f)
+        self.save_png(f)
         f.seek(0)
         im = Image.open(f)
         im.save(filename)
@@ -1022,9 +1053,17 @@ class Drawing:
         f.close()
 
 
-    def display(self, width, height):
-        """Render and display the Drawing."""
-        # Display image at the intended aspect ratio
+    def display(self, width, height, fix_aspect=False):
+        """Render and display the Drawing at the given size.
+        
+        If fix_aspect is True, adjust height to make the image
+        appear in the correct aspect ratio.
+        """
+        # Adjust height to fix aspect ratio if desired
+        if fix_aspect:
+            x, y = self.aspect
+            height = float(width) * y / x
+        # Render and display a .png
         png_file = '/tmp/drawing.png'
         self.save_png(png_file, width, height)
         print "Displaying", png_file
@@ -1059,6 +1098,7 @@ def draw_fontsize_demo(drawing):
 
     # Save context
     drawing.save()
+    drawing.scale(1.0/720, 1.0/480)
     
     # Draw white text in a range of sizes
     drawing.set_source('white')
@@ -1079,6 +1119,7 @@ def draw_font_demo(drawing):
 
     # Save context
     drawing.save()
+    drawing.scale(1.0/720, 1.0/480)
 
     fontsize = 48
     drawing.font_size(fontsize)
@@ -1104,6 +1145,7 @@ def draw_shape_demo(drawing):
 
     # Save context
     drawing.save()
+    drawing.scale(1.0/720, 1.0/480)
 
     # Large orange circle with black stroke
     drawing.save()
@@ -1167,7 +1209,8 @@ def draw_stroke_demo(drawing):
 
     # Save context
     drawing.save()
-
+    drawing.scale(1.0/720, 1.0/480)
+    
     for width in [1, 2, 4, 6, 8, 10, 12, 14, 16]:
         drawing.stroke_width(width)
         rgb = ((255 - width * 8), (120 - width * 5), 0)
@@ -1183,7 +1226,7 @@ def draw_stroke_demo(drawing):
 if __name__ == '__main__':
     mytime = time.time() # Benchmark
 
-    drawing = Drawing(720, 480)
+    drawing = Drawing(1.0, 1.0, (4, 3))
 
     # Start a new
     drawing.save()
@@ -1192,7 +1235,7 @@ if __name__ == '__main__':
     # Add a background fill
     #->Background
     drawing.set_source('darkgray')
-    drawing.rectangle(0, 0, 720, 480)
+    drawing.rectangle(0, 0, 1.0, 1.0)
     drawing.fill()
 
     # Shape demo
@@ -1202,19 +1245,19 @@ if __name__ == '__main__':
 
     # Font size demo
     drawing.save()
-    drawing.translate(20, 20)
+    drawing.translate(0.03, 0.04)
     draw_fontsize_demo(drawing)
     drawing.restore()
 
     # Font face demo
     drawing.save()
-    drawing.translate(20, 300)
+    drawing.translate(0.03, 0.6)
     draw_font_demo(drawing)
     drawing.restore()
 
     # Stroke demo
     drawing.save()
-    drawing.translate(600, 200)
+    drawing.translate(0.8, 0.4)
     draw_stroke_demo(drawing)
     drawing.restore()
 
@@ -1224,10 +1267,11 @@ if __name__ == '__main__':
     print "Took %f seconds" % (time.time() - mytime)
 
     # Render and display the Drawing at several different sizes
-    resolutions = [(720, 480), (352, 480), (352, 240)]
-    #resolutions = [(720, 480)]
+    #resolutions = [(352, 240), (720, 480), (352, 480)]
+    resolutions = [(720, 480)]
     for w, h in resolutions:
         print "Displaying Drawing at %sx%s" % (w, h)
         drawing.display(w, h)
+        log.debug("drawing.cr: %s" % drawing.cr)
    
 
