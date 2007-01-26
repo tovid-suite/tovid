@@ -1332,6 +1332,7 @@ fi
 if $SUB_MENU && [ "$TARGET" = svcd ]; then
     usage_error "Sorry, submenu disabled for svcd for now, please remove -submenu option"
 fi
+[[ $TARGET = svcd ]] && $SHOWCASE && ! $TEXTMENU && usage_error "Sorry, showcase disabled for svcd target"
 $SUB_MENU && $GROUPING && usage_error "Sorry, no submenus when using -group"
 # allow user to only specify one audio file for all submenus
 if [ ${#SM_AUDIO[@]} -eq 1 ]; then
@@ -1357,7 +1358,7 @@ if [[ $BUTTON_GRAVITY = *east* || $BUTTON_GRAVITY = *west* ]]; then
     ! $USER_GEO &&  XGEO=45 && YGEO=45
     ! $SHOWCASE && TITLE_GRAVITY=north
 fi
-! $SHOWCASE && [[ $BUTTON_GRAVITY = center ]] && TITLE_GRAVITY=north
+! $SHOWCASE && [[ $BUTTON_GRAVITY = center ]] && ! $USER_TITLE_GEO && TITLE_GRAVITY=north
 # dvdauthor stuff
 # make an array of possible vars for dvdauthor post calls
 if $CHAIN_VIDEOS; then
@@ -1714,9 +1715,9 @@ if [ "$SC_TITLE_ALIGN" = "west" ] || $TEXTMENU; then #FIXME
             SHOWCASE_TITLES_X_ARRAY[i]=$(( ${SHOWCASE_TITLES_X_ARRAY[i]} - SAFE_OFFSET ))
         fi
         if ! $TEXTMENU && ! [[ $SHOWCASE_FILE ]]; then
-            if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt 360 ]; then
-                SHOWCASE_THUMB_X_ARRAY[i]=360
-                SHOWCASE_TITLES_X_ARRAY[i]=360
+            if [ ${SHOWCASE_THUMB_X_ARRAY[i]} -gt $(( ${VIDSIZE/x*} / 2 )) ]; then
+                SHOWCASE_THUMB_X_ARRAY[i]=$(( ${VIDSIZE/x*} / 2 ))
+                SHOWCASE_TITLES_X_ARRAY[i]=$(( ${VIDSIZE/x*} / 2 ))
             fi
         fi
     done
@@ -1751,7 +1752,6 @@ if $SHOWCASE && [ "$SC_TITLE_ALIGN" = "east" ] && ! $TEXTMENU; then
         fi
     done
 fi
-
 if ($USER_GRAVITY && $SHOWCASE && ! $TEXTMENU) && [[ $BUTTON_GRAVITY != north ]]; then
     SW_CORNER=$(( ${SHOWCASE_THUMB_Y_ARRAY[SPLIT-1]} + ${THUMB_SIZE/*x} ))
     if [[ $BUTTON_GRAVITY = *south* ]]; then
@@ -2753,8 +2753,8 @@ if $SHOWCASE; then
             SC_Y=$(( (Y_SPACE / 2) - (sc_height / 2) $TITLE_SPACE ))
         fi
             
-        ! $TEXTMENU && [[ $V_TOTAL -gt 5 ]] && sc_xpage=$(( 360 - (sc_width / 2) ))
-        $TEXTMENU && [[ -n $tt_ygeos_col2 ]] && sc_xpage=$(( 360 - (sc_width / 2) ))
+        ! $TEXTMENU && [[ $V_TOTAL -gt 5 ]] && sc_xpage=$(( ( ${VIDSIZE/x*} / 2 ) - (sc_width / 2) ))
+        $TEXTMENU && [[ -n $tt_ygeos_col2 ]] && sc_xpage=$(( ( ${VIDSIZE/x*} / 2 ) - (sc_width / 2) ))
         $USER_SC_GEO && sc_xpage=${SHOWCASE_GEO/x*}
         $USER_SC_GEO && SC_Y=${SHOWCASE_GEO/*x}
         SC_IMG_PAGE="-page +$sc_xpage+$SC_Y"
