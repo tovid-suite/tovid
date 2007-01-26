@@ -328,7 +328,7 @@ class MenuOptions:
         # Get global configuration (for output directory)
         curConfig = TovidConfig()
 
-        strCommand = "makemenu -noask "
+        strCommand = "makemenu -noask -overwrite "
         # Append format and tvsys
         strCommand += "-%s -%s " % (self.tvsys, self.format)
         # Append alignment
