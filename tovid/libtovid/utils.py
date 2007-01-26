@@ -59,7 +59,7 @@ def to_unicode(text):
     """Return the given text string, converted to unicode.
     """
     if not isinstance(text, unicode):
-        text = unicode(str(text_string).decode('latin-1'))
+        text = unicode(str(text).decode('latin-1'))
     return text
 
 
