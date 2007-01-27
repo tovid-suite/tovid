@@ -1071,7 +1071,7 @@ def display(drawing, width=None, height=None, fix_aspect=False):
     print commands.getoutput('display %s' % png_file)
 
 
-def save_png(drawing, filename, width=None, height=None):
+def save_png(drawing, filename, width, height):
     """Saves a drawing to PNG, keeping alpha channel intact.
 
     This is the quickest, since Cairo itself exports directly to .png"""
@@ -1081,7 +1081,7 @@ def save_png(drawing, filename, width=None, height=None):
     surface.write_to_png(filename)
     
 
-def save_jpg(drawing, filename, width=None, height=None):
+def save_jpg(drawing, filename, width, height):
     """Saves a drawing to JPG, losing alpha channel information.
     """
     f = open('/tmp/export.png', 'wb+')
@@ -1093,7 +1093,7 @@ def save_jpg(drawing, filename, width=None, height=None):
     f.close()
 
 
-def save_image(drawing, img_filename, width=None, height=None):
+def save_image(drawing, img_filename, width, height):
     """Render drawing to a .jpg, .png or other image."""
     log.info("Saving Drawing to %s" % img_filename)
     if img_filename.endswith('.png'):
@@ -1336,10 +1336,10 @@ if __name__ == '__main__':
     print "Took %f seconds" % (time.time() - mytime)
 
     # Render and display the Drawing at several different sizes
-    #resolutions = [(352, 240), (352, 480), (720, 480)]
-    resolutions = [(720, 480)]
+    resolutions = [(352, 240), (352, 480), (720, 480)]
+    #resolutions = [(720, 480)]
     for w, h in resolutions:
-        display(drawing, w, h)
+        display(drawing, w, h, True)
 
     save_svg(drawing, "/tmp/drawing.svg", 400, 300)
     save_pdf(drawing, "/tmp/drawing.pdf", 400, 300)

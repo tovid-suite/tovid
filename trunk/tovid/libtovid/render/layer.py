@@ -285,7 +285,7 @@ class Text (Layer):
 
     text -- UTF8 encoded string.
     """
-    def __init__(self, text, x=0, y=0, color='white', fontsize=20, \
+    def __init__(self, text, position=(0, 0), color='white', fontsize=20, \
                  font='Helvetica', align='left'):
         Layer.__init__(self)
         self.text = text
@@ -294,7 +294,7 @@ class Text (Layer):
         self.font = font
         self.align = align
         # Set (x,y) position
-        self.position = (x, y)
+        self.position = position
 
     # TODO: This is gonna be pretty broken...
     def extents(self, drawing):
@@ -322,7 +322,7 @@ class Text (Layer):
         if self.color is not None:
             drawing.set_source(self.color)
         # TODO: DO something with the align !!
-        drawing.text(self.text, self.position[0], self.position[1], self.align)
+        drawing.text(self.text, self.position[0], self.position[1])
         drawing.restore()
 
 
@@ -331,12 +331,15 @@ class ShadedText (Layer):
 
     text -- UTF8 encoded string.
     """
-    def __init__(self, text, x=0, y=0, dx=5, dy=5, color='white', shade='gray',
-                 fontsize=20, font='Helvetica', align='left'):
+    def __init__(self, text, position=(0, 0), offset=(5, 5),
+                 color='white', shade_color='gray', fontsize=20,
+                 font='Nimbus Sans', align='left'):
         Layer.__init__(self)
-        
-        self.under = Text(text, x+dx, y+dy, color=shade, fontsize=fontsize, font=font, align=align)
-        self.over = Text(text, x, y, color=color, fontsize=fontsize, font=font, align=align)
+        shade_position = (position[0] + offset[0],
+                          position[1] + offset[1])
+        self.under = Text(text, shade_position, shade_color,
+                          fontsize, font, align)
+        self.over = Text(text, position, color, fontsize, font, align)
 
     def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
@@ -372,6 +375,7 @@ class Label (Text):
         width = x1 - x0
         height = y1 - y0
         # Padding to use around text
+        print "self.fontsize is", self.fontsize
         pad = self.fontsize / 3
         # Calculate start and end points of background rectangle
         start = (-pad, -height - pad)
@@ -891,19 +895,19 @@ if __name__ == '__main__':
     # Draw a label (experimental)
     drawing.save()
     drawing.translate(460, 200)
-    label = Label(u"tovid loves Linux")
+    label = Label("tovid loves Linux")
     label.draw(drawing, 1)
     drawing.restore()
 
     # Draw a text layer, with position.
-    text = Text(u"Jackdaws love my big sphinx of quartz",
+    text = Text("Jackdaws love my big sphinx of quartz",
                 (82, 62), '#bbb')
     text.draw(drawing, 1)
 
     # Draw a text layer
     drawing.save()
     drawing.translate(80, 60)
-    text = Text(u"Jackdaws love my big sphinx of quartz")
+    text = Text("Jackdaws love my big sphinx of quartz")
     text.draw(drawing, 1)
     drawing.restore()
 
@@ -939,4 +943,4 @@ if __name__ == '__main__':
     drawing.restore()
 
     print "Output to /tmp/my.png"
-    save_image(drawing, '/tmp/my.png')
+    save_image(drawing, '/tmp/my.png', 800, 600)
