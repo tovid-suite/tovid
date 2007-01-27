@@ -259,7 +259,7 @@ class Drawing:
             self.set_source(source, opacity)
 
         def _fill(cr):
-            cr.fill()
+            cr.fill_preserve()
         self.commands.append(_fill)
 
 
@@ -1079,7 +1079,16 @@ def save_image(drawing, img_filename):
         print commands.getoutput(cmd)
 
 
-
+def display_xlib(drawing, width=0, height=0):
+    """Display the given Drawing using Xlib.
+    
+        drawing:    A Drawing object to display
+        width:      Pixel width of displayed image,
+                    or 0 to use the given Drawing's size
+        height:     Pixel height of displayed image,
+                    or 0 to use the given Drawing's size
+    """
+    pass
 
 
 ### --------------------------------------------------------------------
@@ -1215,14 +1224,13 @@ def draw_stroke_demo(drawing):
     # Restore context
     drawing.restore()
 
-
 import logging
 log.setLevel(logging.INFO)
 
 if __name__ == '__main__':
     mytime = time.time() # Benchmark
 
-    drawing = Drawing(1, 1, (16, 9))
+    drawing = Drawing(1, 1, (4, 3))
 
     # Start a new
     drawing.save()
@@ -1266,6 +1274,6 @@ if __name__ == '__main__':
     resolutions = [(352, 240), (352, 480), (720, 480)]
     #resolutions = [(720, 480)]
     for w, h in resolutions:
-        display(drawing, w, h, True)
+        display(drawing, w, h)
    
 
