@@ -36,15 +36,16 @@ not mpeg, you will have the option to auto-encode them with **tovid**.
 
 **At present there are 3 display arrangements or "templates":**
 
-A. The default style B. showcase style   C. textmenu style
+: A. (Default)
+    Thumbs will be centred, and as large as space restraints allow.
 
-    A. No extra args needed. Thumbs will be centred, and as large as space restraints allow.
-
-    B. -showcase IMAGE|VIDEO : will produce an arrangement with small buttons on
+: B. -showcase IMAGE|VIDEO
+    Produces an arrangement with small buttons on
     the side and the showcase image/video in the centre.
     If no IMAGE or VIDEO argument is supplied, the central thumb will be omitted.
 
-    C. -textmenu : no thumbs will be made, text will be used instead.  You can
+: C. -textmenu
+    No thumbs will be made, text will be used instead.  You can
     still make an animated menu however by using a video for the background.
     (-background VIDEO)
 
@@ -96,7 +97,7 @@ constraints of each arrangement.
 
 == Menu style ==
 
-: -showcase IMAGE|VIDEO (without an argument, use showcase style with no central thumb) 
+: -showcase IMAGE|VIDEO (without an argument, use showcase style with no central thumb)
     A different arrangement of images for the menu: small thumbnails go at left
     (and right) side of screen, with a larger image in the centre. Maximum of 10 videos
     If the provided argument is a video file, the central thumb will be animated.
@@ -149,7 +150,7 @@ constraints of each arrangement.
 : -thumb-shape [normal|oval|plectrum|egg]
     Apply a shaped transparency mask to thumbnail videos
 : -3dthumbs
-    This will give an illusion of 3D to the thumbnails: dynamic lighting on 
+    This will give an illusion of 3D to the thumbnails: dynamic lighting on
     rounded thumbs, and a raised effect on rectangular thumbs.  Try it !
 : -thumb-font FONT
     Display thumbnail titles in the given font
@@ -307,7 +308,7 @@ constraints of each arrangement.
 : -aspect 4:3|16:9 videos|menu|all  (default: all)
     This will output a <video aspect WIDTH:HEIGHT /> tag for the dvdauthor xml file.
     It will affect all videos in the titleset.  (effectively all videos since todisc only does
-    one titleset)  The optional 2nd argument will apply this tag either to just the menu itself, 
+    one titleset)  The optional 2nd argument will apply this tag either to just the menu itself,
     just the videos, or "all". For example:
 
 ```
@@ -333,7 +334,7 @@ constraints of each arrangement.
 
 ==See also==
 
-**idvid**(1), **makedvd**(1), **makemenu**(1), **makeslides**(1), 
+**idvid**(1), **makedvd**(1), **makemenu**(1), **makeslides**(1),
 **makevcd**(1), **makexml**(1), **postproc**(1), **tovid**(1), **todisc**(1)
 
 
