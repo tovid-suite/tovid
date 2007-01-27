@@ -681,11 +681,12 @@ class Drawing:
         same.
         """
 
+        # Optionally set fill color, and save it.
+        if source is not None:
+            print "SET SOURCE inside stroke: %s" % source
+            self.set_source(source, opacity)
+
         def _stroke(cr):
-            # Optionally set fill color, and save it.
-            if source is not None:
-                print "SET SOURCE inside stroke: %s" % source
-                self.set_source(source, opacity)
             cr.stroke_preserve()
         self.commands.append(_stroke)
 
