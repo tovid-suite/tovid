@@ -192,12 +192,11 @@ function get_info ()
 
     # ffmpeg has a better concept of the actual bitrate than mplayer
     TOTAL_AV_BITRATE=$(awk -F: '{gsub("kb/s", "")};  /bitrate:/ {print $6*1000}' "$SCRATCH_FILE")
-    VIDEO_ONLY_BITRATE=$(awk '/Video:/ {print $7*1000}' "$SCRATCH_FILE")
     ## take the lower of the two
-    if test $TOTAL_AV_BITRATE -lt $VIDEO_ONLY_BITRATE; then
+    if test $TOTAL_AV_BITRATE -lt $ID_VIDEO_BITRATE; then
         ID_VIDEO_BITRATE=$TOTAL_AV_BITRATE
     else
-        ID_VIDEO_BITRATE=$VIDEO_ONLY_BITRATE
+        ID_VIDEO_BITRATE=$ID_VIDEO_BITRATE
     fi
 
     # Find out what audio channels are available
