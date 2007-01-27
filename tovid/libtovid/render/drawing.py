@@ -77,16 +77,22 @@ from libtovid import log
 from libtovid.utils import to_unicode
 
 
-def get_surface(width, height, surface_type='image'):
+def get_surface(width, height, surface_type='image', filename=''):
     """Get a cairo surface at the given dimensions.
     """
     if type(width) != int or type(height) != int:
         log.warning("Surface width and height should be integers."\
                     " Converting to int.")
-    # TODO: Support other surface types
+
     if surface_type == 'image':
         return cairo.ImageSurface(cairo.FORMAT_ARGB32,
                                   int(width), int(height))
+    elif surface_type == 'svg':
+        return cairo.SVGSurface(filename, width, height)
+    elif surface_type == 'pdf':
+        return cairo.PDFSurface(filename, width, height)
+    elif surface_type == 'ps':
+        return cairo.PSSurface(filename, width, height)
 
 
 def function_string(func):
@@ -680,12 +686,12 @@ class Drawing:
         See fill() documentation for parameter explanation. They are the
         same.
         """
-
-        # Optionally set fill color, and save it.
+        # Optionally set stroke color, and save it.
         if source is not None:
             self.set_source(source, opacity)
 
         def _stroke(cr):
+            # Optionally set fill color, and save it.
             cr.stroke_preserve()
         self.commands.append(_stroke)
 
@@ -1016,21 +1022,10 @@ class Drawing:
 ### Exported functions
 ### --------------------------------------------------------------------
 
-def render(drawing, width=None, height=None):
-    """Render a Drawing at the given size to a new surface, and
-    return the surface and context.
+def render(drawing, surface, width, height):
+    """Render a Drawing to the given surface at the given size.
     """
-
-    # Take original size if not specified
-    if not width:
-        width = drawing.size[0]
-    if not height:
-        height = drawing.size[1]
-        
-    # Create a new surface/context at the given size
-    surface = get_surface(width, height, 'image')
     cr = cairo.Context(surface)
-    log.debug("render()--surface, cr: %s, %s" % (surface, cr))
     
     # Scale from the original size
     scale_x = float(width) / drawing.size[0]
@@ -1046,8 +1041,6 @@ def render(drawing, width=None, height=None):
 
     # Remove scaling function
     drawing.commands.pop(0)
-    
-    return surface, cr
 
 
 def display(drawing, width=None, height=None, fix_aspect=False):
@@ -1082,11 +1075,10 @@ def save_png(drawing, filename, width=None, height=None):
     """Saves a drawing to PNG, keeping alpha channel intact.
 
     This is the quickest, since Cairo itself exports directly to .png"""
-    surface, cr = render(drawing, width, height)
+    surface = get_surface(width, height, 'image')
+    render(drawing, surface, width, height)
     print "Saving", filename
     surface.write_to_png(filename)
-    del cr
-    del surface
     
 
 def save_jpg(drawing, filename, width=None, height=None):
@@ -1118,6 +1110,27 @@ def save_image(drawing, img_filename, width=None, height=None):
         print commands.getoutput(cmd)
 
 
+def save_svg(drawing, filename, width, height):
+    """Render drawing to an SVG file."""
+    surface = get_surface(width, height, 'svg', filename)
+    render(drawing, surface, width, height)
+    print "Saved SVG to", filename
+
+
+def save_pdf(drawing, filename, width, height):
+    """Render drawing to a PDF file."""
+    surface = get_surface(width, height, 'pdf', filename)
+    render(drawing, surface, width, height)
+    print "Saved PDF to", filename
+
+
+def save_ps(drawing, filename, width, height):
+    """Render drawing to a PostScript file."""
+    surface = get_surface(width, height, 'ps', filename)
+    render(drawing, surface, width, height)
+    print "Saved PostScript to", filename
+
+
 def display_xlib(drawing, width=0, height=0):
     """Display the given Drawing using Xlib.
     
@@ -1127,6 +1140,7 @@ def display_xlib(drawing, width=0, height=0):
         height:     Pixel height of displayed image,
                     or 0 to use the given Drawing's size
     """
+    import Xlib
     pass
 
 
@@ -1147,9 +1161,9 @@ def draw_fontsize_demo(drawing):
     
     for size in [12,16,20,24,28,32]:
         ypos = size * size / 5
-        drawing.font('Helvetica')
+        drawing.font('Nimbus Sans')
         drawing.font_size(size)
-        drawing.text(u"%s pt: The quick brown fox" % size, 0, ypos)
+        drawing.text("%s pt: The quick brown fox" % size, 700, ypos, 'right')
     
     # Restore context
     drawing.restore()
@@ -1163,9 +1177,21 @@ def draw_font_demo(drawing):
     drawing.save()
     drawing.scale(1.0/720, 1.0/480)
 
-    fontsize = 48
+    fontsize = 24
     drawing.font_size(fontsize)
-    fonts = [u'Helvetica', u'NimbusSans', u'Tahoma', u'Times']
+    fonts = [
+        'Arial',
+        'Baskerville',
+        'Dragonwick',
+        'Georgia',
+        'Helvetica',
+        'Linotext',
+        'Luxi Mono',
+        'Nimbus Sans',
+        'Old-Town',
+        'Sharktooth',
+        'Tahoma',
+        'Times']
     ypos = 0
     for font in fonts:
         drawing.font(font)
@@ -1288,14 +1314,8 @@ if __name__ == '__main__':
 
     # Font size demo
     drawing.save()
-    drawing.translate(0.03, 0.04)
+    #drawing.translate(0.03, 0.04)
     draw_fontsize_demo(drawing)
-    drawing.restore()
-
-    # Font face demo
-    drawing.save()
-    drawing.translate(0.03, 0.6)
-    draw_font_demo(drawing)
     drawing.restore()
 
     # Stroke demo
@@ -1304,15 +1324,23 @@ if __name__ == '__main__':
     draw_stroke_demo(drawing)
     drawing.restore()
 
+    # Font face demo
+    drawing.save()
+    drawing.translate(0.1, 0.2)
+    draw_font_demo(drawing)
+    drawing.restore()
+
     # Close out the Cairo rendering...
     drawing.restore()
 
     print "Took %f seconds" % (time.time() - mytime)
 
     # Render and display the Drawing at several different sizes
-    resolutions = [(352, 240), (352, 480), (720, 480)]
-    #resolutions = [(720, 480)]
+    #resolutions = [(352, 240), (352, 480), (720, 480)]
+    resolutions = [(720, 480)]
     for w, h in resolutions:
         display(drawing, w, h)
-   
 
+    save_svg(drawing, "/tmp/drawing.svg", 400, 300)
+    save_pdf(drawing, "/tmp/drawing.pdf", 400, 300)
+    save_ps(drawing, "/tmp/drawing.ps", 400, 300)
