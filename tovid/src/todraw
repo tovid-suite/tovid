@@ -1,0 +1,45 @@
+#! /usr/bin/env python
+# todraw
+
+"""A simple command-based paint program (and later, an interactive shell).
+"""
+
+try:
+    from Tkinter import *
+    from tkFileDialog import *
+    from tkMessageBox import *
+except:
+    import traceback
+    traceback.print_exc()
+    print "Could not import Tkinter. You may need to do the following:"
+    print "  Debian: Install 'python-tk'"
+    print "  Gentoo: Add 'tcltk' to python USE flags"
+    print "  Fedora: Install 'tkinter'"
+    sys.exit()
+
+from PIL import Image, ImageTk
+
+
+class Application(Frame):
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.grid()
+        self.drawWidgets()
+
+    def drawWidgets(self):
+        # Load and display /tmp/drawing.png
+        image = Image.open('/tmp/drawing.png')
+        photo = ImageTk.PhotoImage(image)
+        label = Label(image=photo)
+        label.image = photo
+        label.pack()
+
+
+### --------------------------------------------------------------------
+### Entry point
+### --------------------------------------------------------------------
+root = Tk()
+if __name__ == '__main__':
+    root.title("tktodisc: A todisc GUI")
+    app = Application(root)
+    root.mainloop()
