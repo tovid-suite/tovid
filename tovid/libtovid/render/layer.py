@@ -331,7 +331,7 @@ class ShadedText (Layer):
 
     text -- UTF8 encoded string.
     """
-    def __init__(self, text, x=0, y=0, dx=5, dy=5, color='white', shade='grey',
+    def __init__(self, text, x=0, y=0, dx=5, dy=5, color='white', shade='gray',
                  fontsize=20, font='Helvetica', align='left'):
         Layer.__init__(self)
         
