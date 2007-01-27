@@ -2396,11 +2396,17 @@ class MenuPanel(wx.Panel):
             self.btnFillColor2.SetLabel("To...")
             self.sizFillColor1.Hide(self.chkFillColor)
             self.sizFillColor2.Hide(self.chkFillColor2)
+            self.chkStrokeColor.Enable(True)
+            self.curOptions.fillColor1 = "rgb(%d,%d,%d)" % \
+                ( self.curOptions.color1.Red(), 
+                  self.curOptions.color1.Green(), 
+                  self.curOptions.color1.Blue()   )
         # Only show the pattern drop box for 'pattern'
         elif self.fillType == "Pattern":
             self.sizTextFill.Hide(self.sizFillColor1)
             self.sizTextFill.Hide(self.sizFillColor2)
             self.sizTextFill.Show(self.cbPattern)
+            self.chkStrokeColor.Enable(True)
         else:
             print "DEBUG: invalid FillType: %d" % evt.GetSelection()
             print "DEBUG: selection was: %s" % selection
@@ -2416,12 +2422,21 @@ class MenuPanel(wx.Panel):
             if evt.IsChecked():
                 self.btnFillColor.Enable(False)
                 self.curOptions.fillColor1 = "none"
+                # Can't have both no fill and no stroke, so set stroke
+                self.chkStrokeColor.Enable(False)
+                self.chkStrokeColor.SetValue(False)
+                self.curOptions.textStrokeColor = "rgb(%d,%d,%d)" % \
+                    ( self.curOptions.colorStroke.Red(),
+                      self.curOptions.colorStroke.Green(),
+                      self.curOptions.colorStroke.Blue()   )
             else:
                 self.btnFillColor.Enable(True)
                 self.curOptions.fillColor1 = "rgb(%d,%d,%d)" % \
                     ( self.curOptions.color1.Red(), 
                       self.curOptions.color1.Green(), 
                       self.curOptions.color1.Blue()   )
+                # Re-enable disabled stroke color controls
+                self.chkStrokeColor.Enable(True)
 
         elif evt.GetId() == self.chkFillColor2.GetId():
             if evt.IsChecked():
@@ -2438,42 +2453,91 @@ class MenuPanel(wx.Panel):
             if evt.IsChecked():
                 self.btnStrokeColor.Enable(False)
                 self.curOptions.textStrokeColor = "none"
+                # Can't have both no color and no fill, so set fill
+                self.chkFillColor.Enable(False)
+                self.chkFillColor.SetValue(False)
+                self.curOptions.fillColor1 = "rgb(%d,%d,%d)" % \
+                    ( self.curOptions.color1.Red(), 
+                      self.curOptions.color1.Green(), 
+                      self.curOptions.color1.Blue()   )
             else:
                 self.btnStrokeColor.Enable(True)
                 self.curOptions.textStrokeColor = "rgb(%d,%d,%d)" % \
                     ( self.curOptions.colorStroke.Red(),
                       self.curOptions.colorStroke.Green(),
                       self.curOptions.colorStroke.Blue()   )
+                # Re-enable fill controls
+                self.chkFillColor.Enable(True)
+
         elif evt.GetId() == self.chkButtonOutline.GetId():
             if evt.IsChecked():
                 self.btnButtonOutlineColor.Enable(False)
                 self.curOptions.buttonOutlineColor = "none"
+                # Can't have both no fill and no outline, so set fill
+                self.chkHiColor.Enable(False)
+                self.chkSelColor.Enable(False)
+                self.curOptions.highlightColor = "rgb(%d,%d,%d)" % \
+                    ( self.curOptions.colorHi.Red(),
+                      self.curOptions.colorHi.Green(),
+                      self.curOptions.colorHi.Blue()   )
+                self.curOptions.selectColor = "rgb(%d,%d,%d)" % \
+                    ( self.curOptions.colorSel.Red(),
+                      self.curOptions.colorSel.Green(),
+                      self.curOptions.colorSel.Blue()   )
             else:
                 self.btnButtonOutlineColor.Enable(True)
                 self.curOptions.buttonOutlineColor = "rgb(%d,%d,%d)" % \
                     ( self.curOptions.colorButtonOutline.Red(),
                       self.curOptions.colorButtonOutline.Green(),
                       self.curOptions.colorButtonOutline.Blue()   )
+                # Re-enable button fill controls
+                self.chkHiColor.Enable(True)
+                self.chkSelColor.Enable(True)
+
         elif evt.GetId() == self.chkHiColor.GetId():
             if evt.IsChecked():
                 self.btnHiColor.Enable(False)
                 self.curOptions.highlightColor = "none"
+                # Can't have both no fill and no stroke, so set outline
+                self.chkButtonOutline.Enable(False)
+                self.curOptions.buttonOutlineColor = "rgb(%d,%d,%d)" % \
+                    ( self.curOptions.colorButtonOutline.Red(),
+                      self.curOptions.colorButtonOutline.Green(),
+                      self.curOptions.colorButtonOutline.Blue()   )
             else:
                 self.btnHiColor.Enable(True)
                 self.curOptions.highlightColor = "rgb(%d,%d,%d)" % \
                     ( self.curOptions.colorHi.Red(),
                       self.curOptions.colorHi.Green(),
                       self.curOptions.colorHi.Blue()   )
+                # Re-enable button outline controls
+                if self.chkSelColor.IsChecked():
+                    pass
+                else:
+                    self.chkButtonOutline.Enable(True)
+        
         elif evt.GetId() == self.chkSelColor.GetId():
             if evt.IsChecked():
                 self.btnSelColor.Enable(False)
                 self.curOptions.selectColor = "none"
+                # Can't have both no fill and no stroke, so set outline
+                self.chkButtonOutline.Enable(False)
+                self.curOptions.buttonOutlineColor = "rgb(%d,%d,%d)" % \
+                    ( self.curOptions.colorButtonOutline.Red(),
+                      self.curOptions.colorButtonOutline.Green(),
+                      self.curOptions.colorButtonOutline.Blue()   )
             else:
                 self.btnSelColor.Enable(True)
                 self.curOptions.selectColor = "rgb(%d,%d,%d)" % \
                     ( self.curOptions.colorSel.Red(),
                       self.curOptions.colorSel.Green(),
                       self.curOptions.colorSel.Blue()   )
+                # Re-enable button outline controls
+                if self.chkHiColor.IsChecked():
+                    pass
+                else:
+                    self.chkButtonOutline.Enable(True)
+        
         else:
             print "DEBUG: ", evt.IsChecked(), self.GetId()
             print "DEBUG: ", self.chkFillColor.GetId(), self.chkFillColor2.GetId()
