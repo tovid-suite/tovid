@@ -781,7 +781,7 @@ class Drawing:
 
         #self.save()
         def _text(cr):
-            (dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
+            (dx, dy, w, h, ax, ay) = cr.text_extents(text_string)
             if align == 'right':
                 nx = x - w
             elif align == 'center':
