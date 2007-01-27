@@ -22,6 +22,7 @@ __all__ = [\
     'Layer',
     'Background',
     'Text',
+    'ShadedText',
     'TextBox',
     'Label',
     'VideoClip',
@@ -284,7 +285,7 @@ class Text (Layer):
 
     text -- UTF8 encoded string.
     """
-    def __init__(self, text, position=(0,0), color='white', fontsize=20, \
+    def __init__(self, text, x=0, y=0, color='white', fontsize=20, \
                  font='Helvetica', align='left'):
         Layer.__init__(self)
         self.text = text
@@ -293,8 +294,7 @@ class Text (Layer):
         self.font = font
         self.align = align
         # Set (x,y) position
-        assert(isinstance(position, tuple))
-        self.position = position
+        self.position = (x, y)
 
     # TODO: This is gonna be pretty broken...
     def extents(self, drawing):
@@ -323,6 +323,27 @@ class Text (Layer):
             drawing.set_source(self.color)
         # TODO: DO something with the align !!
         drawing.text(self.text, self.position[0], self.position[1], self.align)
+        drawing.restore()
+
+
+class ShadedText (Layer):
+    """A simple text string, with size, color and font.
+
+    text -- UTF8 encoded string.
+    """
+    def __init__(self, text, x=0, y=0, dx=5, dy=5, color='white', shade='grey',
+                 fontsize=20, font='Helvetica', align='left'):
+        Layer.__init__(self)
+        
+        self.under = Text(text, x+dx, y+dy, color=shade, fontsize=fontsize, font=font, align=align)
+        self.over = Text(text, x, y, color=color, fontsize=fontsize, font=font, align=align)
+
+    def draw(self, drawing, frame=1):
+        assert isinstance(drawing, Drawing)
+        log.debug("Drawing Text")
+        drawing.save()
+        self.under.draw(drawing, frame)
+        self.over.draw(drawing, frame)
         drawing.restore()
 
 
