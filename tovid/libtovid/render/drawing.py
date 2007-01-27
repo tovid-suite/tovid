@@ -397,6 +397,8 @@ class Drawing:
         # Let someone else do the dirty work
         self.image_surface(x, y, width, height, surface)
 
+        return surface
+
 
     def line(self, x0, y0, x1, y1):
         """Set new path as a line from (x0, y0) to (x1, y1).
