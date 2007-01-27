@@ -7,7 +7,8 @@ import math
 import sys
 sys.path.insert(0, '..')
 # Get modules to test
-from libtovid.render.drawing import Drawing
+from libtovid.render.drawing import Drawing, display, save_jpg, save_png
+import libtovid
 import cairo
 import os
 
@@ -20,8 +21,7 @@ class TestCairoDraws(unittest.TestCase):
 
     def tearDown(self):
         """Delete the drawing"""
-        self.d.render()
-        os.system("display /tmp/my.png")
+        display(self.d)
         del(self.d)
         
     def txt(self, txt):
@@ -48,8 +48,8 @@ class TestImageLoad(TestCairoDraws):
         im.stroke('red')
         im.circle(25, 25, 10)
         im.stroke()
-        im.save_jpg('/tmp/img.jpg')
-        im.save_png('/tmp/img.png')
+        save_jpg(im, '/tmp/img.jpg')
+        save_png(im, '/tmp/img.png')
 
         # Load it with the image() function.
         self.d.image(5, 5, 25, 25, '/tmp/img.jpg')
