@@ -8,7 +8,7 @@ import math
 import sys
 sys.path.insert(0, '..')
 # Get modules to test
-from libtovid.render.drawing import Drawing
+from libtovid.render.drawing import Drawing, save_image
 import cairo
 
 class TestCairoRenderer(unittest.TestCase):
@@ -165,7 +165,7 @@ class TestCairoRenderer(unittest.TestCase):
 
         # We use these also for the 'text' function.
         self.d.text('ahuh', 10,50)
-        self.d.text_path(10, 1000, 'ahuh')
+        self.d.text_path('ahuh', 10, 1000)
         self.d.fill('blue')
 
         # When we call fill() and stroke() with no parameters, the last used
@@ -196,17 +196,15 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.font_rotate(0)
 
     def test_text_stuff(self):
-        self.d.text("Test of text string", (15, 15))
+        self.d.text("Test of text string", 15, 15)
 
     def test_antialias_stuff(self):
         self.d.stroke_antialias(True)
-        self.assert_(self.d.cr.get_antialias() == cairo.ANTIALIAS_GRAY)
         self.d.stroke_antialias(False)
-        self.assert_(self.d.cr.get_antialias() == cairo.ANTIALIAS_NONE)
 
     def test_rectangle_stuff(self):
         self.d.rectangle(20, 20, 200, 200)
-        self.d.rectangle_size(20, 20, 230, 230)
+        self.d.rectangle_corners(20, 20, 230, 230)
         self.d.roundrectangle(10, 445, 610, 470, 5, 5)
         
             
@@ -220,7 +218,7 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.stroke_width(2)
         self.d.circle(250, 250, 80)
 
-        self.d.render('/tmp/my.png')
+        save_image(self.d, '/tmp/my.png')
 
 
 
