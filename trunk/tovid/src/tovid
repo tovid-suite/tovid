@@ -1747,13 +1747,13 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     yecho "Found compliant audio and dumping the stream."
     precho "This sometimes causes errors when multiplexing; add '-force' to the tovid command line to re-encode if multiplexing fails."
     yecho "Copying the existing audio stream with the following command:"
-    AUDIO_CMD="$PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${AUDIO_STREAM[@]}""
-    yecho "$AUDIO_CMD"
+    AUDIO_CMD=($PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${AUDIO_STREAM[@]}")
+    yecho "${AUDIO_CMD[@]}"
     #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
     function run_audio_cmd()
     {
         LOG_FILTER="$CRLF"
-        cmd_exec "$AUDIO_CMD"
+        "${AUDIO_CMD[@]}" >> "$LOG_FILE" 2>&1 &
         #$PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy \
         #$AUDIO_MAP "${AUDIO_STREAM[@]}" >> "$LOG_FILE" 2>&1
     }
