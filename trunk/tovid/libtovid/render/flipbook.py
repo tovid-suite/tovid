@@ -108,7 +108,7 @@ class Flipbook:
         # Draw each layer
         for layer, position in self.layers:
             drawing.save()
-            drawing.translate(*position)
+            drawing.translate(position[0], position[1])
             # Apply effects and draw
             layer.draw_with_effects(drawing, frame)
             drawing.restore()
