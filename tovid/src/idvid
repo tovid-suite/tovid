@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+#set -u
+
 ME="[idvid]:"
 . tovid-init
 
@@ -87,6 +89,7 @@ MATCH_FORMAT=""
 MATCH_TVSYS=""
 TABULAR=false
 ID_FILES=""
+
 mkdir -p "$STAT_DIR"
 touch "$STAT_FILE"
 
@@ -151,16 +154,17 @@ function get_info ()
         fi
     fi
 
-    # Print a message if the file couldn't be identified
+    # Print a message and exit if the file couldn't be identified
     if grep -q "^ID_" "$SCRATCH_FILE"; then :;
     else
         if $TERSE; then
             echo "CANT_IDENTIFY=:"
+            rm -rf "$TMP_DIR"
+            exit 1
         else
             echo "Could not identify file: $INFILE"
+            echo "See $SCRATCH_FILE for clues why."
         fi
-        #rm -rf "$TMP_DIR"
-        #exit 1
     fi
 
     # Defaults. Many of these values may be overridden by
@@ -181,10 +185,21 @@ function get_info ()
     V_ASPECT_RATIO="1:1"
     ID_LENGTH="0"
 
-    # Source mplayer's output to set relevant variables
+    # bash appears to have no way of initializing empty arrays; we append to these later,
+    # so unsetting them clears out their previous contents
+    unset A_SAMPRATES
+    unset A_BITRATES
+    unset A_CODECS
+    unset A_HEX_TRACKS
+    unset A_TRACKS
+    unset wavs
+
+    # Evaluate mplayer's output to set relevant variables.
     # (ID_V(ideo), ID_A(udio), and ID_L(ength))
     # Grep out special characters ()[
     eval $(cat "$SCRATCH_FILE" | grep "^ID_[VAL]" | grep -v "[()\[]")
+    # (If you've got a problem with eval, give me an alternative that
+    # works as well and is as readable :-)
 
     ID_VIDEO_FRAMES=$(grep 'length:' "$SCRATCH_FILE" | \
         awk -F ' ' '{print $2}')
@@ -222,7 +237,7 @@ function get_info ()
                 sed -r 's/.* ([0-9]+) kb\/s.*/\1/')")
             A_CODECS=("${A_CODECS[@]}" "$(echo $CUR_CHAN | \
                 sed -r 's/.*Audio: ([^,]+),.*/\1/')")
-            if $USE_HEX_TRACKS; then
+                if $USE_HEX_TRACKS; then
                 MP_TRACKNUM=$((16#${HEX_TRACKS[i]}))
             else
                 MP_TRACKNUM=$i
@@ -370,7 +385,8 @@ function idvid_main ()
         # Multiple audio track info
         for t in ${!tracks[@]}; do
             [[ ${tracks[t]} = *Unsupported* ]] && A_CODECS[t]=": *** Unsupported ***"
-            done
+        done
+
         for ((j=0; j<${#A_TRACKS[@]}; j++)); do
             echo "---------------------------"
             echo "Audio track $((j+1)) (Stream ${A_TRACKS[j]}, AID ${A_HEX_TRACKS[j]}):"
@@ -393,6 +409,7 @@ function idvid_main ()
     A_VCD2=""
     A_SVCD=""
     A_DVD=""
+    A_NONE=""
 
     # Find matching audio profile(s)
     # DVD audio must be 48khz, 32-1536 kbps
