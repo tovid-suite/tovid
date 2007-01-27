@@ -213,12 +213,11 @@ class Image (Layer):
     image_source -- can be anything cairo::Drawing::image() can accept.
                     See documentation.
     """
-    def __init__(self, image_source, (width, height), position=(0,0)):
+    def __init__(self, image_source, x, y, width, height):
         Layer.__init__(self)
         self.size = (width, height)
         self.image_source = image_source
-        assert(isinstance(position, tuple))
-        self.position = position
+        self.position = (x, y)
 
 
     def draw(self, drawing, frame=1):
