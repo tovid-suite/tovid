@@ -262,6 +262,7 @@ class BurnDiscPanel(wx.Panel):
     def OnSetDevice(self, evt):
         """Use the selected device."""
         self.device = self.txtDiscDevice.GetValue()
+        self.SetCommands()
 
     def OnStart(self, evt):
         """Begin authoring and burning the disc."""
