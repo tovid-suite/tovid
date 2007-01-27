@@ -62,8 +62,9 @@ __all__ = ['Flipbook']
 
 import os
 import sys
+import time
 from libtovid.render.animation import Keyframe
-from libtovid.render.drawing import Drawing
+from libtovid.render.drawing import Drawing, save_image
 from libtovid.render import layer, effect
 from libtovid import standard
 from libtovid.media import MediaFile, standard_media, load_media
@@ -107,7 +108,7 @@ class Flipbook:
         # Draw each layer
         for layer, position in self.layers:
             drawing.save()
-            drawing.translate(position)
+            drawing.translate(*position)
             # Apply effects and draw
             layer.draw_with_effects(drawing, frame)
             drawing.restore()
@@ -128,7 +129,7 @@ class Flipbook:
             print "Drawing frame %s of %s" % (frame, self.frames)
             drawing = self.get_drawing(frame)
             # jpeg2yuv likes frames to start at 0
-            drawing.save_png('%s/%08d.png' % (tmp, frame - 1))
+            save_image(drawing, '%s/%08d.png' % (tmp, frame - 1))
             frame += 1
         self.encode_flipbook(tmp, m2v_file)
 
@@ -237,3 +238,4 @@ if __name__ == '__main__':
     flip.render_video('/tmp/flipbook')
 
     print "Took %f seconds" % (time.time() - start_time)
+

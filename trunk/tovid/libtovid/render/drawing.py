@@ -93,6 +93,7 @@ def function_string(func):
     """Return a formatted string describing the given function object.
     """
     # TODO: Find a way to print more info (local variables?)
+    # Backtrace ?!
     return "%s" % func.__name__
 
 
@@ -161,7 +162,7 @@ class Drawing:
         """
         def _arc(cr):
             cr.arc(x, y, radius, start_deg * pi/180., end_deg * pi/180.)
-        self.commands.append(_arg)
+        self.commands.append(_arc)
 
 
     def arc_rad(self, x, y, radius, start_rad, end_rad):
@@ -254,8 +255,10 @@ class Drawing:
         If arguments are present, they are passed to set_source()
         before filling.
         """
+
         # Optionally set fill color, and save it.
         if source is not None:
+            print "SOURCE in FILL: %s" % source
             self.set_source(source, opacity)
 
         def _fill(cr):
@@ -275,6 +278,10 @@ class Drawing:
         """
         tr = {'evenodd': cairo.FILL_RULE_EVEN_ODD,
               'winding': cairo.FILL_RULE_WINDING}
+
+        # Test value
+        tr[rule]
+        
         def _fill_rule(cr):
             cr.set_fill_rule(tr[rule])
         self.commands.append(_fill_rule)
@@ -352,7 +359,7 @@ class Drawing:
         def _image_surface(cr):
             cr.set_source_surface(surface)
             cr.paint()
-        self.commands.append(_image_surface())
+        self.commands.append(_image_surface)
 
         self.restore()
     
@@ -389,7 +396,7 @@ class Drawing:
             surface = cairo.ImageSurface.create_from_png(outfile)
             outfile.close()
         # Let someone else do the dirty work
-        self.image_surface(x, y, width, height, img)
+        self.image_surface(x, y, width, height, surface)
 
 
     def line(self, x0, y0, x1, y1):
@@ -414,22 +421,26 @@ class Drawing:
                             xor, add, saturate
 
         """
+        ops = {'clear': cairo.OPERATOR_CLEAR,
+               'source': cairo.OPERATOR_SOURCE,
+               'over': cairo.OPERATOR_OVER,
+               'in': cairo.OPERATOR_IN,
+               'out': cairo.OPERATOR_OUT,
+               'atop': cairo.OPERATOR_ATOP,
+               'dest': cairo.OPERATOR_DEST,
+               'dest_over': cairo.OPERATOR_DEST_OVER,
+               'dest_in': cairo.OPERATOR_DEST_IN,
+               'dest_out': cairo.OPERATOR_DEST_OUT,
+               'dest_atop': cairo.OPERATOR_DEST_ATOP,
+               'xor': cairo.OPERATOR_XOR,
+               'add': cairo.OPERATOR_ADD,
+               'saturate': cairo.OPERATOR_SATURATE,
+               }
+
+        # Test bad value
+        ops[operator]
+
         def _operator(cr):
-            ops = {'clear': cairo.OPERATOR_CLEAR,
-                   'source': cairo.OPERATOR_SOURCE,
-                   'over': cairo.OPERATOR_OVER,
-                   'in': cairo.OPERATOR_IN,
-                   'out': cairo.OPERATOR_OUT,
-                   'atop': cairo.OPERATOR_ATOP,
-                   'dest': cairo.OPERATOR_DEST,
-                   'dest_over': cairo.OPERATOR_DEST_OVER,
-                   'dest_in': cairo.OPERATOR_DEST_IN,
-                   'dest_out': cairo.OPERATOR_DEST_OUT,
-                   'dest_atop': cairo.OPERATOR_DEST_ATOP,
-                   'xor': cairo.OPERATOR_XOR,
-                   'add': cairo.OPERATOR_ADD,
-                   'saturate': cairo.OPERATOR_SATURATE,
-                   }
             cr.set_operator(ops[operator])
         self.commands.append(_operator)
 
@@ -484,7 +495,7 @@ class Drawing:
         def _rectangle_corners(cr):
             cr.new_path()
             cr.rectangle(x0, y0, x1-x0, y1-y0)
-        self.commands.append(_rectangle_)
+        self.commands.append(_rectangle_corners)
 
 
     def rectangle(self, x, y, width, height):
@@ -574,6 +585,7 @@ class Drawing:
         """
         mysource = self.create_source(source, opacity)
         def _set_source(cr):
+            print "INSIDE set_source function: %s" % mysource
             cr.set_source(mysource)
         self.commands.append(_set_source)
 
@@ -668,11 +680,12 @@ class Drawing:
         See fill() documentation for parameter explanation. They are the
         same.
         """
-        # Optionally set fill color, and save it.
-        if source is not None:
-            self.set_source(source, opacity)
 
         def _stroke(cr):
+            # Optionally set fill color, and save it.
+            if source is not None:
+                print "SET SOURCE inside stroke: %s" % source
+                self.set_source(source, opacity)
             cr.stroke_preserve()
         self.commands.append(_stroke)
 
@@ -722,6 +735,10 @@ class Drawing:
         dic = {'butt': cairo.LINE_CAP_BUTT,
                'round': cairo.LINE_CAP_ROUND,
                'square': cairo.LINE_CAP_SQUARE}
+
+        # Test value
+        dic[cap_type]
+        
         def _stroke_linecap(cr):
             cr.set_line_cap(dic[cap_type])
         self.commands.append(_stroke_linecap)
@@ -735,6 +752,10 @@ class Drawing:
         dic = {'bevel': cairo.LINE_JOIN_BEVEL,
                'miter': cairo.LINE_JOIN_MITER,
                'round': cairo.LINE_JOIN_ROUND}
+
+        # Test value
+        dic[join_type]
+        
         def _stroke_linejoin(cr):
             cr.set_line_join(dic[join_type])
         self.commands.append(_stroke_linejoin)
@@ -748,7 +769,7 @@ class Drawing:
         self.commands.append(_stroke_width)
 
 
-    def text(self, text_string, x, y):
+    def text(self, text_string, x, y, align='left'):
         """Draw the given text string.
 
             text_string: utf8 encoded text string
@@ -760,7 +781,17 @@ class Drawing:
 
         #self.save()
         def _text(cr):
-            cr.move_to(x, y)
+            (dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
+            if align == 'right':
+                nx = x - w
+            elif align == 'center':
+                nx = x - w / 2
+            else:
+                nx = x
+            # TODO: Fix, the center thing is *not really* centered..
+            # maybe all those scalings, rescalings and scalings again mess
+            # things up.
+            cr.move_to(nx, y)
             cr.show_text(text_string)
         self.commands.append(_text)
         #self.restore()
@@ -985,10 +1016,17 @@ class Drawing:
 ### Exported functions
 ### --------------------------------------------------------------------
 
-def render(drawing, width, height):
+def render(drawing, width=None, height=None):
     """Render a Drawing at the given size to a new surface, and
     return the surface and context.
     """
+
+    # Take original size if not specified
+    if not width:
+        width = drawing.size[0]
+    if not height:
+        height = drawing.size[1]
+        
     # Create a new surface/context at the given size
     surface = get_surface(width, height, 'image')
     cr = cairo.Context(surface)
@@ -1012,7 +1050,7 @@ def render(drawing, width, height):
     return surface, cr
 
 
-def display(drawing, width=0, height=0, fix_aspect=False):
+def display(drawing, width=None, height=None, fix_aspect=False):
     """Render and display the given Drawing at the given size.
     
         drawing:    A Drawing object to display
@@ -1023,10 +1061,11 @@ def display(drawing, width=0, height=0, fix_aspect=False):
         fix_aspect: True to adjust height to make the image
                     appear in the correct aspect ratio
     """
-    if width == 0:
+    if not width:
         width = drawing.size[0]
-    if height == 0:
+    if not height:
         height = drawing.size[1]
+        
     # Adjust height to fix aspect ratio if desired
     if fix_aspect:
         x, y = drawing.aspect
@@ -1039,7 +1078,7 @@ def display(drawing, width=0, height=0, fix_aspect=False):
     print commands.getoutput('display %s' % png_file)
 
 
-def save_png(drawing, filename, width, height):
+def save_png(drawing, filename, width=None, height=None):
     """Saves a drawing to PNG, keeping alpha channel intact.
 
     This is the quickest, since Cairo itself exports directly to .png"""
@@ -1050,11 +1089,11 @@ def save_png(drawing, filename, width, height):
     del surface
     
 
-def save_jpg(drawing, filename):
+def save_jpg(drawing, filename, width=None, height=None):
     """Saves a drawing to JPG, losing alpha channel information.
     """
     f = open('/tmp/export.png', 'wb+')
-    save_png(drawing, f)
+    save_png(drawing, f, width, height)
     f.seek(0)
     im = Image.open(f)
     im.save(filename)
@@ -1062,17 +1101,17 @@ def save_jpg(drawing, filename):
     f.close()
 
 
-def save_image(drawing, img_filename):
+def save_image(drawing, img_filename, width=None, height=None):
     """Render drawing to a .jpg, .png or other image."""
     log.info("Saving Drawing to %s" % img_filename)
     if img_filename.endswith('.png'):
-        save_png(drawing, img_filename)
+        save_png(drawing, img_filename, width, height)
     elif img_filename.endswith('.jpg'):
-        save_jpg(drawing, img_filename)
+        save_jpg(drawing, img_filename, width, height)
     else:
         log.debug("Creating temporary .png")
         temp_png = '/tmp/%s.png' % img_filename
-        save_png(drawing, temp_png)
+        save_png(drawing, temp_png, width, height)
         log.debug("Converting temporary png to %s" % img_filename)
         cmd = "convert -size %sx%s " % drawing.size
         cmd += "%s %s" % (temp_png, img_filename)
@@ -1195,8 +1234,8 @@ def draw_shape_demo(drawing):
         drawing.scale(scale, scale)
         drawing.stroke_width(scale)
         # roundrectangle broken?
-        #drawing.roundrectangle(-30, -30, 30, 30, 8, 8)
-        drawing.rectangle(-30, -30, 30, 30)
+        drawing.roundrectangle(-30, -30, 30, 30, 8, 8)
+        #drawing.rectangle(-30, -30, 30, 30)
         drawing.fill('lightgreen', scale / 5.0)
         drawing.stroke('black')
         drawing.restore()

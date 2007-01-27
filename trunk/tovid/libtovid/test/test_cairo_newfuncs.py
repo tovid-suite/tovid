@@ -14,7 +14,7 @@ import cairo
 class TestCairoRenderer(unittest.TestCase):
     def setUp(self):
         """Set up a new drawing"""
-        self.d = Drawing((640, 480))
+        self.d = Drawing(640, 480)
 
     def tearDown(self):
         """Delete the drawing"""

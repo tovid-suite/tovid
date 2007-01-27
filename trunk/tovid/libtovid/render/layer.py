@@ -38,7 +38,7 @@ import sys
 import math
 import commands
 from libtovid.utils import get_file_type
-from libtovid.render.drawing import Drawing
+from libtovid.render.drawing import Drawing, save_image
 from libtovid.render.effect import Effect
 from libtovid.render.animation import Keyframe, Tween
 from libtovid.media import MediaFile
@@ -167,10 +167,10 @@ class MyLayer (Layer):
 
         # Now, draw something. Here, a couple of pretty semitransparent
         # rectangles, using the fill and stroke color patterns created earlier:
-        drawing.rectangle((0, 0), (50, 20))
+        drawing.rectangle(0, 0,  50, 20)
         drawing.fill(fc)
         drawing.stroke(sc)
-        drawing.rectangle((15, 12), (45, 28))
+        drawing.rectangle(15, 12,  45, 28)
         drawing.fill(fc)
         drawing.stroke(sc)
 
@@ -321,7 +321,8 @@ class Text (Layer):
         drawing.font_size(self.fontsize)
         if self.color is not None:
             drawing.set_source(self.color)
-        drawing.text(self.text, self.position, self.align)
+        # TODO: DO something with the align !!
+        drawing.text(self.text, self.position[0], self.position[1], self.align)
         drawing.restore()
 
 
@@ -358,7 +359,7 @@ class Label (Text):
         # Draw a stroked round rectangle
         drawing.save()
         drawing.stroke_width(1)
-        drawing.roundrectangle(start, end, (pad, pad))
+        drawing.roundrectangle(start[0], start[1], end[0], end[1], pad, pad)
         drawing.stroke('black')
         drawing.fill(self.bgcolor, 0.3)
         drawing.restore()
@@ -574,15 +575,15 @@ class SafeArea (Layer):
                   (1.0 - scale) * height / 2)
         # Save context
         drawing.save()
-        drawing.translate(topleft)
+        drawing.translate(topleft[0], topleft[1])
         # Safe area box
         drawing.stroke_width(3)
-        drawing.rectangle((0, 0), (width * scale, height * scale))
+        drawing.rectangle(0, 0,  width * scale, height * scale)
         drawing.stroke(self.color)
         # Label
         drawing.font_size(18)
         drawing.set_source(self.color)
-        drawing.text(u"%s%%" % self.percent, (10, 20))
+        drawing.text(u"%s%%" % self.percent, 10, 20)
         # Restore context
         drawing.restore()
 
@@ -749,7 +750,7 @@ class InterpolationGraph (Layer):
         drawing.stroke_width(2)
         for key in self.keyframes:
             x = int(key.frame * x_scale)
-            drawing.line((x, 0), (x, height))
+            drawing.line(x, 0,   x, height)
             drawing.stroke('red')
             
         # Draw Keyframe labels
@@ -757,7 +758,7 @@ class InterpolationGraph (Layer):
         for key in self.keyframes:
             x = int(key.frame * x_scale)
             y = int(height - key.data * y_scale - 3)
-            drawing.text(u"(%s,%s)" % (key.frame, key.data), (x, y))
+            drawing.text(u"(%s,%s)" % (key.frame, key.data), x, y)
 
         drawing.restore()
 
@@ -765,7 +766,7 @@ class InterpolationGraph (Layer):
         #->drawing.comment("Current frame marker")
         drawing.save()
         pos = (frame * x_scale, height - data[frame-1] * y_scale)
-        drawing.circle(pos, 2)
+        drawing.circle(pos[0], pos[1], 2)
         drawing.fill('yellow')
         drawing.restore()
 
@@ -917,4 +918,4 @@ if __name__ == '__main__':
     drawing.restore()
 
     print "Output to /tmp/my.png"
-    drawing.save_png('/tmp/my.png')
+    save_image(drawing, '/tmp/my.png')

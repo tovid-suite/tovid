@@ -153,7 +153,7 @@ class Movement (Effect):
 
     def pre_draw(self, drawing, frame):
         drawing.save()
-        drawing.translate(self.tween[frame])
+        drawing.translate(*self.tween[frame])
 
     def post_draw(self, drawing, frame):
         drawing.restore()
@@ -315,14 +315,14 @@ class Whirl(Effect):
     def pre_draw(self, drawing, frame):
         drawing.save()
         # how to center the thing ? so you give a rotation point ?
-        drawing.translate(self.center)
+        drawing.translate(*self.center)
         if self.units is 'deg':
             drawing.rotate_deg(self.tween[frame])
         elif self.units is 'rad':
             drawing.rotate_rad(self.tween[frame])
 
     def post_draw(self, drawing, frame):
-        drawing.translate((- self.center[0], - self.center[1]))
+        drawing.translate(- self.center[0], - self.center[1])
         drawing.restore()
 
 class KeyFunction (Effect):
