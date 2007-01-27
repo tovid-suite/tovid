@@ -228,7 +228,8 @@ class Image (Layer):
         # Save the source for future calls to draw, so no further
         # processing will be necessary. And other effects can be done
         # without interferring with the original source.
-        self.image_source = drawing.image(self.position, self.size,
+        self.image_source = drawing.image(self.position[0], self.position[1],
+                                          self.size[0], self.size[1],
                                           self.image_source)
         drawing.restore()
 
