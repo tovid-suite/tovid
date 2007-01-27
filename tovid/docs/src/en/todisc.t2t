@@ -49,6 +49,7 @@ not mpeg, you will have the option to auto-encode them with **tovid**.
     still make an animated menu however by using a video for the background.
     (-background VIDEO)
 
+
 The **-titles** arguments should be double-quoted, with special characters
 (like ", !, *, &, ?) backslash-escaped. These titles are used for labelling
 thumbnails on the main menu, and for the submenu title for that video.
