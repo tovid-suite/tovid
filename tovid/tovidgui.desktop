@@ -1,0 +1,19 @@
+[Desktop Entry]
+Version=1.0
+Name=tovid GUI
+Type=Application
+Path=
+Exec=tovidgui
+Icon=tovid.svg
+Terminal=true
+GenericName=DVD/(S)VCD Maker
+GenericName[en_US]=DVD/(S)VCD Maker
+Comment=Author videos to DVD or (S)VCD
+Comment[en_US]=Author videos to DVD or (S)VCD
+Categories=AudioVideo;Video;DiscBurning
+MimeType=
+StartupNotify=true
+TerminalOptions=
+X-DCOP-ServiceType=
+X-KDE-SubstituteUID=false
+X-KDE-Username=

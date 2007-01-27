@@ -111,9 +111,12 @@ dist_icon32_DATA = $(icon_src_dir)/tovid_icon_32.png
 dist_iconSVG_DATA = $(icon_src_dir)/cd.svg \
 	$(icon_src_dir)/disc.svg \
 	$(icon_src_dir)/tovid.svg
-dist_app_DATA = tktodisc.desktop
+dist_app_DATA = \
+	tovidgui.desktop \
+	tktodisc.desktop
 
-# Distribute the scripts, icons, and manpage source files
+
+# Distribute the scripts and manpage source files
 # manpages are made and packaged in the dist-hook for tarball users which
 # prevents them from having to install txt2tags to make the mans, thus
 # they aren't listed here.
@@ -128,8 +131,7 @@ dist_app_DATA = tktodisc.desktop
 #   thinking that it's a rule like clean: .
 EXTRA_DIST = \
 	$(bin_SCRIPTS) \
-	$(src_MANS) \
-	icons/*
+	$(src_MANS) 
 
 # Shared python libraries: libtovid and the gui
 # See lengthy comments in configure.ac
@@ -161,7 +163,7 @@ pyexecGUI_PYTHON = libtovid/gui/*.py
 pyexecGUIdir = $(pyexecdir)/libtovid/gui
 
 # src/tovid-init not needed b/c ./configure derives it from src/tovid-init.in
-# make fresh man pages for tarball users, esuring that they're newer than the
+# make fresh man pages for tarball users, ensuring that they're newer than the
 #   manpage source.
 dist-hook:
 	rm -rvf $(top_distdir)/src/tovid-init
