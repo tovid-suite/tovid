@@ -267,6 +267,11 @@ constraints of each arrangement.
 : -intro VIDEO
    Use a introductory video that will play before the main menu.
    At present this must be a DVD compatible video at the correct resolution etc.
+: -text-start N
+   This option is for -text-menu menus.  The titles will start at the Nth pixel from the
+   top of the menu ( Y axis ).
+: -title-gap N
+   This option is for -text-menu menus.  The gap is the space between titles vertically ( Y axis ).
 
 
 ==Thumbnail Style==
