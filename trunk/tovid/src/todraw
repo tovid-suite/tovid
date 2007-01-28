@@ -71,7 +71,7 @@ if __name__ == '__main__':
         print "Displays a slideshow of the given images"
         print "Usage: todraw FILE [FILE ...]"
         exit(1)
-    file = sys.argv[1:]
+    files = sys.argv[1:]
     root.title("todraw")
-    app = Application(root, file)
+    app = Application(root, files)
     root.mainloop()
