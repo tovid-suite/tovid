@@ -727,6 +727,20 @@ function get_image_dim()
     identify -verbose "$1" | awk '/Geometry:/ {print $2}'
 }
 
+function parse_rotateargs()
+{
+    unset x ARGS_ARRAY
+    # Hackish list-parsing
+    while test $# -gt 0 && egrep -q '^[-+]?[[:digit:]]{1,2}+$' <<< "$1"; do
+        ARGS_ARRAY[x++]="$1"
+        shift
+    done
+    # Do not skip past the next argument
+    if test $# -gt 0 && test x"${1:0:1}" = x"-";then
+        DO_SHIFT=false
+    fi
+}
+
 ##############################################################################
 #                          	End of functions                                 #
 ##############################################################################
@@ -1162,6 +1176,12 @@ while test $# -gt 0; do
             shift
             OUTLINEWIDTH=\"$1\"
             ;;
+        "-rotate-thumbs" )
+            shift
+            parse_rotateargs "$@"
+            ROTATE_ARRAY=( "${ARGS_ARRAY[@]}" )
+            IMG_FMT=png
+            ;;
         "-tovidopts" )
             shift
             TOVID_OPTS="$1"
@@ -1342,10 +1362,10 @@ V_TOTAL=${#IN_FILES[@]}
 NUM_FILES=$((V_TOTAL - 1))
 
 # switch title position when appropriate so it doesn't get covered up
-[[ $BUTTON_GRAVITY = *south* ]] && TITLE_GRAVITY=north
+! $USER_TITLE_GEO && [[ $BUTTON_GRAVITY = *south* ]] && TITLE_GRAVITY=north
 if [[ $BUTTON_GRAVITY = *east* || $BUTTON_GRAVITY = *west* ]]; then
     ! $USER_GEO &&  XGEO=45 && YGEO=45
-    ! $SHOWCASE && TITLE_GRAVITY=north
+    ! $SHOWCASE && ! $USER_TITLE_GEO && TITLE_GRAVITY=north
 fi
 ! $SHOWCASE && [[ $BUTTON_GRAVITY = center ]] && ! $USER_TITLE_GEO && TITLE_GRAVITY=north
 # dvdauthor stuff
@@ -1445,6 +1465,13 @@ fi
 if $AUDIOLANG &&  [[ ${#FILES[@]} -ne ${#AUDIO_LANG[@]} &&  ${#AUDIO_LANG[@]} -ne 1 ]]; then
     usage_error "Please give the same number of audio channels as videos.
     You gave ${#FILES[@]} video files and ${#AUDIO_LANG[@]} audio channel values"
+fi
+# make sure number of -rotate-thumbs arguments equals number of videos
+if [[ -n ${ROTATE_ARRAY[@]} ]]; then
+    if  [[ ${#FILES[@]} -ne ${#ROTATE_ARRAY[@]} ]]; then
+        usage_error "Please give the same number of thumb rotate values as videos.
+        You gave  ${#FILES[@]} video files and ${#ROTATE_ARRAY[@]} thumb rotate values."
+    fi
 fi
 # if only one seek value, then use for all videos
 if [ ${#SEEK_VAL[@]} -eq 1 ]; then
@@ -1804,7 +1831,8 @@ if [[ -n $THUMB_SHAPE ]]; then
     ! egrep -q  '^round$|^oval$|^plectrum$|^normal$' <<< "$THUMB_SHAPE"  && \
         usage_error "Please supply a usable thumb shape with -thumb-shape option. You gave \"$THUMB_SHAPE\""
 fi
-            
+
+[[ -n ${ROTATE_ARRAY[@]} && $BUTTON_STYLE != text-rect ]] && BUTTON_STYLE=text
 # use a suitable button style
 for ((i=0; i<=NUM_FILES; i++)); do
     if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
@@ -1819,6 +1847,11 @@ for ((i=0; i<=NUM_FILES; i++)); do
         fi
     fi
 done
+# multiline titles not allowed unless showcase style
+$MULTILINE_TITLE && ! $SHOWCASE && usage_error "Sorry, multiline titles only allowed for showcase style"
+# no rect button style with rotated thumbs yet, so use text-rect fallback
+([[ -n ${ROTATE_ARRAY[@]} ]] && $MULTILINE_TITLE) && BUTTON_STYLE="text-rect"
+
 # transparent border around text so rect spumux outline can fit
 if [[ $BUTTON_STYLE = text-rect ]]; then
     TEXT_BORDER="-bordercolor Transparent -border 8x8"
@@ -2376,6 +2409,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
 done
 if ! $TEXTMENU; then
     for ((i=0; i<${#PICS[@]}; i++)); do
+        [[ -n ${ROTATE_ARRAY[@]} ]] && THUMB_ROTATE="-background none -rotate ${ROTATE_ARRAY[i]}"
         if $THUMBS_3D && [ "$THUMB_SHAPE" != "normal" ]; then
         CURVE_VARS="5 3 5 1 1"
         . todisc-fade-routine
@@ -2427,7 +2461,7 @@ if ! $TEXTMENU; then
         IM_CMD3=(composite -gravity center -compose DstOver "$WORK_DIR/feather_mask2.png" - )
         IM_CMD4=(convert -background none -frame 3x3 \
         -bordercolor "#444744" -)
-        IM_CMD5=(convert -resize $THUMB_SIZE! - "${PICS[i]}")
+        IM_CMD5=(convert - $THUMB_ROTATE -resize $THUMB_SIZE! "${PICS[i]}")
         if $FEATHER; then
             if $SHOWCASE; then
                 "${IM_CMD0[@]}" miff:- | "${IM_CMD5[@]}"
@@ -2495,6 +2529,7 @@ PNG_IS_DONE=false
 for ((t=0; t<${#TITLES[@]}; t++)); do
     unset BUTTON_CMD6b BUTTON_CMD7b
     if $FEATHER; then FRAME=0; else FRAME=3x3;fi
+    [[ -n ${ROTATE_ARRAY[@]} ]] && THUMB_ROTATE="-background none -rotate ${ROTATE_ARRAY[t]}"
     BUTTON_SIZE=$THUMB_SIZE
     BUTTON_CMD=(montage -size $THUMB_SIZE xc:none -geometry +4+4 \
     -background none -mattecolor none -bordercolor none -stroke none \
@@ -2506,13 +2541,13 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     -title "${TITLES[t]}" -compose CopyOpacity)
     BUTTON_CMD2=(convert -mattecolor none -background none \
     -bordercolor none -frame 3x3 -)
-    BUTTON_CMD3=(convert - -resize ${THUMB_SIZE}! +antialias)
+    BUTTON_CMD3=(convert - $THUMB_ROTATE -resize ${THUMB_SIZE}! +antialias)
     BUTTON_CMD4=(convert -size "${THUMB_SIZE}+5+5"  xc:none \
     -fill none +antialias -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file \
-    -colors 3 "$WORK_DIR/Selectx1.png")
+    -colors 3 $THUMB_ROTATE -resize ${THUMB_SIZE}! "$WORK_DIR/Selectx1.png")
     BUTTON_CMD5=(convert -size "${THUMB_SIZE}+5+5" xc:none \
     -fill none +antialias -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file \
-    -colors 3 "$WORK_DIR/Highlightx1.png")
+    -colors 3 $THUMB_ROTATE -resize ${THUMB_SIZE}! "$WORK_DIR/Highlightx1.png")
     BUTTON_CMD6=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
     -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file "$WORK_DIR/Selectx1.png")
     BUTTON_CMD6b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
@@ -2571,7 +2606,7 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
         "${BUTTON_CMD6b[@]}"
         "${BUTTON_CMD7b[@]}"
     fi
-    PNG_IS_DONE=: # do not loop over creating same png
+    [[ -z ${ROTATE_ARRAY[@]} ]] && PNG_IS_DONE=: # do not loop over creating same png
 done
 #if ! $NOASK && ! $SHOWCASE; then
 #    echo "Creating and displaying a preview of the main menu."
@@ -3778,6 +3813,7 @@ if ! $TEXTMENU; then
         yecho "Working on ${#PICS[@]} images from ${IN_FILES[i]}"
         for ((p=0; p<${#PICS[@]}; p++)); do
             unset IM_CMD6
+            [[ -n ${ROTATE_ARRAY[@]} ]] && THUMB_ROTATE="-background none -rotate ${ROTATE_ARRAY[i]}"
             IM_CMD=(composite -compose CopyOpacity $THUMB_MASK +matte "${PICS[p]}")
             IM_CMD0=(montage -  -geometry +4+4 -compose Copy -background none \
             -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}")
@@ -3797,7 +3833,7 @@ if ! $TEXTMENU; then
             -bordercolor "#444744" -)
             IM_CMD4b=(convert -background none -frame 3x3 \
             -bordercolor none -)
-            IM_CMD5=(convert -resize $THUMB_SIZE! - "${PICS[p]}")
+            IM_CMD5=(convert - $THUMB_ROTATE -resize $THUMB_SIZE! - "${PICS[p]}")
             IM_CMD6=(convert - -write mpr:img${p} -fx A  +matte \
             -blur 0x$( printf "%.2f" $(awk_math 7 plus .${CURVE_ARRAY[p]/.} float) )  \
             -shade $(awk_math 115 plus ${CURVE_ARRAY[p]} float)x30 -normalize mpr:img${p} \
