@@ -190,7 +190,8 @@ class Flipbook:
 
     def encode_flipbook(self, tmpdir, m2v_file):
         # Encode the frames to an .m2v file
-        encode.encode_frames(tmpdir, m2v_file, self.format, self.tvsys)
+        encode.encode_frames(tmpdir, m2v_file, self.format, self.tvsys,
+                             self.aspect)
         print "Output file is: %s" % m2v_file
 
         vidonly = load_media(m2v_file)
