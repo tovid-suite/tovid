@@ -1025,7 +1025,7 @@ while test $# -gt 0; do
             shift
             SELECT_COLOUR="$1"
             ;;
-        "-selectcolour" | "-selectcolor" | "-highlightcolour" | "-highlightcolor" | "-submenu-audio-length" | "-menu-audio-length")
+        "-selectcolour" | "-selectcolor" | "-highlightcolour" | "-highlightcolor" | "-submenu-audiolength" | "-menu-audiolength")
             usage_error "$1 is depricated, option names are now split with logical hyphens where appropriate"
             ;;
         "-text-mist" )
