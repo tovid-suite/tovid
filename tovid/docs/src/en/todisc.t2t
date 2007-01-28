@@ -103,8 +103,8 @@ constraints of each arrangement.
     (and right) side of screen, with a larger image in the centre. Maximum of 10 videos
     If the provided argument is a video file, the central thumb will be animated.
     Pick a file of correct aspect ratio: ie. it should still look good when
-    resized to 720x480 (PAL 720x576)
-: -textmenu NUM ( without an argument, create a textmenu out of the supplied titles
+    resized to 720x480 (PAL 720x576), then resized to proper aspect ratio.
+: -textmenu, -text-menu NUM ( without an argument, create a textmenu out of the supplied titles
     The optional argument specifies how many titles are in the 1st column, ie. giving
     4 titles and using "-textmenu 2" would make 2 columns of 2 titles. The default is to
     put all titles up to 13 in the first column before starting a second title.
@@ -166,18 +166,41 @@ constraints of each arrangement.
     Print and log additional debugging information
 : -menu-length
     The desired animated main menu length in seconds
-: -submenu-stroke-colo[u]r
-    The colo[u]r for the sub-menu font outline (stroke)
-: -submenu-title-colo[u]r
-    The fill colo[u]r used for sub-menu title fonts
+: -submenu-stroke-color, -submenu-stroke-colour COLOR
+    The color for the sub-menu font outline (stroke)
+: -submenu-title-color, -submenu-title-colour
+    The fill color used for sub-menu title fonts
 : -submenu-titles
     You can supple a list of titles here for sub-menus without the length
     restrictions found in thumb titles.  Must equal number of videos
 : -chapters NUM
     The number of sub-menu chapters for each video (default: 6)
+: -seek NUM | "NUM1 NUM2 NUM3 . . ."
+     Seek to NUM seconds before generating thumbnails (default: 2.0 seconds)
+     If a quoted string of values matching the number of videos is used, then
+     each video can use a different seek value
+: -showcase-seek NUM
+     Seek to NUM seconds before generating thumbnails for showcase video
+     (default: 2.0 seconds)
+: -bgvideo-seek NUM
+     Seek to NUM seconds before generating images for background video
+     (default: 2.0 seconds)
+: -bgaudio-seek NUM
+     Seek to NUM seconds before generating audio for bgaudio
+     (default: 2.0 seconds)
+: -group N VIDEO1 VIDEO2 . . .
+    Allow grouping videos in dvdauthor.xml. Example:
+
+```
+ -group 1 2.mpg 3.mpg 4.mpg
+```
+
+ will group these 3 videos with the 1st video given with -files
+: -intro VIDEO
+    Option for adding a vmgm intro movie that plays before the root menu
 : -noask
     Skip all interactive questions.  No preview, no re-encoding option, no interactive
-    option to use bgvideo for bgaudio.
+    option to use background video for bgaudio.
 : -tovidopts "OPTIONS"
     Pass the given string of options to 'tovid', if it is called upon to
     re-encode your non-compliant videos. Be sure to include the double-quotes
@@ -194,10 +217,10 @@ constraints of each arrangement.
     titles in the showcase-* template.  "text-rect" is  used by default if you use -3dthumbs
     with showcase-* and multiline titles, as the others are not suitable for this arrangement.
 : -rotate DEGREES
-    Rotate the showcase-image|video clockwise by DEGREES.
+    Rotate the showcase image|video clockwise by DEGREES.
     (default: if used without options, the rotate will be 5 degrees)
 : -wave default|GEOMETRY
-    Wave effect for showcase-image|video.  Alters thumbs along a sine wave using
+    Wave effect for showcase image|video.  Alters thumbs along a sine wave using
     GEOMETRY. (default: no wave)
     "default" will produce a wave arg of -20x556, which
     produces a gentle wave with a small amount of distortion.
@@ -209,30 +232,30 @@ constraints of each arrangement.
     "glass" will use mplayer to make frames, which gives an interesting animated
     effect to the frames, and can be much faster ( especially if you don't use -rotate or
     -wave as thumbs will not need to be processed again after mplayer spits them out
-    Note: you need to be using either -showcase-image IMAGE or -showcase-video VIDEO
+    Note: you need to be using either -showcase IMAGE or -showcase VIDEO
     for this framestyle to work.
-: -title-color COLOR (or -title-colour COLOR)
+: -title-color, -title-colour COLOR
     Color to use for the main menu title.  For list of supported colors do:
     **convert -list** color.  HTML notation may be used: "#ff0000". See:
     http://www.imagemagick.org/script/color.php
-: -stroke-color COLOR (or -stroke-colour COLOR)
+: -stroke-color, -stroke-colour COLOR
     Outline color for the main menu font. Use "none" for transparent outline
     (see title-color)
-: -highlightcolor ( or -highlightcolour )
+: -highlight-color, -highlight-colour
     Color to use for the menu buttons that your dvd remote uses to navigate
-: -selectcolor ( or -selectcolour )
+: -select-color, -select-colour
     Color to use for the menu buttons that your dvd remote uses to select
 : -text-mist
     Put a semi-transparent misted background behind the title text, just
     slightly larger than the text area
-: -text-mist-color COLOR (or -text-mist-colour COLOR)
+: -text-mist-color, -text-mist-colour COLOR
     Color of the mist behind the menu text (see title-color)
 : -text-mist-opacity
     Opacity of the mist behind the menu text - see -opacity
-: -menu-audiolength
+: -menu-audio-length
     The length of the background audio for a static menu.  The default is to
     use the full length of the supplied audio ( -bgaudio ).
-: -submenu-audiolength
+: -submenu-audio-length
     The length of the background audio for a static submenu.  The default is to
     use the full length of the supplied audio ( -bgaudio ).
 : -menu-audio-fade
@@ -258,23 +281,19 @@ constraints of each arrangement.
     Higher values are possible, but you may not like the result, particularly when
     using "-thumb-mist-colour none"
     3D thumbs are automatically set to a negligble blur, so this option has no effect
-: -thumb-mist-colo[u]r
+: -align north|south
+    This will align  thumbs and titles north or south. 
+    (if -align south then title will align north)
+: -thumb-mist-color, -thumb-mist-colour
     Color of mist behind thumbnails
-: -thumb-text-color COLOR (or -thumb-text-colour COLOR)
+: -thumb-text-color, -thumb-text-colour COLOR
      Color to use for the thumb titles (see -title-color)
-: -seek NUM | "NUM1 NUM2 NUM3 . . ."
-     Seek to NUM seconds before generating thumbnails (default: 1.0 seconds)
-     If a quoted string of values matching the number of videos is used, then
-     each video can use a different seek value
-: -showcase-seek NUM
-     Seek to NUM seconds before generating thumbnails for showcase video
-     (default: 1.0 seconds)
-: -showcase-titles-align west|east (default: centre [center])
+: -showcase-titles-align west|east (default: center [centre])
      The default is to center the text above the thumbnails.
      This option will align the titles either to the left (west) or right (east).
      Aligning west gives more space to the titles.  Aligning east also does so, and
      as well will let you use \n in your titles to achieve multi line titles.
-: -tile3x1
+: -tile-3x1, -tile3x1
      Use a montage tile of 3x1 instead of the usual 2x2 for 3 videos
      ie.  [movie1] [movie2] [movie3] instead of
      [movie1] [movie2]
@@ -306,32 +325,28 @@ constraints of each arrangement.
     If the tracks are 0. English 1.French, then the above would make
     French the audio language on Video1 and Video3, and English the audio language on Video2.
     You can check the mpeg with "mplayer -v . . ."
-: -aspect 4:3|16:9 videos|menu|all  (default: all)
+: -aspect 4:3|16:9
     This will output a <video aspect WIDTH:HEIGHT /> tag for the dvdauthor xml file.
     It will affect all videos in the titleset.  (effectively all videos since todisc only does
-    one titleset)  The optional 2nd argument will apply this tag either to just the menu itself,
-    just the videos, or "all". For example:
+    one titleset). example:
 
 ```
-    -aspect 16:9 video
+    -aspect 16:9
 ```
 
-: -widescreen nopanscan|noletterbox [nopanscan] videos|menu|all [all]
+: -widescreen nopanscan|noletterbox [nopanscan]
     This will output a <video widescreen=nopanscan /> tag (for example)
     for the dvdauthor xml file.  It will affect all videos in the titleset.
-    Use in conjunction with -aspect if your dvd player is cropping you videos.
+    Use in conjunction with -aspect if your dvd player is cropping your videos.
     example:
-```
-    -aspect 16:9 -widescreen
-```
-    The optional 2nd argument will apply this tag either to just the menu itself,
-    just the videos, or "all" (both videos AND menu).  Used with a 2nd argument, "all" will
-    be assumed. Used with no arguments, and "nopanscan all" will be assumed.
-    Example:
 
 ```
-    -widescreen nopanscan video.
+    -aspect 16:9 -widescreen
+
 ```
+: -outlinewidth, -outline-width WIDTH
+    For spumux outlinewidth variable.  If there is a large gap between words in a
+    text button, this option may help.
 
 ==See also==
 
