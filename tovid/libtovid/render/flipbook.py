@@ -105,7 +105,7 @@ class Flipbook:
             flipbook.h (height)
         """
         self.seconds = float(seconds)
-        self.fps = standards.fps(tvsys)
+        self.fps = standard.fps(tvsys)
         self.frames = int(seconds * self.fps)
         self.output_size = standard.resolution(format, tvsys)
         # TODO: We'll need aspect ratio here.. 4:3 or 16:9 anamorphic ?
