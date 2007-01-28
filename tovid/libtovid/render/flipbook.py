@@ -15,9 +15,18 @@ To use this module interactively, run 'python' from the command-line, and do:
 
     >>> from libtovid.flipbook import Flipbook
 
-To create a Flipbook 10 seconds long at 720x480 resolution, do:
+To create a Flipbook 10 seconds long with 'dvd' and 'ntsc' standards, do:
 
-    >>> flipbook = Flipbook(10, (720, 480))
+    >>> flipbook = Flipbook(10, 'dvd', 'ntsc', '4:3')
+
+Then you can retrieve the canvas width and height with:
+
+    >>> flipbook.canvas
+    (640, 480)
+    >>> flipbook.w
+    640
+    >>> flipbook.h
+    480
 
 All drawing upon a Flipbook is achieved through the use of layers
 (libtovid/layer.py). To use them, import the layer module:
@@ -63,6 +72,7 @@ __all__ = ['Flipbook']
 import os
 import sys
 import time
+import math
 from libtovid.render.animation import Keyframe
 from libtovid.render.drawing import Drawing, save_image
 from libtovid.render import layer, effect
@@ -74,22 +84,66 @@ from libtovid import utils
 class Flipbook:
     """A collection of Drawings that together comprise an animation.
     """
-    def __init__(self, seconds, format, tvsys):
+    def __init__(self, seconds, format, tvsys, aspect='4:3'):
         """Create a flipbook of the given length in seconds, at the given
         resolution.
 
             seconds: Length of flipbook playback in seconds
             format:  'dvd', 'vcd', 'svcd', 'dvd-vcd', or 'half-dvd'
             tvsys:   'ntsc' or 'pal'
+            aspect:  '4:3' or '16:9' (the latter only for format='dvd')
+                     (default: '4:3')
+
+        Once you've created the Flipbook, you can grab the dimensions
+        in with the property:
+
+            flipbook.canvas as (width, height)
+
+        and with the two properties:
+
+            flipbook.w (width)
+            flipbook.h (height)
         """
-        self.seconds = seconds
-        self.frames = int(seconds * standard.fps(tvsys))
-        self.size = standard.resolution(format, tvsys)
+        self.seconds = float(seconds)
+        self.fps = standards.fps(tvsys)
+        self.frames = int(seconds * self.fps)
+        self.output_size = standard.resolution(format, tvsys)
         # TODO: We'll need aspect ratio here.. 4:3 or 16:9 anamorphic ?
         self.format = format
         self.tvsys = tvsys
+        self.aspect = aspect
+        self.widescreen = False
+        if (aspect == '16:9'):
+            self.widescreen = True
+            
+        self.canvas = self._get_canvas_size()
+        self.w = self.canvas[0]
+        self.h = self.canvas[1]
+
+        # Empty layers, and currently no drawings.
         self.layers = []
         self.drawings = []
+
+    def stof(self, seconds):
+        """Return the number of frames to the specified time (in seconds)"""
+        return int(self.fps * float(seconds))
+
+    def _get_canvas_size(self):
+        ow = self.output_size[0]
+        oh = self.output_size[1]
+        a = self.aspect.split(':')
+
+        # Calculate the square pixels canvas size based on aspect ratio
+        # and intended output size.
+        x = float(a[0]) * float(oh) / float(a[1])
+        # Make sure they are factor of '2'
+        nw = int(math.ceil(x / 2.0) * 2)
+
+        # We'll always change only the width, like it seems the standard,
+        # since on TVs, the number of *lines* can't change (when interlacing
+        # is into business)
+        return (nw, oh)
+        
 
     def add(self, layer, position=(0, 0)):
         """Add a Layer to the flipbook."""
@@ -100,11 +154,11 @@ class Flipbook:
         filename = "/tmp/flipbook_%s.png" % frame
         print "Rendering Flipbook frame %s to %s" % (frame, filename)
         drawing = self.get_drawing(frame)
-        drawing.save_png(filename)
+        drawing.save_png(filename, self.output_size[0], self.output_size[1])
 
     def get_drawing(self, frame):
         """Get a Drawing of the given frame"""
-        drawing = Drawing(self.size[0], self.size[1])
+        drawing = Drawing(self.canvas[0], self.canvas[1])
         # Draw each layer
         for layer, position in self.layers:
             drawing.save()
@@ -129,7 +183,8 @@ class Flipbook:
             print "Drawing frame %s of %s" % (frame, self.frames)
             drawing = self.get_drawing(frame)
             # jpeg2yuv likes frames to start at 0
-            save_image(drawing, '%s/%08d.png' % (tmp, frame - 1))
+            save_image(drawing, '%s/%08d.png' % (tmp, frame - 1),
+                       self.output_size[0], self.output_size[1])
             frame += 1
         self.encode_flipbook(tmp, m2v_file)
 
@@ -141,6 +196,10 @@ class Flipbook:
         vidonly = load_media(m2v_file)
 
         outvid = MediaFile('/tmp/flipbook.mpg', self.format, self.tvsys)
+        # TODO: Pass the command that we want something widescreen or not.
+        outvid.aspect = self.aspect
+        # Important to render 16:9 video correctly.
+        outvid.widescreen = self.widescreen
 
         print "Running audio encoder..."
         encode.encode_audio(vidonly, '/tmp/flipbook.ac3', outvid)
