@@ -305,6 +305,18 @@ constraints of each arrangement.
      [movie3]
      This option only comes into play if the number of videos supplied equals 3
      Otherwise it will be silently ignored. Not used for -showcase-* style either
+: -rotate-thumbs DEGREE LIST ( list of degrees, one for each thumb )
+     Rotate thumbs the given amount in degrees - can be positive or negative.
+     There must be one value for each file given with -files.
+     If the values are not the same distance from zero, the thumbs will be of different
+     sizes as images are necessarily resized *after* rotating.
+     With the default montage template - this will also resize the titles; with the showcase
+     template the titles will remain the same size. Example:
+
+```
+-rotate-thumbs -10 10 -10 10 -10  (for 5 files)
+```
+
 
 
     ==Dvdauthor options==
