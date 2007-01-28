@@ -67,11 +67,11 @@ class Application(Frame):
 root = Tk()
 if __name__ == '__main__':
     import sys
-    if len(sys.argv) < 1:
-        print "Usage: todraw FILE [FILE ...]"
+    if len(sys.argv) < 2:
         print "Displays a slideshow of the given images"
+        print "Usage: todraw FILE [FILE ...]"
         exit(1)
     file = sys.argv[1:]
-    root.title("tktodisc: A todisc GUI")
+    root.title("todraw")
     app = Application(root, file)
     root.mainloop()
