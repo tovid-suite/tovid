@@ -410,13 +410,14 @@ def mplex_streams(vstream, astream, target):
 #
 # --------------------------------------------------------------------------
 
-def encode_frames(imagedir, outfile, format, tvsys):
+def encode_frames(imagedir, outfile, format, tvsys, aspect):
     """Convert an image sequence in the given directory to match a target
     MediaFile, putting the output stream in outfile.
 
         imagedir:  Directory containing images (and only images)
         outfile:   Filename for output.
         tvsys:     TVsys desired for output (to deal with FPS)
+        aspect:    Aspect ratio ('4:3', '16:9')
         
     Currently supports JPG and PNG images; input images must already be
     at the desired target resolution.
@@ -463,12 +464,19 @@ def encode_frames(imagedir, outfile, format, tvsys):
     mpeg2enc.add('-v', '0',
                  '-q' '3',
                  '-o' '%s' % outfile)
+    # Format
     if format == 'vcd':
         mpeg2enc.add('--format', '1')
     elif format == 'svcd':
         mpeg2enc.add('--format', '4')
     else:
         mpeg2enc.add('--format', '8')
+    # Aspect ratio
+    if aspect == '16:9':
+        mpeg2enc.add('-a', '3')
+    elif aspect == '4:3':
+        mpeg2enc.add('-a', '2')
+
     pipe.add(mpeg2enc)
 
     pipe.run(capture=True)
