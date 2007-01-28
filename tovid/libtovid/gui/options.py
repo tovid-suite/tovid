@@ -415,11 +415,28 @@ class MenuOptions:
         self.tvsys = opts.tvsys
         self.background = opts.background
         self.audio = opts.audio
-        self.color1 = opts.color1
-        self.colorHi = opts.colorHi
-        self.colorSel = opts.colorSel
         self.font = opts.font
         self.alignment = opts.alignment
+        self.menutitle = opts.menutitle
+        self.titlefontsize = opts.titlefontsize
+        self.menulength = opts.menulength
+        self.fontsize = opts.fontsize
+        self.fillType = opts.fillType
+        self.fillColor1 = opts.fillColor1
+        self.color1 = opts.color1
+        self.fillColor2 = opts.fillColor2
+        self.color2 = opts.color2
+        self.textStrokeColor = opts.textStrokeColor
+        self.colorStroke = opts.colorStroke
+        self.textStrokeWidth = opts.textStrokeWidth
+        self.buttonFont = opts.buttonFont
+        self.highlightColor = opts.highlightColor
+        self.colorHi = opts.colorHi
+        self.selectColor = opts.selectColor
+        self.colorSel = opts.colorSel
+        self.button = opts.button
+        self.buttonOutlineColor = opts.buttonOutlineColor
+        self.colorButtonOutline = opts.colorButtonOutline
 
     def AudioFileOK(self, panel):
         """Check for any errors associated with the audio file"""
