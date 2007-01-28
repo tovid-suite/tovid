@@ -147,7 +147,6 @@ ASPECT_RATIO=4:3
 ASPECT_ARG=all
 WIDE_SCREEN=false
 WIDESCREEN="nopanscan"
-WIDESCREEN_ARG=all
 GROUPING=false
 TEXT_YSTART=$SAFE_AREA
 BUTTON_GRAVITY=north
@@ -818,32 +817,19 @@ while test $# -gt 0; do
         "-aspect" )
             unset ASPECT ASPECT_ARG
             shift
-            get_listargs "$@"
-            ASPECT_ARGS=( ${ARGS_ARRAY[@]} )
-            if [[ ${#ASPECT_ARGS[@]} -gt 0 ]]; then
-                ASPECT=${ASPECT_ARGS[0]}
-            fi
-            if [[ ${#ASPECT_ARGS[@]} -gt 1 ]]; then
-                ASPECT_ARG=${ASPECT_ARGS[1]}
-            fi
-            if [[ "$ASPECT_ARG" = all || "$ASPECT_ARG" = menu || -z "$ASPECT_ARG" ]]; then
-                ASPECT_RATIO=$ASPECT
-                M_ASPECT="aspect=\"$ASPECT\""
-            fi
-            if [[ "$ASPECT_ARG" = all || "$ASPECT_ARG" = video || -z "$ASPECT_ARG" ]]; then
-                V_ASPECT="aspect=\"$ASPECT\""
+            ASPECT_ARG=$1
+            if [[ ${#ASPECT_ARG[@]} -gt 0 ]]; then
+            ASPECT=$ASPECT_ARG
+            ASPECT_RATIO=$ASPECT
+            V_ASPECT="aspect=\"$ASPECT\""
             fi
             ;;
         "-widescreen" )
             WIDE_SCREEN=:
-            unset WIDESCREEN WIDESCREEN_ARG
             shift
-            get_listargs "$@"
-            WIDESCREEN_ARGS=( ${ARGS_ARRAY[@]} )
+            WIDESCREEN_ARGS=$1
             WIDE_SCREEN=:
-            (( ${#WIDESCREEN_ARGS[@]} > 0)) && WIDESCREEN=${WIDESCREEN_ARGS[0]} || \
-            WIDESCREEN=nopanscan; WS_ARG=all
-            (( ${#WIDESCREEN_ARGS[@]} > 1)) && WS_ARG=${WIDESCREEN_ARGS[1]}
+            (( ${#WIDESCREEN_ARGS[@]} > 0)) && WIDESCREEN=$WIDESCREEN_ARGS || WIDESCREEN=nopanscan
             ;;
         "-showcase-safe-area" )
             ADV_OPT=( "${ADV_OPT[@]}" "$1" )
@@ -879,7 +865,7 @@ while test $# -gt 0; do
             MENU_FADE=:
             AUDIO_FADE=:
             ;;
-        "-tile3x1" )
+        "-tile3x1" | "-tile-3x1" )
             THREExONE=:
             ;;
         "-loop" )
@@ -1017,13 +1003,16 @@ while test $# -gt 0; do
             shift
             THUMB_TEXT_COLOUR="$1"
             ;;
-        "-highlightcolour" | "-highlightcolor" )
+        "-highlight-colour" | "-highlight-color" )
             shift
             HIGHLIGHT_COLOUR="$1"
             ;;
-        "-selectcolour" | "-selectcolor" )
+        "-select-colour" | "-select-color" )
             shift
             SELECT_COLOUR="$1"
+            ;;
+        "-selectcolour" | "-selectcolor" | "-highlightcolour" | "-highlightcolor" | "-submenu-audio-length" | "-menu-audio-length")
+            usage_error "$1 is depricated, option names are now split with logical hyphens where appropriate"
             ;;
         "-text-mist" )
             MIST=:
@@ -1076,7 +1065,7 @@ while test $# -gt 0; do
             FADE="$1"
             AUDIO_FADE=:
             ;;
-        "-menu-audiolength" )
+        "-menu-audio-length" )
             shift
             MENU_AUDIOLENGTH="$1"
             ;;
@@ -1092,7 +1081,7 @@ while test $# -gt 0; do
             done
             SUBMENU_AUDIO=:
             ;;
-        "-submenu-audiolength" )
+        "-submenu-audio-length" )
             shift
             SUBMENU_AUDIOLENGTH="$1"
             ;;
@@ -1840,31 +1829,15 @@ if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
 # spumux and dvdauthor vars
 if $WIDE_SCREEN; then
-    if [[ "$WS_ARG" = all || "$WS_ARG" = video ]]; then
         TITLES_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $V_ASPECT/>"
         TITLES_VIDEO_TAG="$(sed 's/ \/>/\/>/' <<< ${TITLES_VIDEO_TAG})"
-    fi
-    if [[ "$WS_ARG" = all || "$WS_ARG" = menu ]]; then
-        MENU_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $M_ASPECT/>"
-        MENU_VIDEO_TAG="$(sed 's/ \/>/\/>/' <<< ${MENU_VIDEO_TAG})"
-    fi
     if [ ${#WIDESCREEN_ARGS[@]} -lt 1 ]; then
-        MENU_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $M_ASPECT/>"
-        MENU_VIDEO_TAG="$(sed 's/ \/>/\/>/' <<< ${MENU_VIDEO_TAG})"
         TITLES_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $V_ASPECT/>"
         TITLES_VIDEO_TAG="$(sed 's/ \/>/\/>/' <<< ${TITLES_VIDEO_TAG})"
     fi
 fi
-if [[ -n "$V_ASPECT" || -n "$M_ASPECT" ]] &&  ! $WIDE_SCREEN; then
+if [[ -n "$V_ASPECT" ]] &&  ! $WIDE_SCREEN; then
     TITLES_VIDEO_TAG="<video $V_ASPECT/>"
-    MENU_VIDEO_TAG="<video $M_ASPECT/>"
-fi
-if [[ -n "$M_ASPECT" ]] && [[ "$WS_ARG" = video ]]; then
-        MENU_VIDEO_TAG="<video $M_ASPECT/>"
-        MENU_VIDEO_TAG="$(sed 's/ \/>/\/>/' <<< ${MENU_VIDEO_TAG})"
-elif [[ -n "$V_ASPECT" ]] && [[ "$WS_ARG" = menu ]]; then
-        TITLES_VIDEO_TAG="<video $V_ASPECT/>"
-        TITLES_VIDEO_TAG="$(sed 's/ \/>/\/>/' <<< ${TITLES_VIDEO_TAG})"
 fi
 START="00:00:00.0"
 if $PLAYALL; then
@@ -3237,7 +3210,6 @@ if [ "$TARGET" = "dvd" ]; then
   </vmgm>
   <titleset>
     <menus>
-      $MENU_VIDEO_TAG
       <pgc>
 $(for ((i=1; i<=$V_TOTAL; i++)); do
     if $SUB_MENU; then
