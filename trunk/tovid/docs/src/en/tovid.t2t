@@ -130,7 +130,7 @@ letterboxing or anamorphic scaling.
 
 ===Video stream options===
 
-: **-quality** //NUM//
+: **-quality** //NUM// (default 6)
     Desired output quality, on a scale of 1 to 10, with 10 giving the best
     quality at the expense of a larger output file. Default is 8. Output size
     can vary by approximately a factor of 4 (that is, **-quality 1** output
@@ -148,13 +148,13 @@ letterboxing or anamorphic scaling.
 : **-interlaced**
     Do interlaced encoding of the input video. Use this option if your video is
     interlaced, and you want to preserve as much picture quality as possible.
-    Ignored for VCD, which doesn't support it.
+    This option is ignored for VCD, which doesn't support it.
 
     You can tell your source video is interlaced by playing it, and pausing
     during a scene with horizontal motion; if you see a "comb" effect at the
     edges of objects in the scene, you have interlaced video. Use this option
     to encode it properly. If you would prefer to have output in progressive
-    format, use **-deinterlace**.
+    format, use **-progressive**.
 
 : **-deinterlace** | **-progressive**
     Convert interlaced source video into progressive output video. Because
@@ -185,7 +185,7 @@ letterboxing or anamorphic scaling.
 
 : **-safe** //PERCENT//
     Fit the video within a safe area defined by //PERCENT//. For example,
-    "-safe 90%" will scale the video to 90% of the width/height of the output
+    **-safe 90%** will scale the video to 90% of the width/height of the output
     resolution, and pad the edges with a black border. Use this if some of the
     picture is cut off when played on your TV.  The percent sign is optional.
 
@@ -211,7 +211,7 @@ letterboxing or anamorphic scaling.
 ===Audio stream options===
 
 : **-normalize** [VOLUME]
-    If used without VOLUME argument, analyze the audio stream and then 
+    If used without VOLUME argument, analyze the audio stream and then
     normalize the volume of the audio.
     This is useful if the audio is too quiet or too loud, or you want to
     make volume consistent for a bunch of videos. Similar to running
@@ -312,8 +312,24 @@ letterboxing or anamorphic scaling.
     a gui.
 
 : **-noask**
-    Don't ask questions when choices need to be made. Assume reasonable 
+    Don't ask questions when choices need to be made. Assume reasonable
     answers.
+
+
+==Configuration==
+
+Two configuration files are created the first time you run tovid. Edit them
+to change tovid's directory use and default behavior.
+
+Working and output directories are defined in **~/.tovid/preferences**:
+
+```
+WORKING_DIR=/tmp
+OUTPUT_DIR=/pub/video
+```
+
+If you would like to include certain command-line options all the time, edit
+**~/.tovid/tovid.config** and add them.
 
 
 ==See also==

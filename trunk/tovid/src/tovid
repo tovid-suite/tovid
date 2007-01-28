@@ -1013,8 +1013,8 @@ else
     ANAMORPH=false
 fi
 
-# Default quality 8 (or 9 for ffmpeg), if not set by user
-: ${VID_QUALITY:=8}
+# Default quality 6 (or 7 for ffmpeg), if not set by user
+: ${VID_QUALITY:=6}
 
 # Set resolution and frame rate according to format and TV system
 case "$TGT_RES" in
@@ -1321,7 +1321,8 @@ fi
 #
 # ******************************************************************************
 
-yecho "Converting $IN_FILE to compliant $TVSYS $TGT_RES format"
+yecho "Converting $IN_FILE to $TVSYS $TGT_RES format"
+yecho "Encoding quality is $VID_QUALITY of 10 (use -quality to change)"
 yecho "Saving to $OUT_FILENAME"
 yecho "Storing log and temporary files in $TMP_DIR"
 yecho "Run 'tail -f \"$LOG_FILE\"' in another terminal to monitor the log"
