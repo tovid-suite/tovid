@@ -21,18 +21,44 @@ from PIL import Image, ImageTk
 
 
 class Application(Frame):
-    def __init__(self, master=None):
-        Frame.__init__(self, master)
+    def __init__(self, master=None, files=None, width=640, height=480):
+        Frame.__init__(self, master, width=width, height=height)
+        print "todraw application started, press 'q' or Escape to quit"
+        print "Press the right arrow key to view the next image"
+        self.width = width
+        self.height = height
         self.grid()
-        self.drawWidgets()
+        self.files = files or []
+        self.lblImage = None
+        self.setImage(files.pop(0))
+        self.bind_all("<q>", self.onQuit)
+        self.bind_all("<Escape>", self.onQuit)
+        self.bind_all("<Right>", self.onNext)
 
-    def drawWidgets(self):
-        # Load and display /tmp/drawing.png
-        image = Image.open('/tmp/drawing.png')
-        photo = ImageTk.PhotoImage(image)
-        label = Label(image=photo)
-        label.image = photo
-        label.pack()
+    def onQuit(self, evt):
+        print "Quitting todraw"
+        sys.exit(0)
+    
+    def onNext(self, evt):
+        """Load and display the next image file."""
+        if self.files:
+            self.setImage(self.files.pop(0))
+        else:
+            print "No more images to display"
+        
+    def setImage(self, filename):
+        """Display the given image in the application window.
+        """
+        print "Displaying:", filename
+        # Open the image and resize it
+        image = Image.open(filename)
+        image = image.resize((self.width, self.height))
+        self.photo = ImageTk.PhotoImage(image, (self.width, self.height))
+        # Create an pack a Label to hold the image
+        if self.lblImage:
+            self.lblImage.pack_forget()
+        self.lblImage = Label(self, image=self.photo)
+        self.lblImage.pack()
 
 
 ### --------------------------------------------------------------------
@@ -40,6 +66,12 @@ class Application(Frame):
 ### --------------------------------------------------------------------
 root = Tk()
 if __name__ == '__main__':
+    import sys
+    if len(sys.argv) < 1:
+        print "Usage: todraw FILE [FILE ...]"
+        print "Displays a slideshow of the given images"
+        exit(1)
+    file = sys.argv[1:]
     root.title("tktodisc: A todisc GUI")
-    app = Application(root)
+    app = Application(root, file)
     root.mainloop()
