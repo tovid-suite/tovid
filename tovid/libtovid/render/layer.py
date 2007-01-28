@@ -214,7 +214,7 @@ class Image (Layer):
     image_source -- can be anything cairo::Drawing::image() can accept.
                     See documentation.
     """
-    def __init__(self, image_source, x, y, width, height):
+    def __init__(self, image_source, (x, y), (width, height)):
         Layer.__init__(self)
         self.size = (width, height)
         self.image_source = image_source
@@ -322,7 +322,7 @@ class Text (Layer):
         if self.color is not None:
             drawing.set_source(self.color)
         # TODO: DO something with the align !!
-        drawing.text(self.text, self.position[0], self.position[1])
+        drawing.text(self.text, self.position[0], self.position[1], self.align)
         drawing.restore()
 
 
