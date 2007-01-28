@@ -1106,6 +1106,11 @@ def render(drawing, surface, width, height):
     # Remove scaling function
     drawing.steps.pop(0)
 
+    # Close the open files..
+    if type(surface) in [cairo.SVGSurface, cairo.PSSurface, cairo.PDFSurface]:
+        cr.show_page()
+        surface.finish()
+
 
 def display(drawing, width=None, height=None, fix_aspect=False):
     """Render and display the given Drawing at the given size.
