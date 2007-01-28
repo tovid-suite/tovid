@@ -62,7 +62,7 @@ You can preview a specific frame of the Flipbook by calling render():
 Or, you can generate all frames and create an .m2v video stream file by calling
 render_video():
 
-    >>> flipbook.render_video('/tmp/flipbook')
+    >>> filename = flipbook.render_video()
 
 See the demo below for more on what's possible with Flipbooks.
 """
@@ -73,6 +73,8 @@ import os
 import sys
 import time
 import math
+import shutil
+import random
 from libtovid.render.animation import Keyframe
 from libtovid.render.drawing import Drawing, save_image
 from libtovid.render import layer, effect
@@ -104,6 +106,9 @@ class Flipbook:
             flipbook.w (width)
             flipbook.h (height)
         """
+        self.tmpdir = '/tmp'
+        if 'TMPDIR' in os.environ:
+            self.tmpdir = os.environ['TMPDIR']
         self.seconds = float(seconds)
         self.fps = standard.fps(tvsys)
         self.frames = int(seconds * self.fps)
@@ -168,47 +173,83 @@ class Flipbook:
             drawing.restore()
         return drawing
 
-    def render_video(self, out_prefix):
-        """Render the flipbook to an .m2v video stream file."""
-        tmp = "%s_frames" % out_prefix
-        m2v_file = "%s.m2v" % out_prefix
+    def render_video(self, out_filename=None):
+        """Render the flipbook to an .m2v video stream file.
 
-        if os.path.exists(tmp):
-            print "Temp dir %s already exists, overwriting." % tmp
-            os.system('rm -rf %s' % tmp)
-        os.mkdir(tmp)
+            out_filename:    Filename for output.
+                             If not specified, a temporary filename
+                             will be given, and returned from the function.
+        
+        Return the filename of the output, in both cases.
+        """
+        #
+        # if self.tmpdir = /tmp, we get:
+        # /tmp
+        # /tmp/flipbook-120391232-work/
+        # /tmp/flipbook-120391232-work/frames/
+        # /tmp/flipbook-120391232-work/bunch-of-files..m2v, .ac3, etc.
+        # /tmp/flipbook-120391232.mpg -> final output..
+        #
+        
+        tmp_prefix = '';tmp_workdir = '';tmp_framedir = '';
+        while 1:
+            rnd = random.randint(1000000,9999999)
+            tmp_prefix = "%s/flipbook-%s" % (self.tmpdir, rnd)
+            tmp_workdir = "%s-work" % (tmp_prefix)
+            tmp_framedir = "%s-work/frames" % (tmp_prefix)
 
+            if not os.path.exists(tmp_workdir):
+                break
+
+        # In case no filename has been specified.
+        if not out_filename:
+            out_filename = "%s.mpg" % tmp_workdir
+
+        os.mkdir(tmp_workdir)
+        os.mkdir(tmp_framedir)
+        
+        # Do the rendering...
         frame = 1
         while frame <= self.frames:
             print "Drawing frame %s of %s" % (frame, self.frames)
             drawing = self.get_drawing(frame)
             # jpeg2yuv likes frames to start at 0
-            save_image(drawing, '%s/%08d.png' % (tmp, frame - 1),
+            save_image(drawing, '%s/%08d.png' % (tmp_framedir, frame - 1),
                        self.output_size[0], self.output_size[1])
             frame += 1
-        self.encode_flipbook(tmp, m2v_file)
 
-    def encode_flipbook(self, tmpdir, m2v_file):
+        # Launch the encoder..
+        print "Encoding to %s ..." % out_filename
+        self.encode_flipbook(tmp_workdir, tmp_framedir, out_filename)
+
+        # Clean up
+        print "Cleaning up %s ..." % tmp_workdir
+        shutil.rmtree(tmp_workdir)
+
+        return out_filename
+
+    def encode_flipbook(self, tmp_workdir, tmp_framedir, out_filename):
         # Encode the frames to an .m2v file
-        encode.encode_frames(tmpdir, m2v_file, self.format, self.tvsys,
-                             self.aspect)
-        print "Output file is: %s" % m2v_file
-
+        m2v_file = "%s/video.m2v" % tmp_workdir
+        ac3_file = "%s/audio.ac3" % tmp_workdir
+        encode.encode_frames(tmp_framedir, m2v_file,
+                             self.format, self.tvsys, self.aspect)
+        
         vidonly = load_media(m2v_file)
 
-        outvid = MediaFile('/tmp/flipbook.mpg', self.format, self.tvsys)
+        outvid = MediaFile(out_filename, self.format, self.tvsys)
         # TODO: Pass the command that we want something widescreen or not.
         outvid.aspect = self.aspect
         # Important to render 16:9 video correctly.
         outvid.widescreen = self.widescreen
 
         print "Running audio encoder..."
-        encode.encode_audio(vidonly, '/tmp/flipbook.ac3', outvid)
+        encode.encode_audio(vidonly, ac3_file, outvid)
 
         print "Mplex..."
-        encode.mplex_streams('/tmp/flipbook.m2v', '/tmp/flipbook.ac3', outvid)
+        encode.mplex_streams(m2v_file, ac3_file, outvid)
 
-        print "Output: /tmp/flipbook.mpg"
+        print "Output: %s" % out_filename
 
 
 def draw_text_demo(flipbook):
@@ -295,7 +336,7 @@ if __name__ == '__main__':
     #flip.add(clip, (260, 200))
     
     # Render the final video
-    flip.render_video('/tmp/flipbook')
+    filename = flip.render_video('/tmp/flipbook.mpg')
 
-    print "Took %f seconds" % (time.time() - start_time)
-
+    print "Took %f seconds to render: %s" % (time.time() - start_time, filename)
+    
