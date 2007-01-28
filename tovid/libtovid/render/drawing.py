@@ -851,9 +851,6 @@ class Drawing:
                 nx = x - w / 2
             else:
                 nx = x
-            # TODO: Fix, the center thing is *not really* centered..
-            # maybe all those scalings, rescalings and scalings again mess
-            # things up.
             cr.move_to(nx, y)
             cr.show_text(text_string)
         self.addstep(_text, text_string, x, y, align)
