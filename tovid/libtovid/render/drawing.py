@@ -145,15 +145,17 @@ class Drawing:
 
     tk = None # tkinter widget to send redraws to
     
-    def __init__(self, width=800, height=600, aspect=(4, 3)):
+    def __init__(self, width=800, height=600, autodraw=False):
         """Create a blank drawing at the given size.
         
-            width, height: Dimensions of the drawable region.
-            aspect:        Aspect ratio, as a (width, height) tuple
-            
+            width, height: Dimensions of the drawable region,
+                           in arbitrary units
+            autodraw:      Redraw a preview image after each
+                           drawing operation
         """
         self.size = (width, height)
-        self.aspect = aspect
+        self.aspect = float(width) / height
+        self.autodraw = autodraw
         #self.commands = []
         self.steps = []
         # "Dummy" surface/context at the original resolution;
@@ -161,9 +163,20 @@ class Drawing:
         self.surface = get_surface(width, height, 'image')
         self.cr = cairo.Context(self.surface)
 
+
     def addstep(self, func, *args):
         """Add a Step to self.steps using the given function and args."""
-        self.steps.append(Step(func, *args))
+        step = Step(func, *args)
+        self.steps.append(step)
+        if self.autodraw and step.name in ['fill', 'stroke']:
+            display(self, 640, 480, True)
+
+    def history(self):
+        """Return a formatted string of all steps in this Drawing."""
+        result = ''
+        for number, step in enumerate(self.steps):
+            result += '%d. %s\n' % (number, step)
+        return result
 
 
     ### -----------------------------------------------------------------
@@ -198,7 +211,7 @@ class Drawing:
         """
         def _arc(cr):
             cr.arc(x, y, radius, start_deg * pi/180., end_deg * pi/180.)
-        self.addstep(_arg, x, y, radius, start_deg, end_deg)
+        self.addstep(_arc, x, y, radius, start_deg, end_deg)
         #self.commands.append(_arc)
 
 
@@ -641,13 +654,16 @@ class Drawing:
         mysource = self.create_source(source, opacity)
         def _set_source(cr):
             cr.set_source(mysource)
-        self.addstep(_set_source, source, opacity)
+        # Only add the step if the source could be created
+        if mysource:
+            self.addstep(_set_source, source, opacity)
         #self.commands.append(_set_source)
 
 
     def create_source(self, source, opacity=None):
         """Return a source pattern (solid, gradient, image surface)
-        with anything fed into it.
+        with anything fed into it. Returns None if the source could not
+        be created successfully.
 
         See the set_source() documentation for more details on inputs.
 
@@ -657,7 +673,11 @@ class Drawing:
             return source
         # A string--color name, rgb(), hsv(), or hexadecimal
         elif isinstance(source, str):
-            (r, g, b) = ImageColor.getrgb(source)
+            try:
+                (r, g, b) = ImageColor.getrgb(source)
+            except ValueError, err:
+                log.error(err)
+                return None
             alpha = 1.0
             if opacity is not None:
                 alpha = opacity
@@ -1127,8 +1147,7 @@ def display(drawing, width=None, height=None, fix_aspect=False):
         
     # Adjust height to fix aspect ratio if desired
     if fix_aspect:
-        x, y = drawing.aspect
-        height = width * y / x
+        height = width / drawing.aspect
     # Render and display a .png
     png_file = '/tmp/drawing.png'
     save_png(drawing, png_file, width, height)
@@ -1220,7 +1239,7 @@ def draw_fontsize_demo(drawing):
 
     # Save context
     drawing.save()
-    drawing.scale(1.0/720, 1.0/480)
+    drawing.scale(4.0/720, 3.0/480)
     
     # Draw white text in a range of sizes
     drawing.set_source('white')
@@ -1241,7 +1260,7 @@ def draw_font_demo(drawing):
 
     # Save context
     drawing.save()
-    drawing.scale(1.0/720, 1.0/480)
+    drawing.scale(4.0/720, 3.0/480)
 
     fontsize = 24
     drawing.font_size(fontsize)
@@ -1279,7 +1298,7 @@ def draw_shape_demo(drawing):
 
     # Save context
     drawing.save()
-    drawing.scale(1.0/720, 1.0/480)
+    drawing.scale(4.0/720, 3.0/480)
 
     # Large orange circle with black stroke
     drawing.save()
@@ -1343,7 +1362,7 @@ def draw_stroke_demo(drawing):
 
     # Save context
     drawing.save()
-    drawing.scale(1.0/720, 1.0/480)
+    drawing.scale(4.0/720, 3.0/480)
     
     for width in [1, 2, 4, 6, 8, 10, 12, 14, 16]:
         drawing.stroke_width(width)
@@ -1361,16 +1380,15 @@ log.setLevel(logging.INFO)
 if __name__ == '__main__':
     mytime = time.time() # Benchmark
 
-    drawing = Drawing(1, 1, (4, 3))
+    drawing = Drawing(4, 3)
 
     # Start a new
     drawing.save()
-    #drawing.viewbox((0, 0), (720, 480))
 
     # Add a background fill
     #->Background
     drawing.set_source('darkgray')
-    drawing.rectangle(0, 0, 1.0, 1.0)
+    drawing.rectangle(0, 0, 4, 3)
     drawing.fill()
 
     # Shape demo
@@ -1380,19 +1398,18 @@ if __name__ == '__main__':
 
     # Font size demo
     drawing.save()
-    #drawing.translate(0.03, 0.04)
     draw_fontsize_demo(drawing)
     drawing.restore()
 
     # Stroke demo
     drawing.save()
-    drawing.translate(0.8, 0.4)
+    drawing.translate(3.4, 1.2)
     draw_stroke_demo(drawing)
     drawing.restore()
 
     # Font face demo
     drawing.save()
-    drawing.translate(0.1, 0.2)
+    drawing.translate(0.3, 0.8)
     draw_font_demo(drawing)
     drawing.restore()
 
@@ -1402,8 +1419,8 @@ if __name__ == '__main__':
     print "Took %f seconds" % (time.time() - mytime)
 
     # Render and display the Drawing at several different sizes
-    resolutions = [(352, 240), (352, 480), (720, 480)]
-    #resolutions = [(720, 480)]
+    #resolutions = [(352, 240), (352, 480), (720, 480)]
+    resolutions = [(720, 480)]
     for w, h in resolutions:
         display(drawing, w, h, True)
 
