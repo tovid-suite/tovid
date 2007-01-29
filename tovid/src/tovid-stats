@@ -9,7 +9,7 @@ import os
 import sys
 from libtovid import stats
 from libtovid.utils import pretty_dict
-from libtovid.render.drawing import Drawing
+from libtovid.render.drawing import Drawing, display
 from libtovid.render.layer import Scatterplot
 
 USAGE = \
@@ -18,7 +18,9 @@ file, and can display summary information or average values."
 
 Usage:
     tovid-stats COMMANDS
+
 COMMANDS may be any of:
+
     -count FIELD
         Count total occurrences of distinct values in FIELD
     -average FIELD_1 [by FIELD_2]
@@ -28,27 +30,16 @@ COMMANDS may be any of:
     -plot FIELD_1 by FIELD_2
         Like -list, but show a scatterplot image of the data.
     -match FIELD VALUE
-        Only display records where FIELD is VALUE. This option can be used
-        to filter the results of subsequent options.
+        Only display records where FIELD is VALUE. This option can
+        be used to filter the results of subsequent options.
     -show 'FIELD [FIELD]...'
         Format and display the given fields for all records
+
 FIELDs may be any of the following:
-"""
-for field in stats.FIELDS:
-    USAGE += "    %s\n" % field
-USAGE += \
-"""You may include multiple commands, for example:
 
-    tovid-stats -count cpu_speed -average avg_bitrate by tvsys
+    format, tvsys, final_size, avg_bitrate, encoding_time, quant, kbpm
 
-To filter results, use the -match option. For example, to show the filename
-and output size of all SVCD-format encodings, do:
-
-    tovid-stats -match format svcd -show 'final_name final_size'
-
-Use multiple -match options to filter further, i.e.:
-
-    tovid-stats -match format dvd -match tvsys pal [-show etc.]
+and many others. See 'man tovid-stats' for a full listing, and examples.
 """
 
 STATFILE = os.path.expanduser("~/.tovid/stats.tovid")
@@ -77,14 +68,14 @@ if __name__ == '__main__':
     # Parse command-line
     while args:
         arg = args.pop(0)
-        
+
         if arg == '-count':
             field = args.pop(0)
             counts = statlist.count_unique(field)
             print "Total occurrences of each distinct value of '%s':" % field
             print pretty_dict(counts)
             print "Total of %s distinct values" % len(counts)
-            
+
         elif arg == '-average':
             avg_field = args.pop(0)
             if args and args[0] == 'by':
@@ -99,7 +90,7 @@ if __name__ == '__main__':
         # Useful -list arguments:
         #    -list avg_bitrate by tgt_bitrate
         #    -list peak_bitrate by tgt_bitrate
-        
+
         elif arg == '-list':
             list_field = args.pop(0)
             if args and args[0] == 'by':
@@ -124,12 +115,12 @@ if __name__ == '__main__':
                                           by_field, list_field)
                 drawing = Drawing(720, 576)
                 drawing.fill('white')
-                drawing.rectangle((0, 0), (720, 576))
-                drawing.translate((40, 48))
+                drawing.rectangle(0, 0, 720, 576)
+                drawing.translate(40, 48)
                 scatterplot.draw(drawing, 1)
                 print "Showing scatterplot. Press 'q' to close."
-                drawing.display()
-    
+                display(drawing)
+
         elif arg == '-match':
             field = args.pop(0)
             value = args.pop(0)
@@ -160,7 +151,7 @@ def required_MB(format, tvsys, vbitrate, quant, seconds=1):
     returns MB per second of video.
     """
     statlist = get_statlist(STATFILE)
-    
+
     # Determine final output size per second
     for record in statlist.records:
         if record['format'] == format and record['tvsys'] == tvsys and \
