@@ -120,11 +120,11 @@ DVD-only options:
 
 
 : **-highlightcolor** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
-    Use specified color for menu highlighting. Yellow (#FF0) is the
+    Use the specified color for button highlighting. Yellow (#FF0) is the
     default color.
 
 : **-selectcolor** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
-    Use specified color for menu selections (when a menu item is played
+    Use the specified color for button selections (when a menu item is played
     or activated). Red (#F00) is the default color.
 
 : **-button-outline** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
@@ -193,6 +193,10 @@ If that doesn't work, try
 imagick_type_gen.pl > ~/.magick/type.mgk.
 
 Or you can specify a ttf font file directly to the **-font** options if you don't want to install fonts to ImageMagick.
+
+The **-fontdeco** option is quite extensible and takes a lot of ImageMagick's 
+//convert// options. Please refer to the tovid [wiki http://tovid.wikia.com/wiki/Making_a_DVD_with_text_menus] and Anthony Thyssen's 
+guide for further explanation and examples.
 
 ==See also==
 
