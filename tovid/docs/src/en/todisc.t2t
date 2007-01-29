@@ -46,13 +46,16 @@ not mpeg, you will have the option to auto-encode them with **tovid**.
 
 : C. -textmenu
     No thumbs will be made, text will be used instead.  You can
-    still make an animated menu however by using a video for the background.
-    (-background VIDEO)
+    still make an animated menu however by using a video for the background
+    (-background VIDEO), or a showcase video (-showcase VIDEO)
 
 
-The **-titles** arguments should be double-quoted, with special characters
-(like ", !, *, &, ?) backslash-escaped. These titles are used for labelling
-thumbnails on the main menu, and for the submenu title for that video.
+The **-titles** arguments should be double or single quoted,
+or have the spaces backslash-escaped. Special characters
+(like ", !, *, &, ?) may need to be backslash-escaped.
+To include a quoted string within a title, backslash-escape the quotes.
+These titles are used for labelling thumbnails on the main menu,
+and for the submenu title for that video.
 ( see also -submenu-titles )
 
 
@@ -84,7 +87,7 @@ constraints of each arrangement.
 : -dvd
     DVD-compatible output (default)
 : -svcd
-    Super Video-CD-compatible output: *this is currently broken for -showcase-*
+    Super Video-CD-compatible output: *this is currently disabled for -showcase-* styles
 : -ntsc
     720x480 output, compatible with NTSC standard (default)
 : -pal
@@ -216,24 +219,6 @@ constraints of each arrangement.
     draws a rectangle around the title text.  "text-rect" is ONLY used for multiline
     titles in the showcase-* template.  "text-rect" is  used by default if you use -3dthumbs
     with showcase-* and multiline titles, as the others are not suitable for this arrangement.
-: -rotate DEGREES
-    Rotate the showcase image|video clockwise by DEGREES.
-    (default: if used without options, the rotate will be 5 degrees)
-: -wave default|GEOMETRY
-    Wave effect for showcase image|video.  Alters thumbs along a sine wave using
-    GEOMETRY. (default: no wave)
-    "default" will produce a wave arg of -20x556, which
-    produces a gentle wave with a small amount of distortion.
-    See: http://www.cit.gu.edu.au/~anthony/graphics/imagick6/distorts/#wave if you want
-    to try other values
-: -showcase-framestyle  none|glass
-    For -showcase-* style template only
-    "none" will use the default frame method, using "convert -frame . . ."
-    "glass" will use mplayer to make frames, which gives an interesting animated
-    effect to the frames, and can be much faster ( especially if you don't use -rotate or
-    -wave as thumbs will not need to be processed again after mplayer spits them out
-    Note: you need to be using either -showcase IMAGE or -showcase VIDEO
-    for this framestyle to work.
 : -title-color, -title-colour COLOR
     Color to use for the main menu title.  For list of supported colors do:
     **convert -list** color.  HTML notation may be used: "#ff0000". See:
@@ -267,11 +252,34 @@ constraints of each arrangement.
 : -intro VIDEO
    Use a introductory video that will play before the main menu.
    At present this must be a DVD compatible video at the correct resolution etc.
+
+
+
+===Menu Style options specific to showcase and textmenu arrangements===
 : -text-start N
    This option is for -text-menu menus.  The titles will start at the Nth pixel from the
    top of the menu ( Y axis ).
 : -title-gap N
    This option is for -text-menu menus.  The gap is the space between titles vertically ( Y axis ).
+: -rotate DEGREES
+    Rotate the showcase image|video clockwise by DEGREES.
+    (default: if used without options, the rotate will be 5 degrees)
+: -wave default|GEOMETRY
+    Wave effect for showcase image|video.  Alters thumbs along a sine wave using
+    GEOMETRY. (default: no wave)
+    "default" will produce a wave arg of -20x556, which
+    produces a gentle wave with a small amount of distortion.
+    See: http://www.cit.gu.edu.au/~anthony/graphics/imagick6/distorts/#wave if you want
+    to try other values
+: -showcase-framestyle  none|glass
+    For -showcase-* style template only
+    "none" will use the default frame method, using "convert -frame . . ."
+    "glass" will use mplayer to make frames, which gives an interesting animated
+    effect to the frames, and can be much faster ( especially if you don't use -rotate or
+    -wave as thumbs will not need to be processed again after mplayer spits them out
+    Note: you need to be using either -showcase IMAGE or -showcase VIDEO
+    for this framestyle to work.
+
 
 
 ==Thumbnail Style==
