@@ -198,9 +198,11 @@ constraints of each arrangement.
  will group these 3 videos with the 1st video given with -files
 : -intro VIDEO
     Option for adding a vmgm intro movie that plays before the root menu
-: -noask
+: -noask, -no-ask
     Skip all interactive questions.  No preview, no re-encoding option, no interactive
     option to use background video for bgaudio.
+: -nowarn, -no-warn
+    Don't pause after outputing warning messages
 : -tovidopts "OPTIONS"
     Pass the given string of options to 'tovid', if it is called upon to
     re-encode your non-compliant videos. Be sure to include the double-quotes
