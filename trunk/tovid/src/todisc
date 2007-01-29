@@ -224,7 +224,7 @@ function titlesafe_error()
     yecho "Part of the title may not be visible on your tv screen"
     yecho "Consider using a smaller -thumb-fontsize, or shortening \"${TITLES[i]}\""
     echo "****************************"
-    sleep 3
+    ! $NO_WARN && sleep 3
 }
 # process $LOG_FILE.tmp variously - eg. output of ffmpeg is ugly without this
 function cleanlog()
