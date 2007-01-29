@@ -106,15 +106,7 @@ Menu text options:
 
 DVD-only options:
 
-: **-highlightcolor** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
-    Use specified color for menu highlighting. Yellow (#FF0) is the
-    default color.
-
-: **-selectcolor** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
-    Use specified color for menu selections (when a menu item is played
-    or activated). Red (#F00) is the default color.
-
-: **-button** //BUTTON//
+: **-button** //BUTTON// (default '>')
     Specify the button used for menu selection. Specify either a _single_
     character or one of the shortcuts:
     - **play** -- Use a button shaped like 'Play' on many A/V electronics:
@@ -126,14 +118,23 @@ DVD-only options:
         ImageMagick's utf8 characters aren't the same as those drawn in
         character browsers like gucharmap.
 
+
+: **-highlightcolor** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
+    Use specified color for menu highlighting. Yellow (#FF0) is the
+    default color.
+
+: **-selectcolor** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
+    Use specified color for menu selections (when a menu item is played
+    or activated). Red (#F00) is the default color.
+
+: **-button-outline** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
+    Outline buttons with the specified color. 'none' is the default.
+
 : **-button-font** //FONTNAME//
     Specify a differnt font to use for the buttons. By default, the button
     font will be inherited from the title font (see **-font**). Use this
     option to use a different font for the buttons. The button font size is
     inherited from **-fontsize**.
-
-: **-button-outline** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
-    Outline buttons with the specified color. 'none' is the default.
 
 
 Other options:
