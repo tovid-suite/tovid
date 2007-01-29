@@ -18,37 +18,46 @@ except:
     sys.exit()
 
 from PIL import Image, ImageTk
-
+import os
+import time
 
 class Application(Frame):
-    def __init__(self, master=None, files=None, width=640, height=480):
+    def __init__(self, master=None, filename=None, width=640, height=480):
         Frame.__init__(self, master, width=width, height=height)
-        print "todraw application started, press 'q' or Escape to quit"
-        print "Press the right arrow key to view the next image"
+
+        self.filename = filename
         self.width = width
         self.height = height
-        self.grid()
-        self.files = files or []
-        self.lblImage = None
-        self.setImage(files.pop(0))
+
         self.bind_all("<q>", self.onQuit)
         self.bind_all("<Escape>", self.onQuit)
-        self.bind_all("<Right>", self.onNext)
+        self.lblImage = None
+        self.photo = None
+        self.pack()
+        self.lastmod = self.modTime(self.filename)
+        self.setImage(self.filename)
+        self.checkRefresh()
 
+    def modTime(self, filename):
+        """Return the last modification time the given filename."""
+        return os.stat(filename).st_mtime
+    
     def onQuit(self, evt):
         print "Quitting todraw"
         sys.exit(0)
     
-    def onNext(self, evt):
-        """Load and display the next image file."""
-        if self.files:
-            self.setImage(self.files.pop(0))
-        else:
-            print "No more images to display"
-        
+    def checkRefresh(self):
+        """If file was modified, refresh the image."""
+        curmod = self.modTime(self.filename)
+        if curmod > self.lastmod:
+            self.lastmod = curmod
+            self.setImage(self.filename)
+        self.master.after(1000, self.checkRefresh)
+
     def setImage(self, filename):
         """Display the given image in the application window.
         """
+        start = time.time()
         print "Displaying:", filename
         # Open the image and resize it
         image = Image.open(filename)
@@ -59,19 +68,43 @@ class Application(Frame):
             self.lblImage.pack_forget()
         self.lblImage = Label(self, image=self.photo)
         self.lblImage.pack()
+        print "Took %s to render" % (time.time() - start)
+
+
+
+#root = Tk()
+def main():
+    import sys
+    if len(sys.argv) < 2:
+        print "Displays and refreshes a given image file"
+        print "Usage: todraw FILE"
+        exit(1)
+    filename = sys.argv[1]
+    root.title("todraw")
+    #root.withdraw()
+    app = Application(root, filename)
+    app.mainloop()
+    #console()
+
+
+def console():
+    """Open an interactive Python console and import the drawing module."""
+    import code
+    console = code.InteractiveConsole()
+    console.push('from libtovid.render import drawing')
+    console.push('from libtovid.render.drawing import *')
+
+    banner = "todraw python shell\n"\
+             "Type help(drawing) or help(Drawing) for assistance\n"\
+             "Press Ctrl-D to quit"
+    console.interact(banner)
+
 
 
 ### --------------------------------------------------------------------
 ### Entry point
 ### --------------------------------------------------------------------
-root = Tk()
+
 if __name__ == '__main__':
-    import sys
-    if len(sys.argv) < 2:
-        print "Displays a slideshow of the given images"
-        print "Usage: todraw FILE [FILE ...]"
-        exit(1)
-    files = sys.argv[1:]
-    root.title("todraw")
-    app = Application(root, files)
-    root.mainloop()
+    #main()
+    console()
