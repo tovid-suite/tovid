@@ -663,27 +663,27 @@ class Scatterplot (Layer):
         drawing.save()
         drawing.set_source('blue')
         drawing.save()
-        drawing.text(str(max(x_vals)), (width, height + 15))
+        drawing.text(str(max(x_vals)), width, height+15)
         i = 0
         while i < len(x_vals):
             drawing.save()
             if x_is_num:
-                drawing.translate((x_vals[i] * x_scale, height + 15))
+                drawing.translate(x_vals[i] * x_scale, height + 15)
             else:
-                drawing.translate((i * x_scale, height + 15))
+                drawing.translate(i * x_scale, height + 15)
             drawing.rotate(30)
-            drawing.text(x_vals[i], (0, 0))
+            drawing.text(x_vals[i], 0, 0)
             drawing.restore()
             i += 1
         drawing.font_size(20)
-        drawing.text(self.x_label, (width / 2, height + 40))
+        drawing.text(self.x_label, width/2, height+40)
         drawing.restore()
         #->comment("Y axis labels")
         drawing.save()
-        drawing.text(max_y, (-30, 0))
-        drawing.translate((-25, height / 2))
+        drawing.text(max_y, -30, 0)
+        drawing.translate(-25, height/2)
         drawing.rotate(90)
-        drawing.text(self.y_label, (0, 0))
+        drawing.text(self.y_label, 0, 0)
         drawing.restore()
         #for x in x_vals:
         #    axis_pos = (int(x * x_scale), height + 15)
@@ -703,8 +703,8 @@ class Scatterplot (Layer):
             x_coord += 10
             # Plot all y-values for this x
             for y in self.xy_dict[x_vals[i]]:
-                point = (x_coord, int(height - y * y_scale))
-                drawing.circle(point, 3)
+                y_coord = int(height - y * y_scale)
+                drawing.circle(x_coord, y_coord, 3)
                 drawing.fill('red', 0.2)
             i += 1
         drawing.restore()
