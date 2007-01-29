@@ -807,7 +807,7 @@ while test $# -gt 0; do
             shift
             OUT_PREFIX="$1"
             ;;
-        "-noask" | "no-ask" )
+        "-no-ask" | "-noask" )
             NOASK=:
             ;;
         "-no-warn" | "-nowarn" )
