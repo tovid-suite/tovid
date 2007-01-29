@@ -829,41 +829,41 @@ class ColorBars (Layer):
         # Top 67% of picture: Color bars at 75% amplitude
         top = 0
         bottom = 2.0 / 3
-        x_inc = 1.0 / 7
-        size = (x_inc, bottom)
-        bars = [(0, top, x_inc, bottom, 'rgb(191, 191, 191)'),
-                (x_inc, top, x_inc, bottom, 'rgb(191, 191, 0)'),
-                (x_inc*2, top, x_inc, bottom, 'rgb(0, 191, 191)'),
-                (x_inc*3, top, x_inc, bottom, 'rgb(0, 191, 0)'),
-                (x_inc*4, top, x_inc, bottom, 'rgb(191, 0, 191)'),
-                (x_inc*5, top, x_inc, bottom, 'rgb(191, 0, 0)'),
-                (x_inc*6, top, x_inc, bottom, 'rgb(0, 0, 191)')]
+        seventh = 1.0 / 7
+        size = (seventh, bottom)
+        bars = [(0, top, seventh, bottom, 'rgb(191, 191, 191)'),
+                (seventh, top, seventh, bottom, 'rgb(191, 191, 0)'),
+                (2*seventh, top, seventh, bottom, 'rgb(0, 191, 191)'),
+                (3*seventh, top, seventh, bottom, 'rgb(0, 191, 0)'),
+                (4*seventh, top, seventh, bottom, 'rgb(191, 0, 191)'),
+                (5*seventh, top, seventh, bottom, 'rgb(191, 0, 0)'),
+                (6*seventh, top, seventh, bottom, 'rgb(0, 0, 191)')]
 
         # Next 8% of picture: Reverse blue bars
         top = bottom
         bottom = 0.75
         height = bottom - top
-        bars.extend([(0, top, x_inc, height, 'rgb(0, 0, 191)'),
-                (x_inc, top, x_inc, height, 'rgb(16, 16, 16)'),
-                (x_inc*2, top, x_inc, height, 'rgb(191, 0, 191)'),
-                (x_inc*3, top, x_inc, height, 'rgb(16, 16, 16)'),
-                (x_inc*4, top, x_inc, height, 'rgb(0, 191, 191)'),
-                (x_inc*5, top, x_inc, height, 'rgb(16, 16, 16)'),
-                (x_inc*6, top, x_inc, height, 'rgb(191, 191, 191)')])
+        bars.extend([(0, top, seventh, height, 'rgb(0, 0, 191)'),
+                (seventh, top, seventh, height, 'rgb(16, 16, 16)'),
+                (2*seventh, top, seventh, height, 'rgb(191, 0, 191)'),
+                (3*seventh, top, seventh, height, 'rgb(16, 16, 16)'),
+                (4*seventh, top, seventh, height, 'rgb(0, 191, 191)'),
+                (5*seventh, top, seventh, height, 'rgb(16, 16, 16)'),
+                (6*seventh, top, seventh, height, 'rgb(191, 191, 191)')])
 
         # Lower 25%: Pluge signal
         top = bottom
         bottom = 1.0
-        x_inc = 1.0 / 6
+        sixth = 1.0 / 6
         height = bottom - top
         bars.extend([(0, top, 1.0, height, 'rgb(16, 16, 16)'),
-                (0, top, x_inc, height, 'rgb(0, 29, 66)'),
-                (x_inc, top, x_inc, height, 'rgb(255, 255, 255)'),
-                (x_inc*2, top, x_inc, height, 'rgb(44, 0, 92)'),
+                (0, top, sixth, height, 'rgb(0, 29, 66)'),
+                (sixth, top, sixth, height, 'rgb(255, 255, 255)'),
+                (2*sixth, top, sixth, height, 'rgb(44, 0, 92)'),
                 # Sub- and super- black narrow bars
-                (x_inc*4, top, 0.33, height, 'rgb(7, 7, 7)'),
-                (x_inc*4.33, top, 0.33, height,'rgb(16, 16, 16)'),
-                (x_inc*4.66, top, 0.33, height, 'rgb(24, 24, 24)')])
+                (4*sixth, top, 0.33*sixth, height, 'rgb(7, 7, 7)'),
+                (4.33*sixth, top, 0.33*sixth, height,'rgb(16, 16, 16)'),
+                (4.66*sixth, top, 0.33*sixth, height, 'rgb(24, 24, 24)')])
 
         # Draw and fill all bars
         for x, y, width, height, color in bars:
