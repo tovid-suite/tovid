@@ -162,8 +162,6 @@ constraints of each arrangement.
 
 = ADVANCED USAGE =
 == Options ==
-: -debug
-    Print and log additional debugging information
 : -menu-length
     The desired animated main menu length in seconds
 : -submenu-stroke-color, -submenu-stroke-colour COLOR
