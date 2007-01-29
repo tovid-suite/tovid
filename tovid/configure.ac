@@ -57,6 +57,20 @@ AM_INIT_AUTOMAKE([1.9])
 # ******************************************************************************
 # ******************************************************************************
 
+# The only 'compile time' dependency we have is txt2tags, which is used to
+# build the man pages.
+AC_CHECK_PROG(TXT2TAGS, [txt2tags], [:], [false])
+if ! $TXT2TAGS; then
+    AC_MSG_ERROR([
+
+ txt2tags cannot be found on your system, but tovid needs it to build
+ the man pages. Please install txt2tags (http://txt2tags.sf.net) and
+ run ./configure again. Thanks! 
+ 
+     -- http://tovid.org
+])
+fi
+
 # All run-time dependencies are checked in tovid-init now. In addition to being
 # the Correct Way to do things, it makes packaging much easier for deb|rpm|???
 # maintainers.
