@@ -807,13 +807,13 @@ while test $# -gt 0; do
             shift
             OUT_PREFIX="$1"
             ;;
-        "-noask" )
+        "-noask" | "no-ask" )
             NOASK=:
             ;;
-        "-nowarn" )
+        "-no-warn" | "-nowarn" )
             NO_WARN=:
             ;;
-        "-keepfiles" )
+        "-keep-files" | "-keepfiles" )
             KEEP_FILES=:
             ;;
         "-dvd" )
@@ -1219,7 +1219,7 @@ if ! $SHOWCASE; then
         val=${#TITLES[i]}
         [ -z "$MAX_CHARS" ] || ((val > MAX_CHARS)) && MAX_CHARS=$val && key=$i
     done
-    if [[ ${#TITLES[@]} -gt 6 && $MAX_CHARS -gt 16 ]] && ! $NO_WARN; then
+    if [[ ${#TITLES[@]} -gt 6 && $MAX_CHARS -gt 16 ]]; then
         yecho
         yecho "WARNING! Some titles are longer than 16 characters; they may be chopped off."
         yecho
@@ -1270,15 +1270,15 @@ if test -e "$OUT_DIR"; then
     exit 1
 fi
 # see if advanced options were used and give warning if so
-if [[ -n "${ADV_OPT[@]}" ]] && ! $NO_WARN; then
+if [[ -n "${ADV_OPT[@]}" ]]; then
     yecho
     yecho "**** WARNING ****"
     yecho "You have used the following advanced options:"
     yecho \'"${ADV_OPT[@]}"\' | format_output
     yecho "With these options it is possible to create a menu where things overlap or are offscreen, so please check it with the preview."
-    yecho "These are things that todisc usually tries to avoid if left on its own, so if you have problems, please leave them out."
+    yecho "These are things that todisc tries to avoid normally, so if you have problems, please leave them out."
     yecho
-    sleep 15
+    ! $NO_WARN && sleep 15
 fi
 
 # Do text-only menu if requested
@@ -1750,7 +1750,7 @@ if [[ $BUTTON_STYLE = text-rect ]] && ! [[ $SC_TITLE_ALIGN = east ]] && ! $TEXTM
         SC_TITLE_ALIGN=east
     fi
     yecho
-    sleep 5
+    ! $NO_WARN && sleep 10
 fi
 if $SHOWCASE && [ "$SC_TITLE_ALIGN" = "east" ] && ! $TEXTMENU; then
     THUMB_TITLE_ALIGN="west" # align titles left to allow longer titles
