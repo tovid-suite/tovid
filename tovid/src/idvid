@@ -298,10 +298,9 @@ function get_info ()
     else
         # Determine duration by playing the video into /dev/null and doing
         # tons of filtering. Time consuming, but presumably more accurate.
-        V_DURATION="$(LC_ALL=C mencoder -ovc frameno -oac copy -noskiplimit \
-            "$INFILE" -o /dev/null 2>/dev/null \
-            | tr '\r' '\n' | grep \"^Pos:\" | tail -n 1 \
-            | sed s/\"Pos:\"// | awk -- '{print $1}' | sed s/[.][0-9]s//)"
+        V_DURATION=$(LC_ALL=C mencoder -ovc frameno -oac pcm -noskiplimit \
+            "$INFILE" -o /dev/null 2>/dev/null | tr '\r' '\n' | grep ^Pos: | \
+            tail -n 1 | awk '{print $2}' | sed s/[.][0-9]s//)
     fi
 
     # Use mplayer-reported length as a last resort (truncate floating-point)
