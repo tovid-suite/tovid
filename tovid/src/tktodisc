@@ -18,27 +18,9 @@ camel-case for remaining words, i.e.
     rbFoo:  Radiobutton
     varFoo: Control variable (Variable, StringVar, IntVar, DoubleVar)
 
-Ideas for later:
-
-Use dictionaries for accessing Widgets inside of classes, i.e.
-    self.lblTitles --> self.lbl['Titles']
-    self.entTitles --> self.ent['Titles']
-This may simplify automated widget-instantiation later.
-
-Allow user to edit the regular expression used to filter titles out of
-filenames (or do a field-formatting approach: %number_-_%title.%ext)
-
-Implement an in-place edit in the title listbox
-
-TODO:
-
-Multiple selection, select-all in file/title listbox (context menu?)
-Popup warnings for missing fields (-files/-titles, -out) before running todisc
-"""
-
-"""
-
-
+Each Frame class has a grouping of todisc options in tkinter widget form.
+Frame subclasses define a getOptions method that appends command-line
+options to a Command, raising exceptions if required options are missing.
 """
 
 
@@ -58,6 +40,8 @@ except:
     print "  Gentoo: Add 'tcltk' to python USE flags"
     print "  Fedora: Install 'tkinter'"
     sys.exit()
+
+class MissingOptionException (Exception): pass
 
 ###
 ### Frames for grouping controls
@@ -266,11 +250,11 @@ class FileListFrame (Frame):
         titles = self.varTitles.get()
         if len(files) != len(titles):
             # Should never happen, if the listboxes are properly in sync
-            print "WARNING: Number of files and titles do not match"
+            raise Exception, "Number of files and titles do not match"
         if len(files) == 0:
-            print "WARNING: No input files selected"
+            raise MissingOptionException, "File list (-files)"
         if len(titles) == 0:
-            print "WARNING: No input titles selected"
+            raise MissingOptionException, "Title list (-titles)"
         command.add('-files')
         for file in files:
             command.add(file)
@@ -385,6 +369,7 @@ class OutfileFrame (Frame):
         outfile = self.varOutfile.get()
         if not outfile:
             print "WARNING: No output file selected"
+            raise MissingOptionException, "Output filename (-out)"
         command.add('-out', outfile)
 
 
@@ -561,13 +546,21 @@ class Application(Frame):
     def getCommand(self):
         """Return the complete todisc command."""
         cmd = Command('todisc')
-        self.fraTitle.setOptions(cmd)
-        self.fraFileList.setOptions(cmd)
-        self.fraFormat.setOptions(cmd)
-        self.fraTvsys.setOptions(cmd)
-        self.fraBackgrounds.setOptions(cmd)
-        self.fraMisc.setOptions(cmd)
-        self.fraOutfile.setOptions(cmd)
+        frames = [
+            self.fraTitle,
+            self.fraFileList,
+            self.fraFormat,
+            self.fraTvsys,
+            self.fraBackgrounds,
+            self.fraMisc,
+            self.fraOutfile,
+            self.fraAdvanced]
+        for frame in frames:
+            try:
+                frame.setOptions(cmd)
+            except MissingOptionException, err:
+                print "Missing a required option: %s" % err
+                raise
         return cmd
 
     def showCommand(self):
@@ -585,12 +578,17 @@ class Application(Frame):
 
     def runCommand(self):
         """Run the todisc command."""
-        cmd = self.getCommand()
+        try:
+            cmd = self.getCommand()
+        except MissingOptionException, err:
+            showerror("Missing option",
+                      "Missing a required option: %s" % err)
+            return
         print "Running command:"
         print cmd
         # Verify with user
         if askyesno(message="Run todisc now?"):
-            root.iconify()
+            root.withdraw()
             try:
                 cmd.run()
             except KeyboardInterrupt:
