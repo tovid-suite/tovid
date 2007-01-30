@@ -111,15 +111,16 @@ if __name__ == '__main__':
                 print "Generating a scatterplot of %ss by %s" % \
                       (list_field, by_field)
                 xy_values = statlist.list_by(list_field, by_field, True)
-                scatterplot = Scatterplot(xy_values, (640, 480), \
-                                          by_field, list_field)
-                drawing = Drawing(720, 576)
+                
+                scatterplot = Scatterplot(xy_values, by_field, list_field)
+                drawing = Drawing(1, 1)
+                drawing.rectangle(0, 0, 1, 1)
                 drawing.fill('white')
-                drawing.rectangle(0, 0, 720, 576)
-                drawing.translate(40, 48)
+                #drawing.scale(6, 4)      # Scatterplot size
+                #drawing.translate(1, 1)  # Center against (8, 6)
                 scatterplot.draw(drawing, 1)
                 print "Showing scatterplot. Press 'q' to close."
-                display(drawing)
+                display(drawing, 640, 640)
 
         elif arg == '-match':
             field = args.pop(0)
