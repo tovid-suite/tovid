@@ -529,7 +529,7 @@ class Application(Frame):
     
         # Bottom row of buttons
         fraButtons = Frame(self)
-        self.btnAdvanced = Button(fraButtons, text="Advanced",
+        self.btnAdvanced = Button(fraButtons, text="Advanced >>",
                                   command=self.showAdvanced)
         self.btnAdvanced.pack(side=LEFT)
         self.btnCommand = Button(fraButtons, text="Show todisc command",
@@ -570,11 +570,15 @@ class Application(Frame):
     def showAdvanced(self):
         """Show/hide the "advanced options" frame in a popup window."""
         if self.advanced_visible:
+            self.btnAdvanced.config(text="Advanced >>")
             self.advanced_visible = False
             self.fraAdvanced.grid_forget()
+
         else:
+            self.btnAdvanced.config(text="Advanced <<")
             self.advanced_visible = True
             self.fraAdvanced.grid()
+            self.btnAdvanced.update()
 
     def runCommand(self):
         """Run the todisc command."""
