@@ -46,7 +46,7 @@ For example:
     and exits successfully. Otherwise, idvid reports "false" and exits 
     with status 1 (failure).
 
-: **-issys** [//ntsc//|//pal//]
+: **-istvsys** [//ntsc//|//pal//]
     Check //VIDEO_FILE// for compliance with the given TV system. If 
     //VIDEO_FILE// matches the given TV system, then idvid reports "true"
     and exits successfully. Otherwise, idvid reports "false" and exits
@@ -62,7 +62,7 @@ For example:
 : ``idvid -isformat dvd homevideo.mpg``
     Check to see if homevideo.mpg is compliant with the DVD standard.
 
-: ``idvid -issys pal homevideo.mpg``
+: ``idvid -istvsys pal homevideo.mpg``
     Check to see if homevideo.mpg is compliant with PAL TV systems.
 
 
