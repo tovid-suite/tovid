@@ -51,7 +51,6 @@ py_bin = \
 	src/tktodisc \
 	src/tovidgui \
 	src/tovid-stats \
-	src/todiscgui \
 	src/todraw
 
 # Specify the scripts to make and install.
