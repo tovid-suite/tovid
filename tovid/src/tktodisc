@@ -34,8 +34,13 @@ TODO:
 
 Multiple selection, select-all in file/title listbox (context menu?)
 Popup warnings for missing fields (-files/-titles, -out) before running todisc
+"""
 
 """
+
+
+"""
+
 
 import os
 import time
@@ -58,7 +63,7 @@ except:
 ### Frames for grouping controls
 ###
 
-class FormatFrame(Frame):
+class FormatFrame (Frame):
     """A frame containing controls suitable for setting disc format
     (VCD, SVCD, DVD, etc.)"""
     def __init__(self, master=None):
@@ -94,7 +99,7 @@ class FormatFrame(Frame):
         command.add('-%s' % format)
 
 
-class TvsysFrame(Frame):
+class TvsysFrame (Frame):
     """A frame containing controls suitable for setting TV system (PAL, NTSC).
     """
     def __init__(self, master=None):
@@ -129,7 +134,7 @@ class TvsysFrame(Frame):
         command.add('-%s' % tvsys)
     
 
-class FileListFrame(Frame):
+class FileListFrame (Frame):
     """A frame containing a list of filenames, and controls to add or delete
     files from the list.
     """
@@ -274,7 +279,7 @@ class FileListFrame(Frame):
             command.add(title)
 
 
-class BrowseButton(Button):
+class BrowseButton (Button):
     """A "Browse" button that opens a file browser for loading/saving a file."""
     def __init__(self, master=None, type='load', textvariable=None,
                  title="Select a file"):
@@ -302,7 +307,32 @@ class BrowseButton(Button):
             self.textvariable.set(filename)
 
 
-class BackgroundsFrame(Frame):
+class FileSelector (Frame):
+    """A file selector frame, consisting of label, entry, and browse button.
+    """
+    def __init__(self, master=None, label='Filename:', type='load',
+                 variable=None, purpose='Select a file to load'):
+        """Create a FileSelector with label, text entry, and browse button.
+        
+            label:     Text of label next to file entry box
+            type:      'load' or 'save'
+            purpose:   Brief description (shown in title bar of file
+                       browser dialog)
+            variable:  A tkinter text variable to save the filename in
+        """
+        Frame.__init__(self, master)
+        self.pack()
+        label = Label(self, text=label)
+        entry = Entry(self, width=40, background='white',
+                      textvariable=variable)
+        button = BrowseButton(self, type, variable,
+                              "Select an image file")
+        label.pack(side=LEFT)
+        entry.pack(side=LEFT)
+        button.pack(side=LEFT)
+
+
+class BackgroundsFrame (Frame):
     """Widgets for setting background image, video and audio"""
     def __init__(self, master=None):
         Frame.__init__(self, master, borderwidth=1, relief=SUNKEN)
@@ -315,34 +345,16 @@ class BackgroundsFrame(Frame):
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
         self.lblHeading = Label(self, text="Menu backgrounds")
-        self.lblHeading.grid(row=0, columnspan=3, sticky=W)
-        # BG image
-        self.lblImage = Label(self, text="Image:")
-        self.lblImage.grid(row=1, column=0)
-        self.entImage = Entry(self, width=40, background='white',
-                              textvariable=self.varImage)
-        self.entImage.grid(row=1, column=1)
-        self.btnImage = BrowseButton(self, 'load', self.varImage,
-                                     "Select an image file")
-        self.btnImage.grid(row=1, column=2)
-        # BG video
-        self.lblVideo = Label(self, text="Video:")
-        self.lblVideo.grid(row=2, column=0)
-        self.entVideo = Entry(self, width=40, background='white',
-                              textvariable=self.varVideo)
-        self.entVideo.grid(row=2, column=1, sticky=E+W)
-        self.btnVideo = BrowseButton(self, 'load', self.varVideo,
-                                     "Select a video file")
-        self.btnVideo.grid(row=2, column=2)
-        # BG audio
-        self.lblAudio = Label(self, text="Audio:")
-        self.lblAudio.grid(row=3, column=0)
-        self.entAudio = Entry(self, width=40, background='white',
-                              textvariable=self.varAudio)
-        self.entAudio.grid(row=3, column=1)
-        self.btnAudio = BrowseButton(self, 'load', self.varAudio,
-                                     "Select an audio file")
-        self.btnAudio.grid(row=3, column=2)
+        self.lblHeading.grid(row=0, sticky=W)
+        self.fsImage = FileSelector(self, "Image:", 'load', self.varImage,
+                                    "Select an image file")
+        self.fsVideo = FileSelector(self, "Video:", 'load', self.varVideo,
+                                    "Select a video file")
+        self.fsAudio = FileSelector(self, "Audio:", 'load', self.varAudio,
+                                    "Select an audio file")
+        self.fsImage.grid()
+        self.fsVideo.grid()
+        self.fsAudio.grid()
     
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
@@ -354,7 +366,7 @@ class BackgroundsFrame(Frame):
             command.add('-bgaudio', self.varAudio.get())
 
 
-class OutfileFrame(Frame):
+class OutfileFrame (Frame):
     """A frame containing an output-file text entry/browser box."""
     def __init__(self, master=None):
         Frame.__init__(self, master)
@@ -364,14 +376,9 @@ class OutfileFrame(Frame):
     
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
-        self.lblOutfile = Label(self, text="Output file:")
-        self.lblOutfile.pack(side=LEFT)
-        self.entOutfile = Entry(self, width=40, background='white',
-                                textvariable=self.varOutfile)
-        self.entOutfile.pack(side=LEFT)
-        self.btnOutfile = BrowseButton(self, 'save', self.varOutfile,
-                                       "Select an output name")
-        self.btnOutfile.pack(side=LEFT)
+        self.fsOutfile = FileSelector(self, "Output file:", 'save',
+                                      self.varOutfile, "Select an output name.")
+        self.fsOutfile.pack(side=LEFT)
 
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
@@ -381,7 +388,19 @@ class OutfileFrame(Frame):
         command.add('-out', outfile)
 
 
-class TitleFrame(Frame):
+class LabelEntry (Frame):
+    """A labeled entry box"""
+    def __init__(self, master=None, label="Text:", variable=None):
+        Frame.__init__(self, master)
+        self.pack()
+        self.label = Label(self, text=label)
+        self.entry = Entry(self, width=30, background='white',
+                           textvariable=variable)
+        self.label.pack(side=LEFT)
+        self.entry.pack(side=LEFT)
+
+
+class TitleFrame (Frame):
     """A frame containing options for customizing titles"""
     def __init__(self, master=None):
         Frame.__init__(self, master)
@@ -391,11 +410,8 @@ class TitleFrame(Frame):
         
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
-        self.lblTitle = Label(self, text="Menu title:")
-        self.lblTitle.pack(side=LEFT)
-        self.entTitle = Entry(self, width=30, background='white',
-                              textvariable=self.varTitle)
-        self.entTitle.pack(side=LEFT)
+        self.leTitle = LabelEntry(self, "Menu title:", self.varTitle)
+        self.leTitle.pack(side=LEFT)
         self.varTitle.set("My video collection")
 
     def setOptions(self, command):
@@ -407,7 +423,7 @@ class TitleFrame(Frame):
             command.add('-menu-title', ' ')
 
 
-class MiscOptionsFrame(Frame):
+class MiscOptionsFrame (Frame):
     """A frame containing miscellaneous options"""
     # TODO: Categorize these as needed and separate into new Frame subclasses
     def __init__(self, master=None):
@@ -446,6 +462,48 @@ class MiscOptionsFrame(Frame):
             for opt in custom:
                 command.add(opt)
 
+class AdvancedFrame (Frame):
+    """A frame containing controls for setting advanced options.
+    """
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        #self.grid()
+        self.varSubAudio = StringVar()
+        self.varShowcase = StringVar()
+        self.varMenuFont = StringVar()
+        self.varThumbFont = StringVar()
+        self.drawWidgets()
+        
+    def drawWidgets(self):
+        self.lblAdvanced = Label(self, text="Advanced options")
+        self.lblAdvanced.grid()
+        self.subAudio = FileSelector(self, "Submenu audio:", 'load',
+                                     self.varSubAudio, "Select an audio file.")
+        self.showcase = FileSelector(self, "Showcase:", 'load',
+                                     self.varShowcase,
+                                     "Select an image or video file.")
+        self.menuFont = LabelEntry(self, "Menu font:", self.varMenuFont)
+        self.thumbFont = LabelEntry(self, "Thumb font:", self.varThumbFont)
+        self.subAudio.grid()
+        self.showcase.grid()
+        self.menuFont.grid()
+        self.thumbFont.grid()
+
+    def setOptions(self, command):
+        """Add relevant todisc options to the given Command."""
+        subaudio = self.varSubAudio.get()
+        showcase = self.varShowcase.get()
+        menufont = self.varMenuFont.get()
+        thumbfont = self.varThumbFont.get()
+        if subaudio:
+            command.add('-submenu-audio', subaudio)
+        if showcase:
+            command.add('-showcase', showcase)
+        if menufont:
+            command.add('-menu-font', menufont)
+        if thumbfont:
+            command.add('-thumb-font', thumbfont)
+
 
 ###
 ### Main application window
@@ -456,6 +514,7 @@ class Application(Frame):
         Frame.__init__(self, master)
         self.grid()
         self.drawWidgets()
+        self.advanced_visible = False
 
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
@@ -480,7 +539,14 @@ class Application(Frame):
         self.fraOutfile = OutfileFrame(self)
         self.fraOutfile.grid(sticky=W)
 
+        # Create AdvancedFrame, but don't grid it
+        self.fraAdvanced = AdvancedFrame(self)
+    
+        # Bottom row of buttons
         fraButtons = Frame(self)
+        self.btnAdvanced = Button(fraButtons, text="Advanced",
+                                  command=self.showAdvanced)
+        self.btnAdvanced.pack(side=LEFT)
         self.btnCommand = Button(fraButtons, text="Show todisc command",
                                  command=self.showCommand)
         self.btnCommand.pack(side=LEFT)
@@ -490,6 +556,7 @@ class Application(Frame):
         self.btnQuit = Button(fraButtons, text="Quit", command=self.quit)
         self.btnQuit.pack(side=LEFT)
         fraButtons.grid()
+
 
     def getCommand(self):
         """Return the complete todisc command."""
@@ -506,6 +573,15 @@ class Application(Frame):
     def showCommand(self):
         """Show the todisc command that would be run."""
         print self.getCommand()
+
+    def showAdvanced(self):
+        """Show/hide the "advanced options" frame in a popup window."""
+        if self.advanced_visible:
+            self.advanced_visible = False
+            self.fraAdvanced.grid_forget()
+        else:
+            self.advanced_visible = True
+            self.fraAdvanced.grid()
 
     def runCommand(self):
         """Run the todisc command."""
