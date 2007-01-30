@@ -41,7 +41,30 @@ except:
     print "  Fedora: Install 'tkinter'"
     sys.exit()
 
-class MissingOptionException (Exception): pass
+class MissingOption (Exception):
+    """Raised when a required command-line option was not specified.
+
+        message: Brief description of the missing option
+        widget: A tkinter Widget where the option can be set
+    """
+    def __init__(self, message, widget=None):
+        self.message = message
+        self.widget = widget
+
+
+# TODO: Widget class-level styling (to avoid having to pass background='white'
+# everywhere)
+
+def blink(widget):
+    """Cause a widget to "blink" by briefly changing its background color.
+    """
+    if widget == None:
+        return
+    assert isinstance(widget, Widget)
+    widget.config(background='#C0C0F0')
+    widget.update()
+    time.sleep(1)
+    widget.config(background='white')
 
 ###
 ### Frames for grouping controls
@@ -252,9 +275,9 @@ class FileListFrame (Frame):
             # Should never happen, if the listboxes are properly in sync
             raise Exception, "Number of files and titles do not match"
         if len(files) == 0:
-            raise MissingOptionException, "File list (-files)"
+            raise MissingOption("File list (-files)", self.lstFiles)
         if len(titles) == 0:
-            raise MissingOptionException, "Title list (-titles)"
+            raise MissingOption("Title list (-titles)", self.lstTitles)
         command.add('-files')
         for file in files:
             command.add(file)
@@ -305,15 +328,15 @@ class FileSelector (Frame):
             variable:  A tkinter text variable to save the filename in
         """
         Frame.__init__(self, master)
-        self.pack()
-        label = Label(self, text=label)
-        entry = Entry(self, width=40, background='white',
+        self.grid()
+        self.label = Label(self, text=label)
+        self.entry = Entry(self, width=40, background='white',
                       textvariable=variable)
-        button = BrowseButton(self, type, variable,
+        self.button = BrowseButton(self, type, variable,
                               "Select an image file")
-        label.pack(side=LEFT)
-        entry.pack(side=LEFT)
-        button.pack(side=LEFT)
+        self.label.grid(row=0, column=0, sticky=E)
+        self.entry.grid(row=0, column=1, sticky=EW)
+        self.button.grid(row=0, column=2, sticky=E)
 
 
 class BackgroundsFrame (Frame):
@@ -336,9 +359,9 @@ class BackgroundsFrame (Frame):
                                     "Select a video file")
         self.fsAudio = FileSelector(self, "Audio:", 'load', self.varAudio,
                                     "Select an audio file")
-        self.fsImage.grid()
-        self.fsVideo.grid()
-        self.fsAudio.grid()
+        self.fsImage.grid(sticky=E)
+        self.fsVideo.grid(sticky=E)
+        self.fsAudio.grid(sticky=E)
     
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
@@ -369,7 +392,8 @@ class OutfileFrame (Frame):
         outfile = self.varOutfile.get()
         if not outfile:
             print "WARNING: No output file selected"
-            raise MissingOptionException, "Output filename (-out)"
+            raise MissingOption("Output filename (-out)",
+                                self.fsOutfile.entry)
         command.add('-out', outfile)
 
 
@@ -447,6 +471,7 @@ class MiscOptionsFrame (Frame):
             for opt in custom:
                 command.add(opt)
 
+
 class AdvancedFrame (Frame):
     """A frame containing controls for setting advanced options.
     """
@@ -516,7 +541,7 @@ class Application(Frame):
         self.fraTvsys.grid(sticky=W)
 
         self.fraBackgrounds = BackgroundsFrame(self)
-        self.fraBackgrounds.grid(sticky=W)
+        self.fraBackgrounds.grid(sticky=EW)
         
         self.fraMisc = MiscOptionsFrame(self)
         self.fraMisc.grid(sticky=W)
@@ -529,17 +554,17 @@ class Application(Frame):
     
         # Bottom row of buttons
         fraButtons = Frame(self)
-        self.btnAdvanced = Button(fraButtons, text="Advanced >>",
-                                  command=self.showAdvanced)
-        self.btnAdvanced.pack(side=LEFT)
+        self.btnQuit = Button(fraButtons, text="Quit", command=self.quit)
+        self.btnQuit.pack(side=LEFT)
         self.btnCommand = Button(fraButtons, text="Show todisc command",
                                  command=self.showCommand)
         self.btnCommand.pack(side=LEFT)
         self.btnRun = Button(fraButtons, text="Run todisc command",
                              command=self.runCommand)
         self.btnRun.pack(side=LEFT)
-        self.btnQuit = Button(fraButtons, text="Quit", command=self.quit)
-        self.btnQuit.pack(side=LEFT)
+        self.btnAdvanced = Button(fraButtons, text="Advanced >>",
+                                  command=self.showAdvanced)
+        self.btnAdvanced.pack(side=LEFT)
         fraButtons.grid()
 
 
@@ -558,8 +583,8 @@ class Application(Frame):
         for frame in frames:
             try:
                 frame.setOptions(cmd)
-            except MissingOptionException, err:
-                print "Missing a required option: %s" % err
+            except MissingOption, err:
+                print "Missing a required option: %s" % err.message
                 raise
         return cmd
 
@@ -573,20 +598,21 @@ class Application(Frame):
             self.btnAdvanced.config(text="Advanced >>")
             self.advanced_visible = False
             self.fraAdvanced.grid_forget()
-
+            self.update()
         else:
             self.btnAdvanced.config(text="Advanced <<")
             self.advanced_visible = True
-            self.fraAdvanced.grid()
+            self.fraAdvanced.grid(row=0, column=2, rowspan=8, sticky=NW)
             self.btnAdvanced.update()
 
     def runCommand(self):
         """Run the todisc command."""
         try:
             cmd = self.getCommand()
-        except MissingOptionException, err:
+        except MissingOption, err:
             showerror("Missing option",
-                      "Missing a required option: %s" % err)
+                      "Missing a required option: %s" % err.message)
+            blink(err.widget)
             return
         print "Running command:"
         print cmd
