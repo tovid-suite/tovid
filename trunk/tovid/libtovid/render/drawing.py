@@ -527,6 +527,16 @@ class Drawing:
         self.addstep(_paint_with_alpha, alpha)
         #self.commands.append(_paint_with_alpha)
 
+    def point(self, x, y):
+        """Draw a point (really a tiny circle) at (x, y)."""
+        # Circle radius 1/1000 the drawing width
+        radius = float(self.size[0]) / 1000
+        def _point(cr):
+            cr.new_path()
+            cr.arc(x, y, radius, 0, 2*pi)
+        self.addstep(_point, x, y)
+
+
     def polygon(self, points, close_path=True):
         """Define a polygonal path defined by (x, y) points in the given
         list.
@@ -959,7 +969,7 @@ class Drawing:
             cr.save()
         self.addstep(_save)
         #self.commands.append(_save)
-
+    BEGIN = save
 
     def restore(self):
         """Restore the previously saved context."""
@@ -967,7 +977,7 @@ class Drawing:
             cr.restore()
         self.addstep(_restore)
         #self.commands.append(_restore)
-
+    END = restore
 
     ### ----------------------------------------------------------------
     ### Unfinished methods
