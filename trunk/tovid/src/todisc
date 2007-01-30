@@ -3833,7 +3833,7 @@ if ! $TEXTMENU; then
             -bordercolor "#444744" -)
             IM_CMD4b=(convert -background none -frame 3x3 \
             -bordercolor none -)
-            IM_CMD5=(convert - $THUMB_ROTATE -resize $THUMB_SIZE! - "${PICS[p]}")
+            IM_CMD5=(convert - $THUMB_ROTATE -resize $THUMB_SIZE! "${PICS[p]}")
             IM_CMD6=(convert - -write mpr:img${p} -fx A  +matte \
             -blur 0x$( printf "%.2f" $(awk_math 7 plus .${CURVE_ARRAY[p]/.} float) )  \
             -shade $(awk_math 115 plus ${CURVE_ARRAY[p]} float)x30 -normalize mpr:img${p} \
@@ -3881,7 +3881,7 @@ if ! $TEXTMENU; then
                 fi
             else # not FEATHER
                 if $SHOWCASE; then # showcase but not feather
-                    if [ "$SC_FRAMESTYLE" = "glass" ]; then
+                    if [[ "$SC_FRAMESTYLE" = "glass" && -z ${ROTATE_ARRAY[@]} ]]; then
                         :
                     else
                         spin "\rProcessing $(awk -F / '{ print $NF }' <<< "${PICS[p]}")  "
