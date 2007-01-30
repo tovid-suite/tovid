@@ -164,7 +164,7 @@ class FileListFrame (Frame):
         # File list box and add/remove buttons
         self.lblFiles = Label(self, text="Files")
         self.lblFiles.grid(row=0, column=0, columnspan=2, sticky=W)
-        self.lstFiles = Listbox(self, width=30, background='white',
+        self.lstFiles = Listbox(self, width=30,
                                 listvariable=self.varFiles,
                                 yscrollcommand=self.scrollbar.set)
         self.lstFiles.bind('<Button-1>', self.selectListitem)
@@ -179,14 +179,14 @@ class FileListFrame (Frame):
         # Title list box and editing field
         self.lblTitles = Label(self, text="Titles")
         self.lblTitles.grid(row=0, column=2, sticky=W)
-        self.lstTitles = Listbox(self, width=30, background='white',
+        self.lstTitles = Listbox(self, width=30,
                                  listvariable=self.varTitles,
                                  yscrollcommand=self.scrollbar.set)
         self.lstTitles.bind('<Button-1>', self.selectListitem)
         self.lstTitles.bind('<B1-Motion>', self.dragListitem)
         self.lstTitles.bind('<ButtonRelease-1>', self.onDrop)
         self.lstTitles.grid(row=1, column=2)
-        self.entTitle = Entry(self, width=30, background='white',
+        self.entTitle = Entry(self, width=30,
                               textvariable=self.curtitle)
         self.entTitle.bind('<Return>', self.setTitle)
         self.entTitle.grid(row=2, column=2)
@@ -330,7 +330,7 @@ class FileSelector (Frame):
         Frame.__init__(self, master)
         self.grid()
         self.label = Label(self, text=label)
-        self.entry = Entry(self, width=40, background='white',
+        self.entry = Entry(self, width=40,
                       textvariable=variable)
         self.button = BrowseButton(self, type, variable,
                               "Select an image file")
@@ -403,7 +403,7 @@ class LabelEntry (Frame):
         Frame.__init__(self, master)
         self.pack()
         self.label = Label(self, text=label)
-        self.entry = Entry(self, width=30, background='white',
+        self.entry = Entry(self, width=30,
                            textvariable=variable)
         self.label.pack(side=LEFT)
         self.entry.pack(side=LEFT)
@@ -455,7 +455,7 @@ class MiscOptionsFrame (Frame):
         self.chkSubmenus.grid(columnspan=2, sticky=W)
         self.lblCustom = Label(self, text="Custom todisc options:")
         self.lblCustom.grid(row=2, column=0)
-        self.entCustom = Entry(self, width=40, background='white',
+        self.entCustom = Entry(self, width=40,
                                textvariable=self.varCustom)
         self.entCustom.grid(row=2, column=1)
         
@@ -520,11 +520,12 @@ class AdvancedFrame (Frame):
 ###
 
 class Application(Frame):
-    def __init__(self, master=None):
+    def __init__(self, master=None, theme='default'):
         Frame.__init__(self, master)
-        self.grid()
-        self.drawWidgets()
         self.advanced_visible = False
+        self.grid()
+        self.setTheme(theme)
+        self.drawWidgets()
 
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
@@ -556,9 +557,6 @@ class Application(Frame):
         fraButtons = Frame(self)
         self.btnQuit = Button(fraButtons, text="Quit", command=self.quit)
         self.btnQuit.pack(side=LEFT)
-        self.btnCommand = Button(fraButtons, text="Show todisc command",
-                                 command=self.showCommand)
-        self.btnCommand.pack(side=LEFT)
         self.btnRun = Button(fraButtons, text="Run todisc command",
                              command=self.runCommand)
         self.btnRun.pack(side=LEFT)
@@ -587,10 +585,6 @@ class Application(Frame):
                 print "Missing a required option: %s" % err.message
                 raise
         return cmd
-
-    def showCommand(self):
-        """Show the todisc command that would be run."""
-        print self.getCommand()
 
     def showAdvanced(self):
         """Show/hide the "advanced options" frame in a popup window."""
@@ -627,6 +621,28 @@ class Application(Frame):
                 showinfo(message="todisc finished running!")
             root.deiconify()
 
+    def setTheme(self, theme='default'):
+        """Set widget styles to match a theme. This must be called before
+        widgets are created, and does not apply to widgets already created.
+        """
+        if theme == 'light':
+            print "Using 'light' theme"
+            #self.option_add("*Frame*background", '#808080')
+            self.option_add("*Entry.relief", GROOVE)
+            self.option_add("*Listbox.relief", GROOVE)
+            self.option_add("*Button.relief", GROOVE)
+            self.option_add("*Frame*font",
+                            ("Helvetica", 12))
+        else:  # theme == 'default' or anything else
+            print "Using default theme"
+            self.option_add("*Entry.relief", SUNKEN)
+            self.option_add("*Listbox.relief", SUNKEN)
+            self.option_add("*Button.relief", RAISED)
+            self.option_add("*Frame*font",
+                            ("Helvetica", 10, "bold"))
+        # These apply to all themes
+        self.option_add("*Entry.background", 'white')
+        self.option_add("*Listbox.background", 'white')
 
 ###
 ### Entry point
@@ -634,6 +650,11 @@ class Application(Frame):
 root = Tk()
 
 if __name__ == '__main__':
+    # Single argument: theme name 'default' or 'light'
+    theme = 'default'
+    if len(sys.argv) > 1:
+        theme = sys.argv[1]
+
     root.title("tktodisc: A todisc GUI")
-    app = Application(root)
+    app = Application(root, theme)
     root.mainloop()
