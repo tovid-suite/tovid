@@ -30,6 +30,8 @@ __all__ = [\
     'Thumb',
     'ThumbGrid',
     'SafeArea',
+    'Plot',
+    'LabeledPlot',
     'Scatterplot',
     'InterpolationGraph',
     'ColorBars']
@@ -45,6 +47,9 @@ from libtovid.render.animation import Keyframe, Tween
 from libtovid.media import MediaFile
 from libtovid.transcode import rip
 from libtovid import log
+import logging
+
+log.setLevel(logging.INFO)
 
 class Layer:
     """A visual element, or a composition of visual elements. Conceptually
@@ -613,104 +618,218 @@ class SafeArea (Layer):
         drawing.restore()
 
 
-class Scatterplot (Layer):
-    """A 2D scatterplot of data.
+class Plot (Layer):
+    """An x, y plot of data, drawn in the unit square."""
+    def __init__(self, xy_dict):
+        """Plot (x, y) data from a dictionary.
 
-    Untested since MVG move.
-    """
-    def __init__(self, xy_dict, size=(240, 80), x_label='', y_label=''):
-        """Create a scatterplot using data in xy_dict, a dictionary of
-        lists of y-values, indexed by x-value."""
+            xy_dict: Dictionary of one-to-one {x: y} or one-to-many {x: [y]}
+                     data to plot.
+        """
         self.xy_dict = xy_dict
-        self.size = size
+        self.x_scale, self.y_scale = self.xy_scaling()
+
+    def max_y(self):
+        """Return the maximum y-value in xy_dict."""
+        max_y = 0
+        for x, y in self.xy_dict.items():
+            if type(y) is list:
+                # Max 0 for empty list
+                largest = max(y or [0])
+                max_y = max([largest, max_y])
+            else:
+                max_y = max([y, max_y])
+        return max_y
+
+    def numeric_x(self):
+        """Return True if x is numeric, False if non-numeric
+        (or if xy_vals is empty)"""
+        if len(self.xy_dict) == 0:
+            return False
+        xs = self.xy_dict.keys()
+        # Test only the first x
+        return isinstance(xs[0], int) or isinstance(xs[0], float)
+    
+    def xy_scaling(self):
+        """Precalculate necessary x, y scaling to fit data in the unit square.
+        Returns (x_scale, y_scale).
+        """
+        # Determine x scaling
+        x_vals = self.xy_dict.keys()
+        # For numeric x, scale by maximum x-value
+        if self.numeric_x():
+            x_scale = 1.0 / max(x_vals)
+        # For string x, scale by number of x-values
+        else:
+            x_scale = 1.0 / len(x_vals)
+
+        # Determine y scaling
+        y_scale = 1.0 / self.max_y()
+        return (x_scale, y_scale)
+
+    def draw(self, drawing):
+        """Draw a point-plot of all data."""
+        assert isinstance(drawing, Drawing)
+        # Background color
+        drawing.rectangle(0, 0, 1, 1)
+        drawing.fill('white', 0.5)
+        # Plot each point
+        drawing.BEGIN()
+        x_vals = self.xy_dict.keys()
+        for i, x in enumerate(x_vals):
+            if self.numeric_x():
+                x_coord = x * self.x_scale
+            else:
+                x_coord = i * self.x_scale
+            # Plot all y-values for this x
+            for y in self.xy_dict[x]:
+                y_coord = int(1.0 - y * self.y_scale)
+                drawing.point(x_coord, y_coord)
+                drawing.fill('red')
+        drawing.END()
+
+    
+class LabeledPlot (Plot):
+    """A Plot with axis markings and labels, drawn in the unit square.
+    """
+    def __init__(self, xy_dict, x_label='', y_label=''):
+        """Plot (x, y) data from a dictionary, with the given axis labels.
+
+            xy_dict: Dictionary of one-to-one {x: y} or one-to-many {x: [y]}
+                     data to plot.
+            x_label: Text label for x-axis
+            y_label: Text label for y-axis
+        """
+        Plot.__init__(self, xy_dict)
         self.x_label = x_label
         self.y_label = y_label
 
-    def draw(self, drawing, frame):
-        """Draw the scatterplot."""
+    def draw(self, drawing):
+        """Draw the axes, labels, and plot."""
+        drawing.BEGIN()
+
+        # Background color
+        drawing.rectangle(0, 0, 1, 1)
+        drawing.fill('white')
+        
+        # Draw axes and labels
+        self.draw_axes(drawing)
+        self.draw_labels(drawing)        
+
+        # Draw plot using base class draw()
+        drawing.BEGIN()
+        # Leave room for labels
+        drawing.translate(0.1, 0)
+        drawing.scale(0.9, 0.9)
+        Plot.draw(self, drawing)
+        drawing.END()
+
+        drawing.END()
+
+    def draw_axes(self, drawing):
+        """Draw the x and y axes."""
         assert isinstance(drawing, Drawing)
-        log.debug("Drawing Scatterplot")
-        width, height = self.size
-        x_vals = self.xy_dict.keys()
-        max_y = 0
-        for x in x_vals:
-            largest = max(self.xy_dict[x] or [0])
-            if largest > max_y:
-                max_y = largest
-        # For numeric x, scale by maximum x-value
-        x_is_num = isinstance(x_vals[0], int) or isinstance(x_vals[0], float)
-        if x_is_num:
-            x_scale = float(width) / max(x_vals)
-        # For string x, scale by number of x-values
-        else:
-            x_scale = float(width) / len(x_vals)
-        # Scale y according to maximum value
-        y_scale = float(height) / max_y
-        
-        # Save context
-        drawing.save()
-        drawing.fill(None)
-        
         # Draw axes
-        #->comment("Axes of scatterplot")
-        drawing.save()
-        drawing.stroke_width(3)
-        drawing.polyline([(0, 0), (0, height), (width, height)], False)
+        drawing.BEGIN()
+        # Move axes 10% in from left and bottom sides to leave room for labels
+        drawing.stroke_width(0.01)
+        drawing.line(0.1, 0, 0.1, 0.9)
         drawing.stroke('black')
-        drawing.restore()
+        drawing.line(0.1, 0.9, 1.0, 0.9)
+        drawing.stroke('black')
+        drawing.END()
 
-        # Axis labels
-        drawing.save()
-        drawing.set_source('blue')
-        drawing.save()
-        drawing.text(str(max(x_vals)), width, height+15)
-        i = 0
-        while i < len(x_vals):
-            drawing.save()
-            if x_is_num:
-                drawing.translate(x_vals[i] * x_scale, height + 15)
-            else:
-                drawing.translate(i * x_scale, height + 15)
-            drawing.rotate(30)
-            drawing.text(x_vals[i], 0, 0)
-            drawing.restore()
-            i += 1
-        drawing.font_size(20)
-        drawing.text(self.x_label, width/2, height+40)
-        drawing.restore()
-        #->comment("Y axis labels")
-        drawing.save()
-        drawing.text(max_y, -30, 0)
-        drawing.translate(-25, height/2)
-        drawing.rotate(90)
-        drawing.text(self.y_label, 0, 0)
-        drawing.restore()
-        #for x in x_vals:
-        #    axis_pos = (int(x * x_scale), height + 15)
-        #    drawing.text("%s" % x, axis_pos)
-        drawing.restore()
 
-        # Plot all y-values for each x (as small circles)
-        #->comment("Scatterplot data")
-        drawing.save()
-        i = 0
-        while i < len(x_vals):
-            if x_is_num:
-                x_coord = x_vals[i] * x_scale
-            else:
-                x_coord = i * x_scale
-            # Shift x over slightly
-            x_coord += 10
-            # Plot all y-values for this x
-            for y in self.xy_dict[x_vals[i]]:
-                y_coord = int(height - y * y_scale)
-                drawing.circle(x_coord, y_coord, 3)
-                drawing.fill('red', 0.2)
-            i += 1
-        drawing.restore()
+    def draw_labels(self, drawing):
+        """Draw axis labels in the left 10% and bottom 10% of the unit square.
+        """
+        assert isinstance(drawing, Drawing)
+        x_vals = self.xy_dict.keys()
+
+        drawing.BEGIN()
         
-        # Restore context
-        drawing.restore()
+        drawing.font('NimbusSans')
+        drawing.font_size(0.05)
+        drawing.set_source('blue', 0.5)
+        
+        # Reduce x scale by 10% to fit x labels under plot area
+        x_scale = 0.90 * self.x_scale
+        # Label each value of x
+        for i, x in enumerate(x_vals):
+            drawing.BEGIN()
+            # Numeric scaling
+            if self.numeric_x():
+                drawing.translate(0.1 + x * x_scale, 0.93)
+            # Non-numeric; equally-spaced x labels
+            else:
+                drawing.translate(0.1 + i * x_scale, 0.93)
+            drawing.line(0, -0.02, 0, -0.05)
+            drawing.stroke_width(0.01)
+            drawing.stroke('blue', 0.5)
+            drawing.font_size(0.04)
+            drawing.rotate(45)
+            drawing.text(x, 0, 0)
+            drawing.END()
+            
+        # x-axis title label
+        drawing.font_size(0.05)
+        drawing.text(self.x_label, 0.5, 0.98)
+
+        drawing.BEGIN()
+        # Maximum y-value
+        drawing.font_size(0.04)
+        drawing.text(self.max_y(), 0.03, 0.05)
+        # y axis label
+        drawing.translate(0.03, 0.4)
+        drawing.rotate(90)
+        drawing.font_size(0.05)
+        drawing.text(self.y_label, 0, 0)
+        drawing.END()
+
+        drawing.END()
+
+
+
+class Scatterplot (LabeledPlot):
+    """A labeled 2D scatterplot of data, drawn in the unit square.
+    """
+    def __init__(self, xy_dict, x_label='', y_label=''):
+        """Create a scatterplot using data in xy_dict, a dictionary of
+        lists of y-values, indexed by x-value."""
+        LabeledPlot.__init__(self, xy_dict, x_label, y_label)
+
+    def draw(self, drawing, frame):
+        """Draw the scatterplot and axis labels."""
+        assert isinstance(drawing, Drawing)
+        drawing.BEGIN()
+        drawing.rectangle(0, 0, 1, 1)
+        drawing.fill('white')
+        LabeledPlot.draw_axes(self, drawing)
+        LabeledPlot.draw_labels(self, drawing)
+        # Leave room for labels
+        drawing.translate(0.1, 0)
+        drawing.scale(0.9, 0.9)
+        self.draw_plot(drawing)
+        drawing.END()
+
+    def draw_plot(self, drawing):
+        """Draw a scatterplot of small partially-transparent red circles.
+        """
+        assert isinstance(drawing, Drawing)
+        # Plot all y-values for each x (as small circles)
+        drawing.BEGIN()
+        x_vals = self.xy_dict.keys()
+        for i, x in enumerate(x_vals):
+            if self.numeric_x():
+                x_coord = x * self.x_scale
+            else:
+                x_coord = i * self.x_scale
+            # Plot all y-values for this x
+            for y in self.xy_dict[x]:
+                y_coord = 1.0 - y * self.y_scale
+                drawing.circle(x_coord, y_coord, 0.007)
+                drawing.fill('red', 0.2)
+        drawing.END()
 
 
 class InterpolationGraph (Layer):
@@ -874,6 +993,8 @@ class ColorBars (Layer):
 
 
 
+
+
 if __name__ == '__main__':
     images = None
     # Get arguments, if any
@@ -888,59 +1009,72 @@ if __name__ == '__main__':
     bgd = Background(color='#7080A0')
     bgd.draw(drawing, 1)
 
-    # Draw color bars
-    bars = ColorBars((320, 240), (400, 100))
-    bars.draw(drawing, 1)
+    ## Draw color bars
+    #bars = ColorBars((320, 240), (400, 100))
+    #bars.draw(drawing, 1)
 
-    # Draw a label (experimental)
+    ## Draw a label
+    #drawing.save()
+    #drawing.translate(460, 200)
+    #label = Label("tovid loves Linux")
+    #label.draw(drawing, 1)
+    #drawing.restore()
+
+    ## Draw a text layer, with position.
+    #text = Text("Jackdaws love my big sphinx of quartz",
+                #(82, 62), '#bbb')
+    #text.draw(drawing, 1)
+
+    ## Draw a text layer
+    #drawing.save()
+    #drawing.translate(80, 60)
+    #text = Text("Jackdaws love my big sphinx of quartz")
+    #text.draw(drawing, 1)
+    #drawing.restore()
+
+    ## Draw a template layer (overlapping semitransparent rectangles)
+    #template = MyLayer('white', 'darkblue')
+    ## Scale and translate the layer before drawing it
+    #drawing.save()
+    #drawing.translate(50, 100)
+    #drawing.scale(3.0, 3.0)
+    #template.draw(drawing, 1)
+    #drawing.restore()
+
+    ## Draw a safe area test (experimental)
+    #safe = SafeArea(93, 'yellow')
+    #safe.draw(drawing, 1)
+
+    ## Draw a thumbnail grid (if images were provided)
+    #if images:
+        #drawing.save()
+        #drawing.translate(350, 300)
+        #thumbs = ThumbGrid(images, (320, 250))
+        #thumbs.draw(drawing, 1)
+        #drawing.restore()
+
+    ## Draw an interpolation graph
+    #drawing.save()
+    #drawing.translate(60, 400)
+    ## Some random keyframes to graph
+    #keys = [Keyframe(1, 25), Keyframe(10, 5), Keyframe(30, 35),
+            #Keyframe(40, 35), Keyframe(45, 20), Keyframe(60, 40)]
+    #interp = InterpolationGraph(keys, (400, 120), method="cosine")
+    #interp.draw(drawing, 25)
+    #drawing.restore()
+
+    # Draw a scatterplot
     drawing.save()
-    drawing.translate(460, 200)
-    label = Label("tovid loves Linux")
-    label.draw(drawing, 1)
+    xy_data = {
+        5: [2, 4, 6, 8],
+        10: [3, 5, 7, 9],
+        15: [5, 9, 13, 17],
+        20: [8, 14, 20, 26]}
+    drawing.translate(150, 50)
+    drawing.scale(500, 500)
+    plot = Scatterplot(xy_data, "Spam", "Eggs")
+    plot.draw(drawing, 1)
     drawing.restore()
-
-    # Draw a text layer, with position.
-    text = Text("Jackdaws love my big sphinx of quartz",
-                (82, 62), '#bbb')
-    text.draw(drawing, 1)
-
-    # Draw a text layer
-    drawing.save()
-    drawing.translate(80, 60)
-    text = Text("Jackdaws love my big sphinx of quartz")
-    text.draw(drawing, 1)
-    drawing.restore()
-
-    # Draw a template layer (overlapping semitransparent rectangles)
-    template = MyLayer('white', 'darkblue')
-    # Scale and translate the layer before drawing it
-    drawing.save()
-    drawing.translate(50, 100)
-    drawing.scale(3.0, 3.0)
-    template.draw(drawing, 1)
-    drawing.restore()
-
-    # Draw a safe area test (experimental)
-    safe = SafeArea(93, 'yellow')
-    safe.draw(drawing, 1)
-
-    # Draw a thumbnail grid (if images were provided)
-    if images:
-        drawing.save()
-        drawing.translate(350, 300)
-        thumbs = ThumbGrid(images, (320, 250))
-        thumbs.draw(drawing, 1)
-        drawing.restore()
-
-    # Draw an interpolation graph (experimental)
-    drawing.save()
-    drawing.translate(60, 400)
-    # Some random keyframes to graph
-    keys = [Keyframe(1, 25), Keyframe(10, 5), Keyframe(30, 35),
-            Keyframe(40, 35), Keyframe(45, 20), Keyframe(60, 40)]
-    interp = InterpolationGraph(keys, (400, 120), method="cosine")
-    interp.draw(drawing, 25)
-    drawing.restore()
-
+    
     print "Output to /tmp/my.png"
     save_image(drawing, '/tmp/my.png', 800, 600)
