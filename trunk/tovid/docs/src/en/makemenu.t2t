@@ -73,13 +73,12 @@ Menu background/audio options:
 Menu text options:
 
 : **-menu-title** **"**//MENU TITLE TEXT//**"**
-    Add //MENU TITLE TEXT// as a title to the menu.
+    Add //MENU TITLE TEXT// as a title/header to the menu.
 
-: **-font** //FONTNAME//
+: **-font** //FONTNAME// (default Helvetica)
     Use //FONTNAME// for the menu text. Run 'convert -list type' to see a
     list of the fonts that you can use; choose a font name from the
-    leftmost column that is displayed.
-    Or you can specify a ttf font file instead. 
+    leftmost column that is displayed. Or you can specify a ttf font file instead. 
     E.g., '-font /path/to/myfont.ttf'.
 
 : **-fontsize** //NUM// (default 24)
@@ -89,8 +88,9 @@ Menu text options:
     Sets the size of the menu title.
 
 : **-fontdeco** **'**//FONTDECORATION//**'**
-    Sets the font decoration method to //FONTDECORATION//. 
-    It is used by the 'convert' command to generate DVD text menus.
+    Sets the font decoration method to //FONTDECORATION//. It is used by the 
+    'convert' ImageMagick command to draw the menu text. You can add colored
+    text outlines, gradient fills, and many others. See **Usage notes**.
 
 : **-align** {**left**|**center**|**middle**|**right**}
     Align the text at the top left, top center, very middle, or top right 
@@ -134,7 +134,7 @@ DVD-only options:
     Specify a differnt font to use for the buttons. By default, the button
     font will be inherited from the title font (see **-font**). Use this
     option to use a different font for the buttons. The button font size is
-    inherited from **-fontsize**.
+    inherited from **-fontsize** and cannot be changed.
 
 
 Other options:
@@ -194,7 +194,7 @@ imagick_type_gen.pl > ~/.magick/type.mgk.
 
 Or you can specify a ttf font file directly to the **-font** options if you don't want to install fonts to ImageMagick.
 
-The **-fontdeco** option is quite extensible and takes a lot of ImageMagick's 
+The **-fontdeco** option is quite flexible and takes a lot of ImageMagick's 
 //convert// options. Please refer to the tovid [wiki http://tovid.wikia.com/wiki/Making_a_DVD_with_text_menus] and Anthony Thyssen's 
 guide for further explanation and examples.
 
