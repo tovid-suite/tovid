@@ -1077,11 +1077,9 @@ class Drawing:
 ### Exported functions
 ### --------------------------------------------------------------------
 
-def render(drawing, surface, width, height):
-    """Render a Drawing to the given surface at the given size.
+def render(drawing, context, width, height):
+    """Render a Drawing to the given cairo context at the given size.
     """
-    cr = cairo.Context(surface)
-    
     # Scale from the original size
     scale_x = float(width) / drawing.size[0]
     scale_y = float(height) / drawing.size[1]
@@ -1092,15 +1090,10 @@ def render(drawing, surface, width, height):
     # Execute all draw commands
     for step in drawing.steps:
         log.debug("Drawing step: %s" % step)
-        step.function(cr)
+        step.function(context)
 
     # Remove scaling function
     drawing.steps.pop(0)
-
-    # Close the open files..
-    if type(surface) in [cairo.SVGSurface, cairo.PSSurface, cairo.PDFSurface]:
-        cr.show_page()
-        surface.finish()
 
 
 def display(drawing, width=None, height=None, fix_aspect=False):
@@ -1118,7 +1111,7 @@ def display(drawing, width=None, height=None, fix_aspect=False):
         width = drawing.size[0]
     if not height:
         height = drawing.size[1]
-        
+
     # Adjust height to fix aspect ratio if desired
     if fix_aspect:
         height = width / drawing.aspect
@@ -1134,10 +1127,18 @@ def save_png(drawing, filename, width, height):
     """Saves a drawing to PNG, keeping alpha channel intact.
 
     This is the quickest, since Cairo itself exports directly to .png"""
-    surface = get_surface(width, height, 'image')
-    render(drawing, surface, width, height)
+    # Timing
+    start = time.time()
+    if (width, height) == drawing.size:
+        print "Not re-rendering"
+        surface = drawing.surface
+    else:
+        surface = get_surface(width, height, 'image')
+        context = cairo.Context(surface)
+        render(drawing, context, width, height)
     print "Saving", filename
     surface.write_to_png(filename)
+    print "save_png took %s seconds" % (time.time() - start)
     
 
 def save_jpg(drawing, filename, width, height):
@@ -1172,35 +1173,31 @@ def save_image(drawing, img_filename, width, height):
 def save_svg(drawing, filename, width, height):
     """Render drawing to an SVG file."""
     surface = get_surface(width, height, 'svg', filename)
-    render(drawing, surface, width, height)
+    context = cairo.Context(surface)
+    render(drawing, context, width, height)
+    context.show_page()
+    surface.finish()
     print "Saved SVG to", filename
 
 
 def save_pdf(drawing, filename, width, height):
     """Render drawing to a PDF file."""
     surface = get_surface(width, height, 'pdf', filename)
-    render(drawing, surface, width, height)
+    context = cairo.Context(surface)
+    render(drawing, context, width, height)
+    context.show_page()
+    surface.finish()
     print "Saved PDF to", filename
 
 
 def save_ps(drawing, filename, width, height):
     """Render drawing to a PostScript file."""
     surface = get_surface(width, height, 'ps', filename)
-    render(drawing, surface, width, height)
+    context = cairo.Context(surface)
+    render(drawing, context, width, height)
+    context.show_page()
+    surface.finish()
     print "Saved PostScript to", filename
-
-
-def display_xlib(drawing, width=0, height=0):
-    """Display the given Drawing using Xlib.
-    
-        drawing:    A Drawing object to display
-        width:      Pixel width of displayed image,
-                    or 0 to use the given Drawing's size
-        height:     Pixel height of displayed image,
-                    or 0 to use the given Drawing's size
-    """
-    import Xlib
-    pass
 
 
 ### --------------------------------------------------------------------
@@ -1213,7 +1210,8 @@ def draw_fontsize_demo(drawing):
 
     # Save context
     drawing.save()
-    drawing.scale(4.0/720, 3.0/480)
+    # TODO: Remove this scaling hack
+    drawing.scale(800.0/720, 600.0/480)
     
     # Draw white text in a range of sizes
     drawing.set_source('white')
@@ -1234,7 +1232,8 @@ def draw_font_demo(drawing):
 
     # Save context
     drawing.save()
-    drawing.scale(4.0/720, 3.0/480)
+    # TODO: Remove this scaling hack
+    drawing.scale(800.0/720, 600.0/480)
 
     fontsize = 24
     drawing.font_size(fontsize)
@@ -1272,7 +1271,8 @@ def draw_shape_demo(drawing):
 
     # Save context
     drawing.save()
-    drawing.scale(4.0/720, 3.0/480)
+    # TODO: Remove this scaling hack
+    drawing.scale(800.0/720, 600.0/480)
 
     # Large orange circle with black stroke
     drawing.save()
@@ -1336,7 +1336,8 @@ def draw_stroke_demo(drawing):
 
     # Save context
     drawing.save()
-    drawing.scale(4.0/720, 3.0/480)
+    # TODO: Remove this scaling hack
+    drawing.scale(800.0/720, 600.0/480)
     
     for width in [1, 2, 4, 6, 8, 10, 12, 14, 16]:
         drawing.stroke_width(width)
@@ -1354,7 +1355,7 @@ log.setLevel(logging.INFO)
 if __name__ == '__main__':
     mytime = time.time() # Benchmark
 
-    drawing = Drawing(4, 3)
+    drawing = Drawing(800, 600)
 
     # Start a new
     drawing.save()
@@ -1362,7 +1363,7 @@ if __name__ == '__main__':
     # Add a background fill
     #->Background
     drawing.set_source('darkgray')
-    drawing.rectangle(0, 0, 4, 3)
+    drawing.rectangle(0, 0, 800, 600)
     drawing.fill()
 
     # Shape demo
@@ -1377,13 +1378,13 @@ if __name__ == '__main__':
 
     # Stroke demo
     drawing.save()
-    drawing.translate(3.4, 1.2)
+    drawing.translate(680, 240)
     draw_stroke_demo(drawing)
     drawing.restore()
 
     # Font face demo
     drawing.save()
-    drawing.translate(0.3, 0.8)
+    drawing.translate(60, 160)
     draw_font_demo(drawing)
     drawing.restore()
 
@@ -1393,10 +1394,10 @@ if __name__ == '__main__':
     print "Took %f seconds" % (time.time() - mytime)
 
     # Render and display the Drawing at several different sizes
-    #resolutions = [(352, 240), (352, 480), (720, 480)]
-    resolutions = [(720, 480)]
+    resolutions = [(352, 240), (352, 480), (720, 480), (800, 600)]
+    #resolutions = [(720, 480)]
     for w, h in resolutions:
-        display(drawing, w, h, True)
+        display(drawing, w, h)
 
     #save_svg(drawing, "/tmp/drawing.svg", 400, 300)
     #save_pdf(drawing, "/tmp/drawing.pdf", 400, 300)
