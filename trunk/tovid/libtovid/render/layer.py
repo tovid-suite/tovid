@@ -213,6 +213,8 @@ class Background (Layer):
         drawing.restore()
 
 
+### --------------------------------------------------------------------
+
 class Image (Layer):
     """A rectangular image, scaled to the given size.
 
@@ -238,6 +240,8 @@ class Image (Layer):
                                           self.image_source)
         drawing.restore()
 
+
+### --------------------------------------------------------------------
 
 class VideoClip (Layer):
     """A rectangular video clip, scaled to the given size.
@@ -285,6 +289,8 @@ class VideoClip (Layer):
         drawing.restore()
 
 
+### --------------------------------------------------------------------
+
 class Text (Layer):
     """A simple text string, with size, color and font.
 
@@ -304,6 +310,7 @@ class Text (Layer):
     # TODO: This is gonna be pretty broken...
     def extents(self, drawing):
         """Return the extents of the text as a (x0, y0, x1, y1) tuple."""
+        assert isinstance(drawing, Drawing)
         drawing.save()
         drawing.font(self.font)
         drawing.font_size(self.fontsize)
@@ -331,6 +338,8 @@ class Text (Layer):
         drawing.restore()
 
 
+### --------------------------------------------------------------------
+
 class ShadedText (Layer):
     """A simple text string, with size, color and font.
 
@@ -355,6 +364,8 @@ class ShadedText (Layer):
         drawing.restore()
 
 
+### --------------------------------------------------------------------
+
 class Label (Text):
     """A text string with a rectangular background.
 
@@ -372,7 +383,7 @@ class Label (Text):
         log.debug("Drawing Label")
         #(dx, dy, w, h, ax, ay) = self.extents(drawing)
         (x0, y0, x1, y1) = self.extents(drawing)
-        
+        print x0, y0, x1, y1
         # Save context
         drawing.save()
 
@@ -402,6 +413,7 @@ class Label (Text):
         drawing.restore()
 
 
+### --------------------------------------------------------------------
 
 class Thumb (Layer):
     """A thumbnail image or video."""
@@ -433,6 +445,8 @@ class Thumb (Layer):
         self.draw_sublayers(drawing, frame)
         drawing.restore()
 
+
+### --------------------------------------------------------------------
 
 class ThumbGrid (Layer):
     """A rectangular array of thumbnail images or videos."""
@@ -503,6 +517,8 @@ class ThumbGrid (Layer):
         drawing.restore()
 
 
+### --------------------------------------------------------------------
+
 class SafeArea (Layer):
     """Render a safe area box at a given percentage.
     """
@@ -532,6 +548,8 @@ class SafeArea (Layer):
         # Restore context
         drawing.restore()
 
+
+### --------------------------------------------------------------------
 
 class Plot (Layer):
     """An x, y plot of data, drawn in the unit square."""
@@ -603,7 +621,9 @@ class Plot (Layer):
                 drawing.fill('red')
         drawing.END()
 
-    
+
+### --------------------------------------------------------------------
+
 class LabeledPlot (Plot):
     """A Plot with axis markings and labels, drawn in the unit square.
     """
@@ -704,6 +724,7 @@ class LabeledPlot (Plot):
         drawing.END()
 
 
+### --------------------------------------------------------------------
 
 class Scatterplot (LabeledPlot):
     """A labeled 2D scatterplot of data, drawn in the unit square.
@@ -746,6 +767,8 @@ class Scatterplot (LabeledPlot):
                 drawing.fill('red', 0.2)
         drawing.END()
 
+
+### --------------------------------------------------------------------
 
 class InterpolationGraph (Layer):
     # TODO: Support graphing of tuple data
@@ -832,6 +855,8 @@ class InterpolationGraph (Layer):
         # Restore context
         drawing.restore()
 
+
+### --------------------------------------------------------------------
 
 class ColorBars (Layer):
     """Standard SMPTE color bars
