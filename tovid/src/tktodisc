@@ -3,26 +3,83 @@
 
 """A Tkinter graphical user interface for todisc.
 
-Note on notation:
-
-tkinter widget variable names shall use a prefix describing widget type, and
-camel-case for remaining words, i.e.
-
-    fraFoo: Frame
-    mnuFoo: Menu
-    lblFoo: Label
-    btnFoo: Button
-    entFoo: Entry
-    lstFoo: Listbox
-    chkFoo: Checkbox
-    rbFoo:  Radiobutton
-    varFoo: Control variable (Variable, StringVar, IntVar, DoubleVar)
-
 Each Frame class has a grouping of todisc options in tkinter widget form.
 Frame subclasses define a getOptions method that appends command-line
 options to a Command, raising exceptions if required options are missing.
 """
 
+"""
+Style control
+
+-showcase FileEntry
+-textmenu
+-background FileEntry
+-menu-font FontSelector
+-menu-fontsize
+-menu-fade
+-thumb-shape
+-3dthumbs
+-thumb-font FontSelector
+-thumb-fontsize
+-submenu-stroke-color
+-submenu-title-color
+-button-style rect|text|text-rect
+-rotate
+-wave
+-showcase-framestyle none|glass
+-title-color
+-stroke-color
+-highlightcolor
+-selectcolor
+-text-mist
+-text-mist-color
+-text-mist-opacity
+-opacity
+-blur
+-thumb-mist-color
+-thumb-text-color
+-showcase-titles-align
+-tile3x1
+
+Audio:
+
+-bgaudio FileEntry
+-menu-audiolength
+-menu-audio-fade
+-submenu-audio FileEntry
+-submenu-audiolength
+-submenu-audio-fade
+
+
+Other
+
+-files
+-titles
+-submenus YesNo
+-ani-submenus YesNo
+-static YesNo
+-submneu-titles
+-chapters
+-menu-title
+-menu-length
+-intro FileEntry
+-seek
+-showcase-seek
+-loop
+-playall YesNo
+-chain-videos
+-subtitles lang1 lang2 ...
+-audio-lang chan1 chan2 ...
+-aspect Choice
+-widescreen Choice
+
+Execution control
+
+-debug
+-noask
+-tovidopts
+
+"""
 
 import os
 import time
@@ -51,9 +108,18 @@ class MissingOption (Exception):
         self.message = message
         self.widget = widget
 
-
-# TODO: Widget class-level styling (to avoid having to pass background='white'
-# everywhere)
+def pretty_todisc(command):
+    """Return a prettified version of a given todisc Command."""
+    assert isinstance(command, Command)
+    result = ['%s' % command.args[0]]
+    opts = command.args[1:]
+    while opts:
+        arg = str(opts.pop(0))
+        if arg.startswith('-'):
+            result.append(arg)
+        else:
+            result[-1] += ' ' + arg
+    return '\n'.join(result)
 
 def blink(widget):
     """Cause a widget to "blink" by briefly changing its background color.
@@ -66,35 +132,132 @@ def blink(widget):
     time.sleep(1)
     widget.config(background='white')
 
+
 ###
-### Frames for grouping controls
+### Custom widgets
 ###
 
-"""
-label="Disc format:"
-options=['DVD', 'SCVD']
-"""
+class Metawidget (Frame):
+    """A base class for extended special-purpose widgets.
 
-class Choice (Frame):
-    def __init__(self, master=None, label="Choices:", choices=['A', 'B']):
+    A Metawidget may contain any number of other widgets, and store a
+    single variable value. Presumably, a subclass will link self.variable
+    to one or more control widgets, via their textvariable attribute.
+    
+    See the Metawidget subclasses below for examples of how self.variable,
+    get() and set() are used.
+    """
+    def __init__(self, master=None):
         Frame.__init__(self, master)
-        self.rb = {}
-        self.chosen = StringVar()
+        # TODO: Support different variable types
+        self.variable = StringVar()
+
+    def get(self):
+        """Return the value of the Metawidget's variable."""
+        return self.variable.get()
+
+    def set(self, value):
+        """Set the Metawidget's variable to the given value."""
+        self.variable.set(value)
+
+
+class Choice (Metawidget):
+    """A set of radiobuttons for choosing one of several options.
+    """
+    def __init__(self, master=None, label="Choices:", choices=['A', 'B']):
+        """Initialize Choice widget with the given label and list of choices.
+        """
+        Metawidget.__init__(self, master)
         self.label = Label(self, text=label)
         self.label.pack(side=LEFT)
+        # Radiobutton widgets, indexed by choice value
+        self.rb = {}
         for choice in choices:
             self.rb[choice] =\
                 Radiobutton(self, text=choice, value=choice,
-                            variable=self.chosen, command=self.change)
+                            variable=self.variable, command=self.change)
             self.rb[choice].pack(side=LEFT)
-        self.chosen.set(choices[0])
+        # First choice by default
+        self.set(choices[0])
+
     def change(self):
-        """Event handler called when the radiobutton is changed."""
-        print "%s chosen" % self.chosen.get()
+        """Event handler called when the radiobutton is changed.
+        Print the new value chosen."""
+        print "%s chosen" % self.get()
+
+
+class LabelEntry (Metawidget):
+    """A labeled entry box"""
+    def __init__(self, master=None, label="Text:", variable=None):
+        Metawidget.__init__(self, master)
+        self.pack()
+        self.label = Label(self, text=label)
+        self.entry = Entry(self, width=30, textvariable=self.variable)
+        self.label.pack(side=LEFT)
+        self.entry.pack(side=LEFT)
+
+
+class BrowseButton (Metawidget):
+    """A "Browse" button that opens a file browser for loading/saving a file.
+    """
+    def __init__(self, master=None, type='load', title="Select a file"):
+        """Create a file-browser button.
+        
+            master:       Widget to use as master
+            type:         What kind of file dialog to use ('load' or 'save')
+            title:        Text to display in the titlebar of the file dialog
+        """
+        Metawidget.__init__(self, master)
+        self.button = Button(self, text="Browse...", command=self.onClick)
+        self.button.grid()
+        self.type = type
+        self.title = title
+
+    def onClick(self, event=None):
+        """Event handler when button is pressed"""
+        if self.type == 'load':
+            filename = askopenfilename(parent=self, title=self.title)
+        elif self.type == 'save':
+            filename = asksaveasfilename(parent=self, title=self.title)
+        else:
+            raise ValueError, "BrowseButton type must be 'load' or 'save'"
+        # Got a filename? Save it
+        if filename and self.variable:
+            self.set(filename)
+
+
+class FileEntry (Metawidget):
+    """A filename selector frame, consisting of label, entry, and browse button.
+    """
+    def __init__(self, master=None, label='Filename:', type='load',
+                 desc='Select a file to load'):
+        """Create a FileEntry with label, text entry, and browse button.
+        
+            label: Text of label next to file entry box
+            type:  Do you intend to 'load' or 'save' this file?
+            desc:  Brief description (shown in title bar of file
+                   browser dialog)
+        """
+        Metawidget.__init__(self, master)
+        self.label = Label(self, text=label)
+        self.entry = Entry(self, width=40, textvariable=self.variable)
+        self.button = BrowseButton(self, type, desc)
+        # Link our variable with button's
+        self.button.variable = self.variable
+        # Draw
+        self.label.grid(row=0, column=0, sticky=E)
+        self.entry.grid(row=0, column=1, sticky=EW)
+        self.button.grid(row=0, column=2, sticky=E)
+
+
+###
+### Frames containing related control widgets
+###
 
 
 class FormatFrame (Frame):
-    """A frame with a choice of formats (DVD, SVCD)"""
+    """A frame with a choice of formats (DVD, SVCD)
+    """
     def __init__(self, master=None):
         Frame.__init__(self, master)
         self.format = Choice(self, "Disc format:", ['DVD', 'SVCD'])
@@ -102,12 +265,12 @@ class FormatFrame (Frame):
         
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
-        format = str(self.format.chosen.get()).lower()
+        format = str(self.format.get()).lower()
         command.add('-%s' % format)
 
 
 class TvsysFrame (Frame):
-    """A frame with a choice of TV system (PAL, NTSC).
+    """A frame with a choice of TV system (PAL, NTSC)
     """
     def __init__(self, master=None):
         Frame.__init__(self, master)
@@ -115,7 +278,7 @@ class TvsysFrame (Frame):
         self.tvsys.pack()
 
     def setOptions(self, command):
-        tvsys = str(self.tvsys.chosen.get()).lower()
+        tvsys = str(self.tvsys.get()).lower()
         command.add('-%s' % tvsys)
     
 
@@ -263,60 +426,8 @@ class FileListFrame (Frame):
             command.add(title)
 
 
-class BrowseButton (Button):
-    """A "Browse" button that opens a file browser for loading/saving a file."""
-    def __init__(self, master=None, type='load', textvariable=None,
-                 title="Select a file"):
-        """Create a file-browser button.
-        
-            master:       Widget to use as master
-            type:         What kind of file dialog to use ('load' or 'save')
-            title:        Text to display in the titlebar of the file dialog
-            textvariable: A StringVar to store selected filename(s)
-        """ 
-        Button.__init__(self, master, text="Browse...", command=self.onClick)
-        self.type = type
-        self.title = title
-        self.textvariable = textvariable
-
-    def onClick(self, event=None):
-        """Event handler when button is pressed"""
-        if self.type == 'load':
-            filename = askopenfilename(parent=self, title=self.title)
-        elif self.type == 'save':
-            filename = asksaveasfilename(parent=self, title=self.title)
-        else:
-            raise ValueError, "Browse button type must be 'load' or 'save'"
-        if filename and self.textvariable:
-            self.textvariable.set(filename)
-
-
-class FileSelector (Frame):
-    """A file selector frame, consisting of label, entry, and browse button.
-    """
-    def __init__(self, master=None, label='Filename:', type='load',
-                 purpose='Select a file to load'):
-        """Create a FileSelector with label, text entry, and browse button.
-        
-            label:     Text of label next to file entry box
-            type:      'load' or 'save'
-            purpose:   Brief description (shown in title bar of file
-                       browser dialog)
-            variable:  A tkinter text variable to save the filename in
-        """
-        Frame.__init__(self, master)
-        self.chosen = StringVar()
-        self.label = Label(self, text=label)
-        self.entry = Entry(self, width=40, textvariable=self.chosen)
-        self.button = BrowseButton(self, type, self.chosen,
-                                   "Select an image file")
-        self.label.grid(row=0, column=0, sticky=E)
-        self.entry.grid(row=0, column=1, sticky=EW)
-        self.button.grid(row=0, column=2, sticky=E)
-
-
 class BackgroundsFrame (Frame):
-    """Widgets for setting background image, video and audio"""
+    """Widgets for setting background image or video and audio"""
     def __init__(self, master=None):
         Frame.__init__(self, master, borderwidth=1, relief=SUNKEN)
         self.drawWidgets()
@@ -325,25 +436,19 @@ class BackgroundsFrame (Frame):
         """Draw all the widgets in this frame."""
         label = Label(self, text="Menu backgrounds")
         label.grid(row=0, sticky=W)
-        self.image = FileSelector(self, "Image:", 'load',
-                                  "Select an image file")
-        self.video = FileSelector(self, "Video:", 'load',
-                                  "Select a video file")
-        self.audio = FileSelector(self, "Audio:", 'load',
-                                  "Select an audio file")
-        self.image.grid(sticky=E)
-        self.video.grid(sticky=E)
+        self.visual = FileEntry(self, "Image or video:", 'load',
+                                "Select an image or video file")
+        self.audio = FileEntry(self, "Audio:", 'load',
+                               "Select an audio file")
+        self.visual.grid(sticky=E)
         self.audio.grid(sticky=E)
     
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
-        image = self.image.chosen.get()
-        video = self.video.chosen.get()
-        audio = self.audio.chosen.get()
-        if image:
-            command.add('-background', image)
-        if video:
-            command.add('-background', video)
+        visual = self.visual.get()
+        audio = self.audio.get()
+        if visual:
+            command.add('-background', pic)
         if audio:
             command.add('-bgaudio', audio)
 
@@ -356,48 +461,35 @@ class OutfileFrame (Frame):
     
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
-        self.outfile = FileSelector(self, "Output file:", 'save',
-                                    "Select an output name.")
+        self.outfile = FileEntry(self, "Output file:", 'save',
+                                 "Select an output name.")
         self.outfile.pack(side=LEFT)
 
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
-        outfile = self.outfile.chosen.get()
+        outfile = self.outfile.get()
         if not outfile:
             print "WARNING: No output file selected"
-            raise MissingOption("Output filename (-out)",
-                                self.outfile.entry)
+            raise MissingOption("Output filename (-out)", self.outfile.entry)
         command.add('-out', outfile)
 
-
-class LabelEntry (Frame):
-    """A labeled entry box"""
-    def __init__(self, master=None, label="Text:", variable=None):
-        Frame.__init__(self, master)
-        self.pack()
-        self.label = Label(self, text=label)
-        self.entry = Entry(self, width=30,
-                           textvariable=variable)
-        self.label.pack(side=LEFT)
-        self.entry.pack(side=LEFT)
 
 
 class TitleFrame (Frame):
     """A frame containing options for customizing titles"""
     def __init__(self, master=None):
         Frame.__init__(self, master)
-        self.varTitle = StringVar() # Current title
         self.drawWidgets()
         
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
-        self.leTitle = LabelEntry(self, "Menu title:", self.varTitle)
-        self.leTitle.pack(side=LEFT)
-        self.varTitle.set("My video collection")
+        self.title = LabelEntry(self, "Menu title:")
+        self.title.pack(side=LEFT)
+        self.title.set("My video collection")
 
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
-        title = self.varTitle.get()
+        title = self.title.get()
         if title:
             command.add('-menu-title', title)
         else:
@@ -448,19 +540,17 @@ class AdvancedFrame (Frame):
     """
     def __init__(self, master=None):
         Frame.__init__(self, master)
-        self.varMenuFont = StringVar()
-        self.varThumbFont = StringVar()
         self.drawWidgets()
         
     def drawWidgets(self):
         self.lblAdvanced = Label(self, text="Advanced options")
         self.lblAdvanced.grid()
-        self.subAudio = FileSelector(self, "Submenu audio:", 'load',
-                                     "Select an audio file.")
-        self.showcase = FileSelector(self, "Showcase:", 'load',
-                                     "Select an image or video file.")
-        self.menuFont = LabelEntry(self, "Menu font:", self.varMenuFont)
-        self.thumbFont = LabelEntry(self, "Thumb font:", self.varThumbFont)
+        self.subAudio = FileEntry(self, "Submenu audio:", 'load',
+                                  "Select an audio file.")
+        self.showcase = FileEntry(self, "Showcase:", 'load',
+                                  "Select an image or video file.")
+        self.menuFont = LabelEntry(self, "Menu font:")
+        self.thumbFont = LabelEntry(self, "Thumb font:")
         self.subAudio.grid()
         self.showcase.grid()
         self.menuFont.grid()
@@ -468,10 +558,10 @@ class AdvancedFrame (Frame):
 
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
-        subaudio = self.subAudio.chosen.get()
-        showcase = self.showcase.chosen.get()
-        menufont = self.varMenuFont.get()
-        thumbfont = self.varThumbFont.get()
+        subaudio = self.subAudio.get()
+        showcase = self.showcase.get()
+        menufont = self.menuFont.get()
+        thumbfont = self.thumbFont.get()
         if subaudio:
             command.add('-submenu-audio', subaudio)
         if showcase:
@@ -575,8 +665,10 @@ class Application(Frame):
                       "Missing a required option: %s" % err.message)
             blink(err.widget)
             return
+        # Show pretty-printed command
+        pretty_cmd = pretty_todisc(cmd)
         print "Running command:"
-        print cmd
+        print pretty_cmd
         # Verify with user
         if askyesno(message="Run todisc now?"):
             root.withdraw()
