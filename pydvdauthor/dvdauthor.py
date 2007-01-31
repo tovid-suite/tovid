@@ -106,7 +106,7 @@ class Disc:
         """
         self.id = _gen_id()
         self.titlesets = []
-        self.jumppad = False
+        self.jumppad = True
         self.vmgm = None
         self.name = name
 
@@ -426,6 +426,11 @@ class Title:
 
     def add_video_file(self, file, chapters=None, pause=None):
         """Add a .vob (or .mpg) file to the Title.
+
+        chapters -- A string as understood by dvdauthor. Example:
+                   "00:00:00.000,00:01:00.001" or "12:26,15:42"
+        pause -- A time in seconds (ranging from 0 (no pause, default)
+                 to 254. Use 'inf' if you want it to stop indefinitely.
         """
         self.video_files.append({'file': file, 'chapters': chapters,
                                 'pause': pause})
@@ -466,9 +471,11 @@ class Title:
     def _xml(self):
         """Return the dvdauthor XML string for this Title."""
 
-        if not len(self.video_files):
-            raise ValueError, 'VideoFiles needed for Title named: "%s"' % \
-                  self.name
+        # It is possible to have a no-video menu, with only a <pre>
+        # (so it seems!)
+        #if not len(self.video_files):
+        #    raise ValueError, 'VideoFiles needed for Title named: "%s"' % \
+        #          self.name
         
         xml =  "<!-- %s: %s -->\n" % (self.__class__, self.name)
         
