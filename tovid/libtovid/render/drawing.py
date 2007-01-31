@@ -164,12 +164,17 @@ class Drawing:
         self.cr = cairo.Context(self.surface)
 
 
-    def addstep(self, func, *args):
+    def addStep(self, func, *args):
         """Add a Step to self.steps using the given function and args."""
         step = Step(func, *args)
         self.steps.append(step)
         if self.autodraw and step.name in ['fill', 'stroke']:
             display(self, 640, 480, True)
+
+    def doStep(self, func, *args):
+        """Add the given Step, and execute it."""
+        self.addStep(func, *args)
+        func(self.cr)
 
     def history(self):
         """Return a formatted string of all steps in this Drawing."""
@@ -200,9 +205,8 @@ class Drawing:
                            translate_x, translate_y)
         def _affine(cr):
             cr.set_matrix(mtx)
-        self.addstep(_affine, rot_x, rot_y, scale_x, scale_y,
+        self.doStep(_affine, rot_x, rot_y, scale_x, scale_y,
                      translate_x, translate_y)
-        #self.commands.append(_affine)
 
 
     def arc(self, x, y, radius, start_deg, end_deg):
@@ -211,8 +215,7 @@ class Drawing:
         """
         def _arc(cr):
             cr.arc(x, y, radius, start_deg * pi/180., end_deg * pi/180.)
-        self.addstep(_arc, x, y, radius, start_deg, end_deg)
-        #self.commands.append(_arc)
+        self.doStep(_arc, x, y, radius, start_deg, end_deg)
 
 
     def arc_rad(self, x, y, radius, start_rad, end_rad):
@@ -221,8 +224,7 @@ class Drawing:
         """
         def _arc_rad(cr):
             cr.arc(x, y, radius, start_rad, end_rad)
-        self.addstep(_arc_rad, x, y, radius, start_rad, end_rad)
-        #self.commands.append(_arc_rad)
+        self.doStep(_arc_rad, x, y, radius, start_rad, end_rad)
 
 
     # TODO: Rewrite/cleanup bezier function
@@ -287,8 +289,7 @@ class Drawing:
                             pt[1][0], pt[1][1])
             if close_path:
                 cr.close_path()
-        self.addstep(_bezier, points, rel, close_path)
-        #self.commands.append(_bezier)
+        self.doStep(_bezier, points, rel, close_path)
 
 
     def circle(self, center_x, center_y, radius):
@@ -296,8 +297,7 @@ class Drawing:
         def _circle(cr):
             cr.new_path()
             cr.arc(center_x, center_y, radius, 0, 2*pi)
-        self.addstep(_circle, center_x, center_y, radius)
-        #self.commands.append(_circle)
+        self.doStep(_circle, center_x, center_y, radius)
 
     # TODO: add clip stuff...
 
@@ -308,15 +308,13 @@ class Drawing:
         If arguments are present, they are passed to set_source()
         before filling.
         """
-
         # Optionally set fill color, and save it.
         if source is not None:
             self.set_source(source, opacity)
 
         def _fill(cr):
             cr.fill_preserve()
-        self.addstep(_fill, source, opacity)
-        #self.commands.append(_fill)
+        self.doStep(_fill, source, opacity)
 
 
     def fill_rule(self, rule):
@@ -337,8 +335,7 @@ class Drawing:
         
         def _fill_rule(cr):
             cr.set_fill_rule(tr[rule])
-        self.addstep(_fill_rule, rule)
-        #self.commands.append(_fill_rule)
+        self.doStep(_fill_rule, rule)
 
 
     def font(self, name, slant='normal', weight='normal'):
@@ -355,16 +352,14 @@ class Drawing:
               'bold': cairo.FONT_WEIGHT_BOLD}
         def _font(cr):
             cr.select_font_face(name, sl[slant], wg[weight])
-        self.addstep(_font, name, slant, weight)
-        #self.commands.append(_font)
+        self.doStep(_font, name, slant, weight)
 
 
     def font_size(self, pointsize):
         """Set the current font size in points."""
         def _font_size(cr):
             cr.set_font_size(pointsize)
-        self.addstep(_font_size, pointsize)
-        #self.commands.append(_font_size)
+        self.doStep(_font_size, pointsize)
 
 
     def font_stretch(self, x=1.0, y=1.0):
@@ -379,8 +374,7 @@ class Drawing:
             m = cr.get_font_matrix()
             m.scale(x, y)
             cr.set_font_matrix(m)
-        self.addstep(_font_stretch, x, y)
-        #self.commands.append(_font_stretch)
+        self.doStep(_font_stretch, x, y)
 
 
     def font_rotate(self, degrees):
@@ -390,8 +384,7 @@ class Drawing:
             m = cr.get_font_matrix()
             m.rotate(degrees * pi/180.)
             cr.set_font_matrix(m)
-        self.addstep(_font_rotate, degrees)
-        #self.commands.append(_font_rotate)
+        self.doStep(_font_rotate, degrees)
 
     def image_surface(self, x, y, width, height, surface):
         """Draw a given cairo.ImageSurface centered at (x, y), at the given
@@ -417,8 +410,7 @@ class Drawing:
         def _image_surface(cr):
             cr.set_source_surface(surface)
             cr.paint()
-        self.addstep(_image_surface, x, y, width, height, surface)
-        #self.commands.append(_image_surface)
+        self.doStep(_image_surface, x, y, width, height, surface)
 
         self.restore()
     
@@ -469,8 +461,7 @@ class Drawing:
             cr.new_path()
             cr.move_to(x0, y0)
             cr.line_to(x1, y1)
-        self.addstep(_line, x0, y0, x1, y1)
-        #self.commands.append(_line)
+        self.doStep(_line, x0, y0, x1, y1)
 
 
     def operator(self, operator='clear'):
@@ -503,8 +494,7 @@ class Drawing:
 
         def _operator(cr):
             cr.set_operator(ops[operator])
-        self.addstep(_operator, operator)
-        #self.commands.append(_operator)
+        self.doStep(_operator, operator)
 
 
     def paint(self):
@@ -512,8 +502,7 @@ class Drawing:
         region."""
         def _paint(cr):
             cr.paint()
-        self.addstep(_paint)
-        #self.commands.append(_paint)
+        self.doStep(_paint)
 
 
     def paint_with_alpha(self, alpha):
@@ -524,8 +513,7 @@ class Drawing:
         using the alpha value."""
         def _paint_with_alpha(cr):
             cr.paint_with_alpha(alpha)
-        self.addstep(_paint_with_alpha, alpha)
-        #self.commands.append(_paint_with_alpha)
+        self.doStep(_paint_with_alpha, alpha)
 
     def point(self, x, y):
         """Draw a point (really a tiny circle) at (x, y)."""
@@ -534,7 +522,7 @@ class Drawing:
         def _point(cr):
             cr.new_path()
             cr.arc(x, y, radius, 0, 2*pi)
-        self.addstep(_point, x, y)
+        self.doStep(_point, x, y)
 
 
     def polygon(self, points, close_path=True):
@@ -569,8 +557,7 @@ class Drawing:
         def _rectangle_corners(cr):
             cr.new_path()
             cr.rectangle(x0, y0, x1-x0, y1-y0)
-        self.addstep(_rectangle_corners, x0, y0, x1, y1)
-        #self.commands.append(_rectangle_corners)
+        self.doStep(_rectangle_corners, x0, y0, x1, y1)
 
 
     def rectangle(self, x, y, width, height):
@@ -580,8 +567,7 @@ class Drawing:
         def _rectangle(cr):
             cr.new_path()
             cr.rectangle(x, y, width, height)
-        self.addstep(_rectangle, x, y, width, height)
-        #self.commands.append(_rectangle)
+        self.doStep(_rectangle, x, y, width, height)
 
 
     def rotate_deg(self, degrees):
@@ -590,8 +576,7 @@ class Drawing:
             m = cr.get_matrix()
             m.rotate(degrees * pi/180.)
             cr.set_matrix(m)
-        self.addstep(_rotate_deg, degrees)
-        #self.commands.append(_rotate_deg)
+        self.doStep(_rotate_deg, degrees)
 
     rotate = rotate_deg
 
@@ -602,8 +587,7 @@ class Drawing:
             m = cr.get_matrix()
             m.rotate(rad)
             cr.set_matrix(m)
-        self.addstep(_rotate_rad, rad)
-        #self.commands.append(_rotate_rad)
+        self.doStep(_rotate_rad, rad)
 
 
     def roundrectangle(self, x0, y0, x1, y1, bevel_width, bevel_height):
@@ -664,10 +648,9 @@ class Drawing:
         mysource = self.create_source(source, opacity)
         def _set_source(cr):
             cr.set_source(mysource)
-        # Only add the step if the source could be created
+        # Only do the step if the source could be created
         if mysource:
-            self.addstep(_set_source, source, opacity)
-        #self.commands.append(_set_source)
+            self.doStep(_set_source, source, opacity)
 
 
     def create_source(self, source, opacity=None):
@@ -739,8 +722,7 @@ class Drawing:
             m = cr.get_matrix()
             m.scale(factor_x, factor_y)
             cr.set_matrix(m)
-        self.addstep(_scale, factor_x, factor_y)
-        #self.commands.append(_scale)
+        self.doStep(_scale, factor_x, factor_y)
 
 
     def scale_centered(self, center_x, center_y, factor_x, factor_y):
@@ -757,8 +739,7 @@ class Drawing:
                         -(center_y * factor_y - center_y))
             m.scale(factor_x, factor_y)
             cr.set_matrix(m)
-        self.addstep(_scale_centered, center_x, center_y, factor_x, factor_y)
-        #self.commands.append(_scale_centered)
+        self.doStep(_scale_centered, center_x, center_y, factor_x, factor_y)
 
 
     def stroke(self, source=None, opacity=None):
@@ -774,8 +755,7 @@ class Drawing:
         def _stroke(cr):
             # Optionally set fill color, and save it.
             cr.stroke_preserve()
-        self.addstep(_stroke, source, opacity)
-        #self.commands.append(_stroke)
+        self.doStep(_stroke, source, opacity)
 
 
     def stroke_antialias(self, do_antialias=True):
@@ -793,8 +773,7 @@ class Drawing:
             
         def _stroke_antialias(cr):
             cr.set_antialias(aa_type)
-        self.addstep(_stroke_antialias, do_antialias)
-        #self.commands.append(_stroke_antialias)
+        self.doStep(_stroke_antialias, do_antialias)
 
 
     def stroke_dash(self, array, offset=0.0):
@@ -813,8 +792,7 @@ class Drawing:
         """
         def _stroke_dash(cr):
             cr.set_dash(array, offset)
-        self.addstep(_stroke_dash, array, offset)
-        #self.commands.append(_stroke_dash)
+        self.doStep(_stroke_dash, array, offset)
 
 
     def stroke_linecap(self, cap_type):
@@ -831,8 +809,7 @@ class Drawing:
         
         def _stroke_linecap(cr):
             cr.set_line_cap(dic[cap_type])
-        self.addstep(_stroke_linecap, cap_type)
-        #self.commands.append(_stroke_linecap)
+        self.doStep(_stroke_linecap, cap_type)
 
 
     def stroke_linejoin(self, join_type):
@@ -849,8 +826,7 @@ class Drawing:
         
         def _stroke_linejoin(cr):
             cr.set_line_join(dic[join_type])
-        self.addstep(_stroke_linejoin, join_type)
-        #self.commands.append(_stroke_linejoin)
+        self.doStep(_stroke_linejoin, join_type)
 
 
     def stroke_width(self, width):
@@ -858,8 +834,7 @@ class Drawing:
         # (Pixels or points?)
         def _stroke_width(cr):
             cr.set_line_width(width)
-        self.addstep(_stroke_width, width)
-        #self.commands.append(_stroke_width)
+        self.doStep(_stroke_width, width)
 
 
     def text(self, text_string, x, y, align='left'):
@@ -872,7 +847,6 @@ class Drawing:
         """
         text_string = to_unicode(text_string)
 
-        #self.save()
         def _text(cr):
             (dx, dy, w, h, ax, ay) = cr.text_extents(text_string)
             if align == 'right':
@@ -883,9 +857,7 @@ class Drawing:
                 nx = x
             cr.move_to(nx, y)
             cr.show_text(text_string)
-        self.addstep(_text, text_string, x, y, align)
-        #self.commands.append(_text)
-        #self.restore()
+        self.doStep(_text, text_string, x, y, align)
 
 
     def text_path(self, text_string, x, y):
@@ -903,8 +875,7 @@ class Drawing:
         def _text_path(cr):
             cr.move_to(x, y)
             cr.text_path(text_string)
-        self.addstep(_text_path, text_string, x, y)
-        #self.commands.append(_text_path)
+        self.doStep(_text_path, text_string, x, y)
 
 
     def text_extents(self, text):
@@ -918,7 +889,6 @@ class Drawing:
         Returns:
             (x_bearing, y_bearing, width, height, x_advance, y_advance)
         """
-        # TODO: Fix this
         text = to_unicode(text)
         return self.cr.text_extents(text)
 
@@ -929,8 +899,7 @@ class Drawing:
             m = cr.get_matrix()
             m.translate(dx, dy)
             cr.set_matrix(m)
-        self.addstep(_translate, dx, dy)
-        #self.commands.append(_translate)
+        self.doStep(_translate, dx, dy)
 
 
     def push_group(self):
@@ -944,8 +913,7 @@ class Drawing:
         """
         def _push_group(cr):
             cr.push_group()
-        self.addstep(_push_group)
-        #self.commands.append(_push_group)
+        self.doStep(_push_group)
 
 
     def pop_group_to_source(self):
@@ -955,8 +923,7 @@ class Drawing:
         """
         def _pop_group_to_source(cr):
             cr.pop_group_to_source()
-        self.addstep(_pop_group_to_source)
-        #self.commands.append(_pop_group_to_source)
+        self.doStep(_pop_group_to_source)
 
 
     def save(self):
@@ -967,56 +934,89 @@ class Drawing:
         """
         def _save(cr):
             cr.save()
-        self.addstep(_save)
-        #self.commands.append(_save)
+        self.doStep(_save)
     BEGIN = save
 
     def restore(self):
         """Restore the previously saved context."""
         def _restore(cr):
             cr.restore()
-        self.addstep(_restore)
-        #self.commands.append(_restore)
+        self.doStep(_restore)
     END = restore
 
     ### ----------------------------------------------------------------
-    ### Unfinished methods
+    ### Untested methods
     ### ----------------------------------------------------------------
     
     
-    #def font_style(self, style):
-    #    """Set the font style to one of:
-    #    all, normal, italic, oblique
-    #
-    #    Alias to font_slant()
-    #    """
-    #    self.font_slant(style)
+    def font_slant(self, style):
+        """Set the font slant. Use one of:
+    
+           normal, italic, oblique
+        """
+        tr = {'italic': cairo.FONT_SLANT_ITALIC,
+              'normal': cairo.FONT_SLANT_NORMAL,
+              'oblique': cairo.FONT_SLANT_OBLIQUE}
+        def _font_slant(cr):
+            cr.set_slant(tr[style])
+        self.doStep(_font_slant, style)
+    # Alias
+    font_style = font_slant
 
 
-    #def font_slant(self, style):
-    #    """Set the font slant. Use one of:
-    #
-    #       normal, italic, oblique
-    #    """
-    #    tr = {'italic': cairo.FONT_SLANT_ITALIC,
-    #          'normal': cairo.FONT_SLANT_NORMAL,
-    #          'oblique': cairo.FONT_SLANT_OBLIQUE}
-    #    self.cr.set_slant(tr[style])
-   
-
-    #def font_weight(self, weight):
-    #    """Set the font weight to one of:
-    #    
-    #        normal, bold
-    #    """
-    #    tr = {'normal': cairo.FONT_WEIGHT_NORMAL,
-    #          'bold': cairo.FONT_WEIGHT_BOLD}
-    #    self.cr.set_font_weight(tr[weight])
+    def font_weight(self, weight):
+        """Set the font weight to one of:
+        
+            normal, bold
+        """
+        tr = {'normal': cairo.FONT_WEIGHT_NORMAL,
+              'bold': cairo.FONT_WEIGHT_BOLD}
+        def _font_weight(cr):
+            cr.set_font_weight(tr[weight])
+        self.doStep(_font_weight, weight)
 
 
-    #def font_family(self, family):
-    #    """Set the current font, by family name."""
-    #    self.cr.select_font_face(family)
+    def font_family(self, family):
+        """Set the current font, by family name."""
+        def _font_family(cr):
+            cr.select_font_face(family)
+        self.doStep(_font_family, family)
+    # Alias
+    font_face = font_family
+
+
+    def text_align(self, text_string, x, y, align='left'):
+        """Draw the given text string.
+
+            text_string: utf8 encoded text string
+            (x, y):      lower-left corner position
+            align:       'left', 'center', 'right'. This only changes the
+                         alignment in 'x', and 'y' stays the baseline.
+
+        Set the text's color with set_source() before calling text().
+        """
+        (dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
+        w = 0
+        if align == 'right':
+            x = x - w
+        elif align == 'center':
+            x = x - w / 2
+        else: # 'left'
+            x = x
+        # Let text() do the drawing
+        self.text(text_string, x, y)
+
+
+    def text_path_align(self, x, y, text_string, centered=False):
+        """Same as text_align(), but sets a path and doesn't draw anything.
+        Call stroke() or fill() yourself.
+        """
+        (dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
+        if centered:
+            x = x - w / 2
+            y = y + h / 2
+        # Let text_path() do the drawing
+        self.text_path(text_string, x, y)
 
 
     #def gradient_units(self, units):
@@ -1065,42 +1065,6 @@ class Drawing:
     #        else:
     #            command += ' %s' % token
     #    self.insert(command)
-
-
-    #def text_align(self, text_string, x, y, align='left'):
-        #"""Draw the given text string.
-
-            #text_string: utf8 encoded text string
-            #(x, y):      lower-left corner position
-            #align:       'left', 'center', 'right'. This only changes the
-                         #alignment in 'x', and 'y' stays the baseline.
-
-        #Set the text's color with set_source() before calling text().
-        #"""
-        ## TODO: Somehow determine extents of text without needing self.cr
-        #(dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
-        #w = 0
-        #if align == 'right':
-            #x = x - w
-        #elif align == 'center':
-            #x = x - w / 2
-        #else: # 'left'
-            #x = x
-        ## Let text() do the drawing
-        #self.text(text_string, x, y)
-
-
-    #def text_path_align(self, x, y, text_string, centered=False):
-        #"""Same as text_align(), but sets a path and doesn't draw anything.
-        #Call stroke() or fill() yourself.
-        #"""
-        ## TODO: Somehow determine extents of text without needing self.cr
-        
-        #(dx, dy, w, h, ax, ay) = self.cr.text_extents(text_string)
-        #if centered:
-            #x = x - w / 2
-            #y = y + h / 2
-        #self.text_path(text_string, x, y)
 
 
     #def point(self, (x, y), size):
@@ -1434,6 +1398,6 @@ if __name__ == '__main__':
     for w, h in resolutions:
         display(drawing, w, h, True)
 
-    save_svg(drawing, "/tmp/drawing.svg", 400, 300)
-    save_pdf(drawing, "/tmp/drawing.pdf", 400, 300)
-    save_ps(drawing, "/tmp/drawing.ps", 400, 300)
+    #save_svg(drawing, "/tmp/drawing.svg", 400, 300)
+    #save_pdf(drawing, "/tmp/drawing.pdf", 400, 300)
+    #save_ps(drawing, "/tmp/drawing.ps", 400, 300)
