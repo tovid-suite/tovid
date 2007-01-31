@@ -379,6 +379,7 @@ class Label (Text):
         # Calculate rectangle dimensions from text size/length
         width = x1 - x0
         height = y1 - y0
+        print "width, height:", width, height
         # Padding to use around text
         print "self.fontsize is", self.fontsize
         pad = self.fontsize / 3
@@ -400,92 +401,6 @@ class Label (Text):
         # Restore context
         drawing.restore()
 
-
-class TextBox (Text):
-    """A text box containing paragraphs, and support for simple formatting
-    markup in HTML-like syntax.
-    
-    Formatting elements are <p>...</p>, <b>...</b>, and <i>...</i>.
-    """
-    def __init__(self, text, (width, height), color='white',
-                 fontsize=20, font='Times', position=(0,0)):
-        """Formatted text contained in a box of the given size."""
-        Text.__init__(self, text, position, color, fontsize, font)
-        self.size = (width, height)
-        # TODO: Determine max number of characters that will fit in given
-        # width, and break marked-up text into lines (breaking at word
-        # boundaries)
-        # Set (x,y) position
-        assert(isinstance(position, tuple))
-        self.position = position
-
-    def draw(self, drawing, frame=1):
-        assert isinstance(drawing, Drawing)
-        log.debug("Drawing TextBox")
-        drawing.save()
-
-        # TODO: Wrap text!
-
-        # Draw font and effects for the whole text box
-        drawing.fill(self.color)
-        drawing.font(self.font)
-        drawing.font_size(self.fontsize)
-
-        # Start reading text at position 0
-        # TODO: For text-wrapping purposes, cursor will be the position on
-        # the current line
-        cursor = 0
-        # Start drawing in upper left-hand corner
-        draw_loc = self.position
-        
-        finished = False
-        while not finished:
-            # Find the next tag after cursor
-            tag_start = self.text.find('<', cursor)
-            
-            # If no tag was found, draw remaining text and finish up
-            if tag_start == -1:
-                drawing.text(self.text[cursor:], draw_loc)
-                finished = True
-
-            # Otherwise, parse and render tags
-            else:
-                # Draw text from cursor up to (but not including) the '<'
-                drawing.text(self.text[cursor:tag_start], draw_loc)
-                chars_written = tag_start - cursor
-    
-                # Adjust draw_loc
-                (x, y) = draw_loc
-                # Badly-hacked horizontal positioning
-                x += int(self.fontsize / 2 * chars_written)
-                # Line-height is double fontsize (Disabled for now)
-                # y = y + 2 * self.fontsize
-                draw_loc = (x, y)
-
-                # Get the full tag <..>
-                tag_end = self.text.find('>', tag_start) + 1
-                tag = self.text[tag_start:tag_end]
-                # Position the cursor after the tag
-                cursor = tag_end
-    
-                # For any opening tag, start a new drawing context
-                if not tag.startswith('</'):
-                    drawing.save()
-    
-                # Paragraph
-                if tag == '<p>':
-                    # TODO
-                    pass
-                # Bold text
-                elif tag == '<b>':
-                    drawing.font_weight('bold')
-                # Italic text
-                elif tag == '<i>':
-                    drawing.font_style('italic')
-                # For any closing tag, close the current drawing context
-                if tag.startswith('</'):
-                    drawing.restore()
-        drawing.restore()
 
 
 class Thumb (Layer):
@@ -993,8 +908,6 @@ class ColorBars (Layer):
 
 
 
-
-
 if __name__ == '__main__':
     images = None
     # Get arguments, if any
@@ -1009,59 +922,59 @@ if __name__ == '__main__':
     bgd = Background(color='#7080A0')
     bgd.draw(drawing, 1)
 
-    ## Draw color bars
-    #bars = ColorBars((320, 240), (400, 100))
-    #bars.draw(drawing, 1)
+    # Draw color bars
+    bars = ColorBars((320, 240), (400, 100))
+    bars.draw(drawing, 1)
 
-    ## Draw a label
-    #drawing.save()
-    #drawing.translate(460, 200)
-    #label = Label("tovid loves Linux")
-    #label.draw(drawing, 1)
-    #drawing.restore()
+    # Draw a label
+    drawing.save()
+    drawing.translate(460, 200)
+    label = Label("tovid loves Linux")
+    label.draw(drawing, 1)
+    drawing.restore()
 
-    ## Draw a text layer, with position.
-    #text = Text("Jackdaws love my big sphinx of quartz",
-                #(82, 62), '#bbb')
-    #text.draw(drawing, 1)
+    # Draw a text layer, with position.
+    text = Text("Jackdaws love my big sphinx of quartz",
+                (82, 62), '#bbb')
+    text.draw(drawing, 1)
 
-    ## Draw a text layer
-    #drawing.save()
-    #drawing.translate(80, 60)
-    #text = Text("Jackdaws love my big sphinx of quartz")
-    #text.draw(drawing, 1)
-    #drawing.restore()
+    # Draw a text layer
+    drawing.save()
+    drawing.translate(80, 60)
+    text = Text("Jackdaws love my big sphinx of quartz")
+    text.draw(drawing, 1)
+    drawing.restore()
 
-    ## Draw a template layer (overlapping semitransparent rectangles)
-    #template = MyLayer('white', 'darkblue')
-    ## Scale and translate the layer before drawing it
-    #drawing.save()
-    #drawing.translate(50, 100)
-    #drawing.scale(3.0, 3.0)
-    #template.draw(drawing, 1)
-    #drawing.restore()
+    # Draw a template layer (overlapping semitransparent rectangles)
+    template = MyLayer('white', 'darkblue')
+    # Scale and translate the layer before drawing it
+    drawing.save()
+    drawing.translate(50, 100)
+    drawing.scale(3.0, 3.0)
+    template.draw(drawing, 1)
+    drawing.restore()
 
-    ## Draw a safe area test (experimental)
-    #safe = SafeArea(93, 'yellow')
-    #safe.draw(drawing, 1)
+    # Draw a safe area test (experimental)
+    safe = SafeArea(93, 'yellow')
+    safe.draw(drawing, 1)
 
-    ## Draw a thumbnail grid (if images were provided)
-    #if images:
-        #drawing.save()
-        #drawing.translate(350, 300)
-        #thumbs = ThumbGrid(images, (320, 250))
-        #thumbs.draw(drawing, 1)
-        #drawing.restore()
+    # Draw a thumbnail grid (if images were provided)
+    if images:
+        drawing.save()
+        drawing.translate(350, 300)
+        thumbs = ThumbGrid(images, (320, 250))
+        thumbs.draw(drawing, 1)
+        drawing.restore()
 
-    ## Draw an interpolation graph
-    #drawing.save()
-    #drawing.translate(60, 400)
-    ## Some random keyframes to graph
-    #keys = [Keyframe(1, 25), Keyframe(10, 5), Keyframe(30, 35),
-            #Keyframe(40, 35), Keyframe(45, 20), Keyframe(60, 40)]
-    #interp = InterpolationGraph(keys, (400, 120), method="cosine")
-    #interp.draw(drawing, 25)
-    #drawing.restore()
+    # Draw an interpolation graph
+    drawing.save()
+    drawing.translate(60, 400)
+    # Some random keyframes to graph
+    keys = [Keyframe(1, 25), Keyframe(10, 5), Keyframe(30, 35),
+            Keyframe(40, 35), Keyframe(45, 20), Keyframe(60, 40)]
+    interp = InterpolationGraph(keys, (400, 120), method="cosine")
+    interp.draw(drawing, 25)
+    drawing.restore()
 
     # Draw a scatterplot
     drawing.save()
@@ -1070,8 +983,8 @@ if __name__ == '__main__':
         10: [3, 5, 7, 9],
         15: [5, 9, 13, 17],
         20: [8, 14, 20, 26]}
-    drawing.translate(150, 50)
-    drawing.scale(500, 500)
+    drawing.translate(550, 350)
+    drawing.scale(200, 200)
     plot = Scatterplot(xy_data, "Spam", "Eggs")
     plot.draw(drawing, 1)
     drawing.restore()
