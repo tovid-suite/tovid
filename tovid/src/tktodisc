@@ -9,11 +9,13 @@ options to a Command, raising exceptions if required options are missing.
 """
 
 """
+todisc options
+
 Style control
 
--showcase FileEntry
+-showcase FileEntry('Showcase:', 'load', 'Select an image or video file')
 -textmenu
--background FileEntry
+-background FileEntry('Background:', 'load', 'Select an image or video file')
 -menu-font FontSelector
 -menu-fontsize
 -menu-fade
@@ -21,7 +23,7 @@ Style control
 -3dthumbs
 -thumb-font FontSelector
 -thumb-fontsize
--submenu-stroke-color
+-submenu-stroke-color ColorPicker
 -submenu-title-color
 -button-style rect|text|text-rect
 -rotate
@@ -43,7 +45,7 @@ Style control
 
 Audio:
 
--bgaudio FileEntry
+-bgaudio FileEntry('Audio:', 'load', 'Select an audio file')
 -menu-audiolength
 -menu-audio-fade
 -submenu-audio FileEntry
@@ -89,6 +91,7 @@ try:
     from Tkinter import *
     from tkFileDialog import *
     from tkMessageBox import *
+    from tkColorChooser import askcolor
 except:
     import traceback
     traceback.print_exc()
@@ -97,6 +100,11 @@ except:
     print "  Gentoo: Add 'tcltk' to python USE flags"
     print "  Fedora: Install 'tkinter'"
     sys.exit()
+
+
+### --------------------------------------------------------------------
+### Exceptions
+### --------------------------------------------------------------------
 
 class MissingOption (Exception):
     """Raised when a required command-line option was not specified.
@@ -107,6 +115,11 @@ class MissingOption (Exception):
     def __init__(self, message, widget=None):
         self.message = message
         self.widget = widget
+
+
+### --------------------------------------------------------------------
+### Helper functions
+### --------------------------------------------------------------------
 
 def pretty_todisc(command):
     """Return a prettified version of a given todisc Command."""
@@ -133,9 +146,9 @@ def blink(widget):
     widget.config(background='white')
 
 
-###
+### --------------------------------------------------------------------
 ### Custom widgets
-###
+### --------------------------------------------------------------------
 
 class Metawidget (Frame):
     """A base class for extended special-purpose widgets.
@@ -160,6 +173,7 @@ class Metawidget (Frame):
         """Set the Metawidget's variable to the given value."""
         self.variable.set(value)
 
+### --------------------------------------------------------------------
 
 class Choice (Metawidget):
     """A set of radiobuttons for choosing one of several options.
@@ -185,6 +199,7 @@ class Choice (Metawidget):
         Print the new value chosen."""
         print "%s chosen" % self.get()
 
+### --------------------------------------------------------------------
 
 class LabelEntry (Metawidget):
     """A labeled entry box"""
@@ -196,6 +211,7 @@ class LabelEntry (Metawidget):
         self.label.pack(side=LEFT)
         self.entry.pack(side=LEFT)
 
+### --------------------------------------------------------------------
 
 class BrowseButton (Metawidget):
     """A "Browse" button that opens a file browser for loading/saving a file.
@@ -225,6 +241,7 @@ class BrowseButton (Metawidget):
         if filename and self.variable:
             self.set(filename)
 
+### --------------------------------------------------------------------
 
 class FileEntry (Metawidget):
     """A filename selector frame, consisting of label, entry, and browse button.
@@ -249,11 +266,27 @@ class FileEntry (Metawidget):
         self.entry.grid(row=0, column=1, sticky=EW)
         self.button.grid(row=0, column=2, sticky=E)
 
+### --------------------------------------------------------------------
 
-###
+class ColorPicker (Metawidget):
+    def __init__(self, master=None, label="Color:"):
+        Metawidget.__init__(self, master)
+        self.variable = Variable()
+        self.label = Label(self, text=label)
+        self.button = Button(self, text="None", command=self.change)
+        self.label.pack(side=LEFT)
+        self.button.pack(side=LEFT)
+
+    def change(self):
+        rgb, color = askcolor(self.get())
+        if color:
+            self.set(color)
+            self.button.config(text=color, foreground=color)
+
+
+### --------------------------------------------------------------------
 ### Frames containing related control widgets
-###
-
+### --------------------------------------------------------------------
 
 class FormatFrame (Frame):
     """A frame with a choice of formats (DVD, SVCD)
@@ -268,6 +301,7 @@ class FormatFrame (Frame):
         format = str(self.format.get()).lower()
         command.add('-%s' % format)
 
+### --------------------------------------------------------------------
 
 class TvsysFrame (Frame):
     """A frame with a choice of TV system (PAL, NTSC)
@@ -281,6 +315,7 @@ class TvsysFrame (Frame):
         tvsys = str(self.tvsys.get()).lower()
         command.add('-%s' % tvsys)
     
+### --------------------------------------------------------------------
 
 class FileListFrame (Frame):
     """A frame containing a list of filenames, and controls to add or delete
@@ -425,6 +460,7 @@ class FileListFrame (Frame):
         for title in titles:
             command.add(title)
 
+### --------------------------------------------------------------------
 
 class BackgroundsFrame (Frame):
     """Widgets for setting background image or video and audio"""
@@ -452,6 +488,7 @@ class BackgroundsFrame (Frame):
         if audio:
             command.add('-bgaudio', audio)
 
+### --------------------------------------------------------------------
 
 class OutfileFrame (Frame):
     """A frame containing an output-file text entry/browser box."""
@@ -473,7 +510,7 @@ class OutfileFrame (Frame):
             raise MissingOption("Output filename (-out)", self.outfile.entry)
         command.add('-out', outfile)
 
-
+### --------------------------------------------------------------------
 
 class TitleFrame (Frame):
     """A frame containing options for customizing titles"""
@@ -495,6 +532,7 @@ class TitleFrame (Frame):
         else:
             command.add('-menu-title', ' ')
 
+### --------------------------------------------------------------------
 
 class MiscOptionsFrame (Frame):
     """A frame containing miscellaneous options"""
@@ -534,6 +572,7 @@ class MiscOptionsFrame (Frame):
             for opt in custom:
                 command.add(opt)
 
+### --------------------------------------------------------------------
 
 class AdvancedFrame (Frame):
     """A frame containing controls for setting advanced options.
@@ -555,6 +594,8 @@ class AdvancedFrame (Frame):
         self.showcase.grid()
         self.menuFont.grid()
         self.thumbFont.grid()
+        self.titlecolor = ColorPicker(self, "Title color:")
+        self.titlecolor.grid()
 
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
@@ -572,9 +613,9 @@ class AdvancedFrame (Frame):
             command.add('-thumb-font', thumbfont)
 
 
-###
+### --------------------------------------------------------------------
 ### Main application window
-###
+### --------------------------------------------------------------------
 
 class Application(Frame):
     def __init__(self, master=None, theme='default'):
@@ -621,7 +662,6 @@ class Application(Frame):
                                   command=self.showAdvanced)
         self.btnAdvanced.pack(side=LEFT)
         fraButtons.grid()
-
 
     def getCommand(self):
         """Return the complete todisc command."""
@@ -703,11 +743,11 @@ class Application(Frame):
         self.option_add("*Entry.background", 'white')
         self.option_add("*Listbox.background", 'white')
 
-###
+### --------------------------------------------------------------------
 ### Entry point
-###
-root = Tk()
+### --------------------------------------------------------------------
 
+root = Tk()
 if __name__ == '__main__':
     # Single argument: theme name 'default' or 'light'
     theme = 'default'
@@ -717,3 +757,4 @@ if __name__ == '__main__':
     root.title("tktodisc: A todisc GUI")
     app = Application(root, theme)
     root.mainloop()
+
