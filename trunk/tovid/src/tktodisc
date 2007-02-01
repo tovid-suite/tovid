@@ -97,7 +97,7 @@ except:
     traceback.print_exc()
     print "Could not import Tkinter. You may need to do the following:"
     print "  Debian: Install 'python-tk'"
-    print "  Gentoo: Add 'tcltk' to python USE flags"
+    print "  Gentoo: Add 'tk' to python USE flags"
     print "  Fedora: Install 'tkinter'"
     sys.exit()
 
