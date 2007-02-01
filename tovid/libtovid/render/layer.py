@@ -383,16 +383,13 @@ class Label (Text):
         log.debug("Drawing Label")
         #(dx, dy, w, h, ax, ay) = self.extents(drawing)
         (x0, y0, x1, y1) = self.extents(drawing)
-        print x0, y0, x1, y1
         # Save context
         drawing.save()
 
         # Calculate rectangle dimensions from text size/length
         width = x1 - x0
         height = y1 - y0
-        print "width, height:", width, height
         # Padding to use around text
-        print "self.fontsize is", self.fontsize
         pad = self.fontsize / 3
         # Calculate start and end points of background rectangle
         start = (-pad, -height - pad)
@@ -551,221 +548,104 @@ class SafeArea (Layer):
 
 ### --------------------------------------------------------------------
 
-class Plot (Layer):
-    """An x, y plot of data, drawn in the unit square."""
-    def __init__(self, xy_dict):
-        """Plot (x, y) data from a dictionary.
+class Scatterplot (Layer):
+    """A 2D scatterplot of data.
 
-            xy_dict: Dictionary of one-to-one {x: y} or one-to-many {x: [y]}
-                     data to plot.
-        """
-        self.xy_dict = xy_dict
-        self.x_scale, self.y_scale = self.xy_scaling()
-
-    def max_y(self):
-        """Return the maximum y-value in xy_dict."""
-        max_y = 0
-        for x, y in self.xy_dict.items():
-            if type(y) is list:
-                # Max 0 for empty list
-                largest = max(y or [0])
-                max_y = max([largest, max_y])
-            else:
-                max_y = max([y, max_y])
-        return max_y
-
-    def numeric_x(self):
-        """Return True if x is numeric, False if non-numeric
-        (or if xy_vals is empty)"""
-        if len(self.xy_dict) == 0:
-            return False
-        xs = self.xy_dict.keys()
-        # Test only the first x
-        return isinstance(xs[0], int) or isinstance(xs[0], float)
-    
-    def xy_scaling(self):
-        """Precalculate necessary x, y scaling to fit data in the unit square.
-        Returns (x_scale, y_scale).
-        """
-        # Determine x scaling
-        x_vals = self.xy_dict.keys()
-        # For numeric x, scale by maximum x-value
-        if self.numeric_x():
-            x_scale = 1.0 / max(x_vals)
-        # For string x, scale by number of x-values
-        else:
-            x_scale = 1.0 / len(x_vals)
-
-        # Determine y scaling
-        y_scale = 1.0 / self.max_y()
-        return (x_scale, y_scale)
-
-    def draw(self, drawing):
-        """Draw a point-plot of all data."""
-        assert isinstance(drawing, Drawing)
-        # Background color
-        drawing.rectangle(0, 0, 1, 1)
-        drawing.fill('white', 0.5)
-        # Plot each point
-        drawing.BEGIN()
-        x_vals = self.xy_dict.keys()
-        for i, x in enumerate(x_vals):
-            if self.numeric_x():
-                x_coord = x * self.x_scale
-            else:
-                x_coord = i * self.x_scale
-            # Plot all y-values for this x
-            for y in self.xy_dict[x]:
-                y_coord = int(1.0 - y * self.y_scale)
-                drawing.point(x_coord, y_coord)
-                drawing.fill('red')
-        drawing.END()
-
-
-### --------------------------------------------------------------------
-
-class LabeledPlot (Plot):
-    """A Plot with axis markings and labels, drawn in the unit square.
+    Untested since MVG move.
     """
-    def __init__(self, xy_dict, x_label='', y_label=''):
-        """Plot (x, y) data from a dictionary, with the given axis labels.
-
-            xy_dict: Dictionary of one-to-one {x: y} or one-to-many {x: [y]}
-                     data to plot.
-            x_label: Text label for x-axis
-            y_label: Text label for y-axis
-        """
-        Plot.__init__(self, xy_dict)
+    def __init__(self, xy_dict, width=240, height=80, x_label='', y_label=''):
+        """Create a scatterplot using data in xy_dict, a dictionary of
+        lists of y-values, indexed by x-value."""
+        self.xy_dict = xy_dict
+        self.width, self.height = (width, height)
         self.x_label = x_label
         self.y_label = y_label
 
-    def draw(self, drawing):
-        """Draw the axes, labels, and plot."""
-        drawing.BEGIN()
-
-        # Background color
-        drawing.rectangle(0, 0, 1, 1)
-        drawing.fill('white')
-        
-        # Draw axes and labels
-        self.draw_axes(drawing)
-        self.draw_labels(drawing)        
-
-        # Draw plot using base class draw()
-        drawing.BEGIN()
-        # Leave room for labels
-        drawing.translate(0.1, 0)
-        drawing.scale(0.9, 0.9)
-        Plot.draw(self, drawing)
-        drawing.END()
-
-        drawing.END()
-
-    def draw_axes(self, drawing):
-        """Draw the x and y axes."""
-        assert isinstance(drawing, Drawing)
-        # Draw axes
-        drawing.BEGIN()
-        # Move axes 10% in from left and bottom sides to leave room for labels
-        drawing.stroke_width(0.01)
-        drawing.line(0.1, 0, 0.1, 0.9)
-        drawing.stroke('black')
-        drawing.line(0.1, 0.9, 1.0, 0.9)
-        drawing.stroke('black')
-        drawing.END()
-
-
-    def draw_labels(self, drawing):
-        """Draw axis labels in the left 10% and bottom 10% of the unit square.
-        """
-        assert isinstance(drawing, Drawing)
-        x_vals = self.xy_dict.keys()
-
-        drawing.BEGIN()
-        
-        drawing.font('NimbusSans')
-        drawing.font_size(0.05)
-        drawing.set_source('blue', 0.5)
-        
-        # Reduce x scale by 10% to fit x labels under plot area
-        x_scale = 0.90 * self.x_scale
-        # Label each value of x
-        for i, x in enumerate(x_vals):
-            drawing.BEGIN()
-            # Numeric scaling
-            if self.numeric_x():
-                drawing.translate(0.1 + x * x_scale, 0.93)
-            # Non-numeric; equally-spaced x labels
-            else:
-                drawing.translate(0.1 + i * x_scale, 0.93)
-            drawing.line(0, -0.02, 0, -0.05)
-            drawing.stroke_width(0.01)
-            drawing.stroke('blue', 0.5)
-            drawing.font_size(0.04)
-            drawing.rotate(45)
-            drawing.text(x, 0, 0)
-            drawing.END()
-            
-        # x-axis title label
-        drawing.font_size(0.05)
-        drawing.text(self.x_label, 0.5, 0.98)
-
-        drawing.BEGIN()
-        # Maximum y-value
-        drawing.font_size(0.04)
-        drawing.text(self.max_y(), 0.03, 0.05)
-        # y axis label
-        drawing.translate(0.03, 0.4)
-        drawing.rotate(90)
-        drawing.font_size(0.05)
-        drawing.text(self.y_label, 0, 0)
-        drawing.END()
-
-        drawing.END()
-
-
-### --------------------------------------------------------------------
-
-class Scatterplot (LabeledPlot):
-    """A labeled 2D scatterplot of data, drawn in the unit square.
-    """
-    def __init__(self, xy_dict, x_label='', y_label=''):
-        """Create a scatterplot using data in xy_dict, a dictionary of
-        lists of y-values, indexed by x-value."""
-        LabeledPlot.__init__(self, xy_dict, x_label, y_label)
-
     def draw(self, drawing, frame):
-        """Draw the scatterplot and axis labels."""
+        """Draw the scatterplot."""
         assert isinstance(drawing, Drawing)
-        drawing.BEGIN()
-        drawing.rectangle(0, 0, 1, 1)
-        drawing.fill('white')
-        LabeledPlot.draw_axes(self, drawing)
-        LabeledPlot.draw_labels(self, drawing)
-        # Leave room for labels
-        drawing.translate(0.1, 0)
-        drawing.scale(0.9, 0.9)
-        self.draw_plot(drawing)
-        drawing.END()
-
-    def draw_plot(self, drawing):
-        """Draw a scatterplot of small partially-transparent red circles.
-        """
-        assert isinstance(drawing, Drawing)
-        # Plot all y-values for each x (as small circles)
-        drawing.BEGIN()
+        log.debug("Drawing Scatterplot")
+        width, height = (self.width, self.height)
         x_vals = self.xy_dict.keys()
+        max_y = 0
+        for x in x_vals:
+            largest = max(self.xy_dict[x] or [0])
+            if largest > max_y:
+                max_y = largest
+        print "max_y", max_y
+        # For numeric x, scale by maximum x-value
+        x_is_num = isinstance(x_vals[0], int) or isinstance(x_vals[0], float)
+        if x_is_num:
+            x_scale = float(width) / max(x_vals)
+        # For string x, scale by number of x-values
+        else:
+            x_scale = float(width) / len(x_vals)
+        # Scale y according to maximum value
+        y_scale = float(height) / max_y
+        print "y_scale", y_scale
+        
+        # Save context
+        drawing.save()
+        drawing.rectangle(0, 0, width, height)
+        drawing.fill('white', 0.75)
+        
+        # Draw axes
+        #->comment("Axes of scatterplot")
+        drawing.save()
+        drawing.stroke_width(2)
+        drawing.line(0, 0, 0, height)
+        drawing.stroke('black')
+        drawing.line(0, height, width, height)
+        drawing.stroke('black')
+        drawing.restore()
+
+        # Axis labels
+        drawing.save()
+        drawing.set_source('blue')
+
+        drawing.save()
         for i, x in enumerate(x_vals):
-            if self.numeric_x():
-                x_coord = x * self.x_scale
+            drawing.save()
+            if x_is_num:
+                drawing.translate(x * x_scale, height + 15)
             else:
-                x_coord = i * self.x_scale
+                drawing.translate(i * x_scale, height + 15)
+            drawing.rotate(30)
+            drawing.text(x, 0, 0)
+            drawing.restore()
+
+        drawing.font_size(20)
+        drawing.text(self.x_label, width/2, height+40)
+        drawing.restore()
+
+        drawing.save()
+        drawing.text(max_y, -30, 0)
+        drawing.translate(-25, height/2)
+        drawing.rotate(90)
+        drawing.text(self.y_label, 0, 0)
+        drawing.restore()
+
+        drawing.restore()
+
+        # Plot all y-values for each x (as small circles)
+        #->comment("Scatterplot data")
+        drawing.save()
+        for i, x in enumerate(x_vals):
+            if x_is_num:
+                x_coord = x * x_scale
+            else:
+                x_coord = i * x_scale
+            # Shift x over slightly
+            x_coord += 10
             # Plot all y-values for this x
             for y in self.xy_dict[x]:
-                y_coord = 1.0 - y * self.y_scale
-                drawing.circle(x_coord, y_coord, 0.007)
+                y_coord = height - y * y_scale
+                drawing.circle(x_coord, y_coord, 3)
                 drawing.fill('red', 0.2)
-        drawing.END()
+        drawing.restore()
+        
+        # Restore context
+        drawing.restore()
 
 
 ### --------------------------------------------------------------------
@@ -1009,8 +889,8 @@ if __name__ == '__main__':
         15: [5, 9, 13, 17],
         20: [8, 14, 20, 26]}
     drawing.translate(550, 350)
-    drawing.scale(200, 200)
-    plot = Scatterplot(xy_data, "Spam", "Eggs")
+    #drawing.scale(200, 200)
+    plot = Scatterplot(xy_data, 200, 200, "Spam", "Eggs")
     plot.draw(drawing, 1)
     drawing.restore()
     
