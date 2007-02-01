@@ -108,19 +108,23 @@ if __name__ == '__main__':
             elif args and args[0] == 'by':
                 args.pop(0)
                 by_field = args.pop(0)
+                if by_field not in stats.FIELDS:
+                    print "Invalid field name: %s" % by_field
+                    sys.exit(1)
+
                 print "Generating a scatterplot of %ss by %s" % \
                       (list_field, by_field)
                 xy_values = statlist.list_by(list_field, by_field, True)
                 
-                scatterplot = Scatterplot(xy_values, by_field, list_field)
-                drawing = Drawing(1, 1)
-                drawing.rectangle(0, 0, 1, 1)
+                scatterplot = Scatterplot(xy_values, 640, 480,
+                                          by_field, list_field)
+                drawing = Drawing(800, 600)
+                drawing.rectangle(0, 0, 800, 600)
                 drawing.fill('white')
-                #drawing.scale(6, 4)      # Scatterplot size
-                #drawing.translate(1, 1)  # Center against (8, 6)
+                drawing.translate(80, 60)
                 scatterplot.draw(drawing, 1)
                 print "Showing scatterplot. Press 'q' to close."
-                display(drawing, 640, 640)
+                display(drawing, 800, 600)
 
         elif arg == '-match':
             field = args.pop(0)
