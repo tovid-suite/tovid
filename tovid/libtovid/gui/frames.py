@@ -71,7 +71,6 @@ class TovidFrame(wx.Frame):
         
         # Menu events
         # TODO: Re-enable save/open
-        # Commented out for the 0.26 release; not working
         #wx.EVT_MENU(self, ID_MENU_FILE_PREFS, self.OnFilePrefs)
         wx.EVT_MENU(self, ID_MENU_FILE_EXIT, self.OnExit)
         wx.EVT_MENU(self, ID_MENU_VIEW_SHOWGUIDE, self.OnShowGuide)

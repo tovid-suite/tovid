@@ -2,6 +2,7 @@
 # configs.py
 
 import os
+import sys
 import re
 import gettext
 import wx
@@ -32,16 +33,24 @@ class TovidConfig:
     statusBar = None
     # The user's locale/system encoding information
     cur_lang_code, cur_encoding = locale.getdefaultlocale()
+    # Hack: Error out on undefined locale
+    if cur_encoding is None:
+        print "Error: Could not get default locale."
+        print "You should be able to fix this by setting LANG or LC_ALL:"
+        print "   LANG=en_US.utf8 tovidgui, or"
+        print "   LC_ALL=en_US.utf8 tovidgui"
+        print "Set LANG or LC_ALL in your ~/.profile to avoid this error."
+        sys.exit(1)
 
     def __init__(self):
         """Initialize "static" class data.
         The real initialization function, only called once."""
-   
         self.__dict__ = self.__shared_state
         self.isInitialized = True
         self.ConfigAvailFonts()
         #self.InitLocales()
     
+
     def ConfigAvailFonts(self):
         """Determine fonts that are available in both wx.Python and
         ImageMagick."""
