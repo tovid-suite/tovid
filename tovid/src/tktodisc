@@ -189,6 +189,53 @@ def blink(widget):
 ### --------------------------------------------------------------------
 ### Frames containing related control widgets
 ### --------------------------------------------------------------------
+# add Menu template choices frame
+class menuChoiceFrame (Frame):
+    """A frame for setting which Menu template will be used"""
+    def __init__(self, master=None):
+        Frame.__init__(self, master, borderwidth=3, relief=GROOVE)
+        self.varMenuStyle = StringVar()     # Menu arrangement variable
+        self.varShowcaseFile = StringVar()     # use showcase file
+        self.varTextSplit = IntVar()
+        self.drawWidgets()
+    def drawWidgets(self):
+        self.lblMenuTemplate = Label(self, text="Menu Arrangement")
+        self.lblMenuTemplate.grid(row=1, column=0, sticky=W)
+        self.chkDefault = Radiobutton(self,
+                                     text="Default style",
+                                     variable=self.varMenuStyle, value="doDefault")
+        self.chkDefault.grid(row=2, column=0, sticky=W)
+        self.chkDefault.select()
+        self.chkShowcase = Radiobutton(self,
+                                     text="Showcase style",
+                                     variable=self.varMenuStyle, value="doShowcase")
+        self.chkShowcase.grid(row=3, column=0, sticky=W)
+        self.chkTextmenu = Radiobutton(self,
+                                     text="Textmenu style",
+                                     variable=self.varMenuStyle, value="doTextmenu")
+        self.chkTextmenu.grid(row=4, column=0, sticky=W)
+        self.showcasefile = FileEntry(self, "Showcase file:", 'load',
+                                "Select an image or video file.")
+        self.showcasefile.grid(row=5, column=0, sticky=E)
+        self.lblTextmenuSplit = Label(self, text="Start new textmenu column at video #   ( default is 15 )")
+        self.lblTextmenuSplit.grid(row=6, column=0, sticky=E+W)
+        self.textSplit = Spinbox(self, from_=2, to=15, width=3, textvariable=self.varTextSplit, wrap=1)
+        self.varTextSplit.set(15)
+        self.textSplit.grid(row=6, column=0, padx=5, sticky=W)
+# TODO {  if textmenu is not checked, remove these 2 options
+#      {  self.lblTextmenuSplit.grid_remove() and self.textSplit.grid_remove()
+    def setOptions(self, command):
+        """Add relevant todisc options to the given Command."""
+        showcasefile = self.showcasefile.get()
+        textsplit = self.varTextSplit.get()
+        if textsplit == 15:
+            textsplit=""
+        if self.varMenuStyle.get() == "doShowcase" or showcasefile:
+            command.add('-showcase', showcasefile)
+        if self.varMenuStyle.get() == "doTextmenu":
+            command.add('-textmenu', textsplit)
+
+
 
 class FormatFrame (Frame):
     """A frame with a choice of formats (DVD, SVCD)
@@ -367,7 +414,7 @@ class FileListFrame (Frame):
 class BackgroundsFrame (Frame):
     """Widgets for setting background image or video and audio"""
     def __init__(self, master=None):
-        Frame.__init__(self, master, borderwidth=1, relief=SUNKEN)
+        Frame.__init__(self, master)
         self.drawWidgets()
 
     def drawWidgets(self):
@@ -386,7 +433,7 @@ class BackgroundsFrame (Frame):
         visual = self.visual.get()
         audio = self.audio.get()
         if visual:
-            command.add('-background', pic)
+            command.add('-background', visual)
         if audio:
             command.add('-bgaudio', audio)
 
@@ -525,6 +572,9 @@ class Application(Frame):
         self.fraTvsys = TvsysFrame(self)
         self.fraTvsys.grid(sticky=W)
 
+        self.fraMenuFormat = menuChoiceFrame(self)
+        self.fraMenuFormat.grid(padx=5, pady=5, sticky=W)
+
         self.fraBackgrounds = BackgroundsFrame(self)
         self.fraBackgrounds.grid(sticky=EW)
         
@@ -557,6 +607,7 @@ class Application(Frame):
             self.fraFileList,
             self.fraFormat,
             self.fraTvsys,
+            self.fraMenuFormat,
             self.fraBackgrounds,
             self.fraMisc,
             self.fraOutfile,
