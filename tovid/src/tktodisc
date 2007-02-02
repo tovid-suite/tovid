@@ -28,8 +28,6 @@ except:
 
 
 WIDGETS = {
-    'showcase':
-        (FileEntry, 'Showcase:', 'load', 'Select an image or video file.'),
     'background':
         (FileEntry, 'Background:', 'load', 'Select an image or video file'),
     'menu-font':
@@ -522,7 +520,6 @@ class AdvancedFrame (Frame):
         self.label.grid()
         options = [
             'submenu-audio',
-            'showcase',
             'menu-font',
             'thumb-font',
             'title-color',
