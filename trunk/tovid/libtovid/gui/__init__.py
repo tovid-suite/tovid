@@ -22,6 +22,7 @@ __all__ = [\
     "dialogs", 
     "frames", 
     "icons", 
+    "meta",
     "options", 
     "panels",
     "util"]
