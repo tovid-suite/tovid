@@ -29,63 +29,63 @@ except:
 
 WIDGETS = {
     'showcase':
-        (FileEntry, 'Showcase:', 'load', 'Select an image or video file.'),
+        (FileEntry, 'Showcase', 'load', 'Select an image or video file.'),
     'background':
-        (FileEntry, 'Background:', 'load', 'Select an image or video file'),
+        (FileEntry, 'Background', 'load', 'Select an image or video file'),
     'menu-font':
         (FontPicker,),
     'menu-fade':
-        (Flag, 'Fade in menu:', False),
+        (Flag, 'Fade in menu', False),
     'thumb-shape':
-        (Choice, 'Thumb shape:', ['normal', 'oval', 'plectrum', 'egg']),
+        (Choice, 'Thumb shape', 'normal|oval|plectrum|egg'),
     'thumb-font':
         (FontPicker,),
     'submenu-stroke-color':
-        (ColorPicker, 'Submenu stroke color:'),
+        (ColorPicker, 'Submenu stroke color'),
     'submenu-title-color':
-        (ColorPicker, 'Submenu title color:'),
+        (ColorPicker, 'Submenu title color'),
     'button-style':
-        (Choice, 'Button style:', ['rect', 'text', 'text-rect']),
+        (Choice, 'Button style', 'rect|text|text-rect'),
     'rotate':
-        (Number, 'Rotate:'),
+        (Number, 'Rotate'),
     'showcase-framestyle':
-        (Choice, 'Showcase frame style:', ['none', 'glass']),
+        (Choice, 'Showcase frame style', 'none|glass'),
     'title-color':
         (ColorPicker, 'Title color'),
     'stroke-color':
-        (ColorPicker, 'Stroke color:'),
+        (ColorPicker, 'Stroke color'),
     'highlightcolor':
-        (ColorPicker, 'Highlight color:'),
+        (ColorPicker, 'Highlight color'),
     'selectcolor':
-        (ColorPicker, 'Selection color:'),
+        (ColorPicker, 'Selection color'),
     'text-mist':
-        (Flag, 'Text mist:', False),
+        (Flag, 'Text mist', False),
     'text-mist-color':
         (ColorPicker, 'Text mist color'),
     'text-mist-opacity':
-        (Number, 'Text mist opacity:', 1, 100, 'scale'),
+        (Number, 'Text mist opacity', 1, 100, 'scale'),
     'opacity':
-        (Number, 'Thumbnail opacity:', 1, 100, 'scale'),
+        (Number, 'Thumbnail opacity', 1, 100, 'scale'),
     'blur':
-        (Number, 'Blur:', 1, 5),
+        (Number, 'Blur', 1, 5),
     'thumb-mist-color':
         (ColorPicker, 'Thumb mist color'),
     'thumb-text-color':
         (ColorPicker, 'Thumb text color'),
     'showcase-titles-align':
-        (Choice, 'Showcase title alignment:', ['west', 'east', 'center']),
+        (Choice, 'Showcase title alignment', 'west|east|center'),
     'bgaudio':
-        (FileEntry, 'Audio:', 'load', 'Select an audio file'),
+        (FileEntry, 'Audio', 'load', 'Select an audio file'),
     'menu-audio-length':
-        (Number, 'Menu audio length:', 0, 120, 'scale'),
+        (Number, 'Menu audio length', 0, 120, 'scale'),
     'menu-audio-fade':
-        (Number, 'Menu audio fade:', 0, 10, 'scale'),
+        (Number, 'Menu audio fade', 0, 10, 'scale'),
     'submenu-audio':
-        (FileEntry, 'Submenu audio:', 'load', 'Select an audio file'),
+        (FileEntry, 'Submenu audio', 'load', 'Select an audio file'),
     'submenu-audio-length':
-        (Number, 'Submenu audio length:', 0, 120, 'scale'),
+        (Number, 'Submenu audio length', 0, 120, 'scale'),
     'submenu-audio-fade':
-        (Number, 'Submenu audio fade:', 0, 10, 'scale'),
+        (Number, 'Submenu audio fade', 0, 10, 'scale'),
     'submenus':
         (Flag, 'Create submenus'),
     'ani-submenus':
@@ -93,11 +93,11 @@ WIDGETS = {
     'static':
         (Flag, 'Static menus (takes less time)'),
     'menu-title':
-        (LabelEntry, 'Menu title:'),
+        (LabelEntry, 'Menu title'),
     'menu-length':
-        (Number, 'Menu length:', 0, 120, 'scale'),
+        (Number, 'Menu length', 0, 120, 'scale'),
     'intro':
-        (FileEntry, 'Intro video:', 'load', 'Select a video file'),
+        (FileEntry, 'Intro video', 'load', 'Select a video file'),
     'seek':
         (Number, 'Seek time', 0, 600, 'scale'),
     'showcase-seek':
@@ -107,9 +107,9 @@ WIDGETS = {
     'playall':
         (Flag, '"Play all" button', False),
     'aspect':
-        (Choice, 'Aspect ratio', ['4:3', '16:9']),
+        (Choice, 'Aspect ratio', '4:3|16:9'),
     'widescreen':
-        (Choice, 'Widescreen', ['nopanscan', 'noletterbox']),
+        (Choice, 'Widescreen', 'nopanscan|noletterbox'),
     'tovidopts':
         (LabelEntry, 'Custom tovid options')
     }
