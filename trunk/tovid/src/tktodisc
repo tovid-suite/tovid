@@ -28,6 +28,8 @@ except:
 
 
 WIDGETS = {
+    'showcase':
+        (FileEntry, 'Showcase:', 'load', 'Select an image or video file.'),
     'background':
         (FileEntry, 'Background:', 'load', 'Select an image or video file'),
     'menu-font':
