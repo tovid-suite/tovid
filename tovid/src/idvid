@@ -368,7 +368,7 @@ function idvid_main ()
         echo "V_ASPECT_WIDTH=$V_ASPECT_WIDTH"
         echo "ID_VIDEO_FRAMES=$ID_VIDEO_FRAMES"
     elif $TABULAR; then
-        FILE_SIZE=$(du -h "$INFILE" | awk '{print $1}')
+        FILE_SIZE=$(du -Dh "$INFILE" | awk '{print $1}')
         echo "$INFILE||$FILE_SIZE||${ID_VIDEO_WIDTH}x${ID_VIDEO_HEIGHT}||$ID_VIDEO_BITRATE||$ID_AUDIO_BITRATE" >> "$TABLE"
     else
         echo $SEPARATOR
