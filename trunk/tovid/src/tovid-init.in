@@ -388,11 +388,18 @@ fi
 # ******************************************************************************
 # Find multiple version kludge
 # ******************************************************************************
-INSTALLED_TOVIDS=$(which -a tovid 2>>/dev/null | tr '\n' ' ')
-NUMBER_TOVIDS=$(echo $INSTALLED_TOVIDS | wc -w)
+INSTALLED_TOVIDS=$(type -a tovid 2>>/dev/null | awk '{print $NF}' | tr '\n' ' ')
+NUM_INSTALLED=0
+
+# Only count non-links
+for tovid in $INSTALLED_TOVIDS; do
+    if ! test -L $tovid; then
+        let "NUM_INSTALLED=NUM_INSTALLED+1"
+    fi
+done
 
 # Exit when there is more than one tovid installed
-if test $NUMBER_TOVIDS -ne 1; then
+if test $NUM_INSTALLED -ne 1; then
     echo "Found $NUMBER_TOVIDS installations of tovid on your system!"
     echo "I won't run until there is only one of me :)"
     echo "Installed versions:"
