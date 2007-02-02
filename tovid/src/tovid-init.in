@@ -400,7 +400,7 @@ done
 
 # Exit when there is more than one tovid installed
 if test $NUM_INSTALLED -ne 1; then
-    echo "Found $NUMBER_TOVIDS installations of tovid on your system!"
+    echo "Found $NUM_INSTALLED installations of tovid on your system!"
     echo "I won't run until there is only one of me :)"
     echo "Installed versions:"
     for version in $INSTALLED_TOVIDS; do
