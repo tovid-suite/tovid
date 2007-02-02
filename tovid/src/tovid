@@ -316,7 +316,7 @@ function check_disk_space()
     # based on original file size
     $SLICE && VIDEO_DURATION=$CLIP_LENGTH || VIDEO_DURATION=$V_DURATION
     if test "$VIDEO_DURATION" = "0"; then
-        CUR_SIZE=$(du -c -k \"$IN_FILE\" | awk 'END{print $1}')
+        CUR_SIZE=$(du -Dck \"$IN_FILE\" | awk 'END{print $1}')
         NEED_SPACE=$(expr $CUR_SIZE \* 2)
         yecho  "The encoding process will require about"
     # Estimate space based as kbps * duration
