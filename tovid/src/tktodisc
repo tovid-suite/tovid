@@ -8,90 +8,15 @@ Frame subclasses define a getOptions method that appends command-line
 options to a Command, raising exceptions if required options are missing.
 """
 
-"""
-todisc options
-
-Style control
-
--showcase FileEntry('Showcase:', 'load', 'Select an image or video file')
--textmenu
--background FileEntry('Background:', 'load', 'Select an image or video file')
--menu-font FontSelector
--menu-fontsize
--menu-fade
--thumb-shape
--3dthumbs
--thumb-font FontSelector
--thumb-fontsize
--submenu-stroke-color ColorPicker
--submenu-title-color
--button-style rect|text|text-rect
--rotate
--wave
--showcase-framestyle none|glass
--title-color
--stroke-color
--highlightcolor
--selectcolor
--text-mist
--text-mist-color
--text-mist-opacity
--opacity
--blur
--thumb-mist-color
--thumb-text-color
--showcase-titles-align
--tile3x1
-
-Audio:
-
--bgaudio FileEntry('Audio:', 'load', 'Select an audio file')
--menu-audiolength
--menu-audio-fade
--submenu-audio FileEntry
--submenu-audiolength
--submenu-audio-fade
-
-
-Other
-
--files
--titles
--submenus YesNo
--ani-submenus YesNo
--static YesNo
--submneu-titles
--chapters
--menu-title
--menu-length
--intro FileEntry
--seek
--showcase-seek
--loop
--playall YesNo
--chain-videos
--subtitles lang1 lang2 ...
--audio-lang chan1 chan2 ...
--aspect Choice
--widescreen Choice
-
-Execution control
-
--debug
--noask
--tovidopts
-
-"""
-
 import os
 import time
 from libtovid.cli import Command
+from libtovid.gui.meta import *
 
 try:
     from Tkinter import *
     from tkFileDialog import *
     from tkMessageBox import *
-    from tkColorChooser import askcolor
 except:
     import traceback
     traceback.print_exc()
@@ -101,6 +26,111 @@ except:
     print "  Fedora: Install 'tkinter'"
     sys.exit()
 
+
+WIDGETS = {
+    'showcase':
+        (FileEntry, 'Showcase:', 'load', 'Select an image or video file.'),
+    'background':
+        (FileEntry, 'Background:', 'load', 'Select an image or video file'),
+    'menu-font':
+        (FontPicker,),
+    'menu-fade':
+        (Flag, 'Fade in menu:', False),
+    'thumb-shape':
+        (Choice, 'Thumb shape:', ['normal', 'oval', 'plectrum', 'egg']),
+    'thumb-font':
+        (FontPicker,),
+    'submenu-stroke-color':
+        (ColorPicker, 'Submenu stroke color:'),
+    'submenu-title-color':
+        (ColorPicker, 'Submenu title color:'),
+    'button-style':
+        (Choice, 'Button style:', ['rect', 'text', 'text-rect']),
+    'rotate':
+        (Number, 'Rotate:'),
+    'showcase-framestyle':
+        (Choice, 'Showcase frame style:', ['none', 'glass']),
+    'title-color':
+        (ColorPicker, 'Title color'),
+    'stroke-color':
+        (ColorPicker, 'Stroke color:'),
+    'highlightcolor':
+        (ColorPicker, 'Highlight color:'),
+    'selectcolor':
+        (ColorPicker, 'Selection color:'),
+    'text-mist':
+        (Flag, 'Text mist:', False),
+    'text-mist-color':
+        (ColorPicker, 'Text mist color'),
+    'text-mist-opacity':
+        (Number, 'Text mist opacity:', 1, 100, 'scale'),
+    'opacity':
+        (Number, 'Thumbnail opacity:', 1, 100, 'scale'),
+    'blur':
+        (Number, 'Blur:', 1, 5),
+    'thumb-mist-color':
+        (ColorPicker, 'Thumb mist color'),
+    'thumb-text-color':
+        (ColorPicker, 'Thumb text color'),
+    'showcase-titles-align':
+        (Choice, 'Showcase title alignment:', ['west', 'east', 'center']),
+    'bgaudio':
+        (FileEntry, 'Audio:', 'load', 'Select an audio file'),
+    'menu-audio-length':
+        (Number, 'Menu audio length:', 0, 120, 'scale'),
+    'menu-audio-fade':
+        (Number, 'Menu audio fade:', 0, 10, 'scale'),
+    'submenu-audio':
+        (FileEntry, 'Submenu audio:', 'load', 'Select an audio file'),
+    'submenu-audio-length':
+        (Number, 'Submenu audio length:', 0, 120, 'scale'),
+    'submenu-audio-fade':
+        (Number, 'Submenu audio fade:', 0, 10, 'scale'),
+    'submenus':
+        (Flag, 'Create submenus'),
+    'ani-submenus':
+        (Flag, 'Animated submenus (takes more time)'),
+    'static':
+        (Flag, 'Static menus (takes less time)'),
+    'menu-title':
+        (LabelEntry, 'Menu title:'),
+    'menu-length':
+        (Number, 'Menu length:', 0, 120, 'scale'),
+    'intro':
+        (FileEntry, 'Intro video:', 'load', 'Select a video file'),
+    'seek':
+        (Number, 'Seek time', 0, 600, 'scale'),
+    'showcase-seek':
+        (Number, 'Showcase seek time', 0, 600, 'scale'),
+    'loop':
+        (Number, 'Loop', 0, 10),
+    'playall':
+        (Flag, '"Play all" button', False),
+    'aspect':
+        (Choice, 'Aspect ratio', ['4:3', '16:9']),
+    'widescreen':
+        (Choice, 'Widescreen', ['nopanscan', 'noletterbox']),
+    'tovidopts':
+        (LabelEntry, 'Custom tovid options')
+    }
+
+"""
+Not yet fitted into above dictionary:
+
+textmenu
+menu-fontsize
+thumb-fontsize
+3dthumbs
+wave
+tile3x1
+files
+titles
+submneu-titles
+chapters
+chain-videos
+subtitles lang1 lang2 ...
+audio-lang chan1 chan2 ...
+"""
 
 ### --------------------------------------------------------------------
 ### Exceptions
@@ -120,6 +150,16 @@ class MissingOption (Exception):
 ### --------------------------------------------------------------------
 ### Helper functions
 ### --------------------------------------------------------------------
+
+def getWidget(master, option):
+    """Create a widget with the given master, appropriate for the given option.
+    Return the new widget.
+    """
+    if option not in WIDGETS:
+        raise NotImplementedError("No widget found for option: %s" % option)
+    widget = WIDGETS[option][0]
+    args = WIDGETS[option][1:]
+    return widget(master, *args)
 
 def pretty_todisc(command):
     """Return a prettified version of a given todisc Command."""
@@ -144,144 +184,6 @@ def blink(widget):
     widget.update()
     time.sleep(1)
     widget.config(background='white')
-
-
-### --------------------------------------------------------------------
-### Custom widgets
-### --------------------------------------------------------------------
-
-class Metawidget (Frame):
-    """A base class for extended special-purpose widgets.
-
-    A Metawidget may contain any number of other widgets, and store a
-    single variable value. Presumably, a subclass will link self.variable
-    to one or more control widgets, via their textvariable attribute.
-    
-    See the Metawidget subclasses below for examples of how self.variable,
-    get() and set() are used.
-    """
-    def __init__(self, master=None):
-        Frame.__init__(self, master)
-        # TODO: Support different variable types
-        self.variable = StringVar()
-
-    def get(self):
-        """Return the value of the Metawidget's variable."""
-        return self.variable.get()
-
-    def set(self, value):
-        """Set the Metawidget's variable to the given value."""
-        self.variable.set(value)
-
-### --------------------------------------------------------------------
-
-class Choice (Metawidget):
-    """A set of radiobuttons for choosing one of several options.
-    """
-    def __init__(self, master=None, label="Choices:", choices=['A', 'B']):
-        """Initialize Choice widget with the given label and list of choices.
-        """
-        Metawidget.__init__(self, master)
-        self.label = Label(self, text=label)
-        self.label.pack(side=LEFT)
-        # Radiobutton widgets, indexed by choice value
-        self.rb = {}
-        for choice in choices:
-            self.rb[choice] =\
-                Radiobutton(self, text=choice, value=choice,
-                            variable=self.variable, command=self.change)
-            self.rb[choice].pack(side=LEFT)
-        # First choice by default
-        self.set(choices[0])
-
-    def change(self):
-        """Event handler called when the radiobutton is changed.
-        Print the new value chosen."""
-        print "%s chosen" % self.get()
-
-### --------------------------------------------------------------------
-
-class LabelEntry (Metawidget):
-    """A labeled entry box"""
-    def __init__(self, master=None, label="Text:", variable=None):
-        Metawidget.__init__(self, master)
-        self.pack()
-        self.label = Label(self, text=label)
-        self.entry = Entry(self, width=30, textvariable=self.variable)
-        self.label.pack(side=LEFT)
-        self.entry.pack(side=LEFT)
-
-### --------------------------------------------------------------------
-
-class BrowseButton (Metawidget):
-    """A "Browse" button that opens a file browser for loading/saving a file.
-    """
-    def __init__(self, master=None, type='load', title="Select a file"):
-        """Create a file-browser button.
-        
-            master:       Widget to use as master
-            type:         What kind of file dialog to use ('load' or 'save')
-            title:        Text to display in the titlebar of the file dialog
-        """
-        Metawidget.__init__(self, master)
-        self.button = Button(self, text="Browse...", command=self.onClick)
-        self.button.grid()
-        self.type = type
-        self.title = title
-
-    def onClick(self, event=None):
-        """Event handler when button is pressed"""
-        if self.type == 'load':
-            filename = askopenfilename(parent=self, title=self.title)
-        elif self.type == 'save':
-            filename = asksaveasfilename(parent=self, title=self.title)
-        else:
-            raise ValueError, "BrowseButton type must be 'load' or 'save'"
-        # Got a filename? Save it
-        if filename and self.variable:
-            self.set(filename)
-
-### --------------------------------------------------------------------
-
-class FileEntry (Metawidget):
-    """A filename selector frame, consisting of label, entry, and browse button.
-    """
-    def __init__(self, master=None, label='Filename:', type='load',
-                 desc='Select a file to load'):
-        """Create a FileEntry with label, text entry, and browse button.
-        
-            label: Text of label next to file entry box
-            type:  Do you intend to 'load' or 'save' this file?
-            desc:  Brief description (shown in title bar of file
-                   browser dialog)
-        """
-        Metawidget.__init__(self, master)
-        self.label = Label(self, text=label)
-        self.entry = Entry(self, width=40, textvariable=self.variable)
-        self.button = BrowseButton(self, type, desc)
-        # Link our variable with button's
-        self.button.variable = self.variable
-        # Draw
-        self.label.grid(row=0, column=0, sticky=E)
-        self.entry.grid(row=0, column=1, sticky=EW)
-        self.button.grid(row=0, column=2, sticky=E)
-
-### --------------------------------------------------------------------
-
-class ColorPicker (Metawidget):
-    def __init__(self, master=None, label="Color:"):
-        Metawidget.__init__(self, master)
-        self.variable = Variable()
-        self.label = Label(self, text=label)
-        self.button = Button(self, text="None", command=self.change)
-        self.label.pack(side=LEFT)
-        self.button.pack(side=LEFT)
-
-    def change(self):
-        rgb, color = askcolor(self.get())
-        if color:
-            self.set(color)
-            self.button.config(text=color, foreground=color)
 
 
 ### --------------------------------------------------------------------
@@ -539,37 +441,27 @@ class MiscOptionsFrame (Frame):
     # TODO: Categorize these as needed and separate into new Frame subclasses
     def __init__(self, master=None):
         Frame.__init__(self, master)
-        self.varStatic = BooleanVar()    # Static menus
-        self.varSubmenus = BooleanVar()  # Create submenus
-        self.varCustom = StringVar()     # Custom todisc options
         self.drawWidgets()
     
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
-        self.chkStatic = Checkbutton(self,
-                                     text="Static menus (takes less time)",
-                                     variable=self.varStatic)
-        self.chkStatic.grid(columnspan=2, sticky=W)
-        self.chkSubmenus = Checkbutton(self,
-                                       text="Create submenus (takes more time)",
-                                       variable=self.varSubmenus)
-        self.chkSubmenus.grid(columnspan=2, sticky=W)
-        self.lblCustom = Label(self, text="Custom todisc options:")
-        self.lblCustom.grid(row=2, column=0)
-        self.entCustom = Entry(self, width=40,
-                               textvariable=self.varCustom)
-        self.entCustom.grid(row=2, column=1)
+        self.static = Flag(self, "Static menus (takes less time)", False)
+        self.submenus = Flag(self, "Create submenus (takes more time)", False)
+        self.custom = LabelEntry(self, "Custom todisc options:")
+        self.static.grid(columnspan=2, sticky=W)
+        self.submenus.grid(columnspan=2, sticky=W)
+        self.custom.grid(row=2, column=0)
         
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
-        if self.varStatic.get():
+        if self.static.get():
             command.add('-static')
-        if self.varSubmenus.get():
+        if self.submenus.get():
             command.add('-submenus')
         # Hack alert: Splitting on ' ' may not work in some cases
-        if self.varCustom.get():
-            custom = self.varCustom.get().split(' ')
-            for opt in custom:
+        if self.custom.get():
+            options = self.custom.get().split(' ')
+            for opt in options:
                 command.add(opt)
 
 ### --------------------------------------------------------------------
@@ -579,38 +471,32 @@ class AdvancedFrame (Frame):
     """
     def __init__(self, master=None):
         Frame.__init__(self, master)
-        self.drawWidgets()
-        
-    def drawWidgets(self):
-        self.lblAdvanced = Label(self, text="Advanced options")
-        self.lblAdvanced.grid()
-        self.subAudio = FileEntry(self, "Submenu audio:", 'load',
-                                  "Select an audio file.")
-        self.showcase = FileEntry(self, "Showcase:", 'load',
-                                  "Select an image or video file.")
-        self.menuFont = LabelEntry(self, "Menu font:")
-        self.thumbFont = LabelEntry(self, "Thumb font:")
-        self.subAudio.grid()
-        self.showcase.grid()
-        self.menuFont.grid()
-        self.thumbFont.grid()
-        self.titlecolor = ColorPicker(self, "Title color:")
-        self.titlecolor.grid()
+        self.label = Label(self, text="Advanced options")
+        self.label.grid()
+        options = [
+            'submenu-audio',
+            'showcase',
+            'menu-font',
+            'thumb-font',
+            'title-color',
+            'opacity',
+            'blur',
+            'seek',
+            'loop',
+            'playall',
+            'aspect',
+            'widescreen']
+        self.widgets = {}
+        for option in options:
+            self.widgets[option] = getWidget(self, option)
+            self.widgets[option].grid(sticky=E)
 
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
-        subaudio = self.subAudio.get()
-        showcase = self.showcase.get()
-        menufont = self.menuFont.get()
-        thumbfont = self.thumbFont.get()
-        if subaudio:
-            command.add('-submenu-audio', subaudio)
-        if showcase:
-            command.add('-showcase', showcase)
-        if menufont:
-            command.add('-menu-font', menufont)
-        if thumbfont:
-            command.add('-thumb-font', thumbfont)
+        for option, widget in self.widgets.items():
+            value = widget.get()
+            if value:
+                command.add('-%s' % option, value)
 
 
 ### --------------------------------------------------------------------
