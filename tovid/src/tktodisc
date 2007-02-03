@@ -65,9 +65,9 @@ WIDGETS = {
     'text-mist-opacity':
         (Number, 'Text mist opacity', 1, 100, 'scale'),
     'opacity':
-        (Number, 'Thumbnail opacity', 1, 100, 'scale'),
+        (Number, 'Thumbnail opacity', 1, 100, 'spin'),
     'blur':
-        (Number, 'Blur', 1, 5),
+        (Number, 'Blur', 1, 5, 'scale'),
     'thumb-mist-color':
         (ColorPicker, 'Thumb mist color'),
     'thumb-text-color':
@@ -99,11 +99,11 @@ WIDGETS = {
     'intro':
         (FileEntry, 'Intro video', 'load', 'Select a video file'),
     'seek':
-        (Number, 'Seek time', 0, 600, 'scale'),
+        (Number, 'Seek time', 0, 600, 'spin'),
     'showcase-seek':
         (Number, 'Showcase seek time', 0, 600, 'scale'),
     'loop':
-        (Number, 'Loop', 0, 10),
+        (Number, 'Loop', 0, 10, 'scale'),
     'playall':
         (Flag, '"Play all" button', False),
     'aspect':
@@ -224,6 +224,7 @@ class menuChoiceFrame (Frame):
         self.textSplit.grid(row=6, column=0, padx=5, sticky=W)
 # TODO {  if textmenu is not checked, remove these 2 options
 #      {  self.lblTextmenuSplit.grid_remove() and self.textSplit.grid_remove()
+#      {  if default is not selected, remove both of the above and the showcase file selector
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
         showcasefile = self.showcasefile.get()
@@ -517,7 +518,7 @@ class AdvancedFrame (Frame):
     """A frame containing controls for setting advanced options.
     """
     def __init__(self, master=None):
-        Frame.__init__(self, master)
+        Frame.__init__(self, master, borderwidth=3, relief=GROOVE)
         self.label = Label(self, text="Advanced options")
         self.label.grid()
         options = [
@@ -535,7 +536,7 @@ class AdvancedFrame (Frame):
         self.widgets = {}
         for option in options:
             self.widgets[option] = getWidget(self, option)
-            self.widgets[option].grid(sticky=E)
+            self.widgets[option].grid(sticky=W)
 
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
