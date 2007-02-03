@@ -234,11 +234,11 @@ class menuChoiceFrame (Frame):
         self.showcasefile = FileEntry(self, "Showcase file", 'load',
                                 "Select an image or video file.")
         self.showcasefile.grid(row=5, column=0, sticky=E)
-        self.lblTextmenuSplit = Label(self, text="Start new textmenu column at video #   ( default is 15 )")
-        self.lblTextmenuSplit.grid(row=6, column=0, sticky=E+W)
+        self.lblTextmenuSplit = Label(self, text="New column at title #   [15]:")
+        self.lblTextmenuSplit.grid(row=4, column=0, sticky=N)
         self.textSplit = Spinbox(self, from_=2, to=15, width=3, textvariable=self.varTextSplit, wrap=1)
         self.varTextSplit.set(15)
-        self.textSplit.grid(row=6, column=0, padx=5, sticky=W)
+        self.textSplit.grid(row=4, column=0, padx=100, sticky=E)
 # TODO {  if textmenu is not checked, remove these 2 options
 #      {  self.lblTextmenuSplit.grid_remove() and self.textSplit.grid_remove()
 #      {  if default is not selected, remove both of the above and the showcase file selector
