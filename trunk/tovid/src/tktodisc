@@ -10,6 +10,7 @@ options to a Command, raising exceptions if required options are missing.
 
 import os
 import time
+import re
 from libtovid.cli import Command
 from libtovid.gui.meta import *
 
@@ -168,7 +169,7 @@ def pretty_todisc(command):
     opts = command.args[1:]
     while opts:
         arg = str(opts.pop(0))
-        if arg.startswith('-'):
+        if arg.startswith('-') and not re.match('^[-+]?[0-9]+$', arg):
             result.append(arg)
         else:
             result[-1] += ' ' + arg
