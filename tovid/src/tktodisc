@@ -109,7 +109,7 @@ WIDGETS = {
     'aspect':
         (Choice, 'Aspect ratio', '4:3|16:9'),
     'widescreen':
-        (Choice, 'Widescreen', 'nopanscan|noletterbox'),
+        (Choice, 'Widescreen', 'off|nopanscan|noletterbox'),
     'tovidopts':
         (LabelEntry, 'Custom tovid options')
     }
@@ -537,14 +537,15 @@ class AdvancedFrame (Frame):
         for option in options:
             self.widgets[option] = getWidget(self, option)
             self.widgets[option].grid(sticky=W)
-
+#        self.widgets['widescreen'].set('off')
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
         for option, widget in self.widgets.items():
             value = widget.get()
-            if value:
+            if value == True:
+                command.add('-%s' % option)
+            elif value and value != "off":
                 command.add('-%s' % option, value)
-
 
 ### --------------------------------------------------------------------
 ### Main application window
