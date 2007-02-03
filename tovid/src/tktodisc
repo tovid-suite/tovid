@@ -65,9 +65,9 @@ WIDGETS = {
     'text-mist-opacity':
         (Number, 'Text mist opacity', 1, 100, 'scale'),
     'opacity':
-        (Number, 'Thumbnail opacity', 1, 100, 'spin'),
+        (Number, 'Thumbnail opacity', 1, 100, 'spin', 100),
     'blur':
-        (Number, 'Blur', 1, 5, 'scale'),
+        (Number, 'Blur', 1, 5, 'scale', 4),
     'thumb-mist-color':
         (ColorPicker, 'Thumb mist color'),
     'thumb-text-color':
@@ -99,9 +99,9 @@ WIDGETS = {
     'intro':
         (FileEntry, 'Intro video', 'load', 'Select a video file'),
     'seek':
-        (Number, 'Seek time', 0, 600, 'spin'),
+        (Number, 'Seek time', 0, 600, 'spin', 2),
     'showcase-seek':
-        (Number, 'Showcase seek time', 0, 600, 'scale'),
+        (Number, 'Showcase seek time', 0, 600, 'scale', 2),
     'loop':
         (Number, 'Loop', 0, 10, 'scale'),
     'playall':
