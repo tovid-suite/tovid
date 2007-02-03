@@ -108,7 +108,7 @@ WIDGETS = {
     'playall':
         (Flag, '"Play all" button', False),
     'aspect':
-        (Choice, 'Aspect ratio', '4:3|16:9'),
+        (Optional, Choice, 'Aspect ratio', '4:3|16:9'),
     'widescreen':
         (Choice, 'Widescreen', 'off|nopanscan|noletterbox'),
     'tovidopts':
@@ -131,6 +131,22 @@ chapters
 chain-videos
 subtitles lang1 lang2 ...
 audio-lang chan1 chan2 ...
+
+
+Special cases:
+
+Optional: Some choices (i.e. widescreen nopanscan|noletterbox) may be omitted,
+    equivalent to having nothing chosen (no radiobutton). For these, disable
+    or hide the widgets, and ensure that they don't output any command-line
+    options.
+    
+    (Optional, Choice, 'Widescreen', 'nopanscan|noletterbox')
+    
+Flag (True/False): Include option, or don't include option
+
+Lists: -files/-titles may need rethinking!
+
+
 """
 
 ### --------------------------------------------------------------------
@@ -215,7 +231,7 @@ class menuChoiceFrame (Frame):
                                      text="Textmenu style",
                                      variable=self.varMenuStyle, value="doTextmenu")
         self.chkTextmenu.grid(row=4, column=0, sticky=W)
-        self.showcasefile = FileEntry(self, "Showcase file:", 'load',
+        self.showcasefile = FileEntry(self, "Showcase file", 'load',
                                 "Select an image or video file.")
         self.showcasefile.grid(row=5, column=0, sticky=E)
         self.lblTextmenuSplit = Label(self, text="Start new textmenu column at video #   ( default is 15 )")
@@ -244,7 +260,7 @@ class FormatFrame (Frame):
     """
     def __init__(self, master=None):
         Frame.__init__(self, master)
-        self.format = Choice(self, "Disc format:", ['DVD', 'SVCD'])
+        self.format = Choice(self, "Disc format", ['DVD', 'SVCD'])
         self.format.pack()
         
     def setOptions(self, command):
@@ -259,7 +275,7 @@ class TvsysFrame (Frame):
     """
     def __init__(self, master=None):
         Frame.__init__(self, master)
-        self.tvsys = Choice(self, "TV system:", ['NTSC', 'PAL'])
+        self.tvsys = Choice(self, "TV system", ['NTSC', 'PAL'])
         self.tvsys.pack()
 
     def setOptions(self, command):
@@ -423,9 +439,9 @@ class BackgroundsFrame (Frame):
         """Draw all the widgets in this frame."""
         label = Label(self, text="Menu backgrounds")
         label.grid(row=0, sticky=W)
-        self.visual = FileEntry(self, "Image or video:", 'load',
+        self.visual = FileEntry(self, "Image or video", 'load',
                                 "Select an image or video file")
-        self.audio = FileEntry(self, "Audio:", 'load',
+        self.audio = FileEntry(self, "Audio", 'load',
                                "Select an audio file")
         self.visual.grid(sticky=E)
         self.audio.grid(sticky=E)
@@ -449,7 +465,7 @@ class OutfileFrame (Frame):
     
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
-        self.outfile = FileEntry(self, "Output file:", 'save',
+        self.outfile = FileEntry(self, "Output file", 'save',
                                  "Select an output name.")
         self.outfile.pack(side=LEFT)
 
@@ -471,7 +487,7 @@ class TitleFrame (Frame):
         
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
-        self.title = LabelEntry(self, "Menu title:")
+        self.title = LabelEntry(self, "Menu title")
         self.title.pack(side=LEFT)
         self.title.set("My video collection")
 
@@ -496,7 +512,7 @@ class MiscOptionsFrame (Frame):
         """Draw all the widgets in this frame."""
         self.static = Flag(self, "Static menus (takes less time)", False)
         self.submenus = Flag(self, "Create submenus (takes more time)", False)
-        self.custom = LabelEntry(self, "Custom todisc options:")
+        self.custom = LabelEntry(self, "Custom todisc options")
         self.static.grid(columnspan=2, sticky=W)
         self.submenus.grid(columnspan=2, sticky=W)
         self.custom.grid(row=2, column=0)

@@ -13,7 +13,8 @@ __all__ = [
     'Flag',
     'FontPicker',
     'LabelEntry',
-    'Number']
+    'Number',
+    'Optional']
 
 from Tkinter import *
 from tkFileDialog import *
@@ -66,10 +67,14 @@ class Flag (Metawidget):
     """A widget for controlling a yes/no value."""
     def __init__(self, master=None, label="Debug", default=False):
         """Create a Flag widget with the given label and default value.
+
+            master:   Tkinter widget that will contain this Flag
+            label:    Text label for the flag
+            default:  Default value (True or False)
         """
         Metawidget.__init__(self, master, bool)
         self.variable.set(default)
-        self.check = Checkbutton(self, text=label+':', variable=self.variable)
+        self.check = Checkbutton(self, text=label, variable=self.variable)
         self.check.pack()
 
 ### --------------------------------------------------------------------
@@ -78,17 +83,27 @@ class Choice (Metawidget):
     """A widget for choosing one of several options.
     """
     def __init__(self, master=None, label="Choices", choices=['A', 'B'],
-                 default='A'):
+                 default=None):
         """Initialize Choice widget with the given label and list of choices.
+
+            master:   Tkinter widget that will contain this Choice
+            label:    Text label for the choices
+            choices:  Available choices, in list form: ['one', 'two']
+                      or string form: 'one|two'
+            default:  Default choice, or None to use first choice in list
         """
         # TODO: Allow alternative choice styles (listbox, combobox?)
         Metawidget.__init__(self, master)
-        self.variable.set(default)
-        self.label = Label(self, text=label+':')
-        self.label.pack(side=LEFT)
         # If choices is a string, split on '|'
         if type(choices) == str:
             choices = choices.split('|')
+        # Use first choice if default wasn't provided
+        if default is None:
+            default = choices[0]
+        self.variable.set(default)
+
+        self.label = Label(self, text=label+':')
+        self.label.pack(side=LEFT)
         # Radiobutton widgets, indexed by choice value
         self.rb = {}
         for choice in choices:
@@ -111,6 +126,8 @@ class Number (Metawidget):
     def __init__(self, master=None, label="Number", min=1, max=10,
                  style='spin', default=None):
         """Create a number-setting widget.
+        
+            master:   Tkinter widget that will contain this Number
             label:    Text label describing the meaning of the number
             min, max: Range of allowable numbers (inclusive)
             style:    'spin' or 'scale'
@@ -151,16 +168,14 @@ class BrowseButton (Metawidget):
     """A "Browse" button that opens a file browser for loading/saving a file.
     """
     # TODO: simpler widget name
-    def __init__(self, master=None, type='load', title="Select a file",
-                 default=''):
+    def __init__(self, master=None, type='load', title="Select a file"):
         """Create a file-browser button.
         
-            master:       Widget to use as master
-            type:         What kind of file dialog to use ('load' or 'save')
-            title:        Text to display in the titlebar of the file dialog
+            master:   Tkinter widget that will contain this BrowseButton
+            type:     What kind of file dialog to use ('load' or 'save')
+            title:    Text to display in the titlebar of the file dialog
         """
         Metawidget.__init__(self, master, str)
-        self.variable.set(default)
         self.button = Button(self, text="Browse...", command=self.onClick)
         self.button.pack()
         self.type = type
@@ -185,10 +200,12 @@ class FileEntry (Metawidget):
                  desc='Select a file to load', default=''):
         """Create a FileEntry with label, text entry, and browse button.
         
-            label: Text of label next to file entry box
-            type:  Do you intend to 'load' or 'save' this file?
-            desc:  Brief description (shown in title bar of file
-                   browser dialog)
+            master:  Tkinter widget that will contain the FileEntry
+            label:   Text of label next to file entry box
+            type:    Do you intend to 'load' or 'save' this file?
+            desc:    Brief description (shown in title bar of file
+                     browser dialog)
+            default: Default value
         """
         Metawidget.__init__(self, master)
         self.variable.set(default)
@@ -206,6 +223,12 @@ class FileEntry (Metawidget):
 
 class ColorPicker (Metawidget):
     def __init__(self, master=None, label="Color", default=''):
+        """Create a widget that opens a color-chooser dialog.
+        
+            master:  Tkinter widget that will contain the ColorPicker
+            label:   Text label describing the color to be selected
+            default: Default color (named color or hexadecimal RGB)
+        """
         Metawidget.__init__(self, master, str)
         self.variable.set(default)
         self.label = Label(self, text=label+':')
@@ -222,5 +245,27 @@ class ColorPicker (Metawidget):
 ### --------------------------------------------------------------------
 
 class FontPicker (Metawidget):
+    # TODO
     pass
 
+### --------------------------------------------------------------------
+
+class Optional (Metawidget):
+    def __init__(self, master=None, widget=None, label='Show', *args):
+        Metawidget.__init__(self, master, bool)
+
+        self.check = Checkbutton(self, text=label,
+                                 command=self.showHide)
+        self.widget = widget(self, '', *args)
+        self.check.pack(side=LEFT)
+        #self.widget.pack(side=LEFT)
+        self.shown = False
+    
+    def showHide(self):
+        """Show or hide the sub-widget."""
+        if self.shown:
+            self.widget.pack_forget()
+            self.shown = False
+        else:
+            self.widget.pack(side=LEFT)
+            self.shown = True
