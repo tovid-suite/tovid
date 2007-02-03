@@ -231,7 +231,7 @@ class menuChoiceFrame (Frame):
                                      text="Textmenu style",
                                      variable=self.varMenuStyle, value="doTextmenu")
         self.chkTextmenu.grid(row=4, column=0, sticky=W)
-        self.showcasefile = FileEntry(self, "Showcase file", 'load',
+        self.showcasefile = FileEntry(self, "Optional Showcase file\nfor textmenu or showcase", 'load',
                                 "Select an image or video file.")
         self.showcasefile.grid(row=5, column=0, sticky=E)
         self.lblTextmenuSplit = Label(self, text="New column at title #   [15]:")
