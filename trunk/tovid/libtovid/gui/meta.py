@@ -102,7 +102,7 @@ class Choice (Metawidget):
             default = choices[0]
         self.variable.set(default)
 
-        self.label = Label(self, text=label+':')
+        self.label = Label(self, text=label)
         self.label.pack(side=LEFT)
         # Radiobutton widgets, indexed by choice value
         self.rb = {}
@@ -139,7 +139,7 @@ class Number (Metawidget):
         if default is None:
             default = min
         self.variable.set(default)
-        self.label = Label(self, text=label+':')
+        self.label = Label(self, text=label)
         self.label.pack(side=LEFT)
         if style == 'spin':
             self.number = Spinbox(self, from_=min, to=max,
@@ -157,7 +157,7 @@ class LabelEntry (Metawidget):
     def __init__(self, master=None, label="Text", default=''):
         Metawidget.__init__(self, master, str)
         self.variable.set(default)
-        self.label = Label(self, text=label+':')
+        self.label = Label(self, text=label)
         self.entry = Entry(self, width=30, textvariable=self.variable)
         self.label.pack(side=LEFT)
         self.entry.pack(side=LEFT)
@@ -209,7 +209,7 @@ class FileEntry (Metawidget):
         """
         Metawidget.__init__(self, master)
         self.variable.set(default)
-        self.label = Label(self, text=label+':')
+        self.label = Label(self, text=label)
         self.entry = Entry(self, width=40, textvariable=self.variable)
         self.button = BrowseButton(self, type, desc)
         # Link our variable with button's
@@ -231,7 +231,7 @@ class ColorPicker (Metawidget):
         """
         Metawidget.__init__(self, master, str)
         self.variable.set(default)
-        self.label = Label(self, text=label+':')
+        self.label = Label(self, text=label)
         self.button = Button(self, text="None", command=self.change)
         self.label.pack(side=LEFT)
         self.button.pack(side=LEFT)
@@ -251,21 +251,27 @@ class FontPicker (Metawidget):
 ### --------------------------------------------------------------------
 
 class Optional (Metawidget):
-    def __init__(self, master=None, widget=None, label='Show', *args):
-        Metawidget.__init__(self, master, bool)
+    """Container that shows/hides an optional Metawidget."""
+    def __init__(self, master=None, widget=None, label='Option', *args):
+        """Create an Optional widget.
 
+            master:  Tkinter widget that will contain the Optional
+            widget:  A Metawidget to show or hide
+            label:   Label for the optional widget
+            *args:   Additional arguments to pass to the sub-widget
+        """
+        Metawidget.__init__(self, master, bool)
         self.check = Checkbutton(self, text=label,
                                  command=self.showHide)
         self.widget = widget(self, '', *args)
         self.check.pack(side=LEFT)
-        #self.widget.pack(side=LEFT)
-        self.shown = False
+        self.set(False)
     
     def showHide(self):
         """Show or hide the sub-widget."""
-        if self.shown:
+        if self.get() == True:
             self.widget.pack_forget()
-            self.shown = False
+            self.set(False)
         else:
             self.widget.pack(side=LEFT)
-            self.shown = True
+            self.set(True)
