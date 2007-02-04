@@ -28,6 +28,7 @@ except:
     sys.exit()
 
 
+# Associate a Metawidget type with each available command-line option
 WIDGETS = {
     'showcase':
         (FileEntry, 'Showcase', 'load', 'Select an image or video file.'),
@@ -144,8 +145,19 @@ Optional: Some choices (i.e. widescreen nopanscan|noletterbox) may be omitted,
     
 Flag (True/False): Include option, or don't include option
 
+Some choices (format/tvsys) are translated directly into single options,
+rather than into an option/argument combo
+
 Lists: -files/-titles may need rethinking!
 
+If metawidget variable is empty, omit option
+
+
+Requirements:
+
+Compatible with normal tkinter gui design; should be possible to use
+both metawidgets and regular widgets in same application (metawidgets are
+just a shortcut method of creating regular widgets)
 
 """
 
@@ -202,15 +214,53 @@ def blink(widget):
     time.sleep(1)
     widget.config(background='white')
 
+### --------------------------------------------------------------------
+
+class OptionFrame (Frame):
+    """A Frame containing widgets that control command-line options.
+    """
+    def __init__(self, master=None, *args, **kwargs):
+        """Create an OptionFrame with the given master and control widgets.
+
+            master:  Tkinter widget that will contain this OptionFrame
+            *args:   Additional arguments to pass to Frame constructor
+        """
+        Frame.__init__(self, master, *args, **kwargs)
+        self.controls = {}
+
+    def get(self, option):
+        """Get the value of the given option from its associated widget.
+        """
+        return self.controls[option].get()
+
+    def set(self, option, value):
+        """Set the value of the widget associated with the given option.
+        """
+        self.controls[option].set(value)
+
+    def arglist(self):
+        """Return a list of command-line arguments for all options.
+        """
+        args = []
+        for option, widget in self.controls.items():
+            value = widget.get()
+            if value == True:
+                args.append("-%s" % option)
+            elif value:
+                args.append("-%s" % option)
+                args.append(value)
+        return args
 
 ### --------------------------------------------------------------------
 ### Frames containing related control widgets
 ### --------------------------------------------------------------------
+
 # add Menu template choices frame
 class menuChoiceFrame (Frame):
     """A frame for setting which Menu template will be used"""
     def __init__(self, master=None):
         Frame.__init__(self, master, borderwidth=3, relief=GROOVE)
+        print "Creating menuChoiceFrame"
         self.varMenuStyle = StringVar()     # Menu arrangement variable
         self.varShowcaseFile = StringVar()     # use showcase file
         self.varTextSplit = IntVar()
@@ -253,9 +303,9 @@ class menuChoiceFrame (Frame):
         if self.varMenuStyle.get() == "doTextmenu":
             command.add('-textmenu', textsplit)
 
+### --------------------------------------------------------------------
 
-
-class FormatFrame (Frame):
+class Format (Frame):
     """A frame with a choice of formats (DVD, SVCD)
     """
     def __init__(self, master=None):
@@ -270,7 +320,7 @@ class FormatFrame (Frame):
 
 ### --------------------------------------------------------------------
 
-class TvsysFrame (Frame):
+class Tvsys (Frame):
     """A frame with a choice of TV system (PAL, NTSC)
     """
     def __init__(self, master=None):
@@ -284,7 +334,79 @@ class TvsysFrame (Frame):
     
 ### --------------------------------------------------------------------
 
-class FileListFrame (Frame):
+class Backgrounds (Frame):
+    """Widgets for setting background image or video and audio"""
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.drawWidgets()
+
+    def drawWidgets(self):
+        """Draw all the widgets in this frame."""
+        label = Label(self, text="Menu backgrounds")
+        label.grid(row=0, sticky=W)
+        self.visual = FileEntry(self, "Image or video", 'load',
+                                "Select an image or video file")
+        self.audio = FileEntry(self, "Audio", 'load',
+                               "Select an audio file")
+        self.visual.grid(sticky=E)
+        self.audio.grid(sticky=E)
+    
+    def setOptions(self, command):
+        """Add relevant todisc options to the given Command."""
+        visual = self.visual.get()
+        audio = self.audio.get()
+        if visual:
+            command.add('-background', visual)
+        if audio:
+            command.add('-bgaudio', audio)
+
+### --------------------------------------------------------------------
+
+class Outfile (Frame):
+    """A frame containing an output-file text entry/browser box."""
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.drawWidgets()
+    
+    def drawWidgets(self):
+        """Draw all the widgets in this frame."""
+        self.outfile = FileEntry(self, "Output file", 'save',
+                                 "Select an output name.")
+        self.outfile.pack(side=LEFT)
+
+    def setOptions(self, command):
+        """Add relevant todisc options to the given Command."""
+        outfile = self.outfile.get()
+        if not outfile:
+            print "WARNING: No output file selected"
+            raise MissingOption("Output filename (-out)", self.outfile.entry)
+        command.add('-out', outfile)
+
+### --------------------------------------------------------------------
+
+class Title (Frame):
+    """A frame containing options for customizing titles"""
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.drawWidgets()
+        
+    def drawWidgets(self):
+        """Draw all the widgets in this frame."""
+        self.title = LabelEntry(self, "Menu title")
+        self.title.pack(side=LEFT)
+        self.title.set("My video collection")
+
+    def setOptions(self, command):
+        """Add relevant todisc options to the given Command."""
+        title = self.title.get()
+        if title:
+            command.add('-menu-title', title)
+        else:
+            command.add('-menu-title', ' ')
+
+### --------------------------------------------------------------------
+
+class FileList (Frame):
     """A frame containing a list of filenames, and controls to add or delete
     files from the list.
     """
@@ -429,79 +551,7 @@ class FileListFrame (Frame):
 
 ### --------------------------------------------------------------------
 
-class BackgroundsFrame (Frame):
-    """Widgets for setting background image or video and audio"""
-    def __init__(self, master=None):
-        Frame.__init__(self, master)
-        self.drawWidgets()
-
-    def drawWidgets(self):
-        """Draw all the widgets in this frame."""
-        label = Label(self, text="Menu backgrounds")
-        label.grid(row=0, sticky=W)
-        self.visual = FileEntry(self, "Image or video", 'load',
-                                "Select an image or video file")
-        self.audio = FileEntry(self, "Audio", 'load',
-                               "Select an audio file")
-        self.visual.grid(sticky=E)
-        self.audio.grid(sticky=E)
-    
-    def setOptions(self, command):
-        """Add relevant todisc options to the given Command."""
-        visual = self.visual.get()
-        audio = self.audio.get()
-        if visual:
-            command.add('-background', visual)
-        if audio:
-            command.add('-bgaudio', audio)
-
-### --------------------------------------------------------------------
-
-class OutfileFrame (Frame):
-    """A frame containing an output-file text entry/browser box."""
-    def __init__(self, master=None):
-        Frame.__init__(self, master)
-        self.drawWidgets()
-    
-    def drawWidgets(self):
-        """Draw all the widgets in this frame."""
-        self.outfile = FileEntry(self, "Output file", 'save',
-                                 "Select an output name.")
-        self.outfile.pack(side=LEFT)
-
-    def setOptions(self, command):
-        """Add relevant todisc options to the given Command."""
-        outfile = self.outfile.get()
-        if not outfile:
-            print "WARNING: No output file selected"
-            raise MissingOption("Output filename (-out)", self.outfile.entry)
-        command.add('-out', outfile)
-
-### --------------------------------------------------------------------
-
-class TitleFrame (Frame):
-    """A frame containing options for customizing titles"""
-    def __init__(self, master=None):
-        Frame.__init__(self, master)
-        self.drawWidgets()
-        
-    def drawWidgets(self):
-        """Draw all the widgets in this frame."""
-        self.title = LabelEntry(self, "Menu title")
-        self.title.pack(side=LEFT)
-        self.title.set("My video collection")
-
-    def setOptions(self, command):
-        """Add relevant todisc options to the given Command."""
-        title = self.title.get()
-        if title:
-            command.add('-menu-title', title)
-        else:
-            command.add('-menu-title', ' ')
-
-### --------------------------------------------------------------------
-
-class MiscOptionsFrame (Frame):
+class MiscOptions (Frame):
     """A frame containing miscellaneous options"""
     # TODO: Categorize these as needed and separate into new Frame subclasses
     def __init__(self, master=None):
@@ -531,11 +581,11 @@ class MiscOptionsFrame (Frame):
 
 ### --------------------------------------------------------------------
 
-class AdvancedFrame (Frame):
+class Advanced (OptionFrame):
     """A frame containing controls for setting advanced options.
     """
     def __init__(self, master=None):
-        Frame.__init__(self, master, borderwidth=3, relief=GROOVE)
+        OptionFrame.__init__(self, master, borderwidth=3, relief=GROOVE)
         self.label = Label(self, text="Advanced options")
         self.label.grid()
         options = [
@@ -550,24 +600,21 @@ class AdvancedFrame (Frame):
             'playall',
             'aspect',
             'widescreen']
-        self.widgets = {}
         for option in options:
-            self.widgets[option] = getWidget(self, option)
-            self.widgets[option].grid(sticky=W)
+            self.controls[option] = getWidget(self, option)
+            self.controls[option].grid(sticky=W)
+
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
-        for option, widget in self.widgets.items():
-            value = widget.get()
-            if value == True:
-                command.add('-%s' % option)
-            elif value:
-                command.add('-%s' % option, value)
+        args = self.arglist()
+        command.add(*args)
+
 
 ### --------------------------------------------------------------------
 ### Main application window
 ### --------------------------------------------------------------------
 
-class Application(Frame):
+class Application (Frame):
     def __init__(self, master=None, theme='default'):
         Frame.__init__(self, master)
         self.advanced_visible = False
@@ -577,32 +624,32 @@ class Application(Frame):
 
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
-        self.fraTitle = TitleFrame(self)
+        self.fraTitle = Title(self)
         self.fraTitle.grid(sticky=W)
-        
-        self.fraFileList = FileListFrame(self)
+
+        self.fraFileList = FileList(self)
         self.fraFileList.grid(sticky=W)
 
-        self.fraFormat = FormatFrame(self)
+        self.fraFormat = Format(self)
         self.fraFormat.grid(sticky=W)
 
-        self.fraTvsys = TvsysFrame(self)
+        self.fraTvsys = Tvsys(self)
         self.fraTvsys.grid(sticky=W)
 
         self.fraMenuFormat = menuChoiceFrame(self)
         self.fraMenuFormat.grid(padx=5, pady=5, sticky=W)
 
-        self.fraBackgrounds = BackgroundsFrame(self)
+        self.fraBackgrounds = Backgrounds(self)
         self.fraBackgrounds.grid(sticky=EW)
         
-        self.fraMisc = MiscOptionsFrame(self)
+        self.fraMisc = MiscOptions(self)
         self.fraMisc.grid(sticky=W)
 
-        self.fraOutfile = OutfileFrame(self)
+        self.fraOutfile = Outfile(self)
         self.fraOutfile.grid(sticky=W)
 
-        # Create AdvancedFrame, but don't grid it
-        self.fraAdvanced = AdvancedFrame(self)
+        # Create Advanced Frame, but don't grid it
+        self.fraAdvanced = Advanced(self)
     
         # Bottom row of buttons
         fraButtons = Frame(self)

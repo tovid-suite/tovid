@@ -52,6 +52,40 @@ class Metawidget (Frame):
         # Or use a generic Variable
         else:
             self.variable = Variable()
+        self.names = []
+        self.widgets = []
+
+    def __getitem__(self, name):
+        """Return the widget indexed by the given name.
+        """
+        if name in self.names:
+            return self.widgets[self.names.index(name)]
+        else:
+            raise KeyError("Widget named '%s' does not exist." % key)
+
+    def __setitem__(self, name, widget):
+        """Store a widget with the given name.
+        """
+        assert isinstance(widget, Widget)
+        if name in self.names:
+            self.widgets[self.names.index(name)] = widget
+        else:
+            self.names.append(name)
+            self.widgets.append(widget)
+
+    def pack_all(self, *args, **kwargs):
+        """Pack all widgets in the order they were defined. This function
+        takes the same arguments as the regular Tkinter pack() function.
+        """
+        for widget in self.widgets:
+            widget.pack(*args, **kwargs)
+
+    def grid_all(self, *args, **kwargs):
+        """Grid all widgets in the order they were defined. This function
+        takes the same arguments as the regular Tkinter grid() function.
+        """
+        for widget in self.widgets:
+            widget.grid(*args, **kwargs)
 
     def get(self):
         """Return the value of the Metawidget's variable."""
@@ -60,6 +94,19 @@ class Metawidget (Frame):
     def set(self, value):
         """Set the Metawidget's variable to the given value."""
         self.variable.set(value)
+
+    def enable(self, enable=True):
+        """Enable or disable sub-widgets."""
+        if enable:
+            newstate = ACTIVE
+        else:
+            newstate = DISABLED
+        for widget in self.widgets:
+            widget.config(state=newstate)
+
+    def disable(self):
+        """Disable sub-widgets."""
+        self.enable(False)
 
 ### --------------------------------------------------------------------
 
@@ -73,9 +120,11 @@ class Flag (Metawidget):
             default:  Default value (True or False)
         """
         Metawidget.__init__(self, master, bool)
+        print "Creating Flag", label
         self.variable.set(default)
-        self.check = Checkbutton(self, text=label, variable=self.variable)
-        self.check.pack()
+        # Create and pack widgets
+        self['check'] = Checkbutton(self, text=label, variable=self.variable)
+        self.pack_all()
 
 ### --------------------------------------------------------------------
 
@@ -94,6 +143,7 @@ class Choice (Metawidget):
         """
         # TODO: Allow alternative choice styles (listbox, combobox?)
         Metawidget.__init__(self, master)
+        print "Creating Choice", label, choices
         # If choices is a string, split on '|'
         if type(choices) == str:
             choices = choices.split('|')
@@ -101,18 +151,13 @@ class Choice (Metawidget):
         if default is None:
             default = choices[0]
         self.variable.set(default)
-
-        self.label = Label(self, text=label)
-        self.label.pack(side=LEFT)
-        # Radiobutton widgets, indexed by choice value
-        self.rb = {}
+        # Create and pack widgets
+        self['label'] = Label(self, text=label)
         for choice in choices:
-            self.rb[choice] =\
+            self['rb_%s' % choice] =\
                 Radiobutton(self, text=choice, value=choice,
                             variable=self.variable, command=self.change)
-            self.rb[choice].pack(side=LEFT)
-        # First choice by default
-        self.set(choices[0])
+        self.pack_all(side=LEFT)
 
     def change(self):
         """Event handler called when the radiobutton is changed.
@@ -135,32 +180,34 @@ class Number (Metawidget):
         """
         # TODO: Multiple styles (entry, spinbox, scale)
         Metawidget.__init__(self, master, int)
+        print "Creating Number", label, min, max
         # Use min if default wasn't provided
         if default is None:
             default = min
         self.variable.set(default)
-        self.label = Label(self, text=label)
-        self.label.pack(side=LEFT)
+        # Create and pack widgets
+        self['label'] = Label(self, text=label)
         if style == 'spin':
-            self.number = Spinbox(self, from_=min, to=max,
-                                  textvariable=self.variable)
-        else:
-            self.number = Scale(self, from_=min, to=max, orient=HORIZONTAL,
-                                variable=self.variable)
-        self.number.pack(side=LEFT)
+            self['number'] = Spinbox(self, from_=min, to=max,
+                                     textvariable=self.variable)
+        else: # 'scale'
+            self['number'] = Scale(self, from_=min, to=max, orient=HORIZONTAL,
+                                   variable=self.variable)
+        self.pack_all(side=LEFT)
+        
 
 ### --------------------------------------------------------------------
 
 class LabelEntry (Metawidget):
-    """A labeled entry box"""
-    # TODO: simpler widget name
+    """A labeled text entry box"""
     def __init__(self, master=None, label="Text", default=''):
         Metawidget.__init__(self, master, str)
+        print "Creating LabelEntry", label
         self.variable.set(default)
-        self.label = Label(self, text=label)
-        self.entry = Entry(self, width=30, textvariable=self.variable)
-        self.label.pack(side=LEFT)
-        self.entry.pack(side=LEFT)
+        # Create and pack widgets
+        self['label'] = Label(self, text=label)
+        self['entry'] = Entry(self, width=30, textvariable=self.variable)
+        self.pack_all(side=LEFT)
 
 ### --------------------------------------------------------------------
 
@@ -176,10 +223,12 @@ class BrowseButton (Metawidget):
             title:    Text to display in the titlebar of the file dialog
         """
         Metawidget.__init__(self, master, str)
-        self.button = Button(self, text="Browse...", command=self.onClick)
-        self.button.pack()
+        print "Creating BrowseButton", type
         self.type = type
         self.title = title
+        # Create and pack widgets
+        self['button'] = Button(self, text="Browse...", command=self.onClick)
+        self.pack_all()
 
     def onClick(self, event=None):
         """Event handler when button is pressed"""
@@ -208,16 +257,17 @@ class FileEntry (Metawidget):
             default: Default value
         """
         Metawidget.__init__(self, master)
+        print "Creating FileEntry", label
         self.variable.set(default)
-        self.label = Label(self, text=label)
-        self.entry = Entry(self, width=40, textvariable=self.variable)
-        self.button = BrowseButton(self, type, desc)
-        # Link our variable with button's
-        self.button.variable = self.variable
-        # Draw
-        self.label.grid(row=0, column=0, sticky=E)
-        self.entry.grid(row=0, column=1, sticky=EW)
-        self.button.grid(row=0, column=2, sticky=E)
+        # Create and grid widgets
+        self['label'] = Label(self, text=label)
+        self['entry'] = Entry(self, width=40, textvariable=self.variable)
+        self['button'] = BrowseButton(self, type, desc)
+        self['label'].grid(row=0, column=0, sticky=E)
+        self['entry'].grid(row=0, column=1, sticky=EW)
+        self['button'].grid(row=0, column=2, sticky=E)
+        # Link button's variable to ours
+        self['button'].variable = self.variable
 
 ### --------------------------------------------------------------------
 
@@ -230,17 +280,18 @@ class ColorPicker (Metawidget):
             default: Default color (named color or hexadecimal RGB)
         """
         Metawidget.__init__(self, master, str)
+        print "Creating ColorPicker", label
         self.variable.set(default)
-        self.label = Label(self, text=label)
-        self.button = Button(self, text="None", command=self.change)
-        self.label.pack(side=LEFT)
-        self.button.pack(side=LEFT)
+        # Create and pack widgets
+        self['label'] = Label(self, text=label)
+        self['button'] = Button(self, text="None", command=self.change)
+        self.pack_all(side=LEFT)
 
     def change(self):
         rgb, color = askcolor(self.get())
         if color:
             self.set(color)
-            self.button.config(text=color, foreground=color)
+            self['button'].config(text=color, foreground=color)
 
 ### --------------------------------------------------------------------
 
@@ -261,17 +312,32 @@ class Optional (Metawidget):
             *args:   Additional arguments to pass to the sub-widget
         """
         Metawidget.__init__(self, master, bool)
-        self.check = Checkbutton(self, text=label,
-                                 command=self.showHide)
-        self.widget = widget(self, '', *args)
-        self.check.pack(side=LEFT)
-        self.set(False)
+        print "Creating Optional", label
+        self.active = False
+        # Create and pack widgets
+        self['check'] = Checkbutton(self, text=label, command=self.showHide)
+        self['widget'] = widget(self, '', *args)
+        self.pack_all(side=LEFT)
+        self['widget'].disable()
     
     def showHide(self):
         """Show or hide the sub-widget."""
-        if self.get() == True:
-            self.widget.pack_forget()
-            self.set(False)
+        if self.active:
+            self['widget'].disable()
+            self.active = False
         else:
-            self.widget.pack(side=LEFT)
-            self.set(True)
+            self['widget'].enable()
+            self.active = True
+
+    def get(self):
+        """Return the sub-widget's value if active, or None if inactive."""
+        if self.active:
+            return self['widget'].get()
+        else:
+            return None
+    
+    def set(self, value):
+        """Set sub-widget's value."""
+        self['widget'].set(value)
+
+### --------------------------------------------------------------------
