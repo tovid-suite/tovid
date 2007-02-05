@@ -261,7 +261,7 @@ class FileEntry (Metawidget):
         print "Creating FileEntry", label
         self.variable.set(default)
         # Create and grid widgets
-        Label(self, name='label', text=label)
+        Label(self, name='label', text=label, justify=LEFT)
         Entry(self, name='entry', width=40, textvariable=self.variable)
         BrowseButton(self, name='button', type=type, title=desc)
         self['label'].grid(row=0, column=0, sticky=E)
