@@ -14,7 +14,8 @@ __all__ = [
     'FontPicker',
     'LabelEntry',
     'Number',
-    'Optional']
+    'Optional',
+    'OptionFrame']
 
 from Tkinter import *
 from tkFileDialog import *
@@ -339,5 +340,51 @@ class Optional (Metawidget):
     def set(self, value):
         """Set sub-widget's value."""
         self['widget'].set(value)
+
+### --------------------------------------------------------------------
+
+class OptionFrame (Frame):
+    """A Frame containing Metawidgets that control command-line options.
+    """
+    def __init__(self, master=None, *args, **kwargs):
+        """Create an OptionFrame with the given master and control widgets.
+
+            master:  Tkinter widget that will contain this OptionFrame
+            args:    Positional arguments to pass to Frame constructor
+            kwargs:  Keyword arguments to pass to Frame constructor
+        """
+        Frame.__init__(self, master, *args, **kwargs)
+        self.controls = {}
+
+    def add(self, option, widget):
+        """Add a widget controlling the given option.
+        """
+        assert isinstance(widget, Widget)
+        self.controls[option] = widget
+        
+    def get(self, option):
+        """Get the value of the given option from its associated widget.
+        """
+        return self.controls[option].get()
+
+    def set(self, option, value):
+        """Set the value of the widget associated with the given option.
+        """
+        self.controls[option].set(value)
+
+    def arglist(self):
+        """Return a list of command-line arguments for all options.
+        """
+        args = []
+        for option, widget in self.controls.items():
+            value = widget.get()
+            # Boolean values control a flag
+            if value == True:
+                args.append("-%s" % option)
+            # All others use '-option value'
+            elif value:
+                args.append("-%s" % option)
+                args.append(value)
+        return args
 
 ### --------------------------------------------------------------------

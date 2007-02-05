@@ -214,42 +214,6 @@ def blink(widget):
     time.sleep(1)
     widget.config(background='white')
 
-### --------------------------------------------------------------------
-
-class OptionFrame (Frame):
-    """A Frame containing widgets that control command-line options.
-    """
-    def __init__(self, master=None, *args, **kwargs):
-        """Create an OptionFrame with the given master and control widgets.
-
-            master:  Tkinter widget that will contain this OptionFrame
-            *args:   Additional arguments to pass to Frame constructor
-        """
-        Frame.__init__(self, master, *args, **kwargs)
-        self.controls = {}
-
-    def get(self, option):
-        """Get the value of the given option from its associated widget.
-        """
-        return self.controls[option].get()
-
-    def set(self, option, value):
-        """Set the value of the widget associated with the given option.
-        """
-        self.controls[option].set(value)
-
-    def arglist(self):
-        """Return a list of command-line arguments for all options.
-        """
-        args = []
-        for option, widget in self.controls.items():
-            value = widget.get()
-            if value == True:
-                args.append("-%s" % option)
-            elif value:
-                args.append("-%s" % option)
-                args.append(value)
-        return args
 
 ### --------------------------------------------------------------------
 ### Frames containing related control widgets
@@ -586,8 +550,6 @@ class Advanced (OptionFrame):
     """
     def __init__(self, master=None):
         OptionFrame.__init__(self, master, borderwidth=3, relief=GROOVE)
-        self.label = Label(self, text="Advanced options")
-        self.label.grid()
         options = [
             'submenu-audio',
             'menu-font',
@@ -601,7 +563,7 @@ class Advanced (OptionFrame):
             'aspect',
             'widescreen']
         for option in options:
-            self.controls[option] = getWidget(self, option)
+            self.add(option, getWidget(self, option))
             self.controls[option].grid(sticky=W)
 
     def setOptions(self, command):
