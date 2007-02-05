@@ -105,7 +105,7 @@ WIDGETS = {
     'showcase-seek':
         (Number, 'Showcase seek time', 0, 600, 'scale', 2),
     'loop':
-        (Number, 'Loop', 0, 10, 'scale'),
+        (Optional, Number, 'Loop (default varies)', 0, 10, 'spin', 10),
     'playall':
         (Flag, '"Play all" button', False),
     'aspect':
@@ -248,7 +248,7 @@ class menuChoiceFrame (Frame):
         self.showcasefile = FileEntry(self, "Optional Showcase file\nfor textmenu or showcase", 'load',
                                 "Select an image or video file.")
         self.showcasefile.grid(row=5, column=0, sticky=E)
-        self.lblTextmenuSplit = Label(self, text="New column at title #   [15]:")
+        self.lblTextmenuSplit = Label(self, text="New column at title number   [15]:")
         self.lblTextmenuSplit.grid(row=4, column=0, sticky=N)
         self.textSplit = Spinbox(self, from_=2, to=15, width=3, textvariable=self.varTextSplit, wrap=1)
         self.varTextSplit.set(15)
