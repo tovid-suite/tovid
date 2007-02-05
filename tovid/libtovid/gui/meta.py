@@ -324,7 +324,7 @@ class Optional (Frame):
         self.active = False
         # Create and pack widgets
         self.check = Checkbutton(self, text=label,
-                                 command=self.showHide)
+                                 command=self.showHide, justify=LEFT)
         self.check.pack(side=LEFT)
         self.widget = widget(self, '', *args)
         self.widget.pack(side=LEFT)
