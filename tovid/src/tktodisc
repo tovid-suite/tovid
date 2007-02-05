@@ -77,13 +77,13 @@ WIDGETS = {
     'showcase-titles-align':
         (Choice, 'Showcase title alignment', 'west|east|center'),
     'bgaudio':
-        (FileEntry, 'Audio', 'load', 'Select an audio file'),
+        (FileEntry, 'Audio', 'load', 'Select an audio file, or a video containing audio'),
     'menu-audio-length':
         (Number, 'Menu audio length', 0, 120, 'scale'),
     'menu-audio-fade':
         (Number, 'Menu audio fade', 0, 10, 'scale'),
     'submenu-audio':
-        (FileEntry, 'Submenu audio', 'load', 'Select an audio file'),
+        (FileEntry, 'Submenu audio', 'load', 'Select an audio file, or a video containing audio'),
     'submenu-audio-length':
         (Number, 'Submenu audio length', 0, 120, 'scale'),
     'submenu-audio-fade':
@@ -311,7 +311,7 @@ class Backgrounds (Frame):
         self.visual = FileEntry(self, "Image or video", 'load',
                                 "Select an image or video file")
         self.audio = FileEntry(self, "Audio", 'load',
-                               "Select an audio file")
+                               "Select an audio file or video containing audio")
         self.visual.grid(sticky=E)
         self.audio.grid(sticky=E)
     
