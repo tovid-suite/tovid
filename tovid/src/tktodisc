@@ -343,7 +343,8 @@ class Outfile (Frame):
         outfile = self.outfile.get()
         if not outfile:
             print "WARNING: No output file selected"
-            raise MissingOption("Output filename (-out)", self.outfile.entry)
+            raise MissingOption("Output filename (-out)",
+                                self.outfile['entry'])
         command.add('-out', outfile)
 
 ### --------------------------------------------------------------------
@@ -555,6 +556,8 @@ class Advanced (OptionFrame):
             'menu-font',
             'thumb-font',
             'title-color',
+            'stroke-color',
+            'text-mist-color',
             'opacity',
             'blur',
             'seek',
