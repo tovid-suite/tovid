@@ -1349,8 +1349,7 @@ def draw_stroke_demo(drawing):
     # Restore context
     drawing.restore()
 
-import logging
-log.setLevel(logging.INFO)
+log.level = 'info'
 
 if __name__ == '__main__':
     mytime = time.time() # Benchmark

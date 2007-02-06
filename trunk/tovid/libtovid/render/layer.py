@@ -47,9 +47,8 @@ from libtovid.render.animation import Keyframe, Tween
 from libtovid.media import MediaFile
 from libtovid.transcode import rip
 from libtovid import log
-import logging
 
-log.setLevel(logging.INFO)
+log.level = 'info'
 
 class Layer:
     """A visual element, or a composition of visual elements. Conceptually
