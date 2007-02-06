@@ -143,8 +143,64 @@ class DiscOptions:
         #If get this far, file is OK
         return True
 
+    def OutputDirectoryExists(self, panel):
+        """"Ensure there are no problems with the output directory name"""
+        # Get global configuration (for output directory)
+        curConfig = TovidConfig()
+        outputDirectory = "%s" % (curConfig.strOutputDirectory)
+ 
+        #If specified, check whether it exists
+        if os.path.exists(outputDirectory) == True:
+            #If exists, check whether it is a file or directory
+            if os.path.isfile(outputDirectory) == True:
+                msgOutputDirectoryIsAFileDlg = wx.MessageDialog(panel, \
+                    "The output directory cannot be created as a file\n" \
+                    "already exists in that location.\n"\
+                    "The file is: %s\n\n" \
+                    "Please change the output directory." % (outputDirectory),
+                    "Output Directory Error",
+                    wx.OK | wx.ICON_ERROR)
+                msgOutputDirectoryIsAFileDlg.ShowModal()
+                msgOutputDirectoryIsAFileDlg.Destroy()
+                return False
+        else:   
+            msgOutputDirectoryDoesNotExistDlg = wx.MessageDialog(panel, \
+                "The specified output directory does not exist.\n" \
+                "The specified output directory is: %s\n\n" \
+                "Please either create the directory or change the name." \
+                % (outputDirectory),
+                "Output Directory Does Not Exist",
+                    wx.OK | wx.ICON_ERROR)
+            msgOutputDirectoryDoesNotExistDlg.ShowModal()
+            msgOutputDirectoryDoesNotExistDlg.Destroy()
+            return False   
+
+        #Check whether contains problematic characters
+        if outputDirectory.find("'") > -1 or outputDirectory.find("\"") > -1 or outputDirectory.find("$") > -1 :
+
+            #If so, give option of going back or trying anyway
+            #NB, it is not just Python files that need fixing. 
+            #Many lines throughout makemenu do aswell.
+            msgOutputDirectoryErrorDlg = wx.MessageDialog(panel, \
+                "For technical reasons, currently apostrophes, double quotes\n"\
+                "and $ signs may cause problems when in the output directory name.\n" \
+                "The output directory name is: %s\n\n" \
+                "Do you want to return to rename the output directory?\n" \
+                "NB, continuing (i.e. No) is very unlikely to work!" % (outputDirectory),
+                "Problematic Character in Output Directory",
+                wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
+            response = msgOutputDirectoryErrorDlg.ShowModal()
+            msgOutputDirectoryErrorDlg.Destroy()
+       
+            if response != wx.ID_NO:
+                return False   
+        #If get this far, file is OK
+        return True
+
     def RelevantFilesAreOK(self, panel):
         """Check the disc options for errors detectable before encoding"""
+        if self.OutputDirectoryExists(panel) == False:
+            return False
         if self.DiscNameOK(panel) == False:
             return False
         return True
