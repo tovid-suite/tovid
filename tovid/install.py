@@ -180,13 +180,16 @@ def install_modules(prefix):
     for module in modules:
         dest = os.path.join(dest_dir, module)
         install(module, dest)
-    # TODO: Byte-compile python modules (using compileall)
+    print green("Byte-compiling Python modules")
+    #libtovid_dir = os.path.join(dest_dir, 'libtovid')
+    #compileall.compile_dir(libtovid_dir)
 
 
 def install_icons(prefix):
     """Install icons to the given prefix directory."""
     dest_dir = os.path.join(prefix, 'share/icons/hicolor')
     print green("Installing icons to %s" % dest_dir)
+    # Yuck
     for icon in icons:
         if icon.endswith('128.png'):
             subdir = '128x128'
@@ -220,11 +223,13 @@ if __name__ == '__main__':
     if prefix == '':
         prefix = '/usr/local'
 
-    # Destination directories, relative to prefix
-    
-    # TODO: Become root if necessary
-    
+    # Build manpages as regular user
     build_manpages()
+
+    if not os.geteuid() == 0:
+        print "Please run as root to install files system-wide."
+        sys.exit()
+
     install_executables(prefix)
     install_manpages(prefix)
     install_modules(prefix)
