@@ -34,12 +34,6 @@ pydoc_modules = []
 mods = libtovid.__all__
 for mod in mods:
     pydoc_modules.append('libtovid.%s' % mod)
-#mods = libtovid.gui.__all__
-#for mod in mods:
-#    pydoc_modules.append('libtovid.gui.%s' % mod)
-#mods = libtovid..__all__
-#for mod in mods:
-#    pydoc_modules.append('libtovid.encoders.%s' % mod)
 
 
 def newer(source, target):
