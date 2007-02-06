@@ -55,7 +55,6 @@ __all__ = [\
 
 import os
 import sys
-import logging
 from ConfigParser import ConfigParser
 
 
@@ -90,16 +89,47 @@ class Config (ConfigParser):
         outfile.close()
 
 
+# Logging class
+class Log:
+    # Increasing levels of severity
+    _levels = {
+        'debug': 1,
+        'info': 2,
+        'warning': 3,
+        'error': 4,
+        'critical': 5}
+    
+    def __init__(self, level='info'):
+        """Create a logger with the given severity level."""
+        self.level = level
+    
+    def message(self, level, text):
+        """Print a message if it's at the current severity level or higher."""
+        if Log._levels[level] >= Log._levels[self.level]:
+            print text
+
+    def debug(self, text):
+        """Log a debugging message."""
+        self.message('debug', text)
+
+    def info(self, text):
+        """Log an informational message."""
+        self.message('info', text)
+
+    def warning(self, text):
+        """Log a warning message."""
+        self.message('warning', text)
+
+    def error(self, text):
+        """Log an error message."""
+        self.message('error', text)
+
+    def critical(self, text):
+        """Log a critical error message."""
+        self.message('critical', text)
+
 # Global logger
-# HACK ALERT
-log = logging.getLogger('libtovid')
-log.setLevel(logging.DEBUG)
-# Output format
-fmt = logging.Formatter("[%(levelname)s]: %(message)s")
-stdout = logging.StreamHandler(sys.stdout)
-stdout.setFormatter(fmt)
-log.addHandler(stdout)
-# TODO: Support logging to a file with a different severity level
+log = Log()
 
 
 # =========================================================================
