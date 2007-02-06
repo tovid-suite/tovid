@@ -1562,7 +1562,7 @@ class EncodingPanel(wx.Panel):
         self.btnStartStop.Enable(False)
 
 class GroupPanel(wx.Panel):
-    """A panel showing controls appropriate to encoding a video."""
+    """A panel showing controls appropriate to encoding a group of videoes."""
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
 
@@ -1570,178 +1570,23 @@ class GroupPanel(wx.Panel):
         self.curOptions = GroupOptions()
         self.parent = parent
 
-        # File information display
-#        self.lblInFile = wx.StaticText(self, wx.ID_ANY, "Filename:")
-#        self.txtInFile = wx.StaticText(self, wx.ID_ANY, "None")
-
-        # Statix box and sizer to hold file info
-#        self.sboxFileInfo = wx.StaticBox(self, wx.ID_ANY, "Video information")
-#        self.sizFileInfo = wx.StaticBoxSizer(self.sboxFileInfo, wx.HORIZONTAL)
-#        self.sizFileInfo.Add(self.lblInFile, 0, wx.EXPAND | wx.ALL, 6)
-#        self.sizFileInfo.Add(self.txtInFile, 1, wx.EXPAND | wx.ALL, 6)
-        
-        # Radio buttons
-        # Format-selection radio buttons
-#        outFormatList = ['352x240 VCD',
-#                         '480x480 SVCD',
-#                         '720x480 DVD',
-#                         '352x480 Half-DVD',
-#                         '352x240 VCD on DVD' ]
-
-        # Aspect ratio radio buttons
-#        aspectList = ['4:3 Fullscreen TV',
-#                      '16:9 Widescreen TV',
-#                      '2.35:1 Theatrical widescreen']
-
-        # Radio boxes and tooltips
-#        self.rbResolution = wx.RadioBox(self, wx.ID_ANY, "Output resolution",
-#            wx.DefaultPosition, wx.DefaultSize,
-#            outFormatList, 1, wx.RA_SPECIFY_COLS)
-#        wx.EVT_RADIOBOX(self, self.rbResolution.GetId(), self.OnFormat)
-#        self.rbResolution.SetToolTipString("Select which resolution you want to "
-#            "encode your video in. The available resolutions are shown depending on "
-#            "whether you are making a VCD, SVCD, or DVD disc.")
-#        self.rbAspect = wx.RadioBox(self, wx.ID_ANY, "Aspect ratio of input",
-#            wx.DefaultPosition, wx.DefaultSize,
-#            aspectList, 1, wx.RA_SPECIFY_COLS)
-#        wx.EVT_RADIOBOX(self, self.rbAspect.GetId(), self.OnAspect)
-#        self.rbAspect.SetToolTipString("Select which aspect ratio the original video "
-#            "is in. If it is roughly TV-shaped, use '4:3'. If it is more than "
-#            "twice as wide as it is tall, use '2.35:1'. If it's somewhere in "
-#            "between, use '16:9'.")
-
-        # Sizer for radioboxes
-#        self.sizResAspect = wx.BoxSizer(wx.HORIZONTAL)
-#        self.sizResAspect.Add(self.rbResolution, 1, wx.EXPAND | wx.ALL)
-#        self.sizResAspect.Add(self.rbAspect, 1, wx.EXPAND | wx.ALL)
-                
-        # Direct-entry CLI option box
-#        self.lblCLIOptions = wx.StaticText(self, wx.ID_ANY, "Custom options:")
-#        self.txtCLIOptions = wx.TextCtrl(self, wx.ID_ANY, "")
-#        self.txtCLIOptions.SetToolTipString("Type custom tovid command-line "
-#            "options that you'd like to use, separated by spaces. Warning:"
-#            "Please make sure you know what you are doing!")
-#        wx.EVT_TEXT(self, self.txtCLIOptions.GetId(), self.OnCLIOptions)
-#        self.sizCLIOptions = wx.BoxSizer(wx.HORIZONTAL)
-#        self.sizCLIOptions.Add(self.lblCLIOptions, 0, wx.EXPAND | wx.ALL, 8)
-#        self.sizCLIOptions.Add(self.txtCLIOptions, 1, wx.EXPAND | wx.ALL, 8)
-
-        # Sizer to hold all encoding options
-#        self.sizEncOpts = wx.BoxSizer(wx.VERTICAL)
-#        self.sizEncOpts.Add(self.sizResAspect, 1, wx.EXPAND | wx.ALL)
-#        self.sizEncOpts.Add(self.sizCLIOptions, 0, wx.EXPAND | wx.ALL)
-
-        # Button to preview the video
-#        self.btnPreview = wx.Button(self, wx.ID_ANY, "Preview video")
-#        self.btnPreview.SetToolTipString("Play the video using mplayer")
-#        wx.EVT_BUTTON(self, self.btnPreview.GetId(), self.OnPreview)
-
-        # Button to copy video options to all videos on disc
-#        self.btnUseForAll = wx.Button(self, wx.ID_ANY,
-#            "Use these settings for all videos")
-#        self.btnUseForAll.SetToolTipString("Apply the current video"
-#            " settings, including resolution, aspect ratio, and"
-#            " custom command-line options, to all videos on the disc.")
-#        wx.EVT_BUTTON(self, self.btnUseForAll.GetId(), self.OnUseForAll)
-
         # Group options heading
         self.txtHeading = HeadingText(self, wx.ID_ANY, "Group options")
 
         # Add controls to main vertical sizer
         self.sizMain = wx.BoxSizer(wx.VERTICAL)
         self.sizMain.Add(self.txtHeading, 0, wx.EXPAND | wx.ALL, 8)
-#        self.sizMain.Add(self.sizFileInfo, 0, wx.EXPAND | wx.ALL, 8)
-#        self.sizMain.Add(self.sizEncOpts, 1, wx.EXPAND | wx.ALL, 8)
-#        self.sizMain.Add(self.btnPreview, 0, wx.EXPAND | wx.ALL, 8)
-#        self.sizMain.Add(self.btnUseForAll, 0, wx.EXPAND | wx.ALL, 8)
         self.SetSizer(self.sizMain)
-
-#    def OnFormat(self, evt):
-#        """Set appropriate format based on radio button selection."""
-#        # Convert integer value to text representation
-#        # (e.g., ID_FMT_DVD to 'dvd')
-#        self.curOptions.format = util.ID_to_text('format', evt.GetInt())
-
-#    def OnAspect(self, evt):
-#        """Set aspect ratio based on radio button selection."""
-#        self.curOptions.aspect = util.ID_to_text('aspect', evt.GetInt())
-
-#    def OnCLIOptions(self, evt):
-#        """Update custom CLI options when the user edits the textbox."""
-#        self.curOptions.addoptions = self.txtCLIOptions.GetValue()
-
-#    def OnUseForAll(self, evt):
-#        """Use the current video settings for all videos on disc."""
-#        countItems = self.parent.UseForAllItems(self.curOptions)
-#        # Display acknowledgement
-#        dlgAck = wx.MessageDialog(self,
-#            "The current video settings were copied to\n"
-#            "%d other videos on the disc." % countItems,
-#            "Settings copied", wx.OK | wx.ICON_INFORMATION)
-#        dlgAck.ShowModal()
-
-#    def OnPreview(self, evt):
-#        """Preview the video in mplayer."""
-#        strCommand = "gmplayer \"%s\"" % self.curOptions.inFile
-#        wx.Execute(strCommand, wx.EXEC_SYNC)
-
 
     def SetOptions(self, groupOpts):
         """Set control values based on the provided GroupOptions."""
         self.curOptions = groupOpts
 
         self.txtHeading.SetLabel("Group options: %s" % self.curOptions.title)
-#        self.txtInFile.SetLabel(self.curOptions.inFile)
-#        self.rbResolution.SetSelection(util.text_to_ID(self.curOptions.format))
-#        self.rbAspect.SetSelection(util.text_to_ID(self.curOptions.aspect))
-#        self.txtCLIOptions.SetValue(self.curOptions.addoptions)
 
     def GetOptions(self):
         """Return the currently-set encoding options."""
         return self.curOptions
-
-#    def SetDiscFormat(self, format):
-#        """Enable/disable controls to suit DVD, VCD, or SVCD-compliance."""
-#        # For DVD, disable non-DVD output formats
-#        if format == 'dvd':
-#            for rbItem in [ID_FMT_DVD, ID_FMT_HALFDVD, ID_FMT_DVDVCD]:
-#                self.rbResolution.EnableItem(rbItem, True)
-#            for rbItem in [ID_FMT_SVCD, ID_FMT_VCD]:
-#                self.rbResolution.EnableItem(rbItem, False)
-#        # For VCD, enable only VCD output and disable bitrate controls
-#        elif format == 'vcd':
-#            for rbItem in range(0, 5):
-#                self.rbResolution.EnableItem(rbItem, False)
-#            self.rbResolution.EnableItem(ID_FMT_VCD, True)
-#        # For SVCD, enable only SVCD output
-#        elif format == 'svcd':
-#            for rbItem in range(0, 5):
-#                self.rbResolution.EnableItem(rbItem, False)
-#            self.rbResolution.EnableItem(ID_FMT_SVCD, True)
-#        # Unknown format?
-#        else:
-#            print "VideoPanel.SetDiscFormat: Unknown format %s" % format 
-    
-#    def SetDiscTVSystem(self, format):
-#        """Set NTSC or PAL, and show appropriate controls."""
-#        # Display NTSC resolutions in format radiobox
-#        if format in [ 'ntsc', 'ntscfilm' ]:
-#            self.rbResolution.SetItemLabel(ID_FMT_VCD, '352x240 VCD')
-#            self.rbResolution.SetItemLabel(ID_FMT_SVCD, '480x480 SVCD')
-#            self.rbResolution.SetItemLabel(ID_FMT_DVD, '720x480 DVD')
-#            self.rbResolution.SetItemLabel(ID_FMT_HALFDVD, '352x480 Half-DVD')
-#            self.rbResolution.SetItemLabel(ID_FMT_DVDVCD, '352x240 VCD on DVD')
-#        # Display PAL resolutions in format radiobox
-#        elif format == 'pal':
-#            self.rbResolution.SetItemLabel(ID_FMT_VCD, '352x288 VCD')
-#            self.rbResolution.SetItemLabel(ID_FMT_SVCD, '480x576 SVCD')
-#            self.rbResolution.SetItemLabel(ID_FMT_DVD, '720x576 DVD')
-#            self.rbResolution.SetItemLabel(ID_FMT_HALFDVD, '352x576 Half-DVD')
-#            self.rbResolution.SetItemLabel(ID_FMT_DVDVCD, '352x288 VCD on DVD')
-#        # Unknown format?
-#        else:
-#            print "VideoPanel.SetDiscTVSystem: Unknown format %s" % format
-
 
 class GuidePanel(wx.Panel):
     """A panel showing live context-sensitive help."""
