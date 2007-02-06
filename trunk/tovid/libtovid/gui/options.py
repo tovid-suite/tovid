@@ -579,6 +579,32 @@ class MenuOptions:
         #If get this far, file is OK
         return True
 
+    def HeaderOK(self, panel):
+        """Check for any errors associated with the menu header"""
+        menuTitle = "%s" % (self.menutitle)
+
+        #Check whether menu title contains problematic characters
+        if menuTitle.find("'") > -1 or menuTitle.find("\"") > -1 \
+           or menuTitle.find("$") > -1:
+
+            #If so, give option of going back or trying anyway
+            msgMenuTitleErrorDlg = wx.MessageDialog(panel, \
+                "For technical reasons, currently apostrophes, double quotes\n" \
+                "and $ signs may cause problems in the menu headers.\n" \
+                "One menu header contains at least one of these characters.\n"
+                "This menu header is: %s\n\n" \
+                "Do you want to return to rename this menu header?\n" \
+                "NB, continuing (i.e. No) is very unlikely to work!" % (menuTitle),
+                "Problematic character in Menu Title",
+                wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
+            response = msgMenuTitleErrorDlg.ShowModal()
+            msgMenuTitleErrorDlg.Destroy()
+       
+            if response != wx.ID_NO:
+                return False   
+        #If get this far, file is OK
+        return True
+
     def OutputFileOK(self, panel):
         """Check for any errors associated with the output file"""
         # Get global configuration (for output directory)
@@ -645,6 +671,8 @@ class MenuOptions:
         if self.AudioFileOK(panel) == False:
             return False
         if self.ImageFileOK(panel) == False:
+            return False
+        if self.HeaderOK(panel) == False:
             return False
         if self.OutputFileOK(panel) == False:
             return False
