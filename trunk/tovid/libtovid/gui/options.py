@@ -122,14 +122,15 @@ class DiscOptions:
                 return False   
 
         #ICheck whether contains problematic characters
-        if discName.find("'") > -1 or discName.find("\"") > -1 or discName.find("$") > -1 :
+        if discName.find("'") > -1 or discName.find("\"") > -1 \
+           or discName.find("$") > -1 or discName.find("&") > -1:
 
             #If so, give option of going back or trying anyway
             #NB, it is not just Python files that need fixing. 
             #Many lines throughout makemenu do aswell.
             msgDiscNameErrorDlg = wx.MessageDialog(panel, \
                 "For technical reasons, currently apostrophes, double quotes\n"\
-                "and $ signs may cause problems when in the disc name.\n" \
+                "$ signs and & signs may cause problems when in the disc name.\n" \
                 "The disc name is: %s\n\n" \
                 "Do you want to return to rename the disc?\n" \
                 "NB, continuing (i.e. No) is very unlikely to work!" % (self.title),
@@ -616,14 +617,15 @@ class MenuOptions:
 
 
         #Check whether output file contains problematic characters
-        if outputFile.find("'") > -1 or outputFile.find("\"") > -1 or outputFile.find("$") > -1 :
+        if outputFile.find("'") > -1 or outputFile.find("\"") > -1 \
+           or outputFile.find("$") > -1 or outputFile.find("&") > -1:
 
             #If so, give option of going back or trying anyway
             #NB, it is not just Python files that need fixing. 
             #Many lines throughout e.g. makemenu do aswell.
             msgMenuNameErrorDlg = wx.MessageDialog(panel, \
                 "For technical reasons, currently apostrophes, double quotes\n" \
-                "and $ signs may cause problems in the name of menus.\n" \
+                "& signs and $ signs may cause problems in the name of menus.\n" \
                 "One menu name contains at least one of these characters.\n"
                 "This menu name is: %s\n\n" \
                 "Do you want to return to rename this menu?\n" \
@@ -868,7 +870,8 @@ class VideoOptions:
                 return False   
 
         #Check whether the output file contains problematic characters
-        if videoOutput.find("'") > -1 or videoOutput.find("\"") > -1 or videoOutput.find("$") > -1 :
+        if videoOutput.find("'") > -1 or videoOutput.find("\"") > -1 \
+           or videoOutput.find("$") > -1 or videoOutput.find("&") > -1:
 
             #If so, give option of going back or trying anyway
             #NB, it is not just Python files that need fixing. 
@@ -877,7 +880,7 @@ class VideoOptions:
                 "This program converts the video files into the correct format,\n" \
                 "and saves these resultant files with names based on the entered values.\n\n" \
                 "For technical reasons, currently apostrophes, double quotes\n" \
-                "and $ signs may cause problems when in these filenames.\n" \
+                "& and $ signs may cause problems when in these filenames.\n" \
                 "One output file contains at least one of these characters.\n"
                 "This output video file is: %s\n\n" \
                 "Do you want to return to modify these values?\n" \
