@@ -103,6 +103,7 @@ modules = [
     'libtovid/transcode/rip.py']
 
 # Icons
+icon_dir = 'icons'
 icons = [
     'tovid_icon_128.png',
     'tovid_icon_64.png',
@@ -112,6 +113,9 @@ icons = [
     'disc.svg',
     'cd.svg']
 
+shortcuts = [
+    'tovidgui.desktop',
+    'tktodisc.desktop']
 
 def newer(source, dest):
     """Return True if the source file is more recently modified than the
@@ -131,11 +135,12 @@ def install(source, dest):
         print "Copying '%s' to '%s'" % (source, dest)
         # shutil.copy(source, dest)
     else:
-        print "Skipping: '%s'" % source
+        print "Skipping: '%s' (no changes)" % source
 
 
-def install_executables(dest_dir):
-    """Install executable files to the given directory."""
+def install_executables(prefix):
+    """Install executable files to the given prefix directory."""
+    dest_dir = os.path.join(prefix, 'src')
     print green("Installing executables to %s" % dest_dir)
     for file in executables:
         source = os.path.join(exec_dir, file)
@@ -157,8 +162,9 @@ def build_manpages():
             print "Skipping: %s" % manfile
 
 
-def install_manpages(dest_dir):
-    """Install manual pages to the given directory."""
+def install_manpages(prefix):
+    """Install manual pages to the given prefix directory."""
+    dest_dir = os.path.join(prefix, 'share/man/man1')
     print green("Installing manpages to %s" % dest_dir)
     for manpage in manpages:
         source = os.path.join(man_dir, manpage) + '.1'
@@ -166,17 +172,44 @@ def install_manpages(dest_dir):
         install(source, dest)
 
 
-def install_modules(dest_dir):
-    """Install Python modules to the given directory."""
+def install_modules(prefix):
+    """Install Python modules to the given prefix directory."""
+    dest_dir = os.path.join(prefix, 'lib/python%s.%s/site-packages' %\
+                            (sys.version_info[0], sys.version_info[1]))
     print green("Installing Python modules to %s" % dest_dir)
     for module in modules:
         dest = os.path.join(dest_dir, module)
         install(module, dest)
+    # TODO: Byte-compile python modules (using compileall)
 
 
-def install_icons(dest_dir):
-    """Install icons to the given directory."""
-    pass
+def install_icons(prefix):
+    """Install icons to the given prefix directory."""
+    dest_dir = os.path.join(prefix, 'share/icons/hicolor')
+    print green("Installing icons to %s" % dest_dir)
+    for icon in icons:
+        if icon.endswith('128.png'):
+            subdir = '128x128'
+        elif icon.endswith('64.png'):
+            subdir = '64x64'
+        elif icon.endswith('48.png'):
+            subdir = '48x48'
+        elif icon.endswith('32.png'):
+            subdir = '32x32'
+        elif icon.endswith('.svg'):
+            subdir = 'scalable'
+        source = os.path.join(icon_dir, icon)
+        dest = os.path.join(dest_dir, subdir, 'apps', icon)
+        install(source, dest)
+
+
+def install_misc(prefix):
+    """Install miscellaneous files to the given prefix directory."""
+    desktop_dir = os.path.join(prefix, 'share/applications')
+    print green("Installing desktop shortcuts to %s" % desktop_dir)
+    for shortcut in shortcuts:
+        dest = os.path.join(desktop_dir, shortcut)
+        install(shortcut, dest)
 
 
 if __name__ == '__main__':
@@ -188,16 +221,14 @@ if __name__ == '__main__':
         prefix = '/usr/local'
 
     # Destination directories, relative to prefix
-    exec_dest = os.path.join(prefix, 'src')
-    man_dest = os.path.join(prefix, 'share/man/man1')
-    module_dest = os.path.join(prefix, 'lib/python%s.%s/site-packages' %\
-                               (sys.version_info[0], sys.version_info[1]))
-
+    
     # TODO: Become root if necessary
     
     build_manpages()
-    install_executables(exec_dest)
-    install_manpages(man_dest)
-    install_modules(module_dest)
-
+    install_executables(prefix)
+    install_manpages(prefix)
+    install_modules(prefix)
+    install_icons(prefix)
+    install_misc(prefix)
+    
     print blue("Done! Thanks for using the tovid installer.")
