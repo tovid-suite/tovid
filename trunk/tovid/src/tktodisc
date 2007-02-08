@@ -51,7 +51,7 @@ WIDGETS = {
     'rotate':
         (Optional, Number, 'Rotate', 5),
     'showcase-framestyle':
-        (Choice, 'Showcase frame style', 'none|glass'),
+        (Optional, Choice, 'Showcase frame style', 'none|glass'),
     'title-color':
         (Optional, ColorPicker, 'Title color'),
     'stroke-color':
@@ -76,8 +76,12 @@ WIDGETS = {
         (Optional, ColorPicker, 'Thumb text color'),
     'showcase-titles-align':
         (Optional, Choice, 'Showcase title alignment', 'west|east|center'),
+    'menu-title-geo':
+        (Optional, Choice, 'Menu title position', 'north|south|west|east|center'),
+    'menu-title-offset':
+        (Optional, LabelEntry, 'Offset for menu title position', '+0+0'),
     'align':
-        (Optional, Choice, 'Montage alignment', 'north|south'),
+        (Optional, Choice, 'Montage alignment', 'north|south|east|west'),
     'bgaudio':
         (FileEntry, 'Audio', 'load', 'Select an audio file'),
     'menu-audio-length':
@@ -98,6 +102,10 @@ WIDGETS = {
         (Flag, 'Static menus (takes less time)'),
     '3dthumbs':
         (Flag, 'Create 3D thumbs'),
+    'tile3x1':
+        (Flag, 'Arrange thumb montage in 1 row of 3 thumbs (default style only)'),
+    'wave':
+        (Optional, LabelEntry, 'Create a wave effect on the showcase thumb', 'default'),
     'menu-title':
         (LabelEntry, 'Menu title'),
     'menu-length':
@@ -108,22 +116,34 @@ WIDGETS = {
         (Number, 'Seek time', 0, 600, 'spin', 2),
     'showcase-seek':
         (Number, 'Showcase seek time', 0, 600, 'scale', 2),
+    'showcase-geo':
+        (Optional, LabelEntry, 'Showcase image position (XxY'),
     'loop':
         (Number, 'Loop', 0, 10, 'scale'),
     'playall':
         (Flag, '"Play all" button', False),
+    'chapters':
+        (Optional, LabelEntry, 'Number of Chapters'),
+    'audio-lang':
+        (Optional, LabelEntry, 'Default audio language'),
+    'subtitles':
+        (Optional, LabelEntry, 'Default subtitle language'),
+    'outlinewidth':
+        (Optional, Number, 'Outlinewidth for spumux buttons', 0, 20, 'scale'),
     'aspect':
         (Optional, Choice, 'Aspect ratio', '4:3|16:9'),
     'widescreen':
         (Optional, Choice, 'Widescreen', 'nopanscan|noletterbox'),
     'tovidopts':
         (LabelEntry, 'Custom tovid options'),
+    'use-makemenu':
+        (Flag, 'Use makemenu script instead of todisc, and exit', False),
     'no-ask':
         (Flag, 'No prompts for questions', False),
     'no-warn':
         (Flag, 'Do not pause at warnings', False),
     'keep-files':
-        (Flag, 'keep useful intermediate files on exit', False)
+        (Flag, 'Keep useful intermediate files on exit', False)
     }
 
 """
@@ -132,9 +152,6 @@ Not yet fitted into above dictionary:
 textmenu
 menu-fontsize
 thumb-fontsize
-3dthumbs
-wave
-tile3x1
 files
 titles
 submneu-titles
@@ -168,14 +185,16 @@ font_options = [
 #    'thumb-fontsize',
     'title-color',
     'submenu-title-color',
-    'thumb-text-color']
+    'thumb-text-color',
+    'stroke-color',
+    'submenu-stroke-color']
 
 #[Thumb style options]
 
 thumb_options = [
     '3dthumbs',
-#    'wave',
-#    'tile3x1',
+    'wave',
+    'tile3x1',
     'thumb-shape',
     'rotate',
 #    'rotate-thumbs',
@@ -186,15 +205,16 @@ thumb_options = [
 #[Dvdauthor options]
 
 author_options = [
-#    'chapters',
+    'chapters',
 #    'chain-videos',
     'widescreen',
     'aspect',
-    'stroke-color',
     'highlight-color',
     'select-color',
-    'submenu-stroke-color',
     'button-style',
+    'audio-lang',
+    'subtitles',
+    'outlinewidth',
     'playall']
 
 
@@ -205,14 +225,16 @@ author_options = [
 #[Menu style options]
 
 menu_options = [
-    'align',
-   'intro',
-    'showcase-titles-align',
+    'menu-fade',
+    'showcase-framestyle',
     'text-mist',
     'text-mist-color',
     'text-mist-opacity',
-    'showcase-framestyle',
-    'menu-fade']
+    'showcase-titles-align',
+    'menu-title-geo',
+    'menu-title-offset',
+    'align',
+    'intro']
 
 #[Audio Options]
 
@@ -227,7 +249,9 @@ audio_options = [
 general_options = [
     'keep-files',
     'no-ask',
-    'no-warn']
+    'no-warn',
+    'use-makemenu',
+    'tovidopts']
 
 group_options = ""
 
@@ -292,7 +316,7 @@ def blink(widget):
 class menuChoiceFrame (Frame):
     """A frame for setting which Menu template will be used"""
     def __init__(self, master=None):
-        Frame.__init__(self, master)
+        Frame.__init__(self, master, borderwidth=2, relief=GROOVE)
         self.varMenuStyle = StringVar()     # Menu arrangement variable
         self.varShowcaseFile = StringVar()     # use showcase file
         self.varTextSplit = IntVar()
@@ -314,7 +338,7 @@ class menuChoiceFrame (Frame):
                                      text="Textmenu style",
                                      variable=self.varMenuStyle, value="doTextmenu")
         self.chkTextmenu.grid(row=4, column=0, sticky=W)
-        self.lblShowcaseFile = Label(self, text="Optional Showcase file for showcase or textmenu")
+        self.lblShowcaseFile = Label(self, text="Optional Showcase file for Showcase or Textmenu")
         self.lblShowcaseFile.grid(row=5, column=0, sticky=W)
         self.showcasefile = FileEntry(self, "Showcase file", 'load',
                                 "Select an image or video file.")
@@ -419,7 +443,7 @@ class FileListFrame (Frame):
         self.entTitle.grid(row=2, column=2)
         # Disc usage total
         self.lblUsage = Label(self, textvariable=self.varUsage)
-        self.lblUsage.grid(row=3, column=0, columnspan=2, sticky=W)
+        self.lblUsage.grid(row=0, column=1, columnspan=2, sticky=E)
         self.updateUsage()
 
     def scroll(self, *args):
@@ -673,7 +697,7 @@ class Application(Frame):
         self.fraTvsys.grid(sticky=W)
 
         self.fraMenuFormat = menuChoiceFrame(self)
-        self.fraMenuFormat.grid(padx=5, pady=17, sticky=W)
+        self.fraMenuFormat.grid(padx=5, pady=5, sticky=W)
 
         self.fraBackgrounds = BackgroundsFrame(self)
         self.fraBackgrounds.grid(sticky=EW)
