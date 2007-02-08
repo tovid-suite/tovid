@@ -43,9 +43,9 @@ WIDGETS = {
     'thumb-font':
         (FontPicker,),
     'submenu-stroke-color':
-        (ColorPicker, 'Submenu stroke color'),
+        (Optional, ColorPicker, 'Submenu stroke color'),
     'submenu-title-color':
-        (ColorPicker, 'Submenu title color'),
+        (Optional, ColorPicker, 'Submenu title color'),
     'button-style':
         (Optional, Choice, 'Button style', 'rect|text|text-rect'),
     'rotate':
@@ -53,17 +53,17 @@ WIDGETS = {
     'showcase-framestyle':
         (Choice, 'Showcase frame style', 'none|glass'),
     'title-color':
-        (ColorPicker, 'Title color'),
+        (Optional, ColorPicker, 'Title color'),
     'stroke-color':
-        (ColorPicker, 'Stroke color'),
+        (Optional, ColorPicker, 'Stroke color'),
     'highlight-color':
-        (ColorPicker, 'Highlight color'),
+        (Optional, ColorPicker, 'Highlight color'),
     'select-color':
-        (ColorPicker, 'Selection color'),
+        (Optional, ColorPicker, 'Selection color'),
     'text-mist':
         (Flag, 'Text mist', False),
     'text-mist-color':
-        (ColorPicker, 'Text mist color'),
+        (Optional, ColorPicker, 'Text mist color'),
     'text-mist-opacity':
         (Optional, Number, 'Text mist opacity', 1, 100, 'scale', 60),
     'opacity':
@@ -71,7 +71,7 @@ WIDGETS = {
     'blur':
         (Optional, Number, 'Blur', 1, 5, 'scale', 4),
     'thumb-mist-color':
-        (ColorPicker, 'Thumb mist color'),
+        (Optional, ColorPicker, 'Thumb mist color'),
     'thumb-text-color':
         (Optional, ColorPicker, 'Thumb text color'),
     'showcase-titles-align':
@@ -117,7 +117,13 @@ WIDGETS = {
     'widescreen':
         (Optional, Choice, 'Widescreen', 'nopanscan|noletterbox'),
     'tovidopts':
-        (LabelEntry, 'Custom tovid options')
+        (LabelEntry, 'Custom tovid options'),
+    'no-ask':
+        (Flag, 'No prompts for questions', False),
+    'no-warn':
+        (Flag, 'Do not pause at warnings', False),
+    'keep-files':
+        (Flag, 'keep useful intermediate files on exit', False)
     }
 
 """
@@ -156,9 +162,9 @@ Lists: -files/-titles may need rethinking!
 #[Font style options]
 
 font_options = [
-    'menu-font',
+#    'menu-font',
 #    'menu-fontsize',
-    'thumb-font',
+#    'thumb-font',
 #    'thumb-fontsize',
     'title-color',
     'submenu-title-color',
@@ -216,6 +222,12 @@ audio_options = [
     'submenu-audio',
     'submenu-audio-length',
     'submenu-audio-fade']
+
+#[General Options]
+general_options = [
+    'keep-files',
+    'no-ask',
+    'no-warn']
 
 group_options = ""
 
@@ -280,7 +292,7 @@ def blink(widget):
 class menuChoiceFrame (Frame):
     """A frame for setting which Menu template will be used"""
     def __init__(self, master=None):
-        Frame.__init__(self, master, borderwidth=3, relief=GROOVE)
+        Frame.__init__(self, master)
         self.varMenuStyle = StringVar()     # Menu arrangement variable
         self.varShowcaseFile = StringVar()     # use showcase file
         self.varTextSplit = IntVar()
@@ -302,10 +314,12 @@ class menuChoiceFrame (Frame):
                                      text="Textmenu style",
                                      variable=self.varMenuStyle, value="doTextmenu")
         self.chkTextmenu.grid(row=4, column=0, sticky=W)
-        self.showcasefile = FileEntry(self, "Optional Showcase file\nfor Textmenu or Showcase", 'load',
+        self.lblShowcaseFile = Label(self, text="Optional Showcase file for showcase or textmenu")
+        self.lblShowcaseFile.grid(row=5, column=0, sticky=W)
+        self.showcasefile = FileEntry(self, "Showcase file", 'load',
                                 "Select an image or video file.")
-        self.showcasefile.grid(row=5, column=0, sticky=E)
-        self.lblTextmenuSplit = Label(self, text="New column at title number:   [15]:")
+        self.showcasefile.grid(row=6, column=0, sticky=E)
+        self.lblTextmenuSplit = Label(self, text="New column at title number: ")
         self.lblTextmenuSplit.grid(row=4, column=0, sticky=N)
         self.textSplit = Spinbox(self, from_=2, to=15, width=3, textvariable=self.varTextSplit, wrap=1)
         self.varTextSplit.set(15)
@@ -510,7 +524,7 @@ class BackgroundsFrame (Frame):
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
         label = Label(self, text="Menu backgrounds")
-        label.grid(row=0, sticky=W)
+        label.grid(sticky=W)
         self.visual = FileEntry(self, "Image or video", 'load',
                                 "Select an image or video file")
         self.audio = FileEntry(self, "Audio", 'load',
@@ -606,7 +620,7 @@ class AdvancedFrame (OptionFrame):
     """A frame containing controls for setting advanced options.
     """
     def __init__(self, master=None, options="", label_text="Advanced Options"):
-        Frame.__init__(self, master, borderwidth=3)
+        Frame.__init__(self, master, borderwidth=5)
         self.label = Label(self, text=label_text)
         self.label.grid()
         self.label = Label(self, text="", height=2)
@@ -614,9 +628,9 @@ class AdvancedFrame (OptionFrame):
         self.widgets = {}
         for option in options:
             self.widgets[option] = getWidget(self, option)
-            self.widgets[option].grid(sticky=EW)
+            self.widgets[option].grid(sticky=W, padx=9, pady=10)
         self.label2 = Label(self, height=1, width=68)
-        self.label2.grid(sticky=S)
+        self.label2.grid(sticky=N+S)
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
         for option, widget in self.widgets.items():
@@ -638,6 +652,7 @@ class Application(Frame):
         self.AdvDvdShown=False
         self.AdvFontShown=False
         self.AdvAudioShown=False
+        self.AdvGeneralShown=False
         self.advanced_visible = False
         self.grid()
         self.setTheme(theme)
@@ -658,7 +673,7 @@ class Application(Frame):
         self.fraTvsys.grid(sticky=W)
 
         self.fraMenuFormat = menuChoiceFrame(self)
-        self.fraMenuFormat.grid(padx=5, pady=5, sticky=W)
+        self.fraMenuFormat.grid(padx=5, pady=17, sticky=W)
 
         self.fraBackgrounds = BackgroundsFrame(self)
         self.fraBackgrounds.grid(sticky=EW)
@@ -675,6 +690,7 @@ class Application(Frame):
         self.fraAdvAudio = AdvancedFrame(self, audio_options, "Advanced Audio Options")
         self.fraAdvFont = AdvancedFrame(self, font_options, "Advanced Font Options")
         self.fraAdvDvd = AdvancedFrame(self, author_options, "Advanced Dvdauthor and Spumux Options")
+        self.fraAdvGeneral = AdvancedFrame(self, general_options, "Advanced General Options")
 
         # create a menubar
         menubar = Menu(self)
@@ -692,6 +708,7 @@ class Application(Frame):
         editmenu.add_command(label="Font options", command=lambda: self.showitem(font_options, "font"))
         editmenu.add_command(label="Audio options", command=lambda: self.showitem(audio_options, "audio")) 
         editmenu.add_command(label="Dvdauthor options", command=lambda: self.showitem(author_options, "dvd"))
+        editmenu.add_command(label="General options", command=lambda: self.showitem(general_options, "general"))
         editmenu.add_separator()
         editmenu.add_command(label="Hide advanced pane", command=lambda: self.showitem("", "hide"))
         menubar.add_cascade(label="Advanced Options", menu=editmenu)
@@ -723,19 +740,31 @@ class Application(Frame):
             self.hideAdvMenu(_label)
             self.fraAdvDvd.grid(row=0, column=2, rowspan=8, sticky=NW)
             self.AdvDvdShown=True
+        elif _label == "general":                
+            self.hideAdvMenu(_label)
+            self.fraAdvGeneral.grid(row=0, column=2, rowspan=8, sticky=NW)
+            self.AdvGeneralShown=True
         elif _label == "hide":                
             self.hideAdvMenu(_label)
     def hideAdvMenu(self, _label):
         if self.AdvMenuShown:
             self.fraAdvMenu.grid_forget()
+            self.AdvMenuShown=False
         if self.AdvThumbShown:
             self.fraAdvThumb.grid_forget()
+            self.AdvThumbShown=False
         if self.AdvAudioShown:
             self.fraAdvAudio.grid_forget()
+            self.AdvAudioShown=False
         if self.AdvFontShown:
             self.fraAdvFont.grid_forget()
+            self.AdvFontShown=False
         if self.AdvDvdShown:
             self.fraAdvDvd.grid_forget()
+            self.AdvDvdShown=False
+        if self.AdvGeneralShown:
+            self.fraAdvGeneral.grid_forget()
+            self.AdvGeneralShown=False
 
         
     def getCommand(self):
