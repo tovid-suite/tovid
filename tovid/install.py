@@ -140,7 +140,7 @@ def install(source, dest):
 
 def install_executables(prefix):
     """Install executable files to the given prefix directory."""
-    dest_dir = os.path.join(prefix, 'src')
+    dest_dir = os.path.join(prefix, 'bin')
     print green("Installing executables to %s" % dest_dir)
     for file in executables:
         source = os.path.join(exec_dir, file)
