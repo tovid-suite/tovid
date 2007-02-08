@@ -118,15 +118,15 @@ class Log:
 
     def warning(self, text):
         """Log a warning message."""
-        self.message('warning', text)
+        self.message('warning', "WARNING: " + text)
 
     def error(self, text):
         """Log an error message."""
-        self.message('error', text)
+        self.message('error', "ERROR: " + text)
 
     def critical(self, text):
         """Log a critical error message."""
-        self.message('critical', text)
+        self.message('critical', "CRITICAL: " + text)
 
 # Global logger
 log = Log()
