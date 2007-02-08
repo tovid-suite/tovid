@@ -1325,7 +1325,7 @@ if $SHOWCASE; then
         elif [[ $TYPE = video ]]; then
             SHOWCASE_VIDEO="${SHOWCASE_FILE[@]}"
         else
-            usage_error "Sorry, can not identify "${SHOWCASE_FILE[@]}""
+            usage_error "Sorry, can not identify showcase file: "${SHOWCASE_FILE[@]}""
         fi
     else
         NO_SC_THUMB=:
@@ -1738,6 +1738,9 @@ if [ "$SC_TITLE_ALIGN" = "west" ] || $TEXTMENU; then #FIXME
         fi
     done
 fi
+# centre aligned titles are not for textmenu style
+$TEXTMENU && [[ $SC_TITLE_ALIGN = center ]] && \
+usage_error "You can not use center align for textmenu titles"
 # text-rect only for -align east
 if [[ $BUTTON_STYLE = text-rect ]] && ! [[ $SC_TITLE_ALIGN = east ]] && ! $TEXTMENU; then
     yecho "***Warning*** : text-rect buttons need to be aligned east of thumbs: \
