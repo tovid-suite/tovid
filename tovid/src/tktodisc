@@ -36,6 +36,10 @@ WIDGETS = {
         (FileEntry, 'Background', 'load', 'Select an image or video file'),
     'menu-font':
         (FontPicker,),
+    'menu-fontsize':
+        (Optional, Number, 'Menu font size', 0, 80, 'scale'),
+    'thumb-fontsize':
+        (Optional, Number, 'Thumb and textmenu title font size', 0, 80, 'scale'),
     'menu-fade':
         (Flag, 'Fade in menu', False),
     'thumb-shape':
@@ -49,7 +53,9 @@ WIDGETS = {
     'button-style':
         (Optional, Choice, 'Button style', 'rect|text|text-rect'),
     'rotate':
-        (Optional, Number, 'Rotate', 5),
+        (Optional, Number, 'Rotate Showcase thumb(s)', 5),
+    'rotate-thumbs':
+        (Optional, LabelEntry, 'Rotate Thumbs (list)'),
     'showcase-framestyle':
         (Optional, Choice, 'Showcase frame style', 'none|glass'),
     'title-color':
@@ -105,7 +111,7 @@ WIDGETS = {
     'tile3x1':
         (Flag, 'Arrange thumb montage in 1 row of 3 thumbs (default style only)'),
     'wave':
-        (Optional, LabelEntry, 'Create a wave effect on the showcase thumb', 'default'),
+        (Optional, LabelEntry, 'Wave effect for showcase thumb', 'default'),
     'menu-title':
         (LabelEntry, 'Menu title'),
     'menu-length':
@@ -113,9 +119,13 @@ WIDGETS = {
     'intro':
         (FileEntry, 'Intro video', 'load', 'Select a video file'),
     'seek':
-        (Number, 'Seek time', 0, 600, 'spin', 2),
+        (Optional, Number, 'Seek time', 0, 600, 'scale', 2),
+    'bgaudio-seek':
+        (Optional, Number, 'Background audio seek time', 0, 600, 'scale', 2),
+    'bgvideo-seek':
+        (Optional, Number, 'Background video seek time', 0, 600, 'scale', 2),
     'showcase-seek':
-        (Number, 'Showcase seek time', 0, 600, 'scale', 2),
+        (Optional, Number, 'Showcase video seek time', 0, 600, 'scale', 2),
     'showcase-geo':
         (Optional, LabelEntry, 'Showcase image position (XxY'),
     'loop':
@@ -161,10 +171,7 @@ thumb-fontsize
 files
 titles
 submneu-titles
-chapters
 chain-videos
-subtitles lang1 lang2 ...
-audio-lang chan1 chan2 ...
 
 
 Special cases:
@@ -186,9 +193,9 @@ Lists: -files/-titles may need rethinking!
 
 font_options = [
 #    'menu-font',
-#    'menu-fontsize',
 #    'thumb-font',
-#    'thumb-fontsize',
+    'menu-fontsize',
+    'thumb-fontsize',
     'title-color',
     'submenu-title-color',
     'thumb-text-color',
@@ -200,16 +207,17 @@ font_options = [
 thumb_options = [
     '3dthumbs',
     'thumb-shape',
-#    'rotate-thumbs',
     'opacity',
     'blur',
-    'thumb-mist-color',
+    'seek',
+    'rotate-thumbs',
     'spacer',
     'showcaseonlylabel',
     'wave',
     'rotate',
     'spacer',
     'defaultonlylabel',
+    'thumb-mist-color',
     'tile3x1']
 
 #[Dvdauthor options]
@@ -235,6 +243,9 @@ author_options = [
 #[Menu style options]
 
 menu_options = [
+    'bgvideo-seek',
+    'bgaudio-seek',
+    'showcase-seek',
     'menu-fade',
     'text-mist',
     'text-mist-color',
@@ -731,7 +742,6 @@ class Application(Frame):
 
         # create a menubar
         menubar = Menu(self)
-
         # create a pulldown menu, and add it to the menu bar
         filemenu = Menu(menubar, tearoff=0)
         filemenu.add_separator()
@@ -754,7 +764,7 @@ class Application(Frame):
         runmenu.add_command(label="Run todisc now !", command=self.runCommand)
         menubar.add_cascade(label="Run", menu=runmenu)
         root.config(menu=menubar)
-
+        # create a toolbar
     def showitem(self, widget_list, _label):
         """show frame, and set vars so we know it is shown, hide previously shown frame if exists"""
         if _label == "menu":
