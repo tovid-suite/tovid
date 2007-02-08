@@ -171,10 +171,11 @@ class Number (Metawidget):
             self.number = Spinbox(self, from_=min, to=max,
                                   textvariable=self.variable)
         else: # 'scale'
-            self.number = Scale(self, from_=min, to=max,
+            self.number = Scale(self, from_=min, to=max, tickinterval=max-min,
                                 variable=self.variable, orient=HORIZONTAL)
+            self.number['troughcolor'] = 'white'
         self.label.pack(side=LEFT)
-        self.number.pack(side=LEFT)
+        self.number.pack(side=RIGHT, expand=YES, fill=X)
 
 ### --------------------------------------------------------------------
 
@@ -190,9 +191,9 @@ class LabelEntry (Metawidget):
         self.variable.set(default)
         # Create and pack widgets
         self.label = Label(self, text=label)
-        self.entry = Entry(self, width=30, textvariable=self.variable)
+        self.entry = Entry(self, textvariable=self.variable)
         self.label.pack(side=LEFT)
-        self.entry.pack(side=LEFT)
+        self.entry.pack(side=LEFT, fill=X, expand=YES)
 
 ### --------------------------------------------------------------------
 
@@ -222,11 +223,11 @@ class FileEntry (Metawidget):
         self.desc = desc
         # Create and grid widgets
         self.label = Label(self, text=label, justify=LEFT)
-        self.entry = Entry(self, width=40, textvariable=self.variable)
+        self.entry = Entry(self, textvariable=self.variable)
         self.button = Button(self, text="Browse...", command=self.browse)
-        self.label.grid(row=0, column=0, sticky=E)
-        self.entry.grid(row=0, column=1, sticky=EW)
-        self.button.grid(row=0, column=2, sticky=E)
+        self.label.pack(side=LEFT)
+        self.entry.pack(side=LEFT, fill=X, expand=YES)
+        self.button.pack(side=LEFT)
         # Link button's variable to ours
         self.button.variable = self.variable
 
@@ -299,7 +300,7 @@ class Optional (Frame):
                                  command=self.showHide, justify=LEFT)
         self.check.pack(side=LEFT)
         self.widget = widget(self, '', *args)
-        self.widget.pack(side=LEFT)
+        self.widget.pack(side=LEFT, expand=YES, fill=X)
         self.widget.disable()
         self.active.set(False)
     
