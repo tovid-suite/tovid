@@ -371,7 +371,7 @@ class menuChoiceFrame (Frame):
         self.lblTextmenuSplit.grid(row=4, column=0, sticky=N)
         self.textSplit = Spinbox(self, from_=2, to=15, width=3, textvariable=self.varTextSplit, wrap=1)
         self.varTextSplit.set(15)
-        self.textSplit.grid(row=4, column=0, padx=120, sticky=E)
+        self.textSplit.grid(row=4, column=0, padx=100, sticky=E)
 # TODO {  if textmenu is not checked, remove these 2 options
 #      {  self.lblTextmenuSplit.grid_remove() and self.textSplit.grid_remove()
 #      {  if default is not selected, remove both of the above and the showcase file selector
