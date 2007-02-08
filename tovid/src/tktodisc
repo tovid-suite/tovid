@@ -143,7 +143,13 @@ WIDGETS = {
     'no-warn':
         (Flag, 'Do not pause at warnings', False),
     'keep-files':
-        (Flag, 'Keep useful intermediate files on exit', False)
+        (Flag, 'Keep useful intermediate files on exit', False),
+    'showcaseonlylabel':
+        (PlainLabel, 'The following options apply to Showcase style only'),
+    'defaultonlylabel':
+        (PlainLabel, 'The following options apply to the Default style only'),
+    'spacer':
+        (PlainLabel, '')
     }
 
 """
@@ -193,14 +199,18 @@ font_options = [
 
 thumb_options = [
     '3dthumbs',
-    'wave',
-    'tile3x1',
     'thumb-shape',
-    'rotate',
 #    'rotate-thumbs',
     'opacity',
     'blur',
-    'thumb-mist-color']
+    'thumb-mist-color',
+    'spacer',
+    'showcaseonlylabel',
+    'wave',
+    'rotate',
+    'spacer',
+    'defaultonlylabel',
+    'tile3x1']
 
 #[Dvdauthor options]
 
@@ -226,15 +236,18 @@ author_options = [
 
 menu_options = [
     'menu-fade',
-    'showcase-framestyle',
     'text-mist',
     'text-mist-color',
     'text-mist-opacity',
-    'showcase-titles-align',
     'menu-title-geo',
     'menu-title-offset',
     'align',
-    'intro']
+    'intro',
+    'spacer',
+    'showcaseonlylabel',
+    'showcase-framestyle',
+    'showcase-titles-align']
+    
 
 #[Audio Options]
 
@@ -652,7 +665,7 @@ class AdvancedFrame (OptionFrame):
         self.widgets = {}
         for option in options:
             self.widgets[option] = getWidget(self, option)
-            self.widgets[option].grid(sticky=W, padx=9, pady=10)
+            self.widgets[option].grid(sticky=W, padx=9, pady=4)
         self.label2 = Label(self, height=1, width=68)
         self.label2.grid(sticky=N+S)
     def setOptions(self, command):
