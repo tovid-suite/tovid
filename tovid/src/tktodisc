@@ -13,6 +13,7 @@ import time
 import re
 from libtovid.cli import Command
 from libtovid.gui.meta import *
+from libtovid import log
 
 try:
     from Tkinter import *
@@ -440,7 +441,7 @@ class FileListFrame (Frame):
     def setTitle(self, event):
         """Event handler when Enter is pressed after editing a title."""
         newtitle = self.curtitle.get()
-        print "Setting title to '%s'" % newtitle
+        log.debug("Setting title to '%s'" % newtitle)
         self.lstTitles.delete(self.curindex)
         self.lstTitles.insert(self.curindex, newtitle)
         
@@ -448,7 +449,7 @@ class FileListFrame (Frame):
         """Event handler for adding files to the list box"""
         files = askopenfilenames(parent=self, title='Add files')
         for file in files:
-            print "Adding '%s' to the file list" % file
+            log.debug("Adding '%s' to the file list" % file)
             self.lstFiles.insert(END, file)
             # Add a dummy title (with pathname and extension removed)
             title = os.path.basename(file)[0:-4]
@@ -474,7 +475,8 @@ class FileListFrame (Frame):
                   or self.lstTitles.curselection()
         # Using reverse order prevents reflow from messing up indexing
         for line in reversed(selection):
-            print "Removing '%s' from the file list" % self.lstFiles.get(line)
+            log.debug("Removing '%s' from the file list" %\
+                      self.lstFiles.get(line))
             self.lstFiles.delete(line)
             self.lstTitles.delete(line)
         self.updateUsage()
@@ -543,7 +545,7 @@ class OutfileFrame (Frame):
         """Add relevant todisc options to the given Command."""
         outfile = self.outfile.get()
         if not outfile:
-            print "WARNING: No output file selected"
+            log.warning("No output file selected")
             raise MissingOption("Output filename (-out)", self.outfile.entry)
         command.add('-out', outfile)
 
@@ -612,7 +614,7 @@ class AdvancedFrame (OptionFrame):
         self.widgets = {}
         for option in options:
             self.widgets[option] = getWidget(self, option)
-            self.widgets[option].grid(sticky=W)
+            self.widgets[option].grid(sticky=EW)
         self.label2 = Label(self, height=1, width=68)
         self.label2.grid(sticky=S)
     def setOptions(self, command):
@@ -757,7 +759,7 @@ class Application(Frame):
             try:
                 frame.setOptions(cmd)
             except MissingOption, err:
-                print "Missing a required option: %s" % err.message
+                log.error("Missing a required option: %s" % err.message)
                 raise
         return cmd
 
@@ -772,8 +774,8 @@ class Application(Frame):
             return
         # Show pretty-printed command
         pretty_cmd = pretty_todisc(cmd)
-        print "Running command:"
-        print pretty_cmd
+        log.info("Running command:")
+        log.info(pretty_cmd)
         # Verify with user
         if askyesno(message="Run todisc now?"):
             root.withdraw()
@@ -790,7 +792,7 @@ class Application(Frame):
         widgets are created, and does not apply to widgets already created.
         """
         if theme == 'light':
-            print "Using 'light' theme"
+            log.info("Using 'light' theme")
             #self.option_add("*Frame*background", '#808080')
             self.option_add("*Entry.relief", GROOVE)
             self.option_add("*Listbox.relief", GROOVE)
@@ -798,13 +800,11 @@ class Application(Frame):
             self.option_add("*Frame*font",
                             ("Helvetica", 12))
         else:  # theme == 'default' or anything else
-            print "Using default theme"
-            self.option_add("*Entry.relief", SUNKEN)
-            self.option_add("*Listbox.relief", SUNKEN)
-            self.option_add("*Button.relief", RAISED)
-            self.option_add("*Frame*font",
-                            ("Helvetica", 10, "bold"))
+            log.info("Using default theme")
+            self.option_clear()
         # These apply to all themes
+        self.option_add("*Scale.troughColor", 'white')
+        self.option_add("*Spinbox.background", 'white')
         self.option_add("*Entry.background", 'white')
         self.option_add("*Listbox.background", 'white')
 
