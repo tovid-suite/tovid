@@ -14,7 +14,8 @@ __all__ = [
     'LabelEntry',
     'Number',
     'Optional',
-    'OptionFrame']
+    'OptionFrame',
+    'PlainLabel']
 
 from Tkinter import *
 from tkFileDialog import *
@@ -369,3 +370,21 @@ class OptionFrame (Frame):
         return args
 
 ### --------------------------------------------------------------------
+
+class PlainLabel (Metawidget):
+    """A plain label or spacer widget"""
+    def __init__(self,
+                 master=None,
+                 label="Text",
+                 default='',
+                 *args, **kwargs):
+        Metawidget.__init__(self, master, str, *args, **kwargs)
+        log.debug("Creating PlainLabel(%s)" % label)
+        self.variable.set(default)
+        # Create and pack widgets
+        self.label = Label(self, text=label)
+        self.label.pack(side=LEFT)
+
+### --------------------------------------------------------------------
+
+
