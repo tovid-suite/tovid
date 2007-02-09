@@ -1,8 +1,8 @@
 [Desktop Entry]
-Name=tktodisc
+Name=todiscgui
 Type=Application
 Path=
-Exec=tktodisc
+Exec=todiscgui
 Icon=tovid.svg
 Terminal=true
 GenericName=GUI frontend for todisc
