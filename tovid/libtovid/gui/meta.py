@@ -63,9 +63,9 @@ class Metawidget (Frame):
         """Set the Metawidget's variable to the given value."""
         self.variable.set(value)
 
-    def enable(self, enable=True):
+    def enable(self, enabled=True):
         """Enable or disable all sub-widgets."""
-        if enable:
+        if enabled:
             newstate = NORMAL
         else:
             newstate = DISABLED
@@ -162,21 +162,34 @@ class Number (Metawidget):
         # TODO: Multiple styles (entry, spinbox, scale)
         Metawidget.__init__(self, master, int, *args, **kwargs)
         log.debug("Creating Number(%s, %s, %s)" % (label, min, max))
+        self.style = style
         # Use min if default wasn't provided
         if default is None:
             default = min
         self.variable.set(default)
         # Create and pack widgets
         self.label = Label(self, name='label', text=label)
-        if style == 'spin':
+        if self.style == 'spin':
             self.number = Spinbox(self, from_=min, to=max,
                                   textvariable=self.variable)
         else: # 'scale'
             self.number = Scale(self, from_=min, to=max, tickinterval=max-min,
                                 variable=self.variable, orient=HORIZONTAL)
-            self.number['troughcolor'] = 'white'
         self.label.pack(side=LEFT)
         self.number.pack(side=RIGHT, expand=YES, fill=X)
+
+    def enable(self, enabled=True):
+        """Enable or disable all sub-widgets. Overridden to make Scale widget
+        look disabled."""
+        Metawidget.enable(self, enabled)
+        if self.style == 'scale':
+            if enabled:
+                self.number['fg'] = 'black'
+                self.number['troughcolor'] = 'white'
+            else:
+                self.number['fg'] = '#A3A3A3'
+                self.number['troughcolor'] = '#D9D9D9'
+                
 
 ### --------------------------------------------------------------------
 
