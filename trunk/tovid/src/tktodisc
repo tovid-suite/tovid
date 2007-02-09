@@ -31,11 +31,11 @@ except:
 
 WIDGETS = {
     'showcase':
-        (FileEntry, 'Showcase', 'load', 'Select an image or video file.'),
+        (Filename, 'Showcase', 'load', 'Select an image or video file.'),
     'background':
-        (FileEntry, 'Background', 'load', 'Select an image or video file'),
+        (Filename, 'Background', 'load', 'Select an image or video file'),
     'menu-font':
-        (FontPicker,),
+        (Font,),
     'menu-fontsize':
         (Optional, Number, 'Menu font size', 0, 80, 'scale'),
     'thumb-fontsize':
@@ -45,11 +45,11 @@ WIDGETS = {
     'thumb-shape':
         (Optional, Choice, 'Thumb shape', 'normal|oval|plectrum|egg'),
     'thumb-font':
-        (FontPicker,),
+        (Font,),
     'submenu-stroke-color':
-        (Optional, ColorPicker, 'Submenu stroke color'),
+        (Optional, Color, 'Submenu stroke color'),
     'submenu-title-color':
-        (Optional, ColorPicker, 'Submenu title color'),
+        (Optional, Color, 'Submenu title color'),
     'button-style':
         (Optional, Choice, 'Button style', 'rect|text|text-rect'),
     'rotate':
@@ -59,17 +59,17 @@ WIDGETS = {
     'showcase-framestyle':
         (Optional, Choice, 'Showcase frame style', 'none|glass'),
     'title-color':
-        (Optional, ColorPicker, 'Title color'),
+        (Optional, Color, 'Title color'),
     'stroke-color':
-        (Optional, ColorPicker, 'Stroke color'),
+        (Optional, Color, 'Stroke color'),
     'highlight-color':
-        (Optional, ColorPicker, 'Highlight color'),
+        (Optional, Color, 'Highlight color'),
     'select-color':
-        (Optional, ColorPicker, 'Selection color'),
+        (Optional, Color, 'Selection color'),
     'text-mist':
         (Flag, 'Text mist', False),
     'text-mist-color':
-        (Optional, ColorPicker, 'Text mist color'),
+        (Optional, Color, 'Text mist color'),
     'text-mist-opacity':
         (Optional, Number, 'Text mist opacity', 1, 100, 'scale', 60),
     'opacity':
@@ -77,9 +77,9 @@ WIDGETS = {
     'blur':
         (Optional, Number, 'Blur', 1, 5, 'scale', 4),
     'thumb-mist-color':
-        (Optional, ColorPicker, 'Thumb mist color'),
+        (Optional, Color, 'Thumb mist color'),
     'thumb-text-color':
-        (Optional, ColorPicker, 'Thumb text color'),
+        (Optional, Color, 'Thumb text color'),
     'showcase-titles-align':
         (Optional, Choice, 'Showcase title alignment', 'west|east|center'),
     'menu-title-geo':
@@ -89,13 +89,13 @@ WIDGETS = {
     'align':
         (Optional, Choice, 'Montage alignment', 'north|south|east|west'),
     'bgaudio':
-        (FileEntry, 'Audio', 'load', 'Select an audio file'),
+        (Filename, 'Audio', 'load', 'Select an audio file'),
     'menu-audio-length':
         (Optional, Number, 'Menu audio length', 0, 120, 'scale'),
     'menu-audio-fade':
         (Optional, Number, 'Menu audio fade', 0, 10, 'scale', 1),
     'submenu-audio':
-        (FileEntry, 'Submenu audio', 'load', 'Select an audio file'),
+        (Filename, 'Submenu audio', 'load', 'Select an audio file'),
     'submenu-audio-length':
         (Optional, Number, 'Submenu audio length', 0, 120, 'scale'),
     'submenu-audio-fade':
@@ -117,7 +117,7 @@ WIDGETS = {
     'menu-length':
         (Number, 'Menu length', 0, 120, 'scale'),
     'intro':
-        (FileEntry, 'Intro video', 'load', 'Select a video file'),
+        (Filename, 'Intro video', 'load', 'Select a video file'),
     'seek':
         (Optional, Number, 'Seek time', 0, 600, 'scale', 2),
     'bgaudio-seek':
@@ -336,45 +336,50 @@ def blink(widget):
 ### --------------------------------------------------------------------
 ### Frames containing related control widgets
 ### --------------------------------------------------------------------
-# add Menu template choices frame
-class menuChoiceFrame (Frame):
+
+class MenuChoice (Frame):
     """A frame for setting which Menu template will be used"""
     def __init__(self, master=None):
-        Frame.__init__(self, master, borderwidth=2, relief=GROOVE)
+        Frame.__init__(self, master)
         self.varMenuStyle = StringVar()     # Menu arrangement variable
         self.varShowcaseFile = StringVar()     # use showcase file
         self.varTextSplit = IntVar()
         self.drawWidgets()
+
     def drawWidgets(self):
-        self.lblMenuTemplate = Label(self, text="Menu Arrangement")
-        self.lblMenuTemplate.grid(row=1, column=0, sticky=W)
-        self.chkDefault = Radiobutton(self,
-                                     text="Default style",
-                                     variable=self.varMenuStyle, value="doDefault", selectcolor="green")
-        self.chkDefault.grid(row=2, column=0, sticky=W)
+        group = LabelFrame(self, text="Menu arrangement")
+        self.chkDefault = Radiobutton(group, text="Default style",
+                                      variable=self.varMenuStyle,
+                                      value="doDefault", selectcolor="green")
+        self.chkDefault.pack(anchor=W)
         self.chkDefault.select()
-        self.chkShowcase = Radiobutton(self,
-                                     text="Showcase style",
-                                     variable=self.varMenuStyle, value="doShowcase")
-        self.chkShowcase.configure ( selectcolor="blue" )
-        self.chkShowcase.grid(row=3, column=0, sticky=W)
-        self.chkTextmenu = Radiobutton(self,
-                                     text="Textmenu style",
-                                     variable=self.varMenuStyle, value="doTextmenu")
-        self.chkTextmenu.grid(row=4, column=0, sticky=W)
-        self.lblShowcaseFile = Label(self, text="Optional Showcase file for Showcase or Textmenu")
-        self.lblShowcaseFile.grid(row=5, column=0, sticky=W)
-        self.showcasefile = FileEntry(self, "Showcase file", 'load',
+        self.chkShowcase = Radiobutton(group, text="Showcase style",
+                                       variable=self.varMenuStyle,
+                                       value="doShowcase")
+        self.chkShowcase.configure(selectcolor="blue" )
+        self.chkShowcase.pack(anchor=W)
+        self.chkTextmenu = Radiobutton(group, text="Textmenu style",
+                                       variable=self.varMenuStyle,
+                                       value="doTextmenu")
+        self.chkTextmenu.pack(anchor=W)
+        self.lblShowcaseFile = Label(group, text="Optional Showcase file"\
+                                     " for Showcase or Textmenu")
+        self.lblShowcaseFile.pack(anchor=W)
+        self.showcasefile = Filename(group, "Showcase file", 'load',
                                 "Select an image or video file.")
-        self.showcasefile.grid(row=6, column=0, sticky=E)
-        self.lblTextmenuSplit = Label(self, text="New column at title number: ")
-        self.lblTextmenuSplit.grid(row=4, column=0, sticky=N)
-        self.textSplit = Spinbox(self, from_=2, to=15, width=3, textvariable=self.varTextSplit, wrap=1)
+        self.showcasefile.pack(anchor=W)
+
+        self.lblTextmenuSplit = Label(group, text="New column at title number: ")
+        self.lblTextmenuSplit.pack(anchor=W)
+        self.textSplit = Spinbox(group, from_=2, to=15, width=3,
+                                 textvariable=self.varTextSplit, wrap=1)
         self.varTextSplit.set(15)
-        self.textSplit.grid(row=4, column=0, padx=100, sticky=E)
+        self.textSplit.pack(anchor=W)
+        group.pack(fill=X, expand=YES)
 # TODO {  if textmenu is not checked, remove these 2 options
 #      {  self.lblTextmenuSplit.grid_remove() and self.textSplit.grid_remove()
 #      {  if default is not selected, remove both of the above and the showcase file selector
+
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
         showcasefile = self.showcasefile.get()
@@ -387,8 +392,7 @@ class menuChoiceFrame (Frame):
             command.add('-textmenu', textsplit)
 
 
-
-class FormatFrame (Frame):
+class Format (Frame):
     """A frame with a choice of formats (DVD, SVCD)
     """
     def __init__(self, master=None):
@@ -403,7 +407,7 @@ class FormatFrame (Frame):
 
 ### --------------------------------------------------------------------
 
-class TvsysFrame (Frame):
+class Tvsys (Frame):
     """A frame with a choice of TV system (PAL, NTSC)
     """
     def __init__(self, master=None):
@@ -417,7 +421,7 @@ class TvsysFrame (Frame):
     
 ### --------------------------------------------------------------------
 
-class FileListFrame (Frame):
+class FileList (Frame):
     """A frame containing a list of filenames, and controls to add or delete
     files from the list.
     """
@@ -563,7 +567,7 @@ class FileListFrame (Frame):
 
 ### --------------------------------------------------------------------
 
-class BackgroundsFrame (Frame):
+class Backgrounds (Frame):
     """Widgets for setting background image or video and audio"""
     def __init__(self, master=None):
         Frame.__init__(self, master)
@@ -572,13 +576,13 @@ class BackgroundsFrame (Frame):
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
         label = Label(self, text="Menu backgrounds")
-        label.grid(sticky=W)
-        self.visual = FileEntry(self, "Image or video", 'load',
+        label.pack(anchor=W)
+        self.visual = Filename(self, "Image or video", 'load',
                                 "Select an image or video file")
-        self.audio = FileEntry(self, "Audio", 'load',
+        self.audio = Filename(self, "Audio", 'load',
                                "Select an audio file")
-        self.visual.grid(sticky=E)
-        self.audio.grid(sticky=E)
+        self.visual.pack(anchor=E, fill=X, expand=YES)
+        self.audio.pack(anchor=E, fill=X, expand=YES)
     
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
@@ -591,17 +595,17 @@ class BackgroundsFrame (Frame):
 
 ### --------------------------------------------------------------------
 
-class OutfileFrame (Frame):
+class Outfile (Frame):
     """A frame containing an output-file text entry/browser box."""
     def __init__(self, master=None):
-        Frame.__init__(self, master)
+        Frame.__init__(self, master, relief=GROOVE)
         self.drawWidgets()
     
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
-        self.outfile = FileEntry(self, "Output file", 'save',
+        self.outfile = Filename(self, "Output file", 'save',
                                  "Select an output name.")
-        self.outfile.pack(side=LEFT, pady=2)
+        self.outfile.pack(side=LEFT, pady=2, fill=X, expand=YES)
 
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
@@ -613,7 +617,7 @@ class OutfileFrame (Frame):
 
 ### --------------------------------------------------------------------
 
-class TitleFrame (Frame):
+class Title (Frame):
     """A frame containing options for customizing titles"""
     def __init__(self, master=None):
         Frame.__init__(self, master)
@@ -622,7 +626,7 @@ class TitleFrame (Frame):
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
         self.title = LabelEntry(self, "Menu title")
-        self.title.pack(side=LEFT, pady=4)
+        self.title.pack(side=RIGHT, pady=4, fill=X, expand=YES)
         self.title.set("My video collection")
 
     def setOptions(self, command):
@@ -635,7 +639,7 @@ class TitleFrame (Frame):
 
 ### --------------------------------------------------------------------
 
-class MiscOptionsFrame (Frame):
+class MiscOptions (Frame):
     """A frame containing miscellaneous options"""
     # TODO: Categorize these as needed and separate into new Frame subclasses
     def __init__(self, master=None):
@@ -647,9 +651,9 @@ class MiscOptionsFrame (Frame):
         self.static = Flag(self, "Static menus (takes less time)", False)
         self.submenus = Flag(self, "Create submenus (takes more time)", False)
         self.custom = LabelEntry(self, "Custom todisc options")
-        self.static.grid(columnspan=2, sticky=W)
-        self.submenus.grid(columnspan=2, sticky=W)
-        self.custom.grid(row=2, column=0)
+        self.static.pack(anchor=W)
+        self.submenus.pack(anchor=W)
+        self.custom.pack(anchor=W, fill=X, expand=YES)
         
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
@@ -664,21 +668,18 @@ class MiscOptionsFrame (Frame):
                 command.add(opt)
 
 ### --------------------------------------------------------------------
-class AdvancedFrame (OptionFrame):
+
+class Advanced (OptionFrame):
     """A frame containing controls for setting advanced options.
     """
     def __init__(self, master=None, options="", label_text="Advanced Options"):
         Frame.__init__(self, master, borderwidth=5)
-        self.label = Label(self, text=label_text)
-        self.label.grid()
-        self.label = Label(self, text="", height=2)
-        self.label.grid()
+        group = LabelFrame(self, text=label_text)
+        group.pack(ipadx=6, ipady=6, fill=BOTH, expand=YES)
         self.widgets = {}
         for option in options:
-            self.widgets[option] = getWidget(self, option)
-            self.widgets[option].grid(sticky=W, padx=9, pady=4)
-        self.label2 = Label(self, height=1, width=68)
-        self.label2.grid(sticky=N+S)
+            self.widgets[option] = getWidget(group, option)
+            self.widgets[option].pack(anchor=NW)
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
         for option, widget in self.widgets.items():
@@ -692,7 +693,7 @@ class AdvancedFrame (OptionFrame):
 ### Main application window
 ### --------------------------------------------------------------------
 
-class Application(Frame):
+class Application (Frame):
     def __init__(self, master=None, theme='default'):
         Frame.__init__(self, master)
         self.AdvThumbShown=False
@@ -702,43 +703,45 @@ class Application(Frame):
         self.AdvAudioShown=False
         self.AdvGeneralShown=False
         self.advanced_visible = False
-        self.grid()
+        self.pack()
         self.setTheme(theme)
         self.drawWidgets()
 
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
-        self.fraTitle = TitleFrame(self)
-        self.fraTitle.grid(sticky=W)
-        
-        self.fraFileList = FileListFrame(self)
-        self.fraFileList.grid(sticky=W)
+        group = Frame(self)
+        self.title = Title(group)
+        self.files = FileList(group)
+        self.format = Format(group)
+        self.tvsys = Tvsys(group)
+        self.menuformat = MenuChoice(group)
+        self.backgrounds = Backgrounds(group)
+        self.misc = MiscOptions(group)
+        self.outfile = Outfile(group)
+        group.pack(side=LEFT, padx=6, pady=6)
+        # Pack widgets in main frame
+        self.title.pack(fill=X, expand=YES)
+        self.files.pack(anchor=W)
+        self.format.pack(anchor=W)
+        self.tvsys.pack(anchor=W)
+        self.menuformat.pack(anchor=W, fill=X, expand=YES)
+        self.backgrounds.pack(anchor=W, fill=X, expand=YES)
+        self.misc.pack(anchor=W, fill=X, expand=YES)
+        self.outfile.pack(anchor=W, fill=X, expand=YES)
 
-        self.fraFormat = FormatFrame(self)
-        self.fraFormat.grid(sticky=W)
-
-        self.fraTvsys = TvsysFrame(self)
-        self.fraTvsys.grid(sticky=W)
-
-        self.fraMenuFormat = menuChoiceFrame(self)
-        self.fraMenuFormat.grid(padx=5, pady=5, sticky=W)
-
-        self.fraBackgrounds = BackgroundsFrame(self)
-        self.fraBackgrounds.grid(sticky=EW)
-        
-        self.fraMisc = MiscOptionsFrame(self)
-        self.fraMisc.grid(sticky=W)
-
-        self.fraOutfile = OutfileFrame(self)
-        self.fraOutfile.grid(sticky=W)
-
-        """ create advanced frames but don't grid them yet """
-        self.fraAdvMenu = AdvancedFrame(self, menu_options, "Advanced Menu Options")
-        self.fraAdvThumb = AdvancedFrame(self, thumb_options, "Advanced Thumb Options")
-        self.fraAdvAudio = AdvancedFrame(self, audio_options, "Advanced Audio Options")
-        self.fraAdvFont = AdvancedFrame(self, font_options, "Advanced Font Options")
-        self.fraAdvDvd = AdvancedFrame(self, author_options, "Advanced Dvdauthor and Spumux Options")
-        self.fraAdvGeneral = AdvancedFrame(self, general_options, "Advanced General Options")
+        # Create advanced frames but don't pack them yet
+        self.fraAdvMenu = Advanced(self, menu_options,
+                                   "Advanced Menu Options")
+        self.fraAdvThumb = Advanced(self, thumb_options,
+                                    "Advanced Thumb Options")
+        self.fraAdvAudio = Advanced(self, audio_options,
+                                    "Advanced Audio Options")
+        self.fraAdvFont = Advanced(self, font_options,
+                                   "Advanced Font Options")
+        self.fraAdvDvd = Advanced(self, author_options,
+                                  "Advanced Dvdauthor and Spumux Options")
+        self.fraAdvGeneral = Advanced(self, general_options,
+                                      "Advanced General Options")
 
         # create a menubar
         menubar = Menu(self)
@@ -750,82 +753,91 @@ class Application(Frame):
 
         # create more pulldown menus
         editmenu = Menu(menubar, tearoff=1)
-        editmenu.add_command(label="Menu style options", command=lambda: self.showitem(menu_options, "menu"))
-        editmenu.add_command(label="Thumb style options", command=lambda: self.showitem(thumb_options, "thumb"))
-        editmenu.add_command(label="Font options", command=lambda: self.showitem(font_options, "font"))
-        editmenu.add_command(label="Audio options", command=lambda: self.showitem(audio_options, "audio")) 
-        editmenu.add_command(label="Dvdauthor options", command=lambda: self.showitem(author_options, "dvd"))
-        editmenu.add_command(label="General options", command=lambda: self.showitem(general_options, "general"))
+        editmenu.add_command(label="Menu style options",
+                             command=lambda:self.showitem(menu_options, "menu"))
+        editmenu.add_command(label="Thumb style options",
+                             command=lambda:self.showitem(thumb_options, "thumb"))
+        editmenu.add_command(label="Font options",
+                             command=lambda:self.showitem(font_options, "font"))
+        editmenu.add_command(label="Audio options",
+                             command=lambda:self.showitem(audio_options, "audio")) 
+        editmenu.add_command(label="Dvdauthor options",
+                             command=lambda:self.showitem(author_options, "dvd"))
+        editmenu.add_command(label="General options",
+                             command=lambda:self.showitem(general_options, "general"))
         editmenu.add_separator()
-        editmenu.add_command(label="Hide advanced pane", command=lambda: self.showitem("", "hide"))
+        editmenu.add_command(label="Hide advanced pane",
+                             command=lambda:self.showitem("", "hide"))
         menubar.add_cascade(label="Advanced Options", menu=editmenu)
 
         runmenu = Menu(menubar, tearoff=0)
         runmenu.add_command(label="Run todisc now !", command=self.runCommand)
         menubar.add_cascade(label="Run", menu=runmenu)
         root.config(menu=menubar)
-        # create a toolbar
+
     def showitem(self, widget_list, _label):
-        """show frame, and set vars so we know it is shown, hide previously shown frame if exists"""
+        """show frame, and set vars so we know it is shown, hide previously
+        shown frame if exists
+        """
         if _label == "menu":
             self.hideAdvMenu(_label)
-            self.fraAdvMenu.grid(row=0, column=2, rowspan=8, sticky=NW)
+            self.fraAdvMenu.pack(anchor=NW, side=LEFT)
             self.AdvMenuShown=True
         elif _label == "thumb":                
             self.hideAdvMenu(_label)
-            self.fraAdvThumb.grid(row=0, column=2, rowspan=8, sticky=NW)
+            self.fraAdvThumb.pack(anchor=NW, side=LEFT)
             self.AdvThumbShown=True
         elif _label == "audio":                
             self.hideAdvMenu(_label)
-            self.fraAdvAudio.grid(row=0, column=2, rowspan=8, sticky=NW)
+            self.fraAdvAudio.pack(anchor=NW, side=LEFT)
             self.AdvAudioShown=True
         elif _label == "font":                
             self.hideAdvMenu(_label)
-            self.fraAdvFont.grid(row=0, column=2, rowspan=8, sticky=NW)
+            self.fraAdvFont.pack(anchor=NW, side=LEFT)
             self.AdvFontShown=True
         elif _label == "dvd":                
             self.hideAdvMenu(_label)
-            self.fraAdvDvd.grid(row=0, column=2, rowspan=8, sticky=NW)
+            self.fraAdvDvd.pack(anchor=NW, side=LEFT)
             self.AdvDvdShown=True
         elif _label == "general":                
             self.hideAdvMenu(_label)
-            self.fraAdvGeneral.grid(row=0, column=2, rowspan=8, sticky=NW)
+            self.fraAdvGeneral.pack(anchor=NW, side=LEFT)
             self.AdvGeneralShown=True
         elif _label == "hide":                
             self.hideAdvMenu(_label)
+
     def hideAdvMenu(self, _label):
         if self.AdvMenuShown:
-            self.fraAdvMenu.grid_forget()
+            self.fraAdvMenu.pack_forget()
             self.AdvMenuShown=False
         if self.AdvThumbShown:
-            self.fraAdvThumb.grid_forget()
+            self.fraAdvThumb.pack_forget()
             self.AdvThumbShown=False
         if self.AdvAudioShown:
-            self.fraAdvAudio.grid_forget()
+            self.fraAdvAudio.pack_forget()
             self.AdvAudioShown=False
         if self.AdvFontShown:
-            self.fraAdvFont.grid_forget()
+            self.fraAdvFont.pack_forget()
             self.AdvFontShown=False
         if self.AdvDvdShown:
-            self.fraAdvDvd.grid_forget()
+            self.fraAdvDvd.pack_forget()
             self.AdvDvdShown=False
         if self.AdvGeneralShown:
-            self.fraAdvGeneral.grid_forget()
+            self.fraAdvGeneral.pack_forget()
             self.AdvGeneralShown=False
 
-        
     def getCommand(self):
         """Return the complete todisc command."""
         cmd = Command('todisc')
         frames = [
-            self.fraTitle,
-            self.fraFileList,
-            self.fraFormat,
-            self.fraTvsys,
-            self.fraMenuFormat,
-            self.fraBackgrounds,
-            self.fraMisc,
-            self.fraOutfile,
+            self.title,
+            self.files,
+            self.format,
+            self.tvsys,
+            self.menuformat,
+            self.backgrounds,
+            self.misc,
+            self.outfile,
             self.fraAdvThumb,
             self.fraAdvFont,
             self.fraAdvAudio,
