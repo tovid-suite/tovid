@@ -48,7 +48,7 @@ py_bin = \
 	src/pymakemenu \
 	src/pymakexml \
 	src/ripframes \
-	src/tktodisc \
+	src/todiscgui \
 	src/tovidgui \
 	src/tovid-stats \
 	src/todraw
@@ -113,7 +113,7 @@ dist_iconSVG_DATA = $(icon_src_dir)/cd.svg \
 	$(icon_src_dir)/tovid.svg
 dist_app_DATA = \
 	tovidgui.desktop \
-	tktodisc.desktop
+	todiscgui.desktop
 
 
 # Distribute the scripts and manpage source files
