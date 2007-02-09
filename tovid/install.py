@@ -37,7 +37,7 @@ executables = [
     'pymakemenu',
     'pymakexml',
     'ripframes',
-    'tktodisc',
+    'todiscgui',
     'tovidgui',
     'tovid-stats',
     'todraw']
@@ -115,7 +115,7 @@ icons = [
 
 shortcuts = [
     'tovidgui.desktop',
-    'tktodisc.desktop']
+    'todiscgui.desktop']
 
 def newer(source, dest):
     """Return True if the source file is more recently modified than the

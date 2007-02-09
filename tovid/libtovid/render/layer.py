@@ -263,7 +263,7 @@ class VideoClip (Layer):
 
     def rip_frames(self, start, end):
         """Rip frames from the video file, from start to end frames."""
-        print "VideoClip: Ripping frames %s to %s" % (start, end)
+        log.info("VideoClip: Ripping frames %s to %s" % (start, end))
         outdir = '/tmp/%s_frames' % self.filename
         self.frame_files = rip.rip_frames(self.mediafile, outdir,
                                           [start, end])
@@ -277,7 +277,7 @@ class VideoClip (Layer):
         assert isinstance(drawing, Drawing)
         log.debug("Drawing VideoClip")
         if len(self.frame_files) == 0:
-            print "VideoClip error: need to call rip_frames() before drawing."
+            log.error("VideoClip: need to call rip_frames() before drawing.")
             sys.exit(1)
         drawing.save()
         # Loop frames (modular arithmetic)
@@ -489,9 +489,9 @@ class ThumbGrid (Layer):
                 return (columns, rows)
             # Not enough room; auto-dimension both
             else:
-                print "ThumbGrid: Can't fit %s items in (%s, %s) grid;" % \
-                      (num_items, columns, rows)
-                print "doing auto-dimensioning instead."
+                log.warning("ThumbGrid: Can't fit %s items" % num_items +\
+                            " in (%s, %s) grid;" % (columns, rows) +\
+                            " doing auto-dimensioning instead.")
                 columns = rows = 0
         # Auto-dimension to fit num_items
         if columns == 0 and rows == 0:
@@ -571,7 +571,6 @@ class Scatterplot (Layer):
             largest = max(self.xy_dict[x] or [0])
             if largest > max_y:
                 max_y = largest
-        print "max_y", max_y
         # For numeric x, scale by maximum x-value
         x_is_num = isinstance(x_vals[0], int) or isinstance(x_vals[0], float)
         if x_is_num:
@@ -581,8 +580,7 @@ class Scatterplot (Layer):
             x_scale = float(width) / len(x_vals)
         # Scale y according to maximum value
         y_scale = float(height) / max_y
-        print "y_scale", y_scale
-        
+
         # Save context
         drawing.save()
         drawing.rectangle(0, 0, width, height)
@@ -893,5 +891,5 @@ if __name__ == '__main__':
     plot.draw(drawing, 1)
     drawing.restore()
     
-    print "Output to /tmp/my.png"
+    log.info("Output to /tmp/my.png")
     save_image(drawing, '/tmp/my.png', 800, 600)
