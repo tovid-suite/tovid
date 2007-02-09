@@ -7,10 +7,10 @@
 __all__ = [
     'Metawidget',
     'Choice',
-    'ColorPicker',
-    'FileEntry',
+    'Color',
+    'Filename',
     'Flag',
-    'FontPicker',
+    'Font',
     'LabelEntry',
     'Number',
     'Optional',
@@ -198,7 +198,7 @@ class LabelEntry (Metawidget):
 
 ### --------------------------------------------------------------------
 
-class FileEntry (Metawidget):
+class Filename (Metawidget):
     """A filename selector with a label, text entry, and browse button.
     """
     def __init__(self,
@@ -244,7 +244,7 @@ class FileEntry (Metawidget):
 
 ### --------------------------------------------------------------------
 
-class ColorPicker (Metawidget):
+class Color (Metawidget):
     def __init__(self,
                  master=None,
                  label="Color",
@@ -274,9 +274,36 @@ class ColorPicker (Metawidget):
 
 ### --------------------------------------------------------------------
 
-class FontPicker (Metawidget):
-    # TODO
-    pass
+class FontChooser (Frame):
+    def __init__(self, master):
+        Frame.__init__(self, master)
+        self.pack()
+        self.fontlist = Listbox(self)
+        self.preview = Label(self, text="How quickly daft jumping zebras vex")
+        self.fontlist.insert(END, self.get_fonts())
+        self.fontlist.pack()
+        self.preview.pack()
+
+    def get_fonts(self):
+        """Return a list of font names available in ImageMagick."""
+        IM_lines = os.popen("convert -list type").readlines()
+        IM_lines = [unicode(line, self.cur_encoding) for line in IM_lines]
+        font_name_re = re.compile("^[\w-]+")   # match [a-zA-Z_-] at least once
+        IM_fonts = [font_name_re.search(line).group() 
+            for line in IM_lines if hasattr(font_name_re.search(line), 'group')]
+        return IM_fonts
+
+class Font (Metawidget):
+    def __init__(self, master=None):
+        Metawidget.__init__(self, master, str)
+        self.button = Button(self, text="None", command=self.choose)
+        
+    
+    def choose(self):
+        """Open a font chooser for font selection."""
+        popup = Toplevel()
+        chooser = FontChooser(popup)
+
 
 ### --------------------------------------------------------------------
 
