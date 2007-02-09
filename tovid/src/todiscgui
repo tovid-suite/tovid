@@ -901,6 +901,7 @@ class Application (Frame):
                             ("Helvetica", 12))
         else:  # theme == 'default' or anything else
             log.info("Using default theme")
+            log.info("(run 'todiscgui light' for alternate theme)")
             self.option_clear()
         # These apply to all themes
         self.option_add("*Scale.troughColor", 'white')
