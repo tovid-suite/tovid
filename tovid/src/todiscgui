@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# tktodisc
+# todiscgui
 
 """A Tkinter graphical user interface for todisc.
 
@@ -909,7 +909,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         theme = sys.argv[1]
 
-    root.title("tktodisc: A todisc GUI")
+    root.title("todisc GUI")
     app = Application(root, theme)
     root.mainloop()
 
