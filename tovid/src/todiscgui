@@ -341,55 +341,65 @@ class MenuChoice (Frame):
     """A frame for setting which Menu template will be used"""
     def __init__(self, master=None):
         Frame.__init__(self, master)
-        self.varMenuStyle = StringVar()     # Menu arrangement variable
-        self.varShowcaseFile = StringVar()     # use showcase file
-        self.varTextSplit = IntVar()
+        self.style = StringVar()     # Menu arrangement variable
         self.drawWidgets()
 
     def drawWidgets(self):
         group = LabelFrame(self, text="Menu arrangement")
-        self.chkDefault = Radiobutton(group, text="Default style",
-                                      variable=self.varMenuStyle,
-                                      value="doDefault", selectcolor="green")
-        self.chkDefault.pack(anchor=W)
-        self.chkDefault.select()
-        self.chkShowcase = Radiobutton(group, text="Showcase style",
-                                       variable=self.varMenuStyle,
-                                       value="doShowcase")
-        self.chkShowcase.configure(selectcolor="blue" )
-        self.chkShowcase.pack(anchor=W)
-        self.chkTextmenu = Radiobutton(group, text="Textmenu style",
-                                       variable=self.varMenuStyle,
-                                       value="doTextmenu")
-        self.chkTextmenu.pack(anchor=W)
-        self.lblShowcaseFile = Label(group, text="Optional Showcase file"\
-                                     " for Showcase or Textmenu")
-        self.lblShowcaseFile.pack(anchor=W)
-        self.showcasefile = Filename(group, "Showcase file", 'load',
-                                "Select an image or video file.")
-        self.showcasefile.pack(anchor=W)
+        # TODO: Disable showcase file widget for default style
+        self.showcase = {}
+        self.showcase['default'] = \
+            Radiobutton(group, text="Default style", value="default",
+                        variable=self.style, command=self.changeStyle)
+        self.showcase['showcase'] = \
+            Radiobutton(group, text="Showcase style", value="showcase",
+                        variable=self.style, command=self.changeStyle)
+        self.showcase['textmenu'] = \
+            Radiobutton(group, text="Textmenu style", value="textmenu",
+                        variable=self.style, command=self.changeStyle)
+        for style in self.showcase:
+            self.showcase[style].pack(anchor=W)
 
-        self.lblTextmenuSplit = Label(group, text="New column at title number: ")
-        self.lblTextmenuSplit.pack(anchor=W)
-        self.textSplit = Spinbox(group, from_=2, to=15, width=3,
-                                 textvariable=self.varTextSplit, wrap=1)
-        self.varTextSplit.set(15)
-        self.textSplit.pack(anchor=W)
+        self.filename = Filename(group, "Showcase file", 'load',
+                                "Select an image or video file.")
+        self.filename.pack(anchor=W, fill=X, expand=YES)
+
+        self.colsize = Number(group, "Textmenu column size", 2, 15)
+        self.colsize.set(15)
+        self.colsize.pack(anchor=W)
+
+        self.style.set('default')
+        self.changeStyle()
+
         group.pack(fill=X, expand=YES)
-# TODO {  if textmenu is not checked, remove these 2 options
-#      {  self.lblTextmenuSplit.grid_remove() and self.textSplit.grid_remove()
-#      {  if default is not selected, remove both of the above and the showcase file selector
+
+    def changeStyle(self):
+        """Change showcase styles, and enable suitable widgets."""
+        style = self.style.get()
+        if style == 'default':
+            self.filename.disable()
+            self.colsize.disable()
+        else:
+            self.filename.enable()
+            if style == 'textmenu':
+                self.colsize.enable()
+            else:
+                self.colsize.disable()
 
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
-        showcasefile = self.showcasefile.get()
-        textsplit = self.varTextSplit.get()
-        if textsplit == 15:
-            textsplit=""
-        if self.varMenuStyle.get() == "doShowcase" or showcasefile:
-            command.add('-showcase', showcasefile)
-        if self.varMenuStyle.get() == "doTextmenu":
-            command.add('-textmenu', textsplit)
+        style = self.style.get()
+        filename = self.filename.get()
+        colsize = self.colsize.get()
+        if colsize == 15:
+            colsize = ''
+        if style in ['showcase', 'textmenu']:
+            if not filename:
+                raise MissingOption("Showcase filename",
+                                    self.filename.entry)
+            command.add('-showcase', filename)
+        if style == "textmenu":
+            command.add('-textmenu', colsize)
 
 
 class Format (Frame):
