@@ -674,12 +674,14 @@ class Advanced (OptionFrame):
     """
     def __init__(self, master=None, options="", label_text="Advanced Options"):
         Frame.__init__(self, master, borderwidth=5)
-        group = LabelFrame(self, text=label_text)
-        group.pack(ipadx=6, ipady=6, fill=BOTH, expand=YES)
+        group = LabelFrame(self, text=label_text, width=3000)
+        group.pack(ipadx=6, ipady=6)
         self.widgets = {}
         for option in options:
             self.widgets[option] = getWidget(group, option)
             self.widgets[option].pack(anchor=NW)
+        spacer = Label(group, text='', width=65)
+        spacer.pack(fill=BOTH, expand=YES)
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
         for option, widget in self.widgets.items():
