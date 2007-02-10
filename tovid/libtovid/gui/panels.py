@@ -1304,10 +1304,25 @@ class DiscLayoutPanel(wx.Panel):
                     return False;
         return True
 
+    def CheckForNoGroupsWhenNotDVD(self, panel):
+        """Check for invalid characters in filenames etc"""       
+        if self.discFormat in [ 'vcd', 'svcd' ] and self.numGroups > 0:
+            msgGroupsWhenSVCDDlg = wx.MessageDialog(panel, \
+                "Tovid does not currently support groups for (S)VCDs\n" \
+                "Please remove all groups or change to a DVD disc.",
+                "Groups not supported for (S)VCDs",
+                wx.OK | wx.ICON_ERROR)
+            msgGroupsWhenSVCDDlg.ShowModal()
+            msgGroupsWhenSVCDDlg.Destroy()
+            return False;
+        return True
+
     def PerformSanityCheckOnFiles(self, panel):
         """Check for invalid characters in filenames etc"""       
         # Get references for all items
         refs = self.discTree.GetReferenceList(self.rootItem)
+        if self.CheckForNoGroupsWhenNotDVD(panel) == False:
+            return False
         for curItem in refs:
             if curItem.RelevantFilesAreOK(panel) == False:
                 return False
