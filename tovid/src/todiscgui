@@ -37,15 +37,15 @@ WIDGETS = {
     'menu-font':
         (Font, 'Menu font'),
     'menu-fontsize':
-        (Optional, Number, 'Menu font size', 0, 80, 'scale'),
+        (Optional, Number, 'Menu title font size', 0, 80, 'scale'),
     'thumb-fontsize':
-        (Optional, Number, 'Thumb and textmenu title font size', 0, 80, 'scale'),
+        (Optional, Number, 'Video title(s) font size', 0, 80, 'scale'),
     'menu-fade':
         (Flag, 'Fade in menu', False),
     'thumb-shape':
         (Optional, Choice, 'Thumb shape', 'normal|oval|plectrum|egg'),
     'thumb-font':
-        (Font, 'Thumbnail font'),
+        (Font, 'Video title(s) font'),
     'submenu-stroke-color':
         (Optional, Color, 'Submenu stroke color'),
     'submenu-title-color':
@@ -81,7 +81,7 @@ WIDGETS = {
     'thumb-text-color':
         (Optional, Color, 'Thumb text color'),
     'showcase-titles-align':
-        (Optional, Choice, 'Showcase title alignment', 'west|east|center'),
+        (Optional, Choice, 'Thumb title alignment', 'west|east|center'),
     'menu-title-geo':
         (Optional, Choice, 'Menu title position', 'north|south|west|east|center'),
     'menu-title-offset':
@@ -166,8 +166,6 @@ WIDGETS = {
 Not yet fitted into above dictionary:
 
 textmenu
-menu-fontsize
-thumb-fontsize
 files
 titles
 submneu-titles
@@ -192,6 +190,7 @@ Lists: -files/-titles may need rethinking!
 #[Font style options]
 
 font_options = [
+    'spacer',
     'menu-font',
     'thumb-font',
     'menu-fontsize',
@@ -205,6 +204,7 @@ font_options = [
 #[Thumb style options]
 
 thumb_options = [
+    'spacer',
     '3dthumbs',
     'thumb-shape',
     'opacity',
@@ -223,6 +223,7 @@ thumb_options = [
 #[Dvdauthor options]
 
 author_options = [
+    'spacer',
     'chapters',
 #    'chain-videos',
     'widescreen',
@@ -263,6 +264,7 @@ menu_options = [
 #[Audio Options]
 
 audio_options = [
+    'spacer',
     'menu-audio-length',
     'menu-audio-fade',
     'submenu-audio',
@@ -271,6 +273,7 @@ audio_options = [
 
 #[General Options]
 general_options = [
+    'spacer',
     'keep-files',
     'no-ask',
     'no-warn',
@@ -684,12 +687,14 @@ class Advanced (OptionFrame):
     """
     def __init__(self, master=None, options="", label_text="Advanced Options"):
         Frame.__init__(self, master, borderwidth=5)
-        group = LabelFrame(self, text=label_text, width=3000)
+        self.update_idletasks()
+        group = LabelFrame(self, text=label_text, width=root.winfo_width(), height=root.winfo_height())
         group.pack(ipadx=6, ipady=6)
+        group.pack_propagate(0)
         self.widgets = {}
         for option in options:
             self.widgets[option] = getWidget(group, option)
-            self.widgets[option].pack(anchor=NW)
+            self.widgets[option].pack(anchor=NW, pady=3)
         spacer = Label(group, text='', width=65)
         spacer.pack(fill=BOTH, expand=YES)
     def setOptions(self, command):
