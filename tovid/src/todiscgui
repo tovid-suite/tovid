@@ -35,7 +35,7 @@ WIDGETS = {
     'background':
         (Filename, 'Background', 'load', 'Select an image or video file'),
     'menu-font':
-        (Font, 'Menu font'),
+        (Font, 'Menu title font'),
     'menu-fontsize':
         (Optional, Number, 'Menu title font size', 0, 80, 'scale'),
     'thumb-fontsize':
@@ -95,7 +95,7 @@ WIDGETS = {
     'menu-audio-fade':
         (Optional, Number, 'Menu audio fade', 0, 10, 'scale', 1),
     'submenu-audio':
-        (Filename, 'Submenu audio', 'load', 'Select an audio file'),
+        (Optional, Filename, 'Submenu audio', 'load', 'Select an audio file', ' Single file or list'),
     'submenu-audio-length':
         (Optional, Number, 'Submenu audio length', 0, 120, 'scale'),
     'submenu-audio-fade':
@@ -109,7 +109,7 @@ WIDGETS = {
     '3dthumbs':
         (Flag, 'Create 3D thumbs'),
     'tile3x1':
-        (Flag, 'Arrange thumb montage in 1 row of 3 thumbs (default style only)'),
+        (Flag, 'Arrange thumb montage in 1 row of 3 thumbs'),
     'wave':
         (Optional, LabelEntry, 'Wave effect for showcase thumb', 'default'),
     'menu-title':
@@ -119,7 +119,7 @@ WIDGETS = {
     'intro':
         (Filename, 'Intro video', 'load', 'Select a video file'),
     'seek':
-        (Optional, Number, 'Seek time', 0, 600, 'scale', 2),
+        (Optional, LabelEntry, 'Seek time', ' [2]   Single value or list'),
     'bgaudio-seek':
         (Optional, Number, 'Background audio seek time', 0, 600, 'scale', 2),
     'bgvideo-seek':
@@ -133,7 +133,7 @@ WIDGETS = {
     'playall':
         (Flag, '"Play all" button', False),
     'chapters':
-        (Optional, LabelEntry, 'Number of Chapters'),
+        (Optional, LabelEntry, 'Number of Chapters', ' Single value or list'),
     'audio-lang':
         (Optional, LabelEntry, 'Default audio language'),
     'subtitles':
@@ -209,7 +209,6 @@ thumb_options = [
     'thumb-shape',
     'opacity',
     'blur',
-    'seek',
     'rotate-thumbs',
     'spacer',
     'showcaseonlylabel',
@@ -244,10 +243,12 @@ author_options = [
 #[Menu style options]
 
 menu_options = [
+    'spacer',
+    'menu-fade',
+    'seek',
     'bgvideo-seek',
     'bgaudio-seek',
     'showcase-seek',
-    'menu-fade',
     'text-mist',
     'text-mist-color',
     'text-mist-opacity',
@@ -264,7 +265,6 @@ menu_options = [
 #[Audio Options]
 
 audio_options = [
-    'spacer',
     'menu-audio-length',
     'menu-audio-fade',
     'submenu-audio',
