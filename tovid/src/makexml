@@ -115,6 +115,10 @@ FORCE_TITLESETS=false
 CUR_VIDEO=0
 CHAPTER_INTERVAL=5
 
+STANDARD=133
+WIDESCREEN=177
+NOPANSCAN=''
+
 # ==========================================================
 # Backslash-escape the given special character (and any EOLs)
 # Usage:
@@ -140,6 +144,26 @@ function checkExistence ()
 }
 
 # ==========================================================
+# Find a video's aspect ratio and set dvd behavior accordingly
+# Arge: $1 = video file to find aspect for
+# Usage: noPanScan foo.avi
+# Sets NOPANSCAN to either: widescreen="nopanscan"
+#                       or: <null>
+function noPanScan ()
+{
+    ASPECT=$(idvid -fast -terse "$1" | grep "ASPECT" | awk -F '=' '{print $2}')
+    echo -n "$1 is $ASPECT "
+    if test $ASPECT -eq $WIDESCREEN; then
+        NOPANSCAN='widescreen="nopanscan"'
+        echo "(widescreen)."
+    else
+        NOPANSCAN=''
+        echo "(standard)."
+    fi
+
+}
+
+# ==========================================================
 # Add a top-level VMGM menu to the DVD
 # Args: $1 = video file to use for top menu
 function addTopMenu ()
@@ -150,12 +174,14 @@ function addTopMenu ()
   # --------------------------
   # For DVD
   if test $XML_FORMAT = "dvd"; then
-
+    # Set NOPANSCAN
+    noPanScan "$1"
+    
     # Generate XML for the top menu, with a placeholder for
     # the titleset menu buttons (to be replaced later by sed)
     TOP_MENU_XML=`cat << EOF
   <menus>
-  <video widescreen="nopanscan" />
+  <video $NOPANSCAN />
   <pgc entry="title">
   <vob file="$1" />
 __TOP_MENU_BUTTONS__
@@ -202,11 +228,14 @@ function addMenu ()
     <button>jump titleset $CUR_TS menu;</button>
 EOF`
 
+    # Set NOPANSCAN
+    noPanScan "$1"
+
     # Generate XML for the menu header, with a placeholder for
     # the video segment buttons (to be replaced later by sed)
     MENU_XML=`cat << EOF
   <menus>
-    <video widescreen="nopanscan" />
+    <video $NOPANSCAN />
     <pgc entry="root">
       <vob file="$1" />
 __MENU_BUTTONS__
@@ -258,6 +287,9 @@ EOF`
 # Args: $1 = video file to use for the title
 function addTitle ()
 {
+  # Set NOPANSCAN
+  noPanScan "$1"
+
   if $FORCE_TITLESETS && test $CUR_VIDEO -eq 0; then
     closeTitleset
   fi
@@ -502,7 +534,7 @@ $ALL_MENU_XML
 <titleset>
 $MENU_XML
   <titles>
-    <video widescreen="nopanscan" />
+    <video $NOPANSCAN />
 $TS_TITLES
   </titles>
 </titleset>
@@ -520,7 +552,7 @@ $ALL_MENU_XML
     </pgc>
   </menus>
   <titles>
-    <video widescreen="nopanscan" />
+    <video $NOPANSCAN />
 $TS_TITLES
   </titles>
 </titleset>
@@ -777,7 +809,7 @@ EOF`
 fi
 
 # Remove blank lines and write final result to output file
-echo "$FINAL_DISC_XML" | sed -e '/^ *$/d' > $OUT_PREFIX.xml
+echo "$FINAL_DISC_XML" | sed -e '/^ *$/d' > "$OUT_PREFIX.xml"
 
 if $FILE_NOT_FOUND; then
   echo $SEPARATOR
@@ -791,10 +823,10 @@ echo "Done. The resulting XML was written to $OUT_PREFIX.xml."
 if ! $QUIET; then
     if test $XML_FORMAT = "dvd" ; then
         echo "You can now author, image and/or burn the disc by running:"
-        echo "    makedvd $OUT_PREFIX.xml"
+        echo "    makedvd \"$OUT_PREFIX.xml\""
     else
         echo "You can create the (S)VCD .bin and .cue files by running the command:"
-        echo "    makevcd $OUT_PREFIX.xml"
+        echo "    makevcd \"$OUT_PREFIX.xml\""
     fi
     echo "Thanks for using makexml!"
 fi
