@@ -166,8 +166,6 @@ WIDGETS = {
         (PlainLabel, 'The following options apply to the Default style only'),
     'textmenuonlylabel':
         (PlainLabel, 'The following options apply to the Textmenu style only'),
-    'test':
-        (FilesList, 'This is a test'),
     'spacer':
         (PlainLabel, '')
     }
@@ -270,7 +268,6 @@ menu_options = [
     'showcase-seek',
     'align',
     'intro',
-    'test',
     'spacer',
     'showcaseonlylabel',
     'showcase-titles-align',
