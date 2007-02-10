@@ -35,7 +35,7 @@ WIDGETS = {
     'background':
         (Filename, 'Background', 'load', 'Select an image or video file'),
     'menu-font':
-        (Font, 'Menu title font'),
+        (Optional, Font, 'Menu title font'),
     'menu-fontsize':
         (Optional, Number, 'Menu title font size', 0, 80, 'scale'),
     'thumb-fontsize':
@@ -45,7 +45,7 @@ WIDGETS = {
     'thumb-shape':
         (Optional, Choice, 'Thumb shape', 'normal|oval|plectrum|egg'),
     'thumb-font':
-        (Font, 'Video title(s) font'),
+        (Optional, Font, 'Video title(s) font'),
     'submenu-stroke-color':
         (Optional, Color, 'Submenu stroke color'),
     'submenu-title-color':
@@ -53,7 +53,7 @@ WIDGETS = {
     'button-style':
         (Optional, Choice, 'Button style', 'rect|text|text-rect'),
     'rotate':
-        (Optional, Number, 'Rotate Showcase thumb(s)', 5),
+        (Optional, Number, 'Rotate Showcase thumb', -30, 30, 'spin', 5),
     'rotate-thumbs':
         (Optional, LabelEntry, 'Rotate Thumbs (list)'),
     'showcase-framestyle':
@@ -71,11 +71,11 @@ WIDGETS = {
     'text-mist-color':
         (Optional, Color, 'Text mist color'),
     'text-mist-opacity':
-        (Optional, Number, 'Text mist opacity', 1, 100, 'scale', 60),
+        (Optional, Number, 'Text mist opacity', 1, 100, 'spin', 60),
     'opacity':
         (Optional, Number, 'Thumbnail opacity', 1, 100, 'spin', 100),
     'blur':
-        (Optional, Number, 'Blur', 1, 5, 'scale', 4),
+        (Optional, Number, 'Blur', 1, 5, 'spin', 4),
     'thumb-mist-color':
         (Optional, Color, 'Thumb mist color'),
     'thumb-text-color':
@@ -121,19 +121,25 @@ WIDGETS = {
     'seek':
         (Optional, LabelEntry, 'Seek time', ' [2]   Single value or list'),
     'bgaudio-seek':
-        (Optional, Number, 'Background audio seek time', 0, 600, 'scale', 2),
+        (Optional, Number, 'Background audio seek time', 0, 3600, 'scale', 2),
     'bgvideo-seek':
-        (Optional, Number, 'Background video seek time', 0, 600, 'scale', 2),
+        (Optional, Number, 'Background video seek time', 0, 3600, 'scale', 2),
     'showcase-seek':
-        (Optional, Number, 'Showcase video seek time', 0, 600, 'scale', 2),
+        (Optional, Number, 'Showcase video seek time', 0, 3600, 'scale', 2),
     'showcase-geo':
         (Optional, LabelEntry, 'Showcase image position (XxY'),
+    'text-start':
+        (Optional, Number, 'Start Textmenu titles at: (pixels)', 0, 460, 'spin', 2),
+    'title-gap':
+        (Optional, Number, 'Space between Textmenu titles (pixels)', 0, 400, 'spin', 2),
     'loop':
         (Number, 'Loop', 0, 10, 'scale'),
     'playall':
         (Flag, '"Play all" button', False),
     'chapters':
         (Optional, LabelEntry, 'Number of Chapters', ' Single value or list'),
+    'chain-videos':
+        (Optional, LabelEntry, 'Treat video group as one video', ' See "man todisc" for details'),
     'audio-lang':
         (Optional, LabelEntry, 'Default audio language'),
     'subtitles':
@@ -158,6 +164,10 @@ WIDGETS = {
         (PlainLabel, 'The following options apply to Showcase style only'),
     'defaultonlylabel':
         (PlainLabel, 'The following options apply to the Default style only'),
+    'textmenuonlylabel':
+        (PlainLabel, 'The following options apply to the Textmenu style only'),
+    'test':
+        (FilesList, 'This is a test'),
     'spacer':
         (PlainLabel, '')
     }
@@ -189,7 +199,7 @@ Lists: -files/-titles may need rethinking!
 """
 #[Font style options]
 
-font_options = [
+text_options = [
     'spacer',
     'menu-font',
     'thumb-font',
@@ -198,8 +208,17 @@ font_options = [
     'title-color',
     'submenu-title-color',
     'thumb-text-color',
+    'text-mist',
+    'text-mist-color',
+    'text-mist-opacity',
+    'menu-title-geo',
+    'menu-title-offset',
     'stroke-color',
-    'submenu-stroke-color']
+    'submenu-stroke-color',
+    'spacer',
+    'textmenuonlylabel',
+    'title-gap',
+    'text-start']
 
 #[Thumb style options]
 
@@ -224,7 +243,7 @@ thumb_options = [
 author_options = [
     'spacer',
     'chapters',
-#    'chain-videos',
+    'chain-videos',
     'widescreen',
     'aspect',
     'highlight-color',
@@ -249,19 +268,13 @@ menu_options = [
     'bgvideo-seek',
     'bgaudio-seek',
     'showcase-seek',
-    'text-mist',
-    'text-mist-color',
-    'text-mist-opacity',
-    'menu-title-geo',
-    'menu-title-offset',
     'align',
     'intro',
+    'test',
     'spacer',
     'showcaseonlylabel',
-    'showcase-framestyle',
-    'showcase-titles-align']
-    
-
+    'showcase-titles-align',
+    'showcase-framestyle']
 #[Audio Options]
 
 audio_options = [
@@ -694,9 +707,9 @@ class Advanced (OptionFrame):
         self.widgets = {}
         for option in options:
             self.widgets[option] = getWidget(group, option)
-            self.widgets[option].pack(anchor=NW, pady=3)
-        spacer = Label(group, text='', width=65)
-        spacer.pack(fill=BOTH, expand=YES)
+            self.widgets[option].pack(anchor=NW, pady=1)
+#        spacer = Label(group, text='', width=65)
+#        spacer.pack(fill=BOTH, expand=YES)
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
         for option, widget in self.widgets.items():
@@ -753,8 +766,8 @@ class Application (Frame):
                                     "Advanced Thumb Options")
         self.fraAdvAudio = Advanced(self, audio_options,
                                     "Advanced Audio Options")
-        self.fraAdvFont = Advanced(self, font_options,
-                                   "Advanced Font Options")
+        self.fraAdvFont = Advanced(self, text_options,
+                                   "Advanced text and font Options")
         self.fraAdvDvd = Advanced(self, author_options,
                                   "Advanced Dvdauthor and Spumux Options")
         self.fraAdvGeneral = Advanced(self, general_options,
@@ -774,8 +787,8 @@ class Application (Frame):
                              command=lambda:self.showitem(menu_options, "menu"))
         editmenu.add_command(label="Thumb style options",
                              command=lambda:self.showitem(thumb_options, "thumb"))
-        editmenu.add_command(label="Font options",
-                             command=lambda:self.showitem(font_options, "font"))
+        editmenu.add_command(label="Text and font options",
+                             command=lambda:self.showitem(text_options, "font"))
         editmenu.add_command(label="Audio options",
                              command=lambda:self.showitem(audio_options, "audio")) 
         editmenu.add_command(label="Dvdauthor options",
