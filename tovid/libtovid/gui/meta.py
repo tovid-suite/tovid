@@ -322,7 +322,7 @@ class Font (Metawidget):
         self.label.pack(side=LEFT)
         self.button = Button(self, textvariable=self.variable,
                              command=self.choose)
-        self.button.pack(side=LEFT)
+        self.button.pack(side=LEFT, padx=8)
         self.variable.set(default)
 
     def choose(self):
