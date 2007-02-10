@@ -15,7 +15,8 @@ __all__ = [
     'Number',
     'Optional',
     'OptionFrame',
-    'PlainLabel']
+    'PlainLabel',
+    'ScrollList']
 
 import os
 from Tkinter import *
@@ -289,6 +290,49 @@ class Color (Metawidget):
 
 ### --------------------------------------------------------------------
 
+
+class ScrollList (Metawidget):
+    """A Listbox with a vertical scrollbar.
+    """
+    # TODO: Add methods to insert/delete items?
+    # TODO: Drag/drop functionality in derived class?
+    def __init__(self, master=None, label="List", values=None):
+        """Create a ScrollList widget.
+        
+            master:   Tkinter widget that will contain this ScrollList
+            label:    Text label for the list
+            values:   List of initial values
+        """
+        Metawidget.__init__(self, master, list)
+        self.label = Label(self, text=label)
+        self.scrollbar = Scrollbar(self, orient=VERTICAL,
+                                   command=self.scroll)
+        self.listbox = Listbox(self, width=30,
+                               yscrollcommand=self.scrollbar.set)
+        # Add initial values to list
+        if values:
+            for value in values:
+                self.listbox.insert(END, value)
+        # Pack widgets
+        self.label.pack(anchor=W)
+        self.listbox.pack(anchor=W, side=LEFT, fill=BOTH, expand=YES)
+        self.scrollbar.pack(side=LEFT, fill=Y, expand=YES)
+        # Add mouse bindings to listbox
+        self.listbox.bind('<Button-1>', self.select)
+
+    def scroll(self, *args):
+        """Event handler when the list is scrolled
+        """
+        apply(self.listbox.yview, args)
+
+    def select(self, event):
+        """Event handler when an item in the list is selected
+        """
+        self.curindex = self.listbox.nearest(event.y)
+        self.set(self.listbox.get(self.curindex))
+    
+### --------------------------------------------------------------------
+
 class FontChooser (Dialog):
     def __init__(self, master=None):
         Dialog.__init__(self, master, "Font chooser")
@@ -302,20 +346,24 @@ class FontChooser (Dialog):
         """Draw widgets inside the Dialog, and return the widget that should
         have the initial focus. Called by the Dialog base class constructor.
         """
-        self.fontlist = Listbox(master)
-        for font in self.get_fonts():
-            self.fontlist.insert(END, font)
-        self.fontlist.pack()
+        self.fontlist = ScrollList(master, "Available fonts", self.get_fonts())
+        self.fontlist.pack(fill=BOTH, expand=YES)
         return self.fontlist
     
     def apply(self):
         """Set the selected font.
         """
-        index = self.fontlist.curselection()[0]
-        self.result = self.fontlist.get(index)
+        self.result = self.fontlist.get()
 
 class Font (Metawidget):
+    """A font selector widget"""
     def __init__(self, master=None, label='Font', default='Helvetica'):
+        """Create a widget that opens a font chooser dialog.
+        
+            master:  Tkinter widget that will contain this Font
+            label:   Text label for the font
+            default: Default font
+        """
         Metawidget.__init__(self, master, str)
         log.debug("Creating Font")
         self.label = Label(self, text=label)
@@ -439,5 +487,4 @@ class PlainLabel (Metawidget):
         self.label.pack(side=LEFT)
 
 ### --------------------------------------------------------------------
-
 
