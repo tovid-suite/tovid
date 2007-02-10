@@ -83,6 +83,7 @@ runtime_error ()
 }
 
 # Defaults
+QUIET=false
 # Create the DVD filesystem hierarchy?
 DO_AUTHOR=false
 # Burn the image to disc?
@@ -197,7 +198,7 @@ while test $# -gt 1; do
 done
 
 if test -e "$1"; then
-    DISC_NAME=$(abspath "$1")
+    DISC_NAME="$(abspath "$1")"
 else
     usage_error "File or DVD directory '$1' does not exist."
 fi
@@ -299,9 +300,9 @@ fi
 if ! $DO_BURN; then
     if ! $QUIET; then
         echo "If you'd like to preview the disc before burning, try:"
-        echo "    gxine dvd:/$(pwd)/$OUT_DIR"
+        echo "    gxine \"dvd:/$(pwd)/$OUT_DIR\""
         echo "You can burn the disc with a command like this:"
-        echo "    makedvd -burn $OUT_DIR"
+        echo "    makedvd -burn \"$OUT_DIR\""
     fi
 
 # Otherwise, get on with burning
