@@ -780,6 +780,9 @@ class Application (Frame):
 
         # create more pulldown menus
         editmenu = Menu(menubar, tearoff=1)
+        
+        editmenu.add_command(label="For advanced users", command='', background="black", state=DISABLED)
+        editmenu.add_separator()
         editmenu.add_command(label="Menu style options",
                              command=lambda:self.showitem(menu_options, "menu"))
         editmenu.add_command(label="Thumb style options",
@@ -801,6 +804,7 @@ class Application (Frame):
         runmenu.add_command(label="Run todisc now !", command=self.runCommand)
         menubar.add_cascade(label="Run", menu=runmenu)
         root.config(menu=menubar)
+#        editmenu.entryconfig(1, state=DISABLED)
 
     def showitem(self, widget_list, _label):
         """show frame, and set vars so we know it is shown, hide previously
@@ -937,6 +941,7 @@ if __name__ == '__main__':
         theme = sys.argv[1]
 
     root.title("todisc GUI")
+    root.iconbitmap('@//work/svn/tovid/src/tovid_icon_32.xbm')
     app = Application(root, theme)
     root.mainloop()
 
