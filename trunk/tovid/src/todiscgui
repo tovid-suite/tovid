@@ -141,9 +141,9 @@ WIDGETS = {
     'chain-videos':
         (Optional, LabelEntry, 'Treat video group as one video', ' See "man todisc" for details'),
     'audio-lang':
-        (Optional, LabelEntry, 'Default audio language'),
+        (Optional, LabelEntry, 'Default audio language', " Single value or list"),
     'subtitles':
-        (Optional, LabelEntry, 'Default subtitle language'),
+        (Optional, LabelEntry, 'Default subtitle language', " Single value or list"),
     'outlinewidth':
         (Optional, Number, 'Outlinewidth for spumux buttons', 0, 20, 'scale'),
     'aspect':
