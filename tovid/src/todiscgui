@@ -35,7 +35,7 @@ WIDGETS = {
     'background':
         (Filename, 'Background', 'load', 'Select an image or video file'),
     'menu-font':
-        (Font,),
+        (Font, 'Menu font'),
     'menu-fontsize':
         (Optional, Number, 'Menu font size', 0, 80, 'scale'),
     'thumb-fontsize':
@@ -45,7 +45,7 @@ WIDGETS = {
     'thumb-shape':
         (Optional, Choice, 'Thumb shape', 'normal|oval|plectrum|egg'),
     'thumb-font':
-        (Font,),
+        (Font, 'Thumbnail font'),
     'submenu-stroke-color':
         (Optional, Color, 'Submenu stroke color'),
     'submenu-title-color':
@@ -192,8 +192,8 @@ Lists: -files/-titles may need rethinking!
 #[Font style options]
 
 font_options = [
-#    'menu-font',
-#    'thumb-font',
+    'menu-font',
+    'thumb-font',
     'menu-fontsize',
     'thumb-fontsize',
     'title-color',
@@ -664,7 +664,7 @@ class MiscOptions (Frame):
         self.static.pack(anchor=W)
         self.submenus.pack(anchor=W)
         self.custom.pack(anchor=W, fill=X, expand=YES)
-        
+
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
         if self.static.get():

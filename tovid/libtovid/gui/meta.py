@@ -17,9 +17,11 @@ __all__ = [
     'OptionFrame',
     'PlainLabel']
 
+import os
 from Tkinter import *
 from tkFileDialog import *
 from tkColorChooser import askcolor
+from tkSimpleDialog import Dialog
 from libtovid import log
 
 ### --------------------------------------------------------------------
@@ -287,36 +289,47 @@ class Color (Metawidget):
 
 ### --------------------------------------------------------------------
 
-class FontChooser (Frame):
-    def __init__(self, master):
-        Frame.__init__(self, master)
-        self.pack()
-        self.fontlist = Listbox(self)
-        self.preview = Label(self, text="How quickly daft jumping zebras vex")
-        self.fontlist.insert(END, self.get_fonts())
-        self.fontlist.pack()
-        self.preview.pack()
+class FontChooser (Dialog):
+    def __init__(self, master=None):
+        Dialog.__init__(self, master, "Font chooser")
 
     def get_fonts(self):
         """Return a list of font names available in ImageMagick."""
-        IM_lines = os.popen("convert -list type").readlines()
-        IM_lines = [unicode(line, self.cur_encoding) for line in IM_lines]
-        font_name_re = re.compile("^[\w-]+")   # match [a-zA-Z_-] at least once
-        IM_fonts = [font_name_re.search(line).group() 
-            for line in IM_lines if hasattr(font_name_re.search(line), 'group')]
-        return IM_fonts
+        find = "convert -list type | sed '/Path/,/---/d' | awk '{print $1}'"
+        return [line.rstrip('\n') for line in os.popen(find).readlines()]
+
+    def body(self, master):
+        """Draw widgets inside the Dialog, and return the widget that should
+        have the initial focus. Called by the Dialog base class constructor.
+        """
+        self.fontlist = Listbox(master)
+        for font in self.get_fonts():
+            self.fontlist.insert(END, font)
+        self.fontlist.pack()
+        return self.fontlist
+    
+    def apply(self):
+        """Set the selected font.
+        """
+        index = self.fontlist.curselection()[0]
+        self.result = self.fontlist.get(index)
 
 class Font (Metawidget):
-    def __init__(self, master=None):
+    def __init__(self, master=None, label='Font', default='Helvetica'):
         Metawidget.__init__(self, master, str)
-        self.button = Button(self, text="None", command=self.choose)
-        
-    
-    def choose(self):
-        """Open a font chooser for font selection."""
-        popup = Toplevel()
-        chooser = FontChooser(popup)
+        log.debug("Creating Font")
+        self.label = Label(self, text=label)
+        self.label.pack(side=LEFT)
+        self.button = Button(self, textvariable=self.variable,
+                             command=self.choose)
+        self.button.pack(side=LEFT)
+        self.variable.set(default)
 
+    def choose(self):
+        """Open a font chooser to select a font."""
+        chooser = FontChooser()
+        if chooser.result:
+            self.variable.set(chooser.result)
 
 ### --------------------------------------------------------------------
 
