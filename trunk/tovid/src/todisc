@@ -117,7 +117,6 @@ CHAPTERS=( 6 )
 TOVID_OPTS=""
 CHAIN_VIDEOS=false
 NOASK=false
-SMALL_FONTSIZE=false
 SC_FRAMESTYLE=none
 THUMB_FRAME="-frame 3x3"
 SC_FRAME="-frame 3x3"
@@ -970,9 +969,6 @@ while test $# -gt 0; do
                 WAVE="-wave $1"
             fi
             ;;
-        "-smallthumbs" )
-            SMALLTHUMBS=:
-            ;;
         "-showcase-framestyle" )
             shift
             SC_FRAMESTYLE="$1"
@@ -1679,11 +1675,7 @@ if $SHOWCASE; then
     elif [ $V_TOTAL -eq 3 ]; then
         THUMB_SIZE="${GEO_ARRAY[13]}"
     elif [ $V_TOTAL -eq 4 ]; then
-        if $SMALL_FONTSIZE; then
-            THUMB_SIZE="${GEO_ARRAY[30]}"
-        else
-            THUMB_SIZE="${GEO_ARRAY[23]}"
-        fi
+        THUMB_SIZE="${GEO_ARRAY[23]}"
     elif [ $V_TOTAL -eq 5 ]; then
         THUMB_SIZE="${GEO_ARRAY[30]}"
     elif [ $V_TOTAL -eq 6 ]; then
