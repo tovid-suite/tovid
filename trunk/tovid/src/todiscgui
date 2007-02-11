@@ -241,6 +241,7 @@ author_options = [
 #[Menu style options]
 menu_options = [
     'spacer',
+    'ani-submenus',
     'menu-fade',
     'seek',
     'bgvideo-seek',
@@ -930,5 +931,6 @@ if __name__ == '__main__':
     setTheme(theme)
 #    root.iconbitmap('@//work/svn/tovid/src/tovid_bw_32.xbm')
     app = Application(root)
+    root.update_idletasks()
     root.mainloop()
 
