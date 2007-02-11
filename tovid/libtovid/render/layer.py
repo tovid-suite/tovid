@@ -30,8 +30,6 @@ __all__ = [\
     'Thumb',
     'ThumbGrid',
     'SafeArea',
-    'Plot',
-    'LabeledPlot',
     'Scatterplot',
     'InterpolationGraph',
     'ColorBars']
