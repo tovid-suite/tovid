@@ -679,12 +679,7 @@ function write_stats()
         :
     else
         yecho "Output files:"
-        for OUTFILE in $(ls -1 "$OUT_PREFIX".mpg "$OUT_PREFIX".[0-9].mpg 2>/dev/null);
-        do
-            echo "$OUTFILE"
-            OUTSIZE=$(du -h "$OUTFILE" | awk 'END{print $1}')
-            echo "    $OUTFILE ($OUTSIZE)"
-        done
+        du -shc "$OUT_PREFIX".mpg "$OUT_PREFIX".[0-9].mpg 2>/dev/null
     fi
 
     # Create stats directory if it doesn't already exist.
