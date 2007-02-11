@@ -22,7 +22,7 @@ class TovidFrame(wx.Frame):
 
     def __init__(self, parent, id, title):
         wx.Frame.__init__(self, parent, id , title, wx.DefaultPosition,
-            (800, 775), wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
+            (800, 820), wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
 
         icon = wx.EmptyIcon()
         icon.CopyFromBitmap(AppIcon())
