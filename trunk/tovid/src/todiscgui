@@ -897,17 +897,21 @@ def setTheme(theme='default'):
     """
     if theme == 'light':
         log.info("Using 'light' theme")
+        log.info("(run 'todiscgui tk' for alternate theme)")
         root.option_add("*Entry.relief", GROOVE)
+        root.option_add("*Spinbox.relief", GROOVE)
         root.option_add("*Listbox.relief", GROOVE)
         root.option_add("*Button.relief", GROOVE)
-        root.option_add("*Frame*font", ("Helvetica", 10))
+        root.option_add("*Menu.relief", GROOVE)
+        root.option_add("*font", ("Helvetica", 12))
         root.option_add("*Radiobutton.selectColor", "#8888FF")
         root.option_add("*Checkbutton.selectColor", "#8888FF")
+        # Mouse-over effects
         root.option_add("*Button.overRelief", RAISED)
         root.option_add("*Checkbutton.overRelief", GROOVE)
         root.option_add("*Radiobutton.overRelief", GROOVE)
-    else:  # theme == 'default' or anything else
-        log.info("Using default theme")
+    else:  # theme == 'tk' or anything else
+        log.info("Using 'tk' theme")
         log.info("(run 'todiscgui light' for alternate theme)")
         root.option_clear()
     # These apply to all themes
@@ -915,7 +919,7 @@ def setTheme(theme='default'):
     root.option_add("*Spinbox.background", 'white')
     root.option_add("*Entry.background", 'white')
     root.option_add("*Listbox.background", 'white')
-
+    
 ### --------------------------------------------------------------------
 ### Entry point
 ### --------------------------------------------------------------------
@@ -923,13 +927,13 @@ def setTheme(theme='default'):
 root = Tk()
 if __name__ == '__main__':
     # Single argument: theme name 'default' or 'light'
-    theme = 'default'
+    theme = 'light'
     if len(sys.argv) > 1:
         theme = sys.argv[1]
 
     root.title("todisc GUI")
+    #root.iconbitmap('@//work/svn/tovid/src/tovid_bw_32.xbm')
     setTheme(theme)
-#    root.iconbitmap('@//work/svn/tovid/src/tovid_bw_32.xbm')
     app = Application(root)
     root.update_idletasks()
     root.mainloop()
