@@ -50,7 +50,8 @@ class Metawidget (Frame):
             str: StringVar,
             bool: BooleanVar,
             int: IntVar,
-            float: DoubleVar}
+            float: DoubleVar,
+            list: Variable}
         # Create an appropriate Tkinter variable type
         if vartype in vartypes:
             self.variable = vartypes[vartype]()
@@ -100,7 +101,7 @@ class Flag (Metawidget):
         self.variable.set(default)
         # Create and pack widgets
         self.check = Checkbutton(self, text=label, variable=self.variable)
-        self.check.pack()
+        self.check.pack(side=LEFT)
 
 ### --------------------------------------------------------------------
 
@@ -172,14 +173,15 @@ class Number (Metawidget):
         self.variable.set(default)
         # Create and pack widgets
         self.label = Label(self, name='label', text=label)
+        self.label.pack(side=LEFT)
         if self.style == 'spin':
-            self.number = Spinbox(self, from_=min, to=max,
+            self.number = Spinbox(self, from_=min, to=max, width=4,
                                   textvariable=self.variable)
+            self.number.pack(side=LEFT)
         else: # 'scale'
             self.number = Scale(self, from_=min, to=max, tickinterval=max-min,
                                 variable=self.variable, orient=HORIZONTAL)
-        self.label.pack(side=LEFT)
-        self.number.pack(side=RIGHT, expand=YES, fill=X)
+            self.number.pack(side=LEFT, fill=X, expand=YES)
 
     def enable(self, enabled=True):
         """Enable or disable all sub-widgets. Overridden to make Scale widget
