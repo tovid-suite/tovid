@@ -77,7 +77,8 @@ class Metawidget (Frame):
         else:
             newstate = DISABLED
         for widget in self.children.values():
-            widget.config(state=newstate)
+            if hasattr(widget, 'state'):
+                widget.config(state=newstate)
 
     def disable(self):
         """Disable all sub-widgets."""
