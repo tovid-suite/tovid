@@ -330,7 +330,8 @@ class FontChooser (Dialog):
     def apply(self):
         """Set the selected font.
         """
-        self.result = self.fontlist.get()
+        self.result = self.fontlist.selected.get()
+
 
 class Font (Metawidget):
     """A font selector widget"""
@@ -464,6 +465,8 @@ class PlainLabel (Metawidget):
         self.label.pack(side=LEFT)
 
 ### --------------------------------------------------------------------
+### Not exported yet
+### --------------------------------------------------------------------
 
 class ScrollList (Metawidget):
     """A widget for choosing from a list of values
@@ -479,8 +482,6 @@ class ScrollList (Metawidget):
         """
         Metawidget.__init__(self, master, list)
         self.selected = StringVar() # Currently selected list item
-        if values:
-            self.variable.set(values)
         # Listbox label
         self.label = Label(self, text=label)
         self.label.pack(anchor=W)
@@ -494,6 +495,13 @@ class ScrollList (Metawidget):
         self.scrollbar.pack(side=LEFT, fill=Y, expand=YES)
         group.pack()
         self.listbox.bind('<Button-1>', self.select)
+        if values:
+            self.add(*values)
+
+    def add(self, *values):
+        """Add the given values to the list."""
+        for value in values:
+            self.listbox.insert(END, value)
 
     def scroll(self, *args):
         """Event handler when the list is scrolled
