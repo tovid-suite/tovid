@@ -736,6 +736,8 @@ class Application (Frame):
         self.backgrounds.pack(anchor=W, fill=X, expand=YES)
         self.misc.pack(anchor=W, fill=X, expand=YES)
         self.outfile.pack(anchor=W, fill=X, expand=YES)
+        # Add the menu
+        self.makeMenu()
 
         # Create advanced frames but don't pack them yet
         self.fraAdvMenu = Advanced(self, menu_options,
@@ -750,7 +752,38 @@ class Application (Frame):
                                   "Advanced Dvdauthor and Spumux Options")
         self.fraAdvGeneral = Advanced(self, general_options,
                                       "Advanced General Options")
+    def showitem(self, widget_list, _label):
+        """show frame, and set vars so we know it is shown, hide previously
+        shown frame if exists
+        """
+        if _label == "menu":
+            self.hideAdvMenu(_label)
+            self.fraAdvMenu.pack(anchor=NW, side=LEFT)
+            self.AdvMenuShown=True
+        elif _label == "thumb":                
+            self.hideAdvMenu(_label)
+            self.fraAdvThumb.pack(anchor=NW, side=LEFT)
+            self.AdvThumbShown=True
+        elif _label == "audio":                
+            self.hideAdvMenu(_label)
+            self.fraAdvAudio.pack(anchor=NW, side=LEFT)
+            self.AdvAudioShown=True
+        elif _label == "font":                
+            self.hideAdvMenu(_label)
+            self.fraAdvFont.pack(anchor=NW, side=LEFT)
+            self.AdvFontShown=True
+        elif _label == "dvd":                
+            self.hideAdvMenu(_label)
+            self.fraAdvDvd.pack(anchor=NW, side=LEFT)
+            self.AdvDvdShown=True
+        elif _label == "general":                
+            self.hideAdvMenu(_label)
+            self.fraAdvGeneral.pack(anchor=NW, side=LEFT)
+            self.AdvGeneralShown=True
+        elif _label == "hide":                
+            self.hideAdvMenu(_label)
 
+    def makeMenu(self):
         # create a menubar
         menubar = Menu(self)
         # create a pulldown menu, and add it to the menu bar
@@ -785,37 +818,6 @@ class Application (Frame):
         menubar.add_cascade(label="Run", menu=runmenu)
         root.config(menu=menubar)
 #        editmenu.entryconfig(1, state=DISABLED)
-
-    def showitem(self, widget_list, _label):
-        """show frame, and set vars so we know it is shown, hide previously
-        shown frame if exists
-        """
-        if _label == "menu":
-            self.hideAdvMenu(_label)
-            self.fraAdvMenu.pack(anchor=NW, side=LEFT)
-            self.AdvMenuShown=True
-        elif _label == "thumb":                
-            self.hideAdvMenu(_label)
-            self.fraAdvThumb.pack(anchor=NW, side=LEFT)
-            self.AdvThumbShown=True
-        elif _label == "audio":                
-            self.hideAdvMenu(_label)
-            self.fraAdvAudio.pack(anchor=NW, side=LEFT)
-            self.AdvAudioShown=True
-        elif _label == "font":                
-            self.hideAdvMenu(_label)
-            self.fraAdvFont.pack(anchor=NW, side=LEFT)
-            self.AdvFontShown=True
-        elif _label == "dvd":                
-            self.hideAdvMenu(_label)
-            self.fraAdvDvd.pack(anchor=NW, side=LEFT)
-            self.AdvDvdShown=True
-        elif _label == "general":                
-            self.hideAdvMenu(_label)
-            self.fraAdvGeneral.pack(anchor=NW, side=LEFT)
-            self.AdvGeneralShown=True
-        elif _label == "hide":                
-            self.hideAdvMenu(_label)
 
     def hideAdvMenu(self, _label):
         if self.AdvMenuShown:
@@ -922,7 +924,7 @@ if __name__ == '__main__':
         theme = sys.argv[1]
 
     root.title("todisc GUI")
-    #root.iconbitmap('@//work/svn/tovid/src/tovid_icon_32.xbm')
+#    root.iconbitmap('@//work/svn/tovid/src/tovid_bw_32.xbm')
     app = Application(root, theme)
     root.mainloop()
 
