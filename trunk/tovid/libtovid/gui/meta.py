@@ -12,14 +12,11 @@ __all__ = [
     'Flag',
     'Font',
     'LabelEntry',
+    'ListEntry',
     'Number',
     'Optional',
     'OptionFrame',
-    'PlainLabel',
-    'ScrollList',
-    'DragList',
-    'FileList',
-    'TextList']
+    'PlainLabel']
 
 import os
 from Tkinter import *
@@ -77,8 +74,7 @@ class Metawidget (Frame):
         else:
             newstate = DISABLED
         for widget in self.children.values():
-            if hasattr(widget, 'state'):
-                widget.config(state=newstate)
+            widget.config(state=newstate)
 
     def disable(self):
         """Disable all sub-widgets."""
@@ -216,6 +212,23 @@ class LabelEntry (Metawidget):
         self.entry = Entry(self, textvariable=self.variable)
         self.label.pack(side=LEFT)
         self.entry.pack(side=LEFT, fill=X, expand=YES)
+
+### --------------------------------------------------------------------
+
+class ListEntry (LabelEntry):
+    """A widget for entering a space-separated list of text items"""
+    def __init__(self, master=None, label="List", default=''):
+        LabelEntry.__init__(self, master, label, default)
+
+    def get(self):
+        """Split text into a list at space boundaries."""
+        text = LabelEntry.get(self)
+        return text.split(' ')
+
+    def set(self, listvalue):
+        """Set a value to a list, joined with spaces."""
+        text = ' '.join(listvalue)
+        LabelEntry.set(self, text)
 
 ### --------------------------------------------------------------------
 
@@ -465,25 +478,22 @@ class ScrollList (Metawidget):
             values:    List of initial values
         """
         Metawidget.__init__(self, master, list)
+        self.selected = StringVar() # Currently selected list item
+        if values:
+            self.variable.set(values)
+        # Listbox label
         self.label = Label(self, text=label)
         self.label.pack(anchor=W)
         # Group listbox and scrollbar together
         group = Frame(self)
         self.scrollbar = Scrollbar(group, orient=VERTICAL,
                                    command=self.scroll)
-        self.listbox = Listbox(group, width=30,
+        self.listbox = Listbox(group, width=30, listvariable=self.variable,
                                yscrollcommand=self.scrollbar.set)
         self.listbox.pack(side=LEFT, fill=BOTH, expand=YES)
         self.scrollbar.pack(side=LEFT, fill=Y, expand=YES)
         group.pack()
-        if values:
-            self.add(*values)
         self.listbox.bind('<Button-1>', self.select)
-
-    def add(self, *values):
-        """Add one or more values to the listbox"""
-        for value in values:
-            self.listbox.insert(END, value)
 
     def scroll(self, *args):
         """Event handler when the list is scrolled
@@ -494,7 +504,7 @@ class ScrollList (Metawidget):
         """Event handler when an item in the list is selected
         """
         self.curindex = self.listbox.nearest(event.y)
-        self.set(self.listbox.get(self.curindex))
+        self.selected.set(self.listbox.get(self.curindex))
 
 ### --------------------------------------------------------------------
 
@@ -567,7 +577,7 @@ class TextList (DragList):
     """A widget for listing and editing several text strings"""
     def __init__(self, master=None, label="Text list", values=None):
         DragList.__init__(self, master, label, values)
-        self.editbox = Entry(self, width=30, textvariable=self.variable)
+        self.editbox = Entry(self, width=30, textvariable=self.selected)
         self.editbox.bind('<Return>', self.setTitle)
         self.editbox.pack(fill=X, expand=YES)
 

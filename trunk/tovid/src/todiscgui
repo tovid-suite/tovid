@@ -55,7 +55,7 @@ WIDGETS = {
     'rotate':
         (Optional, Number, 'Rotate Showcase thumb', -30, 30, 'spin', 5),
     'rotate-thumbs':
-        (Optional, LabelEntry, 'Rotate Thumbs (list)'),
+        (Optional, ListEntry, 'Rotate Thumbs (list)'),
     'showcase-framestyle':
         (Optional, Choice, 'Showcase frame style', 'none|glass'),
     'title-color':
@@ -95,7 +95,7 @@ WIDGETS = {
     'menu-audio-fade':
         (Optional, Number, 'Menu audio fade', 0, 10, 'scale', 1),
     'submenu-audio':
-        (Optional, FileList, 'Submenu audio files'),
+        (Optional, ListEntry, 'Submenu audio files'),
     'submenu-audio-length':
         (Optional, Number, 'Submenu audio length', 0, 120, 'scale'),
     'submenu-audio-fade':
