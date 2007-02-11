@@ -635,7 +635,7 @@ function check_compliance()
                 for title in "${FILES_TO_ENCODE[@]}"; do
                     ln -sfv "$(readlink "${title}").enc.mpg" "$title"
                 done
-            else    
+            else
                  IN_FILES=("${ENC_IN_FILES[@]}")
             fi
         else
@@ -2324,7 +2324,7 @@ if ! $TEXTMENU; then
             NS_PID="$!"
             if [[ -n "$NS_PID" ]]; then
                 while ps -p $NS_PID >/dev/null; do
-                    sleep .5 # spinner interval
+                    sleep 2 # spinner interval
                     spin "Creating a nav_seek log for "${IN_FILES[i]}": $SPINNER"
                 done
             fi
@@ -2736,7 +2736,7 @@ if $SHOWCASE; then
                 sc_space=$((${VIDSIZE%x*} - (SAFE_AREA * 2) - BUTTON_COLUMN1))
                 sc_xpage=$((SAFE_AREA + (sc_space / 2) - (sc_width / 2) ))
             fi
-        fi 
+        fi
         # find out where to put the showcase image in the Y axis
         if ! $TEXTMENU; then
             Y1=${SHOWCASE_THUMB_Y_ARRAY[0]}; Y2=${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]}
@@ -2751,11 +2751,11 @@ if $SHOWCASE; then
             if [[ -n $VMGM_TITLE ]] && ! $USER_SC_GEO && ! $USER_TITLE_GEO; then
                 [[ $TITLE_GRAVITY = south ]] && TITLE_SPACE="- $(( (title_yoffset + TITLE_TEXT_YDIM) / 2))"
                 [[ $TITLE_GRAVITY = north ]] && TITLE_SPACE="+ $(( (title_yoffset + TITLE_TEXT_YDIM) / 2))"
-            fi    
+            fi
             Y_SPACE=${VIDSIZE#*x}
             SC_Y=$(( (Y_SPACE / 2) - (sc_height / 2) $TITLE_SPACE ))
         fi
-            
+
         ! $TEXTMENU && [[ $V_TOTAL -gt 5 ]] && sc_xpage=$(( ( ${VIDSIZE/x*} / 2 ) - (sc_width / 2) ))
         $TEXTMENU && [[ -n $tt_ygeos_col2 ]] && sc_xpage=$(( ( ${VIDSIZE/x*} / 2 ) - (sc_width / 2) ))
         $USER_SC_GEO && sc_xpage=${SHOWCASE_GEO/x*}
@@ -2937,7 +2937,7 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
             NS_PID="$!"
             if [[ -n "$NS_PID" ]]; then
                 while ps -p $NS_PID >/dev/null; do
-                    sleep .5 # spinner interval
+                    sleep 2 # spinner interval
                     spin "Creating a nav_seek log for "${IN_FILES[i]/*\/}": $SPINNER"
                 done
             fi
@@ -2994,7 +2994,7 @@ if $GROUPING; then
             GROUP_VID_LENGTHS[i]="${VID_LEN[i]} ${GROUP_VID_LENGTHS[i]}"
             GROUP_TOT_LEN[i]=$(awk_total <<< "${GROUP_VID_LENGTHS[i]}")
         fi
-    done    
+    done
 fi
 echo
 for ((i=0; i<${#VID_LEN[@]}; i++)); do
@@ -3086,7 +3086,7 @@ if ! $TEXTMENU; then
                     check_stall &
                     if [[ -n "$TRANSCODE_PID" ]]; then
                         while ps -p $TRANSCODE_PID >/dev/null; do
-                            sleep .5 # spinner interval
+                            sleep 2 # spinner interval
                         spin "Seeking in video and creating images: $(find $WORK_DIR/pics/$i \
                     -maxdepth 1 -name \*.$IMG_FMT|sort|awk -F / '{ field = $NF }; END{ print field }')"
                         done
@@ -3121,7 +3121,7 @@ for ((s=0; s<=NUM_FILES; s++)); do
     # make appropriate chapter lengths for each video
     # get chapter lengths by dividing by $CHAPTERS, then getting running totals
     CHAPT_INTERVALS=( ${CHAPT_INTERVALS[@]} "$(awk_math ${VID_LEN[s]} by ${CHAPTERS[s]} float)" )
-    # <TODO if GROUPING:  for making chapter thumbs for the group 
+    # <TODO if GROUPING:  for making chapter thumbs for the group
     # feed group chapter points to transcode in a loop to transcode as usual, but output
     # to different subdirs.  Then rename according to framenumber, moving all to the same subdir
     # then follow same procedure as usual in moving into chapter subdirs for final montages
@@ -3425,7 +3425,7 @@ if $SUB_MENU; then
                 sleep 1
             }
             run_transcode &
-            sleep .5 # short sleep to allow 1st jpg to appear
+            sleep 2 # short sleep to allow 1st jpg to appear
             TCODE_PID=$(<$WORK_DIR/tcode$i.pid)
             check_stall &
             if [[ -n "$TCODE_PID" ]]; then
