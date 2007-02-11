@@ -1516,28 +1516,29 @@ class EncodingPanel(wx.Panel):
         # If currently running, stop/suspend processing
         if self.panCmdList.idleTimer.IsRunning():
             # Disable button temporarily, to allow processes to die
-            self.btnStartStop.Enable(False)
-            self.panCmdList.Stop()
-            self.btnStartStop.SetLabel("Resume encoding")
-            self.btnStartStop.SetToolTipString("Resume the encoding process " \
-                "where it left off")
+#            self.btnStartStop.Enable(False)
+#            self.panCmdList.Stop()
+#            self.btnStartStop.SetLabel("Resume encoding")
+#            self.btnStartStop.SetToolTipString("Resume the encoding process " \
+#                "where it left off")
             # Show message that processing stopped
-            msgStopped = wx.MessageDialog(self,
-                "Encoding is now suspended. You can continue\n" \
-                "by selecting \"Resume encoding\".",
-                "Encoding suspended", wx.OK | wx.ICON_INFORMATION)
-            msgStopped.ShowModal()
+#            msgStopped = wx.MessageDialog(self,
+#                "Encoding is now suspended. You can continue\n" \
+#                "by selecting \"Resume encoding\".",
+#                "Encoding suspended", wx.OK | wx.ICON_INFORMATION)
+#            msgStopped.ShowModal()
             # Give processes time to die before re-enabling button
-            os.system("sleep 2s")
-            self.btnStartStop.Enable(True)
-
+#            os.system("sleep 2s")
+#            self.btnStartStop.Enable(True)
+            pass
         # Not running; start/resume processing
         else:
             self.curConfig.panGuide.SetTask(ID_TASK_ENCODING_STARTED)
             self.panCmdList.Start()
-            self.btnStartStop.SetLabel("Suspend encoding")
-            self.btnStartStop.SetToolTipString("Interrupt the current " \
-                "encoding process and return the current command to the queue")
+            self.btnStartStop.Enable(False)
+#            self.btnStartStop.SetLabel("Suspend encoding")
+#            self.btnStartStop.SetToolTipString("Interrupt the current " \
+#                "encoding process and return the current command to the queue")
 
     def SetCommands(self, commands):
         """Set command-list to be executed from DiscLayoutPanel."""
@@ -1574,7 +1575,7 @@ class EncodingPanel(wx.Panel):
 
         # Re-enable buttons
         self.btnStartStop.SetLabel("Start encoding")
-        self.btnStartStop.Enable(False)
+        self.btnStartStop.Enable(True)
 
 class GroupPanel(wx.Panel):
     """A panel showing controls appropriate to encoding a group of videoes."""
