@@ -152,13 +152,13 @@ function checkExistence ()
 function noPanScan ()
 {
     ASPECT=$(idvid -fast -terse "$1" | grep "ASPECT" | awk -F '=' '{print $2}')
-    echo -n "$1 is $ASPECT "
+    $QUIET || echo -n "    $1 has aspect $ASPECT "
     if test $ASPECT -eq $WIDESCREEN; then
         NOPANSCAN='widescreen="nopanscan"'
-        echo "(widescreen)."
+        $QUIET || echo "(widescreen)."
     else
         NOPANSCAN=''
-        echo "(standard)."
+        $QUIET || echo "(standard)."
     fi
 
 }
@@ -336,7 +336,7 @@ EOF`
     # If file exists, get duration and add appropriate chapter breaks
     if test -e "$1" && $MAKE_CHAPTERS; then
         CMD="idvid -terse \"$1\""
-        echo "    Calculating the duration of the video using the following command:"
+        echo "    Calculating the duration of the video with:"
         echo "        $CMD"
         echo "    This may take a few minutes, so please be patient..."
         DURATION=$(eval $CMD | grep DURATION | awk -F '=' '{print $2}')
