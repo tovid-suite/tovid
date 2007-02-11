@@ -671,7 +671,7 @@ function cleanup()
 function write_stats()
 {
     # Get total size of all output files
-    cd $(dirname "$OUT_FILENAME")
+    cd "$(dirname "$OUT_FILENAME")"
     FINAL_SIZE=$(du -c -k "$OUT_PREFIX"*.mpg | awk 'END{print $1}')
     test -z $FINAL_SIZE && FINAL_SIZE=0
 
@@ -679,7 +679,7 @@ function write_stats()
         :
     else
         yecho "Output files:"
-        for OUTFILE in $(ls -1 $OUT_PREFIX.mpg $OUT_PREFIX.[0-9].mpg 2>/dev/null);
+        for OUTFILE in $(ls -1 "$OUT_PREFIX".mpg "$OUT_PREFIX".[0-9].mpg 2>/dev/null);
         do
             echo "$OUTFILE"
             OUTSIZE=$(du -h "$OUTFILE" | awk 'END{print $1}')
