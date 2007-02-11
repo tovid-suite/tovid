@@ -95,7 +95,7 @@ WIDGETS = {
     'menu-audio-fade':
         (Optional, Number, 'Menu audio fade', 0, 10, 'scale', 1),
     'submenu-audio':
-        (Optional, Filename, 'Submenu audio', 'load', 'Select an audio file', ' Single file or list'),
+        (Optional, FileList, 'Submenu audio files'),
     'submenu-audio-length':
         (Optional, Number, 'Submenu audio length', 0, 120, 'scale'),
     'submenu-audio-fade':
