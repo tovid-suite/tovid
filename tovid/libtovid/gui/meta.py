@@ -16,7 +16,10 @@ __all__ = [
     'Optional',
     'OptionFrame',
     'PlainLabel',
-    'ScrollList']
+    'ScrollList',
+    'DragList',
+    'FileList',
+    'TextList']
 
 import os
 from Tkinter import *
@@ -34,7 +37,7 @@ class Metawidget (Frame):
 
     A Metawidget may contain any number of other widgets, and store a
     single variable value. Presumably, a subclass will link self.variable
-    to one or more control widgets, via their textvariable attribute.
+    to one or more control widgets, via the variable/textvariable attribute.
     
     See the Metawidget subclasses below for examples of how self.variable,
     get() and set() are used.
@@ -151,7 +154,6 @@ class Number (Metawidget):
                  label="Number",
                  min=1,
                  max=10,
-                 #resolution=1,
                  style='spin',
                  default=None,
                  *args, **kwargs):
@@ -199,7 +201,7 @@ class Number (Metawidget):
 ### --------------------------------------------------------------------
 
 class LabelEntry (Metawidget):
-    """A labeled text entry box"""
+    """A widget for entering a line of text"""
     def __init__(self,
                  master=None,
                  label="Text",
@@ -217,7 +219,7 @@ class LabelEntry (Metawidget):
 ### --------------------------------------------------------------------
 
 class Filename (Metawidget):
-    """A filename selector with a label, text entry, and browse button.
+    """A widget for entering or browsing for a filename
     """
     def __init__(self,
                  master=None,
@@ -263,6 +265,7 @@ class Filename (Metawidget):
 ### --------------------------------------------------------------------
 
 class Color (Metawidget):
+    """A widget for choosing a color"""
     def __init__(self,
                  master=None,
                  label="Color",
@@ -289,53 +292,11 @@ class Color (Metawidget):
         if color:
             self.set(color)
             self.button.config(text=color, foreground=color)
-
-### --------------------------------------------------------------------
-
-
-class ScrollList (Metawidget):
-    """A Listbox with a vertical scrollbar.
-    """
-    # TODO: Add methods to insert/delete items?
-    # TODO: Drag/drop functionality in derived class?
-    def __init__(self, master=None, label="List", values=None):
-        """Create a ScrollList widget.
-        
-            master:   Tkinter widget that will contain this ScrollList
-            label:    Text label for the list
-            values:   List of initial values
-        """
-        Metawidget.__init__(self, master, list)
-        self.label = Label(self, text=label)
-        self.scrollbar = Scrollbar(self, orient=VERTICAL,
-                                   command=self.scroll)
-        self.listbox = Listbox(self, width=30,
-                               yscrollcommand=self.scrollbar.set)
-        # Add initial values to list
-        if values:
-            for value in values:
-                self.listbox.insert(END, value)
-        # Pack widgets
-        self.label.pack(anchor=W)
-        self.listbox.pack(anchor=W, side=LEFT, fill=BOTH, expand=YES)
-        self.scrollbar.pack(side=LEFT, fill=Y, expand=YES)
-        # Add mouse bindings to listbox
-        self.listbox.bind('<Button-1>', self.select)
-
-    def scroll(self, *args):
-        """Event handler when the list is scrolled
-        """
-        apply(self.listbox.yview, args)
-
-    def select(self, event):
-        """Event handler when an item in the list is selected
-        """
-        self.curindex = self.listbox.nearest(event.y)
-        self.set(self.listbox.get(self.curindex))
     
 ### --------------------------------------------------------------------
 
 class FontChooser (Dialog):
+    """A widget for choosing a font"""
     def __init__(self, master=None):
         Dialog.__init__(self, master, "Font chooser")
 
@@ -384,7 +345,7 @@ class Font (Metawidget):
 ### --------------------------------------------------------------------
 
 class Optional (Frame):
-    """Container that shows/hides an optional Metawidget."""
+    """Container that shows/hides an optional Metawidget"""
     def __init__(self,
                  master=None,
                  widget=None,
@@ -489,4 +450,130 @@ class PlainLabel (Metawidget):
         self.label.pack(side=LEFT)
 
 ### --------------------------------------------------------------------
+
+class ScrollList (Metawidget):
+    """A widget for choosing from a list of values
+    """
+    # TODO: Add methods to insert/delete items?
+    # TODO: Drag/drop functionality in derived class?
+    def __init__(self, master=None, label="List", values=None):
+        """Create a ScrollList widget.
+        
+            master:    Tkinter widget that will contain this ScrollList
+            label:     Text label for the list
+            values:    List of initial values
+        """
+        Metawidget.__init__(self, master, list)
+        self.label = Label(self, text=label)
+        self.label.pack(anchor=W)
+        # Group listbox and scrollbar together
+        group = Frame(self)
+        self.scrollbar = Scrollbar(group, orient=VERTICAL,
+                                   command=self.scroll)
+        self.listbox = Listbox(group, width=30,
+                               yscrollcommand=self.scrollbar.set)
+        self.listbox.pack(side=LEFT, fill=BOTH, expand=YES)
+        self.scrollbar.pack(side=LEFT, fill=Y, expand=YES)
+        group.pack()
+        if values:
+            self.add(*values)
+        self.listbox.bind('<Button-1>', self.select)
+
+    def add(self, *values):
+        """Add one or more values to the listbox"""
+        for value in values:
+            self.listbox.insert(END, value)
+
+    def scroll(self, *args):
+        """Event handler when the list is scrolled
+        """
+        apply(self.listbox.yview, args)
+
+    def select(self, event):
+        """Event handler when an item in the list is selected
+        """
+        self.curindex = self.listbox.nearest(event.y)
+        self.set(self.listbox.get(self.curindex))
+
+### --------------------------------------------------------------------
+
+class DragList (ScrollList):
+    """A scrollable listbox with drag-and-drop support"""
+    def __init__(self, master=None, label="List", values=None):
+        ScrollList.__init__(self, master, label, values)
+        self.listbox.bind('<Button-1>', self.select)
+        self.listbox.bind('<B1-Motion>', self.drag)
+        self.listbox.bind('<ButtonRelease-1>', self.drop)
+        self.curindex = 0
+
+    def select(self, event):
+        """Event handler when an item in the list is selected.
+        """
+        # Set currently selected item and change the cursor to a double-arrow
+        ScrollList.select(self, event)
+        self.config(cursor="double_arrow")
+    
+    def drag(self, event):
+        """Event handler when an item in the list is dragged
+        """
+        # If item is dragged to a new location, delete/insert
+        loc = self.listbox.nearest(event.y)
+        if loc != self.curindex:
+            item = self.listbox.get(self.curindex)
+            self.listbox.delete(self.curindex)
+            self.listbox.insert(loc, item)
+            self.curindex = loc
+
+    def drop(self, event):
+        """Event handler when an item in the list is "dropped"
+        """
+        # Change the mouse cursor back to the default arrow.
+        self.config(cursor="")
+
+### --------------------------------------------------------------------
+
+class FileList (DragList):
+    """A widget for listing several filenames"""
+    def __init__(self, master=None, label="File list", files=None):
+        DragList.__init__(self, master, label, files)
+        # Group Add/Remove buttons
+        group = Frame(self)
+        self.add = Button(group, text="Add...", command=self.addFiles)
+        self.remove = Button(group, text="Remove", command=self.removeFiles)
+        self.add.pack(side=LEFT, fill=X, expand=YES)
+        self.remove.pack(side=LEFT, fill=X, expand=YES)
+        group.pack(fill=X)
+
+    def addFiles(self):
+        """Event handler to add files to the list"""
+        files = askopenfilenames(parent=self, title='Add files')
+        for file in files:
+            log.debug("Adding '%s' to the file list" % file)
+            self.listbox.insert(END, file)
+
+    def removeFiles(self):
+        """Event handler to remove files from the list"""
+        selection = self.listbox.curselection()
+        # Using reverse order prevents reflow from messing up indexing
+        for line in reversed(selection):
+            log.debug("Removing '%s' from the file list" %\
+                      self.listbox.get(line))
+            self.listbox.delete(line)
+
+### --------------------------------------------------------------------
+
+class TextList (DragList):
+    """A widget for listing and editing several text strings"""
+    def __init__(self, master=None, label="Text list", values=None):
+        DragList.__init__(self, master, label, values)
+        self.editbox = Entry(self, width=30, textvariable=self.variable)
+        self.editbox.bind('<Return>', self.setTitle)
+        self.editbox.pack(fill=X, expand=YES)
+
+    def setTitle(self, event):
+        """Event handler when Enter is pressed after editing a title."""
+        newtitle = self.get()
+        log.debug("Setting title to '%s'" % newtitle)
+        self.listbox.delete(self.curindex)
+        self.listbox.insert(self.curindex, newtitle)
 
