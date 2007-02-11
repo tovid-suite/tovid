@@ -781,7 +781,6 @@ class Application (Frame):
         # create more pulldown menus
         editmenu = Menu(menubar, tearoff=1)
         
-        editmenu.add_command(label="For advanced users", command='', background="black", state=DISABLED)
         editmenu.add_separator()
         editmenu.add_command(label="Menu style options",
                              command=lambda:self.showitem(menu_options, "menu"))
@@ -798,7 +797,7 @@ class Application (Frame):
         editmenu.add_separator()
         editmenu.add_command(label="Hide advanced pane",
                              command=lambda:self.showitem("", "hide"))
-        menubar.add_cascade(label="Advanced Options", menu=editmenu)
+        menubar.add_cascade(label="Advanced", menu=editmenu)
 
         runmenu = Menu(menubar, tearoff=0)
         runmenu.add_command(label="Run todisc now !", command=self.runCommand)
@@ -873,6 +872,7 @@ class Application (Frame):
             self.fraAdvFont,
             self.fraAdvAudio,
             self.fraAdvDvd,
+            self.fraAdvGeneral,
             self.fraAdvMenu]
         for frame in frames:
             try:
