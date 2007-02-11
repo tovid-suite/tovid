@@ -139,6 +139,8 @@ class AuthorFilesTaskPanel(wx.Panel):
 
     def OnEncode(self, evt):
 
+        # Clear Encoding panel command list
+        self.panEncoding.panCmdList.Clear()
 
         # Abort encoding if detected an error
         if self.btnLayout.GetValue() == True:
