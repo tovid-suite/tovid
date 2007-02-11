@@ -901,7 +901,12 @@ class Application (Frame):
             self.option_add("*Button.relief", GROOVE)
             self.option_add("*Frame*font",
                             ("Helvetica", 12))
-            self.update_idletasks()
+            self.option_add("*Radiobutton.selectColor", "#8888FF")
+            self.option_add("*Checkbutton.selectColor", "#8888FF")
+            self.option_add("*Button.overRelief", RAISED)
+            self.option_add("*Checkbutton.overRelief", GROOVE)
+            self.option_add("*Radiobutton.overRelief", GROOVE)
+            # self.update_idletasks()
         else:  # theme == 'default' or anything else
             log.info("Using default theme")
             log.info("(run 'todiscgui light' for alternate theme)")
