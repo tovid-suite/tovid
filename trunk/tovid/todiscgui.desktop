@@ -1,12 +1,12 @@
 [Desktop Entry]
-Name=todiscgui
+Name=todisc GUI
 Type=Application
 Path=
 Exec=todiscgui
 Icon=tovid.svg
 Terminal=true
-GenericName=GUI frontend for todisc
-GenericName[en_US]=GUI frontend for todisc
+GenericName=frontend for todisc
+GenericName[en_US]=frontend for todisc
 Comment=Author videos to DVD or SVCD
 Comment[en_US]=Author videos to DVD or SVCD
 Categories=AudioVideo;Video
