@@ -288,10 +288,9 @@ class BurnDiscPanel(wx.Panel):
             msgError = wx.MessageDialog(self,
                 "Error(s) occurred during burning. If you want to\n" \
                 "help improve this software, please file a bug report\n" \
-                "containing a copy of the output log. Unfortunately,\n" \
-                "this also means you won't be able to continue with\n" \
-                "creating your disc. Sorry for the inconvenience!",
-                "Error occurred during encoding", wx.ICON_ERROR | wx.OK)
+                "containing a copy of the output log. \n" \
+                "Sorry for the inconvenience!",
+                "Error occurred during burning", wx.ICON_ERROR | wx.OK)
             msgError.ShowModal()
         # Show success message and enable burning
         else:
@@ -548,7 +547,7 @@ class CommandOutputPanel(wx.Panel):
             self.lblQueue.SetLabel("Commands left to run: 0")
             # Let parent know that processing is done
             self.parent.ProcessingDone(self.errorOccurred)
-
+            self.errorOccurred = False
     def Clear(self):
         """Clear out the command queue."""
         self.strCmdQueue = []
@@ -1562,8 +1561,8 @@ class EncodingPanel(wx.Panel):
                 "Error(s) occurred during encoding. If you want to\n" \
                 "help improve this software, please file a bug report\n" \
                 "containing a copy of the output log. Unfortunately,\n" \
-                "this also means you won't be able to continue with\n" \
-                "creating your disc. Sorry for the inconvenience!",
+                "this also means you won't be able to continue to\n" \
+                "burning your disc. Sorry for the inconvenience!",
                 "Error occurred during encoding", wx.ICON_ERROR | wx.OK)
             msgError.ShowModal()
         # Show success message and enable burning
