@@ -178,25 +178,9 @@ files
 titles
 submneu-titles
 chain-videos
-
-
-Special cases:
-
-Optional: Some choices (i.e. widescreen nopanscan|noletterbox) may be omitted,
-    equivalent to having nothing chosen (no radiobutton). For these, disable
-    or hide the widgets, and ensure that they don't output any command-line
-    options.
-    
-    (Optional, Choice, 'Widescreen', 'nopanscan|noletterbox')
-    
-Flag (True/False): Include option, or don't include option
-
-Lists: -files/-titles may need rethinking!
-
-
 """
-#[Font style options]
 
+#[Font style options]
 text_options = [
     'spacer',
     'menu-font',
@@ -219,7 +203,6 @@ text_options = [
     'text-start']
 
 #[Thumb style options]
-
 thumb_options = [
     'spacer',
     '3dthumbs',
@@ -237,7 +220,6 @@ thumb_options = [
     'tile3x1']
 
 #[Dvdauthor options]
-
 author_options = [
     'spacer',
     'chapters',
@@ -252,13 +234,11 @@ author_options = [
     'outlinewidth',
     'playall']
 
-
 # not fit in yet ( dvdauthor options )
 #    'subtitles',  # ???
 #    'audio-lang', # ???
 
 #[Menu style options]
-
 menu_options = [
     'spacer',
     'menu-fade',
@@ -272,8 +252,8 @@ menu_options = [
     'showcaseonlylabel',
     'showcase-titles-align',
     'showcase-framestyle']
-#[Audio Options]
 
+#[Audio Options]
 audio_options = [
     'menu-audio-length',
     'menu-audio-fade',
@@ -581,12 +561,8 @@ class FileList (Frame):
             raise MissingOption("File list (-files)", self.lstFiles)
         if len(titles) == 0:
             raise MissingOption("Title list (-titles)", self.lstTitles)
-        command.add('-files')
-        for file in files:
-            command.add(file)
-        command.add('-titles')
-        for title in titles:
-            command.add(title)
+        command.add('-files', *files)
+        command.add('-titles', *titles)
 
 ### --------------------------------------------------------------------
 
@@ -698,21 +674,26 @@ class Advanced (OptionFrame):
     def __init__(self, master=None, options="", label_text="Advanced Options"):
         Frame.__init__(self, master, borderwidth=5)
         self.update_idletasks()
-        group = LabelFrame(self, text=label_text, width=root.winfo_width(), height=root.winfo_height())
+        group = LabelFrame(self, text=label_text, padx=8, pady=8,
+                           width=root.winfo_width(),
+                           height=root.winfo_height())
         group.pack(ipadx=6, ipady=6)
         group.pack_propagate(0)
         self.widgets = {}
         for option in options:
             self.widgets[option] = getWidget(group, option)
-            self.widgets[option].pack(anchor=NW, pady=1)
-#        spacer = Label(group, text='', width=65)
-#        spacer.pack(fill=BOTH, expand=YES)
+            self.widgets[option].pack(anchor=NW, pady=1, fill=X)
+        spacer = Label(group, text='', width=65)
+        spacer.pack(fill=BOTH, expand=YES)
+
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
         for option, widget in self.widgets.items():
             value = widget.get()
             if value == True:
                 command.add('-%s' % option)
+            elif type(value) == list:
+                command.add('-%s' % option, *value)
             elif value:
                 command.add('-%s' % option, value)
 
@@ -941,7 +922,7 @@ if __name__ == '__main__':
         theme = sys.argv[1]
 
     root.title("todisc GUI")
-    root.iconbitmap('@//work/svn/tovid/src/tovid_icon_32.xbm')
+    #root.iconbitmap('@//work/svn/tovid/src/tovid_icon_32.xbm')
     app = Application(root, theme)
     root.mainloop()
 
