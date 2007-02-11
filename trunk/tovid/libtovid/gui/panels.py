@@ -301,12 +301,19 @@ class BurnDiscPanel(wx.Panel):
             msgSuccess = wx.MessageDialog(self, strSuccess, "Success!",
                 wx.ICON_INFORMATION | wx.OK)
             msgSuccess.ShowModal()
+
+
+            #Set the command, so can do another burn immediately
+            self.SetCommandsWithoutClearingList()
+
         self.btnStart.Enable(True)
 
     def SetCommands(self):
         """Set command-list to be executed based on Author and Burn boxes."""
         self.panCmdList.Clear()
+        self.SetCommandsWithoutClearingList()
 
+    def SetCommandsWithoutClearingList(self):
         makedvdOptions = ""
 
         # Get global config (for XML filename and format)
