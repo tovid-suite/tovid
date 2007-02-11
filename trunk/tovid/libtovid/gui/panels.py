@@ -1517,6 +1517,8 @@ class EncodingPanel(wx.Panel):
         """Start/suspend/resume encoding."""
         # If currently running, stop/suspend processing
         if self.panCmdList.idleTimer.IsRunning():
+
+# Disable 'suspend encoding' since it's not working
             # Disable button temporarily, to allow processes to die
 #            self.btnStartStop.Enable(False)
 #            self.panCmdList.Stop()
@@ -1538,7 +1540,7 @@ class EncodingPanel(wx.Panel):
             self.curConfig.panGuide.SetTask(ID_TASK_ENCODING_STARTED)
             self.panCmdList.Start()
             self.btnStartStop.Enable(False)
-#            self.btnStartStop.SetLabel("Suspend encoding")
+            self.btnStartStop.SetLabel("Currently encoding...")
 #            self.btnStartStop.SetToolTipString("Interrupt the current " \
 #                "encoding process and return the current command to the queue")
 
