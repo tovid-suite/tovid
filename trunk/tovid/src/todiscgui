@@ -79,7 +79,7 @@ WIDGETS = {
     'thumb-mist-color':
         (Optional, Color, 'Thumb mist color'),
     'thumb-text-color':
-        (Optional, Color, 'Thumb text color'),
+        (Optional, Color, 'Video title(s) color'),
     'showcase-titles-align':
         (Optional, Choice, 'Thumb title alignment', 'west|east|center'),
     'menu-title-geo':
@@ -119,7 +119,7 @@ WIDGETS = {
     'intro':
         (Filename, 'Intro video', 'load', 'Select a video file'),
     'seek':
-        (Optional, LabelEntry, 'Seek time', ' [2]   Single value or list'),
+        (Optional, ListEntry, 'Seek time', ' [2]   Single value or list'),
     'bgaudio-seek':
         (Optional, Number, 'Background audio seek time', 0, 3600, 'scale', 2),
     'bgvideo-seek':
@@ -133,17 +133,17 @@ WIDGETS = {
     'title-gap':
         (Optional, Number, 'Space between Textmenu titles (pixels)', 0, 400, 'spin', 2),
     'loop':
-        (Number, 'Loop', 0, 10, 'scale'),
+        (Optional, Number, 'Loop', 0, 30, 'scale'),
     'playall':
         (Flag, '"Play all" button', False),
     'chapters':
-        (Optional, LabelEntry, 'Number of Chapters', ' Single value or list'),
+        (Optional, ListEntry, 'Number of Chapters', ' Single value or list'),
     'chain-videos':
-        (Optional, LabelEntry, 'Treat video group as one video', ' See "man todisc" for details'),
+        (Optional, ListEntry, 'Treat video group as one video', ' See "man todisc" for details'),
     'audio-lang':
-        (Optional, LabelEntry, 'Default audio language', " Single value or list"),
+        (Optional, ListEntry, 'Default audio language', " Single value or list"),
     'subtitles':
-        (Optional, LabelEntry, 'Default subtitle language', " Single value or list"),
+        (Optional, ListEntry, 'Default subtitle language', " Single value or list"),
     'outlinewidth':
         (Optional, Number, 'Outlinewidth for spumux buttons', 0, 20, 'scale'),
     'aspect':
@@ -151,7 +151,7 @@ WIDGETS = {
     'widescreen':
         (Optional, Choice, 'Widescreen', 'nopanscan|noletterbox'),
     'tovidopts':
-        (LabelEntry, 'Custom tovid options'),
+        (Optional, LabelEntry, 'Custom tovid options'),
     'use-makemenu':
         (Flag, 'Use makemenu script instead of todisc, and exit', False),
     'no-ask':
@@ -232,6 +232,7 @@ author_options = [
     'audio-lang',
     'subtitles',
     'outlinewidth',
+    'loop',
     'playall']
 
 # not fit in yet ( dvdauthor options )
@@ -252,13 +253,14 @@ menu_options = [
     'spacer',
     'showcaseonlylabel',
     'showcase-titles-align',
-    'showcase-framestyle']
+    'showcase-framestyle',
+    'showcase-geo']
 
 #[Audio Options]
 audio_options = [
     'menu-audio-length',
     'menu-audio-fade',
-    'submenu-audio',
+#    'submenu-audio',
     'submenu-audio-length',
     'submenu-audio-fade']
 
