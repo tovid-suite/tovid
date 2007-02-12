@@ -95,7 +95,7 @@ WIDGETS = {
     'menu-audio-fade':
         (Optional, Number, 'Menu audio fade', 0, 10, 'scale', 1),
     'submenu-audio':
-        (Optional, ListEntry, 'Submenu audio files'),
+        (Optional, Filename, 'Submenu audio file'),
     'submenu-audio-length':
         (Optional, Number, 'Submenu audio length', 0, 120, 'scale'),
     'submenu-audio-fade':
@@ -119,7 +119,7 @@ WIDGETS = {
     'intro':
         (Filename, 'Intro video', 'load', 'Select a video file'),
     'seek':
-        (Optional, ListEntry, 'Seek time', ' [2]   Single value or list'),
+        (Optional, ListEntry, 'Seek time', 'Single value or list'),
     'bgaudio-seek':
         (Optional, Number, 'Background audio seek time', 0, 3600, 'scale', 2),
     'bgvideo-seek':
@@ -137,13 +137,13 @@ WIDGETS = {
     'playall':
         (Flag, '"Play all" button', False),
     'chapters':
-        (Optional, ListEntry, 'Number of Chapters', ' Single value or list'),
+        (Optional, ListEntry, 'Number of Chapters', 'Single value or list'),
     'chain-videos':
-        (Optional, ListEntry, 'Treat video group as one video', ' See "man todisc" for details'),
+        (Optional, ListEntry, 'Treat video group as one video', 'See "man todisc" for details'),
     'audio-lang':
-        (Optional, ListEntry, 'Default audio language', " Single value or list"),
+        (Optional, ListEntry, 'Default audio language', "Single value or list"),
     'subtitles':
-        (Optional, ListEntry, 'Default subtitle language', " Single value or list"),
+        (Optional, ListEntry, 'Default subtitle language', "Single value or list"),
     'outlinewidth':
         (Optional, Number, 'Outlinewidth for spumux buttons', 0, 20, 'scale'),
     'aspect':
