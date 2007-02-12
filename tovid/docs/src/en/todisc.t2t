@@ -153,6 +153,8 @@ constraints of each arrangement.
 
 : -thumb-shape [normal|oval|plectrum|egg]
     Apply a shaped transparency mask to thumbnail videos
+    The default is to have a rectangular semi-transparent misted background
+    for each thumb - to disable this mist use "-thumb-mist-color none" (no quotes).
 : -3dthumbs
     This will give an illusion of 3D to the thumbnails: dynamic lighting on
     rounded thumbs, and a raised effect on rectangular thumbs.  Try it !
