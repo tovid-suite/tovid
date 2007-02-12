@@ -210,17 +210,25 @@ if echo "$DISC_NAME" | grep -q -i '\.xml$'; then
     DO_AUTHOR=:
     # Make sure the XML file exists
     if test ! -f "$DVDAUTHOR_XML"; then
-        echo "Could not open file: $DVDAUTHOR_XML"
-        exit 1
+        runtime_error "Could not open file: $DVDAUTHOR_XML"
     else
         echo "Authoring disc from file: $DVDAUTHOR_XML"
     fi
     # The dest= argument from the XML file will be the output directory
-    OUT_DIR=$(grep 'dest=' "$DVDAUTHOR_XML" | awk -F '"' '{print $2}')
-    # Remove existing files in outdir
-    if test -d "$OUT_DIR"; then
-        echo "Removing existing files in ./$OUT_DIR/"
-        rm -rf "$OUT_DIR"
+    OUT_DIR="$(grep 'dest=' "$DVDAUTHOR_XML" | awk -F '"' '{print $2}')"
+    if test -z "$OUT_DIR"; then
+        echo "Malformed xml! No output directory given."
+        echo "Did you use makexml? It doesn't look like it."
+        runtime_error "Malformed xml file: $DVDAUTHOR_XML"
+    fi
+    # Remove existing files in the output directory
+    if test -d "./$OUT_DIR"; then
+        for DVDFS_DIR in VIDEO_TS AUDIO_TS; do
+            if test -d "./$OUT_DIR/$DVDFS_DIR"; then
+                echo "Removing existing dvdfs files in ./$OUT_DIR/$DVDFS_DIR"
+                rm -rvf "./$OUT_DIR/$DVDFS_DIR"
+            fi
+        done
     fi
     $QUIET || echo "Putting output in ./$OUT_DIR/"
 # Burn a directory containing a VIDEO_TS subfolder
