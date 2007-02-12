@@ -37,7 +37,7 @@
 # The first arugment sets the package name, the second sets the package version.
 # eg [tovid], [0.40] would yield a tovid-0.40.tar.gz after "$ make dist"
 #                    the version number is also substituted into tovid-init.in
-AC_INIT([tovid], [0.30])
+AC_INIT([tovid], [svn])
 AC_CONFIG_SRCDIR([src/tovid])
 
 # Require minimum versions of the autotools
