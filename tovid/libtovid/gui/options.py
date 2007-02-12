@@ -42,7 +42,7 @@ class DiscOptions:
         # Get global configuration (for output directory)
         curConfig = TovidConfig()
 
-        strCommand = "makexml -quiet -overwrite -%s " % self.format
+        strCommand = "makexml -noask -quiet -overwrite -%s " % self.format
 
         for curItem in self.optionList:
             # Prefix -topmenu or -menu if necessary
