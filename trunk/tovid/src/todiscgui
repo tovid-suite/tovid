@@ -390,9 +390,6 @@ class MenuChoice (Frame):
         if colsize == 15:
             colsize = ''
         if style in ['showcase', 'textmenu']:
-            if not filename:
-                raise MissingOption("Showcase filename",
-                                    self.filename.entry)
             command.add('-showcase', filename)
         if style == "textmenu":
             command.add('-textmenu', colsize)
