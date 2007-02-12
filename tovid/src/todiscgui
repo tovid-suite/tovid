@@ -97,6 +97,8 @@ WIDGETS = {
     'menu-audio-fade':
         (Optional, Number, 'Menu audio fade', 0, 10, 'scale', 1),
     'submenu-audio':
+        (Optional, Filename, 'Submenu audio file', 'load', 'Select an audio file, or video file with audio'),
+    'submenu-audio-info':
         (PlainLabel, 'Note: for multiple -submenu-audio files please use custom box on main pane'),
     'submenu-audio-length':
         (Optional, Number, 'Submenu audio length', 0, 120, 'scale'),
@@ -270,7 +272,7 @@ audio_options = [
     'submenu-audio',
     'submenu-audio-length',
     'submenu-audio-fade',
-    'submenu-audio']
+    'submenu-audio-info']
 
 #[General Options]
 general_options = [
