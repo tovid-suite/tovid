@@ -741,6 +741,7 @@ fi
 if test $XML_FORMAT = "dvd" ; then
 FINAL_DISC_XML=`cat << EOF
 <dvdauthor dest="$OUT_PREFIX">
+<!-- makexml $TOVID_VERSION -->
 <vmgm>
 $TOP_MENU_XML
 </vmgm>

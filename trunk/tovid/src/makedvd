@@ -84,6 +84,7 @@ runtime_error ()
 
 # Defaults
 QUIET=false
+NOASK=false
 # Create the DVD filesystem hierarchy?
 DO_AUTHOR=false
 # Burn the image to disc?
@@ -173,6 +174,7 @@ fi
 while test $# -gt 1; do
     case "$1" in
         "-quiet" ) QUIET=: ;;
+        "-noask" ) NOASK=: ;;
         "-author" ) DO_AUTHOR=: ;;
         "-burn" )   DO_BURN=: ;;
         "-device" )
@@ -213,6 +215,24 @@ if echo "$DISC_NAME" | grep -q -i '\.xml$'; then
         runtime_error "Could not open file: $DVDAUTHOR_XML"
     else
         echo "Authoring disc from file: $DVDAUTHOR_XML"
+    fi
+    # See if makexml generated the xml file
+    if ! grep makexml "$DVDAUTHOR_XML"; then
+        echo "Your xml file wasn't made with tovid's makexml!"
+        echo "This may cause unexpected (and possibly disastrous) behavior."
+        if $NOASK; then
+            echo "Continuing anyway..."
+        else
+            echo -n "Would you like to continue? [y/N] "
+            ANSWER="N"
+            read ANSWER
+            if ! ( test "$ANSWER" = "y" || test "$ANSWER" = "Y" ); then
+                echo "Exiting..."
+                exit 0
+            else
+                echo "Continuing..."
+            fi
+        fi
     fi
     # The dest= argument from the XML file will be the output directory
     OUT_DIR="$(grep 'dest=' "$DVDAUTHOR_XML" | awk -F '"' '{print $2}')"
