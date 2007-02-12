@@ -1733,6 +1733,8 @@ fi
 # centre aligned titles are not for textmenu style
 $TEXTMENU && [[ $SC_TITLE_ALIGN = center ]] && \
 usage_error "You can not use center align for textmenu titles"
+ [[ $BUTTON_STYLE = text-rect ]] && ! $SHOWCASE && \
+usage_error "You can only use text-rect button style with showcase or textmenu arrangements"
 # text-rect only for -align east
 if [[ $BUTTON_STYLE = text-rect ]] && ! [[ $SC_TITLE_ALIGN = east ]] && ! $TEXTMENU; then
     yecho "***Warning*** : text-rect buttons need to be aligned east of thumbs: \
