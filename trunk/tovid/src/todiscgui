@@ -79,7 +79,9 @@ WIDGETS = {
     'blur':
         (Optional, Number, 'Blur', 1, 5, 'spin', 4),
     'thumb-mist-color':
-        (Optional, Color, 'Thumb mist color'),
+        (Optional, Color, 'Thumb mist color [white]'),
+    'thumb-mist-color-info':
+        (PlainLabel, 'Use "-thumb-mist-color none" in the custom box for no mist'),
     'thumb-text-color':
         (Optional, Color, 'Video title(s) color'),
     'showcase-titles-align':
@@ -222,6 +224,7 @@ thumb_options = [
     'spacer',
     'defaultonlylabel',
     'thumb-mist-color',
+    'thumb-mist-color-info',
     'tile3x1']
 
 #[Dvdauthor options]
