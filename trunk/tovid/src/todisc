@@ -495,8 +495,7 @@ function check_stall()
 }
 function check_filetype()
 {
-    if [[ $(file "$1") = *image* ]]; then
-#    if file "$1" |grep image; then
+    if [[ $(file -L "$1") = *image* ]]; then
         TYPE=image
     elif mencoder -endpos 2 -oac pcm -ovc copy  "$1" -o /dev/null  >/dev/null 2>&1; then
         TYPE=video
