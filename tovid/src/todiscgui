@@ -403,7 +403,11 @@ class MenuChoice (Frame):
         if colsize == 15:
             colsize = ''
         if style in ['showcase', 'textmenu']:
-            command.add('-showcase', filename)
+            if filename:
+                command.add('-showcase', filename)
+            else:
+                if style == 'showcase':
+                    command.add('-showcase')
         if style == "textmenu":
             command.add('-textmenu', colsize)
 
