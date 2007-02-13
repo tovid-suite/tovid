@@ -133,7 +133,7 @@ WIDGETS = {
     'showcase-seek':
         (Optional, Number, 'Showcase video seek time', 0, 3600, 'scale', 2),
     'showcase-geo':
-        (Optional, LabelEntry, 'Showcase image position (XxY'),
+        (Optional, LabelEntry, 'Showcase image position (XxY)'),
     'text-start':
         (Optional, Number, 'Start Textmenu titles at: (pixels)', 0, 460, 'spin', 2),
     'title-gap':
