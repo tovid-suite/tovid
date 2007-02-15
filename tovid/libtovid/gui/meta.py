@@ -19,6 +19,7 @@ __all__ = [
     'PlainLabel']
 
 import os
+import shlex
 from Tkinter import *
 from tkFileDialog import *
 from tkColorChooser import askcolor
@@ -223,7 +224,7 @@ class ListEntry (LabelEntry):
     def get(self):
         """Split text into a list at space boundaries."""
         text = LabelEntry.get(self)
-        return text.split(' ')
+        return shlex.split(text)
 
     def set(self, listvalue):
         """Set a value to a list, joined with spaces."""
