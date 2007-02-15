@@ -393,7 +393,7 @@ NUM_INSTALLED=0
 INSTALLED_VERS=""
 INSTALLED_PREFS=""
 
-# Only count tovids that are the different versions
+# Only count tovids that are different versions
 for tovid in $INSTALLED_TOVIDS; do
     tovid_PREFIX=$(dirname $tovid)
     tovid_VERSION=$(grep TOVID_VERSION $tovid_PREFIX/tovid-init | \
