@@ -4248,7 +4248,7 @@ MENU_ATIME=${MENU_ATIME:-$TMP_TIME}
 BG_AUDIO_LENGTH="-t $MENU_ATIME"
 # create audio background for the main menu
 if [ -z "$BG_AUDIO" ]; then # no audio supplied: use silence
-    cat /dev/zero | nice -n 0 sox -t raw -c 2 -r 48000 -w \
+    cat /dev/zero 2>/dev/null | nice -n 0 sox -t raw -c 2 -r 48000 -w \
     -s - $WORK_DIR/intro.wav  trim 0 $MENU_ATIME
 # Make sure file exists
 elif test ! -e "$BG_AUDIO"; then
