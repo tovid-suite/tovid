@@ -187,6 +187,8 @@ WIDGETS = {
         (PlainLabel, 'The following options apply to the Textmenu style only'),
     'showcaseOrTextmenulabel':
         (PlainLabel, 'The following options apply to Showcase and Textmenu style only'),
+    'burndisabledlabel':
+        (PlainLabel, '*** Note: Burning not functional yet ***'),
     'spacer':
         (PlainLabel, '')
     }
@@ -303,7 +305,9 @@ burning_options = [
     'speed',
     'label',
     'quiet',
-    'noask']
+    'noask',
+    'spacer',
+    'burndisabledlabel']
 
 ### --------------------------------------------------------------------
 ### Exceptions
@@ -861,7 +865,7 @@ class Application (Frame):
         menubar.add_cascade(label="Burning", menu=burnmenu)
         burnmenu.add_command(label="Burning Options", command=lambda:self.showitem(burning_options, "burn"))
         burnmenu.add_separator()
-        burnmenu.add_command(label='Burn it now !', command='')
+        burnmenu.add_command(label="Burn it now !", command=lambda:showinfo(message="This option disabled for now"))
         root.config(menu=menubar)
 
     def hideAdvMenu(self, _label):
