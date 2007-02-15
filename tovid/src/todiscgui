@@ -187,8 +187,8 @@ WIDGETS = {
         (PlainLabel, 'The following options apply to the Textmenu style only'),
     'showcaseOrTextmenulabel':
         (PlainLabel, 'The following options apply to Showcase and Textmenu style only'),
-    'burndisabledlabel':
-        (PlainLabel, '*** Note: Burning not functional yet ***'),
+#    'burndisabledlabel':
+#        (PlainLabel, '*** Note: Burning not functional yet ***'),
     'spacer':
         (PlainLabel, '')
     }
@@ -306,8 +306,7 @@ burning_options = [
     'label',
     'quiet',
     'noask',
-    'spacer',
-    'burndisabledlabel']
+    'spacer']
 
 ### --------------------------------------------------------------------
 ### Exceptions
@@ -651,7 +650,9 @@ class Outfile (Frame):
             log.warning("No output file selected")
             raise MissingOption("Output filename (-out)", self.outfile.entry)
         command.add('-out', outfile)
-
+    def getOutfile(self):
+        out = self.outfile.get()
+        return out
 ### --------------------------------------------------------------------
 
 class Title (Frame):
@@ -726,15 +727,23 @@ class Advanced (OptionFrame):
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
         for option, widget in self.widgets.items():
-            if option not in burning_options:
+            value = widget.get()
+            if value == True:
+                command.add('-%s' % option)
+            elif type(value) == list:
+                command.add('-%s' % option, *value)
+            elif value:
+                command.add('-%s' % option, value)
+                
+    def setBurnOptions(self, burnCmd):
+        """Add relevant todisc options to the given Command."""
+        for option, widget in self.widgets.items():
+            if option in burning_options:
                 value = widget.get()
                 if value == True:
-                    command.add('-%s' % option)
-                elif type(value) == list:
-                    command.add('-%s' % option, *value)
+                    burnCmd.add('-%s' % option)
                 elif value:
-                    command.add('-%s' % option, value)
-
+                    burnCmd.add('-%s' % option, value)
 ### --------------------------------------------------------------------
 ### Main application window
 ### --------------------------------------------------------------------
@@ -865,7 +874,11 @@ class Application (Frame):
         menubar.add_cascade(label="Burning", menu=burnmenu)
         burnmenu.add_command(label="Burning Options", command=lambda:self.showitem(burning_options, "burn"))
         burnmenu.add_separator()
-        burnmenu.add_command(label="Burn it now !", command=lambda:showinfo(message="This option disabled for now"))
+        burnmenu.add_command(label="Hide Options pane",
+                             command=lambda:self.showitem("", "hide"))
+#        burnmenu.add_command(label="Burn it now !", command=lambda:showinfo(message="This option disabled for now"))
+        burnmenu.add_separator()
+        burnmenu.add_command(label="Burn it now !", command=self.runBurnCommand)
         root.config(menu=menubar)
 
     def hideAdvMenu(self, _label):
@@ -908,7 +921,6 @@ class Application (Frame):
             self.fraAdvAudio,
             self.fraAdvDvd,
             self.fraAdvGeneral,
-            self.fraAdvBurn,
             self.fraAdvMenu]
         for frame in frames:
             try:
@@ -918,6 +930,14 @@ class Application (Frame):
                 raise
         return cmd
 
+    def getBurnCommand(self):
+        """Return the complete todisc command."""
+        burnCmd = Command('makedvd')
+        self.fraAdvBurn.setBurnOptions(burnCmd)
+        out = self.outfile.getOutfile()
+        burnCmd.add(out)
+        return burnCmd
+        
     def runCommand(self):
         """Run the todisc command."""
         try:
@@ -942,6 +962,19 @@ class Application (Frame):
                 showinfo(message="todisc finished running!")
             root.deiconify()
 
+    def runBurnCommand(self):
+        """Run the burning command"""
+        burnCmd = self.getBurnCommand()
+        print burnCmd
+        if askyesno(message="Burn now ?"):
+            root.withdraw()
+            try:
+                burnCmd.run()
+            except KeyboardInterrupt:
+                showerror(message="todisc was interrupted!")
+            else:
+                showinfo(message="burning complete !")
+            root.deiconify()
 
 def setTheme(theme='default'):
     """Set widget styles to match a theme. This must be called before
