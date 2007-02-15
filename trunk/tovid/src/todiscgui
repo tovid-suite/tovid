@@ -52,7 +52,7 @@ WIDGETS = {
     'submenu-title-color':
         (Optional, Color, 'Submenu title color'),
     'submenu-titles':
-        (PlainLabel, 'Note: for submenu titles option please use custom box on main pane'),
+        (Optional, ListEntry, 'Submenu titles', 'List of quoted titles'),
     'button-style':
         (Optional, Choice, 'Button style', 'rect|text|text-rect'),
     'rotate':
@@ -165,6 +165,16 @@ WIDGETS = {
         (Flag, 'Use makemenu script instead of todisc, and exit', False),
     'no-ask':
         (Flag, 'No prompts for questions', False),
+    'noask':
+        (Flag, 'No prompts for questions', False),
+    'quiet':
+        (Flag, 'Limit output to essential messages', False),
+    'device':
+        (Optional, LabelEntry, 'Burning device', '/dev/dvdrw'),
+    'speed':
+        (Optional, Number, 'Burning speed', 0, 52, 'scale'),
+    'label':
+        (Optional, LabelEntry, 'DISC_LABEL\nfor volume ID'),
     'no-warn':
         (Flag, 'Do not pause at warnings', False),
     'keep-files':
@@ -248,14 +258,11 @@ author_options = [
     'spacer',
     'group']
 
-# not fit in yet ( dvdauthor options )
-#    'subtitles',  # ???
-#    'audio-lang', # ???
-
 #[Menu style options]
 menu_options = [
     'spacer',
     'ani-submenus',
+    'submenu-titles',
     'menu-fade',
     'seek',
     'bgvideo-seek',
@@ -269,9 +276,7 @@ menu_options = [
     'spacer',
     'showcaseonlylabel',
     'showcase-framestyle',
-    'showcase-geo',
-    'spacer',
-    'submenu-titles']
+    'showcase-geo']
 
 #[Audio Options]
 audio_options = [
@@ -291,7 +296,14 @@ general_options = [
     'use-makemenu',
     'tovidopts']
 
-group_options = ""
+#[Burning Options
+burning_options = [
+    'spacer',
+    'device',
+    'speed',
+    'label',
+    'quiet',
+    'noask']
 
 ### --------------------------------------------------------------------
 ### Exceptions
@@ -710,13 +722,14 @@ class Advanced (OptionFrame):
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
         for option, widget in self.widgets.items():
-            value = widget.get()
-            if value == True:
-                command.add('-%s' % option)
-            elif type(value) == list:
-                command.add('-%s' % option, *value)
-            elif value:
-                command.add('-%s' % option, value)
+            if option not in burning_options:
+                value = widget.get()
+                if value == True:
+                    command.add('-%s' % option)
+                elif type(value) == list:
+                    command.add('-%s' % option, *value)
+                elif value:
+                    command.add('-%s' % option, value)
 
 ### --------------------------------------------------------------------
 ### Main application window
@@ -731,6 +744,7 @@ class Application (Frame):
         self.AdvFontShown=False
         self.AdvAudioShown=False
         self.AdvGeneralShown=False
+        self.AdvBurnShown=False
         self.advanced_visible = False
         self.pack()
         self.drawWidgets()
@@ -772,6 +786,8 @@ class Application (Frame):
                                   "Advanced Dvdauthor and Spumux Options")
         self.fraAdvGeneral = Advanced(self, general_options,
                                       "Advanced General Options")
+        self.fraAdvBurn = Advanced(self, burning_options,
+                                      "Burning Options")
 
     def showitem(self, widget_list, _label):
         """show frame, and set vars so we know it is shown, hide previously
@@ -801,6 +817,10 @@ class Application (Frame):
             self.hideAdvMenu(_label)
             self.fraAdvGeneral.pack(anchor=NW, side=LEFT)
             self.AdvGeneralShown=True
+        elif _label == "burn":                
+            self.hideAdvMenu(_label)
+            self.fraAdvBurn.pack(anchor=NW, side=LEFT)
+            self.AdvBurnShown=True
         elif _label == "hide":                
             self.hideAdvMenu(_label)
 
@@ -837,8 +857,12 @@ class Application (Frame):
         runmenu = Menu(menubar, tearoff=0)
         runmenu.add_command(label="Run todisc now !", command=self.runCommand)
         menubar.add_cascade(label="Run", menu=runmenu)
+        burnmenu = Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Burning", menu=burnmenu)
+        burnmenu.add_command(label="Burning Options", command=lambda:self.showitem(burning_options, "burn"))
+        burnmenu.add_separator()
+        burnmenu.add_command(label='Burn it now !', command='')
         root.config(menu=menubar)
-#        editmenu.entryconfig(1, state=DISABLED)
 
     def hideAdvMenu(self, _label):
         if self.AdvMenuShown:
@@ -859,6 +883,9 @@ class Application (Frame):
         if self.AdvGeneralShown:
             self.fraAdvGeneral.pack_forget()
             self.AdvGeneralShown=False
+        if self.AdvBurnShown:
+            self.fraAdvBurn.pack_forget()
+            self.AdvBurnShown=False
 
     def getCommand(self):
         """Return the complete todisc command."""
@@ -877,6 +904,7 @@ class Application (Frame):
             self.fraAdvAudio,
             self.fraAdvDvd,
             self.fraAdvGeneral,
+            self.fraAdvBurn,
             self.fraAdvMenu]
         for frame in frames:
             try:
