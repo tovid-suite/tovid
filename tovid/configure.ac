@@ -123,7 +123,7 @@ fi
 # executables and not byte-compiled like python_PYTHON would do) will need to be
 # told how to look for libtovid.
 
-AM_PATH_PYTHON(2.3)
+AM_PATH_PYTHON(2.4)
 
 
 
@@ -147,5 +147,8 @@ AC_OUTPUT
 
 AC_MSG_NOTICE([
 
+
  You may now type 'su -c "make install"' to compile and install tovid.
+
+   (or you can try to 'make sense' of it all...)
  ])

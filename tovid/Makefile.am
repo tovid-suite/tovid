@@ -131,7 +131,8 @@ dist_app_DATA = \
 #   thinking that it's a rule like clean: .
 EXTRA_DIST = \
 	$(bin_SCRIPTS) \
-	$(src_MANS) 
+	$(src_MANS) \
+	SENSE
 
 # Shared python libraries: libtovid and the gui
 # See lengthy comments in configure.ac
@@ -163,16 +164,10 @@ pyexecGUI_PYTHON = libtovid/gui/*.py
 pyexecGUIdir = $(pyexecdir)/libtovid/gui
 
 # src/tovid-init not needed b/c ./configure derives it from src/tovid-init.in
-# make fresh man pages for tarball users, ensuring that they're newer than the
-#   manpage source.
+# make the output directory for the man pages, since t2t won't
 dist-hook:
 	rm -rvf $(top_distdir)/src/tovid-init
-	mkdir -p $(distdir)/docs/man
-	for manpage_src in $(src_MANS); do \
-	  manpage=`echo "$${manpage_src}" | sed 's/t2t/1/g'`; \
-	  txt2tags -t man -i $${manpage_src} -o $${manpage}; \
-	  mv -v $${manpage} $(distdir)/docs/man; \
-	done
+	mkdir $(top_distdir)/docs/man
 
 # After uninstalling tovid, remove the python module directories
 uninstall-hook:
@@ -182,3 +177,6 @@ uninstall-hook:
 	rmdir $(pyexecGUIdir)
 	rmdir $(pyexecLIBTOVIDdir)
 
+# A little fun :-)
+sense:
+	fold -w 78 -s SENSE | less
