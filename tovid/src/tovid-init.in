@@ -4,24 +4,24 @@
 # Part of the tovid suite
 # =======================
 # Define global (suite-wide) functions and variables
-# for the tovid suite. 
+# for the tovid suite.
 #
 # Project homepage: http://www.tovid.org
 #
 #
 # Copyright (C) 2005 tovid.org <http://www.tovid.org>
-# 
-# This program is free software; you can redistribute it and/or 
-# modify it under the terms of the GNU General Public License 
-# as published by the Free Software Foundation; either 
-# version 2 of the License, or (at your option) any later 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
 # version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
@@ -128,7 +128,7 @@ function verify()
             echo ":"
         else
             echo "false"
-        fi 
+        fi
         ;;
 
     "set" )
@@ -145,7 +145,7 @@ function verify()
 
 # ******************************************************************************
 # Print a pretty (wrapped) notice message.
-# Args: $@ == text string containing the message 
+# Args: $@ == text string containing the message
 # ******************************************************************************
 function precho()
 {
@@ -154,7 +154,7 @@ function precho()
 
 # ******************************************************************************
 # Print error message, then exit.
-# Args: $@ == text string containing error message 
+# Args: $@ == text string containing error message
 # ******************************************************************************
 function exit_with_error()
 {
@@ -261,11 +261,11 @@ function file_output_progress()
     if test ! -e "$FOP_OUTFILE"; then
         runtime_error "Couldn't create file: \"$FOP_OUTFILE\""
     fi
-    
+
     # File size in bytes
     FOP_LAST_SIZE=0
     FOP_CUR_SIZE=$(du -b "$FOP_OUTFILE" | awk '{print $1}')
-    
+
     # Keep looping until outfile stops getting bigger
     while test "$FOP_CUR_SIZE" -gt "$FOP_LAST_SIZE"; do
         # Display a changing line
@@ -286,7 +286,7 @@ function file_output_progress()
         # (SLEEP_TIME defaults to 1s if unset)
         sleep ${SLEEP_TIME-"1s"}
 
-        FOP_LAST_SIZE=$FOP_CUR_SIZE 
+        FOP_LAST_SIZE=$FOP_CUR_SIZE
         FOP_CUR_SIZE=$(du -b "$FOP_OUTFILE" | awk '{print $1}')
     done
     printf "\n\n"
@@ -294,7 +294,7 @@ function file_output_progress()
 
 # ******************************************************************************
 # Check to see if a dependency group exists, quit if missing
-# Input args: 
+# Input args:
 #    $1 = dependency group to check for; note that this can be a globally
 #         defined group (below), or a space-separated list of executables
 #    $2 = Descriptive message about why the user needs the dependencies
@@ -330,7 +330,7 @@ function assert_dep()
 # See what filesystem a directory is in
 # Input args:
 #   $1 = directory to find filesystem type
-# 
+#
 # Usage:
 #   FS_TYPE=$(get_filesystem "$WORK_DIR")
 # ******************************************************************************
@@ -451,7 +451,7 @@ tovid
 #-kvcd
 #-ksvcd
 #-kdvd
-    
+
 # TV system standard
 #-pal
 #-ntsc
@@ -502,15 +502,15 @@ fi
     #   No:  add another group and fill it with members.
 
     # *************************************************************************
-    # Required Dependencies 
+    # Required Dependencies
     # *************************************************************************
     core="grep sed md5sum mplayer mencoder mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv ffmpeg"
 
     # *************************************************************************
     # Optional Dependencies
     # *************************************************************************
-    # Optional dependencies are grouped according to the functionality they 
-    # bring to tovid: menu creation, DVD creation, (S)VCD creation, and 
+    # Optional dependencies are grouped according to the functionality they
+    # bring to tovid: menu creation, DVD creation, (S)VCD creation, and
     # post-processing.
 
     # -------------------------------------------------------------------------
