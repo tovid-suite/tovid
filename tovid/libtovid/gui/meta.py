@@ -11,8 +11,8 @@ __all__ = [
     'Filename',
     'Flag',
     'Font',
-    'LabelEntry',
-    'ListEntry',
+    'Text',
+    'List',
     'Number',
     'Optional',
     'OptionFrame',
@@ -20,17 +20,18 @@ __all__ = [
 
 import os
 import shlex
-from Tkinter import *
-from tkFileDialog import *
+from libtovid import log
+# Tkinter
+import Tkinter as tk
+import tkFileDialog
 from tkColorChooser import askcolor
 from tkSimpleDialog import Dialog
-from libtovid import log
 
 ### --------------------------------------------------------------------
 ### Custom widgets
 ### --------------------------------------------------------------------
 
-class Metawidget (Frame):
+class Metawidget (tk.Frame):
     """A base class for extended special-purpose widgets.
 
     A Metawidget may contain any number of other widgets, and store a
@@ -40,25 +41,25 @@ class Metawidget (Frame):
     See the Metawidget subclasses below for examples of how self.variable,
     get() and set() are used.
     """
-    def __init__(self, master=None, vartype=str, *args, **kwargs):
+    def __init__(self, master=None, vartype=str):
         """Create a Metawidget with the given master and variable type.
 
             master:   Tkinter widget that will contain this Metawidget
             vartype:  Type of stored variable (str, bool, int, or float)
         """
-        Frame.__init__(self, master, *args, **kwargs)
+        tk.Frame.__init__(self, master)
         vartypes = {
-            str: StringVar,
-            bool: BooleanVar,
-            int: IntVar,
-            float: DoubleVar,
-            list: Variable}
+            str: tk.StringVar,
+            bool: tk.BooleanVar,
+            int: tk.IntVar,
+            float: tk.DoubleVar,
+            list: tk.Variable}
         # Create an appropriate Tkinter variable type
         if vartype in vartypes:
             self.variable = vartypes[vartype]()
         # Or use a generic Variable
         else:
-            self.variable = Variable()
+            self.variable = tk.Variable()
 
     def get(self):
         """Return the value of the Metawidget's variable."""
@@ -71,9 +72,9 @@ class Metawidget (Frame):
     def enable(self, enabled=True):
         """Enable or disable all sub-widgets."""
         if enabled:
-            newstate = NORMAL
+            newstate = tk.NORMAL
         else:
-            newstate = DISABLED
+            newstate = tk.DISABLED
         for widget in self.children.values():
             widget.config(state=newstate)
 
@@ -89,20 +90,19 @@ class Flag (Metawidget):
     def __init__(self,
                  master=None,
                  label="Debug",
-                 default=False,
-                 *args, **kwargs):
+                 default=False):
         """Create a Flag widget with the given label and default value.
 
             master:   Tkinter widget that will contain this Flag
             label:    Text label for the flag
             default:  Default value (True or False)
         """
-        Metawidget.__init__(self, master, bool, *args, **kwargs)
+        Metawidget.__init__(self, master, bool)
         log.debug("Creating Flag(%s)" % label)
         self.variable.set(default)
         # Create and pack widgets
-        self.check = Checkbutton(self, text=label, variable=self.variable)
-        self.check.pack(side=LEFT)
+        self.check = tk.Checkbutton(self, text=label, variable=self.variable)
+        self.check.pack(side=tk.LEFT)
 
 ### --------------------------------------------------------------------
 
@@ -113,8 +113,7 @@ class Choice (Metawidget):
                  master=None,
                  label="Choices",
                  choices='A|B',
-                 default=None,
-                 *args, **kwargs):
+                 default=None):
         """Initialize Choice widget with the given label and list of choices.
 
             master:   Tkinter widget that will contain this Choice
@@ -124,7 +123,7 @@ class Choice (Metawidget):
             default:  Default choice, or None to use first choice in list
         """
         # TODO: Allow alternative choice styles (listbox, combobox?)
-        Metawidget.__init__(self, master, *args, **kwargs)
+        Metawidget.__init__(self, master, str)
         log.debug("Choice(%s, %s)" % (label, choices))
         # If choices is a string, split on '|'
         if type(choices) == str:
@@ -134,14 +133,13 @@ class Choice (Metawidget):
             default = choices[0]
         self.variable.set(default)
         # Create and pack widgets
-        self.label = Label(self, text=label)
-        self.label.pack(side=LEFT)
+        self.label = tk.Label(self, text=label)
+        self.label.pack(side=tk.LEFT)
         self.rb = {}
         for choice in choices:
-            self.rb[choice] = Radiobutton(self, text=choice, value=choice,
-                                          variable=self.variable)
-            self.rb[choice].pack(side=LEFT)
-
+            self.rb[choice] = tk.Radiobutton(self, text=choice, value=choice,
+                                             variable=self.variable)
+            self.rb[choice].pack(side=tk.LEFT)
 
 ### --------------------------------------------------------------------
 
@@ -153,8 +151,7 @@ class Number (Metawidget):
                  min=1,
                  max=10,
                  style='spin',
-                 default=None,
-                 *args, **kwargs):
+                 default=None):
         """Create a number-setting widget.
         
             master:   Tkinter widget that will contain this Number
@@ -164,7 +161,7 @@ class Number (Metawidget):
             default:  Default value, or None to use minimum
         """
         # TODO: Multiple styles (entry, spinbox, scale)
-        Metawidget.__init__(self, master, int, *args, **kwargs)
+        Metawidget.__init__(self, master, int)
         log.debug("Creating Number(%s, %s, %s)" % (label, min, max))
         self.style = style
         # Use min if default wasn't provided
@@ -172,16 +169,17 @@ class Number (Metawidget):
             default = min
         self.variable.set(default)
         # Create and pack widgets
-        self.label = Label(self, name='label', text=label)
-        self.label.pack(side=LEFT)
+        self.label = tk.Label(self, name='label', text=label)
+        self.label.pack(side=tk.LEFT)
         if self.style == 'spin':
-            self.number = Spinbox(self, from_=min, to=max, width=4,
-                                  textvariable=self.variable)
-            self.number.pack(side=LEFT)
+            self.number = tk.Spinbox(self, from_=min, to=max, width=4,
+                                     textvariable=self.variable)
+            self.number.pack(side=tk.LEFT)
         else: # 'scale'
-            self.number = Scale(self, from_=min, to=max, tickinterval=max-min,
-                                variable=self.variable, orient=HORIZONTAL)
-            self.number.pack(side=LEFT, fill=X, expand=YES)
+            self.number = tk.Scale(self, from_=min, to=max,
+                                   tickinterval=max-min,
+                                   variable=self.variable, orient=tk.HORIZONTAL)
+            self.number.pack(side=tk.LEFT, fill=tk.X, expand=tk.YES)
 
     def enable(self, enabled=True):
         """Enable or disable all sub-widgets. Overridden to make Scale widget
@@ -198,38 +196,40 @@ class Number (Metawidget):
 
 ### --------------------------------------------------------------------
 
-class LabelEntry (Metawidget):
+class Text (Metawidget):
     """A widget for entering a line of text"""
     def __init__(self,
                  master=None,
                  label="Text",
-                 default='',
-                 *args, **kwargs):
-        Metawidget.__init__(self, master, str, *args, **kwargs)
-        log.debug("Creating LabelEntry(%s)" % label)
+                 default=''):
+        Metawidget.__init__(self, master, str)
+        log.debug("Creating Text(%s)" % label)
         self.variable.set(default)
         # Create and pack widgets
-        self.label = Label(self, text=label)
-        self.entry = Entry(self, textvariable=self.variable)
-        self.label.pack(side=LEFT)
-        self.entry.pack(side=LEFT, fill=X, expand=YES)
+        self.label = tk.Label(self, text=label)
+        self.entry = tk.Entry(self, textvariable=self.variable)
+        self.label.pack(side=tk.LEFT)
+        self.entry.pack(side=tk.LEFT, fill=tk.X, expand=tk.YES)
 
 ### --------------------------------------------------------------------
 
-class ListEntry (LabelEntry):
+class List (Text):
     """A widget for entering a space-separated list of text items"""
-    def __init__(self, master=None, label="List", default=''):
-        LabelEntry.__init__(self, master, label, default)
+    def __init__(self,
+                 master=None,
+                 label="List",
+                 default=''):
+        Text.__init__(self, master, label, default)
 
     def get(self):
         """Split text into a list at space boundaries."""
-        text = LabelEntry.get(self)
+        text = Text.get(self)
         return shlex.split(text)
 
     def set(self, listvalue):
         """Set a value to a list, joined with spaces."""
         text = ' '.join(listvalue)
-        LabelEntry.set(self, text)
+        Text.set(self, text)
 
 ### --------------------------------------------------------------------
 
@@ -241,8 +241,7 @@ class Filename (Metawidget):
                  label='Filename',
                  type='load',
                  desc='Select a file to load',
-                 default='',
-                 *args, **kwargs):
+                 default=''):
         """Create a FileEntry with label, text entry, and browse button.
         
             master:  Tkinter widget that will contain the FileEntry
@@ -252,27 +251,29 @@ class Filename (Metawidget):
                      browser dialog)
             default: Default filename
         """
-        Metawidget.__init__(self, master, *args, **kwargs)
+        Metawidget.__init__(self, master, str)
         log.debug("Creating FileEntry(%s)" % label)
         self.variable.set(default)
         self.type = type
         self.desc = desc
         # Create and grid widgets
-        self.label = Label(self, text=label, justify=LEFT)
-        self.entry = Entry(self, textvariable=self.variable)
-        self.button = Button(self, text="Browse...", command=self.browse)
-        self.label.pack(side=LEFT)
-        self.entry.pack(side=LEFT, fill=X, expand=YES)
-        self.button.pack(side=LEFT)
+        self.label = tk.Label(self, text=label, justify=tk.LEFT)
+        self.entry = tk.Entry(self, textvariable=self.variable)
+        self.button = tk.Button(self, text="Browse...", command=self.browse)
+        self.label.pack(side=tk.LEFT)
+        self.entry.pack(side=tk.LEFT, fill=tk.X, expand=tk.YES)
+        self.button.pack(side=tk.LEFT)
         # Link button's variable to ours
         self.button.variable = self.variable
 
     def browse(self, event=None):
         """Event handler when browse button is pressed"""
         if self.type == 'save':
-            filename = asksaveasfilename(parent=self, title=self.desc)
+            filename = tkFileDialog.asksaveasfilename(parent=self,
+                                                      title=self.desc)
         else: # 'load'
-            filename = askopenfilename(parent=self, title=self.desc)
+            filename = tkFileDialog.askopenfilename(parent=self,
+                                                    title=self.desc)
         # Got a filename? Save it
         if filename:
             self.set(filename)
@@ -284,22 +285,21 @@ class Color (Metawidget):
     def __init__(self,
                  master=None,
                  label="Color",
-                 default='',
-                 *args, **kwargs):
+                 default=''):
         """Create a widget that opens a color-chooser dialog.
         
             master:  Tkinter widget that will contain the ColorPicker
             label:   Text label describing the color to be selected
             default: Default color (named color or hexadecimal RGB)
         """
-        Metawidget.__init__(self, master, str, *args, **kwargs)
+        Metawidget.__init__(self, master, str)
         log.debug("Creating ColorPicker(%s)" % label)
         self.variable.set(default)
         # Create and pack widgets
-        self.label = Label(self, text=label)
-        self.button = Button(self, text="None", command=self.change)
-        self.label.pack(side=LEFT)
-        self.button.pack(side=LEFT)
+        self.label = tk.Label(self, text=label)
+        self.button = tk.Button(self, text="None", command=self.change)
+        self.label.pack(side=tk.LEFT)
+        self.button.pack(side=tk.LEFT)
         
     def change(self):
         """Choose a color, and set the button's label and color to match."""
@@ -324,8 +324,9 @@ class FontChooser (Dialog):
         """Draw widgets inside the Dialog, and return the widget that should
         have the initial focus. Called by the Dialog base class constructor.
         """
-        self.fontlist = ScrollList(master, "Available fonts", self.get_fonts())
-        self.fontlist.pack(fill=BOTH, expand=YES)
+        self.fontlist = tk.ScrollList(master, "Available fonts",
+                                      self.get_fonts())
+        self.fontlist.pack(fill=tk.BOTH, expand=tk.YES)
         return self.fontlist
     
     def apply(self):
@@ -345,11 +346,11 @@ class Font (Metawidget):
         """
         Metawidget.__init__(self, master, str)
         log.debug("Creating Font")
-        self.label = Label(self, text=label)
-        self.label.pack(side=LEFT)
-        self.button = Button(self, textvariable=self.variable,
+        self.label = tk.Label(self, text=label)
+        self.label.pack(side=tk.LEFT)
+        self.button = tk.Button(self, textvariable=self.variable,
                              command=self.choose)
-        self.button.pack(side=LEFT, padx=8)
+        self.button.pack(side=tk.LEFT, padx=8)
         self.variable.set(default)
 
     def choose(self):
@@ -360,28 +361,28 @@ class Font (Metawidget):
 
 ### --------------------------------------------------------------------
 
-class Optional (Frame):
+class Optional (tk.Frame):
     """Container that shows/hides an optional Metawidget"""
     def __init__(self,
                  master=None,
                  widget=None,
                  label='Option',
-                 *args, **kwargs):
+                 *args):
         """Create an Optional widget.
 
             master:  Tkinter widget that will contain the Optional
             widget:  A Metawidget to show or hide
             label:   Label for the optional widget
         """
-        Frame.__init__(self, master)
+        tk.Frame.__init__(self, master)
         log.debug("Creating Optional(%s)" % label)
-        self.active = BooleanVar()
+        self.active = tk.BooleanVar()
         # Create and pack widgets
-        self.check = Checkbutton(self, text=label, variable=self.active,
-                                 command=self.showHide, justify=LEFT)
-        self.check.pack(side=LEFT)
+        self.check = tk.Checkbutton(self, text=label, variable=self.active,
+                                    command=self.showHide, justify=tk.LEFT)
+        self.check.pack(side=tk.LEFT)
         self.widget = widget(self, '', *args)
-        self.widget.pack(side=LEFT, expand=YES, fill=X)
+        self.widget.pack(side=tk.LEFT, expand=tk.YES, fill=tk.X)
         self.widget.disable()
         self.active.set(False)
     
@@ -405,23 +406,23 @@ class Optional (Frame):
 
 ### --------------------------------------------------------------------
 
-class OptionFrame (Frame):
+class OptionFrame (tk.Frame):
     """A Frame containing Metawidgets that control command-line options.
     """
-    def __init__(self, master=None, *args, **kwargs):
+    def __init__(self, master=None):
         """Create an OptionFrame with the given master and control widgets.
 
             master:  Tkinter widget that will contain this OptionFrame
             args:    Positional arguments to pass to Frame constructor
             kwargs:  Keyword arguments to pass to Frame constructor
         """
-        Frame.__init__(self, master, *args, **kwargs)
+        tk.Frame.__init__(self, master, *args, **kwargs)
         self.controls = {}
 
     def add(self, option, widget):
         """Add a widget controlling the given option.
         """
-        assert isinstance(widget, Widget)
+        assert isinstance(widget, tk.Widget)
         self.controls[option] = widget
         
     def get(self, option):
@@ -456,14 +457,13 @@ class PlainLabel (Metawidget):
     def __init__(self,
                  master=None,
                  label="Text",
-                 default='',
-                 *args, **kwargs):
-        Metawidget.__init__(self, master, str, *args, **kwargs)
+                 default=''):
+        Metawidget.__init__(self, master, str)
         log.debug("Creating PlainLabel(%s)" % label)
         self.variable.set(default)
         # Create and pack widgets
-        self.label = Label(self, text=label)
-        self.label.pack(side=LEFT)
+        self.label = tk.Label(self, text=label)
+        self.label.pack(side=tk.LEFT)
 
 ### --------------------------------------------------------------------
 ### Not exported yet
@@ -484,16 +484,16 @@ class ScrollList (Metawidget):
         Metawidget.__init__(self, master, list)
         self.selected = StringVar() # Currently selected list item
         # Listbox label
-        self.label = Label(self, text=label)
+        self.label = tk.Label(self, text=label)
         self.label.pack(anchor=W)
         # Group listbox and scrollbar together
-        group = Frame(self)
-        self.scrollbar = Scrollbar(group, orient=VERTICAL,
-                                   command=self.scroll)
-        self.listbox = Listbox(group, width=30, listvariable=self.variable,
-                               yscrollcommand=self.scrollbar.set)
-        self.listbox.pack(side=LEFT, fill=BOTH, expand=YES)
-        self.scrollbar.pack(side=LEFT, fill=Y, expand=YES)
+        group = tk.Frame(self)
+        self.scrollbar = tk.Scrollbar(group, orient=tk.VERTICAL,
+                                      command=self.scroll)
+        self.listbox = tk.Listbox(group, width=30, listvariable=self.variable,
+                                  yscrollcommand=self.scrollbar.set)
+        self.listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=tk.YES)
+        self.scrollbar.pack(side=tk.LEFT, fill=tk.Y, expand=tk.YES)
         group.pack()
         self.listbox.bind('<Button-1>', self.select)
         if values:
@@ -502,7 +502,7 @@ class ScrollList (Metawidget):
     def add(self, *values):
         """Add the given values to the list."""
         for value in values:
-            self.listbox.insert(END, value)
+            self.listbox.insert(tk.END, value)
 
     def scroll(self, *args):
         """Event handler when the list is scrolled
@@ -557,16 +557,16 @@ class FileList (DragList):
     def __init__(self, master=None, label="File list", files=None):
         DragList.__init__(self, master, label, files)
         # Group Add/Remove buttons
-        group = Frame(self)
-        self.add = Button(group, text="Add...", command=self.addFiles)
-        self.remove = Button(group, text="Remove", command=self.removeFiles)
-        self.add.pack(side=LEFT, fill=X, expand=YES)
-        self.remove.pack(side=LEFT, fill=X, expand=YES)
-        group.pack(fill=X)
+        group = tk.Frame(self)
+        self.add = tk.Button(group, text="Add...", command=self.addFiles)
+        self.remove = tk.Button(group, text="Remove", command=self.removeFiles)
+        self.add.pack(side=tk.LEFT, fill=tk.X, expand=tk.YES)
+        self.remove.pack(side=tk.LEFT, fill=tk.X, expand=tk.YES)
+        group.pack(fill=tk.X)
 
     def addFiles(self):
         """Event handler to add files to the list"""
-        files = askopenfilenames(parent=self, title='Add files')
+        files = tkFileDialog.askopenfilenames(parent=self, title='Add files')
         for file in files:
             log.debug("Adding '%s' to the file list" % file)
             self.listbox.insert(END, file)
@@ -586,9 +586,9 @@ class TextList (DragList):
     """A widget for listing and editing several text strings"""
     def __init__(self, master=None, label="Text list", values=None):
         DragList.__init__(self, master, label, values)
-        self.editbox = Entry(self, width=30, textvariable=self.selected)
+        self.editbox = tk.Entry(self, width=30, textvariable=self.selected)
         self.editbox.bind('<Return>', self.setTitle)
-        self.editbox.pack(fill=X, expand=YES)
+        self.editbox.pack(fill=tk.X, expand=tk.YES)
 
     def setTitle(self, event):
         """Event handler when Enter is pressed after editing a title."""
