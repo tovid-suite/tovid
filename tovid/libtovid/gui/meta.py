@@ -324,8 +324,8 @@ class FontChooser (Dialog):
         """Draw widgets inside the Dialog, and return the widget that should
         have the initial focus. Called by the Dialog base class constructor.
         """
-        self.fontlist = tk.ScrollList(master, "Available fonts",
-                                      self.get_fonts())
+        self.fontlist = ScrollList(master, "Available fonts",
+                                   self.get_fonts())
         self.fontlist.pack(fill=tk.BOTH, expand=tk.YES)
         return self.fontlist
     
@@ -485,7 +485,7 @@ class ScrollList (Metawidget):
         self.selected = tk.StringVar() # Currently selected list item
         # Listbox label
         self.label = tk.Label(self, text=label)
-        self.label.pack(anchor=W)
+        self.label.pack(anchor=tk.W)
         # Group listbox and scrollbar together
         group = tk.Frame(self)
         self.scrollbar = tk.Scrollbar(group, orient=tk.VERTICAL,
