@@ -680,7 +680,6 @@ class Title (tk.Frame):
 
 class MiscOptions (tk.Frame):
     """A frame containing miscellaneous options"""
-    # TODO: Categorize these as needed and separate into new Frame subclasses
     def __init__(self, master=None):
         tk.Frame.__init__(self, master)
         self.drawWidgets()
