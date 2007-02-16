@@ -47,7 +47,7 @@ if test -e Makefile; then
     ANSWER=n
     read ANSWER
     
-    if test $ANSWER == "y" || test $ANSWER == "Y"; then
+    if test "x$ANSWER" == "xy" || test "x$ANSWER" == "xY"; then
         echo -n "  Enter your root "
         su -c "make uninstall"
     fi      
