@@ -846,6 +846,9 @@ class Application (tk.Frame):
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=root.quit)
         menubar.add_cascade(label="File", menu=filemenu)
+        viewmenu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="View", menu=viewmenu)
+        viewmenu.add_command(label="Hide options pane", command=lambda:self.showitem("", "hide"))
 
         # create more pulldown menus
         editmenu = tk.Menu(menubar, tearoff=1)
@@ -863,21 +866,14 @@ class Application (tk.Frame):
                              command=lambda:self.showitem(author_options, "dvd"))
         editmenu.add_command(label="General options",
                              command=lambda:self.showitem(general_options, "general"))
-        editmenu.add_separator()
-        editmenu.add_command(label="Hide advanced pane",
-                             command=lambda:self.showitem("", "hide"))
         menubar.add_cascade(label="Advanced", menu=editmenu)
 
         runmenu = tk.Menu(menubar, tearoff=0)
         runmenu.add_command(label="Run todisc now !", command=self.runCommand)
         menubar.add_cascade(label="Run", menu=runmenu)
         burnmenu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Burning", menu=burnmenu)
-        burnmenu.add_command(label="Burning Options", command=lambda:self.showitem(burning_options, "burn"))
-        burnmenu.add_separator()
-        burnmenu.add_command(label="Hide Options pane",
-                             command=lambda:self.showitem("", "hide"))
-#        burnmenu.add_command(label="Burn it now !", command=lambda:showinfo(message="This option disabled for now"))
+        menubar.add_cascade(label="Burn", menu=burnmenu)
+        burnmenu.add_command(label="Options", command=lambda:self.showitem(burning_options, "burn"))
         burnmenu.add_separator()
         burnmenu.add_command(label="Burn it now !", command=self.runBurnCommand)
         root.config(menu=menubar)
