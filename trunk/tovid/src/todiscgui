@@ -201,6 +201,8 @@ textmenu
 files
 titles
 submneu-titles
+group
+submenu-audio
 """
 
 #[Font style options]
@@ -651,9 +653,7 @@ class Outfile (tk.Frame):
             log.warning("No output file selected")
             raise MissingOption("Output filename (-out)", self.outfile.entry)
         command.add('-out', outfile)
-    def getOutfile(self):
-        out = self.outfile.get()
-        return out
+
 ### --------------------------------------------------------------------
 
 class Title (tk.Frame):
@@ -744,6 +744,7 @@ class Advanced (OptionFrame):
                     burnCmd.add('-%s' % option)
                 elif value:
                     burnCmd.add('-%s' % option, value)
+        burnCmd.add(app.outfile.outfile.get())
 ### --------------------------------------------------------------------
 ### Main application window
 ### --------------------------------------------------------------------
@@ -934,8 +935,6 @@ class Application (tk.Frame):
         """Return the complete todisc command."""
         burnCmd = Command('makedvd')
         self.fraAdvBurn.setBurnOptions(burnCmd)
-        out = self.outfile.getOutfile()
-        burnCmd.add(out)
         return burnCmd
         
     def runCommand(self):
