@@ -73,7 +73,7 @@ EOF`
 TERSE=false
 VERBOSE=false
 FAST=false
-TMP_DIR=$(tempdir idvid)
+TMP_DIR=$(tempdir "$WORKING_DIR/idvid")
 SCRATCH_FILE="$TMP_DIR/idvid.scratch"
 TABLE="$TMP_DIR/table"
 STAT_DIR=$TOVID_HOME
