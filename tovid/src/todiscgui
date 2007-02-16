@@ -87,7 +87,7 @@ WIDGETS = {
     'thumb-text-color':
         (Optional, Color, 'Video title(s) color'),
     'showcase-titles-align':
-        (Optional, Choice, 'Video(s) title alignment', 'west|east|center'),
+        (Optional, Choice, 'Video(s) title alignment', 'west|east'),
     'menu-title-geo':
         (Optional, Choice, 'Menu title position', 'north|south|west|east|center'),
     'menu-title-offset':
@@ -276,10 +276,8 @@ menu_options = [
     'align',
     'intro',
     'spacer',
-    'showcaseOrTextmenulabel',
-    'showcase-titles-align',
-    'spacer',
     'showcaseonlylabel',
+    'showcase-titles-align',
     'showcase-framestyle',
     'showcase-geo']
 
