@@ -189,8 +189,8 @@ WIDGETS = {
         (PlainLabel, 'The following options apply to the Textmenu style only'),
     'showcaseOrTextmenulabel':
         (PlainLabel, 'The following options apply to Showcase and Textmenu style only'),
-#    'burndisabledlabel':
-#        (PlainLabel, '*** Note: Burning not functional yet ***'),
+    'dvdonlylabel':
+        (PlainLabel, 'The following options apply to DVD burning only'),
     'spacer':
         (PlainLabel, '')
     }
@@ -306,8 +306,10 @@ burning_options = [
     'outputdir',
     'device',
     'speed',
-    'label',
     'quiet',
+    'spacer',
+    'dvdonlylabel',
+    'label',
     'noask',
     'spacer']
 
