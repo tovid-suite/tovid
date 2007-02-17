@@ -176,7 +176,7 @@ WIDGETS = {
     'label':
         (Optional, Text, 'DISC_LABEL\nfor volume ID'),
     'outputdir':
-        (Text, 'DVD directory\nor SVCD xml file'),
+        (Text, 'Directory (DVD)\nor file (SVCD)'),
     'no-warn':
         (Flag, 'Do not pause at warnings', False),
     'keep-files':
@@ -731,16 +731,12 @@ class Advanced (OptionFrame):
 
     def setFormatOpts(self):
         disc_format = app.format.getFormat()
+        outfile = app.outfile.outfile
         for option, widget in self.widgets.items():
             value = widget.get()
             if option == "outputdir":
-                outfile = app.outfile.outfile.get()
-                if outfile:
-                    if disc_format == 'svcd':
-                        outfile = outfile + '.xml'
-                    else:
-                        outfile = app.outfile.outfile.get()
-                    widget.set(outfile)
+                if outfile.get():
+                    widget.set(outfile.get())
             if option == "device":
                 if disc_format == 'svcd':
                     burn_device = '/dev/cdrw'
@@ -761,6 +757,10 @@ class Advanced (OptionFrame):
                 
     def setBurnOptions(self, burnCmd):
         """Add relevant todisc options to the given Command."""
+        disc_format = app.format.getFormat()
+        print disc_format
+        outfile = app.outfile.outfile
+        outfile = outfile.get()
         for option, widget in self.widgets.items():
             if option in burning_options:
                 if option != 'outputdir':
@@ -769,14 +769,11 @@ class Advanced (OptionFrame):
                         burnCmd.add('-%s' % option)
                     elif value:
                         burnCmd.add('-%s' % option, value)
-        if not app.outfile.outfile.get():
-            log.warning("No DVD directory (or SVCD xml file) selected in the 'Output file' selector")
+        if not outfile:
+            log.warning("No directory or file selected in the 'Output file' selector")
         else:
-            outfile = app.outfile.outfile
-            outfile = outfile.get()
-            
-            if app.format.getFormat() == 'svcd':
-                outfile = outfile + '.xml'
+            if disc_format == 'svcd':
+                burnCmd.add('-burn')    
             burnCmd.add(outfile)
 
 ### --------------------------------------------------------------------
