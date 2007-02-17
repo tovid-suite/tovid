@@ -19,8 +19,8 @@ from libtovid import log
 
 try:
     import Tkinter as tk
-    from tkFileDialog import askopenfilenames
-    from tkMessageBox import showerror, showinfo, askyesno
+    import tkFileDialog
+    import tkMessageBox
 except:
     import traceback
     traceback.print_exc()
@@ -388,20 +388,20 @@ class MenuChoice (tk.Frame):
             tk.Radiobutton(group, text="Textmenu style", value="textmenu",
                         variable=self.style, command=self.changeStyle)
         for style in self.showcase:
-            self.showcase[style].pack(anchor=tk.W)
+            self.showcase[style].pack(anchor='w')
 
         self.filename = Filename(group, "Showcase file", 'load',
                                 "Select an image or video file.")
-        self.filename.pack(anchor=tk.W, fill=tk.X, expand=tk.YES)
+        self.filename.pack(anchor='w', fill='x', expand=True)
 
         self.colsize = Number(group, "Textmenu column size", 2, 15)
         self.colsize.set(15)
-        self.colsize.pack(anchor=tk.W)
+        self.colsize.pack(anchor='w')
 
         self.style.set('default')
         self.changeStyle()
 
-        group.pack(fill=tk.X, expand=tk.YES)
+        group.pack(fill='x', expand=True)
 
     def changeStyle(self):
         """Change showcase styles, and enable suitable widgets."""
@@ -478,12 +478,12 @@ class FileList (tk.Frame):
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
         # Scrollbar to control both listboxes
-        self.scrollbar = tk.Scrollbar(self, orient=tk.VERTICAL)
-        self.scrollbar.grid(row=1, column=3, sticky=tk.NS)
+        self.scrollbar = tk.Scrollbar(self, orient='vertical')
+        self.scrollbar.grid(row=1, column=3, sticky='ns')
         self.scrollbar.config(command=self.scroll)
         # File list box and add/remove buttons
         self.lblFiles = tk.Label(self, text="Files")
-        self.lblFiles.grid(row=0, column=0, columnspan=2, sticky=tk.W)
+        self.lblFiles.grid(row=0, column=0, columnspan=2, sticky='w')
         self.lstFiles = tk.Listbox(self, width=30,
                                    listvariable=self.varFiles,
                                    yscrollcommand=self.scrollbar.set)
@@ -492,13 +492,13 @@ class FileList (tk.Frame):
         self.lstFiles.bind('<ButtonRelease-1>', self.onDrop)
         self.lstFiles.grid(row=1, column=0, columnspan=2)
         self.btnAdd = tk.Button(self, text="Add...", command=self.addFiles)
-        self.btnAdd.grid(row=2, column=0, sticky=tk.EW)
+        self.btnAdd.grid(row=2, column=0, sticky='ew')
         self.btnRemove = tk.Button(self, text="Remove",
                                    command=self.removeFiles)
-        self.btnRemove.grid(row=2, column=1, sticky=tk.EW)
+        self.btnRemove.grid(row=2, column=1, sticky='ew')
         # Title list box and editing field
         self.lblTitles = tk.Label(self, text="Titles")
-        self.lblTitles.grid(row=0, column=2, sticky=tk.W)
+        self.lblTitles.grid(row=0, column=2, sticky='w')
         self.lstTitles = tk.Listbox(self, width=30,
                                     listvariable=self.varTitles,
                                     yscrollcommand=self.scrollbar.set)
@@ -512,7 +512,7 @@ class FileList (tk.Frame):
         self.entTitle.grid(row=2, column=2)
         # Disc usage total
         self.lblUsage = tk.Label(self, textvariable=self.varUsage)
-        self.lblUsage.grid(row=0, column=1, columnspan=2, sticky=tk.E)
+        self.lblUsage.grid(row=0, column=1, columnspan=2, sticky='e')
         self.updateUsage()
 
     def scroll(self, *args):
@@ -554,13 +554,13 @@ class FileList (tk.Frame):
         
     def addFiles(self):
         """Event handler for adding files to the list box"""
-        files = askopenfilenames(parent=self, title='Add files')
+        files = tkFileDialog.askopenfilenames(parent=self, title='Add files')
         for file in files:
             log.debug("Adding '%s' to the file list" % file)
-            self.lstFiles.insert(tk.END, file)
+            self.lstFiles.insert('end', file)
             # Add a dummy title (with pathname and extension removed)
             title = os.path.basename(file)[0:-4]
-            self.lstTitles.insert(tk.END, title)
+            self.lstTitles.insert('end', title)
         self.updateUsage()
 
     def getUsage(self):
@@ -613,13 +613,13 @@ class Backgrounds (tk.Frame):
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
         label = tk.Label(self, text="Menu backgrounds")
-        label.pack(anchor=tk.W)
+        label.pack(anchor='w')
         self.visual = Filename(self, "Image or video", 'load',
                                 "Select an image or video file")
         self.audio = Filename(self, "Audio", 'load',
                                "Select an audio file")
-        self.visual.pack(anchor=tk.E, fill=tk.X, expand=tk.YES)
-        self.audio.pack(anchor=tk.E, fill=tk.X, expand=tk.YES)
+        self.visual.pack(anchor='e', fill='x', expand=True)
+        self.audio.pack(anchor='e', fill='x', expand=True)
     
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
@@ -635,14 +635,14 @@ class Backgrounds (tk.Frame):
 class Outfile (tk.Frame):
     """A frame containing an output-file text entry/browser box."""
     def __init__(self, master=None):
-        tk.Frame.__init__(self, master, relief=tk.GROOVE)
+        tk.Frame.__init__(self, master, relief='groove')
         self.drawWidgets()
     
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
         self.outfile = Filename(self, "Output file", 'save',
                                  "Select an output name.")
-        self.outfile.pack(side=tk.LEFT, pady=2, fill=tk.X, expand=tk.YES)
+        self.outfile.pack(side='left', pady=2, fill='x', expand=True)
 
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
@@ -663,7 +663,7 @@ class Title (tk.Frame):
     def drawWidgets(self):
         """Draw all the widgets in this frame."""
         self.title = Text(self, "Menu title")
-        self.title.pack(side=tk.RIGHT, pady=4, fill=tk.X, expand=tk.YES)
+        self.title.pack(side='right', pady=4, fill='x', expand=True)
         self.title.set("My video collection")
 
     def setOptions(self, command):
@@ -687,9 +687,9 @@ class MiscOptions (tk.Frame):
         self.static = Flag(self, "Static menus (takes less time)", False)
         self.submenus = Flag(self, "Create submenus (takes more time)", False)
         self.custom = Text(self, "Custom todisc options")
-        self.static.pack(anchor=tk.W)
-        self.submenus.pack(anchor=tk.W)
-        self.custom.pack(anchor=tk.W, fill=tk.X, expand=tk.YES)
+        self.static.pack(anchor='w')
+        self.submenus.pack(anchor='w')
+        self.custom.pack(anchor='w', fill='x', expand=True)
 
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
@@ -718,9 +718,9 @@ class Advanced (OptionFrame):
         self.widgets = {}
         for option in options:
             self.widgets[option] = getWidget(group, option)
-            self.widgets[option].pack(anchor=tk.NW, pady=1, fill=tk.X)
+            self.widgets[option].pack(anchor='nw', pady=1, fill='x')
         spacer = tk.Label(group, text='', width=65)
-        spacer.pack(fill=tk.BOTH, expand=tk.YES)
+        spacer.pack(fill='both', expand=True)
 
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
@@ -743,6 +743,7 @@ class Advanced (OptionFrame):
                 elif value:
                     burnCmd.add('-%s' % option, value)
         burnCmd.add(app.outfile.outfile.get())
+
 ### --------------------------------------------------------------------
 ### Main application window
 ### --------------------------------------------------------------------
@@ -772,16 +773,16 @@ class Application (tk.Frame):
         self.backgrounds = Backgrounds(group)
         self.misc = MiscOptions(group)
         self.outfile = Outfile(group)
-        group.pack(side=tk.LEFT, padx=6, pady=6)
+        group.pack(side='left', padx=6, pady=6)
         # Pack widgets in main frame
-        self.title.pack(fill=tk.X, expand=tk.YES)
-        self.files.pack(anchor=tk.W)
-        self.format.pack(anchor=tk.W)
-        self.tvsys.pack(anchor=tk.W)
-        self.menuformat.pack(anchor=tk.W, fill=tk.X, expand=tk.YES)
-        self.backgrounds.pack(anchor=tk.W, fill=tk.X, expand=tk.YES)
-        self.misc.pack(anchor=tk.W, fill=tk.X, expand=tk.YES)
-        self.outfile.pack(anchor=tk.W, fill=tk.X, expand=tk.YES)
+        self.title.pack(fill='x', expand=True)
+        self.files.pack(anchor='w')
+        self.format.pack(anchor='w')
+        self.tvsys.pack(anchor='w')
+        self.menuformat.pack(anchor='w', fill='x', expand=True)
+        self.backgrounds.pack(anchor='w', fill='x', expand=True)
+        self.misc.pack(anchor='w', fill='x', expand=True)
+        self.outfile.pack(anchor='w', fill='x', expand=True)
         # Add the menu
         self.makeMenu()
 
@@ -807,31 +808,31 @@ class Application (tk.Frame):
         """
         if _label == "menu":
             self.hideAdvMenu(_label)
-            self.fraAdvMenu.pack(anchor=tk.NW, side=tk.LEFT)
+            self.fraAdvMenu.pack(anchor='nw', side='left')
             self.AdvMenuShown=True
         elif _label == "thumb":                
             self.hideAdvMenu(_label)
-            self.fraAdvThumb.pack(anchor=tk.NW, side=tk.LEFT)
+            self.fraAdvThumb.pack(anchor='nw', side='left')
             self.AdvThumbShown=True
         elif _label == "audio":                
             self.hideAdvMenu(_label)
-            self.fraAdvAudio.pack(anchor=tk.NW, side=tk.LEFT)
+            self.fraAdvAudio.pack(anchor='nw', side='left')
             self.AdvAudioShown=True
         elif _label == "font":                
             self.hideAdvMenu(_label)
-            self.fraAdvFont.pack(anchor=tk.NW, side=tk.LEFT)
+            self.fraAdvFont.pack(anchor='nw', side='left')
             self.AdvFontShown=True
         elif _label == "dvd":                
             self.hideAdvMenu(_label)
-            self.fraAdvDvd.pack(anchor=tk.NW, side=tk.LEFT)
+            self.fraAdvDvd.pack(anchor='nw', side='left')
             self.AdvDvdShown=True
         elif _label == "general":                
             self.hideAdvMenu(_label)
-            self.fraAdvGeneral.pack(anchor=tk.NW, side=tk.LEFT)
+            self.fraAdvGeneral.pack(anchor='nw', side='left')
             self.AdvGeneralShown=True
         elif _label == "burn":                
             self.hideAdvMenu(_label)
-            self.fraAdvBurn.pack(anchor=tk.NW, side=tk.LEFT)
+            self.fraAdvBurn.pack(anchor='nw', side='left')
             self.AdvBurnShown=True
         elif _label == "hide":                
             self.hideAdvMenu(_label)
@@ -936,8 +937,8 @@ class Application (tk.Frame):
         try:
             cmd = self.getCommand()
         except MissingOption, err:
-            showerror("Missing option",
-                      "Missing a required option: %s" % err.message)
+            tkMessageBox.showerror("Missing option",
+                                   "Missing a required option: %s" % err.message)
             blink(err.widget)
             return
         # Show pretty-printed command
@@ -945,28 +946,28 @@ class Application (tk.Frame):
         log.info("Running command:")
         log.info(pretty_cmd)
         # Verify with user
-        if askyesno(message="Run todisc now?"):
+        if tkMessageBox.askyesno(message="Run todisc now?"):
             root.withdraw()
             try:
                 cmd.run()
             except KeyboardInterrupt:
-                showerror(message="todisc was interrupted!")
+                tkMessageBox.showerror(message="todisc was interrupted!")
             else:
-                showinfo(message="todisc finished running!")
+                tkMessageBox.showinfo(message="todisc finished running!")
             root.deiconify()
 
     def runBurnCommand(self):
         """Run the burning command"""
         burnCmd = self.getBurnCommand()
         print burnCmd
-        if askyesno(message="Burn now ?"):
+        if tkMessageBox.askyesno(message="Burn now ?"):
             root.withdraw()
             try:
                 burnCmd.run()
             except KeyboardInterrupt:
-                showerror(message="todisc was interrupted!")
+                tkMessageBox.showerror(message="todisc was interrupted!")
             else:
-                showinfo(message="burning complete !")
+                tkMessageBox.showinfo(message="burning complete !")
             root.deiconify()
 
 def setTheme(theme='default'):
@@ -976,18 +977,18 @@ def setTheme(theme='default'):
     if theme == 'light':
         log.info("Using 'light' theme")
         log.info("(run 'todiscgui tk' for alternate theme)")
-        root.option_add("*Entry.relief", tk.GROOVE)
-        root.option_add("*Spinbox.relief", tk.GROOVE)
-        root.option_add("*Listbox.relief", tk.GROOVE)
-        root.option_add("*Button.relief", tk.GROOVE)
-        root.option_add("*Menu.relief", tk.GROOVE)
+        root.option_add("*Entry.relief", 'groove')
+        root.option_add("*Spinbox.relief", 'groove')
+        root.option_add("*Listbox.relief", 'groove')
+        root.option_add("*Button.relief", 'groove')
+        root.option_add("*Menu.relief", 'groove')
         root.option_add("*font", ("Helvetica", 12))
         root.option_add("*Radiobutton.selectColor", "#8888FF")
         root.option_add("*Checkbutton.selectColor", "#8888FF")
         # Mouse-over effects
-        root.option_add("*Button.overRelief", tk.RAISED)
-        root.option_add("*Checkbutton.overRelief", tk.GROOVE)
-        root.option_add("*Radiobutton.overRelief", tk.GROOVE)
+        root.option_add("*Button.overRelief", 'raised')
+        root.option_add("*Checkbutton.overRelief", 'groove')
+        root.option_add("*Radiobutton.overRelief", 'groove')
     else:  # theme == 'tk' or anything else
         log.info("Using 'tk' theme")
         log.info("(run 'todiscgui light' for alternate theme)")
