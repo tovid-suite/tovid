@@ -1204,6 +1204,7 @@ fi
 # Make sure -out was provided
 if test -n "$OUT_PREFIX"; then
     OUT_DIR="$(abspath "$OUT_PREFIX")"
+    [[ $TARGET = svcd ]] && OUT_FILE="$OUT_DIR"
     MENU_FILE="animenu.mpg"
 else
     usage_error "Please provide an output name with -out"
@@ -4336,8 +4337,8 @@ if [ "$TARGET" = dvd ]; then
         runtime_error "There was a problem creating the DVD structure"
     fi
 elif [ "$TARGET" = svcd ]; then
-    makexml -svcd -menu $WORK_DIR/intro.mpg "${IN_FILES[@]}" -out MyDisc
-    vcdxbuild -b ../videocd.bin -c ../videocd.cue  MyDisc.xml
+    makexml -svcd -menu $WORK_DIR/intro.mpg "${IN_FILES[@]}" -out "$OUT_FILE"
+    vcdxbuild -b "${OUT_FILE}.bin" -c "${OUT_FILE}.cue"  "${OUT_FILE}.xml"
 fi
 echo "Cleaning up unwanted files in $REAL_WORK_DIR"
 find "$WORK_DIR"/ -name '*.png' ! -name Highlight.png ! -name Select.png -exec rm -f {} \;
@@ -4367,7 +4368,7 @@ if [ "$TARGET" = dvd ]; then
     echo "    makedvd -burn \"$OUT_DIR\""
 elif [ "$TARGET" = svcd ]; then
     echo "Your svcd bin and cue files are ready. You can burn them with:"
-    echo "    cdrdao write --device /dev/hdc --driver generic-mmc videocd.cue"
+    echo "    cdrdao write --device /dev/hdc --driver generic-mmc "${OUT_FILE}.cue""
 fi
 echo
 echo "Thanks for using todisc."
