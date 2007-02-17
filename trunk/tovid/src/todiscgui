@@ -176,7 +176,7 @@ WIDGETS = {
     'label':
         (Optional, Text, 'DISC_LABEL\nfor volume ID'),
     'outputdir':
-        (Text, 'DVD directory'),
+        (Text, 'DVD directory\nor SVCD xml file'),
     'no-warn':
         (Flag, 'Do not pause at warnings', False),
     'keep-files':
@@ -447,6 +447,11 @@ class Format (tk.Frame):
         """Add relevant todisc options to the given Command."""
         format = str(self.format.get()).lower()
         command.add('-%s' % format)
+
+    def getFormat(self):
+        """Return the disc format we are using"""
+        disc_format = str(self.format.get()).lower()
+        return disc_format
 
 ### --------------------------------------------------------------------
 
@@ -724,12 +729,24 @@ class Advanced (OptionFrame):
         spacer = tk.Label(group, text='', width=65)
         spacer.pack(fill='both', expand=True)
 
-    def setOutputDir(self):
+    def setFormatOpts(self):
+        disc_format = app.format.getFormat()
         for option, widget in self.widgets.items():
             value = widget.get()
             if option == "outputdir":
-                widget.set(app.outfile.outfile.get())
-        
+                outfile = app.outfile.outfile.get()
+                if outfile:
+                    if disc_format == 'svcd':
+                        outfile = outfile + '.xml'
+                    else:
+                        outfile = app.outfile.outfile.get()
+                    widget.set(outfile)
+            if option == "device":
+                if disc_format == 'svcd':
+                    burn_device = '/dev/cdrw'
+                else:
+                    burn_device = '/dev/dvdrw'
+                widget.set(burn_device)        
 
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
@@ -753,9 +770,14 @@ class Advanced (OptionFrame):
                     elif value:
                         burnCmd.add('-%s' % option, value)
         if not app.outfile.outfile.get():
-            log.warning("No DVD directory selected in the 'Output file' selector")
+            log.warning("No DVD directory (or SVCD xml file) selected in the 'Output file' selector")
         else:
-            burnCmd.add(app.outfile.outfile.get())
+            outfile = app.outfile.outfile
+            outfile = outfile.get()
+            
+            if app.format.getFormat() == 'svcd':
+                outfile = outfile + '.xml'
+            burnCmd.add(outfile)
 
 ### --------------------------------------------------------------------
 ### Main application window
@@ -846,7 +868,7 @@ class Application (tk.Frame):
         elif _label == "burn":                
             self.hideAdvMenu(_label)
             self.fraAdvBurn.pack(anchor='nw', side='left')
-            self.fraAdvBurn.setOutputDir()
+            self.fraAdvBurn.setFormatOpts()
             self.AdvBurnShown=True
         elif _label == "hide":                
             self.hideAdvMenu(_label)
@@ -942,7 +964,13 @@ class Application (tk.Frame):
 
     def getBurnCommand(self):
         """Return the complete todisc command."""
-        burnCmd = Command('makedvd')
+        disc_format = self.format.getFormat()
+        print "We are making a", disc_format
+        if disc_format == 'svcd':
+            burn_program='makevcd'
+        elif disc_format == 'dvd':
+            burn_program = 'makedvd'
+        burnCmd = Command(burn_program)
         self.fraAdvBurn.setBurnOptions(burnCmd)
         return burnCmd
         
@@ -988,7 +1016,7 @@ class Application (tk.Frame):
                 root.deiconify()
         else:
             tkMessageBox.showerror("Missing option",
-                                   "DVD directory todisc outfile to burn\n"\
+                                   "DVD directory or todisc outfile to burn\n"\
                                    "('Output file' box on main pane)")
             blink(outfile.entry)
 
