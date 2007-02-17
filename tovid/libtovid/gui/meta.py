@@ -204,7 +204,7 @@ class Text (Metawidget):
         Metawidget.__init__(self, master, str)
         self.variable.set(default)
         # Create and pack widgets
-        self.label = tk.Label(self, text=label)
+        self.label = tk.Label(self, text=label, justify=tk.LEFT)
         self.entry = tk.Entry(self, textvariable=self.variable)
         self.label.pack(side='left')
         self.entry.pack(side='left', fill='x', expand=True)
