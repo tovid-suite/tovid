@@ -304,7 +304,7 @@ general_options = [
 #[Burning Options
 burning_options = [
     'spacer',
-#    'outputdir',
+    'outputdir',
     'device',
     'speed',
     'label',
@@ -725,6 +725,13 @@ class Advanced (OptionFrame):
         spacer = tk.Label(group, text='', width=65)
         spacer.pack(fill='both', expand=True)
 
+    def setOutputDir(self):
+        for option, widget in self.widgets.items():
+            value = widget.get()
+            if option == "outputdir":
+                widget.set(app.outfile.outfile.get())
+        
+
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
         for option, widget in self.widgets.items():
@@ -740,11 +747,12 @@ class Advanced (OptionFrame):
         """Add relevant todisc options to the given Command."""
         for option, widget in self.widgets.items():
             if option in burning_options:
-                value = widget.get()
-                if value == True:
-                    burnCmd.add('-%s' % option)
-                elif value:
-                    burnCmd.add('-%s' % option, value)
+                if option != 'outputdir':
+                    value = widget.get()
+                    if value == True:
+                        burnCmd.add('-%s' % option)
+                    elif value:
+                        burnCmd.add('-%s' % option, value)
         if not app.outfile.outfile.get():
             log.warning("No DVD directory selected in the 'Output file' selector")
         else:
@@ -839,6 +847,7 @@ class Application (tk.Frame):
         elif _label == "burn":                
             self.hideAdvMenu(_label)
             self.fraAdvBurn.pack(anchor='nw', side='left')
+            self.fraAdvBurn.setOutputDir()
             self.AdvBurnShown=True
         elif _label == "hide":                
             self.hideAdvMenu(_label)
@@ -979,7 +988,7 @@ class Application (tk.Frame):
                 root.deiconify()
         else:
             tkMessageBox.showerror("Missing option",
-                                   "Missing a required option: The DVD directory ('Output file' box on main pane)")
+                                   "Missing a required option:\n The DVD directory.\n('Output file' box on main pane)")
 
 def setTheme(theme='default'):
     """Set widget styles to match a theme. This must be called before
