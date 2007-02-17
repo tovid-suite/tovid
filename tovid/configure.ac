@@ -63,6 +63,8 @@ AC_CHECK_PROG(TXT2TAGS, [txt2tags], [:], [false])
 if ! $TXT2TAGS; then
     AC_MSG_ERROR([
 
+ ERROR:
+
  txt2tags cannot be found on your system, but tovid needs it to build
  the man pages. Please install txt2tags (http://txt2tags.sf.net) and
  run ./configure again. Thanks! 
@@ -125,7 +127,27 @@ fi
 
 AM_PATH_PYTHON(2.4)
 
+# Attempt to inform user that their pyton installation won't look work
+#   with default prefix (/usr/local)
+USER_PYTHON_PATH=$(python -c "import sys; print sys.path")
+PYTHON_LOCAL=$(echo $USER_PYTHON_PATH | awk -F ',' '{ for (f=1; f<=NF; f++) {print $f}; }' | grep local | tr -d "' ")
 
+if test -z $PYTHON_LOCAL && test x"$prefix" == "xNONE"; then
+    AC_MSG_ERROR([
+
+    ERROR: 
+    
+    It looks like your python installation doesn't look in /usr/local for
+    python modules. tovid installs a few modules on your system, and if 
+    python can't find them, then tovid won't work!
+
+    Please try:  ./configure --prefix=/usr
+
+    to install tovid in a place where python will look for modules. Thanks!
+    
+        -- http://tovid.org
+    ])
+fi
 
 
 # Check to see if this is a svn checkout and set version to revision number
