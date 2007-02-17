@@ -30,7 +30,6 @@ except:
     print "  Fedora: Install 'tkinter'"
     sys.exit()
 
-
 WIDGETS = {
     'showcase':
         (Filename, 'Showcase', 'load', 'Select an image or video file.'),
@@ -974,7 +973,8 @@ class Application (tk.Frame):
     def runBurnCommand(self):
         """Run the burning command"""
         burnCmd = self.getBurnCommand()
-        if app.outfile.outfile.get():
+        outfile = app.outfile.outfile
+        if outfile.get():
             print "The command that would be run is:", burnCmd
             if tkMessageBox.askyesno(message="Burn now ?"):
                 root.withdraw()
@@ -988,7 +988,9 @@ class Application (tk.Frame):
                 root.deiconify()
         else:
             tkMessageBox.showerror("Missing option",
-                                   "Missing a required option:\n The DVD directory.\n('Output file' box on main pane)")
+                                   "DVD directory todisc outfile to burn\n"\
+                                   "('Output file' box on main pane)")
+            blink(outfile.entry)
 
 def setTheme(theme='default'):
     """Set widget styles to match a theme. This must be called before
