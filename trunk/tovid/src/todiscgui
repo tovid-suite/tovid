@@ -176,6 +176,8 @@ WIDGETS = {
         (Optional, Number, 'Burning speed', 0, 52, 'scale'),
     'label':
         (Optional, Text, 'DISC_LABEL\nfor volume ID'),
+    'outputdir':
+        (Text, 'DVD directory'),
     'no-warn':
         (Flag, 'Do not pause at warnings', False),
     'keep-files':
@@ -302,6 +304,7 @@ general_options = [
 #[Burning Options
 burning_options = [
     'spacer',
+#    'outputdir',
     'device',
     'speed',
     'label',
@@ -742,7 +745,10 @@ class Advanced (OptionFrame):
                     burnCmd.add('-%s' % option)
                 elif value:
                     burnCmd.add('-%s' % option, value)
-        burnCmd.add(app.outfile.outfile.get())
+        if not app.outfile.outfile.get():
+            log.warning("No DVD directory selected in the 'Output file' selector")
+        else:
+            burnCmd.add(app.outfile.outfile.get())
 
 ### --------------------------------------------------------------------
 ### Main application window
@@ -959,16 +965,21 @@ class Application (tk.Frame):
     def runBurnCommand(self):
         """Run the burning command"""
         burnCmd = self.getBurnCommand()
-        print burnCmd
-        if tkMessageBox.askyesno(message="Burn now ?"):
-            root.withdraw()
-            try:
-                burnCmd.run()
-            except KeyboardInterrupt:
-                tkMessageBox.showerror(message="todisc was interrupted!")
-            else:
-                tkMessageBox.showinfo(message="burning complete !")
-            root.deiconify()
+        if app.outfile.outfile.get():
+            print "The command that would be run is:", burnCmd
+            if tkMessageBox.askyesno(message="Burn now ?"):
+                root.withdraw()
+                try:
+                    print "Running: ", burnCmd
+                    burnCmd.run()
+                except KeyboardInterrupt:
+                    tkMessageBox.showerror(message="todisc was interrupted!")
+                else:
+                    tkMessageBox.showinfo(message="burning complete !")
+                root.deiconify()
+        else:
+            tkMessageBox.showerror("Missing option",
+                                   "Missing a required option: The DVD directory ('Output file' box on main pane)")
 
 def setTheme(theme='default'):
     """Set widget styles to match a theme. This must be called before
