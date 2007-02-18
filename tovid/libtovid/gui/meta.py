@@ -29,6 +29,8 @@ import tkFileDialog
 import tkColorChooser
 import tkSimpleDialog
 
+log.level = 'debug'
+
 ### --------------------------------------------------------------------
 ### Custom widgets
 ### --------------------------------------------------------------------
@@ -620,31 +622,38 @@ class Application (tk.Tk):
         """
         tk.Tk.__init__(self)
         self.title(title)
-        # TODO: Implement single-panel GUI
-        self.panels = panels or []
+        if isinstance(panels, Panel):
+            self.panels = [panels]
+        else:
+            self.panels = panels or []
         self.tabs = []
         # TODO: Avoid current/last hack somehow?
         self.current = tk.IntVar()
         self.last = 0
 
-    def run(self):
-        """Run the GUI application"""
-        # Draw the tab-switching control widget
-        self.buttons = tk.Frame(self)
-        for index, panel in enumerate(self.panels):
-            button = tk.Radiobutton(self.buttons, text=panel.title, value=index, 
-                                    variable=self.current, indicatoron=0,
-                                    command=self.change_tabs,
-                                    selectcolor='white')
-            button.pack(anchor='nw', side='left')
-        self.buttons.pack(anchor='nw')
+    def draw(self):
+        log.debug("%s panels" % len(self.panels))
+        # Draw the tab-switching control widget if needed
+        if len(self.panels) > 1:
+            self.buttons = tk.Frame(self)
+            for index, panel in enumerate(self.panels):
+                button = tk.Radiobutton(self.buttons,
+                    text=panel.title, value=index, 
+                    variable=self.current, indicatoron=0,
+                    command=self.change_tabs, selectcolor='white')
+                button.pack(anchor='nw', side='left')
+            self.buttons.pack(anchor='nw')
         # Draw each tab's panel
         for panel in self.panels:
             tab = tk.Frame(self)
             panel.draw_in(tab)
             self.tabs.append(tab)
-        # Display the first tab
+        # Draw the first (or only) tab
         self.tabs[0].pack(anchor='ne')
+
+    def run(self):
+        """Run the GUI application"""
+        self.draw()
         self.mainloop()
 
     def change_tabs(self):
