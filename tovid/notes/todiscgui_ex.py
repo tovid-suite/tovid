@@ -1,10 +1,87 @@
 #! /usr/bin/env python
 # todiscgui_ex.py
 
-"""Experimental todisc GUI using only meta.py widgets"""
+"""Experimental todisc GUI using only meta.py widgets.
 
+//Note: This isn't fully implemented yet--I'm writing the docs first.//
+
+This module demonstrates a simplified approach to creating GUIs for
+command-line programs. It's designed so _anyone_ can easily write their
+own GUI, without having any programming experience.
+
+It assumes your GUI is a direct frontend to a command-line program, with
+each command-line option having an associated GUI control widget. Say, if
+your program takes input and output filenames:
+
+    $ tovid -in movie.avi -out movie_encoded
+
+then you can create GUI widgets for those options like this:
+
+    ('in', Filename, "Input filename")
+    ('out', Filename, "Output prefix")
+
+Command-line options are associated with GUI widgets by enclosing a tuple of
+things in parentheses. These have the general format:
+
+    ('option', Metawidget, "Label", ...)
+
+where 'option' is a command-line option (without the leading '-'), Metawidget
+is a class like Filename, Choice, or Number, describing what type of value the
+option sets, and "Label" is the text that should appear next to the GUI widget
+that controls the option's value. Other parameters describe the option,
+its default value, and hints about how to draw the GUI control widget; they
+are specific to the flavor of Metawidget being used.
+
+Related options are grouped in a Panel by providing a panel name, and a
+comma-separated list of option tuples:
+
+    general = Panel("General",
+        ('bgaudio', Filename, "Background audio file"),
+        ('submenus', Flag, "Create submenus"),
+        ('menu-length', Number, "Length of menu (seconds)", 0, 120)
+        )
+
+This will create three GUI widgets in a panel labeled "General": one for typing
+or browsing to a filename, one for enabling or disabling submenus, and another 
+for setting menu length to a number between 0 and 120.
+
+To create the GUI with only this one panel, you can do this:
+
+    app = Application("todisc GUI", 'todisc', general)
+    app.run()
+
+This creates the GUI, draws all the widgets, and will run your command-line
+program at the push of a button.
+
+If your program has a lot of options, one panel may not be enough to hold them
+all without looking cluttered, so you may break them down into multiple Panels,
+which will be shown in the GUI as tabs that you can switch between. Create a
+list of Panels like this:
+
+    panels = [
+        Panel("Thumbnails",
+            ('thumb-mist-color', Color, ...),
+            ('wave', Text, ...)
+        ),
+        Panel("Text and Font",
+            ('menu-font', Font, ...),
+            ('menu-fontsize', Number, ...)
+        )
+    ]
+
+Once you have a panel or list of panels, you can create the GUI and run it
+like this:
+
+    app = Application("todisc GUI", 'todisc', panels)
+    app.run()
+
+
+"""
+
+# Get all the Metawidgets we'll need
 from libtovid.gui.meta import *
 
+# List of Panels (tabs in the GUI)
 panels = [
     Panel("General",
         ('showcase', Filename,
@@ -156,5 +233,6 @@ panels = [
     )
 ]
 
-todiscgui = Application('todisc GUI', panels)
+# Create and run the application
+todiscgui = Application('todisc GUI', 'todisc', panels)
 todiscgui.run()
