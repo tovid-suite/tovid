@@ -6,6 +6,7 @@
 
 __all__ = [
     'Metawidget',
+
     'Choice',
     'Color',
     'Filename',
@@ -14,6 +15,7 @@ __all__ = [
     'Text',
     'List',
     'Number',
+
     'Optional',
     'OptionFrame',
     'PlainLabel',
@@ -459,6 +461,191 @@ class PlainLabel (Metawidget):
         self.label.pack(side='left')
 
 ### --------------------------------------------------------------------
+
+class Tabs (tk.Frame):
+    """A button-style tab bar that switches between several Frames.
+    """
+    def __init__(self, master, labels=None, frames=None):
+        """Create a tab bar with:
+        
+            master: Tkinter widget to hold the Tabs frame
+            labels: List of string labels to put on the tabs
+            frames: List of tk.Frames to switch between (one for each label)
+        """
+        tk.Frame.__init__(self, master)
+        # Enforce the rules
+        if not isinstance(labels, list) or \
+           not isinstance(labels[0], str):
+            raise "labels must be a list of text strings."
+        if not isinstance(frames, list) or \
+           not isinstance(frames[0], tk.Frame):
+            raise "frames must be a list of Tkinter Frames."
+        if len(labels) != len(frames):
+            raise "labels and frames must be the same length."
+        # Save attributes
+        self.labels = labels or []
+        self.frames = frames or []
+        self.selected = tk.IntVar()
+        self.index = 0
+        self.draw()
+    
+    def draw(self):
+        """Draw the tab bar and the first enclosed frame.
+        """
+        # Tkinter configuration common to all tab buttons
+        config = {
+            'variable': self.selected,
+            'command': self.change,
+            'selectcolor': 'white',
+            'indicatoron': 0,
+            'padx': 4, 'pady': 4
+            }
+        # Frame to hold tab buttons
+        self.buttons = tk.Frame(self)
+        # Tab buttons, numbered from 0
+        for index, label in enumerate(self.labels):
+            button = tk.Radiobutton(self.buttons, text=label, value=index,
+                                    **config)
+            button.pack(side='left')
+        self.buttons.pack(anchor='n', side='top')
+        # Draw the first frame
+        # self.frames[0].pack(anchor='n', fill='x')
+
+    def change(self):
+        """Switch to the selected tab's frame.
+        """
+        # Unpack the existing frame
+        self.frames[self.index].pack_forget()
+        # Pack the newly-selected frame
+        selected = self.selected.get()
+        log.debug("TabBar: Showing '%s' tab" % self.labels[selected])
+        self.frames[selected].pack(fill='both')
+        # Remember this tab's index
+        self.index = selected
+
+### --------------------------------------------------------------------
+### GUI interface-definition API
+### --------------------------------------------------------------------
+
+class OptionMetawidget:
+    """A Metawidget that controls a command-line option."""
+    def __init__(self, option, metawidget, *args):
+        """Create an OptionMetawidget.
+        
+            option:     Command-line option name (without the leading '-')
+            metawidget: Metawidget type (Filename, Choice, Flag etc.)
+            *args:      Arguments to the given Metawidget
+        
+        """
+        self.option = option
+        self.metawidget = metawidget
+        self.args = args
+    
+    def get_widget(self, master):
+        """Create and return a Metawidget instance.
+        
+            master: Tkinter widget to use as master
+        """
+        return self.metawidget(master, *self.args)
+
+OM = OptionMetawidget
+
+
+class Panel:
+    def __init__(self, title='', *optdefs):
+        """Create a Panel to hold option-metawidget associations.
+        
+            title:   Title of panel (name shown in tab bar)
+            optdefs: Parenthesized tuples with option name, metawidget name,
+                     and metawidget arguments.
+
+        For example:
+
+            Panel("General",
+                ('bgaudio', Filename, "Background audio file"),
+                ('submenus', Flag, "Create submenus"),
+                ('menu-length', Number, "Length of menu (seconds)", 0, 120)
+                )
+        
+        This creates a panel with three GUI widgets that control command-line
+        options '-bgaudio', '-submenus', and '-menu-length'.
+        """
+        self.title = title
+        self.oms = [] # OptionMetawidget instances
+        for optdef in optdefs:
+            if type(optdef) == tuple:
+                self.oms.append(OptionMetawidget(*optdef))
+            # TODO: Support keywords like 'spacer'
+            else:
+                raise "Panel option definitions must be in tuple form."
+
+    def get_widget(self, master):
+        """Create and return a Frame with Metawidgets packed inside it.
+        
+            master: Tkinter widget to use as master
+        """
+        frame = tk.Frame(master)
+        for om in self.oms:
+            log.debug("Creating widget for '-%s'" % om.option)
+            widget = om.get_widget(frame)
+            widget.pack(anchor='nw', fill='x', expand=True)
+        return frame
+
+### --------------------------------------------------------------------
+    
+class Application:
+    def __init__(self, program, title="Application", panels=None,
+                 width=400, height=600):
+        """Define a GUI application frontend for a command-line program.
+        
+            program: Command-line program that the GUI is a frontend for
+            title:   Title of the GUI application (displayed in the title bar)
+            panels:  Single Panel or list of Panels (groups of widgets). If
+                     panels is a list, a tabbed application is created.
+            width:   Pixel width of application window
+            height:  Pixel height of application window
+
+        After defining the Application, call run() to show/execute it.
+        """
+        self.program = program
+        self.title = title
+        self.panels = panels or []
+        self.width = width
+        self.height = height
+
+    def get_widget(self):
+        """Create and return the application root window.
+        """
+        root = tk.Tk()
+        root.title(self.title)
+        # Main window with fixed width/height
+        window = tk.Frame(root, width=self.width, height=self.height)
+        window.pack()
+        window.pack_propagate(False)
+        # Single-panel application
+        if isinstance(self.panels, Panel):
+            frame = panels.get_widget(window)
+            frame.pack()
+        # Multi-panel (tabbed) application
+        elif isinstance(self.panels, list):
+            labels = [panel.title for panel in self.panels]
+            frames = [panel.get_widget(window) for panel in self.panels]
+            tabs = Tabs(window, labels, frames)
+            tabs.pack()
+            frames[0].pack(fill='x')
+        return root
+
+    def run(self):
+        """Run the GUI application"""
+        root = self.get_widget()
+        # Enter the main event handler
+        root.mainloop()
+        # TODO: Interrupt handling
+
+
+
+
+### --------------------------------------------------------------------
 ### Not exported yet
 ### --------------------------------------------------------------------
 
@@ -587,84 +774,4 @@ class TextList (DragList):
         log.debug("Setting title to '%s'" % newtitle)
         self.listbox.delete(self.curindex)
         self.listbox.insert(self.curindex, newtitle)
-
-### --------------------------------------------------------------------
-
-# TODO: Cleanup/document these
-
-class Panel:
-    def __init__(self, title='', *optdefs):
-        self.title = title
-        self.optdefs = optdefs
-        self.widgets = {}
-
-    def create_widget(self, optdef, master):
-        """Create and return a widget defined by the given option
-        definition tuple, with the given master."""
-        option = optdef[0]
-        klass = optdef[1]
-        args = optdef[2:]
-        self.widgets[option] = klass(master, *args)
-        return self.widgets[option]
-
-    def draw_in(self, master):
-        """Draw all panel widgets in the given master"""
-        for optdef in self.optdefs:
-            widget = self.create_widget(optdef, master)
-            widget.pack(anchor='nw', fill='x', expand=True)
-
-### --------------------------------------------------------------------
-
-class Application (tk.Tk):
-    def __init__(self, program, title="Application", panels=None):
-        """Create a GUI application for the given program, with the given
-        title, and a given panel or list or panels.
-        """
-        tk.Tk.__init__(self)
-        self.title(title)
-        if isinstance(panels, Panel):
-            self.panels = [panels]
-        else:
-            self.panels = panels or []
-        self.tabs = []
-        # TODO: Avoid current/last hack somehow?
-        self.current = tk.IntVar()
-        self.last = 0
-
-    def draw(self):
-        log.debug("%s panels" % len(self.panels))
-        self.frame = tk.Frame(self, width=400, height=600)
-        self.frame.pack()
-        # Maintain size
-        self.frame.pack_propagate(False)
-        # Draw the tab-switching control widget if needed
-        if len(self.panels) > 1:
-            self.buttons = tk.Frame(self.frame)
-            for index, panel in enumerate(self.panels):
-                button = tk.Radiobutton(self.buttons,
-                    text=panel.title, value=index, 
-                    variable=self.current, indicatoron=0,
-                    command=self.change_tabs, selectcolor='white',
-                    padx=4, pady=4)
-                button.pack(anchor='nw', side='left')
-            self.buttons.pack(anchor='nw')
-        # Draw each tab's panel
-        for panel in self.panels:
-            tab = tk.Frame(self.frame)
-            panel.draw_in(tab)
-            self.tabs.append(tab)
-        # Draw the first (or only) tab
-        self.tabs[0].pack(anchor='nw', fill='both')
-
-    def run(self):
-        """Run the GUI application"""
-        self.draw()
-        self.mainloop()
-
-    def change_tabs(self):
-        """Switch to the selected tab panel"""
-        index = self.current.get()
-        self.tabs[self.last].pack_forget()
-        self.tabs[index].pack(anchor='nw', fill='both')
-        self.last = index
 
