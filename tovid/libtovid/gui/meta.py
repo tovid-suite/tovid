@@ -611,7 +611,7 @@ class Panel:
         """Draw all panel widgets in the given master"""
         for optdef in self.optdefs:
             widget = self.create_widget(optdef, master)
-            widget.pack(anchor='nw')
+            widget.pack(anchor='nw', fill='x', expand=True)
 
 ### --------------------------------------------------------------------
 
@@ -633,9 +633,13 @@ class Application (tk.Tk):
 
     def draw(self):
         log.debug("%s panels" % len(self.panels))
+        self.frame = tk.Frame(self, width=400, height=600)
+        self.frame.pack()
+        # Maintain size
+        self.frame.pack_propagate(False)
         # Draw the tab-switching control widget if needed
         if len(self.panels) > 1:
-            self.buttons = tk.Frame(self)
+            self.buttons = tk.Frame(self.frame)
             for index, panel in enumerate(self.panels):
                 button = tk.Radiobutton(self.buttons,
                     text=panel.title, value=index, 
@@ -645,11 +649,11 @@ class Application (tk.Tk):
             self.buttons.pack(anchor='nw')
         # Draw each tab's panel
         for panel in self.panels:
-            tab = tk.Frame(self)
+            tab = tk.Frame(self.frame)
             panel.draw_in(tab)
             self.tabs.append(tab)
         # Draw the first (or only) tab
-        self.tabs[0].pack(anchor='ne')
+        self.tabs[0].pack(anchor='nw', fill='both')
 
     def run(self):
         """Run the GUI application"""
@@ -660,6 +664,6 @@ class Application (tk.Tk):
         """Switch to the selected tab panel"""
         index = self.current.get()
         self.tabs[self.last].pack_forget()
-        self.tabs[index].pack(anchor='ne')
+        self.tabs[index].pack(anchor='nw', fill='both')
         self.last = index
 
