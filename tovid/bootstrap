@@ -21,13 +21,15 @@
 
 # Test for good automake -- the no AM_PYTHON error
 # tovid needs automake 1.10
-AM_VERSION=$(automake --version | head -n 1 | sed 's/[a-zA-Z ()]//g')
-AM_110=$(type -a automake-1.10 2>>/dev/null | awk '{print $3}')
+AC_VERSION=$(aclocal --version | head -n 1 | sed 's/[a-zA-Z ()]//g')
+AC_110=$(type -a aclocal-1.10 2>>/dev/null | awk '{print $3}')
 
-if test "$AM_VERSION" == "1.10"; then
+if test "$AC_VERSION" == "1.10"; then
+    ACLOCAL=aclocal
     AUTOMAKE=automake
-elif test -n "$AM_110"; then
-    AUTOMAKE=automake-1.10
+elif test -n "$ACM_110"; then
+    ACLOCAL=aclocal-1.10
+    AUTOMAKE=aclocal-1.10
 else
     echo "I couldn't find automake-1.10 on your system. Is it installed?"
     echo "I need automake-1.10 to generate ./configure..."
@@ -59,7 +61,7 @@ fi
 rm -rvf "autom4te.cache"
 rm -rvf aclocal.m4 config.log config.status configure Makefile Makefile.in
 
-if aclocal \
+if $ACLOCAL \
    && $AUTOMAKE --gnu --add-missing \
    && autoconf
 then
