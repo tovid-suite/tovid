@@ -569,8 +569,11 @@ class OptionMetawidget:
         
             master: Tkinter widget to use as master
         """
-        # Required widget or flag; always shown
-        if self.args[0] == 'required' or self.metawidget == Flag:
+        # Required widget, always shown
+        if self.args[0] == 'required':
+            return self.metawidget(master, *self.args[1:])
+        # Flag widget, always shown
+        elif self.metawidget == Flag:
             return self.metawidget(master, *self.args)
         # Optional widget, may be enabled/disabled
         else:
