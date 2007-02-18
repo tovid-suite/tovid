@@ -204,7 +204,7 @@ class Text (Metawidget):
         Metawidget.__init__(self, master, str)
         self.variable.set(default)
         # Create and pack widgets
-        self.label = tk.Label(self, text=label, justify=tk.LEFT)
+        self.label = tk.Label(self, text=label, justify='left')
         self.entry = tk.Entry(self, textvariable=self.variable)
         self.label.pack(side='left')
         self.entry.pack(side='left', fill='x', expand=True)
@@ -614,9 +614,13 @@ class Panel:
 ### --------------------------------------------------------------------
 
 class Application (tk.Tk):
-    def __init__(self, title="Application", panels=None):
+    def __init__(self, program, title="Application", panels=None):
+        """Create a GUI application for the given program, with the given
+        title, and a given panel or list or panels.
+        """
         tk.Tk.__init__(self)
         self.title(title)
+        # TODO: Implement single-panel GUI
         self.panels = panels or []
         self.tabs = []
         # TODO: Avoid current/last hack somehow?
