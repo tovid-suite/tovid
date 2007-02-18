@@ -96,12 +96,14 @@ class Flag (Metawidget):
     def __init__(self,
                  master=None,
                  label="Debug",
-                 default=False):
+                 default=False,
+                 required=False):
         """Create a Flag widget with the given label and default value.
 
             master:   Tkinter widget that will contain this Flag
             label:    Text label for the flag
             default:  Default value (True or False)
+            required: Required option (True or False)
         """
         Metawidget.__init__(self, master, bool)
         self.variable.set(default)
@@ -118,7 +120,8 @@ class Choice (Metawidget):
                  master=None,
                  label="Choices",
                  choices='A|B',
-                 default=None):
+                 default=None,
+                 required=False):
         """Initialize Choice widget with the given label and list of choices.
 
             master:   Tkinter widget that will contain this Choice
@@ -126,6 +129,7 @@ class Choice (Metawidget):
             choices:  Available choices, in string form: 'one|two|three'
                       or list form: ['one', 'two', 'three']
             default:  Default choice, or None to use first choice in list
+            required: Required option (True or False)
         """
         # TODO: Allow alternative choice styles (listbox, combobox?)
         Metawidget.__init__(self, master, str)
@@ -155,7 +159,8 @@ class Number (Metawidget):
                  min=1,
                  max=10,
                  style='spin',
-                 default=None):
+                 default=None,
+                 required=False):
         """Create a number-setting widget.
         
             master:   Tkinter widget that will contain this Number
@@ -163,6 +168,7 @@ class Number (Metawidget):
             min, max: Range of allowable numbers (inclusive)
             style:    'spin' for a spinbox, or 'scale' for a slider
             default:  Default value, or None to use minimum
+            required: Required option (True or False)
         """
         # TODO: Multiple styles (entry, spinbox, scale)
         Metawidget.__init__(self, master, int)
@@ -204,7 +210,13 @@ class Text (Metawidget):
     def __init__(self,
                  master=None,
                  label="Text",
-                 default=''):
+                 default='',
+                 required=False):
+        """
+            master:   Tkinter widget that will contain this Text
+            label:    Label for the text
+            default:  Default value of text widget
+        """
         Metawidget.__init__(self, master, str)
         self.variable.set(default)
         # Create and pack widgets
@@ -220,7 +232,8 @@ class List (Text):
     def __init__(self,
                  master=None,
                  label="List",
-                 default=''):
+                 default='',
+                 required=False):
         Text.__init__(self, master, label, default)
 
     def get(self):
@@ -243,7 +256,8 @@ class Filename (Metawidget):
                  label='Filename',
                  type='load',
                  desc='Select a file to load',
-                 default=''):
+                 default='',
+                 required=False):
         """Create a Filename with label, text entry, and browse button.
         
             master:  Tkinter widget that will contain the FileEntry
@@ -284,7 +298,8 @@ class Color (Metawidget):
     def __init__(self,
                  master=None,
                  label="Color",
-                 default=''):
+                 default='',
+                 required=False):
         """Create a widget that opens a color-chooser dialog.
         
             master:  Tkinter widget that will contain the ColorPicker
@@ -335,7 +350,11 @@ class FontChooser (tkSimpleDialog.Dialog):
 
 class Font (Metawidget):
     """A font selector widget"""
-    def __init__(self, master=None, label='Font', default='Helvetica'):
+    def __init__(self,
+                 master=None,
+                 label='Font',
+                 default='Helvetica',
+                 required=False):
         """Create a widget that opens a font chooser dialog.
         
             master:  Tkinter widget that will contain this Font
@@ -534,8 +553,12 @@ class OptionMetawidget:
         
             option:     Command-line option name (without the leading '-')
             metawidget: Metawidget type (Filename, Choice, Flag etc.)
-            *args:      Arguments to the given Metawidget
-        
+            *args:      Arguments to the given Metawidget.
+
+        The 'required' keyword may be passed as the first item in args;
+        if present, the widget is drawn always-enabled (representing a
+        mandatory command-line argument). Otherwise, the widget is drawn
+        initially disabled, with a checkbox to enable it.
         """
         self.option = option
         self.metawidget = metawidget
@@ -546,7 +569,14 @@ class OptionMetawidget:
         
             master: Tkinter widget to use as master
         """
-        return self.metawidget(master, *self.args)
+        # Required widget or flag; always shown
+        if self.args[0] == 'required' or self.metawidget == Flag:
+            return self.metawidget(master, *self.args)
+        # Optional widget, may be enabled/disabled
+        else:
+            label = self.args[0]
+            args = self.args[1:]
+            return Optional(master, self.metawidget, label, *args)
 
 OM = OptionMetawidget
 
