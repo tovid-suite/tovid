@@ -21,13 +21,13 @@
 
 # Test for good automake -- the no AM_PYTHON error
 # tovid needs automake 1.10
-AC_VERSION=$(aclocal --version | head -n 1 | sed 's/[a-zA-Z ()]//g')
-AC_110=$(type -a aclocal-1.10 2>>/dev/null | awk '{print $3}')
+AL_VERSION=$(aclocal --version | head -n 1 | sed 's/[a-zA-Z ()]//g')
+AL_110=$(type -a aclocal-1.10 2>>/dev/null | awk '{print $3}')
 
-if test "$AC_VERSION" == "1.10"; then
+if test "$AL_VERSION" == "1.10"; then
     ACLOCAL=aclocal
     AUTOMAKE=automake
-elif test -n "$ACM_110"; then
+elif test -n "$AL_110"; then
     ACLOCAL=aclocal-1.10
     AUTOMAKE=aclocal-1.10
 else
