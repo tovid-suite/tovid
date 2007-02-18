@@ -644,7 +644,8 @@ class Application (tk.Tk):
                 button = tk.Radiobutton(self.buttons,
                     text=panel.title, value=index, 
                     variable=self.current, indicatoron=0,
-                    command=self.change_tabs, selectcolor='white')
+                    command=self.change_tabs, selectcolor='white',
+                    padx=4, pady=4)
                 button.pack(anchor='nw', side='left')
             self.buttons.pack(anchor='nw')
         # Draw each tab's panel
