@@ -24,9 +24,9 @@
 AM_VERSION=$(automake --version | head -n 1 | sed 's/[a-zA-Z ()]//g')
 AM_110=$(type -a automake-1.10 2>>/dev/null | awk '{print $3}')
 
-if test $AM_VERSION == "1.10"; then
+if test "$AM_VERSION" == "1.10"; then
     AUTOMAKE=automake
-elif test -n $AM_110; then
+elif test -n "$AM_110"; then
     AUTOMAKE=automake-1.10
 else
     echo "I couldn't find automake-1.10 on your system. Is it installed?"
