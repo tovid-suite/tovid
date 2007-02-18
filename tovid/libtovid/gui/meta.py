@@ -25,6 +25,7 @@ __all__ = [
 import os
 import shlex
 from libtovid import log
+from libtovid.cli import Command
 # Tkinter
 import Tkinter as tk
 import tkFileDialog
@@ -581,6 +582,26 @@ class OptionMetawidget:
             args = self.args[1:]
             return Optional(master, self.metawidget, label, *args)
 
+    def get_option(self):
+        """Return a list of arguments for passing this command-line option.
+        """
+        args = []
+        value = self.metawidget.get()
+        # Boolean values control a flag
+        if value == True:
+            args.append("-%s" % self.option)
+        # Others use '-option value'
+        elif value:
+            args.append("-%s" % self.option)
+            print "type(value):", type(value)
+            # List of arguments
+            if type(value) == list:
+                args.append(*value)
+            # Single argument
+            else:
+                args.append(value)
+        return args
+
 OM = OptionMetawidget
 
 
@@ -624,6 +645,14 @@ class Panel:
             widget.pack(anchor='nw', fill='x', expand=True)
         return frame
 
+    def get_options(self):
+        """Return a list of all command-line options from contained widgets.
+        """
+        args = []
+        for om in self.oms:
+            args += om.get_options()
+        return args
+
 ### --------------------------------------------------------------------
     
 class Application:
@@ -649,6 +678,7 @@ class Application:
     def get_widget(self):
         """Create and return the application root window.
         """
+        # TODO: Menus, status bar, and an "execute" button
         root = tk.Tk()
         root.title(self.title)
         # Main window with fixed width/height
@@ -667,6 +697,26 @@ class Application:
             tabs.pack()
             frames[0].pack(fill='x')
         return root
+
+    def get_options(self):
+        """Get a list of all command-line arguments from all panels.
+        """
+        if isinstance(self.panels, Panel):
+            return self.panels.get_options()
+        elif isinstance(self.panels, list):
+            args = []
+            for panel in self.panels:
+                args += panel.get_options()
+            return args
+
+    def execute(self):
+        """Run the program with all the supplied options.
+        """
+        # TODO: Create a widget that calls this handler
+        args = self.get_options()
+        command = Command(self.program, *args)
+        print "Running command:", str(command)
+        print "(not really)"
 
     def run(self):
         """Run the GUI application"""
