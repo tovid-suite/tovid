@@ -444,7 +444,7 @@ class Format (tk.Frame):
         tk.Frame.__init__(self, master)
         self.format = Choice(self, "Disc format", ['DVD', 'SVCD'])
         self.format.pack()
-        
+
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
         format = str(self.format.get()).lower()
@@ -528,20 +528,20 @@ class FileList (tk.Frame):
         """Event handler when scrollbar is moved."""
         apply(self.lstFiles.yview, args)
         apply(self.lstTitles.yview, args)
-        
+
     def selectListitem(self, event):
         """Event handler when a filename or title in the list is selected.
         Set the title box for editing and change the mouse cursor."""
         self.curindex = self.lstFiles.nearest(event.y)
         self.curtitle.set(self.lstTitles.get(self.curindex))
         self.config(cursor="double_arrow")
-    
+
     def onDrop(self, event):
         """Event handler called when an item is "dropped" (mouse-release).
         Change the mouse cursor back to the default arrow.
         """
         self.config(cursor="")
-    
+
     def dragListitem(self, event):
         """Event handler to move a file/title to another position in the list"""
         loc = self.lstFiles.nearest(event.y)
@@ -560,7 +560,7 @@ class FileList (tk.Frame):
         log.debug("Setting title to '%s'" % newtitle)
         self.lstTitles.delete(self.curindex)
         self.lstTitles.insert(self.curindex, newtitle)
-        
+
     def addFiles(self):
         """Event handler for adding files to the list box"""
         files = tkFileDialog.askopenfilenames(parent=self, title='Add files')
@@ -761,7 +761,6 @@ class Advanced (OptionFrame):
     def setBurnOptions(self, burnCmd):
         """Add relevant burning options to the given Command."""
         disc_format = app.format.getFormat()
-        print disc_format
         outfile = app.outfile.outfile
         outfile = outfile.get()
         for option, widget in self.widgets.items():
@@ -888,7 +887,7 @@ class Application (tk.Frame):
 
         # create more pulldown menus
         editmenu = tk.Menu(menubar, tearoff=1)
-        
+
         editmenu.add_separator()
         editmenu.add_command(label="Menu style options",
                              command=lambda:self.showitem(menu_options, "menu"))
@@ -967,7 +966,6 @@ class Application (tk.Frame):
     def getBurnCommand(self):
         """Return the complete burning command."""
         disc_format = self.format.getFormat()
-        print "We are making a", disc_format
         if disc_format == 'svcd':
             burn_program='makevcd'
         elif disc_format == 'dvd':
@@ -975,7 +973,7 @@ class Application (tk.Frame):
         burnCmd = Command(burn_program)
         self.fraAdvBurn.setBurnOptions(burnCmd)
         return burnCmd
-        
+
     def runCommand(self):
         """Run the todisc command."""
         try:
@@ -1004,8 +1002,9 @@ class Application (tk.Frame):
         """Run the burning command"""
         burnCmd = self.getBurnCommand()
         outfile = app.outfile.outfile
+        log.info("Running command:")
+        log.info(burnCmd)
         if outfile.get():
-            print "The command that would be run is:", burnCmd
             if tkMessageBox.askyesno(message="Burn now ?"):
                 root.withdraw()
                 try:
@@ -1050,7 +1049,7 @@ def setTheme(theme='default'):
     root.option_add("*Spinbox.background", 'white')
     root.option_add("*Entry.background", 'white')
     root.option_add("*Listbox.background", 'white')
-    
+
 ### --------------------------------------------------------------------
 ### Entry point
 ### --------------------------------------------------------------------
