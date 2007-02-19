@@ -538,7 +538,6 @@ class Tabs (tk.Frame):
         self.frames[self.index].pack_forget()
         # Pack the newly-selected frame
         selected = self.selected.get()
-        log.debug("TabBar: Showing '%s' tab" % self.labels[selected])
         self.frames[selected].pack(fill='both')
         # Remember this tab's index
         self.index = selected
@@ -564,6 +563,7 @@ class OptionMetawidget:
         self.option = option
         self.metawidget = metawidget
         self.args = args
+        self.widget = None
     
     def get_widget(self, master):
         """Create and return a Metawidget instance.
@@ -572,21 +572,25 @@ class OptionMetawidget:
         """
         # Required widget, always shown
         if self.args[0] == 'required':
-            return self.metawidget(master, *self.args[1:])
+            self.widget = self.metawidget(master, *self.args[1:])
         # Flag widget, always shown
         elif self.metawidget == Flag:
-            return self.metawidget(master, *self.args)
+            self.widget = self.metawidget(master, *self.args)
         # Optional widget, may be enabled/disabled
         else:
             label = self.args[0]
             args = self.args[1:]
-            return Optional(master, self.metawidget, label, *args)
+            self.widget = Optional(master, self.metawidget, label, *args)
+        return self.widget
 
-    def get_option(self):
+    def get_options(self):
         """Return a list of arguments for passing this command-line option.
+        get_widget must be called before this function.
         """
+        if not self.widget:
+            raise "Must call get_widget() before calling get_options()"
         args = []
-        value = self.metawidget.get()
+        value = self.widget.get()
         # Boolean values control a flag
         if value == True:
             args.append("-%s" % self.option)
@@ -640,7 +644,6 @@ class Panel:
         """
         frame = tk.Frame(master)
         for om in self.oms:
-            log.debug("Creating widget for '-%s'" % om.option)
             widget = om.get_widget(frame)
             widget.pack(anchor='nw', fill='x', expand=True)
         return frame
@@ -675,7 +678,29 @@ class Application:
         self.width = width
         self.height = height
 
-    def get_widget(self):
+    def draw_menu(self, root):
+        """Draw an application menu in the given root window.
+        """
+        menu = tk.Menu(root)
+        # File menu
+        filemenu = tk.Menu(menu, tearoff=0)
+        filemenu.add_separator()
+        filemenu.add_command(label="Exit", command=root.quit)
+        menu.add_cascade(label="File", menu=filemenu)
+        # View menu
+        viewmenu = tk.Menu(menu, tearoff=0)
+        viewmenu.add_separator()
+        menu.add_cascade(label="View", menu=viewmenu)
+        # Run menu
+        runmenu = tk.Menu(menu, tearoff=0)
+        runmenu.add_command(label="Run %s now" % self.program,
+                            command=self.execute)
+        menu.add_cascade(label="Run", menu=runmenu)
+        # Add the menu to the root window
+        root.config(menu=menu)
+
+
+    def get_root(self):
         """Create and return the application root window.
         """
         # TODO: Menus, status bar, and an "execute" button
@@ -720,7 +745,8 @@ class Application:
 
     def run(self):
         """Run the GUI application"""
-        root = self.get_widget()
+        root = self.get_root()
+        self.draw_menu(root)
         # Enter the main event handler
         root.mainloop()
         # TODO: Interrupt handling
