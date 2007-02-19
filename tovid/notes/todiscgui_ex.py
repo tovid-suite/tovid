@@ -243,5 +243,5 @@ panels = [
 ]
 
 # Create and run the application
-todiscgui = Application('todisc GUI', 'todisc', panels)
+todiscgui = Application('todisc', 'todisc GUI', panels)
 todiscgui.run()
