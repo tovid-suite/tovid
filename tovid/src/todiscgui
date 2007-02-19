@@ -342,17 +342,23 @@ def getWidget(master, option):
     args = WIDGETS[option][1:]
     return widget(master, *args)
 
-def pretty_todisc(command):
+def pretty_todisc(command, type='default'):
     """Return a prettified version of a given todisc Command."""
     assert isinstance(command, Command)
     result = ['%s' % command.args[0]]
     opts = command.args[1:]
     while opts:
         arg = str(opts.pop(0))
-        if arg.startswith('-') and not re.match('^[-+]?[0-9]+$', arg):
-            result.append(arg)
+        if type == 'burn':
+            if arg == app.outfile.outfile.get() or arg.startswith('-'):
+                result.append(arg)
+            else:
+                result[-1] += ' ' + arg
         else:
-            result[-1] += ' ' + arg
+            if arg.startswith('-') and not re.match('^[-+]?[0-9]+$', arg):
+                result.append(arg)
+            else:
+                result[-1] += ' ' + arg
     return '\n'.join(result)
 
 def blink(widget):
@@ -1002,8 +1008,18 @@ class Application (tk.Frame):
         """Run the burning command"""
         burnCmd = self.getBurnCommand()
         outfile = app.outfile.outfile
-        log.info("Running command:")
-        log.info(burnCmd)
+        
+#        log.info("Running command:")
+#        log.info(burnCmd)
+        format = self.format.getFormat()
+        if format == 'dvd':
+            burnProgram = 'makedvd'
+        elif format == 'svcd':
+            burnProgram = 'makevcd'
+        pretty_burnCmd = pretty_todisc(burnCmd, 'burn')
+        Text = "Running command:\n" + burnProgram
+        log.info(Text)
+        log.info(pretty_burnCmd)
         if outfile.get():
             if tkMessageBox.askyesno(message="Burn now ?"):
                 root.withdraw()
