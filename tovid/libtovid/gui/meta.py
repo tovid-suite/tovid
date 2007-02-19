@@ -699,7 +699,6 @@ class Application:
         # Add the menu to the root window
         root.config(menu=menu)
 
-
     def get_root(self):
         """Create and return the application root window.
         """
@@ -712,7 +711,7 @@ class Application:
         window.pack_propagate(False)
         # Single-panel application
         if isinstance(self.panels, Panel):
-            frame = panels.get_widget(window)
+            frame = self.panels.get_widget(window)
             frame.pack()
         # Multi-panel (tabbed) application
         elif isinstance(self.panels, list):
