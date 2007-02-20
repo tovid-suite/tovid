@@ -404,7 +404,7 @@ class MenuChoice (tk.Frame):
                                 "Select an image or video file.")
         self.filename.pack(anchor='w', fill='x', expand=True)
 
-        self.colsize = Number(group, "Textmenu column size", 2, 15)
+        self.colsize = Number(group, "Textmenu column break", 2, 15)
         self.colsize.set(15)
         self.colsize.pack(anchor='w')
 
@@ -1016,11 +1016,11 @@ class Application (tk.Frame):
             burnProgram = 'makedvd'
         elif format == 'svcd':
             burnProgram = 'makevcd'
-        pretty_burnCmd = pretty_todisc(burnCmd, 'burn')
         Text = "Running command:\n" + burnProgram
-        log.info(Text)
-        log.info(pretty_burnCmd)
         if outfile.get():
+            pretty_burnCmd = pretty_todisc(burnCmd, 'burn')
+            log.info(Text)
+            log.info(pretty_burnCmd)
             if tkMessageBox.askyesno(message="Burn now ?"):
                 root.withdraw()
                 try:
