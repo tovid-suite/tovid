@@ -25,4 +25,5 @@ __all__ = [\
     "meta",
     "options", 
     "panels",
+    "tooltip",
     "util"]
