@@ -581,7 +581,6 @@ class OptionControl:
         # Others use '-option value'
         elif value:
             args.append("-%s" % self.option)
-            print "type(value):", type(value)
             # List of arguments
             if type(value) == list:
                 args.append(*value)
