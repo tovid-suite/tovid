@@ -9,7 +9,6 @@
 FontChooser
 Tabs
 Optional
-OptionFrame
 OptiomControl
 Panel
 Application
@@ -31,7 +30,6 @@ __all__ = [
     # Other helper frames
     'Tabs',
     'Optional',
-    'OptionFrame',
     'PlainLabel',
     # GUI creation interface
     'OptionControl',
@@ -59,9 +57,14 @@ log.level = 'debug'
 class Control (tk.Frame):
     """A widget that controls a value.
 
-    A Control may contain any number of other widgets, and store a
-    single variable value. Presumably, a subclass will link self.variable
-    to one or more control widgets, via the variable/textvariable attribute.
+    A Control is a specialized GUI widget that stores a variable value.
+    The value is accessed via get() and set() methods.
+    
+    Control subclasses may have any number of sub-widgets such as labels,
+    buttons or entry boxes; one of the sub-widgets should be linked to the
+    controlled variable via an option like:
+    
+        entry = Entry(self, textvariable=self.variable)
     
     See the Control subclasses below for examples of how self.variable,
     get() and set() are used.
@@ -131,7 +134,7 @@ class Flag (Control):
             help:     Help text to show in a tooltip
         """
         Control.__init__(self, master, bool, help)
-        self.variable.set(default)
+        self.set(default)
         # Create and pack widgets
         self.check = tk.Checkbutton(self, text=label, variable=self.variable)
         self.check.pack(side='left')
@@ -156,15 +159,12 @@ class Choice (Control):
             choices:  Available choices, in string form: 'one|two|three'
                       or list form: ['one', 'two', 'three']
         """
-        # TODO: Allow alternative choice styles (listbox, combobox?)
         Control.__init__(self, master, str, help)
         # If choices is a string, split on '|'
         if type(choices) == str:
             choices = choices.split('|')
-        # Use first choice if default wasn't provided
-        if not default:
-            default = choices[0]
-        self.variable.set(default)
+        # Use first choice if no default was provided
+        self.set(default or choices[0])
         # Create and pack widgets
         self.label = tk.Label(self, text=label)
         self.label.pack(side='left')
@@ -198,11 +198,11 @@ class Number (Control):
         """
         # TODO: Multiple styles (entry, spinbox, scale)
         Control.__init__(self, master, int, help)
-        self.style = style
         # Use min if default wasn't provided
         if default is None:
             default = min
-        self.variable.set(default)
+        self.set(default)
+        self.style = style
         # Create and pack widgets
         self.label = tk.Label(self, name='label', text=label)
         self.label.pack(side='left')
@@ -245,7 +245,7 @@ class Text (Control):
             help:     Help text to show in a tooltip
         """
         Control.__init__(self, master, str, help)
-        self.variable.set(default)
+        self.set(default)
         # Create and pack widgets
         self.label = tk.Label(self, text=label, justify='left')
         self.entry = tk.Entry(self, textvariable=self.variable)
@@ -296,7 +296,7 @@ class Filename (Control):
                      browser dialog)
         """
         Control.__init__(self, master, str, help)
-        self.variable.set(default)
+        self.set(default)
         self.type = type
         self.desc = desc
         # Create and pack widgets
@@ -336,7 +336,7 @@ class Color (Control):
             help:    Help text to show in a tooltip
         """
         Control.__init__(self, master, str, help)
-        self.variable.set(default)
+        self.set(default)
         # Create and pack widgets
         self.label = tk.Label(self, text=label)
         self.button = tk.Button(self, text="None", command=self.change)
@@ -392,12 +392,12 @@ class Font (Control):
             help:    Help text to show in a tooltip
         """
         Control.__init__(self, master, str, help)
+        self.set(default)
         self.label = tk.Label(self, text=label)
         self.label.pack(side='left')
         self.button = tk.Button(self, textvariable=self.variable,
                                 command=self.choose)
         self.button.pack(side='left', padx=8)
-        self.variable.set(default)
 
     def choose(self):
         """Open a font chooser to select a font."""
@@ -451,53 +451,6 @@ class Optional (tk.Frame):
 
 ### --------------------------------------------------------------------
 
-# Deprecated
-class OptionFrame (tk.Frame):
-    """A Frame containing Controls that control command-line options.
-    """
-    def __init__(self, master=None):
-        """Create an OptionFrame with the given master and control widgets.
-
-            master:  Tkinter widget that will contain this OptionFrame
-            args:    Positional arguments to pass to Frame constructor
-            kwargs:  Keyword arguments to pass to Frame constructor
-        """
-        tk.Frame.__init__(self, master, *args, **kwargs)
-        self.controls = {}
-
-    def add(self, option, widget):
-        """Add a widget controlling the given option.
-        """
-        assert isinstance(widget, tk.Widget)
-        self.controls[option] = widget
-        
-    def get(self, option):
-        """Get the value of the given option from its associated widget.
-        """
-        return self.controls[option].get()
-
-    def set(self, option, value):
-        """Set the value of the widget associated with the given option.
-        """
-        self.controls[option].set(value)
-
-    def arglist(self):
-        """Return a list of command-line arguments for all options.
-        """
-        args = []
-        for option, widget in self.controls.items():
-            value = widget.get()
-            # Boolean values control a flag
-            if value == True:
-                args.append("-%s" % option)
-            # All others use '-option value'
-            elif value:
-                args.append("-%s" % option)
-                args.append(value)
-        return args
-
-### --------------------------------------------------------------------
-
 class PlainLabel (Control):
     """A plain label or spacer widget"""
     def __init__(self,
@@ -505,7 +458,7 @@ class PlainLabel (Control):
                  label="Text",
                  default=''):
         Control.__init__(self, master, str)
-        self.variable.set(default)
+        self.set(default)
         # Create and pack widgets
         self.label = tk.Label(self, text=label)
         self.label.pack(side='left')
@@ -637,6 +590,7 @@ class OptionControl:
                 args.append(value)
         return args
 
+### --------------------------------------------------------------------
 
 class Panel:
     def __init__(self, title='', *optdefs):
@@ -651,7 +605,7 @@ class Panel:
             Panel("General",
                 ('bgaudio', Filename, "Background audio file"),
                 ('submenus', Flag, "Create submenus"),
-                ('menu-length', Number, "Length of menu (seconds)", 0, 120)
+                ('menu-length', Number, "Length of menu (seconds)")
                 )
         
         This creates a panel with three GUI widgets that control command-line
