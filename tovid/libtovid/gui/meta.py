@@ -4,9 +4,20 @@
 """This module defines several Tkinter "meta widgets".
 """
 
-__all__ = [
-    'Metawidget',
+"""Things that aren't Controls:
 
+FontChooser
+Tabs
+Optional
+OptionFrame
+OptiomControl
+Panel
+Application
+"""
+
+__all__ = [
+    'Control',
+    # Control subclasses
     'Choice',
     'Color',
     'Filename',
@@ -15,10 +26,15 @@ __all__ = [
     'Text',
     'List',
     'Number',
-
+    'FileList',
+    'TextList',
+    # Other helper frames
+    'Tabs',
     'Optional',
     'OptionFrame',
     'PlainLabel',
+    # GUI creation interface
+    'OptionControl',
     'Panel',
     'Application']
 
@@ -28,9 +44,11 @@ from libtovid import log
 from libtovid.cli import Command
 # Tkinter
 import Tkinter as tk
+import Tix
 import tkFileDialog
 import tkColorChooser
 import tkSimpleDialog
+from libtovid.gui.tooltip import ToolTip
 
 log.level = 'debug'
 
@@ -38,21 +56,22 @@ log.level = 'debug'
 ### Custom widgets
 ### --------------------------------------------------------------------
 
-class Metawidget (tk.Frame):
-    """A base class for extended special-purpose widgets.
+class Control (tk.Frame):
+    """A widget that controls a value.
 
-    A Metawidget may contain any number of other widgets, and store a
+    A Control may contain any number of other widgets, and store a
     single variable value. Presumably, a subclass will link self.variable
     to one or more control widgets, via the variable/textvariable attribute.
     
-    See the Metawidget subclasses below for examples of how self.variable,
+    See the Control subclasses below for examples of how self.variable,
     get() and set() are used.
     """
-    def __init__(self, master=None, vartype=str):
-        """Create a Metawidget with the given master and variable type.
+    def __init__(self, master=None, vartype=str, help=''):
+        """Create a Control with the given master and variable type.
 
-            master:   Tkinter widget that will contain this Metawidget
+            master:   Tkinter widget that will contain this Control
             vartype:  Type of stored variable (str, bool, int, float, list)
+            help:     Help text to show in a tooltip
         """
         tk.Frame.__init__(self, master)
         vartypes = {
@@ -67,13 +86,16 @@ class Metawidget (tk.Frame):
         # Or use a generic Variable
         else:
             self.variable = tk.Variable()
+        # Create tooltip if necessary
+        if help != '':
+            self.tooltip = ToolTip(self, text=help, delay=1000)
 
     def get(self):
-        """Return the value of the Metawidget's variable."""
+        """Return the value of the Control's variable."""
         return self.variable.get()
 
     def set(self, value):
-        """Set the Metawidget's variable to the given value."""
+        """Set the Control's variable to the given value."""
         self.variable.set(value)
 
     def enable(self, enabled=True):
@@ -91,22 +113,24 @@ class Metawidget (tk.Frame):
 
 
 ### --------------------------------------------------------------------
+### Control subclasses
+### --------------------------------------------------------------------
 
-class Flag (Metawidget):
+class Flag (Control):
     """A widget for controlling a yes/no value."""
     def __init__(self,
                  master=None,
-                 label="Debug",
+                 label="Flag",
                  default=False,
-                 required=False):
+                 help=''):
         """Create a Flag widget with the given label and default value.
 
             master:   Tkinter widget that will contain this Flag
             label:    Text label for the flag
             default:  Default value (True or False)
-            required: Required option (True or False)
+            help:     Help text to show in a tooltip
         """
-        Metawidget.__init__(self, master, bool)
+        Control.__init__(self, master, bool, help)
         self.variable.set(default)
         # Create and pack widgets
         self.check = tk.Checkbutton(self, text=label, variable=self.variable)
@@ -114,31 +138,31 @@ class Flag (Metawidget):
 
 ### --------------------------------------------------------------------
 
-class Choice (Metawidget):
+class Choice (Control):
     """A widget for choosing one of several options.
     """
     def __init__(self,
                  master=None,
                  label="Choices",
-                 choices='A|B',
                  default=None,
-                 required=False):
+                 help='',
+                 choices='A|B'):
         """Initialize Choice widget with the given label and list of choices.
 
             master:   Tkinter widget that will contain this Choice
             label:    Text label for the choices
+            default:  Default choice, or None to use first choice in list
+            help:     Help text to show in a tooltip
             choices:  Available choices, in string form: 'one|two|three'
                       or list form: ['one', 'two', 'three']
-            default:  Default choice, or None to use first choice in list
-            required: Required option (True or False)
         """
         # TODO: Allow alternative choice styles (listbox, combobox?)
-        Metawidget.__init__(self, master, str)
+        Control.__init__(self, master, str, help)
         # If choices is a string, split on '|'
         if type(choices) == str:
             choices = choices.split('|')
         # Use first choice if default wasn't provided
-        if default is None:
+        if not default:
             default = choices[0]
         self.variable.set(default)
         # Create and pack widgets
@@ -150,29 +174,30 @@ class Choice (Metawidget):
                                              variable=self.variable)
             self.rb[choice].pack(side='left')
 
+
 ### --------------------------------------------------------------------
 
-class Number (Metawidget):
+class Number (Control):
     """A widget for choosing or entering a number"""
     def __init__(self,
                  master=None,
                  label="Number",
+                 default=None,
+                 help='',
                  min=1,
                  max=10,
-                 style='spin',
-                 default=None,
-                 required=False):
+                 style='spin'):
         """Create a number-setting widget.
         
             master:   Tkinter widget that will contain this Number
             label:    Text label describing the meaning of the number
+            default:  Default value, or None to use minimum
+            help:     Help text to show in a tooltip
             min, max: Range of allowable numbers (inclusive)
             style:    'spin' for a spinbox, or 'scale' for a slider
-            default:  Default value, or None to use minimum
-            required: Required option (True or False)
         """
         # TODO: Multiple styles (entry, spinbox, scale)
-        Metawidget.__init__(self, master, int)
+        Control.__init__(self, master, int, help)
         self.style = style
         # Use min if default wasn't provided
         if default is None:
@@ -194,7 +219,7 @@ class Number (Metawidget):
     def enable(self, enabled=True):
         """Enable or disable all sub-widgets. Overridden to make Scale widget
         look disabled."""
-        Metawidget.enable(self, enabled)
+        Control.enable(self, enabled)
         if self.style == 'scale':
             if enabled:
                 self.number['fg'] = 'black'
@@ -206,19 +231,20 @@ class Number (Metawidget):
 
 ### --------------------------------------------------------------------
 
-class Text (Metawidget):
+class Text (Control):
     """A widget for entering a line of text"""
     def __init__(self,
                  master=None,
                  label="Text",
                  default='',
-                 required=False):
+                 help=''):
         """
             master:   Tkinter widget that will contain this Text
             label:    Label for the text
             default:  Default value of text widget
+            help:     Help text to show in a tooltip
         """
-        Metawidget.__init__(self, master, str)
+        Control.__init__(self, master, str, help)
         self.variable.set(default)
         # Create and pack widgets
         self.label = tk.Label(self, text=label, justify='left')
@@ -234,8 +260,8 @@ class List (Text):
                  master=None,
                  label="List",
                  default='',
-                 required=False):
-        Text.__init__(self, master, label, default)
+                 help=''):
+        Text.__init__(self, master, label, default, help)
 
     def get(self):
         """Split text into a list at whitespace boundaries."""
@@ -249,26 +275,27 @@ class List (Text):
 
 ### --------------------------------------------------------------------
 
-class Filename (Metawidget):
+class Filename (Control):
     """A widget for entering or browsing for a filename
     """
     def __init__(self,
                  master=None,
                  label='Filename',
-                 type='load',
-                 desc='Select a file to load',
                  default='',
-                 required=False):
+                 help='',
+                 type='load',
+                 desc='Select a file to load'):
         """Create a Filename with label, text entry, and browse button.
         
             master:  Tkinter widget that will contain the FileEntry
             label:   Text of label next to file entry box
+            default: Default filename
+            help:    Help text to show in a tooltip
             type:    Do you intend to 'load' or 'save' this file?
             desc:    Brief description (shown in title bar of file
                      browser dialog)
-            default: Default filename
         """
-        Metawidget.__init__(self, master, str)
+        Control.__init__(self, master, str, help)
         self.variable.set(default)
         self.type = type
         self.desc = desc
@@ -294,20 +321,21 @@ class Filename (Metawidget):
 
 ### --------------------------------------------------------------------
 
-class Color (Metawidget):
+class Color (Control):
     """A widget for choosing a color"""
     def __init__(self,
                  master=None,
                  label="Color",
                  default='',
-                 required=False):
+                 help=''):
         """Create a widget that opens a color-chooser dialog.
         
             master:  Tkinter widget that will contain the ColorPicker
             label:   Text label describing the color to be selected
             default: Default color (named color or hexadecimal RGB)
+            help:    Help text to show in a tooltip
         """
-        Metawidget.__init__(self, master, str)
+        Control.__init__(self, master, str, help)
         self.variable.set(default)
         # Create and pack widgets
         self.label = tk.Label(self, text=label)
@@ -349,24 +377,25 @@ class FontChooser (tkSimpleDialog.Dialog):
         self.result = self.fontlist.selected.get()
 
 
-class Font (Metawidget):
+class Font (Control):
     """A font selector widget"""
     def __init__(self,
                  master=None,
                  label='Font',
                  default='Helvetica',
-                 required=False):
+                 help=''):
         """Create a widget that opens a font chooser dialog.
         
             master:  Tkinter widget that will contain this Font
             label:   Text label for the font
             default: Default font
+            help:    Help text to show in a tooltip
         """
-        Metawidget.__init__(self, master, str)
+        Control.__init__(self, master, str, help)
         self.label = tk.Label(self, text=label)
         self.label.pack(side='left')
         self.button = tk.Button(self, textvariable=self.variable,
-                             command=self.choose)
+                                command=self.choose)
         self.button.pack(side='left', padx=8)
         self.variable.set(default)
 
@@ -379,7 +408,7 @@ class Font (Metawidget):
 ### --------------------------------------------------------------------
 
 class Optional (tk.Frame):
-    """Container that shows/hides an optional Metawidget"""
+    """Container that shows/hides an optional Control"""
     def __init__(self,
                  master=None,
                  widget=None,
@@ -388,7 +417,7 @@ class Optional (tk.Frame):
         """Create an Optional widget.
 
             master:  Tkinter widget that will contain the Optional
-            widget:  A Metawidget to show or hide
+            widget:  A Control to show or hide
             label:   Label for the optional widget
         """
         tk.Frame.__init__(self, master)
@@ -422,8 +451,9 @@ class Optional (tk.Frame):
 
 ### --------------------------------------------------------------------
 
+# Deprecated
 class OptionFrame (tk.Frame):
-    """A Frame containing Metawidgets that control command-line options.
+    """A Frame containing Controls that control command-line options.
     """
     def __init__(self, master=None):
         """Create an OptionFrame with the given master and control widgets.
@@ -468,13 +498,13 @@ class OptionFrame (tk.Frame):
 
 ### --------------------------------------------------------------------
 
-class PlainLabel (Metawidget):
+class PlainLabel (Control):
     """A plain label or spacer widget"""
     def __init__(self,
                  master=None,
                  label="Text",
                  default=''):
-        Metawidget.__init__(self, master, str)
+        Control.__init__(self, master, str)
         self.variable.set(default)
         # Create and pack widgets
         self.label = tk.Label(self, text=label)
@@ -546,14 +576,14 @@ class Tabs (tk.Frame):
 ### GUI interface-definition API
 ### --------------------------------------------------------------------
 
-class OptionMetawidget:
-    """A Metawidget that controls a command-line option."""
+class OptionControl:
+    """A Control that controls a command-line option."""
     def __init__(self, option, metawidget, *args):
-        """Create an OptionMetawidget.
+        """Create an OptionControl.
         
             option:     Command-line option name (without the leading '-')
-            metawidget: Metawidget type (Filename, Choice, Flag etc.)
-            *args:      Arguments to the given Metawidget.
+            metawidget: Control type (Filename, Choice, Flag etc.)
+            *args:      Arguments to the given Control.
 
         The 'required' keyword may be passed as the first item in args;
         if present, the widget is drawn always-enabled (representing a
@@ -566,7 +596,7 @@ class OptionMetawidget:
         self.widget = None
     
     def get_widget(self, master):
-        """Create and return a Metawidget instance.
+        """Create and return a Control instance.
         
             master: Tkinter widget to use as master
         """
@@ -578,6 +608,7 @@ class OptionMetawidget:
             self.widget = self.metawidget(master, *self.args)
         # Optional widget, may be enabled/disabled
         else:
+            # Hack: extract Control label
             label = self.args[0]
             args = self.args[1:]
             self.widget = Optional(master, self.metawidget, label, *args)
@@ -606,8 +637,6 @@ class OptionMetawidget:
                 args.append(value)
         return args
 
-OM = OptionMetawidget
-
 
 class Panel:
     def __init__(self, title='', *optdefs):
@@ -629,31 +658,34 @@ class Panel:
         options '-bgaudio', '-submenus', and '-menu-length'.
         """
         self.title = title
-        self.oms = [] # OptionMetawidget instances
+        self.controls = [] # OptionControl instances
+        self.frame = None
         for optdef in optdefs:
             if type(optdef) == tuple:
-                self.oms.append(OptionMetawidget(*optdef))
+                self.controls.append(OptionControl(*optdef))
             # TODO: Support keywords like 'spacer'
             else:
                 raise "Panel option definitions must be in tuple form."
 
     def get_widget(self, master):
-        """Create and return a Frame with Metawidgets packed inside it.
+        """Return the panel widget (tk.Frame with Controls packed inside it).
         
             master: Tkinter widget to use as master
         """
-        frame = tk.Frame(master)
-        for om in self.oms:
-            widget = om.get_widget(frame)
+        self.frame = tk.Frame(master)
+        for control in self.controls:
+            widget = control.get_widget(self.frame)
             widget.pack(anchor='nw', fill='x', expand=True)
-        return frame
+        return self.frame
 
     def get_options(self):
         """Return a list of all command-line options from contained widgets.
         """
+        if not self.frame:
+            raise "Must call get_widget() before calling get_options()"
         args = []
-        for om in self.oms:
-            args += om.get_options()
+        for control in self.controls:
+            args += control.get_options()
         return args
 
 ### --------------------------------------------------------------------
@@ -712,7 +744,7 @@ class Application:
         # Single-panel application
         if isinstance(self.panels, Panel):
             frame = self.panels.get_widget(window)
-            frame.pack()
+            frame.pack(fill='x')
         # Multi-panel (tabbed) application
         elif isinstance(self.panels, list):
             labels = [panel.title for panel in self.panels]
@@ -757,7 +789,7 @@ class Application:
 ### Not exported yet
 ### --------------------------------------------------------------------
 
-class ScrollList (Metawidget):
+class ScrollList (Control):
     """A widget for choosing from a list of values
     """
     def __init__(self, master=None, label="List", values=None):
@@ -767,7 +799,7 @@ class ScrollList (Metawidget):
             label:     Text label for the list
             values:    List of initial values
         """
-        Metawidget.__init__(self, master, list)
+        Control.__init__(self, master, list)
         self.selected = tk.StringVar() # Currently selected list item
         # Listbox label
         self.label = tk.Label(self, text=label)
