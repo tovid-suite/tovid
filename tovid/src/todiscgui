@@ -827,7 +827,6 @@ class GUI (tk.Frame):
 
     def showhide(self):
         """Show or hide the advanced options tabs."""
-        print "showhide", self.show_advanced.get()
         if self.show_advanced.get():
             self.advanced.pack(anchor='nw', side='left')
         else:
