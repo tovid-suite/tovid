@@ -17,6 +17,7 @@ from libtovid.cli import Command
 from libtovid.gui.meta import *
 from libtovid import log
 
+
 try:
     import Tkinter as tk
     import tkFileDialog
