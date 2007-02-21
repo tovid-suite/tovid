@@ -1,17 +1,31 @@
 #! /usr/bin/env python
 # tovid-metagui
 
-"""Experimental tovid suite GUI using only meta.py widgets.
+"""Experimental tovid suite GUI, without any Tkinter code.
 
-//Note: This isn't fully implemented yet--I'm writing the docs first.//
+Run this script standalone for a demonstration:
+
+    $ python tovid-metagui
+
+
+INTRODUCTION
 
 This module demonstrates a simplified approach to creating GUIs for
 command-line programs. It's designed so _anyone_ can easily write their
 own GUI, without having any programming experience.
 
-It assumes your GUI is a direct frontend to a command-line program, with
-each command-line option having an associated GUI control widget. Say, if
-your program takes input and output filenames:
+It assumes your GUI is a direct frontend to one or more command-line programs,
+with each command-line option having an associated GUI control widget. Several
+kinds of widget are provided, for setting Filename, Color, Number or Font, or
+for picking a Choice or Flag.
+
+You probably know of a handful of command-line applications that would be
+much better with a GUI, even a cheesy-looking Tkinter one.
+
+
+OPTION TUPLES
+
+Say, if you have a program that takes input and output filenames:
 
     $ tovid -in movie.avi -out movie_encoded
 
@@ -23,17 +37,29 @@ then you can create GUI widgets for those options like this:
 Command-line options are associated with GUI widgets by enclosing a tuple of
 things in parentheses. These have the general format:
 
-    ('option', Metawidget, "Label", ...)
+    ('option', Control, "Label", ...)
 
-where 'option' is a command-line option (without the leading '-'), Metawidget
-is a class like Filename, Choice, or Number, describing what type of value the
-option sets, and "Label" is the text that should appear next to the GUI widget
-that controls the option's value. Other parameters describe the option,
-its default value, and hints about how to draw the GUI control widget; they
-are specific to the flavor of Metawidget being used.
+where:
 
-Related options are grouped in a Panel by providing a panel name, and a
-comma-separated list of option tuples:
+    'option'  is a command-line option (without the leading '-');
+    Control   is a Control subclass, such as Filename, Choice, or Number,
+              describing what type of value the option sets; and
+    "Label"   is the text that should appear next to the GUI widget
+              that controls the option's value.
+
+Other parameters include default value, help/tooltip text to show, allowable
+values, and hints about how to draw the GUI control widget; they are specific
+to the flavor of Metawidget being used.
+
+Option tuples are just an abstract way of describing a suitable GUI widget
+for a certain command-line option. This is 90% of the syntax you need to
+learn for creating your own GUIs. If you understand the above, you're almost
+ready to...
+
+
+CREATE A GUI
+
+First, give your abstract option tuples a place to live, in a Panel:
 
     general = Panel("General",
         ('bgaudio', Filename, "Background audio file"),
@@ -45,42 +71,65 @@ This will create three GUI widgets in a panel labeled "General": one for typing
 or browsing to a filename, one for enabling or disabling submenus, and another 
 for setting menu length to a number between 0 and 120.
 
-To create the GUI with only this one panel, you can do this:
+Once you have a Panel, you can create an Application:
 
-    app = Application("todisc GUI", 'todisc', general)
-    app.run()
+    app = Application('todisc', [general])
+
+This says your application will run the 'todisc' command-line program,
+passing options set by the "General" panel. Now, create the GUI:
+
+    gui = GUI('MyGUI', [app])
+    gui.run()
 
 This creates the GUI, draws all the widgets, and will run your command-line
 program at the push of a button.
 
+
+CREATE A MULTI-PANEL GUI
+
 If your program has a lot of options, one panel may not be enough to hold them
 all without looking cluttered, so you may break them down into multiple Panels,
-which will be shown in the GUI as tabs that you can switch between. Create a
-list of Panels like this:
+which will be shown in the GUI as tabs that you can switch between. Create
+Panels like this:
 
-    panels = [
-        Panel("Thumbnails",
-            ('thumb-mist-color', Color, ...),
-            ('wave', Text, ...)
-        ),
-        Panel("Text and Font",
-            ('menu-font', Font, ...),
-            ('menu-fontsize', Number, ...)
-        )
-    ]
+    thumbs = Panel("Thumbnails",
+        ('thumb-mist-color', Color, ...),
+        ('wave', Text, ...)
+    )
+    text = Panel("Text and Font",
+        ('menu-font', Font, ...),
+        ('menu-fontsize', Number, ...)
+    )
 
-Once you have a panel or list of panels, you can create the GUI and run it
-like this:
+then, create the Application and GUI:
 
-    app = Application("todisc GUI", 'todisc', panels)
-    app.run()
+    todisc = Application('todisc', [thumbs, text])
+    gui = GUI('MyGUI', [todisc])
+    gui.run()
+
+If there are multiple panels, a tabbed interface is created, with one tab
+for each panel.
 
 
+CREATE A MULTI-APPLICATION GUI
+
+If your GUI needs to be able to run several different command-line programs,
+you can create a multi-application GUI. Create panels for each application,
+then create the applications:
+
+    todisc = Application('todisc', [todisc_panel1, todisc_panel2])
+    tovid = Application('tovid', [tovid_panel1, tovid_panel2])
+
+and then the GUI:
+
+    gui = GUI('MultiGUI', [todisc, tovid])
+    gui.run()
+
+Run this script standalone for a demonstration of this feature.
 """
 
 # Get all the Metawidgets we'll need
 from libtovid.gui.meta import *
-
 
 ### --------------------------------------------------------------------
 ### todisc panels
@@ -338,8 +387,8 @@ todisc = Application('todisc',
 ### tovid
 ### --------------------------------------------------------------------
 
-# Create the tovid application
-tovid = Application('tovid', Panel("Main",
+# Create the tovid panels
+tovid_panel = Panel("Main",
     ('in', Filename, 'required',
      'Input filename', '',
      'Video file to encode',
@@ -372,14 +421,16 @@ tovid = Application('tovid', Panel("Main",
      'Safe area', 90,
      'Safe area as a percentage of screen size',
      50, 100, 'scale')
-    )
 )
+# Create the tovid application
+tovid = Application('tovid', [tovid_panel])
 
 ### --------------------------------------------------------------------
 ### makemenu
 ### --------------------------------------------------------------------
 
-makemenu = Application('makemenu', Panel("Main",
+# Create the makemenu panels
+makemenu_panel = Panel("Main",
     ('background', Filename,
      'Background image', '',
      'TOOLTIP'),
@@ -414,9 +465,9 @@ makemenu = Application('makemenu', Panel("Main",
      'Text alignment', 'left',
      'TOOLTIP',
      'left|center|middle|right')
-    )
 )
-    
+# Create the makemenu application
+makemenu = Application('makemenu', [makemenu_panel])
 
 ### --------------------------------------------------------------------
 ### main GUI
