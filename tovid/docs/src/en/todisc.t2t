@@ -326,6 +326,8 @@ constraints of each arrangement.
 ```
 -rotate-thumbs -10 10 -10 10 -10  (for 5 files)
 ```
+     **Note: this option does not work currently with shaped or 3d thumbs
+     ('-thumb-shape SHAPE' or '-3dthumbs' ) unless using showcase style.
 
 
 
