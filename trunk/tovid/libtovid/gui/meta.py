@@ -468,36 +468,46 @@ class PlainLabel (Control):
 ### --------------------------------------------------------------------
 
 class Tabs (tk.Frame):
-    """A button-style tab bar that switches between several Frames.
+    """A tabbed frame, with tab buttons that switch between several frames.
     """
-    def __init__(self, master, labels=None, frames=None, packopts=None):
-        """Create a tab bar with:
+    def __init__(self, master, side='top'):
+        """Create a tabbed frame widget.
         
-            master:   Tkinter widget to hold the Tabs frame
-            labels:   List of string labels to put on the tabs
-            frames:   List of tk.Frames to switch between (one for each label)
-            packopts: Dictionary of options to give to pack()
-                      (this is a hack to work around pack(in_=...)
-                      apparently not working properly)
+            master: Tkinter widget that will contain the tabs widget
+            side:   Side to show the tab controls on
+                    ('top', 'bottom', 'left', or 'right')
+        
+        Tabs are added to the tab bar via the add() method. The added frames
+        should have the Tabs frame as their master. For example:
+        
+            tabs = Tabs(self)
+            spam = tk.Frame(tabs, ...)
+            tabs.add("Spam", spam)
+            eggs = tk.Frame(tabs, ...)
+            tabs.add("Eggs", eggs)
+            tabs.draw()
+            tabs.pack(...)
+        
+        Tabs are drawn in the order they are added, with the first being
+        initially active.
         """
         tk.Frame.__init__(self, master)
-        # Enforce the rules
-        if not isinstance(labels, list) or \
-           not isinstance(labels[0], str):
-            raise "labels must be a list of text strings."
-        if not isinstance(frames, list) or \
-           not isinstance(frames[0], tk.Frame):
-            raise "frames must be a list of Tkinter Frames."
-        if len(labels) != len(frames):
-            raise "labels and frames must be the same length."
-        # Save attributes
-        self.labels = labels or []
-        self.frames = frames or []
-        self.packopts = packopts
+        self.side = side
+        self.labels = []
+        self.frames = []
         self.selected = tk.IntVar()
         self.index = 0
-        self.draw()
+        #self.draw()    
     
+    def add(self, label, frame):
+        """Add a new tab for the given frame.
+
+            label: Label shown in the tab
+            frame: tk.Frame shown when the tab is activated
+        """
+        self.labels.append(label)
+        self.frames.append(frame)
+
     def draw(self):
         """Draw the tab bar and the first enclosed frame.
         """
@@ -511,14 +521,22 @@ class Tabs (tk.Frame):
             }
         # Frame to hold tab buttons
         self.buttons = tk.Frame(self)
+        # For tabs on left or right, pack tab buttons vertically
+        if self.side in ['left', 'right']:
+            button_side = 'top'
+            bar_anchor = 'n'
+        else:
+            button_side = 'left'
+            bar_anchor = 'w'
         # Tab buttons, numbered from 0
         for index, label in enumerate(self.labels):
             button = tk.Radiobutton(self.buttons, text=label, value=index,
                                     **config)
-            button.pack(side='left')
-        self.buttons.pack(anchor='n', side='top')
-        # Draw the first frame
-        # self.frames[0].pack(anchor='n', fill='x')
+            button.pack(anchor='nw', side=button_side, fill='x')
+        self.buttons.pack(anchor=bar_anchor, side=self.side)
+        # Activate the first tab
+        self.selected.set(0)
+        self.change()
 
     def change(self):
         """Switch to the selected tab's frame.
@@ -527,7 +545,7 @@ class Tabs (tk.Frame):
         self.frames[self.index].pack_forget()
         # Pack the newly-selected frame
         selected = self.selected.get()
-        self.frames[selected].pack(fill='both', **self.packopts)
+        self.frames[selected].pack(side=self.side, fill='both')
         # Remember this tab's index
         self.index = selected
 
@@ -686,21 +704,21 @@ class Application (tk.Frame):
         self.frame.pack()
         # Prevent resizing
         self.frame.pack_propagate(False)
+        # Single-panel application
+        if isinstance(self.panels, Panel):
+            panel = self.panels.get_widget(self.frame)
+            panel.pack(fill='x')
+        # Multi-panel (tabbed) application
+        elif isinstance(self.panels, list):
+            tabs = Tabs(self.frame)
+            for panel in self.panels:
+                tabs.add(panel.title, panel.get_widget(tabs))
+            tabs.draw()
+            tabs.pack()
         # "Run" button
         button = tk.Button(self.frame, text="Run %s now" % self.program,
                            command=self.execute)
         button.pack(anchor='s', fill='x', expand=True)
-        # Single-panel application
-        if isinstance(self.panels, Panel):
-            panel = self.panels.get_widget(self.frame)
-            panel.pack(fill='x', before=button)
-        # Multi-panel (tabbed) application
-        elif isinstance(self.panels, list):
-            labels = [panel.title for panel in self.panels]
-            frames = [panel.get_widget(self.frame) for panel in self.panels]
-            tabs = Tabs(self.frame, labels, frames, {'before': button})
-            tabs.pack(before=button)
-            frames[0].pack(fill='x', before=button)
         return self.frame
 
     def get_options(self):
