@@ -150,7 +150,8 @@ class Choice (Control):
                  label="Choices",
                  default=None,
                  help='',
-                 choices='A|B'):
+                 choices='A|B',
+                 packside='left'):
         """Initialize Choice widget with the given label and list of choices.
 
             master:   Tkinter widget that will contain this Choice
@@ -168,12 +169,12 @@ class Choice (Control):
         self.set(default or choices[0])
         # Create and pack widgets
         self.label = tk.Label(self, text=label)
-        self.label.pack(side='left')
+        self.label.pack(side=packside)
         self.rb = {}
         for choice in choices:
             self.rb[choice] = tk.Radiobutton(self, text=choice, value=choice,
                                              variable=self.variable)
-            self.rb[choice].pack(side='left')
+            self.rb[choice].pack(side=packside)
 
 
 ### --------------------------------------------------------------------

@@ -376,11 +376,54 @@ tovid = Application('tovid', Panel("Main",
 )
 
 ### --------------------------------------------------------------------
+### makemenu
+### --------------------------------------------------------------------
+
+makemenu = Application('makemenu', Panel("Main",
+    ('background', Filename,
+     'Background image', '',
+     'TOOLTIP'),
+    ('crop', Flag,
+     'Crop background image', True,
+     'Cut off the edges of the background image to make it fit into 4:3'),
+    ('scale', Flag,
+     'Stretch background image', False,
+     'Scale or stretch the background image to fit the 4:3 frame'),
+    ('audio', Filename,
+     'Background audio', '',
+     'Audio file to play while the menu is being shown'),
+    ('length', Number,
+     'Menu length', 4,
+     'Duration of menu playback in seconds.',
+     4, 600),
+    ('menu-title', Text,
+     'Menu title', '',
+     'Title or heading for the menu'),
+    ('font', Font,
+     'Menu font', 'Helvetica',
+     'TOOLTIP'),
+    ('fontsize', Number,
+     'Font size', 24,
+     'TOOLTIP',
+     8, 64, 'spin'),
+    ('menu-title-fontsize', Number,
+     'Title font size', 32,
+     'Font size for the menu title',
+     8, 64, 'spin'),
+    ('align', Choice,
+     'Text alignment', 'left',
+     'TOOLTIP',
+     'left|center|middle|right')
+    )
+)
+    
+
+### --------------------------------------------------------------------
 ### main GUI
 ### --------------------------------------------------------------------
 
 # Create the GUI for both applications
-gui = GUI("tovid metagui", [todisc, tovid])
+gui = GUI("tovid metagui", [todisc, tovid, makemenu])
 
 # Show the GUI window
 gui.run()
