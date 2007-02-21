@@ -469,12 +469,15 @@ class PlainLabel (Control):
 class Tabs (tk.Frame):
     """A button-style tab bar that switches between several Frames.
     """
-    def __init__(self, master, labels=None, frames=None):
+    def __init__(self, master, labels=None, frames=None, packopts=None):
         """Create a tab bar with:
         
-            master: Tkinter widget to hold the Tabs frame
-            labels: List of string labels to put on the tabs
-            frames: List of tk.Frames to switch between (one for each label)
+            master:   Tkinter widget to hold the Tabs frame
+            labels:   List of string labels to put on the tabs
+            frames:   List of tk.Frames to switch between (one for each label)
+            packopts: Dictionary of options to give to pack()
+                      (this is a hack to work around pack(in_=...)
+                      apparently not working properly)
         """
         tk.Frame.__init__(self, master)
         # Enforce the rules
@@ -489,6 +492,7 @@ class Tabs (tk.Frame):
         # Save attributes
         self.labels = labels or []
         self.frames = frames or []
+        self.packopts = packopts
         self.selected = tk.IntVar()
         self.index = 0
         self.draw()
@@ -522,7 +526,7 @@ class Tabs (tk.Frame):
         self.frames[self.index].pack_forget()
         # Pack the newly-selected frame
         selected = self.selected.get()
-        self.frames[selected].pack(fill='both')
+        self.frames[selected].pack(fill='both', **self.packopts)
         # Remember this tab's index
         self.index = selected
 
@@ -675,21 +679,29 @@ class Application (tk.Frame):
         if self.frame:
             return self.frame
         # Main window with fixed width/height
-        self.frame = tk.LabelFrame(master, text=self.title, padx=8, pady=8,
-                                   width=self.width, height=self.height)
+        self.frame = \
+            tk.LabelFrame(master, text=self.title, padx=8, pady=8,
+                          width=self.width, height=self.height,
+                          font=('Helvetica', 14, 'bold'))
         self.frame.pack()
+        # Prevent resizing
         self.frame.pack_propagate(False)
+        # "Run" button
+        button = tk.Button(self.frame, text="Run %s now" % self.program,
+                           command=self.execute)
+        button.pack(anchor='s', fill='x', expand=True)
         # Single-panel application
         if isinstance(self.panels, Panel):
             panel = self.panels.get_widget(self.frame)
-            panel.pack(fill='x')
+            panel.pack(fill='x', before=button)
         # Multi-panel (tabbed) application
         elif isinstance(self.panels, list):
             labels = [panel.title for panel in self.panels]
             frames = [panel.get_widget(self.frame) for panel in self.panels]
-            tabs = Tabs(self.frame, labels, frames)
-            tabs.pack()
-            frames[0].pack(fill='x')
+            packopts = {'before': button}
+            tabs = Tabs(self.frame, labels, frames, packopts)
+            tabs.pack(before=button)
+            frames[0].pack(**packopts)
         return self.frame
 
     def get_options(self):
@@ -758,11 +770,6 @@ class GUI (tk.Tk):
                                         variable=self.showing[app],
                                         command=self.show_app)
             menubar.add_cascade(label="Application", menu=appmenu)
-        # Run menu
-        runmenu = tk.Menu(menubar, tearoff=False)
-        runmenu.add_command(label="Execute program",
-                            command=self.execute)
-        menubar.add_cascade(label="Run", menu=runmenu)
 
     def execute(self):
         """Run the current application's program."""
@@ -774,7 +781,7 @@ class GUI (tk.Tk):
         """
         for app, ischecked in self.showing.items():
             if ischecked.get():
-                self.frames[app].pack(side='left')
+                self.frames[app].pack(side='left', padx=8, pady=8)
                 self.program = app.program
             else:
                 self.frames[app].pack_forget()
