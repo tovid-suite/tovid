@@ -333,6 +333,41 @@ authoring = Panel("Authoring",
         'tooltip')
 )
 
+tovidpanel = Panel("Main",
+    ('in', Filename, 'required',
+     'Input filename', '',
+     'Video file to encode',
+     'load', 'Select a video file'),
+    ('out', Filename, 'required',
+     'Output prefix', '',
+     'Name to use for encoded output file (.mpg added automatically)',
+     'save', 'Choose an output prefix'),
+    ('format', Choice,
+     'Format', 'dvd',
+     'Disc format',
+     'vcd|svcd|dvd'),
+    ('tvsys', Choice,
+     'TV system', 'ntsc',
+     'TV standard system',
+     'ntsc|ntscfilm|pal'),
+    ('aspect', Choice,
+     'Aspect ratio', '4:3',
+     'Intended display aspect ratio of input video',
+     '4:3|16:9|2.35:1'),
+    ('ffmpeg', Flag,
+     'Encode using ffmpeg', False),
+    ('quality', Number,
+     'Video quality', 6,
+     'Quality of encoding, on a scale of 1-10.',
+     1, 10, 'scale'),
+    ('interlaced', Flag,
+     'Interlaced encoding', False),
+    ('safe', Number,
+     'Safe area', 90,
+     'Safe area as a percentage of screen size',
+     50, 100, 'scale')
+    )
+
 # A list of all panels, shown in tabs in this order
 panels = [
     #main,
@@ -345,5 +380,7 @@ panels = [
 ]
 
 # Create and run the application
-todiscgui = Application('todisc', 'todisc GUI', panels)
-todiscgui.run()
+todisc = Application('todisc', 'todisc GUI', panels)
+tovid = Application('tovid', 'tovid GUI', tovidpanel)
+gui = GUI("uberGUI", [todisc, tovid])
+gui.run()

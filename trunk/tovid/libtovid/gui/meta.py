@@ -34,7 +34,8 @@ __all__ = [
     # GUI creation interface
     'OptionControl',
     'Panel',
-    'Application']
+    'Application',
+    'GUI']
 
 import os
 import shlex
@@ -643,7 +644,9 @@ class Panel:
 
 ### --------------------------------------------------------------------
     
-class Application:
+class Application (tk.Frame):
+    """GUI frontend for a command-line program.
+    """
     def __init__(self, program, title="Application", panels=None,
                  width=400, height=600):
         """Define a GUI application frontend for a command-line program.
@@ -662,50 +665,32 @@ class Application:
         self.panels = panels or []
         self.width = width
         self.height = height
+        self.showing = False
+        self.frame = None
 
-    def draw_menu(self, root):
-        """Draw an application menu in the given root window.
+    def get_frame(self, master):
+        """Return a tk.Frame containing the application, using the given master.
         """
-        menu = tk.Menu(root)
-        # File menu
-        filemenu = tk.Menu(menu, tearoff=0)
-        filemenu.add_separator()
-        filemenu.add_command(label="Exit", command=root.quit)
-        menu.add_cascade(label="File", menu=filemenu)
-        # View menu
-        viewmenu = tk.Menu(menu, tearoff=0)
-        viewmenu.add_separator()
-        menu.add_cascade(label="View", menu=viewmenu)
-        # Run menu
-        runmenu = tk.Menu(menu, tearoff=0)
-        runmenu.add_command(label="Run %s now" % self.program,
-                            command=self.execute)
-        menu.add_cascade(label="Run", menu=runmenu)
-        # Add the menu to the root window
-        root.config(menu=menu)
-
-    def get_root(self):
-        """Create and return the application root window.
-        """
-        # TODO: Menus, status bar, and an "execute" button
-        root = tk.Tk()
-        root.title(self.title)
+        # If self.window has already been created, return it
+        if self.frame:
+            return self.frame
         # Main window with fixed width/height
-        window = tk.Frame(root, width=self.width, height=self.height)
-        window.pack()
-        window.pack_propagate(False)
+        self.frame = tk.LabelFrame(master, text=self.title, padx=8, pady=8,
+                                   width=self.width, height=self.height)
+        self.frame.pack()
+        self.frame.pack_propagate(False)
         # Single-panel application
         if isinstance(self.panels, Panel):
-            frame = self.panels.get_widget(window)
-            frame.pack(fill='x')
+            panel = self.panels.get_widget(self.frame)
+            panel.pack(fill='x')
         # Multi-panel (tabbed) application
         elif isinstance(self.panels, list):
             labels = [panel.title for panel in self.panels]
-            frames = [panel.get_widget(window) for panel in self.panels]
-            tabs = Tabs(window, labels, frames)
+            frames = [panel.get_widget(self.frame) for panel in self.panels]
+            tabs = Tabs(self.frame, labels, frames)
             tabs.pack()
             frames[0].pack(fill='x')
-        return root
+        return self.frame
 
     def get_options(self):
         """Get a list of all command-line arguments from all panels.
@@ -721,19 +706,91 @@ class Application:
     def execute(self):
         """Run the program with all the supplied options.
         """
-        # TODO: Create a widget that calls this handler
         args = self.get_options()
         command = Command(self.program, *args)
         print "Running command:", str(command)
         print "(not really)"
 
+
+class GUI (tk.Tk):
+    def __init__(self, title, applications):
+        """Create a GUI for the given applications.
+        
+            title:        Text shown in the title bar
+            applications: List of Applications to include in the GUI
+        """
+        tk.Tk.__init__(self)
+        self.title(title)
+        # Index applications by program name
+        programs = [app.program for app in applications]
+        self.appdict = dict(zip(programs, applications))
+        self.apps = applications
+        # On/off (checkbutton) variables for each program
+        self.showing = {}
+        self.frames = {}
+        for app in self.apps:
+            self.showing[app] = tk.BooleanVar(value=False)
+
+    def draw(self):
+        for app in self.apps:
+            self.frames[app] = app.get_frame(self)
+            self.frames[app].pack_forget()
+        # self.frames[self.apps[0]].pack()
+
+    def draw_menu(self, window):
+        """Draw a menu bar in the given window.
+        """
+        # Create and add the menu bar
+        menubar = tk.Menu(window)
+        window.config(menu=menubar)
+        # File menu
+        filemenu = tk.Menu(menubar, tearoff=False)
+        filemenu.add_separator()
+        filemenu.add_command(label="Exit", command=self.quit)
+        menubar.add_cascade(label="File", menu=filemenu)
+        # Application menu
+        # (only included for multi-application GUIs)
+        if len(self.apps) > 1:
+            appmenu = tk.Menu(menubar, tearoff=True)
+            appmenu.add_separator()
+            for app in self.apps:
+                appmenu.add_checkbutton(label=app.program,
+                                        variable=self.showing[app],
+                                        command=self.show_app)
+            menubar.add_cascade(label="Application", menu=appmenu)
+        # Run menu
+        runmenu = tk.Menu(menubar, tearoff=False)
+        runmenu.add_command(label="Execute program",
+                            command=self.execute)
+        menubar.add_cascade(label="Run", menu=runmenu)
+
+    def execute(self):
+        """Run the current application's program."""
+        app = self.appdict[self.current_app.get()]
+        app.execute()
+
+    def show_app(self):
+        """Show all applications that are checked, and hide those that aren't.
+        """
+        for app, ischecked in self.showing.items():
+            if ischecked.get():
+                self.frames[app].pack(side='left')
+                self.program = app.program
+            else:
+                self.frames[app].pack_forget()
+
     def run(self):
-        """Run the GUI application"""
-        root = self.get_root()
-        self.draw_menu(root)
+        """Run the GUI"""
+        self.draw()
+        self.draw_menu(self)
         # Enter the main event handler
-        root.mainloop()
+        self.mainloop()
         # TODO: Interrupt handling
+
+
+
+
+
 
 
 
