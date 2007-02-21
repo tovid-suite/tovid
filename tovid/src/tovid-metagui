@@ -1,7 +1,7 @@
 #! /usr/bin/env python
-# todiscgui_ex.py
+# tovid-metagui
 
-"""Experimental todisc GUI using only meta.py widgets.
+"""Experimental tovid suite GUI using only meta.py widgets.
 
 //Note: This isn't fully implemented yet--I'm writing the docs first.//
 
@@ -81,13 +81,10 @@ like this:
 # Get all the Metawidgets we'll need
 from libtovid.gui.meta import *
 
-# Panels, grouping together related options
-main = Panel("Main",
-    ('files', FileList, 'required',
-        'Input video files'),
-    ('titles', TextList, 'required',
-        'Video titles')
-    )
+
+### --------------------------------------------------------------------
+### todisc panels
+### --------------------------------------------------------------------
 
 # (option, Metawidget, label, default, ...) or
 # (option, Metawidget, 'required', label, default, ...)
@@ -332,8 +329,17 @@ authoring = Panel("Authoring",
         '"Play all" button', False,
         'tooltip')
 )
+# Create the todisc application
+todisc = Application('todisc',
+    [general, menu, thumbnails, audio, text, authoring])
 
-tovidpanel = Panel("Main",
+
+### --------------------------------------------------------------------
+### tovid
+### --------------------------------------------------------------------
+
+# Create the tovid application
+tovid = Application('tovid', Panel("Main",
     ('in', Filename, 'required',
      'Input filename', '',
      'Video file to encode',
@@ -367,20 +373,15 @@ tovidpanel = Panel("Main",
      'Safe area as a percentage of screen size',
      50, 100, 'scale')
     )
+)
 
-# A list of all panels, shown in tabs in this order
-panels = [
-    #main,
-    general,
-    menu,
-    thumbnails,
-    audio,
-    text,
-    authoring
-]
+### --------------------------------------------------------------------
+### main GUI
+### --------------------------------------------------------------------
 
-# Create and run the application
-todisc = Application('todisc', 'todisc GUI', panels)
-tovid = Application('tovid', 'tovid GUI', tovidpanel)
-gui = GUI("uberGUI", [todisc, tovid])
+# Create the GUI for both applications
+gui = GUI("tovid metagui", [todisc, tovid])
+
+# Show the GUI window
 gui.run()
+
