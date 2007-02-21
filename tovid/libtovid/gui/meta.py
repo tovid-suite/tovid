@@ -651,21 +651,20 @@ class Panel:
 class Application (tk.Frame):
     """GUI frontend for a command-line program.
     """
-    def __init__(self, program, title="Application", panels=None,
+    def __init__(self, program, panels=None,
                  width=400, height=600):
         """Define a GUI application frontend for a command-line program.
         
             program: Command-line program that the GUI is a frontend for
-            title:   Title of the GUI application (displayed in the title bar)
-            panels:  Single Panel or list of Panels (groups of widgets). If
-                     panels is a list, a tabbed application is created.
+            panels:  Single Panel or list of Panels (groups of widgets),
+                     containing controls for the given program's options.
+                     If panels is a list, a tabbed application is created.
             width:   Pixel width of application window
             height:  Pixel height of application window
 
         After defining the Application, call run() to show/execute it.
         """
         self.program = program
-        self.title = title
         self.panels = panels or []
         self.width = width
         self.height = height
@@ -680,7 +679,7 @@ class Application (tk.Frame):
             return self.frame
         # Main window with fixed width/height
         self.frame = \
-            tk.LabelFrame(master, text=self.title, padx=8, pady=8,
+            tk.LabelFrame(master, text=self.program, padx=8, pady=8,
                           width=self.width, height=self.height,
                           font=('Helvetica', 14, 'bold'))
         self.frame.pack()
@@ -698,10 +697,9 @@ class Application (tk.Frame):
         elif isinstance(self.panels, list):
             labels = [panel.title for panel in self.panels]
             frames = [panel.get_widget(self.frame) for panel in self.panels]
-            packopts = {'before': button}
-            tabs = Tabs(self.frame, labels, frames, packopts)
+            tabs = Tabs(self.frame, labels, frames, {'before': button})
             tabs.pack(before=button)
-            frames[0].pack(**packopts)
+            frames[0].pack(fill='x', before=button)
         return self.frame
 
     def get_options(self):
@@ -741,7 +739,8 @@ class GUI (tk.Tk):
         self.showing = {}
         self.frames = {}
         for app in self.apps:
-            self.showing[app] = tk.BooleanVar(value=False)
+            self.showing[app] = tk.BooleanVar()
+            self.showing[app].set(False)
 
     def draw(self):
         for app in self.apps:
