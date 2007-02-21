@@ -20,7 +20,8 @@ kinds of widget are provided, for setting Filename, Color, Number or Font, or
 for picking a Choice or Flag.
 
 You probably know of a handful of command-line applications that would be
-much better with a GUI, even a cheesy-looking Tkinter one.
+much better with a GUI, even a cheesy-looking Tkinter one. This module shows
+how easy it is to create one.
 
 
 OPTION TUPLES
