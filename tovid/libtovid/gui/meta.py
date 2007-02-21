@@ -675,9 +675,10 @@ class Application (tk.Frame):
         """Define a GUI application frontend for a command-line program.
         
             program: Command-line program that the GUI is a frontend for
-            panels:  Single Panel or list of Panels (groups of widgets),
-                     containing controls for the given program's options.
-                     If panels is a list, a tabbed application is created.
+            panels:  List of Panels (groups of widgets), containing controls
+                     for the given program's options. Use [panel] to pass
+                     a single panel. If there are multiple panels, a tabbed
+                     application is created.
             width:   Pixel width of application window
             height:  Pixel height of application window
 
@@ -705,11 +706,11 @@ class Application (tk.Frame):
         # Prevent resizing
         self.frame.pack_propagate(False)
         # Single-panel application
-        if isinstance(self.panels, Panel):
-            panel = self.panels.get_widget(self.frame)
+        if len(self.panels) == 1:
+            panel = self.panels[0].get_widget(self.frame)
             panel.pack(fill='x')
         # Multi-panel (tabbed) application
-        elif isinstance(self.panels, list):
+        else:
             tabs = Tabs(self.frame)
             for panel in self.panels:
                 tabs.add(panel.title, panel.get_widget(tabs))
