@@ -1176,6 +1176,7 @@ while test $# -gt 0; do
             parse_rotateargs "$@"
             ROTATE_ARRAY=( "${ARGS_ARRAY[@]}" )
             IMG_FMT=png
+            ROTATE_THUMBS=:
             ;;
         "-tovidopts" )
             shift
@@ -1253,6 +1254,12 @@ else
         usage_error "Sorry, a maximum of 30 videos (thumbs) is supported
         You gave ${#FILES[@]} videos as input"
     fi
+fi
+
+# -rotate-thumbs broken for 3dthumbs and shaped thumbs
+if ($FEATHER || $THUMBS_3D) && $ROTATE_THUMBS; then
+     ! $SHOWCASE && \
+    usage_error "Sorry, rotated thumbs does not work currently if you use shaped or 3d thumbs unless using showcase style"
 fi
 
 # If output directory already exists, print a message and exit
