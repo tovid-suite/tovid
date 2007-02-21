@@ -736,11 +736,11 @@ class Advanced (tk.Frame):
     def __init__(self, master=None, options="", label_text="Advanced Options"):
         tk.Frame.__init__(self, master, borderwidth=5)
         # Create the tab bar and pack the first frame
-        labels = [panel.title for panel in advanced_panels]
-        frames = [panel.get_widget(self) for panel in advanced_panels]
-        tabs = Tabs(self, labels, frames)
+        tabs = Tabs(self, 'left')
+        for panel in advanced_panels:
+            tabs.add(panel.title, panel.get_widget(tabs))
+        tabs.draw()
         tabs.pack()
-        frames[0].pack(fill='x')
         #self.pack_propagate(False)
 
     def setOptions(self, command):
