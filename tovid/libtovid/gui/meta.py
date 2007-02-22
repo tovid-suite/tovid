@@ -1,17 +1,58 @@
 #! /usr/bin/env python
 # meta.py
 
-"""This module defines several Tkinter "meta widgets".
-"""
+"""This module is for easily creating GUIs for command-line programs.
 
-"""Things that aren't Controls:
+It's designed to make GUI creation as painless as possible; in a way, it
+provides a meta-language for writing GUI applications. In this language,
+you create GUIs by specifying (at minimum) three things:
 
-FontChooser
-Tabs
-Optional
-OptiomControl
-Panel
-Application
+    1. The name of a command-line program to invoke. This program is
+       what you're making a GUI frontend for.
+    2. The command-line options that the program expects
+    3. The kind of argument each option expects
+       (a filename, number, text, list, color, choice, etc.)
+
+For #2 and #3, we want to associate certain command-line options with, say,
+Controls, in the GUI. My program's -foo option is controlled by such-and-such
+kind of GUI widget. That's what we have: a Control class, with several
+subclasses:
+
+    Control
+        Choice    Multiple-choice values
+        Color     Color selection button
+        Filename  Type or [Browse] a filename
+        FileList  Add/remove/rearrange filename list
+        Flag      Check box, yes or no
+        Font      Font selection button
+        List      Space-separated list
+        Number    Number between A and B
+        Text      Plain old text
+
+These do all the Tkinter dirty-work of drawing widgets and remembering their
+stored values. All we need is to associate their stored values with a
+particular command-line option in our program, and draw the controls in a...
+let's say in a Panel. Like this:
+
+    panel = Panel("Main",
+        ('image', Filename, 'Image to display'),
+        ('width', Number, 'Width in pixels'),
+        ('height', Number, 'Height in pixels')
+    )
+
+Now we've defined the options and their controls, all that's left is #1 in
+the list above, the name of the program. We'll call it an Application:
+
+    app = Application('showimage', [panel])
+
+So, app is an Application that runs the 'showimage' program, passing it
+all the relevant options set from [panel] which, we assume, is now full of
+GUI widgets (it is). Just one last thing:
+
+    gui = GUI('Da showimage GUI', [app])
+    gui.run()
+
+Really, should it be harder than that?
 """
 
 __all__ = [
