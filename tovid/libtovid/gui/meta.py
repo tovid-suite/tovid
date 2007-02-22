@@ -48,6 +48,10 @@ said my three things, and that should be enough to create a GUI. Like:
 How hard can it be?
 """
 
+# TODO: Multi-flag Choice (for -dvd|-vcd|-svcd, -pal|-ntsc etc.)
+# TODO: Files/titles multi-list
+# Group options in a Panel with a label
+
 __all__ = [
     'Control',
     # Control subclasses
@@ -77,7 +81,6 @@ from libtovid import log
 from libtovid.cli import Command
 # Tkinter
 import Tkinter as tk
-import Tix
 import tkFileDialog
 import tkColorChooser
 import tkSimpleDialog
