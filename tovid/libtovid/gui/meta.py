@@ -1,38 +1,33 @@
 #! /usr/bin/env python
 # meta.py
 
-"""This module is for easily creating GUIs for command-line programs.
+"""Let's say I'd like to write a GUI with as little code as possible.
 
-It's designed to make GUI creation as painless as possible; in a way, it
-provides a meta-language for writing GUI applications. In this language,
-you create GUIs by specifying (at minimum) three things:
+I want to create a GUI application for a command-line program, and I shouldn't
+have to say more than this:
 
-    1. The name of a command-line program to invoke. This program is
-       what you're making a GUI frontend for.
-    2. The command-line options that the program expects
-    3. The kind of argument each option expects
-       (a filename, number, text, list, color, choice, etc.)
+    1. the name of my command-line program
+    2. the command-line options it expects
+    3. the kind of argument each option expects
 
-For #2 and #3, we want to associate certain command-line options with, say,
-Controls, in the GUI. My program's -foo option is controlled by such-and-such
-kind of GUI widget. That's what we have: a Control class, with several
-subclasses:
+For #3, I want to be able to specify some kind of GUI Control that will set
+the value of some option. My program has a bunch of different kinds of
+arguments, so I'll need a lot of Controls:
 
-    Control
-        Choice    Multiple-choice values
-        Color     Color selection button
-        Filename  Type or [Browse] a filename
-        FileList  Add/remove/rearrange filename list
-        Flag      Check box, yes or no
-        Font      Font selection button
-        List      Space-separated list
-        Number    Number between A and B
-        Text      Plain old text
+    Choice    Multiple-choice values
+    Color     Color selection button
+    Filename  Type or [Browse] a filename
+    FileList  Add/remove/rearrange filename list
+    Flag      Check box, yes or no
+    Font      Font selection button
+    List      Space-separated list
+    Number    Number between A and B
+    Text      Plain old text
 
-These do all the Tkinter dirty-work of drawing widgets and remembering their
-stored values. All we need is to associate their stored values with a
-particular command-line option in our program, and draw the controls in a...
-let's say in a Panel. Like this:
+(Don't bother me with all the GUI code backend stuff for this, either.)
+I should be able to group the controls into, like, a Panel, and link each
+of them to the command-line option they should set. So I can fulfill both
+#2 and #3 in my list just by writing:
 
     panel = Panel("Main",
         ('image', Filename, 'Image to display'),
@@ -40,19 +35,17 @@ let's say in a Panel. Like this:
         ('height', Number, 'Height in pixels')
     )
 
-Now we've defined the options and their controls, all that's left is #1 in
-the list above, the name of the program. We'll call it an Application:
+Then, to fulfill item #1, let's keep it simple:
 
     app = Application('showimage', [panel])
 
-So, app is an Application that runs the 'showimage' program, passing it
-all the relevant options set from [panel] which, we assume, is now full of
-GUI widgets (it is). Just one last thing:
+There's the name of my program, and the panel that has all the controls. I've
+said my three things, and that should be enough to create a GUI. Like:
 
     gui = GUI('Da showimage GUI', [app])
     gui.run()
 
-Really, should it be harder than that?
+How hard can it be?
 """
 
 __all__ = [
