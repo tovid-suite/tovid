@@ -138,6 +138,44 @@ from libtovid.metagui import *
 
 # (option, Control, label, default, ...) or
 # (option, Control, 'required', label, default, ...)
+main = Panel("Main",
+    ('menu-title', Text,
+        'Menu title', 'My video collection',
+        'Title text displayed on the main menu'),
+    ('files', FileList, 'required',
+        'Video files', None,
+        'Video files to include on the disc'),
+    ('titles', TextList, 'required',
+        'Video titles', None,
+        'Titles for each video'),
+    ('format', Choice,
+        'Disc format', 'DVD',
+        'Format of disc to create; SVCD can be burned to a CD-R',
+        'DVD|SVCD'),
+    ('tvsys', Choice,
+        'TV system', 'NTSC',
+        'Standard TV system to use',
+        'NTSC|PAL'),
+    ('background', Filename,
+        'Background image or video', '',
+        'Image or video file to display in the background of the main menu',
+        'load', 'Select an image or video file'),
+    ('bgaudio', Filename,
+        'Background audio', '',
+        'Audio file to play while the main menu is showing',
+        'load', 'Select an audio file'),
+    ('static', Flag,
+        'Static menus', False,
+        'Create still-image menus; takes less time'),
+    ('submenus', Flag,
+        'Create Submenus', False,
+        'Create a submenu for each video title; takes more time'),
+    ('out', Filename, 'required',
+        'Output name', '',
+        'Name to use for the output directory where the disc will be created.',
+        'save', 'Choose an output name')
+)
+
 general = Panel("General",
     ('showcase', Filename, 'required',
         'Showcase', '',
@@ -381,7 +419,7 @@ authoring = Panel("Authoring",
 )
 # Create the todisc application
 todisc = Application('todisc',
-    [general, menu, thumbnails, audio, text, authoring])
+    [main, general, menu, thumbnails, audio, text, authoring])
 
 
 ### --------------------------------------------------------------------
