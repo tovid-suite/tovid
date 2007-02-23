@@ -1,7 +1,12 @@
 #! /usr/bin/env python
 # control.py
 
-"""Control widget classes"""
+"""Control widget classes.
+
+This module defines a Control class and several derivatives. A Control is a
+special-purpose GUI widget for setting a value such as a number or filename.
+
+"""
 
 __all__ = [
     'Control',
@@ -24,6 +29,8 @@ import Tkinter as tk
 import tkColorChooser
 import tkFileDialog
 from libtovid.gui.tooltip import ToolTip
+from libtovid import log
+
 
 class Control (tk.Frame):
     """A widget that controls a value.
@@ -40,7 +47,10 @@ class Control (tk.Frame):
     See the Control subclasses below for examples of how self.variable,
     get() and set() are used.
     """
-    def __init__(self, master=None, vartype=str, help=''):
+    def __init__(self,
+                 master=None,
+                 vartype=str,
+                 help=''):
         """Create a Control with the given master and variable type.
 
             master:   Tkinter widget that will contain this Control
@@ -79,7 +89,8 @@ class Control (tk.Frame):
         else:
             newstate = 'disabled'
         for widget in self.children.values():
-            widget.config(state=newstate)
+            if 'state' in widget.config():
+                widget.config(state=newstate)
 
     def disable(self):
         """Disable all sub-widgets."""
@@ -372,12 +383,17 @@ class PlainLabel (Control):
 class ScrollList (Control):
     """A widget for choosing from a list of values
     """
-    def __init__(self, master=None, label="List", values=None):
+    def __init__(self,
+                 master=None,
+                 label="List",
+                 default=None,
+                 help=''):
         """Create a ScrollList widget.
         
-            master:    Tkinter widget that will contain this ScrollList
-            label:     Text label for the list
-            values:    List of initial values
+            master:   Tkinter widget that will contain this ScrollList
+            label:    Text label for the list
+            default:  List of initial values, or None for empty
+            help:     Help text to show in a tooltip
         """
         Control.__init__(self, master, list)
         self.selected = tk.StringVar() # Currently selected list item
@@ -391,11 +407,11 @@ class ScrollList (Control):
         self.listbox = tk.Listbox(group, width=30, listvariable=self.variable,
                                   yscrollcommand=self.scrollbar.set)
         self.listbox.pack(side='left', fill='both', expand=True)
-        self.scrollbar.pack(side='left', fill='y', expand=True)
-        group.pack()
+        self.scrollbar.pack(side='left', fill='y')
+        group.pack(fill='both')
         self.listbox.bind('<Button-1>', self.select)
-        if values:
-            self.add(*values)
+        if default:
+            self.add(*default)
 
     def add(self, *values):
         """Add the given values to the list."""
@@ -417,8 +433,12 @@ class ScrollList (Control):
 
 class DragList (ScrollList):
     """A scrollable listbox with drag-and-drop support"""
-    def __init__(self, master=None, label="List", values=None):
-        ScrollList.__init__(self, master, label, values)
+    def __init__(self,
+                 master=None,
+                 label="List",
+                 default=None,
+                 help=''):
+        ScrollList.__init__(self, master, label, default, help)
         self.listbox.bind('<Button-1>', self.select)
         self.listbox.bind('<B1-Motion>', self.drag)
         self.listbox.bind('<ButtonRelease-1>', self.drop)
@@ -452,8 +472,12 @@ class DragList (ScrollList):
 
 class FileList (DragList):
     """A widget for listing several filenames"""
-    def __init__(self, master=None, label="File list", files=None):
-        DragList.__init__(self, master, label, files)
+    def __init__(self,
+                 master=None,
+                 label="File list",
+                 default=None,
+                 help=''):
+        DragList.__init__(self, master, label, default, help)
         # Group Add/Remove buttons
         group = tk.Frame(self)
         self.add = tk.Button(group, text="Add...", command=self.addFiles)
@@ -482,8 +506,13 @@ class FileList (DragList):
 
 class TextList (DragList):
     """A widget for listing and editing several text strings"""
-    def __init__(self, master=None, label="Text list", values=None):
-        DragList.__init__(self, master, label, values)
+    def __init__(self,
+                 master=None,
+                 label="Text list",
+                 default=None,
+                 help=''):
+        DragList.__init__(self, master, label, default, help)
+        # TODO: Event handling to allow editing items
         self.editbox = tk.Entry(self, width=30, textvariable=self.selected)
         self.editbox.bind('<Return>', self.setTitle)
         self.editbox.pack(fill='x', expand=True)

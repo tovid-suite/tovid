@@ -12,7 +12,9 @@ __all__ = [
 import os
 import Tkinter as tk
 import tkSimpleDialog
+from libtovid import log
 
+log.level = 'debug'
 
 ### --------------------------------------------------------------------
 
@@ -61,6 +63,7 @@ class Optional (tk.Frame):
         self.check = tk.Checkbutton(self, text=label, variable=self.active,
                                     command=self.showHide, justify='left')
         self.check.pack(side='left')
+        log.debug("Creating Control: %s" % widget)
         self.widget = widget(self, '', *args)
         self.widget.pack(side='left', expand=True, fill='x')
         self.widget.disable()
