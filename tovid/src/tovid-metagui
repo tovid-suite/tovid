@@ -50,7 +50,7 @@ where:
 
 Other parameters include default value, help/tooltip text to show, allowable
 values, and hints about how to draw the GUI control widget; they are specific
-to the flavor of Metawidget being used.
+to the flavor of Control being used.
 
 Option tuples are just an abstract way of describing a suitable GUI widget
 for a certain command-line option. This is 90% of the syntax you need to
@@ -129,15 +129,15 @@ and then the GUI:
 Run this script standalone for a demonstration of this feature.
 """
 
-# Get all the Metawidgets we'll need
-from libtovid.gui.meta import *
+# Get supporting classes from libtovid.metagui
+from libtovid.metagui import *
 
 ### --------------------------------------------------------------------
 ### todisc panels
 ### --------------------------------------------------------------------
 
-# (option, Metawidget, label, default, ...) or
-# (option, Metawidget, 'required', label, default, ...)
+# (option, Control, label, default, ...) or
+# (option, Control, 'required', label, default, ...)
 general = Panel("General",
     ('showcase', Filename, 'required',
         'Showcase', '',
