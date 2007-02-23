@@ -141,6 +141,7 @@ class OptionControl:
 ### --------------------------------------------------------------------
 
 class Panel:
+    """A group of option controls in a rectangular frame"""
     def __init__(self, title='', *optdefs):
         """Create a Panel to hold option-control associations.
         
@@ -193,7 +194,7 @@ class Panel:
 ### --------------------------------------------------------------------
 
 class Application (tk.Frame):
-    """GUI frontend for a command-line program.
+    """Graphical frontend for a command-line program
     """
     def __init__(self, program, panels=None,
                  width=400, height=600):
@@ -233,14 +234,14 @@ class Application (tk.Frame):
         # Single-panel application
         if len(self.panels) == 1:
             panel = self.panels[0].get_widget(self.frame)
-            panel.pack(fill='x')
+            panel.pack(anchor='n', fill='x', expand=True)
         # Multi-panel (tabbed) application
         else:
             tabs = Tabs(self.frame)
             for panel in self.panels:
                 tabs.add(panel.title, panel.get_widget(tabs))
             tabs.draw()
-            tabs.pack()
+            tabs.pack(anchor='n', fill='x', expand=True)
         # "Run" button
         button = tk.Button(self.frame, text="Run %s now" % self.program,
                            command=self.execute)
@@ -269,6 +270,8 @@ class Application (tk.Frame):
 ### --------------------------------------------------------------------
 
 class GUI (tk.Tk):
+    """GUI with one or more Applications
+    """
     def __init__(self, title, applications):
         """Create a GUI for the given applications.
         
@@ -288,12 +291,22 @@ class GUI (tk.Tk):
             self.showing[app] = tk.BooleanVar()
             self.showing[app].set(False)
 
+    def run(self):
+        """Run the GUI"""
+        self.draw()
+        self.draw_menu(self)
+        # Enter the main event handler
+        self.mainloop()
+        # TODO: Interrupt handling
+
     def draw(self):
+        """Draw widgets."""
+        self.resizable(width=True, height=True)
         for app in self.apps:
             self.frames[app] = app.get_frame(self)
             self.frames[app].pack_forget()
         # self.frames[self.apps[0]].pack()
-
+        
     def draw_menu(self, window):
         """Draw a menu bar in the given window.
         """
@@ -316,27 +329,16 @@ class GUI (tk.Tk):
                                         command=self.show_app)
             menubar.add_cascade(label="Application", menu=appmenu)
 
-    def execute(self):
-        """Run the current application's program."""
-        app = self.appdict[self.current_app.get()]
-        app.execute()
-
     def show_app(self):
         """Show all applications that are checked, and hide those that aren't.
         """
         for app, ischecked in self.showing.items():
             if ischecked.get():
-                self.frames[app].pack(side='left', padx=8, pady=8)
+                self.frames[app].pack(side='left', fill='both', expand=True,
+                                      padx=8, pady=8)
                 self.program = app.program
             else:
                 self.frames[app].pack_forget()
 
-    def run(self):
-        """Run the GUI"""
-        self.draw()
-        self.draw_menu(self)
-        # Enter the main event handler
-        self.mainloop()
-        # TODO: Interrupt handling
 
 ### --------------------------------------------------------------------
