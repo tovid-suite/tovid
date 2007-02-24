@@ -522,7 +522,7 @@ makemenu = Application('makemenu', [makemenu_panel])
 ### --------------------------------------------------------------------
 
 # Create the GUI for both applications
-gui = GUI("tovid metagui", [todisc, tovid, makemenu])
+gui = GUI("tovid metagui", [todisc, tovid])
 
 # Show the GUI window
 gui.run()

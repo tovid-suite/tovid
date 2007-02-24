@@ -260,7 +260,7 @@ class Application (tk.Frame):
             tk.LabelFrame(master, text=self.program, padx=8, pady=8,
                           width=self.width, height=self.height,
                           font=('Helvetica', 14, 'bold'))
-        self.frame.pack()
+        #self.frame.pack()
         # Prevent resizing
         self.frame.pack_propagate(False)
         # Single-panel application
@@ -308,20 +308,11 @@ class GUI (tk.Tk):
         """Create a GUI for the given applications.
         
             title:        Text shown in the title bar
-            applications: List of Applications to include in the GUI
+            applications: List of Applications to included in the GUI
         """
         tk.Tk.__init__(self)
         self.title(title)
-        # Index applications by program name
-        programs = [app.program for app in applications]
-        self.appdict = dict(zip(programs, applications))
         self.apps = applications
-        # On/off (checkbutton) variables for each program
-        self.showing = {}
-        self.frames = {}
-        for app in self.apps:
-            self.showing[app] = tk.BooleanVar()
-            self.showing[app].set(False)
 
     def run(self):
         """Run the GUI"""
@@ -334,11 +325,18 @@ class GUI (tk.Tk):
     def draw(self):
         """Draw widgets."""
         self.resizable(width=True, height=True)
-        for app in self.apps:
-            self.frames[app] = app.draw(self)
-            self.frames[app].pack_forget()
-        # self.frames[self.apps[0]].pack()
-        
+        # Single-application GUI
+        if len(self.apps) == 1:
+            app = self.apps[0].draw(self)
+            app.pack(anchor='n', fill='x', expand=True)
+        # Multi-application (tabbed) GUI
+        else:
+            tabs = Tabs(self, font=('Helvetica', 14, 'bold'))
+            for app in self.apps:
+                tabs.add(app.program, app.draw(tabs))
+            tabs.draw()
+            tabs.pack(anchor='n', fill='x', expand=True)
+
     def draw_menu(self, window):
         """Draw a menu bar in the given window.
         """
@@ -350,27 +348,5 @@ class GUI (tk.Tk):
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=self.quit)
         menubar.add_cascade(label="File", menu=filemenu)
-        # Application menu
-        # (only included for multi-application GUIs)
-        if len(self.apps) > 1:
-            appmenu = tk.Menu(menubar, tearoff=True)
-            appmenu.add_separator()
-            for app in self.apps:
-                appmenu.add_checkbutton(label=app.program,
-                                        variable=self.showing[app],
-                                        command=self.show_app)
-            menubar.add_cascade(label="Application", menu=appmenu)
-
-    def show_app(self):
-        """Show all applications that are checked, and hide those that aren't.
-        """
-        for app, ischecked in self.showing.items():
-            if ischecked.get():
-                self.frames[app].pack(side='left', fill='both', expand=True,
-                                      padx=8, pady=8)
-                self.program = app.program
-            else:
-                self.frames[app].pack_forget()
-
 
 ### --------------------------------------------------------------------
