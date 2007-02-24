@@ -161,7 +161,7 @@ class OptionControl:
 
 ### --------------------------------------------------------------------
 
-_layout_keywords = ['spacer']
+layout_keywords = ['spacer']
 
 class Panel:
     """A group of option controls in a rectangular frame"""
@@ -184,20 +184,22 @@ class Panel:
         options '-bgaudio', '-submenus', and '-menu-length'.
         """
         self.title = title
-        self.controls = [] # OptionControl instances
+        self.children = [] # OptionControl instances
         self.frame = None
         for optdef in optdefs:
             # Tuple option definition
             if type(optdef) == tuple:
-                self.controls.append(OptionControl(*optdef))
+                self.children.append(OptionControl(*optdef))
             # Layout keyword or label text
             elif type(optdef) == str:
                 # Is text a layout keyword?
-                if optdef in _layout_keywords:
+                if optdef in layout_keywords:
                     pass
                 # Any other text becomes a label
                 else:
                     pass
+            elif isinstance(optdef, Panel):
+                self.children.append(optdef)
             else:
                 raise "Panel option definitions must be in tuple form."
 
@@ -206,9 +208,9 @@ class Panel:
         
             master: Tkinter widget to use as master
         """
-        self.frame = tk.Frame(master)
-        for control in self.controls:
-            widget = control.get_widget(self.frame)
+        self.frame = tk.LabelFrame(master, text=self.title, padx=8, pady=4)
+        for child in self.children:
+            widget = child.get_widget(self.frame)
             widget.pack(anchor='nw', fill='x', expand=True)
         return self.frame
 
@@ -218,8 +220,8 @@ class Panel:
         if not self.frame:
             raise "Must call get_widget() before calling get_options()"
         args = []
-        for control in self.controls:
-            args += control.get_options()
+        for child in self.children:
+            args += child.get_options()
         return args
 
 ### --------------------------------------------------------------------
