@@ -217,7 +217,7 @@ if echo "$DISC_NAME" | grep -q -i '\.xml$'; then
         echo "Authoring disc from file: $DVDAUTHOR_XML"
     fi
     # See if makexml generated the xml file
-    if ! grep makexml "$DVDAUTHOR_XML"; then
+    if ! grep -q makexml "$DVDAUTHOR_XML"; then
         echo "Your xml file wasn't made with tovid's makexml!"
         echo "This may cause unexpected (and possibly disastrous) behavior."
         if $NOASK; then
