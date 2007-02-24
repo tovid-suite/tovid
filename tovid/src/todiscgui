@@ -749,7 +749,7 @@ class Advanced (tk.Frame):
         # Create the tab bar and pack the first frame
         tabs = Tabs(self, 'left')
         for panel in advanced_panels:
-            tabs.add(panel.title, panel.get_widget(tabs))
+            tabs.add(panel.title, panel.draw(tabs))
         tabs.draw()
         tabs.pack()
         #self.pack_propagate(False)

@@ -434,6 +434,7 @@ todisc = Application('todisc',
 
 # Create the tovid panels
 tovid_panel = Panel("Main",
+    ('vbitrate',),
     ('in', Filename, 'required',
      'Input filename', '',
      'Video file to encode',
@@ -467,8 +468,10 @@ tovid_panel = Panel("Main",
      'Safe area as a percentage of screen size',
      50, 100, 'scale')
 )
+tovid_panel2 = Panel("tovid", ('in',), ('out',), ('aspect',), ('quality',))
+
 # Create the tovid application
-tovid = Application('tovid', [tovid_panel])
+tovid = Application('tovid', [tovid_panel, tovid_panel2])
 
 ### --------------------------------------------------------------------
 ### makemenu
