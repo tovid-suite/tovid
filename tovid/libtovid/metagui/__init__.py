@@ -52,6 +52,26 @@ How hard can it be?
 # TODO: Files/titles multi-list
 # Group options in a Panel with a label
 
+"""Notes:
+
+Support alignment keywords in Panel argument list, i.e.:
+
+    panel = Panel("General",
+        ('foo', Number, ...),
+        'beside',
+        ('bar', Filename, ...)
+    )
+
+places the 'foo' and 'bar' widgets side-by-side (instead of the default,
+'below'). Other possible keywords:
+
+    'spacer'
+    'group' ... 'endgroup' groups controls in a sub-frame
+    'Any other text' becomes a label inserted at that position
+
+
+"""
+
 # Export everything from support and control modules
 # (Anyone know of a more concise way to do this?)
 from support import *
@@ -104,16 +124,17 @@ class OptionControl:
         """
         # Required widget, always shown
         if self.args[0] == 'required':
-            self.widget = self.control(master, *self.args[1:])
+            self.widget = self.control(*self.args[1:])
         # Flag widget, always shown
         elif self.control == Flag:
-            self.widget = self.control(master, *self.args)
+            self.widget = self.control(*self.args)
         # Optional widget, may be enabled/disabled
         else:
             # Hack: extract Control label
             label = self.args[0]
             args = self.args[1:]
-            self.widget = Optional(master, self.control, label, *args)
+            self.widget = Optional(self.control, label, *args)
+        self.widget.draw(master)
         return self.widget
 
     def get_options(self):
@@ -132,13 +153,15 @@ class OptionControl:
             args.append("-%s" % self.option)
             # List of arguments
             if type(value) == list:
-                args.append(*value)
+                args.extend(value)
             # Single argument
             else:
                 args.append(value)
         return args
 
 ### --------------------------------------------------------------------
+
+_layout_keywords = ['spacer']
 
 class Panel:
     """A group of option controls in a rectangular frame"""
@@ -164,9 +187,17 @@ class Panel:
         self.controls = [] # OptionControl instances
         self.frame = None
         for optdef in optdefs:
+            # Tuple option definition
             if type(optdef) == tuple:
                 self.controls.append(OptionControl(*optdef))
-            # TODO: Support keywords like 'spacer'
+            # Layout keyword or label text
+            elif type(optdef) == str:
+                # Is text a layout keyword?
+                if optdef in _layout_keywords:
+                    pass
+                # Any other text becomes a label
+                else:
+                    pass
             else:
                 raise "Panel option definitions must be in tuple form."
 
