@@ -94,12 +94,13 @@ class Optional (tk.Frame):
 class Tabs (tk.Frame):
     """A tabbed frame, with tab buttons that switch between several frames.
     """
-    def __init__(self, master, side='top'):
+    def __init__(self, master, side='top', font=('Helvetica', 12, 'normal')):
         """Create a tabbed frame widget.
         
             master: Tkinter widget that will contain the tabs widget
             side:   Side to show the tab controls on
                     ('top', 'bottom', 'left', or 'right')
+            font:   Tkinter font spec for tab-button font
         
         Tabs are added to the tab bar via the add() method. The added frames
         should have the Tabs frame as their master. For example:
@@ -117,6 +118,7 @@ class Tabs (tk.Frame):
         """
         tk.Frame.__init__(self, master)
         self.side = side
+        self.font = font
         self.labels = []
         self.frames = []
         self.selected = tk.IntVar()
@@ -140,6 +142,9 @@ class Tabs (tk.Frame):
             'variable': self.selected,
             'command': self.change,
             'selectcolor': 'white',
+            'relief': 'sunken',
+            'offrelief': 'groove',
+            'font': self.font,
             'indicatoron': 0,
             'padx': 4, 'pady': 4
             }
