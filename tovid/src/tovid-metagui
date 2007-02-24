@@ -97,7 +97,7 @@ Panels like this:
         ('thumb-mist-color', Color, ...),
         ('wave', Text, ...)
     )
-    text = Panel("Text and Font",
+    text = Panel("Text",
         ('menu-font', Font, ...),
         ('menu-fontsize', Number, ...)
     )
@@ -317,7 +317,7 @@ audio = Panel("Audio",
 )
 
 
-text = Panel("Text and Font",
+text = Panel("Text/Font",
     ('menu-font', Font,
         'Menu title font', 'Helvetica',
         'tooltip'),
