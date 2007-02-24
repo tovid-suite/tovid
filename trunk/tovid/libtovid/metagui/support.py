@@ -47,45 +47,47 @@ class FontChooser (tkSimpleDialog.Dialog):
 class Optional (tk.Frame):
     """Container that shows/hides an optional Control"""
     def __init__(self,
-                 master=None,
-                 widget=None,
+                 control=None,
                  label='Option',
                  *args):
         """Create an Optional widget.
 
-            master:  Tkinter widget that will contain the Optional
-            widget:  A Control to show or hide
+            control: A Control to show or hide
             label:   Label for the optional widget
         """
-        tk.Frame.__init__(self, master)
+        self.control = control('', *args)
+        self.label = label
         self.active = tk.BooleanVar()
+
+    def draw(self, master):
+        """Draw optional checkbox and control widgets in the given master."""
+        tk.Frame.__init__(self, master)
         # Create and pack widgets
-        self.check = tk.Checkbutton(self, text=label, variable=self.active,
+        self.check = tk.Checkbutton(self, text=self.label, variable=self.active,
                                     command=self.showHide, justify='left')
         self.check.pack(side='left')
-        log.debug("Creating Control: %s" % widget)
-        self.widget = widget(self, '', *args)
-        self.widget.pack(side='left', expand=True, fill='x')
-        self.widget.disable()
+        self.control.draw(self)
+        self.control.pack(side='left', expand=True, fill='x')
+        self.control.disable()
         self.active.set(False)
     
     def showHide(self):
         """Show or hide the sub-widget."""
         if self.active.get():
-            self.widget.enable()
+            self.control.enable()
         else:
-            self.widget.disable()
+            self.control.disable()
 
     def get(self):
         """Return the sub-widget's value if active, or None if inactive."""
         if self.active.get():
-            return self.widget.get()
+            return self.control.get()
         else:
             return None
     
     def set(self, value):
         """Set sub-widget's value."""
-        self.widget.set(value)
+        self.control.set(value)
 
 ### --------------------------------------------------------------------
 
