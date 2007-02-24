@@ -100,7 +100,7 @@ log.level = 'debug'
 
 class OptionControl:
     """A Control that controls a command-line option."""
-    def __init__(self, option, control, *args):
+    def __init__(self, option, control=None, *args):
         """Create an OptionControl.
         
             option:  Command-line option name (without the leading '-')
@@ -113,17 +113,18 @@ class OptionControl:
         initially disabled, with a checkbox to enable it.
         """
         self.option = option
-        self.control = control
+        self.control = control or Text
         self.args = args
         self.widget = None
     
-    def get_widget(self, master):
-        """Create and return a Control instance.
-        
-            master: Tkinter widget to use as master
+    def draw(self, master):
+        """Draw the Control in the given master, and return the Control.
         """
-        # Required widget, always shown
-        if self.args[0] == 'required':
+        args = self.args
+        # No args; use default label
+        if len(args) == 0:
+            self.widget = self.control("-%s" % self.option)
+        elif args[0] == 'required':
             self.widget = self.control(*self.args[1:])
         # Flag widget, always shown
         elif self.control == Flag:
@@ -139,10 +140,10 @@ class OptionControl:
 
     def get_options(self):
         """Return a list of arguments for passing this command-line option.
-        get_widget must be called before this function.
+        draw must be called before this function.
         """
         if not self.widget:
-            raise "Must call get_widget() before calling get_options()"
+            raise "Must call draw() before calling get_options()"
         args = []
         value = self.widget.get()
         # Boolean values control a flag
@@ -195,22 +196,19 @@ class Panel:
                 # Is text a layout keyword?
                 if optdef in layout_keywords:
                     pass
-                # Any other text becomes a label
                 else:
-                    pass
+                    raise "%s not recognized" % optdef
             elif isinstance(optdef, Panel):
                 self.children.append(optdef)
             else:
                 raise "Panel option definitions must be in tuple form."
 
-    def get_widget(self, master):
-        """Return the panel widget (tk.Frame with Controls packed inside it).
-        
-            master: Tkinter widget to use as master
+    def draw(self, master):
+        """Draw Controls in a Frame with the given master, and return the Frame.
         """
         self.frame = tk.LabelFrame(master, text=self.title, padx=8, pady=4)
         for child in self.children:
-            widget = child.get_widget(self.frame)
+            widget = child.draw(self.frame)
             widget.pack(anchor='nw', fill='x', expand=True)
         return self.frame
 
@@ -218,7 +216,7 @@ class Panel:
         """Return a list of all command-line options from contained widgets.
         """
         if not self.frame:
-            raise "Must call get_widget() before calling get_options()"
+            raise "Must call draw() before calling get_options()"
         args = []
         for child in self.children:
             args += child.get_options()
@@ -250,8 +248,9 @@ class Application (tk.Frame):
         self.showing = False
         self.frame = None
 
-    def get_frame(self, master):
-        """Return a tk.Frame containing the application, using the given master.
+    def draw(self, master):
+        """Draw the application in a Frame with the given master, and return
+        the Frame.
         """
         # If self.window has already been created, return it
         if self.frame:
@@ -266,13 +265,13 @@ class Application (tk.Frame):
         self.frame.pack_propagate(False)
         # Single-panel application
         if len(self.panels) == 1:
-            panel = self.panels[0].get_widget(self.frame)
+            panel = self.panels[0].draw(self.frame)
             panel.pack(anchor='n', fill='x', expand=True)
         # Multi-panel (tabbed) application
         else:
             tabs = Tabs(self.frame)
             for panel in self.panels:
-                tabs.add(panel.title, panel.get_widget(tabs))
+                tabs.add(panel.title, panel.draw(tabs))
             tabs.draw()
             tabs.pack(anchor='n', fill='x', expand=True)
         # "Run" button
@@ -336,7 +335,7 @@ class GUI (tk.Tk):
         """Draw widgets."""
         self.resizable(width=True, height=True)
         for app in self.apps:
-            self.frames[app] = app.get_frame(self)
+            self.frames[app] = app.draw(self)
             self.frames[app].pack_forget()
         # self.frames[self.apps[0]].pack()
         
