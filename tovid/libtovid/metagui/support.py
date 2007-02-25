@@ -6,7 +6,8 @@
 __all__ = [
     'FontChooser',
     'Optional',
-    'Tabs'
+    'Tabs',
+    'ScrolledWindow'
     ]
 
 import os
@@ -154,15 +155,19 @@ class Tabs (tk.Frame):
         if self.side in ['left', 'right']:
             button_side = 'top'
             bar_anchor = 'n'
+            bar_fill = 'y'
         else:
             button_side = 'left'
             bar_anchor = 'w'
+            bar_fill = 'x'
         # Tab buttons, numbered from 0
         for index, label in enumerate(self.labels):
             button = tk.Radiobutton(self.buttons, text=label, value=index,
                                     **config)
-            button.pack(anchor='nw', side=button_side, fill='x')
-        self.buttons.pack(anchor=bar_anchor, side=self.side)
+            button.pack(anchor='nw', side=button_side,
+                        fill='both', expand=True)
+        self.buttons.pack(anchor=bar_anchor, side=self.side,
+                          fill=bar_fill, expand=True)
         # Activate the first tab
         self.selected.set(0)
         self.change()
@@ -179,3 +184,49 @@ class Tabs (tk.Frame):
         self.index = selected
 
 ### --------------------------------------------------------------------
+
+class ScrolledWindow (tk.Tk):
+    """A top-level window with scrollbars that are shown when the window is
+    too small to fit all its content.
+    
+    To use as a container for other widgets, do:
+    
+        window = ScrolledWindow()
+        button = tk.Button(window.frame, text="Click me", ...)
+        entry = tk.Entry(window.frame, ...)
+        window.draw()
+    
+    That is, use window.frame as the master of child widgets, instead of
+    window itself. (TODO: Eliminate this requirement.)
+    """
+    def __init__(self, width, height):
+        tk.Tk.__init__(self)
+        self.width = width
+        self.height = height
+        # Frame inside canvas, fills all available space
+        self.canvas = tk.Canvas(self)
+        self.frame = tk.Frame(self.canvas,
+                              width=self.width, height=self.height)
+        # Grid fills all available window space
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+    def draw(self):
+        """Draw the scrollbars and container frame.
+        """
+        # Attach scrollbars to a Canvas, and pack a frame inside the Canvas.
+        h_scroll = tk.Scrollbar(self, orient='horizontal',
+                                command=self.canvas.xview)
+        v_scroll = tk.Scrollbar(self, orient='vertical',
+                                command=self.canvas.yview)
+        self.canvas.grid(row=0, column=0, sticky='nsew')
+        h_scroll.grid(row=1, column=0, sticky='we')
+        v_scroll.grid(row=0, column=1, sticky='ns')
+        self.canvas.configure(xscrollcommand=h_scroll.set,
+                              yscrollcommand=v_scroll.set)
+        # TODO: Figure out what this stuff is doing
+        # (stolen from http://www.thescripts.com/forum/thread596095.html)
+        #? Put the frame in the canvas's scrollable zone
+        self.canvas.create_window(0, 0, window=self.frame, anchor='nw')
+        #? Configure size of canvas's scrollable zone
+        self.canvas.configure(scrollregion=(0, 0, self.width, self.height))
