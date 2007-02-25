@@ -85,12 +85,9 @@ __all__ = [
     'Application',
     'GUI'] + all_support + all_control
 
-
 from libtovid import log
 from libtovid.cli import Command
-# Tkinter
 import Tkinter as tk
-# meta
 
 log.level = 'debug'
 
@@ -227,8 +224,7 @@ class Panel:
 class Application (tk.Frame):
     """Graphical frontend for a command-line program
     """
-    def __init__(self, program, panels=None,
-                 width=400, height=600):
+    def __init__(self, program, panels=None):
         """Define a GUI application frontend for a command-line program.
         
             program: Command-line program that the GUI is a frontend for
@@ -243,42 +239,28 @@ class Application (tk.Frame):
         """
         self.program = program
         self.panels = panels or []
-        self.width = width
-        self.height = height
         self.showing = False
         self.frame = None
 
     def draw(self, master):
-        """Draw the application in a Frame with the given master, and return
-        the Frame.
+        """Draw the Application in the given master.
         """
-        # If self.window has already been created, return it
-        if self.frame:
-            return self.frame
-        # Main window with fixed width/height
-        self.frame = \
-            tk.LabelFrame(master, text=self.program, padx=8, pady=8,
-                          width=self.width, height=self.height,
-                          font=('Helvetica', 14, 'bold'))
-        #self.frame.pack()
-        # Prevent resizing
-        self.frame.pack_propagate(False)
+        tk.Frame.__init__(self, master)
         # Single-panel application
         if len(self.panels) == 1:
-            panel = self.panels[0].draw(self.frame)
+            panel = self.panels[0].draw(self)
             panel.pack(anchor='n', fill='x', expand=True)
         # Multi-panel (tabbed) application
         else:
-            tabs = Tabs(self.frame)
+            tabs = Tabs(self)
             for panel in self.panels:
                 tabs.add(panel.title, panel.draw(tabs))
             tabs.draw()
             tabs.pack(anchor='n', fill='x', expand=True)
         # "Run" button
-        button = tk.Button(self.frame, text="Run %s now" % self.program,
+        button = tk.Button(self, text="Run %s now" % self.program,
                            command=self.execute)
         button.pack(anchor='s', fill='x', expand=True)
-        return self.frame
 
     def get_options(self):
         """Get a list of all command-line arguments from all panels.
@@ -301,18 +283,20 @@ class Application (tk.Frame):
 
 ### --------------------------------------------------------------------
 
-class GUI (tk.Tk):
+class GUI (ScrolledWindow):
     """GUI with one or more Applications
     """
-    def __init__(self, title, applications):
+    def __init__(self, title, applications, width=400, height=600):
         """Create a GUI for the given applications.
         
             title:        Text shown in the title bar
             applications: List of Applications to included in the GUI
         """
-        tk.Tk.__init__(self)
+        ScrolledWindow.__init__(self, width, height)
         self.title(title)
         self.apps = applications
+        self.width = width
+        self.height = height
 
     def run(self):
         """Run the GUI"""
@@ -324,21 +308,23 @@ class GUI (tk.Tk):
 
     def draw(self):
         """Draw widgets."""
+        ScrolledWindow.draw(self)
         self.resizable(width=True, height=True)
         # Single-application GUI
         if len(self.apps) == 1:
-            app = self.apps[0].draw(self)
+            app = self.apps[0].draw(self.frame)
             app.pack(anchor='n', fill='x', expand=True)
         # Multi-application (tabbed) GUI
         else:
-            tabs = Tabs(self, font=('Helvetica', 14, 'bold'))
+            tabs = Tabs(self.frame, 'top', ('Helvetica', 14, 'bold'))
             for app in self.apps:
-                tabs.add(app.program, app.draw(tabs))
+                app.draw(tabs)
+                tabs.add(app.program, app)
             tabs.draw()
             tabs.pack(anchor='n', fill='x', expand=True)
 
     def draw_menu(self, window):
-        """Draw a menu bar in the given window.
+        """Draw a menu bar in the given top-level window.
         """
         # Create and add the menu bar
         menubar = tk.Menu(window)
