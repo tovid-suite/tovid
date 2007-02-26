@@ -32,11 +32,19 @@ from libtovid.gui.tooltip import ToolTip
 from libtovid import log
 
 
+# Map python types to Tkinter variable types
+vartypes = {
+    str: tk.StringVar,
+    bool: tk.BooleanVar,
+    int: tk.IntVar,
+    float: tk.DoubleVar,
+    list: tk.Variable}
+
 class Control (tk.Frame):
     """A widget that controls a value.
 
-    A Control is a specialized GUI widget that stores a variable value.
-    The value is accessed via get() and set() methods.
+    A Control is a specialized GUI widget that controls a command-line option
+    via a local variable, accessed via get() and set() methods.
     
     Control subclasses may have any number of sub-widgets such as labels,
     buttons or entry boxes; one of the sub-widgets should be linked to the
@@ -49,44 +57,54 @@ class Control (tk.Frame):
     """
     def __init__(self,
                  vartype=str,
+                 option='',
                  label='',
                  default='',
                  help=''):
-        """Create a Control with the given master and variable type.
+        """Create a Control for an option.
 
             vartype:  Type of stored variable (str, bool, int, float, list)
+            option:   Command-line option associated with this Control
+            label:    Label for the Control
+            default:  Default value for the Control
             help:     Help text to show in a tooltip
         """
+        self.vartype = vartype
+        self.variable = None
+        self.option = option
         self.label = label
+        self.value = default
         self.help = help
-        # Map python types to Tkinter variable types
-        vartypes = {
-            str: tk.StringVar,
-            bool: tk.BooleanVar,
-            int: tk.IntVar,
-            float: tk.DoubleVar,
-            list: tk.Variable}
-        if vartype in vartypes:
-            self.variable = vartypes[vartype]()
-        else:
-            self.variable = tk.Variable()
-        self.set(default)
 
     def draw(self, master):
         """Draw the control widgets in the given master.
         Override this method in derived classes.
         """
         tk.Frame.__init__(self, master)
+        # Draw tooltip
         if self.help != '':
             self.tooltip = ToolTip(self, text=self.help, delay=1000)
+        # Create a suitable tk.Variable
+        if self.vartype in vartypes:
+            self.variable = vartypes[self.vartype]()
+        else:
+            self.variable = tk.Variable()
+        # Put the stored value in the Variable
+        self.set(self.value)
 
     def get(self):
         """Return the value of the Control's variable."""
-        return self.variable.get()
+        if self.variable:
+            return self.variable.get()
+        else:
+            return self.value
 
     def set(self, value):
         """Set the Control's variable to the given value."""
-        self.variable.set(value)
+        if self.variable:
+            self.variable.set(value)
+        else:
+            self.value = value
 
     def enable(self, enabled=True):
         """Enable or disable all sub-widgets."""
@@ -102,6 +120,29 @@ class Control (tk.Frame):
         """Disable all sub-widgets."""
         self.enable(False)
 
+    def get_options(self):
+        """Return a list of arguments for passing this command-line option.
+        draw must be called before this function.
+        """
+        if not self.widget:
+            raise "Must call draw() before calling get_options()"
+        args = []
+        value = self.get()
+        # Boolean values control a flag
+        if self.vartype == bool and value:
+            args.append("-%s" % self.option)
+        # Others use '-option value'
+        elif value:
+            args.append("-%s" % self.option)
+            # List of arguments
+            if self.vartype == list:
+                args.extend(value)
+            # Single argument
+            else:
+                args.append(value)
+        return args
+
+
 
 ### --------------------------------------------------------------------
 ### Control subclasses
@@ -110,6 +151,7 @@ class Control (tk.Frame):
 class Flag (Control):
     """A widget for controlling a yes/no value."""
     def __init__(self,
+                 option='',
                  label="Flag",
                  default=False,
                  help=''):
@@ -119,7 +161,7 @@ class Flag (Control):
             default:  Default value (True or False)
             help:     Help text to show in a tooltip
         """
-        Control.__init__(self, bool, label, default, help)
+        Control.__init__(self, bool, option, label, default, help)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -133,6 +175,7 @@ class Choice (Control):
     """A widget for choosing one of several options.
     """
     def __init__(self,
+                 option='',
                  label="Choices",
                  default=None,
                  help='',
@@ -149,7 +192,7 @@ class Choice (Control):
         # If choices is a string, split on '|'
         if type(choices) == str:
             choices = choices.split('|')
-        Control.__init__(self, str, label, default or choices[0], help)
+        Control.__init__(self, str, option, label, default or choices[0], help)
         self.choices = choices
         self.packside = packside
 
@@ -169,6 +212,7 @@ class Choice (Control):
 class Number (Control):
     """A widget for choosing or entering a number"""
     def __init__(self,
+                 option='',
                  label="Number",
                  default=None,
                  help='',
@@ -186,7 +230,7 @@ class Number (Control):
         # Use min if default wasn't provided
         if default is None:
             default = min
-        Control.__init__(self, int, label, default, help)
+        Control.__init__(self, int, option, label, default, help)
         self.min = min
         self.max = max
         self.style = style
@@ -223,6 +267,7 @@ class Number (Control):
 class Text (Control):
     """A widget for entering a line of text"""
     def __init__(self,
+                 option='',
                  label="Text",
                  default='',
                  help=''):
@@ -231,7 +276,7 @@ class Text (Control):
             default:  Default value of text widget
             help:     Help text to show in a tooltip
         """
-        Control.__init__(self, str, label, default, help)
+        Control.__init__(self, str, option, label, default, help)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -245,10 +290,11 @@ class Text (Control):
 class List (Text):
     """A widget for entering a space-separated list of text items"""
     def __init__(self,
+                 option='',
                  label="List",
                  default='',
                  help=''):
-        Text.__init__(self, label, default, help)
+        Text.__init__(self, option, label, default, help)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -270,6 +316,7 @@ class Filename (Control):
     """A widget for entering or browsing for a filename
     """
     def __init__(self,
+                 option='',
                  label='Filename',
                  default='',
                  help='',
@@ -284,7 +331,7 @@ class Filename (Control):
             desc:    Brief description (shown in title bar of file
                      browser dialog)
         """
-        Control.__init__(self, str, label, default, help)
+        Control.__init__(self, str, option, label, default, help)
         self.type = type
         self.desc = desc
 
@@ -315,6 +362,7 @@ class Filename (Control):
 class Color (Control):
     """A widget for choosing a color"""
     def __init__(self,
+                 option='',
                  label="Color",
                  default='',
                  help=''):
@@ -324,7 +372,7 @@ class Color (Control):
             default: Default color (named color or hexadecimal RGB)
             help:    Help text to show in a tooltip
         """
-        Control.__init__(self, str, label, default, help)
+        Control.__init__(self, str, option, label, default, help)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -345,6 +393,7 @@ class Color (Control):
 class Font (Control):
     """A font selector widget"""
     def __init__(self,
+                 option='',
                  label='Font',
                  default='Helvetica',
                  help=''):
@@ -354,7 +403,7 @@ class Font (Control):
             default: Default font
             help:    Help text to show in a tooltip
         """
-        Control.__init__(self, str, label, default, help)
+        Control.__init__(self, str, option, label, default, help)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -376,9 +425,10 @@ class Font (Control):
 class PlainLabel (Control):
     """A plain label or spacer widget"""
     def __init__(self,
+                 option='',
                  label="Text",
                  default=''):
-        Control.__init__(self, str, label)
+        Control.__init__(self, str, option, label)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -391,6 +441,7 @@ class ScrollList (Control):
     """A widget for choosing from a list of values
     """
     def __init__(self,
+                 option='',
                  label="List",
                  default=None,
                  help=''):
@@ -400,12 +451,12 @@ class ScrollList (Control):
             default:  List of initial values, or None for empty
             help:     Help text to show in a tooltip
         """
-        Control.__init__(self, list, label, default or [], help)
-        self.selected = tk.StringVar() # Currently selected list item
+        Control.__init__(self, list, option, label, default or [], help)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
+        self.selected = tk.StringVar() # Currently selected list item
         # Listbox label
         tk.Label(self, text=self.label).pack(anchor=tk.W)
         # Group listbox and scrollbar together
@@ -450,10 +501,11 @@ class ScrollList (Control):
 class DragList (ScrollList):
     """A scrollable listbox with drag-and-drop support"""
     def __init__(self,
+                 option='',
                  label="List",
                  default=None,
                  help=''):
-        ScrollList.__init__(self, label, default, help)
+        ScrollList.__init__(self, option, label, default, help)
         self.curindex = 0
 
     def draw(self, master):
@@ -492,10 +544,11 @@ class DragList (ScrollList):
 class FileList (DragList):
     """A widget for listing several filenames"""
     def __init__(self,
+                 option='',
                  label="File list",
                  default=None,
                  help=''):
-        DragList.__init__(self, label, default, help)
+        DragList.__init__(self, option, label, default, help)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -528,10 +581,11 @@ class FileList (DragList):
 class TextList (DragList):
     """A widget for listing and editing several text strings"""
     def __init__(self,
+                 option='',
                  label="Text list",
                  default=None,
                  help=''):
-        DragList.__init__(self, label, default, help)
+        DragList.__init__(self, option, label, default, help)
 
     def draw(self, master):
         """Draw control widgets in the given master."""

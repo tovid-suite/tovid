@@ -98,7 +98,7 @@ class Tabs (tk.Frame):
     def __init__(self, master, side='top', font=('Helvetica', 12, 'normal')):
         """Create a tabbed frame widget.
         
-            master: Tkinter widget that will contain the tabs widget
+            master: Tkinter widget to draw the Tabs in
             side:   Side to show the tab controls on
                     ('top', 'bottom', 'left', or 'right')
             font:   Tkinter font spec for tab-button font
@@ -124,7 +124,6 @@ class Tabs (tk.Frame):
         self.frames = []
         self.selected = tk.IntVar()
         self.index = 0
-        #self.draw()    
     
     def add(self, label, frame):
         """Add a new tab for the given frame.
