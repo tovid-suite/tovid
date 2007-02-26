@@ -83,7 +83,10 @@ __all__ = [
     'OptionControl',
     'Panel',
     'Application',
-    'GUI'] + all_support + all_control
+    'GUI',
+    # Submodules
+    'manpage',
+    'builder'] + all_support + all_control
 
 from libtovid import log
 from libtovid.cli import Command
@@ -286,7 +289,7 @@ class Application (tk.Frame):
 class GUI (ScrolledWindow):
     """GUI with one or more Applications
     """
-    def __init__(self, title, applications, width=400, height=600):
+    def __init__(self, title, applications, width=500, height=700):
         """Create a GUI for the given applications.
         
             title:        Text shown in the title bar
