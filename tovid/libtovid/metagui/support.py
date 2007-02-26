@@ -217,6 +217,7 @@ class ScrolledWindow (tk.Tk):
         # Canvas scrollable area
         self.canvas.configure(scrollregion=(0, 0, self.width, self.height))
         self.canvas.grid(row=0, column=0, sticky='nsew')
+        self.draw_scrollbars()
 
     def draw_scrollbars(self):
         # Attach scrollbars to the Canvas
