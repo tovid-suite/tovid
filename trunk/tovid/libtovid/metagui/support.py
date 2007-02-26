@@ -186,8 +186,7 @@ class Tabs (tk.Frame):
 ### --------------------------------------------------------------------
 
 class ScrolledWindow (tk.Tk):
-    """A top-level window with scrollbars that are shown when the window is
-    too small to fit all its content.
+    """A top-level window with scrollbars.
     
     To use as a container for other widgets, do:
     
@@ -204,9 +203,8 @@ class ScrolledWindow (tk.Tk):
         self.width = width
         self.height = height
         # Frame inside canvas, fills all available space
-        self.canvas = tk.Canvas(self)
-        self.frame = tk.Frame(self.canvas,
-                              width=self.width, height=self.height)
+        self.canvas = tk.Canvas(self, width=self.width, height=self.height)
+        self.frame = tk.Frame(self.canvas)
         # Grid fills all available window space
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -214,19 +212,19 @@ class ScrolledWindow (tk.Tk):
     def draw(self):
         """Draw the scrollbars and container frame.
         """
-        # Attach scrollbars to a Canvas, and pack a frame inside the Canvas.
+        # Put the container frame in the Canvas
+        self.canvas.create_window(0, 0, window=self.frame, anchor='nw')
+        # Canvas scrollable area
+        self.canvas.configure(scrollregion=(0, 0, self.width, self.height))
+        self.canvas.grid(row=0, column=0, sticky='nsew')
+
+    def draw_scrollbars(self):
+        # Attach scrollbars to the Canvas
         h_scroll = tk.Scrollbar(self, orient='horizontal',
                                 command=self.canvas.xview)
         v_scroll = tk.Scrollbar(self, orient='vertical',
                                 command=self.canvas.yview)
-        self.canvas.grid(row=0, column=0, sticky='nsew')
         h_scroll.grid(row=1, column=0, sticky='we')
         v_scroll.grid(row=0, column=1, sticky='ns')
         self.canvas.configure(xscrollcommand=h_scroll.set,
                               yscrollcommand=v_scroll.set)
-        # TODO: Figure out what this stuff is doing
-        # (stolen from http://www.thescripts.com/forum/thread596095.html)
-        #? Put the frame in the canvas's scrollable zone
-        self.canvas.create_window(0, 0, window=self.frame, anchor='nw')
-        #? Configure size of canvas's scrollable zone
-        self.canvas.configure(scrollregion=(0, 0, self.width, self.height))
