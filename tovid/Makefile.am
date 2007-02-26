@@ -177,8 +177,8 @@ uninstall-hook:
 	rmdir $(pyexecRENDERdir)
 	rmdir $(pyexecTEMPLATEdir)
 	rmdir $(pyexecGUIdir)
-	rmdir $(pyexecLIBTOVIDdir)
 	rmdir $(pyexecMETAGUIdir)
+	rmdir $(pyexecLIBTOVIDdir)
 
 # A little fun :-)
 sense:
