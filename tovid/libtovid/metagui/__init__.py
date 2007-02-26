@@ -69,7 +69,6 @@ places the 'foo' and 'bar' widgets side-by-side (instead of the default,
     'group' ... 'endgroup' groups controls in a sub-frame
     'Any other text' becomes a label inserted at that position
 
-
 """
 
 # Export everything from support and control modules
@@ -80,7 +79,6 @@ from support import __all__ as all_support
 from control import __all__ as all_control
 __all__ = [
     # GUI creation interface
-    'OptionControl',
     'Panel',
     'Application',
     'GUI',
@@ -98,125 +96,45 @@ log.level = 'debug'
 ### GUI interface-definition API
 ### --------------------------------------------------------------------
 
-class OptionControl:
-    """A Control that controls a command-line option."""
-    def __init__(self, option, control=None, *args):
-        """Create an OptionControl.
-        
-            option:  Command-line option name (without the leading '-')
-            control: Control type (Filename, Choice, Flag etc.)
-            *args:   Arguments to the given Control
+class Panel (tk.LabelFrame):
+    """A group of option controls in a rectangular frame.
 
-        The 'required' keyword may be passed as the first item in args;
-        if present, the widget is drawn always-enabled (representing a
-        mandatory command-line argument). Otherwise, the widget is drawn
-        initially disabled, with a checkbox to enable it.
-        """
-        self.option = option
-        self.control = control or Text
-        self.args = args
-        self.widget = None
-    
-    def draw(self, master):
-        """Draw the Control in the given master, and return the Control.
-        """
-        args = self.args
-        # No args; use default label
-        if len(args) == 0:
-            self.widget = self.control("-%s" % self.option)
-        elif args[0] == 'required':
-            self.widget = self.control(*self.args[1:])
-        # Flag widget, always shown
-        elif self.control == Flag:
-            self.widget = self.control(*self.args)
-        # Optional widget, may be enabled/disabled
-        else:
-            # Hack: extract Control label
-            label = self.args[0]
-            args = self.args[1:]
-            self.widget = Optional(self.control, label, *args)
-        self.widget.draw(master)
-        return self.widget
+    For example:
 
-    def get_options(self):
-        """Return a list of arguments for passing this command-line option.
-        draw must be called before this function.
-        """
-        if not self.widget:
-            raise "Must call draw() before calling get_options()"
-        args = []
-        value = self.widget.get()
-        # Boolean values control a flag
-        if value == True:
-            args.append("-%s" % self.option)
-        # Others use '-option value'
-        elif value:
-            args.append("-%s" % self.option)
-            # List of arguments
-            if type(value) == list:
-                args.extend(value)
-            # Single argument
-            else:
-                args.append(value)
-        return args
+        Panel("General",
+            Filename('bgaudio', "Background audio file"),
+            Flag('submenus', "Create submenus"),
+            Number('menu-length', "Length of menu (seconds)")
+            )
 
-### --------------------------------------------------------------------
-
-layout_keywords = ['spacer']
-
-class Panel:
-    """A group of option controls in a rectangular frame"""
-    def __init__(self, title='', *optdefs):
+    This creates a panel with three GUI widgets that control command-line
+    options '-bgaudio', '-submenus', and '-menu-length'.
+    """
+    def __init__(self, title='', *contents):
         """Create a Panel to hold option-control associations.
         
-            title:   Title of panel (name shown in tab bar)
-            optdefs: Parenthesized tuples with option name, control name,
-                     and control arguments.
-
-        For example:
-
-            Panel("General",
-                ('bgaudio', Filename, "Background audio file"),
-                ('submenus', Flag, "Create submenus"),
-                ('menu-length', Number, "Length of menu (seconds)")
-                )
-        
-        This creates a panel with three GUI widgets that control command-line
-        options '-bgaudio', '-submenus', and '-menu-length'.
+            title:    Title of panel (name shown in tab bar)
+            contents: Controls or sub-Panels
         """
         self.title = title
-        self.children = [] # OptionControl instances
-        self.frame = None
-        for optdef in optdefs:
-            # Tuple option definition
-            if type(optdef) == tuple:
-                self.children.append(OptionControl(*optdef))
-            # Layout keyword or label text
-            elif type(optdef) == str:
-                # Is text a layout keyword?
-                if optdef in layout_keywords:
-                    pass
-                else:
-                    raise "%s not recognized" % optdef
-            elif isinstance(optdef, Panel):
-                self.children.append(optdef)
+        self.contents = []
+        for item in contents:
+            if isinstance(item, Control) or isinstance(item, Panel):
+                self.contents.append(item)
             else:
-                raise "Panel option definitions must be in tuple form."
+                raise "Panel may only contain Controls or other Panels"
 
     def draw(self, master):
         """Draw Controls in a Frame with the given master, and return the Frame.
         """
-        self.frame = tk.LabelFrame(master, text=self.title, padx=8, pady=4)
-        for child in self.children:
-            widget = child.draw(self.frame)
-            widget.pack(anchor='nw', fill='x', expand=True)
-        return self.frame
+        tk.LabelFrame.__init__(self, master, text=self.title, padx=8, pady=4)
+        for item in self.contents:
+            item.draw(self)
+            item.pack(anchor='nw', fill='x', expand=True)
 
     def get_options(self):
         """Return a list of all command-line options from contained widgets.
         """
-        if not self.frame:
-            raise "Must call draw() before calling get_options()"
         args = []
         for child in self.children:
             args += child.get_options()
@@ -251,13 +169,15 @@ class Application (tk.Frame):
         tk.Frame.__init__(self, master)
         # Single-panel application
         if len(self.panels) == 1:
-            panel = self.panels[0].draw(self)
+            panel = self.panels[0]
+            panel.draw(self)
             panel.pack(anchor='n', fill='x', expand=True)
         # Multi-panel (tabbed) application
         else:
             tabs = Tabs(self)
             for panel in self.panels:
-                tabs.add(panel.title, panel.draw(tabs))
+                panel.draw(tabs)
+                tabs.add(panel.title, panel)
             tabs.draw()
             tabs.pack(anchor='n', fill='x', expand=True)
         # "Run" button
@@ -311,7 +231,7 @@ class GUI (tk.Tk):
 
     def draw(self):
         """Draw widgets."""
-        self.frame = tk.Frame(width=self.width, height=self.height)
+        self.frame = tk.Frame(self, width=self.width, height=self.height)
         self.frame.pack(fill='both', expand=True)
         self.frame.pack_propagate(False)
         self.resizable(width=True, height=True)
