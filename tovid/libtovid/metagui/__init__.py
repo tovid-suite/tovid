@@ -286,16 +286,16 @@ class Application (tk.Frame):
 
 ### --------------------------------------------------------------------
 
-class GUI (ScrolledWindow):
+class GUI (tk.Tk):
     """GUI with one or more Applications
     """
-    def __init__(self, title, applications, width=500, height=700):
+    def __init__(self, title, applications, width=500, height=800):
         """Create a GUI for the given applications.
         
             title:        Text shown in the title bar
             applications: List of Applications to included in the GUI
         """
-        ScrolledWindow.__init__(self, width, height)
+        tk.Tk.__init__(self)
         self.title(title)
         self.apps = applications
         self.width = width
@@ -311,7 +311,9 @@ class GUI (ScrolledWindow):
 
     def draw(self):
         """Draw widgets."""
-        ScrolledWindow.draw(self)
+        self.frame = tk.Frame(width=self.width, height=self.height)
+        self.frame.pack(fill='both', expand=True)
+        self.frame.pack_propagate(False)
         self.resizable(width=True, height=True)
         # Single-application GUI
         if len(self.apps) == 1:
