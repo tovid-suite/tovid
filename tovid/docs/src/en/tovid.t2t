@@ -132,7 +132,7 @@ letterboxing or anamorphic scaling.
 
 : **-quality** //NUM// (default 6)
     Desired output quality, on a scale of 1 to 10, with 10 giving the best
-    quality at the expense of a larger output file. Default is 8. Output size
+    quality at the expense of a larger output file. Default is 6. Output size
     can vary by approximately a factor of 4 (that is, **-quality 1** output
     can be 1/4 the size of **-quality 10** output). Your results may vary.
 
