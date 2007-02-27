@@ -41,7 +41,7 @@ vartypes = {
     list: tk.Variable}
 
 class Control (tk.Frame):
-    """A widget that controls a value.
+    """A widget that controls the value of an option.
 
     A Control is a specialized GUI widget that controls a command-line option
     via a local variable, accessed via get() and set() methods.
@@ -73,12 +73,18 @@ class Control (tk.Frame):
         self.variable = None
         self.option = option
         self.label = label
-        self.value = default
         self.help = help
+        # Store value in normal Python variable until draw() is called
+        self.value = self.vartype(default)
 
     def draw(self, master):
         """Draw the control widgets in the given master.
-        Override this method in derived classes.
+        
+        Override this method in derived classes, and call the base
+        class draw() method:
+        
+            Control.draw(self, master)
+        
         """
         tk.Frame.__init__(self, master)
         # Draw tooltip
@@ -94,6 +100,7 @@ class Control (tk.Frame):
 
     def get(self):
         """Return the value of the Control's variable."""
+        # self.variable isn't set until draw() is called
         if self.variable:
             return self.variable.get()
         else:
@@ -101,6 +108,7 @@ class Control (tk.Frame):
 
     def set(self, value):
         """Set the Control's variable to the given value."""
+        # self.variable isn't set until draw() is called
         if self.variable:
             self.variable.set(value)
         else:
@@ -113,6 +121,7 @@ class Control (tk.Frame):
         else:
             newstate = 'disabled'
         for widget in self.children.values():
+            # Some widgets don't support state changes
             if 'state' in widget.config():
                 widget.config(state=newstate)
 
@@ -124,8 +133,7 @@ class Control (tk.Frame):
         """Return a list of arguments for passing this command-line option.
         draw must be called before this function.
         """
-        if not self.widget:
-            raise "Must call draw() before calling get_options()"
+        # TODO: Raise exception if draw() hasn't been called
         args = []
         value = self.get()
         # Boolean values control a flag
