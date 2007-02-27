@@ -178,6 +178,7 @@ class Flag (Control):
         self.check = tk.Checkbutton(self, text=self.label, variable=self.variable)
         self.check.pack(side='left')
 
+
 ### --------------------------------------------------------------------
 
 class Choice (Control):
@@ -196,45 +197,73 @@ class Choice (Control):
             default:  Default choice, or None to use first choice in list
             help:     Help text to show in a tooltip
             choices:  Available choices, in string form: 'one|two|three'
-                      or list form: ['one', 'two', 'three']
+                      or list form: ['one', 'two', 'three'], or as a
+                      list-of-lists: [['a', "Use A"], ['b', "Use B"], ..].
+                      A dictionary is also allowed, as long as you don't
+                      care about preserving choice order.
         """
-        # If choices is a string, split on '|'
+        Control.__init__(self, str, option, label, default, help)
+        if type(choices) not in [str, list, dict]:
+            raise TypeError("choices must be a string, list, or dictionary.")
+        # Convert choices to a list if necessary
         if type(choices) == str:
             choices = choices.split('|')
-        Control.__init__(self, str, option, label, default or choices[0], help)
-        self.choices = choices
+        if type(choices) == list:
+            first = choices[0]
+            # list of strings
+            if type(first) == str:
+                choices = [[c, c] for c in choices]
+            # list of 2-element string lists? If not, exception
+            elif type(first) != list or len(first) != 2:
+                raise TypeError("choices lists must either be"\
+                    "['a', 'b', 'c'] or [['a', 'A'], ['b', 'B']] style.")
+        self.choices = []
+        self.labels = []
+        # Now, save it all as two separate lists
+        for choice, label in choices:
+            self.choices.append(choice)
+            self.labels.append(label)
         self.packside = packside
+        if not default:
+            self.set(self.choices[0])
 
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
-        tk.Label(self, text=self.label).pack(side=self.packside)
+        tk.Label(self, text=self.label).pack(anchor='nw', side=self.packside)
         self.rb = {}
-        for choice in self.choices:
-            self.rb[choice] = tk.Radiobutton(self, text=choice, value=choice,
+        for choice, label in zip(self.choices, self.labels):
+            self.rb[choice] = tk.Radiobutton(self, text=label, value=choice,
                                              variable=self.variable)
-            self.rb[choice].pack(side=self.packside)
+            self.rb[choice].pack(anchor='nw', side=self.packside)
 
+### --------------------------------------------------------------------
 
 class FlagChoice (Choice):
     """A widget for choosing among several mutually-exclusive flag options."""
     def __init__(self,
-                 options='',
+                 option='',
                  label="Flag choices",
-                 default='',
+                 default='a',
                  help='',
-                 choices='A|B',
+                 choices=[['a', "Option A"], ['b', "Option B"]],
                  packside='left'):
+        """Create a FlagChoice that sets one of several flag options.
+        
+            option:    Ignored
+            label:     Overall choice label
+            default:   Default (initial) choice
+            help:      Help text to show in a tooltip
+            choices:   List of option names, like ['opt1', 'opt2'], or
+                       list of 2-element lists, with the format:
+                       [['opt1', "Option one"], ['opt2', "Option two"]]
+                       including options and labels together.
+        """
         Choice.__init__(self, '', label, default, help, choices, packside)
-        if type(options) == str:
-            options = options.split('|')
-        self.options = options
     
     def get_options(self):
         """Return list of an argument for setting the selected flag."""
-        chosen = self.variable.get()
-        index = self.choices.index(chosen)
-        arg = "-%s" % self.options[index]
+        arg = "-%s" % self.variable.get()
         return [arg]
     
 
