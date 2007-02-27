@@ -230,10 +230,11 @@ class Choice (Control):
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
-        tk.Label(self, text=self.label).pack(anchor='nw', side=self.packside)
+        frame = tk.LabelFrame(self, text=self.label)
+        frame.pack(anchor='nw', fill='x')
         self.rb = {}
         for choice, label in zip(self.choices, self.labels):
-            self.rb[choice] = tk.Radiobutton(self, text=label, value=choice,
+            self.rb[choice] = tk.Radiobutton(frame, text=label, value=choice,
                                              variable=self.variable)
             self.rb[choice].pack(anchor='nw', side=self.packside)
 
@@ -254,17 +255,19 @@ class FlagChoice (Choice):
             label:     Overall choice label
             default:   Default (initial) choice
             help:      Help text to show in a tooltip
-            choices:   List of option names, like ['opt1', 'opt2'], or
-                       list of 2-element lists, with the format:
-                       [['opt1', "Option one"], ['opt2', "Option two"]]
-                       including options and labels together.
+            choices:   List of flag options (in the same formats accepted
+                       by Choice). Include a choice called 'none' to allow
+                       passing no flags.
         """
         Choice.__init__(self, '', label, default, help, choices, packside)
     
     def get_options(self):
-        """Return list of an argument for setting the selected flag."""
-        arg = "-%s" % self.variable.get()
-        return [arg]
+        """Return argument for setting the selected flag."""
+        arg = self.variable.get()
+        if arg == 'none':
+            return []
+        else:
+            return ["-%s" % arg]
     
 
 ### --------------------------------------------------------------------
@@ -518,7 +521,7 @@ class ScrollList (Control):
         Control.draw(self, master)
         self.selected = tk.StringVar() # Currently selected list item
         # Listbox label
-        tk.Label(self, text=self.label).pack(anchor=tk.W)
+        tk.Label(self, text=self.label).pack(anchor='w')
         # Group listbox and scrollbar together
         group = tk.Frame(self)
         self.scrollbar = tk.Scrollbar(group, orient='vertical',
