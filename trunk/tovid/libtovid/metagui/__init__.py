@@ -136,8 +136,8 @@ class Panel (tk.LabelFrame):
         """Return a list of all command-line options from contained widgets.
         """
         args = []
-        for child in self.children:
-            args += child.get_options()
+        for item in self.contents:
+            args += item.get_options()
         return args
 
 ### --------------------------------------------------------------------
@@ -237,7 +237,8 @@ class GUI (tk.Tk):
         self.resizable(width=True, height=True)
         # Single-application GUI
         if len(self.apps) == 1:
-            app = self.apps[0].draw(self.frame)
+            app = self.apps[0]
+            app.draw(self.frame)
             app.pack(anchor='n', fill='x', expand=True)
         # Multi-application (tabbed) GUI
         else:
