@@ -16,7 +16,6 @@ __all__ = [
     'Filename',
     'Flag',
     'FlagGroup',
-    'FlagChoice',
     'Font',
     'Text',
     'List',
@@ -140,10 +139,10 @@ class Control (tk.Frame):
         value = self.get()
         # Boolean values control a flag
         if self.vartype == bool and value:
-            args.append("-%s" % self.option)
-        # Others use '-option value'
+            args.append(self.option)
+        # Others use 'option value'
         elif value:
-            args.append("-%s" % self.option)
+            args.append(self.option)
             # List of arguments
             if self.vartype == list:
                 args.extend(value)
@@ -187,13 +186,11 @@ class FlagGroup (Control):
     """
     def __init__(self,
                  label='',
-                 default='',
                  state='normal',
                  *flags):
         """Create a FlagGroup with the given label and state.
         
             label:    Label for the group
-            default:  Default selection
             state:    'normal' for regular Flags, 'exclusive' for
                       mutually-exclusive Flags
             *flags:   All additional arguments are Flag controls
@@ -291,38 +288,6 @@ class Choice (Control):
             self.rb[choice] = tk.Radiobutton(frame, text=label, value=choice,
                                              variable=self.variable)
             self.rb[choice].pack(anchor='nw', side=self.packside)
-
-### --------------------------------------------------------------------
-
-class FlagChoice (Choice):
-    """A widget for choosing among several mutually-exclusive flag options."""
-    def __init__(self,
-                 option='',
-                 label="Flag choices",
-                 default='a',
-                 help='',
-                 choices=[['a', "Option A"], ['b', "Option B"]],
-                 packside='left'):
-        """Create a FlagChoice that sets one of several flag options.
-        
-            option:    Ignored
-            label:     Overall choice label
-            default:   Default (initial) choice
-            help:      Help text to show in a tooltip
-            choices:   List of flag options (in the same formats accepted
-                       by Choice). Include a choice called 'none' to allow
-                       passing no flags.
-        """
-        Choice.__init__(self, '', label, default, help, choices, packside)
-    
-    def get_options(self):
-        """Return argument for setting the selected flag."""
-        arg = self.variable.get()
-        if arg == 'none':
-            return []
-        else:
-            return ["-%s" % arg]
-    
 
 ### --------------------------------------------------------------------
 
