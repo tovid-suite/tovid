@@ -1027,18 +1027,24 @@ if $DO_FIT; then
         
     # Calculate bitrate required to fit video into FIT_SIZE MiB
     LENGTH=$(idvid -terse "$IN_FILE" | grep V_DURATION | awk -F '=' '{print $2}')
-    let "MPEG_OVERHEAD=FIT_SIZE/100"
-    let "AUD_VID_SIZE=FIT_SIZE-MPEG_OVERHEAD"
-    let "AUDIO_SIZE=AUD_BITRATE*LENGTH/8/1024"
-    let "VIDEO_SIZE=AUD_VID_SIZE-AUDIO_SIZE"
-    let "VID_BITRATE=VIDEO_SIZE*8*1024/LENGTH"
+    MPEG_OVERHEAD=$(bc_math "$FIT_SIZE / 100")
+    AUD_VID_SIZE=$(bc_math "$FIT_SIZE - $MPEG_OVERHEAD")
+    AUDIO_SIZE=$(bc_math "$AUD_BITRATE * $LENGTH / (8 *1024)")
+    VIDEO_SIZE=$(bc_math "$AUD_VID_SIZE - $AUDIO_SIZE")
+    VID_BITRATE=$(bc_math "$VIDEO_SIZE*8*1024 / $LENGTH")
 
     echo "DEBUG:"
     echo "length=.$LENGTH. overhead=.$MPEG_OVERHEAD. avsize=.$AUD_VID_SIZE."
     echo "asize=.$AUDIO_SIZE. vsize=.$VIDEO_SIZE. vbitr=.$VID_BITRATE."
 
+    VID_BITRATE=$(echo $VID_BITRATE | awk -F '.' '{print $1}')
+
+    # Keep bitrates sane
     if test "$VID_BITRATE" -lt 800; then
         VID_BITRATE=900
+    fi
+    if test "$VID_BITRATE" -gt 9200; then
+        VID_BITRATE=9200
     fi
 
     echo "Fitting video into ${FIT_SIZE}MB (video: ${VID_BITRATE}kbps)."
