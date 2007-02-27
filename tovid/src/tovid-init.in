@@ -342,6 +342,19 @@ function get_filesystem()
     echo "$FILESYSTEM"
 }
 
+# ******************************************************************************
+# Do floating point math with bc
+# Input args:
+#   $1 = The math operation to perfrom, in a quoted string
+#
+# Usage:
+#   ANSWER=$(bc_math "$NUM1 + $NUM2")
+# ******************************************************************************
+function bc_math()
+{
+    echo "scale=2; $1" | bc -l
+}
+
 
 # ******************************************************************************
 # Countdown 5 seconds, then return
