@@ -188,14 +188,12 @@ class FlagGroup (Control):
     def __init__(self,
                  label='',
                  default='',
-                 help='',
                  state='normal',
                  *flags):
         """Create a FlagGroup with the given label and state.
         
             label:    Label for the group
             default:  Default selection
-            help:     Help text to show in a tooltip
             state:    'normal' for regular Flags, 'exclusive' for
                       mutually-exclusive Flags
             *flags:   All additional arguments are Flag controls
