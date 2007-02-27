@@ -158,6 +158,9 @@ PIDS=""
 VIDEO_TYPE="live"
 # Do not normalize audio
 DO_NORM=false
+# EXPERIMENTAL -fit NUM variables
+DO_FIT=false
+FIT_SIZE=""
 # Compact disc size (unset by default)
 DISC_SIZE=""
 # Nonvideo bitrate
@@ -483,6 +486,11 @@ function get_args()
             "-type" )
                 shift
                 VIDEO_TYPE="$1"
+                ;;
+            "-fit" )
+                shift
+                DO_FIT=:
+                FIT_SIZE="$1"
                 ;;
             "-discsize" )
                 shift
@@ -1011,6 +1019,34 @@ fi
 # Default quality 6 (or 7 for ffmpeg), if not set by user
 : ${VID_QUALITY:=6}
 
+if $DO_FIT; then
+    # EXPERIMENTAL: only for DVD and mpeg2enc
+    if $USE_FFMPEG || test "$TGT_RES" != "DVD"; then
+        exit_with_error "-fit only works with -dvd and without -ffmpeg."
+    fi
+        
+    # Calculate bitrate required to fit video into FIT_SIZE MiB
+    LENGTH=$(idvid -terse "$IN_FILE" | grep V_DURATION | awk -F '=' '{print $2}')
+    let "MPEG_OVERHEAD=FIT_SIZE/100"
+    let "AUD_VID_SIZE=FIT_SIZE-MPEG_OVERHEAD"
+    let "AUDIO_SIZE=AUD_BITRATE*LENGTH/8/1024"
+    let "VIDEO_SIZE=AUD_VID_SIZE-AUDIO_SIZE"
+    let "VID_BITRATE=VIDEO_SIZE*8*1024/LENGTH"
+
+    echo "DEBUG:"
+    echo "length=.$LENGTH. overhead=.$MPEG_OVERHEAD. avsize=.$AUD_VID_SIZE."
+    echo "asize=.$AUDIO_SIZE. vsize=.$VIDEO_SIZE. vbitr=.$VID_BITRATE."
+
+    if test "$VID_BITRATE" -lt 800; then
+        VID_BITRATE=900
+    fi
+
+    echo "Fitting video into ${FIT_SIZE}MB (video: ${VID_BITRATE}kbps)."
+
+    echo "Press a key to continue."
+    read FOOBAR
+fi
+
 # Set resolution and frame rate according to format and TV system
 case "$TGT_RES" in
     # VCD
@@ -1256,6 +1292,9 @@ fi
 
 # Default quantization
 QUANT=$(expr 13 \- $VID_QUALITY)
+if $DO_FIT; then
+    QUANT=3
+fi
 
 # mpeg2enc encoding quality options
 # Don't use -q for VCD (since -q implies variable bitrate)
