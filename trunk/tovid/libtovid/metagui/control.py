@@ -15,6 +15,7 @@ __all__ = [
     'Color',
     'Filename',
     'Flag',
+    'FlagGroup',
     'FlagChoice',
     'Font',
     'Text',
@@ -178,6 +179,61 @@ class Flag (Control):
         self.check = tk.Checkbutton(self, text=self.label, variable=self.variable)
         self.check.pack(side='left')
 
+### --------------------------------------------------------------------
+
+class FlagGroup (Control):
+    """A wrapper widget for grouping Flag controls, and allowing
+    mutually-exclusive flags.
+    """
+    def __init__(self,
+                 label='',
+                 default='',
+                 help='',
+                 state='normal',
+                 *flags):
+        """Create a FlagGroup with the given label and state.
+        
+            label:    Label for the group
+            default:  Default selection
+            help:     Help text to show in a tooltip
+            state:    'normal' for regular Flags, 'exclusive' for
+                      mutually-exclusive Flags
+            *flags:   All additional arguments are Flag controls
+        """
+        Control.__init__(self, str, '', label, '', '')
+        self.flags = flags
+        self.state = state
+    
+    def draw(self, master):
+        """Draw Flag controls in the given master."""
+        Control.draw(self, master)
+        frame = tk.LabelFrame(self, text=self.label)
+        frame.pack(fill='x', expand=True)
+        for flag in self.flags:
+            flag.draw(frame)
+            flag.check.bind('<Button-1>', self.select)
+            flag.pack(anchor='nw', side='top')
+    
+    def select(self, event):
+        """Event handler called when a Flag is selected."""
+        # For normal flags, nothing to do
+        if self.state != 'exclusive':
+            return
+        # For exclusive flags, clear all but the selected Flag
+        for flag in self.flags:
+            # Turn on the Flag that was clicked
+            if flag == event.widget:
+                flag.set(True)
+            else:
+                flag.set(False)
+
+    def get_options(self):
+        """Return a list of arguments for setting the relevant flag(s)."""
+        args = []
+        for flag in self.flags:
+            if flag.option != 'none':
+                args.extend(flag.get_options())
+        return args
 
 ### --------------------------------------------------------------------
 
