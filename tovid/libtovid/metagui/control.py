@@ -15,6 +15,7 @@ __all__ = [
     'Color',
     'Filename',
     'Flag',
+    'FlagChoice',
     'Font',
     'Text',
     'List',
@@ -214,6 +215,28 @@ class Choice (Control):
                                              variable=self.variable)
             self.rb[choice].pack(side=self.packside)
 
+
+class FlagChoice (Choice):
+    """A widget for choosing among several mutually-exclusive flag options."""
+    def __init__(self,
+                 options='',
+                 label="Flag choices",
+                 default='',
+                 help='',
+                 choices='A|B',
+                 packside='left'):
+        Choice.__init__(self, '', label, default, help, choices, packside)
+        if type(options) == str:
+            options = options.split('|')
+        self.options = options
+    
+    def get_options(self):
+        """Return list of an argument for setting the selected flag."""
+        chosen = self.variable.get()
+        index = self.choices.index(chosen)
+        arg = "-%s" % self.options[index]
+        return [arg]
+    
 
 ### --------------------------------------------------------------------
 
