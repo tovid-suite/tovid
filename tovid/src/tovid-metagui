@@ -176,16 +176,16 @@ main = Panel("Main",
 )
 
 general = Panel("General",
-    FlagChoice('',
-        'Menu style', 'none',
+    FlagGroup('Menu style', 'none',
         "Style to use for the main DVD menu. Default is a grid of thumbnails,"\
         " large and centered. Showcase shows thumbnails around a showcased"\
         " image or video in the center, and Textmenu avoids thumbnails"\
         " altogether, and just shows text on a static or animated background.",
-        [['none', "Default: Thumbnail grid"],
-         ['showcase', "Showcase: Large central image or video"],
-         ['textmenu', "Textmenu: Text on a background"]],
-        'top'),
+        'exclusive',
+        Flag('none', "Default: Thumbnail grid"),
+        Flag('showcase', "Showcase: Large central image or video"),
+        Flag('textmenu', "Textmenu: Text on a background")
+        ),
     Filename('showcase',
         'Showcase', '',
         'Image or video file to be showcased in a large central frame',
