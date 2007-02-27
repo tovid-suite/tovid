@@ -24,7 +24,7 @@ much better with a GUI, even a cheesy-looking Tkinter one. This module shows
 how easy it is to create one.
 
 
-OPTION TUPLES
+CONTROLS
 
 Say, if you have a program that takes input and output filenames:
 
@@ -32,45 +32,45 @@ Say, if you have a program that takes input and output filenames:
 
 then you can create GUI widgets for those options like this:
 
-    ('in', Filename, "Input filename")
-    ('out', Filename, "Output prefix")
+    Filename('in', "Input filename")
+    Filename('out', "Output prefix")
 
-Command-line options are associated with GUI widgets by enclosing a tuple of
-things in parentheses. These have the general format:
+These have the general format:
 
-    ('option', Control, "Label", ...)
+    Control('option', "Label", ...)
 
 where:
 
-    'option'  is a command-line option (without the leading '-');
     Control   is a Control subclass, such as Filename, Choice, or Number,
-              describing what type of value the option sets; and
-    "Label"   is the text that should appear next to the GUI widget
-              that controls the option's value.
+              describing what type of value is being controlled;
+    'option'  is a command-line option (without the leading '-'),
+              whose value is set by the Control; and
+    "Label"   is the text that should appear next to the GUI Control.
 
 Other parameters include default value, help/tooltip text to show, allowable
 values, and hints about how to draw the GUI control widget; they are specific
-to the flavor of Control being used.
+to the flavor of Control being used. For a full list of available Control
+subclasses and how to use them, see libtovid/metagui/control.py.
 
-Option tuples are just an abstract way of describing a suitable GUI widget
-for a certain command-line option. This is 90% of the syntax you need to
-learn for creating your own GUIs. If you understand the above, you're almost
-ready to...
+This is 90% of the syntax you need to learn for creating your own GUIs. If
+you understand the above, you're almost ready to...
 
 
 CREATE A GUI
 
-First, give your abstract option tuples a place to live, in a Panel:
+First, give your Controls a place to live, in a Panel:
 
     general = Panel("General",
-        ('bgaudio', Filename, "Background audio file"),
-        ('submenus', Flag, "Create submenus"),
-        ('menu-length', Number, "Length of menu (seconds)", 0, 120)
+        Filename('bgaudio', "Background audio file"),
+        Flag('submenus', "Create submenus"),
+        Number('menu-length', "Length of menu (seconds)", 0, 120)
         )
 
-This will create three GUI widgets in a panel labeled "General": one for typing
+This will create three GUI widgets in a Panel labeled "General": one for typing
 or browsing to a filename, one for enabling or disabling submenus, and another 
-for setting menu length to a number between 0 and 120.
+for setting menu length to a number between 0 and 120. You can nest panels
+inside one another for grouping; sub-Panels have their own label and list of
+Controls or sub-Panels.
 
 Once you have a Panel, you can create an Application:
 
@@ -94,12 +94,12 @@ which will be shown in the GUI as tabs that you can switch between. Create
 Panels like this:
 
     thumbs = Panel("Thumbnails",
-        ('thumb-mist-color', Color, ...),
-        ('wave', Text, ...)
+        Color('thumb-mist-color', ...),
+        Text('wave', ...)
     )
     text = Panel("Text",
-        ('menu-font', Font, ...),
-        ('menu-fontsize', Number, ...)
+        Font('menu-font', ...),
+        Number('menu-fontsize', ...)
     )
 
 then, create the Application and GUI:
@@ -108,8 +108,8 @@ then, create the Application and GUI:
     gui = GUI('MyGUI', [todisc])
     gui.run()
 
-If there are multiple panels, a tabbed interface is created, with one tab
-for each panel.
+If multiple panels are given to Application, a tabbed interface is created,
+with one tab for each panel.
 
 
 CREATE A MULTI-APPLICATION GUI
@@ -258,7 +258,6 @@ menu = Panel("Menu",
         'tooltip')
 )
 
-# Throw in a few 'required' options just for fun
 thumbnails = Panel("Thumbnails",
     Flag('3dthumbs',
         'Create 3D thumbs', False,
@@ -519,7 +518,7 @@ makemenu = Application('makemenu', [makemenu_panel])
 ### --------------------------------------------------------------------
 
 # Create the GUI for both applications
-gui = GUI("tovid metagui", [todisc, tovid])
+gui = GUI("tovid metagui", [todisc, tovid, makemenu])
 
 # Show the GUI window
 gui.run()
