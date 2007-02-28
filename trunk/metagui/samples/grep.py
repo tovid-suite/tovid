@@ -5,95 +5,88 @@
 from metagui import *
 
 panel1 = Panel("Page 1",
-    HPanel('',
-        Drawer("Match settings",
-            Flag('-i',
-                'Ignore case', False,
-                "Ignore case distinctions in both the PATTERN and"\
-                " the input files."),
-            Flag('-v',
-                'Invert match', False,
-                "Invert the sense of matching, to select non-matching lines."),
-            Flag('-w',
-                'Match whole words', False,
-                "Select only those lines containing matches that form whole"\
-                " words. The test is that the matching substring must either"\
-                " be at the beginning of the line, or preceded by a non-word"\
-                " constituent character. Similarly, it must be either at the"\
-                " end of the line or followed by a non-word constituent"\
-                " character. Word-constituent characters are letters, digits,"\
-                " and the underscore."),
-            Flag('-x',
-                'Match whole lines', False,
-                "Select only those matches that exactly match the whole line.")
-            ),
-    
-        Drawer("Regular expressions",
-            Flag('-G',
-                'Basic regular expression', True,
-                "Interpret PATTERN as a basic regular expression."),
-            Flag('-E',
-                'Extended regular expression', False,
-                "Interpret PATTERN as an extended regular expression."),
-            Flag('-F',
-                'Fixed strings', False,
-                "Interpret PATTERN as a list of fixed strings, separated"\
-                " by newlines, any of which is to be matched."),
-            Flag('-P',
-                'Perl regular expression', False,
-                "Interpret PATTERN as a Perl regular expression.")
-            )
+    Drawer("Match settings",
+        Flag('-i',
+            'Ignore case', False,
+            "Ignore case distinctions in both the PATTERN and"\
+            " the input files."),
+        Flag('-v',
+            'Invert match', False,
+            "Invert the sense of matching, to select non-matching lines."),
+        Flag('-w',
+            'Match whole words', False,
+            "Select only those lines containing matches that form whole"\
+            " words. The test is that the matching substring must either"\
+            " be at the beginning of the line, or preceded by a non-word"\
+            " constituent character. Similarly, it must be either at the"\
+            " end of the line or followed by a non-word constituent"\
+            " character. Word-constituent characters are letters, digits,"\
+            " and the underscore."),
+        Flag('-x',
+            'Match whole lines', False,
+            "Select only those matches that exactly match the whole line.")
         ),
-
-    HPanel('',
-        Drawer('Context',
-            Number('-A',
-                'Trailing context', 0,
-                "Print NUM lines of trailing context after matching lines."\
-                " Places a line containing -- between contiguous groups of"\
-                " matches.",
-                0, 20),
-            Number('-B',
-                'Leading context', 0,
-                "Print NUM lines of leading context before matching lines."\
-                " Places a line containing -- between contiguous groups of"\
-                " matches.",
-                0, 20),
-            Number('-C',
-                'Output context', 0,
-                "Print NUM lines of output context. Places a line containing --"\
-                " between contiguous groups of matches.",
-                0, 20)
-            ),
-    
-        Drawer('Output',
-            Flag('-l',
-                'Print matching lines', False,
-                "Suppress  normal output; instead print the name of each"\
-                " input file from which output would normally have been"\
-                " printed. The scanning will stop on the first match."),
-            Flag('-L',
-                'Print non-matching lines', False,
-                "Suppress  normal output; instead print the name of each"\
-                " input file from which no output would normally have been"\
-                " printed. The scanning will stop on the first match."),
-            Flag('-c',
-                'Count matching lines', False,
-                "Suppress normal output; instead print a count of matching"\
-                " lines for each input file. With the -v, --invert-match"\
-                " option (see below), count non-matching lines."),
-            Flag('-n',
-                'Show matching part only', False,
-                "Show only the part of a matching line that matches PATTERN."),
-            Flag('-b',
-                'Print byte offset',
-                "Print the byte offset within the input file before each"\
-                " line of output."),
-            Flag('-n',
-                'Print line number', False,
-                "Prefix each line of output with the line number within"\
-                " its input file.")
-            ),
+    Drawer("Regular expressions",
+        Flag('-G',
+            'Basic regular expression', True,
+            "Interpret PATTERN as a basic regular expression."),
+        Flag('-E',
+            'Extended regular expression', False,
+            "Interpret PATTERN as an extended regular expression."),
+        Flag('-F',
+            'Fixed strings', False,
+            "Interpret PATTERN as a list of fixed strings, separated"\
+            " by newlines, any of which is to be matched."),
+        Flag('-P',
+            'Perl regular expression', False,
+            "Interpret PATTERN as a Perl regular expression.")
+        ),
+    Drawer('Context',
+        Number('-A',
+            'Trailing context', 0,
+            "Print NUM lines of trailing context after matching lines."\
+            " Places a line containing -- between contiguous groups of"\
+            " matches.",
+            0, 20),
+        Number('-B',
+            'Leading context', 0,
+            "Print NUM lines of leading context before matching lines."\
+            " Places a line containing -- between contiguous groups of"\
+            " matches.",
+            0, 20),
+        Number('-C',
+            'Output context', 0,
+            "Print NUM lines of output context. Places a line containing --"\
+            " between contiguous groups of matches.",
+            0, 20)
+        ),
+    Drawer('Output',
+        Flag('-l',
+            'Print matching lines', False,
+            "Suppress  normal output; instead print the name of each"\
+            " input file from which output would normally have been"\
+            " printed. The scanning will stop on the first match."),
+        Flag('-L',
+            'Print non-matching lines', False,
+            "Suppress  normal output; instead print the name of each"\
+            " input file from which no output would normally have been"\
+            " printed. The scanning will stop on the first match."),
+        Flag('-c',
+            'Count matching lines', False,
+            "Suppress normal output; instead print a count of matching"\
+            " lines for each input file. With the -v, --invert-match"\
+            " option (see below), count non-matching lines."),
+        Flag('-n',
+            'Show matching part only', False,
+            "Show only the part of a matching line that matches PATTERN."),
+        Flag('-b',
+            'Print byte offset', False,
+            "Print the byte offset within the input file before each"\
+            " line of output."),
+        Flag('-n',
+            'Print line number', False,
+            "Prefix each line of output with the line number within"\
+            " its input file.")
         ),
     FlagGroup('Print filename', 'exclusive',
         Flag('-H', 'Print', True),
