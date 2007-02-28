@@ -162,8 +162,6 @@ pyexecTEMPLATE_PYTHON = libtovid/template/*.py
 pyexecTEMPLATEdir = $(pyexecdir)/libtovid/template
 pyexecGUI_PYTHON = libtovid/gui/*.py
 pyexecGUIdir = $(pyexecdir)/libtovid/gui
-pyexecMETAGUI_PYTHON = libtovid/metagui/*.py
-pyexecMETAGUIdir = $(pyexecdir)/libtovid/metagui
 
 # src/tovid-init not needed b/c ./configure derives it from src/tovid-init.in
 # make the output directory for the man pages, since t2t won't
@@ -177,7 +175,6 @@ uninstall-hook:
 	rmdir $(pyexecRENDERdir)
 	rmdir $(pyexecTEMPLATEdir)
 	rmdir $(pyexecGUIdir)
-	rmdir $(pyexecMETAGUIdir)
 	rmdir $(pyexecLIBTOVIDdir)
 
 # A little fun :-)
