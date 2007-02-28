@@ -1,0 +1,26 @@
+#!/usr/bin/python
+# metagui
+
+"""Standalone executable for metaguis. Usage:
+
+    $ metagui grep
+
+This looks for a metagui file named ~/.metagui/grep.py, and runs it.
+"""
+
+import sys
+import os
+
+app_path = os.path.expanduser('~/.metagui/')
+
+if len(sys.argv) == 0:
+    print USAGE
+    sys.exit()
+else:
+    apps = sys.argv[1:]
+
+for app in apps:
+    appfile = os.path.join(app_path, '%s.py' %app)
+    if os.path.exists(appfile):
+        print "Loading '%s' metagui from: %s" %(app, appfile)
+        os.system('python %s' %appfile)
