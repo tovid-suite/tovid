@@ -4,27 +4,134 @@
 
 from metagui import *
 
-panel1 = Panel("A-L",
-    Number('A',
-        'Trailing context', 0,
-        "Print NUM lines of trailing context after matching lines. Places"\
-        " a line containing -- between contiguous groups of matches."),
+panel1 = Panel("Page 1",
+    HPanel('',
+        FlagGroup("Match settings", 'normal',
+            Flag('-i',
+                'Ignore case', False,
+                "Ignore case distinctions in both the PATTERN and"\
+                " the input files."),
+            Flag('-v',
+                'Invert match', False,
+                "Invert the sense of matching, to select non-matching lines."),
+            Flag('-w',
+                'Match whole words', False,
+                "Select only those lines containing matches that form whole"\
+                " words. The test is that the matching substring must either"\
+                " be at the beginning of the line, or preceded by a non-word"\
+                " constituent character. Similarly, it must be either at the"\
+                " end of the line or followed by a non-word constituent"\
+                " character. Word-constituent characters are letters, digits,"\
+                " and the underscore."),
+            Flag('-x',
+                'Match whole lines', False,
+                "Select only those matches that exactly match the whole line.")
+            ),
+    
+        FlagGroup("Regular expressions", 'normal',
+            Flag('-G',
+                'Basic regular expression', True,
+                "Interpret PATTERN as a basic regular expression."),
+            Flag('-E',
+                'Extended regular expression', False,
+                "Interpret PATTERN as an extended regular expression."),
+            Flag('-F',
+                'Fixed strings', False,
+                "Interpret PATTERN as a list of fixed strings, separated"\
+                " by newlines, any of which is to be matched."),
+            Flag('-P',
+                'Perl regular expression', False,
+                "Interpret PATTERN as a Perl regular expression.")
+            )
+        ),
+
+    Panel("Context",
+        Number('-A',
+            'Trailing context', 0,
+            "Print NUM lines of trailing context after matching lines."\
+            " Places a line containing -- between contiguous groups of"\
+            " matches.",
+            0, 20),
+        Number('-B',
+            'Leading context', 0,
+            "Print NUM lines of leading context before matching lines."\
+            " Places a line containing -- between contiguous groups of"\
+            " matches.",
+            0, 20),
+        Number('-C',
+            'Output context', 0,
+            "Print NUM lines of output context. Places a line containing --"\
+            " between contiguous groups of matches.",
+            0, 20)
+        ),
+
+    FlagGroup('Output', 'normal',
+        Flag('-l',
+            'Print matching lines', False,
+            "Suppress  normal output; instead print the name of each"\
+            " input file from which output would normally have been"\
+            " printed. The scanning will stop on the first match."),
+        Flag('-L',
+            'Print non-matching lines', False,
+            "Suppress  normal output; instead print the name of each"\
+            " input file from which no output would normally have been"\
+            " printed. The scanning will stop on the first match."),
+        Flag('-c',
+            'Count matching lines', False,
+            "Suppress normal output; instead print a count of matching"\
+            " lines for each input file. With the -v, --invert-match"\
+            " option (see below), count non-matching lines."),
+        Flag('-n',
+            'Show matching part only', False,
+            "Show only the part of a matching line that matches PATTERN."),
+        Flag('-b',
+            'Print byte offset',
+            "Print the byte offset within the input file before each"\
+            " line of output."),
+        Flag('-n',
+            'Print line number', False,
+            "Prefix each line of output with the line number within"\
+            " its input file.")
+        ),
+
+    FlagGroup('Print filename', 'exclusive',
+        Flag('-H', 'Print', True),
+        Flag('-h', 'Suppress')
+        ),
+
+    Panel("Recursive search",
+          Flag('-R',
+              'Recursive', False,
+              "Read  all files under each directory, recursively; this is"\
+              "equivalent to the -d recurse option."),
+          Text('--include',
+              'Recursive include pattern', '',
+              "Recurse in directories only searching file matching PATTERN."),
+          Text('--exclude',
+              'Recursive exclude pattern', '',
+              "Recurse in directories skip file matching PATTERN.")
+          ),
+
     Flag('-a',
         'Treat as text', False,
         "Process  a  binary  file as if it were text; this is equivalent to"\
         " the --binary-files=text option."),
-    Number('-B',
-        'Leading context', 0,
-        "Print NUM lines of leading context before matching lines. Places"\
-        " a line containing -- between contiguous groups of matches."),
-    Number('-C',
-        'Output context', 0,
-        "Print NUM lines of output context. Places a line containing --"\
-        " between contiguous groups of matches."),
-    Flag('-b',
-        'Print byte offset',
-        "Print the byte offset within the input file before each line of"\
-        " output."),
+    
+    Choice('--color',
+        'Colored output', 'never',
+        "Surround  the  matching  string with the marker find in GREP_COLOR"\
+        " environment variable.",
+        'never|always|auto'),
+
+    Text('-e',
+        'Pattern', '',
+        "Use PATTERN as the pattern; useful to protect patterns beginning"\
+        " with -."),
+
+)
+
+panel2 = Panel("Page 2",
+
     Text('--binary-files',
         'Assume type for binary files', '',
         "If  the  first few bytes of a file indicate that the file contains"\
@@ -38,21 +145,11 @@ panel1 = Panel("A-L",
         " might  output binary garbage, which can have nasty side effects if"\
         " the output is a terminal and if  the  terminal  driver  interprets"\
         " some of it as commands."),
-    Choice('--color',
-        'Colored output', 'never',
-        "Surround  the  matching  string with the marker find in GREP_COLOR"\
-        " environment variable.",
-        'never|always|auto'),
-    Flag('-c',
-        'Count matching lines', False,
-        "Suppress normal output; instead print a count  of  matching  lines"\
-        " for  each  input  file.   With  the -v, --invert-match option (see"\
-        " below), count non-matching lines."),
     Choice('-D',
         'Device/FIFO/socket action', 'read',
-        "If an input file is a  device,  FIFO  or  socket,  use  ACTION  to"\
-        " process  it.  By default, ACTION is read, which means that devices"\
-        " are read just as if they were ordinary files.  If ACTION is  skip,"\
+        "If an input file is a device, FIFO or socket, use ACTION to"\
+        " process it. By default, ACTION is read, which means that devices"\
+        " are read just as if they were ordinary files. If ACTION is  skip,"\
         " devices are silently skipped.",
         'read|skip'),
     Choice('-d',
@@ -64,54 +161,14 @@ panel1 = Panel("A-L",
         " all files under each directory, recursively; this is equivalent"\
         " to the -r option.",
         'read|skip|recurse'),
-    Flag('-E',
-        'Extended regular expression', False,
-        "Interpret PATTERN as an extended regular expression."),
-    Text('-e',
-        'Pattern', '',
-        "Use PATTERN as the pattern; useful to protect patterns beginning"\
-        " with -."),
-    Flag('-F',
-        'Fixed strings', False,
-        "Interpret  PATTERN  as  a list of fixed strings, separated by"\
-        " newlines, any of which is to be matched."),
-    Flag('-P',
-        'Perl regular expression', False,
-        "Interpret PATTERN as a Perl regular expression."),
     Filename('-f',
         'Get patterns from file', '',
         "Obtain patterns from FILE, one per line.  The empty file  contains"\
         " zero patterns, and therefore matches nothing."),
-    Flag('-G',
-        'Basic regular expression', True,
-        "Interpret PATTERN as a basic regular expression."),
-    FlagGroup('Print filename', 'exclusive',
-        Flag('-H', 'Print', True),
-        Flag('-h', 'Suppress')
-        ),
     Flag('-I',
         '?', False,
         "Process a binary file as if it did not contain matching data; this"\
         " is equivalent to the --binary-files=without-match option."),
-    Flag('-i',
-        'Ignore case', False,
-        "Ignore case distinctions in both the PATTERN and the input files."),
-    FlagGroup('Print only filenames', 'exclusive',
-        Flag('-l',
-            'Matching', False,
-            "Suppress  normal output; instead print the name of each input file"\
-            " from which output would normally have been printed. The scanning"\
-            " will stop on the first match."),
-        Flag('-L',
-            'Non-matching', False,
-            "Suppress  normal output; instead print the name of each input file"\
-            " from which no output would normally have been printed.  The"\
-            " scanning will stop on the first match.")
-        )
-
-)
-
-panel2 = Panel("M-Z",
     Number('-m',
         'Stop after this many matches', 0,
         "Stop  reading  a  file  after NUM matching lines.  If the input is"\
@@ -131,13 +188,6 @@ panel2 = Panel("M-Z",
         " yields better performance.  However, --mmap  can  cause  undefined"\
         " behavior  (including  core  dumps)  if an input file shrinks while"\
         " grep is operating, or if an I/O error occurs."),
-    Flag('-n',
-        'Print line number', False,
-        "Prefix each line of output with the line number within its input"\
-        " file."),
-    Flag('-n',
-        'Show matching part only', False,
-        "Show only the part of a matching line that matches PATTERN."),
     Text('--label',
         'Label for stdin', '',
         "Displays input actually coming from standard input as input coming"\
@@ -151,18 +201,6 @@ panel2 = Panel("M-Z",
         "Quiet; do not write anything to standard output.  Exit immediately"\
         " with zero status if any match is found, even if an error was"\
         " detected.  Also see the -s or --no-messages option."),
-    Panel("Recursive search",
-          Flag('-R',
-              'Recursive', False,
-              "Read  all files under each directory, recursively; this is"\
-              "equivalent to the -d recurse option."),
-          Text('--include',
-              'Recursive include pattern', '',
-              "Recurse in directories only searching file matching PATTERN."),
-          Text('--exclude',
-              'Recursive exclude pattern', '',
-              "Recurse in directories skip file matching PATTERN.")
-          ),
     Flag('-s',
         'Suppress errors', False,
         "Suppress error messages about  nonexistent  or  unreadable  files."\
@@ -195,20 +233,6 @@ panel2 = Panel("M-Z",
         'Print version number', False,
         "Print  the version number of grep to standard error.  This version"\
         " number should be included in all bug reports (see below)."),
-    Flag('-v',
-        'Invert match',
-        "Invert the sense of matching, to select non-matching lines."),
-    Flag('-w',
-        'Match whole words', False,
-        "Select only those lines containing matches that form whole  words."\
-        " The  test  is  that  the  matching substring must either be at the"\
-        " beginning of the line, or preceded by a non-word constituent char-"\
-        " acter.   Similarly,  it  must  be either at the end of the line or"\
-        " followed by a non-word  constituent  character.   Word-constituent"\
-        " characters are letters, digits, and the underscore."),
-    Flag('-x',
-        'Match whole lines', False,
-        "Select only those matches that exactly match the whole line."),
     Flag('-Z',
         'Output zero byte after each filename', False,
         "Output  a zero byte (the ASCII NUL character) instead of the char-"\
