@@ -1049,8 +1049,8 @@ if $DO_FIT; then
 
     echo "Fitting video into ${FIT_SIZE}MB (video: ${VID_BITRATE}kbps)."
 
-    echo "Press a key to continue."
-    read FOOBAR
+    $NOASK || echo "Press a key to continue."
+    $NOASK || read FOOBAR
 fi
 
 # Set resolution and frame rate according to format and TV system
