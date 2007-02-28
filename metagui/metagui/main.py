@@ -4,6 +4,8 @@
 __all__ = [
     # Main GUI creation interface
     'Panel',
+    'HPanel',
+    'VPanel',
     'Application',
     'GUI']
 
@@ -44,13 +46,13 @@ class Panel (tk.LabelFrame):
             else:
                 raise "Panel may only contain Controls or other Panels"
 
-    def draw(self, master):
-        """Draw Controls in a Frame with the given master, and return the Frame.
+    def draw(self, master, side='top'):
+        """Draw Controls in a Frame with the given master.
         """
         tk.LabelFrame.__init__(self, master, text=self.title, padx=8, pady=4)
         for item in self.contents:
             item.draw(self)
-            item.pack(anchor='nw', fill='x', expand=True)
+            item.pack(side=side, anchor='nw', fill='both', expand=True)
 
     def get_options(self):
         """Return a list of all command-line options from contained widgets.
@@ -59,6 +61,26 @@ class Panel (tk.LabelFrame):
         for item in self.contents:
             args += item.get_options()
         return args
+
+### --------------------------------------------------------------------
+
+class HPanel (Panel):
+    """A panel with widgets packed left-to-right"""
+    def __init__(self, title='', *contents):
+        Panel.__init__(self, title, *contents)
+
+    def draw(self, master):
+        Panel.draw(self, master, 'left')
+
+### --------------------------------------------------------------------
+
+class VPanel (Panel):
+    """A panel with widgets packed top-to-bottom"""
+    def __init__(self, title='', *contents):
+        Panel.__init__(self, title, *contents)
+
+    def draw(self, master):
+        Panel.draw(self, master, 'top')
 
 ### --------------------------------------------------------------------
 

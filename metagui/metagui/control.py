@@ -21,9 +21,7 @@ __all__ = [
     'List',
     'Number',
     'FileList',
-    'TextList',
-    # Deprecated
-    'PlainLabel']
+    'TextList']
 
 import shlex
 import Tkinter as tk
@@ -496,22 +494,6 @@ class Font (Control):
         chooser = FontChooser()
         if chooser.result:
             self.variable.set(chooser.result)
-
-### --------------------------------------------------------------------
-
-# Deprecated
-class PlainLabel (Control):
-    """A plain label or spacer widget"""
-    def __init__(self,
-                 option='',
-                 label="Text",
-                 default=''):
-        Control.__init__(self, str, option, label)
-
-    def draw(self, master):
-        """Draw control widgets in the given master."""
-        Control.draw(self, master)
-        tk.Label(self, text=self.label).pack(side='left')
 
 ### --------------------------------------------------------------------
 
