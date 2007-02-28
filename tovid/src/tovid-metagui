@@ -130,7 +130,7 @@ Run this script standalone for a demonstration of this feature.
 """
 
 # Get supporting classes from libtovid.metagui
-from libtovid.metagui import *
+from metagui import *
 
 ### --------------------------------------------------------------------
 ### todisc panels
@@ -141,12 +141,14 @@ main = Panel("Main",
     Text('-menu-title',
         'Menu title', 'My video collection',
         'Title text displayed on the main menu'),
-    FileList('-files',
-        'Video files', None,
-        'Video files to include on the disc'),
-    TextList('-titles',
-        'Video titles', None,
-        'Titles for each video'),
+    HPanel("Files and titles",
+           FileList('-files',
+               'Video files', None,
+               'Video files to include on the disc'),
+           TextList('-titles',
+               'Video titles', None,
+               'Titles for each video')
+        ),
     Choice('-format',
         'Disc format', 'DVD',
         'Format of disc to create; SVCD can be burned to a CD-R',

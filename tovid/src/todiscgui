@@ -14,7 +14,7 @@ import time
 import re
 import shlex
 from libtovid.cli import Command
-from libtovid.metagui import *
+from metagui import *
 from libtovid import log
 
 
