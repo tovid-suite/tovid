@@ -62,7 +62,8 @@ class Control (tk.Frame):
         """Create a Control for an option.
 
             vartype:  Type of stored variable (str, bool, int, float, list)
-            option:   Command-line option associated with this Control
+            option:   Command-line option associated with this Control, or
+                      '' to create a positional argument
             label:    Label for the Control
             default:  Default value for the Control
             help:     Help text to show in a tooltip
@@ -132,6 +133,7 @@ class Control (tk.Frame):
         draw must be called before this function.
         """
         # TODO: Raise exception if draw() hasn't been called
+        
         args = []
         value = self.get()
         # Boolean values control a flag
@@ -139,7 +141,8 @@ class Control (tk.Frame):
             args.append(self.option)
         # Others use 'option value'
         elif value:
-            args.append(self.option)
+            if self.option:
+                args.append(self.option)
             # List of arguments
             if self.vartype == list:
                 args.extend(value)
