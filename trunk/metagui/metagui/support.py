@@ -175,7 +175,7 @@ class Tabs (tk.Frame):
         self.frames[self.index].pack_forget()
         # Pack the newly-selected frame
         selected = self.selected.get()
-        self.frames[selected].pack(side=self.side, fill='both')
+        self.frames[selected].pack(side=self.side, fill='both', expand=True)
         # Remember this tab's index
         self.index = selected
 
