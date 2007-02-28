@@ -627,7 +627,6 @@ class FileList (DragList):
         """Event handler to add files to the list"""
         files = tkFileDialog.askopenfilenames(parent=self, title='Add files')
         for file in files:
-            log.debug("Adding '%s' to the file list" % file)
             self.listbox.insert('end', file)
 
     def removeFiles(self):
@@ -635,8 +634,6 @@ class FileList (DragList):
         selection = self.listbox.curselection()
         # Using reverse order prevents reflow from messing up indexing
         for line in reversed(selection):
-            log.debug("Removing '%s' from the file list" %\
-                      self.listbox.get(line))
             self.listbox.delete(line)
 
 ### --------------------------------------------------------------------
@@ -661,7 +658,6 @@ class TextList (DragList):
     def setTitle(self, event):
         """Event handler when Enter is pressed after editing a title."""
         newtitle = self.selected.get()
-        log.debug("Setting title to '%s'" % newtitle)
         self.listbox.delete(self.curindex)
         self.listbox.insert(self.curindex, newtitle)
 
