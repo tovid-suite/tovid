@@ -49,7 +49,11 @@ class Panel (tk.LabelFrame):
     def draw(self, master, side='top'):
         """Draw Controls in a Frame with the given master.
         """
-        tk.LabelFrame.__init__(self, master, text=self.title, padx=8, pady=4)
+        if self.title:
+            tk.LabelFrame.__init__(self, master, text=self.title,
+                                   padx=8, pady=4)
+        else:
+            tk.LabelFrame.__init__(self, master, bd=0, text='')
         for item in self.contents:
             item.draw(self)
             item.pack(side=side, anchor='nw', fill='both', expand=True)
