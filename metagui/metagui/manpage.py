@@ -35,6 +35,24 @@ class Option:
         # Get option name from header
         self.option = header.split()[0].lstrip('-')
 
+    def getopt(self):
+        """Get option name(s) and argument type from option header."""
+        text = self.header
+        # -f, --foobar
+        short_long = re.compile('(-\w), (--\w+)')
+        # -f, --foobar, --barfoo
+        short_long_other = re.compile('(-\w), (--\w+), (--\w+)')
+        # -f ARG, --foobar=ARG
+        short_long_arg = re.compile('(-\w) \w+, (--\w+)=(\w+)')
+        
+        if short_long.match(text):
+            short, long = short_long.groups()
+        elif short_long_other.match(text):
+            short, long, other = short_long_other.groups()
+        elif short_long_arg.match(text):
+            short, long, arg = short_long_arg.groups()
+        
+
     def append(self, text):
         """Append text to the documentation, with extra whitespace removed.
         """
