@@ -20,6 +20,7 @@ __all__ = [
 import re
 import os
 import textwrap
+from metagui.control import *
 
 def get(program):
     """Return the text of the 'man' page for the given command-line program.
@@ -38,20 +39,26 @@ class Option:
     def getopt(self):
         """Get option name(s) and argument type from option header."""
         text = self.header
+        option = ''
+        arg = ''
+        # Typical option header styles
+        long = re.compile('(-[-\w]+)')
+        short_long = re.compile('(-\w), --[-\w]+')
+        long_arg = re.compile('(-[-\w]+) \[?(\w+)]?')
+        short_long_arg = re.compile('(-\w) (\w+), --[-\w]+=\w+')
+        # -foo
+        if long.match(text):
+            option = long.group(0)
         # -f, --foobar
-        short_long = re.compile('(-\w), (--\w+)')
-        # -f, --foobar, --barfoo
-        short_long_other = re.compile('(-\w), (--\w+), (--\w+)')
+        elif short_long.match(text):
+            option = short_long.group(0)
+        # -foo ARG
+        elif long_arg.match(text):
+            option, arg = long_arg.groups()
         # -f ARG, --foobar=ARG
-        short_long_arg = re.compile('(-\w) \w+, (--\w+)=(\w+)')
-        
-        if short_long.match(text):
-            short, long = short_long.groups()
-        elif short_long_other.match(text):
-            short, long, other = short_long_other.groups()
         elif short_long_arg.match(text):
-            short, long, arg = short_long_arg.groups()
-        
+            option, arg = short_long_arg.groups()
+
 
     def append(self, text):
         """Append text to the documentation, with extra whitespace removed.
