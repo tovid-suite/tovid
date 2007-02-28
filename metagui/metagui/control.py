@@ -151,6 +151,10 @@ class Control (tk.Frame):
                 args.append(value)
         return args
 
+    def __repr__(self):
+        control = str(self.__class__).split('.')[-1]
+        return "%s('%s', '%s')" % (control, self.option, self.label)
+        
 
 
 ### --------------------------------------------------------------------
