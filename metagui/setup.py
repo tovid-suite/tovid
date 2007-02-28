@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 # setup.py
 
+from glob import glob
 from distutils.core import setup
 
 setup(name='Metagui',
@@ -10,5 +11,6 @@ setup(name='Metagui',
     # author_email='',
     # url='',
     packages=['metagui'],
-    scripts=['bin/metagui']
+    scripts=['bin/metagui'],
+    data_files=[('share/metagui/apps', glob('apps/*.py'))]
 )
