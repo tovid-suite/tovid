@@ -95,24 +95,26 @@ class Drawer (tk.Frame):
     """Like a Panel, but may be hidden or closed."""
     def __init__(self, title='', *contents):
         self.panel = Panel(title, *contents)
+        self.visible = False
         
     def draw(self, master):
         tk.Frame.__init__(self, master)
-        self.open = tk.BooleanVar()
-        self.open.set(False)
         # Checkbutton
-        check = tk.Checkbutton(self, text=self.panel.title,
-                               command=self.open_close,
-                               variable=self.open)
-        check.pack(anchor='nw')
+        button = tk.Button(self, text=self.panel.title,
+                           command=self.show_hide)
+        button.pack(anchor='nw', fill='x', expand=True)
         # Draw panel, but don't pack
         self.panel.draw(self)
 
-    def open_close(self):
-        if self.open.get():
-            self.panel.pack(anchor='nw', fill='both', expand=True)
-        else:
+    def show_hide(self):
+        # Hide if showing
+        if self.visible:
             self.panel.pack_forget()
+            self.visible = False
+        # Show if hidden
+        else:
+            self.panel.pack(anchor='nw', fill='both', expand=True)
+            self.visible = True
     
 
 ### --------------------------------------------------------------------
