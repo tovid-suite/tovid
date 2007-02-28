@@ -30,17 +30,18 @@ user_apps = os.path.expanduser('~/.metagui/')
 shared_apps = os.path.join(cur_dir, os.path.pardir, 'share', 'metagui', 'apps')
 
 # If ~/.metagui doesn't exist, create it
-if not os.path.exists(user_apps):
+try:
     os.mkdir(user_apps)
+except OSError:
+    pass
 # Copy shared apps to user dir
 print "Copying shared applications to %s" %user_apps
-print shared_apps
 for app in glob.glob('%s/*.py' %shared_apps):
     dest = os.path.join(user_apps, os.path.basename(app))
     if os.path.exists(dest) and not newer(app, dest):
-        print "  Skipped %s (already exists)" %dest
+        print "  Skipping %s (not modified)" %dest
     else:
-        print "  Copied %s" %dest
+        print "  Copying %s" %dest
         shutil.copy(app, dest)
 
 # Print usage notes
