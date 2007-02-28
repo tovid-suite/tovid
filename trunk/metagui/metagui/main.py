@@ -6,6 +6,7 @@ __all__ = [
     'Panel',
     'HPanel',
     'VPanel',
+    'Drawer',
     'Application',
     'GUI']
 
@@ -41,10 +42,12 @@ class Panel (tk.LabelFrame):
         self.title = title
         self.contents = []
         for item in contents:
-            if isinstance(item, Control) or isinstance(item, Panel):
+            if isinstance(item, Control) \
+               or isinstance(item, Panel) \
+               or isinstance(item, Drawer):
                 self.contents.append(item)
             else:
-                raise "Panel may only contain Controls or other Panels"
+                raise "Panel may only contain Controls, Panels, or Drawers."
 
     def draw(self, master, side='top'):
         """Draw Controls in a Frame with the given master.
@@ -85,6 +88,32 @@ class VPanel (Panel):
 
     def draw(self, master):
         Panel.draw(self, master, 'top')
+
+### --------------------------------------------------------------------
+
+class Drawer (tk.Frame):
+    """Like a Panel, but may be hidden or closed."""
+    def __init__(self, title='', *contents):
+        self.panel = Panel(title, *contents)
+        
+    def draw(self, master):
+        tk.Frame.__init__(self, master)
+        self.open = tk.BooleanVar()
+        self.open.set(False)
+        # Checkbutton
+        check = tk.Checkbutton(self, text=self.panel.title,
+                               command=self.open_close,
+                               variable=self.open)
+        check.pack(anchor='nw')
+        # Draw panel, but don't pack
+        self.panel.draw(self)
+
+    def open_close(self):
+        if self.open.get():
+            self.panel.pack(anchor='nw', fill='both', expand=True)
+        else:
+            self.panel.pack_forget()
+    
 
 ### --------------------------------------------------------------------
 

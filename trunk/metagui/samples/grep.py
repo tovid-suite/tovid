@@ -6,7 +6,7 @@ from metagui import *
 
 panel1 = Panel("Page 1",
     HPanel('',
-        FlagGroup("Match settings", 'normal',
+        Drawer("Match settings",
             Flag('-i',
                 'Ignore case', False,
                 "Ignore case distinctions in both the PATTERN and"\
@@ -28,7 +28,7 @@ panel1 = Panel("Page 1",
                 "Select only those matches that exactly match the whole line.")
             ),
     
-        FlagGroup("Regular expressions", 'normal',
+        Drawer("Regular expressions",
             Flag('-G',
                 'Basic regular expression', True,
                 "Interpret PATTERN as a basic regular expression."),
@@ -46,7 +46,7 @@ panel1 = Panel("Page 1",
         ),
 
     HPanel('',
-        Panel("Context",
+        Drawer('Context',
             Number('-A',
                 'Trailing context', 0,
                 "Print NUM lines of trailing context after matching lines."\
@@ -66,7 +66,7 @@ panel1 = Panel("Page 1",
                 0, 20)
             ),
     
-        FlagGroup('Output', 'normal',
+        Drawer('Output',
             Flag('-l',
                 'Print matching lines', False,
                 "Suppress  normal output; instead print the name of each"\
