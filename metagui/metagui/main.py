@@ -148,7 +148,7 @@ class Application (tk.Frame):
         if len(self.panels) == 1:
             panel = self.panels[0]
             panel.draw(self)
-            panel.pack(anchor='n', fill='x', expand=True)
+            panel.pack(anchor='n', fill='both', expand=True)
         # Multi-panel (tabbed) application
         else:
             tabs = Tabs(self)
@@ -156,11 +156,11 @@ class Application (tk.Frame):
                 panel.draw(tabs)
                 tabs.add(panel.title, panel)
             tabs.draw()
-            tabs.pack(anchor='n', fill='x', expand=True)
+            tabs.pack(anchor='n', fill='both', expand=True)
         # "Run" button
         button = tk.Button(self, text="Run %s now" % self.program,
                            command=self.execute)
-        button.pack(anchor='s', fill='x', expand=True)
+        button.pack(fill='x', expand=True)
 
     def get_options(self):
         """Get a list of all command-line arguments from all panels.

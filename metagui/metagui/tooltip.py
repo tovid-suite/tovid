@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 # tooltip.py
 
+# Stolen from:
 """
 Michael Lange <klappnase at 8ung dot at>
 The ToolTip class provides a flexible tooltip widget for Tkinter; it is based on IDLE's ToolTip

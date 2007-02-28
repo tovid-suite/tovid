@@ -90,7 +90,7 @@ panel1 = Panel("Page 1",
         ),
     FlagGroup('Print filename', 'exclusive',
         Flag('-H', 'Print', True),
-        Flag('-h', 'Suppress')
+        Flag('-h', 'Suppress', False)
         ),
 
     Panel("Recursive search",
@@ -239,6 +239,6 @@ panel2 = Panel("Page 2",
 )
 
 app = Application('grep', [panel1, panel2])
-gui = GUI('gUIrep', [app])
+gui = GUI('grep metagui', [app])
 gui.run()
 
