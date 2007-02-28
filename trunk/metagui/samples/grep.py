@@ -45,55 +45,56 @@ panel1 = Panel("Page 1",
             )
         ),
 
-    Panel("Context",
-        Number('-A',
-            'Trailing context', 0,
-            "Print NUM lines of trailing context after matching lines."\
-            " Places a line containing -- between contiguous groups of"\
-            " matches.",
-            0, 20),
-        Number('-B',
-            'Leading context', 0,
-            "Print NUM lines of leading context before matching lines."\
-            " Places a line containing -- between contiguous groups of"\
-            " matches.",
-            0, 20),
-        Number('-C',
-            'Output context', 0,
-            "Print NUM lines of output context. Places a line containing --"\
-            " between contiguous groups of matches.",
-            0, 20)
+    HPanel('',
+        Panel("Context",
+            Number('-A',
+                'Trailing context', 0,
+                "Print NUM lines of trailing context after matching lines."\
+                " Places a line containing -- between contiguous groups of"\
+                " matches.",
+                0, 20),
+            Number('-B',
+                'Leading context', 0,
+                "Print NUM lines of leading context before matching lines."\
+                " Places a line containing -- between contiguous groups of"\
+                " matches.",
+                0, 20),
+            Number('-C',
+                'Output context', 0,
+                "Print NUM lines of output context. Places a line containing --"\
+                " between contiguous groups of matches.",
+                0, 20)
+            ),
+    
+        FlagGroup('Output', 'normal',
+            Flag('-l',
+                'Print matching lines', False,
+                "Suppress  normal output; instead print the name of each"\
+                " input file from which output would normally have been"\
+                " printed. The scanning will stop on the first match."),
+            Flag('-L',
+                'Print non-matching lines', False,
+                "Suppress  normal output; instead print the name of each"\
+                " input file from which no output would normally have been"\
+                " printed. The scanning will stop on the first match."),
+            Flag('-c',
+                'Count matching lines', False,
+                "Suppress normal output; instead print a count of matching"\
+                " lines for each input file. With the -v, --invert-match"\
+                " option (see below), count non-matching lines."),
+            Flag('-n',
+                'Show matching part only', False,
+                "Show only the part of a matching line that matches PATTERN."),
+            Flag('-b',
+                'Print byte offset',
+                "Print the byte offset within the input file before each"\
+                " line of output."),
+            Flag('-n',
+                'Print line number', False,
+                "Prefix each line of output with the line number within"\
+                " its input file.")
+            ),
         ),
-
-    FlagGroup('Output', 'normal',
-        Flag('-l',
-            'Print matching lines', False,
-            "Suppress  normal output; instead print the name of each"\
-            " input file from which output would normally have been"\
-            " printed. The scanning will stop on the first match."),
-        Flag('-L',
-            'Print non-matching lines', False,
-            "Suppress  normal output; instead print the name of each"\
-            " input file from which no output would normally have been"\
-            " printed. The scanning will stop on the first match."),
-        Flag('-c',
-            'Count matching lines', False,
-            "Suppress normal output; instead print a count of matching"\
-            " lines for each input file. With the -v, --invert-match"\
-            " option (see below), count non-matching lines."),
-        Flag('-n',
-            'Show matching part only', False,
-            "Show only the part of a matching line that matches PATTERN."),
-        Flag('-b',
-            'Print byte offset',
-            "Print the byte offset within the input file before each"\
-            " line of output."),
-        Flag('-n',
-            'Print line number', False,
-            "Prefix each line of output with the line number within"\
-            " its input file.")
-        ),
-
     FlagGroup('Print filename', 'exclusive',
         Flag('-H', 'Print', True),
         Flag('-h', 'Suppress')
@@ -111,23 +112,22 @@ panel1 = Panel("Page 1",
               'Recursive exclude pattern', '',
               "Recurse in directories skip file matching PATTERN.")
           ),
-
     Flag('-a',
         'Treat as text', False,
         "Process  a  binary  file as if it were text; this is equivalent to"\
         " the --binary-files=text option."),
-    
     Choice('--color',
         'Colored output', 'never',
         "Surround  the  matching  string with the marker find in GREP_COLOR"\
         " environment variable.",
         'never|always|auto'),
-
     Text('-e',
         'Pattern', '',
         "Use PATTERN as the pattern; useful to protect patterns beginning"\
         " with -."),
-
+    FileList('',
+        'Search in files', '',
+        'List of files to perform pattern-matching on')
 )
 
 panel2 = Panel("Page 2",
