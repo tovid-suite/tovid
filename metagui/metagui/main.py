@@ -8,7 +8,8 @@ __all__ = [
     'VPanel',
     'Drawer',
     'Application',
-    'GUI']
+    'GUI',
+    'Style']
 
 import Tkinter as tk
 from control import Control
@@ -54,12 +55,13 @@ class Panel (tk.LabelFrame):
         """
         if self.title:
             tk.LabelFrame.__init__(self, master, text=self.title,
-                                   padx=8, pady=4)
+                                   padx=8, pady=8)
         else:
-            tk.LabelFrame.__init__(self, master, bd=0, text='')
+            tk.LabelFrame.__init__(self, master, bd=0, text='',
+                                   padx=8, pady=8)
         for item in self.contents:
             item.draw(self)
-            item.pack(side=side, anchor='nw', fill='both', expand=True)
+            item.pack(side=side, anchor='nw', fill='x', expand=True)
 
     def get_options(self):
         """Return a list of all command-line options from contained widgets.
@@ -116,6 +118,8 @@ class Drawer (tk.Frame):
             self.panel.pack(anchor='nw', fill='both', expand=True)
             self.visible = True
     
+    def get_options(self):
+        return self.panel.get_options()
 
 ### --------------------------------------------------------------------
 
@@ -160,7 +164,7 @@ class Application (tk.Frame):
         # "Run" button
         button = tk.Button(self, text="Run %s now" % self.program,
                            command=self.execute)
-        button.pack(fill='x', expand=True)
+        button.pack(anchor='s', fill='x')
 
     def get_options(self):
         """Get a list of all command-line arguments from all panels.
@@ -186,7 +190,8 @@ class Application (tk.Frame):
 class GUI (tk.Tk):
     """GUI with one or more Applications
     """
-    def __init__(self, title, applications, width=500, height=800):
+    def __init__(self, title, applications, width=500, height=800,
+                 style=None):
         """Create a GUI for the given applications.
         
             title:        Text shown in the title bar
@@ -197,6 +202,7 @@ class GUI (tk.Tk):
         self.apps = applications
         self.width = width
         self.height = height
+        self.style = style or Style()
 
     def run(self):
         """Run the GUI"""
@@ -208,6 +214,7 @@ class GUI (tk.Tk):
 
     def draw(self):
         """Draw widgets."""
+        self.style.apply(self)
         self.frame = tk.Frame(self, width=self.width, height=self.height)
         self.frame.pack(fill='both', expand=True)
         self.frame.pack_propagate(False)
@@ -216,7 +223,7 @@ class GUI (tk.Tk):
         if len(self.apps) == 1:
             app = self.apps[0]
             app.draw(self.frame)
-            app.pack(anchor='n', fill='x', expand=True)
+            app.pack(anchor='n', fill='both', expand=True)
         # Multi-application (tabbed) GUI
         else:
             tabs = Tabs(self.frame, 'top', ('Helvetica', 14, 'bold'))
@@ -224,7 +231,7 @@ class GUI (tk.Tk):
                 app.draw(tabs)
                 tabs.add(app.program, app)
             tabs.draw()
-            tabs.pack(anchor='n', fill='x', expand=True)
+            tabs.pack(anchor='n', fill='both', expand=True)
 
     def draw_menu(self, window):
         """Draw a menu bar in the given top-level window.
@@ -240,3 +247,41 @@ class GUI (tk.Tk):
 
 ### --------------------------------------------------------------------
 
+class Style:
+    """Generic widget style definitions."""
+    def __init__(self,
+                 bgcolor='white',
+                 fgcolor='grey',
+                 textcolor='black',
+                 font=('Helvetica', 12),
+                 relief='groove'):
+        self.bgcolor = bgcolor
+        self.fgcolor = fgcolor
+        self.textcolor = textcolor
+        self.font = font
+        self.relief = relief
+
+    def apply(self, root):
+        """Apply the current style to the given Tkinter root window."""
+        root.option_clear()
+        # Background color
+        root.option_add("*Scale.troughColor", self.bgcolor)
+        root.option_add("*Spinbox.background", self.bgcolor)
+        root.option_add("*Entry.background", self.bgcolor)
+        root.option_add("*Listbox.background", self.bgcolor)
+        # Relief
+        root.option_add("*Entry.relief", self.relief)
+        root.option_add("*Spinbox.relief", self.relief)
+        root.option_add("*Listbox.relief", self.relief)
+        root.option_add("*Button.relief", self.relief)
+        root.option_add("*Menu.relief", self.relief)
+        # Font
+        root.option_add("*font", self.font)
+        root.option_add("*Radiobutton.selectColor", "#8888FF")
+        root.option_add("*Checkbutton.selectColor", "#8888FF")
+        # Mouse-over effects
+        root.option_add("*Button.overRelief", 'raised')
+        root.option_add("*Checkbutton.overRelief", 'groove')
+        root.option_add("*Radiobutton.overRelief", 'groove')
+
+### --------------------------------------------------------------------
