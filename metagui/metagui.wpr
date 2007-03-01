@@ -4,7 +4,19 @@
 # Wing IDE project file                                          #
 ##################################################################
 [project attributes]
-proj.file-list = [loc('../../../../../../pub/svn/tovid/metagui/bin/metagui'),
+proj.file-list = [loc('../../../../../../pub/svn/tovid/metagui/apps/cp.py'),
+                  loc('../../../../../../pub/svn/tovid/metagui/apps/grep.py'),
+                  loc('../../../../../../pub/svn/tovid/metagui/bin/metagui'),
+                  loc('../../../../../../pub/svn/tovid/metagui/bin/pickcontrol.py'),
+                  loc('../../../../../../pub/svn/tovid/metagui/build/lib/metagui/builder.py'),
+                  loc('../../../../../../pub/svn/tovid/metagui/build/lib/metagui/cli.py'),
+                  loc('../../../../../../pub/svn/tovid/metagui/build/lib/metagui/control.py'),
+                  loc('../../../../../../pub/svn/tovid/metagui/build/lib/metagui/main.py'),
+                  loc('../../../../../../pub/svn/tovid/metagui/build/lib/metagui/manpage.py'),
+                  loc('../../../../../../pub/svn/tovid/metagui/build/lib/metagui/support.py'),
+                  loc('../../../../../../pub/svn/tovid/metagui/build/lib/metagui/tooltip.py'),
+                  loc('../../../../../../pub/svn/tovid/metagui/build/lib/metagui/__init__.py'),
+                  loc('../../../../../../pub/svn/tovid/metagui/build/scripts-2.5/metagui'),
                   loc('../../../../../../pub/svn/tovid/metagui/metagui/builder.py'),
                   loc('../../../../../../pub/svn/tovid/metagui/metagui/cli.py'),
                   loc('../../../../../../pub/svn/tovid/metagui/metagui/control.py'),
@@ -13,7 +25,5 @@ proj.file-list = [loc('../../../../../../pub/svn/tovid/metagui/bin/metagui'),
                   loc('../../../../../../pub/svn/tovid/metagui/metagui/support.py'),
                   loc('../../../../../../pub/svn/tovid/metagui/metagui/tooltip.py'),
                   loc('../../../../../../pub/svn/tovid/metagui/metagui/__init__.py'),
-                  loc('../../../../../../pub/svn/tovid/metagui/samples/cp.py'),
-                  loc('../../../../../../pub/svn/tovid/metagui/samples/grep.py'),
                   loc('../../../../../../pub/svn/tovid/metagui/setup.py')]
 proj.file-type = 'shared'
