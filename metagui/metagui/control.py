@@ -29,7 +29,6 @@ import tkColorChooser
 import tkFileDialog
 from tooltip import ToolTip
 
-
 # Map python types to Tkinter variable types
 vartypes = {
     str: tk.StringVar,

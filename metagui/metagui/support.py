@@ -163,7 +163,7 @@ class Tabs (tk.Frame):
             button.pack(anchor='nw', side=button_side,
                         fill='both', expand=True)
         self.buttons.pack(anchor=bar_anchor, side=self.side,
-                          fill=bar_fill, expand=True)
+                          fill=bar_fill)
         # Activate the first tab
         self.selected.set(0)
         self.change()
