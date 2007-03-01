@@ -22,6 +22,13 @@ import os
 import textwrap
 from metagui.control import *
 
+class Matcher:
+    def search(self, pattern, text):
+        self.value = re.search(pattern, text)
+        return self.value
+    def __getitem__(self, index):
+        return self.value.group(index)
+
 def get(program):
     """Return the text of the 'man' page for the given command-line program.
     """
@@ -41,24 +48,24 @@ class Option:
         text = self.header
         option = ''
         arg = ''
+        match = Matcher()
         # Typical option header styles
-        long = re.compile('(-[-\w]+)')
-        short_long = re.compile('(-\w), --[-\w]+')
-        long_arg = re.compile('(-[-\w]+) \[?(\w+)]?')
-        short_long_arg = re.compile('(-\w) (\w+), --[-\w]+=\w+')
-        # -foo
-        if long.match(text):
-            option = long.group(0)
         # -f, --foobar
-        elif short_long.match(text):
-            option = short_long.group(0)
-        # -foo ARG
-        elif long_arg.match(text):
-            option, arg = long_arg.groups()
+        if match.search('(-\w), --[-\w]+', text):
+            option = match[1]
         # -f ARG, --foobar=ARG
-        elif short_long_arg.match(text):
-            option, arg = short_long_arg.groups()
-
+        elif match.search('(-\w) (\w+), --[-\w]+=\w+', text):
+            option = match[1]
+            arg = match[2]
+        # -foo
+        elif match.search('(-[-\w]+)', text):
+            option = match[1]
+        # -foo ARG
+        elif match.search('(-[-\w]+) \[?(\w+)]?', text):
+            option = match[1]
+            arg = match[2]
+            
+        return (option, arg)
 
     def append(self, text):
         """Append text to the documentation, with extra whitespace removed.
