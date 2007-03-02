@@ -143,15 +143,15 @@ See the samples/ directory for some real examples.
 # (Anyone know of a more concise way to do this?)
 from support import *
 from control import *
-from main import *
+from gui import *
 from support import __all__ as all_support
 from control import __all__ as all_control
-from main import __all__ as all_main
+from gui import __all__ as all_gui
 __all__ = [\
     'support',
     'control',
     'gui',
     'manpage',
     'builder',
-    'tooltip'] + all_support + all_control + all_main
+    'tooltip'] + all_support + all_control + all_gui
 
