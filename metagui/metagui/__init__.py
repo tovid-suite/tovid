@@ -148,6 +148,9 @@ from support import __all__ as all_support
 from control import __all__ as all_control
 from main import __all__ as all_main
 __all__ = [\
+    'support',
+    'control',
+    'gui',
     'manpage',
     'builder',
     'tooltip'] + all_support + all_control + all_main
