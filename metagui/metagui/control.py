@@ -28,6 +28,7 @@ import Tkinter as tk
 import tkColorChooser
 import tkFileDialog
 from tooltip import ToolTip
+import support
 
 # Map python types to Tkinter variable types
 vartypes = {
@@ -497,7 +498,7 @@ class Font (Control):
 
     def choose(self):
         """Open a font chooser to select a font."""
-        chooser = FontChooser()
+        chooser = support.FontChooser()
         if chooser.result:
             self.variable.set(chooser.result)
 
@@ -533,7 +534,7 @@ class ScrollList (Control):
                                   yscrollcommand=self.scrollbar.set)
         self.listbox.pack(side='left', fill='both', expand=True)
         self.scrollbar.pack(side='left', fill='y')
-        group.pack(fill='both')
+        group.pack(fill='both', expand=True)
         self.listbox.bind('<Button-1>', self.select)
 
     def add(self, *values):
@@ -552,6 +553,11 @@ class ScrollList (Control):
         self.curindex = self.listbox.nearest(event.y)
         self.selected.set(self.listbox.get(self.curindex))
 
+    def sort(self):
+        """Sort list items in ascending order."""
+        items = list(self.variable.get()).sort()
+        self.variable.set(tuple(items))
+        
     def get(self):
         """Return a list of all entries in the list."""
         # Overridden because Listbox stores variable as a tuple
