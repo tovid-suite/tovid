@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# main.py
+# gui.py
 
 __all__ = [
     # Main GUI creation interface
