@@ -1082,7 +1082,7 @@ while test $# -gt 0; do
             shift
             get_listargs "$@"
             for i in ${!ARGS_ARRAY[@]}; do
-                if [ ${ARGS_ARRAY[i]} = "none" ]; then
+                if [[ ${ARGS_ARRAY[i]} = "none" ]]; then
                     SM_AUDIO=( "${SM_AUDIO[@]}" "${ARGS_ARRAY[i]}" )
                 else
                     SM_AUDIO=( "${SM_AUDIO[@]}" "$(abspath "${ARGS_ARRAY[i]}")" )
