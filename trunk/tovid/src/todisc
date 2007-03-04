@@ -2320,7 +2320,7 @@ fi
 if ! $TEXTMENU; then
     for ((i=0; i<=NUM_FILES; i++)) ; do
         # use a nav_seek file if long seek
-        if [ ${SEEK_VAL[i]} -gt 450 ]; then
+        if [ ${SEEK_VAL[i]%.*} -gt 450 ]; then
             NAVSEEK[i]="--nav_seek "$WORK_DIR/nav${i}_log""
             NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
             run_navseek()
@@ -2931,7 +2931,7 @@ done
 # Store info about input files in an array
 for ((i=0; i<${#IN_FILES[@]}; i++)); do
     # use a nav_seek file and transcode if long seek
-    if [ ${SEEK_VAL[i]} -gt 450 ] || $SUB_MENU; then
+    if [ ${SEEK_VAL[i]%.*} -gt 450 ] || $SUB_MENU; then
         STATS_FRAMES="-frames 1"
         if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
             NAVSEEK[i]="--nav_seek "$WORK_DIR/nav${i}_log""
