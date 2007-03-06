@@ -165,6 +165,7 @@ SPACER=""
 SE_YCORNER=0
 BG_ASYNC=""
 NO_WARN=false
+ROTATE_THUMBS=false
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -1832,7 +1833,7 @@ if ! $USER_BSTYLE && $SHOWCASE; then # text is better than rect for "none" bg
 fi
 # check if user passed a usable button shape
 if [[ -n $THUMB_SHAPE ]]; then
-    ! egrep -q  '^round$|^oval$|^plectrum$|^normal$' <<< "$THUMB_SHAPE"  && \
+    ! egrep -q  '^egg$|^oval$|^plectrum$|^normal$' <<< "$THUMB_SHAPE"  && \
         usage_error "Please supply a usable thumb shape with -thumb-shape option. You gave \"$THUMB_SHAPE\""
 fi
 
