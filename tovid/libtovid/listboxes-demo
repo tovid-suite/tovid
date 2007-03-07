@@ -103,6 +103,7 @@ class ListBoxes (tk.Frame):
         self.varUsage = tk.StringVar()  # String describing current space usage
         self.filesTitle = tk.StringVar()  # Title for left box ('Files' or 'Current Files')
         self.filesTitle.set('Current Files')
+        self.filestitle = self.filesTitle.get() # saved value for filesTitle
         self.mappedTitle = tk.StringVar()  # Title for the right box (mapped files)
         self.mappedTitle.set('')
         self.curindex = 0  # initialize index of currently selected file to 0
@@ -111,6 +112,7 @@ class ListBoxes (tk.Frame):
         self.msgSingle = tk.StringVar()
         self.msgSingle.set('')
         self.filesList = ''
+        self.entTitle = ''
         self.drawWidgets()
 
     def drawWidgets(self):
@@ -164,11 +166,15 @@ class ListBoxes (tk.Frame):
 
     def enableList(self):
         if self.variable.get() == 1:
+            if self.entTitle: self.entTitle.focus_set()
+            self.filesTitle.set(self.filestitle)
             self.lstFiles.config(state='normal')
             self.syncFiles(self.filesList)
         else:
+            self.filesTitle.set('')
             self.lstFiles.delete(0, 'end')
             self.lstFiles.insert('end', self.msgSingle.get())
+            self.lstFiles.selection_set (self.curindex)
             self.lstFiles.config(state='disable')
             if self.lstMapped.get(0):
                 single = self.lstMapped.get(0)
@@ -365,6 +371,7 @@ class MappedFiles(ListBoxes):
         self.lstFiles.insert('end', 'Use this audio file for all videos')
         self.lstFiles.config(state='disable')
         self.lstFiles.config(disabledforeground='black')
+        self.filesTitle.set('')
 
     def addWidgets(self):
         """Add/Draw all the widgets in this frame."""
@@ -384,7 +391,6 @@ class MappedFiles(ListBoxes):
         self.btnMultiple.pack(side='left', fill='x', expand=1)
 
         self.lstFiles.bind('<Double-1>', self.addFiles)
-        print self.variable.get()
 
     def syncFiles(self, filesList):
         """Sync list of files (lstFiles) with FilesTitles instance"""
@@ -553,6 +559,7 @@ class MappedNumbers(ListBoxes):
         self.lstFiles.config(disabledforeground='black')
         self.msgSingle.set('Use this seek value for all videos')
         self.lstMapped.insert(0, 2.0)
+        self.filesTitle.set('')
 
     def addWidgets(self):
         self.var = tk.DoubleVar()
