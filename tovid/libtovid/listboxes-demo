@@ -113,6 +113,7 @@ class ListBoxes (tk.Frame):
         self.msgSingle.set('')
         self.filesList = ''
         self.entTitle = ''
+        self.btnAdd = ''
         self.drawWidgets()
 
     def drawWidgets(self):
@@ -167,9 +168,12 @@ class ListBoxes (tk.Frame):
     def enableList(self):
         if self.variable.get() == 1:
             if self.entTitle: self.entTitle.focus_set()
+            if self.btnAdd: self.btnAdd.focus_set()
             self.filesTitle.set(self.filestitle)
             self.lstFiles.config(state='normal')
+            self.update_idletasks()
             self.syncFiles(self.filesList)
+            self.lstFiles.selection_set(0)
         else:
             self.filesTitle.set('')
             self.lstFiles.delete(0, 'end')
@@ -421,9 +425,10 @@ class MappedFiles(ListBoxes):
                 self.lstMapped.delete(self.curindex)
                 self.lstMapped.insert(self.curindex, self.file)
             # set cursor selection and index to the next file in list
-            if self.lstFiles.get(self.curindex + 1):
+            if self.file and self.lstFiles.get(self.curindex + 1):
                 self.lstFiles.selection_set (self.curindex + 1)
                 self.curindex = self.curindex + 1
+            else: self.lstFiles.selection_set(self.curindex)
 
     def removeFiles(self):
         """Event handler for removing files from the list box"""
