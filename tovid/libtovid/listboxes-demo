@@ -112,7 +112,7 @@ class ListBoxes (tk.Frame):
         self.msgSingle = tk.StringVar()
         self.msgSingle.set('')
         self.filesList = ''
-        self.entTitle = ''
+        self.number = ''
         self.btnAdd = ''
         self.drawWidgets()
 
@@ -167,11 +167,10 @@ class ListBoxes (tk.Frame):
 
     def enableList(self):
         if self.variable.get() == 1:
-            if self.entTitle: self.entTitle.focus_set()
+            if self.number: self.number.focus_set()
             if self.btnAdd: self.btnAdd.focus_set()
             self.filesTitle.set(self.filestitle)
             self.lstFiles.config(state='normal')
-            self.update_idletasks()
             self.syncFiles(self.filesList)
             self.lstFiles.selection_set(0)
         else:
@@ -583,6 +582,7 @@ class MappedNumbers(ListBoxes):
             textvariable=self.var)
         self.entTitle.bind('<Return>', self.makeEntry)
         self.lstMapped.bind('<Button-1>', self.selectListitem)
+        self.number.bind('<Return>', self.makeEntry)
         self.entTitle.pack(fill=tk.BOTH, expand=1, padx=2)
         buttonFrame = tk.Frame(self)
         buttonFrame.grid(row=2, column=0, columnspan=4, sticky='w')
@@ -612,7 +612,7 @@ class MappedNumbers(ListBoxes):
         self.curindex = self.lstFiles.nearest(event.y)
         if self.lstMapped.get(self.curindex):
             self.var.set(float(self.lstMapped.get(self.curindex)))
-        self.entTitle.focus_set()
+        self.number.focus_set()
 
     def popList(self, index_):
         """remove item from lstMapped list - call from FilesTitles instance"""
