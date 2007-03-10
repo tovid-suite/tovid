@@ -686,7 +686,17 @@ class MappedEntry(ListBoxes):
 
     def setOptions(self, command):
         """Add relevant todisc options to the given Command."""
-        chained = self.varChained.get()
+        chained = []
+        for index, item in enumerate(self.varMappedList.get()):
+            if item: chained.insert(index, index)
+            else: chained.insert(index, '')
+        for index, item in enumerate(chained):
+            if not item:
+                if chained[index-1] or chained[index-1] == 0:
+                    chained.pop((index-1))
+            elif index == len(self.varMappedList.get())-1:
+                chained.pop(index)
+
         command.add('-chain-videos', *chained)
 
 ### --------------------------------------------------------------------
