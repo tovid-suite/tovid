@@ -532,12 +532,13 @@ class MappedGroups(ListBoxes):
         selection = self.lstMapped.curselection()
         # Using reverse order prevents reflow from messing up indexing
         for line in reversed(selection):
-            log.debug("Removing '%s' from the file list" %\
-                      self.lstFiles.get(line))
-            self.lstMapped.delete(0, 'end')
-            self.mappedfiles[self.curindex].pop(int(line))
-            file = self.mappedfiles[self.curindex]
-            self.lstMapped.insert('end', *file)
+            if not self.lstMapped.selection_includes(0):
+                log.debug("Removing '%s' from the file list" %\
+                          self.lstFiles.get(line))
+                self.lstMapped.delete(0, 'end')
+                self.mappedfiles[self.curindex].pop(int(line))
+                file = self.mappedfiles[self.curindex]
+                self.lstMapped.insert('end', *file)
 
     def popList(self, _index):
         """remove item from lstMapped list - call from FilesTitles instance"""
