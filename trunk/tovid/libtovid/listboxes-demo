@@ -583,6 +583,7 @@ class MappedNumbers(ListBoxes):
         self.entTitle.bind('<Return>', self.makeEntry)
         self.lstMapped.bind('<Button-1>', self.selectListitem)
         self.number.bind('<Return>', self.makeEntry)
+        self.number.bind('<Button-1>', self.focus)
         self.entTitle.pack(fill=tk.BOTH, expand=1, padx=2)
         buttonFrame = tk.Frame(self)
         buttonFrame.grid(row=2, column=0, columnspan=4, sticky='w')
@@ -593,6 +594,9 @@ class MappedNumbers(ListBoxes):
         self.spacer1 = tk.Label(self, text="", padx=20)
         self.spacer1.grid(row=1, column=6)
         self.lstFiles.config(state='disable')
+
+    def focus(self, event):
+        self.number.focus_set()
         
     def makeEntry(self, event):
         """Event handler when Enter is pressed after editing a title."""
