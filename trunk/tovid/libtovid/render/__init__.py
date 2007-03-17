@@ -2,7 +2,6 @@
 # __init__.py
 
 __all__ = [\
-    #"mvg"     # obsolete
     "animation",
     "drawing",
     "effect",
