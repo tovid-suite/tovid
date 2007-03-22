@@ -71,6 +71,7 @@ class Command:
             self.add(arg)
         self.proc = None
         self.output = ''
+        self.error = ''
 
     def add(self, *args):
         """Append one or more arguments to the command. Each argument passed
@@ -84,8 +85,9 @@ class Command:
     def run(self, capture=False, background=False):
         """Run the command and capture or display output.
         
-            capture:    False to show command output on stdout,
-                        True to capture output for retrieval by get_output()
+            capture:    False to show command output/errors on stdout,
+                        True to capture output/errors for retrieval
+                        by get_output() and get_error()
             background: False to wait for command to finish running,
                         True to run process in the background
         
@@ -98,8 +100,7 @@ class Command:
         use run_redir().
         """
         if capture:
-            # For now, print standard error even when capturing
-            self.run_redir(None, PIPE, stderr=None)
+            self.run_redir(None, PIPE, stderr=PIPE)
         else:
             self.run_redir(None, None, stderr=None)
         if not background:
@@ -113,12 +114,14 @@ class Command:
             stderr: Filename or File object to write errors to
         
         Use None for regular system stdin/stdout/stderr (default behavior).
+        That is, if stdout=None, the command's standard output is printed.
         
         This function is used internally by run(); if you need to do stream
         redirection (ex. `spumux < menu.mpg > menu_subs.mpg`), use this
         function instead of run(), and call wait() afterwards if needed.
         """
         self.output = ''
+        self.error = ''
         # Open files if string filenames were provided
         if type(stdin) == str:
             stdin = open(stdin, 'r')
@@ -158,6 +161,17 @@ class Command:
         if self.output is '' and isinstance(self.proc, Popen):
             self.output = self.proc.communicate()[0]
         return self.output
+
+    def get_error(self):
+        """Wait for the command to finish running, and return a string
+        containing the command's standard error output. Returns an empty
+        string if the command has not been run yet.
+        """
+        if self.error is '' and isinstance(self.proc, Popen):
+            self.error = self.proc.communicate()[1]
+        return self.error
+
+    get_errors = get_error
 
     def __str__(self):
         """Return a string representation of the Command, as it would look if

@@ -2,11 +2,7 @@
 # __init__.py (metagui)
 
 
-"""Experimental tovid suite GUI, without any Tkinter code.
-
-Run this script standalone for a demonstration:
-
-    $ python tovid-metagui
+"""A simplified GUI-writing module.
 
 
 INTRODUCTION
@@ -21,8 +17,8 @@ kinds of widget are provided, for setting Filename, Color, Number or Font, or
 for picking a Choice or Flag.
 
 You probably know of a handful of command-line applications that would be
-much better with a GUI, even a cheesy-looking Tkinter one. This module shows
-how easy it is to create one.
+much better with a GUI, even a cheesy-looking Tkinter one. This module makes
+it easy to create one.
 
 
 DEFINE CONTROLS
@@ -136,10 +132,10 @@ and then the GUI:
     gui = GUI('MultiGUI', [todisc, tovid])
     gui.run()
 
-See the samples/ directory for some real examples.
+See the apps/ directory for example GUIs.
 """
 
-# Export everything from support and control modules
+# Export everything from support, control, and gui modules
 # (Anyone know of a more concise way to do this?)
 from support import *
 from control import *
@@ -153,5 +149,6 @@ __all__ = [\
     'gui',
     'manpage',
     'builder',
-    'tooltip'] + all_support + all_control + all_gui
+    'tooltip',
+    'odict'] + all_support + all_control + all_gui
 

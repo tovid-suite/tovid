@@ -34,5 +34,49 @@ in the manpage, but you can make adjustments if necessary":
 and [a|b|c] are control-configuration widgets that appear depending on the
 chosen control type. Checking an option includes it in the metaGUI.
 """
+__all__ = ['ControlEditor']
 
-pass
+import Tkinter as tk
+from inspect import getargspec
+from metagui.odict import Odict
+from metagui import Text, Number, Flag
+
+class ControlEditor (tk.Frame):
+    """A GUI control panel for setting Control arguments."""
+    def __init__(self, control):
+        """Create a GUI panel for the given Control subclass.
+        """
+        self.control = control
+        # Find out what arguments/defaults the Control constructor has
+        args, varargs, varkw, defaults = getargspec(self.control.__init__)
+        print args[1:]
+        print defaults
+
+        self.kwargs = Odict(args[1:], defaults)
+
+    def draw(self, master):
+        """Draw widgets for adjusting all Control.__init__ arguments."""
+        tk.Frame.__init__(self, master)
+        for arg, default in self.kwargs.items():
+            if type(default) == str:
+                widget = Text('', arg, default)
+            elif type(default) == int:
+                widget = Number('', arg, default)
+            elif type(default) == bool:
+                widget = Flag('', arg, default)
+            else:
+                widget = Text('', arg, default)
+
+            widget.draw(self)
+            widget.pack()
+
+# Demo
+if __name__ == '__main__':
+    from metagui import Number
+    import Tkinter as tk
+    ed = ControlEditor(Number)
+    root = tk.Tk()
+    ed.draw(root)
+    ed.pack()
+    root.mainloop()
+
