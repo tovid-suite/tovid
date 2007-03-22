@@ -42,7 +42,6 @@ from libtovid.cli import Command
 from libtovid import standard
 from libtovid.utils import ratio_to_float
 
-
 class MediaFile:
     """A multimedia video file, and its vital statistics.
     """

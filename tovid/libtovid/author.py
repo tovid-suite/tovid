@@ -90,7 +90,8 @@ class Disc:
 ###
 
 def _add_titleset(titleset, ts_id, segment_items, sequence_items, pbc):
-    """Internal function to add titleset content to a vcdimager XML structure.
+    """Add titleset content to a vcdimager XML structure. This function is
+    used internally, mainly to keep vcdimager_xml() from being too long.
     """
     menu = titleset.menu
     videos = titleset.videos
@@ -143,7 +144,6 @@ def _add_titleset(titleset, ts_id, segment_items, sequence_items, pbc):
 def vcdimager_xml(disc):
     """Return the vcdimager XML string for the given Disc.
     """
-    # TODO: Support topmenu
     assert isinstance(disc, Disc)
     # XML header (will be added later)
     header = '<?xml version="1.0"?>\n'
