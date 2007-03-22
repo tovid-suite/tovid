@@ -147,7 +147,8 @@ class Command:
 
     def done(self):
         """Return True if the command is finished running; False otherwise.
-        Only useful if the command is run in the background."""
+        Only useful if the command is run in the background.
+        """
         return self.proc.poll() != None
 
     def get_output(self):
@@ -258,14 +259,6 @@ def _enc_arg(arg):
     # No special characters found; use literal string
     return arg
 
-
-# An idea to test...
-FAKE = False
-def fake(true_or_false):
-    """Module-level switch to turn on/off fake execution. Any Commands or
-    Pipes run while FAKE is True will not actually be executed.
-    """
-    FAKE = true_or_false
 
 if __name__ == '__main__':
     doctest.testmod(verbose=True)
