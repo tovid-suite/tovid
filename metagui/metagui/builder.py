@@ -49,9 +49,6 @@ class ControlEditor (tk.Frame):
         self.control = control
         # Find out what arguments/defaults the Control constructor has
         args, varargs, varkw, defaults = getargspec(self.control.__init__)
-        print args[1:]
-        print defaults
-
         self.kwargs = Odict(args[1:], defaults)
 
     def draw(self, master):
@@ -72,11 +69,13 @@ class ControlEditor (tk.Frame):
 
 # Demo
 if __name__ == '__main__':
-    from metagui import Number
     import Tkinter as tk
-    ed = ControlEditor(Number)
     root = tk.Tk()
-    ed.draw(root)
-    ed.pack()
+    for control in [Text, Number, Flag]:
+        frame = tk.LabelFrame(root, text=control.__name__)
+        editor = ControlEditor(control)
+        editor.draw(frame)
+        editor.pack()
+        frame.pack()
     root.mainloop()
 
