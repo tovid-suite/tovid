@@ -97,6 +97,10 @@ class ListBoxes (tk.Frame):
     """
     def __init__(self, master=None):
         tk.Frame.__init__(self, master)
+        self.tk.call('namespace', 'import', '::tk::dialog::file::') 
+        self.tk.call('set', '::tk::dialog::file::showHiddenBtn',  '1')
+        self.tk.call('set', '::tk::dialog::file::showHiddenVar',  '0')
+
         self.curentry = tk.StringVar()  # currently selected mapped list entry
         self.varFiles = tk.Variable()   # List of current files
         self.varMappedList = tk.Variable()  # Current mapped list entries
@@ -222,8 +226,6 @@ class FilesTitles(ListBoxes):
 
     def addFiles(self):
         """Event handler for adding files to the list box"""
-        self.tk.call('namespace', 'eval', '::tk::dialog::file::', 'variable', 'showHiddenBtn', 1) 
-        self.tk.call('namespace', 'eval', '::tk::dialog::file::', 'variable', 'showHiddenVar', 0) 
         files = tkFileDialog.askopenfilenames(parent=self, title='Add files')
         for file in files:
             log.debug("Adding '%s' to the file list" % file)
