@@ -23,11 +23,7 @@ __all__ = [
     'FileList',
     'TextList']
 
-import shlex
 import Tkinter as tk
-import tkColorChooser
-import tkFileDialog
-from tooltip import ToolTip
 import support
 
 # Map python types to Tkinter variable types
@@ -37,6 +33,9 @@ vartypes = {
     int: tk.IntVar,
     float: tk.DoubleVar,
     list: tk.Variable}
+
+### --------------------------------------------------------------------
+from tooltip import ToolTip
 
 class Control (tk.Frame):
     """A widget that controls the value of an option.
@@ -58,7 +57,8 @@ class Control (tk.Frame):
                  option='',
                  label='',
                  default='',
-                 help=''):
+                 help='',
+                 **kwargs):
         """Create a Control for an option.
 
             vartype:  Type of stored variable (str, bool, int, float, list)
@@ -67,12 +67,14 @@ class Control (tk.Frame):
             label:    Label for the Control
             default:  Default value for the Control
             help:     Help text to show in a tooltip
+            **kwargs: Keyword arguments of the form key1=arg1, key2=arg2
         """
         self.vartype = vartype
         self.variable = None
         self.option = option
         self.label = label
         self.help = help
+        self.kwargs = kwargs
         # Store value in normal Python variable until draw() is called
         self.value = self.vartype(default)
 
@@ -128,12 +130,11 @@ class Control (tk.Frame):
         """Disable all sub-widgets."""
         self.enable(False)
 
-    def get_options(self):
+    def get_args(self):
         """Return a list of arguments for passing this command-line option.
-        draw must be called before this function.
+        draw() must be called before this function.
         """
         # TODO: Raise exception if draw() hasn't been called
-        
         args = []
         value = self.get()
         # Boolean values control a flag
@@ -152,10 +153,10 @@ class Control (tk.Frame):
         return args
 
     def __repr__(self):
+        """Return a Python code representation of this Control."""
+        # Get derived class name
         control = str(self.__class__).split('.')[-1]
         return "%s('%s', '%s')" % (control, self.option, self.label)
-        
-
 
 ### --------------------------------------------------------------------
 ### Control subclasses
@@ -179,7 +180,8 @@ class Flag (Control):
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
-        self.check = tk.Checkbutton(self, text=self.label, variable=self.variable)
+        self.check = tk.Checkbutton(self, text=self.label,
+                                    variable=self.variable)
         self.check.pack(side='left')
 
 ### --------------------------------------------------------------------
@@ -223,12 +225,12 @@ class FlagGroup (Control):
             if flag.check != event.widget:
                 flag.set(False)
 
-    def get_options(self):
+    def get_args(self):
         """Return a list of arguments for setting the relevant flag(s)."""
         args = []
         for flag in self.flags:
             if flag.option != 'none':
-                args.extend(flag.get_options())
+                args.extend(flag.get_args())
         return args
 
 ### --------------------------------------------------------------------
@@ -369,6 +371,7 @@ class Text (Control):
         self.entry.pack(side='left', fill='x', expand=True)
 
 ### --------------------------------------------------------------------
+import shlex
 
 class List (Text):
     """A widget for entering a space-separated list of text items"""
@@ -394,6 +397,7 @@ class List (Text):
         Text.set(self, text)
 
 ### --------------------------------------------------------------------
+import tkFileDialog
 
 class Filename (Control):
     """A widget for entering or browsing for a filename
@@ -441,6 +445,7 @@ class Filename (Control):
             self.set(filename)
 
 ### --------------------------------------------------------------------
+import tkColorChooser
 
 class Color (Control):
     """A widget for choosing a color"""
@@ -613,6 +618,31 @@ class DragList (ScrollList):
 
 ### --------------------------------------------------------------------
 
+class TextList (DragList):
+    """A widget for listing and editing several text strings"""
+    def __init__(self,
+                 option='',
+                 label="Text list",
+                 default=None,
+                 help=''):
+        DragList.__init__(self, option, label, default, help)
+
+    def draw(self, master):
+        """Draw control widgets in the given master."""
+        DragList.draw(self, master)
+        # TODO: Event handling to allow editing items
+        self.editbox = tk.Entry(self, width=30, textvariable=self.selected)
+        self.editbox.bind('<Return>', self.setTitle)
+        self.editbox.pack(fill='x', expand=True)
+
+    def setTitle(self, event):
+        """Event handler when Enter is pressed after editing a title."""
+        newtitle = self.selected.get()
+        self.listbox.delete(self.curindex)
+        self.listbox.insert(self.curindex, newtitle)
+
+### --------------------------------------------------------------------
+
 class FileList (DragList):
     """A widget for listing several filenames"""
     def __init__(self,
@@ -647,27 +677,3 @@ class FileList (DragList):
 
 ### --------------------------------------------------------------------
 
-class TextList (DragList):
-    """A widget for listing and editing several text strings"""
-    def __init__(self,
-                 option='',
-                 label="Text list",
-                 default=None,
-                 help=''):
-        DragList.__init__(self, option, label, default, help)
-
-    def draw(self, master):
-        """Draw control widgets in the given master."""
-        DragList.draw(self, master)
-        # TODO: Event handling to allow editing items
-        self.editbox = tk.Entry(self, width=30, textvariable=self.selected)
-        self.editbox.bind('<Return>', self.setTitle)
-        self.editbox.pack(fill='x', expand=True)
-
-    def setTitle(self, event):
-        """Event handler when Enter is pressed after editing a title."""
-        newtitle = self.selected.get()
-        self.listbox.delete(self.curindex)
-        self.listbox.insert(self.curindex, newtitle)
-
-### --------------------------------------------------------------------
