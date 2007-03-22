@@ -4,7 +4,7 @@
 
 from metagui import *
 
-panel1 = Panel('',
+options = Panel('',
     Drawer("Binary file handling",
         Text('--binary-files',
             'Assume type for binary files', '',
@@ -121,11 +121,7 @@ panel1 = Panel('',
         " ence  of  file  names containing unusual characters like newlines."\
         " This option can be used with commands like find -print0, perl  -0,"\
         " sort  -z, and xargs -0 to process arbitrary file names, even those"\
-        " that contain newline characters.")
-)
-
-
-panel2 = Panel('',
+        " that contain newline characters."),
     Drawer("Match settings",
         Flag('-i',
             'Ignore case', False,
@@ -230,19 +226,23 @@ panel2 = Panel('',
         'Colored output', 'never',
         "Surround  the  matching  string with the marker find in GREP_COLOR"\
         " environment variable.",
-        'never|always|auto'),
+        'never|always|auto')
+)
+
+pattern = Panel('',
     Text('-e',
         'Pattern', '',
-        "Use PATTERN as the pattern; useful to protect patterns beginning"\
-        " with -."),
+        'Search pattern (regular expression).')
+)
+files = Panel('',
     FileList('',
         'Search in files', '',
         'List of files to perform pattern-matching on')
 )
 
-big_panel = HPanel('', panel1, panel2)
+big_panel = HPanel('', options, pattern, files)
 style = Style(bgcolor='white', font=('Helvetica', 10))
 app = Application('grep', [big_panel])
-gui = GUI('grep metagui', [app], 800, 800, style)
+gui = GUI('grep metagui', [app], style=style)
 gui.run()
 

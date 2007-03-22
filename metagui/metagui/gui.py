@@ -63,12 +63,12 @@ class Panel (tk.LabelFrame):
             item.draw(self)
             item.pack(side=side, anchor='nw', fill='x', expand=True)
 
-    def get_options(self):
+    def get_args(self):
         """Return a list of all command-line options from contained widgets.
         """
         args = []
         for item in self.contents:
-            args += item.get_options()
+            args += item.get_args()
         return args
 
 ### --------------------------------------------------------------------
@@ -118,8 +118,8 @@ class Drawer (tk.Frame):
             self.panel.pack(anchor='nw', fill='both', expand=True)
             self.visible = True
     
-    def get_options(self):
-        return self.panel.get_options()
+    def get_args(self):
+        return self.panel.get_args()
 
 ### --------------------------------------------------------------------
 
@@ -166,21 +166,21 @@ class Application (tk.Frame):
                            command=self.execute)
         button.pack(anchor='s', fill='x')
 
-    def get_options(self):
+    def get_args(self):
         """Get a list of all command-line arguments from all panels.
         """
         if isinstance(self.panels, Panel):
-            return self.panels.get_options()
+            return self.panels.get_args()
         elif isinstance(self.panels, list):
             args = []
             for panel in self.panels:
-                args += panel.get_options()
+                args += panel.get_args()
             return args
 
     def execute(self):
         """Run the program with all the supplied options.
         """
-        args = self.get_options()
+        args = self.get_args()
         command = Command(self.program, *args)
         print "Running command:", str(command)
         print "(not really)"
@@ -190,7 +190,7 @@ class Application (tk.Frame):
 class GUI (tk.Tk):
     """GUI with one or more Applications
     """
-    def __init__(self, title, applications, width=500, height=800,
+    def __init__(self, title, applications, width=500, height=400,
                  style=None):
         """Create a GUI for the given applications.
         
@@ -215,9 +215,9 @@ class GUI (tk.Tk):
     def draw(self):
         """Draw widgets."""
         self.style.apply(self)
-        self.frame = tk.Frame(self, width=self.width, height=self.height)
+        #self.frame = tk.Frame(self, width=self.width, height=self.height)
+        self.frame = tk.Frame(self)
         self.frame.pack(fill='both', expand=True)
-        self.frame.pack_propagate(False)
         self.resizable(width=True, height=True)
         # Single-application GUI
         if len(self.apps) == 1:
@@ -232,7 +232,8 @@ class GUI (tk.Tk):
                 tabs.add(app.program, app)
             tabs.draw()
             tabs.pack(anchor='n', fill='both', expand=True)
-
+        #self.frame.pack_propagate(False)
+        
     def draw_menu(self, window):
         """Draw a menu bar in the given top-level window.
         """
