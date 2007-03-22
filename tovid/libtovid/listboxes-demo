@@ -222,6 +222,8 @@ class FilesTitles(ListBoxes):
 
     def addFiles(self):
         """Event handler for adding files to the list box"""
+        self.tk.call('namespace', 'eval', '::tk::dialog::file::', 'variable', 'showHiddenBtn', 1) 
+        self.tk.call('namespace', 'eval', '::tk::dialog::file::', 'variable', 'showHiddenVar', 0) 
         files = tkFileDialog.askopenfilenames(parent=self, title='Add files')
         for file in files:
             log.debug("Adding '%s' to the file list" % file)
