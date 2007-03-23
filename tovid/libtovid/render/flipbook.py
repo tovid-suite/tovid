@@ -159,6 +159,9 @@ class Flipbook:
         filename = "/tmp/flipbook_%s.png" % frame
         print "Rendering Flipbook frame %s to %s" % (frame, filename)
         drawing = self.get_drawing(frame)
+        # Il faudra ici sauver DEUX drawing si on est en mode entrelacé, puis
+        # les combiner en UN drawing avant de rendre en .PNG.
+        # Entre les deux, on alterne les MASKS, ligne à ligne, etc..
         drawing.save_png(filename, self.output_size[0], self.output_size[1])
 
     def get_drawing(self, frame):

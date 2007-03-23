@@ -154,6 +154,8 @@ class Drawing:
                            drawing operation
         """
         self.size = (width, height)
+        self.w = width
+        self.h = height
         self.aspect = float(width) / height
         self.autodraw = autodraw
         #self.commands = []
@@ -306,7 +308,8 @@ class Drawing:
         """Fill the current (closed) path with an optionally given color.
 
         If arguments are present, they are passed to set_source()
-        before filling.
+        before filling. Note that this source will be applied to further
+        fill()ings or stroke()ings or text() calls.
         """
         # Optionally set fill color, and save it.
         if source is not None:
@@ -386,9 +389,12 @@ class Drawing:
             cr.set_font_matrix(m)
         self.doStep(_font_rotate, degrees)
 
-    def image_surface(self, x, y, width, height, surface):
+    def image_surface(self, x, y, width, height, surface, mask=None):
         """Draw a given cairo.ImageSurface centered at (x, y), at the given
         width and height.
+
+        If you specify mask, it must be a cairo ImageSurface.
+        
         """
         # Calculate centering and scaling
         add_x, add_y = (0, 0)
@@ -407,10 +413,16 @@ class Drawing:
         self.scale(scale, scale)
 
         # Create and append the drawing function
-        def _image_surface(cr):
-            cr.set_source_surface(surface)
-            cr.paint()
-        self.doStep(_image_surface, x, y, width, height, surface)
+        if (mask):
+            def _image_surface(cr):
+                cr.set_source_surface(surface)
+                cr.mask_surface(mask)
+            self.doStep(_image_surface, x, y, width, height, surface, mask)
+        else:
+            def _image_surface(cr):
+                cr.set_source_surface(surface)
+                cr.paint()
+            self.doStep(_image_surface, x, y, width, height, surface, mask)
 
         self.restore()
     
@@ -949,31 +961,31 @@ class Drawing:
     ### ----------------------------------------------------------------
     
     
-    def font_slant(self, style):
-        """Set the font slant. Use one of:
-    
-           normal, italic, oblique
-        """
-        tr = {'italic': cairo.FONT_SLANT_ITALIC,
-              'normal': cairo.FONT_SLANT_NORMAL,
-              'oblique': cairo.FONT_SLANT_OBLIQUE}
-        def _font_slant(cr):
-            cr.set_slant(tr[style])
-        self.doStep(_font_slant, style)
-    # Alias
-    font_style = font_slant
+#    def font_slant(self, style):
+#        """Set the font slant. Use one of:
+#    
+#           normal, italic, oblique
+#        """
+#        tr = {'italic': cairo.FONT_SLANT_ITALIC,
+#              'normal': cairo.FONT_SLANT_NORMAL,
+#              'oblique': cairo.FONT_SLANT_OBLIQUE}
+#        def _font_slant(cr):
+#            cr.set_slant(tr[style])
+#        self.doStep(_font_slant, style)
+#    # Alias
+#    font_style = font_slant
 
 
-    def font_weight(self, weight):
-        """Set the font weight to one of:
-        
-            normal, bold
-        """
-        tr = {'normal': cairo.FONT_WEIGHT_NORMAL,
-              'bold': cairo.FONT_WEIGHT_BOLD}
-        def _font_weight(cr):
-            cr.set_font_weight(tr[weight])
-        self.doStep(_font_weight, weight)
+#    def font_weight(self, weight):
+#        """Set the font weight to one of:
+#        
+#            normal, bold
+#        """
+#        tr = {'normal': cairo.FONT_WEIGHT_NORMAL,
+#              'bold': cairo.FONT_WEIGHT_BOLD}
+#        def _font_weight(cr):
+#            cr.set_font_weight(tr[weight])
+#        self.doStep(_font_weight, weight)
 
 
     def font_family(self, family):
@@ -1076,6 +1088,44 @@ class Drawing:
 ### --------------------------------------------------------------------
 ### Exported functions
 ### --------------------------------------------------------------------
+
+
+def interlace_drawings(draw1, draw2):
+    """Merge two drawings into one, using interlacing fields."""
+
+    dr = Drawing(draw1.w, draw1.h)
+
+    # create new canvas
+    # create masks
+    fields = [0, 1]
+    for f in range(0,2):
+        img = cairo.ImageSurface(cairo.FORMAT_ARGB32, draw1.w, draw1.h)
+        cr = cairo.Context(img)
+        cr.set_antialias(cairo.ANTIALIAS_NONE)
+        cr.set_source_rgba(0.5, 0.5, 0.5, 1)
+        cr.set_line_width(1)
+
+        for x in range(0, draw1.h / 2):
+            # x*2 + f = top field first.., each two lines..
+            cr.move_to(0, x*2 + f)
+            cr.line_to(draw1.w, x*2 + f)
+            cr.stroke()
+
+        fields[f] = img
+
+        #DEBUG
+        #print "Writing: /tmp/file%s.png" % f
+        #img.write_to_png("/tmp/file%s.png" % f)
+
+    # Ici j'ai mes deux image surfaces...
+            
+    # paint first image
+    dr.image_surface(0,0,dr.w, dr.h, draw1.surface, fields[0])
+    # paint second image
+    dr.image_surface(0,0,dr.w, dr.h, draw2.surface, fields[1])
+    # return new drawing
+
+    return dr
 
 def render(drawing, context, width, height):
     """Render a Drawing to the given cairo context at the given size.

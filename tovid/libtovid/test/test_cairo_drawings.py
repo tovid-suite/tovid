@@ -7,7 +7,7 @@ import math
 import sys
 sys.path.insert(0, '..')
 # Get modules to test
-from libtovid.render.drawing import Drawing, display, save_jpg, save_png
+from libtovid.render.drawing import Drawing, display, save_jpg, save_png, interlace_drawings
 import libtovid
 import cairo
 import os
@@ -36,6 +36,25 @@ class TestCairoDraws(unittest.TestCase):
         self.d.restore()
 
     ################ Tests start here ###########
+
+class TestInterlaceDrawings(TestCairoDraws):
+    def test_interlace_drawings(self):
+        """Test interlace_drawings function"""
+        self.txt("Show an interlaced 200x200 image of blue and red.")
+
+        # Save a temp image to disk...
+        im1 = Drawing(200, 200)
+        im1.image(0,0,200,200, 'bleu.png')
+        im2 = Drawing(200, 200)
+        im2.image(0,0,200,200, 'rouge.png')
+        
+        mix = interlace_drawings(im1, im2)
+
+        save_png(mix, '/tmp/img.png', mix.w, mix.h)
+
+        # Show in the test showcase.
+        self.d.image(0, 0, 200, 200, '/tmp/img.png')
+
 
 class TestImageLoad(TestCairoDraws):
     def test_image_load(self):
