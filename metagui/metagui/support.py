@@ -19,11 +19,13 @@ import control
 
 class ComboBox (tk.Frame):
     """A dropdown menu with several choices."""
-    def __init__(self, master, choices=None):
+    def __init__(self, master, choices=None, variable=None,
+                 command=None):
         """Create a ComboBox with the given choices."""
         tk.Frame.__init__(self, master)
         self.choices = choices or []
-        self.variable = tk.Variable()
+        self.variable = variable or tk.StringVar()
+        self.command = command
         self._draw()
 
     def _draw(self):
@@ -65,6 +67,9 @@ class ComboBox (tk.Frame):
         self.curindex = self.chooser.nearest(event.y)
         self.variable.set(self.chooser.get(self.curindex))
         self.dropdown.withdraw()
+        # Callback, if any
+        if self.command:
+            self.command()
 
 ### --------------------------------------------------------------------
 
