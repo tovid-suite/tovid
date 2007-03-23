@@ -17,6 +17,49 @@ import control
 
 ### --------------------------------------------------------------------
 
+class ComboBox (tk.Frame):
+    """A dropdown menu with several choices."""
+    def __init__(self, master, choices=None):
+        """Create a ComboBox with the given choices."""
+        tk.Frame.__init__(self, master)
+        self.choices = choices or []
+        self.variable = tk.Variable()
+        self._draw()
+
+    def _draw(self):
+        """Draw and configure contained widgets."""
+        self.text = tk.Entry(self, textvariable=self.variable)
+        self.button = tk.Button(self, text="+", command=self.open)
+        self.text.grid(row=0, column=0)
+        self.button.grid(row=0, column=1)
+        # Dropdown list, displayed when button is clicked
+        self.dropdown = tk.Toplevel(self)
+        self.chooser = tk.Listbox(self.dropdown, background='white')
+        for choice in self.choices:
+            self.chooser.insert('end', choice)
+        self.chooser.bind('<Button-1>', self.choose)
+        self.chooser.grid()
+        # Align dropdown list with the text box
+        x = self.text.winfo_rootx()
+        y = self.text.winfo_rooty()
+        self.dropdown.geometry("+%d+%d" % (x, y))
+        # Don't draw window manager frame around the dropdown
+        self.dropdown.wm_overrideredirect(1)
+        # Hide until later
+        self.dropdown.withdraw()
+    
+    def open(self):
+        """Open a panel showing the list of choices."""
+        self.dropdown.deiconify()
+    
+    def choose(self, event=None):
+        """Make a selection from the list, and set the variable."""
+        self.curindex = self.chooser.nearest(event.y)
+        self.variable.set(self.chooser.get(self.curindex))
+        self.dropdown.withdraw()
+
+### --------------------------------------------------------------------
+
 class FontChooser (tkSimpleDialog.Dialog):
     """A widget for choosing a font"""
     def __init__(self, master=None):
