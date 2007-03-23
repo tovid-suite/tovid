@@ -40,6 +40,22 @@ import Tkinter as tk
 from inspect import getargspec
 from metagui.odict import Odict
 from metagui import Text, Number, Flag
+from metagui import control
+
+controls = {
+    'Choice': control.Choice,
+    'Color': control.Color,
+    'Filename': control.Filename,
+    'Flag': control.Flag,
+    'FlagGroup': control.FlagGroup,
+    'Font': control.Font,
+    'Text': control.Text,
+    'List': control.List,
+    'Number': control.Number,
+    'FileList': control.FileList,
+    'TextList': control.TextList}
+
+### --------------------------------------------------------------------
 
 class ControlEditor (tk.Frame):
     """A GUI control panel for setting Control arguments."""
@@ -67,15 +83,50 @@ class ControlEditor (tk.Frame):
             widget.draw(self)
             widget.pack()
 
+
+### --------------------------------------------------------------------
+from metagui.support import ComboBox
+
+class ControlChooser (tk.Frame):
+    """A GUI panel for choosing a Control type and setting its arguments."""
+    def __init__(self):
+        self.control = tk.StringVar()
+    
+    def draw(self, master):
+        tk.Frame.__init__(self, master)
+        self.choices = ComboBox(self, controls.keys(),
+                                variable=self.control,
+                                command=self.refresh)
+        self.choices.pack()
+        self.editor = ControlEditor(Number)
+        self.control.set('Number')
+        self.editor.draw(self)
+        self.editor.pack()
+
+    def refresh(self, event=None):
+        """Show the editor for the currently selected control.
+        """
+        self.editor.pack_forget()
+        newcontrol = controls[self.control.get()]
+        self.editor = ControlEditor(newcontrol)
+        self.editor.draw(self)
+        self.editor.pack()
+
+### --------------------------------------------------------------------
+
 # Demo
 if __name__ == '__main__':
     import Tkinter as tk
     root = tk.Tk()
-    for control in [Text, Number, Flag]:
-        frame = tk.LabelFrame(root, text=control.__name__)
-        editor = ControlEditor(control)
-        editor.draw(frame)
-        editor.pack()
-        frame.pack()
+    chooser = ControlChooser()
+    chooser.draw(root)
+    chooser.pack()
+    
+    #for control in [Text, Number, Flag]:
+        #frame = tk.LabelFrame(root, text=control.__name__)
+        #editor = ControlEditor(control)
+        #editor.draw(frame)
+        #editor.pack()
+        #frame.pack()
     root.mainloop()
 
