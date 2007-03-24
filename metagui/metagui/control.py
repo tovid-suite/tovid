@@ -35,6 +35,7 @@ vartypes = {
     list: tk.Variable}
 
 ### --------------------------------------------------------------------
+from metagui.var import Var
 from tooltip import ToolTip
 
 class Control (tk.Frame):
@@ -75,8 +76,6 @@ class Control (tk.Frame):
         self.label = label
         self.help = help
         self.kwargs = kwargs
-        # Store value in normal Python variable until draw() is called
-        self.value = self.vartype(default)
 
     def draw(self, master):
         """Draw the control widgets in the given master.
@@ -88,32 +87,31 @@ class Control (tk.Frame):
         
         """
         tk.Frame.__init__(self, master)
-        # Draw tooltip
-        if self.help != '':
-            self.tooltip = ToolTip(self, text=self.help, delay=1000)
-        # Create a suitable tk.Variable
-        if self.vartype in vartypes:
+        # Pull or create tk.Variable to store Control's value
+        if 'pull' in self.kwargs:
+            print "pulling from", self.kwargs['pull'].option
+            self.variable = self.kwargs['pull'].variable
+        elif self.vartype in vartypes:
             self.variable = vartypes[self.vartype]()
         else:
             self.variable = tk.Variable()
-        # Put the stored value in the Variable
-        self.set(self.value)
+        # Draw tooltip
+        if self.help != '':
+            self.tooltip = ToolTip(self, text=self.help, delay=1000)
 
     def get(self):
         """Return the value of the Control's variable."""
         # self.variable isn't set until draw() is called
-        if self.variable:
-            return self.variable.get()
-        else:
-            return self.value
+        if not self.variable:
+            raise "Must call draw() before get()"
+        return self.variable.get()
 
     def set(self, value):
         """Set the Control's variable to the given value."""
         # self.variable isn't set until draw() is called
-        if self.variable:
-            self.variable.set(value)
-        else:
-            self.value = value
+        if not self.variable:
+            raise "Must call draw() before set()"
+        self.variable.set(value)
 
     def enable(self, enabled=True):
         """Enable or disable all sub-widgets."""
@@ -168,14 +166,15 @@ class Flag (Control):
                  option='',
                  label="Flag",
                  default=False,
-                 help=''):
+                 help='',
+                 **kwargs):
         """Create a Flag widget with the given label and default value.
 
             label:    Text label for the flag
             default:  Default value (True or False)
             help:     Help text to show in a tooltip
         """
-        Control.__init__(self, bool, option, label, default, help)
+        Control.__init__(self, bool, option, label, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -193,7 +192,8 @@ class FlagGroup (Control):
     def __init__(self,
                  label='',
                  state='normal',
-                 *flags):
+                 *flags,
+                 **kwargs):
         """Create a FlagGroup with the given label and state.
         
             label:    Label for the group
@@ -234,6 +234,7 @@ class FlagGroup (Control):
         return args
 
 ### --------------------------------------------------------------------
+from metagui import odict
 
 class Choice (Control):
     """A widget for choosing one of several options.
@@ -244,7 +245,8 @@ class Choice (Control):
                  default=None,
                  help='',
                  choices='A|B',
-                 packside='left'):
+                 packside='left',
+                 **kwargs):
         """Initialize Choice widget with the given label and list of choices.
 
             label:    Text label for the choices
@@ -256,30 +258,11 @@ class Choice (Control):
                       A dictionary is also allowed, as long as you don't
                       care about preserving choice order.
         """
-        Control.__init__(self, str, option, label, default, help)
-        if type(choices) not in [str, list, dict]:
-            raise TypeError("choices must be a string, list, or dictionary.")
-        # Convert choices to a list if necessary
-        if type(choices) == str:
-            choices = choices.split('|')
-        if type(choices) == list:
-            first = choices[0]
-            # list of strings
-            if type(first) == str:
-                choices = [[c, c] for c in choices]
-            # list of 2-element string lists? If not, exception
-            elif type(first) != list or len(first) != 2:
-                raise TypeError("choices lists must either be"\
-                    "['a', 'b', 'c'] or [['a', 'A'], ['b', 'B']] style.")
-        self.choices = []
-        self.labels = []
-        # Now, save it all as two separate lists
-        for choice, label in choices:
-            self.choices.append(choice)
-            self.labels.append(label)
+        self.choices = odict.from_list(choices)
+        Control.__init__(self, str, option, label,
+                         default or self.choices.values()[0],
+                         help, **kwargs)
         self.packside = packside
-        if not default:
-            self.set(self.choices[0])
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -287,7 +270,7 @@ class Choice (Control):
         frame = tk.LabelFrame(self, text=self.label)
         frame.pack(anchor='nw', fill='x')
         self.rb = {}
-        for choice, label in zip(self.choices, self.labels):
+        for choice, label in self.choices.items():
             self.rb[choice] = tk.Radiobutton(frame, text=label, value=choice,
                                              variable=self.variable)
             self.rb[choice].pack(anchor='nw', side=self.packside)
@@ -303,7 +286,8 @@ class Number (Control):
                  help='',
                  min=1,
                  max=10,
-                 style='spin'):
+                 style='spin',
+                 **kwargs):
         """Create a number-setting widget.
         
             label:    Text label describing the meaning of the number
@@ -315,7 +299,7 @@ class Number (Control):
         # Use min if default wasn't provided
         if default is None:
             default = min
-        Control.__init__(self, int, option, label, default, help)
+        Control.__init__(self, int, option, label, default, help, **kwargs)
         self.min = min
         self.max = max
         self.style = style
@@ -355,13 +339,14 @@ class Text (Control):
                  option='',
                  label="Text",
                  default='',
-                 help=''):
+                 help='',
+                 **kwargs):
         """
             label:    Label for the text
             default:  Default value of text widget
             help:     Help text to show in a tooltip
         """
-        Control.__init__(self, str, option, label, default, help)
+        Control.__init__(self, str, option, label, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -379,8 +364,9 @@ class List (Text):
                  option='',
                  label="List",
                  default='',
-                 help=''):
-        Text.__init__(self, option, label, default, help)
+                 help='',
+                 **kwargs):
+        Text.__init__(self, option, label, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -408,7 +394,8 @@ class Filename (Control):
                  default='',
                  help='',
                  type='load',
-                 desc='Select a file to load'):
+                 desc='Select a file to load',
+                 **kwargs):
         """Create a Filename with label, text entry, and browse button.
         
             label:   Text of label next to file entry box
@@ -418,7 +405,7 @@ class Filename (Control):
             desc:    Brief description (shown in title bar of file
                      browser dialog)
         """
-        Control.__init__(self, str, option, label, default, help)
+        Control.__init__(self, str, option, label, default, help, **kwargs)
         self.type = type
         self.desc = desc
 
@@ -453,14 +440,15 @@ class Color (Control):
                  option='',
                  label="Color",
                  default='',
-                 help=''):
+                 help='',
+                 **kwargs):
         """Create a widget that opens a color-chooser dialog.
         
             label:   Text label describing the color to be selected
             default: Default color (named color or hexadecimal RGB)
             help:    Help text to show in a tooltip
         """
-        Control.__init__(self, str, option, label, default, help)
+        Control.__init__(self, str, option, label, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -484,14 +472,15 @@ class Font (Control):
                  option='',
                  label='Font',
                  default='Helvetica',
-                 help=''):
+                 help='',
+                 **kwargs):
         """Create a widget that opens a font chooser dialog.
         
             label:   Text label for the font
             default: Default font
             help:    Help text to show in a tooltip
         """
-        Control.__init__(self, str, option, label, default, help)
+        Control.__init__(self, str, option, label, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -516,14 +505,15 @@ class ScrollList (Control):
                  option='',
                  label="List",
                  default=None,
-                 help=''):
+                 help='',
+                 **kwargs):
         """Create a ScrollList widget.
         
             label:    Text label for the list
             default:  List of initial values, or None for empty
             help:     Help text to show in a tooltip
         """
-        Control.__init__(self, list, option, label, default or [], help)
+        Control.__init__(self, list, option, label, default or [], help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -581,8 +571,9 @@ class DragList (ScrollList):
                  option='',
                  label="List",
                  default=None,
-                 help=''):
-        ScrollList.__init__(self, option, label, default, help)
+                 help='',
+                 **kwargs):
+        ScrollList.__init__(self, option, label, default, help, **kwargs)
         self.curindex = 0
 
     def draw(self, master):
@@ -624,8 +615,9 @@ class TextList (DragList):
                  option='',
                  label="Text list",
                  default=None,
-                 help=''):
-        DragList.__init__(self, option, label, default, help)
+                 help='',
+                 **kwargs):
+        DragList.__init__(self, option, label, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -649,8 +641,9 @@ class FileList (DragList):
                  option='',
                  label="File list",
                  default=None,
-                 help=''):
-        DragList.__init__(self, option, label, default, help)
+                 help='',
+                 **kwargs):
+        DragList.__init__(self, option, label, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -690,6 +683,8 @@ CONTROLS = {
     'Number': Number,
     'FileList': FileList,
     'TextList': TextList}
+
+### --------------------------------------------------------------------
 
 # Demo
 if __name__ == '__main__':
