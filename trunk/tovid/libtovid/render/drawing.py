@@ -1186,7 +1186,6 @@ def save_png(drawing, filename, width, height):
         surface = get_surface(width, height, 'image')
         context = cairo.Context(surface)
         render(drawing, context, width, height)
-    print "Saving", filename
     surface.write_to_png(filename)
     print "save_png took %s seconds" % (time.time() - start)
     

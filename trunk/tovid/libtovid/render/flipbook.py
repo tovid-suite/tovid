@@ -76,7 +76,7 @@ import math
 import shutil
 import random
 from libtovid.render.animation import Keyframe
-from libtovid.render.drawing import Drawing, save_image
+from libtovid.render.drawing import Drawing, save_image, interlace_drawings
 from libtovid.render import layer, effect
 from libtovid import standard
 from libtovid.media import MediaFile, standard_media, load_media
@@ -86,7 +86,7 @@ from libtovid import utils
 class Flipbook:
     """A collection of Drawings that together comprise an animation.
     """
-    def __init__(self, seconds, format, tvsys, aspect='4:3'):
+    def __init__(self, seconds, format, tvsys, aspect='4:3', interlaced=False):
         """Create a flipbook of the given length in seconds, at the given
         resolution.
 
@@ -95,6 +95,9 @@ class Flipbook:
             tvsys:   'ntsc' or 'pal'
             aspect:  '4:3' or '16:9' (the latter only for format='dvd')
                      (default: '4:3')
+            interlaced: True/False. When enabled, the framerate will be
+                     doubled, but only half the frames (twice the fields)
+                     will be rendered.
 
         Once you've created the Flipbook, you can grab the dimensions
         in with the property:
@@ -111,6 +114,9 @@ class Flipbook:
             self.tmpdir = os.environ['TMPDIR']
         self.seconds = float(seconds)
         self.fps = standard.fps(tvsys)
+        if (interlaced):
+            self.fps *= 2
+        self.interlaced = interlaced
         self.frames = int(seconds * self.fps)
         self.output_size = standard.resolution(format, tvsys)
         # TODO: We'll need aspect ratio here.. 4:3 or 16:9 anamorphic ?
@@ -156,16 +162,21 @@ class Flipbook:
 
     def render(self, frame=1):
         """Render the given frame."""
+
+        print "DEPRECATED FUNCTION."
+        exit()
+        
         filename = "/tmp/flipbook_%s.png" % frame
         print "Rendering Flipbook frame %s to %s" % (frame, filename)
         drawing = self.get_drawing(frame)
-        # Il faudra ici sauver DEUX drawing si on est en mode entrelacé, puis
-        # les combiner en UN drawing avant de rendre en .PNG.
-        # Entre les deux, on alterne les MASKS, ligne à ligne, etc..
+
         drawing.save_png(filename, self.output_size[0], self.output_size[1])
 
     def get_drawing(self, frame):
-        """Get a Drawing of the given frame"""
+        """Get a Drawing of the given frame
+
+        TODO: 0-based or 1-based ?
+        """
         drawing = Drawing(self.canvas[0], self.canvas[1])
         # Draw each layer
         for layer, position in self.layers:
@@ -212,13 +223,28 @@ class Flipbook:
         os.mkdir(tmp_framedir)
         
         # Do the rendering...
+        # 1-based file naming
+        # 0-based frame references..
         frame = 1
+        fileno = 0
         while frame <= self.frames:
             print "Drawing frame %s of %s" % (frame, self.frames)
-            drawing = self.get_drawing(frame)
+            # Il faudra ici sauver DEUX drawing si on est en mode entrelacé, puis
+            # les combiner en UN drawing avant de rendre en .PNG.
+            # Entre les deux, on alterne les MASKS, ligne à ligne, etc..
+            if (self.interlaced):
+                draw1 = self.get_drawing(frame)
+                frame += 1
+                draw2 = self.get_drawing(frame)
+
+                drawing = interlace_drawings(draw1, draw2)
+            else:
+                drawing = self.get_drawing(frame)
+
             # jpeg2yuv likes frames to start at 0
-            save_image(drawing, '%s/%08d.png' % (tmp_framedir, frame - 1),
+            save_image(drawing, '%s/%08d.png' % (tmp_framedir, fileno),
                        self.output_size[0], self.output_size[1])
+            fileno += 1
             frame += 1
 
         # Launch the encoder..
