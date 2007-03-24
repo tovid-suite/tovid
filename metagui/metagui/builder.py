@@ -42,19 +42,6 @@ from metagui.odict import Odict
 from metagui import Text, Number, Flag
 from metagui import control
 
-controls = {
-    'Choice': control.Choice,
-    'Color': control.Color,
-    'Filename': control.Filename,
-    'Flag': control.Flag,
-    'FlagGroup': control.FlagGroup,
-    'Font': control.Font,
-    'Text': control.Text,
-    'List': control.List,
-    'Number': control.Number,
-    'FileList': control.FileList,
-    'TextList': control.TextList}
-
 ### --------------------------------------------------------------------
 
 class ControlEditor (tk.Frame):
@@ -94,7 +81,7 @@ class ControlChooser (tk.Frame):
     
     def draw(self, master):
         tk.Frame.__init__(self, master)
-        self.choices = ComboBox(self, controls.keys(),
+        self.choices = ComboBox(self, control.CONTROLS.keys(),
                                 variable=self.control,
                                 command=self.refresh)
         self.choices.pack()
@@ -107,7 +94,7 @@ class ControlChooser (tk.Frame):
         """Show the editor for the currently selected control.
         """
         self.editor.pack_forget()
-        newcontrol = controls[self.control.get()]
+        newcontrol = control.CONTROLS[self.control.get()]
         self.editor = ControlEditor(newcontrol)
         self.editor.draw(self)
         self.editor.pack()
