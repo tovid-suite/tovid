@@ -48,7 +48,8 @@ class Panel (tk.LabelFrame):
                or isinstance(item, Drawer):
                 self.contents.append(item)
             else:
-                raise "Panel may only contain Controls, Panels, or Drawers."
+                raise "Panel may only contain Controls, Panels,"\
+                      " or Drawers (got %s instead)" % type(item)
 
     def draw(self, master, side='top'):
         """Draw Controls in a Frame with the given master.
