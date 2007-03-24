@@ -677,3 +677,29 @@ class FileList (DragList):
 
 ### --------------------------------------------------------------------
 
+# Exported control classes, indexed by name
+CONTROLS = {
+    'Choice': Choice,
+    'Color': Color,
+    'Filename': Filename,
+    'Flag': Flag,
+    'FlagGroup': FlagGroup,
+    'Font': Font,
+    'Text': Text,
+    'List': List,
+    'Number': Number,
+    'FileList': FileList,
+    'TextList': TextList}
+
+# Demo
+if __name__ == '__main__':
+    root = tk.Tk()
+    for name, control in CONTROLS.items():
+        frame = tk.LabelFrame(root, text=name, padx=10, pady=10,
+                          font=('Helvetica', 10, 'bold'))
+        frame.pack(fill='both', expand=True)
+        widget = control()
+        widget.draw(frame)
+        widget.pack(fill='both')
+    root.mainloop()
+    
