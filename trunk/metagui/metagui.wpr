@@ -6,6 +6,8 @@
 [project attributes]
 proj.file-list = [loc('apps/cp.py'),
                   loc('apps/grep.py'),
+                  loc('apps/ls.py'),
+                  loc('apps/todisc.py'),
                   loc('bin/metagui'),
                   loc('bin/pickcontrol.py'),
                   loc('metagui/builder.py'),
@@ -14,8 +16,10 @@ proj.file-list = [loc('apps/cp.py'),
                   loc('metagui/gui.py'),
                   loc('metagui/listbox.py'),
                   loc('metagui/manpage.py'),
+                  loc('metagui/odict.py'),
                   loc('metagui/support.py'),
                   loc('metagui/tooltip.py'),
+                  loc('metagui/var.py'),
                   loc('metagui/__init__.py'),
                   loc('setup.py')]
 proj.file-type = 'shared'

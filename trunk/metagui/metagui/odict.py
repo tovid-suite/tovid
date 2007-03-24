@@ -6,7 +6,13 @@
 http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/107747
 
 """
+__all__ = [
+    'Odict',
+    'from_list']
+
 from UserDict import UserDict
+
+### --------------------------------------------------------------------
 
 class Odict (UserDict):
     def __init__(self, keys=None, values=None):
@@ -63,4 +69,40 @@ class Odict (UserDict):
 
     def values(self):
         return map(self.get, self._keys)
+
+### --------------------------------------------------------------------
+
+def from_list(choices):
+    """Convert a list of choices to an Odict (ordered dictionary).
+    choices may be in one of several formats:
+
+               string: 'one|two|three'
+                 list: ['one', 'two', 'three']
+                 dict: {'a': "Choice A", 'b': "Choice B"}
+        list-of-lists: [['a', "Choice A"], ['b', "Choice B"], ..]
     
+    Note: the dict form does not preserve order. Use list-of-lists
+    to maintain the specified order.
+    """
+    if type(choices) not in [str, list, dict]:
+        raise TypeError("choices must be a string, list, or dictionary.")
+
+    if type(choices) == str:
+        choices = choices.split('|')
+        return Odict(choices, choices)
+
+    if type(choices) == dict:
+        return Odict(choices.keys(), choices.values())
+
+    # choices is a list, but what kind?
+    first = choices[0]
+    # list of strings
+    if type(first) == str:
+        return Odict(choices, choices)
+    # list of 2-element string lists
+    elif type(first) == list and len(first) == 2:
+        choices, labels = zip(*choices)
+        return Odict(choices, labels)
+    else:
+        raise TypeError("choices lists must either be"\
+            "['a', 'b', 'c'] or [['a', 'A'], ['b', 'B']] style.")
