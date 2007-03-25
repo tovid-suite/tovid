@@ -262,7 +262,8 @@ class Flipbook:
         m2v_file = "%s/video.m2v" % tmp_workdir
         ac3_file = "%s/audio.ac3" % tmp_workdir
         encode.encode_frames(tmp_framedir, m2v_file,
-                             self.format, self.tvsys, self.aspect)
+                             self.format, self.tvsys, self.aspect,
+                             interlaced=self.interlaced)
         
         vidonly = load_media(m2v_file)
 
