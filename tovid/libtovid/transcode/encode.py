@@ -410,18 +410,28 @@ def mplex_streams(vstream, astream, target):
 #
 # --------------------------------------------------------------------------
 
-def encode_frames(imagedir, outfile, format, tvsys, aspect):
+def encode_frames(imagedir, outfile, format, tvsys, aspect, interlaced=False):
     """Convert an image sequence in the given directory to match a target
     MediaFile, putting the output stream in outfile.
 
-        imagedir:  Directory containing images (and only images)
-        outfile:   Filename for output.
-        tvsys:     TVsys desired for output (to deal with FPS)
-        aspect:    Aspect ratio ('4:3', '16:9')
+        imagedir:   Directory containing images (and only images)
+        outfile:    Filename for output.
+        tvsys:      TVsys desired for output (to deal with FPS)
+        aspect:     Aspect ratio ('4:3', '16:9')
+        interlaced: Frames are interlaced material.
         
     Currently supports JPG and PNG images; input images must already be
     at the desired target resolution.
     """
+    #
+    # Trying to implement interlaced in encoding failed with:
+    #    ++ WARN: [mpeg2enc] Frame height won't split into two equal field pictures...
+    #    ++ WARN: [mpeg2enc] forcing encoding as progressive video
+    # in all cases. Setting -Ip -L1 with pnv2yuv and -I2 in mpeg2enc, etc..
+    # The option is still there, so that compatibility continues, but it
+    # currently does nothing.
+    #
+    
     # Use absolute path name
     imagedir = os.path.abspath(imagedir)
     print "Creating video stream from image sequence in %s" % imagedir
@@ -442,18 +452,25 @@ def encode_frames(imagedir, outfile, format, tvsys, aspect):
     # Use jpeg2yuv/png2yuv to stream images
     if extension == 'jpg':
         jpeg2yuv = Command('jpeg2yuv')
-        jpeg2yuv.add('-Ip',
-                     '-f', '%.3f' % fps(tvsys),
+        
+        jpeg2yuv.add('-Ip') # Progressive
+            
+        jpeg2yuv.add('-f', '%.3f' % fps(tvsys),
                      '-j', '%s/%%08d.%s' % (imagedir, extension))
         pipe.add(jpeg2yuv)
     elif extension == 'png':
         #ls = Command('sh', '-c', 'ls %s/*.png' % imagedir)
         #xargs = Command('xargs', '-n1', 'pngtopnm')
         png2yuv = Command('png2yuv')
-        png2yuv.add('-Ip',
-                    '-f', '%.3f' % fps(tvsys),
+
+        png2yuv.add('-Ip') # Progressive
+            
+
+        png2yuv.add('-f', '%.3f' % fps(tvsys),
                     '-j', '%s/%%08d.png' % (imagedir))
+        
         pipe.add(png2yuv)
+
         #pipe.add(ls, xargs, png2yuv)
         #cmd += 'pnmtoy4m -Ip -F %s %s/*.png' % standard.fpsratio(tvsys)
 
@@ -461,6 +478,10 @@ def encode_frames(imagedir, outfile, format, tvsys, aspect):
     
     # Pipe image stream into mpeg2enc to encode
     mpeg2enc = Command('mpeg2enc')
+
+    # Anyways.
+    mpeg2enc.add('-I 0') # Progressive
+    
     mpeg2enc.add('-v', '0',
                  '-q' '3',
                  '-o' '%s' % outfile)
