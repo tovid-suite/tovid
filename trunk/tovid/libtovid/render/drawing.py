@@ -1090,42 +1090,51 @@ class Drawing:
 ### --------------------------------------------------------------------
 
 
-def interlace_drawings(draw1, draw2):
-    """Merge two drawings into one, using interlacing fields."""
+# Cached masks, rendered only once.
+interlace_fields = None
 
+
+def interlace_drawings(draw1, draw2):
+    """Merge two drawings into one, using interlacing fields.
+
+    This method interlaces with the BOTTOM-FIRST field order.
+    """
+    global interlace_fields
+    
     dr = Drawing(draw1.w, draw1.h)
 
-    # create new canvas
-    # create masks
-    fields = [0, 1]
-    for f in range(0,2):
-        img = cairo.ImageSurface(cairo.FORMAT_ARGB32, draw1.w, draw1.h)
-        cr = cairo.Context(img)
-        cr.set_antialias(cairo.ANTIALIAS_NONE)
-        cr.set_source_rgba(0.5, 0.5, 0.5, 1)
-        cr.set_line_width(1)
+    # create masks (only once)
+    if (not interlace_fields):
+        fields = [0, 1]
+        for f in range(0,2):
+            img = cairo.ImageSurface(cairo.FORMAT_ARGB32, draw1.w, draw1.h)
+            cr = cairo.Context(img)
+            cr.set_antialias(cairo.ANTIALIAS_NONE)
+            cr.set_source_rgba(0.5, 0.5, 0.5, 1)
+            cr.set_line_width(1)
 
-        for x in range(0, draw1.h / 2):
-            # x*2 + f = top field first.., each two lines..
-            cr.move_to(0, x*2 + f)
-            cr.line_to(draw1.w, x*2 + f)
-            cr.stroke()
+            for x in range(0, draw1.h / 2):
+                # x*2 + f = top field first.., each two lines..
+                # -1 à draw1.w +1 -> pour être sur de couvrir aussi les bouts.
+                cr.move_to(-1, x*2 + f)
+                cr.line_to(draw1.w + 1, x*2 + f)
+                cr.stroke()
 
-        fields[f] = img
+            fields[f] = img
+        interlace_fields = fields
+    else:
+        fields = interlace_fields
 
-        #DEBUG
-        #print "Writing: /tmp/file%s.png" % f
-        #img.write_to_png("/tmp/file%s.png" % f)
-
-    # Ici j'ai mes deux image surfaces...
-            
+    # For bottom first, use fields[0] first, and fields[1] after.
+    # For top-first, use draw1 with fields[1] and draw2 with fields[0]
     # paint first image
     dr.image_surface(0,0,dr.w, dr.h, draw1.surface, fields[0])
     # paint second image
     dr.image_surface(0,0,dr.w, dr.h, draw2.surface, fields[1])
-    # return new drawing
 
     return dr
+
+
 
 def render(drawing, context, width, height):
     """Render a Drawing to the given cairo context at the given size.
