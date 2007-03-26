@@ -4,6 +4,7 @@
 """Supporting classes for metagui"""
 
 __all__ = [
+    'ComboBox',
     'FontChooser',
     'Optional',
     'Tabs',
@@ -13,7 +14,6 @@ __all__ = [
 import os
 import Tkinter as tk
 import tkSimpleDialog
-import control
 
 ### --------------------------------------------------------------------
 
@@ -87,9 +87,10 @@ class FontChooser (tkSimpleDialog.Dialog):
         """Draw widgets inside the Dialog, and return the widget that should
         have the initial focus. Called by the Dialog base class constructor.
         """
-        self.fontlist = control.ScrollList('', "Available fonts",
-                                           self.get_fonts())
-        self.fontlist.draw(master)
+        tk.Label(master, text="Available fonts").pack(side='left')
+        self.fontlist = tk.Listbox(master)
+        for font in self.get_fonts():
+            self.fontlist.insert('end', font)
         self.fontlist.pack(fill='both', expand=True)
         # Return widget with initial focus
         return self.fontlist

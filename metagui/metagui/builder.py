@@ -108,12 +108,5 @@ if __name__ == '__main__':
     chooser = ControlChooser()
     chooser.draw(root)
     chooser.pack()
-    
-    #for control in [Text, Number, Flag]:
-        #frame = tk.LabelFrame(root, text=control.__name__)
-        #editor = ControlEditor(control)
-        #editor.draw(frame)
-        #editor.pack()
-        #frame.pack()
     root.mainloop()
 
