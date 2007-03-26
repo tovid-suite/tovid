@@ -40,6 +40,8 @@ class Panel (tk.LabelFrame):
             title:    Title of panel (name shown in tab bar)
             contents: Controls or sub-Panels
         """
+        if type(title) != str:
+            raise TypeError("First argument to Panel must be a text label.")
         self.title = title
         self.contents = []
         for item in contents:

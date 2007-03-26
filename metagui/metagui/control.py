@@ -235,6 +235,7 @@ class FlagGroup (Control):
 
 ### --------------------------------------------------------------------
 from metagui import odict
+from metagui.support import ComboBox
 
 class Choice (Control):
     """A widget for choosing one of several options.
@@ -245,6 +246,7 @@ class Choice (Control):
                  default=None,
                  help='',
                  choices='A|B',
+                 style='radio',
                  packside='left',
                  **kwargs):
         """Initialize Choice widget with the given label and list of choices.
@@ -257,23 +259,34 @@ class Choice (Control):
                       list-of-lists: [['a', "Use A"], ['b', "Use B"], ..].
                       A dictionary is also allowed, as long as you don't
                       care about preserving choice order.
+            style:    'radio' for radiobuttons, 'dropdown' for a drop-down list
         """
         self.choices = odict.from_list(choices)
         Control.__init__(self, str, option, label,
                          default or self.choices.values()[0],
                          help, **kwargs)
+        if style not in ['radio', 'dropdown']:
+            raise ValueError("Choice style must be 'radio' or 'dropdown'")
+        self.style = style
         self.packside = packside
 
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
-        frame = tk.LabelFrame(self, text=self.label)
-        frame.pack(anchor='nw', fill='x')
-        self.rb = {}
-        for choice, label in self.choices.items():
-            self.rb[choice] = tk.Radiobutton(frame, text=label, value=choice,
-                                             variable=self.variable)
-            self.rb[choice].pack(anchor='nw', side=self.packside)
+        if self.style == 'radio':
+            frame = tk.LabelFrame(self, text=self.label)
+            frame.pack(anchor='nw', fill='x')
+            self.rb = {}
+            for choice, label in self.choices.items():
+                self.rb[choice] = tk.Radiobutton(frame,
+                    text=label, value=choice, variable=self.variable)
+                self.rb[choice].pack(anchor='nw', side=self.packside)
+        else: # dropdown/combobox
+            tk.Label(self, text=self.label).pack(side='left')
+            self.combo = ComboBox(self, self.choices.keys(),
+                                  variable=self.variable)
+            self.combo.pack(side='left')
+
 
 ### --------------------------------------------------------------------
 
@@ -287,6 +300,7 @@ class Number (Control):
                  min=1,
                  max=10,
                  style='spin',
+                 units='',
                  **kwargs):
         """Create a number-setting widget.
         
@@ -295,6 +309,7 @@ class Number (Control):
             help:     Help text to show in a tooltip
             min, max: Range of allowable numbers (inclusive)
             style:    'spin' for a spinbox, or 'scale' for a slider
+            units:    Units of measurement (ex. "kbits/sec"), used as a label
         """
         # Use min if default wasn't provided
         if default is None:
@@ -303,6 +318,7 @@ class Number (Control):
         self.min = min
         self.max = max
         self.style = style
+        self.units = units
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -312,11 +328,15 @@ class Number (Control):
             self.number = tk.Spinbox(self, from_=self.min, to=self.max,
                                      width=4, textvariable=self.variable)
             self.number.pack(side='left')
+            tk.Label(self, name='units', text=self.units).pack(side='left')
+
         else: # 'scale'
+            tk.Label(self, name='units', text=self.units).pack(side='left')
             self.number = tk.Scale(self, from_=self.min, to=self.max,
                                    tickinterval=(self.max - self.min),
                                    variable=self.variable, orient='horizontal')
             self.number.pack(side='left', fill='x', expand=True)
+
 
     def enable(self, enabled=True):
         """Enable or disable all sub-widgets. Overridden to make Scale widget
