@@ -755,14 +755,14 @@ if test -z "$BG_AUDIO"; then
         MENU_LENGTH="-t 4"
     fi
     echo "Creating $(echo "$MENU_LENGTH" | cut -c 4-)-second silent $ASUF audio...   "
-    AUDIO_CMD="ffmpeg -f s16le -i /dev/zero -ac 2 -ar $SAMPRATE -ab 224 \
+    AUDIO_CMD="ffmpeg -f s16le -i /dev/zero -ac 2 -ar $SAMPRATE -ab 224k \
         $MENU_LENGTH -acodec $ASUF -y \"$AUDIO_STREAM\""
     $DEBUG && echo -e "\n\nBG audio:\n$AUDIO_CMD" >> $REDIR
     eval $AUDIO_CMD >> $REDIR 2>&1
 # Otherwise, convert provided audio to the target format
 else
     echo "Converting \"$BG_AUDIO\" to $ASUF...   "
-    AUDIO_CMD="ffmpeg -i \"$BG_AUDIO\" -ac 2 -ar $SAMPRATE -ab 224 \
+    AUDIO_CMD="ffmpeg -i \"$BG_AUDIO\" -ac 2 -ar $SAMPRATE -ab 224k \
         $MENU_LENGTH -acodec $ASUF -y \"$AUDIO_STREAM\""
     $DEBUG && echo -e "\n\nBG audio:\n$AUDIO_CMD" >> $REDIR
     eval $AUDIO_CMD >> $REDIR 2>&1
