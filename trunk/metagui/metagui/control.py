@@ -35,7 +35,6 @@ vartypes = {
     list: tk.Variable}
 
 ### --------------------------------------------------------------------
-from metagui.var import Var
 from tooltip import ToolTip
 
 class Control (tk.Frame):
