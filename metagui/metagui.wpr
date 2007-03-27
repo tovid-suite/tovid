@@ -6,7 +6,6 @@
 [project attributes]
 proj.file-list = [loc('apps/cp.py'),
                   loc('apps/ffmpeg.py'),
-                  loc('apps/ffmpeg2.py'),
                   loc('apps/grep.py'),
                   loc('apps/ls.py'),
                   loc('apps/todisc.py'),

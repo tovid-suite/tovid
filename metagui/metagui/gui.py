@@ -6,6 +6,7 @@ __all__ = [
     'Panel',
     'HPanel',
     'VPanel',
+    'Dropdowns',
     'Drawer',
     'Application',
     'GUI',
@@ -93,6 +94,82 @@ class VPanel (Panel):
 
     def draw(self, master):
         Panel.draw(self, master, 'top')
+
+### --------------------------------------------------------------------
+from metagui.support import ComboBox
+from metagui.control import Control
+from metagui.odict import Odict
+
+class Dropdowns (Panel):
+    """A Panel that uses dropdowns for selecting and setting options.
+    
+    Given a list of controls, the Dropdowns panel displays, initially,
+    a single dropdown list. Each control is a choice in the list, and
+    is shown as two columns, option and label (with help shown in a tooltip).
+    
+    Selecting a control causes that control to be displayed, so that it
+    may be set to the desired value (along with a "remove" button to discard
+    the control). The dropdown list is shifted downward, so another control
+    and option may be set.
+    """
+    def __init__(self, title='', *contents):
+        Panel.__init__(self, title, *contents)
+        # Controls, indexed by option
+        self.controls = Odict()
+        for control in contents:
+            if not isinstance(control, Control):
+                # TODO: Make this sentence untrue:
+                raise TypeError("Dropdowns panel currently only supports"\
+                                " Control subclasses (no nested Panels"\
+                                " or Drawers).")
+            self.controls[control.option] = control
+            
+    def draw(self, master):
+        if self.title:
+            tk.LabelFrame.__init__(self, master, text=self.title,
+                                   padx=8, pady=8)
+        else:
+            tk.LabelFrame.__init__(self, master, bd=0, text='',
+                                   padx=8, pady=8)
+        choices = self.controls.keys()
+        self.chosen = tk.StringVar()
+        self.chooser = ComboBox(self, choices, variable=self.chosen,
+                                command=self.choose_new)
+        self.chooser.pack(fill='both', expand=True)
+
+    def choose_new(self, event=None):
+        """Create and display the chosen control."""
+        self.chooser.pack_forget()
+        # Put control and remove button in a frame
+        frame = tk.Frame(self)
+        button = tk.Button(frame, text="X",
+                           command=lambda:self.remove(frame))
+        button.pack(side='left')
+        control = self.controls[self.chosen.get()]
+        control.draw(frame)
+        control.pack(side='left', fill='x', expand=True)
+        frame.pack(fill='x', expand=True)
+        self.chooser.pack()
+
+    def remove(self, widget):
+        """Remove a widget from the interface."""
+        assert isinstance(widget, tk.Widget)
+        widget.pack_forget()
+        widget.destroy()
+
+    def get_args(self):
+        """Return a list of all command-line options from contained widgets.
+        """
+        args = []
+        for item in self.contents:
+            # Ignore errors from uninitialized controls
+            # (the draw() before get() thing)
+            try:
+                args += item.get_args()
+            except:
+                pass
+        return args
+
 
 ### --------------------------------------------------------------------
 
@@ -289,3 +366,4 @@ class Style:
         root.option_add("*Radiobutton.overRelief", 'groove')
 
 ### --------------------------------------------------------------------
+

@@ -79,7 +79,10 @@ video = Panel("Video",
                  "Pixels of padding on left side", 0, 1000),
           Number('-padright', "Right", 0,
                  "Pixels of padding on right side", 0, 1000)
-          ),
+          )
+    )
+
+drops = Dropdowns("Video options",
     Flag('-vn', "Disable video", False),
     Number('-bufsize', "Buffer size", None,
            "Rate control buffer size", 0, 1000, units='kilobytes'),
@@ -448,7 +451,7 @@ AVCodecContext AVOptions:
 """
 
 
-app = Application('ffmpeg', [video])
+app = Application('ffmpeg', [drops])
 gui = GUI('ffmpeg metagui', [app])
 gui.run()
 
