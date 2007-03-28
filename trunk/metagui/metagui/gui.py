@@ -96,7 +96,7 @@ class VPanel (Panel):
         Panel.draw(self, master, 'top')
 
 ### --------------------------------------------------------------------
-from metagui.support import ComboBox
+from metagui.support import ComboBox, ListVar
 from metagui.control import Control
 from metagui.odict import Odict
 
@@ -116,14 +116,11 @@ class Dropdowns (Panel):
         Panel.__init__(self, title, *contents)
         # Controls, indexed by option
         self.controls = Odict()
-        for control in contents:
+        for control in self.contents:
             if not isinstance(control, Control):
-                # TODO: Make this sentence untrue:
-                raise TypeError("Dropdowns panel currently only supports"\
-                                " Control subclasses (no nested Panels"\
-                                " or Drawers).")
+                raise TypeError("Can only add Controls to a Dropdown")
             self.controls[control.option] = control
-            
+
     def draw(self, master):
         if self.title:
             tk.LabelFrame.__init__(self, master, text=self.title,
@@ -131,43 +128,46 @@ class Dropdowns (Panel):
         else:
             tk.LabelFrame.__init__(self, master, bd=0, text='',
                                    padx=8, pady=8)
-        choices = self.controls.keys()
+        self.choices = ListVar(items=self.controls.keys())
         self.chosen = tk.StringVar()
-        self.chooser = ComboBox(self, choices, variable=self.chosen,
+        self.chooser = ComboBox(self, self.choices, variable=self.chosen,
                                 command=self.choose_new)
         self.chooser.pack(fill='both', expand=True)
 
     def choose_new(self, event=None):
         """Create and display the chosen control."""
+        chosen = self.chosen.get()
+        if chosen == '':
+            return
         self.chooser.pack_forget()
         # Put control and remove button in a frame
         frame = tk.Frame(self)
         button = tk.Button(frame, text="X",
-                           command=lambda:self.remove(frame))
+                           command=lambda:self.remove(chosen))
         button.pack(side='left')
-        control = self.controls[self.chosen.get()]
+        control = self.controls[chosen]
         control.draw(frame)
         control.pack(side='left', fill='x', expand=True)
         frame.pack(fill='x', expand=True)
+        # Remove the chosen control/panel from the list of available ones
+        self.choices.remove(chosen)
         self.chooser.pack()
 
-    def remove(self, widget):
-        """Remove a widget from the interface."""
-        assert isinstance(widget, tk.Widget)
-        widget.pack_forget()
-        widget.destroy()
+    def remove(self, option):
+        """Remove a given option's control from the interface."""
+        frame = self.controls[option].master
+        frame.pack_forget()
+        frame.destroy()
+        # Make this option available in the dropdown
+        self.choices.append(option)
 
     def get_args(self):
         """Return a list of all command-line options from contained widgets.
         """
         args = []
-        for item in self.contents:
-            # Ignore errors from uninitialized controls
-            # (the draw() before get() thing)
-            try:
-                args += item.get_args()
-            except:
-                pass
+        for control in self.contents:
+            if control.active:
+                args += control.get_args()
         return args
 
 

@@ -17,13 +17,47 @@ import tkSimpleDialog
 
 ### --------------------------------------------------------------------
 
+class ListVar (tk.Variable):
+    """A tk Variable suitable for associating with Listboxes."""
+    def __init__(self, master=None, items=None):
+        """Create a ListVar with a given master and initial list of items."""
+        tk.Variable.__init__(self, master)
+        if items:
+            self.set(items)
+    
+    def get(self):
+        return list(tk.Variable.get(self))
+    
+    def set(self, new_list):
+        tk.Variable.set(self, tuple(new_list))
+
+    def remove(self, item):
+        """Remove the item from the list, if it exists."""
+        items = self.get()
+        items.remove(item)
+        self.set(items)
+
+    def append(self, item):
+        """Append an item to the list."""
+        items = self.get()
+        self.set(items + [item])
+
+### --------------------------------------------------------------------
+
 class ComboBox (tk.Frame):
     """A dropdown menu with several choices."""
-    def __init__(self, master, choices=None, variable=None,
-                 command=None):
-        """Create a ComboBox with the given choices."""
+    def __init__(self, master, choices=None,
+                 variable=None, command=None):
+        """Create a ComboBox.
+            
+            master:       Tk Widget that will contain the ComboBox
+            choices:      ListVar or Python list of available choices
+            variable:     Tk StringVar to store currently selected choice in
+        """
         tk.Frame.__init__(self, master)
-        self.choices = choices or []
+        if type(choices) == list:
+            choices = ListVar(self, choices)
+        self.choices = choices or ListVar()
         self.variable = variable or tk.StringVar()
         self.command = command
         self._draw()
@@ -44,9 +78,10 @@ class ComboBox (tk.Frame):
         self.dropdown.withdraw()
 
         # List of choices
-        self.chooser = tk.Listbox(self.dropdown, background='white')
-        for choice in self.choices:
-            self.chooser.insert('end', choice)
+        self.chooser = tk.Listbox(self.dropdown, background='white',
+                                  listvariable=self.choices)
+        #for choice in self.choices:
+        #    self.chooser.insert('end', choice)
         self.chooser.bind('<Button-1>', self.choose)
         self.chooser.grid()
     

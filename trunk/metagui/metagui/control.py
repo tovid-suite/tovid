@@ -75,6 +75,7 @@ class Control (tk.Frame):
         self.label = label
         self.help = help
         self.kwargs = kwargs
+        self.active = False
 
     def draw(self, master):
         """Draw the control widgets in the given master.
@@ -97,6 +98,7 @@ class Control (tk.Frame):
         # Draw tooltip
         if self.help != '':
             self.tooltip = ToolTip(self, text=self.help, delay=1000)
+        self.active = True
 
     def get(self):
         """Return the value of the Control's variable."""
@@ -148,6 +150,10 @@ class Control (tk.Frame):
             else:
                 args.append(value)
         return args
+
+    def destroy(self):
+        tk.Frame.destroy(self)
+        self.active = False
 
     def __repr__(self):
         """Return a Python code representation of this Control."""
