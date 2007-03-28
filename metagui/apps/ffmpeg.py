@@ -33,7 +33,7 @@ Main options:
 
 from metagui import *
 
-video = Panel("Video",
+video = Panel("Video options",
     Panel("Bitrate",
           Number('-b', "Bitrate", None,
                  "Desired target video bitrate", 0, 10000,
@@ -47,7 +47,7 @@ video = Panel("Video",
           Number('-minrate', "Min tolerance", None,
                  "Minimum video bitrate tolerance",
                  units="kbits/sec")
-          ),
+    ),
 
     Number('-vframes', "Frames", None,
            "Number of video frames to record",
@@ -67,7 +67,7 @@ video = Panel("Video",
                  "Pixels to crop from left side", 0, 1000),
           Number('-cropright', "Right", 0,
                  "Pixels to crop from right side", 0, 1000)
-          ),
+    ),
     Panel("Padding",
           Color('-padcolor', "Color", '000000',
                 "Color of padding"),
@@ -79,8 +79,8 @@ video = Panel("Video",
                  "Pixels of padding on left side", 0, 1000),
           Number('-padright', "Right", 0,
                  "Pixels of padding on right side", 0, 1000)
-          )
     )
+)
 
 drops = Dropdowns("Video options",
     Flag('-vn', "Disable video", False),
@@ -99,6 +99,8 @@ drops = Dropdowns("Video options",
     Flag('-newvideo', "New video stream", False,
          "Add a new video stream to the current output stream")
 )
+
+app = Application('ffmpeg', [drops])
 
 """
 Advanced Video options:
@@ -451,7 +453,6 @@ AVCodecContext AVOptions:
 """
 
 
-app = Application('ffmpeg', [drops])
 gui = GUI('ffmpeg metagui', [app])
 gui.run()
 
