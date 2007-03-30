@@ -260,7 +260,7 @@ function runtime_error()
     echo "Check the contents of $LOG_FILE to see what went wrong."
     echo " "
     echo "See the tovid help page for what to do next:"
-	echo "  http://tovid.wikia.com/wiki/Help:Contents"
+    echo "  http://tovid.wikia.com/wiki/Help:Contents"
     echo "Sorry for the inconvenience!"
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     exit 1
@@ -804,15 +804,15 @@ function goodbye()
     yecho
     if ! $QUIET; then
         yecho "Your encoded video should be in the file(s) $OUT_FILENAME."
-		echo
+        echo
         echo "You can author a disc with this video on it by running:"
         echo "    makexml $OUT_FILENAME -out MyDisc"
         echo "    makedvd MyDisc.xml"
         echo "You can also use todisc or makemenu to create menus for your disc."
         echo "See the manual pages (i.e. 'man todisc') for more information."
-		echo
-		echo "Please report successful encodings to:"
-		echo "   http://tovid.wikia.com/wiki/Supported_formats"
+        echo
+        echo "Please report successful encodings to:"
+        echo "   http://tovid.wikia.com/wiki/Supported_formats"
         yecho "Thanks for using tovid!"
         yecho
     fi
@@ -1394,6 +1394,7 @@ if $SLICE; then
     if [[ "$CLIP_ENDTIME" ]]; then
         [[ "$CLIP_ENDTIME" = *:* ]] && CLIP_ENDTIME=$(unformat_time $CLIP_ENDTIME)
         CLIP_LENGTH=$(echo "$CLIP_ENDTIME - $CLIP_SEEK" | bc)
+        [[ $CLIP_LENGTH -eq 0 ]] && CLIP_LENGTH=1
         FF_LENGTH="-t $CLIP_LENGTH"
     fi
     CLIP_SEEK="-ss $CLIP_SEEK"
