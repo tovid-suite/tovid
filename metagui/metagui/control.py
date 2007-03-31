@@ -24,15 +24,16 @@ __all__ = [
     'TextList']
 
 import Tkinter as tk
+from metagui.support import ListVar
 import support
 
 # Map python types to Tkinter variable types
-vartypes = {
+_vartypes = {
     str: tk.StringVar,
     bool: tk.BooleanVar,
     int: tk.IntVar,
     float: tk.DoubleVar,
-    list: tk.Variable}
+    list: ListVar}
 
 ### --------------------------------------------------------------------
 from tooltip import ToolTip
@@ -73,9 +74,24 @@ class Control (tk.Frame):
         self.variable = None
         self.option = option
         self.label = label
+        self.default = default or vartype()
         self.help = help
         self.kwargs = kwargs
         self.active = False
+        # List of Controls to copy updated values to
+        self.copies = []
+        if 'pull' in self.kwargs:
+            pull_from = self.kwargs['pull']
+            if not isinstance(pull_from, Control):
+                raise TypeError("Can only pull values from a Control.")
+            pull_from.copy_to(self)
+
+    def copy_to(self, control):
+        """Update another control whenever this control's value changes.
+        """
+        if not isinstance(control, Control):
+            raise TypeError("Can only copy values to a Control.")
+        self.copies.append(control)
 
     def draw(self, master):
         """Draw the control widgets in the given master.
@@ -87,14 +103,14 @@ class Control (tk.Frame):
         
         """
         tk.Frame.__init__(self, master)
-        # Pull or create tk.Variable to store Control's value
-        if 'pull' in self.kwargs:
-            print "pulling from", self.kwargs['pull'].option
-            self.variable = self.kwargs['pull'].variable
-        elif self.vartype in vartypes:
-            self.variable = vartypes[self.vartype]()
+        # Create tk.Variable to store Control's value
+        if self.vartype in _vartypes:
+            self.variable = _vartypes[self.vartype]()
         else:
             self.variable = tk.Variable()
+        # Set default value
+        if self.default:
+            self.variable.set(self.default)
         # Draw tooltip
         if self.help != '':
             self.tooltip = ToolTip(self, text=self.help, delay=1000)
@@ -109,10 +125,14 @@ class Control (tk.Frame):
 
     def set(self, value):
         """Set the Control's variable to the given value."""
+        print "Control.set:", value
         # self.variable isn't set until draw() is called
         if not self.variable:
             raise "Must call draw() before set()"
         self.variable.set(value)
+        # Update controls that are copying this control's value
+        for control in self.copies:
+            control.variable.set(value)
 
     def enable(self, enabled=True):
         """Enable or disable all sub-widgets."""
@@ -316,10 +336,8 @@ class Number (Control):
             style:    'spin' for a spinbox, or 'scale' for a slider
             units:    Units of measurement (ex. "kbits/sec"), used as a label
         """
-        # Use min if default wasn't provided
-        if default is None:
-            default = min
-        Control.__init__(self, int, option, label, default, help, **kwargs)
+        Control.__init__(self, int, option, label, default or min,
+                         help, **kwargs)
         self.min = min
         self.max = max
         self.style = style
@@ -522,119 +540,9 @@ class Font (Control):
             self.variable.set(chooser.result)
 
 ### --------------------------------------------------------------------
+from metagui.support import DragList
 
-class ScrollList (Control):
-    """A widget for choosing from a list of values
-    """
-    def __init__(self,
-                 option='',
-                 label="List",
-                 default=None,
-                 help='',
-                 **kwargs):
-        """Create a ScrollList widget.
-        
-            label:    Text label for the list
-            default:  List of initial values, or None for empty
-            help:     Help text to show in a tooltip
-        """
-        Control.__init__(self, list, option, label, default or [], help, **kwargs)
-
-    def draw(self, master):
-        """Draw control widgets in the given master."""
-        Control.draw(self, master)
-        self.selected = tk.StringVar() # Currently selected list item
-        # Listbox label
-        tk.Label(self, text=self.label).pack(anchor='w')
-        # Group listbox and scrollbar together
-        group = tk.Frame(self)
-        self.scrollbar = tk.Scrollbar(group, orient='vertical',
-                                      command=self.scroll)
-        self.listbox = tk.Listbox(group, width=30, listvariable=self.variable,
-                                  yscrollcommand=self.scrollbar.set)
-        self.listbox.pack(side='left', fill='both', expand=True)
-        self.scrollbar.pack(side='left', fill='y')
-        group.pack(fill='both', expand=True)
-        self.listbox.bind('<Button-1>', self.select)
-
-    def add(self, *values):
-        """Add the given values to the list."""
-        for value in values:
-            self.listbox.insert('end', value)
-
-    def scroll(self, *args):
-        """Event handler when the list is scrolled
-        """
-        apply(self.listbox.yview, args)
-
-    def select(self, event):
-        """Event handler when an item in the list is selected
-        """
-        self.curindex = self.listbox.nearest(event.y)
-        self.selected.set(self.listbox.get(self.curindex))
-
-    def sort(self):
-        """Sort list items in ascending order."""
-        items = list(self.variable.get()).sort()
-        self.variable.set(tuple(items))
-        
-    def get(self):
-        """Return a list of all entries in the list."""
-        # Overridden because Listbox stores variable as a tuple
-        entries = self.variable.get()
-        return list(entries)
-    
-    def set(self, values):
-        """Set the list values to those given."""
-        self.variable.set(tuple(values))
-
-### --------------------------------------------------------------------
-
-class DragList (ScrollList):
-    """A scrollable listbox with drag-and-drop support"""
-    def __init__(self,
-                 option='',
-                 label="List",
-                 default=None,
-                 help='',
-                 **kwargs):
-        ScrollList.__init__(self, option, label, default, help, **kwargs)
-        self.curindex = 0
-
-    def draw(self, master):
-        """Draw control widgets in the given master."""
-        ScrollList.draw(self, master)
-        self.listbox.bind('<Button-1>', self.select)
-        self.listbox.bind('<B1-Motion>', self.drag)
-        self.listbox.bind('<ButtonRelease-1>', self.drop)
-
-    def select(self, event):
-        """Event handler when an item in the list is selected.
-        """
-        # Set currently selected item and change the cursor to a double-arrow
-        ScrollList.select(self, event)
-        self.config(cursor="double_arrow")
-    
-    def drag(self, event):
-        """Event handler when an item in the list is dragged
-        """
-        # If item is dragged to a new location, delete/insert
-        loc = self.listbox.nearest(event.y)
-        if loc != self.curindex:
-            item = self.listbox.get(self.curindex)
-            self.listbox.delete(self.curindex)
-            self.listbox.insert(loc, item)
-            self.curindex = loc
-
-    def drop(self, event):
-        """Event handler when an item in the list is "dropped"
-        """
-        # Change the mouse cursor back to the default arrow.
-        self.config(cursor="")
-
-### --------------------------------------------------------------------
-
-class TextList (DragList):
+class TextList (Control):
     """A widget for listing and editing several text strings"""
     def __init__(self,
                  option='',
@@ -642,11 +550,15 @@ class TextList (DragList):
                  default=None,
                  help='',
                  **kwargs):
-        DragList.__init__(self, option, label, default, help, **kwargs)
+        Control.__init__(self, list, option, label, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
-        DragList.draw(self, master)
+        Control.draw(self, master)
+        self.selected = tk.StringVar()
+        self.listbox = DragList(self, choices=self.variable,
+                                chosen=self.selected)
+        self.listbox.pack()
         # TODO: Event handling to allow editing items
         self.editbox = tk.Entry(self, width=30, textvariable=self.selected)
         self.editbox.bind('<Return>', self.setTitle)
@@ -654,13 +566,13 @@ class TextList (DragList):
 
     def setTitle(self, event):
         """Event handler when Enter is pressed after editing a title."""
-        newtitle = self.selected.get()
-        self.listbox.delete(self.curindex)
-        self.listbox.insert(self.curindex, newtitle)
+        index = self.listbox.curindex
+        self.variable[index] = self.selected.get()
+        # TODO: Select next item in list and focus the editbox
 
 ### --------------------------------------------------------------------
 
-class FileList (DragList):
+class FileList (Control):
     """A widget for listing several filenames"""
     def __init__(self,
                  option='',
@@ -668,23 +580,38 @@ class FileList (DragList):
                  default=None,
                  help='',
                  **kwargs):
-        DragList.__init__(self, option, label, default, help, **kwargs)
+        Control.__init__(self, list, option, label, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
-        DragList.draw(self, master)
+        Control.draw(self, master)
+        # List of files
+        self.listbox = DragList(self, choices=self.variable,
+                                command=self.select)
+        self.listbox.pack()
+        # Add/remove buttons
         group = tk.Frame(self)
         self.add = tk.Button(group, text="Add...", command=self.addFiles)
         self.remove = tk.Button(group, text="Remove", command=self.removeFiles)
         self.add.pack(side='left', fill='x', expand=True)
         self.remove.pack(side='left', fill='x', expand=True)
         group.pack(fill='x')
+        # Dirty hack to get linked files/titles to work
+        for control in self.copies:
+            if isinstance(control, TextList):
+                self.listbox.link(control.listbox)
+
+    def select(self, event=None):
+        """Event handler when a filename in the list is selected.
+        """
+        pass
 
     def addFiles(self):
         """Event handler to add files to the list"""
         files = tkFileDialog.askopenfilenames(parent=self, title='Add files')
-        for file in files:
-            self.listbox.insert('end', file)
+        self.listbox.add(*files)
+        for control in self.copies:
+            control.listbox.add(*files)
 
     def removeFiles(self):
         """Event handler to remove files from the list"""

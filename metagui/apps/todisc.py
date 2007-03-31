@@ -17,12 +17,24 @@ titles = TextList('-titles',
     'Titles for each video',
     pull=files)
 
+background = Filename('-background',
+    'Background image or video', '',
+    'Image or video file to display in the background of the main menu',
+    'load', 'Select an image or video file')
+bgaudio = Filename('-bgaudio',
+    'Background audio', '',
+    'Audio file to play while the main menu is showing',
+    'load', 'Select an audio file', pull=background)
+
 main = Panel("Main",
     Text('-menu-title',
         'Menu title', 'My video collection',
         'Title text displayed on the main menu'),
     
     HPanel("Files and titles", files, titles),
+
+    background,
+    bgaudio,
     
     Choice('-format',
         'Disc format', 'DVD',
@@ -32,14 +44,6 @@ main = Panel("Main",
         'TV system', 'NTSC',
         'Standard TV system to use',
         'NTSC|PAL'),
-    Filename('-background',
-        'Background image or video', '',
-        'Image or video file to display in the background of the main menu',
-        'load', 'Select an image or video file'),
-    Filename('-bgaudio',
-        'Background audio', '',
-        'Audio file to play while the main menu is showing',
-        'load', 'Select an audio file'),
     Flag('-static',
         'Static menus', False,
         'Create still-image menus; takes less time'),
