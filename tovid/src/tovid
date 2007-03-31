@@ -1861,7 +1861,7 @@ else
         AUDIO_ENC=( "${AUDIO_ENC[@]}" -i "${AUDIO_IN_FILE[@]}" )
         yecho "Encoding audio stream to $AUD_SUF with the following command:"
     fi
-    AUDIO_ENC=( "${AUDIO_ENC[@]}" -vn -ab $AUD_BITRATE -ar $SAMPRATE -ac 2 )
+    AUDIO_ENC=( "${AUDIO_ENC[@]}" -vn -ab ${AUD_BITRATE}k -ar $SAMPRATE -ac 2 )
     ! $DO_NORM && AUDIO_ENC=( "${AUDIO_ENC[@]}" $CLIP_SEEK $FF_LENGTH $AUDIO_MAP )
     AUDIO_ENC=( "${AUDIO_ENC[@]}" -acodec $AUD_SUF)
     $DO_NORM && AUDIO_ENC=( "${AUDIO_ENC[@]}" "${AUDIO_WAV_MAP[@]}" )
