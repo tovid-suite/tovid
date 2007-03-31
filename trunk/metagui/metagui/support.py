@@ -4,6 +4,9 @@
 """Supporting classes for metagui"""
 
 __all__ = [
+    'ListVar',
+    'ScrollList',
+    'DragList',
     'ComboBox',
     'FontChooser',
     'Optional',
@@ -18,13 +21,27 @@ import tkSimpleDialog
 ### --------------------------------------------------------------------
 
 class ListVar (tk.Variable):
-    """A tk Variable suitable for associating with Listboxes."""
+    """A tk Variable suitable for associating with Listboxes.
+    """
     def __init__(self, master=None, items=None):
-        """Create a ListVar with a given master and initial list of items."""
+        """Create a ListVar with a given master and initial list of items.
+        """
         tk.Variable.__init__(self, master)
         if items:
             self.set(items)
     
+    def __getitem__(self, index):
+        """Get a list value using list-index syntax (listvar[index]).
+        """
+        return self.get()[index]
+
+    def __setitem__(self, index, value):
+        """Set a list value using list-index syntax (listvar[index] = value).
+        """
+        current = self.get()
+        current[index] = value
+        self.set(current)
+
     def get(self):
         return list(tk.Variable.get(self))
     
@@ -32,40 +49,181 @@ class ListVar (tk.Variable):
         tk.Variable.set(self, tuple(new_list))
 
     def remove(self, item):
-        """Remove the item from the list, if it exists."""
+        """Remove the item from the list, if it exists.
+        """
         items = self.get()
         items.remove(item)
         self.set(items)
 
     def append(self, item):
-        """Append an item to the list."""
+        """Append an item to the list.
+        """
         items = self.get()
         self.set(items + [item])
 
 ### --------------------------------------------------------------------
 
-class ComboBox (tk.Frame):
-    """A dropdown menu with several choices."""
-    def __init__(self, master, choices=None,
-                 variable=None, command=None):
-        """Create a ComboBox.
-            
-            master:       Tk Widget that will contain the ComboBox
-            choices:      ListVar or Python list of available choices
-            variable:     Tk StringVar to store currently selected choice in
+class ScrollList (tk.Frame):
+    """A Listbox with a scrollbar.
+
+    Similar to a tk.Listbox, a ScrollList shows a list of items. tk.Variables
+    may be associated with both the list of available choices, and the one
+    that is currently chosen/highlighted.
+    """
+    def __init__(self, master=None, choices=None,
+                 chosen=None, command=None):
+        """Create a ScrollList widget.
+        
+            master:   Tkinter widget that will contain the ScrollList
+            choices:  ListVar or Python list of choices to show in listbox
+            chosen:   Tk StringVar to store currently selected choice in
+            command:  Function to call when a list item is clicked
         """
         tk.Frame.__init__(self, master)
         if type(choices) == list:
             choices = ListVar(self, choices)
         self.choices = choices or ListVar()
-        self.variable = variable or tk.StringVar()
+        self.chosen = chosen or tk.StringVar()
+        self.command = command
+        self.curindex = 0
+        self.linked = None
+        # Draw listbox and scrollbar
+        self.scrollbar = tk.Scrollbar(self, orient='vertical',
+                                      command=self.scroll)
+        self.listbox = tk.Listbox(self, width=30, listvariable=self.choices,
+                                  yscrollcommand=self.scrollbar.set)
+        self.listbox.pack(side='left', fill='both', expand=True)
+        self.scrollbar.pack(side='left', fill='y')
+        self.listbox.bind('<Button-1>', self.select)
+
+    def add(self, *values):
+        """Add the given values to the list.
+        """
+        for value in values:
+            self.listbox.insert('end', value)
+
+    def insert(self, index, *values):
+        """Insert values at a given index.
+        """
+        self.listbox.insert(index, *values)
+
+    def delete(self, first, last=None):
+        """Delete values in a given index range (first, last), not including
+        last itself. If last is None, delete only the item at first index.
+        """
+        self.listbox.delete(first, last=None)
+
+    def scroll(self, *args):
+        """Event handler when the list is scrolled.
+        """
+        apply(self.listbox.yview, args)
+        if self.linked:
+            apply(self.linked.listbox.yview, args)
+
+    def select(self, event):
+        """Event handler when an item in the list is selected.
+        """
+        self.curindex = self.listbox.nearest(event.y)
+        self.chosen.set(self.listbox.get(self.curindex))
+
+    def get(self):
+        """Return a list of all entries in the list.
+        """
+        return self.choices.get()
+    
+    def set(self, values):
+        """Set the list values to those given.
+        """
+        self.choices.set(values)
+
+    def swap(self, index_a, index_b):
+        """Swap the element at index_a with the one at index_b.
+        """
+        item_a = self.choices[index_a]
+        item_b = self.choices[index_b]
+        self.choices[index_a] = item_b
+        self.choices[index_b] = item_a
+
+    def link(self, scrolllist):
+        """Link this list to another, so they scroll in unison."""
+        if not isinstance(scrolllist, ScrollList):
+            raise TypeError("Can only link to a ScrollList.")
+        self.linked = scrolllist
+
+### --------------------------------------------------------------------
+
+class DragList (ScrollList):
+    """A scrollable listbox with drag-and-drop support"""
+    def __init__(self, master=None, choices=None,
+                 chosen=None, command=None):
+        """Create a DragList widget.
+        
+            master:   Tkinter widget that will contain the DragList
+            choices:  ListVar or Python list of choices to show in listbox
+            chosen:   Tk StringVar to store currently selected choice in
+            command:  Function to call when a list item is clicked
+        """
+        ScrollList.__init__(self, master, choices, chosen, command)
+        # Add bindings for drag/drop
+        self.listbox.bind('<Button-1>', self.select)
+        self.listbox.bind('<B1-Motion>', self.drag)
+        self.listbox.bind('<ButtonRelease-1>', self.drop)
+
+    def select(self, event):
+        """Event handler when an item in the list is selected.
+        """
+        # Set currently selected item and change the cursor to a double-arrow
+        ScrollList.select(self, event)
+        self.config(cursor="double_arrow")
+    
+    def drag(self, event):
+        """Event handler when an item in the list is dragged.
+        """
+        # If item is dragged to a new location, delete/insert
+        loc = self.listbox.nearest(event.y)
+        if loc != self.curindex:
+            #item = self.listbox.get(self.curindex)
+            #self.listbox.delete(self.curindex)
+            #self.listbox.insert(loc, item)
+            self.swap(self.curindex, loc)
+            # Drag in linked listbox
+            if self.linked:
+                self.linked.swap(self.curindex, loc)
+            self.curindex = loc
+    
+    def drop(self, event):
+        """Event handler when an item in the list is "dropped".
+        """
+        # Change the mouse cursor back to the default arrow.
+        self.config(cursor="")
+
+### --------------------------------------------------------------------
+
+class ComboBox (tk.Frame):
+    """A dropdown menu with several choices.
+    """
+    def __init__(self, master, choices=None,
+                 variable=None, command=None):
+        """Create a ComboBox.
+            
+            master:     Tk Widget that will contain the ComboBox
+            choices:    ListVar or Python list of available choices
+            chosen:     Tk StringVar to store currently selected choice in
+            command:    Function to call after an item in the list is chosen
+        """
+        tk.Frame.__init__(self, master)
+        if type(choices) == list:
+            choices = ListVar(self, choices)
+        self.choices = choices or ListVar()
+        self.chosen = chosen or tk.StringVar()
         self.command = command
         self._draw()
 
     def _draw(self):
-        """Draw and configure contained widgets."""
+        """Draw and configure contained widgets.
+        """
         # Text and button
-        self.text = tk.Entry(self, textvariable=self.variable)
+        self.text = tk.Entry(self, textvariable=self.chosen)
         self.text.grid(row=0, column=0)
         self.button = tk.Button(self, text="<", command=self.open)
         self.button.grid(row=0, column=1)
@@ -86,7 +244,8 @@ class ComboBox (tk.Frame):
         self.chooser.grid()
     
     def open(self):
-        """Open/close a panel showing the list of choices."""
+        """Open/close a panel showing the list of choices.
+        """
         if self.dropdown.winfo_viewable():
             self.dropdown.withdraw()
         else:
@@ -98,9 +257,10 @@ class ComboBox (tk.Frame):
             self.dropdown.deiconify()
     
     def choose(self, event=None):
-        """Make a selection from the list, and set the variable."""
+        """Make a selection from the list, and set the variable.
+        """
         self.curindex = self.chooser.nearest(event.y)
-        self.variable.set(self.chooser.get(self.curindex))
+        self.chosen.set(self.chooser.get(self.curindex))
         self.dropdown.withdraw()
         # Callback, if any
         if self.command:
@@ -114,7 +274,8 @@ class FontChooser (tkSimpleDialog.Dialog):
         tkSimpleDialog.Dialog.__init__(self, master, "Font chooser")
 
     def get_fonts(self):
-        """Return a list of font names available in ImageMagick."""
+        """Return a list of font names available in ImageMagick.
+        """
         find = "convert -list type | sed '/Path/,/---/d' | awk '{print $1}'"
         return [line.rstrip('\n') for line in os.popen(find).readlines()]
 
@@ -122,18 +283,16 @@ class FontChooser (tkSimpleDialog.Dialog):
         """Draw widgets inside the Dialog, and return the widget that should
         have the initial focus. Called by the Dialog base class constructor.
         """
-        tk.Label(master, text="Available fonts").pack(side='left')
-        self.fontlist = tk.Listbox(master)
-        for font in self.get_fonts():
-            self.fontlist.insert('end', font)
-        self.fontlist.pack(fill='both', expand=True)
+        tk.Label(master, text="Available fonts").pack(side='top')
+        self.fontlist = ScrollList(master, self.get_fonts())
+        self.fontlist.pack(side='top', fill='both', expand=True)
         # Return widget with initial focus
         return self.fontlist
     
     def apply(self):
         """Set the selected font.
         """
-        self.result = self.fontlist.selected.get()
+        self.result = self.fontlist.get()
 
 ### --------------------------------------------------------------------
 
@@ -153,7 +312,8 @@ class Optional (tk.Frame):
         self.active = tk.BooleanVar()
 
     def draw(self, master):
-        """Draw optional checkbox and control widgets in the given master."""
+        """Draw optional checkbox and control widgets in the given master.
+        """
         tk.Frame.__init__(self, master)
         # Create and pack widgets
         self.check = tk.Checkbutton(self, text=self.label, variable=self.active,
@@ -165,21 +325,24 @@ class Optional (tk.Frame):
         self.active.set(False)
     
     def showHide(self):
-        """Show or hide the sub-widget."""
+        """Show or hide the sub-widget.
+        """
         if self.active.get():
             self.control.enable()
         else:
             self.control.disable()
 
     def get(self):
-        """Return the sub-widget's value if active, or None if inactive."""
+        """Return the sub-widget's value if active, or None if inactive.
+        """
         if self.active.get():
             return self.control.get()
         else:
             return None
     
     def set(self, value):
-        """Set sub-widget's value."""
+        """Set sub-widget's value.
+        """
         self.control.set(value)
 
 ### --------------------------------------------------------------------
