@@ -210,7 +210,7 @@ if $DO_NORM; then
    # Re-encode audio
    mv -v audio_dump normed_audio
    AUDIO_BITRATE=$(expr $ID_AUDIO_BITRATE / 1000)
-   AUDIO_ENC="ffmpeg -i normed_audio -vn -ab $AUDIO_BITRATE -ar $ID_AUDIO_RATE"
+   AUDIO_ENC="ffmpeg -i normed_audio -vn -ab ${AUDIO_BITRATE}k -ar $ID_AUDIO_RATE"
    AUDIO_ENC="$AUDIO_ENC -ac $ID_AUDIO_NCH -acodec $ID_AUDIO_CODEC"
    AUDIO_ENC="$AUDIO_ENC -y audio_dump.$ID_AUDIO_CODEC"
 

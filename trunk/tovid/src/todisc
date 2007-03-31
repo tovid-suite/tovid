@@ -1864,7 +1864,7 @@ fi
 
 # easier to have non transparent showcase use the transparent block
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
-AUDIO_OPTS="-ab 224 -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
+AUDIO_OPTS="-ab 224k -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
 # spumux and dvdauthor vars
 if $WIDE_SCREEN; then
         TITLES_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $V_ASPECT/>"
