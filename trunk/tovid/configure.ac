@@ -167,10 +167,18 @@ AC_OUTPUT
 # ******************************************************************************
 # ******************************************************************************
 
+# Works for all distros
+INSTALL_COMMAND="su -c \"make install\""
+
+# but *buntu users are used to
+if $(cat /proc/version | grep -iq buntu); then
+    INSTALL_COMMAND="sudo make install"
+fi
+
 AC_MSG_NOTICE([
 
 
- You may now type 'su -c "make install"' to compile and install tovid.
+ You may now type '$INSTALL_COMMAND' to compile and install tovid.
 
    (or you can try to 'make sense' of it all...)
  ])
