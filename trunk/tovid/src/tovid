@@ -1071,7 +1071,7 @@ case "$TGT_RES" in
         AUD_SUF="mp2"
         # Explicitly set audio/video bitrates
         AUD_BITRATE="224"
-        VID_BITRATE="1152"
+        VID_BITRATE="1150"
         MPEG2_FMT="-f 1 -K hi-res"
         MUX_OPTS="-f 1"
         VID_SUF="m1v"
