@@ -166,6 +166,7 @@ SE_YCORNER=0
 BG_ASYNC=""
 NO_WARN=false
 ROTATE_THUMBS=false
+DO_TITLESETS=false
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -724,6 +725,12 @@ function check_with_dvdauthor()
 function get_image_dim()
 {
     identify -verbose "$1" | awk '/Geometry:/ {print $2}'
+}
+
+function titleset_mode()
+# call todisc recursively in order to allow titlesets
+{
+    echo
 }
 
 function parse_rotateargs()
@@ -3238,16 +3245,15 @@ if [ "$TARGET" = "dvd" ]; then
 # make dvdauthor.xml
 (
     cat <<EOF
-<?xml version="1.0" encoding="utf-8"?>
-<dvdauthor dest="$OUT_DIR" jumppad="0">
-  <vmgm>
-    <menus>
-      <pgc>
-        $INTRO
-        <post>jump titleset 1 menu;</post>
-      </pgc>
-    </menus>
-  </vmgm>
+$(if ! $DO_TITLESETS ; then
+    echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+    echo -e "<dvdauthor dest=\"$OUT_DIR\" jumppad=\"0\">"
+    echo -e "  <vmgm>\n    <menus>\n      <pgc entry=\"title\" pause=\"0\">"
+    echo -e "        $INTRO"
+    echo -e "        <vob file=\"$WORK_DIR/dummy.mpg\"/>"
+    echo -e "        <post>jump titleset 1 menu;</post>"
+    echo -e "      </pgc>\n    </menus>\n  </vmgm>"
+fi)
   <titleset>
     <menus>
       <pgc>
@@ -3340,7 +3346,9 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
 done)
     </titles>
   </titleset>
-</dvdauthor>
+$(if ! $DO_TITLESETS ; then
+echo -e "</dvdauthor>"
+fi)
 EOF
 ) |sed '/^ *$/d' >> "$DVDAUTHOR_XML"
 fi
@@ -3349,6 +3357,40 @@ fi
 ##############################################################################
 #                            Animenu stuff                                   #
 ##############################################################################
+
+# make dummy VMGM mpeg
+convert  -resize $VIDSIZE! xc:"#161514" "$WORK_DIR/dummy.jpg"
+JPEG2YUV_OPTS=(-n 1 -l 30)
+ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p "${JPEG2YUV_OPTS[@]}" -L 1 -b1 \
+-j "$WORK_DIR/dummy.jpg")
+ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
+-tvstd $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
+if ${ENC_CMD1[@]} | ${ENC_CMD2[@]}  >> "$LOG_FILE.tmp" 2>&1; then
+    cleanlog 3
+else
+    cleanlog 3
+    runtime_error
+fi
+TIME=$(vid_length "$WORK_DIR/dummy.m2v")
+BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
+$AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
+if "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then #run command
+    cleanlog 3
+else
+    cleanlog 3
+    runtime_error
+fi
+
+MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -o  "$WORK_DIR/dummy.mpg" \
+ "$WORK_DIR/dummy.$AUDIO_EXT"  "$WORK_DIR/dummy.m2v")
+echo "Running: "${MPLEX_CMD[@]}"" >> "$LOG_FILE.tmp"
+cleanlog 1
+if "${MPLEX_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then
+    cleanlog 1
+else
+    cleanlog 1
+    runtime_error
+fi
 
 # do submenu 1st for debug purposes
 if $SUB_MENU; then
@@ -4338,7 +4380,7 @@ if $SUB_MENU; then
         $(sed 's/\(.*\)menu/\1Menu/' <<< $WORK_DIR/menu${x}.mpg) 2>> "$LOG_FILE"
     done
 fi
-if [ "$TARGET" = dvd ]; then
+if [ "$TARGET" = dvd ] && ! $DO_TITLESETS; then
     echo "Running dvdauthor to create the DVD filesystem"
     dvdauthor -x "$DVDAUTHOR_XML" 2>&1 | tee -a "$LOG_FILE"
     if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
