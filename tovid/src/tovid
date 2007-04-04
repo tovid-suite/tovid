@@ -1322,7 +1322,7 @@ case "$TGT_RES" in
             TGT_HEIGHT="480"
         fi
         AUD_SUF="mp2"
-        # -quality gives bitrates from 260-2600 kbps
+        # -quality gives bitrates from 240-2400 kbps
         DEFAULT_BR=$(expr $VID_QUALITY \* $SVCD_VID_MAX_RATE \/ 10)
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
@@ -1396,7 +1396,7 @@ case "$TGT_RES" in
             TGT_HEIGHT="480"
         fi
         AUD_SUF="ac3"
-        # -quality gives bitrates from 960-9600 kbps
+        # -quality gives bitrates from 900-9000 kbps
         DEFAULT_BR=$(expr $VID_QUALITY \* $DVD_VID_MAX_RATE \/ 10)
         $USE_FFMPEG && DEFAULT_BR=$(expr $VID_QUALITY \* 9000 \/ 10)
         # Use default bitrate if none specified
