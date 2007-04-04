@@ -275,6 +275,14 @@ letterboxing or anamorphic scaling.
     own risk. Use 650 or lower if you plan to burn to smaller-capacity CDs.
     Doesn't work with the **-ffmpeg** option.
 
+: **-fit** //NUM//
+    Fit the output file into //NUM// MiB. Rather than using default (or specified)
+    video bitrates, tovid will calculate the correct video bitrate that will
+    limit the final output size to //NUM// MiB. This is different than **-discsize**,
+    which cuts the final file into //NUM// MiB pieces. **-fit** makes sure that
+    the file never exceeds //NUM// MiB. This works with **-ffmpeg**, but not
+    with **-vcd** since VCDs have a standardized constant bitrate.
+
 : **-parallel**
     Perform ripping, encoding, and multiplexing processes in parallel using
     named pipes. Maximizes CPU utilization and minimizes disk usage. Note that
