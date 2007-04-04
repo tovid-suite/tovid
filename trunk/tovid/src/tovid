@@ -80,6 +80,23 @@ SEPARATOR="========================================================="
 READING_CONFIG=false
 
 # Video defaults
+# Bitrate limits
+VCD_VID_MIN_RATE=1150
+VCD_VID_MAX_RATE=1150
+
+# Also DVD-VCD, and
+#   KVCDx3 and KVCDx3a
+KVCD_VID_MIN_RATE=400
+KVCD_VID_MAX_RATE=4000
+
+SVCD_VID_MIN_RATE=900
+SVCD_VID_MAX_RATE=2400
+
+HALFDVD_VID_MIN_RATE=600
+HALFDVD_VID_MAX_RATE=6000
+
+DVD_VID_MIN_RATE=900
+DVD_VID_MAX_RATE=9000
 
 # Don't use ffmpeg
 USE_FFMPEG=false
@@ -1024,342 +1041,6 @@ fi
 # Default quality 6 (or 7 for ffmpeg), if not set by user
 : ${VID_QUALITY:=6}
 
-if $DO_FIT; then
-    # EXPERIMENTAL: only for DVD and mpeg2enc
-    if $USE_FFMPEG || test "$TGT_RES" != "DVD"; then
-        exit_with_error "-fit only works with -dvd and without -ffmpeg."
-    fi
-        
-    # Calculate bitrate required to fit video into FIT_SIZE MiB
-    LENGTH=$(idvid -terse "$IN_FILE" | grep V_DURATION | awk -F '=' '{print $2}')
-    MPEG_OVERHEAD=$(bc_math "$FIT_SIZE / 100")
-    AUD_VID_SIZE=$(bc_math "$FIT_SIZE - $MPEG_OVERHEAD")
-    AUDIO_SIZE=$(bc_math "$AUD_BITRATE * $LENGTH / (8 *1024)")
-    VIDEO_SIZE=$(bc_math "$AUD_VID_SIZE - $AUDIO_SIZE")
-    VID_BITRATE=$(bc_math "$VIDEO_SIZE*8*1024 / $LENGTH")
-
-    echo "DEBUG:"
-    echo "length=.$LENGTH. overhead=.$MPEG_OVERHEAD. avsize=.$AUD_VID_SIZE."
-    echo "asize=.$AUDIO_SIZE. vsize=.$VIDEO_SIZE. vbitr=.$VID_BITRATE."
-
-    VID_BITRATE=$(echo $VID_BITRATE | awk -F '.' '{print $1}')
-
-    # Keep bitrates sane
-    if test "$VID_BITRATE" -lt 800; then
-        VID_BITRATE=900
-    fi
-    if test "$VID_BITRATE" -gt 9200; then
-        VID_BITRATE=9200
-    fi
-
-    echo "Fitting video into ${FIT_SIZE}MB (video: ${VID_BITRATE}kbps)."
-
-    $NOASK || echo "Press a key to continue."
-    $NOASK || read FOOBAR
-fi
-
-# Set resolution and frame rate according to format and TV system
-case "$TGT_RES" in
-    # VCD
-    "VCD" )
-        TGT_WIDTH="352"
-        if test "$TVSYS" = "PAL"; then
-            TGT_HEIGHT="288"
-        else
-            TGT_HEIGHT="240"
-        fi
-        AUD_SUF="mp2"
-        # Explicitly set audio/video bitrates
-        AUD_BITRATE="224"
-        VID_BITRATE="1150"
-        MPEG2_FMT="-f 1 -K hi-res"
-        MUX_OPTS="-f 1"
-        VID_SUF="m1v"
-        ;;
-
-    # KVCD: VCD resolution, but using MPEG-2 and with KVCD quantization
-    "KVCD" )
-        TGT_WIDTH="352"
-        if test "$TVSYS" = "PAL"; then
-            TGT_HEIGHT="288"
-        else
-            TGT_HEIGHT="240"
-        fi
-        AUD_SUF="mp2"
-        # -quality gives bitrates from 400-4000 kbps
-        DEFAULT_BR=$(expr $VID_QUALITY \* 4000 \/ 10)
-        : ${VID_BITRATE:=$DEFAULT_BR}
-        MPEG2_FMT="-f 2 -b $VID_BITRATE -V 230 -K kvcd -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 8 -d"
-        MUX_OPTS="-V -f 5 -b 350 -r 10800"
-        VID_SUF="m2v"
-        ;;
-
-
-    # VCD-on-DVD
-    "DVD-VCD" )
-        TGT_WIDTH="352"
-        if test "$TVSYS" = "PAL"; then
-            TGT_HEIGHT="288"
-        else
-            TGT_HEIGHT="240"
-        fi
-        AUD_SUF="ac3"
-        # -quality gives bitrates from 400-4000 kbps
-        DEFAULT_BR=$(expr $VID_QUALITY \* 4000 \/ 10)
-        # Use default bitrate if none specified
-        : ${VID_BITRATE:=$DEFAULT_BR}
-        MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -K hi-res"
-        MUX_OPTS="-V -f 8"
-        VID_SUF="m2v"
-        ;;
-
-    # SVCD
-    "SVCD" )
-        TGT_WIDTH="480"
-        if test "$TVSYS" = "PAL"; then
-            TGT_HEIGHT="576"
-        else
-            TGT_HEIGHT="480"
-        fi
-        AUD_SUF="mp2"
-        # -quality gives bitrates from 260-2600 kbps
-        DEFAULT_BR=$(expr $VID_QUALITY \* 2600 \/ 10)
-        # Use default bitrate if none specified
-        : ${VID_BITRATE:=$DEFAULT_BR}
-        MPEG2_FMT="-f 4 -b $VID_BITRATE -K hi-res"
-        MUX_OPTS="-V -f 4"
-        VID_SUF="m2v"
-
-        ;;
-
-    # Half-D1 DVD
-    "Half-DVD" )
-        TGT_WIDTH="352"
-        if test "$TVSYS" = "PAL"; then
-            TGT_HEIGHT="576"
-        else
-            TGT_HEIGHT="480"
-        fi
-        AUD_SUF="ac3"
-        # -quality gives bitrates from 600-6000 kbps
-        DEFAULT_BR=$(expr $VID_QUALITY \* 6000 \/ 10)
-        # Use default bitrate if none specified
-        : ${VID_BITRATE:=$DEFAULT_BR}
-        MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -K hi-res"
-        MUX_OPTS="-V -f 8"
-        VID_SUF="m2v"
-        ;;
-
-    # KVCDx3(a) long-playing, high-resolution MPEG for (S)VCD
-    "KVCDx3" | "KVCDx3a" )
-        # KVCD, x3, or x3a?
-        if test "$TGT_RES" = "KVCDx3"; then
-            TGT_WIDTH="528"
-        else
-            TGT_WIDTH="544"
-        fi
-
-        # PAL or NTSC
-        if test "$TVSYS" = "PAL"; then
-            TGT_HEIGHT="576"
-        else
-            TGT_HEIGHT="480"
-        fi
-        AUD_SUF="mp2"
-        # -quality gives bitrates from 400-4000 kbps
-        DEFAULT_BR=$(expr $VID_QUALITY \* 4000 \/ 10)
-        # Use default bitrate if none specified
-        : ${VID_BITRATE:=$DEFAULT_BR}
-
-        # Use optimal (non-standard!) GOP size for live video
-        if test "$VIDEO_TYPE" = "live"; then
-            GOP_MAXSIZE="24"
-        fi
-        # KVCDx3(a) is treated as SVCD, since the standard doesn't specify
-        # mpeg2enc 1.6.2 seems to want bitrate and buffer size (-b and -V)
-        # to be explicit.
-        MPEG2_FMT="-f 5 -b $VID_BITRATE -V 230 -K kvcd -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 8 -d"
-        MUX_OPTS="-V -f 5 -b 350 -r 10800"
-        VID_SUF="m2v"
-        ;;
-
-    # DVD (and KDVD/BDVD)
-    "DVD" | "KDVD" | "BDVD" )
-        if $WIDTH_704; then
-            TGT_WIDTH="704"
-        else
-            TGT_WIDTH="720"
-        fi
-        if test "$TVSYS" = "PAL"; then
-            TGT_HEIGHT="576"
-        else
-            TGT_HEIGHT="480"
-        fi
-        AUD_SUF="ac3"
-        # -quality gives bitrates from 980-9800 kbps
-        DEFAULT_BR=$(expr $VID_QUALITY \* 9800 \/ 10)
-        $USE_FFMPEG && DEFAULT_BR=$(expr $VID_QUALITY \* 9000 \/ 10)
-        # Use default bitrate if none specified
-        : ${VID_BITRATE:=$DEFAULT_BR}
-        MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 10"
-        # For KDVD, use KVCD "Notch" quantization
-        case "$TGT_RES" in
-            "KDVD" )
-                MPEG2_FMT="$MPEG2_FMT -K kvcd"
-                ;;
-            "BDVD" )
-                # BVCD "Under" quantization matrix (www.bvcd.com.br)
-                # (Intra/Non Intra)
-                echo -e \
-                "16,18,20,22,26,28,32,39" \
-                "\n18,20,22,24,28,32,39,44" \
-                "\n20,22,26,28,32,39,44,48" \
-                "\n22,22,26,32,39,44,48,54" \
-                "\n22,26,32,39,44,48,54,64" \
-                "\n26,32,39,44,48,54,64,74" \
-                "\n32,39,44,48,54,64,74,84" \
-                "\n39,44,48,54,64,74,84,94" \
-                "\n20,24,26,28,38,42,46,53" \
-                "\n24,26,28,38,42,46,53,58" \
-                "\n26,28,38,42,46,53,58,62" \
-                "\n28,38,42,46,53,58,62,68" \
-                "\n38,42,46,53,58,62,68,78" \
-                "\n42,46,53,58,62,68,78,88" \
-                "\n46,53,58,62,68,78,88,99" \
-                "\n53,58,62,68,78,88,99,99" > "$TMP_DIR/bvcd.matrix"
-                MPEG2_FMT="$MPEG2_FMT -K file=\"$TMP_DIR/bvcd.matrix\""
-                ;;
-            * )
-                MPEG2_FMT="$MPEG2_FMT -K hi-res"
-                ;;
-        esac
-        MUX_OPTS="-V -f 8"
-        VID_SUF="m2v"
-        ;;
-
-esac # End resolution
-
-# Full pathnames for A/V streams and output file
-AUDIO_WAV="$TMP_DIR/audio.wav"
-AUDIO_STREAM="$TMP_DIR/audio.$AUD_SUF"
-YUV_STREAM="$TMP_DIR/video.yuv"
-VIDEO_STREAM="$TMP_DIR/video.$VID_SUF"
-
-# ******************************************************************************
-#
-# Set nonvideo bitrate, deinterlacing and quality options
-#
-# ******************************************************************************
-
-yecho
-
-# Set nonvideo bitrate
-# Formula: Sum of all nonvideo bitrates + 1% of total bitrate
-NONVIDEO_BITRATE=$(expr \( 101 \* $AUD_BITRATE \+ $VID_BITRATE \) \/ 100)
-
-# Put available mplayer -vf filters into temp file
-mplayer -vf help > "$SCRATCH_FILE" 2>&1
-
-# Find out if mplayer's 'pp' option is available.
-if grep -q "^ *pp " "$SCRATCH_FILE"; then
-    PP_AVAIL=:
-elif grep -q "^ *spp " "$SCRATCH_FILE"; then
-    SPP_AVAIL=:
-else
-    PP_AVAIL=false
-    SPP_AVAIL=false
-fi
-
-# Crop, if requested
-if test -n "$CROP"; then
-    VID_FILTER="$VID_FILTER,crop=$CROP"
-fi
-
-# Set up deinterlacing, if requested.
-# Use the best deinterlacer available, and
-# fall back to others if not available in the user's
-# version of mplayer.
-if $DEINTERLACE; then
-    # If PP is available, use median deinterlacing
-    # NOT ENABLED: pp=md possibly unstable
-    # if $PP_AVAIL; then
-        #VID_FILTER="-vf pp=md"
-    # See if adaptive kernel deinterlacer is available
-    if grep -q "^ *kerndeint " "$SCRATCH_FILE"; then
-        VID_FILTER="$VID_FILTER,kerndeint"
-    # Finally, try lavcdeint
-    elif grep -q "^ *lavcdeint " "$SCRATCH_FILE"; then
-        VID_FILTER="$VID_FILTER,lavcdeint"
-    # Nothing available - print a warning
-    else
-        yecho "I can't find any deinterlacing options to use. No deinterlacing"
-        yecho "will be done on this video (but encoding will continue)."
-        yecho "Encoding will resume in 5 seconds..."
-        sleep 5s
-    fi
-    # Deinterlacing for ffmpeg
-    FF_ILACE="-deinterlace"
-fi
-
-# Default quantization
-QUANT=$(expr 13 \- $VID_QUALITY)
-if $DO_FIT; then
-    QUANT=3
-fi
-
-# mpeg2enc encoding quality options
-# Don't use -q for VCD (since -q implies variable bitrate)
-if test "$TGT_RES" = "VCD"; then
-    MPEG2_QUALITY="--reduction-4x4 2 --reduction-2x2 1"
-    FF_QUANT=""
-else
-    MPEG2_QUALITY="--reduction-4x4 2 --reduction-2x2 1 -q $QUANT"
-    # Use lower qscale
-    QUANT=$(expr $QUANT - 2)
-    FF_QUANT="-qmin $QUANT -qmax 31"
-    ((QUANT == 2)) && FF_QUANT="-qmin 2 -qmax 31"
-fi
-
-# Apply requested postprocessing filters, or
-# fall back to the best alternative.
-if $DO_DENOISE; then
-    # If high-quality 3D denoising is available, use it
-    if grep -q "^ *hqdn3d " "$SCRATCH_FILE"; then
-        VID_FILTER="$VID_FILTER,hqdn3d"
-    # Otherwise, use normal 3D denoising
-    elif grep -q "^ *denoise3d " "$SCRATCH_FILE"; then
-        VID_FILTER="$VID_FILTER,denoise3d"
-    # If all else fails, use yuvdenoise (if available)
-    elif type -p yuvdenoise; then
-        YUVDENOISE="yuvdenoise |"
-    else
-        yecho "Unable to find a suitable denoising filter. Skipping."
-    fi
-fi
-if $DO_CONTRAST; then
-    if $PP_AVAIL; then
-        VID_FILTER="$VID_FILTER,pp=al:f"
-    else
-        yecho "Unable to find a suitable contrast-enhancement filter. Skipping."
-    fi
-fi
-if $DO_DEBLOCK; then
-    if $PP_AVAIL; then
-        VID_FILTER="$VID_FILTER,pp=hb/vb"
-    elif $SPP_AVAIL; then
-        VID_FILTER="$VID_FILTER,spp"
-    else
-        yecho "Unable to find a suitable deblocking filter. Skipping."
-    fi
-fi
-
-# Do fast encoding if requested. Sacrifice quality for encoding speed.
-# NOT IMPLEMENTED IN COMMAND-LINE YET!
-if $FAST_ENCODING; then
-    QUANT=$(expr $QUANT \+ 4)
-    MPEG2_QUALITY="-4 4 -2 4 -q $QUANT"
-fi
-
 # ******************************************************************************
 #
 # Probe input file; check for compliance with selected output format.
@@ -1521,10 +1202,370 @@ else # If $IN_FILE_TYPE != "file"
     yecho "will NOT be probed for resolution, length, or compliance."
 fi
 
+# Find the right video bitrate to use so that the output file fits inside 
+# the user's given file size
+if $DO_FIT; then
+    # Calculate bitrate required to fit video into FIT_SIZE MiB
+    LENGTH=$V_DURATION
+    MPEG_OVERHEAD=$(bc_math "$FIT_SIZE / 100")
+    AUD_VID_SIZE=$(bc_math "$FIT_SIZE - $MPEG_OVERHEAD")
+    AUDIO_SIZE=$(bc_math "$AUD_BITRATE * $LENGTH / (8 *1024)")
+    VIDEO_SIZE=$(bc_math "$AUD_VID_SIZE - $AUDIO_SIZE")
+    VID_BITRATE=$(bc_math "$VIDEO_SIZE*8*1024 / $LENGTH")
+
+    # Verbose debug info
+    if ! $QUIET; then
+        echo "    -fit DEBUG:"
+        echo "    length=[$LENGTH]sec overhead=[$MPEG_OVERHEAD]MiB avsize=[$AUD_VID_SIZE]MiB"
+        echo "    asize=[$AUDIO_SIZE]MiB vsize=[$VIDEO_SIZE]MiB vbitr=[$VID_BITRATE]kbps"
+    fi
+
+    VID_BITRATE=$(echo $VID_BITRATE | awk -F '.' '{print $1}')
+
+    # Keep bitrates sane for each disc format
+    case "$TGT_RES" in
+        "VCD" )
+            VID_MIN_RATE=$VCD_VID_MIN_RATE
+            VID_MAX_RATE=$VCD_VID_MAX_RATE
+            yecho "VCDs cannot use -fit. Ignoring..."
+            ;;
+        "KVCD" | "DVD-VCD" | "KVCDx3" | "KVCDx3a" )
+            VID_MIN_RATE=$KVCD_VID_MIN_RATE
+            VID_MAX_RATE=$KVCD_VID_MAX_RATE
+            ;;
+        "SVCD" )
+            VID_MIN_RATE=$SVCD_VID_MIN_RATE
+            VID_MAX_RATE=$SVCD_VID_MAX_RATE
+            ;;
+        "Half-DVD" )
+            VID_MIN_RATE=$HALFDVD_VID_MIN_RATE
+            VID_MAX_RATE=$HALFDVD_VID_MAX_RATE
+            ;;
+        "DVD" | "KDVD" | "BDVD" )
+            VID_MIN_RATE=$DVD_VID_MIN_RATE
+            VID_MAX_RATE=$DVD_VID_MAX_RATE
+            ;;
+    esac
+
+    if test "$VID_BITRATE" -lt $VID_MIN_RATE; then
+        VID_BITRATE=$VID_MIN_RATE
+    fi
+    if test "$VID_BITRATE" -gt $VID_MAX_RATE; then
+        VID_BITRATE=$VID_MAX_RATE
+    fi
+
+    $NOASK || echo "    Press <Enter> to continue."
+    $NOASK || read FOOBAR
+fi
+
+# Set resolution and frame rate according to format and TV system
+case "$TGT_RES" in
+    # VCD
+    "VCD" )
+        TGT_WIDTH="352"
+        if test "$TVSYS" = "PAL"; then
+            TGT_HEIGHT="288"
+        else
+            TGT_HEIGHT="240"
+        fi
+        AUD_SUF="mp2"
+        # Explicitly set audio/video bitrates
+        AUD_BITRATE="224"
+        VID_BITRATE="$VCD_VID_MAX_RATE"
+        MPEG2_FMT="-f 1 -K hi-res"
+        MUX_OPTS="-f 1"
+        VID_SUF="m1v"
+        ;;
+
+    # KVCD: VCD resolution, but using MPEG-2 and with KVCD quantization
+    "KVCD" )
+        TGT_WIDTH="352"
+        if test "$TVSYS" = "PAL"; then
+            TGT_HEIGHT="288"
+        else
+            TGT_HEIGHT="240"
+        fi
+        AUD_SUF="mp2"
+        # -quality gives bitrates from 400-4000 kbps
+        DEFAULT_BR=$(expr $VID_QUALITY \* $KVCD_VID_MAX_RATE \/ 10)
+        : ${VID_BITRATE:=$DEFAULT_BR}
+        MPEG2_FMT="-f 2 -b $VID_BITRATE -V 230 -K kvcd -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 8 -d"
+        MUX_OPTS="-V -f 5 -b 350 -r 10800"
+        VID_SUF="m2v"
+        ;;
+
+
+    # VCD-on-DVD
+    "DVD-VCD" )
+        TGT_WIDTH="352"
+        if test "$TVSYS" = "PAL"; then
+            TGT_HEIGHT="288"
+        else
+            TGT_HEIGHT="240"
+        fi
+        AUD_SUF="ac3"
+        # -quality gives bitrates from 400-4000 kbps
+        DEFAULT_BR=$(expr $VID_QUALITY \* $KVCD_VID_MAX_RATE \/ 10)
+        # Use default bitrate if none specified
+        : ${VID_BITRATE:=$DEFAULT_BR}
+        MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -K hi-res"
+        MUX_OPTS="-V -f 8"
+        VID_SUF="m2v"
+        ;;
+
+    # SVCD
+    "SVCD" )
+        TGT_WIDTH="480"
+        if test "$TVSYS" = "PAL"; then
+            TGT_HEIGHT="576"
+        else
+            TGT_HEIGHT="480"
+        fi
+        AUD_SUF="mp2"
+        # -quality gives bitrates from 260-2600 kbps
+        DEFAULT_BR=$(expr $VID_QUALITY \* $SVCD_VID_MAX_RATE \/ 10)
+        # Use default bitrate if none specified
+        : ${VID_BITRATE:=$DEFAULT_BR}
+        MPEG2_FMT="-f 4 -b $VID_BITRATE -K hi-res"
+        MUX_OPTS="-V -f 4"
+        VID_SUF="m2v"
+
+        ;;
+
+    # Half-D1 DVD
+    "Half-DVD" )
+        TGT_WIDTH="352"
+        if test "$TVSYS" = "PAL"; then
+            TGT_HEIGHT="576"
+        else
+            TGT_HEIGHT="480"
+        fi
+        AUD_SUF="ac3"
+        # -quality gives bitrates from 600-6000 kbps
+        DEFAULT_BR=$(expr $VID_QUALITY \* $HALFDVD_VID_MAX_RATE \/ 10)
+        # Use default bitrate if none specified
+        : ${VID_BITRATE:=$DEFAULT_BR}
+        MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -K hi-res"
+        MUX_OPTS="-V -f 8"
+        VID_SUF="m2v"
+        ;;
+
+    # KVCDx3(a) long-playing, high-resolution MPEG for (S)VCD
+    "KVCDx3" | "KVCDx3a" )
+        # KVCD, x3, or x3a?
+        if test "$TGT_RES" = "KVCDx3"; then
+            TGT_WIDTH="528"
+        else
+            TGT_WIDTH="544"
+        fi
+
+        # PAL or NTSC
+        if test "$TVSYS" = "PAL"; then
+            TGT_HEIGHT="576"
+        else
+            TGT_HEIGHT="480"
+        fi
+        AUD_SUF="mp2"
+        # -quality gives bitrates from 400-4000 kbps
+        DEFAULT_BR=$(expr $VID_QUALITY \* $KVCD_VID_MAX_RATE \/ 10)
+        # Use default bitrate if none specified
+        : ${VID_BITRATE:=$DEFAULT_BR}
+
+        # Use optimal (non-standard!) GOP size for live video
+        if test "$VIDEO_TYPE" = "live"; then
+            GOP_MAXSIZE="24"
+        fi
+        # KVCDx3(a) is treated as SVCD, since the standard doesn't specify
+        # mpeg2enc 1.6.2 seems to want bitrate and buffer size (-b and -V)
+        # to be explicit.
+        MPEG2_FMT="-f 5 -b $VID_BITRATE -V 230 -K kvcd -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 8 -d"
+        MUX_OPTS="-V -f 5 -b 350 -r 10800"
+        VID_SUF="m2v"
+        ;;
+
+    # DVD (and KDVD/BDVD)
+    "DVD" | "KDVD" | "BDVD" )
+        if $WIDTH_704; then
+            TGT_WIDTH="704"
+        else
+            TGT_WIDTH="720"
+        fi
+        if test "$TVSYS" = "PAL"; then
+            TGT_HEIGHT="576"
+        else
+            TGT_HEIGHT="480"
+        fi
+        AUD_SUF="ac3"
+        # -quality gives bitrates from 960-9600 kbps
+        DEFAULT_BR=$(expr $VID_QUALITY \* $DVD_VID_MAX_RATE \/ 10)
+        $USE_FFMPEG && DEFAULT_BR=$(expr $VID_QUALITY \* 9000 \/ 10)
+        # Use default bitrate if none specified
+        : ${VID_BITRATE:=$DEFAULT_BR}
+        MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 10"
+        # For KDVD, use KVCD "Notch" quantization
+        case "$TGT_RES" in
+            "KDVD" )
+                MPEG2_FMT="$MPEG2_FMT -K kvcd"
+                ;;
+            "BDVD" )
+                # BVCD "Under" quantization matrix (www.bvcd.com.br)
+                # (Intra/Non Intra)
+                echo -e \
+                "16,18,20,22,26,28,32,39" \
+                "\n18,20,22,24,28,32,39,44" \
+                "\n20,22,26,28,32,39,44,48" \
+                "\n22,22,26,32,39,44,48,54" \
+                "\n22,26,32,39,44,48,54,64" \
+                "\n26,32,39,44,48,54,64,74" \
+                "\n32,39,44,48,54,64,74,84" \
+                "\n39,44,48,54,64,74,84,94" \
+                "\n20,24,26,28,38,42,46,53" \
+                "\n24,26,28,38,42,46,53,58" \
+                "\n26,28,38,42,46,53,58,62" \
+                "\n28,38,42,46,53,58,62,68" \
+                "\n38,42,46,53,58,62,68,78" \
+                "\n42,46,53,58,62,68,78,88" \
+                "\n46,53,58,62,68,78,88,99" \
+                "\n53,58,62,68,78,88,99,99" > "$TMP_DIR/bvcd.matrix"
+                MPEG2_FMT="$MPEG2_FMT -K file=\"$TMP_DIR/bvcd.matrix\""
+                ;;
+            * )
+                MPEG2_FMT="$MPEG2_FMT -K hi-res"
+                ;;
+        esac
+        MUX_OPTS="-V -f 8"
+        VID_SUF="m2v"
+        ;;
+
+esac # End resolution
+
+# Now that res and bitrate are set-up, report the target characteristics
 yecho "Target format:"
 yecho "  $TGT_WIDTH x $TGT_HEIGHT pixels, $TGT_FPS fps"
 yecho "  $VID_SUF video with $AUD_SUF audio"
 yecho "  $VID_BITRATE kbits/sec video, $AUD_BITRATE kbits/sec audio"
+
+# Full pathnames for A/V streams and output file
+AUDIO_WAV="$TMP_DIR/audio.wav"
+AUDIO_STREAM="$TMP_DIR/audio.$AUD_SUF"
+YUV_STREAM="$TMP_DIR/video.yuv"
+VIDEO_STREAM="$TMP_DIR/video.$VID_SUF"
+
+# ******************************************************************************
+#
+# Set nonvideo bitrate, deinterlacing and quality options
+#
+# ******************************************************************************
+
+yecho
+
+# Set nonvideo bitrate
+# Formula: Sum of all nonvideo bitrates + 1% of total bitrate
+NONVIDEO_BITRATE=$(expr \( 101 \* $AUD_BITRATE \+ $VID_BITRATE \) \/ 100)
+
+# Put available mplayer -vf filters into temp file
+mplayer -vf help > "$SCRATCH_FILE" 2>&1
+
+# Find out if mplayer's 'pp' option is available.
+if grep -q "^ *pp " "$SCRATCH_FILE"; then
+    PP_AVAIL=:
+elif grep -q "^ *spp " "$SCRATCH_FILE"; then
+    SPP_AVAIL=:
+else
+    PP_AVAIL=false
+    SPP_AVAIL=false
+fi
+
+# Crop, if requested
+if test -n "$CROP"; then
+    VID_FILTER="$VID_FILTER,crop=$CROP"
+fi
+
+# Set up deinterlacing, if requested.
+# Use the best deinterlacer available, and
+# fall back to others if not available in the user's
+# version of mplayer.
+if $DEINTERLACE; then
+    # If PP is available, use median deinterlacing
+    # NOT ENABLED: pp=md possibly unstable
+    # if $PP_AVAIL; then
+        #VID_FILTER="-vf pp=md"
+    # See if adaptive kernel deinterlacer is available
+    if grep -q "^ *kerndeint " "$SCRATCH_FILE"; then
+        VID_FILTER="$VID_FILTER,kerndeint"
+    # Finally, try lavcdeint
+    elif grep -q "^ *lavcdeint " "$SCRATCH_FILE"; then
+        VID_FILTER="$VID_FILTER,lavcdeint"
+    # Nothing available - print a warning
+    else
+        yecho "I can't find any deinterlacing options to use. No deinterlacing"
+        yecho "will be done on this video (but encoding will continue)."
+        yecho "Encoding will resume in 5 seconds..."
+        sleep 5s
+    fi
+    # Deinterlacing for ffmpeg
+    FF_ILACE="-deinterlace"
+fi
+
+# Default quantization
+QUANT=$(expr 13 \- $VID_QUALITY)
+if $DO_FIT; then
+    QUANT=3
+fi
+
+# mpeg2enc encoding quality options
+# Don't use -q for VCD (since -q implies variable bitrate)
+if test "$TGT_RES" = "VCD"; then
+    MPEG2_QUALITY="--reduction-4x4 2 --reduction-2x2 1"
+    FF_QUANT=""
+else
+    MPEG2_QUALITY="--reduction-4x4 2 --reduction-2x2 1 -q $QUANT"
+    # Use lower qscale
+    QUANT=$(expr $QUANT - 2)
+    FF_QUANT="-qmin $QUANT -qmax 31"
+    ((QUANT == 2)) && FF_QUANT="-qmin 2 -qmax 31"
+fi
+
+# Apply requested postprocessing filters, or
+# fall back to the best alternative.
+if $DO_DENOISE; then
+    # If high-quality 3D denoising is available, use it
+    if grep -q "^ *hqdn3d " "$SCRATCH_FILE"; then
+        VID_FILTER="$VID_FILTER,hqdn3d"
+    # Otherwise, use normal 3D denoising
+    elif grep -q "^ *denoise3d " "$SCRATCH_FILE"; then
+        VID_FILTER="$VID_FILTER,denoise3d"
+    # If all else fails, use yuvdenoise (if available)
+    elif type -p yuvdenoise; then
+        YUVDENOISE="yuvdenoise |"
+    else
+        yecho "Unable to find a suitable denoising filter. Skipping."
+    fi
+fi
+if $DO_CONTRAST; then
+    if $PP_AVAIL; then
+        VID_FILTER="$VID_FILTER,pp=al:f"
+    else
+        yecho "Unable to find a suitable contrast-enhancement filter. Skipping."
+    fi
+fi
+if $DO_DEBLOCK; then
+    if $PP_AVAIL; then
+        VID_FILTER="$VID_FILTER,pp=hb/vb"
+    elif $SPP_AVAIL; then
+        VID_FILTER="$VID_FILTER,spp"
+    else
+        yecho "Unable to find a suitable deblocking filter. Skipping."
+    fi
+fi
+
+# Do fast encoding if requested. Sacrifice quality for encoding speed.
+# NOT IMPLEMENTED IN COMMAND-LINE YET!
+if $FAST_ENCODING; then
+    QUANT=$(expr $QUANT \+ 4)
+    MPEG2_QUALITY="-4 4 -2 4 -q $QUANT"
+fi
+
 
 # ******************************************************************************
 #
