@@ -25,6 +25,13 @@ OLD_AUTOHELL=false
 AUTOHELL_MAJOR=1
 AUTOHELL_MINOR=9
 
+if ! ( type aclocal >> /dev/null 2>&1 && type autoconf >> /dev/null 2>&1); then
+    echo "You don't have the autotools installed (automake, autoconf, aclocal)."
+    echo "You cannot bootstrap without them. Please install automake/aclocal 1.9"
+    echo "or later and autoconf 2.5 or later and try again. Thanks!"
+    exit 1
+fi
+
 AUTOHELL_VERSION=$(aclocal --version | head -n 1 | sed 's/[a-zA-Z ()]//g')
 
 if test $(echo $AUTOHELL_VERSION | awk -F '.' '{print $1}') -lt $AUTOHELL_MAJOR;
