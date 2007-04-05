@@ -127,8 +127,8 @@ fi
 
 AM_PATH_PYTHON(2.4)
 
-# Attempt to inform user that their pyton installation won't look work
-#   with default prefix (/usr/local)
+# Attempt to inform user that their pyton installation won't work
+#   with the default prefix (/usr/local)
 USER_PYTHON_PATH=$(python -c "import sys; print sys.path")
 PYTHON_LOCAL=$(echo $USER_PYTHON_PATH | awk -F ',' '{ for (f=1; f<=NF; f++) {print $f}; }' | grep local | tr -d "' ")
 
