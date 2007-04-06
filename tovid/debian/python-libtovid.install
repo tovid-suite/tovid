@@ -1,0 +1,4 @@
+usr/lib/python2.4/site-packages/libtovid/*.py
+usr/lib/python2.4/site-packages/libtovid/render
+usr/lib/python2.4/site-packages/libtovid/template
+usr/lib/python2.4/site-packages/libtovid/transcode

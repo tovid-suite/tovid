@@ -1,0 +1,10 @@
+debian/tovid-suite.1
+docs/man/tovid.1
+docs/man/makemenu.1
+docs/man/makexml.1
+docs/man/idvid.1
+docs/man/todisc.1
+docs/man/makeslides.1
+docs/man/makedvd.1
+docs/man/makevcd.1
+docs/man/postproc.1
