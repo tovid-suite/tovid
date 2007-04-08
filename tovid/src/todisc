@@ -167,6 +167,12 @@ BG_ASYNC=""
 NO_WARN=false
 ROTATE_THUMBS=false
 DO_TITLESETS=false
+AUTHOR=true
+ts_start=0
+args=( $@ )
+VMGM_ONLY=false
+TITLESET_MODE=false
+TSET_NUM=""
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -323,8 +329,10 @@ function cleanup()
         [[ -n $SUPPORT_VIDEOS ]] && yecho "Removing "${SUPPORT_VIDEOS[@]}"" && rm -f "${SUPPORT_VIDEOS[@]}"
         rm -rf "$REAL_WORK_DIR"
     fi
+#    if ! $DO_TITLESETS; then
     echo "Removing the symlink in /tmp . . . "
     rm -fv "$WORK_DIR"
+#    fi
 }
 
 function running_total ()
@@ -568,7 +576,6 @@ done
 
 function check_compliance()
 {
-    $NOASK && NO_ASK="-noask"
     unset FILES_TO_ENCODE ENC_IN_FILES CHECK_IN_FILES
     group_set=false
     if [[ $1 = group ]]; then
@@ -657,7 +664,7 @@ function mk_workdir()
     mkdir -pv "$REAL_WORK_DIR"
     if [[ -h "$WORK_DIR" && -z ${GROUP[@]} ]]; then
         echo -n "Removing existing symlink in /tmp . . . "
-        rm -fv "$WORK_DIR"
+        ! $DO_TITLESETS && rm -fv "$WORK_DIR"
     fi
 
     # link WORK_DIR to /tmp for easy solution to spaces, illegal chars bugs
@@ -730,7 +737,45 @@ function get_image_dim()
 function titleset_mode()
 # call todisc recursively in order to allow titlesets
 {
-    echo
+    ! $GROUPING && mk_workdir
+#    cd "$WORK_DIR"
+    DVDAUTHOR_XML=$BASEDIR/dvdauthor.xml
+    # make dvdauthor.xml
+(
+    cat <<EOF
+<?xml version="1.0" encoding="utf-8"?>
+<dvdauthor dest="$OUT_DIR" jumppad="0">
+  <vmgm>
+    <menus>
+    <pgc entry="title" pause="inf">
+$(for ((i=1; i<=${#TITLESET_OPTS[@]}; i++)); do echo "      <button name=\"$i\">jump titleset $i menu;</button>"; done)
+      $INTRO
+      <vob file="$BASEDIR/VMGM.mpg"/>
+    </pgc>
+    </menus>
+  </vmgm>
+EOF
+) |sed '/^ *$/d' >> "$DVDAUTHOR_XML"
+    yecho "Making a VMGM menu with the following command"
+    vmgm_menu_cmd=(todisc -out $OUT_PREFIX  -basedir "$REAL_WORK_DIR" \
+    -menu-only -textmenu "${VMGM_OPTS[@]}")
+#    vmgm_menu_cmd=(makemenu "${VMGM_TITLES[@]}" -out VMGM -button play  -align middle $NO_ASK $VMGM_MENU_OPTS)
+    echo VMGM_ONLY is $VMGM_ONLY
+    yecho "Running: ${vmgm_menu_cmd[@]}"
+    "${vmgm_menu_cmd[@]}"
+    for tset in ${!TITLESET_OPTS[@]}; do
+      eval  todisc -titleset-mode -basedir "$REAL_WORK_DIR" \
+        -tset_num $tset $NO_ASK -out $OUT_PREFIX ${TITLESET_OPTS[tset]}
+    done
+    echo -e "</dvdauthor>" >> "$DVDAUTHOR_XML"
+    yecho "Running dvdauthor to create final DVD structure"
+    dvdauthor -x "$DVDAUTHOR_XML" 2>&1 | tee -a "$LOG_FILE"
+    if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
+        runtime_error "There was a problem creating the DVD structure"
+    fi
+    yecho "Your new DVD should be in $OUT_DIR"
+    cleanup
+
 }
 
 function parse_rotateargs()
@@ -738,6 +783,40 @@ function parse_rotateargs()
     unset x ARGS_ARRAY
     # Hackish list-parsing
     while test $# -gt 0 && egrep -q '^[-+]?[[:digit:]]{1,2}+$' <<< "$1"; do
+        ARGS_ARRAY[x++]="$1"
+        shift
+    done
+    # Do not skip past the next argument
+    if test $# -gt 0 && test x"${1:0:1}" = x"-";then
+        DO_SHIFT=false
+    fi
+}
+function parse_titleset_args()
+{
+    unset x ARGS_ARRAY
+    if [[ $1 = vmgm ]]; then
+        END="-end-vmgm"
+    elif [[ $1 = titleset ]]; then
+        END="-end-titleset"
+    else
+        END="-"
+    fi
+    unset x ARGS_ARRAY
+    # Hackish list-parsing
+    while test $# -gt 0 && test x"${1:0:1}" != x"-"; do
+        ARGS_ARRAY[x++]="$1"
+        shift
+    done
+    # Do not skip past the next argument
+    if test $# -gt 0 && test x"${1:0:1}" = x"-";then
+        DO_SHIFT=false
+    fi
+
+
+
+    unset x ARGS_ARRAY
+    # Hackish list-parsing
+    while test $# -gt 0 && test $1 != "-end-vmgm"; do
         ARGS_ARRAY[x++]="$1"
         shift
     done
@@ -773,6 +852,35 @@ while test $# -gt 0; do
                 FILES[f]="$(abspath "${ARGS_ARRAY[f]}")"
             done
             ;;
+        "-titleset" )
+            shift
+            unset x ARGS_ARRAY
+            # Hackish list-parsing
+            while test $# -gt 0 && test "$1" != "-end-titleset"; do
+                ARGS_ARRAY[x++]=\"$1\"
+                shift
+            done
+            # Do not skip past the next argument
+            if test $# -gt 0 && test x"${1:0:1}" = x"-";then
+                DO_SHIFT=false
+            fi
+            TITLESET_OPTS[y++]="${ARGS_ARRAY[@]}"
+            DO_TITLESETS=:
+            ;;
+       "-vmgm" )
+            shift
+            unset x ARGS_ARRAY
+            # Hackish list-parsing
+            while test $# -gt 0 && test "$1" != "-end-vmgm"; do
+                ARGS_ARRAY[x++]="$1"
+                shift
+            done
+            # Do not skip past the next argument
+            if test $# -gt 0 && test x"${1:0:1}" = x"-";then
+                DO_SHIFT=false
+            fi
+            VMGM_OPTS=( "${ARGS_ARRAY[@]}" )
+            ;;
         "-group" )
             shift
             mk_workdir
@@ -787,7 +895,7 @@ while test $# -gt 0; do
             GROUP[groupkey]="$group"
             # create symlinks to ease substitution later
             for c in ${!grp[@]}; do
-                ln -sv "${grp[c]}" $WORK_DIR/group-$((groupkey+1))-$((c+1)).mpg
+                ln -sv "${grp[c]}" $WORK_DIR/${TSET_NUM}-group-$((groupkey+1))-$((c+1)).mpg
             done
             GROUPING=:
             ;;
@@ -796,7 +904,7 @@ while test $# -gt 0; do
             get_listargs "$@"
             OIFS=$IFS
             IFS=""
-            TITLES=( "${ARGS_ARRAY[@]}" )
+            TITLES=( "${TITLES[@]}" "${ARGS_ARRAY[@]}" )
             IFS=$OIFS
             ;;
         "-submenu-titles" )
@@ -845,11 +953,11 @@ while test $# -gt 0; do
             fi
             ;;
         "-widescreen" )
-            WIDE_SCREEN=:
             shift
-            WIDESCREEN_ARGS=$1
+            get_listargs "$@"
+            wsarg=${ARGS_ARRAY[0]}
+            [[ -n $wsarg ]] &&  WIDESCREEN=$wsarg || WIDESCREEN=nopanscan
             WIDE_SCREEN=:
-            (( ${#WIDESCREEN_ARGS[@]} > 0)) && WIDESCREEN=$WIDESCREEN_ARGS || WIDESCREEN=nopanscan
             ;;
         "-showcase-safe-area" )
             ADV_OPT=( "${ADV_OPT[@]}" "$1" )
@@ -1190,6 +1298,21 @@ while test $# -gt 0; do
             shift
             TOVID_OPTS="$1"
             ;;
+        "-titleset-mode" )
+            # used internally by todisc, do NOT pass as a user option !
+            AUTHOR=false
+            ;;
+        "-menu-only" )
+            VMGM_ONLY=:
+            ;;
+        "-basedir" )
+            shift
+            BASEDIR="$1"
+            ;;
+        "-tset_num" )
+            shift
+            TSET_NUM="$1"
+            ;;
     esac
     $DO_SHIFT && shift
 done
@@ -1198,11 +1321,13 @@ done
 #                      Sanity checks and preliminaries                       #
 ##############################################################################
 # Make sure equal, nonzero number of titles and files were provided
-if test ${#FILES[@]} -eq 0 || test ${#TITLES[@]} -eq 0; then
-    usage_error "Please provide at least one file and one title."
-elif test ${#FILES[@]} -ne ${#TITLES[@]}; then
-    usage_error "Please give the same number of files as titles.
-    You gave ${#FILES[@]} files and ${#TITLES[@]} titles"
+if ! $VMGM_ONLY && ! $DO_TITLESETS; then
+    if test ${#FILES[@]} -eq 0 || test ${#TITLES[@]} -eq 0; then
+        usage_error "Please provide at least one file and one title."
+    elif test ${#FILES[@]} -ne ${#TITLES[@]}; then
+        usage_error "Please give the same number of files as titles.
+        You gave ${#FILES[@]} files and ${#TITLES[@]} titles"
+    fi
 fi
 if [[ -n "$SM_TITLES" ]]; then
     if test ${#SM_TITLES[@]} -ne ${#TITLES[@]}; then
@@ -1210,11 +1335,13 @@ if [[ -n "$SM_TITLES" ]]; then
     You gave ${#SM_TITLES[@]} submenu titles and ${#TITLES[@]} titles"
     fi
 fi
+# titlesets use BASEDIR which is the WORK_DIR of the calling todisc
+# BASEDIR is supplied by the calling todisc with -basedir
+: ${BASEDIR:=$REAL_WORK_DIR}
 # Make sure -out was provided
 if test -n "$OUT_PREFIX"; then
     OUT_DIR="$(abspath "$OUT_PREFIX")"
     [[ $TARGET = svcd ]] && OUT_FILE="$OUT_DIR"
-    MENU_FILE="animenu.mpg"
 else
     usage_error "Please provide an output name with -out"
 fi
@@ -1242,6 +1369,8 @@ if [ "$BUTTON_STYLE" = "text" ]; then
         fi
     done
 fi
+# honour -noask for functions and called scripts that use them
+$NOASK && NO_ASK="-noask"
 # allow multiline titles in submenu
 if [[ -n "$SM_TITLES" ]]; then
     for i in ${!SM_TITLES[@]}; do
@@ -1297,6 +1426,15 @@ if $USE_MAKEMENU; then
     call_makemenu
     exit
 fi
+# copy symlinks for -group hack
+if $GROUPING && [[ -n $TSET_NUM ]]; then
+    find "$WORK_DIR"/  -type l -name \*group\*.mpg -exec cp -Pv {} "$BASEDIR" \;
+fi
+if $DO_TITLESETS; then
+    # call todisc recursively, collect parts and author.  Then exit
+    titleset_mode
+    exit
+fi
 
 # double check sox is installed, as the consequence of not having it is ugly
 confirm_dep sox "http://sox.sourceforge.net/"
@@ -1307,7 +1445,7 @@ yecho
 
 # create an array of grouped files. Hopefully LC_ALL=C takes care of sort issues
 if $GROUPING; then
-    LC_ALL=C grouping=( $WORK_DIR/group* )
+    LC_ALL=C grouping=( $WORK_DIR/${TSET_NUM}-group* )
 fi
 
 # Clean out any existing WORK_DIR
@@ -1359,18 +1497,19 @@ if [ ${#SM_AUDIO[@]} -eq 1 ]; then
     SM_AUDIO_FILE=${SM_AUDIO[0]}
 fi
 # if more than one audio file for submenu make sure they equal video #
-if [[ $SM_AUDIO &&  ${#FILES[@]} -ne ${#SM_AUDIO[@]} &&  ${#SM_AUDIO[@]} -ne 1 ]]; then
+if [[ ${SM_AUDIO[@]} &&  ${#FILES[@]} -ne ${#SM_AUDIO[@]} &&  ${#SM_AUDIO[@]} -ne 1 ]]; then
     usage_error "Please give the same number of submenu audios as videos.
     You gave ${#FILES[@]} video files and ${#SM_AUDIO[@]} audio files"
 fi
 # Get absolute pathnames of all files
-for i in "${FILES[@]}"; do
-    IN_FILES=("${IN_FILES[@]}" "$(abspath "$i")")
-    echo "Adding: $i"
-done
-
-V_TOTAL=${#IN_FILES[@]}
-NUM_FILES=$((V_TOTAL - 1))
+if ! $VMGM_ONLY; then
+    for i in "${FILES[@]}"; do
+        IN_FILES=("${IN_FILES[@]}" "$(abspath "$i")")
+        echo "Adding: $i"
+    done
+fi
+$VMGM_ONLY && V_TOTAL=$(( ${#TITLES[@]} - 1 )) || V_TOTAL=${#IN_FILES[@]}
+$VMGM_ONLY && NUM_FILES=$(( ${#TITLES[@]} - 1 )) || NUM_FILES=$((V_TOTAL - 1))
 
 # switch title position when appropriate so it doesn't get covered up
 ! $USER_TITLE_GEO && [[ $BUTTON_GRAVITY = *south* ]] && TITLE_GRAVITY=north
@@ -1417,8 +1556,8 @@ if [ ${#CHAPTERS[@]} -eq 1 ]; then
 fi
 
 # if more than one value for CHAPTERS, make sure they equal video #
-if [[ $SUB_MENU &&  ${#FILES[@]} -ne ${#CHAPTERS[@]} &&  ${#CHAPTERS[@]} -ne 1 ]]; then
-    usage_error "Please give the same number of submenu audios as videos.
+if $SUB_MENU &&  [[ ${#FILES[@]} -ne ${#CHAPTERS[@]} &&  ${#CHAPTERS[@]} -ne 1 ]]; then
+    usage_error "Please give the same number of chapters as videos.
     You gave ${#FILES[@]} video files and ${#CHAPTERS[@]} chapter values"
 fi
 # find out longest chapter value (number of chapters)
@@ -1492,7 +1631,7 @@ if [ ${#SEEK_VAL[@]} -eq 1 ]; then
     done
 fi
 # make sure if more than one seek value, they equal the number of video
-if [[ ${#FILES[@]} -ne ${#SEEK_VAL[@]} &&  ${#SEEK_VAL[@]} -ne 1 ]]; then
+if ! $VMGM_ONLY &&  [[ ${#FILES[@]} -ne ${#SEEK_VAL[@]} &&  ${#SEEK_VAL[@]} -ne 1 ]]; then
     usage_error "Please give the same number of seek times as videos, or just use one value.
     You gave ${#FILES[@]} video files and ${#SEEK_VAL[@]} seek times"
 fi
@@ -1503,21 +1642,24 @@ for ((i=0; i<=NUM_FILES; i++)); do
 done
 # var for dcdemux and the navigation log
 #TCDEMUX_MODE="-M 0"
-echo
-echo "Verifying that input files are video files"
-for ((i=0; i<=NUM_FILES; i++)); do
-    IN_FILE="${IN_FILES[i]}"
-    if test -e "$IN_FILE"; then
-        if mencoder -quiet -oac pcm -ovc copy -frames 0 -o /dev/null "$IN_FILE" &>/dev/null; then
-            echo "$IN_FILE ok"
+if ! $VMGM_ONLY; then
+    echo
+    echo "Verifying that input files are video files"
+    for ((i=0; i<=NUM_FILES; i++)); do
+        IN_FILE="${IN_FILES[i]}"
+        if test -e "$IN_FILE"; then
+            if mencoder -quiet -oac pcm -ovc copy \
+            -frames 0 -o /dev/null "$IN_FILE" &>/dev/null; then
+                echo "$IN_FILE ok"
+            else
+                usage_error "Sorry, $IN_FILE is not a video file"
+            fi
         else
-            usage_error "Sorry, $IN_FILE is not a video file"
+            usage_error "Sorry, $IN_FILE does not exist"
         fi
-    else
-        usage_error "Sorry, $IN_FILE does not exist"
-    fi
-done
-echo
+    done
+    echo
+fi
 ##############################################################################
 # Font defaults
 ##############################################################################
@@ -1584,25 +1726,27 @@ yecho "  -menu-font $MENU_FONT"
 yecho "  -menu-fontsize $MENU_FONTSIZE"
 yecho "  -thumb-font $THUMB_FONT"
 yecho "  -thumb-fontsize $THUMB_FONTSIZE"
-yecho "Current menu settings: "
-if  ! $STATIC; then
-    yecho "  -menu-length $ANI_MENU_LENGTH seconds"
-fi
-if $ANI_SUB_MENU; then
-    yecho "  -submenu-length $ANI_SUBMENU_LENGTH seconds"
-    if $SUBMENU_AUDIO; then
-        yecho "  -submenu-audio-fade $SM_FADE second(s)"
+if ! $VMGM_ONLY; then
+    yecho "Current menu settings: "
+    if  ! $STATIC; then
+        yecho "  -menu-length $ANI_MENU_LENGTH seconds"
     fi
+    if $ANI_SUB_MENU; then
+        yecho "  -submenu-length $ANI_SUBMENU_LENGTH seconds"
+        if $SUBMENU_AUDIO; then
+            yecho "  -submenu-audio-fade $SM_FADE second(s)"
+        fi
+    fi
+        for ((i=0; i<=NUM_FILES; i++)); do
+            echo -n "Video $((i+1)):"
+            echo -n "  -seek ${SEEK_VAL[i]} second(s)"
+            echo "  -chapters ${CHAPTERS[i]}"
+        done
+    if [ ! $STATIC ]; then
+        yecho "  -menu-audio-fade $FADE second(s)"
+    fi
+    yecho
 fi
-for ((i=0; i<=NUM_FILES; i++)); do
-    echo -n "Video $((i+1)):"
-    echo -n "  -seek ${SEEK_VAL[i]} second(s)"
-    echo "  -chapters ${CHAPTERS[i]}"
-done
-if [ ! $STATIC ]; then
-    yecho "  -menu-audio-fade $FADE second(s)"
-fi
-yecho
 
 
 # TODO: Merge these globals with the ones up top
@@ -1818,6 +1962,8 @@ echo "$WORK_DIR will be a symlink pointing to this directory"
 echo -e "\n**************"
 sleep 1
 cd "$WORK_DIR"
+# BASEDIR is the dir of the calling script, if unset, use WORK_DIR (For vmgm)
+: ${BASEDOR:-$WORK_DIR}
 
 # default of no blur if using 3D thumbs
 if $THUMBS_3D; then
@@ -2893,14 +3039,13 @@ if ! $NOASK; then
 fi
 
 # Check input files for compliance; offer to tovid-encode non-compliant files
-check_compliance
+! $VMGM_ONLY && check_compliance
 check_compliance group
 # check bgvideo and showcase VIDEO for compliance ( if present )
 tovid_reencode()
 {
     VIDEO_IN="$1"
     VIDEO_IN_SEEK="$2"
-    $NOASK && NO_ASK="-noask"
     yecho
     yecho "$VIDEO_IN is not compliant - re-encoding $(bc <<< "$VIDEO_IN_SEEK + $ANI_MENU_LENGTH") second slice to DVD compliant file"
     yecho "if you used a long seek this will take some time and produce a large file."
@@ -2933,7 +3078,7 @@ fi
 # symlink IN_FILES in $WORK_DIR to solve some quoting issues for dvdauthor
 
 for i in ${!IN_FILES[@]}; do
-    (cd "$REAL_WORK_DIR" &&  ln -sv "${IN_FILES[i]}" $((i+1)).mpg)
+    (cd "$REAL_WORK_DIR" &&  ln -sv "${IN_FILES[i]}" $BASEDIR/${TSET_NUM}-$((i+1)).mpg)
 done
 
 # Store info about input files in an array
@@ -2983,9 +3128,9 @@ if $GROUPING; then
 fi
 
 # put in the log file in case anyone is interested
-get_stats files
+! $VMGM_ONLY && get_stats files
 echo
-$GROUPING && get_stats group
+! $VMGM_ONLY && $GROUPING && get_stats group
 echo
 echo $SEPARATOR
 
@@ -3199,11 +3344,12 @@ EOF
     fi
 done
 # debug chapters
-echo
-for ((i=0; i<=NUM_FILES; i++)); do
-    echo -e "Chapters for "${IN_FILES[i]}" are: \n"${CHAPT_ARRAY[i]}"\n"
-done
-
+if ! $VMGM_ONLY; then
+    echo
+    for ((i=0; i<=NUM_FILES; i++)); do
+        echo -e "Chapters for "${IN_FILES[i]}" are: \n"${CHAPT_ARRAY[i]}"\n"
+    done
+fi
 if [[ "$BUTTON_STYLE" = "text" && -z "$OUTLINEWIDTH" ]]; then
     if $TEXTMENU; then
         (( THUMB_FONTSIZE < 26 )) &&  OUTLINEWIDTH="\"10\"" || OUTLINEWIDTH="\"12\""
@@ -3243,14 +3389,20 @@ else
 fi
 if [ "$TARGET" = "dvd" ]; then
 # make dvdauthor.xml
+
+# TSET_NUM supplied by the calling todisc script and is the current titleset #
+MENU_FILE="$BASEDIR/animenu${TSET_NUM}.mpg"
+$VMGM_ONLY && MENU_FILE="$BASEDIR/VMGM.mpg"
+
+! $AUTHOR && DVDAUTHOR_XML="$BASEDIR/dvdauthor.xml"
 (
     cat <<EOF
-$(if ! $DO_TITLESETS ; then
+$(if $AUTHOR ; then
     echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
     echo -e "<dvdauthor dest=\"$OUT_DIR\" jumppad=\"0\">"
     echo -e "  <vmgm>\n    <menus>\n      <pgc entry=\"title\" pause=\"0\">"
     echo -e "        $INTRO"
-    echo -e "        <vob file=\"$WORK_DIR/dummy.mpg\"/>"
+    echo -e "        <vob file=\"$REAL_WORK_DIR/dummy.mpg\"/>"
     echo -e "        <post>jump titleset 1 menu;</post>"
     echo -e "      </pgc>\n    </menus>\n  </vmgm>"
 fi)
@@ -3278,7 +3430,7 @@ $(if $SUB_MENU; then
             for ((g=1; g<="${CHAPTERS[Y-1]}"; g++)); do
                 echo -e "        <button name=\"$g\">jump title $Y chapter $g;</button>"
             done
-            echo -e "        <vob file=\"$WORK_DIR/Menu$Y.mpg\"$PAUSE/>"
+            echo -e "        <vob file=\"$BASEDIR/${TSET_NUM}-Menu$Y.mpg\"$PAUSE/>"
 echo "$POST"
             echo "      </pgc>"
             echo "      <pgc>"
@@ -3301,18 +3453,18 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
     if [[ -n ${GROUP[i]} ]]; then
         get_group_chapters $i format
         if ((${CHAPTERS[i]} == 0)); then
-            echo -e "        <vob file=\"$REAL_WORK_DIR/$i.mpg\"/>"
-            for mpg in $WORK_DIR/group-$((i+1))-*; do
+            echo -e "        <vob file=\"$BASEDIR/$i.mpg\"/>"
+            for mpg in $BASEDIR/${TSET_NUM}-group-$((i+1))-*; do
                 echo -e "        <vob file=\"$mpg\"/>"
             done
         else
-            echo -e "        <vob file=\"$REAL_WORK_DIR/$((i+1)).mpg\" $chpts0/>"
-            for mpg in $WORK_DIR/group-$((i+1))-*; do
+            echo -e "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\" $chpts0/>"
+            for mpg in $BASEDIR/${TSET_NUM}-group-$((i+1))-*; do
                 echo -e "        <vob file=\"$mpg\" ${chpts[++j]}/>"
             done
         fi
     else
-        echo -ne "        <vob file=\"$REAL_WORK_DIR/$((i+1)).mpg\""
+        echo -ne "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\""
         echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
     fi
     if $CHAIN_VIDEOS; then
@@ -3346,7 +3498,7 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
 done)
     </titles>
   </titleset>
-$(if ! $DO_TITLESETS ; then
+$(if $AUTHOR ; then
 echo -e "</dvdauthor>"
 fi)
 EOF
@@ -3359,9 +3511,9 @@ fi
 ##############################################################################
 
 # make dummy VMGM mpeg
+yecho "Creating a blank mpeg for the vmgm menu"
 convert  -resize $VIDSIZE! xc:"#161514" "$WORK_DIR/dummy.jpg"
-JPEG2YUV_OPTS=(-n 1 -l 30)
-ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p "${JPEG2YUV_OPTS[@]}" -L 1 -b1 \
+ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p -n 1 -l 30 -L 1 -b1 \
 -j "$WORK_DIR/dummy.jpg")
 ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
 -tvstd $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
@@ -4377,10 +4529,10 @@ if $SUB_MENU; then
         $(sed 's/\(.*\)menu/\1Menu/' <<< $WORK_DIR/menu${x}.mpg)"|fold -bs
         spumux "$WORK_DIR/submenu${x}_spumux.xml" < \
         $WORK_DIR/menu${x}.mpg > \
-        $(sed 's/\(.*\)menu/\1Menu/' <<< $WORK_DIR/menu${x}.mpg) 2>> "$LOG_FILE"
+        $(sed 's/\(.*\)menu/\1Menu/' <<< $BASEDIR/${TSET_NUM}-menu${x}.mpg) 2>> "$LOG_FILE"
     done
 fi
-if [ "$TARGET" = dvd ] && ! $DO_TITLESETS; then
+if [ "$TARGET" = dvd ] && $AUTHOR && ! $VMGM_ONLY && ! $DO_TITLESETS; then
     echo "Running dvdauthor to create the DVD filesystem"
     dvdauthor -x "$DVDAUTHOR_XML" 2>&1 | tee -a "$LOG_FILE"
     if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
@@ -4402,25 +4554,26 @@ rm -fv "$WORK_DIR"
 #        "-menu $WORK_DIR/Menu${x}.mpg";done) "${IN_FILES[@]}" -out MyDisc
 #        vcdxbuild MyDisc.xml
 #    else
-
-SCRIPT_END_TIME=`date +%s`
-SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
-HHMMSS=`format_time $SCRIPT_TOT_TIME`
-echo
-echo $SEPARATOR
-echo "todisc took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
-echo $SEPARATOR
-if [ "$TARGET" = dvd ]; then
-    echo "Your new DVD should be in $OUT_DIR"
-    echo "You can preview them in gxine with this command:"
-    echo "    gxine \"dvd:/$OUT_DIR\""
-    echo "If you are satisfied with the results, you can burn a disc with:"
-    echo "    makedvd -burn \"$OUT_DIR\""
-elif [ "$TARGET" = svcd ]; then
-    echo "Your svcd bin and cue files are ready. You can burn them with:"
-    echo "    cdrdao write --device /dev/hdc --driver generic-mmc "${OUT_FILE}.cue""
+if ! $VMGM_ONLY && ! [[ -n $TSET_NUM ]]; then
+    SCRIPT_END_TIME=`date +%s`
+    SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
+    HHMMSS=`format_time $SCRIPT_TOT_TIME`
+    echo
+    echo $SEPARATOR
+    echo "todisc took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
+    echo $SEPARATOR
+    if [ "$TARGET" = dvd ]; then
+        echo "Your new DVD should be in $OUT_DIR"
+        echo "You can preview them in gxine with this command:"
+        echo "    gxine \"dvd:/$OUT_DIR\""
+        echo "If you are satisfied with the results, you can burn a disc with:"
+        echo "    makedvd -burn \"$OUT_DIR\""
+    elif [ "$TARGET" = svcd ]; then
+        echo "Your svcd bin and cue files are ready. You can burn them with:"
+        echo "    cdrdao write --device /dev/hdc --driver generic-mmc "${OUT_FILE}.cue""
+    fi
+    echo
+    echo "Thanks for using todisc."
 fi
-echo
-echo "Thanks for using todisc."
 cleanup
 exit 0
