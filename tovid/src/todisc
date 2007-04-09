@@ -808,7 +808,8 @@ ZbeIJQzWl6wAAAAASUVORK5CYII=
 ====
 "
  
-uudecode <<< "$upbutton"
+    uudecode <<< "$upbutton"
+    convert -rotate -90 "$TODISC_WORK/upbutton.png" "$TODISC_WORK/upbutton.png"
 }
 
 ##############################################################################
