@@ -760,12 +760,14 @@ EOF
     vmgm_menu_cmd=(todisc -out $OUT_PREFIX  -basedir "$REAL_WORK_DIR" \
     -menu-only -textmenu "${VMGM_OPTS[@]}")
 #    vmgm_menu_cmd=(makemenu "${VMGM_TITLES[@]}" -out VMGM -button play  -align middle $NO_ASK $VMGM_MENU_OPTS)
-    echo VMGM_ONLY is $VMGM_ONLY
+    yecho
     yecho "Running: ${vmgm_menu_cmd[@]}"
     "${vmgm_menu_cmd[@]}"
     for tset in ${!TITLESET_OPTS[@]}; do
-      eval  todisc -titleset-mode -basedir "$REAL_WORK_DIR" \
-        -tset_num $tset $NO_ASK -out $OUT_PREFIX ${TITLESET_OPTS[tset]}
+        titleset_cmd=( todisc -titleset-mode -basedir "$REAL_WORK_DIR" \
+        -tset_num $tset $NO_ASK -out $OUT_PREFIX ${TITLESET_OPTS[tset]} )
+        yecho "Running: ${titleset_cmd[@]}"
+        eval ${titleset_cmd[@]}
     done
     echo -e "</dvdauthor>" >> "$DVDAUTHOR_XML"
     yecho "Running dvdauthor to create final DVD structure"
@@ -791,39 +793,22 @@ function parse_rotateargs()
         DO_SHIFT=false
     fi
 }
-function parse_titleset_args()
+
+function make_upbutton()
 {
-    unset x ARGS_ARRAY
-    if [[ $1 = vmgm ]]; then
-        END="-end-vmgm"
-    elif [[ $1 = titleset ]]; then
-        END="-end-titleset"
-    else
-        END="-"
-    fi
-    unset x ARGS_ARRAY
-    # Hackish list-parsing
-    while test $# -gt 0 && test x"${1:0:1}" != x"-"; do
-        ARGS_ARRAY[x++]="$1"
-        shift
-    done
-    # Do not skip past the next argument
-    if test $# -gt 0 && test x"${1:0:1}" = x"-";then
-        DO_SHIFT=false
-    fi
-
-
-
-    unset x ARGS_ARRAY
-    # Hackish list-parsing
-    while test $# -gt 0 && test $1 != "-end-vmgm"; do
-        ARGS_ARRAY[x++]="$1"
-        shift
-    done
-    # Do not skip past the next argument
-    if test $# -gt 0 && test x"${1:0:1}" = x"-";then
-        DO_SHIFT=false
-    fi
+upbutton="
+begin-base64 644 "$TODISC_WORK/upbutton.png"
+iVBORw0KGgoAAAANSUhEUgAAACQAAAA0EAYAAACyRkZAAAAABmJLR0T/////
+//8JWPfcAAAACXBIWXMAAABIAAAASABGyWs+AAAAwklEQVRo3u3YwQ2EUAwD
+UaD/nncvTAc4sb88BVjRO+a6WmuttdZaawb93rbv+KpHNXwKlAyI0qHkQJQK
+NQZEaVDjQJQCtQZE7lDrQOQKZQNEblB2QOQCZQtE21D2QLQFFQNE01BxQDQF
+FQtEaqh4IFJBHQOk6hig++3r3XggFQzFAqlhKA5oCoZigKZhyB5oC4ZsgbZh
+yA7IBYZsgNxgaB3IFYbWgNxhaBwoBYbGgNJgSA6UCiNr+8neWmuttdZac+gP
+ZbeIJQzWl6wAAAAASUVORK5CYII=
+====
+"
+ 
+uudecode <<< "$upbutton"
 }
 
 ##############################################################################
