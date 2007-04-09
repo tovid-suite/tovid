@@ -109,7 +109,7 @@ component to generate the menu, this should all be handled for you.
 : ``makexml -dvd title-1.mpg title-2.mpg title-3.mpg -out My_DVD``
     Make a DVD without a menu. Title 1, 2, and 3 will play in sequence.
 
-: ``makexml -dvd -group chapter-1.mpg chapter-2.mpg chapter-3.mpg -end-group -out My_DVD``
+: ``makexml -dvd -group chapter-1.mpg chapter-2.mpg chapter-3.mpg -endgroup -out My_DVD``
     Group the file chapter-1|2|3.mpg into one title and make a DVD without a menu.
 
 : ``makexml -dvd -menu main_menu.mpg -chapters 3 movie-1.mpg -chapters 10 movie-2.mpg -out My_DVD``
