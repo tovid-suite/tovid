@@ -76,9 +76,6 @@ EOF`
 
 SEPARATOR="========================================================="
 
-# Not currently reading in config file
-READING_CONFIG=false
-
 # Video defaults
 # Bitrate limits
 VCD_VID_MIN_RATE=1150
@@ -352,8 +349,7 @@ function check_disk_space()
 
 
 # ******************************************************************************
-# Read all command-line arguments, and read any arguments included in the
-# default configuration file (if it exists)
+# Read all arguments
 # ******************************************************************************
 function get_args()
 {
@@ -364,10 +360,9 @@ function get_args()
 
             # Use config file?
             "-config" )
-                # Read in name of config file
-                # (will be read in later)
+                # Read configuration file
                 shift
-                CONFIG_FILE="$1"
+                read_config "$1"
                 ;;
 
             # PAL or NTSC
@@ -627,36 +622,32 @@ function get_args()
         # Get next argument
         $DO_SHIFT && shift
     done
-
-    # Read in the config file, but only if a config
-    # file is not already being read (prevents recursion
-    # if a config file calls itself).
-    if $READING_CONFIG; then :
-    else
-        # check that a config file exists and is readable
-        if test -r "$CONFIG_FILE"; then
-            # Make sure file is a tovid config file
-            CONFIG_TYPE=$(head -n 1 "$CONFIG_FILE")
-            if test "$CONFIG_TYPE" != "tovid"; then
-                yecho "$CONFIG_FILE is not a valid tovid configuration file."
-                yecho "Skipping $CONFIG_FILE"
-            else
-                READING_CONFIG=:
-                CONFIG_ARGS=$(grep '^-' $CONFIG_FILE | tr '\n' ' ')
-                yecho "Using config file $CONFIG_FILE, containing the following options:"
-                if test -n "$CONFIG_ARGS"; then
-                    yecho "$CONFIG_ARGS"
-                    get_args $CONFIG_ARGS
-                else
-                    yecho "(none)"
-                fi
-            fi
-        fi
-
-    fi # If READING_CONFIG
-
 } # End get_args()
 
+# ******************************************************************************
+# Read a configuration file
+# Args: $1: name of configuration file
+# ******************************************************************************
+function read_config()
+{
+    # Check that a config file exists and is readable
+    if ! test -r "$1"; then
+        exit_with_error "Could not find configuration file: $1"
+    # Make sure file is a tovid config file
+    elif test $(head -n 1 "$1") != "tovid"; then
+        exit_with_error "$1 is not a valid tovid configuration file."
+    fi
+
+    # Strip config contents down to just its command-line options
+    CONFIG_ARGS=$(grep '^-' $1 | tr '\n' ' ')
+    yecho "Using config file $1, containing the following options:"
+    if test -n "$CONFIG_ARGS"; then
+        yecho "$CONFIG_ARGS"
+        get_args $CONFIG_ARGS
+    else
+        yecho "(none)"
+    fi
+}
 
 # ******************************************************************************
 # Clean up temporary files
@@ -678,6 +669,8 @@ function cleanup()
             yecho
             yecho "Do you want to keep the temporary files that were created ?"
             yecho "Please type \"yes\", or else they will be deleted"
+            yecho "(add '-noask' to your ~/.tovid/tovid.config to avoid"
+            yecho "being asked this question in the future)"
             read input # would someone really type "yes" with quotes? (probably )
             echo
             if [[ ! -z "$input" && "$input" = "yes" || "$input" = \"yes\" ]]; then
@@ -854,7 +847,14 @@ if test "$1" = "-v" || test "$1" = "-version"; then
 fi
 
 printf "%s\n" "$SCRIPT_NAME"
+# Read default configuration file, if it exists
+# (CONFIG_FILE is defined in tovid-init.in)
+if test -e $CONFIG_FILE; then
+    read_config $CONFIG_FILE
+fi
+# Read command-line options
 get_args "$@"
+
 # Print complete 'tovid' command-line that was used
 if ! $QUIET; then
     yecho "tovid command-line used:"
