@@ -208,14 +208,14 @@ class ComboBox (tk.Frame):
             
             master:     Tk Widget that will contain the ComboBox
             choices:    ListVar or Python list of available choices
-            chosen:     Tk StringVar to store currently selected choice in
+            variable:   Tk StringVar to store currently selected choice in
             command:    Function to call after an item in the list is chosen
         """
         tk.Frame.__init__(self, master)
         if type(choices) == list:
             choices = ListVar(self, choices)
         self.choices = choices or ListVar()
-        self.chosen = chosen or tk.StringVar()
+        self.variable = variable or tk.StringVar()
         self.command = command
         self._draw()
 
@@ -223,7 +223,7 @@ class ComboBox (tk.Frame):
         """Draw and configure contained widgets.
         """
         # Text and button
-        self.text = tk.Entry(self, textvariable=self.chosen)
+        self.text = tk.Entry(self, textvariable=self.variable)
         self.text.grid(row=0, column=0)
         self.button = tk.Button(self, text="<", command=self.open)
         self.button.grid(row=0, column=1)
@@ -260,7 +260,7 @@ class ComboBox (tk.Frame):
         """Make a selection from the list, and set the variable.
         """
         self.curindex = self.chooser.nearest(event.y)
-        self.chosen.set(self.chooser.get(self.curindex))
+        self.variable.set(self.chooser.get(self.curindex))
         self.dropdown.withdraw()
         # Callback, if any
         if self.command:

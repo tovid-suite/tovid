@@ -214,8 +214,6 @@ class Application (tk.Frame):
                      for the given program's options. Use [panel] to pass
                      a single panel. If there are multiple panels, a tabbed
                      application is created.
-            width:   Pixel width of application window
-            height:  Pixel height of application window
 
         After defining the Application, call run() to show/execute it.
         """
