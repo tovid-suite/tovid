@@ -311,14 +311,15 @@ authoring = Panel("Authoring",
         'tooltip')
 )
 
+
 ### --------------------------------------------------------------------
 ### Application and GUI
 ### --------------------------------------------------------------------
 
-style = Style(bgcolor='white', font=('Helvetica', 14, 'bold'))
+style = Style(bgcolor='white', font=('Helvetica', 12, 'bold'))
 
 todisc = Application('todisc',
     [main, general, menu, thumbnails, audio, text, authoring])
-gui = GUI("todiscgui", [todisc], 800, 400, style)
+gui = GUI("todiscgui", [todisc])
 gui.run()
 
