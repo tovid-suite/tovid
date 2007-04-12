@@ -8,6 +8,28 @@ special-purpose GUI widget for setting a value such as a number or filename.
 
 """
 
+"""
+Pull behavior
+
+When a widget pulls from another, it's expected that:
+
+- The pulling widget synchronizes its valus with another control; when that
+  control changes, so does pulling control
+- The exact value is pulled, or a modified copy is pulled (to do regexp
+  search/replace at minimum)
+
+Lists are a special case, because they have more interactivity than other
+widgets. When items in one list are rearranged or removed, the pulling
+list should rearrange/remove corresponding items.
+
+Q. Should correspondence in ordering be assumed?
+
+Q. Would pulling ever be useful for non-lists?
+
+Q. Would any other controls benefit by event-binding behaviors?
+
+"""
+
 __all__ = [
     'Control',
     # Control subclasses
@@ -597,9 +619,6 @@ class FileList (Control):
         self.remove.pack(side='left', fill='x', expand=True)
         group.pack(fill='x')
         # Dirty hack to get linked files/titles to work
-        for control in self.copies:
-            if isinstance(control, TextList):
-                self.listbox.link(control.listbox)
 
     def select(self, event=None):
         """Event handler when a filename in the list is selected.

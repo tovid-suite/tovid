@@ -315,8 +315,10 @@ authoring = Panel("Authoring",
 ### Application and GUI
 ### --------------------------------------------------------------------
 
+style = Style(bgcolor='white', font=('Helvetica', 14, 'bold'))
+
 todisc = Application('todisc',
     [main, general, menu, thumbnails, audio, text, authoring])
-gui = GUI("todiscgui", [todisc])
+gui = GUI("todiscgui", [todisc], 800, 400, style)
 gui.run()
 
