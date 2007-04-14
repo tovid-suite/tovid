@@ -173,6 +173,7 @@ args=( "$@" )
 VMGM_ONLY=false
 TITLESET_MODE=false
 TSET_NUM=1
+INTRO=""
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -729,7 +730,18 @@ function titleset_mode()
 # call todisc recursively in order to allow titlesets
 {
     ! $GROUPING && mk_workdir
-#    cd "$WORK_DIR"
+    # FIXME make a function or move the other copy of the next if block
+    # set some vars for vmgm menu, depending on if static or not
+    egrep -q -- -static <<< "${VMGM_OPTS[@]}" && STATIC=:
+    if $STATIC; then
+        if ! $STATIC_LOOP; then
+            VMGM_PAUSE_TIME="inf"
+        else
+            VMGM_PAUSE_TIME=$PAUSE_TIME
+        fi
+    else
+        VMGM_PAUSE_TIME=$PAUSE_TIME
+    fi
     DVDAUTHOR_XML=$BASEDIR/dvdauthor.xml
     # make dvdauthor.xml
 (
@@ -739,9 +751,11 @@ function titleset_mode()
   <vmgm>
     <menus>
     <pgc entry="title" pause="inf">
+$([[ $INTRO ]] && echo -e "      <pre> if (g2==1) jump cell 2;</pre>")
 $(for ((i=1; i<=${#TITLESET_OPTS[@]}; i++)); do echo "      <button name=\"$i\">jump titleset $i menu;</button>"; done)
       $INTRO
-      <vob file="$BASEDIR/VMGM.mpg"/>
+      <vob file="$BASEDIR/VMGM.mpg" pause="$VMGM_PAUSE_TIME"/>
+$([[ $INTRO ]] && echo -e "      <post>g2=1; jump vmgm menu entry title;</post>")
     </pgc>
     </menus>
   </vmgm>
@@ -2023,7 +2037,10 @@ if [[ -n "$V_ASPECT" ]] &&  ! $WIDE_SCREEN; then
 fi
 START="00:00:00.0"
 if $PLAYALL; then
-    PLAYALL_PRE="g4=0;"
+    TITLESET_PRE="g4=0;"
+fi
+if $ITLESET_MODE; then
+    TITLESET_PRE="$TITLESET_PRE g2=1;"
 fi
 
 if $AUDIOLANG; then
@@ -2039,7 +2056,8 @@ if $AUDIOLANG; then
         VOB_PRE[i]="        <pre> ${AUDIO_PRE[i]} </pre>"
     done
 fi
-$PLAYALL && MAIN_PRE="        <pre> $PLAYALL_PRE  </pre>"
+($PLAYALL || $TITLESET_MODE) && MAIN_PRE="        <pre> $TITLESET_PRE  </pre>"
+
 MAIN_POST="        <post> jump cell 1; </post>"
 if $MENU_FADE; then
     . todisc-fade-routine
@@ -2108,7 +2126,7 @@ if [[ -n "$THUMB_SHAPE" ]]; then
     convert "$WORK_DIR/feather_orig.png" -channel RGBA \
     -blur 0x60 "$WORK_DIR/feather_mask2.png"
 fi
-if [ -z "$THUMB_TEXT_COLOUR" ]; then
+if [[ -z "$THUMB_TEXT_COLOUR" ]]; then
     if $FEATHER && ! $SHOWCASE &&  [ $THUMB_BG_COLOUR != none ]; then
         THUMB_TEXT_COLOUR="#161514" # dark font for misted backgrounds
     else
@@ -3421,7 +3439,7 @@ $(for ((i=1; i<=$V_TOTAL; i++)); do
     echo -e "        <button name=\"$i\">jump $JUMP $JUMP_INC;</button>"
 done)
 $(if $TITLESET_MODE; then
-      echo -e "        <button name=\"$((V_TOTAL + 1))\">jump vmgm menu;</button>"
+      echo -e "        <button name=\"$((V_TOTAL + 1))\">g2=1; jump vmgm menu;</button>"
   else
       $PLAYALL && echo -e "        <button name=\"$((V_TOTAL + 1))\">g4=1; jump title 1 chapter 1;</button>"
   fi)
