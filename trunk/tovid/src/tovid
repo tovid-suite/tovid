@@ -914,6 +914,7 @@ elif test "$OUT_PREFIX" = "$(basename "$OUT_PREFIX")"; then
 # Otherwise, use the full qualified pathname
 else
     OUT_PREFIX=$(abspath "$OUT_PREFIX")
+    mkdir -p "$(dirname "$OUT_PREFIX")"
 fi
 
 # ******************************************************************************
