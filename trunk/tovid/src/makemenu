@@ -695,7 +695,7 @@ else
     fi
         BG_CMD="convert \"$BG_IMAGE\" $SCALECROP -matte \"$BG_CANVAS\""
 fi
-echo "Working on the the background...   "
+echo "Working on the background...   "
 $DEBUG && echo -e "\n\nBackground:\n$BG_CMD" >> $REDIR
 eval $BG_CMD
 
