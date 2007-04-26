@@ -305,7 +305,7 @@ function get_info ()
         # use tcdemux if present, and  if *.mpg extension
             NAVSEEK_CMD=(nice tcdemux  -f $ID_VIDEO_FPS -W -i "$INFILE")
             "${NAVSEEK_CMD[@]}"  >  "$INFILE".nav_log 2>/dev/null
-            [[ -s  "$INFILE".nav_log ]] && USE_MENCODER=false # check if empty
+            [[ -s  "$INFILE".nav_log ]] && USE_MENCODER=false || rm -f "$INFILE".nav_log
         fi
         if $USE_MENCODER; then
             # Determine duration by playing the video into /dev/null and doing
@@ -313,8 +313,7 @@ function get_info ()
             V_DURATION=$(LC_ALL=C mencoder -ovc frameno -oac pcm -noskiplimit \
             "$INFILE" -o /dev/null 2>/dev/null | tr '\r' '\n' | grep ^Pos: | \
             tail -n 1 | sed s/^.*Pos:// | awk '{print $1}' | sed s/[.][0-9]s//)
-        fi
-        if ! $USE_MENCODER; then
+        else
             ID_VIDEO_FRAMES=$(awk '{ field = $2 }; END{ print field }'  < "${INFILE}".nav_log)
             V_DUR=$(bc <<< "$ID_VIDEO_FRAMES / $ID_VIDEO_FPS")
             V_DURATION=${V_DUR%%.*} # final value is integer ( seconds )
