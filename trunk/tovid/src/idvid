@@ -89,6 +89,7 @@ MATCH_FORMAT=""
 MATCH_TVSYS=""
 TABULAR=false
 USE_MENCODER=:
+USE_NAVLOG=false
 ID_FILES=""
 
 mkdir -p "$STAT_DIR"
@@ -294,30 +295,44 @@ function get_info ()
     sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g')
 
     # If doing -fast identification, skip "accurate" length determination
-    if $FAST; then
-        :
-    else # make a nav_log: can be reused, especially by todisc for fast seeking
-        if  [[ -s "$INFILE".nav_log ]]; then # use existing, if non empty
-            echo "Using ${INFILE}.nav_log"
-            echo "If you don't want to use this file please delete it"
+    if  [[ -s "$INFILE".nav_log ]]; then # use existing, if non empty   
+        if  [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
+            if ! $TERSE; then
+                echo "Using ${INFILE}.nav_log"
+                echo "If you don't want to use this file please delete it"
+                echo "(It is very useful for speeding up makemenu and todisc though)"
+            fi
             USE_MENCODER=false
-        elif  [[ ${INFILE##*.} =~ [MmPpGg] ]] && hash tcdemux 2>/dev/null; then
-        # use tcdemux if present, and  if *.mpg extension
-            NAVSEEK_CMD=(nice tcdemux  -f $ID_VIDEO_FPS -W -i "$INFILE")
-            "${NAVSEEK_CMD[@]}"  >  "$INFILE".nav_log 2>/dev/null
-            [[ -s  "$INFILE".nav_log ]] && USE_MENCODER=false || rm -f "$INFILE".nav_log
+            USE_NAVLOG=:
         fi
-        if $USE_MENCODER; then
-            # Determine duration by playing the video into /dev/null and doing
-            # tons of filtering. Time consuming, but presumably more accurate.
-            V_DURATION=$(LC_ALL=C mencoder -ovc frameno -oac pcm -noskiplimit \
-            "$INFILE" -o /dev/null 2>/dev/null | tr '\r' '\n' | grep ^Pos: | \
-            tail -n 1 | sed s/^.*Pos:// | awk '{print $1}' | sed s/[.][0-9]s//)
+    # check if tcdemux installed, and if extension is mpg (use mencoder for vob)
+    elif [[ ${INFILE##*.} =~ [MmPpGg] ]] && hash tcdemux 2>/dev/null; then
+        if ! $FAST; then # only run this long process if $FAST is set to false
+            if [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then # do not run if no fps parsed
+                NAVSEEK_CMD=(nice tcdemux  -f $ID_VIDEO_FPS -W -i "$INFILE")
+                "${NAVSEEK_CMD[@]}"  >  "$INFILE".nav_log 2>/dev/null
+                if [[ -s  "$INFILE".nav_log ]]; then # if non empty lets use it
+                    USE_MENCODER=false
+                    USE_NAVLOG=:
+                else
+                     rm -f "$INFILE".nav_log
+                fi
+            fi
         else
-            ID_VIDEO_FRAMES=$(awk '{ field = $2 }; END{ print field }'  < "${INFILE}".nav_log)
-            V_DUR=$(bc <<< "$ID_VIDEO_FRAMES / $ID_VIDEO_FPS")
-            V_DURATION=${V_DUR%%.*} # final value is integer ( seconds )
+            USE_MENCODER=false  # do not run mencoder either if $FAST is set to false
         fi
+    fi
+
+    if $USE_MENCODER; then # any of: no/empty log file, ! $FAST, no tcdemux, or not an mpg
+        # Determine duration by playing the video into /dev/null and doing
+        # tons of filtering. Time consuming, but presumably more accurate.
+        V_DURATION=$(LC_ALL=C mencoder -ovc frameno -oac pcm -noskiplimit \
+        "$INFILE" -o /dev/null 2>/dev/null | tr '\r' '\n' | grep ^Pos: | \
+        tail -n 1 | sed s/^.*Pos:// | awk '{print $1}' | sed s/[.][0-9]s//)
+    elif $USE_NAVLOG; then
+        ID_VIDEO_FRAMES=$(awk '{ field = $2 }; END{ print field }'  < "${INFILE}".nav_log)
+        V_DUR=$(bc <<< "$ID_VIDEO_FRAMES / $ID_VIDEO_FPS")
+        V_DURATION=${V_DUR%%.*} # final value is integer ( seconds )
     fi
 
     # Use mplayer-reported length as a last resort (truncate floating-point)
