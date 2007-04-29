@@ -199,7 +199,7 @@ function get_info ()
     # Evaluate mplayer's output to set relevant variables.
     # (ID_V(ideo), ID_A(udio), and ID_L(ength))
     # Grep out special characters ()[
-    eval $(cat "$SCRATCH_FILE" | grep "^ID_[VAL]" | grep -v "[()\[]")
+    eval $(cat "$SCRATCH_FILE" | grep "^ID_[VAL]" | grep -v "[()\[]" | sed 's/$/"/' | sed 's/=/="/')
     # (If you've got a problem with eval, give me an alternative that
     # works as well and is as readable :-)
 
