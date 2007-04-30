@@ -173,7 +173,16 @@ args=( "$@" )
 VMGM_ONLY=false
 TITLESET_MODE=false
 TSET_NUM=1
+MENU_NUM=1
 INTRO=""
+QUICK_NAV=false
+SKIP_VMGM_MENU=false
+NO_VMGM_MENU=false
+SWITCHED_MENUS=false
+SWITCHED_MODE=false
+TSET_MODE=false
+NONAME=false
+DO_INTRO=false
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -543,7 +552,7 @@ for ((i=0; i<TOT; i++)); do
     if [ -z "$A_BR" ]; then
         A_BR="No audio found"
     fi
-    if [ -e "$WORK_DIR/${NAV}${i}_log" ]; then
+    if [ -e "${IN_FILES[i]}".nav_log ]; then
         V_LENGTH=$(awk_math $LENGTH by $FRAME_RATE float)
     else
         V_LENGTH=$(awk '/Video stream:/{print $10}'<<< "${IN_STATS[i]}")
@@ -725,14 +734,31 @@ function get_image_dim()
 {
     identify -verbose "$1" | awk '/Geometry:/ {print $2}'
 }
-
+function switched_menu_mode()
+#call todisc recursively to make multiple menus for -switched-menus option
+{
+    $TSET_MODE && IS_TITLESET="-is_titleset"
+    ! $GROUPING && mk_workdir
+    for ((i=1; i<${#FILES[@]}; i++)); do
+        yecho
+        yecho "Working on switched menu $((i+1))"
+        yecho
+        yecho "Running todisc "$@" -switched-mode $IS_TITLESET -basedir "$BASEDIR"  -menu_num $((i+1)) -showcase "${FILES[i]}""
+        todisc "$@" -switched-mode $IS_TITLESET -basedir "$REAL_WORK_DIR" -menu_num $((i+1)) -showcase "${FILES[i]}"
+    done
+#    exit
+}
 function titleset_mode()
 # call todisc recursively in order to allow titlesets
 {
     ! $GROUPING && mk_workdir
     # FIXME make a function or move the other copy of the next if block
-    # set some vars for vmgm menu, depending on if static or not
+    # some vars for vmgm menu, depending on presence of -static or -quick-nav
+    GEN_OPTS=$(sed   's/-vmgm.*-end-vmgm//;s/-titleset.*-end-titleset//g' <<< "$@")
     egrep -q -- -static <<< "${VMGM_OPTS[@]}" && STATIC=:
+    $QUICK_NAV && QUICKNAV="-quick-nav"
+    # how many titlesets do we have ?
+    for i in "$@"; do [[ $i == -end-titleset ]] && ((count++)); done
     if $STATIC; then
         if ! $STATIC_LOOP; then
             VMGM_PAUSE_TIME="inf"
@@ -743,6 +769,11 @@ function titleset_mode()
         VMGM_PAUSE_TIME=$PAUSE_TIME
     fi
     DVDAUTHOR_XML=$BASEDIR/dvdauthor.xml
+    VMGM_PRE="<pre>"
+    $DO_INTRO && VMGM_PRE="    $VMGM_PRE if (g2==1) jump cell 2;"
+    grep -q -- -switched-menus <<< "${args[@]}" && VMGM_PRE="    $VMGM_PRE g1=1;"
+    $SKIP_VMGM_MENU && VMGM_PRE="    $VMGM_PRE  if ( g3 eq 0 )  { g3 = 1 ; }"
+#    $SWITCHED_MODE && VMGM_PRE="$VMGM_PRE g1=1;"
     # make dvdauthor.xml
 (
     cat <<EOF
@@ -750,23 +781,43 @@ function titleset_mode()
 <dvdauthor dest="$OUT_DIR" jumppad="0">
   <vmgm>
     <menus>
-    <pgc entry="title" pause="inf">
-$([[ $INTRO ]] && echo -e "      <pre> if (g2==1) jump cell 2;</pre>")
-$(for ((i=1; i<=${#TITLESET_OPTS[@]}; i++)); do echo "      <button name=\"$i\">jump titleset $i menu;</button>"; done)
-      $INTRO
-      <vob file="$BASEDIR/VMGM.mpg" pause="$VMGM_PAUSE_TIME"/>
+      <pgc entry="title">
+$VMGM_PRE
+$(if $QUICK_NAV || $SKIP_VMGM_MENU; then
+        for ((i=1; i<=${#TITLESET_OPTS[@]}; i++)); do
+            echo -e "          if ( g3 eq $i ) jump titleset $i menu;"
+        done
+fi)
+        </pre>
+        <post>jump cell 1;</post>
+$(for ((i=1; i<=${#TITLESET_OPTS[@]}; i++)); do echo "        <button name=\"$i\">jump titleset $i menu;</button>"; done)
+        $INTRO
+        <vob file="$BASEDIR/VMGM.mpg" pause="$VMGM_PAUSE_TIME"/>
 $([[ $INTRO ]] && echo -e "      <post>g2=1; jump vmgm menu entry title;</post>")
-    </pgc>
+      </pgc>
     </menus>
   </vmgm>
 EOF
 ) |sed '/^ *$/d' >> "$DVDAUTHOR_XML"
-    yecho "Making a VMGM menu with the following command"
-    vmgm_menu_cmd=(todisc -out $OUT_PREFIX  -basedir "$REAL_WORK_DIR" \
+    if [[ -z ${VMGM_OPTS[@]} ]]; then
+        yecho
+        yecho "You have not supplied -vmgm OPTIONS -end-vmgm"
+        yecho "At a minumum you should have '-vmgm -titles "Title one" "Title two" -end-vmgm'"
+        yecho "One title for each titleset you are making"
+        yecho "Any other options for the vmgm menu can be specified too"
+        yecho "Making a generic vmgm menu for you - you may wish to cancell out and change this"
+        yecho
+        ! $NO_VMGM_MENU && sleep 15
+        VMGM_OPTS[0]="-titles"
+        for ((menu=1; menu<=count; menu++)); do VMGM_OPTS[menu]="Titleset $menu"; done
+    fi
+    yecho
+    yecho "Making a VMGM menu with the following command:"
+    vmgm_menu_cmd=(todisc -out $OUT_PREFIX $QUICKNAV $NO_ASK -basedir "$REAL_WORK_DIR" \
     -menu-only -textmenu "${VMGM_OPTS[@]}")
 #    vmgm_menu_cmd=(makemenu "${MENU_TITLE[@]}" -out VMGM -button play  -align middle $NO_ASK $VMGM_MENU_OPTS)
-    yecho
     yecho "Running: ${vmgm_menu_cmd[@]}"
+    INITIALDIR=$BASEDIR
     "${vmgm_menu_cmd[@]}"
    # TODO move to function so its not duplicated here and in main parser, generalize for -vmgm too 
     while test $# -gt 0; do
@@ -787,9 +838,13 @@ EOF
                 fi
                 TITLESET_OPTS=( "${ARGS_ARRAY[@]}" )
                 titleset_cmd=( todisc -titleset-mode -basedir "$REAL_WORK_DIR" \
-                -tset_num $tset $NO_ASK -out $OUT_PREFIX "${TITLESET_OPTS[@]}" )
+                -tset_num ${count}-${tset} $NO_ASK -out $OUT_PREFIX $NO_VMGM $QUICKNAV "${TITLESET_OPTS[@]}" )
+                yecho
+                yecho "Working on the menu for titleset number $tset"
+                yecho
                 yecho "Running: ${titleset_cmd[@]}"
                 "${titleset_cmd[@]}"
+                yecho
                 ;;
         esac
         $DO_SHIFT && shift
@@ -850,8 +905,8 @@ trap 'cleanup; exit 13' TERM INT
 # ***********************************
 # EXECUTION BEGINS HERE
 # ***********************************
-
-yecho $"$SCRIPT_NAME"
+egrep -q 'titleset-mode|switched-mode|menu-only' <<< "$@" && NONAME=:
+! $NONAME && yecho $"$SCRIPT_NAME"
 
 while test $# -gt 0; do
     DO_SHIFT=:
@@ -1034,9 +1089,9 @@ while test $# -gt 0; do
             ;;
         "-intro" )
             shift
+            DO_INTRO=:
             INTRO_CLIP="$(abspath "$1")"
             ! [[ -e "$INTRO_CLIP" ]] && usage_error "$INTRO_CLIP does not exist"
-            INTRO="<vob file=\"$INTRO_CLIP\"/>"
             ;;
         "-showcase" )
             shift
@@ -1307,16 +1362,49 @@ while test $# -gt 0; do
             AUTHOR=false
             TITLESET_MODE=:
             ;;
-        "-menu-only" )
+        "-switched-mode" )
+            # used internally by todisc, do NOT pass as a user option !
+            SWITCHED_MODE=:
+            BUTTON_STYLE=text-rect
+            TEXTMENU=:
+            SC_TITLE_ALIGN=west
+            SHOWCASE=:
+            ;;
+        "-menu-only" ) # internal use only
             VMGM_ONLY=:
             ;;
-        "-basedir" )
+        "-basedir" ) # internal use only
             shift
             BASEDIR="$1"
             ;;
-        "-tset_num" )
+        "-tset_num" ) # internal use only
             shift
-            TSET_NUM="$1"
+            TSET_NUMS="$1"
+            TSET_NUM=${TSET_NUMS/*-}
+            TSET_TOT=${TSET_NUMS/-*}
+            ;;
+        "-menu_num" ) # internal use only
+            shift
+            MENU_NUM="$1"
+            ;;
+        "-quick-nav" )
+            QUICK_NAV=:
+            ;;
+        "-switched-menus" )
+            SWITCHED_MENUS=:
+            BUTTON_STYLE=text-rect
+            TEXTMENU=:
+            SHOWCASE=:
+            SC_TITLE_ALIGN=west
+            ;;
+        "-skip-vmgm" )
+            SKIP_VMGM_MENU=:
+            ;;
+        "-no-vmgm-menu" | "-no-vmgm" )
+            NO_VMGM_MENU=:
+            ;;
+        "-is_titleset" ) #FIXME - this is useless
+            TSET_MODE=:
             ;;
     esac
     $DO_SHIFT && shift
@@ -1350,6 +1438,14 @@ if test -n "$OUT_PREFIX"; then
 else
     usage_error "Please provide an output name with -out"
 fi
+# for dvdauthor.xml, if -intro was used
+$DO_INTRO && INTRO="<vob file=\"$INTRO_CLIP\"/>"
+# don't make submenus on each recursive call in switched mode
+if $SWITCHED_MODE; then
+    ANI_SUB_MENU=false && SUB_MENU=false
+fi
+# -no-vmgm requires -skip-vmgm for now
+$NO_VMGM_MENU && SKIP_VMGM_MENU=:
 # Warn if thumb labels have more than 16 characters
 if ! $SHOWCASE; then
     for ((i=0; i<${#TITLES[@]}; i++)); do
@@ -1376,6 +1472,7 @@ if [ "$BUTTON_STYLE" = "text" ]; then
 fi
 # honour -noask for functions and called scripts that use them
 $NOASK && NO_ASK="-noask"
+$NO_VMGM_MENU && NO_VMGM="-no-vmgm-menu"
 # allow multiline titles in submenu
 if [[ -n "$SM_TITLES" ]]; then
     for i in ${!SM_TITLES[@]}; do
@@ -1435,11 +1532,19 @@ fi
 if $GROUPING && $TITLESET_MODE; then
     find "$WORK_DIR"/  -type l -name \*group\*.mpg -exec cp -Pv {} "$BASEDIR" \;
 fi
+$SWITCHED_MODE && SWITCHED_MENUS=false
+$SWITCHED_MODE && KEEP_FILES=false
+if $SWITCHED_MENUS; then
+    # call todisc recursively, collect intro.mpg, exit
+    switched_menu_mode "${args[@]}"
+fi
 if $DO_TITLESETS; then
     # call todisc recursively, collect parts and author.  Then exit
     titleset_mode "${args[@]}"
     exit
 fi
+# set some vars for the last run of switched menus (non-recursive )
+$SWITCHED_MENUS && SHOWCASE_FILE="${FILES[0]}"
 
 # double check sox is installed, as the consequence of not having it is ugly
 confirm_dep sox "http://sox.sourceforge.net/"
@@ -1455,10 +1560,12 @@ fi
 
 # Clean out any existing WORK_DIR
 # link WORK_DIR to /tmp for easy solution to spaces, illegal chars bugs
-! $GROUPING && mk_workdir
+! $GROUPING && ! $SWITCHED_MENUS && mk_workdir
 
 # Remove any existing log file
-test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
+if ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $VMGM_ONLY && ! $DO_TITLESETS; then
+    test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
+fi
 # check file type of background file and assign to BG_VIDEO or BG_IMAGE
 if [[ -n $BACKGROUND ]]; then
     check_filetype "$BACKGROUND"
@@ -2036,12 +2143,8 @@ if [[ -n "$V_ASPECT" ]] &&  ! $WIDE_SCREEN; then
     TITLES_VIDEO_TAG="<video $V_ASPECT/>"
 fi
 START="00:00:00.0"
-if $PLAYALL; then
-    TITLESET_PRE="g4=0;"
-fi
-if $ITLESET_MODE; then
-    TITLESET_PRE="$TITLESET_PRE g2=1;"
-fi
+$PLAYALL && TITLESET_PRE="g4=0;"
+$ITLESET_MODE && TITLESET_PRE="$TITLESET_PRE g2=1;"
 
 if $AUDIOLANG; then
     # if only one -audio-lang value, then use for all videos
@@ -2056,7 +2159,6 @@ if $AUDIOLANG; then
         VOB_PRE[i]="        <pre> ${AUDIO_PRE[i]} </pre>"
     done
 fi
-($PLAYALL || $TITLESET_MODE) && MAIN_PRE="        <pre> $TITLESET_PRE  </pre>"
 
 MAIN_POST="        <post> jump cell 1; </post>"
 if $MENU_FADE; then
@@ -2343,7 +2445,7 @@ fi
 # button to jump back to the vmgm here instead, and put the playall on vmgm page
 $TITLESET_MODE && SE_BTNTEXT="Main" || SE_BTNTEXT="Play All"
 SE_BTN="$WORK_DIR/SE_BTN.png"
-if $TITLESET_MODE || $PLAYALL; then
+if ($TITLESET_MODE && ! $NO_VMGM_MENU) || $PLAYALL; then
     BTN_CMD=(convert -size 100x100 xc:none \
    -font "$MENU_FONT" -pointsize 20 \
     -fill black -stroke black -gravity center  \
@@ -2496,12 +2598,12 @@ if ! $TEXTMENU; then
     for ((i=0; i<=NUM_FILES; i++)) ; do
         # use a nav_seek file if long seek
         if [ ${SEEK_VAL[i]%.*} -gt 450 ]; then
-            NAVSEEK[i]="--nav_seek "$WORK_DIR/nav${i}_log""
+            NAVSEEK[i]="--nav_seek "${IN_FILES[i]}".nav_log"
             NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
             run_navseek()
             {
-                yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
-               "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "$WORK_DIR/nav${i}_log"
+                yecho "Running "${NAVSEEK_CMD[@]}" > "${IN_FILES[i]}".nav_log"
+               "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "${IN_FILES[i]}".nav_log
             }
 
             run_navseek &
@@ -2512,7 +2614,7 @@ if ! $TEXTMENU; then
                     spin "Creating a nav_seek log for "${IN_FILES[i]}": $SPINNER"
                 done
             fi
-            length=( ${length[@]} $(( $(awk  '{ field = $2 }; END{ print field }'  "$WORK_DIR/nav${i}_log") + 1)) )
+            length=( ${length[@]} $(( $(awk  '{ field = $2 }; END{ print field }'  "${IN_FILES[i]}".nav_log) + 1)) )
         fi
 #        if ! $NOASK; then
             echo
@@ -2575,7 +2677,7 @@ if $SHOWCASE; then
     -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
     -composite "$WORK_DIR/pics/template.png"
 fi
-if $PLAYALL || $TITLESET_MODE; then
+if $PLAYALL || ($TITLESET_MODE && ! $NO_VMGM_MENU) ; then
     convert "$WORK_DIR/pics/template.png" "$SE_BTN" \
     -gravity SouthEast -geometry +55+55 -composite "$WORK_DIR/pics/template.png"
     convert "$WORK_DIR/pics/template.png" "$SE_BTN" \
@@ -2693,7 +2795,7 @@ EOF
     done
 fi
 # command constructions for -button-style options
-if $PLAYALL || $TITLESET_MODE; then
+if $PLAYALL ||  ($TITLESET_MODE && ! $NO_VMGM_MENU); then
     for BUTTON in "$SELECT_COLOUR" "$HIGHLIGHT_COLOUR"; do
         convert -size 100x100 xc:none -font "$MENU_FONT" -pointsize 20 \
         -fill "$BUTTON" -stroke none -gravity center \
@@ -2870,7 +2972,7 @@ elif [[ "$BUTTON_STYLE" = *text* ]]; then
         -composite "$WORK_DIR/fake_montage.png"
     fi
 fi
-if $PLAYALL || $TITLESET_MODE; then
+if $PLAYALL ||  ($TITLESET_MODE && ! $NO_VMGM_MENU); then
     convert -gravity SouthEast -geometry +55+55 "$WORK_DIR/Select.png" \
     $WORK_DIR/${HIGHLIGHT_COLOUR/\#}_se_button.png -composite "$WORK_DIR/Select.png"
     convert -gravity SouthEast -geometry +55+55 "$WORK_DIR/Highlight.png" \
@@ -3018,7 +3120,7 @@ fi
 # make the fake montage with highlighted 1st button and display it
 composite -compose Over "$WORK_DIR/fake_montage.png" "$WORK_DIR/preview.jpg" \
 "$WORK_DIR/preview.jpg"
-if ($PLAYALL || $TITLESET_MODE) && ! $VMGM_ONLY; then
+if ($PLAYALL || ($TITLESET_MODE && ! $NO_VMGM_MENU) ) && ! $VMGM_ONLY; then
 convert -gravity SouthEast -geometry +55+55 "$WORK_DIR/preview.jpg" \
 "$SE_BTN" -composite "$WORK_DIR/preview.jpg"
 fi
@@ -3060,8 +3162,10 @@ if ! $NOASK; then
 fi
 
 # Check input files for compliance; offer to tovid-encode non-compliant files
-! $VMGM_ONLY && check_compliance
-check_compliance group
+if ! $VMGM_ONLY && [[ $MENU_NUM -eq 1 ]]; then
+    check_compliance
+    $GROUPING && check_compliance group
+fi
 # check bgvideo and showcase VIDEO for compliance ( if present )
 tovid_reencode()
 {
@@ -3097,23 +3201,24 @@ elif [[ -n $SHOWCASE_VIDEO ]]  && ! idvid -isformat dvd "$SHOWCASE_VIDEO" >/dev/
     tovid_reencode "$SHOWCASE_VIDEO" $SHOWCASE_SEEK_VAL && SHOWCASE_VIDEO="$SHOWCASE_VIDEO.enc.mpg"
 fi
 # symlink IN_FILES in $WORK_DIR to solve some quoting issues for dvdauthor
-
-for i in ${!IN_FILES[@]}; do
-    (cd "$REAL_WORK_DIR" &&  ln -sv "${IN_FILES[i]}" $BASEDIR/${TSET_NUM}-$((i+1)).mpg)
-done
-
+if [[ $MENU_NUM -eq 1 ]]; then
+    for i in ${!IN_FILES[@]}; do
+        (cd "$REAL_WORK_DIR" &&  ln -sv "${IN_FILES[i]}" $BASEDIR/${TSET_NUM}-$((i+1)).mpg)
+    done
+fi
 # Store info about input files in an array
 for ((i=0; i<${#IN_FILES[@]}; i++)); do
     # use a nav_seek file and transcode if long seek
-    if [ ${SEEK_VAL[i]%.*} -gt 450 ] || $SUB_MENU; then
+    if [ ${SEEK_VAL[i]%.*} -gt 450 ] || $SUB_MENU || $SWITCHED_MODE; then
         STATS_FRAMES="-frames 1"
-        if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
-            NAVSEEK[i]="--nav_seek "$WORK_DIR/nav${i}_log""
+        if [ ! -e  "${IN_FILES[i]}".nav_log ]; then
+#            NAVSEEK[i]="--nav_seek "$BASEDIR/${TSET_NUM}-nav${i}_log""
+            NAVSEEK[i]="--nav_seek "${IN_FILES[i]}".nav_log"
             NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
             run_navseek()
             {
-                yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
-                "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "$WORK_DIR/nav${i}_log"
+                yecho "Running "${NAVSEEK_CMD[@]}" > "${IN_FILES[i]}".nav_log"
+                "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" >  "${IN_FILES[i]}".nav_log
             }
 
             run_navseek &
@@ -3124,18 +3229,20 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
                     spin "Creating a nav_seek log for "${IN_FILES[i]/*\/}": $SPINNER"
                 done
             fi
-            length=( ${length[@]} $(( $(awk '{ field = $2 }; END{ print field }' \
-            "$WORK_DIR/nav${i}_log") + 1)) )
         fi
     fi
-    echo
-    echo "Getting stats on "${IN_FILES[i]}""
-    mencoder_stats=("${mencoder_stats[@]}" \
-    "$(mencoder -quiet "${IN_FILES[i]}" -oac pcm -ovc copy \
-    $STATS_FRAMES -o /dev/null 2>&1)")
-    unset NAVSEEK_CMD
+    length=( ${length[@]} $(( $(awk '{ field = $2 }; END{ print field }' \
+        "${IN_FILES[i]}".nav_log) + 1)) )
+    [[ $MENU_NUM -eq 1 ]] && echo
+    if [[ $MENU_NUM -eq 1 ]]; then
+        echo "Getting stats on "${IN_FILES[i]}""
+        mencoder_stats=("${mencoder_stats[@]}" \
+        "$(mencoder -quiet "${IN_FILES[i]}" -oac pcm -ovc copy \
+        $STATS_FRAMES -o /dev/null 2>&1)")
+        unset NAVSEEK_CMD
+    fi
 done
-if $GROUPING; then
+if $GROUPING &&  [[ $MENU_NUM -eq 1 ]]; then
     echo
     echo ". . . Getting stats on grouped files now . . ."
     echo
@@ -3149,14 +3256,14 @@ if $GROUPING; then
 fi
 
 # put in the log file in case anyone is interested
-! $VMGM_ONLY && get_stats files
-echo
-! $VMGM_ONLY && $GROUPING && get_stats group
-echo
-echo $SEPARATOR
+if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]]; then get_stats files; echo; fi
+if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]] && $GROUPING; then
+    get_stats group
+    echo; echo $SEPARATOR
+fi
 
 for ((i=0; i<${#mencoder_stats[@]}; i++)); do
-    if [ -e "$WORK_DIR/nav${i}_log" ]; then
+    if [ -e "${IN_FILES[i]}".nav_log ]; then
         VID_LEN=( ${VID_LEN[@]}  $(awk_math ${length[i]} by $FRAME_RATE float) )
     else
         VID_LEN=( ${VID_LEN[@]}  "$(awk '/Video stream:/{print $10}' \
@@ -3365,7 +3472,7 @@ EOF
     fi
 done
 # debug chapters
-if ! $VMGM_ONLY; then
+if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]]; then
     echo
     for ((i=0; i<=NUM_FILES; i++)); do
         echo -e "Chapters for "${IN_FILES[i]}" are: \n"${CHAPT_ARRAY[i]}"\n"
@@ -3380,21 +3487,69 @@ if [[ "$BUTTON_STYLE" = "text" && -z "$OUTLINEWIDTH" ]]; then
 else
     [[ -z "$OUTLINEWIDTH" ]] && OUTLINEWIDTH="\"6\""
 fi
-
+if $PLAYALL ||  ($TITLESET_MODE && ! $NO_VMGM_MENU) || ($TSET_MODE && ! $NO_VMGM_MENU); then
+    NUM_BUTTONS=$(( ${#FILES[@]} + 1 ))
+else
+    NUM_BUTTONS=${#FILES[@]}
+fi
+($SWITCHED_MODE || $SWITCHED_MENUS) && SPUMUX_XML="$BASEDIR/spumux.xml"
 (
     cat <<EOF
 <subpictures>
    <stream>
      <spu force="yes" start="$START"$END
-          highlight="$WORK_DIR/Highlight.png"
-          select="$WORK_DIR/Select.png"
-          autooutline="infer"
-          outlinewidth=$OUTLINEWIDTH
-          autoorder="$AUTOORDER"/>
+       highlight="$WORK_DIR/Highlight.png"
+       select="$WORK_DIR/Select.png"
+       autooutline="infer"
+       outlinewidth=$OUTLINEWIDTH
+       autoorder="$AUTOORDER">
+$(if $QUICK_NAV; then
+    if $SWITCHED_MENUS; then
+        down="down=\"ActionDown\"" && up="up=\"ActionUp\"" &&  lastup="up=\"ActionDown\""
+        right="right=\"ActionDown\"" && left="left=\"ActionUp\""
+    fi
+    for ((i=1; i<=$NUM_BUTTONS; i++)); do
+        ! $SWITCHED_MENUS && right="right=\"$((i+1))\"" && left="left=\"$((i-1))\""
+        if [[ $i -eq 1 ]]; then
+            echo -n "       <button name=\"$i\" $down $up"
+        elif [[ $i -eq ${#FILES[@]} ]]; then
+            if $TITLESET_MODE || $PLAYALL; then
+                echo -n "       <button name=\"$i\" $up"
+            else
+                echo -n "       <button name=\"$i\" $down $up"
+            fi
+        else
+            [[ $i -ne $(( ${#FILES[@]} + 1)) ]] && \
+            echo -e "       <button name=\"$i\" $left $right $down $up/>"
+        fi
+        [[ $i -eq 1 ]] && echo -e " left=\"ActionLeft\" $right/>"
+        if [[ $i -eq ${#FILES[@]} ]]; then
+            echo -e " right=\"ActionRight\" $left/>"
+            echo -e "       <action name=\"ActionLeft\"/>"
+            echo -e "       <action name=\"ActionRight\"/>"
+            if $SWITCHED_MENUS; then
+                echo -e "       <action name=\"ActionDown\"/>"
+                echo -e "       <action name=\"ActionUp\"/>"
+            fi
+        fi
+        if [[ $i -eq $(( ${#FILES[@]} + 1 )) ]]; then
+            echo -e "       <button name=\"$i\" $down $lastup/>"
+        fi
+    done
+fi)   
+$(if $SWITCHED_MENUS && ! $QUICK_NAV; then
+    updown="down=\"ActionDown\" up=\"ActionUp\""
+    for ((i=1; i<=$NUM_BUTTONS; i++)); do
+        echo -e "       <button name=\"$i\" $updown/>"
+    done
+    echo -e "       <action name=\"ActionDown\"/>"
+    echo -e "       <action name=\"ActionUp\"/>"
+fi)
+     </spu>
    </stream>
- </subpictures>
+</subpictures>
 EOF
-)  > "$SPUMUX_XML"
+) |sed '/^ *$/d'  > "$SPUMUX_XML"
 
 if $SUB_MENU; then
     JUMP=menu
@@ -3410,11 +3565,14 @@ else
 fi
 if [ "$TARGET" = "dvd" ]; then
 # make dvdauthor.xml
+# g1 register: switched menus, g2: vmgm intro, g3: -quick-nav, g4: playall
 
 # TSET_NUM supplied by the calling todisc script and is the current titleset #
-MENU_FILE="$BASEDIR/animenu${TSET_NUM}.mpg"
+MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${MENU_NUM}.mpg"
 $VMGM_ONLY && MENU_FILE="$BASEDIR/VMGM.mpg"
-
+$SWITCHED_MODE && ! $VMGM_ONLY && MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${MENU_NUM}.mpg"
+$SWITCHED_MENUS && VMGM_PRE="<pre>$VMGM_PRE g1=1;</pre>"
+$SWITCHED_MENUS && NUM_MENUS=${#FILES[@]} || NUM_MENUS=1
 ! $AUTHOR && DVDAUTHOR_XML="$BASEDIR/dvdauthor.xml"
 (
     cat <<EOF
@@ -3422,6 +3580,7 @@ $(if $AUTHOR ; then
     echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
     echo -e "<dvdauthor dest=\"$OUT_DIR\" jumppad=\"0\">"
     echo -e "  <vmgm>\n    <menus>\n      <pgc entry=\"title\" pause=\"0\">"
+    echo -e "        $VMGM_PRE"
     echo -e "        $INTRO"
     echo -e "        <vob file=\"$REAL_WORK_DIR/dummy.mpg\"/>"
     echo -e "        <post>jump titleset 1 menu;</post>"
@@ -3429,24 +3588,49 @@ $(if $AUTHOR ; then
 fi)
   <titleset>
     <menus>
-      <pgc>
-$(for ((i=1; i<=$V_TOTAL; i++)); do
-    if $SUB_MENU; then
-        JUMP_INC=$((i + 1))
-    else
-        JUMP_INC=$i
+$(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
+    echo -e "      <pgc>"
+    for ((i=1; i<=$V_TOTAL; i++)); do
+        if $SUB_MENU; then
+            JUMP_INC=$((i + NUM_MENUS))
+        else
+            JUMP_INC=$i
+        fi
+        echo -e "        <button name=\"$i\">jump $JUMP $JUMP_INC;</button>"
+    done
+    if $QUICK_NAV; then
+        [[ $TSET_NUM -eq 1 ]] && PREV=$TSET_TOT || PREV=$(( TSET_NUM - 1 ))
+        [[ $TSET_NUM -eq $TSET_TOT ]] && NEXT=1 || NEXT=$(( TSET_NUM + 1))
+        echo -e "        <button name=\"ActionLeft\"> {g3=$PREV; button=1024; jump vmgm menu entry title;}</button>"
+        echo -e "        <button name=\"ActionRight\"> {g3=$NEXT; button=1024; jump vmgm menu entry title;}</button>"
     fi
-    echo -e "        <button name=\"$i\">jump $JUMP $JUMP_INC;</button>"
+    if $SWITCHED_MENUS; then
+        if [[ $menu_num -eq $NUM_MENUS ]]; then
+            inc=1
+        else
+            inc=$((menu_num+1))
+        fi
+        [[ $menu_num -eq 1 ]] && dec=$NUM_MENUS || dec=$((menu_num - 1))
+        echo -e "        <button name=\"ActionUp\">{ g1 = $dec; jump menu $dec; }</button>"
+        echo -e "        <button name=\"ActionDown\">{ g1 = $inc; jump menu $inc; }</button>"
+    fi
+    if  $TITLESET_MODE && ! $NO_VMGM_MENU; then
+        echo -e "        <button name=\"$((V_TOTAL + 1))\">g2=1; g3=1000; button=1024; jump vmgm menu;</button>"
+    else
+        $PLAYALL && echo -e "        <button name=\"$((V_TOTAL + 1))\">g4=1; jump title 1 chapter 1;</button>"
+    fi
+    echo -e "        <vob file=\"$BASEDIR/animenu${TSET_NUM}-${menu_num}.mpg\" pause=\"$VMGM_PAUSE_TIME\"/>"
+    if $SWITCHED_MENUS; then
+        if [[ $menu_num -eq 1 ]]; then
+            echo -e "        <pre> { if (g1 ne 1) {jump menu 2;} button = g1 * 1024; } </pre>"
+        else
+            echo -e "        <pre> { button = g1 * 1024;} </pre>"
+        fi
+    fi    
+    echo -e "$MAIN_PRE"
+    echo -e "$MAIN_POST"
+    echo -e "      </pgc>"
 done)
-$(if $TITLESET_MODE; then
-      echo -e "        <button name=\"$((V_TOTAL + 1))\">g2=1; jump vmgm menu;</button>"
-  else
-      $PLAYALL && echo -e "        <button name=\"$((V_TOTAL + 1))\">g4=1; jump title 1 chapter 1;</button>"
-  fi)
-        <vob file="$MENU_FILE" pause="$VMGM_PAUSE_TIME"/>
-$MAIN_PRE
-$MAIN_POST
-      </pgc>
 $(if $SUB_MENU; then
     echo -ne "      <pgc>\n"
         for ((Y=1; Y<=$V_TOTAL; Y++)); do
@@ -3521,7 +3705,7 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
 done)
     </titles>
   </titleset>
-$(if $AUTHOR ; then
+$(if $AUTHOR; then
 echo -e "</dvdauthor>"
 fi)
 EOF
@@ -3534,37 +3718,40 @@ fi
 ##############################################################################
 
 # make dummy VMGM mpeg
-yecho "Creating a blank mpeg for the vmgm menu"
-convert  -resize $VIDSIZE! xc:"#161514" "$WORK_DIR/dummy.jpg"
-ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p -n 1 -l 30 -L 1 -b1 \
--j "$WORK_DIR/dummy.jpg")
-ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
--tvstd $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
-if ${ENC_CMD1[@]} | ${ENC_CMD2[@]}  >> "$LOG_FILE.tmp" 2>&1; then
-    cleanlog 3
-else
-    cleanlog 3
-    runtime_error
-fi
-TIME=$(vid_length "$WORK_DIR/dummy.m2v")
-BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
-$AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
-if "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then #run command
-    cleanlog 3
-else
-    cleanlog 3
-    runtime_error
-fi
+if ! $TITLESET_MODE && ! $DO_TITLESETS; then
+    yecho "Creating a blank mpeg for the vmgm menu"
+    convert  -resize $VIDSIZE! xc:"#161514" "$WORK_DIR/dummy.jpg"
+    ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p -n 1 -l 30 -L 1 -b1 \
+    -j "$WORK_DIR/dummy.jpg")
+    ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
+    -tvstd $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
+    if ${ENC_CMD1[@]} | ${ENC_CMD2[@]}  >> "$LOG_FILE.tmp" 2>&1; then
+        cleanlog 3
+    else
+        cleanlog 3
+        runtime_error
+    fi
+    TIME=$(vid_length "$WORK_DIR/dummy.m2v")
+    BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
+    $AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
+    if "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then #run command
+        cleanlog 3
+    else
+        cleanlog 3
+        runtime_error
+    fi
 
-MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -o  "$WORK_DIR/dummy.mpg" \
- "$WORK_DIR/dummy.$AUDIO_EXT"  "$WORK_DIR/dummy.m2v")
-echo "Running: "${MPLEX_CMD[@]}"" >> "$LOG_FILE.tmp"
-cleanlog 1
-if "${MPLEX_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then
+    MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -o  "$BASEDIR/dummy.mpg" \
+     "$WORK_DIR/dummy.$AUDIO_EXT"  "$WORK_DIR/dummy.m2v")
+    echo "Running: "${MPLEX_CMD[@]}"" >> "$LOG_FILE.tmp"
     cleanlog 1
-else
-    cleanlog 1
-    runtime_error
+    if "${MPLEX_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then
+        cleanlog 1
+    else
+        cleanlog 1
+        runtime_error
+    fi
+#    $VMGM_ONLY && $SKIP_VMGM && mv "$BASEDIR/dummy.mpg" "$BASEDIR/VMGM.mpg"
 fi
 
 # do submenu 1st for debug purposes
@@ -3629,11 +3816,11 @@ if $SUB_MENU; then
         unset cmd[key]
         # create a nav_seek log with tcdemux if not already present
         NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
-        if [ ! -e "$WORK_DIR/nav${i}_log" ]; then
-            yecho "Running "${NAVSEEK_CMD[@]}" > "$WORK_DIR/nav${i}_log""
-            "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "$WORK_DIR/nav${i}_log"
+        if [ ! -e "${IN_FILES[i]}".nav_log ]; then
+            yecho "Running "${NAVSEEK_CMD[@]}" > "${IN_FILES[i]}".nav_log"
+            "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "${IN_FILES[i]}".nav_log
         fi
-        NAVSEEK[i]="--nav_seek "$WORK_DIR/nav${i}_log""
+        NAVSEEK[i]="--nav_seek "${IN_FILES[i]}".nav_log"
         yecho
         yecho "Creating $TOTAL_JPEGS chapter images for "${IN_FILES[i]}""
         yecho
@@ -4006,8 +4193,8 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && ! $NO_SC_THUMB; then
     next_pic=$(($last_pic + 1))
     if [ $last_pic -lt $MAX_ANI_LENGTH ] && ! $STATIC; then
         for ((l=next_pic; l<=MAX_ANI_LENGTH; l++)); do
-            cp $WORK_DIR/showcase/$( printf %06d $last_pic).$IMG_FMT \
-            $WORK_DIR/showcase/$(printf %06d $l).$IMG_FMT
+            cp $WORK_DIR/showcase/$( printf %06d $last_pic).png \
+            $WORK_DIR/showcase/$(printf %06d $l).png
         done
     fi
 
@@ -4534,7 +4721,29 @@ else
 fi
 
 yecho
-if [[ $TARGET != svcd ]]; then
+if $SWITCHED_MODE || $SWITCHED_MENUS; then
+    yecho "Copying the menu mpeg"
+    if [[ $MENU_NUM -ne 1 ]]; then
+        cp -v $REAL_WORK_DIR/intro.mpg $BASEDIR/${TSET_NUM}-${MENU_NUM}intro.mpg
+    else
+        cp -v  $REAL_WORK_DIR/intro.mpg  $REAL_WORK_DIR/${TSET_NUM}-${MENU_NUM}intro.mpg
+    fi
+    sleep 2
+    if $SWITCHED_MODE; then
+        ( KEEP_FILES=false && cleanup )
+        exit
+    fi
+fi
+# FIXME no need for both the next 2 blocks running spumux
+# "for intro in" should cover it if only one intro file for the TSET
+if $SWITCHED_MENUS && [[ $TARGET != svcd ]]; then
+    for ((i=1; i<=${#FILES[@]}; i++)); do
+        yecho "Running spumux "$SPUMUX_XML" < "$REAL_WORK_DIR/${TSET_NUM}-${i}intro.mpg" > "$BASEDIR/animenu${TSET_NUM}-${i}.mpg""
+        sleep 5 #FIXME
+        spumux "$SPUMUX_XML" < "$WORK_DIR/${TSET_NUM}-${i}intro.mpg" > "$BASEDIR/animenu${TSET_NUM}-${i}.mpg"
+    done
+fi
+if [[ $TARGET != svcd ]] && ! $SWITCHED_MENUS && ! $SWITCHED_MODE; then
     yecho "Running spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE""
     spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE" 2>> "$LOG_FILE"
     yecho
@@ -4556,7 +4765,7 @@ if $SUB_MENU; then
         $(sed 's/\(.*\)menu/\1Menu/' <<< $BASEDIR/${TSET_NUM}-menu${x}.mpg) 2>> "$LOG_FILE"
     done
 fi
-if [ "$TARGET" = dvd ] && $AUTHOR && ! $VMGM_ONLY && ! $DO_TITLESETS; then
+if [ "$TARGET" = dvd ] && $AUTHOR && ! $VMGM_ONLY && ! $DO_TITLESETS && ! $SWITCHED_MODE; then
     echo "Running dvdauthor to create the DVD filesystem"
     dvdauthor -x "$DVDAUTHOR_XML" 2>&1 | tee -a "$LOG_FILE"
     if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
