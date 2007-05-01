@@ -170,7 +170,7 @@ function get_info ()
     fi
 
     # Defaults. Many of these values may be overridden by
-    # mplayer's output in the 'eval' statement to follow
+    # vars from mplayer's output to be sourced later.
     ID_VIDEO_ID=""
     ID_AUDIO_ID=""
     ID_VIDEO_WIDTH="0"
@@ -196,12 +196,16 @@ function get_info ()
     unset A_TRACKS
     unset wavs
 
-    # Evaluate mplayer's output to set relevant variables.
+    # send formated mplayer's output to a vars file to be sourced to set relevant variables.
     # (ID_V(ideo), ID_A(udio), and ID_L(ength))
     # Grep out special characters ()[
-    eval $(cat "$SCRATCH_FILE" | grep "^ID_[VAL]" | grep -v "[()\[]" | sed 's/$/"/' | sed 's/=/="/')
+    # # put the VARS in a file 
+    grep "^ID_[VAL]" < "$SCRATCH_FILE"   | grep -v "[()\[]" | sed 's/$/"/;s/=/="/' > "$SCRATCH_FILE".vars
+    # source the file to set the variables
+    . "$SCRATCH_FILE".vars
     # (If you've got a problem with eval, give me an alternative that
     # works as well and is as readable :-)
+    # DONE :)
 
     ID_VIDEO_FRAMES=$(grep 'length:' "$SCRATCH_FILE" | \
         awk -F ' ' '{print $2}')
@@ -297,18 +301,14 @@ function get_info ()
     # If doing -fast identification, skip "accurate" length determination
     if  [[ -s "$INFILE".nav_log ]]; then # use existing, if non empty   
         if  [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
-            if ! $TERSE; then
-                echo "Using ${INFILE}.nav_log"
-                echo "If you don't want to use this file please delete it"
-                echo "(It is very useful for speeding up makemenu and todisc though)"
-            fi
+            ! $TERSE && echo "Using ${INFILE}.nav_log"
             USE_MENCODER=false
             USE_NAVLOG=:
         fi
     # check if tcdemux installed, and if extension is mpg (use mencoder for vob)
     elif [[ ${INFILE##*.} =~ [MmPpGg] ]] && hash tcdemux 2>/dev/null; then
         if ! $FAST; then # only run this long process if $FAST is set to false
-            if [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then # do not run if no fps parsed
+            if [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then # only run if fps parsed
                 NAVSEEK_CMD=(nice tcdemux  -f $ID_VIDEO_FPS -W -i "$INFILE")
                 "${NAVSEEK_CMD[@]}"  >  "$INFILE".nav_log 2>/dev/null
                 if [[ -s  "$INFILE".nav_log ]]; then # if non empty lets use it
@@ -318,7 +318,7 @@ function get_info ()
                      rm -f "$INFILE".nav_log
                 fi
             fi
-        else
+        else # -fast passed to idvid
             USE_MENCODER=false  # do not run mencoder either if $FAST is set to false
         fi
     fi
