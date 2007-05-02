@@ -1,0 +1,43 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 04_multiple-installations-silence.dpatch by  <friedrij@localhost>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: No description.
+
+@DPATCH@
+diff -urNad tovid-0.30~/src/tovid-init.in tovid-0.30/src/tovid-init.in
+--- tovid-0.30~/src/tovid-init.in	2007-04-16 19:16:18.000000000 -0600
++++ tovid-0.30/src/tovid-init.in	2007-04-16 19:16:59.000000000 -0600
+@@ -386,32 +386,6 @@
+ 
+ 
+ # ******************************************************************************
+-# Find multiple version kludge
+-# ******************************************************************************
+-INSTALLED_TOVIDS=$(type -a tovid 2>>/dev/null | awk '{print $NF}' | tr '\n' ' ')
+-NUM_INSTALLED=0
+-
+-# Only count non-links
+-for tovid in $INSTALLED_TOVIDS; do
+-    if ! test -L $tovid; then
+-        let "NUM_INSTALLED=NUM_INSTALLED+1"
+-    fi
+-done
+-
+-# Exit when there is more than one tovid installed
+-if test $NUM_INSTALLED -ne 1; then
+-    echo "Found $NUM_INSTALLED installations of tovid on your system!"
+-    echo "I won't run until there is only one of me :)"
+-    echo "Installed versions:"
+-    for version in $INSTALLED_TOVIDS; do
+-        echo "   $version"
+-    done
+-    echo "Exiting..."
+-    exit 1
+-fi
+-
+-
+-# ******************************************************************************
+ # tovid home setup
+ # ******************************************************************************
+ 
