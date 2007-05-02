@@ -768,7 +768,7 @@ function titleset_mode()
     else
         VMGM_PAUSE_TIME=$PAUSE_TIME
     fi
-    DVDAUTHOR_XML=$BASEDIR/dvdauthor.xml
+    DVDAUTHOR_XML="$BASEDIR/dvdauthor.xml"
     VMGM_PRE="<pre>"
     $DO_INTRO && VMGM_PRE="    $VMGM_PRE if (g2==1) jump cell 2;"
     grep -q -- -switched-menus <<< "${args[@]}" && VMGM_PRE="    $VMGM_PRE g1=1;"
@@ -817,7 +817,7 @@ EOF
     -menu-only -textmenu "${VMGM_OPTS[@]}")
 #    vmgm_menu_cmd=(makemenu "${MENU_TITLE[@]}" -out VMGM -button play  -align middle $NO_ASK $VMGM_MENU_OPTS)
     yecho "Running: ${vmgm_menu_cmd[@]}"
-    INITIALDIR=$BASEDIR
+    INITIALDIR="$BASEDIR"
     "${vmgm_menu_cmd[@]}"
    # TODO move to function so its not duplicated here and in main parser, generalize for -vmgm too 
     while test $# -gt 0; do
@@ -1098,7 +1098,7 @@ while test $# -gt 0; do
             get_listargs "$@"
             unset f
             for f in  ${!ARGS_ARRAY[@]}; do
-                SHOWCASE_FILE[f]="$(abspath ${ARGS_ARRAY[f]})"
+                SHOWCASE_FILE[f]="$(abspath "${ARGS_ARRAY[f]}")"
             done
             SHOWCASE=:
             IMG_FMT=png
@@ -1430,7 +1430,7 @@ if [[ -n "$SM_TITLES" ]]; then
 fi
 # titlesets use BASEDIR which is the WORK_DIR of the calling todisc
 # BASEDIR is supplied by the calling todisc with -basedir
-: ${BASEDIR:=$REAL_WORK_DIR}
+: ${BASEDIR:="$REAL_WORK_DIR"}
 # Make sure -out was provided
 if test -n "$OUT_PREFIX"; then
     OUT_DIR="$(abspath "$OUT_PREFIX")"
@@ -3203,7 +3203,7 @@ fi
 # symlink IN_FILES in $WORK_DIR to solve some quoting issues for dvdauthor
 if [[ $MENU_NUM -eq 1 ]]; then
     for i in ${!IN_FILES[@]}; do
-        (cd "$REAL_WORK_DIR" &&  ln -sv "${IN_FILES[i]}" $BASEDIR/${TSET_NUM}-$((i+1)).mpg)
+        (cd "$REAL_WORK_DIR" &&  ln -sv "${IN_FILES[i]}" "$BASEDIR/${TSET_NUM}-$((i+1)).mpg")
     done
 fi
 # Store info about input files in an array
@@ -4724,9 +4724,9 @@ yecho
 if $SWITCHED_MODE || $SWITCHED_MENUS; then
     yecho "Copying the menu mpeg"
     if [[ $MENU_NUM -ne 1 ]]; then
-        cp -v $REAL_WORK_DIR/intro.mpg $BASEDIR/${TSET_NUM}-${MENU_NUM}intro.mpg
+        cp -v "$REAL_WORK_DIR/intro.mpg" "$BASEDIR/${TSET_NUM}-${MENU_NUM}intro.mpg"
     else
-        cp -v  $REAL_WORK_DIR/intro.mpg  $REAL_WORK_DIR/${TSET_NUM}-${MENU_NUM}intro.mpg
+        cp -v  "$REAL_WORK_DIR/intro.mpg"  "$REAL_WORK_DIR/${TSET_NUM}-${MENU_NUM}intro.mpg"
     fi
     sleep 2
     if $SWITCHED_MODE; then
