@@ -744,7 +744,7 @@ function switched_menu_mode()
         yecho "Working on switched menu $((i+1))"
         yecho
         yecho "Running todisc "$@" -switched-mode $IS_TITLESET -basedir "$BASEDIR"  -menu_num $((i+1)) -showcase "${FILES[i]}""
-        todisc "$@" -switched-mode $IS_TITLESET -basedir "$REAL_WORK_DIR" -menu_num $((i+1)) -showcase "${FILES[i]}"
+        todisc "$@" -switched-mode $IS_TITLESET -basedir "$WORK_DIR" -menu_num $((i+1)) -showcase "${FILES[i]}"
     done
 #    exit
 }
@@ -770,9 +770,9 @@ function titleset_mode()
     fi
     DVDAUTHOR_XML="$BASEDIR/dvdauthor.xml"
     VMGM_PRE="<pre>"
-    $DO_INTRO && VMGM_PRE="    $VMGM_PRE if (g2==1) jump cell 2;"
-    grep -q -- -switched-menus <<< "${args[@]}" && VMGM_PRE="    $VMGM_PRE g1=1;"
-    $SKIP_VMGM_MENU && VMGM_PRE="    $VMGM_PRE  if ( g3 eq 0 )  { g3 = 1 ; }"
+    $DO_INTRO && VMGM_PRE="        $VMGM_PRE if (g2==1) jump cell 2;"
+    grep -q -- -switched-menus <<< "${args[@]}" && VMGM_PRE="        $VMGM_PRE g1=1;"
+    $SKIP_VMGM_MENU && VMGM_PRE="        $VMGM_PRE  if ( g3 eq 0 )  { g3 = 1 ; }"
 #    $SWITCHED_MODE && VMGM_PRE="$VMGM_PRE g1=1;"
     # make dvdauthor.xml
 (
@@ -813,7 +813,7 @@ EOF
     fi
     yecho
     yecho "Making a VMGM menu with the following command:"
-    vmgm_menu_cmd=(todisc -out $OUT_PREFIX $QUICKNAV $NO_ASK -basedir "$REAL_WORK_DIR" \
+    vmgm_menu_cmd=(todisc -out $OUT_PREFIX $QUICKNAV $NO_ASK -basedir "$WORK_DIR" \
     -menu-only -textmenu "${VMGM_OPTS[@]}")
 #    vmgm_menu_cmd=(makemenu "${MENU_TITLE[@]}" -out VMGM -button play  -align middle $NO_ASK $VMGM_MENU_OPTS)
     yecho "Running: ${vmgm_menu_cmd[@]}"
@@ -837,7 +837,7 @@ EOF
                     DO_SHIFT=false
                 fi
                 TITLESET_OPTS=( "${ARGS_ARRAY[@]}" )
-                titleset_cmd=( todisc -titleset-mode -basedir "$REAL_WORK_DIR" \
+                titleset_cmd=( todisc -titleset-mode -basedir "$WORK_DIR" \
                 -tset_num ${count}-${tset} $NO_ASK -out $OUT_PREFIX $NO_VMGM $QUICKNAV "${TITLESET_OPTS[@]}" )
                 yecho
                 yecho "Working on the menu for titleset number $tset"
@@ -1430,11 +1430,15 @@ if [[ -n "$SM_TITLES" ]]; then
 fi
 # titlesets use BASEDIR which is the WORK_DIR of the calling todisc
 # BASEDIR is supplied by the calling todisc with -basedir
-: ${BASEDIR:="$REAL_WORK_DIR"}
+: ${BASEDIR:="$WORK_DIR"}
 # Make sure -out was provided
 if test -n "$OUT_PREFIX"; then
     OUT_DIR="$(abspath "$OUT_PREFIX")"
     [[ $TARGET = svcd ]] && OUT_FILE="$OUT_DIR"
+     if egrep -q '<|>|&' <<< "$OUT_DIR"; then
+        usage_error "Sorry, dvdauthor will not let you use a -out name with '>', '<' or '&' in it \
+        Please choose a directory or name for -out  You used "$OUT_DIR""
+    fi
 else
     usage_error "Please provide an output name with -out"
 fi
@@ -3582,7 +3586,7 @@ $(if $AUTHOR ; then
     echo -e "  <vmgm>\n    <menus>\n      <pgc entry=\"title\" pause=\"0\">"
     echo -e "        $VMGM_PRE"
     echo -e "        $INTRO"
-    echo -e "        <vob file=\"$REAL_WORK_DIR/dummy.mpg\"/>"
+    echo -e "        <vob file=\"$WORK_DIR/dummy.mpg\"/>"
     echo -e "        <post>jump titleset 1 menu;</post>"
     echo -e "      </pgc>\n    </menus>\n  </vmgm>"
 fi)
@@ -4188,7 +4192,7 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && ! $NO_SC_THUMB; then
         done
     fi
     # make sure showcase video finishes at the time time as other menu items
-    IMAGES=( $(find $WORK_DIR/showcase -maxdepth 1 -name 00\*.$IMG_FMT|sort) )
+    IMAGES=( $(find $WORK_DIR/showcase -maxdepth 1 -name 00\*.png|sort) )
     last_pic=$(( ${#IMAGES[@]} - 1 ))
     next_pic=$(($last_pic + 1))
     if [ $last_pic -lt $MAX_ANI_LENGTH ] && ! $STATIC; then
