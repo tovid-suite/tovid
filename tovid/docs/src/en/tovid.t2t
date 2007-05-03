@@ -44,8 +44,6 @@ For example:
     Do not actually encode; only print the commands (mplayer, mpeg2enc etc.)
     that would be executed. Useful in debugging; have tovid give you the
     commands, and run them manually.
-: **-debug**
-    Print extra debugging information on standard output.
 : **-ffmpeg**
     Use ffmpeg for video encoding, instead of mplayer/mpeg2enc. Try this if
     you have any problems with the default encoding method. Using this option,
