@@ -633,9 +633,6 @@ function read_config()
     # Check that a config file exists and is readable
     if ! test -r "$1"; then
         exit_with_error "Could not find configuration file: $1"
-    # Make sure file is a tovid config file
-    elif test $(head -n 1 "$1") != "tovid"; then
-        exit_with_error "$1 is not a valid tovid configuration file."
     fi
 
     # Strip config contents down to just its command-line options
@@ -1203,7 +1200,7 @@ else # If $IN_FILE_TYPE != "file"
     yecho "will NOT be probed for resolution, length, or compliance."
 fi
 
-# Find the right video bitrate to use so that the output file fits inside 
+# Find the right video bitrate to use so that the output file fits inside
 # the user's given file size
 if $DO_FIT; then
     # Calculate bitrate required to fit video into FIT_SIZE MiB
