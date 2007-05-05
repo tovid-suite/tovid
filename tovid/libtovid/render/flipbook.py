@@ -76,7 +76,7 @@ import math
 import shutil
 import random
 from libtovid.render.animation import Keyframe
-from libtovid.render.drawing import Drawing, save_image, interlace_drawings
+from libtovid.render.drawing import Drawing, write_ppm, interlace_drawings
 from libtovid.render import layer, effect
 from libtovid import standard
 from libtovid.media import MediaFile, standard_media, load_media
@@ -261,6 +261,9 @@ class Flipbook:
         # 0-based frame references..
         frame = 1
         fileno = 0
+
+        pipe = self.launch_encoder(tmp_workdir, tmp_framedir, out_filename)
+        
         while frame <= self.frames:
             print "Drawing frame %s of %s" % (frame, self.frames)
             # Il faudra ici sauver DEUX drawing si on est en mode entrelacé, puis
@@ -276,20 +279,69 @@ class Flipbook:
                 drawing = self.get_drawing(frame)
 
             # jpeg2yuv likes frames to start at 0
-            save_image(drawing, '%s/%08d.png' % (tmp_framedir, fileno),
-                       self.output_size[0], self.output_size[1])
+            write_ppm(drawing, pipe, self.output_size[0], self.output_size[1])
+            #save_image(drawing, '%s/%08d.png' % (tmp_framedir, fileno),
+            #           self.output_size[0], self.output_size[1])
             fileno += 1
             frame += 1
 
         # Launch the encoder..
-        print "Encoding to %s ..." % out_filename
-        self.encode_flipbook(tmp_workdir, tmp_framedir, out_filename)
+        #print "Encoding to %s ..." % out_filename
+        #self.encode_flipbook(tmp_workdir, tmp_framedir, out_filename)
+        print "Closing encoder. Output to %s" % out_filename
+        #pipe.close()
+
+        #TODO: wait for the pipe to be cleanly closed.
+        self.finish_off(tmp_workdir, tmp_framedir, out_filename)
 
         # Clean up
         print "Cleaning up %s ..." % tmp_workdir
         shutil.rmtree(tmp_workdir)
 
         return out_filename
+
+
+    def launch_encoder(self, tmp_workdir, tmp_framedir, out_filename):
+        """Start off the pipe to encode from PPM files to MPEG using
+        mpeg2enc.
+
+        """
+        # Encode the frames to an .m2v file
+        m2v_file = "%s/video.m2v" % tmp_workdir
+        ac3_file = "%s/audio.ac3" % tmp_workdir
+
+        # TODO: move this to encode.py
+        pipe = os.popen("ppmtoy4m -F 30000:1001 -A 4:3 -Ip -B -S 420mpeg2 | mpeg2enc -f 8 -a 2 -b 7500 -I0 -o %s" % m2v_file, 'w')
+        
+        #encode.encode_frames(tmp_framedir, m2v_file,
+        #                     self.format, self.tvsys, self.aspect,
+        #                     interlaced=self.interlaced)
+
+        return pipe
+
+        
+    def finish_off(self, tmp_workdir, tmp_framedir, out_filename):
+        """Finish the job launched by launch_encoder"""
+        m2v_file = "%s/video.m2v" % tmp_workdir
+        ac3_file = "%s/audio.ac3" % tmp_workdir
+        
+        vidonly = load_media(m2v_file)
+
+        outvid = MediaFile(out_filename, self.format, self.tvsys)
+        # TODO: Pass the command that we want something widescreen or not.
+        outvid.aspect = self.aspect
+        # Important to render 16:9 video correctly.
+        outvid.widescreen = self.widescreen
+
+        print "Running audio encoder..."
+        encode.encode_audio(vidonly, ac3_file, outvid)
+
+        print "Mplex..."
+        encode.mplex_streams(m2v_file, ac3_file, outvid)
+
+        print "Output: %s" % out_filename
+        
+
 
     def encode_flipbook(self, tmp_workdir, tmp_framedir, out_filename):
         # Encode the frames to an .m2v file
