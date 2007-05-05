@@ -215,8 +215,8 @@ class Background (Layer):
 class Image (Layer):
     """A rectangular image, scaled to the given size.
 
-    image_source -- can be anything cairo::Drawing::image() can accept.
-                    See documentation.
+    image_source -- can be anything Drawing::image() can accept.
+                    See documentation in render/drawing.py.
     """
     def __init__(self, image_source, (x, y), (width, height)):
         Layer.__init__(self)
