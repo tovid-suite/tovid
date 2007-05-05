@@ -15,6 +15,7 @@ Effect classes are arranged in a (currently) simple hierarchy:
     |-- Spectrum
     |-- Scale
     |-- Whirl
+    |-- PhotoZoom
     \-- KeyFunction
 
 """
@@ -28,12 +29,14 @@ __all__ = [\
     'Colorfade',
     'Spectrum',
     'Scale',
-    'Whirl'
+    'Whirl',
+    'PhotoZoom',
     'KeyFunction'
     ]
 
 from libtovid.render.drawing import Drawing
 from libtovid.render.animation import Keyframe, Tween
+from random import randint
 
 class Effect:
     """A "special effect" created by keyframing a Cairo drawing command
@@ -324,6 +327,78 @@ class Whirl(Effect):
     def post_draw(self, drawing, frame):
         drawing.translate(- self.center[0], - self.center[1])
         drawing.restore()
+
+
+
+class PhotoZoom(Effect):
+    """Zoom in and create dynamism by moving a picture.
+
+    Normally applies to an Image layer, but can be used with others.
+    """
+    def __init__(self, keyframes, subject=(0,0), direction=None, movement=50, method='linear'):
+        """Create a PhotoZoom effect
+
+        keyframes -- 0.0 for beginning of effect, and 1.0 to reach the end,
+                     intermediate values show the intermediate state of the
+                     effect.
+        subject -- Position of the subject of interest. That is the point where
+                   the zoom in/out will focus it's attention.
+                   If (0,0), the focus will be chosen randomly in the 2/3 of
+                   the center of the screen.
+        direction -- 'in', 'out', None (random)
+        movement -- 0 to 100, percentage of movement to create.
+        method -- 'linear' or 'cosine'
+        """
+        if direction != 'in' and direction != 'out' and direction != None:
+            raise ValueError, "'direction' must be 'in', 'out' or None"
+        if (direction == None):
+            self.direction = randint(0,1) and 'in' or 'out'
+        else:
+            self.direction = direction
+        
+        self.subject = subject
+
+        self.movement = movement
+
+        self.keyframes = keyframes
+        self.tween = Tween(self.keyframes, method)
+
+    def pre_draw(self, drawing, frame):
+        drawing.save()
+        # how to center the thing ? so you give a rotation point ?
+        drawing.translate(*self.subject)
+
+        # Max moving = 25% * pixels estimation * movement factor
+        zoomfactor = 0.25 * (self.movement / 100.)
+
+        #((drawing.h + drawing.w) / 2.) * 
+        inter = self.tween[frame]
+        
+        if (self.direction == 'in'):
+            gozoom = 1.0 + (1.0 - inter) * zoomfactor
+        else:
+            gozoom = 1.0 * inter * zoomfactor
+
+        #print "VALUES:\nzoomfactor: %s\ninter:%s\ngozoom: %s\ndirection: %s\n" % (zoomfactor, inter, gozoom, self.direction)
+
+        # Use subject, or randomize in the center 1/3 of the image.
+        #TODO : make randomization work.
+        #if (self.subject == (0,0)):
+        #    self.subject = (randint(int(0.33 * drawing.w),
+        #                            int(0.66 * drawing.w)),
+        #                    randint(int(0.33 * drawing.h),
+        #                            int(0.66 * drawing.h)))
+
+        drawing.scale_centered(self.subject[0], self.subject[1],
+                               gozoom, gozoom)
+        #drawing.scale(gozoom, gozoom)
+
+    def post_draw(self, drawing, frame):
+        drawing.translate(- self.subject[0], - self.subject[1])
+        drawing.restore()
+
+
+
 
 class KeyFunction (Effect):
     """A keyframed effect on an arbitrary Drawing function."""
