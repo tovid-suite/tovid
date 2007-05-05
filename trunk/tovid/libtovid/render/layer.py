@@ -59,6 +59,34 @@ class Layer:
         from any derived __init__ functions."""
         self.effects = []
         self.sublayers = []
+        self._parent_flipbook = None
+        self._parent_layer = None
+
+    ###
+    ### Child-parent initialization
+    ###
+    def _init_childs(self):
+        """Give access to all descendant layers and effects to their parents.
+
+        In layers, you can access your parent layer (if sublayed) with:
+            layer._parent_layer
+        and to the top Flipbook object with:
+            layer._parent_flipbook
+        """
+        for x in range(0, len(self.effects)):
+            self.effects[x]._init_parent_flipbook(self._parent_flipbook)
+            self.effects[x]._init_parent_layer(self)
+        for x in range(0, len(self.sublayers)):
+            self.sublayers[x][0]._init_parent_flipbook(self._parent_flipbook)
+            self.sublayers[x][0]._init_parent_layer(self)
+            self.sublayers[x][0]._init_childs(self)
+
+    def _init_parent_flipbook(self, flipbook):
+        self._parent_flipbook = flipbook
+
+    def _init_parent_layer(self, layer):
+        self._parent_layer = layer
+
 
     ###
     ### Derived-class interface

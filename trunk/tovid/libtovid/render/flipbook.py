@@ -135,6 +135,32 @@ class Flipbook:
         self.layers = []
         self.drawings = []
 
+        self._called_init_childs = False
+
+
+    ### Child-parent handling
+    def _init_childs(self):
+        """Give access to all descendant layers and effects to their parents.
+
+        In layers, you can access your parent layer (if sublayed) with:
+            layer._parent_layer
+        and to the top Flipbook object with:
+            layer._parent_flipbook
+
+        This function gets called just before rendering a video with
+            render_video()
+
+        It's also called in emergency if you call directly get_drawing().
+        """
+        for x in range(0, len(self.layers)):
+            self.layers[x][0]._init_parent_flipbook(self)
+            self.layers[x][0]._init_childs()
+
+        self._called_init_childs = True
+        
+        
+    # Utility functions
+
     def stof(self, seconds):
         """Return the number of frames to the specified time (in seconds)"""
         return int(self.fps * float(seconds))
@@ -177,6 +203,11 @@ class Flipbook:
 
         TODO: 0-based or 1-based ?
         """
+
+        # Make sure all layers and effects has been initialized with parents.
+        if (not self._called_init_childs):
+            self._init_childs()
+            
         drawing = Drawing(self.canvas[0], self.canvas[1])
         # Draw each layer
         for layer, position in self.layers:
@@ -196,6 +227,9 @@ class Flipbook:
         
         Return the filename of the output, in both cases.
         """
+        ## Make sure layers and effects have been initialized with parents.
+        self._init_childs()
+
         #
         # if self.tmpdir = /tmp, we get:
         # /tmp
