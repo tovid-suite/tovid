@@ -482,8 +482,10 @@ def encode_frames(imagedir, outfile, format, tvsys, aspect, interlaced=False):
     # Anyways.
     mpeg2enc.add('-I 0') # Progressive
 
+    # Bottom-first, determined in render/drawing.py::interlace_drawings()
     if (interlaced):
-        mpeg2enc.add('--playback-field-order', 'b')  # Bottom-first field orde                         # conforming to drawing.py::interlace_drawings()
+        mpeg2enc.add('--playback-field-order', 'b')  # Bottom-first field order
+        # conforming to drawing.py::interlace_drawings()
     
     mpeg2enc.add('-v', '0',
                  '-q' '3',
