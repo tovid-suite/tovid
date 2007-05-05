@@ -49,6 +49,16 @@ class Effect:
         self.keyframes = [Keyframe(self.start, 0), Keyframe(self.end, 0)]
         self.tween = Tween(self.keyframes)
 
+        # Parents
+        self._parent_flipbook = None
+        self._parent_layer = None
+
+    def _init_parent_flipbook(self, fb):
+        self._parent_flipbook = fb
+
+    def _init_parent_layer(self, layer):
+        self._parent_layer = layer
+
     def pre_draw(self, drawing, frame):
         """Set up effect elements that must be applied before drawing a Layer.
 
@@ -355,6 +365,8 @@ class PhotoZoom(Effect):
             self.direction = randint(0,1) and 'in' or 'out'
         else:
             self.direction = direction
+
+        print "Zoom in direction: %s" % self.direction
         
         self.subject = subject
 
@@ -365,36 +377,33 @@ class PhotoZoom(Effect):
 
     def pre_draw(self, drawing, frame):
         drawing.save()
-        # how to center the thing ? so you give a rotation point ?
-        drawing.translate(*self.subject)
+
+        fb = self._parent_flipbook
+        # Use subject, or randomize in the center 1/3 of the image.
+        if (self.subject == (0,0)):
+            self.subject = (randint(int(0.33 * fb.w),
+                                    int(0.66 * fb.w)),
+                            randint(int(0.33 * fb.h),
+                                    int(0.66 * fb.h)))
 
         # Max moving = 25% * pixels estimation * movement factor
         zoomfactor = 0.25 * (self.movement / 100.)
 
-        #((drawing.h + drawing.w) / 2.) * 
         inter = self.tween[frame]
         
         if (self.direction == 'in'):
             gozoom = 1.0 + (1.0 - inter) * zoomfactor
         else:
-            gozoom = 1.0 * inter * zoomfactor
+            gozoom = 1.0 + inter * zoomfactor
 
-        #print "VALUES:\nzoomfactor: %s\ninter:%s\ngozoom: %s\ndirection: %s\n" % (zoomfactor, inter, gozoom, self.direction)
 
-        # Use subject, or randomize in the center 1/3 of the image.
-        #TODO : make randomization work.
-        #if (self.subject == (0,0)):
-        #    self.subject = (randint(int(0.33 * drawing.w),
-        #                            int(0.66 * drawing.w)),
-        #                    randint(int(0.33 * drawing.h),
-        #                            int(0.66 * drawing.h)))
+        #print "Values: zoomfactor %s inter %s gozoom %s fb %s" % (zoomfactor, inter, gozoom, fb)
 
         drawing.scale_centered(self.subject[0], self.subject[1],
                                gozoom, gozoom)
-        #drawing.scale(gozoom, gozoom)
+
 
     def post_draw(self, drawing, frame):
-        drawing.translate(- self.subject[0], - self.subject[1])
         drawing.restore()
 
 
