@@ -36,6 +36,7 @@ __all__ = [\
 import os
 import sys
 import copy
+import commands
 # From libtovid
 from libtovid import log
 from libtovid.cli import Command
@@ -92,7 +93,7 @@ class MediaFile:
         return '\n'.join(lines)
 
 
-def load_media(filename):
+def load_media(filename, length_accuracy=False):
     """Return a MediaFile filled with attributes read from a file.
     
         filename:  Name of a multimedia video file
@@ -153,6 +154,12 @@ def load_media(filename):
         elif left == 'ID_LENGTH':
             media.length = float(right)
     media.expand = media.scale
+
+    # Length accuracy
+    if (length_accuracy):
+        media.length = float(commands.getoutput("mencoder '%s' -quiet -ovc copy -oac pcm -o /dev/null 2>/dev/null | awk '/Video stream/ {print $10}'" % filename))
+
+    
     # Fix mplayer's audio codec naming for ac3 and mp2
     if media.acodec == "8192":
         media.acodec = "ac3"
