@@ -83,6 +83,7 @@ from math import pi, sqrt
 import cairo
 import Image      # for JPG export
 import ImageColor # for getrgb, getcolor
+import ImageFile  # for write_png()
 from libtovid import log
 from libtovid.utils import to_unicode
 
@@ -1183,24 +1184,11 @@ def display(drawing, width=None, height=None, fix_aspect=False):
     print commands.getoutput('display %s' % png_file)
 
 
-def save_png(drawing, filename, width, height):
-    """Saves a drawing to PNG, keeping alpha channel intact.
-
-    This is the quickest, since Cairo itself exports directly to .png"""
-    # Timing
-    start = time.time()
-    if (width, height) == drawing.size:
-        print "Not re-rendering"
-        surface = drawing.surface
-    else:
-        surface = get_surface(width, height, 'image')
-        context = cairo.Context(surface)
-        render(drawing, context, width, height)
-    surface.write_to_png(filename)
-    print "save_png took %s seconds" % (time.time() - start)
-
-def write_ppm(drawing, pipe, width, height):
+def write_ppm(drawing, pipe, width, height, workdir=None):
     """Write image as a PPM file to a file-object
+
+      workdir - Unused in this context, just to have parallel parameters
+                with write_png().
 
     Useful to pipe directly in ppmtoy4m and to pipe directly to mpeg2enc.
     """
@@ -1223,6 +1211,47 @@ def write_ppm(drawing, pipe, width, height):
     
     print "write_ppm took %s seconds" % (time.time() - start)
     
+def write_png(drawing, pipe, width, height, workdir):
+    """Write image as a PPM file to a file-object
+
+    Useful to pipe directly in pngtopnm -mix -background=rgb:00/00/00 | ppmtoy4m | mpeg2enc.
+    """
+    # Timing
+    start = time.time()
+    if (width, height) == drawing.size:
+        #print "Not re-rendering"
+        surface = drawing.surface
+    else:
+        surface = get_surface(width, height, 'image')
+        context = cairo.Context(surface)
+        render(drawing, context, width, height)
+
+    surface.write_to_png('%s/tmp.png' % workdir)
+    im = Image.open('%s/tmp.png' % workdir)
+    im.load()
+    im.save(pipe, 'ppm')
+    
+    print "write_png took %s seconds" % (time.time() - start)
+
+
+
+
+def save_png(drawing, filename, width, height):
+    """Saves a drawing to PNG, keeping alpha channel intact.
+
+    This is the quickest, since Cairo itself exports directly to .png"""
+    # Timing
+    start = time.time()
+    if (width, height) == drawing.size:
+        print "Not re-rendering"
+        surface = drawing.surface
+    else:
+        surface = get_surface(width, height, 'image')
+        context = cairo.Context(surface)
+        render(drawing, context, width, height)
+    surface.write_to_png(filename)
+    print "save_png took %s seconds" % (time.time() - start)
+
 
 def save_jpg(drawing, filename, width, height):
     """Saves a drawing to JPG, losing alpha channel information.
