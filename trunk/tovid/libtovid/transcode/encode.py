@@ -27,6 +27,7 @@ __all__ = [\
     'encode',
     'get_encoder',
     'ffmpeg_encode',
+    'encode_audio',
     'mencoder_encode',
     'mpeg2enc_encode']
 
@@ -288,15 +289,17 @@ def encode_audio(source, audiofile, target):
     else:
         # Add silence the length of source length
         ln = source.length
+        #print "Source.length: %f" % ln
         if ln < 4:
             # Minimum 4 secs :)
             ln = 4.0
         cmd.add('-f', 's16le', '-i', '/dev/zero', '-t', '%f' % ln)
-    cmd.add_raw('-vn -ac 2 -ab 224')
+    cmd.add('-vn', '-ac', '2', '-ab', '224')
     cmd.add('-ar', target.samprate)
     cmd.add('-acodec', target.acodec)
     cmd.add('-y', audiofile)
     # Run the command to encode the audio
+
     cmd.run()
 
 
@@ -351,31 +354,6 @@ def encode_video(source, yuvfile, videofile, target):
     
     # Run the pipeline to encode the video stream
     pipe.run()
-
-
-def encode_audio(source, audiofile, target):
-    """Encode an audio stream to AC3 or MP2 format.
-    
-        source:    Input MediaFile
-        audiofile: File to put encoded audio in
-        target:    Output MediaFile
-        
-    """
-    cmd = Command('ffmpeg')
-    # If source file has audio, encode it
-    if source.has_audio:
-        cmd.add('-i', source.filename)
-    # Otherwise, generate 4-second silence
-    else:
-        cmd.add('-f', 's16le', '-i', '/dev/zero', '-t', '4')
-    # Add other necessary qualifiers
-    cmd.add('-ac', '2',
-            '-ab', '224',
-            '-ar', target.samprate,
-            '-acodec', target.acodec,
-            '-y', audiofile)
-    # Run the command to encode the audio
-    cmd.run()
 
 
 def mplex_streams(vstream, astream, target):
