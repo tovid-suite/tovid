@@ -71,7 +71,8 @@ __all__ = [
     'save_pdf',
     'save_png',
     'save_ps',
-    'save_svg']
+    'save_svg',
+    'write_ppm']
 
 import os
 import sys
@@ -1197,6 +1198,30 @@ def save_png(drawing, filename, width, height):
         render(drawing, context, width, height)
     surface.write_to_png(filename)
     print "save_png took %s seconds" % (time.time() - start)
+
+def write_ppm(drawing, pipe, width, height):
+    """Write image as a PPM file to a file-object
+
+    Useful to pipe directly in ppmtoy4m and to pipe directly to mpeg2enc.
+    """
+    # Timing
+    start = time.time()
+    if (width, height) == drawing.size:
+        #print "Not re-rendering"
+        surface = drawing.surface
+    else:
+        surface = get_surface(width, height, 'image')
+        context = cairo.Context(surface)
+        render(drawing, context, width, height)
+        
+    buf = surface.get_data()
+    # Assumes surface is cairo.FORMAT_ARGB32
+    im = Image.frombuffer('RGBA', (surface.get_width(),  surface.get_height()),
+                          buf)
+    im = im.transpose(Image.FLIP_TOP_BOTTOM)
+    im.save(pipe, 'ppm')
+    
+    print "write_ppm took %s seconds" % (time.time() - start)
     
 
 def save_jpg(drawing, filename, width, height):
