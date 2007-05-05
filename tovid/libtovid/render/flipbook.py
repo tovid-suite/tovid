@@ -73,10 +73,11 @@ import os
 import sys
 import time
 import math
+import cairo
 import shutil
 import random
 from libtovid.render.animation import Keyframe
-from libtovid.render.drawing import Drawing, write_ppm, interlace_drawings
+from libtovid.render.drawing import Drawing, write_ppm, write_png, interlace_drawings
 from libtovid.render import layer, effect
 from libtovid import standard
 from libtovid.media import MediaFile, standard_media, load_media
@@ -256,14 +257,31 @@ class Flipbook:
             out_filename = "%s.mpg" % tmp_workdir
 
         os.mkdir(tmp_workdir)
-        
-        # Do the rendering...
-        # 1-based file naming
-        # 0-based frame references..
-        frame = 1
 
-        pipe = self.launch_encoder(tmp_workdir, out_filename)
+        # Encode the frames to an .m2v file
+        m2v_file = "%s/video.m2v" % tmp_workdir
+        ac3_file = "%s/audio.ac3" % tmp_workdir
+
+
+        try:
+            cairo.ImageSurface.get_data
+
+            pngorpnm = 'ppmtoy4m -F %s -A %s -Ip -B -S 420mpeg2' % (self.fpsratio, self.aspect)
+            _write_img = write_ppm  # set write function just below
+        except:
+            pngorpnm = 'ppmtoy4m -F %s -A %s -Ip -S 420mpeg2' % (self.fpsratio, self.aspect)
+            _write_img = write_png
+            
+        # Cinelerra params: -b 0 -q 5 -a 2 -F 4 -I 0 -M 2 -f 8 -R 0
+        # TODO: move this to encode.py
+        # -M (multi-threading, num CPUs)
+        #
+        # -b 0 -q 5
+        #    or
+        # -b 7500
+        pipe = os.popen("%s | mpeg2enc -q 5 -g 45 -G 45 -f 8 -a 2 -I 0 -o '%s'" % (pngorpnm,  m2v_file), 'w')
         
+        frame = 1
         while frame <= self.frames:
             print "Drawing frame %s of %s" % (frame, self.frames)
             # Il faudra ici sauver DEUX drawing si on est en mode entrelacé, puis
@@ -279,7 +297,8 @@ class Flipbook:
                 drawing = self.get_drawing(frame)
 
             # jpeg2yuv likes frames to start at 0
-            write_ppm(drawing, pipe, self.output_size[0], self.output_size[1])
+                _write_img(drawing, pipe, self.output_size[0], self.output_size[1], tmp_workdir)
+                
             frame += 1
 
         print "Closing encoder. Output to %s" % out_filename
@@ -287,43 +306,6 @@ class Flipbook:
 
         print "Waiting for encoder to finish..."
         time.sleep(0.5)
-
-        #TODO: wait for the pipe to be cleanly closed.
-        self.finish_off(tmp_workdir, out_filename)
-
-        # Clean up
-        print "Cleaning up %s ..." % tmp_workdir
-        shutil.rmtree(tmp_workdir)
-
-        return out_filename
-
-
-    def launch_encoder(self, tmp_workdir, out_filename):
-        """Start off the pipe to encode from PPM files to MPEG using
-        mpeg2enc.
-
-        """
-        # Encode the frames to an .m2v file
-        m2v_file = "%s/video.m2v" % tmp_workdir
-        ac3_file = "%s/audio.ac3" % tmp_workdir
-
-        # Cinelerra params: -b 0 -q 5 -a 2 -F 4 -I 0 -M 2 -f 8 -R 0
-        # TODO: move this to encode.py
-        # -M (multi-threading, num CPUs)
-        #
-        # -b 0 -q 5
-        #    or
-        # -b 7500
-        pipe = os.popen("ppmtoy4m -F %s -A %s -Ip -B -S 420mpeg2 | mpeg2enc -q 5 -g 45 -G 45 -f 8 -a 2 -I 0 -o '%s'" % (self.fpsratio, self.aspect, m2v_file), 'w')
-        
-        return pipe
-
-        
-    def finish_off(self, tmp_workdir, out_filename):
-        """Finish the job launched by launch_encoder"""
-        m2v_file = "%s/video.m2v" % tmp_workdir
-        ac3_file = "%s/audio.ac3" % tmp_workdir
-
 
         os.system("ls -al %s" % m2v_file)
         os.system("cp %s /tmp/go.m2v" % m2v_file)
@@ -333,7 +315,6 @@ class Flipbook:
         vidonly.length = float(self.seconds)
 
         outvid = MediaFile(out_filename, self.format, self.tvsys)
-        # TODO: Pass the command that we want something widescreen or not.
         outvid.aspect = self.aspect
         # Important to render 16:9 video correctly.
         outvid.widescreen = self.widescreen
@@ -341,16 +322,17 @@ class Flipbook:
         print "Running audio encoder..."
         encode.encode_audio(vidonly, ac3_file, outvid)
 
-        #print "Running: %s" % cmd
-        #print "aaaaaaaaaaaaaHHHHHHHHHHHHHHHHHHHHHHHH"
-        #print "AAAAAAAAAAAAAAAAAAHHHHHHHHHH"
-    
-
-
         print "Mplex..."
         encode.mplex_streams(m2v_file, ac3_file, outvid)
 
+        # Clean up
+        print "Cleaning up %s ..." % tmp_workdir
+        shutil.rmtree(tmp_workdir)
+
         print "Output: %s" % out_filename
+        return out_filename
+
+
         
 
 def draw_text_demo(flipbook):
