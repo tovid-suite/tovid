@@ -181,6 +181,7 @@ NO_VMGM_MENU=false
 SWITCHED_MENUS=false
 SWITCHED_MODE=false
 TSET_MODE=false
+TSET_TOT=1
 NONAME=false
 DO_INTRO=false
 SCRIPT_START_TIME=`date +%s`
@@ -335,14 +336,14 @@ function cleanup()
         [[ -n $SUPPORT_VIDEOS ]] && yecho "Keeping ${SUPPORT_VIDEOS[@]}" && \
             yecho "This sliced video will not work if todisc is run with different seeks so should be deleted manually"
     else
-        yecho "Removing $REAL_WORK_DIR"
-        [[ -n $SUPPORT_VIDEOS ]] && yecho "Removing "${SUPPORT_VIDEOS[@]}"" && rm -f "${SUPPORT_VIDEOS[@]}"
-        rm -rf "$REAL_WORK_DIR"
+        if [[ -d $REAL_WORK_DIR ]]; then
+            yecho "Removing $REAL_WORK_DIR"
+            [[ -n $SUPPORT_VIDEOS ]] && yecho "Removing "${SUPPORT_VIDEOS[@]}"" && rm -f "${SUPPORT_VIDEOS[@]}"
+            rm -rf "$REAL_WORK_DIR"
+        fi
     fi
-#    if ! $DO_TITLESETS; then
     echo "Removing the symlink in /tmp . . . "
     rm -fv "$WORK_DIR"
-#    fi
 }
 
 function running_total ()
@@ -746,6 +747,9 @@ function switched_menu_mode()
         yecho "Running todisc "$@" -switched-mode $IS_TITLESET -basedir "$BASEDIR"  -menu_num $((i+1)) -showcase "${FILES[i]}""
         todisc "$@" -switched-mode $IS_TITLESET -basedir "$WORK_DIR" -menu_num $((i+1)) -showcase "${FILES[i]}"
     done
+        yecho
+        yecho "Working on switched menu 1"
+        yecho
 #    exit
 }
 function titleset_mode()
@@ -769,10 +773,9 @@ function titleset_mode()
         VMGM_PAUSE_TIME=$PAUSE_TIME
     fi
     DVDAUTHOR_XML="$BASEDIR/dvdauthor.xml"
-    VMGM_PRE="<pre>"
-    $DO_INTRO && VMGM_PRE="        $VMGM_PRE if (g2==1) jump cell 2;"
+    $DO_INTRO && VMGM_PRE="if (g2==1) jump cell 2;"
     grep -q -- -switched-menus <<< "${args[@]}" && VMGM_PRE="        $VMGM_PRE g1=1;"
-    $SKIP_VMGM_MENU && VMGM_PRE="        $VMGM_PRE  if ( g3 eq 0 )  { g3 = 1 ; }"
+    $SKIP_VMGM_MENU && VMGM_PRE="        $VMGM_PRE if ( g3 eq 0 )  { g3 = 1 ; }"
 #    $SWITCHED_MODE && VMGM_PRE="$VMGM_PRE g1=1;"
     # make dvdauthor.xml
 (
@@ -782,6 +785,7 @@ function titleset_mode()
   <vmgm>
     <menus>
       <pgc entry="title">
+        <pre>
 $VMGM_PRE
 $(if $QUICK_NAV || $SKIP_VMGM_MENU; then
         for ((i=1; i<=${#TITLESET_OPTS[@]}; i++)); do
@@ -789,11 +793,13 @@ $(if $QUICK_NAV || $SKIP_VMGM_MENU; then
         done
 fi)
         </pre>
-        <post>jump cell 1;</post>
+        <post>
+$([[ $INTRO ]] && echo -e "        g2=1; jump vmgm menu entry title;")
+        jump cell 1;
+        </post>
 $(for ((i=1; i<=${#TITLESET_OPTS[@]}; i++)); do echo "        <button name=\"$i\">jump titleset $i menu;</button>"; done)
         $INTRO
         <vob file="$BASEDIR/VMGM.mpg" pause="$VMGM_PAUSE_TIME"/>
-$([[ $INTRO ]] && echo -e "      <post>g2=1; jump vmgm menu entry title;</post>")
       </pgc>
     </menus>
   </vmgm>
@@ -838,7 +844,7 @@ EOF
                 fi
                 TITLESET_OPTS=( "${ARGS_ARRAY[@]}" )
                 titleset_cmd=( todisc -titleset-mode -basedir "$WORK_DIR" \
-                -tset_num ${count}-${tset} $NO_ASK -out $OUT_PREFIX $NO_VMGM $QUICKNAV "${TITLESET_OPTS[@]}" )
+                -tset_num ${count}-${tset} $NO_ASK $KEEPFILES -out $OUT_PREFIX $NO_VMGM $QUICKNAV "${TITLESET_OPTS[@]}" )
                 yecho
                 yecho "Working on the menu for titleset number $tset"
                 yecho
@@ -988,6 +994,7 @@ while test $# -gt 0; do
             ;;
         "-keep-files" | "-keepfiles" )
             KEEP_FILES=:
+            KEEPFILES="-keep-files"
             ;;
         "-dvd" )
             TARGET=dvd
@@ -1436,8 +1443,7 @@ if test -n "$OUT_PREFIX"; then
     OUT_DIR="$(abspath "$OUT_PREFIX")"
     [[ $TARGET = svcd ]] && OUT_FILE="$OUT_DIR"
      if egrep -q '<|>|&' <<< "$OUT_DIR"; then
-        usage_error "Sorry, dvdauthor will not let you use a -out name with '>', '<' or '&' in it \
-        Please choose a directory or name for -out  You used "$OUT_DIR""
+        usage_error "Sorry, dvdauthor will not let you use a -out name with '>', '<' or '&' in it.  Please choose another directory or name for -out  You used: "$OUT_DIR""
     fi
 else
     usage_error "Please provide an output name with -out"
@@ -1448,8 +1454,14 @@ $DO_INTRO && INTRO="<vob file=\"$INTRO_CLIP\"/>"
 if $SWITCHED_MODE; then
     ANI_SUB_MENU=false && SUB_MENU=false
 fi
-# -no-vmgm requires -skip-vmgm for now
-$NO_VMGM_MENU && SKIP_VMGM_MENU=:
+# need a way to get back to the VMGM menu, so -no-vmgm-menu requires -quicknav ? FIXME
+# -no-vmgm requires -skip-vmgm for now; pass -no-vmgm-menu to subshells via NO_VMGM
+if $NO_VMGM_MENU; then
+    SKIP_VMGM_MENU=:
+    NO_VMGM="-no-vmgm-menu"
+fi
+# honour -noask for functions and called scripts that use them
+$NOASK && NO_ASK="-noask"
 # Warn if thumb labels have more than 16 characters
 if ! $SHOWCASE; then
     for ((i=0; i<${#TITLES[@]}; i++)); do
@@ -1473,10 +1485,25 @@ if [ "$BUTTON_STYLE" = "text" ]; then
             exit 1
         fi
     done
+    if $SHOWCASE; then
+        BUTTON_STYLE="line"
+        yecho
+        yecho "You can not use text button style with showcase or textmenu"
+        yecho "Changing button style to 'line' style instead"
+        yecho "If you would rather use 'text-rect', or 'rect' for showcase,"
+        yecho "please ctrl-c now to exit and rethink things"
+        yecho
+        ! $NO_WARN && sleep 15
+    fi
 fi
-# honour -noask for functions and called scripts that use them
-$NOASK && NO_ASK="-noask"
-$NO_VMGM_MENU && NO_VMGM="-no-vmgm-menu"
+if [[ $BUTTON_STYLE = "line" ]] && ! $SHOWCASE; then
+    yecho
+    yecho "Sorry, button style 'line' is only for showcase and textmenu styles"
+    yecho "Using button style 'rect' instead"
+    yecho
+    BUTTON_STYLE="rect"
+    ! $NO_WARN && sleep 10
+fi
 # allow multiline titles in submenu
 if [[ -n "$SM_TITLES" ]]; then
     for i in ${!SM_TITLES[@]}; do
@@ -1501,8 +1528,16 @@ fi
 
 # -rotate-thumbs broken for 3dthumbs and shaped thumbs
 if ($FEATHER || $THUMBS_3D) && $ROTATE_THUMBS; then
-     ! $SHOWCASE && \
-    usage_error "Sorry, rotated thumbs does not work currently if you use shaped or 3d thumbs unless using showcase style"
+    if ! $SHOWCASE; then
+        yecho
+        yecho "Sorry, rotated thumbs does not work currently"
+        yecho "if you use shaped or 3d thumbs unless using showcase style"
+        yecho "Disabling this option for you"
+        yecho "Please ctrl-c now to exit if you wish to examine the situation"
+        yecho
+        ! $NO_WARN && sleep 15
+        unset ROTATE_ARRAY; ROTATE=false
+    fi
 fi
 
 # If output directory already exists, print a message and exit
@@ -1521,7 +1556,8 @@ if [[ -n "${ADV_OPT[@]}" ]]; then
     yecho "**** WARNING ****"
     yecho "You have used the following advanced options:"
     yecho \'"${ADV_OPT[@]}"\' | format_output
-    yecho "With these options it is possible to create a menu where things overlap or are offscreen, so please check it with the preview."
+    yecho "With these options it is possible to create a menu where things overlap or"
+    yecho "are offscreen, or that has other problems, so please check it with the preview."
     yecho "These are things that todisc tries to avoid normally, so if you have problems, please leave them out."
     yecho
     ! $NO_WARN && sleep 15
@@ -1537,7 +1573,7 @@ if $GROUPING && $TITLESET_MODE; then
     find "$WORK_DIR"/  -type l -name \*group\*.mpg -exec cp -Pv {} "$BASEDIR" \;
 fi
 $SWITCHED_MODE && SWITCHED_MENUS=false
-$SWITCHED_MODE && KEEP_FILES=false
+#$SWITCHED_MODE && KEEP_FILES=false
 if $SWITCHED_MENUS; then
     # call todisc recursively, collect intro.mpg, exit
     switched_menu_mode "${args[@]}"
@@ -1545,6 +1581,7 @@ fi
 if $DO_TITLESETS; then
     # call todisc recursively, collect parts and author.  Then exit
     titleset_mode "${args[@]}"
+    yecho Goodbye
     exit
 fi
 # set some vars for the last run of switched menus (non-recursive )
@@ -1567,7 +1604,7 @@ fi
 ! $GROUPING && ! $SWITCHED_MENUS && mk_workdir
 
 # Remove any existing log file
-if ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $VMGM_ONLY && ! $DO_TITLESETS; then
+if ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
     test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
 fi
 # check file type of background file and assign to BG_VIDEO or BG_IMAGE
@@ -1598,8 +1635,13 @@ if $SHOWCASE; then
     fi
 fi
 if [[ $SC_FRAMESTYLE = glass ]] && [[ -z $SHOWCASE_IMG && -z $SHOWCASE_VIDEO ]]; then
-    usage_error "You must use a -showcase option for '-showcase-framestyle'
-    Either -showcase IMAGE, -showcase VIDEO or just '-showcase'"
+    yecho
+    yecho "You must use a -showcase option for '-showcase-framestyle'"
+    yecho "Either -showcase IMAGE, -showcase VIDEO or just '-showcase'"
+    yecho "Disabling this option for you - please ctrl-c now to exit"
+    yecho "if you wish to reexamine the situation"
+    yecho
+    SC_FRAMESTYLE="none"
 fi
 
 # disable submenus for svcd
@@ -1686,12 +1728,22 @@ if $SUB_MENU; then
 fi
 # do not let user use -chapters 0 (-chapters 5 0 6)
 if $SUB_MENU; then
+    chapter_error=false
     for ((i=0; i<${#CHAPTERS[@]}; i++)); do
         if ((${CHAPTERS[i]} == 0)) && [[ -z ${GROUP[i]} ]]; then
-            usage_error "Please use -chapters 1 not -chapters 0, if you do not want chapters.
-            -chapters 0 is a special case for -group videos, meaning the each video is a chapter."
+            CHAPTERS[i]=1
+            chapter_error=:
         fi
     done
+    if $chapter_error; then
+        yecho
+        yecho "Please use -chapters 1 not -chapters 0, if you do not want chapters."
+        yecho "-chapters 0 is a special case for -group videos, meaning the each video is a chapter."
+        yecho "Changing all chapters that were '0' to '1' for you"
+        yecho "Please ctrl-c to exit if you wish to reexamine the situation"
+        yecho
+        ! $NO_WARN && sleep 15
+    fi
 fi
 # create_dirs
 echo
@@ -2006,20 +2058,31 @@ if [ "$SC_TITLE_ALIGN" = "west" ] || $TEXTMENU; then #FIXME
     done
 fi
 # centre aligned titles are not for textmenu style
-$TEXTMENU && [[ $SC_TITLE_ALIGN = center ]] && \
-usage_error "You can not use center align for textmenu titles"
- [[ $BUTTON_STYLE = text-rect ]] && ! $SHOWCASE && \
-usage_error "You can only use text-rect button style with showcase or textmenu arrangements"
+if $TEXTMENU && [[ $SC_TITLE_ALIGN = center ]]; then
+    yecho
+    yecho "Sorry, you can not use center align for textmenu titles"
+    yecho "Using title alignment of 'west': please check the preview"
+    yecho
+    SC_TITLE_ALIGN="west"
+    ! $NO_WARN && sleep 10
+fi
+if  [[ $BUTTON_STYLE = text-rect ]] && ! $SHOWCASE; then
+    yecho  "You can only use text-rect button style with showcase or textmenu arrangements"
+    yecho "Setting button style to 'rect'"
+    yecho "If you would rather use 'text' style please ctrl-c now to exit and reform your command"
+    BUTTON_STYLE="rect"
+    ! $NO_WARN && sleep 15
+fi
 # text-rect only for -align east
 if [[ $BUTTON_STYLE = text-rect ]] && ! [[ $SC_TITLE_ALIGN = east ]] && ! $TEXTMENU; then
     yecho "***Warning*** : text-rect buttons need to be aligned east of thumbs: \
     by using: '-showcase-titles-align east'"
     if [[ -n $SHOWCASE_FILE ]]; then
-        echo "However, you are using a -showcase FILE, so choosing 'text' buttons instead"
+        echo "However, you are using a -showcase FILE, so choosing 'line' buttons instead"
         echo "If you wish you may use instead: '-button-style rect' - in which case exit now . . ."
-        BUTTON_STYLE=text
+        BUTTON_STYLE="line"
     else
-        SC_TITLE_ALIGN=east
+        SC_TITLE_ALIGN="east"
     fi
     yecho
     ! $NO_WARN && sleep 10
@@ -2047,9 +2110,7 @@ if ($USER_GRAVITY && $SHOWCASE && ! $TEXTMENU) && [[ $BUTTON_GRAVITY != north ]]
     elif [[ $BUTTON_GRAVITY = *st* ]] || [[ $BUTTON_GRAVITY = *center* ]]; then
         COL1_HEIGHT=$(( SW_CORNER - ${SHOWCASE_TITLES_Y_ARRAY[0]} ))
         Y_OFFSET=$(( ( ${VIDSIZE/*x} / 2) - (COL1_HEIGHT / 2) ))
-        echo "Y_OFFSET is half the vidsize y dim ( 240) - half COL1_HEIGHT ( $COL1_HEIGHT / 2 ) or $Y_OFFSET"
         Y_OFFSET=$(( Y_OFFSET - ${SHOWCASE_TITLES_Y_ARRAY[0]} ))
-        echo "Y_OFFSET is Y_OFFSET ( $Y_OFFSET ) - SHOWCASE_TITLES_Y_ARRAY[0] ( ${SHOWCASE_TITLES_Y_ARRAY[0]} ) or $Y_OFFSET"
     fi
     for ((i=0; i<=NUM_FILES; i++)); do
         SHOWCASE_THUMB_Y_ARRAY[i]=$(( ${SHOWCASE_THUMB_Y_ARRAY[i]} + Y_OFFSET ))
@@ -2097,8 +2158,8 @@ fi
 if $SHOWCASE; then
     THUMB_BG_COLOUR="none"   # mist backgrounds look a bit funny with showcase
 fi
-if ! $USER_BSTYLE && $SHOWCASE; then # text is better than rect for "none" bg
-    BUTTON_STYLE="text"
+if ! $USER_BSTYLE && $SHOWCASE; then # line is better than rect for "none" bg
+    BUTTON_STYLE="line"
 fi
 # check if user passed a usable button shape
 if [[ -n $THUMB_SHAPE ]]; then
@@ -2106,7 +2167,18 @@ if [[ -n $THUMB_SHAPE ]]; then
         usage_error "Please supply a usable thumb shape with -thumb-shape option. You gave \"$THUMB_SHAPE\""
 fi
 
-[[ -n ${ROTATE_ARRAY[@]} && $BUTTON_STYLE != text-rect ]] && BUTTON_STYLE=text
+if [[ -n ${ROTATE_ARRAY[@]} ]]; then
+    $SHOWCASE && [[ $BUTTON_STYLE != text-rect ]] && BUTTON_STYLE="line"
+    if ! $SHOWCASE; then
+        if [[ $BUTTON_STYLE != "text" ]]; then
+            BUTTON_STYLE="text"
+            yecho
+            yecho "Setting button style to 'text' so it will work with rotatation"
+            yecho
+            ! $NO_WARN && sleep 10
+        fi
+    fi
+fi
 # use a suitable button style
 for ((i=0; i<=NUM_FILES; i++)); do
     if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
@@ -2115,16 +2187,22 @@ for ((i=0; i<=NUM_FILES; i++)); do
             # multiline titles not suitable for text buttons
             BUTTON_STYLE="text-rect"
         elif $TEXTMENU; then
-            BUTTON_STYLE="text-rect"
+             ! $USER_BSTYLE && BUTTON_STYLE="text-rect"
         else
-            [[ $BUTTON_STYLE != "text-rect" ]] && BUTTON_STYLE="rect"
+            [[ $BUTTON_STYLE != "text-rect" ]] &&  ! $USER_BSTYLE && BUTTON_STYLE="rect"
         fi
     fi
 done
 # multiline titles not allowed unless showcase style
 $MULTILINE_TITLE && ! $SHOWCASE && usage_error "Sorry, multiline titles only allowed for showcase style"
 # no rect button style with rotated thumbs yet, so use text-rect fallback
-([[ -n ${ROTATE_ARRAY[@]} ]] && $MULTILINE_TITLE) && BUTTON_STYLE="text-rect"
+if ([[ -n ${ROTATE_ARRAY[@]} ]] && $MULTILINE_TITLE) && [[ $BUTTON_STYLE = rect ]]; then
+    BUTTON_STYLE="text-rect"
+    yecho
+    yecho "Using 'text-rect' instead of 'rect' button style for rotated thumbs"
+    yecho
+    ! $NO_WARN && sleep 15
+fi
 
 # transparent border around text so rect spumux outline can fit
 if [[ $BUTTON_STYLE = text-rect ]]; then
@@ -2300,13 +2378,14 @@ fi
 #! [[ -z ${STR// /} || -z $STR ]] && TRIM_CMD="-trim +repage -blur 0x0.4 "
 TRIM_CMD="-trim +repage -blur 0x0.4"
 TITLE_CMD=(convert  -size 620x100 xc:none -font "$MENU_FONT"  -pointsize $MENU_FONTSIZE \
--fill black -stroke black -gravity center  -annotate +0+0 "$MENU_TITLE"
+-fill black -stroke black -gravity center  -annotate +0+0 "$MENU_TITLE" \
 -fill "$TITLE_COLOUR" -stroke "$STROKE" -strokewidth 1 -annotate +1+1 "$MENU_TITLE")
 TITLE_CMD1=(convert - $TRIM_CMD  "$WORK_DIR/title_txt.png")
 
 echo "Running "${TITLE_CMD[@]}" miff:- |
 "${TITLE_CMD1[@]}"" | format_output|tee -a "$LOG_FILE"
-"${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}" 2>/dev/null
+"${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}" >> "$LOG_FILE" 2>&1
+#"${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}" 2>/dev/null
 # make playall if titlesets and playall
 if $TITLESET_MODE && $PLAYALL; then
     PLAYALL_CMD=( convert -size 100x100 xc:none -gravity center \
@@ -2447,7 +2526,11 @@ if $SHOWCASE; then
 fi
 # make a PLAYALL button if called for.  If we are doing titlesets, make a MAIN
 # button to jump back to the vmgm here instead, and put the playall on vmgm page
-$TITLESET_MODE && SE_BTNTEXT="Main" || SE_BTNTEXT="Play All"
+if $TITLESET_MODE && ! $NO_VMGM_MENU; then
+    SE_BTNTEXT="Main"
+else
+    SE_BTNTEXT="Play All"
+fi
 SE_BTN="$WORK_DIR/SE_BTN.png"
 if ($TITLESET_MODE && ! $NO_VMGM_MENU) || $PLAYALL; then
     BTN_CMD=(convert -size 100x100 xc:none \
@@ -2620,10 +2703,8 @@ if ! $TEXTMENU; then
             fi
             length=( ${length[@]} $(( $(awk  '{ field = $2 }; END{ print field }'  "${IN_FILES[i]}".nav_log) + 1)) )
         fi
-#        if ! $NOASK; then
             echo
             echo "[$i of $NUM_FILES] Seeking to ${SEEK_VAL[i]} seconds in ${IN_FILES[i]}"
-#        fi
 
         FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" -an -ss ${SEEK_VAL[i]} -vframes 1 \
         -s $THUMB_SIZE $WORK_DIR/pics/$i/%06d.$IMG_FMT)
@@ -2843,39 +2924,19 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     BUTTON_CMD7b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
     -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file${t} \
     "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)")
-    BUTTON_CMD8=(convert -size 620x300 xc:none \
-    -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
-    -fill $HIGHLIGHT_COLOUR -stroke none -gravity center  \
-    -annotate +0+0 "${TITLES[t]}" \
-    -fill $HIGHLIGHT_COLOUR -stroke $HIGHLIGHT_COLOUR -strokewidth 1 \
-    -annotate +1+1 "${TITLES[t]}")
-    BUTTON_CMD9=(convert -size 620x300 xc:none \
-    -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
-    -fill $SELECT_COLOUR -stroke none -gravity center  \
-    -annotate +0+0 "${TITLES[t]}" \
-    -fill $SELECT_COLOUR -stroke $SELECT_COLOUR -strokewidth 1 \
-    -annotate +1+1 "${TITLES[t]}")
-    BUTTON_CMD10=(convert - -trim +repage)
 
     if [ "$BUTTON_STYLE" = "text" ]; then
-        if $SHOWCASE; then
-            "${BUTTON_CMD8[@]}" miff:- |  "${BUTTON_CMD10[@]}" \
-            "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
-            "${BUTTON_CMD9[@]}" miff:- |  "${BUTTON_CMD10[@]}" \
+        if $FEATHER; then
+            "${BUTTON_CMD[@]}" miff:- | "${BUTTON_CMD3[@]}" \
             "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
-        else # not showcase
-            if $FEATHER; then
-                "${BUTTON_CMD[@]}" miff:- | "${BUTTON_CMD3[@]}" \
-                "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
-                "${BUTTON_CMD1[@]}" miff:- | "${BUTTON_CMD3[@]}" \
-                "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
-            else
-                "${BUTTON_CMD[@]}" miff:- | "${BUTTON_CMD2[@]}" miff:- |
-                "${BUTTON_CMD3[@]}" \
-                "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
-                "${BUTTON_CMD1[@]}" miff:- | "${BUTTON_CMD2[@]}" miff:- |
-                "${BUTTON_CMD3[@]}" "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
-            fi
+            "${BUTTON_CMD1[@]}" miff:- | "${BUTTON_CMD3[@]}" \
+            "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
+        else
+            "${BUTTON_CMD[@]}" miff:- | "${BUTTON_CMD2[@]}" miff:- |
+            "${BUTTON_CMD3[@]}" \
+            "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
+            "${BUTTON_CMD1[@]}" miff:- | "${BUTTON_CMD2[@]}" miff:- |
+            "${BUTTON_CMD3[@]}" "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
         fi
     elif [ $BUTTON_STYLE = "rect" ]; then
         if  ! $PNG_IS_DONE; then
@@ -2931,7 +2992,7 @@ if [ "$BUTTON_STYLE" = "rect" ]; then
         fi
     done
 elif [[ "$BUTTON_STYLE" = *text* ]]; then
-    if $SHOWCASE; then
+    if $SHOWCASE && [[ $BUTTON_STYLE = "text-rect" ]]; then
         select_buttons=( ${select_buttons[@]} \
         $(find $WORK_DIR/ -name 00\*select.png |sort) )
         highlight_buttons=( ${highlight_buttons[@]} \
@@ -2965,9 +3026,11 @@ elif [[ "$BUTTON_STYLE" = *text* ]]; then
         echo $WORK_DIR/empty-button.png; done))
     fi
     if $SHOWCASE; then
-        convert  -size $VIDSIZE xc:none -background none \
-        ${THUMBTITLES_ARRAY[0]} $WORK_DIR/000000-highlight.png \
-        -mosaic "$WORK_DIR/fake_montage.png"
+        if [[ $BUTTON_STYLE = "text-rect" ]]; then
+            convert  -size $VIDSIZE xc:none -background none \
+            ${THUMBTITLES_ARRAY[0]} $WORK_DIR/000000-highlight.png \
+            -mosaic "$WORK_DIR/fake_montage.png"
+        fi
     else
         montage -background none ${fake_montage[@]} \
         -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
@@ -2975,6 +3038,21 @@ elif [[ "$BUTTON_STYLE" = *text* ]]; then
         convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
         -composite "$WORK_DIR/fake_montage.png"
     fi
+elif $SHOWCASE && [[ "$BUTTON_STYLE" = "line" ]]; then
+    for i in ${!FILES[@]}; do
+        XPT1=$( cut -f2 -d+ <<< ${THUMBTITLES_ARRAY[i]} )
+        XPT2=$(( XPT1 + ${TT_DIM[i]%%x*} ))
+        YPT=$( cut -f3 -d+ <<< ${THUMBTITLES_ARRAY[i]} )
+        YPT=$(( YPT + ${TT_DIM[i]##*x} ))
+        echo  "line ${XPT1},${YPT} ${XPT2},${YPT}" >> "$WORK_DIR/spumux_drawfile"
+        [[ $i -eq 0 ]] && echo  "line ${XPT1},${YPT} ${XPT2},${YPT}" >> "$WORK_DIR/fake_montage.mvg"
+    done
+        convert -size $VIDSIZE xc:none -fill none -stroke $SELECT_COLOUR \
+        -strokewidth 2 -draw @spumux_drawfile "$WORK_DIR/Select.png"
+        convert -size $VIDSIZE xc:none -fill none -stroke $HIGHLIGHT_COLOUR \
+        -strokewidth 2 -draw @spumux_drawfile "$WORK_DIR/Highlight.png"
+        convert  -size $VIDSIZE xc:none -fill none -stroke $HIGHLIGHT_COLOUR \
+        -strokewidth 2 -draw @fake_montage.mvg "$WORK_DIR/fake_montage.png"
 fi
 if $PLAYALL ||  ($TITLESET_MODE && ! $NO_VMGM_MENU); then
     convert -gravity SouthEast -geometry +55+55 "$WORK_DIR/Select.png" \
@@ -3483,11 +3561,7 @@ if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]]; then
     done
 fi
 if [[ "$BUTTON_STYLE" = "text" && -z "$OUTLINEWIDTH" ]]; then
-    if $TEXTMENU; then
-        (( THUMB_FONTSIZE < 26 )) &&  OUTLINEWIDTH="\"10\"" || OUTLINEWIDTH="\"12\""
-    else
-        OUTLINEWIDTH="\"14\""
-    fi
+    OUTLINEWIDTH="\"14\""
 else
     [[ -z "$OUTLINEWIDTH" ]] && OUTLINEWIDTH="\"6\""
 fi
@@ -4650,7 +4724,7 @@ if mencoder -quiet -oac pcm -ovc copy -frames 0 $WORK_DIR/intro.m2v -o /dev/null
     :
 else
     echo
-    runtime_error  "The menu video (m2v) does not appear to have been created"
+    runtime_error  "The menu video file does not appear to have been created"
 fi
 # if static then keep bg audio length (check later if -menu-audiolength opt used
 if $STATIC && [[ -n "$BG_AUDIO" ]]; then
@@ -4734,22 +4808,13 @@ if $SWITCHED_MODE || $SWITCHED_MENUS; then
     fi
     sleep 2
     if $SWITCHED_MODE; then
+        $KEEP_FILES && mv -v "$REAL_WORK_DIR" "$BASEDIR"/TITLESET${TSET_NUM}-MENU${MENU_NUM}
         ( KEEP_FILES=false && cleanup )
         exit
     fi
 fi
-# FIXME no need for both the next 2 blocks running spumux
-# "for intro in" should cover it if only one intro file for the TSET
-if $SWITCHED_MENUS && [[ $TARGET != svcd ]]; then
-    for ((i=1; i<=${#FILES[@]}; i++)); do
-        yecho "Running spumux "$SPUMUX_XML" < "$REAL_WORK_DIR/${TSET_NUM}-${i}intro.mpg" > "$BASEDIR/animenu${TSET_NUM}-${i}.mpg""
-        sleep 5 #FIXME
-        spumux "$SPUMUX_XML" < "$WORK_DIR/${TSET_NUM}-${i}intro.mpg" > "$BASEDIR/animenu${TSET_NUM}-${i}.mpg"
-    done
-fi
-if [[ $TARGET != svcd ]] && ! $SWITCHED_MENUS && ! $SWITCHED_MODE; then
-    yecho "Running spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE""
-    spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE" 2>> "$LOG_FILE"
+function check_menufile()
+{
     yecho
     if test -f "$MENU_FILE"; then
         echo "Menu file $MENU_FILE created"
@@ -4757,6 +4822,21 @@ if [[ $TARGET != svcd ]] && ! $SWITCHED_MENUS && ! $SWITCHED_MODE; then
     else
         runtime_error "Menu file $MENU_FILE not found.  Spumux seems to have had problems"
     fi
+}
+# FIXME no need for both the next 2 blocks running spumux
+# "for intro in" should cover it if only one intro file for the TSET
+if $SWITCHED_MENUS && [[ $TARGET != svcd ]]; then
+    for ((i=1; i<=${#FILES[@]}; i++)); do
+        MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${i}.mpg"
+        yecho "Running spumux "$SPUMUX_XML" < "$REAL_WORK_DIR/${TSET_NUM}-${i}intro.mpg" > "$MENU_FILE""
+        spumux "$SPUMUX_XML" < "$WORK_DIR/${TSET_NUM}-${i}intro.mpg" > "$MENU_FILE" 2>> "$LOG_FILE"
+        check_menufile
+    done
+fi
+if [[ $TARGET != svcd ]] && ! $SWITCHED_MENUS && ! $SWITCHED_MODE; then
+    yecho "Running spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE""
+    spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE" 2>> "$LOG_FILE"
+    check_menufile
 fi
 if $SUB_MENU; then
     echo "Creating submenus"
@@ -4768,6 +4848,9 @@ if $SUB_MENU; then
         $WORK_DIR/menu${x}.mpg > \
         $(sed 's/\(.*\)menu/\1Menu/' <<< $BASEDIR/${TSET_NUM}-menu${x}.mpg) 2>> "$LOG_FILE"
     done
+fi
+if $TITLESET_MODE; then
+    $KEEP_FILES && mv -v "$REAL_WORK_DIR" "$BASEDIR"/TITLESET${TSET_NUM}
 fi
 if [ "$TARGET" = dvd ] && $AUTHOR && ! $VMGM_ONLY && ! $DO_TITLESETS && ! $SWITCHED_MODE; then
     echo "Running dvdauthor to create the DVD filesystem"
