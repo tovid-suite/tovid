@@ -3039,7 +3039,7 @@ elif [[ "$BUTTON_STYLE" = *text* ]]; then
         -composite "$WORK_DIR/fake_montage.png"
     fi
 elif $SHOWCASE && [[ "$BUTTON_STYLE" = "line" ]]; then
-    for i in ${!FILES[@]}; do
+    for i in ${!TITLES[@]}; do
         XPT1=$( cut -f2 -d+ <<< ${THUMBTITLES_ARRAY[i]} )
         XPT2=$(( XPT1 + ${TT_DIM[i]%%x*} ))
         YPT=$( cut -f3 -d+ <<< ${THUMBTITLES_ARRAY[i]} )
