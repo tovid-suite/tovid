@@ -2539,9 +2539,19 @@ if ($TITLESET_MODE && ! $NO_VMGM_MENU) || $PLAYALL; then
     -annotate +0+0 "$SE_BTNTEXT" \
     -fill "$TITLE_COLOUR" -stroke "$STROKE" -strokewidth 1 \
     -annotate +1+1 "$SE_BTNTEXT")
-    TRIM_CMD=(convert - -background none -rotate -30 -trim +repage "$SE_BTN")
-    "${BTN_CMD[@]}" miff:- | "${TRIM_CMD[@]}"|fold -bs >> "$LOG_FILE"
+    TRIM_CMD=(convert "$SE_BTN" -background none -rotate -30 -trim +repage "$SE_BTN")
+    "${BTN_CMD[@]}" -trim +repage "$SE_BTN"
+    SE_BTN_WIDTH=$(get_image_dim "$SE_BTN"|awk -Fx '{print $1}' )
+    SPUMUX_LINE_WIDTH=$((SE_BTN_WIDTH+10))
+    "${TRIM_CMD[@]}"
+#    "${BTN_CMD[@]}" miff:- | "${TRIM_CMD[@]}"|fold -bs >> "$LOG_FILE"
     ADD_SE_BTN="$SE_BTN -gravity SouthEast -geometry +55+55 -composite"
+    # make the image for spumux while we are add it
+    for BUTTON in "$SELECT_COLOUR" "$HIGHLIGHT_COLOUR"; do
+        convert -size 120x60 xc:none -strokewidth 1 -fill none -stroke $BUTTON \
+        -draw "line 10,10 $SE_BTN_WIDTH,10" miff:- | convert - -background none \
+        -rotate -30 -trim +repage $WORK_DIR/${BUTTON/\#}_se_button.png
+    done
 fi
 
 if [[ -n $MENU_TITLE ]]; then
@@ -2879,17 +2889,6 @@ EOF
 )  > "$WORK_DIR/draw_file${i}"
     done
 fi
-# command constructions for -button-style options
-if $PLAYALL ||  ($TITLESET_MODE && ! $NO_VMGM_MENU); then
-    for BUTTON in "$SELECT_COLOUR" "$HIGHLIGHT_COLOUR"; do
-        convert -size 100x100 xc:none -font "$MENU_FONT" -pointsize 20 \
-        -fill "$BUTTON" -stroke none -gravity center \
-        -annotate +0+0 "$SE_BTNTEXT" \
-        -fill "$BUTTON" -stroke none -strokewidth 1  \
-        -annotate +1+1 "$SE_BTNTEXT" miff:- | convert  - -background none -rotate -30 \
-        -trim +repage $WORK_DIR/${BUTTON/\#}_se_button.png
-    done
-fi
 
 PNG_IS_DONE=false
 for ((t=0; t<${#TITLES[@]}; t++)); do
@@ -3055,10 +3054,10 @@ elif $SHOWCASE && [[ "$BUTTON_STYLE" = "line" ]]; then
         -strokewidth 2 -draw @fake_montage.mvg "$WORK_DIR/fake_montage.png"
 fi
 if $PLAYALL ||  ($TITLESET_MODE && ! $NO_VMGM_MENU); then
-    convert -gravity SouthEast -geometry +55+55 "$WORK_DIR/Select.png" \
-    $WORK_DIR/${HIGHLIGHT_COLOUR/\#}_se_button.png -composite "$WORK_DIR/Select.png"
-    convert -gravity SouthEast -geometry +55+55 "$WORK_DIR/Highlight.png" \
-    $WORK_DIR/${SELECT_COLOUR/\#}_se_button.png -composite "$WORK_DIR/Highlight.png"
+    convert -gravity SouthEast -geometry +53+53 "$WORK_DIR/Select.png" \
+    $WORK_DIR/${SELECT_COLOUR/\#}_se_button.png -composite "$WORK_DIR/Select.png"
+    convert -gravity SouthEast -geometry +53+53 "$WORK_DIR/Highlight.png" \
+    $WORK_DIR/${HIGHLIGHT_COLOUR/\#}_se_button.png -composite "$WORK_DIR/Highlight.png"
 fi
 
 # this reduces colours so spumux is happy
