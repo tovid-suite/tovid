@@ -145,7 +145,7 @@ function checkExistence ()
 
 # ==========================================================
 # Find a video's aspect ratio and set dvd behavior accordingly
-# Arge: $1 = video file to find aspect for
+# Args: $1 = video file to find aspect for
 # Usage: noPanScan foo.avi
 # Sets NOPANSCAN to either: widescreen="nopanscan"
 #                       or: <null>
@@ -287,9 +287,6 @@ EOF`
 # Args: $1 = video file to use for the title
 function addTitle ()
 {
-  # Set NOPANSCAN
-  noPanScan "$1"
-
   if $FORCE_TITLESETS && test $CUR_VIDEO -eq 0; then
     closeTitleset
   fi
@@ -314,6 +311,10 @@ function addTitle ()
       fi
       echo "Adding $1 as video $CUR_VIDEO of title $CUR_TITLE"
     fi
+
+    # Set NOPANSCAN
+    noPanScan "$1"
+
     # Generate XML for the button linking to this title from the titleset menu
     if ! $FORCE_TITLESETS; then
       if test $CUR_VIDEO -lt 2; then
