@@ -292,7 +292,7 @@ if $DO_AUTHOR; then
       DISC_SUM=$(expr $VOB_SIZE \+ $DISC_SUM)
       i=$(expr $i \+ 1)
     done
-    AVAIL_SPACE=$(df -B M -P . | awk 'NR != 1 {print $4;}' | tr -d M)
+    AVAIL_SPACE=$(df -B M -P "$OUT_DIR" | awk 'NR != 1 {print $4;}' | tr -d M)
 
     if test $DISC_SUM -gt $AVAIL_SPACE; then
        echo $SEPARATOR
