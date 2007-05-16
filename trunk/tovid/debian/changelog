@@ -1,3 +1,11 @@
+tovid (2068) experimental; urgency=low
+
+  * New todisc options: -quick-nav, -switched-menus, -titleset
+  * New idvid nav_log
+  * Fixed idvid bug: quote mplayer variables
+
+ -- Joe Friedrichsen <pengi.films@gmail.com>  Tue, 01 May 2007 21:52:46 -0600
+
 tovid (2049) experimental; urgency=low
 
   * Initial release of svn packages.
