@@ -143,6 +143,7 @@ export PATH
 
 # Set version
 DEMO_VERSION=$(wget --quiet http://svn.sourceforge.net/viewvc/tovid/trunk/ -O - | grep "directory revision" | grep -v pydvdauthor | awk -F "<strong>" '{print $2}' | awk -F "</strong>" '{print $1}')
+echo "$DEMO_VERSION"
 sed -i "s/@VERSION@/demo-$DEMO_VERSION/" $BIN/tovid-init.in
 mv $BIN/tovid-init.in $BIN/tovid-init
 
@@ -194,16 +195,16 @@ VID_2_SRC="http://youtube.com/watch?v=JzqumbhfxRo"
 VID_2_NAME="amateur"
 VID_2_STR="Amateur by Lasse Gjertsen"
 
-VID_3_SRC="http://youtube.com/watch?v=993H5fCQKuI"
-VID_3_NAME="caliendo"
-VID_3_STR="Frank Caliendo on David Letterman"
+VID_3_SRC="http://youtube.com/watch?v=N5XVeENmLMk"
+VID_3_NAME="fujiya"
+VID_3_STR="Fujiya & Miyagi - Ankle Injuries"
 
 VID_4_SRC="http://youtube.com/watch?v=v4Wy7gRGgeA"
 VID_4_NAME="monkey"
 VID_4_STR="Code Monkey music video"
 
 echo
-echo "Grabbing 4 YouTube videos (43MB). Give me about 12 minutes..."
+echo "Grabbing 4 YouTube videos (34MB). Give me about 10 minutes..."
 
 i=1
 for vid in "$VID_1_SRC,$VID_1_NAME,$VID_1_STR" \
@@ -248,7 +249,7 @@ IMAGE="tovid_demo_DVD"
 echo
 echo "Making the menu and DVD image. Give me about 40 minutes..."
 if ! test -d $IMAGE; then
-    if ! todisc -files $VIDS/*.mpg -titles "Amateur" "Frank Caliendo" "Code Monkey" "Korean Breakers" -background $VIDS/$MENU_BG -bgaudio $VIDS/$MENU_AUD -menu-title "tovid demo DVD" -menu-fade -thumb-shape normal -noask -button-style rect -text-mist -out "$IMAGE" >> $DEMO_LOG 2>&1; then
+    if ! todisc -files $VIDS/*.mpg -titles "Amateur" "Ankle Injuries" "Code Monkey" "Korean Breakers" -background $VIDS/$MENU_BG -bgaudio $VIDS/$MENU_AUD -menu-title "tovid demo DVD" -menu-fade -thumb-shape normal -noask -button-style rect -text-mist -out "$IMAGE" >> $DEMO_LOG 2>&1; then
     runtime_fail "Could't make DVD image!"
     fi
 fi
