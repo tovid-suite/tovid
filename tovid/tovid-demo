@@ -142,7 +142,7 @@ PATH=$(pwd)/$BIN:$PATH
 export PATH
 
 # Set version
-DEMO_VERSION=$(wget --quiet http://svn.sourceforge.net/viewvc/tovid/trunk/ -O - | grep "directory revision" | grep -v pydvdauthor | awk -F "<strong>" '{print $2}' | awk -F "</strong>" '{print $1}')
+DEMO_VERSION=$(wget --quiet http://svn.sourceforge.net/viewvc/tovid/trunk/ -O - | grep "directory revision" | grep "trunk/tovid" | awk -F "<strong>" '{print $2}' | awk -F "</strong>" '{print $1}')
 echo "$DEMO_VERSION"
 sed -i "s/@VERSION@/demo-$DEMO_VERSION/" $BIN/tovid-init.in
 mv $BIN/tovid-init.in $BIN/tovid-init
