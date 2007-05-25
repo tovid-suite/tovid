@@ -562,9 +562,9 @@ for ((i=0; i<$NUM_TITLES; i++)); do
             "$TMP_DIR/00_title-$SEQNUM.png"
 
         # Blank placeholder: no font decorations or color
+        DIMS=$(identify "$TMP_DIR/00_title-$SEQNUM.png" | grep -o -e " [0-9]\{1,\}x[0-9]\{1,\} " | tr -d ' ')
         convert \
-            -size $(identify "$TMP_DIR/00_title-$SEQNUM.png" | awk '{print $3}') \
-            xc:none "$TMP_DIR/00_title-${SEQNUM}_placeholder.png"
+            -size $DIMS xc:none "$TMP_DIR/00_title-${SEQNUM}_placeholder.png"
     fi
 done
 
@@ -600,8 +600,8 @@ if test $RES = "dvd"; then
         "$TILE_CANVAS" "$SELECT_BUTTON"
 
     # A placeholder to space the title text correctly
-    convert -size $(identify "$HIGHLIGHT_BUTTON" | awk '{print $3}') xc:none \
-        "$BUTTON_PLACEHOLDER"
+    DIMS=$(identify "$HIGHLIGHT_BUTTON" | grep -o -e " [0-9]\{1,\}x[0-9]\{1,\} " | tr -d ' ')
+    convert -size $DIMS xc:none "$BUTTON_PLACEHOLDER"
     
     # Next, join the button tiles with the title tiles:
     i=0
@@ -654,8 +654,8 @@ if $MAKE_TITLE; then
         "$MENU_TEXT"
     if test $RES = "dvd"; then
         # DVD menus need an empty placeholder for the buttons
-        convert -size $(identify "$MENU_TITLE_TEXT" | awk '{print $3}') \
-            xc:none "$MENU_TITLE_PLACEHOLDER"
+        DIMS=$(identify "$MENU_TITLE_TEXT" | grep -o -e " [0-9]\{1,\}x[0-9]\{1,\} " | tr -d ' ')
+        convert -size $DIMS xc:none "$MENU_TITLE_PLACEHOLDER"
         convert -background none "$MENU_TITLE_PLACEHOLDER" "$HIGHLIGHT_TEXT" \
             -append "$HIGHLIGHT_TEXT"
         convert -background none "$MENU_TITLE_PLACEHOLDER" "$SELECT_TEXT" \
