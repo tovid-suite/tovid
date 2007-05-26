@@ -758,9 +758,6 @@ function titleset_mode()
     ! $GROUPING && mk_workdir
     # FIXME make a function or move the other copy of the next if block
     # some vars for vmgm menu, depending on presence of -static or -quick-nav
-    GEN_OPTS=$(sed   's/-vmgm.*-end-vmgm//;s/-titleset.*-end-titleset//g' <<< "$@")
-    egrep -q -- -static <<< "${VMGM_OPTS[@]}" && STATIC=:
-    $QUICK_NAV && QUICKNAV="-quick-nav"
     # how many titlesets do we have ?
     for i in "$@"; do [[ $i == -end-titleset ]] && ((count++)); done
     if $STATIC; then
@@ -805,6 +802,32 @@ $(for ((i=1; i<=${#TITLESET_OPTS[@]}; i++)); do echo "        <button name=\"$i\
   </vmgm>
 EOF
 ) |sed '/^ *$/d' >> "$DVDAUTHOR_XML"
+
+    function  get_genopts()
+    {
+        unset GEN_OPTS
+        i=0
+        while [[ $@ ]]; do
+            case "$1" in
+                "-titleset")
+                    while [[ $@ && $1 != "-end-titleset" ]]; do
+                        shift
+                    done
+                    ;;
+                "-vmgm")
+                    while [[ $@ && $1 != "-end-vmgm" ]]; do
+                        shift
+                    done
+                    ;;
+                *)
+                    GEN_OPTS[i++]="$1"
+                    ;;
+            esac
+            shift
+        done
+    }
+    get_genopts "${args[@]}"
+
     if [[ -z ${VMGM_OPTS[@]} ]]; then
         yecho
         yecho "You have not supplied -vmgm OPTIONS -end-vmgm"
@@ -819,9 +842,7 @@ EOF
     fi
     yecho
     yecho "Making a VMGM menu with the following command:"
-    vmgm_menu_cmd=(todisc -out $OUT_PREFIX $QUICKNAV $NO_ASK -basedir "$WORK_DIR" \
-    -menu-only -textmenu "${VMGM_OPTS[@]}")
-#    vmgm_menu_cmd=(makemenu "${MENU_TITLE[@]}" -out VMGM -button play  -align middle $NO_ASK $VMGM_MENU_OPTS)
+    vmgm_menu_cmd=(todisc "${GEN_OPTS[@]}" -basedir "$WORK_DIR" -menu-only -textmenu "${VMGM_OPTS[@]}")
     yecho "Running: ${vmgm_menu_cmd[@]}"
     INITIALDIR="$BASEDIR"
     "${vmgm_menu_cmd[@]}"
@@ -832,19 +853,19 @@ EOF
             "-titleset" )
                 let tset=tset+1
                 shift
-                unset x ARGS_ARRAY TITLESET_OPTS
+                unset x TITLESET_OPTS
                 # Hackish list-parsing
                 while test $# -gt 0 && test "$1" != "-end-titleset"; do
-                    ARGS_ARRAY[x++]="$1"
+                    TITLESET_OPTS[x++]="$1"
                     shift
                 done
                 # Do not skip past the next argument
-                if test $# -gt 0 && test x"${1:0:1}" = x"-";then
-                    DO_SHIFT=false
-                fi
-                TITLESET_OPTS=( "${ARGS_ARRAY[@]}" )
+#                if test $# -gt 0 && test x"${1:0:1}" = x"-";then
+#                    DO_SHIFT=false
+#                fi
+#                TITLESET_OPTS=( "${ARGS_ARRAY[@]}" )
                 titleset_cmd=( todisc -titleset-mode -basedir "$WORK_DIR" \
-                -tset_num ${count}-${tset} $NO_ASK $KEEPFILES -out $OUT_PREFIX $NO_VMGM $QUICKNAV "${TITLESET_OPTS[@]}" )
+                -tset_num ${count}-${tset} "${GEN_OPTS[@]}" "${TITLESET_OPTS[@]}" )
                 yecho
                 yecho "Working on the menu for titleset number $tset"
                 yecho
@@ -861,8 +882,9 @@ EOF
     if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
         runtime_error "There was a problem creating the DVD structure"
     fi
-    yecho "Your new DVD should be in $OUT_DIR"
-    cleanup
+    thanks_goodbye
+#    yecho "Your new DVD should be in $OUT_DIR"
+#    cleanup
 
 }
 
@@ -896,6 +918,55 @@ ZbeIJQzWl6wAAAAASUVORK5CYII=
  
     uudecode <<< "$upbutton"
     convert -rotate -90 "$TODISC_WORK/upbutton.png" "$TODISC_WORK/upbutton.png"
+}
+function thanks_goodbye()
+{
+    SCRIPT_END_TIME=`date +%s`
+    SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
+    HHMMSS=`format_time $SCRIPT_TOT_TIME`
+    echo
+    echo $SEPARATOR
+    echo "todisc took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
+    echo $SEPARATOR
+    if [ "$TARGET" = dvd ]; then
+        echo "Your new DVD should be in $OUT_DIR"
+        echo "You can preview them in gxine with this command:"
+        echo "    gxine \"dvd:/$OUT_DIR\""
+        echo "If you are satisfied with the results, you can burn a disc with:"
+        echo "    makedvd -burn \"$OUT_DIR\""
+    elif [ "$TARGET" = svcd ]; then
+        echo "Your svcd bin and cue files are ready. You can burn them with:"
+        echo "    cdrdao write --device /dev/hdc --driver generic-mmc "${OUT_FILE}.cue""
+    fi
+    echo
+    echo "Thanks for using todisc."
+}
+
+# create the main and/or playall PNGs
+function mk_se_png()
+# usage make_se_png POINTSIZE TEXT OUTFILE
+{
+    cmd1=( convert -size 100x100 xc:none -font "$THUMB_FONT" -pointsize "$1" \
+    -fill black -stroke black -gravity center -annotate +0+0 "$2" \
+    -fill "$THUMB_TEXT_COLOUR"  -stroke "$STROKE"  -strokewidth 1 \
+    -annotate +1+1 "$2" "$3")
+    echo "Running ${cmd1[@]}" >> "$LOG_FILE" 2>&1
+    "${cmd1[@]}"
+    # rotate and trim it
+    convert "$3" -background none -rotate -30 -trim +repage "$3"
+    SE_BTN_WIDTH=$(get_image_dim "$3"|awk -Fx '{print $1}' )
+}
+# create the main and/or playall spumux buttons
+function mk_se_button()
+# usage make_se_button width stroke outfile
+{
+    dimx="$1"; stroke="$2"; outfile="$3"
+    cmd1=( convert -size 120x60 xc:none -strokewidth 2 -stroke "$stroke" \
+    -fill none -draw "line 10,10 $dimx,10")
+    cmd2=( convert - -background none -rotate -30 -trim +repage "$outfile" )
+    yecho "Running ${cmd1[@]} miff:- | ${cmd2[@]}" >> "$LOG_FILE" 2>&1
+    "${cmd1[@]}" miff:- | "${cmd2[@]}"
+    unset cmd1 cmd2
 }
 
 ##############################################################################
@@ -994,7 +1065,6 @@ while test $# -gt 0; do
             ;;
         "-keep-files" | "-keepfiles" )
             KEEP_FILES=:
-            KEEPFILES="-keep-files"
             ;;
         "-dvd" )
             TARGET=dvd
@@ -1351,7 +1421,7 @@ while test $# -gt 0; do
         "-outlinewidth" )
             ADV_OPT=( "${ADV_OPT[@]}" "$1" )
             shift
-            OUTLINEWIDTH=\"$1\"
+            OUTLINEWIDTH="\"$1\""
             ;;
         "-rotate-thumbs" )
             shift
@@ -1429,6 +1499,7 @@ if ! $VMGM_ONLY && ! $DO_TITLESETS; then
         You gave ${#FILES[@]} files and ${#TITLES[@]} titles"
     fi
 fi
+$VMGM_ONLY && PLAYALL=false && SUB_MENU=false && ANI_SUB_MENU=false
 if [[ -n "$SM_TITLES" ]]; then
     if test ${#SM_TITLES[@]} -ne ${#TITLES[@]}; then
     usage_error "Please give the same number of submenu titles as titles.
@@ -1488,11 +1559,21 @@ if [ "$BUTTON_STYLE" = "text" ]; then
     if $SHOWCASE; then
         BUTTON_STYLE="line"
         yecho
+        yecho "Warning ************"
         yecho "You can not use text button style with showcase or textmenu"
         yecho "Changing button style to 'line' style instead"
         yecho "If you would rather use 'text-rect', or 'rect' for showcase,"
         yecho "please ctrl-c now to exit and rethink things"
         yecho
+        ! $NO_WARN && sleep 15
+    fi
+    if $TITLESET_MODE && ! $NO_VMGM_MENU && $PLAYALL && ! $SHOWCASE; then
+        BUTTON_STYLE="rect"
+        yecho
+        yecho "Warning ************"
+        yecho "You can not use text button style when using both playall and titlesets"
+        yecho "because of spumux and space limitations"
+        yecho "Changing to 'rect' style of buttons"
         ! $NO_WARN && sleep 15
     fi
 fi
@@ -1551,11 +1632,11 @@ if test -e "$OUT_DIR"; then
     exit 1
 fi
 # see if advanced options were used and give warning if so
-if [[ -n "${ADV_OPT[@]}" ]]; then
+if [[ -n "${ADV_OPT[@]}" ]] && ! $SWITCHED_MODE; then
     yecho
     yecho "**** WARNING ****"
     yecho "You have used the following advanced options:"
-    yecho \'"${ADV_OPT[@]}"\' | format_output
+    yecho "${ADV_OPT[@]}" | format_output
     yecho "With these options it is possible to create a menu where things overlap or"
     yecho "are offscreen, or that has other problems, so please check it with the preview."
     yecho "These are things that todisc tries to avoid normally, so if you have problems, please leave them out."
@@ -1867,7 +1948,11 @@ rm -f "$WORK_DIR/font.png"
 
 # Some user feedback
 yecho
-yecho "Disc title: \"$MENU_TITLE\""
+if $VMGM_ONLY; then
+    yecho "Disc title: \"$MENU_TITLE\""
+else
+    yecho "Menu title: \"$MENU_TITLE\""
+fi
 yecho "  (adjust with -menu-title)"
 yecho "Including the following videos:"
 # do not echo all of long or multiline titles AND files
@@ -2382,19 +2467,8 @@ TITLE_CMD=(convert  -size 620x100 xc:none -font "$MENU_FONT"  -pointsize $MENU_F
 -fill "$TITLE_COLOUR" -stroke "$STROKE" -strokewidth 1 -annotate +1+1 "$MENU_TITLE")
 TITLE_CMD1=(convert - $TRIM_CMD  "$WORK_DIR/title_txt.png")
 
-echo "Running "${TITLE_CMD[@]}" miff:- |
-"${TITLE_CMD1[@]}"" | format_output|tee -a "$LOG_FILE"
+echo "Running ${TITLE_CMD[@]} miff:- | ${TITLE_CMD1[@]}" | format_output|tee -a "$LOG_FILE"
 "${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}" >> "$LOG_FILE" 2>&1
-#"${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}" 2>/dev/null
-# make playall if titlesets and playall
-if $TITLESET_MODE && $PLAYALL; then
-    PLAYALL_CMD=( convert -size 100x100 xc:none -gravity center \
-    -font "$THUMB_FONT" -pointsize 20  -fill $THUMB_TEXT_COLOUR \
-    -stroke "$STROKE" -strokewidth 1 -annotate +0+0 "Play all" )
-    TRIM_CMD=(convert - -background none -rotate -10 -trim +repage \
-    "$WORK_DIR/PLAYALL.png")
-    "${PLAYALL_CMD[@]}" miff:- | "${TRIM_CMD[@]}"
-fi
 # make thumb titles if $SHOWCASE
 if $SHOWCASE; then
     for ((i=0; i<=NUM_FILES; i++)); do
@@ -2406,8 +2480,7 @@ if $SHOWCASE; then
         -fill $THUMB_TEXT_COLOUR  -stroke "$STROKE" -strokewidth 1 \
         -annotate +1+1 "${TITLES[i]}")
         TT_CMD1=(convert - -trim +repage $TEXT_BORDER "$WORK_DIR/thumb_title${i}.png")
-        echo "Running "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}"" \
-        |fold -bs >> "$LOG_FILE"
+        echo "Running ${THUMB_TITLE_CMD[@]} miff:- | ${TT_CMD1[@]}" |fold -bs >> "$LOG_FILE"
         "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}" 2> /dev/null
 
         # find out dimension of the thumb title png
@@ -2524,34 +2597,35 @@ if $SHOWCASE; then
         THUMBTITLES_ARRAY[i]="-page ${SHOWCASE_TITLES_ARRAY[i]}"
     done
 fi
-# make a PLAYALL button if called for.  If we are doing titlesets, make a MAIN
-# button to jump back to the vmgm here instead, and put the playall on vmgm page
-if $TITLESET_MODE && ! $NO_VMGM_MENU; then
-    SE_BTNTEXT="Main"
-else
-    SE_BTNTEXT="Play All"
+# make a button for playall and one for jumping to the vmgm menu, if called for
+if ($TITLESET_MODE && ! $NO_VMGM_MENU) && ! $VMGM_ONLY; then
+    if $PLAYALL; then
+        POINTSIZE=14
+        MAIN_SE_GEO="+75+75"
+    else
+        POINTSIZE=20
+        MAIN_SE_GEO="+50+50"
+    fi
+    mk_se_png $POINTSIZE "Main" "$WORK_DIR/Main.png"
+    ADD_MAIN_BTN=("$WORK_DIR/Main.png" -gravity SouthEast -geometry "$MAIN_SE_GEO" -composite)
+    # make the image for spumux while we at add it
+    yecho "mk_se_button $SE_BTN_WIDTH "$HIGHLIGHT_COLOUR" "$WORK_DIR/Main_${HIGHLIGHT_COLOUR/\#}.png""
+    mk_se_button $SE_BTN_WIDTH "$HIGHLIGHT_COLOUR" "$WORK_DIR/Main_${HIGHLIGHT_COLOUR/\#}.png"
+    mk_se_button $SE_BTN_WIDTH "$SELECT_COLOUR" "$WORK_DIR/Main_${SELECT_COLOUR/\#}.png"
 fi
-SE_BTN="$WORK_DIR/SE_BTN.png"
-if ($TITLESET_MODE && ! $NO_VMGM_MENU) || $PLAYALL; then
-    BTN_CMD=(convert -size 100x100 xc:none \
-   -font "$MENU_FONT" -pointsize 20 \
-    -fill black -stroke black -gravity center  \
-    -annotate +0+0 "$SE_BTNTEXT" \
-    -fill "$TITLE_COLOUR" -stroke "$STROKE" -strokewidth 1 \
-    -annotate +1+1 "$SE_BTNTEXT")
-    TRIM_CMD=(convert "$SE_BTN" -background none -rotate -30 -trim +repage "$SE_BTN")
-    "${BTN_CMD[@]}" -trim +repage "$SE_BTN"
-    SE_BTN_WIDTH=$(get_image_dim "$SE_BTN"|awk -Fx '{print $1}' )
-    SPUMUX_LINE_WIDTH=$((SE_BTN_WIDTH+10))
-    "${TRIM_CMD[@]}"
-#    "${BTN_CMD[@]}" miff:- | "${TRIM_CMD[@]}"|fold -bs >> "$LOG_FILE"
-    ADD_SE_BTN="$SE_BTN -gravity SouthEast -geometry +55+55 -composite"
-    # make the image for spumux while we are add it
-    for BUTTON in "$SELECT_COLOUR" "$HIGHLIGHT_COLOUR"; do
-        convert -size 120x60 xc:none -strokewidth 1 -fill none -stroke $BUTTON \
-        -draw "line 10,10 $SE_BTN_WIDTH,10" miff:- | convert - -background none \
-        -rotate -30 -trim +repage $WORK_DIR/${BUTTON/\#}_se_button.png
-    done
+if $PLAYALL; then
+    if ($TITLESET_MODE && ! $NO_VMGM_MENU) && ! $VMGM_ONLY; then
+        POINTSIZE=14
+        PLAYALL_SE_GEO="+50+50"
+    else
+        POINTSIZE=20
+        PLAYALL_SE_GEO="+55+55"
+    fi
+    mk_se_png $POINTSIZE "Play All" "$WORK_DIR/Playall.png"
+    ADD_PLAYALL_BTN=("$WORK_DIR/Playall.png" -gravity SouthEast -geometry "$PLAYALL_SE_GEO" -composite)
+    # make the button for spumux too
+    mk_se_button $SE_BTN_WIDTH "$HIGHLIGHT_COLOUR" "$WORK_DIR/Playall_${HIGHLIGHT_COLOUR/\#}.png"
+    mk_se_button $SE_BTN_WIDTH "$SELECT_COLOUR" "$WORK_DIR/Playall_${SELECT_COLOUR/\#}.png"
 fi
 
 if [[ -n $MENU_TITLE ]]; then
@@ -2773,10 +2847,11 @@ if $SHOWCASE; then
     -composite "$WORK_DIR/pics/template.png"
 fi
 if $PLAYALL || ($TITLESET_MODE && ! $NO_VMGM_MENU) ; then
-    convert "$WORK_DIR/pics/template.png" "$SE_BTN" \
-    -gravity SouthEast -geometry +55+55 -composite "$WORK_DIR/pics/template.png"
-    convert "$WORK_DIR/pics/template.png" "$SE_BTN" \
-    -gravity SouthEast -geometry +55+55 -composite "$WORK_DIR/pics/template.jpg"
+    if ! $VMGM_ONLY; then
+        convert "$WORK_DIR/pics/template.png" "${ADD_PLAYALL_BTN[@]}" \
+        "${ADD_MAIN_BTN[@]}" "$WORK_DIR/pics/template.png"
+        convert "$WORK_DIR/pics/template.png" "$WORK_DIR/pics/template.jpg"
+    fi
 fi
 # lets be sure of order by using a loop
 for ((i=0; i<=NUM_FILES; i++)); do
@@ -2953,10 +3028,6 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     fi
     [[ -z ${ROTATE_ARRAY[@]} ]] && PNG_IS_DONE=: # do not loop over creating same png
 done
-#if ! $NOASK && ! $SHOWCASE; then
-#    echo "Creating and displaying a preview of the main menu."
-#    echo "(Press 'q' or ESC in the preview window to close it.)"
-#fi
 if [ "$BUTTON_STYLE" = "rect" ]; then
     BUTTON_DIM=$(get_image_dim "$WORK_DIR/Highlightx1.png")
     for button in Select Highlight; do
@@ -3053,11 +3124,17 @@ elif $SHOWCASE && [[ "$BUTTON_STYLE" = "line" ]]; then
         convert  -size $VIDSIZE xc:none -fill none -stroke $HIGHLIGHT_COLOUR \
         -strokewidth 2 -draw @fake_montage.mvg "$WORK_DIR/fake_montage.png"
 fi
-if $PLAYALL ||  ($TITLESET_MODE && ! $NO_VMGM_MENU); then
-    convert -gravity SouthEast -geometry +53+53 "$WORK_DIR/Select.png" \
-    $WORK_DIR/${SELECT_COLOUR/\#}_se_button.png -composite "$WORK_DIR/Select.png"
-    convert -gravity SouthEast -geometry +53+53 "$WORK_DIR/Highlight.png" \
-    $WORK_DIR/${HIGHLIGHT_COLOUR/\#}_se_button.png -composite "$WORK_DIR/Highlight.png"
+if $TITLESET_MODE && ! $VMGM_ONLY && ! $NO_VMGM_MENU; then
+    convert -gravity SouthEast -geometry "$MAIN_SE_GEO" "$WORK_DIR/Select.png" \
+    "$WORK_DIR/Main_${SELECT_COLOUR/\#}.png" -composite "$WORK_DIR/Select.png"
+    convert -gravity SouthEast -geometry "$MAIN_SE_GEO" "$WORK_DIR/Highlight.png" \
+    "$WORK_DIR/Main_${HIGHLIGHT_COLOUR/\#}.png" -composite "$WORK_DIR/Highlight.png"
+fi
+if $PLAYALL && ! $VMGM_ONLY; then
+    convert -gravity SouthEast -geometry "$PLAYALL_SE_GEO" "$WORK_DIR/Select.png" \
+    "$WORK_DIR/Playall_${SELECT_COLOUR/\#}.png" -composite "$WORK_DIR/Select.png"
+    convert -gravity SouthEast -geometry "$PLAYALL_SE_GEO" "$WORK_DIR/Highlight.png" \
+    "$WORK_DIR/Playall_${HIGHLIGHT_COLOUR/\#}.png" -composite "$WORK_DIR/Highlight.png"
 fi
 
 # this reduces colours so spumux is happy
@@ -3201,10 +3278,6 @@ fi
 # make the fake montage with highlighted 1st button and display it
 composite -compose Over "$WORK_DIR/fake_montage.png" "$WORK_DIR/preview.jpg" \
 "$WORK_DIR/preview.jpg"
-if ($PLAYALL || ($TITLESET_MODE && ! $NO_VMGM_MENU) ) && ! $VMGM_ONLY; then
-convert -gravity SouthEast -geometry +55+55 "$WORK_DIR/preview.jpg" \
-"$SE_BTN" -composite "$WORK_DIR/preview.jpg"
-fi
 if ! $NOASK; then
     convert -resize $PREVIEW_SIZE! "$WORK_DIR/preview.jpg" miff:- |
     display -title "todisc preview - close window to continue" -
@@ -3570,6 +3643,11 @@ else
     NUM_BUTTONS=${#FILES[@]}
 fi
 ($SWITCHED_MODE || $SWITCHED_MENUS) && SPUMUX_XML="$BASEDIR/spumux.xml"
+if $SWITCHED_MENUS; then
+    down="down=\"ActionDown\"" && up="up=\"ActionUp\"" &&  lastup="up=\"ActionDown\""
+    right="right=\"ActionDown\"" && left="left=\"ActionUp\""
+    updown="down=\"ActionDown\" up=\"ActionUp\""
+fi
 (
     cat <<EOF
 <subpictures>
@@ -3581,17 +3659,13 @@ fi
        outlinewidth=$OUTLINEWIDTH
        autoorder="$AUTOORDER">
 $(if $QUICK_NAV; then
-    if $SWITCHED_MENUS; then
-        down="down=\"ActionDown\"" && up="up=\"ActionUp\"" &&  lastup="up=\"ActionDown\""
-        right="right=\"ActionDown\"" && left="left=\"ActionUp\""
-    fi
     for ((i=1; i<=$NUM_BUTTONS; i++)); do
         ! $SWITCHED_MENUS && right="right=\"$((i+1))\"" && left="left=\"$((i-1))\""
         if [[ $i -eq 1 ]]; then
             echo -n "       <button name=\"$i\" $down $up"
         elif [[ $i -eq ${#FILES[@]} ]]; then
             if $TITLESET_MODE || $PLAYALL; then
-                echo -n "       <button name=\"$i\" $up"
+                echo -n "       <button name=\"$i\" $up down=\"$((i+1))\""
             else
                 echo -n "       <button name=\"$i\" $down $up"
             fi
@@ -3610,14 +3684,27 @@ $(if $QUICK_NAV; then
             fi
         fi
         if [[ $i -eq $(( ${#FILES[@]} + 1 )) ]]; then
-            echo -e "       <button name=\"$i\" $down $lastup/>"
+            if $TITLESET_MODE && ! $NO_VMGM_MENU && $PLAYALL; then
+                echo -e "       <button name=\"$i\" $lastup/>"
+                echo -e "       <button name=\"$((i+1))\" $down/>"
+            else
+                echo -e "       <button name=\"$((i+1))\" $down $lastup/>"
+            fi
         fi
     done
 fi)   
 $(if $SWITCHED_MENUS && ! $QUICK_NAV; then
-    updown="down=\"ActionDown\" up=\"ActionUp\""
     for ((i=1; i<=$NUM_BUTTONS; i++)); do
-        echo -e "       <button name=\"$i\" $updown/>"
+        if [[ $i -eq $(( ${#FILES[@]} + 1 )) ]]; then
+            if $TITLESET_MODE && ! $NO_VMGM_MENU && $PLAYALL; then
+                echo -e "       <button name=\"$i\" $lastup/>"
+                echo -e "       <button name=\"$((i+1))\" $down/>"
+            else
+                echo -e "       <button name=\"$i\" $updown/>"
+            fi
+        else
+            echo -e "       <button name=\"$i\" $updown/>"
+        fi
     done
     echo -e "       <action name=\"ActionDown\"/>"
     echo -e "       <action name=\"ActionUp\"/>"
@@ -3691,10 +3778,14 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
         echo -e "        <button name=\"ActionUp\">{ g1 = $dec; jump menu $dec; }</button>"
         echo -e "        <button name=\"ActionDown\">{ g1 = $inc; jump menu $inc; }</button>"
     fi
+    SE_BUTTON_NUM=$V_TOTAL
     if  $TITLESET_MODE && ! $NO_VMGM_MENU; then
-        echo -e "        <button name=\"$((V_TOTAL + 1))\">g2=1; g3=1000; button=1024; jump vmgm menu;</button>"
-    else
-        $PLAYALL && echo -e "        <button name=\"$((V_TOTAL + 1))\">g4=1; jump title 1 chapter 1;</button>"
+        ((SE_BUTTON_NUM++))
+        echo -e "        <button name=\"$SE_BUTTON_NUM\">g2=1; g3=1000; button=1024; jump vmgm menu;</button>"
+    fi
+    if $PLAYALL ; then
+        ((SE_BUTTON_NUM++))
+        echo -e "        <button name=\"$SE_BUTTON_NUM\">g4=1; jump title 1 chapter 1;</button>"
     fi
     echo -e "        <vob file=\"$BASEDIR/animenu${TSET_NUM}-${menu_num}.mpg\" pause=\"$VMGM_PAUSE_TIME\"/>"
     if $SWITCHED_MENUS; then
@@ -4494,12 +4585,19 @@ if $MENU_FADE && ! $STATIC; then
         MONTAGE_CMD4=(composite -dissolve $C -gravity $TITLE_GRAVITY -geometry \
         ${title_xoffset}${title_yoffset} $WORK_DIR/title_txt.png - \
         -background none $WORK_DIR/animenu/$(($frame + 1)).jpg)
-        if $PLAYALL; then
-            MONTAGE_CMD5=(composite -dissolve $S -gravity SouthEast -geometry +55+55 \
-            $SE_BTN - -background none)
+        if $PLAYALL ; then
+            MONTAGE_CMD5=(composite -dissolve $S -gravity SouthEast \
+            -geometry $PLAYALL_SE_GEO "$WORK_DIR/Playall.png" - -background none)
         else
             MONTAGE_CMD5=(convert -)
         fi
+        if $TITLESET_MODE && ! $VMGM_ONLY && ! $NO_VMGM_MENU; then
+            MONTAGE_CMD6=(composite -dissolve $S -gravity SouthEast \
+            -geometry $MAIN_SE_GEO "$WORK_DIR/Main.png" - -background none)
+        else
+            MONTAGE_CMD6=(convert -)
+        fi
+ 
         $TEXTMENU && unset MONTAGE_CMD
         $TEXTMENU && MONTAGE_CMD=( "${MONTAGE_CMD03[@]}" )
         # pipe all of above commands if using MIST
@@ -4508,31 +4606,34 @@ if $MENU_FADE && ! $STATIC; then
                 if [[ -n "$SHOWCASE_VIDEO" ]]; then
                     "${MONTAGE_CMD01[@]}" miff:- | "${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- | "${MONTAGE_CMD3[@]}" miff:- |
-                    "${MONTAGE_CMD5[@]}" miff:- | "${MONTAGE_CMD4[@]}"
+                    "${MONTAGE_CMD5[@]}" miff:- | "${MONTAGE_CMD6[@]}" miff:- |
+                    "${MONTAGE_CMD4[@]}"
                 else # not SHOWCASE_VIDEO (SHOWCASE_IMG)
                     "${MONTAGE_CMD[@]}" miff:- | "${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- |  "${MONTAGE_CMD5[@]}" miff:- |
-                    "${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD4[@]}"
+                    "${MONTAGE_CMD6[@]}" miff:- | "${MONTAGE_CMD3[@]}" miff:- |
+                    "${MONTAGE_CMD4[@]}"
                 fi
             else # not SHOWCASE
                 "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
                 "${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD5[@]}" miff:- |
-                "${MONTAGE_CMD4[@]}"
+                "${MONTAGE_CMD6[@]}" miff:- | "${MONTAGE_CMD4[@]}"
             fi
         else  # no mist: pipe all commands but the mist command
             if $SHOWCASE; then
                 if [[ -n "$SHOWCASE_VIDEO" ]]; then
                     "${MONTAGE_CMD01[@]}" miff:- | "${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- | "${MONTAGE_CMD5[@]}" miff:- |
-                    "${MONTAGE_CMD4[@]}"
+                    "${MONTAGE_CMD6[@]}" miff:- | "${MONTAGE_CMD4[@]}"
                 else
                     "${MONTAGE_CMD[@]}" miff:- | "${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- |  "${MONTAGE_CMD5[@]}" miff:- |
-                    "${MONTAGE_CMD4[@]}"
+                    "${MONTAGE_CMD6[@]}" miff:- | "${MONTAGE_CMD4[@]}"
                 fi
             else
                 "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
-                "${MONTAGE_CMD5[@]}" miff:- | "${MONTAGE_CMD4[@]}"
+                "${MONTAGE_CMD5[@]}" miff:- | "${MONTAGE_CMD6[@]}" miff:- |
+                "${MONTAGE_CMD4[@]}"
             fi
         fi
         unset ANI_PICS sc_cmd
@@ -4585,8 +4686,8 @@ else # Do not do menu fade
             IM_CMD3=(composite -dissolve 30 -gravity $TITLE_GRAVITY \
             -geometry ${mist_xoffset}${mist_yoffset} $WORK_DIR/white.png - miff:-)
             IM_CMD4=(convert - $WORK_DIR/title_txt.png -gravity $TITLE_GRAVITY \
-            -geometry ${title_xoffset}${title_yoffset} -composite $ADD_SE_BTN \
-            $WORK_DIR/animenu/$count.jpg )
+            -geometry ${title_xoffset}${title_yoffset} -composite "${ADD_MAIN_BTN[@]}" \
+            "${ADD_PLAYALL_BTN[@]}" $WORK_DIR/animenu/$count.jpg )
             if $MIST; then
                 if $SHOWCASE && [[ -n "$SHOWCASE_VIDEO" ]]; then # showcase, mist, showcase-video
                     if test -n "$BG_VIDEO"; then # showcase, mist, showcase-video, bgvideo
@@ -4655,7 +4756,7 @@ else # Do not do menu fade
             -geometry ${mist_xoffset}${mist_yoffset} $WORK_DIR/white.png - miff:-)
             IM_CMD4=(convert - $WORK_DIR/title_txt.png  \
             -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
-            -composite $ADD_SE_BTN $WORK_DIR/animenu/$count.jpg )
+            -composite "${ADD_MAIN_BTN[@]}" "${ADD_PLAYALL_BTN[@]}" $WORK_DIR/animenu/$count.jpg )
 
             if $STATIC; then
                 if $MIST; then
@@ -4865,34 +4966,11 @@ echo "Cleaning up unwanted files in $REAL_WORK_DIR"
 find "$WORK_DIR"/ -name '*.png' ! -name Highlight.png ! -name Select.png -exec rm -f {} \;
 find "$WORK_DIR"/ -name '*.jpg' ! -name preview.jpg -exec rm -f {} \;
 rm -frv "$WORK_DIR/animenu" "$WORK_DIR/pics" "$WORK_DIR/submenu"
+$VMGM_ONLY && $KEEP_FILES && mv -v "$REAL_WORK_DIR" "$BASEDIR"/VMGM
 echo "Removing the link in /tmp"
 rm -fv "$WORK_DIR"
-#    if $SUB_MENU; then
-#        makexml -vcd -topmenu "$WORK_DIR/animenu.mpg" \
-#        $(for ((x=1; x<=V_TOTAL; x++)); do echo \
-#        "-menu $WORK_DIR/Menu${x}.mpg";done) "${IN_FILES[@]}" -out MyDisc
-#        vcdxbuild MyDisc.xml
-#    else
-if ! $VMGM_ONLY && ! [[ -n $TSET_NUM ]]; then
-    SCRIPT_END_TIME=`date +%s`
-    SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
-    HHMMSS=`format_time $SCRIPT_TOT_TIME`
-    echo
-    echo $SEPARATOR
-    echo "todisc took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
-    echo $SEPARATOR
-    if [ "$TARGET" = dvd ]; then
-        echo "Your new DVD should be in $OUT_DIR"
-        echo "You can preview them in gxine with this command:"
-        echo "    gxine \"dvd:/$OUT_DIR\""
-        echo "If you are satisfied with the results, you can burn a disc with:"
-        echo "    makedvd -burn \"$OUT_DIR\""
-    elif [ "$TARGET" = svcd ]; then
-        echo "Your svcd bin and cue files are ready. You can burn them with:"
-        echo "    cdrdao write --device /dev/hdc --driver generic-mmc "${OUT_FILE}.cue""
-    fi
-    echo
-    echo "Thanks for using todisc."
+if ! $VMGM_ONLY && ! $SWITCHED_MODE && [[  $TSET_NUM -eq 1 ]]; then
+    thanks_goodbye
 fi
 cleanup
 exit 0
