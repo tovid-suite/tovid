@@ -80,6 +80,40 @@ The "-align" argument will position both titles and thumbs either south, north
 east, west, southwest, northwest, southeast, northeast, subject to certain
 constraints of each arrangement.
 
+**TITLESETS**
+
+A word should be mentioned here about titlesets.  If you want to have titlesets you 
+need to put all the options for each titleset menu you would like to have between 
+'-titleset' and '-end-titleset' options.  Additionally, for the main menu, you need to put
+options between '-vmgm' and '-end-vmgm'. 
+Any options outside the -titleset -end-titleset and -vmgm -end-vmgm areas will be
+general options that will apply to every titleset.  If an general option is duplicated
+inside a -titleset or -vmgm area, the general option will be overridden.
+You do not use '-files' for the vmgm menu options, but you will need as many TITLES after'
+-titles' as you have menus. For example:
+
+```
+ $ todisc -static -out MY_DVD \
+    \
+   -titleset -files 1.mpg 2.mpg 3.mpg \
+   -titles "Title One" "Title Two" "Title Three" \
+   -end-titleset \
+   \
+   -titleset -files 4.mpg 5.mpg \
+   -titles "Title Four" "Title Five" \
+    -background foo.jpg \
+    -showcase bar.png \
+    -end-titleset \
+    \
+    -vmgm \
+    -titles "Season One" "Season Two" \
+    -background bg.jpg \
+    -bgaudio foo.mp3 \
+    -thumb-fontsize 20 \
+    -end-vmgm
+```    
+See also -titleset and -vmgm
+
 == Options ==
 
 : -keepfiles
@@ -130,7 +164,6 @@ constraints of each arrangement.
 ```
     $ todisc ... -menu-title "A\nMultilined\nTitle" -menu-fontsize 24
 ```
-
 : -menu-font FONT
     Font to use for titles, either by ImageMagick font name (ex., "Arial") or
     explicit pathname (ex., "/full/path/to/arial.ttf"). To see a complete
@@ -147,6 +180,24 @@ constraints of each arrangement.
     List of files for sub-menu backgrounds. If one file is given, then it will
     be used for all sub-menus.  Else the number given must equal the number of
     chapters, though the keyword "none" may be used for silence
+: -titleset . . . -end-titleset
+    If you have more than one titleset, put the options for each titleset between
+    -titleset and -end-titleset.  A separate menu will be created that can be accessed
+    from the main menu (VMGM).  You can create this main menu using the -vmgm -end-vmgm
+    options.  See -vmgm below and TITLESET introduction above.
+: -vmgm . . . -end-vmgm
+    The VMGM menu is the root menu when you use titlesets.
+    Put your VMGM menu options between -vmgm and -end-vmgm.
+    You only need -titles "Titleset One title"  "Titleset Two title" . . . and not -files.
+    Any other options can be used, but the  menu will be a textmenu style by default.
+    **Hint**: use -showcase IMAGE/VIDEO to create a fancier VMGM menu.
+: -switched-menus
+    This should probably be under "advanced" but is included here for exposure :)
+    This will make a "switched menu": there will be a central image where the showcase 
+    image would go, and text menu titles along the menu edge where textmenu titles go.
+    As you select a video title with the down or up arrow on your DVD remote, the image
+    in the centre will change to the image or video
+    made from that selected video.
 
 
 == Thumbnail style ==
@@ -266,6 +317,8 @@ constraints of each arrangement.
 : -rotate DEGREES
     Rotate the showcase image|video clockwise by DEGREES.
     (default: if used without options, the rotate will be 5 degrees)
+: -showcase-geo GEOMETRY
+    The position of the showcase image.  ( XxY position )
 : -wave default|GEOMETRY
     Wave effect for showcase image|video.  Alters thumbs along a sine wave using
     GEOMETRY. (default: no wave)
@@ -362,7 +415,6 @@ constraints of each arrangement.
 ```
     -aspect 16:9
 ```
-
 : -widescreen nopanscan|noletterbox [nopanscan]
     This will output a <video widescreen=nopanscan /> tag (for example)
     for the dvdauthor xml file.  It will affect all videos in the titleset.
@@ -371,8 +423,13 @@ constraints of each arrangement.
 
 ```
     -aspect 16:9 -widescreen
-
 ```
+: -quick-nav
+    This option will allow navigation of a menu with more than one titleset by using the
+    left and right arrow keys of your DVD remote.  When you press this key the highlight will go
+    the next or previous title.  If you are at the end of a titleset the right key will go to the
+    next titleset.  If you are at the beginning of a titleset, the left key will go to the previous
+    titleset.  If no next or previous titleset it will cycle to the end or beginning of the titlesets.
 : -outlinewidth, -outline-width WIDTH
     For spumux outlinewidth variable.  If there is a large gap between words in a
     text button, this option may help.
