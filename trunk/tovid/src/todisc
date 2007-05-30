@@ -2716,6 +2716,7 @@ if $SHOWCASE && ! $NO_SC_THUMB; then
             VOUT="png:z=7"; FRAMES=30
             FRAME_SIZE=$SHOWCASE_SIZE
             MPLAYER_SEEK_VAL=$SHOWCASE_SEEK_VAL
+            $SWITCHED_MODE && MPLAYER_SEEK_VAL=${SEEK_VAL[MENU_NUM-1]}
             echo "Using mplayer to get framed images from the showcase video"
             echo "Running: mplayer -ss $MPLAYER_SEEK_VAL -vo $VOUT \
             -vf expand=-5:-5,rectangle=384:256,rectangle=382:254,rectangle=380:252,rectangle=378:250 \
@@ -2730,10 +2731,16 @@ if $SHOWCASE && ! $NO_SC_THUMB; then
             -background none $ROTATE $WAVE miff:-|
             convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
         elif [ "$SC_FRAMESTYLE" = "none" ]; then
-            FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -ss $SHOWCASE_SEEK_VAL \
+            if $SWITCHED_MODE|| $SWITCHED_MENUS; then
+                FFMPEG_SEEK_VAL=${SEEK_VAL[MENU_NUM-1]}
+            else
+                FFMPEG_SEEK_VAL=$SHOWCASE_SEEK_VAL
+            fi
+            
+            FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -ss $FFMPEG_SEEK_VAL \
             -s $SHOWCASE_SIZE  -vframes 1 -vcodec png -an -f rawvideo -y \
             "$WORK_DIR/showcase_img.png")
-            echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
+            echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs |tee -a "$LOG_FILE"
             SED_VAR="frame="
             if "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
                 cleanlog 3
@@ -3098,7 +3105,8 @@ elif [[ "$BUTTON_STYLE" = *text* ]]; then
     if $SHOWCASE; then
         if [[ $BUTTON_STYLE = "text-rect" ]]; then
             convert  -size $VIDSIZE xc:none -background none \
-            ${THUMBTITLES_ARRAY[0]} $WORK_DIR/000000-highlight.png \
+            ${THUMBTITLES_ARRAY[MENU_NUM-1]} \
+            $WORK_DIR/$(printf "%06d%s" $((MENU_NUM-1)) -highlight.png) \
             -mosaic "$WORK_DIR/fake_montage.png"
         fi
     else
@@ -3115,7 +3123,8 @@ elif $SHOWCASE && [[ "$BUTTON_STYLE" = "line" ]]; then
         YPT=$( cut -f3 -d+ <<< ${THUMBTITLES_ARRAY[i]} )
         YPT=$(( YPT + ${TT_DIM[i]##*x} ))
         echo  "line ${XPT1},${YPT} ${XPT2},${YPT}" >> "$WORK_DIR/spumux_drawfile"
-        [[ $i -eq 0 ]] && echo  "line ${XPT1},${YPT} ${XPT2},${YPT}" >> "$WORK_DIR/fake_montage.mvg"
+        [[ $i -eq $((MENU_NUM-1)) ]] && echo \
+        "line ${XPT1},${YPT} ${XPT2},${YPT}" >> "$WORK_DIR/fake_montage.mvg"
     done
         convert -size $VIDSIZE xc:none -fill none -stroke $SELECT_COLOUR \
         -strokewidth 2 -draw @spumux_drawfile "$WORK_DIR/Select.png"
@@ -4312,14 +4321,21 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && ! $NO_SC_THUMB; then
         FRAME_SIZE=$SHOWCASE_SIZE
         VOUT="png:z=7"
         MPLAYER_SEEK_VAL=$SHOWCASE_SEEK_VAL
+        $SWITCHED_MODE && MPLAYER_SEEK_VAL=${SEEK_VAL[MENU_NUM-1]}
         get_framed_pics "$SHOWCASE_VIDEO"  >> "$LOG_FILE" 2>&1
         for ((i=1; i<=$FIND_FRAMES; i++)); do
             mv  "$WORK_DIR"/$(printf "%08d%s"  $i .png) \
             "$WORK_DIR"/showcase/$(printf "%06d%s"  $i .png) 2>/dev/null
         done
     elif [ "$SC_FRAMESTYLE" = "none" ]; then
+        if $SWITCHED_MODE; then
+            FFMPEG_SEEK_VAL=${SEEK_VAL[MENU_NUM-1]}
+        else
+            FFMPEG_SEEK_VAL=$SHOWCASE_SEEK_VAL
+        fi
+
         FIND_FRAMES=$FRAMES # ffmpeg starts at 0
-        FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -ss $SHOWCASE_SEEK_VAL $BG_ASYNC \
+        FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -ss $FFMPEG_SEEK_VAL $BG_ASYNC \
         -s $SHOWCASE_SIZE -vframes $FRAMES -an -y "$WORK_DIR/showcase/%06d.png")
         echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
         SED_VAR="frame="
