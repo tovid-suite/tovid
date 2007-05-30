@@ -529,7 +529,8 @@ function get_args()
             "-subtitles" )
                 shift
                 if test -e "$1"; then
-                    SUBTITLES="-sub \"$(abspath \"$1\")\""
+                    SUBS_FILE=$(abspath "$1")
+                    SUBTITLES="-sub \"$SUBS_FILE\""
                     DO_SUBS=:
                 else
                     yecho "Cannot find subtitle file $1."
