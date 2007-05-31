@@ -738,7 +738,7 @@ function get_image_dim()
 function switched_menu_mode()
 #call todisc recursively to make multiple menus for -switched-menus option
 {
-    $TSET_MODE && IS_TITLESET="-is_titleset"
+    $TITLESET_MODE && IS_TITLESET="-is_titleset"
     ! $GROUPING && mk_workdir
     for ((i=1; i<${#FILES[@]}; i++)); do
         yecho
@@ -868,7 +868,7 @@ EOF
                 -tset_num ${count}-${tset} "${GEN_OPTS[@]}" "${TITLESET_OPTS[@]}" )
                 yecho
                 yecho "Working on the menu for titleset number $tset"
-                yecho
+                yecho && sleep 5
                 yecho "Running: ${titleset_cmd[@]}"
                 "${titleset_cmd[@]}"
                 yecho
@@ -2792,7 +2792,8 @@ if ! $TEXTMENU; then
                     spin "Creating a nav_seek log for "${IN_FILES[i]}": $SPINNER"
                 done
             fi
-            length=( ${length[@]} $(( $(awk  '{ field = $2 }; END{ print field }'  "${IN_FILES[i]}".nav_log) + 1)) )
+            length=( ${length[@]} $(( $(awk  '{ field = $2 }; END{ print field }' \
+            "${IN_FILES[i]}".nav_log) + 1)) )
         fi
             echo
             echo "[$i of $NUM_FILES] Seeking to ${SEEK_VAL[i]} seconds in ${IN_FILES[i]}"
@@ -3374,7 +3375,7 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
     # use a nav_seek file and transcode if long seek
     if [ ${SEEK_VAL[i]%.*} -gt 450 ] || $SUB_MENU || $SWITCHED_MODE; then
         STATS_FRAMES="-frames 1"
-        if [ ! -e  "${IN_FILES[i]}".nav_log ]; then
+        if [ ! -s  "${IN_FILES[i]}".nav_log ]; then
 #            NAVSEEK[i]="--nav_seek "$BASEDIR/${TSET_NUM}-nav${i}_log""
             NAVSEEK[i]="--nav_seek "${IN_FILES[i]}".nav_log"
             NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
@@ -3394,8 +3395,10 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
             fi
         fi
     fi
-    length=( ${length[@]} $(( $(awk '{ field = $2 }; END{ print field }' \
+    if [ -s  "${IN_FILES[i]}".nav_log ]; then
+        length=( ${length[@]} $(( $(awk '{ field = $2 }; END{ print field }' \
         "${IN_FILES[i]}".nav_log) + 1)) )
+    fi
     [[ $MENU_NUM -eq 1 ]] && echo
     if [[ $MENU_NUM -eq 1 ]]; then
         echo "Getting stats on "${IN_FILES[i]}""
@@ -4985,7 +4988,7 @@ rm -frv "$WORK_DIR/animenu" "$WORK_DIR/pics" "$WORK_DIR/submenu"
 $VMGM_ONLY && $KEEP_FILES && mv -v "$REAL_WORK_DIR" "$BASEDIR"/VMGM
 echo "Removing the link in /tmp"
 rm -fv "$WORK_DIR"
-if ! $VMGM_ONLY && ! $SWITCHED_MODE && [[  $TSET_NUM -eq 1 ]]; then
+if ! $VMGM_ONLY && ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
     thanks_goodbye
 fi
 cleanup
