@@ -859,11 +859,6 @@ EOF
                     TITLESET_OPTS[x++]="$1"
                     shift
                 done
-                # Do not skip past the next argument
-#                if test $# -gt 0 && test x"${1:0:1}" = x"-";then
-#                    DO_SHIFT=false
-#                fi
-#                TITLESET_OPTS=( "${ARGS_ARRAY[@]}" )
                 titleset_cmd=( todisc -titleset-mode -basedir "$WORK_DIR" \
                 -tset_num ${count}-${tset} "${GEN_OPTS[@]}" "${TITLESET_OPTS[@]}" )
                 yecho
@@ -1083,9 +1078,8 @@ while test $# -gt 0; do
             shift
             ASPECT_ARG=$1
             if [[ ${#ASPECT_ARG[@]} -gt 0 ]]; then
-            ASPECT=$ASPECT_ARG
-            ASPECT_RATIO=$ASPECT
-            V_ASPECT="aspect=\"$ASPECT\""
+            ASPECT_RATIO=$ASPECT_ARG
+            V_ASPECT="aspect=\"$ASPECT_RATIO\""
             fi
             ;;
         "-widescreen" )
@@ -2050,7 +2044,8 @@ if  [ $TARGET = "dvd" ]; then
     SAMPLERATE="48000"
     MPLEX_FORMAT="8"
     GEO_ARRAY=("${DVD_GEO_ARRAY[@]}")
-    FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 230KiB  -aspect $ASPECT_RATIO"
+    FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 230KiB -aspect 4:3"
+    ASPECT="-aspect $ASPECT_RATIO"
     SHOWCASE_SIZE=384x256
     if [ $TV_STANDARD = ntsc ]; then
         VIDSIZE="720x480"
@@ -2064,7 +2059,8 @@ elif [ $TARGET = "svcd" ]; then
     SAMPLERATE="44100"
     MPLEX_FORMAT="4"
     GEO_ARRAY=("${SVCD_GEO_ARRAY[@]}")
-    FFMPEG_OPTS="-b 2200k -minrate 2200k -maxrate 2200k -bufsize 112KiB -aspect $ASPECT_RATIO"
+    FFMPEG_OPTS="-b 2200k -minrate 2200k -maxrate 2200k -bufsize 112KiB -aspect 4:3"
+    ASPECT="-aspect $ASPECT_RATIO"
     SHOWCASE_SIZE=256x256
     if [ $TV_STANDARD = ntsc ]; then
         VIDSIZE="480x480"
@@ -3755,7 +3751,8 @@ $SWITCHED_MENUS && NUM_MENUS=${#FILES[@]} || NUM_MENUS=1
 $(if $AUTHOR ; then
     echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
     echo -e "<dvdauthor dest=\"$OUT_DIR\" jumppad=\"0\">"
-    echo -e "  <vmgm>\n    <menus>\n      <pgc entry=\"title\" pause=\"0\">"
+    echo -e "  <vmgm>\n    <menus>"
+    echo -e "      <pgc entry=\"title\" pause=\"0\">"
     echo -e "        $VMGM_PRE"
     echo -e "        $INTRO"
     echo -e "        <vob file=\"$WORK_DIR/dummy.mpg\"/>"
