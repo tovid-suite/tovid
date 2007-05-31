@@ -230,18 +230,20 @@ See also -titleset and -vmgm
 : -chapters NUM
     The number of sub-menu chapters for each video (default: 6)
 : -seek NUM | "NUM1 NUM2 NUM3 . . ."
-     Seek to NUM seconds before generating thumbnails (default: 2.0 seconds)
-     If a quoted string of values matching the number of videos is used, then
-     each video can use a different seek value
+    Seek to NUM seconds before generating thumbnails (default: 2.0 seconds)
+    If a quoted string of values matching the number of videos is used, then
+    each video can use a different seek value
+    If using switched menus, the -seek value(s) will be used to generate the showcase
+    image that displays on switching to another video choice with the up/down arrow keys.
 : -showcase-seek NUM
-     Seek to NUM seconds before generating thumbnails for showcase video
-     (default: 2.0 seconds)
+    Seek to NUM seconds before generating thumbnails for showcase video
+    (default: 2.0 seconds)
 : -bgvideo-seek NUM
-     Seek to NUM seconds before generating images for background video
-     (default: 2.0 seconds)
+    Seek to NUM seconds before generating images for background video
+    (default: 2.0 seconds)
 : -bgaudio-seek NUM
-     Seek to NUM seconds before generating audio for bgaudio
-     (default: 2.0 seconds)
+    Seek to NUM seconds before generating audio for bgaudio
+    (default: 2.0 seconds)
 : -group N VIDEO1 VIDEO2 . . .
     Allow grouping videos in dvdauthor.xml. Example:
 
@@ -250,8 +252,6 @@ See also -titleset and -vmgm
 ```
 
  will group these 3 videos with the 1st video given with -files
-: -intro VIDEO
-    Option for adding a vmgm intro movie that plays before the root menu
 : -noask, -no-ask
     Skip all interactive questions.  No preview, no re-encoding option, no interactive
     option to use background video for bgaudio.
@@ -305,6 +305,7 @@ See also -titleset and -vmgm
 : -intro VIDEO
    Use a introductory video that will play before the main menu.
    At present this must be a DVD compatible video at the correct resolution etc.
+   Only 4:3 aspect is supported: 16:9 will give unexpected results.
 
 
 
