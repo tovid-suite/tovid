@@ -104,13 +104,13 @@ icon32dir = $(icon_base_dir)/32x32/apps
 iconSVGdir = $(icon_base_dir)/scalable/apps
 appdir = $(datadir)/applications
 # Distribute the data
-dist_icon128_DATA = $(icon_src_dir)/tovid_icon_128.png
-dist_icon64_DATA = $(icon_src_dir)/tovid_icon_64.png 
-dist_icon48_DATA = $(icon_src_dir)/tovid_icon_48.png 
-dist_icon32_DATA = $(icon_src_dir)/tovid_icon_32.png 
-dist_iconSVG_DATA = $(icon_src_dir)/cd.svg \
-	$(icon_src_dir)/disc.svg \
-	$(icon_src_dir)/tovid.svg
+dist_icon128_DATA = $(icon_src_dir)/hicolor/128x128/apps/tovid.png
+dist_icon64_DATA = $(icon_src_dir)/hicolor/64x64/apps/tovid.png 
+dist_icon48_DATA = $(icon_src_dir)/hicolor/48x48/apps/tovid.png 
+dist_icon32_DATA = $(icon_src_dir)/hicolor/32x32/apps/tovid.png 
+dist_iconSVG_DATA = $(icon_src_dir)/hicolor/scalable/apps/cd.svg \
+	$(icon_src_dir)/hicolor/scalable/apps/disc.svg \
+	$(icon_src_dir)/hicolor/scalable/apps/tovid.svg
 dist_app_DATA = \
 	tovidgui.desktop \
 	todiscgui.desktop
