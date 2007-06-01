@@ -93,24 +93,31 @@ $(man_MANS): $(man_dir)/%.1: $(man_src_dir)/%.t2t
 	txt2tags -t man -i "$<" -o "$@"
 
 # Shared data: icons and .desktop files
-# Source directories:
-icon_src_dir = icons
+# Icons -- freedesktop.org scheme
+icon_top_dir = icons/hicolor
+icon_svg_dir = scalable/apps
+icon_128_dir = 128x128/apps
+icon_64_dir = 64x64/apps
+icon_48_dir = 48x48/apps
+icon_32_dir = 32x32/apps
+
 # Install directories, $(datadir) == $(prefix)/share
-icon_base_dir = $(datadir)/icons/hicolor
-icon128dir = $(icon_base_dir)/128x128/apps
-icon64dir = $(icon_base_dir)/64x64/apps
-icon48dir = $(icon_base_dir)/48x48/apps
-icon32dir = $(icon_base_dir)/32x32/apps
-iconSVGdir = $(icon_base_dir)/scalable/apps
+icon_base_dir = $(datadir)/$(icon_top_dir)
+icon128dir = $(icon_base_dir)/$(icon_128_dir)
+icon64dir = $(icon_base_dir)/$(icon_64_dir)
+icon48dir = $(icon_base_dir)/$(icon_48_dir)
+icon32dir = $(icon_base_dir)/$(icon_32_dir)
+iconSVGdir = $(icon_base_dir)/$(icon_svg_dir)
 appdir = $(datadir)/applications
+
 # Distribute the data
-dist_icon128_DATA = $(icon_src_dir)/hicolor/128x128/apps/tovid.png
-dist_icon64_DATA = $(icon_src_dir)/hicolor/64x64/apps/tovid.png 
-dist_icon48_DATA = $(icon_src_dir)/hicolor/48x48/apps/tovid.png 
-dist_icon32_DATA = $(icon_src_dir)/hicolor/32x32/apps/tovid.png 
-dist_iconSVG_DATA = $(icon_src_dir)/hicolor/scalable/apps/cd.svg \
-	$(icon_src_dir)/hicolor/scalable/apps/disc.svg \
-	$(icon_src_dir)/hicolor/scalable/apps/tovid.svg
+dist_icon128_DATA = $(icon_top_dir)/$(icon_128_dir)/tovid.png
+dist_icon64_DATA = $(icon_top_dir)/$(icon_64_dir)/tovid.png 
+dist_icon48_DATA = $(icon_top_dir)/$(icon_48_dir)/tovid.png 
+dist_icon32_DATA = $(icon_top_dir)/$(icon_32_dir)/tovid.png 
+dist_iconSVG_DATA = $(icon_top_dir)/$(icon_svg_dir)/cd.svg \
+	$(icon_top_dir)/$(icon_svg_dir)/disc.svg \
+	$(icon_top_dir)/$(icon_svg_dir)/tovid.svg
 dist_app_DATA = \
 	tovidgui.desktop \
 	todiscgui.desktop
