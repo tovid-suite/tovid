@@ -86,7 +86,7 @@ fi
 # and $(pyexecdir), which is the directory where Python extension modules 
 # (shared libraries) should be installed.
 
-# For example, on friedrij's debian system
+# For example, on friedrij's woody debian system
 # $(pythondir) = ${prefix}/lib/python2.3/site-packages
 # $(pyexecdir) = ${exec_prefix}/lib/python2.3/site-packages
 
@@ -107,7 +107,7 @@ fi
 # (such as executables and subroutine libraries), while $(prefix) is used
 # directly for other directories."
 
-# So, this dev thinks we need $(pyexecdir) and some 'enlightened' python
+# So, this dev thinks we need $(pythondir) and some 'enlightened' python
 # scripts, as pointed out by 
 # http://sources.redhat.com/automake/automake.html#Hard_002dCoded-Install-Paths
 # If you do [use $(pythondir) or $(pyexecdir)], then:
@@ -119,8 +119,8 @@ fi
 #      this shared library, it's easy to tell Python were to look in the
 #      beginning of your script, so the script works in both cases). 
 
-# Using pyexecdir_PYTHON for libtovid will install it to 
-# ${exec_prefix}/lib/python2.3/site-packages (for example)
+# Using pythondir_PYTHON for libtovid will install it to 
+# ${prefix}/lib/python2.3/site-packages (for example)
 # and the pytovid suite (left as bin_SCRIPTS, so that they are installed as
 # executables and not byte-compiled like python_PYTHON would do) will need to be
 # told how to look for libtovid.
