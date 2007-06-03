@@ -169,6 +169,8 @@ pythonTEMPLATE_PYTHON = libtovid/template/*.py
 pythonTEMPLATEdir = $(pythondir)/libtovid/template
 pythonGUI_PYTHON = libtovid/gui/*.py
 pythonGUIdir = $(pythondir)/libtovid/gui
+pythonMETAGUI_PYTHON = libtovid/metagui/*.py
+pythonMETAGUIdir = $(pythondir)/libtovid/metagui
 
 # src/tovid-init not needed b/c ./configure derives it from src/tovid-init.in
 # make the output directory for the man pages, since t2t won't
@@ -182,6 +184,7 @@ uninstall-hook:
 	rmdir $(pythonRENDERdir)
 	rmdir $(pythonTEMPLATEdir)
 	rmdir $(pythonGUIdir)
+	rmdir $(pythonMETAGUIdir)
 	rmdir $(pythonLIBTOVIDdir)
 
 # A little fun :-)
