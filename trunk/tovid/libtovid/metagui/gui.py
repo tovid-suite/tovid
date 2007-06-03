@@ -17,7 +17,7 @@ import Tkinter as tk
 
 from control import Control, MissingOption
 from support import Tabs
-from cli import Command
+from libtovid.cli import Command
 
 ### --------------------------------------------------------------------
 ### GUI interface-definition API
