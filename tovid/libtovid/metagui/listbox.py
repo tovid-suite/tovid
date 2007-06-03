@@ -1,16 +1,44 @@
-#!/usr/bin/env python
+#! /usr/bin/env python
+# listbox.py
+# Based on grepper's ListBoxes
+# under adaptation to metagui Controls
 
-
-""" Experiments with ListBoxes widget.
-
-This base class has the minimum widgets and methods shared by both
-ListBoxes widget and FilesSubtitles widget, though many need to be
-overriden.  The addWidgets method allows widget additions/configurations.
-addPuller is a method of FilesTitles that allows it to know which
-instances to sync its list of files with and needs a call outside
-of the class, ie. in the application class instance.
-eg.  self.filestitles.addPuller(self.submenutitles)
 """
+
+Files <-> Titles (map filename to title)
+Files <-> Submenu audio files (map filename to list)
+Files <-> Seek values (map filename to number)
+
+When filename in list is selected, a new control may be displayed for
+setting the filename's associated attribute (title, seek, etc.)
+
+Filenames->associated values are maintained in an Odict. Only one file's
+associated-value control may be shown at a time.
+
+When current file's associated control is updated with <Enter>, the next
+filename is selected and the associated control focused.
+
+Q. How are args assembled for associated controls? Can call get_args for
+each in order, should be possible to define (at metagui top level) how they
+pass options.
+
+Speaking of top-level:
+
+Panel("...",
+    FileList('-files', "Input video files", '',
+        map=Text('-titles', "Title for FILE", '')), ...
+)
+
+"""
+
+__all__ = [
+    'ListBoxes',
+    'FilesTitles',
+    'MappedEntry',
+    'MappedFiles',
+    'MappedGroups',
+    'MappedNumbers',
+    'MappedTitles']
 
 import os
 import sys
@@ -18,24 +46,11 @@ import time
 import re
 import copy
 import shlex
-from libtovid.cli import Command
+import Tkinter as tk
+import tkFileDialog
+import tkMessageBox
+
 from libtovid.metagui import *
-from libtovid import log
-
-
-try:
-    import Tkinter as tk
-    import tkFileDialog
-    import tkMessageBox
-except:
-    import traceback
-    traceback.print_exc()
-    print "Could not import Tkinter. You may need to do the following:"
-    print "  Debian: Install 'python-tk'"
-    print "  Gentoo: Add 'tk' to python USE flags"
-    print "  Fedora: Install 'tkinter'"
-    sys.exit()
-
 
 ### --------------------------------------------------------------------
 ### Exceptions
@@ -55,25 +70,6 @@ class UserError (Exception):
 ### --------------------------------------------------------------------
 ### Helper functions
 ### --------------------------------------------------------------------
-
-def pretty_todisc(command, type='default'):
-    """Return a prettified version of a given todisc Command."""
-    assert isinstance(command, Command)
-    result = ['%s' % command.args[0]]
-    opts = command.args[1:]
-    while opts:
-        arg = str(opts.pop(0))
-        if type == 'burn':
-            if arg == app.outfile.outfile.get() or arg.startswith('-'):
-                result.append(arg)
-            else:
-                result[-1] += ' ' + arg
-        else:
-            if arg.startswith('-') and not re.match('^[-+]?[0-9]+$', arg):
-                result.append(arg)
-            else:
-                result[-1] += ' ' + arg
-    return '\n'.join(result)
 
 def blink(widget):
     """Cause a widget to "blink" by briefly changing its background color.
@@ -95,19 +91,15 @@ class ListBoxes (tk.Frame):
     """A frame containing a list of filenames, and controls to add or delete
     files from the list.
     """
-    def __init__(self, master=None):
-        tk.Frame.__init__(self, master)
-        self.tk.call('namespace', 'import', '::tk::dialog::file::') 
-        self.tk.call('set', '::tk::dialog::file::showHiddenBtn',  '1')
-        self.tk.call('set', '::tk::dialog::file::showHiddenVar',  '0')
-
+    def __init__(self):
         self.curentry = tk.StringVar()  # currently selected mapped list entry
         self.varFiles = tk.Variable()   # List of current files
         self.varMappedList = tk.Variable()  # Current mapped list entries
         self.varUsage = tk.StringVar()  # String describing current space usage
+        
         self.filesTitle = tk.StringVar()  # Title for left box ('Files' or 'Current Files')
         self.filesTitle.set('Current Files')
-        self.filestitle = self.filesTitle.get() # saved value for filesTitle
+        
         self.mappedTitle = tk.StringVar()  # Title for the right box (mapped files)
         self.mappedTitle.set('')
         self.curindex = 0  # initialize index of currently selected file to 0
@@ -116,12 +108,10 @@ class ListBoxes (tk.Frame):
         self.msgSingle = tk.StringVar()
         self.msgSingle.set('')
         self.filesList = ''
-        self.number = ''
-        self.btnAdd = ''
-        self.drawWidgets()
 
-    def drawWidgets(self):
+    def draw(self, master):
         """Draw all the widgets in this frame."""
+        tk.Frame.__init__(self, master)
         # Scrollbar to control both listboxes
         self.scrollbar = tk.Scrollbar(self, orient='vertical')
         self.scrollbar.grid(row=1, column=3, sticky='ns')
@@ -133,7 +123,7 @@ class ListBoxes (tk.Frame):
                                    background='#EFEFEF',
                                    listvariable=self.varFiles,
                                    yscrollcommand=self.scrollbar.set)
-        self.lstFiles.bind('<Button-1>', self.selectListitem)
+        self.lstFiles.bind('<Button-1>', self.select)
         self.lstFiles.grid(row=1, column=0, columnspan=2, sticky='w')
 
         # Title list box and editing field
@@ -144,14 +134,12 @@ class ListBoxes (tk.Frame):
                                     yscrollcommand=self.scrollbar.set)
         self.lstMapped.grid(row=1, column=2)
 
-        self.addWidgets()
-
     def scroll(self, *args):
         """Event handler when scrollbar is moved."""
         apply(self.lstFiles.yview, args)
         apply(self.lstMapped.yview, args)
 
-    def selectListitem(self, event):
+    def select(self, event):
         """Event handler when a filename or title in the list is selected.
         Set the title box for editing and change the mouse cursor."""
         self.curindex = self.lstFiles.nearest(event.y)
@@ -171,17 +159,11 @@ class ListBoxes (tk.Frame):
 
     def enableList(self):
         if self.variable.get() == 1:
-            if self.number: self.number.focus_set()
-            if self.btnAdd: self.btnAdd.focus_set()
-            self.filesTitle.set(self.filestitle)
             self.lstFiles.config(state='normal')
             self.syncFiles(self.filesList)
-            self.lstFiles.selection_set(0)
         else:
-            self.filesTitle.set('')
             self.lstFiles.delete(0, 'end')
             self.lstFiles.insert('end', self.msgSingle.get())
-            self.lstFiles.selection_set (self.curindex)
             self.lstFiles.config(state='disable')
             if self.lstMapped.get(0):
                 single = self.lstMapped.get(0)
@@ -189,25 +171,23 @@ class ListBoxes (tk.Frame):
                 self.lstMapped.insert(0, single)
                 self.curindex = 0
 
-    def addWidgets(self):
-        """Add/draw widgets specific to a subclass. Override in subclass"""
-        pass
 
-class FilesTitles(ListBoxes):
+class FilesTitles (ListBoxes):
     """ a frame containing a listbox to show (readonly) loaded files,
     and a listbox to display and edit titles"""
-    def __init__(self, master=None):
-        ListBoxes.__init__(self, master)
+    def __init__(self):
+        ListBoxes.__init__(self)
         self.filesTitle.set("Files")
         self.mappedTitle.set("Titles")
 
-    def addWidgets(self):
-        """Add/Draw all the widgets in this frame."""
-        self.lstMapped.bind('<B1-Motion>', self.dragListitem)
-        self.lstMapped.bind('<ButtonRelease-1>', self.onDrop)
-        self.lstFiles.bind('<B1-Motion>', self.dragListitem)
-        self.lstFiles.bind('<ButtonRelease-1>', self.onDrop)
-        self.lstMapped.bind('<Button-1>', self.selectListitem)
+    def draw(self, master):
+        """Draw all the widgets in this frame."""
+        ListBoxes.draw(self, master)
+        self.lstMapped.bind('<B1-Motion>', self.drag)
+        self.lstMapped.bind('<ButtonRelease-1>', self.drop)
+        self.lstFiles.bind('<B1-Motion>', self.drag)
+        self.lstFiles.bind('<ButtonRelease-1>', self.drop)
+        self.lstMapped.bind('<Button-1>', self.select)
         self.lstFiles.bind('<Return>', self.makeEntry)
         self.entTitle = tk.Entry(self, width=30,
             textvariable=self.curentry)
@@ -261,7 +241,7 @@ class FilesTitles(ListBoxes):
         for instance_ in self.puller:
             instance_.syncFiles(self.lstFiles.get(0, 'end'))
 
-    def selectListitem(self, event):
+    def select(self, event):
         """Event handler when a filename or title in the list is selected.
         Set the title box for editing and change the mouse cursor."""
         self.entTitle.focus_set()
@@ -269,7 +249,7 @@ class FilesTitles(ListBoxes):
         self.curentry.set(self.lstMapped.get(self.curindex))
         self.config(cursor="double_arrow")
 
-    def dragListitem(self, event):
+    def drag(self, event):
         """Event handler to move a file/title to another position in the list"""
         loc = self.lstFiles.nearest(event.y)
         if loc != self.curindex:
@@ -283,7 +263,7 @@ class FilesTitles(ListBoxes):
             self.syncFilesList()
             self.update_idletasks()
 
-    def onDrop(self, event):
+    def drop(self, event):
         """Event handler called when an item is "dropped" (mouse-release).
         Change the mouse cursor back to the default arrow.
         """
@@ -302,8 +282,8 @@ class FilesTitles(ListBoxes):
         usage = self.getUsage() / (1024 * 1024)
         self.varUsage.set("%s MB used" % usage)
 
-    def setOptions(self, command):
-        """Add relevant todisc options to the given Command."""
+    def get_args(self):
+        """Return todisc arguments for setting files and titles."""
         files = self.varFiles.get()
         titles = self.varMappedList.get()
         if len(files) != len(titles):
@@ -313,24 +293,24 @@ class FilesTitles(ListBoxes):
             raise UserError("File list (-files)", self.lstFiles)
         if len(titles) == 0:
             raise UserError("Title list (-titles)", self.lstMapped)
-        command.add('-files', *files)
-        command.add('-titles', *titles)
+        return ['-files'] + files + ['-titles'] + titles
 
 
-class MappedTitles(ListBoxes):
+class MappedTitles (ListBoxes):
     """A frame containing a listbox to show (readonly) loaded files,
     and a listbox to display and edit corresponding submenu titles"""
     def __init__(self, master=None):
-        ListBoxes.__init__(self, master)
+        ListBoxes.__init__(self)
         self.mappedTitle.set("Submenu titles")
         self.mappedfiles = []
 
-    def addWidgets(self):
-        """Add/Draw all the widgets in this frame."""
+    def draw(self, master):
+        """Draw all the widgets in this frame."""
+        ListBoxes.draw(self, master)
         self.entTitle = tk.Entry(self, width=30,
             textvariable=self.curentry)
         self.entTitle.bind('<Return>', self.makeEntry)
-        self.lstMapped.bind('<Button-1>', self.selectListitem)
+        self.lstMapped.bind('<Button-1>', self.select)
 #        self.lstFiles.bind('<Double-1>', do_something)
         self.entTitle.grid(row=2, column=2)
 
@@ -340,12 +320,12 @@ class MappedTitles(ListBoxes):
         self.lstFiles.delete(0, 'end')
         for file in self.filesList:
             self.lstFiles.insert('end', file)
-        self.titles = self.varMappedList.get()
-        if len(self.titles) == 0:
+        titles = self.varMappedList.get()
+        if len(titles) == 0:
             for file in filesList:
                 self.lstMapped.insert('end', '')
 
-    def selectListitem(self, event=None):
+    def select(self, event=None):
         """Event handler when a filename or title in the list is selected.
         Set the title box for editing and change the mouse cursor."""
         self.curindex = self.lstFiles.nearest(event.y)
@@ -357,31 +337,31 @@ class MappedTitles(ListBoxes):
         self.index_ = index_
         self.lstMapped.delete(self.index_)
 
-    def setOptions(self, command):
-        """Add relevant todisc options to the given Command."""
-        self.titles = []
+    def get_args(self):
+        """Return todisc arguments for setting submenu titles."""
+        args = []
         for title in self.varMappedList.get():
             if title:
-                self.titles.append(title)
+                args.append(title)
             else:
-                self.titles.append("' '")
-        command.add('-submenu-titles', *self.titles)
+                args.append("' '")
+        return ['-submenu-titles'] + args
 
 
-class MappedFiles(ListBoxes):
+class MappedFiles (ListBoxes):
     """ a frame containing a listbox to show (readonly) loaded files,
     and a listbox to load files coresponding to the readonly file list"""
     def __init__(self, master=None):
-        ListBoxes.__init__(self, master)
+        ListBoxes.__init__(self)
         self.mappedTitle.set("Submenu audio files")
         self.msgSingle.set('Use this audio file for all videos')
         self.lstFiles.insert('end', 'Use this audio file for all videos')
         self.lstFiles.config(state='disable')
         self.lstFiles.config(disabledforeground='black')
-        self.filesTitle.set('')
 
-    def addWidgets(self):
-        """Add/Draw all the widgets in this frame."""
+    def draw(self, master):
+        """Draw all the widgets in this frame."""
+        ListBoxes.draw(self, master)
         val = ''
         buttonFrame = tk.Frame(self)
         buttonFrame.grid(row=3, column=2, sticky='ew')
@@ -398,6 +378,7 @@ class MappedFiles(ListBoxes):
         self.btnMultiple.pack(side='left', fill='x', expand=1)
 
         self.lstFiles.bind('<Double-1>', self.addFiles)
+        print self.variable.get()
 
     def syncFiles(self, filesList):
         """Sync list of files (lstFiles) with FilesTitles instance"""
@@ -428,10 +409,9 @@ class MappedFiles(ListBoxes):
                 self.lstMapped.delete(self.curindex)
                 self.lstMapped.insert(self.curindex, self.file)
             # set cursor selection and index to the next file in list
-            if self.file and self.lstFiles.get(self.curindex + 1):
+            if self.lstFiles.get(self.curindex + 1):
                 self.lstFiles.selection_set (self.curindex + 1)
                 self.curindex = self.curindex + 1
-            else: self.lstFiles.selection_set(self.curindex)
 
     def removeFiles(self):
         """Event handler for removing files from the list box"""
@@ -451,8 +431,8 @@ class MappedFiles(ListBoxes):
         if self.numfiles != 1 or len(self.filesList) == 0:
             self.lstMapped.delete(self.index_)
 
-    def setOptions(self, command):
-        """Add relevant todisc options to the given Command."""
+    def get_args(self):
+        """Return todisc arguments for setting submenu audio files."""
         self.audiofiles = list(self.lstMapped.get(0, 'end'))
         self.numfiles = len(self.audiofiles) - self.audiofiles.count('')
         if self.numfiles != 1:
@@ -461,21 +441,23 @@ class MappedFiles(ListBoxes):
                 if file:
                     self.audio.append(file)
                 else: self.audio.append('none')
-        else: self.audio = self.varMappedList.get()
-        command.add('-submenu-audio', *self.audio)
+        else:
+            self.audio = self.varMappedList.get()
+        return ['-submenu-audio'] + self.audio
 
 
-class MappedGroups(ListBoxes):
+class MappedGroups (ListBoxes):
     """ a frame containing a listbox to show (readonly) loaded files, and
     a listbox to load grouped files coresponding to the readonly file list"""
     def __init__(self, master=None):
-        ListBoxes.__init__(self, master)
+        ListBoxes.__init__(self)
         self.mappedTitle.set("These files will be grouped together")
         self.mappedfiles=[]
         self.shownIndex = 0
 
-    def addWidgets(self):
-        """Add/Draw all the widgets in this frame."""
+    def draw(self, master):
+        """Draw all the widgets in this frame."""
+        ListBoxes.draw(self, master)
         buttonFrame = tk.Frame(self)
         buttonFrame.grid(row=3, column=2, sticky='ew')
 
@@ -488,7 +470,7 @@ class MappedGroups(ListBoxes):
         self.lstFiles.bind('<Double-1>', self.addFiles)
         self.lstFiles.bind('<Return>', self.addFiles)
 
-    def selectListitem(self, event):
+    def select(self, event):
         """Event handler when a filename or title in the list is selected.
         A list of lists is used to allow each video to have its own group"""
         self.curindex = self.lstFiles.nearest(event.y)
@@ -536,13 +518,12 @@ class MappedGroups(ListBoxes):
         selection = self.lstMapped.curselection()
         # Using reverse order prevents reflow from messing up indexing
         for line in reversed(selection):
-            if not self.lstMapped.selection_includes(0):
-                log.debug("Removing '%s' from the file list" %\
-                          self.lstFiles.get(line))
-                self.lstMapped.delete(0, 'end')
-                self.mappedfiles[self.curindex].pop(int(line))
-                file = self.mappedfiles[self.curindex]
-                self.lstMapped.insert('end', *file)
+            log.debug("Removing '%s' from the file list" %\
+                      self.lstFiles.get(line))
+            self.lstMapped.delete(0, 'end')
+            self.mappedfiles[self.curindex].pop(int(line))
+            file = self.mappedfiles[self.curindex]
+            self.lstMapped.insert('end', *file)
 
     def popList(self, _index):
         """remove item from lstMapped list - call from FilesTitles instance"""
@@ -551,29 +532,28 @@ class MappedGroups(ListBoxes):
         if self.shownIndex == self._index:
             self.lstMapped.delete(0, 'end')
 
-    def setOptions(self, command):
-        """Add relevant todisc options to the given Command."""
+    def get_args(self):
+        """Return todisc arguments for setting groups."""
+        args = []
         for index, item in enumerate(self.mappedfiles):
-            if self.mappedfiles[index]:
-                self.mappedfiles[index].pop(0)
-                if item:
-                    command.add('-group', index+1, *self.mappedfiles[index])
+            if item:
+                args.extend(['-group', index+1] + item)
 
 ### --------------------------------------------------------------------
 
-class MappedNumbers(ListBoxes):
+class MappedNumbers (ListBoxes):
     def __init__(self, master=None):
-        ListBoxes.__init__(self, master)
+        ListBoxes.__init__(self)
         self.mappedTitle.set('Seek')
         self.lstFiles.config(disabledforeground='black')
         self.msgSingle.set('Use this seek value for all videos')
         self.lstMapped.insert(0, 2.0)
-        self.filesTitle.set('')
 
-    def addWidgets(self):
+    def draw(self, master):
+        ListBoxes.draw(self, master)
         self.var = tk.DoubleVar()
         self.var.set(2)
-        self.curentry = tk.DoubleVar()  # Text of the currently selected title
+        self.curentry = tk.DoubleVar()
         self.lstMapped.config(width=6)
         NumberFrame = tk.Frame(self)
         NumberFrame.grid(row=1, column=4, sticky='ew', columnspan=2)
@@ -586,9 +566,7 @@ class MappedNumbers(ListBoxes):
         self.entTitle = tk.Entry(NumberFrame, width=10,
             textvariable=self.var)
         self.entTitle.bind('<Return>', self.makeEntry)
-        self.lstMapped.bind('<Button-1>', self.selectListitem)
-        self.number.bind('<Return>', self.makeEntry)
-        self.number.bind('<Button-1>', self.focus)
+        self.lstMapped.bind('<Button-1>', self.select)
         self.entTitle.pack(fill=tk.BOTH, expand=1, padx=2)
         buttonFrame = tk.Frame(self)
         buttonFrame.grid(row=2, column=0, columnspan=4, sticky='w')
@@ -599,9 +577,6 @@ class MappedNumbers(ListBoxes):
         self.spacer1 = tk.Label(self, text="", padx=20)
         self.spacer1.grid(row=1, column=6)
         self.lstFiles.config(state='disable')
-
-    def focus(self, event):
-        self.number.focus_set()
         
     def makeEntry(self, event):
         """Event handler when Enter is pressed after editing a title."""
@@ -615,13 +590,13 @@ class MappedNumbers(ListBoxes):
             self.lstFiles.selection_set(self.curindex)
             self.curentry.set(self.lstMapped.get(self.curindex))
 
-    def selectListitem(self, event=None):
+    def select(self, event=None):
         """Event handler when a filename or title in the list is selected.
         Set the title box for editing and change the mouse cursor."""
         self.curindex = self.lstFiles.nearest(event.y)
         if self.lstMapped.get(self.curindex):
             self.var.set(float(self.lstMapped.get(self.curindex)))
-        self.number.focus_set()
+        self.entTitle.focus_set()
 
     def popList(self, index_):
         """remove item from lstMapped list - call from FilesTitles instance"""
@@ -635,21 +610,22 @@ class MappedNumbers(ListBoxes):
         for file in self.filesList:
             self.lstFiles.insert('end', file)
 
-    def setOptions(self, command):
-        """Add relevant todisc options to the given Command."""
-        seeks = self.varMappedList.get()
-        command.add('-seek', *seeks)
+    def get_args(self):
+        """Return todisc arguments for setting seek."""
+        seeks = list(self.varMappedList.get())
+        return ['-seek'] + seeks
 
 ### --------------------------------------------------------------------
 
 class MappedEntry(ListBoxes):
     def __init__(self, master=None):
-        ListBoxes.__init__(self, master)
+        ListBoxes.__init__(self)
         self.lstFiles.config(selectmode=tk.MULTIPLE)
         self.filesTitle.set('Select Files to chain together')
         self.mappedTitle.set('Files to be chained together')
 
-    def addWidgets(self):
+    def draw(self, master):
+        ListBoxes.draw(self, master)
         self.varChained = tk.Variable()
         self.btnAdd = tk.Button(self, text="OK", command=self.enterIndexes)
         self.btnAdd.grid(row=4, column=0, sticky='ew', columnspan=2)
@@ -688,23 +664,13 @@ class MappedEntry(ListBoxes):
         self.index_ = index_
         self.lstMapped.delete(self.index_)
 
-    def setOptions(self, command):
-        """Add relevant todisc options to the given Command."""
-        chained = []
-        for index, item in enumerate(self.varMappedList.get()):
-            if item: chained.insert(index, index)
-            else: chained.insert(index, '')
-        for index, item in enumerate(chained):
-            if not item:
-                if chained[index-1] or chained[index-1] == 0:
-                    chained.pop((index-1))
-            elif index == len(self.varMappedList.get())-1:
-                chained.pop(index)
+    def get_args(self):
+        """Return todisc arguments for setting chained videos."""
+        chained = list(self.varChained.get())
+        return ['-chain-videos'] + chained
 
-        command.add('-chain-videos', *chained)
 
 ### --------------------------------------------------------------------
-
 ### Main application window
 ### --------------------------------------------------------------------
 
@@ -712,9 +678,9 @@ class GUI (tk.Frame):
     def __init__(self, master=None):
         tk.Frame.__init__(self, master)
         self.pack()
-        self.drawWidgets()
+        self.draw()
 
-    def drawWidgets(self):
+    def draw(self, master):
         """Draw all the widgets in this frame."""
         group = tk.Frame(self)
         group.pack(side='left', padx=6, pady=7)
@@ -777,7 +743,7 @@ class GUI (tk.Frame):
             self.submenutitles]
         for frame in frames:
             try:
-                frame.setOptions(cmd)
+                cmd.add(*frame.get_args())
             except UserError, err:
                 log.error("Missing a required option: %s" % err.message)
                 raise
@@ -809,34 +775,6 @@ class GUI (tk.Frame):
                 tkMessageBox.showinfo(message="todisc finished running!")
             root.deiconify()
 
-def setTheme(theme='default'):
-    """Set widget styles to match a theme. This must be called before
-    widgets are created, and does not apply to widgets already created.
-    """
-    if theme == 'light':
-        log.info("Using 'light' theme")
-        log.info("(run 'todiscgui tk' for alternate theme)")
-        root.option_add("*Entry.relief", 'groove')
-        root.option_add("*Spinbox.relief", 'groove')
-        root.option_add("*Listbox.relief", 'groove')
-        root.option_add("*Button.relief", 'groove')
-        root.option_add("*Menu.relief", 'groove')
-        root.option_add("*font", ("Helvetica", 12))
-        root.option_add("*Radiobutton.selectColor", "#8888FF")
-        root.option_add("*Checkbutton.selectColor", "#8888FF")
-        # Mouse-over effects
-        root.option_add("*Button.overRelief", 'raised')
-        root.option_add("*Checkbutton.overRelief", 'groove')
-        root.option_add("*Radiobutton.overRelief", 'groove')
-    else:  # theme == 'tk' or anything else
-        log.info("Using 'tk' theme")
-        log.info("(run 'todiscgui light' for alternate theme)")
-        root.option_clear()
-    # These apply to all themes
-    root.option_add("*Scale.troughColor", 'white')
-    root.option_add("*Spinbox.background", 'white')
-    root.option_add("*Entry.background", 'white')
-    root.option_add("*Listbox.background", 'white')
 
 ### --------------------------------------------------------------------
 ### Entry point
@@ -850,8 +788,6 @@ if __name__ == '__main__':
         theme = sys.argv[1]
 
     root.title("todisc GUI")
-    #root.iconbitmap('@//work/svn/tovid/src/tovid_bw_32.xbm')
-    setTheme(theme)
     app = GUI(root)
     root.update_idletasks()
     root.mainloop()
