@@ -9,6 +9,7 @@ __all__ = [
     'DragList',
     'ComboBox',
     'FontChooser',
+    'ConfigWindow',
     'Optional',
     'Tabs',
     'ScrolledWindow'
@@ -296,6 +297,38 @@ class FontChooser (tkSimpleDialog.Dialog):
 
 ### --------------------------------------------------------------------
 
+class ConfigWindow (tkSimpleDialog.Dialog):
+    """Configuration settings dialog box."""
+    def __init__(self, master=None, inifile=''):
+        """Create and display a configuration window.
+        
+            inifile:  An .ini-style file to load save settings from
+        """
+        tkSimpleDialog.Dialog.__init__(self, master, "Configuration")
+        self.inifile = inifile
+        
+    def body(self, master):
+        """Draw widgets inside the Dialog, and return the widget that should
+        have the initial focus. Called by the Dialog base class constructor.
+        """
+        tk.Label(master, text="GUI font").pack(side='top')
+        self.font = ComboBox(master, choices=['Helvetica', 'Courier', 'Times'])
+        self.font.pack(side='top', fill='both', expand=True)
+        tk.Label(master, text="Font size").pack(side='top')
+        self.fontsize = ComboBox(master, choices=[8, 10, 12, 15, 18, 24])
+        self.fontsize.pack(side='top')
+        # Return widget with initial focus
+        return self.font
+    
+    def apply(self):
+        """Apply the selected configuration settings.
+        """
+        self.result = (self.font.variable.get(),
+                       self.fontsize.variable.get(),
+                       'normal')
+
+### --------------------------------------------------------------------
+
 class Optional (tk.Frame):
     """Container that shows/hides an optional Control"""
     def __init__(self,
@@ -350,7 +383,7 @@ class Optional (tk.Frame):
 class Tabs (tk.Frame):
     """A tabbed frame, with tab buttons that switch between several frames.
     """
-    def __init__(self, master, side='top', font=('Helvetica', 12, 'normal')):
+    def __init__(self, master, side='top', font=('courier', 15, 'normal')):
         """Create a tabbed frame widget.
         
             master: Tkinter widget to draw the Tabs in
@@ -483,3 +516,4 @@ class ScrolledWindow (tk.Tk):
         v_scroll.grid(row=0, column=1, sticky='ns')
         self.canvas.configure(xscrollcommand=h_scroll.set,
                               yscrollcommand=v_scroll.set)
+        
