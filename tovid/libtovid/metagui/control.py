@@ -157,7 +157,6 @@ class Control (tk.Frame):
 
     def set(self, value):
         """Set the Control's variable to the given value."""
-        print "Control.set:", value
         # self.variable isn't set until draw() is called
         if not self.variable:
             raise "Must call draw() before set()"
@@ -189,17 +188,17 @@ class Control (tk.Frame):
         args = []
         value = self.get()
         # Skip if unmodified
-        if not value or value == self.default:
+        if value == self.default or value == []:
             if self.required:
                 raise MissingOption(self.option)
             else:
                 return []
 
-        # '-flag'
+        # -flag
         if self.vartype == bool and value:
             return [self.option]
 
-        # '-option' <argument>
+        # -option <argument>
         args.append(self.option)
         # List of arguments
         if self.vartype == list:
