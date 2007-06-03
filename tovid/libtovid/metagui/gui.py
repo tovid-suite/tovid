@@ -57,7 +57,7 @@ class Panel (tk.LabelFrame):
                 # Print helpful info from stack trace
                 last_error = traceback.extract_stack()[0]
                 filename, lineno, foo, code = last_error
-                print "Error on line %s of %s:" % (lineno, filename)
+                print "Error on line %(lineno)s of %(filename)s:" % vars()
                 print "    " + code
                 print "Panel '%s' may only contain Controls, Panels,"\
                       " or Drawers (got %s instead)" % (title, type(item))
@@ -219,7 +219,7 @@ class Drawer (tk.Frame):
 class Application (tk.Frame):
     """Graphical frontend for a command-line program
     """
-    def __init__(self, program, panels=None):
+    def __init__(self, program, panels=None, style=None):
         """Define a GUI application frontend for a command-line program.
         
             program: Command-line program that the GUI is a frontend for
@@ -277,6 +277,7 @@ class Application (tk.Frame):
         print "(not really)"
 
 ### --------------------------------------------------------------------
+from support import ConfigWindow
 
 class GUI (tk.Tk):
     """GUI with one or more Applications
@@ -287,6 +288,9 @@ class GUI (tk.Tk):
         
             title:        Text shown in the title bar
             applications: List of Applications to included in the GUI
+            width:        Initial width of GUI window in pixels
+            height:       Initial height of GUI window in pixels
+            style:        Style to apply to the GUI and its applications
         """
         tk.Tk.__init__(self)
         self.title(title)
@@ -317,14 +321,18 @@ class GUI (tk.Tk):
             app.pack(anchor='n', fill='both', expand=True)
         # Multi-application (tabbed) GUI
         else:
-            tabs = Tabs(self.frame, 'top', ('Helvetica', 14, 'bold'))
+            tabs = Tabs(self.frame, 'top', self.style.font)
             for app in self.apps:
                 app.draw(tabs)
                 tabs.add(app.program, app)
             tabs.draw()
             tabs.pack(anchor='n', fill='both', expand=True)
         #self.frame.pack_propagate(False)
-        
+    
+    def redraw(self):
+        self.frame.destroy()
+        self.draw()
+
     def draw_menu(self, window):
         """Draw a menu bar in the given top-level window.
         """
@@ -333,9 +341,18 @@ class GUI (tk.Tk):
         window.config(menu=menubar)
         # File menu
         filemenu = tk.Menu(menubar, tearoff=False)
+        filemenu.add_command(label="Config", command=self.show_config)
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=self.quit)
         menubar.add_cascade(label="File", menu=filemenu)
+
+    def show_config(self):
+        """Open the GUI configuration dialog."""
+        config = ConfigWindow()
+        if config.result:
+            self.style.font = config.result
+            self.style.apply(self)
+            self.redraw()
 
 ### --------------------------------------------------------------------
 
@@ -345,7 +362,7 @@ class Style:
                  bgcolor='white',
                  fgcolor='grey',
                  textcolor='black',
-                 font=('Helvetica', 12),
+                 font=('Helvetica', 12, 'normal'),
                  relief='groove'):
         self.bgcolor = bgcolor
         self.fgcolor = fgcolor
@@ -356,6 +373,8 @@ class Style:
     def apply(self, root):
         """Apply the current style to the given Tkinter root window."""
         assert isinstance(root, tk.Tk)
+        print "Applying style to root window %s" % root
+        print "Font: %s, size: %s, %s" % self.font
         root.option_clear()
         # Background color
         root.option_add("*Scale.troughColor", self.bgcolor)
