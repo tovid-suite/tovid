@@ -1,154 +1,44 @@
 #! /usr/bin/env python
-# tovid-metagui
-
-"""Experimental tovid suite GUI, without any Tkinter code.
-
-Run this script standalone for a demonstration:
-
-    $ python tovid-metagui
-
-
-INTRODUCTION
-
-This module demonstrates a simplified approach to creating GUIs for
-command-line programs. It's designed so _anyone_ can easily write their
-own GUI, without having any programming experience.
-
-It assumes your GUI is a direct frontend to one or more command-line programs,
-with each command-line option having an associated GUI control widget. Several
-kinds of widget are provided, for setting Filename, Color, Number or Font, or
-for picking a Choice or Flag.
-
-You probably know of a handful of command-line applications that would be
-much better with a GUI, even a cheesy-looking Tkinter one. This module shows
-how easy it is to create one.
-
-
-CONTROLS
-
-Say, if you have a program that takes input and output filenames:
-
-    $ tovid -in movie.avi -out movie_encoded
-
-then you can create GUI widgets for those options like this:
-
-    Filename('-in', "Input filename")
-    Filename('-out', "Output prefix")
-
-These have the general format:
-
-    Control('-option', "Label", ...)
-
-where:
-
-    Control   is a Control subclass, such as Filename, Choice, or Number,
-              describing what type of value is being controlled;
-    'option'  is a command-line option (without the leading '-'),
-              whose value is set by the Control; and
-    "Label"   is the text that should appear next to the GUI Control.
-
-Other parameters include default value, help/tooltip text to show, allowable
-values, and hints about how to draw the GUI control widget; they are specific
-to the flavor of Control being used. For a full list of available Control
-subclasses and how to use them, see libtovid/metagui/control.py.
-
-This is 90% of the syntax you need to learn for creating your own GUIs. If
-you understand the above, you're almost ready to...
-
-
-CREATE A GUI
-
-First, give your Controls a place to live, in a Panel:
-
-    general = Panel("General",
-        Filename('-bgaudio', "Background audio file"),
-        Flag('-submenus', "Create submenus"),
-        Number('-menu-length', "Length of menu (seconds)", 0, 120)
-        )
-
-This will create three GUI widgets in a Panel labeled "General": one for typing
-or browsing to a filename, one for enabling or disabling submenus, and another 
-for setting menu length to a number between 0 and 120. You can nest panels
-inside one another for grouping; sub-Panels have their own label and list of
-Controls or sub-Panels.
-
-Once you have a Panel, you can create an Application:
-
-    app = Application('todisc', [general])
-
-This says your application will run the 'todisc' command-line program,
-passing options set by the "General" panel. Now, create the GUI:
-
-    gui = GUI('MyGUI', [app])
-    gui.run()
-
-This creates the GUI, draws all the widgets, and will run your command-line
-program at the push of a button.
-
-
-CREATE A MULTI-PANEL GUI
-
-If your program has a lot of options, one panel may not be enough to hold them
-all without looking cluttered, so you may break them down into multiple Panels,
-which will be shown in the GUI as tabs that you can switch between. Create
-Panels like this:
-
-    thumbs = Panel("Thumbnails",
-        Color('-thumb-mist-color', ...),
-        Text('-wave', ...)
-    )
-    text = Panel("Text",
-        Font('-menu-font', ...),
-        Number('-menu-fontsize', ...)
-    )
-
-then, create the Application and GUI:
-
-    todisc = Application('todisc', [thumbs, text])
-    gui = GUI('MyGUI', [todisc])
-    gui.run()
-
-If multiple panels are given to Application, a tabbed interface is created,
-with one tab for each panel.
-
-
-CREATE A MULTI-APPLICATION GUI
-
-If your GUI needs to be able to run several different command-line programs,
-you can create a multi-application GUI. Create panels for each application,
-then create the applications:
-
-    todisc = Application('todisc', [todisc_panel1, todisc_panel2])
-    tovid = Application('tovid', [tovid_panel1, tovid_panel2])
-
-and then the GUI:
-
-    gui = GUI('MultiGUI', [todisc, tovid])
-    gui.run()
-
-Run this script standalone for a demonstration of this feature.
-"""
+# todisc.py
 
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
 
 ### --------------------------------------------------------------------
-### todisc panels
+### Panels
 ### --------------------------------------------------------------------
+import re
 
 # Control(option, label, default, help, ...)
+files = FileList('-files',
+    'Video files', None,
+    'Video files to include on the disc',
+    required=True)
+titles = TextList('-titles',
+    'Video titles', None,
+    'Titles for each video',
+    pull=files,
+    required=True)
+
+background = Filename('-background',
+    'Background image or video', '',
+    'Image or video file to display in the background of the main menu',
+    'load', 'Select an image or video file')
+bgaudio = Filename('-bgaudio',
+    'Background audio', '',
+    'Audio file to play while the main menu is showing',
+    'load', 'Select an audio file', pull=background)
+
 main = Panel("Main",
     Text('-menu-title',
         'Menu title', 'My video collection',
         'Title text displayed on the main menu'),
-    HPanel("Files and titles",
-           FileList('-files',
-               'Video files', None,
-               'Video files to include on the disc'),
-           TextList('-titles',
-               'Video titles', None,
-               'Titles for each video')
-        ),
+    
+    HPanel("Files and titles", files, titles),
+
+    background,
+    bgaudio,
+    
     Choice('-format',
         'Disc format', 'DVD',
         'Format of disc to create; SVCD can be burned to a CD-R',
@@ -157,14 +47,6 @@ main = Panel("Main",
         'TV system', 'NTSC',
         'Standard TV system to use',
         'NTSC|PAL'),
-    Filename('-background',
-        'Background image or video', '',
-        'Image or video file to display in the background of the main menu',
-        'load', 'Select an image or video file'),
-    Filename('-bgaudio',
-        'Background audio', '',
-        'Audio file to play while the main menu is showing',
-        'load', 'Select an audio file'),
     Flag('-static',
         'Static menus', False,
         'Create still-image menus; takes less time'),
@@ -174,7 +56,8 @@ main = Panel("Main",
     Filename('-out',
         'Output name', '',
         'Name to use for the output directory where the disc will be created.',
-        'save', 'Choose an output name')
+        'save', 'Choose an output name',
+        required=True)
 )
 
 general = Panel("General",
@@ -431,118 +314,16 @@ authoring = Panel("Authoring",
         '"Play all" button', False,
         'tooltip')
 )
-# Create the todisc application
+
+
+### --------------------------------------------------------------------
+### Application and GUI
+### --------------------------------------------------------------------
+
+style = Style(bgcolor='white', font=("courier", 15, 'normal'))
+
 todisc = Application('todisc',
     [main, general, menu, thumbnails, audio, text, authoring])
-
-
-### --------------------------------------------------------------------
-### tovid
-### --------------------------------------------------------------------
-
-# Create the tovid panels
-tovid_panel = Panel("Main",
-    Filename('-in',
-        'Input filename', '',
-        'Video file to encode',
-        'load', 'Select a video file'),
-    Filename('-out',
-        'Output prefix', '',
-        'Name to use for encoded output file (.mpg added automatically)',
-        'save', 'Choose an output prefix'),
-    FlagGroup('Video format', 'exclusive',
-        Flag('-vcd', "Video CD (VCD)", False,
-             "Video CD format, 352x[240|288], may be burned to a CD-R."\
-             " About 1 hour of playing time per disc."),
-        Flag('-svcd', "Super Video CD (SVCD)", False,
-             "Super Video CD format, 480x[480|576], may be burned to a CD-R."\
-             " Like VCD but with better resolution and variable bitrate."\
-             " About 1 hour of playing time per disc."),
-        Flag('-dvd', "DVD", True,
-             "DVD, 720x[480|576], may be burned to a DVD[+/-]R[W] disc."\
-             "Also known as Digital [Versatile|Video] Disc, or just DVD"\
-             "depending on who you talk to.")
-        ),
-    FlagGroup('TV system', 'exclusive',
-        Flag('-ntsc', "NTSC, 29.97 fps", True),
-        Flag('-ntscfilm', "NTSC Film, 23.976 fps", False),
-        Flag('-pal', "PAL, 25.00 fps", False)
-        ),
-    Choice('-aspect',
-        'Aspect ratio', '4:3',
-        'Intended display aspect ratio of input video',
-        [['4:3', "4:3 (full-frame)"],
-         ['16:9', "16:9 (widescreen)"],
-         ['235:100', "2.35:1 (panavision)"]],
-        'top'),
-    Flag('-ffmpeg',
-        'Encode using ffmpeg', False),
-    Number('-quality',
-        'Video quality', 6,
-        'Quality of encoding, on a scale of 1-10.',
-        1, 10, 'scale'),
-    Flag('-interlaced',
-        'Interlaced encoding', False),
-    Number('-safe',
-        'Safe area', 90,
-        'Safe area as a percentage of screen size',
-        50, 100, 'scale')
-)
-
-# Create the tovid application
-tovid = Application('tovid', [tovid_panel])
-
-### --------------------------------------------------------------------
-### makemenu
-### --------------------------------------------------------------------
-
-# Create the makemenu panels
-makemenu_panel = Panel("Main",
-    Filename('-background',
-     'Background image', '',
-     'TOOLTIP'),
-    Flag('-crop',
-     'Crop background image', True,
-     'Cut off the edges of the background image to make it fit into 4:3'),
-    Flag('-scale',
-     'Stretch background image', False,
-     'Scale or stretch the background image to fit the 4:3 frame'),
-    Filename('-audio',
-     'Background audio', '',
-     'Audio file to play while the menu is being shown'),
-    Number('-length',
-     'Menu length', 4,
-     'Duration of menu playback in seconds.',
-     4, 600),
-    Text('-menu-title',
-     'Menu title', '',
-     'Title or heading for the menu'),
-    Font('-font',
-     'Menu font', 'Helvetica',
-     'TOOLTIP'),
-    Number('-fontsize',
-     'Font size', 24,
-     'TOOLTIP',
-     8, 64, 'spin'),
-    Number('-menu-title-fontsize',
-     'Title font size', 32,
-     'Font size for the menu title',
-     8, 64, 'spin'),
-    Choice('-align',
-     'Text alignment', 'left',
-     'TOOLTIP',
-     'left|center|middle|right')
-)
-# Create the makemenu application
-makemenu = Application('makemenu', [makemenu_panel])
-
-### --------------------------------------------------------------------
-### main GUI
-### --------------------------------------------------------------------
-
-# Create the GUI for both applications
-gui = GUI("tovid metagui", [todisc, tovid, makemenu])
-
-# Show the GUI window
+gui = GUI("todiscgui", [todisc], 600, 400, style)
 gui.run()
 
