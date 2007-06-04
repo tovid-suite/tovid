@@ -180,6 +180,7 @@ SKIP_VMGM_MENU=false
 NO_VMGM_MENU=false
 SWITCHED_MENUS=false
 SWITCHED_MODE=false
+SWITCHED=false
 TSET_MODE=false
 TSET_TOT=1
 NONAME=false
@@ -317,15 +318,15 @@ function cleanup()
 {
     echo
     yecho "Cleaning up..."
-    if test -e "$WORK_DIR/tc_pids"; then
+    if test -s "$WORK_DIR/tc_pids"; then
         TCPIDS=$(awk -F"=" '/pid=/ {print $2}' "$WORK_DIR/tc_pids" | cut -f1 -d')'|sort|uniq)
         for i in $TCPIDS; do
             if  kill -0 $i 2> /dev/null; then kill -9 $i 2> /dev/null;fi
         done
     fi
-    if test -e "$WORK_DIR/tcode*.pid"; then
+    if test -s "$WORK_DIR/tcode*.pid"; then
         for pidfile in "$WORK_DIR/tcode*.pid"; do
-            if kill -0 $(<$pidfile); then kill -9 $(<$pidfile) 2> /dev/null; fi
+            if kill -0 $(<$pidfile) 2> /dev/null; then kill -9 $(<$pidfile) 2> /dev/null; fi
         done
     fi
     if kill -0 $TCODE_PID 2> /dev/null; then kill -9  $TCODE_PID  2> /dev/null; fi
@@ -534,7 +535,6 @@ if [[ $this_set = group ]]; then
     IN_STATS=( "${group_mencoder_stats[@]}" )
     FILES_IN=( "${grouping[@]}" )
     NAV=group_nav
-    LENGTH=length
 else
     TOT=${#IN_FILES[@]}
     IN_STATS=( "${mencoder_stats[@]}" )
@@ -543,7 +543,7 @@ else
 fi
 
 for ((i=0; i<TOT; i++)); do
-    [[ $this_set = group ]] &&  LENGTH=${group_length[i]} || LENGTH=${length[i]}
+    ([[ $this_set = group ]] &&  LENGTH=${GROUP_VID_LENGTHS[i]}) || LENGTH=${length[i]}
     VCODEC="$(awk '/VIDEO:/ {gsub(/\[|\]/, ""); print $2}' \
     <<< "${IN_STATS[i]}")"
     V_BR="$(awk '/Video stream:/{print $3}'<<< "${IN_STATS[i]}")"
@@ -553,10 +553,13 @@ for ((i=0; i<TOT; i++)); do
     if [ -z "$A_BR" ]; then
         A_BR="No audio found"
     fi
-    if [ -e "${IN_FILES[i]}".nav_log ]; then
+    if [ -s "${IN_FILES[i]}".nav_log ] ; then
         V_LENGTH=$(awk_math $LENGTH by $FRAME_RATE float)
     else
         V_LENGTH=$(awk '/Video stream:/{print $10}'<<< "${IN_STATS[i]}")
+    fi
+    if [[ $this_set = group ]]; then
+        V_LENGTH=$(awk '/Video stream:/{print $10}' <<< "${group_mencoder_stats[i]}")
     fi
     if [[ $this_set != group ]]; then
         if [[ ${V_LENGTH%.*} -lt ${SEEK_VAL[i]%.*} ]]; then
@@ -623,7 +626,7 @@ function check_compliance()
             test -n "$this_file" && yecho " $this_file"
         done
         yecho " "
-        if $NOASK; then
+        if ($SWITCHED && [[ $MENU_NUM -ne 2 ]]) || $NOASK; then
             echo "Converting files to $TV_STND_CAPS $TGT_CAPS-compliant format."
             echo "(This may take a long time)"
             ENCODE="yes"
@@ -639,7 +642,7 @@ function check_compliance()
             yecho "Converting files to $TGT_CAPS format with 'tovid'"
             for i in "${FILES_TO_ENCODE[@]}"; do
                 $group_set && yecho "Converting $(readlink $i)" || yecho "Converting: $i"
-                countdown
+                (($SWITCHED && [[ $MENU_NUM -eq 2 ]]) || ! $SWITCHED) && countdown
                 $group_set && IN="$(readlink "$i")" || IN="$i"
                 tovid $NO_ASK -$TV_STANDARD -$TARGET -in "$IN" -out "$IN.enc" $TOVID_OPTS
                 wait
@@ -743,7 +746,7 @@ function switched_menu_mode()
     for ((i=1; i<${#FILES[@]}; i++)); do
         yecho
         yecho "Working on switched menu $((i+1))"
-        yecho
+        yecho && sleep 5
         yecho "Running todisc "$@" -switched-mode $IS_TITLESET -basedir "$BASEDIR"  -menu_num $((i+1)) -showcase "${FILES[i]}""
         todisc "$@" -switched-mode $IS_TITLESET -basedir "$WORK_DIR" -menu_num $((i+1)) -showcase "${FILES[i]}"
     done
@@ -756,7 +759,6 @@ function titleset_mode()
 # call todisc recursively in order to allow titlesets
 {
     ! $GROUPING && mk_workdir
-    # FIXME make a function or move the other copy of the next if block
     # some vars for vmgm menu, depending on presence of -static or -quick-nav
     # how many titlesets do we have ?
     for i in "$@"; do [[ $i == -end-titleset ]] && ((count++)); done
@@ -845,7 +847,7 @@ EOF
     vmgm_menu_cmd=(todisc "${GEN_OPTS[@]}" -basedir "$WORK_DIR" -menu-only -textmenu "${VMGM_OPTS[@]}")
     yecho "Running: ${vmgm_menu_cmd[@]}"
     INITIALDIR="$BASEDIR"
-    "${vmgm_menu_cmd[@]}"
+    if ! "${vmgm_menu_cmd[@]}" ; then cleanup && exit 1; fi
    # TODO move to function so its not duplicated here and in main parser, generalize for -vmgm too 
     while test $# -gt 0; do
         DO_SHIFT=:
@@ -865,7 +867,7 @@ EOF
                 yecho "Working on the menu for titleset number $tset"
                 yecho && sleep 5
                 yecho "Running: ${titleset_cmd[@]}"
-                "${titleset_cmd[@]}"
+                if ! "${titleset_cmd[@]}"; then cleanup && exit 1; fi
                 yecho
                 ;;
         esac
@@ -962,6 +964,17 @@ function mk_se_button()
     yecho "Running ${cmd1[@]} miff:- | ${cmd2[@]}" >> "$LOG_FILE" 2>&1
     "${cmd1[@]}" miff:- | "${cmd2[@]}"
     unset cmd1 cmd2
+}
+
+function check_menufile()
+{
+    yecho
+    if test -f "$MENU_FILE"; then
+        echo "Menu file $MENU_FILE created"
+        echo
+    else
+        runtime_error "Menu file $MENU_FILE not found.  Spumux seems to have had problems"
+    fi
 }
 
 ##############################################################################
@@ -1484,6 +1497,10 @@ done
 ##############################################################################
 #                      Sanity checks and preliminaries                       #
 ##############################################################################
+
+# check that needed todisc deps are installed
+assert_dep "$todisc_deps"
+
 # Make sure equal, nonzero number of titles and files were provided
 if ! $VMGM_ONLY && ! $DO_TITLESETS; then
     if test ${#FILES[@]} -eq 0 || test ${#TITLES[@]} -eq 0; then
@@ -1648,7 +1665,7 @@ if $GROUPING && $TITLESET_MODE; then
     find "$WORK_DIR"/  -type l -name \*group\*.mpg -exec cp -Pv {} "$BASEDIR" \;
 fi
 $SWITCHED_MODE && SWITCHED_MENUS=false
-#$SWITCHED_MODE && KEEP_FILES=false
+($SWITCHED_MODE || $SWITCHED_MENUS) && SWITCHED=:
 if $SWITCHED_MENUS; then
     # call todisc recursively, collect intro.mpg, exit
     switched_menu_mode "${args[@]}"
@@ -1661,9 +1678,6 @@ if $DO_TITLESETS; then
 fi
 # set some vars for the last run of switched menus (non-recursive )
 $SWITCHED_MENUS && SHOWCASE_FILE="${FILES[0]}"
-
-# double check sox is installed, as the consequence of not having it is ugly
-confirm_dep sox "http://sox.sourceforge.net/"
 
 yecho
 yecho "Creating work directories"
@@ -2727,7 +2741,7 @@ if $SHOWCASE && ! $NO_SC_THUMB; then
             -background none $ROTATE $WAVE miff:-|
             convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
         elif [ "$SC_FRAMESTYLE" = "none" ]; then
-            if $SWITCHED_MODE|| $SWITCHED_MENUS; then
+            if $SWITCHED; then
                 FFMPEG_SEEK_VAL=${SEEK_VAL[MENU_NUM-1]}
             else
                 FFMPEG_SEEK_VAL=$SHOWCASE_SEEK_VAL
@@ -3322,7 +3336,7 @@ if ! $NOASK; then
 fi
 
 # Check input files for compliance; offer to tovid-encode non-compliant files
-if ! $VMGM_ONLY && [[ $MENU_NUM -eq 1 ]]; then
+if ! $VMGM_ONLY; then
     check_compliance
     $GROUPING && check_compliance group
 fi
@@ -3358,7 +3372,10 @@ tovid_reencode()
 if [[ -n $BG_VIDEO ]] && ! idvid -isformat dvd "$BG_VIDEO" >/dev/null; then
     tovid_reencode "$BG_VIDEO" $BG_SEEK && BG_VIDEO="$BG_VIDEO.enc.mpg"
 elif [[ -n $SHOWCASE_VIDEO ]]  && ! idvid -isformat dvd "$SHOWCASE_VIDEO" >/dev/null; then
-    tovid_reencode "$SHOWCASE_VIDEO" $SHOWCASE_SEEK_VAL && SHOWCASE_VIDEO="$SHOWCASE_VIDEO.enc.mpg"
+    if ! $SWITCHED; then
+        tovid_reencode "$SHOWCASE_VIDEO" $SHOWCASE_SEEK_VAL
+        SHOWCASE_VIDEO="$SHOWCASE_VIDEO.enc.mpg"
+    fi
 fi
 # symlink IN_FILES in $WORK_DIR to solve some quoting issues for dvdauthor
 if [[ $MENU_NUM -eq 1 ]]; then
@@ -3392,15 +3409,14 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
         fi
     fi
     if [ -s  "${IN_FILES[i]}".nav_log ]; then
-        length=( ${length[@]} $(( $(awk '{ field = $2 }; END{ print field }' \
-        "${IN_FILES[i]}".nav_log) + 1)) )
+        length[i]="$(( $(awk '{ field = $2 }; END{ print field }' \
+        "${IN_FILES[i]}".nav_log) + 1))"
     fi
     [[ $MENU_NUM -eq 1 ]] && echo
     if [[ $MENU_NUM -eq 1 ]]; then
         echo "Getting stats on "${IN_FILES[i]}""
-        mencoder_stats=("${mencoder_stats[@]}" \
-        "$(mencoder -quiet "${IN_FILES[i]}" -oac pcm -ovc copy \
-        $STATS_FRAMES -o /dev/null 2>&1)")
+        mencoder_stats[i]="$(mencoder -quiet "${IN_FILES[i]}" -oac pcm -ovc copy \
+        $STATS_FRAMES -o /dev/null 2>&1)"
         unset NAVSEEK_CMD
     fi
 done
@@ -3411,9 +3427,8 @@ if $GROUPING &&  [[ $MENU_NUM -eq 1 ]]; then
     for u in ${!grouping[@]}; do
         echo "Getting stats on "$(readlink "${grouping[u]}")""
         echo
-        group_mencoder_stats=( "${group_mencoder_stats[@]}" \
-        "$(mencoder -quiet "${grouping[u]}" -oac pcm -ovc copy \
-        $STATS_FRAMES -o /dev/null 2>&1)")
+        group_mencoder_stats[u]="$(mencoder -quiet "${grouping[u]}" \
+        -oac pcm -ovc copy  -o /dev/null 2>&1)"
     done
 fi
 
@@ -3425,7 +3440,7 @@ if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]] && $GROUPING; then
 fi
 
 for ((i=0; i<${#mencoder_stats[@]}; i++)); do
-    if [ -e "${IN_FILES[i]}".nav_log ]; then
+    if [ -s "${IN_FILES[i]}".nav_log ]; then
         VID_LEN=( ${VID_LEN[@]}  $(awk_math ${length[i]} by $FRAME_RATE float) )
     else
         VID_LEN=( ${VID_LEN[@]}  "$(awk '/Video stream:/{print $10}' \
@@ -3478,9 +3493,6 @@ fi
 # allow animated menus of length of longest video
 MAX_ANI_LENGTH=$(awk_math $FRAME_RATE times $ANI_MENU_LENGTH)
 MAX_VAL_FRAMES="$((MAX_VAL * 30))"
-#if [ $MAX_VAL_FRAMES -lt $MAX_ANI_LENGTH ]; then #FIXME - removed to see how it flys
-#    MAX_ANI_LENGTH=$MAX_VAL_FRAMES
-#fi
 # if submenu selected, translate seconds of submenu length into # of frames
 if $ANI_SUB_MENU; then
     ANI_SUBMENU_FRAMES=$(awk_math $FRAME_RATE times $ANI_SUBMENU_LENGTH)
@@ -3650,9 +3662,9 @@ if $PLAYALL ||  ($TITLESET_MODE && ! $NO_VMGM_MENU) || ($TSET_MODE && ! $NO_VMGM
 else
     NUM_BUTTONS=${#FILES[@]}
 fi
-($SWITCHED_MODE || $SWITCHED_MENUS) && SPUMUX_XML="$BASEDIR/spumux.xml"
-if $SWITCHED_MENUS; then
-    down="down=\"ActionDown\"" && up="up=\"ActionUp\"" &&  lastup="up=\"ActionDown\""
+$SWITCHED && SPUMUX_XML="$BASEDIR/spumux.xml"
+if $SWITCHED; then
+    down="down=\"ActionDown\"" && up="up=\"ActionUp\"" 
     right="right=\"ActionDown\"" && left="left=\"ActionUp\""
     updown="down=\"ActionDown\" up=\"ActionUp\""
 fi
@@ -3693,20 +3705,26 @@ $(if $QUICK_NAV; then
         fi
         if [[ $i -eq $(( ${#FILES[@]} + 1 )) ]]; then
             if $TITLESET_MODE && ! $NO_VMGM_MENU && $PLAYALL; then
-                echo -e "       <button name=\"$i\" $lastup/>"
+                echo -e "       <button name=\"$i\" $up/>"
                 echo -e "       <button name=\"$((i+1))\" $down/>"
             else
-                echo -e "       <button name=\"$((i+1))\" $down $lastup/>"
+                echo -e "       <button name=\"$((i+1))\" $down $up/>"
             fi
         fi
     done
 fi)   
-$(if $SWITCHED_MENUS && ! $QUICK_NAV; then
+$(if $SWITCHED && ! $QUICK_NAV; then
     for ((i=1; i<=$NUM_BUTTONS; i++)); do
         if [[ $i -eq $(( ${#FILES[@]} + 1 )) ]]; then
             if $TITLESET_MODE && ! $NO_VMGM_MENU && $PLAYALL; then
-                echo -e "       <button name=\"$i\" $lastup/>"
+                echo -e "       <button name=\"$i\" $up/>"
                 echo -e "       <button name=\"$((i+1))\" $down/>"
+            else
+                echo -e "       <button name=\"$i\" $updown/>"
+            fi
+        elif [[ $i -eq ${#FILES[@]} ]]; then
+            if $TITLESET_MODE || $PLAYALL; then
+                echo -e "       <button name=\"$i\" $up down=\"$((i+1))\"/>"
             else
                 echo -e "       <button name=\"$i\" $updown/>"
             fi
@@ -3835,7 +3853,7 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
         echo "${VOB_PRE[i]}"
     fi
     if [[ -n ${GROUP[i]} ]]; then
-        get_group_chapters $i format
+       [[ $MENU_NUM -eq 1 ]] && get_group_chapters $i format
         if ((${CHAPTERS[i]} == 0)); then
             echo -e "        <vob file=\"$BASEDIR/$i.mpg\"/>"
             for mpg in $BASEDIR/${TSET_NUM}-group-$((i+1))-*; do
@@ -3993,7 +4011,7 @@ if $SUB_MENU; then
         unset cmd[key]
         # create a nav_seek log with tcdemux if not already present
         NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
-        if [ ! -e "${IN_FILES[i]}".nav_log ]; then
+        if [ ! -s "${IN_FILES[i]}".nav_log ]; then
             yecho "Running "${NAVSEEK_CMD[@]}" > "${IN_FILES[i]}".nav_log"
             "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "${IN_FILES[i]}".nav_log
         fi
@@ -4199,7 +4217,7 @@ if $SUB_MENU; then
             BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
             $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
         fi
-        if [ ! -e $WORK_DIR/submenu.wav ]; then # only run if no wav
+        if [ ! -s $WORK_DIR/submenu.wav ]; then # only run if no wav
             yecho "Running "${BGAUDIO_CMD[@]}"" >> "$LOG_FILE.tmp" 2>&1
             cleanlog 1
             if "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then #run command
@@ -4234,7 +4252,7 @@ if $SUB_MENU; then
             unset TIME
         fi
         # if "1" audio file, then convert it if it has not been done yet
-        if [[ -n "$SM_AUDIO_FILE" && ! -e $WORK_DIR/submenu-processed.wav ]]; then
+        if [[ -n "$SM_AUDIO_FILE" && ! -s $WORK_DIR/submenu-processed.wav ]]; then
             if $AUDIO_FADE; then
                 TIME=$(ffmpeg -i "$WORK_DIR/submenu.wav" 2>&1|awk '/Duration/ {print $2}')
                 TIME=${TIME/,/}
@@ -4249,7 +4267,7 @@ if $SUB_MENU; then
             fi
             BGAUDIO_CMD3=(ffmpeg -i $WORK_DIR/submenu.wav \
             $AUDIO_OPTS -y $WORK_DIR/submenu.$AUDIO_EXT)
-            if [ -e $WORK_DIR/submenu.$AUDIO_EXT ]; then # if file exists do nothing
+            if [ -s $WORK_DIR/submenu.$AUDIO_EXT ]; then # if file exists do nothing
                 :
             else
                 echo "Running "${BGAUDIO_CMD3[@]}"" >> "$LOG_FILE.tmp" 2>&1
@@ -4858,7 +4876,7 @@ if [ -z "$BG_AUDIO" ]; then # no audio supplied: use silence
     cat /dev/zero 2>/dev/null | nice -n 0 sox -t raw -c 2 -r 48000 -w \
     -s - $WORK_DIR/intro.wav  trim 0 $MENU_ATIME
 # Make sure file exists
-elif test ! -e "$BG_AUDIO"; then
+elif test ! -s "$BG_AUDIO"; then
     runtime_error "Cannot find background audio file: $BG_AUDIO"
 else # audio supplied: convert to wav then later to dvd/svcd format
     # TODO if ! $BG_AUDIOVIDEO_FILE; then  # check if same file and if so
@@ -4929,18 +4947,6 @@ if $SWITCHED_MODE || $SWITCHED_MENUS; then
         exit
     fi
 fi
-function check_menufile()
-{
-    yecho
-    if test -f "$MENU_FILE"; then
-        echo "Menu file $MENU_FILE created"
-        echo
-    else
-        runtime_error "Menu file $MENU_FILE not found.  Spumux seems to have had problems"
-    fi
-}
-# FIXME no need for both the next 2 blocks running spumux
-# "for intro in" should cover it if only one intro file for the TSET
 if $SWITCHED_MENUS && [[ $TARGET != svcd ]]; then
     for ((i=1; i<=${#FILES[@]}; i++)); do
         MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${i}.mpg"
