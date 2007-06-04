@@ -312,7 +312,7 @@ function assert_dep()
     NO_GROUP=false
     for dep in $DEPS; do
         if ! type -a $dep >> /dev/null 2>&1; then
-            yecho
+            echo $SEPARATOR
             printf "%-13s %s\n" "  $dep" "MISSING!"
             NO_GROUP=:
         fi
@@ -322,7 +322,7 @@ function assert_dep()
     if $NO_GROUP; then
         echo
         precho "$HELP $DEP_ERROR_MSG"
-        yecho
+        echo $SEPARATOR
         exit 1
     fi
 }
@@ -554,7 +554,7 @@ fi
 
     # -------------------------------------------------------------------------
     # todisc dependancies
-    todisc_deps="$plugins $magick mogrify spumux dvdauthor transcode"
+    todisc_deps="$magick mogrify spumux dvdauthor transcode sox"
     
     # Quit and complain if ANY core dependency is missing.
     assert_dep "$core" "You are missing CORE tovid dependencies!"
