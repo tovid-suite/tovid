@@ -312,6 +312,7 @@ function assert_dep()
     NO_GROUP=false
     for dep in $DEPS; do
         if ! type -a $dep >> /dev/null 2>&1; then
+            yecho
             printf "%-13s %s\n" "  $dep" "MISSING!"
             NO_GROUP=:
         fi
@@ -321,6 +322,7 @@ function assert_dep()
     if $NO_GROUP; then
         echo
         precho "$HELP $DEP_ERROR_MSG"
+        yecho
         exit 1
     fi
 }
