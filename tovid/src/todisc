@@ -53,6 +53,8 @@ Input files must be MPEG, and the number of -files and -titles must be equal.
 See the todisc manual page ('man todisc') for additional documentation.
 
 EOF`
+# check that needed todisc deps are installed
+assert_dep "$todisc_deps"
 # check if symlink in /tmp exists and use time stamped link if so
 WORK_DIR="/tmp/todisc-work"
 for link in $(find /tmp -maxdepth 1 -name todisc-work\* -type l 2>/dev/null ); do
@@ -828,19 +830,41 @@ EOF
             shift
         done
     }
+    function  get_menu_titles()
+    {
+        unset MENUTITLES
+        i=0
+        while [[ $@ ]]; do
+            case "$1" in
+                "-menu-title" )
+                    shift
+                    MENUTITLES[x++]="$1"
+                    ;;
+            esac
+            shift
+        done
+    }
     get_genopts "${args[@]}"
 
     if [[ -z ${VMGM_OPTS[@]} ]]; then
+        unset x
+        get_menu_titles "${args[@]}"
         yecho
         yecho "You have not supplied -vmgm OPTIONS -end-vmgm"
         yecho "At a minumum you should have '-vmgm -titles "Title one" "Title two" -end-vmgm'"
-        yecho "One title for each titleset you are making"
-        yecho "Any other options for the vmgm menu can be specified too"
-        yecho "Making a generic vmgm menu for you - you may wish to cancell out and change this"
+        yecho "One title for each titleset you are making."
+        yecho "Any other appropriate todisc options for the vmgm menu can be specified as well."
+        if  [[ ${#MENUTITLES[@]} -eq $count ]]; then
+            yecho "Since -menu-title was supplied for each titleset: these titleset titles will be used:"
+            for t in "${MENUTITLES[@]}"; do echo "\"$t\""; done
+            VMGM_OPTS=(-titles "${MENUTITLES[@]}")
+        else
+            VMGM_OPTS[0]="-titles"
+            for ((menu=1; menu<=count; menu++)); do VMGM_OPTS[menu]="Titleset $menu"; done
+        fi
+        yecho "Making a generic vmgm menu for you - you may wish to cancell out and change this."
         yecho
-        ! $NO_VMGM_MENU && sleep 15
-        VMGM_OPTS[0]="-titles"
-        for ((menu=1; menu<=count; menu++)); do VMGM_OPTS[menu]="Titleset $menu"; done
+        ! $NO_VMGM_MENU && ! $NO_WARN && sleep 15
     fi
     yecho
     yecho "Making a VMGM menu with the following command:"
@@ -1498,8 +1522,6 @@ done
 #                      Sanity checks and preliminaries                       #
 ##############################################################################
 
-# check that needed todisc deps are installed
-assert_dep "$todisc_deps"
 
 # Make sure equal, nonzero number of titles and files were provided
 if ! $VMGM_ONLY && ! $DO_TITLESETS; then
