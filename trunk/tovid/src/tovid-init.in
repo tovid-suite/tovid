@@ -550,6 +550,10 @@ fi
     # Plugin tools
     plugins="sox $NORMALIZE"
 
+    # -------------------------------------------------------------------------
+    # todisc dependancies
+    todisc_deps="$plugins $magick mogrify spumux dvdauthor transcode"
+    
     # Quit and complain if ANY core dependency is missing.
     assert_dep "$core" "You are missing CORE tovid dependencies!"
 
