@@ -298,17 +298,18 @@ function get_info ()
     V_ASPECT_RATIO=$(echo $V_ASPECT_WIDTH | \
     sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g')
 
-    # If doing -fast identification, skip "accurate" length determination
-    if  [[ -s "$INFILE".nav_log ]]; then # use existing, if non empty   
-        if  [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
-            ! $TERSE && echo "Using ${INFILE}.nav_log"
-            USE_MENCODER=false
-            USE_NAVLOG=:
-        fi
-    # check if tcdemux installed, and if extension is mpg (use mencoder for vob)
-    elif [[ ${INFILE##*.} =~ [MmPpGg] ]] && hash tcdemux 2>/dev/null; then
-        if ! $FAST; then # only run this long process if $FAST is set to false
-            if [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then # only run if fps parsed
+    # if a nav_log file exists and we have a value for FPS, use the log
+    if  [[ -s "$INFILE".nav_log ]] && [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
+        ! $TERSE && echo "Using ${INFILE}.nav_log"
+        USE_MENCODER=false
+        USE_NAVLOG=:
+    else # no nav_log or ID_VIDEO_FPS missing
+        # If doing -fast identification, skip "accurate" length determination
+        if $FAST; then # skip this long process
+            USE_MENCODER=false  # USE_NAV_LOG already set to false
+        else
+            # check if tcdemux installed, and if extension is mpg (use mencoder for vob)
+            if [[ ${INFILE##*.} =~ [MmPpGg] ]] && hash tcdemux 2>/dev/null &&  [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
                 NAVSEEK_CMD=(nice tcdemux  -f $ID_VIDEO_FPS -W -i "$INFILE")
                 "${NAVSEEK_CMD[@]}"  >  "$INFILE".nav_log 2>/dev/null
                 if [[ -s  "$INFILE".nav_log ]]; then # if non empty lets use it
@@ -317,9 +318,9 @@ function get_info ()
                 else
                      rm -f "$INFILE".nav_log
                 fi
+            else # not $FAST and using tcdemux not possible, so usee mencoder
+                USE_MENCODER=:
             fi
-        else # -fast passed to idvid
-            USE_MENCODER=false  # do not run mencoder either if $FAST is set to false
         fi
     fi
 
