@@ -297,9 +297,14 @@ function get_info ()
     # Normalized aspect ratio
     V_ASPECT_RATIO=$(echo $V_ASPECT_WIDTH | \
     sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g')
-
+    
+    # if INFILE is newer than the nav_log, then remove it
+    if [[ -e "$INFILE".nav_log && "$INFILE" -nt "$INFILE".nav_log ]]; then
+        ! $TERSE && echo "$INFILE.nav_log is older than $INFILE ... removing"
+        rm -f "$INFILE".nav_log
+    fi
     # if a nav_log file exists and we have a value for FPS, use the log
-    if  [[ -s "$INFILE".nav_log ]] && [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
+    if  [[ -s "$INFILE".nav_log  &&  ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
         ! $TERSE && echo "Using ${INFILE}.nav_log"
         USE_MENCODER=false
         USE_NAVLOG=:
@@ -316,7 +321,9 @@ function get_info ()
                     USE_MENCODER=false
                     USE_NAVLOG=:
                 else
-                     rm -f "$INFILE".nav_log
+                    # remove empty log and we will use mencoder in next code block
+                    [[ -e "$INFILE".nav_log ]] && rm -fv "$INFILE".nav_log
+                    USE_MENCODER=:
                 fi
             else # not $FAST and using tcdemux not possible, so usee mencoder
                 USE_MENCODER=:
