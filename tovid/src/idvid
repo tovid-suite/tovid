@@ -298,7 +298,7 @@ function get_info ()
     V_ASPECT_RATIO=$(echo $V_ASPECT_WIDTH | \
     sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g')
     
-    # if INFILE is newer than the nav_log, then remove it
+    # if the nav_log is older that $INFILE, then remove the log
     if [[ -e "$INFILE".nav_log && "$INFILE" -nt "$INFILE".nav_log ]]; then
         ! $TERSE && echo "$INFILE.nav_log is older than $INFILE ... removing"
         rm -f "$INFILE".nav_log
