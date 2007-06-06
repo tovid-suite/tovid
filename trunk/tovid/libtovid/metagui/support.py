@@ -10,7 +10,6 @@ __all__ = [
     'ComboBox',
     'FontChooser',
     'ConfigWindow',
-    'Optional',
     'Tabs',
     'ScrolledWindow'
     ]
@@ -326,57 +325,6 @@ class ConfigWindow (tkSimpleDialog.Dialog):
         self.result = (self.font.variable.get(),
                        self.fontsize.variable.get(),
                        'normal')
-
-### --------------------------------------------------------------------
-
-class Optional (tk.Frame):
-    """Container that shows/hides an optional Control"""
-    def __init__(self,
-                 control=None,
-                 label='Option',
-                 *args):
-        """Create an Optional widget.
-
-            control: A Control to show or hide
-            label:   Label for the optional widget
-        """
-        self.control = control('', *args)
-        self.label = label
-        self.active = tk.BooleanVar()
-
-    def draw(self, master):
-        """Draw optional checkbox and control widgets in the given master.
-        """
-        tk.Frame.__init__(self, master)
-        # Create and pack widgets
-        self.check = tk.Checkbutton(self, text=self.label, variable=self.active,
-                                    command=self.showHide, justify='left')
-        self.check.pack(side='left')
-        self.control.draw(self)
-        self.control.pack(side='left', expand=True, fill='x')
-        self.control.disable()
-        self.active.set(False)
-    
-    def showHide(self):
-        """Show or hide the sub-widget.
-        """
-        if self.active.get():
-            self.control.enable()
-        else:
-            self.control.disable()
-
-    def get(self):
-        """Return the sub-widget's value if active, or None if inactive.
-        """
-        if self.active.get():
-            return self.control.get()
-        else:
-            return None
-    
-    def set(self, value):
-        """Set sub-widget's value.
-        """
-        self.control.set(value)
 
 ### --------------------------------------------------------------------
 

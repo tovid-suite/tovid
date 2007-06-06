@@ -595,7 +595,7 @@ class TextList (Control):
         self.selected = tk.StringVar()
         self.listbox = DragList(self, choices=self.variable,
                                 chosen=self.selected)
-        self.listbox.pack()
+        self.listbox.pack(fill='x', expand=True)
         # TODO: Event handling to allow editing items
         self.editbox = tk.Entry(self, width=30, textvariable=self.selected)
         self.editbox.bind('<Return>', self.setTitle)
@@ -625,7 +625,7 @@ class FileList (Control):
         # List of files
         self.listbox = DragList(self, choices=self.variable,
                                 command=self.select)
-        self.listbox.pack()
+        self.listbox.pack(fill='x', expand=True)
         # Add/remove buttons
         group = tk.Frame(self)
         self.add = tk.Button(group, text="Add...", command=self.addFiles)
@@ -648,11 +648,12 @@ class FileList (Control):
             control.listbox.add(*files)
 
     def removeFiles(self):
-        """Event handler to remove files from the list"""
-        selection = self.listbox.curselection()
-        # Using reverse order prevents reflow from messing up indexing
-        for line in reversed(selection):
-            self.listbox.delete(line)
+        """Event handler to remove selected files from the list"""
+        # TODO: Support multiple selection
+        selected = self.listbox.curindex
+        self.listbox.delete(selected)
+        for control in self.copies:
+            control.listbox.delete(selected)
 
 ### --------------------------------------------------------------------
 
