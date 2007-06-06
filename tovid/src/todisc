@@ -1558,6 +1558,7 @@ $DO_INTRO && INTRO="<vob file=\"$INTRO_CLIP\"/>"
 if $SWITCHED_MODE; then
     ANI_SUB_MENU=false && SUB_MENU=false
 fi
+$VMGM_ONLY && SWITCHED_MODE=false && SWITCHED_MENUS=false
 # need a way to get back to the VMGM menu, so -no-vmgm-menu requires -quicknav ? FIXME
 # -no-vmgm requires -skip-vmgm for now; pass -no-vmgm-menu to subshells via NO_VMGM
 if $NO_VMGM_MENU; then
@@ -3812,8 +3813,8 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
         echo -e "        <button name=\"$i\">jump $JUMP $JUMP_INC;</button>"
     done
     if $QUICK_NAV; then
-        [[ $TSET_NUM -eq 1 ]] && PREV=$TSET_TOT || PREV=$(( TSET_NUM - 1 ))
-        [[ $TSET_NUM -eq $TSET_TOT ]] && NEXT=1 || NEXT=$(( TSET_NUM + 1))
+        if [[ $TSET_NUM -eq 1 ]]; then PREV=$TSET_TOT; else PREV=$(( TSET_NUM - 1 )); fi
+        if [[ $TSET_NUM -eq $TSET_TOT ]]; then NEXT=1; else NEXT=$(( TSET_NUM + 1)); fi
         echo -e "        <button name=\"ActionLeft\"> {g3=$PREV; button=1024; jump vmgm menu entry title;}</button>"
         echo -e "        <button name=\"ActionRight\"> {g3=$NEXT; button=1024; jump vmgm menu entry title;}</button>"
     fi
@@ -5007,8 +5008,8 @@ elif [ "$TARGET" = svcd ]; then
     vcdxbuild -b "${OUT_FILE}.bin" -c "${OUT_FILE}.cue"  "${OUT_FILE}.xml"
 fi
 echo "Cleaning up unwanted files in $REAL_WORK_DIR"
-find "$WORK_DIR"/ -name '*.png' ! -name Highlight.png ! -name Select.png -exec rm -f {} \;
-find "$WORK_DIR"/ -name '*.jpg' ! -name preview.jpg -exec rm -f {} \;
+find "$WORK_DIR"/ -name '*.png' ! -name Highlight.png ! -name Select.png -exec rm -f {} \; > /dev/null 2>&1
+find "$WORK_DIR"/ -name '*.jpg' ! -name preview.jpg -exec rm -f {} \; > /dev/null 2>&1
 rm -frv "$WORK_DIR/animenu" "$WORK_DIR/pics" "$WORK_DIR/submenu"
 $VMGM_ONLY && $KEEP_FILES && mv -v "$REAL_WORK_DIR" "$BASEDIR"/VMGM
 echo "Removing the link in /tmp"
