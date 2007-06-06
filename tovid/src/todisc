@@ -3876,9 +3876,9 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
         echo "${VOB_PRE[i]}"
     fi
     if [[ -n ${GROUP[i]} ]]; then
-       [[ $MENU_NUM -eq 1 ]] && get_group_chapters $i format
+       [[ $MENU_NUM -eq 1 && ${CHAPTERS[i]} -ne 0 ]] && get_group_chapters $i format
         if ((${CHAPTERS[i]} == 0)); then
-            echo -e "        <vob file=\"$BASEDIR/$i.mpg\"/>"
+            echo -e "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\"/>"
             for mpg in $BASEDIR/${TSET_NUM}-group-$((i+1))-*; do
                 echo -e "        <vob file=\"$mpg\"/>"
             done
@@ -3949,8 +3949,8 @@ if ! $TITLESET_MODE && ! $DO_TITLESETS; then
         cleanlog 3
         runtime_error
     fi
-    TIME=$(vid_length "$WORK_DIR/dummy.m2v")
-    BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
+    VMGM_TIME=$(vid_length "$WORK_DIR/dummy.m2v")
+    BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME \
     $AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
     if "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then #run command
         cleanlog 3
