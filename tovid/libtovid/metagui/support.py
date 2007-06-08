@@ -304,21 +304,16 @@ class Style:
                  fgcolor='grey',
                  textcolor='black',
                  font=('Helvetica', 12, 'normal'),
-                 relief='groove',
-                 inifile=None):
+                 relief='groove'):
         self.bgcolor = bgcolor
         self.fgcolor = fgcolor
         self.textcolor = textcolor
         self.font = font
         self.relief = relief
-        if inifile:
-            self.load(inifile)
 
     def apply(self, root):
         """Apply the current style to the given Tkinter root window."""
         assert isinstance(root, tk.Tk)
-        print "Applying style to root window %s" % root
-        print "Font: %s, size: %s, %s" % self.font
         root.option_clear()
         # Font
         root.option_add("*font", self.font)
@@ -366,7 +361,6 @@ class Style:
     def load(self, filename):
         """Load style settings from an .ini-formatted config file.
         """
-        print "Loading Style from", filename
         config = ConfigParser()
         config.read(filename)
         font = dict(config.items('font'))

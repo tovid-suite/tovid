@@ -299,7 +299,13 @@ class GUI (tk.Tk):
         self.width = width
         self.height = height
         self.inifile = inifile or DEFAULT_CONFIG
-        self.style = Style(inifile=self.inifile)
+        self.style = Style()
+        if os.path.exists(self.inifile):
+            print "Loading style from config file", self.inifile
+            self.style.load(self.inifile)
+        else:
+            print "Creating config file", self.inifile
+            self.style.save(self.inifile)
 
     def run(self):
         """Run the GUI"""
@@ -353,6 +359,7 @@ class GUI (tk.Tk):
         config = ConfigWindow(self, self.style)
         if config.result:
             self.style = config.result
+            print "Saving configuration to", self.inifile
             self.style.save(self.inifile)
             self.style.apply(self)
             self.redraw()
