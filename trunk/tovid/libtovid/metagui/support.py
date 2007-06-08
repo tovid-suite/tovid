@@ -11,8 +11,8 @@ __all__ = [
     'FontChooser',
     'ConfigWindow',
     'Tabs',
-    'ScrolledWindow'
-    ]
+    'ScrolledWindow',
+    'Style']
 
 import os
 import Tkinter as tk
@@ -295,49 +295,143 @@ class FontChooser (tkSimpleDialog.Dialog):
         self.result = self.fontlist.get()
 
 ### --------------------------------------------------------------------
+from ConfigParser import ConfigParser
+
+class Style:
+    """Generic widget style definitions."""
+    def __init__(self,
+                 bgcolor='white',
+                 fgcolor='grey',
+                 textcolor='black',
+                 font=('Helvetica', 12, 'normal'),
+                 relief='groove',
+                 inifile=None):
+        self.bgcolor = bgcolor
+        self.fgcolor = fgcolor
+        self.textcolor = textcolor
+        self.font = font
+        self.relief = relief
+        if inifile:
+            self.load(inifile)
+
+    def apply(self, root):
+        """Apply the current style to the given Tkinter root window."""
+        assert isinstance(root, tk.Tk)
+        print "Applying style to root window %s" % root
+        print "Font: %s, size: %s, %s" % self.font
+        root.option_clear()
+        # Font
+        root.option_add("*font", self.font)
+        # Background color
+        root.option_add("*Scale.troughColor", self.bgcolor)
+        root.option_add("*Spinbox.background", self.bgcolor)
+        root.option_add("*Entry.background", self.bgcolor)
+        root.option_add("*Listbox.background", self.bgcolor)
+        # Button colors
+        root.option_add("*Radiobutton.selectColor", "#8888FF")
+        root.option_add("*Checkbutton.selectColor", "#8888FF")
+        # Relief
+        root.option_add("*Entry.relief", self.relief)
+        root.option_add("*Spinbox.relief", self.relief)
+        root.option_add("*Listbox.relief", self.relief)
+        root.option_add("*Button.relief", self.relief)
+        root.option_add("*Menu.relief", self.relief)
+        # Mouse-over effects
+        root.option_add("*Button.overRelief", 'raised')
+        root.option_add("*Checkbutton.overRelief", 'groove')
+        root.option_add("*Radiobutton.overRelief", 'groove')
+
+    def save(self, filename):
+        """Save the current style settings to an .ini-formatted config file.
+        """
+        # Load existing config file
+        config = ConfigParser()
+        config.read(filename)
+
+        # Save font settings
+        if 'font' not in config.sections():
+            config.add_section('font')
+        family, size, style = self.font
+        config.set('font', 'family', family)
+        config.set('font', 'size', size)
+        config.set('font', 'style', style)
+        
+        # TODO: Save other style settings
+        
+        # Yuck...
+        outfile = open(filename, 'w')
+        config.write(outfile)
+        outfile.close()
+
+    def load(self, filename):
+        """Load style settings from an .ini-formatted config file.
+        """
+        print "Loading Style from", filename
+        config = ConfigParser()
+        config.read(filename)
+        font = dict(config.items('font'))
+        self.font = (font['family'], int(font['size']), font['style'])
+
+### --------------------------------------------------------------------
+from tkMessageBox import showinfo
+from ConfigParser import ConfigParser
+
 
 class ConfigWindow (tkSimpleDialog.Dialog):
-    """Configuration settings dialog box."""
-    def __init__(self, master=None, inifile=''):
+    """Configuration settings dialog box.
+    """
+    def __init__(self, master=None, style=None):
         """Create and display a configuration window.
         
-            inifile:  An .ini-style file to load save settings from
+            inifile:  An .ini-style file to load/save settings from
         """
+        self.style = style or Style()
         tkSimpleDialog.Dialog.__init__(self, master, "Configuration")
-        self.inifile = inifile
-        
+
     def body(self, master):
         """Draw widgets inside the Dialog, and return the widget that should
         have the initial focus. Called by the Dialog base class constructor.
         """
-        tk.Label(master, text="GUI font").pack(side='top')
-        self.font = ComboBox(master, choices=['Helvetica', 'Courier', 'Times'])
-        self.font.pack(side='top', fill='both', expand=True)
+        # Font family
+        tk.Label(master, text="Font family").pack(side='top')
+        self.fontfamily = ComboBox(master,
+                                   choices=['Helvetica', 'Courier', 'Times'])
+        self.fontfamily.pack(side='top', fill='both', expand=True)
+        # Font size
         tk.Label(master, text="Font size").pack(side='top')
         self.fontsize = ComboBox(master, choices=[8, 10, 12, 15, 18, 24])
         self.fontsize.pack(side='top')
+        # Font style
+        tk.Label(master, text="Font style").pack(side='top')
+        self.fontstyle = ComboBox(master, choices=['normal', 'bold'])
+        self.fontstyle.pack(side='top')
+        # Use initial values loaded from .ini file
+        family, size, style = self.style.font
+        self.fontfamily.variable.set(family)
+        self.fontsize.variable.set(size)
+        self.fontstyle.variable.set(style)
         # Return widget with initial focus
-        return self.font
-    
+        return self.fontfamily
+
     def apply(self):
         """Apply the selected configuration settings.
         """
-        self.result = (self.font.variable.get(),
-                       self.fontsize.variable.get(),
-                       'normal')
+        self.style.font = (self.fontfamily.variable.get(),
+                           self.fontsize.variable.get(),
+                           self.fontstyle.variable.get())
+        self.result = self.style
 
 ### --------------------------------------------------------------------
 
 class Tabs (tk.Frame):
     """A tabbed frame, with tab buttons that switch between several frames.
     """
-    def __init__(self, master, side='top', font=('courier', 15, 'normal')):
+    def __init__(self, master, side='top'):
         """Create a tabbed frame widget.
         
             master: Tkinter widget to draw the Tabs in
             side:   Side to show the tab controls on
                     ('top', 'bottom', 'left', or 'right')
-            font:   Tkinter font spec for tab-button font
         
         Tabs are added to the tab bar via the add() method. The added frames
         should have the Tabs frame as their master. For example:
@@ -355,7 +449,6 @@ class Tabs (tk.Frame):
         """
         tk.Frame.__init__(self, master)
         self.side = side
-        self.font = font
         self.labels = []
         self.frames = []
         self.selected = tk.IntVar()
@@ -380,7 +473,6 @@ class Tabs (tk.Frame):
             'selectcolor': 'white',
             'relief': 'sunken',
             'offrelief': 'groove',
-            'font': self.font,
             'indicatoron': 0,
             'padx': 4, 'pady': 4
             }
@@ -464,4 +556,5 @@ class ScrolledWindow (tk.Tk):
         v_scroll.grid(row=0, column=1, sticky='ns')
         self.canvas.configure(xscrollcommand=h_scroll.set,
                               yscrollcommand=v_scroll.set)
-        
+
+### --------------------------------------------------------------------
