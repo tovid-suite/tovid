@@ -292,7 +292,7 @@ class FontChooser (tkSimpleDialog.Dialog):
     def apply(self):
         """Set the selected font.
         """
-        self.result = self.fontlist.get()
+        self.result = self.fontlist.chosen.get()
 
 ### --------------------------------------------------------------------
 from ConfigParser import ConfigParser
