@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 # __init__.py (metagui)
 
-
 """A simplified GUI-writing module.
 
 

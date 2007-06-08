@@ -9,8 +9,7 @@ __all__ = [
     'Dropdowns',
     'Drawer',
     'Application',
-    'GUI',
-    'Style']
+    'GUI']
 
 import sys
 import Tkinter as tk
@@ -277,27 +276,30 @@ class Application (tk.Frame):
         print "(not really)"
 
 ### --------------------------------------------------------------------
-from support import ConfigWindow
+from support import ConfigWindow, Style
+import os
+DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
 
 class GUI (tk.Tk):
     """GUI with one or more Applications
     """
     def __init__(self, title, applications, width=500, height=400,
-                 style=None):
+                 inifile=None):
         """Create a GUI for the given applications.
         
             title:        Text shown in the title bar
             applications: List of Applications to included in the GUI
             width:        Initial width of GUI window in pixels
             height:       Initial height of GUI window in pixels
-            style:        Style to apply to the GUI and its applications
+            inifile:      Name of an .ini-formatted file with GUI configuration
         """
         tk.Tk.__init__(self)
         self.title(title)
         self.apps = applications
         self.width = width
         self.height = height
-        self.style = style or Style()
+        self.inifile = inifile or DEFAULT_CONFIG
+        self.style = Style(inifile=self.inifile)
 
     def run(self):
         """Run the GUI"""
@@ -321,7 +323,7 @@ class GUI (tk.Tk):
             app.pack(anchor='n', fill='both', expand=True)
         # Multi-application (tabbed) GUI
         else:
-            tabs = Tabs(self.frame, 'top', self.style.font)
+            tabs = Tabs(self.frame, 'top')
             for app in self.apps:
                 app.draw(tabs)
                 tabs.add(app.program, app)
@@ -348,53 +350,12 @@ class GUI (tk.Tk):
 
     def show_config(self):
         """Open the GUI configuration dialog."""
-        config = ConfigWindow()
+        config = ConfigWindow(self, self.style)
         if config.result:
-            self.style.font = config.result
+            self.style = config.result
+            self.style.save(self.inifile)
             self.style.apply(self)
             self.redraw()
-
-### --------------------------------------------------------------------
-
-class Style:
-    """Generic widget style definitions."""
-    def __init__(self,
-                 bgcolor='white',
-                 fgcolor='grey',
-                 textcolor='black',
-                 font=('Helvetica', 12, 'normal'),
-                 relief='groove'):
-        self.bgcolor = bgcolor
-        self.fgcolor = fgcolor
-        self.textcolor = textcolor
-        self.font = font
-        self.relief = relief
-
-    def apply(self, root):
-        """Apply the current style to the given Tkinter root window."""
-        assert isinstance(root, tk.Tk)
-        print "Applying style to root window %s" % root
-        print "Font: %s, size: %s, %s" % self.font
-        root.option_clear()
-        # Background color
-        root.option_add("*Scale.troughColor", self.bgcolor)
-        root.option_add("*Spinbox.background", self.bgcolor)
-        root.option_add("*Entry.background", self.bgcolor)
-        root.option_add("*Listbox.background", self.bgcolor)
-        # Relief
-        root.option_add("*Entry.relief", self.relief)
-        root.option_add("*Spinbox.relief", self.relief)
-        root.option_add("*Listbox.relief", self.relief)
-        root.option_add("*Button.relief", self.relief)
-        root.option_add("*Menu.relief", self.relief)
-        # Font
-        root.option_add("*font", self.font)
-        root.option_add("*Radiobutton.selectColor", "#8888FF")
-        root.option_add("*Checkbutton.selectColor", "#8888FF")
-        # Mouse-over effects
-        root.option_add("*Button.overRelief", 'raised')
-        root.option_add("*Checkbutton.overRelief", 'groove')
-        root.option_add("*Radiobutton.overRelief", 'groove')
 
 ### --------------------------------------------------------------------
 
