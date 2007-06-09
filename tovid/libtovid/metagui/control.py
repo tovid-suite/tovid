@@ -187,16 +187,13 @@ class Control (tk.Frame):
         # TODO: Raise exception if draw() hasn't been called
         args = []
         value = self.get()
-        # Skip if unmodified
+
+        # Skip if unmodified or empty
         if value == self.default or value == []:
             if self.required:
                 raise MissingOption(self.option)
             else:
                 return []
-
-        # -flag
-        if self.vartype == bool and value:
-            return [self.option]
 
         # -option <argument>
         args.append(self.option)
@@ -244,6 +241,15 @@ class Flag (Control):
         self.check = tk.Checkbutton(self, text=self.label,
                                     variable=self.variable)
         self.check.pack(side='left')
+
+    def get_args(self):
+        """Return a list of arguments for passing this command-line option.
+        draw() must be called before this function.
+        """
+        if self.get() == True:
+            return [self.option]
+        else:
+            return []
 
 ### --------------------------------------------------------------------
 
