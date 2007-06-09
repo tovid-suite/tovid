@@ -368,8 +368,6 @@ class Style:
 
 ### --------------------------------------------------------------------
 from tkMessageBox import showinfo
-from ConfigParser import ConfigParser
-
 
 class ConfigWindow (tkSimpleDialog.Dialog):
     """Configuration settings dialog box.
