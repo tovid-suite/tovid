@@ -142,8 +142,12 @@ class Command:
         try:
             self.proc.wait()
         except KeyboardInterrupt:
-            os.kill(self.proc.pid, signal.SIGTERM)
+            self.kill()
             raise KeyboardInterrupt
+
+    def kill(self):
+        """Abort!"""
+        os.kill(self.proc.pid, signal.SIGTERM)
 
     def done(self):
         """Return True if the command is finished running; False otherwise.
