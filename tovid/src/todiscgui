@@ -7,7 +7,6 @@ from libtovid.metagui import *
 ### --------------------------------------------------------------------
 ### Panels
 ### --------------------------------------------------------------------
-import re
 
 # Control(option, label, default, help, ...)
 files = FileList('-files',
