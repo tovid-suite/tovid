@@ -93,7 +93,7 @@ class Control (tk.Frame):
             vartype:  Type of stored variable (str, bool, int, float, list)
             option:   Command-line option associated with this Control, or
                       '' to create a positional argument
-            label:    Label for the Control
+            label:    Label shown in the GUI for the Control
             default:  Default value for the Control
             help:     Help text to show in a tooltip
             **kwargs: Keyword arguments of the form key1=arg1, key2=arg2
@@ -234,22 +234,50 @@ class Flag (Control):
             help:     Help text to show in a tooltip
         """
         Control.__init__(self, bool, option, label, default, help, **kwargs)
+        # Enable an associated control when this Flag is True
+        self.enables = None
+        if 'enables' in kwargs:
+            self.enables = kwargs['enables']
+            if not isinstance(self.enables, Control):
+                raise "A Flag can only enable another Control"
 
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
         self.check = tk.Checkbutton(self, text=self.label,
-                                    variable=self.variable)
+                                    variable=self.variable,
+                                    command=self.enabler)
         self.check.pack(side='left')
+        # Draw any controls enabled by this one
+        if self.enables:
+            print "Drawing enabled Control: %s" % self.enables.__class__
+            self.enables.draw(self)
+            self.enables.pack(side='left')
+            # Disable if False
+            if not self.default:
+                self.enables.disable()
+
+
+    def enabler(self):
+        """Enable/disable a Control based on the value of the Flag."""
+        if not self.enables:
+            return
+        if self.get():
+            self.enables.enable()
+        else:
+            self.enables.disable()
 
     def get_args(self):
         """Return a list of arguments for passing this command-line option.
         draw() must be called before this function.
         """
+        args = []
         if self.get() == True:
-            return [self.option]
-        else:
-            return []
+            if self.option:
+                args.append(self.option)
+            if self.enables:
+                args.extend(self.enables.get_args())
+        return args
 
 ### --------------------------------------------------------------------
 
@@ -467,6 +495,10 @@ class List (Text):
         """Set a value to a list, joined with spaces."""
         text = ' '.join(listvalue)
         Text.set(self, text)
+    
+    def get_args(self):
+        """Return a list of arguments."""
+        return self.get()
 
 ### --------------------------------------------------------------------
 import tkFileDialog
