@@ -362,13 +362,13 @@ function format_seconds()
 
 function awk_math()
 {
-    if [ $2 = times ]; then
+    if [ $2 = "times" ]; then
         OP=*
-    elif [ $2 = by ]; then
+    elif [ $2 = "by" ]; then
         OP=/
-    elif [ $2 = less ]; then
+    elif [ $2 = "less" ]; then
         OP=-
-    elif [ $2 = plus ]; then
+    elif [ $2 = "plus" ]; then
         OP=+
     fi
 if [[ -n "$4" && "$4" = "float" ]]; then
@@ -522,7 +522,7 @@ function get_stats()
 {
 unset IN_STATS FILES_IN
 this_set=$1
-if [[ $this_set = group ]]; then
+if [[ $this_set = "group" ]]; then
     unset TOT IN_STATS FILES_IN
     TOT=${#grouping[@]} # || TOT=${#IN_FILES[@]}
     IN_STATS=( "${group_mencoder_stats[@]}" )
@@ -536,7 +536,7 @@ else
 fi
 
 for ((i=0; i<TOT; i++)); do
-    ([[ $this_set = group ]] &&  LENGTH=${GROUP_VID_LENGTHS[i]}) || LENGTH=${length[i]}
+    ([[ $this_set = "group" ]] &&  LENGTH=${GROUP_VID_LENGTHS[i]}) || LENGTH=${length[i]}
     VCODEC="$(awk '/VIDEO:/ {gsub(/\[|\]/, ""); print $2}' \
     <<< "${IN_STATS[i]}")"
     V_BR="$(awk '/Video stream:/{print $3}'<<< "${IN_STATS[i]}")"
@@ -551,7 +551,7 @@ for ((i=0; i<TOT; i++)); do
     else
         V_LENGTH=$(awk '/Video stream:/{print $10}'<<< "${IN_STATS[i]}")
     fi
-    if [[ $this_set = group ]]; then
+    if [[ $this_set = "group" ]]; then
         V_LENGTH=$(awk '/Video stream:/{print $10}' <<< "${group_mencoder_stats[i]}")
     fi
     if [[ $this_set != group ]]; then
@@ -561,11 +561,11 @@ for ((i=0; i<TOT; i++)); do
     fi
     FPS="$(awk ' /VIDEO/ { if ($_=="fps"); sub(/fps.*$/, ""); print $NF}' <<<"${IN_STATS[i]}")"
     yecho
-    if [[ $this_set = group ]] && ((i == 0)); then
+    if [[ $this_set = "group" ]] && ((i == 0)); then
         echo; echo ". . . Grouped file stats . . ."; echo
     yecho
     fi
-    [[ $this_set = group ]] && echo -e "Stats for" $(readlink "${FILES_IN[i]}") "\n" || \
+    [[ $this_set = "group" ]] && echo -e "Stats for" $(readlink "${FILES_IN[i]}") "\n" || \
     echo -e "Stats for" "${FILES_IN[i]}" "\n"
     echo -e  \
     " video codec:   " \
@@ -585,7 +585,7 @@ function check_compliance()
 {
     unset FILES_TO_ENCODE ENC_IN_FILES CHECK_IN_FILES
     group_set=false
-    if [[ $1 = group ]]; then
+    if [[ $1 = "group" ]]; then
         group_set=:
         unset x a
         CHECK_IN_FILES=( "${grouping[@]}" )
@@ -667,7 +667,7 @@ function mk_workdir()
     REAL_WORK_DIR=$(tempdir $CUR_DIR/todisc-work)
     WORK_DIR=$(tempdir /tmp/todisc-work)
     # tempdir function makes a directory, so remove it and make symlink
-    rm -frv "$WORK_DIR" && ln -sfv "$REAL_WORK_DIR" "$WORK_DIR"
+    rm -fr "$WORK_DIR" && ln -sfv "$REAL_WORK_DIR" "$WORK_DIR"
 }
 
 
@@ -949,13 +949,13 @@ function thanks_goodbye()
     echo $SEPARATOR
     echo "todisc took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
     echo $SEPARATOR
-    if [ "$TARGET" = dvd ]; then
+    if [ "$TARGET" = "dvd" ]; then
         echo "Your new DVD should be in $OUT_DIR"
         echo "You can preview them in gxine with this command:"
         echo "    gxine \"dvd:/$OUT_DIR\""
         echo "If you are satisfied with the results, you can burn a disc with:"
         echo "    makedvd -burn \"$OUT_DIR\""
-    elif [ "$TARGET" = svcd ]; then
+    elif [ "$TARGET" = "svcd" ]; then
         echo "Your svcd bin and cue files are ready. You can burn them with:"
         echo "    cdrdao write --device /dev/hdc --driver generic-mmc "${OUT_FILE}.cue""
     fi
@@ -1137,7 +1137,7 @@ while test $# -gt 0; do
             ADV_OPT=( "${ADV_OPT[@]}" "$1" )
             shift
             BUTTON_GRAVITY=$1
-            [[ $BUTTON_GRAVITY = centre ]] && BUTTON_GRAVITY=center
+            [[ $BUTTON_GRAVITY = "centre" ]] && BUTTON_GRAVITY=center
             USER_GRAVITY=:
             ;;
         # Menu control options
