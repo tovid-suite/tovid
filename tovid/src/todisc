@@ -57,16 +57,9 @@ EOF`
 assert_dep "$todisc_deps"
 # check if symlink in /tmp exists and use time stamped link if so
 WORK_DIR="/tmp/todisc-work"
-for link in $(find /tmp -maxdepth 1 -name todisc-work\* -type l 2>/dev/null ); do
-    [ -h "$link" ] && { WORK_DIR=/tmp/todisc-work$((NUM++)); continue; }
-done
 CUR_DIR="$(abspath "$(pwd)")"
 # make unique REAL_WORK_DIR
 REAL_WORK_DIR="$CUR_DIR/todisc-work"
-for dir in "$REAL_WORK_DIR"*; do
-    [ -d "$dir" ] && { REAL_WORK_DIR="$(pwd)"/todisc-work$((NUM++))
-    continue; }
-done
 LOG_FILE="$(abspath "todisc.log")"
 OUT_PREFIX=""
 TV_STANDARD=ntsc
@@ -77,8 +70,6 @@ TARGET=dvd
 FRAME_RATE=29.970  # when -ntsc and -pal options added put in body in if block
 VIDSIZE=720x480
 MENU_TITLE="My Video Collection"
-SPUMUX_XML="$WORK_DIR/spumux.xml"
-DVDAUTHOR_XML="$WORK_DIR/dvdauthor.xml"
 STATIC=false
 SUB_MENU=false
 ANI_SUB_MENU=false
@@ -673,19 +664,12 @@ function check_compliance()
 
 function mk_workdir()
 {
-    if [[ -d "$REAL_WORK_DIR" && -z ${GROUP[@]} ]]; then
-        echo "Removing existing files in \"$REAL_WORK_DIR\""
-        rm -rf "$REAL_WORK_DIR"
-    fi
-    mkdir -pv "$REAL_WORK_DIR"
-    if [[ -h "$WORK_DIR" && -z ${GROUP[@]} ]]; then
-        echo -n "Removing existing symlink in /tmp . . . "
-        ! $DO_TITLESETS && rm -fv "$WORK_DIR"
-    fi
-
-    # link WORK_DIR to /tmp for easy solution to spaces, illegal chars bugs
-    [[ -z ${GROUP[@]} ]] && ln -sfv "$REAL_WORK_DIR" "$WORK_DIR"
+    REAL_WORK_DIR=$(tempdir $CUR_DIR/todisc-work)
+    WORK_DIR=$(tempdir /tmp/todisc-work)
+    # tempdir function makes a directory, so remove it and make symlink
+    rm -frv "$WORK_DIR" && ln -sfv "$REAL_WORK_DIR" "$WORK_DIR"
 }
+
 
 function get_group_chapters()
 {
@@ -744,7 +728,6 @@ function switched_menu_mode()
 #call todisc recursively to make multiple menus for -switched-menus option
 {
     $TITLESET_MODE && IS_TITLESET="-is_titleset"
-    ! $GROUPING && mk_workdir
     for ((i=1; i<${#FILES[@]}; i++)); do
         yecho
         yecho "Working on switched menu $((i+1))"
@@ -760,7 +743,6 @@ function switched_menu_mode()
 function titleset_mode()
 # call todisc recursively in order to allow titlesets
 {
-    ! $GROUPING && mk_workdir
     # some vars for vmgm menu, depending on presence of -static or -quick-nav
     # how many titlesets do we have ?
     for i in "$@"; do [[ $i == -end-titleset ]] && ((count++)); done
@@ -823,6 +805,10 @@ EOF
                         shift
                     done
                     ;;
+                "-group")
+                    shift
+                    get_listargs "$@"
+                    ;;
                 *)
                     GEN_OPTS[i++]="$1"
                     ;;
@@ -832,23 +818,38 @@ EOF
     }
     function  get_menu_titles()
     {
-        unset MENUTITLES
-        i=0
+        unset menutitles x y titles
         while [[ $@ ]]; do
             case "$1" in
+                "-vmgm")
+                    while [[ $@ && $1 != "-end-vmgm" ]]; do
+                        shift
+                    done
+                    ;;
                 "-menu-title" )
                     shift
-                    MENUTITLES[x++]="$1"
+                    menutitles[x++]="$1"
+                    ;;
+                "-titles" )
+                    shift
+                    get_listargs "$@"
+                    OIFS=$IFS
+                    IFS=""
+                    titles=( "${titles[@]}" "${ARGS_ARRAY[@]}" )
+                    IFS=$OIFS
                     ;;
             esac
             shift
         done
     }
     get_genopts "${args[@]}"
-
+    get_menu_titles "${args[@]}"
+    MENUTITLES=( "${menutitles[@]}" )
+    get_menu_titles "${VMGM_OPTS[@]}"
+    if [[ ${#titles[@]} -ne $count ]]; then
+        usage_error "Number of titleset titles must equal the number of titlesets"
+    fi
     if [[ -z ${VMGM_OPTS[@]} ]]; then
-        unset x
-        get_menu_titles "${args[@]}"
         yecho
         yecho "You have not supplied -vmgm OPTIONS -end-vmgm"
         yecho "At a minumum you should have '-vmgm -titles "Title one" "Title two" -end-vmgm'"
@@ -904,8 +905,7 @@ EOF
         runtime_error "There was a problem creating the DVD structure"
     fi
     thanks_goodbye
-#    yecho "Your new DVD should be in $OUT_DIR"
-#    cleanup
+    cleanup
 
 }
 
@@ -1099,16 +1099,16 @@ while test $# -gt 0; do
             KEEP_FILES=:
             ;;
         "-dvd" )
-            TARGET=dvd
+            TARGET="dvd"
             ;;
         "-svcd" )
-            TARGET=svcd
+            TARGET="svcd"
             ;;
         "-ntsc" )
-            TV_STANDARD=ntsc
+            TV_STANDARD="ntsc"
             ;;
         "-pal" )
-            TV_STANDARD=pal
+            TV_STANDARD="pal"
             ;;
         "-aspect" )
             unset ASPECT ASPECT_ARG
@@ -1130,7 +1130,7 @@ while test $# -gt 0; do
             ADV_OPT=( "${ADV_OPT[@]}" "$1" )
             shift
             SAFE_AREA="$1"
-            let SAFE_OFFSET=86-SAFE_AREA
+            let SAFE_OFFSET="86-SAFE_AREA"
             USER_SAFE_AREA=:
             ;;
         "-align" )
@@ -1209,7 +1209,7 @@ while test $# -gt 0; do
                 SHOWCASE_FILE[f]="$(abspath "${ARGS_ARRAY[f]}")"
             done
             SHOWCASE=:
-            IMG_FMT=png
+            IMG_FMT="png"
             ;;
         "-textmenu" )
             shift
@@ -1218,8 +1218,8 @@ while test $# -gt 0; do
             [[ -n $arg ]] && SPLIT=$arg && USER_SPLIT=:
             TEXTMENU=:
             SHOWCASE=:
-            IMG_FMT=png
-            SC_TITLE_ALIGN=west
+            IMG_FMT="png"
+            SC_TITLE_ALIGN="west"
             ;;
         "-text-start" )
             ADV_OPT=( "${ADV_OPT[@]}" "$1" )
@@ -1229,7 +1229,7 @@ while test $# -gt 0; do
         "-showcase-titles-align" )
             shift
             SC_TITLE_ALIGN="$1"
-            [[ SC_TITLE_ALIGN = centre ]] && SC_TITLE_ALIGN=center
+            [[ SC_TITLE_ALIGN = "centre" ]] && SC_TITLE_ALIGN="center"
             ;;
         "-title-gap" )
             ADV_OPT=( "${ADV_OPT[@]}" "$1" )
@@ -1240,12 +1240,12 @@ while test $# -gt 0; do
             shift
             ROTATE_DEGREES="$1"
             ROTATE="-rotate $ROTATE_DEGREES"
-            IMG_FMT=png
+            IMG_FMT="png"
             ;;
         "-wave" )
             shift
             WAVE=$1
-            if [ "$WAVE" = default ]; then
+            if [[ "$WAVE" = "default" ]]; then
                 WAVE="-wave -20x556"
             else
                 WAVE="-wave $1"
@@ -1259,7 +1259,7 @@ while test $# -gt 0; do
             shift
             THUMB_SHAPE="$1"
             FEATHER=:
-            IMG_FMT=png
+            IMG_FMT="png"
             ;;
         "-button-style" )
             shift
@@ -1500,10 +1500,10 @@ while test $# -gt 0; do
             ;;
         "-switched-menus" )
             SWITCHED_MENUS=:
-            BUTTON_STYLE=text-rect
+            BUTTON_STYLE="text-rect"
             TEXTMENU=:
             SHOWCASE=:
-            SC_TITLE_ALIGN=west
+            SC_TITLE_ALIGN="west"
             ;;
         "-skip-vmgm" )
             SKIP_VMGM_MENU=:
@@ -1522,6 +1522,11 @@ done
 #                      Sanity checks and preliminaries                       #
 ##############################################################################
 
+# link WORK_DIR to /tmp for easy solution to spaces, illegal chars bugs
+! $GROUPING && mk_workdir
+# set some other vars now that depended on *WORK_DIR being set
+SPUMUX_XML="$WORK_DIR/spumux.xml"
+DVDAUTHOR_XML="$WORK_DIR/dvdauthor.xml"
 
 # Make sure equal, nonzero number of titles and files were provided
 if ! $VMGM_ONLY && ! $DO_TITLESETS; then
@@ -1532,7 +1537,7 @@ if ! $VMGM_ONLY && ! $DO_TITLESETS; then
         You gave ${#FILES[@]} files and ${#TITLES[@]} titles"
     fi
 fi
-$VMGM_ONLY && PLAYALL=false && SUB_MENU=false && ANI_SUB_MENU=false
+$VMGM_ONLY && PLAYALL=false && SUB_MENU=false && ANI_SUB_MENU=false && SM_TITLES=""
 if [[ -n "$SM_TITLES" ]]; then
     if test ${#SM_TITLES[@]} -ne ${#TITLES[@]}; then
     usage_error "Please give the same number of submenu titles as titles.
@@ -1545,7 +1550,7 @@ fi
 # Make sure -out was provided
 if test -n "$OUT_PREFIX"; then
     OUT_DIR="$(abspath "$OUT_PREFIX")"
-    [[ $TARGET = svcd ]] && OUT_FILE="$OUT_DIR"
+    [[ $TARGET = "svcd" ]] && OUT_FILE="$OUT_DIR"
      if egrep -q '<|>|&' <<< "$OUT_DIR"; then
         usage_error "Sorry, dvdauthor will not let you use a -out name with '>', '<' or '&' in it.  Please choose another directory or name for -out  You used: "$OUT_DIR""
     fi
@@ -1711,10 +1716,6 @@ if $GROUPING; then
     LC_ALL=C grouping=( $WORK_DIR/${TSET_NUM}-group* )
 fi
 
-# Clean out any existing WORK_DIR
-# link WORK_DIR to /tmp for easy solution to spaces, illegal chars bugs
-! $GROUPING && ! $SWITCHED_MENUS && mk_workdir
-
 # Remove any existing log file
 if ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
     test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
@@ -1722,9 +1723,9 @@ fi
 # check file type of background file and assign to BG_VIDEO or BG_IMAGE
 if [[ -n $BACKGROUND ]]; then
     check_filetype "$BACKGROUND"
-    if [[ $TYPE = image ]]; then
+    if [[ $TYPE = "image" ]]; then
         BG_PIC="$BACKGROUND"
-    elif [[ $TYPE = video ]]; then
+    elif [[ $TYPE = "video" ]]; then
         BG_VIDEO="$BACKGROUND"
     else
         usage_error "Sorry, can not identify "$BACKGROUND""
@@ -1734,9 +1735,9 @@ fi
 if $SHOWCASE; then
     if [[ -n ${SHOWCASE_FILE[@]} ]]; then
         check_filetype "${SHOWCASE_FILE[@]}"
-        if [[ $TYPE = image ]]; then
+        if [[ $TYPE = "image" ]]; then
             SHOWCASE_IMG="${SHOWCASE_FILE[@]}"
-        elif [[ $TYPE = video ]]; then
+        elif [[ $TYPE = "video" ]]; then
             SHOWCASE_VIDEO="${SHOWCASE_FILE[@]}"
         else
             usage_error "Sorry, can not identify showcase file: "${SHOWCASE_FILE[@]}""
@@ -1746,7 +1747,7 @@ if $SHOWCASE; then
         SHOWCASE_IMG="dummy"
     fi
 fi
-if [[ $SC_FRAMESTYLE = glass ]] && [[ -z $SHOWCASE_IMG && -z $SHOWCASE_VIDEO ]]; then
+if [[ $SC_FRAMESTYLE = "glass" ]] && [[ -z $SHOWCASE_IMG && -z $SHOWCASE_VIDEO ]]; then
     yecho
     yecho "You must use a -showcase option for '-showcase-framestyle'"
     yecho "Either -showcase IMAGE, -showcase VIDEO or just '-showcase'"
@@ -1757,10 +1758,10 @@ if [[ $SC_FRAMESTYLE = glass ]] && [[ -z $SHOWCASE_IMG && -z $SHOWCASE_VIDEO ]];
 fi
 
 # disable submenus for svcd
-if $SUB_MENU && [ "$TARGET" = svcd ]; then
+if $SUB_MENU && [ "$TARGET" = "svcd" ]; then
     usage_error "Sorry, submenu disabled for svcd for now, please remove -submenu option"
 fi
-[[ $TARGET = svcd ]] && $SHOWCASE && ! $TEXTMENU && usage_error "Sorry, showcase disabled for svcd target"
+[[ $TARGET = "svcd" ]] && $SHOWCASE && ! $TEXTMENU && usage_error "Sorry, showcase disabled for svcd target"
 $SUB_MENU && $GROUPING && usage_error "Sorry, no submenus when using -group"
 # allow user to only specify one audio file for all submenus
 if [ ${#SM_AUDIO[@]} -eq 1 ]; then
@@ -1782,12 +1783,12 @@ $VMGM_ONLY && V_TOTAL=$(( ${#TITLES[@]} - 1 )) || V_TOTAL=${#IN_FILES[@]}
 $VMGM_ONLY && NUM_FILES=$(( ${#TITLES[@]} - 1 )) || NUM_FILES=$((V_TOTAL - 1))
 
 # switch title position when appropriate so it doesn't get covered up
-! $USER_TITLE_GEO && [[ $BUTTON_GRAVITY = *south* ]] && TITLE_GRAVITY=north
+! $USER_TITLE_GEO && [[ $BUTTON_GRAVITY = *south* ]] && TITLE_GRAVITY="north"
 if [[ $BUTTON_GRAVITY = *east* || $BUTTON_GRAVITY = *west* ]]; then
     ! $USER_GEO &&  XGEO=45 && YGEO=45
     ! $SHOWCASE && ! $USER_TITLE_GEO && TITLE_GRAVITY=north
 fi
-! $SHOWCASE && [[ $BUTTON_GRAVITY = center ]] && ! $USER_TITLE_GEO && TITLE_GRAVITY=north
+! $SHOWCASE && [[ $BUTTON_GRAVITY = "center" ]] && ! $USER_TITLE_GEO && TITLE_GRAVITY="north"
 # dvdauthor stuff
 # make an array of possible vars for dvdauthor post calls
 if $CHAIN_VIDEOS; then
@@ -2084,10 +2085,10 @@ if  [ $TARGET = "dvd" ]; then
     FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 230KiB -aspect 4:3"
     ASPECT="-aspect $ASPECT_RATIO"
     SHOWCASE_SIZE=384x256
-    if [ $TV_STANDARD = ntsc ]; then
+    if [ $TV_STANDARD = "ntsc" ]; then
         VIDSIZE="720x480"
         FRAME_RATE=29.970
-    elif [ $TV_STANDARD = pal ]; then
+    elif [ $TV_STANDARD = "pal" ]; then
         VIDSIZE="720x576"
         FRAME_RATE=25
     fi
@@ -2099,10 +2100,10 @@ elif [ $TARGET = "svcd" ]; then
     FFMPEG_OPTS="-b 2200k -minrate 2200k -maxrate 2200k -bufsize 112KiB -aspect 4:3"
     ASPECT="-aspect $ASPECT_RATIO"
     SHOWCASE_SIZE=256x256
-    if [ $TV_STANDARD = ntsc ]; then
+    if [ $TV_STANDARD = "ntsc" ]; then
         VIDSIZE="480x480"
         FRAME_RATE=29.970
-    elif [ $TV_STANDARD = pal ]; then
+    elif [ $TV_STANDARD = "pal" ]; then
         VIDSIZE="480x576"
         FRAME_RATE=25
     fi
@@ -2134,7 +2135,7 @@ fi
 # some choices needed for different title alignments
 if $SHOWCASE && ! $TEXTMENU; then
     if [ $V_TOTAL -le 5 ]; then
-        if [[ $SC_TITLE_ALIGN = east ]]; then
+        if [[ $SC_TITLE_ALIGN = "east" ]]; then
             SHOWCASE_SIZE=288x216  # smaller to allow for titles
             [ $TARGET = "svcd" ] && SHOWCASE_SIZE=216x216
         else
@@ -2146,7 +2147,7 @@ if $SHOWCASE && ! $TEXTMENU; then
         SHOWCASE_SIZE=288x216  # smaller showcase thumb because we have 2 rows
         [ $TARGET = "svcd" ] && SHOWCASE_SIZE=216x216
         AUTOORDER="columns"
-        if ! $NO_SC_THUMB && [[ "$SC_TITLE_ALIGN" = east ]] && [[ -n $SHOWCASE_FILE ]]; then
+        if ! $NO_SC_THUMB && [[ "$SC_TITLE_ALIGN" = "east" ]] && [[ -n $SHOWCASE_FILE ]]; then
             usage_error "Sorry, there is no room for the showcase thumb " \
             "if you use more than 5 videos with -showcase-titles-align east|west. " \
             "Either remove the -showcase-titles-align switch or remove the " \
@@ -2176,7 +2177,7 @@ if [ "$SC_TITLE_ALIGN" = "west" ] || $TEXTMENU; then #FIXME
     done
 fi
 # centre aligned titles are not for textmenu style
-if $TEXTMENU && [[ $SC_TITLE_ALIGN = center ]]; then
+if $TEXTMENU && [[ $SC_TITLE_ALIGN = "center" ]]; then
     yecho
     yecho "Sorry, you can not use center align for textmenu titles"
     yecho "Using title alignment of 'west': please check the preview"
@@ -2184,7 +2185,7 @@ if $TEXTMENU && [[ $SC_TITLE_ALIGN = center ]]; then
     SC_TITLE_ALIGN="west"
     ! $NO_WARN && sleep 10
 fi
-if  [[ $BUTTON_STYLE = text-rect ]] && ! $SHOWCASE; then
+if  [[ $BUTTON_STYLE = "text-rect" ]] && ! $SHOWCASE; then
     yecho  "You can only use text-rect button style with showcase or textmenu arrangements"
     yecho "Setting button style to 'rect'"
     yecho "If you would rather use 'text' style please ctrl-c now to exit and reform your command"
@@ -2192,7 +2193,7 @@ if  [[ $BUTTON_STYLE = text-rect ]] && ! $SHOWCASE; then
     ! $NO_WARN && sleep 15
 fi
 # text-rect only for -align east
-if [[ $BUTTON_STYLE = text-rect ]] && ! [[ $SC_TITLE_ALIGN = east ]] && ! $TEXTMENU; then
+if [[ $BUTTON_STYLE = "text-rect" ]] && ! [[ $SC_TITLE_ALIGN = "east" ]] && ! $TEXTMENU; then
     yecho "***Warning*** : text-rect buttons need to be aligned east of thumbs: \
     by using: '-showcase-titles-align east'"
     if [[ -n $SHOWCASE_FILE ]]; then
@@ -2269,6 +2270,13 @@ fi
 if $THREExONE && [ $V_TOTAL -eq 3 ]; then
     TILE_ARRAY[2]=3x1
 fi
+if ( ($DO_TITLESETS || $TITLESET_MODE) && ! $NO_VMGM_MENU ) || $PLAYALL; then
+    if [[ $BUTTON_GRAVITY = "south" ]]; then
+        BUTTON_GRAVITY="center"
+        yecho "Changing thumb alignment to 'center' to make room for navigation button"
+    fi
+fi
+
 # do not use frame for showcase-framestyle glass
 if [[ "$SC_FRAMESTYLE" = "glass" && -n "$SHOWCASE_VIDEO" ]] ; then
     unset SC_FRAME
@@ -2314,7 +2322,7 @@ done
 # multiline titles not allowed unless showcase style
 $MULTILINE_TITLE && ! $SHOWCASE && usage_error "Sorry, multiline titles only allowed for showcase style"
 # no rect button style with rotated thumbs yet, so use text-rect fallback
-if ([[ -n ${ROTATE_ARRAY[@]} ]] && $MULTILINE_TITLE) && [[ $BUTTON_STYLE = rect ]]; then
+if ([[ -n ${ROTATE_ARRAY[@]} ]] && $MULTILINE_TITLE) && [[ $BUTTON_STYLE = "rect" ]]; then
     BUTTON_STYLE="text-rect"
     yecho
     yecho "Using 'text-rect' instead of 'rect' button style for rotated thumbs"
@@ -2323,7 +2331,7 @@ if ([[ -n ${ROTATE_ARRAY[@]} ]] && $MULTILINE_TITLE) && [[ $BUTTON_STYLE = rect 
 fi
 
 # transparent border around text so rect spumux outline can fit
-if [[ $BUTTON_STYLE = text-rect ]]; then
+if [[ $BUTTON_STYLE = "text-rect" ]]; then
     TEXT_BORDER="-bordercolor Transparent -border 8x8"
 fi
 
@@ -2545,7 +2553,7 @@ if $SHOWCASE; then
     done
     if $TEXTMENU; then
         # text-rect can get along with a small space between titles for spumux
-        [[ $BUTTON_STYLE = text-rect ]] && SPACER=${SPACER:-"10"} || SPACER=${SPACER:-"15"}
+        [[ $BUTTON_STYLE = "text-rect" ]] && SPACER=${SPACER:-"10"} || SPACER=${SPACER:-"15"}
         # get an array of title Y positions
         offsets1=$(for ((c=0; c<NUM_FILES; c++)); do
         ((c < (LEFT_MAX-1))) && echo $(( ${TT_DIM[c]#*x} + SPACER )); done)
@@ -2581,7 +2589,7 @@ if $SHOWCASE; then
             avail_space=$avail_space1
         fi
         # get the height of each column for -align centre
-        if [[ $BUTTON_GRAVITY = center || $BUTTON_GRAVITY = east || $BUTTON_GRAVITY = west ]]; then
+        if [[ $BUTTON_GRAVITY = "center" || $BUTTON_GRAVITY = "east" || $BUTTON_GRAVITY = "west" ]]; then
             WEST_YSPACE=$(( SW_YCORNER - TEXT_YSTART))
             EAST_YSPACE=$((SE_YCORNER - TEXT_YSTART))
             ((WEST_YSPACE > EAST_YSPACE)) && YSPACE=$WEST_YSPACE || YSPACE=$EAST_YSPACE
@@ -2594,7 +2602,7 @@ if $SHOWCASE; then
             for ((d=0; d<=NUM_FILES; d++)); do
                 SHOWCASE_TITLES_Y_ARRAY[d]=$(( ${SHOWCASE_TITLES_Y_ARRAY[d]} + $avail_space ))
             done
-        elif  [[ $BUTTON_GRAVITY = center || $BUTTON_GRAVITY = east || $BUTTON_GRAVITY = west ]]; then
+        elif  [[ $BUTTON_GRAVITY = "center" || $BUTTON_GRAVITY = "east" || $BUTTON_GRAVITY = "west" ]]; then
             for ((d=0; d<=NUM_FILES; d++)); do
                 SHOWCASE_TITLES_Y_ARRAY[d]=$(( ${SHOWCASE_TITLES_Y_ARRAY[d]} + $TEXT_YSTART_OFFSET ))
             done
@@ -2731,7 +2739,7 @@ if [[ -n "$BG_VIDEO" ]]; then
     fi
 fi
 if $SHOWCASE && ! $NO_SC_THUMB; then
-[[ $SC_TITLE_ALIGN = east ]] && ! $TEXTMENU && TS="+ ${THUMB_SIZE/x*}"
+[[ $SC_TITLE_ALIGN = "east" ]] && ! $TEXTMENU && TS="+ ${THUMB_SIZE/x*}"
     if (( (WIDEST_TITLE + SAFE_AREA $TS + ${SHOWCASE_SIZE/x*}) > ( ${VIDSIZE/x*} - SAFE_AREA) )); then
             SHOWCASE_SIZE=288x216
             [[ $TARGET = "svcd" ]] && SHOWCASE_SIZE=216x216
@@ -3236,8 +3244,8 @@ if $SHOWCASE; then
 #            ((NUM_FILES < SPLIT)) && split=$NUM_FILES || split=$((SPLIT - 1))
             # if there is a menu title, move the showcase thumb up or down
             if [[ -n $MENU_TITLE ]] && ! $USER_SC_GEO && ! $USER_TITLE_GEO; then
-                [[ $TITLE_GRAVITY = south ]] && TITLE_SPACE="- $(( (title_yoffset + TITLE_TEXT_YDIM) / 2))"
-                [[ $TITLE_GRAVITY = north ]] && TITLE_SPACE="+ $(( (title_yoffset + TITLE_TEXT_YDIM) / 2))"
+                [[ $TITLE_GRAVITY = "south" ]] && TITLE_SPACE="- $(( (title_yoffset + TITLE_TEXT_YDIM) / 2))"
+                [[ $TITLE_GRAVITY = "north" ]] && TITLE_SPACE="+ $(( (title_yoffset + TITLE_TEXT_YDIM) / 2))"
             fi
             Y_SPACE=${VIDSIZE#*x}
             SC_Y=$(( (Y_SPACE / 2) - (sc_height / 2) $TITLE_SPACE ))
@@ -4875,7 +4883,9 @@ else
 fi
 echo
 echo "Cleaning up montage images"
-rm -fr $WORK_DIR/animenu/*.jpg
+rm -f $WORK_DIR/animenu/*.jpg
+rm -f $WORK_DIR/animenu/*.png
+
 # check if m2v was created ok before proceeding
 if mencoder -quiet -oac pcm -ovc copy -frames 0 $WORK_DIR/intro.m2v -o /dev/null &> /dev/null; then
     :
@@ -4997,13 +5007,13 @@ fi
 if $TITLESET_MODE; then
     $KEEP_FILES && mv -v "$REAL_WORK_DIR" "$BASEDIR"/TITLESET${TSET_NUM}
 fi
-if [ "$TARGET" = dvd ] && $AUTHOR && ! $VMGM_ONLY && ! $DO_TITLESETS && ! $SWITCHED_MODE; then
+if [ "$TARGET" = "dvd" ] && $AUTHOR && ! $VMGM_ONLY && ! $DO_TITLESETS && ! $SWITCHED_MODE; then
     echo "Running dvdauthor to create the DVD filesystem"
     dvdauthor -x "$DVDAUTHOR_XML" 2>&1 | tee -a "$LOG_FILE"
     if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
         runtime_error "There was a problem creating the DVD structure"
     fi
-elif [ "$TARGET" = svcd ]; then
+elif [ "$TARGET" = "svcd" ]; then
     makexml -svcd -menu $WORK_DIR/intro.mpg "${IN_FILES[@]}" -out "$OUT_FILE"
     vcdxbuild -b "${OUT_FILE}.bin" -c "${OUT_FILE}.cue"  "${OUT_FILE}.xml"
 fi
@@ -5012,10 +5022,10 @@ find "$WORK_DIR"/ -name '*.png' ! -name Highlight.png ! -name Select.png -exec r
 find "$WORK_DIR"/ -name '*.jpg' ! -name preview.jpg -exec rm -f {} \; > /dev/null 2>&1
 rm -frv "$WORK_DIR/animenu" "$WORK_DIR/pics" "$WORK_DIR/submenu"
 $VMGM_ONLY && $KEEP_FILES && mv -v "$REAL_WORK_DIR" "$BASEDIR"/VMGM
-echo "Removing the link in /tmp"
-rm -fv "$WORK_DIR"
+#echo "Removing the link in /tmp"
+#rm -fv "$WORK_DIR"
 if ! $VMGM_ONLY && ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
     thanks_goodbye
 fi
-cleanup
+! $DO_TITLESETS && cleanup
 exit 0
