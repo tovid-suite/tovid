@@ -732,7 +732,7 @@ function switched_menu_mode()
         yecho
         yecho "Working on switched menu $((i+1))"
         yecho && sleep 5
-        yecho "Running todisc "$@" -switched-mode $IS_TITLESET -basedir "$BASEDIR"  -menu_num $((i+1)) -showcase "${FILES[i]}""
+        yecho "Running todisc "$@" -switched-mode $IS_TITLESET -basedir "$BASEDIR" -menu_num $((i+1)) -showcase "${FILES[i]}""
         todisc "$@" -switched-mode $IS_TITLESET -basedir "$WORK_DIR" -menu_num $((i+1)) -showcase "${FILES[i]}"
     done
         yecho
@@ -1349,8 +1349,14 @@ while test $# -gt 0; do
             ;;
         "-bgaudio" )
             shift
-            BG_AUDIO="$(abspath "$1")"
-            ! [[ -e "$BG_AUDIO" ]] && usage_error "$BG_AUDIO does not exist"
+            if [[ $1 = "none" ]]; then
+                BG_AUDIO="none"
+            else
+                BG_AUDIO="$(abspath "$1")"
+                if [[ ! -e "$BG_AUDIO" ]]; then
+                    usage_error "$BG_AUDIO does not exist"
+                fi
+            fi
             ;;
         "-menu-audio-fade" )
             shift
@@ -1623,6 +1629,14 @@ if [[ $BUTTON_STYLE = "line" ]] && ! $SHOWCASE; then
     yecho
     BUTTON_STYLE="rect"
     ! $NO_WARN && sleep 10
+elif [[ $USER_BSTYLE && $BUTTON_STYLE="rect" ]] && $TEXTMENU; then
+    BUTTON_STYLE="line"
+    if [[ $MENU_NUM -eq 2 ]] ||  (! $SWITCHED_MODE && ! $SWITCHED_MENUS); then
+        yecho
+        yecho "Using button style 'line' instead of 'text-rect' for textmenu menu"
+        yecho
+        ! $NO_WARN && sleep 10
+    fi
 fi
 # allow multiline titles in submenu
 if [[ -n "$SM_TITLES" ]]; then
@@ -2313,7 +2327,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
             # multiline titles not suitable for text buttons
             BUTTON_STYLE="text-rect"
         elif $TEXTMENU; then
-             ! $USER_BSTYLE && BUTTON_STYLE="text-rect"
+            ! $USER_BSTYLE && BUTTON_STYLE="text-rect"
         else
             [[ $BUTTON_STYLE != "text-rect" ]] &&  ! $USER_BSTYLE && BUTTON_STYLE="rect"
         fi
@@ -3364,6 +3378,42 @@ if ! $NOASK; then
             fi
         fi
     fi
+fi
+
+# if doing switched menus, use the bgaudio from each video
+# unless "none" is passed for -bgaudio
+if $SWITCHED; then
+    yecho
+    SHOWCASE_SEEK_VAL=${SEEK_VAL[vid]}
+    let vid=MENU_NUM-1
+    # if no audio is detected in the video
+    if ! mencoder -quiet "${FILES[vid]}" -oac pcm -ovc copy -frames 0 \
+    -o /dev/null 2>&1 |grep Audio 2>&1 >/dev/null; then
+        # -bgaudio is not passed, or passed as 'none', use silence
+        if [[ -z $BG_AUDIO || $BG_AUDIO = "none" ]]; then
+            yecho "Using silence as audio background for "${FILES[vid]}""
+        else # -bgaudio is passed, use the provided file
+            [[ $BG_AUDIO != "none" ]] && \
+            yecho "Using $BG_AUDIO as audio background for "${FILES[vid]}""
+        fi    
+    else # audio detected in the video
+        if [[ -z $BG_AUDIO ]]; then 
+            # use the audio from each video for each switched menu
+            BG_AUDIO="${FILES[vid]}"
+            BG_AUDIO_SEEK=${SEEK_VAL[vid]} # same audio and video seek
+            yecho "Using audio from "${FILES[vid]}" for the audio background,"
+            yecho "using the same seek value for the audio as the video"
+            yecho "If you wish to use silence for the swotched menu,"
+            yecho "use '-bgaudio none'"
+        else
+            if [[ $BG_AUDIO = "none" ]]; then # no audio if -bgaudio none
+                BG_AUDIO=""
+            else # BG_AUDIO="$BG_AUDIO" if -bgaudio supplied and not 'none'
+                yecho "Using "$BG_AUDIO" as audio background for "${FILES[vid]}""
+            fi
+        fi
+    fi 
+    yecho
 fi
 
 # Check input files for compliance; offer to tovid-encode non-compliant files
