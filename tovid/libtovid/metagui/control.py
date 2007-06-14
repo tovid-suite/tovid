@@ -257,7 +257,6 @@ class Flag (Control):
             if not self.default:
                 self.enables.disable()
 
-
     def enabler(self):
         """Enable/disable a Control based on the value of the Flag."""
         if not self.enables:
@@ -320,6 +319,7 @@ class FlagGroup (Control):
         for flag in self.flags:
             if flag.check != event.widget:
                 flag.set(False)
+            flag.enabler()
 
     def get_args(self):
         """Return a list of arguments for setting the relevant flag(s)."""
@@ -501,17 +501,16 @@ class List (Text):
         return self.get()
 
 ### --------------------------------------------------------------------
-import tkFileDialog
+from tkFileDialog import asksaveasfilename, askopenfilename
 
 class Filename (Control):
-    """A widget for entering or browsing for a filename
-    """
+    """A widget for entering or browsing for a filename"""
     def __init__(self,
                  option='',
                  label='Filename',
                  default='',
                  help='',
-                 type='load',
+                 action='load',
                  desc='Select a file to load',
                  **kwargs):
         """Create a Filename with label, text entry, and browse button.
@@ -519,12 +518,12 @@ class Filename (Control):
             label:   Text of label next to file entry box
             default: Default filename
             help:    Help text to show in a tooltip
-            type:    Do you intend to 'load' or 'save' this file?
+            action:  Do you intend to 'load' or 'save' this file?
             desc:    Brief description (shown in title bar of file
                      browser dialog)
         """
         Control.__init__(self, str, option, label, default, help, **kwargs)
-        self.type = type
+        self.action = action
         self.desc = desc
 
     def draw(self, master):
@@ -539,13 +538,11 @@ class Filename (Control):
 
     def browse(self, event=None):
         """Event handler when browse button is pressed"""
-        if self.type == 'save':
-            filename = tkFileDialog.asksaveasfilename(parent=self,
-                                                      title=self.desc)
+        if self.action == 'save':
+            filename = asksaveasfilename(parent=self, title=self.desc)
         else: # 'load'
-            filename = tkFileDialog.askopenfilename(parent=self,
-                                                    title=self.desc)
-        # Got a filename? Save it
+            filename = askopenfilename(parent=self, title=self.desc)
+        # Got a filename? Display it
         if filename:
             self.set(filename)
 
