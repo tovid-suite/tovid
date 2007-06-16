@@ -91,11 +91,13 @@ function tempdir()
 {
     NUM=0
     BASENAME="$1"
+    CREATE=:
     TEMPDIR="$BASENAME.$NUM"
+    [[  -n $2  && $2 = "nocreate" ]] && CREATE=false
     while test -d "$BASENAME.$NUM"; do
         ((NUM++))
     done
-    mkdir "$BASENAME.$NUM"
+    $CREATE && mkdir "$BASENAME.$NUM"
     echo "$BASENAME.$NUM"
 }
 
