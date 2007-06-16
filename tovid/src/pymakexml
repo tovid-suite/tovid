@@ -29,8 +29,7 @@ def error(message):
     """Exit with an error message, after printing usage notes."""
     print __doc__
     print red("Error: ") + message
-    exit()
-
+    sys.exit()
 
 # Main program
 if __name__ == '__main__':

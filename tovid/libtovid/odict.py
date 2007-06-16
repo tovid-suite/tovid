@@ -6,6 +6,8 @@
 http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/107747
 
 """
+__all__ = ['Odict']
+
 from UserDict import UserDict
 
 class Odict (UserDict):

@@ -39,7 +39,7 @@ __all__ = ['ControlEditor']
 import Tkinter as tk
 from inspect import getargspec
 
-from libtovid.metagui.odict import Odict
+from libtovid.odict import Odict
 from libtovid.metagui import Text, Number, Flag
 from libtovid.metagui import control
 
