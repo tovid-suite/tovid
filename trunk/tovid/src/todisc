@@ -178,6 +178,7 @@ TSET_MODE=false
 TSET_TOT=1
 NONAME=false
 DO_INTRO=false
+USE_MPLAYER_4AUDIO=false
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -428,7 +429,7 @@ function get_framed_pics()
 {
 mplayer -ss $MPLAYER_SEEK_VAL -vo $VOUT -noconsolecontrols \
 -vf ${EXPAND}rectangle=${FRAME_SIZE/x*}:${FRAME_SIZE/*x},rectangle=$(( ${FRAME_SIZE/x*} - D )):$(( ${FRAME_SIZE/*x} - D)),rectangle=$(( ${FRAME_SIZE/x*} - $((D * 2)) )):$(( ${FRAME_SIZE/*x} - $((D * 2)) )),rectangle=$(( ${FRAME_SIZE/x*} - $((D * 3)) )):$(( ${FRAME_SIZE/*x} - $((D * 3)) )) \
--ao null -zoom -x ${FRAME_SIZE/x*} -y ${FRAME_SIZE/*x}  -frames $FRAMES "$1"
+-nosound -zoom -x ${FRAME_SIZE/x*} -y ${FRAME_SIZE/*x}  -frames $FRAMES "$1"
 }
 
 # Create a text-only menu, using makemenu/makexml
@@ -1629,11 +1630,11 @@ if [[ $BUTTON_STYLE = "line" ]] && ! $SHOWCASE; then
     yecho
     BUTTON_STYLE="rect"
     ! $NO_WARN && sleep 10
-elif [[ $USER_BSTYLE && $BUTTON_STYLE="rect" ]] && $TEXTMENU; then
-    BUTTON_STYLE="line"
+elif [[ $USER_BSTYLE && $BUTTON_STYLE = "rect" ]] && $TEXTMENU; then
+    $MULTILINE_TITLE && BUTTON_STYLE="text-rect" || BUTTON_STYLE="line"
     if [[ $MENU_NUM -eq 2 ]] ||  (! $SWITCHED_MODE && ! $SWITCHED_MENUS); then
         yecho
-        yecho "Using button style 'line' instead of 'text-rect' for textmenu menu"
+        yecho "Using button style \'$BUTTON_STYLE\' instead of 'rect' for textmenu menu"
         yecho
         ! $NO_WARN && sleep 10
     fi
@@ -2771,13 +2772,14 @@ if $SHOWCASE && ! $NO_SC_THUMB; then
             VOUT="png:z=7"; FRAMES=30
             FRAME_SIZE=$SHOWCASE_SIZE
             MPLAYER_SEEK_VAL=$SHOWCASE_SEEK_VAL
-            $SWITCHED_MODE && MPLAYER_SEEK_VAL=${SEEK_VAL[MENU_NUM-1]}
+            $SWITCHED && MPLAYER_SEEK_VAL=${SEEK_VAL[MENU_NUM-1]}
             echo "Using mplayer to get framed images from the showcase video"
+            yecho
             echo "Running: mplayer -ss $MPLAYER_SEEK_VAL -vo $VOUT \
             -vf expand=-5:-5,rectangle=384:256,rectangle=382:254,rectangle=380:252,rectangle=378:250 \
             -ao null -zoom -x 384 -y 256  -ss 0:0:05 -frames $FRAMES "$SHOWCASE_VIDEO"" |
             format_output | tee -a "$LOG_FILE"
-            echo
+            yecho
             get_framed_pics "$SHOWCASE_VIDEO" >> "$LOG_FILE" 2>&1
 
             mv -v "$WORK_DIR"/00000025.png "$OUT"
@@ -3054,12 +3056,12 @@ for ((t=0; t<${#TITLES[@]}; t++)); do
     BUTTON_CMD6=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
     -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file "$WORK_DIR/Selectx1.png")
     BUTTON_CMD6b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
-    -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file${t} \
+    -stroke "$SELECT_COLOUR" -strokewidth 2 -draw @draw_file${t} \
     "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)")
     BUTTON_CMD7=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
     -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file "$WORK_DIR/Highlightx1.png")
     BUTTON_CMD7b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
-    -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file${t} \
+    -stroke "$HIGHLIGHT_COLOUR" -strokewidth 2 -draw @draw_file${t} \
     "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)")
 
     if [ "$BUTTON_STYLE" = "text" ]; then
@@ -4951,6 +4953,7 @@ if $STATIC && [[ -n "$BG_AUDIO" ]]; then
 else
     MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
 fi
+[[ $SC_FRAMESTYLE = "glass" && $BG_AUDIO = $SHOWCASE_FILE ]] && USE_MPLAYER_4AUDIO=:
 if [[ -n "$MENU_AUDIOLENGTH" ]] && $STATIC; then MENU_ATIME=$MENU_AUDIOLENGTH; fi
 MENU_ATIME=${MENU_ATIME:-$TMP_TIME}
 BG_AUDIO_LENGTH="-t $MENU_ATIME"
@@ -4964,8 +4967,13 @@ elif test ! -s "$BG_AUDIO"; then
 else # audio supplied: convert to wav then later to dvd/svcd format
     # TODO if ! $BG_AUDIOVIDEO_FILE; then  # check if same file and if so
     # decode the audio and jpegs in one step above, and skip this block
-    BGAUDIO_CMD=(ffmpeg -i "$BG_AUDIO" -ar 48000 -ac 2 -acodec pcm_s16le -async 1 -y \
-    -ss $BG_AUDIO_SEEK $BG_AUDIO_LENGTH $WORK_DIR/intro.wav)
+    if $USE_MPLAYER_4AUDIO; then
+        BGAUDIO_CMD=(mplayer  -quiet -vc null -vo null -ss $MPLAYER_SEEK_VAL \
+        -ao pcm:waveheader:file="$WORK_DIR/intro.wav" -frames $FRAMES "$BG_AUDIO")
+    else
+        BGAUDIO_CMD=(ffmpeg -i "$BG_AUDIO" -r 29.970 -ar 48000 -ac 2 -acodec pcm_s16le \
+        -async 1 -y  -ss $BG_AUDIO_SEEK $BG_AUDIO_LENGTH $WORK_DIR/intro.wav)
+    fi
     yecho
     echo "Running "${BGAUDIO_CMD[@]}"" >> "$LOG_FILE.tmp" 2>&1
     if "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then
