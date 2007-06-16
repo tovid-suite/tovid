@@ -199,7 +199,7 @@ function get_info ()
     # send formated mplayer's output to a vars file to be sourced to set relevant variables.
     # (ID_V(ideo), ID_A(udio), and ID_L(ength))
     # Grep out special characters ()[
-    # # put the VARS in a file 
+    # # put the VARS in a file
     grep "^ID_[VAL]" < "$SCRATCH_FILE"   | grep -v "[()\[]" | sed 's/$/"/;s/=/="/' > "$SCRATCH_FILE".vars
     # source the file to set the variables
     . "$SCRATCH_FILE".vars
@@ -297,7 +297,7 @@ function get_info ()
     # Normalized aspect ratio
     V_ASPECT_RATIO=$(echo $V_ASPECT_WIDTH | \
     sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g')
-    
+
     # if the nav_log is older that $INFILE, then remove the log
     if [[ -e "$INFILE".nav_log && "$INFILE" -nt "$INFILE".nav_log ]]; then
         ! $TERSE && echo "$INFILE.nav_log is older than $INFILE ... removing"
@@ -322,7 +322,7 @@ function get_info ()
                     USE_NAVLOG=:
                 else
                     # remove empty log and we will use mencoder in next code block
-                    [[ -e "$INFILE".nav_log ]] && rm -fv "$INFILE".nav_log
+                    [[ -e "$INFILE".nav_log ]] && rm -f "$INFILE".nav_log
                     USE_MENCODER=:
                 fi
             else # not $FAST and using tcdemux not possible, so usee mencoder
