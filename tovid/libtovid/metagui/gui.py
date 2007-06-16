@@ -1,8 +1,10 @@
 #! /usr/bin/env python
 # gui.py
 
+"""Classes for creating and laying out GUI applications.
+"""
+
 __all__ = [
-    # Main GUI creation interface
     'Panel',
     'HPanel',
     'VPanel',
@@ -110,7 +112,7 @@ class VPanel (Panel):
 ### --------------------------------------------------------------------
 from support import ComboBox, ListVar
 from control import Control
-from odict import Odict
+from libtovid.odict import Odict
 
 class Dropdowns (Panel):
     """A Panel that uses dropdowns for selecting and setting options.
@@ -186,7 +188,7 @@ class Dropdowns (Panel):
 ### --------------------------------------------------------------------
 
 class Drawer (tk.Frame):
-    """Like a Panel, but may be hidden or closed."""
+    """Like a Panel, but may be hidden or "closed" like a drawer."""
     def __init__(self, title='', *contents):
         self.panel = Panel(title, *contents)
         self.visible = False

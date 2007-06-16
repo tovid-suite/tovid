@@ -330,8 +330,44 @@ class FlagGroup (Control):
         return args
 
 ### --------------------------------------------------------------------
-import odict
+from libtovid.odict import Odict
 from support import ComboBox
+
+# Awkward having this here, but it's not needed anywhere else (yet)
+def odict_from_list(choices):
+    """Convert a list of choices to an Odict (ordered dictionary).
+    choices may be in one of several formats:
+
+               string: 'one|two|three'
+                 list: ['one', 'two', 'three']
+                 dict: {'a': "Choice A", 'b': "Choice B"}
+        list-of-lists: [['a', "Choice A"], ['b', "Choice B"], ..]
+    
+    Note: the dict form does not preserve order. Use list-of-lists
+    to maintain the specified order.
+    """
+    if type(choices) not in [str, list, dict]:
+        raise TypeError("choices must be a string, list, or dictionary.")
+
+    if type(choices) == str:
+        choices = choices.split('|')
+        return Odict(choices, choices)
+
+    if type(choices) == dict:
+        return Odict(choices.keys(), choices.values())
+
+    # choices is a list, but what kind?
+    first = choices[0]
+    # list of strings
+    if type(first) == str:
+        return Odict(choices, choices)
+    # list of 2-element string lists
+    elif type(first) == list and len(first) == 2:
+        choices, values = zip(*choices)
+        return Odict(choices, values)
+    else:
+        raise TypeError("choices lists must either be"\
+            "['a', 'b', 'c'] or [['a', 'A'], ['b', 'B']] style.")
 
 class Choice (Control):
     """A widget for choosing one of several options.
@@ -357,7 +393,7 @@ class Choice (Control):
                       care about preserving choice order.
             style:    'radio' for radiobuttons, 'dropdown' for a drop-down list
         """
-        self.choices = odict.from_list(choices)
+        self.choices = odict_from_list(choices)
         Control.__init__(self, str, option, label,
                          default or self.choices.values()[0],
                          help, **kwargs)
