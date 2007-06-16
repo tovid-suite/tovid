@@ -22,15 +22,20 @@ titles = TextList('-titles',
 menu_style = FlagGroup('Menu style', 'exclusive',
     Flag('none', "Default: Thumbnail grid", True,
          "Centered grid of thumbnails, filling all available space"),
-    Flag('', "Showcase: Large central image or video", False,
+    Flag('-showcase', "Showcase: Large central image or video", False,
         "Showcase an image or video in a large central frame",
-        enables=Filename('-showcase',
+        enables=Filename('',
            'Showcase', '',
            'Image or video file to be showcased in a large central frame',
            'load', 'Select an image or video file.')
         ),
     Flag('-textmenu', "Textmenu: Text on a background", False,
-         "Text-only menu, with image or video background")
+        "Text-only menu, with image or video background",
+        enables=Number('',
+           'Titles per column', 13,
+           'Maximum number of titles per column',
+           1, 50)
+        )
 )
 
 main = Panel("Main",

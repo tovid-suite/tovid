@@ -46,6 +46,7 @@ __all__ = [\
     'deps',
     'layout'
     'media',
+    'odict',
     'opts',
     'output',
     'spumux',
