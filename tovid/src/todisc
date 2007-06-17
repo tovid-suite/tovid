@@ -61,6 +61,7 @@ CUR_DIR="$(abspath "$(pwd)")"
 # make unique REAL_WORK_DIR
 REAL_WORK_DIR="$CUR_DIR/todisc-work"
 LOG_FILE="$(abspath "todisc.log")"
+#RECURSIVE_LOG_FILE=$(tempfile -s -todisc.log)
 OUT_PREFIX=""
 TV_STANDARD=ntsc
 ANI_MENU_LENGTH=20
@@ -304,8 +305,9 @@ function runtime_error()
 
 function vid_length()
 {
-    yecho "Running mencoder "$1" -quiet -ovc copy -oac pcm -o /dev/null | awk '/Video stream/ {print $10}'" >> "$LOG_FILE"
     mencoder "$1" -quiet -ovc copy -oac pcm -o /dev/null 2>>"$LOG_FILE" | awk '/Video stream/ {print $10}'
+    echo "Running mencoder $1 -quiet -ovc copy -oac pcm -o /dev/null | awk '/Video stream/ {print \$10}'" \
+    >> "$LOG_FILE" 2>&1
 }
 
 function cleanup()
@@ -666,9 +668,9 @@ function check_compliance()
 function mk_workdir()
 {
     REAL_WORK_DIR=$(tempdir $CUR_DIR/todisc-work)
-    WORK_DIR=$(tempdir /tmp/todisc-work)
+    WORK_DIR=$(tempdir /tmp/todisc-work nocreate)
     # tempdir function makes a directory, so remove it and make symlink
-    rm -fr "$WORK_DIR" && ln -sfv "$REAL_WORK_DIR" "$WORK_DIR"
+    ln -sfv "$REAL_WORK_DIR" "$WORK_DIR"
 }
 
 
@@ -3394,7 +3396,7 @@ if $SWITCHED; then
         # -bgaudio is not passed, or passed as 'none', use silence
         if [[ -z $BG_AUDIO || $BG_AUDIO = "none" ]]; then
             yecho "Using silence as audio background for "${FILES[vid]}""
-        else # -bgaudio is passed, use the provided file
+        elif [[ -n $BG_AUDIO && $BG_AUDIO != "none" ]]; then # -bgaudio is passed, use the provided file
             [[ $BG_AUDIO != "none" ]] && \
             yecho "Using $BG_AUDIO as audio background for "${FILES[vid]}""
         fi    
@@ -3402,9 +3404,9 @@ if $SWITCHED; then
         if [[ -z $BG_AUDIO ]]; then 
             # use the audio from each video for each switched menu
             BG_AUDIO="${FILES[vid]}"
-            BG_AUDIO_SEEK=${SEEK_VAL[vid]} # same audio and video seek
+            ! $STATIC && BG_AUDIO_SEEK=${SEEK_VAL[vid]} # same audio and video seek
             yecho "Using audio from "${FILES[vid]}" for the audio background,"
-            yecho "using the same seek value for the audio as the video"
+            ! $STATIC && yecho "using the same seek value for the audio as the video"
             yecho "If you wish to use silence for the swotched menu,"
             yecho "use '-bgaudio none'"
         else
@@ -4010,8 +4012,10 @@ if ! $TITLESET_MODE && ! $DO_TITLESETS; then
         runtime_error
     fi
     VMGM_TIME=$(vid_length "$WORK_DIR/dummy.m2v")
+    echo "VMGM_TIME is $VMGM_TIME"
     BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME \
     $AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
+    yecho "${BGAUDIO_CMD[@]}"
     if "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then #run command
         cleanlog 3
     else
@@ -4949,16 +4953,23 @@ fi
 if $STATIC && [[ -n "$BG_AUDIO" ]]; then
     TMP_TIME=$(ffmpeg -i "$BG_AUDIO" 2>&1|
     awk '/Duration/ {print $2}')
-    TMP_TIME=$(awk_math ${TMP_TIME/,/} less $BG_AUDIO_SEEK float )
+    TMP_TIME=$(unformat_time  ${TMP_TIME/,/})
+    TMP_TIME=$(awk_math $TMP_TIME less $BG_AUDIO_SEEK float )
+    echo "TMP_TIME is $TMP_TIME"; sleep 4
 else
     MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
 fi
-[[ $SC_FRAMESTYLE = "glass" && $BG_AUDIO = $SHOWCASE_FILE ]] && USE_MPLAYER_4AUDIO=:
+# use mplayer to dump audio if mplayer used for video
+# but first check if audio same file as video and its not a static menu
+if [[ $SC_FRAMESTYLE = "glass" && $BG_AUDIO = $SHOWCASE_FILE ]]; then
+    ! $STATIC && USE_MPLAYER_4AUDIO=:
+fi
 if [[ -n "$MENU_AUDIOLENGTH" ]] && $STATIC; then MENU_ATIME=$MENU_AUDIOLENGTH; fi
 MENU_ATIME=${MENU_ATIME:-$TMP_TIME}
+
 BG_AUDIO_LENGTH="-t $MENU_ATIME"
 # create audio background for the main menu
-if [ -z "$BG_AUDIO" ]; then # no audio supplied: use silence
+if [[ -z "$BG_AUDIO" ]]; then # no audio supplied: use silence
     cat /dev/zero 2>/dev/null | nice -n 0 sox -t raw -c 2 -r 48000 -w \
     -s - $WORK_DIR/intro.wav  trim 0 $MENU_ATIME
 # Make sure file exists
@@ -4969,13 +4980,13 @@ else # audio supplied: convert to wav then later to dvd/svcd format
     # decode the audio and jpegs in one step above, and skip this block
     if $USE_MPLAYER_4AUDIO; then
         BGAUDIO_CMD=(mplayer  -quiet -vc null -vo null -ss $MPLAYER_SEEK_VAL \
-        -ao pcm:waveheader:file="$WORK_DIR/intro.wav" -frames $FRAMES "$BG_AUDIO")
+        -ao pcm:waveheader:file="$WORK_DIR/intro.wav" -endpos $MENU_ATIME  "$BG_AUDIO")
     else
         BGAUDIO_CMD=(ffmpeg -i "$BG_AUDIO" -r 29.970 -ar 48000 -ac 2 -acodec pcm_s16le \
         -async 1 -y  -ss $BG_AUDIO_SEEK $BG_AUDIO_LENGTH $WORK_DIR/intro.wav)
     fi
     yecho
-    echo "Running "${BGAUDIO_CMD[@]}"" >> "$LOG_FILE.tmp" 2>&1
+    echo "Running "${BGAUDIO_CMD[@]}"" |tee -a "$LOG_FILE.tmp" 2>&1
     if "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then
         cleanlog 3
     else
