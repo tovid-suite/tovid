@@ -1019,6 +1019,8 @@ trap 'cleanup; exit 13' TERM INT
 # ***********************************
 egrep -q 'titleset-mode|switched-mode|menu-only' <<< "$@" && NONAME=:
 ! $NONAME && yecho $"$SCRIPT_NAME"
+echo "You are using the following locale settings:" >> "$LOG_FILE"
+locale >>  "$LOG_FILE" 2>&1
 
 while test $# -gt 0; do
     DO_SHIFT=:
@@ -4012,7 +4014,10 @@ if ! $TITLESET_MODE && ! $DO_TITLESETS; then
         runtime_error
     fi
     VMGM_TIME=$(vid_length "$WORK_DIR/dummy.m2v")
-    echo "VMGM_TIME is $VMGM_TIME"
+    yecho
+    mencoder "$WORK_DIR/dummy.m2v"  -ovc copy -oac pcm -o /dev/null >>"$LOG_FILE" 2>&1
+    yecho "VMGM_TIME is $VMGM_TIME"
+    yecho
     BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME \
     $AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
     yecho "${BGAUDIO_CMD[@]}"
