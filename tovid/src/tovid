@@ -121,6 +121,7 @@ PRIORITY="nice -n 0"
 DEINTERLACE=false
 # Don't do interlaced encoding
 INTERLACED=false
+INTERLACED_BF=false
 YUV4MPEG_ILACE=""
 FF_ILACE=""
 # Don't do any filtering by default
@@ -495,6 +496,10 @@ function get_args()
             "-interlaced" )
                 # Do interlaced encoding
                 INTERLACED=:
+                ;;
+            "-interlaced_bf" )
+                # Bottom fields first encoding
+                INTERLACED_BF=:
                 ;;
             "-type" )
                 shift
@@ -1684,15 +1689,20 @@ if test $ID_VIDEO_WIDTH != $INNER_WIDTH || test $ID_VIDEO_HEIGHT != $INNER_HEIGH
 fi
 
 # Do interlaced encoding for everything but VCD (which doesn't support it)
-if $INTERLACED && test "$TGT_RES" != "VCD"; then
+if ($INTERLACED || $INTERLACED_BF) && test "$TGT_RES" != "VCD"; then
     # Unneeded, and possibly harmful?
-    # MPEG2_FMT="$MPEG2_FMT --interlace-mode 1"
+    MPEG2_FMT="$MPEG2_FMT --interlace-mode 1"
 
     # Apply deinterleave/reinterleave filters, if needed
     if test -n "$VID_FILTER"; then
         VID_FILTER="il=d:d,$VID_FILTER,il=i:i"
     fi
-    YUV4MPEG_ILACE=":interlaced"
+    
+    if $INTERLACED_BF; then
+        YUV4MPEG_ILACE=":interlaced_bf"
+    else
+        YUV4MPEG_ILACE=":interlaced"
+    fi
     # Add the ilpack video filter
     #VF_POST="$VF_POST -vf-add ilpack"
     # Interlacing for ffmpeg
