@@ -214,7 +214,7 @@ function get_info ()
     # ffmpeg has a better concept of the actual bitrate than mplayer
     TOTAL_AV_BITRATE=$(awk -F: '{gsub("kb/s", "")};  /bitrate:/ {print $6*1000}' "$SCRATCH_FILE")
     ## take the lower of the two
-    if test $TOTAL_AV_BITRATE -lt $ID_VIDEO_BITRATE; then
+    if test $ID_VIDEO_BITRATE -eq 0 || test $TOTAL_AV_BITRATE -lt $ID_VIDEO_BITRATE; then
         ID_VIDEO_BITRATE=$TOTAL_AV_BITRATE
     else
         ID_VIDEO_BITRATE=$ID_VIDEO_BITRATE
@@ -332,11 +332,15 @@ function get_info ()
     fi
 
     if $USE_MENCODER; then # any of: no/empty log file, ! $FAST, no tcdemux, or not an mpg
-        # Determine duration by playing the video into /dev/null and doing
-        # tons of filtering. Time consuming, but presumably more accurate.
-        V_DURATION=$(LC_ALL=C mencoder -ovc frameno -oac pcm -noskiplimit \
-        "$INFILE" -o /dev/null 2>/dev/null | tr '\r' '\n' | grep ^Pos: | \
-        tail -n 1 | sed s/^.*Pos:// | awk '{print $1}' | sed s/[.][0-9]s//)
+        # Determine duration by playing the video into /dev/null
+        # Time consuming, but presumably more accurate.
+        MENCODER_STATS=$(LC_ALL=C mencoder -ovc copy -nosound -noskiplimit \
+        "$INFILE" -o /dev/null 2>/dev/null)
+        V_DURATION=$(awk 'END{print $(NF-3)}' <<< "$MENCODER_STATS")
+        V_DURATION=${V_DURATION%%.*}  # integer in seconds
+        # overwrite ID_VIDEO_FRAMES since we have a more accurate count now
+        ID_VIDEO_FRAMES=$(awk 'END{print $(NF-1)}' <<< "$MENCODER_STATS")
+        $VERBOSE && echo "$MENCODER_STATS"
     elif $USE_NAVLOG; then
         ID_VIDEO_FRAMES=$(awk '{ field = $2 }; END{ print field }'  < "${INFILE}".nav_log)
         V_DUR=$(bc <<< "$ID_VIDEO_FRAMES / $ID_VIDEO_FPS")
