@@ -1,3 +1,14 @@
+tovid (2138) experimental; urgency=low
+
+  * New todisc option: -vmgm
+  * New tovid option: -interlaced_bf
+  * Multiple bug fixes for todisc
+  * Bug fixes for tovid, makedvd, and makexml
+  * Fully-compliant freedesktop.org installation
+  * Python modules installed as arch-independent
+
+ -- Joe Friedrichsen <pengi.films@gmail.com>  Tue, 19 Jun 2007 12:25:24 -0600
+
 tovid (2068) experimental; urgency=low
 
   * New todisc options: -quick-nav, -switched-menus, -titleset

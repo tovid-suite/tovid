@@ -144,15 +144,22 @@ letterboxing or anamorphic scaling.
     which must be constant bitrate.
 
 : **-interlaced**
-    Do interlaced encoding of the input video. Use this option if your video is
-    interlaced, and you want to preserve as much picture quality as possible.
-    This option is ignored for VCD, which doesn't support it.
+    Do interlaced encoding of the input video (top fields first). Use this 
+    option if your video is  interlaced, and you want to preserve as much 
+    picture quality as possible. This option is ignored for VCD, which 
+    doesn't support it.
 
     You can tell your source video is interlaced by playing it, and pausing
     during a scene with horizontal motion; if you see a "comb" effect at the
     edges of objects in the scene, you have interlaced video. Use this option
-    to encode it properly. If you would prefer to have output in progressive
-    format, use **-progressive**.
+    to encode it properly. 
+    
+    If you would prefer to have output in progressive format, use 
+    **-progressive**. If you have a DV camera, use **-interlaced_bf** since 
+    DV footage is generally bottom fields first.
+
+: **-interlaced_bf**
+    Do interlaced encoding of the input video (bottom fields first).
 
 : **-deinterlace** | **-progressive**
     Convert interlaced source video into progressive output video. Because
