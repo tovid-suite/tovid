@@ -1700,13 +1700,13 @@ if ($INTERLACED || $INTERLACED_BF) && test "$TGT_RES" != "VCD"; then
     
     if $INTERLACED_BF; then
         YUV4MPEG_ILACE=":interlaced_bf"
+        FF_ILACE="-top 0 -flags ildct+ilme"
     else
         YUV4MPEG_ILACE=":interlaced"
+        FF_ILACE="-top 1 -flags ildct+ilme"
     fi
     # Add the ilpack video filter
     #VF_POST="$VF_POST -vf-add ilpack"
-    # Interlacing for ffmpeg
-    FF_ILACE="-interlace"
 fi
 
 # Expand to the target outer size
