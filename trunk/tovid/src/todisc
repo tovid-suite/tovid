@@ -305,9 +305,8 @@ function runtime_error()
 
 function vid_length()
 {
-    mencoder "$1" -quiet -ovc copy -oac pcm -o /dev/null 2>>"$LOG_FILE" | awk '/Video stream/ {print $10}'
-    echo "Running mencoder $1 -quiet -ovc copy -oac pcm -o /dev/null | awk '/Video stream/ {print \$10}'" \
-    >> "$LOG_FILE" 2>&1
+    mencoder -nosound -oac copy -ovc copy -o /dev/null "$1" 2>/dev/null |
+    awk 'END{print $(NF-3)}'
 }
 
 function cleanup()
@@ -1019,8 +1018,6 @@ trap 'cleanup; exit 13' TERM INT
 # ***********************************
 egrep -q 'titleset-mode|switched-mode|menu-only' <<< "$@" && NONAME=:
 ! $NONAME && yecho $"$SCRIPT_NAME"
-echo "You are using the following locale settings:" >> "$LOG_FILE"
-locale >>  "$LOG_FILE" 2>&1
 
 while test $# -gt 0; do
     DO_SHIFT=:
@@ -1638,7 +1635,7 @@ elif [[ $USER_BSTYLE && $BUTTON_STYLE = "rect" ]] && $TEXTMENU; then
     $MULTILINE_TITLE && BUTTON_STYLE="text-rect" || BUTTON_STYLE="line"
     if [[ $MENU_NUM -eq 2 ]] ||  (! $SWITCHED_MODE && ! $SWITCHED_MENUS); then
         yecho
-        yecho "Using button style \'$BUTTON_STYLE\' instead of 'rect' for textmenu menu"
+        yecho "Using button style '$BUTTON_STYLE' instead of 'rect' for textmenu menu"
         yecho
         ! $NO_WARN && sleep 10
     fi
@@ -1739,6 +1736,9 @@ fi
 if ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
     test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
 fi
+# do some locale debugging
+echo "You are using the following locale settings:" >> "$LOG_FILE"
+locale >>  "$LOG_FILE" 2>&1
 # check file type of background file and assign to BG_VIDEO or BG_IMAGE
 if [[ -n $BACKGROUND ]]; then
     check_filetype "$BACKGROUND"
@@ -4015,7 +4015,9 @@ if ! $TITLESET_MODE && ! $DO_TITLESETS; then
     fi
     VMGM_TIME=$(vid_length "$WORK_DIR/dummy.m2v")
     yecho
-    mencoder "$WORK_DIR/dummy.m2v"  -ovc copy -oac pcm -o /dev/null >>"$LOG_FILE" 2>&1
+    mencoder "$WORK_DIR/dummy.m2v"  -ovc copy -oac pcm -o /dev/null >>"$LOG_FILE.tmp" 2>&1
+    SED_VAR="Pos"
+    cleanlog 3
     yecho "VMGM_TIME is $VMGM_TIME"
     yecho
     BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME \
