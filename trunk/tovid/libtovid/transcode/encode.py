@@ -106,7 +106,8 @@ def ffmpeg_encode(source, target, **kwargs):
     
         quant:      Minimum quantization, from 1-31 (1 being fewest artifacts)
         vbitrate:   Maximum video bitrate, in kilobits per second
-        interlaced: True to do interlaced encoding, False for progressive
+        interlace:  'top' or 'bottom', to do interlaced encoding with
+                    top or bottom field first
 
     For example:
     
@@ -118,13 +119,18 @@ def ffmpeg_encode(source, target, **kwargs):
     if target.format in ['vcd', 'svcd', 'dvd']:
         cmd.add('-tvstd', target.tvsys,
                 '-target', '%s-%s' % (target.tvsys, target.format))
-    # Keyword arguments
+
+    # Interpret keyword arguments
     if 'quant' in kwargs:
         cmd.add('-qmin', kwargs['quant'], '-qmax', 31)
     if 'vbitrate' in kwargs:
         cmd.add('-b', '%dk' % kwargs['vbitrate'])
-    if 'interlaced' in kwargs and kwargs['interlaced'] == True:
-        cmd.add('-interlace')
+    if 'interlace' in kwargs:
+        if kwargs['interlace'] == 'bottom':
+            cmd.add('-top', 0, '-flags', '+alt+ildct+ilme')
+        else:
+            cmd.add('-top', 1, '-flags', '+alt+ildct+ilme')
+
     # Convert frame rate and audio sampling rate
     cmd.add('-r', target.fps,
             '-ar', target.samprate)
@@ -147,8 +153,8 @@ def ffmpeg_encode(source, target, **kwargs):
     # Overwrite existing output files
     cmd.add('-y')
     cmd.add(target.filename)
-    
-    # Run the command to do the encoding
+        
+    print "Running:", cmd
     cmd.run()
 
 
