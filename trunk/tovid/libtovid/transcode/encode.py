@@ -108,6 +108,9 @@ def ffmpeg_encode(source, target, **kwargs):
         vbitrate:   Maximum video bitrate, in kilobits per second
         interlaced: True to do interlaced encoding, False for progressive
 
+    For example:
+    
+        ffmpeg_encode(source, target, quant=4, vbitrate=7000)
     """
     # Build the ffmpeg command
     cmd = Command('ffmpeg')
