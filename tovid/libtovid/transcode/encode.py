@@ -49,7 +49,8 @@ from libtovid import log
 #
 # --------------------------------------------------------------------------
 
-def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg'):
+def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
+           **kwargs):
     """Encode a multimedia file according to a target profile, saving the
     encoded file to outfile.
     
@@ -58,7 +59,10 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg'):
         format:  One of 'vcd', 'svcd', 'dvd' (case-insensitive)
         tvsys:   One of 'ntsc', 'pal' (case-insensitive)
         method:  Encoding backend: 'ffmpeg', 'mencoder', or 'mpeg2enc'
-
+        kwargs:  Additional keyword arguments (name=value)
+    
+    The supported keyword arguments vary by encoding method. See the encoding
+    functions for what is available in each.
     """
     source = load_media(infile)
     # Add .mpg to outfile if not already present
@@ -71,8 +75,8 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg'):
     target.filename = outfile
     
     # Get the appropriate encoding backend and encode
-    encoder = get_encoder(method)
-    encoder(source, target)
+    encode_method = get_encoder(method)
+    encode_method(source, target, **kwargs)
 
 def get_encoder(backend):
     """Get an encoding function."""
@@ -91,12 +95,19 @@ def get_encoder(backend):
 #
 # --------------------------------------------------------------------------
 
-def ffmpeg_encode(source, target):
+def ffmpeg_encode(source, target, **kwargs):
     """Encode a multimedia video using ffmpeg.
 
         source:  Input MediaFile
         target:  Output MediaFile
+        kwargs:  name=value keyword arguments
     
+    Supported keywords:
+    
+        quant:      Minimum quantization, from 1-31 (1 being fewest artifacts)
+        vbitrate:   Maximum video bitrate, in kilobits per second
+        interlaced: True to do interlaced encoding, False for progressive
+
     """
     # Build the ffmpeg command
     cmd = Command('ffmpeg')
@@ -104,7 +115,14 @@ def ffmpeg_encode(source, target):
     if target.format in ['vcd', 'svcd', 'dvd']:
         cmd.add('-tvstd', target.tvsys,
                 '-target', '%s-%s' % (target.tvsys, target.format))
-    
+    # Keyword arguments
+    if 'quant' in kwargs:
+        cmd.add('-qmin', kwargs['quant'], '-qmax', 31)
+    if 'vbitrate' in kwargs:
+        cmd.add('-b', '%dk' % kwargs['vbitrate'])
+    if 'interlaced' in kwargs and kwargs['interlaced'] == True:
+        cmd.add('-interlace')
+    # Convert frame rate and audio sampling rate
     cmd.add('-r', target.fps,
             '-ar', target.samprate)
     # Convert scale/expand to ffmpeg's padding system
@@ -137,7 +155,7 @@ def ffmpeg_encode(source, target):
 #
 # --------------------------------------------------------------------------
 
-def mencoder_encode(source, target):
+def mencoder_encode(source, target, **kwargs):
     """Encode a multimedia video using mencoder.
 
         source:  Input MediaFile
@@ -232,7 +250,7 @@ def mencoder_encode(source, target):
 # --------------------------------------------------------------------------
 
 
-def mpeg2enc_encode(source, target):
+def mpeg2enc_encode(source, target, **kwargs):
     """Encode a multimedia video using mplayer|yuvfps|mpeg2enc.
     
         source:  Input MediaFile
