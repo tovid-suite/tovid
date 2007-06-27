@@ -202,7 +202,6 @@ def standard_media(format, tvsys):
         media.vbitrate = 6000
     return media
 
-
 def correct_aspect(source, target, aspect='auto'):
     """Calculate the necessary scaling to fit source into target at a given
     aspect ratio, without distorting the picture.
