@@ -97,6 +97,11 @@ class Control (tk.Frame):
             default:  Default value for the Control
             help:     Help text to show in a tooltip
             **kwargs: Keyword arguments of the form key1=arg1, key2=arg2
+        
+        Keyword arguments allowed:
+        
+            pull=Control(...):  Mirror value from another Control
+            required=True:      Required option, must be set or run will fail
         """
         self.vartype = vartype
         self.variable = None
@@ -250,7 +255,6 @@ class Flag (Control):
         self.check.pack(side='left')
         # Draw any controls enabled by this one
         if self.enables:
-            print "Drawing enabled Control: %s" % self.enables.__class__
             self.enables.draw(self)
             self.enables.pack(side='left')
             # Disable if False
@@ -679,6 +683,7 @@ class TextList (Control):
         # TODO: Select next item in list and focus the editbox
 
 ### --------------------------------------------------------------------
+from tkFileDialog import askopenfilenames
 
 class FileList (Control):
     """A widget for listing several filenames"""
@@ -713,7 +718,7 @@ class FileList (Control):
 
     def addFiles(self):
         """Event handler to add files to the list"""
-        files = tkFileDialog.askopenfilenames(parent=self, title='Add files')
+        files = askopenfilenames(parent=self, title='Add files')
         self.listbox.add(*files)
         for control in self.copies:
             control.listbox.add(*files)

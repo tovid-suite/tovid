@@ -36,7 +36,7 @@ import math
 import copy
 import glob
 from libtovid.cli import Command, Pipe
-from libtovid.utils import float_to_ratio, ratio_to_float
+from libtovid.utils import float_to_ratio
 from libtovid.transcode import rip
 from libtovid.media import *
 from libtovid.standard import fps
@@ -106,6 +106,7 @@ def ffmpeg_encode(source, target, **kwargs):
     
         quant:      Minimum quantization, from 1-31 (1 being fewest artifacts)
         vbitrate:   Maximum video bitrate, in kilobits per second
+        abitrate:   Audio bitrate, in kilobits per second
         interlace:  'top' or 'bottom', to do interlaced encoding with
                     top or bottom field first
 
@@ -113,6 +114,8 @@ def ffmpeg_encode(source, target, **kwargs):
     
         ffmpeg_encode(source, target, quant=4, vbitrate=7000)
     """
+    for name, value in kwargs.items():
+        print "  ", name, value
     # Build the ffmpeg command
     cmd = Command('ffmpeg')
     cmd.add('-i', source.filename)
@@ -121,19 +124,28 @@ def ffmpeg_encode(source, target, **kwargs):
                 '-target', '%s-%s' % (target.tvsys, target.format))
 
     # Interpret keyword arguments
+    #if 'quality' in kwargs:
+        #kwargs['quant'] = ...
+        #kwargs['vbitrate'] = ...
+    if 'fit' in kwargs:
+        kwargs['vbitrate'] = fit(source, target, kwargs['fit'])
+        kwargs['quant'] = 3
     if 'quant' in kwargs:
         cmd.add('-qmin', kwargs['quant'], '-qmax', 31)
     if 'vbitrate' in kwargs:
         cmd.add('-b', '%dk' % kwargs['vbitrate'])
+    if 'abitrate' in kwargs:
+        cmd.add('-ab', '%dk' % kwargs['abitrate'])
     if 'interlace' in kwargs:
         if kwargs['interlace'] == 'bottom':
             cmd.add('-top', 0, '-flags', '+alt+ildct+ilme')
-        else:
+        elif kwargs['interlace'] == 'top':
             cmd.add('-top', 1, '-flags', '+alt+ildct+ilme')
 
     # Convert frame rate and audio sampling rate
     cmd.add('-r', target.fps,
             '-ar', target.samprate)
+    
     # Convert scale/expand to ffmpeg's padding system
     if target.scale:
         cmd.add('-s', '%sx%s' % target.scale)
@@ -512,3 +524,44 @@ def encode_frames(imagedir, outfile, format, tvsys, aspect, interlaced=False):
 
     pipe.run(capture=True)
     pipe.get_output() # and wait :)
+
+
+def fit(source, target, fit_size):
+    """Calculate the video bitrate needed to fit a video into a given size.
+    
+        source:   MediaFile input (the video being encoded)
+        target:   MediaFile output (desired target profile)
+        fit_size: Desired encoded file size, in MiB
+
+    """
+    assert isinstance(source, MediaFile)
+    assert isinstance(target, MediaFile)
+    fit_size = float(fit_size)
+    mpeg_overhead = fit_size / 100
+    aud_vid_size = fit_size - mpeg_overhead
+    audio_size = float(source.length * target.abitrate) / (8*1024)
+    video_size = aud_vid_size - audio_size
+    vid_bitrate = int(video_size*8*1024 / source.length)
+
+    print "Length:", source.length, "seconds"
+    print "Overhead:", mpeg_overhead, "MiB"
+    print "Audio:", audio_size, "MiB"
+    print "Video:", video_size, "MiB"
+    print "VBitrate:", vid_bitrate, "kbps"
+
+    # Keep bitrates sane for each disc format
+    bitrate_limits = {\
+        'vcd': (1150, 1150),
+        'kvcd': (400, 4000),
+        'dvd-vcd': (400, 4000),
+        'svcd': (900, 2400),
+        'half-dvd': (600, 6000),
+        'dvd': (900, 9000)
+        }
+    lower, upper = bitrate_limits[target.format]
+    if vid_bitrate < lower:
+        return lower
+    elif vid_bitrate > upper:
+        return upper
+    else:
+        return vid_bitrate
