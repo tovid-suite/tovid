@@ -42,6 +42,14 @@ from libtovid.media import *
 from libtovid.standard import fps
 from libtovid import log
 
+_bitrate_limits = {\
+    'vcd': (1150, 1150),
+    'kvcd': (400, 4000),
+    'dvd-vcd': (400, 4000),
+    'svcd': (900, 2400),
+    'half-dvd': (600, 6000),
+    'dvd': (900, 9000)
+    }
 
 # --------------------------------------------------------------------------
 #
@@ -50,7 +58,7 @@ from libtovid import log
 # --------------------------------------------------------------------------
 
 def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
-           **kwargs):
+           **kw):
     """Encode a multimedia file according to a target profile, saving the
     encoded file to outfile.
     
@@ -59,7 +67,7 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
         format:  One of 'vcd', 'svcd', 'dvd' (case-insensitive)
         tvsys:   One of 'ntsc', 'pal' (case-insensitive)
         method:  Encoding backend: 'ffmpeg', 'mencoder', or 'mpeg2enc'
-        kwargs:  Additional keyword arguments (name=value)
+        **kw:    Additional keyword arguments (name=value)
     
     The supported keyword arguments vary by encoding method. See the encoding
     functions for what is available in each.
@@ -76,7 +84,7 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
     
     # Get the appropriate encoding backend and encode
     encode_method = get_encoder(method)
-    encode_method(source, target, **kwargs)
+    encode_method(source, target, **kw)
 
 def get_encoder(backend):
     """Get an encoding function."""
@@ -88,19 +96,18 @@ def get_encoder(backend):
         return mpeg2enc_encode
 
 
-
 # --------------------------------------------------------------------------
 #
 # ffmpeg backend
 #
 # --------------------------------------------------------------------------
 
-def ffmpeg_encode(source, target, **kwargs):
+def ffmpeg_encode(source, target, **kw):
     """Encode a multimedia video using ffmpeg.
 
         source:  Input MediaFile
         target:  Output MediaFile
-        kwargs:  name=value keyword arguments
+        kw:  name=value keyword arguments
     
     Supported keywords:
     
@@ -114,8 +121,6 @@ def ffmpeg_encode(source, target, **kwargs):
     
         ffmpeg_encode(source, target, quant=4, vbitrate=7000)
     """
-    for name, value in kwargs.items():
-        print "  ", name, value
     # Build the ffmpeg command
     cmd = Command('ffmpeg')
     cmd.add('-i', source.filename)
@@ -124,22 +129,22 @@ def ffmpeg_encode(source, target, **kwargs):
                 '-target', '%s-%s' % (target.tvsys, target.format))
 
     # Interpret keyword arguments
-    #if 'quality' in kwargs:
-        #kwargs['quant'] = ...
-        #kwargs['vbitrate'] = ...
-    if 'fit' in kwargs:
-        kwargs['vbitrate'] = fit(source, target, kwargs['fit'])
-        kwargs['quant'] = 3
-    if 'quant' in kwargs:
-        cmd.add('-qmin', kwargs['quant'], '-qmax', 31)
-    if 'vbitrate' in kwargs:
-        cmd.add('-b', '%dk' % kwargs['vbitrate'])
-    if 'abitrate' in kwargs:
-        cmd.add('-ab', '%dk' % kwargs['abitrate'])
-    if 'interlace' in kwargs:
-        if kwargs['interlace'] == 'bottom':
+    if 'quality' in kw:
+        kw['quant'] = 13-kw['quality']
+        max_bitrate = _bitrate_limits[target.format][1]
+        kw['vbitrate'] = kw['quality'] * max_bitrate / 10
+    if 'fit' in kw:
+        kw['quant'], kw['vbitrate'] = _fit(source, target, kw['fit'])
+    if 'quant' in kw:
+        cmd.add('-qmin', kw['quant'], '-qmax', 31)
+    if 'vbitrate' in kw:
+        cmd.add('-b', '%dk' % kw['vbitrate'])
+    if 'abitrate' in kw:
+        cmd.add('-ab', '%dk' % kw['abitrate'])
+    if 'interlace' in kw:
+        if kw['interlace'] == 'bottom':
             cmd.add('-top', 0, '-flags', '+alt+ildct+ilme')
-        elif kwargs['interlace'] == 'top':
+        elif kw['interlace'] == 'top':
             cmd.add('-top', 1, '-flags', '+alt+ildct+ilme')
 
     # Convert frame rate and audio sampling rate
@@ -165,8 +170,10 @@ def ffmpeg_encode(source, target, **kwargs):
     # Overwrite existing output files
     cmd.add('-y')
     cmd.add(target.filename)
-        
+    
+    print
     print "Running:", cmd
+    print
     cmd.run()
 
 
@@ -176,7 +183,7 @@ def ffmpeg_encode(source, target, **kwargs):
 #
 # --------------------------------------------------------------------------
 
-def mencoder_encode(source, target, **kwargs):
+def mencoder_encode(source, target, **kw):
     """Encode a multimedia video using mencoder.
 
         source:  Input MediaFile
@@ -271,7 +278,7 @@ def mencoder_encode(source, target, **kwargs):
 # --------------------------------------------------------------------------
 
 
-def mpeg2enc_encode(source, target, **kwargs):
+def mpeg2enc_encode(source, target, **kw):
     """Encode a multimedia video using mplayer|yuvfps|mpeg2enc.
     
         source:  Input MediaFile
@@ -526,8 +533,8 @@ def encode_frames(imagedir, outfile, format, tvsys, aspect, interlaced=False):
     pipe.get_output() # and wait :)
 
 
-def fit(source, target, fit_size):
-    """Calculate the video bitrate needed to fit a video into a given size.
+def _fit(source, target, fit_size):
+    """Return video (quantization, bitrate) to fit a video into a given size.
     
         source:   MediaFile input (the video being encoded)
         target:   MediaFile output (desired target profile)
@@ -550,18 +557,12 @@ def fit(source, target, fit_size):
     print "VBitrate:", vid_bitrate, "kbps"
 
     # Keep bitrates sane for each disc format
-    bitrate_limits = {\
-        'vcd': (1150, 1150),
-        'kvcd': (400, 4000),
-        'dvd-vcd': (400, 4000),
-        'svcd': (900, 2400),
-        'half-dvd': (600, 6000),
-        'dvd': (900, 9000)
-        }
-    lower, upper = bitrate_limits[target.format]
+    lower, upper = _bitrate_limits[target.format]
+    quant = 3
     if vid_bitrate < lower:
-        return lower
+        return (quant, lower)
     elif vid_bitrate > upper:
-        return upper
+        return (quant, upper)
     else:
-        return vid_bitrate
+        return (quant, vid_bitrate)
+
