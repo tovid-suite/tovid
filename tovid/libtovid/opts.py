@@ -181,7 +181,7 @@ class OptionDict(dict):
         self.defdict = {}
         if options:
             for opt in options:
-                self[opt.name] = copy(opt.default)
+                #self[opt.name] = copy(opt.default)
                 self.defdict[opt.name] = opt
 
     def override(self, custom):

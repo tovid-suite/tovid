@@ -61,7 +61,7 @@ OPTION_DEFS = [\
         width/height of the output resolution, and pad the edges with a
         black border. Use this if some of the picture is cut off when
         played on your TV."""),
-    Option('interlaced', '', False,
+    Option('interlaced', 'top|bottom', None,
         """Do interlaced encoding of the input video. Use this option if
         your video is interlaced, and you want to preserve as much picture
         quality as possible. Ignored for VCD."""),
@@ -88,7 +88,9 @@ OPTION_DEFS = [\
         """Encode using the given tool. The mpeg2enc method uses mplayer to
         rip the audio and video, and mpeg2enc to encode the video. The
         mencoder and ffmpeg methods do all encoding with the respective
-        tool.""")
+        tool."""),
+    Option('fit', 'SIZE', None,
+        """Attempt to fit the output into SIZE MiB.""")
 ]
 
 if __name__ == '__main__':
@@ -103,7 +105,8 @@ if __name__ == '__main__':
         print options.usage()
         print 'Please provide an input file (-in) and output name (-out).'
         sys.exit()
+    # Get all command-line options
     options.override(sys.argv[1:])
+
     # Encode the video
-    encode.encode(options['in'], options['out'], \
-       options['format'], options['tvsys'], options['method'])
+    encode.encode(options['in'], options['out'], **options)
