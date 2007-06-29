@@ -1,26 +1,35 @@
 #! /usr/bin/env python
 # encode.py
 
-"""This module provides several video-encoding backends. It provides one
-high-level function:
+"""This module provides several backend for encoding video and audio.
 
-    encode(infile, outfile, format, tvsys, method)
+One high-level function is provided:
 
-For example:
+    encode(infile, outfile, format, tvsys, method, ...)
+
+where "..." is optional keyword arguments (described below). For example:
 
     encode('/video/foo.avi', '/video/bar.mpg', 'dvd', 'ntsc', 'mencoder')
 
-This will encode '/video/foo.avi' to NTSC DVD form using mencoder, saving
-the result as '/video/bar.mpg'.
+This will encode '/video/foo.avi' to NTSC DVD format using mencoder, saving
+the result as '/video/bar.mpg'. Keyword arguments may be used to further
+refine encoding behavior, for example:
 
-Each backend implements a top-level function:
+    encode('foo.avi', 'foo.mpg', 'dvd', 'pal', 'ffmpeg',
+           quality=7, interlace='bottom', ...)
 
-    ffmpeg_encode(source, target)
-    mencoder_encode(source, target)
-    mpeg2enc_encode(source, target)
+The supported keywords may vary by backend, but one of our goals should be to
+implement a set of commonly-used keywords in all the backends.
+
+Each backend has a top-level function:
+
+    ffmpeg_encode(source, target, ...)
+    mencoder_encode(source, target, ...)
+    mpeg2enc_encode(source, target, ...)
 
 The source and target are MediaFile objects from libtovid.media, containing
-profiles of the input and output videos.
+profiles of the input and output videos. Again, the "..." are optional keyword
+arguments.
 """
 
 __all__ = [\
@@ -111,8 +120,10 @@ def ffmpeg_encode(source, target, **kw):
     
     Supported keywords:
     
+        quality:    From 1 (lowest) to 10 (highest) video quality
+        fit:        Size in MiB to fit output video to (overrides 'quality')
         quant:      Minimum quantization, from 1-31 (1 being fewest artifacts)
-        vbitrate:   Maximum video bitrate, in kilobits per second
+        vbitrate:   Maximum video bitrate, in kilobits per second.
         abitrate:   Audio bitrate, in kilobits per second
         interlace:  'top' or 'bottom', to do interlaced encoding with
                     top or bottom field first
