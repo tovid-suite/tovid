@@ -529,16 +529,12 @@ if [[ $this_set = "group" ]]; then
     TOT=${#grouping[@]} # || TOT=${#IN_FILES[@]}
     IN_STATS=( "${group_mencoder_stats[@]}" )
     FILES_IN=( "${grouping[@]}" )
-    NAV=group_nav
 else
     TOT=${#IN_FILES[@]}
     IN_STATS=( "${mencoder_stats[@]}" )
     FILES_IN=( "${IN_FILES[@]}" )
-    NAV=nav
 fi
-
 for ((i=0; i<TOT; i++)); do
-    ([[ $this_set = "group" ]] &&  LENGTH=${GROUP_VID_LENGTHS[i]}) || LENGTH=${length[i]}
     VCODEC="$(awk '/VIDEO:/ {gsub(/\[|\]/, ""); print $2}' \
     <<< "${IN_STATS[i]}")"
     V_BR="$(awk '/Video stream:/{print $3}'<<< "${IN_STATS[i]}")"
@@ -548,19 +544,8 @@ for ((i=0; i<TOT; i++)); do
     if [ -z "$A_BR" ]; then
         A_BR="No audio found"
     fi
-    if [ -s "${IN_FILES[i]}".nav_log ] ; then
-        V_LENGTH=$(awk_math $LENGTH by $FRAME_RATE float)
-    else
-        V_LENGTH=$(awk '/Video stream:/{print $10}'<<< "${IN_STATS[i]}")
-    fi
-    if [[ $this_set = "group" ]]; then
-        V_LENGTH=$(awk '/Video stream:/{print $10}' <<< "${group_mencoder_stats[i]}")
-    fi
-    if [[ $this_set != group ]]; then
-        if [[ ${V_LENGTH%.*} -lt ${SEEK_VAL[i]%.*} ]]; then
-            usage_error "A seek of ${SEEK_VAL[i]} seconds is too large for ${IN_FILES[i]}. The file is only $V_LENGTH seconds long"
-        fi
-    fi
+    V_LENGTH=${VID_LEN[i]}
+    [[ $this_set = "group" ]] && V_LENGTH=${GROUP_VID_LEN[i]} 
     FPS="$(awk ' /VIDEO/ { if ($_=="fps"); sub(/fps.*$/, ""); print $NF}' <<<"${IN_STATS[i]}")"
     yecho
     if [[ $this_set = "group" ]] && ((i == 0)); then
@@ -682,7 +667,6 @@ function get_group_chapters()
     remainder=0
     chapter_length=$( bc <<< "scale=3; ${GROUP_TOT_LEN[index]} / ${CHAPTERS[index]}")
     GROUP_VIDEO_LENGTHS=( ${GROUP_VID_LENGTHS[index]} )
-
     for len in ${GROUP_VIDEO_LENGTHS[@]}; do
         adjusted_length=$( bc <<< "scale=3; $len + $remainder" )
         num_chapters=$( bc <<< "$adjusted_length / $chapter_length" )
@@ -1053,7 +1037,7 @@ while test $# -gt 0; do
             ;;
         "-group" )
             shift
-            mk_workdir
+            ! $GROUPING && mk_workdir
             get_listargs "$@"
             unset group groupkey grp x
             for ((i=1; i<${#ARGS_ARRAY[@]}; i++)); do
@@ -3474,7 +3458,6 @@ fi
 for ((i=0; i<${#IN_FILES[@]}; i++)); do
     # use a nav_seek file and transcode if long seek
     if [ ${SEEK_VAL[i]%.*} -gt 450 ] || $SUB_MENU || $SWITCHED_MODE; then
-        STATS_FRAMES="-frames 1"
         if [ ! -s  "${IN_FILES[i]}".nav_log ]; then
 #            NAVSEEK[i]="--nav_seek "$BASEDIR/${TSET_NUM}-nav${i}_log""
             NAVSEEK[i]="--nav_seek "${IN_FILES[i]}".nav_log"
@@ -3502,8 +3485,8 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
     [[ $MENU_NUM -eq 1 ]] && echo
     if [[ $MENU_NUM -eq 1 ]]; then
         echo "Getting stats on "${IN_FILES[i]}""
-        mencoder_stats[i]="$(mencoder -quiet "${IN_FILES[i]}" -oac pcm -ovc copy \
-        $STATS_FRAMES -o /dev/null 2>&1)"
+        mencoder_stats[i]="$(mencoder "${IN_FILES[i]}" -quiet -oac pcm -ovc copy \
+        -frames 90 -o /dev/null 2>&1)"
         unset NAVSEEK_CMD
     fi
 done
@@ -3514,25 +3497,26 @@ if $GROUPING &&  [[ $MENU_NUM -eq 1 ]]; then
     for u in ${!grouping[@]}; do
         echo "Getting stats on "$(readlink "${grouping[u]}")""
         echo
-        group_mencoder_stats[u]="$(mencoder -quiet "${grouping[u]}" \
-        -oac pcm -ovc copy  -o /dev/null 2>&1)"
+        group_mencoder_stats[u]="$(mencoder "${grouping[u]}" -quiet \
+        -frames 90 -oac pcm -ovc copy  -o /dev/null 2>&1)"
     done
 fi
 
-# put in the log file in case anyone is interested
-if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]]; then get_stats files; echo; fi
-if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]] && $GROUPING; then
-    get_stats group
-    echo; echo $SEPARATOR
-fi
-
-for ((i=0; i<${#mencoder_stats[@]}; i++)); do
+# get length of videos in a seperate loop from other stats (decode whole file)
+for i in ${!IN_FILES[@]}; do
     if [ -s "${IN_FILES[i]}".nav_log ]; then
-        VID_LEN=( ${VID_LEN[@]}  $(awk_math ${length[i]} by $FRAME_RATE float) )
+        VID_LEN[i]=$(awk_math ${length[i]} by $FRAME_RATE float)
     else
-        VID_LEN=( ${VID_LEN[@]}  "$(awk '/Video stream:/{print $10}' \
-        <<<"${mencoder_stats[i]}")" )
+        VID_LEN[i]=$(vid_length  "${IN_FILES[i]}" )
     fi
+    VID_LEN[i]=${VID_LEN[i]/,/.} # replacement for comma delimited locales
+    if [[ ${VID_LEN[i]%.*} -lt ${SEEK_VAL[i]%.*} ]]; then
+        usage_error "A seek of ${SEEK_VAL[i]} seconds is too large for ${IN_FILES[i]}. The file is only ${VID_LEN[i]} seconds long"
+    fi
+done
+# get the length of grouped files seperately as well
+for g in ${!grouping[@]}; do
+    GROUP_VID_LEN[g]=$(vid_length "${grouping[g]}")
 done
 if $GROUPING; then
     index=0
@@ -3540,15 +3524,26 @@ if $GROUPING; then
         if [[ ${GROUP[i]} ]]; then
             iter=( $BASEDIR/${TSET_NUM}-group-$((i+1))-* )
             for ((t=index; t<index+${#iter[@]}; t++)); do
-                GROUP_VID_LENGTHS[i]="${GROUP_VID_LENGTHS[i]} $(awk '/Video stream:/{print $10}' \
-                <<< "${group_mencoder_stats[t]}")"
+                # get lengths of group videos also in a seperate loop
+                # concatenate the group lengths in a string
+                GROUP_VID_LENGTHS[i]="${GROUP_VID_LENGTHS[i]} ${GROUP_VID_LEN[t]}"
+		        # replacement for comma delimited locales
+		        GROUP_VID_LENGTHS[i]=${GROUP_VID_LENGTHS[i]/,/.}
             done
             index=$((index+${#iter[@]}))
             unset iter
+            # a string of the joined grouped lengths and 1st video in the group
             GROUP_VID_LENGTHS[i]="${VID_LEN[i]} ${GROUP_VID_LENGTHS[i]}"
+            # total length for the whole group - for chapter creation
             GROUP_TOT_LEN[i]=$(awk_total <<< "${GROUP_VID_LENGTHS[i]}")
         fi
     done
+fi
+# put in the log file in case anyone is interested
+if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]]; then get_stats files; echo; fi
+if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]] && $GROUPING; then
+    get_stats group
+    echo; echo $SEPARATOR
 fi
 echo
 for ((i=0; i<${#VID_LEN[@]}; i++)); do
@@ -3667,11 +3662,12 @@ fi
 
 echo
 # chapters and submenu xml stuff
-
 for ((s=0; s<=NUM_FILES; s++)); do
     # make appropriate chapter lengths for each video
     # get chapter lengths by dividing by $CHAPTERS, then getting running totals
-    CHAPT_INTERVALS=( ${CHAPT_INTERVALS[@]} "$(awk_math ${VID_LEN[s]} by ${CHAPTERS[s]} float)" )
+    CHAPT_INTERVALS[s]="$(awk_math ${VID_LEN[s]} by ${CHAPTERS[s]} float)"
+    # replace commas for comma delimited locales
+    CHAPT_INTERVALS[s]=${CHAPT_INTERVALS[s]/,/.}
     # <TODO if GROUPING:  for making chapter thumbs for the group
     # feed group chapter points to transcode in a loop to transcode as usual, but output
     # to different subdirs.  Then rename according to framenumber, moving all to the same subdir
@@ -3733,7 +3729,7 @@ EOF
     fi
 done
 # debug chapters
-if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]]; then
+if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]] && ! $GROUPING; then
     echo
     for ((i=0; i<=NUM_FILES; i++)); do
         echo -e "Chapters for "${IN_FILES[i]}" are: \n"${CHAPT_ARRAY[i]}"\n"
@@ -4018,7 +4014,6 @@ if ! $TITLESET_MODE && ! $DO_TITLESETS; then
     mencoder "$WORK_DIR/dummy.m2v"  -ovc copy -oac pcm -o /dev/null >>"$LOG_FILE.tmp" 2>&1
     SED_VAR="Pos"
     cleanlog 3
-    yecho "VMGM_TIME is $VMGM_TIME"
     yecho
     BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME \
     $AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
@@ -4962,7 +4957,6 @@ if $STATIC && [[ -n "$BG_AUDIO" ]]; then
     awk '/Duration/ {print $2}')
     TMP_TIME=$(unformat_time  ${TMP_TIME/,/})
     TMP_TIME=$(awk_math $TMP_TIME less $BG_AUDIO_SEEK float )
-    echo "TMP_TIME is $TMP_TIME"; sleep 4
 else
     MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
 fi
