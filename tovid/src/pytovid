@@ -97,16 +97,26 @@ if __name__ == '__main__':
     """Create a Video with provided options and generate it.
     """
     options = OptionDict(OPTION_DEFS)
-    # If no arguments were provided, print usage notes
-    # TODO: Proper argument verification
-    if len(sys.argv) < 5:
+
+    def usage_error(message):
         print 'Usage: pytovid [options] -in FILE -out NAME'
         print 'Where [options] may be any of the following:'
         print options.usage()
-        print 'Please provide an input file (-in) and output name (-out).'
-        sys.exit()
+        print message
+        sys.exit(1)
+
+    # Inadequate arguments?
+    if len(sys.argv) < 5:
+        usage_error('Please provide an input file (-in)'\
+                    ' and output name (-out).')
+
     # Get all command-line options
     options.override(sys.argv[1:])
+    
+    # -in and -out are required
+    if 'in' not in options or 'out' not in options:
+        usage_error('Please provide an input file (-in)'\
+                    ' and output name (-out).')
 
     # Encode the video
     encode.encode(options['in'], options['out'], **options)
