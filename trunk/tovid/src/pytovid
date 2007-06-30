@@ -13,32 +13,44 @@ from libtovid import log
 
 # List of valid command-line options, with documentation
 OPTION_DEFS = [\
+    # Filenames
     Option('in', 'FILENAME', None,
         """Input video file, in any format."""),
     Option('out', 'NAME', None,
         """Output prefix or name."""),
 
-    # New options to (eventually) replace -vcd, -pal etc.
+    # Format options
     Option('format', 'vcd|svcd|dvd|half-dvd|dvd-vcd', 'dvd',
         """Make video compliant with the specified format"""),
-    Option('tvsys', 'ntsc|pal', 'ntsc',
-        """Make the video compliant with the specified TV system"""),
-    Option('filters', 'denoise|contrast|deblock[, ...]', [],
-        """Apply the given filters to the video before or during
-        encoding."""),
-        
-    Option('vcd', '', False, alias=('format', 'vcd')),
-    Option('svcd', '', False, alias=('format', 'svcd')),
-    Option('dvd', '', False, alias=('format', 'dvd')),
-    Option('half-dvd', '', False, alias=('format', 'half-dvd')),
-    Option('dvd-vcd', '', False, alias=('format', 'dvd-vcd')),
-    Option('ntsc', '', False, alias=('tvsys', 'ntsc')),
-    Option('ntscfilm', '', False),
-    Option('pal', '', False, alias=('tvsys', 'pal')),
+    Option('vcd', alias=('format', 'vcd')),
+    Option('svcd', alias=('format', 'svcd')),
+    Option('dvd', alias=('format', 'dvd')),
+    Option('half-dvd', alias=('format', 'half-dvd')),
+    Option('dvd-vcd', alias=('format', 'dvd-vcd')),
 
+    # TV system options
+    Option('tvsys', 'pal|ntsc|ntscfilm', 'ntsc',
+        """Make the video compliant with the specified TV system"""),        
+    Option('ntsc', alias=('tvsys', 'ntsc')),
+    #Option('ntscfilm', '', False),
+    Option('pal', alias=('tvsys', 'pal')),
+
+    # Aspect ratio options
     Option('aspect', 'WIDTH:HEIGHT', "4:3",
         """Force the input video to be the given aspect ratio, where WIDTH
         and HEIGHT are integers."""),
+    Option('wide', alias=('aspect', '16:9')),
+    Option('full', alias=('aspect', '4:3')),
+    Option('panavision', alias=('aspect', '235:100')),
+
+    # Other options
+    Option('method', 'mpeg2enc|mencoder|ffmpeg', 'ffmpeg',
+        """Encode using the given tool. The mpeg2enc method uses mplayer to
+        rip the audio and video, and mpeg2enc to encode the video. The
+        mencoder and ffmpeg methods do all encoding with the respective
+        tool."""),
+    Option('fit', 'SIZE', None,
+        """Attempt to fit the output into SIZE MiB."""),
     Option('quality', '[1-10]', 8,
         """Desired output quality, on a scale of 1 to 10, with 10 giving
         the best quality at the expense of a larger output file. Output
@@ -84,13 +96,9 @@ OPTION_DEFS = [\
         """Normalize the volume of the audio. Useful if the audio is too
         quiet or too loud, or you want to make volume consistent for a
         bunch of videos."""),
-    Option('method', 'mpeg2enc|mencoder|ffmpeg', 'ffmpeg',
-        """Encode using the given tool. The mpeg2enc method uses mplayer to
-        rip the audio and video, and mpeg2enc to encode the video. The
-        mencoder and ffmpeg methods do all encoding with the respective
-        tool."""),
-    Option('fit', 'SIZE', None,
-        """Attempt to fit the output into SIZE MiB.""")
+    Option('filters', 'denoise|contrast|deblock[, ...]', [],
+        """Apply the given filters to the video before or during
+        encoding.""")
 ]
 
 if __name__ == '__main__':
