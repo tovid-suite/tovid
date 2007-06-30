@@ -64,6 +64,8 @@ import doctest
 from libtovid.utils import trim, tokenize, pretty_dict
 from libtovid import log
 
+# TODO: Rethink this whole mess. Alias handling is a pain.
+
 class Option:
     """A command-line-style option, expected argument formatting, default value,
     and notes on usage and purpose.
@@ -81,9 +83,18 @@ class Option:
     expected argument formatting, a default value, and a string documenting the
     option's purpose and/or usage information."""
 
-    def __init__(self, name, argformat, default=None,
+    def __init__(self, name, argformat='', default=None,
                  doc='Undocumented option', alias=None):
-        """Create a new option definition with the given attributes."""
+        """Create a new option definition with the given attributes.
+        
+            name:      Option name
+            argformat: String describing format of expected arguments
+                       (see is_valid() for examples)
+            default:   Default value, if any
+            doc:       Manual-page-style documentation of the option
+            alias:     An ('option', 'value') equivalent for this option.
+
+        """
         self.name = name
         self.argformat = argformat
         self.default = default
@@ -98,7 +109,10 @@ class Option:
     def num_args(self):
         """Return the number of arguments expected by this option, or -1 if
         unlimited."""
-        if isinstance(self.default, bool):
+        # Flag alias for another option
+        if self.alias:
+            return 0
+        elif isinstance(self.default, bool):
             # Boolean: no argument
             return 0
         elif isinstance(self.default, list):
@@ -165,22 +179,28 @@ class Option:
 
     def usage(self):
         """Return a string containing "usage notes" for this option."""
-        usage = "-%s %s (default: %s)\n" % \
-                (self.name, self.argformat, self.default)
-        for line in textwrap.wrap(self.doc, 60):
-            usage += '    ' + line + '\n'
+        if self.alias:
+            usage = "-%s: Same as '-%s %s'\n" % \
+                  (self.name, self.alias[0], self.alias[1])
+        else:
+            usage = "-%s %s (default: %s)\n" % \
+                    (self.name, self.argformat, self.default)
+            for line in textwrap.wrap(self.doc, 60):
+                usage += '    ' + line + '\n'
         return usage
 
+from libtovid.odict import Odict
 
-class OptionDict(dict):
+class OptionDict(Odict):
     """An indexed collection (dictionary) of user-configurable options."""
     def __init__(self, options=None):
         """Create an option dictionary using the given list of Options."""
-        dict.__init__(self)
+        Odict.__init__(self)
         # Keep a copy of the original Option definitions
-        self.defdict = {}
+        self.defdict = Odict()
         if options:
             for opt in options:
+                print "Adding %s to defdict" % opt.name
                 #self[opt.name] = copy(opt.default)
                 self.defdict[opt.name] = opt
 
@@ -197,13 +217,13 @@ class OptionDict(dict):
     def usage(self):
         """Return a string containing usage notes for all option definitions."""
         usage = ''
-        for opt in self.defdict.itervalues():
+        for opt in self.defdict.values():
             usage += opt.usage()
         return usage
 
     def __getitem__(self, key):
         """Return the value indexed by key, or None if not present."""
-        return dict.get(self, key, None)
+        return Odict.get(self, key, None)
 
     def _parse(self, options):
         """Parse a string or list of options, returning a dictionary of those
