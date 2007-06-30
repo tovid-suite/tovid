@@ -77,7 +77,7 @@ class MediaFile:
         """Return a string representation of the MediaFile suitable for
         printing.
         """
-        width, height = self.expand
+        width, height = self.expand or self.scale
         # List of lines of output
         lines = [\
             'Filename: %s' % self.filename,
@@ -211,22 +211,22 @@ def correct_aspect(source, target, aspect='auto'):
         aspect:  Aspect ratio to assume for input file (e.g., '4:3', '16:9')
                  or 'auto' to use autodetection
 
-    Return a new target (MediaFile) with correct scaling, using letterboxing
+    Return a new target MediaFile with correct scaling, using letterboxing
     if appropriate, and anamorphic widescreen if available.
     """
     assert isinstance(source, MediaFile)
     assert isinstance(target, MediaFile)
-    # Make a copy of the provided Profile
+
+    # Base new target on existing one
     target = copy.copy(target)
     
     # Convert aspect (ratio) to a floating-point value
-    src_aspect = ratio_to_float('4:3')
-    if aspect is not 'auto':
-        src_aspect = ratio_to_float(aspect)
-    else:
+    if aspect == 'auto':
         src_aspect = ratio_to_float(source.aspect)
+    else:
+        src_aspect = ratio_to_float(aspect)
     
-    # Use anamorphic widescreen for any video 16:9 or wider
+    # Use anamorphic widescreen for any video ~16:9 or wider
     # (Only DVD supports this)
     if src_aspect >= 1.7 and target.format == 'dvd':
         target_aspect = 16.0/9.0
@@ -237,24 +237,20 @@ def correct_aspect(source, target, aspect='auto'):
 
     width, height = target.scale
     # If aspect matches target, no letterboxing is necessary
-    # (Match within a tolerance of 0.05)
-    if abs(src_aspect - target_aspect) < 0.05:
+    tolerance = 0.05
+    if abs(src_aspect - target_aspect) < tolerance:
         scale = (width, height)
-        expand = False
     # If aspect is wider than target, letterbox vertically
     elif src_aspect > target_aspect:
         scale = (width, int(height * target_aspect / src_aspect))
-        expand = (width, height)
     # Otherwise (rare), letterbox horizontally
     else:
         scale = (int(width * src_aspect / target_aspect), height)
-        expand = (width, height)
+    expand = (width, height)
 
     # If input file is already the correct size, don't scale
     if scale == source.scale:
         scale = False
-        log.debug('Infile resolution matches target resolution.')
-        log.debug('No scaling will be done.')
 
     # Final scaling/expansion for correct aspect ratio display
     target.scale = scale

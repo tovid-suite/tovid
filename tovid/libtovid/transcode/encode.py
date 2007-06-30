@@ -91,6 +91,13 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
     target = correct_aspect(source, target, '4:3')
     target.filename = outfile
     
+    # Some friendly output
+    print "Source media:"
+    print source
+    print
+    print "Target media:"
+    print target
+    
     # Get the appropriate encoding backend and encode
     encode_method = get_encoder(method)
     encode_method(source, target, **kw)
@@ -165,7 +172,7 @@ def ffmpeg_encode(source, target, **kw):
     # Convert scale/expand to ffmpeg's padding system
     if target.scale:
         cmd.add('-s', '%sx%s' % target.scale)
-    if target.expand > target.scale:
+    if target.expand != target.scale:
         e_width, e_height = target.expand
         s_width, s_height = target.scale
         h_pad = (e_width - s_width) / 2
@@ -182,9 +189,6 @@ def ffmpeg_encode(source, target, **kw):
     cmd.add('-y')
     cmd.add(target.filename)
     
-    print
-    print "Running:", cmd
-    print
     cmd.run()
 
 
@@ -275,11 +279,10 @@ def mencoder_encode(source, target, **kw):
     if target.scale:
         vfilter = 'scale=%s:%s' % target.scale
         # Expand is not done unless also scaling
-        if target.expand > target.scale:
+        if target.expand != target.scale:
             vfilter += ',expand=%s:%s' % target.expand
         cmd.add('-vf', vfilter)
 
-    # Run the command to do the encoding
     cmd.run()
 
 # --------------------------------------------------------------------------
@@ -355,7 +358,6 @@ def encode_audio(source, audiofile, target):
     cmd.add('-ar', target.samprate)
     cmd.add('-acodec', target.acodec)
     cmd.add('-y', audiofile)
-    # Run the command to encode the audio
 
     cmd.run()
 
