@@ -469,15 +469,6 @@ function call_makemenu()
     cmd_exec "$MAKEDVD"
 }
 
-function confirm_dep()
-{
-    if ! $(which $1 > /dev/null 2>&1); then
-        yecho "The program $1 is not installed, please install it to use todisc"
-        yecho "The $1 homepage is $2"
-        exit 1
-    fi
-}
-
 function stat_logfile()
 {
      awk '/Modify/ {print $3}' <<< "$(stat "$LOG_FILE")"
@@ -527,26 +518,24 @@ this_set=$1
 if [[ $this_set = "group" ]]; then
     unset TOT IN_STATS FILES_IN
     TOT=${#grouping[@]} # || TOT=${#IN_FILES[@]}
-    IN_STATS=( "${group_mencoder_stats[@]}" )
+    IN_STATS=( "${group_idvid_stats[@]}" )
     FILES_IN=( "${grouping[@]}" )
 else
     TOT=${#IN_FILES[@]}
-    IN_STATS=( "${mencoder_stats[@]}" )
+    IN_STATS=( "${idvid_stats[@]}" )
     FILES_IN=( "${IN_FILES[@]}" )
 fi
 for ((i=0; i<TOT; i++)); do
-    VCODEC="$(awk '/VIDEO:/ {gsub(/\[|\]/, ""); print $2}' \
-    <<< "${IN_STATS[i]}")"
-    V_BR="$(awk '/Video stream:/{print $3}'<<< "${IN_STATS[i]}")"
-    ACODEC="$(awk  '/Selected audio codec/ {gsub(/\[|\]/, ""); print $4}' \
-    <<< "${IN_STATS[i]}")"
-    A_BR="$(awk  '/AUDIO:/ {print $7}' <<< "${IN_STATS[i]}")"
+    VCODEC="$(awk -F= '/ID_VIDEO_FORMAT/ {print $2}'    <<< "${IN_STATS[i]}")"
+    V_BR="$(awk -F= '/ID_VIDEO_BITRATE/ {print $2}'    <<< "${IN_STATS[i]}")"
+    ACODEC="$(awk -F= '/ID_AUDIO_CODEC/ {print $2}'    <<< "${IN_STATS[i]}")"
+    A_BR="$(awk -F= '/ID_AUDIO_BITRATE/ {print $2}'    <<< "${IN_STATS[i]}")"
     if [ -z "$A_BR" ]; then
         A_BR="No audio found"
     fi
     V_LENGTH=${VID_LEN[i]}
     [[ $this_set = "group" ]] && V_LENGTH=${GROUP_VID_LEN[i]} 
-    FPS="$(awk ' /VIDEO/ { if ($_=="fps"); sub(/fps.*$/, ""); print $NF}' <<<"${IN_STATS[i]}")"
+    FPS="$(awk -F= '/ID_VIDEO_FPS/ {print $2}'    <<< "${IN_STATS[i]}")"
     yecho
     if [[ $this_set = "group" ]] && ((i == 0)); then
         echo; echo ". . . Grouped file stats . . ."; echo
@@ -557,14 +546,14 @@ for ((i=0; i<TOT; i++)); do
     echo -e  \
     " video codec:   " \
     "$VCODEC" "\n" \
-    "video bitrate: " "$V_BR" "kbps" "\n" \
+    "video bitrate: " "$V_BR" "bits per second" "\n" \
     "framerate:     " "$FPS" "fps" "\n" \
     "audio codec:   " \
     "$ACODEC" "\n" \
     "audio bitrate: " \
-    "$A_BR" " kbps" "\n" \
+    "$A_BR" "bits per second" "\n" \
     "video length:  " \
-    "$V_LENGTH" " seconds" |tee -a "$LOG_FILE"
+    "$V_LENGTH" "seconds" |tee -a "$LOG_FILE"
 done
 }
 
@@ -3459,7 +3448,6 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
     # use a nav_seek file and transcode if long seek
     if [ ${SEEK_VAL[i]%.*} -gt 450 ] || $SUB_MENU || $SWITCHED_MODE; then
         if [ ! -s  "${IN_FILES[i]}".nav_log ]; then
-#            NAVSEEK[i]="--nav_seek "$BASEDIR/${TSET_NUM}-nav${i}_log""
             NAVSEEK[i]="--nav_seek "${IN_FILES[i]}".nav_log"
             NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
             run_navseek()
@@ -3485,8 +3473,7 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
     [[ $MENU_NUM -eq 1 ]] && echo
     if [[ $MENU_NUM -eq 1 ]]; then
         echo "Getting stats on "${IN_FILES[i]}""
-        mencoder_stats[i]="$(mencoder "${IN_FILES[i]}" -quiet -oac pcm -ovc copy \
-        -frames 90 -o /dev/null 2>&1)"
+        idvid_stats[i]="$(idvid -terse -fast "${IN_FILES[i]}" 2>/dev/null)"
         unset NAVSEEK_CMD
     fi
 done
@@ -3497,16 +3484,16 @@ if $GROUPING &&  [[ $MENU_NUM -eq 1 ]]; then
     for u in ${!grouping[@]}; do
         echo "Getting stats on "$(readlink "${grouping[u]}")""
         echo
-        group_mencoder_stats[u]="$(mencoder "${grouping[u]}" -quiet \
-        -frames 90 -oac pcm -ovc copy  -o /dev/null 2>&1)"
+        group_idvid_stats[u]="$(idvid -terse -fast "${grouping[u]}" 2>/dev/null)"
     done
 fi
 
-# get length of videos in a seperate loop from other stats (decode whole file)
+# get length of videos in a separate loop from other stats (decode whole file)
 for i in ${!IN_FILES[@]}; do
+    # if we have a non empty nav_log get the length from that
     if [ -s "${IN_FILES[i]}".nav_log ]; then
         VID_LEN[i]=$(awk_math ${length[i]} by $FRAME_RATE float)
-    else
+    else # otherwise, we run mencoder to get the length
         VID_LEN[i]=$(vid_length  "${IN_FILES[i]}" )
     fi
     VID_LEN[i]=${VID_LEN[i]/,/.} # replacement for comma delimited locales
@@ -3514,7 +3501,7 @@ for i in ${!IN_FILES[@]}; do
         usage_error "A seek of ${SEEK_VAL[i]} seconds is too large for ${IN_FILES[i]}. The file is only ${VID_LEN[i]} seconds long"
     fi
 done
-# get the length of grouped files seperately as well
+# get the length of grouped files separately (with mencoder) as well
 for g in ${!grouping[@]}; do
     GROUP_VID_LEN[g]=$(vid_length "${grouping[g]}")
 done
@@ -3666,8 +3653,6 @@ for ((s=0; s<=NUM_FILES; s++)); do
     # make appropriate chapter lengths for each video
     # get chapter lengths by dividing by $CHAPTERS, then getting running totals
     CHAPT_INTERVALS[s]="$(awk_math ${VID_LEN[s]} by ${CHAPTERS[s]} float)"
-    # replace commas for comma delimited locales
-    CHAPT_INTERVALS[s]=${CHAPT_INTERVALS[s]/,/.}
     # <TODO if GROUPING:  for making chapter thumbs for the group
     # feed group chapter points to transcode in a loop to transcode as usual, but output
     # to different subdirs.  Then rename according to framenumber, moving all to the same subdir
@@ -3677,6 +3662,8 @@ for ((s=0; s<=NUM_FILES; s++)); do
     L=( ${L[@]} $(for ((i=1; i<=${CHAPTERS[s]}; i++)) ; do echo "${CHAPT_INTERVALS[s]}";done) )
     chapt_intervals=$(running_total <<< ${L[@]})
     chapters="$(for c in $chapt_intervals; do echo $(format_seconds $c); done)"
+    # replace commas for comma delimited locales
+    chapters=${chapters//,/.}
     chapters="00:00:00.000 $chapters"
     if [ ${CHAPTERS[s]} = 1 ]; then chapters="00:00:00.000"; fi
     CHAPTS=$(for i in $chapters; do echo -n $i,;done)
