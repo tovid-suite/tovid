@@ -308,7 +308,15 @@ function vid_length()
     mencoder -nosound -oac copy -ovc copy -o /dev/null "$1" 2>/dev/null |
     awk 'END{print $(NF-3)}'
 }
-
+function audio_length()
+{
+    mplayer -speed 20  -vo null -ao null "$1"  2>&1 |
+    tr '\r' '\n' |
+    grep ^A: |
+    tail -n 1 |
+    sed s/^.*A:// |
+    awk '{print $1}'
+}
 function cleanup()
 {
     echo
@@ -364,6 +372,7 @@ function format_seconds()
 
 function awk_math()
 {
+    LC_ALL="C"
     if [ $2 = "times" ]; then
         OP=*
     elif [ $2 = "by" ]; then
@@ -471,7 +480,7 @@ function call_makemenu()
 
 function stat_logfile()
 {
-     awk '/Modify/ {print $3}' <<< "$(stat "$LOG_FILE")"
+    stat -L -c "%Y" "$LOG_FILE"
 }
 
 function get_line_count()
@@ -697,7 +706,7 @@ function get_group_chapters()
 
 function get_image_dim()
 {
-    identify -verbose "$1" | awk '/Geometry:/ {print $2}'
+    identify "$1" | awk '{print $3}'
 }
 function switched_menu_mode()
 #call todisc recursively to make multiple menus for -switched-menus option
@@ -4258,13 +4267,9 @@ if $SUB_MENU; then
             if ! $ANI_SUB_MENU ; then  # if static, see if length option given
                 [[ -n "$SUBMENU_AUDIOLENGTH" ]] && TIME=$SUBMENU_AUDIOLENGTH
                 if [[ -n "$SM_AUDIO_FILE" ]]; then # one audio file for all menus
-                    TIME_TMP=$(ffmpeg -i "$SM_AUDIO_FILE" 2>&1|
-                    awk '/Duration/ {print $2}')
-                    TIME_TMP=${TIME_TMP/,/}
+                    TIME_TMP=$(audio_length "$SM_AUDIO_FILE")
                 else # audio will be different for each menu
-                    TIME_TMP=$(ffmpeg -i "${SM_AUDIO[s]}" 2>&1|
-                    awk '/Duration/ {print $2}')
-                    TIME_TMP=${TIME_TMP/,/}
+                    TIME_TMP=$(audio_length "${SM_AUDIO[s]}")
                 fi
             else # if animated, get time from video instead of the audio file
                 TIME_TMP=$(vid_length "$WORK_DIR/menu$s.m2v")
@@ -4306,8 +4311,7 @@ if $SUB_MENU; then
         # convert to DVD/SVCD format as long as not "none" or single audio file
         if $SUBMENU_AUDIO && [[ ! "${SM_AUDIO[s]}" = "none" && -z "$SM_AUDIO_FILE" ]]; then
             if $SM_AUDIO_FADE; then
-                TIME=$(ffmpeg -i "$WORK_DIR/menu$s.wav" 2>&1|awk '/Duration/ {print $2}')
-                TIME=${TIME/,/}
+                TIME=$(audio_length "$WORK_DIR/menu$s.wav")
                 echo -e "Running:
                 sox $WORK_DIR/menu$s.wav \
                 $WORK_DIR/menu$s-processed.wav fade t $SM_FADE $TIME $SM_FADE" |
@@ -4330,8 +4334,7 @@ if $SUB_MENU; then
         # if "1" audio file, then convert it if it has not been done yet
         if [[ -n "$SM_AUDIO_FILE" && ! -s $WORK_DIR/submenu-processed.wav ]]; then
             if $AUDIO_FADE; then
-                TIME=$(ffmpeg -i "$WORK_DIR/submenu.wav" 2>&1|awk '/Duration/ {print $2}')
-                TIME=${TIME/,/}
+                TIME=$(audio_length "$WORK_DIR/submenu.wav")
                 echo -e "Running:
                 sox $WORK_DIR/submenu.wav \
                 $WORK_DIR/submenu-processed.wav fade t $SM_FADE $TIME $SM_FADE" |sed 's/    */ /g'
@@ -4940,13 +4943,13 @@ else
 fi
 # if static then keep bg audio length (check later if -menu-audiolength opt used
 if $STATIC && [[ -n "$BG_AUDIO" ]]; then
-    TMP_TIME=$(ffmpeg -i "$BG_AUDIO" 2>&1|
-    awk '/Duration/ {print $2}')
-    TMP_TIME=$(unformat_time  ${TMP_TIME/,/})
+    TMP_TIME=$(audio_length "$BG_AUDIO")
     TMP_TIME=$(awk_math $TMP_TIME less $BG_AUDIO_SEEK float )
+    TMP_TIME=${TMP_TIME/,/.} # replace comma for comma delimited decimal locales
 else
     MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
 fi
+echo TMP_TIME is $TMP_TIME && sleep 5 #FIXME
 # use mplayer to dump audio if mplayer used for video
 # but first check if audio same file as video and its not a static menu
 if [[ $SC_FRAMESTYLE = "glass" && $BG_AUDIO = $SHOWCASE_FILE ]]; then
@@ -4982,8 +4985,7 @@ else # audio supplied: convert to wav then later to dvd/svcd format
         runtime_error
     fi
     if $AUDIO_FADE; then  # bgaudio supplied and audio fade selected
-        WAV_TIME=$(ffmpeg -i "$WORK_DIR/intro.wav" 2>&1|awk '/Duration/ {print $2}')
-        WAV_TIME=${WAV_TIME/,/}
+        WAV_TIME=$(audio_length "$WORK_DIR/intro.wav")
         echo "Running: "
         echo "sox $WORK_DIR/intro.wav $WORK_DIR/intro-processed.wav fade t \
         $FADE $WAV_TIME $FADE"
