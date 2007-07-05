@@ -125,10 +125,10 @@ function get_info ()
             echo $SEPARATOR
             echo "Identifying video with mplayer..."
             echo $SEPARATOR
-            mplayer -vo null -ao null -frames 1 -channels 6 -identify \
+            mplayer -vo null -ao null -frames 90 -channels 6 -identify \
                 "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
         else
-            mplayer -vo null -ao null -frames 1 -channels 6 -identify \
+            mplayer -vo null -ao null -frames 90 -channels 6 -identify \
                 "$INFILE" > "$SCRATCH_FILE" 2>&1
         fi
     fi
