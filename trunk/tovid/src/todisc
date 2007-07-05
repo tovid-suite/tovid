@@ -4,12 +4,13 @@ ME="[todisc]:"
 # todisc
 # Part of the tovid suite
 # =======================
-# A bash script for generating a DVD with animated thumbnail menus
+# A bash script for generating a DVD or SVCD
+# with many styles of animated and static menus,
 # from a collection of MPEG video files.
 #
 # Project homepage: http://www.tovid.org
-#
-#
+
+
 # Copyright (C) 2005 tovid.org <http://www.tovid.org>
 #
 # This program is free software; you can redistribute it and/or
@@ -180,6 +181,8 @@ TSET_TOT=1
 NONAME=false
 DO_INTRO=false
 USE_MPLAYER_4AUDIO=false
+BURN=false
+LC_NUMERIC="C"
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -352,41 +355,31 @@ function cleanup()
 
 function running_total ()
 {
-    awk -v offset=$offset '{
+    LC_ALL="C" awk -v offset=$offset '{
     for (i=1; i<=NF; i++) if (s=s+$i) printf("%s ",s);printf ("\n")}'
 }
 
 function awk_total()
 {
-    awk '{for (i=1; i<=NF; i++) s=s+$i}; END{print s}'
+    LC_ALL="C" awk '{for (i=1; i<=NF; i++) s=s+$i}; END{print s}'
 }
 
 function format_seconds()
 {
-    awk '{
+    LC_ALL="C"  awk '{
     hr=($1/3600); hd=(sprintf("%02d", hr))
     mr=((hr-hd)*60); md=(sprintf("%02d", mr))
     s=((mr-md)*60); sd=(sprintf("%02d", s))
     t=(sprintf("%02d:%02d:%06.3f" ,hd,md,s)); print t}' <<< $1
 }
 
-function awk_math()
+# TODO get rid of awk_math and use bc as below
+bc_math()
+# usage: bc_math "expression" [int]
 {
-    LC_ALL="C"
-    if [ $2 = "times" ]; then
-        OP=*
-    elif [ $2 = "by" ]; then
-        OP=/
-    elif [ $2 = "less" ]; then
-        OP=-
-    elif [ $2 = "plus" ]; then
-        OP=+
-    fi
-if [[ -n "$4" && "$4" = "float" ]]; then
-    awk 'BEGIN { printf("'"$1"'" '$OP' "'"$3"'")"\n" ; exit  }'
-else
-    awk -v A=$1 -v B=$3 'BEGIN { printf("%d\n", (A '$OP' B)); }'
-fi
+    bc_out=$(bc <<< "scale=3;$1" 2>/dev/null)
+    [[ -n $2 && $2 = "int" ]] && bc_out=${bc_out%.*}
+    echo "$bc_out"
 }
 
 function confirm_preview()
@@ -907,28 +900,34 @@ function parse_rotateargs()
     fi
 }
 
-function make_upbutton()
+function burn_disc()
+# FIXME get working with svcd too
 {
-upbutton="
-begin-base64 644 "$TODISC_WORK/upbutton.png"
-iVBORw0KGgoAAAANSUhEUgAAACQAAAA0EAYAAACyRkZAAAAABmJLR0T/////
-//8JWPfcAAAACXBIWXMAAABIAAAASABGyWs+AAAAwklEQVRo3u3YwQ2EUAwD
-UaD/nncvTAc4sb88BVjRO+a6WmuttdZaawb93rbv+KpHNXwKlAyI0qHkQJQK
-NQZEaVDjQJQCtQZE7lDrQOQKZQNEblB2QOQCZQtE21D2QLQFFQNE01BxQDQF
-FQtEaqh4IFJBHQOk6hig++3r3XggFQzFAqlhKA5oCoZigKZhyB5oC4ZsgbZh
-yA7IBYZsgNxgaB3IFYbWgNxhaBwoBYbGgNJgSA6UCiNr+8neWmuttdZac+gP
-ZbeIJQzWl6wAAAAASUVORK5CYII=
-====
-"
- 
-    uudecode <<< "$upbutton"
-    convert -rotate -90 "$TODISC_WORK/upbutton.png" "$TODISC_WORK/upbutton.png"
+    yecho
+    echo "You have indicated you want to burn the DVD directory"
+    echo "Would you like to burn the DVD now ?  Type 'yes' to continue: "
+    read input
+    echo
+    if [ ! -z "$input" -a "$input" = "yes" ]; then
+        echo "Proceeding to burn, continuing."
+        echo
+        if makedvd -burn -device "$BURN_DEVICE" $BURN_SPEED "$OUT_DIR" >> "$LOG_FILE" 2>&1; then
+            echo "Your DVD should be ready"
+        else
+            echo "There appears to have been a problem creating the DVD"
+            echo "Please see "$LOG_FILE" for details"
+        fi
+    else
+        echo "Not burning now - please see the parting message from todisc"
+        echo "for instructions on using makedvd or makevcd"
+    fi
 }
+
 function thanks_goodbye()
 {
     SCRIPT_END_TIME=`date +%s`
     SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
-    HHMMSS=`format_time $SCRIPT_TOT_TIME`
+    HHMMSS=`format_seconds $SCRIPT_TOT_TIME`
     echo
     echo $SEPARATOR
     echo "todisc took $HHMMSS to finish on $CPU_MODEL $CPU_SPEED mhz"
@@ -1504,6 +1503,18 @@ while test $# -gt 0; do
         "-is_titleset" ) #FIXME - this is useless
             TSET_MODE=:
             ;;
+        "-burn" )
+            BURN=:
+            ;;
+        "-device" )
+            shift
+            BURN_DEVICE="$1"
+            ;;
+        "-speed" )
+            shift
+            SPEED="$1"
+            BURN_SPEED="-speed $SPEED"
+            ;;
     esac
     $DO_SHIFT && shift
 done
@@ -1711,7 +1722,7 @@ yecho
 
 # create an array of grouped files. Hopefully LC_ALL=C takes care of sort issues
 if $GROUPING; then
-    LC_ALL=C grouping=( $WORK_DIR/${TSET_NUM}-group* )
+    LC_ALL="C" declare -a grouping=( $WORK_DIR/${TSET_NUM}-group*.mpg )
 fi
 
 # Remove any existing log file
@@ -1920,7 +1931,7 @@ fi
 #create seek value for each video
 for ((i=0; i<=NUM_FILES; i++)); do
     # translate SEEK_VAL into frames for transcode
-    SEEK_FRAMES[i]=$(awk_math ${SEEK_VAL[i]} times $FRAME_RATE)
+    SEEK_FRAMES[i]=$(bc_math "${SEEK_VAL[i]} * $FRAME_RATE" int)
 done
 # var for dcdemux and the navigation log
 #TCDEMUX_MODE="-M 0"
@@ -2712,7 +2723,7 @@ if $MIST; then
     mist_xdim_offset=$(( (mist_xdim - TITLE_TEXT_XDIM) / 2 ))
     if [[ $TITLE_GRAVITY = *st* ]]; then
         title_xoffset=${title_xoffset:-"+50"}
-        mist_xoffset="$( awk_math ${title_xoffset#*[-+]} less $mist_xdim_offset)"
+        mist_xoffset="$(bc_math "${title_xoffset#*[-+]} - $mist_xdim_offset" int)"
         [[ ${mist_xoffset:0:1} != [+-] ]] && mist_xoffset=+${mist_xoffset}
     else
         title_xoffset=${title_xoffset:-"+0"}
@@ -2752,6 +2763,7 @@ if $SHOWCASE && ! $NO_SC_THUMB; then
     if [[ -n "$SHOWCASE_VIDEO" ]]; then
         echo "Getting video images from $SHOWCASE_VIDEO"
         if [[ "$SC_FRAMESTYLE" = "glass" && -n "$SHOWCASE_VIDEO" ]]; then
+            # some vars for get_framed_pics()
             D=2
             OUTDIR="$WORK_DIR/showcase"
             OUT="$WORK_DIR/showcase_img.png"
@@ -2817,35 +2829,15 @@ fi
 # create the preview images
 if ! $TEXTMENU; then
     for ((i=0; i<=NUM_FILES; i++)) ; do
-        # use a nav_seek file if long seek
-        if [ ${SEEK_VAL[i]%.*} -gt 450 ]; then
-            NAVSEEK[i]="--nav_seek "${IN_FILES[i]}".nav_log"
-            NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
-            run_navseek()
-            {
-                yecho "Running "${NAVSEEK_CMD[@]}" > "${IN_FILES[i]}".nav_log"
-               "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "${IN_FILES[i]}".nav_log
-            }
-
-            run_navseek &
-            NS_PID="$!"
-            if [[ -n "$NS_PID" ]]; then
-                while ps -p $NS_PID >/dev/null; do
-                    sleep 2 # spinner interval
-                    spin "Creating a nav_seek log for "${IN_FILES[i]}": $SPINNER"
-                done
-            fi
-            length=( ${length[@]} $(( $(awk  '{ field = $2 }; END{ print field }' \
-            "${IN_FILES[i]}".nav_log) + 1)) )
-        fi
-            echo
-            echo "[$i of $NUM_FILES] Seeking to ${SEEK_VAL[i]} seconds in ${IN_FILES[i]}"
+        echo
+        echo "[$i of $NUM_FILES] Seeking to ${SEEK_VAL[i]} seconds in ${IN_FILES[i]}"
 
         FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" -an -ss ${SEEK_VAL[i]} -vframes 1 \
         -s $THUMB_SIZE $WORK_DIR/pics/$i/%06d.$IMG_FMT)
         CMD=( "${FFMPEG_CMD[@]}" )
         SED_VAR="frame="
         ! [[ "$SC_FRAMESTYLE" = "glass" ]] && echo -e "\nRunning: "${CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
+        # some vars for get_framed_pics()
         VOUT="png:z=7"; FRAMES=30
         FRAME_SIZE=$THUMB_SIZE
         D=2
@@ -2921,8 +2913,8 @@ if ! $TEXTMENU; then
         PVIEW_CMD0=(convert "${PICS[i]}" $RAISE)
         PVIEW_CMD1=(convert - $RAISE)
         PVIEW_CMD2=(convert - -write mpr:${i}img -fx A  +matte \
-        -blur 0x$( printf  "%.2f" $(awk_math 6.9 plus .${CURVE_ARRAY[i]/.} float) ) \
-        -shade $(awk_math 115 plus ${CURVE_ARRAY[i]})x30 -normalize mpr:${i}img -compose \
+        -blur 0x$( printf  "%.2f" $(bc_math "6.9 + .${CURVE_ARRAY[i]/.}") ) \
+        -shade $(bc_math "115 + ${CURVE_ARRAY[i]}" int)x30 -normalize mpr:${i}img -compose \
         Overlay -composite mpr:${i}img  -matte  -compose Dst_In -composite)
         PVIEW_CMD3=(convert -trim +repage - "${PICS[i]}")
         if $FEATHER; then
@@ -3454,36 +3446,14 @@ if [[ $MENU_NUM -eq 1 ]]; then
 fi
 # Store info about input files in an array
 for ((i=0; i<${#IN_FILES[@]}; i++)); do
-    # use a nav_seek file and transcode if long seek
-    if [ ${SEEK_VAL[i]%.*} -gt 450 ] || $SUB_MENU || $SWITCHED_MODE; then
-        if [ ! -s  "${IN_FILES[i]}".nav_log ]; then
-            NAVSEEK[i]="--nav_seek "${IN_FILES[i]}".nav_log"
-            NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
-            run_navseek()
-            {
-                yecho "Running "${NAVSEEK_CMD[@]}" > "${IN_FILES[i]}".nav_log"
-                "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" >  "${IN_FILES[i]}".nav_log
-            }
-
-            run_navseek &
-            NS_PID="$!"
-            if [[ -n "$NS_PID" ]]; then
-                while ps -p $NS_PID >/dev/null; do
-                    sleep 2 # spinner interval
-                    spin "Creating a nav_seek log for "${IN_FILES[i]/*\/}": $SPINNER"
-                done
-            fi
-        fi
+    if [[ $MENU_NUM -eq 1 ]]; then
+        echo
+        echo "Getting stats on "${IN_FILES[i]}""
+        idvid_stats[i]="$(idvid -terse "${IN_FILES[i]}" 2>/dev/null)"
     fi
     if [ -s  "${IN_FILES[i]}".nav_log ]; then
         length[i]="$(( $(awk '{ field = $2 }; END{ print field }' \
         "${IN_FILES[i]}".nav_log) + 1))"
-    fi
-    [[ $MENU_NUM -eq 1 ]] && echo
-    if [[ $MENU_NUM -eq 1 ]]; then
-        echo "Getting stats on "${IN_FILES[i]}""
-        idvid_stats[i]="$(idvid -terse -fast "${IN_FILES[i]}" 2>/dev/null)"
-        unset NAVSEEK_CMD
     fi
 done
 if $GROUPING &&  [[ $MENU_NUM -eq 1 ]]; then
@@ -3493,38 +3463,46 @@ if $GROUPING &&  [[ $MENU_NUM -eq 1 ]]; then
     for u in ${!grouping[@]}; do
         echo "Getting stats on "$(readlink "${grouping[u]}")""
         echo
-        group_idvid_stats[u]="$(idvid -terse -fast "${grouping[u]}" 2>/dev/null)"
+        group_idvid_stats[u]="$(idvid -terse "${grouping[u]}" 2>/dev/null)"
+        if [ -s "${grouping[u]}".nav_log ]; then
+            group_length[u]="$(( $(awk '{ field = $2 }; END{ print field }' \
+            "${grouping[u]}".nav_log) + 1))"
+        fi
     done
 fi
 
-# get length of videos in a separate loop from other stats (decode whole file)
+# get length of videos in a separate loop from other stats
+# if we are doing SVCD there will be no nav_seek file
 for i in ${!IN_FILES[@]}; do
     # if we have a non empty nav_log get the length from that
     if [ -s "${IN_FILES[i]}".nav_log ]; then
-        VID_LEN[i]=$(awk_math ${length[i]} by $FRAME_RATE float)
+        VID_LEN[i]=$(bc_math "${length[i]} / $FRAME_RATE")
     else # otherwise, we run mencoder to get the length
         VID_LEN[i]=$(vid_length  "${IN_FILES[i]}" )
     fi
-    VID_LEN[i]=${VID_LEN[i]/,/.} # replacement for comma delimited locales
     if [[ ${VID_LEN[i]%.*} -lt ${SEEK_VAL[i]%.*} ]]; then
         usage_error "A seek of ${SEEK_VAL[i]} seconds is too large for ${IN_FILES[i]}. The file is only ${VID_LEN[i]} seconds long"
     fi
 done
-# get the length of grouped files separately (with mencoder) as well
+# make sure we have the length of grouped files as well
 for g in ${!grouping[@]}; do
-    GROUP_VID_LEN[g]=$(vid_length "${grouping[g]}")
+    # if we have a non empty nav_log get the length from that
+    if [ -s "${grouping[g]}".nav_log ]; then
+        GROUP_VID_LEN[g]=$(bc_math "${group_length[g]} / $FRAME_RATE")
+    else # otherwise, we run mencoder to get the length
+        GROUP_VID_LEN[g]=$(vid_length "${grouping[g]}")
+    fi
 done
 if $GROUPING; then
     index=0
     for i in "${!IN_FILES[@]}"; do
         if [[ ${GROUP[i]} ]]; then
-            iter=( $BASEDIR/${TSET_NUM}-group-$((i+1))-* )
+            iter=( $BASEDIR/${TSET_NUM}-group-$((i+1))-*.mpg )
             for ((t=index; t<index+${#iter[@]}; t++)); do
                 # get lengths of group videos also in a seperate loop
                 # concatenate the group lengths in a string
                 GROUP_VID_LENGTHS[i]="${GROUP_VID_LENGTHS[i]} ${GROUP_VID_LEN[t]}"
 		        # replacement for comma delimited locales
-		        GROUP_VID_LENGTHS[i]=${GROUP_VID_LENGTHS[i]/,/.}
             done
             index=$((index+${#iter[@]}))
             unset iter
@@ -3556,24 +3534,24 @@ done
 # if animated submenu check if videos are long enough for the # of chapters
 if $ANI_SUB_MENU; then
     for ((i=0; i<=NUM_FILES; i++)); do
-        S=$(awk_math ${SEEK_VAL[i]} times $FRAME_RATE)
-        F=$(awk_math  "${CHAPTERS[i]}" times 340 )
-        V=$(awk_math "${VID_LEN[i]}" times $FRAME_RATE)
+        S=$(bc_math "${SEEK_VAL[i]} * $FRAME_RATE" int)
+        F=$(bc_math  "${CHAPTERS[i]} * 340" int )
+        V=$(bc_math "${VID_LEN[i]} * $FRAME_RATE" int)
         if [ $((V - S)) -le $F ] ; then
             echo "Sorry, you can not use ${CHAPTERS[i]} chapters for ${IN_FILES[i]}"
             echo "The maximum number for this video (using a -seek of ${SEEK_VAL[i]}):"
-            echo "$(awk_math $((V - S)) by 340) chapters"
+            echo "$(bc_math "($V - $S) / 340" int) chapters"
             exit 1
         fi
         unset V F
     done
 fi
 # allow animated menus of length of longest video
-MAX_ANI_LENGTH=$(awk_math $FRAME_RATE times $ANI_MENU_LENGTH)
+MAX_ANI_LENGTH=$(bc_math "$FRAME_RATE * $ANI_MENU_LENGTH" int)
 MAX_VAL_FRAMES="$((MAX_VAL * 30))"
 # if submenu selected, translate seconds of submenu length into # of frames
 if $ANI_SUB_MENU; then
-    ANI_SUBMENU_FRAMES=$(awk_math $FRAME_RATE times $ANI_SUBMENU_LENGTH)
+    ANI_SUBMENU_FRAMES=$(bc_math "$FRAME_RATE * $ANI_SUBMENU_LENGTH" int)
 fi
 
 ANI_FRAMES=$MAX_ANI_LENGTH
@@ -3594,6 +3572,7 @@ if ! $TEXTMENU; then
     echo
     echo "Creating $FRAMES images from each video for the main menu"
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
+        # some vars for get_framed_pics()
         D=2
         VOUT="png:z=7"
         FRAME_SIZE=$THUMB_SIZE
@@ -3612,6 +3591,9 @@ if ! $TEXTMENU; then
     else
         for ((i=0; i<=NUM_FILES; i++)) ; do
             echo "Working on "${IN_FILES[i]}""
+            if [ -s  "${IN_FILES[i]}".nav_log ]; then
+                NAVSEEK[i]="--nav_seek "${IN_FILES[i]}".nav_log"
+            fi
             TRANSCODE_CMD2=(nice transcode --print_status 10 \
             --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "${IN_FILES[i]}" \
             -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + $FRAMES)) ${NAVSEEK[i]} \
@@ -3661,7 +3643,7 @@ echo
 for ((s=0; s<=NUM_FILES; s++)); do
     # make appropriate chapter lengths for each video
     # get chapter lengths by dividing by $CHAPTERS, then getting running totals
-    CHAPT_INTERVALS[s]="$(awk_math ${VID_LEN[s]} by ${CHAPTERS[s]} float)"
+    CHAPT_INTERVALS[s]=$(bc_math "${VID_LEN[s]} / ${CHAPTERS[s]}")
     # <TODO if GROUPING:  for making chapter thumbs for the group
     # feed group chapter points to transcode in a loop to transcode as usual, but output
     # to different subdirs.  Then rename according to framenumber, moving all to the same subdir
@@ -3672,7 +3654,6 @@ for ((s=0; s<=NUM_FILES; s++)); do
     chapt_intervals=$(running_total <<< ${L[@]})
     chapters="$(for c in $chapt_intervals; do echo $(format_seconds $c); done)"
     # replace commas for comma delimited locales
-    chapters=${chapters//,/.}
     chapters="00:00:00.000 $chapters"
     if [ ${CHAPTERS[s]} = 1 ]; then chapters="00:00:00.000"; fi
     CHAPTS=$(for i in $chapters; do echo -n $i,;done)
@@ -3935,12 +3916,12 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
        [[ $MENU_NUM -eq 1 && ${CHAPTERS[i]} -ne 0 ]] && get_group_chapters $i format
         if ((${CHAPTERS[i]} == 0)); then
             echo -e "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\"/>"
-            for mpg in $BASEDIR/${TSET_NUM}-group-$((i+1))-*; do
+            for mpg in $BASEDIR/${TSET_NUM}-group-$((i+1))-*.mpg; do
                 echo -e "        <vob file=\"$mpg\"/>"
             done
         else
             echo -e "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\" $chpts0/>"
-            for mpg in $BASEDIR/${TSET_NUM}-group-$((i+1))-*; do
+            for mpg in $BASEDIR/${TSET_NUM}-group-$((i+1))-*.mpg; do
                 echo -e "        <vob file=\"$mpg\" ${chpts[++j]}/>"
             done
         fi
@@ -4086,7 +4067,7 @@ if $SUB_MENU; then
             TOTAL_JPEGS=${CHAPTERS[i]}
             PREFIX=${i}-
         fi
-        counts=$(awk_math ${CHAPT_INTERVALS[i]} times $FRAME_RATE)
+        counts=$(bc_math "${CHAPT_INTERVALS[i]} * $FRAME_RATE" int)
         CUT=( 30 $(running_total <<<  $(for ((a=0; a<${CHAPTERS[i]} ; a++)); \
         do echo -n "$counts ";done)) )
         for ((c=0; c<${#CUT[@]}; c++)); do
@@ -4094,13 +4075,9 @@ if $SUB_MENU; then
         done
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
-        # create a nav_seek log with tcdemux if not already present
-        NAVSEEK_CMD=(nice tcdemux  $TCDEMUX_MODE -f $FRAME_RATE -W -i "${IN_FILES[i]}")
-        if [ ! -s "${IN_FILES[i]}".nav_log ]; then
-            yecho "Running "${NAVSEEK_CMD[@]}" > "${IN_FILES[i]}".nav_log"
-            "${NAVSEEK_CMD[@]}"  2>> "$WORK_DIR/tc_pids" > "${IN_FILES[i]}".nav_log
+        if [ -s  "${IN_FILES[i]}".nav_log ]; then
+            NAVSEEK[i]="--nav_seek "${IN_FILES[i]}".nav_log"
         fi
-        NAVSEEK[i]="--nav_seek "${IN_FILES[i]}".nav_log"
         yecho
         yecho "Creating $TOTAL_JPEGS chapter images for "${IN_FILES[i]}""
         yecho
@@ -4414,6 +4391,7 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && ! $NO_SC_THUMB; then
     echo "Getting showcase video images from $SHOWCASE_VIDEO"
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
         FIND_FRAMES=$((FRAMES + 1)) # unfortunately mplayer starts at 1 not 0
+        # some vars for get_framed_pics()
         D=2
         FRAME_SIZE=$SHOWCASE_SIZE
         VOUT="png:z=7"
@@ -4525,13 +4503,13 @@ if ! $TEXTMENU; then
             -bordercolor none -)
             IM_CMD5=(convert - $THUMB_ROTATE -resize $THUMB_SIZE! "${PICS[p]}")
             IM_CMD6=(convert - -write mpr:img${p} -fx A  +matte \
-            -blur 0x$( printf "%.2f" $(awk_math 7 plus .${CURVE_ARRAY[p]/.} float) )  \
-            -shade $(awk_math 115 plus ${CURVE_ARRAY[p]} float)x30 -normalize mpr:img${p} \
+            -blur 0x$( printf "%.2f" $(bc_math "7 + .${CURVE_ARRAY[p]/.}") )  \
+            -shade $(bc_math "115 + ${CURVE_ARRAY[p]}")x30 -normalize mpr:img${p} \
             -compose Overlay -composite mpr:img${p} -matte -compose Dst_In -composite)
             IM_CMD7=(convert -trim +repage - )
             if $FEATHER &&  [ "$THUMB_SHAPE" != "normal" ] && $THUMBS_3D; then
-                CURVE_UPDATE="with -blur 0x$( printf  "%.2f" $(awk_math 7 plus .${CURVE_ARRAY[p]/.} float) ) \
-                -shade $( printf "%.2f" $(awk_math 115 plus ${CURVE_ARRAY[p]} float) )x30"
+                CURVE_UPDATE="with -blur 0x$( printf  "%.2f" $(bc_math "7 + .${CURVE_ARRAY[p]/.}") ) \
+                -shade $( printf "%.2f" $(bc_math "115 + ${CURVE_ARRAY[p]}") )x30"
             fi
             if $FEATHER; then
                 spin "\rProcessing $(awk -F / '{ print $NF }' <<< "${PICS[p]}") \
@@ -4944,12 +4922,10 @@ fi
 # if static then keep bg audio length (check later if -menu-audiolength opt used
 if $STATIC && [[ -n "$BG_AUDIO" ]]; then
     TMP_TIME=$(audio_length "$BG_AUDIO")
-    TMP_TIME=$(awk_math $TMP_TIME less $BG_AUDIO_SEEK float )
-    TMP_TIME=${TMP_TIME/,/.} # replace comma for comma delimited decimal locales
+    TMP_TIME=$(bc_math "$TMP_TIME - $BG_AUDIO_SEEK")
 else
     MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
 fi
-echo TMP_TIME is $TMP_TIME && sleep 5 #FIXME
 # use mplayer to dump audio if mplayer used for video
 # but first check if audio same file as video and its not a static menu
 if [[ $SC_FRAMESTYLE = "glass" && $BG_AUDIO = $SHOWCASE_FILE ]]; then
@@ -5085,6 +5061,7 @@ $VMGM_ONLY && $KEEP_FILES && mv -v "$REAL_WORK_DIR" "$BASEDIR"/VMGM
 #rm -fv "$WORK_DIR"
 if ! $VMGM_ONLY && ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
     thanks_goodbye
+    $BURN && burn_disc
 fi
 ! $DO_TITLESETS && cleanup
 exit 0
