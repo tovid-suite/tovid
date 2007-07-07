@@ -128,6 +128,7 @@ USER_BSTYLE=false
 SHOWCASE_SEEK_VAL=2
 BG_SEEK=2
 BG_AUDIO_SEEK=2
+USER_BG_AUDIO_SEEK=false
 NO_SC_THUMB=false
 TEXTMENU=false
 SC_TITLE_ALIGN=center
@@ -1333,9 +1334,10 @@ while test $# -gt 0; do
         "-bgaudio" )
             shift
             if [[ $1 = "none" ]]; then
-                BG_AUDIO="none"
+                BG_AUDIO="none" # for switched menus
             else
                 BG_AUDIO="$(abspath "$1")"
+                BG_AUDIO=:
                 if [[ ! -e "$BG_AUDIO" ]]; then
                     usage_error "$BG_AUDIO does not exist"
                 fi
@@ -1416,6 +1418,7 @@ while test $# -gt 0; do
         "-bgaudio-seek" )
             shift
             BG_AUDIO_SEEK="$1"
+            USER_BG_AUDIO_SEEK=:
             ;;
         "-showcase-geo" )
             ADV_OPT=( "${ADV_OPT[@]}" "$1" )
@@ -3341,10 +3344,12 @@ unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
 ###############################################################################
 
 # if -bgvideo selected, but not -bgaudio, offer to use audio from bgvideo
+# if "none" is passed for BG_AUDIO it means we are doing switched menus
+# in which case we want to skip this step anyway
 if ! $NOASK; then
+    BGVIDEO_STATS=$(idvid -terse -fast "$BG_VIDEO" 2>&1)
     if [[ -n "$BG_VIDEO" && -z "$BG_AUDIO" ]]; then
-        if ! mencoder -quiet "$BG_VIDEO" -oac pcm -ovc copy -frames 0 \
-        -o /dev/null 2>&1|grep Audio 2>&1 >/dev/null; then
+        if grep -q "A_NOAUDIO=:" <<< "$BGVIDEO_STATS"; then
             :
         else
             echo "You selected -bgvideo but not -bgaudio"
@@ -3360,42 +3365,10 @@ if ! $NOASK; then
     fi
 fi
 
-# if doing switched menus, use the bgaudio from each video
-# unless "none" is passed for -bgaudio
-if $SWITCHED; then
-    yecho
-    SHOWCASE_SEEK_VAL=${SEEK_VAL[vid]}
-    let vid=MENU_NUM-1
-    # if no audio is detected in the video
-    if ! mencoder -quiet "${FILES[vid]}" -oac pcm -ovc copy -frames 0 \
-    -o /dev/null 2>&1 |grep Audio 2>&1 >/dev/null; then
-        # -bgaudio is not passed, or passed as 'none', use silence
-        if [[ -z $BG_AUDIO || $BG_AUDIO = "none" ]]; then
-            yecho "Using silence as audio background for "${FILES[vid]}""
-        elif [[ -n $BG_AUDIO && $BG_AUDIO != "none" ]]; then # -bgaudio is passed, use the provided file
-            [[ $BG_AUDIO != "none" ]] && \
-            yecho "Using $BG_AUDIO as audio background for "${FILES[vid]}""
-        fi    
-    else # audio detected in the video
-        if [[ -z $BG_AUDIO ]]; then 
-            # use the audio from each video for each switched menu
-            BG_AUDIO="${FILES[vid]}"
-            ! $STATIC && BG_AUDIO_SEEK=${SEEK_VAL[vid]} # same audio and video seek
-            yecho "Using audio from "${FILES[vid]}" for the audio background,"
-            ! $STATIC && yecho "using the same seek value for the audio as the video"
-            yecho "If you wish to use silence for the swotched menu,"
-            yecho "use '-bgaudio none'"
-        else
-            if [[ $BG_AUDIO = "none" ]]; then # no audio if -bgaudio none
-                BG_AUDIO=""
-            else # BG_AUDIO="$BG_AUDIO" if -bgaudio supplied and not 'none'
-                yecho "Using "$BG_AUDIO" as audio background for "${FILES[vid]}""
-            fi
-        fi
-    fi 
-    yecho
-fi
-
+# find out the length of the -bgaudio FILE, if there is one
+[[ -n "$BG_AUDIO" ]] && BG_AUDIOLENGTH=$(audio_length "$BG_AUDIO")
+# if static menu and no background audio, ignore MENU_AUDIOLENGTH
+$STATIC && [[ -z "$BG_AUDIO" ]] && ! $SWITCHED && unset MENU_AUDIOLENGTH
 # Check input files for compliance; offer to tovid-encode non-compliant files
 if ! $VMGM_ONLY; then
     check_compliance
@@ -3451,9 +3424,9 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
         echo "Getting stats on "${IN_FILES[i]}""
         idvid_stats[i]="$(idvid -terse "${IN_FILES[i]}" 2>/dev/null)"
     fi
-    if [ -s  "${IN_FILES[i]}".nav_log ]; then
+    if [ -s  "${IN_FILES[i]}.nav_log" ]; then
         length[i]="$(( $(awk '{ field = $2 }; END{ print field }' \
-        "${IN_FILES[i]}".nav_log) + 1))"
+        "${IN_FILES[i]}.nav_log") + 1))"
     fi
 done
 if $GROUPING &&  [[ $MENU_NUM -eq 1 ]]; then
@@ -3461,12 +3434,13 @@ if $GROUPING &&  [[ $MENU_NUM -eq 1 ]]; then
     echo ". . . Getting stats on grouped files now . . ."
     echo
     for u in ${!grouping[@]}; do
-        echo "Getting stats on "$(readlink "${grouping[u]}")""
+        CUR_VID=$(readlink "${grouping[u]}")
+        echo "Getting stats on "$CUR_VID""
         echo
-        group_idvid_stats[u]="$(idvid -terse "${grouping[u]}" 2>/dev/null)"
-        if [ -s "${grouping[u]}".nav_log ]; then
+        group_idvid_stats[u]="$(idvid -terse "$CUR_VID" 2>/dev/null)"
+        if [ -s "$CUR_VID.nav_log" ]; then
             group_length[u]="$(( $(awk '{ field = $2 }; END{ print field }' \
-            "${grouping[u]}".nav_log) + 1))"
+            "$CUR_VID.nav_log") + 1))"
         fi
     done
 fi
@@ -3486,8 +3460,8 @@ for i in ${!IN_FILES[@]}; do
 done
 # make sure we have the length of grouped files as well
 for g in ${!grouping[@]}; do
-    # if we have a non empty nav_log get the length from that
-    if [ -s "${grouping[g]}".nav_log ]; then
+    # if we have a value for ${group_length[g]}  get the length from that
+    if [[ -n "${group_length[g]}" ]]; then
         GROUP_VID_LEN[g]=$(bc_math "${group_length[g]} / $FRAME_RATE")
     else # otherwise, we run mencoder to get the length
         GROUP_VID_LEN[g]=$(vid_length "${grouping[g]}")
@@ -3520,6 +3494,52 @@ if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]] && $GROUPING; then
     echo; echo $SEPARATOR
 fi
 echo
+
+# if doing switched menus, use the bgaudio from each video
+# unless "none" is passed for -bgaudio
+if $SWITCHED; then
+    yecho
+    SHOWCASE_SEEK_VAL=${SEEK_VAL[vid]}
+    let vid=MENU_NUM-1
+    # if no audio is detected in the video
+    if grep -q "A_NOAUDIO=:" <<< "${idvid_stats[vid]}"; then
+        # if -bgaudio is not passed, or passed as 'none', use silence
+        if [[ -z $BG_AUDIO || $BG_AUDIO = "none" ]]; then
+            yecho "Using silence as audio background for "${FILES[vid]}""
+        # if -bgaudio is passed, use the provided file
+        else
+            yecho "Using $BG_AUDIO as audio background for "${FILES[vid]}""
+        fi    
+    else # audio detected in the video
+        if [[ -z $BG_AUDIO && $BG_AUDIO != "none" ]]; then
+            # use the audio from each video for each switched menu
+            BG_AUDIO="${FILES[vid]}"
+            [[ -z $MENU_AUDIOLENGTH ]] && MENU_AUDIOLENGTH=${VID_LEN[vid]}
+            if $STATIC; then
+                # start audio at the beginning unless user passes -bgaudio-seek
+                ! $USER_BG_AUDIO_SEEK && BG_AUDIO_SEEK=0
+                # make sure we don't make the menu audio longer than the video
+                if test $(bc <<< "($MENU_AUDIOLENGTH + ${SEEK_VAL[vid]}) > ${VID_LEN[vid]}") -eq 1; then
+                    MENU_AUDIOLENGTH=${VID_LEN[vid]}
+                fi
+            else
+                # same seek value as video unless user passes -bgaudio-seek
+                ! $USER_BG_AUDIO_SEEK && BG_AUDIO_SEEK=${SEEK_VAL[vid]}
+            fi
+            yecho "Using audio from "${FILES[vid]}" for the audio background,"
+            ! $STATIC && yecho "using the same seek value for the audio as the video"
+            yecho "If you wish to use silence for the swotched menu,"
+            yecho "use '-bgaudio none'"
+        else
+            if [[ $BG_AUDIO = "none" ]]; then # no audio if -bgaudio none
+                BG_AUDIO=""
+            else # BG_AUDIO="$BG_AUDIO" if -bgaudio supplied and not 'none'
+                yecho "Using "$BG_AUDIO" as audio background for "${FILES[vid]}""
+            fi
+        fi
+    fi 
+    yecho
+fi
 for ((i=0; i<${#VID_LEN[@]}; i++)); do
     NEW_LENGTH=( ${NEW_LENGTH[@]}   ${VID_LEN[i]%.*} )
 done
@@ -4879,9 +4899,12 @@ echo
 echo "Converting images to video stream and encoding to DVD-compliant format"
 # convert images to video stream and encode to dvd compliant m2v
 if $STATIC; then
-    if [[ -n "$MENU_AUDIOLENGTH" ]]; then
+    # we have a value for MENU_AUDIOLENGTH AND BG_AUDIO
+    if [[ -n "$MENU_AUDIOLENGTH" && -n "$BG_AUDIO" && "$BG_AUDIO" != "none" ]]; then
         LOOPS=$( bc <<< "$MENU_AUDIOLENGTH * $FRAME_RATE")
         LOOPS=${LOOPS%.*}
+    elif [[ -z "$MENU_AUDIOLENGTH" && -n "$BG_AUDIO" ]]; then
+        LOOPS=${BG_AUDIOLENGTH%.*}
     else
         LOOPS=60
     fi
@@ -4920,23 +4943,22 @@ else
     runtime_error  "The menu video file does not appear to have been created"
 fi
 # if static then keep bg audio length (check later if -menu-audiolength opt used
-if $STATIC && [[ -n "$BG_AUDIO" ]]; then
-    TMP_TIME=$(audio_length "$BG_AUDIO")
-    TMP_TIME=$(bc_math "$TMP_TIME - $BG_AUDIO_SEEK")
+if $STATIC && [[ -n "$BG_AUDIOLENGTH" ]]; then
+    MENU_ATIME=$(bc_math "$BG_AUDIOLENGTH - $BG_AUDIO_SEEK")
 else
     MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
 fi
+# if -menu-audio-length LENGTH was passed, override the above MENU_ATIME
+if [[ -n "$MENU_AUDIOLENGTH" ]] && $STATIC; then MENU_ATIME=$MENU_AUDIOLENGTH; fi
 # use mplayer to dump audio if mplayer used for video
 # but first check if audio same file as video and its not a static menu
 if [[ $SC_FRAMESTYLE = "glass" && $BG_AUDIO = $SHOWCASE_FILE ]]; then
     ! $STATIC && USE_MPLAYER_4AUDIO=:
 fi
-if [[ -n "$MENU_AUDIOLENGTH" ]] && $STATIC; then MENU_ATIME=$MENU_AUDIOLENGTH; fi
-MENU_ATIME=${MENU_ATIME:-$TMP_TIME}
 
 BG_AUDIO_LENGTH="-t $MENU_ATIME"
 # create audio background for the main menu
-if [[ -z "$BG_AUDIO" ]]; then # no audio supplied: use silence
+if [[ -z "$BG_AUDIO" || "$BG_AUDIO" = "none" ]]; then # no audio: use silence
     cat /dev/zero 2>/dev/null | nice -n 0 sox -t raw -c 2 -r 48000 -w \
     -s - $WORK_DIR/intro.wav  trim 0 $MENU_ATIME
 # Make sure file exists
