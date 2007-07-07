@@ -51,6 +51,7 @@ Any preceding '-'s before option names are ignored. To parse command-line
 options given to your script, call update() with the list of arguments from
 sys.argv[1:] (everything after the program name).
 """
+
 __all__ = [\
     'Option',
     'OptionDict']

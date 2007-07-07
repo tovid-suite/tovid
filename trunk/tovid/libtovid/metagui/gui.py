@@ -275,7 +275,7 @@ class Application (tk.Frame):
         args = self.get_args()
         command = Command(self.program, *args)
         print "Running command:", str(command)
-        print "(not really)"
+        command.run()
 
 ### --------------------------------------------------------------------
 from support import ConfigWindow, Style
