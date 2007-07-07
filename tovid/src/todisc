@@ -183,7 +183,6 @@ NONAME=false
 DO_INTRO=false
 USE_MPLAYER_4AUDIO=false
 BURN=false
-LC_NUMERIC="C"
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -325,12 +324,6 @@ function cleanup()
 {
     echo
     yecho "Cleaning up..."
-    if test -s "$WORK_DIR/tc_pids"; then
-        TCPIDS=$(awk -F"=" '/pid=/ {print $2}' "$WORK_DIR/tc_pids" | cut -f1 -d')'|sort|uniq)
-        for i in $TCPIDS; do
-            if  kill -0 $i 2> /dev/null; then kill -9 $i 2> /dev/null;fi
-        done
-    fi
     if test -s "$WORK_DIR/tcode*.pid"; then
         for pidfile in "$WORK_DIR/tcode*.pid"; do
             if kill -0 $(<$pidfile) 2> /dev/null; then kill -9 $(<$pidfile) 2> /dev/null; fi
@@ -2916,7 +2909,7 @@ if ! $TEXTMENU; then
         PVIEW_CMD0=(convert "${PICS[i]}" $RAISE)
         PVIEW_CMD1=(convert - $RAISE)
         PVIEW_CMD2=(convert - -write mpr:${i}img -fx A  +matte \
-        -blur 0x$( printf  "%.2f" $(bc_math "6.9 + .${CURVE_ARRAY[i]/.}") ) \
+        -blur 0x$( LC_ALL="C" bash -c "printf  "%.2f" $(bc_math "6.9 + .${CURVE_ARRAY[i]/.}")" ) \
         -shade $(bc_math "115 + ${CURVE_ARRAY[i]}" int)x30 -normalize mpr:${i}img -compose \
         Overlay -composite mpr:${i}img  -matte  -compose Dst_In -composite)
         PVIEW_CMD3=(convert -trim +repage - "${PICS[i]}")
@@ -4523,13 +4516,13 @@ if ! $TEXTMENU; then
             -bordercolor none -)
             IM_CMD5=(convert - $THUMB_ROTATE -resize $THUMB_SIZE! "${PICS[p]}")
             IM_CMD6=(convert - -write mpr:img${p} -fx A  +matte \
-            -blur 0x$( printf "%.2f" $(bc_math "7 + .${CURVE_ARRAY[p]/.}") )  \
+            -blur 0x$( LC_ALL="C" bash -c "printf "%.2f" $(bc_math "7 + .${CURVE_ARRAY[p]/.}")" )  \
             -shade $(bc_math "115 + ${CURVE_ARRAY[p]}")x30 -normalize mpr:img${p} \
             -compose Overlay -composite mpr:img${p} -matte -compose Dst_In -composite)
             IM_CMD7=(convert -trim +repage - )
             if $FEATHER &&  [ "$THUMB_SHAPE" != "normal" ] && $THUMBS_3D; then
-                CURVE_UPDATE="with -blur 0x$( printf  "%.2f" $(bc_math "7 + .${CURVE_ARRAY[p]/.}") ) \
-                -shade $( printf "%.2f" $(bc_math "115 + ${CURVE_ARRAY[p]}") )x30"
+                CURVE_UPDATE="with -blur 0x$( LC_ALL="C" bash -c "printf  "%.2f" $(bc_math "7 + .${CURVE_ARRAY[p]/.}")" ) \
+                -shade $( LC_ALL="C" bash -c "printf "%.2f" $(bc_math "115 + ${CURVE_ARRAY[p]}")" )x30"
             fi
             if $FEATHER; then
                 spin "\rProcessing $(awk -F / '{ print $NF }' <<< "${PICS[p]}") \
