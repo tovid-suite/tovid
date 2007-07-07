@@ -3603,12 +3603,13 @@ if ! $TEXTMENU; then
     else
         for ((i=0; i<=NUM_FILES; i++)) ; do
             echo "Working on "${IN_FILES[i]}""
-            if [ -s  "${IN_FILES[i]}".nav_log ]; then
-                NAVSEEK[i]="--nav_seek "${IN_FILES[i]}".nav_log"
+            if [ -s  "${IN_FILES[i]}.nav_log" ]; then
+                NAV_SEEK[i]="--nav_seek"
+                NAVSEEK[i]="${IN_FILES[i]}.nav_log"
             fi
             TRANSCODE_CMD2=(nice transcode --print_status 10 \
             --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "${IN_FILES[i]}" \
-            -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + $FRAMES)) ${NAVSEEK[i]} \
+            -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + $FRAMES)) ${NAV_SEEK[i]} "${NAVSEEK[i]}" \
             -o "$WORK_DIR/pics/$i/" -f $FRAME_RATE  -Z $THUMB_SIZE $EXPORT)
 
                     function run_transcode()
@@ -4088,19 +4089,20 @@ if $SUB_MENU; then
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
         if [ -s  "${IN_FILES[i]}".nav_log ]; then
-            NAVSEEK[i]="--nav_seek "${IN_FILES[i]}".nav_log"
+            NAV_SEEK[i]="--nav_seek"
+            NAVSEEK[i]="${IN_FILES[i]}.nav_log"
         fi
         yecho
         yecho "Creating $TOTAL_JPEGS chapter images for "${IN_FILES[i]}""
         yecho
         for t in "${cmd[@]}"; do
             echo "Running nice transcode --print_status 10 -q 1 -i "${IN_FILES[i]}" \
-            ${NAVSEEK[i]} -o $WORK_DIR/submenu/ \
+            ${NAV_SEEK[i]} "${NAVSEEK[i]}" -o $WORK_DIR/submenu/ \
             -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null" |
             sed 's/    */ /g'|sed -e "s/^ *//"|tee -a "$LOG_FILE"
 
             TCODE_CMD=(nice transcode --print_status 10 --write_pid $WORK_DIR/tcode$i.pid \
-            -q 1 -i "${IN_FILES[i]}"   ${NAVSEEK[i]} -o "${PICS_OUT[@]}" \
+            -q 1 -i "${IN_FILES[i]}"  ${NAV_SEEK[i]} "${NAVSEEK[i]}" -o "${PICS_OUT[@]}" \
             -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null)
             function run_transcode()
             {
