@@ -1330,7 +1330,6 @@ while test $# -gt 0; do
                 BG_AUDIO="none" # for switched menus
             else
                 BG_AUDIO="$(abspath "$1")"
-                BG_AUDIO=:
                 if [[ ! -e "$BG_AUDIO" ]]; then
                     usage_error "$BG_AUDIO does not exist"
                 fi
