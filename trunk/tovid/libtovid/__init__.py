@@ -49,6 +49,7 @@ __all__ = [\
     'odict',
     'opts',
     'output',
+    'playtime',
     'spumux',
     'standard',
     'stats',
