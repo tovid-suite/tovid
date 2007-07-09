@@ -871,6 +871,18 @@ fi
 #
 # ******************************************************************************
 
+# hack alert: ffmpeg is broken for encoding from audio
+if [[ $TGT_RES = *VCD* && $TGT_RES != "DVD-VCD" ]]; then
+    if ! $USE_FFMPEG || $DO_NORM; then
+        yecho
+        yecho "Sorry, for $TGT_RES output, mpeg2enc encoding and normalizing have been disabled"
+        yecho "Setting new options for you"
+        yecho
+        sleep 10
+        USE_FFMPEG=: && DO_NORM=false
+    fi
+fi
+
 # Can't do -subtitles with -ffmpeg; if both were used, print error and exit
 # TODO: Support subtitles in ffmpeg!
 if $USE_FFMPEG && $DO_SUBS; then
