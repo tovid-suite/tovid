@@ -361,14 +361,18 @@ function bc_math()
 
 
 # ******************************************************************************
-# Countdown 5 seconds, then return
-# TODO: Take argument # of seconds
+# Countdown N seconds, then return
+# N defaults to 5 seconds if no args to function
+# usage: countdown [SECONDS]
 # ******************************************************************************
-function countdown()
+countdown ()
 {
-    for _CNTR in 5 4 3 2 1; do
-        echo -n -e " in $_CNTR seconds...\r"
-        sleep 1s
+    [[ -n $1 ]] && LAST=$1 || LAST=5
+    count=$(seq 1 $LAST)
+    for _CNTR in $(sort -nr <<< "$count")
+    do
+        echo -n -e " in $_CNTR seconds...\r";
+        sleep 1s;
     done
 }
 
