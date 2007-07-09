@@ -898,22 +898,23 @@ function burn_disc()
 # FIXME get working with svcd too
 {
     yecho
-    echo "You have indicated you want to burn the DVD directory"
-    echo "Would you like to burn the DVD now ?  Type 'yes' to continue: "
+    echo "You have indicated you want to burn the $BURN_TGT_STR"
+    echo "Would you like to burn the ${BURN_TGT_STR/ *} now ?"
+    echo -n "Type 'yes' to continue: "
     read input
     echo
     if [ ! -z "$input" -a "$input" = "yes" ]; then
         echo "Proceeding to burn, continuing."
         echo
-        if makedvd -burn -device "$BURN_DEVICE" $BURN_SPEED "$OUT_DIR" >> "$LOG_FILE" 2>&1; then
-            echo "Your DVD should be ready"
+        if $BURN_PROG -burn -device "$BURN_DEVICE" $BURN_SPEED "$BURN_TGT" | tee -a "$LOG_FILE" 2>&1; then
+            echo "Your ${BURN_TGT_STR/ *} should be ready"
         else
-            echo "There appears to have been a problem creating the DVD"
+            echo "There appears to have been a problem creating the ${BURN_TGT_STR/ *}"
             echo "Please see "$LOG_FILE" for details"
         fi
     else
         echo "Not burning now - please see the parting message from todisc"
-        echo "for instructions on using makedvd or makevcd"
+        echo "for instructions on using $BURN_PROG"
     fi
 }
 
@@ -2042,6 +2043,7 @@ fi
 
 
 # TODO: Merge these globals with the ones up top
+# only the 1st 6 are mergable - keeping them here for debugging this beast :)
 DVD_GEO_ARRAY=(320x240 272x204 192x144 192x144 184x138 184x138 136x102 136x102 \
 120x90 120x90 120x90 120x90 96x72 96x72 96x72 96x72 96x72 96x72 96x72 96x72 \
 80x60 80x60 80x60 80x60 80x60 80x60 80x60 80x60 80x60 80x60 60x40 40x30)
@@ -2092,6 +2094,9 @@ if  [ $TARGET = "dvd" ]; then
     FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 230KiB -aspect 4:3"
     ASPECT="-aspect $ASPECT_RATIO"
     SHOWCASE_SIZE=384x256
+    BURN_TGT="$OUT_DIR"
+    BURN_TGT_STR="DVD directory"
+    BURN_PROG="makedvd"
     if [ $TV_STANDARD = "ntsc" ]; then
         VIDSIZE="720x480"
         FRAME_RATE=29.970
@@ -2107,6 +2112,9 @@ elif [ $TARGET = "svcd" ]; then
     FFMPEG_OPTS="-b 2200k -minrate 2200k -maxrate 2200k -bufsize 112KiB -aspect 4:3"
     ASPECT="-aspect $ASPECT_RATIO"
     SHOWCASE_SIZE=256x256
+    BURN_TGT="${OUT_FILE}.xml"
+    BURN_TGT_STR="SVCD image"
+    BURN_PROG="makevcd"
     if [ $TV_STANDARD = "ntsc" ]; then
         VIDSIZE="480x480"
         FRAME_RATE=29.970
@@ -3385,6 +3393,8 @@ tovid_reencode()
         fi
     fi
     yecho
+    yecho "Converting files to $TGT_CAPS format with 'tovid'"
+    countdown
     tovid $NO_ASK -in "$VIDEO_IN" -slice 0-$((VIDEO_IN_SEEK + ANI_MENU_LENGTH)) -$TV_STANDARD \
     -$TARGET -in "$VIDEO_IN" -out "$VIDEO_IN.enc" $TOVID_OPTS
     # See if output file exists
@@ -4001,20 +4011,30 @@ if ! $TITLESET_MODE && ! $DO_TITLESETS; then
     fi
     VMGM_TIME=$(vid_length "$WORK_DIR/dummy.m2v")
     yecho
-    mencoder "$WORK_DIR/dummy.m2v"  -ovc copy -oac pcm -o /dev/null >>"$LOG_FILE.tmp" 2>&1
     SED_VAR="Pos"
     cleanlog 3
     yecho
-    BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME \
-    $AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
-    yecho "${BGAUDIO_CMD[@]}"
-    if "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then #run command
+    # temporarily use mp2enc for svcd audio as ffmpeg broken # FIXME
+    # see r2162 todisc or older for how to fix this block when ffmpeg is fixed
+    if [[ $TARGET = "dvd" ]]; then
+        BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME \
+        $AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
+        yecho "${BGAUDIO_CMD[@]}"
+        "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1
+    else
+        # generate wav from /dev/zero
+        ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME -ar 48000 \
+        -ac 2 -acodec pcm_s16le -y "$WORK_DIR/dummy.wav"
+        BGAUDIO_CMD=(mp2enc -r 44100 -o "$WORK_DIR/dummy.$AUDIO_EXT")
+        echo "Running "${BGAUDIO_CMD[@]}" < $WORK_DIR/dummy.wav" | fold -bs >> "$LOG_FILE"
+        "${BGAUDIO_CMD[@]}" < "$WORK_DIR/dummy.wav" 2>&1 |fold -bs >> "$LOG_FILE.tmp"
+    fi
+    if [[ -s "$WORK_DIR/dummy.$AUDIO_EXT" ]]; then
         cleanlog 3
     else
         cleanlog 3
         runtime_error
     fi
-
     MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -o  "$BASEDIR/dummy.mpg" \
      "$WORK_DIR/dummy.$AUDIO_EXT"  "$WORK_DIR/dummy.m2v")
     echo "Running: "${MPLEX_CMD[@]}"" >> "$LOG_FILE.tmp"
@@ -4991,11 +5011,20 @@ fi
 unset BGAUDIO_CMD TIME
 
 # convert to proper audio format
-BGAUDIO_CMD=(ffmpeg -i $WORK_DIR/intro.wav \
-$AUDIO_OPTS -y $WORK_DIR/intro.$AUDIO_EXT)
-if "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then
+# temporarily have to use mp2enc for svcd as ffmpeg broken FIXME
+# see r2162 todisc or older for how to fix this block when ffmpeg is fixed
+if [[ $TARGET = "dvd" ]]; then
+    BGAUDIO_CMD=(ffmpeg -i $WORK_DIR/intro.wav \
+    $AUDIO_OPTS -y $WORK_DIR/intro.$AUDIO_EXT)
+    yecho "Running "${BGAUDIO_CMD[@]}"" | fold -bs >> "$LOG_FILE"
+    "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1
+else
+    BGAUDIO_CMD=(mp2enc -r 44100 -o $WORK_DIR/intro.$AUDIO_EXT)
+    "${BGAUDIO_CMD[@]}" < "$WORK_DIR/intro.wav" 2>&1 |fold -bs >> "$LOG_FILE.tmp"
+fi
+if [[ -s $WORK_DIR/intro.$AUDIO_EXT ]]; then
     cleanlog 3
-    else
+else
     cleanlog 3
     runtime_error
 fi
@@ -5066,7 +5095,8 @@ if [ "$TARGET" = "dvd" ] && $AUTHOR && ! $VMGM_ONLY && ! $DO_TITLESETS && ! $SWI
     fi
 elif [ "$TARGET" = "svcd" ]; then
     makexml -svcd -menu $WORK_DIR/intro.mpg "${IN_FILES[@]}" -out "$OUT_FILE"
-    vcdxbuild -b "${OUT_FILE}.bin" -c "${OUT_FILE}.cue"  "${OUT_FILE}.xml"
+    makevcd "${OUT_FILE}.xml"
+#    vcdxbuild -b "${OUT_FILE}.bin" -c "${OUT_FILE}.cue"  "${OUT_FILE}.xml"
 fi
 echo "Cleaning up unwanted files in $REAL_WORK_DIR"
 find "$WORK_DIR"/ -name '*.png' ! -name Highlight.png ! -name Select.png -exec rm -f {} \; > /dev/null 2>&1
