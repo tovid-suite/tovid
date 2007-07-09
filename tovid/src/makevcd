@@ -186,6 +186,14 @@ if $BURN; then
     $QUIET || echo "Please insert a blank CD-R(W) disc into your CD-recorder"
     $QUIET || echo "($CDRW_DEVICE) if you have not already done so."
 
+    # check for cdrw and blank if so
+    if cdrdao disk-info --device /dev/hdc --driver generic-mmc 2>&1 |
+    grep -q CD-RW.*yes; then
+    echo $SEPARATOR
+    echo "Found rewritable CD - starting to blank in 10 seconds - press ctrl-c to quit"
+    countdown 10
+	cdrdao blank --driver generic-mmc  $CDRW_DEVICE
+    fi 
     # Burn the disc
     CDRDAO_CMD="cdrdao write --device $CDRW_DEVICE --driver generic-mmc \
         --speed $BURN_SPEED \"$VCDIMAGER_XML.cue\""
