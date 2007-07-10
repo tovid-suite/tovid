@@ -3518,6 +3518,8 @@ if $SWITCHED; then
             BG_AUDIO="${FILES[vid]}"
             [[ -z $MENU_AUDIOLENGTH ]] && MENU_AUDIOLENGTH=${VID_LEN[vid]}
             if $STATIC; then
+                # default for audio length if -menu-audio-length not passed
+                [[ -z $MENU_AUDIOLENGTH ]] && MENU_AUDIOLENGTH=30
                 # start audio at the beginning unless user passes -bgaudio-seek
                 ! $USER_BG_AUDIO_SEEK && BG_AUDIO_SEEK=0
                 # make sure we don't make the menu audio longer than the video
