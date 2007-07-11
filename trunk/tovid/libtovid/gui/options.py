@@ -12,7 +12,7 @@ import os
 import wx
 
 import libtovid
-from libtovid import Group
+from libtovid.author import Group
 from libtovid.gui.constants import *
 from libtovid.gui.configs import TovidConfig
 from libtovid.gui.util import _
