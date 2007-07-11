@@ -83,6 +83,16 @@ function abspath()
 }
 
 # ******************************************************************************
+# test if input is a number or not
+# returns true or false exit code ( 0 or 1 )
+# usage: test_is_number INPUt
+# ******************************************************************************
+function test_is_number()
+{
+    [[ $1 && $1 =~ ^[-+]?[0-9]*\(\.[0-9]+\)?$ ]]
+}
+
+# ******************************************************************************
 # Create a unique temporary directory and return its name
 # Input args: $1 = Base name (i.e., "work_dir")
 # Return value is echoed to stdout (i.e., "work_dir.3")
