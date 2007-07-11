@@ -85,7 +85,7 @@ function abspath()
 # ******************************************************************************
 # test if input is a number or not
 # returns true or false exit code ( 0 or 1 )
-# usage: test_is_number INPUt
+# usage: test_is_number INPUT
 # ******************************************************************************
 function test_is_number()
 {
