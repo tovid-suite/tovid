@@ -1134,7 +1134,7 @@ if test "$IN_FILE_TYPE" = "file"; then
         :
     else
         check_disk_space
-        if test "$AVAIL_SPACE" -lt "$NEED_SPACE"; then
+        if test "$AVAIL_SPACE" -lt "$NEED_SPACE" && ! test $FROM_GUI -o $NOASK ; then
             yecho "Available: $AVAIL_SPACE, needed: $NEED_SPACE"
             echo "It doesn't look like you have enough space to encode this video."
             echo "Of course, I could be wrong. Do you want to proceed anyway? (y/n)"
