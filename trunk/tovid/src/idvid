@@ -204,7 +204,7 @@ function get_info ()
     # source the file to set the variables
     . "$SCRATCH_FILE".vars
     # (If you've got a problem with eval, give me an alternative that
-    # works as well and is as readable :-)
+    # works as well and is as readable :-) ... but no less safe :(
     # DONE :)
 
     ID_VIDEO_FRAMES=$(grep 'length:' "$SCRATCH_FILE" | \
@@ -215,9 +215,20 @@ function get_info ()
     TOTAL_AV_BITRATE=$(awk -F: '{gsub("kb/s", "")};  /bitrate:/ {print $6*1000}' "$SCRATCH_FILE")
     ## take the lower of the two
     if test $ID_VIDEO_BITRATE -eq 0 || test $TOTAL_AV_BITRATE -lt $ID_VIDEO_BITRATE; then
-        ID_VIDEO_BITRATE=$TOTAL_AV_BITRATE
+        # make sure we have a value from ffmpeg
+        if test_is_number $TOTAL_AV_BITRATE; then
+            ID_VIDEO_BITRATE=$TOTAL_AV_BITRATE
+        fi
     else
         ID_VIDEO_BITRATE=$ID_VIDEO_BITRATE
+    fi
+    # if we still don't have a value for ID_VIDEO_WIDTH and ID_VIDEO_HEIGHT
+    MP_FRAMESIZE=$(awk '/=>/ {print $3}' "$SCRATCH_FILE")
+    if test $ID_VIDEO_WIDTH -eq 0; then
+        test_is_number ${MP_FRAMESIZE%x*} &&  ID_VIDEO_WIDTH=${MP_FRAMESIZE%x*}
+    fi
+    if test $ID_VIDEO_HEIGHT -eq 0; then
+        test_is_number ${MP_FRAMESIZE#*x} && ID_VIDEO_HEIGHT=${MP_FRAMESIZE#*x}
     fi
 
     # Find out what audio channels are available
@@ -241,12 +252,28 @@ function get_info ()
                 sed -r 's/.* ([0-9]+) Hz.*/\1/')")
             A_BITRATES=("${A_BITRATES[@]}" "$(echo $CUR_CHAN | \
                 sed -r 's/.* ([0-9]+) kb\/s.*/\1/')")
+            # make sure the above is a number, else set  A_BITRATE to 0
+            ! test_is_number ${A_BITRATES[i]} && A_BITRATES[i]=0
             A_CODECS=("${A_CODECS[@]}" "$(echo $CUR_CHAN | \
                 sed -r 's/.*Audio: ([^,]+),.*/\1/')")
                 if $USE_HEX_TRACKS; then
                 MP_TRACKNUM=$((16#${HEX_TRACKS[i]}))
             else
                 MP_TRACKNUM=$i
+            fi
+            # last ditch efforts to get audio bitrate if we still don't have it
+            if test ${A_BITRATES[i]} -eq 0; then
+                MP_ABITRATE=$(mplayer -vo null -ao null -frames 90 -channels 6 -identify \
+                -aid $MP_TRACKNUM "$INFILE" 2>&1 |
+                grep ID_AUDIO_BITRATE|awk -F=  'END{print $2}')
+                if test_is_number $MP_ABITRATE; then
+                    MP_ABITRATE=${MP_ABITRATE%.*}
+                    A_BITRATES[i]=${MP_ABITRATE/000*}
+                else # final attempt
+                    MENC_ABITRATE=$(mencoder "$INFILE" -aid $MP_TRACKNUM  -oac pcm -ovc copy \
+                    -frames 90 -o /dev/null 2>&1 | awk '/AUDIO/ {print $7}')
+                    test_is_number $MENC_ABITRATE && A_BITRATES[i]=${MENC_ABITRATE%.*}
+                fi
             fi
             A_HEX_TRACKS=("${A_HEX_TRACKS[@]}" "$MP_TRACKNUM")
         done
@@ -340,6 +367,14 @@ function get_info ()
         V_DURATION=${V_DURATION%%.*}  # integer in seconds
         # overwrite ID_VIDEO_FRAMES since we have a more accurate count now
         ID_VIDEO_FRAMES=$(awk 'END{print $(NF-1)}' <<< "$MENCODER_STATS")
+        # if we failed to get a video bitrate earlier, use mencoder stats
+        if test $ID_VIDEO_BITRATE -eq 0; then
+            MENCODER_STATS_BR=$(awk -F: 'END{print $2}' <<< "$MENCODER_STATS" | awk '{print $1}')
+            # make sure it is a number
+            if test_is_number $MENCODER_STATS_BR; then
+                ID_VIDEO_BITRATE=${MENCODER_STATS_BR%.*}000
+            fi
+        fi
         $VERBOSE && echo "$MENCODER_STATS"
     elif $USE_NAVLOG; then
         ID_VIDEO_FRAMES=$(awk '{ field = $2 }; END{ print field }'  < "${INFILE}".nav_log)
