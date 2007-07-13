@@ -1183,6 +1183,10 @@ if test "$IN_FILE_TYPE" = "file"; then
 
     if $DO_NORM; then AUDIO_OK=false; fi
     [[ "$AUDIO_TRACK" ]] && AUDIO_OK=false
+
+    # ffmpeg is broken, so we can't just dump compliant mp2 audio
+    $AUDIO_OK && ! $VIDEO_OK && [[ $ID_AUDIO_CODEC = "mp2" ]] && AUDIO_OK=false
+
     # If both audio and video are OK, stop now - there's no need to convert.
     if ! $FORCE_ENCODING && $AUDIO_OK && $VIDEO_OK; then
         # Create a symbolic link in place of the output file
