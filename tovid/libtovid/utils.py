@@ -48,7 +48,8 @@ def safe_filename(filename, work_dir):
 
 def escape(text):
     """Return a copy of the given text string with potentially problematic
-    "special" characters backslash-escaped."""
+    "special" characters backslash-escaped.
+    """
     result = text
     for char in special_chars:
         result = result.replace(char, '\%s' % char)
@@ -64,7 +65,8 @@ def to_unicode(text):
 
 
 def indent_level(line):
-    """Return the number of leading whitespace characters in the line."""
+    """Return the number of leading whitespace characters in the line.
+    """
     return len(line) - len(line.lstrip())
 
 
@@ -119,7 +121,8 @@ def ratio_to_float(ratio):
 
 def float_to_ratio(number):
     """Convert a decimal number into an integer ratio string 'X:Y'.
-    Keeps three digits of precision."""
+    Keeps three digits of precision.
+    """
     numerator = float(number) * 1000
     return "%g:1000" % numerator
 
@@ -128,7 +131,8 @@ def tokenize(line, include_chars=''):
     """Separate a text line into tokens, returning them in a list. By default,
     tokens are space-separated, and each token consists of [a-z], [A-Z], [0-9],
     or any of '.:-%()/'. Additional valid token characters may be specified by
-    passing them in the include_chars string."""
+    passing them in the include_chars string.
+    """
     lexer = shlex.shlex(line, posix = True)
     # Rules for splitting tokens
     lexer.wordchars = lexer.wordchars + '.:-%()/' + include_chars
@@ -146,7 +150,8 @@ def tokenize(line, include_chars=''):
 
 def pretty_dict(dict):
     """Return a pretty-printed dictionary, with one line for each key.
-    Keys are printed in sorted ascending order."""
+    Keys are printed in sorted ascending order.
+    """
     result = ''
     keys = dict.keys()
     keys.sort()
@@ -169,7 +174,8 @@ def pretty_dict(dict):
 
 def get_code_lines(filename):
     """Return a list of all lines of code in the given file.
-    Whitespace and #-style comments are ignored."""
+    Whitespace and #-style comments are ignored.
+    """
     infile = open(filename, 'r')
     codelines = []
     for line in infile.readlines():
@@ -218,7 +224,8 @@ def temp_file(prefix='', suffix=''):
 
 
 def wait(seconds):
-    """Print a message and pause for the given number of seconds."""
+    """Print a message and pause for the given number of seconds.
+    """
     print "Resuming in %s seconds..." % seconds
     os.system('sleep %ss' % seconds)
 

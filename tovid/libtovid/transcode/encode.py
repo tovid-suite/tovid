@@ -87,9 +87,12 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
         outfile += '.mpg'
     # Get an appropriate encoding target
     target = standard_media(format, tvsys)
-    # TODO: User-defined aspect ratio; hardcoded 4:3 for now
-    target = correct_aspect(source, target, '4:3')
     target.filename = outfile
+    # Set desired aspect ratio, or auto
+    if 'aspect' in kw:
+        target = correct_aspect(source, target, kw['aspect'])
+    else:
+        target = correct_aspect(source, target, 'auto')
     
     # Some friendly output
     print "Source media:"
@@ -98,9 +101,13 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
     print "Target media:"
     print target
     
-    # Get the appropriate encoding backend and encode
+    # Get the appropriate encoding backend
     encode_method = get_encoder(method)
+    # Evaluate high-level keywords
+    kw = eval_keywords(**kw)
+    # Encode!
     encode_method(source, target, **kw)
+
 
 def get_encoder(backend):
     """Get an encoding function."""
@@ -110,6 +117,26 @@ def get_encoder(backend):
         return mencoder_encode
     elif backend == 'mpeg2enc':
         return mpeg2enc_encode
+
+def eval_keywords(**kw):
+    """Interpret keywords that affect other keywords, and return the result.
+    These are keywords that can be shared between multiple encoding backends.
+
+    Supported keywords:
+    
+        quality:    From 1 (lowest) to 10 (highest) video quality.
+                    Overrides 'quant' and 'vbitrate' keywords.
+        fit:        Size in MiB to fit output video to (overrides 'quality')
+                    Overrides 'quant' and 'vbitrate' keywords.
+
+    """
+    if 'quality' in kw:
+        kw['quant'] = 13-kw['quality']
+        max_bitrate = _bitrate_limits[target.format][1]
+        kw['vbitrate'] = kw['quality'] * max_bitrate / 10
+    if 'fit' in kw:
+        kw['quant'], kw['vbitrate'] = _fit(source, target, kw['fit'])
+    return kw
 
 
 # --------------------------------------------------------------------------
@@ -123,12 +150,10 @@ def ffmpeg_encode(source, target, **kw):
 
         source:  Input MediaFile
         target:  Output MediaFile
-        kw:  name=value keyword arguments
+        kw:      name=value keyword arguments
     
     Supported keywords:
     
-        quality:    From 1 (lowest) to 10 (highest) video quality
-        fit:        Size in MiB to fit output video to (overrides 'quality')
         quant:      Minimum quantization, from 1-31 (1 being fewest artifacts)
         vbitrate:   Maximum video bitrate, in kilobits per second.
         abitrate:   Audio bitrate, in kilobits per second
@@ -147,12 +172,6 @@ def ffmpeg_encode(source, target, **kw):
                 '-target', '%s-%s' % (target.tvsys, target.format))
 
     # Interpret keyword arguments
-    if 'quality' in kw:
-        kw['quant'] = 13-kw['quality']
-        max_bitrate = _bitrate_limits[target.format][1]
-        kw['vbitrate'] = kw['quality'] * max_bitrate / 10
-    if 'fit' in kw:
-        kw['quant'], kw['vbitrate'] = _fit(source, target, kw['fit'])
     if 'quant' in kw:
         cmd.add('-qmin', kw['quant'], '-qmax', 31)
     if 'vbitrate' in kw:
@@ -203,7 +222,9 @@ def mencoder_encode(source, target, **kw):
 
         source:  Input MediaFile
         target:  Output MediaFile
+        kw:      name=value keyword arguments
     
+    Supported keywords:
     """
 
     # Build the mencoder command
@@ -241,7 +262,7 @@ def mencoder_encode(source, target, **kw):
         else:
             audiofile = '%s.ac3' % target.filename
         encode_audio(source, audiofile, target)
-        # TODO: make this work, it,s still not adding the ac3 file correctly.
+        # TODO: make this work, it's still not adding the ac3 file correctly.
         cmd.add('-audiofile', audiofile)
 
     # Video codec
@@ -266,7 +287,7 @@ def mencoder_encode(source, target, **kw):
         lavcopts += ':aspect=16/9'
     else:
         lavcopts += ':aspect=4/3'
-    # Put all lavcopts together
+    # Pass all lavcopts together
     cmd.add('-lavcopts', lavcopts)
 
     # FPS
