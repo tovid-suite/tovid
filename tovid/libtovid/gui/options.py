@@ -779,7 +779,7 @@ class VideoOptions:
 
         strCommand += "-in \"%s\" " % self.inFile
         strCommand += "-out \"%s/%s\" " % (curConfig.strOutputDirectory, self.outPrefix)
-        strCommand += "-from-gui"
+        strCommand += "-from-gui -noask"
         return strCommand
 
     def SetDiscFormat(self, format):
