@@ -66,3 +66,8 @@ class Odict (UserDict):
     def values(self):
         return map(self.get, self._keys)
     
+    def __str__(self):
+        lines = []
+        for key, value in self.items():
+            lines.append("%s: %s" % (key, value))
+        return '\n'.join(lines)

@@ -116,7 +116,7 @@ def add_subpictures(movie_filename, select, image=None, highlight=None):
         image:     Image shown for non-selected regions
         highlight: Image shown when "enter" is pressed
         
-    All images must indexed, 4-color, transparent, non-antialiased PNG.
+    All images must be indexed, 4-color, transparent, non-antialiased PNG.
     Button regions are auto-inferred.
     """
     spu = xml.Element('spu')
