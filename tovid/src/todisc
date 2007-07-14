@@ -65,9 +65,9 @@ LOG_FILE="$(abspath "todisc.log")"
 #RECURSIVE_LOG_FILE=$(tempfile -s -todisc.log)
 OUT_PREFIX=""
 TV_STANDARD=ntsc
-ANI_MENU_LENGTH=20
+MENU_LENGTH=20
 ANI_SUBMENU_LENGTH=10
-MAX_ANI_LENGTH=""
+MAX_MENU_LENGTH=""
 TARGET=dvd
 FRAME_RATE=29.970  # when -ntsc and -pal options added put in body in if block
 VIDSIZE=720x480
@@ -182,6 +182,8 @@ TSET_TOT=1
 NONAME=false
 DO_INTRO=false
 USE_MPLAYER_4AUDIO=false
+MENU_AUDIOLENGTH="20"
+USER_AUDIOLENGTH=false
 BURN=false
 SCRIPT_START_TIME=`date +%s`
 
@@ -243,35 +245,7 @@ function titlesafe_error()
     echo "****************************"
     ! $NO_WARN && sleep 3
 }
-# process $LOG_FILE.tmp variously - eg. output of ffmpeg is ugly without this
-function cleanlog()
-{
-    SED_VAR=${SED_VAR:-"frame="}
-    FOLD="fold -bs"
-    NO_CR="tr -d '\r'"
-    RELINE="{s/$SED_VAR/\n$SED_VAR/g}"
-    TMP_LOG="$LOG_FILE.tmp"
-    NOSPACE="tr -s ' '"
 
-    case "$1" in
-        1 )
-            $FOLD "$TMP_LOG" >> "$LOG_FILE"
-            echo >> "$LOG_FILE"
-            ;;
-        2 )
-            $NO_CR < "$TMP_LOG" | $FOLD >> "$LOG_FILE"
-            echo >> "$LOG_FILE"
-            ;;
-        3 )
-            $NO_CR < "$TMP_LOG" | sed $RELINE | $FOLD >> "$LOG_FILE"
-            echo >> "$LOG_FILE"
-            ;;
-        4 )
-            $NOSPACE < "$TMP_LOG" | $FOLD >> "$LOG_FILE"
-            ;;
-    esac
-    rm -f "$LOG_FILE.tmp"
-}
 function format_output()
 {
     sed "s/    */ /g;s/^ *//"|fold -bs
@@ -313,7 +287,8 @@ function vid_length()
 }
 function audio_length()
 {
-    mplayer -speed 20  -vo null -ao null "$1"  2>&1 |
+    [[ -n $2 ]] && ENDPOS="-endpos $(format_time $2)"
+    mplayer $ENDPOS -speed 20  -vo null -ao null "$1"  2>&1 |
     tr '\r' '\n' |
     grep ^A: |
     tail -n 1 |
@@ -570,7 +545,8 @@ function check_compliance()
         ! $group_set && yecho "Checking $IN_FILE for compliance..."
         # test files with idvid script
         if test "$(idvid -isformat $TARGET "$IN_FILE")" = "true" && \
-           test "$(idvid -istvsys $TV_STANDARD "$IN_FILE")" = "true"; then
+           test "$(idvid -istvsys $TV_STANDARD "$IN_FILE")" = "true" && \
+           [[ $TOVID_OPTS != *-force* ]] ; then
             ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE")
         # Video needs to be re-encoded; use a .enc filename in ENC_IN_FILES
         else
@@ -1121,7 +1097,7 @@ while test $# -gt 0; do
         # Menu control options
         "-menu-length" )
             shift
-            ANI_MENU_LENGTH="$1"
+            MENU_LENGTH="$1"
             ;;
         # submenu-length disabled for now
         "-submenu-length" )
@@ -1344,6 +1320,7 @@ while test $# -gt 0; do
         "-menu-audio-length" )
             shift
             MENU_AUDIOLENGTH="$1"
+            USER_AUDIOLENGTH=:
             ;;
         "-submenu-audio" )
             shift
@@ -1556,6 +1533,10 @@ else
 fi
 # for dvdauthor.xml, if -intro was used
 $DO_INTRO && INTRO="<vob file=\"$INTRO_CLIP\"/>"
+
+# switched menus need more than one video file
+$SWITCHED_MENUS && [[ ${#FILES[@]} -eq 1 ]] && SWITCHED_MENUS=false
+
 # don't make submenus on each recursive call in switched mode
 if $SWITCHED_MODE; then
     ANI_SUB_MENU=false && SUB_MENU=false
@@ -2022,7 +2003,7 @@ yecho "  -thumb-fontsize $THUMB_FONTSIZE"
 if ! $VMGM_ONLY; then
     yecho "Current menu settings: "
     if  ! $STATIC; then
-        yecho "  -menu-length $ANI_MENU_LENGTH seconds"
+        yecho "  -menu-length $MENU_LENGTH seconds"
     fi
     if $ANI_SUB_MENU; then
         yecho "  -submenu-length $ANI_SUBMENU_LENGTH seconds"
@@ -2745,12 +2726,8 @@ if [[ -n "$BG_VIDEO" ]]; then
     -vcodec png -an  -f rawvideo -y "$WORK_DIR/pics/template.png")
     echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
     SED_VAR="frame="
-    if "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
-        cleanlog 3
-    else
-        cleanlog 3
+    if ! "${FFMPEG_CMD[@]}" 2>&1 |strings  >> "$LOG_FILE";then
         runtime_error "Problem creating images from the video."
-        exit 1
     fi
 fi
 if $SHOWCASE && ! $NO_SC_THUMB; then
@@ -2800,12 +2777,8 @@ if $SHOWCASE && ! $NO_SC_THUMB; then
             "$WORK_DIR/showcase_img.png")
             echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs |tee -a "$LOG_FILE"
             SED_VAR="frame="
-            if "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
-                cleanlog 3
-            else
-                cleanlog 3
+            if ! "${FFMPEG_CMD[@]}" 2>&1 | strings >> "$LOG_FILE";then
                 runtime_error "Problem creating images from the video."
-                exit 1
             fi
             echo "Running convert "$WORK_DIR/showcase_img.png" -mattecolor gray"
             echo "$SC_FRAME "$WORK_DIR/showcase_img.jpg"" |format_output
@@ -2852,12 +2825,8 @@ if ! $TEXTMENU; then
             $WORK_DIR/pics/$i/$(printf "%06d%s"  0 .$IMG_FMT)
             rm -f "$WORK_DIR"/00000*.png
         elif [ "$SC_FRAMESTYLE" = "none" ]; then
-            if "${FFMPEG_CMD[@]}" >> "$LOG_FILE" 2>&1;then
-                : #cleanlog 3
-            else
-                #cleanlog 3
+            if ! "${FFMPEG_CMD[@]}" 2>&1 |strings >> "$LOG_FILE";then
                 runtime_error "Problem creating images from the video."
-                exit 1
             fi
         fi
 
@@ -3346,7 +3315,7 @@ unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
 # if -bgvideo selected, but not -bgaudio, offer to use audio from bgvideo
 # if "none" is passed for BG_AUDIO it means we are doing switched menus
 # in which case we want to skip this step anyway
-if ! $NOASK; then
+if ! $NOASK && ! $SWITCHED; then
     BGVIDEO_STATS=$(idvid -terse -fast "$BG_VIDEO" 2>&1)
     if [[ -n "$BG_VIDEO" && -z "$BG_AUDIO" ]]; then
         if grep -q "A_NOAUDIO=:" <<< "$BGVIDEO_STATS"; then
@@ -3366,7 +3335,18 @@ if ! $NOASK; then
 fi
 
 # find out the length of the -bgaudio FILE, if there is one
-[[ -n "$BG_AUDIO" ]] && BG_AUDIOLENGTH=$(audio_length "$BG_AUDIO")
+if [[ -n "$BG_AUDIO" ]]; then
+    BG_AUDIOLENGTH=$(audio_length "$BG_AUDIO" $MENU_AUDIOLENGTH)
+    yecho
+    yecho "Getting length of bg audio"
+    yecho
+    # make sure user isn't trying to get a longer menu than the audio allows
+    MENU_AL=$(bc_math "$MENU_AUDIOLENGTH * $FRAME_RATE" int)
+    BG_AL=$(bc_math "$BG_AUDIOLENGTH * $FRAME_RATE" int)
+    if [[ $(bc <<< "$MENU_AL > $BG_AL")  -eq 1 ]]; then
+        MENU_AUDIOLENGTH=$BG_AUDIOLENGTH
+    fi
+fi
 # if static menu and no background audio, ignore MENU_AUDIOLENGTH
 $STATIC && [[ -z "$BG_AUDIO" ]] && ! $SWITCHED && unset MENU_AUDIOLENGTH
 # Check input files for compliance; offer to tovid-encode non-compliant files
@@ -3380,7 +3360,7 @@ tovid_reencode()
     VIDEO_IN="$1"
     VIDEO_IN_SEEK="$2"
     yecho
-    yecho "$VIDEO_IN is not compliant - re-encoding $(bc <<< "$VIDEO_IN_SEEK + $ANI_MENU_LENGTH") second slice to DVD compliant file"
+    yecho "$VIDEO_IN is not compliant - re-encoding $(bc <<< "$VIDEO_IN_SEEK + $MENU_LENGTH") second slice to DVD compliant file"
     yecho "if you used a long seek this will take some time and produce a large file."
     yecho "But if the file is not encoded this way there may be sync problems."
     yecho "Do you want to continue encoding this file?, type 'yes' to do so"
@@ -3395,7 +3375,7 @@ tovid_reencode()
     yecho
     yecho "Converting files to $TGT_CAPS format with 'tovid'"
     countdown
-    tovid $NO_ASK -in "$VIDEO_IN" -slice 0-$((VIDEO_IN_SEEK + ANI_MENU_LENGTH)) -$TV_STANDARD \
+    tovid $NO_ASK -in "$VIDEO_IN" -slice 0-$((VIDEO_IN_SEEK + MENU_LENGTH)) -$TV_STANDARD \
     -$TARGET -in "$VIDEO_IN" -out "$VIDEO_IN.enc" $TOVID_OPTS
     # See if output file exists
     if ! test -f "$VIDEO_IN.enc.mpg"; then
@@ -3516,29 +3496,29 @@ if $SWITCHED; then
         if [[ -z $BG_AUDIO && $BG_AUDIO != "none" ]]; then
             # use the audio from each video for each switched menu
             BG_AUDIO="${FILES[vid]}"
-            [[ -z $MENU_AUDIOLENGTH ]] && MENU_AUDIOLENGTH=${VID_LEN[vid]}
             if $STATIC; then
-                # default for audio length if -menu-audio-length not passed
-                [[ -z $MENU_AUDIOLENGTH ]] && MENU_AUDIOLENGTH=30
                 # start audio at the beginning unless user passes -bgaudio-seek
                 ! $USER_BG_AUDIO_SEEK && BG_AUDIO_SEEK=0
-                # make sure we don't make the menu audio longer than the video
-                if test $(bc <<< "($MENU_AUDIOLENGTH + ${SEEK_VAL[vid]}) > ${VID_LEN[vid]}") -eq 1; then
-                    MENU_AUDIOLENGTH=${VID_LEN[vid]}
-                fi
+                # make sure MENU_AUDIOLENGTH value isn't longer than the video
+                [[ $MENU_AUDIOLENGTH -gt ${VID_LEN[vid]%.*} ]] && MENU_AUDIOLENGTH=${VID_LEN[vid]}
             else
                 # same seek value as video unless user passes -bgaudio-seek
                 ! $USER_BG_AUDIO_SEEK && BG_AUDIO_SEEK=${SEEK_VAL[vid]}
+                # the menu audio will be the same length as the switched video
+                MENU_AUDIOLENGTH=${VID_LEN[vid]}
             fi
             yecho "Using audio from "${FILES[vid]}" for the audio background,"
             ! $STATIC && yecho "using the same seek value for the audio as the video"
             yecho "If you wish to use silence for the swotched menu,"
             yecho "use '-bgaudio none'"
+            echo "MENU_AUDIOLENGTH is $MENU_AUDIOLENGTH" # FIXME
+            echo "VID_LEN is ${VID_LEN[vid]}"
         else
             if [[ $BG_AUDIO = "none" ]]; then # no audio if -bgaudio none
                 BG_AUDIO=""
             else # BG_AUDIO="$BG_AUDIO" if -bgaudio supplied and not 'none'
                 yecho "Using "$BG_AUDIO" as audio background for "${FILES[vid]}""
+                ! $STATIC && MENU_AUDIOLENGTH=${VID_LEN[vid]}
             fi
         fi
     fi 
@@ -3571,18 +3551,18 @@ if $ANI_SUB_MENU; then
     done
 fi
 # allow animated menus of length of longest video
-MAX_ANI_LENGTH=$(bc_math "$FRAME_RATE * $ANI_MENU_LENGTH" int)
+MAX_MENU_LENGTH=$(bc_math "$FRAME_RATE * $MENU_LENGTH" int)
 MAX_VAL_FRAMES="$((MAX_VAL * 30))"
 # if submenu selected, translate seconds of submenu length into # of frames
 if $ANI_SUB_MENU; then
     ANI_SUBMENU_FRAMES=$(bc_math "$FRAME_RATE * $ANI_SUBMENU_LENGTH" int)
 fi
 
-ANI_FRAMES=$MAX_ANI_LENGTH
+MENU_FRAMES=$MAX_MENU_LENGTH
 if $STATIC; then
     FRAMES=1
 else
-    FRAMES=$ANI_FRAMES
+    FRAMES=$MENU_FRAMES
 fi
 ###############################################################################
 #                           End of info block                                 #
@@ -3641,11 +3621,8 @@ if ! $TEXTMENU; then
                         done
                         echo
                         echo "Created $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*.$IMG_FMT|wc -l) images of $FRAMES"
-                        #cleanlog 1
                     else
-                        #cleanlog 1
                         runtime_error "Problem creating images from the video."
-                        exit 1
                     fi
                     unset TRANSCODE_CMD2 run_transcode
         done
@@ -4005,16 +3982,10 @@ if ! $TITLESET_MODE && ! $DO_TITLESETS; then
     -j "$WORK_DIR/dummy.jpg")
     ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
     -tvstd $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
-    if ${ENC_CMD1[@]} | ${ENC_CMD2[@]}  >> "$LOG_FILE.tmp" 2>&1; then
-        cleanlog 3
-    else
-        cleanlog 3
+    if ! ${ENC_CMD1[@]} | ${ENC_CMD2[@]} 2>&1 |strings  >> "$LOG_FILE"; then
         runtime_error
     fi
     VMGM_TIME=$(vid_length "$WORK_DIR/dummy.m2v")
-    yecho
-    SED_VAR="Pos"
-    cleanlog 3
     yecho
     # temporarily use mp2enc for svcd audio as ffmpeg broken # FIXME
     # see r2162 todisc or older for how to fix this block when ffmpeg is fixed
@@ -4022,7 +3993,7 @@ if ! $TITLESET_MODE && ! $DO_TITLESETS; then
         BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME \
         $AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
         yecho "${BGAUDIO_CMD[@]}"
-        "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1
+        "${BGAUDIO_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
     else
         # generate wav from /dev/zero
         ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME -ar 48000 \
@@ -4031,22 +4002,12 @@ if ! $TITLESET_MODE && ! $DO_TITLESETS; then
         echo "Running "${BGAUDIO_CMD[@]}" < $WORK_DIR/dummy.wav" | fold -bs >> "$LOG_FILE"
         "${BGAUDIO_CMD[@]}" < "$WORK_DIR/dummy.wav" 2>&1 |fold -bs >> "$LOG_FILE.tmp"
     fi
-    if [[ -s "$WORK_DIR/dummy.$AUDIO_EXT" ]]; then
-        cleanlog 3
-    else
-        cleanlog 3
-        runtime_error
-    fi
+    ! [[ -s "$WORK_DIR/dummy.$AUDIO_EXT" ]] &&  runtime_error
+
     MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -o  "$BASEDIR/dummy.mpg" \
      "$WORK_DIR/dummy.$AUDIO_EXT"  "$WORK_DIR/dummy.m2v")
-    echo "Running: "${MPLEX_CMD[@]}"" >> "$LOG_FILE.tmp"
-    cleanlog 1
-    if "${MPLEX_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then
-        cleanlog 1
-    else
-        cleanlog 1
-        runtime_error
-    fi
+    echo "Running: "${MPLEX_CMD[@]}"" |fold -bs >> "$LOG_FILE"
+    ! "${MPLEX_CMD[@]}" 2>&1 |strings >> "$LOG_FILE" && runtime_error
 #    $VMGM_ONLY && $SKIP_VMGM && mv "$BASEDIR/dummy.mpg" "$BASEDIR/VMGM.mpg"
 fi
 
@@ -4144,11 +4105,8 @@ if $SUB_MENU; then
                 echo
 
                 echo "Created $(find "$JPEG_DIR" -maxdepth 1 -name \*.jpg|wc -l) JPEGS of $TOTAL_JPEGS"
-                #cleanlog 1
             else
-                #cleanlog 1
                 runtime_error "Problem creating images from the video."
-                exit 1
             fi
             unset TCODE_CMD cmd run_transcode
             if ! $ANI_SUB_MENU ; then
@@ -4246,10 +4204,7 @@ if $SUB_MENU; then
         ENC_CMD1=(ffmpeg   -f yuv4mpegpipe -i - -r $FRAME_RATE -s $VIDSIZE \
         -tvstd $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/menu$i.m2v")
         echo "Running "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}""|format_output | tee -a "$LOG_FILE" 2>&1
-        if "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}" >> "$LOG_FILE.tmp" 2>&1; then
-            cleanlog 3
-        else
-            cleanlog 3
+        if ! "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}" 2>&1|strings >> "$LOG_FILE"; then
             runtime_error
         fi
 
@@ -4312,14 +4267,9 @@ if $SUB_MENU; then
             $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
         fi
         if [ ! -s $WORK_DIR/submenu.wav ]; then # only run if no wav
-            yecho "Running "${BGAUDIO_CMD[@]}"" >> "$LOG_FILE.tmp" 2>&1
-            cleanlog 1
-            if "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then #run command
-                cleanlog 3
-            else
-                cleanlog 3
-                runtime_error
-            fi
+            yecho "Running "${BGAUDIO_CMD[@]}"" |fold -bs >> "$LOG_FILE"
+            # run command, error out if problem
+            ! "${BGAUDIO_CMD[@]}" 2>&1 |strings >> "$LOG_FILE" 2>&1 && runtime_error
         fi
         # convert to DVD/SVCD format as long as not "none" or single audio file
         if $SUBMENU_AUDIO && [[ ! "${SM_AUDIO[s]}" = "none" && -z "$SM_AUDIO_FILE" ]]; then
@@ -4334,14 +4284,8 @@ if $SUB_MENU; then
                 rm $WORK_DIR/menu$s.wav
                 mv $WORK_DIR/menu$s-processed.wav $WORK_DIR/menu$s.wav
             fi
-            echo "Running "${BGAUDIO_CMD2[@]}"" >> "$LOG_FILE.tmp" 2>&1
-            cleanlog 1
-            if "${BGAUDIO_CMD2[@]}" >> "$LOG_FILE.tmp" 2>&1; then
-                cleanlog 3
-            else
-                cleanlog 3
-                runtime_error
-            fi
+            echo "Running "${BGAUDIO_CMD2[@]}"" | fold -bs >> "$LOG_FILE"
+            ! "${BGAUDIO_CMD2[@]}" 2>&1 |strings >> "$LOG_FILE" && runtime_error
             unset TIME
         fi
         # if "1" audio file, then convert it if it has not been done yet
@@ -4363,12 +4307,7 @@ if $SUB_MENU; then
                 :
             else
                 echo "Running "${BGAUDIO_CMD3[@]}"" >> "$LOG_FILE.tmp" 2>&1
-                if "${BGAUDIO_CMD3[@]}" >> "$LOG_FILE.tmp" 2>&1; then
-                    cleanlog 3
-                else
-                    cleanlog 3
-                    runtime_error
-                fi
+                ! "${BGAUDIO_CMD3[@]}" 2>&1 |strings >> "$LOG_FILE" && runtime_error
             fi
         fi
         # copy the final file for each submenu if only 1 supplied
@@ -4378,14 +4317,8 @@ if $SUB_MENU; then
         S=$((s + 1))
         MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -o $WORK_DIR/menu$S.mpg \
         $WORK_DIR/menu$s.$AUDIO_EXT $WORK_DIR/menu$s.m2v)
-        echo "Running: "${MPLEX_CMD[@]}"" >> "$LOG_FILE.tmp"
-        cleanlog 1
-        if "${MPLEX_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then
-            cleanlog 1
-        else
-            cleanlog 1
-            runtime_error
-        fi
+        echo "Running: "${MPLEX_CMD[@]}"" | fold -bs >> "$LOG_FILE"
+        ! "${MPLEX_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"  && runtime_error
         # remove wav to save space
         rm -fv $WORK_DIR/menu$s.wav
     done
@@ -4415,8 +4348,8 @@ if [[ -n "$BG_VIDEO" ]]; then
     $(find $WORK_DIR/bg -maxdepth 1 -name \*[1-9]\*.jpg|sort) )
     last_pic=${#IMAGES[@]}
     next_pic=$(($last_pic + 1))
-    if [ $last_pic -lt $MAX_ANI_LENGTH ]; then
-        for ((l=next_pic; l<=MAX_ANI_LENGTH; l++)); do
+    if [ $last_pic -lt $MAX_MENU_LENGTH ]; then
+        for ((l=next_pic; l<=MAX_MENU_LENGTH; l++)); do
             cp $WORK_DIR/bg/${last_pic}.jpg $WORK_DIR/bg/$l.jpg
         done
     fi
@@ -4450,12 +4383,8 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && ! $NO_SC_THUMB; then
         -s $SHOWCASE_SIZE -vframes $FRAMES -an -y "$WORK_DIR/showcase/%06d.png")
         echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
         SED_VAR="frame="
-        if "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1;then
-            cleanlog 3
-        else
-            cleanlog 3
+        if ! "${FFMPEG_CMD[@]}" 2>&1 |strings >> "$LOG_FILE";then
             runtime_error "Problem creating images from the video."
-            exit 1
         fi
     fi
 
@@ -4486,8 +4415,8 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && ! $NO_SC_THUMB; then
     IMAGES=( $(find $WORK_DIR/showcase -maxdepth 1 -name 00\*.png|sort) )
     last_pic=$(( ${#IMAGES[@]} - 1 ))
     next_pic=$(($last_pic + 1))
-    if [ $last_pic -lt $MAX_ANI_LENGTH ] && ! $STATIC; then
-        for ((l=next_pic; l<=MAX_ANI_LENGTH; l++)); do
+    if [ $last_pic -lt $MAX_MENU_LENGTH ] && ! $STATIC; then
+        for ((l=next_pic; l<=MAX_MENU_LENGTH; l++)); do
             cp $WORK_DIR/showcase/$( printf %06d $last_pic).png \
             $WORK_DIR/showcase/$(printf %06d $l).png
         done
@@ -4615,8 +4544,8 @@ if ! $TEXTMENU; then
             $(find $WORK_DIR/pics/$i -maxdepth 1 -name 00\*.$IMG_FMT|sort) )
             last_pic=$(( ${#IMAGES[@]} - 1 ))
             next_pic=$(($last_pic + 1))
-            if [ $last_pic -lt $MAX_ANI_LENGTH ]; then
-                for ((l=next_pic; l<=MAX_ANI_LENGTH; l++)); do
+            if [ $last_pic -lt $MAX_MENU_LENGTH ]; then
+                for ((l=next_pic; l<=MAX_MENU_LENGTH; l++)); do
                     cp $WORK_DIR/pics/$i/$( printf %06d $last_pic).$IMG_FMT \
                     $WORK_DIR/pics/$i/$(printf %06d $l).$IMG_FMT
                 done
@@ -4916,11 +4845,10 @@ echo "Converting images to video stream and encoding to DVD-compliant format"
 # convert images to video stream and encode to dvd compliant m2v
 if $STATIC; then
     # we have a value for MENU_AUDIOLENGTH AND BG_AUDIO
-    if [[ -n "$MENU_AUDIOLENGTH" && -n "$BG_AUDIO" && "$BG_AUDIO" != "none" ]]; then
+    if [[ -n "$BG_AUDIO" && "$BG_AUDIO" != "none" ]]; then
+        echo "MENU_AUDIOLENGTH is $MENU_AUDIOLENGTH" # FIXME
         LOOPS=$( bc <<< "$MENU_AUDIOLENGTH * $FRAME_RATE")
         LOOPS=${LOOPS%.*}
-    elif [[ -z "$MENU_AUDIOLENGTH" && -n "$BG_AUDIO" ]]; then
-        LOOPS=${BG_AUDIOLENGTH%.*}
     else
         LOOPS=60
     fi
@@ -4930,7 +4858,7 @@ else  # animated menu
     if $MENU_FADE; then
         JPEG2YUV_OPTS="-n $((ANI_MENU_END_FRAME + 18))"
     else
-        JPEG2YUV_OPTS="-n $ANI_FRAMES"
+        JPEG2YUV_OPTS="-n $MENU_FRAMES"
     fi
     PICS_IN="$WORK_DIR/animenu/%d.jpg"
 fi
@@ -4940,32 +4868,20 @@ ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
 -tvstd $TV_STANDARD $FFMPEG_OPTS -y $WORK_DIR/intro.m2v)
 yecho
 echo "Running "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}"" |format_output
-if "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" >> "$LOG_FILE.tmp" 2>&1; then
-    cleanlog 3
-else
-    cleanlog 3
-    runtime_error
-fi
+! "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" 2>&1 | strings >> "$LOG_FILE" && runtime_error
 echo
 echo "Cleaning up montage images"
 rm -f $WORK_DIR/animenu/*.jpg
 rm -f $WORK_DIR/animenu/*.png
 
 # check if m2v was created ok before proceeding
-if mencoder -quiet -oac pcm -ovc copy -frames 0 $WORK_DIR/intro.m2v -o /dev/null &> /dev/null; then
-    :
-else
+if ! mencoder -quiet -oac pcm -ovc copy -frames 0 $WORK_DIR/intro.m2v -o /dev/null &> /dev/null; then
     echo
     runtime_error  "The menu video file does not appear to have been created"
 fi
-# if static then keep bg audio length (check later if -menu-audiolength opt used
-if $STATIC && [[ -n "$BG_AUDIOLENGTH" ]]; then
-    MENU_ATIME=$(bc_math "$BG_AUDIOLENGTH - $BG_AUDIO_SEEK")
-else
-    MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
-fi
+MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
 # if -menu-audio-length LENGTH was passed, override the above MENU_ATIME
-if [[ -n "$MENU_AUDIOLENGTH" ]] && $STATIC; then MENU_ATIME=$MENU_AUDIOLENGTH; fi
+if [[ -n "$BG_AUDIO" ]] && $STATIC; then MENU_ATIME=$MENU_AUDIOLENGTH; fi
 # use mplayer to dump audio if mplayer used for video
 # but first check if audio same file as video and its not a static menu
 if [[ $SC_FRAMESTYLE = "glass" && $BG_AUDIO = $SHOWCASE_FILE ]]; then
@@ -4992,12 +4908,8 @@ else # audio supplied: convert to wav then later to dvd/svcd format
     fi
     yecho
     echo "Running "${BGAUDIO_CMD[@]}"" |tee -a "$LOG_FILE.tmp" 2>&1
-    if "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1; then
-        cleanlog 3
-    else
-        cleanlog 3
-        runtime_error
-    fi
+    ! "${BGAUDIO_CMD[@]}" 2>&1 |strings >> "$LOG_FILE" && runtime_error
+
     if $AUDIO_FADE; then  # bgaudio supplied and audio fade selected
         WAV_TIME=$(audio_length "$WORK_DIR/intro.wav")
         echo "Running: "
@@ -5019,17 +4931,13 @@ if [[ $TARGET = "dvd" ]]; then
     BGAUDIO_CMD=(ffmpeg -i $WORK_DIR/intro.wav \
     $AUDIO_OPTS -y $WORK_DIR/intro.$AUDIO_EXT)
     yecho "Running "${BGAUDIO_CMD[@]}"" | fold -bs >> "$LOG_FILE"
-    "${BGAUDIO_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1
+    "${BGAUDIO_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"
 else
     BGAUDIO_CMD=(mp2enc -r 44100 -o $WORK_DIR/intro.$AUDIO_EXT)
-    "${BGAUDIO_CMD[@]}" < "$WORK_DIR/intro.wav" 2>&1 |fold -bs >> "$LOG_FILE.tmp"
+    "${BGAUDIO_CMD[@]}" < "$WORK_DIR/intro.wav" 2>&1 |fold -bs >> "$LOG_FILE"
 fi
-if [[ -s $WORK_DIR/intro.$AUDIO_EXT ]]; then
-    cleanlog 3
-else
-    cleanlog 3
-    runtime_error
-fi
+! [[ -s $WORK_DIR/intro.$AUDIO_EXT ]] && runtime_error
+
 unset BGAUDIO_CMD
 rm -fv "$WORK_DIR/intro.wav"
 echo
@@ -5037,15 +4945,9 @@ echo "Multiplexing main menu audio and video together"
 # mplex main menu audio and video together
 INTRO_MPLEX_CMD="mplex -V -f $MPLEX_FORMAT -o $WORK_DIR/intro.mpg \
 $WORK_DIR/intro.$AUDIO_EXT $WORK_DIR/intro.m2v"
-echo -e "\nRunning: $INTRO_MPLEX_CMD\n" >> "$LOG_FILE.tmp"
-cleanlog 1
+echo -e "\nRunning: $INTRO_MPLEX_CMD\n" |fold -bs >> "$LOG_FILE"
 yecho
-if ${INTRO_MPLEX_CMD[@]} >> "$LOG_FILE.tmp" 2>&1; then
-    cleanlog 1
-else
-    cleanlog 1
-    runtime_error
-fi
+! ${INTRO_MPLEX_CMD[@]} 2>&1 |strings >> "$LOG_FILE" && runtime_error
 
 yecho
 if $SWITCHED_MODE || $SWITCHED_MENUS; then
@@ -5091,10 +4993,11 @@ if $TITLESET_MODE; then
 fi
 if [ "$TARGET" = "dvd" ] && $AUTHOR && ! $VMGM_ONLY && ! $DO_TITLESETS && ! $SWITCHED_MODE; then
     echo "Running dvdauthor to create the DVD filesystem"
-    dvdauthor -x "$DVDAUTHOR_XML" 2>&1 | tee -a "$LOG_FILE"
+    dvdauthor -x "$DVDAUTHOR_XML" 2>&1  | tee -a  "$LOG_FILE.tmp"
     if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
         runtime_error "There was a problem creating the DVD structure"
     fi
+    strings "$LOG_FILE.tmp" >> "$LOG_FILE" && rm -f "$LOG_FILE.tmp"
 elif [ "$TARGET" = "svcd" ]; then
     makexml -svcd -menu $WORK_DIR/intro.mpg "${IN_FILES[@]}" -out "$OUT_FILE"
     makevcd "${OUT_FILE}.xml"
