@@ -12,7 +12,7 @@ INSTALLING FROM DISTRIBUTED SOURCE (*.tar.gz)
 =====================================================
 
 To install an official source distribution of tovid (from a tarball such
-as tovid-0.25.tar.gz), do the following after extracting the tarball:
+as tovid-0.30.tar.gz), do the following after extracting the tarball:
 
     $ ./configure
     $ su -c "make install"
