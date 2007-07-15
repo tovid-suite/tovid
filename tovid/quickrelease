@@ -30,6 +30,7 @@ sudo make install
 # Build the quick-release
 rm -f tovid-svn*.tar.gz
 make dist
+
 # Upload the tarball to Google Code
 TARBALL=$(ls -1 ./tovid-svn*.tar.gz)
 ./googlecode_upload.py \
@@ -37,4 +38,9 @@ TARBALL=$(ls -1 ./tovid-svn*.tar.gz)
     -p tovid \
     -u $USERNAME \
     $TARBALL
+
+# Prompt to remove tarball
 rm -i tovid-svn*.tar.gz
+
+echo "Done."
+
