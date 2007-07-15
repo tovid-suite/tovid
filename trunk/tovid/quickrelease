@@ -20,10 +20,15 @@ if $(svn stat -u | grep -q '^M'); then
     exit
 fi
 
+# Install tovid
 ./bootstrap
 ./configure
+sudo make install
+
+# Build the quick-release
 rm -f tovid-svn*.tar.gz
 make dist
+# Upload the tarball to Google Code
 TARBALL=$(ls -1 ./tovid-svn*.tar.gz)
 ./googlecode_upload.py \
     -s "quick-release" \
