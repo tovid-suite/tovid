@@ -1,20 +1,26 @@
 #! /bin/bash
 # Do a "quick release" of the SVN code
 
-TARGET_DIR="/home/groups/t/to/tovid/htdocs/download/quick_releases"
-
 if test $# -lt 1; then
     echo "quickrelease: Create and upload a tovid 'quick release' (SVN .tar.gz)"
     echo "Usage:"
     echo "    quickrelease USERNAME"
-    echo "where USERNAME is your sourceforge.net username."
+    echo "where USERNAME is your Google (GMail) username."
+    echo "Warning: This script removes any existing quick-releases"
+    echo "in the current directory (rm -f tovid-svn*.tar.gz)"
     exit
 else
     USERNAME=$1
 fi
+
 ./bootstrap
 ./configure
+rm -f tovid-svn*.tar.gz
 make dist
-scp tovid-svn*.tar.gz $USERNAME@shell.sourceforge.net:$TARGET_DIR
+TARBALL=$(ls -1 ./tovid-svn*.tar.gz)
+./googlecode_upload.py \
+    -s "quick-release" \
+    -p tovid \
+    -u $USERNAME \
+    $TARBALL
 rm -i tovid-svn*.tar.gz
-
