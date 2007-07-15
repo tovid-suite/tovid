@@ -1,16 +1,18 @@
 #! /bin/bash
 # Do a "quick release" of the SVN code
 
-if test $# -lt 1; then
+if test $# -lt 2; then
     echo "quickrelease: Create and upload a tovid 'quick release' (SVN .tar.gz)"
     echo "Usage:"
-    echo "    quickrelease USERNAME"
-    echo "where USERNAME is your Google (GMail) username."
+    echo "    quickrelease USERNAME PREFIX"
+    echo "Where USERNAME is your Google (GMail) username, and"
+    echo "PREFIX is your preferred ./configure --prefix setting."
     echo "Warning: This script removes any existing quick-releases"
     echo "in the current directory (rm -f tovid-svn*.tar.gz)"
     exit
 else
     USERNAME=$1
+    PREFIX=$2
 fi
 
 # Make sure there are no commits (otherwise revision number
@@ -22,7 +24,7 @@ fi
 
 # Install tovid
 ./bootstrap
-./configure
+./configure --prefix=$PREFIX
 sudo make install
 
 # Build the quick-release
