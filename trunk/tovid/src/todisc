@@ -65,7 +65,7 @@ LOG_FILE="$(abspath "todisc.log")"
 #RECURSIVE_LOG_FILE=$(tempfile -s -todisc.log)
 OUT_PREFIX=""
 TV_STANDARD=ntsc
-MENU_LENGTH=20
+MENU_LENGTH=""
 ANI_SUBMENU_LENGTH=10
 MAX_MENU_LENGTH=""
 TARGET=dvd
@@ -182,7 +182,7 @@ TSET_TOT=1
 NONAME=false
 DO_INTRO=false
 USE_MPLAYER_4AUDIO=false
-MENU_AUDIOLENGTH="20"
+MENU_AUDIOLENGTH=""
 USER_AUDIOLENGTH=false
 BURN=false
 SCRIPT_START_TIME=`date +%s`
@@ -218,6 +218,11 @@ function yecho()
 # set the LOG_FILTER variable before calling this function, to e.g.
 #    LOG_FILTER="sed 's/\r/\r\n/g'"    # Replace LF with CR/LF
 # ******************************************************************************
+function abspath()
+{
+    readlink -f "$1"
+}
+
 function cmd_exec()
 {
     eval "$@" 2>&1 | ${LOG_FILTER:=cat} # >> "$LOG_FILE"
@@ -1541,6 +1546,7 @@ $SWITCHED_MENUS && [[ ${#FILES[@]} -eq 1 ]] && SWITCHED_MENUS=false
 if $SWITCHED_MODE; then
     ANI_SUB_MENU=false && SUB_MENU=false
 fi
+
 $VMGM_ONLY && SWITCHED_MODE=false && SWITCHED_MENUS=false
 # need a way to get back to the VMGM menu, so -no-vmgm-menu requires -quicknav ? FIXME
 # -no-vmgm requires -skip-vmgm for now; pass -no-vmgm-menu to subshells via NO_VMGM
@@ -1548,6 +1554,9 @@ if $NO_VMGM_MENU; then
     SKIP_VMGM_MENU=:
     NO_VMGM="-no-vmgm-menu"
 fi
+# initialize MENU_LENGTH and MENU_AUDIOLENGTH now that options have been read
+[[ -z $MENU_LENGTH ]] && MENU_LENGTH=20
+MENU_AUDIOLENGTH=$MENU_LENGTH
 # honour -noask for functions and called scripts that use them
 $NOASK && NO_ASK="-noask"
 # Warn if thumb labels have more than 16 characters
@@ -3511,8 +3520,6 @@ if $SWITCHED; then
             ! $STATIC && yecho "using the same seek value for the audio as the video"
             yecho "If you wish to use silence for the swotched menu,"
             yecho "use '-bgaudio none'"
-            echo "MENU_AUDIOLENGTH is $MENU_AUDIOLENGTH" # FIXME
-            echo "VID_LEN is ${VID_LEN[vid]}"
         else
             if [[ $BG_AUDIO = "none" ]]; then # no audio if -bgaudio none
                 BG_AUDIO=""
@@ -3836,7 +3843,7 @@ $(if $AUTHOR ; then
     echo -e "        $VMGM_PRE"
     echo -e "        $INTRO"
     echo -e "        <vob file=\"$WORK_DIR/dummy.mpg\"/>"
-    echo -e "        <post>jump titleset 1 menu;</post>"
+    echo -e "        <pre>jump titleset 1 menu;</pre>"
     echo -e "      </pgc>\n    </menus>\n  </vmgm>"
 fi)
   <titleset>
