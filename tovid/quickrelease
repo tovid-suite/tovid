@@ -13,6 +13,13 @@ else
     USERNAME=$1
 fi
 
+# Make sure there are no commits (otherwise revision number
+# will be wrong)
+if $(svn stat -u | grep -q '^M'); then
+    echo "You have uncommitted changes. Please run svn commit first."
+    exit
+fi
+
 ./bootstrap
 ./configure
 rm -f tovid-svn*.tar.gz
