@@ -1,7 +1,5 @@
 #summary A pointer to the current tovid wiki
-#labels Featured
 
 = Official tovid Wiki =
 
 The [http://tovid.org official tovid wiki] is hosted by wikia.com.
-
