@@ -1589,11 +1589,13 @@ fi
 # initialize MENU_AUDIOLENGTH now that options have been read
 [[ -n $BG_AUDIO ]] && MENU_AUDIOLENGTH=$MENU_LENGTH
 
-# quick-menu needs TEXTMENU=: , and does its own showcase and bg with ffmpeg
+# some checks for -quick-menu
 if $QUICK_MENU; then
+# quick-menu needs TEXTMENU=: , and does its own showcase and bg with ffmpeg
     TEXTMENU=:
     NO_SC_THUMB=:
     BACKGROUND=""
+    [[ -z $SHOWCASE_FILE ]] && usage_error "-quick-menu needs a showcase file ( -showcase FILE )"
 fi
 
 # honour -noask for functions and called scripts that use them
@@ -3409,7 +3411,7 @@ fi
 # if static menu and no background audio, ignore MENU_AUDIOLENGTH
 $STATIC && [[ -z "$BG_AUDIO" ]] && ! $SWITCHED && unset MENU_AUDIOLENGTH
 # Check input files for compliance; offer to tovid-encode non-compliant files
-$SWITCHED && MN=${#IN_FILES[@]} || MN=1
+$SWITCHED && MN=2 || MN=1
 if [[ $MENU_NUM -eq $MN ]]; then
     check_compliance
     $GROUPING && check_compliance group
@@ -4617,7 +4619,7 @@ if ! $TEXTMENU; then
         unset PICS
     done
 fi
-if ! $MENU_FADE; then
+if ! $MENU_FADE && ! $QUICK_MENU; then
     yecho
     yecho "Making $FRAMES final montages and compositing onto background with title"
     yecho
