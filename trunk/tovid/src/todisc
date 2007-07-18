@@ -1595,7 +1595,9 @@ if $QUICK_MENU; then
     TEXTMENU=:
     NO_SC_THUMB=:
     BACKGROUND=""
-    [[ -z $SHOWCASE_FILE ]] && usage_error "-quick-menu needs a showcase file ( -showcase FILE )"
+    if [[ -z $SHOWCASE_FILE ]] && ! $SWITCHED_MENUS; then
+        runtime_error "-quick-menu needs a showcase file ( -showcase FILE )"
+    fi
 fi
 
 # honour -noask for functions and called scripts that use them
