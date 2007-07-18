@@ -65,7 +65,7 @@ LOG_FILE="$(abspath "todisc.log")"
 #RECURSIVE_LOG_FILE=$(tempfile -s -todisc.log)
 OUT_PREFIX=""
 TV_STANDARD=ntsc
-MENU_LENGTH=""
+MENU_LENGTH="20"
 ANI_SUBMENU_LENGTH=10
 MAX_MENU_LENGTH=""
 TARGET=dvd
@@ -185,6 +185,7 @@ USE_MPLAYER_4AUDIO=false
 MENU_AUDIOLENGTH=""
 USER_AUDIOLENGTH=false
 BURN=false
+QUICK_MENU=false
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -271,7 +272,7 @@ function get_font()
 # ******************************************************************************
 # Print out a runtime error specified as an argument, and exit
 # ******************************************************************************
-function runtime_error()
+runtime_error()
 {
     # Uncomment if needed later
     #killsubprocs
@@ -285,12 +286,12 @@ function runtime_error()
     exit 1
 }
 
-function vid_length()
+vid_length()
 {
     mencoder -nosound -oac copy -ovc copy -o /dev/null "$1" 2>/dev/null |
     awk 'END{print $(NF-3)}'
 }
-function audio_length()
+audio_length()
 {
     [[ -n $2 ]] && ENDPOS="-endpos $(format_time $2)"
     mplayer $ENDPOS -speed 20  -vo null -ao null "$1"  2>&1 |
@@ -300,7 +301,7 @@ function audio_length()
     sed s/^.*A:// |
     awk '{print $1}'
 }
-function cleanup()
+cleanup()
 {
     echo
     yecho "Cleaning up..."
@@ -327,18 +328,18 @@ function cleanup()
     rm -fv "$WORK_DIR"
 }
 
-function running_total ()
+running_total ()
 {
     LC_ALL="C" awk -v offset=$offset '{
     for (i=1; i<=NF; i++) if (s=s+$i) printf("%s ",s);printf ("\n")}'
 }
 
-function awk_total()
+awk_total()
 {
     LC_ALL="C" awk '{for (i=1; i<=NF; i++) s=s+$i}; END{print s}'
 }
 
-function format_seconds()
+format_seconds()
 {
     LC_ALL="C"  awk '{
     hr=($1/3600); hd=(sprintf("%02d", hr))
@@ -356,7 +357,7 @@ bc_math()
     echo "$bc_out"
 }
 
-function confirm_preview()
+confirm_preview()
 {
     yecho
     echo "If you are happy with the preview, type 'yes' to continue: "
@@ -392,7 +393,7 @@ function confirm_preview()
 
 # Display (echo) a spinner with a message
 SP=0
-function spin()
+spin()
 {
     SPIN_CHARS=".oOo"
     SPINNER="${SPIN_CHARS:SP++%${#SPIN_CHARS}:1}"
@@ -402,7 +403,7 @@ function spin()
 }
 
 #EXPAND="expand=-6:-6,"
-function get_framed_pics()
+get_framed_pics()
 {
 mplayer -ss $MPLAYER_SEEK_VAL -vo $VOUT -noconsolecontrols \
 -vf ${EXPAND}rectangle=${FRAME_SIZE/x*}:${FRAME_SIZE/*x},rectangle=$(( ${FRAME_SIZE/x*} - D )):$(( ${FRAME_SIZE/*x} - D)),rectangle=$(( ${FRAME_SIZE/x*} - $((D * 2)) )):$(( ${FRAME_SIZE/*x} - $((D * 2)) )),rectangle=$(( ${FRAME_SIZE/x*} - $((D * 3)) )):$(( ${FRAME_SIZE/*x} - $((D * 3)) )) \
@@ -410,7 +411,7 @@ mplayer -ss $MPLAYER_SEEK_VAL -vo $VOUT -noconsolecontrols \
 }
 
 # Create a text-only menu, using makemenu/makexml
-function call_makemenu()
+call_makemenu()
 {
     # Assemble and run makemenu command
     MENU_OUT="${OUT_PREFIX}_menu"
@@ -445,17 +446,17 @@ function call_makemenu()
     cmd_exec "$MAKEDVD"
 }
 
-function stat_logfile()
+stat_logfile()
 {
     stat -L -c "%Y" "$LOG_FILE"
 }
 
-function get_line_count()
+get_line_count()
 {
 awk 'END{print NR}' "$LOG_FILE"
 }
 
-function check_stall()
+check_stall()
 {
     PIDOF_TRANSCODE=$(<$WORK_DIR/tcode$i.pid)
     newlines=$(stat_logfile)
@@ -477,7 +478,7 @@ function check_stall()
         fi
     done
 }
-function check_filetype()
+check_filetype()
 {
     if [[ $(file -L "$1") = *image* ]]; then
         TYPE=image
@@ -487,7 +488,7 @@ function check_filetype()
     fi
 }
 
-function get_stats()
+get_stats()
 {
 unset IN_STATS FILES_IN
 this_set=$1
@@ -533,7 +534,7 @@ for ((i=0; i<TOT; i++)); do
 done
 }
 
-function check_compliance()
+check_compliance()
 {
     unset FILES_TO_ENCODE ENC_IN_FILES CHECK_IN_FILES
     group_set=false
@@ -615,7 +616,7 @@ function check_compliance()
     fi
 }
 
-function mk_workdir()
+mk_workdir()
 {
     REAL_WORK_DIR=$(tempdir $CUR_DIR/todisc-work)
     WORK_DIR=$(tempdir /tmp/todisc-work nocreate)
@@ -624,7 +625,7 @@ function mk_workdir()
 }
 
 
-function get_group_chapters()
+get_group_chapters()
 {
     FORMAT=false
     index=$1
@@ -672,18 +673,18 @@ function get_group_chapters()
     fi
 }
 
-function get_image_dim()
+get_image_dim()
 {
     identify "$1" | awk '{print $3}'
 }
-function switched_menu_mode()
+switched_menu_mode()
 #call todisc recursively to make multiple menus for -switched-menus option
 {
     $TITLESET_MODE && IS_TITLESET="-is_titleset"
     for ((i=1; i<${#FILES[@]}; i++)); do
         yecho
         yecho "Working on switched menu $((i+1))"
-        yecho && sleep 5
+        ! $NO_WARN && yecho && sleep 5
         yecho "Running todisc "$@" -switched-mode $IS_TITLESET -basedir "$BASEDIR" -menu_num $((i+1)) -showcase "${FILES[i]}""
         todisc "$@" -switched-mode $IS_TITLESET -basedir "$WORK_DIR" -menu_num $((i+1)) -showcase "${FILES[i]}"
     done
@@ -692,7 +693,7 @@ function switched_menu_mode()
         yecho
 #    exit
 }
-function titleset_mode()
+titleset_mode()
 # call todisc recursively in order to allow titlesets
 {
     # some vars for vmgm menu, depending on presence of -static or -quick-nav
@@ -861,7 +862,7 @@ EOF
 
 }
 
-function parse_rotateargs()
+parse_rotateargs()
 {
     unset x ARGS_ARRAY
     # Hackish list-parsing
@@ -875,7 +876,7 @@ function parse_rotateargs()
     fi
 }
 
-function burn_disc()
+burn_disc()
 # FIXME get working with svcd too
 {
     yecho
@@ -899,7 +900,7 @@ function burn_disc()
     fi
 }
 
-function thanks_goodbye()
+thanks_goodbye()
 {
     SCRIPT_END_TIME=`date +%s`
     SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
@@ -923,7 +924,7 @@ function thanks_goodbye()
 }
 
 # create the main and/or playall PNGs
-function mk_se_png()
+mk_se_png()
 # usage make_se_png POINTSIZE TEXT OUTFILE
 {
     cmd1=( convert -size 100x100 xc:none -font "$THUMB_FONT" -pointsize "$1" \
@@ -937,7 +938,7 @@ function mk_se_png()
     SE_BTN_WIDTH=$(get_image_dim "$3"|awk -Fx '{print $1}' )
 }
 # create the main and/or playall spumux buttons
-function mk_se_button()
+mk_se_button()
 # usage make_se_button width stroke outfile
 {
     dimx="$1"; stroke="$2"; outfile="$3"
@@ -949,7 +950,7 @@ function mk_se_button()
     unset cmd1 cmd2
 }
 
-function check_menufile()
+check_menufile()
 {
     yecho
     if test -f "$MENU_FILE"; then
@@ -959,6 +960,36 @@ function check_menufile()
         runtime_error "Menu file $MENU_FILE not found.  Spumux seems to have had problems"
     fi
 }
+
+quick_menu()
+{
+QM_SHOWCASE_FILE="$SHOWCASE_FILE"
+# find out where vhook lives for ffmpeg
+ffmpeg_prefix=$(which ffmpeg)
+ffmpeg_prefix=$(sed 's/bin\/ffmpeg//g' <<< "$ffmpeg_prefix")
+imlib2_vhook="$ffmpeg_prefix/lib/vhook/imlib2.so"
+! [[ -s "$imlib2_vhook" ]] && runtime_error "Can't find your ffmpeg's vhook's"
+# convert and resize the bgvideo so that is is framed by ntsc-safe black bg
+PAD_CMD=(ffmpeg -t "$MENU_LENGTH" -i "$QM_SHOWCASE_FILE" -s 318x212 -an \
+-padtop 104 -padbottom 164 -padleft 262 -padright 140 -r $FRAME_RATE -b 5000k \
+-padcolor 161514 -y  "$WORK_DIR/quick_tmp.avi")
+yecho
+yecho "Running ${PAD_CMD[@]}"|fold -bs
+"${PAD_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"
+
+# use vhook to add the titles in
+VHOOK_CMD=(ffmpeg -i "$WORK_DIR/quick_tmp.avi" -an \
+-vhook "$imlib2_vhook -x 0 -y 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
+-f mpeg2video -r $FRAME_RATE -tvstd ntsc -b 7000k -maxrate 8000k \
+-bufsize 230KiB -aspect $ASPECT_RATIO -padcolor 161514 \
+-y "$WORK_DIR/intro.m2v")
+yecho
+yecho "Running ${VHOOK_CMD[@]}" | fold -bs
+"${VHOOK_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
+
+}
+
+# make a transparent png for vhook with the menu title and video titles on it
 
 ##############################################################################
 #                          	End of functions                                 #
@@ -1322,11 +1353,6 @@ while test $# -gt 0; do
             FADE="$1"
             AUDIO_FADE=:
             ;;
-        "-menu-audio-length" )
-            shift
-            MENU_AUDIOLENGTH="$1"
-            USER_AUDIOLENGTH=:
-            ;;
         "-submenu-audio" )
             shift
             get_listargs "$@"
@@ -1493,6 +1519,10 @@ while test $# -gt 0; do
             SPEED="$1"
             BURN_SPEED="-speed $SPEED"
             ;;
+        "-quick-menu" )
+            QUICK_MENU=:
+            PREVIEW_IMG="$WORK_DIR/preview.png"
+            ;;
     esac
     $DO_SHIFT && shift
 done
@@ -1506,6 +1536,7 @@ done
 # set some other vars now that depended on *WORK_DIR being set
 SPUMUX_XML="$WORK_DIR/spumux.xml"
 DVDAUTHOR_XML="$WORK_DIR/dvdauthor.xml"
+PREVIEW_IMG="$WORK_DIR/preview.jpg"
 
 # Make sure equal, nonzero number of titles and files were provided
 if ! $VMGM_ONLY && ! $DO_TITLESETS; then
@@ -1554,9 +1585,17 @@ if $NO_VMGM_MENU; then
     SKIP_VMGM_MENU=:
     NO_VMGM="-no-vmgm-menu"
 fi
-# initialize MENU_LENGTH and MENU_AUDIOLENGTH now that options have been read
-[[ -z $MENU_LENGTH ]] && MENU_LENGTH=20
-MENU_AUDIOLENGTH=$MENU_LENGTH
+
+# initialize MENU_AUDIOLENGTH now that options have been read
+[[ -n $BG_AUDIO ]] && MENU_AUDIOLENGTH=$MENU_LENGTH
+
+# quick-menu needs TEXTMENU=: , and does its own showcase and bg with ffmpeg
+if $QUICK_MENU; then
+    TEXTMENU=:
+    NO_SC_THUMB=:
+    BACKGROUND=""
+fi
+
 # honour -noask for functions and called scripts that use them
 $NOASK && NO_ASK="-noask"
 # Warn if thumb labels have more than 16 characters
@@ -2325,7 +2364,10 @@ for ((i=0; i<=NUM_FILES; i++)); do
     fi
 done
 # multiline titles not allowed unless showcase style
-$MULTILINE_TITLE && ! $SHOWCASE && usage_error "Sorry, multiline titles only allowed for showcase style"
+# TODO move this down so to get rid of some && 's
+if $MULTILINE_TITLE && ! $SHOWCASE && ! $SWITCHED && ! $QUICK_MENU; then
+    usage_error "Sorry, multiline titles only allowed for showcase style"
+fi
 # no rect button style with rotated thumbs yet, so use text-rect fallback
 if ([[ -n ${ROTATE_ARRAY[@]} ]] && $MULTILINE_TITLE) && [[ $BUTTON_STYLE = "rect" ]]; then
     BUTTON_STYLE="text-rect"
@@ -2403,7 +2445,8 @@ if [ -z "$BG_PIC" ]; then
     echo
     echo "Creating a black background"
     BG_PIC="$WORK_DIR/pics/template.png"
-    convert  -resize $VIDSIZE! xc:"#161514" "$BG_PIC"
+    $QUICK_MENU && template_colour="none" || template_colour="#161514"
+    convert  -resize $VIDSIZE! xc:$template_colour "$BG_PIC"
 else
     convert -resize $VIDSIZE! "$BG_PIC" "$WORK_DIR/pics/template.png"
 fi
@@ -2729,7 +2772,7 @@ fi
 #      generate a basic preview of the main menu                              #
 ###############################################################################
 # generate images for montage and title and resize them
-if [[ -n "$BG_VIDEO" ]]; then
+if [[ -n "$BG_VIDEO" ]] ; then
     echo "Getting background video images from $BG_VIDEO"
     FFMPEG_CMD=(ffmpeg -i "$BG_VIDEO" -s $VIDSIZE -ss $BG_SEEK -vframes 1 \
     -vcodec png -an  -f rawvideo -y "$WORK_DIR/pics/template.png")
@@ -2861,22 +2904,30 @@ if $SHOWCASE; then
         "$WORK_DIR/thumb_title${i}.png")
     done
     echo "Running:
-    convert  -size $VIDSIZE "$WORK_DIR/pics/template.png"
+    convert  -size $VIDSIZE -background none "$WORK_DIR/pics/template.png"
     ${sc_thumb_title_cmd[@]} -page +210+400 "$WORK_DIR/title_txt.png" \
     -mosaic "$WORK_DIR/pics/template.png" "| format_output
-    convert -size $VIDSIZE "$WORK_DIR/pics/template.png" \
+    convert -size $VIDSIZE -background none "$WORK_DIR/pics/template.png" \
     ${sc_thumb_title_cmd[@]} -mosaic "$WORK_DIR/pics/template.png"
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
     -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
-    -composite "$WORK_DIR/pics/template.png"
+    -composite -background none "$WORK_DIR/pics/template.png"
+    
 fi
 if $PLAYALL || ($TITLESET_MODE && ! $NO_VMGM_MENU) ; then
     if ! $VMGM_ONLY; then
-        convert "$WORK_DIR/pics/template.png" "${ADD_PLAYALL_BTN[@]}" \
+        convert "$WORK_DIR/pics/template.png" -background none "${ADD_PLAYALL_BTN[@]}" \
         "${ADD_MAIN_BTN[@]}" "$WORK_DIR/pics/template.png"
         convert "$WORK_DIR/pics/template.png" "$WORK_DIR/pics/template.jpg"
     fi
 fi
+
+# copy the preview for -quick-menu
+$QUICK_MENU && cp "$WORK_DIR/pics/template.png" "$WORK_DIR/quick_menu_bg.png"
+# run quick_menu to create the almost finished menu file
+$QUICK_MENU && quick_menu
+
+
 # lets be sure of order by using a loop
 for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
@@ -3233,7 +3284,7 @@ if $SHOWCASE; then
         SC_IMG_PAGE="-page +$sc_xpage+$SC_Y"
         SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
     fi
-    if $NO_SC_THUMB; then unset SC_IMG_CMD; fi
+    if $NO_SC_THUMB; then unset SC_IMG_CMD ; fi
     if [[ -n "$SHOWCASE_IMG" || -n "$SHOWCASE_VIDEO" ]]; then
         unset sc_cmd
         for ((i=0; i<=NUM_FILES; i++)); do
@@ -3248,9 +3299,9 @@ if $SHOWCASE; then
             IM_CMD2=(composite -size $VIDSIZE -background none \
             -gravity NorthWest  -dissolve $OPACITY - "$WORK_DIR/pics/template.png" \
             -background none)
-            IM_CMD3=(convert - $WORK_DIR/title_txt.png  \
+            IM_CMD3=(convert - -background none $WORK_DIR/title_txt.png  \
             -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
-            -composite "$WORK_DIR/preview.jpg" )
+            -composite "$PREVIEW_IMG" )
             echo "Running
             "${IM_CMD0[@]}" miff:- | "${IM_CMD1[@]}" miff:- |
             "${IM_CMD2[@]}" miff:- | "${IM_CMD3[@]}"
@@ -3260,11 +3311,11 @@ if $SHOWCASE; then
         else
             echo "Running:
             convert  -size $VIDSIZE "$WORK_DIR/pics/template.png"
-            ${sc_cmd[@]} $SC_IMG_CMD \
-            -mosaic "$WORK_DIR/preview.jpg" "|sed "s/    */ /g;s/^ *//"|fold -bs
+            -background none ${sc_cmd[@]} $SC_IMG_CMD \
+            -mosaic "$PREVIEW_IMG" "|sed "s/    */ /g;s/^ *//"|fold -bs
             convert  -size $VIDSIZE "$WORK_DIR/pics/template.png" \
-            ${sc_cmd[@]} $SC_IMG_CMD \
-            -mosaic "$WORK_DIR/preview.jpg"
+            -background none ${sc_cmd[@]} $SC_IMG_CMD \
+            -mosaic "$PREVIEW_IMG"
         fi
         unset sc_cmd IM_CMD05 IM_CMD04 IM_CMD03 IM_CMD4
     fi
@@ -3279,33 +3330,34 @@ else # not showcase
         "$WORK_DIR/pics/template.png" -background none miff:- |
         convert - "$WORK_DIR/title_txt.png"  \
         -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
-        -composite "$WORK_DIR/preview.jpg"
+        -composite "$PREVIEW_IMG"
         " | fold -bs
         montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
         -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none -bordercolor "#444744" miff:- |
         composite -dissolve $OPACITY \
         -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
         "$WORK_DIR/pics/template.png" -background none miff:- |
-        convert - "$WORK_DIR/title_txt.png"  \
+        convert - -background none "$WORK_DIR/title_txt.png"  \
         -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
-        -composite "$WORK_DIR/preview.jpg"
+        -composite "$PREVIEW_IMG"
     else # Not transparent
         montage ${PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
         -geometry ${GEO_ARRAY[NUM_FILES]}+10+4  -background none -bordercolor "#444744" miff:- |
         convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png"  -gravity $TITLE_GRAVITY \
         -geometry ${title_xoffset}${title_yoffset} -composite -  -gravity $BUTTON_GRAVITY \
-        -geometry +${XGEO}+${YGEO} -composite "$WORK_DIR/preview.jpg"
+        -geometry +${XGEO}+${YGEO} -composite "$PREVIEW_IMG"
     fi
 fi
-if ! $NOASK; then
+
+if ! $NOASK && ! $QUICK_MENU; then
     echo "Creating and displaying a preview of the main menu."
     echo "(Press 'q' or ESC in the preview window to close it.)"
 fi
 # make the fake montage with highlighted 1st button and display it
-composite -compose Over "$WORK_DIR/fake_montage.png" "$WORK_DIR/preview.jpg" \
-"$WORK_DIR/preview.jpg"
-if ! $NOASK; then
-    convert -resize $PREVIEW_SIZE! "$WORK_DIR/preview.jpg" miff:- |
+composite -compose Over "$WORK_DIR/fake_montage.png" "$PREVIEW_IMG" \
+"$PREVIEW_IMG"
+if ! $NOASK && ! $QUICK_MENU; then
+    convert -resize $PREVIEW_SIZE! "$PREVIEW_IMG" miff:- |
     display -title "todisc preview - close window to continue" -
     confirm_preview
 fi
@@ -3345,21 +3397,20 @@ fi
 
 # find out the length of the -bgaudio FILE, if there is one
 if [[ -n "$BG_AUDIO" ]]; then
-    BG_AUDIOLENGTH=$(audio_length "$BG_AUDIO" $MENU_AUDIOLENGTH)
+    BG_AUDIOLENGTH=$(audio_length "$BG_AUDIO" $MENU_LENGTH)
     yecho
     yecho "Getting length of bg audio"
     yecho
     # make sure user isn't trying to get a longer menu than the audio allows
-    MENU_AL=$(bc_math "$MENU_AUDIOLENGTH * $FRAME_RATE" int)
-    BG_AL=$(bc_math "$BG_AUDIOLENGTH * $FRAME_RATE" int)
-    if [[ $(bc <<< "$MENU_AL > $BG_AL")  -eq 1 ]]; then
+    if [[ $(bc <<< "$MENU_LENGTH > $BG_AUDIOLENGTH")  -eq 1 ]]; then
         MENU_AUDIOLENGTH=$BG_AUDIOLENGTH
     fi
 fi
 # if static menu and no background audio, ignore MENU_AUDIOLENGTH
 $STATIC && [[ -z "$BG_AUDIO" ]] && ! $SWITCHED && unset MENU_AUDIOLENGTH
 # Check input files for compliance; offer to tovid-encode non-compliant files
-if ! $VMGM_ONLY; then
+$SWITCHED && MN=${#IN_FILES[@]} || MN=1
+if [[ $MENU_NUM -eq $MN ]]; then
     check_compliance
     $GROUPING && check_compliance group
 fi
@@ -3397,7 +3448,7 @@ tovid_reencode()
 if [[ -n $BG_VIDEO ]] && ! idvid -isformat dvd "$BG_VIDEO" >/dev/null; then
     tovid_reencode "$BG_VIDEO" $BG_SEEK && BG_VIDEO="$BG_VIDEO.enc.mpg"
 elif [[ -n $SHOWCASE_VIDEO ]]  && ! idvid -isformat dvd "$SHOWCASE_VIDEO" >/dev/null; then
-    if ! $SWITCHED; then
+    if ! $SWITCHED && ! $QUICK_MENU; then
         tovid_reencode "$SHOWCASE_VIDEO" $SHOWCASE_SEEK_VAL
         SHOWCASE_VIDEO="$SHOWCASE_VIDEO.enc.mpg"
     fi
@@ -3509,12 +3560,12 @@ if $SWITCHED; then
                 # start audio at the beginning unless user passes -bgaudio-seek
                 ! $USER_BG_AUDIO_SEEK && BG_AUDIO_SEEK=0
                 # make sure MENU_AUDIOLENGTH value isn't longer than the video
-                [[ $MENU_AUDIOLENGTH -gt ${VID_LEN[vid]%.*} ]] && MENU_AUDIOLENGTH=${VID_LEN[vid]}
+#                [[ $MENU_AUDIOLENGTH -gt ${VID_LEN[vid]%.*} ]] && MENU_AUDIOLENGTH=${VID_LEN[vid]}
             else
                 # same seek value as video unless user passes -bgaudio-seek
                 ! $USER_BG_AUDIO_SEEK && BG_AUDIO_SEEK=${SEEK_VAL[vid]}
                 # the menu audio will be the same length as the switched video
-                MENU_AUDIOLENGTH=${VID_LEN[vid]}
+#                MENU_AUDIOLENGTH=${VID_LEN[vid]}
             fi
             yecho "Using audio from "${FILES[vid]}" for the audio background,"
             ! $STATIC && yecho "using the same seek value for the audio as the video"
@@ -3525,7 +3576,7 @@ if $SWITCHED; then
                 BG_AUDIO=""
             else # BG_AUDIO="$BG_AUDIO" if -bgaudio supplied and not 'none'
                 yecho "Using "$BG_AUDIO" as audio background for "${FILES[vid]}""
-                ! $STATIC && MENU_AUDIOLENGTH=${VID_LEN[vid]}
+#                ! $STATIC && MENU_AUDIOLENGTH=${VID_LEN[vid]}
             fi
         fi
     fi 
@@ -3636,16 +3687,20 @@ if ! $TEXTMENU; then
     fi
 fi
 # create the pics for background image
-    if [ -z "$BG_PIC" ]; then
-        echo
-        echo "Creating a black background"
-        BG_PIC="$WORK_DIR/pics/template.jpg"
-        convert  -size $VIDSIZE xc:"#161514" "$BG_PIC"
-        convert  -size $VIDSIZE xc:"#161514" "$WORK_DIR/submenu_template.jpg"
+if [ -z "$BG_PIC" ]; then
+    echo
+    echo "Creating a black background"
+    BG_PIC="$WORK_DIR/pics/template.jpg"
+    if $QUICK_MENU; then
+        convert  -size $VIDSIZE xc:none "$BG_PIC"
     else
-        convert -resize $VIDSIZE! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
-        convert -size $VIDSIZE xc:"#161514" "$WORK_DIR/submenu_template.jpg"
+        convert  -size $VIDSIZE xc:"#161514" "$BG_PIC"
     fi
+    convert  -size $VIDSIZE xc:"#161514" "$WORK_DIR/submenu_template.jpg"
+else
+    convert -resize $VIDSIZE! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
+    convert -size $VIDSIZE xc:"#161514" "$WORK_DIR/submenu_template.jpg"
+fi
 
 echo
 # chapters and submenu xml stuff
@@ -3828,9 +3883,10 @@ if [ "$TARGET" = "dvd" ]; then
 
 # TSET_NUM supplied by the calling todisc script and is the current titleset #
 MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${MENU_NUM}.mpg"
+VMGM_PREJUMP="jump titleset 1 menu;"
 $VMGM_ONLY && MENU_FILE="$BASEDIR/VMGM.mpg"
 $SWITCHED_MODE && ! $VMGM_ONLY && MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${MENU_NUM}.mpg"
-$SWITCHED_MENUS && VMGM_PRE="<pre>$VMGM_PRE g1=1;</pre>"
+$SWITCHED_MENUS && VMGM_PRE="<pre>g1=1;$VMGM_PREJUMP</pre>" || VMGM_PRE="<pre>$VMGM_PREJUMP</pre>"
 $SWITCHED_MENUS && NUM_MENUS=${#FILES[@]} || NUM_MENUS=1
 ! $AUTHOR && DVDAUTHOR_XML="$BASEDIR/dvdauthor.xml"
 (
@@ -3840,10 +3896,9 @@ $(if $AUTHOR ; then
     echo -e "<dvdauthor dest=\"$OUT_DIR\" jumppad=\"0\">"
     echo -e "  <vmgm>\n    <menus>"
     echo -e "      <pgc entry=\"title\" pause=\"0\">"
-    echo -e "        $VMGM_PRE"
     echo -e "        $INTRO"
     echo -e "        <vob file=\"$WORK_DIR/dummy.mpg\"/>"
-    echo -e "        <pre>jump titleset 1 menu;</pre>"
+    echo -e "        $VMGM_PRE"
     echo -e "      </pgc>\n    </menus>\n  </vmgm>"
 fi)
   <titleset>
@@ -4567,7 +4622,7 @@ if ! $MENU_FADE; then
     yecho "Making $FRAMES final montages and compositing onto background with title"
     yecho
 fi
-if $MENU_FADE && ! $STATIC; then
+if $MENU_FADE && ! $STATIC && ! $QUICK_MENU; then
     . todisc-fade-routine
     yecho
     yecho "Creating background fade"
@@ -4705,7 +4760,7 @@ if $MENU_FADE && ! $STATIC; then
     for ((i=FRAMES; i<FRAMES+18; i++)); do
         cp $WORK_DIR/black.jpg $WORK_DIR/animenu/$i.jpg
     done
-else # Do not do menu fade
+elif ! $MENU_FADE && ! $QUICK_MENU; then # Do not do menu fade
     if $TRANSPARENT; then # non transparent -showcase-* uses this block too
         for (( count=1; count<=$FRAMES; count++)); do
             spin "\rProcessing "$count.jpg"  "
@@ -4848,12 +4903,11 @@ else # Do not do menu fade
     fi
 fi
 echo
-echo "Converting images to video stream and encoding to DVD-compliant format"
+! $QUICK_MENU && echo "Converting images to video stream and encoding to DVD-compliant format"
 # convert images to video stream and encode to dvd compliant m2v
 if $STATIC; then
     # we have a value for MENU_AUDIOLENGTH AND BG_AUDIO
     if [[ -n "$BG_AUDIO" && "$BG_AUDIO" != "none" ]]; then
-        echo "MENU_AUDIOLENGTH is $MENU_AUDIOLENGTH" # FIXME
         LOOPS=$( bc <<< "$MENU_AUDIOLENGTH * $FRAME_RATE")
         LOOPS=${LOOPS%.*}
     else
@@ -4874,27 +4928,34 @@ ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p "${JPEG2YUV_OPTS[@]}" -L 1 -b1 \
 ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
 -tvstd $TV_STANDARD $FFMPEG_OPTS -y $WORK_DIR/intro.m2v)
 yecho
-echo "Running "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}"" |format_output
-! "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" 2>&1 | strings >> "$LOG_FILE" && runtime_error
-echo
-echo "Cleaning up montage images"
-rm -f $WORK_DIR/animenu/*.jpg
-rm -f $WORK_DIR/animenu/*.png
-
+if ! $QUICK_MENU; then
+    echo "Running "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}"" |format_output
+    ! "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" 2>&1 | strings >> "$LOG_FILE" && runtime_error
+    echo
+    echo "Cleaning up montage images"
+    rm -f $WORK_DIR/animenu/*.jpg
+    rm -f $WORK_DIR/animenu/*.png
+fi
 # check if m2v was created ok before proceeding
 if ! mencoder -quiet -oac pcm -ovc copy -frames 0 $WORK_DIR/intro.m2v -o /dev/null &> /dev/null; then
     echo
     runtime_error  "The menu video file does not appear to have been created"
 fi
+
 MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
+$SWITCHED && MENU_ATIME=$MENU_LENGTH
+echo STATIC is $STATIC  #FIXME
+echo "MENU_ATIME is $MENU_ATIME"
 # if -menu-audio-length LENGTH was passed, override the above MENU_ATIME
-if [[ -n "$BG_AUDIO" ]] && $STATIC; then MENU_ATIME=$MENU_AUDIOLENGTH; fi
+#if [[ -n "$BG_AUDIO" ]] && $STATIC; then MENU_ATIME=$MENU_AUDIOLENGTH; fi
 # use mplayer to dump audio if mplayer used for video
 # but first check if audio same file as video and its not a static menu
 if [[ $SC_FRAMESTYLE = "glass" && $BG_AUDIO = $SHOWCASE_FILE ]]; then
     ! $STATIC && USE_MPLAYER_4AUDIO=:
 fi
-
+echo SWITCHED is $SWITCHED #FIXME
+echo MENU_LENGTH is $MENU_LENGTH
+echo "MENU_ATIME is $MENU_ATIME"
 BG_AUDIO_LENGTH="-t $MENU_ATIME"
 # create audio background for the main menu
 if [[ -z "$BG_AUDIO" || "$BG_AUDIO" = "none" ]]; then # no audio: use silence
@@ -4997,6 +5058,15 @@ if $SUB_MENU; then
 fi
 if $TITLESET_MODE; then
     $KEEP_FILES && mv -v "$REAL_WORK_DIR" "$BASEDIR"/TITLESET${TSET_NUM}
+fi
+if $QUICK_MENU; then  # FIXME this is just here temporarily
+    SCRIPT_END_TIME=`date +%s`
+    SCRIPT_TOT_TIME=`expr $SCRIPT_END_TIME \- $SCRIPT_START_TIME`
+    HHMMSS=`format_seconds $SCRIPT_TOT_TIME`
+    yecho
+    yecho "todisc took $HHMMSS to finish making the spumuxed menu file(s)"
+    yecho
+    sleep 5
 fi
 if [ "$TARGET" = "dvd" ] && $AUTHOR && ! $VMGM_ONLY && ! $DO_TITLESETS && ! $SWITCHED_MODE; then
     echo "Running dvdauthor to create the DVD filesystem"
