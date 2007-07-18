@@ -125,7 +125,7 @@ echo "Grabbing the latest scripts..."
 
 # tovid sources
 # =============
-TOVID_DL_HOME="http://svn.sourceforge.net/viewvc/*checkout*/tovid/trunk/tovid/src"
+TOVID_DL_HOME="http://tovid.googlecode.com/svn/trunk/tovid/src/"
 TOVID_SRCS="idvid tovid makedvd todisc todisc-fade-routine tovid-init.in"
 
 echo     "   tovid sources:"
@@ -142,7 +142,8 @@ PATH=$(pwd)/$BIN:$PATH
 export PATH
 
 # Set version
-DEMO_VERSION=$(wget --quiet http://svn.sourceforge.net/viewvc/tovid/trunk/ -O - | grep "directory revision" | grep "trunk/tovid" | awk -F "<strong>" '{print $2}' | awk -F "</strong>" '{print $1}')
+DEMO_VERSION=$(wget --quiet http://tovid.googlecode.com/svn/trunk/tovid/ -O - |
+awk  '/Revision/ {print $2}' |awk -F: 'END{print $1}')
 sed -i "s/@VERSION@/demo-$DEMO_VERSION/" $BIN/tovid-init.in
 mv $BIN/tovid-init.in $BIN/tovid-init
 
