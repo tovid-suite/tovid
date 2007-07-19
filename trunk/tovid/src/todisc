@@ -186,6 +186,7 @@ MENU_AUDIOLENGTH=""
 USER_AUDIOLENGTH=false
 BURN=false
 QUICK_MENU=false
+PAD_COLOUR=161514
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -970,16 +971,16 @@ ffmpeg_prefix=$(sed 's/bin\/ffmpeg//g' <<< "$ffmpeg_prefix")
 imlib2_vhook="$ffmpeg_prefix/lib/vhook/imlib2.so"
 ! [[ -s "$imlib2_vhook" ]] && runtime_error "Can't find your ffmpeg's vhook's"
 # convert and resize the bgvideo so that is is framed by ntsc-safe black bg
-PAD_CMD=(ffmpeg -t "$MENU_LENGTH" -i "$QM_SHOWCASE_FILE" -s 318x212 -an \
+PAD_CMD=(ffmpeg -ss ${SEEK_VAL[MENU_NUM-1]} -t "$MENU_LENGTH" -i "$QM_SHOWCASE_FILE" -s 318x212 -an \
 -padtop 104 -padbottom 164 -padleft 262 -padright 140 -r $FRAME_RATE -b 5000k \
--padcolor 161514 -y  "$WORK_DIR/quick_tmp.avi")
+-padcolor $PAD_COLOUR -y  "$WORK_DIR/quick_tmp.avi")
 yecho
 yecho "Running ${PAD_CMD[@]}"|fold -bs
 "${PAD_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"
 
 # use vhook to add the titles in
 VHOOK_CMD=(ffmpeg -i "$WORK_DIR/quick_tmp.avi" -an \
--vhook "$imlib2_vhook -x 0 -y 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
+-vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
 -f mpeg2video -r $FRAME_RATE -tvstd ntsc -b 7000k -maxrate 8000k \
 -bufsize 230KiB -aspect $ASPECT_RATIO -padcolor 161514 \
 -y "$WORK_DIR/intro.m2v")
@@ -1523,6 +1524,11 @@ while test $# -gt 0; do
             QUICK_MENU=:
             PREVIEW_IMG="$WORK_DIR/preview.png"
             ;;
+        "-pad-colour" | "-pad-color" )
+            shift
+            PAD_COLOUR="$1"
+            PAD_COLOUR=${PAD_COLOUR/\#/} # in case user passed #ffffff syntax
+            ;;
     esac
     $DO_SHIFT && shift
 done
@@ -1730,6 +1736,10 @@ fi
 if $GROUPING && $TITLESET_MODE; then
     find "$WORK_DIR"/  -type l -name \*group\*.mpg -exec cp -Pv {} "$BASEDIR" \;
 fi
+# Remove any existing log file
+if ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
+    test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
+fi
 $SWITCHED_MODE && SWITCHED_MENUS=false
 ($SWITCHED_MODE || $SWITCHED_MENUS) && SWITCHED=:
 if $SWITCHED_MENUS; then
@@ -1754,10 +1764,6 @@ if $GROUPING; then
     LC_ALL="C" declare -a grouping=( $WORK_DIR/${TSET_NUM}-group*.mpg )
 fi
 
-# Remove any existing log file
-if ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
-    test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
-fi
 # do some locale debugging
 echo "You are using the following locale settings:" >> "$LOG_FILE"
 locale >>  "$LOG_FILE" 2>&1
@@ -2928,8 +2934,6 @@ fi
 
 # copy the preview for -quick-menu
 $QUICK_MENU && cp "$WORK_DIR/pics/template.png" "$WORK_DIR/quick_menu_bg.png"
-# run quick_menu to create the almost finished menu file
-$QUICK_MENU && quick_menu
 
 
 # lets be sure of order by using a loop
@@ -3457,6 +3461,9 @@ elif [[ -n $SHOWCASE_VIDEO ]]  && ! idvid -isformat dvd "$SHOWCASE_VIDEO" >/dev/
         SHOWCASE_VIDEO="$SHOWCASE_VIDEO.enc.mpg"
     fi
 fi
+# run quick_menu to create the almost finished menu file ( intro.m2v )
+$QUICK_MENU && quick_menu
+
 # symlink IN_FILES in $WORK_DIR to solve some quoting issues for dvdauthor
 if [[ $MENU_NUM -eq 1 ]]; then
     for i in ${!IN_FILES[@]}; do
@@ -4948,8 +4955,6 @@ fi
 
 MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
 $SWITCHED && MENU_ATIME=$MENU_LENGTH
-echo STATIC is $STATIC  #FIXME
-echo "MENU_ATIME is $MENU_ATIME"
 # if -menu-audio-length LENGTH was passed, override the above MENU_ATIME
 #if [[ -n "$BG_AUDIO" ]] && $STATIC; then MENU_ATIME=$MENU_AUDIOLENGTH; fi
 # use mplayer to dump audio if mplayer used for video
@@ -4957,9 +4962,6 @@ echo "MENU_ATIME is $MENU_ATIME"
 if [[ $SC_FRAMESTYLE = "glass" && $BG_AUDIO = $SHOWCASE_FILE ]]; then
     ! $STATIC && USE_MPLAYER_4AUDIO=:
 fi
-echo SWITCHED is $SWITCHED #FIXME
-echo MENU_LENGTH is $MENU_LENGTH
-echo "MENU_ATIME is $MENU_ATIME"
 BG_AUDIO_LENGTH="-t $MENU_ATIME"
 # create audio background for the main menu
 if [[ -z "$BG_AUDIO" || "$BG_AUDIO" = "none" ]]; then # no audio: use silence
@@ -4975,8 +4977,9 @@ else # audio supplied: convert to wav then later to dvd/svcd format
         BGAUDIO_CMD=(mplayer  -quiet -vc null -vo null -ss $MPLAYER_SEEK_VAL \
         -ao pcm:waveheader:file="$WORK_DIR/intro.wav" -endpos $MENU_ATIME  "$BG_AUDIO")
     else
-        BGAUDIO_CMD=(ffmpeg -i "$BG_AUDIO" -r 29.970 -ar 48000 -ac 2 -acodec pcm_s16le \
-        -async 1 -y  -ss $BG_AUDIO_SEEK $BG_AUDIO_LENGTH $WORK_DIR/intro.wav)
+        BGAUDIO_CMD=(ffmpeg -y  -ss $BG_AUDIO_SEEK $BG_AUDIO_LENGTH \
+        -i "$BG_AUDIO" -r 29.970 -ar 48000 -ac 2 -acodec pcm_s16le \
+        $WORK_DIR/intro.wav)
     fi
     yecho
     echo "Running "${BGAUDIO_CMD[@]}"" |tee -a "$LOG_FILE.tmp" 2>&1
