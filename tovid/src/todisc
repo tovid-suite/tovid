@@ -289,7 +289,7 @@ runtime_error()
 
 vid_length()
 {
-    mencoder -nosound -oac copy -ovc copy -o /dev/null "$1" 2>/dev/null |
+    mencoder -nosound -mc 0 -oac pcm -ovc copy -o /dev/null "$1" 2>/dev/null |
     awk 'END{print $(NF-3)}'
 }
 audio_length()
@@ -971,23 +971,39 @@ ffmpeg_prefix=$(sed 's/bin\/ffmpeg//g' <<< "$ffmpeg_prefix")
 imlib2_vhook="$ffmpeg_prefix/lib/vhook/imlib2.so"
 ! [[ -s "$imlib2_vhook" ]] && runtime_error "Can't find your ffmpeg's vhook's"
 # convert and resize the bgvideo so that is is framed by ntsc-safe black bg
-PAD_CMD=(ffmpeg -ss ${SEEK_VAL[MENU_NUM-1]} -t "$MENU_LENGTH" -i "$QM_SHOWCASE_FILE" -s 318x212 -an \
--padtop 104 -padbottom 164 -padleft 262 -padright 140 -r $FRAME_RATE -b 5000k \
+#PAD_CMD=(ffmpeg -async 1 -ss ${SEEK_VAL[MENU_NUM-1]} -t "$MENU_LENGTH" -i "$QM_SHOWCASE_FILE" -s 318x212 -an \
+#-padtop 104 -padbottom 164 -padleft 262 -padright 140 \
+#-f mpeg2video -r $FRAME_RATE -tvstd ntsc -b 12000k -maxrate 15000k \
+#-bufsize 230KiB -aspect $ASPECT_RATIO \
+#-padcolor $PAD_COLOUR -y  "$WORK_DIR/quick_tmp.m2v")
+yecho
+yecho "resizing and padding  showcase file: $SHOWCASE_FILE"
+PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 -ss ${SEEK_VAL[MENU_NUM-1]} -t "$MENU_LENGTH" \
+-i "$QM_SHOWCASE_FILE" -s 318x212 -acodec copy \
+-padtop 104 -padbottom 164 -padleft 262 -padright 140 -r $FRAME_RATE -b 15000k \
 -padcolor $PAD_COLOUR -y  "$WORK_DIR/quick_tmp.avi")
 yecho
 yecho "Running ${PAD_CMD[@]}"|fold -bs
 "${PAD_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"
 
 # use vhook to add the titles in
-VHOOK_CMD=(ffmpeg -i "$WORK_DIR/quick_tmp.avi" -an \
--vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
+#VHOOK_CMD=(ffmpeg -i  "$WORK_DIR/quick_tmp.m2v" -an \
+#-vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
+#-f mpeg2video -r $FRAME_RATE -tvstd ntsc -b 7000k -maxrate 8000k \
+#-bufsize 230KiB -aspect $ASPECT_RATIO -padcolor 161514 \
+#-y "$WORK_DIR/intro.m2v")
+yecho
+yecho "Using ffmpeg's imlib2 vhook to put titles on the showcase file"
+VHOOK_CMD=(ffmpeg -i  "$WORK_DIR/quick_tmp.avi" -an \
 -f mpeg2video -r $FRAME_RATE -tvstd ntsc -b 7000k -maxrate 8000k \
--bufsize 230KiB -aspect $ASPECT_RATIO -padcolor 161514 \
+-bufsize 230KiB -aspect $ASPECT_RATIO \
+-vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
 -y "$WORK_DIR/intro.m2v")
 yecho
 yecho "Running ${VHOOK_CMD[@]}" | fold -bs
 "${VHOOK_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
-
+cp -v $WORK_DIR/quick_menu_bg.png /tmp/
+yecho
 }
 
 # make a transparent png for vhook with the menu title and video titles on it
@@ -4977,7 +4993,7 @@ else # audio supplied: convert to wav then later to dvd/svcd format
         BGAUDIO_CMD=(mplayer  -quiet -vc null -vo null -ss $MPLAYER_SEEK_VAL \
         -ao pcm:waveheader:file="$WORK_DIR/intro.wav" -endpos $MENU_ATIME  "$BG_AUDIO")
     else
-        BGAUDIO_CMD=(ffmpeg -y  -ss $BG_AUDIO_SEEK $BG_AUDIO_LENGTH \
+        BGAUDIO_CMD=(ffmpeg -y  -async 1 -ss $BG_AUDIO_SEEK $BG_AUDIO_LENGTH \
         -i "$BG_AUDIO" -r 29.970 -ar 48000 -ac 2 -acodec pcm_s16le \
         $WORK_DIR/intro.wav)
     fi
