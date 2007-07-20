@@ -187,6 +187,7 @@ USER_AUDIOLENGTH=false
 BURN=false
 QUICK_MENU=false
 PAD_COLOUR=161514
+QM_PREVIEW=false
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -897,7 +898,7 @@ burn_disc()
         fi
     else
         echo "Not burning now - please see the parting message from todisc"
-        echo "for instructions on using $BURN_PROG"
+        echo "for instructions on using ${BURN_PROG}, or see 'man $BURN_PROG'"
     fi
 }
 
@@ -964,6 +965,11 @@ check_menufile()
 
 quick_menu()
 {
+if [[ -n $1 && $1 = "preview" ]]; then
+    QM_MENU_TIME=1 && QM_PREVIEW=:
+else
+    QM_MENU_TIME=$MENU_LENGTH && QM_PREVIEW=false
+fi
 QM_SHOWCASE_FILE="$SHOWCASE_FILE"
 # find out where vhook lives for ffmpeg
 ffmpeg_prefix=$(which ffmpeg)
@@ -977,13 +983,17 @@ imlib2_vhook="$ffmpeg_prefix/lib/vhook/imlib2.so"
 #-bufsize 230KiB -aspect $ASPECT_RATIO \
 #-padcolor $PAD_COLOUR -y  "$WORK_DIR/quick_tmp.m2v")
 yecho
-yecho "resizing and padding  showcase file: $SHOWCASE_FILE"
-PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 -ss ${SEEK_VAL[MENU_NUM-1]} -t "$MENU_LENGTH" \
+if $QM_PREVIEW; then
+    yecho "Creating a quick-menu preview image"
+else
+    yecho "resizing and padding  showcase file: $SHOWCASE_FILE"
+fi
+PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 -ss ${SEEK_VAL[MENU_NUM-1]} -t "$QM_MENU_TIME" \
 -i "$QM_SHOWCASE_FILE" -s 318x212 -acodec copy \
 -padtop 104 -padbottom 164 -padleft 262 -padright 140 -r $FRAME_RATE -b 15000k \
 -padcolor $PAD_COLOUR -y  "$WORK_DIR/quick_tmp.avi")
 yecho
-yecho "Running ${PAD_CMD[@]}"|fold -bs
+! $QM_PREVIEW && yecho "Running ${PAD_CMD[@]}"|fold -bs
 "${PAD_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"
 
 # use vhook to add the titles in
@@ -992,18 +1002,28 @@ yecho "Running ${PAD_CMD[@]}"|fold -bs
 #-f mpeg2video -r $FRAME_RATE -tvstd ntsc -b 7000k -maxrate 8000k \
 #-bufsize 230KiB -aspect $ASPECT_RATIO -padcolor 161514 \
 #-y "$WORK_DIR/intro.m2v")
-yecho
-yecho "Using ffmpeg's imlib2 vhook to put titles on the showcase file"
+! $QM_PREVIEW && yecho
+! $QM_PREVIEW && yecho "Using ffmpeg's imlib2 vhook to put titles on the showcase file"
 VHOOK_CMD=(ffmpeg -i  "$WORK_DIR/quick_tmp.avi" -an \
 -f mpeg2video -r $FRAME_RATE -tvstd ntsc -b 7000k -maxrate 8000k \
 -bufsize 230KiB -aspect $ASPECT_RATIO \
 -vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
 -y "$WORK_DIR/intro.m2v")
-yecho
-yecho "Running ${VHOOK_CMD[@]}" | fold -bs
+! $QM_PREVIEW && yecho
+! $QM_PREVIEW && yecho "Running ${VHOOK_CMD[@]}" | fold -bs
 "${VHOOK_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
-cp -v $WORK_DIR/quick_menu_bg.png /tmp/
-yecho
+! $QM_PREVIEW && yecho
+# create preview images if called for
+if $QM_PREVIEW; then
+    FFMPEG_CMD=(ffmpeg -i "$WORK_DIR/intro.m2v" -an -ss 1 -vframes 30 \
+    $WORK_DIR/showcase/%06d.png)
+    "${FFMPEG_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
+    largest_png=$(du -s "$WORK_DIR"/showcase/*.png|sort -r | awk 'NR>1{exit};1 {print $2}')
+    mv "$largest_png" "$PREVIEW_IMG"
+    yecho "Removing temporary preview files"
+    rm -f "$WORK_DIR"/showcase/*.png "$WORK_DIR/intro.m2v" "$WORK_DIR/quick_tmp.avi"
+fi
+$QM_PREVIEW && yecho
 }
 
 # make a transparent png for vhook with the menu title and video titles on it
@@ -1538,7 +1558,6 @@ while test $# -gt 0; do
             ;;
         "-quick-menu" )
             QUICK_MENU=:
-            PREVIEW_IMG="$WORK_DIR/preview.png"
             ;;
         "-pad-colour" | "-pad-color" )
             shift
@@ -3373,14 +3392,15 @@ else # not showcase
     fi
 fi
 
-if ! $NOASK && ! $QUICK_MENU; then
+$QUICK_MENU && ! $NOASK && quick_menu preview
+if ! $NOASK; then
     echo "Creating and displaying a preview of the main menu."
     echo "(Press 'q' or ESC in the preview window to close it.)"
 fi
 # make the fake montage with highlighted 1st button and display it
 composite -compose Over "$WORK_DIR/fake_montage.png" "$PREVIEW_IMG" \
 "$PREVIEW_IMG"
-if ! $NOASK && ! $QUICK_MENU; then
+if ! $NOASK ; then
     convert -resize $PREVIEW_SIZE! "$PREVIEW_IMG" miff:- |
     display -title "todisc preview - close window to continue" -
     confirm_preview
