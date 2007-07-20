@@ -3588,8 +3588,8 @@ echo
 # unless "none" is passed for -bgaudio
 if $SWITCHED; then
     yecho
-    SHOWCASE_SEEK_VAL=${SEEK_VAL[vid]}
     let vid=MENU_NUM-1
+    SHOWCASE_SEEK_VAL=${SEEK_VAL[vid]}
     # if no audio is detected in the video
     if grep -q "A_NOAUDIO=:" <<< "${idvid_stats[vid]}"; then
         # if -bgaudio is not passed, or passed as 'none', use silence
