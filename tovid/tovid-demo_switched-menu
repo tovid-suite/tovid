@@ -337,6 +337,7 @@ if ! todisc \
  -no-warn \
  -menu-audio-fade 0 \
  -button-style text-rect \
+ -pad-colour '#000030' \
  -text-mist \
  -switched-menus \
  -out "$IMAGE" >> "$DEMO_LOG" 2>&1; then
