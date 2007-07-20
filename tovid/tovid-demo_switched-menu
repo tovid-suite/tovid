@@ -17,6 +17,8 @@ DEMO_HOME=tovid_demo
 DEMO_LOG="$DEMO_HOME/tovid-demo.log"
 BIN=$DEMO_HOME/bin
 VIDS=$DEMO_HOME/vids
+IMAGE="tovid_demo_DVD"
+SEP=$(for i in {0..80}; do echo -n '*'; done)
 
 # ========================================================================
 # Function definitions
@@ -78,11 +80,23 @@ runtime_fail()
 # ========================================================================
 # Basic set-up/checks
 
+# make sure the tovid_demo_DVD dir doesn't already exist
+if test -d $IMAGE; then
+    echo -e "\n$SEP"
+    echo "$IMAGE already exists, would you like to delete this directory and continue?"
+    echo "Enter 'y' if you wish to do do, or else the script will exit"
+    read instructions
+    if [[ -n $instructions && $instructions = "y" ]]; then
+        rm -frv "$IMAGE"
+    else
+        echo "exiting: $IMAGE already exists"
+        echo -e "$SEP\n"
+        exit 0
+    fi
+    echo "$SEP"
+fi
 # read in command args and find out which demo we are making
-while [ $# -gt 0 ]; do
-    case "$1" in  titlesets)  TITLESETS=:;; full)  FULL=:;; esac; shift
-done
-$TITLESETS && FULL=false # titleset mode doesn't have a 'full' option
+while [ $# -gt 0 ]; do case "$1" in  full)  FULL=:;; esac; shift; done
 
 # check if todisc already installed and exit with error if so
 if hash todisc 2>/dev/null; then
@@ -122,19 +136,21 @@ GREETING=`cat << EOF
 
 /======================== T O V I D   D E M O ===========================\\\\
   Hi! Thanks for downloading the tovid demo. Please sit back, relax, 
-  and wait while everything sorts itself out. In the end, you'll have a 
+  and wait while everything sorts itself out. In the end, you will have a 
   working DVD image. (ready to burn!)
   
-  If you run this script with the option 'deluxe' ("sh tovid-demo deluxe"),
-  then you can get a demo of todisc's new titleset capability, as well as
-  new options '-switched-menus' and '-quick-nav'.
-  This would take longer as we would be doing multiple levels of menus.
+  This script will created switched menus using the todisc script,
+  and using an experimental technique to avoid using imagemagick for
+  animated menu creation.  Instead it  relies on ffmpeg and its 'vhooks'.
+  If you run this script with the option 'full' ("sh tovid-demo_switched-menus full"),
+  then the menu will be a bit fancier, using '-wave and -rotate', and will take over
+  an hour instead of 15 minutes or so.
 
-  I'll be downloading the latest tovid development version, some helper 
-  files, and a few videos from YouTube to make the DVD. I'll convert 
+  I will be downloading the latest tovid development version, some helper 
+  files, and a few videos from YouTube to make the DVD. I will convert 
   the YouTube videos, make an animated menu, and create the DVD image.
 
-  Please be patient. . . This may take 1-2 hours.
+  Please be patient. . .
 
   While you are waiting, consider coming by the irc channel '#tovid' on
   chat.freenode.net to say hello!
@@ -267,7 +283,7 @@ fi
 # ========================================================================
 # Convert the demo videos
 echo
-echo "Converting videos to DVD specification. Give me about 12 minutes..."
+echo "Converting videos to DVD specification. Give me about 10 minutes..."
 
 i=1
 for vid in "$VID_1_SRC,$VID_1_NAME,$VID_1_STR" \
@@ -284,147 +300,48 @@ for vid in "$VID_1_SRC,$VID_1_NAME,$VID_1_STR" \
         fi
     fi
     echo "done."
-    if $TITLESETS && ! test -f "$VIDS/${name}-ws.mpg"; then
-        if [[ $name = $VID_2_NAME || $name = $VID_4_NAME ]]; then
-            ([[ $name = $VID_1_NAME ]] && TOPCROP=30 && BOTTOMCROP=30) || TOPCROP=36 && BOTTOMCROP=24
-            printf "%s" "encoding to 16:9 aspect as well..."
-            if ! ffmpeg -i $VIDS/$name.flv -sameq  -croptop $TOPCROP -cropbottom $BOTTOMCROP \
-            -target ntsc-dvd -aspect 16:9  -y "$VIDS/${name}-ws.mpg" >> $DEMO_LOG 2>&1; then
-                runtime_fail "Couldn't encode $name.flv to 16:9 aspect!"
-            fi
-        fi
-    fi
     echo "done."
     i=$(expr $i \+ 1)
 done
 
 # ========================================================================
 # Author the disc
-IMAGE="tovid_demo_DVD"
-if $TITLESETS; then
+if $FULL; then
+# allow for fancy menu with 'full' command option
     TASK_TIME="about an hour"
+    STYLE="-wave default -rotate 7"
+    MENU_LENGTH=19
 else
-    $FULL && TASK_TIME="about an hour" || TASK_TIME="about 20 minutes"
-fi
-echo
-echo "Making the menu and DVD image. Give me ${TASK_TIME}..."
-if ! test -d $IMAGE; then
-    if ! $TITLESETS; then
-        if $FULL; then
-            :
-        else
-            if ! todisc \
-            -files "$VIDS/amateur.mpg" "$VIDS/fujiya.mpg" \
-            "$VIDS/monkey.mpg" "$VIDS/poppin.mpg" \
-            -titles "Amateur\nby  Lasse Gjertsen" \
-            "Ankle Injuries\nby Fujiya & Miyagi " \
-             "Code Monkey\nby Spiff and Coulton" \
-            "Poppin' in the Streets\nof Korea" \
-            -menu-title "tovid demo DVD" \
-            -quick-menu \
-            -seek 126 1 0 5 \
-            -menu-length 30 \
-            -noask \
-            -menu-font "$VIDS/bardn.ttf" \
-            -thumb-font "$VIDS/aleia.ttf" \
-            -thumb-fontsize 18 \
-            -no-warn \
-            -menu-audio-fade 1 \
-            -button-style text-rect \
-            -text-mist \
-            -switched-menus \
-            -out "$IMAGE" >> "$DEMO_LOG" 2>&1; then
-                runtime_fail "Could't make DVD image!"
-            fi
-        fi
-    else
-        if ! todisc \
-        -no-ask \
-        -no-warn \
-        -static \
-        -menu-font Bard \
-        -thumb-font "$VIDS/aleia.ttf" \
-        -thumb-fontsize 24 \
-        -menu-fontsize 40 \
-        -out "$IMAGE" \
-        -menu-audio-length 30 \
-        \
-        -titleset \
-        -files  "$VIDS/amateur.mpg" "$VIDS/fujiya.mpg" "$VIDS/monkey.mpg" \
-        -titles "Amateur" "Ankle Injuries" "Code Monkey" \
-        -menu-title "Switched Menus" \
-        -switched-menus \
-        -seek 27 1 0 \
-        -wave default \
-        -background "$VIDS/bg1.jpg" \
-        -rotate 10 \
-        -text-mist \
-        -end-titleset \
-        \
-        -titleset \
-        -files "$VIDS/amateur.mpg" "$VIDS/fujiya.mpg" "$VIDS/poppin.mpg" \
-        -titles "Amateur" "Ankle Injuries" "Korean Breakers" \
-        -tile3x1 \
-        -rotate-thumbs 10 -10 10 \
-        -menu-title "Rotated thumbs" \
-        -bgaudio /work/svn/tovid/poppin.mpg \
-        -align south \
-        -background "$VIDS/bg2.jpg" \
-        -end-titleset \
-        \
-        -titleset \
-        -aspect 16:9 \
-        -widescreen nopanscan \
-        -files  "$VIDS/amateur-ws.mpg" "$VIDS/monkey-ws.mpg" \
-        -showcase "$VIDS/monkey-ws.mpg" \
-        -bgaudio "$VIDS/monkey.mpg" \
-        -titles "Amateur"  "Code Monkey" \
-        -rotate 10 \
-        -textmenu \
-        -menu-title "Widescreen videos" \
-        -background "$VIDS/bg3.jpg" \
-        -static \
-        -end-titleset \
-        \
-        -titleset \
-        -files  "$VIDS/amateur.mpg" "$VIDS/fujiya.mpg" "$VIDS/monkey.mpg" \
-        -titles "Amateur" "Ankle Injuries" "Code Monkey" \
-        -menu-title "Oval thumbs titleset" \
-        -bgaudio "$VIDS/amateur.mpg" \
-        -bgaudio-seek 26 \
-        -thumb-shape oval \
-        -button-style rect \
-        -tile3x1 \
-        -align center \
-        -text-mist \
-        -menu-title "Oval shaped thumbs" \
-        -background "$VIDS/bg4.jpg" \
-        -static \
-        -end-titleset \
-        \
-        -vmgm \
-        -bgaudio "$VIDS/fujiya.mpg" \
-        -background  "$VIDS/fujiya.mpg" \
-        -bg-audio-seek 1 \
-        -menu-fade \
-        -menu-length 20 \
-        -rotate 10 \
-        -menu-title "Tovid demo DVD" \
-        -menu-font Bard \
-        -menu-fontsize 40 \
-        -thumb-font ComicSans \
-        -thumb-fontsize 18 \
-        -title-gap 40 \
-        -text-start 75 \
-        -titles "Switched Menus" "Rotated thumbs" "Widescreen videos"  "Oval shaped thumbs" \
-        -background "$VIDS/tile.jpg" \
-        -end-vmgm  >> "$DEMO_LOG" 2>&1; then
-            runtime_fail "Could't make DVD image!"
-        fi
-    fi
+    TASK_TIME="about 20 minutes"
+    STYLE="-quick-menu"
+    MENU_LENGTH=19 # FIXME should be 30
 fi
 
-# -showcase $VIDS/fujiya.mpg \
+echo
+echo "Making the menu and DVD image. Give me ${TASK_TIME}..."
+if ! todisc \
+ -files "$VIDS/amateur.mpg" "$VIDS/fujiya.mpg" \
+ "$VIDS/monkey.mpg" "$VIDS/poppin.mpg" \
+ -titles "Amateur\nby  Lasse Gjertsen" \
+ "Ankle Injuries\nby Fujiya & Miyagi " \
+  "Code Monkey\nby Spiff and Coulton" \
+ "Poppin' in the Streets\nof Korea" \
+ -menu-title "tovid demo DVD" \
+ $STYLE \
+ -seek 126 1 0 5 \
+ -menu-length $MENU_LENGTH \
+ -noask \
+ -menu-font "$VIDS/bardn.ttf" \
+ -thumb-font "$VIDS/aleia.ttf" \
+ -thumb-fontsize 18 \
+ -no-warn \
+ -menu-audio-fade 0 \
+ -button-style text-rect \
+ -text-mist \
+ -switched-menus \
+ -out "$IMAGE" >> "$DEMO_LOG" 2>&1; then
+    runtime_fail "Could't make DVD image!"
+fi
 
 # ========================================================================
 # Sign off
