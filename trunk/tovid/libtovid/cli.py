@@ -98,8 +98,10 @@ class Command:
         This function does not allow special stream redirection. For that,
         use run_redir().
         """
+        print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
         print "Running command:"
         print str(self)
+        print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
         if capture:
             self.run_redir(None, PIPE, stderr=PIPE)
