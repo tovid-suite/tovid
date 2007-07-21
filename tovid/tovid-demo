@@ -257,17 +257,16 @@ fi
 # ========================================================================
 # Sign off
 
-PWD=`pwd`
 GOODBYE=`cat << EOF
 
 /========================== F I N I S H E D =============================\\\\
   Well, it looks like I'm all done here. You can preview your dvd with:
 
-        gxine dvd:/$PWD/$IMAGE
+        gxine "dvd:/$PWD/$IMAGE"
 
   And you can burn it with:
 
-        export PATH=$(pwd)/$BIN:\\$PATH
+        export PATH="$PWD/$BIN:\\$PATH"
         makedvd -burn $IMAGE
 
   Thanks for trying the tovid demo. We hope you like what you see!
