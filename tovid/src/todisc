@@ -968,7 +968,7 @@ quick_menu()
 if [[ -n $1 && $1 = "preview" ]]; then
     QM_MENU_TIME=1 && QM_PREVIEW=:
 else
-    QM_MENU_TIME=$MENU_LENGTH && QM_PREVIEW=false
+    QM_MENU_TIME=${MENU_LENGTH[MENU_NUM-1]} && QM_PREVIEW=false
 fi
 QM_SHOWCASE_FILE="$SHOWCASE_FILE"
 # find out where vhook lives for ffmpeg
@@ -1170,7 +1170,10 @@ while test $# -gt 0; do
         # Menu control options
         "-menu-length" )
             shift
-            MENU_LENGTH="$1"
+            unset MENU_LENGTH
+            get_listargs "$@"
+            MENU_LENGTH="${ARGS_ARRAY[@]}"
+            MENU_LENGTH=( ${MENU_LENGTH//,/ } )
             ;;
         # submenu-length disabled for now
         "-submenu-length" )
@@ -1628,7 +1631,7 @@ if $NO_VMGM_MENU; then
 fi
 
 # initialize MENU_AUDIOLENGTH now that options have been read
-[[ -n $BG_AUDIO ]] && MENU_AUDIOLENGTH=$MENU_LENGTH
+[[ -n $BG_AUDIO ]] && MENU_AUDIOLENGTH=${MENU_LENGTH[MENU_NUM-1]}
 
 # some checks for -quick-menu
 if $QUICK_MENU; then
@@ -1987,16 +1990,31 @@ if [[ -n ${ROTATE_ARRAY[@]} ]]; then
     fi
 fi
 # if only one seek value, then use for all videos
-if [ ${#SEEK_VAL[@]} -eq 1 ]; then
-    for ((i=0; i<=NUM_FILES; i++)); do
+for ((i=0; i<=NUM_FILES; i++)); do
+    if [ ${#SEEK_VAL[@]} -eq 1 ]; then
         SEEK_VAL[i]=${SEEK_VAL[0]}
         SEEK[i]="-ss ${SEEK_VAL[i]}" # create seek value for each video
-    done
-fi
+    fi
+    if [ ${#MENU_LENGTH[@]} -eq 1 ]; then
+        MENU_LENGTH[i]=${MENU_LENGTH[0]}
+    fi
+done   
+
+# allow -seek to have HH:MM:SS format passed
+for ((i=0; i<=NUM_FILES; i++)); do
+    if [[ "${SEEK_VAL[i]}" = *:* ]]; then
+        SEEK_VAL[i]=$(unformat_time ${SEEK_VAL[i]})
+    fi
+done
 # make sure if more than one seek value, they equal the number of video
 if ! $VMGM_ONLY &&  [[ ${#FILES[@]} -ne ${#SEEK_VAL[@]} &&  ${#SEEK_VAL[@]} -ne 1 ]]; then
     usage_error "Please give the same number of seek times as videos, or just use one value.
     You gave ${#FILES[@]} video files and ${#SEEK_VAL[@]} seek times"
+fi
+# make sure if more than one -menu-length value, they equal the number of video
+if ! $VMGM_ONLY &&  [[ ${#FILES[@]} -ne ${#MENU_LENGTH[@]} &&  ${#MENU_LENGTH[@]} -ne 1 ]]; then
+    usage_error "Please give the same number of -menu-length times as videos, or just use one value.
+    You gave ${#FILES[@]} video files and ${#MENU_LENGTH[@]} -menu-length times"
 fi
 #create seek value for each video
 for ((i=0; i<=NUM_FILES; i++)); do
@@ -2096,7 +2114,7 @@ yecho "  -thumb-fontsize $THUMB_FONTSIZE"
 if ! $VMGM_ONLY; then
     yecho "Current menu settings: "
     if  ! $STATIC; then
-        yecho "  -menu-length $MENU_LENGTH seconds"
+        yecho "  -menu-length ${MENU_LENGTH[MENU_NUM-1]} seconds"
     fi
     if $ANI_SUB_MENU; then
         yecho "  -submenu-length $ANI_SUBMENU_LENGTH seconds"
@@ -3441,12 +3459,12 @@ fi
 
 # find out the length of the -bgaudio FILE, if there is one
 if [[ -n "$BG_AUDIO" ]]; then
-    BG_AUDIOLENGTH=$(audio_length "$BG_AUDIO" $MENU_LENGTH)
+    BG_AUDIOLENGTH=$(audio_length "$BG_AUDIO" ${MENU_LENGTH[MENU_NUM-1]})
     yecho
     yecho "Getting length of bg audio"
     yecho
     # make sure user isn't trying to get a longer menu than the audio allows
-    if [[ $(bc <<< "$MENU_LENGTH > $BG_AUDIOLENGTH")  -eq 1 ]]; then
+    if [[ $(bc <<< "${MENU_LENGTH[MENU_NUM-1]} > $BG_AUDIOLENGTH")  -eq 1 ]]; then
         MENU_AUDIOLENGTH=$BG_AUDIOLENGTH
     fi
 fi
@@ -3464,7 +3482,7 @@ tovid_reencode()
     VIDEO_IN="$1"
     VIDEO_IN_SEEK="$2"
     yecho
-    yecho "$VIDEO_IN is not compliant - re-encoding $(bc <<< "$VIDEO_IN_SEEK + $MENU_LENGTH") second slice to DVD compliant file"
+    yecho "$VIDEO_IN is not compliant - re-encoding $(bc <<< "$VIDEO_IN_SEEK + ${MENU_LENGTH[MENU_NUM-1]}") second slice to DVD compliant file"
     yecho "if you used a long seek this will take some time and produce a large file."
     yecho "But if the file is not encoded this way there may be sync problems."
     yecho "Do you want to continue encoding this file?, type 'yes' to do so"
@@ -3479,8 +3497,9 @@ tovid_reencode()
     yecho
     yecho "Converting files to $TGT_CAPS format with 'tovid'"
     countdown
-    tovid $NO_ASK -in "$VIDEO_IN" -slice 0-$((VIDEO_IN_SEEK + MENU_LENGTH)) -$TV_STANDARD \
-    -$TARGET -in "$VIDEO_IN" -out "$VIDEO_IN.enc" $TOVID_OPTS
+    tovid $NO_ASK -in "$VIDEO_IN" \
+    -slice 0-$(bc <<< "$VIDEO_IN_SEEK + ${MENU_LENGTH[MENU_NUM-1]}") \
+    -${TV_STANDARD} -${TARGET} -in "$VIDEO_IN" -out "$VIDEO_IN.enc" $TOVID_OPTS
     # See if output file exists
     if ! test -f "$VIDEO_IN.enc.mpg"; then
         runtime_error "Could not encode file: $VIDEO_IN"
@@ -3656,7 +3675,7 @@ if $ANI_SUB_MENU; then
     done
 fi
 # allow animated menus of length of longest video
-MAX_MENU_LENGTH=$(bc_math "$FRAME_RATE * $MENU_LENGTH" int)
+MAX_MENU_LENGTH=$(bc_math "$FRAME_RATE * ${MENU_LENGTH[MENU_NUM-1]}" int)
 MAX_VAL_FRAMES="$((MAX_VAL * 30))"
 # if submenu selected, translate seconds of submenu length into # of frames
 if $ANI_SUB_MENU; then
@@ -4990,7 +5009,7 @@ if ! mencoder -quiet -oac pcm -ovc copy -frames 0 $WORK_DIR/intro.m2v -o /dev/nu
 fi
 
 MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
-$SWITCHED && MENU_ATIME=$MENU_LENGTH
+$SWITCHED && MENU_ATIME=${MENU_LENGTH[MENU_NUM-1]}
 # if -menu-audio-length LENGTH was passed, override the above MENU_ATIME
 #if [[ -n "$BG_AUDIO" ]] && $STATIC; then MENU_ATIME=$MENU_AUDIOLENGTH; fi
 # use mplayer to dump audio if mplayer used for video
