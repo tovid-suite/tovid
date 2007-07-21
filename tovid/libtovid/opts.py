@@ -14,7 +14,7 @@ import textwrap
 from libtovid.odict import Odict
 from libtovid.utils import trim
 
-class Option:
+class Option (object):
     """A command-line-style option, expected argument formatting, default value,
     and notes on usage and purpose.
     
@@ -32,7 +32,8 @@ class Option:
     option's purpose and/or usage information."""
 
     def __init__(self, name, argformat='', default=None,
-                 doc='Undocumented option', alias=None):
+                 doc='Undocumented option', alias=None,
+                 required=False):
         """Create a new option definition with the given attributes.
         
             name:      Option name
@@ -48,6 +49,7 @@ class Option:
         self.default = default
         self.doc = trim(doc)
         self.alias = alias
+        self.required = required
         # If an alias was provided, generate documentation.
         # i.e., alias=('tvsys', 'ntsc') means this option is the same as
         # giving the 'tvsys' option with 'ntsc' as the argument.
@@ -70,31 +72,34 @@ class Option:
             # Unary: one argument
             return 1
     
-    def usage(self):
+    def __str__(self):
         """Return a string containing "usage notes" for this option."""
         if self.alias:
             usage = "-%s: Same as '-%s %s'\n" % \
                   (self.name, self.alias[0], self.alias[1])
         else:
-            usage = "-%s %s (default: %s)\n" % \
-                    (self.name, self.argformat, self.default)
+            usage = "-%s %s " % (self.name, self.argformat)
+            if self.required:
+                usage += "(REQUIRED)\n"
+            else:
+                usage += "(default: %s)\n" % self.default
             for line in textwrap.wrap(self.doc, 60):
                 usage += '    ' + line + '\n'
         return usage
 
 ### --------------------------------------------------------------------
 
-class Usage (Odict):
+class Usage (object):
     """Command-line usage definition."""
-    def __init__(self, usage_string='', *options):
+    def __init__(self, usage_string='program [options]', *options):
         """Define usage of a command-line program.
         
-            usage_string: Human-readable example of how to invoke the program
-            *options:     Comma-separated list of Options allowed
+            usage_string: Command-line syntax and required options
+            *options:     List of allowed Options
 
         Examples:
 
-        usage = Usage('pytovid OPTIONS -in FILENAME -out NAME',
+        usage = Usage('pytovid [options] -in FILENAME -out NAME',
             Option('in', 'FILENAME', None,
                 "Input video file, in any format."),
             Option('out', 'NAME', None,
@@ -104,32 +109,32 @@ class Usage (Odict):
         )
         
         print usage
-        print usage['format']
+        print usage.options['format']
         
         """
-        Odict.__init__(self)
-        for opt in options:
-            self[opt.name] = opt
-        # TODO: Parse usage string and recognize required options
         self.usage_string = usage_string
+        # Odict of options indexed by name
+        names = [opt.name for opt in options]
+        self.options = Odict(names, options)
 
     def __str__(self):
-        result = "Usage: %s %s\n" % (self.program, self.usage_string)
+        """Return string-formatted usage notes."""
+        result = "Usage: %s\n" % self.usage_string
         result += "Allowed options:\n"
-        for opt in self.values():
-            result += str(opt) + "\n"
+        option_list = ['-' + opt.name for opt in self.options.values()]
+        result += ', '.join(option_list)
         return result
 
 ### --------------------------------------------------------------------
 from copy import copy
 
 def parse(args):
-    """Parse a list of arguments and return an Odict of found options.
+    """Parse a list of arguments and return a dictionary of found options.
 
         args:    List of command-line arguments (such as from sys.argv)
     """
     args = copy(args)
-    options = Odict()
+    options = {}
     option = None
     while len(args) > 0:
         arg = args.pop(0)
@@ -139,7 +144,7 @@ def parse(args):
             current = arg.lstrip('-')
             options[current] = True
             
-        # Argument to an existing option
+        # Argument to current option
         else:
             # Was a flag, now has a single value
             if options[current] == True:
