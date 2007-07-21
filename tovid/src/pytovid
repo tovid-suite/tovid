@@ -7,17 +7,19 @@ shell script).
 """
 
 import sys
-from libtovid.opts import Option, OptionDict
+from libtovid.opts import Option, Usage, parse
 from libtovid.transcode import encode
 from libtovid import log
 
 # List of valid command-line options, with documentation
-OPTION_DEFS = [\
+allowed_options = [\
     # Filenames
     Option('in', 'FILENAME', None,
-        """Input video file, in any format."""),
+        """Input video file, in any format.""",
+        required=True),
     Option('out', 'NAME', None,
-        """Output prefix or name."""),
+        """Output prefix or name.""",
+        required=True),
 
     # Format options
     Option('format', 'vcd|svcd|dvd|half-dvd|dvd-vcd', 'dvd',
@@ -101,30 +103,17 @@ OPTION_DEFS = [\
         encoding.""")
 ]
 
-if __name__ == '__main__':
-    """Create a Video with provided options and generate it.
-    """
-    options = OptionDict(OPTION_DEFS)
+usage = Usage('pytovid [options] -in FILE -out NAME', *allowed_options)
 
-    def usage_error(message):
-        print 'Usage: pytovid [options] -in FILE -out NAME'
-        print 'Where [options] may be any of the following:'
-        print options.usage()
-        print message
+if __name__ == '__main__':
+
+    if len(sys.argv) < 5:
+        print usage
+        print "Please provide an input file (-in) and output name (-out)."
         sys.exit(1)
 
-    # Inadequate arguments?
-    if len(sys.argv) < 5:
-        usage_error('Please provide an input file (-in)'\
-                    ' and output name (-out).')
+    options = parse(sys.argv[1:])
 
-    # Get all command-line options
-    options.override(sys.argv[1:])
-    
-    # -in and -out are required
-    if 'in' not in options or 'out' not in options:
-        usage_error('Please provide an input file (-in)'\
-                    ' and output name (-out).')
-
-    # Encode the video
     encode.encode(options['in'], options['out'], **options)
+    
+    print "Done. Thanks for using pytovid!"
