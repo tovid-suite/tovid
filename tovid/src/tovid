@@ -299,7 +299,8 @@ function cmd_exec()
         yecho
         return
     else
-        eval "$@" 2>&1 | ${LOG_FILTER:=cat} >> "$LOG_FILE" &
+#        eval "$@" 2>&1 | ${LOG_FILTER:=cat} >> "$LOG_FILE" &
+        eval "$@" 2>&1 | strings >> "$LOG_FILE" &
         PIDS="$PIDS $!"
     fi
 }
@@ -1091,7 +1092,7 @@ if $SLICE; then
     if [[ "$CLIP_ENDTIME" ]]; then
         [[ "$CLIP_ENDTIME" = *:* ]] && CLIP_ENDTIME=$(unformat_time $CLIP_ENDTIME)
         CLIP_LENGTH=$(echo "$CLIP_ENDTIME - $CLIP_SEEK" | bc)
-        [[ $CLIP_LENGTH -eq 0 ]] && CLIP_LENGTH=1
+        [[ ${CLIP_LENGTH%.*} -eq 0 ]] && CLIP_LENGTH=1
         FF_LENGTH="-t $CLIP_LENGTH"
     fi
     CLIP_SEEK="-ss $CLIP_SEEK"
