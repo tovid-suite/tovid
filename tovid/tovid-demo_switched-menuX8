@@ -1,0 +1,393 @@
+#!/usr/bin/env bash
+# tovid demo script
+
+# this is a hacked version of MacNorth's 'tovid-demo' script
+# I take full credit for all errors in it :)
+# grepper@gmail.com  July 2007
+
+# ========================================================================
+# Options to the script
+OPTS=($@)
+TITLESETS=false
+SWITCHED=:
+FULL=false
+# Global constants
+# Working directories
+DEMO_HOME=tovid_demo
+DEMO_LOG="$DEMO_HOME/tovid-demo.log"
+BIN=$DEMO_HOME/bin
+VIDS=$DEMO_HOME/vids
+IMAGE="tovid_demo_DVD"
+SEP=$(for i in {0..80}; do echo -n '*'; done)
+
+# ========================================================================
+# Function definitions
+
+# get_source_file
+# Download a source file from the internet, and set it +x
+# Sources are saved to $BIN
+#
+# Example:
+#   Retrieve http://foobar.org/baz.sh with:
+#   get_source_file http://foobar.org baz.sh
+get_source_file()
+{
+    URL="$1"
+    SRC="$2"
+    if ! wget "$URL/$SRC" --output-document="$BIN/$SRC" >> $DEMO_LOG 2>&1; then
+        runtime_fail "Problem downloading $SRC!"
+    fi
+    chmod +x $BIN/$SRC
+}
+
+
+# get_youtube_vid
+# Download a video from YouTube
+# Videos are saved to $VIDS with the given name ('.flv' is added)
+# Videos are NOT re-downloaded if the given name exists already (time saver).
+#
+# Example:
+#   Retrieve http://youtube.com/watch?v=JzqumbhfxRo as "amateur.flv" with:
+#   get_youtube_vid http://youtube.com/watch?v=JzqumbhfxRo amateur
+get_youtube_vid()
+{
+    URL="$1"
+    NAME="$2"
+    if ! test -f "$VIDS/$NAME.flv"; then
+        if youtube-dl -o "$VIDS/$NAME.flv" "$URL" >> $DEMO_LOG 2>&1; then :
+        else
+            runtime_fail "Problem downloading $URL!"
+        fi
+    fi
+}
+
+
+# runtime_fail
+# Exit the demo, with an optional help message
+#
+# Example:
+#   runtime_fail "Problem downloading a file!"
+runtime_fail()
+{
+    MSG="$1"
+    echo -e "\n\n$MSG"
+    echo "Please keep the file $DEMO_LOG and go to tovid.org for help."
+    echo "Exiting..."
+    exit 1
+}
+
+# ========================================================================
+# Basic set-up/checks
+
+# check if todisc already installed and exit with error if so
+if hash todisc 2>/dev/null; then
+    echo "Sorry, I can't run this script if you already have a version"
+    echo "of the tovid suite installed.  Please uninstall it and try again"
+    exit 1
+fi
+
+# make sure the tovid_demo_DVD dir doesn't already exist
+if test -d $IMAGE; then
+    echo -e "\n$SEP"
+    echo "$IMAGE already exists, would you like to delete this directory and continue?"
+    echo "Enter 'y' if you wish to do do, or else the script will exit"
+    read instructions
+    if [[ -n $instructions && $instructions = "y" ]]; then
+        rm -frv "$IMAGE"
+    else
+        echo "exiting: $IMAGE already exists"
+        echo -e "$SEP\n"
+        exit 0
+    fi
+    echo "$SEP"
+fi
+# read in command args and find out which demo we are making
+while [ $# -gt 0 ]; do case "$1" in  full)  FULL=:;; esac; shift; done
+
+# Empty the log file
+echo -n > "$DEMO_LOG"
+
+# Make the destination directories if they don't exist already
+for dir in $DEMO_HOME $BIN $VIDS; do
+    if ! test -d $dir; then
+        mkdir $dir
+    fi
+done
+
+# Check for run-time deps
+DEPS="wget python sed grep awk ffmpeg mplayer mencoder mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv composite convert mogrify montage identify dvdauthor spumux growisofs tcprobe tcdemux tcrequant transcode gxine"
+# Determine if any group member is missing
+NO_GROUP=false
+for dep in $DEPS; do
+    if ! type -a $dep >> $DEMO_LOG 2>&1; then
+        printf "%-13s %s\n" "  $dep" "MISSING!"
+        NO_GROUP=:
+    fi
+done
+# Quit if any group member is missing
+if $NO_GROUP; then
+    echo
+    echo "Sorry! You can't run the demo until these packages are installed."
+    exit 1
+fi
+
+# Greeting
+GREETING=`cat << EOF
+
+/======================== T O V I D   D E M O ===========================\\\\
+  Hi! Thanks for downloading the tovid demo. Please sit back, relax, 
+  and wait while everything sorts itself out. In the end, you will have a 
+  working DVD image. (ready to burn!)
+  
+  This script will created switched menus using the todisc script, featuring
+  videos from spiffworld ( music by Jonathan Coulton ).
+  The script uses an experimental technique to avoid using imagemagick for
+  animated menu creation, instead it  relies on ffmpeg 'vhooks'.
+  If you run this script with the option 'full' ("sh tovid-demo_switched-menus full"),
+  then the menu will be a bit fancier, using '-wave and -rotate', and will take several
+  hours instead of 30 minutes or so.
+
+  I will be downloading the latest tovid development version, some helper 
+  files, and a few videos from YouTube to make the DVD. I will convert 
+  the YouTube videos, make an animated menu, and create the DVD image.
+
+  Please be patient. . .
+
+  While you are waiting, consider coming by the irc channel '#tovid' on
+  chat.freenode.net to say hello!
+\\\\========================================================================/
+
+EOF`
+echo "$GREETING"
+
+# ========================================================================
+# Get executables
+
+echo
+echo "Grabbing the latest scripts..."
+
+# tovid sources
+# =============
+TOVID_DL_HOME="http://tovid.googlecode.com/svn/trunk/tovid/src/"
+TOVID_SRCS="idvid tovid makedvd todisc todisc-fade-routine tovid-init.in"
+
+echo     "   tovid sources:"
+echo     "      $TOVID_SRCS"
+echo -n  "      "
+for src in $TOVID_SRCS; do
+    get_source_file $TOVID_DL_HOME $src
+    echo -n "$src "
+done
+echo
+
+# Update executable path
+PATH=$(pwd)/$BIN:$PATH
+export PATH
+
+# Set version
+DEMO_VERSION=$(wget --quiet http://tovid.googlecode.com/svn/trunk/tovid/ -O - |
+awk -F'[: ]' '/Revision/{s=$3} END{print s}')
+sed -i "s/@VERSION@/demo-$DEMO_VERSION/" $BIN/tovid-init.in
+mv $BIN/tovid-init.in $BIN/tovid-init
+
+# Get YouTube video downloader
+# ============================
+YGET_DL_HOME="http://www.arrakis.es/~rggi3/youtube-dl/"
+YGET="youtube-dl"
+
+if ! test -s "$BIN/$YGET"; then 
+    echo -n "   youtube-dl...   "
+    get_source_file $YGET_DL_HOME $YGET
+    echo "done."
+fi
+
+# ========================================================================
+# Get DVD source video/images/sound
+echo
+
+# Menu background image
+if $TITLESETS; then
+    FILES="bg1.jpg bg2.jpg bg3.jpg bg4.jpg aleia.ttf bardn.ttf"
+else
+    FILES="aleia.ttf bardn.ttf"
+fi
+FILES_SRC="http://tovid-users.googlegroups.com/web/"
+echo "Grabbing background image(s) and fonts for the main menu... (1MB)"
+for FILE in $FILES; do
+    printf "   %s: %-55s\n" "Image" "$FILES_SRC/$FILE..."
+    if ! test -f $VIDS/$FILE; then
+        if ! wget "$FILES_SRC/$FILE" -O "$VIDS/$FILE" >> $DEMO_LOG 2>&1; then
+            runtime_fail "Couldn't get background image ($FILE_SRC/$FILE)!"
+        fi
+    fi
+done
+echo "done."
+
+# Menu audio
+if $TITLESETS; then
+    MENU_AUD_SRC="http://www.paulosacramento.com.br/musicas/08-11-05-batida-urbana.mp3"
+    MENU_AUD="batida-urbana.mp3"
+    MENU_AUD_STR="Batida Urbana by Paulo Sacramento on opsound.org"
+    printf "   %s: %-55s" "Audio" "$MENU_AUD_STR..."
+    if ! test -f $VIDS/$MENU_AUD; then
+        if ! wget "$MENU_AUD_SRC" -O "$VIDS/$MENU_AUD" >> $DEMO_LOG 2>&1; then
+            runtime_fail "Couldn't get menu audio ($MENU_AUD_SRC)!"
+        fi
+    fi
+    echo done.
+fi
+
+# Demo videos
+VID_1_SRC="http://www.youtube.com/watch?v=knzMFC6s4Bw"
+VID_1_NAME="fantastic"
+VID_1_STR="I feel fantastic"
+
+VID_2_SRC="http://www.youtube.com/watch?v=ShPAyOoOGPw"
+VID_2_NAME="betty"
+VID_2_STR="Betty and Me"
+
+VID_3_SRC="http://www.youtube.com/watch?v=eTSkWnKs9rM"
+VID_3_NAME="creppy"
+VID_3_STR="Creepy Doll"
+
+VID_4_SRC="http://www.youtube.com/watch?v=2_ryNJVreiY"
+VID_4_NAME="skullcrusher"
+VID_4_STR="Skullcrusher Mountain"
+
+VID_5_SRC="http://www.youtube.com/watch?v=XqAzgmVUKi0"
+VID_5_NAME="long_as_me"
+VID_5_STR="Just as long as Me"
+
+VID_6_SRC="http://youtube.com/watch?v=v4Wy7gRGgeA"
+VID_6_NAME="monkey"
+VID_6_STR="Code Monkey music video"
+
+VID_7_SRC="http://www.youtube.com/watch?v=BjMiDZIY1bM"
+VID_7_NAME="brains"
+VID_7_STR="Re: Your Brains"
+
+VID_8_SRC="http://www.youtube.com/watch?v=50UhOdBHsQg"
+VID_8_NAME="podsafe"
+VID_8_STR="Podsafe Christmas song"
+
+echo
+echo "Grabbing 4 YouTube videos (34MB). Give me about 10 minutes..."
+
+i=1
+for vid in "$VID_1_SRC,$VID_1_NAME,$VID_1_STR" \
+           "$VID_2_SRC,$VID_2_NAME,$VID_2_STR" \
+           "$VID_3_SRC,$VID_3_NAME,$VID_3_STR" \
+           "$VID_4_SRC,$VID_4_NAME,$VID_4_STR" \
+           "$VID_5_SRC,$VID_5_NAME,$VID_5_STR" \
+           "$VID_6_SRC,$VID_6_NAME,$VID_6_STR" \
+           "$VID_7_SRC,$VID_7_NAME,$VID_7_STR" \
+           "$VID_8_SRC,$VID_8_NAME,$VID_8_STR"; do
+    url=$(echo $vid | awk -F "," '{print $1}')
+    name=$(echo $vid | awk -F "," '{print $2}')
+    str=$(echo $vid | awk -F ',' '{print $3}')
+    printf "   %s: %-38s" "$i" "$str..."
+    get_youtube_vid $url $name
+    echo "done."
+    i=$(expr $i \+ 1)
+done
+
+# ========================================================================
+# Convert the demo videos
+echo
+echo "Converting videos to DVD specification. Give me about 10 minutes..."
+
+i=1
+for vid in "$VID_1_SRC,$VID_1_NAME,$VID_1_STR" \
+           "$VID_2_SRC,$VID_2_NAME,$VID_2_STR" \
+           "$VID_3_SRC,$VID_3_NAME,$VID_3_STR" \
+           "$VID_4_SRC,$VID_4_NAME,$VID_4_STR" \
+           "$VID_5_SRC,$VID_5_NAME,$VID_5_STR" \
+           "$VID_6_SRC,$VID_6_NAME,$VID_6_STR" \
+           "$VID_7_SRC,$VID_7_NAME,$VID_7_STR" \
+           "$VID_8_SRC,$VID_8_NAME,$VID_8_STR"; do
+    url=$(echo $vid | awk -F "," '{print $1}')
+    name=$(echo $vid | awk -F "," '{print $2}')
+    str=$(echo $vid | awk -F ',' '{print $3}')
+    printf "   %s: %-38s" "$i" "$str..."
+    if ! test -f "$VIDS/$name.mpg"; then
+        if ! tovid -noask -ffmpeg -half-dvd -in $VIDS/$name.flv -out $VIDS/$name | strings >> $DEMO_LOG 2>&1; then
+            runtime_fail "Couldn't encode $name.flv!"
+        fi
+    fi
+    echo "done."
+    echo "done."
+    i=$(expr $i \+ 1)
+done
+
+# ========================================================================
+# Author the disc
+if $FULL; then
+# allow for fancy menu with 'full' command option
+    TASK_TIME="about an hour"
+    STYLE="-wave default -rotate 7"
+    MENU_LEN=19
+    BACKGROUND="-background $VIDS/tile.jpg"
+else
+    TASK_TIME="about 20 minutes"
+    STYLE="-quick-menu"
+    MENU_LEN="22 21 24 24 21 25.3 25 33.5"
+fi
+
+MENU_LEN="-menu-length $MENU_LEN"
+echo
+echo "Making the menu and DVD image. Give me ${TASK_TIME}..."
+if ! todisc \
+ -files "$VIDS/fantastic.mpg" "$VIDS/betty.mpg" \
+ "$VIDS/creppy.mpg" "$VIDS/skullcrusher.mpg" \
+ "$VIDS/long_as_me.mpg" "$VIDS/monkey.mpg" \
+ "$VIDS/brains.mpg" "$VIDS/podsafe.mpg" \
+ -titles "I feel fantastic" \
+ "Betty and Me" \
+ "Creepy Doll" \
+ "Skullcrusher Mountain" \
+ "Just as long as Me" \
+ "Code Monkey" \
+ "Re: Your Brains" \
+  "Podsafe Christmas song" \
+ -menu-title "tovid demo DVD" \
+ $STYLE \
+ $MENU_LEN \
+ -noask \
+ -seek 34 127.5 45 0 25 35 2 27.5 \
+ -menu-font "$VIDS/bardn.ttf" \
+ -thumb-font "$VIDS/aleia.ttf" \
+ -thumb-fontsize 18 \
+ -no-warn \
+ -menu-audio-fade 1 \
+ -pad-colour '#000030' \
+ -menu-title-offset +60+80 \
+ -switched-menus \
+ $BACKGROUND \
+ -out "$IMAGE" >> "$DEMO_LOG" 2>&1; then
+    runtime_fail "Could't make DVD image!"
+fi
+
+# ========================================================================
+# Sign off
+
+GOODBYE=`cat << EOF
+
+/========================== F I N I S H E D =============================\\\\
+  Well, it looks like I'm all done here. You can preview your dvd with:
+
+        gxine "dvd:/$PWD/$IMAGE"
+
+  And you can burn it with:
+
+        export PATH="$PWD/$BIN:\\$PATH"
+        makedvd -burn $IMAGE
+
+  Thanks for trying the tovid demo. We hope you like what you see!
+  We're at http://tovid.org if you have feedback or questions.
+\\\\========================================================================/
+
+EOF`
+
+echo "$GOODBYE"
+rm todisc.log >> $DEMO_LOG 2>&1
+exit 0
