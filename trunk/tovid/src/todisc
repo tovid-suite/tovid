@@ -1990,12 +1990,12 @@ if [[ -n ${ROTATE_ARRAY[@]} ]]; then
     fi
 fi
 # if only one seek value, then use for all videos
-for ((i=0; i<=NUM_FILES; i++)); do
-    if [ ${#SEEK_VAL[@]} -eq 1 ]; then
+if [ ${#SEEK_VAL[@]} -eq 1 ]; then
+    for ((i=0; i<=NUM_FILES; i++)); do
         SEEK_VAL[i]=${SEEK_VAL[0]}
         SEEK[i]="-ss ${SEEK_VAL[i]}" # create seek value for each video
-    fi
-done   
+    done   
+fi
 
 if [ ${#MENU_LENGTH[@]} -eq 1 ]; then
     for ((i=0; i<=NUM_FILES; i++)); do
