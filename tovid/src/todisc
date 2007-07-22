@@ -65,7 +65,7 @@ LOG_FILE="$(abspath "todisc.log")"
 #RECURSIVE_LOG_FILE=$(tempfile -s -todisc.log)
 OUT_PREFIX=""
 TV_STANDARD=ntsc
-MENU_LENGTH="20"
+MENU_LENGTH=( 20 )
 ANI_SUBMENU_LENGTH=10
 MAX_MENU_LENGTH=""
 TARGET=dvd
@@ -1995,11 +1995,13 @@ for ((i=0; i<=NUM_FILES; i++)); do
         SEEK_VAL[i]=${SEEK_VAL[0]}
         SEEK[i]="-ss ${SEEK_VAL[i]}" # create seek value for each video
     fi
-    if [ ${#MENU_LENGTH[@]} -eq 1 ]; then
-        MENU_LENGTH[i]=${MENU_LENGTH[0]}
-    fi
 done   
 
+if [ ${#MENU_LENGTH[@]} -eq 1 ]; then
+    for ((i=0; i<=NUM_FILES; i++)); do
+        MENU_LENGTH[i]=${MENU_LENGTH[0]}
+    done
+fi
 # allow -seek to have HH:MM:SS format passed
 for ((i=0; i<=NUM_FILES; i++)); do
     if [[ "${SEEK_VAL[i]}" = *:* ]]; then
