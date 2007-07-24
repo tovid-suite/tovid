@@ -142,7 +142,7 @@ See also -titleset and -vmgm
     Pick a file of correct aspect ratio: ie. it should still look good when
     resized to 720x480 (PAL 720x576), then resized to proper aspect ratio.
 : -textmenu, -text-menu NUM ( without an argument, create a textmenu out of the supplied titles
-    The optional argument specifies how many titles are in the 1st column, ie. giving
+    The optional argument specifies how many titles are in the 1st column, i.e. giving
     4 titles and using "-textmenu 2" would make 2 columns of 2 titles. The default is to
     put all titles up to 13 in the first column before starting a second title.
     Maximum, 2 columns and 26 titles.
@@ -154,7 +154,7 @@ See also -titleset and -vmgm
 : -background IMAGE|VIDEO
     Menu background.  This can be a image file or an video file.  If it is a
     video file the background will be animated.  Pick a file of correct aspect
-    ratio: ie. it should still look good when resized to 720x480 (PAL 720x576)
+    ratio: i.e. it should still look good when resized to 720x480 (PAL 720x576)
 : -menu-title
     Title for the root menu - may be longer than thumbnail labels
     Also if you use \n in the title, you can use multi line titles, but you
@@ -227,8 +227,36 @@ See also -titleset and -vmgm
 : -submenu-titles
     You can supple a list of titles here for sub-menus without the length
     restrictions found in thumb titles.  Must equal number of videos
-: -chapters NUM
-    The number of sub-menu chapters for each video (default: 6)
+: -chapters [ NUM | CHAPTER POINTS in HH:MM:SS ]
+    The number of chapters for each video (default: 6) OR
+    the actual chapter points in HH:MM:SS format.
+    If you just pass a number for number of chapters, then todisc will make the
+    chapter points for you.
+    Chapter points will be used for generating the submenu thumbs.
+
+    If passing HH:MM:SS format you need to pass the group of chapter points for
+    each video and each group should have comma separated values.
+    Additionally, the first chapter should always start at 00:00:00 as dvdauthor
+    will add that if it is not there already.
+    If you wish you may pass 00:00:01 instead of 00:00:00 as the 1st chapter,
+    to skip black frames at video beginning.
+    NOTE: Passing chapter points will not work at present for grouped videos.
+    '''
+
+    Example for passing just number of chapters ( 4 videos:
+    '''
+```
+    -chapters 5 2 4 8
+```
+    '''
+
+    Example of passing chapter points ( 4 videos ):
+    '''
+```
+    -chapters 00:00:01,00:05:34.41,00:12:54,00:20:45 00:00:01,00:04:25.623,00:09:12,00:15:51 \
+    00:00:01,00:05:10,00:13:41,00:18:13.033 00:00:01:00:15:23.342,00:26:42.523
+```
+    
 : -seek NUM | "NUM1 NUM2 NUM3 . . ."
     Seek to NUM seconds before generating thumbnails (default: 2.0 seconds)
     If a quoted string of values matching the number of videos is used, then
@@ -334,7 +362,7 @@ See also -titleset and -vmgm
     effect to the frames, and can be much faster ( especially if you don't use -rotate or
     -wave as thumbs will not need to be processed again after mplayer spits them out
     Note: you need to be using either -showcase IMAGE or -showcase VIDEO
-    for this framestyle to work.
+    for this "frame style" to work.
 
 
 
@@ -349,7 +377,7 @@ See also -titleset and -vmgm
     Choose float or integer values between 0.1 and 5.0
     Higher values are possible, but you may not like the result, particularly when
     using "-thumb-mist-colour none"
-    3D thumbs are automatically set to a negligble blur, so this option has no effect
+    3D thumbs are automatically set to a negligible blur, so this option has no effect
 : -align north|south
     This will align  thumbs and titles north or south. 
     (if -align south then title will align north)
@@ -411,7 +439,7 @@ See also -titleset and -vmgm
 : -aspect 4:3|16:9
     This will output a <video aspect WIDTH:HEIGHT /> tag for the dvdauthor xml file.
     It will affect all videos in the titleset.  (effectively all videos since todisc only does
-    one titleset). example:
+    one titleset). Example:
 
 ```
     -aspect 16:9
@@ -420,7 +448,7 @@ See also -titleset and -vmgm
     This will output a <video widescreen=nopanscan /> tag (for example)
     for the dvdauthor xml file.  It will affect all videos in the titleset.
     Use in conjunction with -aspect if your dvd player is cropping your videos.
-    example:
+    Example:
 
 ```
     -aspect 16:9 -widescreen
