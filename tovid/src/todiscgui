@@ -315,6 +315,6 @@ authoring = Panel("Authoring",
 
 todisc = Application('todisc',
     [main, general, menu, thumbnails, audio, text, authoring])
-gui = GUI("todiscgui", [todisc], 800, 400)
+gui = GUI("todiscgui", [todisc], 600, 800)
 gui.run()
 
