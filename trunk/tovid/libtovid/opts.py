@@ -132,10 +132,20 @@ def parse(args):
     """Parse a list of arguments and return a dictionary of found options.
 
         args:    List of command-line arguments (such as from sys.argv)
+    
+    The argument list is interpreted in this way:
+    
+        - If it begins with '-', it's an option
+        - Arguments that precede the first option are ignored
+        - Anything following an option is an argument to that option
+        - If there is no argument to an option, it's a flag (True if present)
+        - If there's one argument to an option, it's a single string value
+        - If there are multiple arguments to an option, it's a list of strings
+
     """
     args = copy(args)
     options = {}
-    option = None
+    current = None
     while len(args) > 0:
         arg = args.pop(0)
         # New option
@@ -145,7 +155,7 @@ def parse(args):
             options[current] = True
             
         # Argument to current option
-        else:
+        elif current:
             # Was a flag, now has a single value
             if options[current] == True:
                 options[current] = arg
