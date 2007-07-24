@@ -38,7 +38,8 @@ sh_bin = \
 	src/tovid-batch \
 	src/tovid-init \
 	src/tovid-interactive \
-	src/tovid-test
+	src/tovid-test \
+	src/toyoutube
 
 # List the source files for each python script
 py_bin = \
