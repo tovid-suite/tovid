@@ -10,20 +10,20 @@ from libtovid.cli import Command
 def convert(infile, outfile):
     cmd = Command('ffmpeg')
     cmd.add('-i', infile,
-            '-acodec', 'libmp3lame',
-            '-ar', 44100,
             '-vcodec', 'libxvid',
             '-r', 30,
-            '-ab', '64k',
             '-s', '320x240',
             '-b', '500k',
+            '-acodec', 'libmp3lame',
+            '-ab', '64k',
+            '-ar', 44100,
             '-y',
-            outfile)
+            outfile + '.avi')
     cmd.run()
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print "Usage: toyoutube -in FILE -out FILE"
+        print "Usage: toyoutube -in FILE -out {output prefix}"
         sys.exit(1)
 
     options = parse(sys.argv[1:])
