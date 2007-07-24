@@ -147,6 +147,26 @@ See also -titleset and -vmgm
     put all titles up to 13 in the first column before starting a second title.
     Maximum, 2 columns and 26 titles.
     If no video files for either -background or -showcase are supplied, the menu will be static.
+: -quick-menu
+    This will make a very quick '-showcase IMAGE|VIDEO' style menu by using ffmpeg
+    instead of imagemagick.  There are no fancy effects like -wave or -rotate available
+    for it, but it is extremely fast.  It will be a text-menu style of menu, with no video
+    thumbs, and a central showcase IMAGE(static)|VIDEO(animated).
+
+    Specifying the IMAGE|VIDEO argument to '-showcase' is mandatory for this style of menu, unless
+    used in conjunction with '-switched-menus' in which case the videos passed with '-files' 
+    automatically become the showcase videos.
+    If this is used in combination with '-switched-menus' it can really speed up an
+    otherwise time comsuming process.
+    On my athlon 2900+ system it makes a 4 video switched menu of 30 seconds length (each) in about
+    4 minutes ( !! ).
+
+    Example:
+```
+    -quick-menu -showcase /home/robert/showcase.mpg
+```
+    See '-switched-menus' for example of '-quick-menu' using '-switched-menus
+
 : -use-makemenu
     This will call the other tovid menu script, "makemenu" on the titles supplied.
 : -static
@@ -198,6 +218,15 @@ See also -titleset and -vmgm
     As you select a video title with the down or up arrow on your DVD remote, the image
     in the centre will change to the image or video
     made from that selected video.
+
+    This is a time consuming process for making animated menus as you need to make a
+    separate menu for each video provided with '-files'.  The process can be greatly
+    speeded up by using '-quick-menu' in conjunction with this.
+
+    Example for using with '-quick-menu':
+```
+    -switched-menus -quick-menu
+```
 
 
 == Thumbnail style ==
