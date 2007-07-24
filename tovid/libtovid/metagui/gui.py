@@ -285,7 +285,7 @@ DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
 class GUI (tk.Tk):
     """GUI with one or more Applications
     """
-    def __init__(self, title, applications, width=500, height=400,
+    def __init__(self, title, applications, width=600, height=600,
                  inifile=None):
         """Create a GUI for the given applications.
         
@@ -296,6 +296,7 @@ class GUI (tk.Tk):
             inifile:      Name of an .ini-formatted file with GUI configuration
         """
         tk.Tk.__init__(self)
+        self.geometry("%dx%d" % (width, height))
         self.title(title)
         self.apps = applications
         self.width = width
@@ -320,8 +321,7 @@ class GUI (tk.Tk):
     def draw(self):
         """Draw widgets."""
         self.style.apply(self)
-        #self.frame = tk.Frame(self, width=self.width, height=self.height)
-        self.frame = tk.Frame(self)
+        self.frame = tk.Frame(self, width=self.width, height=self.height)
         self.frame.pack(fill='both', expand=True)
         self.resizable(width=True, height=True)
         # Single-application GUI
