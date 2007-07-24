@@ -29,7 +29,7 @@ allowed_options = [\
     Option('dvd', alias=('format', 'dvd')),
     Option('half-dvd', alias=('format', 'half-dvd')),
     Option('dvd-vcd', alias=('format', 'dvd-vcd')),
-
+    
     # TV system options
     Option('tvsys', 'pal|ntsc|ntscfilm', 'ntsc',
         """Make the video compliant with the specified TV system"""),        
