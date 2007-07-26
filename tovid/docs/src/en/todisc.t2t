@@ -267,8 +267,6 @@ See also -titleset and -vmgm
     each video and each group should have comma separated values.
     Additionally, the first chapter should always start at 00:00:00 as dvdauthor
     will add that if it is not there already.
-    If you wish you may pass 00:00:01 instead of 00:00:00 as the 1st chapter,
-    to skip black frames at video beginning.
     NOTE: Passing chapter points will not work at present for grouped videos.
     '''
 
