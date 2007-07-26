@@ -34,8 +34,7 @@ get_source_file()
 {
     URL="$1"
     SRC="$2"
-    if wget "$URL/$SRC" --output-document="$BIN/$SRC" >> $DEMO_LOG 2>&1; then :
-    else
+    if ! wget "$URL/$SRC" --output-document="$BIN/$SRC" >> $DEMO_LOG 2>&1; then
         runtime_fail "Problem downloading $SRC!"
     fi
     chmod +x $BIN/$SRC
@@ -194,9 +193,11 @@ mv $BIN/tovid-init.in $BIN/tovid-init
 YGET_DL_HOME="http://www.arrakis.es/~rggi3/youtube-dl/"
 YGET="youtube-dl"
 
-echo -n "   youtube-dl...   "
-get_source_file $YGET_DL_HOME $YGET
-echo "done."
+if ! test -s "$BIN/$YGET"; then 
+    echo -n "   youtube-dl...   "
+    get_source_file $YGET_DL_HOME $YGET
+    echo "done."
+fi
 
 # ========================================================================
 # Get DVD source video/images/sound
@@ -310,11 +311,12 @@ if $FULL; then
 # allow for fancy menu with 'full' command option
     TASK_TIME="about an hour"
     STYLE="-wave default -rotate 7"
-    MENU_LENGTH=19
+    MENU_LEN=19
+    BACKGROUND="-background $VIDS/tile.jpg"
 else
     TASK_TIME="about 20 minutes"
     STYLE="-quick-menu"
-    MENU_LENGTH=19 # FIXME should be 30
+    MENU_LEN=30
 fi
 
 echo
@@ -329,17 +331,17 @@ if ! todisc \
  -menu-title "tovid demo DVD" \
  $STYLE \
  -seek 126 1 0 5 \
- -menu-length $MENU_LENGTH \
+ -menu-length $MENU_LEN \
  -noask \
  -menu-font "$VIDS/bardn.ttf" \
  -thumb-font "$VIDS/aleia.ttf" \
  -thumb-fontsize 18 \
  -no-warn \
- -menu-audio-fade 0 \
+ -menu-audio-fade 1 \
  -button-style text-rect \
  -pad-colour '#000030' \
- -text-mist \
  -switched-menus \
+ $BACKGROUND \
  -out "$IMAGE" >> "$DEMO_LOG" 2>&1; then
     runtime_fail "Could't make DVD image!"
 fi
