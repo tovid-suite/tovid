@@ -188,6 +188,7 @@ BURN=false
 QUICK_MENU=false
 PAD_COLOUR=161514
 QM_PREVIEW=false
+USER_CHAPTERS=false
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -622,7 +623,7 @@ mk_workdir()
 {
     REAL_WORK_DIR=$(tempdir $CUR_DIR/todisc-work)
     WORK_DIR=$(tempdir /tmp/todisc-work nocreate)
-    # tempdir function makes a directory, so remove it and make symlink
+    # tempdir() made a unique name with nocreate, now make it a symlink
     ln -sfv "$REAL_WORK_DIR" "$WORK_DIR"
 }
 
@@ -634,18 +635,18 @@ get_group_chapters()
     [[ -n $2 ]] && FORMAT=:
     unset chapt_len_array x len remainder t
     remainder=0
-    chapter_length=$( bc <<< "scale=3; ${GROUP_TOT_LEN[index]} / ${CHAPTERS[index]}")
+    chapter_length=$( bc <<< "scale=3; ${GROUP_TOT_LEN[index]} / ${CHAPTERS[index]}" 2>/dev/null)
     GROUP_VIDEO_LENGTHS=( ${GROUP_VID_LENGTHS[index]} )
     for len in ${GROUP_VIDEO_LENGTHS[@]}; do
-        adjusted_length=$( bc <<< "scale=3; $len + $remainder" )
-        num_chapters=$( bc <<< "$adjusted_length / $chapter_length" )
+        adjusted_length=$( bc <<< "scale=3; $len + $remainder" 2>/dev/null)
+        num_chapters=$( bc <<< "$adjusted_length / $chapter_length" 2>/dev/null )
         if (( num_chapters > 0)); then
             chapt_len_array=( $( for ((t=0; t<num_chapters; t++)); do
             echo $chapter_length; done) )
-            chapt_len_array=($(bc <<< "scale=3; $chapter_length - $remainder" ) ${chapt_len_array[@]})
+            chapt_len_array=($(bc <<< "scale=3; $chapter_length - $remainder" 2>/dev/null) ${chapt_len_array[@]})
             unset chapt_len_array[${#chapt_len_array[@]}-1]
             chapter_points=$( running_total <<< ${chapt_len_array[@]} )
-            remainder=$( bc <<< "$adjusted_length % $chapter_length")
+            remainder=$( bc <<< "$adjusted_length % $chapter_length" 2>/dev/null)
             group_chapters[x++]=$chapter_points
         else
             group_chapters[x++]=""
@@ -965,65 +966,71 @@ check_menufile()
 
 quick_menu()
 {
-if [[ -n $1 && $1 = "preview" ]]; then
-    QM_MENU_TIME=1 && QM_PREVIEW=:
-else
-    QM_MENU_TIME=${MENU_LENGTH[MENU_NUM-1]} && QM_PREVIEW=false
-fi
-QM_SHOWCASE_FILE="$SHOWCASE_FILE"
-# find out where vhook lives for ffmpeg
-ffmpeg_prefix=$(which ffmpeg)
-ffmpeg_prefix=$(sed 's/bin\/ffmpeg//g' <<< "$ffmpeg_prefix")
-imlib2_vhook="$ffmpeg_prefix/lib/vhook/imlib2.so"
-! [[ -s "$imlib2_vhook" ]] && runtime_error "Can't find your ffmpeg's vhook's"
-# convert and resize the bgvideo so that is is framed by ntsc-safe black bg
-#PAD_CMD=(ffmpeg -async 1 -ss ${SEEK_VAL[MENU_NUM-1]} -t "$MENU_LENGTH" -i "$QM_SHOWCASE_FILE" -s 318x212 -an \
-#-padtop 104 -padbottom 164 -padleft 262 -padright 140 \
-#-f mpeg2video -r $FRAME_RATE -tvstd ntsc -b 12000k -maxrate 15000k \
-#-bufsize 230KiB -aspect $ASPECT_RATIO \
-#-padcolor $PAD_COLOUR -y  "$WORK_DIR/quick_tmp.m2v")
-yecho
-if $QM_PREVIEW; then
-    yecho "Creating a quick-menu preview image"
-else
-    yecho "resizing and padding  showcase file: $SHOWCASE_FILE"
-fi
-PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 -ss ${SEEK_VAL[MENU_NUM-1]} -t "$QM_MENU_TIME" \
--i "$QM_SHOWCASE_FILE" -s 318x212 -acodec copy \
--padtop 104 -padbottom 164 -padleft 262 -padright 140 -r $FRAME_RATE -b 15000k \
--padcolor $PAD_COLOUR -y  "$WORK_DIR/quick_tmp.avi")
-yecho
-! $QM_PREVIEW && yecho "Running ${PAD_CMD[@]}"|fold -bs
-"${PAD_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"
+    if [[ -n $1 && $1 = "preview" ]]; then
+        QM_MENU_TIME=1 && QM_PREVIEW=:
+    else
+        QM_MENU_TIME=${MENU_LENGTH[MENU_NUM-1]} && QM_PREVIEW=false
+    fi
+    QM_SHOWCASE_FILE="$SHOWCASE_FILE"
+    # find out where vhook lives for ffmpeg
+    ffmpeg_prefix=$(which ffmpeg)
+    ffmpeg_prefix=$(sed 's/bin\/ffmpeg//g' <<< "$ffmpeg_prefix")
+    imlib2_vhook="$ffmpeg_prefix/lib/vhook/imlib2.so"
+    ! [[ -s "$imlib2_vhook" ]] && runtime_error "Can't find ffmpeg's vhook's"
 
-# use vhook to add the titles in
-#VHOOK_CMD=(ffmpeg -i  "$WORK_DIR/quick_tmp.m2v" -an \
-#-vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
-#-f mpeg2video -r $FRAME_RATE -tvstd ntsc -b 7000k -maxrate 8000k \
-#-bufsize 230KiB -aspect $ASPECT_RATIO -padcolor 161514 \
-#-y "$WORK_DIR/intro.m2v")
-! $QM_PREVIEW && yecho
-! $QM_PREVIEW && yecho "Using ffmpeg's imlib2 vhook to put titles on the showcase file"
-VHOOK_CMD=(ffmpeg -i  "$WORK_DIR/quick_tmp.avi" -an \
--f mpeg2video -r $FRAME_RATE -tvstd ntsc -b 7000k -maxrate 8000k \
--bufsize 230KiB -aspect $ASPECT_RATIO \
--vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
--y "$WORK_DIR/intro.m2v")
-! $QM_PREVIEW && yecho
-! $QM_PREVIEW && yecho "Running ${VHOOK_CMD[@]}" | fold -bs
-"${VHOOK_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
-! $QM_PREVIEW && yecho
-# create preview images if called for
-if $QM_PREVIEW; then
-    FFMPEG_CMD=(ffmpeg -i "$WORK_DIR/intro.m2v" -an -ss 1 -vframes 30 \
-    $WORK_DIR/showcase/%06d.png)
-    "${FFMPEG_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
-    largest_png=$(du -s "$WORK_DIR"/showcase/*.png|sort -r | awk 'NR>1{exit};1 {print $2}')
-    mv "$largest_png" "$PREVIEW_IMG"
-    yecho "Removing temporary preview files"
-    rm -f "$WORK_DIR"/showcase/*.png "$WORK_DIR/intro.m2v" "$WORK_DIR/quick_tmp.avi"
-fi
-$QM_PREVIEW && yecho
+    # convert and resize the bgvideo so that is is framed by ntsc-safe black bg
+    yecho
+    if $QM_PREVIEW; then
+        yecho "Creating a quick-menu preview image"
+    else
+        yecho "resizing and padding  showcase file: $SHOWCASE_FILE"
+    fi
+    PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 -ss ${SEEK_VAL[MENU_NUM-1]} \
+    -t "$QM_MENU_TIME" -i "$QM_SHOWCASE_FILE" -s 318x212 -acodec copy \
+    -padtop 104 -padbottom 164 -padleft 262 -padright 140 -r $FRAME_RATE \
+    -b 15000k -padcolor $PAD_COLOUR -y  "$WORK_DIR/quick_tmp.avi")
+    yecho
+    ! $QM_PREVIEW && yecho "Running ${PAD_CMD[@]}"|fold -bs
+    "${PAD_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"
+
+    # use vhook to add the titles in
+    ! $QM_PREVIEW && yecho
+    ! $QM_PREVIEW && yecho "Using ffmpeg's vhook to put titles on padded file"
+    VHOOK_CMD=(ffmpeg -i  "$WORK_DIR/quick_tmp.avi" -an \
+    -f mpeg2video -r $FRAME_RATE -tvstd ntsc -b 7000k -maxrate 8000k \
+    -bufsize 1835008 -aspect $ASPECT_RATIO \
+    -vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
+    -y "$WORK_DIR/intro.m2v")
+    ! $QM_PREVIEW && yecho
+    ! $QM_PREVIEW && yecho "Running ${VHOOK_CMD[@]}" | fold -bs
+    "${VHOOK_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
+    ! $QM_PREVIEW && yecho
+    # create preview images if called for
+    if $QM_PREVIEW; then
+        FFMPEG_CMD=(ffmpeg -i "$WORK_DIR/intro.m2v" -an -ss 1 -vframes 30 \
+        $WORK_DIR/showcase/%06d.png)
+        "${FFMPEG_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
+        largest_png=$(du -s "$WORK_DIR"/showcase/*.png|sort -r |
+        awk 'NR>1{exit};1 {print $2}')
+        mv "$largest_png" "$PREVIEW_IMG"
+        yecho "Removing temporary preview files"
+        rm -f "$WORK_DIR"/showcase/*.png "$WORK_DIR/intro.m2v" \
+        "$WORK_DIR/quick_tmp.avi"
+    fi
+    $QM_PREVIEW && yecho
+}
+
+get_all_files()
+{
+    unset x y all_files
+    while [[ $@ ]]; do case "$1" in "-files" ) shift; get_listargs "$@"
+        for i in  ${!ARGS_ARRAY[@]}; do
+            all_files[i]="$(readlink -f "${ARGS_ARRAY[i]}")"
+        done
+        f=${#ALL_FILES[@]}
+        for i in ${!all_files[@]}; do ALL_FILES[f++]="${all_files[i]}"; done
+        esac; shift
+    done
 }
 
 # make a transparent png for vhook with the menu title and video titles on it
@@ -1361,7 +1368,10 @@ while test $# -gt 0; do
             shift
             get_listargs "$@"
             CHAPTERS="${ARGS_ARRAY[@]}"
-            CHAPTERS=( ${CHAPTERS//,/ } )
+            # user can pass HH:MM:SS chapters, else, remove possible comma sep
+            ! [[ "$CHAPTERS" = *:* ]] && CHAPTERS=( ${CHAPTERS//,/ } )
+            # a way to tell later if user passed HH:MM:SS chapters
+            [[ "$CHAPTERS" = *:* ]] && USER_CHAPTERS=: && CHAPTERS=( $CHAPTERS )
             ;;
         "-subtitles" )
             shift
@@ -1638,9 +1648,10 @@ if $QUICK_MENU; then
 # quick-menu needs TEXTMENU=: , and does its own showcase and bg with ffmpeg
     TEXTMENU=:
     NO_SC_THUMB=:
+    STATIC=false # no static quickmenus, imagemagick is fast enough for this
     BACKGROUND=""
     if [[ -z $SHOWCASE_FILE ]] && ! $SWITCHED_MENUS; then
-        runtime_error "-quick-menu needs a showcase file ( -showcase FILE )"
+        usage_error "-quick-menu needs a showcase file ( -showcase FILE )"
     fi
 fi
 
@@ -1848,6 +1859,7 @@ if $SUB_MENU && [ "$TARGET" = "svcd" ]; then
 fi
 [[ $TARGET = "svcd" ]] && $SHOWCASE && ! $TEXTMENU && usage_error "Sorry, showcase disabled for svcd target"
 $SUB_MENU && $GROUPING && usage_error "Sorry, no submenus when using -group"
+$USER_CHAPTERS && $GROUPING && usage_error "Sorry, no arbitrary chapters ( HH:MM:SS ) for grouped video arrangements"
 # allow user to only specify one audio file for all submenus
 if [ ${#SM_AUDIO[@]} -eq 1 ]; then
     SM_AUDIO_FILE=${SM_AUDIO[0]}
@@ -1874,8 +1886,8 @@ if [[ $BUTTON_GRAVITY = *east* || $BUTTON_GRAVITY = *west* ]]; then
     ! $SHOWCASE && ! $USER_TITLE_GEO && TITLE_GRAVITY=north
 fi
 ! $SHOWCASE && [[ $BUTTON_GRAVITY = "center" ]] && ! $USER_TITLE_GEO && TITLE_GRAVITY="north"
-# dvdauthor stuff
-# make an array of possible vars for dvdauthor post calls
+
+# dvdauthor stuff: make an array of possible vars for dvdauthor post calls
 if $CHAIN_VIDEOS; then
     if [ -z "$post_play" ]; then
         for ((i=0; i<NUM_FILES; i++)); do
@@ -1904,22 +1916,45 @@ if $CHAIN_VIDEOS; then
     done
     echo
 fi
-# allow user to specify one # of chapters for all videos
-if [ ${#CHAPTERS[@]} -eq 1 ]; then
+# allow user to pass HH:MM:SS chapters
+$USER_CHAPTERS && CHAPT_ARRAY=( ${CHAPTERS[@]} )
+    
+# allow specifying one # of chapters for all videos if not given in HH:MM:SS
+if [[ ${#CHAPTERS[@]} -eq 1 && -z ${CHAPT_ARRAY[@]} ]]; then
     for ((i=0; i<=NUM_FILES; i++)); do
         CHAPTERS[i]=${CHAPTERS[0]}
     done
 fi
+#        if [[ ${CHAPTERS[@]} = *:* && ${CHAPTERS[i]} != *:* ]]; then
+#            usage_error "if passing HH:MM:SS chapters, all video chapters must have this format"
+#        fi
+
 
 # if more than one value for CHAPTERS, make sure they equal video #
-if $SUB_MENU &&  [[ ${#FILES[@]} -ne ${#CHAPTERS[@]} &&  ${#CHAPTERS[@]} -ne 1 ]]; then
-    usage_error "Please give the same number of chapters as videos.
-    You gave ${#FILES[@]} video files and ${#CHAPTERS[@]} chapter values"
+if $SUB_MENU &&  [[ ${#FILES[@]} -ne ${#CHAPTERS[@]} ]]; then
+    $USER_CHAPTERS && string="chapter point string" || string="chapter"
+    usage_error "Please give the same number of ${string}s as videos.
+    You gave ${#FILES[@]} video files and ${#CHAPTERS[@]} ${string}(s)"
 fi
+# get normal CHAPTERS VAR,i.e.: 'how many chapters'
+# Check if 1st is 00:00:00 and all chapters have HH:MM:SS format
+if $USER_CHAPTERS; then
+    for i in ${!CHAPT_ARRAY[@]}; do
+        [[ ${CHAPTERS[i]} != *:* ]] && usage_error \
+        "for HH:MM:SS style chapters all video chapters must have this format"
+        if [[ ${CHAPT_ARRAY[i]:0:8} != 00:00:00 ]];then
+            usage_error \
+            "1st chapter must be 00:00:00. ${IN_FILES[i]} used ${CHAPT_ARRAY[i]}"
+        fi
+        CHAPTERS[i]=$(wc -w <<< "${CHAPT_ARRAY[i]//,/ }")
+    done
+fi
+
 # find out longest chapter value (number of chapters)
 if $SUB_MENU; then
     for ((i=0; i<${#CHAPTERS[@]}; i++)); do
         chapt_val=${CHAPTERS[i]}
+#        [[ $chapt_val = *:* ]] && chapt_val=$(unformat_time $chapt_val)
         [ -z "$MAX_CHAPTERS" ] || ((chapt_val > MAX_CHAPTERS)) && MAX_CHAPTERS=$chapt_val && max_chapt_key=$i
         [ -z "$MIN_CHAPTERS" ]  || ((chapt_val < MIN_VAL)) && MIN_CHAPTERS=$chapt_val && min_chapt_key=$i
     done
@@ -2185,7 +2220,7 @@ if  [ $TARGET = "dvd" ]; then
     SAMPLERATE="48000"
     MPLEX_FORMAT="8"
     GEO_ARRAY=("${DVD_GEO_ARRAY[@]}")
-    FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 230KiB -aspect 4:3"
+    FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 1835008 -aspect 4:3"
     ASPECT="-aspect $ASPECT_RATIO"
     SHOWCASE_SIZE=384x256
     BURN_TGT="$OUT_DIR"
@@ -3466,7 +3501,7 @@ if [[ -n "$BG_AUDIO" ]]; then
     yecho "Getting length of bg audio"
     yecho
     # make sure user isn't trying to get a longer menu than the audio allows
-    if [[ $(bc <<< "${MENU_LENGTH[MENU_NUM-1]} > $BG_AUDIOLENGTH")  -eq 1 ]]; then
+    if [[ $(bc <<< "${MENU_LENGTH[MENU_NUM-1]} > $BG_AUDIOLENGTH" 2>/dev/null)  -eq 1 ]]; then
         MENU_AUDIOLENGTH=$BG_AUDIOLENGTH
     fi
 fi
@@ -3484,7 +3519,7 @@ tovid_reencode()
     VIDEO_IN="$1"
     VIDEO_IN_SEEK="$2"
     yecho
-    yecho "$VIDEO_IN is not compliant - re-encoding $(bc <<< "$VIDEO_IN_SEEK + ${MENU_LENGTH[MENU_NUM-1]}") second slice to DVD compliant file"
+    yecho "$VIDEO_IN is not compliant - re-encoding $(bc <<< "$VIDEO_IN_SEEK + ${MENU_LENGTH[MENU_NUM-1]}" 2>/dev/null) second slice to DVD compliant file"
     yecho "if you used a long seek this will take some time and produce a large file."
     yecho "But if the file is not encoded this way there may be sync problems."
     yecho "Do you want to continue encoding this file?, type 'yes' to do so"
@@ -3500,7 +3535,7 @@ tovid_reencode()
     yecho "Converting files to $TGT_CAPS format with 'tovid'"
     countdown
     tovid $NO_ASK -in "$VIDEO_IN" \
-    -slice 0-$(bc <<< "$VIDEO_IN_SEEK + ${MENU_LENGTH[MENU_NUM-1]}") \
+    -slice 0-$(bc <<< "$VIDEO_IN_SEEK + ${MENU_LENGTH[MENU_NUM-1]}" 2>/dev/null) \
     -${TV_STANDARD} -${TARGET} -in "$VIDEO_IN" -out "$VIDEO_IN.enc" $TOVID_OPTS
     # See if output file exists
     if ! test -f "$VIDEO_IN.enc.mpg"; then
@@ -3772,28 +3807,38 @@ fi
 
 echo
 # chapters and submenu xml stuff
-for ((s=0; s<=NUM_FILES; s++)); do
-    # make appropriate chapter lengths for each video
-    # get chapter lengths by dividing by $CHAPTERS, then getting running totals
-    CHAPT_INTERVALS[s]=$(bc_math "${VID_LEN[s]} / ${CHAPTERS[s]}")
-    # <TODO if GROUPING:  for making chapter thumbs for the group
-    # feed group chapter points to transcode in a loop to transcode as usual, but output
-    # to different subdirs.  Then rename according to framenumber, moving all to the same subdir
-    # then follow same procedure as usual in moving into chapter subdirs for final montages
-    # /TODO>
-    # and format in HH:MM:SS
-    L=( ${L[@]} $(for ((i=1; i<=${CHAPTERS[s]}; i++)) ; do echo "${CHAPT_INTERVALS[s]}";done) )
-    chapt_intervals=$(running_total <<< ${L[@]})
-    chapters="$(for c in $chapt_intervals; do echo $(format_seconds $c); done)"
-    # replace commas for comma delimited locales
-    chapters="00:00:00.000 $chapters"
-    if [ ${CHAPTERS[s]} = 1 ]; then chapters="00:00:00.000"; fi
-    CHAPTS=$(for i in $chapters; do echo -n $i,;done)
-    CHAPT_ARRAY[s]="${CHAPTS%?}" # %? to remove trailing ','
-    unset L cmd
-    if $SUB_MENU; then
+# this block does not run if user passing HH:MM:SS chapters
+if [[ -n ${CHAPT_ARRAY[@]} ]]; then
+    :
+else
+    for ((s=0; s<=NUM_FILES; s++)); do
+        # make chapter points for videos, divide by $CHAPTERS to get 
+        # chapter lengths, then get running totals
+        CHAPT_INTERVALS[s]=$(bc_math "${VID_LEN[s]} / ${CHAPTERS[s]}")
+        # <TODO if GROUPING:  for group chapter thumbs feed group 
+        # chapter points to transcode in a loop as normal, but output 
+        # to different subdirs. Then rename according to framenumber
+        # moving all to the same subdir. Then follow usual procedure,
+        # moving  into chapter subdirs for final montages  /TODO>
+
+        # and format in HH:MM:SS
+        L=( ${L[@]} $(for ((i=1; i<=${CHAPTERS[s]}; i++)) ; \
+        do echo "${CHAPT_INTERVALS[s]}";done) )
+        chapt_intervals=$(running_total <<< ${L[@]})
+        chapters="$(for c in $chapt_intervals; \
+        do echo $(format_seconds $c); done)"
+        # replace commas for comma delimited locales
+        chapters="00:00:00.000 $chapters"
+        if [ ${CHAPTERS[s]} = 1 ]; then chapters="00:00:00.000"; fi
+        CHAPTS=$(for i in $chapters; do echo -n $i,;done)
+        CHAPT_ARRAY[s]="${CHAPTS%?}" # %? to remove trailing ','
+        unset L cmd
+    done
+fi
+if $SUB_MENU; then
+    for ((s=0; s<=NUM_FILES; s++)); do
         echo
-        echo "Creating the highlight and selection PNGs for submenu $((s + 1))"
+        echo "Creating highlight and select PNGs for submenu $((s + 1))"
         C=$((${CHAPTERS[s]} - 1))
         MENU_BUTTON_SIZE="${GEO_ARRAY[C]}"
         get_button_geo
@@ -3835,8 +3880,8 @@ EOF
  </subpictures>
 EOF
 ) > "$WORK_DIR/submenu$((s + 1))_spumux.xml"
-    fi
-done
+    done
+fi
 # debug chapters
 if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]] && ! $GROUPING; then
     echo
@@ -4179,7 +4224,7 @@ if $SUB_MENU; then
 
         else  # not animated submenu
             if [[ -n "$SUBMENU_AUDIOLENGTH" ]]; then
-                SM_LOOPS=$( bc <<< "$SUBMENU_AUDIOLENGTH * $FRAME_RATE")
+                SM_LOOPS=$( bc <<< "$SUBMENU_AUDIOLENGTH * $FRAME_RATE" 2>/dev/null)
                 SM_LOOPS=${SM_LOOPS%.*}
             else
                 SM_LOOPS=60
@@ -4193,11 +4238,23 @@ if $SUB_MENU; then
             TOTAL_JPEGS=${CHAPTERS[i]}
             PREFIX=${i}-
         fi
+        # CHAPT_INTERVALS is in seconds: bc -l <<< "${VID_LEN[i]} / ${CHAPTERS[i]}"
         counts=$(bc_math "${CHAPT_INTERVALS[i]} * $FRAME_RATE" int)
         CUT=( 30 $(running_total <<<  $(for ((a=0; a<${CHAPTERS[i]} ; a++)); \
         do echo -n "$counts ";done)) )
+        if $USER_CHAPTERS; then
+            unset x CUT c_array
+            # CHAPT_ARRAY is left in HH:MM:SS,HH:MM:SS, format, so unformat now
+            c_array="${CHAPT_ARRAY[i]//,/ }"
+            for v in $c_array; do
+                f=$(unformat_time $v)
+                CUT[x++]=$( bc_math "$f * $FRAME_RATE" int)
+            done 
+            # add a final chapter on, it will get removed below
+            CUT[${#CUT[@]}]=$( bc_math "((${VID_LEN[i]} * $FRAME_RATE )  - 340)" int )
+        fi
         for ((c=0; c<${#CUT[@]}; c++)); do
-            cmd[c]=${CUT[c]}-$(( ${CUT[c]} + CUT_TIME))
+            cmd[c]=${CUT[c]}-$(bc_math "${CUT[c]} + $CUT_TIME" int)
         done
         key=$((${#cmd[@]} - 1))
         unset cmd[key]
@@ -4209,14 +4266,12 @@ if $SUB_MENU; then
         yecho "Creating $TOTAL_JPEGS chapter images for "${IN_FILES[i]}""
         yecho
         for t in "${cmd[@]}"; do
-            echo "Running nice transcode --print_status 10 -q 1 -i "${IN_FILES[i]}" \
-            ${NAV_SEEK[i]} "${NAVSEEK[i]}" -o $WORK_DIR/submenu/ \
-            -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null" |
-            sed 's/    */ /g'|sed -e "s/^ *//"|tee -a "$LOG_FILE"
-
             TCODE_CMD=(nice transcode --print_status 10 --write_pid $WORK_DIR/tcode$i.pid \
             -q 1 -i "${IN_FILES[i]}"  ${NAV_SEEK[i]} "${NAVSEEK[i]}" -o "${PICS_OUT[@]}" \
             -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null)
+            echo "Running ${TCODE_CMD[@]}" |
+            sed 's/    */ /g'|sed -e "s/^ *//"|fold -bs|tee -a "$LOG_FILE"
+            echo
             function run_transcode()
             {
                 "${TCODE_CMD[@]}" >> "$LOG_FILE"  2>&1
@@ -4248,9 +4303,10 @@ if $SUB_MENU; then
                 echo
                 u=${t/*-}; v=${t/-*}
                 for ((n=0; n<340; n++)); do
-                    if [ $v -eq 30 ]; then
+                    
+                    if [ $v -eq ${CUT[0]} ]; then
                         mv  $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
-                        $WORK_DIR/animenu/$(printf "%08d%s\n" $((n+30)) .jpg)
+                        $WORK_DIR/animenu/$(printf "%08d%s\n" $((n + ${CUT[0]} )) .jpg)
                     else
                         mv  $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
                         $WORK_DIR/animenu/$(printf "%08d%s\n" $((n+v)) .jpg)
@@ -4976,7 +5032,7 @@ echo
 if $STATIC; then
     # we have a value for MENU_AUDIOLENGTH AND BG_AUDIO
     if [[ -n "$BG_AUDIO" && "$BG_AUDIO" != "none" ]]; then
-        LOOPS=$( bc <<< "$MENU_AUDIOLENGTH * $FRAME_RATE")
+        LOOPS=$( bc <<< "$MENU_AUDIOLENGTH * $FRAME_RATE" 2>/dev/null)
         LOOPS=${LOOPS%.*}
     else
         LOOPS=60
@@ -5012,8 +5068,7 @@ fi
 
 MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
 $SWITCHED && MENU_ATIME=${MENU_LENGTH[MENU_NUM-1]}
-# if -menu-audio-length LENGTH was passed, override the above MENU_ATIME
-#if [[ -n "$BG_AUDIO" ]] && $STATIC; then MENU_ATIME=$MENU_AUDIOLENGTH; fi
+
 # use mplayer to dump audio if mplayer used for video
 # but first check if audio same file as video and its not a static menu
 if [[ $SC_FRAMESTYLE = "glass" && $BG_AUDIO = $SHOWCASE_FILE ]]; then
