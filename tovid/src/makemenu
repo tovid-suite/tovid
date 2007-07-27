@@ -2,6 +2,7 @@
 ME="[makemenu]:"
 . tovid-init
 
+# version $Id:$
 # makemenu
 # Part of the tovid suite
 # =======================
