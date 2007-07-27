@@ -100,7 +100,7 @@ function get_listargs()
 
 
 if [[ -z "$@" ]]; then
-    echo "Usage: makemix.sh -i FILES -l MENU LENGTH -n SLICES PER VIDEO"
+    echo "Usage: makemix.sh -files FILES -menu-length SECONDS -slices-per-video N"
     exit 1
 fi
 
@@ -111,22 +111,22 @@ fi
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        "-files" | "-i" )
+        "-files" | "-in" )
             shift
             get_listargs "$@"
             for f in  ${!ARGS_ARRAY[@]}; do
                 FILES[f]=$(readlink -f "${ARGS_ARRAY[f]}")
             done
             ;;
-        "-slices-per-video" | "-n" )
+        "-slices-per-video" | "-ns" )
             shift
             SLICE_PER_VID=$1
             ;;
-        "-menu-length" | "-l" )
+        "-menu-length" | "-ml" )
             shift
             MENU_LENGTH=$1
             ;;
-        "-quick-menu" | "-q" )
+        "-quick-menu" | "-qm" )
             QUICK_MENU_SHOWCASE=:
             ;;           
     esac
@@ -164,9 +164,10 @@ for v in ${!FILES[@]}; do
     file_len[v]=$(vid_length "${FILES[v]}")
 done
 
-echo "video lengths are:"
 for i in ${!FILES[@]}; do
-    echo "${FILES[i]##*/}: ${file_len[i]}"
+    echo "${FILES[i]##*/}:"
+    echo "Length:  ${file_len[i]} seconds"
+    echo
 done
 echo
 
@@ -179,14 +180,14 @@ for i in ${!file_len[@]}; do
 done
 
 # make the individual slices, outputting high bitrate m2v
+z=1
 for ind in ${!FILES[@]}; do
-    slice=0
     echo
     echo "Working on ${FILES[ind]}"
     sliceseek=${slice_seek[ind]}
     for ((i=0; i<SLICE_PER_VID; i++)); do
         make_slice "${FILES[ind]}" $( bc_math "$sliceseek * ($i + 1)" ) ${ind}-${i}
-        echo "slice $((z++)) done"
+        echo "slice $((z++)) of $((SLICE_PER_VID * ${#FILES[@]}))  done"
     done
 done
 
@@ -202,3 +203,6 @@ cat "${m2v_files[@]}" > "${OUT_FILE}.m2v"
 
 echo
 echo "Your file is ready: ${OUT_FILE}.m2v"
+echo
+
+rm -fr "$WORK_DIR"
