@@ -36,15 +36,16 @@ main = Panel("Main",
             Flag('-pal', "PAL", False))
         ),
 
-    Flag('-showcase', "Showcase: Large central image or video", False,
-        "Showcase an image or video in a large central frame",
+    Flag('-showcase', "Showcase style menu", False,
+        "Arrange menu links along the outside edges, to leave room for" \
+        " an optional 'showcase' image or video.",
         enables=Filename('',
            'Showcase', '',
            'Image or video file to be showcased in a large central frame',
            'load', 'Select an image or video file.')
         ),
-    Flag('-textmenu', "Textmenu: Text on a background", False,
-        "Text-only menu, with image or video background",
+    Flag('-textmenu', "Use text links in menu", False,
+        "Use text links instead of thumbnail links.",
         enables=Number('',
             'Titles per column', 13,
             'Maximum number of titles per column',
