@@ -64,9 +64,38 @@ _vartypes = {
     list: ListVar}
 
 ### --------------------------------------------------------------------
+class Widget (tk.Frame):
+    """Generic metagui widget, used for Controls and Panels."""
+    def __init__(self):
+        self.active = False
+    
+    def draw(self, master):
+        tk.Frame.__init__(self, master)
+        self.active = True
+
+    def destroy(self):
+        tk.Frame.destroy(self)
+        self.active = False
+
+    def enable(self, enabled=True):
+        """Enable or disable all sub-widgets."""
+        if enabled:
+            newstate = 'normal'
+        else:
+            newstate = 'disabled'
+        for widget in self.children.values():
+            # Some widgets don't support state changes
+            if 'state' in widget.config():
+                widget.config(state=newstate)
+
+    def disable(self):
+        """Disable all sub-widgets."""
+        self.enable(False)
+
+### --------------------------------------------------------------------
 from tooltip import ToolTip
 
-class Control (tk.Frame):
+class Control (Widget):
     """A widget that controls the value of an option.
 
     A Control is a specialized GUI widget that controls a command-line option
@@ -103,6 +132,7 @@ class Control (tk.Frame):
             pull=Control(...):  Mirror value from another Control
             required=True:      Required option, must be set or run will fail
         """
+        Widget.__init__(self)
         self.vartype = vartype
         self.variable = None
         self.option = option
@@ -110,7 +140,6 @@ class Control (tk.Frame):
         self.default = default or vartype()
         self.help = help
         self.kwargs = kwargs
-        self.active = False
         # Controls a mandatory option?
         self.required = False
         if 'required' in kwargs:
@@ -139,7 +168,7 @@ class Control (tk.Frame):
             Control.draw(self, master)
         
         """
-        tk.Frame.__init__(self, master)
+        Widget.draw(self, master)
         # Create tk.Variable to store Control's value
         if self.vartype in _vartypes:
             self.variable = _vartypes[self.vartype]()
@@ -151,7 +180,6 @@ class Control (tk.Frame):
         # Draw tooltip
         if self.help != '':
             self.tooltip = ToolTip(self, text=self.help, delay=1000)
-        self.active = True
 
     def get(self):
         """Return the value of the Control's variable."""
@@ -170,21 +198,6 @@ class Control (tk.Frame):
         for control in self.copies:
             control.variable.set(value)
 
-    def enable(self, enabled=True):
-        """Enable or disable all sub-widgets."""
-        if enabled:
-            newstate = 'normal'
-        else:
-            newstate = 'disabled'
-        for widget in self.children.values():
-            # Some widgets don't support state changes
-            if 'state' in widget.config():
-                widget.config(state=newstate)
-
-    def disable(self):
-        """Disable all sub-widgets."""
-        self.enable(False)
-
     def get_args(self):
         """Return a list of arguments for passing this command-line option.
         draw() must be called before this function.
@@ -201,7 +214,8 @@ class Control (tk.Frame):
                 return []
 
         # -option <argument>
-        args.append(self.option)
+        if self.option != '':
+            args.append(self.option)
         # List of arguments
         if self.vartype == list:
             args.extend(value)
@@ -209,10 +223,6 @@ class Control (tk.Frame):
         else:
             args.append(value)
         return args
-
-    def destroy(self):
-        tk.Frame.destroy(self)
-        self.active = False
 
     def __repr__(self):
         """Return a Python code representation of this Control."""
@@ -223,6 +233,8 @@ class Control (tk.Frame):
 ### --------------------------------------------------------------------
 ### Control subclasses
 ### --------------------------------------------------------------------
+
+from gui import Panel
 
 class Flag (Control):
     """A widget for controlling a yes/no value."""
@@ -243,8 +255,8 @@ class Flag (Control):
         self.enables = None
         if 'enables' in kwargs:
             self.enables = kwargs['enables']
-            if not isinstance(self.enables, Control):
-                raise "A Flag can only enable another Control"
+            if not isinstance(self.enables, Widget):
+                raise "A Flag can only enable a Widget (Control or Panel)"
 
     def draw(self, master):
         """Draw control widgets in the given master."""
