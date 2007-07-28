@@ -16,7 +16,7 @@ __all__ = [
 import sys
 import Tkinter as tk
 
-from control import Control, MissingOption
+from control import Widget, Control, MissingOption
 from support import Tabs
 from libtovid.cli import Command
 
@@ -24,7 +24,7 @@ from libtovid.cli import Command
 ### GUI interface-definition API
 ### --------------------------------------------------------------------
 
-class Panel (tk.LabelFrame):
+class Panel (Widget):
     """A group of option controls in a rectangular frame.
 
     For example:
@@ -44,6 +44,7 @@ class Panel (tk.LabelFrame):
             title:    Title of panel (name shown in tab bar)
             contents: Controls or sub-Panels
         """
+        Widget.__init__(self)
         if type(title) != str:
             raise TypeError("First argument to Panel must be a text label.")
         self.title = title
@@ -67,12 +68,8 @@ class Panel (tk.LabelFrame):
     def draw(self, master, side='top'):
         """Draw Controls in a Frame with the given master.
         """
-        if self.title:
-            tk.LabelFrame.__init__(self, master, text=self.title,
-                                   padx=8, pady=8)
-        else:
-            tk.LabelFrame.__init__(self, master, bd=0, text='',
-                                   padx=8, pady=8)
+        # TODO: Use self.title in some way?
+        Widget.draw(self, master)
         for item in self.contents:
             item.draw(self)
             item.pack(side=side, anchor='nw', fill='x', expand=True)
