@@ -259,15 +259,23 @@ See also -titleset and -vmgm
 : -chapters [ NUM | CHAPTER POINTS in HH:MM:SS ]
     The number of chapters for each video (default: 6) OR
     the actual chapter points in HH:MM:SS format.
+    Chapter points will be used for generating the submenu thumbs, and for seeking
+    with your DVD player.  You can pass in just one value that will be used for all videos,
+    or supply a list of values (number of chapters) or timecode strings.
 
-    If you just pass a number for number of chapters, then todisc will make the
-    chapter points for you, otherwise the chapter points you give will be used.
-    Chapter points will be used for generating the submenu thumbs.
+    If you just pass an integer for 'number of chapters', then todisc will make the
+    chapter points for you by dividing the video length by the number you supply.
 
     If passing HH:MM:SS format you need to pass the group of chapter points for
     each video and each group should have comma separated values.
     Additionally, the first chapter should always start at 00:00:00 as dvdauthor
     will add that if it is not there already.
+
+    To get your timecodes, you can play your videos in mplayer and press 'o' to see
+    them onscreen.  I have found these to be very accurate in my short tests.  For absolute
+    frame accuracy you could load the file in avidemux and find the time codes for the
+    frames you want.
+
     NOTE: Passing chapter points is disabled at present for arrangements containing
     grouped videos - it will cause a usage error..
 
