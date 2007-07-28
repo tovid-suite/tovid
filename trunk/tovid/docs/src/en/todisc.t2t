@@ -139,7 +139,7 @@ See also -titleset and -vmgm
     A different arrangement of images for the menu: small thumbnails go at left
     (and right) side of screen, with a larger image in the centre. Maximum of 10 videos
     If the provided argument is a video file, the central thumb will be animated.
-    Pick a file of correct aspect ratio: ie. it should still look good when
+    Pick a file of correct aspect ratio: i.e. it should still look good when
     resized to 720x480 (PAL 720x576), then resized to proper aspect ratio.
 : -textmenu, -text-menu NUM ( without an argument, create a textmenu out of the supplied titles
     The optional argument specifies how many titles are in the 1st column, i.e. giving
@@ -208,7 +208,7 @@ See also -titleset and -vmgm
 : -vmgm . . . -end-vmgm
     The VMGM menu is the root menu when you use titlesets.
     Put your VMGM menu options between -vmgm and -end-vmgm.
-    You only need -titles "Titleset One title"  "Titleset Two title" . . . and not -files.
+    You only need -titles "Titleset One title"  "Titleset Two title" . . . , and not -files.
     Any other options can be used, but the  menu will be a textmenu style by default.
     **Hint**: use -showcase IMAGE/VIDEO to create a fancier VMGM menu.
 : -switched-menus
@@ -219,9 +219,9 @@ See also -titleset and -vmgm
     in the centre will change to the image or video
     made from that selected video.
 
-    This is a time consuming process for making animated menus as you need to make a
+    This can be a time consuming process for making animated menus as you need to make a
     separate menu for each video provided with '-files'.  The process can be greatly
-    speeded up by using '-quick-menu' in conjunction with this.
+    sped up by using '-quick-menu' in conjunction with this.
 
     Example for using with '-quick-menu':
 ```
@@ -259,29 +259,27 @@ See also -titleset and -vmgm
 : -chapters [ NUM | CHAPTER POINTS in HH:MM:SS ]
     The number of chapters for each video (default: 6) OR
     the actual chapter points in HH:MM:SS format.
+
     If you just pass a number for number of chapters, then todisc will make the
-    chapter points for you.
+    chapter points for you, otherwise the chapter points you give will be used.
     Chapter points will be used for generating the submenu thumbs.
 
     If passing HH:MM:SS format you need to pass the group of chapter points for
     each video and each group should have comma separated values.
     Additionally, the first chapter should always start at 00:00:00 as dvdauthor
     will add that if it is not there already.
-    NOTE: Passing chapter points will not work at present for grouped videos.
-    '''
+    NOTE: Passing chapter points is disabled at present for arrangements containing
+    grouped videos - it will cause a usage error..
 
-    Example for passing just number of chapters ( 4 videos:
-    '''
+    Example for passing just number of chapters ( 4 videos ):
 ```
     -chapters 5 2 4 8
 ```
-    '''
 
     Example of passing chapter points ( 4 videos ):
-    '''
 ```
-    -chapters 00:00:01,00:05:34.41,00:12:54,00:20:45 00:00:01,00:04:25.623,00:09:12,00:15:51 \
-    00:00:01,00:05:10,00:13:41,00:18:13.033 00:00:01:00:15:23.342,00:26:42.523
+    -chapters 00:00:00,00:05:34.41,00:12:54,00:20:45 00:00:00,00:04:25.623,00:09:12,00:15:51 \
+    00:00:00,00:05:10,00:13:41,00:18:13.033 00:00:00,00:15:23.342,00:26:42.523
 ```
     
 : -seek NUM | "NUM1 NUM2 NUM3 . . ."
@@ -300,13 +298,23 @@ See also -titleset and -vmgm
     Seek to NUM seconds before generating audio for bgaudio
     (default: 2.0 seconds)
 : -group N VIDEO1 VIDEO2 . . .
-    Allow grouping videos in dvdauthor.xml. Example:
+    Allow grouping videos in dvdauthor.xml, so they will play sequentially as a group.
+ The videos passed in after the 'N' will be grouped with the 'Nth' video. Example:
 
 ```
- -group 1 2.mpg 3.mpg 4.mpg
+ -group 2 2.mpg 3.mpg 4.mpg
 ```
 
- will group these 3 videos with the 1st video given with -files
+ will group these 3 videos with the 2nd video given with '-files', so that they will play
+ sequentially as one title.  Only one thumbnail and/or title will appear on the menu
+ for the group: it will be made from the 1st video in the group.
+ In the above example if you passed:
+```
+ -files foo.mpg bar.mpg baz.mpg -group 2 2.mpg 3.mpg 4.mpg
+```
+ then the group will consist of bar.mpg  2.mpg, 3.mpg and 4.mpg, and only the title and/or
+ thumbnail for bar.mpg will appear in the menu.  You can use -group more than once if you
+ have more than one group you are making.
 : -noask, -no-ask
     Skip all interactive questions.  No preview, no re-encoding option, no interactive
     option to use background video for bgaudio.
