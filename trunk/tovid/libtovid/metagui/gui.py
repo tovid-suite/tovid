@@ -39,10 +39,10 @@ class Panel (Widget):
     options '-bgaudio', '-submenus', and '-menu-length'.
     """
     def __init__(self, title='', *contents):
-        """Create a Panel to hold option-control associations.
+        """Create a Panel to hold control widgets or sub-panels.
         
             title:    Title of panel (name shown in tab bar)
-            contents: Controls or sub-Panels
+            contents: One or more Widgets (Controls, Panels, Drawers etc.)
         """
         Widget.__init__(self)
         if type(title) != str:
@@ -50,9 +50,7 @@ class Panel (Widget):
         self.title = title
         self.contents = []
         for item in contents:
-            if isinstance(item, Control) \
-               or isinstance(item, Panel) \
-               or isinstance(item, Drawer):
+            if isinstance(item, Widget):
                 self.contents.append(item)
             else:
                 import traceback
@@ -61,12 +59,13 @@ class Panel (Widget):
                 filename, lineno, foo, code = last_error
                 print "Error on line %(lineno)s of %(filename)s:" % vars()
                 print "    " + code
-                print "Panel '%s' may only contain Controls, Panels,"\
-                      " or Drawers (got %s instead)" % (title, type(item))
+                print "Panel '%s' may only contain Widget subclasses" \
+                      " (Controls, Panels, Drawers etc.)" \
+                      " got %s instead" % type(item)
                 sys.exit(1)
 
     def draw(self, master, side='top'):
-        """Draw Controls in a Frame with the given master.
+        """Draw Panel and its contents in the given master.
         """
         # TODO: Use self.title in some way?
         Widget.draw(self, master)
@@ -184,14 +183,15 @@ class Dropdowns (Panel):
 
 ### --------------------------------------------------------------------
 
-class Drawer (tk.Frame):
+class Drawer (Widget):
     """Like a Panel, but may be hidden or "closed" like a drawer."""
     def __init__(self, title='', *contents):
+        Widget.__init__(self)
         self.panel = Panel(title, *contents)
         self.visible = False
         
     def draw(self, master):
-        tk.Frame.__init__(self, master)
+        Widget.draw(self, master)
         # Checkbutton
         button = tk.Button(self, text=self.panel.title,
                            command=self.show_hide)
@@ -214,7 +214,7 @@ class Drawer (tk.Frame):
 
 ### --------------------------------------------------------------------
 
-class Application (tk.Frame):
+class Application (Widget):
     """Graphical frontend for a command-line program
     """
     def __init__(self, program, panels=None, style=None):
@@ -228,6 +228,7 @@ class Application (tk.Frame):
 
         After defining the Application, call run() to show/execute it.
         """
+        Widget.__init__(self)
         self.program = program
         self.panels = panels or []
         self.showing = False
@@ -236,7 +237,7 @@ class Application (tk.Frame):
     def draw(self, master):
         """Draw the Application in the given master.
         """
-        tk.Frame.__init__(self, master)
+        Widget.draw(self, master)
         # Single-panel application
         if len(self.panels) == 1:
             panel = self.panels[0]
