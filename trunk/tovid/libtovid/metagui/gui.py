@@ -71,7 +71,8 @@ class Panel (Widget):
         Widget.draw(self, master)
         for item in self.contents:
             item.draw(self)
-            item.pack(side=side, anchor='nw', fill='x', expand=True)
+            item.pack(side=side, anchor='nw', fill='x', expand=True,
+                  padx=4, pady=4)
 
     def get_args(self):
         """Return a list of all command-line options from contained widgets.
@@ -242,7 +243,7 @@ class Application (Widget):
         if len(self.panels) == 1:
             panel = self.panels[0]
             panel.draw(self)
-            panel.pack(anchor='n', fill='both', expand=True)
+            panel.pack(anchor='n', fill='x', expand=True)
         # Multi-panel (tabbed) application
         else:
             tabs = Tabs(self)
@@ -250,7 +251,7 @@ class Application (Widget):
                 panel.draw(tabs)
                 tabs.add(panel.title, panel)
             tabs.draw()
-            tabs.pack(anchor='n', fill='both', expand=True)
+            tabs.pack(anchor='n', fill='x', expand=True)
         # "Run" button
         button = tk.Button(self, text="Run %s now" % self.program,
                            command=self.execute)
