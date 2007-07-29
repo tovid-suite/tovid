@@ -98,6 +98,7 @@ proj.file-list = [loc('configure.ac'),
                   loc('quickrelease'),
                   loc('src/genvid'),
                   loc('src/idvid'),
+                  loc('src/livegui'),
                   loc('src/makedvd'),
                   loc('src/makemenu'),
                   loc('src/makeslides'),
@@ -124,6 +125,7 @@ proj.file-list = [loc('configure.ac'),
                   loc('src/tovid-stats'),
                   loc('src/tovid-test'),
                   loc('src/tovidgui'),
+                  loc('src/toyoutube'),
                   loc('src/wxtodisc')]
 proj.file-type = 'shared'
 proj.main-file = loc('src/todiscgui')
