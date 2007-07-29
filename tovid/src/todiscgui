@@ -104,6 +104,16 @@ menu = Panel("Menu",
     Flag('-menu-fade',
         'Fade in menu', False,
         'tooltip'),
+    Flag('-quick-menu', "Make a quick animated showcase style menu.  ", False,
+        "Ten times faster than normal showcase animation.  " \
+        "A showcase image is required.  No video thumbs are made",
+        ),
+    Flag('-switched-menus', "Make switched menus", False,
+        "This will make a showcase style menu with text menu links.  " \
+        "The showcased VIDEO or IMAGE will be of each video 'title' " \
+        " in the menu.  It is not necessary to select showcase or " \
+        "the showcase image for this option."
+        ),
     Panel("Seek times",
           List('-seek',
               'Seek time', '',
@@ -138,7 +148,7 @@ menu = Panel("Menu",
         'tooltip',
         'none|glass'),
     Text('-showcase-geo',
-        'Showcase image position (XxY', '',
+        'Showcase image position (XxY)', '',
         'tooltip')
 )
 
