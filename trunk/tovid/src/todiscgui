@@ -35,7 +35,8 @@ main = Panel("Main",
             Flag('-ntsc', "NTSC", True),
             Flag('-pal', "PAL", False))
         ),
-
+    HPanel('',
+    FlagGroup('Menu Style', '',
     Flag('-showcase', "Showcase style menu", False,
         "Arrange menu links along the outside edges, to leave room for" \
         " an optional 'showcase' image or video.",
@@ -50,7 +51,7 @@ main = Panel("Main",
             'Titles per column', 13,
             'Maximum number of titles per column',
             1, 50)
-        ),
+        ))),
     
     Filename('-background',
         'Background image or video', '',
@@ -314,13 +315,25 @@ authoring = Panel("Authoring",
         'tooltip')
 )
 
+burning = Panel("Burning",
+    Flag('-burn',
+        'Prompt for burning on completion', False),
+    Number('-speed',
+        'Burning speed', 8,
+        'Speed for burning',
+        0, 30, 'scale'),
+    Filename('-device',
+        'Device to use for burning', '/dev/dvdrw',
+        'tooltip',
+        'load', 'Select or type your burning device ( default /dev/dvdrw )'),
+)
 
 ### --------------------------------------------------------------------
 ### Application and GUI
 ### --------------------------------------------------------------------
 
 todisc = Application('todisc',
-    [main, general, menu, thumbnails, audio, text, authoring])
+    [main, general, menu, thumbnails, audio, text, authoring, burning])
 gui = GUI("todiscgui", [todisc], 600, 800)
 gui.run()
 
