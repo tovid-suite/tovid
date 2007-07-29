@@ -65,7 +65,7 @@ _vartypes = {
 
 ### --------------------------------------------------------------------
 class Widget (tk.Frame):
-    """Generic metagui widget, used for Controls and Panels."""
+    """Generic metagui widget, suitable for Controls, Panels, etc."""
     def __init__(self):
         self.active = False
     
@@ -96,7 +96,7 @@ class Widget (tk.Frame):
 from tooltip import ToolTip
 
 class Control (Widget):
-    """A widget that controls the value of an option.
+    """A widget that controls the value of a command-line option.
 
     A Control is a specialized GUI widget that controls a command-line option
     via a local variable, accessed via get() and set() methods.
@@ -208,16 +208,17 @@ class Control (Widget):
 
         # Skip if unmodified or empty
         if value == self.default or value == []:
+            # ...unless it's required
             if self.required:
                 raise MissingOption(self.option)
             else:
                 return []
 
-        # -option <argument>
+        # '-option'
         if self.option != '':
             args.append(self.option)
         # List of arguments
-        if self.vartype == list:
+        if type(value) == list:
             args.extend(value)
         # Single argument
         else:
@@ -485,8 +486,8 @@ class Number (Control):
 
 
     def enable(self, enabled=True):
-        """Enable or disable all sub-widgets. Overridden to make Scale widget
-        look disabled."""
+        """Enable or disable all sub-widgets."""
+        # Overridden to make Scale widget look disabled
         Control.enable(self, enabled)
         if self.style == 'scale':
             if enabled:
@@ -548,9 +549,6 @@ class List (Text):
         text = ' '.join(listvalue)
         Text.set(self, text)
     
-    def get_args(self):
-        """Return a list of arguments."""
-        return self.get()
 
 ### --------------------------------------------------------------------
 from tkFileDialog import asksaveasfilename, askopenfilename
