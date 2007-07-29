@@ -68,8 +68,13 @@ class Panel (Widget):
         """Draw Panel and its contents in the given master.
         """
         Widget.draw(self, master)
-        frame = tk.LabelFrame(self, text=self.title)
-        frame.pack(fill='both', expand=True)
+        # Get a labeled or unlabeled frame
+        if self.title:
+            frame = tk.LabelFrame(self, text=self.title)
+            frame.pack(fill='both', expand=True)
+        else:
+            frame = self
+        # Draw all contents in the frame
         for item in self.contents:
             item.draw(frame)
             item.pack(side=side, anchor='nw', fill='x', expand=True,
