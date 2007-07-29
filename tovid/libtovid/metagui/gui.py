@@ -67,10 +67,11 @@ class Panel (Widget):
     def draw(self, master, side='top'):
         """Draw Panel and its contents in the given master.
         """
-        # TODO: Use self.title in some way?
         Widget.draw(self, master)
+        frame = tk.LabelFrame(self, text=self.title)
+        frame.pack(fill='both', expand=True)
         for item in self.contents:
-            item.draw(self)
+            item.draw(frame)
             item.pack(side=side, anchor='nw', fill='x', expand=True,
                   padx=4, pady=4)
 
