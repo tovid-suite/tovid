@@ -200,7 +200,7 @@ while test $# -gt 1; do
 done
 
 if test -e "$1"; then
-    DISC_NAME="$(abspath "$1")"
+    DISC_NAME="$(readlink -f "$1")"
 else
     usage_error "File or DVD directory '$1' does not exist."
 fi
@@ -292,7 +292,8 @@ if $DO_AUTHOR; then
       DISC_SUM=$(expr $VOB_SIZE \+ $DISC_SUM)
       i=$(expr $i \+ 1)
     done
-    AVAIL_SPACE=$(df -B M -P "$OUT_DIR" | awk 'NR != 1 {print $4;}' | tr -d M)
+    OUTDIR=$(readlink -f "$OUT_DIR")
+    AVAIL_SPACE=$(df -B M -P "${OUTDIR%/*}" | awk 'NR != 1 {print $4;}' | tr -d M)
 
     if test $DISC_SUM -gt $AVAIL_SPACE; then
        echo $SEPARATOR
