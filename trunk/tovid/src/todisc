@@ -3446,7 +3446,7 @@ else # not showcase
     fi
 fi
 # if there is quickmenu bg, cut out transparent hole for showcase image/video
-if $QUICK_MENU && [[ -n "BACKGROUND" ]]; then
+if $QUICK_MENU && [[ -n "$BACKGROUND" ]]; then
     convert -size $SHOWCASE_SIZE xc:white "$WORK_DIR/showcase_blank.png"
     convert -size  $VIDSIZE xc:none -geometry +$sc_xpage+$SC_Y \
     "$WORK_DIR/showcase_blank.png" -composite "$WORK_DIR/cookie_cutter.png"
