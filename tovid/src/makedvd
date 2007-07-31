@@ -200,7 +200,7 @@ while test $# -gt 1; do
 done
 
 if test -e "$1"; then
-    DISC_NAME="$(readlink -f "$1")"
+    DISC_NAME=$(readlink -f "$1")
 else
     usage_error "File or DVD directory '$1' does not exist."
 fi
@@ -288,7 +288,7 @@ if $DO_AUTHOR; then
     DISC_SUM=0
     while test $i -le $NUM_VOBS; do
       VOB=$(echo "$VOB_LIST" | awk -F ':' '{ print $'$i' }')
-      VOB_SIZE=$(du -B M "$VOB" | awk -F ' ' '{print $1}' | tr -d M)
+      VOB_SIZE=$(du -D -B M "$VOB" | awk -F ' ' '{print $1}' | tr -d M)
       DISC_SUM=$(expr $VOB_SIZE \+ $DISC_SUM)
       i=$(expr $i \+ 1)
     done
