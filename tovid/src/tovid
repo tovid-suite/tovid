@@ -535,7 +535,7 @@ function get_args()
             "-subtitles" )
                 shift
                 if test -e "$1"; then
-                    SUBS_FILE=$(abspath "$1")
+                    SUBS_FILE=$(readlink -f "$1")
                     SUBTITLES="-sub \"$SUBS_FILE\""
                     DO_SUBS=:
                 else
@@ -904,7 +904,7 @@ if expr "$IN_FILE" : ".*:\/\/" >/dev/null; then
     IN_FILE_TYPE="uri"
 else
     IN_FILE_TYPE="file"
-    IN_FILE=$(abspath "$IN_FILE")
+    IN_FILE=$(readlink -f "$IN_FILE")
 fi
 
 
@@ -929,7 +929,7 @@ elif test "$OUT_PREFIX" = "$(basename "$OUT_PREFIX")"; then
     OUT_PREFIX="$OUTPUT_DIR/$OUT_PREFIX"
 # Otherwise, use the full qualified pathname
 else
-    OUT_PREFIX=$(abspath "$OUT_PREFIX")
+    OUT_PREFIX=$(readlink -f "$OUT_PREFIX")
     mkdir -p "$(dirname "$OUT_PREFIX")"
 fi
 
