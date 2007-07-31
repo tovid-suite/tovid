@@ -66,22 +66,6 @@ TOVID_FORUMS="http://www.createphpbb.com/tovid/"
 # ******************************************************************************
 # ******************************************************************************
 
-
-# ******************************************************************************
-# Return the full, absolute pathname of a given file or directory
-# Echoes result to stdout, so in order to use the output as a "return value",
-# call the function like this:
-#     RETURN_VALUE=$(abspath "$FILENAME")
-# ******************************************************************************
-function abspath()
-{
-    DIR=$(dirname "$1")
-    BASE=$(basename "$1")
-    ABS_PATH="`cd \"$DIR\" && pwd || echo \"$DIR\"`/$BASE"
-    #ABS_PATH=$(cd "$DIR" && pwd || echo "$DIR")/$BASE
-    echo "$ABS_PATH"
-}
-
 # ******************************************************************************
 # test if input is a number or not
 # returns true or false exit code ( 0 or 1 )
@@ -205,7 +189,12 @@ function unformat_time()
     HMS_HOURS=$(awk -F ':' '{print $1}' <<< $1)
     HMS_MINS=$(awk -F ':' '{print $2}' <<< $1)
     HMS_SECS=$(awk -F ':' '{print $3}' <<< $1)
-    TOT_SECONDS=$(bc <<< "($HMS_HOURS * 3600) + ($HMS_MINS * 60) + $HMS_SECS")
+    # allow integer to be passed, if so it will be echoed unchanged
+    if [[ $1 = *:* ]]; then
+        TOT_SECONDS=$(bc <<< "($HMS_HOURS * 3600) + ($HMS_MINS * 60) + $HMS_SECS")
+    else
+        TOT_SECONDS=$1
+    fi
     echo $TOT_SECONDS
 }
 
