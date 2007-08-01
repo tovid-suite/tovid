@@ -133,6 +133,9 @@ letterboxing or anamorphic scaling.
     quality at the expense of a larger output file. Default is 6. Output size
     can vary by approximately a factor of 4 (that is, **-quality 1** output
     can be 1/4 the size of **-quality 10** output). Your results may vary.
+    WARNING: With **-quality 10**, the output bitrate may be too high for
+    your hardware DVD player to handle. Stick with 9 or lower unless you
+    have phenomenally good eyesight.
 
     At present, this option affects both output bitrate and quantization (but
     may, in the future, affect other quality/size-related attributes). Use
@@ -144,18 +147,18 @@ letterboxing or anamorphic scaling.
     which must be constant bitrate.
 
 : **-interlaced**
-    Do interlaced encoding of the input video (top fields first). Use this 
-    option if your video is  interlaced, and you want to preserve as much 
-    picture quality as possible. This option is ignored for VCD, which 
+    Do interlaced encoding of the input video (top fields first). Use this
+    option if your video is  interlaced, and you want to preserve as much
+    picture quality as possible. This option is ignored for VCD, which
     doesn't support it.
 
     You can tell your source video is interlaced by playing it, and pausing
     during a scene with horizontal motion; if you see a "comb" effect at the
     edges of objects in the scene, you have interlaced video. Use this option
-    to encode it properly. 
-    
-    If you would prefer to have output in progressive format, use 
-    **-progressive**. If you have a DV camera, use **-interlaced_bf** since 
+    to encode it properly.
+
+    If you would prefer to have output in progressive format, use
+    **-progressive**. If you have a DV camera, use **-interlaced_bf** since
     DV footage is generally bottom fields first.
 
 : **-interlaced_bf**
