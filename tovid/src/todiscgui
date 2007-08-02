@@ -101,10 +101,14 @@ general = Panel("General",
 menu = Panel("Menu",
     Flag('-ani-submenus',
         'Animated submenus (takes more time)', False,
-        'tooltip'),
+        'Create an animated submenu for each video.  ' \
+        'Submenu links lead to chapter points.'),
     Flag('-menu-fade',
         'Fade in menu', False,
-        'tooltip'),
+        'Fade  the  menu  in  and out The background ' \
+        ' will fade in first, then title ' \
+        '(and mist if called for), then the menu thumbs.  ' \
+        'The fadeout is in reverse order'),
     Flag('-quick-menu', "Make a quick animated showcase style menu.  ", False,
         "Ten times faster than normal showcase animation.  " \
         "A showcase image is required.  No video thumbs are made",
@@ -142,24 +146,36 @@ menu = Panel("Menu",
         'load', 'Select a video file'),
     Choice('-showcase-titles-align',
         'Video(s) title alignment', 'west',
-        'tooltip',
+        'This is a showcase style only option.  The default is to center ' \
+        'the text above the thumbnails.  This option will align the titles ' \
+        ' either to the left (west) or right  (east).  Aligning west gives ' \
+        'more space to the titles.  Aligning east also does so, and as well ' \
+        'will let you use "\\n" in your titles to achieve multi line titles.',
         'west|east|center'),
     Choice('-showcase-framestyle',
         'Showcase frame style', 'none',
-        'tooltip',
+        'This is a showcase style only option.  The "none" option will use the ' \
+        'default  frame method, using "convert -frame  ...". The "glass" option ' \
+        'will use mplayer to make frames, giving an animated effect.  The ' \
+        'glass style can be much faster - epecially if used without -rotate and -wave options',
         'none|glass'),
     Text('-showcase-geo',
         'Showcase image position (XxY)', '',
-        'tooltip')
+        'This is a showcase style only option. ' \
+        'Enter the position of the top left corner of the showcase image: e.g. "200x80"')
 )
 
 thumbnails = Panel("Thumbnails",
     Flag('-3dthumbs',
         'Create 3D thumbs', False,
-        'tooltip'),
+        'This will give an illusion of 3D to the thumbnails: ' \
+        'dynamic lighting on rounded thumbs, and a  raised ' \
+        ' effect on rectangular thumbs'),
     Choice('-thumb-shape',
         'Thumb shape', 'normal',
-        'tooltip',
+        'Apply a shaped transparency mask to thumbnail videos. ' \
+        'Note: to disable the "mist" background ' \
+        'behind each thumb, use "none" for -thumb-mist-color.',
         'normal|oval|plectrum|egg'),
     Number('-opacity',
         'Thumbnail opacity', 100,
@@ -182,6 +198,9 @@ thumbnails = Panel("Thumbnails",
     Color('-thumb-mist-color',
         'Thumb mist color', 'white',
         'tooltip'),
+    Choice('-thumb-mist-color',
+        'Transparent thumb background', '',
+        'tooltip', '|none'),
     Flag('-tile3x1',
         'Arrange thumb montage in 1 row of 3 thumbs', False,
         'tooltip')
@@ -317,14 +336,14 @@ authoring = Panel("Authoring",
 
 burning = Panel("Burning",
     Flag('-burn',
-        'Prompt for burning on completion', False),
+        'Burn project on completion', False),
     Number('-speed',
         'Burning speed', 8,
         'Speed for burning',
         0, 30, 'scale'),
     Filename('-device',
         'Device to use for burning', '/dev/dvdrw',
-        'tooltip',
+        'Select or type your burning device ( default /dev/dvdrw',
         'load', 'Select or type your burning device ( default /dev/dvdrw )'),
 )
 
