@@ -116,4 +116,9 @@ if __name__ == '__main__':
 
     encode.encode(options['in'], options['out'], **options)
     
-    print "Done. Thanks for using pytovid!"
+    print
+    print "Done encoding '%s' to '%s.mpg'" % (options['in'], options['out'])
+    print
+    print "Please report bugs to http://groups.google.com/group/tovid-users"
+    print "Thanks for using pytovid!"
+
