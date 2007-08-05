@@ -630,29 +630,49 @@ get_group_chapters()
 {
     FORMAT=false
     index=$1
-    [[ -n $2 ]] && FORMAT=:
-    unset chapt_len_array x len remainder t
+    [[ -n $2 && $2 = "format" ]] && FORMAT=:
+    $USER_CHAPTERS && FORMAT=false
+    unset chapt_len_array x len remainder y e
     remainder=0
-    chapter_length=$( bc <<< "scale=3; ${GROUP_TOT_LEN[index]} / ${CHAPTERS[index]}" 2>/dev/null)
+    chapter_length=$( bc <<< "scale=3; ${GROUP_TOT_LEN[index]} / \
+    ${CHAPTERS[index]}" 2>/dev/null)
     GROUP_VIDEO_LENGTHS=( ${GROUP_VID_LENGTHS[index]} )
-    for len in ${GROUP_VIDEO_LENGTHS[@]}; do
-        adjusted_length=$( bc <<< "scale=3; $len + $remainder" 2>/dev/null)
-        num_chapters=$( bc <<< "$adjusted_length / $chapter_length" 2>/dev/null )
-        if (( num_chapters > 0)); then
-            chapt_len_array=( $( for ((t=0; t<num_chapters; t++)); do
-            echo $chapter_length; done) )
-            chapt_len_array=($(bc <<< "scale=3; $chapter_length - $remainder" 2>/dev/null) ${chapt_len_array[@]})
-            unset chapt_len_array[${#chapt_len_array[@]}-1]
-            chapter_points=$( running_total <<< ${chapt_len_array[@]} )
-            remainder=$( bc <<< "$adjusted_length % $chapter_length" 2>/dev/null)
-            group_chapters[x++]=$chapter_points
-        else
-            group_chapters[x++]=""
-            remainder=$adjusted_length
-        fi
-        unset chapt_len_array t
-    done
-    unset remainder
+    if $USER_CHAPTERS; then
+        unset grp_arb_chts y
+        grp_arb_chts=( ${group_arbitrary_chapters[index]} )
+        
+        for y in ${!grp_arb_chts[@]}; do
+            [[ $y -eq 0 ]] && chpts0="chapters=\"${grp_arb_chts[y]}\""
+            if [[ ${grp_arb_chts[y]} = 0 ]]; then
+                chpts[y]=""
+            else
+                chpts[y]="chapters=\"${grp_arb_chts[y]}\""
+            fi
+        done
+    else
+#        unset chapt_len_array remainder e
+        for len in ${GROUP_VIDEO_LENGTHS[@]}; do
+            adjusted_length=$( bc <<< "scale=3; $len + $remainder" 2>/dev/null)
+            num_chapters=$( bc <<< "$adjusted_length / $chapter_length" \
+            2>/dev/null )
+            if (( num_chapters > 0)); then
+                chapt_len_array=( $( for ((t=0; t<num_chapters; t++)); do
+                echo $chapter_length; done) )
+                chapt_len_array=($(bc <<< "scale=3; $chapter_length - $remainder" \
+                2>/dev/null) ${chapt_len_array[@]})
+                unset chapt_len_array[${#chapt_len_array[@]}-1]
+                chapter_points=$( running_total <<< ${chapt_len_array[@]} )
+                remainder=$( bc <<< "$adjusted_length % $chapter_length" \
+                2>/dev/null)
+                group_chapters[x++]=$chapter_points
+            else
+                group_chapters[x++]=""
+                remainder=$adjusted_length
+            fi
+        unset chapt_len_array
+        done
+        unset remainder
+    fi
     if $FORMAT; then
         for d in ${!group_chapters[@]}; do
             for number in ${group_chapters[d]}; do
@@ -1363,7 +1383,13 @@ while test $# -gt 0; do
             # user can pass HH:MM:SS chapters, else, remove possible comma sep
             ! [[ "$CHAPTERS" = *:* ]] && CHAPTERS=( ${CHAPTERS//,/ } )
             # a way to tell later if user passed HH:MM:SS chapters
-            [[ "$CHAPTERS" = *:* ]] && USER_CHAPTERS=: && CHAPTERS=( $CHAPTERS )
+            if [[ "$CHAPTERS" = *:* ]]; then
+                [[ "$CHAPTERS" = *+* ]] && grouped_user_chapters=( $CHAPTERS )
+                # make array, remove everything after and including 1st '+',
+                CHAPTERS=( $CHAPTERS )
+                CHAPTERS=( ${CHAPTERS[@]%%+*} ) # in case of grouped chapters
+                USER_CHAPTERS=: # user passed HH:MM:SS chapters
+            fi
             ;;
         "-subtitles" )
             shift
@@ -1852,7 +1878,6 @@ if $SUB_MENU && [ "$TARGET" = "svcd" ]; then
 fi
 [[ $TARGET = "svcd" ]] && $SHOWCASE && ! $TEXTMENU && usage_error "Sorry, showcase disabled for svcd target"
 $SUB_MENU && $GROUPING && usage_error "Sorry, no submenus when using -group"
-$USER_CHAPTERS && $GROUPING && usage_error "Sorry, no arbitrary chapters ( HH:MM:SS ) for grouped video arrangements"
 # allow user to only specify one audio file for all submenus
 if [ ${#SM_AUDIO[@]} -eq 1 ]; then
     SM_AUDIO_FILE=${SM_AUDIO[0]}
@@ -1909,9 +1934,20 @@ if $CHAIN_VIDEOS; then
     done
     echo
 fi
+# make array, remove everything after and including 1st '+',
+#CHAPTERS=( ${CHAPTERS%%+*} ) # in case of grouped chapters
 # allow user to pass HH:MM:SS chapters
 $USER_CHAPTERS && CHAPT_ARRAY=( ${CHAPTERS[@]} )
-    
+# if arbitrary grouped chapters passed, make an array of them
+if $GROUPING && $USER_CHAPTERS; then
+    for i in ${!IN_FILES[@]}; do
+        if [[ -n ${GROUP[i]} ]]; then
+            group_arbitrary_chapters[i]="${grouped_user_chapters[i]//+/ }"
+        else
+            group_arbitrary_chapters[i]=""
+        fi
+    done
+fi
 # allow specifying one # of chapters for all videos if not given in HH:MM:SS
 if [[ ${#CHAPTERS[@]} -eq 1 && -z ${CHAPT_ARRAY[@]} ]]; then
     for ((i=0; i<=NUM_FILES; i++)); do
@@ -4151,7 +4187,6 @@ fi)
 EOF
 ) |sed '/^ *$/d' >> "$DVDAUTHOR_XML"
 fi
-
 
 ##############################################################################
 #                            Animenu stuff                                   #
