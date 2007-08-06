@@ -117,6 +117,7 @@ class Control (Widget):
                  label='',
                  default='',
                  help='',
+                 filter='',
                  **kwargs):
         """Create a Control for an option.
 
@@ -140,6 +141,7 @@ class Control (Widget):
         self.label = label
         self.default = default or vartype()
         self.help = help
+        self.filter = filter
         self.kwargs = kwargs
         # Controls a mandatory option?
         self.required = False
@@ -672,8 +674,9 @@ class TextList (Control):
                  label="Text list",
                  default=None,
                  help='',
+                 filter='',
                  **kwargs):
-        Control.__init__(self, list, option, label, default, help, **kwargs)
+        Control.__init__(self, list, option, label, default, help, filter, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -736,13 +739,13 @@ class FileList (Control):
         files = askopenfilenames(parent=self, title='Add files')
         self.listbox.add(*files)
         for control in self.copies:
-            if control.label == 'Video titles':
-                self.listbox.linked = control.listbox
-                control.listbox.linked = self.listbox
+            self.listbox.linked = control.listbox
+            control.listbox.linked = self.listbox
+            if control.filter:
+                filter_cmd='title =' + control.filter
                 titles = []
                 for file in files:
-                    title = os.path.basename(file)[0:-4]
-                    title = title.replace('_', ' ')
+                    exec filter_cmd
                     titles.append(title)
                 titles = tuple(*[titles]) # not really needed
                 control.listbox.add(*titles)
