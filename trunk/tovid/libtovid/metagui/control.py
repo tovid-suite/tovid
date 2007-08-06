@@ -48,6 +48,7 @@ __all__ = [
 import Tkinter as tk
 from support import ListVar
 import support
+import os
 
 ### --------------------------------------------------------------------
 class MissingOption (Exception):
@@ -728,10 +729,25 @@ class FileList (Control):
 
     def addFiles(self):
         """Event handler to add files to the list"""
+        # some tk calls to use the undocumented "hidden files" button
+        self.tk.call('namespace', 'import', '::tk::dialog::file::')
+        self.tk.call('set', '::tk::dialog::file::showHiddenBtn',  '1')
+        self.tk.call('set', '::tk::dialog::file::showHiddenVar',  '0')
         files = askopenfilenames(parent=self, title='Add files')
         self.listbox.add(*files)
         for control in self.copies:
-            control.listbox.add(*files)
+            if control.label == 'Video titles':
+                self.listbox.linked = control.listbox
+                control.listbox.linked = self.listbox
+                titles = []
+                for file in files:
+                    title = os.path.basename(file)[0:-4]
+                    title = title.replace('_', ' ')
+                    titles.append(title)
+                titles = tuple(*[titles]) # not really needed
+                control.listbox.add(*titles)
+            else:
+                control.listbox.add(*files)
 
     def removeFiles(self):
         """Event handler to remove selected files from the list"""
