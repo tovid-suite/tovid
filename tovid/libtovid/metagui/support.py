@@ -174,6 +174,8 @@ class DragList (ScrollList):
         """
         # Set currently selected item and change the cursor to a double-arrow
         ScrollList.select(self, event)
+        if self.linked:
+            self.linked.curindex = self.curindex
         self.config(cursor="double_arrow")
     
     def drag(self, event):
@@ -189,6 +191,7 @@ class DragList (ScrollList):
             # Drag in linked listbox
             if self.linked:
                 self.linked.swap(self.curindex, loc)
+                self.linked.curindex = loc
             self.curindex = loc
     
     def drop(self, event):
