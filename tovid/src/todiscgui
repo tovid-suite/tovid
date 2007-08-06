@@ -16,6 +16,7 @@ files = FileList('-files',
 titles = TextList('-titles',
     'Video titles', None,
     'Titles for each video',
+     'os.path.basename(file)[0:-4]',
     pull=files,
     required=True)
 
@@ -80,10 +81,6 @@ main = Panel("Main",
 )
 
 general = Panel("General",
-    Number('-menu-length',
-        'Menu length', 30,
-        'Duration of menu in seconds',
-        0, 120, 'scale'),
     Flag('-keep-files',
         'Keep useful intermediate files on exit', False),
     Flag('-no-ask',
@@ -99,6 +96,10 @@ general = Panel("General",
 )
 
 menu = Panel("Menu",
+    Number('-menu-length',
+        'Menu length', 20,
+        'Duration of menu in seconds',
+        0, 120, 'scale'),
     Flag('-ani-submenus',
         'Animated submenus (takes more time)', False,
         'Create an animated submenu for each video.  ' \
@@ -179,31 +180,41 @@ thumbnails = Panel("Thumbnails",
         'normal|oval|plectrum|egg'),
     Number('-opacity',
         'Thumbnail opacity', 100,
-        'tooltip',
+        'Opacity  of thumbnail videos as a percentage ' \
+        '(no percent sign).  Less than 100(%) ' \
+        'is semi-transparent.  Not recommended with dark backgrounds.',
         1, 100, 'spin'),
     Number('-blur',
         'Blur', 4,
-        'tooltip',
+        'The amount of feather blur to apply to the thumb-shape.  ' \
+        'Default is 4.0 which will  more  or  less  keep  the shape, ' \
+        'creating transparency at the edges.  Choose float or ' \
+        'integer values between 0.1 and 5.0',
         1, 5, 'spin'),
     List('-rotate-thumbs',
         'Rotate Thumbs (list)', '',
-        'tooltip'),
+        'Rotate  thumbs  the  given amount in degrees - can be positive ' \
+        'or negative.  There must be one value for each file given with -files.  ' \
+        'If the values are not the same distance from zero, the thumbs will be  ' \
+        'of  different sizes as images are necessarily resized *after* rotating.'),
     Text('-wave',
         'Wave effect for showcase thumb', 'default',
-        'tooltip'),
+        'Wave effect for showcase image|video.  Alters thumbs along a sine wave ' \
+        'using the argument given.  The argument "default" will produce a wave arg ' \
+        'of -20x556, which produces a gentle wave with a small amount of distortion.'),
     Number('-rotate',
         'Rotate Showcase thumb', 5,
-        'tooltip',
+        'Rotate the showcase image|video clockwise by this number of degrees.',
         -30, 30, 'spin'),
     Color('-thumb-mist-color',
         'Thumb mist color', 'white',
-        'tooltip'),
+        'Color of mist behind thumbnails (not a showcase option).'),
     Choice('-thumb-mist-color',
         'Transparent thumb background', '',
         'tooltip', '|none'),
     Flag('-tile3x1',
         'Arrange thumb montage in 1 row of 3 thumbs', False,
-        'tooltip')
+        'Use a montage tile of 3x1 instead of the usual 2x2 (for 3 videos only).')
 )
 
 
