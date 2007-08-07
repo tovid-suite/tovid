@@ -1368,7 +1368,13 @@ while test $# -gt 0; do
             ;;
         "-thumb-mist-colour" |"-thumb-mist-color" )
             shift
-            THUMB_BG_COLOUR="$1"
+            get_listargs "$@"
+            thumb_bg_colour=${ARGS_ARRAY[0]}
+            if [[ -n $thumb_bg_colour ]]; then
+                THUMB_BG_COLOUR=$thumb_bg_colour
+            else
+                THUMB_BG_COLOUR="none"
+            fi
             ;;
         "-opacity" )
             shift
