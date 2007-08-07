@@ -117,7 +117,6 @@ class Control (Widget):
                  label='',
                  default='',
                  help='',
-                 filter='',
                  **kwargs):
         """Create a Control for an option.
 
@@ -141,7 +140,6 @@ class Control (Widget):
         self.label = label
         self.default = default or vartype()
         self.help = help
-        self.filter = filter
         self.kwargs = kwargs
         # Controls a mandatory option?
         self.required = False
@@ -154,6 +152,10 @@ class Control (Widget):
             if not isinstance(pull_from, Control):
                 raise TypeError("Can only pull values from a Control.")
             pull_from.copy_to(self)
+        # Filter expression when pulling from another Control
+        self.filter = None
+        if 'filter' in self.kwargs:
+            self.filter = self.kwargs['filter']
 
     def copy_to(self, control):
         """Update another control whenever this control's value changes.
@@ -674,9 +676,8 @@ class TextList (Control):
                  label="Text list",
                  default=None,
                  help='',
-                 filter='',
                  **kwargs):
-        Control.__init__(self, list, option, label, default, help, filter, **kwargs)
+        Control.__init__(self, list, option, label, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -738,19 +739,14 @@ class FileList (Control):
         self.tk.call('set', '::tk::dialog::file::showHiddenVar',  '0')
         files = askopenfilenames(parent=self, title='Add files')
         self.listbox.add(*files)
-        for control in self.copies:
-            self.listbox.linked = control.listbox
-            control.listbox.linked = self.listbox
-            if control.filter:
-                filter_cmd='title =' + control.filter
-                titles = []
-                for file in files:
-                    exec filter_cmd
-                    titles.append(title)
-                titles = tuple(*[titles]) # not really needed
-                control.listbox.add(*titles)
+        for dest in self.copies:
+            self.listbox.linked = dest.listbox
+            dest.listbox.linked = self.listbox
+            if dest.filter:
+                titles = [dest.filter(file) for file in files]
+                dest.listbox.add(*titles)
             else:
-                control.listbox.add(*files)
+                dest.listbox.add(*files)
 
     def removeFiles(self):
         """Event handler to remove selected files from the list"""
