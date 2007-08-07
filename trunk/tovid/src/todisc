@@ -1373,6 +1373,7 @@ while test $# -gt 0; do
             if [[ -n $thumb_bg_colour ]]; then
                 THUMB_BG_COLOUR=$thumb_bg_colour
             else
+                # a hack to address a current lack in metagui for todiscgui
                 THUMB_BG_COLOUR="none"
             fi
             ;;
@@ -1525,7 +1526,7 @@ while test $# -gt 0; do
             shift
             parse_rotateargs "$@"
             ROTATE_ARRAY=( "${ARGS_ARRAY[@]}" )
-            IMG_FMT=png
+            IMG_FMT="png"
             ROTATE_THUMBS=:
             ;;
         "-tovidopts" )
@@ -1540,9 +1541,8 @@ while test $# -gt 0; do
         "-switched-mode" )
             # used internally by todisc, do NOT pass as a user option !
             SWITCHED_MODE=:
-            BUTTON_STYLE=text-rect
             TEXTMENU=:
-            SC_TITLE_ALIGN=west
+            SC_TITLE_ALIGN="west"
             SHOWCASE=:
             ;;
         "-menu-only" ) # internal use only
@@ -1567,7 +1567,6 @@ while test $# -gt 0; do
             ;;
         "-switched-menus" )
             SWITCHED_MENUS=:
-            BUTTON_STYLE="text-rect"
             TEXTMENU=:
             SHOWCASE=:
             SC_TITLE_ALIGN="west"
@@ -1707,7 +1706,7 @@ if [ "$BUTTON_STYLE" = "text" ]; then
     if $SHOWCASE; then
         BUTTON_STYLE="line"
         yecho
-        yecho "Warning ************"
+        yecho "**** WARNING ****"
         yecho "You can not use text button style with showcase or textmenu"
         yecho "Changing button style to 'line' style instead"
         yecho "If you would rather use 'text-rect', or 'rect' for showcase,"
@@ -2500,6 +2499,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
 done
 # multiline titles not allowed unless showcase style
 # TODO move this down so to get rid of some && 's
+echo "SWTICHED is $SWITCHED"; sleep 5
 if $MULTILINE_TITLE && ! $SHOWCASE && ! $SWITCHED && ! $QUICK_MENU; then
     usage_error "Sorry, multiline titles only allowed for showcase style"
 fi
@@ -3811,7 +3811,7 @@ if ! $TEXTMENU; then
                 NAVSEEK[i]=${IN_FILES[i]}.nav_log
             fi
             TRANSCODE_CMD2=(nice transcode --print_status 10 \
-            --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "${IN_FILES[i]}" \
+            --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "${IN_FILES[i]}" -x mpeg2,null \
             -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + $FRAMES)) ${NAV_SEEK[i]} "${NAVSEEK[i]}" \
             -o "$WORK_DIR/pics/$i/" -f $FRAME_RATE  -Z $THUMB_SIZE $EXPORT)
 
@@ -4316,8 +4316,8 @@ if $SUB_MENU; then
         yecho
         for t in "${cmd[@]}"; do
             TCODE_CMD=(nice transcode --print_status 10 --write_pid $WORK_DIR/tcode$i.pid \
-            -q 1 -i "${IN_FILES[i]}"  ${NAV_SEEK[i]} "${NAVSEEK[i]}" -o "${PICS_OUT[@]}" \
-            -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null)
+            -q 1 -i "${IN_FILES[i]}" -x mpeg2,null ${NAV_SEEK[i]} "${NAVSEEK[i]}" \
+            -o "${PICS_OUT[@]}" -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null)
             echo "Running ${TCODE_CMD[@]}" |
             sed 's/    */ /g'|sed -e "s/^ *//"|fold -bs|tee -a "$LOG_FILE"
             echo
