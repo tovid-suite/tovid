@@ -314,6 +314,10 @@ class GUI (tk.Tk):
         else:
             print "Creating config file", self.inifile
             self.style.save(self.inifile)
+        # Show hidden file option in file dialogs
+        self.tk.call('namespace', 'import', '::tk::dialog::file::')
+        self.tk.call('set', '::tk::dialog::file::showHiddenBtn',  '1')
+        self.tk.call('set', '::tk::dialog::file::showHiddenVar',  '0')
 
     def run(self):
         """Run the GUI"""
