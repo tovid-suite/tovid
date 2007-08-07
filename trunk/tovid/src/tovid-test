@@ -71,6 +71,7 @@ ERRORS=0
 LOG_FILE="tovid-test.log"
 DEFAULT_OUTFILE="outfile.default"
 TEST_FORMATS="vcd svcd dvd"
+TEST_FFMPEG=false
 
 get_args()
 {
