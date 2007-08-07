@@ -734,9 +734,6 @@ class FileList (Control):
     def addFiles(self):
         """Event handler to add files to the list"""
         # some tk calls to use the undocumented "hidden files" button
-        self.tk.call('namespace', 'import', '::tk::dialog::file::')
-        self.tk.call('set', '::tk::dialog::file::showHiddenBtn',  '1')
-        self.tk.call('set', '::tk::dialog::file::showHiddenVar',  '0')
         files = askopenfilenames(parent=self, title='Add files')
         self.listbox.add(*files)
         for dest in self.copies:
