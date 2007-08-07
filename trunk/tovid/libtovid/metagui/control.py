@@ -465,7 +465,9 @@ class Number (Control):
             style:    'spin' for a spinbox, or 'scale' for a slider
             units:    Units of measurement (ex. "kbits/sec"), used as a label
         """
-        Control.__init__(self, int, option, label, default or min,
+        if default is None:
+            default = min
+        Control.__init__(self, int, option, label, default,
                          help, **kwargs)
         self.min = min
         self.max = max
@@ -733,7 +735,6 @@ class FileList (Control):
 
     def addFiles(self):
         """Event handler to add files to the list"""
-        # some tk calls to use the undocumented "hidden files" button
         files = askopenfilenames(parent=self, title='Add files')
         self.listbox.add(*files)
         for dest in self.copies:

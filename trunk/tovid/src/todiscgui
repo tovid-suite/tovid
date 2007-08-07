@@ -204,7 +204,7 @@ thumbnails = Panel("Thumbnails",
         'using the argument given.  The argument "default" will produce a wave arg ' \
         'of -20x556, which produces a gentle wave with a small amount of distortion.'),
     Number('-rotate',
-        'Rotate Showcase thumb', 5,
+        'Rotate Showcase thumb', 0,
         'Rotate the showcase image|video clockwise by this number of degrees.',
         -30, 30, 'spin'),
     Color('-thumb-mist-color',
