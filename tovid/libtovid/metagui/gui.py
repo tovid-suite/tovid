@@ -284,12 +284,16 @@ class Application (Widget):
         print "Running command:", command
         # Verify with user
         if tkMessageBox.askyesno(message="Run %s now?" % self.program):
+            # Kind of hackish...
+            root = self.master.master
+            root.withdraw()
             try:
                 command.run()
             except KeyboardInterrupt:
                 tkMessageBox.showerror(message="todisc was interrupted!")
             else:
                 tkMessageBox.showinfo(message="todisc finished running!")
+            root.deiconify()
 
 ### --------------------------------------------------------------------
 from support import ConfigWindow, Style
