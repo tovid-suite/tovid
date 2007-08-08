@@ -220,6 +220,7 @@ class Drawer (Widget):
         return self.panel.get_args()
 
 ### --------------------------------------------------------------------
+import tkMessageBox
 
 class Application (Widget):
     """Graphical frontend for a command-line program
@@ -279,8 +280,16 @@ class Application (Widget):
         """
         args = self.get_args()
         command = Command(self.program, *args)
-        print "Running command:", str(command)
-        command.run()
+
+        print "Running command:", command
+        # Verify with user
+        if tkMessageBox.askyesno(message="Run %s now?" % self.program):
+            try:
+                command.run()
+            except KeyboardInterrupt:
+                tkMessageBox.showerror(message="todisc was interrupted!")
+            else:
+                tkMessageBox.showinfo(message="todisc finished running!")
 
 ### --------------------------------------------------------------------
 from support import ConfigWindow, Style
