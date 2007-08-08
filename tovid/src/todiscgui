@@ -15,7 +15,9 @@ files = FileList('-files',
     required=True)
 
 def to_title(filename):
-    return os.path.basename(filename)[0:-4]
+    basename = os.path.basename(filename)
+    title, ext = os.path.splitext(basename)
+    return title
 
 titles = TextList('-titles',
     'Video titles', None,
