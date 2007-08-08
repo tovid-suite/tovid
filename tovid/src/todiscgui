@@ -61,7 +61,7 @@ main = Panel("Main",
             'Maximum number of titles per column',
             1, 50)
         ))),
-    
+    VPanel('Menu backgrounds',
     Filename('-background',
         'Background image or video', '',
         'Image or video file to display in the background of the main menu',
@@ -69,15 +69,20 @@ main = Panel("Main",
     Filename('-bgaudio',
         'Background audio', '',
         'Audio file to play while the main menu is showing',
-        'load', 'Select an audio file'),
-
+        'load', 'Select an audio file')),
+    VPanel('Animation and submenus',
     Flag('-static',
         'Static menus', False,
-        'Create still-image menus; takes less time'),
+        'Create still-image menus; takes less time.  ' \
+        'For duration of background audio for static '
+        'menus, use "menu length" on the "Menu" tab'),
     Flag('-submenus',
         'Create Submenus', False,
-        'Create a submenu for each video title; takes more time.  ' \
-        'Also see "Animated submenus" on "Menu" tab'),
+        'Create a submenu for each video title; takes more time.'),
+    Flag('-ani-submenus',
+        'Animated submenus (takes more time)', False,
+        'Create an animated submenu for each video.  ' \
+        'Submenu links lead to chapter points.')),
 
     List('',
         'Custom todisc options', '',
@@ -109,10 +114,6 @@ menu = Panel("Menu",
         'Menu length', 20,
         'Duration of menu in seconds',
         0, 120, 'scale'),
-    Flag('-ani-submenus',
-        'Animated submenus (takes more time)', False,
-        'Create an animated submenu for each video.  ' \
-        'Submenu links lead to chapter points.'),
     Flag('-menu-fade',
         'Fade in menu', False,
         'Fade  the  menu  in  and out The background ' \
@@ -229,10 +230,6 @@ thumbnails = Panel("Thumbnails",
 
 
 audio = Panel("Audio",
-    Number('-menu-audio-length',
-        'Menu audio length', 30,
-        'tooltip',
-        0, 120, 'scale'),
     Number('-menu-audio-fade',
         'Menu audio fade', 1,
         'tooltip',
