@@ -1,23 +1,49 @@
 #! /usr/bin/env python
-# todisc.py
+# todiscgui
+
+"""A GUI for the todisc command-line program.
+
+Usage:
+
+    $ todiscgui
+
+This GUI is written using the 'metagui' module from libtovid, a high-level
+GUI design language that involves very little code.
+
+See the wiki page about metagui for more details:
+
+    http://tovid.wikia.com/wiki/Metagui
+
+"""
 
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
-import os
 
 ### --------------------------------------------------------------------
-### Panels
+### -files and -titles
 ### --------------------------------------------------------------------
+
+"""todisc's -files and -titles options have a one-to-one correspondence.
+Rather than make the user manually enter a title for each file, this
+approach uses two lists, with one "dependent" on another via a filter.
+
+Specifically, when the GUI user adds to -files, the corresponding
+-titles should be automatically filled in with the filename, minus
+pathname and extension.
+
+In other words:
+"""
+
+import os
+def to_title(filename):
+    basename = os.path.basename(filename)
+    firstdot = basename.find('.')
+    return basename[0:firstdot]
 
 files = FileList('-files',
     'Video files', None,
     'Video files to include on the disc',
     required=True)
-
-def to_title(filename):
-    basename = os.path.basename(filename)
-    title, ext = os.path.splitext(basename)
-    return title
 
 titles = TextList('-titles',
     'Video titles', None,
@@ -26,6 +52,10 @@ titles = TextList('-titles',
     filter=to_title, # strip pathname and extension from filenames
     required=True)
 
+
+### --------------------------------------------------------------------
+### Main todisc options
+### --------------------------------------------------------------------
 
 main = Panel("Main",
     Text('-menu-title',
@@ -42,34 +72,37 @@ main = Panel("Main",
             Flag('-ntsc', "NTSC", True),
             Flag('-pal', "PAL", False))
         ),
-    HPanel('',
+
     FlagGroup('Menu Style', '',
-    Flag('-showcase', "Showcase style menu", False,
-        "Arrange menu links along the outside edges, to leave room for" \
-        " an optional 'showcase' image or video.",
-        enables=Filename('',
-           'Showcase', '',
-           'Image or video file to be showcased in a large central frame',
-           'load', 'Select an image or video file.')
+        Flag('-showcase', "Showcase style menu", False,
+            "Arrange menu links along the outside edges, to leave room for" \
+            " an optional 'showcase' image or video.",
+            enables=Filename('',
+               'Showcase', '',
+               'Image or video file to be showcased in a large central frame',
+               'load', 'Select an image or video file.')
         ),
-    Flag('-textmenu', "Use text menu links (no thumbnails)", False,
-        'Showcase style text only menu.  Optionally use a "showcase" ' \
-        'image/video, or static/animated background.  See also ' \
-        'quick-menu and switched menu in the "Menu" tab',
-        enables=Number('',
-            'Titles per column', 13,
-            'Maximum number of titles per column',
-            1, 50)
-        ))),
+        Flag('-textmenu', "Use text menu links (no thumbnails)", False,
+            'Showcase style text only menu.  Optionally use a "showcase" ' \
+            'image/video, or static/animated background.  See also ' \
+            'quick-menu and switched menu in the "Menu" tab',
+            enables=Number('',
+                'Titles per column', 13,
+                'Maximum number of titles per column',
+                1, 50)
+        )
+    ),
     VPanel('Menu backgrounds',
-    Filename('-background',
-        'Background image or video', '',
-        'Image or video file to display in the background of the main menu',
-        'load', 'Select an image or video file'),
-    Filename('-bgaudio',
-        'Background audio', '',
-        'Audio file to play while the main menu is showing',
-        'load', 'Select an audio file')),
+          Filename('-background',
+              'Image or video', '',
+              'Graphic to display in the background of the main menu',
+              'load', 'Select an image or video file'),
+          Filename('-bgaudio',
+              'Audio', '',
+              'Audio file to play while the main menu is showing',
+              'load', 'Select an audio file')
+    ),
+
     VPanel('Animation and submenus',
     Flag('-static',
         'Static menus', False,
@@ -82,7 +115,8 @@ main = Panel("Main",
     Flag('-ani-submenus',
         'Animated submenus (takes more time)', False,
         'Create an animated submenu for each video.  ' \
-        'Submenu links lead to chapter points.')),
+        'Submenu links lead to chapter points.')
+    ),
 
     List('',
         'Custom todisc options', '',
