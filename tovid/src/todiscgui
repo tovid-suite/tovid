@@ -9,16 +9,19 @@ import os
 ### Panels
 ### --------------------------------------------------------------------
 
-# Control(option, label, default, help, ...)
 files = FileList('-files',
     'Video files', None,
     'Video files to include on the disc',
     required=True)
+
+def to_title(filename):
+    return os.path.basename(filename)[0:-4]
+
 titles = TextList('-titles',
     'Video titles', None,
     'Titles for each video',
-    filter=lambda file: os.path.basename(file)[0:-4],
-    pull=files,
+    pull=files, # -titles is updated when -files is updated
+    filter=to_title, # strip pathname and extension from filenames
     required=True)
 
 
