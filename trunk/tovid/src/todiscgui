@@ -202,7 +202,7 @@ menu = Panel("Menu",
         'This is a showcase style only option.  The "none" option will use the ' \
         'default  frame method, using "convert -frame  ...". The "glass" option ' \
         'will use mplayer to make frames, giving an animated effect.  The ' \
-        'glass style can be much faster - epecially if used without -rotate and -wave options',
+        'glass style can be much faster - especially if used without -rotate and -wave options',
         'none|glass'),
     Text('-showcase-geo',
         'Showcase image position (XxY)', '',
@@ -266,19 +266,22 @@ thumbnails = Panel("Thumbnails",
 audio = Panel("Audio",
     Number('-menu-audio-fade',
         'Menu audio fade', 1,
-        'tooltip',
+        'Number  of  sec to fade given menu audio in and out (default: 1.0 seconds) ' \
+        'If you use -menu-audio-fade 0 then the audio will not be faded.',
         0, 10, 'scale'),
-    Filename('-submenu-audio',
+    List('-submenu-audio',
         'Submenu audio file', '',
-        'tooltip',
-        'load', 'Select an audio file, or video file with audio'),
+        'Quoted list of files for sub-menu backgrounds. If one file is given, then it will ' \
+        'be used for all sub-menus.  Else the number given must equal the number of ' \
+        'chapters, though the keyword "none" may be used for silence.'),
     Number('-submenu-audio-length',
         'Submenu audio length', 30,
-        'tooltip',
+        'The length of the background audio for a static submenu.  ' \
+        'The default is to use the full length of the supplied audio ( -bgaudio ).',
         0, 120, 'scale'),
     Number('-submenu-audio-fade',
         'Submenu audio fade', 1,
-        'tooltip',
+        'Number of sec to fade given sub-menu audio in and out (default: 1.0 seconds)',
         0, 10, 'scale')
 )
 
@@ -344,8 +347,15 @@ text = Panel("Text/Font",
 
 authoring = Panel("Authoring",
     List('-chapters',
-        'Number of Chapters', '',
-        'Single value or list'),
+        'Chapters', '',
+        'Single value or list.  ' \
+        'Can be a single integer (or list of integers) ' \
+        ' for "# of chapters", ' \
+        'or a list of chapter points in HH:MM:SS ' \
+        'format, one string for each video.  ' \
+        'The first HH:MM:SS format chapter MUST be 00:00:00 '
+        'If using grouped videos and HH:MM:SS format ' \
+        'link grouped chapter points with a "+" separator.'),
     List('-chain-videos',
         'Chain videos together', '',
         'See "man todisc" for details'),
