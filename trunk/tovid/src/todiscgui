@@ -99,7 +99,9 @@ main = Panel("Main",
               'load', 'Select an image or video file'),
           Filename('-bgaudio',
               'Audio', '',
-              'Audio file to play while the main menu is showing',
+              'Audio file to play while the main menu is showing.  ' \
+              'If static menu, default is to use audio length of 20 seconds.  ' \
+              'Change with "Menu length" on "Menu" tab.',
               'load', 'Select an audio file')
     ),
 
@@ -155,19 +157,20 @@ menu = Panel("Menu",
         '(and mist if called for), then the menu thumbs.  ' \
         'The fadeout is in reverse order'),
     Flag('-quick-menu', "Make a quick animated showcase style menu.  ", False,
-        "Ten times faster than normal showcase animation.  " \
-        "A showcase image is required.  No video thumbs are made",
-        ),
+        'Ten times faster than normal showcase animation.  ' \
+        'A showcase image is required.  No video thumbs are made.  '
+        'Not compatible with wave or rotate options'),
     Flag('-switched-menus', "Make switched menus", False,
         "This will make a showcase style menu with text menu links.  " \
         "The showcased VIDEO or IMAGE will be of each video 'title' " \
-        " in the menu.  It is not necessary to select showcase or " \
-        "the showcase image for this option."
-        ),
+        " in the menu.  Do not select showcase or a showcase file for this option.   " \
+        "Use with quick menu option above for a huge speed up !"),
     Panel("Seek times",
           List('-seek',
               'Seek time', '',
-              'Play thumbnail videos from the given seek time (seconds)'),
+              'Play thumbnail videos from the given seek time (seconds).  ' \
+              'A single value or space separated list, one value per video.  ' \
+              'Also used for seeking in switched menus.'),
           Number('-bgvideo-seek',
               'Background video seek time', 2,
               'Play background video from the given seek time (seconds)',
@@ -178,7 +181,9 @@ menu = Panel("Menu",
               0, 3600, 'scale'),
           Number('-showcase-seek',
               'Showcase video seek time', 2,
-              'Play showcase video from the given seek time (seconds)',
+              'Play showcase video from the given seek time (seconds).  '
+              'Note: switched menus use the value(s) from "Seek time" option above, '
+              'not this one',
               0, 3600, 'scale')
     ),
     Choice('-align',
@@ -193,14 +198,12 @@ menu = Panel("Menu",
         'Video(s) title alignment', 'west',
         'This is a showcase style only option.  The default is to center ' \
         'the text above the thumbnails.  This option will align the titles ' \
-        ' either to the left (west) or right  (east).  Aligning west gives ' \
-        'more space to the titles.  Aligning east also does so, and as well ' \
-        'will let you use "\\n" in your titles to achieve multi line titles.',
+        ' either to the left (west) or right (east).',
         'west|east|center'),
     Choice('-showcase-framestyle',
         'Showcase frame style', 'none',
         'This is a showcase style only option.  The "none" option will use the ' \
-        'default  frame method, using "convert -frame  ...". The "glass" option ' \
+        'default frame method, using imagemagick. The "glass" option ' \
         'will use mplayer to make frames, giving an animated effect.  The ' \
         'glass style can be much faster - especially if used without -rotate and -wave options',
         'none|glass'),
@@ -231,7 +234,7 @@ thumbnails = Panel("Thumbnails",
     Number('-blur',
         'Blur', 4,
         'The amount of feather blur to apply to the thumb-shape.  ' \
-        'Default is 4.0 which will  more  or  less  keep  the shape, ' \
+        'Default is 4.0 which will more or less keep the shape, ' \
         'creating transparency at the edges.  Choose float or ' \
         'integer values between 0.1 and 5.0',
         1, 5, 'spin'),
@@ -241,15 +244,16 @@ thumbnails = Panel("Thumbnails",
         'or negative.  There must be one value for each file given with -files.  ' \
         'If the values are not the same distance from zero, the thumbs will be  ' \
         'of  different sizes as images are necessarily resized *after* rotating.'),
-    Text('-wave',
-        'Wave effect for showcase thumb', 'default',
+    Flag('-wave', 'Wave effect for showcase thumb', 'False',
         'Wave effect for showcase image|video.  Alters thumbs along a sine wave ' \
-        'using the argument given.  The argument "default" will produce a wave arg ' \
-        'of -20x556, which produces a gentle wave with a small amount of distortion.'),
+        'This will pass a wave arg of -20x556, which produces a gentle wave with a ' \
+        'small amount of distortion.  To use other values you will need to use ' \
+        'the "tovidopts" box on the first panel - see man todisc for details.'),
     Number('-rotate',
         'Rotate Showcase thumb', 0,
         'Rotate the showcase image|video clockwise by this number of degrees.',
         -30, 30, 'spin'),
+    VPanel('Thumb mist',
     Flag('', "", False,
         "",
     enables=Color('-thumb-mist-color',
@@ -257,12 +261,12 @@ thumbnails = Panel("Thumbnails",
         'Color of mist behind thumbnails (not a showcase option).')),
     Flag('-thumb-mist-color', "Transparent thumb mist", False,
         'Do not use a mist behind thumbs (not a showcase option).  ' \
-        'Warning: this may cause contrast problems unless you use a large bold font'),
+        'Warning: this may cause contrast problems unless you use a large bold font')
+),
     Flag('-tile3x1',
         'Arrange thumb montage in 1 row of 3 thumbs', False,
         'Use a montage tile of 3x1 instead of the usual 2x2 (for 3 videos only).')
 )
-
 
 audio = Panel("Audio",
     Number('-menu-audio-fade',
