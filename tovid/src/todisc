@@ -1220,9 +1220,16 @@ while test $# -gt 0; do
             THREExONE=:
             ;;
         "-loop" )
+            unset pause_time
             shift
-            PAUSE_TIME="$1"
-            STATIC_LOOP=:
+            get_listargs "$@"
+            pause_time=${ARGS_ARRAY[0]}
+            if [[ -n $pause_time ]]; then
+                PAUSE_TIME=$pause_time
+            else
+                # a hack to address a current lack in metagui for todiscgui
+                PAUSE_TIME="inf"
+            fi
             ;;
         "-chain-videos" )
             shift
@@ -1293,11 +1300,17 @@ while test $# -gt 0; do
             ;;
         "-wave" )
             shift
-            WAVE=$1
-            if [[ "$WAVE" = "default" ]]; then
-                WAVE="-wave -20x556"
+            get_listargs "$@"
+            wave=${ARGS_ARRAY[0]}
+            if [[ -n $wave ]]; then
+                if [[ $wave = "default" ]]; then
+                    WAVE="-wave -20x556"
+                else
+                    WAVE="-wave $wave"
+                fi
             else
-                WAVE="-wave $1"
+                # a hack to address a current lack in metagui for todiscgui
+                WAVE="-wave -20x556"
             fi
             ;;
         "-showcase-framestyle" )
@@ -1367,6 +1380,7 @@ while test $# -gt 0; do
             MIST_COLOUR="$1"
             ;;
         "-thumb-mist-colour" |"-thumb-mist-color" )
+            unset thumb_bg_colour
             shift
             get_listargs "$@"
             thumb_bg_colour=${ARGS_ARRAY[0]}
@@ -1694,6 +1708,34 @@ if ! $SHOWCASE; then
         #exit 1
     fi
 fi
+# set some vars for switched menus so we know where we are
+$SWITCHED_MODE && SWITCHED_MENUS=false
+($SWITCHED_MODE || $SWITCHED_MENUS) && SWITCHED=:
+
+#
+# sanity checks for button style ( -button-style ) for menu buttons
+#
+
+# FIXME checks have not been consolidated as options were added - needs cleanup
+
+# line of text-rect for "none" bg
+if ! $USER_BSTYLE && $SHOWCASE; then # line or text-rect for "none" bg
+    [[ $BUTTON_STYLE != "text-rect" ]] && BUTTON_STYLE="line"
+fi
+# use a suitable button style
+for ((i=0; i<=NUM_FILES; i++)); do
+    if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
+        MULTILINE_TITLE=:
+        if $FEATHER && [ $THUMB_SHAPE != "normal" ]; then
+            # multiline titles not suitable for text buttons
+            BUTTON_STYLE="text-rect"
+        elif $TEXTMENU; then
+            [[ $BUTTON_STYLE != "line" ]] && BUTTON_STYLE="text-rect"
+        else
+            [[ $BUTTON_STYLE != "text-rect" ]] &&  ! $USER_BSTYLE && BUTTON_STYLE="rect"
+        fi
+    fi
+done
 # disallow spaces in thumb titles for text button style
 if [ "$BUTTON_STYLE" = "text" ]; then
     for ((i=0; i<${#TITLES[@]}; i++)); do
@@ -1748,6 +1790,47 @@ if [[ -n "$SM_TITLES" ]]; then
         fi
     done
 fi
+# check if user passed a usable button shape
+if [[ -n $THUMB_SHAPE ]]; then
+    ! egrep -q  '^egg$|^oval$|^plectrum$|^normal$' <<< "$THUMB_SHAPE"  && \
+        usage_error "Please supply a usable thumb shape with -thumb-shape option. You gave \"$THUMB_SHAPE\""
+fi
+# rotation doesn't play well with all options
+if [[ -n ${ROTATE_ARRAY[@]} ]]; then
+    $SHOWCASE && [[ $BUTTON_STYLE != text-rect ]] && BUTTON_STYLE="line"
+    if ! $SHOWCASE; then
+        if [[ $BUTTON_STYLE != "text" ]]; then
+            BUTTON_STYLE="text"
+            yecho
+            yecho "Setting button style to 'text' so it will work with rotatation"
+            yecho
+            ! $NO_WARN && sleep 10
+        fi
+    fi
+fi
+# multiline titles not allowed unless showcase style
+# TODO move this down so to get rid of some && 's
+if $MULTILINE_TITLE && ! $SHOWCASE && ! $SWITCHED && ! $QUICK_MENU; then
+    usage_error "Sorry, multiline titles only allowed for showcase and textmenu styles"
+fi
+# no rect button style with rotated thumbs yet, so use text-rect fallback
+if ([[ -n ${ROTATE_ARRAY[@]} ]] && $MULTILINE_TITLE) && [[ $BUTTON_STYLE = "rect" ]]; then
+    BUTTON_STYLE="text-rect"
+    yecho
+    yecho "Using 'text-rect' instead of 'rect' button style for rotated thumbs"
+    yecho
+    ! $NO_WARN && sleep 15
+fi
+
+#
+# end of button-style checks
+#
+
+# transparent border around text so rect spumux outline can fit
+if [[ $BUTTON_STYLE = "text-rect" ]]; then
+    TEXT_BORDER="-bordercolor Transparent -border 8x8"
+fi
+
 
 # set a maximum # of videos
 if $SHOWCASE; then
@@ -1812,8 +1895,6 @@ fi
 if ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
     test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
 fi
-$SWITCHED_MODE && SWITCHED_MENUS=false
-($SWITCHED_MODE || $SWITCHED_MENUS) && SWITCHED=:
 if $SWITCHED_MENUS; then
     # call todisc recursively, collect intro.mpg, exit
     switched_menu_mode "${args[@]}"
@@ -2462,61 +2543,6 @@ fi
 if $SHOWCASE; then
     THUMB_BG_COLOUR="none"   # mist backgrounds look a bit funny with showcase
 fi
-if ! $USER_BSTYLE && $SHOWCASE; then # line is better than rect for "none" bg
-    BUTTON_STYLE="line"
-fi
-# check if user passed a usable button shape
-if [[ -n $THUMB_SHAPE ]]; then
-    ! egrep -q  '^egg$|^oval$|^plectrum$|^normal$' <<< "$THUMB_SHAPE"  && \
-        usage_error "Please supply a usable thumb shape with -thumb-shape option. You gave \"$THUMB_SHAPE\""
-fi
-
-if [[ -n ${ROTATE_ARRAY[@]} ]]; then
-    $SHOWCASE && [[ $BUTTON_STYLE != text-rect ]] && BUTTON_STYLE="line"
-    if ! $SHOWCASE; then
-        if [[ $BUTTON_STYLE != "text" ]]; then
-            BUTTON_STYLE="text"
-            yecho
-            yecho "Setting button style to 'text' so it will work with rotatation"
-            yecho
-            ! $NO_WARN && sleep 10
-        fi
-    fi
-fi
-# use a suitable button style
-for ((i=0; i<=NUM_FILES; i++)); do
-    if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
-        MULTILINE_TITLE=:
-        if $FEATHER && [ $THUMB_SHAPE != "normal" ]; then
-            # multiline titles not suitable for text buttons
-            BUTTON_STYLE="text-rect"
-        elif $TEXTMENU; then
-            ! $USER_BSTYLE && BUTTON_STYLE="text-rect"
-        else
-            [[ $BUTTON_STYLE != "text-rect" ]] &&  ! $USER_BSTYLE && BUTTON_STYLE="rect"
-        fi
-    fi
-done
-# multiline titles not allowed unless showcase style
-# TODO move this down so to get rid of some && 's
-echo "SWTICHED is $SWITCHED"; sleep 5
-if $MULTILINE_TITLE && ! $SHOWCASE && ! $SWITCHED && ! $QUICK_MENU; then
-    usage_error "Sorry, multiline titles only allowed for showcase style"
-fi
-# no rect button style with rotated thumbs yet, so use text-rect fallback
-if ([[ -n ${ROTATE_ARRAY[@]} ]] && $MULTILINE_TITLE) && [[ $BUTTON_STYLE = "rect" ]]; then
-    BUTTON_STYLE="text-rect"
-    yecho
-    yecho "Using 'text-rect' instead of 'rect' button style for rotated thumbs"
-    yecho
-    ! $NO_WARN && sleep 15
-fi
-
-# transparent border around text so rect spumux outline can fit
-if [[ $BUTTON_STYLE = "text-rect" ]]; then
-    TEXT_BORDER="-bordercolor Transparent -border 8x8"
-fi
-
 # easier to have non transparent showcase use the transparent block
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224k -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
@@ -3710,15 +3736,15 @@ if $SWITCHED; then
             # use the audio from each video for each switched menu
             BG_AUDIO=${FILES[vid]}
             if $STATIC; then
+                [[ -z $MENU_AUDIOLENGTH ]] && MENU_AUDIOLENGTH=${MENU_LENGTH[MENU_NUM-1]}
                 # start audio at the beginning unless user passes -bgaudio-seek
                 ! $USER_BG_AUDIO_SEEK && BG_AUDIO_SEEK=0
                 # make sure MENU_AUDIOLENGTH value isn't longer than the video
-#                [[ $MENU_AUDIOLENGTH -gt ${VID_LEN[vid]%.*} ]] && MENU_AUDIOLENGTH=${VID_LEN[vid]}
+                [[ $MENU_AUDIOLENGTH -gt ${VID_LEN[vid]%.*} ]] && MENU_AUDIOLENGTH=${VID_LEN[vid]}
             else
                 # same seek value as video unless user passes -bgaudio-seek
                 ! $USER_BG_AUDIO_SEEK && BG_AUDIO_SEEK=${SEEK_VAL[vid]}
                 # the menu audio will be the same length as the switched video
-#                MENU_AUDIOLENGTH=${VID_LEN[vid]}
             fi
             yecho "Using audio from "${FILES[vid]}" for the audio background,"
             ! $STATIC && yecho "using the same seek value for the audio as the video"
@@ -3728,6 +3754,7 @@ if $SWITCHED; then
             if [[ $BG_AUDIO = "none" ]]; then # no audio if -bgaudio none
                 BG_AUDIO=""
             else # BG_AUDIO="$BG_AUDIO" if -bgaudio supplied and not 'none'
+                [[ -z $MENU_AUDIOLENGTH ]] && MENU_AUDIOLENGTH=${MENU_LENGTH[MENU_NUM-1]}
                 yecho "Using "$BG_AUDIO" as audio background for "${FILES[vid]}""
 #                ! $STATIC && MENU_AUDIOLENGTH=${VID_LEN[vid]}
             fi
@@ -3811,7 +3838,7 @@ if ! $TEXTMENU; then
                 NAVSEEK[i]=${IN_FILES[i]}.nav_log
             fi
             TRANSCODE_CMD2=(nice transcode --print_status 10 \
-            --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "${IN_FILES[i]}" -x mpeg2,null \
+            --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "${IN_FILES[i]}" \
             -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + $FRAMES)) ${NAV_SEEK[i]} "${NAVSEEK[i]}" \
             -o "$WORK_DIR/pics/$i/" -f $FRAME_RATE  -Z $THUMB_SIZE $EXPORT)
 
@@ -4316,7 +4343,7 @@ if $SUB_MENU; then
         yecho
         for t in "${cmd[@]}"; do
             TCODE_CMD=(nice transcode --print_status 10 --write_pid $WORK_DIR/tcode$i.pid \
-            -q 1 -i "${IN_FILES[i]}" -x mpeg2,null ${NAV_SEEK[i]} "${NAVSEEK[i]}" \
+            -q 1 -i "${IN_FILES[i]}"  ${NAV_SEEK[i]} "${NAVSEEK[i]}" \
             -o "${PICS_OUT[@]}" -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null)
             echo "Running ${TCODE_CMD[@]}" |
             sed 's/    */ /g'|sed -e "s/^ *//"|fold -bs|tee -a "$LOG_FILE"
