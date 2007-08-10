@@ -353,11 +353,9 @@ text = Panel("Text/Font",
 authoring = Panel("Authoring",
     List('-chapters',
         'Chapters', '',
-        'Single value or list.  ' \
-        'Can be a single integer (or list of integers) ' \
-        ' for "# of chapters", ' \
-        'or a list of chapter points in HH:MM:SS ' \
-        'format, one string for each video.  ' \
+        'Single value/string or list.  ' \
+        'Can be an integer for "# of chapters", ' \
+        'or a comma separated string of chapter points in HH:MM:SS format.  ' \
         'The first HH:MM:SS format chapter MUST be 00:00:00 '
         'If using grouped videos and HH:MM:SS format ' \
         'link grouped chapter points with a "+" separator.'),
@@ -366,21 +364,26 @@ authoring = Panel("Authoring",
         'See "man todisc" for details'),
     Choice('-widescreen',
         'Widescreen', None,
-        'tooltip',
+        'This will output a <video widescreen=nopanscan /> tag (for example) ' \
+        'for the dvdauthor xml file.  It will affect all videos in the titleset.  '
+        'Use in conjunction with "Aspect ration" if your dvd player is cropping your videos',
         'nopanscan|noletterbox'),
     Choice('-aspect',
         'Aspect ratio', '4:3',
-        'tooltip',
+        'This will output a <video aspect WIDTH:HEIGHT /> tag for the dvdauthor xml file.  ' \
+        'It will affect all videos in the titleset.',
         '4:3|16:9'),
     Color('-highlight-color',
         'Highlight color', '',
-        'tooltip'),
+        'Color to use for the menu buttons that your dvd remote uses to navigate.'),
     Color('-select-color',
         'Selection color', '',
-        'tooltip'),
+        'Color to use for the menu buttons that your dvd remote uses to select.'),
     Choice('-button-style',
         'Button style', 'rect',
-        'tooltip',
+        'Style or shape of the buttons that you will see when you play the DVD.  ' \
+        '"rect" draws a rectangle around the thumbs, "text" uses the title text, ' \
+        'and "text-rect" draws a rectangle around the title text.',
         'rect|text|text-rect'),
     List('-audio-lang',
         'Default audio language', '',
@@ -390,15 +393,20 @@ authoring = Panel("Authoring",
         'Single value or list'),
     Number('-outlinewidth',
         'Outlinewidth for spumux buttons', 4,
-        'tooltip',
+        'For spumux outlinewidth variable.  This option may help if there is a large gap ' \
+         'between words or characters in a text button, causing spumux to fail.',
         0, 20, 'scale'),
-    Number('-loop',
-        'Loop', 10,
-        'tooltip',
+    Number('',
+        'Pause', 10,
+        'Pause in seconds at end of menu.  Or use "Indefinate pause" item below.',
         0, 30, 'scale'),
+    Flag('-loop',
+        'Indefinite pause', False,
+        'Pause indefinitely at the end of the menu.'),
     Flag('-playall',
         '"Play all" button', False,
-        'tooltip')
+        'Create a "Play All" button that lets you jump to the 1st title and play '
+        'all the videos in sucession before returning to the main menu.')
 )
 
 burning = Panel("Burning",
