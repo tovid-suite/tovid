@@ -328,10 +328,9 @@ text = Panel("Text/Font",
         'The position of the menu title',
         'north|south|west|east|center'),
     Text('-menu-title-offset',
-        'Offset for menu title position', '+0+0',
-        'Menu title position as an offset (in pixels) from its N/S/E/W/center position' \
-        '(See "Menu title position" above).  Use +X+Y syntax  ' \
-        'This value is applied to the video *before* is is scaled.'),
+        'Offset for menu title position', '+0+50',
+        'Menu title position as an offset (in pixels) from "Menu title position" above.  '
+        'Use +X+Y syntax.  This value is applied to the video *before* is is scaled.'),
     Color('-stroke-color',
         'Stroke color', '',
         'Outline color for the main menu font. Use "none" for transparent outline.'),
@@ -339,14 +338,15 @@ text = Panel("Text/Font",
         'Submenu stroke color', '',
         'The color for the sub-menu font outline (stroke).'),
     Number('-title-gap',
-        'Space between Textmenu titles (pixels)', 2,
+        'Space between Textmenu titles (pixels)', 10,
         'Leave this much vertical gap between titles.  ' \
-        'This value is applied to the video *before* is is scaled.',
+        'Default is 10 for line buttons, 15 for text-rect buttons.  ' \
+        'This value is applied before the menu is scaled.',
         0, 400, 'spin'),
     Number('-text-start',
-        'Start Textmenu titles at: (pixels)', 2,
-        'The text menu will start a this pixel in the "Y" axis (north/south).' \
-        'This value is applied to the video *before* is is scaled.',
+        'Start Textmenu titles at: (pixels)', 50,
+        'The text menu will start a this pixel in the Y-axis (north/south).  ' \
+        'This value is applied before the menu is scaled.',
         0, 460, 'spin'),
 )
 
@@ -396,7 +396,7 @@ authoring = Panel("Authoring",
         'For spumux outlinewidth variable.  This option may help if there is a large gap ' \
          'between words or characters in a text button, causing spumux to fail.',
         0, 20, 'scale'),
-    Number('',
+    Number('-loop',
         'Pause', 10,
         'Pause in seconds at end of menu.  Or use "Indefinate pause" item below.',
         0, 30, 'scale'),
