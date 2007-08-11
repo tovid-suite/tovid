@@ -84,7 +84,7 @@ main = Panel("Main",
 
     VPanel('Menu Style',
         Flag('-showcase', "Showcase style menu", False,
-            "Arrange menu links along the outside edges, to leave room for" \
+            "Arrange menu links along the outside edges, to leave room for"
             " an optional 'showcase' image or video.",
             enables=Filename('',
                'Showcase', '',
@@ -92,23 +92,23 @@ main = Panel("Main",
                'load', 'Select an image or video file.')
         ),
         Flag('-textmenu', "Use text menu links (no thumbnails)", False,
-            'Showcase style text only menu.  Optionally use a "showcase" ' \
-            'image/video, or static/animated background.  See also ' \
+            'Showcase style text only menu.  Optionally use a "showcase" '
+            'image/video, or static/animated background.  See also '
             'quick-menu and switched menu below.',
             enables=Number('',
                 'Titles per column', 13,
                 'Maximum number of titles per column',
                 1, 50)
         ),
-        Flag('-quick-menu', "Make a quick animated showcase style menu.  ", False,
-            'Ten times faster than normal showcase animation.  ' \
-            'A showcase image is required unless doing switched menus.  ' \
-            ' No video thumbs are made.  Not compatible with wave or rotate options'),
+        Flag('-quick-menu', "A quick animated showcase style menu.  ", False,
+            'Ten times faster than normal showcase animation.  A showcase '
+            'image is required unless doing switched menus.  No video thumbs '
+            'are made.  Not compatible with wave or rotate options'),
         Flag('-switched-menus', "Make switched menus", False,
-            'This will make a showcase style menu with text menu links.  ' \
-            'The showcased VIDEO or IMAGE will be of each video "title", ' \
-            'and will change as you press the up/down keys on your remote.  ' \
-            'Do not select showcase or a showcase file for this option.   ' \
+            'This will make a showcase style menu with text menu links.  '
+            'The showcased VIDEO or IMAGE will be of each video "title", '
+            'and will change as you press the up/down keys on your remote.  '
+            'Do not select showcase or a showcase file for this option.   '
             'Use with quick menu option above for a huge speed up !'),
     ),
     VPanel('Menu backgrounds',
@@ -118,8 +118,8 @@ main = Panel("Main",
               'load', 'Select an image or video file'),
           Filename('-bgaudio',
               'Audio', '',
-              'Audio file to play while the main menu is showing.  ' \
-              'If static menu, default is to use audio length of 20 seconds.  ' \
+              'Audio file to play while the main menu is showing.  '
+              'If static menu, default is to use audio length of 20 seconds.  ' 
               'Change with "Menu length" on "Menu" tab.',
               'load', 'Select an audio file')
     ),
@@ -155,19 +155,19 @@ menu = Panel("Menu",
         0, 120, 'scale'),
     Flag('-ani-submenus',
         'Animated submenus (takes more time)', False,
-        'Create an animated submenu for each video.  ' \
+        'Create an animated submenu for each video.  '
         'Submenu links lead to chapter points.'),
     Flag('-menu-fade',
         'Fade in menu', False,
-        'Fade  the  menu  in  and out The background ' \
-        ' will fade in first, then title ' \
-        '(and mist if called for), then the menu thumbs.  ' \
+        'Fade  the  menu  in  and out The background '
+        ' will fade in first, then title '
+        '(and mist if called for), then the menu thumbs.  '
         'The fadeout is in reverse order'),
     Panel("Seek times",
           List('-seek',
               'Seek time', '',
-              'Play thumbnail videos from the given seek time (seconds).  ' \
-              'A single value or space separated list, one value per video.  ' \
+              'Play thumbnail videos from the given seek time (seconds).  '
+              'A single value or space separated list, one value per video.  '
               'Also used for seeking in switched menus.'),
           Number('-bgvideo-seek',
               'Background video seek time', 2,
@@ -180,8 +180,8 @@ menu = Panel("Menu",
           Number('-showcase-seek',
               'Showcase video seek time', 2,
               'Play showcase video from the given seek time (seconds).  '
-              'Note: switched menus use the value(s) from "Seek time" option above, '
-              'not this one',
+              'Note: switched menus uses the value(s) from "Seek time" '
+              'option, above, not this one',
               0, 3600, 'scale')
     ),
     Choice('-align',
@@ -194,59 +194,62 @@ menu = Panel("Menu",
         'load', 'Select a video file'),
     Choice('-showcase-titles-align',
         'Video(s) title alignment', 'west',
-        'This is a showcase style only option.  The default is to center ' \
-        'the text above the thumbnails.  This option will align the titles ' \
+        'This is a showcase style only option.  The default is to center '
+        'the text above the thumbnails.  This option will align the titles '
         ' either to the left (west) or right (east).',
         'west|east|center'),
     Choice('-showcase-framestyle',
         'Showcase frame style', 'none',
-        'This is a showcase style only option.  The "none" option will use the ' \
-        'default frame method, using imagemagick. The "glass" option ' \
-        'will use mplayer to make frames, giving an animated effect.  The ' \
-        'glass style can be much faster - especially if used without -rotate and -wave options',
+        'This is a showcase style only option.  The "none" option will use '
+        'the default frame method, using imagemagick. The "glass" option '
+        'will use mplayer to make frames, giving an animated effect.  The ' 
+        'glass style can be much faster - especially if used without '
+        '-rotate and -wave options',
         'none|glass'),
     Text('-showcase-geo',
         'Showcase image position (XxY)', '',
-        'This is a showcase style only option. ' \
-        'Enter the position of the top left corner of the showcase image: e.g. "200x80"')
+        'This is a showcase style only option.  Enter the position of the '
+        'top left corner of the showcase image: e.g. "200x80"')
 )
 
 thumbnails = Panel("Thumbnails",
     Flag('-3dthumbs',
         'Create 3D thumbs', False,
-        'This will give an illusion of 3D to the thumbnails: ' \
-        'dynamic lighting on rounded thumbs, and a  raised ' \
+        'This will give an illusion of 3D to the thumbnails: '
+        'dynamic lighting on rounded thumbs, and a  raised '
         ' effect on rectangular thumbs'),
     Choice('-thumb-shape',
         'Thumb shape', 'normal',
-        'Apply a shaped transparency mask to thumbnail videos. ' \
-        'Note: to disable the "mist" background ' \
+        'Apply a shaped transparency mask to thumbnail videos. '
+        'Note: to disable the "mist" background '
         'behind each thumb, use "none" for -thumb-mist-color.',
         'normal|oval|plectrum|egg'),
     Number('-opacity',
         'Thumbnail opacity', 100,
-        'Opacity  of thumbnail videos as a percentage ' \
-        '(no percent sign).  Less than 100(%) ' \
+        'Opacity  of thumbnail videos as a percentage '
+        '(no percent sign).  Less than 100(%) '
         'is semi-transparent.  Not recommended with dark backgrounds.',
         1, 100, 'spin'),
     Number('-blur',
         'Blur', 4,
-        'The amount of feather blur to apply to the thumb-shape.  ' \
-        'Default is 4.0 which will more or less keep the shape, ' \
-        'creating transparency at the edges.  Choose float or ' \
+        'The amount of feather blur to apply to the thumb-shape.  '
+        'Default is 4.0 which will more or less keep the shape, '
+        'creating transparency at the edges.  Choose float or '
         'integer values between 0.1 and 5.0',
         1, 5, 'spin'),
     List('-rotate-thumbs',
         'Rotate Thumbs (list)', '',
-        'Rotate  thumbs  the  given amount in degrees - can be positive ' \
-        'or negative.  There must be one value for each file given with -files.  ' \
-        'If the values are not the same distance from zero, the thumbs will be  ' \
-        'of  different sizes as images are necessarily resized *after* rotating.'),
+        'Rotate  thumbs  the  given amount in degrees - can be positive '
+        'or negative.  There must be one value for each file given with '
+        'files.  If the values are not the same distance from zero, the '
+        'thumbs will be of  different sizes as images are necessarily '
+        'resized *after* rotating.'),
     Flag('-wave', 'Wave effect for showcase thumb', 'False',
-        'Wave effect for showcase image|video.  Alters thumbs along a sine wave ' \
-        'This will pass a wave arg of -20x556, which produces a gentle wave with a ' \
-        'small amount of distortion.  To use other values you will need to use ' \
-        'the "tovidopts" box on the first panel - see man todisc for details.'),
+        'Wave effect for showcase image|video.  Alters thumbs along a sine '
+        'wave.  This will pass a wave arg of -20x556, producing a gentle '
+        'wave with a small amount of distortion.  To use other values you '
+        'will need to use the "tovidopts" box on the first panel.  '
+        'See man todisc for details.'),
     Number('-rotate',
         'Rotate Showcase thumb', 0,
         'Rotate the showcase image|video clockwise by this number of degrees.',
@@ -258,33 +261,35 @@ thumbnails = Panel("Thumbnails",
         'Thumb mist color', 'white',
         'Color of mist behind thumbnails (not a showcase option).')),
     Flag('-thumb-mist-color', "Transparent thumb mist", False,
-        'Do not use a mist behind thumbs (not a showcase option).  ' \
-        'Warning: this may cause contrast problems unless you use a large bold font')
+        'Do not use a mist behind thumbs (not a showcase option).  Warning: '
+        'this may cause contrast problems unless you use a large bold font')
 ),
     Flag('-tile3x1',
         'Arrange thumb montage in 1 row of 3 thumbs', False,
-        'Use a montage tile of 3x1 instead of the usual 2x2 (for 3 videos only).')
+        'Use a montage tile of 3x1 instead of the usual 2x2 (3 videos only).')
 )
 
 audio = Panel("Audio",
     Number('-menu-audio-fade',
         'Menu audio fade', 1,
-        'Number  of  sec to fade given menu audio in and out (default: 1.0 seconds) ' \
-        'If you use -menu-audio-fade 0 then the audio will not be faded.',
+        'Number  of  sec to fade given menu audio in and out '
+        '(default: 1.0 seconds). Use a fade of "0" for no fade.',
         0, 10, 'scale'),
     List('-submenu-audio',
         'Submenu audio file', '',
-        'Quoted list of files for sub-menu backgrounds. If one file is given, then it will ' \
-        'be used for all sub-menus.  Else the number given must equal the number of ' \
-        'chapters, though the keyword "none" may be used for silence.'),
+        'Quoted list of files for sub-menu audio backgrounds. If one file is '
+        'given, then it will be used for all sub-menus.  Else the number '
+        'given must equal the number of chapters, though the keyword "none" '
+        'may be used for silence.'),
     Number('-submenu-audio-length',
         'Submenu audio length', 30,
-        'The length of the background audio for a static submenu.  ' \
-        'The default is to use the full length of the supplied audio ( -bgaudio ).',
+        'Background audio length for static submenus.  The default is to use '
+        'the full length of the supplied audio ( -bgaudio ).',
         0, 120, 'scale'),
     Number('-submenu-audio-fade',
         'Submenu audio fade', 1,
-        'Number of sec to fade given sub-menu audio in and out (default: 1.0 seconds)',
+        'Number of sec to fade given sub-menu audio in and out.  '
+        ' (default: 1.0 seconds)',
         0, 10, 'scale')
 )
 
@@ -331,23 +336,24 @@ text = Panel("Text/Font",
         'north|south|west|east|center'),
     Text('-menu-title-offset',
         'Offset for menu title position', '+0+50',
-        'Menu title position as an offset (in pixels) from "Menu title position" above.  '
-        'Use +X+Y syntax.  This value is applied to the video *before* is is scaled.'),
+        'Menu title position as an offset (in pixels) from '
+        '"Menu title position" above.  Use +X+Y syntax.  This value is '
+        'applied to the video *before* is is scaled.'),
     Color('-stroke-color',
         'Stroke color', '',
-        'Outline color for the main menu font. Use "none" for transparent outline.'),
+        'Outline color for the main menu font. Use "none" for no outline.'),
     Color('-submenu-stroke-color',
         'Submenu stroke color', '',
         'The color for the sub-menu font outline (stroke).'),
     Number('-title-gap',
         'Space between Textmenu titles (pixels)', 10,
-        'Leave this much vertical gap between titles.  ' \
-        'Default is 10 for line buttons, 15 for text-rect buttons.  ' \
+        'Leave this much vertical gap between titles.  '
+        'Default is 10 for line buttons, 15 for text-rect buttons.  '
         'This value is applied before the menu is scaled.',
         0, 400, 'spin'),
     Number('-text-start',
         'Start Textmenu titles at: (pixels)', 50,
-        'The text menu will start a this pixel in the Y-axis (north/south).  ' \
+        'The text menu will start a this pixel in the Y-axis (north/south).  '
         'This value is applied before the menu is scaled.',
         0, 460, 'spin'),
 )
@@ -355,37 +361,38 @@ text = Panel("Text/Font",
 authoring = Panel("Authoring",
     List('-chapters',
         'Chapters', '',
-        'Single value/string or list.  ' \
-        'Can be an integer for "# of chapters", ' \
-        'or a comma separated string of chapter points in HH:MM:SS format.  ' \
+        'Single value/string or list.  '
+        'Can be an integer for "# of chapters", '
+        'or a comma separated string of chapter points in HH:MM:SS format.  '
         'The first HH:MM:SS format chapter MUST be 00:00:00 '
-        'If using grouped videos and HH:MM:SS format ' \
+        'If using grouped videos and HH:MM:SS format '
         'link grouped chapter points with a "+" separator.'),
     List('-chain-videos',
         'Chain videos together', '',
         'See "man todisc" for details'),
     Choice('-widescreen',
         'Widescreen', None,
-        'This will output a <video widescreen=nopanscan /> tag (for example) ' \
-        'for the dvdauthor xml file.  It will affect all videos in the titleset.  '
-        'Use in conjunction with "Aspect ration" if your dvd player is cropping your videos',
+        'This will output a <video widescreen=nopanscan /> tag (for example) '
+        'for the dvdauthor xml file.  It affects all videos in the titleset.  '
+        'Use in conjunction with "Aspect ratio" if your dvd player is '
+        'cropping your videos',
         'nopanscan|noletterbox'),
     Choice('-aspect',
         'Aspect ratio', '4:3',
-        'This will output a <video aspect WIDTH:HEIGHT /> tag for the dvdauthor xml file.  ' \
-        'It will affect all videos in the titleset.',
+        'This will output a <video aspect WIDTH:HEIGHT /> tag for the '
+        'dvdauthor xml file.  It will affect all videos in the titleset.',
         '4:3|16:9'),
     Color('-highlight-color',
         'Highlight color', '',
-        'Color to use for the menu buttons that your dvd remote uses to navigate.'),
+        'Color to use for the menu buttons the dvd remote uses to navigate.'),
     Color('-select-color',
         'Selection color', '',
-        'Color to use for the menu buttons that your dvd remote uses to select.'),
+        'Color to use for the menu buttons the dvd remote uses to select.'),
     Choice('-button-style',
         'Button style', 'rect',
-        'Style or shape of the buttons that you will see when you play the DVD.  ' \
-        '"rect" draws a rectangle around the thumbs, "text" uses the title text, ' \
-        'and "text-rect" draws a rectangle around the title text.',
+        'Style or shape of the buttons seen when playing the DVD menu.  '
+        '"rect" draws a rectangle around the thumbs, "text" uses the title '
+        'text, and "text-rect" draws a rectangle around the title text.',
         'rect|text|text-rect'),
     List('-audio-lang',
         'Default audio language', '',
@@ -395,20 +402,21 @@ authoring = Panel("Authoring",
         'Single value or list'),
     Number('-outlinewidth',
         'Outlinewidth for spumux buttons', 4,
-        'For spumux outlinewidth variable.  This option may help if there is a large gap ' \
-         'between words or characters in a text button, causing spumux to fail.',
+        'For spumux outlinewidth variable.  This option may help if spumux '
+        'fails because of a large gap between button words or characters.',
         0, 20, 'scale'),
     Number('-loop',
         'Pause', 10,
-        'Pause in seconds at end of menu.  Or use "Indefinate pause" item below.',
+        'Pause in seconds at end of menu.  Or use the "Indefinate pause" '
+        'item below.',
         0, 30, 'scale'),
     Flag('-loop',
         'Indefinite pause', False,
         'Pause indefinitely at the end of the menu.'),
     Flag('-playall',
         '"Play all" button', False,
-        'Create a "Play All" button that lets you jump to the 1st title and play '
-        'all the videos in sucession before returning to the main menu.')
+        'Create a "Play All" button that lets you jump to the 1st title and '
+        'play all the videos in sucession before returning to the main menu.')
 )
 
 burning = Panel("Burning",
