@@ -152,6 +152,7 @@ See also -titleset and -vmgm
     instead of imagemagick.  There are no fancy effects like -wave or -rotate available
     for it, but it is extremely fast.  It will be a text-menu style of menu, with no video
     thumbs, and a central showcase IMAGE(static)|VIDEO(animated).
+    ( see -pad-color if you are not using a -background and want to change the default black )
 
     Specifying the IMAGE|VIDEO argument to '-showcase' is mandatory for this style of menu, unless
     used in conjunction with '-switched-menus' in which case the videos passed with '-files' 
@@ -167,6 +168,8 @@ See also -titleset and -vmgm
 ```
     See '-switched-menus' for example of '-quick-menu' using '-switched-menus
 
+: -pad-color | -pad-colour
+    The color to use as background for a -quick-menu menu. (default: ntsc-safe black)
 : -use-makemenu
     This will call the other tovid menu script, "makemenu" on the titles supplied.
 : -static
@@ -196,10 +199,10 @@ See also -titleset and -vmgm
     mist if called for), then the menu thumbs.  The fadeout is in reverse order
 : -bgaudio
     An audio file for the main menu background
-: -submenu-audio NUM
+: -submenu-audio FILE(S)
     List of files for sub-menu backgrounds. If one file is given, then it will
     be used for all sub-menus.  Else the number given must equal the number of
-    chapters, though the keyword "none" may be used for silence
+    submenus, though the keyword "none" in this list may be used for silence.
 : -titleset . . . -end-titleset
     If you have more than one titleset, put the options for each titleset between
     -titleset and -end-titleset.  A separate menu will be created that can be accessed
@@ -276,8 +279,9 @@ See also -titleset and -vmgm
     frame accuracy you could load the file in avidemux and find the time codes for the
     frames you want.
 
-    NOTE: Passing chapter points is disabled at present for arrangements containing
-    grouped videos - it will cause a usage error..
+    If passing grouped chapters you need to join the chapters from all the videos in a
+    group with a '+' seperator.  If you want to skip a video in the group use '0' for its
+    chapters.
 
     Example for passing just number of chapters ( 4 videos ):
 ```
@@ -289,7 +293,12 @@ See also -titleset and -vmgm
     -chapters 00:00:00,00:05:34.41,00:12:54,00:20:45 00:00:00,00:04:25.623,00:09:12,00:15:51 \
     00:00:00,00:05:10,00:13:41,00:18:13.033 00:00:00,00:15:23.342,00:26:42.523
 ```
-    
+
+    Example of passing grouped chapters using the '+' seperator:
+```
+    -chapters 00:00:00,00:05:34.41,00:12:54,00:20:45+00:04:23,00:09:35 00:00...etc
+```
+
 : -seek NUM | "NUM1 NUM2 NUM3 . . ."
     Seek to NUM seconds before generating thumbnails (default: 2.0 seconds)
     If a quoted string of values matching the number of videos is used, then
@@ -336,13 +345,16 @@ See also -titleset and -vmgm
 
 ==Menu Style==
 
+: -menu-title-geo north|south|east|west|center [south]
+    The position of the menu title.
+: -menu-title-offset OFFSET (+X+Y)
+    Move menu title by this offset from its N|S|E|W|Center position.
 : -button-style rect|text|text-rect
     The style of button that you will see when you play the DVD.
     "rect" draws a rectangle around the thumb when you select it
     in the DVD player.  "text" highlights the thumb title text, and "text-rect"
-    draws a rectangle around the title text.  "text-rect" is ONLY used for multiline
-    titles in the showcase-* template.  "text-rect" is  used by default if you use -3dthumbs
-    with showcase-* and multiline titles, as the others are not suitable for this arrangement.
+    draws a rectangle around the title text.  ONLY "text-rect" is used for multiline
+    titles in the showcase-* template.
 : -title-color, -title-colour COLOR
     Color to use for the main menu title.  For list of supported colors do:
     **convert -list** color.  HTML notation may be used: "#ff0000". See:
@@ -481,8 +493,7 @@ See also -titleset and -vmgm
     You can check the mpeg with "mplayer -v . . ."
 : -aspect 4:3|16:9
     This will output a <video aspect WIDTH:HEIGHT /> tag for the dvdauthor xml file.
-    It will affect all videos in the titleset.  (effectively all videos since todisc only does
-    one titleset). Example:
+    It will affect all videos in the titleset.  Example:
 
 ```
     -aspect 16:9
