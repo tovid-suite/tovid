@@ -369,9 +369,13 @@ authoring = Panel("Authoring",
         'The first HH:MM:SS format chapter MUST be 00:00:00 '
         'If using grouped videos and HH:MM:SS format '
         'link grouped chapter points with a "+" separator.'),
-    List('-chain-videos',
-        'Chain videos together', '',
-        'See "man todisc" for details'),
+    Flag('-chain-videos',
+        'Chain videos together', False,
+        'This option will "chain" videos together so they play sequentially '
+        'until the last, which will return to the menu.  It is also possible '
+        'to specify individual videos to behave like this, but you will need '
+        'to use the "Custom todisc options" box under "General" tab.  See '
+        'man todisc for details.'),
     Choice('-widescreen',
         'Widescreen', None,
         'This will output a <video widescreen=nopanscan /> tag (for example) '
