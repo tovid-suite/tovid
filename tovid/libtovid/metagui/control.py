@@ -633,12 +633,14 @@ class TextList (Control):
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
+        frame = tk.LabelFrame(self, text=self.label)
+        frame.pack(fill='x', expand=True)
         self.selected = tk.StringVar()
-        self.listbox = DragList(self, choices=self.variable,
+        self.listbox = DragList(frame, choices=self.variable,
                                 chosen=self.selected)
         self.listbox.pack(fill='x', expand=True)
         # TODO: Event handling to allow editing items
-        self.editbox = tk.Entry(self, width=30, textvariable=self.selected)
+        self.editbox = tk.Entry(frame, width=30, textvariable=self.selected)
         self.editbox.bind('<Return>', self.setTitle)
         self.editbox.pack(fill='x', expand=True)
 
@@ -664,18 +666,19 @@ class FileList (Control):
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
+        frame = tk.LabelFrame(self, text=self.label)
+        frame.pack(fill='x', expand=True)
         # List of files
-        self.listbox = DragList(self, choices=self.variable,
+        self.listbox = DragList(frame, choices=self.variable,
                                 command=self.select)
         self.listbox.pack(fill='x', expand=True)
         # Add/remove buttons
-        group = tk.Frame(self)
+        group = tk.Frame(frame)
         self.add = tk.Button(group, text="Add...", command=self.addFiles)
         self.remove = tk.Button(group, text="Remove", command=self.removeFiles)
         self.add.pack(side='left', fill='x', expand=True)
         self.remove.pack(side='left', fill='x', expand=True)
         group.pack(fill='x')
-        # Dirty hack to get linked files/titles to work
 
     def select(self, event=None):
         """Event handler when a filename in the list is selected.
