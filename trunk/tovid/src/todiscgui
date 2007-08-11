@@ -52,6 +52,8 @@ titles = TextList('-titles',
     filter=to_title, # strip pathname and extension from filenames
     required=True)
 
+# The rest of the GUI is pretty straightforward, so don't be frightened
+# by the above :-)
 
 ### --------------------------------------------------------------------
 ### Main todisc options
@@ -62,7 +64,7 @@ main = Panel("Main",
         'Menu title', 'My video collection',
         'Title text displayed on the main menu'),
     
-    HPanel("Files and titles", files, titles),
+    HPanel('', files, titles),
 
     HPanel('',
         FlagGroup('Format', 'exclusive',
