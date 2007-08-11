@@ -223,7 +223,7 @@ class Flag (Control):
         # Draw any controls enabled by this one
         if self.enables:
             self.enables.draw(self)
-            self.enables.pack(side='left')
+            self.enables.pack(side='left', fill='x', expand=True)
             # Disable if False
             if not self.default:
                 self.enables.disable()
