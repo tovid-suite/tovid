@@ -16,7 +16,8 @@ __all__ = [
 import sys
 import Tkinter as tk
 
-from control import Widget, Control, MissingOption
+from widget import Widget
+from control import Control, MissingOption
 from support import Tabs
 from libtovid.cli import Command
 

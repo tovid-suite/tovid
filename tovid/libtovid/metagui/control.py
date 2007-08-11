@@ -8,27 +8,6 @@ special-purpose GUI widget for setting a value such as a number or filename.
 
 """
 
-"""
-Pull behavior
-
-When a widget pulls from another, it's expected that:
-
-- The pulling widget synchronizes its valus with another control; when that
-  control changes, so does pulling control
-- The exact value is pulled, or a modified copy is pulled (to do regexp
-  search/replace at minimum)
-
-Lists are a special case, because they have more interactivity than other
-widgets. When items in one list are rearranged or removed, the pulling
-list should rearrange/remove corresponding items.
-
-Q. Should correspondence in ordering be assumed?
-
-Q. Would pulling ever be useful for non-lists?
-
-Q. Would any other controls benefit by event-binding behaviors?
-
-"""
 
 __all__ = [
     'Control',
@@ -46,6 +25,7 @@ __all__ = [
     'TextList']
 
 import Tkinter as tk
+from widget import Widget
 from support import ListVar
 import support
 import os
@@ -63,35 +43,6 @@ _vartypes = {
     int: tk.IntVar,
     float: tk.DoubleVar,
     list: ListVar}
-
-### --------------------------------------------------------------------
-class Widget (tk.Frame):
-    """Generic metagui widget, suitable for Controls, Panels, etc."""
-    def __init__(self):
-        self.active = False
-    
-    def draw(self, master):
-        tk.Frame.__init__(self, master)
-        self.active = True
-
-    def destroy(self):
-        tk.Frame.destroy(self)
-        self.active = False
-
-    def enable(self, enabled=True):
-        """Enable or disable all sub-widgets."""
-        if enabled:
-            newstate = 'normal'
-        else:
-            newstate = 'disabled'
-        for widget in self.children.values():
-            # Some widgets don't support state changes
-            if 'state' in widget.config():
-                widget.config(state=newstate)
-
-    def disable(self):
-        """Disable all sub-widgets."""
-        self.enable(False)
 
 ### --------------------------------------------------------------------
 from tooltip import ToolTip
@@ -239,8 +190,6 @@ class Control (Widget):
 ### --------------------------------------------------------------------
 ### Control subclasses
 ### --------------------------------------------------------------------
-
-from gui import Panel
 
 class Flag (Control):
     """A widget for controlling a yes/no value."""
