@@ -148,6 +148,7 @@ __all__ = [\
     'gui',
     'manpage',
     'builder',
-    'tooltip'] + all_support + all_control + all_gui
+    'tooltip',
+    'widget'] + all_support + all_control + all_gui
 
 
