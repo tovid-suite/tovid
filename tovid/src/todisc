@@ -1718,10 +1718,6 @@ $SWITCHED_MODE && SWITCHED_MENUS=false
 
 # FIXME checks have not been consolidated as options were added - needs cleanup
 
-# line of text-rect for "none" bg
-if ! $USER_BSTYLE && $SHOWCASE; then # line or text-rect for "none" bg
-    [[ $BUTTON_STYLE != "text-rect" ]] && BUTTON_STYLE="line"
-fi
 # use a suitable button style
 for ((i=0; i<=NUM_FILES; i++)); do
     if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
@@ -1822,6 +1818,10 @@ if ([[ -n ${ROTATE_ARRAY[@]} ]] && $MULTILINE_TITLE) && [[ $BUTTON_STYLE = "rect
     ! $NO_WARN && sleep 15
 fi
 
+# line of text-rect for "none" bg
+if ! $USER_BSTYLE && $SHOWCASE; then # line or text-rect for "none" bg
+    [[ $BUTTON_STYLE != "text-rect" ]] && BUTTON_STYLE="line"
+fi
 #
 # end of button-style checks
 #
@@ -2168,11 +2168,6 @@ if ! $VMGM_ONLY &&  [[ ${#FILES[@]} -ne ${#MENU_LENGTH[@]} &&  ${#MENU_LENGTH[@]
     usage_error "Please give the same number of -menu-length times as videos, or just use one value.
     You gave ${#FILES[@]} video files and ${#MENU_LENGTH[@]} -menu-length times"
 fi
-#create seek value for each video
-for ((i=0; i<=NUM_FILES; i++)); do
-    # translate SEEK_VAL into frames for transcode
-    SEEK_FRAMES[i]=$(bc_math "${SEEK_VAL[i]} * $FRAME_RATE" int)
-done
 # var for dcdemux and the navigation log
 #TCDEMUX_MODE="-M 0"
 if ! $VMGM_ONLY; then
@@ -2391,6 +2386,13 @@ if $SHOWCASE; then
         THUMB_SIZE=${GEO_ARRAY[30]}
     fi
 fi
+
+#create seek value for each video
+for ((i=0; i<=NUM_FILES; i++)); do
+    # translate SEEK_VAL into frames for transcode
+    SEEK_FRAMES[i]=$(bc_math "${SEEK_VAL[i]} * $FRAME_RATE" int)
+done
+
 # some choices needed for different title alignments
 if $SHOWCASE && ! $TEXTMENU; then
     if [ $V_TOTAL -le 5 ]; then
