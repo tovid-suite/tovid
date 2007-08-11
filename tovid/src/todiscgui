@@ -73,7 +73,7 @@ main = Panel("Main",
             Flag('-pal', "PAL", False))
         ),
 
-    FlagGroup('Menu Style', '',
+    VPanel('Menu Style',
         Flag('-showcase', "Showcase style menu", False,
             "Arrange menu links along the outside edges, to leave room for" \
             " an optional 'showcase' image or video.",
@@ -85,12 +85,22 @@ main = Panel("Main",
         Flag('-textmenu', "Use text menu links (no thumbnails)", False,
             'Showcase style text only menu.  Optionally use a "showcase" ' \
             'image/video, or static/animated background.  See also ' \
-            'quick-menu and switched menu in the "Menu" tab',
+            'quick-menu and switched menu below.',
             enables=Number('',
                 'Titles per column', 13,
                 'Maximum number of titles per column',
                 1, 50)
-        )
+        ),
+        Flag('-quick-menu', "Make a quick animated showcase style menu.  ", False,
+            'Ten times faster than normal showcase animation.  ' \
+            'A showcase image is required unless doing switched menus.  ' \
+            ' No video thumbs are made.  Not compatible with wave or rotate options'),
+        Flag('-switched-menus', "Make switched menus", False,
+            'This will make a showcase style menu with text menu links.  ' \
+            'The showcased VIDEO or IMAGE will be of each video "title", ' \
+            'and will change as you press the up/down keys on your remote.  ' \
+            'Do not select showcase or a showcase file for this option.   ' \
+            'Use with quick menu option above for a huge speed up !'),
     ),
     VPanel('Menu backgrounds',
           Filename('-background',
@@ -104,8 +114,6 @@ main = Panel("Main",
               'Change with "Menu length" on "Menu" tab.',
               'load', 'Select an audio file')
     ),
-
-    VPanel('Animation and submenus',
     Flag('-static',
         'Static menus', False,
         'Create still-image menus; takes less time.  ' \
@@ -114,15 +122,6 @@ main = Panel("Main",
     Flag('-submenus',
         'Create Submenus', False,
         'Create a submenu for each video title; takes more time.'),
-    Flag('-ani-submenus',
-        'Animated submenus (takes more time)', False,
-        'Create an animated submenu for each video.  ' \
-        'Submenu links lead to chapter points.')
-    ),
-
-    List('',
-        'Custom todisc options', '',
-        'Space-separated list of custom options to pass to todisc.'),
     Filename('-out',
         'Output name', '',
         'Name to use for the output directory where the disc will be created.',
@@ -140,6 +139,9 @@ general = Panel("General",
     Flag('-use-makemenu',
         'Use makemenu', False,
         'Create menus using the makemenu script instead of todisc'),
+    List('',
+        'Custom todisc options', '',
+        'Space-separated list of custom options to pass to todisc.'),
     Text('-tovidopts',
         'Custom tovid options', '',
         "Space-separated list of options to pass to tovid for encoding.")
@@ -150,21 +152,16 @@ menu = Panel("Menu",
         'Menu length', 20,
         'Duration of menu in seconds',
         0, 120, 'scale'),
+    Flag('-ani-submenus',
+        'Animated submenus (takes more time)', False,
+        'Create an animated submenu for each video.  ' \
+        'Submenu links lead to chapter points.'),
     Flag('-menu-fade',
         'Fade in menu', False,
         'Fade  the  menu  in  and out The background ' \
         ' will fade in first, then title ' \
         '(and mist if called for), then the menu thumbs.  ' \
         'The fadeout is in reverse order'),
-    Flag('-quick-menu', "Make a quick animated showcase style menu.  ", False,
-        'Ten times faster than normal showcase animation.  ' \
-        'A showcase image is required.  No video thumbs are made.  '
-        'Not compatible with wave or rotate options'),
-    Flag('-switched-menus', "Make switched menus", False,
-        "This will make a showcase style menu with text menu links.  " \
-        "The showcased VIDEO or IMAGE will be of each video 'title' " \
-        " in the menu.  Do not select showcase or a showcase file for this option.   " \
-        "Use with quick menu option above for a huge speed up !"),
     Panel("Seek times",
           List('-seek',
               'Seek time', '',
