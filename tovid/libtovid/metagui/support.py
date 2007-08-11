@@ -306,7 +306,7 @@ class Style:
                  bgcolor='white',
                  fgcolor='grey',
                  textcolor='black',
-                 font=('Helvetica', 12, 'normal'),
+                 font=('Helvetica', 10, 'normal'),
                  relief='groove'):
         self.bgcolor = bgcolor
         self.fgcolor = fgcolor
