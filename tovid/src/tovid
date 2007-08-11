@@ -1907,7 +1907,7 @@ else
             wait
 
             # Make sure the audio stream exists before proceeding
-            if test ! -f "$AUDIO_WAV"; then
+            if test ! -s "$AUDIO_WAV"; then
                     runtime_error "Could not extract audio from original video"
             fi
         fi
@@ -1945,7 +1945,7 @@ else
         file_output_progress "$AUDIO_STREAM" "Encoding audio to $AUD_SUF" "$OUTPUT_FILES"
         wait
 
-        if test -f "$AUDIO_STREAM"; then
+        if test -s "$AUDIO_STREAM"; then
             yecho "Audio encoding finished successfully."
         else
             runtime_error "There was a problem with encoding the audio to $AUD_SUF format."
@@ -2034,9 +2034,9 @@ yecho
 if $FAKE || $PARALLEL; then
     :
 else
-    test ! -f "$AUDIO_STREAM" && \
+    test ! -s "$AUDIO_STREAM" && \
         runtime_error "The audio stream did not encode properly, and no output file exists."
-    test ! -f "$VIDEO_STREAM" && \
+    test ! -s "$VIDEO_STREAM" && \
         runtime_error "The video stream did not encode properly, and no output file exists."
 fi
 
