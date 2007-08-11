@@ -70,7 +70,16 @@ main = Panel("Main",
             Flag('-svcd', "SVCD", False)),
         FlagGroup('TV System', 'exclusive',
             Flag('-ntsc', "NTSC", True),
-            Flag('-pal', "PAL", False))
+            Flag('-pal', "PAL", False)),
+        FlagGroup('Menu options', 'normal',
+            Flag('-static',
+                'Static menus', False,
+                'Create still-image menus; takes less time.  '
+                'For duration of background audio for static '
+                'menus, use "menu length" on the "Menu" tab'),
+            Flag('-submenus',
+                'Create Submenus', False,
+                'Create a submenu for each video title; takes more time.'))
         ),
 
     VPanel('Menu Style',
@@ -114,14 +123,6 @@ main = Panel("Main",
               'Change with "Menu length" on "Menu" tab.',
               'load', 'Select an audio file')
     ),
-    Flag('-static',
-        'Static menus', False,
-        'Create still-image menus; takes less time.  ' \
-        'For duration of background audio for static '
-        'menus, use "menu length" on the "Menu" tab'),
-    Flag('-submenus',
-        'Create Submenus', False,
-        'Create a submenu for each video title; takes more time.'),
     Filename('-out',
         'Output name', '',
         'Name to use for the output directory where the disc will be created.',
