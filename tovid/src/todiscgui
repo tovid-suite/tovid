@@ -165,6 +165,11 @@ menu = Panel("Menu",
         ' will fade in first, then title '
         '(and mist if called for), then the menu thumbs.  '
         'The fadeout is in reverse order'),
+    Number('-menu-audio-fade',
+        'Menu audio fade', 1,
+        'Number  of  sec to fade given menu audio in and out '
+        '(default: 1.0 seconds). Use a fade of "0" for no fade.',
+        0, 10, 'scale'),
     Panel("Seek times",
           List('-seek',
               'Seek time', '',
@@ -271,18 +276,10 @@ thumbnails = Panel("Thumbnails",
         'Use a montage tile of 3x1 instead of the usual 2x2 (3 videos only).')
 )
 
-audio = Panel("Audio",
-    Number('-menu-audio-fade',
-        'Menu audio fade', 1,
-        'Number  of  sec to fade given menu audio in and out '
-        '(default: 1.0 seconds). Use a fade of "0" for no fade.',
-        0, 10, 'scale'),
-    List('-submenu-audio',
-        'Submenu audio file', '',
-        'Quoted list of files for sub-menu audio backgrounds. If one file is '
-        'given, then it will be used for all sub-menus.  Else the number '
-        'given must equal the number of chapters, though the keyword "none" '
-        'may be used for silence.'),
+submenus = Panel("Submenus",
+    List('-submenu-titles',
+        'Submenu titles', '',
+        'Space-separated list of quoted submenu titles.'),
     Number('-submenu-audio-length',
         'Submenu audio length', 30,
         'Background audio length for static submenus.  The default is to use '
@@ -292,9 +289,12 @@ audio = Panel("Audio",
         'Submenu audio fade', 1,
         'Number of sec to fade given sub-menu audio in and out.  '
         ' (default: 1.0 seconds)',
-        0, 10, 'scale')
+        0, 10, 'scale'),
+    FileList('-submenu-audio',
+        'Submenu audio file(s)', None,
+        'Submenu audio file(s) that will play as background for each submenu.  '
+        'Use a single file for all submenus, or 1 file per submenu',)
 )
-
 
 text = Panel("Text/Font",
     Font('-menu-font',
@@ -439,7 +439,7 @@ burning = Panel("Burning",
 ### --------------------------------------------------------------------
 
 todisc = Application('todisc',
-    [main, general, menu, thumbnails, audio, text, authoring, burning])
+    [main, general, menu, thumbnails, text, submenus, authoring, burning])
 gui = GUI("todiscgui", [todisc], 600, 800)
 gui.run()
 
