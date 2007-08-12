@@ -310,6 +310,9 @@ class Application (Widget):
         """
         Widget.__init__(self)
         self.program = program
+        # TODO: Friendlier error-handling
+        if not type(panels) == list or len(panels) == 0:
+            raise TypeError("Application needs a list of Panels")
         self.panels = panels or []
         self.showing = False
         self.frame = None
@@ -385,6 +388,9 @@ class GUI (tk.Tk):
         tk.Tk.__init__(self)
         self.geometry("%dx%d" % (width, height))
         self.title(title)
+        # TODO: Friendlier error-handling
+        if not type(applications) == list or len(applications) == 0:
+            raise TypeError("GUI needs a list of Applications")
         self.apps = applications
         self.width = width
         self.height = height
