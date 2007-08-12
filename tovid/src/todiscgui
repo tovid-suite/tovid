@@ -40,13 +40,11 @@ def to_title(filename):
     firstdot = basename.find('.')
     return basename[0:firstdot]
 
-files = FileList('Video files',
-    '-files', None,
+files = FileList('Video files', '-files', None,
     'Video files to include on the disc',
     required=True)
 
-titles = TextList('Video titles',
-    '-titles', None,
+titles = TextList('Video titles', '-titles', None,
     'Titles for each video',
     pull=files, # -titles is updated when -files is updated
     filter=to_title, # strip pathname and extension from filenames
@@ -60,8 +58,7 @@ titles = TextList('Video titles',
 ### --------------------------------------------------------------------
 
 main = Panel("Main",
-    Text('Menu title',
-        '-menu-title', 'My video collection',
+    Text('Menu title', '-menu-title', 'My video collection',
         'Title text displayed on the main menu'),
     
     HPanel('', files, titles),
@@ -74,13 +71,11 @@ main = Panel("Main",
             Flag("NTSC", '-ntsc', True),
             Flag("PAL", '-pal', False)),
         FlagGroup('Menu options', 'normal',
-            Flag('Static menus',
-                '-static', False,
+            Flag('Static menus', '-static', False,
                 'Create still-image menus; takes less time.  '
                 'For duration of background audio for static '
                 'menus, use "menu length" on the "Menu" tab'),
-            Flag('Create Submenus', 
-                '-submenus', False,
+            Flag('Create Submenus', '-submenus', False,
                 'Create a submenu for each video title; takes more time.'))
         ),
 
@@ -101,27 +96,27 @@ main = Panel("Main",
                 1, 50)
         ),
         HPanel('',
-        Flag("Quick menu", '-quick-menu', False,
-            'Ten times faster than normal showcase animation.  A showcase '
-            'image is required unless doing switched menus.  No video thumbs '
-            'are made.  Not compatible with wave or rotate options'),
-        Flag("Switched menus", '-switched-menus', False,
-            'This will make a showcase style menu with text menu links.  '
-            'The showcased VIDEO or IMAGE will be of each video "title", '
-            'and will change as you press the up/down keys on your remote.  '
-            'Do not select showcase or a showcase file for this option.   '
-            'Use with quick menu option above for a huge speed up !'),
-    ),
+            Flag("Quick menu", '-quick-menu', False,
+                'Ten times faster than normal showcase animation.  A showcase '
+                'image is required unless doing switched menus.  No video thumbs '
+                'are made.  Not compatible with wave or rotate options'),
+            Flag("Switched menus", '-switched-menus', False,
+                'This will make a showcase style menu with text menu links.  '
+                'The showcased VIDEO or IMAGE will be of each video "title", '
+                'and will change as you press the up/down keys on your remote.  '
+                'Do not select showcase or a showcase file for this option.   '
+                'Use with quick menu option above for a huge speed up !'),
+        ),
     ),
     VPanel('Menu backgrounds',
-          Filename('Image or video', '-background', '',
-              'Graphic to display in the background of the main menu',
-              'load', 'Select an image or video file'),
-          Filename('Audio', '-bgaudio', '',
-              'Audio file to play while the main menu is showing.  '
-              'If static menu, default is to use audio length of 20 seconds.  ' 
-              'Change with "Menu length" on "Menu" tab.',
-              'load', 'Select an audio file')
+        Filename('Image or video', '-background', '',
+            'Graphic to display in the background of the main menu',
+            'load', 'Select an image or video file'),
+        Filename('Audio', '-bgaudio', '',
+            'Audio file to play while the main menu is showing.  '
+            'If static menu, default is to use audio length of 20 seconds.  ' 
+            'Change with "Menu length" on "Menu" tab.',
+            'load', 'Select an audio file')
     ),
     Filename('Output name', '-out', '',
         'Name to use for the output directory where the disc will be created.',
@@ -228,7 +223,7 @@ thumbnails = Panel("Thumbnails",
         'Rotate the showcase image|video clockwise by this number of degrees.',
         -30, 30, 'spin'),
     VPanel('Thumb mist',
-        Flag('', '', False, "",
+        Flag('', '', False,
             enables=Color('Thumb mist color', '-thumb-mist-color', 'white',
                 'Color of mist behind thumbnails (not a showcase option).')),
         Flag("No thumb mist", '-thumb-mist-color', False,
