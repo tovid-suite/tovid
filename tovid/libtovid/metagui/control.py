@@ -64,17 +64,17 @@ class Control (Widget):
     """
     def __init__(self,
                  vartype=str,
-                 option='',
                  label='',
+                 option='',
                  default='',
                  help='',
                  **kwargs):
         """Create a Control for an option.
 
             vartype:  Type of stored variable (str, bool, int, float, list)
+            label:    Label shown in the GUI for the Control
             option:   Command-line option associated with this Control, or
                       '' to create a positional argument
-            label:    Label shown in the GUI for the Control
             default:  Default value for the Control
             help:     Help text to show in a tooltip
             **kwargs: Keyword arguments of the form key1=arg1, key2=arg2
@@ -87,8 +87,8 @@ class Control (Widget):
         Widget.__init__(self)
         self.vartype = vartype
         self.variable = None
-        self.option = option
         self.label = label
+        self.option = option
         self.default = default or vartype()
         self.help = help
         self.kwargs = kwargs
@@ -194,18 +194,19 @@ class Control (Widget):
 class Flag (Control):
     """A widget for controlling a yes/no value."""
     def __init__(self,
-                 option='',
                  label="Flag",
+                 option='',
                  default=False,
                  help='',
                  **kwargs):
         """Create a Flag widget with the given label and default value.
 
             label:    Text label for the flag
+            option:   Command-line flag passed
             default:  Default value (True or False)
             help:     Help text to show in a tooltip
         """
-        Control.__init__(self, bool, option, label, default, help, **kwargs)
+        Control.__init__(self, bool, label, option, default, help, **kwargs)
         # Enable an associated control when this Flag is True
         self.enables = None
         if 'enables' in kwargs:
@@ -301,51 +302,15 @@ class FlagGroup (Control):
         return args
 
 ### --------------------------------------------------------------------
-from libtovid.odict import Odict
+from libtovid.odict import Odict, convert_list
 from support import ComboBox
-
-# Awkward having this here, but it's not needed anywhere else (yet)
-def odict_from_list(choices):
-    """Convert a list of choices to an Odict (ordered dictionary).
-    choices may be in one of several formats:
-
-               string: 'one|two|three'
-                 list: ['one', 'two', 'three']
-                 dict: {'a': "Choice A", 'b': "Choice B"}
-        list-of-lists: [['a', "Choice A"], ['b', "Choice B"], ..]
-    
-    Note: the dict form does not preserve order. Use list-of-lists
-    to maintain the specified order.
-    """
-    if type(choices) not in [str, list, dict]:
-        raise TypeError("choices must be a string, list, or dictionary.")
-
-    if type(choices) == str:
-        choices = choices.split('|')
-        return Odict(choices, choices)
-
-    if type(choices) == dict:
-        return Odict(choices.keys(), choices.values())
-
-    # choices is a list, but what kind?
-    first = choices[0]
-    # list of strings
-    if type(first) == str:
-        return Odict(choices, choices)
-    # list of 2-element string lists
-    elif type(first) == list and len(first) == 2:
-        choices, values = zip(*choices)
-        return Odict(choices, values)
-    else:
-        raise TypeError("choices lists must either be"\
-            "['a', 'b', 'c'] or [['a', 'A'], ['b', 'B']] style.")
 
 class Choice (Control):
     """A widget for choosing one of several options.
     """
     def __init__(self,
-                 option='',
                  label="Choices",
+                 option='',
                  default=None,
                  help='',
                  choices='A|B',
@@ -355,6 +320,7 @@ class Choice (Control):
         """Initialize Choice widget with the given label and list of choices.
 
             label:    Text label for the choices
+            option:   Command-line option to set
             default:  Default choice, or None to use first choice in list
             help:     Help text to show in a tooltip
             choices:  Available choices, in string form: 'one|two|three'
@@ -364,8 +330,8 @@ class Choice (Control):
                       care about preserving choice order.
             style:    'radio' for radiobuttons, 'dropdown' for a drop-down list
         """
-        self.choices = odict_from_list(choices)
-        Control.__init__(self, str, option, label,
+        self.choices = convert_list(choices)
+        Control.__init__(self, str, label, option,
                          default or self.choices.values()[0],
                          help, **kwargs)
         if style not in ['radio', 'dropdown']:
@@ -390,14 +356,13 @@ class Choice (Control):
                                   variable=self.variable)
             self.combo.pack(side='left')
 
-
 ### --------------------------------------------------------------------
 
 class Number (Control):
     """A widget for choosing or entering a number"""
     def __init__(self,
-                 option='',
                  label="Number",
+                 option='',
                  default=None,
                  help='',
                  min=1,
@@ -408,6 +373,7 @@ class Number (Control):
         """Create a number-setting widget.
         
             label:    Text label describing the meaning of the number
+            option:   Command-line option to set
             default:  Default value, or None to use minimum
             help:     Help text to show in a tooltip
             min, max: Range of allowable numbers (inclusive)
@@ -416,7 +382,7 @@ class Number (Control):
         """
         if default is None:
             default = min
-        Control.__init__(self, int, option, label, default,
+        Control.__init__(self, int, label, option, default,
                          help, **kwargs)
         self.min = min
         self.max = max
@@ -459,17 +425,18 @@ class Number (Control):
 class Text (Control):
     """A widget for entering a line of text"""
     def __init__(self,
-                 option='',
                  label="Text",
+                 option='',
                  default='',
                  help='',
                  **kwargs):
         """
             label:    Label for the text
+            option:   Command-line option to set
             default:  Default value of text widget
             help:     Help text to show in a tooltip
         """
-        Control.__init__(self, str, option, label, default, help, **kwargs)
+        Control.__init__(self, str, label, option, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -484,12 +451,12 @@ import shlex
 class List (Text):
     """A widget for entering a space-separated list of text items"""
     def __init__(self,
-                 option='',
                  label="List",
+                 option='',
                  default='',
                  help='',
                  **kwargs):
-        Text.__init__(self, option, label, default, help, **kwargs)
+        Text.__init__(self, label, option, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -512,8 +479,8 @@ from tkFileDialog import asksaveasfilename, askopenfilename
 class Filename (Control):
     """A widget for entering or browsing for a filename"""
     def __init__(self,
-                 option='',
                  label='Filename',
+                 option='',
                  default='',
                  help='',
                  action='load',
@@ -522,13 +489,14 @@ class Filename (Control):
         """Create a Filename with label, text entry, and browse button.
         
             label:   Text of label next to file entry box
+            option:  Command-line option to set
             default: Default filename
             help:    Help text to show in a tooltip
             action:  Do you intend to 'load' or 'save' this file?
             desc:    Brief description (shown in title bar of file
                      browser dialog)
         """
-        Control.__init__(self, str, option, label, default, help, **kwargs)
+        Control.__init__(self, str, label, option, default, help, **kwargs)
         self.action = action
         self.desc = desc
 
@@ -558,18 +526,19 @@ import tkColorChooser
 class Color (Control):
     """A widget for choosing a color"""
     def __init__(self,
-                 option='',
                  label="Color",
+                 option='',
                  default='',
                  help='',
                  **kwargs):
         """Create a widget that opens a color-chooser dialog.
         
             label:   Text label describing the color to be selected
+            option:  Command-line option to set
             default: Default color (named color or hexadecimal RGB)
             help:    Help text to show in a tooltip
         """
-        Control.__init__(self, str, option, label, default, help, **kwargs)
+        Control.__init__(self, str, label, option, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -590,18 +559,19 @@ class Color (Control):
 class Font (Control):
     """A font selector widget"""
     def __init__(self,
-                 option='',
                  label='Font',
+                 option='',
                  default='Helvetica',
                  help='',
                  **kwargs):
         """Create a widget that opens a font chooser dialog.
         
             label:   Text label for the font
+            option:  Command-line option to set
             default: Default font
             help:    Help text to show in a tooltip
         """
-        Control.__init__(self, str, option, label, default, help, **kwargs)
+        Control.__init__(self, str, label, option, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -623,12 +593,12 @@ from support import DragList
 class TextList (Control):
     """A widget for listing and editing several text strings"""
     def __init__(self,
-                 option='',
                  label="Text list",
+                 option='',
                  default=None,
                  help='',
                  **kwargs):
-        Control.__init__(self, list, option, label, default, help, **kwargs)
+        Control.__init__(self, list, label, option, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -656,12 +626,12 @@ from tkFileDialog import askopenfilenames
 class FileList (Control):
     """A widget for listing several filenames"""
     def __init__(self,
-                 option='',
                  label="File list",
+                 option='',
                  default=None,
                  help='',
                  **kwargs):
-        Control.__init__(self, list, option, label, default, help, **kwargs)
+        Control.__init__(self, list, label, option, default, help, **kwargs)
 
     def draw(self, master):
         """Draw control widgets in the given master."""
