@@ -223,7 +223,7 @@ class Drawer (Widget):
 ### --------------------------------------------------------------------
 
 class Tabs (Widget):
-    """A widget with tab buttons that switch between several other widgets.
+    """A widget with tab buttons that switch between several panels.
     """
     def __init__(self, *panels, **kwargs):
         """Create tabs that switch between several Panels.
