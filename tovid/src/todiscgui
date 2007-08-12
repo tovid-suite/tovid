@@ -296,11 +296,10 @@ thumbnails = Panel("Thumbnails",
         'Rotate the showcase image|video clockwise by this number of degrees.',
         -30, 30, 'spin'),
     VPanel('Thumb mist',
-    Flag('', "", False,
-        "",
-    enables=Color('-thumb-mist-color',
-        'Thumb mist color', 'white',
-        'Color of mist behind thumbnails (not a showcase option).')),
+    Flag('', "", False, "",
+        enables=Color('-thumb-mist-color',
+            'Thumb mist color', 'white',
+            'Color of mist behind thumbnails (not a showcase option).')),
     Flag('-thumb-mist-color', "Transparent thumb mist", False,
         'Do not use a mist behind thumbs (not a showcase option).  Warning: '
         'this may cause contrast problems unless you use a large bold font')
@@ -464,11 +463,7 @@ burning = Panel("Burning",
 ### --------------------------------------------------------------------
 
 todisc = Application('todisc',
-#<<<<<<< .mine
     [main, general, menu, submenus, thumbnails, text, authoring, burning])
-#=======
-    [main, general, menu, thumbnails, text, submenus, authoring, burning])
-#>>>>>>> .r2279
 gui = GUI("todiscgui", [todisc], 600, 800)
 gui.run()
 
