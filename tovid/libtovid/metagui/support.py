@@ -10,7 +10,6 @@ __all__ = [
     'ComboBox',
     'FontChooser',
     'ConfigWindow',
-    'Tabs',
     'ScrolledWindow',
     'Style']
 
@@ -415,95 +414,6 @@ class ConfigWindow (tkSimpleDialog.Dialog):
                            self.fontsize.variable.get(),
                            self.fontstyle.variable.get())
         self.result = self.style
-
-### --------------------------------------------------------------------
-
-class Tabs (tk.Frame):
-    """A tabbed frame, with tab buttons that switch between several frames.
-    """
-    def __init__(self, master, side='top'):
-        """Create a tabbed frame widget.
-        
-            master: Tkinter widget to draw the Tabs in
-            side:   Side to show the tab controls on
-                    ('top', 'bottom', 'left', or 'right')
-        
-        Tabs are added to the tab bar via the add() method. The added frames
-        should have the Tabs frame as their master. For example:
-        
-            tabs = Tabs(self)
-            spam = tk.Frame(tabs, ...)
-            tabs.add("Spam", spam)
-            eggs = tk.Frame(tabs, ...)
-            tabs.add("Eggs", eggs)
-            tabs.draw()
-            tabs.pack(...)
-        
-        Tabs are drawn in the order they are added, with the first being
-        initially active.
-        """
-        tk.Frame.__init__(self, master)
-        self.side = side
-        self.labels = []
-        self.frames = []
-        self.selected = tk.IntVar()
-        self.index = 0
-    
-    def add(self, label, frame):
-        """Add a new tab for the given frame.
-
-            label: Label shown in the tab
-            frame: tk.Frame shown when the tab is activated
-        """
-        self.labels.append(label)
-        self.frames.append(frame)
-
-    def draw(self):
-        """Draw the tab bar and the first enclosed frame.
-        """
-        # Tkinter configuration common to all tab buttons
-        config = {
-            'variable': self.selected,
-            'command': self.change,
-            'selectcolor': 'white',
-            'relief': 'sunken',
-            'offrelief': 'groove',
-            'indicatoron': 0,
-            'padx': 4, 'pady': 4
-            }
-        # Frame to hold tab buttons
-        self.buttons = tk.Frame(self)
-        # For tabs on left or right, pack tab buttons vertically
-        if self.side in ['left', 'right']:
-            button_side = 'top'
-            bar_anchor = 'n'
-            bar_fill = 'y'
-        else:
-            button_side = 'left'
-            bar_anchor = 'w'
-            bar_fill = 'x'
-        # Tab buttons, numbered from 0
-        for index, label in enumerate(self.labels):
-            button = tk.Radiobutton(self.buttons, text=label, value=index,
-                                    **config)
-            button.pack(anchor='nw', side=button_side,
-                        fill='both', expand=True)
-        self.buttons.pack(anchor=bar_anchor, side=self.side,
-                          fill=bar_fill)
-        # Activate the first tab
-        self.selected.set(0)
-        self.change()
-
-    def change(self):
-        """Switch to the selected tab's frame.
-        """
-        # Unpack the existing frame
-        self.frames[self.index].pack_forget()
-        # Pack the newly-selected frame
-        selected = self.selected.get()
-        self.frames[selected].pack(side=self.side, fill='both', expand=True)
-        # Remember this tab's index
-        self.index = selected
 
 ### --------------------------------------------------------------------
 

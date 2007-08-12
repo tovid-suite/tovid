@@ -10,6 +10,7 @@ __all__ = [
     'VPanel',
     'Dropdowns',
     'Drawer',
+    'Tabs',
     'Application',
     'GUI']
 
@@ -18,7 +19,6 @@ import Tkinter as tk
 
 from widget import Widget
 from control import Control, MissingOption
-from support import Tabs
 from libtovid.cli import Command
 
 ### --------------------------------------------------------------------
@@ -221,6 +221,77 @@ class Drawer (Widget):
         return self.panel.get_args()
 
 ### --------------------------------------------------------------------
+
+class Tabs (Widget):
+    """A widget with tab buttons that switch between several other widgets.
+    """
+    def __init__(self, *panels, **kwargs):
+        """Create tabs that switch between several Panels.
+        """
+        Widget.__init__(self)
+        self.index = 0
+        self.panels = []
+        for panel in panels:
+            if not isinstance(panel, Panel):
+                raise TypeError("Tabs may only contain Panels")
+            self.panels.append(panel)
+
+    def add(self, panel):
+        """Add the given Panel to the Tabs.
+        """
+        self.panels.append(panel)
+
+    def draw(self, master, side='top'):
+        """Draw the Tabs widget in the given master."""
+        Widget.draw(self, master)
+        self.selected = tk.IntVar()
+        self.side = side
+        # Tkinter configuration common to all tab buttons
+        config = {
+            'variable': self.selected,
+            'command': self.change,
+            'selectcolor': 'white',
+            'relief': 'sunken',
+            'offrelief': 'groove',
+            'indicatoron': 0,
+            'padx': 4, 'pady': 4
+            }
+        # Frame to hold tab buttons
+        self.buttons = tk.Frame(self)
+        # For tabs on left or right, pack tab buttons vertically
+        if self.side in ['left', 'right']:
+            button_side = 'top'
+            bar_anchor = 'n'
+            bar_fill = 'y'
+        else:
+            button_side = 'left'
+            bar_anchor = 'w'
+            bar_fill = 'x'
+        # Tab buttons, numbered from 0
+        for index, panel in enumerate(self.panels):
+            button = tk.Radiobutton(self.buttons, text=panel.title,
+                                    value=index, **config)
+            button.pack(anchor='nw', side=button_side,
+                        fill='both', expand=True)
+            panel.draw(self)
+        self.buttons.pack(anchor=bar_anchor, side=self.side,
+                          fill=bar_fill)
+        # Activate the first tab
+        self.selected.set(0)
+        self.change()
+
+    def change(self):
+        """Switch to the selected tab's frame.
+        """
+        # Unpack the existing panel
+        self.panels[self.index].pack_forget()
+        # Pack the newly-selected panel
+        selected = self.selected.get()
+        self.panels[selected].pack(side=self.side, fill='both', expand=True)
+        # Remember this tab's index
+        self.index = selected
+
+### --------------------------------------------------------------------
 import tkMessageBox
 
 class Application (Widget):
@@ -254,11 +325,8 @@ class Application (Widget):
             panel.pack(anchor='n', fill='x', expand=True)
         # Multi-panel (tabbed) application
         else:
-            tabs = Tabs(self)
-            for panel in self.panels:
-                panel.draw(tabs)
-                tabs.add(panel.title, panel)
-            tabs.draw()
+            tabs = Tabs(*self.panels)
+            tabs.draw(self)
             tabs.pack(anchor='n', fill='x', expand=True)
         # "Run" button
         button = tk.Button(self, text="Run %s now" % self.program,
