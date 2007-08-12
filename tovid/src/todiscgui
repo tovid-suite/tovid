@@ -473,6 +473,9 @@ burning = Panel("Burning",
         'Device to use for burning', '/dev/dvdrw',
         'Select or type your burning device (default: /dev/dvdrw)',
         'load', 'Select or type your burning device'),
+    Tabs(Panel('A', Flag(), Filename(), Number()),
+         Panel('B', Color(), Font()),
+         Panel('C', Filename(), Color(), Number()))
 )
 
 ### --------------------------------------------------------------------
