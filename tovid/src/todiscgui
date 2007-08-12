@@ -213,11 +213,6 @@ menu = Panel("Menu",
 )
 
 thumbnails = Panel("Thumbnails",
-    Flag('-3dthumbs',
-        'Create 3D thumbs', False,
-        'This will give an illusion of 3D to the thumbnails: '
-        'dynamic lighting on rounded thumbs, and a  raised '
-        ' effect on rectangular thumbs'),
     Choice('-thumb-shape',
         'Thumb shape', 'normal',
         'Apply a shaped transparency mask to thumbnail videos. '
@@ -237,6 +232,11 @@ thumbnails = Panel("Thumbnails",
         'creating transparency at the edges.  Choose float or '
         'integer values between 0.1 and 5.0',
         1, 5, 'spin'),
+    Flag('-3dthumbs',
+        'Create 3D thumbs', False,
+        'This will give an illusion of 3D to the thumbnails: '
+        'dynamic lighting on rounded thumbs, and a  raised '
+        ' effect on rectangular thumbs'),
     List('-rotate-thumbs',
         'Rotate Thumbs (list)', '',
         'Rotate  thumbs  the  given amount in degrees - can be positive '
@@ -275,10 +275,10 @@ submenus = Panel("Submenus",
         'Submenu links lead to chapter points.'),
     VPanel('Titles',
         List('-submenu-titles',
-            'Titles', '',
+            '', '',
             'Space-separated list of quoted submenu titles.'),
         Color('-submenu-title-color',
-            'Font color "  "', '#CDC0B0',
+            'Font color', '#CDC0B0',
             'The font color to use for submenu title(s)'),
         Color('-submenu-stroke-color',
             'Stroke color', '',
@@ -384,40 +384,56 @@ text = Panel("Text/Font",
 )
 
 authoring = Panel("Authoring",
-    List('-chapters',
-        'Chapters', '',
-        'Single value/string or list.  '
-        'Can be an integer for "# of chapters", '
-        'or a comma separated string of chapter points in HH:MM:SS format.  '
-        'The first HH:MM:SS format chapter MUST be 00:00:00 '
-        'If using grouped videos and HH:MM:SS format '
-        'link grouped chapter points with a "+" separator.'),
-    List('',
-        'Group videos', '',
-        'For each video group, you will need to use an integer for the '
-        'number of the 1st video in the group, as well as the path to the '
-        'videos that will be grouped with it.  Each group will need to be '
-        'preceeded with the "-group" switch.  Example: -group 2 2b.mpg '
-        '2c.mpg -group 4 4b.mpg 4c.mpg. See man todisc for details.'),
-    Flag('-chain-videos',
-        'Chain videos together', False,
-        'This option will "chain" videos together so they play sequentially '
-        'until the last, which will return to the menu.  It is also possible '
-        'to specify individual videos to behave like this, but you will need '
-        'to use the "Custom todisc options" box under "General" tab.  See '
-        'man todisc for details.'),
-    Choice('-widescreen',
-        'Widescreen', None,
-        'This will output a <video widescreen=nopanscan /> tag (for example) '
-        'for the dvdauthor xml file.  It affects all videos in the titleset.  '
-        'Use in conjunction with "Aspect ratio" if your dvd player is '
-        'cropping your videos',
-        'nopanscan|noletterbox'),
-    Choice('-aspect',
-        'Aspect ratio', '4:3',
-        'This will output a <video aspect WIDTH:HEIGHT /> tag for the '
-        'dvdauthor xml file.  It will affect all videos in the titleset.',
-        '4:3|16:9'),
+    VPanel('Play control',
+        List('-chapters',
+            'Chapters', '',
+            'Single value/string or list.  '
+            'Can be an integer for "# of chapters", '
+            'or a comma separated string of chapter points in HH:MM:SS format.  '
+            'The first HH:MM:SS format chapter MUST be 00:00:00 '
+            'If using grouped videos and HH:MM:SS format '
+            'link grouped chapter points with a "+" separator.'),
+        List('',
+            'Group videos', '',
+            'For each video group, you will need to use an integer for the '
+            'number of the 1st video in the group, as well as the path to the '
+            'videos that will be grouped with it.  Each group will need to be '
+            'preceeded with the "-group" switch.  Example: -group 2 2b.mpg '
+            '2c.mpg -group 4 4b.mpg 4c.mpg. See man todisc for details.'),
+        Flag('-chain-videos',
+            'Chain videos together', False,
+            'This option will "chain" videos together so they play sequentially '
+            'until the last, which will return to the menu.  It is also possible '
+            'to specify individual videos to behave like this, but you will need '
+            'to use the "Custom todisc options" box under "General" tab.  See '
+            'man todisc for details.'),
+        Flag('-playall',
+            '"Play all" button', False,
+            'Create a "Play All" button that lets you jump to the 1st title and '
+            'play all the videos in sucession before returning to the main menu.'),
+        Number('-loop',
+            'Pause', 10,
+            'Pause in seconds at end of menu.  Or leave this value at "10" '
+            'and use the "Indefinate pause item below.',
+            0, 30),
+        Flag('-loop',
+            'Indefinite pause', False,
+            'Pause indefinitely at the end of the menu.')
+    ),
+    VPanel('Aspect',
+        Choice('-widescreen',
+            'Widescreen', None,
+            'This will output a <video widescreen=nopanscan /> tag (for example) '
+            'for the dvdauthor xml file.  It affects all videos in the titleset.  '
+            'Use in conjunction with "Aspect ratio" if your dvd player is '
+            'cropping your videos',
+            'nopanscan|noletterbox'),
+        Choice('-aspect',
+            'Aspect ratio', '4:3',
+            'This will output a <video aspect WIDTH:HEIGHT /> tag for the '
+            'dvdauthor xml file.  It will affect all videos in the titleset.',
+            '4:3|16:9'),
+    ),
     VPanel('Language(s)',
         List('-audio-lang',
             'Audio', '',
@@ -444,19 +460,7 @@ authoring = Panel("Authoring",
             'For spumux outlinewidth variable.  This option may help if spumux '
             'fails because of a large gap between button words or characters.',
             0, 20),
-    ),
-    Number('-loop',
-        'Pause', 10,
-        'Pause in seconds at end of menu.  Or leave this value at "10" '
-        'and use the "Indefinate pause item below.',
-        0, 30),
-    Flag('-loop',
-        'Indefinite pause', False,
-        'Pause indefinitely at the end of the menu.'),
-    Flag('-playall',
-        '"Play all" button', False,
-        'Create a "Play All" button that lets you jump to the 1st title and '
-        'play all the videos in sucession before returning to the main menu.')
+    )
 )
 burning = Panel("Burning",
     Flag('-burn',
