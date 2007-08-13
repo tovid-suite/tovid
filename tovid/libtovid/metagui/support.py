@@ -335,7 +335,7 @@ class Style:
         root.option_add("*Menu.relief", self.relief)
         # Mouse-over effects
         root.option_add("*Button.overRelief", 'raised')
-        root.option_add("*Checkbutton.overRelief", 'groove')
+        root.option_add("*Checkbutton.overRelief", 'raised')
         root.option_add("*Radiobutton.overRelief", 'raised')
 
     def save(self, filename):
