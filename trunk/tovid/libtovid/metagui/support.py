@@ -336,7 +336,7 @@ class Style:
         # Mouse-over effects
         root.option_add("*Button.overRelief", 'raised')
         root.option_add("*Checkbutton.overRelief", 'groove')
-        root.option_add("*Radiobutton.overRelief", 'groove')
+        root.option_add("*Radiobutton.overRelief", 'raised')
 
     def save(self, filename):
         """Save the current style settings to an .ini-formatted config file.
