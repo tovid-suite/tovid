@@ -8,7 +8,6 @@ special-purpose GUI widget for setting a value such as a number or filename.
 
 """
 
-
 __all__ = [
     'Control',
     # Control subclasses
@@ -83,6 +82,8 @@ class Control (Widget):
         
             pull=Control(...):  Mirror value from another Control
             required=True:      Required option, must be set or run will fail
+            filter=function:    Text-filtering function for pulled values
+            toggles=True:       May be toggled on and off
         """
         Widget.__init__(self)
         self.vartype = vartype
@@ -92,20 +93,28 @@ class Control (Widget):
         self.default = default or vartype()
         self.help = help
         self.kwargs = kwargs
+
+        # TODO: Find a way to condense/separate keyword handling
         # Controls a mandatory option?
         self.required = False
         if 'required' in kwargs:
-            self.required = kwargs['required']
+            self.required = bool(kwargs['required'])
+        # Has an enable/disable toggle button
+        self.toggles = False
+        if 'toggles' in self.kwargs:
+            self.toggles = bool(self.kwargs['toggles'])
         # List of Controls to copy updated values to
         self.copies = []
         if 'pull' in self.kwargs:
-            pull_from = self.kwargs['pull']
-            if not isinstance(pull_from, Control):
+            if not isinstance(self.kwargs['pull'], Control):
                 raise TypeError("Can only pull values from a Control.")
+            pull_from = self.kwargs['pull']
             pull_from.copy_to(self)
         # Filter expression when pulling from another Control
         self.filter = None
         if 'filter' in self.kwargs:
+            if not callable(self.kwargs['filter']):
+                raise TypeError("Pull filter must be a function.")
             self.filter = self.kwargs['filter']
 
     def copy_to(self, control):
@@ -136,6 +145,28 @@ class Control (Widget):
         # Draw tooltip
         if self.help != '':
             self.tooltip = ToolTip(self, text=self.help, delay=1000)
+        # Draw enabler checkbox
+        if self.toggles:
+            self.enabled = tk.BooleanVar()
+            self.check = tk.Checkbutton(self, text='',
+                                        variable=self.enabled,
+                                        command=self.enabler)
+            self.check.pack(side='left')
+
+    def post(self):
+        """Post-draw initialization.
+        """
+        if self.toggles:
+            self.enabler()
+
+    def enabler(self):
+        """Enable or disable the Control when the checkbox is toggled.
+        """
+        if self.enabled.get():
+            self.enable()
+        else:
+            self.disable()
+            self.check.config(state='normal')
 
     def get(self):
         """Return the value of the Control's variable."""
@@ -162,8 +193,12 @@ class Control (Widget):
         args = []
         value = self.get()
 
+        # For toggles, return 
+        if self.toggles:
+            if not self.enabled.get():
+                return []
         # Skip if unmodified or empty
-        if value == self.default or value == []:
+        elif value == self.default or value == []:
             # ...unless it's required
             if self.required:
                 raise MissingOption(self.option)
@@ -228,6 +263,7 @@ class Flag (Control):
             # Disable if False
             if not self.default:
                 self.enables.disable()
+        Control.post(self)
 
     def enabler(self):
         """Enable/disable a Control based on the value of the Flag."""
@@ -281,6 +317,7 @@ class FlagGroup (Control):
             flag.draw(frame)
             flag.check.bind('<Button-1>', self.select)
             flag.pack(anchor='nw', side='top')
+        Control.post(self)
 
     def select(self, event):
         """Event handler called when a Flag is selected."""
@@ -355,6 +392,7 @@ class Choice (Control):
             self.combo = ComboBox(self, self.choices.keys(),
                                   variable=self.variable)
             self.combo.pack(side='left')
+        Control.post(self)
 
 ### --------------------------------------------------------------------
 
@@ -405,7 +443,7 @@ class Number (Control):
                                    tickinterval=(self.max - self.min),
                                    variable=self.variable, orient='horizontal')
             self.number.pack(side='left', fill='x', expand=True)
-
+        Control.post(self)
 
     def enable(self, enabled=True):
         """Enable or disable all sub-widgets."""
@@ -444,6 +482,7 @@ class Text (Control):
         tk.Label(self, text=self.label, justify='left').pack(side='left')
         self.entry = tk.Entry(self, textvariable=self.variable)
         self.entry.pack(side='left', fill='x', expand=True)
+        Control.post(self)
 
 ### --------------------------------------------------------------------
 import shlex
@@ -461,6 +500,7 @@ class List (Text):
     def draw(self, master):
         """Draw control widgets in the given master."""
         Text.draw(self, master)
+        Text.post(self)
 
     def get(self):
         """Split text into a list at whitespace boundaries."""
@@ -509,6 +549,7 @@ class Filename (Control):
         self.button = tk.Button(self, text="Browse...", command=self.browse)
         self.entry.pack(side='left', fill='x', expand=True)
         self.button.pack(side='left')
+        Control.post(self)
 
     def browse(self, event=None):
         """Event handler when browse button is pressed"""
@@ -546,7 +587,8 @@ class Color (Control):
         tk.Label(self, text=self.label).pack(side='left')
         self.button = tk.Button(self, text="None", command=self.change)
         self.button.pack(side='left')
-        
+        Control.post(self)
+
     def change(self):
         """Choose a color, and set the button's label and color to match."""
         rgb, color = tkColorChooser.askcolor(self.get())
@@ -580,6 +622,7 @@ class Font (Control):
         self.button = tk.Button(self, textvariable=self.variable,
                                 command=self.choose)
         self.button.pack(side='left', padx=8)
+        Control.post(self)
 
     def choose(self):
         """Open a font chooser to select a font."""
@@ -613,6 +656,7 @@ class TextList (Control):
         self.editbox = tk.Entry(frame, width=30, textvariable=self.selected)
         self.editbox.bind('<Return>', self.setTitle)
         self.editbox.pack(fill='x', expand=True)
+        Control.post(self)
 
     def setTitle(self, event):
         """Event handler when Enter is pressed after editing a title."""
@@ -649,6 +693,7 @@ class FileList (Control):
         self.add.pack(side='left', fill='x', expand=True)
         self.remove.pack(side='left', fill='x', expand=True)
         group.pack(fill='x')
+        Control.post(self)
 
     def select(self, event=None):
         """Event handler when a filename in the list is selected.

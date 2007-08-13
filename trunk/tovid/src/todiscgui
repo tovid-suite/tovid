@@ -80,21 +80,15 @@ main = Panel("Main",
         ),
 
     VPanel('Menu Style',
-        Flag("Showcase style menu", '-showcase', False,
+        Filename('Showcase menu', '-showcase', '',
             "Arrange menu links along the outside edges, to leave room for"
             " an optional 'showcase' image or video.",
-            enables=Filename('Showcase', '', '',
-               'Image or video file to be showcased in a large central frame',
-               'load', 'Select an image or video file.')
-        ),
-        Flag("Use text menu links (no thumbnails)", '-textmenu', False,
-            'Showcase style text only menu.  Optionally use a "showcase" '
-            'image/video, or static/animated background.  See also '
-            'quick-menu and switched menu below.',
-            enables=Number('Titles per column', '', 13,
-                'Maximum number of titles per column',
-                1, 50)
-        ),
+            'load', 'Select an image or video file.',
+            toggles=True),
+        Number('Text menu links', '-textmenu', 13,
+            "Use text links from the main menu instead of thumbnails."
+            " The number indicates the number of rows in each column of text.",
+            1, 50, toggles=True),
         HPanel('',
             Flag("Quick menu", '-quick-menu', False,
                 'Ten times faster than normal showcase animation.  A showcase '

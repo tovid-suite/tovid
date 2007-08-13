@@ -291,6 +291,14 @@ class Tabs (Widget):
         # Remember this tab's index
         self.index = selected
 
+    def get_args(self):
+        """Return command-line arguments from each of the tab Panels.
+        """
+        args = []
+        for panel in self.panels:
+            args += panel.get_args()
+        return args
+
 ### --------------------------------------------------------------------
 import tkMessageBox
 
