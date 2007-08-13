@@ -264,8 +264,38 @@ submenus = Panel("Submenus",
 )
 
 text = Panel("Text/Font",
-    VPanel('Video title(s)',
-        HPanel('',
+    Tabs(
+        VPanel('Menu title', 
+            Font('Font', '-menu-font', 'Helvetica',
+                'The font to use for the menu title'),
+            Number('Font size', '-menu-fontsize', 20,
+                'The font size to use for the menu title',
+                0, 80),
+            Color('Color', '-title-color', '#CDC0B0',
+                'The font color to use for the menu title'),
+            Color('Stroke color', '-stroke-color', 'gray',
+                'Outline color for the main menu font.',
+                initialcolor="gray"),
+            HPanel('Title position',
+                Choice('', '-menu-title-geo', 'south',
+                    'The position of the menu title',
+                    'north|south|west|east|center'),
+                Text('Offset', '-menu-title-offset', '+0+50',
+                    'Menu title position as an offset (in pixels) from '
+                    '"Menu title position" above.  Use +X+Y syntax.  This value '
+                    'is applied to the video *before* is is scaled.'),
+            ),
+            Panel("Mist",
+                Flag('Text mist', '-text-mist', False,
+                    'Use a "mist" behind the menu title (helps with contrast).'),
+                Color('Text mist color', '-text-mist-color', '',
+                    'Color of the mist behind the menu title.'),
+                Number('Text mist opacity', '-text-mist-opacity', 60,
+                    'The opacity of the mist behind the menu title.',
+                    1, 100, 'spin')
+                ),
+            ),
+        VPanel('Video title(s)',
             Font('Font', '-thumb-font', 'Helvetica',
                 'The font to use for the video titles'),
             Number('Font size', '-thumb-fontsize', 12,
@@ -273,58 +303,24 @@ text = Panel("Text/Font",
                 'Default size varies depending on options chosen, '
                 'unless you change this value',
                 0, 80),
+            Color('Color', '-thumb-text-color', '#C6C6C6',
+                'The font color to use for the video titles'),
+            Choice('Video(s) title alignment', '-showcase-titles-align', 'west',
+                'This is a showcase style only option.  The default is to center '
+                'the text above the thumbnails.  This option will align the titles '
+                ' either to the left (west) or right (east).',
+                'west|east|center'),
+            Number('Space between Textmenu titles (pixels)', '-title-gap', 10,
+                'Leave this much vertical gap between titles.  '
+                'Default is 10 for line buttons, 15 for text-rect buttons.  '
+                'This value is applied before the menu is scaled.',
+                0, 400, 'spin'),
+            Number('Start Textmenu titles at: (pixels)', '-text-start', 50,
+                'The text menu will start at this pixel in the Y-axis (north/south).  '
+                'This value is applied before the menu is scaled.',
+                0, 460, 'spin')
         ),
-        Color('Color', '-thumb-text-color', '#C6C6C6',
-            'The font color to use for the video titles'),
-        Choice('Video(s) title alignment', '-showcase-titles-align', 'west',
-            'This is a showcase style only option.  The default is to center '
-            'the text above the thumbnails.  This option will align the titles '
-            ' either to the left (west) or right (east).',
-            'west|east|center'),
-        Number('Space between Textmenu titles (pixels)', '-title-gap', 10,
-            'Leave this much vertical gap between titles.  '
-            'Default is 10 for line buttons, 15 for text-rect buttons.  '
-            'This value is applied before the menu is scaled.',
-            0, 400, 'spin'),
-        Number('Start Textmenu titles at: (pixels)', '-text-start', 50,
-            'The text menu will start at this pixel in the Y-axis (north/south).  '
-            'This value is applied before the menu is scaled.',
-            0, 460, 'spin')
-    ),
-    VPanel('Menu title', 
-        HPanel('',
-            Font('Font', '-menu-font', 'Helvetica',
-                'The font to use for the menu title'),
-            Number('Font size', '-menu-fontsize', 20,
-                'The font size to use for the menu title',
-                0, 80),
-        ),
-        HPanel('',
-            Color('Color', '-title-color', '#CDC0B0',
-                'The font color to use for the menu title'),
-            Color('Stroke color', '-stroke-color', 'gray',
-                'Outline color for the main menu font.',
-                initialcolor="gray"),
-        ),
-        HPanel('Title position',
-            Choice('', '-menu-title-geo', 'south',
-                'The position of the menu title',
-                'north|south|west|east|center'),
-            Text('Offset', '-menu-title-offset', '+0+50',
-                'Menu title position as an offset (in pixels) from '
-                '"Menu title position" above.  Use +X+Y syntax.  This value '
-                'is applied to the video *before* is is scaled.'),
-        ),
-        Panel("Mist",
-            Flag('Text mist', '-text-mist', False,
-                'Use a "mist" behind the menu title (helps with contrast).'),
-            Color('Text mist color', '-text-mist-color', '',
-                'Color of the mist behind the menu title.'),
-            Number('Text mist opacity', '-text-mist-opacity', 60,
-                'The opacity of the mist behind the menu title.',
-                1, 100, 'spin')
-            ),
-        ),
+    )
 )
 
 authoring = Panel("Authoring",
