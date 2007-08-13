@@ -85,7 +85,7 @@ main = Panel("Main",
             " an optional 'showcase' image or video.",
             'load', 'Select an image or video file.',
             toggles=True),
-        Number('Text menu links', '-textmenu', 13,
+        Number('Use text menu links', '-textmenu', 13,
             "Use text links from the main menu instead of thumbnails."
             " The number indicates the number of rows in each column of text.",
             1, 50, toggles=True),
@@ -95,11 +95,11 @@ main = Panel("Main",
                 'image is required unless doing switched menus.  No video '
                 'thumbs are made.  Not compatible with wave or rotate options'),
             Flag("Switched menus", '-switched-menus', False,
-                'This will make a showcase style menu with text menu links.  '
+                'This makes a showcase style menu with text menu links.  '
                 'The showcased VIDEO or IMAGE will be of each video "title", '
                 'and will change as you press the up/down keys on your remote.  '
-                'Do not select showcase or a showcase file for this option.   '
-                'Use with quick menu option above for a huge speed up !'),
+                'Do not select "Showcase menu" for this option.  '
+                'Use with "Quick menu" option for a huge speed up !'),
         ),
     ),
     VPanel('Menu backgrounds',
@@ -134,7 +134,7 @@ menu = Panel("Menu",
     Number('Menu length', '-menu-length', 20,
         'Duration of menu in seconds.  The length of the menu will also set '
         'the length of background audio for a static menu',
-        0, 120),
+        0, 120, toggles=True),
     Number('Menu audio fade', '-menu-audio-fade', 1,
         'Number  of  sec to fade given menu audio in and out '
         '(default: 1.0 seconds). Use a fade of "0" for no fade.',
@@ -145,10 +145,11 @@ menu = Panel("Menu",
         '(and mist if called for), then the menu thumbs.  '
         'The fadeout is in reverse order'),
     Filename('Intro video', '-intro', '',
-        'Video to play before showing the main menu',
+        'Video to play before showing the main menu.  At present this must '
+        'be a DVD compatible video at the correct resolution etc.  Only 4:3 '
+        'aspect is supported.',
         'load', 'Select a video file'),
-    Choice('-align',
-        'Montage alignment', 'north',
+    Choice('Montage alignment', '-align', 'north',
         'Controls positioning of the thumbnails and their titles',
         'north|south|east|west|center'),
         Panel('Seek times',
@@ -162,7 +163,7 @@ menu = Panel("Menu",
             Number('Background audio', '-bgaudio-seek', 2,
                 'Play background audio from the given seek time (seconds)',
                 0, 3600),
-            Number('Showcase video', '-showcase-seek', 2,
+            Number('Showcased video', '-showcase-seek', 2,
                 'Play showcase video from the given seek time (seconds).  '
                 'Note: switched menus uses the value(s) from "Seek time" '
                 'option, above, not this one',
@@ -177,7 +178,8 @@ menu = Panel("Menu",
         'none|glass'),
     Text('Showcase image position (XxY)', '-showcase-geo', '',
         'This is a showcase style only option.  Enter the position of the '
-        'top left corner of the showcase image: e.g. "200x80"'),
+        'top left corner of the showcase image: e.g. "200x80".  This '
+        'value is applied to the video *before* is is scaled.'),
 )
 
 thumbnails = Panel("Thumbnails",
@@ -246,8 +248,9 @@ submenus = Panel("Submenus",
             'Use a single file for all submenus, or 1 file per submenu',),
         VPanel('',
             Number('Length', '-submenu-audio-length', 30,
-                'Background audio length for static submenus.  The default is '
-                'to use the full length of the supplied audio ( -bgaudio ).',
+                'Background audio length for static submenus.  Default: use '
+                'the full length of the supplied audio file.  Animated '
+                'submenu length is NOT adjustable: 10 sec NTSC, 12 sec PAL.',
                 0, 120),
             Number('Fade', '-submenu-audio-fade', 1,
                 'Number of sec to fade given sub-menu audio in and out.  '
