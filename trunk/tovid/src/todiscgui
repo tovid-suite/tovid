@@ -98,8 +98,8 @@ main = Panel("Main",
         HPanel('',
             Flag("Quick menu", '-quick-menu', False,
                 'Ten times faster than normal showcase animation.  A showcase '
-                'image is required unless doing switched menus.  No video thumbs '
-                'are made.  Not compatible with wave or rotate options'),
+                'image is required unless doing switched menus.  No video '
+                'thumbs are made.  Not compatible with wave or rotate options'),
             Flag("Switched menus", '-switched-menus', False,
                 'This will make a showcase style menu with text menu links.  '
                 'The showcased VIDEO or IMAGE will be of each video "title", '
@@ -227,8 +227,8 @@ thumbnails = Panel("Thumbnails",
             enables=Color('Thumb mist color', '-thumb-mist-color', 'white',
                 'Color of mist behind thumbnails (not a showcase option).')),
         Flag("No thumb mist", '-thumb-mist-color', False,
-            'Do not use a mist behind thumbs (not a showcase option).  Warning: '
-            'this may cause contrast problems unless you use a large bold font')
+            'Do not use mist behind thumbs (not a showcase option).  Warning: '
+            'might cause contrast problems unless you use a large bold font')
     ),
     Flag('Arrange thumb montage in 1 row of 3 thumbs', '-tile3x1', False,
         'Use a montage tile of 3x1 instead of the usual 2x2 (3 videos only).')
@@ -282,12 +282,12 @@ text = Panel("Text/Font",
                     'north|south|west|east|center'),
                 Text('Offset', '-menu-title-offset', '+0+50',
                     'Menu title position as an offset (in pixels) from '
-                    '"Menu title position" above.  Use +X+Y syntax.  This value '
-                    'is applied to the video *before* is is scaled.'),
+                    '"Menu title position" above.  Use +X+Y syntax.  This '
+                    'value is applied to the video *before* is is scaled.'),
             ),
             Panel("Mist",
                 Flag('Text mist', '-text-mist', False,
-                    'Use a "mist" behind the menu title (helps with contrast).'),
+                    'Use "mist" behind the menu title (helps with contrast).'),
                 Color('Text mist color', '-text-mist-color', '',
                     'Color of the mist behind the menu title.'),
                 Number('Text mist opacity', '-text-mist-opacity', 60,
@@ -306,9 +306,9 @@ text = Panel("Text/Font",
             Color('Color', '-thumb-text-color', '#C6C6C6',
                 'The font color to use for the video titles'),
             Choice('Video(s) title alignment', '-showcase-titles-align', 'west',
-                'This is a showcase style only option.  The default is to center '
-                'the text above the thumbnails.  This option will align the titles '
-                ' either to the left (west) or right (east).',
+                'This is a showcase style only option.  Default is to center '
+                'the text above the thumbnails.  This option will align the '
+                'titles either to the left (west) or right (east).',
                 'west|east|center'),
             Number('Space between Textmenu titles (pixels)', '-title-gap', 10,
                 'Leave this much vertical gap between titles.  '
@@ -316,7 +316,7 @@ text = Panel("Text/Font",
                 'This value is applied before the menu is scaled.',
                 0, 400, 'spin'),
             Number('Start Textmenu titles at: (pixels)', '-text-start', 50,
-                'The text menu will start at this pixel in the Y-axis (north/south).  '
+                'Titles will start at this pixel in the vertical axis.  '
                 'This value is applied before the menu is scaled.',
                 0, 460, 'spin')
         ),
@@ -327,8 +327,8 @@ authoring = Panel("Authoring",
     VPanel('Play control',
         List('Chapters', '-chapters', '',
             'Single value/string or list.  '
-            'Can be an integer for "# of chapters", '
-            'or a comma separated string of chapter points in HH:MM:SS format.  '
+            'Can be an integer for "# of chapters", or a comma '
+            'separated string of chapter points in HH:MM:SS format.  '
             'The first HH:MM:SS format chapter MUST be 00:00:00 '
             'If using grouped videos and HH:MM:SS format '
             'link grouped chapter points with a "+" separator.'),
@@ -339,14 +339,14 @@ authoring = Panel("Authoring",
             'preceeded with the "-group" switch.  Example: -group 2 2b.mpg '
             '2c.mpg -group 4 4b.mpg 4c.mpg. See man todisc for details.'),
         Flag('Chain videos together', '-chain-videos', False,
-            'This option will "chain" videos together so they play sequentially '
-            'until the last, which will return to the menu.  It is also possible '
-            'to specify individual videos to behave like this, but you will need '
-            'to use the "Custom todisc options" box under "General" tab.  See '
-            'man todisc for details.'),
+            'This option will "chain" videos so they play sequentially '
+            'until the last, which will return to the menu.  You can also '
+            'specify individual videos to behave like this, but you will need '
+            'to use the "Custom todisc options" box under "General" tab.  '
+            'See man todisc for details.'),
         Flag('"Play all" button', '-playall', False,
-            'Create a "Play All" button that lets you jump to the 1st title and '
-            'play all the videos in sucession before returning to the main menu.'),
+            'Create a "Play All" button that jumps to the 1st title and plays '
+            'all the videos in sucession before returning to the main menu.'),
         Number('Pause', '-loop', 10,
             'Pause in seconds at end of menu.  Or leave this value at "10" '
             'and use the "Indefinate pause item below.',
@@ -356,10 +356,10 @@ authoring = Panel("Authoring",
     ),
     VPanel('Aspect',
         Choice('Widescreen', '-widescreen', None,
-            'This will output a <video widescreen=nopanscan /> tag (for example) '
-            'for the dvdauthor xml file.  It affects all videos in the titleset.  '
-            'Use in conjunction with "Aspect ratio" if your dvd player is '
-            'cropping your videos',
+            'This will output a <video widescreen=nopanscan /> tag '
+            '(for example) for the dvdauthor xml file.  It affects all '
+            'videos in the titleset.  Use in conjunction with "Aspect ratio" '
+            'if your dvd player is cropping your videos',
             'nopanscan|noletterbox'),
         Choice('Aspect ratio', '-aspect', '4:3',
             'This will output a <video aspect WIDTH:HEIGHT /> tag for the '
@@ -374,16 +374,17 @@ authoring = Panel("Authoring",
     ),
     VPanel('Buttons',
         Choice('Style', '-button-style', 'rect',
-            'Style or shape of the buttons seen when playing the DVD menu.  '
-            '"rect" draws a rectangle around the thumbs, "text" uses the title '
-            'text, and "text-rect" draws a rectangle around the title text.',
+            'Style or shape of the buttons seen when playing the DVD '
+            'menu.  "rect" draws a rectangle around the thumbs, "text" uses '
+            'the title text, and "text-rect" draws a rectangle '
+            'around the title text.',
             'rect|text|text-rect'),
         Color('Highlight color', '-highlight-color', '',
-            'Color to use for the menu buttons the dvd remote uses to navigate.'),
+            'Color for the menu buttons the dvd remote uses to navigate.'),
         Color('Selection color', '-select-color', '',
-            'Color to use for the menu buttons the dvd remote uses to select.'),
+            'Color for the menu buttons the dvd remote uses to select.'),
         Number('Outlinewidth for spumux', '-outlinewidth', 4,
-            'For spumux outlinewidth variable.  This option may help if spumux '
+            'For spumux outlinewidth variable.  This option helps if spumux '
             'fails because of a large gap between button words or characters.',
             0, 20),
     )
