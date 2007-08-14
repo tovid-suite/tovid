@@ -289,7 +289,7 @@ runtime_error()
 
 vid_length()
 {
-    mencoder -nosound -mc 0 -oac pcm -ovc copy -o /dev/null "$1" 2>/dev/null |
+    mencoder -nosound -mc 0 -oac pcm -ovc copy -o /dev/null "$1" 2>> "$LOG_FILE" |
     awk 'END{print $(NF-3)}'
 }
 audio_length()
@@ -4231,11 +4231,12 @@ fi
 if ! $TITLESET_MODE && ! $DO_TITLESETS; then
     yecho "Creating a blank mpeg for the vmgm menu"
     convert  -resize $VIDSIZE! xc:"#161514" "$WORK_DIR/dummy.jpg"
-    ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p -n 1 -l 30 -L 1 -b1 \
+    ENC_CMD1=(jpeg2yuv -v 1 -f $FRAME_RATE -I p -n 1 -l 30 -L 1 -b1 \
     -j "$WORK_DIR/dummy.jpg")
-    ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
+    ENC_CMD2=(ffmpeg -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
     -tvstd $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
-    if ! ${ENC_CMD1[@]} | ${ENC_CMD2[@]} 2>&1 |strings  >> "$LOG_FILE"; then
+    echo "Running: ${ENC_CMD1[@]} | ${ENC_CMD2[@]}"|strings|fold -bs | tee -a "$LOG_FILE"
+    if ! ${ENC_CMD1[@]} 2>> "$LOG_FILE"  | ${ENC_CMD2[@]} 2>&1 |strings  >> "$LOG_FILE"; then
         runtime_error
     fi
     VMGM_TIME=$(vid_length "$WORK_DIR/dummy.m2v")
