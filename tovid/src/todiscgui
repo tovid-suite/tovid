@@ -79,37 +79,50 @@ main = Panel("Main",
                 'Create a submenu for each video title; takes more time.'))
         ),
 
-    VPanel('Menu Style',
-        Filename('Showcase menu', '-showcase', '',
-            "Arrange menu links along the outside edges, to leave room for"
-            " an optional 'showcase' image or video.",
-            'load', 'Select an image or video file.',
-            toggles=True),
-        Number('Use text menu links', '-textmenu', 13,
-            "Use text links from the main menu instead of thumbnails."
-            " The number indicates the number of rows in each column of text.",
-            1, 50, toggles=True),
-        HPanel('',
-            Flag("Quick menu", '-quick-menu', False,
-                'Ten times faster than normal showcase animation.  A showcase '
-                'image is required unless doing switched menus.  No video '
-                'thumbs are made.  Not compatible with wave or rotate options'),
-            Flag("Switched menus", '-switched-menus', False,
-                'This makes a showcase style menu with text menu links.  '
-                'The showcased VIDEO or IMAGE will be of each video "title", '
-                'and will change as you press the up/down keys on your remote.  '
-                'Do not select "Showcase menu" for this option.  '
-                'Use with "Quick menu" option for a huge speed up !'),
+        VPanel('Menu style',
+            FlagGroup('', 'exclusive',
+                Flag('Default', '', True,
+                'Thumbnail menu links, centred, and as large as space '
+                'restraints allow'),
+                Flag('Showcase', '-showcase', False,
+                "Arrange menu links along the outside edges, to leave room for"
+                " an optional 'showcase' image or video.",
+                enables=Filename('', '', '',
+                'Image or video file to be showcased in a large central frame',
+                'load', 'Select an image or video file.'),
+                ),
+            ),
+            HPanel('Showcase options',
+                Flag("Textmenu", '-textmenu', False,
+                'Showcase style text only menu.  Optionally use a "showcase" '
+                'image/video, or static/animated background.  See also '
+                'quick-menu and switched menu.',
+                enables=Number('     columns', '', 13,
+                'Maximum number of titles per column', 1, 50)
+                ),
+                    Flag("Quick menu", '-quick-menu', False,
+                        'Ten times faster than normal showcase animation.  '
+                        'A showcase image is required unless doing switched '
+                        'menus.  No video thumbs are made.  Not compatible '
+                        'with wave or rotate options'),
+                    Flag("Switched menus", '-switched-menus', False,
+                        'This makes a showcase style menu with text menu '
+                        'links.  The showcased VIDEO or IMAGE will be of each '
+                        'video "title", and will change as you press the '
+                        'up/down keys on your remote.  Do not select a '
+                        'showcase file for this option.  Use with '
+                        '"Quick menu" option for a huge speed up !'),
+            ),
         ),
-    ),
     VPanel('Menu backgrounds',
         Filename('Image or video', '-background', '',
-            'Graphic to display in the background of the main menu',
+            'Image or video displayed in the background of the main menu',
             'load', 'Select an image or video file'),
         Filename('Audio', '-bgaudio', '',
-            'Audio file to play while the main menu is showing.  '
-            'If static menu, default is to use audio length of 20 seconds.  ' 
-            'Change with "Menu length" on "Menu" tab.',
+            'Audio file to play while the main menu plays.  '
+            'Static menus use default audio length of 20 seconds.  ' 
+            'Change with "Menu length" on "Menu" tab.  '
+            'Use almost any filetype containing audio.',
             'load', 'Select an audio file')
     ),
     Filename('Output name', '-out', '',
@@ -140,10 +153,10 @@ menu = Panel("Menu",
         '(default: 1.0 seconds). Use a fade of "0" for no fade.',
         0, 10),
     Flag('Fade in menu', '-menu-fade', False,
-        'Fade  the  menu  in  and out The background '
-        ' will fade in first, then title '
-        '(and mist if called for), then the menu thumbs.  '
-        'The fadeout is in reverse order'),
+        'Fade the menu in and out.  The background '
+        ' will fade in first, then the title '
+        '(and mist if called for), then the menu thumbs and/or titles.  '
+        'The fadeout is in reverse order.'),
     Filename('Intro video', '-intro', '',
         'Video to play before showing the main menu.  At present this must '
         'be a DVD compatible video at the correct resolution etc.  Only 4:3 '
@@ -166,7 +179,7 @@ menu = Panel("Menu",
             Number('Showcased video', '-showcase-seek', 2,
                 'Play showcase video from the given seek time (seconds).  '
                 'Note: switched menus uses the value(s) from "Seek time" '
-                'option, above, not this one',
+                'option above, not this one',
                 0, 3600)
         ),
     Choice('Showcase frame style', '-showcase-framestyle', 'none',
@@ -186,7 +199,7 @@ thumbnails = Panel("Thumbnails",
     Choice('Thumb shape', '-thumb-shape', 'normal',
         'Apply a shaped transparency mask to thumbnail videos. '
         'Note: to disable the "mist" background '
-        'behind each thumb, use "none" for -thumb-mist-color.',
+        'behind each thumb, use see "Thumb mist" section below.',
         'normal|oval|plectrum|egg'),
     Number('Thumbnail opacity', '-opacity', 100,
         'Opacity  of thumbnail videos as a percentage '
@@ -219,15 +232,16 @@ thumbnails = Panel("Thumbnails",
         'Rotate the showcase image|video clockwise by this number of degrees.',
         -30, 30, 'spin'),
     VPanel('Thumb mist',
-        Flag('', '', False,
-            enables=Color('Thumb mist color', '-thumb-mist-color', 'white',
-                'Color of mist behind thumbnails (not a showcase option).')),
+        Color('Thumb mist color', '-thumb-mist-color', 'white',
+            'Color of mist behind thumbnails (not a showcase option). ' 
+            'Default if not enabled: white', toggles=True),
         Flag("No thumb mist", '-thumb-mist-color', False,
             'Do not use mist behind thumbs (not a showcase option).  Warning: '
             'might cause contrast problems unless you use a large bold font')
     ),
     Flag('Arrange thumb montage in 1 row of 3 thumbs', '-tile3x1', False,
-        'Use a montage tile of 3x1 instead of the usual 2x2 (3 videos only).')
+        'Use a montage tile of 3x1 instead of the usual 2x2 '
+        '(3 videos only).  Not a showcase option.')
 )
 
 submenus = Panel("Submenus",
@@ -238,9 +252,9 @@ submenus = Panel("Submenus",
         List('', '-submenu-titles', '',
             'Space-separated list of quoted submenu titles.'),
         Color('Font color', '-submenu-title-color', '#CDC0B0',
-            'The font color to use for submenu title(s)'),
-        Color('Stroke color', '-submenu-stroke-color', '',
-            'The color for the sub-menu font outline (stroke).'),
+            'The font color to use for submenu title(s)', toggles=True),
+        Color('Stroke color', '-submenu-stroke-color', 'none',
+            'The color for the submenu font outline (stroke).', toggles=True),
     ),
     HPanel('Audio',
         FileList('File(s)', '-submenu-audio', None,
@@ -253,7 +267,7 @@ submenus = Panel("Submenus",
                 'submenu length is NOT adjustable: 10 sec NTSC, 12 sec PAL.',
                 0, 120),
             Number('Fade', '-submenu-audio-fade', 1,
-                'Number of sec to fade given sub-menu audio in and out.  '
+                'Number of sec to fade given submenu audio in and out.  '
                 ' (default: 1.0 seconds)',
                 0, 10)
         ),
@@ -265,13 +279,13 @@ text = Panel("Text/Font",
         VPanel('Menu title', 
             Font('Font', '-menu-font', 'Helvetica',
                 'The font to use for the menu title'),
-            Number('Font size', '-menu-fontsize', 20,
+            Number('Font size', '-menu-fontsize', 30,
                 'The font size to use for the menu title',
-                0, 80),
+                0, 80, toggles=True),
             Color('Color', '-title-color', '#CDC0B0',
-                'The font color to use for the menu title'),
+                'The font color to use for the menu title', toggles=True),
             Color('Stroke color', '-stroke-color', 'gray',
-                'Outline color for the main menu font.',
+                'Outline color for the main menu font.', toggles=True,
                 initialcolor="gray"),
             HPanel('Title position',
                 Choice('', '-menu-title-geo', 'south',
@@ -279,14 +293,14 @@ text = Panel("Text/Font",
                     'north|south|west|east|center'),
                 Text('Offset', '-menu-title-offset', '+0+50',
                     'Menu title position as an offset (in pixels) from '
-                    '"Menu title position" above.  Use +X+Y syntax.  This '
-                    'value is applied to the video *before* is is scaled.'),
+                    'the N/S/E/W "Title position".  Use +X+Y syntax.  This '
+                    'value is applied to the video *before* is is scaled.', toggles=True),
             ),
             Panel("Mist",
                 Flag('Text mist', '-text-mist', False,
                     'Use "mist" behind the menu title (helps with contrast).'),
-                Color('Text mist color', '-text-mist-color', '',
-                    'Color of the mist behind the menu title.'),
+                Color('Text mist color', '-text-mist-color', 'white',
+                    'Color of the mist behind the menu title.', toggles=True),
                 Number('Text mist opacity', '-text-mist-opacity', 60,
                     'The opacity of the mist behind the menu title.',
                     1, 100, 'spin')
@@ -296,12 +310,11 @@ text = Panel("Text/Font",
             Font('Font', '-thumb-font', 'Helvetica',
                 'The font to use for the video titles'),
             Number('Font size', '-thumb-fontsize', 12,
-                'The font size to use for the video titles'
-                'Default size varies depending on options chosen, '
-                'unless you change this value',
-                0, 80),
+                'The font size to use for the video titles.  '
+                'Default size varies depending on options chosen.',
+                0, 80, toggles=True),
             Color('Color', '-thumb-text-color', '#C6C6C6',
-                'The font color to use for the video titles'),
+                'The font color to use for the video titles', toggles=True),
             Choice('Video(s) title alignment', '-showcase-titles-align', 'west',
                 'This is a showcase style only option.  Default is to center '
                 'the text above the thumbnails.  This option will align the '
@@ -311,7 +324,7 @@ text = Panel("Text/Font",
                 'Leave this much vertical gap between titles.  '
                 'Default is 10 for line buttons, 15 for text-rect buttons.  '
                 'This value is applied before the menu is scaled.',
-                0, 400, 'spin'),
+                0, 400, 'spin', toggles=True),
             Number('Start Textmenu titles at: (pixels)', '-text-start', 50,
                 'Titles will start at this pixel in the vertical axis.  '
                 'This value is applied before the menu is scaled.',
@@ -347,7 +360,7 @@ authoring = Panel("Authoring",
         Number('Pause', '-loop', 10,
             'Pause in seconds at end of menu.  Or leave this value at "10" '
             'and use the "Indefinate pause item below.',
-            0, 30),
+            0, 30, toggles=True),
         Flag('Indefinite pause', '-loop', False,
             'Pause indefinitely at the end of the menu.')
     ),
@@ -376,21 +389,21 @@ authoring = Panel("Authoring",
             'the title text, and "text-rect" draws a rectangle '
             'around the title text.',
             'rect|text|text-rect'),
-        Color('Highlight color', '-highlight-color', '',
-            'Color for the menu buttons the dvd remote uses to navigate.'),
-        Color('Selection color', '-select-color', '',
-            'Color for the menu buttons the dvd remote uses to select.'),
+        Color('Highlight color', '-highlight-color', '#266CAE',
+            'Color for the menu buttons the dvd remote uses to navigate.', toggles=True),
+        Color('Selection color', '-select-color', '"#DE7F7C"',
+            'Color for the menu buttons the dvd remote uses to select.', toggles=True),
         Number('Outlinewidth for spumux', '-outlinewidth', 4,
             'For spumux outlinewidth variable.  This option helps if spumux '
             'fails because of a large gap between button words or characters.',
-            0, 20),
+            0, 20, toggles=True),
     )
 )
 burning = Panel("Burning",
     Flag('Burn project on completion', '-burn', False),
     Number('Burning speed', '-speed', 8,
         'Speed for burning',
-        0, 30),
+        0, 30, toggles=True),
     Filename('Device to use for burning', '-device', '/dev/dvdrw',
         'Select or type your burning device (default: /dev/dvdrw)',
         'load', 'Select or type your burning device')
