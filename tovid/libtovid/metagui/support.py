@@ -356,6 +356,8 @@ class Style:
         # TODO: Save other style settings
         
         # Yuck...
+        dirname, fname = os.path.split(filename)
+        os.mkdir(dirname)
         outfile = open(filename, 'w')
         config.write(outfile)
         outfile.close()
