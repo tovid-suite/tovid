@@ -331,7 +331,8 @@ See also -titleset and -vmgm
 ```
  then the group will consist of bar.mpg  2.mpg, 3.mpg and 4.mpg, and only the title and/or
  thumbnail for bar.mpg will appear in the menu.  You can use -group more than once if you
- have more than one group you are making.
+ have more than one group you are making.  Be sure to quote video filenames if they contain 
+ spaces.
 : -noask, -no-ask
     Skip all interactive questions.  No preview, no re-encoding option, no interactive
     option to use background video for bgaudio.
@@ -451,7 +452,14 @@ See also -titleset and -vmgm
      [movie1] [movie2]
      [movie3]
      This option only comes into play if the number of videos supplied equals 3
-     Otherwise it will be silently ignored. Not used for -showcase-* style either
+     Otherwise it will be silently ignored. Not used for -showcase-* style.
+: -tile-4x1, -tile4x1
+     Use a montage tile of 4x1 instead of the usual 2x2 for 4 videos
+     ie.  [movie1] [movie2] [movie3] [movie4] instead of
+     [movie1] [movie2]
+     [movie3] [movie4] 
+     This option only comes into play if the number of videos supplied equals 4
+     Otherwise it will be silently ignored. Not used for -showcase-* style.
 : -rotate-thumbs DEGREE LIST ( list of degrees, one for each thumb )
      Rotate thumbs the given amount in degrees - can be positive or negative.
      There must be one value for each file given with -files.
