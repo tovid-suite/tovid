@@ -117,6 +117,7 @@ THUMB_FRAME="-frame 3x3"
 SC_FRAME="-frame 3x3"
 SHOWCASE_VIDEO=""
 THREExONE=false
+FOURxONE=false
 PLAYALL=false
 USE_MAKEMENU=false
 THUMBS_3D=false
@@ -289,8 +290,8 @@ runtime_error()
 
 vid_length()
 {
-    mencoder -nosound -mc 0 -oac pcm -ovc copy -o /dev/null "$1" 2>> "$LOG_FILE" |
-    awk 'END{print $(NF-3)}'
+    L=$(mencoder -nosound -mc 0 -oac pcm -ovc copy -o /dev/null "$1" 2>> "$LOG_FILE")
+    awk 'END{print $(NF-3)}' <<< "$L"
 }
 audio_length()
 {
@@ -1219,6 +1220,9 @@ while test $# -gt 0; do
         "-tile3x1" | "-tile-3x1" )
             THREExONE=:
             ;;
+        "-tile4x1" | "-tile-4x1" )
+            FOURxONE=:
+            ;;
         "-loop" )
             unset pause_time
             shift
@@ -1662,7 +1666,9 @@ fi
 $DO_INTRO && INTRO="<vob file=\"$INTRO_CLIP\"/>"
 
 # switched menus need more than one video file
-$SWITCHED_MENUS && [[ ${#FILES[@]} -eq 1 ]] && SWITCHED_MENUS=false
+if $SWITCHED_MENUS && [[ ${#FILES[@]} -eq 1 ]]; then
+    usage_error "You can not use switched menus with only one file"
+fi
 
 # don't make submenus on each recursive call in switched mode
 if $SWITCHED_MODE; then
@@ -2530,6 +2536,9 @@ fi
 # allow specifically setting the geometry for 3 videos to 1x3 page
 if $THREExONE && [ $V_TOTAL -eq 3 ]; then
     TILE_ARRAY[2]=3x1
+elif $FOURxONE && [[ $V_TOTAL -eq 4 ]]; then
+    TILE_ARRAY[3]=4x1
+    THUMB_SIZE=${GEO_ARRAY[6]}
 fi
 if ( ($DO_TITLESETS || $TITLESET_MODE) && ! $NO_VMGM_MENU ) || $PLAYALL; then
     if [[ $BUTTON_GRAVITY = "south" ]]; then
@@ -3289,7 +3298,7 @@ if [ "$BUTTON_STYLE" = "rect" ]; then
             fake_montage=( $WORK_DIR/Highlightx1.png $(for ((i=0; i<NUM_FILES-1; i++)); do
             echo $WORK_DIR/empty-button.png; done))
             montage -background none ${fake_montage[@]} \
-            -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
+            -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}+10+4 \
             -bordercolor none -mattecolor transparent miff:- |
             convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
             -composite "$WORK_DIR/fake_montage.png"
@@ -3315,12 +3324,12 @@ elif [[ "$BUTTON_STYLE" = *text* ]]; then
         highlight_buttons=( ${highlight_buttons[@]} \
         $(find $WORK_DIR/ -name 00\*highlight.png |sort) )
         montage -background none ${select_buttons[@]} \
-        -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
+        -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}+10+4 \
         -bordercolor none -mattecolor transparent miff:- |
         convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
         -composite "$WORK_DIR/Select.png"
         montage -background none ${highlight_buttons[@]} \
-        -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
+        -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}+10+4 \
         -bordercolor none -mattecolor transparent miff:- |
         convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
         -composite "$WORK_DIR/Highlight.png"
@@ -3338,7 +3347,7 @@ elif [[ "$BUTTON_STYLE" = *text* ]]; then
         fi
     else
         montage -background none ${fake_montage[@]} \
-        -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 \
+        -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}+10+4 \
         -bordercolor none -mattecolor transparent miff:- |
         convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
         -composite "$WORK_DIR/fake_montage.png"
@@ -3491,7 +3500,7 @@ else # not showcase
     if $TRANSPARENT; then
         yecho "Running:
         montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
-        -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none -bordercolor "#444744" miff:- |
+        -geometry ${THUMB_SIZE}+10+4 -background none -bordercolor "#444744" miff:- |
         composite -dissolve $OPACITY \
         -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
         "$WORK_DIR/pics/template.png" -background none miff:- |
@@ -3500,7 +3509,7 @@ else # not showcase
         -composite "$PREVIEW_IMG"
         " | fold -bs
         montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
-        -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none -bordercolor "#444744" miff:- |
+        -geometry ${THUMB_SIZE}+10+4 -background none -bordercolor "#444744" miff:- |
         composite -dissolve $OPACITY \
         -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
         "$WORK_DIR/pics/template.png" -background none miff:- |
@@ -3509,7 +3518,7 @@ else # not showcase
         -composite "$PREVIEW_IMG"
     else # Not transparent
         montage ${PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
-        -geometry ${GEO_ARRAY[NUM_FILES]}+10+4  -background none -bordercolor "#444744" miff:- |
+        -geometry ${THUMB_SIZE}+10+4  -background none -bordercolor "#444744" miff:- |
         convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png"  -gravity $TITLE_GRAVITY \
         -geometry ${title_xoffset}${title_yoffset} -composite -  -gravity $BUTTON_GRAVITY \
         -geometry +${XGEO}+${YGEO} -composite "$PREVIEW_IMG"
@@ -4722,7 +4731,7 @@ if ! $TEXTMENU; then
             IM_CMD04=(montage - -geometry +4+4 -background '#444744' \
             -mattecolor "#444744" -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" \
             -pointsize $THUMB_FONTSIZE -title "${TITLES[i]}")
-            IM_CMD1=(convert -resize $THUMB_SIZE! -)
+            IM_CMD1=(convert -resize ${THUMB_SIZE}! -)
             IM_CMD2=(composite -gravity center -compose DstOver $WORK_DIR/feather_mask2.png -)
             IM_CMD3=(montage -geometry +4+4 -background '#444744' \
             -fill "$THUMB_TEXT_COLOUR" -font "$THUMB_FONT" \
@@ -4731,7 +4740,7 @@ if ! $TEXTMENU; then
             -bordercolor "#444744" -)
             IM_CMD4b=(convert -background none -frame 3x3 \
             -bordercolor none -)
-            IM_CMD5=(convert - $THUMB_ROTATE -resize $THUMB_SIZE! "${PICS[p]}")
+            IM_CMD5=(convert - $THUMB_ROTATE -resize ${THUMB_SIZE}! "${PICS[p]}")
             IM_CMD6=(convert - -write mpr:img${p} -fx A  +matte \
             -blur 0x$( LC_ALL="C" bash -c "printf "%.2f" $(bc_math "7 + .${CURVE_ARRAY[p]/.}")" )  \
             -shade $(bc_math "115 + ${CURVE_ARRAY[p]}")x30 -normalize mpr:img${p} \
@@ -4889,7 +4898,7 @@ if $MENU_FADE && ! $STATIC && ! $QUICK_MENU; then
         MONTAGE_CMD03=(convert -size $VIDSIZE -background none \
         ${sc_thumb_title_cmd[@]} -mosaic)
         MONTAGE_CMD1=(montage "${ANI_PICS[@]}" -tile ${TILE_ARRAY[NUM_FILES]} \
-        -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none)
+        -geometry ${THUMB_SIZE}+10+4 -background none)
         #  dissolve the finished montages onto the background
         MONTAGE_CMD2=(composite -dissolve $S -gravity $BUTTON_GRAVITY \
         -geometry +${XGEO}+${YGEO} - $WORK_DIR/bg/$(($frame + 1)).jpg -background none)
@@ -4997,7 +5006,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU; then # Do not do menu fade
             IM_CMD05=(convert  -size $VIDSIZE xc:none -background none \
             ${sc_cmd[@]} $SC_IMG_PAGE -mosaic)
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
-            -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none miff:-)
+            -geometry ${THUMB_SIZE}+10+4 -background none miff:-)
             IM_CMD2=(composite -dissolve $OPACITY \
             -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
             $WORK_DIR/pics/template.jpg -background none miff:-)
@@ -5068,7 +5077,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU; then # Do not do menu fade
             done
             # make final montages and composite onto grey background with title
             IM_CMD0=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
-            -geometry ${GEO_ARRAY[NUM_FILES]}+10+4 -background none miff:-)
+            -geometry ${THUMB_SIZE}+10+4 -background none miff:-)
             IM_CMD1=(convert $WORK_DIR/pics/template.jpg \
             -  -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} -composite miff:-)
             IM_CMD2=(convert $WORK_DIR/bg/$count.jpg \
