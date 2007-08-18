@@ -185,6 +185,7 @@ function get_info ()
     ID_AUDIO_NCH="0"
     ID_AUDIO_TRACKS=""
     V_ASPECT_RATIO="1:1"
+    V_DURATION=""
     ID_LENGTH="0"
 
     # bash appears to have no way of initializing empty arrays; we append to these later,
