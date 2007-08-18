@@ -1236,7 +1236,7 @@ if $DO_FIT; then
 
     # Verbose debug info
     if ! $QUIET; then
-        echo "    -fit DEBUG:"
+        echo "    -fit $FIT_SIZE report:"
         echo "    length=[$LENGTH]sec overhead=[$MPEG_OVERHEAD]MiB avsize=[$AUD_VID_SIZE]MiB"
         echo "    asize=[$AUDIO_SIZE]MiB vsize=[$VIDEO_SIZE]MiB vbitr=[$VID_BITRATE]kbps"
     fi
@@ -1274,9 +1274,6 @@ if $DO_FIT; then
     if test "$VID_BITRATE" -gt $VID_MAX_RATE; then
         VID_BITRATE=$VID_MAX_RATE
     fi
-
-    $NOASK || echo "    Press <Enter> to continue."
-    $NOASK || read FOOBAR
 fi
 
 # Set resolution and frame rate according to format and TV system
