@@ -138,8 +138,9 @@ function checkExistence ()
 {
     if test -e "$1"; then :
     else
-        echo "The file "$1" was not found."
+        echo "The file "$1" was not found.  Exiting."
         FILE_NOT_FOUND=:
+        exit 1
     fi
 }
 
