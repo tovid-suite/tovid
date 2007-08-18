@@ -357,7 +357,8 @@ class Style:
         
         # Yuck...
         dirname, fname = os.path.split(filename)
-        os.mkdir(dirname)
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
         outfile = open(filename, 'w')
         config.write(outfile)
         outfile.close()
