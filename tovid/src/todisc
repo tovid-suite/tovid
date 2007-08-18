@@ -1066,7 +1066,14 @@ get_all_files()
     done
 }
 
-# make a transparent png for vhook with the menu title and video titles on it
+# 3x1 and 4x1 tile only for default arrangement
+tile_warning()
+{
+    yecho
+    echo "-tile-3x1 and -tile-4x1 are not showcase options.  Disabling"
+    yecho
+    sleep 5
+}
 
 ##############################################################################
 #                          	End of functions                                 #
@@ -2428,7 +2435,7 @@ if $SHOWCASE && ! $TEXTMENU; then
         SHOWCASE_SIZE=288x216  # smaller showcase thumb because we have 2 rows
         [ $TARGET = "svcd" ] && SHOWCASE_SIZE=216x216
         AUTOORDER="columns"
-        if ($SC_THUMB || $QUICK_MENU) && [[ "$SC_TITLE_ALIGN" = "east" ]] && [[ -n $SHOWCASE_FILE ]]; then
+        if $SC_THUMB && [[ "$SC_TITLE_ALIGN" = "east" ]] && [[ -n $SHOWCASE_FILE ]]; then
             usage_error "Sorry, there is no room for the showcase thumb " \
             "if you use more than 5 videos with -showcase-titles-align east|west. " \
             "Either remove the -showcase-titles-align switch or remove the " \
@@ -2547,6 +2554,8 @@ if $THUMBS_3D; then
     BLUR=0.1
 fi
 
+$FOURxONE && $SHOWCASE && FOURxONE=false && tile_warning
+$THREExONE && $SHOWCASE && THREExONE=false && tile_warning
 # allow specifically setting the geometry for 3 videos to 1x3 page
 if $THREExONE && [ $V_TOTAL -eq 3 ]; then
     TILE_ARRAY[2]=3x1
@@ -3109,10 +3118,8 @@ if $PLAYALL || ($TITLESET_MODE && ! $NO_VMGM_MENU) ; then
     fi
 fi
 
-
 # copy the preview for -quick-menu
 $QUICK_MENU && cp "$WORK_DIR/pics/template.png" "$WORK_DIR/quick_menu_bg.png"
-
 
 # lets be sure of order by using a loop
 for ((i=0; i<=NUM_FILES; i++)); do
