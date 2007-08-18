@@ -138,7 +138,6 @@ ALIGN_OVERRIDE=false
 MULTILINE_TITLE=false
 SAFE_AREA=50 # undocumented: you can set this from CLI with -showcase-safe-area
 SAFE_OFFSET=36
-PREVIEW_SIZE=720x540
 ASPECT_RATIO=4:3
 ASPECT_ARG=all
 WIDE_SCREEN=false
@@ -160,7 +159,6 @@ USER_SAFE_AREA=false
 USER_TITLE_GEO=false
 SPACER=""
 SE_YCORNER=0
-BG_ASYNC=""
 NO_WARN=false
 ROTATE_THUMBS=false
 DO_TITLESETS=false
@@ -274,22 +272,10 @@ function get_font()
 # ******************************************************************************
 # Print out a runtime error specified as an argument, and exit
 # ******************************************************************************
-runtime_error()
-{
-    # Uncomment if needed later
-    #killsubprocs
-    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    yecho "todisc encountered an error:"
-    yecho "    $@"
-    echo "Check the contents of $LOG_FILE to see what went wrong."
-    echo "See the tovid website ($TOVID_HOME_PAGE) for what to do next."
-    echo "Sorry for the inconvenience!"
-    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    exit 1
-}
 
 vid_length()
 {
+    echo "Using mencoder to get length of $1" >> "$LOG_FILE"
     L=$(mencoder -nosound -mc 0 -oac pcm -ovc copy -o /dev/null "$1" 2>> "$LOG_FILE")
     awk 'END{print $(NF-3)}' <<< "$L"
 }
@@ -330,6 +316,25 @@ cleanup()
     rm -fv "$WORK_DIR"
 }
 
+runtime_error()
+{
+    # Uncomment if needed later
+    #killsubprocs
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    yecho "todisc encountered an error:"
+    yecho "    $@"
+    echo "Check the contents of $LOG_FILE to see what went wrong."
+    echo "See the tovid website ($TOVID_HOME_PAGE) for what to do next."
+    echo "Sorry for the inconvenience!"
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    cleanup
+    if $SWITCHED || $TITLESET_MODE || $DO_TITLESETS; then
+        for P in $(<"$BASEDIR/script.pid"); do
+            kill $P
+        done
+    fi
+    exit 1
+}
 running_total ()
 {
     LC_ALL="C" awk -v offset=$offset '{
@@ -877,7 +882,12 @@ EOF
     yecho "Running dvdauthor to create final DVD structure"
     dvdauthor -x "$DVDAUTHOR_XML" 2>&1 | tee -a "$LOG_FILE"
     if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
-        runtime_error "There was a problem creating the DVD structure"
+        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        yecho "todisc encountered an error:"
+        yecho "There was a problem creating the DVD structure"
+        yecho "Saving files in "$WORK_DIR" so you can examine the situtaion"
+        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        exit 1
     fi
     thanks_goodbye
     cleanup
@@ -1652,6 +1662,10 @@ fi
 # titlesets use BASEDIR which is the WORK_DIR of the calling todisc
 # BASEDIR is supplied by the calling todisc with -basedir
 : ${BASEDIR:="$WORK_DIR"}
+
+# get script pid so we can kill the parent if doing recursive todisc's
+echo $$ >> "$BASEDIR/script.pid"
+
 # Make sure -out was provided
 if test -n "$OUT_PREFIX"; then
     OUT_DIR=$(readlink -f "$OUT_PREFIX")
@@ -2952,8 +2966,12 @@ if [[ -n "$BG_VIDEO" ]] ; then
     fi
 fi
 if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
-    [[ $SC_TITLE_ALIGN = "east" ]] && ! $TEXTMENU && TS="+ ${THUMB_SIZE/x*}"
-    if (( (WIDEST_TITLE + SAFE_AREA $TS + ${SHOWCASE_SIZE/x*}) > ( ${VIDSIZE/x*} - SAFE_AREA) )); then
+    if [[ $SC_TITLE_ALIGN = "east" ]] && ! $TEXTMENU; then
+        TS="+ ${THUMB_SIZE/x*}"
+    else
+        TS=0
+    fi
+    if (( (WIDEST_TITLE + SAFE_AREA + TS + ${SHOWCASE_SIZE/x*}) > ( ${VIDSIZE/x*} - SAFE_AREA) )); then
             SHOWCASE_SIZE=288x216
             [[ $TARGET = "svcd" ]] && SHOWCASE_SIZE=216x216
     fi
@@ -3543,8 +3561,7 @@ fi
 composite -compose Over "$WORK_DIR/fake_montage.png" "$PREVIEW_IMG" \
 "$PREVIEW_IMG"
 if ! $NOASK ; then
-    convert -resize $PREVIEW_SIZE! "$PREVIEW_IMG" miff:- |
-    display -title "todisc preview - close window to continue" -
+    display -title "todisc preview - close window to continue" "$PREVIEW_IMG"
     confirm_preview
 fi
 # copy the template back if using $MENU_FADE
@@ -4607,7 +4624,7 @@ yecho
 yecho "Building main menu"
 if [[ -n "$BG_VIDEO" ]]; then
     yecho "Getting background video from $BG_VIDEO"
-    FFMPEG_CMD="ffmpeg -i \"$BG_VIDEO\" -ss $BG_SEEK -vframes $FRAMES $BG_ASYNC \
+    FFMPEG_CMD="ffmpeg -i \"$BG_VIDEO\" -ss $BG_SEEK -vframes $FRAMES \
     -s $VIDSIZE -sameq \"$WORK_DIR/bg/%d.jpg\""
     yecho "Extracting/resizing background images with the following command:"
     yecho "$FFMPEG_CMD"
@@ -4653,7 +4670,7 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
         fi
 
         FIND_FRAMES=$FRAMES # ffmpeg starts at 0
-        FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -ss $FFMPEG_SEEK_VAL $BG_ASYNC \
+        FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -ss $FFMPEG_SEEK_VAL \
         -s $SHOWCASE_SIZE -vframes $FRAMES -an -y "$WORK_DIR/showcase/%06d.png")
         echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
         SED_VAR="frame="
@@ -5271,7 +5288,12 @@ if [ "$TARGET" = "dvd" ] && $AUTHOR && ! $VMGM_ONLY && ! $DO_TITLESETS && ! $SWI
     echo "Running dvdauthor to create the DVD filesystem"
     dvdauthor -x "$DVDAUTHOR_XML" 2>&1  | tee -a  "$LOG_FILE.tmp"
     if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
-        runtime_error "There was a problem creating the DVD structure"
+        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        yecho "todisc encountered an error:"
+        yecho "There was a problem creating the DVD structure"
+        yecho "Saving files in "$WORK_DIR" so you can examine the situtaion"
+        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        exit 1
     fi
     strings "$LOG_FILE.tmp" >> "$LOG_FILE" && rm -f "$LOG_FILE.tmp"
 elif [ "$TARGET" = "svcd" ]; then
