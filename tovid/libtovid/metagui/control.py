@@ -316,7 +316,7 @@ class FlagGroup (Control):
         for flag in self.flags:
             flag.draw(frame)
             flag.check.bind('<Button-1>', self.select)
-            flag.pack(anchor='nw', side='top')
+            flag.pack(anchor='nw', side='top', fill='x', expand=True)
         Control.post(self)
 
     def select(self, event):
