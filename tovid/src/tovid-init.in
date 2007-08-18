@@ -385,6 +385,15 @@ countdown ()
 # ******************************************************************************
 # ******************************************************************************
 
+if [[ $UID -eq 0 ]]; then
+    echo "Removing unneeded temporary files in / ..."
+    sleep 10
+    echo "Just kidding! Had this been for real, your hard drive would be"
+    echo "well on its way to oblivion right now, because you're running as root."
+    echo "I hope you know what you're doing..."
+    sleep 5
+fi
+
 # ******************************************************************************
 # Platform-specific initialization
 # Determines host platform and configures things accordingly
@@ -558,9 +567,9 @@ fi
     plugins="sox $NORMALIZE"
 
     # -------------------------------------------------------------------------
-    # todisc dependancies
+    # todisc dependencies
     todisc_deps="$magick mogrify spumux dvdauthor transcode sox"
-    
+
     # Quit and complain if ANY core dependency is missing.
     assert_dep "$core" "You are missing CORE tovid dependencies!"
 
