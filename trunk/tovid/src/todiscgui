@@ -322,11 +322,12 @@ text = Panel("Text/Font",
                 0, 80, toggles=True),
             Color('Color', '-thumb-text-color', '#C6C6C6',
                 'The font color to use for the video titles', toggles=True),
-            Choice('Video(s) title alignment', '-showcase-titles-align', 'west',
+            Choice('Video(s) title alignment', '-showcase-titles-align', 'none',
                 'This is a showcase style only option.  Default is to center '
                 'the text above the thumbnails.  This option will align the '
-                'titles either to the left (west) or right (east).',
-                'west|east|center'),
+                'titles either to the left (west), right (east), or center.  '
+                'Leave at "none" to let todisc sort it out for you.',
+                'west|east|center|none'),
             Number('Space between Textmenu titles (pixels)', '-title-gap', 10,
                 'Leave this much vertical gap between titles.  '
                 'Default is 10 for line buttons, 15 for text-rect buttons.  '
