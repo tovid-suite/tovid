@@ -158,6 +158,12 @@ menu = Panel("Menu",
         ' will fade in first, then the title '
         '(and mist if called for), then the menu thumbs and/or titles.  '
         'The fadeout is in reverse order.'),
+    Color('Quick menu background color', '-pad-color', 'white',
+        'Color of background for -quick-menu menus.  ' 
+        'Default if not enabled: ntsc color-safe black (#161514).  '
+        'Note: the color turns out MUCH lighter than the one you choose, '
+        'so pick a VERY dark version of the color you want.',
+        toggles=True),
     Filename('Intro video', '-intro', '',
         'Video to play before showing the main menu.  At present this must '
         'be a DVD compatible video at the correct resolution etc.  Only 4:3 '
