@@ -102,7 +102,7 @@ main = Panel("Main",
                 ),
                     Flag("Quick menu", '-quick-menu', False,
                         'Ten times faster than normal showcase animation.  '
-                        'A showcase image is required unless doing switched '
+                        'A showcase video is required unless doing switched '
                         'menus.  No video thumbs are made.  Not compatible '
                         'with wave or rotate options'),
                     Flag("Switched menus", '-switched-menus', False,
@@ -163,7 +163,8 @@ menu = Panel("Menu",
         'aspect is supported.',
         'load', 'Select a video file'),
     Choice('Montage alignment', '-align', 'north',
-        'Controls positioning of the thumbnails and their titles',
+        'Controls positioning of the thumbnails and their titles.  '
+        'With some arrangements this will have limited effects however.',
         'north|south|east|west|center'),
         Panel('Seek times',
             List('Thumbnails', '-seek', '',
@@ -345,9 +346,9 @@ authoring = Panel("Authoring",
         List('Group videos', '', '',
             'For each video group, you will need to use an integer for the '
             'number of the 1st video in the group, as well as the path to the '
-            'videos that will be grouped with it.  Each group will need to be '
-            'preceeded with the "-group" switch.  Example: -group 2 2b.mpg '
-            '2c.mpg -group 4 4b.mpg 4c.mpg. See man todisc for details.'),
+            'videos that will be grouped with it (quoted).  Each group will need to be '
+            'preceeded with the "-group" switch.  Example: -group 2 "2b.mpg" '
+            '"2c.mpg" -group 4 "4b.mpg" "4c.mpg". See man todisc for details.'),
         Flag('Chain videos together', '-chain-videos', False,
             'This option will "chain" videos so they play sequentially '
             'until the last, which will return to the menu.  You can also '
@@ -385,15 +386,16 @@ authoring = Panel("Authoring",
     VPanel('Buttons',
         Choice('Style', '-button-style', 'rect',
             'Style or shape of the buttons seen when playing the DVD '
-            'menu.  "rect" draws a rectangle around the thumbs, "text" uses '
-            'the title text, and "text-rect" draws a rectangle '
-            'around the title text.',
-            'rect|text|text-rect'),
+            'menu.  "rect": rectangle around the thumbs, "text": uses '
+            'the title text, "text-rect": rectangle around the title text, '
+            '"line": line underneath title.  The "line" style is showcase only'
+            ', and the "text" buttons can not be used with "showcase" menus.',
+            'rect|line|text|text-rect'),
         Color('Highlight color', '-highlight-color', '#266CAE',
             'Color for the menu buttons the dvd remote uses to navigate.', toggles=True),
         Color('Selection color', '-select-color', '"#DE7F7C"',
             'Color for the menu buttons the dvd remote uses to select.', toggles=True),
-        Number('Outlinewidth for spumux', '-outlinewidth', 4,
+        Number('Outlinewidth for spumux', '-outlinewidth', 14,
             'For spumux outlinewidth variable.  This option helps if spumux '
             'fails because of a large gap between button words or characters.',
             0, 20, toggles=True),
