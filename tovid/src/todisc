@@ -112,7 +112,7 @@ CHAPTERS=( 6 )
 TOVID_OPTS=""
 CHAIN_VIDEOS=false
 NOASK=false
-SC_FRAMESTYLE=none
+SC_FRAMESTYLE="none"
 THUMB_FRAME="-frame 3x3"
 SC_FRAME="-frame 3x3"
 SHOWCASE_VIDEO=""
@@ -1067,7 +1067,7 @@ quick_menu()
     # check for badly compiled or otherwise unusable vhook
     if [[ ! -s "$BASEDIR/dummy.mpg" ]]; then
         yecho
-        yecho "making a MPEG for testing ffmpeg's imlib2 vhook"
+        yecho "Making a MPEG for testing ffmpeg's imlib2 vhook"
         convert  -resize $VIDSIZE! xc:"#161514" "$WORK_DIR/dummy.jpg"
         dummy_cmd=(ffmpeg -t 2 -loop_input -i "$WORK_DIR/dummy.jpg" \
         -aspect 4:3  -f mpeg1video -r 29.970 -vcodec mpeg2video -b 5000k \
@@ -1107,7 +1107,7 @@ quick_menu()
     ! $QM_PREVIEW && yecho "Using ffmpeg's vhook to put titles on padded file"
     VHOOK_CMD=(ffmpeg -i  "$WORK_DIR/quick_tmp.avi" -an \
     -f mpeg2video -r $FRAME_RATE -tvstd ntsc -b 7000k -maxrate 8000k \
-    -bufsize 1835008 -aspect $ASPECT_RATIO \
+    -bufsize 224KiB -aspect $ASPECT_RATIO \
     -vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
     -y "$WORK_DIR/intro.m2v")
     ! $QM_PREVIEW && yecho
@@ -1747,6 +1747,7 @@ while test $# -gt 0; do
             ;;
         "-quick-menu" )
             QUICK_MENU=:
+            SC_TITLE_ALIGN="west"
             ;;
         "-pad-colour" | "-pad-color" )
             shift
@@ -2102,7 +2103,12 @@ if [[ $SC_FRAMESTYLE = "glass" ]] && [[ -z $SHOWCASE_IMG && -z $SHOWCASE_VIDEO ]
     yecho
     SC_FRAMESTYLE="none"
 fi
-
+if [[ $SC_FRAMESTYLE = "glass" ]] && $QUICK_MENU; then
+    yecho
+    yecho "You can not use 'glass' frame style with -quick-menu, disabling this option"
+    yecho
+    SC_FRAMESTYLE="none"
+fi
 # disable submenus for svcd
 if $SUB_MENU && [ "$TARGET" = "svcd" ]; then
     usage_error "Sorry, no submenu for svcd, please remove -submenu option"
@@ -2475,7 +2481,7 @@ if  [ $TARGET = "dvd" ]; then
     SAMPLERATE="48000"
     MPLEX_FORMAT="8"
     GEO_ARRAY=("${DVD_GEO_ARRAY[@]}")
-    FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 1835008 -aspect 4:3"
+    FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 224KiB -aspect 4:3"
     ASPECT="-aspect $ASPECT_RATIO"
     SHOWCASE_SIZE=384x256
     BURN_TGT="$OUT_DIR"
