@@ -34,20 +34,18 @@ For example:
 The number of **-files** and **-titles** must be equal. If the input files are
 not mpeg, you will have the option to auto-encode them with **tovid**.
 
-**At present there are 3 display arrangements or "templates":**
+**At present there are 2 display arrangements or "templates":**
 
 : A. (Default)
     Thumbs will be centred, and as large as space restraints allow.
 
-: B. -showcase IMAGE|VIDEO
+: B. **-showcase** IMAGE|VIDEO
     Produces an arrangement with small buttons on
     the side and the showcase image/video in the centre.
     If no IMAGE or VIDEO argument is supplied, the central thumb will be omitted.
 
-: C. -textmenu
-    No thumbs will be made, text will be used instead.  You can
-    still make an animated menu however by using a video for the background
-    (-background VIDEO), or a showcase video (-showcase VIDEO)
+    Note: **-textmenu**, **-quick-menu** and **-switched-menus** are all types of showcase
+    style menus.  See their descriptions under **Menu style** section.
 
 
 The **-titles** arguments should be double or single quoted,
@@ -56,12 +54,12 @@ or have the spaces backslash-escaped. Special characters
 To include a quoted string within a title, backslash-escape the quotes.
 These titles are used for labelling thumbnails on the main menu,
 and for the submenu title for that video.
-( see also -submenu-titles )
+( see also **-submenu-titles** )
 
 
-The -showcase and -textmenu styles can use longer titles than the default arrangement.
-With -showcase style, use: "-showcase-titles-align west" to give more space for the title,
-or use ""-showcase-titles-align east" to allow titles of more than one line.
+The **-showcase** styles can use longer titles than the default arrangement.
+With a showcase style, use: **-showcase-titles-align west** to give more space for the title,
+or use **-showcase-titles-align east** to allow titles of more than one line.
 
 The default style can only show about 16 characters (depending on the number of thumbs,
 and what **-thumb-font** and **-thumb-fontsize** is being used).
@@ -76,21 +74,29 @@ sub-menus, which can display longer titles, for example:
           -out foo
 ```
 
-The "-align" argument will position both titles and thumbs either south, north
+The **-align** argument will position both titles and thumbs either south, north
 east, west, southwest, northwest, southeast, northeast, subject to certain
 constraints of each arrangement.
 
 **TITLESETS**
 
-A word should be mentioned here about titlesets.  If you want to have titlesets you 
-need to put all the options for each titleset menu you would like to have between 
-'-titleset' and '-end-titleset' options.  Additionally, for the main menu, you need to put
-options between '-vmgm' and '-end-vmgm'. 
-Any options outside the -titleset -end-titleset and -vmgm -end-vmgm areas will be
-general options that will apply to every titleset.  If an general option is duplicated
-inside a -titleset or -vmgm area, the general option will be overridden.
-You do not use '-files' for the vmgm menu options, but you will need as many TITLES after'
--titles' as you have menus. For example:
+A word should be mentioned here about titlesets.  You need to use titlesets,
+for example, if you have videos of different resolutions.  If you want to have
+titlesets you need to put all the options for each titleset menu you would
+like to have between **-titleset** and **-end-titleset** options.
+
+Additionally, for the main menu (the opening menu that will let you jump to each titleset),
+you need to put options between **-vmgm** and **-end-vmgm**.
+You do not use **-files** for the opening menu options (**-vmgm**), but you will need as many
+TITLES after **-titles** as you have menus.
+
+Any options outside the **-titleset** **-end-titleset** and **-vmgm**
+**-end-vmgm** areas will be general options applying to every titleset.
+If an general option is duplicated inside a **-titleset** or **-vmgm** area, the
+general option will be overridden.
+
+Example of using todisc with titlesets:
+
 
 ```
  $ todisc -static -out MY_DVD \
@@ -112,52 +118,52 @@ You do not use '-files' for the vmgm menu options, but you will need as many TIT
     -thumb-fontsize 20 \
     -end-vmgm
 ```    
-See also -titleset and -vmgm
+See also **-titleset** and **-vmgm**
 
 == Options ==
 
-: -keepfiles
+: **-keepfiles**
     Keep all intermediate/temporary files (helps with debugging)
-: -dvd
+: **-dvd**
     DVD-compatible output (default)
-: -svcd
+: **-svcd**
     Super Video-CD-compatible output: *this is currently disabled for -showcase-* styles
-: -ntsc
+: **-ntsc**
     720x480 output, compatible with NTSC standard (default)
-: -pal
+: **-pal**
     720x576 output, compatible with PAL standard
-: -submenus
+: **-submenus**
     Create a sub-menu with chapters for each video (default: no sub-menus)
-: -ani-submenus
+: **-ani-submenus**
     Create an animated sub-menu with chapters for each video (default: not
     animated)
 
 
 == Menu style ==
 
-: -showcase IMAGE|VIDEO (without an argument, use showcase style with no central thumb)
+: **-showcase** IMAGE|VIDEO (without an argument, use showcase style with no central thumb)
     A different arrangement of images for the menu: small thumbnails go at left
     (and right) side of screen, with a larger image in the centre. Maximum of 10 videos
     If the provided argument is a video file, the central thumb will be animated.
     Pick a file of correct aspect ratio: i.e. it should still look good when
     resized to 720x480 (PAL 720x576), then resized to proper aspect ratio.
-: -textmenu, -text-menu NUM ( without an argument, create a textmenu out of the supplied titles
+: **-textmenu**, **-text-menu** NUM ( without an argument, create a textmenu out of the supplied titles
     The optional argument specifies how many titles are in the 1st column, i.e. giving
     4 titles and using "-textmenu 2" would make 2 columns of 2 titles. The default is to
     put all titles up to 13 in the first column before starting a second title.
     Maximum, 2 columns and 26 titles.
-    If no video files for either -background or -showcase are supplied, the menu will be static.
-: -quick-menu
+    If no video files for either **-background** or **-showcase** are supplied, the menu will be static.
+: **-quick-menu**
     This will make a very quick '-showcase IMAGE|VIDEO' style menu by using ffmpeg
-    instead of imagemagick.  There are no fancy effects like -wave or -rotate available
+    instead of imagemagick.  There are no fancy effects like **-wave** or **-rotate** available
     for it, but it is extremely fast.  It will be a text-menu style of menu, with no video
     thumbs, and a central showcase IMAGE(static)|VIDEO(animated).
-    ( see -pad-color if you are not using a -background and want to change the default black )
+    ( see **-pad-color** if you are not using a **-background** and want to change the default black )
 
-    Specifying the IMAGE|VIDEO argument to '-showcase' is mandatory for this style of menu, unless
-    used in conjunction with '-switched-menus' in which case the videos passed with '-files' 
+    Specifying the IMAGE|VIDEO argument to **-showcase** is mandatory for this style of menu, unless
+    used in conjunction with **-switched-menus** in which case the videos passed with **-files** 
     automatically become the showcase videos.
-    If this is used in combination with '-switched-menus' it can really speed up an
+    If this is used in combination with **-switched-menus** it can really speed up an
     otherwise time comsuming process.
     On my athlon 2900+ system it makes a 4 video switched menu of 30 seconds length (each) in about
     4 minutes ( !! ).
@@ -166,67 +172,67 @@ See also -titleset and -vmgm
 ```
     -quick-menu -showcase /home/robert/showcase.mpg
 ```
-    See '-switched-menus' for example of '-quick-menu' using '-switched-menus
+    See **-switched-menus** for example of making switched menus with **-quick-menu**
 
-: -pad-color | -pad-colour
-    The color to use as background for a -quick-menu menu. (default: ntsc-safe black)
-: -use-makemenu
+: **-pad-color** | **-pad-colour**
+    The color to use as background for a **-quick-menu** menu. (default: ntsc-safe black)
+: **-use-makemenu**
     This will call the other tovid menu script, "makemenu" on the titles supplied.
-: -static
+: **-static**
     Main menu will just be static thumbs (not animated) (default: animated)
-: -background IMAGE|VIDEO
+: **-background** IMAGE|VIDEO
     Menu background.  This can be a image file or an video file.  If it is a
     video file the background will be animated.  Pick a file of correct aspect
     ratio: i.e. it should still look good when resized to 720x480 (PAL 720x576)
-: -menu-title
+: **-menu-title**
     Title for the root menu - may be longer than thumbnail labels
     Also if you use \n in the title, you can use multi line titles, but you
-    would need to adjust -menu-fontsize to something smaller than default
+    would need to adjust **-menu-fontsize** to something smaller than default
     for example:
 
 ```
     $ todisc ... -menu-title "A\nMultilined\nTitle" -menu-fontsize 24
 ```
-: -menu-font FONT
+: **-menu-font** FONT
     Font to use for titles, either by ImageMagick font name (ex., "Arial") or
     explicit pathname (ex., "/full/path/to/arial.ttf"). To see a complete
     list of acceptable ImageMagick font names, run **convert -list type**, and
     refer to the leftmost column
-: -menu-fontsize
+: **-menu-fontsize**
     Font size for main menu - best to -preview if you use this
-: -menu-fade
+: **-menu-fade**
     Fade the menu in and out The background will fade in first, then title (and
     mist if called for), then the menu thumbs.  The fadeout is in reverse order
-: -bgaudio
+: **-bgaudio**
     An audio file for the main menu background
-: -submenu-audio FILE(S)
+: **-submenu-audio** FILE(S)
     List of files for sub-menu backgrounds. If one file is given, then it will
     be used for all sub-menus.  Else the number given must equal the number of
     submenus, though the keyword "none" in this list may be used for silence.
-: -titleset . . . -end-titleset
+: **-titleset** . . . **-end-titleset**
     If you have more than one titleset, put the options for each titleset between
-    -titleset and -end-titleset.  A separate menu will be created that can be accessed
-    from the main menu (VMGM).  You can create this main menu using the -vmgm -end-vmgm
-    options.  See -vmgm below and TITLESET introduction above.
-: -vmgm . . . -end-vmgm
+    **-titleset** and **-end-titleset**.  A separate menu will be created that can be accessed
+    from the main menu (VMGM).  You can create this main menu using the **-vmgm** **-end-vmgm**
+    options.  See **-vmgm** below and TITLESET paragraph opening **Usage** section.
+: **-vmgm** . . . **-end-vmgm**
     The VMGM menu is the root menu when you use titlesets.
-    Put your VMGM menu options between -vmgm and -end-vmgm.
-    You only need -titles "Titleset One title"  "Titleset Two title" . . . , and not -files.
+    Put your VMGM menu options between **-vmgm** and **-end-vmgm**.
+    You only need **-titles** "Titleset One title"  "Titleset Two title" . . . , and not **-files**.
     Any other options can be used, but the  menu will be a textmenu style by default.
-    **Hint**: use -showcase IMAGE/VIDEO to create a fancier VMGM menu.
-: -switched-menus
-    This should probably be under "advanced" but is included here for exposure :)
+    **Hint**: use **-showcase** IMAGE/VIDEO to create a fancier VMGM menu.
+: **-switched-menus**
     This will make a "switched menu": there will be a central image where the showcase 
     image would go, and text menu titles along the menu edge where textmenu titles go.
     As you select a video title with the down or up arrow on your DVD remote, the image
     in the centre will change to the image or video
-    made from that selected video.
+    made from that selected video. Do not use **-showcase** IMAGE/VIDEO with this option.
 
     This can be a time consuming process for making animated menus as you need to make a
-    separate menu for each video provided with '-files'.  The process can be greatly
-    sped up by using '-quick-menu' in conjunction with this.
+    separate menu for each video provided with **-files**.  The process can be greatly
+    sped up by using **-quick-menu** in conjunction with this, though you will lose
+    fancy options like **-rotate** and **-wave**.
 
-    Example for using with '-quick-menu':
+    Example for using with **-quick-menu**:
 ```
     -switched-menus -quick-menu
 ```
@@ -234,32 +240,32 @@ See also -titleset and -vmgm
 
 == Thumbnail style ==
 
-: -thumb-shape [normal|oval|plectrum|egg]
+: **-thumb-shape** [normal|oval|plectrum|egg]
     Apply a shaped transparency mask to thumbnail videos
     The default is to have a rectangular semi-transparent misted background
-    for each thumb - to disable this mist use "-thumb-mist-color none" (no quotes).
-: -3dthumbs
+    for each thumb - to disable this mist use **-thumb-mist-color none**.
+: **-3dthumbs**
     This will give an illusion of 3D to the thumbnails: dynamic lighting on
     rounded thumbs, and a raised effect on rectangular thumbs.  Try it !
-: -thumb-font FONT
+: **-thumb-font** FONT
     Display thumbnail titles in the given font
-: -thumb-fontsize POINTS
+: **-thumb-fontsize** POINTS
     Font size to use for thumbnail titles
 
 
 
 = ADVANCED USAGE =
 == Options ==
-: -menu-length
+: **-menu-length**
     The desired animated main menu length in seconds
-: -submenu-stroke-color, -submenu-stroke-colour COLOR
+: **-submenu-stroke-color**, **-submenu-stroke-colour** COLOR
     The color for the sub-menu font outline (stroke)
-: -submenu-title-color, -submenu-title-colour
+: **-submenu-title-color**, **-submenu-title-colour**
     The fill color used for sub-menu title fonts
-: -submenu-titles
+: **-submenu-titles**
     You can supple a list of titles here for sub-menus without the length
     restrictions found in thumb titles.  Must equal number of videos
-: -chapters [ NUM | CHAPTER POINTS in HH:MM:SS ]
+: **-chapters** [ NUM | CHAPTER POINTS in HH:MM:SS ]
     The number of chapters for each video (default: 6) OR
     the actual chapter points in HH:MM:SS format.
     Chapter points will be used for generating the submenu thumbs, and for seeking
@@ -296,25 +302,25 @@ See also -titleset and -vmgm
 
     Example of passing grouped chapters using the '+' seperator:
 ```
-    -chapters 00:00:00,00:05:34.41,00:12:54,00:20:45+00:04:23,00:09:35 00:00...etc
+    -chapters 00:00:00,00:05:34.41,00:12:54,00:20:45+00:04:23,00:09:35 00:00:00...etc
 ```
 
-: -seek NUM | "NUM1 NUM2 NUM3 . . ."
+: **-seek** NUM | "NUM1 NUM2 NUM3 . . ."
     Seek to NUM seconds before generating thumbnails (default: 2.0 seconds)
     If a quoted string of values matching the number of videos is used, then
     each video can use a different seek value
-    If using switched menus, the -seek value(s) will be used to generate the showcase
+    If using switched menus, the **-seek** value(s) will be used to generate the showcase
     image that displays on switching to another video choice with the up/down arrow keys.
-: -showcase-seek NUM
+: **-showcase-seek** NUM
     Seek to NUM seconds before generating thumbnails for showcase video
     (default: 2.0 seconds)
-: -bgvideo-seek NUM
+: **-bgvideo-seek** NUM
     Seek to NUM seconds before generating images for background video
     (default: 2.0 seconds)
-: -bgaudio-seek NUM
+: **-bgaudio-seek** NUM
     Seek to NUM seconds before generating audio for bgaudio
     (default: 2.0 seconds)
-: -group N VIDEO1 VIDEO2 . . .
+: **-group** N VIDEO1 VIDEO2 . . .
     Allow grouping videos in dvdauthor.xml, so they will play sequentially as a group.
  The videos passed in after the 'N' will be grouped with the 'Nth' video. Example:
 
@@ -322,7 +328,7 @@ See also -titleset and -vmgm
  -group 2 2.mpg 3.mpg 4.mpg
 ```
 
- will group these 3 videos with the 2nd video given with '-files', so that they will play
+ will group these 3 videos with the 2nd video given with **-files**, so that they will play
  sequentially as one title.  Only one thumbnail and/or title will appear on the menu
  for the group: it will be made from the 1st video in the group.
  In the above example if you passed:
@@ -330,15 +336,15 @@ See also -titleset and -vmgm
  -files foo.mpg bar.mpg baz.mpg -group 2 2.mpg 3.mpg 4.mpg
 ```
  then the group will consist of bar.mpg  2.mpg, 3.mpg and 4.mpg, and only the title and/or
- thumbnail for bar.mpg will appear in the menu.  You can use -group more than once if you
+ thumbnail for bar.mpg will appear in the menu.  You can use **-group** more than once if you
  have more than one group you are making.  Be sure to quote video filenames if they contain 
  spaces.
-: -noask, -no-ask
-    Skip all interactive questions.  No preview, no re-encoding option, no interactive
-    option to use background video for bgaudio.
-: -nowarn, -no-warn
+: **-noask**, **-no-ask**
+    Skip all interactive questions.  No preview, automatic re-encoding with tovid if needed,
+    no interactive option to use background video for bgaudio.
+: **-nowarn**, **-no-warn**
     Don't pause after outputing warning messages
-: -tovidopts "OPTIONS"
+: **-tovidopts** "OPTIONS"
     Pass the given string of options to 'tovid', if it is called upon to
     re-encode your non-compliant videos. Be sure to include the double-quotes
     around your list of options!
@@ -346,47 +352,44 @@ See also -titleset and -vmgm
 
 ==Menu Style==
 
-: -menu-title-geo north|south|east|west|center [south]
+: **-menu-title-geo** north|south|east|west|center [south]
     The position of the menu title.
-: -menu-title-offset OFFSET (+X+Y)
+: **-menu-title-offset** OFFSET (+X+Y)
     Move menu title by this offset from its N|S|E|W|Center position.
-: -button-style rect|text|text-rect
+: **-button-style** rect|text|line|text-rect
     The style of button that you will see when you play the DVD.
     "rect" draws a rectangle around the thumb when you select it
-    in the DVD player.  "text" highlights the thumb title text, and "text-rect"
-    draws a rectangle around the title text.  ONLY "text-rect" is used for multiline
-    titles in the showcase-* template.
-: -title-color, -title-colour COLOR
+    in the DVD player.  "text" highlights the thumb title text, "line" underlines the title,
+    and "text-rect" draws a rectangle around the title text.  If you have multiline titles,
+    use "text-rect" or "line".
+: **-title-color**, **-title-colour** COLOR
     Color to use for the main menu title.  For list of supported colors do:
     **convert -list** color.  HTML notation may be used: "#ff0000". See:
     http://www.imagemagick.org/script/color.php
-: -stroke-color, -stroke-colour COLOR
+: **-stroke-color**, **-stroke-colour** COLOR
     Outline color for the main menu font. Use "none" for transparent outline
     (see title-color)
-: -highlight-color, -highlight-colour
+: **-highlight-color**, **-highlight-colour**
     Color to use for the menu buttons that your dvd remote uses to navigate
-: -select-color, -select-colour
+: **-select-color**, **-select-colour**
     Color to use for the menu buttons that your dvd remote uses to select
-: -text-mist
+: **-text-mist**
     Put a semi-transparent misted background behind the title text, just
     slightly larger than the text area
-: -text-mist-color, -text-mist-colour COLOR
+: **-text-mist-color**, **-text-mist-colour** COLOR
     Color of the mist behind the menu text (see title-color)
-: -text-mist-opacity
-    Opacity of the mist behind the menu text - see -opacity
-: -menu-audio-length
-    The length of the background audio for a static menu.  The default is to
-    use the full length of the supplied audio ( -bgaudio ).
-: -submenu-audio-length
+: **-text-mist-opacity**
+    Opacity of the mist behind the menu text - see **-opacity**
+: **-submenu-audio-length**
     The length of the background audio for a static submenu.  The default is to
-    use the full length of the supplied audio ( -bgaudio ).
-: -menu-audio-fade
+    use the full length of the supplied audio ( **-bgaudio** ).
+: **-menu-audio-fade**
     Number of sec to fade given menu audio in and out (default: 1.0 seconds)
-    If you use -menu-audio-fade 0 then the audio will not be faded.
-: -submenu-audio-fade
+    If you use **-menu-audio-fade** 0 then the audio will not be faded.
+: **-submenu-audio-fade**
     Number of sec to fade given sub-menu audio in and out (default: 1.0 seconds)
-    See -menu-audio-fade
-: -intro VIDEO
+    See **-menu-audio-fade**
+: **-intro** VIDEO
    Use a introductory video that will play before the main menu.
    At present this must be a DVD compatible video at the correct resolution etc.
    Only 4:3 aspect is supported: 16:9 will give unexpected results.
@@ -394,75 +397,70 @@ See also -titleset and -vmgm
 
 
 ===Menu Style options specific to showcase and textmenu arrangements===
-: -text-start N
-   This option is for -text-menu menus.  The titles will start at the Nth pixel from the
+: **-text-start** N
+   This option is for **-textmenu** menus.  The titles will start at the Nth pixel from the
    top of the menu ( Y axis ).
-: -title-gap N
-   This option is for -text-menu menus.  The gap is the space between titles vertically ( Y axis ).
-: -rotate DEGREES
+: **-title-gap** N
+   This option is for **-textmenu** menus.  The gap is the space between titles vertically ( Y axis ).
+: **-rotate** DEGREES
     Rotate the showcase image|video clockwise by DEGREES.
     (default: if used without options, the rotate will be 5 degrees)
-: -showcase-geo GEOMETRY
+: **-showcase-geo** GEOMETRY
     The position of the showcase image.  ( XxY position )
-: -wave default|GEOMETRY
+: **-wave** default|GEOMETRY
     Wave effect for showcase image|video.  Alters thumbs along a sine wave using
     GEOMETRY. (default: no wave)
     "default" will produce a wave arg of -20x556, which
     produces a gentle wave with a small amount of distortion.
     See: http://www.cit.gu.edu.au/~anthony/graphics/imagick6/distorts/#wave if you want
     to try other values
-: -showcase-framestyle  none|glass
+: **-showcase-framestyle**  none|glass
     For -showcase-* style template only
     "none" will use the default frame method, using "convert -frame . . ."
     "glass" will use mplayer to make frames, which gives an interesting animated
-    effect to the frames, and can be much faster ( especially if you don't use -rotate or
-    -wave as thumbs will not need to be processed again after mplayer spits them out
-    Note: you need to be using either -showcase IMAGE or -showcase VIDEO
+    effect to the frames, and can be much faster ( especially if you don't use **-rotate** or
+    **-wave** as thumbs will not need to be processed again after mplayer spits them out
+    Note: you need to be using either **-showcase** IMAGE or **-showcase** VIDEO
     for this "frame style" to work.
 
 
 
 ==Thumbnail Style==
-: -opacity [0-100] (default 100)
+: **-opacity** [0-100] (default 100)
     Opacity of thumbnail videos as a percentage (no percent sign)
     Anything less than 100(%) is semi-transparent. Not recommended with dark
     backgrounds
-: -blur NUM
+: **-blur** NUM
     The amount of feather blur to apply to the thumb-shape.  Default is 4.0 which
     will more or less keep the shape and produce transparency at the edges
     Choose float or integer values between 0.1 and 5.0
     Higher values are possible, but you may not like the result, particularly when
     using "-thumb-mist-colour none"
     3D thumbs are automatically set to a negligible blur, so this option has no effect
-: -align north|south
-    This will align  thumbs and titles north or south. 
-    (if -align south then title will align north)
-: -thumb-mist-color, -thumb-mist-colour
+: **-align** north|south
+    This will align  thumbs/titles north or south. 
+    (if **-align** south then menu title will align north)
+: **-thumb-mist-color**, **-thumb-mist-colour**
     Color of mist behind thumbnails
-: -thumb-text-color, -thumb-text-colour COLOR
-     Color to use for the thumb titles (see -title-color)
-: -showcase-titles-align west|east (default: center [centre])
+: **-thumb-text-color**, **-thumb-text-colour** COLOR
+     Color to use for the thumb titles (see **-title-color**)
+: **-showcase-titles-align** west|east (default: center [centre])
      The default is to center the text above the thumbnails.
      This option will align the titles either to the left (west) or right (east).
      Aligning west gives more space to the titles.  Aligning east also does so, and
      as well will let you use \n in your titles to achieve multi line titles.
-: -tile-3x1, -tile3x1
+: **-tile-3x1**, **-tile3x1**
      Use a montage tile of 3x1 instead of the usual 2x2 for 3 videos
      ie.  [movie1] [movie2] [movie3] instead of
      [movie1] [movie2]
      [movie3]
      This option only comes into play if the number of videos supplied equals 3
      Otherwise it will be silently ignored. Not used for -showcase-* style.
-: -tile-4x1, -tile4x1
-     Use a montage tile of 4x1 instead of the usual 2x2 for 4 videos
-     ie.  [movie1] [movie2] [movie3] [movie4] instead of
-     [movie1] [movie2]
-     [movie3] [movie4] 
-     This option only comes into play if the number of videos supplied equals 4
-     Otherwise it will be silently ignored. Not used for -showcase-* style.
-: -rotate-thumbs DEGREE LIST ( list of degrees, one for each thumb )
+: **-tile-4x1**, **-tile4x1**
+     Same as **-tile-3x1** above, except use tile of 4x1.  (one row of 4 videos)
+: **-rotate-thumbs** DEGREE LIST ( list of degrees, one for each thumb )
      Rotate thumbs the given amount in degrees - can be positive or negative.
-     There must be one value for each file given with -files.
+     There must be one value for each file given with **-files**.
      If the values are not the same distance from zero, the thumbs will be of different
      sizes as images are necessarily resized *after* rotating.
      With the default montage template - this will also resize the titles; with the showcase
@@ -472,56 +470,56 @@ See also -titleset and -vmgm
 -rotate-thumbs -10 10 -10 10 -10  (for 5 files)
 ```
      **Note: this option does not work currently with shaped or 3d thumbs
-     ('-thumb-shape SHAPE' or '-3dthumbs' ) unless using showcase style.
+     (**-thumb-shape** SHAPE' or **-3dthumbs** ) unless using showcase style.
 
 
 
     ==Dvdauthor options==
-: -loop
+: **-loop**
     Pause in seconds at end of menu.  Use "inf" if you wish indefinite pause.
-    (Note: you can not use inf with -menu-fade as you will get a black screen
+    (Note: you can not use inf with **-menu-fade** as you will get a black screen
     at the end)  (default: "inf" for static menu, 10.0 seconds for animated)
-: -playall
+: **-playall**
     This option will create a button on the main menu that will allow going
     right to the 1st title and playing all videos in succession before returning
     to the main menu
-: -chain-videos NUM | N1-NN
+: **-chain-videos** NUM | N1-NN
     Without options this will chain all videos together so they play sequentially
     without returning to the main menu, except for the last, which will return.
     You can also specify which videos you want to behave this way by number or by
-    a range.  ( ie. -chain-videos 1 2 4-6 )
-: -subtitles "lang1 lang2 . . ."
+    a range.  ( ie. **-chain-videos** 1 2 4-6 )
+: **-subtitles** "lang1 lang2 . . ."
     This allows selectable subtitles in the DVD, assuming you have optional subtitles
     muxed into your videos
-: -audio-lang "Video1_channel Video2_channel Video3_channel . . ."
+: **-audio-lang** "Video1_channel Video2_channel Video3_channel . . ."
     "VideoN_channel" is the track number to use in a multitrack (multi-language) mpeg
-    Usually something like -audio-lang "1 0 1"  ( 1st track is 0, 2nd is 1 . . . etc )
+    Usually something like **-audio-lang** "1 0 1"  ( 1st track is 0, 2nd is 1 . . . etc )
     If the tracks are 0. English 1.French, then the above would make
     French the audio language on Video1 and Video3, and English the audio language on Video2.
     You can check the mpeg with "mplayer -v . . ."
-: -aspect 4:3|16:9
+: **-aspect** 4:3|16:9
     This will output a <video aspect WIDTH:HEIGHT /> tag for the dvdauthor xml file.
     It will affect all videos in the titleset.  Example:
 
 ```
     -aspect 16:9
 ```
-: -widescreen nopanscan|noletterbox [nopanscan]
+: **-widescreen** nopanscan|noletterbox [nopanscan]
     This will output a <video widescreen=nopanscan /> tag (for example)
     for the dvdauthor xml file.  It will affect all videos in the titleset.
-    Use in conjunction with -aspect if your dvd player is cropping your videos.
+    Use in conjunction with **-aspect** if your dvd player is cropping your videos.
     Example:
 
 ```
     -aspect 16:9 -widescreen
 ```
-: -quick-nav
+: **-quick-nav**
     This option will allow navigation of a menu with more than one titleset by using the
     left and right arrow keys of your DVD remote.  When you press this key the highlight will go
     the next or previous title.  If you are at the end of a titleset the right key will go to the
     next titleset.  If you are at the beginning of a titleset, the left key will go to the previous
     titleset.  If no next or previous titleset it will cycle to the end or beginning of the titlesets.
-: -outlinewidth, -outline-width WIDTH
+: **-outlinewidth**, **-outline-width** WIDTH
     For spumux outlinewidth variable.  If there is a large gap between words in a
     text button, this option may help.
 
