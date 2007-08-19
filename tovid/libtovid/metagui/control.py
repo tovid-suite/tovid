@@ -307,6 +307,7 @@ class FlagGroup (Control):
         Control.__init__(self, str, '', label, '', '')
         self.flags = flags
         self.state = state
+        self.label = label
     
     def draw(self, master):
         """Draw Flag controls in the given master."""
