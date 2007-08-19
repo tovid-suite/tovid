@@ -1063,6 +1063,24 @@ quick_menu()
     ffmpeg_prefix=$(sed 's/\/bin\/ffmpeg//g' <<< "$ffmpeg_prefix")
     imlib2_vhook="$ffmpeg_prefix/lib/vhook/imlib2.so"
     ! [[ -s "$imlib2_vhook" ]] && runtime_error "Can't find ffmpeg's vhook's"
+    # check for badly compiled or otherwise unusable vhook
+    if [[ ! -s "$BASEDIR/dummy.mpg" ]]; then
+        yecho
+        yecho "making a MPEG for testing ffmpeg's imlib2 vhook"
+        convert  -resize $VIDSIZE! xc:"#161514" "$WORK_DIR/dummy.jpg"
+        dummy_cmd=(ffmpeg -t 2 -loop_input -i "$WORK_DIR/dummy.jpg" \
+        -aspect 4:3  -f mpeg1video -r 29.970 -vcodec mpeg2video -b 5000k \
+        -f s16le  -i /dev/zero -acodec ac3 -ac 2 -ar 48000 -ab 224k \
+        -y "$WORK_DIR/dummy.mpg")
+        if ! "${dummy_cmd[@]}" 2>> "$LOG_FILE"; then
+            runtime_error "There was a problem making a dummy.mpg with ffmpeg"
+        fi
+        if ! ffmpeg -vhook "$imlib2_vhook -i "$WORK_DIR/dummy.jpg"" \
+        -i "$WORK_DIR/dummy.mpg" -y "$WORK_DIR/test.mpg" 2>> "$LOG_FILE"; then
+            runtime_error "Your ffmpeg's vhook is broken.  No 'quick-menu' :("
+        fi
+        yecho
+    fi
 
     # convert and resize the bgvideo so that is is framed by ntsc-safe black bg
     yecho
@@ -1130,6 +1148,44 @@ tile_warning()
     echo "-tile-3x1 and -tile-4x1 are not showcase options.  Disabling"
     yecho
     sleep 5
+}
+
+make_dummy()
+{
+    yecho "Creating a blank mpeg for the vmgm menu"
+    convert  -resize $VIDSIZE! xc:"#161514" "$WORK_DIR/dummy.jpg"
+    ENC_CMD1=(jpeg2yuv -v 1 -f $FRAME_RATE -I p -n 1 -l 30 -L 1 -b1 \
+    -j "$WORK_DIR/dummy.jpg")
+    ENC_CMD2=(ffmpeg -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
+    -tvstd $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
+    echo "Running: ${ENC_CMD1[@]} | ${ENC_CMD2[@]}"|strings|fold -bs | tee -a "$LOG_FILE"
+    if ! ${ENC_CMD1[@]} 2>> "$LOG_FILE"  | ${ENC_CMD2[@]} 2>&1 |strings  >> "$LOG_FILE"; then
+        runtime_error
+    fi
+    VMGM_TIME=$(vid_length "$WORK_DIR/dummy.m2v")
+    yecho
+    # temporarily use mp2enc for svcd audio as ffmpeg broken # FIXME
+    # see r2162 todisc or older for how to fix this block when ffmpeg is fixed
+    if [[ $TARGET = "dvd" ]]; then
+        BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME \
+        $AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
+        yecho "${BGAUDIO_CMD[@]}"
+        "${BGAUDIO_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
+    else
+        # generate wav from /dev/zero
+        ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME -ar 48000 \
+        -ac 2 -acodec pcm_s16le -y "$WORK_DIR/dummy.wav"
+        BGAUDIO_CMD=(mp2enc -r 44100 -o "$WORK_DIR/dummy.$AUDIO_EXT")
+        echo "Running "${BGAUDIO_CMD[@]}" < $WORK_DIR/dummy.wav" | fold -bs >> "$LOG_FILE"
+        "${BGAUDIO_CMD[@]}" < "$WORK_DIR/dummy.wav" 2>&1 |fold -bs >> "$LOG_FILE.tmp"
+    fi
+    ! [[ -s "$WORK_DIR/dummy.$AUDIO_EXT" ]] &&  runtime_error
+
+    MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -o  "$BASEDIR/dummy.mpg" \
+     "$WORK_DIR/dummy.$AUDIO_EXT"  "$WORK_DIR/dummy.m2v")
+    echo "Running: "${MPLEX_CMD[@]}"" |fold -bs >> "$LOG_FILE"
+    ! "${MPLEX_CMD[@]}" 2>&1 |strings >> "$LOG_FILE" && runtime_error
+#    $VMGM_ONLY && $SKIP_VMGM && mv "$BASEDIR/dummy.mpg" "$BASEDIR/VMGM.mpg"
 }
 
 ##############################################################################
@@ -2883,7 +2939,7 @@ if $SHOWCASE; then
             SE_YCORNER=$(( ${TT_DIM[last_title_col2]/*x} + $last_title_col2_ygeo ))
             avail_space2=$(( ( ${VIDSIZE/*x} - SAFE_AREA ) - $SE_YCORNER ))
         fi
-        # availible space is lowest value of 2 *space* vars ( if 2 columns)
+        # available space is lowest value of 2 *space* vars ( if 2 columns)
         if [[ -n $tt_ygeos_col2 ]] && ((SE_YCORNER > SW_YCORNER)); then
             avail_space=$avail_space2
         else
@@ -3210,7 +3266,7 @@ if ! $TEXTMENU; then
                         "${PVIEW_CMD[@]}" miff:- |
                         "${PVIEW_CMD2[@]}" miff:- |
                         "${PVIEW_CMD3[@]}"
-                    else # normal thumbshape
+                    else # normal thumb shape
                         "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD1[@]}" miff:- |
                         "${PVIEW_CMD3[@]}"
                     fi
@@ -3218,7 +3274,7 @@ if ! $TEXTMENU; then
                     if [ "$THUMB_SHAPE" != "normal" ]; then
                         "${PVIEW_CMD[@]}" miff:- |
                         "${PVIEW_CMD2[@]}" "${PICS[i]}"
-                    else # normal thumbshape
+                    else # normal thumb shape
                         echo "Running
                         "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD3[@]}"
                         "|format_output
@@ -3531,7 +3587,7 @@ if $SHOWCASE; then
         $USER_SC_GEO && sc_xpage=${SHOWCASE_GEO/x*}
         $USER_SC_GEO && SC_Y=${SHOWCASE_GEO/*x}
 
-        # make sure its divisable by 2 for ffmpeg's padding with -quick-menu
+        # make sure its divisible by 2 for ffmpeg's padding with -quick-menu
         if $QUICK_MENU; then
             SC_Y=$(( (SC_Y /2) * 2 ))
             sc_xpage=$(( (sc_xpage / 2) * 2 ))
@@ -3806,7 +3862,7 @@ if $SWITCHED; then
             fi
             yecho "Using audio from "${FILES[vid]}" for the audio background,"
             ! $STATIC && yecho "using the same seek value for the audio as the video"
-            yecho "If you wish to use silence for the swotched menu,"
+            yecho "If you wish to use silence for the switched menu,"
             yecho "use '-bgaudio none'"
         else
             if [[ $BG_AUDIO = "none" ]]; then # no audio if -bgaudio none
@@ -3952,7 +4008,7 @@ else
         CHAPT_INTERVALS[s]=$(bc_math "${VID_LEN[s]} / ${CHAPTERS[s]}")
         # <TODO if GROUPING:  for group chapter thumbs feed group 
         # chapter points to transcode in a loop as normal, but output 
-        # to different subdirs. Then rename according to framenumber
+        # to different subdirs. Then rename according to frame number
         # moving all to the same subdir. Then follow usual procedure,
         # moving  into chapter subdirs for final montages  /TODO>
 
@@ -4285,40 +4341,7 @@ fi
 
 # make dummy VMGM mpeg
 if ! $TITLESET_MODE && ! $DO_TITLESETS; then
-    yecho "Creating a blank mpeg for the vmgm menu"
-    convert  -resize $VIDSIZE! xc:"#161514" "$WORK_DIR/dummy.jpg"
-    ENC_CMD1=(jpeg2yuv -v 1 -f $FRAME_RATE -I p -n 1 -l 30 -L 1 -b1 \
-    -j "$WORK_DIR/dummy.jpg")
-    ENC_CMD2=(ffmpeg -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
-    -tvstd $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
-    echo "Running: ${ENC_CMD1[@]} | ${ENC_CMD2[@]}"|strings|fold -bs | tee -a "$LOG_FILE"
-    if ! ${ENC_CMD1[@]} 2>> "$LOG_FILE"  | ${ENC_CMD2[@]} 2>&1 |strings  >> "$LOG_FILE"; then
-        runtime_error
-    fi
-    VMGM_TIME=$(vid_length "$WORK_DIR/dummy.m2v")
-    yecho
-    # temporarily use mp2enc for svcd audio as ffmpeg broken # FIXME
-    # see r2162 todisc or older for how to fix this block when ffmpeg is fixed
-    if [[ $TARGET = "dvd" ]]; then
-        BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME \
-        $AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
-        yecho "${BGAUDIO_CMD[@]}"
-        "${BGAUDIO_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
-    else
-        # generate wav from /dev/zero
-        ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME -ar 48000 \
-        -ac 2 -acodec pcm_s16le -y "$WORK_DIR/dummy.wav"
-        BGAUDIO_CMD=(mp2enc -r 44100 -o "$WORK_DIR/dummy.$AUDIO_EXT")
-        echo "Running "${BGAUDIO_CMD[@]}" < $WORK_DIR/dummy.wav" | fold -bs >> "$LOG_FILE"
-        "${BGAUDIO_CMD[@]}" < "$WORK_DIR/dummy.wav" 2>&1 |fold -bs >> "$LOG_FILE.tmp"
-    fi
-    ! [[ -s "$WORK_DIR/dummy.$AUDIO_EXT" ]] &&  runtime_error
-
-    MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -o  "$BASEDIR/dummy.mpg" \
-     "$WORK_DIR/dummy.$AUDIO_EXT"  "$WORK_DIR/dummy.m2v")
-    echo "Running: "${MPLEX_CMD[@]}"" |fold -bs >> "$LOG_FILE"
-    ! "${MPLEX_CMD[@]}" 2>&1 |strings >> "$LOG_FILE" && runtime_error
-#    $VMGM_ONLY && $SKIP_VMGM && mv "$BASEDIR/dummy.mpg" "$BASEDIR/VMGM.mpg"
+    make_dummy
 fi
 
 # do submenu 1st for debug purposes
@@ -4576,7 +4599,7 @@ if $SUB_MENU; then
                 BGAUDIO_CMD=(ffmpeg -i "$SM_AUDIO_FILE" -t $TIME -ar 48000 \
                 -ac 2 -acodec pcm_s16le -y $WORK_DIR/submenu.wav)
             else # SM_AUDIO[s] is an audio file we will process it
-                # make seperate wavs for each supplied audio bg for each submenu
+                # make separate wavs for each supplied audio bg for each submenu
                 BGAUDIO_CMD=(ffmpeg -i "${SM_AUDIO[s]}" -t $TIME -ar 48000 \
                 -ac 2 -acodec pcm_s16le -y $WORK_DIR/menu$s.wav)
                 BGAUDIO_CMD2=(ffmpeg -i $WORK_DIR/menu$s.wav \
@@ -5321,7 +5344,7 @@ if [ "$TARGET" = "dvd" ] && $AUTHOR && ! $VMGM_ONLY && ! $DO_TITLESETS && ! $SWI
         echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         yecho "todisc encountered an error:"
         yecho "There was a problem creating the DVD structure"
-        yecho "Saving files in "$WORK_DIR" so you can examine the situtaion"
+        yecho "Saving files in "$WORK_DIR" so you can examine the situation"
         echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         exit 1
     fi
