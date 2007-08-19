@@ -377,9 +377,10 @@ confirm_preview()
     yecho
     if $SWITCHED || $TITLESET_MODE || $VMGM_ONLY; then
         echo "If doing titlesets or switched menus and you wish to exit "
-        echo "without seeing more previews, then type: 'exit', "
-        echo "else you will continue on with other previews."
+        echo "without seeing more previews, then type: 'exit', else you will "
+        echo "continue on with other previews even if you don't type 'yes'."
         echo
+        confirm_msg="read above paragraph; then $confirm_msg"
     fi
     echo "If you are happy with the preview, $confirm_msg"
     read input
