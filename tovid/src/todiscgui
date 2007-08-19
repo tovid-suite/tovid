@@ -95,10 +95,11 @@ main = Panel("Main",
             HPanel('Showcase options',
                 Flag("Textmenu", '-textmenu', False,
                 'Showcase style text only menu.  Optionally use a "showcase" '
-                'image/video, or static/animated background.  See also '
-                'quick-menu and switched menu.',
+                'image/video, or static/animated background.  Use the '
+                '"columns" option to set the maximum number of titles per '
+                ' column.  See also quick-menu and switched menu.',
                 enables=Number('     columns', '', 13,
-                'Maximum number of titles per column', 1, 50)
+                '', 1, 50)
                 ),
                     Flag("Quick menu", '-quick-menu', False,
                         'Ten times faster than normal showcase animation.  '
@@ -238,11 +239,16 @@ thumbnails = Panel("Thumbnails",
             'Default if not enabled: white', toggles=True),
         Flag("No thumb mist", '-thumb-mist-color', False,
             'Do not use mist behind thumbs (not a showcase option).  Warning: '
-            'might cause contrast problems unless you use a large bold font')
+            'might cause contrast problems (use a large bold font)')
     ),
-    Flag('Arrange thumb montage in 1 row of 3 thumbs', '-tile3x1', False,
-        'Use a montage tile of 3x1 instead of the usual 2x2 '
-        '(3 videos only).  Not a showcase option.')
+    FlagGroup('Special thumb arrangements', 'exclusive',
+        Flag('1 row of 3 thumbs', '-tile3x1', False,
+            'Use a montage tile of 3x1 instead of the usual 2x2 '
+            '(3 videos only).  Not a showcase option.'),
+        Flag('1 row of 4 thumbs', '-tile4x1', False,
+            'Use a montage tile of 4x1 instead of the usual 2x2 '
+            '(4 videos only).  Not a showcase option.')
+    ),
 )
 
 submenus = Panel("Submenus",
