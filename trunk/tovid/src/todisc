@@ -1402,7 +1402,7 @@ while test $# -gt 0; do
             SHOWCASE=:
             IMG_FMT="png"
             ;;
-        "-textmenu" )
+        "-textmenu" | "-text-menu" )
             shift
             get_listargs "$@"
             arg=${ARGS_ARRAY[0]}
