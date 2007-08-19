@@ -380,7 +380,7 @@ confirm_preview()
         echo "without seeing more previews, then type: 'exit', else you will "
         echo "continue on with other previews even if you don't type 'yes'."
         echo
-        confirm_msg="read above paragraph; then $confirm_msg"
+        confirm_msg="read above paragraph and then $confirm_msg"
     fi
     echo "If you are happy with the preview, $confirm_msg"
     read input
@@ -1097,7 +1097,7 @@ quick_menu()
     PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 -ss ${SEEK_VAL[MENU_NUM-1]} \
     -t "$QM_MENU_TIME" -i "$QM_SHOWCASE_FILE" -s $SHOWCASE_SIZE -acodec copy \
     -padtop $TOPPAD -padbottom $BOTTOMPAD -padleft $LEFTPAD -padright $RIGHTPAD \
-    -r $FRAME_RATE -b 15000k -padcolor $PAD_COLOUR -y  "$WORK_DIR/quick_tmp.avi")
+    -r $FRAME_RATE -b 15000k -padcolor "$PAD_COLOUR" -y  "$WORK_DIR/quick_tmp.avi")
     yecho
     ! $QM_PREVIEW && yecho "Running ${PAD_CMD[@]}"|fold -bs
     "${PAD_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"
