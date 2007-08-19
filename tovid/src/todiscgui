@@ -372,16 +372,18 @@ authoring = Panel("Authoring",
             'Pause indefinitely at the end of the menu.')
     ),
     VPanel('Aspect',
-        Choice('Widescreen', '-widescreen', None,
+        Choice('Widescreen', '-widescreen', 'none',
             'This will output a <video widescreen=nopanscan /> tag '
             '(for example) for the dvdauthor xml file.  It affects all '
             'videos in the titleset.  Use in conjunction with "Aspect ratio" '
-            'if your dvd player is cropping your videos',
-            'nopanscan|noletterbox'),
-        Choice('Aspect ratio', '-aspect', '4:3',
+            'if your dvd player is cropping your videos.  '
+            'Leave this at "none" to not output a widescreen tag',
+            'nopanscan|noletterbox|none'),
+        Choice('Aspect ratio', '-aspect', 'none',
             'This will output a <video aspect WIDTH:HEIGHT /> tag for the '
-            'dvdauthor xml file.  It will affect all videos in the titleset.',
-            '4:3|16:9'),
+            'dvdauthor xml file.  It will affect all videos in the titleset.  '
+            'Leave this at "none" to let dvdauthor figure it out for you',
+            '4:3|16:9|none'),
     ),
     VPanel('Language(s)',
         List('Audio', '-audio-lang', '',
@@ -390,13 +392,14 @@ authoring = Panel("Authoring",
             'Single value or list'),
     ),
     VPanel('Buttons',
-        Choice('Style', '-button-style', 'rect',
+        Choice('Style', '-button-style', 'none',
             'Style or shape of the buttons seen when playing the DVD '
             'menu.  "rect": rectangle around the thumbs, "text": uses '
             'the title text, "text-rect": rectangle around the title text, '
             '"line": line underneath title.  The "line" style is showcase only'
-            ', and the "text" buttons can not be used with "showcase" menus.',
-            'rect|line|text|text-rect'),
+            ', and the "text" buttons can not be used with "showcase" menus.'
+            'Leave at "none" to let todisc pick the most appropriate style. ',
+            'rect|line|text|text-rect|none'),
         Color('Highlight color', '-highlight-color', '#266CAE',
             'Color for the menu buttons the dvd remote uses to navigate.', toggles=True),
         Color('Selection color', '-select-color', '"#DE7F7C"',
