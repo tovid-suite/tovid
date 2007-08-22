@@ -814,13 +814,6 @@ fi
 # Remove blank lines and write final result to output file
 echo "$FINAL_DISC_XML" | sed -e '/^ *$/d' > "$OUT_PREFIX.xml"
 
-if $FILE_NOT_FOUND; then
-  echo $SEPARATOR
-  echo "Some of the video files you specified were not found."
-  echo "The XML file was written anyway, but you might want to"
-  echo "double-check to make sure you didn't make a typing mistake."
-fi
-
 echo "Done. The resulting XML was written to $OUT_PREFIX.xml."
 
 if ! $QUIET; then
