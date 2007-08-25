@@ -162,7 +162,7 @@ SE_YCORNER=0
 NO_WARN=false
 ROTATE_THUMBS=false
 DO_TITLESETS=false
-AUTHOR=true
+AUTHOR=:
 ts_start=0
 args=( "$@" )
 VMGM_ONLY=false
@@ -172,7 +172,7 @@ MENU_NUM=1
 INTRO=""
 QUICK_NAV=false
 SKIP_VMGM_MENU=false
-NO_VMGM_MENU=false
+VMGM_MENU=:
 SWITCHED_MENUS=false
 SWITCHED_MODE=false
 SWITCHED=false
@@ -794,9 +794,11 @@ titleset_mode()
         VMGM_PAUSE_TIME=$PAUSE_TIME
     fi
     DVDAUTHOR_XML="$BASEDIR/dvdauthor.xml"
-    $DO_INTRO && VMGM_PRE="if (g2==1) jump cell 2;"
-    grep -q -- -switched-menus <<< "${args[@]}" && VMGM_PRE="        $VMGM_PRE g1=1;"
-    $SKIP_VMGM_MENU && VMGM_PRE="        $VMGM_PRE if ( g3 eq 0 )  { g3 = 1 ; }"
+    VMGM_PRE="          if ( g5 eq 0 ) g5 = 1; "
+    grep -q -- -switched-menus <<< "${args[@]}" && VMGM_PRE="$VMGM_PRE g1=1;"
+    $DO_INTRO && VMGM_PRE="$VMGM_PRE if (g2==1) jump cell 2;"
+    $SKIP_VMGM_MENU && VMGM_PRE="$VMGM_PRE if ( g3 eq 0 )  { g3 = 1 ; }"
+
 #    $SWITCHED_MODE && VMGM_PRE="$VMGM_PRE g1=1;"
     # make dvdauthor.xml
 (
@@ -818,7 +820,7 @@ fi)
 $([[ $INTRO ]] && echo -e "        g2=1; jump vmgm menu entry title;")
         jump cell 1;
         </post>
-$(for ((i=1; i<=${#TITLESET_OPTS[@]}; i++)); do echo "        <button name=\"$i\">jump titleset $i menu;</button>"; done)
+$(for ((i=1; i<=${#TITLESET_OPTS[@]}; i++)); do echo "        <button name=\"$i\">g5=1; jump titleset $i menu;</button>"; done)
         $INTRO
         <vob file="$BASEDIR/VMGM.mpg" pause="$VMGM_PAUSE_TIME"/>
       </pgc>
@@ -873,8 +875,16 @@ EOF
                     get_listargs "$@"
                     OIFS=$IFS
                     IFS=""
+                    NUM_TITLES="$NUM_TITLES ${#ARGS_ARRAY[@]}"
                     titles=( "${titles[@]}" "${ARGS_ARRAY[@]}" )
                     IFS=$OIFS
+                    ;;
+                "-files" )
+                    shift
+                    get_listargs "$@"
+                    for i in ${!ARGS_ARRAY[@]}; do
+                        all_files[i]=$(readlink -f "${ARGS_ARRAY[i]}")
+                    done
                     ;;
             esac
             shift
@@ -882,7 +892,10 @@ EOF
     }
     get_genopts "${args[@]}"
     get_menu_titles "${args[@]}"
+    # get the number of files in each titleset
+    num_titles="$NUM_TITLES"
     MENUTITLES=( "${menutitles[@]}" )
+
     get_menu_titles "${VMGM_OPTS[@]}"
     if [[ ${#titles[@]} -ne $count ]]; then
         usage_error "Number of titleset titles must equal the number of titlesets"
@@ -903,11 +916,11 @@ EOF
         fi
         yecho "Making a generic vmgm menu for you - you may wish to cancell out and change this."
         yecho
-        ! $NO_VMGM_MENU && ! $NO_WARN && sleep 15
+        $VMGM_MENU && ! $NO_WARN && sleep 15
     fi
     yecho
     yecho "Making a VMGM menu with the following command:"
-    vmgm_menu_cmd=(todisc "${GEN_OPTS[@]}" -basedir "$WORK_DIR" -menu-only -textmenu  -todisc-pids "$todisc_pids"  "${VMGM_OPTS[@]}")
+    vmgm_menu_cmd=(todisc "${GEN_OPTS[@]}" -basedir "$WORK_DIR" -menu-only -textmenu -todisc-pids "$todisc_pids"  "${VMGM_OPTS[@]}")
     yecho "Running: ${vmgm_menu_cmd[@]}"
     INITIALDIR="$BASEDIR"
     if ! "${vmgm_menu_cmd[@]}" ; then cleanup && exit 1; fi
@@ -925,7 +938,8 @@ EOF
                     shift
                 done
                 titleset_cmd=( todisc -titleset-mode -basedir "$WORK_DIR" \
-                -tset_num ${count}-${tset} "${GEN_OPTS[@]}" "${TITLESET_OPTS[@]}" )
+                -title_count "$num_titles" -tset_num ${count}-${tset} \
+                "${GEN_OPTS[@]}" "${TITLESET_OPTS[@]}" )
                 yecho
                 yecho "Working on the menu for titleset number $tset"
                 yecho && sleep 5
@@ -1063,25 +1077,24 @@ quick_menu()
     ffmpeg_prefix=$(which ffmpeg)
     ffmpeg_prefix=$(sed 's/\/bin\/ffmpeg//g' <<< "$ffmpeg_prefix")
     imlib2_vhook="$ffmpeg_prefix/lib/vhook/imlib2.so"
-    ! [[ -s "$imlib2_vhook" ]] && runtime_error "Can't find ffmpeg's vhook's"
+
     # check for badly compiled or otherwise unusable vhook
-    if [[ ! -s "$BASEDIR/dummy.mpg" ]]; then
-        yecho
-        yecho "Making a MPEG for testing ffmpeg's imlib2 vhook"
-        convert  -resize $VIDSIZE! xc:"#161514" "$WORK_DIR/dummy.jpg"
-        dummy_cmd=(ffmpeg -t 2 -loop_input -i "$WORK_DIR/dummy.jpg" \
-        -aspect 4:3  -f mpeg1video -r 29.970 -vcodec mpeg2video -b 5000k \
-        -f s16le  -i /dev/zero -acodec ac3 -ac 2 -ar 48000 -ab 224k \
-        -y "$WORK_DIR/dummy.mpg")
-        if ! "${dummy_cmd[@]}" 2>> "$LOG_FILE"; then
-            runtime_error "There was a problem making a dummy.mpg with ffmpeg"
-        fi
-        if ! ffmpeg -vhook "$imlib2_vhook -i "$WORK_DIR/dummy.jpg"" \
-        -i "$WORK_DIR/dummy.mpg" -y "$WORK_DIR/test.mpg" 2>> "$LOG_FILE"; then
-            runtime_error "Your ffmpeg's vhook is broken.  No 'quick-menu' :("
-        fi
-        yecho
+    ! [[ -s "$imlib2_vhook" ]] && runtime_error "Can't find ffmpeg's vhook's"
+    yecho
+    yecho "Making a MPEG for testing ffmpeg's imlib2 vhook"
+    convert  -resize $VIDSIZE! xc:"#161514" "$WORK_DIR/dummy.jpg"
+    dummy_cmd=(ffmpeg -t 2 -loop_input -i "$WORK_DIR/dummy.jpg" \
+    -aspect 4:3  -f mpeg1video -r 29.970 -vcodec mpeg2video -b 5000k \
+    -f s16le  -i /dev/zero -acodec ac3 -ac 2 -ar 48000 -ab 224k \
+    -y "$WORK_DIR/dummy.mpg")
+    if ! "${dummy_cmd[@]}" 2>> "$LOG_FILE"; then
+        runtime_error "There was a problem making a dummy.mpg with ffmpeg"
     fi
+    if ! ffmpeg -vhook "$imlib2_vhook -i "$WORK_DIR/dummy.jpg"" \
+    -i "$WORK_DIR/dummy.mpg" -y "$WORK_DIR/test.mpg" 2>> "$LOG_FILE"; then
+        runtime_error "Your ffmpeg's vhook is broken.  No 'quick-menu' :("
+    fi
+    yecho
 
     # convert and resize the bgvideo so that is is framed by ntsc-safe black bg
     yecho
@@ -1127,19 +1140,6 @@ quick_menu()
         "$WORK_DIR/quick_tmp.avi"
     fi
     $QM_PREVIEW && yecho
-}
-
-get_all_files()
-{
-    unset x y all_files
-    while [[ $@ ]]; do case "$1" in "-files" ) shift; get_listargs "$@"
-        for i in  ${!ARGS_ARRAY[@]}; do
-            all_files[i]=$(readlink -f "${ARGS_ARRAY[i]}")
-        done
-        f=${#ALL_FILES[@]}
-        for i in ${!all_files[@]}; do ALL_FILES[f++]=${all_files[i]}; done
-        esac; shift
-    done
 }
 
 # 3x1 and 4x1 tile only for default arrangement
@@ -1715,6 +1715,10 @@ while test $# -gt 0; do
             shift
             MENU_NUM="$1"
             ;;
+        "-title_count" ) # internal use only
+            shift
+            ALLTITLES=( $1 )
+            ;;
         "-quick-nav" )
             QUICK_NAV=:
             ;;
@@ -1728,7 +1732,7 @@ while test $# -gt 0; do
             SKIP_VMGM_MENU=:
             ;;
         "-no-vmgm-menu" | "-no-vmgm" )
-            NO_VMGM_MENU=:
+            VMGM_MENU=false
             ;;
         "-is_titleset" ) #FIXME - this is useless
             TSET_MODE=:
@@ -1818,7 +1822,7 @@ fi
 $VMGM_ONLY && SWITCHED_MODE=false && SWITCHED_MENUS=false
 # need a way to get back to the VMGM menu, so -no-vmgm-menu requires -quicknav ? FIXME
 # -no-vmgm requires -skip-vmgm for now; pass -no-vmgm-menu to subshells via NO_VMGM
-if $NO_VMGM_MENU; then
+if ! $VMGM_MENU; then
     SKIP_VMGM_MENU=:
     NO_VMGM="-no-vmgm-menu"
 fi
@@ -1898,7 +1902,7 @@ if [ "$BUTTON_STYLE" = "text" ]; then
         yecho
         ! $NO_WARN && sleep 15
     fi
-    if $TITLESET_MODE && ! $NO_VMGM_MENU && $PLAYALL && ! $SHOWCASE; then
+    if $TITLESET_MODE && $VMGM_MENU && $PLAYALL && ! $SHOWCASE; then
         BUTTON_STYLE="rect"
         yecho
         yecho "Warning ************"
@@ -2687,7 +2691,7 @@ elif $FOURxONE && [[ $V_TOTAL -eq 4 ]]; then
     TILE_ARRAY[3]=4x1
     THUMB_SIZE=${GEO_ARRAY[6]}
 fi
-if ( ($DO_TITLESETS || $TITLESET_MODE) && ! $NO_VMGM_MENU ) || $PLAYALL; then
+if ( ($DO_TITLESETS || $TITLESET_MODE) && $VMGM_MENU ) || $PLAYALL; then
     if [[ $BUTTON_GRAVITY = "south" ]]; then
         BUTTON_GRAVITY="center"
         yecho "Changing thumb alignment to 'center' to make room for navigation button"
@@ -3003,7 +3007,7 @@ if $SHOWCASE; then
     done
 fi
 # make a button for playall and one for jumping to the vmgm menu, if called for
-if ($TITLESET_MODE && ! $NO_VMGM_MENU) && ! $VMGM_ONLY; then
+if ($TITLESET_MODE && $VMGM_MENU) && ! $VMGM_ONLY; then
     if $PLAYALL; then
         POINTSIZE=14
         MAIN_SE_GEO="+75+75"
@@ -3019,7 +3023,7 @@ if ($TITLESET_MODE && ! $NO_VMGM_MENU) && ! $VMGM_ONLY; then
     mk_se_button $SE_BTN_WIDTH "$SELECT_COLOUR" "$WORK_DIR/Main_${SELECT_COLOUR/\#}.png"
 fi
 if $PLAYALL; then
-    if ($TITLESET_MODE && ! $NO_VMGM_MENU) && ! $VMGM_ONLY; then
+    if ($TITLESET_MODE && $VMGM_MENU) && ! $VMGM_ONLY; then
         POINTSIZE=14
         PLAYALL_SE_GEO="+50+50"
     else
@@ -3234,7 +3238,7 @@ if $SHOWCASE; then
     -composite -background none "$WORK_DIR/pics/template.png"
     
 fi
-if $PLAYALL || ($TITLESET_MODE && ! $NO_VMGM_MENU) ; then
+if $PLAYALL || ($TITLESET_MODE && $VMGM_MENU) ; then
     if ! $VMGM_ONLY; then
         convert "$WORK_DIR/pics/template.png" -background none "${ADD_PLAYALL_BTN[@]}" \
         "${ADD_MAIN_BTN[@]}" "$WORK_DIR/pics/template.png"
@@ -3511,7 +3515,7 @@ elif $SHOWCASE && [[ "$BUTTON_STYLE" = "line" ]]; then
         convert  -size $VIDSIZE xc:none -fill none -stroke $HIGHLIGHT_COLOUR \
         -strokewidth 2 -draw @fake_montage.mvg "$WORK_DIR/fake_montage.png"
 fi
-if $TITLESET_MODE && ! $VMGM_ONLY && ! $NO_VMGM_MENU; then
+if $TITLESET_MODE && ! $VMGM_ONLY && $VMGM_MENU; then
     convert -gravity SouthEast -geometry "$MAIN_SE_GEO" "$WORK_DIR/Select.png" \
     "$WORK_DIR/Main_${SELECT_COLOUR/\#}.png" -composite "$WORK_DIR/Select.png"
     convert -gravity SouthEast -geometry "$MAIN_SE_GEO" "$WORK_DIR/Highlight.png" \
@@ -4092,7 +4096,7 @@ if [[ "$BUTTON_STYLE" = "text" && -z "$OUTLINEWIDTH" ]]; then
 else
     [[ -z "$OUTLINEWIDTH" ]] && OUTLINEWIDTH="\"6\""
 fi
-if $PLAYALL ||  ($TITLESET_MODE && ! $NO_VMGM_MENU) || ($TSET_MODE && ! $NO_VMGM_MENU); then
+if $PLAYALL ||  ($TITLESET_MODE && $VMGM_MENU) || ($TSET_MODE && $VMGM_MENU); then
     NUM_BUTTONS=$(( ${#FILES[@]} + 1 ))
 else
     NUM_BUTTONS=${#FILES[@]}
@@ -4139,11 +4143,11 @@ $(if $QUICK_NAV; then
             fi
         fi
         if [[ $i -eq $(( ${#FILES[@]} + 1 )) ]]; then
-            if $TITLESET_MODE && ! $NO_VMGM_MENU && $PLAYALL; then
+            if $TITLESET_MODE && $VMGM_MENU && $PLAYALL; then
                 echo -e "       <button name=\"$i\" $up/>"
                 echo -e "       <button name=\"$((i+1))\" $down/>"
             else
-                echo -e "       <button name=\"$((i+1))\" $down $up/>"
+                echo -e "       <button name=\"$i\" $down $up/>"
             fi
         fi
     done
@@ -4151,7 +4155,7 @@ fi)
 $(if $SWITCHED && ! $QUICK_NAV; then
     for ((i=1; i<=$NUM_BUTTONS; i++)); do
         if [[ $i -eq $(( ${#FILES[@]} + 1 )) ]]; then
-            if $TITLESET_MODE && ! $NO_VMGM_MENU && $PLAYALL; then
+            if $TITLESET_MODE && $VMGM_MENU && $PLAYALL; then
                 echo -e "       <button name=\"$i\" $up/>"
                 echo -e "       <button name=\"$((i+1))\" $down/>"
             else
@@ -4190,7 +4194,8 @@ else
 fi
 if [ "$TARGET" = "dvd" ]; then
 # make dvdauthor.xml
-# g1 register: switched menus, g2: vmgm intro, g3: -quick-nav, g4: playall
+# g1 register: switched menus, g2: vmgm intro
+# g3: -quick-nav, g4: playall, g5: button highlight
 
 # TSET_NUM supplied by the calling todisc script and is the current titleset #
 MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${MENU_NUM}.mpg"
@@ -4222,13 +4227,15 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
         else
             JUMP_INC=$i
         fi
-        echo -e "        <button name=\"$i\">jump $JUMP $JUMP_INC;</button>"
+        echo -e "        <button name=\"$i\">g5=$i; jump $JUMP $JUMP_INC;</button>"
     done
     if $QUICK_NAV; then
         if [[ $TSET_NUM -eq 1 ]]; then PREV=$TSET_TOT; else PREV=$(( TSET_NUM - 1 )); fi
         if [[ $TSET_NUM -eq $TSET_TOT ]]; then NEXT=1; else NEXT=$(( TSET_NUM + 1)); fi
-        echo -e "        <button name=\"ActionLeft\"> {g3=$PREV; button=1024; jump vmgm menu entry title;}</button>"
-        echo -e "        <button name=\"ActionRight\"> {g3=$NEXT; button=1024; jump vmgm menu entry title;}</button>"
+        if [[ $TSET_NUM -eq 1 ]]; then Ind=$((TSET_TOT-1)); else Ind=$(( TSET_NUM - 2 )); fi
+        echo -e "        <button name=\"ActionLeft\"> {g5=${ALLTITLES[Ind]}; g3=$PREV; button=1024; jump vmgm menu entry title;}</button>"
+        echo -e "        <button name=\"ActionRight\"> {g5=1; g3=$NEXT; button=1024; jump vmgm menu entry title;}</button>"
+
     fi
     if $SWITCHED_MENUS; then
         if [[ $menu_num -eq $NUM_MENUS ]]; then
@@ -4241,7 +4248,7 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
         echo -e "        <button name=\"ActionDown\">{ g1 = $inc; jump menu $inc; }</button>"
     fi
     SE_BUTTON_NUM=$V_TOTAL
-    if  $TITLESET_MODE && ! $NO_VMGM_MENU; then
+    if  $TITLESET_MODE && $VMGM_MENU; then
         ((SE_BUTTON_NUM++))
         echo -e "        <button name=\"$SE_BUTTON_NUM\">g2=1; g3=1000; button=1024; jump vmgm menu;</button>"
     fi
@@ -4256,7 +4263,9 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
         else
             echo -e "        <pre> { button = g1 * 1024;} </pre>"
         fi
-    fi    
+    else
+        echo -e "        <pre>button = g5 * 1024; </pre>"
+    fi
     echo -e "$MAIN_PRE"
     echo -e "$MAIN_POST"
     echo -e "      </pgc>"
@@ -4998,7 +5007,7 @@ if $MENU_FADE && ! $STATIC && ! $QUICK_MENU; then
         else
             MONTAGE_CMD5=(convert -)
         fi
-        if $TITLESET_MODE && ! $VMGM_ONLY && ! $NO_VMGM_MENU; then
+        if $TITLESET_MODE && ! $VMGM_ONLY && $VMGM_MENU; then
             MONTAGE_CMD6=(composite -dissolve $S -gravity SouthEast \
             -geometry $MAIN_SE_GEO "$WORK_DIR/Main.png" - -background none)
         else
