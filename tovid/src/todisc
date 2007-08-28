@@ -4185,7 +4185,7 @@ $(if $QUICK_NAV; then
         if [[ $i -eq 1 ]]; then
             echo -n "       <button name=\"$i\" $down $up"
         elif [[ $i -eq ${#FILES[@]} ]]; then
-            if $TITLESET_MODE || $PLAYALL; then
+            if ($TITLESET_MODE || $PLAYALL) && $VMGM_MENU; then
                 echo -n "       <button name=\"$i\" $up down=\"$((i+1))\""
             else
                 echo -n "       <button name=\"$i\" $down $up"
