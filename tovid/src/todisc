@@ -159,7 +159,7 @@ USER_SAFE_AREA=false
 USER_TITLE_GEO=false
 SPACER=""
 SE_YCORNER=0
-NO_WARN=false
+WARN=true
 ROTATE_THUMBS=false
 DO_TITLESETS=false
 AUTHOR=:
@@ -249,7 +249,7 @@ function titlesafe_error()
     yecho "Part of the title may not be visible on your tv screen"
     yecho "Consider using a smaller -thumb-fontsize, or shortening \"${TITLES[i]}\""
     echo "****************************"
-    ! $NO_WARN && sleep 3
+    $WARN && sleep 3
 }
 
 function format_output()
@@ -479,9 +479,11 @@ get_line_count()
 awk 'END{print NR}' "$LOG_FILE"
 }
 
+# hack to check if transcode is stalling and set it a HUP if so
+# usage: check_stall PID
 check_stall()
 {
-    PIDOF_TRANSCODE=$(<$WORK_DIR/tcode$i.pid)
+    PIDOF_TRANSCODE=$1
     newlines=$(stat_logfile)
     while ps -p $PIDOF_TRANSCODE >/dev/null; do
         # Check for transcode output every 10 seconds
@@ -769,7 +771,7 @@ switched_menu_mode()
     for ((i=1; i<${#FILES[@]}; i++)); do
         yecho
         yecho "Working on switched menu $((i+1))"
-        ! $NO_WARN && yecho && sleep 5
+        $WARN && yecho && sleep 5
         yecho "Running todisc "$@" -switched-mode $IS_TITLESET -basedir "$BASEDIR" -menu_num $((i+1)) -showcase "${FILES[i]}""
         todisc "$@" -switched-mode $IS_TITLESET -basedir "$WORK_DIR" -menu_num $((i+1)) -todisc-pids "$todisc_pids" -showcase "${FILES[i]}"
     done
@@ -794,10 +796,10 @@ titleset_mode()
         VMGM_PAUSE_TIME=$PAUSE_TIME
     fi
     DVDAUTHOR_XML="$BASEDIR/dvdauthor.xml"
-    VMGM_PRE="          if ( g5 eq 0 ) g5 = 1; "
-    grep -q -- -switched-menus <<< "${args[@]}" && VMGM_PRE="$VMGM_PRE g1=1;"
+    VMGM_PRE="        if ( g5 eq 0 ) g5 = 1; "
+    grep -q -- -switched-menus <<< "${args[@]}" && VMGM_PRE="$VMGM_PRE if (g1 eq 0) g1=1;"
     $DO_INTRO && VMGM_PRE="$VMGM_PRE if (g2==1) jump cell 2;"
-    $SKIP_VMGM_MENU && VMGM_PRE="$VMGM_PRE if ( g3 eq 0 )  { g3 = 1 ; }"
+    $SKIP_VMGM_MENU && VMGM_PRE="$VMGM_PRE if ( g3 eq 0 )  g3 = 1 ;"
 
 #    $SWITCHED_MODE && VMGM_PRE="$VMGM_PRE g1=1;"
     # make dvdauthor.xml
@@ -812,7 +814,7 @@ titleset_mode()
 $VMGM_PRE
 $(if $QUICK_NAV || $SKIP_VMGM_MENU; then
         for ((i=1; i<=${#TITLESET_OPTS[@]}; i++)); do
-            echo -e "          if ( g3 eq $i ) jump titleset $i menu;"
+            echo -e "        if ( g3 eq $i ) jump titleset $i menu;"
         done
 fi)
         </pre>
@@ -916,7 +918,7 @@ EOF
         fi
         yecho "Making a generic vmgm menu for you - you may wish to cancell out and change this."
         yecho
-        $VMGM_MENU && ! $NO_WARN && sleep 15
+        $VMGM_MENU && $WARN && sleep 15
     fi
     yecho
     yecho "Making a VMGM menu with the following command:"
@@ -1064,6 +1066,53 @@ check_menufile()
         runtime_error "Menu file $MENU_FILE not found.  Spumux seems to have had problems"
     fi
 }
+
+get_slices()
+{
+    num_vids=$1
+    slices_per_vid=3
+
+    get_slice_length()
+    {
+        num_slices=$(bc -l <<< "$num_vids * $slices_per_vid")
+        slice_length=$(bc -l <<< "scale=2; $MENU_LENGTH / $num_vids / $slices_per_vid")
+    }
+
+    get_slice_length
+
+    while (( num_slices > menu_length )) ; do
+        ((slices_per_vid--))
+        get_slice_length
+    done
+    while [[ $(bc -l <<< "$slice_length > 2") = 1 ]]; do
+        ((slices_per_vid++))
+        get_slice_length
+    done
+}
+make_mix()
+{
+    mix_size=$1
+    SLICE_PER_VID=3
+    if $SHOWCASE_MIX; then
+        mix_size=$SHOWCASE_SIZE
+        LEFTPAD=$sc_xpage
+        TOPPAD=$SC_Y
+        RIGHTPAD=$(( ${VIDSIZE%%x*} - $LEFTPAD - ${SHOWCASE_SIZE%%x*} ))
+        BOTTOMPAD=$(( ${VIDSIZE##*x} - $TOPPAD - ${SHOWCASE_SIZE##*x} ))
+        PADDING="-Y -${TOPPAD},-${LEFTPAD},-${BOTTOMPAD},-${RIGHTPAD}"
+    fi
+    # get menu length in frames
+    menu_length=$(bc_math "$MENU_LENGTH * $FRAME_RATE" int)
+    slice_size=$(bc_math "(($MENU_LENGTH / ${#FILES[@]}) / $slices_per_vid)" )
+    if $SHOWCASE_MIX; then
+        SLICE_CMD=(transcode -i "$FILE_IN" $NAVSEEK "$NAVLOG" -c $slice \
+        -Z $CLIP_SIZE --export_fps $FRAME_RATE -w 8000  -y ffmpeg,null \
+        --export_asr $AR -F mpeg2video $PADDING -o  "$WORK_DIR/slice${index}_tmp")
+        echo "Running: ${SLICE_CMD[@]}"|fold -bs >> "$LOG_FILE.log" 2>&1
+       "${SLICE_CMD[@]}" >>"$LOG_FILE.log" 2>&1
+    fi
+}
+
 
 quick_menu()
 {
@@ -1281,7 +1330,7 @@ while test $# -gt 0; do
             NOASK=:
             ;;
         "-no-warn" | "-nowarn" )
-            NO_WARN=:
+            WARN=false
             ;;
         "-keep-files" | "-keepfiles" )
             KEEP_FILES=:
@@ -1782,6 +1831,9 @@ if ! $VMGM_ONLY && ! $DO_TITLESETS; then
         You gave ${#FILES[@]} files and ${#TITLES[@]} titles"
     fi
 fi
+if $DO_TITLESETS && ! $VMGM_MENU && ! $QUICK_NAV; then
+    usage_error "You can not use -no-vmgm if doing titlesets unless using -quick-nav"
+fi
 $VMGM_ONLY && PLAYALL=false && SUB_MENU=false && ANI_SUB_MENU=false && SM_TITLES=""
 if [[ -n "$SM_TITLES" ]]; then
     if test ${#SM_TITLES[@]} -ne ${#TITLES[@]}; then
@@ -1819,7 +1871,7 @@ if $SWITCHED_MODE; then
     ANI_SUB_MENU=false && SUB_MENU=false
 fi
 
-$VMGM_ONLY && SWITCHED_MODE=false && SWITCHED_MENUS=false
+if $VMGM_ONLY; then SWITCHED_MODE=false && SWITCHED_MENUS=false; fi
 # need a way to get back to the VMGM menu, so -no-vmgm-menu requires -quicknav ? FIXME
 # -no-vmgm requires -skip-vmgm for now; pass -no-vmgm-menu to subshells via NO_VMGM
 if ! $VMGM_MENU; then
@@ -1829,18 +1881,6 @@ fi
 
 # initialize MENU_AUDIOLENGTH now that options have been read
 [[ -n $BG_AUDIO ]] && MENU_AUDIOLENGTH=${MENU_LENGTH[MENU_NUM-1]}
-
-# some checks for -quick-menu
-if $QUICK_MENU; then
-# quick-menu needs TEXTMENU=: , and does its own showcase and bg with ffmpeg
-    TEXTMENU=:
-    SC_THUMB=false
-    STATIC=false # no static quickmenus, imagemagick is fast enough for this
-#    BACKGROUND=""
-    if [[ -z $SHOWCASE_FILE ]] && ! $SWITCHED_MENUS; then
-        usage_error "-quick-menu needs a showcase file ( -showcase FILE )"
-    fi
-fi
 
 # honour -noask for functions and called scripts that use them
 $NOASK && NO_ASK="-noask"
@@ -1900,7 +1940,7 @@ if [ "$BUTTON_STYLE" = "text" ]; then
         yecho "If you would rather use 'text-rect', or 'rect' for showcase,"
         yecho "please ctrl-c now to exit and rethink things"
         yecho
-        ! $NO_WARN && sleep 15
+        $WARN && sleep 15
     fi
     if $TITLESET_MODE && $VMGM_MENU && $PLAYALL && ! $SHOWCASE; then
         BUTTON_STYLE="rect"
@@ -1909,7 +1949,7 @@ if [ "$BUTTON_STYLE" = "text" ]; then
         yecho "You can not use text button style when using both playall and titlesets"
         yecho "because of spumux and space limitations"
         yecho "Changing to 'rect' style of buttons"
-        ! $NO_WARN && sleep 15
+        $WARN && sleep 15
     fi
 fi
 if [[ $BUTTON_STYLE = "line" ]] && ! $SHOWCASE; then
@@ -1918,14 +1958,14 @@ if [[ $BUTTON_STYLE = "line" ]] && ! $SHOWCASE; then
     yecho "Using button style 'rect' instead"
     yecho
     BUTTON_STYLE="rect"
-    ! $NO_WARN && sleep 10
+    $WARN && sleep 10
 elif $USER_BSTYLE && $TEXTMENU && [[ $BUTTON_STYLE = "rect" ]]; then
     $MULTILINE_TITLE && BUTTON_STYLE="text-rect" || BUTTON_STYLE="line"
     if [[ $MENU_NUM -eq 2 ]] ||  (! $SWITCHED_MODE && ! $SWITCHED_MENUS); then
         yecho
         yecho "Using button style '$BUTTON_STYLE' instead of 'rect' for textmenu menu"
         yecho
-        ! $NO_WARN && sleep 10
+        $WARN && sleep 10
     fi
 fi
 # allow multiline titles in submenu
@@ -1950,7 +1990,7 @@ if [[ -n ${ROTATE_ARRAY[@]} ]]; then
             yecho
             yecho "Setting button style to 'text' so it will work with rotatation"
             yecho
-            ! $NO_WARN && sleep 10
+            $WARN && sleep 10
         fi
     fi
 fi
@@ -1965,7 +2005,7 @@ if ([[ -n ${ROTATE_ARRAY[@]} ]] && $MULTILINE_TITLE) && [[ $BUTTON_STYLE = "rect
     yecho
     yecho "Using 'text-rect' instead of 'rect' button style for rotated thumbs"
     yecho
-    ! $NO_WARN && sleep 15
+    $WARN && sleep 15
 fi
 
 # line of text-rect for "none" bg
@@ -2004,7 +2044,7 @@ if ($FEATHER || $THUMBS_3D) && $ROTATE_THUMBS; then
         yecho "Disabling this option for you"
         yecho "Please ctrl-c now to exit if you wish to examine the situation"
         yecho
-        ! $NO_WARN && sleep 15
+        $WARN && sleep 15
         unset ROTATE_ARRAY; ROTATE=false
     fi
 fi
@@ -2029,7 +2069,7 @@ if [[ -n "${ADV_OPT[@]}" ]] && ! $SWITCHED_MODE; then
     yecho "are offscreen, or that has other problems, so please check it with the preview."
     yecho "These are things that todisc tries to avoid normally, so if you have problems, please leave them out."
     yecho
-    ! $NO_WARN && sleep 15
+    $WARN && sleep 15
 fi
 
 # Do text-only menu if requested
@@ -2054,6 +2094,25 @@ if $DO_TITLESETS; then
     titleset_mode "${args[@]}"
     yecho Goodbye
     exit
+fi
+
+# some checks for -quick-menu
+if $QUICK_MENU; then
+# quick-menu needs TEXTMENU=: , and does its own showcase and bg with ffmpeg
+    TEXTMENU=:
+    SC_THUMB=false
+    STATIC=false # no static quickmenus, imagemagick is fast enough for this
+#    BACKGROUND=""
+    if [[ -z $SHOWCASE_FILE ]] && ! $SWITCHED_MENUS; then
+        yecho
+        yecho "**** WARNING ****"
+        yecho "-quick-menu needs a showcase file ( -showcase FILE )"
+        yecho "Disabling -quick-menu for you as it is not needed"
+        yecho "Ctrl-c now if you wish to exit and examine the situation"
+        yecho
+        QUICK_MENU=false
+        $WARN && sleep 10
+    fi
 fi
 # set some vars for the last run of switched menus (non-recursive )
 $SWITCHED_MENUS && SHOWCASE_FILE=${FILES[0]}
@@ -2245,7 +2304,7 @@ if $SUB_MENU; then
         yecho "Changing all chapters that were '0' to '1' for you"
         yecho "Please ctrl-c to exit if you wish to reexamine the situation"
         yecho
-        ! $NO_WARN && sleep 15
+        $WARN && sleep 15
     fi
 fi
 # create_dirs
@@ -2599,14 +2658,14 @@ if $TEXTMENU && [[ $SC_TITLE_ALIGN = "center" ]]; then
     yecho "Using title alignment of 'west': please check the preview"
     yecho
     SC_TITLE_ALIGN="west"
-    ! $NO_WARN && sleep 10
+    $WARN && sleep 10
 fi
 if  [[ $BUTTON_STYLE = "text-rect" ]] && ! $SHOWCASE; then
     yecho  "You can only use text-rect button style with showcase or textmenu arrangements"
     yecho "Setting button style to 'rect'"
     yecho "If you would rather use 'text' style please ctrl-c now to exit and reform your command"
     BUTTON_STYLE="rect"
-    ! $NO_WARN && sleep 15
+    $WARN && sleep 15
 fi
 # text-rect only for -align east
 if [[ $BUTTON_STYLE = "text-rect" ]] && ! [[ $SC_TITLE_ALIGN = "east" ]] && ! $TEXTMENU; then
@@ -2620,7 +2679,7 @@ if [[ $BUTTON_STYLE = "text-rect" ]] && ! [[ $SC_TITLE_ALIGN = "east" ]] && ! $T
         SC_TITLE_ALIGN="east"
     fi
     yecho
-    ! $NO_WARN && sleep 10
+    $WARN && sleep 10
 fi
 if $SHOWCASE && [ "$SC_TITLE_ALIGN" = "east" ] && ! $TEXTMENU; then
     THUMB_TITLE_ALIGN="west" # align titles left to allow longer titles
@@ -3740,8 +3799,10 @@ fi
 # if static menu and no background audio, ignore MENU_AUDIOLENGTH
 $STATIC && [[ -z "$BG_AUDIO" ]] && ! $SWITCHED && unset MENU_AUDIOLENGTH
 # Check input files for compliance; offer to tovid-encode non-compliant files
+# horrible hack to make sure correct reencoded file gets symlinked
+# as this runs check_compliance twice if switched menus
 $SWITCHED && MN=2 || MN=1
-if [[ $MENU_NUM -eq $MN ]]; then
+if [[ $MENU_NUM -eq 1 || $MENU_NUM -eq $MN ]]; then
     check_compliance
     $GROUPING && check_compliance group
 fi
@@ -3966,6 +4027,7 @@ if ! $TEXTMENU; then
             --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "${IN_FILES[i]}" \
             -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + $FRAMES)) ${NAV_SEEK[i]} "${NAVSEEK[i]}" \
             -o "$WORK_DIR/pics/$i/" -f $FRAME_RATE  -Z $THUMB_SIZE $EXPORT)
+            yecho "Running ${TRANSCODE_CMD2[@]}" | fold -bs
 
                     function run_transcode()
                     {
@@ -3975,7 +4037,7 @@ if ! $TEXTMENU; then
                     run_transcode &
                     sleep 1 # short sleep to allow 1st jpg to appear
                     TRANSCODE_PID=$(<$WORK_DIR/tcode$i.pid)
-                    check_stall &
+                    check_stall $TRANSCODE_PID &
                     if [[ -n "$TRANSCODE_PID" ]]; then
                         while ps -p $TRANSCODE_PID >/dev/null; do
                             sleep 2 # spinner interval
@@ -4196,13 +4258,18 @@ if [ "$TARGET" = "dvd" ]; then
 # make dvdauthor.xml
 # g1 register: switched menus, g2: vmgm intro
 # g3: -quick-nav, g4: playall, g5: button highlight
+# Note: for switched menus g1 is used for 'button highlight', not g5
+# ALLTITLES is an array of the number of titles in each titleset
+# NUM_MENUS is the # of menus being made
+# menu_num is the current menu being worked on 
+# the above 2 values always equal 1 unless doing swithced menus
 
 # TSET_NUM supplied by the calling todisc script and is the current titleset #
 MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${MENU_NUM}.mpg"
 VMGM_PREJUMP="jump titleset 1 menu;"
 $VMGM_ONLY && MENU_FILE="$BASEDIR/VMGM.mpg"
 $SWITCHED_MODE && ! $VMGM_ONLY && MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${MENU_NUM}.mpg"
-$SWITCHED_MENUS && VMGM_PRE="<pre>g1=1;$VMGM_PREJUMP</pre>" || VMGM_PRE="<pre>$VMGM_PREJUMP</pre>"
+$SWITCHED_MENUS && VMGM_PRE="<pre>if (g1 eq 0) g1=1;$VMGM_PREJUMP</pre>" || VMGM_PRE="<pre>$VMGM_PREJUMP</pre>"
 $SWITCHED_MENUS && NUM_MENUS=${#FILES[@]} || NUM_MENUS=1
 ! $AUTHOR && DVDAUTHOR_XML="$BASEDIR/dvdauthor.xml"
 (
@@ -4233,9 +4300,12 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
         if [[ $TSET_NUM -eq 1 ]]; then PREV=$TSET_TOT; else PREV=$(( TSET_NUM - 1 )); fi
         if [[ $TSET_NUM -eq $TSET_TOT ]]; then NEXT=1; else NEXT=$(( TSET_NUM + 1)); fi
         if [[ $TSET_NUM -eq 1 ]]; then Ind=$((TSET_TOT-1)); else Ind=$(( TSET_NUM - 2 )); fi
-        echo -e "        <button name=\"ActionLeft\"> {g5=${ALLTITLES[Ind]}; g3=$PREV; button=1024; jump vmgm menu entry title;}</button>"
-        echo -e "        <button name=\"ActionRight\"> {g5=1; g3=$NEXT; button=1024; jump vmgm menu entry title;}</button>"
-
+        echo -e "        <button name=\"ActionLeft\">"
+        echo -e "        g1=${ALLTITLES[Ind]}; g5=${ALLTITLES[Ind]}; g3=$PREV; button=1024;"
+        echo -e "        jump vmgm menu entry title;</button>"
+        echo -e "        <button name=\"ActionRight\">"
+        echo -e "        g1=1; g5=1; g3=$NEXT; button=1024;"
+        echo -e "        jump vmgm menu entry title;</button>"
     fi
     if $SWITCHED_MENUS; then
         if [[ $menu_num -eq $NUM_MENUS ]]; then
@@ -4244,8 +4314,8 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
             inc=$((menu_num+1))
         fi
         [[ $menu_num -eq 1 ]] && dec=$NUM_MENUS || dec=$((menu_num - 1))
-        echo -e "        <button name=\"ActionUp\">{ g1 = $dec; jump menu $dec; }</button>"
-        echo -e "        <button name=\"ActionDown\">{ g1 = $inc; jump menu $inc; }</button>"
+        echo -e "        <button name=\"ActionUp\">g1 = $dec; jump menu $dec;</button>"
+        echo -e "        <button name=\"ActionDown\">g1 = $inc; jump menu $inc;</button>"
     fi
     SE_BUTTON_NUM=$V_TOTAL
     if  $TITLESET_MODE && $VMGM_MENU; then
@@ -4258,10 +4328,13 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
     fi
     echo -e "        <vob file=\"$BASEDIR/animenu${TSET_NUM}-${menu_num}.mpg\" pause=\"$VMGM_PAUSE_TIME\"/>"
     if $SWITCHED_MENUS; then
-        if [[ $menu_num -eq 1 ]]; then
-            echo -e "        <pre> { if (g1 ne 1) {jump menu 2;} button = g1 * 1024; } </pre>"
+        if [[ $menu_num -ne $NUM_MENUS ]]; then
+            echo -e "        <pre>"
+            echo -e "        button = g1 * 1024;"
+            echo -e "        if (g1 ne $menu_num) jump menu $((menu_num+1));"
+            echo -e "        </pre>"
         else
-            echo -e "        <pre> { button = g1 * 1024;} </pre>"
+            echo -e "        <pre>button = g1 * 1024;</pre>"
         fi
     else
         echo -e "        <pre>button = g5 * 1024; </pre>"
@@ -4454,7 +4527,7 @@ if $SUB_MENU; then
             run_transcode &
             sleep 2 # short sleep to allow 1st jpg to appear
             TCODE_PID=$(<$WORK_DIR/tcode$i.pid)
-            check_stall &
+            check_stall $TCODE_PID &
             if [[ -n "$TCODE_PID" ]]; then
                 while ps -p $TCODE_PID >/dev/null; do
                     sleep $SLEEP # spinner interval
