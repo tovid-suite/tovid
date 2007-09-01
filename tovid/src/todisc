@@ -189,7 +189,10 @@ QUICK_MENU=false
 PAD_COLOUR=161514
 QM_PREVIEW=false
 USER_CHAPTERS=false
-SHOWCASE_MIX=false
+QUICKMENU_IS_SHOWCASE=false
+QUICKMENU_IS_BACKGROUND=false
+RESIZE_BG=false
+MIX=false
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -244,7 +247,7 @@ function usage_error ()
 }
 function titlesafe_error()
 {
-    echo "********* WARNING *********"
+    echo "***** WARNING *****"
     yecho "thumb title is $1 pixels from screen edge"
     yecho "Part of the title may not be visible on your tv screen"
     yecho "Consider using a smaller -thumb-fontsize, or shortening \"${TITLES[i]}\""
@@ -1093,7 +1096,7 @@ make_mix()
 {
     mix_size=$1
     SLICE_PER_VID=3
-    if $SHOWCASE_MIX; then
+    if $MIX; then
         mix_size=$SHOWCASE_SIZE
         LEFTPAD=$sc_xpage
         TOPPAD=$SC_Y
@@ -1104,7 +1107,7 @@ make_mix()
     # get menu length in frames
     menu_length=$(bc_math "$MENU_LENGTH * $FRAME_RATE" int)
     slice_size=$(bc_math "(($MENU_LENGTH / ${#FILES[@]}) / $slices_per_vid)" )
-    if $SHOWCASE_MIX; then
+    if $MIX; then
         SLICE_CMD=(transcode -i "$FILE_IN" $NAVSEEK "$NAVLOG" -c $slice \
         -Z $CLIP_SIZE --export_fps $FRAME_RATE -w 8000  -y ffmpeg,null \
         --export_asr $AR -F mpeg2video $PADDING -o  "$WORK_DIR/slice${index}_tmp")
@@ -1116,12 +1119,39 @@ make_mix()
 
 quick_menu()
 {
+    # get width and height of background: we may need to resize it to $VIDSIZE
+    if $QUICKMENU_IS_BACKGROUND; then
+        BG_VIDEO_STATS=$(idvid -fast "$BG_VIDEO")
+        BG_VIDEO_WIDTH=$(awk '/Width:/ {print $2}' <<< "$BG_VIDEO_STATS")
+        BG_VIDEO_HEIGHT=$(awk '/Height:/ {print $2}' <<< "$BG_VIDEO_STATS")
+        if [[ ${BG_VIDEO_WIDTH}x${BG_VIDEO_HEIGHT} != $VIDSIZE ]]; then
+            RESIZE_BG=:
+        fi
+    fi
     if [[ -n $1 && $1 = "preview" ]]; then
-        QM_MENU_TIME=1 && QM_PREVIEW=:
+        QM_MENU_TIME=2 && QM_PREVIEW=:
     else
         QM_MENU_TIME=${MENU_LENGTH[MENU_NUM-1]} && QM_PREVIEW=false
     fi
-    QM_SHOWCASE_FILE="$SHOWCASE_FILE"
+    # if QUICK_MENU_FILE is a showcase video then we need a temp avi file
+    if $QUICKMENU_IS_SHOWCASE; then
+        ! $MIX && PRE_VHOOK_FILE="$WORK_DIR/quick_tmp.avi" # not needed for mix
+        outdir="$WORK_DIR/showcase"
+        if $SWITCHED; then
+            qm_seek="-ss ${SEEK_VAL[MENU_NUM-1]}"
+        else
+            qm_seek="-ss $SHOWCASE_SEEK_VAL"
+        fi
+    # else if we have background file maybe no need for the 1st resize step
+    elif $QUICKMENU_IS_BACKGROUND; then
+        if ! $RESIZE_BG; then
+            PRE_VHOOK_FILE="$BG_VIDEO"
+        else
+            PRE_VHOOK_FILE="$WORK_DIR/quick_tmp.avi"
+        fi
+        outdir="$WORK_DIR/bg"
+        qm_seek="-ss $BG_SEEK"
+    fi
     # find out where vhook lives for ffmpeg
     ffmpeg_prefix=$(which ffmpeg)
     ffmpeg_prefix=$(sed 's/\/bin\/ffmpeg//g' <<< "$ffmpeg_prefix")
@@ -1145,48 +1175,65 @@ quick_menu()
     fi
     yecho
 
+    $QM_PREVIEW && yecho "Creating a quick-menu preview image"
     # convert and resize the bgvideo so that is is framed by ntsc-safe black bg
-    yecho
-    if $QM_PREVIEW; then
-        yecho "Creating a quick-menu preview image"
-    else
-        yecho "resizing and padding  showcase file: $SHOWCASE_FILE"
+    if ($QUICKMENU_IS_SHOWCASE || $RESIZE_BG) && ! $MIX; then
+        yecho
+        if $RESIZE_BG; then
+            yecho "resizing background video: $BG_VIDEO"
+            QM_TMP_FRAMESIZE=$VIDSIZE
+        else
+            yecho "resizing and padding showcase file: $SHOWCASE_VIDEO"
+            LEFTPAD=$sc_xpage
+            TOPPAD=$SC_Y
+            RIGHTPAD="-padright \
+            $(( ${VIDSIZE%%x*} - $LEFTPAD - ${SHOWCASE_SIZE%%x*} ))"
+            BOTTOMPAD="-padbottom \
+            $(( ${VIDSIZE##*x} - $TOPPAD - ${SHOWCASE_SIZE##*x} ))"
+            LEFTPAD="-padleft $sc_xpage"
+            TOPPAD="-padtop $SC_Y"
+            QM_TMP_FRAMESIZE=$SHOWCASE_SIZE
+        fi
+        PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 $qm_seek \
+        -t "$QM_MENU_TIME" -i "$QUICK_MENU_FILE" -s $QM_TMP_FRAMESIZE \
+        -acodec copy $TOPPAD $BOTTOMPAD $LEFTPAD $RIGHTPAD \
+        -r $FRAME_RATE -b 15000k -padcolor "$PAD_COLOUR" \
+        -y  "$WORK_DIR/quick_tmp.avi")
+        yecho
+        yecho "Running ${PAD_CMD[@]}"|fold -bs
+        "${PAD_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"
     fi
-    LEFTPAD=$sc_xpage
-    TOPPAD=$SC_Y
-    RIGHTPAD=$(( ${VIDSIZE%%x*} - $LEFTPAD - ${SHOWCASE_SIZE%%x*} ))
-    BOTTOMPAD=$(( ${VIDSIZE##*x} - $TOPPAD - ${SHOWCASE_SIZE##*x} ))
-    PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 -ss ${SEEK_VAL[MENU_NUM-1]} \
-    -t "$QM_MENU_TIME" -i "$QM_SHOWCASE_FILE" -s $SHOWCASE_SIZE -acodec copy \
-    -padtop $TOPPAD -padbottom $BOTTOMPAD -padleft $LEFTPAD -padright $RIGHTPAD \
-    -r $FRAME_RATE -b 15000k -padcolor "$PAD_COLOUR" -y  "$WORK_DIR/quick_tmp.avi")
-    yecho
-    ! $QM_PREVIEW && yecho "Running ${PAD_CMD[@]}"|fold -bs
-    "${PAD_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"
 
     # use vhook to add the titles in
     ! $QM_PREVIEW && yecho
-    ! $QM_PREVIEW && yecho "Using ffmpeg's vhook to put titles on padded file"
-    VHOOK_CMD=(ffmpeg -i  "$WORK_DIR/quick_tmp.avi" -an \
-    -f mpeg2video -r $FRAME_RATE -tvstd ntsc -b 7000k -maxrate 8000k \
-    -bufsize 224KiB -aspect $ASPECT_RATIO \
+    if ! $QM_PREVIEW; then
+        yecho "Using ffmpeg's vhook to add titles (and background if present)"
+    fi
+    # don't seek if we already made a padded video with a seek
+    $QUICKMENU_IS_SHOWCASE || $RESIZE_BG && qm_seek=""
+    VHOOK_CMD=(ffmpeg -t "$QM_MENU_TIME" $qm_seek -s $VIDSIZE \
+    -i  "$PRE_VHOOK_FILE"  -an -f mpeg2video -r $FRAME_RATE -tvstd ntsc \
+    -b 7000k -maxrate 8000k -bufsize 224KiB -aspect $ASPECT_RATIO \
     -vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
     -y "$WORK_DIR/intro.m2v")
-    ! $QM_PREVIEW && yecho
-    ! $QM_PREVIEW && yecho "Running ${VHOOK_CMD[@]}" | fold -bs
+    $QM_PREVIEW && yecho
+    $QM_PREVIEW && yecho "Running ${VHOOK_CMD[@]}" | fold -bs
     "${VHOOK_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
     ! $QM_PREVIEW && yecho
     # create preview images if called for
     if $QM_PREVIEW; then
         FFMPEG_CMD=(ffmpeg -i "$WORK_DIR/intro.m2v" -an -ss 1 -vframes 30 \
-        $WORK_DIR/showcase/%06d.png)
+        "$outdir"/%06d.png)
+        yecho "${FFMPEG_CMD[@]}" | strings
         "${FFMPEG_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
-        largest_png=$(du -s "$WORK_DIR"/showcase/*.png|sort -r |
+        largest_png=$(du -s "$outdir"/*.png|sort -r |
         awk 'NR>1{exit};1 {print $2}')
         mv "$largest_png" "$PREVIEW_IMG"
         yecho "Removing temporary preview files"
-        rm -f "$WORK_DIR"/showcase/*.png "$WORK_DIR/intro.m2v" \
-        "$WORK_DIR/quick_tmp.avi"
+        rm -f "$WORK_DIR/intro.m2v"
+        $QUICKMENU_IS_SHOWCASE && rm -f "$WORK_DIR/quick_tmp.avi" \
+        "$WORK_DIR"/showcase/*.png
+        $QUICKMENU_IS_BACKGROUND && rm -f  "$WORK_DIR"/bg/*.png
     fi
     $QM_PREVIEW && yecho
 }
@@ -1441,7 +1488,7 @@ while test $# -gt 0; do
             get_listargs "$@"
             unset f
             if [[ "${ARGS_ARRAY[0]}" = "mix" ]]; then
-                SHOWCASE_MIX=:
+                MIX=:
                 [[ -n  "${ARGS_ARRAY[1]}" ]] && MIX_GEO=${ARGS_ARRAY[1]}
             else
                 for f in  ${!ARGS_ARRAY[@]}; do
@@ -1799,6 +1846,7 @@ while test $# -gt 0; do
             BURN_SPEED="-speed $SPEED"
             ;;
         "-quick-menu" )
+            SHOWCASE=:
             QUICK_MENU=:
             SC_TITLE_ALIGN="west"
             ;;
@@ -1934,7 +1982,7 @@ if [ "$BUTTON_STYLE" = "text" ]; then
     if $SHOWCASE; then
         BUTTON_STYLE="line"
         yecho
-        yecho "**** WARNING ****"
+        yecho "***** WARNING *****"
         yecho "You can not use text button style with showcase or textmenu"
         yecho "Changing button style to 'line' style instead"
         yecho "If you would rather use 'text-rect', or 'rect' for showcase,"
@@ -2062,7 +2110,7 @@ fi
 # see if advanced options were used and give warning if so
 if [[ -n "${ADV_OPT[@]}" ]] && ! $SWITCHED_MODE; then
     yecho
-    yecho "**** WARNING ****"
+    yecho "***** WARNING *****"
     yecho "You have used the following advanced options:"
     yecho "${ADV_OPT[@]}" | format_output
     yecho "With these options it is possible to create a menu where things overlap or"
@@ -2096,24 +2144,6 @@ if $DO_TITLESETS; then
     exit
 fi
 
-# some checks for -quick-menu
-if $QUICK_MENU; then
-# quick-menu needs TEXTMENU=: , and does its own showcase and bg with ffmpeg
-    TEXTMENU=:
-    SC_THUMB=false
-    STATIC=false # no static quickmenus, imagemagick is fast enough for this
-#    BACKGROUND=""
-    if [[ -z $SHOWCASE_FILE ]] && ! $SWITCHED_MENUS; then
-        yecho
-        yecho "**** WARNING ****"
-        yecho "-quick-menu needs a showcase file ( -showcase FILE )"
-        yecho "Disabling -quick-menu for you as it is not needed"
-        yecho "Ctrl-c now if you wish to exit and examine the situation"
-        yecho
-        QUICK_MENU=false
-        $WARN && sleep 10
-    fi
-fi
 # set some vars for the last run of switched menus (non-recursive )
 $SWITCHED_MENUS && SHOWCASE_FILE=${FILES[0]}
 
@@ -2135,7 +2165,7 @@ if [[ -n $BACKGROUND ]]; then
     if [[ $TYPE = "image" ]]; then
         BG_PIC="$BACKGROUND"
     elif [[ $TYPE = "video" ]]; then
-        $QUICK_MENU && usage_error "Sorry, image background only for -quick-menu"
+#        $QUICK_MENU && usage_error "Sorry, image background only for -quick-menu"
         BG_VIDEO="$BACKGROUND"
     else
         usage_error "Sorry, can not identify "$BACKGROUND""
@@ -2156,6 +2186,33 @@ if $SHOWCASE; then
         SC_THUMB=false
         SHOWCASE_IMG="dummy"
     fi
+fi
+
+if $QUICK_MENU ; then
+    if [[ -n $SHOWCASE_VIDEO ]]; then
+        QUICK_MENU_FILE="$SHOWCASE_VIDEO"
+        QUICKMENU_IS_SHOWCASE=:
+    elif [[ -n $BG_VIDEO ]]; then
+        QUICK_MENU_FILE="$BG_VIDEO"
+        QUICKMENU_IS_BACKGROUND=:
+    else
+        yecho
+        yecho "***** WARNING *****"
+        yecho "-quick-menu needs a -showcase VIDEO or a -background VIDEO"
+        yecho "Disabling -quick-menu for you as it is not needed"
+        yecho "Ctrl-c now if you wish to exit and examine the situation"
+        yecho
+        QUICK_MENU=false
+        $WARN && sleep 10
+    fi
+fi
+$QUICKMENU_IS_BACKGROUND && SHOWCASE_IMG=""
+# some checks for -quick-menu
+if $QUICK_MENU; then
+# quick-menu needs TEXTMENU=: , and does its own showcase and bg with ffmpeg
+    TEXTMENU=:
+    SC_THUMB=false
+    STATIC=false # no static quickmenus, imagemagick is fast enough for this
 fi
 if [[ $SC_FRAMESTYLE = "glass" ]] && [[ -z $SHOWCASE_IMG && -z $SHOWCASE_VIDEO ]]; then
     yecho
@@ -3151,7 +3208,7 @@ fi
 #      generate a basic preview of the main menu                              #
 ###############################################################################
 # generate images for montage and title and resize them
-if [[ -n "$BG_VIDEO" ]] ; then
+if [[ -n "$BG_VIDEO" ]] && ! $QUICKMENU_IS_BACKGROUND; then
     echo "Getting background video images from $BG_VIDEO"
     FFMPEG_CMD=(ffmpeg -i "$BG_VIDEO" -s $VIDSIZE -ss $BG_SEEK -vframes 1 \
     -vcodec png -an  -f rawvideo -y "$WORK_DIR/pics/template.png")
@@ -3216,7 +3273,7 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
                 runtime_error "Problem creating images from the video."
             fi
             echo "Running convert "$WORK_DIR/showcase_img.png" -mattecolor gray"
-            echo "$SC_FRAME "$WORK_DIR/showcase_img.jpg"" |format_output
+            echo "$SC_FRAME "$WORK_DIR/showcase_img.png"" |format_output
             convert "$WORK_DIR/showcase_img.png" -mattecolor gray $SC_FRAME miff:- |
             convert -background none $ROTATE $WAVE - miff:-|
             convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
@@ -3224,7 +3281,7 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
     elif [[ -n "$SHOWCASE_IMG" ]]; then
         echo "Running convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" miff:- | \
         convert -background none $ROTATE $WAVE -bordercolor Transparent -border 8x8 - miff:- | \
-        convert - -trim +repage -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.jpg"" |format_output
+        convert - -trim +repage -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"" |format_output
         convert "$SHOWCASE_IMG" -resize $SHOWCASE_SIZE! -mattecolor gray $SC_FRAME miff:- |
         convert - -background none -bordercolor Transparent -border 8x8 $ROTATE $WAVE miff:- |
         convert - -trim +repage -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
@@ -3306,7 +3363,9 @@ if $PLAYALL || ($TITLESET_MODE && $VMGM_MENU) ; then
 fi
 
 # copy the preview for -quick-menu
-$QUICK_MENU && cp "$WORK_DIR/pics/template.png" "$WORK_DIR/quick_menu_bg.png"
+if $QUICK_MENU && [[ -s "$WORK_DIR/showcase_img.png" ]]; then
+    cp -v "$WORK_DIR/pics/template.png" "$WORK_DIR/quick_menu_bg.png"
+fi
 
 # lets be sure of order by using a loop
 for ((i=0; i<=NUM_FILES; i++)); do
@@ -3730,16 +3789,18 @@ else # not showcase
     fi
 fi
 # if there is quickmenu bg, cut out transparent hole for showcase image/video
-if $QUICK_MENU && [[ -n "$BACKGROUND" ]]; then
-    convert -size $SHOWCASE_SIZE xc:white "$WORK_DIR/showcase_blank.png"
-    convert -size  $VIDSIZE xc:none -geometry +$sc_xpage+$SC_Y \
-    "$WORK_DIR/showcase_blank.png" -composite "$WORK_DIR/cookie_cutter.png"
-    convert "$WORK_DIR/cookie_cutter.png" "$WORK_DIR/pics/template.png" \
-    -compose Xor -composite "$WORK_DIR/quick_menu_bg.png"
-elif $QUICK_MENU && [[ -z "BACKGROUND" ]]; then
-    cp "$WORK_DIR/pics/template.png" "$WORK_DIR/quick_menu_bg.png"
+if $QUICK_MENU; then
+    if $QUICKMENU_IS_SHOWCASE && [[ -n "$BACKGROUND" ]]; then
+        convert -size $SHOWCASE_SIZE xc:white "$WORK_DIR/showcase_blank.png"
+        convert -size  $VIDSIZE xc:none -geometry +$sc_xpage+$SC_Y \
+        "$WORK_DIR/showcase_blank.png" -composite "$WORK_DIR/cookie_cutter.png"
+        convert "$WORK_DIR/cookie_cutter.png" "$WORK_DIR/pics/template.png" \
+        -compose Xor -composite "$WORK_DIR/quick_menu_bg.png"
+    else
+        cp "$WORK_DIR/pics/template.png" "$WORK_DIR/quick_menu_bg.png"
+    fi
 fi
-$QUICK_MENU && ! $NOASK && quick_menu preview
+$QUICK_MENU && quick_menu preview
 if ! $NOASK; then
     echo "Creating and displaying a preview of the main menu."
     echo "(Press 'q' or ESC in the preview window to close it.)"
@@ -3772,6 +3833,7 @@ if ! $NOASK && ! $SWITCHED; then
         if grep -q "A_NOAUDIO=:" <<< "$BGVIDEO_STATS"; then
             :
         else
+            echo "***** NOTE *****"
             echo "You selected -bgvideo but not -bgaudio"
             echo "If you want to use the audio from "$BG_VIDEO" please type: yes"
             read bgaudio
@@ -4766,7 +4828,7 @@ fi
 ##############################################################################
 yecho
 yecho "Building main menu"
-if [[ -n "$BG_VIDEO" ]]; then
+if [[ -n "$BG_VIDEO" ]] && ! $QUICK_MENU; then
     yecho "Getting background video from $BG_VIDEO"
     FFMPEG_CMD="ffmpeg -i \"$BG_VIDEO\" -ss $BG_SEEK -vframes $FRAMES \
     -s $VIDSIZE -sameq \"$WORK_DIR/bg/%d.jpg\""
@@ -5320,7 +5382,7 @@ $SWITCHED && MENU_ATIME=${MENU_LENGTH[MENU_NUM-1]}
 
 # use mplayer to dump audio if mplayer used for video
 # but first check if audio same file as video and its not a static menu
-if [[ $SC_FRAMESTYLE = "glass" && $BG_AUDIO = $SHOWCASE_FILE ]]; then
+if [[ $SC_FRAMESTYLE = "glass" && $BG_AUDIO = $SHOWCASE_VIDEO ]]; then
     ! $STATIC && USE_MPLAYER_4AUDIO=:
 fi
 BG_AUDIO_LENGTH="-t $MENU_ATIME"
