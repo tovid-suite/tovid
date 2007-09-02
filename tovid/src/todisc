@@ -1664,7 +1664,7 @@ while test $# -gt 0; do
             else
                 BG_AUDIO=$(readlink -f "$1")
                 if [[ ! -e "$BG_AUDIO" ]]; then
-                    usage_error "backgaudio \"$BG_AUDIO\" does not exist"
+                    usage_error "background audio \"$BG_AUDIO\" does not exist"
                 fi
             fi
             ;;
