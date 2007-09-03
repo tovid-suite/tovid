@@ -102,7 +102,8 @@ if test -d $IMAGE; then
     echo "$SEP"
 fi
 # read in command args and find out which demo we are making
-while [ $# -gt 0 ]; do case "$1" in  full)  FULL=:;; esac; shift; done
+# currently disabled
+#while [ $# -gt 0 ]; do case "$1" in  full)  FULL=:;; esac; shift; done
 
 # Empty the log file
 echo -n > "$DEMO_LOG"
@@ -143,9 +144,6 @@ GREETING=`cat << EOF
   videos from spiffworld ( music by Jonathan Coulton ).
   The script uses an experimental technique to avoid using imagemagick for
   animated menu creation, instead it  relies on ffmpeg 'vhooks'.
-  If you run this script with the option 'full' ("sh tovid-demo_switched-menus full"),
-  then the menu will be a bit fancier, using '-wave and -rotate', and will take several
-  hours instead of 30 minutes or so.
 
   I will be downloading the latest tovid development version, some helper 
   files, and a few videos from YouTube to make the DVD. I will convert 
@@ -181,7 +179,7 @@ done
 echo
 
 # Update executable path
-PATH=$(pwd)/$BIN:$PATH
+PATH="$PWD/$BIN:$PATH"
 export PATH
 
 # Set version
@@ -321,12 +319,13 @@ done
 
 # ========================================================================
 # Author the disc
-if $FULL; then
+if $FULL; then  # currently disabled
+    :
 # allow for fancy menu with 'full' command option
-    TASK_TIME="about an hour"
-    STYLE="-wave default -rotate 7"
-    MENU_LEN=19
-    BACKGROUND="-background $VIDS/tile.jpg"
+#    TASK_TIME="about hour 2 hours"
+#    STYLE="-wave default -rotate 7"
+#    MENU_LEN=19
+#    BACKGROUND="-background $VIDS/tile.jpg"
 else
     TASK_TIME="about 20 minutes"
     STYLE="-quick-menu"
