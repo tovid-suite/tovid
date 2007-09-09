@@ -308,6 +308,9 @@ class FlagGroup (Control):
         self.flags = flags
         self.state = state
         self.label = label
+        self.side = 'top'
+        if 'side' in kwargs:
+            self.side = kwargs['side']
     
     def draw(self, master):
         """Draw Flag controls in the given master."""
@@ -317,7 +320,7 @@ class FlagGroup (Control):
         for flag in self.flags:
             flag.draw(frame)
             flag.check.bind('<Button-1>', self.select)
-            flag.pack(anchor='nw', side='top', fill='x', expand=True)
+            flag.pack(anchor='nw', side=self.side, fill='x', expand=True)
         Control.post(self)
 
     def select(self, event):
