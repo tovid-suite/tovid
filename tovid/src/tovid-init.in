@@ -364,7 +364,7 @@ function bc_math()
 # N defaults to 5 seconds if no args to function
 # usage: countdown [SECONDS]
 # ******************************************************************************
-countdown ()
+function countdown()
 {
     [[ -n $1 ]] && LAST=$1 || LAST=5
     count=$(seq 1 $LAST)
@@ -373,6 +373,23 @@ countdown ()
         echo -n -e " in $_CNTR seconds...\r";
         sleep 1s;
     done
+}
+
+# ******************************************************************************
+# Print a warning if running as root
+# ******************************************************************************
+function root_warning()
+{
+    if [[ $UID -eq 0 ]]; then
+        echo $SEPARATOR
+        echo "Removing unneeded temporary files in / ..."
+        sleep 5
+        echo "Just kidding! Had this been for real, your hard drive would be"
+        echo "well on its way to oblivion right now, because you're running as root."
+        echo "I hope you know what you're doing..."
+        echo $SEPARATOR
+        sleep 2
+    fi
 }
 
 # ******************************************************************************
@@ -385,14 +402,6 @@ countdown ()
 # ******************************************************************************
 # ******************************************************************************
 
-if [[ $UID -eq 0 ]]; then
-    echo "Removing unneeded temporary files in / ..."
-    sleep 10
-    echo "Just kidding! Had this been for real, your hard drive would be"
-    echo "well on its way to oblivion right now, because you're running as root."
-    echo "I hope you know what you're doing..."
-    sleep 5
-fi
 
 # ******************************************************************************
 # Platform-specific initialization
