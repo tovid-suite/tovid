@@ -64,19 +64,20 @@ main = Panel("Main",
     HPanel('', files, titles),
 
     HPanel('',
-        FlagGroup('Format', 'exclusive',
-            Flag("DVD", '-dvd', True),
-            Flag("SVCD", '-svcd', False)),
-        FlagGroup('TV System', 'exclusive',
-            Flag("NTSC", '-ntsc', True),
-            Flag("PAL", '-pal', False)),
         FlagGroup('Menu options', 'normal',
             Flag('Static menus', '-static', False,
                 'Create still-image menus; takes less time.  '
                 'For duration of background audio for static '
                 'menus, use "menu length" on the "Menu" tab'),
-            Flag('Create Submenus', '-submenus', False,
-                'Create a submenu for each video title; takes more time.'))
+            Flag('Submenus', '-submenus', False,
+                'Create a submenu for each video title; takes more time.'),
+            side='left'),
+        FlagGroup('Format', 'exclusive',
+            Flag("DVD", '-dvd', True),
+            Flag("SVCD", '-svcd', False), side='left'),
+        FlagGroup('TV System', 'exclusive',
+            Flag("NTSC", '-ntsc', True),
+            Flag("PAL", '-pal', False), side='left'),
         ),
 
         VPanel('Menu style',
@@ -433,6 +434,6 @@ burning = Panel("Burning",
 
 todisc = Application('todisc',
     [main, general, menu, submenus, thumbnails, text, authoring, burning])
-gui = GUI("todiscgui", [todisc], 600, 800)
+gui = GUI("todiscgui", [todisc], 600, 700)
 gui.run()
 
