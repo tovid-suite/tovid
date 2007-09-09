@@ -339,10 +339,6 @@ class Application (Widget):
             tabs = Tabs(*self.panels)
             tabs.draw(self)
             tabs.pack(anchor='n', fill='x', expand=True)
-        # "Run" button
-        button = tk.Button(self, text="Run %s now" % self.program,
-                           command=self.execute)
-        button.pack(anchor='s', fill='x')
 
     def get_args(self):
         """Get a list of all command-line arguments from all panels.
@@ -418,7 +414,6 @@ class GUI (tk.Tk):
     def run(self):
         """Run the GUI"""
         self.draw()
-        self.draw_menu(self)
         # Enter the main event handler
         self.mainloop()
         # TODO: Interrupt handling
@@ -434,33 +429,36 @@ class GUI (tk.Tk):
             app = self.apps[0]
             app.draw(self.frame)
             app.pack(anchor='n', fill='both', expand=True)
+            self.draw_toolbar(app)
         # Multi-application (tabbed) GUI
         else:
             tabs = Tabs(self.frame, 'top')
             for app in self.apps:
+                self.draw_toolbar(app)
                 app.draw(tabs)
                 tabs.add(app.program, app)
             tabs.draw()
             tabs.pack(anchor='n', fill='both', expand=True)
         #self.frame.pack_propagate(False)
-    
+
     def redraw(self):
         self.frame.destroy()
         self.draw()
 
-    def draw_menu(self, window):
-        """Draw a menu bar in the given top-level window.
+    def draw_toolbar(self, app):
+        """Draw a toolbar at the bottom of the application(s).
         """
-        # Create and add the menu bar
-        menubar = tk.Menu(window)
-        window.config(menu=menubar)
-        # File menu
-        filemenu = tk.Menu(menubar, tearoff=False)
-        filemenu.add_command(label="Config", command=self.show_config)
-        filemenu.add_separator()
-        filemenu.add_command(label="Exit", command=self.quit)
-        menubar.add_cascade(label="File", menu=filemenu)
-
+        app.config_button = tk.Button(app, text="Config",
+                        command=self.show_config)
+        app.config_button.pack(anchor='w', side='left', fill='x')
+        app.run_button = tk.Button(app, text="Run %s now" % app.program,
+                                            command=app.execute)
+        app.run_button.pack(anchor='e', side='left', fill='x', expand=True,
+                                                            padx=32)
+        app.exit_button = tk.Button(app, text="Exit",
+                            command=lambda:self.confirm_exit(app))
+        app.exit_button.pack(anchor='e', side='right', fill='x')
+        
     def show_config(self):
         """Open the GUI configuration dialog."""
         config = ConfigWindow(self, self.style)
@@ -470,6 +468,10 @@ class GUI (tk.Tk):
             self.style.save(self.inifile)
             self.style.apply(self)
             self.redraw()
+ 
+    def confirm_exit(self, app):
+        if tkMessageBox.askyesno(message="Exit %s now?" % app.program):
+            self.quit()
 
 ### --------------------------------------------------------------------
 
