@@ -865,6 +865,8 @@ if ! $QUIET; then
     yecho "$@"
 fi
 
+# Warn if running as root
+root_warning
 
 # ******************************************************************************
 #
@@ -1711,7 +1713,7 @@ if ($INTERLACED || $INTERLACED_BF) && test "$TGT_RES" != "VCD"; then
     if test -n "$VID_FILTER"; then
         VID_FILTER="il=d:d,$VID_FILTER,il=i:i"
     fi
-    
+
     if $INTERLACED_BF; then
         YUV4MPEG_ILACE=":interlaced_bf"
         FF_ILACE="-top 0 -flags +alt+ildct+ilme"
