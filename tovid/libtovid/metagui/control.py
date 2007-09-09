@@ -627,7 +627,7 @@ class Font (Control):
 
     def choose(self):
         """Open a font chooser to select a font."""
-        chooser = support.FontChooser()
+        chooser = support.FontChooser(self)
         if chooser.result:
             self.variable.set(chooser.result)
 
