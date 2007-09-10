@@ -158,7 +158,7 @@ See also **-titleset** and **-vmgm**
     instead of imagemagick.  There are no fancy effects like **-wave** or **-rotate** available
     for it, but it is extremely fast.  It will be a text-menu style of menu, with no video
     thumbs, and a central showcase IMAGE(static)|VIDEO(animated).
-    ( see **-pad-color** if you are not using a **-background** and want to change the default black )
+    ( see **-bg-color** if you are not using a **-background** and want to change the default black )
 
     Specifying the IMAGE|VIDEO argument to **-showcase** is mandatory for this style of menu, unless
     used in conjunction with **-switched-menus** in which case the videos passed with **-files** 
@@ -174,8 +174,10 @@ See also **-titleset** and **-vmgm**
 ```
     See **-switched-menus** for example of making switched menus with **-quick-menu**
 
-: **-pad-color** | **-pad-colour**
+: **-bg-color** | **-bg-colour**
     The color to use as background for a **-quick-menu** menu. (default: ntsc-safe black)
+: **-submenu-bg-color** | **-submenu-bg-colour**
+    The color to use as background for the  submenu(s). (default: ntsc-safe black)
 : **-use-makemenu**
     This will call the other tovid menu script, "makemenu" on the titles supplied.
 : **-static**
