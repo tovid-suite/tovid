@@ -175,7 +175,7 @@ See also **-titleset** and **-vmgm**
     See **-switched-menus** for example of making switched menus with **-quick-menu**
 
 : **-bg-color** | **-bg-colour**
-    The color to use as background for a **-quick-menu** menu. (default: ntsc-safe black)
+    The color to use for the menu background. (default: ntsc-safe black)
 : **-submenu-bg-color** | **-submenu-bg-colour**
     The color to use as background for the  submenu(s). (default: ntsc-safe black)
 : **-use-makemenu**
