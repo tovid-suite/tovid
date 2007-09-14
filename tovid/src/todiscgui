@@ -45,7 +45,7 @@ files = FileList('Video files', '-files', None,
     required=True)
 
 titles = TextList('Video titles', '-titles', None,
-    'Titles for each video',
+    'Titles for each video.  Use \\n for a new line in a multi-line title.',
     pull=files, # -titles is updated when -files is updated
     filter=to_title, # strip pathname and extension from filenames
     required=True)
@@ -59,7 +59,8 @@ titles = TextList('Video titles', '-titles', None,
 
 main = Panel("Main",
     Text('Menu title', '-menu-title', 'My video collection',
-        'Title text displayed on the main menu'),
+        'Title text displayed on the main menu. Use \\n for a new line '
+         'in a multi-line title.'),
     
     HPanel('', files, titles),
 
@@ -264,7 +265,8 @@ submenus = Panel("Submenus",
         'Submenu links lead to chapter points.'),
     VPanel('Titles',
         List('', '-submenu-titles', '',
-            'Space-separated list of quoted submenu titles.'),
+            'Space-separated list of quoted submenu titles.  '
+            'Use \\n for a new line in a multi-line title.'),
         Color('Font color', '-submenu-title-color', '#CDC0B0',
             'The font color to use for submenu title(s)', toggles=True),
         Color('Stroke color', '-submenu-stroke-color', 'none',
@@ -435,5 +437,6 @@ burning = Panel("Burning",
 todisc = Application('todisc',
     [main, general, menu, submenus, thumbnails, text, authoring, burning])
 gui = GUI("todiscgui", [todisc], 600, 700)
+gui.title('tovidgui - fancy menus using the "todisc" script')
 gui.run()
 
