@@ -1164,7 +1164,6 @@ quick_menu()
     imlib2_vhook="$ffmpeg_prefix/lib/vhook/imlib2.so"
 
     # check for badly compiled or otherwise unusable vhook
-    $SWITCHED && MN=2 || MN=1
     if $QM_PREVIEW && [[ $MENU_NUM -eq $MN ]]; then
         ! [[ -s "$imlib2_vhook" ]] && runtime_error "Missing ffmpeg's vhook's"
         yecho
@@ -1943,7 +1942,7 @@ while test $# -gt 0; do
         "-slideshow" )
             shift
             VPAUSE="$1"
-            SEEK=0; PLAYALL=:; VMGM_MENU=false; SWITCHED_MENUS=:; TEXTMENU=:;
+            SEEK_VAL=0; PLAYALL=:; VMGM_MENU=false; SWITCHED_MENUS=:; TEXTMENU=:;
             SHOWCASE=:; SC_TITLE_ALIGN="west"; QUICK_NAV=:; AUDIO_FADE=false
             ;;
     esac
@@ -1973,8 +1972,8 @@ if ! $VMGM_ONLY && ! $DO_TITLESETS; then
         You gave ${#FILES[@]} files and ${#TITLES[@]} titles"
     fi
 fi
+$SWITCHED && MN=2 || MN=1
 if [[ ${#TITLES[@]} -eq 0 ]]; then
-    $SWITCHED && MN=2 || MN=1
     if [[ $MENU_NUM = $MN ]]; then
         yecho
         yecho "You did not provide any titles with -titles"
@@ -2596,11 +2595,11 @@ fi
 if ! $VMGM_ONLY; then
     echo
     echo "Verifying that input files are video or image files"
-    verify_infiles infiles
+    [[ $MENU_NUM = $MN ]] && verify_infiles infiles
     if $GROUPING; then 
         echo
         echo "Verifying that grouped input files are video or image files"
-        verify_infiles group
+        [[ $MENU_NUM = [1-2] ]] && verify_infiles group
         echo
     fi
     echo
