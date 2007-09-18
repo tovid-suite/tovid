@@ -44,6 +44,7 @@ sh_bin = \
 # List the source files for each python script
 py_bin = \
 	src/genvid \
+	src/makemenugui \
 	src/pyidvid \
 	src/pytovid \
 	src/pymakemenu \
