@@ -1984,9 +1984,7 @@ if [[ ${#TITLES[@]} -eq 0 ]]; then
         $WARN && sleep 5
     fi
     for i in ${!FILENAMES[@]}; do
-        echo "FILENAMES[$i] is ${FILENAMES[i]}"
         TITLE=${FILENAMES[i]##*/}
-        echo "TITLE is $TITLE"
         TITLES[i]="${TITLE%%.*}"
     done
 fi
