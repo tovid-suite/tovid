@@ -241,13 +241,14 @@ See also **-titleset** and **-vmgm**
 ```
     -switched-menus -quick-menu
 ```
-: **-slideshow** PAUSE
+: **-slideshow** [PAUSE]
     This option is for convenience: it sets some options that are useful for doing a slideshow
     of images ( yes todisc can take images as input for -files ).
     The "PAUSE" argument is number of seconds each slide title will remain on the screen.  This
     option can also be set using **-video-pause** SECONDS.
     The options this convenience switch sets are equivilent to using the following options:
-    -seek 0 -playall -no-vmgm -switched-menus -quick-nav -menu-audio-fade 0
+    -video-pause PAUSE -seek 0 -playall -no-vmgm -switched-menus -quick-nav -menu-audio-fade 0 
+    If you wish to pass a list of pause times, use **-video-pause** LIST.
 
 == Thumbnail style ==
 
