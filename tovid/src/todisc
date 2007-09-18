@@ -65,9 +65,10 @@ LOG_FILE=$(readlink -f todisc.log)
 #RECURSIVE_LOG_FILE=$(tempfile -s -todisc.log)
 OUT_PREFIX=""
 TV_STANDARD=ntsc
-MENU_LENGTH=( 20 )
-ANI_SUBMENU_LENGTH=10
-MAX_MENU_LENGTH=""
+MENU_LEN=( 20 )
+USER_MENU_LEN=false
+ANI_SUBMENU_LEN=10
+MAX_MENU_LEN=""
 TARGET=dvd
 FRAME_RATE=29.970  # when -ntsc and -pal options added put in body in if block
 VIDSIZE=720x480
@@ -107,6 +108,7 @@ SM_IMG_FMT=jpg  # submenu image format
 KEEP_FILES=false
 THUMB_SHAPE=""
 SEEK_VAL=2
+USER_SEEK_VAL=false
 FADE=1
 CHAPTERS=( 6 )
 TOVID_OPTS=""
@@ -114,7 +116,8 @@ CHAIN_VIDEOS=false
 NOASK=false
 SC_FRAMESTYLE="none"
 THUMB_FRAME="-frame 3x3"
-SC_FRAME="-frame 3x3"
+SC_BORDERWIDTH=4x4
+SC_FRAME="-bordercolor  #6E6E6E -compose Copy -border $SC_BORDERWIDTH -blur 0x0.4"
 SHOWCASE_VIDEO=""
 THREExONE=false
 FOURxONE=false
@@ -186,13 +189,13 @@ USER_AUDIOLENGTH=false
 BURN=false
 BURN_DEVICE="/dev/dvdrw"
 QUICK_MENU=false
-PAD_COLOUR=161514
+BG_COLOUR=161514
+SUBMENU_BG_COLOUR=161514
 QM_PREVIEW=false
 USER_CHAPTERS=false
 QUICKMENU_IS_SHOWCASE=false
 QUICKMENU_IS_BACKGROUND=false
 RESIZE_BG=false
-MIX=false
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -243,6 +246,9 @@ function usage_error ()
     for ((i=0; i<$#; i++)) ; do printf "%s" "${MESSAGE[i]}"; done |fold -bs
     printf "\n\n%s\n" "***"
     rm -rf "$REAL_WORK_DIR" "$WORK_DIR"
+    if $SWITCHED_MODE || $SWITCHED_MENUS || $TITLESET_MODE || $DO_TITLESETS; then
+        killall_instances
+    fi
     exit 1
 }
 function titlesafe_error()
@@ -508,7 +514,8 @@ check_stall()
 }
 check_filetype()
 {
-    if [[ $(file -L "$1") = *image* ]]; then
+    fstats=$(file -L "$1")
+    if [[ $fstats =~ "image data" || $fstats =~ "bitmap data" ]]; then
         TYPE=image
     elif mencoder -endpos 2 -oac pcm -ovc copy  "$1" -o /dev/null  >/dev/null 2>&1; then
         TYPE=video
@@ -575,10 +582,20 @@ check_compliance()
     fi
     for ((i=0; i<${#CHECK_IN_FILES[@]}; i++)); do
         IN_FILE=${CHECK_IN_FILES[i]}
-        $group_set && yecho "Checking $(readlink "$IN_FILE") for compliance..."
-        ! $group_set && yecho "Checking $IN_FILE for compliance..."
+        yecho "Checking $(readlink -f "$IN_FILE") for compliance..."
+        # if file tested as an image when we were verifying input files 
+        $group_set && is_image=${grp_file_is_image[i]} || is_image=${file_is_image[i]}
+        if [[ $is_image = "yes" ]]; then
+            # ffmpeg image2 can't handle 16 bit depth
+            if $group_set && [[ $(identify -format "%z" "$IN_FILE") = 16 ]]; then
+                convert "$IN_FILE" -depth 8 "${IN_FILE%%.*}.png"
+                IN_FILE="$WORK_DIR/${IN_FILE##*/}"
+            fi
+            $group_set && grp_use_image2mpeg2[i]="yes" || use_image2mpeg2[i]="yes"
+            FILES_TO_ENCODE[i]="$IN_FILE"
+            ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE.enc.mpg")
         # test files with idvid script
-        if test "$(idvid -isformat $TARGET "$IN_FILE")" = "true" && \
+        elif test "$(idvid -isformat $TARGET "$IN_FILE")" = "true" && \
            test "$(idvid -istvsys $TV_STANDARD "$IN_FILE")" = "true" && \
            [[ $TOVID_OPTS != *-force* ]] ; then
             ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE")
@@ -597,7 +614,7 @@ check_compliance()
         yecho "Some of the -files you provided are not $TV_STND_CAPS $TGT_CAPS-compliant:"
         yecho " "
         for i in "${FILES_TO_ENCODE[@]}"; do
-            $group_set && this_file=$(readlink "$i") || this_file="$i"
+            this_file=$(readlink -f "$i")
             test -n "$this_file" && yecho " $this_file"
         done
         yecho " "
@@ -614,16 +631,39 @@ check_compliance()
         fi
         if test -n "$ENCODE" && test "$ENCODE" = 'yes'; then
             yecho
-            yecho "Converting files to $TGT_CAPS format with 'tovid'"
-            for i in "${FILES_TO_ENCODE[@]}"; do
-                $group_set && yecho "Converting $(readlink "$i")" || yecho "Converting: $i"
-                (($SWITCHED && [[ $MENU_NUM -eq 2 ]]) || ! $SWITCHED) && countdown
-                $group_set && IN=$(readlink "$i") || IN="$i"
-                tovid $NO_ASK -$TV_STANDARD -$TARGET -in "$IN" -out "$IN.enc" $TOVID_OPTS
+            yecho "Converting files to $TGT_CAPS format"
+            yecho
+            for i in "${!FILES_TO_ENCODE[@]}"; do
+                yecho "Converting $(readlink -f "${FILES_TO_ENCODE[i]}")"
+                (($SWITCHED && [[ $MENU_NUM -eq 2 ]]) || ! $SWITCHED)
+                
+                IN=$(readlink -f "${FILES_TO_ENCODE[i]}")
+                if $group_set; then
+                    convert_image=${grp_use_image2mpeg2[i]}
+                else
+                    convert_image=${use_image2mpeg2[i]}
+                fi
+                    
+                if [[ $convert_image = "yes" ]]; then
+                    if ! $group_set && $USER_MENU_LEN; then
+                        vlen=${MENU_LEN[i]}
+                    else
+                        vlen=1
+                    fi
+                    if [[ -s "${IN}.enc.mpg" ]]; then
+                        yecho "${IN}.enc.mpg exists, will not overwrite"
+                    else
+                        image2mpeg2 "$IN" $vlen
+                    fi
+                else
+                    countdown
+                    tovid $NO_ASK -$TV_STANDARD -$TARGET -in "$IN" \
+                    -out "$IN.enc" $TOVID_OPTS
+                fi
                 wait
                 # See if output file exists
                 if ! test -f "$IN.enc.mpg"; then
-                    runtime_error "Could not encode file: $i"
+                    runtime_error "Could not encode file: $IN"
                 fi
                 yecho
             done
@@ -649,8 +689,9 @@ tovid_reencode()
 {
     VIDEO_IN="$1"
     VIDEO_IN_SEEK="$2"
+    video_type=$3
     yecho
-    yecho "$VIDEO_IN is not compliant - re-encoding $(bc <<< "$VIDEO_IN_SEEK + ${MENU_LENGTH[MENU_NUM-1]}" 2>/dev/null) second slice to DVD compliant file"
+    yecho "$VIDEO_IN is not compliant - re-encoding $(bc <<< "$VIDEO_IN_SEEK + ${MENU_LEN[MENU_NUM-1]}" 2>/dev/null) second slice to DVD compliant file"
     yecho "if you used a long seek this will take some time and produce a large file."
     yecho "But if the file is not encoded this way there may be sync problems."
     yecho "Do you want to continue encoding this file?, type 'yes' to do so"
@@ -666,11 +707,14 @@ tovid_reencode()
     yecho "Converting files to $TGT_CAPS format with 'tovid'"
     countdown
     tovid $NO_ASK -in "$VIDEO_IN" \
-    -slice 0-$(bc <<< "$VIDEO_IN_SEEK + ${MENU_LENGTH[MENU_NUM-1]}" 2>/dev/null) \
+    -slice 0-$(bc <<< "$VIDEO_IN_SEEK + ${MENU_LEN[MENU_NUM-1]}" 2>/dev/null) \
     -${TV_STANDARD} -${TARGET} -in "$VIDEO_IN" -out "$VIDEO_IN.enc" $TOVID_OPTS
     # See if output file exists
     if ! test -f "$VIDEO_IN.enc.mpg"; then
         runtime_error "Could not encode file: $VIDEO_IN"
+    else
+        [[ $video_type = showcase ]] && SHOWCASE_VIDEO="$VIDEO_IN.enc.mpg"
+        [[ $video_type = background ]] && BG_VIDEO="$VIDEO_IN.enc.mpg"
     fi
     SUPPORT_VIDEOS=( "${SUPPORT_VIDEOS[@]}" "$VIDEO_IN.enc.mpg" )
     yecho "Encoded file is "$VIDEO_IN.enc.mpg", this will be deleted when todisc is finished unless you used -keepfiles"
@@ -767,6 +811,17 @@ get_button_geo()
     GEOy=$((GEOy - 3))
     GEO="$GEOx,$GEOy"
 }
+
+image2mpeg2()
+{
+    IN_IMAGE="$1"
+    IMAGE_ENC_CMD=(ffmpeg -f image2 -loop_input -t $vlen -i "$IN_IMAGE" \
+    -s $VIDSIZE -f s16le -i /dev/zero -t $vlen -ar $SAMPLERATE -ac 2 \
+    -ab 224k -target ${TV_STANDARD}-${TARGET} -aspect $ASPECT_RATIO  \
+    -y "${IN_IMAGE}.enc.mpg")
+    "${IMAGE_ENC_CMD[@]}" >> "$LOG_FILE" 2>&1
+}
+
 switched_menu_mode()
 #call todisc recursively to make multiple menus for -switched-menus option
 {
@@ -863,7 +918,7 @@ EOF
     }
     function  get_menu_titles()
     {
-        unset menutitles x y titles
+        unset y titles
         while [[ $@ ]]; do
             case "$1" in
                 "-vmgm")
@@ -873,15 +928,15 @@ EOF
                     ;;
                 "-menu-title" )
                     shift
-                    menutitles[x++]="$1"
+                    menutitles=("${menutitles[@]}" "$1")
                     ;;
                 "-titles" )
                     shift
                     get_listargs "$@"
                     OIFS=$IFS
                     IFS=""
-                    NUM_TITLES="$NUM_TITLES ${#ARGS_ARRAY[@]}"
                     titles=( "${titles[@]}" "${ARGS_ARRAY[@]}" )
+                   # NUM_TITLES="$NUM_TITLES ${#ARGS_ARRAY[@]}"
                     IFS=$OIFS
                     ;;
                 "-files" )
@@ -890,6 +945,8 @@ EOF
                     for i in ${!ARGS_ARRAY[@]}; do
                         all_files[i]=$(readlink -f "${ARGS_ARRAY[i]}")
                     done
+                    ALL_FILES=( "${ALL_FILES[@]}" "${all_files[@]}")
+                    NUM_TITLES="$NUM_TITLES ${#ARGS_ARRAY[@]}"
                     ;;
             esac
             shift
@@ -902,7 +959,7 @@ EOF
     MENUTITLES=( "${menutitles[@]}" )
 
     get_menu_titles "${VMGM_OPTS[@]}"
-    if [[ ${#titles[@]} -ne $count ]]; then
+    if [[ ${#menutitles[@]} -ne 0 && ${#menutitles[@]} -ne $count ]]; then
         usage_error "Number of titleset titles must equal the number of titlesets"
     fi
     if [[ -z ${VMGM_OPTS[@]} ]]; then
@@ -959,12 +1016,7 @@ EOF
     yecho "Running dvdauthor to create final DVD structure"
     dvdauthor -x "$DVDAUTHOR_XML" 2>&1 | tee -a "$LOG_FILE"
     if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
-        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        yecho "todisc encountered an error:"
-        yecho "There was a problem creating the DVD structure"
-        yecho "Saving files in "$WORK_DIR" so you can examine the situtaion"
-        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        exit 1
+        dvdauthor_error
     fi
     thanks_goodbye
     cleanup
@@ -1070,55 +1122,9 @@ check_menufile()
     fi
 }
 
-get_slices()
-{
-    num_vids=$1
-    slices_per_vid=3
-
-    get_slice_length()
-    {
-        num_slices=$(bc -l <<< "$num_vids * $slices_per_vid")
-        slice_length=$(bc -l <<< "scale=2; $MENU_LENGTH / $num_vids / $slices_per_vid")
-    }
-
-    get_slice_length
-
-    while (( num_slices > menu_length )) ; do
-        ((slices_per_vid--))
-        get_slice_length
-    done
-    while [[ $(bc -l <<< "$slice_length > 2") = 1 ]]; do
-        ((slices_per_vid++))
-        get_slice_length
-    done
-}
-make_mix()
-{
-    mix_size=$1
-    SLICE_PER_VID=3
-    if $MIX; then
-        mix_size=$SHOWCASE_SIZE
-        LEFTPAD=$sc_xpage
-        TOPPAD=$SC_Y
-        RIGHTPAD=$(( ${VIDSIZE%%x*} - $LEFTPAD - ${SHOWCASE_SIZE%%x*} ))
-        BOTTOMPAD=$(( ${VIDSIZE##*x} - $TOPPAD - ${SHOWCASE_SIZE##*x} ))
-        PADDING="-Y -${TOPPAD},-${LEFTPAD},-${BOTTOMPAD},-${RIGHTPAD}"
-    fi
-    # get menu length in frames
-    menu_length=$(bc_math "$MENU_LENGTH * $FRAME_RATE" int)
-    slice_size=$(bc_math "(($MENU_LENGTH / ${#FILES[@]}) / $slices_per_vid)" )
-    if $MIX; then
-        SLICE_CMD=(transcode -i "$FILE_IN" $NAVSEEK "$NAVLOG" -c $slice \
-        -Z $CLIP_SIZE --export_fps $FRAME_RATE -w 8000  -y ffmpeg,null \
-        --export_asr $AR -F mpeg2video $PADDING -o  "$WORK_DIR/slice${index}_tmp")
-        echo "Running: ${SLICE_CMD[@]}"|fold -bs >> "$LOG_FILE.log" 2>&1
-       "${SLICE_CMD[@]}" >>"$LOG_FILE.log" 2>&1
-    fi
-}
-
-
 quick_menu()
 {
+    unset LEFTPAD TOPPAD RIGHTPAD BOTTOMPAD
     # get width and height of background: we may need to resize it to $VIDSIZE
     if $QUICKMENU_IS_BACKGROUND; then
         BG_VIDEO_STATS=$(idvid -fast "$BG_VIDEO")
@@ -1131,11 +1137,11 @@ quick_menu()
     if [[ -n $1 && $1 = "preview" ]]; then
         QM_MENU_TIME=2 && QM_PREVIEW=:
     else
-        QM_MENU_TIME=${MENU_LENGTH[MENU_NUM-1]} && QM_PREVIEW=false
+        QM_MENU_TIME=${MENU_LEN[MENU_NUM-1]} && QM_PREVIEW=false
     fi
     # if QUICK_MENU_FILE is a showcase video then we need a temp avi file
     if $QUICKMENU_IS_SHOWCASE; then
-        ! $MIX && PRE_VHOOK_FILE="$WORK_DIR/quick_tmp.avi" # not needed for mix
+        PRE_VHOOK_FILE="$WORK_DIR/quick_tmp.avi" # not needed for mix
         outdir="$WORK_DIR/showcase"
         if $SWITCHED; then
             qm_seek="-ss ${SEEK_VAL[MENU_NUM-1]}"
@@ -1158,46 +1164,48 @@ quick_menu()
     imlib2_vhook="$ffmpeg_prefix/lib/vhook/imlib2.so"
 
     # check for badly compiled or otherwise unusable vhook
-    ! [[ -s "$imlib2_vhook" ]] && runtime_error "Can't find ffmpeg's vhook's"
-    yecho
-    yecho "Making a MPEG for testing ffmpeg's imlib2 vhook"
-    convert  -resize $VIDSIZE! xc:"#161514" "$WORK_DIR/dummy.jpg"
-    dummy_cmd=(ffmpeg -t 2 -loop_input -i "$WORK_DIR/dummy.jpg" \
-    -aspect 4:3  -f mpeg1video -r 29.970 -vcodec mpeg2video -b 5000k \
-    -f s16le  -i /dev/zero -acodec ac3 -ac 2 -ar 48000 -ab 224k \
-    -y "$WORK_DIR/dummy.mpg")
-    if ! "${dummy_cmd[@]}" 2>> "$LOG_FILE"; then
-        runtime_error "There was a problem making a dummy.mpg with ffmpeg"
+    $SWITCHED && MN=2 || MN=1
+    if $QM_PREVIEW && [[ $MENU_NUM -eq $MN ]]; then
+        ! [[ -s "$imlib2_vhook" ]] && runtime_error "Missing ffmpeg's vhook's"
+        yecho
+        yecho "Making a MPEG for testing ffmpeg's imlib2 vhook"
+        convert  -resize $VIDSIZE! xc:"#161514" "$WORK_DIR/dummy.jpg"
+        dummy_cmd=(ffmpeg -t 2 -loop_input -i "$WORK_DIR/dummy.jpg" \
+        -aspect 4:3  -f mpeg1video -r 29.970 -vcodec mpeg2video -b 5000k \
+        -f s16le  -i /dev/zero -acodec ac3 -ac 2 -ar 48000 -ab 224k \
+        -y "$WORK_DIR/dummy.mpg")
+        if ! "${dummy_cmd[@]}" 2>> "$LOG_FILE"; then
+            runtime_error "There was a problem making a dummy.mpg with ffmpeg"
+        fi
+        if ! ffmpeg -vhook "$imlib2_vhook -i "$WORK_DIR/dummy.jpg"" \
+        -i "$WORK_DIR/dummy.mpg" -y "$WORK_DIR/test.mpg" 2>> "$LOG_FILE"; then
+            runtime_error "Your ffmpeg's vhook is broken.  No 'quick-menu' :("
+        fi
+        yecho
     fi
-    if ! ffmpeg -vhook "$imlib2_vhook -i "$WORK_DIR/dummy.jpg"" \
-    -i "$WORK_DIR/dummy.mpg" -y "$WORK_DIR/test.mpg" 2>> "$LOG_FILE"; then
-        runtime_error "Your ffmpeg's vhook is broken.  No 'quick-menu' :("
-    fi
-    yecho
-
     $QM_PREVIEW && yecho "Creating a quick-menu preview image"
     # convert and resize the bgvideo so that is is framed by ntsc-safe black bg
-    if ($QUICKMENU_IS_SHOWCASE || $RESIZE_BG) && ! $MIX; then
+    if $QUICKMENU_IS_SHOWCASE || $RESIZE_BG; then
         yecho
         if $RESIZE_BG; then
             yecho "resizing background video: $BG_VIDEO"
             QM_TMP_FRAMESIZE=$VIDSIZE
         else
             yecho "resizing and padding showcase file: $SHOWCASE_VIDEO"
-            LEFTPAD=$sc_xpage
+            LEFTPAD=$SC_X
             TOPPAD=$SC_Y
             RIGHTPAD="-padright \
             $(( ${VIDSIZE%%x*} - $LEFTPAD - ${SHOWCASE_SIZE%%x*} ))"
             BOTTOMPAD="-padbottom \
             $(( ${VIDSIZE##*x} - $TOPPAD - ${SHOWCASE_SIZE##*x} ))"
-            LEFTPAD="-padleft $sc_xpage"
+            LEFTPAD="-padleft $SC_X"
             TOPPAD="-padtop $SC_Y"
             QM_TMP_FRAMESIZE=$SHOWCASE_SIZE
         fi
         PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 $qm_seek \
         -t "$QM_MENU_TIME" -i "$QUICK_MENU_FILE" -s $QM_TMP_FRAMESIZE \
         -acodec copy $TOPPAD $BOTTOMPAD $LEFTPAD $RIGHTPAD \
-        -r $FRAME_RATE -b 15000k -padcolor "$PAD_COLOUR" \
+        -r $FRAME_RATE -b 15000k -padcolor $BG_COLOUR \
         -y  "$WORK_DIR/quick_tmp.avi")
         yecho
         yecho "Running ${PAD_CMD[@]}"|fold -bs
@@ -1207,7 +1215,7 @@ quick_menu()
     # use vhook to add the titles in
     ! $QM_PREVIEW && yecho
     if ! $QM_PREVIEW; then
-        yecho "Using ffmpeg's vhook to add titles (and background if present)"
+        yecho "Using ffmpeg's vhook to add titles and background"
     fi
     # don't seek if we already made a padded video with a seek
     $QUICKMENU_IS_SHOWCASE || $RESIZE_BG && qm_seek=""
@@ -1244,7 +1252,19 @@ tile_warning()
     yecho
     echo "-tile-3x1 and -tile-4x1 are not showcase options.  Disabling"
     yecho
-    sleep 5
+    $WARN && sleep 5
+}
+dvdauthor_error()
+{
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    yecho "todisc encountered an error:"
+    yecho "There was a problem creating the DVD structure"
+    yecho "Saving files in "$WORK_DIR" so you can examine the situtaion"
+    yecho "You can edit "$WORK_DIR/dvdauthor.xml" and rerun: "
+    yecho "dvdauthor -x dvdauthor.xml from inside $REAL_WORK_DIR"
+    yecho "Remove the symlink in /tmp when you are done"
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    exit 1
 }
 
 make_dummy()
@@ -1284,7 +1304,59 @@ make_dummy()
     ! "${MPLEX_CMD[@]}" 2>&1 |strings >> "$LOG_FILE" && runtime_error
 #    $VMGM_ONLY && $SKIP_VMGM && mv "$BASEDIR/dummy.mpg" "$BASEDIR/VMGM.mpg"
 }
-
+verify_infiles()
+{
+    verify_type=$1
+    if [[ $verify_type = "infiles" ]]; then
+        in_files=( "${IN_FILES[@]}" )
+    else
+        in_files=( "${grouping[@]}" )
+    fi
+    for ((i=0; i<${#in_files[@]}; i++)); do
+        IN_FILE="${in_files[i]}"
+        if test -e "$IN_FILE"; then
+            check_filetype "$IN_FILE"
+            if [[ $TYPE = "image" ]]; then
+                if [[ $verify_type = "infiles" ]]; then
+                    if [[ $fstats = *JPEG* || $fstats = *PNG* ]]; then
+                        # ffmpeg image2 can't handle 16 bit depth
+                        # test IN_FILES for preview - group files tested later
+                        if [[ $verify_type = "infiles" ]]; then
+                            DEPTH=$(identify -format "%z" "$IN_FILE")
+                            if ((DEPTH == 16)); then
+                                echo "$IN_FILE is 16 bit, converting"
+                                convert "$IN_FILE" -depth 8 "${IN_FILE%%.*}-8.png"
+                                IN_FILES[i]="${IN_FILE%%.*}-8.png"
+                            fi
+                        fi
+                    else # image but not png or jpeg
+                            # only PNG or JPEG supported - convert it
+                            convert "$IN_FILE" -depth 8 "${IN_FILE%%.*}-8.png"
+                            IN_FILES[i]="${IN_FILE%%.*}-8.png"
+                    fi
+                    if [[ "$SC_FRAMESTYLE" = "glass" ]]; then
+                        # make mpeg with ffmpeg now #FIXME
+                        $USER_MENU_LEN & vlen=${MENU_LEN[i]} || vlen=1
+                        image2mpeg2 "${IN_FILES[i]}" $vlen
+                        IN_FILES[i]="${IN_FILES[i]}.enc.mpg"
+                    else
+                        file_is_image[i]="yes" # needs to be encoded to mpeg
+                    fi
+                else
+                    grp_file_is_image[i]="yes"
+                fi
+                echo "$IN_FILE ok"
+            elif mencoder -quiet -oac pcm -ovc copy \
+            -frames 0 -o /dev/null "$IN_FILE" &>/dev/null; then
+                echo "$IN_FILE ok"
+            else
+                usage_error "Sorry, $IN_FILE is not a supported file type"
+            fi
+        else
+            usage_error "Sorry, $IN_FILE does not exist"
+        fi
+    done
+}
 ##############################################################################
 #                          	End of functions                                 #
 ##############################################################################
@@ -1427,15 +1499,16 @@ while test $# -gt 0; do
         # Menu control options
         "-menu-length" )
             shift
-            unset MENU_LENGTH
+            unset MENU_LEN
             get_listargs "$@"
-            MENU_LENGTH=${ARGS_ARRAY[@]}
-            MENU_LENGTH=( ${MENU_LENGTH//,/ } )
+            MENU_LEN=${ARGS_ARRAY[@]}
+            MENU_LEN=( ${MENU_LEN//,/ } )
+            USER_MENU_LEN=:
             ;;
         # submenu-length disabled for now
         "-submenu-length" )
             shift
-            ANI_SUBMENU_LENGTH="$1"
+            ANI_SUBMENU_LEN="$1"
             ;;
         "-static" )
             STATIC=:
@@ -1462,6 +1535,16 @@ while test $# -gt 0; do
                 PAUSE_TIME="inf"
             fi
             ;;
+        "-video-pause" )
+            shift
+            get_listargs "$@"
+            VPAUSE=( "${ARGS_ARRAY[@]}" )
+            ;;
+        "-group-video-pause" )
+            shift
+            get_listargs "$@"
+            GRP_VPAUSE=( "${ARGS_ARRAY[@]}" )
+            ;;
         "-chain-videos" )
             shift
             get_listargs "$@"
@@ -1475,7 +1558,8 @@ while test $# -gt 0; do
         "-background" )
             shift
             BACKGROUND=$(readlink -f "$1")
-            ! [[ -e "$BACKGROUND" ]] && usage_error "background \"$BACKGROUND\" does not exist"
+            ! [[ -e "$BACKGROUND" ]] && \
+            usage_error "background \"$BACKGROUND\" does not exist"
             ;;
         "-intro" )
             shift
@@ -1487,14 +1571,9 @@ while test $# -gt 0; do
             shift
             get_listargs "$@"
             unset f
-            if [[ "${ARGS_ARRAY[0]}" = "mix" ]]; then
-                MIX=:
-                [[ -n  "${ARGS_ARRAY[1]}" ]] && MIX_GEO=${ARGS_ARRAY[1]}
-            else
-                for f in  ${!ARGS_ARRAY[@]}; do
-                    SHOWCASE_FILE[f]=$(readlink -f "${ARGS_ARRAY[f]}")
-                done
-            fi
+            for f in  ${!ARGS_ARRAY[@]}; do
+                SHOWCASE_FILE[f]=$(readlink -f "${ARGS_ARRAY[f]}")
+            done
             SHOWCASE=:
             IMG_FMT="png"
             ;;
@@ -1727,6 +1806,7 @@ while test $# -gt 0; do
             get_listargs "$@"
             SEEK_VAL=${ARGS_ARRAY[@]}
             SEEK_VAL=( ${SEEK_VAL//,/ } )
+            USER_SEEK_VAL=:
             ;;
         "-showcase-seek" )
             shift
@@ -1850,10 +1930,21 @@ while test $# -gt 0; do
             QUICK_MENU=:
             SC_TITLE_ALIGN="west"
             ;;
-        "-pad-colour" | "-pad-color" )
+        "-bg-colour" | "-bg-color" )
             shift
-            PAD_COLOUR="$1"
-            PAD_COLOUR=${PAD_COLOUR/\#/} # in case user passed #ffffff syntax
+            BG_COLOUR="$1"
+            BG_COLOUR=${BG_COLOUR/\#/} # in case user passed #ffffff syntax
+            ;;
+        "-submenu-bg-colour" | "-submenu-bg-color" )
+            shift
+            SUBMENU_BG_COLOUR="$1"
+            SUBMENU_BG_COLOUR=${BG_COLOUR/\#/} # in case user passed #ffffff syntax
+            ;;
+        "-slideshow" )
+            shift
+            VPAUSE="$1"
+            SEEK=0; PLAYALL=:; VMGM_MENU=false; SWITCHED_MENUS=:; TEXTMENU=:;
+            SHOWCASE=:; SC_TITLE_ALIGN="west"; QUICK_NAV=:; AUDIO_FADE=false
             ;;
     esac
     $DO_SHIFT && shift
@@ -1862,6 +1953,9 @@ done
 ##############################################################################
 #                      Sanity checks and preliminaries                       #
 ##############################################################################
+
+# get script pid so we can kill the parent if doing recursive todisc's
+todisc_pids="$todisc_pids $$"
 
 # link WORK_DIR to /tmp for easy solution to spaces, illegal chars bugs
 ! $GROUPING && mk_workdir
@@ -1872,17 +1966,46 @@ PREVIEW_IMG="$WORK_DIR/preview.jpg"
 
 # Make sure equal, nonzero number of titles and files were provided
 if ! $VMGM_ONLY && ! $DO_TITLESETS; then
-    if test ${#FILES[@]} -eq 0 || test ${#TITLES[@]} -eq 0; then
-        usage_error "Please provide at least one file and one title."
-    elif test ${#FILES[@]} -ne ${#TITLES[@]}; then
+    if [[ ${#FILES[@]} -eq 0 ]]; then
+        usage_error "Please provide at least one file."
+    elif [[ -n ${TITLES[@]} ]] && [[ ${#FILES[@]} -ne ${#TITLES[@]} ]]; then
         usage_error "Please give the same number of files as titles.
         You gave ${#FILES[@]} files and ${#TITLES[@]} titles"
     fi
 fi
+if [[ ${#TITLES[@]} -eq 0 ]]; then
+    $SWITCHED && MN=2 || MN=1
+    if [[ $MENU_NUM = $MN ]]; then
+        yecho
+        yecho "You did not provide any titles with -titles"
+        yecho "Using the basename of each file provided (minus the extension)."
+        yecho
+        $WARN && sleep 5
+    fi
+    for i in ${!FILES[@]}; do
+        TITLE=${FILES[i]##*/}
+        TITLES[i]="${TITLE%%.*}"
+    done
+fi
 if $DO_TITLESETS && ! $VMGM_MENU && ! $QUICK_NAV; then
     usage_error "You can not use -no-vmgm if doing titlesets unless using -quick-nav"
 fi
-$VMGM_ONLY && PLAYALL=false && SUB_MENU=false && ANI_SUB_MENU=false && SM_TITLES=""
+
+if ! $TITLESET_MODE && ! $DO_TITLESETS && $QUICK_NAV; then
+    QUICK_NAV=false
+    yecho
+    yecho "No -quick-nav unless doing titlesets ... disabling this option"
+    $WARN && sleep 5
+    yecho
+fi
+# some things the vmgm menu does not support
+if $VMGM_ONLY; then
+    PLAYALL=false
+    SUB_MENU=false
+    ANI_SUB_MENU=false
+    QUICK_MENU=false
+    SM_TITLES=""
+fi
 if [[ -n "$SM_TITLES" ]]; then
     if test ${#SM_TITLES[@]} -ne ${#TITLES[@]}; then
     usage_error "Please give the same number of submenu titles as titles.
@@ -1892,9 +2015,6 @@ fi
 # titlesets use BASEDIR which is the WORK_DIR of the calling todisc
 # BASEDIR is supplied by the calling todisc with -basedir
 : ${BASEDIR:="$WORK_DIR"}
-
-# get script pid so we can kill the parent if doing recursive todisc's
-todisc_pids="$todisc_pids $$"
 
 # Make sure -out was provided
 if test -n "$OUT_PREFIX"; then
@@ -1928,7 +2048,7 @@ if ! $VMGM_MENU; then
 fi
 
 # initialize MENU_AUDIOLENGTH now that options have been read
-[[ -n $BG_AUDIO ]] && MENU_AUDIOLENGTH=${MENU_LENGTH[MENU_NUM-1]}
+[[ -n $BG_AUDIO ]] && MENU_AUDIOLENGTH=${MENU_LEN[MENU_NUM-1]}
 
 # honour -noask for functions and called scripts that use them
 $NOASK && NO_ASK="-noask"
@@ -2069,7 +2189,6 @@ if [[ $BUTTON_STYLE = "text-rect" ]]; then
     TEXT_BORDER="-bordercolor Transparent -border 8x8"
 fi
 
-
 # set a maximum # of videos
 if $SHOWCASE; then
     $TEXTMENU && file_max=30 || file_max=10
@@ -2159,6 +2278,11 @@ fi
 # do some locale debugging
 echo "You are using the following locale settings:" >> "$LOG_FILE"
 locale >>  "$LOG_FILE" 2>&1
+# if no bg supplied, use template.png so we can add a frame (-quick-menu only)
+if [[ -z $BACKGROUND ]]; then
+    BACKGROUND="$WORK_DIR/bg.png"
+    convert  -resize $VIDSIZE! xc:'#'$BG_COLOUR $BACKGROUND
+fi 
 # check file type of background file and assign to BG_VIDEO or BG_IMAGE
 if [[ -n $BACKGROUND ]]; then
     check_filetype "$BACKGROUND"
@@ -2171,6 +2295,7 @@ if [[ -n $BACKGROUND ]]; then
         usage_error "Sorry, can not identify "$BACKGROUND""
     fi
 fi
+
 # if $SHOWCASE, find out if using SHOWCASE_VIDEO or SHOWCASE_IMG or ! SC_THUMB
 if $SHOWCASE; then
     if [[ -n ${SHOWCASE_FILE[@]} ]]; then
@@ -2180,22 +2305,24 @@ if $SHOWCASE; then
         elif [[ $TYPE = "video" ]]; then
             SHOWCASE_VIDEO=${SHOWCASE_FILE[@]}
         else
-            usage_error "Sorry, can not identify showcase file: "${SHOWCASE_FILE[@]}""
+            usage_error "Can not identify showcase file: "${SHOWCASE_FILE[@]}""
         fi
     else
         SC_THUMB=false
         SHOWCASE_IMG="dummy"
     fi
 fi
-
-if $QUICK_MENU ; then
+if $QUICK_MENU; then
     if [[ -n $SHOWCASE_VIDEO ]]; then
         QUICK_MENU_FILE="$SHOWCASE_VIDEO"
         QUICKMENU_IS_SHOWCASE=:
     elif [[ -n $BG_VIDEO ]]; then
         QUICK_MENU_FILE="$BG_VIDEO"
         QUICKMENU_IS_BACKGROUND=:
-    else
+    fi
+fi
+if $QUICK_MENU && ! $QUICKMENU_IS_SHOWCASE && ! $QUICKMENU_IS_BACKGROUND; then
+    if ! $VMGM_ONLY && ! $SWITCHED; then
         yecho
         yecho "***** WARNING *****"
         yecho "-quick-menu needs a -showcase VIDEO or a -background VIDEO"
@@ -2216,8 +2343,8 @@ if $QUICK_MENU; then
 fi
 if [[ $SC_FRAMESTYLE = "glass" ]] && [[ -z $SHOWCASE_IMG && -z $SHOWCASE_VIDEO ]]; then
     yecho
-    yecho "You must use a -showcase option for '-showcase-framestyle'"
-    yecho "Either -showcase IMAGE, -showcase VIDEO or just '-showcase'"
+    yecho "You must use -showcase option for '-showcase-framestyle. Either '"
+    yecho "-showcase IMAGE, -showcase VIDEO, -showcase mix, or '-showcase'"
     yecho "Disabling this option for you - please ctrl-c now to exit"
     yecho "if you wish to reexamine the situation"
     yecho
@@ -2233,7 +2360,8 @@ fi
 if $SUB_MENU && [ "$TARGET" = "svcd" ]; then
     usage_error "Sorry, no submenu for svcd, please remove -submenu option"
 fi
-[[ $TARGET = "svcd" ]] && $SHOWCASE && ! $TEXTMENU && usage_error "Sorry, showcase disabled for svcd target"
+[[ $TARGET = "svcd" ]] && $SHOWCASE && ! $TEXTMENU && \
+usage_error "Sorry, showcase disabled for svcd target"
 $SUB_MENU && $GROUPING && usage_error "Sorry, no submenus when using -group"
 # allow user to only specify one audio file for all submenus
 if [ ${#SM_AUDIO[@]} -eq 1 ]; then
@@ -2309,6 +2437,30 @@ fi
 if [[ ${#CHAPTERS[@]} -eq 1 && -z ${CHAPT_ARRAY[@]} ]]; then
     for ((i=0; i<=NUM_FILES; i++)); do
         CHAPTERS[i]=${CHAPTERS[0]}
+    done
+fi
+# make sure if -video-pause is given it equals the # of videos
+if [[ -n ${VPAUSE[@]} && ${#VPAUSE[@]} -ne 1 ]]; then
+    if [[ ${#VPAUSE[@]} -ne ${#IN_FILES[@]} ]]; then
+        usage_error "# of -video-pause args must equal 1 or the # of videos"
+    fi
+fi
+# make sure if -group-video-pause is given it equals the # of videos
+if [[ -n ${GRP_VPAUSE[@]} && ${#GRP_VPAUSE[@]} -ne 1 ]]; then
+    if [[ ${#GRP_VPAUSE[@]} -ne ${#grouping[@]} ]]; then
+        usage_error "# of -video-pause args must equal 1 or the # of videos"
+    fi
+fi
+# allow specifying one # for -video-pause
+if [[ -n ${VPAUSE[@]} && ${#VPAUSE[@]} -eq 1 ]]; then
+    for ((i=0; i<=NUM_FILES; i++)); do
+        VPAUSE[i]=${VPAUSE[0]}
+    done
+fi
+# allow specifying one # for -group-video-pause
+if [[ -n ${GRP_VPAUSE[@]} && ${#GRP_VPAUSE[@]} -eq 1 ]]; then
+    for i in ${!grouping[@]}; do
+        GRP_VPAUSE[i]=${GRP_VPAUSE[0]}
     done
 fi
 #        if [[ ${CHAPTERS[@]} = *:* && ${CHAPTERS[i]} != *:* ]]; then
@@ -2418,9 +2570,9 @@ if [ ${#SEEK_VAL[@]} -eq 1 ]; then
     done   
 fi
 
-if [ ${#MENU_LENGTH[@]} -eq 1 ]; then
+if [ ${#MENU_LEN[@]} -eq 1 ]; then
     for ((i=0; i<=NUM_FILES; i++)); do
-        MENU_LENGTH[i]=${MENU_LENGTH[0]}
+        MENU_LEN[i]=${MENU_LEN[0]}
     done
 fi
 # allow -seek to have HH:MM:SS format passed
@@ -2435,28 +2587,22 @@ if ! $VMGM_ONLY &&  [[ ${#FILES[@]} -ne ${#SEEK_VAL[@]} &&  ${#SEEK_VAL[@]} -ne 
     You gave ${#FILES[@]} video files and ${#SEEK_VAL[@]} seek times"
 fi
 # make sure if more than one -menu-length value, they equal the number of video
-if ! $VMGM_ONLY &&  [[ ${#FILES[@]} -ne ${#MENU_LENGTH[@]} &&  ${#MENU_LENGTH[@]} -ne 1 ]]; then
+if ! $VMGM_ONLY &&  [[ ${#FILES[@]} -ne ${#MENU_LEN[@]} &&  ${#MENU_LEN[@]} -ne 1 ]]; then
     usage_error "Please give the same number of -menu-length times as videos, or just use one value.
-    You gave ${#FILES[@]} video files and ${#MENU_LENGTH[@]} -menu-length times"
+    You gave ${#FILES[@]} video files and ${#MENU_LEN[@]} -menu-length times"
 fi
 # var for dcdemux and the navigation log
 #TCDEMUX_MODE="-M 0"
 if ! $VMGM_ONLY; then
     echo
-    echo "Verifying that input files are video files"
-    for ((i=0; i<=NUM_FILES; i++)); do
-        IN_FILE=${IN_FILES[i]}
-        if test -e "$IN_FILE"; then
-            if mencoder -quiet -oac pcm -ovc copy \
-            -frames 0 -o /dev/null "$IN_FILE" &>/dev/null; then
-                echo "$IN_FILE ok"
-            else
-                usage_error "Sorry, $IN_FILE is not a video file"
-            fi
-        else
-            usage_error "Sorry, $IN_FILE does not exist"
-        fi
-    done
+    echo "Verifying that input files are video or image files"
+    verify_infiles infiles
+    if $GROUPING; then 
+        echo
+        echo "Verifying that grouped input files are video or image files"
+        verify_infiles group
+        echo
+    fi
     echo
 fi
 ##############################################################################
@@ -2504,7 +2650,7 @@ else
     yecho "Menu title: \"$MENU_TITLE\""
 fi
 yecho "  (adjust with -menu-title)"
-yecho "Including the following videos:"
+yecho "Including the following files:"
 # do not echo all of long or multiline titles AND files
 for ((i=0; i<${#TITLES[@]}; i++)); do
     if [[ ${#TITLES[i]} -gt 35 || $(echo -e "${TITLES[i]}" |wc -l) -gt 1 ]]; then
@@ -2532,10 +2678,10 @@ yecho "  -thumb-fontsize $THUMB_FONTSIZE"
 if ! $VMGM_ONLY; then
     yecho "Current menu settings: "
     if  ! $STATIC; then
-        yecho "  -menu-length ${MENU_LENGTH[MENU_NUM-1]} seconds"
+        yecho "  -menu-length ${MENU_LEN[MENU_NUM-1]} seconds"
     fi
     if $ANI_SUB_MENU; then
-        yecho "  -submenu-length $ANI_SUBMENU_LENGTH seconds"
+        yecho "  -submenu-length $ANI_SUBMENU_LEN seconds"
         if $SUBMENU_AUDIO; then
             yecho "  -submenu-audio-fade $SM_FADE second(s)"
         fi
@@ -2726,7 +2872,8 @@ if  [[ $BUTTON_STYLE = "text-rect" ]] && ! $SHOWCASE; then
 fi
 # text-rect only for -align east
 if [[ $BUTTON_STYLE = "text-rect" ]] && ! [[ $SC_TITLE_ALIGN = "east" ]] && ! $TEXTMENU; then
-    yecho "***Warning*** : text-rect buttons need to be aligned east of thumbs: \
+    yecho "***Warning*** \
+    text-rect buttons need to be aligned east of thumbs: \
     by using: '-showcase-titles-align east'"
     if [[ -n $SHOWCASE_FILE ]]; then
         echo "However, you are using a -showcase FILE, so choosing 'line' buttons instead"
@@ -2825,17 +2972,10 @@ fi
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224k -ar $SAMPLERATE -ac 2 -acodec $AUDIO_EXT"
 # spumux and dvdauthor vars
-if $WIDE_SCREEN; then
-        TITLES_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $V_ASPECT/>"
-        TITLES_VIDEO_TAG="$(sed 's/ \/>/\/>/' <<< ${TITLES_VIDEO_TAG})"
-    if [ ${#WIDESCREEN_ARGS[@]} -lt 1 ]; then
-        TITLES_VIDEO_TAG="<video widescreen=\"$WIDESCREEN\" $V_ASPECT/>"
-        TITLES_VIDEO_TAG="$(sed 's/ \/>/\/>/' <<< ${TITLES_VIDEO_TAG})"
-    fi
-fi
-if [[ -n "$V_ASPECT" ]] &&  ! $WIDE_SCREEN; then
-    TITLES_VIDEO_TAG="<video $V_ASPECT/>"
-fi
+$WIDE_SCRREN || [[ -n "$V_ASPECT" ]] && TITLES_VID_TAG="<video " 
+$WIDE_SCREEN && TITLES_VID_TAG=" $TITLES_VID_TAG <widescreen=\"$WIDESCREEN\""
+[[ -n "$V_ASPECT" ]] && TITLES_VID_TAG="$TITLES_VID_TAG $V_ASPECT"
+[[ -n $TITLES_VID_TAG ]] && TITLES_VID_TAG="$TITLES_VID_TAG />"
 START="00:00:00.0"
 $PLAYALL && TITLESET_PRE="g4=0;"
 $ITLESET_MODE && TITLESET_PRE="$TITLESET_PRE g2=1;"
@@ -2884,7 +3024,7 @@ if [ -z "$BG_PIC" ]; then
     echo
     echo "Creating a black background"
     BG_PIC="$WORK_DIR/pics/template.png"
-    $QUICK_MENU && template_colour="none" || template_colour="#161514"
+    $QUICK_MENU && template_colour="none" || template_colour='#'$BG_COLOUR
     convert  -resize $VIDSIZE! xc:$template_colour "$BG_PIC"
 else
     convert -resize $VIDSIZE! "$BG_PIC" "$WORK_DIR/pics/template.png"
@@ -3232,9 +3372,10 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
         SHOWCASE_SIZE=288x216
         [[ $TARGET = "svcd" ]] && SHOWCASE_SIZE=216x216
     fi
+
     if [[ -n "$SHOWCASE_VIDEO" ]]; then
         echo "Getting video images from $SHOWCASE_VIDEO"
-        if [[ "$SC_FRAMESTYLE" = "glass" && -n "$SHOWCASE_VIDEO" ]]; then
+        if [[ "$SC_FRAMESTYLE" = "glass" ]]; then
             # some vars for get_framed_pics()
             D=2
             OUTDIR="$WORK_DIR/showcase"
@@ -3252,7 +3393,9 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
             yecho
             get_framed_pics "$SHOWCASE_VIDEO" >> "$LOG_FILE" 2>&1
 
-            mv -v "$WORK_DIR"/00000025.png "$OUT"
+            largest_png=$(du -s "$WORK_DIR"/000000*.png|sort -r |
+                                awk 'NR>1{exit};1 {print $2}')
+            mv -v "$largest_png" "$OUT"
             rm -f "$WORK_DIR"/00000*.png
             convert "$WORK_DIR/showcase_img.png" \
             -background none $ROTATE $WAVE miff:-|
@@ -3272,9 +3415,10 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
             if ! "${FFMPEG_CMD[@]}" 2>&1 | strings >> "$LOG_FILE";then
                 runtime_error "Problem creating images from the video."
             fi
+
             echo "Running convert "$WORK_DIR/showcase_img.png" -mattecolor gray"
             echo "$SC_FRAME "$WORK_DIR/showcase_img.png"" |format_output
-            convert "$WORK_DIR/showcase_img.png" -mattecolor gray $SC_FRAME miff:- |
+            convert "$WORK_DIR/showcase_img.png" $SC_FRAME miff:- |
             convert -background none $ROTATE $WAVE - miff:-|
             convert - -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
         fi
@@ -3282,7 +3426,7 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
         echo "Running convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" miff:- | \
         convert -background none $ROTATE $WAVE -bordercolor Transparent -border 8x8 - miff:- | \
         convert - -trim +repage -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"" |format_output
-        convert "$SHOWCASE_IMG" -resize $SHOWCASE_SIZE! -mattecolor gray $SC_FRAME miff:- |
+        convert "$SHOWCASE_IMG" -resize $SHOWCASE_SIZE!  $SC_FRAME miff:- |
         convert - -background none -bordercolor Transparent -border 8x8 $ROTATE $WAVE miff:- |
         convert - -trim +repage -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
     fi
@@ -3313,8 +3457,9 @@ if ! $TEXTMENU; then
         if [ "$SC_FRAMESTYLE" = "glass" ]; then
             MPLAYER_SEEK_VAL=${SEEK_VAL[i]}
             get_framed_pics "${IN_FILES[i]}"  >> "$LOG_FILE" 2>&1
-            mv -fv $WORK_DIR/$(printf "%08d%s"  25 .$IMG_FMT) \
-            $WORK_DIR/pics/$i/$(printf "%06d%s"  0 .$IMG_FMT)
+            largest_png=$(du -s $WORK_DIR/000*.png | sort -r |
+                                        awk 'NR>1{exit};1 {print $2}')
+            mv -fv $largest_png $WORK_DIR/pics/$i/$(printf "%06d%s"  0 .$IMG_FMT)
             rm -f "$WORK_DIR"/00000*.png
         elif [ "$SC_FRAMESTYLE" = "none" ]; then
             if ! "${FFMPEG_CMD[@]}" 2>&1 |strings >> "$LOG_FILE";then
@@ -3677,18 +3822,18 @@ if $SHOWCASE; then
         if ! $TEXTMENU; then
         sc_space=$((${VIDSIZE%x*} - \
             ${SHOWCASE_THUMB_X_ARRAY[0]} - BUTTON_COLUMN1 - SAFE_AREA))
-        sc_xpage=$(( ${SHOWCASE_THUMB_X_ARRAY[0]} + BUTTON_COLUMN1 \
+        SC_X=$(( ${SHOWCASE_THUMB_X_ARRAY[0]} + BUTTON_COLUMN1 \
             + (sc_space / 2) - (sc_width / 2) ))
         else
             BUTTON_COLUMN1=$((WIDEST_TITLE + 5))
             sc_space=$((${VIDSIZE%x*} - \
                 ${SHOWCASE_TITLES_X_ARRAY[0]} - BUTTON_COLUMN1 - SAFE_AREA))
-            sc_xpage=$(( ${SHOWCASE_TITLES_X_ARRAY[0]} + BUTTON_COLUMN1 \
+            SC_X=$(( ${SHOWCASE_TITLES_X_ARRAY[0]} + BUTTON_COLUMN1 \
             + (sc_space / 2) - (sc_width / 2) ))
             if [[ $BUTTON_GRAVITY = *east* ]]; then
                 BUTTON_COLUMN1=$WIDEST_TITLE
                 sc_space=$((${VIDSIZE%x*} - (SAFE_AREA * 2) - BUTTON_COLUMN1))
-                sc_xpage=$((SAFE_AREA + (sc_space / 2) - (sc_width / 2) ))
+                SC_X=$((SAFE_AREA + (sc_space / 2) - (sc_width / 2) ))
             fi
         fi
         # find out where to put the showcase image in the Y axis
@@ -3711,17 +3856,17 @@ if $SHOWCASE; then
 
         fi
 
-        ! $TEXTMENU && [[ $V_TOTAL -gt 5 ]] && sc_xpage=$(( ( ${VIDSIZE/x*} / 2 ) - (sc_width / 2) ))
-        $TEXTMENU && [[ -n $tt_ygeos_col2 ]] && sc_xpage=$(( ( ${VIDSIZE/x*} / 2 ) - (sc_width / 2) ))
-        $USER_SC_GEO && sc_xpage=${SHOWCASE_GEO/x*}
+        ! $TEXTMENU && [[ $V_TOTAL -gt 5 ]] && SC_X=$(( ( ${VIDSIZE/x*} / 2 ) - (sc_width / 2) ))
+        $TEXTMENU && [[ -n $tt_ygeos_col2 ]] && SC_X=$(( ( ${VIDSIZE/x*} / 2 ) - (sc_width / 2) ))
+        $USER_SC_GEO && SC_X=${SHOWCASE_GEO/x*}
         $USER_SC_GEO && SC_Y=${SHOWCASE_GEO/*x}
 
         # make sure its divisible by 2 for ffmpeg's padding with -quick-menu
         if $QUICK_MENU; then
             SC_Y=$(( (SC_Y /2) * 2 ))
-            sc_xpage=$(( (sc_xpage / 2) * 2 ))
+            SC_X=$(( (SC_X / 2) * 2 ))
         fi
-        SC_IMG_PAGE="-page +$sc_xpage+$SC_Y"
+        SC_IMG_PAGE="-page +$SC_X+$SC_Y"
         SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
     fi
     if ! $SC_THUMB; then unset SC_IMG_CMD ; fi
@@ -3764,16 +3909,15 @@ else # not showcase
     if $TRANSPARENT; then
         yecho "Running:
         montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
-        -geometry ${THUMB_SIZE}+10+4 -background none -bordercolor "#444744" miff:- |
+        -geometry ${THUMB_SIZE}+10+4 -background none -bordercolor '#444744' miff:- |
         composite -dissolve $OPACITY \
         -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
-        "$WORK_DIR/pics/template.png" -background none miff:- |
-        convert - "$WORK_DIR/title_txt.png"  \
+        $WORK_DIR/pics/template.png -background none miff:- |
+        convert - $WORK_DIR/title_txt.png  \
         -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
-        -composite "$PREVIEW_IMG"
-        " | fold -bs
+        -composite $PREVIEW_IMG" | fold -bs
         montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
-        -geometry ${THUMB_SIZE}+10+4 -background none -bordercolor "#444744" miff:- |
+        -geometry ${THUMB_SIZE}+10+4 -background none -bordercolor '#444744' miff:- |
         composite -dissolve $OPACITY \
         -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
         "$WORK_DIR/pics/template.png" -background none miff:- |
@@ -3791,9 +3935,23 @@ fi
 # if there is quickmenu bg, cut out transparent hole for showcase image/video
 if $QUICK_MENU; then
     if $QUICKMENU_IS_SHOWCASE && [[ -n "$BACKGROUND" ]]; then
-        convert -size $SHOWCASE_SIZE xc:white "$WORK_DIR/showcase_blank.png"
-        convert -size  $VIDSIZE xc:none -geometry +$sc_xpage+$SC_Y \
+        #[[ -n $SC_MATTECOLOR ]] && SC_MATTECOLOR="-mattecolor $SC_MATTECOLOR"
+        # make a blank png for cutting out showcase area (cookie cutter)
+        convert -size $SHOWCASE_SIZE xc:black "$WORK_DIR/showcase_blank.png"
+        # make a similar framed blank to composite onto the background
+        frame_cmd=(convert -size $SHOWCASE_SIZE xc:black \
+        $SC_FRAME "$WORK_DIR/showcase_frame.png")
+        yecho "Running ${frame_cmd[@]}" | fold -bs
+        "${frame_cmd[@]}" >> "$LOG_FILE"
+        # composite the framed blank onto background subtracting the width \
+        # of the frame (border) when calculating XxY geometry
+        convert "$WORK_DIR/pics/template.png" -geometry \
+        +$((SC_X-${SC_BORDERWIDTH/x*}))+$((SC_Y-${SC_BORDERWIDTH/x*})) \
+        "$WORK_DIR/showcase_frame.png" -composite "$WORK_DIR/pics/template.png"
+        # add blank to a transparent image the size of the menu video
+        convert -size  $VIDSIZE xc:none  -geometry +$SC_X+$SC_Y \
         "$WORK_DIR/showcase_blank.png" -composite "$WORK_DIR/cookie_cutter.png"
+        # cut out transparent hole in background with this 'cookie cutter'
         convert "$WORK_DIR/cookie_cutter.png" "$WORK_DIR/pics/template.png" \
         -compose Xor -composite "$WORK_DIR/quick_menu_bg.png"
     else
@@ -3801,14 +3959,14 @@ if $QUICK_MENU; then
     fi
 fi
 $QUICK_MENU && quick_menu preview
-if ! $NOASK; then
+if ! $NOASK && $VMGM_MENU; then
     echo "Creating and displaying a preview of the main menu."
     echo "(Press 'q' or ESC in the preview window to close it.)"
 fi
 # make the fake montage with highlighted 1st button and display it
 composite -compose Over "$WORK_DIR/fake_montage.png" "$PREVIEW_IMG" \
 "$PREVIEW_IMG"
-if ! $NOASK ; then
+if ! $NOASK && $VMGM_MENU; then
     display -title "todisc preview - close window to continue" "$PREVIEW_IMG"
     confirm_preview
 fi
@@ -3849,12 +4007,12 @@ fi
 
 # find out the length of the -bgaudio FILE, if there is one
 if [[ -n "$BG_AUDIO" ]]; then
-    BG_AUDIOLENGTH=$(audio_length "$BG_AUDIO" ${MENU_LENGTH[MENU_NUM-1]})
+    BG_AUDIOLENGTH=$(audio_length "$BG_AUDIO" ${MENU_LEN[MENU_NUM-1]})
     yecho
     yecho "Getting length of bg audio"
     yecho
     # make sure user isn't trying to get a longer menu than the audio allows
-    if [[ $(bc <<< "${MENU_LENGTH[MENU_NUM-1]} > $BG_AUDIOLENGTH" 2>/dev/null)  -eq 1 ]]; then
+    if [[ $(bc <<< "${MENU_LEN[MENU_NUM-1]} > $BG_AUDIOLENGTH" 2>/dev/null)  -eq 1 ]]; then
         MENU_AUDIOLENGTH=$BG_AUDIOLENGTH
     fi
 fi
@@ -3863,22 +4021,22 @@ $STATIC && [[ -z "$BG_AUDIO" ]] && ! $SWITCHED && unset MENU_AUDIOLENGTH
 # Check input files for compliance; offer to tovid-encode non-compliant files
 # horrible hack to make sure correct reencoded file gets symlinked
 # as this runs check_compliance twice if switched menus
-$SWITCHED && MN=2 || MN=1
-if [[ $MENU_NUM -eq 1 || $MENU_NUM -eq $MN ]]; then
+if [[ $MENU_NUM = [1-2] || -n ${file_is_image[@]}  ]]; then
     check_compliance
     $GROUPING && check_compliance group
 fi
-# check bgvideo and showcase VIDEO for compliance ( if present )
-if [[ -n $BG_VIDEO ]] && ! idvid -isformat dvd "$BG_VIDEO" >/dev/null; then
-    tovid_reencode "$BG_VIDEO" $BG_SEEK && BG_VIDEO="$BG_VIDEO.enc.mpg"
-elif [[ -n $SHOWCASE_VIDEO ]]  && ! idvid -isformat dvd "$SHOWCASE_VIDEO" >/dev/null; then
+# check bgvideo and showcase VIDEO for compliance ( if present ) #FIXME
+if [[ -n $BG_VIDEO ]]; then
+    if ! idvid -isformat dvd "$BG_VIDEO" >/dev/null; then
+        tovid_reencode "$BG_VIDEO" $BG_SEEK background
+    fi
+elif [[ -n $SHOWCASE_VIDEO ]]; then
     if ! $SWITCHED && ! $QUICK_MENU; then
-        tovid_reencode "$SHOWCASE_VIDEO" $SHOWCASE_SEEK_VAL
-        SHOWCASE_VIDEO="$SHOWCASE_VIDEO.enc.mpg"
+        if ! idvid -isformat dvd "$SHOWCASE_VIDEO" >/dev/null; then
+            tovid_reencode "$SHOWCASE_VIDEO" $SHOWCASE_SEEK_VAL showcase
+        fi
     fi
 fi
-# run quick_menu to create the almost finished menu file ( intro.m2v )
-$QUICK_MENU && quick_menu
 
 # symlink IN_FILES in $WORK_DIR to solve some quoting issues for dvdauthor
 if [[ $MENU_NUM -eq 1 ]]; then
@@ -3964,6 +4122,8 @@ if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]] && $GROUPING; then
 fi
 echo
 
+# run quick_menu to create an almost finished menu file ( intro.m2v )
+$QUICK_MENU && quick_menu
 # if doing switched menus, use the bgaudio from each video
 # unless "none" is passed for -bgaudio
 if $SWITCHED; then
@@ -3982,13 +4142,21 @@ if $SWITCHED; then
     else # audio detected in the video
         if [[ -z $BG_AUDIO && $BG_AUDIO != "none" ]]; then
             # use the audio from each video for each switched menu
-            BG_AUDIO=${FILES[vid]}
+            BG_AUDIO=${IN_FILES[vid]}
             if $STATIC; then
-                [[ -z $MENU_AUDIOLENGTH ]] && MENU_AUDIOLENGTH=${MENU_LENGTH[MENU_NUM-1]}
+                [[ -z $MENU_AUDIOLENGTH ]] && MENU_AUDIOLENGTH=${MENU_LEN[MENU_NUM-1]}
                 # start audio at the beginning unless user passes -bgaudio-seek
                 ! $USER_BG_AUDIO_SEEK && BG_AUDIO_SEEK=0
                 # make sure MENU_AUDIOLENGTH value isn't longer than the video
-                [[ $MENU_AUDIOLENGTH -gt ${VID_LEN[vid]%.*} ]] && MENU_AUDIOLENGTH=${VID_LEN[vid]}
+                # FIXME if video shorter than menu length adjust MENU_LEN
+                [[ $( bc_math "$MENU_AUDIOLENGTH > ${VID_LEN[vid]}") -eq 1 ]] \
+                                            && MENU_AUDIOLENGTH=${VID_LEN[vid]}
+                # MENU_LEN can't be longer than the audio length
+                [[ $( bc_math  "${VID_LEN[vid]%.*} < ${MENU_LEN[vid]}")  = 1 ]] \
+                                                && MENU_LEN[vid]=${VID_LEN[vid]}
+                # don't use a fade unless the video is long enough to support it
+                [[ $(bc_math "${VID_LEN[vid]} < (($FADE * 2) + 2)") -eq 1 ]] \
+                                                && AUDIO_FADE=false
             else
                 # same seek value as video unless user passes -bgaudio-seek
                 ! $USER_BG_AUDIO_SEEK && BG_AUDIO_SEEK=${SEEK_VAL[vid]}
@@ -4002,7 +4170,7 @@ if $SWITCHED; then
             if [[ $BG_AUDIO = "none" ]]; then # no audio if -bgaudio none
                 BG_AUDIO=""
             else # BG_AUDIO="$BG_AUDIO" if -bgaudio supplied and not 'none'
-                [[ -z $MENU_AUDIOLENGTH ]] && MENU_AUDIOLENGTH=${MENU_LENGTH[MENU_NUM-1]}
+                [[ -z $MENU_AUDIOLENGTH ]] && MENU_AUDIOLENGTH=${MENU_LEN[MENU_NUM-1]}
                 yecho "Using "$BG_AUDIO" as audio background for "${FILES[vid]}""
 #                ! $STATIC && MENU_AUDIOLENGTH=${VID_LEN[vid]}
             fi
@@ -4037,14 +4205,14 @@ if $ANI_SUB_MENU; then
     done
 fi
 # allow animated menus of length of longest video
-MAX_MENU_LENGTH=$(bc_math "$FRAME_RATE * ${MENU_LENGTH[MENU_NUM-1]}" int)
+MAX_MENU_LEN=$(bc_math "$FRAME_RATE * ${MENU_LEN[MENU_NUM-1]}" int)
 MAX_VAL_FRAMES="$((MAX_VAL * 30))"
 # if submenu selected, translate seconds of submenu length into # of frames
 if $ANI_SUB_MENU; then
-    ANI_SUBMENU_FRAMES=$(bc_math "$FRAME_RATE * $ANI_SUBMENU_LENGTH" int)
+    ANI_SUBMENU_FRAMES=$(bc_math "$FRAME_RATE * $ANI_SUBMENU_LEN" int)
 fi
 
-MENU_FRAMES=$MAX_MENU_LENGTH
+MENU_FRAMES=$MAX_MENU_LEN
 if $STATIC; then
     FRAMES=1
 else
@@ -4123,12 +4291,12 @@ if [ -z "$BG_PIC" ]; then
     if $QUICK_MENU; then
         convert  -size $VIDSIZE xc:none "$BG_PIC"
     else
-        convert  -size $VIDSIZE xc:"#161514" "$BG_PIC"
+        convert  -size $VIDSIZE xc:'#'$BG_COLOUR "$BG_PIC"
     fi
-    convert  -size $VIDSIZE xc:"#161514" "$WORK_DIR/submenu_template.jpg"
+    convert  -size $VIDSIZE xc:'#'$SUBMENU_BG_COLOUR "$WORK_DIR/submenu_template.jpg"
 else
     convert -resize $VIDSIZE! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
-    convert -size $VIDSIZE xc:"#161514" "$WORK_DIR/submenu_template.jpg"
+    convert -size $VIDSIZE xc:'#'$SUBMENU_BG_COLOUR "$WORK_DIR/submenu_template.jpg"
 fi
 
 echo
@@ -4247,7 +4415,7 @@ $(if $QUICK_NAV; then
         if [[ $i -eq 1 ]]; then
             echo -n "       <button name=\"$i\" $down $up"
         elif [[ $i -eq ${#FILES[@]} ]]; then
-            if ($TITLESET_MODE || $PLAYALL) && $VMGM_MENU; then
+            if  $PLAYALL || $VMGM_MENU; then
                 echo -n "       <button name=\"$i\" $up down=\"$((i+1))\""
             else
                 echo -n "       <button name=\"$i\" $down $up"
@@ -4267,11 +4435,11 @@ $(if $QUICK_NAV; then
             fi
         fi
         if [[ $i -eq $(( ${#FILES[@]} + 1 )) ]]; then
-            if $TITLESET_MODE && $VMGM_MENU && $PLAYALL; then
-                echo -e "       <button name=\"$i\" $up/>"
+            if $VMGM_MENU && $PLAYALL; then
+                echo -e "       <button name=\"$i\" up=\"$((i-1))\" down=\"$((i+1))\"/>"
                 echo -e "       <button name=\"$((i+1))\" $down/>"
             else
-                echo -e "       <button name=\"$i\" $down $up/>"
+                echo -e "       <button name=\"$i\" $down/>"
             fi
         fi
     done
@@ -4280,13 +4448,13 @@ $(if $SWITCHED && ! $QUICK_NAV; then
     for ((i=1; i<=$NUM_BUTTONS; i++)); do
         if [[ $i -eq $(( ${#FILES[@]} + 1 )) ]]; then
             if $TITLESET_MODE && $VMGM_MENU && $PLAYALL; then
-                echo -e "       <button name=\"$i\" $up/>"
+                echo -e "       <button name=\"$i\" up=\"$((i-1))\"/>"
                 echo -e "       <button name=\"$((i+1))\" $down/>"
             else
-                echo -e "       <button name=\"$i\" $updown/>"
+                echo -e "       <button name=\"$i\"  up=\"$((i-1))\" $down/>"
             fi
         elif [[ $i -eq ${#FILES[@]} ]]; then
-            if $TITLESET_MODE || $PLAYALL; then
+            if ($TITLESET_MODE && $VMGM_MENU) || $PLAYALL; then
                 echo -e "       <button name=\"$i\" $up down=\"$((i+1))\"/>"
             else
                 echo -e "       <button name=\"$i\" $updown/>"
@@ -4421,13 +4589,15 @@ echo "$POST"
 fi)
     </menus>
     <titles>
-      $TITLES_VIDEO_TAG
+      $TITLES_VID_TAG
 $(if $SUBTITLES; then
     for ((s=0; s<${#SUBS_ARRAY[@]}; s++)); do
         echo -e "      <subpicture lang=\"${SUBS_ARRAY[s]}\"/>"
     done
 fi)
 $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
+    [[ -n ${VPAUSE[@]} ]] && vid_pause="pause=\"${VPAUSE[i]}\""
+    [[ -n ${GRP_VPAUSE[@]} ]] && grp_vid_pause="pause=\"${GRP_VPAUSE[i]}\""
     unset j
     echo -e "      <pgc>"
     if $AUDIOLANG; then
@@ -4436,19 +4606,19 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
     if [[ -n ${GROUP[i]} ]]; then
        [[ $MENU_NUM -eq 1 && ${CHAPTERS[i]} -ne 0 ]] && get_group_chapters $i format
         if ((${CHAPTERS[i]} == 0)); then
-            echo -e "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\"/>"
+            echo -e "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\" $vid_pause/>"
             for mpg in $BASEDIR/${TSET_NUM}-group-$((i+1))-*.mpg; do
-                echo -e "        <vob file=\"$mpg\"/>"
+                echo -e "        <vob file=\"$mpg\" $grp_vid_pause/>"
             done
         else
-            echo -e "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\" $chpts0/>"
+            echo -e "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\" $chpts0 $vid_pause/>"
             for mpg in $BASEDIR/${TSET_NUM}-group-$((i+1))-*.mpg; do
-                echo -e "        <vob file=\"$mpg\" ${chpts[++j]}/>"
+                echo -e "        <vob file=\"$mpg\" ${chpts[++j]} $grp_vid_pause/>"
             done
         fi
     else
         echo -ne "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\""
-        echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\"/>"
+        echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\" $vid_pause/>"
     fi
     if $CHAIN_VIDEOS; then
         if [ "${POST_PLAY[i]}" = "chain" ]; then
@@ -4777,7 +4947,7 @@ if $SUB_MENU; then
                 $WORK_DIR/menu$s-processed.wav fade t $SM_FADE $TIME $SM_FADE" |
                 sed 's/    */ /g'|sed -e "s/^ *//"
                 sox -q $WORK_DIR/menu$s.wav \
-                $WORK_DIR/menu$s-processed.wav fade t $FADE $TIME $FADE
+                $WORK_DIR/menu$s-processed.wav fade t $SM_FADE $TIME $SM_FADE
                 rm $WORK_DIR/menu$s.wav
                 mv $WORK_DIR/menu$s-processed.wav $WORK_DIR/menu$s.wav
             fi
@@ -4787,14 +4957,14 @@ if $SUB_MENU; then
         fi
         # if "1" audio file, then convert it if it has not been done yet
         if [[ -n "$SM_AUDIO_FILE" && ! -s $WORK_DIR/submenu-processed.wav ]]; then
-            if $AUDIO_FADE; then
+            if $SM_AUDIO_FADE; then
                 TIME=$(audio_length "$WORK_DIR/submenu.wav")
                 echo -e "Running:
                 sox $WORK_DIR/submenu.wav \
                 $WORK_DIR/submenu-processed.wav fade t $SM_FADE $TIME $SM_FADE" |sed 's/    */ /g'
 
                 sox -q $WORK_DIR/submenu.wav \
-                $WORK_DIR/submenu-processed.wav fade t $FADE $TIME $FADE
+                $WORK_DIR/submenu-processed.wav fade t $SM_FADE $TIME $SM_FADE
                 rm -f $WORK_DIR/submenu.wav
                 cp  $WORK_DIR/submenu-processed.wav $WORK_DIR/submenu.wav
             fi
@@ -4845,8 +5015,8 @@ if [[ -n "$BG_VIDEO" ]] && ! $QUICK_MENU; then
     $(find $WORK_DIR/bg -maxdepth 1 -name \*[1-9]\*.jpg|sort) )
     last_pic=${#IMAGES[@]}
     next_pic=$(($last_pic + 1))
-    if [ $last_pic -lt $MAX_MENU_LENGTH ]; then
-        for ((l=next_pic; l<=MAX_MENU_LENGTH; l++)); do
+    if [ $last_pic -lt $MAX_MENU_LEN ]; then
+        for ((l=next_pic; l<=MAX_MENU_LEN; l++)); do
             cp $WORK_DIR/bg/${last_pic}.jpg $WORK_DIR/bg/$l.jpg
         done
     fi
@@ -4912,8 +5082,8 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
     IMAGES=( $(find $WORK_DIR/showcase -maxdepth 1 -name 00\*.png|sort) )
     last_pic=$(( ${#IMAGES[@]} - 1 ))
     next_pic=$(($last_pic + 1))
-    if [ $last_pic -lt $MAX_MENU_LENGTH ] && ! $STATIC; then
-        for ((l=next_pic; l<=MAX_MENU_LENGTH; l++)); do
+    if [ $last_pic -lt $MAX_MENU_LEN ] && ! $STATIC; then
+        for ((l=next_pic; l<=MAX_MENU_LEN; l++)); do
             cp $WORK_DIR/showcase/$( printf %06d $last_pic).png \
             $WORK_DIR/showcase/$(printf %06d $l).png
         done
@@ -5041,8 +5211,8 @@ if ! $TEXTMENU; then
             $(find $WORK_DIR/pics/$i -maxdepth 1 -name 00\*.$IMG_FMT|sort) )
             last_pic=$(( ${#IMAGES[@]} - 1 ))
             next_pic=$(($last_pic + 1))
-            if [ $last_pic -lt $MAX_MENU_LENGTH ]; then
-                for ((l=next_pic; l<=MAX_MENU_LENGTH; l++)); do
+            if [ $last_pic -lt $MAX_MENU_LEN ]; then
+                for ((l=next_pic; l<=MAX_MENU_LEN; l++)); do
                     cp $WORK_DIR/pics/$i/$( printf %06d $last_pic).$IMG_FMT \
                     $WORK_DIR/pics/$i/$(printf %06d $l).$IMG_FMT
                 done
@@ -5378,7 +5548,7 @@ if ! mencoder -quiet -oac pcm -ovc copy -frames 0 $WORK_DIR/intro.m2v -o /dev/nu
 fi
 
 MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
-$SWITCHED && MENU_ATIME=${MENU_LENGTH[MENU_NUM-1]}
+$SWITCHED && MENU_ATIME=${MENU_LEN[MENU_NUM-1]}
 
 # use mplayer to dump audio if mplayer used for video
 # but first check if audio same file as video and its not a static menu
@@ -5405,7 +5575,7 @@ else # audio supplied: convert to wav then later to dvd/svcd format
         $WORK_DIR/intro.wav)
     fi
     yecho
-    echo "Running "${BGAUDIO_CMD[@]}"" |tee -a "$LOG_FILE.tmp" 2>&1
+    echo "Running "${BGAUDIO_CMD[@]}"" |strings|tee -a "$LOG_FILE" 2>&1
     ! "${BGAUDIO_CMD[@]}" 2>&1 |strings >> "$LOG_FILE" && runtime_error
 
     if $AUDIO_FADE; then  # bgaudio supplied and audio fade selected
@@ -5494,12 +5664,7 @@ if [ "$TARGET" = "dvd" ] && $AUTHOR && ! $VMGM_ONLY && ! $DO_TITLESETS && ! $SWI
     echo "Running dvdauthor to create the DVD filesystem"
     dvdauthor -x "$DVDAUTHOR_XML" 2>&1  | tee -a  "$LOG_FILE.tmp"
     if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
-        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        yecho "todisc encountered an error:"
-        yecho "There was a problem creating the DVD structure"
-        yecho "Saving files in "$WORK_DIR" so you can examine the situation"
-        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        exit 1
+        dvdauthor_error
     fi
     strings "$LOG_FILE.tmp" >> "$LOG_FILE" && rm -f "$LOG_FILE.tmp"
 elif [ "$TARGET" = "svcd" ]; then
