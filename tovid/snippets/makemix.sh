@@ -5,15 +5,18 @@
 #############
 
 WORK_DIR=$(readlink -f todisc_work)
-LOG_FILE="makemix"
+LOG_FILE=$(readlink -f makemix)
 FRAME_RATE=29.970
 ASPECT_RATIO="4:3"
 MENU_LENGTH=20
+SLICE_PER_VID=3
 FRAME_SIZE="720x480"
-QUICK_MENU_SHOWCASE=false
+SHOWCASE_MIX=false
 FFMPEG_PREFIX=$(which ffmpeg)
 FFMPEG_PREFIX=$(sed 's/bin\/ffmpeg//g' <<< "$FFMPEG_PREFIX")
 IMLIB2_VHOOK="$FFMPEG_PREFIX/lib/vhook/imlib2.so"
+CLIP_SIZE="medium"
+TV_STD="ntsc"
 
 #############
 # functions #
@@ -44,20 +47,25 @@ make_slice()
     FILE_IN="$1"
     slice=$2
     index=$3
-    if $QUICK_MENU_SHOWCASE; then
-        FFMPEG_CMD=(ffmpeg -i "$FILE_IN" -ss $slice -t $slice_size \
-        -s 318x212 -an -padtop 104 -padbottom 164 -padleft 262 -padright 140 \
-        -f mpeg2video -r $FRAME_RATE -tvstd ntsc -b 12000k -maxrate 15000k \
-        -bufsize 230KiB -aspect $ASPECT_RATIO \
-        -y  "$WORK_DIR/slice${index}_tmp.m2v")
+     [[ -s "$FILE_IN.nav_log" ]] && NAVSEEK="-nav_seek" && NAVLOG="$FILE_IN.nav_log"
+    if $SHOWCASE_MIX; then
+        :
+#        FFMPEG_CMD=(ffmpeg -i "$FILE_IN" -ss $slice -t $slice_size \
+#        -s 318x212 -an -padtop 104 -padbottom 164 -padleft 262 -padright 140 \
+#        -f mpeg2video -r $FRAME_RATE -tvstd ntsc -b 12000k -maxrate 15000k \
+#        -bufsize 230KiB -aspect $ASPECT_RATIO \
+#        -y  "$WORK_DIR/slice${index}_tmp.m2v")
     else
-        FFMPEG_CMD=(ffmpeg -i "$FILE_IN" -ss $slice -t $slice_size \
-        -s $FRAME_SIZE -an -f mpeg2video -r $FRAME_RATE -tvstd ntsc \
-        -b 8000k -maxrate 9000k -bufsize 230KiB -aspect $ASPECT_RATIO \
-        -y  "$WORK_DIR/slice${index}_tmp.m2v")
+        SLICE_CMD=(transcode -i "$FILE_IN" $NAVSEEK "$NAVLOG" -c $slice \
+        -Z $CLIP_SIZE --export_fps $FRAME_RATE -w 8000  -y ffmpeg,null \
+        --export_asr $AR -F mpeg2video $DO_PADDING -o  "$WORK_DIR/slice${index}_tmp")
+        echo "Running: ${SLICE_CMD[@]}"|fold -bs >> "$LOG_FILE.log" 2>&1
+        "${SLICE_CMD[@]}" >>"$LOG_FILE.log" 2>&1
+#        FFMPEG_CMD=(ffmpeg -i "$FILE_IN" -ss $slice -t $slice_size \
+#        -s $FRAME_SIZE -an -f mpeg2video -r $FRAME_RATE -tvstd ntsc \
+#        -b 8000k -maxrate 9000k -bufsize 230KiB -aspect $ASPECT_RATIO \
+#        -y  "$WORK_DIR/slice${index}_tmp.m2v")
     fi
-
-    "${FFMPEG_CMD[@]}" >/dev/null 2>&1
 }
 
 cleanup()
@@ -65,7 +73,7 @@ cleanup()
     exit 1
 }
 
-function tempdir()
+tempdir()
 {
     NUM=0
     BASENAME="$1"
@@ -79,12 +87,15 @@ function tempdir()
     echo "$BASENAME.$NUM"
 }
 
-function bc_math()
+bc_math()
+# usage: bc_math "expression" [int]
 {
-    echo "scale=2; $1" | bc -l
+    bc_out=$(bc <<< "scale=3;$1" 2>/dev/null)
+    [[ -n $2 && $2 = "int" ]] && bc_out=${bc_out%.*}
+    echo "$bc_out"
 }
 
-function get_listargs()
+get_listargs()
 {
     unset x ARGS_ARRAY
     # Hackish list-parsing
@@ -96,6 +107,12 @@ function get_listargs()
     if test $# -gt 0 && test x"${1:0:1}" = x"-";then
         DO_SHIFT=false
     fi
+}
+
+# usage: test_is_number INPUT
+function test_is_number()
+{
+    [[ $1 && $1 =~ ^[-+]?[0-9]*\(\.[0-9]+\)?$ ]]
 }
 
 
@@ -126,8 +143,31 @@ while [ $# -gt 0 ]; do
             shift
             MENU_LENGTH=$1
             ;;
-        "-quick-menu" | "-qm" )
-            QUICK_MENU_SHOWCASE=:
+        "-showcase" | "-sc" )
+            SHOWCASE_MIX=:
+            ;;           
+        "-keep-files" | "-kf" )
+            KEEP_FILES=:
+            ;;           
+        "-size" | "-s" )
+            shift
+            CLIP_SIZE="$1"
+            ;;
+        "-ntsc" )
+            TV_STD="ntsc"
+            ;;
+        "-pal" )
+            TV_STD="pal"
+            ;;
+        "-aspect" | "-s" )
+            shift
+            ASPECT_RATIO="$1"
+            [[ $ASPECT_RATIO = "4:3" ]] && AR=2
+            [[ $ASPECT_RATIO = "16:9" ]] && AR=3
+            ;;
+        "-out" | "-kf" )
+            shift
+            OUT_FILE=$(readlink -f "$1")
             ;;           
     esac
     shift
@@ -143,25 +183,53 @@ trap 'cleanup; exit 13' TERM INT
 ! [[ -s "$IMLIB2_VHOOK" ]] && runtime_error "Can't find your ffmpeg's vhook's"
 
 # set OUT_FILE name
-OUT_FILE=$(tempdir mix nocreate)
-OUT_FILE=$(readlink -f ${OUT_FILE/./})
+OUT_FILE=$(tempdir "$OUT_FILE" nocreate)
 
 # create the working directory
 WORK_DIR=$(tempdir "$WORK_DIR")
 cd "$WORK_DIR"
 
-# set LOG_FILE name then create it or zero out existing log
+# set LOG_FILE name then create it
 
 LOG_FILE=$(tempdir $LOG_FILE nocreate)
-> "$LOG_FILE.log"
+rm -f "$LOG_FILE.log"
 
+# tv standard options
+if [[ $TV_STD = "ntsc" ]]; then
+    FRAME_SIZE=720x480
+    FRAME_RATE=29.970
+elif [[ $TV_STD="pal" ]]; then
+    FRAME_SIZE=720x576
+    FRAME_RATE=25
+fi
+# what size clips are we making
+if [[ $CLIP_SIZE = "full" ]]; then
+    CLIP_SIZE=$FRAME_SIZE
+elif [[ $CLIP_SIZE = "small" ]]; then 
+    CLIP_SIZE=288x216
+elif [[ $CLIP_SIZE = "medium" ]]; then
+    CLIP_SIZE=384x256
+    TOPPAD=110
+    LEFTPAD=240
+fi
+if [[ $CLIP_SIZE != $FRAME_SIZE ]]; then
+    BOTTOMPAD=$(( ${FRAME_SIZE##*x} - $TOPPAD - ${CLIP_SIZE##*x} ))
+    RIGHTPAD=$(( ${FRAME_SIZE%%x*} - $LEFTPAD - ${CLIP_SIZE%%x*} ))
+    DO_PADDING="-Y -${TOPPAD},-${LEFTPAD},-${BOTTOMPAD},-${RIGHTPAD}"
+fi
+
+# get menu length in frames
+MENU_LENGTH=$(bc_math "$MENU_LENGTH * $FRAME_RATE" int)
 
 echo
 echo "Getting video lengths"
 echo
 
+unset y
 for v in ${!FILES[@]}; do
-    file_len[v]=$(vid_length "${FILES[v]}")
+    echo "Getting stats on ${FILES[v]}"
+    stats[v]=$(idvid "${FILES[v]}")
+    file_len[v]=$(awk '/Frames:/ {print $2}' <<< "${stats[v]}")
 done
 
 for i in ${!FILES[@]}; do
@@ -171,12 +239,12 @@ for i in ${!FILES[@]}; do
 done
 echo
 
-# get the size of each slice
-slice_size=$(bc_math "$MENU_LENGTH / (${#FILES[@]} * $SLICE_PER_VID)" )
+# get the size (seconds) of each slice
+slice_size=$(bc_math "(($MENU_LENGTH / ${#FILES[@]}) / $SLICE_PER_VID)" )
 
 # array of slices for each vid (add 1 to -n VALUE so we skip end credits)
 for i in ${!file_len[@]}; do
-    slice_seek[i]=$(bc_math "${file_len[i]} / ($SLICE_PER_VID + 1)")
+    SEEK[i]=$(bc_math "${file_len[i]} / ($SLICE_PER_VID + 1)")
 done
 
 # make the individual slices, outputting high bitrate m2v
@@ -184,10 +252,10 @@ z=1
 for ind in ${!FILES[@]}; do
     echo
     echo "Working on ${FILES[ind]}"
-    sliceseek=${slice_seek[ind]}
-    for ((i=0; i<SLICE_PER_VID; i++)); do
-        make_slice "${FILES[ind]}" $( bc_math "$sliceseek * ($i + 1)" ) ${ind}-${i}
-        echo "slice $((z++)) of $((SLICE_PER_VID * ${#FILES[@]}))  done"
+    for ((s=0; s<SLICE_PER_VID; s++)); do
+        sliceseek=$( bc_math "${SEEK[ind]} * ($s + 1)" int)
+        slice_end=$(bc_math "$sliceseek + $slice_size" int)
+        make_slice "${FILES[ind]}" ${sliceseek}-${slice_end} ${ind}-${s}
     done
 done
 
@@ -205,4 +273,4 @@ echo
 echo "Your file is ready: ${OUT_FILE}.m2v"
 echo
 
-rm -fr "$WORK_DIR"
+! $KEEP_FILES && rm -fr "$WORK_DIR"

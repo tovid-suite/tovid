@@ -39,6 +39,7 @@ executables = [
     'ripframes',
     'todiscgui',
     'tovidgui',
+    'makemenugui',
     'tovid-stats',
     'todraw']
 
@@ -114,8 +115,8 @@ icons = [
     'cd.svg']
 
 shortcuts = [
-    'tovidgui.desktop',
-    'todiscgui.desktop']
+    'tovidgui-simple.desktop',
+    'tovidgui-fancy.desktop']
 
 def newer(source, dest):
     """Return True if the source file is more recently modified than the

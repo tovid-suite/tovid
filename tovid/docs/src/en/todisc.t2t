@@ -176,8 +176,11 @@ See also **-titleset** and **-vmgm**
 
 : **-bg-color** | **-bg-colour**
     The color to use for the menu background. (default: ntsc-safe black)
+    Note: use a color a great deal darker than you want, as it appears quite a bit
+    lighter in the video version.
 : **-submenu-bg-color** | **-submenu-bg-colour**
     The color to use as background for the  submenu(s). (default: ntsc-safe black)
+    See **-bg-color**
 : **-use-makemenu**
     This will call the other tovid menu script, "makemenu" on the titles supplied.
 : **-static**
@@ -238,7 +241,13 @@ See also **-titleset** and **-vmgm**
 ```
     -switched-menus -quick-menu
 ```
-
+: **-slideshow** PAUSE
+    This option is for convenience: it sets some options that are useful for doing a slideshow
+    of images ( yes todisc can take images as input for -files ).
+    The "PAUSE" argument is number of seconds each slide title will remain on the screen.  This
+    option can also be set using **-video-pause** SECONDS.
+    The options this convenience switch sets are equivilent to using the following options:
+    -seek 0 -playall -no-vmgm -switched-menus -quick-nav -menu-audio-fade 0
 
 == Thumbnail style ==
 
@@ -477,7 +486,7 @@ See also **-titleset** and **-vmgm**
 
 
     ==Dvdauthor options==
-: **-loop**
+: **-loop** PAUSE
     Pause in seconds at end of menu.  Use "inf" if you wish indefinite pause.
     (Note: you can not use inf with **-menu-fade** as you will get a black screen
     at the end)  (default: "inf" for static menu, 10.0 seconds for animated)
@@ -524,7 +533,15 @@ See also **-titleset** and **-vmgm**
 : **-outlinewidth**, **-outline-width** WIDTH
     For spumux outlinewidth variable.  If there is a large gap between words in a
     text button, this option may help.
-
+: **-video-pause PAUSE (single value or list)
+    The pause in seconds after playing a video title.  This is useful for slideshows ( see **-slideshow** )
+    as the 'slide' will remain on the screen for this length of time.  If you have grouped videos you
+    should probably not pause the videos that have a grouped title after it, but instead see
+    **-grouped-video-pause**.  Note: if you provide a list of values they must be one for each video.
+: **-group-video-pause PAUSE (single value or list)
+    The pause in seconds after a grouped video plays.  If you wish to pause after the whole group
+    finishes, then only use a value greater than zero for the last video in the group.
+    If providing a list of values they must equal the number of grouped videos
 
 ==See also==
 
