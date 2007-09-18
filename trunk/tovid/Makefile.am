@@ -120,8 +120,8 @@ dist_iconSVG_DATA = $(icon_top_dir)/$(icon_svg_dir)/cd.svg \
 	$(icon_top_dir)/$(icon_svg_dir)/disc.svg \
 	$(icon_top_dir)/$(icon_svg_dir)/tovid.svg
 dist_app_DATA = \
-	tovidgui.desktop \
-	todiscgui.desktop
+	tovidgui-simple.desktop \
+	tovidgui-fancy.desktop
 
 
 # Distribute the scripts and manpage source files
