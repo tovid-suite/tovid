@@ -1379,6 +1379,7 @@ while test $# -gt 0; do
             shift
             get_listargs "$@"
             for f in  ${!ARGS_ARRAY[@]}; do
+                FILENAMES[f]=${ARGS_ARRAY[f]}
                 FILES[f]=$(readlink -f "${ARGS_ARRAY[f]}")
             done
             ;;
@@ -1537,7 +1538,7 @@ while test $# -gt 0; do
         "-video-pause" )
             shift
             get_listargs "$@"
-            VPAUSE=( "${ARGS_ARRAY[@]}" )
+            [[ -n "${ARGS_ARRAY[@]}" ]] && VPAUSE=( "${ARGS_ARRAY[@]}" )
             ;;
         "-group-video-pause" )
             shift
@@ -1941,7 +1942,8 @@ while test $# -gt 0; do
             ;;
         "-slideshow" )
             shift
-            VPAUSE="$1"
+            get_listargs "$@"
+            [[ -n ${ARGS_ARRAY[@]} ]] && VPAUSE=( ${ARGS_ARRAY[@]} )
             SEEK_VAL=0; PLAYALL=:; VMGM_MENU=false; SWITCHED_MENUS=:; TEXTMENU=:;
             SHOWCASE=:; SC_TITLE_ALIGN="west"; QUICK_NAV=:; AUDIO_FADE=false
             ;;
@@ -1981,8 +1983,10 @@ if [[ ${#TITLES[@]} -eq 0 ]]; then
         yecho
         $WARN && sleep 5
     fi
-    for i in ${!FILES[@]}; do
-        TITLE=${FILES[i]##*/}
+    for i in ${!FILENAMES[@]}; do
+        echo "FILENAMES[$i] is ${FILENAMES[i]}"
+        TITLE=${FILENAMES[i]##*/}
+        echo "TITLE is $TITLE"
         TITLES[i]="${TITLE%%.*}"
     done
 fi
