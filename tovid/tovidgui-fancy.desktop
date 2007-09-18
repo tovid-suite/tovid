@@ -1,0 +1,18 @@
+[Desktop Entry]
+Name=tovid GUI -fancy menus
+Type=Application
+Path=
+Exec=todiscgui
+Icon=tovid.svg
+Terminal=true
+GenericName=DVD/(S)VCD Maker -fancy
+GenericName[en_US]=DVD/(S)VCD Maker -fancy
+Comment=Author videos to DVD or SVCD with fancy menus
+Comment[en_US]=Author videos to DVD or SVCD with fancy menus
+Categories=AudioVideo;Video
+MimeType=
+StartupNotify=true
+TerminalOptions=
+X-DCOP-ServiceType=
+X-KDE-SubstituteUID=false
+X-KDE-Username=

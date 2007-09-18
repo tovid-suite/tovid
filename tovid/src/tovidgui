@@ -1,49 +1,21 @@
 #! /usr/bin/env python
-# tovidgui
-
-"""A wxPython frontend for the tovid suite.
-"""
-
-# tovid GUI
-# ===============
-# A wxPython frontend for the tovid suite
-#
-# Project homepage: http://tovid.org/
-#
-# This software is licensed under the GNU General Public License
-# For the full text of the GNU GPL, see:
-#
-#   http://www.gnu.org/copyleft/gpl.html
-#
-# No guarantees of any kind are associated with use of this software.
-
 
 import sys
-import traceback
+from libtovid.cli import Command
 
-# Try to import wx 2.6; print error if it's unavailable
-try:
-    import wxversion
-    if wxversion.checkInstalled('2.6'):
-        wxversion.select('2.6-unicode')
-    else:
-        print "tovidgui requires wxPython 2.6; please install or upgrade wxPython."
-        sys.exit()
-    import wx
-except ImportError:
-    traceback.print_exc()
-    print "There was an error importing the 'wx' libraries. The above"
-    print "output should help you find what went wrong. Re-installing"
-    print "wxPython 2.6 (or upgrading from wxPython 2.4 to 2.6) may"
-    print "help. Consult the tovid homepage (tovid.org) for further"
-    print "assistance."
-    print "Sorry, 'tovidgui' will not work."
-    sys.exit()
+def rungui(gui):
+    cmd = Command(gui)
+    cmd.run()
 
-from libtovid.gui.frames import TovidFrame
+if __name__ == '__main__':
+    if len(sys.argv) < 2 or not \
+      sys.argv[1] in ('-s', 'simple', '-f', 'fancy'):
+        print "Usage: tovidgui simple|-s fancy|-f"
+        sys.exit(1)
 
-TovidGUI = wx.PySimpleApp()
-#frame = MiniEditorFrame(None, wx.ID_ANY, "tovid GUI")
-frame = TovidFrame(None, wx.ID_ANY, "tovid GUI")
-frame.Show(True)
-TovidGUI.MainLoop()
+    if sys.argv[1] in ('-s', 'simple'):
+        gui = 'makemenugui'
+    elif sys.argv[1] in ('-f', 'fancy'):
+        gui = 'todiscgui' 
+
+    rungui(gui)
