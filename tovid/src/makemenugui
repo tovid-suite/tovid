@@ -44,6 +44,6 @@ from libtovid.gui.frames import TovidFrame
 
 TovidGUI = wx.PySimpleApp()
 #frame = MiniEditorFrame(None, wx.ID_ANY, "tovid GUI")
-frame = TovidFrame(None, wx.ID_ANY, "tovid GUI")
+frame = TovidFrame(None, wx.ID_ANY, "tovid GUI - simple menus using 'makemenu'")
 frame.Show(True)
 TovidGUI.MainLoop()

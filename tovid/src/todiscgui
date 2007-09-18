@@ -437,6 +437,6 @@ burning = Panel("Burning",
 todisc = Application('todisc',
     [main, general, menu, submenus, thumbnails, text, authoring, burning])
 gui = GUI("todiscgui", [todisc], 600, 700)
-gui.title('tovidgui - fancy menus using the "todisc" script')
+gui.title("tovid GUI - fancy menus using 'todisc'")
 gui.run()
 
