@@ -2597,11 +2597,11 @@ fi
 if ! $VMGM_ONLY; then
     echo
     echo "Verifying that input files are video or image files"
-    [[ $MENU_NUM = $MN ]] && verify_infiles infiles
+    verify_infiles infiles
     if $GROUPING; then 
         echo
         echo "Verifying that grouped input files are video or image files"
-        [[ $MENU_NUM = [1-2] ]] && verify_infiles group
+        verify_infiles group
         echo
     fi
     echo
