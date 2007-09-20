@@ -186,6 +186,7 @@ DO_INTRO=false
 USE_MPLAYER_4AUDIO=false
 MENU_AUDIOLENGTH=""
 USER_AUDIOLENGTH=false
+USER_AUDIO_FADE=false
 BURN=false
 BURN_DEVICE="/dev/dvdrw"
 QUICK_MENU=false
@@ -284,8 +285,10 @@ function get_font()
 
 vid_length()
 {
+    check_frames=""
+    [[ -n $2 ]] && check_frames=$2 && check_frames="-frames $check_frames"
     echo "Using mencoder to get length of $1" >> "$LOG_FILE"
-    L=$(mencoder -nosound -mc 0 -oac pcm -ovc copy -o /dev/null "$1" 2>> "$LOG_FILE")
+    L=$(mencoder -nosound -mc 0 -oac pcm -ovc copy $check_frames -o /dev/null "$1" 2>> "$LOG_FILE")
     awk 'END{print $(NF-3)}' <<< "$L"
 }
 audio_length()
@@ -588,8 +591,9 @@ check_compliance()
         if [[ $is_image = "yes" ]]; then
             # ffmpeg image2 can't handle 16 bit depth
             if $group_set && [[ $(identify -format "%z" "$IN_FILE") = 16 ]]; then
-                convert "$IN_FILE" -depth 8 "${IN_FILE%%.*}.png"
-                IN_FILE="$WORK_DIR/${IN_FILE##*/}"
+                [[ ! -s "${IN_FILE%%.*}-8.png" ]] && \
+                    convert "$IN_FILE" -depth 8  "${IN_FILE%%.*}-8.png"
+                IN_FILE="${IN_FILE%%.*}-8.png"
             fi
             $group_set && grp_use_image2mpeg2[i]="yes" || use_image2mpeg2[i]="yes"
             FILES_TO_ENCODE[i]="$IN_FILE"
@@ -656,9 +660,15 @@ check_compliance()
                         image2mpeg2 "$IN" $vlen
                     fi
                 else
-                    countdown
-                    tovid $NO_ASK -$TV_STANDARD -$TARGET -in "$IN" \
-                    -out "$IN.enc" $TOVID_OPTS
+                    # slideshows can contain a lot of files, don't waste time
+                    # with a countdown for each
+                    if [[ -s "${IN}.enc.mpg" ]]; then
+                        yecho "${IN}.enc.mpg exists, will not overwrite"
+                    else
+                        countdown 3
+                        tovid $NO_ASK -$TV_STANDARD -$TARGET -in "$IN" \
+                        -out "$IN.enc" $TOVID_OPTS
+                    fi
                 fi
                 wait
                 # See if output file exists
@@ -1004,7 +1014,8 @@ EOF
                 "${GEN_OPTS[@]}" "${TITLESET_OPTS[@]}" )
                 yecho
                 yecho "Working on the menu for titleset number $tset"
-                yecho && sleep 5
+                yecho
+                $WARN && sleep 5
                 yecho "Running: ${titleset_cmd[@]}"
                 if ! "${titleset_cmd[@]}"; then cleanup && exit 1; fi
                 yecho
@@ -1324,12 +1335,15 @@ verify_infiles()
                             DEPTH=$(identify -format "%z" "$IN_FILE")
                             if ((DEPTH == 16)); then
                                 echo "$IN_FILE is 16 bit, converting"
-                                convert "$IN_FILE" -depth 8 "${IN_FILE%%.*}-8.png"
+                                [[ ! -s "${IN_FILE%%.*}-8.png" ]] && \
+                                convert "$IN_FILE" -depth 8 \
+                                "${IN_FILE%%.*}-8.png"
                                 IN_FILES[i]="${IN_FILE%%.*}-8.png"
                             fi
                         fi
                     else # image but not png or jpeg
                             # only PNG or JPEG supported - convert it
+                            [[ ! -s "${IN_FILE%%.*}-8.png" ]] && \
                             convert "$IN_FILE" -depth 8 "${IN_FILE%%.*}-8.png"
                             IN_FILES[i]="${IN_FILE%%.*}-8.png"
                     fi
@@ -1750,6 +1764,7 @@ while test $# -gt 0; do
         "-menu-audio-fade" )
             shift
             FADE="$1"
+            USER_AUDIO_FADE=:
             AUDIO_FADE=:
             ;;
         "-submenu-audio" )
@@ -1940,13 +1955,6 @@ while test $# -gt 0; do
             SUBMENU_BG_COLOUR="$1"
             SUBMENU_BG_COLOUR=${BG_COLOUR/\#/} # in case user passed #ffffff syntax
             ;;
-        "-slideshow" )
-            shift
-            get_listargs "$@"
-            [[ -n ${ARGS_ARRAY[@]} ]] && VPAUSE=( ${ARGS_ARRAY[@]} )
-            SEEK_VAL=0; PLAYALL=:; VMGM_MENU=false; SWITCHED_MENUS=:; TEXTMENU=:;
-            SHOWCASE=:; SC_TITLE_ALIGN="west"; QUICK_NAV=:; AUDIO_FADE=false
-            ;;
     esac
     $DO_SHIFT && shift
 done
@@ -1991,7 +1999,6 @@ fi
 if $DO_TITLESETS && ! $VMGM_MENU && ! $QUICK_NAV; then
     usage_error "You can not use -no-vmgm if doing titlesets unless using -quick-nav"
 fi
-
 if ! $TITLESET_MODE && ! $DO_TITLESETS && $QUICK_NAV; then
     QUICK_NAV=false
     yecho
@@ -2047,7 +2054,6 @@ if ! $VMGM_MENU; then
     SKIP_VMGM_MENU=:
     NO_VMGM="-no-vmgm-menu"
 fi
-
 # initialize MENU_AUDIOLENGTH now that options have been read
 [[ -n $BG_AUDIO ]] && MENU_AUDIOLENGTH=${MENU_LEN[MENU_NUM-1]}
 
@@ -2529,11 +2535,6 @@ if $TEXTMENU && [[ -z $SHOWCASE_VIDEO && -z $BG_VIDEO ]]; then STATIC=:; fi
 if $STATIC; then
     MENU_FADE=false
 fi
-if [ $FADE = 0 ]; then # in case user thinks he needs to specify 0 for fade
-    AUDIO_FADE=false
-elif [ $SM_AUDIO_FADE = 0 ]; then
-    SM_AUDIO_FADE=false
-fi
 if $MENU_FADE || test -n "$BG_VIDEO"; then mkdir -v "$REAL_WORK_DIR/bg"; fi
 mkdir -v "$REAL_WORK_DIR/animenu"
 if $ANI_SUB_MENU; then
@@ -2605,6 +2606,31 @@ if ! $VMGM_ONLY; then
         echo
     fi
     echo
+fi
+
+# for slides or short files, seeking/fading will not work: set them to 0
+# if user has not set a value from the command line
+for i in ${!IN_FILES[@]}; do
+    SHORTFILE=false
+    if [[ ${file_is_image[i]} = "yes" ]]; then
+        SHORTFILE=:
+    else
+        FRAME_CK=$(vid_length ${IN_FILES[i]} 90)
+        if [[ $FRAME_CK < 70 ]]; then
+            SHORTFILE=:
+        fi
+    fi
+    if $SHORTFILE; then
+        ! $USER_SEEK_VAL && SEEK[i]=0
+        ! $USER_AUDIO_FADE && FADE=0
+        STATIC=:
+        ! $USER_CHAPTERS && CHAPTERS[i]=1
+    fi
+done
+if [ $FADE = 0 ]; then # in case user thinks he needs to specify 0 for fade
+    AUDIO_FADE=false
+elif [ $SM_AUDIO_FADE = 0 ]; then
+    SM_AUDIO_FADE=false
 fi
 ##############################################################################
 # Font defaults
