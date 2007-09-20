@@ -622,7 +622,7 @@ check_compliance()
             test -n "$this_file" && yecho " $this_file"
         done
         yecho " "
-        if ($SWITCHED && [[ $MENU_NUM -ne 2 ]]) || $NOASK; then
+        if ($SWITCHED && [[ $MENU_NUM -ne 2 ]]) || $NOASK || [[ $TOVID_OPTS = *-noask* ]]; then
             echo "Converting files to $TV_STND_CAPS $TGT_CAPS-compliant format."
             echo "(This may take a long time)"
             ENCODE="yes"
@@ -638,45 +638,44 @@ check_compliance()
             yecho "Converting files to $TGT_CAPS format"
             yecho
             for i in "${!FILES_TO_ENCODE[@]}"; do
-                yecho "Converting $(readlink -f "${FILES_TO_ENCODE[i]}")"
-                (($SWITCHED && [[ $MENU_NUM -eq 2 ]]) || ! $SWITCHED)
-                
-                IN=$(readlink -f "${FILES_TO_ENCODE[i]}")
-                if $group_set; then
-                    convert_image=${grp_use_image2mpeg2[i]}
+                if [[ -s "${FILES_TO_ENCODE[i]}.enc.mpg" ]]; then
+                    yecho "${FILES_TO_ENCODE[i]}.enc.mpg exists, will not overwrite"
                 else
-                    convert_image=${use_image2mpeg2[i]}
-                fi
+                    yecho "Converting $(readlink -f "${FILES_TO_ENCODE[i]}")"
+                    ($SWITCHED && [[ $MENU_NUM -eq 2 ]]) || ! $SWITCHED
                     
-                if [[ $convert_image = "yes" ]]; then
-                    if ! $group_set && $USER_MENU_LEN; then
-                        vlen=${MENU_LEN[i]}
+                    IN=$(readlink -f "${FILES_TO_ENCODE[i]}")
+                    if $group_set; then
+                        convert_image=${grp_use_image2mpeg2[i]}
                     else
-                        vlen=1
+                        convert_image=${use_image2mpeg2[i]}
                     fi
-                    if [[ -s "${IN}.enc.mpg" ]]; then
-                        yecho "${IN}.enc.mpg exists, will not overwrite"
-                    else
-                        image2mpeg2 "$IN" $vlen
-                    fi
-                else
-                    # slideshows can contain a lot of files, don't waste time
-                    # with a countdown for each
-                    if [[ -s "${IN}.enc.mpg" ]]; then
-                        yecho "${IN}.enc.mpg exists, will not overwrite"
+                        
+                    if [[ $convert_image = "yes" ]]; then
+                        if ! $group_set && $USER_MENU_LEN; then
+                            vlen=${MENU_LEN[i]}
+                        else
+                            vlen=1
+                        fi
+                        if [[ -s "${IN}.enc.mpg" ]]; then
+                            yecho "${IN}.enc.mpg exists, will not overwrite"
+                        else
+                            image2mpeg2 "$IN" $vlen
+                        fi
                     else
                         countdown 3
                         tovid $NO_ASK -$TV_STANDARD -$TARGET -in "$IN" \
                         -out "$IN.enc" $TOVID_OPTS
                     fi
+                    wait
+                    # See if output file exists
+                    if ! test -f "$IN.enc.mpg"; then
+                        runtime_error "Could not encode file: $IN"
+                    fi
+                    yecho
                 fi
-                wait
-                # See if output file exists
-                if ! test -f "$IN.enc.mpg"; then
-                    runtime_error "Could not encode file: $IN"
-                fi
-                yecho
             done
+            
             # Replace IN_FILES with ENC_IN_FILES (with .enc extension)
             if $group_set; then
                 for title in "${FILES_TO_ENCODE[@]}"; do
@@ -1331,15 +1330,13 @@ verify_infiles()
                     if [[ $fstats = *JPEG* || $fstats = *PNG* ]]; then
                         # ffmpeg image2 can't handle 16 bit depth
                         # test IN_FILES for preview - group files tested later
-                        if [[ $verify_type = "infiles" ]]; then
-                            DEPTH=$(identify -format "%z" "$IN_FILE")
-                            if ((DEPTH == 16)); then
-                                echo "$IN_FILE is 16 bit, converting"
-                                [[ ! -s "${IN_FILE%%.*}-8.png" ]] && \
-                                convert "$IN_FILE" -depth 8 \
-                                "${IN_FILE%%.*}-8.png"
-                                IN_FILES[i]="${IN_FILE%%.*}-8.png"
-                            fi
+                        DEPTH=$(identify -format "%z" "$IN_FILE")
+                        if ((DEPTH == 16)); then
+                            echo "$IN_FILE is 16 bit, converting"
+                            [[ ! -s "${IN_FILE%%.*}-8.png" ]] && \
+                            convert "$IN_FILE" -depth 8 \
+                            "${IN_FILE%%.*}-8.png"
+                            IN_FILES[i]="${IN_FILE%%.*}-8.png"
                         fi
                     else # image but not png or jpeg
                             # only PNG or JPEG supported - convert it
@@ -2616,20 +2613,18 @@ for i in ${!IN_FILES[@]}; do
         SHORTFILE=:
     else
         FRAME_CK=$(vid_length ${IN_FILES[i]} 90)
-        if [[ $FRAME_CK < 70 ]]; then
-            SHORTFILE=:
-        fi
+        (( $FRAME_CK < 70 )) && SHORTFILE=:
     fi
     if $SHORTFILE; then
-        ! $USER_SEEK_VAL && SEEK[i]=0
+        ! $USER_SEEK_VAL && SEEK_VAL[i]=0
         ! $USER_AUDIO_FADE && FADE=0
         STATIC=:
         ! $USER_CHAPTERS && CHAPTERS[i]=1
     fi
 done
-if [ $FADE = 0 ]; then # in case user thinks he needs to specify 0 for fade
+if [[ $FADE -eq 0 ]]; then # in case user thinks he needs to specify 0 for fade
     AUDIO_FADE=false
-elif [ $SM_AUDIO_FADE = 0 ]; then
+elif [[ $SM_FADE -eq 0 ]]; then
     SM_AUDIO_FADE=false
 fi
 ##############################################################################
@@ -3468,10 +3463,12 @@ fi
 # create the preview images
 if ! $TEXTMENU; then
     for ((i=0; i<=NUM_FILES; i++)) ; do
+        # pass -f image2 to ffmpeg if its an image (not always needed but ...)
+        [[ ${file_is_image[i]} = "yes" ]] && fmt="-f image2" || fmt=""
         echo
         echo "[$((i + 1)) of ${#FILES[@]}] Seeking to ${SEEK_VAL[i]}  seconds in ${IN_FILES[i]}"
 
-        FFMPEG_CMD=(ffmpeg -i "${IN_FILES[i]}" -an -ss ${SEEK_VAL[i]} -vframes 1 \
+        FFMPEG_CMD=(ffmpeg $fmt -i "${IN_FILES[i]}" -an -ss ${SEEK_VAL[i]} -vframes 1 \
         -s $THUMB_SIZE $WORK_DIR/pics/$i/%06d.$IMG_FMT)
         CMD=( "${FFMPEG_CMD[@]}" )
         SED_VAR="frame="
