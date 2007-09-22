@@ -571,6 +571,17 @@ for ((i=0; i<TOT; i++)); do
     "$V_LENGTH" "seconds" |tee -a "$LOG_FILE"
 done
 }
+test_compliance()
+{
+    file_in="$1"
+    if idvid -isformat $TARGET "$file_in" >/dev/null &&
+      idvid -istvsys $TV_STANDARD  "$file_in" >/dev/null; then
+        :
+    else
+        return 1
+    fi
+}
+    
 
 check_compliance()
 {
@@ -591,17 +602,15 @@ check_compliance()
         if [[ $is_image = "yes" ]]; then
             # ffmpeg image2 can't handle 16 bit depth
             if $group_set && [[ $(identify -format "%z" "$IN_FILE") = 16 ]]; then
-                [[ ! -s "${IN_FILE%%.*}-8.png" ]] && \
-                    convert "$IN_FILE" -depth 8  "${IN_FILE%%.*}-8.png"
-                IN_FILE="${IN_FILE%%.*}-8.png"
+                [[ ! -s "${IN_FILE%%.*}-8bit.png" ]] && \
+                    convert "$IN_FILE" -depth 8  "${IN_FILE%%.*}-8bit.png"
+                IN_FILE="${IN_FILE%%.*}-8bit.png"
             fi
             $group_set && grp_use_image2mpeg2[i]="yes" || use_image2mpeg2[i]="yes"
             FILES_TO_ENCODE[i]="$IN_FILE"
             ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE.enc.mpg")
         # test files with idvid script
-        elif test "$(idvid -isformat $TARGET "$IN_FILE")" = "true" && \
-           test "$(idvid -istvsys $TV_STANDARD "$IN_FILE")" = "true" && \
-           [[ $TOVID_OPTS != *-force* ]] ; then
+        elif test_compliance "$IN_FILE" && [[ $TOVID_OPTS != *-force* ]] ; then
             ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE")
         # Video needs to be re-encoded; use a .enc filename in ENC_IN_FILES
         else
@@ -638,8 +647,11 @@ check_compliance()
             yecho "Converting files to $TGT_CAPS format"
             yecho
             for i in "${!FILES_TO_ENCODE[@]}"; do
-                if [[ -s "${FILES_TO_ENCODE[i]}.enc.mpg" ]]; then
-                    yecho "${FILES_TO_ENCODE[i]}.enc.mpg exists, will not overwrite"
+                THIS_FILE="${FILES_TO_ENCODE[i]}"
+                if [[ -s "${THIS_FILE}.enc.mpg" ]] && \
+                  test_compliance "${THIS_FILE}.enc.mpg"; then
+                    yecho "${THIS_FILE}.enc.mpg exists and is compatible, \
+                    will not overwrite"
                 else
                     yecho "Converting $(readlink -f "${FILES_TO_ENCODE[i]}")"
                     ($SWITCHED && [[ $MENU_NUM -eq 2 ]]) || ! $SWITCHED
@@ -652,15 +664,15 @@ check_compliance()
                     fi
                         
                     if [[ $convert_image = "yes" ]]; then
-                        if ! $group_set && $USER_MENU_LEN; then
-                            vlen=${MENU_LEN[i]}
+                        #if ! $group_set && $USER_MENU_LEN; then
+                        #    slen=$(bc_math "${MENU_LEN[i]} * $FRAME_RATE" int)
+                        slen=4
+                        if [[ -s "${IN}.enc.mpg" ]] && \
+                          test_compliance "${IN}.enc.mpg"; then
+                            yecho "${IN}.enc.mpg exists and is compatible, \
+                              will not overwrite"
                         else
-                            vlen=1
-                        fi
-                        if [[ -s "${IN}.enc.mpg" ]]; then
-                            yecho "${IN}.enc.mpg exists, will not overwrite"
-                        else
-                            image2mpeg2 "$IN" $vlen
+                            image2mpeg2 "$IN"
                         fi
                     else
                         countdown 3
@@ -823,9 +835,10 @@ get_button_geo()
 
 image2mpeg2()
 {
+    $USER_MENU_LEN && alen=$(bc_math "$slen / $FRAME_RATE" int) || alen=0.14
     IN_IMAGE="$1"
-    IMAGE_ENC_CMD=(ffmpeg -f image2 -loop_input -t $vlen -i "$IN_IMAGE" \
-    -s $VIDSIZE -f s16le -i /dev/zero -t $vlen -ar $SAMPLERATE -ac 2 \
+    IMAGE_ENC_CMD=(ffmpeg -f image2 -loop_input -vframes $slen -i "$IN_IMAGE" \
+    -s $VIDSIZE -f s16le -i /dev/zero -t $alen -ar $SAMPLERATE -ac 2 \
     -ab 224k -target ${TV_STANDARD}-${TARGET} -aspect $ASPECT_RATIO  \
     -y "${IN_IMAGE}.enc.mpg")
     "${IMAGE_ENC_CMD[@]}" >> "$LOG_FILE" 2>&1
@@ -1328,27 +1341,32 @@ verify_infiles()
             if [[ $TYPE = "image" ]]; then
                 if [[ $verify_type = "infiles" ]]; then
                     if [[ $fstats = *JPEG* || $fstats = *PNG* ]]; then
-                        # ffmpeg image2 can't handle 16 bit depth
+                        # ffmpeg image2 can't handle 16 bit depth - convert it
                         # test IN_FILES for preview - group files tested later
                         DEPTH=$(identify -format "%z" "$IN_FILE")
                         if ((DEPTH == 16)); then
                             echo "$IN_FILE is 16 bit, converting"
-                            [[ ! -s "${IN_FILE%%.*}-8.png" ]] && \
+                            [[ ! -s "${IN_FILE%%.*}-8bit.png" ]] && \
                             convert "$IN_FILE" -depth 8 \
-                            "${IN_FILE%%.*}-8.png"
-                            IN_FILES[i]="${IN_FILE%%.*}-8.png"
+                            "${IN_FILE%%.*}-8bit.png"
+                            IN_FILES[i]="${IN_FILE%%.*}-8bit.png"
                         fi
                     else # image but not png or jpeg
                             # only PNG or JPEG supported - convert it
-                            [[ ! -s "${IN_FILE%%.*}-8.png" ]] && \
-                            convert "$IN_FILE" -depth 8 "${IN_FILE%%.*}-8.png"
-                            IN_FILES[i]="${IN_FILE%%.*}-8.png"
+                            [[ ! -s "${IN_FILE%%.*}-8bit.png" ]] && \
+                            convert "$IN_FILE" -depth 8 "${IN_FILE%%.*}-8bit.png"
+                            IN_FILES[i]="${IN_FILE%%.*}-8bit.png"
                     fi
                     if [[ "$SC_FRAMESTYLE" = "glass" ]]; then
                         # make mpeg with ffmpeg now #FIXME
-                        $USER_MENU_LEN & vlen=${MENU_LEN[i]} || vlen=1
-                        image2mpeg2 "${IN_FILES[i]}" $vlen
-                        IN_FILES[i]="${IN_FILES[i]}.enc.mpg"
+                        #if $USER_MENU_LEN; then
+                        #    slen=$(bc_math "${MENU_LEN[i]} * $FRAME_RATE" int)
+                        slen=4
+                        if [[ ! -s "${IN_FILES[i]}.enc.mpg" ]] && ! idvid \
+                        -isformat $TARGET "${IN_FILES[i]}.enc.mpg" > /dev/null; then
+                            image2mpeg2 "${IN_FILES[i]}" $slen
+                            IN_FILES[i]="${IN_FILES[i]}.enc.mpg"
+                        fi
                     else
                         file_is_image[i]="yes" # needs to be encoded to mpeg
                     fi
@@ -1548,6 +1566,7 @@ while test $# -gt 0; do
             ;;
         "-video-pause" )
             shift
+            svcd_pause=$1
             get_listargs "$@"
             [[ -n "${ARGS_ARRAY[@]}" ]] && VPAUSE=( "${ARGS_ARRAY[@]}" )
             ;;
@@ -1919,7 +1938,7 @@ while test $# -gt 0; do
         "-skip-vmgm" )
             SKIP_VMGM_MENU=:
             ;;
-        "-no-vmgm-menu" | "-no-vmgm" )
+        "-no-vmgm-menu" | "-no-vmgm" | "-no-top-menu" )
             VMGM_MENU=false
             ;;
         "-is_titleset" ) #FIXME - this is useless
@@ -1993,15 +2012,15 @@ if [[ ${#TITLES[@]} -eq 0 ]]; then
         TITLES[i]="${TITLE%%.*}"
     done
 fi
-if $DO_TITLESETS && ! $VMGM_MENU && ! $QUICK_NAV; then
-    usage_error "You can not use -no-vmgm if doing titlesets unless using -quick-nav"
-fi
-if ! $TITLESET_MODE && ! $DO_TITLESETS && $QUICK_NAV; then
+if ! $TITLESET_MODE && ! $DO_TITLESETS && $QUICK_NAV && ! $VMGM_ONLY; then
     QUICK_NAV=false
     yecho
     yecho "No -quick-nav unless doing titlesets ... disabling this option"
     $WARN && sleep 5
     yecho
+fi
+if $DO_TITLESETS && ! $VMGM_MENU && ! $QUICK_NAV; then
+    usage_error "You can not use -no-vmgm if doing titlesets unless using -quick-nav"
 fi
 # some things the vmgm menu does not support
 if $VMGM_ONLY; then
@@ -2793,6 +2812,7 @@ elif [ $TARGET = "svcd" ]; then
     BURN_TGT="${OUT_FILE}.xml"
     BURN_TGT_STR="SVCD image"
     BURN_PROG="makevcd"
+    [[ -n $svcd_pause ]] && SVCD_PAUSE="-pause $svcd_pause"
     if [ $TV_STANDARD = "ntsc" ]; then
         VIDSIZE="480x480"
         FRAME_RATE=29.970
@@ -4108,6 +4128,14 @@ for i in ${!IN_FILES[@]}; do
     if [[ ${VID_LEN[i]%.*} -lt ${SEEK_VAL[i]%.*} ]]; then
         usage_error "A seek of ${SEEK_VAL[i]} seconds is too large for ${IN_FILES[i]}. The file is only ${VID_LEN[i]} seconds long"
     fi
+    # add -force to makevcd if short file
+    if [[ ${VID_LEN[i]%.*} -lt 5 && $TARGET = "svcd" ]]; then
+        BURN_PROG="makevcd -force"
+    fi
+    if [[ ${VID_LEN[i]%.*} -lt 1 && -z $SVCD_PAUSE ]]; then
+        # wait for input on short files (slides) unless -video-pause passed
+        SVCD_PAUSE="-pause -1"
+    fi
 done
 # make sure we have the length of grouped files as well
 for g in ${!grouping[@]}; do
@@ -4116,6 +4144,14 @@ for g in ${!grouping[@]}; do
         GROUP_VID_LEN[g]=$(bc_math "${group_length[g]} / $FRAME_RATE")
     else # otherwise, we run mencoder to get the length
         GROUP_VID_LEN[g]=$(vid_length "${grouping[g]}")
+    fi
+    if [[ $TARGET = "svcd" ]]; then
+        # add -force to makevcd if short file
+        [[ ${GROUP_VID_LEN[i]%.*} -lt 5 ]] && BURN_PROG="makevcd -force"
+        # wait for input on short files (slides) unless -video-pause passed
+        if [[ ${GROUP_VID_LEN[i]%.*} -lt 1 && -z $SVCD_PAUSE ]]; then
+            SVCD_PAUSE="-pause -1"
+        fi
     fi
 done
 if $GROUPING; then
@@ -5692,7 +5728,11 @@ if [ "$TARGET" = "dvd" ] && $AUTHOR && ! $VMGM_ONLY && ! $DO_TITLESETS && ! $SWI
     fi
     strings "$LOG_FILE.tmp" >> "$LOG_FILE" && rm -f "$LOG_FILE.tmp"
 elif [ "$TARGET" = "svcd" ]; then
-    makexml -svcd -menu $WORK_DIR/intro.mpg "${IN_FILES[@]}" -out "$OUT_FILE"
+    $VMGM_MENU && svcd_menu=(-menu "$WORK_DIR/intro.mpg")
+    MKXML_CMD=(makexml -svcd $SLIDES $SVCD_PAUSE "${svcd_menu[@]}" \
+                    "${IN_FILES[@]}" -out "$OUT_FILE")
+    echo "${MKXML_CMD[@]}"
+    "${MKXML_CMD[@]}"
     makevcd "${OUT_FILE}.xml"
 #    vcdxbuild -b "${OUT_FILE}.bin" -c "${OUT_FILE}.cue"  "${OUT_FILE}.xml"
 fi
