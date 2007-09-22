@@ -48,6 +48,7 @@ Where OPTIONS may be any of the following:
   -burn              (default only make image)
   -device DEVICE     (default /dev/cdrw)
   -speed NUM         (default 12)
+  -force             Add --force to cdrdao command (needed for short slides)
 
 And:
 
@@ -116,6 +117,9 @@ while test x"${1:0:1}" = "x-"; do
         shift
         BURN_SPEED=$1
         ;;
+      "-force" )
+        FORCE="--force"
+	;;
       * )
         usage_error "Error: Unrecognized command-line option $1"
         ;;
@@ -196,7 +200,7 @@ if $BURN; then
     fi 
     # Burn the disc
     CDRDAO_CMD="cdrdao write --device $CDRW_DEVICE --driver generic-mmc \
-        --speed $BURN_SPEED \"$VCDIMAGER_XML.cue\""
+        --speed $BURN_SPEED $FORCE \"$VCDIMAGER_XML.cue\""
     echo $SEPARATOR
     echo "Burning cue/bin image to $CDRW_DEVICE with the following command:"
     echo $CDRDAO_CMD
