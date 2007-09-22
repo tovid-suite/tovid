@@ -118,6 +118,7 @@ CHAPTER_INTERVAL=5
 STANDARD=133
 WIDESCREEN=177
 NOPANSCAN=''
+PAUSE=0
 
 # ==========================================================
 # Backslash-escape the given special character (and any EOLs)
@@ -481,7 +482,7 @@ $PLAYLIST_XML
     <prev ref="play-title-$PREV_TITLE"/>
     __NEXT_TITLE__
     $RETURN_CMD
-    <wait>0</wait>
+    <wait>$PAUSE</wait>
     <play-item ref="seq-title-$CUR_TITLE"/>
   </playlist>
 EOF`
@@ -614,6 +615,10 @@ while test $# -gt 0; do
         "-out" )
             shift
             OUT_PREFIX="$1"
+            ;;
+        "-pause" )
+            shift
+            PAUSE="$1"
             ;;
         # Format and overwriting options
         "-dvd" ) XML_FORMAT="dvd" ;;
