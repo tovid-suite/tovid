@@ -2220,8 +2220,13 @@ if $SHOWCASE; then
     You gave ${#FILES[@]} videos as input"
 else
     if test ${#FILES[@]} -gt 30; then
-        usage_error "Sorry, a maximum of 30 videos (thumbs) is supported
-        You gave ${#FILES[@]} videos as input"
+        # SVCD without a menu can support many more videos/slides
+        if (! $VMGM_MENU && [[ $TARGET = "svcd" ]]); then
+            :
+        else
+            usage_error "Sorry, a maximum of 30 videos (thumbs) is supported
+            You gave ${#FILES[@]} videos as input"
+        fi
     fi
 fi
 
@@ -2632,7 +2637,7 @@ for i in ${!IN_FILES[@]}; do
         SHORTFILE=:
     else
         FRAME_CK=$(vid_length ${IN_FILES[i]} 90)
-        (( $FRAME_CK < 70 )) && SHORTFILE=:
+        [[ $(bc_math "$FRAME_CK < 2") -eq 1 ]] && SHORTFILE=:
     fi
     if $SHORTFILE; then
         ! $USER_SEEK_VAL && SEEK_VAL[i]=0
@@ -3637,208 +3642,211 @@ fi
 ##############################################################################
 #                 create button layer for spumux                             #
 ##############################################################################
-
-echo
-echo "Creating the highlight and selection PNGs for the main menu"
-if [ "$BUTTON_STYLE" = "rect" ]; then
-    MENU_BUTTON_SIZE=$THUMB_SIZE
-    get_button_geo
-(
-cat  <<EOF
+if ([[ $TARGET = "svcd" ]] && ! $VMGM_MENU); then
+    :
+else
+    echo
+    echo "Creating the highlight and selection PNGs for the main menu"
+    if [ "$BUTTON_STYLE" = "rect" ]; then
+        MENU_BUTTON_SIZE=$THUMB_SIZE
+        get_button_geo
+    (
+    cat  <<EOF
 rectangle 2,2 $GEO
 EOF
 )  > "$WORK_DIR/draw_file"
-fi
-if [ $BUTTON_STYLE = "text-rect" ]; then
-    for ((i=0; i<=NUM_FILES; i++)); do
-        MENU_BUTTON_SIZE=${TT_DIM[i]}
-        get_button_geo
-(
-cat <<EOF
+    fi
+    if [ $BUTTON_STYLE = "text-rect" ]; then
+        for ((i=0; i<=NUM_FILES; i++)); do
+            MENU_BUTTON_SIZE=${TT_DIM[i]}
+            get_button_geo
+    (
+    cat <<EOF
 rectangle 1,1 $GEO
 EOF
-)  > "$WORK_DIR/draw_file${i}"
-    done
-fi
-
-PNG_IS_DONE=false
-for ((t=0; t<${#TITLES[@]}; t++)); do
-    unset BUTTON_CMD6b BUTTON_CMD7b
-    if $FEATHER; then FRAME=0; else FRAME=3x3;fi
-    [[ -n ${ROTATE_ARRAY[@]} ]] && THUMB_ROTATE="-background none -rotate ${ROTATE_ARRAY[t]}"
-    BUTTON_SIZE=$THUMB_SIZE
-    BUTTON_CMD=(montage -size $THUMB_SIZE xc:none -geometry +4+4 \
-    -background none -mattecolor none -bordercolor none -stroke none \
-    -fill "$SELECT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
-    -title "${TITLES[t]}" -compose CopyOpacity)
-    BUTTON_CMD1=(montage -size $THUMB_SIZE xc:none -geometry +4+4 \
-    -background none -mattecolor none -bordercolor none -stroke none \
-    -fill "$HIGHLIGHT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
-    -title "${TITLES[t]}" -compose CopyOpacity)
-    BUTTON_CMD2=(convert -mattecolor none -background none \
-    -bordercolor none -frame 3x3 -)
-    BUTTON_CMD3=(convert - $THUMB_ROTATE -resize ${THUMB_SIZE}! +antialias)
-    BUTTON_CMD4=(convert -size "${THUMB_SIZE}+5+5"  xc:none \
-    -fill none +antialias -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file \
-    -colors 3 $THUMB_ROTATE -resize ${THUMB_SIZE}! "$WORK_DIR/Selectx1.png")
-    BUTTON_CMD5=(convert -size "${THUMB_SIZE}+5+5" xc:none \
-    -fill none +antialias -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file \
-    -colors 3 $THUMB_ROTATE -resize ${THUMB_SIZE}! "$WORK_DIR/Highlightx1.png")
-    BUTTON_CMD6=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
-    -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file "$WORK_DIR/Selectx1.png")
-    BUTTON_CMD6b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
-    -stroke "$SELECT_COLOUR" -strokewidth 2 -draw @draw_file${t} \
-    "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)")
-    BUTTON_CMD7=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
-    -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file "$WORK_DIR/Highlightx1.png")
-    BUTTON_CMD7b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
-    -stroke "$HIGHLIGHT_COLOUR" -strokewidth 2 -draw @draw_file${t} \
-    "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)")
-
-    if [ "$BUTTON_STYLE" = "text" ]; then
-        if $FEATHER; then
-            "${BUTTON_CMD[@]}" miff:- | "${BUTTON_CMD3[@]}" \
-            "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
-            "${BUTTON_CMD1[@]}" miff:- | "${BUTTON_CMD3[@]}" \
-            "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
-        else
-            "${BUTTON_CMD[@]}" miff:- | "${BUTTON_CMD2[@]}" miff:- |
-            "${BUTTON_CMD3[@]}" \
-            "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
-            "${BUTTON_CMD1[@]}" miff:- | "${BUTTON_CMD2[@]}" miff:- |
-            "${BUTTON_CMD3[@]}" "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
-        fi
-    elif [ $BUTTON_STYLE = "rect" ]; then
-        if  ! $PNG_IS_DONE; then
-            if $SHOWCASE; then
-                "${BUTTON_CMD6[@]}"
-                "${BUTTON_CMD7[@]}"
-            else
-                "${BUTTON_CMD4[@]}" 2> /dev/null
-                "${BUTTON_CMD5[@]}" 2> /dev/null
-            fi
-        fi
-    elif [ $BUTTON_STYLE = "text-rect" ]; then
-        "${BUTTON_CMD6b[@]}"
-        "${BUTTON_CMD7b[@]}"
+    )  > "$WORK_DIR/draw_file${i}"
+        done
     fi
-    [[ -z ${ROTATE_ARRAY[@]} ]] && PNG_IS_DONE=: # do not loop over creating same png
-done
-if [ "$BUTTON_STYLE" = "rect" ]; then
-    BUTTON_DIM=$(get_image_dim "$WORK_DIR/Highlightx1.png")
-    for button in Select Highlight; do
-        if $SHOWCASE; then
-            unset sc_spumux_cmd fake_montage_cmd
-            convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
-            fake_montage=( $WORK_DIR/Highlightx1.png $(for ((i=0; i<NUM_FILES-1; i++)); do
-            echo $WORK_DIR/empty-button.png; done))
+
+    PNG_IS_DONE=false
+    for ((t=0; t<${#TITLES[@]}; t++)); do
+        unset BUTTON_CMD6b BUTTON_CMD7b
+        if $FEATHER; then FRAME=0; else FRAME=3x3;fi
+        [[ -n ${ROTATE_ARRAY[@]} ]] && THUMB_ROTATE="-background none -rotate ${ROTATE_ARRAY[t]}"
+        BUTTON_SIZE=$THUMB_SIZE
+        BUTTON_CMD=(montage -size $THUMB_SIZE xc:none -geometry +4+4 \
+        -background none -mattecolor none -bordercolor none -stroke none \
+        -fill "$SELECT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
+        -title "${TITLES[t]}" -compose CopyOpacity)
+        BUTTON_CMD1=(montage -size $THUMB_SIZE xc:none -geometry +4+4 \
+        -background none -mattecolor none -bordercolor none -stroke none \
+        -fill "$HIGHLIGHT_COLOUR" -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
+        -title "${TITLES[t]}" -compose CopyOpacity)
+        BUTTON_CMD2=(convert -mattecolor none -background none \
+        -bordercolor none -frame 3x3 -)
+        BUTTON_CMD3=(convert - $THUMB_ROTATE -resize ${THUMB_SIZE}! +antialias)
+        BUTTON_CMD4=(convert -size "${THUMB_SIZE}+5+5"  xc:none \
+        -fill none +antialias -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file \
+        -colors 3 $THUMB_ROTATE -resize ${THUMB_SIZE}! "$WORK_DIR/Selectx1.png")
+        BUTTON_CMD5=(convert -size "${THUMB_SIZE}+5+5" xc:none \
+        -fill none +antialias -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file \
+        -colors 3 $THUMB_ROTATE -resize ${THUMB_SIZE}! "$WORK_DIR/Highlightx1.png")
+        BUTTON_CMD6=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
+        -stroke "$SELECT_COLOUR" -strokewidth 4 -draw @draw_file "$WORK_DIR/Selectx1.png")
+        BUTTON_CMD6b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
+        -stroke "$SELECT_COLOUR" -strokewidth 2 -draw @draw_file${t} \
+        "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)")
+        BUTTON_CMD7=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias -fill none \
+        -stroke "$HIGHLIGHT_COLOUR" -strokewidth 4 -draw @draw_file "$WORK_DIR/Highlightx1.png")
+        BUTTON_CMD7b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
+        -stroke "$HIGHLIGHT_COLOUR" -strokewidth 2 -draw @draw_file${t} \
+        "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)")
+
+        if [ "$BUTTON_STYLE" = "text" ]; then
+            if $FEATHER; then
+                "${BUTTON_CMD[@]}" miff:- | "${BUTTON_CMD3[@]}" \
+                "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
+                "${BUTTON_CMD1[@]}" miff:- | "${BUTTON_CMD3[@]}" \
+                "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
+            else
+                "${BUTTON_CMD[@]}" miff:- | "${BUTTON_CMD2[@]}" miff:- |
+                "${BUTTON_CMD3[@]}" \
+                "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
+                "${BUTTON_CMD1[@]}" miff:- | "${BUTTON_CMD2[@]}" miff:- |
+                "${BUTTON_CMD3[@]}" "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
+            fi
+        elif [ $BUTTON_STYLE = "rect" ]; then
+            if  ! $PNG_IS_DONE; then
+                if $SHOWCASE; then
+                    "${BUTTON_CMD6[@]}"
+                    "${BUTTON_CMD7[@]}"
+                else
+                    "${BUTTON_CMD4[@]}" 2> /dev/null
+                    "${BUTTON_CMD5[@]}" 2> /dev/null
+                fi
+            fi
+        elif [ $BUTTON_STYLE = "text-rect" ]; then
+            "${BUTTON_CMD6b[@]}"
+            "${BUTTON_CMD7b[@]}"
+        fi
+        [[ -z ${ROTATE_ARRAY[@]} ]] && PNG_IS_DONE=: # do not loop over creating same png
+    done
+    if [ "$BUTTON_STYLE" = "rect" ]; then
+        BUTTON_DIM=$(get_image_dim "$WORK_DIR/Highlightx1.png")
+        for button in Select Highlight; do
+            if $SHOWCASE; then
+                unset sc_spumux_cmd fake_montage_cmd
+                convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
+                fake_montage=( $WORK_DIR/Highlightx1.png $(for ((i=0; i<NUM_FILES-1; i++)); do
+                echo $WORK_DIR/empty-button.png; done))
+                for ((i=0; i<=NUM_FILES; i++)); do
+                    fake_montage_cmd=( ${fake_montage_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "${fake_montage[i]}")
+                    sc_spumux_cmd=( ${sc_spumux_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "$WORK_DIR/${button}x1.png" )
+                done
+                convert  -size $VIDSIZE xc:none -background none \
+                ${fake_montage_cmd[@]} -mosaic "$WORK_DIR/fake_montage.png"
+                convert  -size $VIDSIZE xc:none -background none \
+                ${sc_spumux_cmd[@]} -mosaic "$WORK_DIR/${button}.png"
+            else
+                montage -background none \
+                $(for ((i=0; i<=NUM_FILES; i++)); do echo $WORK_DIR/${button}x1.png;done) \
+                -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}+10+4 \
+                -bordercolor none -mattecolor transparent miff:- |
+                convert  -colors 3 -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
+                -composite  "$WORK_DIR/${button}.png"
+                convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
+                fake_montage=( $WORK_DIR/Highlightx1.png $(for ((i=0; i<NUM_FILES-1; i++)); do
+                echo $WORK_DIR/empty-button.png; done))
+                montage -background none ${fake_montage[@]} \
+                -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}+10+4 \
+                -bordercolor none -mattecolor transparent miff:- |
+                convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
+                -composite "$WORK_DIR/fake_montage.png"
+            fi
+        done
+    elif [[ "$BUTTON_STYLE" = *text* ]]; then
+        if $SHOWCASE && [[ $BUTTON_STYLE = "text-rect" ]]; then
+            select_buttons=( ${select_buttons[@]} \
+            $(find $WORK_DIR/ -name 00\*select.png |sort) )
+            highlight_buttons=( ${highlight_buttons[@]} \
+            $(find $WORK_DIR/ -name 00\*highlight.png |sort) )
             for ((i=0; i<=NUM_FILES; i++)); do
-                fake_montage_cmd=( ${fake_montage_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "${fake_montage[i]}")
-                sc_spumux_cmd=( ${sc_spumux_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "$WORK_DIR/${button}x1.png" )
+                sc_select_cmd=(${sc_select_cmd[@]} ${THUMBTITLES_ARRAY[i]} "${select_buttons[i]}")
+                sc_highlight_cmd=(${sc_highlight_cmd[@]} ${THUMBTITLES_ARRAY[i]} "${highlight_buttons[i]}")
             done
-            convert  -size $VIDSIZE xc:none -background none \
-            ${fake_montage_cmd[@]} -mosaic "$WORK_DIR/fake_montage.png"
-            convert  -size $VIDSIZE xc:none -background none \
-            ${sc_spumux_cmd[@]} -mosaic "$WORK_DIR/${button}.png"
+            convert -colors 3 -size $VIDSIZE xc:none -background none \
+            ${sc_highlight_cmd[@]} -mosaic "$WORK_DIR/Highlight.png"
+            convert  -colors 3 -size $VIDSIZE xc:none -background none \
+            ${sc_select_cmd[@]} -mosaic "$WORK_DIR/Select.png"
         else
-            montage -background none \
-            $(for ((i=0; i<=NUM_FILES; i++)); do echo $WORK_DIR/${button}x1.png;done) \
+            select_buttons=( ${select_buttons[@]} \
+            $(find $WORK_DIR/ -name 00\*select.png |sort) )
+            highlight_buttons=( ${highlight_buttons[@]} \
+            $(find $WORK_DIR/ -name 00\*highlight.png |sort) )
+            montage -background none ${select_buttons[@]} \
             -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}+10+4 \
             -bordercolor none -mattecolor transparent miff:- |
-            convert  -colors 3 -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
-            -composite  "$WORK_DIR/${button}.png"
+            convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
+            -composite "$WORK_DIR/Select.png"
+            montage -background none ${highlight_buttons[@]} \
+            -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}+10+4 \
+            -bordercolor none -mattecolor transparent miff:- |
+            convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
+            -composite "$WORK_DIR/Highlight.png"
+            BUTTON_DIM=$(get_image_dim "$WORK_DIR/000000-highlight.png")
             convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
-            fake_montage=( $WORK_DIR/Highlightx1.png $(for ((i=0; i<NUM_FILES-1; i++)); do
+            fake_montage=( $WORK_DIR/000000-highlight.png $(for ((i=0; i<NUM_FILES-1; i++)); do
             echo $WORK_DIR/empty-button.png; done))
+        fi
+        if $SHOWCASE; then
+            if [[ $BUTTON_STYLE = "text-rect" ]]; then
+                convert  -size $VIDSIZE xc:none -background none \
+                ${THUMBTITLES_ARRAY[MENU_NUM-1]} \
+                $WORK_DIR/$(printf "%06d%s" $((MENU_NUM-1)) -highlight.png) \
+                -mosaic "$WORK_DIR/fake_montage.png"
+            fi
+        else
             montage -background none ${fake_montage[@]} \
             -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}+10+4 \
             -bordercolor none -mattecolor transparent miff:- |
             convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
             -composite "$WORK_DIR/fake_montage.png"
         fi
-    done
-elif [[ "$BUTTON_STYLE" = *text* ]]; then
-    if $SHOWCASE && [[ $BUTTON_STYLE = "text-rect" ]]; then
-        select_buttons=( ${select_buttons[@]} \
-        $(find $WORK_DIR/ -name 00\*select.png |sort) )
-        highlight_buttons=( ${highlight_buttons[@]} \
-        $(find $WORK_DIR/ -name 00\*highlight.png |sort) )
-        for ((i=0; i<=NUM_FILES; i++)); do
-            sc_select_cmd=(${sc_select_cmd[@]} ${THUMBTITLES_ARRAY[i]} "${select_buttons[i]}")
-            sc_highlight_cmd=(${sc_highlight_cmd[@]} ${THUMBTITLES_ARRAY[i]} "${highlight_buttons[i]}")
+    elif $SHOWCASE && [[ "$BUTTON_STYLE" = "line" ]]; then
+        for i in ${!TITLES[@]}; do
+            XPT1=$( cut -f2 -d+ <<< ${THUMBTITLES_ARRAY[i]} )
+            XPT2=$(( XPT1 + ${TT_DIM[i]%%x*} ))
+            YPT=$( cut -f3 -d+ <<< ${THUMBTITLES_ARRAY[i]} )
+            YPT=$(( YPT + ${TT_DIM[i]##*x} ))
+            echo  "line ${XPT1},${YPT} ${XPT2},${YPT}" >> "$WORK_DIR/spumux_drawfile"
+            [[ $i -eq $((MENU_NUM-1)) ]] && echo \
+            "line ${XPT1},${YPT} ${XPT2},${YPT}" >> "$WORK_DIR/fake_montage.mvg"
         done
-        convert -colors 3 -size $VIDSIZE xc:none -background none \
-        ${sc_highlight_cmd[@]} -mosaic "$WORK_DIR/Highlight.png"
-        convert  -colors 3 -size $VIDSIZE xc:none -background none \
-        ${sc_select_cmd[@]} -mosaic "$WORK_DIR/Select.png"
-    else
-        select_buttons=( ${select_buttons[@]} \
-        $(find $WORK_DIR/ -name 00\*select.png |sort) )
-        highlight_buttons=( ${highlight_buttons[@]} \
-        $(find $WORK_DIR/ -name 00\*highlight.png |sort) )
-        montage -background none ${select_buttons[@]} \
-        -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}+10+4 \
-        -bordercolor none -mattecolor transparent miff:- |
-        convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
-        -composite "$WORK_DIR/Select.png"
-        montage -background none ${highlight_buttons[@]} \
-        -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}+10+4 \
-        -bordercolor none -mattecolor transparent miff:- |
-        convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
-        -composite "$WORK_DIR/Highlight.png"
-        BUTTON_DIM=$(get_image_dim "$WORK_DIR/000000-highlight.png")
-        convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
-        fake_montage=( $WORK_DIR/000000-highlight.png $(for ((i=0; i<NUM_FILES-1; i++)); do
-        echo $WORK_DIR/empty-button.png; done))
+            convert -size $VIDSIZE xc:none -fill none -stroke $SELECT_COLOUR \
+            -strokewidth 2 -draw @spumux_drawfile "$WORK_DIR/Select.png"
+            convert -size $VIDSIZE xc:none -fill none -stroke $HIGHLIGHT_COLOUR \
+            -strokewidth 2 -draw @spumux_drawfile "$WORK_DIR/Highlight.png"
+            convert  -size $VIDSIZE xc:none -fill none -stroke $HIGHLIGHT_COLOUR \
+            -strokewidth 2 -draw @fake_montage.mvg "$WORK_DIR/fake_montage.png"
     fi
-    if $SHOWCASE; then
-        if [[ $BUTTON_STYLE = "text-rect" ]]; then
-            convert  -size $VIDSIZE xc:none -background none \
-            ${THUMBTITLES_ARRAY[MENU_NUM-1]} \
-            $WORK_DIR/$(printf "%06d%s" $((MENU_NUM-1)) -highlight.png) \
-            -mosaic "$WORK_DIR/fake_montage.png"
-        fi
-    else
-        montage -background none ${fake_montage[@]} \
-        -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}+10+4 \
-        -bordercolor none -mattecolor transparent miff:- |
-        convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
-        -composite "$WORK_DIR/fake_montage.png"
+    if $TITLESET_MODE && ! $VMGM_ONLY && $VMGM_MENU; then
+        convert -gravity SouthEast -geometry "$MAIN_SE_GEO" "$WORK_DIR/Select.png" \
+        "$WORK_DIR/Main_${SELECT_COLOUR/\#}.png" -composite "$WORK_DIR/Select.png"
+        convert -gravity SouthEast -geometry "$MAIN_SE_GEO" "$WORK_DIR/Highlight.png" \
+        "$WORK_DIR/Main_${HIGHLIGHT_COLOUR/\#}.png" -composite "$WORK_DIR/Highlight.png"
     fi
-elif $SHOWCASE && [[ "$BUTTON_STYLE" = "line" ]]; then
-    for i in ${!TITLES[@]}; do
-        XPT1=$( cut -f2 -d+ <<< ${THUMBTITLES_ARRAY[i]} )
-        XPT2=$(( XPT1 + ${TT_DIM[i]%%x*} ))
-        YPT=$( cut -f3 -d+ <<< ${THUMBTITLES_ARRAY[i]} )
-        YPT=$(( YPT + ${TT_DIM[i]##*x} ))
-        echo  "line ${XPT1},${YPT} ${XPT2},${YPT}" >> "$WORK_DIR/spumux_drawfile"
-        [[ $i -eq $((MENU_NUM-1)) ]] && echo \
-        "line ${XPT1},${YPT} ${XPT2},${YPT}" >> "$WORK_DIR/fake_montage.mvg"
-    done
-        convert -size $VIDSIZE xc:none -fill none -stroke $SELECT_COLOUR \
-        -strokewidth 2 -draw @spumux_drawfile "$WORK_DIR/Select.png"
-        convert -size $VIDSIZE xc:none -fill none -stroke $HIGHLIGHT_COLOUR \
-        -strokewidth 2 -draw @spumux_drawfile "$WORK_DIR/Highlight.png"
-        convert  -size $VIDSIZE xc:none -fill none -stroke $HIGHLIGHT_COLOUR \
-        -strokewidth 2 -draw @fake_montage.mvg "$WORK_DIR/fake_montage.png"
-fi
-if $TITLESET_MODE && ! $VMGM_ONLY && $VMGM_MENU; then
-    convert -gravity SouthEast -geometry "$MAIN_SE_GEO" "$WORK_DIR/Select.png" \
-    "$WORK_DIR/Main_${SELECT_COLOUR/\#}.png" -composite "$WORK_DIR/Select.png"
-    convert -gravity SouthEast -geometry "$MAIN_SE_GEO" "$WORK_DIR/Highlight.png" \
-    "$WORK_DIR/Main_${HIGHLIGHT_COLOUR/\#}.png" -composite "$WORK_DIR/Highlight.png"
-fi
-if $PLAYALL && ! $VMGM_ONLY; then
-    convert -gravity SouthEast -geometry "$PLAYALL_SE_GEO" "$WORK_DIR/Select.png" \
-    "$WORK_DIR/Playall_${SELECT_COLOUR/\#}.png" -composite "$WORK_DIR/Select.png"
-    convert -gravity SouthEast -geometry "$PLAYALL_SE_GEO" "$WORK_DIR/Highlight.png" \
-    "$WORK_DIR/Playall_${HIGHLIGHT_COLOUR/\#}.png" -composite "$WORK_DIR/Highlight.png"
-fi
+    if $PLAYALL && ! $VMGM_ONLY; then
+        convert -gravity SouthEast -geometry "$PLAYALL_SE_GEO" "$WORK_DIR/Select.png" \
+        "$WORK_DIR/Playall_${SELECT_COLOUR/\#}.png" -composite "$WORK_DIR/Select.png"
+        convert -gravity SouthEast -geometry "$PLAYALL_SE_GEO" "$WORK_DIR/Highlight.png" \
+        "$WORK_DIR/Playall_${HIGHLIGHT_COLOUR/\#}.png" -composite "$WORK_DIR/Highlight.png"
+    fi
 
-# this reduces colours so spumux is happy
-for button in Select Highlight; do
-    mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
-done
+    # this reduces colours so spumux is happy
+    for button in Select Highlight; do
+        mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
+    done
+fi
 if $SHOWCASE; then
     if $SC_THUMB; then
         # find out where to put the showcase image/video in the X axis
