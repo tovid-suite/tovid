@@ -176,6 +176,7 @@ INTRO=""
 QUICK_NAV=false
 SKIP_VMGM_MENU=false
 VMGM_MENU=:
+DO_MENU=true
 SWITCHED_MENUS=false
 SWITCHED_MODE=false
 SWITCHED=false
@@ -2092,7 +2093,7 @@ fi
 # set some vars for switched menus so we know where we are
 $SWITCHED_MODE && SWITCHED_MENUS=false
 ($SWITCHED_MODE || $SWITCHED_MENUS) && SWITCHED=:
-
+[[ $TARGET = "svcd" ]] && ! $VMGM_MENU && DO_MENU=false
 #
 # sanity checks for button style ( -button-style ) for menu buttons
 #
@@ -3486,7 +3487,7 @@ elif [ $IMG_FMT = "png" ]; then
 fi
 
 # create the preview images
-if ! $TEXTMENU; then
+if ! $TEXTMENU && $DO_MENU; then
     for ((i=0; i<=NUM_FILES; i++)) ; do
         # pass -f image2 to ffmpeg if its an image (not always needed but ...)
         [[ ${file_is_image[i]} = "yes" ]] && fmt="-f image2" || fmt=""
@@ -3642,9 +3643,7 @@ fi
 ##############################################################################
 #                 create button layer for spumux                             #
 ##############################################################################
-if ([[ $TARGET = "svcd" ]] && ! $VMGM_MENU); then
-    :
-else
+if $DO_MENU; then
     echo
     echo "Creating the highlight and selection PNGs for the main menu"
     if [ "$BUTTON_STYLE" = "rect" ]; then
@@ -3847,7 +3846,7 @@ EOF
         mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
     done
 fi
-if $SHOWCASE; then
+if $SHOWCASE; then # silly, but someone might try it
     if $SC_THUMB; then
         # find out where to put the showcase image/video in the X axis
         sc_size=$(get_image_dim "$WORK_DIR/showcase_img.png")
@@ -4011,13 +4010,13 @@ if $QUICK_MENU; then
     fi
 fi
 $QUICK_MENU && quick_menu preview
-if ! $NOASK && $VMGM_MENU; then
+if ! $NOASK && $VMGM_MENU && $DO_MENU; then
     echo "Creating and displaying a preview of the main menu."
     echo "(Press 'q' or ESC in the preview window to close it.)"
 fi
 # make the fake montage with highlighted 1st button and display it
-composite -compose Over "$WORK_DIR/fake_montage.png" "$PREVIEW_IMG" \
-"$PREVIEW_IMG"
+$DO_MENU && composite -compose Over "$WORK_DIR/fake_montage.png" \
+"$PREVIEW_IMG" "$PREVIEW_IMG"
 if ! $NOASK && $VMGM_MENU; then
     display -title "todisc preview - close window to continue" "$PREVIEW_IMG"
     confirm_preview
@@ -4294,7 +4293,7 @@ fi
 #                       work on the clip title images                         #
 ###############################################################################
 # extract images from the provided background video
-if ! $TEXTMENU; then
+if ! $TEXTMENU && $DO_MENU; then
     echo
     echo "Creating $FRAMES images from each video for the main menu"
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
@@ -4352,22 +4351,25 @@ if ! $TEXTMENU; then
     fi
 fi
 # create the pics for background image
-if [ -z "$BG_PIC" ]; then
-    echo
-    echo "Creating a black background"
-    BG_PIC="$WORK_DIR/pics/template.jpg"
-    if $QUICK_MENU; then
-        convert  -size $VIDSIZE xc:none "$BG_PIC"
+if $DO_MENU; then
+    if [ -z "$BG_PIC" ]; then
+        echo
+        echo "Creating a black background"
+        BG_PIC="$WORK_DIR/pics/template.jpg"
+        if $QUICK_MENU; then
+            convert  -size $VIDSIZE xc:none "$BG_PIC"
+        else
+            convert  -size $VIDSIZE xc:'#'$BG_COLOUR "$BG_PIC"
+        fi
+        convert  -size $VIDSIZE xc:'#'$SUBMENU_BG_COLOUR \
+          "$WORK_DIR/submenu_template.jpg"
     else
-        convert  -size $VIDSIZE xc:'#'$BG_COLOUR "$BG_PIC"
+        convert -resize $VIDSIZE! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
+        convert -size $VIDSIZE xc:'#'$SUBMENU_BG_COLOUR \
+          "$WORK_DIR/submenu_template.jpg"
     fi
-    convert  -size $VIDSIZE xc:'#'$SUBMENU_BG_COLOUR "$WORK_DIR/submenu_template.jpg"
-else
-    convert -resize $VIDSIZE! "$BG_PIC" "$WORK_DIR/pics/template.jpg"
-    convert -size $VIDSIZE xc:'#'$SUBMENU_BG_COLOUR "$WORK_DIR/submenu_template.jpg"
+    echo
 fi
-
-echo
 # chapters and submenu xml stuff
 # this block does not run if user passing HH:MM:SS chapters
 if [[ -n ${CHAPT_ARRAY[@]} ]]; then
@@ -4731,7 +4733,7 @@ fi
 ##############################################################################
 
 # make dummy VMGM mpeg
-if ! $TITLESET_MODE && ! $DO_TITLESETS; then
+if ! $TITLESET_MODE && ! $DO_TITLESETS && [[ $TARGET = "dvd" ]]; then
     make_dummy
 fi
 
@@ -5168,7 +5170,7 @@ if [[ ! "$SC_FRAMESTYLE" = "glass" && ! $TEXTMENU ]]; then
         yecho "Adding title to video images and resizing"
     fi
 fi
-if ! $TEXTMENU; then
+if ! $TEXTMENU && $DO_MENU; then
     for ((i=0; i<=NUM_FILES; i++)); do
         if $FEATHER && $THUMBS_3D && [ "$THUMB_SHAPE" != "normal" ]; then
             unset CURVE_ARRAY CURVE_VALUES CURVE_VARS
@@ -5290,7 +5292,7 @@ if ! $TEXTMENU; then
         unset PICS
     done
 fi
-if ! $MENU_FADE && ! $QUICK_MENU; then
+if ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then
     yecho
     yecho "Making $FRAMES final montages and compositing onto background with title"
     yecho
@@ -5433,7 +5435,7 @@ if $MENU_FADE && ! $STATIC && ! $QUICK_MENU; then
     for ((i=FRAMES; i<FRAMES+18; i++)); do
         cp $WORK_DIR/black.jpg $WORK_DIR/animenu/$i.jpg
     done
-elif ! $MENU_FADE && ! $QUICK_MENU; then # Do not do menu fade
+elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
     if $TRANSPARENT; then # non transparent -showcase-* uses this block too
         for (( count=1; count<=$FRAMES; count++)); do
             spin "\rProcessing "$count.jpg"  "
@@ -5576,7 +5578,8 @@ elif ! $MENU_FADE && ! $QUICK_MENU; then # Do not do menu fade
     fi
 fi
 echo
-! $QUICK_MENU && echo "Converting images to video stream and encoding to DVD-compliant format"
+! $QUICK_MENU && $DO_MENU && \
+  echo "Converting images to video and encoding to $TARGET-compliant format"
 # convert images to video stream and encode to dvd compliant m2v
 if $STATIC; then
     # we have a value for MENU_AUDIOLENGTH AND BG_AUDIO
@@ -5601,7 +5604,7 @@ ENC_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p "${JPEG2YUV_OPTS[@]}" -L 1 -b1 \
 ENC_CMD2=(ffmpeg   -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
 -tvstd $TV_STANDARD $FFMPEG_OPTS -y $WORK_DIR/intro.m2v)
 yecho
-if ! $QUICK_MENU; then
+if ! $QUICK_MENU && $DO_MENU; then
     echo "Running "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}"" |format_output
     ! "${ENC_CMD1[@]}" | "${ENC_CMD2[@]}" 2>&1 | strings >> "$LOG_FILE" && runtime_error
     echo
@@ -5610,13 +5613,17 @@ if ! $QUICK_MENU; then
     rm -f $WORK_DIR/animenu/*.png
 fi
 # check if m2v was created ok before proceeding
-if ! mencoder -quiet -oac pcm -ovc copy -frames 0 $WORK_DIR/intro.m2v -o /dev/null &> /dev/null; then
-    echo
-    runtime_error  "The menu video file does not appear to have been created"
+if $DO_MENU; then
+    if ! mencoder -quiet -oac pcm -ovc copy -frames 0 \
+      "$WORK_DIR/intro.m2v" -o /dev/null &> /dev/null; then
+        echo
+        runtime_error  "The menu video file does not appear to have been created"
+    fi
 fi
-
-MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
-$SWITCHED && MENU_ATIME=${MENU_LEN[MENU_NUM-1]}
+if $DO_MENU; then
+    MENU_ATIME=$(vid_length "$WORK_DIR/intro.m2v")
+    $SWITCHED && MENU_ATIME=${MENU_LEN[MENU_NUM-1]}
+fi
 
 # use mplayer to dump audio if mplayer used for video
 # but first check if audio same file as video and its not a static menu
@@ -5625,39 +5632,40 @@ if [[ $SC_FRAMESTYLE = "glass" && $BG_AUDIO = $SHOWCASE_VIDEO ]]; then
 fi
 BG_AUDIO_LENGTH="-t $MENU_ATIME"
 # create audio background for the main menu
-if [[ -z "$BG_AUDIO" || "$BG_AUDIO" = "none" ]]; then # no audio: use silence
-    cat /dev/zero 2>/dev/null | nice -n 0 sox -t raw -c 2 -r 48000 -w \
-    -s - $WORK_DIR/intro.wav  trim 0 $MENU_ATIME
-# Make sure file exists
-elif test ! -s "$BG_AUDIO"; then
-    runtime_error "Cannot find background audio file: $BG_AUDIO"
-else # audio supplied: convert to wav then later to dvd/svcd format
-    # TODO if ! $BG_AUDIOVIDEO_FILE; then  # check if same file and if so
-    # decode the audio and jpegs in one step above, and skip this block
-    if $USE_MPLAYER_4AUDIO; then
-        BGAUDIO_CMD=(mplayer  -quiet -vc null -vo null -ss $MPLAYER_SEEK_VAL \
-        -ao pcm:waveheader:file="$WORK_DIR/intro.wav" -endpos $MENU_ATIME  "$BG_AUDIO")
-    else
-        BGAUDIO_CMD=(ffmpeg -y  -async 1 -ss $BG_AUDIO_SEEK $BG_AUDIO_LENGTH \
-        -i "$BG_AUDIO" -r 29.970 -ar 48000 -ac 2 -acodec pcm_s16le \
-        $WORK_DIR/intro.wav)
-    fi
-    yecho
-    echo "Running "${BGAUDIO_CMD[@]}"" |strings|tee -a "$LOG_FILE" 2>&1
-    ! "${BGAUDIO_CMD[@]}" 2>&1 |strings >> "$LOG_FILE" && runtime_error
+if $DO_MENU; then
+    if [[ -z "$BG_AUDIO" || "$BG_AUDIO" = "none" ]]; then # use silence
+        cat /dev/zero 2>/dev/null | nice -n 0 sox -t raw -c 2 -r 48000 -w \
+        -s - $WORK_DIR/intro.wav  trim 0 $MENU_ATIME
+    # Make sure file exists
+    elif test ! -s "$BG_AUDIO"; then
+        runtime_error "Cannot find background audio file: $BG_AUDIO"
+    else # audio supplied: convert to wav then later to dvd/svcd format
+        # TODO if ! $BG_AUDIOVIDEO_FILE; then  # check if same file and if so
+        # decode the audio and jpegs in one step above, and skip this block
+        if $USE_MPLAYER_4AUDIO; then
+            BGAUDIO_CMD=(mplayer  -quiet -vc null -vo null -ss $MPLAYER_SEEK_VAL \
+            -ao pcm:waveheader:file="$WORK_DIR/intro.wav" -endpos $MENU_ATIME  "$BG_AUDIO")
+        else
+            BGAUDIO_CMD=(ffmpeg -y  -async 1 -ss $BG_AUDIO_SEEK $BG_AUDIO_LENGTH \
+            -i "$BG_AUDIO" -r 29.970 -ar 48000 -ac 2 -acodec pcm_s16le \
+            $WORK_DIR/intro.wav)
+        fi
+        yecho
+        echo "Running "${BGAUDIO_CMD[@]}"" |strings|tee -a "$LOG_FILE" 2>&1
+        ! "${BGAUDIO_CMD[@]}" 2>&1 |strings >> "$LOG_FILE" && runtime_error
 
-    if $AUDIO_FADE; then  # bgaudio supplied and audio fade selected
-        WAV_TIME=$(audio_length "$WORK_DIR/intro.wav")
-        echo "Running: "
-        echo "sox $WORK_DIR/intro.wav $WORK_DIR/intro-processed.wav fade t \
-        $FADE $WAV_TIME $FADE"
-        sox $WORK_DIR/intro.wav \
-        $WORK_DIR/intro-processed.wav fade t $FADE $WAV_TIME $FADE
-        rm $WORK_DIR/intro.wav
-        mv $WORK_DIR/intro-processed.wav $WORK_DIR/intro.wav
+        if $AUDIO_FADE; then  # bgaudio supplied and audio fade selected
+            WAV_TIME=$(audio_length "$WORK_DIR/intro.wav")
+            echo "Running: "
+            echo "sox $WORK_DIR/intro.wav $WORK_DIR/intro-processed.wav fade t \
+            $FADE $WAV_TIME $FADE"
+            sox $WORK_DIR/intro.wav \
+            $WORK_DIR/intro-processed.wav fade t $FADE $WAV_TIME $FADE
+            rm $WORK_DIR/intro.wav
+            mv $WORK_DIR/intro-processed.wav $WORK_DIR/intro.wav
+        fi
     fi
 fi
-
 unset BGAUDIO_CMD TIME
 
 # convert to proper audio format
@@ -5668,45 +5676,51 @@ if [[ $TARGET = "dvd" ]]; then
     $AUDIO_OPTS -y $WORK_DIR/intro.$AUDIO_EXT)
     yecho "Running "${BGAUDIO_CMD[@]}"" | fold -bs >> "$LOG_FILE"
     "${BGAUDIO_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"
-else
+elif [[ $TARGET = "svcd" ]] && $DO_MENU; then
     BGAUDIO_CMD=(mp2enc -r 44100 -o $WORK_DIR/intro.$AUDIO_EXT)
     "${BGAUDIO_CMD[@]}" < "$WORK_DIR/intro.wav" 2>&1 |fold -bs >> "$LOG_FILE"
 fi
-! [[ -s $WORK_DIR/intro.$AUDIO_EXT ]] && runtime_error
+if $DO_MENU; then
+     ! [[ -s $WORK_DIR/intro.$AUDIO_EXT ]] && runtime_error
+    unset BGAUDIO_CMD
+    rm -fv "$WORK_DIR/intro.wav"
+    echo
+    echo "Multiplexing main menu audio and video together"
+    # mplex main menu audio and video together
+    INTRO_MPLEX_CMD="mplex -V -f $MPLEX_FORMAT -o $WORK_DIR/intro.mpg \
+      $WORK_DIR/intro.$AUDIO_EXT $WORK_DIR/intro.m2v"
+    echo -e "\nRunning: $INTRO_MPLEX_CMD\n" |fold -bs >> "$LOG_FILE"
+    yecho
+    ! ${INTRO_MPLEX_CMD[@]} 2>&1 |strings >> "$LOG_FILE" && runtime_error
 
-unset BGAUDIO_CMD
-rm -fv "$WORK_DIR/intro.wav"
-echo
-echo "Multiplexing main menu audio and video together"
-# mplex main menu audio and video together
-INTRO_MPLEX_CMD="mplex -V -f $MPLEX_FORMAT -o $WORK_DIR/intro.mpg \
-$WORK_DIR/intro.$AUDIO_EXT $WORK_DIR/intro.m2v"
-echo -e "\nRunning: $INTRO_MPLEX_CMD\n" |fold -bs >> "$LOG_FILE"
-yecho
-! ${INTRO_MPLEX_CMD[@]} 2>&1 |strings >> "$LOG_FILE" && runtime_error
-
-yecho
-if $SWITCHED_MODE || $SWITCHED_MENUS; then
-    yecho "Copying the menu mpeg"
-    if [[ $MENU_NUM -ne 1 ]]; then
-        cp -v "$REAL_WORK_DIR/intro.mpg" "$BASEDIR/${TSET_NUM}-${MENU_NUM}intro.mpg"
-    else
-        cp -v  "$REAL_WORK_DIR/intro.mpg"  "$REAL_WORK_DIR/${TSET_NUM}-${MENU_NUM}intro.mpg"
+    yecho
+    if $SWITCHED_MODE || $SWITCHED_MENUS; then
+        yecho "Copying the menu mpeg"
+        if [[ $MENU_NUM -ne 1 ]]; then
+            cp -v "$REAL_WORK_DIR/intro.mpg" \
+              "$BASEDIR/${TSET_NUM}-${MENU_NUM}intro.mpg"
+        else
+            cp -v  "$REAL_WORK_DIR/intro.mpg"  \
+              "$REAL_WORK_DIR/${TSET_NUM}-${MENU_NUM}intro.mpg"
+        fi
+        sleep 2
+        if $SWITCHED_MODE; then
+            $KEEP_FILES && mv -v "$REAL_WORK_DIR" \
+              "$BASEDIR"/TITLESET${TSET_NUM}-MENU${MENU_NUM}
+            ( KEEP_FILES=false && cleanup )
+            exit
+        fi
     fi
-    sleep 2
-    if $SWITCHED_MODE; then
-        $KEEP_FILES && mv -v "$REAL_WORK_DIR" "$BASEDIR"/TITLESET${TSET_NUM}-MENU${MENU_NUM}
-        ( KEEP_FILES=false && cleanup )
-        exit
+    if $SWITCHED_MENUS && [[ $TARGET != svcd ]]; then
+        for ((i=1; i<=${#FILES[@]}; i++)); do
+            MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${i}.mpg"
+            yecho "Running spumux "$SPUMUX_XML" \
+              < "$REAL_WORK_DIR/${TSET_NUM}-${i}intro.mpg" > "$MENU_FILE""
+            spumux "$SPUMUX_XML" < "$WORK_DIR/${TSET_NUM}-${i}intro.mpg" \
+              > "$MENU_FILE" 2>> "$LOG_FILE"
+            check_menufile
+        done
     fi
-fi
-if $SWITCHED_MENUS && [[ $TARGET != svcd ]]; then
-    for ((i=1; i<=${#FILES[@]}; i++)); do
-        MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${i}.mpg"
-        yecho "Running spumux "$SPUMUX_XML" < "$REAL_WORK_DIR/${TSET_NUM}-${i}intro.mpg" > "$MENU_FILE""
-        spumux "$SPUMUX_XML" < "$WORK_DIR/${TSET_NUM}-${i}intro.mpg" > "$MENU_FILE" 2>> "$LOG_FILE"
-        check_menufile
-    done
 fi
 if [[ $TARGET != svcd ]] && ! $SWITCHED_MENUS && ! $SWITCHED_MODE; then
     yecho "Running spumux "$SPUMUX_XML" < $WORK_DIR/intro.mpg > "$MENU_FILE""
