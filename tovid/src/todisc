@@ -4446,6 +4446,7 @@ EOF
 ) > "$WORK_DIR/submenu$((s + 1))_spumux.xml"
     done
 fi
+
 # debug chapters
 if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]] && ! $GROUPING; then
     echo
@@ -5066,8 +5067,10 @@ fi
 ##############################################################################
 #                      Work on main menu                                     #
 ##############################################################################
-yecho
-yecho "Building main menu"
+if $DO_MENU; then
+    yecho
+    yecho "Building main menu"
+fi
 if [[ -n "$BG_VIDEO" ]] && ! $QUICK_MENU; then
     yecho "Getting background video from $BG_VIDEO"
     FFMPEG_CMD="ffmpeg -i \"$BG_VIDEO\" -ss $BG_SEEK -vframes $FRAMES \
@@ -5753,8 +5756,8 @@ elif [ "$TARGET" = "svcd" ]; then
     $VMGM_MENU && svcd_menu=(-menu "$WORK_DIR/intro.mpg")
     MKXML_CMD=(makexml -svcd $SLIDES $SVCD_PAUSE "${svcd_menu[@]}" \
                     "${IN_FILES[@]}" -out "$OUT_FILE")
-    echo "${MKXML_CMD[@]}"
-    "${MKXML_CMD[@]}"
+    echo "${MKXML_CMD[@]}" | fold -bs | tee -a "$LOG_FILE"
+    "${MKXML_CMD[@]}" 2>> "$LOG_FILE" | tee -a "$LOG_FILE"
     makevcd "${OUT_FILE}.xml"
 #    vcdxbuild -b "${OUT_FILE}.bin" -c "${OUT_FILE}.cue"  "${OUT_FILE}.xml"
 fi
