@@ -176,7 +176,8 @@ INTRO=""
 QUICK_NAV=false
 SKIP_VMGM_MENU=false
 VMGM_MENU=:
-DO_MENU=true
+DO_MENU=:
+DO_STATS=:
 SWITCHED_MENUS=false
 SWITCHED_MODE=false
 SWITCHED=false
@@ -241,11 +242,11 @@ function cmd_exec()
 
 # Print script name, usage notes, and optional error message, then exit.
 # Args: $@ == text string(s) containing error message and help
-function usage_error ()
+function usage_error()
 {
     MESSAGE=( "$@" )
     printf "%s\n%s\n%s\n\n" "$USAGE" "$SEPARATOR" "***"
-    for ((i=0; i<$#; i++)) ; do printf "%s" "${MESSAGE[i]}"; done |fold -bs
+    for ((i=0; i<$#; i++)) ; do printf "%s" "${MESSAGE[i]}"; done |format_output
     printf "\n\n%s\n" "***"
     rm -rf "$REAL_WORK_DIR" "$WORK_DIR"
     if $SWITCHED_MODE || $SWITCHED_MENUS || $TITLESET_MODE || $DO_TITLESETS; then
@@ -1102,7 +1103,9 @@ thanks_goodbye()
         echo "    makedvd -burn \"$OUT_DIR\""
     elif [ "$TARGET" = "svcd" ]; then
         echo "Your svcd bin and cue files are ready. You can burn them with:"
-        echo "    cdrdao write --device /dev/hdc --driver generic-mmc "${OUT_FILE}.cue""
+        echo "   $BURN_PROG -burn -device $BURN_DEVICE $BURN_SPEED $BURN_TGT"
+        echo "Make sure to adjust the device name to YOURS "
+        echo "and add -speed NN if needed ( ie. -speed 4 for an old cdrw disc)"
     fi
     echo
     echo "Thanks for using todisc."
@@ -2549,8 +2552,9 @@ fi
 echo
 yecho "Creating pics directories..."
 for ((i=0; i<=NUM_FILES; i++)); do
-    mkdir -pv "$REAL_WORK_DIR/pics/$i"
+    mkdir -p "$REAL_WORK_DIR/pics/$i"
 done
+yecho "$NUM_FILES pics directories created"
 # textmenu is static unless there is an animated background or showcase video
 if $TEXTMENU && [[ -z $SHOWCASE_VIDEO && -z $BG_VIDEO ]]; then STATIC=:; fi
 # prevent user from using mutually exclusive options
@@ -2612,8 +2616,9 @@ if ! $VMGM_ONLY &&  [[ ${#FILES[@]} -ne ${#SEEK_VAL[@]} &&  ${#SEEK_VAL[@]} -ne 
 fi
 # make sure if more than one -menu-length value, they equal the number of video
 if ! $VMGM_ONLY &&  [[ ${#FILES[@]} -ne ${#MENU_LEN[@]} &&  ${#MENU_LEN[@]} -ne 1 ]]; then
-    usage_error "Please give the same number of -menu-length times as videos, or just use one value.
-    You gave ${#FILES[@]} video files and ${#MENU_LEN[@]} -menu-length times"
+    usage_error "Please give the same number of -menu-length times as
+    videos, or just use one value.  You gave ${#FILES[@]} video files
+    and ${#MENU_LEN[@]} -menu-length times"
 fi
 # var for dcdemux and the navigation log
 #TCDEMUX_MODE="-M 0"
@@ -2629,6 +2634,9 @@ if ! $VMGM_ONLY; then
     fi
     echo
 fi
+# if all files are images and we are doing SVCD menu, don't do stats
+[[ ${#file_is_image[@]} -eq ${#IN_FILES[@]} ]] && [[ $TARGET = "svcd" ]] && \
+ DO_STATS=false
 
 # for slides or short files, seeking/fading will not work: set them to 0
 # if user has not set a value from the command line
@@ -2722,7 +2730,7 @@ yecho "  -menu-font $MENU_FONT"
 yecho "  -menu-fontsize $MENU_FONTSIZE"
 yecho "  -thumb-font $THUMB_FONT"
 yecho "  -thumb-fontsize $THUMB_FONTSIZE"
-if ! $VMGM_ONLY; then
+if ! $VMGM_ONLY && $DO_MENU; then
     yecho "Current menu settings: "
     if  ! $STATIC; then
         yecho "  -menu-length ${MENU_LEN[MENU_NUM-1]} seconds"
@@ -2818,6 +2826,7 @@ elif [ $TARGET = "svcd" ]; then
     BURN_TGT="${OUT_FILE}.xml"
     BURN_TGT_STR="SVCD image"
     BURN_PROG="makevcd"
+    BURN_DEVICE=/dev/cdrw
     [[ -n $svcd_pause ]] && SVCD_PAUSE="-pause $svcd_pause"
     if [ $TV_STANDARD = "ntsc" ]; then
         VIDSIZE="480x480"
@@ -3163,153 +3172,174 @@ elif test "$THUMB_SHAPE" = "plectrum"; then
 fi
 
 # Print and execute the thumb-shape mask command
-yecho "$MASK_CMD"
-cmd_exec "$MASK_CMD"
-yecho "Creating a title image"
-if [[ -z "$BG_PIC" && -z "$BG_VIDEO" ]]; then
-    STROKE=none
-elif [ -z "$STROKE" ]; then
-    STROKE=gray
-fi
-
-# make a title image
-#! [[ -z ${STR// /} || -z $STR ]] && TRIM_CMD="-trim +repage -blur 0x0.4 "
-TRIM_CMD="-trim +repage -blur 0x0.4"
-TITLE_CMD=(convert  -size 620x100 xc:none -font "$MENU_FONT"  -pointsize $MENU_FONTSIZE \
--fill black -stroke black -gravity center  -annotate +0+0 "$MENU_TITLE" \
--fill "$TITLE_COLOUR" -stroke "$STROKE" -strokewidth 1 -annotate +1+1 "$MENU_TITLE")
-TITLE_CMD1=(convert - $TRIM_CMD  "$WORK_DIR/title_txt.png")
-
-echo "Running ${TITLE_CMD[@]} miff:- | ${TITLE_CMD1[@]}" | format_output|tee -a "$LOG_FILE"
-"${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}" >> "$LOG_FILE" 2>&1
-# make thumb titles if $SHOWCASE
-if $SHOWCASE; then
-    for ((i=0; i<=NUM_FILES; i++)); do
-        unset ts_dim j
-        THUMB_TITLE_CMD=(convert  -size 620x300 xc:none \
-        -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
-        -fill black -stroke black -gravity $THUMB_TITLE_ALIGN  \
-        -annotate +0+0 "${TITLES[i]}" \
-        -fill $THUMB_TEXT_COLOUR  -stroke "$STROKE" -strokewidth 1 \
-        -annotate +1+1 "${TITLES[i]}")
-        TT_CMD1=(convert - -trim +repage $TEXT_BORDER "$WORK_DIR/thumb_title${i}.png")
-        echo "Running ${THUMB_TITLE_CMD[@]} miff:- | ${TT_CMD1[@]}" |fold -bs >> "$LOG_FILE"
-        "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}" 2> /dev/null
-
-        # find out dimension of the thumb title png
-        TT_DIM=( ${TT_DIM[@]} $(get_image_dim "$WORK_DIR/thumb_title${i}.png") )
-        # get widest png in each colum for use later for alignment use
-        if ((i < SPLIT)); then
-            val=${TT_DIM[i]/x*}
-            [ -z "$WIDEST_TITLE" ] || ((val > WIDEST_TITLE)) && WIDEST_TITLE=$val
-        else
-            val2=${TT_DIM[i]/x*}
-            [ -z "$WIDEST_TITLE2" ] || ((val2 > WIDEST_TITLE2)) && WIDEST_TITLE2=$val2
-        fi
-        # get just X demension to help determine final title pos below
-        tt_dim=${TT_DIM[i]/x*}
-        # thumb pos plus 1/2 (X dim) of thumbsize, less 1/2 (X dim) of title size
-        if [ "$SC_TITLE_ALIGN" = "center" ]; then
-            f=$(( ${THUMB_SIZE/x*} / 2 ))
-            j=$(( (f + ${SHOWCASE_THUMB_X_ARRAY[i]}) - (tt_dim / 2) ))
-            k=( ${k[@]} "$j" )
-            l=$((j + tt_dim))
-            if [ $j -lt 48 ]; then
-                off_left=$j
-                titlesafe_error $off_left
-            elif [ $l -gt 672 ]; then
-                off_right=$((720 - l))
-                titlesafe_error $off_right
-            fi
-        fi
-    done
-    if $TEXTMENU; then
-        # text-rect can get along with a small space between titles for spumux
-        [[ $BUTTON_STYLE = "text-rect" ]] && SPACER=${SPACER:-"10"} || SPACER=${SPACER:-"15"}
-        # get an array of title Y positions
-        offsets1=$(for ((c=0; c<NUM_FILES; c++)); do
-        ((c < (LEFT_MAX-1))) && echo $(( ${TT_DIM[c]#*x} + SPACER )); done)
-        if [[ $NUM_FILES -ge $SPLIT ]]; then
-            offsets2=$(for ((d=0; d<=NUM_FILES; d++)); do
-            ((d >= LEFT_MAX)) && echo $(( ${TT_DIM[d]#*x} + SPACER )); done)
-            [[ $offsets2 ]] && offsets2="$TEXT_YSTART $offsets2"
-            tt_ygeos_col2=$(running_total <<< $offsets2)
-        fi
-        offsets1="$TEXT_YSTART $offsets1"
-        tt_ygeos_col1=$(running_total <<< $offsets1)
-        tt_ygeos="$tt_ygeos_col1 $tt_ygeos_col2"
-        unset SHOWCASE_TITLES_Y_ARRAY
-        SHOWCASE_TITLES_Y_ARRAY=( $tt_ygeos_col1 $tt_ygeos_col2 )
-        # get the y position of the last title in 1st column (tt_ygeos_col1)
-        last_title_col1=$(wc -w <<< "$tt_ygeos_col1")
-        last_title_col1_ygeo=${SHOWCASE_TITLES_Y_ARRAY[last_title_col1-1]/*x}
-        # add the y dimension of the last title size to the above y position
-        SW_YCORNER=$(( ${TT_DIM[last_title_col1-1]/*x} + $last_title_col1_ygeo ))
-        avail_space1=$(( ( ${VIDSIZE/*x} - SAFE_AREA ) - $SW_YCORNER ))
-        # if there are 2 columns, get same data for column 2
-        if [[ -n $tt_ygeos_col2 ]]; then
-            last_title_col2=$NUM_FILES
-            last_title_col2_ygeo=${SHOWCASE_TITLES_Y_ARRAY[last_title_col2]/*x}
-            last_title_col2_xgeo=${SHOWCASE_TITLES_Y_ARRAY[last_title_col2]/x*}
-            SE_YCORNER=$(( ${TT_DIM[last_title_col2]/*x} + $last_title_col2_ygeo ))
-            avail_space2=$(( ( ${VIDSIZE/*x} - SAFE_AREA ) - $SE_YCORNER ))
-        fi
-        # available space is lowest value of 2 *space* vars ( if 2 columns)
-        if [[ -n $tt_ygeos_col2 ]] && ((SE_YCORNER > SW_YCORNER)); then
-            avail_space=$avail_space2
-        else
-            avail_space=$avail_space1
-        fi
-        # get the height of each column for -align centre
-        if [[ $BUTTON_GRAVITY = "center" || $BUTTON_GRAVITY = "east" || $BUTTON_GRAVITY = "west" ]]; then
-            WEST_YSPACE=$(( SW_YCORNER - TEXT_YSTART))
-            EAST_YSPACE=$((SE_YCORNER - TEXT_YSTART))
-            ((WEST_YSPACE > EAST_YSPACE)) && YSPACE=$WEST_YSPACE || YSPACE=$EAST_YSPACE
-            CANVAS=$(( ${VIDSIZE/*x} - (SAFE_AREA * 2) ))
-            NEW_TEXT_YSTART=$(( ((CANVAS - YSPACE) / 2) + SAFE_AREA ))
-            TEXT_YSTART_OFFSET=$((NEW_TEXT_YSTART - TEXT_YSTART))
-        fi
-        # add the available space to each title position for south alignment
-        if [[ $BUTTON_GRAVITY = *south* ]] && ((avail_space > 0)); then
-            for ((d=0; d<=NUM_FILES; d++)); do
-                SHOWCASE_TITLES_Y_ARRAY[d]=$(( ${SHOWCASE_TITLES_Y_ARRAY[d]} + $avail_space ))
-            done
-        elif  [[ $BUTTON_GRAVITY = "center" || $BUTTON_GRAVITY = "east" || $BUTTON_GRAVITY = "west" ]]; then
-            for ((d=0; d<=NUM_FILES; d++)); do
-                SHOWCASE_TITLES_Y_ARRAY[d]=$(( ${SHOWCASE_TITLES_Y_ARRAY[d]} + $TEXT_YSTART_OFFSET ))
-            done
-        fi
-            # this justifies titles to the right on the east side of the menu
-            ((NUM_FILES >= SPLIT-1)) && WIDE_TITLE=$WIDEST_TITLE2 || WIDE_TITLE=$WIDEST_TITLE
-            for ((d=0; d<=NUM_FILES; d++)); do
-                ([[ "$BUTTON_GRAVITY" = *east* ]] || [[ -n $tt_ygeos_col2 ]]) && \
-                    east_offset=$(( ( ${VIDSIZE/x*} - SAFE_AREA ) - ${TT_DIM[d]/x*} ))
-                if (($NUM_FILES < SPLIT)); then
-                    SHOWCASE_TITLES_X_ARRAY[d]=$SAFE_AREA
-                    [[ "$BUTTON_GRAVITY" = *east* ]] && SHOWCASE_TITLES_X_ARRAY[d]=$east_offset
-                else
-                    if ((d >= LEFT_MAX)); then
-                        SHOWCASE_TITLES_X_ARRAY[d]=$east_offset
-                    else
-                        SHOWCASE_TITLES_X_ARRAY[d]=$SAFE_AREA
-                    fi
-                fi
-            done
-        unset MAX_VAL val max_key
+if $DO_MENU; then
+    if [[ -n $MASK_CMD ]]; then
+        yecho "$MASK_CMD"
+        cmd_exec "$MASK_CMD"
     fi
-    # make array of SHOWCASE_PAGES for thumbs and THUMBTITLES_ARRAY for titles
-    # use preset values unless doing centre align for titles
-    for ((i=0; i<=NUM_FILES; i++)); do
-        if [ "$SC_TITLE_ALIGN" != "center" ]; then
-            SHOWCASE_TITLES_ARRAY[i]=+${SHOWCASE_TITLES_X_ARRAY[i]}+${SHOWCASE_TITLES_Y_ARRAY[i]}
-        else
-            SHOWCASE_TITLES_ARRAY[i]=+${k[i]}+${SHOWCASE_TITLES_Y_ARRAY[i]}
-        fi
+    yecho "Creating a title image"
+    if [[ -z "$BG_PIC" && -z "$BG_VIDEO" ]]; then
+        STROKE=none
+    elif [ -z "$STROKE" ]; then
+        STROKE=gray
+    fi
 
-        SHOWCASE_THUMB_PAGES[i]="-page ${SHOWCASE_THUMB_PAGES_ARRAY[i]}"
-        THUMBTITLES_ARRAY[i]="-page ${SHOWCASE_TITLES_ARRAY[i]}"
-    done
+    # make a title image
+    #! [[ -z ${STR// /} || -z $STR ]] && TRIM_CMD="-trim +repage -blur 0x0.4 "
+    TRIM_CMD="-trim +repage -blur 0x0.4"
+    TITLE_CMD=(convert  -size 620x100 xc:none -font "$MENU_FONT" -pointsize \
+      $MENU_FONTSIZE -fill black -stroke black -gravity center  -annotate +0+0 \
+      "$MENU_TITLE" -fill "$TITLE_COLOUR" -stroke "$STROKE" -strokewidth 1 \
+      -annotate +1+1 "$MENU_TITLE")
+    TITLE_CMD1=(convert - $TRIM_CMD  "$WORK_DIR/title_txt.png")
+
+    echo "Running ${TITLE_CMD[@]} miff:- | ${TITLE_CMD1[@]}" |
+      format_output|tee -a "$LOG_FILE"
+    "${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}" >> "$LOG_FILE" 2>&1
+    # make thumb titles if $SHOWCASE
+    if $SHOWCASE; then
+        for ((i=0; i<=NUM_FILES; i++)); do
+            unset ts_dim j
+            THUMB_TITLE_CMD=(convert  -size 620x300 xc:none \
+            -font "$THUMB_FONT" -pointsize $THUMB_FONTSIZE \
+            -fill black -stroke black -gravity $THUMB_TITLE_ALIGN  \
+            -annotate +0+0 "${TITLES[i]}" \
+            -fill $THUMB_TEXT_COLOUR  -stroke "$STROKE" -strokewidth 1 \
+            -annotate +1+1 "${TITLES[i]}")
+            TT_CMD1=(convert - -trim +repage \
+              $TEXT_BORDER "$WORK_DIR/thumb_title${i}.png")
+            echo "Running ${THUMB_TITLE_CMD[@]} miff:- | ${TT_CMD1[@]}" |
+              fold -bs >> "$LOG_FILE"
+            "${THUMB_TITLE_CMD[@]}" miff:- | "${TT_CMD1[@]}" 2> /dev/null
+
+            # find out dimension of the thumb title png
+            TT_DIM=( ${TT_DIM[@]} $(get_image_dim \
+              "$WORK_DIR/thumb_title${i}.png") )
+            # get widest png in each colum for use later for alignment use
+            if ((i < SPLIT)); then
+                val=${TT_DIM[i]/x*}
+                [ -z "$WIDEST_TITLE" ] || ((val > WIDEST_TITLE)) \
+                  && WIDEST_TITLE=$val
+            else
+                val2=${TT_DIM[i]/x*}
+                [ -z "$WIDEST_TITLE2" ] || ((val2 > WIDEST_TITLE2)) \
+                  && WIDEST_TITLE2=$val2
+            fi
+            # get just X demension to help determine final title pos below
+            tt_dim=${TT_DIM[i]/x*}
+            # thumb pos + 1/2 (X dim) of thumbsize - 1/2 (X dim) of title size
+            if [ "$SC_TITLE_ALIGN" = "center" ]; then
+                f=$(( ${THUMB_SIZE/x*} / 2 ))
+                j=$(( (f + ${SHOWCASE_THUMB_X_ARRAY[i]}) - (tt_dim / 2) ))
+                k=( ${k[@]} "$j" )
+                l=$((j + tt_dim))
+                if [ $j -lt 48 ]; then
+                    off_left=$j
+                    titlesafe_error $off_left
+                elif [ $l -gt 672 ]; then
+                    off_right=$((720 - l))
+                    titlesafe_error $off_right
+                fi
+            fi
+        done
+        if $TEXTMENU; then
+            # text-rect is OK with a small space between titles for spumux
+            [[ $BUTTON_STYLE = "text-rect" ]] && \
+              SPACER=${SPACER:-"10"} || SPACER=${SPACER:-"15"}
+            # get an array of title Y positions
+            offsets1=$(for ((c=0; c<NUM_FILES; c++)); do
+            ((c < (LEFT_MAX-1))) && echo $((${TT_DIM[c]#*x} + SPACER)); done)
+            if [[ $NUM_FILES -ge $SPLIT ]]; then
+                offsets2=$(for ((d=0; d<=NUM_FILES; d++)); do
+                ((d >= LEFT_MAX)) && echo $((${TT_DIM[d]#*x} + SPACER)); done)
+                [[ $offsets2 ]] && offsets2="$TEXT_YSTART $offsets2"
+                tt_ygeos_col2=$(running_total <<< $offsets2)
+            fi
+            offsets1="$TEXT_YSTART $offsets1"
+            tt_ygeos_col1=$(running_total <<< $offsets1)
+            tt_ygeos="$tt_ygeos_col1 $tt_ygeos_col2"
+            unset SHOWCASE_TITLES_Y_ARRAY
+            SHOWCASE_TITLES_Y_ARRAY=( $tt_ygeos_col1 $tt_ygeos_col2 )
+            # get the y position of the last title in 1st column (tt_ygeos_col1)
+            endtitle_col1=$(wc -w <<< "$tt_ygeos_col1")
+            endtitle_col1_ygeo=${SHOWCASE_TITLES_Y_ARRAY[endtitle_col1-1]/*x}
+            # add y dimension of the last title size to the above y position
+            SW_YCORNER=$((${TT_DIM[endtitle_col1-1]/*x} + $endtitle_col1_ygeo))
+            avail_space1=$(( ( ${VIDSIZE/*x} - SAFE_AREA ) - $SW_YCORNER ))
+            # if there are 2 columns, get same data for column 2
+            if [[ -n $tt_ygeos_col2 ]]; then
+                endtitle_col2=$NUM_FILES
+                endtitle_col2_ygeo=${SHOWCASE_TITLES_Y_ARRAY[endtitle_col2]/*x}
+                endtitle_col2_xgeo=${SHOWCASE_TITLES_Y_ARRAY[endtitle_col2]/x*}
+                SE_YCORNER=$((${TT_DIM[endtitle_col2]/*x} + $endtitle_col2_ygeo))
+                avail_space2=$(( ( ${VIDSIZE/*x} - SAFE_AREA ) - $SE_YCORNER ))
+            fi
+            # available space is lowest value of 2 *space* vars ( if 2 columns)
+            if [[ -n $tt_ygeos_col2 ]] && ((SE_YCORNER > SW_YCORNER)); then
+                avail_space=$avail_space2
+            else
+                avail_space=$avail_space1
+            fi
+            # get the height of each column for -align centre
+            if [[ $BUTTON_GRAVITY = "center" \
+              || $BUTTON_GRAVITY = "east" || $BUTTON_GRAVITY = "west" ]]; then
+                WEST_YSPACE=$(( SW_YCORNER - TEXT_YSTART))
+                EAST_YSPACE=$((SE_YCORNER - TEXT_YSTART))
+                ((WEST_YSPACE > EAST_YSPACE)) && YSPACE=$WEST_YSPACE \
+                  || YSPACE=$EAST_YSPACE
+                CANVAS=$(( ${VIDSIZE/*x} - (SAFE_AREA * 2) ))
+                NEW_TEXT_YSTART=$(( ((CANVAS - YSPACE) / 2) + SAFE_AREA ))
+                TEXT_YSTART_OFFSET=$((NEW_TEXT_YSTART - TEXT_YSTART))
+            fi
+            # add available space to each title position for south alignment
+            if [[ $BUTTON_GRAVITY = *south* ]] && ((avail_space > 0)); then
+                for ((d=0; d<=NUM_FILES; d++)); do
+                    SHOWCASE_TITLES_Y_ARRAY[d]=$(( $avail_space + \
+                      ${SHOWCASE_TITLES_Y_ARRAY[d]} ))
+                done
+            elif  [[ $BUTTON_GRAVITY = "center" \
+              || $BUTTON_GRAVITY = "east" || $BUTTON_GRAVITY = "west" ]]; then
+                for ((d=0; d<=NUM_FILES; d++)); do
+                    SHOWCASE_TITLES_Y_ARRAY[d]=$(($TEXT_YSTART_OFFSET + \
+                      ${SHOWCASE_TITLES_Y_ARRAY[d]} ))
+                done
+            fi
+                # justify titles to the right on the east side of the menu
+                ((NUM_FILES >= SPLIT-1)) && WIDE_TITLE=$WIDEST_TITLE2 \
+                  || WIDE_TITLE=$WIDEST_TITLE
+                for ((d=0; d<=NUM_FILES; d++)); do
+                    ([[ "$BUTTON_GRAVITY" = *east* ]] \
+                      || [[ -n $tt_ygeos_col2 ]]) && \
+                        east_offset=$(( ( ${VIDSIZE/x*} - SAFE_AREA ) - ${TT_DIM[d]/x*} ))
+                    if (($NUM_FILES < SPLIT)); then
+                        SHOWCASE_TITLES_X_ARRAY[d]=$SAFE_AREA
+                        [[ "$BUTTON_GRAVITY" = *east* ]] && \
+                          SHOWCASE_TITLES_X_ARRAY[d]=$east_offset
+                    else
+                        if ((d >= LEFT_MAX)); then
+                            SHOWCASE_TITLES_X_ARRAY[d]=$east_offset
+                        else
+                            SHOWCASE_TITLES_X_ARRAY[d]=$SAFE_AREA
+                        fi
+                    fi
+                done
+            unset MAX_VAL val max_key
+        fi
+        # make SHOWCASE_PAGE arrayS for thumbs and THUMBTITLES_ARRAY for titles
+        # use preset values unless doing centre align for titles
+        for ((i=0; i<=NUM_FILES; i++)); do
+            if [ "$SC_TITLE_ALIGN" != "center" ]; then
+                SHOWCASE_TITLES_ARRAY[i]=+${SHOWCASE_TITLES_X_ARRAY[i]}+${SHOWCASE_TITLES_Y_ARRAY[i]}
+            else
+                SHOWCASE_TITLES_ARRAY[i]=+${k[i]}+${SHOWCASE_TITLES_Y_ARRAY[i]}
+            fi
+
+            SHOWCASE_THUMB_PAGES[i]="-page ${SHOWCASE_THUMB_PAGES_ARRAY[i]}"
+            THUMBTITLES_ARRAY[i]="-page ${SHOWCASE_TITLES_ARRAY[i]}"
+        done
+    fi
 fi
+
 # make a button for playall and one for jumping to the vmgm menu, if called for
 if ($TITLESET_MODE && $VMGM_MENU) && ! $VMGM_ONLY; then
     if $PLAYALL; then
@@ -3320,13 +3350,17 @@ if ($TITLESET_MODE && $VMGM_MENU) && ! $VMGM_ONLY; then
         MAIN_SE_GEO="+50+50"
     fi
     mk_se_png $POINTSIZE "Main" "$WORK_DIR/Main.png"
-    ADD_MAIN_BTN=("$WORK_DIR/Main.png" -gravity SouthEast -geometry "$MAIN_SE_GEO" -composite)
+    ADD_MAIN_BTN=("$WORK_DIR/Main.png" -gravity SouthEast -geometry \
+      "$MAIN_SE_GEO" -composite)
     # make the image for spumux while we at add it
-    yecho "mk_se_button $SE_BTN_WIDTH "$HIGHLIGHT_COLOUR" "$WORK_DIR/Main_${HIGHLIGHT_COLOUR/\#}.png""
-    mk_se_button $SE_BTN_WIDTH "$HIGHLIGHT_COLOUR" "$WORK_DIR/Main_${HIGHLIGHT_COLOUR/\#}.png"
-    mk_se_button $SE_BTN_WIDTH "$SELECT_COLOUR" "$WORK_DIR/Main_${SELECT_COLOUR/\#}.png"
+    yecho "mk_se_button $SE_BTN_WIDTH "$HIGHLIGHT_COLOUR" \
+      "$WORK_DIR/Main_${HIGHLIGHT_COLOUR/\#}.png""
+    mk_se_button $SE_BTN_WIDTH "$HIGHLIGHT_COLOUR" \
+      "$WORK_DIR/Main_${HIGHLIGHT_COLOUR/\#}.png"
+    mk_se_button $SE_BTN_WIDTH "$SELECT_COLOUR" \
+      "$WORK_DIR/Main_${SELECT_COLOUR/\#}.png"
 fi
-if $PLAYALL; then
+if $PLAYALL && $DO_MENU; then
     if ($TITLESET_MODE && $VMGM_MENU) && ! $VMGM_ONLY; then
         POINTSIZE=14
         PLAYALL_SE_GEO="+50+50"
@@ -3335,13 +3369,16 @@ if $PLAYALL; then
         PLAYALL_SE_GEO="+55+55"
     fi
     mk_se_png $POINTSIZE "Play All" "$WORK_DIR/Playall.png"
-    ADD_PLAYALL_BTN=("$WORK_DIR/Playall.png" -gravity SouthEast -geometry "$PLAYALL_SE_GEO" -composite)
+    ADD_PLAYALL_BTN=("$WORK_DIR/Playall.png" -gravity SouthEast -geometry \
+      "$PLAYALL_SE_GEO" -composite)
     # make the button for spumux too
-    mk_se_button $SE_BTN_WIDTH "$HIGHLIGHT_COLOUR" "$WORK_DIR/Playall_${HIGHLIGHT_COLOUR/\#}.png"
-    mk_se_button $SE_BTN_WIDTH "$SELECT_COLOUR" "$WORK_DIR/Playall_${SELECT_COLOUR/\#}.png"
+    mk_se_button $SE_BTN_WIDTH "$HIGHLIGHT_COLOUR" \
+      "$WORK_DIR/Playall_${HIGHLIGHT_COLOUR/\#}.png"
+    mk_se_button $SE_BTN_WIDTH "$SELECT_COLOUR" \
+      "$WORK_DIR/Playall_${SELECT_COLOUR/\#}.png"
 fi
 
-if [[ -n $MENU_TITLE ]]; then
+if [[ -n $MENU_TITLE ]] && $DO_MENU; then
     TITLE_TEXT_DIM=$(get_image_dim "$WORK_DIR/title_txt.png")
     TITLE_TEXT_XDIM=${TITLE_TEXT_DIM/x*}
     TITLE_TEXT_YDIM=${TITLE_TEXT_DIM/*x}
@@ -3350,7 +3387,7 @@ if $MIST; then
     echo
     echo "Making a white or colored png for the misted title background"
     echo
-    # make a white or coloured png for misted background effect, only for user bg
+    # make a white/coloured png for misted background effect, only for user bg
     # add 10 pixels to width and height compared to title text png
     y=$((TITLE_TEXT_YDIM + 40))
     x=$((TITLE_TEXT_XDIM + 40))
@@ -3359,7 +3396,8 @@ if $MIST; then
     DIM=${x}x${y}
     convert -size $DIM xc:none -fill $MIST_COLOUR -stroke none \
     -draw "rectangle 10,10 $newX,$newY" "$WORK_DIR/white_orig.png"
-    convert $WORK_DIR/white_orig.png -channel RGBA -blur 0x4 "$WORK_DIR/white.png"
+    convert $WORK_DIR/white_orig.png -channel RGBA -blur 0x4 \
+      "$WORK_DIR/white.png"
     unset X Y x y
 fi
 # offsets for placing title and mist for Y dimension
@@ -3383,7 +3421,8 @@ if $MIST; then
     mist_xdim_offset=$(( (mist_xdim - TITLE_TEXT_XDIM) / 2 ))
     if [[ $TITLE_GRAVITY = *st* ]]; then
         title_xoffset=${title_xoffset:-"+50"}
-        mist_xoffset="$(bc_math "${title_xoffset#*[-+]} - $mist_xdim_offset" int)"
+        mist_xoffset="$(bc_math "${title_xoffset#*[-+]} \
+          - $mist_xdim_offset" int)"
         [[ ${mist_xoffset:0:1} != [+-] ]] && mist_xoffset=+${mist_xoffset}
     else
         title_xoffset=${title_xoffset:-"+0"}
@@ -3412,7 +3451,8 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
     else
         TS=0
     fi
-    if (( (WIDEST_TITLE + SAFE_AREA + TS + ${SHOWCASE_SIZE/x*}) > ( ${VIDSIZE/x*} - SAFE_AREA) )); then
+    if (( (WIDEST_TITLE + SAFE_AREA + TS + \
+      ${SHOWCASE_SIZE/x*}) > ( ${VIDSIZE/x*} - SAFE_AREA) )); then
             SHOWCASE_SIZE=288x216
             [[ $TARGET = "svcd" ]] && SHOWCASE_SIZE=216x216
     fi
@@ -3436,8 +3476,8 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
             yecho
             echo "Running: mplayer -ss $MPLAYER_SEEK_VAL -vo $VOUT \
             -vf expand=-5:-5,rectangle=384:256,rectangle=382:254,rectangle=380:252,rectangle=378:250 \
-            -ao null -zoom -x 384 -y 256  -ss 0:0:05 -frames $FRAMES "$SHOWCASE_VIDEO"" |
-            format_output | tee -a "$LOG_FILE"
+            -ao null -zoom -x 384 -y 256  -ss 0:0:05 -frames $FRAMES \
+            "$SHOWCASE_VIDEO"" | format_output | tee -a "$LOG_FILE"
             yecho
             get_framed_pics "$SHOWCASE_VIDEO" >> "$LOG_FILE" 2>&1
 
@@ -3458,7 +3498,8 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
             FFMPEG_CMD=(ffmpeg -i "$SHOWCASE_VIDEO" -ss $FFMPEG_SEEK_VAL \
             -s $SHOWCASE_SIZE  -vframes 1 -vcodec png -an -f rawvideo -y \
             "$WORK_DIR/showcase_img.png")
-            echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs |tee -a "$LOG_FILE"
+            echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs \
+              |tee -a "$LOG_FILE"
             SED_VAR="frame="
             if ! "${FFMPEG_CMD[@]}" 2>&1 | strings >> "$LOG_FILE";then
                 runtime_error "Problem creating images from the video."
@@ -3472,11 +3513,13 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
         fi
     elif [[ -n "$SHOWCASE_IMG" ]]; then
         echo "Running convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" miff:- | \
-        convert -background none $ROTATE $WAVE -bordercolor Transparent -border 8x8 - miff:- | \
-        convert - -trim +repage -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"" |format_output
+        convert -background none $ROTATE $WAVE -bordercolor Transparent \
+        -border 8x8 - miff:- | convert - -trim +repage -resize \
+        $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"" |format_output
         convert "$SHOWCASE_IMG" -resize $SHOWCASE_SIZE!  $SC_FRAME miff:- |
-        convert - -background none -bordercolor Transparent -border 8x8 $ROTATE $WAVE miff:- |
-        convert - -trim +repage -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
+        convert - -background none -bordercolor Transparent -border 8x8 \
+        $ROTATE $WAVE miff:- | convert - -trim +repage \
+        -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
     fi
 fi
 # transcode makes it harder to switch between PNG and JPEG for output
@@ -3525,15 +3568,15 @@ fi
 if $MIST; then
     # overlay white.png onto background
     echo "Running:
-    composite -dissolve $MIST_OPACITY -gravity $TITLE_GRAVITY -geometry ${mist_xoffset}${mist_yoffset} \
-    "$WORK_DIR/white.png" "$WORK_DIR/pics/template.png" \
-    "$WORK_DIR/pics/template.png"
-    " | format_output
-    composite -dissolve $MIST_OPACITY -gravity $TITLE_GRAVITY -geometry ${mist_xoffset}${mist_yoffset} \
-    "$WORK_DIR/white.png" "$WORK_DIR/pics/template.png" \
-    "$WORK_DIR/pics/template.png"
+    composite -dissolve $MIST_OPACITY -gravity $TITLE_GRAVITY \
+    -geometry ${mist_xoffset}${mist_yoffset} "$WORK_DIR/white.png" \
+    "$WORK_DIR/pics/template.png" "$WORK_DIR/pics/template.png"" |format_output
+    composite -dissolve $MIST_OPACITY -gravity $TITLE_GRAVITY \
+      -geometry ${mist_xoffset}${mist_yoffset} \
+      "$WORK_DIR/white.png" "$WORK_DIR/pics/template.png" \
+      "$WORK_DIR/pics/template.png"
 fi
-if $SHOWCASE; then
+if $SHOWCASE && $DO_MENU; then
     for ((i=0; i<=NUM_FILES; i++)); do
         sc_thumb_title_cmd=( "${sc_thumb_title_cmd[@]}" "${THUMBTITLES_ARRAY[i]}"  \
         "$WORK_DIR/thumb_title${i}.png")
@@ -3567,7 +3610,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i/  -maxdepth 1 -name 000\*.$IMG_FMT) )
 done
-if ! $TEXTMENU; then
+if ! $TEXTMENU && $DO_MENU; then
     for ((i=0; i<${#PICS[@]}; i++)); do
         [[ -n ${ROTATE_ARRAY[@]} ]] && THUMB_ROTATE="-background none -rotate ${ROTATE_ARRAY[i]}"
         if $THUMBS_3D && [ "$THUMB_SHAPE" != "normal" ]; then
@@ -3846,7 +3889,7 @@ EOF
         mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
     done
 fi
-if $SHOWCASE; then # silly, but someone might try it
+if $SHOWCASE && $DO_MENU; then # silly, but someone might try it
     if $SC_THUMB; then
         # find out where to put the showcase image/video in the X axis
         sc_size=$(get_image_dim "$WORK_DIR/showcase_img.png")
@@ -3955,8 +3998,7 @@ if $SHOWCASE; then # silly, but someone might try it
         fi
         unset sc_cmd IM_CMD05 IM_CMD04 IM_CMD03 IM_CMD4
     fi
-else # not showcase
-
+elif ! $SHOWCASE && $DO_MENU; then # not showcase
     if $TRANSPARENT; then
         yecho "Running:
         montage ${PICS[@]} -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
@@ -4091,22 +4133,26 @@ fi
 
 # symlink IN_FILES in $WORK_DIR to solve some quoting issues for dvdauthor
 if [[ $MENU_NUM -eq 1 ]]; then
+    yecho "Symlinking files to $WORK_DIR"
     for i in ${!IN_FILES[@]}; do
-        (cd "$REAL_WORK_DIR" &&  ln -sv "${IN_FILES[i]}" "$BASEDIR/${TSET_NUM}-$((i+1)).mpg")
+        (cd "$REAL_WORK_DIR" &&  ln -s "${IN_FILES[i]}" "$BASEDIR/${TSET_NUM}-$((i+1)).mpg")
     done
 fi
 # Store info about input files in an array
-for ((i=0; i<${#IN_FILES[@]}; i++)); do
-    if [[ $MENU_NUM -eq 1 ]]; then
-        echo
-        echo "Getting stats on "${IN_FILES[i]}""
-        idvid_stats[i]="$(idvid -terse "${IN_FILES[i]}" 2>/dev/null)"
-    fi
-    if [ -s  "${IN_FILES[i]}.nav_log" ]; then
-        length[i]="$(( $(awk '{ field = $2 }; END{ print field }' \
-        "${IN_FILES[i]}.nav_log") + 1))"
-    fi
-done
+if $DO_STATS; then
+    for ((i=0; i<${#IN_FILES[@]}; i++)); do
+        if [[ $MENU_NUM -eq 1 ]]; then
+            echo
+            echo "Getting stats on "${IN_FILES[i]}""
+            idvid_stats[i]="$(idvid -terse "${IN_FILES[i]}" 2>/dev/null)"
+        fi
+        if [ -s  "${IN_FILES[i]}.nav_log" ]; then
+            length[i]="$(( $(awk '{ field = $2 }; END{ print field }' \
+            "${IN_FILES[i]}.nav_log") + 1))"
+        fi
+    done
+fi
+
 if $GROUPING &&  [[ $MENU_NUM -eq 1 ]]; then
     echo
     echo ". . . Getting stats on grouped files now . . ."
@@ -4182,7 +4228,10 @@ if $GROUPING; then
     done
 fi
 # put in the log file in case anyone is interested
-if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]]; then get_stats files; echo; fi
+if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]] && $DO_STATS; then
+    get_stats files
+    echo
+ fi
 if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]] && $GROUPING; then
     get_stats group
     echo; echo $SEPARATOR
@@ -4448,7 +4497,7 @@ EOF
 fi
 
 # debug chapters
-if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]] && ! $GROUPING; then
+if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]] && ! $GROUPING && $DO_STATS; then
     echo
     for ((i=0; i<=NUM_FILES; i++)); do
         echo -e "Chapters for "${IN_FILES[i]}" are: \n"${CHAPT_ARRAY[i]}"\n"
@@ -4957,7 +5006,7 @@ if $SUB_MENU; then
         fi
         # clean out submenu dirs of images
         echo "Cleaning up leftover pics in $REAL_WORK_DIR/animenu"
-        rm -fv $WORK_DIR/submenu/*
+        rm -f $WORK_DIR/submenu/*
         find $WORK_DIR/animenu/ -maxdepth 1 -type f -exec rm -f {} \;
         if $ANI_SUB_MENU; then
             find $WORK_DIR/animenu/[0-9]/ -type f -exec rm -f {} \;
@@ -5756,15 +5805,17 @@ elif [ "$TARGET" = "svcd" ]; then
     $VMGM_MENU && svcd_menu=(-menu "$WORK_DIR/intro.mpg")
     MKXML_CMD=(makexml -svcd $SLIDES $SVCD_PAUSE "${svcd_menu[@]}" \
                     "${IN_FILES[@]}" -out "$OUT_FILE")
-    echo "${MKXML_CMD[@]}" | fold -bs | tee -a "$LOG_FILE"
-    "${MKXML_CMD[@]}" 2>> "$LOG_FILE" | tee -a "$LOG_FILE"
-    makevcd "${OUT_FILE}.xml"
+    echo "Running ${MKXML_CMD[@]}" | fold -bs | tee -a "$LOG_FILE"
+    "${MKXML_CMD[@]}" |tee -a "$LOG_FILE"
+    MAKEVCD_CMD=(makevcd "${OUT_FILE}.xml"); yecho "Running ${MAKEVCD_CMD[@]}"
+    "${MAKEVCD_CMD[@]}" >> "$LOG_FILE" 2>&1
+    awk '/makevcd/,EOF' "$LOG_FILE" | awk '!/WARN:/'
 #    vcdxbuild -b "${OUT_FILE}.bin" -c "${OUT_FILE}.cue"  "${OUT_FILE}.xml"
 fi
 echo "Cleaning up unwanted files in $REAL_WORK_DIR"
 find "$WORK_DIR"/ -name '*.png' ! -name Highlight.png ! -name Select.png -exec rm -f {} \; > /dev/null 2>&1
 find "$WORK_DIR"/ -name '*.jpg' ! -name preview.jpg -exec rm -f {} \; > /dev/null 2>&1
-rm -frv "$WORK_DIR/animenu" "$WORK_DIR/pics" "$WORK_DIR/submenu"
+rm -fr "$WORK_DIR/animenu" "$WORK_DIR/pics" "$WORK_DIR/submenu"
 $VMGM_ONLY && $KEEP_FILES && mv -v "$REAL_WORK_DIR" "$BASEDIR"/VMGM
 #echo "Removing the link in /tmp"
 #rm -fv "$WORK_DIR"
