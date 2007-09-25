@@ -142,6 +142,7 @@ MULTILINE_TITLE=false
 SAFE_AREA=50 # undocumented: you can set this from CLI with -showcase-safe-area
 SAFE_OFFSET=36
 ASPECT_RATIO=4:3
+AR=1.333
 ASPECT_ARG=all
 WIDE_SCREEN=false
 WIDESCREEN="nopanscan"
@@ -604,20 +605,20 @@ check_compliance()
         if [[ $is_image = "yes" ]]; then
             # ffmpeg image2 can't handle 16 bit depth
             if $group_set && [[ $(identify -format "%z" "$IN_FILE") = 16 ]]; then
-                [[ ! -s "${IN_FILE%%.*}-8bit.png" ]] && \
+                [[ ! -s "${IN_FILE%%.*}.todisc_enc.png" ]] && \
                     convert "$IN_FILE" -depth 8  "${IN_FILE%%.*}-8bit.png"
-                IN_FILE="${IN_FILE%%.*}-8bit.png"
+                IN_FILE="${IN_FILE%%.*}.todisc_enc.png"
             fi
             $group_set && grp_use_image2mpeg2[i]="yes" || use_image2mpeg2[i]="yes"
             FILES_TO_ENCODE[i]="$IN_FILE"
-            ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE.enc.mpg")
+            ENC_IN_FILES=("${ENC_IN_FILES[@]}" "${IN_FILE}.todisc_enc.mpg")
         # test files with idvid script
         elif test_compliance "$IN_FILE" && [[ $TOVID_OPTS != *-force* ]] ; then
             ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE")
         # Video needs to be re-encoded; use a .enc filename in ENC_IN_FILES
         else
             FILES_TO_ENCODE[i]="$IN_FILE"
-            ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE.enc.mpg")
+            ENC_IN_FILES=("${ENC_IN_FILES[@]}" "${IN_FILE}.todisc_enc.mpg")
         fi
     done
     if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
@@ -650,50 +651,35 @@ check_compliance()
             yecho
             for i in "${!FILES_TO_ENCODE[@]}"; do
                 THIS_FILE="${FILES_TO_ENCODE[i]}"
-                if [[ -s "${THIS_FILE}.enc.mpg" ]] && \
-                  test_compliance "${THIS_FILE}.enc.mpg"; then
-                    yecho "${THIS_FILE}.enc.mpg exists and is compatible, \
-                    will not overwrite"
+                yecho "Converting $(readlink -f "${FILES_TO_ENCODE[i]}")"
+                ($SWITCHED && [[ $MENU_NUM -eq 2 ]]) || ! $SWITCHED
+                
+                IN=$(readlink -f "${FILES_TO_ENCODE[i]}")
+                if $group_set; then
+                    convert_image=${grp_use_image2mpeg2[i]}
                 else
-                    yecho "Converting $(readlink -f "${FILES_TO_ENCODE[i]}")"
-                    ($SWITCHED && [[ $MENU_NUM -eq 2 ]]) || ! $SWITCHED
-                    
-                    IN=$(readlink -f "${FILES_TO_ENCODE[i]}")
-                    if $group_set; then
-                        convert_image=${grp_use_image2mpeg2[i]}
-                    else
-                        convert_image=${use_image2mpeg2[i]}
-                    fi
-                        
-                    if [[ $convert_image = "yes" ]]; then
-                        #if ! $group_set && $USER_MENU_LEN; then
-                        #    slen=$(bc_math "${MENU_LEN[i]} * $FRAME_RATE" int)
-                        slen=4
-                        if [[ -s "${IN}.enc.mpg" ]] && \
-                          test_compliance "${IN}.enc.mpg"; then
-                            yecho "${IN}.enc.mpg exists and is compatible, \
-                              will not overwrite"
-                        else
-                            image2mpeg2 "$IN"
-                        fi
-                    else
-                        countdown 3
-                        tovid $NO_ASK -$TV_STANDARD -$TARGET -in "$IN" \
-                        -out "$IN.enc" $TOVID_OPTS
-                    fi
-                    wait
-                    # See if output file exists
-                    if ! test -f "$IN.enc.mpg"; then
-                        runtime_error "Could not encode file: $IN"
-                    fi
-                    yecho
+                    convert_image=${use_image2mpeg2[i]}
                 fi
+                    
+                if [[ $convert_image = "yes" ]]; then
+                    image2mpeg2 "$IN"
+                else
+                    countdown 3
+                    tovid $NO_ASK -$TV_STANDARD -$TARGET -in "$IN" \
+                    -out "$IN.enc" $TOVID_OPTS
+                fi
+                wait
+                # See if output file exists
+                if ! test -f "${IN}.todisc_enc.mpg"; then
+                    runtime_error "Could not encode file: $IN"
+                fi
+                yecho
             done
             
             # Replace IN_FILES with ENC_IN_FILES (with .enc extension)
             if $group_set; then
                 for title in "${FILES_TO_ENCODE[@]}"; do
-                    ln -sfv "$(readlink "${title}").enc.mpg" "$title"
+                    ln -sfv "$(readlink "${title}").todisc_enc.mpg" "$title"
                 done
             else
                  IN_FILES=("${ENC_IN_FILES[@]}")
@@ -733,14 +719,14 @@ tovid_reencode()
     -slice 0-$(bc <<< "$VIDEO_IN_SEEK + ${MENU_LEN[MENU_NUM-1]}" 2>/dev/null) \
     -${TV_STANDARD} -${TARGET} -in "$VIDEO_IN" -out "$VIDEO_IN.enc" $TOVID_OPTS
     # See if output file exists
-    if ! test -f "$VIDEO_IN.enc.mpg"; then
+    if ! test -f "$VIDEO_IN.todisc_enc.mpg"; then
         runtime_error "Could not encode file: $VIDEO_IN"
     else
-        [[ $video_type = showcase ]] && SHOWCASE_VIDEO="$VIDEO_IN.enc.mpg"
-        [[ $video_type = background ]] && BG_VIDEO="$VIDEO_IN.enc.mpg"
+        [[ $video_type = showcase ]] && SHOWCASE_VIDEO="$VIDEO_IN.todisc_enc.mpg"
+        [[ $video_type = background ]] && BG_VIDEO="$VIDEO_IN.todisc_enc.mpg"
     fi
-    SUPPORT_VIDEOS=( "${SUPPORT_VIDEOS[@]}" "$VIDEO_IN.enc.mpg" )
-    yecho "Encoded file is "$VIDEO_IN.enc.mpg", this will be deleted when todisc is finished unless you used -keepfiles"
+    SUPPORT_VIDEOS=( "${SUPPORT_VIDEOS[@]}" "$VIDEO_IN.todisc_enc.mpg" )
+    yecho "Encoded file is "$VIDEO_IN.todisc_enc.mpg", this will be deleted when todisc is finished unless you used -keepfiles"
     yecho
 }
 
@@ -837,12 +823,11 @@ get_button_geo()
 
 image2mpeg2()
 {
-    $USER_MENU_LEN && alen=$(bc_math "$slen / $FRAME_RATE" int) || alen=0.14
     IN_IMAGE="$1"
     IMAGE_ENC_CMD=(ffmpeg -f image2 -loop_input -vframes $slen -i "$IN_IMAGE" \
     -s $VIDSIZE -f s16le -i /dev/zero -t $alen -ar $SAMPLERATE -ac 2 \
     -ab 224k -target ${TV_STANDARD}-${TARGET} -aspect $ASPECT_RATIO  \
-    -y "${IN_IMAGE}.enc.mpg")
+    -y "${IN_IMAGE}.todisc_enc.mpg")
     "${IMAGE_ENC_CMD[@]}" >> "$LOG_FILE" 2>&1
 }
 
@@ -1339,38 +1324,41 @@ verify_infiles()
         in_files=( "${grouping[@]}" )
     fi
     for ((i=0; i<${#in_files[@]}; i++)); do
+        CROP_CMD=()
         IN_FILE="${in_files[i]}"
         if test -e "$IN_FILE"; then
             check_filetype "$IN_FILE"
             if [[ $TYPE = "image" ]]; then
+                IMG_STATS=( $(identify -format "%z %w %h" "$IN_FILE") )
+                DEPTH=${IMG_STATS[0]}
+                IMG_WIDTH=${IMG_STATS[1]}
+                IMG_HEIGHT=${IMG_STATS[2]}
+                IMG_AR=$(bc_math "$IMG_WIDTH / $IMG_HEIGHT")
+                if [[ $ASPECT_RATIO = "4:3" ]]; then
+                    NEWSIZE=640x480
+                else
+                    NEWSIZE=640x360
+                fi
+                if [[ ${IMG_AR:0:4} != ${AR:0:4} ]]; then
+                    CROP_CMD=(-resize  ${NEWSIZE}\> -size $NEWSIZE \
+                    xc:black +swap -gravity center -composite)
+                fi
                 if [[ $verify_type = "infiles" ]]; then
-                    if [[ $fstats = *JPEG* || $fstats = *PNG* ]]; then
-                        # ffmpeg image2 can't handle 16 bit depth - convert it
-                        # test IN_FILES for preview - group files tested later
-                        DEPTH=$(identify -format "%z" "$IN_FILE")
-                        if ((DEPTH == 16)); then
-                            echo "$IN_FILE is 16 bit, converting"
-                            [[ ! -s "${IN_FILE%%.*}-8bit.png" ]] && \
-                            convert "$IN_FILE" -depth 8 \
-                            "${IN_FILE%%.*}-8bit.png"
-                            IN_FILES[i]="${IN_FILE%%.*}-8bit.png"
-                        fi
-                    else # image but not png or jpeg
-                            # only PNG or JPEG supported - convert it
-                            [[ ! -s "${IN_FILE%%.*}-8bit.png" ]] && \
-                            convert "$IN_FILE" -depth 8 "${IN_FILE%%.*}-8bit.png"
-                            IN_FILES[i]="${IN_FILE%%.*}-8bit.png"
+                    # ffmpeg image2 can't handle 16 bit depth - convert it
+                    # also convert if not PNG or JPEG or wrong aspect ratio
+                    # test IN_FILES for preview - group files tested later
+                    if [[ $DEPTH = 16 || $fstats != *JPEG* || $fstats = *PNG* || -n ${CROP_CMD[@]} ]]; then
+                        echo "Converting $IN_FILE to proper image format"
+                        IMG_CMD=(convert "$IN_FILE" -depth 8 \
+                        "${CROP_CMD[@]}" "${IN_FILE%%.*}.todisc_enc.png")
+                        yecho "${IMG_CMD[@]}"
+                        "${IMG_CMD[@]}" >> "$LOG_FILE" 2>&1
+                        IN_FILES[i]="${IN_FILE%%.*}.todisc_enc.png"
                     fi
                     if [[ "$SC_FRAMESTYLE" = "glass" ]]; then
                         # make mpeg with ffmpeg now #FIXME
-                        #if $USER_MENU_LEN; then
-                        #    slen=$(bc_math "${MENU_LEN[i]} * $FRAME_RATE" int)
-                        slen=4
-                        if [[ ! -s "${IN_FILES[i]}.enc.mpg" ]] && ! idvid \
-                        -isformat $TARGET "${IN_FILES[i]}.enc.mpg" > /dev/null; then
-                            image2mpeg2 "${IN_FILES[i]}" $slen
-                            IN_FILES[i]="${IN_FILES[i]}.enc.mpg"
-                        fi
+                        image2mpeg2 "${IN_FILES[i]}" $slen
+                        IN_FILES[i]="${IN_FILES[i]}.todisc_enc.mpg"
                     else
                         file_is_image[i]="yes" # needs to be encoded to mpeg
                     fi
@@ -1505,6 +1493,7 @@ while test $# -gt 0; do
             ASPECT_ARG=$1
             if [[ ${#ASPECT_ARG[@]} -gt 0 ]]; then
             ASPECT_RATIO=$ASPECT_ARG
+            [[ $ASPECT_RATIO = "16:9" ]] && AR=1.777
             V_ASPECT="aspect=\"$ASPECT_RATIO\""
             fi
             ;;
@@ -1568,7 +1557,7 @@ while test $# -gt 0; do
                 PAUSE_TIME="inf"
             fi
             ;;
-        "-video-pause" )
+        "-video-pause" | "-slide-pause" )
             shift
             svcd_pause=$1
             get_listargs "$@"
@@ -1578,6 +1567,14 @@ while test $# -gt 0; do
             shift
             get_listargs "$@"
             GRP_VPAUSE=( "${ARGS_ARRAY[@]}" )
+            ;;
+        "-slideshow-audio" )
+            shift
+            [[ -n $1 ]] && SLIDESHOW_AUDIO=$(readlink -f "$1")
+            ;;
+        "-slide-length" )
+            shift
+            [[ -n $1 ]] && SLIDE_LEN=$1
             ;;
         "-chain-videos" )
             shift
@@ -2622,6 +2619,18 @@ if ! $VMGM_ONLY &&  [[ ${#FILES[@]} -ne ${#MENU_LEN[@]} &&  ${#MENU_LEN[@]} -ne 
 fi
 # var for dcdemux and the navigation log
 #TCDEMUX_MODE="-M 0"
+if [[ $TARGET = "svcd" ]]; then
+    if [[ -n $SLIDE_LEN ]]; then
+        slen=$(bc_math "$SLIDE_LEN * $FRAME_RATE" int)
+        alen=$slen
+    elif [[ -n $SLIDESHOW_LEN ]]; then
+        slen=4
+        alen=0.14
+    else
+        slen=4
+        alen=0.14
+    fi
+fi
 if ! $VMGM_ONLY; then
     echo
     echo "Verifying that input files are video or image files"
@@ -2635,7 +2644,7 @@ if ! $VMGM_ONLY; then
     echo
 fi
 # if all files are images and we are doing SVCD menu, don't do stats
-[[ ${#file_is_image[@]} -eq ${#IN_FILES[@]} ]] && [[ $TARGET = "svcd" ]] && \
+[[ ${#file_is_image[@]} -eq ${#IN_FILES[@]} && $TARGET = "svcd" ]] && \
  DO_STATS=false
 
 # for slides or short files, seeking/fading will not work: set them to 0
@@ -2664,92 +2673,95 @@ fi
 # Font defaults
 ##############################################################################
 
-# Menu title font size
-test $TARGET = "dvd" && : ${MENU_FONTSIZE:="30"}
-test $TARGET = "svcd" && : ${MENU_FONTSIZE:="26"}
-# Thumbnail title font size
-if test -z "$THUMB_FONTSIZE"; then
-# if not -thumb-fontsize N passed, use default, based on the following:
-    if $SHOWCASE; then
-        if test "$NUM_FILES" -lt 2; then
-            THUMB_FONTSIZE=20
-        elif  test "$NUM_FILES" -eq 2; then
-            THUMB_FONTSIZE=18
-        elif  test "$NUM_FILES" -ge 3; then
-            THUMB_FONTSIZE=16
-        fi
-    else
-        THUMB_FONTSIZE=10
-    fi
-fi
-
-# See if "Helvetica" or "helvetica" are available as default fonts
-if convert -size 50x20 xc:none -font Helvetica -gravity Center \
--draw "text 0,0 'test'" "$WORK_DIR/font.png"; then
-    DEFAULT_FONT="Helvetica"
-elif convert -size 200x100 xc:none -font helvetica -gravity Center \
--draw "text 0,0 'test'" "$WORK_DIR/font.png"; then
-    DEFAULT_FONT="helvetica"
-fi
-# If user did not specify fonts, use default
-test -z "$MENU_FONT" && MENU_FONT=$DEFAULT_FONT
-test -z "$THUMB_FONT" && THUMB_FONT=$DEFAULT_FONT
-rm -f "$WORK_DIR/font.png"
-
-
-# Some user feedback
-yecho
-if $VMGM_ONLY; then
-    yecho "Disc title: \"$MENU_TITLE\""
-else
-    yecho "Menu title: \"$MENU_TITLE\""
-fi
-yecho "  (adjust with -menu-title)"
-yecho "Including the following files:"
-# do not echo all of long or multiline titles AND files
-for ((i=0; i<${#TITLES[@]}; i++)); do
-    if [[ ${#TITLES[i]} -gt 35 || $(echo -e "${TITLES[i]}" |wc -l) -gt 1 ]]; then
-        TITLE[i]=$(sed 's/^  *//'<<<${TITLES[i]//\\n/ }) # remove spaces and \n
-        TITLE[i]=${TITLE[i]:0:35} # cut down to 35 characters maximum
-        if [ ${#TITLES[i]} -gt 35 ]; then
-            echo "  \"${TITLE[i]}...\" (${IN_FILES[i]})" # "..." if truncated
+if $DO_MENU; then
+    # Menu title font size
+    test $TARGET = "dvd" && : ${MENU_FONTSIZE:="30"}
+    test $TARGET = "svcd" && : ${MENU_FONTSIZE:="26"}
+    # Thumbnail title font size
+    if test -z "$THUMB_FONTSIZE"; then
+    # if not -thumb-fontsize N passed, use default, based on the following:
+        if $SHOWCASE; then
+            if test "$NUM_FILES" -lt 2; then
+                THUMB_FONTSIZE=20
+            elif  test "$NUM_FILES" -eq 2; then
+                THUMB_FONTSIZE=18
+            elif  test "$NUM_FILES" -ge 3; then
+                THUMB_FONTSIZE=16
+            fi
         else
-            echo "  \"${TITLE[i]}\" (${IN_FILES[i]})"
-        fi
-    else # echo titles "as is"
-        echo "  \"${TITLES[i]}\" (${IN_FILES[i]})"
-    fi
-    if [[ $(echo -e "${TITLES[i]}" |wc -l) -gt 1 ]]; then
-        # if there is a multiline title we need to align to right of thumbs
-        SC_TITLE_ALIGN=east
-        ALIGN_OVERRIDE=:
-    fi
-done
-yecho "Current font settings: "
-yecho "  -menu-font $MENU_FONT"
-yecho "  -menu-fontsize $MENU_FONTSIZE"
-yecho "  -thumb-font $THUMB_FONT"
-yecho "  -thumb-fontsize $THUMB_FONTSIZE"
-if ! $VMGM_ONLY && $DO_MENU; then
-    yecho "Current menu settings: "
-    if  ! $STATIC; then
-        yecho "  -menu-length ${MENU_LEN[MENU_NUM-1]} seconds"
-    fi
-    if $ANI_SUB_MENU; then
-        yecho "  -submenu-length $ANI_SUBMENU_LEN seconds"
-        if $SUBMENU_AUDIO; then
-            yecho "  -submenu-audio-fade $SM_FADE second(s)"
+            THUMB_FONTSIZE=10
         fi
     fi
-        for ((i=0; i<=NUM_FILES; i++)); do
-            echo -n "Video $((i+1)):"
-            echo -n "  -seek ${SEEK_VAL[i]} second(s)"
-            echo "  -chapters ${CHAPTERS[i]}"
-        done
-    if [ ! $STATIC ]; then
-        yecho "  -menu-audio-fade $FADE second(s)"
+
+    # See if "Helvetica" or "helvetica" are available as default fonts
+    if convert -size 50x20 xc:none -font Helvetica -gravity Center \
+    -draw "text 0,0 'test'" "$WORK_DIR/font.png"; then
+        DEFAULT_FONT="Helvetica"
+    elif convert -size 200x100 xc:none -font helvetica -gravity Center \
+    -draw "text 0,0 'test'" "$WORK_DIR/font.png"; then
+        DEFAULT_FONT="helvetica"
     fi
+    # If user did not specify fonts, use default
+    test -z "$MENU_FONT" && MENU_FONT=$DEFAULT_FONT
+    test -z "$THUMB_FONT" && THUMB_FONT=$DEFAULT_FONT
+    rm -f "$WORK_DIR/font.png"
+
+
+    # Some user feedback
     yecho
+    if $VMGM_ONLY; then
+        yecho "Disc title: \"$MENU_TITLE\""
+    else
+        yecho "Menu title: \"$MENU_TITLE\""
+    fi
+    yecho "  (adjust with -menu-title)"
+    yecho "Including the following files:"
+    # do not echo all of long or multiline titles AND files
+    for ((i=0; i<${#TITLES[@]}; i++)); do
+        if [[ ${#TITLES[i]} -gt 35 || \
+          $(echo -e "${TITLES[i]}" |wc -l) -gt 1 ]]; then
+            TITLE[i]=$(sed 's/^  *//'<<<${TITLES[i]//\\n/ }) # no spaces or \n
+            TITLE[i]=${TITLE[i]:0:35} # cut down to 35 characters maximum
+            if [ ${#TITLES[i]} -gt 35 ]; then
+                echo "  \"${TITLE[i]}...\" (${IN_FILES[i]})" # "..." if cut off
+            else
+                echo "  \"${TITLE[i]}\" (${IN_FILES[i]})"
+            fi
+        else # echo titles "as is"
+            echo "  \"${TITLES[i]}\" (${IN_FILES[i]})"
+        fi
+        if [[ $(echo -e "${TITLES[i]}" |wc -l) -gt 1 ]]; then
+            # if there is a multiline title we need to align to right of thumbs
+            SC_TITLE_ALIGN=east
+            ALIGN_OVERRIDE=:
+        fi
+    done
+    yecho "Current font settings: "
+    yecho "  -menu-font $MENU_FONT"
+    yecho "  -menu-fontsize $MENU_FONTSIZE"
+    yecho "  -thumb-font $THUMB_FONT"
+    yecho "  -thumb-fontsize $THUMB_FONTSIZE"
+    if ! $VMGM_ONLY; then
+        yecho "Current menu settings: "
+        if  ! $STATIC; then
+            yecho "  -menu-length ${MENU_LEN[MENU_NUM-1]} seconds"
+        fi
+        if $ANI_SUB_MENU; then
+            yecho "  -submenu-length $ANI_SUBMENU_LEN seconds"
+            if $SUBMENU_AUDIO; then
+                yecho "  -submenu-audio-fade $SM_FADE second(s)"
+            fi
+        fi
+            for ((i=0; i<=NUM_FILES; i++)); do
+                echo -n "Video $((i+1)):"
+                echo -n "  -seek ${SEEK_VAL[i]} second(s)"
+                echo "  -chapters ${CHAPTERS[i]}"
+            done
+        if [ ! $STATIC ]; then
+            yecho "  -menu-audio-fade $FADE second(s)"
+        fi
+        yecho
+    fi
 fi
 
 
@@ -4111,13 +4123,43 @@ if [[ -n "$BG_AUDIO" ]]; then
 fi
 # if static menu and no background audio, ignore MENU_AUDIOLENGTH
 $STATIC && [[ -z "$BG_AUDIO" ]] && ! $SWITCHED && unset MENU_AUDIOLENGTH
+# if we are doing slides and joining them, the slide length will be
+# SLIDE_LEN / NUM_FILES+1
+if [[ -n $SLIDE_AUDIO && $TARGET = "svcd" ]]; then
+    slen=$(bc_math "$SLIDE_LEN / ($NUM_FILES + 1)")
+    slen=$(bc_math "$slen * $FRAME_RATE")
+else
+    slen=4
+fi
 # Check input files for compliance; offer to tovid-encode non-compliant files
-# horrible hack to make sure correct reencoded file gets symlinked
-# as this runs check_compliance twice if switched menus
+# run this twice for switched menus for 1st menu made and last
+# to make sure files get symlinked properly (Hack)
 if [[ $MENU_NUM = [1-2] || -n ${file_is_image[@]}  ]]; then
     check_compliance
     $GROUPING && check_compliance group
 fi
+# -playall for svcd joins the slides and can add audio (-slideshow-audio)
+if [[ $TARGET = "svcd" ]] && $PLAYALL; then
+    cat "${IN_FILES[@]}" > "$WORK_DIR/showsho.mpg"
+    if [[ -n $SLIDESHOW_AUDIO ]]; then
+        ssaudio_stats=$(ffmpeg -i "$SLIDESHOW_AUDIO" 2>&1)
+        ssaudio_track=$(grep Audio <<< "$ssaudio_stats" |awk -F[#:[] '{print $2}')
+        AUDIOCMD=(-i "$SLIDESHOW_AUDIO" -target ${TV_STD}-${TARGET} \
+          -map 0:0 -map $ssaudio_track)
+    else
+        AUDIOCMD=(-f s16le -i /dev/zero -target ${TV_STD}-${TARGET})
+    fi
+    FF_CMD=(ffmpeg -shortest -i "$WORK_DIR/slidesho.mpg" "${AUDIOCMD[@]}" \
+      -y "$WORK_DIR/slideshow.mpg")
+    yecho "Running ${FF_CMD[@]}"
+    "${FF_CMD[@]}" >> "$LOG_FILE" 2>&1
+    if [[ -s "$WORK_DIR/slideshow.mpg" ]]; then
+        IN_FILES=("$WORK_DIR/slideshow.mpg")
+    else
+        runtime_error "The joined slideshow file was not created"
+    fi
+fi
+
 # check bgvideo and showcase VIDEO for compliance ( if present ) #FIXME
 if [[ -n $BG_VIDEO ]]; then
     if ! idvid -isformat dvd "$BG_VIDEO" >/dev/null; then
@@ -4231,7 +4273,7 @@ fi
 if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]] && $DO_STATS; then
     get_stats files
     echo
- fi
+fi
 if ! $VMGM_ONLY &&  [[ $MENU_NUM -eq 1 ]] && $GROUPING; then
     get_stats group
     echo; echo $SEPARATOR
