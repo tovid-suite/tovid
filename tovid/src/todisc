@@ -523,6 +523,10 @@ check_filetype()
     fstats=$(file -L "$1")
     if [[ $fstats =~ "image data" || $fstats =~ "bitmap data" ]]; then
         TYPE=image
+        CONVRT=:
+        if [[ $fstats = *JPEG* || $fstats = *PNG || $fstas = *PPM* ]]; then
+            CONVRT=false
+        fi
     elif mencoder -endpos 2 -oac pcm -ovc copy  "$1" -o /dev/null  >/dev/null 2>&1; then
         TYPE=video
     else TYPE=unknown
@@ -605,20 +609,19 @@ check_compliance()
         if [[ $is_image = "yes" ]]; then
             # ffmpeg image2 can't handle 16 bit depth
             if $group_set && [[ $(identify -format "%z" "$IN_FILE") = 16 ]]; then
-                [[ ! -s "${IN_FILE%%.*}.todisc_enc.png" ]] && \
-                    convert "$IN_FILE" -depth 8  "${IN_FILE%%.*}-8bit.png"
-                IN_FILE="${IN_FILE%%.*}.todisc_enc.png"
+                convert "$IN_FILE" -depth 8  "${IN_FILE/.todisc_enc.*}.todisc_enc.png"
+                IN_FILE="${IN_FILE/.todisc_enc.*}.todisc_enc.png"
             fi
             $group_set && grp_use_image2mpeg2[i]="yes" || use_image2mpeg2[i]="yes"
             FILES_TO_ENCODE[i]="$IN_FILE"
-            ENC_IN_FILES=("${ENC_IN_FILES[@]}" "${IN_FILE}.todisc_enc.mpg")
+            ENC_IN_FILES=("${ENC_IN_FILES[@]}" "${IN_FILE/.todisc_enc.*}.todisc_enc.mpg")
         # test files with idvid script
         elif test_compliance "$IN_FILE" && [[ $TOVID_OPTS != *-force* ]] ; then
             ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE")
         # Video needs to be re-encoded; use a .enc filename in ENC_IN_FILES
         else
             FILES_TO_ENCODE[i]="$IN_FILE"
-            ENC_IN_FILES=("${ENC_IN_FILES[@]}" "${IN_FILE}.todisc_enc.mpg")
+            ENC_IN_FILES=("${ENC_IN_FILES[@]}" "${IN_FILE/.todisc_enc.*}.todisc_enc.mpg")
         fi
     done
     if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
@@ -666,11 +669,11 @@ check_compliance()
                 else
                     countdown 3
                     tovid $NO_ASK -$TV_STANDARD -$TARGET -in "$IN" \
-                    -out "$IN.enc" $TOVID_OPTS
+                    -out "${IN}.todisc_enc" $TOVID_OPTS
                 fi
                 wait
                 # See if output file exists
-                if ! test -f "${IN}.todisc_enc.mpg"; then
+                if ! test -f "${IN/.todisc_enc.*}.todisc_enc.mpg"; then
                     runtime_error "Could not encode file: $IN"
                 fi
                 yecho
@@ -679,7 +682,7 @@ check_compliance()
             # Replace IN_FILES with ENC_IN_FILES (with .enc extension)
             if $group_set; then
                 for title in "${FILES_TO_ENCODE[@]}"; do
-                    ln -sfv "$(readlink "${title}").todisc_enc.mpg" "$title"
+                    ln -sfv "$(readlink "${title/.todisc_enc.*}").todisc_enc.mpg" "$title"
                 done
             else
                  IN_FILES=("${ENC_IN_FILES[@]}")
@@ -717,16 +720,15 @@ tovid_reencode()
     countdown
     tovid $NO_ASK -in "$VIDEO_IN" \
     -slice 0-$(bc <<< "$VIDEO_IN_SEEK + ${MENU_LEN[MENU_NUM-1]}" 2>/dev/null) \
-    -${TV_STANDARD} -${TARGET} -in "$VIDEO_IN" -out "$VIDEO_IN.enc" $TOVID_OPTS
+    -${TV_STANDARD} -${TARGET} -in "$VIDEO_IN" -out "${VIDEO_IN}.todisc_enc" $TOVID_OPTS
     # See if output file exists
-    if ! test -f "$VIDEO_IN.todisc_enc.mpg"; then
+    if ! test -f "${VIDEO_IN}.todisc_enc.mpg"; then
         runtime_error "Could not encode file: $VIDEO_IN"
     else
-        [[ $video_type = showcase ]] && SHOWCASE_VIDEO="$VIDEO_IN.todisc_enc.mpg"
-        [[ $video_type = background ]] && BG_VIDEO="$VIDEO_IN.todisc_enc.mpg"
+        [[ $video_type = showcase ]] && SHOWCASE_VIDEO="${VIDEO_IN}.todisc_enc.mpg"
+        [[ $video_type = background ]] && BG_VIDEO="${VIDEO_IN}.todisc_enc.mpg"
     fi
-    SUPPORT_VIDEOS=( "${SUPPORT_VIDEOS[@]}" "$VIDEO_IN.todisc_enc.mpg" )
-    yecho "Encoded file is "$VIDEO_IN.todisc_enc.mpg", this will be deleted when todisc is finished unless you used -keepfiles"
+    SUPPORT_VIDEOS=( "${SUPPORT_VIDEOS[@]}" "${VIDEO_IN}.todisc_enc.mpg" )
     yecho
 }
 
@@ -827,7 +829,7 @@ image2mpeg2()
     IMAGE_ENC_CMD=(ffmpeg -f image2 -loop_input -vframes $slen -i "$IN_IMAGE" \
     -s $VIDSIZE -f s16le -i /dev/zero -t $alen -ar $SAMPLERATE -ac 2 \
     -ab 224k -target ${TV_STANDARD}-${TARGET} -aspect $ASPECT_RATIO  \
-    -y "${IN_IMAGE}.todisc_enc.mpg")
+    -y "${IN_IMAGE/.todisc_enc.*}.todisc_enc.mpg")
     "${IMAGE_ENC_CMD[@]}" >> "$LOG_FILE" 2>&1
 }
 
@@ -1347,18 +1349,18 @@ verify_infiles()
                     # ffmpeg image2 can't handle 16 bit depth - convert it
                     # also convert if not PNG or JPEG or wrong aspect ratio
                     # test IN_FILES for preview - group files tested later
-                    if [[ $DEPTH = 16 || $fstats != *JPEG* || $fstats = *PNG* || -n ${CROP_CMD[@]} ]]; then
-                        echo "Converting $IN_FILE to proper image format"
+                    if [[ $DEPTH = 16 || -n ${CROP_CMD[@]} ]] || $CONVRT ; then
+                        yecho "Converting $IN_FILE to proper image format"
                         IMG_CMD=(convert "$IN_FILE" -depth 8 \
-                        "${CROP_CMD[@]}" "${IN_FILE%%.*}.todisc_enc.png")
+                        "${CROP_CMD[@]}" "${IN_FILE/.todisc_enc.*}.todisc_enc.png")
                         yecho "${IMG_CMD[@]}"
                         "${IMG_CMD[@]}" >> "$LOG_FILE" 2>&1
-                        IN_FILES[i]="${IN_FILE%%.*}.todisc_enc.png"
+                        IN_FILES[i]="${IN_FILE/.todisc_enc.*}.todisc_enc.png"
                     fi
                     if [[ "$SC_FRAMESTYLE" = "glass" ]]; then
                         # make mpeg with ffmpeg now #FIXME
                         image2mpeg2 "${IN_FILES[i]}" $slen
-                        IN_FILES[i]="${IN_FILES[i]}.todisc_enc.mpg"
+                        IN_FILES[i]=${IN_FILES[i]/.todisc_enc.*}.todisc_enc.mpg
                     else
                         file_is_image[i]="yes" # needs to be encoded to mpeg
                     fi
@@ -1366,6 +1368,7 @@ verify_infiles()
                     grp_file_is_image[i]="yes"
                 fi
                 echo "$IN_FILE ok"
+                echo
             elif mencoder -quiet -oac pcm -ovc copy \
             -frames 0 -o /dev/null "$IN_FILE" &>/dev/null; then
                 echo "$IN_FILE ok"
@@ -2630,6 +2633,9 @@ if [[ $TARGET = "svcd" ]]; then
         slen=4
         alen=0.14
     fi
+else
+    slen=4
+    alen=0.14
 fi
 if ! $VMGM_ONLY; then
     echo
@@ -5862,6 +5868,21 @@ $VMGM_ONLY && $KEEP_FILES && mv -v "$REAL_WORK_DIR" "$BASEDIR"/VMGM
 #echo "Removing the link in /tmp"
 #rm -fv "$WORK_DIR"
 if ! $VMGM_ONLY && ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
+    # remove temporary files from slideshow if they exist ( *.todisc_enc.* )
+    linked_files=($WORK_DIR/*.mpg)
+    for i in ${!linked_files[@]}; do
+        f=$(readlink -f "${linked_files[i]}")
+        if [[ $f = *todisc_enc* && -e $f ]]; then
+            [[ -e ${f%.*}.png ]] && rm -fv "${f%.*}.png"
+            # only remove if smaller than 5M
+            fsize=$(du -s "$f" | cut -f 1)
+            if [[ $(bc_math "$fsize < 5000") -eq 1 ]]; then
+                rm -fv "$f"
+                [[ -e ${f}.nav_log ]] && rm -fv "${f}.nav_log"
+            fi
+                
+        fi
+    done
     thanks_goodbye
     $BURN && burn_disc
 fi
