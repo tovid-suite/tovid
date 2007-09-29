@@ -49,12 +49,9 @@ Where OPTIONS may be any of the following:
     -terse      Suitable for parsing
     -verbose    Also use ffmpeg and tcprobe
     -fast       Skip lengthy playing time estimation
-    -isformat [vcd|svcd|dvd]
+    -isformat [ntsc-vcd|pal-vcd|ntsc-svcd|pal-svcd|ntsc-dvd|pal-dvd]
         Tell whether the first file is compliant with the given
         format; prints "true" or "false" (returns shell 0 or 1)
-    -istvsys [pal|ntsc]
-        Tell whether the file is compliant with the given TV system.
-        Ignored if -isformat is present.
 
 See the idvid manual page ('man idvid') for additional documentation.
 
@@ -673,30 +670,41 @@ function idvid_main ()
         MATCH=false
         if test -n "$MATCH_FORMAT"; then
             case "$MATCH_FORMAT" in
-                "vcd" )
+                "ntsc-vcd" )
                     if test -n "$A_VCD1" || test -n "$A_VCD2"; then
-                        if test -n "$V_VCD";
-                        then MATCH=:
+                        if test -n "$V_VCD" && test  "$V_TV" = "NTSC"; then
+                            MATCH=:
                         fi
                     fi
                     ;;
-                "svcd" )
-                    if test -n "$V_SVCD" && test -n "$A_SVCD";
-                    then MATCH=:
+                "pal-vcd" )
+                    if test -n "$A_VCD1" || test -n "$A_VCD2"; then
+                        if test -n "$V_VCD" && test "$V_TV" = "PAL"; then
+                            MATCH=:
+                        fi
                     fi
                     ;;
-                "dvd" )
-                    if test -n "$V_DVD" && test -n "$A_DVD";
-                    then MATCH=:
+                "ntsc-svcd" )
+                    if test -n "$V_SVCD" && test -n "$A_SVCD"; then
+                        test "$V_TV" = "NTSC" && MATCH=:
+                    fi
+                    ;;
+                "pal-svcd" )
+                    if test -n "$V_SVCD" && test -n "$A_SVCD"; then
+                        test "$V_TV" = "PAL" && MATCH=:
+                    fi
+                    ;;
+                "ntsc-dvd" )
+                    if test -n "$V_DVD" && test -n "$A_DVD"; then
+                        test "$V_TV" = "NTSC" && MATCH=:
+                    fi
+                    ;;
+                "pal-dvd" )
+                    if test -n "$V_DVD" && test -n "$A_DVD"; then
+                        test "$V_TV" = "PAL" && MATCH=:
                     fi
                     ;;
             esac
-        elif test -n "$MATCH_TVSYS"; then
-            if test "$MATCH_TVSYS" = "ntsc" && test "$V_TV" = "NTSC"; then
-                MATCH=:
-            elif test "$MATCH_TVSYS" = "pal" && test "$V_TV" = "PAL"; then
-                MATCH=:
-            fi
         fi
 
         rm -rf "$TMP_DIR"
@@ -799,12 +807,6 @@ while test $# -gt 0; do
         "-isformat" )
             shift
             MATCH_FORMAT="$1"
-            TERSE=:
-            FAST=:
-            ;;
-        "-istvsys" )
-            shift
-            MATCH_TVSYS="$1"
             TERSE=:
             FAST=:
             ;;
