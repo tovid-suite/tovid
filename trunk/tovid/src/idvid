@@ -251,7 +251,9 @@ function get_info ()
             A_BITRATES=("${A_BITRATES[@]}" "$(echo $CUR_CHAN | \
                 sed -r 's/.* ([0-9]+) kb\/s.*/\1/')")
             # make sure the above is a number, else set  A_BITRATE to 0
-            ! test_is_number ${A_BITRATES[i]} && A_BITRATES[i]=0
+            if test_is_number ${A_BITRATES[i]}; then
+                A_BITRATES[i]=0
+            fi
             A_CODECS=("${A_CODECS[@]}" "$(echo $CUR_CHAN | \
                 sed -r 's/.*Audio: ([^,]+),.*/\1/')")
                 if $USE_HEX_TRACKS; then
