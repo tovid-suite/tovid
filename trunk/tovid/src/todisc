@@ -1521,9 +1521,6 @@ while test $# -gt 0; do
         "-keep-files" | "-keepfiles" )
             KEEP_FILES=:
             ;;
-        "-keepall-files" | "-keepallfiles" )
-            KEEPALL_FILES=:
-            ;;
         "-dvd" )
             TARGET="dvd"
             ;;
@@ -4230,7 +4227,7 @@ if $DO_SLIDE_MIX; then
     fi
     MIX_ALEN=$MIX_SLIDE_LEN
     MIX_VFRAMES=$(bc_math "$MIX_SLIDE_LEN * $FRAME_RATE" int)
-    for file in ${MIX_IN[@]/.todisc_enc.mpg}; do
+    for file in "${MIX_IN[@]/.todisc_enc.mpg}"; do
     #    image2mpeg2 "$file" mix
         MIX_ENC_CMD=(ffmpeg -f image2 -loop_input -vframes $MIX_VFRAMES \
         -i "$file" -r $FRAME_RATE -s $VIDSIZE -f mpeg2video \
@@ -5979,7 +5976,7 @@ if ! $VMGM_ONLY && ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
     linked_files=($WORK_DIR/*.mpg)
     for i in ${!linked_files[@]}; do
         f=$(readlink -f "${linked_files[i]}")
-        if [[ $f = *todisc_enc* && -e $f ]] && ! $KEEPALL_FILES; then
+        if [[ $f = *todisc_enc* && -e $f ]] && ! $KEEP_FILES; then
             [[ $i = 0 ]] && echo "Removing temp files outside of working dir"
             [[ -e ${f%.*}.png ]] && rm -f "${f%.*}.png"
             # only remove if smaller than 5M
@@ -5990,7 +5987,7 @@ if ! $VMGM_ONLY && ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
             fi
                 
         fi
-        ! $KEEPALL_FILES && [[ -e ${f%.*}.m2v ]] && rm -fv "${f%.*}.m2v"
+        ! $KEEP_FILES && [[ -e ${f%.*}.m2v ]] && rm -fv "${f%.*}.m2v"
     done
     thanks_goodbye
     $BURN && burn_disc
