@@ -159,11 +159,11 @@ function get_info ()
         if $TERSE; then
             echo "CANT_IDENTIFY=:"
             rm -rf "$TMP_DIR"
-            exit 1
         else
             echo "Could not identify file: $INFILE"
             echo "See $SCRATCH_FILE for clues why."
         fi
+        exit 1
     fi
 
     # Defaults. Many of these values may be overridden by
