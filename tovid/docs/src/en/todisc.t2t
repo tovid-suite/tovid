@@ -250,6 +250,7 @@ See also **-titleset** and **-vmgm**
     -video-pause PAUSE -seek 0 -playall -no-vmgm -switched-menus -quick-nav -menu-audio-fade 0 
     If you wish to pass a list of pause times, use **-video-pause** LIST.
 
+
 == Thumbnail style ==
 
 : **-thumb-shape** [normal|oval|plectrum|egg]
