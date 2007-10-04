@@ -147,7 +147,7 @@ function get_info ()
             echo $SEPARATOR
             echo "Identifying video with tcprobe..."
             echo $SEPARATOR
-            tcprobe -i "$INFILE" 2>/dev/null | tee -a "$SCRATCH_FILE"
+            tcprobe -i "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
         else
             tcprobe -i "$INFILE" >> "$SCRATCH_FILE" 2>/dev/null
         fi
@@ -251,7 +251,7 @@ function get_info ()
             A_BITRATES=("${A_BITRATES[@]}" "$(echo $CUR_CHAN | \
                 sed -r 's/.* ([0-9]+) kb\/s.*/\1/')")
             # make sure the above is a number, else set  A_BITRATE to 0
-            if test_is_number ${A_BITRATES[i]}; then
+            if ! test_is_number ${A_BITRATES[i]}; then
                 A_BITRATES[i]=0
             fi
             A_CODECS=("${A_CODECS[@]}" "$(echo $CUR_CHAN | \
