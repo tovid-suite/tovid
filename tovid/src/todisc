@@ -683,10 +683,10 @@ check_compliance()
                      [[ -s "${IN/.todisc_enc.*}.todisc_enc.mpg" ]]; then
                         :
                     else
-                        spin "Processing $IN"
+                        spin "Processing" "$IN"
                         image2mpeg2 "$IN" stills
                     fi
-                    AUDIO_FADE=false # do not fade silence FIXME ???
+                    # AUDIO_FADE=false # do not fade silence FIXME ???
                 else
                     countdown 3
                     tovid $NO_ASK -$TV_STANDARD -$TARGET -in "$IN" \
@@ -1410,11 +1410,11 @@ verify_infiles()
                 else
                     grp_file_is_image[i]="yes"
                 fi
-                spin "$IN_FILE ok"
+                spin "$IN_FILE" "ok"
 #                echo
             elif mencoder -quiet -oac pcm -ovc copy \
             -frames 0 -o /dev/null "$IN_FILE" &>/dev/null; then
-                spin "$IN_FILE ok"
+                spin "$IN_FILE" "ok"
             else
                 usage_error "Sorry, $IN_FILE is not a supported file type"
             fi
@@ -2836,11 +2836,12 @@ for i in {41..98}; do DVD_GEO_ARRAY[i]="40x30"; done
 SVCD_GEO_ARRAY=(240x240 180x180 120x120 120x120 120x120 120x120 96x96 96x96 \
 96x96 80x80 80x80 80x80 64x64 64x64 64x64 64x64 64x64 64x64 \
 64x64 64x64 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 \
-48x48 48x48 42x42 42x42 42x42 42x42 42x42 42x42 42x42 42x42 \
-42x42 42x42 40x40 40x40 40x40 40x40 40x40 40x40 40x40 40x40 \
+48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 48x48 \
+48x48 48x48 40x40 40x40 40x40 40x40 40x40 40x40 40x40 40x40 \
 40x40 40x40 36x36 36x36 36x36 36x36 36x36 36x36 36x36 36x36 \
 36x36 36x36 30x30 30x30 30x30 30x30 30x30 30x30 30x30 30x30)
-for i in {67..98}; do SVCD_GEO_ARRAY[i]="30x30"; done
+#for i in {4..98}; do SVCD_GEO_ARRAY[i]="36x36"; done
+for i in {67..98}; do SVCD_GEO_ARRAY[i]="36x36"; done
 # 15 per row
 TILE_ARRAY=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 3x3 4x3 4x3 4x3 4x4 4x4 4x4 \
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5 \
@@ -4227,34 +4228,78 @@ if $DO_SLIDE_MIX; then
     fi
     MIX_ALEN=$MIX_SLIDE_LEN
     MIX_VFRAMES=$(bc_math "$MIX_SLIDE_LEN * $FRAME_RATE" int)
-    for file in "${MIX_IN[@]/.todisc_enc.mpg}"; do
+    for f in ${!MIX_IN[@]}; do
     #    image2mpeg2 "$file" mix
-        MIX_ENC_CMD=(ffmpeg -f image2 -loop_input -vframes $MIX_VFRAMES \
-        -i "$file" -r $FRAME_RATE -s $VIDSIZE -f mpeg2video \
-        -b 7000k  -maxrate 8000k -bufsize 224KiB \
-        -aspect $ASPECT_RATIO -y "${file/.todisc_enc.*}.todisc_enc.m2v")
+        MIX_ENC_CMD=(ffmpeg -r $FRAME_RATE -f image2 -loop_input -vframes $MIX_VFRAMES \
+        -i "${MIX_IN[f]/.todisc_enc.mpg}" -r $FRAME_RATE -s $VIDSIZE -f mpeg2video \
+        -b 10000k -aspect $ASPECT_RATIO -y "${MIX_IN[f]/.todisc_enc.*}.todisc_enc.m2v")
         "${MIX_ENC_CMD[@]}" >> "$LOG_FILE" 2>&1
         MIX_FILES=( "${MIX_FILES[@]}" \
-          "${file/.todisc_enc.*}.todisc_enc.m2v" )
+          "${MIX_IN[f]/.todisc_enc.*}.todisc_enc.m2v" )
         spin "Running ${MIX_ENC_CMD[@]}"
+
+        # effects unfinished - will probably remove as they are too expensive
+        if [[ $SLIDE_EFFECT = "blend" ]]; then
+            convert  "${MIX_IN[f]/.todisc_enc.mpg}" -resize ${VIDSIZE}! \
+             "$WORK_DIR/slide-base.png"
+            convert  "${MIX_IN[f+1]/.todisc_enc.mpg}" -resize ${VIDSIZE}! \
+             "$WORK_DIR/slide-overlay.png"
+            for ((i=0; i<=15; i++)); do
+                cp "$WORK_DIR/slide-base.png" "$WORK_DIR/animenu/$(printf %0d%s $i .png)"
+            done
+            slides=("$WORK_DIR"/animenu/*.png)
+            for s in ${!slides[@]}; do
+                echo -n ""
+            done
+        fi
     done
     echo
  
     cat "${MIX_FILES[@]}"  > \
       "$WORK_DIR/slidesho.m2v"
+    # use transcode to create SVCD compat mpeg
+#    transcode -i  "$WORK_DIR/slidesho.m2v" -C 2 -J pp=dr=pre -J pp=tn=pre -J hqdn3d=pre=1 \
+#    transcode -i  "$WORK_DIR/slidesho.m2v" -C 2 -J pp=dr -J pp=tn -J hqdn3d=1 \
+    transcode -i  "$WORK_DIR/slidesho.m2v" \
+    -J unsharp=luma=-0.7:luma_matrix=3x3:chroma=-0.7:chroma_matrix=3x3:pre=1 \
+    --export_prof ${TARGET}-${TV_STANDARD} -Z fast -o "$WORK_DIR/slideshow"
+    # get length
+    mp2_time=$(vid_length "$WORK_DIR/slideshow.m2v")
+    
     if [[ -n $BG_AUDIO ]]; then
-        ssaudio_stats=$(ffmpeg -i "$BG_AUDIO" 2>&1)
-        ssaudio_track=$(grep Audio <<< "$ssaudio_stats" |awk -F[#:[] '{print $2}')
-        ssaudio_track="1.$(awk -F'.' '{print $2}' <<< "$ssaudio_track")"
-        AUDIOCMD=(-i "$BG_AUDIO" -target ${TV_STANDARD}-${TARGET} \
-        -map 0:0 -map $ssaudio_track)
+        # convert background audio to wav
+        BGAUDIO_CMD=(ffmpeg -i "$BG_AUDIO" -t $mp2_time -ar 48000 \
+         -ac 2 -acodec pcm_s16le -y $WORK_DIR/slideshow.wav)
     else
-        AUDIOCMD=(-f s16le -i /dev/zero -target ${TV_STANDARD}-${TARGET})
+        # generate silence
+        BGAUDIO_CMD=(ffmpeg -f s16le -t $mp2_time -i /dev/zero -ar 48000 \
+        -ac 2 -acodec pcm_s16le -y $WORK_DIR/slideshow.wav)
     fi
-    FF_CMD=(ffmpeg -shortest -i "$WORK_DIR/slidesho.m2v" "${AUDIOCMD[@]}" \
-      -y "$WORK_DIR/slideshow.mpg")
-    yecho "Running ${FF_CMD[@]}"
-    "${FF_CMD[@]}" >> "$LOG_FILE" 2>&1
+    echo "Running ${BGAUDIO_CMD[@]}" | format_output | tee -a "$LOG_FILE"
+    "${BGAUDIO_CMD[@]}" >> "$LOG_FILE" 2>&1
+    # fade wav if background audio used and user did not disable fading
+    if [[ -n $BG_AUDIO ]] && $AUDIO_FADE; then
+        sox "$WORK_DIR/slideshow.wav" "$WORK_DIR/slideshow-faded.wav" \
+         fade t $FADE $mp2_time $FADE
+        rm -f "$WORK_DIR/slideshow.wav"
+        mv "$WORK_DIR/slideshow-faded.wav" "$WORK_DIR/slideshow.wav"
+    fi
+
+    # convert the wav to mp2
+    BGAUDIO_CMD=(mp2enc -r 44100 -o $WORK_DIR/slideshow.mp2)
+    yecho
+    echo "Running ${BGAUDIO_CMD[@]} < $WORK_DIR/slideshow.wav" |
+     format_output >> "$LOG_FILE"
+    "${BGAUDIO_CMD[@]}" < "$WORK_DIR/slideshow.wav" 2>&1 |
+     format_output >> "$LOG_FILE"
+    yecho
+    # multiplex to svcd mpeg
+    MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -o "$WORK_DIR/slideshow.mpg" \
+    "$WORK_DIR/slideshow.mp2" "$WORK_DIR/slideshow.m2v")
+    yecho
+    echo "Running ${MPLEX_CMD[@]}" |format_output |tee -a "$LOG_FILE"
+    "${MPLEX_CMD[@]}" |format_output >> "$LOG_FILE" 2>&1
+    yecho
     if [[ -s "$WORK_DIR/slideshow.mpg" ]]; then
         SLIDE_MENU=( -menu "$WORK_DIR/slideshow.mpg")
     else
