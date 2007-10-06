@@ -21,15 +21,9 @@
 import sys
 import traceback
 
-# Try to import wx 2.6; print error if it's unavailable
+# wxversion (wxpython 2.6) is required
 try:
     import wxversion
-    if wxversion.checkInstalled('2.6'):
-        wxversion.select('2.6-unicode')
-    else:
-        print "tovidgui requires wxPython 2.6; please install or upgrade wxPython."
-        sys.exit()
-    import wx
 except ImportError:
     traceback.print_exc()
     print "There was an error importing the 'wx' libraries. The above"
@@ -40,6 +34,15 @@ except ImportError:
     print "Sorry, 'tovidgui' will not work."
     sys.exit()
 
+# Use wx version 2.6 or 2.8
+try:
+    wxversion.select(['2.6-unicode'], ['2.8-unicode'])
+except wxversion.VersionError:
+    print "tovidgui requires wxPython 2.6 or 2.8."
+    print "Please install or upgrade wxPython."
+    sys.exit()
+
+import wx
 from libtovid.gui.frames import TovidFrame
 
 TovidGUI = wx.PySimpleApp()
