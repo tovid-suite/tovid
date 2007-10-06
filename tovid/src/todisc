@@ -204,6 +204,7 @@ RESIZE_BG=false
 DO_SLIDE_MIX=false
 SLIDESHOW=false
 KEEPALL_FILES=false
+SLIDE_FADE=false
 MTG_GEO="+10+4"
 SCRIPT_START_TIME=`date +%s`
 
@@ -1092,7 +1093,6 @@ parse_rotateargs()
 }
 
 burn_disc()
-# FIXME get working with svcd too
 {
     yecho
     echo "You have indicated you want to burn the $BURN_TGT_STR"
@@ -1623,6 +1623,9 @@ while test $# -gt 0; do
             get_listargs "$@"
             [[ -n ${ARGS_ARRAY[@]} ]] && MIX_RANGE=${ARGS_ARRAY[@]}
             DO_SLIDE_MIX=:
+            ;;
+        "-slide-fade" )
+            SLIDE_FADE=:
             ;;
         "-chain-videos" )
             shift
@@ -4226,31 +4229,46 @@ if $DO_SLIDE_MIX; then
     else # if neither user menu length or slideshow audio passed: use 20s
         MIX_SLIDE_LEN=$(bc_math "${MENU_LEN[MENU_NUM-1]} / ${#MIX_IN[@]}")
     fi
+    # subtract transition time from the slide length
+    TT=$(bc_math "(${#MIX_IN[@]} - 1) / ${#MIX_IN[@]}")
+    $SLIDE_FADE && MIX_SLIDE_LEN=$(bc_math "$MIX_SLIDE_LEN - $TT")
     MIX_ALEN=$MIX_SLIDE_LEN
     MIX_VFRAMES=$(bc_math "$MIX_SLIDE_LEN * $FRAME_RATE" int)
     for f in ${!MIX_IN[@]}; do
-    #    image2mpeg2 "$file" mix
-        MIX_ENC_CMD=(ffmpeg -r $FRAME_RATE -f image2 -loop_input -vframes $MIX_VFRAMES \
-        -i "${MIX_IN[f]/.todisc_enc.mpg}" -r $FRAME_RATE -s $VIDSIZE -f mpeg2video \
-        -b 10000k -aspect $ASPECT_RATIO -y "${MIX_IN[f]/.todisc_enc.*}.todisc_enc.m2v")
+        MIX_ENC_CMD=(ffmpeg -r $FRAME_RATE -f image2 -loop_input -vframes \
+         $MIX_VFRAMES -i "${MIX_IN[f]/.todisc_enc.mpg}" -r $FRAME_RATE \
+         -s $VIDSIZE -f mpeg2video -b 10000k -aspect $ASPECT_RATIO \
+         -y "${MIX_IN[f]/.todisc_enc.*}.todisc_enc.m2v")
         "${MIX_ENC_CMD[@]}" >> "$LOG_FILE" 2>&1
         MIX_FILES=( "${MIX_FILES[@]}" \
           "${MIX_IN[f]/.todisc_enc.*}.todisc_enc.m2v" )
         spin "Running ${MIX_ENC_CMD[@]}"
 
-        # effects unfinished - will probably remove as they are too expensive
-        if [[ $SLIDE_EFFECT = "blend" ]]; then
-            convert  "${MIX_IN[f]/.todisc_enc.mpg}" -resize ${VIDSIZE}! \
-             "$WORK_DIR/slide-base.png"
-            convert  "${MIX_IN[f+1]/.todisc_enc.mpg}" -resize ${VIDSIZE}! \
-             "$WORK_DIR/slide-overlay.png"
-            for ((i=0; i<=15; i++)); do
-                cp "$WORK_DIR/slide-base.png" "$WORK_DIR/animenu/$(printf %0d%s $i .png)"
-            done
-            slides=("$WORK_DIR"/animenu/*.png)
-            for s in ${!slides[@]}; do
-                echo -n ""
-            done
+        # effects unfinished - only dissolve in/out for now
+        if $SLIDE_FADE; then
+            if [[ $f -lt $((${#MIX_IN[@]} -1)) ]]; then
+                overlay_png="$WORK_DIR/slide-overlay.png"
+                base_png="$WORK_DIR/slide-base.png"
+                convert  "${MIX_IN[f]/.todisc_enc.mpg}" -resize ${VIDSIZE}! \
+                 "$base_png"
+                convert  "${MIX_IN[f+1]/.todisc_enc.mpg}" -resize ${VIDSIZE}! \
+                 "$overlay_png"
+                [[ $TV_STANDARD = "ntsc" ]] && fade_frames=30 || fade_frames=25
+                fade_incr=$(bc_math "100 / $fade_frames")
+                for ((i=0; i<fade_frames; i++)); do
+                    BLEND_AMT=$(bc_math "$i * $fade_incr")
+                    composite -blend $BLEND_AMT "$overlay_png" \
+                     "$base_png" "$WORK_DIR/animenu/fade$(printf %0d%s $i .jpg)"
+                done
+                ffmpeg -f image2 -r $FRAME_RATE \
+                 -i "$WORK_DIR"/animenu/fade%0d.jpg -f mpeg2video -b 8000k \
+                 -aspect $ASPECT_RATIO -y "$WORK_DIR/fade${f}.m2v"
+                cat "${MIX_FILES[f]}" "$WORK_DIR/fade${f}.m2v" \
+                 > "$WORK_DIR"/$(printf %06d%s $f .m2v)
+                MIX_FILES[f]="$WORK_DIR"/$(printf %06d%s $f .m2v)
+            else
+                break
+            fi
         fi
     done
     echo
@@ -4260,7 +4278,7 @@ if $DO_SLIDE_MIX; then
     # use transcode to create SVCD compat mpeg
 #    transcode -i  "$WORK_DIR/slidesho.m2v" -C 2 -J pp=dr=pre -J pp=tn=pre -J hqdn3d=pre=1 \
 #    transcode -i  "$WORK_DIR/slidesho.m2v" -C 2 -J pp=dr -J pp=tn -J hqdn3d=1 \
-    transcode -i  "$WORK_DIR/slidesho.m2v" -J pp=dr -J pp=tn \
+    transcode -i  "$WORK_DIR/slidesho.m2v" -x mpeg2,null -J pp=dr -J pp=tn \
     -J unsharp=luma=-0.5:luma_matrix=3x3:chroma=-0.5:chroma_matrix=3x3:pre=1 \
     --export_prof ${TARGET}-${TV_STANDARD} -Z fast -o "$WORK_DIR/slideshow"
     # get length
@@ -6032,7 +6050,7 @@ if ! $VMGM_ONLY && ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
             fi
                 
         fi
-        ! $KEEP_FILES && [[ -e ${f%.*}.m2v ]] && rm -fv "${f%.*}.m2v"
+        rm -f "${f%.*}.m2v"
     done
     thanks_goodbye
     $BURN && burn_disc
