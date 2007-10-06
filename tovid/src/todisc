@@ -4260,8 +4260,8 @@ if $DO_SLIDE_MIX; then
     # use transcode to create SVCD compat mpeg
 #    transcode -i  "$WORK_DIR/slidesho.m2v" -C 2 -J pp=dr=pre -J pp=tn=pre -J hqdn3d=pre=1 \
 #    transcode -i  "$WORK_DIR/slidesho.m2v" -C 2 -J pp=dr -J pp=tn -J hqdn3d=1 \
-    transcode -i  "$WORK_DIR/slidesho.m2v" \
-    -J unsharp=luma=-0.7:luma_matrix=3x3:chroma=-0.7:chroma_matrix=3x3:pre=1 \
+    transcode -i  "$WORK_DIR/slidesho.m2v" -J pp=dr -J pp=tn \
+    -J unsharp=luma=-0.5:luma_matrix=3x3:chroma=-0.5:chroma_matrix=3x3:pre=1 \
     --export_prof ${TARGET}-${TV_STANDARD} -Z fast -o "$WORK_DIR/slideshow"
     # get length
     mp2_time=$(vid_length "$WORK_DIR/slideshow.m2v")
