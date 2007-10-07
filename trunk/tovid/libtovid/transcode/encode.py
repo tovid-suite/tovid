@@ -191,15 +191,15 @@ def ffmpeg_encode(source, target, **kw):
     # Convert scale/expand to ffmpeg's padding system
     if target.scale:
         cmd.add('-s', '%sx%s' % target.scale)
-    if target.expand != target.scale:
-        e_width, e_height = target.expand
-        s_width, s_height = target.scale
-        h_pad = (e_width - s_width) / 2
-        v_pad = (e_height - s_height) / 2
-        if h_pad > 0:
-            cmd.add('-padleft', h_pad, '-padright', h_pad)
-        if v_pad > 0:
-            cmd.add('-padtop', v_pad, '-padbottom', v_pad)
+        if target.expand != target.scale:
+            e_width, e_height = target.expand
+            s_width, s_height = target.scale
+            h_pad = (e_width - s_width) / 2
+            v_pad = (e_height - s_height) / 2
+            if h_pad > 0:
+                cmd.add('-padleft', h_pad, '-padright', h_pad)
+            if v_pad > 0:
+                cmd.add('-padtop', v_pad, '-padbottom', v_pad)
     if target.widescreen:
         cmd.add('-aspect', '16:9')
     else:
