@@ -375,7 +375,7 @@ def encode_audio(source, audiofile, target):
             # Minimum 4 secs :)
             ln = 4.0
         cmd.add('-f', 's16le', '-i', '/dev/zero', '-t', '%f' % ln)
-    cmd.add('-vn', '-ac', '2', '-ab', '224')
+    cmd.add('-vn', '-ac', '2', '-ab', '224k')
     cmd.add('-ar', target.samprate)
     cmd.add('-acodec', target.acodec)
     cmd.add('-y', audiofile)
