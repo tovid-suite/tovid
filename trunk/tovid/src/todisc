@@ -4275,12 +4275,22 @@ if $DO_SLIDE_MIX; then
                 convert  "$overlay" -resize ${VIDSIZE}! \
                  "$overlay_png"
                 [[ $TV_STANDARD = "ntsc" ]] && fade_frames=30 || fade_frames=25
-                fade_incr=$(bc_math "100 / $fade_frames")
+                fade_incr=$(bc -l <<< "100 / $fade_frames")
                 for ((i=1; i<=fade_frames; i++)); do
                     BLEND_AMT=$(bc_math "$i * $fade_incr")
                     composite -blend $BLEND_AMT "$overlay_png" \
                      "$base_png" "$WORK_DIR/animenu/fade$(printf %0d%s $i .jpg)"
                 done
+                if [[ $f -eq $((${#MIX_IN[@]} - 1)) ]]; then
+                    convert "$overlay" -resize ${VIDSIZE}! \
+                     "$WORK_DIR/overlay.jpg"
+                    for s in {1..15}; do
+                        # copy a few extra frames for looping end frame
+                        cp "$WORK_DIR/overlay.jpg" \
+                         "$WORK_DIR/animenu/fade$(printf %0d%s $((fade_frames + s)) .jpg)"
+                    done
+                fi
+                
                 ffmpeg -f image2 -r $FRAME_RATE \
                  -i "$WORK_DIR"/animenu/fade%0d.jpg -f mpeg2video -b 8000k \
                  -aspect $ASPECT_RATIO -y "$WORK_DIR/fade${f}.m2v"
