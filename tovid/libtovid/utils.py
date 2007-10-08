@@ -230,6 +230,14 @@ def wait(seconds):
     os.system('sleep %ss' % seconds)
 
 
+def imagemagick_version():
+    """Return the version of ImageMagick that's currently installed,
+    as a dotted string of numbers (e.g. '6.3.5.10').
+    """
+    command = 'convert -list configure | grep ^LIB_VERSION_NUMBER'
+    lines = os.popen(command).readlines()
+    return lines[0].split()[1].replace(',', '.')
+
 
 if __name__ == '__main__':
     doctest.testmod(verbose=True)
