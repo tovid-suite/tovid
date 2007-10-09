@@ -269,6 +269,7 @@ class ComboBox (tk.Frame):
             self.command()
 
 ### --------------------------------------------------------------------
+from libtovid.utils import get_listtype
 
 class FontChooser (tkSimpleDialog.Dialog):
     """A widget for choosing a font"""
@@ -278,7 +279,8 @@ class FontChooser (tkSimpleDialog.Dialog):
     def get_fonts(self):
         """Return a list of font names available in ImageMagick.
         """
-        find = "convert -list type | sed '/Path/,/---/d' | awk '{print $1}'"
+	im_cmd = 'convert -list ' + get_listtype()
+        find = im_cmd + " | sed '/Path/,/---/d' | awk '{print $1}'"
         return [line.rstrip('\n') for line in os.popen(find).readlines()]
 
     def body(self, master):
