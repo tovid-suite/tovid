@@ -7,6 +7,7 @@ import re
 import gettext
 import wx
 import locale
+from libtovid.utils import get_listtype
 
 __all__ = ["TovidConfig"]
 class TovidConfig:
@@ -86,7 +87,8 @@ class TovidConfig:
         #     describes a font also includes the foundry and other information
         #     we don't want. We only want the font_name, which is the 
         #     first word on each line.
-        IM_lines = os.popen("convert -list type").readlines()
+        im_cmd = "convert -list " + get_listtype()
+        IM_lines = os.popen(im_cmd).readlines()
         IM_lines = [unicode(line, self.cur_encoding) for line in IM_lines]
         font_name_re = re.compile("^[\w-]+")   # match [a-zA-Z_-] at least once
         IM_fonts = [font_name_re.search(line).group() 
