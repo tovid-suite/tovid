@@ -236,8 +236,17 @@ def imagemagick_version():
     """
     command = 'convert -list configure | grep ^LIB_VERSION_NUMBER'
     lines = os.popen(command).readlines()
-    return lines[0].split()[1].replace(',', '.')
+    return lines[0].split()[1].replace(',', '')
 
+def get_listtype():
+    """Return argument for finding ImageMagick's list of fonts,
+    based on the version of IM installed.
+    """
+    if imagemagick_version() >= '6357':
+	    listarg = 'font'
+    else:
+	    listarg = 'type'
+    return listarg
 
 if __name__ == '__main__':
     doctest.testmod(verbose=True)
