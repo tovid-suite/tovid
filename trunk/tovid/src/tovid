@@ -1127,7 +1127,7 @@ if test "$IN_FILE_TYPE" = "file"; then
     # Override the above A_ and V_ variables by 'eval'ing the output of
     # 'idvid -terse' on the infile. Exit on failure.
     # (Yes, I know eval==evil. Deal.)
-    if eval $(idvid -terse "$IN_FILE"); then :; else
+    if eval $(idvid -terse "$IN_FILE" 2>/dev/null); then :; else
         runtime_error "Could not identify source video: $IN_FILE"
     fi
 
