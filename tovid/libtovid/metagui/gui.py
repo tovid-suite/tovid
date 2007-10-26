@@ -79,7 +79,7 @@ class Panel (Widget):
         for item in self.contents:
             item.draw(frame)
             item.pack(side=side, anchor='nw', fill='x', expand=True,
-                  padx=4, pady=4)
+                  padx=4, pady=2)
 
     def get_args(self):
         """Return a list of all command-line options from contained widgets.
