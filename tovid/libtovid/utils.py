@@ -232,11 +232,12 @@ def wait(seconds):
 
 def imagemagick_version():
     """Return the version of ImageMagick that's currently installed,
-    as a dotted string of numbers (e.g. '6.3.5.10').
+    as a list of integers (ex. [6, 3, 5, 10] for version 6.3.5.10).
     """
     command = 'convert -list configure | grep ^LIB_VERSION_NUMBER'
     lines = os.popen(command).readlines()
-    return lines[0].split()[1].replace(',', '')
+    version_string = lines[0].split()[1]
+    return [int(n) for n in version_string.split(',')]
 
 def get_listtype():
     """Return argument for finding ImageMagick's list of fonts,
