@@ -243,7 +243,7 @@ def get_listtype():
     """Return argument for finding ImageMagick's list of fonts,
     based on the version of IM installed.
     """
-    if imagemagick_version() >= '6357':
+    if imagemagick_version() >= [6, 3, 5, 7]:
 	    listarg = 'font'
     else:
 	    listarg = 'type'
