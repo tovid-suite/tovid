@@ -4330,12 +4330,12 @@ if $QUICK_MENU; then
         "${frame_cmd[@]}" >> "$LOG_FILE"
         # composite the framed blank onto background subtracting the width \
         # of the frame (border) when calculating XxY geometry
-        convert "$WORK_DIR/pics/template.png" -geometry \
-        +$((SC_X-${SC_BORDERWIDTH/x*}))+$((SC_Y-${SC_BORDERWIDTH/x*})) \
-        "$WORK_DIR/showcase_frame.png" -composite "$WORK_DIR/pics/template.png"
+        convert "$WORK_DIR/pics/template.png" "$WORK_DIR/showcase_frame.png" \
+	-geometry +$((SC_X-${SC_BORDERWIDTH/x*}))+$((SC_Y-${SC_BORDERWIDTH/x*})) \
+        -composite "$WORK_DIR/pics/template.png"
         # add blank to a transparent image the size of the menu video
-        convert -size  $VIDSIZE xc:none  -geometry +$SC_X+$SC_Y \
-        "$WORK_DIR/showcase_blank.png" -composite "$WORK_DIR/cookie_cutter.png"
+        convert -size  $VIDSIZE xc:none "$WORK_DIR/showcase_blank.png" \
+	-geometry +$SC_X+$SC_Y -composite "$WORK_DIR/cookie_cutter.png"
         # cut out transparent hole in background with this 'cookie cutter'
         convert "$WORK_DIR/cookie_cutter.png" "$WORK_DIR/pics/template.png" \
         -compose Xor -composite "$WORK_DIR/quick_menu_bg.png"
