@@ -5058,15 +5058,15 @@ $(if $SWITCHED && ! $QUICK_NAV; then
     for ((i=1; i<=NUM_BUTTONS; i++)); do
         if [[ $i -eq $(( ${#FILES[@]} + 1 )) ]]; then
             if $TITLESET_MODE && $VMGM_MENU && $PLAYALL; then
-                echo -n "       <button name=\"$i\"  "
+                echo -n "       <button name=\"$i\" ${btn_geos[i-1]} "
                 echo -e "up=\"$((i-1))\"/>"
-                echo -e "       <button name=\"$((i+1))\" $down/>"
+                echo -e "       <button name=\"$((i+1))\" ${btn_geos[i]} $down/>"
             else
-                echo -n "       <button name=\"$i\" "
+                echo -n "       <button name=\"$i\" ${btn_geos[i-1]} "
                 echo -e "up=\"$((i-1))\" $down/>"
             fi
         elif [[ $i -eq ${#FILES[@]} ]]; then
-            if ($TITLESET_MODE && $VMGM_MENU) || $PLAYALL; then
+            if { $TITLESET_MODE && $VMGM_MENU ; } || $PLAYALL; then
                 echo -n "       <button name=\"$i\"  ${btn_geos[i-1]} "
                 echo -e "$up down=\"$((i+1))\"/>"
             else
