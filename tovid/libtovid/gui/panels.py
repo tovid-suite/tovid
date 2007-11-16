@@ -532,9 +532,8 @@ class CommandOutputPanel(wx.Panel):
             print "The following command returned an exit status of %d:" % \
                     curExitStatus
             print self.strCurCmd
-            print "Please report this bug on the tovid forum or IRC channel:"
-            print "    Forum: http://www.createphpbb.com/phpbb/tovid.html"
-            print "    IRC:   irc://irc.freenode.net/tovid"
+            print "Please report this bug to the tovid issue tracker:"
+            print "    Forum: http://code.google.com/p/tovid/issues/list"
             print "Include all the output shown above, as well as any output"
             print "shown in the log window of the tovid GUI."
             self.errorOccurred = True
