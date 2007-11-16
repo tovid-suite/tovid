@@ -119,6 +119,6 @@ if __name__ == '__main__':
     print
     print "Done encoding '%s' to '%s.mpg'" % (options['in'], options['out'])
     print
-    print "Please report bugs to http://groups.google.com/group/tovid-users"
+    print "Please report bugs to http://code.google.com/p/tovid/issues/list"
     print "Thanks for using pytovid!"
 

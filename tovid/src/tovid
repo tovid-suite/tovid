@@ -825,8 +825,8 @@ function goodbye()
         echo "You can also use todisc or makemenu to create menus for your disc."
         echo "See the manual pages (i.e. 'man todisc') for more information."
         echo
-        echo "Please report successful encodings to:"
-        echo "   http://tovid.wikia.com/wiki/Supported_formats"
+        echo "Please report bugs to:"
+        echo "   http://code.google.com/p/tovid/issues/list"
         yecho "Thanks for using tovid!"
         yecho
     fi

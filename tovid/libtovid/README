@@ -24,9 +24,9 @@ A curious user, with minimal patience (and perhaps a Python primer) should be
 able to read, and get the gist of, the Python code in this directory. If not,
 it should be rewritten, improved, and simplified until it does meet this
 requirement. You are invited to comment and submit patches, either via the
-tovid forum:
+issue tracker:
 
-    http://www.createphpbb.com/tovid
+    http://code.google.com/p/tovid/issues/list
 
 Or the wiki:
 

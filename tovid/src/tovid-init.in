@@ -52,8 +52,8 @@ TOVID_VERSION="@VERSION@"
 SEPARATOR="========================================================="
 
 TOVID_HOME="$HOME/.tovid"
-TOVID_HOME_PAGE="http://www.tovid.org"
-TOVID_FORUMS="http://www.createphpbb.com/tovid/"
+TOVID_HOME_PAGE="http://tovid.org"
+TOVID_FORUMS="http://groups.google.com/group/tovid-users"
 
 
 # ******************************************************************************
