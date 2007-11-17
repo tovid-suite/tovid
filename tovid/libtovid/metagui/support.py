@@ -28,7 +28,7 @@ class ListVar (tk.Variable):
         tk.Variable.__init__(self, master)
         if items:
             self.set(items)
-    
+
     def __getitem__(self, index):
         """Get a list value using list-index syntax (listvar[index]).
         """
@@ -43,7 +43,7 @@ class ListVar (tk.Variable):
 
     def get(self):
         return list(tk.Variable.get(self))
-    
+
     def set(self, new_list):
         tk.Variable.set(self, tuple(new_list))
 
@@ -72,7 +72,7 @@ class ScrollList (tk.Frame):
     def __init__(self, master=None, choices=None,
                  chosen=None, command=None):
         """Create a ScrollList widget.
-        
+
             master:   Tkinter widget that will contain the ScrollList
             choices:  ListVar or Python list of choices to show in listbox
             chosen:   Tk StringVar to store currently selected choice in
@@ -129,7 +129,7 @@ class ScrollList (tk.Frame):
         """Return a list of all entries in the list.
         """
         return self.choices.get()
-    
+
     def set(self, values):
         """Set the list values to those given.
         """
@@ -156,7 +156,7 @@ class DragList (ScrollList):
     def __init__(self, master=None, choices=None,
                  chosen=None, command=None):
         """Create a DragList widget.
-        
+
             master:   Tkinter widget that will contain the DragList
             choices:  ListVar or Python list of choices to show in listbox
             chosen:   Tk StringVar to store currently selected choice in
@@ -176,7 +176,7 @@ class DragList (ScrollList):
         if self.linked:
             self.linked.curindex = self.curindex
         self.config(cursor="double_arrow")
-    
+
     def drag(self, event):
         """Event handler when an item in the list is dragged.
         """
@@ -192,7 +192,7 @@ class DragList (ScrollList):
                 self.linked.swap(self.curindex, loc)
                 self.linked.curindex = loc
             self.curindex = loc
-    
+
     def drop(self, event):
         """Event handler when an item in the list is "dropped".
         """
@@ -207,7 +207,7 @@ class ComboBox (tk.Frame):
     def __init__(self, master, choices=None,
                  variable=None, command=None):
         """Create a ComboBox.
-            
+
             master:     Tk Widget that will contain the ComboBox
             choices:    ListVar or Python list of available choices
             variable:   Tk StringVar to store currently selected choice in
@@ -244,7 +244,7 @@ class ComboBox (tk.Frame):
         #    self.chooser.insert('end', choice)
         self.chooser.bind('<Button-1>', self.choose)
         self.chooser.grid()
-    
+
     def open(self):
         """Open/close a panel showing the list of choices.
         """
@@ -257,7 +257,7 @@ class ComboBox (tk.Frame):
             self.dropdown.wm_geometry("+%d+%d" % (x, y))
             # Show list
             self.dropdown.deiconify()
-    
+
     def choose(self, event=None):
         """Make a selection from the list, and set the variable.
         """
@@ -279,7 +279,7 @@ class FontChooser (tkSimpleDialog.Dialog):
     def get_fonts(self):
         """Return a list of font names available in ImageMagick.
         """
-	im_cmd = 'convert -list ' + get_listtype()
+        im_cmd = 'convert -list ' + get_listtype()
         find = im_cmd + " | sed '/Path/,/---/d' | awk '{print $1}'"
         return [line.rstrip('\n') for line in os.popen(find).readlines()]
 
@@ -292,7 +292,7 @@ class FontChooser (tkSimpleDialog.Dialog):
         self.fontlist.pack(side='top', fill='both', expand=True)
         # Return widget with initial focus
         return self.fontlist
-    
+
     def apply(self):
         """Set the selected font.
         """
@@ -354,9 +354,9 @@ class Style:
         config.set('font', 'family', family)
         config.set('font', 'size', size)
         config.set('font', 'style', style)
-        
+
         # TODO: Save other style settings
-        
+
         # Yuck...
         dirname, fname = os.path.split(filename)
         if not os.path.exists(dirname):
@@ -381,7 +381,7 @@ class ConfigWindow (tkSimpleDialog.Dialog):
     """
     def __init__(self, master=None, style=None):
         """Create and display a configuration window.
-        
+
             inifile:  An .ini-style file to load/save settings from
         """
         self.style = style or Style()
@@ -424,14 +424,14 @@ class ConfigWindow (tkSimpleDialog.Dialog):
 
 class ScrolledWindow (tk.Tk):
     """A top-level window with scrollbars.
-    
+
     To use as a container for other widgets, do:
-    
+
         window = ScrolledWindow()
         button = tk.Button(window.frame, text="Click me", ...)
         entry = tk.Entry(window.frame, ...)
         window.draw()
-    
+
     That is, use window.frame as the master of child widgets, instead of
     window itself. (TODO: Eliminate this requirement.)
     """
