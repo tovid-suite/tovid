@@ -1692,6 +1692,10 @@ while test $# -gt 0; do
             shift
             usage_error "Use -carousel now instead of -slide-menu-mix"
             ;;
+        "-slide-fade" )
+            shift
+            usage_error "Use -carousel-fade now instead of -slide-fade"
+            ;;
         "-carousel" )
             shift
             get_listargs "$@"
