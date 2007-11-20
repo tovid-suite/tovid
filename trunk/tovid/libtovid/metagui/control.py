@@ -680,6 +680,9 @@ class FileList (Control):
                  help='',
                  **kwargs):
         Control.__init__(self, list, label, option, default, help, **kwargs)
+        self.filetypes=[('All Files', '*.*')]
+        if 'filetypes' in kwargs:
+            self.filetypes = kwargs['filetypes']
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -706,7 +709,7 @@ class FileList (Control):
 
     def addFiles(self):
         """Event handler to add files to the list"""
-        files = askopenfilenames(parent=self, title='Add files')
+        files = askopenfilenames(parent=self, title='Add files', filetypes=self.filetypes)
         self.listbox.add(*files)
         for dest in self.copies:
             self.listbox.linked = dest.listbox
