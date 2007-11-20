@@ -50,6 +50,18 @@ titles = TextList('Video titles', '-titles', None,
     filter=to_title, # strip pathname and extension from filenames
     required=True)
 
+slideshow_tooltip='Image files for the slideshow.'
+
+allfiles = ('All files', '*.*')
+images = ('All image files', '*.jpg *.png *.tga *.bmp *.gif')
+jpeg = ('JPEG files', '*.jpg *')
+png = ('PNG files', '*.png')
+tga = ('TGA files', '*.tga')
+gif = ('GIF files', '*.gif')
+bmp = ('BMP files', '*.bmp')
+
+slideshow_filetypes=[images, jpeg, gif, png, tga, bmp, allfiles]
+
 # The rest of the GUI is pretty straightforward, so don't be frightened
 # by the above :-)
 
@@ -88,9 +100,11 @@ main = Panel("Main",
                 'restraints allow'),
                 Flag('Showcase', '-showcase', False,
                 "Arrange menu links along the outside edges, to leave room for"
-                " an optional 'showcase' image or video.",
+                " an optional 'showcase' image or video.  The file entry box"
+                " is for an optional image or video file to be showcased in a"
+                " large central frame",
                 enables=Filename('', '', '',
-                'Image or video file to be showcased in a large central frame',
+                '',
                 'load', 'Select an image or video file.'),
                 ),
             ),
@@ -204,6 +218,93 @@ menu = Panel("Menu",
         'top left corner of the showcase image: e.g. "200x80".  This '
         'value is applied to the video *before* is is scaled.'),
 )
+slideshows = Panel("Slideshows",
+    Tabs(
+    VPanel('slideshow',
+        Text('Title', '-titles', '',
+        'Title for this slideshow.'),
+        FileList('images for slideshow one', '-slideshow', None,
+            slideshow_tooltip, filetypes=slideshow_filetypes),
+        Panel('Slideshow options',
+            Flag('Animated "carousel" slide menu', '-carousel', False,
+            'Create an animaged menu of the slides.  The argument (spin box) is '
+            'the number of slides to use for the carousel. (Default: all).  '
+            'These options are for single slideshow only',
+            enables=Number('     # of slides', '', 20,
+                    '', 1, 50)
+            ),
+            Flag('Fade in transitions', '-carousel-fade', False,
+            'Fade trasition between slides in the "slide menu mix"'),
+            ),
+        ),
+    VPanel('2',
+        Text('Title', '-titles', '',
+        'Title for this slideshow.'),
+        FileList('images for slideshow two', '-slideshow', None,
+            slideshow_tooltip, filetypes=slideshow_filetypes),
+        ),
+    VPanel('3',
+        Text('Title', '-titles', '',
+        'Title for this slideshow.'),
+        FileList('images for slideshow three', '-slideshow', None,
+            slideshow_tooltip, filetypes=slideshow_filetypes),
+        ),
+    VPanel('4',
+        Text('Title', '-titles', '',
+        'Title for this slideshow.'),
+        FileList('images for slideshow four', '-slideshow', None,
+            slideshow_tooltip, filetypes=slideshow_filetypes),
+        ),
+    VPanel('5',
+        Text('Title', '-titles', '',
+        'Title for this slideshow.'),
+        FileList('images for slideshow five', '-slideshow', None,
+            slideshow_tooltip, filetypes=slideshow_filetypes),
+        ),
+    VPanel('6',
+        Text('Title', '-titles', '',
+        'Title for this slideshow.'),
+        FileList('images for slideshow six', '-slideshow', None,
+            slideshow_tooltip, filetypes=slideshow_filetypes),
+        ),
+    VPanel('7',
+        Text('Title', '-titles', '',
+        'Title for this slideshow.'),
+        FileList('images for slideshow seven', '-slideshow', None,
+            slideshow_tooltip, filetypes=slideshow_filetypes),
+        ),
+    VPanel('8',
+        Text('Title', '-titles', '',
+        'Title for this slideshow.'),
+        FileList('images for slideshow eight', '-slideshow', None,
+            slideshow_tooltip, filetypes=slideshow_filetypes),
+        ),
+    VPanel('9',
+        Text('Title', '-titles', '',
+        'Title for this slideshow.'),
+        FileList('images for slideshow nine', '-slideshow', None,
+            slideshow_tooltip, filetypes=slideshow_filetypes),
+        ),
+    VPanel('10',
+        Text('Title', '-titles', '',
+        'Title for this slideshow.'),
+        FileList('images for slideshow ten', '-slideshow', None,
+            slideshow_tooltip, filetypes=slideshow_filetypes),
+        ),
+    VPanel('11',
+        Text('Title', '-titles', '',
+        'Title for this slideshow.'),
+        FileList('images for slideshow eleven', '-slideshow', None,
+            slideshow_tooltip, filetypes=slideshow_filetypes),
+        ),
+    VPanel('12',
+        Text('Title', '-titles', '',
+        'Title for this slideshow.'),
+        FileList('images for slideshow twelve', '-slideshow', None,
+            slideshow_tooltip, filetypes=slideshow_filetypes),
+        ),
+    ),
+)
 
 thumbnails = Panel("Thumbnails",
     Choice('Thumb shape', '-thumb-shape', 'normal',
@@ -294,14 +395,15 @@ text = Panel("Text/Font",
     Tabs(
         VPanel('Menu title', 
             Font('Font', '-menu-font', 'Helvetica',
-                'The font to use for the menu title'),
+                'The font to use for the menu title', toggles=True),
             Number('Font size', '-menu-fontsize', 30,
                 'The font size to use for the menu title',
                 0, 80, toggles=True),
             Color('Color', '-title-color', '#CDC0B0',
                 'The font color to use for the menu title', toggles=True),
             Color('Stroke color', '-stroke-color', 'gray',
-                'Outline color for the main menu font.', toggles=True),
+                'Outline color for the main menu font.', toggles=True,
+                initialcolor="gray"),
             HPanel('Title position',
                 Choice('', '-menu-title-geo', 'south',
                     'The position of the menu title',
@@ -323,7 +425,7 @@ text = Panel("Text/Font",
             ),
         VPanel('Video title(s)',
             Font('Font', '-thumb-font', 'Helvetica',
-                'The font to use for the video titles'),
+                'The font to use for the video titles', toggles=True),
             Number('Font size', '-thumb-fontsize', 12,
                 'The font size to use for the video titles.  '
                 'Default size varies depending on options chosen.',
@@ -434,8 +536,8 @@ burning = Panel("Burning",
 ### --------------------------------------------------------------------
 
 todisc = Application('todisc',
-    [main, general, menu, submenus, thumbnails, text, authoring, burning])
-gui = GUI("todiscgui", [todisc], 600, 700)
+    [main, general, menu, submenus, thumbnails, text, slideshows, authoring, burning])
+gui = GUI("todiscgui", [todisc], 600, 720)
 gui.title("tovid GUI - fancy menus using 'todisc'")
 gui.run()
 
