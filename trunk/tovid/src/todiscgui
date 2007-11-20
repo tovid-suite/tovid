@@ -54,7 +54,7 @@ slideshow_tooltip='Image files for the slideshow.'
 
 allfiles = ('All files', '*.*')
 images = ('All image files', '*.jpg *.png *.tga *.bmp *.gif')
-jpeg = ('JPEG files', '*.jpg *')
+jpeg = ('JPEG files', '*.jpg')
 png = ('PNG files', '*.png')
 tga = ('TGA files', '*.tga')
 gif = ('GIF files', '*.gif')
