@@ -1,25 +1,22 @@
 #! /usr/bin/env python
 # flipbook.py
 
-"""This module provides the Flipbook class.
+"""This module provides the Flipbook class, a collection of drawings that, when
+displayed in sequence, make up an animation or video.
 
 Run this module standalone for a demonstration:
 
-    $ python libtovid/flipbook.py
-
-Much like a paper flipbook made of many individual drawings, the Flipbook class
-has a collection of Drawing objects (from libtovid/renderers/mvg_render.py) that,
-when displayed in sequence, make up an animation or video.
+    $ python flipbook.py
 
 To use this module interactively, run 'python' from the command-line, and do:
 
-    >>> from libtovid.flipbook import Flipbook
+    >>> from libtovid.render.flipbook import Flipbook
 
 To create a Flipbook 10 seconds long with 'dvd' and 'ntsc' standards, do:
 
     >>> flipbook = Flipbook(10, 'dvd', 'ntsc', '4:3')
 
-Then you can retrieve the canvas width and height with:
+You can retrieve the canvas width and height with:
 
     >>> flipbook.canvas
     (640, 480)
@@ -28,10 +25,10 @@ Then you can retrieve the canvas width and height with:
     >>> flipbook.h
     480
 
-All drawing upon a Flipbook is achieved through the use of layers
-(libtovid/layer.py). To use them, import the layer module:
+All drawing upon a Flipbook is achieved through the use of layers (layer.py).
+To use them, import the layer module:
 
-    >>> from libtovid import layer
+    >>> from libtovid.render import layer
 
 You can add layers to a Flipbook on-the-fly:
 
@@ -44,10 +41,9 @@ Or, create layers separately before adding them to the Flipbook:
     >>> flipbook.add(text)
 
 This latter approach is useful if you plan to apply animation effects to the
-Layer. For this, effects classes (libtovid/effect.py) may be applied. First,
-import:
+Layer. For this, effects classes (effect.py) may be applied. First, import:
 
-    >>> from libtovid import effect
+    >>> from libtovid.render import effect
 
 Now, say we want the text "Elephant talk" to move across the screen, say from
 (100, 100) to (500, 100) over the course of the first 90 frames. The

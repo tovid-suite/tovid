@@ -575,12 +575,11 @@ class SafeArea (Layer):
 
 class Scatterplot (Layer):
     """A 2D scatterplot of data.
-
-    Untested since MVG move.
     """
     def __init__(self, xy_dict, width=240, height=80, x_label='', y_label=''):
         """Create a scatterplot using data in xy_dict, a dictionary of
-        lists of y-values, indexed by x-value."""
+        lists of y-values, indexed by x-value.
+        """
         self.xy_dict = xy_dict
         self.width, self.height = (width, height)
         self.x_label = x_label
