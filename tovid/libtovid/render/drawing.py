@@ -12,48 +12,52 @@
 """Interactive vector drawing and rendering interface.
 
 This module provides a class called Drawing, which provides a blank canvas
-that can be painted with drawing functions. To use it, simply provide a
-width and height, in arbitrary units:
+that can be painted with vector drawing functions, and later rendered to
+a raster image file (.png, .jpg etc.) at any desired resolution.
 
-    >>> drawing = Drawing(800, 600)   # width, height
+To create a new, blank Drawing:
 
-This does not imply the *pixel* resolution of your drawing. Remember, this
-is vector drawing, with (virtually) infinite precision; all you're describing
-here is the *shape* of the drawing--800 units by 600 units, which implies a
-4:3 aspect ratio. You could just as well do Drawing(4, 3) or Drawing(80, 60);
-the only thing that changes is the coordinate system you want to use for
-drawing operations.
+    >>> d = Drawing(800, 600)          # width, height
 
-Back on topic: you can now draw shapes on the drawing, fill and stroke them:
+Here, (800, 600) defines two things:
 
-    >>> drawing.circle(500, 300, 150)        # (x, y, radius)
-    >>> drawing.fill('blue', 0.8)            # color name with optional alpha
-    >>> drawing.stroke('rgb(0, 128, 255)')   # rgb values 0-255
+    - On-screen display size, in pixels (800px x 600px)
+    - Intended viewing aspect ratio (800:600 or 4:3)
+
+Note that you are still doing vector drawing, so whatever size you pick here
+has no bearing on your final target resolution--it's mostly intended for a
+convenient "preview" size while doing interactive drawing.
+
+Back on topic: you can now add shapes to the drawing, fill and stroke them:
+
+    >>> d.circle(500, 300, 150)        # (x, y, radius)
+    >>> d.fill('blue', 0.8)            # color name with optional alpha
+    >>> d.stroke('rgb(0, 128, 255)')   # rgb values 0-255
 
 Then add more shapes:
 
-    >>> drawing.rectangle(25, 25, 320, 240)  # x, y, width, height
-    >>> drawing.fill('rgb(40%, 80%, 10%)')   # rgb percentages
-    >>> drawing.stroke('#FF0080', 0.5)       # rgb hex notation with an alpha
+    >>> d.rectangle(25, 25, 320, 240)  # x, y, width, height
+    >>> d.fill('rgb(40%, 80%, 10%)')   # rgb percentages
+    >>> d.stroke('#FF0080', 0.5)       # rgb hex notation with an alpha
 
 To see what the drawing looks like so far, do:
 
-    >>> display(drawing)                     # display at existing size
-    >>> display(drawing, 720, 480)           # display at different size
-    >>> display(drawing, fix_aspect=True)    # display in correct aspect ratio
+    >>> display(d)                     # display at existing size
+    >>> display(d, 720, 480)           # display at different size
+    >>> display(d, fix_aspect=True)    # display in correct aspect ratio
 
 You may then decide to add more to the drawing:
 
-    >>> drawing.set_source('white')
-    >>> drawing.text("Dennis", 50, 100)      # text, x, y
+    >>> d.set_source('white')
+    >>> d.text("Dennis", 50, 100)      # text, x, y
 
 And preview again:
 
-    >>> display(drawing)
+    >>> display(d)
 
 Once you finish your beautiful painting, save it as a nice high-res PNG!
 
-    >>> save_png(drawing, "my.png", 1600, 1200)
+    >>> save_png(d, "my.png", 1600, 1200)
     
 Cairo references:
 
@@ -1209,7 +1213,7 @@ def write_ppm(drawing, pipe, width, height, workdir=None):
     im = im.transpose(Image.FLIP_TOP_BOTTOM)
     im.save(pipe, 'ppm')
     
-    print "write_ppm took %s seconds" % (time.time() - start)
+    #print "write_ppm took %s seconds" % (time.time() - start)
     
 def write_png(drawing, pipe, width, height, workdir):
     """Write image as a PPM file to a file-object
@@ -1231,7 +1235,7 @@ def write_png(drawing, pipe, width, height, workdir):
     im.load()
     im.save(pipe, 'ppm')
     
-    print "write_png took %s seconds" % (time.time() - start)
+    #print "write_png took %s seconds" % (time.time() - start)
 
 
 
@@ -1243,14 +1247,14 @@ def save_png(drawing, filename, width, height):
     # Timing
     start = time.time()
     if (width, height) == drawing.size:
-        print "Not re-rendering"
+        #print "Not re-rendering"
         surface = drawing.surface
     else:
         surface = get_surface(width, height, 'image')
         context = cairo.Context(surface)
         render(drawing, context, width, height)
     surface.write_to_png(filename)
-    print "save_png took %s seconds" % (time.time() - start)
+    #print "save_png took %s seconds" % (time.time() - start)
 
 
 def save_jpg(drawing, filename, width, height):
