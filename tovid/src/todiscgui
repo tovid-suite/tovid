@@ -64,8 +64,8 @@ main_panel = VPanel('slideshow',
             'Create an animaged menu of the slides.  The argument (spin box) is '
             'the number of slides to use for the carousel. (Default: all).  '
             'These options are for single slideshow only',
-            enables=Number('     # of slides', '', 20,
-                    '', 1, 50)
+            enables=Number('     # of slides', '', 0,
+                    '', 0, 50)
             ),
             Flag('Fade in transitions', '-carousel-fade', False,
             'Fade trasition between slides in the "slide menu mix"'),
