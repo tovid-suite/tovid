@@ -44,6 +44,7 @@ __all__ = [\
     # .py files
     'cli',
     'deps',
+    'filetypes',
     'layout'
     'media',
     'odict',
