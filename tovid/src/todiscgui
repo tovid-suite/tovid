@@ -18,6 +18,7 @@ See the wiki page about metagui for more details:
 
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
+from libtovid.filetypes import *
 
 ### --------------------------------------------------------------------
 ### -files and -titles
@@ -39,7 +40,6 @@ def to_title(filename):
     basename = os.path.basename(filename)
     firstdot = basename.find('.')
     return basename[0:firstdot]
-
 files = FileList('Video files', '-files', None,
     'Video files to include on the disc',
     required=True)
@@ -52,15 +52,38 @@ titles = TextList('Video titles', '-titles', None,
 
 slideshow_tooltip='Image files for the slideshow.'
 
-allfiles = ('All files', '*.*')
-images = ('All image files', '*.jpg *.png *.tga *.bmp *.gif')
-jpeg = ('JPEG files', '*.jpg')
-png = ('PNG files', '*.png')
-tga = ('TGA files', '*.tga')
-gif = ('GIF files', '*.gif')
-bmp = ('BMP files', '*.bmp')
+slideshow_filetypes=[image_files, jpeg, gif, png, tga, bmp, all_files]
+tab_list = []
+main_panel = VPanel('slideshow',
+        Text('Title', '-titles', '',
+        'Title for this slideshow.'),
+        FileList('images for slideshow one', '-slideshow', None,
+            slideshow_tooltip, filetypes=slideshow_filetypes),
+        Panel('Slideshow options',
+            Flag('Animated "carousel" slide menu', '-carousel', False,
+            'Create an animaged menu of the slides.  The argument (spin box) is '
+            'the number of slides to use for the carousel. (Default: all).  '
+            'These options are for single slideshow only',
+            enables=Number('     # of slides', '', 20,
+                    '', 1, 50)
+            ),
+            Flag('Fade in transitions', '-carousel-fade', False,
+            'Fade trasition between slides in the "slide menu mix"'),
+            ),
+        )
 
-slideshow_filetypes=[images, jpeg, gif, png, tga, bmp, allfiles]
+tab_list.append(main_panel)
+
+for num in range(2,  13):
+    title_str = 'images for slideshow ' + str(num)
+    next_panel = VPanel(str(num),
+        Text('Title', '-titles', '',
+        'Title for this slideshow.'),
+        FileList(title_str, '-slideshow', None,
+            slideshow_tooltip, filetypes=slideshow_filetypes),
+        )
+    tab_list.append(next_panel)
+
 
 # The rest of the GUI is pretty straightforward, so don't be frightened
 # by the above :-)
@@ -218,93 +241,7 @@ menu = Panel("Menu",
         'top left corner of the showcase image: e.g. "200x80".  This '
         'value is applied to the video *before* is is scaled.'),
 )
-slideshows = Panel("Slideshows",
-    Tabs(
-    VPanel('slideshow',
-        Text('Title', '-titles', '',
-        'Title for this slideshow.'),
-        FileList('images for slideshow one', '-slideshow', None,
-            slideshow_tooltip, filetypes=slideshow_filetypes),
-        Panel('Slideshow options',
-            Flag('Animated "carousel" slide menu', '-carousel', False,
-            'Create an animaged menu of the slides.  The argument (spin box) is '
-            'the number of slides to use for the carousel. (Default: all).  '
-            'These options are for single slideshow only',
-            enables=Number('     # of slides', '', 20,
-                    '', 1, 50)
-            ),
-            Flag('Fade in transitions', '-carousel-fade', False,
-            'Fade trasition between slides in the "slide menu mix"'),
-            ),
-        ),
-    VPanel('2',
-        Text('Title', '-titles', '',
-        'Title for this slideshow.'),
-        FileList('images for slideshow two', '-slideshow', None,
-            slideshow_tooltip, filetypes=slideshow_filetypes),
-        ),
-    VPanel('3',
-        Text('Title', '-titles', '',
-        'Title for this slideshow.'),
-        FileList('images for slideshow three', '-slideshow', None,
-            slideshow_tooltip, filetypes=slideshow_filetypes),
-        ),
-    VPanel('4',
-        Text('Title', '-titles', '',
-        'Title for this slideshow.'),
-        FileList('images for slideshow four', '-slideshow', None,
-            slideshow_tooltip, filetypes=slideshow_filetypes),
-        ),
-    VPanel('5',
-        Text('Title', '-titles', '',
-        'Title for this slideshow.'),
-        FileList('images for slideshow five', '-slideshow', None,
-            slideshow_tooltip, filetypes=slideshow_filetypes),
-        ),
-    VPanel('6',
-        Text('Title', '-titles', '',
-        'Title for this slideshow.'),
-        FileList('images for slideshow six', '-slideshow', None,
-            slideshow_tooltip, filetypes=slideshow_filetypes),
-        ),
-    VPanel('7',
-        Text('Title', '-titles', '',
-        'Title for this slideshow.'),
-        FileList('images for slideshow seven', '-slideshow', None,
-            slideshow_tooltip, filetypes=slideshow_filetypes),
-        ),
-    VPanel('8',
-        Text('Title', '-titles', '',
-        'Title for this slideshow.'),
-        FileList('images for slideshow eight', '-slideshow', None,
-            slideshow_tooltip, filetypes=slideshow_filetypes),
-        ),
-    VPanel('9',
-        Text('Title', '-titles', '',
-        'Title for this slideshow.'),
-        FileList('images for slideshow nine', '-slideshow', None,
-            slideshow_tooltip, filetypes=slideshow_filetypes),
-        ),
-    VPanel('10',
-        Text('Title', '-titles', '',
-        'Title for this slideshow.'),
-        FileList('images for slideshow ten', '-slideshow', None,
-            slideshow_tooltip, filetypes=slideshow_filetypes),
-        ),
-    VPanel('11',
-        Text('Title', '-titles', '',
-        'Title for this slideshow.'),
-        FileList('images for slideshow eleven', '-slideshow', None,
-            slideshow_tooltip, filetypes=slideshow_filetypes),
-        ),
-    VPanel('12',
-        Text('Title', '-titles', '',
-        'Title for this slideshow.'),
-        FileList('images for slideshow twelve', '-slideshow', None,
-            slideshow_tooltip, filetypes=slideshow_filetypes),
-        ),
-    ),
-)
+slideshows = Panel("Slideshows", Tabs(*tab_list))
 
 thumbnails = Panel("Thumbnails",
     Choice('Thumb shape', '-thumb-shape', 'normal',
