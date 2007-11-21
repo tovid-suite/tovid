@@ -1493,7 +1493,7 @@ while test $# -gt 0; do
                 [[ $i = -slideshow  ]] && ((sshows++))
                 [[ $i = -files ]] && ((inc_files++))
             done
-#            ((sshows==1)) && ((inc_files<1)) && SINGLE_SLIDESHOW=:
+            ((sshows==1)) && ((inc_files<1)) && SINGLE_SLIDESHOW=:
             shift
             get_listargs "$@"
             if $incoming_vids || [[ $sshows -eq 1 && $inc_files -lt 1 ]]; then
@@ -2132,7 +2132,7 @@ DVDAUTHOR_XML="$WORK_DIR/dvdauthor.xml"
 PREVIEW_IMG="$WORK_DIR/preview.jpg"
 
 # Make sure equal, nonzero number of titles and files were provided
-echo num_slideshows is $num_slideshows
+
 if ! $VMGM_ONLY && ! $DO_TITLESETS; then
     ((num_slideshows>0)) && ss_err="  A slideshow counts as one file.  
      Please give one title for each slideshow. "
@@ -2838,6 +2838,10 @@ if ! $VMGM_ONLY; then
     echo
     echo "Verifying that input files are video or image files"
     verify_infiles infiles
+    if [[ ${#file_is_image[@]} -eq ${#FILES[@]} && $inc_files -gt 0 ]]; then
+        usage_error "Please use -slideshow IMAGES, not -files IMAGES
+        for a slideshow"
+    fi
     if $GROUPING; then 
         echo
         echo "Verifying that grouped input files are video or image files"
@@ -4515,7 +4519,7 @@ fi
 if $GROUPING && $TITLESET_MODE; then
     find "$WORK_DIR"/  -type l -name \*group\*.mpg -exec cp -P {} "$BASEDIR" \;
 fi
-# -slide-mix joins the slides and can add audio (-slideshow-audio)
+# -slide-mix joins the slides and can add audio (-bgaudio)
 echo
 if $DO_CAROUSEL; then
     for f in ${!MIX_IN[@]}; do
