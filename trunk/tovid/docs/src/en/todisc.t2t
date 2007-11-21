@@ -8,8 +8,10 @@ todisc: Create a DVD with animated menus
 
 == Description ==
 
-todisc is a command-line script for creating a DVD file-system with animated
-thumbnail menus, from a list of multimedia video files and their titles.
+todisc is a command-line script for creating a DVD file-system or SVCD's
+with animated thumbnail menus, from a list of multimedia video files and their
+titles.  It also does static thumbnail menus and text only menus.
+In addition, todisc can do slideshows, using images as input.
 It supports sub-menus for chapter breaks, configurable menu style, animated
 backgrounds and transparency effects. It can automatically convert non-compliant
 input files to the target format.
@@ -31,7 +33,14 @@ For example:
       -out Season_one
 ```
 
-The number of **-files** and **-titles** must be equal. If the input files are
+The number of **-files** and **-titles** must be equal, though if you
+do not include any titles todisc will use the basename of the included files
+as titles.
+If you are doing a slideshow or multiple slideshows, use **-slideshow** rather
+than **-files** for passing in the images.
+See SLIDESHOWS part of Usage section, below.
+
+If the input files are
 not mpeg, you will have the option to auto-encode them with **tovid**.
 
 **At present there are 2 display arrangements or "templates":**
@@ -118,7 +127,66 @@ Example of using todisc with titlesets:
     -thumb-fontsize 20 \
     -end-vmgm
 ```    
+
 See also **-titleset** and **-vmgm**
+
+**SLIDESHOWS**
+
+You can also use todisc to make slideshows.  This can either be a single
+slideshow, or multiple slideshows on the same menu. (for SVCD only
+single slideshow is supported).
+Remember to use **-slideshow** rather than **-files** for passing in the
+images.  Images can be any filetype that imagemagick supports: for example
+JPEG, PNG, GIF, TGA BMP etc.  For a single slideshow do not use **-titles**: 
+use -menu-title to set the slideshow title.
+
+For a single slideshow the default is a 'montage' menu of all the slides,
+with a single spumux'ed button for navigating with the enter key.  You may
+to experiment to find out which DVD remote button advances the slides, on my
+player it is different for DVD and SVCD.  Try the 'next chapter' (skip ?)
+button and the play button.
+For single slideshows, you can use **-carousel** to make an animated menu
+that transitions from slide to slide.  See **-carousel**.
+To get fade transitions in the carousel menu, add **-carousel-fade**.
+The argument to **-carousel** is the number of slides to use - be sure to use
+a long enough audio file for **-bgaudio** or set **-menu-length** so the menu
+is long enough to support the slides plus transitions.
+
+You can also put multiple slideshows on one menu.  To do this, use
+**-slideshow IMAGES** for each slideshow you wish to make.  You can even mix videos
+with slideshows by using **-files** **-slideshow** **-titles** multiple times.
+
+Example of a single slideshow with a carousel menu with transitions:
+
+```
+ $ todisc -menu-title "Autumn in Toronto" -slideshow images/*.jpg \
+   -carousel 20 -carousel-fade -bgaudio slideshow.wav -out myslideshow
+```
+Example of multiple slideshows on one menu:
+```
+ $ todisc -menu-title "Autumn in Toronto" \
+   -slideshow photos/september/*.jpg \
+   -slideshow photos/october/*.jpg \
+   -slideshow photos/november/*.jpg \
+   -tile3x1 -rotate -5 5 -5 -align center \
+   -bgaudio background.wav \
+   -out myslideshow
+```
+Example of mixed videos and slideshows:
+```
+ $ todisc -menu-title "Autumn in Toronto" \
+   -files fall_fair.mov \
+   -slideshow  photos/september/*.jpg \
+   -files harvest.mpg \
+   -slideshow photos/october/*.jpg \
+   -titles "Fall Fair" "September" "Harvest" "October" \
+   -background autumn.png \
+   -bgaudio bg.mp3 \
+   -out myslideshow
+```
+
+See also **-slideshow** ,**-carousel** and **-carousel-fade in
+the SLIDESHOWS option section.
 
 == Options ==
 
@@ -241,14 +309,6 @@ See also **-titleset** and **-vmgm**
 ```
     -switched-menus -quick-menu
 ```
-: **-slideshow** [PAUSE]
-    This option is for convenience: it sets some options that are useful for doing a slideshow
-    of images ( yes todisc can take images as input for -files ).
-    The "PAUSE" argument is number of seconds each slide title will remain on the screen.  This
-    option can also be set using **-video-pause** SECONDS.
-    The options this convenience switch sets are equivilent to using the following options:
-    -video-pause PAUSE -seek 0 -playall -no-vmgm -switched-menus -quick-nav -menu-audio-fade 0 
-    If you wish to pass a list of pause times, use **-video-pause** LIST.
 
 
 == Thumbnail style ==
@@ -265,6 +325,31 @@ See also **-titleset** and **-vmgm**
 : **-thumb-fontsize** POINTS
     Font size to use for thumbnail titles
 
+
+== Slideshows ==
+
+: **-slideshow** IMAGES
+    Use **-slideshow IMAGES to pass in images for a slideshow, not
+    **-files** IMAGES.  **-slideshow IMAGES can be used multiple times if you
+    wish to make a menu with multiple slideshows (DVD only).  You can also make
+    a menu of mixed videos and slideshows by using **-slideshow** IMAGES, and
+    **-files** VIDEOS multiple times.  The number of **-titles** needs to match
+    the number of **-files** passed in plus the number of slideshows.  (Each
+    time you use **-slideshow** counts as one title.)
+    
+: **-carousel** NUM
+    Make an animated menu for the slideshow using NUM number of the slides
+    that were passed in with **-slideshow**, moving from one slide to the next.
+    To use a fade transition between slides, see **-carousel-fade**.
+    The length of the menu is determined by 1) **-menu-length** NUM if given,
+    and by 2) the length of the audio from **-bgaudio**.
+
+: **-carousel-fade**
+    Use fade transitions between slides in a carousel type menu.  Be sure the
+    menu length is long enough to support the 1 second transitions between the
+    slides.  The length is determined by 1) the length of the -bgaudio AUDIO
+    2) the length given with -menu-length NUM
+    See **-carousel** , **-bgaudio** and **-menu-length**
 
 
 = ADVANCED USAGE =
@@ -535,12 +620,13 @@ See also **-titleset** and **-vmgm**
 : **-outlinewidth**, **-outline-width** WIDTH
     For spumux outlinewidth variable.  If there is a large gap between words in a
     text button, this option may help.
-: **-video-pause PAUSE (single value or list)
-    The pause in seconds after playing a video title.  This is useful for slideshows ( see **-slideshow** )
-    as the 'slide' will remain on the screen for this length of time.  If you have grouped videos you
-    should probably not pause the videos that have a grouped title after it, but instead see
-    **-grouped-video-pause**.  Note: if you provide a list of values they must be one for each video.
-: **-group-video-pause PAUSE (single value or list)
+: **-video-pause** PAUSE (single value or list)
+    The pause in seconds after playing a video title.  This is useful for
+    slideshows, as the 'slide' will remain on the screen for this length of time.
+    If you have grouped videos you should probably not pause the videos that
+    have a grouped title after it, but instead see **-grouped-video-pause**.
+    Note: if you provide a list of values they must be one for each video.
+: **-group-video-pause** PAUSE (single value or list)
     The pause in seconds after a grouped video plays.  If you wish to pause after the whole group
     finishes, then only use a value greater than zero for the last video in the group.
     If providing a list of values they must equal the number of grouped videos
