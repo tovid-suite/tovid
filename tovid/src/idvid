@@ -181,6 +181,7 @@ function get_info ()
     ID_AUDIO_RATE="0"
     ID_AUDIO_NCH="0"
     ID_AUDIO_TRACKS=""
+    ID_VIDEO_TRACK=""
     V_ASPECT_RATIO="1:1"
     V_DURATION=""
     ID_LENGTH="0"
@@ -229,6 +230,11 @@ function get_info ()
         test_is_number ${MP_FRAMESIZE#*x} && ID_VIDEO_HEIGHT=${MP_FRAMESIZE#*x}
     fi
 
+    # Find out which channel is the video channel ( 1st )
+    # TODO Do we want to worry about videos with multiple channels of video ?
+    VIDEO_INFO=$(grep "Video:" "$SCRATCH_FILE")
+    ID_VIDEO_TRACKS=( $(sed -r 's/.*Stream #([0-9]\.[0-9]+).*/\1/' <<< "$VIDEO_INFO") )
+    ID_VIDEO_TRACK="${ID_VIDEO_TRACKS[0]}"
     # Find out what audio channels are available
     if test -n "$ID_AUDIO_ID"; then
         AUDIO_INFO=$(grep "Audio:" "$SCRATCH_FILE")
@@ -261,6 +267,7 @@ function get_info ()
             else
                 MP_TRACKNUM=$i
             fi
+            
             # last ditch efforts to get audio bitrate if we still don't have it
             if test ${A_BITRATES[i]} -eq 0; then
                 MP_ABITRATE=$(mplayer -vo null -ao null -frames 90 -channels 6 -identify \
@@ -277,6 +284,20 @@ function get_info ()
             fi
             A_HEX_TRACKS=("${A_HEX_TRACKS[@]}" "$MP_TRACKNUM")
         done
+        # read output of grep into AUDIO_NCH array to get Audio: lines
+        if [[ -n $ID_AUDIO_ID ]]; then
+            O=$IFS IFS=$'\n' AUDIO_NCH=($(grep Audio: "$SCRATCH_FILE")) IFS=$O
+            for chn in ${!AUDIO_NCH[@]}; do
+                # TODO flesh this out with other possibilities: 7.1 etc
+                if grep -q 5:1 <<<  ${AUDIO_NCH[chn]}; then
+                    ID_AUDIO_NCH[chn]=6
+                else
+                    ID_AUDIO_NCH[chn]=2
+                fi
+            done
+            ID_AUDIO_NCH=${ID_AUDIO_NCH[@]}
+            ID_AUDIO_NCH=${ID_AUDIO_NCH// /,}
+        fi
 
         tracks=( ${TRACKS[@]} )
         if (( ${#tracks[@]} > 0 )); then
@@ -443,6 +464,7 @@ function idvid_main ()
         echo "ID_AUDIO_BITRATE=$ID_AUDIO_BITRATE"
         echo "ID_AUDIO_NCH=$ID_AUDIO_NCH"
         echo "ID_AUDIO_TRACKS=$ID_AUDIO_TRACKS"
+        echo "ID_VIDEO_TRACK=$ID_VIDEO_TRACK"
         echo "ID_AUDIO_RATE=$ID_AUDIO_RATE"
         echo "V_ASPECT_WIDTH=$V_ASPECT_WIDTH"
         echo "ID_VIDEO_FRAMES=$ID_VIDEO_FRAMES"
