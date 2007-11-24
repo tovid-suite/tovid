@@ -1738,18 +1738,33 @@ fi
 
 # ******************************************************************************
 #
+# make sure # of channels correct for each audio track
 # set up VARS for -audiotrack encoding, if selected
 #
 # ******************************************************************************
 
-if test -n "$AUDIO_TRACK"; then
-    AIDS=( ${ID_AUDIO_TRACKS//,/ } )
+# get audio channels and track id's from idvids output
+AUDIO_CHANS=( ${ID_AUDIO_NCH//,/ } )
+AIDS=( ${ID_AUDIO_TRACKS//,/ } )
+# if -audiotracks was not passed, use 1st audio track ( if audio present )
+[[ -z ${AUDIO_TRACK[@]} ]] && ! $A_NOAUDIO && AUDIO_TRACK[0]=1
+# explicitly give the video track (also from idvid), as it is not always 0:0
+VIDEO_MAP="-map ${ID_VIDEO_TRACK//./:}"
+for i in ${!AUDIO_CHANS[@]}; do
+    test_is_number ${AUDIO_CHANS[i]} && AUDIO_CHAN[i]="-ac ${AUDIO_CHANS[i]}"
+done
+if $GENERATE_AUDIO; then
+    # need to set STREAM_CHANS to audio.wav if no audio
+    $A_NOAUDIO && STREAM_CHANS=( "${TMP_DIR}/audio.${AUD_SUF}" )
+else # set up mapping for ffmpeg, for each track we are going to encode
     for key in ${!AUDIO_TRACK[@]}; do # check if enough tracks for user's selection(s)
         val=${AUDIO_TRACK[key]}
         [ -z "$MAX_KEY" ] || ((val > MAX_KEY)) && MAX_KEY=$val && max_key=$key
     done
     if (( $MAX_KEY > ${#AIDS[@]} )); then
-        usage_error "There doesn't seem to be an audio track ${AUDIO_TRACK[key]}"
+        last_track=$(printf "%s\n" ${AUDIO_TRACK[@]} | sort -n| tail -n 1)
+        usage_error "You have asked for audio track $last_track, 
+        but the total audio track count is only ${#AIDS[@]}"
     fi
     unset AUDIO_STREAM AUDIO_WAV
     for i in ${!AUDIO_TRACK[@]}; do
@@ -1758,12 +1773,15 @@ if test -n "$AUDIO_TRACK"; then
         AUDIO_MAP="$AUDIO_MAP -map ${AUDIO_ID[i]//./:}"
         AUDIO_WAV_MAP=( "${AUDIO_WAV_MAP[@]}" -map $i:0 )
         AUDIO_STREAM=( "${AUDIO_STREAM[@]}" "${TMP_DIR}/audio${i}.$AUD_SUF" )
-        NEW_AUDIO[i]="-acodec ac3 -ab 224k  -newaudio"
+        STREAM_CHANS=( "${STREAM_CHANS[@]}" ${AUDIO_CHAN[track-1]} "${AUDIO_STREAM[i]}" )
+        NEW_AUDIO[i]="-acodec ac3 -ab 224k ${AUDIO_CHAN[track-1]} -newaudio"
         AUDIO_WAV[i]="$TMP_DIR/audio${i}.wav"
+        AUDIO_WAV_CHANS=( "${AUDIO_WAV_CHANS[@]}" ${AUDIO_CHAN[track-1]} "${AUDIO_WAV[i]}" )
     done
 
-    FF_AUDIO_MAP="-map 0:0 $AUDIO_MAP"
-    unset NEW_AUDIO[${#NEW_AUDIO[@]}-1]}
+    FF_CHANNEL_MAP="$VIDEO_MAP $AUDIO_MAP"
+    # we don't need the 1st track for -newaudio
+    unset NEW_AUDIO[0]
     ((${#AUDIO_TRACK[@]} > 1)) && OUTPUT_FILES="each file" && s=s
 fi
 
@@ -1810,13 +1828,14 @@ if $USE_FFMPEG; then
     esac
 fi
 if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; then
+    chan1=${AUDIO_TRACK[0]}
     yecho
     yecho "Using ffmpeg to encode audio and video."
 
-    FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k -ac 2"
+    FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k ${AUDIO_CHAN[chan1-1]} "
     FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $CLIP_SEEK $FF_LENGTH $ASYNC $ASYNC1 \
         $FF_TARGET $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_FPS $FF_ILACE \
-        $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT $FF_AUDIO_MAP"
+        $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT $FF_CHANNEL_MAP"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
     FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\" ${NEW_AUDIO[@]}"
     yecho "Encoding video and audio with the following command:"
@@ -1860,10 +1879,10 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     yecho "Found compliant audio and dumping the stream."
     precho "This sometimes causes errors when multiplexing; add '-force' to the tovid command line to re-encode if multiplexing fails."
     yecho "Copying the existing audio stream with the following command:"
-    AUDIO_CMD=($PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${AUDIO_STREAM[@]}")
+    AUDIO_CMD=($PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${STREAM_CHANS[@]}")
     yecho "${AUDIO_CMD[@]}"
     #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
-    function run_audio_cmd()
+    run_audio_cmd()
     {
         LOG_FILTER="$CRLF"
         "${AUDIO_CMD[@]}" >> "$LOG_FILE" 2>&1 &
@@ -1893,7 +1912,7 @@ else
         AUDIO_IN_FILE[1]="${AUDIO_WAV[0]}"
 
         #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null $MP_AUDIOTRACK_CMD -ao pcm:waveheader:file=\"$AUDIO_WAV\" \"$IN_FILE\""
-        AUDIO_CMD=( $PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" $ASYNC1 $AUDIO_MAP -ar $SAMPRATE -ac 2 -acodec pcm_s16le -y "${AUDIO_WAV[@]}" )
+        AUDIO_CMD=( $PRIORITY ffmpeg -y $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" $ASYNC1 $AUDIO_MAP -ar $SAMPRATE -acodec pcm_s16le "${AUDIO_WAV_CHANS[@]}" )
 
         # Generate or dump audio
         yecho "Normalizing the audio stream${s}."
@@ -1927,11 +1946,11 @@ else
         AUDIO_ENC=( "${AUDIO_ENC[@]}" -i "${AUDIO_IN_FILE[@]}" )
         yecho "Encoding audio stream to $AUD_SUF with the following command:"
     fi
-    AUDIO_ENC=( "${AUDIO_ENC[@]}" -vn -ab ${AUD_BITRATE}k -ar $SAMPRATE -ac 2 )
+    AUDIO_ENC=( "${AUDIO_ENC[@]}" -vn -ab ${AUD_BITRATE}k -ar $SAMPRATE )
     ! $DO_NORM && AUDIO_ENC=( "${AUDIO_ENC[@]}" $CLIP_SEEK $FF_LENGTH $AUDIO_MAP )
     AUDIO_ENC=( "${AUDIO_ENC[@]}" -acodec $AUD_SUF)
     $DO_NORM && AUDIO_ENC=( "${AUDIO_ENC[@]}" "${AUDIO_WAV_MAP[@]}" )
-    AUDIO_ENC=( "${AUDIO_ENC[@]}" -y "${AUDIO_STREAM[@]}" )
+    AUDIO_ENC=( "${AUDIO_ENC[@]}" -y "${STREAM_CHANS[@]}" )
     "${AUDIO_ENC[@]}" >> "$LOG_FILE" 2>&1 &
     yecho "${AUDIO_ENC[@]}"
 
@@ -1953,6 +1972,7 @@ else
 
 fi # encode audio
 
+[[ -n "${AUDIO_WAV[@]}" ]] && rm -fv "${AUDIO_WAV[@]}"
 
 # ******************************************************************************
 #
