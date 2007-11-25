@@ -46,7 +46,6 @@ __all__ = [\
     'deps',
     'filetypes',
     'layout'
-    'media',
     'odict',
     'opts',
     'output',

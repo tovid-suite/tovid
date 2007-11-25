@@ -18,6 +18,7 @@ __all__ = [\
 
 from libtovid import utils
 from libtovid import xml
+from libtovid.transcode import mplayer
 
 # spumux XML elements and valid attributes
 """
@@ -139,7 +140,7 @@ def add_subtitles(movie_filename, sub_filenames):
                         files to include (.sub/.srt etc.)
 
     """
-    infile = load_media(movie_filename)
+    infile = mplayer.identify(movie_filename)
     width, height = infile.scale
 
     # Convert sub_filenames to list if necessary

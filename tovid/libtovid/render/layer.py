@@ -42,7 +42,7 @@ from libtovid.utils import get_file_type
 from libtovid.render.drawing import Drawing, save_image
 from libtovid.render.effect import Effect
 from libtovid.render.animation import Keyframe, Tween
-from libtovid.media import MediaFile
+from libtovid.transcode.media import MediaFile
 from libtovid.transcode import rip
 from libtovid import log
 
