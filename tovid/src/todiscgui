@@ -18,12 +18,7 @@ See the wiki page about metagui for more details:
 
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
-from libtovid.filetypes import *
-
-# grepper: Move this to where it's needed
-from libtovid.filetypes import all_files, image_files, jpeg, gif, png, tga, bmp
-slideshow_filetypes = [image_files, jpeg, gif, png, tga, bmp, all_files]
-
+from libtovid import filetypes
 
 ### --------------------------------------------------------------------
 ### -files and -titles
@@ -57,7 +52,10 @@ titles = TextList('Video titles', '-titles', None,
 
 slideshow_tooltip='Image files for the slideshow.'
 
-slideshow_filetypes=[image_files, jpeg, gif, png, tga, bmp, all_files]
+slideshow_filetypes = [filetypes.all_files]
+slideshow_filetypes.append(filetypes.image_files)
+slideshow_filetypes.extend(filetypes.match_types('image'))
+
 tab_list = []
 main_panel = VPanel('slideshow',
         Text('Title', '-titles', '',

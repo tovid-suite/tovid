@@ -679,6 +679,15 @@ class FileList (Control):
                  default=None,
                  help='',
                  **kwargs):
+        """Create a widget with a list of files, and add/remove buttons.
+        Keywords:
+        
+            mimetypes: List of mime types to show in the file dialog. Ex.:
+                       ['image/jpeg', 'image/png', 'video/quicktime']
+                       Partial-name matches are accepted, so you can also do:
+                       ['image/', 'video/']
+        
+        """
         Control.__init__(self, list, label, option, default, help, **kwargs)
         self.filetypes=[('All Files', '*.*')]
         if 'filetypes' in kwargs:
