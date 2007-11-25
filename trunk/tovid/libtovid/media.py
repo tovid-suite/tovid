@@ -115,6 +115,7 @@ def load_media(filename, length_accuracy=False):
     cmd.run(capture=True)
     # Look for mplayer's "ID_..." lines and include each assignment in mp_dict
     for line in cmd.get_output().splitlines():
+        log.debug(line)
         if line.startswith("ID_"):
             left, right = line.split('=')
             mp_dict[left] = right.strip()

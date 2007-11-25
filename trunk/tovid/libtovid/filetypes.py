@@ -4,6 +4,22 @@
 """Defines several commonly-used multimedia and image file types.
 """
 
+import mimetypes
+
+image_types = {}
+video_types = {}
+audio_types = {}
+
+# Get all known image, video, and audio types/extensions
+for ext, typename in mimetypes.types_map.items():
+    if typename.startswith('image/'):
+        image_types[ext] = typename
+    elif typename.startswith('video/'):
+        video_types[ext] = typename
+    elif typename.startswith('audio/'):
+        audio_types[ext] = typename
+
+
 all_files = ('All files', '*.*')
 
 # image files
