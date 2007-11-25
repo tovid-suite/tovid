@@ -2,5 +2,13 @@
 # __init__.py (transcode)
 
 __all__ = [\
-    "encode",
-    "rip"]
+    'encode',
+    'identify',
+    'media',
+    'rip',
+
+    # Backends
+    'ffmpeg',
+    'mpeg2enc',
+    'mplayer',
+    'mplex']

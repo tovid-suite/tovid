@@ -15,8 +15,6 @@ import os
 import sys
 import Image # for im.size, etc..
 import optparse
-# animation.Keyframe|Tween
-# flipbook.Flipbook|Drawing|Keyframe|MediaFile
 from libtovid.render import *
 from libtovid.transcode import *
 

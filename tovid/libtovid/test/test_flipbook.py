@@ -11,7 +11,7 @@ sys.path.insert(0, '..')
 from libtovid.render.drawing import Drawing
 from libtovid.render.flipbook import Flipbook
 from libtovid.render import layer
-from libtovid.media import MediaFile
+from libtovid.transcode import mplayer
 from libtovid import standard
 
 class TestFlipbook(unittest.TestCase):
@@ -47,7 +47,7 @@ class TestFlipbook(unittest.TestCase):
         fb = Flipbook(2, 'dvd', 'ntsc')
 
         # Add frames
-        mf = load_media('/tmp/testflip.m2v')
+        mf = mplayer.identify('/tmp/testflip.m2v')
         mf.rip_frames([0, 10])
 
         # Add a video also
