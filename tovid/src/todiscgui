@@ -8,7 +8,7 @@ Usage:
     $ todiscgui
 
 This GUI is written using the 'metagui' module from libtovid, a high-level
-GUI design language that involves very little code.
+GUI design language that involves relatively little code.
 
 See the wiki page about metagui for more details:
 
