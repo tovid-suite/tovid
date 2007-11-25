@@ -18,7 +18,7 @@ __all__ = [\
     'to_unicode',
     'trim',
     'wait'
-    ]
+]
 
 import os
 import sys
@@ -103,12 +103,12 @@ def trim(text):
 def ratio_to_float(ratio):
     """Convert a string expressing a numeric ratio, with X and Y parts
     separated by a colon ':', into a decimal number.
-    
+
     For example:
-        
+
         >>> ratio_to_float('4:3')
         1.33333
-        
+
     """
     values = ratio.split(':', 1)
     if len(values) == 2:
@@ -244,9 +244,9 @@ def get_listtype():
     based on the version of IM installed.
     """
     if imagemagick_version() >= [6, 3, 5, 7]:
-	    listarg = 'font'
+        listarg = 'font'
     else:
-	    listarg = 'type'
+        listarg = 'type'
     return listarg
 
 if __name__ == '__main__':

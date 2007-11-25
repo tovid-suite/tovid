@@ -109,6 +109,12 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
     encode_method(source, target, **kw)
 
 
+# --------------------------------------------------------------------------
+#
+# Helper functions
+#
+# --------------------------------------------------------------------------
+
 def get_encoder(backend):
     """Get an encoding function."""
     if backend == 'ffmpeg':
@@ -117,6 +123,7 @@ def get_encoder(backend):
         return mencoder_encode
     elif backend == 'mpeg2enc':
         return mpeg2enc_encode
+
 
 def eval_keywords(**kw):
     """Interpret keywords that affect other keywords, and return the result.
@@ -130,13 +137,49 @@ def eval_keywords(**kw):
                     Overrides 'quant' and 'vbitrate' keywords.
 
     """
+    # Set quant and vbitrate to match desired quality
     if 'quality' in kw:
         kw['quant'] = 13-kw['quality']
         max_bitrate = _bitrate_limits[target.format][1]
         kw['vbitrate'] = kw['quality'] * max_bitrate / 10
+    # Set quant and vbitrate to fit desired size
     if 'fit' in kw:
         kw['quant'], kw['vbitrate'] = _fit(source, target, kw['fit'])
     return kw
+
+
+def _fit(source, target, fit_size):
+    """Return video (quantization, bitrate) to fit a video into a given size.
+    
+        source:   MediaFile input (the video being encoded)
+        target:   MediaFile output (desired target profile)
+        fit_size: Desired encoded file size, in MiB
+
+    """
+    assert isinstance(source, MediaFile)
+    assert isinstance(target, MediaFile)
+    fit_size = float(fit_size)
+    mpeg_overhead = fit_size / 100
+    aud_vid_size = fit_size - mpeg_overhead
+    audio_size = float(source.length * target.abitrate) / (8*1024)
+    video_size = aud_vid_size - audio_size
+    vid_bitrate = int(video_size*8*1024 / source.length)
+
+    print "Length:", source.length, "seconds"
+    print "Overhead:", mpeg_overhead, "MiB"
+    print "Audio:", audio_size, "MiB"
+    print "Video:", video_size, "MiB"
+    print "VBitrate:", vid_bitrate, "kbps"
+
+    # Keep bitrates sane for each disc format
+    lower, upper = _bitrate_limits[target.format]
+    quant = 3
+    if vid_bitrate < lower:
+        return (quant, lower)
+    elif vid_bitrate > upper:
+        return (quant, upper)
+    else:
+        return (quant, vid_bitrate)
 
 
 # --------------------------------------------------------------------------
@@ -566,37 +609,4 @@ def encode_frames(imagedir, outfile, format, tvsys, aspect, interlaced=False):
     pipe.run(capture=True)
     pipe.get_output() # and wait :)
 
-
-def _fit(source, target, fit_size):
-    """Return video (quantization, bitrate) to fit a video into a given size.
-    
-        source:   MediaFile input (the video being encoded)
-        target:   MediaFile output (desired target profile)
-        fit_size: Desired encoded file size, in MiB
-
-    """
-    assert isinstance(source, MediaFile)
-    assert isinstance(target, MediaFile)
-    fit_size = float(fit_size)
-    mpeg_overhead = fit_size / 100
-    aud_vid_size = fit_size - mpeg_overhead
-    audio_size = float(source.length * target.abitrate) / (8*1024)
-    video_size = aud_vid_size - audio_size
-    vid_bitrate = int(video_size*8*1024 / source.length)
-
-    print "Length:", source.length, "seconds"
-    print "Overhead:", mpeg_overhead, "MiB"
-    print "Audio:", audio_size, "MiB"
-    print "Video:", video_size, "MiB"
-    print "VBitrate:", vid_bitrate, "kbps"
-
-    # Keep bitrates sane for each disc format
-    lower, upper = _bitrate_limits[target.format]
-    quant = 3
-    if vid_bitrate < lower:
-        return (quant, lower)
-    elif vid_bitrate > upper:
-        return (quant, upper)
-    else:
-        return (quant, vid_bitrate)
 

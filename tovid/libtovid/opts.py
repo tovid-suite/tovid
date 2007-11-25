@@ -38,7 +38,6 @@ class Option (object):
         
             name:      Option name
             argformat: String describing format of expected arguments
-                       (see is_valid() for examples)
             default:   Default value, if any
             doc:       Manual-page-style documentation of the option
             alias:     An ('option', 'value') equivalent for this option.
@@ -62,14 +61,14 @@ class Option (object):
         # Flag alias for another option
         if self.alias:
             return 0
+        # Boolean: no argument
         elif isinstance(self.default, bool):
-            # Boolean: no argument
             return 0
+        # List: unlimited arguments
         elif isinstance(self.default, list):
-            # List: unlimited arguments
             return -1
+        # Unary: one argument
         else:
-            # Unary: one argument
             return 1
     
     def __str__(self):
@@ -125,6 +124,8 @@ class Usage (object):
         result += ', '.join(option_list)
         return result
 
+
+
 ### --------------------------------------------------------------------
 from copy import copy
 
@@ -135,12 +136,12 @@ def parse(args):
     
     The argument list is interpreted in this way:
     
-        - If it begins with '-', it's an option
-        - Arguments that precede the first option are ignored
-        - Anything following an option is an argument to that option
-        - If there is no argument to an option, it's a flag (True if present)
-        - If there's one argument to an option, it's a single string value
-        - If there are multiple arguments to an option, it's a list of strings
+        * If it begins with '-', it's an option
+        * Arguments that precede the first option are ignored
+        * Anything following an option is an argument to that option
+        * If there is no argument to an option, it's a flag (True if present)
+        * If there's one argument to an option, it's a single string value
+        * If there are multiple arguments to an option, it's a list of strings
 
     """
     args = copy(args)
@@ -150,8 +151,8 @@ def parse(args):
         arg = args.pop(0)
         # New option
         if arg.startswith('-'):
-            # Assume it's a flag unless we see arguments later
             current = arg.lstrip('-')
+            # Treat it as a flag unless we see arguments later
             options[current] = True
             
         # Argument to current option

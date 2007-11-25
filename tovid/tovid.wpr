@@ -5,8 +5,23 @@
 ##################################################################
 [project attributes]
 proj.directory-list = [{'dirloc': loc('.'),
+                        'excludes': [u'config.status',
+                                     u'missing',
+                                     u'configure',
+                                     u'ChangeLog',
+                                     u'Makefile.in',
+                                     u'Makefile',
+                                     u'bootstrap',
+                                     u'config.log',
+                                     u'autom4te.cache',
+                                     u'AUTHORS',
+                                     u'aclocal.m4',
+                                     u'icons',
+                                     u'debian',
+                                     u'snippets'],
                         'filter': 'All Source Files',
                         'include_hidden': 0,
-                        'recursive': 1}]
+                        'recursive': 1,
+                        'watch_for_changes': 1}]
 proj.file-type = 'shared'
 proj.main-file = loc('src/todiscgui')
