@@ -5,14 +5,12 @@
 a profile of attributes including resolution, audio and video codecs and
 bitrates.
 
-Two functions are also provided:
+A function is also provided:
 
-    load_media(filename)
-        Return a MediaFile filled with attributes from the given file
     standard_media(format, tvsys)
         Return a MediaFile profile matching the given format and TV system
 
-These can be used for getting source and target MediaFiles for encoding via
+These can be used for getting a target MediaFile for encoding via
 one of the backends in libtovid.transcode.encode. For example:
 
     >>> dvd = standard_media('dvd', 'ntsc')
@@ -28,7 +26,6 @@ one of the backends in libtovid.transcode.encode. For example:
 
 __all__ = [\
     'MediaFile',
-    'load_media',
     'standard_media',
     'correct_aspect']
 
@@ -91,87 +88,6 @@ class MediaFile:
             ]
         # Add newlines and return
         return '\n'.join(lines)
-
-
-def load_media(filename, length_accuracy=False):
-    """Return a MediaFile filled with attributes read from a file.
-    
-        filename:  Name of a multimedia video file
-        
-    """
-    log.debug("load_media(%s)" % filename)
-    # TODO: Raise an exception if the file couldn't be identified
-    # TODO: Infer aspect ratio
-    media = MediaFile(filename)
-    mp_dict = {}
-    # Use mplayer
-    cmd = Command('mplayer',
-                  '-identify',
-                  '%s' % filename,
-                  '-vo', 'null',
-                  '-ao', 'null',
-                  '-frames', '1',
-                  '-channels', '6')
-    cmd.run(capture=True)
-    # Look for mplayer's "ID_..." lines and include each assignment in mp_dict
-    for line in cmd.get_output().splitlines():
-        log.debug(line)
-        if line.startswith("ID_"):
-            left, right = line.split('=')
-            mp_dict[left] = right.strip()
-            
-    # Check for existence of streams
-    if 'ID_VIDEO_ID' in mp_dict:
-        media.has_video = True
-    else:
-        media.has_video = False
-    if 'ID_AUDIO_ID' in mp_dict:
-        media.has_audio = True
-    else:
-        media.has_audio = False
-
-    # Parse the dictionary and set appropriate values
-    for left, right in mp_dict.iteritems():
-        if left == "ID_VIDEO_WIDTH":
-            media.scale = (int(right), media.scale[1])
-        elif left == "ID_VIDEO_HEIGHT":
-            media.scale = (media.scale[0], int(right))
-        elif left == "ID_VIDEO_FPS":
-            media.fps = float(right)
-        elif left == "ID_VIDEO_FORMAT":
-            media.vcodec = right
-        elif left == "ID_VIDEO_BITRATE":
-            media.vbitrate = int(right) / 1000
-        elif left == "ID_AUDIO_CODEC":
-            media.acodec = right
-        elif left == "ID_AUDIO_FORMAT":
-            audio_format = right
-        elif left == "ID_AUDIO_BITRATE":
-            media.abitrate = int(right) / 1000
-        elif left == "ID_AUDIO_RATE":
-            media.samprate = int(right)
-        elif left == "ID_AUDIO_NCH":
-            media.channels = right
-        elif left == 'ID_LENGTH':
-            media.length = float(right)
-    media.expand = media.scale
-
-    # Length accuracy
-    if (length_accuracy):
-        media.length = float(commands.getoutput("mencoder '%s' -quiet -ovc copy -oac pcm -o /dev/null 2>/dev/null | awk '/Video stream/ {print $10}'" % filename))
-
-    
-    # Fix mplayer's audio codec naming for ac3 and mp2
-    if media.acodec == "8192":
-        media.acodec = "ac3"
-    elif media.acodec == "80":
-        media.acodec = "mp2"
-    # Fix mplayer's video codec naming for mpeg1 and mpeg2
-    if media.vcodec == "0x10000001":
-        media.vcodec = "mpeg1"
-    elif media.vcodec == "0x10000002":
-        media.vcodec = "mpeg2"
-    return media
 
 
 def standard_media(format, tvsys):
@@ -262,14 +178,4 @@ def correct_aspect(source, target, aspect='auto'):
 
 # Self-test; executed when this file is run standalone
 if __name__ == '__main__':
-    # If no arguments were provided, print usage notes
-    if len(sys.argv) == 1:
-        print "Usage: media.py FILE"
-    else:
-        print "Creating a MediaFile object from file: %s" % sys.argv[1]
-        infile = load_media(sys.argv[1])
-        print "------------------------------"
-        print infile
-        print "------------------------------"
-
-
+    pass

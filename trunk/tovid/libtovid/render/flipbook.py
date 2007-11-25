@@ -76,8 +76,8 @@ from libtovid.render.animation import Keyframe
 from libtovid.render.drawing import Drawing, write_ppm, write_png, interlace_drawings
 from libtovid.render import layer, effect
 from libtovid import standard
-from libtovid.media import MediaFile, standard_media, load_media
-from libtovid.transcode import encode
+from libtovid.transcode.media import MediaFile, standard_media
+from libtovid.transcode import encode, mplex, mplayer
 from libtovid import utils
 
 class Flipbook:
@@ -305,9 +305,9 @@ class Flipbook:
 
         os.system("ls -al %s" % m2v_file)
         os.system("cp %s /tmp/go.m2v" % m2v_file)
-        vidonly = load_media(m2v_file)
+        vidonly = mplayer.identify(m2v_file)
 
-        # FIX the length of the load_media's bad ass..
+        # Fix length
         vidonly.length = float(self.seconds)
 
         outvid = MediaFile(out_filename, self.format, self.tvsys)
@@ -319,7 +319,7 @@ class Flipbook:
         encode.encode_audio(vidonly, ac3_file, outvid)
 
         print "Mplex..."
-        encode.mplex_streams(m2v_file, ac3_file, outvid)
+        mplex.mux(m2v_file, ac3_file, outvid)
 
         # Clean up
         print "Cleaning up %s ..." % tmp_workdir
