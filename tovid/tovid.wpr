@@ -13,15 +13,18 @@ proj.directory-list = [{'dirloc': loc('.'),
                                      u'Makefile',
                                      u'bootstrap',
                                      u'config.log',
+                                     u'libtovid/media.py',
                                      u'autom4te.cache',
                                      u'AUTHORS',
                                      u'aclocal.m4',
                                      u'icons',
                                      u'debian',
-                                     u'snippets'],
+                                     u'snippets',
+                                     u'libtovid/transcode/identify.py'],
                         'filter': 'All Source Files',
                         'include_hidden': 0,
                         'recursive': 1,
                         'watch_for_changes': 1}]
+proj.file-list = [loc('libtovid/transcode/identify.py')]
 proj.file-type = 'shared'
 proj.main-file = loc('src/todiscgui')

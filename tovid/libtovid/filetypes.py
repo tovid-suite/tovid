@@ -4,13 +4,15 @@
 """Defines several commonly-used multimedia and image file types.
 """
 
-__all__ = ['match_types']
+__all__ = [\
+    'match_types',
+    'get_extensions',
+    'all_files',
+    'image_files',
+    'video_files',
+    'audio_files']
 
 import mimetypes
-
-image_types = {}
-video_types = {}
-audio_types = {}
 
 def match_types(containing):
     """Return a list of (type, extensions) tuples for matching mimetypes.
@@ -42,48 +44,20 @@ def match_types(containing):
 
     # Convert to tuple-list form
     return types.items()
-    
-    
 
-# Get all known image, video, and audio types/extensions
-for ext, typename in mimetypes.types_map.items():
-    if typename.startswith('image/'):
-        image_types[ext] = typename
-    elif typename.startswith('video/'):
-        video_types[ext] = typename
-    elif typename.startswith('audio/'):
-        audio_types[ext] = typename
 
+def get_extensions(containing):
+    """Return a space-separated string of all extensions for matching types.
+    Like match_types, but only return the extensions.
+    """
+    type_dict = dict(match_types(containing))
+    ext_list = type_dict.values()
+    return ' '.join(ext_list)
+    
 
 all_files = ('All files', '*.*')
+image_files = ('Image files', get_extensions('image'))
+video_files = ('Video files', get_extensions('video'))
+audio_files = ('Audio files', get_extensions('audio'))
 
-# image files
-jpeg = ('JPEG files', '*.jpg')
-png = ('PNG files', '*.png')
-tga = ('TGA files', '*.tga')
-gif = ('GIF files', '*.gif')
-bmp = ('BMP files', '*.bmp')
-image_files = ('Image files', '*.jpg *.png *.tga *.bmp *.gif')
-
-# video files
-mpeg = ('MPEG files', '*.mpg')
-avi = ('AVI files', '*.avi')
-mov = ('MOV files', '*.mov')
-mp4 = ('MPEG4 files', '*.mp4')
-rm = ('Realmedia files', '*.rm')
-mkv = ('Matroska files', '*.mkv')
-video_files = ('Video files', '*.mpg *.avi *.rm *.mkv *.mp4')
-
-# audio files
-wav = ('WAV files', '*.wav')
-mp3 = ('MP3 files', '*.mp3')
-ac3 = ('AC3 files', '*.ac3')
-ra = ('Realaudio files', '*.ra')
-flac = ('FLAC files', '*.flac')
-aac = ('AAC files', '*.aac')
-m4a = ('M4A files', '*.m4a')
-mp2 = ('MPEG audio files', '*.mp2 *.mpa')
-ogg = ('OGG files', '*.ogg')
-mka = ('Matroska audio files', '*.mka')
-audio_files = ('Audio files', '*.wav *.mp3 *.ac3 *.mp2 *.ra *.flac *.aac *.m4a *.ogg *.mka')
  
