@@ -20,6 +20,11 @@ See the wiki page about metagui for more details:
 from libtovid.metagui import *
 from libtovid.filetypes import *
 
+# grepper: Move this to where it's needed
+from libtovid.filetypes import all_files, image_files, jpeg, gif, png, tga, bmp
+slideshow_filetypes = [image_files, jpeg, gif, png, tga, bmp, all_files]
+
+
 ### --------------------------------------------------------------------
 ### -files and -titles
 ### --------------------------------------------------------------------
@@ -467,6 +472,7 @@ burning = Panel("Burning",
         'Select or type your burning device (default: /dev/dvdrw)',
         'load', 'Select or type your burning device')
 )
+
 
 ### --------------------------------------------------------------------
 ### Application and GUI
