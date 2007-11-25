@@ -107,12 +107,12 @@ usage = Usage('pytovid [options] -in FILE -out NAME', *allowed_options)
 
 if __name__ == '__main__':
 
-    if len(sys.argv) < 5:
+    options = parse(sys.argv)
+
+    if 'in' not in options or 'out' not in options:
         print usage
         print "Please provide an input file (-in) and output name (-out)."
         sys.exit(1)
-
-    options = parse(sys.argv[1:])
 
     encode.encode(options['in'], options['out'], **options)
     

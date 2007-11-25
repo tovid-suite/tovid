@@ -78,7 +78,7 @@ def main():
     if len(sys.argv) < 2:
         print "Displays and refreshes a given image file"
         print "Usage: todraw FILE"
-        exit(1)
+        sys.exit(1)
     filename = sys.argv[1]
     root.title("todraw")
     #root.withdraw()
@@ -106,5 +106,5 @@ def console():
 ### --------------------------------------------------------------------
 
 if __name__ == '__main__':
-    #main()
+    main()
     console()

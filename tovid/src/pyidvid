@@ -4,32 +4,40 @@
 import sys
 import os
 
-from libtovid.opts import Option, OptionDict
+from libtovid.opts import Option, Usage, parse
 from libtovid.media import load_media
 from libtovid import log
 
-# Command-line options
-cli_opts = [\
+# Command-line usage
+usage = Usage('pyidvid [options] -files ...',
+    Option('files', 'FILE[,FILE...]', [],
+           """A list of multimedia video files to identify.""",
+           required=True),
+
     Option('verbose', '[terse|normal|all]', 'normal',
            """Verbosity level. 'terse' prints short output suitable for
            parsing, and nothing else; 'normal' displays summarized stats
            in plain English; 'all' prints all output from subprocesses
-           along with normal summary stats."""),
-    Option('files', 'FILE[,FILE...]', [],
-           """A list of multimedia video files to identify.""")
-    ]
-    
+           along with normal summary stats.""")
+)
+
 if __name__ == '__main__':
-    useropts = OptionDict(cli_opts)
-    # If no arguments were provided, print usage notes
-    if len(sys.argv) < 3:
-        print "Usage: pyidvid [OPTIONS] -files FILE ..."
-        print "where OPTIONS may be:"
-        print useropts.usage()
+
+    options = parse(sys.argv)
+
+    if 'files' not in options:
+        print usage
+        print "Please provide -files"
         sys.exit(1)
-    else:
-        useropts.override(sys.argv[1:])
-        for file in useropts['files']:
-            log.info("Identifying file: %s" % file)
-            infile = load_media(file)
-            print infile
+
+    files = options['files']
+    if isinstance(files, str):
+        files = [files]
+
+    if 'verbose' in options:
+        log.level = 'debug'
+        
+    for file in files:
+        log.info("Identifying file: %s" % file)
+        infile = load_media(file)
+        print infile

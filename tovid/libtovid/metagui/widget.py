@@ -1,6 +1,9 @@
 #! /usr/bin/env python
 # widget.py
 
+"""Defines a generic Widget class.
+"""
+
 __all__ = ['Widget']
 
 import Tkinter as tk

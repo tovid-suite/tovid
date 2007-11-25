@@ -110,7 +110,7 @@ if __name__ == '__main__':
     
     # Print out disc structure
     print
-    print "Authoring the following disc structure:"
+    print "Creating the following disc structure:"
     print
     if disc.topmenu:
         print "  Top menu:", disc.topmenu.filename
