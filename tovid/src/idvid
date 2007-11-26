@@ -291,6 +291,9 @@ function get_info ()
                 # TODO flesh this out with other possibilities: 7.1 etc
                 if grep -q 5:1 <<<  ${AUDIO_NCH[chn]}; then
                     ID_AUDIO_NCH[chn]=6
+               elif grep -q channels <<< ${AUDIO_NCH[chn]}; then
+                    ID_AUDIO_NCH[chn]=$(sed -r 's/.* ([0-9]+) channels.*/\1/' \
+                    <<< ${AUDIO_NCH[chn]})
                 else
                     ID_AUDIO_NCH[chn]=2
                 fi
