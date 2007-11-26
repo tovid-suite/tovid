@@ -211,6 +211,7 @@ KEEPFILES=false
 AUDIO_TRACK=""
 AUDIO_MAP=""
 SLICE=false
+DOWNMIX=false
 ASYNC=""
 
 # Make note of when encoding starts, to determine total time later.
@@ -564,6 +565,9 @@ function get_args()
                     DO_SHIFT=false
                 fi
                 AUDIO_TRACK=( ${AUDIO_TRACK//,/ } )
+                ;;
+            "-downmix" )
+                DOWNMIX=:
                 ;;
             "-ffmpeg" )
                 USE_FFMPEG=:
@@ -1746,17 +1750,9 @@ fi
 # get audio channels and track id's from idvids output
 AUDIO_CHANS=( ${ID_AUDIO_NCH//,/ } )
 AIDS=( ${ID_AUDIO_TRACKS//,/ } )
-# if -audiotracks was not passed, use 1st audio track ( if audio present )
-[[ -z ${AUDIO_TRACK[@]} ]] && ! $A_NOAUDIO && AUDIO_TRACK[0]=1
-# explicitly give the video track (also from idvid), as it is not always 0:0
-VIDEO_MAP="-map ${ID_VIDEO_TRACK//./:}"
-for i in ${!AUDIO_CHANS[@]}; do
-    test_is_number ${AUDIO_CHANS[i]} && AUDIO_CHAN[i]="-ac ${AUDIO_CHANS[i]}"
-done
-if $GENERATE_AUDIO; then
-    # need to set STREAM_CHANS to audio.wav if no audio
-    $A_NOAUDIO && STREAM_CHANS=( "${TMP_DIR}/audio.${AUD_SUF}" )
-else # set up mapping for ffmpeg, for each track we are going to encode
+# make sure user didn't mess up passing in audio tracks to encode
+unset MAX_KEY val max_key
+if test -n "$AUDIO_TRACK"; then
     for key in ${!AUDIO_TRACK[@]}; do # check if enough tracks for user's selection(s)
         val=${AUDIO_TRACK[key]}
         [ -z "$MAX_KEY" ] || ((val > MAX_KEY)) && MAX_KEY=$val && max_key=$key
@@ -1766,6 +1762,51 @@ else # set up mapping for ffmpeg, for each track we are going to encode
         usage_error "You have asked for audio track $last_track, 
         but the total audio track count is only ${#AIDS[@]}"
     fi
+fi
+# if -audiotracks was not passed, use 1st audio track ( if audio present )
+[[ -z ${AUDIO_TRACK[@]} ]] && ! $A_NOAUDIO && AUDIO_TRACK[0]=1
+# explicitly give the video track (also from idvid), as it is not always 0:0
+VIDEO_MAP="-map ${ID_VIDEO_TRACK//./:}"
+# if downmixing, make sure ffmpeg supports it for the codec
+if $DOWNMIX; then
+    yecho
+    yecho "Testing whether downmixing the audio is possible"
+    # get the audio track with the most # of channels
+    # if they are all stereo user is wasting time passing -downmix !
+    for i in ${!AUDIO_TRACK[@]}; do
+        key=${AUDIO_TRACK[i]}
+        val=${AUDIO_CHANS[key-1]}
+        [ -z "$MAX_KEY" ] || ((val > MAX_KEY)) && MAX_KEY=$val && max_key=$i
+    done
+    testfile="/tmp/$(date +%s).mpg"
+    ffm_cmd=( ffmpeg -i "$IN_FILE" -ss 2 -ab 224k -ac 2 \
+     -target ntsc-dvd -b 6000k -vframes 1 $VIDEO_MAP \
+     -map ${AIDS[max_key]//./:} "$testfile")
+    yecho "Running ${ffm_cmd[@]}"
+    if ! "${ffm_cmd[@]}" >/dev/null 2>&1; then
+        echo
+        yecho "Downmixing not possible: using original channels"
+        sleep 3
+        yecho
+    else
+        echo
+        yecho "Downmixing OK: continuing"
+        sleep 3
+        yecho
+        for i in ${!AUDIO_CHANS[@]}; do
+            AUDIO_CHANS[i]=2
+        done
+    fi
+    rm -fv "$testfile"
+fi
+
+for i in ${!AUDIO_CHANS[@]}; do
+    test_is_number ${AUDIO_CHANS[i]} && AUDIO_CHAN[i]="-ac ${AUDIO_CHANS[i]}"
+done
+if $GENERATE_AUDIO; then
+    # need to set STREAM_CHANS to audio.wav if no audio
+    $A_NOAUDIO && STREAM_CHANS=( "${TMP_DIR}/audio.${AUD_SUF}" )
+else # set up mapping for ffmpeg, for each track we are going to encode
     unset AUDIO_STREAM AUDIO_WAV
     for i in ${!AUDIO_TRACK[@]}; do
         track="${AUDIO_TRACK[i]}"
