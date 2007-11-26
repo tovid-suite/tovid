@@ -250,6 +250,14 @@ letterboxing or anamorphic scaling.
     **-audiotrack 3,1,2**. Use **idvid** on your source video to determine which
     audio tracks it contains.
 
+: **-downmix**
+    Encode all audio tracks as stereo.  This can save space on your DVD if
+    your player only does stereo.  The default behavior of tovid is to use
+    the original number of channels in each track.  For aac audio, downmixing
+    is not possible: tovid runs a quick 1 frame test to try to downmix the
+    input track with the largest number of channels, and if it fails then it
+    will revert to the default behavior of using the original channels.
+
 : **-async** //NUM//
     Adjust audio synchronization by //NUM// seconds.
 
