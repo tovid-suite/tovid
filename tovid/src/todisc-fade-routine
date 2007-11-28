@@ -50,33 +50,42 @@ MIST_CEILING=33
 BACKGROUND_FADE_LENGTH=0.7
 TITLE_FADE_LENGTH=1.0
 THUMBS_FADE_LENGTH=1.0
- 
+
 # fade in points (in seconds)
 BACKGROUND_FADE_IN_START_TIME=0
 BACKGROUND_FADE_IN_END_TIME=$(awk 'BEGIN { printf("'"$BACKGROUND_FADE_IN_START_TIME"'" + "'"$BACKGROUND_FADE_LENGTH"'")"\n" ; exit  }')
- 
-TITLE_FADE_IN_START_TIME=1.0
+
+# title fade-in start time is possibly user defined
+TITLE_FADE_IN_START_TIME=${TITLE_FADE_IN_START_TIME:-1}
 TITLE_FADE_IN_END_TIME=$(awk 'BEGIN { printf("'"$TITLE_FADE_IN_START_TIME"'" + "'"$TITLE_FADE_LENGTH"'") "\n" ; exit  }')
- 
+# thumbs fade-in start time is possibly user defined 
 THUMBS_FADE_IN_START_TIME=${THUMBS_FADE_IN_START_TIME:-3.5}
 THUMBS_FADE_IN_END_TIME=$(awk 'BEGIN { printf("'"$THUMBS_FADE_IN_START_TIME"'" + "'"$THUMBS_FADE_LENGTH"'") "\n" ; exit  }')
- 
+
 # fade out points (in seconds)
 BACKGROUND_FADE_OUT_END_TIME=$MENU_LEN
-BACKGROUND_FADE_OUT_START_TIME=$(awk 'BEGIN { printf("'"$BACKGROUND_FADE_OUT_END_TIME"'" - "'"$BACKGROUND_FADE_LENGTH"'") "\n" ; exit  }')
- 
-TITLE_FADE_OUT_END_TIME=$(awk 'BEGIN { printf("'"$MENU_LEN"'" - "'"$BACKGROUND_FADE_LENGTH"'")"\n" ; exit  }')
 
-TITLE_FADE_OUT_START_TIME=$(awk 'BEGIN { printf("'"$TITLE_FADE_OUT_END_TIME"'" - "'"$TITLE_FADE_LENGTH"'")"\n" ; exit  }')
- 
-THUMBS_FADE_OUT_END_TIME=$(awk 'BEGIN { printf("'"$BACKGROUND_FADE_OUT_START_TIME"'" - "'"$THUMBS_FADE_LENGTH"'")"\n" ; exit  }')
-THUMBS_FADE_OUT_START_TIME=$(awk 'BEGIN { printf("'"$THUMBS_FADE_OUT_END_TIME"'" - "'"$THUMBS_FADE_LENGTH"'")"\n" ; exit  }')
- 
- 
+# background fade-out start time is possibly user defined
+background_fade_out_start_time=$(awk 'BEGIN { printf("'"$BACKGROUND_FADE_OUT_END_TIME"'" - "'"$BACKGROUND_FADE_LENGTH"'") "\n" ; exit  }')
+BACKGROUND_FADE_OUT_START_TIME=${BACKGROUND_FADE_OUT_START_TIME:-$background_fade_out_start_time}
+
+# title fade out end time and start time are possibly user defined
+title_fade_out_end_time=$(awk 'BEGIN { printf("'"$MENU_LEN"'" - "'"$BACKGROUND_FADE_LENGTH"'")"\n" ; exit  }')
+TITLE_FADE_OUT_END_TIME=${TITLE_FADE_OUT_END_TIME:-$title_fade_out_end_time}
+title_fade_out_start_time=$(awk 'BEGIN { printf("'"$TITLE_FADE_OUT_END_TIME"'" - "'"$TITLE_FADE_LENGTH"'")"\n" ; exit  }')
+TITLE_FADE_OUT_START_TIME=${TITLE_FADE_OUT_START_TIME:-$title_fade_out_start_time} 
+
+# thumbs fade out start time and end time are possibly user defined
+thumbs_fade_out_end_time=$(awk 'BEGIN { printf("'"$BACKGROUND_FADE_OUT_START_TIME"'" - "'"$THUMBS_FADE_LENGTH"'")"\n" ; exit  }')
+THUMBS_FADE_OUT_END_TIME=${THUMBS_FADE_OUT_END_TIME:-$thumbs_fade_out_end_time}
+thumbs_fade_out_start_time=$(awk 'BEGIN { printf("'"$THUMBS_FADE_OUT_END_TIME"'" - "'"$THUMBS_FADE_LENGTH"'")"\n" ; exit  }')
+THUMBS_FADE_OUT_START_TIME=${THUMBS_FADE_OUT_START_TIME:-$thumbs_fade_out_start_time}
+
+
 # ################################################
 # Translate things for frame-by-frame construction
 ANI_MENU_END_FRAME=$(awk -v fr=$FRAME_RATE -v al=$MENU_LEN 'BEGIN { printf("%d\n", (fr*al)); }')
- 
+
 BACKGROUND_FADE_IN_START_FRAME=$(awk -v fr=$FRAME_RATE -v bgfist=$BACKGROUND_FADE_IN_START_TIME 'BEGIN { printf("%d\n", (fr*bgfist)); }')
 
 BACKGROUND_FADE_IN_END_FRAME=$(awk -v fr=$FRAME_RATE -v bgfiet=$BACKGROUND_FADE_IN_END_TIME 'BEGIN { printf("%d\n", (fr*bgfiet)); }')
@@ -88,7 +97,7 @@ TITLE_FADE_IN_END_FRAME=$(awk -v fr=$FRAME_RATE -v tfiet=$TITLE_FADE_IN_END_TIME
 THUMBS_FADE_IN_START_FRAME=$(awk -v fr=$FRAME_RATE -v thfist=$THUMBS_FADE_IN_START_TIME 'BEGIN { printf("%d\n", (fr*thfist)); }')
 
 THUMBS_FADE_IN_END_FRAME=$(awk -v fr=$FRAME_RATE -v thfiet=$THUMBS_FADE_IN_END_TIME 'BEGIN { printf("%d\n", (fr*thfiet)); }')
- 
+
 BACKGROUND_FADE_OUT_START_FRAME=$(awk -v fr=$FRAME_RATE -v bgfost=$BACKGROUND_FADE_OUT_START_TIME 'BEGIN { printf("%d\n", (fr*bgfost)); }')
 
 BACKGROUND_FADE_OUT_END_FRAME=$(awk -v fr=$FRAME_RATE -v bgfoet=$BACKGROUND_FADE_OUT_END_TIME 'BEGIN { printf("%d\n", (fr*bgfoet)); }')
@@ -100,13 +109,13 @@ TITLE_FADE_OUT_END_FRAME=$(awk -v fr=$FRAME_RATE -v tfoet=$TITLE_FADE_OUT_END_TI
 THUMBS_FADE_OUT_START_FRAME=$(awk -v fr=$FRAME_RATE -v thfost=$THUMBS_FADE_OUT_START_TIME 'BEGIN { printf("%d\n", (fr*thfost)); }')
 
 THUMBS_FADE_OUT_END_FRAME=$(awk -v fr=$FRAME_RATE -v thfoet=$THUMBS_FADE_OUT_END_TIME 'BEGIN { printf("%d\n", (fr*thfoet)); }')
- 
+
 # Set fade rates (rise over run or alpha over frame number)
 BACKGROUND_FADE_RATE=$(echo "scale = 2; ($FADE_CEILING - $FADE_FLOOR) / ($FRAME_RATE * $BACKGROUND_FADE_LENGTH)" |bc)
 TITLE_FADE_RATE=$(echo "scale = 2; ($FADE_CEILING - $FADE_FLOOR) / ($FRAME_RATE * $TITLE_FADE_LENGTH)" |bc)
 MIST_FADE_RATE=$(echo "scale = 2; ($MIST_CEILING - $FADE_FLOOR) / ($FRAME_RATE * $TITLE_FADE_LENGTH)" |bc)
 THUMBS_FADE_RATE=$(echo "scale = 2; ($DISSOLVE_LIMIT - $FADE_FLOOR) / ($FRAME_RATE * $THUMBS_FADE_LENGTH)" |bc)
- 
+
 get_bg_opacity ()
 {
   if [[ 0 -le $frame && $frame -lt $BACKGROUND_FADE_IN_START_FRAME ]];  then D=$FADE_FLOOR; fi
@@ -122,7 +131,7 @@ get_bg_opacity ()
   if [[ $BACKGROUND_FADE_OUT_END_FRAME -le $frame && $frame -le $ANI_MENU_END_FRAME ]]; then D=$FADE_FLOOR; fi
   echo $D
 }
- 
+
 get_title_opacity ()
 {
   if [[ 0 -le $frame && $frame -lt $TITLE_FADE_IN_START_FRAME ]]; then
@@ -142,10 +151,10 @@ get_title_opacity ()
   if [[ $TITLE_FADE_OUT_END_FRAME -le $frame && $frame -le $ANI_MENU_END_FRAME ]]; then
       B=$FADE_FLOOR; C=$FADE_FLOOR
   fi
- 
+
   echo $B:$C
 }
- 
+
 get_thumb_opacity ()
 {
   if [[ 0 -le $frame && $frame -lt $THUMBS_FADE_IN_START_FRAME ]];  then S=$FADE_FLOOR; fi
@@ -159,7 +168,7 @@ get_thumb_opacity ()
       S=$(awk -v frame=$frame -v thfosf=$THUMBS_FADE_OUT_START_FRAME -v thfr=$THUMBS_FADE_RATE -v dl=$DISSOLVE_LIMIT  'BEGIN { printf("%d\n", (dl - ( (frame-thfosf) * thfr) )); }')
   fi
   if [[ $THUMBS_FADE_OUT_END_FRAME -le $frame && $frame -le $ANI_MENU_END_FRAME ]]; then S=$FADE_FLOOR; fi
- 
+
   echo $S
 }
 
