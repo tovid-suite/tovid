@@ -1779,15 +1779,17 @@ if $DOWNMIX; then
     yecho "Testing whether downmixing the audio is possible"
     # get the audio track with the most # of channels
     # if they are all stereo user is wasting time passing -downmix !
+    unset MAX_KEY
     for i in ${!AUDIO_TRACK[@]}; do
         key=${AUDIO_TRACK[i]}
         val=${AUDIO_CHANS[key-1]}
         [ -z "$MAX_KEY" ] || ((val > MAX_KEY)) && MAX_KEY=$val && max_key=$i
     done
     testfile="/tmp/$(date +%s).mpg"
+    track_key=${AUDIO_TRACK[max_key]}
     ffm_cmd=( ffmpeg -i "$IN_FILE" -ss 2 -ab 224k -ac 2 \
      -target ntsc-dvd -b 6000k -vframes 1 $VIDEO_MAP \
-     -map ${AIDS[max_key]//./:} "$testfile")
+     -map ${AIDS[track_key-1]//./:} "$testfile")
     yecho "Running ${ffm_cmd[@]}"
     if ! "${ffm_cmd[@]}" >/dev/null 2>&1; then
         echo
