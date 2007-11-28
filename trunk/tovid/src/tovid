@@ -772,14 +772,16 @@ EOF`
         bitrates=$(awk -F= '/^frame=/ {gsub("kbits/s", ""); print $NF}' "$LOG_FILE")
         # get highest value, and remove spaces with sed
         bitrates=$(sort -un <<< "$bitrates" | sed 's/^[ \t]*//;s/[ \t]*$//')
-        # add up all the values and divide by number of values
+        # average the values.  Add 000, so it is in bits.
         AVG_BITRATE=$(awk '{t+=$0} END{printf "%d\n", t/NR}' <<< "$bitrates")
+        AVG_BITRATE=${AVG_BITRATE}000
+        # Sort the values. Take last one for 'PEAK'.  Add 000 so it is in bits
         PEAK_BITRATE=$(sort -n <<< "$bitrates"|tail -n 1)
-        PEAK_BITRATE=${PEAK_BITRATE%.*}
+        PEAK_BITRATE=${PEAK_BITRATE%.*}000
     fi
     # Convert to kbits/sec
-#    test -n "$AVG_BITRATE" && AVG_BITRATE=$(expr $AVG_BITRATE \/ 1000)
-#    test -n "$PEAK_BITRATE" && PEAK_BITRATE=$(expr $PEAK_BITRATE \/ 1000)
+    test -n "$AVG_BITRATE" && AVG_BITRATE=$(expr $AVG_BITRATE \/ 1000)
+    test -n "$PEAK_BITRATE" && PEAK_BITRATE=$(expr $PEAK_BITRATE \/ 1000)
     KB_PER_MIN=$(expr $FINAL_SIZE \* 60 \/ $V_DURATION \+ 1)
     ENC_TIME_RATIO=$(echo "scale = 2; $SCRIPT_TOT_TIME / $V_DURATION" | bc)
     if $USE_FFMPEG; then
