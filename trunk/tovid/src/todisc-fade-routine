@@ -2,7 +2,7 @@
 # animenu-fade-init
 # Part of the tovid suite
 # =======================
-# A bash script that dynamically creates the fade algorithm 
+# A bash script that dynamically creates the fade algorithm
 # needed by animenu for menu fades
 #
 # Project homepage: http://www.tovid.org
@@ -28,7 +28,7 @@
 #           http://www.gnu.org/licenses/gpl.txt
 
 
-# Mostly written by  Joe "Mac North" Friedrichsen:
+# Mostly written by  Joe "MacNorth" Friedrichsen:
 
 
 # user-defined variables....
@@ -51,33 +51,37 @@ BACKGROUND_FADE_LENGTH=0.7
 TITLE_FADE_LENGTH=1.0
 THUMBS_FADE_LENGTH=1.0
 
+# ##############
+# many of the following vars can be defined by the calling (sourcing) script
+# look for ${FOO:-BAR} syntax or vars in small caps *and* LARGE CAPS
+
 # fade in points (in seconds)
 BACKGROUND_FADE_IN_START_TIME=0
 BACKGROUND_FADE_IN_END_TIME=$(awk 'BEGIN { printf("'"$BACKGROUND_FADE_IN_START_TIME"'" + "'"$BACKGROUND_FADE_LENGTH"'")"\n" ; exit  }')
 
-# title fade-in start time is possibly user defined
 TITLE_FADE_IN_START_TIME=${TITLE_FADE_IN_START_TIME:-1}
 TITLE_FADE_IN_END_TIME=$(awk 'BEGIN { printf("'"$TITLE_FADE_IN_START_TIME"'" + "'"$TITLE_FADE_LENGTH"'") "\n" ; exit  }')
-# thumbs fade-in start time is possibly user defined 
+
 THUMBS_FADE_IN_START_TIME=${THUMBS_FADE_IN_START_TIME:-3.5}
 THUMBS_FADE_IN_END_TIME=$(awk 'BEGIN { printf("'"$THUMBS_FADE_IN_START_TIME"'" + "'"$THUMBS_FADE_LENGTH"'") "\n" ; exit  }')
 
 # fade out points (in seconds)
 BACKGROUND_FADE_OUT_END_TIME=$MENU_LEN
 
-# background fade-out start time is possibly user defined
 background_fade_out_start_time=$(awk 'BEGIN { printf("'"$BACKGROUND_FADE_OUT_END_TIME"'" - "'"$BACKGROUND_FADE_LENGTH"'") "\n" ; exit  }')
 BACKGROUND_FADE_OUT_START_TIME=${BACKGROUND_FADE_OUT_START_TIME:-$background_fade_out_start_time}
 
-# title fade out end time and start time are possibly user defined
+
 title_fade_out_end_time=$(awk 'BEGIN { printf("'"$MENU_LEN"'" - "'"$BACKGROUND_FADE_LENGTH"'")"\n" ; exit  }')
 TITLE_FADE_OUT_END_TIME=${TITLE_FADE_OUT_END_TIME:-$title_fade_out_end_time}
-title_fade_out_start_time=$(awk 'BEGIN { printf("'"$TITLE_FADE_OUT_END_TIME"'" - "'"$TITLE_FADE_LENGTH"'")"\n" ; exit  }')
-TITLE_FADE_OUT_START_TIME=${TITLE_FADE_OUT_START_TIME:-$title_fade_out_start_time} 
 
-# thumbs fade out start time and end time are possibly user defined
+title_fade_out_start_time=$(awk 'BEGIN { printf("'"$TITLE_FADE_OUT_END_TIME"'" - "'"$TITLE_FADE_LENGTH"'")"\n" ; exit  }')
+TITLE_FADE_OUT_START_TIME=${TITLE_FADE_OUT_START_TIME:-$title_fade_out_start_time}
+
+
 thumbs_fade_out_end_time=$(awk 'BEGIN { printf("'"$BACKGROUND_FADE_OUT_START_TIME"'" - "'"$THUMBS_FADE_LENGTH"'")"\n" ; exit  }')
 THUMBS_FADE_OUT_END_TIME=${THUMBS_FADE_OUT_END_TIME:-$thumbs_fade_out_end_time}
+
 thumbs_fade_out_start_time=$(awk 'BEGIN { printf("'"$THUMBS_FADE_OUT_END_TIME"'" - "'"$THUMBS_FADE_LENGTH"'")"\n" ; exit  }')
 THUMBS_FADE_OUT_START_TIME=${THUMBS_FADE_OUT_START_TIME:-$thumbs_fade_out_start_time}
 
