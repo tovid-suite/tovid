@@ -95,6 +95,7 @@ SM_FADE=1
 AUDIO_FADE=:
 OPACITY=100
 MENU_FADE=false
+TRANSITION_TO_MENU=false
 TRANSPARENT=false
 PREVIEW=:
 PAUSE_TIME=10
@@ -1501,7 +1502,11 @@ while test $# -gt 0; do
                     FILENAMES[f]=${ARGS_ARRAY[f]}
                     filenames[f]=$(readlink -f "${ARGS_ARRAY[f]}")
                 done
-                SLIDESHOW=( ${SLIDESHOW[@]} false ) # is this a slideshow ?
+                if [[ $sshows -eq 1 && $inc_files -lt 1 ]]; then
+                    SLIDESHOW=( ${SLIDESHOW[@]} : ) # is this a slideshow ?
+                else
+                    SLIDESHOW=( ${SLIDESHOW[@]} false )
+                fi
                 FILES=( "${FILES[@]}" "${filenames[@]}" )
             else
                 ((num_slideshows++))
@@ -1570,6 +1575,13 @@ while test $# -gt 0; do
             IFS=""
             TITLES=( "${TITLES[@]}" "${ARGS_ARRAY[@]}" )
             IFS=$OIFS
+            ;;
+        "-slideshow-menu-thumbs" )
+            shift
+            get_listargs "$@"
+            for f in  ${!ARGS_ARRAY[@]}; do
+                SLIDESHOW_MENU_THUMBS[f]=$(readlink -f "${ARGS_ARRAY[f]}")
+            done
             ;;
         "-submenu-titles" )
             shift
@@ -1657,6 +1669,17 @@ while test $# -gt 0; do
         "-menu-fade" )
             MENU_FADE=:
             AUDIO_FADE=:
+            ;;
+	"-transition-to-menu" )
+            shift
+            get_listargs "$@"
+            transition_time=${ARGS_ARRAY[0]}
+            if [[ -n $transition_time ]]; then
+            	TRANSITION_TO_MENU_LEN=$transition_time
+            else
+                usage_error "-transition-to-menu requires an argument"
+            fi
+            TRANSITION_TO_MENU=:
             ;;
         "-tile3x1" | "-tile-3x1" )
             THREExONE=:
@@ -2120,7 +2143,6 @@ done
 ##############################################################################
 #                      Sanity checks and preliminaries                       #
 ##############################################################################
-
 # get script pid so we can kill the parent if doing recursive todisc's
 todisc_pids="$todisc_pids $$"
 
@@ -2130,6 +2152,18 @@ todisc_pids="$todisc_pids $$"
 SPUMUX_XML="$WORK_DIR/spumux.xml"
 DVDAUTHOR_XML="$WORK_DIR/dvdauthor.xml"
 PREVIEW_IMG="$WORK_DIR/preview.jpg"
+
+# if -slideshow-menu-thumbs passed, change with approprite FILE
+if [[ -n ${SLIDESHOW_MENU_THUMBS[@]} ]]; then
+    unset sld
+    ((sshows < 1)) && \
+     usage_error "You must be doing a slideshow to use -slideshow-menu-thumbs"
+    for f in ${!FILES[@]}; do
+        if ${SLIDESHOW[f]}; then # if this file is part of a slideshow...
+            FILES[f]="${SLIDESHOW_MENU_THUMBS[sld++]}" # replace it
+        fi
+    done
+fi
 
 # Make sure equal, nonzero number of titles and files were provided
 
@@ -2733,7 +2767,15 @@ yecho "${#FILES[@]} pics directories created"
 if $TEXTMENU && [[ -z $SHOWCASE_VIDEO && -z $BG_VIDEO ]]; then STATIC=:; fi
 # prevent user from using mutually exclusive options
 if $STATIC; then
-    MENU_FADE=false
+    if $TRANSITION_TO_MENU; then
+        usage_error "Do not use '-static' with '-transition-to-menu'"
+    else
+        if $MENU_FADE; then
+    		MENU_FADE=false
+        	yecho "Disabling menu fade for static menu"
+        	$WARN && sleep 5
+        fi
+    fi
 fi
 if $MENU_FADE || test -n "$BG_VIDEO"; then mkdir -v "$REAL_WORK_DIR/bg"; fi
 mkdir -v "$REAL_WORK_DIR/animenu"
@@ -2748,10 +2790,7 @@ fi
 if [[ -n "$SHOWCASE_VIDEO" ]]; then
     mkdir -v "$REAL_WORK_DIR/showcase"
 fi
-# if Fading menu, and no BG IMAGE OR VIDEO, fade thumbs right in after title
-if $MENU_FADE && [[ -z "$BG_PIC" && -z "$BG_VIDEO" ]]; then
-    THUMBS_FADE_IN_START_TIME=2.5
-fi
+    
 # if more than one value for AUDIO_LANG, make sure they equal video #
 if $AUDIOLANG &&  [[ ${#FILES[@]} -ne ${#AUDIO_LANG[@]} &&  ${#AUDIO_LANG[@]} -ne 1 ]]; then
     usage_error "Please give the same number of audio channels as videos.
@@ -2764,18 +2803,36 @@ if [[ -n ${ROTATE_ARRAY[@]} ]]; then
         You gave  ${#FILES[@]} video files and ${#ROTATE_ARRAY[@]} thumb rotate values."
     fi
 fi
+
+if [ ${#MENU_LEN[@]} -eq 1 ]; then
+    for ((i=0; i<=NUM_FILES; i++)); do
+        MENU_LEN[i]=${MENU_LEN[0]}
+    done
+fi
+# if Fading menu, and no BG IMAGE OR VIDEO, fade thumbs right in after title
+if $MENU_FADE && [[ -z "$BG_PIC" && -z "$BG_VIDEO" ]]; then
+    THUMBS_FADE_IN_START_TIME=2.5
+fi
+if $TRANSITION_TO_MENU; then
+    MENU_FADE=:
+    # some vars for when we source todisc-fade-routine
+    TITLE_FADE_IN_START_TIME=$((TRANSITION_TO_MENU_LEN-5))
+    THUMBS_FADE_IN_START_TIME=$(bc_math "$TITLE_FADE_IN_START_TIME + 2.5")
+    BACKGROUND_FADE_OUT_START_TIME=${MENU_LEN[MENU_NUM-1]}
+    TITLE_FADE_OUT_END_TIME=${MENU_LEN[MENU_NUM-1]}
+    TITLE_FADE_OUT_START_TIME=${MENU_LEN[MENU_NUM-1]}      
+    THUMBS_FADE_OUT_END_TIME=${MENU_LEN[MENU_NUM-1]}
+    THUMBS_FADE_OUT_START_TIME=${MENU_LEN[MENU_NUM-1]}
+    # if user did not pass in -loop value, set pause to 'inf'
+    ! $STATIC_LOOP && PAUSE_TIME="inf"
+fi
+
 # if only one seek value, then use for all videos
 if [ ${#SEEK_VAL[@]} -eq 1 ]; then
     for ((i=0; i<=NUM_FILES; i++)); do
         SEEK_VAL[i]=${SEEK_VAL[0]}
         SEEK[i]="-ss ${SEEK_VAL[i]}" # create seek value for each video
     done   
-fi
-
-if [ ${#MENU_LEN[@]} -eq 1 ]; then
-    for ((i=0; i<=NUM_FILES; i++)); do
-        MENU_LEN[i]=${MENU_LEN[0]}
-    done
 fi
 # allow -seek to have HH:MM:SS format passed
 for ((i=0; i<=NUM_FILES; i++)); do
@@ -2864,7 +2921,7 @@ fi
 # if only doing slidehshows, then STATIC=:.  For -slide-menu-mix as well
 # FIXME this will change if I get -menu-thumbs or slide-menu-thumbs working
 # or switched menus for carousel menus
-! $SINGLE_SLIDESHOW && ((num_slideshows==${#FILES[@]})) && STATIC=:
+#! $SINGLE_SLIDESHOW && ((num_slideshows==${#FILES[@]})) && STATIC=:
 
 # no playall for single slideshow, and it has its own menu block, not DO_MENU
 if $SINGLE_SLIDESHOW ; then
@@ -2885,7 +2942,7 @@ for i in ${!IN_FILES[@]}; do
     if $SHORTFILE; then
         ! $USER_SEEK_VAL && SEEK_VAL[i]=0
 #        ! $USER_AUDIO_FADE && FADE=0 # FIXME 
-        STATIC=:
+#        STATIC=:
         ! $USER_CHAPTERS && CHAPTERS[i]=1
     fi
 done
@@ -3310,7 +3367,7 @@ MAIN_POST="        <post> jump cell 1; </post>"
 if $MENU_FADE; then
     . todisc-fade-routine
     END_TIME=$(format_seconds $THUMBS_FADE_OUT_END_TIME)
-    END=" end=\"$END_TIME\""
+    ! $TRANSITION_TO_MENU && END=" end=\"$END_TIME\""
     START=$(format_seconds $THUMBS_FADE_IN_START_TIME)
     POST="<post> jump cell 1; </post>"
 fi
@@ -4437,7 +4494,7 @@ if $MENU_FADE; then
     rm -v "$WORK_DIR/pics/template.png"
     cp -v "$WORK_DIR/pics/template.bk.png" "$WORK_DIR/pics/template.png"
 fi
-#rm -fv "${PICS[@]}"
+rm -fv "${PICS[@]}"
 unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
 
 ###############################################################################
@@ -4874,6 +4931,7 @@ fi
 #                       work on the clip title images                         #
 ###############################################################################
 # extract images from the provided background video
+
 if ! $TEXTMENU && $DO_MENU; then
     echo
     echo "Creating $FRAMES images from each video for the main menu"
@@ -5355,14 +5413,16 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
     if [[ -n ${GROUP[i]} ]]; then
        [[ $MENU_NUM -eq 1 && ${CHAPTERS[i]} -ne 0 ]] && get_group_chapters $i format
         if ((${CHAPTERS[i]} == 0)); then
-            echo -e "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\" $vid_pause/>"
+            ! ${SLIDESHOW[i]} && echo -e \
+             "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\" $vid_pause/>"
             for ((m=1; m<=$((${GROUP[i]})); m++)); do
                 mpg="$BASEDIR/${TSET_NUM}-group-$((i+1))-${m}.mpg"
                 [[ -e $mpg ]] && \
                 echo -e "        <vob file=\"$mpg\" $grp_vid_pause/>"
             done
         else
-            echo -e "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\" $chpts0 $vid_pause/>"
+            ! ${SLIDESHOW[i]} && echo -e \
+             "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\" $chpts0 $vid_pause/>"
             for ((m=1; m<=$((${GROUP[i]})); m++)); do
                 mpg="$BASEDIR/${TSET_NUM}-group-$((i+1))-${m}.mpg"
                 [[ -e $mpg ]] && echo -e \
@@ -6131,9 +6191,11 @@ if $MENU_FADE && ! $STATIC && ! $QUICK_MENU; then
         unset ANI_PICS sc_cmd
     done
     # copy a few black frames to make sure end frame is really "black"
-    for ((i=FRAMES; i<FRAMES+18; i++)); do
-        cp $WORK_DIR/black.jpg $WORK_DIR/animenu/$i.jpg
-    done
+    if ! $TRANSITION_TO_MENU; then
+        for ((i=FRAMES; i<FRAMES+18; i++)); do
+            cp $WORK_DIR/black.jpg $WORK_DIR/animenu/$i.jpg
+        done
+    fi
 elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
     if $TRANSPARENT; then # non transparent -showcase-* uses this block too
         for (( count=1; count<=$FRAMES; count++)); do
