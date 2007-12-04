@@ -71,6 +71,7 @@ class Command:
             self.add(arg)
         self.proc = None
         self.output = ''
+        self.error = ''
 
     def add(self, *args):
         """Append one or more arguments to the command. Each argument passed

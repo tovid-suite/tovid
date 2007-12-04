@@ -6,6 +6,7 @@ __all__ = [\
     'encode_audio',
     'identify']
 
+import re
 from libtovid import log
 from libtovid.cli import Command
 
@@ -106,8 +107,54 @@ def encode_audio(source, audiofile, target):
 
     cmd.run()
 
+from libtovid.transcode.media import MediaFile
 
 def identify(filename):
+    """Identify a video file using ffmpeg, and return a MediaFile with
+    the video's specifications.
     """
-    """
+    result = MediaFile(filename)
+
+    cmd = Command('ffmpeg', '-i', filename)
+    cmd.run(capture=True)
+
+    # ffmpeg puts its output on stderr
+    output = cmd.get_error()
+
+    video_line = re.compile(''
+        'Stream (?P<tracknum>[^:]+): Video: ' # Track number (ex. #0.0)
+        '(?P<vcodec>[^,]+), '                 # Video codec (ex. mpeg4)
+        '(?P<colorspace>[^,]+), '             # Color space (ex. yuv420p)
+        '(?P<width>\d+)x(?P<height>\d+), '    # Resolution (ex. 720x480)
+        '((?P<vbitrate>\d+) kb/s, )?'         # Video bitrate (ex. 8000 kb/s)
+        '(?P<fps>[\d.]+)')                    # FPS (ex. 29.97 fps(r))
+
+    audio_line = re.compile(''
+        'Stream (?P<tracknum>[^:]+): Audio: ' # Track number (ex. #0.1)
+        '(?P<acodec>[^,]+), '                 # Audio codec (ex. mp3)
+        '(?P<samprate>\d+) Hz, '              # Sampling rate (ex. 44100 Hz)
+        '(?P<channels>[^,]+), '               # Channels (ex. stereo)
+        '(?P<abitrate>\d+) kb/s')             # Audio bitrate (ex. 128 kb/s)
+    
+    for line in output.split('\n'):
+        if 'Video:' in line:
+            match = video_line.search(line)
+            result.vcodec = match.group('vcodec')
+            result.scale = (int(match.group('width')),
+                            int(match.group('height')))
+            result.fps = float(match.group('fps'))
+            if match.group('vbitrate'):
+                result.vbitrate = int(match.group('vbitrate'))
+
+        elif 'Audio:' in line:
+            match = audio_line.search(line)
+            result.acodec = match.group('acodec')
+            result.samprate = int(match.group('samprate'))
+            result.abitrate = int(match.group('abitrate'))
+            if match.group('channels') == 'stereo':
+                result.channels = 2
+            else:
+                result.channels = 1
+
+    return result
 

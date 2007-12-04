@@ -5,7 +5,7 @@ import sys
 import os
 
 from libtovid.opts import Option, Usage, parse
-from libtovid.transcode import mplayer
+from libtovid.transcode import mplayer, ffmpeg
 from libtovid import log
 
 # Command-line usage
@@ -39,5 +39,10 @@ if __name__ == '__main__':
         
     for file in files:
         log.info("Identifying file: %s" % file)
-        infile = mplayer.identify(file)
-        print infile
+        print
+        print "According to mplayer:"
+        print mplayer.identify(file)
+        print
+        print "According to ffmpeg:"
+        print ffmpeg.identify(file)
+
