@@ -54,20 +54,20 @@ class MediaFile:
         self.has_audio = False
         self.has_video = False
         # Audio attributes
-        self.acodec = 'ac3'
-        self.abitrate = 224
-        self.channels = 2
-        self.samprate = 48000
+        self.acodec = 'none'
+        self.abitrate = 0
+        self.channels = 0
+        self.samprate = 0
         # Video attributes
-        self.vcodec = 'mpeg2'
+        self.vcodec = 'none'
         # TODO: Better names for scale & expand, but not so long as
         # 'inner_resolution' and 'outer_resolution', or
         # 'picture_res' and 'frame_res'. Suggestions?
-        self.scale = (720, 480)
-        self.expand = (720, 480)
-        self.vbitrate = 9800
-        self.fps = 29.97
-        self.aspect = '4:3'
+        self.scale = (0, 0)
+        self.expand = (0, 0)
+        self.vbitrate = 0
+        self.fps = 0.0
+        self.aspect = '0:0'
         self.widescreen = False
 
     def __str__(self):

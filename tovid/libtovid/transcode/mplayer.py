@@ -98,7 +98,8 @@ def encode(source, target, **kw):
     
 
 def identify(filename, length_accuracy=False):
-    """
+    """Identify a video file using mplayer, and return a MediaFile with
+    the video's specifications.
     """
     # TODO: Raise an exception if the file couldn't be identified
     # TODO: Infer aspect ratio
