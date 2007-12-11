@@ -39,8 +39,7 @@ where:
 
     Control   is a Control subclass, such as Filename, Choice, or Number,
               describing what type of value is being controlled;
-    'option'  is a command-line option (without the leading '-'),
-              whose value is set by the Control; and
+    '-option' is a command-line option whose value is set by the Control; and
     "Label"   is the text that should appear next to the GUI Control.
 
 Other parameters include default value, help/tooltip text to show, allowable

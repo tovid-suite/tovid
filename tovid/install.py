@@ -98,10 +98,7 @@ modules = [
     'libtovid/template/__init__.py',
     'libtovid/template/textmenu.py',
     'libtovid/template/thumbmenu.py',
-    # Transcode
-    'libtovid/transcode/__init__.py',
-    'libtovid/transcode/encode.py',
-    'libtovid/transcode/rip.py']
+    # Transcode]
 
 # Icons
 icon_dir = 'icons'

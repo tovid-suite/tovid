@@ -35,6 +35,7 @@
 __all__ = [\
     # Subdirectories
     'author',
+    'backend',
     'gui',
     'metagui',
     'render',
@@ -44,12 +45,15 @@ __all__ = [\
     # .py files
     'cli',
     'deps',
+    'encode',
     'filetypes',
-    'layout'
+    'layout',
+    'media',
     'odict',
     'opts',
     'output',
     'playtime',
+    'rip',
     'spumux',
     'standard',
     'stats',
@@ -63,7 +67,7 @@ from ConfigParser import ConfigParser
 
 # Configuration file reader/writer
 class Config (ConfigParser):
-    """Interface for reading/writing tovid configuration file. Just a wrapper
+    """Interface for reading/writing tovid configuration files. Just a wrapper
     around the standard library ConfigParser. Example usage:
     
         config = libtovid.Config()

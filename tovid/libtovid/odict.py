@@ -3,7 +3,8 @@
 
 """Ordered dictionary class, from a Python Cookbook recipe:
 
-http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/107747
+    http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/107747
+
 
 """
 __all__ = ['Odict']

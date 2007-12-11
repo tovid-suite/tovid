@@ -5,7 +5,7 @@ import sys
 import os
 
 from libtovid.opts import Option, Usage, parse
-from libtovid.transcode import mplayer, ffmpeg
+from libtovid.backend import mplayer, ffmpeg
 from libtovid import log
 
 # Command-line usage

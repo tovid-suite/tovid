@@ -46,9 +46,9 @@ import copy
 import glob
 from libtovid.cli import Command, Pipe
 from libtovid.utils import float_to_ratio
-from libtovid.transcode import rip
-from libtovid.transcode import mplayer
-from libtovid.transcode.media import *
+from libtovid import rip
+from libtovid.backend import mplayer
+from libtovid.media import *
 from libtovid.standard import fps
 from libtovid import log
 
@@ -112,7 +112,7 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
 
 
 # Import available backends
-from libtovid.transcode import ffmpeg, mplayer, mpeg2enc
+from libtovid.backend import ffmpeg, mplayer, mpeg2enc
 
 def get_encoder(backend):
     """Get an encoding function."""
