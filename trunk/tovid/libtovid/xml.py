@@ -69,7 +69,7 @@ class Element (object):
             kwargs:     Keyword arguments for setting specific attributes
         
         Underscores in attribute names are converted to hyphens. If you don't
-        like this behavior, please implement a workaround :-)
+        like this behavior, please suggest a workaround :-)
         """
         # Override kwargs with attributes, if provided
         if type(attributes) == dict:

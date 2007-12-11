@@ -18,7 +18,7 @@ __all__ = [\
 
 from libtovid import utils
 from libtovid import xml
-from libtovid.transcode import mplayer
+from libtovid.backend import mplayer
 
 # spumux XML elements and valid attributes
 """

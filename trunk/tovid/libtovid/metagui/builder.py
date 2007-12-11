@@ -34,7 +34,9 @@ in the manpage, but you can make adjustments if necessary":
 and [a|b|c] are control-configuration widgets that appear depending on the
 chosen control type. Checking an option includes it in the metaGUI.
 """
-__all__ = ['ControlEditor']
+__all__ = [\
+    'ControlEditor',
+    'ControlChooser']
 
 import Tkinter as tk
 from inspect import getargspec

@@ -40,10 +40,32 @@ from libtovid.cli import Command
 from libtovid import standard
 from libtovid.utils import ratio_to_float
 
+"""
+Analysis of MediaFile attributes
+
+acodec: ID, target
+abitrate: ID, target
+channels: ID
+samprate: ID, source, target
+vcodec: ID
+vbitrate: ID, target
+length: ID, source
+scale: (ID), (source), target
+expand: target
+fps: ID, source, target
+aspect: source
+widescreen: target
+
+
+Redundancies(?):
+widescreen/aspect
+scale/expand if aspect is known
+"""
+
 class MediaFile:
     """A multimedia video file, and its vital statistics.
     """
-    def __init__(self, filename='', format='dvd', tvsys='ntsc'):
+    def __init__(self, filename='', format='none', tvsys='none'):
         log.debug("MediaFile(%s, %s, %s)" % (filename, format, tvsys))
         # TODO: Set attributes to match given format and tvsys
         self.filename = filename
@@ -78,8 +100,8 @@ class MediaFile:
         # List of lines of output
         lines = [\
             'Filename: %s' % self.filename,
-            'Format: %s' % self.format.upper(),
-            'TVsys: %s' % self.tvsys.upper(),
+            'Format: %s' % self.format,
+            'TVsys: %s' % self.tvsys,
             'Length: %s seconds' % self.length,
             'Video: %sx%s %sfps %s %s %skbps' % \
             (width, height, self.fps, self.aspect, self.vcodec, self.vbitrate),
@@ -118,6 +140,7 @@ def standard_media(format, tvsys):
     else:
         media.vbitrate = 6000
     return media
+
 
 def correct_aspect(source, target, aspect='auto'):
     """Calculate the necessary scaling to fit source into target at a given

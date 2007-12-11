@@ -29,9 +29,9 @@ def encode(source, target, **kw):
     
         ffmpeg_encode(source, target, quant=4, vbitrate=7000)
     """
-    # Build the ffmpeg command
-    cmd = Command('ffmpeg')
-    cmd.add('-i', source.filename)
+    cmd = Command('ffmpeg', '-y', '-i', source.filename)
+
+    # Use format/tvsys that ffmpeg knows about
     if target.format in ['vcd', 'svcd', 'dvd']:
         cmd.add('-tvstd', target.tvsys,
                 '-target', '%s-%s' % (target.tvsys, target.format))
@@ -49,13 +49,14 @@ def encode(source, target, **kw):
         elif kw['interlace'] == 'top':
             cmd.add('-top', 1, '-flags', '+alt+ildct+ilme')
 
-    # Convert frame rate and audio sampling rate
+    # Frame rate and audio sampling rate
     cmd.add('-r', target.fps,
             '-ar', target.samprate)
     
     # Convert scale/expand to ffmpeg's padding system
     if target.scale:
         cmd.add('-s', '%sx%s' % target.scale)
+        # Letterbox if necessary
         if target.expand != target.scale:
             e_width, e_height = target.expand
             s_width, s_height = target.scale
@@ -65,14 +66,14 @@ def encode(source, target, **kw):
                 cmd.add('-padleft', h_pad, '-padright', h_pad)
             if v_pad > 0:
                 cmd.add('-padtop', v_pad, '-padbottom', v_pad)
+
+    # Aspect
     if target.widescreen:
         cmd.add('-aspect', '16:9')
     else:
         cmd.add('-aspect', '4:3')
-    # Overwrite existing output files
-    cmd.add('-y')
-    cmd.add(target.filename)
-    
+
+    cmd.add(target.filename)    
     cmd.run()
     
 
@@ -91,15 +92,14 @@ def encode_audio(source, audiofile, target):
     # If source has audio, encode it
     if source.has_audio:
         cmd.add('-i', source.filename)
-    # Otherwise, generate 4-second silence
+    # Otherwise, encode silence (minimum 4 seconds)
     else:
-        # Add silence the length of source length
-        ln = source.length
-        #print "Source.length: %f" % ln
-        if ln < 4:
-            # Minimum 4 secs :)
-            ln = 4.0
-        cmd.add('-f', 's16le', '-i', '/dev/zero', '-t', '%f' % ln)
+        cmd.add('-f', 's16le', '-i', '/dev/zero')
+        if source.length < 4:
+            cmd.add('-t', '4.0')
+        else:
+            cmd.add('-t', '%f' % length)
+
     cmd.add('-vn', '-ac', '2', '-ab', '224k')
     cmd.add('-ar', target.samprate)
     cmd.add('-acodec', target.acodec)
@@ -107,7 +107,8 @@ def encode_audio(source, audiofile, target):
 
     cmd.run()
 
-from libtovid.transcode.media import MediaFile
+
+from libtovid.media import MediaFile
 
 def identify(filename):
     """Identify a video file using ffmpeg, and return a MediaFile with
@@ -136,12 +137,14 @@ def identify(filename):
         '(?P<channels>[^,]+), '               # Channels (ex. stereo)
         '(?P<abitrate>\d+) kb/s')             # Audio bitrate (ex. 128 kb/s)
     
+    # Parse ffmpeg output and set MediaFile attributes
     for line in output.split('\n'):
         if 'Video:' in line:
             match = video_line.search(line)
             result.vcodec = match.group('vcodec')
             result.scale = (int(match.group('width')),
                             int(match.group('height')))
+            result.expand = result.scale
             result.fps = float(match.group('fps'))
             if match.group('vbitrate'):
                 result.vbitrate = int(match.group('vbitrate'))
@@ -151,7 +154,9 @@ def identify(filename):
             result.acodec = match.group('acodec')
             result.samprate = int(match.group('samprate'))
             result.abitrate = int(match.group('abitrate'))
-            if match.group('channels') == 'stereo':
+            if match.group('channels') == '5.1':
+                result.channels = 6
+            elif match.group('channels') == 'stereo':
                 result.channels = 2
             else:
                 result.channels = 1
