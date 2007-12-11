@@ -163,8 +163,8 @@ EXTRA_DIST = \
 pythonLIBTOVID_PYTHON = libtovid/*.py
 pythonLIBTOVIDdir = $(pythondir)/libtovid
 # Submodules
-pythonTRANSCODE_PYTHON = libtovid/transcode/*.py
-pythonTRANSCODEdir = $(pythondir)/libtovid/transcode
+pythonBACKEND_PYTHON = libtovid/backend/*.py
+pythonBACKENDdir = $(pythondir)/libtovid/backend
 pythonRENDER_PYTHON = libtovid/render/*.py
 pythonRENDERdir = $(pythondir)/libtovid/render
 pythonTEMPLATE_PYTHON = libtovid/template/*.py
@@ -182,7 +182,7 @@ dist-hook:
 
 # After uninstalling tovid, remove the python module directories
 uninstall-hook:
-	rmdir $(pythonTRANSCODEdir)
+	rmdir $(pythonBACKENDdir)
 	rmdir $(pythonRENDERdir)
 	rmdir $(pythonTEMPLATEdir)
 	rmdir $(pythonGUIdir)

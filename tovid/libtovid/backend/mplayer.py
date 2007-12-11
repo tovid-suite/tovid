@@ -5,7 +5,7 @@ __all__ = ['encode', 'identify']
 
 from libtovid import log
 from libtovid.cli import Command, Pipe
-from media import MediaFile
+from libtovid.media import MediaFile
 
 def encode(source, target, **kw):
     """Encode a multimedia video using mencoder.
@@ -16,8 +16,6 @@ def encode(source, target, **kw):
     
     Supported keywords:
     """
-
-    # Build the mencoder command
     cmd = Command('mencoder')
     cmd.add(source.filename,
             '-o', target.filename,
@@ -31,11 +29,9 @@ def encode(source, target, **kw):
     else:
         cmd.add('format=dvd')
     
-    # TODO: this assumes we only have ONE audio track.
+    # FIXME: This assumes we only have ONE audio track.
     if source.has_audio:
-        # Audio settings
-        # Adjust sampling rate
-        # TODO: Don't resample unless needed
+        # Adjust audio sampling rate if necessary
         if source.samprate != target.samprate:
             log.info("Resampling needed to achieve %d Hz" % target.samprate)
             cmd.add('-srate', target.samprate)
@@ -97,7 +93,7 @@ def encode(source, target, **kw):
     cmd.run()
     
 
-def identify(filename, length_accuracy=False):
+def identify(filename):
     """Identify a video file using mplayer, and return a MediaFile with
     the video's specifications.
     """
@@ -116,13 +112,14 @@ def identify(filename, length_accuracy=False):
                   '-frames', '1',
                   '-channels', '6')
     cmd.run(capture=True)
+    
     # Look for mplayer's "ID_..." lines and include each assignment in mp_dict
     for line in cmd.get_output().splitlines():
         log.debug(line)
         if line.startswith("ID_"):
             left, right = line.split('=')
             mp_dict[left] = right.strip()
-            
+
     # Check for existence of streams
     if 'ID_VIDEO_ID' in mp_dict:
         media.has_video = True
@@ -158,11 +155,6 @@ def identify(filename, length_accuracy=False):
         elif left == 'ID_LENGTH':
             media.length = float(right)
     media.expand = media.scale
-
-    # Length accuracy
-    if (length_accuracy):
-        media.length = float(commands.getoutput("mencoder '%s' -quiet -ovc copy -oac pcm -o /dev/null 2>/dev/null | awk '/Video stream/ {print $10}'" % filename))
-
     
     # Fix mplayer's audio codec naming for ac3 and mp2
     if media.acodec == "8192":

@@ -39,9 +39,7 @@ mod_libtovid = [\
     'standard.py',
     'stats.py',
     'utils.py']
-mod_author = glob('author/*.py')
 mod_render = glob('render/*.py')
-mod_transcode = glob('transcode/*.py')
 modules = mod_test + mod_libtovid + mod_author + mod_render + mod_transcode
 
 if __name__ == '__main__':

@@ -11,7 +11,7 @@ sys.path.insert(0, '..')
 from libtovid.render.drawing import Drawing
 from libtovid.render.flipbook import Flipbook
 from libtovid.render import layer
-from libtovid.transcode import mplayer
+from libtovid.backend import mplayer
 from libtovid import standard
 
 class TestFlipbook(unittest.TestCase):

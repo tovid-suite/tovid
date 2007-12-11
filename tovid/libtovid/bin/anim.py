@@ -16,7 +16,6 @@ import sys
 import Image # for im.size, etc..
 import optparse
 from libtovid.render import *
-from libtovid.transcode import *
 
 ##
 # Options parser

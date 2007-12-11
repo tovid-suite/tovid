@@ -8,7 +8,7 @@ shell script).
 
 import sys
 from libtovid.opts import Option, Usage, parse
-from libtovid.transcode import encode
+from libtovid import encode
 from libtovid import log
 
 # List of valid command-line options, with documentation

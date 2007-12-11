@@ -76,8 +76,9 @@ from libtovid.render.animation import Keyframe
 from libtovid.render.drawing import Drawing, write_ppm, write_png, interlace_drawings
 from libtovid.render import layer, effect
 from libtovid import standard
-from libtovid.transcode.media import MediaFile, standard_media
-from libtovid.transcode import encode, mplex, mplayer
+from libtovid.media import MediaFile, standard_media
+from libtovid.backend import mplex, mplayer
+from libtovid import encode
 from libtovid import utils
 
 class Flipbook:

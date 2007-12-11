@@ -8,7 +8,7 @@ __all__ = [\
 
 from libtovid import log
 from libtovid.cli import Command, Pipe
-from libtovid.transcode import mplex, ffmpeg
+from libtovid.backend import mplex, ffmpeg
 
 def encode(source, target, **kw):
     """Encode a multimedia video using mplayer|yuvfps|mpeg2enc.

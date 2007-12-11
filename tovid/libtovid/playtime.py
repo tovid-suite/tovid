@@ -178,6 +178,7 @@ class AVstream:
         """Find the length given the bitrate and size"""
         self.play_length =  self.final_size / self.bitrate.MiBpm
 
+
 class Bitrate:
     """Convert between different bitrate units
     
@@ -284,3 +285,4 @@ class Bitrate:
             bitrate = self.GiBph
         self.unit = 'GiBph'
         self.GiBph = bitrate
+
