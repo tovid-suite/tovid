@@ -218,17 +218,12 @@ letterboxing or anamorphic scaling.
 
 ===Audio stream options===
 
-: **-normalize** [VOLUME]
-    If used without VOLUME argument, analyze the audio stream and then
-    normalize the volume of the audio.
+: **-normalize**
+    Analyze the audio stream and then normalize the volume of the audio.
     This is useful if the audio is too quiet or too loud, or you want to
     make volume consistent for a bunch of videos. Similar to running
     normalize without any parameters. The default is -12dB average level
     with 0dB gain.
-    If the optional VOLUME argument is supplied, ffmpeg will be used instead
-    to increase or decrease the volume.  An argument of 256 is normal volume.
-    This option is useful for -slice, because there are sync issues if
-    audio and video are encoded separately after a seek.
 
 : **-amplitude** //NUM//[dB]
     In addition to analyzing and normalizing, apply the gain to the audio
