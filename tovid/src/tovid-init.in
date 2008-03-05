@@ -483,18 +483,30 @@ tovid
 
 # Disc type
 #-dvd
-#-half-dvd
-#-dvd-vcd
 #-vcd
 #-svcd
-#-kvcd
-#-ksvcd
-#-kdvd
 
 # TV system standard
 #-pal
 #-ntsc
 #-ntscfilm
+
+# Other suggestions
+
+# Overwrite output files
+#-overwrite
+
+# No prompting
+#-noask
+
+# Use ffmpeg for all encoding
+#-ffmpeg
+
+# Set a default quality
+#-quality 8
+
+# Normalize audio
+#-normalize
 EOF`
     printf "$CONFIG_CONTENTS\n" > "$CONFIG_FILE"
 fi
