@@ -679,8 +679,9 @@ function cleanup()
             yecho "Please type \"yes\", or else they will be deleted"
             yecho "(add '-noask' to your ~/.tovid/tovid.config to avoid"
             yecho "being asked this question in the future)"
-            read input # would someone really type "yes" with quotes? (probably )
+            read input
             echo
+            # Handle 'yes' or '"yes"'
             if [[ ! -z "$input" && "$input" = "yes" || "$input" = \"yes\" ]]; then
                 yecho "Keeping temporary files in $TMP_DIR"
             else
