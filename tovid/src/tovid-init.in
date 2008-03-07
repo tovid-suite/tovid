@@ -411,8 +411,8 @@ function root_warning()
 KERNEL=$(uname)
 if test "$KERNEL" = "Linux"; then
     # Linux should have /proc/cpuinfo
-    CPU_MODEL=$(awk -F ":" '/model name/ {print $2}' /proc/cpuinfo)
-    CPU_SPEED=$(awk 'BEGIN { IGNORECASE = 1 } /MHz/ { print $4 }' /proc/cpuinfo)
+    CPU_MODEL=$(awk -F ":" '/model name/ {print $2}' /proc/cpuinfo | head -n 1)
+    CPU_SPEED=$(awk 'BEGIN { IGNORECASE = 1 } /MHz/ { print $4 }' /proc/cpuinfo | head -n 1)
     # Test for multiple CPUs. If they are available, try to use them.
     if test $(grep "^processor" /proc/cpuinfo | wc -l) -ge "2"; then
         MULTIPLE_CPUS=:
