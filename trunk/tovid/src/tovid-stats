@@ -51,7 +51,9 @@ def get_statlist(statfile):
     statfile = os.path.abspath(statfile)
     tempfile = "%s.csv" % statfile
     # Only use lines beginning with " (and not header line)
-    os.system('cat "%s" | grep \'^ *\"[^T]\' > "%s"' % (statfile, tempfile))
+    filter_cmd = 'grep --color=never \'^ *\"[^T]\' > "%s" "%s"' % \
+        (tempfile, statfile)
+    os.system(filter_cmd)
     statlist = stats.Statlist(filename=tempfile)
     os.remove(tempfile)
     return statlist
