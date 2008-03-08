@@ -1085,10 +1085,12 @@ yecho "Run 'tail -f \"$LOG_FILE\"' in another terminal to monitor the log"
 
 # If multiple CPUs are available, do multithreading in mpeg2enc
 if $MULTIPLE_CPUS; then
-    yecho "Multiple CPUs detected; mpeg2enc will use multithreading."
+    yecho "Multiple CPUs detected; mpeg2enc and ffmpeg will use multithreading."
     MTHREAD="--multi-thread 2"
+    FF_THREAD="-threads 4"
 else
     MTHREAD=""
+    FF_THREAD=""
 fi
 
 yecho
@@ -1788,7 +1790,7 @@ if $DOWNMIX; then
     done
     testfile="/tmp/$(date +%s).mpg"
     track_key=${AUDIO_TRACK[max_key]}
-    ffm_cmd=( ffmpeg -i "$IN_FILE" -ss 2 -ab 224k -ac 2 \
+    ffm_cmd=( ffmpeg -i "$IN_FILE" $FF_THREAD -ss 2 -ab 224k -ac 2 \
      -target ntsc-dvd -b 6000k -vframes 1 $VIDEO_MAP \
      -map ${AIDS[track_key-1]//./:} "$testfile")
     yecho "Running ${ffm_cmd[@]}"
@@ -1883,7 +1885,7 @@ if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; the
     yecho "Using ffmpeg to encode audio and video."
 
     FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k ${AUDIO_CHAN[chan1-1]} "
-    FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $CLIP_SEEK $FF_LENGTH $ASYNC $ASYNC1 \
+    FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH $ASYNC $ASYNC1 \
         $FF_TARGET $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_FPS $FF_ILACE \
         $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT $FF_CHANNEL_MAP"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
@@ -1929,7 +1931,7 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     yecho "Found compliant audio and dumping the stream."
     precho "This sometimes causes errors when multiplexing; add '-force' to the tovid command line to re-encode if multiplexing fails."
     yecho "Copying the existing audio stream with the following command:"
-    AUDIO_CMD=($PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${STREAM_CHANS[@]}")
+    AUDIO_CMD=($PRIORITY ffmpeg $FF_THREAD $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${STREAM_CHANS[@]}")
     yecho "${AUDIO_CMD[@]}"
     #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
     run_audio_cmd()
@@ -1962,7 +1964,7 @@ else
         AUDIO_IN_FILE[1]="${AUDIO_WAV[0]}"
 
         #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null $MP_AUDIOTRACK_CMD -ao pcm:waveheader:file=\"$AUDIO_WAV\" \"$IN_FILE\""
-        AUDIO_CMD=( $PRIORITY ffmpeg -y $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" $ASYNC1 $AUDIO_MAP -ar $SAMPRATE -acodec pcm_s16le "${AUDIO_WAV_CHANS[@]}" )
+        AUDIO_CMD=( $PRIORITY ffmpeg -y $FF_THREAD $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" $ASYNC1 $AUDIO_MAP -ar $SAMPRATE -acodec pcm_s16le "${AUDIO_WAV_CHANS[@]}" )
 
         # Generate or dump audio
         yecho "Normalizing the audio stream${s}."
@@ -2064,7 +2066,7 @@ else
     fi
     VID_PLAY_CMD="$PRIORITY $MPLAYER $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\" $CLIP_SEEK $MP_FRAMES"
     if $USE_FFMPEG ; then
-        VID_ENC_CMD="ffmpeg -i \"$IN_FILE\" $CLIP_SEEK $FF_LENGTH -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_ILACE $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT -y \"$VIDEO_STREAM\""
+        VID_ENC_CMD="ffmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_ILACE $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT -y \"$VIDEO_STREAM\""
     else
         VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
     fi
