@@ -347,18 +347,26 @@ function get_filesystem()
 }
 
 # ******************************************************************************
-# Do floating point math with bc
+# Do floating point or integer math with bc
 # Input args:
-#   $1 = The math operation to perfrom, in a quoted string
+#  1st arg is the math operation to perfrom, in a quoted string
+#  Use 'int' as optional 2nd arg for integer math)
+#  default: 3 place floating point math
 #
 # Usage:
 #   ANSWER=$(bc_math "$NUM1 + $NUM2")
+#    ANSER=$(bc_math "$NUM1 + $NUM2" int)  # no decimal places
 # ******************************************************************************
-function bc_math()
+bc_math()
+# usage: bc_math "expression" [int]
 {
-    echo "scale=2; $1" | bc -l
+    bc_out=$(bc <<< "scale=3;$1" 2>/dev/null)
+    if [[ -n $2 && $2 = "int" ]]; then
+        echo ${bc_out%.*}
+    else
+        printf  "%.03f" $bc_out
+    fi
 }
-
 
 # ******************************************************************************
 # Countdown N seconds, then return
