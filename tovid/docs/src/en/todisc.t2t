@@ -13,8 +13,8 @@ with animated thumbnail menus, from a list of multimedia video files and their
 titles.  It also does static thumbnail menus and text only menus.
 In addition, todisc can do slideshows, using images as input.
 It supports sub-menus for chapter breaks, configurable menu style, animated
-backgrounds and transparency effects. It can automatically convert non-compliant
-input files to the target format.
+backgrounds and transparency effects. It can automatically convert
+non-compliant input files to the target format.
 
 
 == Usage ==
@@ -37,7 +37,8 @@ The number of **-files** and **-titles** must be equal, though if you
 do not include any titles todisc will use the basename of the included files
 as titles.
 If you are doing a slideshow or multiple slideshows, use **-slideshow** rather
-than **-files** for passing in the images.
+than **-files** for passing in the images.  You may use -files and -slideshow
+more than once to create an ordering in a mixed slideshows/videos menu.
 See SLIDESHOWS part of Usage section, below.
 
 If the input files are
@@ -50,11 +51,11 @@ not mpeg, you will have the option to auto-encode them with **tovid**.
 
 : B. **-showcase** IMAGE|VIDEO
     Produces an arrangement with small buttons on
-    the side and the showcase image/video in the centre.
-    If no IMAGE or VIDEO argument is supplied, the central thumb will be omitted.
+    the side and the showcase image/video in the centre.  If no IMAGE or VIDEO
+    argument is supplied, the central thumb will be omitted.
 
-    Note: **-textmenu**, **-quick-menu** and **-switched-menus** are all types of showcase
-    style menus.  See their descriptions under **Menu style** section.
+    Note: **-textmenu**, **-quick-menu** and **-switched-menus** are all types
+    of showcase style menus.  See descriptions under **Menu style** section.
 
 
 The **-titles** arguments should be double or single quoted,
@@ -67,11 +68,12 @@ and for the submenu title for that video.
 
 
 The **-showcase** styles can use longer titles than the default arrangement.
-With a showcase style, use: **-showcase-titles-align west** to give more space for the title,
-or use **-showcase-titles-align east** to allow titles of more than one line.
+With a showcase style, use: **-showcase-titles-align west** to give more space
+for the title, or use **-showcase-titles-align east** to allow titles of more
+than one line.
 
-The default style can only show about 16 characters (depending on the number of thumbs,
-and what **-thumb-font** and **-thumb-fontsize** is being used).
+The default style can only show about 16 characters (depending on the number
+of thumbs, and what **-titles-font** and **-titles-fontsize** is being used).
 If your titles are too long to fit in the label area, you may try using
 sub-menus, which can display longer titles, for example:
 
@@ -83,9 +85,9 @@ sub-menus, which can display longer titles, for example:
           -out foo
 ```
 
-The **-align** argument will position both titles and thumbs either south, north
-east, west, southwest, northwest, southeast, northeast, subject to certain
-constraints of each arrangement.
+The **-align** argument will position both titles and thumbs either south,
+north east, west, southwest, northwest, southeast, northeast, subject to
+certain constraints of each arrangement.
 
 **TITLESETS**
 
@@ -94,14 +96,14 @@ for example, if you have videos of different resolutions.  If you want to have
 titlesets you need to put all the options for each titleset menu you would
 like to have between **-titleset** and **-end-titleset** options.
 
-Additionally, for the main menu (the opening menu that will let you jump to each titleset),
-you need to put options between **-vmgm** and **-end-vmgm**.
-You do not use **-files** for the opening menu options (**-vmgm**), but you will need as many
-TITLES after **-titles** as you have menus.
+Additionally, for the main menu (the opening menu that will let you jump to
+each titleset), you need to put options between **-vmgm** and **-end-vmgm**.
+You do not use **-files** for the opening menu options (**-vmgm**), but you
+will need as many TITLES after **-titles** as you have menus.
 
 Any options outside the **-titleset** **-end-titleset** and **-vmgm**
 **-end-vmgm** areas will be general options applying to every titleset.
-If an general option is duplicated inside a **-titleset** or **-vmgm** area, the
+If a general option is duplicated inside a **-titleset** or **-vmgm** area, the
 general option will be overridden.
 
 Example of using todisc with titlesets:
@@ -124,7 +126,7 @@ Example of using todisc with titlesets:
     -titles "Season One" "Season Two" \
     -background bg.jpg \
     -bgaudio foo.mp3 \
-    -thumb-fontsize 20 \
+    -titles-fontsize 20 \
     -end-vmgm
 ```    
 
@@ -142,25 +144,27 @@ use -menu-title to set the slideshow title.
 
 For a single slideshow the default is a 'montage' menu of all the slides,
 with a single spumux'ed button for navigating with the enter key.  You may
-to experiment to find out which DVD remote button advances the slides, on my
-player it is different for DVD and SVCD.  Try the 'next chapter' (skip ?)
-button and the play button.
+have to experiment to find out which DVD remote button advances the slides,
+on my player it is different for DVD and SVCD.  Try the 'next chapter'
+(skip ?) button and the play or enter buttons.
 For single slideshows, you can use **-carousel** to make an animated menu
 that transitions from slide to slide.  See **-carousel**.
-To get fade transitions in the carousel menu, add **-carousel-fade**.
+To get fade transitions in the carousel menu, add **-carousel-effect**
+crossfade | fade .
 The argument to **-carousel** is the number of slides to use - be sure to use
 a long enough audio file for **-bgaudio** or set **-menu-length** so the menu
 is long enough to support the slides plus transitions.
 
 You can also put multiple slideshows on one menu.  To do this, use
-**-slideshow IMAGES** for each slideshow you wish to make.  You can even mix videos
+**-slideshow IMAGES** for each slideshow desired.  You can even mix videos
 with slideshows by using **-files** **-slideshow** **-titles** multiple times.
 
 Example of a single slideshow with a carousel menu with transitions:
 
 ```
  $ todisc -menu-title "Autumn in Toronto" -slideshow images/*.jpg \
-   -carousel 20 -carousel-fade -bgaudio slideshow.wav -out myslideshow
+   -carousel 20 -carousel-effect crossfade -bgaudio slideshow.wav \
+    -out myslideshow
 ```
 Example of multiple slideshows on one menu:
 ```
@@ -185,7 +189,7 @@ Example of mixed videos and slideshows:
    -out myslideshow
 ```
 
-See also **-slideshow** ,**-carousel** and **-carousel-fade in
+See also **-slideshow** ,**-carousel** and **-carousel-fade** in
 the SLIDESHOWS option section.
 
 == Options ==
@@ -195,7 +199,7 @@ the SLIDESHOWS option section.
 : **-dvd**
     DVD-compatible output (default)
 : **-svcd**
-    Super Video-CD-compatible output: *this is currently disabled for -showcase-* styles
+    Super Video-CD-compatible output: **This is disabled for -showcase-* styles
 : **-ntsc**
     720x480 output, compatible with NTSC standard (default)
 : **-pal**
@@ -209,48 +213,56 @@ the SLIDESHOWS option section.
 
 == Menu style ==
 
-: **-showcase** IMAGE|VIDEO (without an argument, use showcase style with no central thumb)
-    A different arrangement of images for the menu: small thumbnails go at left
-    (and right) side of screen, with a larger image in the centre. Maximum of 10 videos
-    If the provided argument is a video file, the central thumb will be animated.
-    Pick a file of correct aspect ratio: i.e. it should still look good when
-    resized to 720x480 (PAL 720x576), then resized to proper aspect ratio.
-: **-textmenu**, **-text-menu** NUM ( without an argument, create a textmenu out of the supplied titles
-    The optional argument specifies how many titles are in the 1st column, i.e. giving
-    4 titles and using "-textmenu 2" would make 2 columns of 2 titles. The default is to
-    put all titles up to 13 in the first column before starting a second title.
-    Maximum, 2 columns and 26 titles.
-    If no video files for either **-background** or **-showcase** are supplied, the menu will be static.
+: **-showcase** IMAGE|VIDEO
+    If used without an argument, use showcase style without a central thumb.
+    This is a different arrangement of images for the menu: small thumbnails
+    go at left (and right) side of screen, with a larger image in the centre.
+    Maximum of 10 videos.  If the provided argument is a video file, the
+    central thumb will be animated.  Pick a file of correct aspect ratio:
+    i.e. it should still look good when resized to 720x480 (PAL 720x576),
+    then resized to proper aspect ratio.
+: **-textmenu**, **-text-menu** NUM
+    If used without an argument, create a textmenu out of the supplied titles
+    The optional argument specifies how many titles are in the 1st column,
+    i.e. giving 4 titles and using "-textmenu 2" would make 2 columns of 2
+    titles. The default is to put all titles up to 13 in the first column
+    before starting a second title.  Maximum, 2 columns and 26 titles.
+    If no video files for either **-background** or **-showcase** are supplied,
+    the menu will be static.
 : **-quick-menu**
-    This will make a very quick '-showcase IMAGE|VIDEO' style menu by using ffmpeg
-    instead of imagemagick.  There are no fancy effects like **-wave** or **-rotate** available
-    for it, but it is extremely fast.  It will be a text-menu style of menu, with no video
-    thumbs, and a central showcase IMAGE(static)|VIDEO(animated).
-    ( see **-bg-color** if you are not using a **-background** and want to change the default black )
+    This will make a very quick  menu by using ffmpeg instead of imagemagick.
+    There are two choices: you can either use '-showcase IMAGE|VIDEO' or
+    '-background VIDEO'.  There are no fancy effects like **-wave**
+    or **-rotate** available for it, but it is extremely fast.  It will be a
+    text-menu style of menu, with no video thumbs, and a central showcase
+    IMAGE(static) | VIDEO(animated).
+    ( see **-bg-color** if you are not using a **-background** and want to
+    change the default black )
 
-    Specifying the IMAGE|VIDEO argument to **-showcase** is mandatory for this style of menu, unless
-    used in conjunction with **-switched-menus** in which case the videos passed with **-files** 
-    automatically become the showcase videos.
-    If this is used in combination with **-switched-menus** it can really speed up an
-    otherwise time comsuming process.
-    On my athlon 2900+ system it makes a 4 video switched menu of 30 seconds length (each) in about
-    4 minutes ( !! ).
+    Specifying the IMAGE|VIDEO argument to **-showcase** is mandatory for this
+    style of menu, unless used in conjunction with **-switched-menus**
+    in which case the videos passed with **-files** automatically become the
+    showcase videos.  If this is used in combination with **-switched-menus**
+    it can really speed up an otherwise time comsuming process.
+    On my athlon 2900+ system it makes a 4 video switched menu of 30 seconds
+    length (each) in about 4 minutes ( !! ).
 
     Example:
 ```
     -quick-menu -showcase /home/robert/showcase.mpg
 ```
-    See **-switched-menus** for example of making switched menus with **-quick-menu**
+    See **-switched-menus** for example of making switched menus with
+    **-quick-menu**
 
 : **-bg-color** | **-bg-colour**
     The color to use for the menu background. (default: ntsc-safe black)
-    Note: use a color a great deal darker than you want, as it appears quite a bit
-    lighter in the video version.
+    Note: use a color a great deal darker than you want, as it appears quite
+    a bit lighter in the video version.
 : **-submenu-bg-color** | **-submenu-bg-colour**
-    The color to use as background for the  submenu(s). (default: ntsc-safe black)
-    See **-bg-color**
+    The color to use as background for the  submenu(s).
+    (default: ntsc-safe black)  See **-bg-color**
 : **-use-makemenu**
-    This will call the other tovid menu script, "makemenu" on the titles supplied.
+    This will call the other tovid menu script, "makemenu" on the titles given.
 : **-static**
     Main menu will just be static thumbs (not animated) (default: animated)
 : **-background** IMAGE|VIDEO
@@ -273,9 +285,22 @@ the SLIDESHOWS option section.
     refer to the leftmost column
 : **-menu-fontsize**
     Font size for main menu - best to -preview if you use this
-: **-menu-fade**
+: **-menu-fade** ['BACKGROUND DURATION']
     Fade the menu in and out The background will fade in first, then title (and
-    mist if called for), then the menu thumbs.  The fadeout is in reverse order
+    mist if called for), then the menu thumbs.  The fadeout is in reverse
+    order.  'BACKGROUND DURATION' is an integer denoting the amount of time
+    the background will play before the menu begins to fade in.  This can allow
+    you to do a 'transition' to the menu: if you supply a -background VIDEO it
+    will play for the indicated time before the menu fades in.  Leave the
+    optional argument empty (just **-menu-fade**) to get the default behavior
+    of showing the background for 1 second before fading the menu in.
+    
+: **-transition-to-menu** TIME
+    The background video will be a sort of transition to the menu, and is in
+    fact a type of -menu-fade menu.  It will play for TIME amount of time
+    before the menu is faded in.  The menu begins to fade in 4.5 seconds before
+    the end of TIME, so use an appropriate value.
+    This menu does not loop unless you pass -loop VALUE
 : **-bgaudio**
     An audio file for the main menu background
 : **-submenu-audio** FILE(S)
@@ -283,27 +308,31 @@ the SLIDESHOWS option section.
     be used for all sub-menus.  Else the number given must equal the number of
     submenus, though the keyword "none" in this list may be used for silence.
 : **-titleset** . . . **-end-titleset**
-    If you have more than one titleset, put the options for each titleset between
-    **-titleset** and **-end-titleset**.  A separate menu will be created that can be accessed
-    from the main menu (VMGM).  You can create this main menu using the **-vmgm** **-end-vmgm**
-    options.  See **-vmgm** below and TITLESET paragraph opening **Usage** section.
+    If you have more than one titleset, put options for each titleset between
+    **-titleset** and **-end-titleset**.  A separate menu will be created that
+    can be accessed from the main menu (VMGM).  You can create this main menu
+    using the **-vmgm** **-end-vmgm** options.  See **-vmgm** below and
+    TITLESET paragraph opening **Usage** section.
 : **-vmgm** . . . **-end-vmgm**
     The VMGM menu is the root menu when you use titlesets.
     Put your VMGM menu options between **-vmgm** and **-end-vmgm**.
-    You only need **-titles** "Titleset One title"  "Titleset Two title" . . . , and not **-files**.
-    Any other options can be used, but the  menu will be a textmenu style by default.
-    **Hint**: use **-showcase** IMAGE/VIDEO to create a fancier VMGM menu.
+    You only need **-titles** "Titleset One title"  "Titleset Two title"
+    . . . , and not **-files**.
+    Any other options can be used, but the  menu will be a textmenu style by
+    default.  **Hint**: use **-showcase** IMAGE/VIDEO to create a fancier
+    VMGM menu.
 : **-switched-menus**
-    This will make a "switched menu": there will be a central image where the showcase 
-    image would go, and text menu titles along the menu edge where textmenu titles go.
-    As you select a video title with the down or up arrow on your DVD remote, the image
-    in the centre will change to the image or video
-    made from that selected video. Do not use **-showcase** IMAGE/VIDEO with this option.
+    This will make a "switched menu": there will be a central image where the 
+    showcase image would go, and text menu titles along the menu edge where
+    textmenu titles go.  As you select a video title with the down or up arrow
+    on your DVD remote, the image in the centre will change to the image or
+    video made from that selected video. Do not use **-showcase** IMAGE/VIDEO
+    with this option.
 
-    This can be a time consuming process for making animated menus as you need to make a
-    separate menu for each video provided with **-files**.  The process can be greatly
-    sped up by using **-quick-menu** in conjunction with this, though you will lose
-    fancy options like **-rotate** and **-wave**.
+    This can be a time consuming process for making animated menus as you need
+    to make a separate menu for each video provided with **-files**.  The
+    process can be greatly sped up by using **-quick-menu** in conjunction with
+    this, though you will lose fancy options like **-rotate** and **-wave**.
 
     Example for using with **-quick-menu**:
 ```
@@ -313,24 +342,24 @@ the SLIDESHOWS option section.
 
 == Thumbnail style ==
 
-: **-thumb-shape** [normal|oval|plectrum|egg]
+: **-thumb-shape** normal|oval|plectrum|egg
     Apply a shaped transparency mask to thumbnail videos
     The default is to have a rectangular semi-transparent misted background
     for each thumb - to disable this mist use **-thumb-mist-color none**.
 : **-3dthumbs**
     This will give an illusion of 3D to the thumbnails: dynamic lighting on
     rounded thumbs, and a raised effect on rectangular thumbs.  Try it !
-: **-thumb-font** FONT
-    Display thumbnail titles in the given font
-: **-thumb-fontsize** POINTS
-    Font size to use for thumbnail titles
+: **-titles-font** FONT
+    Display thumbnail or textmenu titles in the given font
+: **-titles-fontsize** POINTS
+    Font size to use for thumbnail or textmenu titles
 
 
 == Slideshows ==
 
 : **-slideshow** IMAGES
-    Use **-slideshow IMAGES to pass in images for a slideshow, not
-    **-files** IMAGES.  **-slideshow IMAGES can be used multiple times if you
+    Use **-slideshow** IMAGES to pass in images for a slideshow, not
+    **-files** IMAGES.  **-slideshow** IMAGES can be used multiple times if you
     wish to make a menu with multiple slideshows (DVD only).  You can also make
     a menu of mixed videos and slideshows by using **-slideshow** IMAGES, and
     **-files** VIDEOS multiple times.  The number of **-titles** needs to match
@@ -344,19 +373,94 @@ the SLIDESHOWS option section.
     The length of the menu is determined by 1) **-menu-length** NUM if given,
     and by 2) the length of the audio from **-bgaudio**.
 
-: **-carousel-fade**
+: **-carousel-effect** crossfade|fade [crossfade]
     Use fade transitions between slides in a carousel type menu.  Be sure the
     menu length is long enough to support the 1 second transitions between the
     slides.  The length is determined by 1) the length of the -bgaudio AUDIO
-    2) the length given with -menu-length NUM
-    See **-carousel** , **-bgaudio** and **-menu-length**
+    2) the length given with -menu-length NUM.  The default transition type is
+    'crossfade'.
 
+    See **-carousel** , **-bgaudio** and **-menu-length**
+    
+    The 'crossfade' type is the default if you don't supply an argument.  It
+    fades from one slide to another.  The 'fade' effect fades in and out from
+    and to black.
+
+: **-slideshow-menu-thumbs** FILES
+    Use the FILES instead of the 1st image in each slideshow as the
+    thumb that shows on the menu.  This option is for multiple slideshows
+    or mixed slideshow/video menus only.
+
+: **-slides-to-bin** FILES
+    FILES will be resized to 640x480 using a 'box' filter - this
+    is called 'binning'.  It will reduce the 'signal to noise' ratio for the
+    image in the carousel video.  Use this if you get some unwanted effects
+    for certain images, such as pixels shifting in what should be a static
+    image.  See also **-slides-to-blur** and **-slide-border**
+
+: **-slides-to-blur** FILES
+    FILES will be blurred a small amount - which will help on
+    slides that still have noise even after 'binning' with -slides-to-bin.
+    The default blur is 0x0.2 - you can increase this with
+    -slide-blur ARG.  See also **-slides-to-bin** and **-slide-border**
+
+: **-slide-blur** VALUE or LIST of VALUES [0x0.2]
+    The argument to use for blurring files.
+    It will be passed to imagemagick: convert -blur ARG.
+    You can use a list to have a different blur for each file passed with
+    **-slides-to-blur**.  You must pass in **-files-to-blur** FILES to use this
+    option.  Blurring can help 'noise' problems in the video.  See also
+    **-slides-to-bin** and **-slide-border**
+    
+
+: **-slide-border** WIDTH [100]
+    Pad the slides with a border for the carousel menu.  The default without
+    using an argument is 100.  Using this option can also solve some
+    noise/ringing effects if used alone or in conjuction with 'binning'
+    (**-slides-to-bin**) or blurring (**-slides-to-blur**)
+
+: **-slide-frame** WIDTH [12]
+    Frame the slides for the carousel menu.  The default without using an
+    argument is 12.  See also **-slide-frame-color**
+
+: **-slide-frame-color** | **-slide-frame-colour**
+    The color of the slide frame if passing **-slide-frame**.  The default if
+    you don't use this option is a color-safe white: rgb(235,235,235)
+
+: **-showcase-carousel**
+    If doing multiple slideshows or mixed videos and slideshow(s), then use
+    the carousel as a showcase video.
+
+: **-background-carousel**
+    If doing multiple slideshows or mixed videos and slideshow(s), then use
+    the carousel as a background video.
+
+: **-use-dvd-slideshow** [CONFIG FILE]
+    If you pass this option without an argument, todisc will use the
+    dvd-slideshow program to create the carousel, assuming you have this
+    program installed.  The optional argument is the dvd-slideshow config file
+    - if you don't use this argument todisc will create it for you.  If you
+    to use the 'Ken Burns effect' - then the config file argument is required.
+    Note: the config file will override many of the above options for
+    slideshows.
+
+
+== Burning the disc ==
+
+: **-burn**
+    Prompt to burn the DVD directory on completion.
+
+: **-device**
+    Device to use for the burning program [ /dev/dvdrw ]
+
+: **-speed**
+    The speed to use for burning the disc.
 
 = ADVANCED USAGE =
 == Options ==
 : **-menu-length**
     The desired animated main menu length in seconds
-: **-submenu-stroke-color**, **-submenu-stroke-colour** COLOR
+: **-submenu-stroke** COLOR
     The color for the sub-menu font outline (stroke)
 : **-submenu-title-color**, **-submenu-title-colour**
     The fill color used for sub-menu title fonts
@@ -366,26 +470,28 @@ the SLIDESHOWS option section.
 : **-chapters** [ NUM | CHAPTER POINTS in HH:MM:SS ]
     The number of chapters for each video (default: 6) OR
     the actual chapter points in HH:MM:SS format.
-    Chapter points will be used for generating the submenu thumbs, and for seeking
-    with your DVD player.  You can pass in just one value that will be used for all videos,
-    or supply a list of values (number of chapters) or timecode strings.
+    Chapter points will be used for generating the submenu thumbs, and for
+    seeking with your DVD player.  You can pass in just one value that will
+    be used for all videos, or supply a list of values (number of chapters)
+    or timecode strings.
 
-    If you just pass an integer for 'number of chapters', then todisc will make the
-    chapter points for you by dividing the video length by the number you supply.
+    If you just pass an integer for 'number of chapters', then todisc will
+    make the chapter points for you by dividing the video length by the number
+    you supply.
 
     If passing HH:MM:SS format you need to pass the group of chapter points for
     each video and each group should have comma separated values.
-    Additionally, the first chapter should always start at 00:00:00 as dvdauthor
-    will add that if it is not there already.
+    Additionally, the first chapter should always start at 00:00:00 as
+    dvdauthor will add that if it is not there already.
 
-    To get your timecodes, you can play your videos in mplayer and press 'o' to see
-    them onscreen.  I have found these to be very accurate in my short tests.  For absolute
-    frame accuracy you could load the file in avidemux and find the time codes for the
-    frames you want.
+    To get your timecodes, you can play your videos in mplayer and press 'o'
+    to see them onscreen.  I have found these to be very accurate in my short
+    tests.  For absolute frame accuracy you could load the file in avidemux
+    and find the time codes for the frames you want.
 
-    If passing grouped chapters you need to join the chapters from all the videos in a
-    group with a '+' seperator.  If you want to skip a video in the group use '0' for its
-    chapters.
+    If passing grouped chapters you need to join the chapters from all the
+    videos in a group with a '+' seperator.  If you want to skip a video in
+    the group use '0' for its chapters.
 
     Example for passing just number of chapters ( 4 videos ):
 ```
@@ -394,21 +500,39 @@ the SLIDESHOWS option section.
 
     Example of passing chapter points ( 4 videos ):
 ```
-    -chapters 00:00:00,00:05:34.41,00:12:54,00:20:45 00:00:00,00:04:25.623,00:09:12,00:15:51 \
-    00:00:00,00:05:10,00:13:41,00:18:13.033 00:00:00,00:15:23.342,00:26:42.523
+    -chapters 00:00:00,00:05:34.41,00:12:54,00:20:45 \
+    00:00:00,00:04:25.623,00:09:12,00:15:51 \
+    00:00:00,00:05:10,00:13:41,00:18:13.033 \
+    00:00:00,00:15:23.342,00:26:42.523
 ```
 
     Example of passing grouped chapters using the '+' seperator:
 ```
-    -chapters 00:00:00,00:05:34.41,00:12:54,00:20:45+00:04:23,00:09:35 00:00:00...etc
+    -chapters 00:00:00,00:05:34.41,00:12:54,00:20:45+00:04:23,00:09:35 \
+    00:00:00...etc
 ```
+
+: **-chapter-titles** LIST
+    If you are using submenus, you can pass a list of titles for the
+    chapters.  Each title must be quoted, and the number of titles given
+    must equal the total number of chapters for all videos.  In other words
+    if you use -chapters 4 6 8 , you must give 18 chapter titles, in the same
+    order that the videos were passed in.
+
+: **-chapters-font** FONT
+    Use FONT as the font for submenu chapters.
+
+: **-chapters-fontsize** SIZE
+    Use SIZE as the pointsize for the chapters font.
+
 
 : **-seek** NUM | "NUM1 NUM2 NUM3 . . ."
     Seek to NUM seconds before generating thumbnails (default: 2.0 seconds)
     If a quoted string of values matching the number of videos is used, then
     each video can use a different seek value
-    If using switched menus, the **-seek** value(s) will be used to generate the showcase
-    image that displays on switching to another video choice with the up/down arrow keys.
+    If using switched menus, the **-seek** value(s) will be used to generate
+    the showcase image that displays on switching to another video choice with
+    the up/down arrow keys. 
 : **-showcase-seek** NUM
     Seek to NUM seconds before generating thumbnails for showcase video
     (default: 2.0 seconds)
@@ -419,30 +543,31 @@ the SLIDESHOWS option section.
     Seek to NUM seconds before generating audio for bgaudio
     (default: 2.0 seconds)
 : **-group** N VIDEO1 VIDEO2 . . .
-    Allow grouping videos in dvdauthor.xml, so they will play sequentially as a group.
- The videos passed in after the 'N' will be grouped with the 'Nth' video. Example:
+    Allow grouping videos in dvdauthor.xml, so they will play sequentially as
+    a group.  The videos passed in after the 'N' will be grouped with the 'Nth'
+    video. Example:
 
 ```
  -group 2 2.mpg 3.mpg 4.mpg
 ```
 
- will group these 3 videos with the 2nd video given with **-files**, so that they will play
- sequentially as one title.  Only one thumbnail and/or title will appear on the menu
- for the group: it will be made from the 1st video in the group.
- In the above example if you passed:
-```
- -files foo.mpg bar.mpg baz.mpg -group 2 2.mpg 3.mpg 4.mpg
-```
- then the group will consist of bar.mpg  2.mpg, 3.mpg and 4.mpg, and only the title and/or
- thumbnail for bar.mpg will appear in the menu.  You can use **-group** more than once if you
- have more than one group you are making.  Be sure to quote video filenames if they contain 
- spaces.
+    will group these 3 videos with the 2nd video given with **-files**, so that
+    they will play sequentially as one title.  Only one thumbnail and/or title
+    will appear on the menu for the group: it will be made from the 1st video
+    in the group.  In the above example if you passed:
+    ```
+     -files foo.mpg bar.mpg baz.mpg -group 2 2.mpg 3.mpg 4.mpg
+    ```
+    then the group will consist of bar.mpg  2.mpg, 3.mpg and 4.mpg, and only the
+    title and/or thumbnail for bar.mpg will appear in the menu.  You can use
+    **-group** more than once if you have more than one group you are making.  Be
+    sure to quote video filenames if they contain  spaces.
 : **-noask**, **-no-ask**
-    Skip all interactive questions.  No preview, automatic re-encoding with tovid if needed,
-    no interactive option to use background video for bgaudio.
+    Skip all interactive questions.  No preview, automatic re-encoding with
+    tovid if needed, no interactive option to use background video for bgaudio.
 : **-nowarn**, **-no-warn**
     Don't pause after outputing warning messages
-: **-tovidopts** "OPTIONS"
+: **-tovidopts** | **-tovid-opts** "OPTIONS"
     Pass the given string of options to 'tovid', if it is called upon to
     re-encode your non-compliant videos. Be sure to include the double-quotes
     around your list of options!
@@ -457,25 +582,28 @@ the SLIDESHOWS option section.
 : **-button-style** rect|text|line|text-rect
     The style of button that you will see when you play the DVD.
     "rect" draws a rectangle around the thumb when you select it
-    in the DVD player.  "text" highlights the thumb title text, "line" underlines the title,
-    and "text-rect" draws a rectangle around the title text.  If you have multiline titles,
-    use "text-rect" or "line".
+    in the DVD player.  "text" highlights the thumb title text, "line"
+    underlines the title, and "text-rect" draws a rectangle around the title
+    text.  If you have multiline titles, use "text-rect" or "line".
 : **-title-color**, **-title-colour** COLOR
     Color to use for the main menu title.  For list of supported colors do:
     **convert -list** color.  HTML notation may be used: "#ff0000". See:
     http://www.imagemagick.org/script/color.php
-: **-stroke-color**, **-stroke-colour** COLOR
+: **-title-stroke** COLOR
     Outline color for the main menu font. Use "none" for transparent outline
     (see title-color)
+: **-titles-stroke** COLOR
+    Outline color for the thumb or textmenu titles font. Use "none" for
+    transparent outline  (see **-titles-color**).
 : **-highlight-color**, **-highlight-colour**
-    Color to use for the menu buttons that your dvd remote uses to navigate
+    Color to use for the menu buttons that your dvd remote uses to navigate.
 : **-select-color**, **-select-colour**
-    Color to use for the menu buttons that your dvd remote uses to select
+    Color to use for the menu buttons that your dvd remote uses to select.
 : **-text-mist**
     Put a semi-transparent misted background behind the title text, just
-    slightly larger than the text area
+    slightly larger than the text area.
 : **-text-mist-color**, **-text-mist-colour** COLOR
-    Color of the mist behind the menu text (see title-color)
+    Color of the mist behind the menu text (see title-color).
 : **-text-mist-opacity**
     Opacity of the mist behind the menu text - see **-opacity**
 : **-submenu-audio-length**
@@ -485,21 +613,22 @@ the SLIDESHOWS option section.
     Number of sec to fade given menu audio in and out (default: 1.0 seconds)
     If you use **-menu-audio-fade** 0 then the audio will not be faded.
 : **-submenu-audio-fade**
-    Number of sec to fade given sub-menu audio in and out (default: 1.0 seconds)
+    Number of secs to fade sub-menu audio in and out (default: 1.0 seconds).
     See **-menu-audio-fade**
 : **-intro** VIDEO
-   Use a introductory video that will play before the main menu.
-   At present this must be a DVD compatible video at the correct resolution etc.
-   Only 4:3 aspect is supported: 16:9 will give unexpected results.
+    Use a introductory video that will play before the main menu.
+    At present it must be a DVD compatible video at the correct resolution etc.
+    Only 4:3 aspect is supported: 16:9 will give unexpected results.
 
 
 
 ===Menu Style options specific to showcase and textmenu arrangements===
 : **-text-start** N
-   This option is for **-textmenu** menus.  The titles will start at the Nth pixel from the
-   top of the menu ( Y axis ).
+    This option is for **-textmenu** menus.  The titles will start at the Nth
+    pixel from the top of the menu ( Y axis ).
 : **-title-gap** N
-   This option is for **-textmenu** menus.  The gap is the space between titles vertically ( Y axis ).
+    This option is for **-textmenu** menus.  The gap is the space between
+    titles vertically ( Y axis ).
 : **-rotate** DEGREES
     Rotate the showcase image|video clockwise by DEGREES.
     (default: if used without options, the rotate will be 5 degrees)
@@ -510,59 +639,67 @@ the SLIDESHOWS option section.
     GEOMETRY. (default: no wave)
     "default" will produce a wave arg of -20x556, which
     produces a gentle wave with a small amount of distortion.
-    See: http://www.cit.gu.edu.au/~anthony/graphics/imagick6/distorts/#wave if you want
-    to try other values
+    See: http://www.cit.gu.edu.au/~anthony/graphics/imagick6/distorts/#wave
+    if you want to try other values.
 : **-showcase-framestyle**  none|glass
     For -showcase-* style template only
     "none" will use the default frame method, using "convert -frame . . ."
-    "glass" will use mplayer to make frames, which gives an interesting animated
-    effect to the frames, and can be much faster ( especially if you don't use **-rotate** or
-    **-wave** as thumbs will not need to be processed again after mplayer spits them out
-    Note: you need to be using either **-showcase** IMAGE or **-showcase** VIDEO
-    for this "frame style" to work.
+    "glass" will use mplayer to make frames, which gives an interesting
+    animated effect to the frames, and can be much faster ( especially if you
+    don't use **-rotate** or **-wave** as thumbs will not need to be processed
+    again after mplayer spits them out.  Note: you need to be using either
+    **-showcase** IMAGE or **-showcase** VIDEO for this "frame style" to work.
 
 
 
 ==Thumbnail Style==
 : **-opacity** [0-100] (default 100)
-    Opacity of thumbnail videos as a percentage (no percent sign)
+    Opacity of thumbnail videos as a percentage (no percent sign).
     Anything less than 100(%) is semi-transparent. Not recommended with dark
-    backgrounds
+    backgrounds.
 : **-blur** NUM
-    The amount of feather blur to apply to the thumb-shape.  Default is 4.0 which
-    will more or less keep the shape and produce transparency at the edges
-    Choose float or integer values between 0.1 and 5.0
-    Higher values are possible, but you may not like the result, particularly when
-    using "-thumb-mist-colour none"
-    3D thumbs are automatically set to a negligible blur, so this option has no effect
+    The amount of feather blur to apply to the thumb-shape.  The default is 4.0
+    which will more or less keep the shape and produces transparency at the
+    edges.  Choose float or integer values between 0.1 and 5.0.  Higher values
+    are possible, but you may not like the result, particularly when using
+    "-thumb-mist-colour none".
+    3D thumbs are automatically set to a negligible blur, so this option has no
+    effect on -3dthumbs option.
 : **-align** north|south
     This will align  thumbs/titles north or south. 
     (if **-align** south then menu title will align north)
 : **-thumb-mist-color**, **-thumb-mist-colour**
     Color of mist behind thumbnails
-: **-thumb-text-color**, **-thumb-text-colour** COLOR
-     Color to use for the thumb titles (see **-title-color**)
+: **-titles-color**, **-titles-colour** COLOR
+    Color to use for the thumb or textmenu titles.  If your titles are not
+    clear enough or look washed out, try using a **-titles-stroke** that
+    is the same color as used with **-titles-color**  (see **-title-color**)
 : **-showcase-titles-align** west|east (default: center [centre])
-     The default is to center the text above the thumbnails.
-     This option will align the titles either to the left (west) or right (east).
-     Aligning west gives more space to the titles.  Aligning east also does so, and
-     as well will let you use \n in your titles to achieve multi line titles.
+    The default is to center the text above the thumbnails.  This option will
+    align the titles either to the left (west) or right (east).  Aligning west
+    gives more space to the titles.  Aligning east also does so, and as well
+    will facilitate using \n in your titles to achieve multi line titles.
 : **-tile-3x1**, **-tile3x1**
-     Use a montage tile of 3x1 instead of the usual 2x2 for 3 videos
-     ie.  [movie1] [movie2] [movie3] instead of
-     [movie1] [movie2]
-     [movie3]
-     This option only comes into play if the number of videos supplied equals 3
-     Otherwise it will be silently ignored. Not used for -showcase-* style.
+    Use a montage tile of 3x1 instead of the usual 2x2 for 3 videos
+    ie.
+
+    [movie1] [movie2] [movie3] instead of:
+
+    [movie1] [movie2]
+
+    [movie3]
+
+    This option only comes into play if the number of videos supplied equals 3
+    Otherwise it will be silently ignored. Not used for -showcase-* style.
 : **-tile-4x1**, **-tile4x1**
-     Same as **-tile-3x1** above, except use tile of 4x1.  (one row of 4 videos)
+    Same as **-tile-3x1** above, except use tile of 4x1. (one row of 4 videos)
 : **-rotate-thumbs** DEGREE LIST ( list of degrees, one for each thumb )
-     Rotate thumbs the given amount in degrees - can be positive or negative.
-     There must be one value for each file given with **-files**.
-     If the values are not the same distance from zero, the thumbs will be of different
-     sizes as images are necessarily resized *after* rotating.
-     With the default montage template - this will also resize the titles; with the showcase
-     template the titles will remain the same size. Example:
+    Rotate thumbs the given amount in degrees - can be positive or negative.
+    There must be one value for each file given with **-files**.
+    If the values are not the same distance from zero, the thumbs will be of
+    different sizes as images are necessarily resized *after* rotating.  With
+    the default montage template - this will also resize the titles; with the
+    showcase template the titles will remain the same size. Example:
 
 ```
 -rotate-thumbs -10 10 -10 10 -10  (for 5 files)
@@ -575,61 +712,65 @@ the SLIDESHOWS option section.
     ==Dvdauthor options==
 : **-loop** PAUSE
     Pause in seconds at end of menu.  Use "inf" if you wish indefinite pause.
-    (Note: you can not use inf with **-menu-fade** as you will get a black screen
+    (Note: you can't use inf with **-menu-fade** as you will get a black screen
     at the end)  (default: "inf" for static menu, 10.0 seconds for animated)
 : **-playall**
     This option will create a button on the main menu that will allow going
-    right to the 1st title and playing all videos in succession before returning
-    to the main menu
+    right to the 1st title and playing all videos in succession before
+    returning to the main menu.
 : **-chain-videos** NUM | N1-NN
-    Without options this will chain all videos together so they play sequentially
-    without returning to the main menu, except for the last, which will return.
-    You can also specify which videos you want to behave this way by number or by
-    a range.  ( ie. **-chain-videos** 1 2 4-6 )
+    Without options this will chain all videos together so they play
+    sequentially without returning to the main menu, except for the last, which
+    will return.  You can also specify which videos you want to behave this way
+    by number or by a range. ( ie. **-chain-videos** 1 2 4-6 ).
 : **-subtitles** "lang1 lang2 . . ."
-    This allows selectable subtitles in the DVD, assuming you have optional subtitles
-    muxed into your videos
-: **-audio-lang** "Video1_channel Video2_channel Video3_channel . . ."
-    "VideoN_channel" is the track number to use in a multitrack (multi-language) mpeg
-    Usually something like **-audio-lang** "1 0 1"  ( 1st track is 0, 2nd is 1 . . . etc )
-    If the tracks are 0. English 1.French, then the above would make
-    French the audio language on Video1 and Video3, and English the audio language on Video2.
-    You can check the mpeg with "mplayer -v . . ."
+    This allows selectable subtitles in the DVD, assuming you have optional
+    subtitles muxed into your videos.
+: **-audio-lang** "Video1_track Video2_track Video3_track . . ."
+    "VideoN_track" is the track number to use in a multitrack (multi-language)
+    mpeg: usually something like **-audio-lang** "1 0 1".  The 1st track is
+    0, 2nd is 1 . . . etc.  If the tracks are 0. English 1.French, then the
+    above would make French the audio language on Video1 and Video3, and
+    English the audio language on Video2.  You can check the mpeg with
+    "mplayer -v . . .".
 : **-aspect** 4:3|16:9
-    This will output a <video aspect WIDTH:HEIGHT /> tag for the dvdauthor xml file.
-    It will affect all videos in the titleset.  Example:
+    This will output a <video aspect WIDTH:HEIGHT /> tag for the dvdauthor
+    xml file.  It will affect all videos in the titleset.  Example:
 
 ```
     -aspect 16:9
 ```
 : **-widescreen** nopanscan|noletterbox [nopanscan]
     This will output a <video widescreen=nopanscan /> tag (for example)
-    for the dvdauthor xml file.  It will affect all videos in the titleset.
-    Use in conjunction with **-aspect** if your dvd player is cropping your videos.
+    for the dvdauthor xml file.  It will affect all videos in the titleset. Use
+    in conjunction with **-aspect** if your dvd player is cropping your videos.
     Example:
 
 ```
     -aspect 16:9 -widescreen
 ```
 : **-quick-nav**
-    This option will allow navigation of a menu with more than one titleset by using the
-    left and right arrow keys of your DVD remote.  When you press this key the highlight will go
-    the next or previous title.  If you are at the end of a titleset the right key will go to the
-    next titleset.  If you are at the beginning of a titleset, the left key will go to the previous
-    titleset.  If no next or previous titleset it will cycle to the end or beginning of the titlesets.
+    This option will allow navigation of a menu with more than one titleset by
+    using the left and right arrow keys of your DVD remote.  When you press
+    this key the highlight will go the next or previous title.  If you are at
+    the end of a titleset the right key will go to the next titleset.  If you
+    are at the beginning of a titleset, the left key will go to the previous
+    titleset.  If no next or previous titleset it will cycle to the end or
+    beginning of the titlesets.
 : **-outlinewidth**, **-outline-width** WIDTH
-    For spumux outlinewidth variable.  If there is a large gap between words in a
-    text button, this option may help.
+    For spumux outlinewidth variable.  If there is a large gap between words in
+    a text button, this option may help.
 : **-video-pause** PAUSE (single value or list)
     The pause in seconds after playing a video title.  This is useful for
-    slideshows, as the 'slide' will remain on the screen for this length of time.
+    slideshows: the 'slide' will remain on the screen for this length of time.  
     If you have grouped videos you should probably not pause the videos that
     have a grouped title after it, but instead see **-grouped-video-pause**.
     Note: if you provide a list of values they must be one for each video.
 : **-group-video-pause** PAUSE (single value or list)
-    The pause in seconds after a grouped video plays.  If you wish to pause after the whole group
-    finishes, then only use a value greater than zero for the last video in the group.
-    If providing a list of values they must equal the number of grouped videos
+    The pause in seconds after a grouped video plays.  If you wish to pause
+    after the whole group finishes, then only use a value greater than zero
+    for the last video in the group.  If providing a list of values they must
+    equal the number of grouped videos.
 
 ==See also==
 
