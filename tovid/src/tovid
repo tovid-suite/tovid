@@ -525,7 +525,7 @@ function get_args()
                 SUBTITLES="-slang $1"
                 DO_SUBS=:
                 # Use gmplayer
-                MPLAYER="gmplayer"
+                MPLAYER="gmplayer -nogui"
                 # Force re-encoding of compliant video,
                 # so subtitles can be added
                 FORCE_ENCODING=:
