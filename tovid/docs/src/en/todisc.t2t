@@ -639,8 +639,8 @@ the SLIDESHOWS option section.
     GEOMETRY. (default: no wave)
     "default" will produce a wave arg of -20x556, which
     produces a gentle wave with a small amount of distortion.
-    See: http://www.cit.gu.edu.au/~anthony/graphics/imagick6/distorts/#wave
-    if you want to try other values.
+    See: http://www.imagemagick.org/Usage/distorts/#wave if you want
+    to try other values.
 : **-showcase-framestyle**  none|glass
     For -showcase-* style template only
     "none" will use the default frame method, using "convert -frame . . ."
