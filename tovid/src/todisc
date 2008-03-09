@@ -214,7 +214,7 @@ UNDERCOLOUR="000000"
 SLIDE_FADE=false
 SINGLE_SLIDESHOW=false
 MK_CAROUSEL_MODE=false
-MTG_GEO="+10+4"
+MTG_GEO="+12+6"
 MENUBUTTONS_ARE_CHAPTS=false
 CONFIRM_BACKUP=:
 USE_FEATHER_MASK=false
@@ -2941,7 +2941,8 @@ if $USER_BSTYLE && $TEXTMENU && [[ $BUTTON_STYLE = "rect" ]]; then
     $MULTILINE_TITLE && BUTTON_STYLE="text-rect" || BUTTON_STYLE="line"
     if ((MENU_NUM==2)) || { ! $SWITCHED_MODE && ! $SWITCHED_MENUS ; }; then
         yecho
-        yecho "Using button style '$BUTTON_STYLE' instead of 'rect' for textmenu menu"
+        yecho "Using button style '$BUTTON_STYLE' instead of 'rect'
+        for textmenu menu"
         yecho
         $WARN && sleep 10
     fi
@@ -2957,7 +2958,22 @@ fi
 # check if user passed a usable button shape
 if [[ -n $THUMB_SHAPE ]]; then
     ! egrep -q  '^egg$|^oval$|^plectrum$|^normal$' <<< "$THUMB_SHAPE"  && \
-        usage_error "Please supply a usable thumb shape with -thumb-shape option. You gave \"$THUMB_SHAPE\""
+        usage_error "Please supply a usable thumb shape with
+        -thumb-shape option. You gave \"$THUMB_SHAPE\""
+fi
+if [[ -n ${ROTATE_ARRAY[@]} ]]; then
+    if ! $SHOWCASE; then
+         if [[ $BUTTON_STYLE = "rect" ]]; then
+            BUTTON_STYLE="text-rect"
+            if $USER_BSTYLE; then
+                echo "rect button style with rotated thumbs doesn't play well"
+                echo "with spumux buttons. Setting button style to "
+                echo "text-rect.  You may also use 'line' or 'text' style"
+                echo "Ctrl-c now if you wish to exit and examine your options"
+                $WARN && sleep 10
+            fi
+        fi
+    fi
 fi
 #
 # end of button-style checks
@@ -3918,15 +3934,9 @@ if [[ $BUTTON_STYLE = "text-rect" ]] \
     yecho "***Warning***" 
     yecho "text-rect buttons need to be aligned east of thumbs:  by using:"
     yecho " '-showcase-titles-align east'"
-#    if [[ -n $SHOWCASE_FILE ]]; then
-#        echo "However, you are using a -showcase FILE, so choosing 'line' buttons instead"
-#        echo "If you wish you may use instead: '-button-style rect' - in which case exit now . . ."
-#        BUTTON_STYLE="line"
-#    else
     yecho "Setting this option for you"
     yecho "Ctrl-c now to exit if you wish to reconsider"
     SC_TITLE_ALIGN="east"
-#    fi
     yecho
     $WARN && sleep 10
 fi
@@ -6604,8 +6614,8 @@ if $SUB_MENU; then
             -o "${PICS_OUT[@]}" -f $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t \
             -y $SM_IMG_FMT,null)
             echo "Running ${TCODE_CMD[@]}" |
-            sed 's/    */ /g'|sed -e "s/^ *//"|fold -bs|tee -a "$LOG_FILE"
-            echo
+            sed 's/    */ /g'|sed -e "s/^ *//"|fold -bs >> "$LOG_FILE"
+            echo >> "$LOG_FILE"
             function run_transcode()
             {
                 "${TCODE_CMD[@]}" >> "$LOG_FILE"  2>&1
@@ -6785,6 +6795,7 @@ if $SUB_MENU; then
             "The submenu video (m2v) does not appear to have been created"
         fi
         # clean out submenu dirs of images
+        echo
         echo "Cleaning up leftover pics in $REAL_WORK_DIR/animenu"
         rm -f $WORK_DIR/submenu/*
         find $WORK_DIR/animenu/ -maxdepth 1 -type f -exec rm -f {} \;
