@@ -287,8 +287,11 @@ titlesafe_error()
     yecho "thumb title is $1 pixels from screen edge"
     yecho "Part of the title may not be visible on your tv screen"
     yecho "Consider using a smaller -titles-fontsize, or shortening \"${TITLES[i]}\""
+    $SHOWCASE && [[ -z $SHOWCASE_FILE ]] && \
+    yecho "You may also use '-showcase-titles-align-east' since you are not
+    using a -showcase FILE."
     echo "****************************"
-    $WARN && sleep 3
+    $WARN && sleep 5
 }
 
 format_output()
@@ -329,10 +332,14 @@ cleanup()
     yecho "Cleaning up..."
     if test -s "$WORK_DIR/tcode*.pid"; then
         for pidfile in "$WORK_DIR/tcode*.pid"; do
+            if kill -0 $(<$pidfile) 2> /dev/null; then kill $(<$pidfile) 2> /dev/null; fi
+            # get mean if it still exists
             if kill -0 $(<$pidfile) 2> /dev/null; then kill -9 $(<$pidfile) 2> /dev/null; fi
         done
     fi
-    for PID in $TCODE_PID $TRANSCODE_PID $NS_PID; do
+    for PID in $TCODE_PID $TRANSCODE_PID $NS_PID $polaroid_pid; do
+        if kill -0 $PID  2> /dev/null; then kill $PID  2> /dev/null; fi
+        # get mean if it still exists
         if kill -0 $PID  2> /dev/null; then kill -9 $PID  2> /dev/null; fi
     done
     if $KEEP_FILES; then
@@ -648,11 +655,7 @@ check_compliance()
             # replace the symlink with actual mpeg
             OUTFILE="$WORK_DIR/${TSET_NUM}-$((i+1)).mpg"
         fi
-        if [[ ${#CHECK_IN_FILES[@]} -le 30 ]]; then
-            echo "Checking $(readlink -f "$IN_FILE") for compliance..."
-        else
-            spin "Checking files for compliance..." $SPINNER
-        fi
+        spin "Checking files for compliance..." $SPINNER
         # if file tested as an image when we were verifying input files 
         if [[ $is_image = "yes" ]]; then
             $group_set && grp_use_image2mpeg2[i]="yes" || use_image2mpeg2[i]="yes"
@@ -677,26 +680,30 @@ check_compliance()
         TV_STND_CAPS=$(tr a-z A-Z <<< "$TV_STANDARD")
         echo
         yecho "Encode input files"
-        echo
-        yecho "Some of the -files you provided are not $TV_STND_CAPS $TGT_CAPS-compliant:"
-        echo " "
-        if test ${#FILES_TO_ENCODE[@]} -lt 30; then
+        if ! $SINGLE_SLIDESHOW; then
+            echo
+            yecho "Some of the -files you provided are not \
+            $TV_STND_CAPS $TGT_CAPS-compliant:"
+            echo " "
+        fi
+        if test ${#FILES_TO_ENCODE[@]} -lt 12 && ! $SINGLE_SLIDESHOW; then
             for i in "${FILES_TO_ENCODE[@]}"; do
                 this_file=$(readlink -f "$i")
                 test -n "$this_file" && yecho " $this_file"
             done
         fi
-        yecho " "
         # this ugly list of OR's are cases we want automatic encoding
         # all switched runs except the 1st, if -no-ask, if single slideshow
         # or if all input files are images
         if { $SWITCHED && [[ $MENU_NUM -ne 2 ]] ; } \
-         || $NOASK || [[ $TOVID_OPTS = *-noask* ]] || $SINGLE_SLIDESHOW || \
+         || $NOASK || [[ $TOVID_OPTS = *-noask* ]] || \
          [[ ${#NO_PROMPT_FILES[@]} = ${#FILES_TO_ENCODE[@]} ]]; then
+            yecho " "
             echo "Converting files to $TV_STND_CAPS $TGT_CAPS-compliant format."
             echo "(This may take a long time)"
             ENCODE="yes"
         else
+            yecho " "
             yecho "I can encode them for you, but it may take a long time."
             yecho "Encoding will ensure that your disc is fully compliant;"
             yecho "you may skip this, but your disc may not be playable."
@@ -704,9 +711,11 @@ check_compliance()
             read ENCODE
         fi
         if test -n "$ENCODE" && test "$ENCODE" = 'yes'; then
-            yecho
-            yecho "Converting files to $TGT_CAPS format"
-            yecho
+            if ! $SINGLE_SLIDESHOW; then
+                yecho
+                yecho "Converting files to $TGT_CAPS format"
+                yecho
+            fi
             for i in "${!FILES_TO_ENCODE[@]}"; do
                 IN=$(readlink -f "${FILES_TO_ENCODE[i]}")
                 if $group_set; then
@@ -1422,7 +1431,7 @@ mk_play_button()
     fi
     #-fill "$COLR2" -draw "line 40,10 40,50"  \
     # -fill "$COLR2" -draw "rectangle 36,10 40,50" \
-    MK_PLAY_CMD=(convert +antialias -size 100x80 xc:none  \
+    MK_PLAY_CMD=(convert +antialias -depth 2 -size 100x80 xc:none  \
     -strokewidth 2 -stroke "$COLR2" -fill "$CLR1" \
     -draw 'rectangle 22,0 92,62' \
     -fill "$COLR2" -stroke none \
@@ -1894,6 +1903,61 @@ border_and_frame()
     convert  -size 640x480 "$SLIDE_IN" -mattecolor $SFRAME_COLOUR \
     -thumbnail ${tmbnail_size}\> $SLIDE_FRAME $SLD_BG +swap -gravity center \
     -composite "$SLIDE_OUT"
+}
+
+mk_polaroid_stack()
+{
+    local stackfiles=( "$@" )
+    local CONVERT="convert -quality 01 -depth 8"
+    if [[ $TARGET = "dvd" ]]; then
+        local TSIZE=120x80
+        local CANVAS_SIZE=640x480
+        local rand_xmax=400
+        local rand_ymax=200
+        local rand_xoffset=80
+        local rans_yoffset=50
+    else
+        local TSIZE=80x80
+        local CANVAS_SIZE=480x480
+        local rand_xmax=300
+        local rand_ymax=200
+        local rand_xoffset=60
+        local rand_yoffset=50
+    fi
+
+    # this assignment not used in script, just for standalone demo purposes
+
+    for i in ${!stackfiles[@]}; do
+
+        # Use a 'random' angle
+        local angle=$((RANDOM %45 +1))
+        local angle=$(( (angle / 2) * 2 ))
+
+        # thumbnail to 120x80 or 80x80 # TODO get working for pal
+        $CONVERT "${stackfiles[i]}" -background none -thumbnail ${TSIZE}! \
+        -bordercolor '#EAEAEA' -shave 4x4 +repage -border 4x4 \
+        -rotate $angle  \
+        -background  black  \( +clone -shadow 60x4+4+4 \) +swap \
+        -background  none   -flatten \
+        "$WORK_DIR/tnail${i%.*}.png"
+        stack_files[i]=$WORK_DIR/tnail${i%.*}.png
+
+        # Composite the polaroid over the canvas
+
+        # get 'random' coordinates
+        local rand_xloc=$((RANDOM %rand_xmax + rand_xoffset))
+        local rand_yloc=$((RANDOM %rand_ymax + rans_yoffset))
+        local rand_loc="+${rand_xloc}+${rand_yloc}"
+        local img_page[i]="-page $rand_loc"
+    done
+    for i in ${!stack_files[@]}; do
+        local image_page=( "${image_page[@]}" ${img_page[i]} "${stack_files[i]}" )
+    done
+    $CONVERT -background none -size $CANVAS_SIZE xc:none \
+    "${image_page[@]}" -mosaic -trim +repage "$WORK_DIR/polaroid_stack.png"
+#    $CONVERT -size $VIDSIZE "$BACKGROUND" -background none \
+#    -gravity Center -geometry +0+0 - -composite \
+#    "$WORK_DIR/pics/template.png"
 }
 
 ##############################################################################
@@ -2763,7 +2827,8 @@ $NO_TOP_MENU && [[ $TARGET = "dvd" ]] && usage_error \
 $SWITCHED && MN=2 || MN=1
 
 if [[ ${#TITLES[@]} -eq 0 ]]; then
-    if [[ $MENU_NUM = $MN ]] && ! $DO_TITLESETS && $MONTAGE_MENU; then
+    if [[ $MENU_NUM = $MN ]] \
+     && ! $SINGLE_SLIDESHOW && ! $DO_TITLESETS && $MONTAGE_MENU; then
         yecho
         yecho "You did not provide any titles with -titles"
         yecho "Using the basename of each file provided (minus the extension)."
@@ -2888,7 +2953,8 @@ if ! $SHOWCASE; then
         val=${#TITLES[i]}
         [ -z "$MAX_CHARS" ] || ((val > MAX_CHARS)) && MAX_CHARS=$val && key=$i
     done
-    if [[ ${#TITLES[@]} -gt 6 && $MAX_CHARS -gt 16 ]] && ! ${SLIDESHOW[i]}; then
+    if [[ ${#TITLES[@]} -gt 6 \
+    && $MAX_CHARS -gt 16 ]] && ! $SINGLE_SLIDESHOW; then
         yecho
         yecho "WARNING! Some titles are longer than 16 characters; they may be chopped off."
         yecho
@@ -2904,47 +2970,57 @@ $SWITCHED_MODE && SWITCHED_MENUS=false
 #
 
 # use a suitable button style
-for ((i=0; i<=NUM_FILES; i++)); do
-    if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
-        MULTILINE_TITLE=:
-        if $FEATHER && [ $THUMB_SHAPE != "normal" ]; then
-            # multiline titles not suitable for text buttons
-            BUTTON_STYLE="text-rect"
-        elif $TEXTMENU; then
-            [[ $BUTTON_STYLE != "line" ]] && BUTTON_STYLE="text-rect"
-        else
-            [[ $BUTTON_STYLE != "text-rect" ]] &&  ! $USER_BSTYLE && BUTTON_STYLE="rect"
-        fi
-    fi
-done
-# disallow spaces in thumb titles for text button style
-if [ "$BUTTON_STYLE" = "text" ]; then
-    for ((i=0; i<${#TITLES[@]}; i++)); do
-        T=$(sed 's/^[ \t]*//;s/[ \t]*$//' <<< "${TITLES[i]}")
-        if grep "  " <<< "$T" >/dev/null; then
-            echo "Sorry, a maximum of one consecutive space is allowed in titles for text buttons"
-            echo "\"${TITLES[i]}\" has more than one consecutive space in it"
-            exit 1
+if ! $SINGLE_SLIDESHOW; then
+    for ((i=0; i<=NUM_FILES; i++)); do
+        if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
+            MULTILINE_TITLE=:
+            if $FEATHER && [ $THUMB_SHAPE != "normal" ]; then
+                # multiline titles not suitable for text buttons
+                BUTTON_STYLE="text-rect"
+            elif $TEXTMENU; then
+                [[ $BUTTON_STYLE != "line" ]] && BUTTON_STYLE="text-rect"
+            else
+                [[ $BUTTON_STYLE != "text-rect" ]] &&  ! $USER_BSTYLE && BUTTON_STYLE="rect"
+            fi
         fi
     done
-    if $TITLESET_MODE && $VMGM_MENU && $PLAYALL && ! $SHOWCASE; then
-        BUTTON_STYLE="rect"
-        yecho
-        yecho "Warning ************"
-        yecho "You can not use text button style when using both playall and titlesets"
-        yecho "because of spumux and space limitations"
-        yecho "Changing to 'rect' style of buttons"
-        $WARN && sleep 15
+
+    # disallow spaces in thumb titles for text button style
+    if [ "$BUTTON_STYLE" = "text" ]; then
+        for ((i=0; i<${#TITLES[@]}; i++)); do
+            T=$(sed 's/^[ \t]*//;s/[ \t]*$//' <<< "${TITLES[i]}")
+            if grep "  " <<< "$T" >/dev/null; then
+                echo "Sorry, a maximum of one consecutive space is allowed
+                in titles for text buttons.  \"${TITLES[i]}\" has more than
+                one consecutive space in it" |fold -bs
+                exit 1
+            fi
+        done
+        if $TITLESET_MODE && $VMGM_MENU && $PLAYALL && ! $SHOWCASE; then
+            BUTTON_STYLE="rect"
+            yecho
+            yecho "Warning ************"
+            yecho "You can not use text button style when using both playall and titlesets"
+            yecho "because of spumux and space limitations"
+            yecho "Changing to 'rect' style of buttons"
+            $WARN && sleep 15
+        fi
     fi
 fi
-if $USER_BSTYLE && $TEXTMENU && [[ $BUTTON_STYLE = "rect" ]]; then
-    $MULTILINE_TITLE && BUTTON_STYLE="text-rect" || BUTTON_STYLE="line"
+if { $TEXTMENU || $QUICK_MENU ; } && [[ $BUTTON_STYLE = "rect" ]]; then
+    if $MULTILINE_TITLE; then
+        BUTTON_STYLE="text-rect"
+    else
+        BUTTON_STYLE="line"
+    fi
     if ((MENU_NUM==2)) || { ! $SWITCHED_MODE && ! $SWITCHED_MENUS ; }; then
-        yecho
-        yecho "Using button style '$BUTTON_STYLE' instead of 'rect'
-        for textmenu menu"
-        yecho
-        $WARN && sleep 10
+        if $USER_BSTYLE; then
+            yecho
+            yecho "Using button style '$BUTTON_STYLE' instead of 'rect'
+            for textmenu menu"
+            yecho
+            $WARN && sleep 10
+        fi
     fi
 fi
 # allow multiline titles in submenu
@@ -3135,6 +3211,7 @@ fi
 echo "You are using the following locale settings:" >> "$LOG_FILE"
 locale >>  "$LOG_FILE" 2>&1
 # if no bg supplied, use template.png so we can add a frame (-quick-menu only)
+
 if [[ -z $BACKGROUND ]]; then
     BACKGROUND="$WORK_DIR/bg.png"
     convert  -size $VIDSIZE! xc:'#'$BG_COLOUR $BACKGROUND
@@ -3242,7 +3319,7 @@ fi
 if ! $VMGM_ONLY; then
     for i in "${FILES[@]}"; do
         IN_FILES=("${IN_FILES[@]}" "$(readlink -f "$i")")
-        [[ ${#FILES[@]} -lt 30 ]] && echo "Adding: $i"
+        [[ ${#FILES[@]} -lt 12 ]] && echo "Adding: $i" || spin "Adding: $i"
     done
 fi
 $VMGM_ONLY && V_TOTAL=$(( ${#TITLES[@]} - 1 )) || V_TOTAL=${#IN_FILES[@]}
@@ -3402,17 +3479,17 @@ yecho "${#FILES[@]} pics directories created"
 if $TEXTMENU && [[ -z $SHOWCASE_VIDEO && -z $BG_VIDEO ]]; then STATIC=:; fi
 
 { $MENU_FADE || test -n "$BG_VIDEO" ; } && mkdir -v "$REAL_WORK_DIR/bg"
-mkdir -v "$REAL_WORK_DIR/animenu"
+mkdir "$REAL_WORK_DIR/animenu"
 if $ANI_SUB_MENU; then
     for ((i=0; i<MAX_CHAPTERS; i++)); do
-        mkdir -v "$REAL_WORK_DIR/animenu/$i"
+        mkdir "$REAL_WORK_DIR/animenu/$i"
     done
 fi
 if $SUB_MENU && ! $ANI_SUB_MENU; then
-    mkdir -v "$REAL_WORK_DIR/submenu"
+    mkdir "$REAL_WORK_DIR/submenu"
 fi
 if [[ -n "$SHOWCASE_VIDEO" ]]; then
-    mkdir -v "$REAL_WORK_DIR/showcase"
+    mkdir "$REAL_WORK_DIR/showcase"
 fi
     
 # if more than one value for AUDIO_LANG, make sure they equal video #
@@ -3582,8 +3659,8 @@ fi
 echo 
 if $SINGLE_SLIDESHOW; then
     DO_FRAME=false; DO_BUTTONS=false; STATIC=:; DO_STATS=false
-    [[ -n $THUMB_FRAME ]] && THUMB_FRAME="-shave 3x3 +repage -frame 2x2"
-    MTG_GEO=+2+2
+#    [[ -n $THUMB_FRAME ]] && THUMB_FRAME="-shave 3x3 +repage -frame 2x2"
+#    MTG_GEO=+2+2
 #    MTG_FRM="-frame 2x2"
     CAROUSEL_IS_SHOWCASE=false
     CAROUSEL_IS_BACKGROUND=false
@@ -3595,6 +3672,7 @@ fi
 if $SINGLE_SLIDESHOW ; then
     PLAYALL=false
     ! $MONTAGE_MENU && DO_MENU=false
+    # BREAKPOINT
 fi
 
 # for slides or short files, seeking/fading will not work: set them to 0
@@ -3673,7 +3751,7 @@ if $DO_MENU; then
                 TITLE[i]=$(sed 's/^  *//'<<<${TITLES[i]//\\n/ }) # no spaces or \n
                 TITLE[i]=${TITLE[i]:0:35} # cut down to 35 characters maximum
                 if [ ${#TITLES[i]} -gt 35 ]; then
-                    echo "  \"${TITLE[i]}...\" (${IN_FILES[i]})" # "..." if cut off
+                    echo "  \"${TITLE[i]}...\" (${IN_FILES[i]})" # "..."
                 else
                     echo "  \"${TITLE[i]}\" (${IN_FILES[i]})"
                 fi
@@ -3727,6 +3805,7 @@ NTSC_1333_DVD=(420x280 300x200 192x128 192x128 186x124 186x124 132x88 132x88 \
 60x40 60x40 60x40 60x40 60x40 60x40 60x40 60x40 60x40
 60x40 60x40 60x40 60x40)
 for i in {50..98}; do NTSC_1333_DVD[i]="48x32"; done
+# this is a TODO
 NTSC_1777_DVD=(416x234 256x144 192x108 192x108 192x108 192x108 128x72 128x72 \
 128x72 128x72 128x72 128x72 96x54 96x54 96x54 96x54 \
 96x54 96x54 96x54 96x54 96x54 96x54 96x54 96x54 96x54)
@@ -3748,6 +3827,7 @@ TILE_1333=(1x1 2x1 2x2 2x2 3x2 3x2 3x3 3x3 3x3 4x3 4x3 4x3 4x4 4x4 4x4 \
 8x8 8x8 8x8 8x8 9x8 9x8 9x8 9x8 9x8 9x8  9x8 9x9 9x9 9x9 9x9 \
 9x9 9x9 9x9 9x9 9x9 10x9 10x9 10x9 10x9 10x9 10x9 10x9 10x9 10x9 10x10 \
 10x10 10x10 10x10 10x10 10x10 10x10 10x10)
+# this is a TODO
 TILE_1777=(1x1 2x1 2x2 2x2 3x2 3x2 3x3 3x3 3x3 4x3 4x3 4x3 4x4 4x4 4x4 \
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 5x6 5x6 5x6 5x6 5x6 \
 6x6 6x6 6x6 6x6 6x6 6x6)
@@ -4101,6 +4181,24 @@ fi
 if $MENU_FADE || $FEATHER; then
     convert -size $VIDSIZE xc:"#101010" "$WORK_DIR/black.jpg"
 fi
+# now that we have a background we can do the polaroid stack if called for
+if $SINGLE_SLIDESHOW && ! $DO_CAROUSEL && ! $MK_CAROUSEL_MODE; then
+    echo -e "\nMaking a 'polaroid stack' of your images for the main menu"
+    mk_polaroid_stack "${IN_FILES[@]}" &
+    polaroid_pid=$!
+    while ps -p $polaroid_pid >/dev/null; do
+        sleep .5
+        spin $SPINNER
+    done
+    echo
+    
+    # FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 224KiB -aspect 4:3"
+   #MENU_N=$(bc_math "$FRAME_RATE * ${MENU_LEN[MENU_NUM-1]}" int)
+    #ffmpeg -f image2 -loop_input -t $MENU_LEN  -i "$WORK_DIR/image_stack.png" \
+    #-an -r $FRAME_RATE -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS \
+    #-f mpeg2video -y "$WORK_DIR/intro.m2v"
+fi
+# values to use for the blur mask
 DIMY=$(cut -f1 -dx <<< $THUMB_SIZE)
 DIMX=$(cut -f2 -dx <<< $THUMB_SIZE)
 DIMY1=$((DIMY / 20))
@@ -4138,7 +4236,7 @@ if [[ -z "$TITLES_COLOUR" ]]; then
 fi
 if test "$THUMB_SHAPE" = "normal"; then
     THUMB_MASK="$WORK_DIR/feather_mask.png"
-    yecho "Creating normal mask with the following command:"
+    #yecho "Creating normal mask with the following command:"
     MASK_CMD="convert -size $THUMB_SIZE xc:black -fill white \
     -draw \"Rectangle $MASK_DIM\" \
     +matte -compose CopyOpacity miff:- | \
@@ -4148,7 +4246,7 @@ if test "$THUMB_SHAPE" = "normal"; then
 
 elif test "$THUMB_SHAPE" = "oval"; then
     THUMB_MASK="$WORK_DIR/oval_mask.png"
-    yecho "Creating oval mask with the following command:"
+    #yecho "Creating oval mask with the following command:"
     MASK_CMD="convert -size $THUMB_SIZE xc:black -fill white \
     -draw \"RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3\" \
     +matte -compose CopyOpacity miff:- | \
@@ -4161,7 +4259,7 @@ elif test "$THUMB_SHAPE" = "oval"; then
 
 elif test "$THUMB_SHAPE" = "egg"; then
     THUMB_MASK="$WORK_DIR/egg_mask.png"
-    yecho "Creating egg-shaped mask with the following command:"
+    #yecho "Creating egg-shaped mask with the following command:"
     MASK_CMD="convert -size $THUMB_SIZE xc:black -fill white \
     -draw \"circle $DIMY4,$DIMX4 $DIMY5,$DIMX5\" \
     +matte -compose CopyOpacity miff:- | \
@@ -4170,7 +4268,7 @@ elif test "$THUMB_SHAPE" = "egg"; then
 
 elif test "$THUMB_SHAPE" = "plectrum"; then
     THUMB_MASK="$WORK_DIR/plectrum_mask.png"
-    yecho "Creating plectrum-shaped mask with the following command:"
+    #yecho "Creating plectrum-shaped mask with the following command:"
     MASK_CMD="convert -size 200x200 xc:none -fill white \
     -draw 'circle 100,100 150,150' miff:- |
     convert -background none -wave -50x456 - miff:- |
@@ -4185,7 +4283,8 @@ if $DO_MENU; then
     if [[ -n $MASK_CMD ]]; then
         cmd_exec "$MASK_CMD"
     fi
-    yecho "Creating a title image"
+    yecho "Creating a menu title image"
+    echo
     if [[ -z $TITLE_STROKE ]]; then
         if [[ -z "$BG_PIC" && -z "$BG_VIDEO" ]]; then
             TITLE_STROKE=none
@@ -4213,61 +4312,63 @@ if $DO_MENU; then
     "${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}" >> "$LOG_FILE" 2>&1
 
     # make thumb titles
-    echo "Creating video titles"
-    for ((i=0; i<=NUM_FILES; i++)); do
-        echo "Working on title $((i+1))"
-        # in case user needs -undercolor, make sure it contrasts the text colour
-        get_contrasting_color $TITLES_COLOUR
-        THUMB_TITLE_CMD=(convert -size 620x300 xc:none -stroke '#101010' \
-        -font "$TITLES_FONT" -pointsize $TITLES_FONTSIZE \
-        -fill '#101010'  -stroke '#101010' -gravity South \
-        -annotate +0+0 "${TITLES[i]}" \
-        -fill $TITLES_COLOUR  -stroke "$TITLES_STROKE" -strokewidth 1 \
-        -annotate +1+1 "${TITLES[i]}" miff:-)
-        if [[ $BUTTON_STYLE = "text" ]]; then
-            TRIM_CMD=(trim3sides -  "$WORK_DIR/thumb_title${i}.png")
-        else
-            TRIM_CMD=(convert - -trim +repage $TEXT_BORDER "$WORK_DIR/thumb_title${i}.png")
-        fi
-        "${THUMB_TITLE_CMD[@]}" | "${TRIM_CMD[@]}"
-
-        # make spumux buttons now if 'text' button style
-        if [[ $BUTTON_STYLE = "text" ]]; then
-            for btn in ${HLIGHT_CLR/\#} ${SELECT_CLR/\#}; do
-                btncmd=(convert -colors 3 -background none -fill none \
-                -size 500x100 xc:none -font "$TITLES_FONT" \
-                -pointsize $TITLES_FONTSIZE -gravity South \
-                -fill "#${btn}" -annotate +1+1 "${TITLES[i]}" \
-                "$WORK_DIR/thumb_title${i}-${btn}.png")
-                "${btncmd[@]}"
-            done
-            # cutout the button from the shape of thumb_title*.png
-            #if $SHOWCASE; then
-            for clr in ${HLIGHT_CLR/\#} ${SELECT_CLR/\#}; do
-                btn="$WORK_DIR/thumb_title${i}-${clr}.png"
-                #composite -compose Src  -gravity South "$btn" \
-                #"$WORK_DIR/thumb_title${i}.png" "$btn"
-                convert +antialias -colors 3 \
-                "$WORK_DIR/thumb_title${i}.png" -gravity South \
-                "$btn" -compose Src -composite "$btn"
-            done
-            # rename textmenu buttons, as they don't need further processing
-            if $SHOWCASE; then
-                mv -v "$WORK_DIR/thumb_title${i}-${HLIGHT_CLR/\#}.png" \
-                "$WORK_DIR/$(printf %06d%s%s ${i} -highlight .png)"
-                mv -v "$WORK_DIR/thumb_title${i}-${SELECT_CLR/\#}.png" \
-                "$WORK_DIR/$(printf %06d%s%s ${i} -select .png)"
+    if ! $SINGLE_SLIDESHOW; then
+        for ((i=0; i<=NUM_FILES; i++)); do
+            spin "Working on video title $((i+1)) "
+            # if user needs -undercolor, make sure it contrasts the text colour
+            get_contrasting_color $TITLES_COLOUR
+            THUMB_TITLE_CMD=(convert -size 620x300 xc:none \
+            -font "$TITLES_FONT" -pointsize $TITLES_FONTSIZE \
+            -fill '#101010'  -stroke '#101010' -gravity South \
+            -annotate +0+0 "${TITLES[i]}" \
+            -fill $TITLES_COLOUR  -stroke "$TITLES_STROKE" -strokewidth 1 \
+            -annotate +1+1 "${TITLES[i]}" miff:-)
+            if [[ $BUTTON_STYLE = "text" ]]; then
+                TRIM_CMD=(trim3sides -  "$WORK_DIR/thumb_title${i}.png")
+            else
+                TRIM_CMD=(convert - -trim +repage $TEXT_BORDER \
+                "$WORK_DIR/thumb_title${i}.png")
             fi
-        fi
-        # find out dimension of the thumb title png
-        TT_DIM=( ${TT_DIM[@]} $(get_image_dim \
-            "$WORK_DIR/thumb_title${i}.png") )
-        if ! $SHOWCASE && (( ${TT_DIM[i]/x*} > ${THUMB_SIZE/x*} )); then
-            usage_error "The title \"${TITLES[i]}\" is too long to fit
-            at your fontsize.  Use a smaller font with -titles-fontsize"
-        fi
-    done
-    echo
+            "${THUMB_TITLE_CMD[@]}" | "${TRIM_CMD[@]}"
+
+            # make spumux buttons now if 'text' button style
+            if [[ $BUTTON_STYLE = "text" ]]; then
+                for btn in ${HLIGHT_CLR/\#} ${SELECT_CLR/\#}; do
+                    btncmd=(convert -depth 2 -background none -fill none \
+                    -size 620x300 xc:none -font "$TITLES_FONT" \
+                    -pointsize $TITLES_FONTSIZE -gravity South \
+                    -fill "#${btn}" -annotate +1+1 "${TITLES[i]}" \
+                    "$WORK_DIR/thumb_title${i}-${btn}.png")
+                    "${btncmd[@]}"
+                done
+                # cutout the button from the shape of thumb_title*.png
+                #if $SHOWCASE; then
+                for clr in ${HLIGHT_CLR/\#} ${SELECT_CLR/\#}; do
+                    btn="$WORK_DIR/thumb_title${i}-${clr}.png"
+                    #composite -compose Src  -gravity South "$btn" \
+                    #"$WORK_DIR/thumb_title${i}.png" "$btn"
+                    convert +antialias -colors 3 \
+                    "$WORK_DIR/thumb_title${i}.png" -gravity South \
+                    "$btn" -compose Src -composite "$btn"
+                done
+                # rename textmenu buttons, - they don't need further processing
+                if $SHOWCASE; then
+                    mv "$WORK_DIR/thumb_title${i}-${HLIGHT_CLR/\#}.png" \
+                    "$WORK_DIR/$(printf %06d%s%s ${i} -highlight .png)"
+                    mv "$WORK_DIR/thumb_title${i}-${SELECT_CLR/\#}.png" \
+                    "$WORK_DIR/$(printf %06d%s%s ${i} -select .png)"
+                fi
+            fi
+            # find out dimension of the thumb title png
+            TT_DIM=( ${TT_DIM[@]} $(get_image_dim \
+                "$WORK_DIR/thumb_title${i}.png") )
+            if ! $SHOWCASE && (( ${TT_DIM[i]/x*} > ${THUMB_SIZE/x*} )); then
+                usage_error "The title \"${TITLES[i]}\" is too long to fit
+                at your fontsize.  Use a smaller font with -titles-fontsize"
+            fi
+        done
+        echo
+    fi
 
     if $SHOWCASE; then
         for ((i=0; i<=NUM_FILES; i++)); do
@@ -4607,8 +4708,8 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
                 runtime_error "Problem creating images from the video."
             fi
 
-            echo "Running convert $WORK_DIR/showcase_img.png -mattecolor gray"
-            echo "$SC_FRAME "$WORK_DIR/showcase_img.png"" |format_output
+            echo "Running convert $WORK_DIR/showcase_img.png -mattecolor gray
+            $SC_FRAME $WORK_DIR/showcase_img.png" |format_output >> "$LOG_FILE"
             convert "$WORK_DIR/showcase_img.png" $SC_FRAME miff:- |
             convert -background none $ROTATE $WAVE - miff:-|
             convert -size $SHOWCASE_SIZE - -resize $SHOWCASE_SIZE! \
@@ -4618,7 +4719,7 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
         echo "Running convert -resize $SHOWCASE_SIZE! "$SHOWCASE_IMG" miff:- | \
         convert -background none $ROTATE $WAVE -bordercolor Transparent \
         -border 8x8 - miff:- | convert - -trim +repage -resize \
-        $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"" |format_output
+        $SHOWCASE_SIZE! $WORK_DIR/showcase_img.png" |format_output>>"$LOG_FILE"
         convert -size  $SHOWCASE_SIZE "$SHOWCASE_IMG" \
          -resize $SHOWCASE_SIZE! $SC_FRAME miff:- |
         convert - -background none -bordercolor Transparent -border 8x8 \
@@ -4635,7 +4736,7 @@ elif [ $IMG_FMT = "png" ]; then
 fi
 
 # create the preview images
-if ! $TEXTMENU && $DO_MENU; then
+if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
     for ((i=0; i<=NUM_FILES; i++)) ; do
         # don't make titles if all input files are images
         # pass -f image2 to ffmpeg if its an image (not always needed but ...)
@@ -4674,10 +4775,10 @@ fi
 # overlay menu title and thumb titles on template
 if $MIST; then
     # overlay white.png onto background
-    echo "Running:
-    composite -dissolve $MIST_OPACITY -gravity $TITLE_GRAVITY \
-    -geometry ${mist_xoffset}${mist_yoffset} "$WORK_DIR/white.png" \
-    "$WORK_DIR/pics/template.png" "$WORK_DIR/pics/template.png"" |format_output
+    echo "Running: composite -dissolve $MIST_OPACITY -gravity $TITLE_GRAVITY \
+    -geometry ${mist_xoffset}${mist_yoffset} $WORK_DIR/white.png \
+    $WORK_DIR/pics/template.png $WORK_DIR/pics/template.png" |
+    format_output >> "$LOG_FILE"
     composite -dissolve $MIST_OPACITY -gravity $TITLE_GRAVITY \
       -geometry ${mist_xoffset}${mist_yoffset} \
       "$WORK_DIR/white.png" "$WORK_DIR/pics/template.png" \
@@ -4691,7 +4792,7 @@ if $SHOWCASE && $DO_MENU; then
     echo "Running:
     convert  -size $VIDSIZE -background none "$WORK_DIR/pics/template.png"
     ${sc_thumb_title_cmd[@]} -page +210+400 "$WORK_DIR/title_txt.png" \
-    -mosaic "$WORK_DIR/pics/template.png" "| format_output
+    -mosaic "$WORK_DIR/pics/template.png" "| format_output >> "$LOG_FILE"
     convert -size $VIDSIZE -background none "$WORK_DIR/pics/template.png" \
     ${sc_thumb_title_cmd[@]} -mosaic "$WORK_DIR/pics/template.png"
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
@@ -4718,7 +4819,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
     PICS=( "${PICS[@]}" \
     $(find $WORK_DIR/pics/$i/  -maxdepth 1 -name 000\*.$IMG_FMT) )
 done
-if ! $TEXTMENU && $DO_MENU; then
+if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
     for ((i=0; i<${#PICS[@]}; i++)); do
         [[ -n ${ROTATE_ARRAY[@]} ]] && \
         THUMB_ROTATE="-background none -rotate ${ROTATE_ARRAY[i]}"
@@ -4782,8 +4883,6 @@ if ! $TEXTMENU && $DO_MENU; then
         $THUMB_FRAME "$WORK_DIR/thumb_title${i}.png" -gravity south \
         -geometry +0+5 -compose over -composite)
         IM_CMD5=(convert - $THUMB_ROTATE -resize ${THUMB_SIZE}! "${PICS[i]}")
-        $SINGLE_SLIDESHOW && IM_CMD1=(montage "${PICS[i]}" -geometry +2+2 \
-        -compose Copy -background  none)
         if $FEATHER; then
             if $SHOWCASE; then
                 "${IM_CMD0[@]}" miff:- | "${IM_CMD5[@]}"
@@ -4964,7 +5063,7 @@ EOF
                 done
                 convert  -size $VIDSIZE xc:none -background none \
                 ${fake_montage_cmd[@]} -mosaic "$WORK_DIR/fake_montage.png"
-                convert +antialias -colors 2 -size $VIDSIZE xc:none -background none \
+                convert +antialias -depth 2 -size $VIDSIZE xc:none -background none \
                 ${sc_spumux_cmd[@]} -mosaic "$WORK_DIR/${button}.png"
             else
                 montage -background none \
@@ -4972,7 +5071,7 @@ EOF
                 -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}${MTG_GEO} \
                 -bordercolor none -mattecolor transparent miff:- |
                 convert +antialias  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY \
-                -geometry +${XGEO}+${YGEO} -composite  -colors 2  "$WORK_DIR/${button}.png"
+                -geometry +${XGEO}+${YGEO} -composite  -depth 2  "$WORK_DIR/${button}.png"
                 convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
                 fake_montage=( $WORK_DIR/Highlight0.png $(for ((i=0; i<NUM_FILES-1; i++)); do
                 echo $WORK_DIR/empty-button.png; done))
@@ -4995,10 +5094,10 @@ EOF
                 sc_highlight_cmd=(${sc_highlight_cmd[@]} ${THUMBTITLES_ARRAY[i]} \
                  "${highlight_buttons[i]}")
             done
-            convert +antialias -depth 2 -colors 2 -bordercolor none -mattecolor none \
+            convert +antialias -depth 2 -depth 2 -quality 01 \
             -size $VIDSIZE xc:none -background none \
             ${sc_highlight_cmd[@]} -mosaic "$WORK_DIR/Highlight.png"
-            convert +antialias -depth 2 -colors 2 -bordercolor none -mattecolor none \
+            convert +antialias -depth 2 -depth 2 -quality 01 \
             -size $VIDSIZE xc:none -background none \
             ${sc_select_cmd[@]} -mosaic "$WORK_DIR/Select.png"
         else
@@ -5010,12 +5109,12 @@ EOF
             -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}${MTG_GEO} \
             -bordercolor none -mattecolor none miff:- |
             convert  +antialias -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY \
-            -geometry +${XGEO}+${YGEO} -composite -colors 2 "$WORK_DIR/Select.png"
+            -geometry +${XGEO}+${YGEO} -composite -depth 2 "$WORK_DIR/Select.png"
             montage -background none ${highlight_buttons[@]} \
             -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}${MTG_GEO} \
             -bordercolor none -mattecolor none miff:- |
             convert +antialias -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY \
-            -geometry +${XGEO}+${YGEO} -composite -colors 2 "$WORK_DIR/Highlight.png"
+            -geometry +${XGEO}+${YGEO} -composite -depth 2 "$WORK_DIR/Highlight.png"
             BUTTON_DIM=$(get_image_dim "$WORK_DIR/000000-highlight.png")
             convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
             fake_montage=( $WORK_DIR/000000-highlight.png \
@@ -5055,9 +5154,9 @@ EOF
             [[ $i -eq $((MENU_NUM-1)) ]] && echo \
             "line ${XPT1},${YPT} ${XPT2},${YPT}" >> "$WORK_DIR/fake_montage.mvg"
         done
-            convert +antialias -colors 2 -size $VIDSIZE xc:none -fill none -stroke $SELECT_CLR \
+            convert +antialias -depth 2 -size $VIDSIZE xc:none -fill none -stroke $SELECT_CLR \
             -strokewidth 2 -draw @spumux_drawfile "$WORK_DIR/Select.png"
-            convert +antialias -colors 2 -size $VIDSIZE xc:none -fill none -stroke $HLIGHT_CLR \
+            convert +antialias -depth 2 -size $VIDSIZE xc:none -fill none -stroke $HLIGHT_CLR \
             -strokewidth 2 -draw @spumux_drawfile "$WORK_DIR/Highlight.png"
             convert  -size $VIDSIZE xc:none -fill none -stroke $HLIGHT_CLR \
             -strokewidth 2 -draw @fake_montage.mvg "$WORK_DIR/fake_montage.png"
@@ -5069,12 +5168,12 @@ EOF
             montage -background none ${select_buttons[@]} \
             -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}${MTG_GEO} \
             -bordercolor none -mattecolor none miff:- |
-            convert +antialias -colors 2 -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY \
+            convert +antialias -depth 2 -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY \
             -geometry +${XGEO}+${YGEO} -composite "$WORK_DIR/Select.png"
             montage -background none ${highlight_buttons[@]} \
             -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}${MTG_GEO} \
             -bordercolor none -mattecolor none miff:- |
-            convert +antialias -colors 2 -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY \
+            convert +antialias -depth 2 -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY \
             -geometry +${XGEO}+${YGEO} -composite "$WORK_DIR/Highlight.png"
             BUTTON_DIM=$(get_image_dim "$WORK_DIR/000000-highlight.png")
             convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
@@ -5087,18 +5186,18 @@ EOF
             -geometry +${XGEO}+${YGEO} -composite "$WORK_DIR/fake_montage.png"
     fi
     if $TITLESET_MODE && ! $VMGM_ONLY && $VMGM_MENU; then
-        convert +antialias -colors 2 -gravity $RTN_BTN_GRAVITY -geometry "$RTN_BTN_OFFSETS" \
+        convert +antialias -depth 2 -gravity $RTN_BTN_GRAVITY -geometry "$RTN_BTN_OFFSETS" \
         "$WORK_DIR/Select.png" "$WORK_DIR/Main_${SELECT_CLR/\#}.png" \
         -composite "$WORK_DIR/Select.png"
-        convert +antialias -colors 2 -gravity $RTN_BTN_GRAVITY -geometry "$RTN_BTN_OFFSETS" \
+        convert +antialias -depth 2 -gravity $RTN_BTN_GRAVITY -geometry "$RTN_BTN_OFFSETS" \
         "$WORK_DIR/Highlight.png" "$WORK_DIR/Main_${HLIGHT_CLR/\#}.png" \
          -composite "$WORK_DIR/Highlight.png"
     fi
     if $PLAYALL && ! $VMGM_ONLY; then
-        convert +antialias -colors 2 -gravity SouthEast -geometry "$PLAYALL_BTN_OFFSETS" \
+        convert +antialias -depth 2 -gravity SouthEast -geometry "$PLAYALL_BTN_OFFSETS" \
         "$WORK_DIR/Select.png" "$WORK_DIR/Playall_${SELECT_CLR/\#}.png" \
         -composite "$WORK_DIR/Select.png"
-        convert +antialias -colors 2 -gravity SouthEast -geometry "$PLAYALL_BTN_OFFSETS" \
+        convert +antialias -depth 2 -gravity SouthEast -geometry "$PLAYALL_BTN_OFFSETS" \
         "$WORK_DIR/Highlight.png" "$WORK_DIR/Playall_${HLIGHT_CLR/\#}.png" \
         -composite "$WORK_DIR/Highlight.png"
     fi
@@ -5108,25 +5207,25 @@ fi
 #if $SLIDESHOW && [[ ${#GROUP[@]} -le 1 && $TARGET = "dvd" ]]; then
 if $SINGLE_SLIDESHOW && [[ $TARGET = "dvd" ]]; then
     if $TITLESET_MODE && ! $VMGM_ONLY && $VMGM_MENU; then
-        convert +antialias -colors 2 -size $VIDSIZE xc:none -fill none  \
+        convert +antialias -depth 2 -size $VIDSIZE xc:none -fill none  \
         "$WORK_DIR/Main_${SELECT_CLR/\#}.png" -gravity $RTN_BTN_GRAVITY \
         -geometry "$RTN_BTN_OFFSETS" -composite "$WORK_DIR/Select.png"
-        convert +antialias -colors 2 -size $VIDSIZE xc:none -fill none \
+        convert +antialias -depth 2 -size $VIDSIZE xc:none -fill none \
         "$WORK_DIR/Main_${HLIGHT_CLR/\#}.png" -gravity $RTN_BTN_GRAVITY \
         -geometry "$RTN_BTN_OFFSETS" -composite "$WORK_DIR/Highlight.png"
         
-        convert +antialias -colors 2 -gravity SouthEast -geometry "$PLAYALL_BTN_OFFSETS" \
+        convert +antialias -depth 2 -gravity SouthEast -geometry "$PLAYALL_BTN_OFFSETS" \
         "$WORK_DIR/Select.png"  "$WORK_DIR/Playall_${SELECT_CLR/\#}.png" \
         -composite "$WORK_DIR/Select.png"
 
-        convert +antialias -colors 2 -gravity SouthEast -geometry "$PLAYALL_BTN_OFFSETS" \
+        convert +antialias -depth 2 -gravity SouthEast -geometry "$PLAYALL_BTN_OFFSETS" \
         "$WORK_DIR/Highlight.png" "$WORK_DIR/Playall_${HLIGHT_CLR/\#}.png" \
         -composite "$WORK_DIR/Highlight.png"
     else
-        convert +antialias -colors 2 -size $VIDSIZE xc:none -fill none  \
+        convert +antialias -depth 2 -size $VIDSIZE xc:none -fill none  \
         "$WORK_DIR/Playall_${SELECT_CLR/\#}.png" -gravity SouthEast \
         -geometry "$PLAYALL_BTN_OFFSETS" -composite "$WORK_DIR/Select.png"
-        convert +antialias -colors 2 -size $VIDSIZE xc:none -fill none  \
+        convert +antialias -depth 2 -size $VIDSIZE xc:none -fill none  \
         "$WORK_DIR/Playall_${HLIGHT_CLR/\#}.png" -gravity SouthEast \
         -geometry "$PLAYALL_BTN_OFFSETS" -composite "$WORK_DIR/Highlight.png"
     fi
@@ -5135,16 +5234,15 @@ fi
 if [[ $TARGET = "dvd" ]]; then
     # this reduces colours so spumux is happy
     for button in Select Highlight; do
-        #convert -colors 3 "$WORK_DIR/${button}.png" "$WORK_DIR/${button}.png"
         num_colours=$(identify -ping -format %k "$WORK_DIR/${button}.png")
         if ((num_colours > 2)); then
-#            echo "number of colors is $num_colours"
+            # echo "number of colors is $num_colours" #DEBUG
             mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
         fi
         echo
     done
 fi
-if $SHOWCASE && $DO_MENU; then # silly, but someone might try it
+if $SHOWCASE && $DO_MENU; then
     if $SC_THUMB; then
         # find out where to put the showcase image/video in the X axis
         sc_size=$(get_image_dim "$WORK_DIR/showcase_img.png")
@@ -5187,7 +5285,8 @@ if $SHOWCASE && $DO_MENU; then # silly, but someone might try it
         fi
         # find out where to put the showcase image in the Y axis
         if ! $TEXTMENU; then
-            Y1=${SHOWCASE_THUMB_Y_ARRAY[0]}; Y2=${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]}
+            Y1=${SHOWCASE_THUMB_Y_ARRAY[0]}
+            Y2=${SHOWCASE_THUMB_Y_ARRAY[NUM_FILES]}
             ((NUM_FILES >= LEFT_MAX)) && Y2=${SHOWCASE_THUMB_Y_ARRAY[SPLIT-1]}
             Y_SPACE=$(( (Y2 - Y1) + ${THUMB_SIZE/*x} ))
             Y_SPACE=$(( Y_SPACE - sc_height ))
@@ -5197,16 +5296,20 @@ if $SHOWCASE && $DO_MENU; then # silly, but someone might try it
 #            ((NUM_FILES < SPLIT)) && split=$NUM_FILES || split=$((SPLIT - 1))
             # if there is a menu title, move the showcase thumb up or down
             if [[ -n $MENU_TITLE ]] && ! $USER_SC_GEO && ! $USER_TITLE_GEO; then
-                [[ $TITLE_GRAVITY = "south" ]] && TITLE_SPACE="- $(( (title_yoffset + TITLE_TEXT_YDIM) / 2))"
-                [[ $TITLE_GRAVITY = "north" ]] && TITLE_SPACE="+ $(( (title_yoffset + TITLE_TEXT_YDIM) / 2))"
+                [[ $TITLE_GRAVITY = "south" ]] && \
+                TITLE_SPACE="- $(( (title_yoffset + TITLE_TEXT_YDIM) / 2))"
+                [[ $TITLE_GRAVITY = "north" ]] && \
+                TITLE_SPACE="+ $(( (title_yoffset + TITLE_TEXT_YDIM) / 2))"
             fi
             Y_SPACE=${VIDSIZE#*x}
             SC_Y=$(( (Y_SPACE / 2) - (sc_height / 2) $TITLE_SPACE ))
 
         fi
 
-        ! $TEXTMENU && [[ $V_TOTAL -gt 5 ]] && SC_X=$(( ( ${VIDSIZE/x*} / 2 ) - (sc_width / 2) ))
-        $TEXTMENU && [[ -n $tt_ygeos_col2 ]] && SC_X=$(( ( ${VIDSIZE/x*} / 2 ) - (sc_width / 2) ))
+        ! $TEXTMENU && [[ $V_TOTAL -gt 5 ]] && \
+        SC_X=$(( ( ${VIDSIZE/x*} / 2 ) - (sc_width / 2) ))
+        $TEXTMENU && [[ -n $tt_ygeos_col2 ]] \
+        && SC_X=$(( ( ${VIDSIZE/x*} / 2 ) - (sc_width / 2) ))
         $USER_SC_GEO && SC_X=${SHOWCASE_GEO/x*}
         $USER_SC_GEO && SC_Y=${SHOWCASE_GEO/*x}
 
@@ -5231,60 +5334,65 @@ if $SHOWCASE && $DO_MENU; then # silly, but someone might try it
             IM_CMD1=(convert -size $VIDSIZE -background none \
             - ${sc_thumb_title_cmd[@]} -mosaic)
             IM_CMD2=(composite -size $VIDSIZE -background none \
-            -gravity NorthWest  -dissolve $OPACITY - "$WORK_DIR/pics/template.png" \
-            -background none)
+            -gravity NorthWest  -dissolve $OPACITY - \
+            "$WORK_DIR/pics/template.png" -background none)
             IM_CMD3=(convert - -background none $WORK_DIR/title_txt.png  \
-            -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
-            -composite "$PREVIEW_IMG" )
-            echo "Running
-            "${IM_CMD0[@]}" miff:- | "${IM_CMD1[@]}" miff:- |
-            "${IM_CMD2[@]}" miff:- | "${IM_CMD3[@]}"
-            " |format_output
+            -gravity $TITLE_GRAVITY -geometry \
+            ${title_xoffset}${title_yoffset} -composite "$PREVIEW_IMG" )
+            echo "Running ${IM_CMD0[@]} miff:- | ${IM_CMD1[@]} miff:- |
+            ${IM_CMD2[@]} miff:- | ${IM_CMD3[@]}" |format_output >> "$LOG_FILE"
             "${IM_CMD0[@]}" miff:- | "${IM_CMD1[@]}" miff:- |
             "${IM_CMD2[@]}" miff:- | "${IM_CMD3[@]}"
         else
-            echo "Running:
-            convert  -size $VIDSIZE "$WORK_DIR/pics/template.png"
+            IM_CMD=(convert  -size $VIDSIZE "$WORK_DIR/pics/template.png" \
             -background none ${sc_cmd[@]} $SC_IMG_CMD \
-            -mosaic "$PREVIEW_IMG" "|sed "s/    */ /g;s/^ *//"|fold -bs
-            convert  -size $VIDSIZE "$WORK_DIR/pics/template.png" \
-            -background none ${sc_cmd[@]} $SC_IMG_CMD \
-            -mosaic "$PREVIEW_IMG"
+            -mosaic "$PREVIEW_IMG")
+            echo "Running ${IM_CMD[@]}" |format_output >> "$LOG_FILE"
+            "${IM_CMD[@]}"
         fi
         unset sc_cmd IM_CMD05 IM_CMD04 IM_CMD03 IM_CMD4
     fi
-elif ! $SHOWCASE && $DO_MENU; then # not showcase
+elif ! $SHOWCASE && ! $SINGLE_SLIDESHOW && $DO_MENU; then # not showcase
     if $TRANSPARENT; then
-        yecho "Running:
-        montage ${PICS[@]} $MTG_FRM -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
-        -geometry ${THUMB_SIZE}${MTG_GEO} -background none -bordercolor '#444744' miff:- |
-        composite -dissolve $OPACITY \
+        IM_CMD1=(montage ${PICS[@]} $MTG_FRM -blur 0x.3 \
+        -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}${MTG_GEO} \
+        -background none -bordercolor '#444744' miff:- )
+        IM_CMD2=(composite -dissolve $OPACITY \
         -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
-        $WORK_DIR/pics/template.png -background none miff:- |
-        convert - $WORK_DIR/title_txt.png  \
+        "$WORK_DIR/pics/template.png" -background none miff:- )
+        IM_CMD3=(convert - -background none "$WORK_DIR/title_txt.png"  \
         -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
-        -composite $PREVIEW_IMG" | fold -bs
-        montage ${PICS[@]} $MTG_FRM -blur 0x.3 -tile ${TILE_ARRAY[NUM_FILES]} \
-        -geometry ${THUMB_SIZE}${MTG_GEO} -background none -bordercolor '#444744' miff:- |
-        composite -dissolve $OPACITY \
-        -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
-        "$WORK_DIR/pics/template.png" -background none miff:- |
-        convert - -background none "$WORK_DIR/title_txt.png"  \
-        -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
-        -composite "$PREVIEW_IMG"
+        -composite "$PREVIEW_IMG")
+        echo "Running ${IM_CMD1[@]} | ${IM_CMD2[@]} | ${IM_CMD3[@]}" |
+        format_output >> "$LOG_FILE"
+        "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}"
     else # Not transparent
-        yecho "Running
-        montage ${PICS[@]} $MTG_FRM -tile ${TILE_ARRAY[NUM_FILES]} \
-        -geometry ${THUMB_SIZE}${MTG_GEO}  -background none -bordercolor "#444744" miff:- |
-        convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png"  -gravity $TITLE_GRAVITY \
-        -geometry ${title_xoffset}${title_yoffset} -composite -  -gravity $BUTTON_GRAVITY \
-        -geometry +${XGEO}+${YGEO} -composite "$PREVIEW_IMG""
-        montage ${PICS[@]} $MTG_FRM -tile ${TILE_ARRAY[NUM_FILES]} \
-        -geometry ${THUMB_SIZE}${MTG_GEO}  -background none -bordercolor "#444744" miff:- |
-        convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png"  -gravity $TITLE_GRAVITY \
-        -geometry ${title_xoffset}${title_yoffset} -composite -  -gravity $BUTTON_GRAVITY \
-        -geometry +${XGEO}+${YGEO} -composite "$PREVIEW_IMG"
+        IM_CMD1=(montage ${PICS[@]} $MTG_FRM -tile ${TILE_ARRAY[NUM_FILES]} \
+        -geometry ${THUMB_SIZE}${MTG_GEO}  -background none \
+        -bordercolor "#444744" miff:- )
+        IM_CMD2=(convert "$WORK_DIR/pics/template.png" \
+        "$WORK_DIR/title_txt.png" -gravity $TITLE_GRAVITY \
+        -geometry ${title_xoffset}${title_yoffset} -composite - -gravity \
+        $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} -composite "$PREVIEW_IMG")
+        echo "Running ${IM_CMD1[@]} | ${IM_CMD1[@]}" |
+        format_output >> "$LOG_FILE"
+        "${IM_CMD1[@]}" | "${IM_CMD2[@]}"
     fi
+fi
+# make a preview for static slideshow menu #FIXME this should use $STATIC
+if $SINGLE_SLIDESHOW && ! $DO_CAROUSEL && ! $MK_CAROUSEL_MODE; then
+    if [[ $TARGET != "svcd" ]]; then
+        add_playbtn=("$WORK_DIR/Playall_${HLIGHT_CLR/\#}.png" -gravity SouthEast \
+        -geometry "$PLAYALL_BTN_OFFSETS" -composite)
+    fi
+    IM_CMD1=(composite -dissolve $OPACITY -gravity $BUTTON_GRAVITY -geometry \
+    +${XGEO}+${YGEO} "$WORK_DIR/polaroid_stack.png" \
+    "$WORK_DIR/pics/template.png" -background none miff:- )
+    IM_CMD2=(convert - -background none "$WORK_DIR/title_txt.png" \
+    -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
+    -composite "${add_playbtn[@]}" "$PREVIEW_IMG" )
+    echo "Running ${IM_CMD1[@]} | ${IM_CMD1[@]}" | format_output >> "$LOG_FILE"
+    "${IM_CMD1[@]}" | "${IM_CMD2[@]}"
 fi
 # if there is quickmenu bg, cut out transparent hole for showcase image/video
 if $QUICK_MENU; then
@@ -5295,7 +5403,7 @@ if $QUICK_MENU; then
         # make a similar framed blank to composite onto the background
         frame_cmd=(convert -size $SHOWCASE_SIZE xc:black \
         $SC_FRAME "$WORK_DIR/showcase_frame.png")
-        yecho "Running ${frame_cmd[@]}" | fold -bs
+        yecho "Running ${frame_cmd[@]}" | format_output >> "$LOG_FILE"
         "${frame_cmd[@]}" >> "$LOG_FILE"
         # composite the framed blank onto background subtracting the width \
         # of the frame (border) when calculating XxY geometry
@@ -5372,7 +5480,9 @@ fi
 # find out the length of the -bgaudio FILE, if there is one
 if [[ -n "$BG_AUDIO" ]]; then
     $SINGLE_SLIDESHOW && end_pos="" || end_pos=${MENU_LEN[MENU_NUM-1]}
-    BG_AUDIOLENGTH=$(audio_length "$BG_AUDIO" $end_pos)
+    BG_AUDIOLENGTH=$(audio_length "$BG_AUDIO")
+    BG_AUDIOLENGTH=$( unformat_time ${BG_AUDIOLENGTH%.*} )
+    
     yecho
     yecho "Getting length of bg audio"
     yecho
@@ -5468,28 +5578,20 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
         #$PP $UNSHARP --export_prof ${TARGET}-${TV_STANDARD} -Z fast \
         #-o "$WORK_DIR/slideshow")
     echo
-    echo "Resizing slides"
-    echo
     for p in ${!MIX_IN[@]}; do
         if [[ "${F2BIN[p]}" = "yes" ]]; then
             BINNING_CMD=(convert "${MIX_IN[p]}" -depth 8 \
             -resize $CAROUSEL_SIZE "$WORK_DIR/${p}.ppm")
             # BINNING_CMD modified after get_binning_cmd() if imaage>1440 etc
             get_binning_cmd $p "${MIX_IN[p]}"
-            #spin "Resizing slide $((p+1)): Binning"
-            echo "${BINNING_CMD[@]}"
+            spin "Binning slide $((p+1))"
             "${BINNING_CMD[@]}"  >> "$LOG_FILE" 2>&1
             MIX_IN[p]="$WORK_DIR/${p}.ppm"
         fi
         # resize to $CAROUSEL_SIZE
         
-        if [[ ${F2BIN[p]} = "yes" ]]; then
-            # do not blur the file twice if already binned and blurred
-            unset SLIDEBLUR[p]
-            #spin "Resizing slide $((p+1)): Scaling"
-        #else
-        #    spin "Resizing slide $((p+1))"
-        fi
+        # do not blur the file twice if already binned and blurred
+        [[ ${F2BIN[p]} = "yes" ]] && unset SLIDEBLUR[p]
         if [[ $SBORDER_ARG || $SLIDE_FRAME ]]; then
             tmbnail_size=$(( 640 - SFRAME_ARG - (SBORDER_ARG * 2) ))
             if $USERS_BACKGROUND && [[ -n $BACKGROUND ]]; then
@@ -5499,13 +5601,18 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
             else
                 SLD_BG="xc:#101010"
             fi
+            spin "Bordering and framing slide $((p+1))"
             border_and_frame "${MIX_IN[p]}" "$WORK_DIR/${p}.ppm"
             MIX_IN[p]="$WORK_DIR/${p}.ppm"
         fi
-            
-        convert "${MIX_IN[p]}" -depth 8 \
-        -resize ${CAROUSEL_SIZE}!  ${SLIDE_BLUR[p]} "$WORK_DIR/${p}.ppm"
-        MIX_IN[p]="$WORK_DIR/${p}.ppm"
+        cursize=$(identify -ping -format %wx%h "${MIX_IN[p]}")
+        if (( ${cursize/x*} !=  ${CAROUSEL_SIZE/x*} )) \
+        || (( ${cursize/*x} !=  ${CAROUSEL_SIZE/*x} )); then
+            spin "Resizing slide $((p+1))"
+            convert "${MIX_IN[p]}" -depth 8 \
+            -resize ${CAROUSEL_SIZE}!  ${SLIDE_BLUR[p]} "$WORK_DIR/${p}.ppm"
+            MIX_IN[p]="$WORK_DIR/${p}.ppm"
+        fi
     done
     echo
     # make a fifo to send raw yuv to, to be encoded by ffmpeg
@@ -5595,11 +5702,14 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
                 rm -f "$WORK_DIR"/animenu/*.ppm
             fi
         fi
-        sleep 1
     done >&3
     # close the pipe
     exec 3>&-
-
+    sstime2=$(date +%s)
+    enctime=$(( sstime2 - sstime1 ))
+    enctime=$(format_seconds $enctime)
+    echo
+    echo "todisc took $enctime to do the slideshow"
     if $MK_CAROUSEL_MODE; then
         # move the m2v to BASEDIR (basedir of -carousel_menu_mode)
         echo
@@ -5717,13 +5827,12 @@ fi
 $SINGLE_SLIDESHOW && echo "Getting stats on the slides now"
 for ((i=0; i<${#IN_FILES[@]}; i++)); do
     if [[ $MENU_NUM -eq 1 ]]; then
-        ! $SINGLE_SLIDESHOW && echo
-        ! $SINGLE_SLIDESHOW && echo "Getting stats on "${IN_FILES[i]}""
-        idvid_stats[i]="$(idvid -terse "${IN_FILES[i]}" 2>/dev/null)"
+        ! $SINGLE_SLIDESHOW && spin "Getting stats on ${IN_FILES[i]}"
+        idvid_stats[i]=$(idvid -terse "${IN_FILES[i]}" 2>/dev/null)
     fi
     if [ -s  "${IN_FILES[i]}.nav_log" ]; then
-        length[i]="$(( $(awk '{ field = $2 }; END{ print field }' \
-         "${IN_FILES[i]}.nav_log") + 1))"
+        length[i]=$(( $(awk '{ field = $2 }; END{ print field }' \
+         "${IN_FILES[i]}.nav_log") + 1))
     fi
 done
 
@@ -5734,10 +5843,10 @@ if $GROUPING &&  [[ $MENU_NUM -eq 1 ]]; then
     for u in ${!grouping[@]}; do
         CUR_VID=$(readlink -f "${grouping[u]}")
         spin "Getting stats on "${CUR_VID##*/}""
-        group_idvid_stats[u]="$(idvid -terse "$CUR_VID" 2>/dev/null)"
+        group_idvid_stats[u]=$(idvid -terse "$CUR_VID" 2>/dev/null)
         if [ -s "$CUR_VID.nav_log" ]; then
-            group_length[u]="$(( $(awk '{ field = $2 }; END{ print field }' \
-            "$CUR_VID.nav_log") + 1))"
+            group_length[u]=$(( $(awk '{ field = $2 }; END{ print field }' \
+            "$CUR_VID.nav_log") + 1))
         fi
     done
     echo
@@ -5923,7 +6032,7 @@ LAST_PIC=${LAST_PIC:-$FRAMES}
 ###############################################################################
 # extract images from the provided background video
 
-if ! $TEXTMENU && $DO_MENU; then
+if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
     echo
     echo "Creating $FRAMES images from each video for the main menu"
     for ((i=0; i<=NUM_FILES; i++)) ; do
@@ -6296,8 +6405,8 @@ else
 fi
 if [ "$TARGET" = "dvd" ]; then
 # make dvdauthor.xml
-# g1 register: switched menus, g2: vmgm intro
-# g3: -quick-nav, g4: playall, g5: button highlight, g6: VMGM button highlight
+# REGISTERS: g1: switched menus, g2: vmgm intro g3: -quick-nav, g4: playall
+# g5: button highlight, g6: VMGM button highlight
 # Note: for switched menus g1 is used for 'button highlight', not g5
 # TSET_NUM is the titleset number being worked on
 # ALLTITLES is an array of the number of titles in each titleset
@@ -6756,7 +6865,7 @@ if $SUB_MENU; then
                 for P in "${!imgs[@]}"; do
                 spin "\rProcessing $(awk -F / '{ print $NF }' <<< "${imgs[P]}")  "
                 ctitle="$WORK_DIR/${TSET_NUM}-${i}-chapter${P}.png"
-                    sm_title_cmd=(convert $QUALITY "${imgs[P]}" \
+                    sm_title_cmd=(convert "${imgs[P]}" \
                     "$ctitle" -gravity south -geometry +0+5 \
                     -compose over -composite  "${imgs[P]}"  )
                     "${sm_title_cmd[@]}" | tee -a "$LOG_FILE"
@@ -6765,7 +6874,7 @@ if $SUB_MENU; then
             IM_CMD=(convert "${imgs[@]}" -bordercolor '#6E6E6E' -border 3x3 miff:-)
             IM_CMD1=(montage - -tile ${TILE_ARRAY[C]} -geometry \
             ${GEO_ARRAY[C]}+5+5 -background '#141614' miff:-)
-            IM_CMD2=(convert $QUALITY $WORK_DIR/submenu_template.jpg \
+            IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
             $WORK_DIR/title${i}_txt.png  -gravity south -geometry +0+55 \
             -composite - -gravity north -geometry +0+45 -composite \
             $WORK_DIR/${i}-submenu.$SM_IMG_FMT)
@@ -6858,7 +6967,7 @@ if $SUB_MENU; then
                 echo -e "Running:
                 sox $WORK_DIR/menu$s.wav \
                 $WORK_DIR/menu$s-processed.wav fade t $SM_FADE $TIME $SM_FADE" |
-                sed 's/    */ /g'|sed -e "s/^ *//"
+                sed 's/    */ /g' | format_output
                 sox -q $WORK_DIR/menu$s.wav \
                 $WORK_DIR/menu$s-processed.wav fade t $SM_FADE $TIME $SM_FADE
                 rm $WORK_DIR/menu$s.wav
@@ -6873,8 +6982,8 @@ if $SUB_MENU; then
             if $SM_AUDIO_FADE; then
                 TIME=$(audio_length "$WORK_DIR/submenu.wav")
                 echo -e "Running:
-                sox $WORK_DIR/submenu.wav \
-                $WORK_DIR/submenu-processed.wav fade t $SM_FADE $TIME $SM_FADE" |sed 's/    */ /g'
+                sox $WORK_DIR/submenu.wav $WORK_DIR/submenu-processed.wav \
+                fade t $SM_FADE $TIME $SM_FADE" | format_output >> "$LOG_FILE"
 
                 sox -q $WORK_DIR/submenu.wav \
                 $WORK_DIR/submenu-processed.wav fade t $SM_FADE $TIME $SM_FADE
@@ -6937,7 +7046,6 @@ if [[ -n "$BG_VIDEO" ]] && ! $QUICK_MENU; then
     fi
     unset IMAGES PICS last_pic next_pic
 fi
-#if [ -n "$SHOWCASE_VIDEO" ] && $SC_THUMB; then
 if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
     echo "Getting showcase video images from $SHOWCASE_VIDEO"
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
@@ -7018,7 +7126,7 @@ if [[ ! "$SC_FRAMESTYLE" = "glass" && ! $TEXTMENU ]]; then
         yecho "Adding title to video images and resizing"
     fi
 fi
-if ! $TEXTMENU && $DO_MENU; then
+if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
     for ((i=0; i<=NUM_FILES; i++)); do
         if $FEATHER && $THUMBS_3D && [ "$THUMB_SHAPE" != "normal" ]; then
             unset CURVE_ARRAY CURVE_VALUES CURVE_VARS
@@ -7167,7 +7275,6 @@ if $STATIC; then
     PPM_LOOPS=$LOOPS
 fi
 if ! $QUICK_MENU && $DO_MENU; then
-    #PIPE_FORMAT="-f image2pipe -vcodec ppm -s $VIDSIZE -aspect $ASPECT_RATIO"
     PIPE_FORMAT="-pix_fmt yuv420p -f yuv4mpegpipe"
     $STATIC && INSIZE="-s $VIDSIZE"
     echo
@@ -7273,6 +7380,9 @@ if $MENU_FADE && ! $STATIC && ! $QUICK_MENU; then
         else
             MONTAGE_CMD6=(convert -)
         fi
+        # in case I get -menu-fade working with -static
+        $SINGLE_SLIDESHOW && \
+        IM_CMD1=(convert "$WORK_DIR/polaroid_stack.png" miff:- )
 
         $TEXTMENU && unset MONTAGE_CMD
         $TEXTMENU && MONTAGE_CMD=( "${MONTAGE_CMD03[@]}" )
@@ -7368,7 +7478,8 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
             -composite "${ADD_RTN_BTN[@]}" "${ADD_PLAYALL_BTN[@]}" \
             ppm:- )
-            #$WORK_DIR/animenu/$count.jpg )
+            $SINGLE_SLIDESHOW && \
+            IM_CMD1=(convert "$WORK_DIR/polaroid_stack.png" miff:- )
             if $MIST; then
                 # showcase, mist, showcase-video
                 if $SHOWCASE && [[ -n "$SHOWCASE_VIDEO" ]]; then
@@ -7452,6 +7563,8 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
             -composite "${ADD_RTN_BTN[@]}" "${ADD_PLAYALL_BTN[@]}" ppm:- )
             #-composite "${ADD_RTN_BTN[@]}" "${ADD_PLAYALL_BTN[@]}" $WORK_DIR/animenu/$count.jpg )
+            $SINGLE_SLIDESHOW && \
+            IM_CMD0=(convert "$WORK_DIR/polaroid_stack.png" miff:- )
 
             if $STATIC; then
                 if $MIST; then
