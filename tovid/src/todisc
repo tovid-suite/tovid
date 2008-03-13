@@ -50,7 +50,7 @@ Usage:
       -files File1.mpg File2.mpg ... \\\\
       -titles "Title 1" "Title 2" ... \\\\
       -out OUT_PREFIX
-You can also do slideshows using -slideshow IMAGES rather than -files VIDEOS
+You can also do slideshows using -slides IMAGES rather than -files VIDEOS
 See the todisc manual page ('man todisc') for additional documentation.
 
 EOF`
@@ -970,18 +970,18 @@ carousel_menu_mode()
     mk_carousel()
     {
         c=$1 # carousel number
-        yecho "Running todisc -slideshow ${IN_SLIDES[@]} ${encopt[@]} \
-        -carousel $MIX_RANGE $carsousel_fade $background_carousel $NO_CONFIRM_BACKUP
+        yecho "Running todisc -slides ${IN_SLIDES[@]} ${encopt[@]} \
+        -menu-slide-total $MIX_RANGE $sld_tranition $background_carousel $NO_CONFIRM_BACKUP
         $showcase_carousel -carousel_menu_mode -basedir $WORK_DIR \
         $menu_length -carousel_num $((c+1)) -todisc_pids $TODISC_PIDS"
-         todisc -slideshow "${IN_SLIDES[@]}" -carousel $MIX_RANGE $NO_CONFIRM_BACKUP \
-         ${encopt[@]} $carsousel_fade $background_carousel $showcase_carousel \
+         todisc -slides "${IN_SLIDES[@]}" -menu-slide-total $MIX_RANGE $NO_CONFIRM_BACKUP \
+         ${encopt[@]} $sld_tranition $background_carousel $showcase_carousel \
          -out "$OUT_PREFIX" -carousel_menu_mode -basedir "$WORK_DIR" \
          $menu_length -carousel_num $((c+1)) -todisc_pids "$TODISC_PIDS"
     }
 
     $USER_MENU_LEN && menu_length="-menu-length $MENU_LEN"
-    $SLIDE_FADE && carsousel_fade="-carousel-effect $EFFECT"
+    $SLIDE_FADE && sld_tranition="-slide-transition $EFFECT"
     ! grep -q -- -noask <<< "$TOVID_OPTS" && \
      encopt=(-tovidopts $TOVID_OPTS -noask)
     if $CAROUSEL_IS_BACKGROUND; then
@@ -1058,7 +1058,7 @@ get_title_count()
                 get_listargs "$@"
                 fls=( "${fls[@]}" "${#ARGS_ARRAY[@]}")
                 ;;
-            "-slideshow" )
+            "-slides" )
                 fls=( "${fls[@]}" 1)
                 ;;
         esac
@@ -1210,21 +1210,21 @@ EOF
              no sense.  Please run your command again without -textmenu"
         fi
         if $GREP '-submenus|-ani-submenus' <<< "$options" \
-           && $GREP '-group|-slideshow' <<< "$options"; then
+           && $GREP '-group|-slides' <<< "$options"; then
             usage_error "Sorry, no submenus when using grouped videos
-             (-group) or doing slideshows (-slideshow)"
+             (-group) or doing slideshows (-slides)"
         fi
         if $GREP -carousel <<< "$options" && \
-         ! $GREP -slideshow <<< "$options ${GEN_OPTS[@]}"; then
+         ! $GREP -slides <<< "$options ${GEN_OPTS[@]}"; then
             usage_error "You must be making a slideshow to use -carousel"
         fi
         if $GREP -videos-are-chapters <<< "$options"; then
             if $GREP -playall  <<< "$options"; then
                 usage_error \
                  "-videos-are-chapters can not be used with -playall"
-            elif $GREP '-group|-slideshow' <<< "$options"; then
+            elif $GREP '-group|-slides' <<< "$options"; then
                 usage_error "-videos-are-chapters can not be used with
-                 grouped videos (-group) or slideshows (-slideshow)"
+                 grouped videos (-group) or slideshows (-slides)"
             fi
         fi
         if $GREP -static <<< "$options"; then
@@ -1234,14 +1234,14 @@ EOF
         fi
         # making a slideshow without carousel is static - no -quick-menu
         if $GREP -quick-menu <<< "$options" \
-         && $GREP -slideshow <<< "$options" \
+         && $GREP -slides <<< "$options" \
          && ! $GREP -carousel <<< "$options"; then
             usage_error "You must use '-carousel' when making a slideshow if
             you want to use '-quick-menu', as the menu is static without it.
             If you ARE wanting a static menu, remove the '-quick-menu' option"
         fi
         # warning to backup images if doing slideshow
-        if $GREP -slideshow <<< "$options"; then
+        if $GREP -slides <<< "$options"; then
             $CONFIRM_BACKUP && confirm_backup
         fi
         # transition-to-menu incompatible with -quick-menu
@@ -1250,7 +1250,7 @@ EOF
             usage_error "-quick-menu is incompatible with -transition-to-menu"
         fi
         if $GREP '-ani-submenus|-submenus' <<< "$options" \
-         && $GREP '-group|-slideshow' <<< "$options"; then
+         && $GREP '-group|-slides' <<< "$options"; then
             usage_error "Sorry, no submenus when using -group"
         fi
     done
@@ -1932,11 +1932,15 @@ mk_polaroid_stack()
         # Use a 'random' angle
         local angle=$((RANDOM %45 +1))
         local angle=$(( (angle / 2) * 2 ))
-
+        # use a 'random' direction of rotation
+        #local rand_dir=$((RANDOM %2))
+        #((rand_dir==0)) && randir="" || randir='-'
+        rand_dir=""
         # thumbnail to 120x80 or 80x80 # TODO get working for pal
         $CONVERT "${stackfiles[i]}" -background none -thumbnail ${TSIZE}! \
-        -bordercolor '#EAEAEA' -shave 4x4 +repage -border 4x4 \
-        -rotate $angle  \
+        -bordercolor '#EAEAEA' -shave 5x5 +repage -border 4x4 \
+        -bordercolor grey60 -border 1 \
+        -rotate ${randir}${angle}  \
         -background  black  \( +clone -shadow 60x4+4+4 \) +swap \
         -background  none   -flatten \
         "$WORK_DIR/tnail${i%.*}.png"
@@ -1979,7 +1983,7 @@ egrep -q 'titleset-mode|switched-mode|menu-only' <<< "$@" && NONAME=:
 while test $# -gt 0; do
     DO_SHIFT=:
     case "$1" in
-        "-files" | "-slideshow" )
+        "-files" | "-slides" )
             unset sshows inc_files unset grp
             if [[ $1 = '-files' ]]; then
                 incoming_vids=:; incoming_slides=false
@@ -1987,7 +1991,7 @@ while test $# -gt 0; do
                 incoming_vids=false; incoming_slides=:
             fi
             for i in ${args[@]}; do
-                [[ $i = -slideshow  ]] && ((sshows++))
+                [[ $i = -slides  ]] && ((sshows++))
                 [[ $i = -files ]] && ((inc_files++))
             done
             ((sshows==1)) && ((inc_files<1)) && SINGLE_SLIDESHOW=:
@@ -2228,29 +2232,34 @@ while test $# -gt 0; do
             ;;
         "-slide-menu-mix" )
             shift
-            usage_error "Use -carousel now instead of -slide-menu-mix"
+            usage_error "-slide-menu-mix has been changed - see manpage"
+            ;;
+        "-slideshow" )
+            shift
+            usage_error "Use -slides now instead of -slideshow"
             ;;
         "-slide-fade" )
             shift
-            usage_error "Use -carousel-effect fade|crossfade now instead of -slide-fade"
+            usage_error "Use -slide-transition fade|crossfade now instead of -slide-fade"
             ;;
-        "-carousel" )
+        "-menu-slide-total" )
             shift
-            get_listargs "$@"
+            test_is_number $1 && MIX_RANGE=$1
             IMG_FMT="png"
-            [[ -n ${ARGS_ARRAY[@]} ]] && MIX_RANGE=${ARGS_ARRAY[@]}
-            DO_CAROUSEL=:
-            is_carousel=:
             ;;
-        "-carousel-effect" )
+        "-slide-transition" )
             shift
             EFFECT=$1
+            if ! egrep -q -w 'fade|crossfade'  <<< "$EFFECT"; then
+                usage_error "The -slide-transition argument must be 'fade' or
+                'crossfade' (default if option unused: 'crossfade')"
+            fi
             SLIDE_FADE=:
             ;;
-        "-background-carousel" )
+        "-background-slideshow" )
             CAROUSEL_IS_BACKGROUND=:
             ;;
-        "-showcase-carousel" )
+        "-showcase-slideshow" )
             CAROUSEL_IS_SHOWCASE=:
             SHOWCASE=:
             IMG_FMT="png"
@@ -2762,7 +2771,7 @@ while test $# -gt 0; do
             SUBMENU_BG_COLOUR=${BG_COLOUR/\#/} # in case user passed #ffffff syntax
             ;;
         -car*-effect )
-            usage_error "$1: No such option - did you mean '-carousel-effect' ?"
+            usage_error "$1: No such option - did you mean '-slide-transition' ?"
             ;;
         -car* )
             usage_error "$1: No such option - did you mean '-carousel' ?"
@@ -2877,6 +2886,12 @@ if [[ -n "$SM_TITLES" ]]; then
     You gave ${#SM_TITLES[@]} submenu titles and ${#TITLES[@]} titles"
     fi
 fi
+# slideshows are animated by default like rest of todisc
+if [[ ${SLIDESHOW[@]} ]] && ! $STATIC; then
+    DO_CAROUSEL=:
+    is_carousel=:
+    SLIDE_FADE=:
+fi    
 # titlesets use BASEDIR which is the WORK_DIR of the calling todisc
 # BASEDIR is supplied by the calling todisc with -basedir
 : ${BASEDIR:="$WORK_DIR"}
@@ -3591,7 +3606,7 @@ if ! $VMGM_ONLY; then
     echo "Verifying that input files are video or image files"
     verify_infiles infiles
     if [[ ${#file_is_image[@]} -eq ${#FILES[@]} && $inc_files -gt 0 ]]; then
-        usage_error "Please use -slideshow IMAGES, not -files IMAGES
+        usage_error "Please use -slides IMAGES, not -files IMAGES
         for a slideshow"
     fi
     if $GROUPING; then 
@@ -3645,23 +3660,32 @@ if $DO_CAROUSEL; then
     for s in ${!SLIDE_BLUR[@]}; do
         [[ ${SLIDE_BLUR[s]} = "none" ]] && unset SLIDE_BLUR[s]
     done
-    if [[ -n $MIX_RANGE ]]; then
-        for ((i=0; i<MIX_RANGE; i++)); do
-            #[[ -n ${SLIDE_BLUR[i]} ]] &&
+fi
+if [[ -n $MIX_RANGE ]]; then
+    last_ind=$MIX_RANGE
+    for ((i=0; i<MIX_RANGE; i++)); do
+        #[[ -n ${SLIDE_BLUR[i]} ]] &&
+        if $DO_CAROUSEL; then
             MIX_IN=( "${MIX_IN[@]}" "${MIXFILES[i]}" )
-        done
-    else
+        else
+            # read in in reverse order so 1st slide is composited last
+            MIX_IN=( "${MIX_IN[@]}" "${IN_FILES[--last_ind]}" )
+        fi
+    done
+else
+    if $DO_CAROUSEL; then
         MIX_IN=( "${MIXFILES[@]}" )
+    else
+        MIX_IN=( "${IN_FILES[@]}" )
     fi
 fi
 # All files must be images for slide mix.
 # if all are images, then we are doing a slideshow.
 echo 
 if $SINGLE_SLIDESHOW; then
+    # if -static was not passed we have already set DO_CAROUSEL to :
+    # So here we set STATIC to : as ani slideshow has its own code
     DO_FRAME=false; DO_BUTTONS=false; STATIC=:; DO_STATS=false
-#    [[ -n $THUMB_FRAME ]] && THUMB_FRAME="-shave 3x3 +repage -frame 2x2"
-#    MTG_GEO=+2+2
-#    MTG_FRM="-frame 2x2"
     CAROUSEL_IS_SHOWCASE=false
     CAROUSEL_IS_BACKGROUND=false
 fi
@@ -4184,7 +4208,7 @@ fi
 # now that we have a background we can do the polaroid stack if called for
 if $SINGLE_SLIDESHOW && ! $DO_CAROUSEL && ! $MK_CAROUSEL_MODE; then
     echo -e "\nMaking a 'polaroid stack' of your images for the main menu"
-    mk_polaroid_stack "${IN_FILES[@]}" &
+    mk_polaroid_stack "${MIX_IN[@]}" &
     polaroid_pid=$!
     while ps -p $polaroid_pid >/dev/null; do
         sleep .5
