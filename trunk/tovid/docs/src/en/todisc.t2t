@@ -36,8 +36,8 @@ For example:
 The number of **-files** and **-titles** must be equal, though if you
 do not include any titles todisc will use the basename of the included files
 as titles.
-If you are doing a slideshow or multiple slideshows, use **-slideshow** rather
-than **-files** for passing in the images.  You may use -files and -slideshow
+If you are doing a slideshow or multiple slideshows, use **-slides** rather
+than **-files** for passing in the images.  You may use -files and -slides
 more than once to create an ordering in a mixed slideshows/videos menu.
 See SLIDESHOWS part of Usage section, below.
 
@@ -137,41 +137,41 @@ See also **-titleset** and **-vmgm**
 You can also use todisc to make slideshows.  This can either be a single
 slideshow, or multiple slideshows on the same menu. (for SVCD only
 single slideshow is supported).
-Remember to use **-slideshow** rather than **-files** for passing in the
+Remember to use **-slides** rather than **-files** for passing in the
 images.  Images can be any filetype that imagemagick supports: for example
 JPEG, PNG, GIF, TGA BMP etc.  For a single slideshow do not use **-titles**: 
 use -menu-title to set the slideshow title.
 
-For a single slideshow the default is a 'montage' menu of all the slides,
-with a single spumux'ed button for navigating with the enter key.  You may
-have to experiment to find out which DVD remote button advances the slides,
+For a single slideshow the default is an animated menu that transitions from
+slide to slide.  The default transition type is 'crossfade', which fades each
+slide into the next and loops back to the first slide at the end.  If instead
+you use **-static**, then a static 'polaroid stack' menu of all the slides is
+created, with a single spumux'ed button for navigating with the enter key.  You
+may have to experiment to find out which DVD remote button advances the slides,
 on my player it is different for DVD and SVCD.  Try the 'next chapter'
 (skip ?) button and the play or enter buttons.
-For single slideshows, you can use **-carousel** to make an animated menu
-that transitions from slide to slide.  See **-carousel**.
-To get fade transitions in the carousel menu, add **-carousel-effect**
-crossfade | fade .
-The argument to **-carousel** is the number of slides to use - be sure to use
+If you want to limit the number of slides in the menu to a subset of all files
+entered with **-slides**, then use **-menu-slide-total** INT.  Be sure to use
 a long enough audio file for **-bgaudio** or set **-menu-length** so the menu
 is long enough to support the slides plus transitions.
 
 You can also put multiple slideshows on one menu.  To do this, use
-**-slideshow IMAGES** for each slideshow desired.  You can even mix videos
-with slideshows by using **-files** **-slideshow** **-titles** multiple times.
+**-slides IMAGES** for each slideshow desired.  You can even mix videos
+with slideshows by using **-files** **-slides** **-titles** multiple times.
 
-Example of a single slideshow with a carousel menu with transitions:
+Example of a single slideshow with an animated menu with transitions:
 
 ```
- $ todisc -menu-title "Autumn in Toronto" -slideshow images/*.jpg \
-   -carousel 20 -carousel-effect crossfade -bgaudio slideshow.wav \
+ $ todisc -menu-title "Autumn in Toronto" -slides images/*.jpg \
+   -menu-slide-total 20 -slide-transition crossfade -bgaudio slideshow.wav \
     -out myslideshow
 ```
 Example of multiple slideshows on one menu:
 ```
  $ todisc -menu-title "Autumn in Toronto" \
-   -slideshow photos/september/*.jpg \
-   -slideshow photos/october/*.jpg \
-   -slideshow photos/november/*.jpg \
+   -slides photos/september/*.jpg \
+   -slides photos/october/*.jpg \
+   -slides photos/november/*.jpg \
    -tile3x1 -rotate -5 5 -5 -align center \
    -bgaudio background.wav \
    -out myslideshow
@@ -180,17 +180,16 @@ Example of mixed videos and slideshows:
 ```
  $ todisc -menu-title "Autumn in Toronto" \
    -files fall_fair.mov \
-   -slideshow  photos/september/*.jpg \
+   -slides  photos/september/*.jpg \
    -files harvest.mpg \
-   -slideshow photos/october/*.jpg \
+   -slides photos/october/*.jpg \
    -titles "Fall Fair" "September" "Harvest" "October" \
    -background autumn.png \
    -bgaudio bg.mp3 \
    -out myslideshow
 ```
 
-See also **-slideshow** ,**-carousel** and **-carousel-fade** in
-the SLIDESHOWS option section.
+See the other slideshow options in the SLIDESHOWS options section.
 
 == Options ==
 
@@ -357,34 +356,37 @@ the SLIDESHOWS option section.
 
 == Slideshows ==
 
-: **-slideshow** IMAGES
-    Use **-slideshow** IMAGES to pass in images for a slideshow, not
-    **-files** IMAGES.  **-slideshow** IMAGES can be used multiple times if you
-    wish to make a menu with multiple slideshows (DVD only).  You can also make
-    a menu of mixed videos and slideshows by using **-slideshow** IMAGES, and
-    **-files** VIDEOS multiple times.  The number of **-titles** needs to match
-    the number of **-files** passed in plus the number of slideshows.  (Each
-    time you use **-slideshow** counts as one title.)
-    
-: **-carousel** NUM
-    Make an animated menu for the slideshow using NUM number of the slides
-    that were passed in with **-slideshow**, moving from one slide to the next.
-    To use a fade transition between slides, see **-carousel-fade**.
-    The length of the menu is determined by 1) **-menu-length** NUM if given,
-    and by 2) the length of the audio from **-bgaudio**.
+: **-slides** IMAGES
+    Use **-slides** IMAGES to pass in images for a slideshow.  The default is
+    to make an animated menu of the slides, moving from one slide to the
+    next. If you use **-static**, a 'polaroid stack' montage is created.  This
+    composites the slides onto the background in 'random' locations with random
+    rotations.  **-slides**  IMAGES can be used multiple times if you wish to
+    make a menu with multiple slideshows (DVD only).  You can also make a menu
+    of mixed videos and slideshows by using **-slides** IMAGES, and **-files**
+    VIDEOS multiple times.  For such a menu, the number of **-titles**
+    needs to match the number of **-files** passed in plus the number of
+    slideshows.  (Each time you use **-slides** counts as one title.)  To use
+    a transition between the slides, use **-slide-transition**
+    crossfade|fade.  See **-slide-transition** **-menu-slide-total**
 
-: **-carousel-effect** crossfade|fade [crossfade]
-    Use fade transitions between slides in a carousel type menu.  Be sure the
-    menu length is long enough to support the 1 second transitions between the
-    slides.  The length is determined by 1) the length of the -bgaudio AUDIO
-    2) the length given with -menu-length NUM.  The default transition type is
-    'crossfade'.
+: **-menu-slide-total** INT
+    Use INT number of the slides that were passed in with **-slides**
+    to make the animated or static slide menu.  The length of the menu is
+    determined by 1) **-menu-length** NUM if given,  and by 2) the length
+    of the audio from **-bgaudio**.
 
-    See **-carousel** , **-bgaudio** and **-menu-length**
-    
-    The 'crossfade' type is the default if you don't supply an argument.  It
-    fades from one slide to another.  The 'fade' effect fades in and out from
-    and to black.
+: **-slide-transition** crossfade|fade [crossfade]
+    The type of fade transition between slides in a animated slide menu.  Be
+    sure the menu length is long enough to support the 1 second transitions
+    between the slides.  The length is determined by 1) the length of the
+    -bgaudio AUDIO  2) the length given with -menu-length NUM.
+
+    See **-menu-slide-total** , **-bgaudio** and **-menu-length**
+
+    The 'crossfade' transition fades from one slide to another.  The 'fade'
+    transition fades in and out from and to black.  If you don't use this
+    option, the default is to use a 'crossfade' transition.
 
 : **-slideshow-menu-thumbs** FILES
     Use the FILES instead of the 1st image in each slideshow as the
@@ -394,9 +396,9 @@ the SLIDESHOWS option section.
 : **-slides-to-bin** FILES
     FILES will be resized to 640x480 using a 'box' filter - this
     is called 'binning'.  It will reduce the 'signal to noise' ratio for the
-    image in the carousel video.  Use this if you get some unwanted effects
-    for certain images, such as pixels shifting in what should be a static
-    image.  See also **-slides-to-blur** and **-slide-border**
+    image in the animated slide menu.  Use this if you get some unwanted
+    effects for certain images, such as pixels shifting in what should be a
+    static image.  See also **-slides-to-blur** and **-slide-border**
 
 : **-slides-to-blur** FILES
     FILES will be blurred a small amount - which will help on
@@ -411,13 +413,12 @@ the SLIDESHOWS option section.
     **-slides-to-blur**.  You must pass in **-files-to-blur** FILES to use this
     option.  Blurring can help 'noise' problems in the video.  See also
     **-slides-to-bin** and **-slide-border**
-    
 
 : **-slide-border** WIDTH [100]
-    Pad the slides with a border for the carousel menu.  The default without
-    using an argument is 100.  Using this option can also solve some
+    Pad the slides with a border for the animated slide menu.  The default
+    without using an argument is 100.  Using this option can also solve some
     noise/ringing effects if used alone or in conjuction with 'binning'
-    (**-slides-to-bin**) or blurring (**-slides-to-blur**)
+    (**-slides-to-bin**) or blurring (**-slides-to-blur**).
 
 : **-slide-frame** WIDTH [12]
     Frame the slides for the carousel menu.  The default without using an
@@ -425,24 +426,24 @@ the SLIDESHOWS option section.
 
 : **-slide-frame-color** | **-slide-frame-colour**
     The color of the slide frame if passing **-slide-frame**.  The default if
-    you don't use this option is a color-safe white: rgb(235,235,235)
+    you don't use this option is a color-safe white: rgb(235,235,235).
 
-: **-showcase-carousel**
+: **-showcase-slideshow**
     If doing multiple slideshows or mixed videos and slideshow(s), then use
-    the carousel as a showcase video.
+    the animated slideshow as a showcase video.
 
-: **-background-carousel**
+: **-background-slideshow**
     If doing multiple slideshows or mixed videos and slideshow(s), then use
-    the carousel as a background video.
+    the animated slideshow as a background video.
 
 : **-use-dvd-slideshow** [CONFIG FILE]
     If you pass this option without an argument, todisc will use the
-    dvd-slideshow program to create the carousel, assuming you have this
-    program installed.  The optional argument is the dvd-slideshow config file
-    - if you don't use this argument todisc will create it for you.  If you
-    to use the 'Ken Burns effect' - then the config file argument is required.
-    Note: the config file will override many of the above options for
-    slideshows.
+    dvd-slideshow program to create the animated slide menu, assuming you have
+    this program installed.  The optional argument is the dvd-slideshow config
+    file  - if you don't use this argument todisc will create it for you.  If
+    you want to use the 'Ken Burns effect' - then the config file argument is
+    required.  Note: the config file will override many of the above options
+    for slideshows.
 
 
 == Burning the disc ==
@@ -576,9 +577,14 @@ the SLIDESHOWS option section.
 ==Menu Style==
 
 : **-menu-title-geo** north|south|east|west|center [south]
-    The position of the menu title.
+    The position of the menu title.  You may need to use -align as well if
+    you don't want your title covering other parts of your menu.  See
+    **-align**
 : **-menu-title-offset** OFFSET (+X+Y)
-    Move menu title by this offset from its N|S|E|W|Center position.
+    Move menu title by this offset from its N|S|E|W|Center position.  You
+    may need to use -align as well if you don't want your title covering other
+    parts of your menu.  See **-align**
+    
 : **-button-style** rect|text|line|text-rect
     The style of button that you will see when you play the DVD.
     "rect" draws a rectangle around the thumb when you select it
@@ -667,7 +673,8 @@ the SLIDESHOWS option section.
     effect on -3dthumbs option.
 : **-align** north|south
     This will align  thumbs/titles north or south. 
-    (if **-align** south then menu title will align north)
+    if **-align** south then menu title will align north, unless you manually
+    set one or both of **-menu-title-geo** or **-menu-title-offset**.
 : **-thumb-mist-color**, **-thumb-mist-colour**
     Color of mist behind thumbnails
 : **-titles-color**, **-titles-colour** COLOR
