@@ -410,6 +410,9 @@ class GUI (tk.Tk):
         self.tk.call('namespace', 'import', '::tk::dialog::file::')
         self.tk.call('set', '::tk::dialog::file::showHiddenBtn',  '1')
         self.tk.call('set', '::tk::dialog::file::showHiddenVar',  '0')
+        # handle user closing window with window manager or ctrl-q
+        self.protocol("WM_DELETE_WINDOW", lambda:self.confirm_exit(self.apps[0]))
+        self.bind('<Control-q>', lambda e, : self.confirm_exit(self.apps[0]))
 
     def run(self):
         """Run the GUI"""
