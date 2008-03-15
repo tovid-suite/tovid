@@ -520,12 +520,15 @@ See the other slideshow options in the SLIDESHOWS options section.
     if you use -chapters 4 6 8 , you must give 18 chapter titles, in the same
     order that the videos were passed in.
 
-: **-chapters-font** FONT
+: **-chapter-font** FONT
     Use FONT as the font for submenu chapters.
 
-: **-chapters-fontsize** SIZE
+: **-chapter-fontsize** SIZE
     Use SIZE as the pointsize for the chapters font.
-
+: **-chapter-color** COLOR
+    The color for the chapters font.
+: **-chapter-stroke** COLOR
+    The color for the chapters font outline (stroke)
 
 : **-seek** NUM | "NUM1 NUM2 NUM3 . . ."
     Seek to NUM seconds before generating thumbnails (default: 2.0 seconds)
