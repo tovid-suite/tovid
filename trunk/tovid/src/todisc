@@ -2185,7 +2185,7 @@ while test $# -gt 0; do
                 fi
             else
                 # use the default menu-fade
-                transition_time=1
+                TRANSITION_TO_MENU_LEN=1
             fi
             MENU_FADE=:
             AUDIO_FADE=:
@@ -6687,7 +6687,7 @@ if $SUB_MENU; then
         SN_BTN_XY=${GEO_ARRAY[C]} # button dimensions
         NUM_CHAPTERS=${CHAPTERS[i]}
         yecho "Creating a transparent title PNG"
-        convert $QUALITY -size 620x300 xc:none -font "$SM_TITLE_FONT" \
+        convert -size 620x300 xc:none -font "$SM_TITLE_FONT" \
         -pointsize $SUBMENU_FONTSIZE \
         -fill "$SM_TITLE_COLOUR" -draw "gravity center text 2,2 \"${SM_TITLES[i]}\"" \
         -stroke "$SUBMENU_STROKE" -strokewidth 1 \
@@ -6803,7 +6803,7 @@ if $SUB_MENU; then
             #get_contrasting_color $TITLES_COLOUR
             for ((a=0; a<${CHAPTERS[i]}; a++)); do
                 ctitle="$WORK_DIR/${TSET_NUM}-${i}-chapter${a}.png"
-                ctitle_cmd=(convert $QUALITY -size 620x300 xc:none -stroke '#101010' \
+                ctitle_cmd=(convert -size 620x300 xc:none -stroke '#101010' \
                 -font "$CHAPTER_FONT" -pointsize $CHAPTER_FONTSIZE \
                 -fill '#101010'  -stroke '#101010' -gravity South \
                 -annotate +0+0 "${CHAPTER_TITLES[a+I]}" \
@@ -7181,7 +7181,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             IM_CMD04=(convert - -background none \
             -bordercolor "#444744"  "$WORK_DIR/thumb_title${i}.png" \
             -gravity south -geometry +0+5 -compose over -composite)
-            IM_CMD1=(convert $QUALITY -resize ${THUMB_SIZE}! -)
+            IM_CMD1=(convert -resize ${THUMB_SIZE}! -)
             IM_CMD2=(composite -gravity center -compose DstOver \
             $WORK_DIR/feather_mask2.png -)
             ! $USE_FEATHER_MASK && IM_CMD2=(convert -)
@@ -7193,7 +7193,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             $THUMB_FRAME -)
             IM_CMD4b=(convert -background none -bordercolor none \
             $THUMB_FRAME -)
-            IM_CMD5=(convert $QUALITY -size ${THUMB_SIZE} - $THUMB_ROTATE \
+            IM_CMD5=(convert -size ${THUMB_SIZE} - $QUALITY $THUMB_ROTATE \
             -resize ${THUMB_SIZE}! "${PICS[p]}")
             IM_CMD6=(convert - -write mpr:img${p} -fx A  +matte \
             -blur 0x$( LC_ALL="C" bash -c \
