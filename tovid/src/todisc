@@ -76,8 +76,8 @@ MENU_TITLE="My Video Collection"
 STATIC=false
 SUB_MENU=false
 ANI_SUB_MENU=false
-TITLE_COLOUR="#CDC0B0"
-SM_TITLE_COLOUR="#CDC0B0"
+TITLE_COLOUR="#EAEAEA"
+SM_TITLE_COLOUR="#EAEAEA"
 THUMB_BG_COLOUR=white
 TITLES_COLOUR=""
 BUTTON_STYLE="rect"
@@ -1148,6 +1148,7 @@ titleset_mode()
 <dvdauthor dest="$OUT_DIR" jumppad="0">
   <vmgm>
     <menus>
+      <video aspect="4:3"/>
       <pgc entry="title">
         <pre>
 $(echo -e "$VMGM_PRE")
@@ -2790,12 +2791,12 @@ if [[ $TV_STANDARD = "ntsc" ]]; then
     ALL_COLOURS="$SFRAME_COLOUR $TITLE_COLOUR $SM_TITLE_COLOUR $TITLE_STROKE \
     $SUBMENU_STROKE $CHAPTER_STROKE $TITLES_COLOUR $HLIGHT_CLR $SELECT_CLR \
     $BG_COLOUR $TITLES_STROKE $SUBMENU_BG_COLOUR"
-    if egrep -q -w 'white|black|red|yellow' <<< "$ALL_COLOURS" ||
+    if egrep -q -w 'white|black|red|yellow|blue' <<< "$ALL_COLOURS" ||
     egrep -q 'ffffff|FFFFFF|000000|FF0000|ff0000|FFFF00|ffff00' \
                                             <<< "$ALL_COLOURS"; then
         usage_error "Do not use pure white,black,red, or yellow as a color if
-        doing a NTSC menu.  The color-safe equivalents are:
-        white: '#EAEAEA', black: '#101010', red: '#EA0000', blue: '#0000EA'"
+        doing a NTSC menu.  The color-safe equivalents are:  white: '#EAEAEA',
+        black: '#101010', red: '#EB2D2D', blue: '#2D2DEB', yellow: '#EBEB2D'"
     fi
 fi
 # make sure dvd-slideshow is installed if user passed -use-dvd-slideshow
@@ -2886,7 +2887,7 @@ if [[ -n "$SM_TITLES" ]]; then
     fi
 fi
 # slideshows are animated by default like rest of todisc
-if [[ ${SLIDESHOW[@]} ]] && ! $STATIC; then
+if  $SINGLE_SLIDESHOW ]] && ! $STATIC; then
     DO_CAROUSEL=:
     is_carousel=:
     SLIDE_FADE=:
@@ -6443,7 +6444,7 @@ MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${MENU_NUM}.mpg"
 ! $DO_INTRO && VMGM_PREJUMP="jump titleset 1 menu;"
 $VMGM_ONLY && MENU_FILE="$BASEDIR/VMGM.mpg"
 $SWITCHED_MODE && ! $VMGM_ONLY && MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${MENU_NUM}.mpg"
-VMGM_PRE="if ( g5 eq 0 ) g5 = 1;"
+VMGM_PRE="if ( g5 eq 0 ) g5 = 1; g4=0;"
 $SWITCHED_MENUS && VMGM_PRE="$VMGM_PRE if (g1 eq 0) g1=1;$VMGM_PREJUMP" || VMGM_PRE="$VMGM_PRE $VMGM_PREJUMP"
 VMGM_PRE="<pre>$VMGM_PRE</pre>"
 $SWITCHED_MENUS && NUM_MENUS=${#FILES[@]} || NUM_MENUS=1
@@ -6454,6 +6455,7 @@ $(if $AUTHOR ; then
     echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
     echo -e "<dvdauthor dest=\"$OUT_DIR\" jumppad=\"0\">"
     echo -e "  <vmgm>\n    <menus>"
+    echo -e "      <video aspect=\"4:3\"/>"
     echo -e "      <pgc entry=\"title\" pause=\"0\">"
     echo -e "        $INTRO"
     echo -e "        <vob file=\"$WORK_DIR/dummy.mpg\"/>"
@@ -6462,6 +6464,7 @@ $(if $AUTHOR ; then
 fi)
   <titleset>
     <menus>
+      <video aspect="4:3"/>
 $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
     echo -e "      <pgc>"
     for ((i=1; i<=$V_TOTAL; i++)); do
@@ -6528,16 +6531,16 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
         if [[ $menu_num -ne $NUM_MENUS ]]; then
             echo -e "        <pre>"
             echo -e "        button = g1 * 1024;"
-            echo -e "        if (g1 ne $menu_num) jump menu $((menu_num+1));"
+            echo -e "        if (g1 ne $menu_num) jump menu $((menu_num+1)); g4=0;;"
             echo -e "        </pre>"
         else
-            echo -e "        <pre>button = g1 * 1024;</pre>"
+            echo -e "        <pre>button = g1 * 1024; g4=0;</pre>"
         fi
     else
         if $SINGLE_SLIDESHOW; then
             echo -e "        <pre>if (g5 gt 1) g5=1; button = g5 * 1024;</pre>"
         else
-            echo -e "        <pre>button = g5 * 1024; </pre>"
+            echo -e "        <pre>button = g5 * 1024; g4=0;</pre>"
         fi
     fi
     echo -e "$MAIN_PRE"
@@ -6774,7 +6777,6 @@ if $SUB_MENU; then
             unset TCODE_CMD cmd run_transcode
             if ! $ANI_SUB_MENU ; then
                 echo
-                # FIXME
                 mv $WORK_DIR/submenu/000000.$SM_IMG_FMT \
                 $WORK_DIR/submenu/$(printf "%08d%s\n" ${t%-*} .$SM_IMG_FMT)
             elif $ANI_SUB_MENU; then
