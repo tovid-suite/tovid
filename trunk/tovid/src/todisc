@@ -663,7 +663,7 @@ check_compliance()
             NO_PROMPT_FILES[i]=$IN_FILE
             ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$WORK_DIR/${OUTFILE##*/}")
             # for titlesets we need to move all encoded mpegs to $BASEDIR
-        # do not reencode carousel m2v's made by MK_CAROUSEL_MODE
+        # do not reencode animated slideshow m2v's made by MK_CAROUSEL_MODE
         elif ! $group_set && [[ ${CAROUSEL[i]} = "carousel" ]]; then
             ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE")
         # test files with idvid script
@@ -965,7 +965,7 @@ switched_menu_mode()
 #    exit
 }
 carousel_menu_mode()
-# call todisc recursively to make carousel menu
+# call todisc recursively to make animated slideshow menu
 {
     mk_carousel()
     {
@@ -985,11 +985,11 @@ carousel_menu_mode()
     ! grep -q -- -noask <<< "$TOVID_OPTS" && \
      encopt=(-tovidopts $TOVID_OPTS -noask)
     if $CAROUSEL_IS_BACKGROUND; then
-        background_carousel="-background-carousel"
+        background_carousel="-background-slideshow"
         IN_SLIDES=( "$WORK_DIR"/${TSET_NUM}-slide_grp*.mpg )
         mk_carousel 0
     elif $CAROUSEL_IS_SHOWCASE; then
-        showcase_carousel="-showcase-carousel"
+        showcase_carousel="-showcase-slideshow"
         IN_SLIDES=( "$WORK_DIR"/${TSET_NUM}-slide_grp*.mpg )
         mk_carousel 0
     else
@@ -1200,23 +1200,10 @@ EOF
     fi
     for t in ${!tsetopts[@]}; do
         options="${tsetopts[t]} ${GEN_OPTS[@]}"
-        if $GREP -carousel <<< "$options" && \
-         $GREP '-textmenu|-text-menu' <<< "$options" && \
-         ! $GREP -switched <<< "$options" && \
-         ! $GREP -showcase-carousel <<< "$options" && \
-         ! $GREP -background-carousel <<< "$options"; then
-            usage_error "You are using -carousel AND -textmenu but not making
-             a background-carousel OR -showcase-carousel, so -textmenu makes
-             no sense.  Please run your command again without -textmenu"
-        fi
         if $GREP '-submenus|-ani-submenus' <<< "$options" \
            && $GREP '-group|-slides' <<< "$options"; then
             usage_error "Sorry, no submenus when using grouped videos
              (-group) or doing slideshows (-slides)"
-        fi
-        if $GREP -carousel <<< "$options" && \
-         ! $GREP -slides <<< "$options ${GEN_OPTS[@]}"; then
-            usage_error "You must be making a slideshow to use -carousel"
         fi
         if $GREP -videos-are-chapters <<< "$options"; then
             if $GREP -playall  <<< "$options"; then
@@ -1235,9 +1222,8 @@ EOF
         # making a slideshow without carousel is static - no -quick-menu
         if $GREP -quick-menu <<< "$options" \
          && $GREP -slides <<< "$options" \
-         && ! $GREP -carousel <<< "$options"; then
-            usage_error "You must use '-carousel' when making a slideshow if
-            you want to use '-quick-menu', as the menu is static without it.
+         && $GREP -static <<< "$options"; then
+            usage_error "A -quick-menu slideshow must be animated.
             If you ARE wanting a static menu, remove the '-quick-menu' option"
         fi
         # warning to backup images if doing slideshow
@@ -2449,21 +2435,37 @@ while test $# -gt 0; do
             shift
             TITLE_COLOUR="$1"
             ;;
+        "-submenu-font" )
+            shift
+            SM_TITLE_FONT="$1"
+            ;;
+        "-submenu-fontsize" )
+            shift
+            SUBMENU_FONTSIZE="$1"
+            ;;
         "-submenu-title-colour" | "-submenu-title-color" )
             shift
             SM_TITLE_COLOUR="$1"
             ;;
-        "-title-stroke" | "-title-stroke" )
+        "-title-stroke" )
             shift
             TITLE_STROKE="$1"
             ;;
-        "-titles-stroke" | "-titles-stroke" )
+        "-titles-stroke" )
             shift
             TITLES_STROKE="$1"
             ;;
-        "-submenu-stroke" | "-submenu-stroke" )
+        "-submenu-stroke" )
             shift
             SUBMENU_STROKE="$1"
+            ;;
+        "-chapter-stroke" )
+            shift
+            CHAPTER_STROKE="$1"
+            ;;
+        "-chapter-color" | "-chapter-colour" )
+            shift
+            CHAPTER_COLOUR="$1"
             ;;
         "-titles-colour" | "-titles-color" )
             shift
@@ -2608,11 +2610,11 @@ while test $# -gt 0; do
             ;;
         "-chapter-font" )
             shift
-            SM_CHAPTS_FONT=$(get_font "$1")
+            CHAPTER_FONT=$(get_font "$1")
             ;;
         "-chapter-fontsize" )
             shift
-            SM_CHAPT_FONTSIZE="$1"
+            CHAPTER_FONTSIZE="$1"
             ;;
         "-seek" )
             shift
@@ -2770,11 +2772,8 @@ while test $# -gt 0; do
             SUBMENU_BG_COLOUR="$1"
             SUBMENU_BG_COLOUR=${BG_COLOUR/\#/} # in case user passed #ffffff syntax
             ;;
-        -car*-effect )
-            usage_error "$1: No such option - did you mean '-slide-transition' ?"
-            ;;
         -car* )
-            usage_error "$1: No such option - did you mean '-carousel' ?"
+            usage_error "$1: No such option.  Please see 'man todisc' ?"
             ;;
     esac
     $DO_SHIFT && shift
@@ -2789,8 +2788,8 @@ TODISC_PIDS="$TODISC_PIDS $$"
 # make sure user used colour-safe colours if doing NTSC (incomplete)
 if [[ $TV_STANDARD = "ntsc" ]]; then
     ALL_COLOURS="$SFRAME_COLOUR $TITLE_COLOUR $SM_TITLE_COLOUR $TITLE_STROKE \
-    $SUBMENU_STROKE $TITLES_COLOUR $HLIGHT_CLR $SELECT_CLR $BG_COLOUR \
-    $TITLES_STROKE $SUBMENU_BG_COLOUR"
+    $SUBMENU_STROKE $CHAPTER_STROKE $TITLES_COLOUR $HLIGHT_CLR $SELECT_CLR \
+    $BG_COLOUR $TITLES_STROKE $SUBMENU_BG_COLOUR"
     if egrep -q -w 'white|black|red|yellow' <<< "$ALL_COLOURS" ||
     egrep -q 'ffffff|FFFFFF|000000|FF0000|ff0000|FFFF00|ffff00' \
                                             <<< "$ALL_COLOURS"; then
@@ -2934,10 +2933,6 @@ if ! $VMGM_MENU; then
 fi
 # initialize MENU_AUDIOLENGTH now that options have been read
 [[ -n $BG_AUDIO ]] && MENU_AUDIOLENGTH=${MENU_LEN[MENU_NUM-1]}
-
-# -carousel is for slideshows
-$DO_CAROUSEL && ((sshows==0)) && usage_error \
- "You must be making a slideshow to use -carousel"
 
 # ffmpeg noise reduction
 if [[ -n $NR ]]; then
@@ -3119,8 +3114,8 @@ if $DO_CAROUSEL && $TEXTMENU && ! $SWITCHED && \
  ! $CAROUSEL_IS_BACKGROUND && ! $CAROUSEL_IS_SHOWCASE; then
     TEXTMENU=false
     yecho
-    yecho "You are using -carousel AND -textmenu, but not making a background
-    or showcase carousel, so -textmenu makes no sense.  Removing -textmenu
+    yecho "You are using an animated slideshow but not making a background
+    or showcase slideshow, so -textmenu makes no sense.  Removing -textmenu
     option.  You may want to ctrl-c now to exit so you can remove this option
     yourself, as it has also had the effect of setting a 'showcase' style, which
     may not be what you want."
@@ -3130,9 +3125,9 @@ fi
 # carousel's are made BEFORE switched menus - so don't do them in switched mode
 $SWITCHED_MODE && DO_CAROUSEL=false
 
-######################################
-# recursive magic for titlesets,     #
-# switched menus, and carousel menus #
+################################################
+#        recursive magic for titlesets,        #
+# switched menus, and animated slideshow menus #
 ######################################
 
 # if doing titlesets, call todisc recursively,
@@ -3142,7 +3137,7 @@ if $DO_TITLESETS; then
     yecho Goodbye
     exit
 fi
-# if -carousel, AND  multiple slideshow or slideshow AND video(s)
+# if -animated slideshow, AND  multiple slideshow or slideshow AND video(s)
 # call todisc recursively for each ${FILES[@]},
 # collect each concatenated carousel m2v, and exit
 if { ((sshows>=1)) && ((inc_files >=1)) ; } || ((sshows>1)); then
@@ -3280,8 +3275,8 @@ if $QUICK_MENU && ! $QUICKMENU_IS_SHOWCASE && ! $QUICKMENU_IS_BACKGROUND; then
             yech=usage_error
         fi
         if $is_carousel; then
-            $yech "-carousel needs either -background-carousel 
-            or -showcase-carousel"
+            $yech "animated slideshows with quick-menu need either 
+            -background-slideshow  or -showcase-slideshow"
         else
             $yech "-quick-menu needs a -showcase VIDEO or a -background VIDEO"
         fi
@@ -3742,7 +3737,8 @@ if $DO_MENU; then
             TITLES_FONTSIZE=14
         fi
     fi
-    test -z $SM_CHAPTS_FONTSIZE && SM_CHAPTS_FONTSIZE=14
+    test -z $CHAPTER_FONTSIZE && CHAPTER_FONTSIZE=14
+    test -z $SUBMENU_FONTSIZE && SUBMENU_FONTSIZE=$MENU_FONTSIZE
 
     # See if "Helvetica" or "helvetica" are available as default fonts
     if convert -size 50x20 xc:none -font Helvetica -gravity Center \
@@ -3755,7 +3751,8 @@ if $DO_MENU; then
     # If user did not specify fonts, use default
     test -z "$MENU_FONT" && MENU_FONT=$DEFAULT_FONT
     test -z "$TITLES_FONT" && TITLES_FONT=$DEFAULT_FONT
-    test -z "$SM_CHAPTS_FONT" && SM_CHAPTS_FONT="$TITLES_FONT"
+    test -z "$CHAPTER_FONT" && CHAPTER_FONT="$TITLES_FONT"
+    test -z "$SM_TITLE_FONT" && SM_TITLE_FONT="$MENU_FONT"
     rm -f "$WORK_DIR/font.png"
 
     # Some user feedback
@@ -3997,7 +3994,7 @@ elif $TEXTMENU; then
     AUTOORDER="columns"
 fi
 
-# set size of carousel menu images
+# set size of animated slideshow menu images
 if $CAROUSEL_IS_BACKGROUND; then
     CAROUSEL_SIZE=$VIDSIZE
 else
@@ -4258,6 +4255,9 @@ if [[ -z "$TITLES_COLOUR" ]]; then
         TITLES_COLOUR="#C6C6C6"
     fi
 fi
+# set submenu font colours to defaults if not passed in
+[[ -z $CHAPTER_STROKE ]] && CHAPTER_STROKE="$SUBMENU_STROKE"
+[[ -z $CHAPTER_COLOUR ]] && CHAPTER_COLOUR="$TITLES_COLOUR"
 if test "$THUMB_SHAPE" = "normal"; then
     THUMB_MASK="$WORK_DIR/feather_mask.png"
     #yecho "Creating normal mask with the following command:"
@@ -5537,6 +5537,7 @@ if $DO_CAROUSEL; then
         For slideshows where -bgaudio FILE is supplied, this is determined by:
         1. -menu-length argument if supplied
         2. length of the supplied -bgaudio
+        you gave ${#MIX_IN[@]} files
         
         If -menu-length is not supplied, the length of the menu is the length
         the -bgaudio FILE, or 20 secs if silent background (no -bguaudio FILE)
@@ -5562,7 +5563,7 @@ for i in $WORK_DIR/*slide_grp*.mpg; do
     MPEGS2MOVE=( "${MPEGS2MOVE[@]}" "${i/slide_grp/group}")
 done
 for i in "${!FILES[@]}"; do
-    # do not overwrite carousels if making them
+    # do not overwrite slideshows if making them
     if $SINGLE_SLIDESHOW \
      || { ${SLIDESHOW[i]} &&  [[ ${CAROUSEL[i]} != "carousel" ]] ; }; then 
         MPEGS2MOVE=( "${MPEGS2MOVE[@]}" "$WORK_DIR/${TSET_NUM}-$((i+1)).mpg")
@@ -5576,9 +5577,9 @@ if { $GROUPING || $SINGLE_SLIDESHOW ; } && $TITLESET_MODE; then
         done
     fi
 fi
-# -carousel joins the slides and can add audio (-bgaudio)
 echo
- 
+
+# animated slideshows join the slides and can add audio (-bgaudio)
 if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
     sstime1=$(date +%s)
 
@@ -5642,7 +5643,7 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
     # make a fifo to send raw yuv to, to be encoded by ffmpeg
     mkfifo "$WORK_DIR/enc.fifo"
     "${IMGENC_CMD[@]}" 2>/dev/null < "$WORK_DIR/enc.fifo" &
-    exec 3> "$WORK_DIR/enc.fifo"
+    #exec 3> "$WORK_DIR/enc.fifo"
 
     if [[ $EFFECT = "fade" ]]; then
         [[ $TV_STANDARD = "ntsc" ]] && fade_frames=15 || fade_frames=12
@@ -5676,7 +5677,7 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
             ((f==0)) && YUVCORRECT="cat"
             do_transitions fadein
             # encode transition frames
-            cat "$WORK_DIR"/animenu/*.ppm |
+            cat "$WORK_DIR"/animenu/*.ppm 2>/dev/null |
             "${TOYUV_FADE_CMD[@]}" 2>/dev/null | $YUVCORRECT 2>/dev/null
             rm -f "$WORK_DIR"/animenu/*.ppm
         fi
@@ -5707,10 +5708,10 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
         # encode transition frames
         if (($f == (${#MIX_IN[@]} - 1) )); then
             fadein_cmd=(ppmtoy4m -v 0 -n 26 -A 10:11 -I p -r -S 420mpeg2)
-            cat "$WORK_DIR"/animenu/*.ppm | "${fadein_cmd[@]}" 2>/dev/null |
+            cat "$WORK_DIR"/animenu/*.ppm 2>/dev/null | "${fadein_cmd[@]}" 2>/dev/null |
             $YUVCORRECT 2> /dev/null
         else
-            cat "$WORK_DIR"/animenu/*.ppm |
+            cat "$WORK_DIR"/animenu/*.ppm 2>/dev/null|
             "${TOYUV_FADE_CMD[@]}" 2>/dev/null | $YUVCORRECT 2> /dev/null
         fi
         rm -f "$WORK_DIR"/animenu/*.ppm
@@ -5721,14 +5722,14 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
                 base_ppm=${MIX_IN[0]}
                 do_transitions crossfade
                 # encode transition frames
-                cat "$WORK_DIR"/animenu/*.ppm |
+                cat "$WORK_DIR"/animenu/*.ppm 2>/dev/null |
                 "${TOYUV_FADE_CMD[@]}" 2>/dev/null | $YUVCORRECT 2> /dev/null
                 rm -f "$WORK_DIR"/animenu/*.ppm
             fi
         fi
-    done >&3
+    done > "$WORK_DIR/enc.fifo"
     # close the pipe
-    exec 3>&-
+    #exec 3>&-
     sstime2=$(date +%s)
     enctime=$(( sstime2 - sstime1 ))
     enctime=$(format_seconds $enctime)
@@ -5819,7 +5820,7 @@ if $DO_CAROUSEL && $USE_DVD_SLIDESHOW; then
 fi
 # check bgvideo and showcase VIDEO for compliance ( if present ) #FIXME
 if [[ -n $BG_VIDEO ]]; then
-    # do not reencode carousel made in MK_CAROUSEL_MODE
+    # do not reencode animated slideshow made in MK_CAROUSEL_MODE
     if ! [[ $BG_VIDEO = $WORK_DIR/carousel-1.m2v ]]; then
         if ! idvid -isformat \
          ${TV_STANDARD}-${TARGET} "$BG_VIDEO" >/dev/null; then
@@ -5827,7 +5828,7 @@ if [[ -n $BG_VIDEO ]]; then
         fi
     fi
 elif [[ -n $SHOWCASE_VIDEO ]]; then
-    # do not reencode carousel made in MK_CAROUSEL_MODE
+    # do not reencode animated slideshow made in MK_CAROUSEL_MODE
     if ! [[ $SHOWCASE_VIDEO = $WORK_DIR/carousel-1.m2v ]]; then
         if ! $SWITCHED && ! $QUICK_MENU; then
             if ! idvid -isformat \
@@ -6680,8 +6681,8 @@ if $SUB_MENU; then
         SN_BTN_XY=${GEO_ARRAY[C]} # button dimensions
         NUM_CHAPTERS=${CHAPTERS[i]}
         yecho "Creating a transparent title PNG"
-        convert $QUALITY -size 620x300 xc:none -font "$MENU_FONT" \
-        -pointsize $MENU_FONTSIZE \
+        convert $QUALITY -size 620x300 xc:none -font "$SM_TITLE_FONT" \
+        -pointsize $SUBMENU_FONTSIZE \
         -fill "$SM_TITLE_COLOUR" -draw "gravity center text 2,2 \"${SM_TITLES[i]}\"" \
         -stroke "$SUBMENU_STROKE" -strokewidth 1 \
         -fill "$SM_TITLE_COLOUR" -stroke "$SUBMENU_STROKE" \
@@ -6798,10 +6799,10 @@ if $SUB_MENU; then
             for ((a=0; a<${CHAPTERS[i]}; a++)); do
                 ctitle="$WORK_DIR/${TSET_NUM}-${i}-chapter${a}.png"
                 ctitle_cmd=(convert $QUALITY -size 620x300 xc:none -stroke '#101010' \
-                -font "$SM_CHAPTS_FONT" -pointsize $SM_CHAPTS_FONTSIZE \
+                -font "$CHAPTER_FONT" -pointsize $CHAPTER_FONTSIZE \
                 -fill '#101010'  -stroke '#101010' -gravity South \
                 -annotate +0+0 "${CHAPTER_TITLES[a+I]}" \
-                -fill $TITLES_COLOUR -stroke "$SUBMENU_STROKE" -strokewidth 1 \
+                -fill $CHAPTER_COLOUR -stroke "$CHAPTER_STROKE" -strokewidth 1 \
                 -annotate +1+1 "${CHAPTER_TITLES[a+I]}" miff:-)
                 "${ctitle_cmd[@]}" | convert $QUALITY - -trim +repage "$ctitle"
                 # make sure title fits
