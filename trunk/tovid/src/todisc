@@ -2183,6 +2183,9 @@ while test $# -gt 0; do
                     usage_error "the argument for --menu-fade must be in
                     in seconds or HH:MM:SS format"
                 fi
+            else
+                # use the default menu-fade
+                transition_time=1
             fi
             MENU_FADE=:
             AUDIO_FADE=:
@@ -4756,7 +4759,7 @@ fi
 if [ $IMG_FMT = "jpg" ]; then
     EXPORT="-y jpg,null"
 elif [ $IMG_FMT = "png" ]; then
-    EXPORT="-y im -F png"
+    EXPORT="-y im -F png -w 04"
     QUALITY="-quality 01"
 fi
 
