@@ -42,13 +42,13 @@ def to_title(filename):
     return basename[0:firstdot]
 files = FileList('Video files', '-files', None,
     'Video files to include on the disc',
-    required=True)
+    )
 
 titles = TextList('Video titles', '-titles', None,
     'Titles for each video.  Use \\n for a new line in a multi-line title.',
     pull=files, # -titles is updated when -files is updated
     filter=to_title, # strip pathname and extension from filenames
-    required=True)
+    )
 
 slideshow_tooltip='Image files for the slideshow.'
 
@@ -58,22 +58,97 @@ slideshow_filetypes.extend(filetypes.match_types('image'))
 
 tab_list = []
 main_panel = VPanel('slideshow',
-        Text('Title', '-titles', '',
-        'Title for this slideshow.'),
-        FileList('images for slideshow one', '-slideshow', None,
+    Tabs(
+        VPanel('General Options',
+            Text('Title', '-titles', '',
+            'Title for this slideshow.'),
+            FileList('images for slideshow one', '-slides', None,
             slideshow_tooltip, filetypes=slideshow_filetypes),
-        Panel('Slideshow options',
-            Flag('Animated "carousel" slide menu', '-carousel', False,
-            'Create an animaged menu of the slides.  The argument (spin box) is '
-            'the number of slides to use for the carousel. (Default: all).  '
-            'These options are for single slideshow only',
-            enables=Number('     # of slides', '', 0,
-                    '', 0, 50)
+                FlagGroup("", 'exclusive',
+                    Flag('Animated with transitions', '', True,
+                        'This is the default if you are not doing a static '
+                        'menu.  The slides transition one to the next, using'
+                        'the type of transition selected in "Transition type"'),
+                    Flag('Static with "Polaroid stack" menu', '-static', False,
+                        'This puts the  slides  onto  the  background in '
+                        '"random" locations with random rotations, making it '
+                        'look like a scattered stack of photos. This is the '
+                        'same as setting -static on the Main tab.'),
+                ),
+                Number('Numbert of slides shown on menu', '-menu-slides-total',
+                0, 'Use this many slides for making the slideshow menu. '
+                'The default is to use all the slides given.',
+                0, 100, toggles=True),
+            Panel('Animated slideshow options',
+                HPanel('',
+                    Choice('Transition type', '-slide-transition', 'crossfade',
+                        'The type of fade transition between slides in an '
+                        'animated slideshow menu.  Be sure  the  menu  length '
+                        'is long enough to support the 1 second transitions '
+                        'between the slides.  The length is determined by  '
+                        '1)  the length  of  the -bgaudio AUDIO  2) the '
+                        'length given with -menu-length DURATiON.  '
+                        '* See Menu tab for menu length option *.',
+                        'crossfade|fade'),
+                        HPanel('Border and frame',
+                            Number('Slide border', '-slide-border', 0,
+                            'Use a border around animated slideshow slides '
+                            '(default: 100 pixels).',
+                            0, 200),
+                            Number('Slide frame', '-slide-frame', 0,
+                            'Use a frame around the animated slideshow slides '
+                            '(default: 12).',
+                            0, 20),
+                        ),
+                    ),
+                    FlagGroup('Use slideshow as background or showcase video ',
+                        'exclusive',
+                        Flag("Background", '-background-slideshow',
+                        False, 'This option is only for multiple slideshows, '
+                        '(or mixed video and slideshow menus). It uses the '
+                        'animated slideshow as the background video'),
+                        Flag("Showcase", '-showcase-slideshow',
+                        False, 'This option is only for multiple slideshows, '
+                        '(or mixed video and slideshow menus).  It uses the '
+                        'animated slideshow as the showcase video',),
+                    ),
+                ),
             ),
-            Flag('Fade in transitions', '-carousel-fade', False,
-            'Fade trasition between slides in the "slide menu mix"'),
+        VPanel('Advanced options',
+            Panel('Denoising options',
+                HPanel('',
+                    FileList('Slides to "bin"', '-slides-to-bin', None,
+                    '"Binning" resizes the image to 640x480 using a "box" '
+                    'filter, which reduces "signal to noise ratio"'
+                    'Use in conjuction with the next option for burring, '
+                    'to achieve stronger denoising',
+                    filetypes=slideshow_filetypes),
+                    FileList('Slides to blur', '-slides-to-blur', None,
+                    'Blurring the image can reduce noise such as "ringing" '
+                    'effects.  Use values between 0x0.1 and 0x0.9 for best '
+                    'results.  Enter a single value or 1 value for each slide '
+                    'to be blurred.', filetypes=slideshow_filetypes),
+                ),
             ),
-        )
+            Flag('Use dvd-slideshow program', '-use-dvd-slideshow', False,
+                'Use the "dvd-slideshow" program to make the animated '
+                'slideshow. You need of course to have installed this program '
+                'to use this. You only need this for special effects like the '
+                '"Ken Burns effect" otherwise todisc can do the job well '
+                'and fast on its own. The optional file is the dvd-slideshow '
+                'file you would need for non-todisc options, otherwise '
+                'todisc will make the file for you. Using this option will '
+                'void many todisc slideshow options.',
+                enables=Filename('', '', '', '',  'load',
+                'Select the dvd-author configuration file..'),
+            ),
+            FileList('Menu slide thumbs', '-slideshow-menu-thumbs', None,
+            'Slides for the menu thumbnail.  For multiple slideshows or '
+            'mixed slideshows/videos only.', filetypes=slideshow_filetypes),
+        ),
+    ),
+)
+        
 
 tab_list.append(main_panel)
 
@@ -81,9 +156,9 @@ for num in range(2,  13):
     title_str = 'images for slideshow ' + str(num)
     next_panel = VPanel(str(num),
         Text('Title', '-titles', '',
-        'Title for this slideshow.'),
-        FileList(title_str, '-slideshow', None,
-            slideshow_tooltip, filetypes=slideshow_filetypes),
+        'Title for this slideshow. Leave empty if doing a single slideshow.'),
+        FileList(title_str, '-slides', None,
+            slideshow_tooltip),
         )
     tab_list.append(next_panel)
 
@@ -200,6 +275,11 @@ menu = Panel("Menu",
         ' will fade in first, then the title '
         '(and mist if called for), then the menu thumbs and/or titles.  '
         'The fadeout is in reverse order.'),
+    Number('Transition to menu', '-transition-to-menu', 10,
+        'Create a transition to the menu.  The number argument is the length '
+        'of the transition, which is the background video.  A background '
+        'video  is required (-background VIDEO).',
+        0, 120, toggles=True),
     Color('Quick menu background color', '-pad-color', 'white',
         'Color of background for -quick-menu menus.  ' 
         'Default if not enabled: ntsc color-safe black (#161514).  '
@@ -308,10 +388,37 @@ submenus = Panel("Submenus",
         List('', '-submenu-titles', '',
             'Space-separated list of quoted submenu titles.  '
             'Use \\n for a new line in a multi-line title.'),
-        Color('Font color', '-submenu-title-color', '#CDC0B0',
-            'The font color to use for submenu title(s)', toggles=True),
-        Color('Stroke color', '-submenu-stroke-color', 'black',
-            'The color for the submenu font outline (stroke).', toggles=True),
+            Number('Font size', '-submenu-fontsize', 30,
+                'The font size to use for the submenu title',
+            0, 80, toggles=True),
+            Font('Font', '-submenu-font', 'Helvetica',
+                'The font to use for the Submenu menu titles', toggles=True),
+        HPanel('',
+            Color('Font color', '-submenu-title-color', '#CDC0B0',
+                'The font color to use for submenu title(s)', toggles=True),
+            Color('Stroke color', '-submenu-stroke', '#101010',
+                'The color for the submenu font outline (stroke).', toggles=True),
+        ),
+    ),
+    VPanel('Chapter titles',
+        List('', '-chapter-titles', '',
+            'Space-separated list of quoted chapter titles.  '
+            'Number of titles given must equal the total  number of '
+            'chapters  for  all videos.  I.E. if you use -chapters '
+            '4 6 8 , you must give 18 chapter titles, in the same order that '
+            'the videos were passed in.'),
+        Number('Font size', '-chapter-fontsize', 14,
+            'The font size to use for the Submenu title',
+            0, 80, toggles=True),
+        Font('Font', '-chapter-font', 'Helvetica',
+            'The font to use for the chapter titles', toggles=True),
+        HPanel('',
+            Color('Font color', '-chapter-color', '#101010',
+            'The color for the chapters font.', toggles=True),
+            Color('Stroke color', '-chapter-stroke',
+            '#101010', 'The color for the chapters font outline (stroke).',
+            toggles=True),
+        ),
     ),
     HPanel('Audio',
         FileList('File(s)', '-submenu-audio', None,
@@ -341,7 +448,7 @@ text = Panel("Text/Font",
                 0, 80, toggles=True),
             Color('Color', '-title-color', '#CDC0B0',
                 'The font color to use for the menu title', toggles=True),
-            Color('Stroke color', '-stroke-color', 'gray',
+            Color('Stroke color', '-title-stroke', 'gray',
                 'Outline color for the main menu font.', toggles=True,
                 initialcolor="gray"),
             HPanel('Title position',
@@ -351,7 +458,8 @@ text = Panel("Text/Font",
                 Text('Offset', '-menu-title-offset', '+0+50',
                     'Menu title position as an offset (in pixels) from '
                     'the N/S/E/W "Title position".  Use +X+Y syntax.  This '
-                    'value is applied to the video *before* is is scaled.', toggles=True),
+                    'value is applied to the video *before* is is scaled.',
+                    toggles=True),
             ),
             Panel("Mist",
                 Flag('Text mist', '-text-mist', False,
@@ -364,14 +472,17 @@ text = Panel("Text/Font",
                 ),
             ),
         VPanel('Video title(s)',
-            Font('Font', '-thumb-font', 'Helvetica',
+            Font('Font', '-titles-font', 'Helvetica',
                 'The font to use for the video titles', toggles=True),
-            Number('Font size', '-thumb-fontsize', 12,
+            Number('Font size', '-titles-fontsize', 12,
                 'The font size to use for the video titles.  '
                 'Default size varies depending on options chosen.',
                 0, 80, toggles=True),
-            Color('Color', '-thumb-text-color', '#C6C6C6',
+            Color('Color', '-titles-color', '#CDC0B0',
                 'The font color to use for the video titles', toggles=True),
+            Color('Stroke Color', '-titles-stroke', '#CDC0B0',
+                'The color to use for the video titles font outline (stroke)',
+                toggles=True),
             Choice('Video(s) title alignment', '-showcase-titles-align', 'none',
                 'This is a showcase style only option.  Default is to center '
                 'the text above the thumbnails.  This option will align the '
@@ -403,9 +514,10 @@ authoring = Panel("Authoring",
         List('Group videos', '', '',
             'For each video group, you will need to use an integer for the '
             'number of the 1st video in the group, as well as the path to the '
-            'videos that will be grouped with it (quoted).  Each group will need to be '
-            'preceeded with the "-group" switch.  Example: -group 2 "2b.mpg" '
-            '"2c.mpg" -group 4 "4b.mpg" "4c.mpg". See man todisc for details.'),
+            'videos that will be grouped with it (quoted).  Each group will '
+            'need to be preceeded with the "-group" switch.  Example: '
+            '-group 2 "2b.mpg" "2c.mpg" -group 4 "4b.mpg" "4c.mpg". '
+            'See man todisc for details.'),
         Flag('Chain videos together', '-chain-videos', False,
             'This option will "chain" videos so they play sequentially '
             'until the last, which will return to the menu.  You can also '
@@ -452,9 +564,11 @@ authoring = Panel("Authoring",
             'Leave at "none" to let todisc pick the most appropriate style. ',
             'rect|line|text|text-rect|none'),
         Color('Highlight color', '-highlight-color', '#266CAE',
-            'Color for the menu buttons the dvd remote uses to navigate.', toggles=True),
+            'Color for the menu buttons the dvd remote uses to navigate.',
+            toggles=True),
         Color('Selection color', '-select-color', '"#DE7F7C"',
-            'Color for the menu buttons the dvd remote uses to select.', toggles=True),
+            'Color for the menu buttons the dvd remote uses to select.',
+            toggles=True),
         Number('Outlinewidth for spumux', '-outlinewidth', 14,
             'For spumux outlinewidth variable.  This option helps if spumux '
             'fails because of a large gap between button words or characters.',
