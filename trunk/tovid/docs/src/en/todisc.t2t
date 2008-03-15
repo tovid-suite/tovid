@@ -421,8 +421,8 @@ See the other slideshow options in the SLIDESHOWS options section.
     (**-slides-to-bin**) or blurring (**-slides-to-blur**).
 
 : **-slide-frame** WIDTH [12]
-    Frame the slides for the carousel menu.  The default without using an
-    argument is 12.  See also **-slide-frame-color**
+    Frame the slides for the animated slideshow menu.  The default width
+    without using an  argument is 12.  See also **-slide-frame-color**
 
 : **-slide-frame-color** | **-slide-frame-colour**
     The color of the slide frame if passing **-slide-frame**.  The default if
@@ -728,6 +728,10 @@ See the other slideshow options in the SLIDESHOWS options section.
     This option will create a button on the main menu that will allow going
     right to the 1st title and playing all videos in succession before
     returning to the main menu.
+: **-videos-are-chapters**
+    A button will be made on the main menu for each video, which you can use as
+    a chapter button.  Selecting any video will play them all in order
+    starting with the selected one.
 : **-chain-videos** NUM | N1-NN
     Without options this will chain all videos together so they play
     sequentially without returning to the main menu, except for the last, which
