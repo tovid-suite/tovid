@@ -527,6 +527,10 @@ authoring = Panel("Authoring",
         Flag('"Play all" button', '-playall', False,
             'Create a "Play All" button that jumps to the 1st title and plays '
             'all the videos in sucession before returning to the main menu.'),
+        Flag('Each video is a chapter', '-videos-are-chapters', False,
+            'A button will be made on the main menu for each video which You '
+            'can use as a chapter button .  Selecting any video will play '
+            'them all in order starting with the selected one.' ),
         Number('Pause', '-loop', 10,
             'Pause in seconds at end of menu.  Or leave this value at "10" '
             'and use the "Indefinate pause item below.',
@@ -566,7 +570,7 @@ authoring = Panel("Authoring",
         Color('Highlight color', '-highlight-color', '#266CAE',
             'Color for the menu buttons the dvd remote uses to navigate.',
             toggles=True),
-        Color('Selection color', '-select-color', '"#DE7F7C"',
+        Color('Selection color', '-select-color', '#DE7F7C',
             'Color for the menu buttons the dvd remote uses to select.',
             toggles=True),
         Number('Outlinewidth for spumux', '-outlinewidth', 14,
