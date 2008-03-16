@@ -655,7 +655,7 @@ check_compliance()
             # replace the symlink with actual mpeg
             OUTFILE="$WORK_DIR/${TSET_NUM}-$((i+1)).mpg"
         fi
-        spin "Checking files for compliance..." $SPINNER
+        spin "Checking files for compliance...    File $((i+1))"
         # if file tested as an image when we were verifying input files 
         if [[ $is_image = "yes" ]]; then
             $group_set && grp_use_image2mpeg2[i]="yes" || use_image2mpeg2[i]="yes"
@@ -3396,6 +3396,8 @@ fi
 if $MENUBUTTONS_ARE_CHAPTS; then
     if [[ -n ${grouping[@]} ]]; then
         usage_error "-videos-are-chapters can not be used with -group"
+    elif $SUB_MENU; then
+        usage_error "-videos-are-chapters can not be used with submenus"
     else
          CHAPTERS=1 && PLAYALL=false
     fi
@@ -5467,7 +5469,7 @@ if $DO_MENU && [[ $TARGET = "dvd" ]] && ! $SINGLE_SLIDESHOW; then #FIXME ?
       "$PREVIEW_IMG" "$PREVIEW_IMG"
 fi
 if $DISPLAY_PREVIEW; then
-    display -title "todisc preview - close window to continue" "$PREVIEW_IMG"
+    display -title "Preview: (not in aspect) - close window to continue" "$PREVIEW_IMG"
     confirm_preview
 fi
 # copy the template back if using $MENU_FADE
@@ -7212,7 +7214,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                 $(bc_math "115 + ${CURVE_ARRAY[p]}")" )x30"
             fi
             if $FEATHER; then
-                spin "\rProcessing frame $p "
+                spin "\rProcessing frame $((p+1)) "
                 if $SHOWCASE; then
                     if $THUMBS_3D; then
                         if [ "$THUMB_SHAPE" != "normal" ]; then # normal has $RAISE
@@ -7252,7 +7254,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                     if [[ "$SC_FRAMESTYLE" = "glass" && -z ${ROTATE_ARRAY[@]} ]]; then
                         :
                     else
-                        spin "\rProcessing frame $p  "
+                        spin "\rProcessing frame $((p+1))  "
                         if $THUMBS_3D; then
                             "${IM_CMD02[@]}" miff:- | "${IM_CMD5[@]}"
                         else
@@ -7260,7 +7262,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                         fi
                     fi
                 else # not showcase or feather
-                    spin "\rProcessing frame $p "
+                    spin "\rProcessing frame $((p+1)) "
                     if $THUMBS_3D; then
                         "${IM_CMD02[@]}" miff:- |"${IM_CMD04[@]}" miff:- |
                         "${IM_CMD4b[@]}" miff:- | "${IM_CMD5[@]}"
