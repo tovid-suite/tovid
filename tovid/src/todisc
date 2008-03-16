@@ -655,7 +655,7 @@ check_compliance()
             # replace the symlink with actual mpeg
             OUTFILE="$WORK_DIR/${TSET_NUM}-$((i+1)).mpg"
         fi
-        spin "Checking files for compliance...    File $((i+1))"
+        spin "Checking compliance of file $((i+1))"
         # if file tested as an image when we were verifying input files 
         if [[ $is_image = "yes" ]]; then
             $group_set && grp_use_image2mpeg2[i]="yes" || use_image2mpeg2[i]="yes"
@@ -3940,6 +3940,11 @@ elif [ $TARGET = "svcd" ]; then
         FRAME_RATE=25
     fi
 fi
+if [[ $TV_STANDARD = "ntsc" ]]; then
+    YUV_FR=30000:1001
+else
+    YUV_FR=25:1
+fi
 THUMB_SIZE=${GEO_ARRAY[NUM_FILES]}
 if $SHOWCASE; then
     if [ -z ${BLUR/.*} ]; then
@@ -5661,8 +5666,10 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
         fade_incr=$(bc -l <<< "scale=2; 100 / $fade_frames") >&2
     fi
 
-    TOYUV_FADE_CMD=(ppmtoy4m -v 0 -n $fade_frames -A 10:11 -I p -r -S 420mpeg2)
-    TOYUV_STILLS_CMD=(ppmtoy4m -n $MIX_VFRAMES -A 10:11 -I p -S 420mpeg2 -r)
+    TOYUV_FADE_CMD=(ppmtoy4m -v 0 -n $fade_frames -A 10:11 -F $YUV_FR -I p \
+    -S 420mpeg2 -r)
+    TOYUV_STILLS_CMD=(ppmtoy4m -n $MIX_VFRAMES -A 10:11 -F $YUV_FR -I p \
+    -S 420mpeg2 -r )
     # transitions
     echo >&2
 
@@ -6853,13 +6860,17 @@ if $SUB_MENU; then
         fi
 
         if $ANI_SUB_MENU; then
-            TOYUV_CMD=(ppmtoy4m -v 0 -n 300 -A 10:11 -I p -r -S 420mpeg2)
-            IMGENC_CMD=(ffmpeg -f yuv4mpegpipe -i - -an -r $FRAME_RATE \
-            -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/menu$i.m2v")
+            TOYUV_CMD=(ppmtoy4m -v 0 -n 300 -A 10:11 -F $YUV_FR -I p \
+            -S 420mpeg2 -r)
+            IMGENC_CMD=(ffmpeg -f yuv4mpegpipe -r $FRAME_RATE -i - -an \
+            -r $FRAME_RATE -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS \
+            -y "$WORK_DIR/menu$i.m2v")
             echo
-            yecho "Running ${TOYUV_CMD[@]} < $WORK_DIR/enc.fifo | ${IMGENC_CMD[@]}" | fold -bs
+            yecho "Running ${TOYUV_CMD[@]} < $WORK_DIR/enc.fifo |
+            ${IMGENC_CMD[@]}" | fold -bs
             mkfifo "$WORK_DIR/enc.fifo" 2>/dev/null
-            ("${TOYUV_CMD[@]}" < "$WORK_DIR/enc.fifo" | "${IMGENC_CMD[@]}" 2>/dev/null)  &
+            ("${TOYUV_CMD[@]}" < "$WORK_DIR/enc.fifo" |
+            "${IMGENC_CMD[@]}" 2>/dev/null)  &
             echo
             echo "Encoding 300 frames for "${IN_FILES[i]}"" >&2
 
@@ -6867,9 +6878,11 @@ if $SUB_MENU; then
                 spin "\rProcessing frame $a  " >&2
                 for ((b=0; b<${CHAPTERS[i]}; b++)); do
                     IMGS=( "${IMGS[@]}" $(find $WORK_DIR/animenu/$b \
-                    -name \*.$SM_IMG_FMT| sort 2>/dev/null | head -n $a | sed -n -e "$a p") )
+                    -name \*.$SM_IMG_FMT| sort 2>/dev/null | head -n $a |
+                    sed -n -e "$a p") )
                 done
-                IM_CMD=(convert "${IMGS[@]}" -bordercolor '#6E6E6E' -border 3x3 miff:-)
+                IM_CMD=(convert "${IMGS[@]}" -bordercolor '#6E6E6E' \
+                -border 3x3 miff:-)
                 IM_CMD1=(montage - -tile ${TILE_ARRAY[C]} \
                 -geometry ${GEO_ARRAY[C]}+5+5 -bordercolor '#101010' \
                 -mattecolor '#101010' -background '#101010' miff:-)
@@ -6918,10 +6931,13 @@ if $SUB_MENU; then
             yecho "Converting chapter montage of "${IN_FILES[i]}" to m2v video format"
             IMG_STREAM_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p \
             "${JPEG2YUV_OPTS[@]}" -L 1 -b 1  -j "${PICS_IN[@]}")
-            ENC_CMD1=(ffmpeg   -f yuv4mpegpipe -i - -r $FRAME_RATE -s $VIDSIZE \
-            -tvstd $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/menu$i.m2v")
-            echo "Running "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}""|format_output | tee -a "$LOG_FILE" 2>&1
-            if ! "${IMG_STREAM_CMD1[@]}" | "${ENC_CMD1[@]}" 2>&1|strings >> "$LOG_FILE"; then
+            ENC_CMD1=(ffmpeg   -f yuv4mpegpipe -r $FRAME_RATE -i - \
+            -r $FRAME_RATE -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS \
+            -y "$WORK_DIR/menu$i.m2v")
+            echo "Running ${IMG_STREAM_CMD1[@]} | ${ENC_CMD1[@]}"|
+            format_output | tee -a "$LOG_FILE" 2>&1
+            if ! "${IMG_STREAM_CMD1[@]}" |
+            "${ENC_CMD1[@]}" 2>&1|strings >> "$LOG_FILE"; then
                 runtime_error
             fi
         fi
@@ -7293,7 +7309,8 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
 fi
 if ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then
     yecho
-    yecho "Making $FRAMES final montage frames compositing onto background with title"
+    yecho "Making $FRAMES final montage frames compositing onto
+    background with title"
     yecho
 fi
 if $STATIC; then
@@ -7314,12 +7331,16 @@ if ! $QUICK_MENU && $DO_MENU; then
     "Converting images to video and encoding to $TARGET-compliant format" >&2
     # convert images to video stream and encode to dvd compliant m2v
     [[ -n $PPM_LOOPS ]] && PPM_FRAMES=$PPM_LOOPS || PPM_FRAMES=$FRAMES
-    TOYUV_CMD=(ppmtoy4m -v 0 -n $PPM_FRAMES -A 10:11 -I p -r -S 420mpeg2)
-    IMGENC_CMD=(ffmpeg $INSIZE $PIPE_FORMAT -i - -an -r $FRAME_RATE \
-    -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS -y $WORK_DIR/intro.m2v)
-    yecho "Running ${TOYUV_CMD[@]} < $WORK_DIR/enc.fifo | ${IMGENC_CMD[@]}" | fold -bs
+    TOYUV_CMD=(ppmtoy4m -v 0 -n $PPM_FRAMES -A 10:11 -I p -F $YUV_FR \
+    -S 420mpeg2 -r)
+    IMGENC_CMD=(ffmpeg $INSIZE -r $FRAME_RATE $PIPE_FORMAT -i - -an \
+    -r $FRAME_RATE -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS \
+    -y $WORK_DIR/intro.m2v)
+    yecho "Running ${TOYUV_CMD[@]} < $WORK_DIR/enc.fifo | ${IMGENC_CMD[@]}" |
+    fold -bs
     mkfifo "$WORK_DIR/enc.fifo" 2>/dev/null
-    ( "${TOYUV_CMD[@]}" < "$WORK_DIR/enc.fifo" | "${IMGENC_CMD[@]}" 2>/dev/null)  &
+    ( "${TOYUV_CMD[@]}" < "$WORK_DIR/enc.fifo" |
+    "${IMGENC_CMD[@]}" 2>/dev/null)  &
 fi
 if $MENU_FADE && ! $STATIC && ! $QUICK_MENU; then
     . todisc-fade-routine
@@ -7339,8 +7360,8 @@ if $MENU_FADE && ! $STATIC && ! $QUICK_MENU; then
     done
     for ((frame=BG_FADEOUT_STARTFRAME; frame<BG_FADEOUT_ENDFRAME; frame++)); do
         D=`get_bg_opacity`
-        composite -dissolve $D $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.jpg \
-        $WORK_DIR/bg/$(($frame + 1)).jpg
+        composite -dissolve $D $WORK_DIR/bg/$(($frame + 1)).jpg \
+        $WORK_DIR/black.jpg $WORK_DIR/bg/$(($frame + 1)).jpg
     done
     for ((frame=0; frame<ANIMENU_ENDFRAME; frame++)); do
         # set dissolve vars from todisc-fade-routine functions
@@ -7352,12 +7373,14 @@ if $MENU_FADE && ! $STATIC && ! $QUICK_MENU; then
         spin  "\rProcessing frame $(($frame + 1))  " >&2
 
         for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
-            ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  -name $(printf "%06d%s"  $((frame + 1)) .$IMG_FMT) ) )
+            ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  \
+            -name $(printf "%06d%s"  $((frame + 1)) .$IMG_FMT) ) )
         done
         if $SHOWCASE; then
             if ! $TEXTMENU; then
                 for ((i=0; i<${#ANI_PICS[@]}; i++)); do
-                    sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} "${ANI_PICS[i]}")
+                    sc_cmd=( ${sc_cmd[@]} ${SHOWCASE_THUMB_PAGES[i]} \
+                    "${ANI_PICS[i]}")
                 done
             fi
             if $SC_THUMB; then
@@ -7669,7 +7692,7 @@ if $DO_MENU; then
             -ao pcm:waveheader:file="$WORK_DIR/intro.wav" -endpos $MENU_ATIME  "$BG_AUDIO")
         else
             BGAUDIO_CMD=(ffmpeg -y  -async 1 -ss $BG_AUDIO_SEEK $BG_AUDIO_LENGTH \
-            -i "$BG_AUDIO" -r 29.970 -ar 48000 -acodec pcm_s16le \
+            -i "$BG_AUDIO" -r $FRAME_RATE -ar 48000 -acodec pcm_s16le \
             $WORK_DIR/intro.wav)
         fi
         yecho
