@@ -67,7 +67,7 @@ main_panel = VPanel('slideshow',
                 FlagGroup("", 'exclusive',
                     Flag('Animated with transitions', '', True,
                         'This is the default if you are not doing a static '
-                        'menu.  The slides transition one to the next, using'
+                        'menu.  The slides transition one to the next, using '
                         'the type of transition selected in "Transition type"'),
                     Flag('Static with "Polaroid stack" menu', '-static', False,
                         'This puts the  slides  onto  the  background in '
@@ -75,7 +75,7 @@ main_panel = VPanel('slideshow',
                         'look like a scattered stack of photos. This is the '
                         'same as setting -static on the Main tab.'),
                 ),
-                Number('Numbert of slides shown on menu', '-menu-slides-total',
+                Number('Numbert of slides shown on menu', '-menu-slide-total',
                 0, 'Use this many slides for making the slideshow menu. '
                 'The default is to use all the slides given.',
                 0, 100, toggles=True),
@@ -90,15 +90,15 @@ main_panel = VPanel('slideshow',
                         'length given with -menu-length DURATiON.  '
                         '* See Menu tab for menu length option *.',
                         'crossfade|fade'),
-                        HPanel('Border and frame',
-                            Number('Slide border', '-slide-border', 0,
+                        HPanel('',
+                            Number('Slide border', '-slide-border', 100,
                             'Use a border around animated slideshow slides '
                             '(default: 100 pixels).',
-                            0, 200),
-                            Number('Slide frame', '-slide-frame', 0,
+                            0, 200, toggles=True),
+                            Number('Slide frame', '-slide-frame', 12,
                             'Use a frame around the animated slideshow slides '
                             '(default: 12).',
-                            0, 20),
+                            0, 20, toggles=True),
                         ),
                     ),
                     FlagGroup('Use slideshow as background or showcase video ',
@@ -113,6 +113,10 @@ main_panel = VPanel('slideshow',
                         'animated slideshow as the showcase video',),
                     ),
                 ),
+                Flag('No reminder prompt for backing up files',
+                '-no-confirm-backup', False, 'Todisc prompts you for a "yes" '
+                ' to show you have taken backup precations.  This option '
+                'disables that prompt.'),
             ),
         VPanel('Advanced options',
             Panel('Denoising options',
