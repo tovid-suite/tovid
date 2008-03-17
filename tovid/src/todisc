@@ -2890,7 +2890,8 @@ if [[ -n "$SM_TITLES" ]]; then
     fi
 fi
 # slideshows are animated by default like rest of todisc
-if  $SINGLE_SLIDESHOW ]] && ! $STATIC; then
+#if  $SINGLE_SLIDESHOW && ! $STATIC; then
+if ((sshows>=1)) && ! $STATIC; then
     DO_CAROUSEL=:
     is_carousel=:
     SLIDE_FADE=:
@@ -7342,7 +7343,7 @@ if ! $QUICK_MENU && $DO_MENU; then
     ( "${TOYUV_CMD[@]}" < "$WORK_DIR/enc.fifo" |
     "${IMGENC_CMD[@]}" 2>/dev/null)  &
 fi
-if $MENU_FADE && ! $STATIC && ! $QUICK_MENU; then
+if $MENU_FADE && ! $QUICK_MENU; then
     . todisc-fade-routine
     yecho >&2
     yecho "Creating background fade" >&2
