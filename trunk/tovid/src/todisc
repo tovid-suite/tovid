@@ -1220,7 +1220,7 @@ EOF
                 usage_error "Do not use -menu-fade with -static menu"
             fi
         fi
-        # making a slideshow without carousel is static - no -quick-menu
+        # making a static slideshow is incompatible with -quick-menu
         if $GREP -quick-menu <<< "$options" \
          && $GREP -slides <<< "$options" \
          && $GREP -static <<< "$options"; then
@@ -1838,7 +1838,8 @@ trim3sides()
 
     convert - \
     -gravity West -background white -splice 1x0  -background black -splice 1x0  \
-    -trim +repage -chop 1x0 "$2"
+    -trim +repage -chop 1x0 -write /tmp/$(date +%s).png "$2"
+    # FIXME DEBUG
 }
 
 transition_slide()
@@ -4352,40 +4353,45 @@ if $DO_MENU; then
         for ((i=0; i<=NUM_FILES; i++)); do
             spin "Working on video title $((i+1)) "
             # if user needs -undercolor, make sure it contrasts the text colour
-            get_contrasting_color $TITLES_COLOUR
+            #get_contrasting_color $TITLES_COLOUR
             THUMB_TITLE_CMD=(convert -size 620x300 xc:none \
             -font "$TITLES_FONT" -pointsize $TITLES_FONTSIZE \
             -fill '#101010'  -stroke '#101010' -gravity South \
             -annotate +0+0 "${TITLES[i]}" \
             -fill $TITLES_COLOUR  -stroke "$TITLES_STROKE" -strokewidth 1 \
-            -annotate +1+1 "${TITLES[i]}" miff:-)
+            -annotate +1+1 "${TITLES[i]}")
             if [[ $BUTTON_STYLE = "text" ]]; then
-                TRIM_CMD=(trim3sides -  "$WORK_DIR/thumb_title${i}.png")
+                TRIM_CMD=(convert - -trim "$WORK_DIR/thumb_title${i}.png")
             else
                 TRIM_CMD=(convert - -trim +repage $TEXT_BORDER \
                 "$WORK_DIR/thumb_title${i}.png")
             fi
-            "${THUMB_TITLE_CMD[@]}" | "${TRIM_CMD[@]}"
+            # make thumb title, only repage and border if not 'text button'
+            "${THUMB_TITLE_CMD[@]}" miff:- | "${TRIM_CMD[@]}"
+            # now get offset before repaging, for the spumux button crop later
+            if [[ $BUTTON_STYLE = "text" ]]; then
+                titles_offset[i]=$(identify -format %O  "$WORK_DIR/thumb_title${i}.png")
+                titles_dim[i]=$(identify -format %wx%h "$WORK_DIR/thumb_title${i}.png")
+                convert "$WORK_DIR/thumb_title${i}.png" +repage \
+                "$WORK_DIR/thumb_title${i}.png"
+            fi
 
             # make spumux buttons now if 'text' button style
             if [[ $BUTTON_STYLE = "text" ]]; then
                 for btn in ${HLIGHT_CLR/\#} ${SELECT_CLR/\#}; do
-                    btncmd=(convert -depth 2 -background none -fill none \
-                    -size 620x300 xc:none -font "$TITLES_FONT" \
+                    btncmd=(convert +antialias -depth 2 -background none \
+                    -fill none -size 620x300 xc:none -font "$TITLES_FONT" \
                     -pointsize $TITLES_FONTSIZE -gravity South \
-                    -fill "#${btn}" -annotate +1+1 "${TITLES[i]}" \
+                    -fill "#${btn}" -stroke none \
+                    -annotate +1+1 "${TITLES[i]}" \
                     "$WORK_DIR/thumb_title${i}-${btn}.png")
                     "${btncmd[@]}"
                 done
                 # cutout the button from the shape of thumb_title*.png
-                #if $SHOWCASE; then
                 for clr in ${HLIGHT_CLR/\#} ${SELECT_CLR/\#}; do
                     btn="$WORK_DIR/thumb_title${i}-${clr}.png"
-                    #composite -compose Src  -gravity South "$btn" \
-                    #"$WORK_DIR/thumb_title${i}.png" "$btn"
-                    convert +antialias -colors 3 \
-                    "$WORK_DIR/thumb_title${i}.png" -gravity South \
-                    "$btn" -compose Src -composite "$btn"
+                    convert "$btn" +antialias -depth 2 \
+                    -crop ${titles_dim[i]}${titles_offset[i]} +repage "$btn"
                 done
                 # rename textmenu buttons, - they don't need further processing
                 if $SHOWCASE; then
@@ -4403,7 +4409,6 @@ if $DO_MENU; then
                 at your fontsize.  Use a smaller font with -titles-fontsize"
             fi
         done
-        echo
     fi
 
     if $SHOWCASE; then
