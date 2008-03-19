@@ -1753,16 +1753,16 @@ get_contrasting_color()
 {
     ucolor=$(convert -size 20x20 xc:$1 -fx 1-intensity -threshold 50% \
     -depth 8 txt:- 2>/dev/null |  awk '{ field = $NF }; END{ print field }')
+    echo ucolor is $ucolor
     if [[ -z $ucolor ]]; then
-        UNDERCOLOUR="none"
+        CONTRAST_CLR="none"
     else
         if [[ $ucolor = "black" ]]; then
-            UNDERCOLOUR="000000"
+            CONTRAST_CLR="#101010"
         else
-            UNDERCOLOUR="C1C1C1"
+            CONTRAST_CLR="gray"
         fi
     fi
-    UNDER_CLR="-undercolor #${UNDERCOLOUR}90"
 }
 
 # see http://www.imagemagick.org/Usage/photos/#binning
@@ -4350,15 +4350,16 @@ if $DO_MENU; then
 
     # make thumb titles
     if ! $SINGLE_SLIDESHOW; then
+        get_contrasting_color $TITLES_COLOUR
         for ((i=0; i<=NUM_FILES; i++)); do
             spin "Working on video title $((i+1)) "
             # if user needs -undercolor, make sure it contrasts the text colour
             #get_contrasting_color $TITLES_COLOUR
-            THUMB_TITLE_CMD=(convert -size 620x300 xc:none \
+            THUMB_TITLE_CMD=(convert -size 620x300 xc:none -gravity South \
             -font "$TITLES_FONT" -pointsize $TITLES_FONTSIZE \
-            -fill '#101010'  -stroke '#101010' -gravity South \
+            -fill $CONTRAST_CLR  -stroke $TITLES_STROKE \
             -annotate +0+0 "${TITLES[i]}" \
-            -fill $TITLES_COLOUR  -stroke "$TITLES_STROKE" -strokewidth 1 \
+            -fill $TITLES_COLOUR  -stroke none \
             -annotate +1+1 "${TITLES[i]}")
             if [[ $BUTTON_STYLE = "text" ]]; then
                 TRIM_CMD=(convert - -trim "$WORK_DIR/thumb_title${i}.png")
