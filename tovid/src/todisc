@@ -1753,7 +1753,6 @@ get_contrasting_color()
 {
     ucolor=$(convert -size 20x20 xc:$1 -fx 1-intensity -threshold 50% \
     -depth 8 txt:- 2>/dev/null |  awk '{ field = $NF }; END{ print field }')
-    echo ucolor is $ucolor
     if [[ -z $ucolor ]]; then
         CONTRAST_CLR="none"
     else
@@ -3919,6 +3918,7 @@ if  [ $TARGET = "dvd" ]; then
     elif [ $TV_STANDARD = "pal" ]; then
         GEO_ARRAY=("${NTSC_1333_DVD[@]}") #TODO make sizes array for pal
         VIDSIZE="720x576"
+        TILE_ARRAY=("${TILE_1333[@]}")
         FRAME_RATE=25
     fi
 elif [ $TARGET = "svcd" ]; then
@@ -4999,12 +4999,12 @@ EOF
         -mattecolor none -background none -bordercolor none \
         "$WORK_DIR/thumb_title${t}-${SELECT_CLR/\#}.png" \
         -gravity South -geometry +0+5 -compose over -composite)
-        BUTTON_CMD2=(convert +antialias -size $THUMB_SIZE xc:none \
+        BUTTON_CMD2=(convert +antialias -depth 2 -size $THUMB_SIZE xc:none \
         -mattecolor none -background none -bordercolor none \
         "$WORK_DIR/thumb_title${t}-${HLIGHT_CLR/\#}.png" \
         -gravity South -geometry +0+5 -compose over -composite)
-        BUTTON_CMD3=(convert - -background none $THUMB_ROTATE \
-        -resize ${THUMB_SIZE}! )
+        BUTTON_CMD3=(convert - +antialias -depth 2 -background none \
+        $THUMB_ROTATE -resize ${THUMB_SIZE}! )
         BUTTON_CMD4=(convert -size "${THUMB_SIZE}+5+5"  xc:none -fill none \
         +antialias -stroke "$SELECT_CLR" -strokewidth 4 -draw @draw_file \
         -colors 3 $THUMB_ROTATE -resize ${THUMB_SIZE}! \
@@ -5136,10 +5136,10 @@ EOF
                 sc_highlight_cmd=(${sc_highlight_cmd[@]} ${THUMBTITLES_ARRAY[i]} \
                  "${highlight_buttons[i]}")
             done
-            convert +antialias -depth 2 -depth 2 -quality 01 \
+            convert +antialias -depth 2 -quality 01 \
             -size $VIDSIZE xc:none -background none \
             ${sc_highlight_cmd[@]} -mosaic "$WORK_DIR/Highlight.png"
-            convert +antialias -depth 2 -depth 2 -quality 01 \
+            convert +antialias -depth 2 -quality 01 \
             -size $VIDSIZE xc:none -background none \
             ${sc_select_cmd[@]} -mosaic "$WORK_DIR/Select.png"
         else
@@ -5147,16 +5147,17 @@ EOF
             $(find $WORK_DIR/ -name 00\*select.png |sort) )
             highlight_buttons=( ${highlight_buttons[@]} \
             $(find $WORK_DIR/ -name 00\*highlight.png |sort) )
-            montage -background none ${select_buttons[@]} \
+            montage -colors 3 -depth 2 -background none ${select_buttons[@]} \
             -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}${MTG_GEO} \
             -bordercolor none -mattecolor none miff:- |
-            convert  +antialias -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY \
-            -geometry +${XGEO}+${YGEO} -composite -depth 2 "$WORK_DIR/Select.png"
-            montage -background none ${highlight_buttons[@]} \
+            convert  +antialias -depth 2 -size $VIDSIZE xc:none \
+            - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
+            -composite  "$WORK_DIR/Select.png"
+            montage -colors 3 -depth 2 -background none ${highlight_buttons[@]} \
             -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}${MTG_GEO} \
             -bordercolor none -mattecolor none miff:- |
-            convert +antialias -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY \
-            -geometry +${XGEO}+${YGEO} -composite -depth 2 "$WORK_DIR/Highlight.png"
+            convert +antialias -depth 2 -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY \
+            -geometry +${XGEO}+${YGEO} -composite "$WORK_DIR/Highlight.png"
             BUTTON_DIM=$(get_image_dim "$WORK_DIR/000000-highlight.png")
             convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
             fake_montage=( $WORK_DIR/000000-highlight.png \
@@ -5164,13 +5165,13 @@ EOF
         fi
         if $SHOWCASE; then
             if [[ $BUTTON_STYLE = *text* ]]; then
-                convert  -size $VIDSIZE xc:none -background none \
-                ${THUMBTITLES_ARRAY[MENU_NUM-1]} \
+                convert +antialias -depth 2 -size $VIDSIZE xc:none \
+                -background none ${THUMBTITLES_ARRAY[MENU_NUM-1]} \
                 $WORK_DIR/$(printf "%06d%s" $((MENU_NUM-1)) -highlight.png) \
                 -mosaic "$WORK_DIR/fake_montage.png"
             fi
         else
-            montage -background none ${fake_montage[@]} \
+            montage -colors 3 -depth 2 -background none ${fake_montage[@]} \
             -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}${MTG_GEO} \
             -bordercolor none -mattecolor transparent miff:- |
             convert  -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY \
@@ -5277,8 +5278,8 @@ if [[ $TARGET = "dvd" ]]; then
     # this reduces colours so spumux is happy
     for button in Select Highlight; do
         num_colours=$(identify -ping -format %k "$WORK_DIR/${button}.png")
-        if ((num_colours > 2)); then
-            # echo "number of colors is $num_colours" #DEBUG
+        if ((num_colours > 3)); then
+            echo "Button has $num_colours colors: using brute force to reduce"
             mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
         fi
         echo
