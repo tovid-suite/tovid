@@ -1837,8 +1837,7 @@ trim3sides()
 
     convert - \
     -gravity West -background white -splice 1x0  -background black -splice 1x0  \
-    -trim +repage -chop 1x0 -write /tmp/$(date +%s).png "$2"
-    # FIXME DEBUG
+    -trim +repage -chop 1x0 "$2"
 }
 
 transition_slide()
@@ -2618,7 +2617,8 @@ while test $# -gt 0; do
             ;;
         "-chapter-fontsize" )
             shift
-            CHAPTER_FONTSIZE="$1"
+            get_listargs "$@"
+            CHAPTER_FONTSIZE=( ${ARGS_ARRAY[@]} )
             ;;
         "-seek" )
             shift
@@ -3550,6 +3550,19 @@ if [ ${#SEEK_VAL[@]} -eq 1 ]; then
         SEEK[i]="-ss ${SEEK_VAL[i]}" # create seek value for each video
     done   
 fi
+# if only one chapters fontsize, then use for all videos
+if ((${#CHAPTER_FONTSIZE[@]} == 1 )); then
+    for ((i=0; i<=NUM_FILES; i++)); do
+        CHAPTER_FONTSIZE[i]=${CHAPTER_FONTSIZE[0]}
+    done   
+fi
+# make sure if more than one chapter fontsize, they equal the number of videos
+if ! $VMGM_ONLY && [[ -n $CHAPTER_FONTSIZE ]] \
+&& ((${#FILES[@]} != ${#CHAPTER_FONTSIZE[@]})); then
+    usage_error "Please give the same number of seek times as videos,
+    or just use one value.  You gave ${#FILES[@]} video files
+    and ${#CHAPTER_FONTSIZE[@]} seek times"
+fi
 # allow -seek to have HH:MM:SS format passed
 for ((i=0; i<=NUM_FILES; i++)); do
     if [[ "${SEEK_VAL[i]}" = *:* ]]; then
@@ -3557,12 +3570,12 @@ for ((i=0; i<=NUM_FILES; i++)); do
     fi
 done
 # make sure if more than one seek value, they equal the number of video
-if ! $VMGM_ONLY &&  [[ ${#FILES[@]} -ne ${#SEEK_VAL[@]} &&  ${#SEEK_VAL[@]} -ne 1 ]]; then
+if ! $VMGM_ONLY &&  ((${#FILES[@]} != ${#SEEK_VAL[@]})); then
     usage_error "Please give the same number of seek times as videos, or just use one value.
     You gave ${#FILES[@]} video files and ${#SEEK_VAL[@]} seek times"
 fi
-# make sure if more than one -menu-length value, they equal the number of video
-if ! $VMGM_ONLY &&  [[ ${#FILES[@]} -ne ${#MENU_LEN[@]} &&  ${#MENU_LEN[@]} -ne 1 ]]; then
+# if more than 1 -menu-length value passed, total must be same as videos total
+if ! $VMGM_ONLY &&  ((${#FILES[@]} != ${#MENU_LEN[@]})); then
     usage_error "Please give the same number of -menu-length times as
     videos, or just use one value.  You gave ${#FILES[@]} video files
     and ${#MENU_LEN[@]} -menu-length times"
@@ -3577,8 +3590,8 @@ else
     if test ${#FILES[@]} -gt 36; then
         # SVCD without titles or without a menu can support 97 videos/slides
         if [[ $TARGET = "svcd" ]]; then
-            if { $SINGLE_SLIDESHOW || ! $MONTAGE_MENU ; }; then
-                [[ ${#FILES[@]} -gt 97 ]] && usage_message \
+            if $SINGLE_SLIDESHOW; then
+                (( ${#FILES[@]} > 97 )) && usage_error \
                 "Sorry, a maximum of 97 files are supported
                 You gave ${#FILES[@]} files as input.  Please use titlesets
                 for this many files."
@@ -3730,21 +3743,23 @@ if $DO_MENU; then
     test $TARGET = "dvd" && : ${MENU_FONTSIZE:="30"}
     test $TARGET = "svcd" && : ${MENU_FONTSIZE:="26"}
     # Thumbnail title font size
-    if test -z "$TITLES_FONTSIZE"; then
     # if not -titles-fontsize N passed, use default, based on the following:
-        if $SHOWCASE; then
-            if test "$NUM_FILES" -lt 2; then
-                TITLES_FONTSIZE=20
-            elif  test "$NUM_FILES" -eq 2; then
-                TITLES_FONTSIZE=18
-            elif  test "$NUM_FILES" -ge 3; then
-                TITLES_FONTSIZE=16
-            fi
-        else
-            TITLES_FONTSIZE=14
+    if test -z "$TITLES_FONTSIZE"; then
+        if test "$NUM_FILES" -lt 2; then
+            TITLES_FONTSIZE=20
+        elif  test "$NUM_FILES" -eq 2; then
+            TITLES_FONTSIZE=18
+        elif  test "$NUM_FILES" -ge 3; then
+            TITLES_FONTSIZE=16
         fi
     fi
-    test -z $CHAPTER_FONTSIZE && CHAPTER_FONTSIZE=14
+    if test -z $CHAPTER_FONTSIZE; then
+        for c in ${!IN_FILES[@]}; do
+            ((${CHAPTERS[c]} <= 2)) && CHAPTER_FONTSIZE[c]=20
+            ((${CHAPTERS[c]} == 2)) && CHAPTER_FONTSIZE[c]=18
+            ((${CHAPTERS[c]} >= 2)) && CHAPTER_FONTSIZE[c]=16
+        done
+    fi
     test -z $SUBMENU_FONTSIZE && SUBMENU_FONTSIZE=$MENU_FONTSIZE
 
     # See if "Helvetica" or "helvetica" are available as default fonts
@@ -4329,11 +4344,13 @@ if $DO_MENU; then
             TITLE_STROKE=gray
         fi
     fi
+    # FIXME set both to none DEBUG
     if [[ -z $TITLES_STROKE ]]; then
         if [[ -z "$BG_PIC" && -z "$BG_VIDEO" ]]; then
             TITLES_STROKE=none
         else
-            TITLES_STROKE=gray
+            TITLES_STROKE=none
+            #TITLES_STROKE=gray
         fi
     fi
 
@@ -4388,7 +4405,7 @@ if $DO_MENU; then
                     "$WORK_DIR/thumb_title${i}-${btn}.png")
                     "${btncmd[@]}"
                 done
-                # cutout the button from the shape of thumb_title*.png
+                # crop the button to the same size as the thumb_title*.png
                 for clr in ${HLIGHT_CLR/\#} ${SELECT_CLR/\#}; do
                     btn="$WORK_DIR/thumb_title${i}-${clr}.png"
                     convert "$btn" +antialias -depth 2 \
@@ -4922,9 +4939,9 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         IM_CMD3b=(convert - "$WORK_DIR/thumb_title${i}.png" -gravity south \
         -geometry +0+5 -compose over -composite)
         IM_CMD4=(convert "${PICS[i]}" -background none -bordercolor "#444744" \
-        $THUMB_FRAME "$WORK_DIR/thumb_title${i}.png" -gravity south \
-        -geometry +0+5 -compose over -composite)
-        IM_CMD5=(convert - $THUMB_ROTATE -resize ${THUMB_SIZE}! "${PICS[i]}")
+        "$WORK_DIR/thumb_title${i}.png" -gravity south \
+        -geometry +0+5 -compose over -composite )
+        IM_CMD5=(convert - $THUMB_FRAME $THUMB_ROTATE -resize ${THUMB_SIZE}! "${PICS[i]}" )
         if $FEATHER; then
             if $SHOWCASE; then
                 "${IM_CMD0[@]}" miff:- | "${IM_CMD5[@]}"
@@ -5280,7 +5297,7 @@ if [[ $TARGET = "dvd" ]]; then
         num_colours=$(identify -ping -format %k "$WORK_DIR/${button}.png")
         if ((num_colours > 3)); then
             echo "Button has $num_colours colors: using brute force to reduce"
-            mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
+            #mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
         fi
         echo
     done
@@ -5690,7 +5707,6 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
                 overlay_ppm="$WORK_DIR/$((f+1)).ppm"
             fi
         fi
-#        spin "Encoding and fading  ${base_ppm##*/}" >&2
         # encode fadein frames - keep yuv header
         if [[ $EFFECT = "fade" ]]; then
             spin "Doing fadein for slide $((f+1))" >&2
@@ -6203,14 +6219,14 @@ rectangle 2,2 $GEO
 EOF
 )  > $WORK_DIR/draw_file${s}
 
-        convert -size ${GEO_ARRAY[C]}+5+5 xc:none -fill none \
-        +antialias -stroke "$SELECT_CLR" -strokewidth 4 -draw @draw_file${s} \
-        -colors 3 "$WORK_DIR/Submenu${s}_Selectx1.png"
-        convert -size ${GEO_ARRAY[C]}+5+5 xc:none -fill none \
-        +antialias -stroke "$HLIGHT_CLR" -strokewidth 4 -draw @draw_file${s} \
-        -colors 3 "$WORK_DIR/Submenu${s}_Highlightx1.png"
+        convert +antialias -colors 3 -depth 2 -size ${GEO_ARRAY[C]}+5+5 \
+        xc:none -fill none -stroke "$SELECT_CLR" -strokewidth 4 \
+        -draw @draw_file${s} "$WORK_DIR/Submenu${s}_Selectx1.png"
+        convert +antialias -colors 3 -depth 2 -size ${GEO_ARRAY[C]}+5+5 \
+        xc:none -fill none -stroke "$HLIGHT_CLR" -strokewidth 4 \
+        -draw @draw_file${s} "$WORK_DIR/Submenu${s}_Highlightx1.png"
         for button in Select Highlight; do
-            montage -background none \
+            montage -colors 3 -background none \
             $(for ((i=0; i<=C; i++)); do
             echo $WORK_DIR/Submenu${s}_${button}x1.png;done) \
             -bordercolor none -mattecolor transparent \
@@ -6218,7 +6234,7 @@ EOF
             -geometry ${GEO_ARRAY[C]}+5+5 \
             -background none miff:- |
 
-            convert  -colors 3 -size $VIDSIZE xc:none  - \
+            convert +antialias -colors 3 -depth 2 -size $VIDSIZE xc:none  - \
             -gravity north -geometry +0+45  \
             -composite  $WORK_DIR/Submenu${s}_${button}.png
             num_colours=$(identify -ping -format %k \
@@ -6821,7 +6837,7 @@ if $SUB_MENU; then
             for ((a=0; a<${CHAPTERS[i]}; a++)); do
                 ctitle="$WORK_DIR/${TSET_NUM}-${i}-chapter${a}.png"
                 ctitle_cmd=(convert -size 620x300 xc:none -stroke '#101010' \
-                -font "$CHAPTER_FONT" -pointsize $CHAPTER_FONTSIZE \
+                -font "$CHAPTER_FONT" -pointsize ${CHAPTER_FONTSIZE[i]} \
                 -fill '#101010'  -stroke '#101010' -gravity South \
                 -annotate +0+0 "${CHAPTER_TITLES[a+I]}" \
                 -fill $CHAPTER_COLOUR -stroke "$CHAPTER_STROKE" -strokewidth 1 \
