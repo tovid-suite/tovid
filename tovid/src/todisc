@@ -84,7 +84,6 @@ BUTTON_STYLE="rect"
 MIST_COLOUR=white
 MIST_OPACITY=60
 TITLE_STROKE=""
-TITLES_STROKE=""
 SUBMENU_STROKE="none"
 BG_AUDIO=""
 BG_PIC=""
@@ -454,13 +453,14 @@ confirm_preview()
         echo "Color:"
         echo "    -title-color"
         echo "    -titles-color"
-        echo "If your titles are not clear enough or look washed out, "
-        echo "try setting -title-stroke and -titles-stroke "
-        echo "to the same color as used with -title-color or -titles-color."
         echo "Fonts:"
         echo "    -menu-font and -menu-fontsize"
         echo "    -titles-font and -titles-fontsize"
-        echo "(or reduce thumb title lengths)"
+        echo "If your titles are not clear enough or look washed out, "
+        echo "try a larger font, or setting -title-stroke and -titles-stroke "
+        echo "to an opposite contrasting color like white or black. "
+        echo "(If NTSC use '#EAEAEA' for white and '#101010' for black.) Or "
+        echo "set to the same color used with -title-color or -titles-color."
         echo "If you get black frames, then look at the -seek option"
         echo "For other fine-tuning options, see 'man todisc'."
         [ ! -z "$input" -a "$input" = "exit" ] && killall_instances
@@ -1737,18 +1737,9 @@ verify_infiles()
         fi
     done
 }
-# used to make text titles and buttons for 'text' style (showcase)
-get_title_cmd()
-{
-    [[ -n $1 ]] && title_out="$1" || title_out="miff:-"
-    THUMB_TITLE_CMD=(convert -size 500x100 xc:none \
-    -font "$TITLES_FONT" -pointsize $TITLES_FONTSIZE \
-    -fill $TITLE_FILL $UNDER_CLR -gravity South \
-    -annotate +0+0 "${TITLES[i]}"  "$title_out")
-}
 
 # contrasting 'undercolor' for -background from given font colour
-# usage: get_contrasting_colour COLOUR (rgb , named, or hex syntax) **UNUSED**
+# usage: get_contrasting_colour COLOUR (rgb , named, or hex syntax)
 get_contrasting_color()
 {
     ucolor=$(convert -size 20x20 xc:$1 -fx 1-intensity -threshold 50% \
@@ -1822,22 +1813,6 @@ mk_dvd_slideshow_conf()
     fadeout:1
 EOF
     ) | sed '/^$/d;s/^[ \t]*//' > "$WORK_DIR/dvd-slideshow.conf"
-}
-
-# this trims all sides of a image but the south edge
-trim3sides()
-{
-    convert "$1" \
-    -gravity South -background white -splice 0x1  -background black -splice 0x1 \
-    -trim  +repage -chop 0x1 miff:- |
-
-    convert - \
-    -gravity East -background white -splice 1x0  -background black -splice 1x0  \
-    -trim +repage -chop 1x0 miff:- |
-
-    convert - \
-    -gravity West -background white -splice 1x0  -background black -splice 1x0  \
-    -trim +repage -chop 1x0 "$2"
 }
 
 transition_slide()
@@ -3054,13 +3029,15 @@ if [[ -n $THUMB_SHAPE ]]; then
 fi
 if [[ -n ${ROTATE_ARRAY[@]} ]]; then
     if ! $SHOWCASE; then
-         if [[ $BUTTON_STYLE = "rect" ]]; then
-            BUTTON_STYLE="text-rect"
+         if [[ $BUTTON_STYLE = *rect* ]]; then
+            BUTTON_STYLE="line"
             if $USER_BSTYLE; then
-                echo "rect button style with rotated thumbs doesn't play well"
+                yecho
+                echo "The '*rect' button styles with rotated thumbs doesn't play well"
                 echo "with spumux buttons. Setting button style to "
-                echo "text-rect.  You may also use 'line' or 'text' style"
+                echo "'line'.  You may also use 'text' style"
                 echo "Ctrl-c now if you wish to exit and examine your options"
+                yecho
                 $WARN && sleep 10
             fi
         fi
@@ -4344,15 +4321,7 @@ if $DO_MENU; then
             TITLE_STROKE=gray
         fi
     fi
-    # FIXME set both to none DEBUG
-    if [[ -z $TITLES_STROKE ]]; then
-        if [[ -z "$BG_PIC" && -z "$BG_VIDEO" ]]; then
-            TITLES_STROKE=none
-        else
-            TITLES_STROKE=none
-            #TITLES_STROKE=gray
-        fi
-    fi
+    [[ -z $TITLES_STROKE ]] && TITLES_STROKE=none
 
     # make a title image
     #! [[ -z ${STR// /} || -z $STR ]] && TRIM_CMD="-trim +repage -blur 0x0.4 "
@@ -5034,16 +5003,18 @@ EOF
         -fill none -stroke "$SELECT_CLR" -strokewidth 4 -draw @draw_file \
         -colors 3 $THUMB_ROTATE -resize ${THUMB_SIZE}! \
         "$WORK_DIR/Select${t}.png")
-        BUTTON_CMD6b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
-        -stroke "$SELECT_CLR" -strokewidth 2 -draw @draw_file${t} \
-        -colors 3 "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)")
-        BUTTON_CMD7=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias \
-        -fill none -stroke "$HLIGHT_CLR" -strokewidth 4 -draw @draw_file \
-        -colors 3 $THUMB_ROTATE -resize ${THUMB_SIZE}! \
+        BUTTON_CMD6b=(convert +antialias -depth 2 -colors 3 \
+        -size ${TT_DIM[t]} xc:none -fill none -stroke "$SELECT_CLR" \
+        -strokewidth 2 -draw @draw_file${t} \
+        "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)")
+        BUTTON_CMD7=(convert +antialias -colors 3 -size ${THUMB_SIZE}+5+5 \
+        xc:none -fill none -stroke "$HLIGHT_CLR" -strokewidth 4 \
+        -draw @draw_file $THUMB_ROTATE -resize ${THUMB_SIZE}! \
         "$WORK_DIR/Highlight${t}.png")
-        BUTTON_CMD7b=(convert -size ${TT_DIM[t]} xc:none +antialias -fill none \
-        -stroke "$HLIGHT_CLR" -strokewidth 2 -draw @draw_file${t} \
-        -colors 3 "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)")
+        BUTTON_CMD7b=(convert +antialias -depth 2 -colors 3 \
+        -size ${TT_DIM[t]} xc:none -fill none -stroke "$HLIGHT_CLR" \
+        -strokewidth 2 -draw @draw_file${t} \
+        "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)")
 
         if [[ $BUTTON_STYLE = "text" ]] && ! $SHOWCASE; then
             if $FEATHER; then
@@ -5079,11 +5050,11 @@ EOF
                 [[ $BUTTON_STYLE = "line" ]] && butgeo=+0+0 || butgeo=+0+5
 
                 convert -size $BUTTON_SIZE xc:none "$WORK_DIR/blank.png"
-                convert $WORK_DIR/blank.png \
+                convert +antialias -depth 2 -colors 3 $WORK_DIR/blank.png \
                 "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)" -gravity south \
                 -geometry $butgeo -composite $THUMB_ROTATE -resize \
                 ${BUTTON_SIZE}! "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
-                convert $WORK_DIR/blank.png  \
+                convert +antialias -depth 2 -colors 3 $WORK_DIR/blank.png  \
                 "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)" \
                 -gravity south -geometry $butgeo -composite $THUMB_ROTATE \
                 -resize ${BUTTON_SIZE}! \
@@ -5164,17 +5135,19 @@ EOF
             $(find $WORK_DIR/ -name 00\*select.png |sort) )
             highlight_buttons=( ${highlight_buttons[@]} \
             $(find $WORK_DIR/ -name 00\*highlight.png |sort) )
-            montage -colors 3 -depth 2 -background none ${select_buttons[@]} \
-            -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}${MTG_GEO} \
-            -bordercolor none -mattecolor none miff:- |
-            convert  +antialias -depth 2 -size $VIDSIZE xc:none \
+            montage -colors 3 -depth 2 -colors 3 -background none \
+            ${select_buttons[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
+            -geometry ${THUMB_SIZE}${MTG_GEO} -bordercolor none \
+            -mattecolor none miff:- |
+            convert  +antialias -depth 2 -colors 3 -size $VIDSIZE xc:none \
             - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
             -composite  "$WORK_DIR/Select.png"
             montage -colors 3 -depth 2 -background none ${highlight_buttons[@]} \
             -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}${MTG_GEO} \
             -bordercolor none -mattecolor none miff:- |
-            convert +antialias -depth 2 -size $VIDSIZE xc:none - -gravity $BUTTON_GRAVITY \
-            -geometry +${XGEO}+${YGEO} -composite "$WORK_DIR/Highlight.png"
+            convert +antialias -depth 2 -colors 3 -size $VIDSIZE xc:none - \
+            -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} -composite \
+            "$WORK_DIR/Highlight.png"
             BUTTON_DIM=$(get_image_dim "$WORK_DIR/000000-highlight.png")
             convert -size $BUTTON_DIM xc:none -background none $WORK_DIR/empty-button.png
             fake_montage=( $WORK_DIR/000000-highlight.png \
@@ -5296,7 +5269,8 @@ if [[ $TARGET = "dvd" ]]; then
     for button in Select Highlight; do
         num_colours=$(identify -ping -format %k "$WORK_DIR/${button}.png")
         if ((num_colours > 3)); then
-            echo "Button has $num_colours colors: using brute force to reduce"
+            : # remove this whole test block if spumux is happy with all styles
+            #echo "Button has $num_colours colors: using brute force to reduce"
             #mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
         fi
         echo
