@@ -6587,7 +6587,7 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
     if $QUICK_NAV; then
         (( TSET_NUM == 1 )) && PREV=$TSET_TOT || PREV=$(( TSET_NUM - 1 ))
         (( TSET_NUM == TSET_TOT )) && NEXT=1 || NEXT=$(( TSET_NUM + 1))
-        (( TSET_NUM -eq 1 )) && Ind=$((TSET_TOT-1)) || Ind=$(( TSET_NUM - 2 ))
+        (( TSET_NUM == 1 )) && Ind=$((TSET_TOT-1)) || Ind=$(( TSET_NUM - 2 ))
     fi
     if $SINGLE_SLIDESHOW; then
         echo -e "        <button name=\"1\">jump title 1;</button>"
