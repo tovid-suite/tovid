@@ -76,10 +76,10 @@ MENU_TITLE="My Video Collection"
 STATIC=false
 SUB_MENU=false
 ANI_SUB_MENU=false
-TITLE_COLOUR="#EAEAEA"
-SM_TITLE_COLOUR="#EAEAEA"
-THUMB_BG_COLOUR=white
-TITLES_COLOUR=""
+TITLE_CLR="#EAEAEA"
+SM_TITLE_CLR="#EAEAEA"
+THUMB_BG_CLR=white
+TITLES_CLR=""
 BUTTON_STYLE="rect"
 MIST_COLOUR=white
 MIST_OPACITY=60
@@ -198,8 +198,8 @@ USER_AUDIO_FADE=false
 BURN=false
 BURN_DEVICE="/dev/dvdrw"
 QUICK_MENU=false
-BG_COLOUR=101010
-SUBMENU_BG_COLOUR=101010
+BG_CLR=101010
+SUBMENU_BG_CLR=101010
 QM_PREVIEW=false
 USER_CHAPTERS=false
 QUICKMENU_IS_SHOWCASE=false
@@ -223,7 +223,7 @@ USE_FFMPEG=:
 USE_DVD_SLIDESHOW=false
 SLIDE_BLUR_OPT="0x0.4"
 USERS_BACKGROUND=false
-SFRAME_COLOUR="#EAEAEA"
+SFRAME_CLR="#EAEAEA"
 EFFECT="crossfade"
 num_bgpics=0
 num_scpics=0
@@ -463,13 +463,12 @@ confirm_preview()
         echo "Fonts:"
         echo "    -menu-font and -menu-fontsize"
         echo "    -titles-font and -titles-fontsize"
-        echo "If your titles are not clear enough or look washed out, "
-        echo "try a larger font, or setting -title-stroke and -titles-stroke "
-        echo "to an opposite contrasting color like white or black. "
-        echo "(If NTSC use '#EAEAEA' for white and '#101010' for black.) Or "
-        echo "set to the same color used with -title-color or -titles-color."
-        echo "If you get black frames, then look at the -seek option"
+        echo "If your titles are not clear enough or look washed out,"
+        echo "try a larger font, or setting -title-stroke and -titles-stroke"
+        echo "to a contrasting color.  Or set the strokes to the same color"
+        echo "as your titles.  For black frames look at the -seek option."
         echo "For other fine-tuning options, see 'man todisc'."
+        echo
         [ ! -z "$input" -a "$input" = "exit" ] && killall_instances
         exit 0
     fi
@@ -507,7 +506,7 @@ call_makemenu()
     for ((i=0; i<${#TITLES[@]}; i++)); do
         MAKEMENU="$MAKEMENU \"${TITLES[i]}\""
     done
-    MAKEMENU="$MAKEMENU -textcolor \"$TITLE_COLOUR\""
+    MAKEMENU="$MAKEMENU -textcolor \"$TITLE_CLR\""
     test -n "$BG_PIC" && MAKEMENU="$MAKEMENU -background \"$BG_PIC\""
     test -n "$MENU_FONT" && MAKEMENU="$MAKEMENU -font \"$MENU_FONT\""
     test -n "$MENU_FONTSIZE" && \
@@ -1544,7 +1543,7 @@ quick_menu()
         PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 $qm_seek \
         -t "$QM_MENU_TIME" -i "$QUICK_MENU_FILE" -s $QM_TMP_FRAMESIZE \
         -acodec copy $TOPPAD $BOTTOMPAD $LEFTPAD $RIGHTPAD \
-        -r $FRAME_RATE -b 15000k -padcolor $BG_COLOUR \
+        -r $FRAME_RATE -b 15000k -padcolor $BG_CLR \
         -y  "$WORK_DIR/quick_tmp.avi")
         yecho
         yecho "Running ${PAD_CMD[@]}"|fold -bs
@@ -1780,6 +1779,20 @@ get_contrasting_color()
     fi
 }
 
+# get safe NTSC colour
+get_safe_colour()
+{
+    unset SAFE_CLR
+    case $1 in
+        '#ffffff'|'#FFFFFF'|white) SAFE_CLR='#EAEAEA' && SUB_CLRS+=( "${1}:${SAFE_CLR}" );;
+        '#000000'|black) SAFE_CLR='#101010' && SUB_CLRS+=( "${1}:${SAFE_CLR}" );;
+        '#FF0000'|'#ff0000'|red) SAFE_CLR='#EB2D2D' && SUB_CLRS+=( "${1}:${SAFE_CLR}" );;
+        '#FFFF00'|'#ffff00'|yellow) SAFE_CLR='#EBEB2D' && SUB_CLRS+=( "${1}:${SAFE_CLR}" );;
+        '#0000FF'|'#0000ff'|blue) SAFE_CLR='#2D2DEB' && SUB_CLRS+=( "${1}:${SAFE_CLR}" );;
+        *) return 1
+    esac
+}
+
 # see http://www.imagemagick.org/Usage/photos/#binning
 # the function is modified from a script by Walter Dnes with thanks
 get_binning_cmd()
@@ -1885,7 +1898,7 @@ border_and_frame()
 {
     SLIDE_IN="$1"
     SLIDE_OUT="$2"
-    convert  -size 640x480 "$SLIDE_IN" -mattecolor $SFRAME_COLOUR \
+    convert  -size 640x480 "$SLIDE_IN" -mattecolor $SFRAME_CLR \
     -thumbnail ${tmbnail_size}\> $SLIDE_FRAME $SLD_BG +swap -gravity center \
     -composite "$SLIDE_OUT"
 }
@@ -2332,7 +2345,7 @@ while test $# -gt 0; do
         "-slide-frame-color" | "-slide-frame-colour" )
             opt=$1
             shift
-            [[ -n $1 ]] && SFRAME_COLOUR="$1" ||
+            [[ -n $1 ]] && SFRAME_CLR="$1" ||
              usage_error "$opt takes an argument - the ${opt/*-} for the frame"
             ;;
         "-chain-videos" )
@@ -2438,7 +2451,7 @@ while test $# -gt 0; do
             ;;
         "-title-colour" | "-title-color" )
             shift
-            TITLE_COLOUR="$1"
+            TITLE_CLR="$1"
             ;;
         "-submenu-font" )
             shift
@@ -2450,7 +2463,7 @@ while test $# -gt 0; do
             ;;
         "-submenu-title-colour" | "-submenu-title-color" )
             shift
-            SM_TITLE_COLOUR="$1"
+            SM_TITLE_CLR="$1"
             ;;
         "-title-stroke" )
             shift
@@ -2474,7 +2487,7 @@ while test $# -gt 0; do
             ;;
         "-titles-colour" | "-titles-color" )
             shift
-            TITLES_COLOUR="$1"
+            TITLES_CLR="$1"
             ;;
         "-highlight-colour" | "-highlight-color" )
             shift
@@ -2508,10 +2521,10 @@ while test $# -gt 0; do
             get_listargs "$@"
             thumb_bg_colour=${ARGS_ARRAY[0]}
             if [[ -n $thumb_bg_colour ]]; then
-                THUMB_BG_COLOUR=$thumb_bg_colour
+                THUMB_BG_CLR=$thumb_bg_colour
             else
                 # a hack to address a current lack in metagui for todiscgui
-                THUMB_BG_COLOUR="none"
+                THUMB_BG_CLR="none"
             fi
             ;;
         "-opacity" )
@@ -2772,13 +2785,13 @@ while test $# -gt 0; do
             ;;
         "-bg-colour" | "-bg-color" )
             shift
-            BG_COLOUR="$1"
-            BG_COLOUR=${BG_COLOUR/\#/} # in case user passed #ffffff syntax
+            BG_CLR="$1"
+            BG_CLR=${BG_CLR/\#/} # in case user passed #ffffff syntax
             ;;
         "-submenu-bg-colour" | "-submenu-bg-color" )
             shift
-            SUBMENU_BG_COLOUR="$1"
-            SUBMENU_BG_COLOUR=${BG_COLOUR/\#/} # in case #ffffff syntax passed
+            SUBMENU_BG_CLR="$1"
+            SUBMENU_BG_CLR=${BG_CLR/\#/} # in case #ffffff syntax passed
             ;;
         -car* )
             usage_error "$1: No such option.  Please see 'man todisc' ?"
@@ -2793,19 +2806,6 @@ done
 # get script pid so we can kill the parent if doing recursive todisc's
 TODISC_PIDS="$TODISC_PIDS $$"
 
-# make sure user used colour-safe colours if doing NTSC (incomplete)
-if [[ $TV_STANDARD = "ntsc" ]]; then
-    ALL_COLOURS="$SFRAME_COLOUR $TITLE_COLOUR $SM_TITLE_COLOUR $TITLE_STROKE \
-    $SUBMENU_STROKE $CHAPTER_STROKE $TITLES_COLOUR $HLIGHT_CLR $SELECT_CLR \
-    $BG_COLOUR $TITLES_STROKE $SUBMENU_BG_COLOUR"
-    if egrep -q -w 'white|black|red|yellow|blue' <<< "$ALL_COLOURS" ||
-    egrep -q 'ffffff|FFFFFF|000000|FF0000|ff0000|FFFF00|ffff00' \
-                                            <<< "$ALL_COLOURS"; then
-        usage_error "Do not use pure white,black,red, or yellow as a color if
-        doing a NTSC menu.  The color-safe equivalents are:  white: '#EAEAEA',
-        black: '#101010', red: '#EB2D2D', blue: '#2D2DEB', yellow: '#EBEB2D'"
-    fi
-fi
 # make sure dvd-slideshow is installed if user passed -use-dvd-slideshow
 $USE_DVD_SLIDESHOW && assert_dep dvd-slideshow \
 "The program dvd-slideshow was not found - you can get it from
@@ -3241,9 +3241,37 @@ echo "You are using the following locale settings:" >> "$LOG_FILE"
 locale >>  "$LOG_FILE" 2>&1
 # if no bg supplied, use template.png so we can add a frame (-quick-menu only)
 
+# check that NTSC menu uses safe colours
+if [[ $TV_STANDARD = "ntsc" ]]; then
+    get_safe_colour $SFRAME_CLR && FRAME_CLR=$SAFE_CLR
+    get_safe_colour $TITLE_CLR && TITLE_CLR=$SAFE_CLR
+    get_safe_colour $SM_TITLE_CLR && SM_TITLE_CLR=$SAFE_CLR
+    get_safe_colour $TITLE_STROKE && TITLE_STROKE=$SAFE_CLR
+    get_safe_colour $SUBMENU_STROKE && SUBMENU_STROKE=$SAFE_CLR
+    get_safe_colour $CHAPTER_STROKE && CHAPTER_STROKE=$SAFE_CLR
+    get_safe_colour $TITLES_CLR && TITLES_CLR=$SAFE_CLR
+    get_safe_colour $HLIGHT_CLR && HLIGHT_CLR=$SAFE_CLR
+    get_safe_colour $SELECT_CLR && SELECT_CLR=$SAFE_CLR
+    get_safe_colour $BG_CLR && BG_CLR=$SAFE_CLR
+    get_safe_colour $TITLES_STROKE && TITLES_STROKE=$SAFE_CLR
+    get_safe_colour $SUBMENU_BG_CLR && SUBMENU_BG_CLR=$SAFE_CLR
+    echo
+    if [[ -n ${SUB_CLRS[@]} ]]; then
+        echo "*** Note: ***"
+        echo "Some of the colors you passed in are not NTSC color safe. "
+        echo "The following substitutions were made for you:"
+        for i in ${!SUB_CLRS[@]}; do
+            echo "${SUB_CLRS[i]/:*} ===>  ${SUB_CLRS[i]/*:}"
+        done
+        echo "*************"
+        echo
+        $WARN && sleep 5
+    fi
+fi
+
 if [[ -z $BACKGROUND ]]; then
     BACKGROUND="$WORK_DIR/bg.png"
-    convert  -size $VIDSIZE! xc:'#'$BG_COLOUR $BACKGROUND
+    convert  -size $VIDSIZE! xc:'#'$BG_CLR $BACKGROUND
 fi 
 # check file type of background file and assign to BG_VIDEO or BG_IMAGE
 if [[ -n $BACKGROUND ]]; then
@@ -4179,7 +4207,7 @@ if [[ "$SC_FRAMESTYLE" = "glass" && -n "$SHOWCASE_VIDEO" ]] ; then
     unset SC_FRAME
 fi
 if $SHOWCASE; then
-    THUMB_BG_COLOUR="none"   # mist backgrounds look a bit funny with showcase
+    THUMB_BG_CLR="none"   # mist backgrounds look a bit funny with showcase
 fi
 # easier to have non transparent showcase use the transparent block
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
@@ -4247,7 +4275,7 @@ if [ -z "$BG_PIC" ]; then
     echo
     echo "Creating a black background"
     BG_PIC="$WORK_DIR/pics/template.png"
-    $QUICK_MENU && template_colour="none" || template_colour='#'$BG_COLOUR
+    $QUICK_MENU && template_colour="none" || template_colour='#'$BG_CLR
     convert  -resize $VIDSIZE! xc:$template_colour "$BG_PIC"
 else
     convert -resize $VIDSIZE! "$BG_PIC" "$WORK_DIR/pics/template.png"
@@ -4299,22 +4327,22 @@ fi
 
 if [[ -n "$THUMB_SHAPE" ]]; then
     # make a mask for the mist if called for
-    convert -size $THUMB_SIZE xc:none -fill  "$THUMB_BG_COLOUR" -stroke none \
+    convert -size $THUMB_SIZE xc:none -fill  "$THUMB_BG_CLR" -stroke none \
     -draw "rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2" "$WORK_DIR/feather_orig.png"
     convert "$WORK_DIR/feather_orig.png" -channel RGBA \
     -blur 0x60 "$WORK_DIR/feather_mask2.png"
 fi
-if [[ -z "$TITLES_COLOUR" ]]; then
+if [[ -z "$TITLES_CLR" ]]; then
     if $FEATHER && ! $SHOWCASE &&
-     [[ $THUMB_BG_COLOUR != "none" && $THUMB_SHAPE != "normal" ]] ; then
-        TITLES_COLOUR="#101010" # dark font for misted backgrounds
+     [[ $THUMB_BG_CLR != "none" && $THUMB_SHAPE != "normal" ]] ; then
+        TITLES_CLR="#101010" # dark font for misted backgrounds
     else
-        TITLES_COLOUR="#C6C6C6"
+        TITLES_CLR="#C6C6C6"
     fi
 fi
 # set submenu font colours to defaults if not passed in
 [[ -z $CHAPTER_STROKE ]] && CHAPTER_STROKE="$SUBMENU_STROKE"
-[[ -z $CHAPTER_COLOUR ]] && CHAPTER_COLOUR="$TITLES_COLOUR"
+[[ -z $CHAPTER_COLOUR ]] && CHAPTER_COLOUR="$TITLES_CLR"
 if test "$THUMB_SHAPE" = "normal"; then
     THUMB_MASK="$WORK_DIR/feather_mask.png"
     #yecho "Creating normal mask with the following command:"
@@ -4380,7 +4408,7 @@ if $DO_MENU; then
     TRIM_CMD="-trim +repage -blur 0x0.3"
     TITLE_CMD=(convert  -size 620x100 xc:none -font "$MENU_FONT" -pointsize \
     $MENU_FONTSIZE -fill '#101010' -stroke '#101010' -gravity center \
-    -annotate +0+0 "$MENU_TITLE" -fill "$TITLE_COLOUR" \
+    -annotate +0+0 "$MENU_TITLE" -fill "$TITLE_CLR" \
     -stroke "$TITLE_STROKE" -strokewidth 1 -annotate +1+1 "$MENU_TITLE")
     TITLE_CMD1=(convert - $TRIM_CMD  "$WORK_DIR/title_txt.png")
 
@@ -4388,16 +4416,16 @@ if $DO_MENU; then
 
     # make thumb titles
     if ! $SINGLE_SLIDESHOW; then
-        get_contrasting_color $TITLES_COLOUR
+        get_contrasting_color $TITLES_CLR
         for ((i=0; i<=NUM_FILES; i++)); do
             spin "Working on video title $((i+1)) "
             # if user needs -undercolor, make sure it contrasts the text colour
-            #get_contrasting_color $TITLES_COLOUR
+            #get_contrasting_color $TITLES_CLR
             THUMB_TITLE_CMD=(convert -size 620x300 xc:none -gravity South \
             -font "$TITLES_FONT" -pointsize $TITLES_FONTSIZE \
             -fill $CONTRAST_CLR  -stroke $TITLES_STROKE \
             -annotate +0+0 "${TITLES[i]}" \
-            -fill $TITLES_COLOUR  -stroke none \
+            -fill $TITLES_CLR  -stroke none \
             -annotate +1+1 "${TITLES[i]}")
             if [[ $BUTTON_STYLE = "text" ]]; then
                 TRIM_CMD=(convert - -trim "$WORK_DIR/thumb_title${i}.png")
@@ -6224,14 +6252,14 @@ if $DO_MENU; then
         if $QUICK_MENU; then
             convert  -size $VIDSIZE xc:none "$BG_PIC"
         else
-            convert  -size $VIDSIZE xc:'#'$BG_COLOUR "$BG_PIC"
+            convert  -size $VIDSIZE xc:'#'$BG_CLR "$BG_PIC"
         fi
-        convert  -size $VIDSIZE xc:'#'$SUBMENU_BG_COLOUR \
+        convert  -size $VIDSIZE xc:'#'$SUBMENU_BG_CLR \
           "$WORK_DIR/submenu_template.jpg"
     else
         convert -size $VIDSIZE "$BG_PIC" -resize $VIDSIZE! \
         "$WORK_DIR/pics/template.jpg"
-        convert -size $VIDSIZE xc:'#'$SUBMENU_BG_COLOUR \
+        convert -size $VIDSIZE xc:'#'$SUBMENU_BG_CLR \
           "$WORK_DIR/submenu_template.jpg"
     fi
     echo
@@ -6784,10 +6812,10 @@ if $SUB_MENU; then
         NUM_CHAPTERS=${CHAPTERS[i]}
         yecho "Creating a transparent title PNG"
         convert -size 620x300 xc:none -font "$SM_TITLE_FONT" \
-        -pointsize $SUBMENU_FONTSIZE -fill "$SM_TITLE_COLOUR" \
+        -pointsize $SUBMENU_FONTSIZE -fill "$SM_TITLE_CLR" \
         -draw "gravity center text 2,2 \"${SM_TITLES[i]}\"" \
         -stroke "$SUBMENU_STROKE" -strokewidth 1 \
-        -fill "$SM_TITLE_COLOUR" -stroke "$SUBMENU_STROKE" \
+        -fill "$SM_TITLE_CLR" -stroke "$SUBMENU_STROKE" \
         -draw "gravity center text 1,1 \"${SM_TITLES[i]}\"" miff:- |
         convert $QUALITY -trim +repage - -blur 0x0.3 \
         $WORK_DIR/title${i}_txt.png 2>/dev/null
@@ -6901,7 +6929,7 @@ if $SUB_MENU; then
         # make the chapter titles if called for
         if [[ -n  ${CHAPTER_TITLES[@]} ]]; then
             echo "Making Chapter titles for Video $((i+1))"
-            #get_contrasting_color $TITLES_COLOUR
+            #get_contrasting_color $TITLES_CLR
             for ((a=0; a<${CHAPTERS[i]}; a++)); do
                 ctitle="$WORK_DIR/${TSET_NUM}-${i}-chapter${a}.png"
                 ctitle_cmd=(convert -size 620x300 xc:none -stroke '#101010' \
