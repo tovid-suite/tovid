@@ -1182,7 +1182,7 @@ $([[ $INTRO ]] && echo -e "        g2=1; jump vmgm menu entry title;")
         </post>
 $(for ((i=1; i<=${#TITLESET_OPTS[@]}; i++)); do
     echo \
-    "        <button name=\"$i\">g5=1; g6=$i; jump titleset $i menu;</button>"
+    "        <button name=\"$i\">g1=1; g5=1; g6=$i; jump titleset $i menu;</button>"
 done)
 $(if $QUICK_NAV; then
     echo -e "        <button name=\"ActionLeft\">"
@@ -1248,15 +1248,15 @@ EOF
         fi
         # transition-to-menu incompatible with -quick-menu
         if $GREP -quick-menu <<< "$options" \
-         && $GREP -transition-to-menu <<< "$options"; then
-            usage_error "-quick-menu is incompatible with -transition-to-menu"
+         && $GREP -menu-fade <<< "$options"; then
+            usage_error "-quick-menu is incompatible with -menu-fade"
         fi
     done
     unset vmgmtitles
     get_menu_titles "${VMGM_OPTS[@]}"
-    if ((${#vmgmtitles[@]} != 0)) && ((${#vmgmtitles[@]} != count)); then
+    if [[ -n ${VMGM_OPTS[@]} ]] && ((${#vmgmtitles[@]} != count)); then
         usage_error "Number of titleset titles must equal the number
-         of titlesets."
+         of titlesets. ( -vmgm ... -titles 'Title 1' 'Title 2' -end-vmgm )"
     fi
     ################### end titleset options testing #########################
 
@@ -1283,7 +1283,15 @@ EOF
         you may wish to cancell out and change this."
         yecho
         $VMGM_MENU && $WARN && sleep 15
+    else
+        unset vmgmtitles
+        get_menu_titles "${VMGM_OPTS[@]}"
+        if ((${#vmgmtitles[@]} != 0)) && ((${#vmgmtitles[@]} != count)); then
+            usage_error "Number of titleset titles must equal the number
+            of titlesets."
+        fi
     fi
+    ################### end titleset options testing #########################
     yecho
     yecho "Making a VMGM menu with the following command:"
     vmgm_menu_cmd=(todisc "${GEN_OPTS[@]}" -basedir "$WORK_DIR" -vmgm_only \
@@ -3346,7 +3354,7 @@ if $QUICK_MENU; then
 # quick-menu needs TEXTMENU=: , and does its own showcase and bg with ffmpeg
     TEXTMENU=:
     SC_THUMB=false
-    STATIC=false # no static quickmenus, imagemagick is fast enough for this
+    STATIC=: #FIXME
 fi
 if [[ $SC_FRAMESTYLE = "glass" ]] && [[ -z $SHOWCASE_IMG && -z $SHOWCASE_VIDEO ]]; then
     yecho
@@ -4249,7 +4257,8 @@ if $MENU_FADE; then
     FIRST_PIC=$THUMBS_FADEIN_STARTFRAME # 1st image to use IM on
     LAST_PIC=$THUMBS_FADEOUT_ENDFRAME
 fi
-if $STATIC && ! $MENU_FADE; then
+# remember that static menus can have animated background or showcase video
+if $STATIC && ! $MENU_FADE && [[ -z $BG_VIDEO && -z $SHOWCASE_VIDEO ]] ; then
     if ! $USER_LOOP; then
         VMGM_PAUSE_TIME="inf"
     else
@@ -6658,7 +6667,7 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
         if [[ $menu_num -ne $NUM_MENUS ]]; then
             echo -e "        <pre>"
             echo -e "        button = g1 * 1024;"
-            echo -e "        if (g1 ne $menu_num) jump menu $((menu_num+1)); g4=0;;"
+            echo -e "        if (g1 ne $menu_num) jump menu $((menu_num+1)); g4=0;"
             echo -e "        </pre>"
         else
             echo -e "        <pre>button = g1 * 1024; g4=0;</pre>"
@@ -7557,8 +7566,9 @@ if $MENU_FADE && ! $QUICK_MENU; then
         -geometry ${mist_xoffset}${mist_yoffset} $WORK_DIR/white.png -)
         # finally, dissolve title onto MIST (or background) and pipe out a ppm
         # write out a ppm if montages are static from here on in
-        (( frame == ani_pics )) && (( frame < ANIMENU_ENDFRAME )) && \
-        write_ppm=(-write "$WORK_DIR/montage.ppm")
+        if (( frame == ani_pics)) || ((frame == BG_FADEIN_ENDFRAME )); then
+            write_ppm=(-write "$WORK_DIR/montage.ppm")
+        fi
         MONTAGE_CMD4=(composite -dissolve $C -gravity $TITLE_GRAVITY \
         -geometry ${title_xoffset}${title_yoffset} $WORK_DIR/title_txt.png - \
         -background none -depth 8 ppm:- )
@@ -7588,29 +7598,38 @@ if $MENU_FADE && ! $QUICK_MENU; then
         # break from the loop and use ppmtoy4m to repeat last frame
         # if we are not doing a fadeout, or if doing fadeout, cat the last
         # animated frame in the loop till we reach the start of the fadeout
+        # if we have a static background, then cat frames from the frame the bg
+        # finishes fading in, to the frame where the title starts to fade in
 
         # make sure we don't start copying frames if fadein is not finished
         ((THUMBS_FADEIN_ENDFRAME > ani_pics )) && \
         ani_frames=$THUMBS_FADEIN_ENDFRAME || ani_frames=$ani_pics
-
+        f=$((frame + 1))
         if ((frame==ani_frames)); then
             endframe=$THUMBS_FADEOUT_STARTFRAME
             copy_frames=$((endframe - frame))
             # no fadeout, just let ppmtoy4m repeat last frame till done
             if ((ANIMENU_ENDFRAME<=THUMBS_FADEOUT_STARTFRAME)); then 
-                spin  "\rEncoding frames $frame to $endframe  " >&2
+                spin  "\rEncoding frames $f to $endframe  " >&2
                 echo 
                 break
             else
                 if [[ -s "$WORK_DIR/montage.ppm" ]]; then
                     # endframe is the last unchanging frame in the video
                     for ((i=0; i<copy_frames; i++)); do
-                        spin  "\rEncoding frames $frame to $endframe  " >&2
+                        spin  "\rEncoding frames $f to $endframe  " >&2
                         cat "$WORK_DIR/montage.ppm"
                     done
                     frame=$endframe
                 fi
             fi
+        elif [[ -z $BG_VIDEO ]] &&  ((frame==BG_FADEIN_ENDFRAME)); then
+            for ((i=BG_FADEIN_ENDFRAME; i<TITLE_FADEIN_STARTFRAME; i++)); do
+                spin  \
+                "\rEncoding frames $f to $TITLE_FADEIN_STARTFRAME " >&2
+                cat "$WORK_DIR/montage.ppm"
+            done
+            frame=$TITLE_FADEIN_STARTFRAME
         fi
             
         # pipe all of above commands if using MIST
@@ -7664,9 +7683,12 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
     if $TRANSPARENT; then # non transparent -showcase-* uses this block too
         for (( count=1; count<=$FRAMES; count++)); do
             spin "\rProcessing frame $count  " >&2
+            # experimental: allow using -menu-fade with static thumbs
+            $STATIC && FRAME_NUM=0 || FRAME_NUM=$((count - 1))
+
             for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
                 ANI_PICS=( "${ANI_PICS[@]}" $(find $WORK_DIR/pics/$cnt  \
-                -name $(printf "%06d%s"  $((count - 1)) .$IMG_FMT) ) )
+                -name $(printf "%06d%s"  $FRAME_NUM .$IMG_FMT) ) )
             done
             for ((f=0; f<${#ANI_PICS[@]}; f++)); do
                 sc_cmd=( ${sc_cmd[@]} \
@@ -7674,7 +7696,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             done
             SC_VIDEO_CMD="$SC_IMG_PAGE \
             "$WORK_DIR"/showcase/$(printf "%06d%s"  $count .png)"
-            $STATIC && SC_VIDEO_CMD="$SC_IMG_PAGE \
+            $STATIC && [[ -z $SHOWCASE_VIDEO ]] && SC_VIDEO_CMD="$SC_IMG_PAGE \
             "$WORK_DIR"/showcase_img.png"
             $TEXTMENU && unset sc_cmd
 
@@ -7770,17 +7792,20 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
                     fi
                 fi
             fi
-            rm -f ${ANI_PICS[@]}
+            # don't remove ANI_PICS if static as we reuse them for each loop !
+            ! $STATIC && rm -f ${ANI_PICS[@]}
             unset ANI_PICS sc_cmd
         done > "$WORK_DIR/enc.fifo"
     else # Not transparent (non transparent showcase uses transparent block ^^)
         C=$((${CHAPTERS[s]} - 1))
         for (( count=1; count <=FRAMES; count++)); do
             spin -ne "\rProcessing frame $count  " >&2
+            $STATIC && FRAME_NUM=0 || FRAME_NUM=$((count - 1))
+
             for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
                 ANI_PICS=( "${ANI_PICS[@]}" \
                 $(find $WORK_DIR/pics/$cnt \
-                -name $(printf "%06d%s" $((count - 1))  .$IMG_FMT) ) )
+                -name $(printf "%06d%s" $FRAME_NUM  .$IMG_FMT) ) )
             done
             # make final montages and composite onto grey background with title
             IM_CMD0=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
@@ -7799,32 +7824,22 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             $SINGLE_SLIDESHOW && \
             IM_CMD0=(convert "$WORK_DIR/polaroid_stack.png" miff:- )
 
-            if $STATIC; then
+            if test -n "$BG_VIDEO"; then
+                if $MIST; then
+                    "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" |
+                    "${IM_CMD4[@]}"
+                else # no mist
+                    "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}"
+                fi
+            else # no bg video
                 if $MIST; then
                     "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" |
                     "${IM_CMD4[@]}"
-                else  # static and no MIST
+                else # no mist
                     "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}"
                 fi
-                #for ((s=0; s<$FRAMES; s++)); do cat "$WORK_DIR/menu.ppm"; done
-            else # animated
-                if test -n "$BG_VIDEO"; then
-                    if $MIST; then
-                        "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" |
-                        "${IM_CMD4[@]}"
-                    else # no mist
-                        "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}"
-                    fi
-                else # no bg video
-                    if $MIST; then
-                        "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" |
-                        "${IM_CMD4[@]}"
-                    else # no mist
-                        "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}"
-                    fi
-                fi
             fi
-            unset ANI_PICS
+            unset ANI_PICS write_ppm
         done > "$WORK_DIR/enc.fifo"
     fi
 fi # end making final montages
