@@ -5147,7 +5147,7 @@ EOF
                 "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)" \
                 -gravity south -geometry $butgeo -composite $THUMB_ROTATE \
                 -resize ${BUTTON_SIZE}! \
-                "$WORK_DIR/$(printf %06ds%s ${t} -highlight .png)"
+                "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
             fi
         fi
         # do not loop over creating same png
@@ -7583,7 +7583,7 @@ if $MENU_FADE && ! $QUICK_MENU; then
         -geometry ${mist_xoffset}${mist_yoffset} $WORK_DIR/white.png -)
         # finally, dissolve title onto MIST (or background) and pipe out a ppm
         # write out a ppm if montages are static from here on in
-        if (( frame == ani_pics)) || ((frame == BG_FADEIN_ENDFRAME )); then
+        if (( frame == ani_pics-1)) || ((frame == BG_FADEIN_ENDFRAME-1 )); then
             write_ppm=(-write "$WORK_DIR/montage.ppm")
         fi
         MONTAGE_CMD4=(composite -dissolve $C -gravity $TITLE_GRAVITY \
@@ -7856,7 +7856,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
                     "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}"
                 fi
             fi
-            unset ANI_PICS write_ppm
+            unset ANI_PICS
         done > "$WORK_DIR/enc.fifo"
     fi
 fi # end making final montages
