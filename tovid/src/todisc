@@ -4432,7 +4432,7 @@ if $DO_MENU; then
             spin "Working on video title $((i+1)) "
             # if user needs -undercolor, make sure it contrasts the text colour
             #get_contrasting_color $TITLES_CLR
-            THUMB_TITLE_CMD=(convert -size 620x300 xc:none -gravity South \
+            THUMB_TITLE_CMD=(convert -size 620x300 xc:none -gravity West \
             -font "$TITLES_FONT" -pointsize $TITLES_FONTSIZE \
             -fill $CONTRAST_CLR  -stroke $TITLES_STROKE \
             -annotate +0+0 "${TITLES[i]}" \
@@ -4461,7 +4461,7 @@ if $DO_MENU; then
                 for btn in ${HLIGHT_CLR/\#} ${SELECT_CLR/\#}; do
                     btncmd=(convert +antialias -colors 3 -background none \
                     -fill none -size 620x300 xc:none -font "$TITLES_FONT" \
-                    -pointsize $TITLES_FONTSIZE -gravity South \
+                    -pointsize $TITLES_FONTSIZE -gravity West \
                     -fill "#${btn}" -stroke none \
                     -annotate +1+1 "${TITLES[i]}" \
                     "$WORK_DIR/thumb_title${i}-${btn}.png")
@@ -7344,7 +7344,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         echo
         ((${#PICS[@]} < LAST_PIC)) && LAST_PIC=${#PICS[@]}
         $STATIC && START_PIC=0 || START_PIC=$FIRST_PIC
-        yecho "Working on $((LAST_PIC - START_PIC)) images from ${IN_FILES[i]}"
+        yecho "Working on ${#PICS[@]} images from ${IN_FILES[i]}"
         for ((p=START_PIC; p<LAST_PIC; p++)); do
             unset IM_CMD6
             [[ -n ${ROTATE_ARRAY[@]} ]] && \
