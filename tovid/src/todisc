@@ -320,8 +320,7 @@ vid_length()
     [[ -n $2 ]] && check_frames=$2 && check_frames="-frames $check_frames"
     echo "Using mencoder to get length of $1" >> "$LOG_FILE"
     L=$(mencoder -nosound -mc 0 -oac pcm -ovc copy $check_frames \
-    -o /dev/null "$1" 2>> "$LOG_FILE")
-    echo "Running $L" >> "$LOG_FILE"
+    -o /dev/null "$1" 2> /dev/null)
     awk 'END{print $(NF-3)}' <<< "$L"
 }
 audio_length()
