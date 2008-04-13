@@ -1427,6 +1427,7 @@ mk_return_button()
     -resize 30% -trim +repage +antialias -colors 3 "$OUTBUTTON")
     echo -e "\nRunning ${MK_RTN_CMD[@]}\n" |format_output
     "${MK_RTN_CMD[@]}"
+    mogrify -channel A -threshold 50% "$OUTBUTTON"
     RTN_BTN_DIM=$(get_image_dim "$OUTBUTTON")
     rtn_btn_width=$(awk -Fx '{print $1}' <<< $RTN_BTN_DIM )
     rtn_btn_height=$(awk -Fx '{print $2}' <<< $RTN_BTN_DIM )
