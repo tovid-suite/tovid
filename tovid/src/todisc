@@ -3507,8 +3507,6 @@ if $USER_CHAPTERS; then
             used ${CHAPT_ARRAY[i]}"
         fi
         CHAPTERS[i]=$(wc -w <<< "${CHAPT_ARRAY[i]//,/ }")
-        # 00:00:00 doesn't count as a chapter
-        CHAPTERS[i]=$(( ${CHAPTERS[i]} -1 ))
     done
 fi
 
@@ -3525,7 +3523,6 @@ fi
 if $SUB_MENU; then
     for ((i=0; i<${#CHAPTERS[@]}; i++)); do
         chapt_val=${CHAPTERS[i]}
-#        [[ $chapt_val = *:* ]] && chapt_val=$(unformat_time $chapt_val)
         [ -z "$MAX_CHAPTERS" ] || ((chapt_val > MAX_CHAPTERS)) \
         && MAX_CHAPTERS=$chapt_val && max_chapt_key=$i
         [ -z "$MIN_CHAPTERS" ]  || ((chapt_val < MIN_VAL)) \
@@ -6310,14 +6307,13 @@ else
         # moving  into chapter subdirs for final montages  /TODO>
 
         # and format in HH:MM:SS
-        L=( ${L[@]} $(for ((i=1; i<=${CHAPTERS[s]}; i++)) ; \
+        L=( ${L[@]} $(for ((i=1; i<${CHAPTERS[s]}; i++)) ; \
         do echo "${CHAPT_INTERVALS[s]}";done) )
-        chapt_intervals=$(running_total <<< ${L[@]})
+        chapt_intervals="0 $(running_total <<< ${L[@]})"
         chapters="$(for c in $chapt_intervals; \
         do echo $(format_seconds $c); done)"
-        # replace commas for comma delimited locales
-        chapters="00:00:00.000 $chapters"
         if [ ${CHAPTERS[s]} = 1 ]; then chapters="00:00:00.000"; fi
+        # replace commas for comma delimited locales
         CHAPTS=$(for i in $chapters; do echo -n $i,;done)
         CHAPT_ARRAY[s]="${CHAPTS%?}" # %? to remove trailing ','
         unset L cmd
@@ -6889,21 +6885,24 @@ if $SUB_MENU; then
                 f=$(unformat_time $v)
                 CUT[x++]=$( bc_math "$f * $FRAME_RATE" int)
             done 
-            # add a final chapter on, it will get removed below
-            CUT[${#CUT[@]}]=$( bc_math \
-            "((${VID_LEN[i]} * $FRAME_RATE )  - 300)" int )
         fi
         for ((c=0; c<${#CUT[@]}; c++)); do
             cmd[c]=${CUT[c]}-$(bc_math "${CUT[c]} + $CUT_TIME" int)
         done
-        key=$((${#cmd[@]} - 1))
-        unset cmd[key]
+        if $USER_CHAPTERS; then
+            # seek 1 second to avoid black frames for 1st chapter (would be 0)
+            cmd[0]=30-$(bc_math "30 + $CUT_TIME" int)
+        else
+            # auto chapters needs the last seek removed
+            key=$((${#cmd[@]} - 1))
+            unset cmd[key]
+        fi
         if [ -s  "${IN_FILES[i]}".nav_log ]; then
             NAV_SEEK[i]="--nav_seek"
             NAVSEEK[i]="${IN_FILES[i]}.nav_log"
         fi
         yecho
-        yecho "Creating $TOTAL_JPEGS chapter images for "${IN_FILES[i]}""
+        yecho "Creating $TOTAL_JPEGS chapter images for ${IN_FILES[i]}"
         yecho
         for t in "${cmd[@]}"; do
             TCODE_CMD=(nice transcode --print_status 10 \
