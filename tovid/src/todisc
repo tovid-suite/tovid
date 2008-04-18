@@ -6312,8 +6312,8 @@ else
         chapt_intervals="0 $(running_total <<< ${L[@]})"
         chapters="$(for c in $chapt_intervals; \
         do echo $(format_seconds $c); done)"
-        if [ ${CHAPTERS[s]} = 1 ]; then chapters="00:00:00.000"; fi
         # replace commas for comma delimited locales
+        if [ ${CHAPTERS[s]} = 1 ]; then chapters="00:00:00.000"; fi
         CHAPTS=$(for i in $chapters; do echo -n $i,;done)
         CHAPT_ARRAY[s]="${CHAPTS%?}" # %? to remove trailing ','
         unset L cmd
@@ -6884,7 +6884,7 @@ if $SUB_MENU; then
             for v in $c_array; do
                 f=$(unformat_time $v)
                 CUT[x++]=$( bc_math "$f * $FRAME_RATE" int)
-            done 
+            done
         fi
         for ((c=0; c<${#CUT[@]}; c++)); do
             cmd[c]=${CUT[c]}-$(bc_math "${CUT[c]} + $CUT_TIME" int)
