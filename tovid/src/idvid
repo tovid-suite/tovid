@@ -122,10 +122,10 @@ function get_info ()
             echo $SEPARATOR
             echo "Identifying video with mplayer..."
             echo $SEPARATOR
-            mplayer -vo null -ao null -frames 90 -channels 6 -identify \
+            mplayer -vo null -ao null -frames 30 -channels 6 -identify \
                 "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
         else
-            mplayer -vo null -ao null -frames 90 -channels 6 -identify \
+            mplayer -vo null -ao null -frames 30 -channels 6 -identify \
                 "$INFILE" > "$SCRATCH_FILE" 2>&1
         fi
     fi
@@ -270,7 +270,7 @@ function get_info ()
             
             # last ditch efforts to get audio bitrate if we still don't have it
             if test ${A_BITRATES[i]} -eq 0; then
-                MP_ABITRATE=$(mplayer -vo null -ao null -frames 90 -channels 6 -identify \
+                MP_ABITRATE=$(mplayer -vo null -ao null -frames 30 -channels 6 -identify \
                 -aid $MP_TRACKNUM "$INFILE" 2>&1 |
                 grep ID_AUDIO_BITRATE|awk -F=  'END{print $2}')
                 if test_is_number $MP_ABITRATE; then
@@ -278,7 +278,7 @@ function get_info ()
                     A_BITRATES[i]=${MP_ABITRATE/000*}
                 else # final attempt
                     MENC_ABITRATE=$(mencoder "$INFILE" -aid $MP_TRACKNUM  -oac pcm -ovc copy \
-                    -frames 90 -o /dev/null 2>&1 | awk '/AUDIO/ {print $7}')
+                    -frames 30 -o /dev/null 2>&1 | awk '/AUDIO/ {print $7}')
                     test_is_number $MENC_ABITRATE && A_BITRATES[i]=${MENC_ABITRATE%.*}
                 fi
             fi
