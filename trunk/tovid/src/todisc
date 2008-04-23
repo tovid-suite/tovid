@@ -3662,9 +3662,10 @@ else
             fi
         else 
             ! $SINGLE_SLIDESHOW && usage_error \
-             "Sorry, a maximum of 49 videos (thumbs) is supported
+             "Sorry, a maximum of 36 videos (thumbs) is supported
              You gave ${#FILES[@]} files as input.  Please use titlesets
-             for this many files."
+             for this many files.  Alternatively you may use '-group' to group
+            some of them under a single button"
         fi
     fi
 fi
@@ -3761,6 +3762,8 @@ if $SINGLE_SLIDESHOW; then
     DO_FRAME=false; DO_BUTTONS=false; STATIC=:; DO_STATS=false
     CAROUSEL_IS_SHOWCASE=false
     CAROUSEL_IS_BACKGROUND=false
+    [[ $MENU_TITLE = "My Video Collection" ]] && \
+    MENU_TITLE="My Slideshow"
 fi
 # don't print stats when slideshows are being done
 ((sshows>=1)) && DO_STATS=false
@@ -3896,8 +3899,6 @@ fi
 
 # TODO: Merge these globals with the ones up top
 # only the 1st 6 are mergable - keeping them here for debugging this beast :)
-#NTSC_1333_DVD=(320x240 272x204 192x144 192x144 184x138 184x138 136x102 136x102 \
-#TODO make sizes array for pal ( PAL_DVD_GEO_ARRAY )
 # 9 /row
 NTSC_1333_DVD=(420x280 300x200 192x128 192x128 186x124 186x124 132x88 132x88 \
 132x88 120x80 120x80 120x80 96x64 96x64 96x64 96x64 96x64 96x64 \
@@ -3905,11 +3906,22 @@ NTSC_1333_DVD=(420x280 300x200 192x128 192x128 186x124 186x124 132x88 132x88 \
 84x56 84x56 84x56 60x40 60x40 60x40 60x40 60x40 60x40 \
 60x40 60x40 60x40 60x40 60x40 60x40 60x40 60x40 60x40
 60x40 60x40 60x40 60x40)
-for i in {50..98}; do NTSC_1333_DVD[i]="48x32"; done
 # this is a TODO
-NTSC_1777_DVD=(416x234 256x144 192x108 192x108 192x108 192x108 128x72 128x72 \
-128x72 128x72 128x72 128x72 96x54 96x54 96x54 96x54 \
-96x54 96x54 96x54 96x54 96x54 96x54 96x54 96x54 96x54)
+# *_1777_DVD is for 16:9 videos displayed in proper res on a 4:3 menu
+NTSC_1777_DVD=(420x210 300x150 240x120 240x120 186x98 186x98 180x90 180x90 \
+180x90 132x66 132x66 132x66 132x66 132x66 132x66 132x66 100x50 100x50 \
+100x50 100x50 100x50 100x50 100x50 100x50 100x50 88x44 88x44 \
+88x44 88x44 88x44 76x38 76x38 76x38 76x38 76x38 76x38)
+PAL_1333_DVD=(420x336 300x240 190x152 190x152 190x152 190x152 130x104 130x104 \
+130x104 130x104 130x104 130x104 100x80 100x80 100x80 100x80 100x80 100x80 \
+100x80 100x80 90x72 90x72 90x72 90x72 90x72 90x72 90x72 \
+90x72 90x72 90x72 60x48 60x48 60x48 60x48 60x48 60x48 \
+60x48 60x48 60x48 60x48 60x48 60x48 60x48 60x48 60x48 \
+60x48 60x48 60x48 60x48)
+PAL_1777_DVD=(420x252 300x180 240x144 240x144 190x114 190x114 190x114 190x114 \
+190x114 130x78 130x78 130x78 130x78 130x78 130x78 130x78 100x60 100x60
+100x60 100x60 100x60 100x60 100x60 100x60 100x60 90x54 90x54 90x54 90x54 90x54
+80x48 80x48 80x48 80x48 80x48 80x48)
 # 10/row, 8 in 1st row
 SVCD_GEO_ARRAY=(240x240 180x180 120x120 120x120 120x120 120x120 96x96 96x96 \
 96x96 80x80 80x80 80x80 64x64 64x64 64x64 64x64 64x64 64x64 \
@@ -3989,10 +4001,14 @@ if  [ $TARGET = "dvd" ]; then
         VIDSIZE="720x480"
         FRAME_RATE=29.970
     elif [ $TV_STANDARD = "pal" ]; then
-        GEO_ARRAY=("${NTSC_1333_DVD[@]}") #TODO make sizes array for pal
         VIDSIZE="720x576"
         TILE_ARRAY=("${TILE_1333[@]}")
         FRAME_RATE=25
+        if [[ $ASPECT_RATIO = "4:3" ]]; then
+            GEO_ARRAY=("${PAL_1333_DVD[@]}") #TODO make sizes array for pal
+        else
+            GEO_ARRAY=("${PAL_1777_DVD[@]}")
+        fi
     fi
 elif [ $TARGET = "svcd" ]; then
     AUDIO_EXT="mp2"
@@ -6259,7 +6275,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                 spin "Seeking in video and creating images: $last_image"
                 done
                 echo
-                numpics=$(ls $WORK_DIR/pics/$i/*.${IMG_FMT} | wc -l)
+                numpics=$(find $WORK_DIR/pics/$i/ -name  "*.${IMG_FMT}" | wc -l)
                 # which video has the most frames encoded? Used in final encode
                 ((numpics > ani_pics)) && ani_pics=$numpics
                 echo "Created $numpics images of $THUMB_FRAMES"
@@ -6929,7 +6945,7 @@ if $SUB_MENU; then
                     spin "Seeking in video and creating images: $last_image"
                 done
                 echo
-                total_images=$(ls "$JPEG_DIR"/*.jpg | wc -l)
+                total_images=$(find "$JPEG_DIR" -name '*.jpg' | wc -l)
                 echo "Created $total_images JPEGS of $TOTAL_JPEGS"
             else
                 runtime_error "Problem creating images from the video."
