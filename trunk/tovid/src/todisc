@@ -4215,9 +4215,14 @@ $THREExONE && $SHOWCASE && THREExONE=false && tile_warning
 # allow specifically setting the geometry for 3 videos to 1x3 page
 if $THREExONE && [ $V_TOTAL -eq 3 ]; then
     TILE_ARRAY[2]=3x1
+    [[ $ASPECT_RATIO = "16:9" ]] && THUMB_SIZE=${GEO_ARRAY[4]}
 elif $FOURxONE && [[ $V_TOTAL -eq 4 ]]; then
     TILE_ARRAY[3]=4x1
-    THUMB_SIZE=${GEO_ARRAY[6]}
+    if  [[ $ASPECT_RATIO = "16:9" ]]; then
+        THUMB_SIZE=${GEO_ARRAY[9]}
+    else
+        THUMB_SIZE=${GEO_ARRAY[6]}
+    fi
 fi
 if ( ($DO_TITLESETS || $TITLESET_MODE) && $VMGM_MENU ) || $PLAYALL; then
     if [[ $BUTTON_GRAVITY = "south" ]]; then
