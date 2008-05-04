@@ -750,6 +750,8 @@ check_compliance()
                 fi
 
                 if [[ $convert_image = "yes" ]]; then
+                    # max 99 still titles with SVCD at present
+                    [[ $TARGET = "svcd" ]] && ((i==97)) && break
                     # group: test if $OUTFILE is symlink (ie. not encoded yet)
                     # files: test if $OUTFILE doesn't exist
                     if [[ -L $OUTFILE || ! -e $OUTFILE ]]; then
@@ -1892,9 +1894,14 @@ do_transitions()
 {
     TYPE=$1
     fade_slide=0
-#    echo f is $f >&2
     for ((i=0; i<=fade_frames; i++)); do
-        transition_slide $TYPE $i
+        transition_slide $TYPE $i &
+        transition_pids="$transition_pids $!"
+        ((num_procs++))
+        if ((num_procs == max_procs || i == fade_frames-1)); then
+            wait $transition_pids
+            unset transition_pids num_procs
+        fi
         let fade_slide=fade_slide+1
     done
     if [[ $TYPE = "fadeout" ]] && ((f == ${#MIX_IN[@]}-1)); then
@@ -2120,6 +2127,7 @@ while test $# -gt 0; do
         "-out" )
             shift
             OUT_PREFIX="$1"
+            OUT_PREFIX=${OUT_PREFIX%/}
             ;;
         "-no-ask" | "-noask" )
             NOASK=:
@@ -2288,6 +2296,13 @@ while test $# -gt 0; do
                 SLIDESHOW_CONF=$(readlink -f "${ARGS_ARRAY[0]}")
             fi
             USE_DVD_SLIDESHOW=:
+            ;;
+        "-jobs" )
+            shift
+            ! test_is_number $1 && \
+            usage_error "-jobs requires a numerical argument (integer)"
+            JOBS=$1
+            max_procs=$JOBS
             ;;
         "-nr" )
             shift
@@ -2836,6 +2851,13 @@ SPUMUX_XML="$WORK_DIR/spumux.xml"
 DVDAUTHOR_XML="$WORK_DIR/dvdauthor.xml"
 PREVIEW_IMG="$WORK_DIR/preview.jpg"
 
+# check for multiple cpus if -jobs not passed already
+#TODO always wait for either 1 or 2 processes - no need for if block later
+if [[ -z $JOBS ]]; then
+    proc_cnt=$(grep ^processor /proc/cpuinfo |awk 'END{print $NF+1}')
+    max_procs=$proc_cnt
+fi
+
 # Make sure equal, nonzero number of titles and files were provided
 
 if ! $VMGM_ONLY && ! $DO_TITLESETS; then
@@ -3311,6 +3333,15 @@ if $SHOWCASE; then
         SHOWCASE_IMG="dummy"
     fi
 fi
+# find out the aspect ratio of the showcase file
+if [[ -n $SHOWCASE_VIDEO ]]; then
+    SC_AR=$(idvid -fast -terse "$SHOWCASE_VIDEO" |
+    awk -F= '/V_ASPECT_WIDTH/ {print $2}')
+elif [[ -n $SHOWCASE_IMG && $SHOWCASE_IMG != "dummy" ]]; then
+    SC_AR=$(identify -ping -format %wx%h "$SHOWCASE_IMG")
+    SC_AR=$(bc_math "${SC_AR/x*} / ${SC_AR/*x}" )
+fi
+
 # now the showcase image is id'ed, we can find out what kind of quick menu
 if $QUICK_MENU; then
     if [[ -n $SHOWCASE_VIDEO ]]; then
@@ -3388,7 +3419,7 @@ fi
 if ! $VMGM_ONLY; then
     for i in "${FILES[@]}"; do
         IN_FILES=("${IN_FILES[@]}" "$(readlink -f "$i")")
-        [[ ${#FILES[@]} -lt 12 ]] && echo "Adding: $i" || spin "Adding: $i"
+        [[ ${#FILES[@]} -lt 12 ]] && echo "Adding: $i" || spin "Adding: ${i##*/}"
     done
 fi
 $VMGM_ONLY && V_TOTAL=$(( ${#TITLES[@]} - 1 )) || V_TOTAL=${#IN_FILES[@]}
@@ -3649,7 +3680,7 @@ else
         # SVCD without titles or without a menu can support 97 videos/slides
         if [[ $TARGET = "svcd" ]]; then
             if $SINGLE_SLIDESHOW; then
-                (( ${#FILES[@]} > 97 )) && usage_error \
+                (( ${#FILES[@]} > 200 )) && usage_error \
                 "Sorry, a maximum of 97 files are supported
                 You gave ${#FILES[@]} files as input.  Please use titlesets
                 for this many files."
@@ -3672,10 +3703,17 @@ fi
 
 if ! $VMGM_ONLY; then
     # two values for length of video(frames) and audio(secs) for slides
-    vlength=4
-    alength=$(bc_math "4 / $FRAME_RATE") # 0.16 or 0.133
-    # float < 1  must begin with 0
-    [[ -n ${alength/*.} && -z ${alength/.*} ]] && alength=0${alength}
+    # SVCD mpegs are minumum length of 4 seconds, DVD can be just single frame
+    # this is a hack since makexml is broken for svcd stills
+    if [[ $TARGET = "dvd" ]]; then
+        vlength=4
+        alength=$(bc_math "4 / $FRAME_RATE") # 0.16 or 0.133
+        # float < 1  must begin with 0
+        [[ -n ${alength/*.} && -z ${alength/.*} ]] && alength=0${alength}
+    else # SVCD
+        vlength=$(bc_math "4 * $FRAME_RATE" int)
+        alength=4
+    fi
     echo
     echo "Verifying that input files are video or image files"
     verify_infiles infiles
@@ -4658,7 +4696,11 @@ if [[ $TARGET = "dvd" ]]; then
         # make the button for spumux too
         mk_play_button  "$HLIGHT_CLR" "$HLIGHT_CLR" spu \
          "$WORK_DIR/Playall_${HLIGHT_CLR/\#}.png"
+        mogrify -channel A -threshold 50% \
+         "$WORK_DIR/Playall_${HLIGHT_CLR/\#}.png"
         mk_play_button   "$SELECT_CLR" "$SELECT_CLR" spu \
+         "$WORK_DIR/Playall_${SELECT_CLR/\#}.png"
+        mogrify -channel A -threshold 50% "$OUTBUTTON" \
          "$WORK_DIR/Playall_${SELECT_CLR/\#}.png"
         # coordinates for spumux
         X0=$(( ${VIDSIZE/x*} - PLAYALL_BTN_xOFFSET - play_btn_width))
@@ -4799,12 +4841,12 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
     fi
     if (( (WIDEST_TITLE + SAFE_AREA + TS + \
       ${SHOWCASE_SIZE/x*}) > ( ${VIDSIZE/x*} - SAFE_AREA) )); then
-            SHOWCASE_SIZE=288x216
-            [[ $TARGET = "svcd" ]] && SHOWCASE_SIZE=216x216
+            SHOWCASE_SIZE=288x192
+            [[ $TARGET = "svcd" ]] && SHOWCASE_SIZE=192x192
     fi
     if $TEXTMENU && [[ -n $tt_ygeos_col2 ]]; then
-        SHOWCASE_SIZE=288x216
-        [[ $TARGET = "svcd" ]] && SHOWCASE_SIZE=216x216
+        SHOWCASE_SIZE=288x192
+        [[ $TARGET = "svcd" ]] && SHOWCASE_SIZE=192x192
     fi
 
     if [[ -n "$SHOWCASE_VIDEO" ]]; then
@@ -5138,6 +5180,11 @@ EOF
                 "${BUTTON_CMD2[@]}" miff:- | "${BUTTON_CMD3[@]}" \
                 "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
             fi
+            mogrify -channel A -threshold 50% \
+            "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
+            mogrify -channel A -threshold 50% \
+            "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
+            
         elif [[ $BUTTON_STYLE = "rect" ]]; then
             if  ! $PNG_IS_DONE; then
                 if $SHOWCASE; then
@@ -5403,6 +5450,7 @@ if [[ $TARGET = "dvd" ]]; then
     for button in Select Highlight; do
         num_colours=$(identify -ping -format %k "$WORK_DIR/${button}.png")
         if ((num_colours > 3)); then
+            echo "$button button had $num_colours colors, reducing ..."
            mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
         fi
         echo
@@ -5694,7 +5742,8 @@ fi
 # run this twice for switched menus for 1st menu made and last
 # to make sure files get symlinked properly (Hack)
 if [[ $MENU_NUM = [1-2] || -n ${file_is_image[@]}  ]]; then
-    if ! $MK_CAROUSEL_MODE; then
+    # do not check compliance for SVCD's - no still images are made
+    if ! $MK_CAROUSEL_MODE && ! [[ $TARGET = "svcd" ]]; then
         echo
         check_compliance
         $GROUPING && check_compliance group
@@ -5725,7 +5774,6 @@ echo
 
 # animated slideshows join the slides and can add audio (-bgaudio)
 if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
-    sstime1=$(date +%s)
 
     for i in ${!MIX_IN[@]}; do
         this_item=${MIX_IN[i]##*/}
@@ -5782,6 +5830,7 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
         fi
     done
     echo
+    sstime1=$(date +%s)
     # make a fifo to send raw yuv to, to be encoded by ffmpeg
     mkfifo "$WORK_DIR/enc.fifo"
     "${IMGENC_CMD[@]}" 2>/dev/null < "$WORK_DIR/enc.fifo" &
@@ -5937,7 +5986,7 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
     yecho
     if [[ -s "$WORK_DIR/slideshow.mpg" ]]; then
         if [[ $TARGET = "svcd" ]]; then
-            SLIDE_MENU=( -menu "$WORK_DIR/slideshow.mpg")
+            SLIDE_MENU="$WORK_DIR/slideshow.mpg"
         else
             mv "$WORK_DIR/slideshow.mpg" "$WORK_DIR/intro.mpg"
         fi
@@ -5955,10 +6004,10 @@ if $DO_CAROUSEL && $USE_DVD_SLIDESHOW; then
     else
         mk_dvd_slideshow_conf "${MIX_IN[@]}"
     fi
-    dvd-slideshow $vid_type -n slideshow -o "$WORK_DIR" "${SS_AUDIO[@]}" \
-    -f "$WORK_DIR/dvd-slideshow.conf"
+    dvd-slideshow $NO_SMP $vid_type -n slideshow -o "$WORK_DIR" \
+    "${SS_AUDIO[@]}" -f "$WORK_DIR/dvd-slideshow.conf"
     if [[ $TARGET = "svcd" ]]; then
-        SLIDE_MENU=( -menu "$WORK_DIR/slideshow.mpg")
+        SLIDE_MENU="$WORK_DIR/slideshow.mpg"
     else
         mv "$WORK_DIR/slideshow.vob" "$WORK_DIR/intro.mpg"
     fi
@@ -6001,8 +6050,7 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
         idvid_stats[i]=$(idvid -terse "${IN_FILES[i]}" 2>/dev/null)
     fi
     if [ -s  "${IN_FILES[i]}.nav_log" ]; then
-        length[i]=$(( $(awk '{ field = $2 }; END{ print field }' \
-         "${IN_FILES[i]}.nav_log") + 1))
+        length[i]=$(awk 'END{print NR}' "${IN_FILES[i]}.nav_log")
     fi
 done
 
@@ -6015,8 +6063,7 @@ if $GROUPING &&  [[ $MENU_NUM -eq 1 ]]; then
         spin "Getting stats on "${CUR_VID##*/}""
         group_idvid_stats[u]=$(idvid -terse "$CUR_VID" 2>/dev/null)
         if [ -s "$CUR_VID.nav_log" ]; then
-            group_length[u]=$(( $(awk '{ field = $2 }; END{ print field }' \
-            "$CUR_VID.nav_log") + 1))
+            group_length[u]=$(awk 'END{print NR}' "$CUR_VID.nav_log")
         fi
     done
     echo
@@ -6041,11 +6088,12 @@ for i in ${!IN_FILES[@]}; do
     fi
     # wait for input on short files (slides) unless -video-pause passed
     if [[ $(bc -l <<< "${VID_LEN[i]} < 1") -eq 1 ]]; then
-        [[ $TARGET = "svcd" && -z $SVCD_PAUSE ]] && SVCD_PAUSE="-pause -1"
         [[ $TARGET = "dvd" && -z ${VPAUSE[i]} ]] && VPAUSE[i]="inf"
         # 1 chapter per short file, (altered below if group short file)
         ! $USER_CHAPTERS && CHAPTERS[i]=1 # each 'slide' is a chapter 
     fi
+    $SINGLE_SLIDESHOW && [[ $TARGET = "svcd" && -z $SVCD_PAUSE ]] && \
+    SVCD_PAUSE="-pause -1" #FIXME
 done
 # make sure we have the length of grouped files as well
 for g in ${!grouping[@]}; do
@@ -6744,7 +6792,8 @@ fi)
 $(if $SINGLE_SLIDESHOW || $MENUBUTTONS_ARE_CHAPTS; then
     echo -e "      <pgc>"
 fi)
-$(for ((i=0; i<${#IN_FILES[@]}; i++)); do
+$(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
+    
     vid_pause=""; grp_vid_pause=""
     [[ -n ${VPAUSE[i]} ]] && vid_pause="pause=\"${VPAUSE[i]}\""
     [[ -n ${GRP_VPAUSE[i]} ]] && grp_vid_pause="pause=\"${GRP_VPAUSE[i]}\""
@@ -6777,8 +6826,18 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
             done
         fi
     else
+        # this block runs for single slideshows
+        # max 99 titles, else we make a new <pgc>
         echo -ne "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\""
         echo -e  " chapters=\""${CHAPT_ARRAY[i]}"\" $vid_pause/>"
+        if $SINGLE_SLIDESHOW && ((t==96 && i < NUM_FILES)); then
+            echo -e "        <post>jump title $((++z));</post>"
+            echo -e "      </pgc>"
+            echo -e "      <pgc>"
+            t=0
+        else
+            unset CHAIN_PP
+        fi
     fi
     if $CHAIN_VIDEOS; then
         if [ "${POST_PLAY[i]}" = "chain" ]; then
@@ -6817,6 +6876,7 @@ $(for ((i=0; i<${#IN_FILES[@]}; i++)); do
     else
         echo -e "      </pgc>"
     fi
+    ((t++)) # var for counting slides
 done)
 $( { $SINGLE_SLIDESHOW || $MENUBUTTONS_ARE_CHAPTS ; } && 
  echo -e "      </pgc>")
@@ -7367,7 +7427,13 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         ((${#PICS[@]} < LAST_PIC)) && LAST_PIC=${#PICS[@]}
         $STATIC && START_PIC=0 || START_PIC=$FIRST_PIC
         yecho "Working on ${#PICS[@]} images from ${IN_FILES[i]}"
+        num_procs=0
         for ((p=START_PIC; p<LAST_PIC; p++)); do
+            ((num_procs++))
+            # only let one process use the spinner at a time
+            if (( (p/max_procs) * max_procs == p || p==LAST_PIC-1 )); then
+                spin "\rProcessing frame $((p+1)) "
+            fi
             unset IM_CMD6
             [[ -n ${ROTATE_ARRAY[@]} ]] && \
             THUMB_ROTATE="-background none -rotate ${ROTATE_ARRAY[i]}"
@@ -7387,6 +7453,8 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             IM_CMD3=(convert "${PICS[p]}" -background none -bordercolor \
             "#444744" $THUMB_FRAME "$WORK_DIR/thumb_title${i}.png" \
             -gravity south -geometry +0+5 -compose over -composite)
+            IM_CMD4=(convert -background none -frame 3x3 \
+            -bordercolor "#444744" -)
             IM_CMD4b=(convert -background none -bordercolor none \
             $THUMB_FRAME -)
             IM_CMD5=(convert -size ${THUMB_SIZE} - $QUALITY $THUMB_ROTATE \
@@ -7408,22 +7476,21 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                 $(bc_math "115 + ${CURVE_ARRAY[p]}")" )x30"
             fi
             if $FEATHER; then
-                spin "\rProcessing frame $((p+1)) "
                 if $SHOWCASE; then
                     if $THUMBS_3D; then
                         if [ "$THUMB_SHAPE" != "normal" ]; then
                             "${IM_CMD[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
                             "${IM_CMD6[@]}" miff:- |  "${IM_CMD7[@]}" miff:- |
-                            "${IM_CMD5[@]}"
+                            "${IM_CMD5[@]}" &
                         else # normal thumbshape, with feather and 3D
                             "${IM_CMD02[@]}" miff:- | "${IM_CMD03[@]}" miff:- |
                             "${IM_CMD2[@]}" miff:- |"${IM_CMD7[@]}" miff:- |
-                            "${IM_CMD5[@]}"
+                            "${IM_CMD5[@]}" &
 
                         fi
                     else
                         "${IM_CMD[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
-                        "${IM_CMD5[@]}"
+                        "${IM_CMD5[@]}" &
                     fi
                 else # not SHOWCASE
                     if $THUMBS_3D; then
@@ -7431,16 +7498,16 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                             "${IM_CMD[@]}" miff:- | "${IM_CMD6[@]}"  miff:- |
                             "${IM_CMD1[@]}" miff:- |"${IM_CMD04[@]}" miff:- |
                             "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
-                            "${IM_CMD5[@]}"
+                            "${IM_CMD5[@]}" &
                         else
                             "${IM_CMD02[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                             "${IM_CMD2[@]}" miff:- |
-                            "${IM_CMD5[@]}"
+                            "${IM_CMD5[@]}" &
                         fi
                     else # not 3D
                         "${IM_CMD[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                         "${IM_CMD1[@]}" miff:- |"${IM_CMD2[@]}" miff:- |
-                        "${IM_CMD5[@]}"
+                        "${IM_CMD5[@]}" &
                     fi
                 fi
             else # not FEATHER
@@ -7449,22 +7516,25 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                       && -z ${ROTATE_ARRAY[@]} ]]; then
                         :
                     else
-                        spin "\rProcessing frame $((p+1))  "
                         if $THUMBS_3D; then
-                            "${IM_CMD02[@]}" miff:- | "${IM_CMD5[@]}"
+                            "${IM_CMD02[@]}" miff:- | "${IM_CMD5[@]}" &
                         else
-                            "${IM_CMD01[@]}" miff:- | "${IM_CMD5[@]}"
+                            "${IM_CMD01[@]}" miff:- | "${IM_CMD5[@]}" &
                         fi
                     fi
                 else # not showcase or feather
-                    spin "\rProcessing frame $((p+1)) "
                     if $THUMBS_3D; then
-                        "${IM_CMD02[@]}" miff:- |"${IM_CMD04[@]}" miff:- |
-                        "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
+                        "${IM_CMD02[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
+                        "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}" &
                     else
-                        "${IM_CMD3[@]}" miff:- | "${IM_CMD5[@]}"
+                        "${IM_CMD3[@]}" miff:- | "${IM_CMD5[@]}" &
                     fi
                 fi
+            fi
+            # wait on processes to keep on or below max # of processes
+            if ((num_procs >= max_procs || i == LAST_PIC-1)); then
+                wait
+                unset num_procs
             fi
             if $STATIC; then unset PICS; fi
             unset IM_CMD0 IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5 IM_CMD6
@@ -7534,16 +7604,30 @@ if $MENU_FADE && ! $QUICK_MENU; then
             cp $WORK_DIR/pics/template.jpg $WORK_DIR/bg/$(($frame + 1)).jpg
         done
     fi
+    num_procs=0; unset bgfade_pids
     for ((frame=0; frame<=BG_FADEIN_ENDFRAME; frame++)); do
+        ((num_procs++))
         D=`get_bg_opacity`
         composite -dissolve $D \
         $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.jpg \
-        $WORK_DIR/bg/$(($frame + 1)).jpg
+        $WORK_DIR/bg/$(($frame + 1)).jpg &
+        bgfade_pids="$bgfade_pids $!"
+        if ((num_procs >= max_procs || frame == BG_FADEIN_ENDFRAME)); then
+            wait $bgfade_pids
+            unset bgfade_pids num_procs
+        fi
     done
+    num_procs=0; unset bgfade_pids
     for ((frame=BG_FADEOUT_STARTFRAME; frame<=BG_FADEOUT_ENDFRAME; frame++)); do
+        ((num_procs++))
         D=`get_bg_opacity`
         composite -dissolve $D $WORK_DIR/bg/$frame.jpg \
-        $WORK_DIR/black.jpg $WORK_DIR/bg/$frame.jpg
+        $WORK_DIR/black.jpg $WORK_DIR/bg/$frame.jpg &
+        bgfade_pids="$bgfade_pids $!"
+        if ((num_procs >= max_procs || frame == BG_FADEOUT_ENDFRAME)); then
+            wait $bgfade_pids
+            unset bgfade_pids num_procs
+        fi
     done
     for ((frame=0; frame<ANIMENU_ENDFRAME; frame++)); do
         # set dissolve vars from todisc-fade-routine functions
@@ -7662,7 +7746,7 @@ if $MENU_FADE && ! $QUICK_MENU; then
                     frame=$endframe
                 fi
             fi
-        elif [[ -z $BG_VIDEO ]] &&  ((frame==BG_FADEIN_ENDFRAME)); then
+        elif [[ -z $BG_VIDEO ]] &&  ((frame==BG_FADEIN_ENDFRAME+1)); then
             for ((i=BG_FADEIN_ENDFRAME; i<TITLE_FADEIN_STARTFRAME; i++)); do
                 spin  \
                 "\rEncoding frames $f to $TITLE_FADEIN_STARTFRAME " >&2
@@ -8033,11 +8117,25 @@ if [ "$TARGET" = "dvd" ] && $AUTHOR \
     fi
     strings "$LOG_FILE.tmp" >> "$LOG_FILE" && rm -f "$LOG_FILE.tmp"
 elif [ "$TARGET" = "svcd" ]; then
-    $MONTAGE_MENU && SLIDE_MENU=(-menu "$WORK_DIR/intro.mpg")
-    MKXML_CMD=(makexml -svcd -quiet "${SLIDE_MENU[@]}" \
-      $SVCD_PAUSE "${IN_FILES[@]}" -out "$OUT_FILE")
+    # maximum 98 still files for SVCD at present
+    for f in ${!IN_FILES[@]}; do
+        ((f < 97)) && STILL_SLIDES[f]=${IN_FILES[f]}
+    done
+    $MONTAGE_MENU && SLIDE_MENU="$WORK_DIR/intro.mpg"
+    #MKXML_CMD=(makexml -svcd -quiet "$SLIDE_MENU" \
+    #-out "$OUT_FILE")
+    MKXML_CMD=(vcdxgen -t svcd --update-scan-offsets -o "${OUT_FILE}.xml" \
+    "$WORK_DIR/slideshow.mpg")
     echo "Running ${MKXML_CMD[@]}" | fold -bs | tee -a "$LOG_FILE"
-    "${MKXML_CMD[@]}" |tee -a "$LOG_FILE"
+    if ! "${MKXML_CMD[@]}" |tee -a "$LOG_FILE"; then
+        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        yecho "todisc encountered an error:"
+        yecho "There was a problem creating the SVCD xml file."
+        yecho "Saving files in "$WORK_DIR" so you can examine the situtaion"
+        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        exit 1
+    fi
+
     MAKEVCD_CMD=(makevcd "${OUT_FILE}.xml"); yecho "Running ${MAKEVCD_CMD[@]}"
     "${MAKEVCD_CMD[@]}" 2>&1 >> "$LOG_FILE" 2>&1
     awk '/makevcd/,EOF' "$LOG_FILE" | awk '!/WARN/'
