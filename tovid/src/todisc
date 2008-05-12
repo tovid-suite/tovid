@@ -228,6 +228,7 @@ EFFECT="crossfade"
 num_bgpics=0
 num_scpics=0
 TRANSITION_TO_MENU=false
+DEBUG=false
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -658,6 +659,7 @@ check_compliance()
         CHECK_IN_FILES=( "${IN_FILES[@]}" )
     fi
     TEMP_FILE="$WORK_DIR/temp.mpg"
+    stime=$(date +%s)
     for ((i=0; i<${#CHECK_IN_FILES[@]}; i++)); do
         # save slideshow temporary files in $WORK_DIR
         IN_FILE=${CHECK_IN_FILES[i]}
@@ -691,6 +693,7 @@ check_compliance()
             ENC_IN_FILES=("${ENC_IN_FILES[@]}" "${IN_FILE}.enc.mpg")
         fi
     done
+    $DEBUG && etime=$(date +%s) && get_elapsed "compliance check"
     if test "${#FILES_TO_ENCODE[@]}" -gt 0; then
         TGT_CAPS=$(tr a-z A-Z <<< "$TARGET")
         TV_STND_CAPS=$(tr a-z A-Z <<< "$TV_STANDARD")
@@ -1145,12 +1148,12 @@ titleset_mode()
     # some vars for vmgm menu, depending on presence of -static or -quick-nav
     # how many titlesets do we have ?
     for i in "$@"; do [[ $i == -end-titleset ]] && ((count++)); done
-    VMGM_PAUSE_TIME=$PAUSE_TIME
-    grep -q ' -static ' <<< "$VMGM_OPTS" && VMGM_PAUSE_TIME="inf"
+    VMGM_PAUSE=$PAUSE_TIME
+    grep -q ' -static ' <<< "$VMGM_OPTS" && VMGM_PAUSE="inf"
     for i in ${!VMGM_OPTS[@]}; do
         if [[ ${VMGM_OPTS[i]} = '-loop' ]]; then
             loop_val=${VMGM_OPTS[i+1]}
-            test_is_number $loop_val && VMGM_PAUSE_TIME=$loop_val
+            test_is_number $loop_val && VMGM_PAUSE=$loop_val
         fi
     done
     DVDAUTHOR_XML="$BASEDIR/dvdauthor.xml"
@@ -1195,7 +1198,7 @@ $(if $QUICK_NAV; then
     echo -e "        jump vmgm menu entry title;</button>"
 fi)
         $INTRO
-        <vob file="$BASEDIR/VMGM.mpg" pause="$VMGM_PAUSE_TIME"/>
+        <vob file="$BASEDIR/VMGM.mpg" pause="$VMGM_PAUSE"/>
       </pgc>
     </menus>
   </vmgm>
@@ -1979,6 +1982,10 @@ mk_polaroid_stack()
     "${image_page[@]}" -mosaic -trim +repage "$WORK_DIR/polaroid_stack.png"
 }
 
+get_elapsed()
+{
+    echo -e "\nIt took $(format_seconds $((etime-stime)) ) for the $1\n"
+}
 ##############################################################################
 #                          	End of functions                             #
 ##############################################################################
@@ -2134,6 +2141,10 @@ while test $# -gt 0; do
             ;;
         "-no-warn" | "-nowarn" )
             WARN=false
+            ;;
+        "-debug" )
+            DEBUG=:
+            KEEP_FILES=:
             ;;
         "-keep-files" | "-keepfiles" )
             KEEP_FILES=:
@@ -2931,7 +2942,7 @@ if ((sshows>=1)) && ! $STATIC; then
     DO_CAROUSEL=:
     is_carousel=:
     SLIDE_FADE=:
-fi    
+fi
 if $DO_CAROUSEL && $SHOWCASE && ! $SWITCHED && \
  ! $CAROUSEL_IS_BACKGROUND && ! $CAROUSEL_IS_SHOWCASE; then
     yecho
@@ -3304,7 +3315,7 @@ fi
 if [[ -z $BACKGROUND ]]; then
     BACKGROUND="$WORK_DIR/bg.png"
     convert  -size $VIDSIZE! xc:'#'$BG_CLR $BACKGROUND
-fi 
+fi
 # check file type of background file and assign to BG_VIDEO or BG_IMAGE
 if [[ -n $BACKGROUND ]]; then
     check_filetype "$BACKGROUND"
@@ -3594,7 +3605,7 @@ fi
 if [[ -n "$SHOWCASE_VIDEO" ]]; then
     mkdir "$REAL_WORK_DIR/showcase"
 fi
-    
+
 # if more than one value for AUDIO_LANG, make sure they equal video #
 if $AUDIOLANG && \
 [[ ${#FILES[@]} -ne ${#AUDIO_LANG[@]} &&  ${#AUDIO_LANG[@]} -ne 1 ]]; then
@@ -3624,7 +3635,7 @@ if $MENU_FADE; then
     # if user did not pass in -loop value, set pause to 'inf'
     if $USER_LOOP && [[ $PAUSE_TIME = "inf" ]]; then
         TITLE_FADEOUT_ENDTIME=${MENU_LEN[MENU_NUM-1]}
-        TITLE_FADEOUT_STARTTIME=${MENU_LEN[MENU_NUM-1]}      
+        TITLE_FADEOUT_STARTTIME=${MENU_LEN[MENU_NUM-1]}
         THUMBS_FADEOUT_ENDTIME=${MENU_LEN[MENU_NUM-1]}
         THUMBS_FADEOUT_STARTTIME=${MENU_LEN[MENU_NUM-1]}
         BG_FADEOUT_STARTTIME=${MENU_LEN[MENU_NUM-1]}
@@ -4320,19 +4331,19 @@ fi
 # remember that static menus can have animated background or showcase video
 if $STATIC && ! $MENU_FADE && [[ -z $BG_VIDEO && -z $SHOWCASE_VIDEO ]] ; then
     if ! $USER_LOOP; then
-        VMGM_PAUSE_TIME="inf"
+        VMGM_PAUSE="inf"
     else
-        VMGM_PAUSE_TIME=$PAUSE_TIME
+        VMGM_PAUSE=$PAUSE_TIME
     fi
 else
-    VMGM_PAUSE_TIME=$PAUSE_TIME
+    VMGM_PAUSE=$PAUSE_TIME
 fi
 # pausing a -menu-fade gives a period of unselectable thumbs: use pause of 0
-if $MENU_FADE && ! $USER_LOOP && [[ $VMGM_PAUSE_TIME != "inf" ]]; then
-    VMGM_PAUSE_TIME=0
+if $MENU_FADE && ! $USER_LOOP && [[ $VMGM_PAUSE != "inf" ]]; then
+    VMGM_PAUSE=0
 fi
 # loop slideshows with fades by default, unless user passed -loop VALUE
-$DO_CAROUSEL && $SLIDE_FADE && ! $USER_LOOP && VMGM_PAUSE_TIME=0
+$DO_CAROUSEL && $SLIDE_FADE && ! $USER_LOOP && VMGM_PAUSE=0
 if [ "$PAUSE_TIME" = "inf" ]; then
     unset MAIN_POST
 fi
@@ -4355,6 +4366,7 @@ fi
 
 if $MENU_FADE || $FEATHER; then
     convert -size $VIDSIZE xc:"#101010" "$WORK_DIR/black.jpg"
+    convert -depth 8 -size $VIDSIZE xc:"#101010" "$WORK_DIR/black.ppm"
 fi
 # now that we have a background we can do the polaroid stack if called for
 if $SINGLE_SLIDESHOW && ! $DO_CAROUSEL && ! $MK_CAROUSEL_MODE; then
@@ -4974,7 +4986,6 @@ if $SHOWCASE && $DO_MENU; then
     convert "$WORK_DIR/pics/template.png" "$WORK_DIR/title_txt.png" \
     -gravity $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
     -composite -background none "$WORK_DIR/pics/template.png"
-    
 fi
 if $PLAYALL || { $TITLESET_MODE && $VMGM_MENU; } || $SINGLE_SLIDESHOW ; then
     if ! $VMGM_ONLY; then
@@ -5723,7 +5734,7 @@ if $DO_CAROUSEL; then
 #    TT=$(bc_math "(${#MIX_IN[@]} - 1) / ${#MIX_IN[@]}")
     TT=1
     $SLIDE_FADE && MIX_SLIDE_LEN=$(bc_math "$MIX_SLIDE_LEN - $TT")
-    
+
     if [[ $(bc -l <<<  "$MIX_SLIDE_LEN < 0") -eq 1 ]]; then
         runtime_error "The menu length is not long enough for an animated menu.
         For slideshows where -bgaudio FILE is supplied, this is determined by:
@@ -5749,6 +5760,7 @@ if [[ $MENU_NUM = [1-2] || -n ${file_is_image[@]}  ]]; then
         $GROUPING && check_compliance group
     fi
 fi
+
 # this is for getting slide files to BASEDIR
 unset MPEGS2MOVE
 for i in $WORK_DIR/*slide_grp*.mpg; do
@@ -6463,7 +6475,7 @@ if [[ $BUTTON_STYLE = *text* ]] && $SHOWCASE; then
         ((X1%2 && X1++)); ((Y1%2 && Y1++))
         $SHOWCASE && btn_geos[i]="x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\""
     done
-fi 
+fi
 if [[ "$BUTTON_STYLE" = "text" && -z "$OUTLINEWIDTH" ]]; then
     OUTLINEWIDTH="\"14\""
 else
@@ -6574,7 +6586,6 @@ $(if $SWITCHED && ! $QUICK_NAV; then
             elif $PLAYALL; then # Playall only
                 echo -n "       <button name=\"$i\" ${btn_geos[i-1]} "
                 echo -e "up=\"$((i-1))\" $down/>"
-                
             fi
         elif ((i==NUM_FILES+1)); then
             if ($TITLESET_MODE && $VMGM_MENU) || $PLAYALL; then
@@ -6748,7 +6759,7 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
         ((NAV_BTN_NUM++))
         echo -e "        <button name=\"$NAV_BTN_NUM\">g2=1; g3=1000; g6=$TSET_NUM; jump vmgm menu;</button>"
     fi
-    echo -e "        <vob file=\"$BASEDIR/animenu${TSET_NUM}-${menu_num}.mpg\" pause=\"$VMGM_PAUSE_TIME\"/>"
+    echo -e "        <vob file=\"$BASEDIR/animenu${TSET_NUM}-${menu_num}.mpg\" pause=\"$VMGM_PAUSE\"/>"
     if $SWITCHED_MENUS; then
         if [[ $menu_num -ne $NUM_MENUS ]]; then
             echo -e "        <pre>"
@@ -6793,7 +6804,6 @@ $(if $SINGLE_SLIDESHOW || $MENUBUTTONS_ARE_CHAPTS; then
     echo -e "      <pgc>"
 fi)
 $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
-    
     vid_pause=""; grp_vid_pause=""
     [[ -n ${VPAUSE[i]} ]] && vid_pause="pause=\"${VPAUSE[i]}\""
     [[ -n ${GRP_VPAUSE[i]} ]] && grp_vid_pause="pause=\"${GRP_VPAUSE[i]}\""
@@ -7061,21 +7071,29 @@ if $SUB_MENU; then
             # move 300 images to each subdir:  $WORK_DIR/animenu/{0,1,2,3,etc}
             # or if making chapter titles, output to subdirs; rm original
             for ((a=0; a<${CHAPTERS[i]}; a++)); do
+                unset num_procs smpids curimgs
                 # 2>/dev/null to work around perplexing spawned xterm bug
                 pics=($(find $WORK_DIR/animenu/ -maxdepth 1 -name \
                 00\*.$SM_IMG_FMT|sort 2>/dev/null|head -n 300 2>/dev/null))
                 if [[ -n  ${CHAPTER_TITLES[@]} ]]; then
-                    ctitle="$WORK_DIR/${TSET_NUM}-${i}-chapter${a}.png"
                     # title the chapters for submenu if needed
+                    ctitle="$WORK_DIR/${TSET_NUM}-${i}-chapter${a}.png"
                     spin "Working on Video $((i+1)): chapter $((a+1))  "
                     for f in ${pics[@]}; do
                         if [[ -s $f ]]; then
+                            ((num_procs++))
                             convert -size ${GEO_ARRAY[C]} "$f" \
                             "$ctitle" -gravity south -geometry +0+5 -compose \
-                            over -composite "$WORK_DIR/animenu/$a/${f##*/}"
-                            rm -f "$f"
+                            over -composite "$WORK_DIR/animenu/$a/${f##*/}" &
+                            smpids="$smpids $!"
+                            if ((num_procs==max_procs)); then
+                                wait $smpids
+                                unset num_procs smpids
+                            fi
+                            # rm -f "$f"
                         fi
                     done
+                    wait && rm -f "${pics[@]}"
                 else # no chapter titles
                     # moving images from Video $((i+1)) into subdirectories
                     for f in ${pics[@]}; do
@@ -7089,6 +7107,7 @@ if $SUB_MENU; then
         fi
 
         if $ANI_SUB_MENU; then
+            $DEBUG && stime=$(date +%s)
             TOYUV_CMD=(ppmtoy4m -v 0 -n 300 -A 10:11 -F $YUV_FR -I p \
             -S 420mpeg2 -r)
             IMGENC_CMD=(ffmpeg -f yuv4mpegpipe -r $FRAME_RATE -i - -an \
@@ -7102,9 +7121,15 @@ if $SUB_MENU; then
             "${IMGENC_CMD[@]}" 2>/dev/null)  &
             echo
             echo "Encoding 300 frames for "${IN_FILES[i]}"" >&2
-
+            # make fifos for intermediary piping
+            for ((f=1; f<=max_procs; f++)); do
+                [[ ! -p "$WORK_DIR/temp-${f}.ppm" ]] && \
+                 mkfifo "$WORK_DIR/temp-${f}.ppm"
+            done
+            unset smpids  num_procs
             for ((a=1; a<300; a++)); do
-                spin "\rProcessing frame $a  " >&2
+                ((num_procs++))
+                out_ppm="$WORK_DIR/temp-${num_procs}.ppm" # current frame
                 for ((b=0; b<${CHAPTERS[i]}; b++)); do
                     IMGS=( "${IMGS[@]}" $(find $WORK_DIR/animenu/$b \
                     -name \*.$SM_IMG_FMT| sort 2>/dev/null | head -n $a |
@@ -7118,17 +7143,28 @@ if $SUB_MENU; then
                 IM_CMD2=(convert -depth 8 $WORK_DIR/submenu_template.jpg \
                 $WORK_DIR/title${i}_txt.png  -gravity south \
                 -geometry +0+55 -composite -  -gravity north -geometry +0+45 \
-                -composite ppm:-)
-                "${IM_CMD[@]}" | "${IM_CMD1[@]}" | "${IM_CMD2[@]}"
+                -composite "$out_ppm")
+                "${IM_CMD[@]}" | "${IM_CMD1[@]}" | "${IM_CMD2[@]}" &
+                smpids="$smpids $!"
+                ppm_fifos+=("$out_ppm") # all frames waiting to be processed
+                if ((num_procs==max_procs || a == 299 )); then
+                    spin "\rProcessing frame $((a+1)) of 300  " >&2
+                    cat "${ppm_fifos[@]}"
+                    wait $smpids
+                    unset smpids num_procs ppm_fifos
+                fi
+
                 unset IMGS TOYUV_CMD IMGENC_CMD
             done > "$WORK_DIR/enc.fifo"
+            $DEBUG && etime=$(date +%s) && get_elapsed "the submenu m2v"
+            
             # wait for ppmtoyuv and ffmpeg to finish
             wait
 
             unset IM_CMD IM_CMD2 d f P
 
         else # not $ANI_SUB_MENU
- 
+
             yecho
             yecho "Making montage images for "${IN_FILES[i]}""
             # just use $CHAPTERS number of images
@@ -7312,9 +7348,9 @@ if [[ -n "$BG_VIDEO" ]] && ! $QUICK_MENU; then
     FFMPEG_CMD=(ffmpeg -ss $BG_SEEK -i "$BG_VIDEO" -vframes $BG_VIDEO_FRAMES \
     -s $VIDSIZE -sameq "$WORK_DIR/bg/%d.jpg")
     yecho "Extracting/resizing background images"
-    echo "${FFMPEG_CMD[@]}" | format_output
+    echo "Running: ${FFMPEG_CMD[@]}" | format_output >> "$LOG_FILE"
     # Run command and check for failure
-    if ! "${FFMPEG_CMD[@]}"; then
+    if ! "${FFMPEG_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"; then
         runtime_error "Problem creating images from the background video"
     fi
     # make sure there are enough pics to make a bg video
@@ -7369,14 +7405,19 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
     &&  [[ -z "$ROTATE" && -z "$WAVE" ]]; then
         :
     else
-        for pic in "${SC_PICS[@]}"; do
-            last_pic=$(awk -F / '{ print $NF }' <<< "$pic")
-            spin "\rProcessing $last_pic of $LAST_PIC  "
+        unset impids
+        num_procs=0
+        for p in ${!SC_PICS[@]}; do
+            ((num_procs++)) # how many processes are running
+            #last_pic=$(awk -F / '{ print $NF }' <<< "${SC_PICS[pic]}")
+            last_pic=${SC_PICS[p]##*/}
+            pic="${SC_PICS[p]}"
+            #((num_procs==)) && spin "\rProcessing $last_pic of $LAST_PIC  "
             # if glass and either wave or rotate
             if [ "$SC_FRAMESTYLE" = "glass" ] && \
              [[ -n "$WAVE" || -n "$ROTATE" ]]; then
-                convert -size $SHOWCASE_SIZE "$pic" -background none \
-                $ROTATE $WAVE -resize $SHOWCASE_SIZE! "$pic"
+                convert -size $SHOWCASE_SIZE "$pic" \
+                -background none $ROTATE $WAVE -resize $SHOWCASE_SIZE! "$pic" &
             # if glass and neither wave or rotate
             elif [ "$SC_FRAMESTYLE" = "glass" ] && \
              [[ -z "$WAVE" && -z "$ROTATE" ]]; then
@@ -7384,7 +7425,13 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
             else # not glass
                 convert $QUALITY -size $SHOWCASE_SIZE "$pic" \
                 -mattecolor gray $SC_FRAME -background none $ROTATE $WAVE \
-                -resize ${SHOWCASE_SIZE}! "$pic"
+                -resize ${SHOWCASE_SIZE}! "$pic" &
+            fi
+            impids="$impids $!"
+            if ((num_procs==max_procs || p >= (${#SC_PICS[@]}-1) )); then
+                spin "\rProcessing $last_pic of $LAST_PIC  "
+                wait $impids
+                unset impids num_procs
             fi
         done
     fi
@@ -7425,7 +7472,12 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[0-9]\*.$IMG_FMT|sort) )
         echo
         ((${#PICS[@]} < LAST_PIC)) && LAST_PIC=${#PICS[@]}
-        $STATIC && START_PIC=0 || START_PIC=$FIRST_PIC
+        if $STATIC; then
+            START_PIC=0
+            LAST_PIC=1
+        else
+            START_PIC=$FIRST_PIC
+        fi
         yecho "Working on ${#PICS[@]} images from ${IN_FILES[i]}"
         num_procs=0
         for ((p=START_PIC; p<LAST_PIC; p++)); do
@@ -7532,7 +7584,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                 fi
             fi
             # wait on processes to keep on or below max # of processes
-            if ((num_procs >= max_procs || i == LAST_PIC-1)); then
+            if ((num_procs >= max_procs || i == LAST_PIC)); then
                 wait
                 unset num_procs
             fi
@@ -7581,7 +7633,8 @@ if ! $QUICK_MENU && $DO_MENU; then
     echo \
     "Converting images to video and encoding to $TARGET-compliant format" >&2
     # convert images to video stream and encode to dvd compliant m2v
-    [[ -n $PPM_LOOPS ]] && PPM_FRAMES=$PPM_LOOPS || PPM_FRAMES=$FRAMES
+    [[ -n $PPM_LOOPS ]] && PPM_FRAMES=$PPM_LOOPS ||
+    PPM_FRAMES=$((FRAMES+18))
     TOYUV_CMD=(ppmtoy4m -v 0 -n $PPM_FRAMES -A 10:11 -I p -F $YUV_FR \
     -S 420mpeg2 -r)
     IMGENC_CMD=(ffmpeg $INSIZE -r $FRAME_RATE $PIPE_FORMAT -i - -an \
@@ -7593,6 +7646,11 @@ if ! $QUICK_MENU && $DO_MENU; then
     ( "${TOYUV_CMD[@]}" < "$WORK_DIR/enc.fifo" |
     "${IMGENC_CMD[@]}" 2>/dev/null)  &
 fi
+# make intermediary fifos for images.  They will get catted to enc.fifo
+for ((n=1; n<=max_procs; n++)); do
+    [[ ! -e "$WORK_DIR/temp-${n}.ppm" ]] && mkfifo "$WORK_DIR/temp-${n}.ppm"
+done
+start_time=$(date +%s)
 if $MENU_FADE && ! $QUICK_MENU; then
     . todisc-fade-routine
     yecho >&2
@@ -7604,12 +7662,12 @@ if $MENU_FADE && ! $QUICK_MENU; then
             cp $WORK_DIR/pics/template.jpg $WORK_DIR/bg/$(($frame + 1)).jpg
         done
     fi
-    num_procs=0; unset bgfade_pids
+    unset bgfade_pids num_procs
     for ((frame=0; frame<=BG_FADEIN_ENDFRAME; frame++)); do
         ((num_procs++))
         D=`get_bg_opacity`
         composite -dissolve $D \
-        $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.jpg \
+        $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.ppm \
         $WORK_DIR/bg/$(($frame + 1)).jpg &
         bgfade_pids="$bgfade_pids $!"
         if ((num_procs >= max_procs || frame == BG_FADEIN_ENDFRAME)); then
@@ -7617,26 +7675,32 @@ if $MENU_FADE && ! $QUICK_MENU; then
             unset bgfade_pids num_procs
         fi
     done
-    num_procs=0; unset bgfade_pids
+    unset bgfade_pids num_procs
     for ((frame=BG_FADEOUT_STARTFRAME; frame<=BG_FADEOUT_ENDFRAME; frame++)); do
-        ((num_procs++))
+        #((num_procs++))
         D=`get_bg_opacity`
         composite -dissolve $D $WORK_DIR/bg/$frame.jpg \
-        $WORK_DIR/black.jpg $WORK_DIR/bg/$frame.jpg &
-        bgfade_pids="$bgfade_pids $!"
-        if ((num_procs >= max_procs || frame == BG_FADEOUT_ENDFRAME)); then
-            wait $bgfade_pids
-            unset bgfade_pids num_procs
-        fi
+        $WORK_DIR/black.ppm $WORK_DIR/bg/$frame.jpg
+        #bgfade_pids="$bgfade_pids $!"
+        #if ((num_procs >= max_procs || frame == BG_FADEOUT_ENDFRAME)); then
+        #    wait $bgfade_pids
+        #    unset bgfade_pids num_procs
+        #fi
     done
+    unset num_procs
+    cp $WORK_DIR/pics/0/* /tmp/
     for ((frame=0; frame<ANIMENU_ENDFRAME; frame++)); do
+        ((num_procs++)) # how many processes are running
+        out_ppm="$WORK_DIR/temp-${num_procs}.ppm" # current frame
         # set dissolve vars from todisc-fade-routine functions
         BC=$(get_title_opacity)
         B=$(awk -F ':' '{print $1'}<<<$BC)
         C=$(awk -F ':' '{print $2'}<<<$BC)
         S=$(get_thumb_opacity)
-
-        spin  "\rProcessing frame $(($frame + 1))  " >&2
+        if ((frame==ANIMENU_ENDFRAME-1 ||
+         (frame/max_procs) * max_procs == frame)); then
+            spin  "\rProcessing frame $(($frame + 1))  " >&2
+        fi
         # experimental: allow using -menu-fade with static thumbs
         $STATIC && FRAME_NUM=0 || FRAME_NUM=$((frame + 1))
 
@@ -7691,6 +7755,9 @@ if $MENU_FADE && ! $QUICK_MENU; then
         # write out a ppm if montages are static from here on in
         if (( frame == ani_pics-1)) || ((frame == BG_FADEIN_ENDFRAME-1 )); then
             write_ppm=(-write "$WORK_DIR/montage.ppm")
+        elif  (( frame == ani_pics+max_procs+1)) ||
+        ((frame == BG_FADEIN_ENDFRAME+max_procs+1)); then
+            unset write_ppm
         fi
         MONTAGE_CMD4=(composite -dissolve $C -gravity $TITLE_GRAVITY \
         -geometry ${title_xoffset}${title_yoffset} $WORK_DIR/title_txt.png - \
@@ -7710,7 +7777,7 @@ if $MENU_FADE && ! $QUICK_MENU; then
         else
             MONTAGE_CMD6=(cat)
         fi
-        MONTAGE_CMD7=(convert - -depth 8  "${write_ppm[@]}" ppm:-)
+        MONTAGE_CMD7=(convert - -depth 8  "${write_ppm[@]}" "$out_ppm")
         # in case I get -menu-fade working with -static
         $SINGLE_SLIDESHOW && \
         IM_CMD1=(convert "$WORK_DIR/polaroid_stack.png" miff:- )
@@ -7727,84 +7794,104 @@ if $MENU_FADE && ! $QUICK_MENU; then
         # make sure we don't start copying frames if fadein is not finished
         ((THUMBS_FADEIN_ENDFRAME > ani_pics )) && \
         ani_frames=$THUMBS_FADEIN_ENDFRAME || ani_frames=$ani_pics
-        f=$((frame + 1))
+        f=$((frame + 2))
         if ((frame==ani_frames)); then
+            cat_fifos=false
             endframe=$THUMBS_FADEOUT_STARTFRAME
-            copy_frames=$((endframe - frame))
+            copy_frames=$((endframe - f))
             # no fadeout, just let ppmtoy4m repeat last frame till done
             if ((ANIMENU_ENDFRAME<=THUMBS_FADEOUT_STARTFRAME)); then 
                 spin  "\rEncoding frames $f to $endframe  " >&2
-                echo 
+                echo >&2
                 break
             else
                 if [[ -s "$WORK_DIR/montage.ppm" ]]; then
+                    # cat any backlog of backgrounded processes
+                    if [[ -n ${ppm_fifos[@]} ]]; then
+                        cat "${ppm_fifos[@]}"
+                    fi
                     # endframe is the last unchanging frame in the video
                     for ((i=0; i<copy_frames; i++)); do
                         spin  "\rEncoding frames $f to $endframe  " >&2
                         cat "$WORK_DIR/montage.ppm"
                     done
+                    unset ppm_fifos num_procs
                     frame=$endframe
                 fi
             fi
-        elif [[ -z $BG_VIDEO ]] &&  ((frame==BG_FADEIN_ENDFRAME+1)); then
-            for ((i=BG_FADEIN_ENDFRAME; i<TITLE_FADEIN_STARTFRAME; i++)); do
-                spin  \
-                "\rEncoding frames $f to $TITLE_FADEIN_STARTFRAME " >&2
+        elif [[ -z $BG_VIDEO ]] && ((frame==BG_FADEIN_ENDFRAME+max_procs)); then
+            # cat any backlog of backgrounded processes
+            if [[ -n ${ppm_fifos[@]} ]]; then
+                cat "${ppm_fifos[@]}"
+            fi
+            cat_fifos=false
+            for ((i=BG_FADEIN_ENDFRAME+max_procs;
+             i<TITLE_FADEIN_STARTFRAME-1; i++)); do
+                spin "Encoding frames $f to $TITLE_FADEIN_STARTFRAME " >&2
                 cat "$WORK_DIR/montage.ppm"
             done
-            frame=$TITLE_FADEIN_STARTFRAME
+            unset ppm_fifos num_procs
+            frame=$((TITLE_FADEIN_STARTFRAME-1))
+        else
+            ppm_fifos+=("$out_ppm") # all frames waiting to be processed
+            cat_fifos=:
         fi
             
         # pipe all of above commands if using MIST
-        if $MIST; then
+        if $MIST && $cat_fifos; then
             if $SHOWCASE; then
                 if [[ -n "$SHOWCASE_VIDEO" ]]; then
                     "${MONTAGE_CMD01[@]}" miff:-|"${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- |"${MONTAGE_CMD3[@]}" miff:- |
                     "${MONTAGE_CMD5[@]}" | "${MONTAGE_CMD6[@]}" |
-                    "${MONTAGE_CMD4[@]}" miff:- | "${MONTAGE_CMD7[@]}"
+                    "${MONTAGE_CMD4[@]}" | "${MONTAGE_CMD7[@]}" &
                 else # not SHOWCASE_VIDEO (SHOWCASE_IMG)
                     "${MONTAGE_CMD[@]}" miff:- | "${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- |"${MONTAGE_CMD5[@]}" |
                     "${MONTAGE_CMD6[@]}" | "${MONTAGE_CMD3[@]}" miff:- |
-                    "${MONTAGE_CMD4[@]}" | "${MONTAGE_CMD7[@]}"
+                    "${MONTAGE_CMD4[@]}" | "${MONTAGE_CMD7[@]}" &
                 fi
             else # not SHOWCASE
                 "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
                 "${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD5[@]}" |
                 "${MONTAGE_CMD6[@]}" | "${MONTAGE_CMD4[@]}" |
-                "${MONTAGE_CMD7[@]}"
+                "${MONTAGE_CMD7[@]}" &
             fi
-        else  # no mist: pipe all commands but the mist command
+        elif ! $MIST && $cat_fifos; then  # no mist
             if $SHOWCASE; then
                 if [[ -n "$SHOWCASE_VIDEO" ]]; then
                     "${MONTAGE_CMD01[@]}" miff:-|"${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- |"${MONTAGE_CMD5[@]}" |
                     "${MONTAGE_CMD6[@]}" | "${MONTAGE_CMD4[@]}" |
-                    "${MONTAGE_CMD7[@]}"
+                    "${MONTAGE_CMD7[@]}" &
                 else
                     "${MONTAGE_CMD[@]}" miff:- | "${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- |"${MONTAGE_CMD5[@]}" |
                     "${MONTAGE_CMD6[@]}" | "${MONTAGE_CMD4[@]}" |
-                    "${MONTAGE_CMD7[@]}"
+                    "${MONTAGE_CMD7[@]}" &
                 fi
             else
                 "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
                 "${MONTAGE_CMD5[@]}" | "${MONTAGE_CMD6[@]}" |
-                "${MONTAGE_CMD4[@]}"  | "${MONTAGE_CMD7[@]}"
+                "${MONTAGE_CMD4[@]}"  | "${MONTAGE_CMD7[@]}" &
             fi
         fi
+        impids="$impids $!"
+
         unset ANI_PICS sc_cmd writeppm
+        if ((num_procs==max_procs || frame >= ANIMENU_ENDFRAME-1)) && $cat_fifos; then
+            cat "${ppm_fifos[@]}"
+            wait $impids
+            unset num_procs ppm_fifos impids
+        fi
     done > "$WORK_DIR/enc.fifo"
-    # copy a few black frames to make sure end frame is really "black"
-    if [[ $VMGM_PAUSE_TIME != "inf" ]]; then
-        for ((i=FRAMES; i<FRAMES+18; i++)); do
-            cp $WORK_DIR/black.jpg $WORK_DIR/animenu/$i.jpg
-        done
-    fi
 elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
     if $TRANSPARENT; then # non transparent -showcase-* uses this block too
+        num_procs=0
         for (( count=1; count<=$FRAMES; count++)); do
+            ((num_procs++)) # how many processes are running
+            out_ppm="$WORK_DIR/temp-${num_procs}.ppm" # current frame
+            ppm_fifos+=("$out_ppm") # all frames waiting to be processed
             spin "\rProcessing frame $count  " >&2
             # experimental: allow using -menu-fade with static thumbs
             $STATIC && FRAME_NUM=0 || FRAME_NUM=$((count - 1))
@@ -7838,7 +7925,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             IM_CMD04=(convert -size $VIDSIZE -background none \
              - ${sc_thumb_title_cmd[@]} -mosaic)
             IM_CMD05=(convert  -size $VIDSIZE xc:none -background none \
-            ${sc_cmd[@]} $SC_IMG_PAGE -mosaic)
+            ${sc_cmd[@]} $SC_IMG_CMD -mosaic)
             IM_CMD1=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
             -geometry ${THUMB_SIZE}${MTG_GEO} -background none miff:-)
             IM_CMD2=(composite -dissolve $OPACITY \
@@ -7853,7 +7940,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             IM_CMD4=(convert -depth 8 - $WORK_DIR/title_txt.png -gravity \
             $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
             -composite "${ADD_RTN_BTN[@]}" "${ADD_PLAYALL_BTN[@]}" \
-            ppm:- )
+            "$out_ppm" )
             $SINGLE_SLIDESHOW && \
             IM_CMD1=(convert "$WORK_DIR/polaroid_stack.png" miff:- )
             if $MIST; then
@@ -7862,11 +7949,10 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
                     if test -n "$BG_VIDEO"; then # also bgvideo
                         "${IM_CMD01[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                        "${IM_CMD03[@]}" miff:- |  "${IM_CMD3[@]}" |
-                        "${IM_CMD4[@]}"
+                        "${IM_CMD4[@]}" &
                     else # not with bgvideo
                         "${IM_CMD01[@]}" miff:- |
-                        "${IM_CMD02[@]}" -depth 8 ppm:-
-                        #"${IM_CMD02[@]}" "$WORK_DIR/animenu/$count.jpg"
+                        "${IM_CMD02[@]}" -depth 8 "$out_ppm" &
                     fi
                 # showcase, mist, showcase-image
                 elif $SHOWCASE && [[ -n "$SHOWCASE_IMG" ]]; then
@@ -7874,18 +7960,17 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
                     if test -n "$BG_VIDEO"; then
                         "${IM_CMD05[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                         "${IM_CMD03[@]}" miff:- |"${IM_CMD3[@]}" |
-                        "${IM_CMD4[@]}"
+                        "${IM_CMD4[@]}" &
                     else # showcase, mist, showcase-image, not bgvideo
-                        "${IM_CMD0[@]}" -depth 8 ppm:-
-                        #"${IM_CMD0[@]}" $WORK_DIR/animenu/$count.jpg
+                        "${IM_CMD0[@]}" -depth 8 "$out_ppm" &
                     fi
                 elif ! $SHOWCASE; then
                     if test -n "$BG_VIDEO"; then
                         "${IM_CMD1[@]}" | "${IM_CMD2b[@]}" | "${IM_CMD3[@]}" |
-                        "${IM_CMD4[@]}"
+                        "${IM_CMD4[@]}" &
                     else
                     "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" |
-                    "${IM_CMD4[@]}"
+                    "${IM_CMD4[@]}" &
                     fi
                 fi
             else # showcase, no mist, showcase-video
@@ -7893,35 +7978,45 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
                     if test -n "$BG_VIDEO"; then
                         # with bgvideo
                         "${IM_CMD01[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
-                        "${IM_CMD03[@]}" miff:- | "${IM_CMD4[@]}"
+                        "${IM_CMD03[@]}" miff:- | "${IM_CMD4[@]}" &
                     else # no bgvideo
                         "${IM_CMD01[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
-                        "${IM_CMD02[@]}" miff:- | "${IM_CMD4[@]}"
+                        "${IM_CMD02[@]}" miff:- | "${IM_CMD4[@]}" &
                     fi
                 elif $SHOWCASE && [[ -n "$SHOWCASE_IMG" ]]; then
                 # showcase, no mist, showcase-image
                     if test -n "$BG_VIDEO"; then # with bgvideo
                         "${IM_CMD05[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
-                        "${IM_CMD03[@]}" miff:- | "${IM_CMD4[@]}"
+                        "${IM_CMD03[@]}" miff:- | "${IM_CMD4[@]}" &
                     else # no bgvideo
-                        "${IM_CMD0[@]}" -depth 8 ppm:-
-                        #"${IM_CMD0[@]}" $WORK_DIR/animenu/$count.jpg
+                        "${IM_CMD0[@]}" -depth 8 "$out_ppm" &
                     fi
                 elif ! $SHOWCASE; then
                     if test -n "$BG_VIDEO"; then
-                        "${IM_CMD1[@]}" | "${IM_CMD2b[@]}" | "${IM_CMD4[@]}"
+                        "${IM_CMD1[@]}" | "${IM_CMD2b[@]}" | "${IM_CMD4[@]}" &
                     else
-                        "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}"
+                        "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}" &
                     fi
                 fi
             fi
-            # don't remove ANI_PICS if static as we reuse them for each loop !
-            ! $STATIC && rm -f ${ANI_PICS[@]}
+            impids="$impids $!"
+            if ((num_procs==max_procs || count >= FRAMES)); then
+                cat "${ppm_fifos[@]}"
+                wait $impids
+                unset num_procs ppm_fifos impids
+                # don't rm ANI_PICS if static as we reuse them for each loop !
+                # FIXME get array of images processed in max_procs passes to rm
+                ! $STATIC && rm -f ${ANI_PICS[@]} # only rm's half of thumbs !
+            fi
             unset ANI_PICS sc_cmd
         done > "$WORK_DIR/enc.fifo"
     else # Not transparent (non transparent showcase uses transparent block ^^)
         C=$((${CHAPTERS[s]} - 1))
+        num_procs=0
         for (( count=1; count <=FRAMES; count++)); do
+            ((num_procs++)) # how many processes are running
+            out_ppm="$WORK_DIR/temp-${num_procs}.ppm" # current frame
+            ppm_fifos+=("$out_ppm") # all frames waiting to be processed
             spin -ne "\rProcessing frame $count  " >&2
             $STATIC && FRAME_NUM=0 || FRAME_NUM=$((count - 1))
 
@@ -7943,24 +8038,30 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             ${mist_xoffset}${mist_yoffset} $WORK_DIR/white.png - miff:-)
             IM_CMD4=(convert -depth 8 - $WORK_DIR/title_txt.png -gravity \
             $TITLE_GRAVITY -geometry ${title_xoffset}${title_yoffset} \
-            -composite "${ADD_RTN_BTN[@]}" "${ADD_PLAYALL_BTN[@]}" ppm:- )
+            -composite "${ADD_RTN_BTN[@]}" "${ADD_PLAYALL_BTN[@]}" "$out_ppm" )
             $SINGLE_SLIDESHOW && \
             IM_CMD0=(convert "$WORK_DIR/polaroid_stack.png" miff:- )
 
             if test -n "$BG_VIDEO"; then
                 if $MIST; then
                     "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" |
-                    "${IM_CMD4[@]}"
+                    "${IM_CMD4[@]}" &
                 else # no mist
-                    "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}"
+                    "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}" &
                 fi
             else # no bg video
                 if $MIST; then
                     "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" |
-                    "${IM_CMD4[@]}"
+                    "${IM_CMD4[@]}" &
                 else # no mist
-                    "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}"
+                    "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}" &
                 fi
+            fi
+            impids="$impids $!"
+            if ((num_procs==max_procs || count >= FRAMES)); then
+                cat "${ppm_fifos[@]}"
+                wait $impids
+                unset num_procs ppm_fifos impids
             fi
             unset ANI_PICS
         done > "$WORK_DIR/enc.fifo"
@@ -7968,6 +8069,10 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
 fi # end making final montages
 # wait for ppmtoy4m and ffmpeg to finish
 wait
+end_time=$(date +%s)
+totaltime=$((end_time-start_time))
+totaltime=$(format_seconds $totaltime)
+echo "Todisc took $totaltime to do the final montages"
 
 if ! $QUICK_MENU && $DO_MENU; then
     echo
@@ -8163,6 +8268,7 @@ if ! $VMGM_ONLY && ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
             fi
         fi
     done
+    echo "This script has run for $(format_time $SECONDS)"
     thanks_goodbye
     $BURN && burn_disc
 fi
