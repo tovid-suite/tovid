@@ -193,7 +193,7 @@ See the other slideshow options in the SLIDESHOWS options section.
 
 == Options ==
 
-: **-keepfiles**
+: **-keep-files**, **-keepfiles**
     Keep all intermediate/temporary files (helps with debugging)
 : **-dvd**
     DVD-compatible output (default)
@@ -564,8 +564,22 @@ See the other slideshow options in the SLIDESHOWS options section.
     ```
     then the group will consist of bar.mpg  2.mpg, 3.mpg and 4.mpg, and only the
     title and/or thumbnail for bar.mpg will appear in the menu.  You can use
-    **-group** more than once if you have more than one group you are making.  Be
-    sure to quote video filenames if they contain  spaces.
+    **-group** more than once for multiple groups.  Be  sure to quote video
+    filenames if they contain  spaces.
+: **-jobs**
+    By default todisc starts a parallel job for each processor detected.  With
+    this option you can manually set the number of jobs.  For example if you
+    have a computer with 2 CPUs you can set "-jobs 1" to keep one processor
+    free for other things.  At present this applies to the time consuming
+    imagemagick loops: you will notice a substantial speedup now if you have a
+    multi-cpu system.   See also  **-tovid-jobs**
+: **tovid-jobs**
+    If you have non compliant files, todisc invokes tovid to encode them.  This
+    option lets you set the number of parallel jobs run.  By default todisc run
+    one instance of tovid for each processor if needed.  With this option you
+    can set the value higher or lower.  It also affects the checking for
+    compliance of files (idvid), as well as a few other non imagemagick
+    related tasks.
 : **-noask**, **-no-ask**
     Skip all interactive questions.  No preview, automatic re-encoding with
     tovid if needed, no interactive option to use background video for bgaudio.
