@@ -101,17 +101,6 @@ main_panel = VPanel('slideshow',
                             0, 20, toggles=True),
                         ),
                     ),
-                    FlagGroup('Use slideshow as background or showcase video ',
-                        'exclusive',
-                        Flag("Background", '-background-slideshow',
-                        False, 'This option is only for multiple slideshows, '
-                        '(or mixed video and slideshow menus). It uses the '
-                        'animated slideshow as the background video'),
-                        Flag("Showcase", '-showcase-slideshow',
-                        False, 'This option is only for multiple slideshows, '
-                        '(or mixed video and slideshow menus).  It uses the '
-                        'animated slideshow as the showcase video',),
-                    ),
                 ),
                 Flag('No reminder prompt for backing up files',
                 '-no-confirm-backup', False, 'Todisc prompts you for a "yes" '
@@ -119,21 +108,20 @@ main_panel = VPanel('slideshow',
                 'disables that prompt.'),
             ),
         VPanel('Advanced options',
-            Panel('Denoising options',
-                HPanel('',
-                    FileList('Slides to "bin"', '-slides-to-bin', None,
-                    '"Binning" resizes the image to 640x480 using a "box" '
-                    'filter, which reduces "signal to noise ratio"'
-                    'Use in conjuction with the next option for burring, '
-                    'to achieve stronger denoising',
-                    filetypes=slideshow_filetypes),
-                    FileList('Slides to blur', '-slides-to-blur', None,
-                    'Blurring the image can reduce noise such as "ringing" '
-                    'effects.  Use values between 0x0.1 and 0x0.9 for best '
-                    'results.  Enter a single value or 1 value for each slide '
-                    'to be blurred.', filetypes=slideshow_filetypes),
-                ),
+            FlagGroup('Use slideshow as background or showcase video ',
+                'exclusive',
+                Flag("Background", '-background-slideshow',
+                False, 'This option is only for multiple slideshows, '
+                '(or mixed video and slideshow menus). It uses the '
+                'animated slideshow as the background video'),
+                Flag("Showcase", '-showcase-slideshow',
+                False, 'This option is only for multiple slideshows, '
+                '(or mixed video and slideshow menus).  It uses the '
+                'animated slideshow as the showcase video',),
             ),
+            FileList('Menu slide thumbs', '-slideshow-menu-thumbs', None,
+            'Slides for the menu thumbnail.  For multiple slideshows or '
+            'mixed slideshows/videos only.', filetypes=slideshow_filetypes),
             Flag('Use dvd-slideshow program', '-use-dvd-slideshow', False,
                 'Use the "dvd-slideshow" program to make the animated '
                 'slideshow. You need of course to have installed this program '
@@ -146,9 +134,19 @@ main_panel = VPanel('slideshow',
                 enables=Filename('', '', '', '',  'load',
                 'Select the dvd-author configuration file..'),
             ),
-            FileList('Menu slide thumbs', '-slideshow-menu-thumbs', None,
-            'Slides for the menu thumbnail.  For multiple slideshows or '
-            'mixed slideshows/videos only.', filetypes=slideshow_filetypes),
+        ),
+        VPanel('Denoising options',
+            FileList('Slides to "bin"', '-slides-to-bin', None,
+            '"Binning" resizes the image to 640x480 using a "box" '
+            'filter, which reduces "signal to noise ratio"'
+            'Use in conjuction with the next option for burring, '
+            'to achieve stronger denoising',
+            filetypes=slideshow_filetypes),
+            FileList('Slides to blur', '-slides-to-blur', None,
+            'Blurring the image can reduce noise such as "ringing" '
+            'effects.  Use values between 0x0.1 and 0x0.9 for best '
+            'results.  Enter a single value or 1 value for each slide '
+            'to be blurred.', filetypes=slideshow_filetypes),
         ),
     ),
 )
