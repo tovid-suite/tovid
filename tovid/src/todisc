@@ -331,39 +331,38 @@ audio_length()
 }
 cleanup()
 {
-    echo
-    yecho "Cleaning up..."
-    if test -s "$WORK_DIR/tcode*.pid"; then
-        for pidfile in "$WORK_DIR/tcode*.pid"; do
-            if kill -0 $(<$pidfile) 2> /dev/null; then
-                kill $(<$pidfile) 2> /dev/null
-            fi
-            # get mean if it still exists
-            if kill -0 $(<$pidfile) 2> /dev/null; then
-                kill -9 $(<$pidfile) 2> /dev/null
-            fi
-        done
-    fi
-    for PID in $TCODE_PID $TRANSCODE_PID $NS_PID $polaroid_pid; do
-        if kill -0 $PID  2> /dev/null; then kill $PID  2> /dev/null; fi
+    echo >&2
+    echo "Cleaning up..." >&2
+    pids2kill="$impids $smpids $bgfade_pids $title_pids $tcode_pids $encpids"
+    for PID in $pids2kill; do
+        if kill -0 $PID  2> /dev/null; then
+            echo "killing pid $PID" >&2
+            kill $PID  2> /dev/null
+            sleep .3
+        fi
         # get mean if it still exists
-        if kill -0 $PID  2> /dev/null; then kill -9 $PID  2> /dev/null; fi
+        if kill -0 $PID  2> /dev/null; then
+            echo "killing $PID with force" >&2
+            kill -9 $PID  2> /dev/null
+        fi
     done
+    wait
     if $KEEP_FILES; then
-        yecho "Keeping temporary files in $REAL_WORK_DIR"
+        echo "Keeping temporary files in $REAL_WORK_DIR" >&2
         [[ -n $SUPPORT_VIDEOS ]] && yecho "Keeping ${SUPPORT_VIDEOS[@]}" && \
             yecho "This sliced video will not work if todisc is run with 
              different seeks so should be deleted manually"
     else
         if [[ -d $REAL_WORK_DIR ]]; then
-            yecho "Removing $REAL_WORK_DIR"
+            yecho "Removing $REAL_WORK_DIR" >&2
             [[ -n $SUPPORT_VIDEOS ]] && yecho \
-             "Removing "${SUPPORT_VIDEOS[@]}"" && rm -f "${SUPPORT_VIDEOS[@]}"
-            rm -rf "$REAL_WORK_DIR"
+             "Removing "${SUPPORT_VIDEOS[@]}"" >&2 && \
+             rm -f "${SUPPORT_VIDEOS[@]}" >&2
+            rm -rf "$REAL_WORK_DIR" >&2
         fi
     fi
-    echo "Removing the symlink in /tmp . . . "
-    rm -fv "$WORK_DIR"
+    yecho "Removing the symlink in /tmp . . . " >&2
+    rm -fv "$WORK_DIR" >&2
 }
 
 # exit from all recursive todisc calls
@@ -3279,9 +3278,17 @@ for ((i=1; i<=${#FILES[@]}; i++)); do
     fi
 done
 fi
+
+PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
+printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
+"todisc from the tovid suite - log for `date`" \
+"$PATTERN" >> "$LOG_FILE"
+# put the command line into the log file to aid debugging
+printf  "%s\n%s\n" todisc "${args[@]}" | sed "s/    */ /g;s/^ *//" | fold -bs >> "$LOG_FILE"
 # do some locale debugging
-echo "You are using the following locale settings:" >> "$LOG_FILE"
+echo -e "\nYou are using the following locale settings:" >> "$LOG_FILE"
 locale >>  "$LOG_FILE" 2>&1
+echo >> "$LOG_FILE"
 # if no bg supplied, use template.png so we can add a frame (-quick-menu only)
 
 # check that NTSC menu uses safe colours
@@ -4238,11 +4245,6 @@ for ((i=0; i<=NUM_FILES; i++)); do
         SCTHUMB_PAGES_ARRAY[i]=+${SC_THUMB_X_ARRAY[i]}+${SC_THUMB_Y_ARRAY[i]}
     fi
 done
-
-PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
-printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
-"todisc from the tovid suite - log for `date`" \
-"$PATTERN" >> "$LOG_FILE"
 
 # Do everything in $WORK_DIR
 echo -e "**** NOTE ****\n"
@@ -5844,9 +5846,9 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
     echo
     sstime1=$(date +%s)
     # make a fifo to send raw yuv to, to be encoded by ffmpeg
-    mkfifo "$WORK_DIR/enc.fifo"
-    "${IMGENC_CMD[@]}" 2>/dev/null < "$WORK_DIR/enc.fifo" &
-    #exec 3> "$WORK_DIR/enc.fifo"
+    mkfifo "$WORK_DIR/ppm.fifo"
+    "${IMGENC_CMD[@]}" 2>/dev/null < "$WORK_DIR/ppm.fifo" &
+    #exec 3> "$WORK_DIR/ppm.fifo"
 
     if [[ $EFFECT = "fade" ]]; then
         [[ $TV_STANDARD = "ntsc" ]] && fade_frames=15 || fade_frames=12
@@ -5932,7 +5934,7 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
                 rm -f "$WORK_DIR"/animenu/*.ppm
             fi
         fi
-    done > "$WORK_DIR/enc.fifo"
+    done > "$WORK_DIR/ppm.fifo"
     # close the pipe
     #exec 3>&-
     sstime2=$(date +%s)
@@ -6330,6 +6332,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             run_transcode &
             sleep 1 # short sleep to allow 1st jpg to appear
             TRANSCODE_PID=$(<$WORK_DIR/tcode$i.pid)
+            tcode_pids="$tcode_pids $TRANSCODE_PID"
             check_stall $TRANSCODE_PID &
             if [[ -n "$TRANSCODE_PID" ]]; then
                 while ps -p $TRANSCODE_PID >/dev/null; do
@@ -7011,6 +7014,7 @@ if $SUB_MENU; then
             run_transcode &
             sleep 2 # short sleep to allow 1st jpg to appear
             TCODE_PID=$(<$WORK_DIR/tcode$i.pid)
+            tcode_pids="$tcode_pids $TCODE_PID"
             check_stall $TCODE_PID &
             if [[ -n "$TCODE_PID" ]]; then
                 while ps -p $TCODE_PID >/dev/null; do
@@ -7082,9 +7086,9 @@ if $SUB_MENU; then
                     for f in ${pics[@]}; do
                         if [[ -s $f ]]; then
                             ((num_procs++))
-                            convert -size ${GEO_ARRAY[C]} "$f" \
-                            "$ctitle" -gravity south -geometry +0+5 -compose \
-                            over -composite "$WORK_DIR/animenu/$a/${f##*/}" &
+                            { convert -size ${GEO_ARRAY[C]} "$f" "$ctitle" \
+                            -gravity south -geometry +0+5 -compose over \
+                            -composite "$WORK_DIR/animenu/$a/${f##*/}" ; } &
                             smpids="$smpids $!"
                             if ((num_procs==max_procs)); then
                                 wait $smpids
@@ -7114,11 +7118,15 @@ if $SUB_MENU; then
             -r $FRAME_RATE -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS \
             -y "$WORK_DIR/menu$i.m2v")
             echo
-            yecho "Running ${TOYUV_CMD[@]} < $WORK_DIR/enc.fifo |
+            yecho "Running ${TOYUV_CMD[@]} < $WORK_DIR/ppm.fifo |
             ${IMGENC_CMD[@]}" | fold -bs
+            mkfifo "$WORK_DIR/ppm.fifo" 2>/dev/null
             mkfifo "$WORK_DIR/enc.fifo" 2>/dev/null
-            ("${TOYUV_CMD[@]}" < "$WORK_DIR/enc.fifo" |
-            "${IMGENC_CMD[@]}" 2>/dev/null)  &
+            { "${TOYUV_CMD[@]}" < "$WORK_DIR/ppm.fifo" > "$WORK_DIR/enc.fifo" \
+            2>/dev/null ; } &
+            encpids="$encpids $!"
+            { "${IMGENC_CMD[@]}" <  "$WORK_DIR/enc.fifo"  2>/dev/null  ; } &
+            encpids="$encpids $!"
             echo
             echo "Encoding 300 frames for "${IN_FILES[i]}"" >&2
             # make fifos for intermediary piping
@@ -7144,7 +7152,7 @@ if $SUB_MENU; then
                 $WORK_DIR/title${i}_txt.png  -gravity south \
                 -geometry +0+55 -composite -  -gravity north -geometry +0+45 \
                 -composite "$out_ppm")
-                "${IM_CMD[@]}" | "${IM_CMD1[@]}" | "${IM_CMD2[@]}" &
+                { "${IM_CMD[@]}" | "${IM_CMD1[@]}" | "${IM_CMD2[@]}" ; } &
                 smpids="$smpids $!"
                 ppm_fifos+=("$out_ppm") # all frames waiting to be processed
                 if ((num_procs==max_procs || a == 299 )); then
@@ -7155,7 +7163,7 @@ if $SUB_MENU; then
                 fi
 
                 unset IMGS TOYUV_CMD IMGENC_CMD
-            done > "$WORK_DIR/enc.fifo"
+            done > "$WORK_DIR/ppm.fifo"
             $DEBUG && etime=$(date +%s) && get_elapsed "the submenu m2v"
             
             # wait for ppmtoyuv and ffmpeg to finish
@@ -7416,16 +7424,16 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
             # if glass and either wave or rotate
             if [ "$SC_FRAMESTYLE" = "glass" ] && \
              [[ -n "$WAVE" || -n "$ROTATE" ]]; then
-                convert -size $SHOWCASE_SIZE "$pic" \
-                -background none $ROTATE $WAVE -resize $SHOWCASE_SIZE! "$pic" &
+                { convert -size $SHOWCASE_SIZE "$pic" -background none \
+                 $ROTATE $WAVE -resize $SHOWCASE_SIZE! "$pic" ; } &
             # if glass and neither wave or rotate
             elif [ "$SC_FRAMESTYLE" = "glass" ] && \
              [[ -z "$WAVE" && -z "$ROTATE" ]]; then
                 :
             else # not glass
-                convert $QUALITY -size $SHOWCASE_SIZE "$pic" \
+                { convert $QUALITY -size $SHOWCASE_SIZE "$pic" \
                 -mattecolor gray $SC_FRAME -background none $ROTATE $WAVE \
-                -resize ${SHOWCASE_SIZE}! "$pic" &
+                -resize ${SHOWCASE_SIZE}! "$pic" ; } &
             fi
             impids="$impids $!"
             if ((num_procs==max_procs || p >= (${#SC_PICS[@]}-1) )); then
@@ -7483,7 +7491,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         for ((p=START_PIC; p<LAST_PIC; p++)); do
             ((num_procs++))
             # only let one process use the spinner at a time
-            if (( (p/max_procs) * max_procs == p || p==LAST_PIC-1 )); then
+            if ((num_procs==max_procs || p==LAST_PIC-1)); then
                 spin "\rProcessing frame $((p+1)) "
             fi
             unset IM_CMD6
@@ -7531,35 +7539,35 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                 if $SHOWCASE; then
                     if $THUMBS_3D; then
                         if [ "$THUMB_SHAPE" != "normal" ]; then
-                            "${IM_CMD[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
+                            { "${IM_CMD[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
                             "${IM_CMD6[@]}" miff:- |  "${IM_CMD7[@]}" miff:- |
-                            "${IM_CMD5[@]}" &
+                            "${IM_CMD5[@]}" ; } &
                         else # normal thumbshape, with feather and 3D
-                            "${IM_CMD02[@]}" miff:- | "${IM_CMD03[@]}" miff:- |
+                            { "${IM_CMD02[@]}" miff:- | "${IM_CMD03[@]}" miff:- |
                             "${IM_CMD2[@]}" miff:- |"${IM_CMD7[@]}" miff:- |
-                            "${IM_CMD5[@]}" &
+                            "${IM_CMD5[@]}" ; } &
 
                         fi
                     else
-                        "${IM_CMD[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
-                        "${IM_CMD5[@]}" &
+                        { "${IM_CMD[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
+                        "${IM_CMD5[@]}" ; } &
                     fi
                 else # not SHOWCASE
                     if $THUMBS_3D; then
                         if [ "$THUMB_SHAPE" != "normal" ]; then
-                            "${IM_CMD[@]}" miff:- | "${IM_CMD6[@]}"  miff:- |
+                            { "${IM_CMD[@]}" miff:- | "${IM_CMD6[@]}"  miff:- |
                             "${IM_CMD1[@]}" miff:- |"${IM_CMD04[@]}" miff:- |
                             "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
-                            "${IM_CMD5[@]}" &
+                            "${IM_CMD5[@]}" ; } &
                         else
-                            "${IM_CMD02[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
+                            { "${IM_CMD02[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                             "${IM_CMD2[@]}" miff:- |
-                            "${IM_CMD5[@]}" &
+                            "${IM_CMD5[@]}" ; } &
                         fi
                     else # not 3D
-                        "${IM_CMD[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
+                        { "${IM_CMD[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                         "${IM_CMD1[@]}" miff:- |"${IM_CMD2[@]}" miff:- |
-                        "${IM_CMD5[@]}" &
+                        "${IM_CMD5[@]}" ; } &
                     fi
                 fi
             else # not FEATHER
@@ -7569,24 +7577,25 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                         :
                     else
                         if $THUMBS_3D; then
-                            "${IM_CMD02[@]}" miff:- | "${IM_CMD5[@]}" &
+                            { "${IM_CMD02[@]}" miff:- | "${IM_CMD5[@]}" ; } &
                         else
-                            "${IM_CMD01[@]}" miff:- | "${IM_CMD5[@]}" &
+                            { "${IM_CMD01[@]}" miff:- | "${IM_CMD5[@]}" ; } &
                         fi
                     fi
                 else # not showcase or feather
                     if $THUMBS_3D; then
-                        "${IM_CMD02[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
-                        "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}" &
+                        { "${IM_CMD02[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
+                        "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}" ; } &
                     else
-                        "${IM_CMD3[@]}" miff:- | "${IM_CMD5[@]}" &
+                        { "${IM_CMD3[@]}" miff:- | "${IM_CMD5[@]}" ; } &
                     fi
                 fi
             fi
+            title_pids="$title_pids $!"
             # wait on processes to keep on or below max # of processes
             if ((num_procs >= max_procs || i == LAST_PIC)); then
                 wait
-                unset num_procs
+                unset num_procs title_pids
             fi
             if $STATIC; then unset PICS; fi
             unset IM_CMD0 IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5 IM_CMD6
@@ -7640,13 +7649,17 @@ if ! $QUICK_MENU && $DO_MENU; then
     IMGENC_CMD=(ffmpeg $INSIZE -r $FRAME_RATE $PIPE_FORMAT -i - -an \
     -r $FRAME_RATE -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS \
     -y $WORK_DIR/intro.m2v)
-    yecho "Running ${TOYUV_CMD[@]} < $WORK_DIR/enc.fifo | ${IMGENC_CMD[@]}" |
+    yecho "Running ${TOYUV_CMD[@]} < $WORK_DIR/ppm.fifo | ${IMGENC_CMD[@]}" |
     fold -bs
+    mkfifo "$WORK_DIR/ppm.fifo" 2>/dev/null
     mkfifo "$WORK_DIR/enc.fifo" 2>/dev/null
-    ( "${TOYUV_CMD[@]}" < "$WORK_DIR/enc.fifo" |
-    "${IMGENC_CMD[@]}" 2>/dev/null)  &
+    { "${TOYUV_CMD[@]}" < "$WORK_DIR/ppm.fifo" > "$WORK_DIR/enc.fifo" \
+     2>/dev/null ; } &
+    encpids="$encpids $!"
+    { "${IMGENC_CMD[@]}" <  "$WORK_DIR/enc.fifo"  2>/dev/null  ; } &
+    encpids="$encpids $!"
 fi
-# make intermediary fifos for images.  They will get catted to enc.fifo
+# make intermediary fifos for images.  They will get catted to ppm.fifo
 for ((n=1; n<=max_procs; n++)); do
     [[ ! -e "$WORK_DIR/temp-${n}.ppm" ]] && mkfifo "$WORK_DIR/temp-${n}.ppm"
 done
@@ -7688,7 +7701,6 @@ if $MENU_FADE && ! $QUICK_MENU; then
         #fi
     done
     unset num_procs
-    cp $WORK_DIR/pics/0/* /tmp/
     for ((frame=0; frame<ANIMENU_ENDFRAME; frame++)); do
         ((num_procs++)) # how many processes are running
         out_ppm="$WORK_DIR/temp-${num_procs}.ppm" # current frame
@@ -7697,10 +7709,6 @@ if $MENU_FADE && ! $QUICK_MENU; then
         B=$(awk -F ':' '{print $1'}<<<$BC)
         C=$(awk -F ':' '{print $2'}<<<$BC)
         S=$(get_thumb_opacity)
-        if ((frame==ANIMENU_ENDFRAME-1 ||
-         (frame/max_procs) * max_procs == frame)); then
-            spin  "\rProcessing frame $(($frame + 1))  " >&2
-        fi
         # experimental: allow using -menu-fade with static thumbs
         $STATIC && FRAME_NUM=0 || FRAME_NUM=$((frame + 1))
 
@@ -7841,50 +7849,51 @@ if $MENU_FADE && ! $QUICK_MENU; then
         if $MIST && $cat_fifos; then
             if $SHOWCASE; then
                 if [[ -n "$SHOWCASE_VIDEO" ]]; then
-                    "${MONTAGE_CMD01[@]}" miff:-|"${MONTAGE_CMD02[@]}" miff:- |
+                    { "${MONTAGE_CMD01[@]}" miff:-|"${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- |"${MONTAGE_CMD3[@]}" miff:- |
                     "${MONTAGE_CMD5[@]}" | "${MONTAGE_CMD6[@]}" |
-                    "${MONTAGE_CMD4[@]}" | "${MONTAGE_CMD7[@]}" &
+                    "${MONTAGE_CMD4[@]}" | "${MONTAGE_CMD7[@]}" ; } &
                 else # not SHOWCASE_VIDEO (SHOWCASE_IMG)
-                    "${MONTAGE_CMD[@]}" miff:- | "${MONTAGE_CMD02[@]}" miff:- |
+                    { "${MONTAGE_CMD[@]}" miff:- | "${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- |"${MONTAGE_CMD5[@]}" |
                     "${MONTAGE_CMD6[@]}" | "${MONTAGE_CMD3[@]}" miff:- |
-                    "${MONTAGE_CMD4[@]}" | "${MONTAGE_CMD7[@]}" &
+                    "${MONTAGE_CMD4[@]}" | "${MONTAGE_CMD7[@]}" ; } &
                 fi
             else # not SHOWCASE
-                "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
+                { "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
                 "${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD5[@]}" |
                 "${MONTAGE_CMD6[@]}" | "${MONTAGE_CMD4[@]}" |
-                "${MONTAGE_CMD7[@]}" &
+                "${MONTAGE_CMD7[@]}" ; } &
             fi
         elif ! $MIST && $cat_fifos; then  # no mist
             if $SHOWCASE; then
                 if [[ -n "$SHOWCASE_VIDEO" ]]; then
-                    "${MONTAGE_CMD01[@]}" miff:-|"${MONTAGE_CMD02[@]}" miff:- |
+                    { "${MONTAGE_CMD01[@]}" miff:-|"${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- |"${MONTAGE_CMD5[@]}" |
                     "${MONTAGE_CMD6[@]}" | "${MONTAGE_CMD4[@]}" |
-                    "${MONTAGE_CMD7[@]}" &
+                    "${MONTAGE_CMD7[@]}" ; } &
                 else
-                    "${MONTAGE_CMD[@]}" miff:- | "${MONTAGE_CMD02[@]}" miff:- |
+                    { "${MONTAGE_CMD[@]}" miff:- | "${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- |"${MONTAGE_CMD5[@]}" |
                     "${MONTAGE_CMD6[@]}" | "${MONTAGE_CMD4[@]}" |
-                    "${MONTAGE_CMD7[@]}" &
+                    "${MONTAGE_CMD7[@]}" ; } &
                 fi
             else
-                "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
+                { "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
                 "${MONTAGE_CMD5[@]}" | "${MONTAGE_CMD6[@]}" |
-                "${MONTAGE_CMD4[@]}"  | "${MONTAGE_CMD7[@]}" &
+                "${MONTAGE_CMD4[@]}"  | "${MONTAGE_CMD7[@]}" ; } &
             fi
         fi
         impids="$impids $!"
 
         unset ANI_PICS sc_cmd writeppm
         if ((num_procs==max_procs || frame >= ANIMENU_ENDFRAME-1)) && $cat_fifos; then
+            spin  "\rProcessing frame $(($frame + 1))  " >&2
             cat "${ppm_fifos[@]}"
             wait $impids
             unset num_procs ppm_fifos impids
         fi
-    done > "$WORK_DIR/enc.fifo"
+    done > "$WORK_DIR/ppm.fifo"
 elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
     if $TRANSPARENT; then # non transparent -showcase-* uses this block too
         num_procs=0
@@ -7892,7 +7901,9 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             ((num_procs++)) # how many processes are running
             out_ppm="$WORK_DIR/temp-${num_procs}.ppm" # current frame
             ppm_fifos+=("$out_ppm") # all frames waiting to be processed
-            spin "\rProcessing frame $count  " >&2
+            if ((num_procs==max_procs || count==FRAMES)); then
+                spin "\rProcessing frame $count  " >&2
+            fi
             # experimental: allow using -menu-fade with static thumbs
             $STATIC && FRAME_NUM=0 || FRAME_NUM=$((count - 1))
 
@@ -7947,55 +7958,56 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
                 # showcase, mist, showcase-video
                 if $SHOWCASE && [[ -n "$SHOWCASE_VIDEO" ]]; then
                     if test -n "$BG_VIDEO"; then # also bgvideo
-                        "${IM_CMD01[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
+                        { "${IM_CMD01[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                        "${IM_CMD03[@]}" miff:- |  "${IM_CMD3[@]}" |
-                        "${IM_CMD4[@]}" &
+                        "${IM_CMD4[@]}" ; } &
                     else # not with bgvideo
-                        "${IM_CMD01[@]}" miff:- |
-                        "${IM_CMD02[@]}" -depth 8 "$out_ppm" &
+                        { "${IM_CMD01[@]}" miff:- |
+                        "${IM_CMD02[@]}" -depth 8 "$out_ppm" ; } &
                     fi
                 # showcase, mist, showcase-image
                 elif $SHOWCASE && [[ -n "$SHOWCASE_IMG" ]]; then
                     # showcase, mist, showcase-image with bgvideo
                     if test -n "$BG_VIDEO"; then
-                        "${IM_CMD05[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
+                        { "${IM_CMD05[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                         "${IM_CMD03[@]}" miff:- |"${IM_CMD3[@]}" |
-                        "${IM_CMD4[@]}" &
+                        "${IM_CMD4[@]}" ; } &
                     else # showcase, mist, showcase-image, not bgvideo
-                        "${IM_CMD0[@]}" -depth 8 "$out_ppm" &
+                        { "${IM_CMD0[@]}" -depth 8 "$out_ppm" ; } &
                     fi
                 elif ! $SHOWCASE; then
                     if test -n "$BG_VIDEO"; then
-                        "${IM_CMD1[@]}" | "${IM_CMD2b[@]}" | "${IM_CMD3[@]}" |
-                        "${IM_CMD4[@]}" &
+                        { "${IM_CMD1[@]}" | "${IM_CMD2b[@]}" | "${IM_CMD3[@]}" |
+                        "${IM_CMD4[@]}" ; } &
                     else
-                    "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" |
-                    "${IM_CMD4[@]}" &
+                    { "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" |
+                    "${IM_CMD4[@]}" ; } &
                     fi
                 fi
             else # showcase, no mist, showcase-video
                 if $SHOWCASE && [[ -n "$SHOWCASE_VIDEO" ]]; then
                     if test -n "$BG_VIDEO"; then
                         # with bgvideo
-                        "${IM_CMD01[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
-                        "${IM_CMD03[@]}" miff:- | "${IM_CMD4[@]}" &
+                        { "${IM_CMD01[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
+                        "${IM_CMD03[@]}" miff:- | "${IM_CMD4[@]}" ; } &
                     else # no bgvideo
-                        "${IM_CMD01[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
-                        "${IM_CMD02[@]}" miff:- | "${IM_CMD4[@]}" &
+                        { "${IM_CMD01[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
+                        "${IM_CMD02[@]}" miff:- | "${IM_CMD4[@]}" ; } &
                     fi
                 elif $SHOWCASE && [[ -n "$SHOWCASE_IMG" ]]; then
                 # showcase, no mist, showcase-image
                     if test -n "$BG_VIDEO"; then # with bgvideo
-                        "${IM_CMD05[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
-                        "${IM_CMD03[@]}" miff:- | "${IM_CMD4[@]}" &
+                        { "${IM_CMD05[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
+                        "${IM_CMD03[@]}" miff:- | "${IM_CMD4[@]}" ; } &
                     else # no bgvideo
-                        "${IM_CMD0[@]}" -depth 8 "$out_ppm" &
+                        { "${IM_CMD0[@]}" -depth 8 "$out_ppm" ; } &
                     fi
                 elif ! $SHOWCASE; then
                     if test -n "$BG_VIDEO"; then
-                        "${IM_CMD1[@]}" | "${IM_CMD2b[@]}" | "${IM_CMD4[@]}" &
+                        { "${IM_CMD1[@]}" |
+                         "${IM_CMD2b[@]}" | "${IM_CMD4[@]}" ; } &
                     else
-                        "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}" &
+                        { "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}" ; } &
                     fi
                 fi
             fi
@@ -8009,7 +8021,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
                 ! $STATIC && rm -f ${ANI_PICS[@]} # only rm's half of thumbs !
             fi
             unset ANI_PICS sc_cmd
-        done > "$WORK_DIR/enc.fifo"
+        done > "$WORK_DIR/ppm.fifo"
     else # Not transparent (non transparent showcase uses transparent block ^^)
         C=$((${CHAPTERS[s]} - 1))
         num_procs=0
@@ -8017,7 +8029,9 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             ((num_procs++)) # how many processes are running
             out_ppm="$WORK_DIR/temp-${num_procs}.ppm" # current frame
             ppm_fifos+=("$out_ppm") # all frames waiting to be processed
-            spin -ne "\rProcessing frame $count  " >&2
+            if ((num_procs==max_procs || count==FRAMES)); then
+                spin -ne "\rProcessing frame $count  " >&2
+            fi
             $STATIC && FRAME_NUM=0 || FRAME_NUM=$((count - 1))
 
             for ((cnt=0; cnt<=NUM_FILES; cnt++)); do
@@ -8044,17 +8058,17 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
 
             if test -n "$BG_VIDEO"; then
                 if $MIST; then
-                    "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" |
-                    "${IM_CMD4[@]}" &
+                    { "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" |
+                    "${IM_CMD4[@]}" ; } &
                 else # no mist
-                    "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}" &
+                    { "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}" ; } &
                 fi
             else # no bg video
                 if $MIST; then
-                    "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" |
-                    "${IM_CMD4[@]}" &
+                    { "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" |
+                    "${IM_CMD4[@]}" ; } &
                 else # no mist
-                    "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}" &
+                    { "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}" ; } &
                 fi
             fi
             impids="$impids $!"
@@ -8064,7 +8078,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
                 unset num_procs ppm_fifos impids
             fi
             unset ANI_PICS
-        done > "$WORK_DIR/enc.fifo"
+        done > "$WORK_DIR/ppm.fifo"
     fi
 fi # end making final montages
 # wait for ppmtoy4m and ffmpeg to finish
