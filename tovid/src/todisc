@@ -6676,7 +6676,9 @@ if [ "$TARGET" = "dvd" ]; then
 # the above 2 values always equal 1 unless doing switched menus
 # TSET_NUM supplied by the calling todisc script and is the current titleset #
 MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${MENU_NUM}.mpg"
-! $DO_INTRO && VMGM_PREJUMP="jump titleset 1 menu;"
+$DO_INTRO && SET_REG="if ( g2 eq 1 )"
+VMGM_PREJUMP="$SET_REG jump titleset 1 menu;"
+$DO_INTRO && VMGM_POST="<post>g2=1; jump titleset 1 menu;</post>"
 $VMGM_ONLY && MENU_FILE="$BASEDIR/VMGM.mpg"
 $SWITCHED_MODE && ! $VMGM_ONLY \
 && MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${MENU_NUM}.mpg"
@@ -6697,6 +6699,7 @@ $(if $AUTHOR ; then
     echo -e "        $INTRO"
     echo -e "        <vob file=\"$WORK_DIR/dummy.mpg\"/>"
     echo -e "        $VMGM_PRE"
+    echo -e "        $VMGM_POST"
     echo -e "      </pgc>\n    </menus>\n  </vmgm>"
 fi)
   <titleset>
