@@ -869,7 +869,7 @@ get_group_chapters()
             if [[ ${grp_arb_chts[y]} = 0 ]]; then
                 chpts[y]=""
             else
-                chpts[y]="chapters=\"${grp_arb_chts[y]}\""
+                chpts[y]=chapters=\"${grp_arb_chts[y]}\"
             fi
         done
     else
@@ -908,7 +908,7 @@ get_group_chapters()
             if [[ -z ${array[e]} ]]; then
                 [[ -n ${chapts[e]} ]] && unset chpts[e]
             else
-                chpts[e]="chapters=\"${points%,}\""
+                chpts[e]=chapters=\"${points%,}\"
             fi
             [[ -n ${array[e]} ]] && chpts[e]=${chpts[e]#,}
             if ((e == 0)); then
@@ -4730,11 +4730,13 @@ if [[ $TARGET = "dvd" ]]; then
             if $SINGLE_SLIDESHOW; then
                 :
             else
-                btn_geos[pa_ind]="x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\""
+                pa_geos=(x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\")
+                btn_geos[pa_ind]=${pa_geos[@]}
             fi
         fi
         if ! $SHOWCASE && $SINGLE_SLIDESHOW; then
-           btn_geos[0]="x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\""
+            ss_geos=(x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\")
+           btn_geos[0]=${ss_geos[@]}
         fi 
     fi  
 fi
@@ -4772,12 +4774,15 @@ if $TITLESET_MODE && $VMGM_MENU && ! $VMGM_ONLY; then
         if $SINGLE_SLIDESHOW; then
             :
         else # else pass on button geometries for making spumux xml
-            btn_geos[ind]="x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\""
+            rtn_geos=(x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\")
+            btn_geos[ind]=${rtn_geos[@]}
         fi
     fi
     if ! $SHOWCASE && $SINGLE_SLIDESHOW; then
-       $TITLESET_MODE && $VMGM_MENU && \
-       btn_geos[1]="x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\""
+        if $TITLESET_MODE && $VMGM_MENU; then
+            rtn_geos=(x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\")
+            btn_geos[1]=${rtn_geos[@]}
+        fi
     fi 
 fi
 
@@ -5260,7 +5265,9 @@ EOF
                     # spumux needs the coordinates to be divisible by 2
                     ((X0%2 && X0--)); ((Y0%2 && Y0--))
                     ((X1%2 && X1++)); ((Y1%2 && Y1++))
-                    btn_geos[i]="x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\""
+                    button_geos=(x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\")
+                    btn_geos[i]=${button_geos[@]}
+                    unset button_geos
                 done
                 convert  -size $VIDSIZE xc:none -background none \
                 ${fake_montage_cmd[@]} -mosaic "$WORK_DIR/fake_montage.png"
@@ -5360,7 +5367,9 @@ EOF
             # make sure coordinates are even
             ((X0%2 && X0--)); ((Y0%2 && Y0--))
             ((X1%2 && X1++)); ((Y1%2 && Y1++))
-            btn_geos[i]="x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\"" #FIXME
+            button_geos=(x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\") #FIXME
+            btn_geos[i]=${button_geos[@]}
+            unset button_geos
             echo \
             "line ${XPT1},${YPT} ${XPT2},${YPT}" >> "$WORK_DIR/spumux_drawfile"
             [[ $i -eq $((MENU_NUM-1)) ]] && echo \
@@ -6478,7 +6487,9 @@ if [[ $BUTTON_STYLE = *text* ]] && $SHOWCASE; then
         Y1=$((Y0 + ydim))
         ((X0%2 && X0--)); ((Y0%2 && Y0--))
         ((X1%2 && X1++)); ((Y1%2 && Y1++))
-        $SHOWCASE && btn_geos[i]="x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\""
+        button_geos=(x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\")
+        $SHOWCASE && btn_geos[i]=${button_geos[@]}
+        unset button_geos
     done
 fi
 if [[ "$BUTTON_STYLE" = "text" && -z "$OUTLINEWIDTH" ]]; then
