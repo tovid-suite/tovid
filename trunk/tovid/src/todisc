@@ -230,6 +230,7 @@ num_scpics=0
 TRANSITION_TO_MENU=false
 DEBUG=false
 pngpipe="-quality 01 png:-"
+JUSTIFY="center"
 SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
@@ -3829,7 +3830,6 @@ fi
 if $SINGLE_SLIDESHOW ; then
     PLAYALL=false
     ! $MONTAGE_MENU && DO_MENU=false
-    # BREAKPOINT
 fi
 
 # for slides or short files, seeking/fading will not work: set them to 0
@@ -4237,7 +4237,8 @@ if { $USER_GRAVITY && $SHOWCASE && ! $TEXTMENU ; } \
         SC_TITLES_Y_ARRAY[i]=$((${SC_TITLES_Y_ARRAY[i]}+ Y_OFFSET))
     done
 fi
-
+# default for showcase style is left justification, for montages: center
+$SHOWCASE && JUSTIFY="west" || JUSTIFY="center"
 # find out the showcase thumb "-page" array for this arrangement
 for ((i=0; i<=NUM_FILES; i++)); do
     if $TEXTMENU; then
@@ -4505,7 +4506,7 @@ if $DO_MENU; then
             spin "Working on video title $((i+1)) "
             # if user needs -undercolor, make sure it contrasts the text colour
             #get_contrasting_color $TITLES_CLR
-            THUMB_TITLE_CMD=(convert -size 620x300 xc:none -gravity West \
+            THUMB_TITLE_CMD=(convert -size 620x300 xc:none -gravity $JUSTIFY \
             -font "$TITLES_FONT" -pointsize $TITLES_FONTSIZE \
             -fill $CONTRAST_CLR  -stroke $TITLES_STROKE \
             -annotate +0+0 "${TITLES[i]}" \
@@ -4534,7 +4535,7 @@ if $DO_MENU; then
                 for btn in ${HLIGHT_CLR/\#} ${SELECT_CLR/\#}; do
                     btncmd=(convert +antialias -colors 3 -background none \
                     -fill none -size 620x300 xc:none -font "$TITLES_FONT" \
-                    -pointsize $TITLES_FONTSIZE -gravity West \
+                    -pointsize $TITLES_FONTSIZE -gravity $JUSTIFY \
                     -fill "#${btn}" -stroke none \
                     -annotate +1+1 "${TITLES[i]}" \
                     "$WORK_DIR/thumb_title${i}-${btn}.png")
