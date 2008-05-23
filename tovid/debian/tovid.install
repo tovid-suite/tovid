@@ -1,7 +1,6 @@
 usr/bin/idvid
 usr/bin/makedvd
 usr/bin/makemenu
-usr/bin/makeslides
 usr/bin/makevcd
 usr/bin/makexml
 usr/bin/postproc
@@ -14,7 +13,6 @@ usr/bin/tovid-interactive
 usr/share/man/man1/idvid.1
 usr/share/man/man1/makedvd.1
 usr/share/man/man1/makemenu.1
-usr/share/man/man1/makeslides.1
 usr/share/man/man1/makevcd.1
 usr/share/man/man1/makexml.1
 usr/share/man/man1/postproc.1

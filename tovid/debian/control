@@ -35,7 +35,6 @@ Description: Console utils for making (S)VCDs and DVDs (bash version)
    * idvid -- identifies audio and video codecs in a video
    * makedvd -- authors and burns DVDs
    * makemenu -- creates menus for (S)VCDs and DVDs
-   * makeslides -- creates still MPEG slides
    * makevcd -- authors and burns (S)VCDs
    * makexml -- creates xml control files for (S)VCDs and DVDs
    * postproc -- adjusts MPEG videos: shrinking, audio synchronizing
