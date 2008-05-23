@@ -18,6 +18,7 @@ See the pymakexml manual page ('man pymakexml') for options and examples.
 
 import os
 import sys
+import libtovid
 from libtovid.author import *
 from libtovid.output import red, green, blue
 
