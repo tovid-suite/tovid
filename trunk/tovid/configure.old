@@ -41,14 +41,13 @@ TOVID="tovid (Converts video to (S)VCD or DVD mpeg format)"
 IDVID="idvid (Identifies video format, resolution, and length)"
 MAKEMENU="makemenu (Creates (S)VCD/DVD menus)"
 MAKEXML="makexml (Creates XML specification for an (S)VCD or DVD navigation hierarchy)"
-MAKESLIDES="makeslides (Creates mpeg still slides for (S)VCD)"
 POSTPROC="postproc (Adjusts A/V sync and does shrinking of encoded video)"
 DVREQUANT="dvrequant (Shrinks and re-authors titles from existing DVDs)"
 # Default location for components to be installed to
 DEFAULT_PATH="/usr/local/bin"
 
 # List of components to install or remove
-COMPONENTS="tovid idvid makemenu makexml makeslides postproc \
+COMPONENTS="tovid idvid makemenu makexml postproc \
 tovid-batch tovid-interactive \
 makevcd makedvd tovid-test"
 
@@ -199,7 +198,6 @@ if [[ -z $YUVFPS ]] || [[ -z $MPEG2ENC ]] ||
   echo "This package is needed for the following suite components:"
   echo "  $TOVID"
   echo "  $MAKEMENU"
-  echo "  $MAKESLIDES"
   echo "  $DVREQUANT"
   echo "If you want to use the above components, please install mjpegtools."
   echo "You can get mjpegtools from http://mjpeg.sourceforge.net/"
@@ -256,7 +254,6 @@ if [[ -z $IMCONVERT ]] || [[ ! $IMCONVERT ]]; then
   echo "Some needed ImageMagick utilities were not found, or are not new enough."
   echo "ImageMagick 6.0 or greater is needed for:"
   echo "  $MAKEMENU"
-  echo "  $MAKESLIDES"
   echo "If you want to use the above components, please install ImageMagick."
   echo "You can get ImageMagick from http://www.imagemagick.org/"
   echo $SEPARATOR
