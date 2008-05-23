@@ -679,51 +679,6 @@ class MenuOptions:
         return True
 
 
-class SlideOptions:
-    """Options related to generating a slideshow"""
-    # Type of item being encoded (menu, video, or slides)
-    type = ID_SLIDE
-    # Title of the group of slides
-    title = _("Untitled slides")
-    # List of image files to convert to slides
-    files = []
-    # -dvd, -vcd, or -svcd
-    format = 'dvd' 
-    # -ntsc or -pal
-    tvsys = 'ntsc'
-
-    def __init__(self, format = 'dvd', tvsys = 'ntsc',
-        files = []):
-        self.tvsys = tvsys
-        self.format = format 
-        self.files = files
-
-    def GetCommand(self):
-        """Return the makeslides command to generate this slideshow."""
-        strCommand = "makeslides -%s -%s " % \
-            (self.tvsys, self.format)
-
-    def SetDiscFormat(self, format):
-        """Make slides compliant with given disc format."""
-        self.format = format 
-
-    def SetDiscTVSystem(self, tvsys):
-        """Make slides compliant with given disc TV system."""
-        self.tvsys = tvsys
-
-    def CopyFrom(self, opts):
-        """Copy the given options into this object."""
-        # If types are different, return
-        if self.type != opts.type:
-            return
-        # Copy opts into self
-        self.format = opts.format
-        self.tvsys = opts.tvsys
-
-    def RelevantFilesAreOK(self, panel):
-        """Check the slide options for any errors detectable before encoding"""
-        return True
-
 class VideoOptions:
     """Options related to encoding a video"""
     # Type of item being encoded (menu, video or slides)

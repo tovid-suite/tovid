@@ -635,7 +635,6 @@ class DiscLayoutPanel(wx.Panel):
         self.btnMoveDown.SetToolTipString("Move the current item down")
         self.btnRemove.SetToolTipString("Remove the current item from the disc")
         wx.EVT_BUTTON(self, self.btnAddVideos.GetId(), self.OnAddVideos)
-#        wx.EVT_BUTTON(self, self.btnAddSlides.GetId(), self.OnAddSlides)
         wx.EVT_BUTTON(self, self.btnAddGroup.GetId(), self.OnAddGroup)
         wx.EVT_BUTTON(self, self.btnAddMenu.GetId(), self.OnAddMenu)
         wx.EVT_BUTTON(self, self.btnMoveUp.GetId(), self.OnCuritemUp)
@@ -998,53 +997,6 @@ class DiscLayoutPanel(wx.Panel):
         # Set appropriate guide text
         self.curConfig.panGuide.SetTask(ID_TASK_VIDEO_ADDED)
 
-    def OnAddSlides(self, evt):
-        """Add slides to the disc structure. Not enabled yet."""
-        # Display a message and return
-        msgDlg = wx.MessageDialog(self, "Slideshows are not supported "
-            "in this version. Sorry!", "Slides not functional yet",
-            wx.OK | wx.ICON_EXCLAMATION)
-        msgDlg.ShowModal()
-        msgDlg.Destroy()
-        return
-
-        # The real functionality, for when slides are supported
-        curParent = self.discTree.GetSelection()
-        # If a menu is not selected, print an error and return
-        if self.discTree.GetPyData(curParent).type != ID_MENU:
-            msgDlg = wx.MessageDialog(self, "Please select a menu before "
-               "adding slides.",
-               "No menu selected",
-               wx.OK | wx.ICON_EXCLAMATION)
-            msgDlg.ShowModal()
-            msgDlg.Destroy()
-            return
-
-        # Open a file dialog for user to choose slides to add
-        addFileDlg= wx.FileDialog(self, "Select image files", "", "", "*.*",
-            wx.OPEN | wx.MULTIPLE)
-        if addFileDlg.ShowModal() == wx.ID_OK:
-            # Get all the filenames that were selected
-            strPathnames = addFileDlg.GetPaths()
-            # Store the directory name for later use
-            addFileDlg.Destroy()
-        else:
-            return
-
-        # Append a new slide element containing the given list of files
-        curItem = self.discTree.AppendItem(curParent, "Untitled slides",
-            self.idxIconSlide)
-        curOpts = SlideOptions(self.discFormat, self.discTVSystem, strPathnames)
-        self.discTree.SetPyData(curItem, curOpts)
-
-        self.discTree.EnsureVisible(curItem)
-
-        # Refresh the parent to include all added videos
-        self.RefreshItem(curParent)
-
-        # If tree has more than one item, enable encoding button
-        if self.discTree.GetCount() > 1:
-            self.parent.EncodeOK(True)
 
     def OnAddGroup(self, evt):
         """Add group to the disc, under the currently-selected menu."""
