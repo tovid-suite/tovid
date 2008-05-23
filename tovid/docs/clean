@@ -36,7 +36,6 @@ NAVMENU=`cat << 'EOF'
         <li><a href="makemenu.html">makemenu</a></li>
         <li><a href="makexml.html">makexml</a></li>
         <li><a href="makedvd.html">makedvd</a></li>
-        <li><a href="makeslides.html">makeslides</a></li>
         <li><a href="postproc.html">postproc</a></li>
         <li><a href="dvrequant.html">dvrequant</a></li>
       </ul>
