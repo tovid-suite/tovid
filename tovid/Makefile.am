@@ -27,7 +27,6 @@ sh_bin = \
 	src/idvid \
 	src/makedvd \
 	src/makemenu \
-	src/makeslides \
 	src/makevcd \
 	src/makexml \
 	src/postproc \
@@ -67,7 +66,6 @@ man_MANS = \
 	$(man_dir)/idvid.1 \
 	$(man_dir)/makedvd.1 \
 	$(man_dir)/makemenu.1 \
-	$(man_dir)/makeslides.1 \
     $(man_dir)/makevcd.1 \
 	$(man_dir)/makexml.1 \
 	$(man_dir)/pymakexml.1 \
@@ -79,7 +77,6 @@ src_MANS = \
 	$(man_src_dir)/idvid.t2t \
 	$(man_src_dir)/makedvd.t2t \
 	$(man_src_dir)/makemenu.t2t \
-	$(man_src_dir)/makeslides.t2t \
     $(man_src_dir)/makevcd.t2t \
 	$(man_src_dir)/makexml.t2t \
 	$(man_src_dir)/pymakexml.t2t \
