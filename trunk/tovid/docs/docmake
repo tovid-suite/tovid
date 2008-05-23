@@ -20,7 +20,7 @@ source_dir = os.path.abspath(base_dir + '/src')
 dest_dir = os.path.abspath(base_dir + '/html')
 man_dir = os.path.abspath(base_dir + '/man')
 man_pages = ['todisc', 'tovid', 'idvid', 'makemenu', 'makedvd', \
-    'makeslides', 'pymakexml', 'makexml', 'postproc', 'todisc']
+    'pymakexml', 'makexml', 'postproc', 'todisc']
 
 # Temporary directory to hold wikitext
 wiki_dir = os.path.abspath(base_dir + '/wiki')
