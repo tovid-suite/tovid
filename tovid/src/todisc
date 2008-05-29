@@ -349,7 +349,6 @@ cleanup()
             kill -9 $PID  2> /dev/null
         fi
     done
-    wait
     if $KEEP_FILES; then
         echo "Keeping temporary files in $REAL_WORK_DIR" >&2
         [[ -n $SUPPORT_VIDEOS ]] && yecho "Keeping ${SUPPORT_VIDEOS[@]}" && \
@@ -366,6 +365,7 @@ cleanup()
     fi
     yecho "Removing the symlink in /tmp . . . " >&2
     rm -fv "$WORK_DIR" >&2
+    exit
 }
 
 # exit from all recursive todisc calls
@@ -7216,10 +7216,10 @@ if $SUB_MENU; then
                 ${IMGENC_CMD[@]}" | fold -bs
                 mkfifo "$WORK_DIR/ppm.fifo" 2>/dev/null
                 mkfifo "$WORK_DIR/enc.fifo" 2>/dev/null
-                { "${TOYUV_CMD[@]}" < "$WORK_DIR/ppm.fifo" > \
-                "$WORK_DIR/enc.fifo" 2>/dev/null ; } &
+                "${TOYUV_CMD[@]}" < "$WORK_DIR/ppm.fifo" > \
+                "$WORK_DIR/enc.fifo" 2>/dev/null &
                 encpids="$encpids $!"
-                { "${IMGENC_CMD[@]}" <  "$WORK_DIR/enc.fifo"  2>/dev/null  ; } &
+                "${IMGENC_CMD[@]}" <  "$WORK_DIR/enc.fifo"  2>/dev/null &
                 encpids="$encpids $!"
                 echo
                 echo "Encoding 300 frames for "${IN_FILES[i]}"" >&2
@@ -7246,7 +7246,7 @@ if $SUB_MENU; then
                     $WORK_DIR/title${i}_txt.png  -gravity south \
                     -geometry +0+55 -composite - -gravity north \
                     -geometry +0+45 -composite "$out_ppm")
-                    { "${IM_CMD[@]}" | "${IM_CMD1[@]}" | "${IM_CMD2[@]}" ; } &
+                    "${IM_CMD[@]}" | "${IM_CMD1[@]}" | "${IM_CMD2[@]}" &
                     smpids="$smpids $!"
                     ppm_fifos+=("$out_ppm") # all frames waiting to be processed
                     if ((num_procs==max_procs || a == 299 )); then
@@ -7791,10 +7791,10 @@ if ! $QUICK_MENU && $DO_MENU; then
     fold -bs
     mkfifo "$WORK_DIR/ppm.fifo" 2>/dev/null
     mkfifo "$WORK_DIR/enc.fifo" 2>/dev/null
-    { "${TOYUV_CMD[@]}" < "$WORK_DIR/ppm.fifo" > "$WORK_DIR/enc.fifo" \
-     2>/dev/null ; } &
+    "${TOYUV_CMD[@]}" < "$WORK_DIR/ppm.fifo" > "$WORK_DIR/enc.fifo" \
+     2>/dev/null &
     encpids="$encpids $!"
-    { "${IMGENC_CMD[@]}" <  "$WORK_DIR/enc.fifo"  2>/dev/null  ; } &
+    "${IMGENC_CMD[@]}" <  "$WORK_DIR/enc.fifo"  2>/dev/null &
     encpids="$encpids $!"
 fi
 # make intermediary fifos for images.  They will get catted to ppm.fifo
@@ -8204,17 +8204,17 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
 
             if test -n "$BG_VIDEO"; then
                 if $MIST; then
-                    { "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" |
-                    "${IM_CMD4[@]}" ; } &
+                    "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" |
+                    "${IM_CMD4[@]}" &
                 else # no mist
-                    { "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}" ; } &
+                    "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}" &
                 fi
             else # no bg video
                 if $MIST; then
-                    { "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" |
-                    "${IM_CMD4[@]}" ; } &
+                    "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" |
+                    "${IM_CMD4[@]}" &
                 else # no mist
-                    { "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}" ; } &
+                    "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}" &
                 fi
             fi
             impids="$impids $!"
