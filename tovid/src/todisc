@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 ME="[todisc]:"
 . tovid-init
-set -m
 # todisc
 # Part of the tovid suite
 # =======================
@@ -343,8 +342,8 @@ cleanup()
         if [[ -s $pidfile ]]; then
             if kill -0 $(<$pidfile) 2> /dev/null; then
                 kill $(<$pidfile) 2> /dev/null
+                sleep .3
             fi
-            # get mean if it still exists
             if kill -0 $(<$pidfile) 2> /dev/null; then
                 kill -9 $(<$pidfile) 2> /dev/null
             fi
@@ -355,12 +354,10 @@ cleanup()
             children=$(pgrep -P $PID)
                 for child in $children; do
                     if kill -0 $child 2>/dev/null; then
-                        echo "killing $child" >&2
                         kill $child 2>/dev/null
+                        sleep .3
                     fi
-                    # get mean if it still exists
                     if kill -0 $child 2>/dev/null; then
-                        echo "killing $child with force" >&2
                         kill -9 $child 2>/dev/null
                     fi
                 done
@@ -368,12 +365,10 @@ cleanup()
     done
     for PID in $pids2kill; do
         if kill -0 $PID  2> /dev/null; then
-            echo "killing pid $PID" >&2
             kill $PID  2> /dev/null
+            sleep .3
         fi
-        # get mean if it still exists
         if kill -0 $PID  2> /dev/null; then
-            echo "killing $PID with force" >&2
             kill -9 $PID  2> /dev/null
         fi
     done
@@ -7035,6 +7030,7 @@ if ! $TITLESET_MODE && ! $DO_TITLESETS && [[ $TARGET = "dvd" ]]; then
 fi
 
 # do submenu 1st for debug purposes
+# TODO use exec 2>> "$LOG_FILE" to save lines
 if $SUB_MENU; then
     yecho
     yecho "Building submenus"
@@ -7285,7 +7281,8 @@ if $SUB_MENU; then
                     $WORK_DIR/title${i}_txt.png  -gravity south \
                     -geometry +0+55 -composite - -gravity north \
                     -geometry +0+45 -composite "$out_ppm")
-                    { "${IM_CMD[@]}" | "${IM_CMD1[@]}" | "${IM_CMD2[@]}" ; } &
+                    { "${IM_CMD[@]}" | "${IM_CMD1[@]}" | "${IM_CMD2[@]}" ; } \
+                    2>> "$LOG_FILE" &
                     smpids="$smpids $!"
                     ppm_fifos+=("$out_ppm") # all frames waiting to be processed
                     if ((num_procs==max_procs || a == 299 )); then
@@ -7419,7 +7416,6 @@ if $SUB_MENU; then
         yecho
         yecho "Creating an audio background"
         yecho "Working on submenu audio for "${IN_FILES[s]}""
-        set -x
         if $SUBMENU_AUDIO; then # user supplied audio file for ths video
             if ! $ANI_SUB_MENU ; then  # if static, see if length option given
                 [[ -n "$SUBMENU_AUDIOLEN" ]] && TIME=$SUBMENU_AUDIOLEN
@@ -7462,7 +7458,6 @@ if $SUB_MENU; then
             ! "${BGAUDIO_CMD[@]}" 2>&1 |strings >> "$LOG_FILE" 2>&1 \
             && runtime_error
         fi
-        set +x
         # convert to DVD/SVCD format as long as not "none" or single audio file
         if $SUBMENU_AUDIO \
         && [[ ! "${SM_AUDIO[s]}" = "none" && -z "$SM_AUDIO_FILE" ]]; then
@@ -7611,7 +7606,7 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
             else # not glass
                 { convert $QUALITY -size $SHOWCASE_SIZE "$pic" \
                 -mattecolor gray $SC_FRAME -background none $ROTATE $WAVE \
-                -resize ${SHOWCASE_SIZE}! "$pic" ; } &
+                -resize ${SHOWCASE_SIZE}! "$pic" ; } 2>> "$LOG_FILE" &
             fi
             impids="$impids $!"
             if ((num_procs==max_procs || p >= (${#SC_PICS[@]}-1) )); then
@@ -7647,6 +7642,7 @@ if [[ ! "$SC_FRAMESTYLE" = "glass" && ! $TEXTMENU ]]; then
         yecho "Adding title to video images and resizing"
     fi
 fi
+# TODO use exec 2>> "$LOG_FILE" to save lines
 if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
     for ((i=0; i<=NUM_FILES; i++)); do
         if $FEATHER && $THUMBS_3D && [ "$THUMB_SHAPE" != "normal" ]; then
@@ -7719,16 +7715,16 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                         if [ "$THUMB_SHAPE" != "normal" ]; then
                             { "${IM_CMD[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
                             "${IM_CMD6[@]}" miff:- |  "${IM_CMD7[@]}" miff:- |
-                            "${IM_CMD5[@]}" ; } &
+                            "${IM_CMD5[@]}" ; } 2>> "$LOG_FILE" &
                         else # normal thumbshape, with feather and 3D
                             { "${IM_CMD02[@]}" miff:- | "${IM_CMD03[@]}" miff:- |
                             "${IM_CMD2[@]}" miff:- |"${IM_CMD7[@]}" miff:- |
-                            "${IM_CMD5[@]}" ; } &
+                            "${IM_CMD5[@]}" ; } 2>> "$LOG_FILE" &
 
                         fi
                     else
                         { "${IM_CMD[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
-                        "${IM_CMD5[@]}" ; } &
+                        "${IM_CMD5[@]}" ; } 2>> "$LOG_FILE" &
                     fi
                 else # not SHOWCASE
                     if $THUMBS_3D; then
@@ -7736,16 +7732,16 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                             { "${IM_CMD[@]}" miff:- | "${IM_CMD6[@]}"  miff:- |
                             "${IM_CMD1[@]}" miff:- |"${IM_CMD04[@]}" miff:- |
                             "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
-                            "${IM_CMD5[@]}" ; } &
+                            "${IM_CMD5[@]}" ; } 2>> "$LOG_FILE" &
                         else
                             { "${IM_CMD02[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                             "${IM_CMD2[@]}" miff:- |
-                            "${IM_CMD5[@]}" ; } &
+                            "${IM_CMD5[@]}" ; } 2>> "$LOG_FILE" &
                         fi
                     else # not 3D
                         { "${IM_CMD[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
                         "${IM_CMD1[@]}" miff:- |"${IM_CMD2[@]}" miff:- |
-                        "${IM_CMD5[@]}" ; } &
+                        "${IM_CMD5[@]}" ; } 2>> "$LOG_FILE" &
                     fi
                 fi
             else # not FEATHER
@@ -7755,17 +7751,21 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                         :
                     else
                         if $THUMBS_3D; then
-                            { "${IM_CMD02[@]}" miff:- | "${IM_CMD5[@]}" ; } &
+                            { "${IM_CMD02[@]}" miff:- | "${IM_CMD5[@]}" ; } \
+                            2>> "$LOG_FILE" &
                         else
-                            { "${IM_CMD01[@]}" miff:- | "${IM_CMD5[@]}" ; } &
+                            { "${IM_CMD01[@]}" miff:- | "${IM_CMD5[@]}" ; } \
+                            2>> "$LOG_FILE" &
                         fi
                     fi
                 else # not showcase or feather
                     if $THUMBS_3D; then
                         { "${IM_CMD02[@]}" miff:- | "${IM_CMD04[@]}" miff:- |
-                        "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}" ; } &
+                        "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}" ; } \
+                        2>> "$LOG_FILE" &
                     else
-                        { "${IM_CMD3[@]}" miff:- | "${IM_CMD5[@]}" ; } &
+                        { "${IM_CMD3[@]}" miff:- | "${IM_CMD5[@]}" ; } \
+                        2>> "$LOG_FILE" &
                     fi
                 fi
             fi
@@ -7843,6 +7843,7 @@ fi
 for ((n=1; n<=max_procs; n++)); do
     [[ ! -e "$WORK_DIR/temp-${n}.ppm" ]] && mkfifo "$WORK_DIR/temp-${n}.ppm"
 done
+# TODO use exec 2>> "$LOG_FILE" to save lines
 if $MENU_FADE && ! $QUICK_MENU; then
     . todisc-fade-routine
     # ani_frames is the last animated frame
@@ -8037,18 +8038,20 @@ if $MENU_FADE && ! $QUICK_MENU; then
                     { "${MONTAGE_CMD01[@]}" miff:-|"${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- |"${MONTAGE_CMD3[@]}" miff:- |
                     "${MONTAGE_CMD5[@]}" | "${MONTAGE_CMD6[@]}" |
-                    "${MONTAGE_CMD4[@]}" | "${MONTAGE_CMD7[@]}" ; } &
+                    "${MONTAGE_CMD4[@]}" | "${MONTAGE_CMD7[@]}" ; } \
+                    2>> "$LOG_FILE" &
                 else # not SHOWCASE_VIDEO (SHOWCASE_IMG)
                     { "${MONTAGE_CMD[@]}" miff:- | "${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- |"${MONTAGE_CMD5[@]}" |
                     "${MONTAGE_CMD6[@]}" | "${MONTAGE_CMD3[@]}" miff:- |
-                    "${MONTAGE_CMD4[@]}" | "${MONTAGE_CMD7[@]}" ; } &
+                    "${MONTAGE_CMD4[@]}" | "${MONTAGE_CMD7[@]}" ; } \
+                    2>> "$LOG_FILE" &
                 fi
             else # not SHOWCASE
                 { "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
                 "${MONTAGE_CMD3[@]}" miff:- | "${MONTAGE_CMD5[@]}" |
                 "${MONTAGE_CMD6[@]}" | "${MONTAGE_CMD4[@]}" |
-                "${MONTAGE_CMD7[@]}" ; } &
+                "${MONTAGE_CMD7[@]}" ; } 2>> "$LOG_FILE" &
             fi
         elif ! $MIST && $cat_fifos; then  # no mist
             if $SHOWCASE; then
@@ -8056,17 +8059,18 @@ if $MENU_FADE && ! $QUICK_MENU; then
                     { "${MONTAGE_CMD01[@]}" miff:-|"${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- |"${MONTAGE_CMD5[@]}" |
                     "${MONTAGE_CMD6[@]}" | "${MONTAGE_CMD4[@]}" |
-                    "${MONTAGE_CMD7[@]}" ; } &
+                    "${MONTAGE_CMD7[@]}" ; } 2>> "$LOG_FILE" &
                 else
                     { "${MONTAGE_CMD[@]}" miff:- | "${MONTAGE_CMD02[@]}" miff:- |
                     "${MONTAGE_CMD2c[@]}" miff:- |"${MONTAGE_CMD5[@]}" |
                     "${MONTAGE_CMD6[@]}" | "${MONTAGE_CMD4[@]}" |
-                    "${MONTAGE_CMD7[@]}" ; } &
+                    "${MONTAGE_CMD7[@]}" ; } 2>> "$LOG_FILE" &
                 fi
             else
                 { "${MONTAGE_CMD1[@]}" miff:- | "${MONTAGE_CMD2[@]}" miff:- |
                 "${MONTAGE_CMD5[@]}" | "${MONTAGE_CMD6[@]}" |
-                "${MONTAGE_CMD4[@]}"  | "${MONTAGE_CMD7[@]}" ; } &
+                "${MONTAGE_CMD4[@]}"  | "${MONTAGE_CMD7[@]}" ; } \
+                2>> "$LOG_FILE" &
             fi
         fi
         impids="$impids $!"
@@ -8166,10 +8170,10 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
                 elif ! $SHOWCASE; then
                     if test -n "$BG_VIDEO"; then
                         { "${IM_CMD1[@]}" | "${IM_CMD2b[@]}" | "${IM_CMD3[@]}" |
-                        "${IM_CMD4[@]}" ; } &
+                        "${IM_CMD4[@]}" ; } 2>> "$LOG_FILE" &
                     else
                     { "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" |
-                    "${IM_CMD4[@]}" ; } &
+                    "${IM_CMD4[@]}" ; } 2>> "$LOG_FILE" &
                     fi
                 fi
             else # showcase, no mist, showcase-video
@@ -8177,25 +8181,31 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
                     if test -n "$BG_VIDEO"; then
                         # with bgvideo
                         { "${IM_CMD01[@]}" miff:- |
-                        "${IM_CMD03[@]}" miff:- | "${IM_CMD4[@]}" ; } &
+                        "${IM_CMD03[@]}" miff:- | "${IM_CMD4[@]}" ; } \
+                        2>> "$LOG_FILE" &
                     else # no bgvideo
                         { "${IM_CMD01[@]}" $pngpipe |
-                        "${IM_CMD02[@]}"  $pngpipe | "${IM_CMD4[@]}" ; } &
+                        "${IM_CMD02[@]}"  $pngpipe | "${IM_CMD4[@]}" ; } \
+                        2>> "$LOG_FILE" &
                     fi
                 elif $SHOWCASE && [[ -n "$SHOWCASE_IMG" ]]; then
                 # showcase, no mist, showcase-image
                     if test -n "$BG_VIDEO"; then # with bgvideo
                         { "${IM_CMD05[@]}" miff:- |
-                        "${IM_CMD03[@]}" miff:- | "${IM_CMD4[@]}" ; } &
+                        "${IM_CMD03[@]}" miff:- | "${IM_CMD4[@]}" ; } \
+                        2>> "$LOG_FILE" &
                     else # no bgvideo
-                        { "${IM_CMD0[@]}" -depth 8 "$out_ppm" ; } &
+                        { "${IM_CMD0[@]}" -depth 8 "$out_ppm" ; } \
+                        2>> "$LOG_FILE" &
                     fi
                 elif ! $SHOWCASE; then
                     if test -n "$BG_VIDEO"; then
                         { "${IM_CMD1[@]}" |
-                         "${IM_CMD2b[@]}" | "${IM_CMD4[@]}" ; } &
+                         "${IM_CMD2b[@]}" | "${IM_CMD4[@]}" ; } \
+                        2>> "$LOG_FILE" &
                     else
-                        { "${IM_CMD1[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}" ; } &
+                        { "${IM_CMD1[@]}" | "${IM_CMD2[@]}" |
+                        "${IM_CMD4[@]}" ; } 2>> "$LOG_FILE" &
                     fi
                 fi
             fi
@@ -8247,16 +8257,18 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             if test -n "$BG_VIDEO"; then
                 if $MIST; then
                     { "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" |
-                    "${IM_CMD4[@]}" ; } &
+                    "${IM_CMD4[@]}" ; } 2>> "$LOG_FILE" &
                 else # no mist
-                    { "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}" ; } &
+                    { "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}" ; } \
+                    2>> "$LOG_FILE" &
                 fi
             else # no bg video
                 if $MIST; then
                     { "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" |
-                    "${IM_CMD4[@]}" ; } &
+                    "${IM_CMD4[@]}" ; } 2>> "$LOG_FILE" &
                 else # no mist
-                    { "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}" ; } &
+                    { "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}" ; } \
+                    2>> "$LOG_FILE" &
                 fi
             fi
             impids="$impids $!"
