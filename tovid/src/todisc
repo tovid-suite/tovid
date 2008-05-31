@@ -205,7 +205,7 @@ QM_PREVIEW=false
 USER_CHAPTERS=false
 QUICKMENU_IS_SHOWCASE=false
 QUICKMENU_IS_BACKGROUND=false
-CAROUSEL_IS_BACKGROUND=false
+CAROUSEL_IS_BG=false
 CAROUSEL_IS_SHOWCASE=false
 RESIZE_BG=false
 DO_CAROUSEL=false
@@ -334,14 +334,42 @@ audio_length()
 }
 cleanup()
 {
+    #TODO make a kill_pid function to avoid repetition below
+    # and/or consider just using pkill
     echo >&2
     echo "Cleaning up..." >&2
     pids2kill="$impids $smpids $bgfade_pids $title_pids $tcode_pids $encpids"
+    for pidfile in "$WORK_DIR/tcode*.pid"; do
+        if [[ -s $pidfile ]]; then
+            if kill -0 $(<$pidfile) 2> /dev/null; then
+                kill $(<$pidfile) 2> /dev/null
+            fi
+            # get mean if it still exists
+            if kill -0 $(<$pidfile) 2> /dev/null; then
+                kill -9 $(<$pidfile) 2> /dev/null
+            fi
+        fi
+    done
+    for PID in $impids $smpids; do
+        if kill -0 $PID  2> /dev/null; then
+            children=$(pgrep -P $PID)
+                for child in $children; do
+                    if kill -0 $child 2>/dev/null; then
+                        echo "killing $child" >&2
+                        kill $child 2>/dev/null
+                    fi
+                    # get mean if it still exists
+                    if kill -0 $child 2>/dev/null; then
+                        echo "killing $child with force" >&2
+                        kill -9 $child 2>/dev/null
+                    fi
+                done
+        fi
+    done
     for PID in $pids2kill; do
         if kill -0 $PID  2> /dev/null; then
             echo "killing pid $PID" >&2
             kill $PID  2> /dev/null
-            sleep .3
         fi
         # get mean if it still exists
         if kill -0 $PID  2> /dev/null; then
@@ -365,7 +393,6 @@ cleanup()
     fi
     yecho "Removing the symlink in /tmp . . . " >&2
     rm -fv "$WORK_DIR" >&2
-    exit
 }
 
 # exit from all recursive todisc calls
@@ -993,7 +1020,7 @@ carousel_menu_mode()
     mk_carousel()
     {
         ! $CONFIRM_BACKUP && NO_CONFIRM_BACKUP="-no-confirm-backup"
-        if [[ -n $MIX_RANGE ]]; then
+        if [[ -n $MIX_RANGE ]] && ((MIX_RANGE<${#IN_SLIDES[@]})); then
             mix_range="-menu-slide-total $MIX_RANGE"
         else
             unset mix_range
@@ -1016,7 +1043,7 @@ carousel_menu_mode()
     $SLIDE_FADE && sld_tranition="-slide-transition $EFFECT"
     ! grep -q -- -noask <<< "$TOVID_OPTS" && \
      encopt=(-tovidopts $TOVID_OPTS -noask)
-    if $CAROUSEL_IS_BACKGROUND && [[ $style != "default" ]]; then
+    if $CAROUSEL_IS_BG && [[ $style != "default" ]]; then
         local background_carousel="-background-slideshow"
         IN_SLIDES=( "$WORK_DIR"/${TSET_NUM}-slide_grp*.mpg )
         mk_carousel 0
@@ -2306,7 +2333,7 @@ while test $# -gt 0; do
             SLIDE_FADE=:
             ;;
         "-background-slideshow" )
-            CAROUSEL_IS_BACKGROUND=:
+            CAROUSEL_IS_BG=:
             SHOWCASE=:
             IMG_FMT="png"
             BG_SEEK=0
@@ -2644,8 +2671,12 @@ while test $# -gt 0; do
                 if [[ ${ARGS_ARRAY[i]} = "none" ]]; then
                     SM_AUDIO=( "${SM_AUDIO[@]}" "${ARGS_ARRAY[i]}" )
                 else
-                    SM_AUDIO=( "${SM_AUDIO[@]}" \
-                    "$(readlink -f "${ARGS_ARRAY[i]}")" )
+                    if [[ ! -e "${ARGS_ARRAY[i]}" ]]; then
+                        usage_error "audio file \"${ARGS_ARRAY[i]}\" not found"
+                    else
+                        SM_AUDIO=( "${SM_AUDIO[@]}" \
+                        "$(readlink -f "${ARGS_ARRAY[i]}")" )
+                    fi
                 fi
             done
             SUBMENU_AUDIO=:
@@ -2869,6 +2900,7 @@ $USE_DVD_SLIDESHOW && assert_dep dvd-slideshow \
 "The program dvd-slideshow was not found - you can get it from
 dvd-slideshow.sourceforge.net.  Note: if you do not use
 -use-dvd-slideshow, todisc will create the slideshow video for you. "
+assert_dep pgrep "You need the pgrep program to use todisc"
 
 # make sure user has backed up personal image files
 ((sshows>=1)) && $CONFIRM_BACKUP && confirm_backup
@@ -2957,7 +2989,7 @@ fi
 # slideshows are animated by default like rest of todisc
 if ((sshows>=1)); then
     if $STATIC && \
-     { ! $CAROUSEL_IS_SHOWCASE && ! $CAROUSEL_IS_BACKGROUND ; }; then
+     { ! $CAROUSEL_IS_SHOWCASE && ! $CAROUSEL_IS_BG ; }; then
         :
     else
         DO_CAROUSEL=:
@@ -2965,12 +2997,12 @@ if ((sshows>=1)); then
         SLIDE_FADE=:
     fi
 fi
-if $DO_CAROUSEL && $SHOWCASE && ! { $SWITCHED_MODE || $SWITCHED_MENUS ; } && \
- ! $CAROUSEL_IS_BACKGROUND && ! $CAROUSEL_IS_SHOWCASE; then
-    yecho
-    usage_error "You are using an animated slideshow but not making a background or
-    showcase slideshow, so -textmenu or -showcase makes no sense."
-fi
+#if $DO_CAROUSEL && $SHOWCASE && ! { $SWITCHED_MODE || $SWITCHED_MENUS ; } && \
+# ! $CAROUSEL_IS_BG && ! $CAROUSEL_IS_SHOWCASE && ((sshows<=1)); then
+#    yecho
+#    usage_error "You are using an animated slideshow but not making a background or
+#    showcase slideshow, so -textmenu or -showcase makes no sense."
+#fi
 
 if [[ -n "$SM_TITLES" ]]; then
     if test ${#SM_TITLES[@]} -ne ${#TITLES[@]}; then
@@ -3234,7 +3266,7 @@ if { ((sshows>=1)) && ((inc_files >=1)) ; } || ((sshows>1)); then
         # call todisc recursively, collect slideshow.m2v and exit
         ! $CONFIRM_BACKUP && NO_CONFIRM_BACKUP="-no-confirm-backup"
         carousel_menu_mode
-        if $CAROUSEL_IS_BACKGROUND; then
+        if $CAROUSEL_IS_BG; then
             mv "$WORK_DIR/carousel-1.m2v" "$WORK_DIR/carousel-00.m2v"
             BACKGROUND="$WORK_DIR/carousel-00.m2v"
             BG_SEEK=0
@@ -3454,7 +3486,14 @@ if [[ $SC_FRAMESTYLE = "glass" ]] && $QUICK_MENU; then
 fi
 # allow user to only specify one audio file for all submenus
 if [ ${#SM_AUDIO[@]} -eq 1 ]; then
-    SM_AUDIO_FILE=${SM_AUDIO[0]}
+    if ((sshows>1)); then
+        for i in ${!FILES[@]}; do
+            SM_AUDIO[i]=${SM_AUDIO[0]}
+        done
+        unset SM_AUDIO_FILE
+    else
+        SM_AUDIO_FILE=${SM_AUDIO[0]}
+    fi
 fi
 # if more than one audio file for submenu make sure they equal video #
 if [[ ${SM_AUDIO[@]} && \
@@ -3815,7 +3854,7 @@ if $DO_CAROUSEL; then
         [[ ${SLIDE_BLUR[s]} = "none" ]] && unset SLIDE_BLUR[s]
     done
 fi
-if [[ -n $MIX_RANGE ]]; then
+if [[ -n $MIX_RANGE ]] && ((MIX_RANGE<${#MIX_FILES[@]})); then
     last_ind=$MIX_RANGE
     for ((i=0; i<MIX_RANGE; i++)); do
         #[[ -n ${SLIDE_BLUR[i]} ]] &&
@@ -3845,7 +3884,7 @@ if $SINGLE_SLIDESHOW; then
     # So here we set STATIC to : as ani slideshow has its own code
     DO_FRAME=false; DO_BUTTONS=false; STATIC=:; DO_STATS=false
     CAROUSEL_IS_SHOWCASE=false
-    CAROUSEL_IS_BACKGROUND=false
+    CAROUSEL_IS_BG=false
     [[ $MENU_TITLE = "My Video Collection" ]] && \
     MENU_TITLE="My Slideshow"
 fi
@@ -4181,7 +4220,7 @@ elif $TEXTMENU; then
 fi
 
 # set size of animated slideshow menu images
-if $CAROUSEL_IS_BACKGROUND; then
+if $CAROUSEL_IS_BG; then
     CAROUSEL_SIZE=$VIDSIZE
 else
     # use SHOWCASE_SIZE instead of THUMBSIZE for better quality,
@@ -7013,7 +7052,7 @@ if $SUB_MENU; then
     # if doing animated submenus, we need a 'carousel' (animated slideshow)
     # background or showcase carousel will not do, nor is it made if $STATIC
     if $ANI_SUB_MENU && ((sshows>=1)) && \
-    { $STATIC || $CAROUSEL_IS_BACKGROUND || $CAROUSEL_IS_SHOWCASE ; }; then
+    { $STATIC || $CAROUSEL_IS_BG || $CAROUSEL_IS_SHOWCASE ; }; then
         carousel_menu_mode default
     fi
     if ! $ANI_SUB_MENU; then
@@ -7246,7 +7285,7 @@ if $SUB_MENU; then
                     $WORK_DIR/title${i}_txt.png  -gravity south \
                     -geometry +0+55 -composite - -gravity north \
                     -geometry +0+45 -composite "$out_ppm")
-                    "${IM_CMD[@]}" | "${IM_CMD1[@]}" | "${IM_CMD2[@]}" &
+                    { "${IM_CMD[@]}" | "${IM_CMD1[@]}" | "${IM_CMD2[@]}" ; } &
                     smpids="$smpids $!"
                     ppm_fifos+=("$out_ppm") # all frames waiting to be processed
                     if ((num_procs==max_procs || a == 299 )); then
@@ -7380,6 +7419,7 @@ if $SUB_MENU; then
         yecho
         yecho "Creating an audio background"
         yecho "Working on submenu audio for "${IN_FILES[s]}""
+        set -x
         if $SUBMENU_AUDIO; then # user supplied audio file for ths video
             if ! $ANI_SUB_MENU ; then  # if static, see if length option given
                 [[ -n "$SUBMENU_AUDIOLEN" ]] && TIME=$SUBMENU_AUDIOLEN
@@ -7415,12 +7455,14 @@ if $SUB_MENU; then
             BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
             $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
         fi
-        if [ ! -s $WORK_DIR/submenu.wav ]; then # only run if no wav
+        # run if wav doesn't exist, or its a slideshow
+        if [[ ! -s $WORK_DIR/submenu.wav ]] || ${SLIDESHOW[s]}; then
             yecho "Running "${BGAUDIO_CMD[@]}"" |fold -bs >> "$LOG_FILE"
             # run command, error out if problem
             ! "${BGAUDIO_CMD[@]}" 2>&1 |strings >> "$LOG_FILE" 2>&1 \
             && runtime_error
         fi
+        set +x
         # convert to DVD/SVCD format as long as not "none" or single audio file
         if $SUBMENU_AUDIO \
         && [[ ! "${SM_AUDIO[s]}" = "none" && -z "$SM_AUDIO_FILE" ]]; then
@@ -8204,17 +8246,17 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
 
             if test -n "$BG_VIDEO"; then
                 if $MIST; then
-                    "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" |
-                    "${IM_CMD4[@]}" &
+                    { "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD3[@]}" |
+                    "${IM_CMD4[@]}" ; } &
                 else # no mist
-                    "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}" &
+                    { "${IM_CMD0[@]}" | "${IM_CMD2[@]}" | "${IM_CMD4[@]}" ; } &
                 fi
             else # no bg video
                 if $MIST; then
-                    "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" |
-                    "${IM_CMD4[@]}" &
+                    { "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD3[@]}" |
+                    "${IM_CMD4[@]}" ; } &
                 else # no mist
-                    "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}" &
+                    { "${IM_CMD0[@]}" | "${IM_CMD1[@]}" | "${IM_CMD4[@]}" ; } &
                 fi
             fi
             impids="$impids $!"
