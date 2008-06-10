@@ -328,7 +328,7 @@ vid_length()
 }
 audio_length()
 {
-    mplayer -noconsolecontrols -vo null -ao pcm:file=/dev/null -speed 20 "$1" \
+    mplayer -noconsolecontrols -vo null -ao pcm:fast:file=/dev/null "$1" \
     2>&1 | tr '\r' '\n' | grep ^A: | tail -1 | sed s/^.*A:// | awk '{print $1}'
 } 
 cleanup()
