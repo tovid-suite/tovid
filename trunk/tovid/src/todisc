@@ -67,7 +67,8 @@ OUT_PREFIX=""
 TV_STANDARD=ntsc
 MENU_LEN=( 20 )
 USER_MENU_LEN=false
-ANI_SUBMENU_LEN=10
+USER_SUBMENU_LEN=false
+SUBMENU_LEN=(10)
 MAX_MENU_LEN=""
 TARGET=dvd
 FRAME_RATE=29.970
@@ -194,7 +195,6 @@ DO_INTRO=false
 USE_MPLAYER_4AUDIO=false
 MENU_AUDIOLEN=""
 USER_AUDIOLENGTH=false
-USER_AUDIO_FADE=false
 BURN=false
 BURN_DEVICE="/dev/dvdrw"
 QUICK_MENU=false
@@ -328,9 +328,9 @@ vid_length()
 }
 audio_length()
 {
-    ALEN=$(ffmpeg -vn -i "$1" 2>&1 | awk '/#[0-9]/{getline;print $2; exit}')
-    echo ${ALEN%,*}
-}
+    mplayer -noconsolecontrols -vo null -ao pcm:file=/dev/null -speed 20 "$1" \
+    2>&1 | tr '\r' '\n' | grep ^A: | tail -1 | sed s/^.*A:// | awk '{print $1}'
+} 
 cleanup()
 {
     #TODO make a kill_pid function to avoid repetition below
@@ -1014,35 +1014,43 @@ carousel_menu_mode()
 {
     mk_carousel()
     {
+        unset menulen
+        c=$1 # carousel index ( 0 based )
         ! $CONFIRM_BACKUP && NO_CONFIRM_BACKUP="-no-confirm-backup"
-        if [[ -n $MIX_RANGE ]] && ((MIX_RANGE<${#IN_SLIDES[@]})); then
-            mix_range="-menu-slide-total $MIX_RANGE"
+        if [[ $sstype = "submenu" ]]; then
+            menulen="-menu-length ${SUBMENU_LEN[c]}"
+            mixrange=${SM_MIX_RANGE[c]}
+        else
+            $USER_MENU_LEN && menulen="-menu-length ${MENU_LEN[c]}"
+            mixrange=${MIX_RANGE[c]}
+        fi
+        if [[ -n $mixrange ]]; then
+            if (($mixrange<${#IN_SLIDES[@]})); then
+                mix_range="-menu-slide-total $mixrange"
+            else
+                unset mix_range
+            fi
         else
             unset mix_range
         fi
-        c=$1 # carousel index ( 0 based )
-        yecho "Running todisc -slides ${IN_SLIDES[@]} ${encopt[@]} \
-        $mix_range $sld_tranition $background_carousel \
-        $NO_CONFIRM_BACKUP \
-        $showcase_carousel -carousel_menu_mode -basedir $WORK_DIR \
-        $menu_length -carousel_num $((c+1)) -todisc_pids $TODISC_PIDS"
-        todisc -slides "${IN_SLIDES[@]}" $mix_range \
+        MC_CMD=(todisc -slides "${IN_SLIDES[@]}" $mix_range \
         $NO_CONFIRM_BACKUP ${encopt[@]} $sld_tranition $background_carousel \
         $showcase_carousel -out "$OUT_PREFIX" -carousel_menu_mode -basedir \
-        "$WORK_DIR" $menu_length -carousel_num $((c+1)) -todisc_pids \
-        "$TODISC_PIDS"
+        "$WORK_DIR" $menulen -carousel_num $((c+1)) -todisc_pids "$TODISC_PIDS")
+        yecho
+        yecho "Running ${MC_CMD[@]}"
+        "${MC_CMD[@]}"
     }
 
-    [[ -n $1 ]]  && local style=$1 || local style=""
-    $USER_MENU_LEN && menu_length="-menu-length $MENU_LEN"
+    [[ -n $1 ]]  && local sstype=$1 || local sstype=""
     $SLIDE_FADE && sld_tranition="-slide-transition $EFFECT"
     ! grep -q -- -noask <<< "$TOVID_OPTS" && \
      encopt=(-tovidopts $TOVID_OPTS -noask)
-    if $CAROUSEL_IS_BG && [[ $style != "default" ]]; then
+    if $CAROUSEL_IS_BG && [[ $sstype != "submenu" ]]; then
         local background_carousel="-background-slideshow"
         IN_SLIDES=( "$WORK_DIR"/${TSET_NUM}-slide_grp*.mpg )
         mk_carousel 0
-    elif $CAROUSEL_IS_SHOWCASE && [[ $style != "default" ]]; then
+    elif $CAROUSEL_IS_SHOWCASE && [[ $sstype != "submenu" ]]; then
         local showcase_carousel="-showcase-slideshow"
         IN_SLIDES=( "$WORK_DIR"/${TSET_NUM}-slide_grp*.mpg )
         mk_carousel 0
@@ -1057,11 +1065,6 @@ carousel_menu_mode()
                 yecho "Working on carousel menu $((i+1))"
                 yecho
                 mk_carousel $i
-                # copy for slideshow submenu now
-                if $ANI_SUB_MENU && $STATIC && ((sshows>=1)); then
-                    cp -v "$WORK_DIR/carousel-$((i+1)).m2v" \
-                    "$WORK_DIR/menu${i}.m2v"
-                fi
             fi
         done
     fi
@@ -2033,7 +2036,8 @@ trap 'cleanup; exit 13' TERM INT
 # ***********************************
 # EXECUTION BEGINS HERE
 # ***********************************
-egrep -q 'titleset-mode|switched-mode|menu-only' <<< "$@" && NONAME=:
+egrep -q 'titleset-mode|switched-mode|menu-only|carousel_menu_mode' <<< "$@" \
+ && NONAME=:
 ! $NONAME && yecho $"$SCRIPT_NAME"
 
 while test $# -gt 0; do
@@ -2124,6 +2128,8 @@ while test $# -gt 0; do
             GROUP_IN_FILES=( "${GROUP_IN_FILES[@]}" "${grp[@]}" )
             groupkey=$(( ${ARGS_ARRAY[0]} - 1))
             GROUP[groupkey]=${#grp[@]}
+            # temporary till I finish submenu groups TODO
+            is_vidgroup[groupkey]=1
             # create symlinks to ease substitution later
             for c in ${!grp[@]}; do
                 ln -s "${grp[c]}" \
@@ -2182,6 +2188,9 @@ while test $# -gt 0; do
             DEBUG=:
             KEEP_FILES=:
             ;;
+        "-grid" )
+            GRID=1
+            ;;
         "-keep-files" | "-keepfiles" )
             KEEP_FILES=:
             ;;
@@ -2237,10 +2246,12 @@ while test $# -gt 0; do
             MENU_LEN=( ${MENU_LEN//,/ } )
             USER_MENU_LEN=:
             ;;
-        # submenu-length disabled for now
         "-submenu-length" )
             shift
-            ANI_SUBMENU_LEN="$1"
+            get_listargs "$@"
+            SUBMENU_LEN=${ARGS_ARRAY[@]}
+            SUBMENU_LEN=( ${SUBMENU_LEN//,/ } )
+            USER_SUBMENU_LEN=:
             ;;
         "-static" )
             STATIC=:
@@ -2300,23 +2311,30 @@ while test $# -gt 0; do
             get_listargs "$@"
             GRP_VPAUSE=( "${ARGS_ARRAY[@]}" )
             ;;
-        "-slide-menu-mix" )
+        "-slide-menu-mix" ) # removed
             shift
             usage_error "-slide-menu-mix has been changed - see manpage"
             ;;
-        "-slideshow" )
+        "-slideshow" ) # removed
             shift
             usage_error "Use -slides now instead of -slideshow"
             ;;
-        "-slide-fade" )
+        "-slide-fade" ) # removed
             shift
             usage_error "Use -slide-transition fade|crossfade \
             now instead of -slide-fade"
             ;;
         "-menu-slide-total" )
             shift
-            test_is_number $1 && MIX_RANGE=$1
-            IMG_FMT="png"
+            get_listargs "$@"
+            MIX_RANGE=${ARGS_ARRAY[@]}
+            MIX_RANGE=( ${MIX_RANGE//,/ } )
+            ;;
+        "-submenu-slide-total" )
+            shift
+            get_listargs "$@"
+            SM_MIX_RANGE=${ARGS_ARRAY[@]}
+            SM_MIX_RANGE=( ${SM_MIX_RANGE//,/ } )
             ;;
         "-slide-transition" )
             shift
@@ -2577,11 +2595,11 @@ while test $# -gt 0; do
             shift
             SELECT_CLR="$1"
             ;;
-        -thumb-text-col* | "-thumb-font" | "-thumb-fontsize" )
+        -thumb-text-col* | "-thumb-font" | "-thumb-fontsize" ) # removed
             usage_error \
             "The $1 option has been renamed.  Now use: -titles-${1##*-}"
             ;;
-        *-stroke-col* )
+        *-stroke-col* ) # removed
             usage_error "The $1 option has been renamed.  Now use: ${1%-*}"
             ;;
         "-text-mist" )
@@ -2656,7 +2674,6 @@ while test $# -gt 0; do
         "-menu-audio-fade" )
             shift
             FADE="$1"
-            USER_AUDIO_FADE=:
             AUDIO_FADE=:
             ;;
         "-submenu-audio" )
@@ -2676,14 +2693,14 @@ while test $# -gt 0; do
             done
             SUBMENU_AUDIO=:
             ;;
-        "-submenu-audio-length" )
-            shift
-            SUBMENU_AUDIOLEN="$1"
-            ;;
         "-submenu-audio-fade" )
             shift
             SM_FADE="$1"
-            SM_AUDIO_FADE=:
+            ;;
+        "-submenu-audio-length" ) # removed
+            usage_error "The $1 option has been removed. Use -submenu-length to
+            set the length of submenu audio for a static submenu. (yes now 
+            submenu lengths can be set)"
             ;;
         "-submenus" )
             SUB_MENU=:
@@ -2779,13 +2796,11 @@ while test $# -gt 0; do
             shift
             TOVID_OPTS="$1"
             ;;
-        "-titleset-mode" )
-            # used internally by todisc, do NOT pass as a user option !
+        "-titleset-mode" ) # internal use only
             AUTHOR=false
             TITLESET_MODE=:
             ;;
-        "-switched-mode" )
-            # used internally by todisc, do NOT pass as a user option !
+        "-switched-mode" ) # internal use only
             SWITCHED_MODE=:
             TEXTMENU=:
             SC_TITLE_ALIGN="west"
@@ -2846,7 +2861,7 @@ while test $# -gt 0; do
         "-is_titleset" ) #FIXME - this is useless
             TSET_MODE=:
             ;;
-        "-carousel_menu_mode" ) # used internally only by todisc
+        "-carousel_menu_mode" ) # internal use only
             MK_CAROUSEL_MODE=:
             ;;
         "-no-confirm-backup" )
@@ -2896,7 +2911,13 @@ $USE_DVD_SLIDESHOW && assert_dep dvd-slideshow \
 dvd-slideshow.sourceforge.net.  Note: if you do not use
 -use-dvd-slideshow, todisc will create the slideshow video for you. "
 assert_dep pgrep "You need the pgrep program to use todisc"
-
+if $USE_DVD_SLIDESHOW; then
+    if $STATIC && $ANI_SUBMENUS ||
+     ((sshows>1 || inc_files>=1)); then
+        usage_error "Sorry you can only use the dvd-slideshow program with
+        single slideshows"
+    fi
+fi
 # make sure user has backed up personal image files
 ((sshows>=1)) && $CONFIRM_BACKUP && confirm_backup
 # link WORK_DIR to /tmp for easy solution to spaces, illegal chars bugs
@@ -2980,7 +3001,16 @@ if $TEXTMENU; then
     IMG_FMT="png"
     SC_TITLE_ALIGN="west"
 fi
-
+# incompatible slideshow options with -switched-menus
+if { $CAROUSEL_IS_BG || $CAROUSEL_IS_SHOWCASE ; } && $SWITCHED_MENUS; then
+    $CAROUSEL_IS_BG && OPT="-background-slideshow" || OPT="-showcase-slideshow"
+    yecho
+    yecho "$OPT uses slides from ALL slideshows, so its use with
+     -switched-menus makes no sense.  Removing this option for you."
+    yecho
+    CAROUSEL_IS_SHOWCASE=false; CAROUSEL_IS_BG=false
+    sleep 10
+fi
 # slideshows are animated by default like rest of todisc
 if ((sshows>=1)); then
     if $STATIC && \
@@ -3037,10 +3067,21 @@ fi
 if $SUB_MENU && [ "$TARGET" = "svcd" ]; then
     usage_error "Sorry, no submenu for svcd, please remove -submenu option"
 fi
+if $SUB_MENU && $SINGLE_SLIDESHOW; then
+    usage_error "Sorry, no submenu for a single slideshow"
+fi
 [[ $TARGET = "svcd" ]] && $SHOWCASE && ! $TEXTMENU && \
 usage_error "Sorry, showcase disabled for svcd target"
-#$SUB_MENU && $GROUPING && usage_error "Sorry, no submenus when using -group" FIXME DEBUG
 
+# TODO get group working with submenus
+# include usage_error for trying to use -group with a slideshow as well
+if $SUB_MENU && $GROUPING; then
+    for i in ${!FILES[@]}; do
+        if ((${is_vidgroup[i]})); then
+            usage_error "Sorry, no submenus when using -group"
+        fi
+    done
+fi
 if $VMGM_ONLY; then SWITCHED_MODE=false && SWITCHED_MENUS=false; fi
 # -no-vmgm requires -skip-vmgm:  pass -no-vmgm-menu to subshells via NO_VMGM
 if ! $VMGM_MENU; then
@@ -3260,7 +3301,12 @@ if { ((sshows>=1)) && ((inc_files >=1)) ; } || ((sshows>1)); then
     if $DO_CAROUSEL && ! $MK_CAROUSEL_MODE; then
         # call todisc recursively, collect slideshow.m2v and exit
         ! $CONFIRM_BACKUP && NO_CONFIRM_BACKUP="-no-confirm-backup"
-        carousel_menu_mode
+        if ! carousel_menu_mode menu; then
+            yecho '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            yecho 'todisc encountered an error'
+            cleanup && killall_instances
+            exit 13
+        fi
         if $CAROUSEL_IS_BG; then
             mv "$WORK_DIR/carousel-1.m2v" "$WORK_DIR/carousel-00.m2v"
             BACKGROUND="$WORK_DIR/carousel-00.m2v"
@@ -3500,7 +3546,7 @@ fi
 if ! $VMGM_ONLY; then
     for i in "${FILES[@]}"; do
         IN_FILES=("${IN_FILES[@]}" "$(readlink -f "$i")")
-        [[ ${#FILES[@]} -lt 12 ]] && echo "Adding: $i" || spin "Adding: ${i##*/}"
+        (( ${#FILES[@]} < 12 )) && echo "Adding: $i" || spin "Adding: ${i##*/}"
     done
 fi
 $VMGM_ONLY && V_TOTAL=$(( ${#TITLES[@]} - 1 )) || V_TOTAL=${#IN_FILES[@]}
@@ -3600,6 +3646,30 @@ if [[ -n ${GRP_VPAUSE[@]} && ${#GRP_VPAUSE[@]} -eq 1 ]]; then
         GRP_VPAUSE[i]=${GRP_VPAUSE[0]}
     done
 fi
+# check # of -submenu-length args, and allow specifying 1 value for all videos
+if $SUB_MENU \
+ && ((${#SUBMENU_LEN[@]} != 1 && ${#SUBMENU_LEN[@]} != ${#IN_FILES[@]} )); then
+    usage_error "Give 1 submenu length for each video, or just 1 value for all"
+fi
+if $SUB_MENU && (( ${#SUBMENU_LEN[@]} == 1 )); then
+    if ! $DO_CAROUSEL; then
+        for i in ${!IN_FILES[@]}; do
+            SUBMENU_LEN[i]=${SUBMENU_LEN[0]}
+        done
+    fi
+fi
+
+# use user passed -submenu-length for static submenus with audio
+if $SUB_MENU && ! $ANI_SUB_MENU; then
+    if ! $DO_CAROUSEL; then
+        for i in ${!IN_FILES[@]}; do
+            if $USER_SUBMENU_LEN; then
+                SUBMENU_AUDIOLEN[i]=${SUBMENU_LEN[i]}
+            fi
+        done
+    fi
+fi 
+    
 
 # if more than one value for CHAPTERS, make sure they equal video #
 if $SUB_MENU &&  [[ ${#FILES[@]} -ne ${#CHAPTERS[@]} ]]; then
@@ -3807,6 +3877,9 @@ if ! $VMGM_ONLY; then
 fi
 echo
 # some vars for slide mix
+# this is only called when todisc running recursively to make ani slideshows
+# DO_CAROUSEL is set to false when the self recursion is complete
+# this happens earlier in the script.
 if $DO_CAROUSEL; then
     if [[ -n ${GROUP[@]} ]] && ! $MK_CAROUSEL_MODE; then
         #*slide_grp*.mpg are symlinks to the original images we have kept intact
@@ -3849,9 +3922,11 @@ if $DO_CAROUSEL; then
         [[ ${SLIDE_BLUR[s]} = "none" ]] && unset SLIDE_BLUR[s]
     done
 fi
-if [[ -n $MIX_RANGE ]] && ((MIX_RANGE<${#MIX_FILES[@]})); then
-    last_ind=$MIX_RANGE
-    for ((i=0; i<MIX_RANGE; i++)); do
+[[ -n $MIX_RANGE ]] && MIXRANGE=$MIX_RANGE
+#[[ -n $SM_MIX_RANGE ]] && MIXRANGE=$SM_MIX_RANGE
+if [[ -n $MIXRANGE ]] && ((MIXRANGE<${#MIXFILES[@]})); then
+    last_ind=$MIXRANGE
+    for ((i=0; i<MIXRANGE; i++)); do
         #[[ -n ${SLIDE_BLUR[i]} ]] &&
         if $DO_CAROUSEL; then
             MIX_IN=( "${MIX_IN[@]}" "${MIXFILES[i]}" )
@@ -3996,7 +4071,14 @@ if $DO_MENU; then
                 yecho "  -menu-length ${MENU_LEN[MENU_NUM-1]} seconds"
             fi
             if $ANI_SUB_MENU; then
-                yecho "  -submenu-length $ANI_SUBMENU_LEN seconds"
+                if $USER_SUBMENU_LEN; then
+                    for i in ${!SUBMENU_LEN[@]}; do
+                        sml=${SUBMENU_LEN[i]}
+                        yecho "Video $((i+1)):  -submenu-length $sml seconds"
+                    done
+                else
+                        yecho "  -submenu-length $SUBMENU_LEN seconds"
+                fi
                 if $SUBMENU_AUDIO; then
                     yecho "  -submenu-audio-fade $SM_FADE second(s)"
                 fi
@@ -5537,6 +5619,20 @@ if [[ $TARGET = "dvd" ]]; then
         echo
     done
 fi
+# make a draw files for grid preview if -grid was passed
+if ((GRID)); then
+    # make draw files for grid
+    for ((i=20; i<=${VIDSIZE/x*}; i=i+20)); do
+        ((i<=${VIDSIZE/*x})) && echo "line 0,${i} ${VIDSIZE/x*},${i}"
+        echo "line ${i},0 ${i},${VIDSIZE/*x}"
+    done >> "$WORK_DIR/grid1.mvg"
+
+    # make draw files for numbered text
+    for ((i=100; i<=600; i=i+100)); do
+        ((i<=${VIDSIZE/*x}-40)) && echo text 0,${i} \'$i\'
+        echo text ${i},20 \'$i\'
+    done >> "$WORK_DIR/grid2.mvg"
+fi
 
 if $SHOWCASE && $DO_MENU; then
     if $SC_THUMB; then
@@ -5738,6 +5834,11 @@ fi
 if $DISPLAY_PREVIEW; then
     display -title "Preview: (not in aspect) - close window to continue" \
     "$PREVIEW_IMG"
+    if ((GRID)); then
+        convert "$PREVIEW_IMG" \
+         -stroke '#FFF5B270' -strokewidth 1 -draw @grid1.mvg miff:- | convert \
+         - -fill none -stroke '#FFFFFF' -strokewidth 1 -draw @grid2.mvg x:
+    fi
     confirm_preview
 fi
 # copy the template back if using $MENU_FADE
@@ -5779,7 +5880,6 @@ fi
 if [[ -n "$BG_AUDIO" ]]; then
     $SINGLE_SLIDESHOW && end_pos="" || end_pos=${MENU_LEN[MENU_NUM-1]}
     BG_AUDIOLENGTH=$(audio_length "$BG_AUDIO")
-    BG_AUDIOLENGTH=$( unformat_time ${BG_AUDIOLENGTH%.*} )
     
     yecho "Getting length of bg audio"
     # make sure user isn't trying to get a longer menu than the audio allows
@@ -5793,16 +5893,14 @@ $STATIC && [[ -z "$BG_AUDIO" ]] && ! $SWITCHED && unset MENU_AUDIOLEN
 # for slideshow: set length of slides; check menu length is long enough
 
 if $DO_CAROUSEL; then
-    if $USER_MENU_LEN; then # user passed menu length takes precedence
-        MIX_SLIDE_LEN=$(bc_math "${MENU_LEN[MENU_NUM-1]} / ${#MIX_IN[@]}")
-    elif [[ -n $BG_AUDIO ]]; then # else use audio length
+    # if user passed -bgaudio but did not -(sub)menu-length, use full audio
+    if  [[ -n $BG_AUDIO ]] && ! $USER_MENU_LEN; then
         MIX_SLIDE_LEN=$(bc_math "$BG_AUDIOLENGTH / ${#MIX_IN[@]}")
-    else # if neither user menu length or slideshow audio passed: use 20s
-        MIX_SLIDE_LEN=$(bc_math "${MENU_LEN[MENU_NUM-1]} / ${#MIX_IN[@]}")
+    else # only use MENU_LEN seconds of audio ( default 20 secs unless passed )
+         MIX_SLIDE_LEN=$(bc_math "${MENU_LEN[MENU_NUM-1]} / ${#MIX_IN[@]}")
     fi
     # subtract transition time from the slide length
-#    TT=$(bc_math "(${#MIX_IN[@]} - 1) / ${#MIX_IN[@]}")
-    TT=1
+    TT=1 # a constant value atm
     $SLIDE_FADE && MIX_SLIDE_LEN=$(bc_math "$MIX_SLIDE_LEN - $TT")
 
     if [[ $(bc -l <<<  "$MIX_SLIDE_LEN < 0") -eq 1 ]]; then
@@ -6299,17 +6397,24 @@ for ((i=0; i<${#NEW_LENGTH[@]}; i++)); do
         [ -z "$MIN_VAL" ]  || ((val < MIN_VAL)) && MIN_VAL=$val && min_key=$i
     fi
 done
+# if submenu selected, translate seconds of submenu length into # of frames
+if $ANI_SUB_MENU; then
+    for i in ${!IN_FILES[@]}; do
+        SUBMENU_FRAMES+=( $(bc_math "$FRAME_RATE * ${SUBMENU_LEN[i]}" int) )
+    done
+fi
 # if animated submenu check if videos are long enough for the # of chapters
 if $ANI_SUB_MENU; then
     for ((i=0; i<=NUM_FILES; i++)); do
         S=$(bc_math "${SEEK_VAL[i]} * $FRAME_RATE" int)
-        F=$(bc_math  "${CHAPTERS[i]} * 300" int )
+        F=$(bc_math  "${CHAPTERS[i]} * 0" int )
         V=$(bc_math "${VID_LEN[i]} * $FRAME_RATE" int)
         if [ $((V - S)) -le $F ] ; then
             echo "Sorry, you can not use ${CHAPTERS[i]}
             chapters for ${IN_FILES[i]}.  Maximum chapters for this video
             (using a -seek of ${SEEK_VAL[i]}): 
-            $(bc_math "($V - $S) / 300" int) chapters" |format_output
+            $(bc_math "($V - $S) / ${SUBMENU_FRAMES[i]}" int) chapters" |
+             format_output
             exit 1
         fi
         unset V F
@@ -6318,10 +6423,6 @@ fi
 # allow animated menus of length of longest video
 MAX_MENU_LEN=$(bc_math "$FRAME_RATE * ${MENU_LEN[MENU_NUM-1]}" int)
 MAX_VAL_FRAMES="$((MAX_VAL * 30))"
-# if submenu selected, translate seconds of submenu length into # of frames
-if $ANI_SUB_MENU; then
-    ANI_SUBMENU_FRAMES=$(bc_math "$FRAME_RATE * $ANI_SUBMENU_LEN" int)
-fi
 
 MENU_FRAMES=$MAX_MENU_LEN
 if $STATIC; then
@@ -7045,23 +7146,57 @@ if $SUB_MENU; then
             SM_TITLES=("${TITLES[@]}")
         fi
     fi
+    # if animated: the length of the submenu audio will be the -submenu-length
+    # if static:
+    #     No audio: it will be 2 seconds long
+    #     Audio and -submenu-length given: -submenu-length
+    #     Audio and no -submenu-length given: full length of the audio file
+    if $SUBMENU_AUDIO; then
+        if [[ -n $SM_AUDIO_FILE ]]; then
+            SM_AUDIOLEN=$(audio_length "$SM_AUDIO_FILE")
+        fi
+        for ((i=0; i<=NUM_FILES; i++)); do
+            [[ -n $SM_AUDIO_FILE ]] && SUBMENU_AUDIOLEN[i]=$SM_AUDIOLEN
+            if $USER_SUBMENU_LEN; then
+                SUBMENU_AUDIOLEN[i]=$( unformat_time ${SUBMENU_LEN[i]} )
+            else
+                if ${SLIDESHOW[i]}; then
+                    yecho
+                    spin "getting length of ${SM_AUDIO[i]} "
+                    SUBMENU_AUDIOLEN[i]=$(audio_length "${SM_AUDIO[i]}")
+                    SUBMENU_LEN[i]=${SUBMENU_AUDIOLEN[i]}
+                else
+                    SUBMENU_AUDIOLEN[i]=$( unformat_time ${SUBMENU_LEN[i]} )
+                fi
+            fi
+            # SM_LOOPS is the # of frames for static menus
+            SM_LOOPS[i]=$( bc \
+             <<< "${SUBMENU_AUDIOLEN[i]} * $FRAME_RATE" 2>/dev/null)
+            SM_LOOPS[i]=${SM_LOOPS[i]%.*}
+        done
+    else # we just use the menu length for generating silence
+        if $ANI_SUB_MENU; then
+            SUBMENU_AUDIOLEN[i]=${SUBMENU_LEN[i]}
+        else
+            SUBMENU_AUDIOLEN[i]=2
+            for ((i=0; i<=NUM_FILES; i++)); do
+                SM_LOOPS[i]=60
+            done
+        fi
+    fi
     # if doing animated submenus, we need a 'carousel' (animated slideshow)
     # background or showcase carousel will not do, nor is it made if $STATIC
-    if $ANI_SUB_MENU && ((sshows>=1)) && \
-    { $STATIC || $CAROUSEL_IS_BG || $CAROUSEL_IS_SHOWCASE ; }; then
-        carousel_menu_mode default
-    fi
-    if ! $ANI_SUB_MENU; then
-        if [[ -n "$SUBMENU_AUDIOLEN" ]]; then
-            SM_LOOPS=$( bc <<< "$SUBMENU_AUDIOLEN * $FRAME_RATE" \
-            2>/dev/null)
-            SM_LOOPS=${SM_LOOPS%.*}
-        else
-            SM_LOOPS=60
+    if $ANI_SUB_MENU && ((sshows>=1)); then
+        if ! carousel_menu_mode submenu; then
+            yecho '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            yecho "todisc encountered an error"
+            cleanup && killall_instances
+            exit 13
         fi
     fi
      
     for ((i=0; i<${#IN_FILES[@]}; i++)); do
+        smframes=${SUBMENU_FRAMES[i]}
         if ! ${SLIDESHOW[i]}; then
             C=$((${CHAPTERS[i]} - 1))
             SN_BTN_XY=${GEO_ARRAY[C]} # button dimensions
@@ -7078,16 +7213,16 @@ if $SUB_MENU; then
 
             # which is harmless as they get removed, but needs to be tweaked
             if $ANI_SUB_MENU; then
-                JPEG2YUV_OPTS=(-n $ANI_SUBMENU_FRAMES)
+                JPEG2YUV_OPTS=(-n $smframes)
                 PICS_IN=($WORK_DIR/animenu/%0d.$SM_IMG_FMT)
                 PICS_OUT=($WORK_DIR/animenu/)
-                CUT_TIME=300
+                CUT_TIME=$smframes
                 JPEG_DIR="$WORK_DIR/animenu"
                 SLEEP=1
-                TOTAL_JPEGS=$((300 * ${CHAPTERS[i]}))
+                TOTAL_JPEGS=$(($smframes * ${CHAPTERS[i]}))
 
             else  # not animated submenu
-                JPEG2YUV_OPTS=(-n 1 -l $SM_LOOPS)
+                JPEG2YUV_OPTS=(-n 1 -l ${SM_LOOPS[i]})
                 PICS_IN=($WORK_DIR/${i}-submenu.$SM_IMG_FMT)
                 PICS_OUT=($WORK_DIR/submenu/)
                 CUT_TIME=1
@@ -7167,7 +7302,7 @@ if $SUB_MENU; then
                     echo "renaming images by frame number"
                     echo
                     u=${t/*-}; v=${t/-*}
-                    for ((n=0; n<300; n++)); do
+                    for ((n=0; n<smframes; n++)); do
                         if [ $v -eq ${CUT[0]} ]; then
                             mv $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
                             $WORK_DIR/animenu/$(printf \
@@ -7201,13 +7336,14 @@ if $SUB_MENU; then
                 done
             fi
             if $ANI_SUB_MENU ; then
-                # move 300 images to each subdir: $WORK_DIR/animenu/{0,1,2,etc}
+                # move submenu images to each subdir: $WORK_DIR/animenu/{0,1,2,etc}
                 # or if making chapter titles, output to subdirs; rm original
                 for ((a=0; a<${CHAPTERS[i]}; a++)); do
                     unset num_procs smpids curimgs
                     # 2>/dev/null to work around perplexing spawned xterm bug
                     pics=($(find $WORK_DIR/animenu/ -maxdepth 1 -name \
-                    00\*.$SM_IMG_FMT|sort 2>/dev/null|head -n 300 2>/dev/null))
+                    00\*.$SM_IMG_FMT|sort 2>/dev/null|
+                    head -n $smframes 2>/dev/null))
                     if [[ -n  ${CHAPTER_TITLES[@]} ]]; then
                         # title the chapters for submenu if needed
                         ctitle="$WORK_DIR/${TSET_NUM}-${i}-chapter${a}.png"
@@ -7241,7 +7377,7 @@ if $SUB_MENU; then
 
             if $ANI_SUB_MENU; then
                 $DEBUG && stime=$(date +%s)
-                TOYUV_CMD=(ppmtoy4m -v 0 -n 300 -A 10:11 -F $YUV_FR -I p \
+                TOYUV_CMD=(ppmtoy4m -v 0 -n $smframes -A 10:11 -F $YUV_FR -I p \
                 -S 420mpeg2 -r)
                 IMGENC_CMD=(ffmpeg -f yuv4mpegpipe -r $FRAME_RATE -i - -an \
                 -r $FRAME_RATE -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS \
@@ -7257,14 +7393,14 @@ if $SUB_MENU; then
                 "${IMGENC_CMD[@]}" <  "$WORK_DIR/enc.fifo"  2>/dev/null &
                 encpids="$encpids $!"
                 echo
-                echo "Encoding 300 frames for "${IN_FILES[i]}"" >&2
+                echo "Encoding $smframes frames for "${IN_FILES[i]}"" >&2
                 # make fifos for intermediary piping
                 for ((f=1; f<=max_procs; f++)); do
                     [[ ! -p "$WORK_DIR/temp-${f}.ppm" ]] && \
                      mkfifo "$WORK_DIR/temp-${f}.ppm"
                 done
                 unset smpids  num_procs
-                for ((a=1; a<300; a++)); do
+                for ((a=1; a<$smframes; a++)); do
                     ((num_procs++))
                     out_ppm="$WORK_DIR/temp-${num_procs}.ppm" # current frame
                     for ((b=0; b<${CHAPTERS[i]}; b++)); do
@@ -7285,8 +7421,8 @@ if $SUB_MENU; then
                     2>> "$LOG_FILE" &
                     smpids="$smpids $!"
                     ppm_fifos+=("$out_ppm") # all frames waiting to be processed
-                    if ((num_procs==max_procs || a == 299 )); then
-                        spin "\rProcessing frame $((a+1)) of 300  " >&2
+                    if ((num_procs==max_procs || a == smframes-1 )); then
+                        spin "\rProcessing frame $((a+1)) of $smframes  " >&2
                         cat "${ppm_fifos[@]}"
                         wait $smpids
                         unset smpids num_procs ppm_fifos
@@ -7367,15 +7503,10 @@ if $SUB_MENU; then
             fi
             # increment submenu titles index
             I=$((I+NUM_CHAPTERS))
-        else
+        else # it is a slideshow
             # mv carousel.m2v or polaroid stack appropriately
             if $ANI_SUB_MENU; then
-                if $STATIC; then
-                    # carousel.m2v's created and mv'ed above this loop block
-                    :
-                else
-                    cp $WORK_DIR/carousel-$((i+1)).m2v $WORK_DIR/menu${i}.m2v
-                fi
+                cp $WORK_DIR/carousel-$((i+1)).m2v $WORK_DIR/menu${i}.m2v
             else
                 yecho "Making a 'polaroid stack' of your slides"
                 mk_polaroid_stack "$WORK_DIR"/${TSET_NUM}-slide_grp-$((i+1))-*.mpg &
@@ -7399,7 +7530,7 @@ if $SUB_MENU; then
                 
                 # encode to m2v
                 yecho "Encoding to compliant m2v video format"
-                PPM_CMD=(ppmtoy4m -v 0 -n $SM_LOOPS -A 10:11 -I p -F $YUV_FR \
+                PPM_CMD=(ppmtoy4m -v 0 -n ${SM_LOOPS[i]} -A 10:11 -I p -F $YUV_FR \
                 -S 420mpeg2 -r)
                 FFM_CMD=(ffmpeg $INSIZE -r $FRAME_RATE -pix_fmt yuv420p \
                 -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
@@ -7417,39 +7548,29 @@ if $SUB_MENU; then
         yecho "Creating an audio background"
         yecho "Working on submenu audio for "${IN_FILES[s]}""
         if $SUBMENU_AUDIO; then # user supplied audio file for ths video
-            if ! $ANI_SUB_MENU ; then  # if static, see if length option given
-                [[ -n "$SUBMENU_AUDIOLEN" ]] && TIME=$SUBMENU_AUDIOLEN
-                if [[ -n "$SM_AUDIO_FILE" ]]; then # 1 audio file for all menus
-                    TIME_TMP=$(audio_length "$SM_AUDIO_FILE")
-                else # audio will be different for each menu
-                    TIME_TMP=$(audio_length "${SM_AUDIO[s]}")
-                fi
-            else # if animated, get time from video instead of the audio file
-                TIME_TMP=$(vid_length "$WORK_DIR/menu$s.m2v")
-            fi
-            # if length option is supplied, we use that, else use $TIME_TMP
-            TIME=${TIME:-$TIME_TMP}
-            # silence only need be the length of the static menu
-            if [ "${SM_AUDIO[s]}" = "none" ]; then # user asked for silence
-                TIME=$(vid_length "$WORK_DIR/menu$s.m2v")
-                BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
-                $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
-            elif [[ -n "$SM_AUDIO_FILE" ]]; then # user supplied "1" audio file
+            if [[ -n "$SM_AUDIO_FILE" ]]; then # user supplied "1" audio file
                 COPY_AC3=(cp -v $WORK_DIR/submenu.$AUDIO_EXT \
                 $WORK_DIR/menu$s.$AUDIO_EXT)
-                BGAUDIO_CMD=(ffmpeg -i "$SM_AUDIO_FILE" -t $TIME -ar 48000 \
-                -acodec pcm_s16le -y $WORK_DIR/submenu.wav)
-            else # SM_AUDIO[s] is an audio file we will process it
+                BGAUDIO_CMD=(ffmpeg -i "$SM_AUDIO_FILE" \
+                -t ${SUBMENU_AUDIOLEN[s]} -ar 48000 -acodec pcm_s16le \
+                -y $WORK_DIR/submenu.wav)
+            elif [[ "${SM_AUDIO[s]}" = "none" ]]; then # user asked for silence
+                SUBMENU_AUDIOLEN[s]=$(vid_length "$WORK_DIR/menu$s.m2v")
+                BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero $AUDIO_OPTS \
+                -t ${SUBMENU_AUDIOLEN[s]} -y $WORK_DIR/menu$s.$AUDIO_EXT)
+            else
+                # SM_AUDIO[s] is an audio file we will process it
                 # do separate wavs for each supplied audio bg for each submenu
-                BGAUDIO_CMD=(ffmpeg -i "${SM_AUDIO[s]}" -t $TIME -ar 48000 \
-                -acodec pcm_s16le -y $WORK_DIR/menu$s.wav)
+                BGAUDIO_CMD=(ffmpeg -i "${SM_AUDIO[s]}" \
+                -t ${SUBMENU_AUDIOLEN[s]} -ar 48000 -acodec pcm_s16le \
+                -y $WORK_DIR/menu$s.wav)
                 BGAUDIO_CMD2=(ffmpeg -i $WORK_DIR/menu$s.wav \
                 $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
             fi
         else # no supplied audio for submenu so create silence
-            TIME=$(vid_length "$WORK_DIR/menu$s.m2v")
-            BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $TIME \
-            $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
+            SUBMENU_AUDIOLEN[s]=$(vid_length "$WORK_DIR/menu$s.m2v")
+            BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero $AUDIO_OPTS \
+            -t ${SUBMENU_AUDIOLEN[s]} -y $WORK_DIR/menu$s.$AUDIO_EXT)
         fi
         # run if wav doesn't exist, or its a slideshow
         if [[ ! -s $WORK_DIR/submenu.wav ]] || ${SLIDESHOW[s]}; then
@@ -7462,13 +7583,13 @@ if $SUB_MENU; then
         if $SUBMENU_AUDIO \
         && [[ ! "${SM_AUDIO[s]}" = "none" && -z "$SM_AUDIO_FILE" ]]; then
             if $SM_AUDIO_FADE; then
-                TIME=$(audio_length "$WORK_DIR/menu$s.wav")
+                #TIME=$(audio_length "$WORK_DIR/menu$s.wav")
                 echo -e "Running:
                 sox $WORK_DIR/menu$s.wav $WORK_DIR/menu$s-processed.wav fade t
-                $SM_FADE $TIME $SM_FADE" |
+                $SM_FADE ${SUBMENU_AUDIOLEN[s]} $SM_FADE" |
                 sed 's/    */ /g' | format_output
-                sox -q $WORK_DIR/menu$s.wav \
-                $WORK_DIR/menu$s-processed.wav fade t $SM_FADE $TIME $SM_FADE
+                sox -q $WORK_DIR/menu$s.wav $WORK_DIR/menu$s-processed.wav \
+                 fade t $SM_FADE ${SUBMENU_AUDIOLEN[s]} $SM_FADE
                 rm $WORK_DIR/menu$s.wav
                 mv $WORK_DIR/menu$s-processed.wav $WORK_DIR/menu$s.wav
             fi
@@ -7481,13 +7602,14 @@ if $SUB_MENU; then
         if [[ -n "$SM_AUDIO_FILE" \
         && ! -s $WORK_DIR/submenu-processed.wav ]]; then
             if $SM_AUDIO_FADE; then
-                TIME=$(audio_length "$WORK_DIR/submenu.wav")
+                #TIME=$(audio_length "$WORK_DIR/submenu.wav")
                 echo -e "Running:
                 sox $WORK_DIR/submenu.wav $WORK_DIR/submenu-processed.wav \
-                fade t $SM_FADE $TIME $SM_FADE" | format_output >> "$LOG_FILE"
+                fade t $SM_FADE ${SUBMENU_AUDIOLEN[s]} $SM_FADE" |
+                format_output >> "$LOG_FILE"
 
-                sox -q $WORK_DIR/submenu.wav \
-                $WORK_DIR/submenu-processed.wav fade t $SM_FADE $TIME $SM_FADE
+                sox -q $WORK_DIR/submenu.wav $WORK_DIR/submenu-processed.wav \
+                 fade t $SM_FADE ${SUBMENU_AUDIOLEN[s]} $SM_FADE
                 rm -f $WORK_DIR/submenu.wav
                 cp  $WORK_DIR/submenu-processed.wav $WORK_DIR/submenu.wav
             fi
@@ -7778,6 +7900,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             if $STATIC; then unset PICS; fi
             unset IM_CMD0 IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5 IM_CMD6
         done
+        wait
         # make sure all animated thumbs finish at the same time
         if ! $STATIC; then
             IMAGES=( "${IMAGES[@]}" \
@@ -7824,7 +7947,7 @@ if ! $QUICK_MENU && $DO_MENU; then
     PPM_FRAMES=$((FRAMES))
     # extra black frames for menu fade at the end
     $MENU_FADE && PPM_FRAMES=$((PPM_FRAMES+18))
-    TOYUV_CMD=(ppmtoy4m -v 0 -n $PPM_FRAMES -A 10:11 -I p -F $YUV_FR \
+    TOYUV_CMD=(ppmtoy4m -v 2 -n $PPM_FRAMES -A 10:11 -I p -F $YUV_FR \
     -S 420mpeg2 -r)
     IMGENC_CMD=(ffmpeg $INSIZE -r $FRAME_RATE $PIPE_FORMAT -i - -an \
     -r $FRAME_RATE -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS \
@@ -7834,9 +7957,9 @@ if ! $QUICK_MENU && $DO_MENU; then
     mkfifo "$WORK_DIR/ppm.fifo" 2>/dev/null
     mkfifo "$WORK_DIR/enc.fifo" 2>/dev/null
     "${TOYUV_CMD[@]}" < "$WORK_DIR/ppm.fifo" > "$WORK_DIR/enc.fifo" \
-     2>/dev/null &
+     2>> "$LOG_FILE" & #/dev/null &
     encpids="$encpids $!"
-    "${IMGENC_CMD[@]}" <  "$WORK_DIR/enc.fifo"  2>/dev/null &
+    "${IMGENC_CMD[@]}" <  "$WORK_DIR/enc.fifo"  2>> "$LOG_FILE" & #/dev/null &
     encpids="$encpids $!"
 fi
 # make intermediary fifos for images.  They will get catted to ppm.fifo
@@ -7915,12 +8038,10 @@ if $MENU_FADE && ! $QUICK_MENU; then
         fi
         $TEXTMENU && unset sc_cmd
         ! $TEXTMENU && MOSAIC="-mosaic"
-        BG_PIC=$(find $WORK_DIR/bg -name $(($frame + 1)).jpg)
+        BG_PIC=$(find $WORK_DIR/bg -name $((frame + 1)).jpg)
         # create the montage from the images in each video dir
         MONTAGE_CMD=(convert  -size $VIDSIZE -background none \
         ${sc_cmd[@]} $SC_IMG_CMD $MOSAIC)
-        MONTAGE_CMD0=(convert  -size $VIDSIZE "$WORK_DIR/pics/template.png" \
-        ${sc_cmd[@]} $SC_VIDEO_CMD $MOSAIC $WORK_DIR/animenu/$((frame +1)).jpg)
         MONTAGE_CMD01=(convert  -size $VIDSIZE xc:none -background none \
         ${sc_cmd[@]} $SC_VIDEO_CMD $MOSAIC)
         MONTAGE_CMD02=(convert -size $VIDSIZE -background none \
@@ -7931,20 +8052,17 @@ if $MENU_FADE && ! $QUICK_MENU; then
         -geometry ${THUMB_SIZE}${MTG_GEO} -background none)
         #  dissolve the finished montages onto the background
         MONTAGE_CMD2=(composite -dissolve $S -gravity $BUTTON_GRAVITY \
-        -geometry +${XGEO}+${YGEO} - $WORK_DIR/bg/$(($frame + 1)).jpg \
+        -geometry +${XGEO}+${YGEO} - $WORK_DIR/bg/$((frame + 1)).jpg \
         -background none)
-        MONTAGE_CMD2b=(composite -size $VIDSIZE -background none -gravity \
-        NorthWest  -dissolve $S - $WORK_DIR/bg/$(($frame + 1)).jpg \
-        -background none  $WORK_DIR/animenu/$(($frame + 1)).jpg)
         MONTAGE_CMD2c=(composite -size $VIDSIZE -background none \
-        -gravity NorthWest  -dissolve $S - $WORK_DIR/bg/$(($frame + 1)).jpg \
+        -gravity NorthWest  -dissolve $S - $WORK_DIR/bg/$((frame + 1)).jpg \
         -background none)
         # if MIST is called for, this dissolves the mist onto the background
         MONTAGE_CMD3=(composite -dissolve $B -gravity $TITLE_GRAVITY \
         -geometry ${mist_xoffset}${mist_yoffset} $WORK_DIR/white.png -)
         # finally, dissolve title onto MIST (or background) and pipe out a ppm
         # write out a ppm if montages are static from here on in
-        if (( frame == ani_frames-1)) || ((frame == BG_FADEIN_ENDFRAME )); then
+        if (( frame == ani_frames)) || ((frame == BG_FADEIN_ENDFRAME )); then
             write_ppm=(-write "$WORK_DIR/montage-${frame}.ppm")
             copy_ppm="$WORK_DIR/montage-${frame}.ppm"
         else
@@ -7953,7 +8071,6 @@ if $MENU_FADE && ! $QUICK_MENU; then
         MONTAGE_CMD4=(composite -dissolve $C -gravity $TITLE_GRAVITY \
         -geometry ${title_xoffset}${title_yoffset} $WORK_DIR/title_txt.png - \
         -background none -depth 8 ppm:- )
-        #-background none -depth 8 $WORK_DIR/animenu/$(($frame + 1)).ppm)
         if $PLAYALL ; then
             MONTAGE_CMD5=(composite -dissolve $S -gravity SouthEast -geometry \
             $PLAYALL_BTN_OFFSETS "$WORK_DIR/Playall.png" - \
@@ -7985,7 +8102,7 @@ if $MENU_FADE && ! $QUICK_MENU; then
         # make sure we don't start copying frames if fadein is not finished
         #f=$((frame + 2))
         f=$((frame + 1))
-        if ((frame==ani_frames)); then
+        if ((frame==ani_frames+1)); then
             cat_fifos=false
             endframe=$THUMBS_FADEOUT_STARTFRAME
             copy_frames=$((endframe - f))
@@ -7995,11 +8112,11 @@ if $MENU_FADE && ! $QUICK_MENU; then
                 echo >&2
                 break
             else
+                # cat any backlog of backgrounded processes
+                if [[ -n ${ppm_fifos[@]} ]]; then
+                    cat "${ppm_fifos[@]}"
+                fi
                 if [[ -s "$copy_ppm" ]]; then
-                    # cat any backlog of backgrounded processes
-                    if [[ -n ${ppm_fifos[@]} ]]; then
-                        cat "${ppm_fifos[@]}"
-                    fi
                     # endframe is the last unchanging frame in the video
                     for ((i=0; i<copy_frames; i++)); do
                         spin  "\rEncoding frames $f to $endframe  " >&2
@@ -8074,6 +8191,10 @@ if $MENU_FADE && ! $QUICK_MENU; then
             fi
         fi
         impids="$impids $!"
+        rmpics+=( "$WORK_DIR/bg/$((frame+1)).jpg" )
+        rmpics+=( "$WORK_DIR"/showcase/$(printf "%06d%s"  $(($frame + 1)) .png) )
+        # we reuse thumbs for static so don't rm ANI_PICS
+        ! $STATIC && rmpics+=( "${ANI_PICS[@]}" )
 
         ((total_frames++))
         unset ANI_PICS sc_cmd writeppm
@@ -8081,11 +8202,10 @@ if $MENU_FADE && ! $QUICK_MENU; then
             spin  "\rProcessing frame $(($frame + 1))  " >&2
             cat "${ppm_fifos[@]}"
             wait $impids
-            unset num_procs ppm_fifos impids
+            rm -f "${rmpics[@]}"
+            unset num_procs ppm_fifos impids rmpics
         fi
     done > "$WORK_DIR/ppm.fifo"
-    echo -e "\ntotal_frames are $total_frames\n" >&2
-    sleep 5
 elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
     if $TRANSPARENT; then # non transparent -showcase-* uses this block too
         num_procs=0
@@ -8210,13 +8330,17 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
                 fi
             fi
             impids="$impids $!"
+            # remove images after they are used each cat run
+            rmpics+=( "$WORK_DIR"/showcase/$(printf "%06d%s"  $count .png) )
+            rmpics+=( "$WORK_DIR/bg/$count.jpg" )
+            # we reuse thumbs for static so don't rm ANI_PICS
+            ! $STATIC && rmpics+=( "${ANI_PICS[@]}" )
             if ((num_procs==max_procs || count >= FRAMES)); then
                 cat "${ppm_fifos[@]}"
                 wait $impids
-                unset num_procs ppm_fifos impids
-                # don't rm ANI_PICS if static as we reuse them for each loop !
-                # FIXME get array of images processed in max_procs passes to rm
-                ! $STATIC && rm -f ${ANI_PICS[@]} # only rm's 1 run of thumbs !
+                rm -f "${rmpics[@]}"
+                unset num_procs ppm_fifos impids rmpics
+                # remove now unneeded images to keep disc usage low
             fi
             unset ANI_PICS sc_cmd
         done > "$WORK_DIR/ppm.fifo"
@@ -8272,10 +8396,14 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
                 fi
             fi
             impids="$impids $!"
+            rmpics+=( "$WORK_DIR/bg/$count.jpg" )
+            # static reuses the thumbs so don't rm each cat run
+            ! $STATIC && rmpics+=( "${ANI_PICS[@]}" )
             if ((num_procs==max_procs || count >= FRAMES)); then
                 cat "${ppm_fifos[@]}"
                 wait $impids
-                unset num_procs ppm_fifos impids
+                rm -f "${rmpics[@]}"
+                unset num_procs ppm_fifos impids rmpics
             fi
             unset ANI_PICS
         done > "$WORK_DIR/ppm.fifo"
