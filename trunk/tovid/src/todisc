@@ -906,6 +906,8 @@ get_group_chapters()
                 ${chapt_len_array[@]})
                 unset chapt_len_array[${#chapt_len_array[@]}-1]
                 chapter_points=$( running_total <<< ${chapt_len_array[@]} )
+                # remove trailing space
+                chapter_points=$(sed 's/[ \t]*$//' <<< $chapter_points)
                 remainder=$( bc <<< "$adjusted_length % $chapter_length" \
                 2>/dev/null)
                 group_chapters[x++]=$chapter_points
@@ -915,6 +917,9 @@ get_group_chapters()
             fi
         unset chapt_len_array
         done
+        # remove last chapter as this makes one for the end of the video
+        lastind=$(( ${#group_chapters[@]} - 1 ))
+        group_chapters[lastind]=${group_chapters[lastind]% *}
         unset remainder
     fi
     if $FORMAT; then
@@ -922,7 +927,7 @@ get_group_chapters()
             for number in ${group_chapters[d]}; do
                 new_element="$new_element $(format_seconds $number),"
             done
-            array[d]="$new_element"
+            array[d]=$new_element
             unset new_element
         done
 
@@ -941,7 +946,7 @@ get_group_chapters()
                     chpts0="chapters=\"00:00:00,${points%,}\""
                 fi
             fi
-            chpts=${chpts[@]#,}
+            #chpts=${chpts[@]#,} # I have no idea why this worked with this here
         done
     fi
 }
@@ -3009,7 +3014,7 @@ if { $CAROUSEL_IS_BG || $CAROUSEL_IS_SHOWCASE ; } && $SWITCHED_MENUS; then
      -switched-menus makes no sense.  Removing this option for you."
     yecho
     CAROUSEL_IS_SHOWCASE=false; CAROUSEL_IS_BG=false
-    sleep 10
+    $WARN && sleep 10
 fi
 # slideshows are animated by default like rest of todisc
 if ((sshows>=1)); then
@@ -4395,7 +4400,7 @@ echo -e "**** NOTE ****\n"
 echo "Doing all work in directory $REAL_WORK_DIR"
 echo "$WORK_DIR will be a symlink pointing to this directory"
 echo -e "\n**************"
-sleep 1
+$WARN && sleep 1
 cd "$WORK_DIR"
 # BASEDIR is the dir of the calling script, if unset, use WORK_DIR (For vmgm)
 : ${BASEDOR:-$WORK_DIR}
