@@ -1279,11 +1279,6 @@ EOF
     fi
     for t in ${!tsetopts[@]}; do
         options="${tsetopts[t]} ${GEN_OPTS[@]}"
-        if $GREP '-submenus|-ani-submenus' <<< "$options" \
-           && $GREP '-group' <<< "$options"; then
-            usage_error "Sorry, no submenus when using grouped videos
-             (-group) or doing slideshows (-slides)"
-        fi
         if $GREP -videos-are-chapters <<< "$options"; then
             if $GREP -playall  <<< "$options"; then
                 usage_error \
@@ -3094,16 +3089,6 @@ fi
 [[ $TARGET = "svcd" ]] && $SHOWCASE && ! $TEXTMENU && \
 usage_error "Sorry, showcase disabled for svcd target"
 
-# TODO get group working with submenus
-# include usage_error for trying to use -group with a slideshow as well
-if $SUB_MENU && $GROUPING; then
-    for i in ${!FILES[@]}; do
-        if ((${is_vidgroup[i]})); then
-            #usage_error "Sorry, no submenus when using -group"
-            :
-        fi
-    done
-fi
 if $VMGM_ONLY; then SWITCHED_MODE=false && SWITCHED_MENUS=false; fi
 # -no-vmgm requires -skip-vmgm:  pass -no-vmgm-menu to subshells via NO_VMGM
 if ! $VMGM_MENU; then
