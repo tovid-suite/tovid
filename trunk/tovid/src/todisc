@@ -198,8 +198,8 @@ USER_AUDIOLENGTH=false
 BURN=false
 BURN_DEVICE="/dev/dvdrw"
 QUICK_MENU=false
-BG_CLR=101010
-SUBMENU_BG_CLR=101010
+BG_CLR='#101010'
+SUBMENU_BG_CLR='#101010'
 QM_PREVIEW=false
 USER_CHAPTERS=false
 QUICKMENU_IS_SHOWCASE=false
@@ -879,7 +879,7 @@ get_group_chapters()
     index=$1
     [[ -n $2 && $2 = "format" ]] && FORMAT=:
     $USER_CHAPTERS && FORMAT=false
-    unset chapt_len_array x len remainder y e
+    unset chapt_len_array x len remainder y e grp_chapters array
     remainder=0
     chapter_length=$( bc_math "${GROUP_TOT_LEN[index]} / ${CHAPTERS[index]}")
     GROUP_VIDEO_LENGTHS=( ${GROUP_VID_LENGTHS[index]} )
@@ -888,7 +888,14 @@ get_group_chapters()
         grp_arb_chts=( ${group_arbitrary_chapters[index]} )
 
         for y in ${!grp_arb_chts[@]}; do
-            [[ $y -eq 0 ]] && chpts0="chapters=\"${grp_arb_chts[y]}\""
+            unset GC
+            (( y == 0 )) && chpts0="chapters=\"${grp_arb_chts[y]}\""
+            gc=( ${grp_arb_chts[y]//,/ } )
+            # allow passing 00:00:00 for grouped chapters
+            ((${#gc[@]} == 1 )) && [[ $gc = 00:00:00* ]] && gc=( 00:00:01 )
+            
+            for g in ${gc[@]}; do GC="$GC $(unformat_time $g)"; done
+            grp_chapters[y]=$GC
             if [[ ${grp_arb_chts[y]} = 0 ]]; then
                 chpts[y]=""
             else
@@ -910,27 +917,29 @@ get_group_chapters()
                 chapter_points=$(sed 's/[ \t]*$//' <<< $chapter_points)
                 remainder=$( bc <<< "$adjusted_length % $chapter_length" \
                 2>/dev/null)
-                group_chapters[x++]=$chapter_points
+                local group_chapters[x++]=$chapter_points
             else
-                group_chapters[x++]=""
+                local group_chapters[x++]=""
                 remainder=$adjusted_length
             fi
         unset chapt_len_array
         done
         # remove last chapter as this makes one for the end of the video
         lastind=$(( ${#group_chapters[@]} - 1 ))
-        group_chapters[lastind]=${group_chapters[lastind]% *}
+        local group_chapters[lastind]=${group_chapters[lastind]% *}
         unset remainder
-    fi
-    if $FORMAT; then
         for d in ${!group_chapters[@]}; do
             for number in ${group_chapters[d]}; do
                 new_element="$new_element $(format_seconds $number),"
+                grp_chapters[d]="${grp_chapters[d]} $number"
+                grp_chapters[d]=$(sed 's/[ \t]*$//' <<< ${grp_chapters[d]})
             done
-            array[d]=$new_element
+            local array[d]=$new_element
             unset new_element
         done
 
+    fi
+    if $FORMAT; then
         for e in ${!array[@]}; do
             points=$(for f in ${array[e]// /}; do echo -n $f;done)
             if [[ -z ${array[e]} ]]; then
@@ -2468,6 +2477,15 @@ while test $# -gt 0; do
             ! [[ -e "$BACKGROUND" ]] && \
             usage_error "background \"$BACKGROUND\" does not exist"
             ;;
+        "-submenu-background" )
+            shift
+            get_listargs "$@"
+            for f in  ${!ARGS_ARRAY[@]}; do
+                SM_BACKGROUND[f]=$(readlink -f "${ARGS_ARRAY[f]}")
+                ! [[ -e ${SM_BACKGROUND[f]} ]] && usage_error \
+                "submenu background \"$SM_BACKGROUND\" does not exist"
+            done
+            ;;
         "-intro" )
             shift
             DO_INTRO=:
@@ -2647,7 +2665,7 @@ while test $# -gt 0; do
                 [[ "$CHAPTERS" = *+* ]] && grouped_user_chapters=( $CHAPTERS )
                 # make array, remove everything after and including 1st '+',
                 CHAPTERS=( $CHAPTERS )
-                CHAPTERS=( ${CHAPTERS[@]%%+*} ) # in case of grouped chapters
+                #CHAPTERS=( ${CHAPTERS[@]%%+*} ) # in case of grouped chapters
                 USER_CHAPTERS=: # user passed HH:MM:SS chapters
             fi
             ;;
@@ -2890,12 +2908,10 @@ while test $# -gt 0; do
         "-bg-colour" | "-bg-color" )
             shift
             BG_CLR="$1"
-            BG_CLR=${BG_CLR/\#/} # in case user passed #ffffff syntax
             ;;
         "-submenu-bg-colour" | "-submenu-bg-color" )
             shift
             SUBMENU_BG_CLR="$1"
-            SUBMENU_BG_CLR=${BG_CLR/\#/} # in case #ffffff syntax passed
             ;;
         -car* )
             usage_error "$1: No such option.  Please see 'man todisc' ?"
@@ -3083,7 +3099,8 @@ usage_error "Sorry, showcase disabled for svcd target"
 if $SUB_MENU && $GROUPING; then
     for i in ${!FILES[@]}; do
         if ((${is_vidgroup[i]})); then
-            usage_error "Sorry, no submenus when using -group"
+            #usage_error "Sorry, no submenus when using -group"
+            :
         fi
     done
 fi
@@ -3429,7 +3446,7 @@ fi
 
 if [[ -z $BACKGROUND ]]; then
     BACKGROUND="$WORK_DIR/bg.png"
-    convert  -size $VIDSIZE! xc:'#'$BG_CLR $BACKGROUND
+    convert  -size $VIDSIZE! xc:$BG_CLR $BACKGROUND
 fi
 # check file type of background file and assign to BG_VIDEO or BG_IMAGE
 if [[ -n $BACKGROUND ]]; then
@@ -3441,6 +3458,14 @@ if [[ -n $BACKGROUND ]]; then
     else
         usage_error "Sorry, can not identify "$BACKGROUND""
     fi
+fi
+if [[ -n ${SM_BACKGROUND[@]} ]]; then
+    for smbg in ${!SM_BACKGROUND[@]}; do
+        check_filetype "${SM_BACKGROUND[smbg]}"
+        if [[ $TYPE != "image" ]]; then
+            usage_error "-submenu-background takes image files only"
+        fi
+    done
 fi
 
 # if $SHOWCASE, find out if using SHOWCASE_VIDEO or SHOWCASE_IMG or ! SC_THUMB
@@ -3605,7 +3630,7 @@ $USER_CHAPTERS && CHAPT_ARRAY=( ${CHAPTERS[@]} )
 if $GROUPING && $USER_CHAPTERS; then
     for i in ${!IN_FILES[@]}; do
         if [[ -n ${GROUP[i]} ]]; then
-            group_arbitrary_chapters[i]="${grouped_user_chapters[i]//+/ }"
+            group_arbitrary_chapters[i]=${grouped_user_chapters[i]//+/ }
         else
             group_arbitrary_chapters[i]=""
         fi
@@ -3647,62 +3672,76 @@ if [[ -n ${VPAUSE[@]} && ${#VPAUSE[@]} -eq 1 ]]; then
 fi
 # allow specifying one # for -group-video-pause
 if [[ -n ${GRP_VPAUSE[@]} && ${#GRP_VPAUSE[@]} -eq 1 ]]; then
-    for i in ${!grouping[@]}; do
-        GRP_VPAUSE[i]=${GRP_VPAUSE[0]}
-    done
+for i in ${!grouping[@]}; do
+    GRP_VPAUSE[i]=${GRP_VPAUSE[0]}
+done
 fi
 # check # of -submenu-length args, and allow specifying 1 value for all videos
 if $SUB_MENU \
- && ((${#SUBMENU_LEN[@]} != 1 && ${#SUBMENU_LEN[@]} != ${#IN_FILES[@]} )); then
-    usage_error "Give 1 submenu length for each video, or just 1 value for all"
+&& ((${#SUBMENU_LEN[@]} != 1 && ${#SUBMENU_LEN[@]} != ${#IN_FILES[@]} )); then
+usage_error "Give 1 submenu length for each video, or just 1 value for all"
 fi
 if $SUB_MENU && (( ${#SUBMENU_LEN[@]} == 1 )); then
-    if ! $DO_CAROUSEL; then
-        for i in ${!IN_FILES[@]}; do
-            SUBMENU_LEN[i]=${SUBMENU_LEN[0]}
-        done
-    fi
+if ! $DO_CAROUSEL; then
+    for i in ${!IN_FILES[@]}; do
+        SUBMENU_LEN[i]=${SUBMENU_LEN[0]}
+    done
+fi
 fi
 
 # use user passed -submenu-length for static submenus with audio
 if $SUB_MENU && ! $ANI_SUB_MENU; then
-    if ! $DO_CAROUSEL; then
-        for i in ${!IN_FILES[@]}; do
-            if $USER_SUBMENU_LEN; then
-                SUBMENU_AUDIOLEN[i]=${SUBMENU_LEN[i]}
-            fi
-        done
-    fi
+if ! $DO_CAROUSEL; then
+    for i in ${!IN_FILES[@]}; do
+        if $USER_SUBMENU_LEN; then
+            SUBMENU_AUDIOLEN[i]=${SUBMENU_LEN[i]}
+        fi
+    done
+fi
 fi 
-    
+
 
 # if more than one value for CHAPTERS, make sure they equal video #
 if $SUB_MENU &&  [[ ${#FILES[@]} -ne ${#CHAPTERS[@]} ]]; then
-    $USER_CHAPTERS && string="chapter point string" || string="chapter"
-    usage_error "Please give the same number of ${string}s as videos.
-    You gave ${#FILES[@]} video files and ${#CHAPTERS[@]} ${string}(s)"
+$USER_CHAPTERS && string="chapter point string" || string="chapter"
+usage_error "Please give the same number of ${string}s as videos.
+You gave ${#FILES[@]} video files and ${#CHAPTERS[@]} ${string}(s)"
 fi
 # get normal CHAPTERS VAR,i.e.: 'how many chapters'
 # Check if 1st is 00:00:00 and all chapters have HH:MM:SS format
 if $USER_CHAPTERS; then
-    for i in ${!CHAPT_ARRAY[@]}; do
-        [[ ${CHAPTERS[i]} != *:* ]] && usage_error \
-        "for HH:MM:SS style chapters all video chapters must have this format"
-        if [[ ${CHAPT_ARRAY[i]:0:8} != 00:00:00 ]];then
-            usage_error \
-            "The first chapter must be 00:00:00. ${IN_FILES[i]} \
-            used ${CHAPT_ARRAY[i]}"
-        fi
-        CHAPTERS[i]=$(wc -w <<< "${CHAPT_ARRAY[i]//,/ }")
-    done
+for i in ${!CHAPT_ARRAY[@]}; do
+    unset newchapts
+    [[ ${CHAPTERS[i]} != *:* ]] && usage_error \
+    "for HH:MM:SS style chapters all video chapters must have this format"
+    if [[ ${CHAPT_ARRAY[i]:0:8} != 00:00:00 ]];then
+        usage_error \
+        "The first chapter must be 00:00:00. ${IN_FILES[i]} \
+        used ${CHAPT_ARRAY[i]}"
+    fi
+    # remove + sign and commas, count the number of chapters left
+    str=$(sed 's/+/ /g;s/,/ /g' <<< ${CHAPTERS[i]})
+    for substr in $str; do [[ $substr != 0 ]] && newchapts+=( $substr ); done
+    CHAPTERS[i]=${#newchapts[@]} 
+done
 fi
+# do not let user use -chapters 0 (-chapters 5 0 6)
+for ((i=0; i<${#CHAPTERS[@]}; i++)); do
+    if ((${CHAPTERS[i]} == 0)) && ! ${SLIDESHOW[i]}; then
+        $SUB_MENU && \
+        usage_error "If doing submenus and you want each grouped video to be a 
+        chapter ( -chapters 0 ), then you will need to make your own chapters
+        using HH:MM:SS format.  See man todisc under -chapters for details"
+    fi
+done
+echo
 
 # if using chapter titles, they must equal the combined total for all files
 if [[ -n ${CHAPTER_TITLES[@]} ]]; then
     total_chapters=$(awk_total <<< "${CHAPTERS[@]}")
     if (( ${#CHAPTER_TITLES[@]} !=  $total_chapters )); then
-        usage_error "If using chapter titles you must supply a title for each \
-        chapter in each video.  You gave ${#CHAPTER_TITLES[@]} titles but \
+        usage_error "If using chapter titles you must supply a title for each
+        chapter in each video.  You gave ${#CHAPTER_TITLES[@]} titles but
         have a total of $total_chapters chapters."
     fi
 fi
@@ -3716,19 +3755,6 @@ if $SUB_MENU; then
         && MIN_CHAPTERS=$chapt_val && min_chapt_key=$i
     done
 fi
-# do not let user use -chapters 0 (-chapters 5 0 6)
-no_chapters=false
-for ((i=0; i<${#CHAPTERS[@]}; i++)); do
-    if ((${CHAPTERS[i]} == 0)) && ! ${SLIDESHOW[i]}; then
-        no_chapters=:
-    fi
-done
-if $SUB_MENU && $no_chapters; then
-    usage_error "Please use -chapters 1 not -chapters 0, if you do not want
-     chapters.  -chapters 0 is a special case that makes each video a chapter."
-fi
-# create_dirs
-echo
 yecho "Creating pics directories..."
 for ((i=0; i<=NUM_FILES; i++)); do
     mkdir -p "$REAL_WORK_DIR/pics/$i"
@@ -4506,7 +4532,7 @@ if [ -z "$BG_PIC" ]; then
     echo
     echo "Creating a black background"
     BG_PIC="$WORK_DIR/pics/template.png"
-    $QUICK_MENU && template_colour="none" || template_colour='#'$BG_CLR
+    $QUICK_MENU && template_colour="none" || template_colour=$BG_CLR
     convert  -resize $VIDSIZE! xc:$template_colour "$BG_PIC"
 else
     convert -resize $VIDSIZE! "$BG_PIC" "$WORK_DIR/pics/template.png"
@@ -6538,15 +6564,35 @@ if $DO_MENU; then
         if $QUICK_MENU; then
             convert  -size $VIDSIZE xc:none "$BG_PIC"
         else
-            convert  -size $VIDSIZE xc:'#'$BG_CLR "$BG_PIC"
+            convert  -size $VIDSIZE xc:$BG_CLR "$BG_PIC"
         fi
-        convert  -size $VIDSIZE xc:'#'$SUBMENU_BG_CLR \
-          "$WORK_DIR/submenu_template.jpg"
     else
         convert -size $VIDSIZE "$BG_PIC" -resize $VIDSIZE! \
         "$WORK_DIR/pics/template.jpg"
-        convert -size $VIDSIZE xc:'#'$SUBMENU_BG_CLR \
-          "$WORK_DIR/submenu_template.jpg"
+    fi
+    # create/resize submenu background, fill in array and symlink if needed
+    if $SUB_MENU; then
+        if [[ -n ${SM_BACKGROUND[@]} ]]; then
+            if ((${#SM_BACKGROUND[@]} > 1)); then
+                for f in ${!SM_BACKGROUND[@]}; do
+                    convert  -size $VIDSIZE "${SM_BACKGROUND[f]}" -resize $VIDSIZE\! \
+                    "$WORK_DIR/submenu$((f+1))_template.jpg"
+                done
+            else
+                convert  -size $VIDSIZE "$SM_BACKGROUND" -resize $VIDSIZE\! \
+                "$WORK_DIR/submenu_template.jpg"
+            fi
+        else
+            convert  -size $VIDSIZE xc:$SUBMENU_BG_CLR \
+            "$WORK_DIR/submenu_template.jpg"
+        fi
+        if  ((${#SM_BACKGROUND[@]} == 1)) || [[ -z ${SM_BACKGROUND[@]} ]]; then
+            for ((f=0; f<${#IN_FILES[@]}; f++)); do
+                ln -s "$WORK_DIR/submenu_template.jpg" \
+                "$WORK_DIR/submenu$((f+1))_template.jpg"
+                SM_BACKGROUND[f]=$WORK_DIR/submenu$((f+1))_template.jpg
+            done
+        fi
     fi
     echo
 fi
@@ -7134,7 +7180,7 @@ fi
 if ! $TITLESET_MODE && ! $DO_TITLESETS && [[ $TARGET = "dvd" ]]; then
     make_dummy
 fi
-
+echo CHAPTERS is "${CHAPTERS[@]}" >&2 #FXIME
 # do submenu 1st for debug purposes
 # TODO use exec 2>> "$LOG_FILE" to save lines
 if $SUB_MENU; then
@@ -7198,8 +7244,7 @@ if $SUB_MENU; then
             cleanup && killall_instances
             exit 13
         fi
-    fi
-     
+    fi 
     for ((i=0; i<${#IN_FILES[@]}; i++)); do
         smframes=${SUBMENU_FRAMES[i]}
         if ! ${SLIDESHOW[i]}; then
@@ -7236,11 +7281,34 @@ if $SUB_MENU; then
                 TOTAL_JPEGS=${CHAPTERS[i]}
                 PREFIX=${i}-
             fi
-            # CHAPT_INTERVALS is seconds: bc <<< "${VID_LEN[i]}/ ${CHAPTERS[i]}"
-            counts=$(bc_math "${CHAPT_INTERVALS[i]} * $FRAME_RATE" int)
-            CUT=( 30 $(running_total <<< $(for ((a=0; a<${CHAPTERS[i]}; a++)); \
-            do echo -n "$counts ";done)) )
-            if $USER_CHAPTERS; then
+            if [[ -n ${GROUP[i]} ]]; then
+                unset x CUT c
+                # this will also take care of grouped USER_CHAPTERS
+                BASE=$WORK_DIR/${TSET_NUM}-group
+                unset grp_chapters
+                get_group_chapters $i
+                ! $USER_CHAPTERS && CUT[0]=30 && FILE_IN[0]=${IN_FILES[i]}
+                for g in ${!grp_chapters[@]}; do
+                    for pt in ${grp_chapters[g]}; do
+                        pnt=$(unformat_time $pt)
+                        if ((g == 0)); then
+                            FILE_IN+=( ${IN_FILES[i]} )
+                        elif [[ $pnt = 0 || -z $pnt ]]; then
+                            # user passed +0: no chapter point in this video
+                            continue
+                        else
+                            FILE_IN+=( ${BASE}-$((i+1))-${g}.mpg )
+                        fi
+                        # do not get CUT frames if user passed +0
+                        if [[ $g != 0 && $pnt = 0 ]] || [[ -z $pnt ]]; then
+                            :
+                        else
+                            CUT+=( $( bc_math "$pnt * $FRAME_RATE" int) )
+                        fi
+                    done
+                    
+                done
+            elif $USER_CHAPTERS; then
                 unset x CUT c_array
                 # CHAPT_ARRAY is left in HH:MM:SS,HH:MM:SS format: unformat now
                 c_array="${CHAPT_ARRAY[i]//,/ }"
@@ -7248,32 +7316,49 @@ if $SUB_MENU; then
                     f=$(unformat_time $v)
                     CUT[x++]=$( bc_math "$f * $FRAME_RATE" int)
                 done
+            else
+                # CHAPT_INTERVALS is seconds: "${VID_LEN[i]}/ ${CHAPTERS[i]}"
+                counts=$(bc_math "${CHAPT_INTERVALS[i]} * $FRAME_RATE" int)
+                numchpts=${CHAPTERS[i]}
+                CUT=( 30 $(running_total <<< $(for ((a=0; a<numchpts; a++)); do
+                echo -n "$counts ";done)) )
             fi
-            for ((c=0; c<${#CUT[@]}; c++)); do
+            for c in ${!CUT[@]}; do
+                [[ -n ${CUT[c]} ]] && \
                 cmd[c]=${CUT[c]}-$(bc_math "${CUT[c]} + $CUT_TIME" int)
             done
             if $USER_CHAPTERS; then
                 # 1 second seek for 1st chapt (00:00:00), to avoid black frames
                 cmd[0]=30-$(bc_math "30 + $CUT_TIME" int)
-            else
+            elif [[ -z ${GROUP[i]} ]]; then
                 # auto chapters needs the last seek removed
                 key=$((${#cmd[@]} - 1))
                 unset cmd[key]
             fi
-            if [ -s  "${IN_FILES[i]}".nav_log ]; then
-                NAV_SEEK[i]="--nav_seek"
-                NAVSEEK[i]="${IN_FILES[i]}.nav_log"
-            fi
             yecho
             yecho "Creating $TOTAL_JPEGS chapter images for ${IN_FILES[i]}"
             yecho
+            unset cf frm
             for t in "${cmd[@]}"; do
+                if [[ -n ${GROUP[i]} ]]; then
+                    CUR_FILE="${FILE_IN[cf++]}"
+                else
+                    CUR_FILE="${IN_FILES[i]}"
+                fi
+                navlog=$(readlink -f "${CUR_FILE}.nav_log")
+                if [[ -s $navlog ]]; then
+                    NAVSEEK="--nav_seek" && NAVLOG=$navlog
+                else
+                    unset NAVSEEK NAVLOG
+                fi
+                    
                 TCODE_CMD=(nice transcode --print_status 10 \
-                --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "${IN_FILES[i]}" \
-                ${NAV_SEEK[i]} "${NAVSEEK[i]}" -o "${PICS_OUT[@]}" -f \
+                --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "$CUR_FILE" \
+                $NAVSEEK "$NAVLOG" -o "${PICS_OUT[@]}" -f \
                 $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null)
                 echo "Running ${TCODE_CMD[@]}" |
-                sed 's/    */ /g'|sed -e "s/^ *//"|fold -bs >> "$LOG_FILE"
+                sed 's/    */ /g'|sed -e "s/^ *//"|tee -a >> "$LOG_FILE"
+                #sed 's/    */ /g'|sed -e "s/^ *//"|fold -bs >> "$LOG_FILE"
                 echo >> "$LOG_FILE"
                 function run_transcode()
                 {
@@ -7302,20 +7387,18 @@ if $SUB_MENU; then
                 if ! $ANI_SUB_MENU ; then
                     echo
                     mv $WORK_DIR/submenu/000000.$SM_IMG_FMT \
-                    $WORK_DIR/submenu/$(printf "%08d%s\n" ${t%-*} .$SM_IMG_FMT)
+                    $WORK_DIR/submenu/$(printf "%08d%s\n" $((frm++)) .$SM_IMG_FMT)
+                    let frm+=1
                 elif $ANI_SUB_MENU; then
                     echo "renaming images by frame number"
                     echo
                     u=${t/*-}; v=${t/-*}
                     for ((n=0; n<smframes; n++)); do
-                        if [ $v -eq ${CUT[0]} ]; then
-                            mv $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
-                            $WORK_DIR/animenu/$(printf \
-                            "%08d%s\n" $((n + ${CUT[0]} )) .jpg)
-                        else
-                            mv $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
-                            $WORK_DIR/animenu/$(printf "%08d%s\n" $((n+v)) .jpg)
-                        fi
+                       # if [ $v -eq ${CUT[0]} ]; then
+                        mv $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
+                        $WORK_DIR/animenu/$(printf \
+                        "%08d%s\n" $((frm++ )) .jpg)
+                        let frm+=1
                     done
                 fi
             done
@@ -7418,7 +7501,8 @@ if $SUB_MENU; then
                     IM_CMD1=(montage - -tile ${TILE_ARRAY[C]} \
                     -geometry ${GEO_ARRAY[C]}+5+5 -bordercolor '#101010' \
                     -mattecolor '#101010' -background '#101010' miff:-)
-                    IM_CMD2=(convert -depth 8 $WORK_DIR/submenu_template.jpg \
+                    IM_CMD2=(convert -depth 8 \
+                    $WORK_DIR/submenu$((i+1))_template.jpg \
                     $WORK_DIR/title${i}_txt.png  -gravity south \
                     -geometry +0+55 -composite - -gravity north \
                     -geometry +0+45 -composite "$out_ppm")
@@ -7464,8 +7548,8 @@ if $SUB_MENU; then
                 IM_CMD=(convert "${imgs[@]}" -bordercolor '#6E6E6E' \
                 -border 3x3 miff:-)
                 IM_CMD1=(montage - -tile ${TILE_ARRAY[C]} -geometry \
-                ${GEO_ARRAY[C]}+5+5 -background '#141614' miff:-)
-                IM_CMD2=(convert $WORK_DIR/submenu_template.jpg \
+                ${GEO_ARRAY[C]}+5+5 -background none miff:-)
+                IM_CMD2=(convert $WORK_DIR/submenu$((i+1))_template.jpg \
                 $WORK_DIR/title${i}_txt.png  -gravity south -geometry +0+55 \
                 -composite - -gravity north -geometry +0+45 -composite \
                 $WORK_DIR/${i}-submenu.$SM_IMG_FMT)
@@ -7523,7 +7607,7 @@ if $SUB_MENU; then
                 echo
                 #cp "$WORK_DIR/polaroid_stack.png"  
                 #ss_ind=$(awk -F[-.] '{print $2}' <<< "$sld")
-                IM_CMD=(convert $WORK_DIR/submenu_template.jpg \
+                IM_CMD=(convert $WORK_DIR/submenu$((i+1))_template.jpg \
                 "$WORK_DIR/polaroid_stack.png" \
                 -gravity north -geometry +0+45 -composite \
                 $WORK_DIR/thumb_title${i}.png \
