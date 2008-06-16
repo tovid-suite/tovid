@@ -7165,7 +7165,6 @@ fi
 if ! $TITLESET_MODE && ! $DO_TITLESETS && [[ $TARGET = "dvd" ]]; then
     make_dummy
 fi
-echo CHAPTERS is "${CHAPTERS[@]}" >&2 #FXIME
 # do submenu 1st for debug purposes
 # TODO use exec 2>> "$LOG_FILE" to save lines
 if $SUB_MENU; then
@@ -7485,7 +7484,7 @@ if $SUB_MENU; then
                     -border 3x3 miff:-)
                     IM_CMD1=(montage - -tile ${TILE_ARRAY[C]} \
                     -geometry ${GEO_ARRAY[C]}+5+5 -bordercolor '#101010' \
-                    -mattecolor '#101010' -background '#101010' miff:-)
+                    -mattecolor '#101010' -background none miff:-)
                     IM_CMD2=(convert -depth 8 \
                     $WORK_DIR/submenu$((i+1))_template.jpg \
                     $WORK_DIR/title${i}_txt.png  -gravity south \
