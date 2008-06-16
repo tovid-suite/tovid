@@ -917,8 +917,10 @@ get_group_chapters()
                 chapter_points=$(sed 's/[ \t]*$//' <<< $chapter_points)
                 remainder=$( bc <<< "$adjusted_length % $chapter_length" \
                 2>/dev/null)
+                (( ${nochapt[index]} )) && local group_chapters[x++]=0 ||
                 local group_chapters[x++]=$chapter_points
             else
+                (( ${nochapt[index]} )) && local group_chapters[x++]=0 ||
                 local group_chapters[x++]=""
                 remainder=$adjusted_length
             fi
@@ -3713,10 +3715,11 @@ fi
 # do not let user use -chapters 0 (-chapters 5 0 6)
 for ((i=0; i<${#CHAPTERS[@]}; i++)); do
     if ((${CHAPTERS[i]} == 0)) && ! ${SLIDESHOW[i]}; then
-        $SUB_MENU && \
-        usage_error "If doing submenus and you want each grouped video to be a 
-        chapter ( -chapters 0 ), then you will need to make your own chapters
-        using HH:MM:SS format.  See man todisc under -chapters for details"
+        if ! $USER_CHAPTERS; then
+            [[ -z ${GROUP[i]} ]] && usage_error \
+            "-chapters 0 is only for grouped videos (each video is a chapter)"
+            CHAPTERS[i]=$(( ${GROUP[i]} + 1 )) && nochapt[i]=1
+        fi
     fi
 done
 echo
@@ -7076,7 +7079,7 @@ $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
     fi
     if [[ -n ${GROUP[i]} ]]; then
        ((MENU_NUM == 1 && ${CHAPTERS[i]} != 0)) && get_group_chapters $i format
-        if ((${CHAPTERS[i]} == 0)); then
+        if ((${nochapt[i]})); then
             ! ${SLIDESHOW[i]} && echo -e \
              "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\" $vid_pause/>"
             for ((m=1; m<=$((${GROUP[i]})); m++)); do
@@ -7271,12 +7274,14 @@ if $SUB_MENU; then
                 BASE=$WORK_DIR/${TSET_NUM}-group
                 unset grp_chapters
                 get_group_chapters $i
-                ! $USER_CHAPTERS && CUT[0]=30 && FILE_IN[0]=${IN_FILES[i]}
+                ! $USER_CHAPTERS && ! ((${nochapt[i]})) && CUT[0]=30 && FILE_IN[0]=${IN_FILES[i]}
                 for g in ${!grp_chapters[@]}; do
                     for pt in ${grp_chapters[g]}; do
                         pnt=$(unformat_time $pt)
                         if ((g == 0)); then
                             FILE_IN+=( ${IN_FILES[i]} )
+                        elif  ((${nochapt[i]})); then
+                            FILE_IN+=( ${BASE}-$((i+1))-${g}.mpg )
                         elif [[ $pnt = 0 || -z $pnt ]]; then
                             # user passed +0: no chapter point in this video
                             continue
@@ -7284,7 +7289,9 @@ if $SUB_MENU; then
                             FILE_IN+=( ${BASE}-$((i+1))-${g}.mpg )
                         fi
                         # do not get CUT frames if user passed +0
-                        if [[ $g != 0 && $pnt = 0 ]] || [[ -z $pnt ]]; then
+                        # nochapt[i] is : for -chapters 0 videos, use 00:00:00
+                        if ! ((${nochapt[i]})) && \
+                        { [[ $g != 0 && $pnt = 0 ]] || [[ -z $pnt ]] ; }; then
                             :
                         else
                             CUT+=( $( bc_math "$pnt * $FRAME_RATE" int) )
