@@ -242,7 +242,7 @@ See the other slideshow options in the SLIDESHOWS options section.
     style of menu, unless used in conjunction with **-switched-menus**
     in which case the videos passed with **-files** automatically become the
     showcase videos.  If this is used in combination with **-switched-menus**
-    it can really speed up an otherwise time comsuming process.
+    it can really speed up an otherwise time consuming process.
     On my athlon 2900+ system it makes a 4 video switched menu of 30 seconds
     length (each) in about 4 minutes ( !! ).
 
@@ -256,7 +256,8 @@ See the other slideshow options in the SLIDESHOWS options section.
 : **-bg-color** | **-bg-colour**
     The color to use for the menu background. (default: ntsc-safe black)
     Note: use a color a great deal darker than you want, as it appears quite
-    a bit lighter in the video version.
+    a bit lighter in the video version.  You can use '#FFFFFF' or named colors
+    syntax.
 : **-submenu-bg-color** | **-submenu-bg-colour**
     The color to use as background for the  submenu(s).
     (default: ntsc-safe black)  See **-bg-color**
@@ -268,6 +269,10 @@ See the other slideshow options in the SLIDESHOWS options section.
     Menu background.  This can be a image file or an video file.  If it is a
     video file the background will be animated.  Pick a file of correct aspect
     ratio: i.e. it should still look good when resized to 720x480 (PAL 720x576)
+: **-submenu-background** IMAGE
+    Submenu background.  This can be only be an image file.  Pick a file of
+    correct aspect ratio: i.e. it should still look good when resized to
+    720x480 (PAL 720x576)
 : **-menu-title**
     Title for the root menu - may be longer than thumbnail labels
     Also if you use \n in the title, you can use multi line titles, but you
@@ -284,6 +289,10 @@ See the other slideshow options in the SLIDESHOWS options section.
     refer to the leftmost column
 : **-menu-fontsize**
     Font size for main menu - best to -preview if you use this
+: **-submenu-font**
+    Font to use for the sub-menu main titles.  See **-menu-font**
+: **-submenu-fontsize
+    Font size for the sub-menu main titles
 : **-menu-fade** ['BACKGROUND DURATION']
     Fade the menu in and out The background will fade in first, then title (and
     mist if called for), then the menu thumbs.  The fadeout is in reverse
@@ -292,8 +301,8 @@ See the other slideshow options in the SLIDESHOWS options section.
     you to do a 'transition' to the menu: if you supply a -background VIDEO it
     will play for the indicated time before the menu fades in.  Leave the
     optional argument empty (just **-menu-fade**) to get the default behavior
-    of showing the background for 1 second before fading the menu in.
-    
+    of showing the background for 1 second before fading the menu in.  See
+    also:  **-transition-to-menu**
 : **-transition-to-menu** TIME
     The background video will be a sort of transition to the menu, and is in
     fact a type of -menu-fade menu.  It will play for TIME amount of time
@@ -305,7 +314,8 @@ See the other slideshow options in the SLIDESHOWS options section.
 : **-submenu-audio** FILE(S)
     List of files for sub-menu backgrounds. If one file is given, then it will
     be used for all sub-menus.  Else the number given must equal the number of
-    submenus, though the keyword "none" in this list may be used for silence.
+    submenus, though the keyword "none" in this list may be used for
+    silence.  See also **-submenu-length**
 : **-titleset** . . . **-end-titleset**
     If you have more than one titleset, put options for each titleset between
     **-titleset** and **-end-titleset**.  A separate menu will be created that
@@ -374,15 +384,20 @@ See the other slideshow options in the SLIDESHOWS options section.
     Use INT number of the slides that were passed in with **-slides**
     to make the animated or static slide menu.  The length of the menu is
     determined by 1) **-menu-length** NUM if given,  and by 2) the length
-    of the audio from **-bgaudio**.
+    of the audio from **-bgaudio**.  For submenu slideshows, it is determined
+    by 1) **-submenu-length** NUM if given,  and by 2) the length of the
+    audio from **-submenu-audio** FILE(S).
 
 : **-slide-transition** crossfade|fade [crossfade]
     The type of fade transition between slides in a animated slide menu.  Be
     sure the menu length is long enough to support the 1 second transitions
     between the slides.  The length is determined by 1) the length of the
-    -bgaudio AUDIO  2) the length given with -menu-length NUM.
+    -bgaudio AUDIO  2) the length given with -menu-length NUM.  For submenu
+    slideshows, it is determined by 1) **-submenu-length** NUM if given,  and
+    by 2) the length of the audio from **-submenu-audio** FILE(S).
 
-    See **-menu-slide-total** , **-bgaudio** and **-menu-length**
+    See **-menu-slide-total** , **-bgaudio** , **-menu-length** , 
+    **-submenu-length**, and **-submenu-audio**.
 
     The 'crossfade' transition fades from one slide to another.  The 'fade'
     transition fades in and out from and to black.  If you don't use this
@@ -417,7 +432,7 @@ See the other slideshow options in the SLIDESHOWS options section.
 : **-slide-border** WIDTH [100]
     Pad the slides with a border for the animated slide menu.  The default
     without using an argument is 100.  Using this option can also solve some
-    noise/ringing effects if used alone or in conjuction with 'binning'
+    noise/ringing effects if used alone or in conjunction with 'binning'
     (**-slides-to-bin**) or blurring (**-slides-to-blur**).
 
 : **-slide-frame** WIDTH [12]
@@ -430,20 +445,25 @@ See the other slideshow options in the SLIDESHOWS options section.
 
 : **-showcase-slideshow**
     If doing multiple slideshows or mixed videos and slideshow(s), then use
-    the animated slideshow as a showcase video.
+    the animated slideshow as a showcase video.  It will be composed of slides
+    from each slideshow in the menu.  The thumb for each slideshow button will
+    be static.  If you used with a mixed menu of videos and slideshows, then
+    the video thumbs WILL be animated, so you may wish to use -static or
+    -textmenu with the option in that case.  
 
 : **-background-slideshow**
     If doing multiple slideshows or mixed videos and slideshow(s), then use
-    the animated slideshow as a background video.
+    the animated slideshow as a background video.  See **-showcase-slideshow**
+    for additional details.
 
 : **-use-dvd-slideshow** [CONFIG FILE]
     If you pass this option without an argument, todisc will use the
     dvd-slideshow program to create the animated slide menu, assuming you have
-    this program installed.  The optional argument is the dvd-slideshow config
-    file  - if you don't use this argument todisc will create it for you.  If
-    you want to use the 'Ken Burns effect' - then the config file argument is
-    required.  Note: the config file will override many of the above options
-    for slideshows.
+    this program installed.  The optional argument is the dvd-slideshow
+    configuration file  - if you don't use this argument todisc will create it
+    for you.  If you want to use the 'Ken Burns effect' - then the
+    configuration file argument is required.  Note: the configuration file will
+    override many of the above options for slideshows.
 
 
 == Burning the disc ==
@@ -474,7 +494,7 @@ See the other slideshow options in the SLIDESHOWS options section.
     Chapter points will be used for generating the submenu thumbs, and for
     seeking with your DVD player.  You can pass in just one value that will
     be used for all videos, or supply a list of values (number of chapters)
-    or timecode strings.
+    or time code strings.
 
     If you just pass an integer for 'number of chapters', then todisc will
     make the chapter points for you by dividing the video length by the number
@@ -485,13 +505,13 @@ See the other slideshow options in the SLIDESHOWS options section.
     Additionally, the first chapter should always start at 00:00:00 as
     dvdauthor will add that if it is not there already.
 
-    To get your timecodes, you can play your videos in mplayer and press 'o'
+    To get your time codes, you can play your videos in mplayer and press 'o'
     to see them onscreen.  I have found these to be very accurate in my short
     tests.  For absolute frame accuracy you could load the file in avidemux
     and find the time codes for the frames you want.
 
     If passing grouped chapters you need to join the chapters from all the
-    videos in a group with a '+' seperator.  If you want to skip a video in
+    videos in a group with a '+' separator.  If you want to skip a video in
     the group use '0' for its chapters.
 
     Example for passing just number of chapters ( 4 videos ):
@@ -507,7 +527,7 @@ See the other slideshow options in the SLIDESHOWS options section.
     00:00:00,00:15:23.342,00:26:42.523
 ```
 
-    Example of passing grouped chapters using the '+' seperator:
+    Example of passing grouped chapters using the '+' separator:
 ```
     -chapters 00:00:00,00:05:34.41,00:12:54,00:20:45+00:04:23,00:09:35 \
     00:00:00...etc
@@ -585,6 +605,9 @@ See the other slideshow options in the SLIDESHOWS options section.
     tovid if needed, no interactive option to use background video for bgaudio.
 : **-nowarn**, **-no-warn**
     Don't pause after outputing warning messages
+: **-grid**
+    Show a second preview image with a grid and numbers that will help in finding
+    coordinates for options that might use them, like **-text-start**
 : **-tovidopts** | **-tovid-opts** "OPTIONS"
     Pass the given string of options to 'tovid', if it is called upon to
     re-encode your non-compliant videos. Be sure to include the double-quotes
@@ -607,7 +630,7 @@ See the other slideshow options in the SLIDESHOWS options section.
     "rect" draws a rectangle around the thumb when you select it
     in the DVD player.  "text" highlights the thumb title text, "line"
     underlines the title, and "text-rect" draws a rectangle around the title
-    text.  If you have multiline titles, use "text-rect" or "line".
+    text.  If you have multi-line titles, use "text-rect" or "line".
 : **-title-color**, **-title-colour** COLOR
     Color to use for the main menu title.  For list of supported colors do:
     **convert -list** color.  HTML notation may be used: "#ff0000". See:
@@ -623,15 +646,12 @@ See the other slideshow options in the SLIDESHOWS options section.
 : **-select-color**, **-select-colour**
     Color to use for the menu buttons that your dvd remote uses to select.
 : **-text-mist**
-    Put a semi-transparent misted background behind the title text, just
-    slightly larger than the text area.
+    Put a semi-transparent misted background behind the text for the menu's
+    title, just slightly larger than the text area.
 : **-text-mist-color**, **-text-mist-colour** COLOR
-    Color of the mist behind the menu text (see title-color).
+    Color of the mist behind the menu's title (see title-color).
 : **-text-mist-opacity**
     Opacity of the mist behind the menu text - see **-opacity**
-: **-submenu-audio-length**
-    The length of the background audio for a static submenu.  The default is to
-    use the full length of the supplied audio ( **-bgaudio** ).
 : **-menu-audio-fade**
     Number of sec to fade given menu audio in and out (default: 1.0 seconds)
     If you use **-menu-audio-fade** 0 then the audio will not be faded.
