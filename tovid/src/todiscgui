@@ -252,6 +252,10 @@ main = Panel("Main",
 )
 
 general = Panel("General",
+    Number('Number of jobs to run simultaneously', '-jobs', 1,
+    'The default is to run as many jobs as processors found.  '
+    'Use this option if you wish to limit or increase this number.  ',
+    1, 32, toggles=True),
     Flag('Keep useful intermediate files on exit', '-keep-files', False),
     Flag('No prompts for questions', '-no-ask', False),
     Flag('Do not pause at warnings', '-no-warn', False),
@@ -282,9 +286,9 @@ menu = Panel("Menu",
         'of the transition, which is the background video.  A background '
         'video  is required (-background VIDEO).',
         0, 120, toggles=True),
-    Color('Quick menu background color', '-pad-color', 'white',
-        'Color of background for -quick-menu menus.  ' 
-        'Default if not enabled: ntsc color-safe black (#161514).  '
+    Color('Menu background color', '-bg-color', 'white',
+        'Color of the menu background.  ' 
+        'Default if not enabled: ntsc color-safe black (#101010).  '
         'Note: the color turns out MUCH lighter than the one you choose, '
         'so pick a VERY dark version of the color you want.',
         toggles=True),
@@ -383,61 +387,76 @@ thumbnails = Panel("Thumbnails",
 )
 
 submenus = Panel("Submenus",
-    Flag('Animated submenus (takes more time)', '-ani-submenus', False,
-        'Create an animated submenu for each video.  '
-        'Submenu links lead to chapter points.'),
-    VPanel('Titles',
-        List('', '-submenu-titles', '',
-            'Space-separated list of quoted submenu titles.  '
-            'Use \\n for a new line in a multi-line title.'),
-            Number('Font size', '-submenu-fontsize', 30,
-                'The font size to use for the submenu title',
-            0, 80, toggles=True),
-            Font('Font', '-submenu-font', 'Helvetica',
-                'The font to use for the Submenu menu titles', toggles=True),
-        HPanel('',
-            Color('Font color', '-submenu-title-color', '#CDC0B0',
-                'The font color to use for submenu title(s)', toggles=True),
-            Color('Stroke color', '-submenu-stroke', '#101010',
-                'The color for the submenu font outline (stroke).', toggles=True),
+    Tabs(
+        VPanel('Main',
+            VPanel('',
+                Flag('Animated', '-ani-submenus', False,
+                    'Create an animated submenu for each video.  '
+                    'Submenu links lead to chapter points.'),
+                Number('Submenu length', '-submenu-length', 14,
+                    'The length of the submenu.  '
+                    'If doing static submenus and using audio for the submenu, '
+                    'This will be the length of the submenu audio',
+                    0, 80, toggles=True),
+            ),
+            VPanel('Submenu titles',
+                List('', '-submenu-titles', '',
+                    'Space-separated list of quoted submenu titles.  '
+                    'Use \\n for a new line in a multi-line title.'),
+                HPanel('',
+                    Font('Font', '-submenu-font', 'Helvetica',
+                        'The font to use for the Submenu menu titles', toggles=True),
+                    Number('Font size', '-submenu-fontsize', 30,
+                        'The font size to use for the submenu title',
+                    0, 80, toggles=True),
+                ),
+                HPanel('',
+                    Color('Font color', '-submenu-title-color', '#CDC0B0',
+                        'The font color to use for submenu title(s)', toggles=True),
+                    Color('Stroke color', '-submenu-stroke', '#101010',
+                        'The color for the submenu font outline (stroke).', toggles=True),
+                ),
+            ),
+            VPanel('Submenu chapter titles',
+                List('', '-chapter-titles', '',
+                    'Space-separated list of quoted chapter titles.  '
+                    'Number of titles given must equal the total  number of '
+                    'chapters  for  all videos.  I.E. if you use -chapters '
+                    '4 6 8 , you must give 18 chapter titles, in the same order that '
+                    'the videos were passed in.'),
+                HPanel('',
+                Number('Font size', '-chapter-fontsize', 14,
+                    'The font size to use for the Submenu title',
+                    0, 80, toggles=True),
+                Font('Font', '-chapter-font', 'Helvetica',
+                    'The font to use for the chapter titles', toggles=True),
+                ),
+                HPanel('',
+                    Color('Font color', '-chapter-color', '#101010',
+                    'The color for the chapters font.', toggles=True),
+                    Color('Stroke color', '-chapter-stroke',
+                    '#101010', 'The color for the chapters font outline (stroke).',
+                    toggles=True),
+                ),
+            ),
+        ),
+        VPanel('Backgrounds',
+            HPanel('Image(s)',
+                FileList('', '-submenu-background', None,
+                 'Background image(s) for the submenus(s). Single value or list'),
+            ),
+            VPanel('Audio',
+                FileList('', '-submenu-audio', None,
+                    'File(s) that will play as background audio for each submenu.  '
+                    'Use a single file for all submenus, or 1 file per submenu.  '
+                    'Any file containing audio can be used.',),
+                Number('Audio fade', '-submenu-audio-fade', 1,
+                    'Number of sec to fade given submenu audio in and out.  '
+                    ' (default: 1.0 seconds)',
+                    0, 10)
+            ),
         ),
     ),
-    VPanel('Chapter titles',
-        List('', '-chapter-titles', '',
-            'Space-separated list of quoted chapter titles.  '
-            'Number of titles given must equal the total  number of '
-            'chapters  for  all videos.  I.E. if you use -chapters '
-            '4 6 8 , you must give 18 chapter titles, in the same order that '
-            'the videos were passed in.'),
-        Number('Font size', '-chapter-fontsize', 14,
-            'The font size to use for the Submenu title',
-            0, 80, toggles=True),
-        Font('Font', '-chapter-font', 'Helvetica',
-            'The font to use for the chapter titles', toggles=True),
-        HPanel('',
-            Color('Font color', '-chapter-color', '#101010',
-            'The color for the chapters font.', toggles=True),
-            Color('Stroke color', '-chapter-stroke',
-            '#101010', 'The color for the chapters font outline (stroke).',
-            toggles=True),
-        ),
-    ),
-    HPanel('Audio',
-        FileList('File(s)', '-submenu-audio', None,
-            'Audio file(s) that will play as background for each submenu.  '
-            'Use a single file for all submenus, or 1 file per submenu',),
-        VPanel('',
-            Number('Length', '-submenu-audio-length', 30,
-                'Background audio length for static submenus.  Default: use '
-                'the full length of the supplied audio file.  Animated '
-                'submenu length is NOT adjustable: 10 sec NTSC, 12 sec PAL.',
-                0, 120),
-            Number('Fade', '-submenu-audio-fade', 1,
-                'Number of sec to fade given submenu audio in and out.  '
-                ' (default: 1.0 seconds)',
-                0, 10)
-        ),
-    )
 )
 
 text = Panel("Text/Font",
@@ -501,7 +520,7 @@ text = Panel("Text/Font",
                 'This value is applied before the menu is scaled.',
                 0, 460, 'spin')
         ),
-    )
+    ),
 )
 
 authoring = Panel("Authoring",
