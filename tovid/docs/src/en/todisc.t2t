@@ -309,12 +309,14 @@ See the other slideshow options in the SLIDESHOWS options section.
     before the menu is faded in.  The menu begins to fade in 4.5 seconds before
     the end of TIME, so use an appropriate value.
     This menu does not loop unless you pass -loop VALUE
-: **-bgaudio**
-    An audio file for the main menu background
+: **-bgaudio** FILE
+    An file containing audio for the main menu background.  For static menus
+    the default is to use 20 seconds of audio.  You can change this using the
+    **-menu-length** option.
 : **-submenu-audio** FILE(S)
-    List of files for sub-menu backgrounds. If one file is given, then it will
-    be used for all sub-menus.  Else the number given must equal the number of
-    submenus, though the keyword "none" in this list may be used for
+    List of files for sub-menu audio backgrounds. If one file is given, then
+    it will be used for all sub-menus.  Otherwise the number given must equal
+    the number of submenus, though the keyword "none" in this list may be used for
     silence.  See also **-submenu-length**
 : **-titleset** . . . **-end-titleset**
     If you have more than one titleset, put options for each titleset between
@@ -330,6 +332,12 @@ See the other slideshow options in the SLIDESHOWS options section.
     Any other options can be used, but the  menu will be a textmenu style by
     default.  **Hint**: use **-showcase** IMAGE/VIDEO to create a fancier
     VMGM menu.
+: **-no-vmgm-menu** | **-no-vmgm**
+  This will skip the creation of a VMGM ( root menu ) for titlesets. The DVD
+  will start with the first titleset.  You can not use this option unless also
+  using **-quick-nav** as you would not have a way to get to other titlesets.
+: **-skip-vmgm**
+  Start DVD from the first titleset instead of the VMGM ( root ) menu.
 : **-switched-menus**
     This will make a "switched menu": there will be a central image where the 
     showcase image would go, and text menu titles along the menu edge where
@@ -387,6 +395,10 @@ See the other slideshow options in the SLIDESHOWS options section.
     of the audio from **-bgaudio**.  For submenu slideshows, it is determined
     by 1) **-submenu-length** NUM if given,  and by 2) the length of the
     audio from **-submenu-audio** FILE(S).
+
+: **-submenu-slide-total** INT
+    This option is the same as **-menu-slide-total** except that it is
+    for submenu slideshows.
 
 : **-slide-transition** crossfade|fade [crossfade]
     The type of fade transition between slides in a animated slide menu.  Be
@@ -455,7 +467,12 @@ See the other slideshow options in the SLIDESHOWS options section.
     If doing multiple slideshows or mixed videos and slideshow(s), then use
     the animated slideshow as a background video.  See **-showcase-slideshow**
     for additional details.
-
+: **-no-confirm-backup**
+    todisc is alpha software, so for your protection todisc prompts you to
+    back up your files first.  It is unlikely that todisc will destroy or overwrite
+    your photos, but as with any largely untested software you should back up
+    first.  If you have already backed up and do not want to be prompted every
+    time, use this option.
 : **-use-dvd-slideshow** [CONFIG FILE]
     If you pass this option without an argument, todisc will use the
     dvd-slideshow program to create the animated slide menu, assuming you have
@@ -481,6 +498,10 @@ See the other slideshow options in the SLIDESHOWS options section.
 == Options ==
 : **-menu-length**
     The desired animated main menu length in seconds
+: **-submenu-length**
+    The desired submenu length.  This will also affect the length of submenu
+    audio for static submenus.  (Assuming that -submenu-audio was passed in).
+    The default is to use 10 seconds of audio for static menus.
 : **-submenu-stroke** COLOR
     The color for the sub-menu font outline (stroke)
 : **-submenu-title-color**, **-submenu-title-colour**
@@ -592,14 +613,7 @@ See the other slideshow options in the SLIDESHOWS options section.
     have a computer with 2 CPUs you can set "-jobs 1" to keep one processor
     free for other things.  At present this applies to the time consuming
     imagemagick loops: you will notice a substantial speedup now if you have a
-    multi-cpu system.   See also  **-tovid-jobs**
-: **tovid-jobs**
-    If you have non compliant files, todisc invokes tovid to encode them.  This
-    option lets you set the number of parallel jobs run.  By default todisc run
-    one instance of tovid for each processor if needed.  With this option you
-    can set the value higher or lower.  It also affects the checking for
-    compliance of files (idvid), as well as a few other non imagemagick
-    related tasks.
+    multi-cpu system.
 : **-noask**, **-no-ask**
     Skip all interactive questions.  No preview, automatic re-encoding with
     tovid if needed, no interactive option to use background video for bgaudio.
@@ -628,18 +642,18 @@ See the other slideshow options in the SLIDESHOWS options section.
 : **-button-style** rect|text|line|text-rect
     The style of button that you will see when you play the DVD.
     "rect" draws a rectangle around the thumb when you select it
-    in the DVD player.  "text" highlights the thumb title text, "line"
+    in the DVD player.  "text" highlights the video title text, "line"
     underlines the title, and "text-rect" draws a rectangle around the title
-    text.  If you have multi-line titles, use "text-rect" or "line".
+    text.
 : **-title-color**, **-title-colour** COLOR
     Color to use for the main menu title.  For list of supported colors do:
     **convert -list** color.  HTML notation may be used: "#ff0000". See:
     http://www.imagemagick.org/script/color.php
 : **-title-stroke** COLOR
-    Outline color for the main menu font. Use "none" for transparent outline
-    (see title-color)
+    Outline color for the main menu's title font. Use "none" for transparent
+    outline  (see title-color)
 : **-titles-stroke** COLOR
-    Outline color for the thumb or textmenu titles font. Use "none" for
+    Outline color for the thumb or textmenu video titles font. Use "none" for
     transparent outline  (see **-titles-color**).
 : **-highlight-color**, **-highlight-colour**
     Color to use for the menu buttons that your dvd remote uses to navigate.
@@ -651,7 +665,7 @@ See the other slideshow options in the SLIDESHOWS options section.
 : **-text-mist-color**, **-text-mist-colour** COLOR
     Color of the mist behind the menu's title (see title-color).
 : **-text-mist-opacity**
-    Opacity of the mist behind the menu text - see **-opacity**
+    Opacity of the mist behind the menu's title - see **-opacity**
 : **-menu-audio-fade**
     Number of sec to fade given menu audio in and out (default: 1.0 seconds)
     If you use **-menu-audio-fade** 0 then the audio will not be faded.
