@@ -147,6 +147,10 @@ main_panel = VPanel('slideshow',
             'effects.  Use values between 0x0.1 and 0x0.9 for best '
             'results.  Enter a single value or 1 value for each slide '
             'to be blurred.', filetypes=slideshow_filetypes),
+            List('Slide blur amount', '-slide-blur', '',
+            'How much to blur each slide given with "Slides to blur".  '
+            'Use a single value, or a list with one value per slide given'
+            ),
         ),
     ),
 )
@@ -259,6 +263,9 @@ general = Panel("General",
     Flag('Keep useful intermediate files on exit', '-keep-files', False),
     Flag('No prompts for questions', '-no-ask', False),
     Flag('Do not pause at warnings', '-no-warn', False),
+    Flag('Grid preview', '-grid', False,
+    'Show a second preview image with a grid and numbers that will help in '
+    'finding coordinates for options that might use them'),
     Flag('Use makemenu', '-use-makemenu', False,
         'Create menus using the makemenu script instead of todisc'),
     List('Custom todisc options', '', '',
