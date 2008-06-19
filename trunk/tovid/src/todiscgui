@@ -64,54 +64,54 @@ main_panel = VPanel('slideshow',
             'Title for this slideshow.'),
             FileList('images for slideshow one', '-slides', None,
             slideshow_tooltip, filetypes=slideshow_filetypes),
-                FlagGroup("", 'exclusive',
-                    Flag('Animated with transitions', '', True,
-                        'This is the default if you are not doing a static '
-                        'menu.  The slides transition one to the next, using '
-                        'the type of transition selected in "Transition type"'),
-                    Flag('Static with "Polaroid stack" menu', '-static', False,
-                        'This puts the  slides  onto  the  background in '
-                        '"random" locations with random rotations, making it '
-                        'look like a scattered stack of photos. This is the '
-                        'same as setting -static on the Main tab.'),
-                ),
-                Number('Numbert of slides shown on menu', '-menu-slide-total',
-                0, 'Use this many slides for making the slideshow menu. '
-                'The default is to use all the slides given.',
-                0, 100, toggles=True),
-                List('Numbert of slides shown on submenu',
-                '-submenu-slide-total', '',
-                'Use this many slides for making the slideshow submenus. '
-                'The default is to use all the slides given.  '
-                'Use a single value for all or list one value per submenu.', toggles=True),
+            FlagGroup("", 'exclusive',
+                Flag('Animated with transitions', '', True,
+                    'This is the default if you are not doing a static '
+                    'menu.  The slides transition one to the next, using '
+                    'the type of transition selected in "Transition type"'),
+                Flag('Static with "Polaroid stack" menu', '-static', False,
+                    'This puts the  slides  onto  the  background in '
+                    '"random" locations with random rotations, making it '
+                    'look like a scattered stack of photos. This is the '
+                    'same as setting -static on the Main tab.'),
+            ),
+            Number('Numbert of slides shown on menu', '-menu-slide-total',
+            0, 'Use this many slides for making the slideshow menu. '
+            'The default is to use all the slides given.',
+            0, 100, toggles=True),
+            List('Numbert of slides shown on submenu',
+            '-submenu-slide-total', '',
+            'Use this many slides for making the slideshow submenus. '
+            'The default is to use all the slides given.  '
+            'Use a single value for all or list one value per submenu.', toggles=True),
             Panel('Animated slideshow options',
                 HPanel('',
                     Choice('Transition type', '-slide-transition', 'crossfade',
-                        'The type of fade transition between slides in an '
-                        'animated slideshow menu.  Be sure  the  menu  length '
-                        'is long enough to support the 1 second transitions '
-                        'between the slides.  The length is determined by  '
-                        '1)  the length  of  the -bgaudio AUDIO  2) the '
-                        'length given with -menu-length DURATiON.  '
-                        '* See Menu tab for menu length option *.',
-                        'crossfade|fade'),
-                        HPanel('',
-                            Number('Slide border', '-slide-border', 100,
-                            'Use a border around animated slideshow slides '
-                            '(default: 100 pixels).',
-                            0, 200, toggles=True),
-                            Number('Slide frame', '-slide-frame', 12,
-                            'Use a frame around the animated slideshow slides '
-                            '(default: 12).',
-                            0, 20, toggles=True),
-                        ),
+                    'The type of fade transition between slides in an '
+                    'animated slideshow menu.  Be sure  the  menu  length '
+                    'is long enough to support the 1 second transitions '
+                    'between the slides.  The length is determined by  '
+                    '1)  the length  of  the -bgaudio AUDIO  2) the '
+                    'length given with -menu-length DURATiON.  '
+                    '* See Menu tab for menu length option *.',
+                    'crossfade|fade'),
+                    HPanel('',
+                        Number('Slide border', '-slide-border', 100,
+                        'Use a border around animated slideshow slides '
+                        '(default: 100 pixels).',
+                        0, 200, toggles=True),
+                        Number('Slide frame', '-slide-frame', 12,
+                        'Use a frame around the animated slideshow slides '
+                        '(default: 12).',
+                        0, 20, toggles=True),
                     ),
                 ),
-                Flag('No reminder prompt for backing up files',
-                '-no-confirm-backup', False, 'Todisc prompts you for a "yes" '
-                ' to show you have taken backup precations.  This option '
-                'disables that prompt.'),
             ),
+            Flag('No reminder prompt for backing up files',
+            '-no-confirm-backup', False, 'Todisc prompts you for a "yes" '
+            ' to show you have taken backup precations.  This option '
+            'disables that prompt.'),
+        ),
         VPanel('Advanced options',
             FlagGroup('Use slideshow as background or showcase video ',
                 'exclusive',
@@ -208,26 +208,25 @@ main = Panel("Main",
         VPanel('Menu style',
             FlagGroup('', 'exclusive',
                 Flag('Default', '', True,
-                'Thumbnail menu links, centred, and as large as space '
-                'restraints allow'),
+                    'Thumbnail menu links, centred, and as large as space '
+                    'restraints allow'),
                 Flag('Showcase', '-showcase', False,
-                "Arrange menu links along the outside edges, to leave room for"
-                " an optional 'showcase' image or video.  The file entry box"
-                " is for an optional image or video file to be showcased in a"
-                " large central frame",
-                enables=Filename('', '', '',
-                '',
-                'load', 'Select an image or video file.'),
+                    "Arrange menu links along the outside edges, to leave room for"
+                    " an optional 'showcase' image or video.  The file entry box"
+                    " is for an optional image or video file to be showcased in a"
+                    " large central frame",
+                    enables=Filename('', '', '', '',
+                    'load', 'Select an image or video file.'),
                 ),
             ),
             HPanel('Showcase options',
                 Flag("Textmenu", '-textmenu', False,
-                'Showcase style text only menu.  Optionally use a "showcase" '
-                'image/video, or static/animated background.  Use the '
-                '"columns" option to set the maximum number of titles per '
-                ' column.  See also quick-menu and switched menu.',
-                enables=Number('     columns', '', 13,
-                '', 1, 50)
+                    'Showcase style text only menu.  Optionally use a "showcase" '
+                    'image/video, or static/animated background.  Use the '
+                    '"columns" option to set the maximum number of titles per '
+                    ' column.  See also quick-menu and switched menu.',
+                    enables=Number('     columns', '', 13,
+                    '', 1, 50)
                 ),
                     Flag("Quick menu", '-quick-menu', False,
                         'Ten times faster than normal showcase animation.  '
@@ -420,7 +419,7 @@ submenus = Panel("Submenus",
                         'The font to use for the Submenu menu titles', toggles=True),
                     Number('Font size', '-submenu-fontsize', 30,
                         'The font size to use for the submenu title',
-                    0, 80, toggles=True),
+                         0, 80, toggles=True),
                 ),
                 HPanel('',
                     Color('Font color', '-submenu-title-color', '#CDC0B0',
