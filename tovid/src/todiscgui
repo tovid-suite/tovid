@@ -79,6 +79,11 @@ main_panel = VPanel('slideshow',
                 0, 'Use this many slides for making the slideshow menu. '
                 'The default is to use all the slides given.',
                 0, 100, toggles=True),
+                List('Numbert of slides shown on submenu',
+                '-submenu-slide-total', '',
+                'Use this many slides for making the slideshow submenus. '
+                'The default is to use all the slides given.  '
+                'Use a single value for all or list one value per submenu.', toggles=True),
             Panel('Animated slideshow options',
                 HPanel('',
                     Choice('Transition type', '-slide-transition', 'crossfade',
