@@ -103,6 +103,12 @@ class Control (Widget):
         self.toggles = False
         if 'toggles' in self.kwargs:
             self.toggles = bool(self.kwargs['toggles'])
+        # allow passing in a first argument to the controls command
+        if 'preargs' in self.kwargs:
+            self.preargs = self.kwargs['preargs']
+        else:
+            self.preargs = ""
+            
         # List of Controls to copy updated values to
         self.copies = []
         if 'pull' in self.kwargs:
@@ -208,6 +214,8 @@ class Control (Widget):
         # '-option'
         if self.option != '':
             args.append(self.option)
+        if self.preargs:
+            args.append(self.preargs)
         # List of arguments
         if type(value) == list:
             args.extend(value)
