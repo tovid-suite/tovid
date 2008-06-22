@@ -129,7 +129,6 @@ THUMBS_3D=false
 RAISE=""
 CURVE_UPDATE=""
 SUBTITLES=false
-AUDIOLANG=false
 USER_BSTYLE=false
 SHOWCASE_SEEK_VAL=2
 BG_SEEK=2
@@ -2673,12 +2672,23 @@ while test $# -gt 0; do
             SUBS=${ARGS_ARRAY[@]}
             SUBS_ARRAY=( ${SUBS//,/ } )
             ;;
-        "-audio-lang" )
+        "-audio-channel" )
             shift
             get_listargs "$@"
-            AUDIO_LANG=${ARGS_ARRAY[@]}
-            AUDIO_LANG=( ${AUDIO_LANG//,/ } )
-            AUDIOLANG=:
+            AUDIO_CHANNEL=${ARGS_ARRAY[@]}
+            AUDIO_CHANNEL=( ${AUDIO_CHANNEL//,/ } )
+            ;;
+        "-audio-lang" )
+            o=$1
+            shift
+            get_listargs "$@"
+            LANGS=${ARGS_ARRAY[@]}
+            LANGS=( ${LANGS//,/ } )
+            for i in ${LANGS[@]}; do
+                test_is_number "$i" && \
+                usage_error "$o is for language codes now: 
+                perhaps you wanted '-audio-channel' ?"
+            done
             ;;
         "-bgaudio" )
             shift
@@ -3765,11 +3775,11 @@ if [[ -n "$SHOWCASE_VIDEO" ]]; then
     mkdir "$REAL_WORK_DIR/showcase"
 fi
 
-# if more than one value for AUDIO_LANG, make sure they equal video #
-if $AUDIOLANG && \
-[[ ${#FILES[@]} -ne ${#AUDIO_LANG[@]} &&  ${#AUDIO_LANG[@]} -ne 1 ]]; then
+# if more than one value for AUDIO_CHANNEL, make sure they equal video #
+if [[ -n $AUDIO_CHANNEL ]] && \
+[[ ${#FILES[@]} -ne ${#AUDIO_CHANNEL[@]} &&  ${#AUDIO_CHANNEL[@]} -ne 1 ]]; then
     usage_error "Please give the same number of audio channels as videos.  \
-    You gave ${#FILES[@]} videos and ${#AUDIO_LANG[@]} audio channel values"
+    You gave ${#FILES[@]} videos and ${#AUDIO_CHANNEL[@]} audio channel values"
 fi
 # make sure number of -rotate-thumbs arguments equals number of videos
 if [[ -n ${ROTATE_ARRAY[@]} ]]; then
@@ -4465,13 +4475,13 @@ START="00:00:00.0"
 $PLAYALL && TITLESET_PRE="g4=0;"
 $ITLESET_MODE && TITLESET_PRE="$TITLESET_PRE g2=1;"
 
-if $AUDIOLANG; then
-    # if only one -audio-lang value, then use for all videos
+if [[ -n $AUDIO_CHANNEL ]]; then
+    # if only one -audio-channel value, then use for all videos
         for ((i=0; i<=NUM_FILES; i++)); do
-            if [ ${#AUDIO_LANG[@]} -eq 1 ]; then
-                AUDIO_PRE[i]="audio=${AUDIO_LANG[0]};"
+            if [ ${#AUDIO_CHANNEL[@]} -eq 1 ]; then
+                AUDIO_PRE[i]="audio=${AUDIO_CHANNEL[0]};"
             else
-                AUDIO_PRE[i]="audio=${AUDIO_LANG[i]};"
+                AUDIO_PRE[i]="audio=${AUDIO_CHANNEL[i]};"
             fi
         done
     for ((i=0; i<=NUM_FILES; i++)); do # create audio tag for dvdauthor
@@ -7056,6 +7066,11 @@ fi)
     </menus>
     <titles>
       $TITLES_VID_TAG
+$(if [[ -n ${LANGS[@]} ]]; then
+    for ((s=0; s<${#LANGS[@]}; s++)); do
+        echo -e "      <audio lang=\"${LANGS[s]}\"/>"
+    done
+fi)
 $(if $SUBTITLES; then
     for ((s=0; s<${#SUBS_ARRAY[@]}; s++)); do
         echo -e "      <subpicture lang=\"${SUBS_ARRAY[s]}\"/>"
@@ -7074,7 +7089,7 @@ $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
     else
         echo -e "      <pgc>"
     fi
-    if $AUDIOLANG; then
+    if [[ -n $AUDIO_CHANNEL ]]; then
         echo "${VOB_PRE[i]}"
     fi
     if [[ -n ${GROUP[i]} ]]; then
