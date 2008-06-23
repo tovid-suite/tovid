@@ -534,6 +534,11 @@ See the other slideshow options in the SLIDESHOWS options section.
     If passing grouped chapters you need to join the chapters from all the
     videos in a group with a '+' separator.  If you want to skip a video in
     the group use '0' for its chapters.
+    
+    Note: chapters for grouped videos should probably be passed in using the
+    above HH:MM:SS format. (Arbitrary chapters using just an INT for the # of
+    chapters is not guaranteed to work reliably in all cases for grouped videos
+    at the moment.)
 
     Example for passing just number of chapters ( 4 videos ):
 ```
