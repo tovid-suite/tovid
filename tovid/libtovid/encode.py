@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # encode.py
 
-"""This module provides several backend for encoding video and audio.
+"""This module provides several backends for encoding video and audio.
 
 One high-level function is provided:
 
