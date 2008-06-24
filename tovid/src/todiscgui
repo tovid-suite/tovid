@@ -296,11 +296,12 @@ menu = Panel("Menu",
         'begins to fade in.',enables=Number('',
         '', 0.0,'',0.0, 60.0, units='seconds', style='scale'),
     ),
-    Number('Transition to menu', '-transition-to-menu', 10,
-        'Create a transition to the menu.  The number argument is the length '
-        'of the transition, which is the background video.  A background '
-        'video  is required (-background VIDEO).',
-        0, 120, toggles=True),
+    Flag('Transition to menu', '-transition-to-menu', False,
+        'This option goes with the "Fade in menu" option above, which '
+        'must be enabled for it to have effect.  It is a convenience option '
+        'for animated backgrounds: the background will become static at the '
+        'exact point the thumbs finish fading in.  This menu does not loop '
+        'unless you pass -loop VALUE (authoring tab).'),
     Color('Menu background color', '-bg-color', 'white',
         'Color of the menu background.  ' 
         'Default if not enabled: ntsc color-safe black (#101010).  '
