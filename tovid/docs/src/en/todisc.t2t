@@ -304,11 +304,11 @@ See the other slideshow options in the SLIDESHOWS options section.
     of showing the background for 1 second before fading the menu in.  See
     also:  **-transition-to-menu**
 : **-transition-to-menu** TIME
-    The background video will be a sort of transition to the menu, and is in
-    fact a type of -menu-fade menu.  It will play for TIME amount of time
-    before the menu is faded in.  The menu begins to fade in 4.5 seconds before
-    the end of TIME, so use an appropriate value.
-    This menu does not loop unless you pass -loop VALUE
+    This option goes with the **-menu-fade** option above, which must be
+    enabled for it to have effect.  It is a convenience option for animated
+    backgrounds: the background will become static at the exact point the
+    thumbs finish fading in. This menu does not loop unless you pass
+    **-loop** VALUE.
 : **-bgaudio** FILE
     An file containing audio for the main menu background.  For static menus
     the default is to use 20 seconds of audio.  You can change this using the
