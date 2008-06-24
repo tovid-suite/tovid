@@ -75,11 +75,11 @@ main_panel = VPanel('slideshow',
                     'look like a scattered stack of photos. This is the '
                     'same as setting -static on the Main tab.'),
             ),
-            Number('Numbert of slides shown on menu', '-menu-slide-total',
+            Number('Number of slides shown on menu', '-menu-slide-total',
             0, 'Use this many slides for making the slideshow menu. '
             'The default is to use all the slides given.',
             0, 100, toggles=True),
-            List('Numbert of slides shown on submenu',
+            List('Number of slides shown on submenu',
             '-submenu-slide-total', '',
             'Use this many slides for making the slideshow submenus. '
             'The default is to use all the slides given.  '

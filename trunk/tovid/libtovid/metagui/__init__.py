@@ -3,10 +3,7 @@
 
 """A simplified GUI-writing module.
 
-
-INTRODUCTION
-
-This module demonstrates a simplified approach to creating GUIs for
+This module provides a simplified approach to creating GUIs for
 command-line programs. It's designed so _anyone_ can easily write their
 own GUI, without having any programming experience.
 
