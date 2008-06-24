@@ -434,12 +434,13 @@ See the other slideshow options in the SLIDESHOWS options section.
     -slide-blur ARG.  See also **-slides-to-bin** and **-slide-border**
 
 : **-slide-blur** VALUE or LIST of VALUES [0x0.2]
-    The argument to use for blurring files.
-    It will be passed to imagemagick: convert -blur ARG.
-    You can use a list to have a different blur for each file passed with
-    **-slides-to-blur**.  You must pass in **-files-to-blur** FILES to use this
-    option.  Blurring can help 'noise' problems in the video.  See also
-    **-slides-to-bin** and **-slide-border**
+    The argument to use for blurring files.  It will be passed to
+    imagemagick: convert -blur ARG.  The format of the arg is {radius}x{sigma}
+    and the default is 0x0.2. Using values between 0x0.1 and 0x0.9 is probably
+    the best range.  Use a single value for all, or a list to have a different
+    blur for each file passed with **-slides-to-blur**.  You must pass in
+    **-files-to-blur** FILES to use this option.  Blurring can help 'noise'
+    problems in the video.  See also **-slides-to-bin** and **-slide-border**
 
 : **-slide-border** WIDTH [100]
     Pad the slides with a border for the animated slide menu.  The default
