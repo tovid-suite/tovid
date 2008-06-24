@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # widget.py
 
-"""Defines a generic Widget class.
+"""A generic widget class, wrapper for tk.Frame.
 """
 
 __all__ = ['Widget']

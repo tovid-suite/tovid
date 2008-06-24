@@ -70,10 +70,11 @@ class Control (Widget):
                  **kwargs):
         """Create a Control for an option.
 
-            vartype:  Type of stored variable (str, bool, int, float, list)
+            vartype:  Python type of stored variable
+                      (str, bool, int, float, list)
             label:    Label shown in the GUI for the Control
-            option:   Command-line option associated with this Control, or
-                      '' to create a positional argument
+            option:   Command-line option associated with this Control,
+                      or '' to create a positional argument
             default:  Default value for the Control
             help:     Help text to show in a tooltip
             **kwargs: Keyword arguments of the form key1=arg1, key2=arg2
@@ -99,7 +100,7 @@ class Control (Widget):
         self.required = False
         if 'required' in kwargs:
             self.required = bool(kwargs['required'])
-        # Has an enable/disable toggle button
+        # Has an enable/disable toggle button?
         self.toggles = False
         if 'toggles' in self.kwargs:
             self.toggles = bool(self.kwargs['toggles'])
@@ -178,14 +179,14 @@ class Control (Widget):
         """Return the value of the Control's variable."""
         # self.variable isn't set until draw() is called
         if not self.variable:
-            raise "Must call draw() before get()"
+            raise Exception("Must call draw() before get()")
         return self.variable.get()
 
     def set(self, value):
         """Set the Control's variable to the given value."""
         # self.variable isn't set until draw() is called
         if not self.variable:
-            raise "Must call draw() before set()"
+            raise Exception("Must call draw() before set()")
         self.variable.set(value)
         # Update controls that are copying this control's value
         for control in self.copies:
@@ -199,7 +200,7 @@ class Control (Widget):
         args = []
         value = self.get()
 
-        # For toggles, return 
+        # Return empty if the control is toggled off
         if self.toggles:
             if not self.enabled.get():
                 return []
@@ -228,8 +229,10 @@ class Control (Widget):
         """Return a Python code representation of this Control."""
         # Get derived class name
         control = str(self.__class__).split('.')[-1]
-        return "%s('%s', '%s')" % (control, self.option, self.label)
+        return "%s('%s', '%s', '%s', %s, '%s')" % \
+               (control, self.option, self.label, self.default, self.help)
 
+    
 ### --------------------------------------------------------------------
 ### Control subclasses
 ### --------------------------------------------------------------------
@@ -255,7 +258,7 @@ class Flag (Control):
         if 'enables' in kwargs:
             self.enables = kwargs['enables']
             if not isinstance(self.enables, Widget):
-                raise "A Flag can only enable a Widget (Control or Panel)"
+                raise Exception("A Flag can only enable a Widget (Control or Panel)")
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -308,9 +311,9 @@ class FlagGroup (Control):
         """Create a FlagGroup with the given label and state.
         
             label:    Label for the group
-            state:    'normal' for regular Flags, 'exclusive' for
-                      mutually-exclusive Flags
-            *flags:   All additional arguments are Flag controls
+            state:    'normal' for independent Flags, 'exclusive' for
+                      mutually-exclusive Flags (more like a Choice)
+            *flags:   One or more Flag controls to include in the group
         """
         Control.__init__(self, str, '', label, '', '')
         self.flags = flags
@@ -360,7 +363,7 @@ class Choice (Control):
     def __init__(self,
                  label="Choices",
                  option='',
-                 default=None,
+                 default='',
                  help='',
                  choices='A|B',
                  style='radio',
@@ -370,7 +373,7 @@ class Choice (Control):
 
             label:    Text label for the choices
             option:   Command-line option to set
-            default:  Default choice, or None to use first choice in list
+            default:  Default choice, or '' to use first choice in list
             help:     Help text to show in a tooltip
             choices:  Available choices, in string form: 'one|two|three'
                       or list form: ['one', 'two', 'three'], or as a
@@ -413,7 +416,7 @@ class Number (Control):
     def __init__(self,
                  label="Number",
                  option='',
-                 default=None,
+                 default=0,
                  help='',
                  min=1,
                  max=10,
@@ -424,15 +427,15 @@ class Number (Control):
         
             label:    Text label describing the meaning of the number
             option:   Command-line option to set
-            default:  Default value, or None to use minimum
+            default:  Default value, or 0 to use minimum.
             help:     Help text to show in a tooltip
             min, max: Range of allowable numbers (inclusive)
             style:    'spin' for a spinbox, or 'scale' for a slider
             units:    Units of measurement (ex. "kbits/sec"), used as a label
+    
+        The default/min/max may be integers or floats.
         """
-        if default is None:
-            default = min
-        Control.__init__(self, int, label, option, default,
+        Control.__init__(self, type(default), label, option, default or min,
                          help, **kwargs)
         self.min = min
         self.max = max
@@ -450,8 +453,14 @@ class Number (Control):
             tk.Label(self, name='units', text=self.units).pack(side='left')
 
         else: # 'scale'
+            # Use integer or float resolution
+            if type(self.default) == int:
+                res = 1
+            else:
+                res = 0.001
             tk.Label(self, name='units', text=self.units).pack(side='left')
             self.number = tk.Scale(self, from_=self.min, to=self.max,
+                                   resolution=res,
                                    tickinterval=(self.max - self.min),
                                    variable=self.variable, orient='horizontal')
             self.number.pack(side='left', fill='x', expand=True)
@@ -752,7 +761,8 @@ CONTROLS = {
     'List': List,
     'Number': Number,
     'FileList': FileList,
-    'TextList': TextList}
+    'TextList': TextList,
+}
 
 ### --------------------------------------------------------------------
 
