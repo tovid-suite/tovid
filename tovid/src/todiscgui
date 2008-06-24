@@ -75,11 +75,11 @@ main_panel = VPanel('slideshow',
                     'look like a scattered stack of photos. This is the '
                     'same as setting -static on the Main tab.'),
             ),
-            Number('Number of slides shown on menu', '-menu-slide-total',
+            Number('Numbert of slides shown on menu', '-menu-slide-total',
             0, 'Use this many slides for making the slideshow menu. '
             'The default is to use all the slides given.',
             0, 100, toggles=True),
-            List('Number of slides shown on submenu',
+            List('Numbert of slides shown on submenu',
             '-submenu-slide-total', '',
             'Use this many slides for making the slideshow submenus. '
             'The default is to use all the slides given.  '
@@ -275,7 +275,7 @@ general = Panel("General",
     List('Custom todisc options', '', '',
         'Space-separated list of custom options to pass to todisc.'),
     Text('Custom tovid options', '-tovidopts', '',
-        "Space-separated list of options to pass to tovid for encoding.")
+        "Space-separated list of options to pass to tovid for encoding."),
 )
 
 menu = Panel("Menu",
@@ -291,7 +291,11 @@ menu = Panel("Menu",
         'Fade the menu in and out.  The background '
         ' will fade in first, then the title '
         '(and mist if called for), then the menu thumbs and/or titles.  '
-        'The fadeout is in reverse order.'),
+        'The fadeout is in reverse order.  The optional numerical argument '
+        'is the length of time the background will play before the menu '
+        'begins to fade in.',enables=Number('',
+        '', 0.0,'',0.0, 60.0, units='seconds', style='scale'),
+    ),
     Number('Transition to menu', '-transition-to-menu', 10,
         'Create a transition to the menu.  The number argument is the length '
         'of the transition, which is the background video.  A background '
@@ -584,9 +588,14 @@ authoring = Panel("Authoring",
             'Leave this at "none" to let dvdauthor figure it out for you',
             '4:3|16:9|none'),
     ),
+    VPanel('Default audio track(s)',
+        List('', '-audio-channel', '',
+            'Single value or list of the default audio track for each videos.  '
+            '0 is the first audio track, 1 is the second ...'),
+    ),
     VPanel('Language(s)',
         List('Audio', '-audio-lang', '',
-            'Single value or list'),
+            'Single value or list of language codes for audio'),
         List('Subtitles', '-subtitles', '',
             'Single value or list'),
     ),
