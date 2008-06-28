@@ -926,8 +926,18 @@ get_group_chapters()
         unset chapt_len_array
         done
         # remove last chapter as this makes one for the end of the video
-        lastind=$(( ${#group_chapters[@]} - 1 ))
-        local group_chapters[lastind]=${group_chapters[lastind]% *}
+        # ignore if we are doing -chapters 0 for this video ( no chapters )
+        if ! ((${nochapt[index]})); then
+            for id in ${!group_chapters[@]}; do
+                for s in ${group_chapters[id]}; do
+                    let p=p+1
+                    (( p < ${CHAPTERS[index]})) && substr="$substr $s"
+                done
+                group_chapters[id]=$substr
+                unset substr
+            done
+        fi
+        
         unset remainder
         for d in ${!group_chapters[@]}; do
             for number in ${group_chapters[d]}; do
@@ -7294,7 +7304,7 @@ if $SUB_MENU; then
                     for pt in ${grp_chapters[g]}; do
                         pnt=$(unformat_time $pt)
                         if ((g == 0)); then
-                            FILE_IN+=( ${IN_FILES[i]} )
+                            FILE_IN+=( "${IN_FILES[i]}" )
                         elif  ((${nochapt[i]})); then
                             FILE_IN+=( ${BASE}-$((i+1))-${g}.mpg )
                         elif [[ $pnt = 0 || -z $pnt ]]; then
@@ -7351,9 +7361,9 @@ if $SUB_MENU; then
                 else
                     CUR_FILE="${IN_FILES[i]}"
                 fi
-                navlog=$(readlink -f "${CUR_FILE}.nav_log")
+                navlog=$(readlink -f "${CUR_FILE}").nav_log
                 if [[ -s $navlog ]]; then
-                    NAVSEEK="--nav_seek" && NAVLOG=$navlog
+                    NAVSEEK="--nav_seek" && NAVLOG="$navlog"
                 else
                     unset NAVSEEK NAVLOG
                 fi
