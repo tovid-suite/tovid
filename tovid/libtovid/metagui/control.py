@@ -21,7 +21,9 @@ __all__ = [
     'List',
     'Number',
     'FileList',
-    'TextList']
+    'TextList',
+    'MappedList',
+    'SyncList']
 
 import Tkinter as tk
 from widget import Widget
@@ -82,6 +84,7 @@ class Control (Widget):
         Keyword arguments allowed:
         
             pull=Control(...):  Mirror value from another Control
+            connected=Control: 2 Controls need to know each others name
             required=True:      Required option, must be set or run will fail
             filter=function:    Text-filtering function for pulled values
             toggles=True:       May be toggled on and off
@@ -123,6 +126,12 @@ class Control (Widget):
             if not callable(self.kwargs['filter']):
                 raise TypeError("Pull filter must be a function.")
             self.filter = self.kwargs['filter']
+        # connect to another Control ( tell it the name of this Control )
+        # TODO do we ever need to 'connect' more than 2 widgets ?
+        # if so change vars, perhaps a 'connected' list and a 'connector'
+        if 'connect' in self.kwargs:
+            self.connected = kwargs['connect']
+            self.connected.connect(self)
 
     def copy_to(self, control):
         """Update another control whenever this control's value changes.
@@ -652,7 +661,7 @@ class Font (Control):
             self.variable.set(chooser.result)
 
 ### --------------------------------------------------------------------
-from support import DragList
+from support import DragList, ScrollList
 
 class TextList (Control):
     """A widget for listing and editing several text strings"""
@@ -683,7 +692,108 @@ class TextList (Control):
         """Event handler when Enter is pressed after editing a title."""
         index = self.listbox.curindex
         self.variable[index] = self.selected.get()
-        # TODO: Select next item in list and focus the editbox
+        if len(self.listbox.get()) > index + 1:
+            # select the next index
+            self.listbox.activate(index + 1)
+            # set the editbox to the new index
+            self.selected.set(self.variable[index+1])
+
+class MappedList (Control):
+    # this class will serve right now for situations requiring 
+    # a list of lists.  It remains to be seen if it can also be used
+    # for a Control which only wants a 1 to 1 relationship with the 'pulled'
+    # Control.  Also can it be reused for other kinds of Controls ?
+    """A widget that uses a multidimensional array of lists"""
+    def __init__(self,
+                 label="Text list",
+                 option='',
+                 default=None,
+                 help='',
+                 **kwargs):
+        Control.__init__(self, list, label, option, default, help, **kwargs)
+        # dict of lists.  Current mapped list entries get saved to the dict
+        # using current pullindex, updated when a 'connected' item is selected
+        self.lists = {}
+
+    def draw(self, master):
+        """Draw control widgets in the given master."""
+        Control.draw(self, master)
+        frame = tk.LabelFrame(self, text=self.label)
+        frame.pack(fill='x', expand=True)
+        self.selected = tk.StringVar()
+        self.listbox = ScrollList(frame, choices=self.variable,
+                                chosen=self.selected)
+        self.listbox.pack(fill='x', expand=True)
+        # TODO: Event handling to allow editing items
+        self.editbox = tk.Entry(frame, width=30, textvariable=self.selected)
+        self.editbox.bind('<Return>', self.setTitle)
+        self.editbox.pack(fill='x', expand=True)
+        Control.post(self)
+        self.variable.append('')
+    def setTitle(self, event):
+        """Event handler when Enter is pressed after editing a title."""
+        index = self.listbox.curindex
+        self.variable[index] = self.selected.get()
+        if len(self.listbox.get()) < index + 2:
+            self.variable.append('')
+        # save the whole of variable to lists dict
+        self.lists[self.connected.listbox.curindex] = self.variable.get()
+        
+        # select the next index
+        self.listbox.activate(index + 1)
+        # set the editbox to the new index
+        self.selected.set(self.variable[index+1])
+    def setList(self):
+        """ set listbox contents to 'lists'at index of connected listbox.
+        """
+        connected_ind = self.connected.listbox.curindex
+        self.lists[connected_ind] = self.lists.get(connected_ind, '')
+        
+        self.variable.set(self.lists[connected_ind])
+        self.listbox.activate(0)
+    
+        if len(self.variable.get()) == 0:
+            self.variable.append('') 
+    def get_args(self):
+        """Return a list of arguments for setting the relevant flag(s)."""
+        args = []
+        # '-option'
+        if self.option != '':
+            args.append(self.option)
+        # List of arguments
+        for index, argument in self.lists.iteritems():
+            args.extend(argument)
+        return args
+class SyncList (Control):
+    """Expermental list of filenames pulled from another widget"""
+    def __init__(self,
+                 label="List",
+                 option='',
+                 default='',
+                 help='',
+                 **kwargs):
+        Control.__init__(self, list, label, option, default, help, **kwargs)
+    def draw(self, master):
+        """Draw control widgets in the given master."""
+        Control.draw(self, master)
+        frame = tk.LabelFrame(self, text=self.label)
+        frame.pack(fill='x', expand=True)
+        self.selected = tk.StringVar()
+        self.listbox = ScrollList(frame, choices=self.variable,
+                                chosen=self.selected, select_cmd=self.selectListitem)
+        self.listbox.pack(fill='x', expand=True)
+        Control.post(self)
+
+    def connect(self, connected):
+        """a call from a connected widget that passes its name"""
+        self.connected = connected
+
+    def selectListitem(self):
+        """Event handler when an item in the list is selected.
+        A list of lists is used to allow each video to have its own group"""
+        # connected widget sets its list to selected index
+        self.connected.setList()
+        
 
 ### --------------------------------------------------------------------
 from tkFileDialog import askopenfilenames
@@ -710,7 +820,7 @@ class FileList (Control):
         frame.pack(fill='x', expand=True)
         # List of files
         self.listbox = DragList(frame, choices=self.variable,
-                                command=self.select)
+        command=self.select, select_cmd=self.selectListitem)
         self.listbox.pack(fill='x', expand=True)
         # Add/remove buttons
         group = tk.Frame(frame)
@@ -721,7 +831,7 @@ class FileList (Control):
         group.pack(fill='x')
         Control.post(self)
 
-    def select(self, event=None):
+    def select(self, event):
         """Event handler when a filename in the list is selected.
         """
         pass
@@ -747,6 +857,14 @@ class FileList (Control):
         for control in self.copies:
             control.listbox.delete(selected)
 
+    def connect(self, connected):
+        """a call from a connected widget that passes its name"""
+        self.connected = connected
+
+    def selectListitem(self):
+        """Event handler when an item in the list is selected.
+        A list of lists is used to allow each video to have its own group"""
+        pass
 ### --------------------------------------------------------------------
 
 # Exported control classes, indexed by name
@@ -762,6 +880,8 @@ CONTROLS = {
     'Number': Number,
     'FileList': FileList,
     'TextList': TextList,
+    'SyncList': SyncList,
+    'MappedList': MappedList,
 }
 
 ### --------------------------------------------------------------------
