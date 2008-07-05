@@ -70,7 +70,7 @@ class ScrollList (tk.Frame):
     that is currently chosen/highlighted.
     """
     def __init__(self, master=None, choices=None,
-                 chosen=None, command=None):
+                 chosen=None, command=None, select_cmd=None):
         """Create a ScrollList widget.
 
             master:   Tkinter widget that will contain the ScrollList
@@ -84,6 +84,7 @@ class ScrollList (tk.Frame):
         self.choices = choices or ListVar()
         self.chosen = chosen or tk.StringVar()
         self.command = command
+        self.select_cmd = select_cmd
         self.curindex = 0
         self.linked = None
         # Draw listbox and scrollbar
@@ -124,6 +125,8 @@ class ScrollList (tk.Frame):
         """
         self.curindex = self.listbox.nearest(event.y)
         self.chosen.set(self.listbox.get(self.curindex))
+        if self.select_cmd:
+            self.select_cmd()
 
     def get(self):
         """Return a list of all entries in the list.
@@ -148,13 +151,17 @@ class ScrollList (tk.Frame):
         if not isinstance(scrolllist, ScrollList):
             raise TypeError("Can only link to a ScrollList.")
         self.linked = scrolllist
+    def activate(self, ind):
+        self.listbox.selection_clear(0, self.listbox.size())
+        self.listbox.selection_set(ind)
+        self.curindex = ind
 
 ### --------------------------------------------------------------------
 
 class DragList (ScrollList):
     """A scrollable listbox with drag-and-drop support"""
     def __init__(self, master=None, choices=None,
-                 chosen=None, command=None):
+                 chosen=None, command=None, select_cmd=None):
         """Create a DragList widget.
 
             master:   Tkinter widget that will contain the DragList
@@ -162,7 +169,7 @@ class DragList (ScrollList):
             chosen:   Tk StringVar to store currently selected choice in
             command:  Function to call when a list item is clicked
         """
-        ScrollList.__init__(self, master, choices, chosen, command)
+        ScrollList.__init__(self, master, choices, chosen, command, select_cmd)
         # Add bindings for drag/drop
         self.listbox.bind('<Button-1>', self.select)
         self.listbox.bind('<B1-Motion>', self.drag)
