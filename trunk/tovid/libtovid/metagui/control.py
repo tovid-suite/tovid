@@ -672,6 +672,7 @@ class TextList (Control):
                  help='',
                  **kwargs):
         Control.__init__(self, list, label, option, default, help, **kwargs)
+        self.lists = []
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -713,7 +714,7 @@ class MappedList (Control):
         Control.__init__(self, list, label, option, default, help, **kwargs)
         # dict of lists.  Current mapped list entries get saved to the dict
         # using current pullindex, updated when a 'connected' item is selected
-        self.lists = {}
+        self.lists = []
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -747,13 +748,14 @@ class MappedList (Control):
         """ set listbox contents to 'lists'at index of connected listbox.
         """
         connected_ind = self.connected.listbox.curindex
-        self.lists[connected_ind] = self.lists.get(connected_ind, '')
         
         self.variable.set(self.lists[connected_ind])
         self.listbox.activate(0)
-    
+       # make sure we have a 'next' index to go to
         if len(self.variable.get()) == 0:
-            self.variable.append('') 
+            self.variable.append('')
+        self.selected.set(self.variable[0])
+        self.editbox.focus_set()
     def get_args(self):
         """Return a list of arguments for setting the relevant flag(s)."""
         args = []
@@ -761,9 +763,10 @@ class MappedList (Control):
         if self.option != '':
             args.append(self.option)
         # List of arguments
-        for index, argument in self.lists.iteritems():
+        for index, argument in enumerate(self.lists):
             args.extend(argument)
         return args
+
 class SyncList (Control):
     """Expermental list of filenames pulled from another widget"""
     def __init__(self,
@@ -840,6 +843,9 @@ class FileList (Control):
         """Event handler to add files to the list"""
         files = askopenfilenames(parent=self, title='Add files', filetypes=self.filetypes)
         self.listbox.add(*files)
+        # add indicies to connected listbox's 'lists' list
+        for n in range(len(files)):
+            self.connected.connected.lists.append([])
         for dest in self.copies:
             self.listbox.linked = dest.listbox
             dest.listbox.linked = self.listbox
@@ -856,6 +862,10 @@ class FileList (Control):
         self.listbox.delete(selected)
         for control in self.copies:
             control.listbox.delete(selected)
+        # needs to be a test in here for 'lists' I think TODO
+        lists_control = self.connected.connected
+        lists_control.lists.pop(selected)
+        # TODO clear the editbox if it contained the deleted index/items
 
     def connect(self, connected):
         """a call from a connected widget that passes its name"""
