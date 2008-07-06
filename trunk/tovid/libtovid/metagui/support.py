@@ -30,12 +30,12 @@ class ListVar (tk.Variable):
             self.set(items)
 
     def __getitem__(self, index):
-        """Get a list value using list-index syntax (listvar[index]).
+        """Get a list value using list-index syntax: ``listvar[index]``.
         """
         return self.get()[index]
 
     def __setitem__(self, index, value):
-        """Set a list value using list-index syntax (listvar[index] = value).
+        """Set a list value using list-index syntax: ``listvar[index] = value``.
         """
         current = self.get()
         current[index] = value
@@ -59,6 +59,48 @@ class ListVar (tk.Variable):
         """
         items = self.get()
         self.set(items + [item])
+
+### --------------------------------------------------------------------
+from libtovid.odict import Odict
+
+class DictVar (tk.Variable):
+    """A tk Variable for storing a dictionary of values.
+    """
+    def __init__(self, master=None, keys=None, values=None):
+        """Create a DictVar with a given master and initial keys/values.
+        """
+        tk.Variable.__init__(self, master)
+        self.set(Odict(keys, values))
+
+    def __getitem__(self, key):
+        """Get a dict value using keyword syntax: ``dictvar[key]``.
+        """
+        return self.get()[key]
+
+    def __setitem__(self, key, value):
+        """Set a dict value using keyword syntax: ``dictvar[key] = value``.
+        """
+        current = self.get()
+        current[key] = value
+        self.set(current)
+
+    def get(self):
+        """Return the entire dictionary of keys/values."""
+        # Convert from tuple
+        tup = tk.Variable.get(self)
+        if tup:
+            keys, values = zip(*tup)
+        else:
+            keys, values = [], []
+        return Odict(keys, values)
+
+    def set(self, new_dict):
+        """Set the entire dictionary of keys/values."""
+        if not new_dict:
+            new_dict = {}
+        # Convert to a tuple of (key, value) pairs
+        tup = tuple([(key, value) for key, value in new_dict.items()])
+        tk.Variable.set(self, tup)
 
 ### --------------------------------------------------------------------
 

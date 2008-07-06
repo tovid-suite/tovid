@@ -14,8 +14,8 @@ from UserDict import UserDict
 class Odict (UserDict):
     def __init__(self, keys=None, values=None):
         """Create an Odict from the given keys and values."""
-        keys = keys or []
-        values = values or []
+        keys = list(keys or [])
+        values = list(values or [])
         if len(keys) != len(values):
             raise ValueError("keys and values are not the same length")
         self._keys = keys

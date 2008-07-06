@@ -69,6 +69,8 @@ class Control (Widget):
                  option='',
                  default='',
                  help='',
+                 required=False,
+                 toggles=False,
                  **kwargs):
         """Create a Control for an option.
 
@@ -79,15 +81,15 @@ class Control (Widget):
                       or '' to create a positional argument
             default:  Default value for the Control
             help:     Help text to show in a tooltip
+            required: Indicates a required (non-optional) option
+            toggles:  Control widget may be toggled on/off
             **kwargs: Keyword arguments of the form key1=arg1, key2=arg2
         
         Keyword arguments allowed:
         
             pull=Control(...):  Mirror value from another Control
             connected=Control: 2 Controls need to know each others name
-            required=True:      Required option, must be set or run will fail
             filter=function:    Text-filtering function for pulled values
-            toggles=True:       May be toggled on and off
         """
         Widget.__init__(self)
         self.vartype = vartype
@@ -96,17 +98,9 @@ class Control (Widget):
         self.option = option
         self.default = default or vartype()
         self.help = help
+        self.required = required
         self.kwargs = kwargs
 
-        # TODO: Find a way to condense/separate keyword handling
-        # Controls a mandatory option?
-        self.required = False
-        if 'required' in kwargs:
-            self.required = bool(kwargs['required'])
-        # Has an enable/disable toggle button?
-        self.toggles = False
-        if 'toggles' in self.kwargs:
-            self.toggles = bool(self.kwargs['toggles'])
         # allow passing in a first argument to the controls command
         if 'preargs' in self.kwargs:
             self.preargs = self.kwargs['preargs']
@@ -120,18 +114,24 @@ class Control (Widget):
                 raise TypeError("Can only pull values from a Control.")
             pull_from = self.kwargs['pull']
             pull_from.copy_to(self)
+
         # Filter expression when pulling from another Control
-        self.filter = None
         if 'filter' in self.kwargs:
             if not callable(self.kwargs['filter']):
                 raise TypeError("Pull filter must be a function.")
             self.filter = self.kwargs['filter']
+        else:
+            self.filter = None
+
         # connect to another Control ( tell it the name of this Control )
         # TODO do we ever need to 'connect' more than 2 widgets ?
         # if so change vars, perhaps a 'connected' list and a 'connector'
         if 'connect' in self.kwargs:
             self.connected = kwargs['connect']
             self.connected.connect(self)
+        else:
+            self.connected = None
+
 
     def copy_to(self, control):
         """Update another control whenever this control's value changes.
@@ -139,6 +139,7 @@ class Control (Widget):
         if not isinstance(control, Control):
             raise TypeError("Can only copy values to a Control.")
         self.copies.append(control)
+
 
     def draw(self, master):
         """Draw the control widgets in the given master.
@@ -169,14 +170,16 @@ class Control (Widget):
                                         command=self.enabler)
             self.check.pack(side='left')
 
+
     def post(self):
         """Post-draw initialization.
         """
         if self.toggles:
             self.enabler()
 
+
     def enabler(self):
-        """Enable or disable the Control when the checkbox is toggled.
+        """Event handler: Enable/disable the Control when self.check is toggled.
         """
         if self.enabled.get():
             self.enable()
@@ -184,12 +187,14 @@ class Control (Widget):
             self.disable()
             self.check.config(state='normal')
 
+
     def get(self):
         """Return the value of the Control's variable."""
         # self.variable isn't set until draw() is called
         if not self.variable:
             raise Exception("Must call draw() before get()")
         return self.variable.get()
+
 
     def set(self, value):
         """Set the Control's variable to the given value."""
@@ -200,6 +205,7 @@ class Control (Widget):
         # Update controls that are copying this control's value
         for control in self.copies:
             control.variable.set(value)
+
 
     def get_args(self):
         """Return a list of arguments for passing this command-line option.
@@ -233,6 +239,7 @@ class Control (Widget):
         else:
             args.append(value)
         return args
+
 
     def __repr__(self):
         """Return a Python code representation of this Control."""
@@ -269,6 +276,7 @@ class Flag (Control):
             if not isinstance(self.enables, Widget):
                 raise Exception("A Flag can only enable a Widget (Control or Panel)")
 
+
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
@@ -285,6 +293,7 @@ class Flag (Control):
                 self.enables.disable()
         Control.post(self)
 
+
     def enabler(self):
         """Enable/disable a Control based on the value of the Flag."""
         if not self.enables:
@@ -294,6 +303,7 @@ class Flag (Control):
         else:
             self.enables.disable()
 
+    
     def get_args(self):
         """Return a list of arguments for passing this command-line option.
         draw() must be called before this function.
@@ -332,6 +342,7 @@ class FlagGroup (Control):
         if 'side' in kwargs:
             self.side = kwargs['side']
     
+
     def draw(self, master):
         """Draw Flag controls in the given master."""
         Control.draw(self, master)
@@ -343,6 +354,7 @@ class FlagGroup (Control):
             flag.pack(anchor='nw', side=self.side, fill='x', expand=True)
         Control.post(self)
 
+
     def select(self, event):
         """Event handler called when a Flag is selected."""
         # For normal flags, nothing to do
@@ -353,6 +365,7 @@ class FlagGroup (Control):
             if flag.check != event.widget:
                 flag.set(False)
             flag.enabler()
+
 
     def get_args(self):
         """Return a list of arguments for setting the relevant flag(s)."""
@@ -399,6 +412,7 @@ class Choice (Control):
             raise ValueError("Choice style must be 'radio' or 'dropdown'")
         self.style = style
         self.packside = packside
+
 
     def draw(self, master):
         """Draw control widgets in the given master."""
@@ -451,6 +465,7 @@ class Number (Control):
         self.style = style
         self.units = units
 
+
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
@@ -474,6 +489,7 @@ class Number (Control):
                                    variable=self.variable, orient='horizontal')
             self.number.pack(side='left', fill='x', expand=True)
         Control.post(self)
+
 
     def enable(self, enabled=True):
         """Enable or disable all sub-widgets."""
@@ -506,6 +522,7 @@ class Text (Control):
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
 
+
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
@@ -527,15 +544,18 @@ class List (Text):
                  **kwargs):
         Text.__init__(self, label, option, default, help, **kwargs)
 
+
     def draw(self, master):
         """Draw control widgets in the given master."""
         Text.draw(self, master)
         Text.post(self)
 
+
     def get(self):
         """Split text into a list at whitespace boundaries."""
         text = Text.get(self)
         return shlex.split(text)
+
 
     def set(self, listvalue):
         """Set a value to a list, joined with spaces."""
@@ -570,6 +590,7 @@ class Filename (Control):
         self.action = action
         self.desc = desc
 
+
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
@@ -580,6 +601,7 @@ class Filename (Control):
         self.entry.pack(side='left', fill='x', expand=True)
         self.button.pack(side='left')
         Control.post(self)
+
 
     def browse(self, event=None):
         """Event handler when browse button is pressed"""
@@ -611,6 +633,7 @@ class Color (Control):
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
 
+
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
@@ -618,6 +641,7 @@ class Color (Control):
         self.button = tk.Button(self, text="None", command=self.change)
         self.button.pack(side='left')
         Control.post(self)
+
 
     def change(self):
         """Choose a color, and set the button's label and color to match."""
@@ -645,6 +669,7 @@ class Font (Control):
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
 
+
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
@@ -653,6 +678,7 @@ class Font (Control):
                                 command=self.choose)
         self.button.pack(side='left', padx=8)
         Control.post(self)
+
 
     def choose(self):
         """Open a font chooser to select a font."""
@@ -674,6 +700,7 @@ class TextList (Control):
         Control.__init__(self, list, label, option, default, help, **kwargs)
         self.lists = []
 
+
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
@@ -689,6 +716,7 @@ class TextList (Control):
         self.editbox.pack(fill='x', expand=True)
         Control.post(self)
 
+
     def setTitle(self, event):
         """Event handler when Enter is pressed after editing a title."""
         index = self.listbox.curindex
@@ -698,6 +726,8 @@ class TextList (Control):
             self.listbox.activate(index + 1)
             # set the editbox to the new index
             self.selected.set(self.variable[index+1])
+
+### --------------------------------------------------------------------
 
 class MappedList (Control):
     # this class will serve right now for situations requiring 
@@ -716,6 +746,7 @@ class MappedList (Control):
         # using current pullindex, updated when a 'connected' item is selected
         self.lists = []
 
+
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
@@ -731,6 +762,8 @@ class MappedList (Control):
         self.editbox.pack(fill='x', expand=True)
         Control.post(self)
         self.variable.append('')
+
+
     def setTitle(self, event):
         """Event handler when Enter is pressed after editing a title."""
         index = self.listbox.curindex
@@ -744,8 +777,10 @@ class MappedList (Control):
         self.listbox.activate(index + 1)
         # set the editbox to the new index
         self.selected.set(self.variable[index+1])
+
+
     def setList(self):
-        """ set listbox contents to 'lists'at index of connected listbox.
+        """ set listbox contents to 'lists' at index of connected listbox.
         """
         connected_ind = self.connected.listbox.curindex
         
@@ -756,6 +791,8 @@ class MappedList (Control):
             self.variable.append('')
         self.selected.set(self.variable[0])
         self.editbox.focus_set()
+
+    
     def get_args(self):
         """Return a list of arguments for setting the relevant flag(s)."""
         args = []
@@ -767,6 +804,8 @@ class MappedList (Control):
             args.extend(argument)
         return args
 
+### --------------------------------------------------------------------
+
 class SyncList (Control):
     """Expermental list of filenames pulled from another widget"""
     def __init__(self,
@@ -776,6 +815,8 @@ class SyncList (Control):
                  help='',
                  **kwargs):
         Control.__init__(self, list, label, option, default, help, **kwargs)
+
+    
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
@@ -787,9 +828,11 @@ class SyncList (Control):
         self.listbox.pack(fill='x', expand=True)
         Control.post(self)
 
+
     def connect(self, connected):
         """a call from a connected widget that passes its name"""
         self.connected = connected
+
 
     def selectListitem(self):
         """Event handler when an item in the list is selected.
@@ -816,6 +859,7 @@ class FileList (Control):
         if 'filetypes' in kwargs:
             self.filetypes = kwargs['filetypes']
 
+
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
@@ -823,7 +867,7 @@ class FileList (Control):
         frame.pack(fill='x', expand=True)
         # List of files
         self.listbox = DragList(frame, choices=self.variable,
-        command=self.select, select_cmd=self.selectListitem)
+            command=self.select, select_cmd=self.selectListitem)
         self.listbox.pack(fill='x', expand=True)
         # Add/remove buttons
         group = tk.Frame(frame)
@@ -834,10 +878,12 @@ class FileList (Control):
         group.pack(fill='x')
         Control.post(self)
 
+
     def select(self, event):
         """Event handler when a filename in the list is selected.
         """
         pass
+
 
     def addFiles(self):
         """Event handler to add files to the list"""
@@ -855,6 +901,7 @@ class FileList (Control):
             else:
                 dest.listbox.add(*files)
 
+
     def removeFiles(self):
         """Event handler to remove selected files from the list"""
         # TODO: Support multiple selection
@@ -867,14 +914,18 @@ class FileList (Control):
         lists_control.lists.pop(selected)
         # TODO clear the editbox if it contained the deleted index/items
 
+
     def connect(self, connected):
         """a call from a connected widget that passes its name"""
         self.connected = connected
+
 
     def selectListitem(self):
         """Event handler when an item in the list is selected.
         A list of lists is used to allow each video to have its own group"""
         pass
+
+
 ### --------------------------------------------------------------------
 
 # Exported control classes, indexed by name
