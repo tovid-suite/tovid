@@ -805,6 +805,8 @@ class Lists (Control):
         # List of arguments
         for index, argument in enumerate(self.lists):
             args.extend(argument)
+        # last index is empty so don't use it
+        args.pop(len(args) -1)
         return args
 
 ### --------------------------------------------------------------------
