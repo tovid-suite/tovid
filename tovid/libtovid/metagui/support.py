@@ -5,6 +5,7 @@
 
 __all__ = [
     'ListVar',
+    'DictVar',
     'ScrollList',
     'DragList',
     'ComboBox',
@@ -29,10 +30,12 @@ class ListVar (tk.Variable):
         if items:
             self.set(items)
 
+
     def __getitem__(self, index):
         """Get a list value using list-index syntax: ``listvar[index]``.
         """
         return self.get()[index]
+
 
     def __setitem__(self, index, value):
         """Set a list value using list-index syntax: ``listvar[index] = value``.
@@ -41,11 +44,18 @@ class ListVar (tk.Variable):
         current[index] = value
         self.set(current)
 
+
     def get(self):
+        """Get the entire list of values.
+        """
         return list(tk.Variable.get(self))
 
+
     def set(self, new_list):
+        """Set the entire list of values.
+        """
         tk.Variable.set(self, tuple(new_list))
+
 
     def remove(self, item):
         """Remove the item from the list, if it exists.
@@ -53,6 +63,7 @@ class ListVar (tk.Variable):
         items = self.get()
         items.remove(item)
         self.set(items)
+
 
     def append(self, item):
         """Append an item to the list.
@@ -72,10 +83,12 @@ class DictVar (tk.Variable):
         tk.Variable.__init__(self, master)
         self.set(Odict(keys, values))
 
+
     def __getitem__(self, key):
         """Get a dict value using keyword syntax: ``dictvar[key]``.
         """
         return self.get()[key]
+
 
     def __setitem__(self, key, value):
         """Set a dict value using keyword syntax: ``dictvar[key] = value``.
@@ -84,8 +97,10 @@ class DictVar (tk.Variable):
         current[key] = value
         self.set(current)
 
+
     def get(self):
-        """Return the entire dictionary of keys/values."""
+        """Return the entire dictionary of keys/values as an Odict.
+        """
         # Convert from tuple
         tup = tk.Variable.get(self)
         if tup:
@@ -94,8 +109,13 @@ class DictVar (tk.Variable):
             keys, values = [], []
         return Odict(keys, values)
 
+
     def set(self, new_dict):
-        """Set the entire dictionary of keys/values."""
+        """Set the entire dictionary of keys/values. If new_dict is empty, or
+        is not a ``dict`` or ``Odict``, an empty ``dict`` is used.
+        """
+        if not isinstance(new_dict, dict) and not isinstance(new_dict, Odict):
+            new_dict = {}
         if not new_dict:
             new_dict = {}
         # Convert to a tuple of (key, value) pairs
@@ -138,16 +158,19 @@ class ScrollList (tk.Frame):
         self.scrollbar.pack(side='left', fill='y')
         self.listbox.bind('<Button-1>', self.select)
 
+
     def add(self, *values):
         """Add the given values to the list.
         """
         for value in values:
             self.listbox.insert('end', value)
 
+
     def insert(self, index, *values):
         """Insert values at a given index.
         """
         self.listbox.insert(index, *values)
+
 
     def delete(self, first, last=None):
         """Delete values in a given index range (first, last), not including
@@ -155,12 +178,14 @@ class ScrollList (tk.Frame):
         """
         self.listbox.delete(first, last=None)
 
+
     def scroll(self, *args):
         """Event handler when the list is scrolled.
         """
         apply(self.listbox.yview, args)
         if self.linked:
             apply(self.linked.listbox.yview, args)
+
 
     def select(self, event):
         """Event handler when an item in the list is selected.
@@ -170,15 +195,18 @@ class ScrollList (tk.Frame):
         if self.select_cmd:
             self.select_cmd()
 
+
     def get(self):
         """Return a list of all entries in the list.
         """
         return self.choices.get()
 
+
     def set(self, values):
         """Set the list values to those given.
         """
         self.choices.set(values)
+
 
     def swap(self, index_a, index_b):
         """Swap the element at index_a with the one at index_b.
@@ -188,11 +216,14 @@ class ScrollList (tk.Frame):
         self.choices[index_a] = item_b
         self.choices[index_b] = item_a
 
+
     def link(self, scrolllist):
         """Link this list to another, so they scroll in unison."""
         if not isinstance(scrolllist, ScrollList):
             raise TypeError("Can only link to a ScrollList.")
         self.linked = scrolllist
+
+
     def activate(self, ind):
         self.listbox.selection_clear(0, self.listbox.size())
         self.listbox.selection_set(ind)
@@ -217,6 +248,7 @@ class DragList (ScrollList):
         self.listbox.bind('<B1-Motion>', self.drag)
         self.listbox.bind('<ButtonRelease-1>', self.drop)
 
+
     def select(self, event):
         """Event handler when an item in the list is selected.
         """
@@ -225,6 +257,7 @@ class DragList (ScrollList):
         if self.linked:
             self.linked.curindex = self.curindex
         self.config(cursor="double_arrow")
+
 
     def drag(self, event):
         """Event handler when an item in the list is dragged.
@@ -241,6 +274,7 @@ class DragList (ScrollList):
                 self.linked.swap(self.curindex, loc)
                 self.linked.curindex = loc
             self.curindex = loc
+
 
     def drop(self, event):
         """Event handler when an item in the list is "dropped".
@@ -270,6 +304,7 @@ class ComboBox (tk.Frame):
         self.command = command
         self._draw()
 
+
     def _draw(self):
         """Draw and configure contained widgets.
         """
@@ -294,6 +329,7 @@ class ComboBox (tk.Frame):
         self.chooser.bind('<Button-1>', self.choose)
         self.chooser.grid()
 
+
     def open(self):
         """Open/close a panel showing the list of choices.
         """
@@ -306,6 +342,7 @@ class ComboBox (tk.Frame):
             self.dropdown.wm_geometry("+%d+%d" % (x, y))
             # Show list
             self.dropdown.deiconify()
+
 
     def choose(self, event=None):
         """Make a selection from the list, and set the variable.
@@ -325,12 +362,14 @@ class FontChooser (tkSimpleDialog.Dialog):
     def __init__(self, master=None):
         tkSimpleDialog.Dialog.__init__(self, master, "Font chooser")
 
+
     def get_fonts(self):
         """Return a list of font names available in ImageMagick.
         """
         im_cmd = 'convert -list ' + get_listtype()
         find = im_cmd + " | sed '/Path/,/---/d' | awk '{print $1}'"
         return [line.rstrip('\n') for line in os.popen(find).readlines()]
+
 
     def body(self, master):
         """Draw widgets inside the Dialog, and return the widget that should
@@ -341,6 +380,7 @@ class FontChooser (tkSimpleDialog.Dialog):
         self.fontlist.pack(side='top', fill='both', expand=True)
         # Return widget with initial focus
         return self.fontlist
+
 
     def apply(self):
         """Set the selected font.
@@ -363,6 +403,7 @@ class Style:
         self.textcolor = textcolor
         self.font = font
         self.relief = relief
+
 
     def apply(self, root):
         """Apply the current style to the given Tkinter root window."""
@@ -389,6 +430,7 @@ class Style:
         root.option_add("*Checkbutton.overRelief", 'raised')
         root.option_add("*Radiobutton.overRelief", 'raised')
 
+
     def save(self, filename):
         """Save the current style settings to an .ini-formatted config file.
         """
@@ -414,6 +456,7 @@ class Style:
         config.write(outfile)
         outfile.close()
 
+
     def load(self, filename):
         """Load style settings from an .ini-formatted config file.
         """
@@ -435,6 +478,7 @@ class ConfigWindow (tkSimpleDialog.Dialog):
         """
         self.style = style or Style()
         tkSimpleDialog.Dialog.__init__(self, master, "Configuration")
+
 
     def body(self, master):
         """Draw widgets inside the Dialog, and return the widget that should
@@ -460,6 +504,7 @@ class ConfigWindow (tkSimpleDialog.Dialog):
         self.fontstyle.variable.set(style)
         # Return widget with initial focus
         return self.fontfamily
+
 
     def apply(self):
         """Apply the selected configuration settings.
@@ -495,6 +540,7 @@ class ScrolledWindow (tk.Tk):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
+
     def draw(self):
         """Draw the scrollbars and container frame.
         """
@@ -504,6 +550,7 @@ class ScrolledWindow (tk.Tk):
         self.canvas.configure(scrollregion=(0, 0, self.width, self.height))
         self.canvas.grid(row=0, column=0, sticky='nsew')
         self.draw_scrollbars()
+
 
     def draw_scrollbars(self):
         # Attach scrollbars to the Canvas
