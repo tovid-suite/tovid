@@ -22,7 +22,7 @@ __all__ = [
     'Number',
     'FileList',
     'TextList',
-    'MappedList',
+    'Lists',
     'SyncList']
 
 import Tkinter as tk
@@ -729,7 +729,7 @@ class TextList (Control):
 
 ### --------------------------------------------------------------------
 
-class MappedList (Control):
+class Lists (Control):
     # this class will serve right now for situations requiring 
     # a list of lists.  It remains to be seen if it can also be used
     # for a Control which only wants a 1 to 1 relationship with the 'pulled'
@@ -838,7 +838,8 @@ class SyncList (Control):
         """Event handler when an item in the list is selected.
         A list of lists is used to allow each video to have its own group"""
         # connected widget sets its list to selected index
-        self.connected.setList()
+        if self.connected and len(self.connected.lists) > 0:
+            self.connected.setList()
         
 
 ### --------------------------------------------------------------------
@@ -889,9 +890,6 @@ class FileList (Control):
         """Event handler to add files to the list"""
         files = askopenfilenames(parent=self, title='Add files', filetypes=self.filetypes)
         self.listbox.add(*files)
-        # add indicies to connected listbox's 'lists' list
-        for n in range(len(files)):
-            self.connected.connected.lists.append([])
         for dest in self.copies:
             self.listbox.linked = dest.listbox
             dest.listbox.linked = self.listbox
@@ -900,6 +898,11 @@ class FileList (Control):
                 dest.listbox.add(*titles)
             else:
                 dest.listbox.add(*files)
+        # add indicies to connected listbox's 'lists' list
+        if self.connected and self.connected.connected:
+            self.lists_control = self.connected.connected
+            for n in range(len(files)):
+                self.lists_control.lists.append([])
 
 
     def removeFiles(self):
@@ -909,10 +912,15 @@ class FileList (Control):
         self.listbox.delete(selected)
         for control in self.copies:
             control.listbox.delete(selected)
-        # needs to be a test in here for 'lists' I think TODO
-        lists_control = self.connected.connected
-        lists_control.lists.pop(selected)
-        # TODO clear the editbox if it contained the deleted index/items
+        if self.connected and self.lists_control:
+            self.lists_control.lists.pop(selected)
+            # just set the editbox to the first index or clear variable
+            if len(self.lists_control.lists) > 0:
+                self.connected.listbox.activate(0)
+                self.lists_control.variable.set(self.lists_control.lists[0])
+                self.lists_control.listbox.curindex = 0
+            else:
+                self.lists_control.variable.set('')
 
 
     def connect(self, connected):
@@ -942,7 +950,7 @@ CONTROLS = {
     'FileList': FileList,
     'TextList': TextList,
     'SyncList': SyncList,
-    'MappedList': MappedList,
+    'Lists': Lists,
 }
 
 ### --------------------------------------------------------------------
