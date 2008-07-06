@@ -27,7 +27,7 @@ __all__ = [
 
 import Tkinter as tk
 from widget import Widget
-from support import ListVar
+from support import ListVar, DictVar
 import support
 import os
 
@@ -43,7 +43,9 @@ _vartypes = {
     bool: tk.BooleanVar,
     int: tk.IntVar,
     float: tk.DoubleVar,
-    list: ListVar}
+    list: ListVar,
+    dict: DictVar,
+}
 
 ### --------------------------------------------------------------------
 from tooltip import ToolTip
@@ -75,7 +77,7 @@ class Control (Widget):
         """Create a Control for an option.
 
             vartype:  Python type of stored variable
-                      (str, bool, int, float, list)
+                      (str, bool, int, float, list, dict)
             label:    Label shown in the GUI for the Control
             option:   Command-line option associated with this Control,
                       or '' to create a positional argument
@@ -99,6 +101,7 @@ class Control (Widget):
         self.default = default or vartype()
         self.help = help
         self.required = required
+        self.toggles = toggles
         self.kwargs = kwargs
 
         # allow passing in a first argument to the controls command
