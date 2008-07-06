@@ -28,8 +28,8 @@ class Widget (tk.Frame):
             newstate = 'normal'
         else:
             newstate = 'disabled'
+        # Change all child widgets that allow state changes
         for widget in self.children.values():
-            # Some widgets don't support state changes
             if 'state' in widget.config():
                 widget.config(state=newstate)
 
