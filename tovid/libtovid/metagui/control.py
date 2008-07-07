@@ -711,7 +711,7 @@ class TextList (Control):
         frame.pack(fill='x', expand=True)
         self.selected = tk.StringVar()
         self.listbox = DragList(frame, choices=self.variable,
-                                chosen=self.selected)
+                        chosen=self.selected, select_cmd=self.selectListitem)
         self.listbox.pack(fill='x', expand=True)
         # TODO: Event handling to allow editing items
         self.editbox = tk.Entry(frame, width=30, textvariable=self.selected)
@@ -729,6 +729,12 @@ class TextList (Control):
             self.listbox.activate(index + 1)
             # set the editbox to the new index
             self.selected.set(self.variable[index+1])
+
+
+    def selectListitem(self):
+        """Event handler when an item in the list is selected.
+        """
+        self.editbox.focus_set()
 
 ### --------------------------------------------------------------------
 
@@ -757,7 +763,7 @@ class Lists (Control):
         frame.pack(fill='x', expand=True)
         self.selected = tk.StringVar()
         self.listbox = ScrollList(frame, choices=self.variable,
-                                chosen=self.selected)
+                        chosen=self.selected, select_cmd=self.selectListitem)
         self.listbox.pack(fill='x', expand=True)
         # TODO: Event handling to allow editing items
         self.editbox = tk.Entry(frame, width=30, textvariable=self.selected)
@@ -796,6 +802,12 @@ class Lists (Control):
         self.editbox.focus_set()
 
     
+    def selectListitem(self):
+        """Event handler when an item in the list is selected.
+        """
+        self.editbox.focus_set()
+
+
     def get_args(self):
         """Return a list of arguments for setting the relevant flag(s)."""
         args = []
@@ -804,9 +816,9 @@ class Lists (Control):
             args.append(self.option)
         # List of arguments
         for index, argument in enumerate(self.lists):
-            args.extend(argument)
-        # last index is empty so don't use it
-        args.pop(len(args) -1)
+            # remove empty 'placeholder' ( last item at each index )
+            ind = len(self.lists[index])-1
+            args.extend(self.lists[index][0:ind])
         return args
 
 ### --------------------------------------------------------------------
@@ -829,7 +841,7 @@ class SyncList (Control):
         frame.pack(fill='x', expand=True)
         self.selected = tk.StringVar()
         self.listbox = ScrollList(frame, choices=self.variable,
-                                chosen=self.selected, select_cmd=self.selectListitem)
+                        chosen=self.selected, select_cmd=self.selectListitem)
         self.listbox.pack(fill='x', expand=True)
         Control.post(self)
 
@@ -919,8 +931,8 @@ class FileList (Control):
             control.listbox.delete(selected)
         if self.connected and self.lists_control:
             self.lists_control.lists.pop(selected)
-            # just set the editbox to the first index or clear variable
             if len(self.lists_control.lists) > 0:
+                # just set the editbox to the first index or clear variable
                 self.connected.listbox.activate(0)
                 self.lists_control.variable.set(self.lists_control.lists[0])
                 self.lists_control.listbox.curindex = 0
