@@ -50,6 +50,22 @@ titles = TextList('Video titles', '-titles', None,
     filter=to_title, # strip pathname and extension from filenames
     )
 
+synclist = SyncList('Video list', '', None,
+        '',
+        pull=files, # -titles is updated when -files is updated
+        connect=files,
+        )
+synclist2 = SyncList('Video list', '', None,
+        '',
+        pull=files, # -titles is updated when -files is updated
+        )
+mappedlist = Lists('chapter titles', '-chapter-titles', None,
+        'Chapter titles for each video.  Use \\n for a new line in a '
+        'multi-line title.  Number of titles given must equal the number of '
+        'chapters given for that video.',
+        connect=synclist,
+        )
+
 slideshow_tooltip='Image files for the slideshow.'
 
 slideshow_filetypes = [filetypes.all_files]
@@ -406,7 +422,7 @@ thumbnails = Panel("Thumbnails",
 
 submenus = Panel("Submenus",
     Tabs(
-        VPanel('Main',
+        VPanel('General submenu options',
             VPanel('',
                 Flag('Animated', '-ani-submenus', False,
                     'Create an animated submenu for each video.  '
@@ -418,9 +434,16 @@ submenus = Panel("Submenus",
                     0, 80, toggles=True),
             ),
             VPanel('Submenu titles',
-                List('', '-submenu-titles', '',
-                    'Space-separated list of quoted submenu titles.  '
-                    'Use \\n for a new line in a multi-line title.'),
+                HPanel('',
+                    synclist2,
+                    TextList('Video titles', '-submenu-titles', None,
+                    'Submenu titles for each video.  '
+                    'Use \\n for a new line in a multi-line title.',
+                    #connect=synclist2, # -titles is updated when -files is updated
+                    pull=files,
+                    filter=to_title,
+                    ),
+                ),
                 HPanel('',
                     Font('Font', '-submenu-font', 'Helvetica',
                         'The font to use for the Submenu menu titles', toggles=True),
@@ -435,44 +458,44 @@ submenus = Panel("Submenus",
                         'The color for the submenu font outline (stroke).', toggles=True),
                 ),
             ),
-            VPanel('Submenu chapter titles',
-                List('', '-chapter-titles', '',
-                    'Space-separated list of quoted chapter titles.  '
-                    'Number of titles given must equal the total  number of '
-                    'chapters  for  all videos.  I.E. if you use -chapters '
-                    '4 6 8 , you must give 18 chapter titles, in the same order that '
-                    'the videos were passed in.'),
-                HPanel('',
-                Number('Font size', '-chapter-fontsize', 14,
-                    'The font size to use for the chapter titles',
-                    0, 80, toggles=True),
-                Font('Font', '-chapter-font', 'Helvetica',
-                    'The font to use for the chapter titles', toggles=True),
+        ),
+        VPanel('Chapter Titles',
+                VPanel('Submenu chapter titles',
+                    HPanel('', synclist, mappedlist),
+        
+                    HPanel('',
+                        Number('Font size', '-chapter-fontsize', 14,
+                            'The font size to use for the chapter titles',
+                            0, 80, toggles=True),
+                        Font('Font', '-chapter-font', 'Helvetica',
+                            'The font to use for the chapter titles', toggles=True),
+                    ),
+                    HPanel('',
+                        Color('Font color', '-chapter-color', '#101010',
+                        'The color for the chapters font.', toggles=True),
+                        Color('Stroke color', '-chapter-stroke',
+                        '#101010', 'The color for the chapters font outline (stroke).',
+                        toggles=True),
+                    ),
                 ),
-                HPanel('',
-                    Color('Font color', '-chapter-color', '#101010',
-                    'The color for the chapters font.', toggles=True),
-                    Color('Stroke color', '-chapter-stroke',
-                    '#101010', 'The color for the chapters font outline (stroke).',
-                    toggles=True),
-                ),
-            ),
         ),
         VPanel('Backgrounds',
-            HPanel('Image(s)',
-                FileList('', '-submenu-background', None,
-                 'Background image(s) for the submenus(s). Single value or list'),
+            HPanel('',
+                HPanel('Audio',
+                    FileList('', '-submenu-audio', None,
+                        'File(s) that will play as background audio for each submenu.  '
+                        'Use a single file for all submenus, or 1 file per submenu.  '
+                        'Any file containing audio can be used.',),
+                ),
+                HPanel('Image(s)',
+                    FileList('', '-submenu-background', None,
+                     'Background image(s) for the submenus(s). Single value or list'),
+                ),
             ),
-            VPanel('Audio',
-                FileList('', '-submenu-audio', None,
-                    'File(s) that will play as background audio for each submenu.  '
-                    'Use a single file for all submenus, or 1 file per submenu.  '
-                    'Any file containing audio can be used.',),
-                Number('Audio fade', '-submenu-audio-fade', 1,
-                    'Number of sec to fade given submenu audio in and out.  '
-                    ' (default: 1.0 seconds)',
-                    0, 10)
-            ),
+            Number('Audio fade', '-submenu-audio-fade', 1,
+                'Number of sec to fade given submenu audio in and out.  '
+                ' (default: 1.0 seconds)',
+                0, 10)
         ),
     ),
 )
@@ -596,7 +619,7 @@ authoring = Panel("Authoring",
             'Single value or list of the default audio track for each videos.  '
             '0 is the first audio track, 1 is the second ...'),
     ),
-    VPanel('Language(s)',
+    HPanel('Language(s)',
         List('Audio', '-audio-lang', '',
             'Single value or list of language codes for audio'),
         List('Subtitles', '-subtitles', '',
@@ -611,16 +634,18 @@ authoring = Panel("Authoring",
             ', and the "text" buttons can not be used with "showcase" menus.'
             'Leave at "none" to let todisc pick the most appropriate style. ',
             'rect|line|text|text-rect|none'),
-        Color('Highlight color', '-highlight-color', '#266CAE',
-            'Color for the menu buttons the dvd remote uses to navigate.',
-            toggles=True),
-        Color('Selection color', '-select-color', '#DE7F7C',
-            'Color for the menu buttons the dvd remote uses to select.',
-            toggles=True),
+        HPanel('',
+            Color('Highlight color', '-highlight-color', '#266CAE',
+                'Color for the menu buttons the dvd remote uses to navigate.',
+                toggles=True),
+            Color('Selection color', '-select-color', '#DE7F7C',
+                'Color for the menu buttons the dvd remote uses to select.',
+                toggles=True),
         Number('Outlinewidth for spumux', '-outlinewidth', 14,
             'For spumux outlinewidth variable.  This option helps if spumux '
             'fails because of a large gap between button words or characters.',
             0, 20, toggles=True),
+        ),
     )
 )
 burning = Panel("Burning",
