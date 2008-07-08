@@ -7294,7 +7294,7 @@ if $SUB_MENU; then
                 PREFIX=${i}-
             fi
             if [[ -n ${GROUP[i]} ]]; then
-                unset x CUT c
+                unset x CUT c FILE_IN
                 # this will also take care of grouped USER_CHAPTERS
                 BASE=$WORK_DIR/${TSET_NUM}-group
                 unset grp_chapters
