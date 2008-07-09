@@ -139,6 +139,7 @@ class ScrollList (tk.Frame):
             choices:  ListVar or Python list of choices to show in listbox
             chosen:   Tk StringVar to store currently selected choice in
             command:  Function to call when a list item is clicked
+            select_cmd: A 2nd function that is called if 'command' is present
         """
         tk.Frame.__init__(self, master)
         if type(choices) == list:
@@ -153,7 +154,7 @@ class ScrollList (tk.Frame):
         self.scrollbar = tk.Scrollbar(self, orient='vertical',
                                       command=self.scroll)
         self.listbox = tk.Listbox(self, width=30, listvariable=self.choices,
-                                  yscrollcommand=self.scrollbar.set)
+                                  yscrollcommand=self.scrollbar.set, exportselection=0)
         self.listbox.pack(side='left', fill='both', expand=True)
         self.scrollbar.pack(side='left', fill='y')
         self.listbox.bind('<Button-1>', self.select)
