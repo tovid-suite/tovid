@@ -23,6 +23,7 @@ __all__ = [
     'FileList',
     'TextList',
     'Lists',
+    'FileLists',
     'SyncList']
 
 import Tkinter as tk
@@ -104,12 +105,6 @@ class Control (Widget):
         self.toggles = toggles
         self.kwargs = kwargs
 
-        # allow passing in a first argument to the controls command
-        if 'preargs' in self.kwargs:
-            self.preargs = self.kwargs['preargs']
-        else:
-            self.preargs = ""
-            
         # List of Controls to copy updated values to
         self.copies = []
         if 'pull' in self.kwargs:
@@ -233,8 +228,6 @@ class Control (Widget):
         # '-option'
         if self.option != '':
             args.append(self.option)
-        if self.preargs:
-            args.append(self.preargs)
         # List of arguments
         if type(value) == list:
             args.extend(value)
@@ -734,7 +727,13 @@ class TextList (Control):
     def selectListitem(self):
         """Event handler when an item in the list is selected.
         """
+        self.editbox.select_range(0, 'end')
         self.editbox.focus_set()
+
+    def setList(self):
+        """ set listbox contents to 'lists' at index of connected listbox.
+        """
+        pass
 
 ### --------------------------------------------------------------------
 
@@ -751,8 +750,9 @@ class Lists (Control):
                  help='',
                  **kwargs):
         Control.__init__(self, list, label, option, default, help, **kwargs)
-        # dict of lists.  Current mapped list entries get saved to the dict
-        # using current pullindex, updated when a 'connected' item is selected
+        # list of lists.  The current self.variable gets saved
+        # to self.lists at the current 'connected' index, and is updated
+        # when a 'connected' item is selected
         self.lists = []
 
 
@@ -799,12 +799,14 @@ class Lists (Control):
         if len(self.variable.get()) == 0:
             self.variable.append('')
         self.selected.set(self.variable[0])
+        self.editbox.select_range(0, 'end')
         self.editbox.focus_set()
 
     
     def selectListitem(self):
         """Event handler when an item in the list is selected.
         """
+        self.editbox.select_range(0, 'end')
         self.editbox.focus_set()
 
 
@@ -817,8 +819,8 @@ class Lists (Control):
         # List of arguments
         for index, argument in enumerate(self.lists):
             # remove empty 'placeholder' ( last item at each index )
-            ind = len(self.lists[index])-1
-            args.extend(self.lists[index][0:ind])
+            end = len(self.lists[index])-1
+            args.extend(self.lists[index][0:end])
         return args
 
 ### --------------------------------------------------------------------
@@ -857,7 +859,10 @@ class SyncList (Control):
         # connected widget sets its list to selected index
         if self.connected and len(self.connected.lists) > 0:
             self.connected.setList()
-        
+    
+    def get_args(self):
+        args = []
+        return args 
 
 ### --------------------------------------------------------------------
 from tkFileDialog import askopenfilenames
@@ -915,29 +920,29 @@ class FileList (Control):
                 dest.listbox.add(*titles)
             else:
                 dest.listbox.add(*files)
-        # add indicies to connected listbox's 'lists' list
-        if self.connected and self.connected.connected:
-            self.lists_control = self.connected.connected
-            for n in range(len(files)):
-                self.lists_control.lists.append([])
+            if dest.connected:
+                for i in range(len(files)):
+                    dest.connected.lists.append([])
 
 
     def removeFiles(self):
         """Event handler to remove selected files from the list"""
-        # TODO: Support multiple selection
+        # TODO: Support multiple selection: *(this will clash 'connected' code)
         selected = self.listbox.curindex
         self.listbox.delete(selected)
         for control in self.copies:
             control.listbox.delete(selected)
-        if self.connected and self.lists_control:
-            self.lists_control.lists.pop(selected)
-            if len(self.lists_control.lists) > 0:
-                # just set the editbox to the first index or clear variable
-                self.connected.listbox.activate(0)
-                self.lists_control.variable.set(self.lists_control.lists[0])
-                self.lists_control.listbox.curindex = 0
-            else:
-                self.lists_control.variable.set('')
+            # if puller is connected to a listbox it has a 'lists' variable
+            if control.connected:
+                # remove the lists index and its contents
+                control.connected.lists.pop(selected)
+                # just set listbox/editbox to 1st index or clear variable
+                if len(control.connected.lists) > 0:
+                    control.connected.listbox.activate(0)
+                    control.connected.variable.set(control.connected.lists[0])
+                    control.connected.listbox.curindex = 0
+                else:
+                    control.connected.variable.set('')
 
 
     def connect(self, connected):
@@ -951,6 +956,99 @@ class FileList (Control):
         pass
 
 
+### --------------------------------------------------------------------
+
+class FileLists (Control):
+    """A widget that list groups of lists"""
+    def __init__(self,
+                 label="Text list",
+                 option='',
+                 default=None,
+                 help='',
+                 **kwargs):
+        Control.__init__(self, list, label, option, default, help, **kwargs)
+        self.filetypes=[('All Files', '*.*')]
+        if 'filetypes' in kwargs:
+            self.filetypes = kwargs['filetypes']
+        self.lists = []
+
+
+    def draw(self, master):
+        """Draw control widgets in the given master."""
+        Control.draw(self, master)
+        frame = tk.LabelFrame(self, text=self.label)
+        frame.pack(fill='x', expand=True)
+        self.selected = tk.StringVar()
+        self.listbox = ScrollList(frame, choices=self.variable,
+                        chosen=self.selected, select_cmd=self.selectListitem)
+        self.listbox.pack(fill='x', expand=True)
+        # Add/remove buttons
+        group = tk.Frame(frame)
+        self.add = tk.Button(group, text="Add...", command=self.addFiles)
+        self.remove = tk.Button(group, text="Remove", command=self.removeFiles)
+        self.add.pack(side='left', fill='x', expand=True)
+        self.remove.pack(side='left', fill='x', expand=True)
+        group.pack(fill='x')
+        Control.post(self)
+
+
+    def select(self, event):
+        """Event handler when a filename in the list is selected.
+        """
+        pass
+
+
+    def addFiles(self):
+        """Event handler to add files to the list"""
+        files = askopenfilenames(parent=self, title='Add files', filetypes=self.filetypes)
+        self.listbox.add(*files)
+        # save the whole of variable to 'lists' list
+        self.lists[self.connected.listbox.curindex] = self.variable.get()
+
+
+    def removeFiles(self):
+        """Event handler to remove selected files from the list"""
+        # TODO: Support multiple selection
+        selected = self.listbox.curindex
+        self.listbox.delete(selected)
+        # save the whole of variable to 'lists' list
+        self.lists[self.connected.listbox.curindex] = self.variable.get()
+        #self.lists.pop(selected)
+
+
+    def connect(self, connected):
+        """a call from a connected widget that passes its name"""
+        self.connected = connected
+
+
+    def setList(self):
+        """ set listbox contents to 'lists' at index of connected listbox.
+        """
+        connected_ind = self.connected.listbox.curindex
+        
+        self.variable.set(self.lists[connected_ind])
+
+    
+    def selectListitem(self):
+        """Event handler when an item in the list is selected.
+        A list of lists is used to allow each video to have its own group"""
+        pass
+
+
+    def get_args(self):
+        """Return a list of arguments for passing this command-line option.
+        draw() must be called before this function.
+        """
+        # TODO: Raise exception if draw() hasn't been called
+        args = []
+        for index, argument in enumerate(self.lists):
+            if self.lists[index]:
+                args.append(self.option)
+                args.append(index+1)
+                args.extend(argument)
+        return args
+
+    
 ### --------------------------------------------------------------------
 
 # Exported control classes, indexed by name
@@ -967,6 +1065,7 @@ CONTROLS = {
     'FileList': FileList,
     'TextList': TextList,
     'SyncList': SyncList,
+    'FileLists': FileLists,
     'Lists': Lists,
 }
 
