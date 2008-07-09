@@ -40,6 +40,22 @@ def to_title(filename):
     basename = os.path.basename(filename)
     firstdot = basename.find('.')
     return basename[0:firstdot]
+
+def strip_all(filename):
+    return ''
+
+x = 0
+def to_chapter_str(filename):
+    cht_str='Chapters for video '
+    return 6
+
+slideshow_tooltip='Image files for the slideshow.'
+group_tooltip='Video files to group together.  Select the video in the list \
+on the left, and add files to group with it by using the file \
+selector on the right'
+chapter_titles_tooltip='Chapter titles for each video.  Use \\n for a new \
+line in a multi-line title.  Number of titles given must equal the number of \
+chapters given for that video.'
 files = FileList('Video files', '-files', None,
     'Video files to include on the disc',
     )
@@ -50,23 +66,12 @@ titles = TextList('Video titles', '-titles', None,
     filter=to_title, # strip pathname and extension from filenames
     )
 
-synclist = SyncList('Video list', '', None,
-        '',
-        pull=files, # -titles is updated when -files is updated
-        connect=files,
-        )
-synclist2 = SyncList('Video list', '', None,
-        '',
-        pull=files, # -titles is updated when -files is updated
-        )
+synclist = SyncList('Video list', '', None, chapter_titles_tooltip, pull=files)
+synclist2 = SyncList('Video list', '', None, '', pull=files)
+synclist3 = SyncList('Video list', '', None, group_tooltip, pull=files)
 mappedlist = Lists('chapter titles', '-chapter-titles', None,
-        'Chapter titles for each video.  Use \\n for a new line in a '
-        'multi-line title.  Number of titles given must equal the number of '
-        'chapters given for that video.',
-        connect=synclist,
-        )
+        chapter_titles_tooltip, connect=synclist)
 
-slideshow_tooltip='Image files for the slideshow.'
 
 slideshow_filetypes = [filetypes.all_files]
 slideshow_filetypes.append(filetypes.image_files)
@@ -203,8 +208,14 @@ main = Panel("Main",
     Text('Menu title', '-menu-title', 'My video collection',
         'Title text displayed on the main menu. Use \\n for a new line '
          'in a multi-line title.'),
-    
-    HPanel('', files, titles),
+    Tabs(
+        HPanel('Add Videos', files, titles),
+        HPanel('Add grouped video',
+            synclist3,
+            FileLists('Video files', '-group', None,
+            group_tooltip, connect=synclist3),
+        ),
+    ),
 
     HPanel('',
         FlagGroup('Menu options', 'normal',
@@ -439,9 +450,9 @@ submenus = Panel("Submenus",
                     TextList('Video titles', '-submenu-titles', None,
                     'Submenu titles for each video.  '
                     'Use \\n for a new line in a multi-line title.',
-                    #connect=synclist2, # -titles is updated when -files is updated
-                    pull=files,
-                    filter=to_title,
+                    #connect=synclist2
+                    pull=files, # list updated when files is updated
+                    filter=strip_all,
                     ),
                 ),
                 HPanel('',
@@ -565,88 +576,96 @@ text = Panel("Text/Font",
 )
 
 authoring = Panel("Authoring",
-    VPanel('Play control',
-        List('Chapters', '-chapters', '',
-            'Single value/string or list.  '
-            'Can be an integer for "# of chapters", or a comma '
-            'separated string of chapter points in HH:MM:SS format.  '
-            'The first HH:MM:SS format chapter MUST be 00:00:00 '
-            'If using grouped videos and HH:MM:SS format '
-            'link grouped chapter points with a "+" separator.'),
-        List('Group videos', '', '',
-            'For each video group, you will need to use an integer for the '
-            'number of the 1st video in the group, as well as the path to the '
-            'videos that will be grouped with it (quoted).  Each group will '
-            'need to be preceeded with the "-group" switch.  Example: '
-            '-group 2 "2b.mpg" "2c.mpg" -group 4 "4b.mpg" "4c.mpg". '
-            'See man todisc for details.'),
-        Flag('Chain videos together', '-chain-videos', False,
-            'This option will "chain" videos so they play sequentially '
-            'until the last, which will return to the menu.  You can also '
-            'specify individual videos to behave like this, but you will need '
-            'to use the "Custom todisc options" box under "General" tab.  '
-            'See man todisc for details.'),
-        Flag('"Play all" button', '-playall', False,
-            'Create a "Play All" button that jumps to the 1st title and plays '
-            'all the videos in sucession before returning to the main menu.'),
-        Flag('Each video is a chapter', '-videos-are-chapters', False,
-            'A button will be made on the main menu for each video which You '
-            'can use as a chapter button .  Selecting any video will play '
-            'them all in order starting with the selected one.' ),
-        Number('Pause', '-loop', 10,
-            'Pause in seconds at end of menu.  Or leave this value at "10" '
-            'and use the "Indefinate pause item below.',
-            0, 30, toggles=True),
-        Flag('Indefinite pause', '-loop', False,
-            'Pause indefinitely at the end of the menu.')
-    ),
-    VPanel('Aspect',
-        Choice('Widescreen', '-widescreen', 'none',
-            'This will output a <video widescreen=nopanscan /> tag '
-            '(for example) for the dvdauthor xml file.  It affects all '
-            'videos in the titleset.  Use in conjunction with "Aspect ratio" '
-            'if your dvd player is cropping your videos.  '
-            'Leave this at "none" to not output a widescreen tag',
-            'nopanscan|noletterbox|none'),
-        Choice('Aspect ratio', '-aspect', 'none',
-            'This will output a <video aspect WIDTH:HEIGHT /> tag for the '
-            'dvdauthor xml file.  It will affect all videos in the titleset.  '
-            'Leave this at "none" to let dvdauthor figure it out for you',
-            '4:3|16:9|none'),
-    ),
-    VPanel('Default audio track(s)',
-        List('', '-audio-channel', '',
-            'Single value or list of the default audio track for each videos.  '
-            '0 is the first audio track, 1 is the second ...'),
-    ),
-    HPanel('Language(s)',
-        List('Audio', '-audio-lang', '',
-            'Single value or list of language codes for audio'),
-        List('Subtitles', '-subtitles', '',
-            'Single value or list'),
-    ),
-    VPanel('Buttons',
-        Choice('Style', '-button-style', 'none',
-            'Style or shape of the buttons seen when playing the DVD '
-            'menu.  "rect": rectangle around the thumbs, "text": uses '
-            'the title text, "text-rect": rectangle around the title text, '
-            '"line": line underneath title.  The "line" style is showcase only'
-            ', and the "text" buttons can not be used with "showcase" menus.'
-            'Leave at "none" to let todisc pick the most appropriate style. ',
-            'rect|line|text|text-rect|none'),
-        HPanel('',
-            Color('Highlight color', '-highlight-color', '#266CAE',
-                'Color for the menu buttons the dvd remote uses to navigate.',
-                toggles=True),
-            Color('Selection color', '-select-color', '#DE7F7C',
-                'Color for the menu buttons the dvd remote uses to select.',
-                toggles=True),
-        Number('Outlinewidth for spumux', '-outlinewidth', 14,
-            'For spumux outlinewidth variable.  This option helps if spumux '
-            'fails because of a large gap between button words or characters.',
-            0, 20, toggles=True),
+    Tabs(
+        VPanel('General authoring options',
+            VPanel('Play control',
+                Flag('Chain videos together', '-chain-videos', False,
+                    'This option will "chain" videos so they play sequentially '
+                    'until the last, which will return to the menu.  You can also '
+                    'specify individual videos to behave like this, but you will need '
+                    'to use the "Custom todisc options" box under "General" tab.  '
+                    'See man todisc for details.'),
+                Flag('"Play all" button', '-playall', False,
+                    'Create a "Play All" button that jumps to the 1st title and plays '
+                    'all the videos in sucession before returning to the main menu.'),
+                Flag('Each video is a chapter', '-videos-are-chapters', False,
+                    'A button will be made on the main menu for each video which You '
+                    'can use as a chapter button .  Selecting any video will play '
+                    'them all in order starting with the selected one.' ),
+                Number('Pause', '-loop', 10,
+                    'Pause in seconds at end of menu.  Or leave this value at "10" '
+                    'and use the "Indefinate pause item below.',
+                    0, 30, toggles=True),
+                Flag('Indefinite pause', '-loop', False,
+                    'Pause indefinitely at the end of the menu.')
+            ),
+            VPanel('Aspect',
+                Choice('Widescreen', '-widescreen', 'none',
+                    'This will output a <video widescreen=nopanscan /> tag '
+                    '(for example) for the dvdauthor xml file.  It affects all '
+                    'videos in the titleset.  Use in conjunction with "Aspect ratio" '
+                    'if your dvd player is cropping your videos.  '
+                    'Leave this at "none" to not output a widescreen tag',
+                    'nopanscan|noletterbox|none'),
+                Choice('Aspect ratio', '-aspect', 'none',
+                    'This will output a <video aspect WIDTH:HEIGHT /> tag for the '
+                    'dvdauthor xml file.  It will affect all videos in the titleset.  '
+                    'Leave this at "none" to let dvdauthor figure it out for you',
+                    '4:3|16:9|none'),
+            ),
+            VPanel('Default audio track(s)',
+                List('', '-audio-channel', '',
+                    'Single value or list of the default audio track for each videos.  '
+                    '0 is the first audio track, 1 is the second ...'),
+            ),
+            HPanel('Language(s)',
+                List('Audio', '-audio-lang', '',
+                    'Single value or list of language codes for audio'),
+                List('Subtitles', '-subtitles', '',
+                    'Single value or list'),
+            ),
+            VPanel('Buttons',
+                Choice('Style', '-button-style', 'none',
+                    'Style or shape of the buttons seen when playing the DVD '
+                    'menu.  "rect": rectangle around the thumbs, "text": uses '
+                    'the title text, "text-rect": rectangle around the title text, '
+                    '"line": line underneath title.  The "line" style is showcase only'
+                    ', and the "text" buttons can not be used with "showcase" menus.'
+                    'Leave at "none" to let todisc pick the most appropriate style. ',
+                    'rect|line|text|text-rect|none'),
+                HPanel('',
+                    Color('Highlight color', '-highlight-color', '#266CAE',
+                        'Color for the menu buttons the dvd remote uses to navigate.',
+                        toggles=True),
+                    Color('Selection color', '-select-color', '#DE7F7C',
+                        'Color for the menu buttons the dvd remote uses to select.',
+                        toggles=True),
+                Number('Outlinewidth for spumux', '-outlinewidth', 14,
+                    'For spumux outlinewidth variable.  This option helps if spumux '
+                    'fails because of a large gap between button words or characters.',
+                    0, 20, toggles=True),
+                ),
+            ),
         ),
-    )
+        VPanel('Advanced chapter options',
+            HPanel('',
+                TextList('Video chapters', '-chapters', None,
+                'Number of chapters (integer) or HH:MM:SS string for each video.  '
+                'Grouped videos automatically use -chapters 0 (each video '
+                'is a chapter) unless you pass HH:MM:SS format.  Use a "+" '
+                'separator for joining grouped chapters.'
+                ''
+                '  An example chapter string using HH:MM:SS format: '
+                '  00:00:00,00:05:00,00:10:00.  An example of 2 grouped videos: '
+                '00:00:00,00:05:00+00:05:00,00:10:00.  '
+                'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.'  ,
+                #connect=synclist2,
+                pull=files, # list updated when files is updated
+                filter=strip_all,
+                ),
+            ),
+        ),
+    ),
 )
 burning = Panel("Burning",
     Flag('Burn project on completion', '-burn', False),
