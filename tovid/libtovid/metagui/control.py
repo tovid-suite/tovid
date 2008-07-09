@@ -814,7 +814,7 @@ class Lists (Control):
         """Return a list of arguments for setting the relevant flag(s)."""
         args = []
         # '-option'
-        if self.option != '':
+        if self.option != '' and any(self.lists):
             args.append(self.option)
         # List of arguments
         for index, argument in enumerate(self.lists):
