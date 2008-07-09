@@ -227,7 +227,12 @@ class Control (Widget):
 
         # '-option'
         if self.option != '':
-            args.append(self.option)
+            if type(value) == list:
+                if any(value):
+                    args.append(self.option)
+            else:
+                args.append(self.option)
+            
         # List of arguments
         if type(value) == list:
             args.extend(value)
