@@ -67,9 +67,8 @@ titles = TextList('Video titles', '-titles', None,
     )
 
 synclist = SyncList('Video list', '', None, chapter_titles_tooltip, pull=files)
-synclist2 = SyncList('Video list', '', None, '', pull=files)
-synclist3 = SyncList('Video list', '', None, group_tooltip, pull=files)
-mappedlist = Lists('chapter titles', '-chapter-titles', None,
+synclist2 = SyncList('Video list', '', None, group_tooltip, pull=files)
+mappedlist = Lists('Chapter titles', '-chapter-titles', None,
         chapter_titles_tooltip, connect=synclist)
 
 
@@ -209,11 +208,11 @@ main = Panel("Main",
         'Title text displayed on the main menu. Use \\n for a new line '
          'in a multi-line title.'),
     Tabs(
-        HPanel('Add Videos', files, titles),
-        HPanel('Add grouped video',
-            synclist3,
+        HPanel('Add videos', files, titles),
+        HPanel('Add grouped videos',
+            synclist2,
             FileLists('Video files', '-group', None,
-            group_tooltip, connect=synclist3),
+            group_tooltip, connect=synclist2),
         ),
     ),
 
@@ -446,11 +445,10 @@ submenus = Panel("Submenus",
             ),
             VPanel('Submenu titles',
                 HPanel('',
-                    synclist2,
+                    SyncList('Video list', '', None, '', pull=files),
                     TextList('Video titles', '-submenu-titles', None,
                     'Submenu titles for each video.  '
                     'Use \\n for a new line in a multi-line title.',
-                    #connect=synclist2
                     pull=files, # list updated when files is updated
                     filter=strip_all,
                     ),
@@ -470,7 +468,7 @@ submenus = Panel("Submenus",
                 ),
             ),
         ),
-        VPanel('Chapter Titles',
+        VPanel('Chapter titles',
                 VPanel('Submenu chapter titles',
                     HPanel('', synclist, mappedlist),
         
@@ -496,17 +494,16 @@ submenus = Panel("Submenus",
                     FileList('', '-submenu-audio', None,
                         'File(s) that will play as background audio for each submenu.  '
                         'Use a single file for all submenus, or 1 file per submenu.  '
-                        'Any file containing audio can be used.',),
+                        'Any file containing audio can be used.'),
                 ),
                 HPanel('Image(s)',
                     FileList('', '-submenu-background', None,
-                     'Background image(s) for the submenus(s). Single value or list'),
+                    'Background image(s) for the submenus(s). Single value or list'),
                 ),
             ),
             Number('Audio fade', '-submenu-audio-fade', 1,
                 'Number of sec to fade given submenu audio in and out.  '
-                ' (default: 1.0 seconds)',
-                0, 10)
+                ' (default: 1.0 seconds)', 0, 10),
         ),
     ),
 )
@@ -649,17 +646,16 @@ authoring = Panel("Authoring",
         ),
         VPanel('Advanced chapter options',
             HPanel('',
-                TextList('Video chapters', '-chapters', None,
+                TextList('Chapters: use 1 line per video. (load files 1st !)', '-chapters', None,
                 'Number of chapters (integer) or HH:MM:SS string for each video.  '
                 'Grouped videos automatically use -chapters 0 (each video '
                 'is a chapter) unless you pass HH:MM:SS format.  Use a "+" '
-                'separator for joining grouped chapters.'
+                'separator for joining the chapters of each grouped video.'
                 ''
                 '  An example chapter string using HH:MM:SS format: '
                 '  00:00:00,00:05:00,00:10:00.  An example of 2 grouped videos: '
                 '00:00:00,00:05:00+00:05:00,00:10:00.  '
                 'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.'  ,
-                #connect=synclist2,
                 pull=files, # list updated when files is updated
                 filter=strip_all,
                 ),
