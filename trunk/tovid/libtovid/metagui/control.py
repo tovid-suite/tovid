@@ -725,6 +725,8 @@ class TextList (Control):
         if len(self.listbox.get()) > index + 1:
             # select the next index
             self.listbox.activate(index + 1)
+            # select the contents of the editbox
+            self.editbox.select_range(0, 'end')
             # set the editbox to the new index
             self.selected.set(self.variable[index+1])
 
@@ -789,6 +791,8 @@ class Lists (Control):
         
         # select the next index
         self.listbox.activate(index + 1)
+        # select the contents of the editbox
+        self.editbox.select_range(0, 'end')
         # set the editbox to the new index
         self.selected.set(self.variable[index+1])
 
