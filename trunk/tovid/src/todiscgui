@@ -56,6 +56,12 @@ selector on the right'
 chapter_titles_tooltip='Chapter titles for each video.  Use \\n for a new \
 line in a multi-line title.  Number of titles given must equal the number of \
 chapters given for that video.'
+chain_tooltip='Enable this option and use the box at right to indicate the \
+number of the video you wish to "chain" to the next, so they play \
+sequentially before returning to the menu.  You can use single integers or \
+indicate a range with a "-" separator.  Example of a range: "1-2 4-6" \
+( no quotes).  This will play video 1 through video 3 before returning to the \
+menu, and the same for video 4 through video 6.'
 files = FileList('Video files', '-files', None,
     'Video files to include on the disc',
     )
@@ -576,25 +582,39 @@ authoring = Panel("Authoring",
     Tabs(
         VPanel('General authoring options',
             VPanel('Play control',
-                Flag('Chain videos together', '-chain-videos', False,
-                    'This option will "chain" videos so they play sequentially '
-                    'until the last, which will return to the menu.  You can also '
-                    'specify individual videos to behave like this, but you will need '
-                    'to use the "Custom todisc options" box under "General" tab.  '
-                    'See man todisc for details.'),
+                Number('Number of chapters', '-chapters', 6,
+                    'The number of chapters to use for all videos. If you  '
+                    'wish to use a different value for each video, or supply '
+                    'chapters in HH:MM:SS format, use the '
+                    '"Advanced chapter options" tab.  That is also where to '
+                    'configure grouped videos.',
+                    0, 60),
+                FlagGroup('', 'exclusive',
+                    Flag('Chain all videos together', '-chain-videos', False,
+                        'This option will "chain" videos so they play '
+                        'sequentially until the last, which will return to '
+                        'the menu.  You can also specify individual videos to '
+                        'behave like this by using the text box at the right. '),
+                    Flag('Chain selected videos together', '', False, chain_tooltip,
+                        enables=Text('', '-chain-videos', '', ''),
+                    ),
+                ),
                 Flag('"Play all" button', '-playall', False,
                     'Create a "Play All" button that jumps to the 1st title and plays '
-                    'all the videos in sucession before returning to the main menu.'),
+                    'all the videos in succession before returning to the main menu.'),
                 Flag('Each video is a chapter', '-videos-are-chapters', False,
                     'A button will be made on the main menu for each video which You '
                     'can use as a chapter button .  Selecting any video will play '
                     'them all in order starting with the selected one.' ),
-                Number('Pause', '-loop', 10,
-                    'Pause in seconds at end of menu.  Or leave this value at "10" '
-                    'and use the "Indefinate pause item below.',
-                    0, 30, toggles=True),
-                Flag('Indefinite pause', '-loop', False,
-                    'Pause indefinitely at the end of the menu.')
+                FlagGroup('', 'exclusive',
+                    Flag('Pause', '', False, 'Pause in seconds at end of '
+                    'menu.  Or leave this value at "10" and use the '
+                    '"Indefinite pause item below.',
+                    enables=Number('', '-loop', 10, '', 0, 30),
+                    ),
+                    Flag('Indefinite pause', '-loop', False,
+                    'Pause indefinitely at the end of the menu.'),
+                ),
             ),
             VPanel('Aspect',
                 Choice('Widescreen', '-widescreen', 'none',
@@ -610,11 +630,9 @@ authoring = Panel("Authoring",
                     'Leave this at "none" to let dvdauthor figure it out for you',
                     '4:3|16:9|none'),
             ),
-            VPanel('Default audio track(s)',
-                List('', '-audio-channel', '',
-                    'Single value or list of the default audio track for each videos.  '
-                    '0 is the first audio track, 1 is the second ...'),
-            ),
+            List('Default audio track(s)', '-audio-channel', '',
+                'Single value or list of the default audio track for each videos.  '
+                '0 is the first audio track, 1 is the second ...'),
             HPanel('Language(s)',
                 List('Audio', '-audio-lang', '',
                     'Single value or list of language codes for audio'),
