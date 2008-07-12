@@ -300,8 +300,8 @@ function cmd_exec()
         yecho
         return
     else
-#        eval "$@" 2>&1 | ${LOG_FILTER:=cat} >> "$LOG_FILE" &
-        eval "$@" 2>&1 | strings >> "$LOG_FILE" &
+        LOG_FILTER="$CRLF"
+        eval "$@" 2>&1 | $LOG_FILTER >> "$LOG_FILE" &
         PIDS="$PIDS $!"
     fi
 }
