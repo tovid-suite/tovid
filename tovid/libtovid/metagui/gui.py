@@ -39,16 +39,19 @@ class Panel (Widget):
     This creates a panel with three GUI widgets that control command-line
     options '-bgaudio', '-submenus', and '-menu-length'.
     """
-    def __init__(self, title='', *contents):
+    def __init__(self, title='', *contents, **kwargs):
         """Create a Panel to hold control widgets or sub-panels.
         
             title:    Title of panel (name shown in tab bar)
             contents: One or more Widgets (Controls, Panels, Drawers etc.)
         """
         Widget.__init__(self)
+        self.tab_title = None
         if type(title) != str:
             raise TypeError("First argument to Panel must be a text label.")
         self.title = title
+        if 'tab_title' in kwargs:
+            self.tab_title = kwargs['tab_title']
         self.contents = []
         for item in contents:
             if isinstance(item, Widget):
@@ -97,9 +100,9 @@ class Panel (Widget):
 
 class HPanel (Panel):
     """A panel with widgets packed left-to-right"""
-    def __init__(self, title='', *contents):
-        Panel.__init__(self, title, *contents)
-
+    def __init__(self, title='', *contents, **kwargs):
+        Panel.__init__(self, title, *contents, **kwargs)
+ 
     def draw(self, master):
         Panel.draw(self, master, 'left')
 
@@ -107,8 +110,8 @@ class HPanel (Panel):
 
 class VPanel (Panel):
     """A panel with widgets packed top-to-bottom"""
-    def __init__(self, title='', *contents):
-        Panel.__init__(self, title, *contents)
+    def __init__(self, title='', *contents, **kwargs):
+        Panel.__init__(self, title, *contents, **kwargs)
 
     def draw(self, master):
         Panel.draw(self, master, 'top')
@@ -269,7 +272,8 @@ class Tabs (Widget):
             bar_fill = 'x'
         # Tab buttons, numbered from 0
         for index, panel in enumerate(self.panels):
-            button = tk.Radiobutton(self.buttons, text=panel.title,
+            tab_title = panel.tab_title or panel.title
+            button = tk.Radiobutton(self.buttons, text=tab_title,
                                     value=index, **config)
             button.pack(anchor='nw', side=button_side,
                         fill='both', expand=True)
