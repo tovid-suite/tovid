@@ -94,14 +94,18 @@ function cleanup()
     fi
 }
 
+# make sure  correct argument to 'convert -list' is used, based on IM version
 get_listarg()
 {
     version=$(convert -list configure | awk '/LIB_VERSION_NUMBER/ {print $2}')
-
     im_version=( ${version//,/ } )
     test_version=(6 3 5 7)
-    arg='font'
-    for i in ${!im_version[@]}; do
+    arg='font' # 'font' argument for IM versions >= 6.3.5-7
+
+    for i in ${!test_version[@]}; do
+        # make sure both arrays are equal in length
+        [[ -z ${im_version[i]} ]] && im_version[i]=0
+        # 'type' argument is for IM versions less than 6.3.5-7
         (( ${im_version[i]} < ${test_version[i]} )) && arg='type'
     done
 
