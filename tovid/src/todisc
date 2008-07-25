@@ -113,7 +113,7 @@ SEEK_VAL=2
 USER_SEEK_VAL=false
 FADE=1
 CHAPTERS=( 6 )
-TOVID_OPTS=""
+TOVID_OPTS=()
 CHAIN_VIDEOS=false
 NOASK=false
 SC_FRAMESTYLE="none"
@@ -708,7 +708,7 @@ check_compliance()
         elif ! $group_set && [[ ${CAROUSEL[i]} = "carousel" ]]; then
             ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE")
         # test files with idvid script
-        elif test_compliance "$IN_FILE" && [[ $TOVID_OPTS != *-force* ]] ; then
+        elif test_compliance "$IN_FILE" && [[ ${TOVID_OPTS[@]} != *-force* ]] ; then
             ENC_IN_FILES=("${ENC_IN_FILES[@]}" "$IN_FILE")
         # Video needs to be re-encoded; use a .enc filename in ENC_IN_FILES
         else
@@ -738,7 +738,7 @@ check_compliance()
         # all switched runs except the 1st, if -no-ask, if single slideshow
         # or if all input files are images
         if { $SWITCHED && [[ $MENU_NUM -ne 2 ]] ; } \
-         || $NOASK || [[ $TOVID_OPTS = *-noask* ]] || \
+         || $NOASK || [[ ${TOVID_OPTS[@]} = *-noask* ]] || \
          [[ ${#NO_PROMPT_FILES[@]} = ${#FILES_TO_ENCODE[@]} ]]; then
             yecho " "
             echo "Encoding files to $TV_STND_CAPS $TGT_CAPS-compliant format."
@@ -794,7 +794,7 @@ check_compliance()
                     echo
                     countdown 3
                     tovid $NO_ASK -$TV_STANDARD -$TARGET -in "$IN" \
-                    -out "${IN}.enc" $TOVID_OPTS
+                    -out "${IN}.enc" "${TOVID_OPTS[@]}"
                     # for grouped files replace symlink in $WORK_DIR
                     $group_set && [[ -L "${FILES_TO_ENCODE[i]}" ]] && \
                     ln -sf "${IN}.enc.mpg" "${FILES_TO_ENCODE[i]}"
@@ -851,7 +851,7 @@ tovid_reencode()
     tovid $NO_ASK -in "$VIDEO_IN" \
     -slice 0-$(bc <<< "$VIDEO_IN_SEEK + ${MENU_LEN[MENU_NUM-1]}" 2>/dev/null) \
     -${TV_STANDARD} -${TARGET} -in "$VIDEO_IN" \
-    -out "${VIDEO_IN}.enc" $TOVID_OPTS
+    -out "${VIDEO_IN}.enc" "${TOVID_OPTS[@]}"
     # See if output file exists
     if ! test -f "${VIDEO_IN}.enc.mpg"; then
         runtime_error "Could not encode file: $VIDEO_IN"
@@ -1069,8 +1069,9 @@ carousel_menu_mode()
 
     [[ -n $1 ]]  && local sstype=$1 || local sstype=""
     $SLIDE_FADE && sld_tranition="-slide-transition $EFFECT"
-    ! grep -q -- -noask <<< "$TOVID_OPTS" && \
-     encopt=(-tovidopts $TOVID_OPTS -noask)
+    #! grep -q -- -noask <<< "$TOVID_OPTS" && \
+    [[ ${TOVID_OPTS[@]} != *-noask* ]] && \
+     encopt=(-tovidopts "${TOVID_OPTS[@]}" -noask)
     if $CAROUSEL_IS_BG && [[ $sstype != "submenu" ]]; then
         local background_carousel="-background-slideshow"
         IN_SLIDES=( "$WORK_DIR"/${TSET_NUM}-slide_grp*.mpg )
@@ -2604,6 +2605,22 @@ while test $# -gt 0; do
             shift
             SUBMENU_STROKE="$1"
             ;;
+        "-titles-opacity" )
+            shift
+            test_is_number $1 && TITLES_OPACITY="$1"
+            ;;
+        "-title-opacity" )
+            shift
+            test_is_number $1 && TITLE_OPACITY="$1"
+            ;;
+        "-submenu-title-opacity" )
+            shift
+            test_is_number $1 && SM_TITLE_OPACITY="$1"
+            ;;
+        "-chapter-title-opacity" )
+            shift
+            test_is_number $1 && CHAPTER_TITLES_OPACITY="$1"
+            ;;
         "-chapter-stroke" )
             shift
             CHAPTER_STROKE="$1"
@@ -2675,7 +2692,7 @@ while test $# -gt 0; do
                 USER_CHAPTERS=: # user passed HH:MM:SS chapters
             fi
             ;;
-        "-subtitles" )
+        "-subtitle-lang" )
             shift
             SUBTITLES=:
             get_listargs "$@"
@@ -2833,8 +2850,10 @@ while test $# -gt 0; do
             ROTATE_THUMBS=:
             ;;
         "-tovidopts" | "-tovid-opts" )
-            shift
-            TOVID_OPTS="$1"
+            usage_error "The -tovidopts option no longer exists.  Now just use
+            the tovid options directly on the command line.  Note 
+            that tovid's -noask (-no-ask) must be given as '-noprompt', 
+            to avoid conflict with the todisc option by the same name."
             ;;
         "-titleset-mode" ) # internal use only
             AUTHOR=false
@@ -2929,6 +2948,34 @@ while test $# -gt 0; do
         "-submenu-bg-colour" | "-submenu-bg-color" )
             shift
             SUBMENU_BG_CLR="$1"
+            ;;
+        "-config" | "-ntscfilm" | "-dvd-vcd" | "-half-dvd" | "-kvcd" | \
+        "-kvcdx3" | "-kvcdx3a" | "-kdvd" | "-bdvd" | "-704" | "-normalize" | \
+        "-amplitude" | "-overwrite" | "-panavision" | "-force" | "-fps" | \
+        "-vbitrate" | "-quality" | "-safe" | "-crop" | "-filters" | \
+        "-abitrate" | "-priority" | "-deinterlace" | "-progressive" | \
+        "-interlaced" | "-interlaced_bf" | "-type" | "-fit" | "-discsize" | \
+        "-parallel" | "-mkvsub" | "-autosubs" | "-subtitles" | "-update" | \
+        "-mplayeropts" | "-audiotrack" | "-downmix" | "-ffmpeg" | "-nofifo" | \
+        "-from-gui" | "-noask" | "-slice" | "-async" | "-quiet" | \
+        "-fake" | "-keepfiles" )
+            # remove this warning for tovid 0.33 TODO
+            if [[ $1 = -subtitles ]]; then
+                if (( ${#2} == 2 )); then
+                    usage_error "todisc's '-subtitles' option has been changed  
+                    to '-subtitle-lang', so it doesn't conflict with a tovid 
+                    option by the same name"
+                elif [[ ! -e $2 ]]; then
+                    usage_error " subtitle file $2 does not exist"
+                fi
+            fi
+            TOVID_OPTS+=( "$1" )
+            shift
+            get_listargs "$@"
+            TOVID_OPTS+=( "${ARGS_ARRAY[@]}" )
+            ;;
+        "-noprompt" )
+            TOVID_OPTS+=( -noask )
             ;;
         -car* )
             usage_error "$1: No such option.  Please see 'man todisc' ?"
@@ -3453,7 +3500,7 @@ fi
 
 if [[ -z $BACKGROUND ]]; then
     BACKGROUND="$WORK_DIR/bg.png"
-    convert  -size $VIDSIZE! xc:$BG_CLR $BACKGROUND
+    convert  -size $VIDSIZE! xc:$BG_CLR "$BACKGROUND"
 fi
 # check file type of background file and assign to BG_VIDEO or BG_IMAGE
 if [[ -n $BACKGROUND ]]; then
@@ -4676,9 +4723,15 @@ if $DO_MENU; then
     $MENU_FONTSIZE -fill '#101010' -stroke '#101010' -gravity center \
     -annotate +0+0 "$MENU_TITLE" -fill "$TITLE_CLR" \
     -stroke "$TITLE_STROKE" -strokewidth 1 -annotate +1+1 "$MENU_TITLE")
+    TITLE_CMD0=(composite -blend 0x${TITLE_OPACITY}  null: - -matte)
     TITLE_CMD1=(convert - $TRIM_CMD  "$WORK_DIR/title_txt.png")
-
-    "${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}" >> "$LOG_FILE" 2>&1
+    
+    if [[ -n $TITLE_OPACITY ]]; then
+        "${TITLE_CMD[@]}" miff:- | "${TITLE_CMD0[@]}" miff:- |
+        "${TITLE_CMD1[@]}" >> "$LOG_FILE" 2>&1
+    else
+        "${TITLE_CMD[@]}" miff:- | "${TITLE_CMD1[@]}" >> "$LOG_FILE" 2>&1
+    fi
 
     # make thumb titles
     if ! $SINGLE_SLIDESHOW; then
@@ -4693,6 +4746,7 @@ if $DO_MENU; then
             -annotate +0+0 "${TITLES[i]}" \
             -fill $TITLES_CLR  -stroke none \
             -annotate +1+1 "${TITLES[i]}")
+            FADE_CMD=(composite -blend 0x${TITLES_OPACITY}  null: - -matte)
             if [[ $BUTTON_STYLE = "text" ]]; then
                 TRIM_CMD=(convert - -trim "$WORK_DIR/thumb_title${i}.png")
             else
@@ -4700,7 +4754,12 @@ if $DO_MENU; then
                 "$WORK_DIR/thumb_title${i}.png")
             fi
             # make thumb title, only repage and border if not 'text button'
-            "${THUMB_TITLE_CMD[@]}" miff:- | "${TRIM_CMD[@]}"
+            if [[ -n $TITLES_OPACITY ]]; then
+                "${THUMB_TITLE_CMD[@]}" miff:- | "${FADE_CMD[@]}" miff:- |
+                "${TRIM_CMD[@]}"
+            else
+                "${THUMB_TITLE_CMD[@]}" miff:- | "${TRIM_CMD[@]}"
+            fi
             # now get offset before repaging, for the spumux button crop later
             if [[ $BUTTON_STYLE = "text" ]]; then
                 titles_offset[i]=$(identify -format %O \
@@ -6465,7 +6524,9 @@ MAX_VAL_FRAMES="$((MAX_VAL * 30))"
 
 MENU_FRAMES=$MAX_MENU_LEN
 if $STATIC; then
-    if [[ -z $BG_VIDEO && -z $SHOWCASE_VIDEO ]] && ! $MENU_FADE; then
+    if $SWITCHED && [[ -z $BG_VIDEO ]] && ! $MENU_FADE; then
+        FRAMES=1
+    elif [[ -z $BG_VIDEO && -z $SHOWCASE_VIDEO ]] && ! $MENU_FADE; then
         FRAMES=1
     else
         FRAMES=$MENU_FRAMES
@@ -7264,14 +7325,22 @@ if $SUB_MENU; then
             SN_BTN_XY=${GEO_ARRAY[C]} # button dimensions
             NUM_CHAPTERS=${CHAPTERS[i]}
             yecho "Creating a transparent title PNG"
-            convert -size 620x300 xc:none -font "$SM_TITLE_FONT" \
+            SMTITLE_CMD=(convert -size 620x300 xc:none -font "$SM_TITLE_FONT" \
             -pointsize $SUBMENU_FONTSIZE -fill "$SM_TITLE_CLR" \
             -draw "gravity center text 2,2 \"${SM_TITLES[i]}\"" \
             -stroke "$SUBMENU_STROKE" -strokewidth 1 \
             -fill "$SM_TITLE_CLR" -stroke "$SUBMENU_STROKE" \
-            -draw "gravity center text 1,1 \"${SM_TITLES[i]}\"" miff:- |
-            convert $QUALITY -trim +repage - -blur 0x0.3 \
-            $WORK_DIR/title${i}_txt.png 2>/dev/null
+            -draw "gravity center text 1,1 \"${SM_TITLES[i]}\"" )
+            SMTITLE_TRIM_CMD=(convert $QUALITY -trim +repage - -blur 0x0.3 \
+            $WORK_DIR/title${i}_txt.png)
+            SMTITLE_FADE_CMD=(composite -blend 0x${SM_TITLE_OPACITY} \
+            null: - -matte)
+            if [[ -n $SM_TITLE_OPACITY ]]; then
+                "${SMTITLE_CMD[@]}" miff:- | "${SMTITLE_FADE_CMD[@]}" miff:- |
+                "${SMTITLE_TRIM_CMD[@]}"
+            else
+                "${SMTITLE_CMD[@]}" miff:- | "${SMTITLE_TRIM_CMD[@]}"
+            fi
 
             # which is harmless as they get removed, but needs to be tweaked
             if $ANI_SUB_MENU; then
@@ -7429,8 +7498,16 @@ if $SUB_MENU; then
                     -fill '#101010'  -stroke '#101010' -gravity South \
                     -annotate +0+0 "${CHAPTER_TITLES[a+I]}" -fill $CHAPTER_CLR \
                     -stroke "$CHAPTER_STROKE" -strokewidth 1 \
-                    -annotate +1+1 "${CHAPTER_TITLES[a+I]}" miff:-)
-                    "${ctcmd[@]}" | convert $QUALITY - -trim +repage "$ctitle"
+                    -annotate +1+1 "${CHAPTER_TITLES[a+I]}")
+                    ct_fade_cmd=(composite -blend 0x${CHAPTER_TITLES_OPACITY} \
+                    null: - -matte)
+                    ct_trim_cmd=(convert $QUALITY - -trim +repage "$ctitle")
+                    if [[ -n $CHAPTER_TITLES_OPACITY ]]; then
+                        "${ctcmd[@]}" miff:- | "${ct_fade_cmd[@]}" miff:- |
+                        "${ct_trim_cmd[@]}"
+                    else
+                        "${ctcmd[@]}" miff:- | "${ct_trim_cmd[@]}"
+                    fi
                     # make sure title fits
                     ctitle_dim=$(identify -ping -format %w "$ctitle")
                     if  (($ctitle_dim >= ${GEO_ARRAY[C]%x*} )); then
@@ -7777,7 +7854,6 @@ fi
 if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
     echo "Getting showcase video images from $SHOWCASE_VIDEO"
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
-        FIND_FRAMES=$((FRAMES + 1)) # unfortunately mplayer starts at 1 not 0
         # some vars for get_framed_pics()
         D=2
         FRAME_SIZE=$SHOWCASE_SIZE
@@ -7785,9 +7861,9 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
         MPLAYER_SEEK_VAL=$SHOWCASE_SEEK_VAL
         $SWITCHED_MODE && MPLAYER_SEEK_VAL=${SEEK_VAL[MENU_NUM-1]}
         get_framed_pics "$SHOWCASE_VIDEO"  >> "$LOG_FILE" 2>&1
-        for ((i=1; i<=$FIND_FRAMES; i++)); do
-            mv  "$WORK_DIR"/$(printf "%08d%s"  $i .png) \
-            "$WORK_DIR"/showcase/$(printf "%06d%s"  $i .png) 2>/dev/null
+        for ((i=0; i<=$FRAMES; i++)); do
+            mv  "$WORK_DIR"/$(printf "%08d%s"  $((i+1)) .png) \
+            "$WORK_DIR"/showcase/$(printf "%06d%s"  $((i+1)) .png) 2>/dev/null
         done
     elif [ "$SC_FRAMESTYLE" = "none" ]; then
         if $SWITCHED_MODE; then
@@ -7796,7 +7872,6 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
             FFMPEG_SEEK_VAL=$SHOWCASE_SEEK_VAL
         fi
 
-        FIND_FRAMES=$FRAMES # ffmpeg starts at 0
         FFMPEG_CMD=(ffmpeg -ss $FFMPEG_SEEK_VAL -i "$SHOWCASE_VIDEO" -s \
         $SHOWCASE_SIZE -vframes $FRAMES -an -y "$WORK_DIR/showcase/%06d.png")
         echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
@@ -7807,8 +7882,9 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
     fi
     for ((i=FIRST_PIC; i<LAST_PIC; i++)); do
         SC_PICS=( ${SC_PICS[@]} $(find $WORK_DIR/showcase -maxdepth 1 \
-        -name $(printf "%06d%s"  $i .png) ) )
+        -name $(printf "%06d%s"  $((i+1)) .png) ) )
     done
+    $SWITCHED && $STATIC && SC_PICS=( "$WORK_DIR/showcase/000001.png" )
     if [[ "$SC_FRAMESTYLE" = "glass" ]] \
     &&  [[ -z "$ROTATE" && -z "$WAVE" ]]; then
         :
@@ -7817,10 +7893,8 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
         num_procs=0
         for p in ${!SC_PICS[@]}; do
             ((num_procs++)) # how many processes are running
-            #last_pic=$(awk -F / '{ print $NF }' <<< "${SC_PICS[pic]}")
-            last_pic=${SC_PICS[p]##*/}
+            this_pic=$(sed 's,.*/,,;s/^0*//;s/.png//' <<< "${SC_PICS[p]}")
             pic="${SC_PICS[p]}"
-            #((num_procs==)) && spin "\rProcessing $last_pic of $LAST_PIC  "
             # if glass and either wave or rotate
             if [ "$SC_FRAMESTYLE" = "glass" ] && \
              [[ -n "$WAVE" || -n "$ROTATE" ]]; then
@@ -7837,7 +7911,7 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
             fi
             impids="$impids $!"
             if ((num_procs==max_procs || p >= (${#SC_PICS[@]}-1) )); then
-                spin "\rProcessing $last_pic of $LAST_PIC  "
+                spin "\rProcessing frame $this_pic of $LAST_PIC  "
                 wait $impids
                 unset impids num_procs
             fi
@@ -7869,7 +7943,6 @@ if [[ ! "$SC_FRAMESTYLE" = "glass" && ! $TEXTMENU ]]; then
         yecho "Adding title to video images and resizing"
     fi
 fi
-# TODO use exec 2>> "$LOG_FILE" to save lines
 if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
     for ((i=0; i<=NUM_FILES; i++)); do
         if $FEATHER && $THUMBS_3D && [ "$THUMB_SHAPE" != "normal" ]; then
@@ -8034,9 +8107,14 @@ if $STATIC; then
     if [[ -n "$BG_AUDIO" && "$BG_AUDIO" != "none" ]]; then
         LOOPS=$( bc <<< "$MENU_AUDIOLEN * $FRAME_RATE" 2>/dev/null)
         LOOPS=${LOOPS%.*}
+    # switched menu: no bg audio or video and not menu fade
+    elif $SWITCHED && [[ -z $BG_VIDEO && -z $BG_AUDIO ]] && ! $MENU_FADE; then
+        LOOPS=60
+    # any animation will use the full menu length
     elif [[ -n $BG_VIDEO || -n $SHOWCASE_VIDEO ]] || $MENU_FADE; then
         LOOPS=$FRAMES
     else
+        # anything I've missed that is static will be 60 frames long :)
         LOOPS=60
     fi
     PPM_LOOPS=$LOOPS
