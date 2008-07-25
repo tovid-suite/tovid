@@ -83,13 +83,14 @@ sub-menus, which can display longer titles, for example:
           -titles "Short 1" "Short 2" \
           -submenu-titles "Long Title One" "Long Title Two" \
           -out foo
+
 ```
 
 The **-align** argument will position both titles and thumbs either south,
 north east, west, southwest, northwest, southeast, northeast, subject to
 certain constraints of each arrangement.
 
-**TITLESETS**
+**Titlesets**
 
 A word should be mentioned here about titlesets.  You need to use titlesets,
 for example, if you have videos of different resolutions.  If you want to have
@@ -132,7 +133,7 @@ Example of using todisc with titlesets:
 
 See also **-titleset** and **-vmgm**
 
-**SLIDESHOWS**
+**Slideshows**
 
 You can also use todisc to make slideshows.  This can either be a single
 slideshow, or multiple slideshows on the same menu. (for SVCD only
@@ -190,6 +191,29 @@ Example of mixed videos and slideshows:
 ```
 
 See the other slideshow options in the SLIDESHOWS options section.
+
+
+
+**Tovid Options**
+
+These are options for reencoding your non-compliant videos.  They are passed
+directly to the tovid script which is invoked by todisc when non-compliant
+files are found.  For details see 'man tovid'.  Here is a list of possible
+options you can pass to tovid through the todisc script:
+    **-config**, **-ntscfilm**, **-dvd-vcd**, **-half-dvd**, **-kvcd**,
+    **-kvcdx3**, **-kvcdx3a**, **-kdvd**, **-bdvd**, **-704**, **-normalize**,
+    **-amplitude**, **-overwrite**, **-panavision**, **-force**, **-fps**,
+    **-vbitrate**, **-quality**, **-safe**, **-crop**, **-filters**,
+    **-abitrate**, **-priority**, **-deinterlace**, **-progressive**,
+    **-interlaced**, **-interlaced_bf**, **-type**, **-fit**, **-discsize**, 
+    **-parallel**, **-mkvsub**, **-autosubs**, **-subtitles**, **-update**, \
+    **-mplayeropts**, **-audiotrack**, **-downmix**, **-ffmpeg**, **-nofifo**, 
+    **-from-gui**, **-slice**, **-async**, **-quiet**, 
+    **-fake**, **-keepfiles**
+
+Note: **-noask** is also a todisc option: if you use it you will not get
+menu previews or other prompts in todisc.  If you just want to pass **-noask**
+to tovid, use **-noprompt**.
 
 == Options ==
 
@@ -495,8 +519,11 @@ See the other slideshow options in the SLIDESHOWS options section.
 : **-speed**
     The speed to use for burning the disc.
 
-= ADVANCED USAGE =
+
+== ADVANCED USAGE ==
+
 == Options ==
+
 : **-menu-length**
     The desired animated main menu length in seconds
 : **-submenu-length**
@@ -628,10 +655,6 @@ See the other slideshow options in the SLIDESHOWS options section.
 : **-grid**
     Show a second preview image with a grid and numbers that will help in finding
     coordinates for options that might use them, like **-text-start**
-: **-tovidopts** | **-tovid-opts** "OPTIONS"
-    Pass the given string of options to 'tovid', if it is called upon to
-    re-encode your non-compliant videos. Be sure to include the double-quotes
-    around your list of options!
 
 
 ==Menu Style==
@@ -682,7 +705,6 @@ See the other slideshow options in the SLIDESHOWS options section.
     Use a introductory video that will play before the main menu.
     At present it must be a DVD compatible video at the correct resolution etc.
     Only 4:3 aspect is supported: 16:9 will give unexpected results.
-
 
 
 ===Menu Style options specific to showcase and textmenu arrangements===
@@ -791,9 +813,9 @@ See the other slideshow options in the SLIDESHOWS options section.
     sequentially without returning to the main menu, except for the last, which
     will return.  You can also specify which videos you want to behave this way
     by number or by a range. ( ie. **-chain-videos** 1 2 4-6 ).
-: **-subtitles** "lang1 lang2 . . ."
+: **-subtitle-lang** "lang1 lang2 . . ."
     This allows selectable subtitles in the DVD, assuming you have optional
-    subtitles muxed into your videos.
+    subtitles muxed into your videos.  Use 2 character language codes.
 : **-audio-channel** "Video1_track Video2_track Video3_track . . ."
     "VideoN_track" is the track number to use in a multitrack (multi-language)
     mpeg: usually something like **-audio-channel** "1 0 1".  The 1st track is
