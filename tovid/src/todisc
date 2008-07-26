@@ -2992,11 +2992,6 @@ done
 ##############################################################################
 # get script pid so we can kill the parent if doing recursive todisc's
 TODISC_PIDS="$TODISC_PIDS $$"
-for i in ${!TOVID_OPTS[@]}; do
-    if [[ ${TOVID_OPTS[i]} == "-subtitles" ]]; then
-        ls "${TOVID_OPTS[i+1]}"
-    fi
-done #FIXME
 
 # make sure dvd-slideshow is installed if user passed -use-dvd-slideshow
 $USE_DVD_SLIDESHOW && assert_dep dvd-slideshow \
