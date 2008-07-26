@@ -105,6 +105,8 @@ get_listarg()
     for i in ${!test_version[@]}; do
         # make sure both arrays are equal in length
         [[ -z ${im_version[i]} ]] && im_version[i]=0
+        # break from loop if any version index is higher than test_version's
+        (( ${im_version[i]} > ${test_version[i]} )) && break
         # 'type' argument is for IM versions less than 6.3.5-7
         (( ${im_version[i]} < ${test_version[i]} )) && arg='type'
     done
