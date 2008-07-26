@@ -2967,12 +2967,15 @@ while test $# -gt 0; do
                     option by the same name"
                 elif [[ ! -e $2 ]]; then
                     usage_error " subtitle file $2 does not exist"
+                else
+                    TOVID_OPTS+=( "$1" "$(readlink -f "$2")" )
                 fi
+            else
+                TOVID_OPTS+=( "$1" )
+                shift
+                get_listargs "$@"
+                TOVID_OPTS+=( "${ARGS_ARRAY[@]}" )
             fi
-            TOVID_OPTS+=( "$1" )
-            shift
-            get_listargs "$@"
-            TOVID_OPTS+=( "${ARGS_ARRAY[@]}" )
             ;;
         "-noprompt" )
             TOVID_OPTS+=( -noask )
@@ -2989,6 +2992,11 @@ done
 ##############################################################################
 # get script pid so we can kill the parent if doing recursive todisc's
 TODISC_PIDS="$TODISC_PIDS $$"
+for i in ${!TOVID_OPTS[@]}; do
+    if [[ ${TOVID_OPTS[i]} == "-subtitles" ]]; then
+        ls "${TOVID_OPTS[i+1]}"
+    fi
+done #FIXME
 
 # make sure dvd-slideshow is installed if user passed -use-dvd-slideshow
 $USE_DVD_SLIDESHOW && assert_dep dvd-slideshow \
