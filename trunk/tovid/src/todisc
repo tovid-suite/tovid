@@ -2960,13 +2960,19 @@ while test $# -gt 0; do
         "-from-gui" | "-noask" | "-slice" | "-async" | "-quiet" | \
         "-fake" | "-keepfiles" )
             # remove this warning for tovid 0.33 TODO
-            if [[ $1 = -subtitles ]]; then
+            if [[ $1 = "-subtitles" ]]; then
                 if (( ${#2} == 2 )); then
                     usage_error "todisc's '-subtitles' option has been changed  
                     to '-subtitle-lang', so it doesn't conflict with a tovid 
                     option by the same name"
                 elif [[ ! -e $2 ]]; then
                     usage_error " subtitle file $2 does not exist"
+                else
+                    TOVID_OPTS+=( "$1" "$(readlink -f "$2")" )
+                fi
+            elif [[ $1 = "-config" ]]; then
+                if [[ ! -e $2 ]]; then
+                    usage_error "config file $2 does not exist"
                 else
                     TOVID_OPTS+=( "$1" "$(readlink -f "$2")" )
                 fi
