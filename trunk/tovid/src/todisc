@@ -134,6 +134,7 @@ SHOWCASE_SEEK_VAL=2
 BG_SEEK=2
 BG_AUDIO_SEEK=2
 USER_BG_AUDIO_SEEK=false
+USER_SM_AUDIO_SEEK=false
 SC_THUMB=:
 TEXTMENU=false
 SC_TITLE_ALIGN=center
@@ -2822,6 +2823,12 @@ while test $# -gt 0; do
             USER_SC_GEO=:
             SHOWCASE_GEO=$1
             ;;
+        "-submenu-audio-seek" ) # not implemented yet
+            shift
+            get_listargs "$@"
+            SM_AUDIO_SEEK=( ${ARGS_ARRAY[@]} )
+            USER_SM_AUDIO_SEEK=:
+            ;;
         "-menu-title-geo" )
             ADV_OPT=( "${ADV_OPT[@]}" "$1" )
             USER_TITLE_GEO=:
@@ -3408,7 +3415,7 @@ if { ((sshows>=1)) && ((inc_files >=1)) ; } || ((sshows>1)); then
                 if ! ${SLIDESHOW[f]}; then
                     # set seek and chapter value if user only passed one value
                     [[ -z ${SEEK_VAL[f]} ]] && SEEK_VAL[f]=${SEEK_VAL[0]}
-                    [[ -z ${CHAPTERS[f]} ]] CHAPTERS[f]=$default_chapters
+                    [[ -z ${CHAPTERS[f]} ]] && CHAPTERS[f]=$default_chapters
                 elif ${SLIDESHOW[f]} && \
                  [[ -e $WORK_DIR/carousel-$((f+1)).m2v ]]; then
                     cp -v  "$WORK_DIR/carousel-$((f+1)).m2v" \
