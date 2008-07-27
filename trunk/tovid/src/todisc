@@ -280,7 +280,7 @@ usage_error()
     printf "%s\n%s\n%s\n\n" "$USAGE" "$SEPARATOR" "***"
     for ((i=0; i<$#; i++)) ; do printf "%s" "${MESSAGE[i]}"; done |format_output
     printf "\n\n%s\n" "***"
-    rm -rf "$REAL_WORK_DIR" "$WORK_DIR"
+    ! $KEEP_FILES && rm -rf "$REAL_WORK_DIR" "$WORK_DIR"
     if $SWITCHED_MODE ||$SWITCHED_MENUS ||$TITLESET_MODE ||$DO_TITLESETS; then
         killall_instances
     fi
@@ -1071,7 +1071,7 @@ carousel_menu_mode()
     $SLIDE_FADE && sld_tranition="-slide-transition $EFFECT"
     #! grep -q -- -noask <<< "$TOVID_OPTS" && \
     [[ ${TOVID_OPTS[@]} != *-noask* ]] && \
-     encopt=(-tovidopts "${TOVID_OPTS[@]}" -noask)
+     encopt=("${TOVID_OPTS[@]}" -noask)
     if $CAROUSEL_IS_BG && [[ $sstype != "submenu" ]]; then
         local background_carousel="-background-slideshow"
         IN_SLIDES=( "$WORK_DIR"/${TSET_NUM}-slide_grp*.mpg )
@@ -3367,6 +3367,9 @@ fi
 # carousel's are made BEFORE switched menus - so don't do them in switched mode
 $SWITCHED_MODE && DO_CAROUSEL=false
 
+# save value of default chapters
+! $USER_CHAPTERS && (( ${#CHAPTERS[@]} == 1 )) && default_chapters=${CHAPTERS[0]}
+
 ################################################
 #        recursive magic for titlesets,        #
 # switched menus, and animated slideshow menus #
@@ -3405,7 +3408,7 @@ if { ((sshows>=1)) && ((inc_files >=1)) ; } || ((sshows>1)); then
                 if ! ${SLIDESHOW[f]}; then
                     # set seek and chapter value if user only passed one value
                     [[ -z ${SEEK_VAL[f]} ]] && SEEK_VAL[f]=${SEEK_VAL[0]}
-                    [[ -z ${CHAPTERS[f]} ]] && CHAPTERS[f]=${CHAPTERS[0]}
+                    [[ -z ${CHAPTERS[f]} ]] CHAPTERS[f]=$default_chapters
                 elif ${SLIDESHOW[f]} && \
                  [[ -e $WORK_DIR/carousel-$((f+1)).m2v ]]; then
                     cp -v  "$WORK_DIR/carousel-$((f+1)).m2v" \
@@ -3773,20 +3776,20 @@ fi
 # get normal CHAPTERS VAR,i.e.: 'how many chapters'
 # Check if 1st is 00:00:00 and all chapters have HH:MM:SS format
 if $USER_CHAPTERS; then
-for i in ${!CHAPT_ARRAY[@]}; do
-    unset newchapts
-    [[ ${CHAPTERS[i]} != *:* ]] && usage_error \
-    "for HH:MM:SS style chapters all video chapters must have this format"
-    if [[ ${CHAPT_ARRAY[i]:0:8} != 00:00:00 ]];then
-        usage_error \
-        "The first chapter must be 00:00:00. ${IN_FILES[i]} \
-        used ${CHAPT_ARRAY[i]}"
-    fi
-    # remove + sign and commas, count the number of chapters left
-    str=$(sed 's/+/ /g;s/,/ /g' <<< ${CHAPTERS[i]})
-    for substr in $str; do [[ $substr != 0 ]] && newchapts+=( $substr ); done
-    CHAPTERS[i]=${#newchapts[@]} 
-done
+    for i in ${!CHAPT_ARRAY[@]}; do
+        unset newchapts
+        [[ ${CHAPTERS[i]} != *:* ]] && usage_error \
+        "for HH:MM:SS style chapters all video chapters must have this format"
+        if [[ ${CHAPT_ARRAY[i]:0:8} != 00:00:00 ]];then
+            usage_error \
+            "The first chapter must be 00:00:00. ${IN_FILES[i]} \
+            used ${CHAPT_ARRAY[i]}"
+        fi
+        # remove + sign and commas, count the number of chapters left
+        str=$(sed 's/+/ /g;s/,/ /g' <<< ${CHAPTERS[i]})
+        for substr in $str; do [[ $substr != 0 ]] && newchapts+=($substr); done
+        CHAPTERS[i]=${#newchapts[@]} 
+    done
 fi
 # do not let user use -chapters 0 (-chapters 5 0 6)
 for ((i=0; i<${#CHAPTERS[@]}; i++)); do
@@ -3843,7 +3846,7 @@ fi
 
 # if more than one value for AUDIO_CHANNEL, make sure they equal video #
 if [[ -n $AUDIO_CHANNEL ]] && \
-[[ ${#FILES[@]} -ne ${#AUDIO_CHANNEL[@]} &&  ${#AUDIO_CHANNEL[@]} -ne 1 ]]; then
+[[ ${#FILES[@]} -ne ${#AUDIO_CHANNEL[@]} && ${#AUDIO_CHANNEL[@]} -ne 1 ]]; then
     usage_error "Please give the same number of audio channels as videos.  \
     You gave ${#FILES[@]} videos and ${#AUDIO_CHANNEL[@]} audio channel values"
 fi
