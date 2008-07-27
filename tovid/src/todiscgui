@@ -201,6 +201,18 @@ for num in range(2,  13):
         )
     tab_list.append(next_panel)
 
+# tovid Flag options lists
+#(tovid_opts, gen_opts) = ([] for i in range(0, 2))
+tovid_opts = []
+format_help = 'Format options are set in the main todisc tab, but \
+can be overriden here with one of these options.  See man tovid for details. '
+tovid_help = 'See man tovid for details'
+#for opt in '-wide', '-panavision', '-ffmpeg', '-quiet', '-keepfiles', \
+#    '-force', '-parallel', '-nofifo', '-noask', '-overwrite':
+for opt in '-quiet', '-keepfiles', \
+    '-overwrite', '-ffmpeg', '-force', '-parallel', '-nofifo':
+    flag_opts =  Flag(opt.lstrip('-'), opt, False, tovid_help)
+    tovid_opts.append(flag_opts)
 
 # The rest of the GUI is pretty straightforward, so don't be frightened
 # by the above :-)
@@ -209,16 +221,16 @@ for num in range(2,  13):
 ### Main todisc options
 ### --------------------------------------------------------------------
 
-main = Panel("Main",
+main = Panel("",
     Text('Menu title', '-menu-title', 'My video collection',
         'Title text displayed on the main menu. Use \\n for a new line '
          'in a multi-line title.'),
     Tabs(
-        HPanel('Add videos', files, titles),
-        HPanel('Add grouped videos',
+        HPanel('', files, titles, tab_title='Add videos'),
+        HPanel('',
             synclist2,
             FileLists('Video files', '-group', None,
-            group_tooltip, connect=synclist2),
+            group_tooltip, connect=synclist2), tab_title='Add grouped videos',
         ),
     ),
 
@@ -290,26 +302,126 @@ main = Panel("Main",
     Filename('Output name', '-out', '',
         'Name to use for the output directory where the disc will be created.',
         'save', 'Choose an output name',
-        required=True)
-)
+        required=True),
+tab_title='Main')
 
-general = Panel("General",
-    Number('Number of jobs to run simultaneously', '-jobs', 1,
-    'The default is to run as many jobs as processors found.  '
-    'Use this option if you wish to limit or increase this number.  ',
-    1, 32, toggles=True),
-    Flag('Keep useful intermediate files on exit', '-keep-files', False),
-    Flag('No prompts for questions', '-no-ask', False),
-    Flag('Do not pause at warnings', '-no-warn', False),
-    Flag('Grid preview', '-grid', False,
-    'Show a second preview image with a grid and numbers that will help in '
-    'finding coordinates for options that might use them'),
-    Flag('Use makemenu', '-use-makemenu', False,
-        'Create menus using the makemenu script instead of todisc'),
+general = Panel("",
+    HPanel('',
+        VPanel('',
+            Number('Number of jobs to run simultaneously', '-jobs', 0,
+            'Leave this value at 0 if you wish the default, which is to run '
+            'as many jobs as processors found. Use this option if you wish '
+            'to limit or increase this number.  ', 0, 32),
+            Flag('Keep useful intermediate files on exit', '-keep-files', False),
+            Flag('No prompts for questions', '-no-ask', False),
+        ),
+        VPanel('',
+            Flag('No pause at warnings', '-no-warn', False),
+            Flag('Grid preview', '-grid', False,
+            'Show a second preview image with a grid and numbers that will help in '
+            'finding coordinates for options that might use them'),
+            Flag('Use makemenu', '-use-makemenu', False,
+            'Create menus using the makemenu script instead of todisc'),
+        ),
+    ),
     List('Custom todisc options', '', '',
-        'Space-separated list of custom options to pass to todisc.'),
-    Text('Custom tovid options', '-tovidopts', '',
-        "Space-separated list of options to pass to tovid for encoding."),
+    'Space-separated list of custom options to pass to todisc.'),
+    List('Custom tovid options', '', '',
+    'Space-separated list of custom options to pass to todisc.'),
+    VPanel('Tovid reencoding options',
+        Tabs(
+            VPanel('',
+                HPanel('control',
+                    Flag('noask',  '-noprompt', False, tovid_help),
+                    *tovid_opts[0:3]),
+                HPanel('encoding',  *tovid_opts[3:7]),
+                HPanel('',
+                    Choice('priority', '-priority', 'high', tovid_help,
+                    'low|medium|high'),
+                    VPanel('update interval',
+                    Number('', '-update', 5, tovid_help, 1, 20),),
+                ),
+                HPanel('configuration file',
+                    Filename('', '-config', '', tovid_help,
+                    'load', 'Select tovid configuration file'),
+                ),
+                VPanel('quality',
+                    HPanel('',
+                        VPanel('quality',
+                            Number('', '-quality', 6, tovid_help, 1, 10),
+                        ),
+                        VPanel('vbitrate',
+                            Number('', '-vbitrate', 0, tovid_help, 0, 9000),
+                        ),
+                    ),
+                ),
+                VPanel('quantity',
+                    HPanel('',
+                        VPanel('fit',
+                            Number('', '-fit', 0, tovid_help, 0, 4400),
+                        ),
+                        VPanel('discsize',
+                            Number('', '-discsize', 0, tovid_help, 0, 4400),
+                        ),
+                    ),
+                ), tab_title='generic',
+            ),
+            VPanel('',
+                VPanel('video',
+                    HPanel('framerate',
+                        Flag('ntscfilm', '-ntscfilm', False, tovid_help),
+                        Text('fps', '-fps', '', tovid_help),
+                    ),
+                    FlagGroup('format', 'exclusive',
+                        Flag('dvd-vcd', '-dvd-vcd', False, format_help),
+                        Flag('half-dvd', '-half-dvd', False, format_help),
+                        Flag('kvcd', '-kvcd', False, format_help),
+                        Flag('kvcdx3', '-kvcdx3', False, format_help),
+                        Flag('kvcdx3a', '-kvcdx3a', False, format_help),
+                        Flag('kdvd', '-kdvd', False, format_help),
+                        Flag('bdvd', '-bdvd', False, format_help),
+                        side='left',
+                    ),
+                    HPanel('',
+                        FlagGroup('interlacing', 'exclusive',
+                            Flag('deinterlace', '-deinterlace', False, tovid_help),
+                            Flag('interlaced', '-interlaced', False, tovid_help),
+                            Flag('interlaced_bf', '-interlaced_bf', False, tovid_help),
+                            side='left',
+                        ),
+                        Choice('video type', '-type', 'live', tovid_help,
+                        'live|animation|bw'),
+                    ),
+                    HPanel('length and display size',
+                        Text('safe area', '-safe', '', tovid_help),
+                        Text('crop', '-crop', '', tovid_help),
+                        Number('slice', '-slice', 0, tovid_help, 0, 220000),
+                    ),
+                    Choice('mplayer filters', '-filters', 'none', tovid_help,
+                    'none|denoise|deblock|contrast|all'),
+                    VPanel('mplayer options',
+                        List('', '-mplayeropts', '', tovid_help),
+                    ),
+                ), tab_title='advanced video',
+            ),
+            VPanel('',
+                    Flag('normalize', '-normalize', False, tovid_help),
+                    Flag('downmix', '-downmix', False, tovid_help),
+                    List('audiotrack', '-audiotrack', '', tovid_help),
+                    Text('abitrate', '-abitrate', '', tovid_help),
+                    Text('amplitude', '-amplitude', '', tovid_help),
+                    Text('async', '-async', '', tovid_help),
+            tab_title='advanced audio',
+            ),
+            VPanel('',
+                Flag('autosubs', '-autosubs', False, tovid_help),
+                Text('mkvsub', '-mkvsub', '', tovid_help),
+                Filename('subtitles', '-subtitles', '', tovid_help,
+                'load', 'Select an image or video file'),
+            tab_title='subtitles',
+            ),
+        ),
+    ), tab_title='General',
 )
 
 menu = Panel("Menu",
@@ -351,11 +463,12 @@ menu = Panel("Menu",
         'Controls positioning of the thumbnails and their titles.  '
         'With some arrangements this will have limited effects however.',
         'north|south|east|west|center'),
-        Panel('Seek times',
-            List('Thumbnails', '-seek', '',
-                'Play thumbnail videos from the given seek time (seconds).  '
-                'A single value or space separated list, 1 value per video.  '
-                'Also used for seeking in switched menus.'),
+    Panel('Seek times',
+        List('Thumbnails', '-seek', '',
+            'Play thumbnail videos from the given seek time (seconds).  '
+            'A single value or space separated list, 1 value per video.  '
+            'Also used for seeking in switched menus.'),
+        HPanel('',
             Number('Background video', '-bgvideo-seek', 2,
                 'Play background video from the given seek time (seconds)',
                 0, 3600),
@@ -366,19 +479,24 @@ menu = Panel("Menu",
                 'Play showcase video from the given seek time (seconds).  '
                 'Note: switched menus uses the value(s) from "Seek time" '
                 'option above, not this one',
-                0, 3600)
-        ),
-    Choice('Showcase frame style', '-showcase-framestyle', 'none',
-        'This is a showcase style only option.  The "none" option will use '
-        'the default frame method, using imagemagick. The "glass" option '
-        'will use mplayer to make frames, giving an animated effect.  The ' 
-        'glass style can be much faster - especially if used without '
-        '-rotate and -wave options',
-        'none|glass'),
-    Text('Showcase image position (XxY)', '-showcase-geo', '',
-        'This is a showcase style only option.  Enter the position of the '
-        'top left corner of the showcase image: e.g. "200x80".  This '
-        'value is applied to the video *before* is is scaled.'),
+                0, 3600),
+        )
+    ),
+    HPanel('',
+        Choice('Showcase frame style', '-showcase-framestyle', 'none',
+            'This is a showcase style only option.  The "none" option will use '
+            'the default frame method, using imagemagick. The "glass" option '
+            'will use mplayer to make frames, giving an animated effect.  The ' 
+            'glass style can be much faster - especially if used without '
+            '-rotate and -wave options',
+            'none|glass'),
+        HPanel('Showcase image position (XxY)',
+            Text('', '-showcase-geo', '',
+                'This is a showcase style only option.  Enter the position of the '
+                'top left corner of the showcase image: e.g. "200x80".  This '
+                'value is applied to the video *before* is is scaled.'),
+        )
+    ),
 )
 slideshows = Panel("Slideshows", Tabs(*tab_list))
 
@@ -438,7 +556,7 @@ thumbnails = Panel("Thumbnails",
 
 submenus = Panel("Submenus",
     Tabs(
-        VPanel('General submenu options',
+        VPanel('',
             VPanel('',
                 Flag('Animated', '-ani-submenus', False,
                     'Create an animated submenu for each video.  '
@@ -449,6 +567,25 @@ submenus = Panel("Submenus",
                     'This will be the length of the submenu audio',
                     0, 80, toggles=True),
             ),
+            VPanel('Backgrounds',
+                HPanel('',
+                    HPanel('Audio',
+                        FileList('', '-submenu-audio', None,
+                            'File(s) that will play as background audio for each submenu.  '
+                            'Use a single file for all submenus, or 1 file per submenu.  '
+                            'Any file containing audio can be used.'),
+                    ),
+                    HPanel('Image(s)',
+                        FileList('', '-submenu-background', None,
+                        'Background image(s) for the submenus(s). Single value or list'),
+                    ),
+                ),
+                Number('Audio fade', '-submenu-audio-fade', 1,
+                    'Number of sec to fade given submenu audio in and out.  '
+                    ' (default: 1.0 seconds)', 0, 10),
+            ), tab_title='General'
+        ),
+        VPanel('Titles',
             VPanel('Submenu titles',
                 HPanel('',
                     SyncList('Video list', '', None, '', pull=files),
@@ -459,57 +596,12 @@ submenus = Panel("Submenus",
                     filter=strip_all,
                     ),
                 ),
-                HPanel('',
-                    Font('Font', '-submenu-font', 'Helvetica',
-                        'The font to use for the Submenu menu titles', toggles=True),
-                    Number('Font size', '-submenu-fontsize', 30,
-                        'The font size to use for the submenu title',
-                         0, 80, toggles=True),
-                ),
-                HPanel('',
-                    Color('Font color', '-submenu-title-color', '#CDC0B0',
-                        'The font color to use for submenu title(s)', toggles=True),
-                    Color('Stroke color', '-submenu-stroke', '#101010',
-                        'The color for the submenu font outline (stroke).', toggles=True),
-                ),
             ),
-        ),
-        VPanel('Chapter titles',
-                VPanel('Submenu chapter titles',
-                    HPanel('', synclist, mappedlist),
-        
-                    HPanel('',
-                        Number('Font size', '-chapter-fontsize', 14,
-                            'The font size to use for the chapter titles',
-                            0, 80, toggles=True),
-                        Font('Font', '-chapter-font', 'Helvetica',
-                            'The font to use for the chapter titles', toggles=True),
+            VPanel('Chapter titles',
+                    VPanel('Submenu chapter titles',
+                        HPanel('', synclist, mappedlist),
                     ),
-                    HPanel('',
-                        Color('Font color', '-chapter-color', '#101010',
-                        'The color for the chapters font.', toggles=True),
-                        Color('Stroke color', '-chapter-stroke',
-                        '#101010', 'The color for the chapters font outline (stroke).',
-                        toggles=True),
-                    ),
-                ),
-        ),
-        VPanel('Backgrounds',
-            HPanel('',
-                HPanel('Audio',
-                    FileList('', '-submenu-audio', None,
-                        'File(s) that will play as background audio for each submenu.  '
-                        'Use a single file for all submenus, or 1 file per submenu.  '
-                        'Any file containing audio can be used.'),
-                ),
-                HPanel('Image(s)',
-                    FileList('', '-submenu-background', None,
-                    'Background image(s) for the submenus(s). Single value or list'),
-                ),
             ),
-            Number('Audio fade', '-submenu-audio-fade', 1,
-                'Number of sec to fade given submenu audio in and out.  '
-                ' (default: 1.0 seconds)', 0, 10),
         ),
     ),
 )
@@ -517,16 +609,22 @@ submenus = Panel("Submenus",
 text = Panel("Text/Font",
     Tabs(
         VPanel('Menu title', 
-            Font('Font', '-menu-font', 'Helvetica',
-                'The font to use for the menu title', toggles=True),
-            Number('Font size', '-menu-fontsize', 30,
-                'The font size to use for the menu title',
-                0, 80, toggles=True),
-            Color('Color', '-title-color', '#CDC0B0',
-                'The font color to use for the menu title', toggles=True),
-            Color('Stroke color', '-title-stroke', 'gray',
-                'Outline color for the main menu font.', toggles=True,
-                initialcolor="gray"),
+            HPanel('',
+                VPanel('Font',
+                Font('Font', '-menu-font', 'Helvetica',
+                    'The font to use for the menu title', toggles=True),
+                Number('Font size', '-menu-fontsize', 30,
+                    'The font size to use for the menu title',
+                    0, 80, toggles=True),
+                ),
+                VPanel('Color',
+                Color('Color', '-title-color', '#CDC0B0',
+                    'The font color to use for the menu title', toggles=True),
+                Color('Stroke color', '-title-stroke', 'gray',
+                    'Outline color for the main menu font.', toggles=True,
+                    initialcolor="gray"),
+                ),
+            ),
             HPanel('Title position',
                 Choice('', '-menu-title-geo', 'south',
                     'The position of the menu title',
@@ -545,20 +643,26 @@ text = Panel("Text/Font",
                 Number('Text mist opacity', '-text-mist-opacity', 60,
                     'The opacity of the mist behind the menu title.',
                     1, 100, 'spin')
-                ),
             ),
+        ),
         VPanel('Video title(s)',
+            HPanel('',
+            VPanel('Font',
             Font('Font', '-titles-font', 'Helvetica',
                 'The font to use for the video titles', toggles=True),
             Number('Font size', '-titles-fontsize', 12,
                 'The font size to use for the video titles.  '
                 'Default size varies depending on options chosen.',
                 0, 80, toggles=True),
+            ),
+            VPanel('Color',
             Color('Color', '-titles-color', '#CDC0B0',
                 'The font color to use for the video titles', toggles=True),
             Color('Stroke Color', '-titles-stroke', '#CDC0B0',
                 'The color to use for the video titles font outline (stroke)',
                 toggles=True),
+            ),
+            ),
             Choice('Video(s) title alignment', '-showcase-titles-align', 'none',
                 'This is a showcase style only option.  Default is to center '
                 'the text above the thumbnails.  This option will align the '
@@ -574,6 +678,47 @@ text = Panel("Text/Font",
                 'Titles will start at this pixel in the vertical axis.  '
                 'This value is applied before the menu is scaled.',
                 0, 460, 'spin')
+        ),
+        VPanel('Submenus)',
+            HPanel('Submenu titles',
+                HPanel('',
+                    VPanel('Font',
+                        Font('Font', '-submenu-font', 'Helvetica',
+                            'The font to use for the Submenu menu titles', toggles=True),
+                        Number('Font size', '-submenu-fontsize', 30,
+                            'The font size to use for the submenu title',
+                             0, 80, toggles=True),
+                    ),
+                ),
+                HPanel('',
+                    VPanel('Color',
+                        Color('Font color', '-submenu-title-color', '#CDC0B0',
+                            'The font color to use for submenu title(s)', toggles=True),
+                        Color('Stroke color', '-submenu-stroke', '#101010',
+                            'The color for the submenu font outline (stroke).', toggles=True),
+                    ),
+                ),
+            ),
+            HPanel('Chapter titles',
+                HPanel('',
+                    VPanel('Font',
+                        Font('Font', '-chapter-font', 'Helvetica',
+                            'The font to use for the chapter titles', toggles=True),
+                        Number('Font size', '-chapter-fontsize', 14,
+                            'The font size to use for the chapter titles',
+                            0, 80, toggles=True),
+                    ),
+                    HPanel('',
+                        VPanel('Color',
+                            Color('Font color', '-chapter-color', '#101010',
+                            'The color for the chapters font.', toggles=True),
+                            Color('Stroke color', '-chapter-stroke',
+                            '#101010', 'The color for the chapters font outline (stroke).',
+                            toggles=True),
+                        ),
+                    ),
+                ),
+            ),
         ),
     ),
 )
@@ -630,15 +775,15 @@ authoring = Panel("Authoring",
                     'Leave this at "none" to let dvdauthor figure it out for you',
                     '4:3|16:9|none'),
             ),
-            List('Default audio track(s)', '-audio-channel', '',
-                'Single value or list of the default audio track for each videos.  '
-                '0 is the first audio track, 1 is the second ...'),
             HPanel('Language(s)',
                 List('Audio', '-audio-lang', '',
                     'Single value or list of language codes for audio'),
                 List('Subtitles', '-subtitles', '',
                     'Single value or list'),
             ),
+            List('Default audio track(s)', '-audio-channel', '',
+                'Single value or list of the default audio track for each video.  '
+                '0 is the first audio track, 1 is the second ...'),
             VPanel('Buttons',
                 Choice('Style', '-button-style', 'none',
                     'Style or shape of the buttons seen when playing the DVD '
@@ -664,11 +809,11 @@ authoring = Panel("Authoring",
         ),
         VPanel('Advanced chapter options',
             HPanel('',
-                TextList('Chapters: use 1 line per video. (load files 1st !)', '-chapters', None,
-                'Number of chapters (integer) or HH:MM:SS string for each video.  '
-                'Grouped videos automatically use -chapters 0 (each video '
-                'is a chapter) unless you pass HH:MM:SS format.  Use a "+" '
-                'separator for joining the chapters of each grouped video.'
+                TextList('Chapters: use 1 line per video. Load files 1st !',
+                '-chapters', None,
+                'Number of chapters (integer) or HH:MM:SS string for each '
+                'video.  For grouped videos, use a "+" separator for joining '
+                'the chapter string of each grouped video.'
                 ''
                 '  An example chapter string using HH:MM:SS format: '
                 '  00:00:00,00:05:00,00:10:00.  An example of 2 grouped videos: '
@@ -698,7 +843,7 @@ burning = Panel("Burning",
 
 todisc = Application('todisc',
     [main, general, menu, submenus, thumbnails, text, slideshows, authoring, burning])
-gui = GUI("todiscgui", [todisc], 600, 720)
+gui = GUI("todiscgui", [todisc], 640, 720)
 gui.title("tovid GUI - fancy menus using 'todisc'")
 gui.run()
 
