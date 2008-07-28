@@ -4737,9 +4737,12 @@ if $DO_MENU; then
 
     # make a title image
     #! [[ -z ${STR// /} || -z $STR ]] && TRIM_CMD="-trim +repage -blur 0x0.4 "
+    # allow removal of contrasting 'undercolour' with 'title-stroke none'
+    # FIXME this is NOT IM syntax and it would be less confusing to adjust it
+    [[ $TITLE_STROKE = 'none' ]] && undercolour='none' || undercolour='#101010'
     TRIM_CMD="-trim +repage -blur 0x0.3"
     TITLE_CMD=(convert  -size 620x100 xc:none -font "$MENU_FONT" -pointsize \
-    $MENU_FONTSIZE -fill '#101010' -stroke '#101010' -gravity center \
+    $MENU_FONTSIZE -fill $undercolour -stroke $undercolour -gravity center \
     -annotate +0+0 "$MENU_TITLE" -fill "$TITLE_CLR" \
     -stroke "$TITLE_STROKE" -strokewidth 1 -annotate +1+1 "$MENU_TITLE")
     TITLE_CMD0=(composite -blend 0x${TITLE_OPACITY}  null: - -matte)
