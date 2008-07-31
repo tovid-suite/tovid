@@ -249,7 +249,8 @@ to tovid, use **-noprompt**.
     The optional argument specifies how many titles are in the 1st column,
     i.e. giving 4 titles and using "-textmenu 2" would make 2 columns of 2
     titles. The default is to put all titles up to 13 in the first column
-    before starting a second title.  Maximum, 2 columns and 26 titles.
+    before starting a second column.  Maximum: 2 columns and 26 titles.
+    Note that column 2 titles are aligned to the right.
     If no video files for either **-background** or **-showcase** are supplied,
     the menu will be static.
 : **-quick-menu**
