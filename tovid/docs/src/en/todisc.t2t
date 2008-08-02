@@ -696,6 +696,14 @@ to tovid, use **-noprompt**.
     Color of the mist behind the menu's title (see title-color).
 : **-text-mist-opacity**
     Opacity of the mist behind the menu's title - see **-opacity**
+: **-title-opacity**
+    Opacity of the menu title text
+: **-titles-opacity**
+    Opacity of the text for video titles
+: **-submenu-title-opacity**
+    Opacity of the text for submenu menu titles
+: **-chapter-title-opacity**
+    Opacity of the text for submenu chapter titles
 : **-menu-audio-fade**
     Number of sec to fade given menu audio in and out (default: 1.0 seconds)
     If you use **-menu-audio-fade** 0 then the audio will not be faded.
