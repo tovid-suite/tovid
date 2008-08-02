@@ -5499,10 +5499,14 @@ EOF
                 "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)" -gravity \
                 South -geometry $butgeo -composite $THUMB_ROTATE -resize \
                 ${BUTTON_SIZE}! "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
+                mogrify -channel A -threshold 50% \
+                "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
                 convert +antialias $WORK_DIR/blank.png  \
                 "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)" \
                 -gravity south -geometry $butgeo -composite $THUMB_ROTATE \
                 -resize ${BUTTON_SIZE}! \
+                "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
+                mogrify -channel A -threshold 50% \
                 "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
             fi
         fi
