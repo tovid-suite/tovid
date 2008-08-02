@@ -1488,7 +1488,7 @@ mk_return_button()
     -draw "polyline 40,10 40,50 10,30 40,10" \
     -draw "polyline 60,10 60,50 30,30 60,10" \
     -fill "$COLR2" -draw "rectangle 6,10 10,50" \
-    -resize 30% -trim +repage +antialias -colors 3 "$OUTBUTTON")
+    -resize 30% -trim +repage +antialias "$OUTBUTTON")
     echo -e "\nRunning ${MK_RTN_CMD[@]}\n" |format_output
     "${MK_RTN_CMD[@]}"
     mogrify -channel A -threshold 50% "$OUTBUTTON"
@@ -1509,7 +1509,7 @@ mk_play_button()
     fi
     #-fill "$COLR2" -draw "line 40,10 40,50"  \
     # -fill "$COLR2" -draw "rectangle 36,10 40,50" \
-    MK_PLAY_CMD=(convert +antialias -colors 3 -size 100x80 xc:none  \
+    MK_PLAY_CMD=(convert +antialias -size 100x80 xc:none  \
     -strokewidth 2 -stroke "$COLR2" -fill "$CLR1" \
     -draw 'rectangle 22,0 92,62' \
     -fill "$COLR2" -stroke none \
@@ -3320,6 +3320,14 @@ if [[ -n ${ROTATE_ARRAY[@]} ]]; then
         fi
     fi
 fi
+if ! $SINGLE_SLIDESHOW; then
+    for i in ${!FILES[@]}; do
+        if [[ ! ${TITLES[i]} && $BUTTON_STYLE != "rect" ]]; then
+            usage_error "You can not use \"$BUTTON_STYLE\" button style if
+            you have no titles.  Use 'rect' style instead"
+        fi
+    done
+fi
 #
 # end of button-style checks
 #
@@ -3376,6 +3384,18 @@ $SWITCHED_MODE && DO_CAROUSEL=false
 
 # save value of default chapters
 ! $USER_CHAPTERS && (( ${#CHAPTERS[@]} == 1 )) && default_chapters=${CHAPTERS[0]}
+
+# script details for the log file
+PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
+printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
+"todisc from the tovid suite ($TOVID_VERSION) - log for `date`" \
+"$PATTERN" >> "$LOG_FILE"
+# put the command line into the log file to aid debugging
+printf  "%s\n%s\n" todisc "${args[@]}" | sed "s/    */ /g;s/^ *//" | fold -bs >> "$LOG_FILE"
+# do some locale debugging
+echo -e "\nYou are using the following locale settings:" >> "$LOG_FILE"
+locale >>  "$LOG_FILE" 2>&1
+echo >> "$LOG_FILE"
 
 ################################################
 #        recursive magic for titlesets,        #
@@ -3477,16 +3497,6 @@ for ((i=1; i<=${#FILES[@]}; i++)); do
 done
 fi
 
-PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
-printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
-"todisc from the tovid suite ($TOVID_VERSION) - log for `date`" \
-"$PATTERN" >> "$LOG_FILE"
-# put the command line into the log file to aid debugging
-printf  "%s\n%s\n" todisc "${args[@]}" | sed "s/    */ /g;s/^ *//" | fold -bs >> "$LOG_FILE"
-# do some locale debugging
-echo -e "\nYou are using the following locale settings:" >> "$LOG_FILE"
-locale >>  "$LOG_FILE" 2>&1
-echo >> "$LOG_FILE"
 # if no bg supplied, use template.png so we can add a frame (-quick-menu only)
 
 # check that NTSC menu uses safe colours
@@ -4795,7 +4805,7 @@ if $DO_MENU; then
             # make spumux buttons now if 'text' button style
             if [[ $BUTTON_STYLE = "text" ]]; then
                 for btn in ${HLIGHT_CLR/\#} ${SELECT_CLR/\#}; do
-                    btncmd=(convert +antialias -colors 3 -background none \
+                    btncmd=(convert +antialias -background none \
                     -fill none -size 620x300 xc:none -font "$TITLES_FONT" \
                     -pointsize $TITLES_FONTSIZE -gravity $JUSTIFY \
                     -fill "#${btn}" -stroke none \
@@ -4806,7 +4816,7 @@ if $DO_MENU; then
                 # crop the button to the same size as the thumb_title*.png
                 for clr in ${HLIGHT_CLR/\#} ${SELECT_CLR/\#}; do
                     btn="$WORK_DIR/thumb_title${i}-${clr}.png"
-                    convert "$btn" +antialias -colors 3 \
+                    convert "$btn" +antialias \
                     -crop ${titles_dim[i]}${titles_offset[i]} +repage "$btn"
                 done
                 # rename textmenu buttons, - they don't need further processing
@@ -5415,33 +5425,33 @@ EOF
         -mattecolor none -background none -bordercolor none \
         "$WORK_DIR/thumb_title${t}-${SELECT_CLR/\#}.png" \
         -gravity South -geometry +0+5 -compose over -composite)
-        BUTTON_CMD2=(convert +antialias -colors 3 -size $THUMB_SIZE xc:none \
+        BUTTON_CMD2=(convert +antialias -size $THUMB_SIZE xc:none \
         -mattecolor none -background none -bordercolor none \
         "$WORK_DIR/thumb_title${t}-${HLIGHT_CLR/\#}.png" \
         -gravity South -geometry +0+5 -compose over -composite)
-        BUTTON_CMD3=(convert - +antialias -colors 3 -background none \
+        BUTTON_CMD3=(convert - +antialias -background none \
         $THUMB_ROTATE -resize ${THUMB_SIZE}! )
         BUTTON_CMD4=(convert -size "${THUMB_SIZE}+5+5"  xc:none -fill none \
         +antialias -stroke "$SELECT_CLR" -strokewidth 4 -draw @draw_file \
-        -colors 3 $THUMB_ROTATE -resize ${THUMB_SIZE}! \
+        $THUMB_ROTATE -resize ${THUMB_SIZE}! \
         "$WORK_DIR/Select${t}.png")
         BUTTON_CMD5=(convert -size "${THUMB_SIZE}+5+5" xc:none -fill none \
         +antialias -stroke "$HLIGHT_CLR" -strokewidth 4 -draw @draw_file \
-        -colors 3 $THUMB_ROTATE -resize ${THUMB_SIZE}! \
+        $THUMB_ROTATE -resize ${THUMB_SIZE}! \
         "$WORK_DIR/Highlight${t}.png")
         BUTTON_CMD6=(convert -size ${THUMB_SIZE}+5+5 xc:none +antialias \
         -fill none -stroke "$SELECT_CLR" -strokewidth 4 -draw @draw_file \
-        -colors 3 $THUMB_ROTATE -resize ${THUMB_SIZE}! \
+        $THUMB_ROTATE -resize ${THUMB_SIZE}! \
         "$WORK_DIR/Select${t}.png")
-        BUTTON_CMD6b=(convert +antialias -colors 3 \
+        BUTTON_CMD6b=(convert +antialias \
         -size ${TT_DIM[t]} xc:none -fill none -stroke "$SELECT_CLR" \
         -strokewidth 2 -draw @draw_file${t} \
         "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)")
-        BUTTON_CMD7=(convert +antialias -colors 3 -size ${THUMB_SIZE}+5+5 \
+        BUTTON_CMD7=(convert +antialias -size ${THUMB_SIZE}+5+5 \
         xc:none -fill none -stroke "$HLIGHT_CLR" -strokewidth 4 \
         -draw @draw_file $THUMB_ROTATE -resize ${THUMB_SIZE}! \
         "$WORK_DIR/Highlight${t}.png")
-        BUTTON_CMD7b=(convert +antialias -colors 3 \
+        BUTTON_CMD7b=(convert +antialias \
         -size ${TT_DIM[t]} xc:none -fill none -stroke "$HLIGHT_CLR" \
         -strokewidth 2 -draw @draw_file${t} \
         "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)")
@@ -5485,11 +5495,11 @@ EOF
                 [[ $BUTTON_STYLE = "line" ]] && butgeo=+0+0 || butgeo=+0+5
 
                 convert -size $BUTTON_SIZE xc:none "$WORK_DIR/blank.png"
-                convert +antialias -colors 3 $WORK_DIR/blank.png \
+                convert +antialias $WORK_DIR/blank.png \
                 "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)" -gravity \
                 South -geometry $butgeo -composite $THUMB_ROTATE -resize \
                 ${BUTTON_SIZE}! "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
-                convert +antialias -colors 3 $WORK_DIR/blank.png  \
+                convert +antialias $WORK_DIR/blank.png  \
                 "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)" \
                 -gravity south -geometry $butgeo -composite $THUMB_ROTATE \
                 -resize ${BUTTON_SIZE}! \
@@ -5530,7 +5540,7 @@ EOF
                 done
                 convert  -size $VIDSIZE xc:none -background none \
                 ${fake_montage_cmd[@]} -mosaic "$WORK_DIR/fake_montage.png"
-                convert +antialias -colors 3 -size $VIDSIZE xc:none \
+                convert +antialias -size $VIDSIZE xc:none \
                 -background none ${sc_spumux_cmd[@]} -mosaic \
                 "$WORK_DIR/${button}.png"
             else
@@ -5566,10 +5576,10 @@ EOF
                 sc_highlight_cmd=(${sc_highlight_cmd[@]} \
                 ${THUMBTITLES_ARRAY[i]} "${highlight_buttons[i]}")
             done
-            convert +antialias -colors 3 -quality 01 \
+            convert +antialias -quality 01 \
             -size $VIDSIZE xc:none -background none \
             ${sc_highlight_cmd[@]} -mosaic "$WORK_DIR/Highlight.png"
-            convert +antialias -colors 3 -quality 01 \
+            convert +antialias -quality 01 \
             -size $VIDSIZE xc:none -background none \
             ${sc_select_cmd[@]} -mosaic "$WORK_DIR/Select.png"
         else
@@ -5581,13 +5591,13 @@ EOF
             ${select_buttons[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
             -geometry ${THUMB_SIZE}${MTG_GEO} -bordercolor none \
             -mattecolor none miff:- |
-            convert  +antialias -colors 3 -size $VIDSIZE xc:none \
+            convert  +antialias -size $VIDSIZE xc:none \
             - -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
             -composite  "$WORK_DIR/Select.png"
             montage -background none \
             ${highlight_buttons[@]} -tile ${TILE_ARRAY[NUM_FILES]} -geometry \
             ${THUMB_SIZE}${MTG_GEO} -bordercolor none -mattecolor none miff:- |
-            convert +antialias -colors 3 -size $VIDSIZE xc:none - \
+            convert +antialias -size $VIDSIZE xc:none - \
             -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} -composite \
             "$WORK_DIR/Highlight.png"
             BUTTON_DIM=$(get_image_dim "$WORK_DIR/000000-highlight.png")
@@ -5599,7 +5609,7 @@ EOF
         fi
         if $SHOWCASE; then
             if [[ $BUTTON_STYLE = *text* ]]; then
-                convert +antialias -colors 3 -size $VIDSIZE xc:none \
+                convert +antialias -size $VIDSIZE xc:none \
                 -background none ${THUMBTITLES_ARRAY[MENU_NUM-1]} \
                 $WORK_DIR/$(printf "%06d%s" $((MENU_NUM-1)) -highlight.png) \
                 -mosaic "$WORK_DIR/fake_montage.png"
@@ -5634,10 +5644,10 @@ EOF
             [[ $i -eq $((MENU_NUM-1)) ]] && echo \
             "line ${XPT1},${YPT} ${XPT2},${YPT}" >>"$WORK_DIR/fake_montage.mvg"
         done
-        convert +antialias -colors 3 -size $VIDSIZE xc:none -fill none \
+        convert +antialias -size $VIDSIZE xc:none -fill none \
         -stroke $SELECT_CLR -strokewidth 2 -draw @spumux_drawfile \
         "$WORK_DIR/Select.png"
-        convert +antialias -colors 3 -size $VIDSIZE xc:none -fill none \
+        convert +antialias -size $VIDSIZE xc:none -fill none \
         -stroke $HLIGHT_CLR \
         -strokewidth 2 -draw @spumux_drawfile "$WORK_DIR/Highlight.png"
         convert  -size $VIDSIZE xc:none -fill none -stroke $HLIGHT_CLR \
@@ -5651,14 +5661,14 @@ EOF
         montage -background none ${select_buttons[@]} \
         -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}${MTG_GEO} \
         -bordercolor none -mattecolor none miff:- |
-        convert +antialias -colors 3 -size $VIDSIZE xc:none - \
+        convert +antialias -size $VIDSIZE xc:none - \
         -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
         -composite "$WORK_DIR/Select.png"
 
         montage -background none ${highlight_buttons[@]} \
         -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}${MTG_GEO} \
         -bordercolor none -mattecolor none miff:- |
-        convert +antialias -colors 3 -size $VIDSIZE xc:none - \
+        convert +antialias -size $VIDSIZE xc:none - \
         -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
         -composite "$WORK_DIR/Highlight.png"
 
@@ -5676,22 +5686,22 @@ EOF
         -geometry +${XGEO}+${YGEO} -composite "$WORK_DIR/fake_montage.png"
     fi
     if $TITLESET_MODE && ! $VMGM_ONLY && $VMGM_MENU; then
-        convert +antialias -colors 3 -gravity $RTN_BTN_GRAVITY \
+        convert +antialias -gravity $RTN_BTN_GRAVITY \
         -geometry "$RTN_BTN_OFFSETS" "$WORK_DIR/Select.png" \
         "$WORK_DIR/Main_${SELECT_CLR/\#}.png" -composite "$WORK_DIR/Select.png"
 
-        convert +antialias -colors 3 -gravity $RTN_BTN_GRAVITY \
+        convert +antialias -gravity $RTN_BTN_GRAVITY \
         -geometry "$RTN_BTN_OFFSETS" "$WORK_DIR/Highlight.png" \
         "$WORK_DIR/Main_${HLIGHT_CLR/\#}.png" \
         -composite "$WORK_DIR/Highlight.png"
     fi
     if $PLAYALL && ! $VMGM_ONLY; then
-        convert +antialias -colors 3 -gravity SouthEast -geometry \
+        convert +antialias -gravity SouthEast -geometry \
         "$PLAYALL_BTN_OFFSETS" "$WORK_DIR/Select.png" \
         "$WORK_DIR/Playall_${SELECT_CLR/\#}.png" \
         -composite "$WORK_DIR/Select.png"
 
-        convert +antialias -colors 3 -gravity SouthEast -geometry \
+        convert +antialias -gravity SouthEast -geometry \
         "$PLAYALL_BTN_OFFSETS" "$WORK_DIR/Highlight.png" \
         "$WORK_DIR/Playall_${HLIGHT_CLR/\#}.png" \
         -composite "$WORK_DIR/Highlight.png"
@@ -5702,27 +5712,27 @@ fi
 #if $SLIDESHOW && [[ ${#GROUP[@]} -le 1 && $TARGET = "dvd" ]]; then
 if $SINGLE_SLIDESHOW && [[ $TARGET = "dvd" ]]; then
     if $TITLESET_MODE && ! $VMGM_ONLY && $VMGM_MENU; then
-        convert +antialias -colors 3 -size $VIDSIZE xc:none -fill none  \
+        convert +antialias -size $VIDSIZE xc:none -fill none  \
         "$WORK_DIR/Main_${SELECT_CLR/\#}.png" -gravity $RTN_BTN_GRAVITY \
         -geometry "$RTN_BTN_OFFSETS" -composite "$WORK_DIR/Select.png"
-        convert +antialias -colors 3 -size $VIDSIZE xc:none -fill none \
+        convert +antialias -size $VIDSIZE xc:none -fill none \
         "$WORK_DIR/Main_${HLIGHT_CLR/\#}.png" -gravity $RTN_BTN_GRAVITY \
         -geometry "$RTN_BTN_OFFSETS" -composite "$WORK_DIR/Highlight.png"
         
-        convert +antialias -colors 3 -gravity SouthEast -geometry \
+        convert +antialias -gravity SouthEast -geometry \
         "$PLAYALL_BTN_OFFSETS"  "$WORK_DIR/Select.png" \
         "$WORK_DIR/Playall_${SELECT_CLR/\#}.png" \
         -composite "$WORK_DIR/Select.png"
 
-        convert +antialias -colors 3 -gravity SouthEast -geometry \
+        convert +antialias -gravity SouthEast -geometry \
         "$PLAYALL_BTN_OFFSETS" "$WORK_DIR/Highlight.png" \
         "$WORK_DIR/Playall_${HLIGHT_CLR/\#}.png" \
         -composite "$WORK_DIR/Highlight.png"
     else
-        convert +antialias -colors 3 -size $VIDSIZE xc:none -fill none  \
+        convert +antialias -size $VIDSIZE xc:none -fill none  \
         "$WORK_DIR/Playall_${SELECT_CLR/\#}.png" -gravity SouthEast \
         -geometry "$PLAYALL_BTN_OFFSETS" -composite "$WORK_DIR/Select.png"
-        convert +antialias -colors 3 -size $VIDSIZE xc:none -fill none  \
+        convert +antialias -size $VIDSIZE xc:none -fill none  \
         "$WORK_DIR/Playall_${HLIGHT_CLR/\#}.png" -gravity SouthEast \
         -geometry "$PLAYALL_BTN_OFFSETS" -composite "$WORK_DIR/Highlight.png"
     fi
@@ -5733,8 +5743,9 @@ if [[ $TARGET = "dvd" ]]; then
     for button in Select Highlight; do
         num_colours=$(identify -ping -format %k "$WORK_DIR/${button}.png")
         if ((num_colours > 3)); then
-            echo "$button button had $num_colours colors, reducing ..."
-           mogrify -channel A -threshold 99% "$WORK_DIR/${button}.png"
+            echo "$button button had $num_colours colors, reducing ..." |
+            tee -a "$LOG_FILE"
+            mogrify -channel A -threshold 50% "$WORK_DIR/${button}.png"
         fi
         echo
     done
@@ -6729,10 +6740,10 @@ cat  <<EOF
 rectangle 2,2 $GEO
 EOF
 )  > $WORK_DIR/draw_file${s}
-            convert +antialias -colors 3 -size ${GEO_ARRAY[C]}+5+5 \
+            convert +antialias -size ${GEO_ARRAY[C]}+5+5 \
             xc:none -fill none -stroke "$SELECT_CLR" -strokewidth 4 \
             -draw @draw_file${s} "$WORK_DIR/Submenu${s}_Selectx1.png"
-            convert +antialias -colors 3 -size ${GEO_ARRAY[C]}+5+5 \
+            convert +antialias -size ${GEO_ARRAY[C]}+5+5 \
             xc:none -fill none -stroke "$HLIGHT_CLR" -strokewidth 4 \
             -draw @draw_file${s} "$WORK_DIR/Submenu${s}_Highlightx1.png"
         fi
@@ -6750,7 +6761,7 @@ EOF
         -tile ${TILE_ARRAY[C]} \
         -geometry ${GEO_ARRAY[C]}+5+5 \
         -background none miff:-)
-        CMD3=(convert +antialias -colors 3 -size $VIDSIZE xc:none  - \
+        CMD3=(convert +antialias -size $VIDSIZE xc:none  - \
         -gravity north -geometry +0+45  \
         -composite )
         if ! ${SLIDESHOW[s]}; then
@@ -6769,11 +6780,11 @@ EOF
             "$WORK_DIR/Playall_${SELECT_CLR/\#}.png"
             mogrify -channel A -threshold 50% \
             "$WORK_DIR/Playall_${SELECT_CLR/\#}.png"
-            convert +antialias -colors 3 -size $VIDSIZE xc:none \
+            convert +antialias -size $VIDSIZE xc:none \
             "$WORK_DIR/Playall_${SELECT_CLR/\#}.png" \
             -gravity SouthEast -geometry +50+50 -composite \
             "$WORK_DIR/Submenu${s}_Select.png"
-            convert +antialias -colors 3 -size $VIDSIZE xc:none \
+            convert +antialias -size $VIDSIZE xc:none \
             "$WORK_DIR/Playall_${HLIGHT_CLR/\#}.png" \
             -gravity SouthEast -geometry +50+50 -composite \
             "$WORK_DIR/Submenu${s}_Highlight.png"
