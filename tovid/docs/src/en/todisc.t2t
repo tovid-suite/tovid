@@ -328,7 +328,7 @@ to tovid, use **-noprompt**.
     optional argument empty (just **-menu-fade**) to get the default behavior
     of showing the background for 1 second before fading the menu in.  See
     also:  **-transition-to-menu**
-: **-transition-to-menu** TIME
+: **-transition-to-menu**
     This option goes with the **-menu-fade** option above, which must be
     enabled for it to have effect.  It is a convenience option for animated
     backgrounds: the background will become static at the exact point the
