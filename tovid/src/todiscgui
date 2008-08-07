@@ -269,8 +269,10 @@ main = Panel("",
                 Flag("Textmenu", '-textmenu', False,
                     'Showcase style text only menu.  Optionally use a "showcase" '
                     'image/video, or static/animated background.  Use the '
-                    '"columns" option to set the maximum number of titles per '
-                    ' column.  See also quick-menu and switched menu.',
+                    '"columns" option to set the number of titles in '
+                    'column 1 (column 2 will use the remainder).  Note that '
+                    'column 2 titles are aligned right. '
+                    'See also quick-menu and switched menu.',
                     enables=Number('     columns', '', 13,
                     '', 1, 50)
                 ),
