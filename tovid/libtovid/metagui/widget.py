@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # widget.py
 
-"""A generic widget class, wrapper for tk.Frame.
+"""A generic GUI widget class, wrapper for tk.Frame.
 """
 
 __all__ = ['Widget']
@@ -10,8 +10,12 @@ import Tkinter as tk
 
 ### --------------------------------------------------------------------
 class Widget (tk.Frame):
-    """Generic metagui widget, suitable for Controls, Panels, etc."""
-    def __init__(self):
+    """Generic metagui widget, suitable for Controls, Panels, etc.
+    """
+    def __init__(self, name=''):
+        if type(name) != str:
+            raise TypeError("Widget name must be a string.")
+        self.name = name
         self.active = False
     
     def draw(self, master):
@@ -36,3 +40,8 @@ class Widget (tk.Frame):
     def disable(self):
         """Disable all sub-widgets."""
         self.enable(False)
+
+    def get_args(self):
+        """Return a list of command-line options for this widget.
+        """
+        return []

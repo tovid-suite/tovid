@@ -25,33 +25,33 @@ Say, if you have a program that takes input and output filenames:
 
 then you can create GUI widgets for those options like this:
 
-    Filename('-in', "Input filename")
-    Filename('-out', "Output prefix")
+    Filename('Input filename', '-in')
+    Filename('Output prefix', '-out')
 
 These have the general format:
 
-    Control('-option', "Label", ...)
+    Control('Label', '-option', ...)
 
 where:
 
     Control   is a Control subclass, such as Filename, Choice, or Number,
               describing what type of value is being controlled;
     '-option' is a command-line option whose value is set by the Control; and
-    "Label"   is the text that should appear next to the GUI Control.
+    'Label'   is the text that should appear next to the GUI Control.
 
 Other parameters include default value, help/tooltip text to show, allowable
 values, and hints about how to draw the GUI control widget; they are specific
 to the flavor of Control being used. Here's a sampling:
 
-    Choice    Multiple-choice values
-    Color     Color selection button
-    Filename  Type or [Browse] a filename
-    FileList  Add/remove/rearrange filename list
-    Flag      Check box, yes or no
-    Font      Font selection button
-    List      Space-separated list
-    Number    Number between A and B
-    Text      Plain old text
+    Choice     Multiple-choice values
+    Color      Color selection button
+    Filename   Type or [Browse] a filename
+    FileList   Add/remove/rearrange filename list
+    Flag       Check box, yes or no
+    Font       Font selection button
+    SpacedText Space-separated list
+    Number     Number between A and B
+    Text       Plain old text
 
 For a full list of available Control subclasses and how to use them,
 see libtovid/metagui/control.py.
@@ -59,26 +59,27 @@ see libtovid/metagui/control.py.
 
 CREATING THE GUI
 
-First, give your Controls a place to live, in a Panel:
+Controls can be grouped together either vertically or horizontally (using a
+VPanel or HPanel, respectively):
 
-    general = Panel("General",
-        Filename('-bgaudio', "Background audio file"),
-        Flag('-submenus', "Create submenus"),
-        Number('-menu-length', "Length of menu (seconds)", 0, 120)
+    general = VPanel('General',
+        Filename('Background audio file', '-bgaudio'),
+        Flag('Create submenus', '-submenus'),
+        Number('Length of menu (seconds)', '-menu-length', 0, 120)
         )
 
-This will create three GUI widgets in a Panel labeled "General": one for typing
+This will create three GUI widgets in a panel labeled 'General': one for typing
 or browsing to a filename, one for enabling or disabling submenus, and another 
 for setting menu length to a number between 0 and 120. You can nest panels
-inside one another for grouping; sub-Panels have their own label and list of
+inside one another for grouping; sub-panels have their own label and list of
 Controls or sub-Panels.
 
-Once you have a Panel, you can create an Application:
+Once you have a panel, you can create an Application:
 
     app = Application('todisc', [general])
 
 This says your application will run the 'todisc' command-line program,
-passing options set by the "General" panel. Now, create the GUI:
+passing options set by the 'General' panel. Now, create the GUI:
 
     gui = GUI('MyGUI', [app])
     gui.run()
@@ -94,13 +95,13 @@ all without looking cluttered, so you may break them down into multiple Panels,
 which will be shown in the GUI as tabs that you can switch between. Create
 Panels like this:
 
-    thumbs = Panel("Thumbnails",
-        Color('-thumb-mist-color', ...),
-        Text('-wave', ...)
+    thumbs = Panel('Thumbnails',
+        Color('Mist color', '-thumb-mist-color', ...),
+        Text('Wave', '-wave', ...)
     )
-    text = Panel("Text",
-        Font('-menu-font', ...),
-        Number('-menu-fontsize', ...)
+    text = Panel('Text',
+        Font('Menu font face', '-menu-font', ...),
+        Number('Menu font size', '-menu-fontsize', ...)
     )
 
 then, create the Application and GUI:
@@ -130,13 +131,15 @@ and then the GUI:
 See the apps/ directory for example GUIs.
 """
 
-# Export everything from support, control, and gui modules
-# (Open to suggestion about more elegant ways to do this...)
+# Export everything from support, control, panel, and gui modules
+# (I'm open to suggestion about more elegant ways to do this...)
 from support import *
 from control import *
+from panel import *
 from gui import *
 from support import __all__ as all_support
 from control import __all__ as all_control
+from panel import __all__ as all_panel
 from gui import __all__ as all_gui
 __all__ = [\
     'support',
@@ -145,6 +148,6 @@ __all__ = [\
     'manpage',
     'builder',
     'tooltip',
-    'widget'] + all_support + all_control + all_gui
+    'widget'] + all_support + all_control + all_panel + all_gui
 
 
