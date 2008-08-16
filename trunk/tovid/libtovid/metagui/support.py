@@ -4,20 +4,60 @@
 """Supporting classes for metagui"""
 
 __all__ = [
+    # Functions
+    'exit_with_traceback',
+    'ensure_type',
+    # Variables
     'ListVar',
     'DictVar',
+    # Others
     'ScrollList',
     'DragList',
     'ComboBox',
     'FontChooser',
     'ConfigWindow',
     'ScrolledWindow',
-    'Style']
+    'Style',
+]
 
 import os
 import Tkinter as tk
 import tkSimpleDialog
 
+### --------------------------------------------------------------------
+### Supporting functions
+### --------------------------------------------------------------------
+
+import sys
+import traceback
+
+def exit_with_traceback(error_message):
+    """Exit with a traceback, and print a custom error message.
+    """
+    # Print helpful info from stack trace
+    last_error = traceback.extract_stack()[0]
+    traceback.print_stack()
+    filename, lineno, foo, code = last_error
+    
+    print "Error on line %(lineno)s of %(filename)s:" % vars()
+    print "    " + code
+    print error_message
+    sys.exit(1)
+
+
+def ensure_type(message, required_type, *objects):
+    """Ensure that the given objects are of the required type.
+    If not, print a message and exit_with_traceback.
+    """
+    for object in objects:
+        if not isinstance(object, required_type):
+            type_message = "Expected %s, got %s instead" % \
+                         (required_type, type(object))
+            exit_with_traceback(type_message + '\n' + message)
+
+
+### --------------------------------------------------------------------
+### Tkinter Variable subclasses
 ### --------------------------------------------------------------------
 
 class ListVar (tk.Variable):
@@ -65,11 +105,34 @@ class ListVar (tk.Variable):
         self.set(items)
 
 
+    def pop(self, index=-1):
+        """Pop an item off the list and return it.
+        """
+        items = self.get()
+        result = items.pop(index)
+        self.set(items)
+        return result
+
+
     def append(self, item):
         """Append an item to the list.
         """
+        self.insert(-1, item)
+
+
+    def insert(self, index, item):
+        """Insert an item into the list at the specified index.
+        """
         items = self.get()
-        self.set(items + [item])
+        items.insert(index, item)
+        self.set(items)
+
+
+    def count(self):
+        """Return the number of items in the list.
+        """
+        return len(self.get())
+
 
 ### --------------------------------------------------------------------
 from libtovid.odict import Odict
@@ -122,39 +185,39 @@ class DictVar (tk.Variable):
         tup = tuple([(key, value) for key, value in new_dict.items()])
         tk.Variable.set(self, tup)
 
+
 ### --------------------------------------------------------------------
 
 class ScrollList (tk.Frame):
     """A Listbox with a scrollbar.
 
     Similar to a tk.Listbox, a ScrollList shows a list of items. tk.Variables
-    may be associated with both the list of available choices, and the one
-    that is currently chosen/highlighted.
+    may be associated with both the list of items, and the one that is currently
+    chosen/highlighted.
     """
-    def __init__(self, master=None, choices=None,
-                 chosen=None, command=None, select_cmd=None):
+    def __init__(self, master=None, items=None,
+                 selected=None, command=None):
         """Create a ScrollList widget.
 
             master:   Tkinter widget that will contain the ScrollList
-            choices:  ListVar or Python list of choices to show in listbox
+            items:    ListVar or Python list of items to show in listbox
             chosen:   Tk StringVar to store currently selected choice in
             command:  Function to call when a list item is clicked
-            select_cmd: A 2nd function that is called if 'command' is present
         """
         tk.Frame.__init__(self, master)
-        if type(choices) == list:
-            choices = ListVar(self, choices)
-        self.choices = choices or ListVar()
-        self.chosen = chosen or tk.StringVar()
+        if type(items) == list:
+            items = ListVar(self, items)
+        self.items = items or ListVar()
+        self.selected = selected or tk.StringVar()
         self.command = command
-        self.select_cmd = select_cmd
         self.curindex = 0
         self.linked = None
         # Draw listbox and scrollbar
         self.scrollbar = tk.Scrollbar(self, orient='vertical',
                                       command=self.scroll)
-        self.listbox = tk.Listbox(self, width=30, listvariable=self.choices,
-                                  yscrollcommand=self.scrollbar.set, exportselection=0)
+        self.listbox = tk.Listbox(self, width=30, listvariable=self.items,
+                                  yscrollcommand=self.scrollbar.set,
+                                  exportselection=0)
         self.listbox.pack(side='left', fill='both', expand=True)
         self.scrollbar.pack(side='left', fill='y')
         self.listbox.bind('<Button-1>', self.select)
@@ -165,85 +228,111 @@ class ScrollList (tk.Frame):
         """
         for value in values:
             self.listbox.insert('end', value)
+        self.select_index(-1)
 
 
     def insert(self, index, *values):
         """Insert values at a given index.
         """
         self.listbox.insert(index, *values)
+        self.select_index(index)
 
 
     def delete(self, first, last=None):
         """Delete values in a given index range (first, last), not including
         last itself. If last is None, delete only the item at first index.
         """
-        self.listbox.delete(first, last=None)
+        self.listbox.delete(first, last)
+        self.select_index(first)
 
 
     def scroll(self, *args):
         """Event handler when the list is scrolled.
         """
         apply(self.listbox.yview, args)
+        # Scroll in the linked list also
         if self.linked:
             apply(self.linked.listbox.yview, args)
 
 
     def select(self, event):
         """Event handler when an item in the list is selected.
+        Calls self.command() if present.
         """
-        self.curindex = self.listbox.nearest(event.y)
-        self.chosen.set(self.listbox.get(self.curindex))
-        if self.select_cmd:
-            self.select_cmd()
+        index = self.listbox.nearest(event.y)
+        self.select_index(index)
+
+
+    def select_index(self, index):
+        """Select (highlight) the list item at the given index.
+        Calls self.command() if present.
+        """
+        item_count = self.items.count()
+        if item_count == 0:
+            return
+        # If index is negative, or past the end, select last item
+        if index < 0 or index >= item_count:
+            index = item_count - 1
+        self.curindex = index
+        # Clear selection, and select only the given index
+        self.listbox.selection_clear(0, item_count)
+        self.listbox.selection_set(index)
+        # Set selected variable
+        self.selected.set(self.listbox.get(self.curindex))
+        # Call command if present
+        if self.command:
+            self.command()
+        # Select same index in linked ScrollList
+        if self.linked:
+            self.linked.listbox.selection_clear(0, item_count)
+            self.linked.listbox.selection_set(self.curindex)
 
 
     def get(self):
         """Return a list of all entries in the list.
         """
-        return self.choices.get()
+        return self.items.get()
 
 
     def set(self, values):
         """Set the list values to those given.
         """
-        self.choices.set(values)
+        self.items.set(values)
 
 
     def swap(self, index_a, index_b):
         """Swap the element at index_a with the one at index_b.
         """
-        item_a = self.choices[index_a]
-        item_b = self.choices[index_b]
-        self.choices[index_a] = item_b
-        self.choices[index_b] = item_a
+        temp_list = self.items.get()
+        item_a = temp_list[index_a]
+        temp_list[index_a] = temp_list[index_b]
+        temp_list[index_b] = item_a
+        self.items.set(temp_list)
 
 
     def link(self, scrolllist):
-        """Link this list to another, so they scroll in unison."""
+        """Link to another ScrollList, so they scroll and select in unison.
+        """
         if not isinstance(scrolllist, ScrollList):
             raise TypeError("Can only link to a ScrollList.")
         self.linked = scrolllist
+        scrolllist.linked = self
 
-
-    def activate(self, ind):
-        self.listbox.selection_clear(0, self.listbox.size())
-        self.listbox.selection_set(ind)
-        self.curindex = ind
 
 ### --------------------------------------------------------------------
 
 class DragList (ScrollList):
     """A scrollable listbox with drag-and-drop support"""
-    def __init__(self, master=None, choices=None,
-                 chosen=None, command=None, select_cmd=None):
+    def __init__(self, master=None, items=None,
+                 selected=None, command=None):
         """Create a DragList widget.
 
             master:   Tkinter widget that will contain the DragList
-            choices:  ListVar or Python list of choices to show in listbox
-            chosen:   Tk StringVar to store currently selected choice in
+            items:    ListVar or Python list of items to show in listbox
+            selected: Tk StringVar to store currently selected list item
             command:  Function to call when a list item is clicked
         """
-        ScrollList.__init__(self, master, choices, chosen, command, select_cmd)
+        ScrollList.__init__(self, master, items, selected, command)
         # Add bindings for drag/drop
         self.listbox.bind('<Button-1>', self.select)
         self.listbox.bind('<B1-Motion>', self.drag)
@@ -295,7 +384,7 @@ class ComboBox (tk.Frame):
             master:     Tk Widget that will contain the ComboBox
             choices:    ListVar or Python list of available choices
             variable:   Tk StringVar to store currently selected choice in
-            command:    Function to call after an item in the list is chosen
+            command:    Function to call when an item in the list is selected
         """
         tk.Frame.__init__(self, master)
         if type(choices) == list:
@@ -564,4 +653,3 @@ class ScrolledWindow (tk.Tk):
         self.canvas.configure(xscrollcommand=h_scroll.set,
                               yscrollcommand=v_scroll.set)
 
-### --------------------------------------------------------------------

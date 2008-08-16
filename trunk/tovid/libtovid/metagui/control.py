@@ -6,40 +6,68 @@
 This module defines a Control class and several derivatives. A Control is a
 special-purpose GUI widget for setting a value such as a number or filename.
 
+Control subclasses:
+    
+    Choice
+        Multiple-choice selection, with radiobutton or dropdown style
+    Color
+        RGB color selection, with color picker
+    Filename
+        Filename selection, with filesystem browse button
+    FileList
+        List of files, with add/remove buttons
+    Flag
+        Checkbox for enabling/disabling an option
+    Font
+        Font name chooser
+    Number
+        Numeric entry, with min/max and optional slide bar
+    Text
+        Plain text string
+    SpacedText
+        Plain text, interpreted as a space-separated list of strings
+    TextList
+        Ordered list of text strings
+
 """
 
 __all__ = [
     'Control',
-    # Control subclasses
+    # Subclasses
     'Choice',
     'Color',
     'Filename',
     'Flag',
-    'FlagGroup',
     'Font',
-    'Text',
-    'List',
     'Number',
+    'SpacedText',
+    'SyncList',
+    'Text',
+    # List stuff
+    'List',
     'FileList',
+    'FileLists',
     'TextList',
     'Lists',
-    'FileLists',
-    'SyncList']
+]
 
+import os
 import Tkinter as tk
 from widget import Widget
-from support import ListVar, DictVar
-import support
-import os
+from support import ListVar, DictVar, DragList, ScrollList, FontChooser
+from support import ensure_type
 
 ### --------------------------------------------------------------------
 class MissingOption (Exception):
     def __init__(self, option):
         self.option = option
 
+class NotDrawn (Exception):
+    pass
+
 ### --------------------------------------------------------------------
 # Map python types to Tkinter variable types
-_vartypes = {
+_tk_vartypes = {
     str: tk.StringVar,
     bool: tk.BooleanVar,
     int: tk.IntVar,
@@ -52,20 +80,32 @@ _vartypes = {
 from tooltip import ToolTip
 
 class Control (Widget):
-    """A widget that controls the value of a command-line option.
+    """A specialized GUI widget that controls a command-line option.
 
-    A Control is a specialized GUI widget that controls a command-line option
-    via a local variable, accessed via get() and set() methods.
-    
     Control subclasses may have any number of sub-widgets such as labels,
-    buttons or entry boxes; one of the sub-widgets should be linked to the
-    controlled variable via an option like:
+    buttons or entry boxes; one of the sub-widgets should be linked to
+    self.variable like so:
     
-        entry = Entry(self, textvariable=self.variable)
+        textbox = tk.Entry(self, textvariable=self.variable)
     
     See the Control subclasses below for examples of how self.variable,
     get() and set() are used.
     """
+
+    # Dict of all instantiated Controls, indexed by option string
+    all = {}
+
+    def by_option(option):
+        """Return the Control instance for a given option string,
+        or None if no Control has that option string.
+        """
+        if option != '' and option in Control.all:
+            return Control.all[option]
+        else:
+            return None
+    by_option = staticmethod(by_option)
+
+
     def __init__(self,
                  vartype=str,
                  label='',
@@ -88,13 +128,8 @@ class Control (Widget):
             toggles:  Control widget may be toggled on/off
             **kwargs: Keyword arguments of the form key1=arg1, key2=arg2
         
-        Keyword arguments allowed:
-        
-            pull=Control(...):  Mirror value from another Control
-            connected=Control: 2 Controls need to know each others name
-            filter=function:    Text-filtering function for pulled values
         """
-        Widget.__init__(self)
+        Widget.__init__(self, label)
         self.vartype = vartype
         self.variable = None
         self.label = label
@@ -105,38 +140,9 @@ class Control (Widget):
         self.toggles = toggles
         self.kwargs = kwargs
 
-        # List of Controls to copy updated values to
-        self.copies = []
-        if 'pull' in self.kwargs:
-            if not isinstance(self.kwargs['pull'], Control):
-                raise TypeError("Can only pull values from a Control.")
-            pull_from = self.kwargs['pull']
-            pull_from.copy_to(self)
-
-        # Filter expression when pulling from another Control
-        if 'filter' in self.kwargs:
-            if not callable(self.kwargs['filter']):
-                raise TypeError("Pull filter must be a function.")
-            self.filter = self.kwargs['filter']
-        else:
-            self.filter = None
-
-        # connect to another Control ( tell it the name of this Control )
-        # TODO do we ever need to 'connect' more than 2 widgets ?
-        # if so change vars, perhaps a 'connected' list and a 'connector'
-        if 'connect' in self.kwargs:
-            self.connected = kwargs['connect']
-            self.connected.connect(self)
-        else:
-            self.connected = None
-
-
-    def copy_to(self, control):
-        """Update another control whenever this control's value changes.
-        """
-        if not isinstance(control, Control):
-            raise TypeError("Can only copy values to a Control.")
-        self.copies.append(control)
+        # Add self to all
+        if self.option != '':
+            Control.all[self.option] = self
 
 
     def draw(self, master):
@@ -150,10 +156,10 @@ class Control (Widget):
         """
         Widget.draw(self, master)
         # Create tk.Variable to store Control's value
-        if self.vartype in _vartypes:
-            self.variable = _vartypes[self.vartype]()
+        if self.vartype in _tk_vartypes:
+            self.variable = _tk_vartypes[self.vartype](self)
         else:
-            self.variable = tk.Variable()
+            self.variable = tk.Variable(self)
         # Set default value
         if self.default:
             self.variable.set(self.default)
@@ -162,7 +168,7 @@ class Control (Widget):
             self.tooltip = ToolTip(self, text=self.help, delay=1000)
         # Draw enabler checkbox
         if self.toggles:
-            self.enabled = tk.BooleanVar()
+            self.enabled = tk.BooleanVar(self)
             self.check = tk.Checkbutton(self, text='',
                                         variable=self.enabled,
                                         command=self.enabler)
@@ -187,29 +193,44 @@ class Control (Widget):
 
 
     def get(self):
-        """Return the value of the Control's variable."""
-        # self.variable isn't set until draw() is called
+        """Return the value of the Control's variable.
+        """
+        # self.variable isn't defined until draw() is called
         if not self.variable:
-            raise Exception("Must call draw() before get()")
+            raise NotDrawn("Must call draw() before get()")
         return self.variable.get()
 
 
     def set(self, value):
-        """Set the Control's variable to the given value."""
-        # self.variable isn't set until draw() is called
+        """Set the Control's variable to the given value.
+        """
+        # self.variable isn't defined until draw() is called
         if not self.variable:
-            raise Exception("Must call draw() before set()")
+            raise NotDrawn("Must call draw() before set()")
         self.variable.set(value)
-        # Update controls that are copying this control's value
-        for control in self.copies:
-            control.variable.set(value)
+
+
+    def reset(self):
+        """Reset the Control's value to the default.
+        """
+        self.set(self.default)
+
+
+    def focus(self):
+        """Set the focus to this Control.
+        Override in subclasses if needed.
+        """
+        pass
 
 
     def get_args(self):
         """Return a list of arguments for passing this command-line option.
         draw() must be called before this function.
         """
-        # TODO: Raise exception if draw() hasn't been called
+        # self.variable isn't defined until draw() is called
+        if not self.variable:
+            raise NotDrawn("Must call draw() before get_args()")
+
         args = []
         value = self.get()
 
@@ -243,145 +264,21 @@ class Control (Widget):
 
 
     def __repr__(self):
-        """Return a Python code representation of this Control."""
-        # Get derived class name
-        control = str(self.__class__).split('.')[-1]
-        return "%s('%s', '%s', '%s', %s, '%s')" % \
-               (control, self.option, self.label, self.default, self.help)
+        """Return a Python code representation of this Control.
+        """
+        return "%s('%s', '%s')" % \
+               (self.__class__.__name__, self.label, self.option)
 
-    
+
 ### --------------------------------------------------------------------
 ### Control subclasses
 ### --------------------------------------------------------------------
 
-class Flag (Control):
-    """A widget for controlling a yes/no value."""
-    def __init__(self,
-                 label="Flag",
-                 option='',
-                 default=False,
-                 help='',
-                 **kwargs):
-        """Create a Flag widget with the given label and default value.
-
-            label:    Text label for the flag
-            option:   Command-line flag passed
-            default:  Default value (True or False)
-            help:     Help text to show in a tooltip
-        """
-        Control.__init__(self, bool, label, option, default, help, **kwargs)
-        # Enable an associated control when this Flag is True
-        self.enables = None
-        if 'enables' in kwargs:
-            self.enables = kwargs['enables']
-            if not isinstance(self.enables, Widget):
-                raise Exception("A Flag can only enable a Widget (Control or Panel)")
-
-
-    def draw(self, master):
-        """Draw control widgets in the given master."""
-        Control.draw(self, master)
-        self.check = tk.Checkbutton(self, text=self.label,
-                                    variable=self.variable,
-                                    command=self.enabler)
-        self.check.pack(side='left')
-        # Draw any controls enabled by this one
-        if self.enables:
-            self.enables.draw(self)
-            self.enables.pack(side='left', fill='x', expand=True)
-            # Disable if False
-            if not self.default:
-                self.enables.disable()
-        Control.post(self)
-
-
-    def enabler(self):
-        """Enable/disable a Control based on the value of the Flag."""
-        if not self.enables:
-            return
-        if self.get():
-            self.enables.enable()
-        else:
-            self.enables.disable()
-
-    
-    def get_args(self):
-        """Return a list of arguments for passing this command-line option.
-        draw() must be called before this function.
-        """
-        args = []
-        if self.get() == True:
-            if self.option:
-                args.append(self.option)
-            if self.enables:
-                args.extend(self.enables.get_args())
-        return args
-
-### --------------------------------------------------------------------
-
-class FlagGroup (Control):
-    """A wrapper widget for grouping Flag controls, and allowing
-    mutually-exclusive flags.
-    """
-    def __init__(self,
-                 label='',
-                 state='normal',
-                 *flags,
-                 **kwargs):
-        """Create a FlagGroup with the given label and state.
-        
-            label:    Label for the group
-            state:    'normal' for independent Flags, 'exclusive' for
-                      mutually-exclusive Flags (more like a Choice)
-            *flags:   One or more Flag controls to include in the group
-        """
-        Control.__init__(self, str, '', label, '', '')
-        self.flags = flags
-        self.state = state
-        self.label = label
-        self.side = 'top'
-        if 'side' in kwargs:
-            self.side = kwargs['side']
-    
-
-    def draw(self, master):
-        """Draw Flag controls in the given master."""
-        Control.draw(self, master)
-        frame = tk.LabelFrame(self, text=self.label)
-        frame.pack(fill='x', expand=True)
-        for flag in self.flags:
-            flag.draw(frame)
-            flag.check.bind('<Button-1>', self.select)
-            flag.pack(anchor='nw', side=self.side, fill='x', expand=True)
-        Control.post(self)
-
-
-    def select(self, event):
-        """Event handler called when a Flag is selected."""
-        # For normal flags, nothing to do
-        if self.state != 'exclusive':
-            return
-        # For exclusive flags, clear all but the clicked Flag
-        for flag in self.flags:
-            if flag.check != event.widget:
-                flag.set(False)
-            flag.enabler()
-
-
-    def get_args(self):
-        """Return a list of arguments for setting the relevant flag(s)."""
-        args = []
-        for flag in self.flags:
-            if flag.option != 'none':
-                args.extend(flag.get_args())
-        return args
-
-### --------------------------------------------------------------------
-from libtovid.odict import Odict, convert_list
+from libtovid.odict import convert_list
 from support import ComboBox
 
 class Choice (Control):
-    """A widget for choosing one of several options.
+    """Multiple-choice selector, with radiobutton or dropdown style.
     """
     def __init__(self,
                  label="Choices",
@@ -416,7 +313,8 @@ class Choice (Control):
 
 
     def draw(self, master):
-        """Draw control widgets in the given master."""
+        """Draw control widgets in the given master.
+        """
         Control.draw(self, master)
         if self.style == 'radio':
             frame = tk.LabelFrame(self, text=self.label)
@@ -434,9 +332,237 @@ class Choice (Control):
         Control.post(self)
 
 ### --------------------------------------------------------------------
+import tkColorChooser
+
+def hex_to_rgb(color):
+    """Convert a hexadecimal color '#aabbcc' to an rgb tuple.
+    """
+    color = color.lstrip('#')
+    red, green, blue = (color[0:2], color[2:4], color[4:6])
+    return (int(red, 16), int(green, 16), int(blue, 16))
+
+
+class Color (Control):
+    """RGB hexadecimal color chooser.
+    """
+    def __init__(self,
+                 label="Color",
+                 option='',
+                 default='',
+                 help='',
+                 **kwargs):
+        """Create a widget that opens a color-chooser dialog.
+        
+            label:   Text label describing the color to be selected
+            option:  Command-line option to set
+            default: Default color (named color or hexadecimal RGB)
+            help:    Help text to show in a tooltip
+        """
+        Control.__init__(self, str, label, option, default, help, **kwargs)
+
+
+    def draw(self, master):
+        """Draw control widgets in the given master.
+        """
+        Control.draw(self, master)
+        tk.Label(self, text=self.label).pack(side='left')
+        self.button = tk.Button(self, textvariable=self.variable,
+                                command=self.change)
+        self.button.pack(side='left')
+        Control.post(self)
+
+
+    def change(self):
+        """Event handler for the color button; choose and set a new color.
+        """
+        rgb, color = tkColorChooser.askcolor(self.get())
+        if color:
+            self.set(color)
+
+
+    def set(self, color):
+        """Set the current color to a hex value,
+        and set the button's label and color to match.
+        """
+        self.variable.set(color)
+        # Choose a foreground color that will show up
+        r, g, b = hex_to_rgb(str(color))
+        if (r + g + b) > 384:
+            fg_color = '#000000' # black
+        else:
+            fg_color = '#ffffff' # white
+        # Set button background color to chosen color
+        self.button.config(text=color, foreground=fg_color, background=color)
+
+
+### --------------------------------------------------------------------
+from tkFileDialog import asksaveasfilename, askopenfilename
+
+class Filename (Control):
+    """Filename entry box with browse button.
+    """
+    def __init__(self,
+                 label='Filename',
+                 option='',
+                 default='',
+                 help='',
+                 action='load',
+                 desc='Select a file to load',
+                 **kwargs):
+        """Create a Filename with label, text entry, and browse button.
+        
+            label:   Text of label next to file entry box
+            option:  Command-line option to set
+            default: Default filename
+            help:    Help text to show in a tooltip
+            action:  Do you intend to 'load' or 'save' this file?
+            desc:    Brief description (shown in title bar of file
+                     browser dialog)
+        """
+        Control.__init__(self, str, label, option, default, help, **kwargs)
+        self.action = action
+        self.desc = desc
+        # Type of files to load, with extensions
+        self.filetypes=[('All Files', '*.*')]
+        if 'filetypes' in kwargs:
+            self.filetypes = kwargs['filetypes']
+
+
+    def draw(self, master):
+        """Draw control widgets in the given master."""
+        Control.draw(self, master)
+        # Create and pack widgets
+        tk.Label(self, text=self.label, justify='left').pack(side='left')
+        self.entry = tk.Entry(self, textvariable=self.variable)
+        self.button = tk.Button(self, text="Browse...", command=self.browse)
+        self.entry.pack(side='left', fill='x', expand=True)
+        self.button.pack(side='left')
+        Control.post(self)
+
+
+    def browse(self, event=None):
+        """Event handler when browse button is pressed"""
+        if self.action == 'save':
+            filename = asksaveasfilename(parent=self, title=self.desc)
+        else: # 'load'
+            filename = askopenfilename(parent=self, title=self.desc)
+        # Got a filename? Display it
+        if filename:
+            self.set(filename)
+
+
+### --------------------------------------------------------------------
+
+class Flag (Control):
+    """Yes/no checkbox, for flag-type options.
+    """
+    def __init__(self,
+                 label="Flag",
+                 option='',
+                 default=False,
+                 help='',
+                 **kwargs):
+        """Create a Flag widget with the given label and default value.
+
+            label:    Text label for the flag
+            option:   Command-line flag passed
+            default:  Default value (True or False)
+            help:     Help text to show in a tooltip
+        """
+        Control.__init__(self, bool, label, option, default, help, **kwargs)
+        # Enable an associated control when this Flag is True
+        if 'enables' in kwargs:
+            self.enables = kwargs['enables']
+            ensure_type("Flag can only enable a Widget", Widget, self.enables)
+        else:
+            self.enables = None
+
+
+
+    def draw(self, master):
+        """Draw the Flag in the given master widget.
+        """
+        Control.draw(self, master)
+        self.check = tk.Checkbutton(self, text=self.label,
+                                    variable=self.variable,
+                                    command=self.enabler)
+        self.check.pack(side='left')
+        # Draw any controls enabled by this one
+        if self.enables:
+            self.enables.draw(self)
+            self.enables.pack(side='left', fill='x', expand=True)
+            # Disable if False
+            if not self.default:
+                self.enables.disable()
+        Control.post(self)
+
+
+    def enabler(self):
+        """Enable/disable a Control based on the value of the Flag.
+        """
+        if not self.enables:
+            return
+        if self.get():
+            self.enables.enable()
+        else:
+            self.enables.disable()
+
+    
+    def get_args(self):
+        """Return a list of arguments for passing this command-line option.
+        draw() must be called before this function.
+        """
+        args = []
+        if self.get() == True:
+            if self.option:
+                args.append(self.option)
+            if self.enables:
+                args.extend(self.enables.get_args())
+        return args
+
+### --------------------------------------------------------------------
+
+class Font (Control):
+    """Font name chooser."""
+    def __init__(self,
+                 label='Font',
+                 option='',
+                 default='Helvetica',
+                 help='',
+                 **kwargs):
+        """Create a widget that opens a font chooser dialog.
+        
+            label:   Text label for the font
+            option:  Command-line option to set
+            default: Default font
+            help:    Help text to show in a tooltip
+        """
+        Control.__init__(self, str, label, option, default, help, **kwargs)
+
+
+    def draw(self, master):
+        """Draw the Font selector in the given master widget.
+        """
+        Control.draw(self, master)
+        tk.Label(self, text=self.label).pack(side='left')
+        self.button = tk.Button(self, textvariable=self.variable,
+                                command=self.choose)
+        self.button.pack(side='left', padx=8)
+        Control.post(self)
+
+
+    def choose(self):
+        """Open a font chooser to select a font.
+        """
+        chooser = FontChooser(self)
+        if chooser.result:
+            self.variable.set(chooser.result)
+
+### --------------------------------------------------------------------
 
 class Number (Control):
-    """A widget for choosing or entering a number"""
+    """Numeric entry box or slider.
+    """
     def __init__(self,
                  label="Number",
                  option='',
@@ -468,7 +594,8 @@ class Number (Control):
 
 
     def draw(self, master):
-        """Draw control widgets in the given master."""
+        """Draw the Number entry in the given master widget.
+        """
         Control.draw(self, master)
         tk.Label(self, name='label', text=self.label).pack(side='left')
         if self.style == 'spin':
@@ -493,7 +620,8 @@ class Number (Control):
 
 
     def enable(self, enabled=True):
-        """Enable or disable all sub-widgets."""
+        """Enable or disable all sub-widgets.
+        """
         # Overridden to make Scale widget look disabled
         Control.enable(self, enabled)
         if self.style == 'scale':
@@ -506,16 +634,19 @@ class Number (Control):
                 
 
 ### --------------------------------------------------------------------
+import shlex
 
 class Text (Control):
-    """A widget for entering a line of text"""
+    """Text string entry box.
+    """
     def __init__(self,
                  label="Text",
                  option='',
                  default='',
                  help='',
                  **kwargs):
-        """
+        """Create a text-entry control.
+        
             label:    Label for the text
             option:   Command-line option to set
             default:  Default value of text widget
@@ -525,18 +656,24 @@ class Text (Control):
 
 
     def draw(self, master):
-        """Draw control widgets in the given master."""
+        """Draw the Text control in the given master widget.
+        """
         Control.draw(self, master)
         tk.Label(self, text=self.label, justify='left').pack(side='left')
         self.entry = tk.Entry(self, textvariable=self.variable)
         self.entry.pack(side='left', fill='x', expand=True)
         Control.post(self)
 
-### --------------------------------------------------------------------
-import shlex
+    def focus(self):
+        """Highlight the text entry box for editing.
+        """
+        self.entry.select_range(0, 'end')
+        self.entry.focus_set()
 
-class List (Text):
-    """A widget for entering a space-separated list of text items"""
+
+class SpacedText (Text):
+    """Text string interpreted as a space-separated list of strings
+    """
     def __init__(self,
                  label="List",
                  option='',
@@ -547,151 +684,203 @@ class List (Text):
 
 
     def draw(self, master):
-        """Draw control widgets in the given master."""
+        """Draw SpacedText control in the given master widget.
+        """
         Text.draw(self, master)
-        Text.post(self)
 
 
     def get(self):
-        """Split text into a list at whitespace boundaries."""
+        """Get current text, split into a list of strings.
+        """
         text = Text.get(self)
         return shlex.split(text)
 
 
     def set(self, listvalue):
-        """Set a value to a list, joined with spaces."""
-        text = ' '.join(listvalue)
+        """Set the text equal to the given list, joined with spaces and
+        double-quoted. Double-quotes in list values are backslash-escaped.
+        """
+        def quote(val):
+            return '"%s"' % val.replace('"', '\\"')
+        text = ' '.join([quote(val) for val in listvalue])
         Text.set(self, text)
+
+### --------------------------------------------------------------------
+from tkFileDialog import askopenfilenames
+
+class List (Control):
+    """A list of values, editable with a given Control.
+
+    Examples:
+
+        List('Filenames', '-files', control=Filename())
+        List('Colors', '-colors', control=Color())
+        List('Texts', '-texts', control=Text())
+        List('Choices', '-choices', control=Choice())
+
+    """
+    def __init__(self,
+                 label="Text List",
+                 option='',
+                 default=None,
+                 help='',
+                 control=Text(),
+                 **kwargs):
+        """Create a control for a list-type option.
+        """
+        ensure_type("List requires a Control instance", Control, control)
+        Control.__init__(self, list, label, option, default, help, **kwargs)
+        self.control = control
+
+
+    def draw(self, master, edit_only=False):
+        """Draw the List and associated Control in the given master.
+        If edit_only=True, omit add/move/remove features.
+        """
+        Control.draw(self, master)
+        # Frame to draw list and child Control in
+        frame = tk.LabelFrame(self, text=self.label)
+        frame.pack(fill='x', expand=True)
+
+        # Add/remove buttons
+        if not edit_only:
+            button_frame = tk.Frame(frame)
+            add_button = \
+                tk.Button(button_frame, text="Add", command=self.add)
+            remove_button = \
+                tk.Button(button_frame, text="Remove", command=self.remove)
+            add_button.pack(fill='x', expand=True, side='left')
+            remove_button.pack(fill='x', expand=True, side='left')
+            button_frame.pack(fill='x', expand=True)
+
+        # Scrolled or draggable listbox
+        if edit_only:
+            self.listbox = ScrollList(frame, self.variable, command=self.select)
+        else:
+            self.listbox = DragList(frame, self.variable, command=self.select)
+        self.listbox.pack(fill='both', expand=True)
+
+        # Draw child Control
+        self.control.draw(frame)
+        self.control.pack(anchor='nw', fill='x', expand=True)
+        # Child is disabled until values are added
+        if not edit_only:
+            self.control.disable()
+
+        # Add event handler to child, to update selected list item
+        # when child control's variable is modified
+        def _modify(name, index, mode):
+            self.modify()
+        self.control.variable.trace_variable('w', _modify)
+
+
+    def modify(self):
+        """Event handler when the Control's variable is modified.
+        """
+        index = self.listbox.curindex
+        new_value = self.control.get()
+        self.variable[index] = new_value
+
+
+    def select(self):
+        """Select an item in the list and enable editing.
+        """
+        index = self.listbox.curindex
+        value = self.get()[index]
+        self.control.set(value)
+        self.control.focus()
+
+
+    def add(self):
+        """Event handler for the "Add" button.
+        """
+        # For filenames, show a file chooser to add one or more files
+        if isinstance(self.control, Filename):
+            files = askopenfilenames(parent=self, title='Add files',
+                                     filetypes=self.control.filetypes)
+            self.listbox.add(*files)
+        # For all others, add an item to the list
+        else:
+            self.listbox.add(self.control.default)
+        # Select the last item in the list, and enable the control
+        self.listbox.select_index(-1)
+        self.control.enable()
+
+
+    def remove(self):
+        """Event handler for the "Remove" button.
+        """
+        if self.listbox.items.count() > 0:
+            index = self.listbox.curindex
+            self.listbox.delete(index)
+        # If last item was removed, disable the Control
+        if self.listbox.items.count() == 0:
+            self.control.disable()
+
+
+### --------------------------------------------------------------------
+### Possibly obsolete...
+### --------------------------------------------------------------------
+
+
+### --------------------------------------------------------------------
+
+class FileList (Control):
+    """List of filenames, with capability to add/move/remove filenames.
+    """
+    def __init__(self,
+                 label="File list",
+                 option='',
+                 default=None,
+                 help='',
+                 **kwargs):
+        """Create a widget with a list of files, and add/remove buttons.
+        """
+        Control.__init__(self, list, label, option, default, help, **kwargs)
+        self.filetypes=[('All Files', '*.*')]
+        if 'filetypes' in kwargs:
+            self.filetypes = kwargs['filetypes']
+
+
+    def draw(self, master):
+        """Draw control widgets in the given master.
+        """
+        Control.draw(self, master)
+        frame = tk.LabelFrame(self, text=self.label)
+        frame.pack(fill='x', expand=True)
+        # List of files
+        self.selected = tk.StringVar()
+        self.listbox = DragList(frame, self.variable, self.selected)
+        self.listbox.pack(fill='x', expand=True)
+        # Add/remove buttons
+        group = tk.Frame(frame)
+        self.add = tk.Button(group, text="Add...", command=self.add_files)
+        self.remove = tk.Button(group, text="Remove", command=self.remove_files)
+        self.add.pack(side='left', fill='x', expand=True)
+        self.remove.pack(side='left', fill='x', expand=True)
+        group.pack(fill='x')
+        Control.post(self)
+
+
+    def add_files(self):
+        """Event handler to add files to the list
+        """
+        files = askopenfilenames(parent=self, title='Add files', filetypes=self.filetypes)
+        self.listbox.add(*files)
+
+
+    def remove_files(self):
+        """Event handler to remove selected files from the list
+        """
+        selected = self.listbox.curindex
+        self.listbox.delete(selected)
+        self.listbox.select_index(selected)
     
-
 ### --------------------------------------------------------------------
-from tkFileDialog import asksaveasfilename, askopenfilename
-
-class Filename (Control):
-    """A widget for entering or browsing for a filename"""
-    def __init__(self,
-                 label='Filename',
-                 option='',
-                 default='',
-                 help='',
-                 action='load',
-                 desc='Select a file to load',
-                 **kwargs):
-        """Create a Filename with label, text entry, and browse button.
-        
-            label:   Text of label next to file entry box
-            option:  Command-line option to set
-            default: Default filename
-            help:    Help text to show in a tooltip
-            action:  Do you intend to 'load' or 'save' this file?
-            desc:    Brief description (shown in title bar of file
-                     browser dialog)
-        """
-        Control.__init__(self, str, label, option, default, help, **kwargs)
-        self.action = action
-        self.desc = desc
-
-
-    def draw(self, master):
-        """Draw control widgets in the given master."""
-        Control.draw(self, master)
-        # Create and pack widgets
-        tk.Label(self, text=self.label, justify='left').pack(side='left')
-        self.entry = tk.Entry(self, textvariable=self.variable)
-        self.button = tk.Button(self, text="Browse...", command=self.browse)
-        self.entry.pack(side='left', fill='x', expand=True)
-        self.button.pack(side='left')
-        Control.post(self)
-
-
-    def browse(self, event=None):
-        """Event handler when browse button is pressed"""
-        if self.action == 'save':
-            filename = asksaveasfilename(parent=self, title=self.desc)
-        else: # 'load'
-            filename = askopenfilename(parent=self, title=self.desc)
-        # Got a filename? Display it
-        if filename:
-            self.set(filename)
-
-### --------------------------------------------------------------------
-import tkColorChooser
-
-class Color (Control):
-    """A widget for choosing a color"""
-    def __init__(self,
-                 label="Color",
-                 option='',
-                 default='',
-                 help='',
-                 **kwargs):
-        """Create a widget that opens a color-chooser dialog.
-        
-            label:   Text label describing the color to be selected
-            option:  Command-line option to set
-            default: Default color (named color or hexadecimal RGB)
-            help:    Help text to show in a tooltip
-        """
-        Control.__init__(self, str, label, option, default, help, **kwargs)
-
-
-    def draw(self, master):
-        """Draw control widgets in the given master."""
-        Control.draw(self, master)
-        tk.Label(self, text=self.label).pack(side='left')
-        self.button = tk.Button(self, text="None", command=self.change)
-        self.button.pack(side='left')
-        Control.post(self)
-
-
-    def change(self):
-        """Choose a color, and set the button's label and color to match."""
-        rgb, color = tkColorChooser.askcolor(self.get())
-        if color:
-            self.set(color)
-            self.button.config(text=color, foreground=color)
-    
-### --------------------------------------------------------------------
-
-class Font (Control):
-    """A font selector widget"""
-    def __init__(self,
-                 label='Font',
-                 option='',
-                 default='Helvetica',
-                 help='',
-                 **kwargs):
-        """Create a widget that opens a font chooser dialog.
-        
-            label:   Text label for the font
-            option:  Command-line option to set
-            default: Default font
-            help:    Help text to show in a tooltip
-        """
-        Control.__init__(self, str, label, option, default, help, **kwargs)
-
-
-    def draw(self, master):
-        """Draw control widgets in the given master."""
-        Control.draw(self, master)
-        tk.Label(self, text=self.label).pack(side='left')
-        self.button = tk.Button(self, textvariable=self.variable,
-                                command=self.choose)
-        self.button.pack(side='left', padx=8)
-        Control.post(self)
-
-
-    def choose(self):
-        """Open a font chooser to select a font."""
-        chooser = support.FontChooser(self)
-        if chooser.result:
-            self.variable.set(chooser.result)
-
-### --------------------------------------------------------------------
-from support import DragList, ScrollList
 
 class TextList (Control):
-    """A widget for listing and editing several text strings"""
+    """List of text strings.
+    """
     def __init__(self,
                  label="Text list",
                  option='',
@@ -703,44 +892,184 @@ class TextList (Control):
 
 
     def draw(self, master):
-        """Draw control widgets in the given master."""
+        """Draw the TextList control in the given master widget.
+        """
+        # TODO: Capability to add/remove list entries
         Control.draw(self, master)
         frame = tk.LabelFrame(self, text=self.label)
         frame.pack(fill='x', expand=True)
         self.selected = tk.StringVar()
-        self.listbox = DragList(frame, choices=self.variable,
-                        chosen=self.selected, select_cmd=self.selectListitem)
+        # Scrollable list of items
+        self.listbox = ScrollList(frame, self.variable, self.selected,
+                                command=self.select)
         self.listbox.pack(fill='x', expand=True)
-        # TODO: Event handling to allow editing items
+        # Edit box for modifying list items
         self.editbox = tk.Entry(frame, width=30, textvariable=self.selected)
-        self.editbox.bind('<Return>', self.setTitle)
+        self.editbox.bind('<Return>', self.set_text)
         self.editbox.pack(fill='x', expand=True)
         Control.post(self)
 
 
-    def setTitle(self, event):
-        """Event handler when Enter is pressed after editing a title."""
+    def set_text(self, event):
+        """Event handler when Enter is pressed after editing a list item.
+        """
         index = self.listbox.curindex
         self.variable[index] = self.selected.get()
-        if len(self.listbox.get()) > index + 1:
-            # select the next index
-            self.listbox.activate(index + 1)
-            # select the contents of the editbox
-            self.editbox.select_range(0, 'end')
-            # set the editbox to the new index
-            self.selected.set(self.variable[index+1])
+        # Select the next item in the listbox, or wraparound to the first
+        if index + 1 < self.variable.count():
+            self.listbox.select_index(index + 1)
+        else:
+            self.listbox.select_index(0)
+        self.select()
 
 
-    def selectListitem(self):
+    def select(self):
         """Event handler when an item in the list is selected.
         """
         self.editbox.select_range(0, 'end')
         self.editbox.focus_set()
 
+
+### --------------------------------------------------------------------
+
+
+class SyncList (Widget):
+    """Read-only synchronized copy of another list.
+    """
+    def __init__(self, option, **kwargs):
+        """Create a SyncList widget for the given option.
+        """
+        self.option = option
+        self.parent = None
+
+    
+    def draw(self, master):
+        """Draw the SyncList in the given master widget.
+        """
+        # Lookup the Control for this option
+        control = Control.by_option(self.option)
+        # Ensure control exists and is correct type
+        if not control:
+            raise Exception("Control for '%s' does not exist" % self.option)
+        if control.__class__.__name__ not in ['FileList', 'TextList']:
+            raise TypeError("SyncList control must be a FileList or TextList.")
+        
+        # Selected item, and reference to control variable
+        self.selected = tk.StringVar()
+        self.variable = control.variable
+        # Draw the listbox
+        self.listbox = ScrollList(self, control.variable, self.selected,
+                                  command=self.select)
+        self.listbox.pack(fill='x', expand=True)
+
+
+    def select(self):
+        """Event handler when an item in the list is selected.
+        """
+        # connected widget sets its list to selected index
+        if self.connected and len(self.connected.lists) > 0:
+            self.connected.setList()
+
+
+    def connect(self, connected):
+        """a call from a connected widget that passes its name"""
+        self.connected = connected
+
+### --------------------------------------------------------------------
+
+class FileLists (Control):
+    """A widget that list groups of lists
+    """
+    def __init__(self,
+                 label="Text list",
+                 option='',
+                 default=None,
+                 help='',
+                 **kwargs):
+        Control.__init__(self, list, label, option, default, help, **kwargs)
+        self.filetypes=[('All Files', '*.*')]
+        if 'filetypes' in kwargs:
+            self.filetypes = kwargs['filetypes']
+        self.lists = []
+
+
+    def draw(self, master):
+        """Draw control widgets in the given master.
+        """
+        Control.draw(self, master)
+        frame = tk.LabelFrame(self, text=self.label)
+        frame.pack(fill='x', expand=True)
+        self.selected = tk.StringVar()
+        self.listbox = ScrollList(frame, self.variable, self.selected,
+                                  command=self.select)
+        self.listbox.pack(fill='x', expand=True)
+        # Add/remove buttons
+        group = tk.Frame(frame)
+        self.add = tk.Button(group, text="Add...", command=self.add_files)
+        self.remove = tk.Button(group, text="Remove", command=self.remove_files)
+        self.add.pack(side='left', fill='x', expand=True)
+        self.remove.pack(side='left', fill='x', expand=True)
+        group.pack(fill='x')
+        Control.post(self)
+
+
+    def select(self, event):
+        """Event handler when a filename in the list is selected.
+        """
+        pass
+
+
+    def add_files(self):
+        """Event handler to add files to the list
+        """
+        files = askopenfilenames(parent=self, title='Add files', filetypes=self.filetypes)
+        self.listbox.add(*files)
+        # save the whole of variable to 'lists' list
+        self.lists[self.connected.listbox.curindex] = self.variable.get()
+
+
+    def remove_files(self):
+        """Event handler to remove selected files from the list
+        """
+        # TODO: Support multiple selection
+        selected = self.listbox.curindex
+        self.listbox.delete(selected)
+        # save the whole of variable to 'lists' list
+        self.lists[self.connected.listbox.curindex] = self.variable.get()
+        #self.lists.pop(selected)
+
+
+    def connect(self, connected):
+        """a call from a connected widget that passes its name
+        """
+        self.connected = connected
+
+
     def setList(self):
         """ set listbox contents to 'lists' at index of connected listbox.
         """
+        connected_ind = self.connected.listbox.curindex
+        self.variable.set(self.lists[connected_ind])
+
+    
+    def select(self):
+        """Event handler when an item in the list is selected.
+        """
         pass
+
+
+    def get_args(self):
+        """Return a list of arguments for passing this command-line option.
+        draw() must be called before this function.
+        """
+        # TODO: Raise exception if draw() hasn't been called
+        args = []
+        for index, argument in enumerate(self.lists):
+            if self.lists[index]:
+                args.append(self.option)
+                args.append(index+1)
+                args.extend(argument)
+        return args
 
 ### --------------------------------------------------------------------
 
@@ -769,19 +1098,19 @@ class Lists (Control):
         frame = tk.LabelFrame(self, text=self.label)
         frame.pack(fill='x', expand=True)
         self.selected = tk.StringVar()
-        self.listbox = ScrollList(frame, choices=self.variable,
-                        chosen=self.selected, select_cmd=self.selectListitem)
+        self.listbox = ScrollList(frame, self.variable, self.selected,
+                                  command=self.select)
         self.listbox.pack(fill='x', expand=True)
         # TODO: Event handling to allow editing items
         self.editbox = tk.Entry(frame, width=30, textvariable=self.selected)
-        self.editbox.bind('<Return>', self.setTitle)
+        self.editbox.bind('<Return>', self.set_text)
         self.editbox.pack(fill='x', expand=True)
         Control.post(self)
         self.variable.append('')
 
 
-    def setTitle(self, event):
-        """Event handler when Enter is pressed after editing a title."""
+    def set_text(self, event):
+        """Event handler when Enter is pressed after editing a list item."""
         index = self.listbox.curindex
         self.variable[index] = self.selected.get()
         if len(self.listbox.get()) < index + 2:
@@ -812,7 +1141,7 @@ class Lists (Control):
         self.editbox.focus_set()
 
     
-    def selectListitem(self):
+    def select(self):
         """Event handler when an item in the list is selected.
         """
         self.editbox.select_range(0, 'end')
@@ -832,250 +1161,28 @@ class Lists (Control):
             args.extend(self.lists[index][0:end])
         return args
 
-### --------------------------------------------------------------------
 
-class SyncList (Control):
-    """Expermental list of filenames pulled from another widget"""
-    def __init__(self,
-                 label="List",
-                 option='',
-                 default='',
-                 help='',
-                 **kwargs):
-        Control.__init__(self, list, label, option, default, help, **kwargs)
-
-    
-    def draw(self, master):
-        """Draw control widgets in the given master."""
-        Control.draw(self, master)
-        frame = tk.LabelFrame(self, text=self.label)
-        frame.pack(fill='x', expand=True)
-        self.selected = tk.StringVar()
-        self.listbox = ScrollList(frame, choices=self.variable,
-                        chosen=self.selected, select_cmd=self.selectListitem)
-        self.listbox.pack(fill='x', expand=True)
-        Control.post(self)
-
-
-    def connect(self, connected):
-        """a call from a connected widget that passes its name"""
-        self.connected = connected
-
-
-    def selectListitem(self):
-        """Event handler when an item in the list is selected.
-        A list of lists is used to allow each video to have its own group"""
-        # connected widget sets its list to selected index
-        if self.connected and len(self.connected.lists) > 0:
-            self.connected.setList()
-    
-    def get_args(self):
-        args = []
-        return args 
-
-### --------------------------------------------------------------------
-from tkFileDialog import askopenfilenames
-
-class FileList (Control):
-    """A widget for listing several filenames"""
-    def __init__(self,
-                 label="File list",
-                 option='',
-                 default=None,
-                 help='',
-                 **kwargs):
-        """Create a widget with a list of files, and add/remove buttons.
-        """
-        Control.__init__(self, list, label, option, default, help, **kwargs)
-        self.filetypes=[('All Files', '*.*')]
-        if 'filetypes' in kwargs:
-            self.filetypes = kwargs['filetypes']
-
-
-    def draw(self, master):
-        """Draw control widgets in the given master."""
-        Control.draw(self, master)
-        frame = tk.LabelFrame(self, text=self.label)
-        frame.pack(fill='x', expand=True)
-        # List of files
-        self.listbox = DragList(frame, choices=self.variable,
-            command=self.select, select_cmd=self.selectListitem)
-        self.listbox.pack(fill='x', expand=True)
-        # Add/remove buttons
-        group = tk.Frame(frame)
-        self.add = tk.Button(group, text="Add...", command=self.addFiles)
-        self.remove = tk.Button(group, text="Remove", command=self.removeFiles)
-        self.add.pack(side='left', fill='x', expand=True)
-        self.remove.pack(side='left', fill='x', expand=True)
-        group.pack(fill='x')
-        Control.post(self)
-
-
-    def select(self, event):
-        """Event handler when a filename in the list is selected.
-        """
-        pass
-
-
-    def addFiles(self):
-        """Event handler to add files to the list"""
-        files = askopenfilenames(parent=self, title='Add files', filetypes=self.filetypes)
-        self.listbox.add(*files)
-        for dest in self.copies:
-            self.listbox.linked = dest.listbox
-            dest.listbox.linked = self.listbox
-            if dest.filter:
-                titles = [dest.filter(file) for file in files]
-                dest.listbox.add(*titles)
-            else:
-                dest.listbox.add(*files)
-            if dest.connected:
-                for i in range(len(files)):
-                    dest.connected.lists.append([])
-
-
-    def removeFiles(self):
-        """Event handler to remove selected files from the list"""
-        # TODO: Support multiple selection: *(this will clash 'connected' code)
-        selected = self.listbox.curindex
-        self.listbox.delete(selected)
-        for control in self.copies:
-            control.listbox.delete(selected)
-            # if puller is connected to a listbox it has a 'lists' variable
-            if control.connected:
-                # remove the lists index and its contents
-                control.connected.lists.pop(selected)
-                # just set listbox/editbox to 1st index or clear variable
-                if len(control.connected.lists) > 0:
-                    control.connected.listbox.activate(0)
-                    control.connected.variable.set(control.connected.lists[0])
-                    control.connected.listbox.curindex = 0
-                else:
-                    control.connected.variable.set('')
-
-
-    def connect(self, connected):
-        """a call from a connected widget that passes its name"""
-        self.connected = connected
-
-
-    def selectListitem(self):
-        """Event handler when an item in the list is selected.
-        A list of lists is used to allow each video to have its own group"""
-        pass
-
-
-### --------------------------------------------------------------------
-
-class FileLists (Control):
-    """A widget that list groups of lists"""
-    def __init__(self,
-                 label="Text list",
-                 option='',
-                 default=None,
-                 help='',
-                 **kwargs):
-        Control.__init__(self, list, label, option, default, help, **kwargs)
-        self.filetypes=[('All Files', '*.*')]
-        if 'filetypes' in kwargs:
-            self.filetypes = kwargs['filetypes']
-        self.lists = []
-
-
-    def draw(self, master):
-        """Draw control widgets in the given master."""
-        Control.draw(self, master)
-        frame = tk.LabelFrame(self, text=self.label)
-        frame.pack(fill='x', expand=True)
-        self.selected = tk.StringVar()
-        self.listbox = ScrollList(frame, choices=self.variable,
-                        chosen=self.selected, select_cmd=self.selectListitem)
-        self.listbox.pack(fill='x', expand=True)
-        # Add/remove buttons
-        group = tk.Frame(frame)
-        self.add = tk.Button(group, text="Add...", command=self.addFiles)
-        self.remove = tk.Button(group, text="Remove", command=self.removeFiles)
-        self.add.pack(side='left', fill='x', expand=True)
-        self.remove.pack(side='left', fill='x', expand=True)
-        group.pack(fill='x')
-        Control.post(self)
-
-
-    def select(self, event):
-        """Event handler when a filename in the list is selected.
-        """
-        pass
-
-
-    def addFiles(self):
-        """Event handler to add files to the list"""
-        files = askopenfilenames(parent=self, title='Add files', filetypes=self.filetypes)
-        self.listbox.add(*files)
-        # save the whole of variable to 'lists' list
-        self.lists[self.connected.listbox.curindex] = self.variable.get()
-
-
-    def removeFiles(self):
-        """Event handler to remove selected files from the list"""
-        # TODO: Support multiple selection
-        selected = self.listbox.curindex
-        self.listbox.delete(selected)
-        # save the whole of variable to 'lists' list
-        self.lists[self.connected.listbox.curindex] = self.variable.get()
-        #self.lists.pop(selected)
-
-
-    def connect(self, connected):
-        """a call from a connected widget that passes its name"""
-        self.connected = connected
-
-
-    def setList(self):
-        """ set listbox contents to 'lists' at index of connected listbox.
-        """
-        connected_ind = self.connected.listbox.curindex
-        
-        self.variable.set(self.lists[connected_ind])
-
-    
-    def selectListitem(self):
-        """Event handler when an item in the list is selected.
-        A list of lists is used to allow each video to have its own group"""
-        pass
-
-
-    def get_args(self):
-        """Return a list of arguments for passing this command-line option.
-        draw() must be called before this function.
-        """
-        # TODO: Raise exception if draw() hasn't been called
-        args = []
-        for index, argument in enumerate(self.lists):
-            if self.lists[index]:
-                args.append(self.option)
-                args.append(index+1)
-                args.extend(argument)
-        return args
-
-    
 ### --------------------------------------------------------------------
 
 # Exported control classes, indexed by name
 CONTROLS = {
+    # Simple controls
     'Choice': Choice,
     'Color': Color,
     'Filename': Filename,
     'Flag': Flag,
-    'FlagGroup': FlagGroup,
     'Font': Font,
-    'Text': Text,
-    'List': List,
     'Number': Number,
+    'SpacedText': SpacedText,
+    'Text': Text,
+    # Lists
+    'List': List,
     'FileList': FileList,
     'TextList': TextList,
+    # Remove?
     'SyncList': SyncList,
-    'FileLists': FileLists,
     'Lists': Lists,
+    'FileLists': FileLists,
 }
 
 ### --------------------------------------------------------------------
