@@ -62,144 +62,6 @@ sequentially before returning to the menu.  You can use single integers or \
 indicate a range with a "-" separator.  Example of a range: "1-2 4-6" \
 ( no quotes).  This will play video 1 through video 3 before returning to the \
 menu, and the same for video 4 through video 6.'
-files = FileList('Video files', '-files', None,
-    'Video files to include on the disc',
-    )
-
-titles = TextList('Video titles', '-titles', None,
-    'Titles for each video.  Use \\n for a new line in a multi-line title.',
-    pull=files, # -titles is updated when -files is updated
-    filter=to_title, # strip pathname and extension from filenames
-    )
-
-synclist = SyncList('Video list', '', None, chapter_titles_tooltip, pull=files)
-synclist2 = SyncList('Video list', '', None, group_tooltip, pull=files)
-mappedlist = Lists('Chapter titles', '-chapter-titles', None,
-        chapter_titles_tooltip, connect=synclist)
-
-
-slideshow_filetypes = [filetypes.all_files]
-slideshow_filetypes.append(filetypes.image_files)
-slideshow_filetypes.extend(filetypes.match_types('image'))
-
-tab_list = []
-main_panel = VPanel('slideshow',
-    Tabs(
-        VPanel('General Options',
-            Text('Title', '-titles', '',
-            'Title for this slideshow.'),
-            FileList('images for slideshow one', '-slides', None,
-            slideshow_tooltip, filetypes=slideshow_filetypes),
-            FlagGroup("", 'exclusive',
-                Flag('Animated with transitions', '', True,
-                    'This is the default if you are not doing a static '
-                    'menu.  The slides transition one to the next, using '
-                    'the type of transition selected in "Transition type"'),
-                Flag('Static with "Polaroid stack" menu', '-static', False,
-                    'This puts the  slides  onto  the  background in '
-                    '"random" locations with random rotations, making it '
-                    'look like a scattered stack of photos. This is the '
-                    'same as setting -static on the Main tab.'),
-            ),
-            Number('Numbert of slides shown on menu', '-menu-slide-total',
-            0, 'Use this many slides for making the slideshow menu. '
-            'The default is to use all the slides given.',
-            0, 100, toggles=True),
-            List('Numbert of slides shown on submenu',
-            '-submenu-slide-total', '',
-            'Use this many slides for making the slideshow submenus. '
-            'The default is to use all the slides given.  '
-            'Use a single value for all or list one value per submenu.', toggles=True),
-            Panel('Animated slideshow options',
-                HPanel('',
-                    Choice('Transition type', '-slide-transition', 'crossfade',
-                    'The type of fade transition between slides in an '
-                    'animated slideshow menu.  Be sure  the  menu  length '
-                    'is long enough to support the 1 second transitions '
-                    'between the slides.  The length is determined by  '
-                    '1)  the length  of  the -bgaudio AUDIO  2) the '
-                    'length given with -menu-length DURATiON.  '
-                    '* See Menu tab for menu length option *.',
-                    'crossfade|fade'),
-                    HPanel('',
-                        Number('Slide border', '-slide-border', 100,
-                        'Use a border around animated slideshow slides '
-                        '(default: 100 pixels).',
-                        0, 200, toggles=True),
-                        Number('Slide frame', '-slide-frame', 12,
-                        'Use a frame around the animated slideshow slides '
-                        '(default: 12).',
-                        0, 20, toggles=True),
-                    ),
-                ),
-            ),
-            Flag('No reminder prompt for backing up files',
-            '-no-confirm-backup', False, 'Todisc prompts you for a "yes" '
-            ' to show you have taken backup precations.  This option '
-            'disables that prompt.'),
-        ),
-        VPanel('Advanced options',
-            FlagGroup('Use slideshow as background or showcase video ',
-                'exclusive',
-                Flag("Background", '-background-slideshow',
-                False, 'This option is only for multiple slideshows, '
-                '(or mixed video and slideshow menus). It uses the '
-                'animated slideshow as the background video'),
-                Flag("Showcase", '-showcase-slideshow',
-                False, 'This option is only for multiple slideshows, '
-                '(or mixed video and slideshow menus).  It uses the '
-                'animated slideshow as the showcase video',),
-            ),
-            FileList('Menu slide thumbs', '-slideshow-menu-thumbs', None,
-            'Slides for the menu thumbnail.  For multiple slideshows or '
-            'mixed slideshows/videos only.', filetypes=slideshow_filetypes),
-            Flag('Use dvd-slideshow program', '-use-dvd-slideshow', False,
-                'Use the "dvd-slideshow" program to make the animated '
-                'slideshow. You need of course to have installed this program '
-                'to use this. You only need this for special effects like the '
-                '"Ken Burns effect" otherwise todisc can do the job well '
-                'and fast on its own. The optional file is the dvd-slideshow '
-                'file you would need for non-todisc options, otherwise '
-                'todisc will make the file for you. Using this option will '
-                'void many todisc slideshow options.',
-                enables=Filename('', '', '', '',  'load',
-                'Select the dvd-author configuration file..'),
-            ),
-        ),
-        VPanel('Denoising options',
-            FileList('Slides to "bin"', '-slides-to-bin', None,
-            '"Binning" resizes the image to 640x480 using a "box" '
-            'filter, which reduces "signal to noise ratio"'
-            'Use in conjuction with the next option for burring, '
-            'to achieve stronger denoising',
-            filetypes=slideshow_filetypes),
-            FileList('Slides to blur', '-slides-to-blur', None,
-            'Blurring the image can reduce noise such as "ringing" '
-            'effects.  Use values between 0x0.1 and 0x0.9 for best '
-            'results.  Enter a single value or 1 value for each slide '
-            'to be blurred.', filetypes=slideshow_filetypes),
-            List('Slide blur amount', '-slide-blur', '',
-            'How much to blur each slide given with "Slides to blur".  '
-            'Use a single value, or a list with one value per slide given'
-            'The format is {radius}x{sigma} and the default is 0x0.2.  Using '
-            'values between 0x0.1 and 0x0.9 is probably the best range.'
-            ),
-        ),
-    ),
-)
-        
-
-tab_list.append(main_panel)
-
-for num in range(2,  13):
-    title_str = 'images for slideshow ' + str(num)
-    next_panel = VPanel(str(num),
-        Text('Title', '-titles', '',
-        'Title for this slideshow. Leave empty if doing a single slideshow.'),
-        FileList(title_str, '-slides', None,
-            slideshow_tooltip),
-        )
-    tab_list.append(next_panel)
 
 # tovid Flag options lists
 #(tovid_opts, gen_opts) = ([] for i in range(0, 2))
@@ -221,17 +83,16 @@ for opt in '-quiet', '-keepfiles', \
 ### Main todisc options
 ### --------------------------------------------------------------------
 
-main = Panel("",
+main = VPanel("",
     Text('Menu title', '-menu-title', 'My video collection',
         'Title text displayed on the main menu. Use \\n for a new line '
          'in a multi-line title.'),
     Tabs(
-        HPanel('', files, titles, tab_title='Add videos'),
-        HPanel('',
-            synclist2,
-            FileLists('Video files', '-group', None,
-            group_tooltip, connect=synclist2), tab_title='Add grouped videos',
-        ),
+        List('Video files', '-files', None, '', Filename()),
+        RelatedList('-files', 'one',
+            List('Video titles', '-titles', None, '', Text())),
+        RelatedList('-files', 'many',
+            List('Grouped videos', '-group', None, group_tooltip, Filename())),
     ),
 
     HPanel('',
@@ -307,7 +168,7 @@ main = Panel("",
         required=True),
 tab_title='Main')
 
-general = Panel("",
+general = VPanel("",
     HPanel('',
         VPanel('',
             Number('Number of jobs to run simultaneously', '-jobs', 0,
@@ -426,7 +287,7 @@ general = Panel("",
     ), tab_title='General',
 )
 
-menu = Panel("Menu",
+menu = VPanel("Menu",
     Number('Menu length', '-menu-length', 20,
         'Duration of menu in seconds.  The length of the menu will also set '
         'the length of background audio for a static menu',
@@ -465,7 +326,7 @@ menu = Panel("Menu",
         'Controls positioning of the thumbnails and their titles.  '
         'With some arrangements this will have limited effects however.',
         'north|south|east|west|center'),
-    Panel('Seek times',
+    VPanel('Seek times',
         List('Thumbnails', '-seek', '',
             'Play thumbnail videos from the given seek time (seconds).  '
             'A single value or space separated list, 1 value per video.  '
@@ -500,9 +361,137 @@ menu = Panel("Menu",
         )
     ),
 )
-slideshows = Panel("Slideshows", Tabs(*tab_list))
 
-thumbnails = Panel("Thumbnails",
+
+
+
+slideshow_filetypes = [filetypes.all_files]
+slideshow_filetypes.append(filetypes.image_files)
+slideshow_filetypes.extend(filetypes.match_types('image'))
+
+tab_list = []
+slideshow_panel = VPanel('slideshow',
+    Tabs(
+        VPanel('General Options',
+            Text('Title', '-titles', '',
+            'Title for this slideshow.'),
+            FileList('images for slideshow one', '-slides', None,
+            slideshow_tooltip, filetypes=slideshow_filetypes),
+            FlagGroup("", 'exclusive',
+                Flag('Animated with transitions', '', True,
+                    'This is the default if you are not doing a static '
+                    'menu.  The slides transition one to the next, using '
+                    'the type of transition selected in "Transition type"'),
+                Flag('Static with "Polaroid stack" menu', '-static', False,
+                    'This puts the  slides  onto  the  background in '
+                    '"random" locations with random rotations, making it '
+                    'look like a scattered stack of photos. This is the '
+                    'same as setting -static on the Main tab.'),
+            ),
+            Number('Numbert of slides shown on menu', '-menu-slide-total',
+            0, 'Use this many slides for making the slideshow menu. '
+            'The default is to use all the slides given.',
+            0, 100, toggles=True),
+            List('Numbert of slides shown on submenu',
+            '-submenu-slide-total', '',
+            'Use this many slides for making the slideshow submenus. '
+            'The default is to use all the slides given.  '
+            'Use a single value for all or list one value per submenu.', toggles=True),
+            VPanel('Animated slideshow options',
+                HPanel('',
+                    Choice('Transition type', '-slide-transition', 'crossfade',
+                    'The type of fade transition between slides in an '
+                    'animated slideshow menu.  Be sure  the  menu  length '
+                    'is long enough to support the 1 second transitions '
+                    'between the slides.  The length is determined by  '
+                    '1)  the length  of  the -bgaudio AUDIO  2) the '
+                    'length given with -menu-length DURATiON.  '
+                    '* See Menu tab for menu length option *.',
+                    'crossfade|fade'),
+                    HPanel('',
+                        Number('Slide border', '-slide-border', 100,
+                        'Use a border around animated slideshow slides '
+                        '(default: 100 pixels).',
+                        0, 200, toggles=True),
+                        Number('Slide frame', '-slide-frame', 12,
+                        'Use a frame around the animated slideshow slides '
+                        '(default: 12).',
+                        0, 20, toggles=True),
+                    ),
+                ),
+            ),
+            Flag('No reminder prompt for backing up files',
+            '-no-confirm-backup', False, 'Todisc prompts you for a "yes" '
+            ' to show you have taken backup precations.  This option '
+            'disables that prompt.'),
+        ),
+        VPanel('Advanced options',
+            FlagGroup('Use slideshow as background or showcase video ',
+                'exclusive',
+                Flag("Background", '-background-slideshow',
+                False, 'This option is only for multiple slideshows, '
+                '(or mixed video and slideshow menus). It uses the '
+                'animated slideshow as the background video'),
+                Flag("Showcase", '-showcase-slideshow',
+                False, 'This option is only for multiple slideshows, '
+                '(or mixed video and slideshow menus).  It uses the '
+                'animated slideshow as the showcase video',),
+            ),
+            FileList('Menu slide thumbs', '-slideshow-menu-thumbs', None,
+            'Slides for the menu thumbnail.  For multiple slideshows or '
+            'mixed slideshows/videos only.', filetypes=slideshow_filetypes),
+            Flag('Use dvd-slideshow program', '-use-dvd-slideshow', False,
+                'Use the "dvd-slideshow" program to make the animated '
+                'slideshow. You need of course to have installed this program '
+                'to use this. You only need this for special effects like the '
+                '"Ken Burns effect" otherwise todisc can do the job well '
+                'and fast on its own. The optional file is the dvd-slideshow '
+                'file you would need for non-todisc options, otherwise '
+                'todisc will make the file for you. Using this option will '
+                'void many todisc slideshow options.',
+                enables=Filename('', '', '', '',  'load',
+                'Select the dvd-author configuration file..'),
+            ),
+        ),
+        VPanel('Denoising options',
+            FileList('Slides to "bin"', '-slides-to-bin', None,
+            '"Binning" resizes the image to 640x480 using a "box" '
+            'filter, which reduces "signal to noise ratio"'
+            'Use in conjuction with the next option for burring, '
+            'to achieve stronger denoising',
+            filetypes=slideshow_filetypes),
+            FileList('Slides to blur', '-slides-to-blur', None,
+            'Blurring the image can reduce noise such as "ringing" '
+            'effects.  Use values between 0x0.1 and 0x0.9 for best '
+            'results.  Enter a single value or 1 value for each slide '
+            'to be blurred.', filetypes=slideshow_filetypes),
+            List('Slide blur amount', '-slide-blur', '',
+            'How much to blur each slide given with "Slides to blur".  '
+            'Use a single value, or a list with one value per slide given'
+            'The format is {radius}x{sigma} and the default is 0x0.2.  Using '
+            'values between 0x0.1 and 0x0.9 is probably the best range.'
+            ),
+        ),
+    ),
+)
+        
+
+tab_list.append(slideshow_panel)
+
+for num in range(2,  13):
+    title_str = 'images for slideshow ' + str(num)
+    next_panel = VPanel(str(num),
+        Text('Title', '-titles', '',
+        'Title for this slideshow. Leave empty if doing a single slideshow.'),
+        FileList(title_str, '-slides', None,
+            slideshow_tooltip),
+        )
+    tab_list.append(next_panel)
+
+slideshows = VPanel("Slideshows", Tabs(*tab_list))
+
+
+thumbnails = VPanel("Thumbnails",
     Choice('Thumb shape', '-thumb-shape', 'normal',
         'Apply a shaped transparency mask to thumbnail videos. '
         'Note: to disable the "mist" background '
@@ -556,7 +545,7 @@ thumbnails = Panel("Thumbnails",
     ),
 )
 
-submenus = Panel("Submenus",
+submenus = VPanel("Submenus",
     Tabs(
         VPanel('',
             VPanel('',
@@ -588,27 +577,22 @@ submenus = Panel("Submenus",
             ), tab_title='General'
         ),
         VPanel('Titles',
-            VPanel('Submenu titles',
-                HPanel('',
-                    SyncList('Video list', '', None, '', pull=files),
-                    TextList('Video titles', '-submenu-titles', None,
+            RelatedList('-files', 'one',
+                List('Submenu titles', '-submenu-titles', None,
                     'Submenu titles for each video.  '
-                    'Use \\n for a new line in a multi-line title.',
-                    pull=files, # list updated when files is updated
-                    filter=strip_all,
-                    ),
+                    'Use \\n for a new line in a multi-line title.'),
+                filter=strip_all
                 ),
             ),
-            VPanel('Chapter titles',
-                    VPanel('Submenu chapter titles',
-                        HPanel('', synclist, mappedlist),
-                    ),
-            ),
+        VPanel('Chapter titles',
+            RelatedList('-files', 'many',
+                List('Submenu chapter titles', '-chapter-titles', None,
+                     chapter_titles_tooltip)),
         ),
     ),
 )
 
-text = Panel("Text/Font",
+text = VPanel("Text/Font",
     Tabs(
         VPanel('Menu title', 
             HPanel('',
@@ -637,7 +621,7 @@ text = Panel("Text/Font",
                     'value is applied to the video *before* is is scaled.',
                     toggles=True),
             ),
-            Panel("Mist",
+            VPanel("Mist",
                 Flag('Text mist', '-text-mist', False,
                     'Use "mist" behind the menu title (helps with contrast).'),
                 Color('Text mist color', '-text-mist-color', 'white',
@@ -706,7 +690,7 @@ text = Panel("Text/Font",
                             'The color for the submenu font outline (stroke).', toggles=True),
                     ),
                 ),
-                Panel('Opacity',
+                VPanel('Opacity',
                     Number('Submenu title opacity', '-submenu-title-opacity', 100,
                         'The opacity of the submenu title.',
                         0, 100),
@@ -730,7 +714,7 @@ text = Panel("Text/Font",
                             toggles=True),
                         ),
                     ),
-                    Panel('Opacity',
+                    VPanel('Opacity',
                         Number('Chapter titles opacity', '-chapter-title-opacity', 100,
                         'The opacity of the chapter titles.',
                         0, 100),
@@ -741,7 +725,7 @@ text = Panel("Text/Font",
     ),
 )
 
-authoring = Panel("Authoring",
+authoring = VPanel("Authoring",
     Tabs(
         VPanel('General authoring options',
             VPanel('Play control',
@@ -799,9 +783,9 @@ authoring = Panel("Authoring",
                 List('Subtitles', '-subtitles', '',
                     'Single value or list'),
             ),
-            List('Default audio track(s)', '-audio-channel', '',
-                'Single value or list of the default audio track for each video.  '
-                '0 is the first audio track, 1 is the second ...'),
+#            List('Default audio track(s)', '-audio-channel', '',
+#                'Single value or list of the default audio track for each video.  '
+#                '0 is the first audio track, 1 is the second ...'),
             VPanel('Buttons',
                 Choice('Style', '-button-style', 'none',
                     'Style or shape of the buttons seen when playing the DVD '
@@ -818,33 +802,32 @@ authoring = Panel("Authoring",
                     Color('Selection color', '-select-color', '#DE7F7C',
                         'Color for the menu buttons the dvd remote uses to select.',
                         toggles=True),
-                Number('Outlinewidth for spumux', '-outlinewidth', 14,
-                    'For spumux outlinewidth variable.  This option helps if spumux '
-                    'fails because of a large gap between button words or characters.',
-                    0, 20, toggles=True),
+                    Number('Outlinewidth for spumux', '-outlinewidth', 14,
+                        'For spumux outlinewidth variable.  This option helps if spumux '
+                        'fails because of a large gap between button words or characters.',
+                        0, 20, toggles=True)
                 ),
             ),
         ),
         VPanel('Advanced chapter options',
-            HPanel('',
-                TextList('Chapters: use 1 line per video. Load files 1st !',
-                '-chapters', None,
-                'Number of chapters (integer) or HH:MM:SS string for each '
-                'video.  For grouped videos, use a "+" separator for joining '
-                'the chapter string of each grouped video.'
-                ''
-                '  An example chapter string using HH:MM:SS format: '
-                '  00:00:00,00:05:00,00:10:00.  An example of 2 grouped videos: '
-                '00:00:00,00:05:00+00:05:00,00:10:00.  '
-                'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.'  ,
-                pull=files, # list updated when files is updated
-                filter=strip_all,
-                ),
-            ),
-        ),
-    ),
+            RelatedList('-files', 'many',
+                List('Chapters: use 1 line per video. Load files 1st !',
+                    '-chapters', None,
+                    'Number of chapters (integer) or HH:MM:SS string for each '
+                    'video.  For grouped videos, use a "+" separator for joining '
+                    'the chapter string of each grouped video.'
+                    ''
+                    '  An example chapter string using HH:MM:SS format: '
+                    '  00:00:00,00:05:00,00:10:00.  An example of 2 grouped videos: '
+                    '00:00:00,00:05:00+00:05:00,00:10:00.  '
+                    'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.'),
+                filter=strip_all
+            )
+        )
+    )
 )
-burning = Panel("Burning",
+
+burning = VPanel("Burning",
     Flag('Burn project on completion', '-burn', False),
     Number('Burning speed', '-speed', 8,
         'Speed for burning',
@@ -860,8 +843,8 @@ burning = Panel("Burning",
 ### --------------------------------------------------------------------
 
 todisc = Application('todisc',
-    [main, general, menu, submenus, thumbnails, text, slideshows, authoring, burning])
-gui = GUI("todiscgui", [todisc], 640, 720)
+    main, general, menu, submenus, thumbnails, text, slideshows, authoring, burning)
+gui = GUI("todiscgui", 640, 720, todisc)
 gui.title("tovid GUI - fancy menus using 'todisc'")
 gui.run()
 

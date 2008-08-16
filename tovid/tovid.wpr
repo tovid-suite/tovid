@@ -5,26 +5,26 @@
 ##################################################################
 [project attributes]
 proj.directory-list = [{'dirloc': loc('.'),
-                        'excludes': [u'config.status',
-                                     u'missing',
+                        'excludes': [u'libtovid/transcode',
+                                     u'bootstrap',
+                                     u'libtovid/media.py',
                                      u'configure',
                                      u'ChangeLog',
                                      u'Makefile.in',
-                                     u'Makefile',
-                                     u'bootstrap',
                                      u'config.log',
-                                     u'libtovid/media.py',
+                                     u'config.status',
+                                     u'Makefile',
                                      u'autom4te.cache',
+                                     u'snippets',
                                      u'AUTHORS',
                                      u'aclocal.m4',
                                      u'icons',
                                      u'debian',
-                                     u'snippets',
+                                     u'missing',
                                      u'libtovid/transcode/identify.py'],
                         'filter': 'All Source Files',
                         'include_hidden': 0,
                         'recursive': 1,
                         'watch_for_changes': 1}]
-proj.file-list = [loc('libtovid/transcode/identify.py')]
 proj.file-type = 'shared'
 proj.main-file = loc('src/todiscgui')
