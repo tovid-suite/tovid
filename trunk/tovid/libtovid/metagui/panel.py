@@ -43,12 +43,13 @@ class Panel (Widget):
         self.widgets = widgets
 
 
-    def draw(self, master):
+    def draw(self, master, labeled=True):
         """Draw the Panel, but not any contained widgets.
+        If labeled is True, and panel has a name, use a LabelFrame.
         """
         Widget.draw(self, master)
         # Get a labeled or unlabeled frame
-        if self.name != '':
+        if self.name != '' and labeled == True:
             self.frame = tk.LabelFrame(self, text=self.name,
                                        padx=8, pady=8)
         else:
@@ -97,10 +98,10 @@ class HPanel (Panel):
     def __init__(self, name='', *widgets, **kwargs):
         Panel.__init__(self, name, *widgets, **kwargs)
  
-    def draw(self, master):
+    def draw(self, master, **kwargs):
         """Draw all widgets in the Panel, packed horizontally.
         """
-        Panel.draw(self, master)
+        Panel.draw(self, master, **kwargs)
         self.draw_widgets('left')
 
 ### --------------------------------------------------------------------
@@ -119,10 +120,10 @@ class VPanel (Panel):
     def __init__(self, name='', *widgets, **kwargs):
         Panel.__init__(self, name, *widgets, **kwargs)
 
-    def draw(self, master):
+    def draw(self, master, **kwargs):
         """Draw all widgets in the Panel, packed vertically.
         """
-        Panel.draw(self, master)
+        Panel.draw(self, master, **kwargs)
         self.draw_widgets('top')
 
 
@@ -147,10 +148,10 @@ class Dropdowns (Panel):
             self.controls[control.label] = control
 
 
-    def draw(self, master):
+    def draw(self, master, **kwargs):
         """Draw the Dropdowns widget in the given master.
         """
-        Panel.draw(self, master)
+        Panel.draw(self, master, **kwargs)
         # List of Controls and chosen item
         self.choices = ListVar(items=self.controls.keys())
         self.chosen = tk.StringVar()
@@ -209,9 +210,9 @@ class Drawer (Panel):
         self.visible = False
 
 
-    def draw(self, master):
+    def draw(self, master, **kwargs):
         # Draw the base panel and contained widgets
-        Panel.draw(self, master)
+        Panel.draw(self, master, **kwargs)
         self.frame.pack_forget()
         self.draw_widgets()
         # Add a checkbutton for showing/hiding
@@ -235,17 +236,17 @@ class Drawer (Panel):
 class Tabs (Panel):
     """A Panel with tab buttons that switch between several widgets.
     """
-    def __init__(self, *widgets, **kwargs):
+    def __init__(self, name='', *widgets, **kwargs):
         """Create a tabbed panel that switch between several widgets.
         """
-        Panel.__init__(self, '', *widgets, **kwargs)
+        Panel.__init__(self, name, *widgets, **kwargs)
         self.index = 0
 
 
-    def draw(self, master, side='top'):
+    def draw(self, master, side='top', **kwargs):
         """Draw the Tabs widget in the given master.
         """
-        Panel.draw(self, master)
+        Panel.draw(self, master, **kwargs)
         self.side = side
         # Selected tab index
         self.selected = tk.IntVar()
@@ -276,7 +277,11 @@ class Tabs (Panel):
                                     value=index, **config)
             button.pack(anchor='nw', side=button_side,
                         fill='both', expand=True)
-            widget.draw(self.frame)
+            # If widget is a Panel, draw it without a label
+            if isinstance(widget, Panel):
+                widget.draw(self.frame, labeled=False)
+            else:
+                widget.draw(self.frame)
         self.buttons.pack(anchor=bar_anchor, side=self.side,
                           fill=bar_fill)
         # Activate the first tab
@@ -322,10 +327,10 @@ class FlagGroup (Panel):
             self.side = kwargs['side']
     
 
-    def draw(self, master):
+    def draw(self, master, **kwargs):
         """Draw the FlagGroup in the given master widget.
         """
-        Panel.draw(self, master)
+        Panel.draw(self, master, **kwargs)
         for flag in self.flags:
             flag.draw(self.frame)
             flag.check.bind('<Button-1>', self.select)
@@ -425,11 +430,11 @@ class RelatedList (Panel):
             self.filter = lambda x: x
 
 
-    def draw(self, master):
+    def draw(self, master, **kwargs):
         """Draw the parent copy and related list Control,
         side by side in the given master.
         """
-        Panel.draw(self, master)
+        Panel.draw(self, master, **kwargs)
 
         # Copy of parent list's values
         self.last_copy = ListVar(self)

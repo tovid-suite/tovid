@@ -58,7 +58,7 @@ class Application (Widget):
             panel.pack(anchor='n', fill='x', expand=True)
         # Multi-panel (tabbed) application
         else:
-            tabs = Tabs(*self.panels)
+            tabs = Tabs('', *self.panels)
             tabs.draw(self)
             tabs.pack(anchor='n', fill='x', expand=True)
 
@@ -166,7 +166,7 @@ class GUI (tk.Tk):
             self.draw_toolbar(app)
         # Multi-application (tabbed) GUI
         else:
-            tabs = Tabs(self.frame, 'top')
+            tabs = Tabs('', self.frame, 'top')
             for app in self.apps:
                 self.draw_toolbar(app)
                 app.draw(tabs)
