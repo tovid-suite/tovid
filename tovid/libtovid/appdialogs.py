@@ -42,7 +42,7 @@ class ConfirmDialog(Tk):
             label1.pack(padx=20, pady=20, side='top')
         elif self.text:
             label2 = Label(text=self.text, font=self.style.font, \
-            justify='left', padx=20, pady=20, relief='groove')
+            justify='left', padx=20, pady=20)
             label2.pack(side='top', fill='both', expand=1)
 
         # draw the button(s) in a frame
