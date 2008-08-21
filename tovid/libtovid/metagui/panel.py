@@ -128,7 +128,8 @@ class VPanel (Panel):
 
 
 ### --------------------------------------------------------------------
-from support import ComboBox, ListVar
+from support import ComboBox
+from variable import ListVar
 from libtovid.odict import Odict
 
 class Dropdowns (Panel):
@@ -421,6 +422,7 @@ class RelatedList (Panel):
         self.parent_option = parent_option
         self.correspondence = correspondence
         self.child = child_control
+        self.mapped = []
 
         if 'filter' in kwargs:
             if not callable(kwargs['filter']):
@@ -436,16 +438,13 @@ class RelatedList (Panel):
         """
         Panel.draw(self, master, **kwargs)
 
-        # Copy of parent list's values
-        self.last_copy = ListVar(self)
-
         # Lookup the parent Control by option
         self.parent = Control.by_option(self.parent_option)
         # Ensure parent control exists and is a List
         if not self.parent:
             raise Exception("Control for '%s' does not exist" % self.option)
         ensure_type("RelatedList parent must be a List", List, self.parent)
-        
+
         # Draw the read-only copy of parent's values
         self.selected = tk.StringVar()
         frame = tk.LabelFrame(self.frame, text="%s (copy)" % self.parent.label)
@@ -453,56 +452,65 @@ class RelatedList (Panel):
         self.listbox.pack(expand=True, fill='both')
         frame.pack(side='left', anchor='nw', expand=True, fill='both')
 
-        # Draw the child control (without Add/Remove buttons)
-        self.child.draw(self.frame, edit_only=True)
+        # Draw the child control
+        # 1:1, add/remove in child is NOT allowed, and lists are linked
+        if self.correspondence == 'one':
+            self.child.draw(self.frame, edit_only=True)
+            self.listbox.link(self.child.listbox)
+        # 1:many, add/remove in child is allowed
+        else:
+            self.child.draw(self.frame)
+        # Pack the child control to the right of the parent copy
         self.child.pack(side='left', anchor='nw', expand=True, fill='both')
 
-        # Link parent copy to child list
-        self.listbox.link(self.child.listbox)
-
-        # Add callback to sync parent with child
-        def _parent_changed(name, index, mode):
-            self.parent_changed()
-        self.parent.variable.trace_variable('w', _parent_changed)
+        # Add callbacks to handle changes in parent
+        self.add_callbacks()
 
 
-    def parent_changed(self):
-        """Event handler for when the parent variable changes.
+    def add_callbacks(self):
+        """Add callback functions for add/remove in the parent Control.
         """
-        old_value = self.last_copy.get()
-        new_value = self.parent.variable.get()
+        if self.correspondence == 'one':
+            # insert/remove callbacks for the parent listbox
+            def insert(index, value):
+                print("Inserting %d: %s" % (index, value))
+                self.child.variable.insert(index, self.filter(value))
+            def remove(index, value):
+                print("Removing %d: %s" % (index, value))
+                self.child.variable.pop(index)
+            def swap(index_a, index_b):
+                print("Swapping %d and %d" % (index_a, index_b))
+                a_value = self.child.variable[index_a]
+                self.child.variable[index_a] = self.child.variable[index_b]
+                self.child.variable[index_b] = a_value
 
-        # FIXME: Most of this is 1:1-specific...
+            # select callback for the parent copy
+            def select(index, value):
+                print("Selected %d: %s" % (index, value))
+                pass # already handled by listboxes being linked
 
-        # Value stayed the same?
-        if old_value == new_value:
-            return
+        else: # 'many'
+            # insert/remove/swap callbacks for the parent listbox
+            def insert(index, value):
+                print("Inserting %d: %s" % (index, value))
+                self.mapped.insert(index, ListVar())
+            def remove(index, value):
+                print("Removing %d: %s" % (index, value))
+                self.mapped.pop(index)
+            def swap(index_a, index_b):
+                print("Swapping %d and %d" % (index_a, index_b))
+                a_var = self.mapped[index_a]
+                self.mapped[index_a] = self.mapped[index_b]
+                self.mapped[index_b] = a_var
 
-        # Item contents changed or were reordered?
-        elif len(new_value) == len(old_value):
-            # Check for swapped items
-            for index in range(0, len(old_value)-1):
-                # This will handle pairwise adjacent swaps only
-                if old_value[index] == new_value[index+1] and \
-                   old_value[index+1] == new_value[index]:
-                    item = self.child.variable.pop(index+1)
-                    self.child.variable.insert(index, item)
+            # select callback for the parent copy
+            def select(index, value):
+                print("Selected %d: %s" % (index, value))
+                self.child.set_variable(self.mapped[index])
 
-        # Items were added to parent?
-        elif len(new_value) > len(old_value):
-            # Add child items at the same index
-            for item in (set(new_value) - set(old_value)):
-                self.child.variable.insert(new_value.index(item),
-                                           self.filter(item))
-
-        # Items were deleted from parent?
-        else:
-            # Delete child items at same index
-            for item in (set(old_value) - set(new_value)):
-                self.child.variable.pop(old_value.index(item))
-
-        # Save new value to last_copy
-        self.last_copy.set(new_value)
+        self.listbox.callback('select', select)
+        self.parent.listbox.callback('insert', insert)
+        self.parent.listbox.callback('remove', remove)
 
 
     def get_args(self):
@@ -511,5 +519,6 @@ class RelatedList (Panel):
             return []
         else:
             return self.child.get_args()
+
 
 
