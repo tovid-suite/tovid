@@ -142,9 +142,10 @@ class LogViewer(Frame):
             self.text.yview_pickplace("end")
         self.after(100,self.poll)
 
+    def run(self):
+        self.mainloop()
 
-#import sys,os
-#import time
+
 from Tkinter import *
 import linecache
 
