@@ -46,7 +46,6 @@ to the flavor of Control being used. Here's a sampling:
     Choice     Multiple-choice values
     Color      Color selection button
     Filename   Type or [Browse] a filename
-    FileList   Add/remove/rearrange filename list
     Flag       Check box, yes or no
     Font       Font selection button
     SpacedText Space-separated list
@@ -142,6 +141,7 @@ from control import __all__ as all_control
 from panel import __all__ as all_panel
 from gui import __all__ as all_gui
 __all__ = [\
+    'variable',
     'support',
     'control',
     'gui',

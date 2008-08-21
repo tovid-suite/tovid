@@ -7,9 +7,6 @@ __all__ = [
     # Functions
     'exit_with_traceback',
     'ensure_type',
-    # Variables
-    'ListVar',
-    'DictVar',
     # Others
     'ScrollList',
     'DragList',
@@ -23,6 +20,7 @@ __all__ = [
 import os
 import Tkinter as tk
 import tkSimpleDialog
+from variable import ListVar
 
 ### --------------------------------------------------------------------
 ### Supporting functions
@@ -57,136 +55,6 @@ def ensure_type(message, required_type, *objects):
 
 
 ### --------------------------------------------------------------------
-### Tkinter Variable subclasses
-### --------------------------------------------------------------------
-
-class ListVar (tk.Variable):
-    """A tk Variable suitable for associating with Listboxes.
-    """
-    def __init__(self, master=None, items=None):
-        """Create a ListVar with a given master and initial list of items.
-        """
-        tk.Variable.__init__(self, master)
-        if items:
-            self.set(items)
-
-
-    def __getitem__(self, index):
-        """Get a list value using list-index syntax: ``listvar[index]``.
-        """
-        return self.get()[index]
-
-
-    def __setitem__(self, index, value):
-        """Set a list value using list-index syntax: ``listvar[index] = value``.
-        """
-        current = self.get()
-        current[index] = value
-        self.set(current)
-
-
-    def get(self):
-        """Get the entire list of values.
-        """
-        return list(tk.Variable.get(self))
-
-
-    def set(self, new_list):
-        """Set the entire list of values.
-        """
-        tk.Variable.set(self, tuple(new_list))
-
-
-    def remove(self, item):
-        """Remove the item from the list, if it exists.
-        """
-        items = self.get()
-        items.remove(item)
-        self.set(items)
-
-
-    def pop(self, index=-1):
-        """Pop an item off the list and return it.
-        """
-        items = self.get()
-        result = items.pop(index)
-        self.set(items)
-        return result
-
-
-    def append(self, item):
-        """Append an item to the list.
-        """
-        self.insert(-1, item)
-
-
-    def insert(self, index, item):
-        """Insert an item into the list at the specified index.
-        """
-        items = self.get()
-        items.insert(index, item)
-        self.set(items)
-
-
-    def count(self):
-        """Return the number of items in the list.
-        """
-        return len(self.get())
-
-
-### --------------------------------------------------------------------
-from libtovid.odict import Odict
-
-class DictVar (tk.Variable):
-    """A tk Variable for storing a dictionary of values.
-    """
-    def __init__(self, master=None, keys=None, values=None):
-        """Create a DictVar with a given master and initial keys/values.
-        """
-        tk.Variable.__init__(self, master)
-        self.set(Odict(keys, values))
-
-
-    def __getitem__(self, key):
-        """Get a dict value using keyword syntax: ``dictvar[key]``.
-        """
-        return self.get()[key]
-
-
-    def __setitem__(self, key, value):
-        """Set a dict value using keyword syntax: ``dictvar[key] = value``.
-        """
-        current = self.get()
-        current[key] = value
-        self.set(current)
-
-
-    def get(self):
-        """Return the entire dictionary of keys/values as an Odict.
-        """
-        # Convert from tuple
-        tup = tk.Variable.get(self)
-        if tup:
-            keys, values = zip(*tup)
-        else:
-            keys, values = [], []
-        return Odict(keys, values)
-
-
-    def set(self, new_dict):
-        """Set the entire dictionary of keys/values. If new_dict is empty, or
-        is not a ``dict`` or ``Odict``, an empty ``dict`` is used.
-        """
-        if not isinstance(new_dict, dict) and not isinstance(new_dict, Odict):
-            new_dict = {}
-        if not new_dict:
-            new_dict = {}
-        # Convert to a tuple of (key, value) pairs
-        tup = tuple([(key, value) for key, value in new_dict.items()])
-        tk.Variable.set(self, tup)
-
-
-### --------------------------------------------------------------------
 
 class ScrollList (tk.Frame):
     """A Listbox with a scrollbar.
@@ -196,20 +64,20 @@ class ScrollList (tk.Frame):
     chosen/highlighted.
     """
     def __init__(self, master=None, items=None,
-                 selected=None, command=None):
+                 selected=None):
         """Create a ScrollList widget.
 
             master:   Tkinter widget that will contain the ScrollList
             items:    ListVar or Python list of items to show in listbox
             chosen:   Tk StringVar to store currently selected choice in
-            command:  Function to call when a list item is clicked
         """
         tk.Frame.__init__(self, master)
+
         if type(items) == list:
             items = ListVar(self, items)
         self.items = items or ListVar()
+
         self.selected = selected or tk.StringVar()
-        self.command = command
         self.curindex = 0
         self.linked = None
         # Draw listbox and scrollbar
@@ -221,29 +89,16 @@ class ScrollList (tk.Frame):
         self.listbox.pack(side='left', fill='both', expand=True)
         self.scrollbar.pack(side='left', fill='y')
         self.listbox.bind('<Button-1>', self.select)
+        self.callbacks = {'insert': [], 'remove': [], 'select': [], 'swap': []}
 
 
-    def add(self, *values):
-        """Add the given values to the list.
+    def set_variable(self, listvar):
+        """Set the ScrollList to use the given ListVar for its items.
         """
-        for value in values:
-            self.listbox.insert('end', value)
-        self.select_index(-1)
-
-
-    def insert(self, index, *values):
-        """Insert values at a given index.
-        """
-        self.listbox.insert(index, *values)
-        self.select_index(index)
-
-
-    def delete(self, first, last=None):
-        """Delete values in a given index range (first, last), not including
-        last itself. If last is None, delete only the item at first index.
-        """
-        self.listbox.delete(first, last)
-        self.select_index(first)
+        if not isinstance(listvar, ListVar):
+            raise TypeError("ScrollList.set_variable requires a ListVar.")
+        self.items = listvar
+        self.listbox.config(listvariable=self.items)
 
 
     def scroll(self, *args):
@@ -255,9 +110,56 @@ class ScrollList (tk.Frame):
             apply(self.linked.listbox.yview, args)
 
 
+    def add(self, *values):
+        """Add the given values to the end of the list.
+        """
+        for value in values:
+            self.listbox.insert('end', value)
+            self.summon_callbacks('insert', -1, value)
+        print "ScrollList.items:"
+        print self.items.get()
+        #self.select_index(-1)
+
+
+    def insert(self, index, *values):
+        """Insert values at a given index.
+        """
+        for offset, value in enumerate(values):
+            self.listbox.insert(index+offset, value)
+            self.summon_callbacks('insert', index+offset, value)
+        self.select_index(index)
+
+
+    def delete(self, first, last=None):
+        """Delete values in a given index range (first, last), not including
+        last itself. If last is None, delete only the item at first index.
+        """
+        # Summon callbacks for each item/value about to be deleted
+        for index in range(first, last or first+1):
+            print("ScrollList.delete: deleting index %d" % index)
+            value = self.items[index]
+            self.summon_callbacks('remove', index, value)
+        # Delete items from the listbox
+        self.listbox.delete(first, last)
+        self.select_index(first)
+
+
+    def swap(self, index_a, index_b):
+        """Swap the element at index_a with the one at index_b.
+        """
+        # Use a temporary list, so self.items is only modified once
+        temp_list = self.items.get()
+        item_a = temp_list[index_a]
+        item_b = temp_list[index_b]
+        temp_list[index_a] = item_b
+        temp_list[index_b] = item_a
+        self.summon_callbacks('swap', index_a, index_b)
+        # Set the updated list
+        self.items.set(temp_list)
+
+
     def select(self, event):
         """Event handler when an item in the list is selected.
-        Calls self.command() if present.
         """
         index = self.listbox.nearest(event.y)
         self.select_index(index)
@@ -265,7 +167,6 @@ class ScrollList (tk.Frame):
 
     def select_index(self, index):
         """Select (highlight) the list item at the given index.
-        Calls self.command() if present.
         """
         item_count = self.items.count()
         if item_count == 0:
@@ -279,9 +180,8 @@ class ScrollList (tk.Frame):
         self.listbox.selection_set(index)
         # Set selected variable
         self.selected.set(self.listbox.get(self.curindex))
-        # Call command if present
-        if self.command:
-            self.command()
+        # Summon 'select' callbacks
+        self.summon_callbacks('select', index, self.selected.get())
         # Select same index in linked ScrollList
         if self.linked:
             self.linked.listbox.selection_clear(0, item_count)
@@ -300,16 +200,6 @@ class ScrollList (tk.Frame):
         self.items.set(values)
 
 
-    def swap(self, index_a, index_b):
-        """Swap the element at index_a with the one at index_b.
-        """
-        temp_list = self.items.get()
-        item_a = temp_list[index_a]
-        temp_list[index_a] = temp_list[index_b]
-        temp_list[index_b] = item_a
-        self.items.set(temp_list)
-
-
     def link(self, scrolllist):
         """Link to another ScrollList, so they scroll and select in unison.
         """
@@ -319,20 +209,49 @@ class ScrollList (tk.Frame):
         scrolllist.linked = self
 
 
+    def callback(self, action, function):
+        """Add a callback function for the given action.
+
+            action:   May be 'insert', 'remove', 'select', or 'swap'
+            function: Callback function, taking (index, value) arguments
+                      index is 0-based; passes -1 for the last item
+
+        All callback functions (except 'swap') must take (index, value)
+        parameters. The 'swap' callback should accept (index_a, index_b).
+        """
+        if action not in ['insert', 'remove', 'select', 'swap']:
+            raise ValueError("List callback action must be"
+                             " 'insert', 'remove', 'select', or 'swap'.")
+        if not callable(function):
+            raise TypeError("List callback function must be callable.")
+        self.callbacks[action].append(function)
+
+
+    def summon_callbacks(self, action, index, item):
+        """Summon callbacks for the given action,
+        passing index and item to each.
+        """
+        if action not in ['insert', 'remove', 'select', 'swap']:
+            raise ValueError("Callback action must be"
+                             " 'insert', 'remove', 'select', or 'swap'")
+        for function in self.callbacks[action]:
+            function(index, item)
+
+
+
 ### --------------------------------------------------------------------
 
 class DragList (ScrollList):
     """A scrollable listbox with drag-and-drop support"""
     def __init__(self, master=None, items=None,
-                 selected=None, command=None):
+                 selected=None):
         """Create a DragList widget.
 
             master:   Tkinter widget that will contain the DragList
             items:    ListVar or Python list of items to show in listbox
             selected: Tk StringVar to store currently selected list item
-            command:  Function to call when a list item is clicked
         """
-        ScrollList.__init__(self, master, items, selected, command)
+        ScrollList.__init__(self, master, items, selected)
         # Add bindings for drag/drop
         self.listbox.bind('<Button-1>', self.select)
         self.listbox.bind('<B1-Motion>', self.drag)
