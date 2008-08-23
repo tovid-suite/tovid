@@ -511,6 +511,8 @@ class RelatedList (Panel):
         self.listbox.callback('select', select)
         self.parent.listbox.callback('insert', insert)
         self.parent.listbox.callback('remove', remove)
+        self.parent.listbox.callback('swap', swap)
+
 
 
     def get_args(self):
