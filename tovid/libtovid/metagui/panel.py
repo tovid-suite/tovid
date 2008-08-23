@@ -82,6 +82,12 @@ class Panel (Widget):
                 print "Missing a required option: " + missing.option
         return args
 
+
+    def enable(self, enabled=True):
+        for widget in self.widgets:
+            widget.enable(enabled)
+
+
 ### --------------------------------------------------------------------
 
 class HPanel (Panel):

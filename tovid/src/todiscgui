@@ -197,146 +197,183 @@ behavior = VPanel("Behavior",
     ) # End tovid re-encoding options
 )
 
-menu = Tabs('Menu',
-    VPanel('Basic',
-        FlagGroup('Menu options', 'normal',
-            Flag('Static menus', '-static', False,
-                'Create still-image menus; takes less time.  '
-                'For duration of background audio for static '
-                'menus, use "menu length" on the "Menu" tab'),
-            Flag('Submenus', '-submenus', False,
-                'Create a submenu for each video title; takes more time.'),
-            side='left'
-        ), # End Menu options
+showcase_options = VPanel('Showcase options',
+    FlagGroup('', 'exclusive',
+        Flag('Default', '', True,
+            'Thumbnail menu links, centred, and as large as space '
+            'restraints allow'),
+        Flag('Showcase', '-showcase', False,
+            "Arrange menu links along the outside edges, to leave room for"
+            " an optional 'showcase' image or video.  The file entry box"
+            " is for an optional image or video file to be showcased in a"
+            " large central frame",
+            enables=Filename('', '', '', '',
+            'load', 'Select an image or video file.'),
+        ),
+    ),
 
-        VPanel('Backgrounds',
-            Filename('Image or video', '-background', '',
-                'Image or video displayed in the background of the main menu',
-                'load', 'Select an image or video file'),
-            Filename('Audio', '-bgaudio', '',
-                'Audio file to play while the main menu plays.  '
-                'Static menus use default audio length of 20 seconds.  ' 
-                'Change with "Menu length" on "Menu" tab.  '
-                'Use almost any filetype containing audio.',
-                'load', 'Select an audio file')
-        ), # End Backgrounds
+    Number('Video seek', '-showcase-seek', 2,
+        'Play showcase video from the given seek time (seconds).  '
+        'Note: switched menus uses the value(s) from "Seek time" '
+        'option above, not this one',
+        0, 3600),
 
-        FlagGroup('', 'exclusive',
-            Flag('Default', '', True,
-                'Thumbnail menu links, centred, and as large as space '
-                'restraints allow'),
-            Flag('Showcase', '-showcase', False,
-                "Arrange menu links along the outside edges, to leave room for"
-                " an optional 'showcase' image or video.  The file entry box"
-                " is for an optional image or video file to be showcased in a"
-                " large central frame",
-                enables=Filename('', '', '', '',
-                'load', 'Select an image or video file.'),
-            ),
-        ), # End Default / Showcase
+    HPanel('Options',
+        Flag("Textmenu", '-textmenu', False,
+            'Showcase style text only menu.  Optionally use a "showcase" '
+            'image/video, or static/animated background.  Use the '
+            '"columns" option to set the number of titles in '
+            'column 1 (column 2 will use the remainder).  Note that '
+            'column 2 titles are aligned right. '
+            'See also quick-menu and switched menu.',
+            enables=Number('     columns', '', 13, '', 1, 50)),
+        Flag("Quick menu", '-quick-menu', False,
+            'Ten times faster than normal showcase animation.  '
+            'A showcase video is required unless doing switched '
+            'menus.  No video thumbs are made.  Not compatible '
+            'with wave or rotate options'),
+        Flag("Switched menus", '-switched-menus', False,
+            'This makes a showcase style menu with text menu '
+            'links.  The showcased VIDEO or IMAGE will be of each '
+            'video "title", and will change as you press the '
+            'up/down keys on your remote.  Do not select a '
+            'showcase file for this option.  Use with '
+            '"Quick menu" option for a huge speed up !'),
+    ),
 
-        HPanel('Showcase options',
-            Flag("Textmenu", '-textmenu', False,
-                'Showcase style text only menu.  Optionally use a "showcase" '
-                'image/video, or static/animated background.  Use the '
-                '"columns" option to set the number of titles in '
-                'column 1 (column 2 will use the remainder).  Note that '
-                'column 2 titles are aligned right. '
-                'See also quick-menu and switched menu.',
-                enables=Number('     columns', '', 13, '', 1, 50)),
-            Flag("Quick menu", '-quick-menu', False,
-                'Ten times faster than normal showcase animation.  '
-                'A showcase video is required unless doing switched '
-                'menus.  No video thumbs are made.  Not compatible '
-                'with wave or rotate options'),
-            Flag("Switched menus", '-switched-menus', False,
-                'This makes a showcase style menu with text menu '
-                'links.  The showcased VIDEO or IMAGE will be of each '
-                'video "title", and will change as you press the '
-                'up/down keys on your remote.  Do not select a '
-                'showcase file for this option.  Use with '
-                '"Quick menu" option for a huge speed up !'),
-        ), # End Showcase options
-    ), # End Menu style tab
+    Choice('Showcase frame style', '-showcase-framestyle', 'none',
+        'This is a showcase style only option.  The "none" option will use '
+        'the default frame method, using imagemagick. The "glass" option '
+        'will use mplayer to make frames, giving an animated effect.  The ' 
+        'glass style can be much faster - especially if used without '
+        '-rotate and -wave options',
+        'none|glass'),
 
-    VPanel("Advanced",
+    HPanel('Showcase image position (XxY)',
+        Text('', '-showcase-geo', '',
+            'This is a showcase style only option.  Enter the position of the '
+            'top left corner of the showcase image: e.g. "200x80".  This '
+            'value is applied to the video *before* is is scaled.'),
+    ),
+)
+
+
+main_menu_backgrounds = VPanel('Backgrounds',
+    Color('Menu background color', '-bg-color', 'white',
+        'Color of the menu background.  ' 
+        'Default if not enabled: ntsc color-safe black (#101010).  '
+        'Note: the color turns out MUCH lighter than the one you choose, '
+        'so pick a VERY dark version of the color you want.',
+        toggles=True),
+    Filename('Image or video', '-background', '',
+        'Image or video displayed in the background of the main menu',
+        'load', 'Select an image or video file'),
+    Number('Video seek', '-bgvideo-seek', 2,
+        'Play background video from the given seek time (seconds)',
+        0, 3600),
+    Filename('Audio', '-bgaudio', '',
+        'Audio file to play while the main menu plays.  '
+        'Static menus use default audio length of 20 seconds.  ' 
+        'Change with "Menu length" on "Menu" tab.  '
+        'Use almost any filetype containing audio.',
+        'load', 'Select an audio file'),
+    Number('Audio seek', '-bgaudio-seek', 2,
+        'Play background audio from the given seek time (seconds)',
+        0, 3600),
+    Number('Fade in audio', '-menu-audio-fade', 1,
+        'Number  of  sec to fade given menu audio in and out '
+        '(default: 1.0 seconds). Use a fade of "0" for no fade.',
+        0, 10),
+)
+
+main_menu_effects = VPanel("Effects",
+    Flag('Fade in menu', '-menu-fade', False,
+        'Fade the menu in and out.  The background '
+        ' will fade in first, then the title '
+        '(and mist if called for), then the menu thumbs and/or titles.  '
+        'The fadeout is in reverse order.  The optional numerical argument '
+        'is the length of time the background will play before the menu '
+        'begins to fade in.',
+        enables = VPanel('',
+            Number(default=0.0, min=0.0, max=60.0, units='seconds', style='scale'),
+            Flag('Transition to menu', '-transition-to-menu', False,
+                'A convenience option for animated backgrounds: the background '
+                'will become static at the exact point the thumbs finish '
+                'fading in.  This menu does not loop '
+                'unless you pass -loop VALUE (authoring tab).'),
+        ),
+    ),
+    Filename('Intro video', '-intro', '',
+        'Video to play before showing the main menu.  At present this must '
+        'be a DVD compatible video at the correct resolution etc.  Only 4:3 '
+        'aspect is supported.',
+        'load', 'Select a video file'),
+)
+
+menus = Tabs('Menus',
+    VPanel('Main menu',
+
+        Flag('Static menus', '-static', False,
+            'Create still-image menus; takes less time.  '
+            'For duration of background audio for static '
+            'menus, use "menu length" on the "Menu" tab'),
+
         Number('Menu length', '-menu-length', 20,
             'Duration of menu in seconds.  The length of the menu will also set '
             'the length of background audio for a static menu',
             0, 120, toggles=True),
-        Number('Menu audio fade', '-menu-audio-fade', 1,
-            'Number  of  sec to fade given menu audio in and out '
-            '(default: 1.0 seconds). Use a fade of "0" for no fade.',
-            0, 10),
-        Flag('Fade in menu', '-menu-fade', False,
-            'Fade the menu in and out.  The background '
-            ' will fade in first, then the title '
-            '(and mist if called for), then the menu thumbs and/or titles.  '
-            'The fadeout is in reverse order.  The optional numerical argument '
-            'is the length of time the background will play before the menu '
-            'begins to fade in.',
-            enables = Number(default=0.0, min=0.0, max=60.0,
-                             units='seconds', style='scale'),
-        ),
-        Flag('Transition to menu', '-transition-to-menu', False,
-            'This option goes with the "Fade in menu" option above, which '
-            'must be enabled for it to have effect.  It is a convenience option '
-            'for animated backgrounds: the background will become static at the '
-            'exact point the thumbs finish fading in.  This menu does not loop '
-            'unless you pass -loop VALUE (authoring tab).'),
-        Color('Menu background color', '-bg-color', 'white',
-            'Color of the menu background.  ' 
-            'Default if not enabled: ntsc color-safe black (#101010).  '
-            'Note: the color turns out MUCH lighter than the one you choose, '
-            'so pick a VERY dark version of the color you want.',
-            toggles=True),
-        Filename('Intro video', '-intro', '',
-            'Video to play before showing the main menu.  At present this must '
-            'be a DVD compatible video at the correct resolution etc.  Only 4:3 '
-            'aspect is supported.',
-            'load', 'Select a video file'),
-        Choice('Montage alignment', '-align', 'north',
-            'Controls positioning of the thumbnails and their titles.  '
-            'With some arrangements this will have limited effects however.',
-            'north|south|east|west|center'),
-        VPanel('Seek times',
-            SpacedText('Thumbnails', '-seek', '',
-                'Play thumbnail videos from the given seek time (seconds).  '
-                'A single value or space separated list, 1 value per video.  '
-                'Also used for seeking in switched menus.'),
-            HPanel('',
-                Number('Background video', '-bgvideo-seek', 2,
-                    'Play background video from the given seek time (seconds)',
-                    0, 3600),
-                Number('Background audio', '-bgaudio-seek', 2,
-                    'Play background audio from the given seek time (seconds)',
-                    0, 3600),
-                Number('Showcased video', '-showcase-seek', 2,
-                    'Play showcase video from the given seek time (seconds).  '
-                    'Note: switched menus uses the value(s) from "Seek time" '
-                    'option above, not this one',
-                    0, 3600),
-            )
-        ),
-        HPanel('',
-            Choice('Showcase frame style', '-showcase-framestyle', 'none',
-                'This is a showcase style only option.  The "none" option will use '
-                'the default frame method, using imagemagick. The "glass" option '
-                'will use mplayer to make frames, giving an animated effect.  The ' 
-                'glass style can be much faster - especially if used without '
-                '-rotate and -wave options',
-                'none|glass'),
-            HPanel('Showcase image position (XxY)',
-                Text('', '-showcase-geo', '',
-                    'This is a showcase style only option.  Enter the position of the '
-                    'top left corner of the showcase image: e.g. "200x80".  This '
-                    'value is applied to the video *before* is is scaled.'),
-            )
-        ),
-    ) # End Advanced tab
-) # End Menu tabs
 
+        Tabs('Extra',
+            showcase_options,
+            main_menu_backgrounds,
+            main_menu_effects),
 
+    ), # End Main menu
+
+    VPanel('Submenus',
+        Flag('Submenus', '-submenus', False,
+            'Create a submenu for each video title; takes more time.'),
+
+        Number('Submenu length', '-submenu-length', 14,
+            'The length of the submenu.  '
+            'If doing static submenus and using audio for the submenu, '
+            'This will be the length of the submenu audio',
+            0, 80, toggles=True),
+
+        Flag('Animated submenus', '-ani-submenus', False,
+            'Create an animated submenu for each video.  '
+            'Submenu links lead to chapter points.'),
+
+        Number('Audio fade', '-submenu-audio-fade', 1,
+            'Number of sec to fade given submenu audio in and out.  '
+            ' (default: 1.0 seconds)', 0, 10),
+
+        Tabs('Extra',
+            HPanel('Backgrounds',
+                List('Audio', '-submenu-audio', None,
+                    'File(s) that will play as background audio for each submenu.  '
+                    'Use a single file for all submenus, or 1 file per submenu.  '
+                    'Any file containing audio can be used.',
+                    Filename()),
+                List('Image(s)', '-submenu-background', None,
+                    'Background image(s) for the submenus(s). Single value or list',
+                    Filename()),
+            ),
+
+            RelatedList('-files', 'one',
+                List('Titles', '-submenu-titles', None,
+                    'Submenu titles for each video.  '
+                    'Use \\n for a new line in a multi-line title.'),
+                filter=strip_all
+            ),
+        
+            RelatedList('-files', 'many',
+                List('Chapter titles', '-chapter-titles', None,
+                     chapter_titles_tooltip)
+            ),
+        ),
+    ), # End Submenus
+)
 
 
 slideshow_filetypes = [filetypes.all_files]
@@ -363,7 +400,7 @@ slideshow_panel = VPanel('slideshow',
                 'look like a scattered stack of photos. This is the '
                 'same as setting -static on the Main tab.'),
         ),
-        Number('Numbert of slides shown on menu', '-menu-slide-total',
+        Number('Number of slides shown on menu', '-menu-slide-total',
         0, 'Use this many slides for making the slideshow menu. '
         'The default is to use all the slides given.',
         0, 100, toggles=True),
@@ -523,50 +560,17 @@ thumbnails = VPanel("Thumbnails",
             'Use a montage tile of 4x1 instead of the usual 2x2 '
             '(4 videos only).  Not a showcase option.')
     ),
+    Choice('Montage alignment', '-align', 'north',
+        'Controls positioning of the thumbnails and their titles.  '
+        'With some arrangements this will have limited effects however.',
+        'north|south|east|west|center'),
+    SpacedText('Thumbnail seek', '-seek', '',
+        'Play thumbnail videos from the given seek time (seconds).  '
+        'A single value or space separated list, 1 value per video.  '
+        'Also used for seeking in switched menus.'),
 )
 
-submenus = Tabs('Submenus',
-    VPanel('General',
-        Flag('Animated submenus', '-ani-submenus', False,
-            'Create an animated submenu for each video.  '
-            'Submenu links lead to chapter points.'),
-        Number('Submenu length', '-submenu-length', 14,
-            'The length of the submenu.  '
-            'If doing static submenus and using audio for the submenu, '
-            'This will be the length of the submenu audio',
-            0, 80, toggles=True),
-    ),
-    VPanel('Backgrounds',
-        HPanel('',
-            List('Audio', '-submenu-audio', None,
-                'File(s) that will play as background audio for each submenu.  '
-                'Use a single file for all submenus, or 1 file per submenu.  '
-                'Any file containing audio can be used.',
-                Filename()),
-            List('Image(s)', '-submenu-background', None,
-                 'Background image(s) for the submenus(s). Single value or list',
-                 Filename()),
-        ),
-        Number('Audio fade', '-submenu-audio-fade', 1,
-            'Number of sec to fade given submenu audio in and out.  '
-            ' (default: 1.0 seconds)', 0, 10),
-    ),
-    VPanel('Titles',
-        RelatedList('-files',
-            'one',
-            List('Submenu titles', '-submenu-titles', None,
-                'Submenu titles for each video.  '
-                'Use \\n for a new line in a multi-line title.'),
-            filter=strip_all
-            ),
-        ),
-    VPanel('Chapter titles',
-        RelatedList('-files',
-            'many',
-            List('Submenu chapter titles', '-chapter-titles', None,
-                 chapter_titles_tooltip)),
-    ),
-)
+
 
 text = Tabs('Text/Font',
     VPanel('Menu title', 
@@ -813,7 +817,7 @@ burning = VPanel("Burning",
 ### --------------------------------------------------------------------
 
 todisc = Application('todisc',
-    main, menu, submenus, behavior, thumbnails, text, slideshows, authoring, burning)
+    main, menus, behavior, thumbnails, text, slideshows, authoring, burning)
 gui = GUI("todiscgui", 640, 720, todisc)
 gui.title("tovid GUI - fancy menus using 'todisc'")
 gui.run()

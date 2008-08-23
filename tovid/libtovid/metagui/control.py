@@ -46,7 +46,7 @@ __all__ = [
 import os
 import Tkinter as tk
 from widget import Widget
-from variable import ListVar, DictVar
+from variable import ListVar, DictVar, VAR_TYPES
 from support import DragList, ScrollList, FontChooser
 from support import ensure_type
 
@@ -57,17 +57,6 @@ class MissingOption (Exception):
 
 class NotDrawn (Exception):
     pass
-
-### --------------------------------------------------------------------
-# Map python types to Tkinter variable types
-_tk_vartypes = {
-    str: tk.StringVar,
-    bool: tk.BooleanVar,
-    int: tk.IntVar,
-    float: tk.DoubleVar,
-    list: ListVar,
-    dict: DictVar,
-}
 
 ### --------------------------------------------------------------------
 from tooltip import ToolTip
@@ -149,8 +138,8 @@ class Control (Widget):
         """
         Widget.draw(self, master)
         # Create tk.Variable to store Control's value
-        if self.vartype in _tk_vartypes:
-            self.variable = _tk_vartypes[self.vartype](self)
+        if self.vartype in VAR_TYPES:
+            self.variable = VAR_TYPES[self.vartype](self)
         else:
             self.variable = tk.Variable(self)
         # Set default value
@@ -206,7 +195,7 @@ class Control (Widget):
     def set_variable(self, variable):
         """Set the Control to reference the given Tkinter variable.
         """
-        need_type = _tk_vartypes[self.vartype]
+        need_type = VAR_TYPES[self.vartype]
         if not isinstance(variable, need_type):
             raise TypeError("Variable must be of type '%s'" % need_type)
         self.variable = variable
