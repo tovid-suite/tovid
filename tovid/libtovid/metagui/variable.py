@@ -2,11 +2,15 @@
 # variable.py
 
 """Contains Tkinter Variable subclasses for List and Dict variables.
+
+This module exists to supplement the built-in Tkinter Variable types,
+which do not provide ``list`` and ``dict`` equivalents.
 """
 
 __all__ = [
     'ListVar',
     'DictVar',
+    'VAR_TYPES',
 ]
 
 import Tkinter as tk
@@ -27,6 +31,18 @@ class ListVar (tk.Variable):
         self.callbacks = {'insert': [], 'remove': [], 'select': []}
 
 
+    def get(self):
+        """Get the entire list of values.
+        """
+        return list(tk.Variable.get(self))
+
+
+    def set(self, new_list):
+        """Set the entire list of values.
+        """
+        tk.Variable.set(self, tuple(new_list))
+
+
     def __getitem__(self, index):
         """Get a list value using list-index syntax: ``listvar[index]``.
         """
@@ -41,16 +57,12 @@ class ListVar (tk.Variable):
         self.set(current)
 
 
-    def get(self):
-        """Get the entire list of values.
+    def insert(self, index, item):
+        """Insert an item into the list at the specified index.
         """
-        return list(tk.Variable.get(self))
-
-
-    def set(self, new_list):
-        """Set the entire list of values.
-        """
-        tk.Variable.set(self, tuple(new_list))
+        items = self.get()
+        items.insert(index, item)
+        self.set(items)
 
 
     def remove(self, item):
@@ -62,6 +74,12 @@ class ListVar (tk.Variable):
         self.set(items)
 
 
+    def append(self, item):
+        """Append an item to the list.
+        """
+        self.insert(-1, item)
+
+
     def pop(self, index=-1):
         """Pop an item off the list and return it.
         """
@@ -69,20 +87,6 @@ class ListVar (tk.Variable):
         item = items.pop(index)
         self.set(items)
         return item
-
-
-    def append(self, item):
-        """Append an item to the list.
-        """
-        self.insert(-1, item)
-
-
-    def insert(self, index, item):
-        """Insert an item into the list at the specified index.
-        """
-        items = self.get()
-        items.insert(index, item)
-        self.set(items)
 
 
     def count(self):
@@ -142,4 +146,16 @@ class DictVar (tk.Variable):
         tup = tuple([(key, value) for key, value in new_dict.items()])
         tk.Variable.set(self, tup)
 
+### --------------------------------------------------------------------
 
+# Map python types to Tkinter variable types
+VAR_TYPES = {
+    str: tk.StringVar,
+    bool: tk.BooleanVar,
+    int: tk.IntVar,
+    float: tk.DoubleVar,
+    list: ListVar,
+    dict: DictVar,
+}
+
+### --------------------------------------------------------------------
