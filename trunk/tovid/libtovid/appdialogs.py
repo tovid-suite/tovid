@@ -10,10 +10,14 @@ class AppDialog(Frame):
     def __init__(self, parent):
         Frame.__init__(self,parent)
 
+        self.parent = parent
         # get metagui font configuration
         self.inifile = os.path.expanduser('~/.metagui/config')
         self.style = Style()
         self.style.load(self.inifile)
+
+    def run(self):
+        self.mainloop()
 
 class ConfirmDialog(AppDialog):
     """A generic dialog class that allows you to make a dialog with single or
@@ -32,7 +36,6 @@ class ConfirmDialog(AppDialog):
     def __init__(self, parent, title='', text='', button_text='', image=''):
         AppDialog.__init__(self,parent)
 
-        self.parent = parent
         self.text = text
         self._title = title
         default_button_text = ['OK']
@@ -99,7 +102,6 @@ class LogViewer(AppDialog):
     def __init__(self, parent, filename, app, processes):
         AppDialog.__init__(self,parent)
 
-        self.parent = parent
         self.app = app
         self.parent.title(self.app)
         self.filename = filename
@@ -153,10 +155,6 @@ class LogViewer(AppDialog):
         self.after(100,self.poll)
 
 
-    def run(self):
-        self.mainloop()
-
-
 from Tkinter import *
 import linecache
 
@@ -191,7 +189,6 @@ class Counter(AppDialog):
     def __init__(self, parent, filename, total, embedded=True):
         AppDialog.__init__(self,parent)
 
-        self.parent = parent
         self.parent.config(relief='sunken')
         self.countfile= filename
         self.file = open(self.countfile, 'r')
