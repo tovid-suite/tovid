@@ -15,6 +15,12 @@ class AppDialog(Frame):
         self.inifile = os.path.expanduser('~/.metagui/config')
         self.style = Style()
         self.style.load(self.inifile)
+        print self.style.font
+        # make a few larger font sizes as well
+        self.med_font = self.lrg_font = list(self.style.font)
+        mfont = int(self.style.font[1])+2
+        self.med_font[1] = mfont
+        self.lrg_font[1] = mfont+2
 
     def run(self):
         self.mainloop()
@@ -56,11 +62,14 @@ class ConfirmDialog(AppDialog):
         # draw the title
         self.parent.title(self._title)
 
-        # draw the text or image
-        # for the moment the dialog can have text OR image, not both
+        # draw the text and/or image
         if self.image:
             self.label1 = Label(bd=2, relief='groove')
             self.label1.pack(padx=20, pady=20, side='top')
+            if self.text:
+                label2 = Label(text=self.text, font=self.lrg_font, \
+                justify='left', padx=20, pady=20)
+                label2.pack(side='top', fill='both', expand=1)
         elif self.text:
             label2 = Label(text=self.text, font=self.style.font, \
             justify='left', padx=20, pady=20)
@@ -90,15 +99,15 @@ import time, tkMessageBox
 from ScrolledText import ScrolledText
 
 class LogViewer(AppDialog):
-        """This class allows you to tail an application log which will be
-        embedded in a tkinter window. It takes the following parameters:
-        filename: the application log to 'tail'.
-        app: the application which this viewer is associated with.
-        processes:  the pid of the application.  On pressing the exit button
-        or closing the window using window manager methods, the pid will be
-        killed if it is still active.
+    """This class allows you to tail an application log which will be
+    embedded in a tkinter window. It takes the following parameters:
+    filename: the application log to 'tail'.
+    app: the application which this viewer is associated with.
+    processes:  the pid of the application.  On pressing the exit button
+    or closing the window using window manager methods, the pid will be
+    killed if it is still active.
 
-        """
+    """
     def __init__(self, parent, filename, app, processes):
         AppDialog.__init__(self,parent)
 
@@ -116,7 +125,7 @@ class LogViewer(AppDialog):
         self.button = Button(text='Exit', relief='groove', overrelief='raised', \
         anchor='s', command=self.confirm_exit, font=self.style.font)
         self.button.pack(side='top')
-        self.text = ScrolledText(parent, width=100, height=40, \
+        self.text = ScrolledText(parent, width=80, height=40, \
         font=self.style.font)
         # text area is not editable. ctrl-q and alt-f4 still quit parent
         self.text.bind("<Key>", lambda e: "break")
@@ -183,6 +192,9 @@ class Counter(AppDialog):
     Using configurable labels:
 
             3|Working on image|resizing
+
+    Use '||' to clear the contents all labels (not suggested for non embedded
+    counters as it will shrink the window and look strange).
         
 
     """
@@ -211,11 +223,8 @@ class Counter(AppDialog):
         self.w1 = Label(frame, textvariable=self.w1text)
         #self.w1text.set('processing frame')
         self.w1.pack(side=self.packside)
-        cfont = list(self.style.font)
-        c = int(self.style.font[1])+4
-        cfont[1]=str(c)
         self.w2 = Label(frame, relief=self.relief, textvariable=self.w2text, \
-        font=cfont, width=len(str(self.total)))
+        font=self.lrg_font, width=len(str(self.total)))
         self.w2.pack(side=self.packside)
         self.w3 = Label(frame, textvariable=self.w3text)
         #self.w3text.set(self.frames)
