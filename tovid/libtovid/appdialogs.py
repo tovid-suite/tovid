@@ -18,9 +18,8 @@ class AppDialog(Frame):
         print self.style.font
         # make a few larger font sizes as well
         self.med_font = self.lrg_font = list(self.style.font)
-        mfont = int(self.style.font[1])+2
-        self.med_font[1] = mfont
-        self.lrg_font[1] = mfont+2
+        self.med_font[1] = self.style.font[1]+2
+        self.lrg_font[1] = self.style.font[1]+4
 
     def run(self):
         self.mainloop()
