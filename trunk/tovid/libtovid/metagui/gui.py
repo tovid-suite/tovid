@@ -98,13 +98,13 @@ from support import ConfigWindow, Style
 class GUI (tk.Tk):
     """GUI with one or more Applications
     """
-    def __init__(self, title, width, height, *applications, **kwargs):
-        """Create a GUI for the given applications.
+    def __init__(self, title, width, height, application, **kwargs):
+        """Create a GUI for the given application.
         
             title:        Text shown in the title bar
             width:        Initial width of GUI window in pixels
             height:       Initial height of GUI window in pixels
-            applications: Applications to included in the GUI
+            application:  Application to show in the GUI
         
         Keywords arguments accepted:
 
@@ -112,10 +112,8 @@ class GUI (tk.Tk):
         """
 
         # Ensure that one or more Application instances were provided
-        if not applications:
-            exit_with_traceback("GUI needs one or more Applications")
-        ensure_type("GUI needs Applications", Application, *applications)
-        self.apps = applications
+        ensure_type("GUI needs Application", Application, application)
+        self.application = application
 
         tk.Tk.__init__(self)
 
@@ -140,8 +138,8 @@ class GUI (tk.Tk):
         self.tk.call('set', '::tk::dialog::file::showHiddenBtn',  '1')
         self.tk.call('set', '::tk::dialog::file::showHiddenVar',  '0')
         # handle user closing window with window manager or ctrl-q
-        self.protocol("WM_DELETE_WINDOW", lambda:self.confirm_exit(self.apps[0]))
-        self.bind('<Control-q>', lambda e, : self.confirm_exit(self.apps[0]))
+        self.protocol("WM_DELETE_WINDOW", lambda:self.confirm_exit(self.application))
+        self.bind('<Control-q>', lambda e, : self.confirm_exit(self.application))
 
 
     def run(self):
@@ -159,20 +157,9 @@ class GUI (tk.Tk):
         self.frame.pack(fill='both', expand=True)
         self.resizable(width=True, height=True)
         # Single-application GUI
-        if len(self.apps) == 1:
-            app = self.apps[0]
-            app.draw(self.frame)
-            app.pack(anchor='n', fill='both', expand=True)
-            self.draw_toolbar(app)
-        # Multi-application (tabbed) GUI
-        else:
-            tabs = Tabs('', self.frame, 'top')
-            for app in self.apps:
-                self.draw_toolbar(app)
-                app.draw(tabs)
-                tabs.add(app.program, app)
-            tabs.draw()
-            tabs.pack(anchor='n', fill='both', expand=True)
+        self.application.draw(self.frame)
+        self.application.pack(anchor='n', fill='both', expand=True)
+        self.draw_toolbar(self.application)
         #self.frame.pack_propagate(False)
 
 

@@ -133,416 +133,225 @@ Run this script standalone for a demonstration of this feature.
 from libtovid.metagui import *
 
 ### --------------------------------------------------------------------
-### todisc panels
-### --------------------------------------------------------------------
-
-# Control(option, label, default, help, ...)
-main = Panel("Main",
-    Text('-menu-title',
-        'Menu title', 'My video collection',
-        'Title text displayed on the main menu'),
-    HPanel("Files and titles",
-           FileList('-files',
-               'Video files', None,
-               'Video files to include on the disc'),
-           TextList('-titles',
-               'Video titles', None,
-               'Titles for each video')
-        ),
-    Choice('-format',
-        'Disc format', 'DVD',
-        'Format of disc to create; SVCD can be burned to a CD-R',
-        'DVD|SVCD'),
-    Choice('-tvsys',
-        'TV system', 'NTSC',
-        'Standard TV system to use',
-        'NTSC|PAL'),
-    Filename('-background',
-        'Background image or video', '',
-        'Image or video file to display in the background of the main menu',
-        'load', 'Select an image or video file'),
-    Filename('-bgaudio',
-        'Background audio', '',
-        'Audio file to play while the main menu is showing',
-        'load', 'Select an audio file'),
-    Flag('-static',
-        'Static menus', False,
-        'Create still-image menus; takes less time'),
-    Flag('-submenus',
-        'Create Submenus', False,
-        'Create a submenu for each video title; takes more time'),
-    Filename('-out',
-        'Output name', '',
-        'Name to use for the output directory where the disc will be created.',
-        'save', 'Choose an output name')
-)
-
-general = Panel("General",
-    FlagGroup('Menu style', 'exclusive',
-        Flag('none', "Default: Thumbnail grid", True,
-             "Centered grid of thumbnails, filling all available space"),
-        Flag('-showcase', "Showcase: Large central image or video", False,
-             "Showcase an image or video in a large central frame"),
-        Flag('-textmenu', "Textmenu: Text on a background", False,
-             "Text-only menu, with image or video background")
-        ),
-    Filename('-showcase',
-        'Showcase', '',
-        'Image or video file to be showcased in a large central frame',
-        'load', 'Select an image or video file.'),
-    Filename('-background',
-        'Background', '',
-        'Image or video displayed in the background of the main menu',
-        'load', 'Select an image or video file'),
-    Filename('-bgaudio',
-        'Audio', '',
-        'Audio file played while the main menu is showing',
-        'load', 'Select an audio file'),
-    Flag('-submenus',
-        'Create submenus', False),
-    Flag('-static',
-        'Static menus (takes less time)', False),
-    Text('-menu-title',
-        'Menu title', '',
-        'Title of the main menu'),
-    Number('-menu-length',
-        'Menu length', 30,
-        'Duration of menu in seconds',
-        0, 120, 'scale'),
-    Flag('-keep-files',
-        'Keep useful intermediate files on exit', False),
-    Flag('-no-ask',
-        'No prompts for questions', False),
-    Flag('-no-warn',
-        'Do not pause at warnings', False),
-    Flag('-use-makemenu',
-        'Use makemenu', False,
-        'Create menus using the makemenu script instead of todisc'),
-    Text('-tovidopts',
-        'Custom tovid options', '',
-        "Space-separated list of options to pass to tovid for encoding.")
-)
-
-menu = Panel("Menu",
-    Flag('-ani-submenus',
-        'Animated submenus (takes more time)', False,
-        'tooltip'),
-    Flag('-menu-fade',
-        'Fade in menu', False,
-        'tooltip'),
-    Panel("Seek times",
-          SpacedText('-seek',
-              'Seek time', '',
-              'Play thumbnail videos from the given seek time (seconds)'),
-          Number('-bgvideo-seek',
-              'Background video seek time', 2,
-              'Play background video from the given seek time (seconds)',
-              0, 3600, 'scale'),
-          Number('-bgaudio-seek',
-              'Background audio seek time', 2,
-              'Play background audio from the given seek time (seconds)',
-              0, 3600, 'scale'),
-          Number('-showcase-seek',
-              'Showcase video seek time', 2,
-              'Play showcase video from the given seek time (seconds)',
-              0, 3600, 'scale')
-    ),
-    Choice('-align',
-        'Montage alignment', 'north',
-        'Controls positioning of the thumbnails and their titles',
-        'north|south|east|west'),
-    Filename('-intro',
-        'Intro video', '',
-        'Video to play before showing the main menu',
-        'load', 'Select a video file'),
-    Choice('-showcase-titles-align',
-        'Video(s) title alignment', 'west',
-        'tooltip',
-        'west|east|center'),
-    Choice('-showcase-framestyle',
-        'Showcase frame style', 'none',
-        'tooltip',
-        'none|glass'),
-    Text('-showcase-geo',
-        'Showcase image position (XxY', '',
-        'tooltip')
-)
-
-thumbnails = Panel("Thumbnails",
-    Flag('-3dthumbs',
-        'Create 3D thumbs', False,
-        'tooltip'),
-    Choice('-thumb-shape',
-        'Thumb shape', 'normal',
-        'tooltip',
-        'normal|oval|plectrum|egg'),
-    Number('-opacity',
-        'Thumbnail opacity', 100,
-        'tooltip',
-        1, 100, 'spin'),
-    Number('-blur',
-        'Blur', 4,
-        'tooltip',
-        1, 5, 'spin'),
-    SpacedText('-rotate-thumbs',
-        'Rotate Thumbs (list)', '',
-        'tooltip'),
-    Text('-wave',
-        'Wave effect for showcase thumb', 'default',
-        'tooltip'),
-    Number('-rotate',
-        'Rotate Showcase thumb', 5,
-        'tooltip',
-        -30, 30, 'spin'),
-    Color('-thumb-mist-color',
-        'Thumb mist color', 'white',
-        'tooltip'),
-    Flag('-tile3x1',
-        'Arrange thumb montage in 1 row of 3 thumbs', False,
-        'tooltip')
-)
-
-
-audio = Panel("Audio",
-    Number('-menu-audio-length',
-        'Menu audio length', 30,
-        'tooltip',
-        0, 120, 'scale'),
-    Number('-menu-audio-fade',
-        'Menu audio fade', 1,
-        'tooltip',
-        0, 10, 'scale'),
-    Filename('-submenu-audio',
-        'Submenu audio file', '',
-        'tooltip',
-        'load', 'Select an audio file, or video file with audio'),
-    Number('-submenu-audio-length',
-        'Submenu audio length', 30,
-        'tooltip',
-        0, 120, 'scale'),
-    Number('-submenu-audio-fade',
-        'Submenu audio fade', 1,
-        'tooltip',
-        0, 10, 'scale')
-)
-
-
-text = Panel("Text/Font",
-    Font('-menu-font',
-        'Menu title font', 'Helvetica',
-        'tooltip'),
-    Font('-thumb-font',
-        'Video title(s) font', 'Helvetica',
-        'tooltip'),
-    Number('-menu-fontsize',
-        'Menu title font size', 20,
-        'tooltip',
-        0, 80, 'scale'),
-    Number('-thumb-fontsize',
-        'Video title(s) font size', 12,
-        'tooltip',
-        0, 80, 'scale'),
-    Color('-title-color',
-        'Title color', '',
-        'tooltip'),
-    Color('-submenu-title-color',
-        'Submenu title color', '',
-        'tooltip'),
-    Color('-thumb-text-color',
-        'Video title(s) color', '',
-        'tooltip'),
-    Panel("Mist",
-          Flag('-text-mist',
-              'Text mist', False,
-              'tooltip'),
-          Panel("Nesting is fun",
-                Color('-text-mist-color',
-                    'Text mist color', '',
-                    'tooltip'),
-                Number('-text-mist-opacity',
-                    'Text mist opacity', 60,
-                    'tooltip',
-                    1, 100, 'spin')
-          ),
-    ),
-    Choice('-menu-title-geo',
-        'Menu title position', 'south',
-        'tooltip',
-        'north|south|west|east|center'),
-    Text('-menu-title-offset',
-        'Offset for menu title position', '+0+0',
-        'tooltip'),
-    Color('-stroke-color',
-        'Stroke color', '',
-        'tooltip'),
-    Color('-submenu-stroke-color',
-        'Submenu stroke color', '',
-        'tooltip'),
-    Number('-title-gap',
-        'Space between Textmenu titles (pixels)', 2,
-        'tooltip',
-        0, 400, 'spin'),
-    Number('-text-start',
-        'Start Textmenu titles at: (pixels)', 2,
-        'tooltip',
-        0, 460, 'spin')
-)
-
-authoring = Panel("Authoring",
-    SpacedText('-chapters',
-        'Number of Chapters', '',
-        'Single value or list'),
-    SpacedText('-chain-videos',
-        'Chain videos together', '',
-        'See "man todisc" for details'),
-    Choice('-widescreen',
-        'Widescreen', None,
-        'tooltip',
-        'nopanscan|noletterbox'),
-    Choice('-aspect',
-        'Aspect ratio', '4:3',
-        'tooltip',
-        '4:3|16:9'),
-    Color('-highlight-color',
-        'Highlight color', '',
-        'tooltip'),
-    Color('-select-color',
-        'Selection color', '',
-        'tooltip'),
-    Choice('-button-style',
-        'Button style', 'rect',
-        'tooltip',
-        'rect|text|text-rect'),
-    SpacedText('-audio-lang',
-        'Default audio language', '',
-        'Single value or list'),
-    SpacedText('-subtitles',
-        'Default subtitle language', '',
-        'Single value or list'),
-    Number('-outlinewidth',
-        'Outlinewidth for spumux buttons', 4,
-        'tooltip',
-        0, 20, 'scale'),
-    Number('-loop',
-        'Loop', 10,
-        'tooltip',
-        0, 30, 'scale'),
-    Flag('-playall',
-        '"Play all" button', False,
-        'tooltip')
-)
-# Create the todisc application
-todisc = Application('todisc',
-    [main, general, menu, thumbnails, audio, text, authoring])
-
-
-### --------------------------------------------------------------------
 ### tovid
 ### --------------------------------------------------------------------
 
-# Create the tovid panels
-tovid_panel = Panel("Main",
-    Filename('-in',
-        'Input filename', '',
-        'Video file to encode',
-        'load', 'Select a video file'),
-    Filename('-out',
-        'Output prefix', '',
-        'Name to use for encoded output file (.mpg added automatically)',
-        'save', 'Choose an output prefix'),
-    FlagGroup('Video format', 'exclusive',
-        Flag('-vcd', "Video CD (VCD)", False,
-             "Video CD format, 352x[240|288], may be burned to a CD-R."\
-             " About 1 hour of playing time per disc."),
-        Flag('-svcd', "Super Video CD (SVCD)", False,
-             "Super Video CD format, 480x[480|576], may be burned to a CD-R."\
-             " Like VCD but with better resolution and variable bitrate."\
-             " About 1 hour of playing time per disc."),
-        Flag('-dvd', "DVD", True,
-             "DVD, 720x[480|576], may be burned to a DVD[+/-]R[W] disc."\
-             "Also known as Digital [Versatile|Video] Disc, or just DVD"\
-             "depending on who you talk to.")
-        ),
-    FlagGroup('TV system', 'exclusive',
-        Flag('-ntsc', "NTSC, 29.97 fps", True),
-        Flag('-ntscfilm', "NTSC Film, 23.976 fps", False),
-        Flag('-pal', "PAL, 25.00 fps", False)
-        ),
-    Choice('-aspect',
-        'Aspect ratio', '4:3',
-        'Intended display aspect ratio of input video',
-        [['4:3', "4:3 (full-frame)"],
-         ['16:9', "16:9 (widescreen)"],
-         ['235:100', "2.35:1 (panavision)"]],
-        'top'),
-    Flag('-ffmpeg',
-        'Encode using ffmpeg', False),
-    Number('-quality',
-        'Video quality', 6,
-        'Quality of encoding, on a scale of 1-10.',
-        1, 10, 'scale'),
-    Flag('-interlaced',
-        'Interlaced encoding', False),
-    Number('-safe',
-        'Safe area', 90,
-        'Safe area as a percentage of screen size',
-        50, 100, 'scale')
+_in = Filename('Input filename', '-in', '',
+    'Video file to encode',
+    'load', 'Select a video file')
+_out = Filename('Output prefix', '-out', '',
+    'Name to use for encoded output file (.mpg added automatically)',
+    'save', 'Choose an output prefix')
+
+# Formats
+_dvd = Flag("DVD", '-dvd', True,
+    "(720x480 NTSC, 720x576 PAL) DVD-compatible output. May be burned "
+    "to a DVD[+/-]R[W] disc. Also known as Digital [Versatile|Video] Disc, "
+    "or just DVD depending on who you talk to.")
+_svcd = Flag("Super Video CD (SVCD)", '-svcd', False,
+    "(480x480 NTSC, 480x576 PAL) Super Video CD format, may be burned "
+    "to a CD-R. Like VCD but with better resolution and variable bitrate. "
+    " About 1 hour of playing time per disc.")
+_vcd = Flag("Video CD (VCD)", '-vcd', False,
+    "(320x240 NTSC, 320x288 PAL) Video CD format, may be burned to a CD-R. "
+    "About 1 hour of playing time per disc.")
+
+_dvd_vcd = Flag('VCD-on-DVD', '-dvd-vcd', False,
+    '(352x240 NTSC, 352x288 PAL) VCD-on-DVD output')
+_half_dvd = Flag('Half-DVD', '-half-dvd', False,
+    '(352x480 NTSC, 352x576 PAL) Half-D1-compatible output')
+_kvcd = Flag('KVCD', '-kvcd', False,
+    '(352x240 NTSC, 352x288 PAL) KVCD-enhanced long-playing video CD')
+_kvcdx3 = Flag('KVCDx3', '-kvcdx3', False,
+    '(528x480 NTSC, 520x576 PAL) KVCDx3 specification')
+_kvcdx3a = Flag('KVCDx3A', '-kvcdx3a', False,
+    '(544x480 NTSC, 544x576 PAL) KVCDx3a specification')
+_kdvd = Flag('KDVD', '-kdvd', False,
+    '(720x480 NTSC, 720x576 PAL) KVCD-enhanced long-playing DVD')
+_bdvd = Flag('BDVD', '-bdvd', False,
+    '(720x480 NTSC, 720x576 PAL) BVCD-enhanced long-playing DVD')
+
+# Aspect ratio
+_full = Flag('4:3 (full-frame)', '-full', True)
+_wide = Flag('16:9 (widescreen)', '-wide', False)
+_panavision = Flag('2.35:1 (panavision)', '-panavision', False)
+
+
+# TV Systems
+_ntsc = Flag("NTSC", '-ntsc', True, "NTSC, US standard, 29.97 fps")
+_ntscfilm = Flag("NTSC Film", '-ntscfilm', False, "NTSC Film, 23.976 fps")
+_pal = Flag("PAL", '-pal', False, "PAL, European standard, 25.00 fps")
+
+
+
+# Video quality/size controls
+_quality = Number('Quality', '-quality', 6,
+    'Quality of encoding, on a scale of 1-10, with 10 giving the best '
+    'quality, at the expense of a larger output file.',
+    1, 10, 'spin')
+_vbitrate = Number('Bitrate', '-vbitrate', 0,
+    'Target video bit rate, in kilobits per second. Higher bit rates '
+    'give better quality, but a larger output file.',
+    0, 9000, units='kbits/sec')
+_fit = Number('Fit to', '-fit', 0,
+    'Fit the output file into the given size in MiB (2^20 bytes). '
+    'Video bitrate and quantization are chosen to ensure the target size '
+    'is not exceeded. Ignored for VCD, which has constant bitrate.',
+    0, 4400, units='MiB')
+_discsize = Number('Disc size', '-discsize', 0,
+    'Size of target media, in MiB (2^20 bytes). Output will be split into '
+    'chunks of this size.',
+    0, 4400, units='MiB')
+
+
+### ---------------------------------------------------------------------------
+
+# Encoder options
+_mplayeropts = SpacedText('mplayer options', '-mplayeropts', '', 'TODO: Tooltip')
+_filters = Choice('mplayer filters', '-filters', 'none', 'TODO: Tooltip',
+    'none|denoise|deblock|contrast|all', packside='top')
+
+_ffmpeg = Flag('Encode using ffmpeg', '-ffmpeg', False)
+_parallel = Flag('Parallel video/audio encoding', '-parallel', False,
+    "(mpeg2enc only) Rip, encode, and multiplex in parallel.")
+
+
+# Video encoding options
+
+# Interlacing
+_interlaced = Flag('Interlaced encoding', '-interlaced', False,
+    "Do interlaced encoding. Use this if your source material is interlaced.")
+_interlaced_bf =Flag('Interlaced (bottom first)', '-interlaced_bf', False,
+    "Do interlaced encoding, bottom-field first. Use this if "
+    "the -interlaced option produces bad output.")
+_deinterlace = Flag('Deinterlace', '-deinterlace', False,
+    "Deinterlace the input video, and create a progressive-scan output. "
+    "Degrades video quality considerably.")
+
+# Picture manipulation
+_safe = Number('Safe area', '-safe', 90,
+    'Safe area as a percentage of screen size',
+    50, 100, 'scale')
+_crop = Text('Crop', '-crop', '', 'TODO: Tooltip')
+_slice = Number('Slice', '-slice', 0, 'TODO: Tooltip', 0, 220000)
+
+
+_fps = Text('FPS', '-fps', '', 'TODO: Tooltip')
+_type = Choice('Video type', '-type', 'live', 'TODO: Tooltip',
+    'live|animation|bw', packside='top')
+
+
+# Subtitles
+_autosubs = Flag('Auto-subtitles', '-autosubs', False, 'TODO: Tooltip')
+_mkvsub = Text('mkvsub', '-mkvsub', '', 'TODO: Tooltip')
+_subtitles = Filename('subtitles', '-subtitles', '', 'TODO: Tooltip',
+    'load', 'Select an image or video file')
+
+
+# Audio options
+_normalize = Flag('Normalize', '-normalize', False, 'TODO: Tooltip')
+_downmix = Flag('Downmix', '-downmix', False, 'TODO: Tooltip')
+_audiotrack = SpacedText('Audio track', '-audiotrack', '', 'TODO: Tooltip')
+_abitrate = Number('Audio bitrate', '-abitrate', 0,
+    'Audio bitrate to encode to. Reasonable values include 128, 224, and 384.',
+    128, 384, units='kbits/sec')
+_amplitude = Text('Amplitude', '-amplitude', '', 'TODO: Tooltip')
+_async = Number('Audio sync', '-async', 0, 'Adjust audio synchronization',
+    -600, 600, units='secs')
+
+# Runtime behavior
+_config = Filename('Configuration file', '-config', '', 'TODO: Tooltip',
+    'load', 'Select tovid configuration file')
+# File-related
+_keepfiles = Flag('Keep temporary files', '-keepfiles')
+_overwrite = Flag('Overwrite files', '-overwrite')
+_nofifo = Flag('No FIFO', '-nofifo', False,
+    "Don't use a FIFO (pipe) when encoding. Instead, write "
+    "intermediate conversion files to disk. May take "
+    "up lots of space!")
+
+_priority = Choice('Process priority', '-priority', 'high', 'TODO: Tooltip',
+    'low|medium|high')
+_update = Number('Update interval', '-update', 5, 'TODO: Tooltip', 1, 20)
+_quiet = Flag('Quiet', '-quiet')
+_fake = Flag('Fake encoding', '-fake')
+_force = Flag('Force encoding', '-force')
+
+# Prompting
+_noask = Flag('No prompts',  '-noask', False, 'TODO: Tooltip')
+_from_gui = Flag('From GUI', '-from-gui', True)
+
+
+### ---------------------------------------------------------------------------
+### Higher-level groups and panels
+### ---------------------------------------------------------------------------
+
+IN_OUT = VPanel('Filenames', _in, _out)
+
+FORMATS = FlagGroup('Disc format', 'exclusive',
+    _dvd, _svcd, _vcd,
+    _dvd_vcd, _half_dvd, _kvcd,
+    _kvcdx3a, _kdvd, _bdvd,
+    side='top',
+    columns=3)
+
+
+ASPECT = FlagGroup('Aspect ratio', 'exclusive', _full, _wide, _panavision)
+TVSYS = FlagGroup('TV System', 'exclusive', _ntsc, _ntscfilm, _pal)
+INTERLACE = FlagGroup('Interlacing', 'exclusive',
+    _interlaced, _deinterlace, _interlaced_bf)
+
+
+MAIN = VPanel('Main',
+    IN_OUT,
+    FORMATS,
+    HPanel('Output file size', _quality, _vbitrate, _fit, _discsize),
+    HPanel('', TVSYS, ASPECT, INTERLACE),
 )
 
-# Create the tovid application
-tovid = Application('tovid', [tovid_panel])
 
-### --------------------------------------------------------------------
-### makemenu
-### --------------------------------------------------------------------
-
-# Create the makemenu panels
-makemenu_panel = Panel("Main",
-    Filename('-background',
-     'Background image', '',
-     'TOOLTIP'),
-    Flag('-crop',
-     'Crop background image', True,
-     'Cut off the edges of the background image to make it fit into 4:3'),
-    Flag('-scale',
-     'Stretch background image', False,
-     'Scale or stretch the background image to fit the 4:3 frame'),
-    Filename('-audio',
-     'Background audio', '',
-     'Audio file to play while the menu is being shown'),
-    Number('-length',
-     'Menu length', 4,
-     'Duration of menu playback in seconds.',
-     4, 600),
-    Text('-menu-title',
-     'Menu title', '',
-     'Title or heading for the menu'),
-    Font('-font',
-     'Menu font', 'Helvetica',
-     'TOOLTIP'),
-    Number('-fontsize',
-     'Font size', 24,
-     'TOOLTIP',
-     8, 64, 'spin'),
-    Number('-menu-title-fontsize',
-     'Title font size', 32,
-     'Font size for the menu title',
-     8, 64, 'spin'),
-    Choice('-align',
-     'Text alignment', 'left',
-     'TOOLTIP',
-     'left|center|middle|right')
+VIDEO = HPanel('Video',
+    VPanel('Encoder options',
+        FlagGroup('', 'exclusive', _ffmpeg, _parallel),
+        _filters,
+        _mplayeropts,
+        _force,
+    ),
+    VPanel('Picture manipulation',
+        _safe, _crop, _slice, _fps, _type),
 )
-# Create the makemenu application
-makemenu = Application('makemenu', [makemenu_panel])
+
+AUDIO = VPanel('Audio & Subtitles',
+    _normalize,
+    _downmix,
+    _audiotrack,
+    _abitrate,
+    _amplitude,
+    _async,
+    _autosubs,
+    _mkvsub,
+    _subtitles,
+)
+
+
+BEHAVIOR = VPanel('Behavior',
+    _config,
+    _priority,
+    VPanel('File output', _fake, _overwrite, _keepfiles, _nofifo),
+    VPanel('Prompts and output options', _quiet, _noask, _from_gui, _update)
+)
+
+tovid_panel = Tabs('',
+    MAIN,
+    VIDEO,
+    AUDIO,
+    BEHAVIOR,
+)
 
 ### --------------------------------------------------------------------
 ### main GUI
 ### --------------------------------------------------------------------
 
-# Create the GUI for both applications
-gui = GUI("tovid metagui", [todisc, tovid, makemenu])
-
-# Show the GUI window
+tovid = Application('tovid', tovid_panel)
+gui = GUI("tovid metagui", 640, 720, tovid)
 gui.run()
-

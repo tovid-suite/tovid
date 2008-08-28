@@ -477,7 +477,7 @@ class Flag (Control):
         self.check = tk.Checkbutton(self, text=self.label,
                                     variable=self.variable,
                                     command=self.enabler)
-        self.check.pack(side='left')
+        self.check.pack(side='left', anchor='nw')
         # Draw any controls enabled by this one
         if self.enables:
             self.enables.draw(self)
@@ -568,7 +568,7 @@ class Number (Control):
         
             label:    Text label describing the meaning of the number
             option:   Command-line option to set
-            default:  Default value, or 0 to use minimum.
+            default:  Default value
             help:     Help text to show in a tooltip
             min, max: Range of allowable numbers (inclusive)
             style:    'spin' for a spinbox, or 'scale' for a slider
@@ -576,7 +576,7 @@ class Number (Control):
     
         The default/min/max may be integers or floats.
         """
-        Control.__init__(self, type(default), label, option, default or min,
+        Control.__init__(self, type(default), label, option, default,
                          help, **kwargs)
         self.min = min
         self.max = max
