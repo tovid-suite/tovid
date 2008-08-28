@@ -7,6 +7,7 @@ __all__ = [
     # Functions
     'exit_with_traceback',
     'ensure_type',
+    'divide_list',
     # Others
     'ScrollList',
     'DragList',
@@ -53,6 +54,16 @@ def ensure_type(message, required_type, *objects):
                          (required_type, type(object))
             exit_with_traceback(type_message + '\n' + message)
 
+import math
+
+def divide_list(items, pieces):
+    """Divide a list of things into several pieces, of roughly equal size.
+    """
+    if pieces < 2:
+        return [items]
+    else:
+        per_piece = int(math.ceil(float(len(items)) / pieces))
+        return [items[i*per_piece : (i+1)*per_piece] for i in range(pieces)]
 
 ### --------------------------------------------------------------------
 
@@ -116,9 +127,7 @@ class ScrollList (tk.Frame):
         for value in values:
             self.listbox.insert('end', value)
             self.summon_callbacks('insert', -1, value)
-        print "ScrollList.items:"
-        print self.items.get()
-        #self.select_index(-1)
+        self.select_index(-1)
 
 
     def insert(self, index, *values):
