@@ -136,7 +136,7 @@ _showcase_framestyle = Choice('Showcase frame style', '-showcase-framestyle', 'n
     '-rotate and -wave options',
     'none|glass')
 
-_showcase_geo = Text('', '-showcase-geo', '',
+_showcase_geo = Text('Showcase image position (XxY)', '-showcase-geo', '',
     'This is a showcase style only option.  Enter the position of the '
     'top left corner of the showcase image: e.g. "200x80".  This '
     'value is applied to the video *before* is is scaled.')
@@ -347,7 +347,7 @@ _opacity = Number('Thumbnail opacity', '-opacity', 100,
     'Opacity  of thumbnail videos as a percentage '
     '(no percent sign).  Less than 100(%) '
     'is semi-transparent.  Not recommended with dark backgrounds.',
-    1, 100, 'spin')
+    1, 100, 'spin', toggles=True)
 
 _blur = Number('Blur', '-blur', 4,
     'The amount of feather blur to apply to the thumb-shape.  '
@@ -412,16 +412,16 @@ _menu_font = Font('Font', '-menu-font', 'Helvetica',
 _menu_fontsize = Number('Font size', '-menu-fontsize', 30,
     'The font size to use for the menu title',
     0, 80, toggles=True)
-_title_color = Color('Color', '-title-color', '#CDC0B0',
+_title_color = Color('Font color', '-title-color', '#CDC0B0',
     'The font color to use for the menu title', toggles=True)
 _title_stroke = Color('Stroke color', '-title-stroke', 'gray',
     'Outline color for the main menu font.', toggles=True,
     initialcolor="gray")
 
-_menu_title_geo = Choice('', '-menu-title-geo', 'south',
+_menu_title_geo = Choice('Title position', '-menu-title-geo', 'south',
     'The position of the menu title',
     'north|south|west|east|center')
-_menu_title_offset = Text('Offset', '-menu-title-offset', '+0+50',
+_menu_title_offset = Text('Title offset', '-menu-title-offset', '+0+50',
     'Menu title position as an offset (in pixels) from '
     'the N/S/E/W "Title position".  Use +X+Y syntax.  This '
     'value is applied to the video *before* is is scaled.',
@@ -432,17 +432,17 @@ _text_mist_color = Color('Text mist color', '-text-mist-color', 'white',
     'Color of the mist behind the menu title.', toggles=True)
 _text_mist_opacity = Number('Text mist opacity', '-text-mist-opacity', 60,
     'The opacity of the mist behind the menu title.',
-    1, 100, 'spin')
+    1, 100, 'spin', toggles=True)
 _title_opacity = Number('Title opacity', '-title-opacity', 100,
     'The opacity of the menu title.',
-    0, 100)
+    0, 100, toggles=True)
 _titles_font = Font('Font', '-titles-font', 'Helvetica',
     'The font to use for the video titles', toggles=True)
 _titles_fontsize = Number('Font size', '-titles-fontsize', 12,
     'The font size to use for the video titles.  '
     'Default size varies depending on options chosen.',
     0, 80, toggles=True)
-_titles_color = Color('Color', '-titles-color', '#CDC0B0',
+_titles_color = Color('Font color', '-titles-color', '#CDC0B0',
     'The font color to use for the video titles', toggles=True)
 _titles_stroke = Color('Stroke Color', '-titles-stroke', '#CDC0B0',
     'The color to use for the video titles font outline (stroke)',
@@ -456,7 +456,7 @@ _showcase_titles_align = Choice('Video(s) title alignment',
     'west|east|center|none')
 _titles_opacity = Number('Titles opacity', '-titles-opacity', 100,
     'The opacity of the video titles.',
-    0, 100)
+    0, 100, toggles=True)
 _submenu_font = Font('Font', '-submenu-font', 'Helvetica',
     'The font to use for the Submenu menu titles', toggles=True)
 _submenu_fontsize = Number('Font size', '-submenu-fontsize', 30,
@@ -469,7 +469,7 @@ _submenu_stroke = Color('Stroke color', '-submenu-stroke', '#101010',
 _submenu_title_opacity = Number('Submenu title opacity',
     '-submenu-title-opacity', 100,
     'The opacity of the submenu title.',
-    0, 100)
+    0, 100, toggles=True)
 _chapter_font = Font('Font', '-chapter-font', 'Helvetica',
     'The font to use for the chapter titles', toggles=True)
 _chapter_fontsize = Number('Font size', '-chapter-fontsize', 14,
@@ -483,7 +483,7 @@ _chapter_stroke = Color('Stroke color', '-chapter-stroke',
 _chapter_title_opacity = Number('Chapter titles opacity',
     '-chapter-title-opacity', 100,
     'The opacity of the chapter titles.',
-    0, 100)
+    0, 100, toggles=True)
 
 _widescreen = Choice('Widescreen', '-widescreen', 'none',
     'This will output a <video widescreen=nopanscan /> tag '
@@ -571,15 +571,11 @@ main = VPanel("Main",
 
 
 showcase_options = VPanel('Showcase options',
-
     _showcase_seek,
     _textmenu,
-
     _showcase_framestyle,
-
-    HPanel('Showcase image position (XxY)',
-        _showcase_geo,
-    ),
+    _showcase_geo,
+    _showcase_titles_align,
 )
 
 
@@ -707,34 +703,42 @@ behavior = VPanel("Behavior",
 )
 
 
-text = Tabs('Text/Font',
-    VPanel('Menu title', 
-        HPanel('',
-            VPanel('Font', _menu_font, _menu_fontsize),
-            VPanel('Color', _title_color, _title_stroke),
+text = VPanel('Text/Font',
+    HPanel('',
+        VPanel('Menu titles',
+            _menu_font,
+            _menu_fontsize,
+            _title_color,
+            _title_opacity,
+            _title_stroke,
         ),
-        HPanel('Title position', _menu_title_geo, _menu_title_offset),
-        VPanel("Mist", _text_mist, _text_mist_color, _text_mist_opacity),
-        _title_opacity
+        VPanel('Video titles',
+            _titles_font,
+            _titles_fontsize,
+            _titles_color,
+            _titles_opacity,
+            _titles_stroke,
+        )
     ),
-    VPanel('Video title(s)',
-        HPanel('',
-            VPanel('Font', _titles_font, _titles_fontsize),
-            VPanel('Color', _titles_color, _titles_stroke),
+    _menu_title_geo,
+    _menu_title_offset,
+    VPanel("Mist", _text_mist, _text_mist_color, _text_mist_opacity),
+
+    HPanel('',
+        VPanel('Submenu titles',
+            _submenu_font,
+            _submenu_fontsize,
+            _submenu_title_color,
+            _submenu_title_opacity,
+            _submenu_stroke,
         ),
-        _showcase_titles_align, _titles_opacity
-    ),
-    VPanel('Submenus)',
-        HPanel('Submenu titles',
-            VPanel('Font', _submenu_font, _submenu_fontsize),
-            VPanel('Color', _submenu_title_color, _submenu_stroke),
-            VPanel('Opacity', _submenu_title_opacity),
-        ),
-        HPanel('Chapter titles',
-            VPanel('Font', _chapter_font, _chapter_fontsize),
-            VPanel('Color', _chapter_color, _chapter_stroke),
-            VPanel('Opacity', _chapter_title_opacity),
-        ),
+        VPanel('Chapter titles',
+            _chapter_font,
+            _chapter_fontsize,
+            _chapter_color,
+            _chapter_title_opacity,
+            _chapter_stroke,
+        )
     ),
 )
 
