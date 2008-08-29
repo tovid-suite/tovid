@@ -64,7 +64,7 @@ class Panel (Widget):
         """
         for widget in self.widgets:
             widget.draw(self.frame)
-            widget.pack(side=side, anchor='nw', fill='x',
+            widget.pack(side=side, anchor='nw', fill='both',
                         expand=True, padx=4, pady=2)
 
 
