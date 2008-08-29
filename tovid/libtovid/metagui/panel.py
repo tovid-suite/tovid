@@ -33,8 +33,10 @@ class Panel (Widget):
                  **kwargs):
         """Create a Panel containing one or more widgets or sub-panels.
         
-            name:     Name (label) for panel, or '' for no label
-            widgets:  One or more Widgets (Controls, Panels, Drawers etc.)
+            name
+                Name (label) for panel, or '' for no label
+            widgets
+                One or more Widgets (Controls, Panels, Drawers etc.)
         """
         Widget.__init__(self, name)
 
@@ -321,10 +323,13 @@ class FlagGroup (Panel):
                  **kwargs):
         """Create a FlagGroup with the given label and state.
         
-            name:     Name/label for the group
-            state:    'normal' for independent Flags, 'exclusive' for
-                      mutually-exclusive Flags (more like a Choice)
-            *flags:   One or more Flag controls to include in the group
+            name
+                Name/label for the group
+            state
+                'normal' for independent Flags, 'exclusive' for
+                mutually-exclusive Flags (more like a Choice)
+            *flags
+                One or more Flag controls to include in the group
         
         These keyword arguments are accepted:
         
@@ -402,7 +407,7 @@ from support import ScrollList
 from control import List
 
 class RelatedList (Panel):
-    """A Panel showing a list Control that's related to another list.
+    """A Panel showing two Lists, where one is related to the other.
 
     Relates a parent list to a child Control, with a parent:child
     relationship of 1:1 (each parent item has one child item)
@@ -433,15 +438,19 @@ class RelatedList (Panel):
     """
     
     def __init__(self,
-                 parent_option,
+                 parent,
                  correspondence,
                  child_control,
                  **kwargs):
         """Create a 1:1 or 1:* correspondence between two lists.
 
-            parent_option:  Option string of parent list
-            correspondence: Either 'one' or 'many'
-            child_list:     List control for the child
+            parent
+                Parent List (a Control instance), or the option string
+                of the parent List control declared elsewhere
+            correspondence
+                Either 'one' or 'many'
+            child_list
+                List control for the child
 
         Examples:
 
@@ -455,7 +464,7 @@ class RelatedList (Panel):
         if not isinstance(child_control, List):
             raise TypeError("Child must be a List instance.")
         Panel.__init__(self, child_control.name)
-        self.parent_option = parent_option
+        self.parent = parent
         self.correspondence = correspondence
         self.child = child_control
         self.mapped = []
@@ -475,18 +484,28 @@ class RelatedList (Panel):
         Panel.draw(self, master, **kwargs)
 
         # Lookup the parent Control by option
-        self.parent = Control.by_option(self.parent_option)
+        if type(self.parent) == str:
+            self.parent = Control.by_option(self.parent)
+            draw_copy = True
+        else:
+            draw_copy = False
+
         # Ensure parent control exists and is a List
         if not self.parent:
             raise Exception("Control for '%s' does not exist" % self.option)
         ensure_type("RelatedList parent must be a List", List, self.parent)
 
         # Draw the read-only copy of parent's values
-        self.selected = tk.StringVar()
-        frame = tk.LabelFrame(self.frame, text="%s (copy)" % self.parent.label)
-        self.listbox = ScrollList(frame, self.parent.variable, self.selected)
-        self.listbox.pack(expand=True, fill='both')
-        frame.pack(side='left', anchor='nw', expand=True, fill='both')
+        if draw_copy:
+            self.selected = tk.StringVar()
+            frame = tk.LabelFrame(self.frame, text="%s (copy)" % self.parent.label)
+            self.listbox = ScrollList(frame, self.parent.variable, self.selected)
+            self.listbox.pack(expand=True, fill='both')
+            frame.pack(side='left', anchor='nw', expand=True, fill='both')
+        else:
+            self.parent.draw(self.frame)
+            self.parent.pack(side='left', anchor='nw', expand=True, fill='both')
+            self.listbox = self.parent.listbox
 
         # Draw the child control
         # 1:1, add/remove in child is NOT allowed, and lists are linked
