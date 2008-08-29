@@ -89,18 +89,18 @@ _showcase_seek = Number('Video seek', '-showcase-seek', 2,
     'Play showcase video from the given seek time (seconds).  '
     'Note: switched menus uses the value(s) from "Seek time" '
     'option above, not this one',
-    0, 3600)
+    0, 3600, units='seconds')
 
-_title_gap = Number('Space between titles (pixels)', '-title-gap', 10,
+_title_gap = Number('Space between titles', '-title-gap', 10,
     'Leave this much vertical gap between titles.  '
     'Default is 10 for line buttons, 15 for text-rect buttons.  '
     'This value is applied before the menu is scaled.',
-    0, 400, 'spin')
+    0, 400, 'spin', 'pixels')
 
-_text_start = Number('Start titles at: (pixels)', '-text-start', 50,
+_text_start = Number('Start titles at', '-text-start', 50,
     'Titles will start at this pixel in the vertical axis.  '
     'This value is applied before the menu is scaled.',
-    0, 460, 'spin')
+    0, 460, 'spin', 'pixels')
 
 _textmenu = Flag("Textmenu", '-textmenu', False,
     'Showcase style text only menu.  Optionally use a "showcase" '
@@ -109,10 +109,7 @@ _textmenu = Flag("Textmenu", '-textmenu', False,
     'column 1 (column 2 will use the remainder).  Note that '
     'column 2 titles are aligned right. '
     'See also quick-menu and switched menu.',
-    enables=VPanel('',
-        Number('Columns', '', 13, '', 1, 50), _title_gap, _text_start,
-    )
-)
+    enables=Number('Columns', '', 13, '', 1, 50))
 
 _quick_menu = Flag("Quick menu", '-quick-menu', False,
     'Ten times faster than normal showcase animation.  '
@@ -148,7 +145,7 @@ _bg_color = Color('Menu background color', '-bg-color', 'white',
     'so pick a VERY dark version of the color you want.',
     toggles=True)
 
-_background = Filename('Menu background', '-background', '',
+_background = Filename('Image or video', '-background', '',
     'Image or video displayed in the background of the main menu',
     'load', 'Select an image or video file')
 
@@ -545,6 +542,8 @@ _device = Filename('Device to use for burning', '-device', '/dev/dvdrw',
 
 
 main = VPanel("Main",
+    _menu_title,
+
     Tabs('Input files',
         _files,
         RelatedList('-files', 'one', _titles),
@@ -552,37 +551,37 @@ main = VPanel("Main",
     ),
 
     HPanel('',
-        FlagGroup('Format', 'exclusive', _dvd, _svcd, side='top'),
-        FlagGroup('TV System', 'exclusive', _ntsc, _pal, side='top'),
+        FlagGroup('Menu options', 'normal', _static, _submenus, side='left'),
+        FlagGroup('Format', 'exclusive', _dvd, _svcd, side='left'),
+        FlagGroup('TV System', 'exclusive', _ntsc, _pal, side='left'),
     ),
 
-    _menu_title,
 
-    HPanel('',
-        VPanel('Menu style',
-            FlagGroup('', 'exclusive', _non_showcase, _showcase),
-            _background,
-        ),
-        VPanel('Menu options', _static, _quick_menu, _switched_menus),
+    VPanel('Menu style',
+        FlagGroup('', 'exclusive', _non_showcase, _showcase),
+        HPanel('Showcase options', _textmenu, _quick_menu, _switched_menus)
     ),
-
+    VPanel('Menu backgrounds',
+        _background,
+        _bgaudio,
+    ),
     _out
 )
 
 
 showcase_options = VPanel('Showcase options',
     _showcase_seek,
-    _textmenu,
     _showcase_framestyle,
     _showcase_geo,
     _showcase_titles_align,
+    _title_gap,
+    _text_start,
 )
 
 
 main_menu_backgrounds = VPanel('Backgrounds',
     _bg_color,
     _bgvideo_seek,
-    _bgaudio,
     _bgaudio_seek,
     _menu_audio_fade,
 )
@@ -601,7 +600,6 @@ menus = Tabs('Menus',
     ),
 
     VPanel('Submenus',
-        _submenus,
         _submenu_length,
         _ani_submenus,
         _submenu_audio_fade,
@@ -809,7 +807,7 @@ burning = VPanel("Burning", _burn, _speed, _device)
 
 todisc = Application('todisc',
     main, menus, behavior, thumbnails, text, slideshows, authoring, burning)
-gui = GUI("todiscgui", 640, 720, todisc)
+gui = GUI("todiscgui", 640, 800, todisc)
 gui.title("tovid GUI - fancy menus using 'todisc'")
 gui.run()
 
