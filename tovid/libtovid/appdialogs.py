@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# confirmdialog.py
+# appdialogs.py
 
 from Tkinter import *
 import sys, os
@@ -7,22 +7,42 @@ from libtovid.metagui import Style
 
 
 class AppDialog(Frame):
+    """This is a 'work in progress' demo of getting a log viewer, a counter, 
+    and dialogs into metagui, as well as a system of IPC so a script and
+    the gui can communicate.  
+    Some thoughts on how it might work:
+        The Application class gets the PID of the program it runs, and
+        passes that onto the appdialog class.  Then the fifos/files in
+        /tmp are created using appname-PID-out-1, appname-PID-out-2,
+        appname-PID-out-3, and appname-PID-in-1.  Naming them thusly would
+        allow the program/script to start communicating right away by getting
+        its own pid and commandline arg 0 (${0##*/}.
+
+        The appname-PID-out* files/fifos are written to by the program/script
+        and read by the gui:
+            The 1st is for the screen output
+            the 2nd is for the counter
+            the 3rd is to send commands (like starting dialogs) to the gui.
+        The appname-PID-in-1 file/fifo is written to by the gui and read by
+        the program/script:
+            it is for sending exit codes or other commands like causing the
+            script to exit.
+
+        Commands passed are all interpreted ( no 'eval' or such )
+    """
     def __init__(self, parent):
-        Frame.__init__(self,parent)
+        Frame.__init__(self, parent)
 
         self.parent = parent
         # get metagui font configuration
         self.inifile = os.path.expanduser('~/.metagui/config')
         self.style = Style()
         self.style.load(self.inifile)
-        print self.style.font
         # make a few larger font sizes as well
         self.med_font = self.lrg_font = list(self.style.font)
         self.med_font[1] = self.style.font[1]+2
         self.lrg_font[1] = self.style.font[1]+4
 
-    def run(self):
-        self.mainloop()
 
 class ConfirmDialog(AppDialog):
     """A generic dialog class that allows you to make a dialog with single or
@@ -99,62 +119,27 @@ from ScrolledText import ScrolledText
 
 class LogViewer(AppDialog):
     """This class allows you to tail an application log which will be
-    embedded in a tkinter window. It takes the following parameters:
-    filename: the application log to 'tail'.
-    app: the application which this viewer is associated with.
-    processes:  the pid of the application.  On pressing the exit button
-    or closing the window using window manager methods, the pid will be
-    killed if it is still active.
+    embedded in a tkinter window. It takes no parameters:
 
     """
-    def __init__(self, parent, filename, app, processes):
+    def __init__(self, parent):
         AppDialog.__init__(self,parent)
 
-        self.app = app
-        self.parent.title(self.app)
-        self.filename = filename
-        self.pids = []
-        self.parent.protocol("WM_DELETE_WINDOW", lambda:self.confirm_exit())
-        self.parent.bind('<Control-q>', lambda e, : self.confirm_exit())
-        if type(processes) == tuple:
-            self.pids.extend(processes)
-        else:
-            self.pids.append(processes)
-        self.file = open(self.filename, 'r')
-        self.button = Button(text='Exit', relief='groove', overrelief='raised', \
-        anchor='s', command=self.confirm_exit, font=self.style.font)
-        self.button.pack(side='top')
-        self.text = ScrolledText(parent, width=80, height=40, \
+        self.text = ScrolledText(parent, width=80, height=32, \
         font=self.style.font)
         # text area is not editable. ctrl-q and alt-f4 still quit parent
         self.text.bind("<Key>", lambda e: "break")
         self.text.pack(fill=BOTH)
+
+    def set(self, filename):
+        self.filename = filename
+        self.file = open(self.filename, 'r')
         data = self.file.read()
         self.size = len(data)
         self.text.insert(END, data)
         self.after(100, self.poll)
 
-    def confirm_exit(self):
-        try:
-            os.kill(self.pids[0], 0)
-        except OSError:
-            sys.exit(0)
-        else:
-            if tkMessageBox.askyesno(message=self.app + \
-            " is still running,\nThis will quit the program !\nExit now?"):
-                for pid in self.pids:
-                    try:
-                        os.kill(pid, 15)
-                        os.wait()
-                    except OSError:
-                        pass
-                if os.path.exists(self.filename):
-                    os.remove(self.filename)
-                sys.exit(1)
-
     def poll(self):
-        if not os.path.exists(self.filename):
-            sys.exit(1)
         if os.path.getsize(self.filename) > self.size:
             data = self.file.read()
             self.size = self.size + len(data)
@@ -168,16 +153,7 @@ import linecache
 
 class Counter(AppDialog):
     """This class provides a counter that reads data from a file in /tmp.
-    The following options exist:
-    filename:
-        the name of the tmp file that your controlling script will
-        use for the counts (only 1st line of file is read)
-    total:
-        the final number of the count.  The counter will exist when this
-        is reached.
-    embedded(boolean)
-        for embedded counters, the labels are all on one line.  The default
-        is 3 lines, with the count in a sunken frame.
+    It takes no options.
 
     The counter file must contain either a single number, or if you wish, the
     top and bottom labels are configurable by passing in label text as well.
@@ -197,37 +173,28 @@ class Counter(AppDialog):
         
 
     """
-    def __init__(self, parent, filename, total, embedded=True):
+    def __init__(self, parent):
         AppDialog.__init__(self,parent)
 
-        self.parent.config(relief='sunken')
-        self.countfile= filename
-        self.file = open(self.countfile, 'r')
-        self.total = total
-        self.frames = 'of',total
+        self.parent = parent
         self.w2text = StringVar()
         self.w1text = StringVar()
         self.w3text = StringVar()
         self.lastdata = ''
-        self.embedded = embedded
-        if self.embedded:
-            self.packside='left'
-            self.relief=None
-        else:
-            self.packside='top'
-            self.relief = 'sunken'
         # a label for the counter
         frame = Frame(self.parent, relief='groove')
-        frame.pack(side=self.packside, padx=5, pady=5)
+        frame.pack(side='left', padx=5, pady=5)
         self.w1 = Label(frame, textvariable=self.w1text)
-        #self.w1text.set('processing frame')
-        self.w1.pack(side=self.packside)
-        self.w2 = Label(frame, relief=self.relief, textvariable=self.w2text, \
-        font=self.lrg_font, width=len(str(self.total)))
-        self.w2.pack(side=self.packside)
+        self.w1.pack(side='left')
+        self.w2 = Label(frame, textvariable=self.w2text, \
+        font=self.lrg_font, width=4)
+        self.w2.pack(side='left')
         self.w3 = Label(frame, textvariable=self.w3text)
-        #self.w3text.set(self.frames)
-        self.w3.pack(side=self.packside)
+        self.w3.pack(side='left')
+
+    def set(self, filename):
+        self.countfile= filename
+        self.file = open(self.countfile, 'r')
 
         # poll file for data
         self.update_idletasks
@@ -235,16 +202,11 @@ class Counter(AppDialog):
         self.data = self.data.strip()
         self.after(100, self.poll)
 
-    def _config(self, args):
+    def label(self, args):
         self.w1text.set(args[0])
         if len(args) == 2:
             self.w3text.set(args[1])
 
-    def _exit(self):
-        self.w2.update_idletasks()
-        time.sleep(1)
-        sys.exit(0)
-        
     def poll(self):
         linecache.clearcache()
         self.data = linecache.getline(self.countfile, 1)
@@ -258,15 +220,8 @@ class Counter(AppDialog):
             else: # set both labels AND the counter
                 List = self.data.split( '|' )
                 # set the text labels (w1 and w3)
-                self._config(List[1:len(List)])
+                self.label(List[1:len(List)])
                 # set the numeric counter (w2)
                 self.w2text.set(List[0])
             self.lastdata = self.data
 
-        if self.data == self.total:
-            # reset counter to empty string
-            f = open(self.countfile,"w")
-            f.writelines('||')
-            f.close()
-            if not self.embedded:
-                self._exit()
