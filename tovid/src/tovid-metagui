@@ -242,20 +242,61 @@ _type = Choice('Video type', '-type', 'live', 'TODO: Tooltip',
 
 
 # Subtitles
-_autosubs = Flag('Auto-subtitles', '-autosubs', False, 'TODO: Tooltip')
-_mkvsub = Text('mkvsub', '-mkvsub', '', 'TODO: Tooltip')
-_subtitles = Filename('subtitles', '-subtitles', '', 'TODO: Tooltip',
-    'load', 'Select an image or video file')
+_autosubs = Flag('Auto-subtitles', '-autosubs', False,
+    'Automatically include subtitle files with the same '
+    'name as the input video.')
+
+_mkvsub = Text('mkvsub', '-mkvsub', '',
+    'EXPERIMENTAL. Attempt to encode an integrated subtitle stream '
+    '(such as may be found in Matroska .mkv files) in the given '
+    'language code (eng, jpn, etc.) May work for other formats.')
+
+_subtitles = Filename('subtitles', '-subtitles', '',
+    'Get subtitles from FILE and encode them into the video. '
+    'WARNING: This hard-codes the subtitles into the video, and you '
+    'cannot turn them off while viewing the video. By default, no subtitles '
+    'are loaded. If your video is already compliant with the chosen output '
+    'format, it will be re-encoded to include the subtitles.',
+    'load', 'Select a subtitle file')
 
 
 # Audio options
-_normalize = Flag('Normalize', '-normalize', False, 'TODO: Tooltip')
-_downmix = Flag('Downmix', '-downmix', False, 'TODO: Tooltip')
-_audiotrack = SpacedText('Audio track', '-audiotrack', '', 'TODO: Tooltip')
+_normalize = Flag('Normalize', '-normalize', False,
+    'Analyze the audio stream and then normalize the volume of the audio. '
+    'This is useful if the audio is too quiet or too loud, or you want to '
+    'make volume consistent for a bunch of videos. Similar to running '
+    'normalize without any parameters. The default is -12dB average level '
+    'with 0dB gain.')
+
+_downmix = Flag('Downmix', '-downmix', False,
+    'Encode all audio tracks as stereo. This can save space on your DVD if '
+    'your player only does stereo. The default behavior of tovid is to use the '
+    'original number of channels in each track. For aac audio, downmixing is '
+    'not possible: tovid runs a quick 1 frame test to try to downmix the input '
+    'track with the largest number of channels, and if it fails then it will '
+    'revert to the default behavior of using the original channels.')
+
+_audiotrack = SpacedText('Audio track', '-audiotrack', '',
+    'Encode  the  given  audio  track, if the input video has multiple '
+    'audio tracks.  NUM is 1 for the first track, 2 for the second, etc. '
+    'You may also provide a list of tracks, separated by spaces or commas, '
+    'for example -audiotrack 3,1,2. Use idvid on your source video to '
+    'determine which audio tracks it contains. ')
+
 _abitrate = Number('Audio bitrate', '-abitrate', 0,
-    'Audio bitrate to encode to. Reasonable values include 128, 224, and 384.',
+   'Encode audio at NUM kilobits per second. Reasonable values include 128, '
+    '224,  and  384.  The default is 224 kbits/sec, good enough for most '
+    'encodings. The value must be within the allowable range for the chosen '
+    'disc format; Ignored for VCD, which must be 224.',
     128, 384, units='kbits/sec')
-_amplitude = Text('Amplitude', '-amplitude', '', 'TODO: Tooltip')
+
+_amplitude = Text('Amplitude', '-amplitude', '',
+    'In addition to analyzing and normalizing, apply the gain to the audio '
+    'such that the "average" (RMS) sound level is NUM. Valid values range '
+    '0.0 - 1.0, with  0.0  being  silent and 1.0 being full scale. Use NUMdB '
+    'for a decibel gain below full scale '
+    '(the default without -amplitude is -12dB).')
+
 _async = Number('Audio sync', '-async', 0, 'Adjust audio synchronization',
     -600, 600, units='secs')
 
@@ -286,27 +327,21 @@ _from_gui = Flag('From GUI', '-from-gui', True)
 ### Higher-level groups and panels
 ### ---------------------------------------------------------------------------
 
-IN_OUT = VPanel('Filenames', _in, _out)
-
-FORMATS = FlagGroup('Disc format', 'exclusive',
-    _dvd, _svcd, _vcd,
-    _dvd_vcd, _half_dvd, _kvcd,
-    _kvcdx3a, _kdvd, _bdvd,
-    side='top',
-    columns=3)
-
-
-ASPECT = FlagGroup('Aspect ratio', 'exclusive', _full, _wide, _panavision)
-TVSYS = FlagGroup('TV System', 'exclusive', _ntsc, _ntscfilm, _pal)
-INTERLACE = FlagGroup('Interlacing', 'exclusive',
-    _interlaced, _deinterlace, _interlaced_bf)
-
-
 MAIN = VPanel('Main',
-    IN_OUT,
-    FORMATS,
+    VPanel('Filenames', _in, _out),
+    FlagGroup('Disc format', 'exclusive',
+        _dvd, _svcd, _vcd,
+        _dvd_vcd, _half_dvd, _kvcd,
+        _kvcdx3a, _kdvd, _bdvd,
+        side='top',
+        columns=3),
     HPanel('Output file size', _quality, _vbitrate, _fit, _discsize),
-    HPanel('', TVSYS, ASPECT, INTERLACE),
+    HPanel('',
+        FlagGroup('TV System', 'exclusive', _ntsc, _ntscfilm, _pal),
+        FlagGroup('Aspect ratio', 'exclusive', _full, _wide, _panavision),
+        FlagGroup('Interlacing', 'exclusive',
+                  _interlaced, _interlaced_bf, _deinterlace)
+    ),
 )
 
 
