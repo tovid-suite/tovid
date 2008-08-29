@@ -64,6 +64,7 @@ _menu_title = Text('Menu title', '-menu-title', 'My video collection',
 
 _files = List('Video files', '-files', None, '', Filename())
 _titles = List('Video titles', '-titles', None, '', Text())
+
 _group = List('Grouped videos', '-group', None, group_tooltip, Filename())        
 
 _dvd = Flag("DVD", '-dvd', True)
@@ -545,8 +546,7 @@ main = VPanel("Main",
     _menu_title,
 
     Tabs('Input files',
-        _files,
-        RelatedList('-files', 'one', _titles),
+        RelatedList(_files, 'one', _titles),
         RelatedList('-files', 'many', _group),
     ),
 
