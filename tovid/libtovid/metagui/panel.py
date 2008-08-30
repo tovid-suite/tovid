@@ -528,39 +528,33 @@ class RelatedList (Panel):
         if self.correspondence == 'one':
             # insert/remove callbacks for the parent listbox
             def insert(index, value):
-                #print("Inserting %d: %s" % (index, value))
+                print("%s, Inserting %d: %s" % (self.child.option, index, value))
                 self.child.variable.insert(index, self.filter(value))
             def remove(index, value):
-                #print("Removing %d: %s" % (index, value))
+                print("%s, Removing %d: %s" % (self.child.option, index, value))
                 self.child.variable.pop(index)
             def swap(index_a, index_b):
-                #print("Swapping %d and %d" % (index_a, index_b))
-                a_value = self.child.variable[index_a]
-                self.child.variable[index_a] = self.child.variable[index_b]
-                self.child.variable[index_b] = a_value
-
-            # select callback for the parent copy
+                print("%s, Swapping %d and %d" % (self.child.option, index_a, index_b))
+                self.child.listbox.swap(index_a, index_b)
             def select(index, value):
-                print("Selected %d: %s" % (index, value))
-                pass # already handled by listboxes being linked
+                print("%s, Selected %d: %s" % (self.child.option, index, value))
+                pass # already handled by listboxes being linked??
 
         else: # 'many'
             # insert/remove/swap callbacks for the parent listbox
             def insert(index, value):
-                #print("Inserting %d: %s" % (index, value))
+                print("%s, Inserting %d: %s" % (self.child.option, index, value))
                 self.mapped.insert(index, ListVar())
             def remove(index, value):
-                #print("Removing %d: %s" % (index, value))
+                print("%s, Removing %d: %s" % (self.child.option, index, value))
                 self.mapped.pop(index)
             def swap(index_a, index_b):
-                #print("Swapping %d and %d" % (index_a, index_b))
+                print("%s, Swapping %d and %d" % (self.child.option, index_a, index_b))
                 a_var = self.mapped[index_a]
                 self.mapped[index_a] = self.mapped[index_b]
                 self.mapped[index_b] = a_var
-
-            # select callback for the parent copy
             def select(index, value):
-                print("Selected %d: %s" % (index, value))
+                print("%s, Selected %d: %s" % (self.child.option, index, value))
                 self.child.set_variable(self.mapped[index])
 
         self.listbox.callback('select', select)

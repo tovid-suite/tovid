@@ -126,7 +126,7 @@ class ScrollList (tk.Frame):
         """
         for value in values:
             self.listbox.insert('end', value)
-            self.summon_callbacks('insert', -1, value)
+            self.summon_callbacks('insert', self.items.count(), value)
         self.select_index(-1)
 
 
@@ -162,9 +162,10 @@ class ScrollList (tk.Frame):
         item_b = temp_list[index_b]
         temp_list[index_a] = item_b
         temp_list[index_b] = item_a
-        self.summon_callbacks('swap', index_a, index_b)
         # Set the updated list
         self.items.set(temp_list)
+        # Summon 'swap' callbacks
+        self.summon_callbacks('swap', index_a, index_b)
 
 
     def select(self, event):
@@ -174,7 +175,7 @@ class ScrollList (tk.Frame):
         self.select_index(index)
 
 
-    def select_index(self, index):
+    def select_index(self, index, select_in_linked=True):
         """Select (highlight) the list item at the given index.
         """
         item_count = self.items.count()
@@ -183,18 +184,20 @@ class ScrollList (tk.Frame):
         # If index is negative, or past the end, select last item
         if index < 0 or index >= item_count:
             index = item_count - 1
-        self.curindex = index
         # Clear selection, and select only the given index
         self.listbox.selection_clear(0, item_count)
         self.listbox.selection_set(index)
         # Set selected variable
-        self.selected.set(self.listbox.get(self.curindex))
+        self.selected.set(self.listbox.get(index))
+        self.curindex = index
         # Summon 'select' callbacks
         self.summon_callbacks('select', index, self.selected.get())
         # Select same index in linked ScrollList
-        if self.linked:
-            self.linked.listbox.selection_clear(0, item_count)
-            self.linked.listbox.selection_set(self.curindex)
+        if self.linked and select_in_linked:
+            self.linked.select_index(index, False)
+            #self.linked.listbox.selection_clear(0, item_count)
+            #self.linked.listbox.selection_set(index)
+            #self.linked.summon_callbacks('select', index, self.selected.get())
 
 
     def get(self):
@@ -280,17 +283,10 @@ class DragList (ScrollList):
     def drag(self, event):
         """Event handler when an item in the list is dragged.
         """
-        # If item is dragged to a new location, delete/insert
+        # If item is dragged to a new location, swap
         loc = self.listbox.nearest(event.y)
         if loc != self.curindex:
-            #item = self.listbox.get(self.curindex)
-            #self.listbox.delete(self.curindex)
-            #self.listbox.insert(loc, item)
             self.swap(self.curindex, loc)
-            # Drag in linked listbox
-            if self.linked:
-                self.linked.swap(self.curindex, loc)
-                self.linked.curindex = loc
             self.curindex = loc
 
 
