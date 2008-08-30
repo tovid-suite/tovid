@@ -778,7 +778,6 @@ class List (Control):
     def select(self, index, value):
         """Select an item in the list and enable editing.
         """
-        print("List.select(%d, %s)" % (index, value))
         self.control.set(value)
         self.control.focus()
 
