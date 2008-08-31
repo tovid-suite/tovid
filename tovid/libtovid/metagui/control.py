@@ -214,16 +214,21 @@ class Control (Widget):
         pass
 
 
-    def get_args(self):
+    def get_args(self, variable=None):
         """Return a list of arguments for passing this command-line option.
         draw() must be called before this function.
-        """
-        # self.variable isn't defined until draw() is called
-        if not self.variable:
-            raise NotDrawn("Must call draw() before get_args()")
 
+            variable
+                Tkinter Variable to use as the current value,
+                or None to use self.variable.
+        """
         args = []
-        value = self.get()
+
+        # Use the provided variable, or self.variable
+        if variable != None:
+            value = variable.get()
+        else:
+            value = self.get()
 
         # Return empty if the control is toggled off
         if self.toggles:
