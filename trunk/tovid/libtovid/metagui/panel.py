@@ -486,9 +486,9 @@ class RelatedList (Panel):
         # Lookup the parent Control by option
         if type(self.parent) == str:
             self.parent = Control.by_option(self.parent)
-            draw_copy = True
+            self.draw_copy = True
         else:
-            draw_copy = False
+            self.draw_copy = False
 
         # Ensure parent control exists and is a List
         if not self.parent:
@@ -496,7 +496,7 @@ class RelatedList (Panel):
         ensure_type("RelatedList parent must be a List", List, self.parent)
 
         # Draw the read-only copy of parent's values
-        if draw_copy:
+        if self.draw_copy:
             self.selected = tk.StringVar()
             frame = tk.LabelFrame(self.frame, text="%s (copy)" % self.parent.label)
             self.listbox = ScrollList(frame, self.parent.variable, self.selected)
@@ -563,13 +563,16 @@ class RelatedList (Panel):
         self.parent.listbox.callback('swap', swap)
 
 
-
     def get_args(self):
+        args = []
+        # Add parent args, if parent was defined here
+        if not self.draw_copy:
+            args.extend(self.parent.get_args())
+        # Add child args, for one or many children
         if self.correspondence == 'many':
-            # TODO
-            return []
-        else:
-            return self.child.get_args()
-
-
+            for list_var in self.mapped:
+                args.extend(self.child.get_args(list_var))
+        else: # 'one'
+            args.extend(self.child.get_args())
+        return args
 
