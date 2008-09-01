@@ -46,14 +46,15 @@ class AppDialog(Frame):
 
 class ConfirmDialog(AppDialog):
     """A generic dialog class that allows you to make a dialog with single or
-    multiple buttons, and a choice of text or image (GIF only). Example:
+    multiple buttons, and a choice of text or image (GIF only).  Providing
+    text AND image makes a 2nd text label underneath the image label.  Example:
 
     from Tkinter import Tk
     from libtovid.appdialogs import ConfirmDialog
 
-    btns='yes','no','maybe'
+    btns='Preview OK ?, No'
     root = Tk()
-    a = ConfirmDialog(root, 'Dialog', ', btns, '/home/me/file.gif')
+    a = ConfirmDialog(root, 'Dialog', 'Menu Preview', btns, '/home/me/pv.gif')
     a.run()
 
     The exit codes of the buttons start at 0 and increment
