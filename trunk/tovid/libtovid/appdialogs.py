@@ -226,3 +226,41 @@ class Counter(AppDialog):
                 self.w2text.set(List[0])
             self.lastdata = self.data
 
+
+import select
+
+class RunDialog:
+    def __init__(self, pipe):
+        # the named pipe
+        self.pipe = pipe
+        fifo = os.open(self.pipe, os.O_NONBLOCK | os.O_RDONLY)
+        self.get_data(fifo)
+
+    def format_input(self, string):
+        stringlist = []
+        string = string.split('|')
+        for index, arg in enumerate(string):
+            stringlist.append(arg.strip())
+        stringlist[2] = stringlist[2].split(',')
+        return stringlist
+
+    def run_dialog(self, args):
+        #print 'running dialog'
+        root = Tk()
+        title, text, buttons, image = args
+        dialog = ConfirmDialog(root, title, text, buttons, image)
+        dialog.run()
+
+    def get_data(self, fifo):
+        select.select([fifo],[],[])
+        string = os.read(fifo, 1024)
+        if len(string):
+            listing = self.format_input(string)
+            print listing
+            self.run_dialog(listing)
+        else:
+            nf = os.open(self.pipe, os.O_NONBLOCK | os.O_RDONLY)
+            os.close(fifo)
+            fifo = nf
+        self.get_data(fifo)
+
