@@ -229,6 +229,10 @@ class Counter(AppDialog):
 
 import select
 
+# this class is useless and will be removed soon
+# if this is to work select.select needs to be
+# polled from the gui, and get_data(..) and run_dialog(..) type functions
+# called from there.  Concentrating on running dialogs from bash for now.
 class RunDialog:
     def __init__(self, pipe):
         # the named pipe
@@ -253,6 +257,7 @@ class RunDialog:
 
     def get_data(self, fifo):
         select.select([fifo],[],[])
+        print 'this should not print till the fifo is ready to read'
         string = os.read(fifo, 1024)
         if len(string):
             listing = self.format_input(string)
