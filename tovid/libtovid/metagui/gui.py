@@ -5,6 +5,7 @@
 """
 
 __all__ = [
+    'Executor',
     'Application',
     'GUI',
 ]
@@ -21,7 +22,77 @@ from libtovid.cli import Command
 DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
 
 ### --------------------------------------------------------------------
+from ScrolledText import ScrolledText
+
+class Executor (Widget):
+    """A widget for executing and viewing the output of a command-line program.
+    """
+    def __init__(self, name='Log'):
+        Widget.__init__(self, name)
+        self.command = None
+        self.log = None
+        self.file = None
+        self.size = 0
+
+
+    def execute(self, command):
+        """Execute the given command.
+        """
+        if not isinstance(command, Command):
+            raise TypeError("execute() requires a Command instance.")
+
+        self.command = command
+
+        # Create a temporary file to hold command output, and open it
+        self.log = tempfile.NamedTemporaryFile(prefix=self.command.program)
+        self.file = open(self.log.name, 'r')
+        self.size = 0
+
+        # Run the command, directing output to temporary file
+        self.command.run_redir(stdout=self.log)
+
+        # Poll until command finishes (or is interrupted)
+        self.poll()
+
+
+    def draw(self, master):
+        """Draw the Executor in the given master widget.
+        """
+        Widget.draw(self, master)
+        self.text = ScrolledText(self, width=80, height=32)
+        # text area is not editable. ctrl-q and alt-f4 still quit parent
+        self.text.bind("<Key>", lambda e: "break")
+        self.text.pack(fill='both', expand=True)
+
+
+    def poll(self):
+        """Poll for process completion, and update the output window.
+        """
+        # Update the output window with tempfile
+        if self.file and os.path.getsize(self.log.name) > self.size:
+            data = self.file.read()
+            if len(data) > 0:
+                self.text.insert('end', data)
+                self.text.see('end')            
+
+        # Stop if command is done, or poll again
+        if self.command.done():
+            self.file.close()
+            self.write("Done executing!")
+        else:
+            self.after(100, self.poll)
+
+
+    def write(self, output):
+        """Write literal output to the LogViewer window
+        (inserted wherever the cursor currently is).
+        """
+        self.text.insert('end', output)
+
+
+### --------------------------------------------------------------------
 import tkMessageBox
+import tempfile
 
 class Application (Widget):
     """Graphical frontend for a command-line program
@@ -31,8 +102,7 @@ class Application (Widget):
         
             program: Command-line program that the GUI is a frontend for
             panels:  One or more Panels, containing controls for the given
-                     program's options. For multiple panels, a tabbed
-                     application is created.
+                     program's options.
 
         After defining the Application, call run() to show/execute it.
         """
@@ -42,7 +112,7 @@ class Application (Widget):
         # Initialize
         Widget.__init__(self)
         self.program = program
-        self.panels = panels
+        self.panels = list(panels)
         self.showing = False
         self.frame = None
 
@@ -51,16 +121,12 @@ class Application (Widget):
         """Draw the Application in the given master.
         """
         Widget.draw(self, master)
-        # Single-panel application
-        if len(self.panels) == 1:
-            panel = self.panels[0]
-            panel.draw(self)
-            panel.pack(anchor='n', fill='x', expand=True)
-        # Multi-panel (tabbed) application
-        else:
-            tabs = Tabs('', *self.panels)
-            tabs.draw(self)
-            tabs.pack(anchor='n', fill='x', expand=True)
+        # Add a LogViewer as the last panel
+        self.panels.append(Executor())
+        # Draw all panels as tabs
+        self.tabs = Tabs('', *self.panels)
+        self.tabs.draw(self)
+        self.tabs.pack(anchor='n', fill='x', expand=True)
 
 
     def get_args(self):
@@ -78,19 +144,18 @@ class Application (Widget):
         args = self.get_args()
         command = Command(self.program, *args)
 
-        print "Running command:", command
-        # Verify with user
+        # Show the Executor
+        self.tabs.activate(len(self.panels)-1)
+        executor = self.panels[-1]
+
+        # Display the command to be executed
+        executor.write("Running command:\n")
+        executor.write(str(command) + '\n')
+
+        # Show prompt asking whether to continue
         if tkMessageBox.askyesno(message="Run %s now?" % self.program):
-            # Kind of hackish...
-            root = self.master.master
-            root.withdraw()
-            try:
-                command.run()
-            except KeyboardInterrupt:
-                tkMessageBox.showerror(message="todisc was interrupted!")
-            else:
-                tkMessageBox.showinfo(message="todisc finished running!")
-            root.deiconify()
+            executor.execute(command)
+
 
 ### --------------------------------------------------------------------
 from support import ConfigWindow, Style

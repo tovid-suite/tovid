@@ -249,6 +249,7 @@ class Tabs (Panel):
         """Create a tabbed panel that switch between several widgets.
         """
         Panel.__init__(self, name, *widgets, **kwargs)
+        # Index of selected tab
         self.index = 0
 
 
@@ -299,7 +300,7 @@ class Tabs (Panel):
 
 
     def change(self):
-        """Switch to the selected tab's frame.
+        """Event handler for switching tabs
         """
         # Unpack the existing widget
         self.widgets[self.index].pack_forget()
@@ -308,6 +309,13 @@ class Tabs (Panel):
         self.widgets[selected].pack(side=self.side, fill='both', expand=True)
         # Remember this tab's index
         self.index = selected
+
+
+    def activate(self, index):
+        """Activate (display) the given tab index.
+        """
+        self.selected.set(index)
+        self.change()
 
 
 ### --------------------------------------------------------------------
