@@ -73,6 +73,7 @@ class Command:
         self.output = ''
         self.error = ''
 
+
     def add(self, *args):
         """Append one or more arguments to the command. Each argument passed
         to this function is converted to string form, and treated as a single
@@ -81,6 +82,7 @@ class Command:
         """
         for arg in args:
             self.args.append(str(arg))
+
     
     def run(self, capture=False, background=False):
         """Run the command and capture or display output.
@@ -99,17 +101,13 @@ class Command:
         This function does not allow special stream redirection. For that,
         use run_redir().
         """
-        print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        print "Running command:"
-        print str(self)
-        print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-
         if capture:
             self.run_redir(None, PIPE, stderr=PIPE)
         else:
             self.run_redir(None, None, stderr=None)
         if not background:
             self.wait()
+
 
     def run_redir(self, stdin=None, stdout=None, stderr=None):
         """Execute the command using the given stream redirections.
@@ -125,6 +123,11 @@ class Command:
         redirection (ex. `spumux < menu.mpg > menu_subs.mpg`), use this
         function instead of run(), and call wait() afterwards if needed.
         """
+        print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        print "Running command:"
+        print str(self)
+        print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+
         self.output = ''
         # Open files if string filenames were provided
         if type(stdin) == str:
@@ -137,29 +140,37 @@ class Command:
         self.proc = Popen([self.program] + self.args,
                           stdin=stdin, stdout=stdout, stderr=stderr)
 
+
     def wait(self):
-        """Wait for the command to finish running. If a KeyboardInterrupt
-        occurs (user pressed Ctrl-C), kill the subprocess (and re-raise the
-        KeyboardInterrupt exception).
+        """Wait for the command to finish running, and return the result
+        (self.proc.returncode attribute).
+
+        If a KeyboardInterrupt occurs (user pressed Ctrl-C), the subprocess
+        is killed (and KeyboardInterrupt re-raised).
         """
         if not isinstance(self.proc, Popen):
             print "**** Can't wait(): Command is not running"
             return
         try:
-            self.proc.wait()
+            result = self.proc.wait()
         except KeyboardInterrupt:
             self.kill()
             raise KeyboardInterrupt
+        return result
+
 
     def kill(self):
-        """Abort!"""
+        """Abort!
+        """
         os.kill(self.proc.pid, signal.SIGTERM)
+
 
     def done(self):
         """Return True if the command is finished running; False otherwise.
         Only useful if the command is run in the background.
         """
         return self.proc.poll() != None
+
 
     def get_output(self):
         """Wait for the command to finish running, and return a string
@@ -171,6 +182,7 @@ class Command:
             self.output = self.proc.communicate()[0]
         return self.output
 
+
     def get_error(self):
         """Wait for the command to finish running, and return a string
         containing the command's standard error output. Returns an empty
@@ -181,6 +193,7 @@ class Command:
         return self.error
 
     get_errors = get_error
+
 
     def __str__(self):
         """Return a string representation of the Command, as it would look if
@@ -201,11 +214,13 @@ class Pipe:
         for cmd in commands:
             self.add(cmd)
         self.proc = None
+
     
     def add(self, *commands):
         """Append the given commands to the end of the pipeline."""
         for cmd in commands:
             self.commands.append(cmd)
+
 
     def run(self, capture=False, background=False):
         """Run all Commands in the pipeline, doing appropriate stream
@@ -233,11 +248,13 @@ class Pipe:
         if not background:
             cmd.wait()
 
+
     def get_output(self):
         """Wait for the pipeline to finish executing, and return a string
         containing the output from the last command in the pipeline.
         """
         return self.commands[-1].get_output()
+
 
     def __str__(self):
         """Return a string representation of the Pipe.
