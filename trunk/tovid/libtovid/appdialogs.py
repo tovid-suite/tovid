@@ -12,18 +12,15 @@ class AppDialog(Frame):
     the gui can communicate.  
     Some thoughts on how it might work:
         The Application class gets the PID of the program it runs, and
-        passes that onto the appdialog class.  Then the fifos/files in
-        /tmp are created using appname-PID-out-1, appname-PID-out-2,
-        appname-PID-out-3, and appname-PID-in-1.  Naming them thusly would
-        allow the program/script to start communicating right away by getting
-        its own pid and commandline arg 0 (${0##*/}.
-
-        The appname-PID-out* files/fifos are written to by the program/script
+        passes that onto the appdialog class.  Then two fifos are
+        created in /tmp using appname-PID-out and appname-PID-in.
+        Naming them thusly would allow the program/script to start
+        communicating right away by getting its own pid and commandline
+        arg 0: ${0##*/}.
+        The appname-PID-out fifo are written to by the program/script
         and read by the gui:
-            The 1st is for the screen output
-            the 2nd is for the counter
-            the 3rd is to send commands (like starting dialogs) to the gui.
-        The appname-PID-in-1 file/fifo is written to by the gui and read by
+            It to send commands (like starting dialogs) to the gui.
+        The appname-PID-in fifo is written to by the gui and read by
         the program/script:
             it is for sending exit codes or other commands like causing the
             script to exit.
@@ -59,8 +56,8 @@ class ConfirmDialog(AppDialog):
 
     The exit codes of the buttons start at 0 and increment
     """
-    def __init__(self, parent, title='', text='', button_text='', image=''):
-        AppDialog.__init__(self,parent)
+    def __init__(self, parent='', title='', text='', button_text='', image=''):
+        AppDialog.__init__(self, parent)
 
         self.text = text
         self._title = title
@@ -75,44 +72,41 @@ class ConfirmDialog(AppDialog):
             self.button_text = default_button_text
         self.image = image
 
-        # get metagui font configuration
-        self.inifile = os.path.expanduser('~/.metagui/config')
-        self.style = Style()
-        self.style.load(self.inifile)
-        # draw the title
-        self.parent.title(self._title)
+        root = Toplevel()
+        self.master = root
+        self.master.title(self._title)
 
         # draw the text and/or image
         if self.image:
-            self.label1 = Label(bd=2, relief='groove')
+            img = PhotoImage(file=self.image)
+            self.im = img
+            self.label1 = Label(self.master, bd=2, relief='groove', image=img)
             self.label1.pack(padx=20, pady=20, side='top')
             if self.text:
-                label2 = Label(text=self.text, font=self.lrg_font, \
+                label2 = Label(self.master, text=self.text, font=self.lrg_font, \
                 justify='left', padx=20, pady=20)
                 label2.pack(side='top', fill='both', expand=1)
         elif self.text:
-            label2 = Label(text=self.text, font=self.style.font, \
+            label2 = Label(self.master, text=self.text, font=self.style.font, \
             justify='left', padx=20, pady=20)
             label2.pack(side='top', fill='both', expand=1)
 
         # draw the button(s) in a frame
-        frame = Frame(self.parent)
+        frame = Frame(self.master)
         buttons = []
         for index, item in enumerate(self.button_text):
             button = Button(frame, text=item, relief='groove', overrelief='raised', \
-            anchor='s', command=lambda index=index:sys.exit(index), \
+            anchor='s', command=lambda index=index:self.exit_with_status(index), \
             font=self.style.font)
             button.pack(side='left')
         frame.pack(side='bottom')
 
-    def set_image(self):
-        self.img = PhotoImage(file=self.image)
-        self.label1.config(image=self.img)
-
-    def run(self):
-        if self.image:
-            self.set_image()
-        self.mainloop()
+    def exit_with_status(self, status):
+        if self.parent:
+            self.parent.dialog_status.set(str(status))
+        else:
+            print status
+        self.master.destroy()
 
 
 import time, tkMessageBox
@@ -225,47 +219,4 @@ class Counter(AppDialog):
                 # set the numeric counter (w2)
                 self.w2text.set(List[0])
             self.lastdata = self.data
-
-
-import select
-
-# this class is useless and will be removed soon
-# if this is to work select.select needs to be
-# polled from the gui, and get_data(..) and run_dialog(..) type functions
-# called from there.  Concentrating on running dialogs from bash for now.
-class RunDialog:
-    def __init__(self, pipe):
-        # the named pipe
-        self.pipe = pipe
-        fifo = os.open(self.pipe, os.O_NONBLOCK | os.O_RDONLY)
-        self.get_data(fifo)
-
-    def format_input(self, string):
-        stringlist = []
-        string = string.split('|')
-        for index, arg in enumerate(string):
-            stringlist.append(arg.strip())
-        stringlist[2] = stringlist[2].split(',')
-        return stringlist
-
-    def run_dialog(self, args):
-        #print 'running dialog'
-        root = Tk()
-        title, text, buttons, image = args
-        dialog = ConfirmDialog(root, title, text, buttons, image)
-        dialog.run()
-
-    def get_data(self, fifo):
-        select.select([fifo],[],[])
-        print 'this should not print till the fifo is ready to read'
-        string = os.read(fifo, 1024)
-        if len(string):
-            listing = self.format_input(string)
-            print listing
-            self.run_dialog(listing)
-        else:
-            nf = os.open(self.pipe, os.O_NONBLOCK | os.O_RDONLY)
-            os.close(fifo)
-            fifo = nf
-        self.get_data(fifo)
 
