@@ -364,7 +364,6 @@ function get_info ()
     else # no nav_log or ID_VIDEO_FPS missing
         # If doing -fast identification, skip "accurate" length determination
         if $FAST; then # skip this long process
-            echo "No nav log, fast"
             USE_MENCODER=false  # USE_NAV_LOG already set to false
         else
             # check if tcdemux installed, and if extension is mpg (use mencoder for vob)
