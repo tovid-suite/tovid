@@ -113,7 +113,7 @@ function get_info ()
     INFILE="$1"
 
     if ! $TERSE; then
-        echo "Analyzing file: '$INFILE'. This may take several minutes..."
+        echo "Analyzing file: '$INFILE'..."
     fi
 
     # Identify video using mplayer
@@ -349,37 +349,45 @@ function get_info ()
     V_ASPECT_RATIO=$(echo $V_ASPECT_WIDTH | \
     sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g')
 
-    # if the nav_log is older that $INFILE, then remove the log
-    if [[ -e "$INFILE".nav_log && "$INFILE" -nt "$INFILE".nav_log ]]; then
-        ! $TERSE && echo "$INFILE.nav_log is older than $INFILE ... removing"
-        rm -f "$INFILE".nav_log
+    NAV_LOG="${INFILE}.nav_log"
+    USE_NAVLOG=false
+    # if the nav_log is older than $INFILE, then remove the log
+    if [[ -e "$NAV_LOG" && "$INFILE" -nt "$NAV_LOG" ]]; then
+        ! $TERSE && echo "$NAV_LOG is older than $INFILE ... removing"
+        rm -f "$NAV_LOG"
     fi
     # if a nav_log file exists and we have a value for FPS, use the log
-    if  [[ -s "$INFILE".nav_log  &&  ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
-        ! $TERSE && echo "Using ${INFILE}.nav_log"
+    if  [[ -s "$NAV_LOG"  &&  ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
+        ! $TERSE && echo "Using $NAV_LOG"
         USE_MENCODER=false
         USE_NAVLOG=:
     else # no nav_log or ID_VIDEO_FPS missing
         # If doing -fast identification, skip "accurate" length determination
         if $FAST; then # skip this long process
+            echo "No nav log, fast"
             USE_MENCODER=false  # USE_NAV_LOG already set to false
         else
             # check if tcdemux installed, and if extension is mpg (use mencoder for vob)
             if [[ ${INFILE##*.} =~ [MmPpGg] ]] && hash tcdemux 2>/dev/null &&  [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
                 NAVSEEK_CMD=(nice tcdemux  -f $ID_VIDEO_FPS -W -i "$INFILE")
-                "${NAVSEEK_CMD[@]}"  >  "$INFILE".nav_log 2>/dev/null
-                if [[ -s  "$INFILE".nav_log ]]; then # if non empty lets use it
+                "${NAVSEEK_CMD[@]}"  >  "$NAV_LOG" 2>/dev/null
+                if [[ -s  "$NAV_LOG" ]]; then # if non empty lets use it
                     USE_MENCODER=false
                     USE_NAVLOG=:
                 else
                     # remove empty log and we will use mencoder in next code block
-                    [[ -e "$INFILE".nav_log ]] && rm -f "$INFILE".nav_log
+                    [[ -e "$NAV_LOG" ]] && rm -f "$NAV_LOG"
                     USE_MENCODER=:
                 fi
             else # not $FAST and using tcdemux not possible, so usee mencoder
                 USE_MENCODER=:
             fi
         fi
+    fi
+    if $USE_NAVLOG; then
+        ID_VIDEO_FRAMES=$(cat "$NAV_LOG" | awk 'END{print NR}')
+        V_DUR=$(bc <<< "$ID_VIDEO_FRAMES / $ID_VIDEO_FPS")
+        V_DURATION=${V_DUR%%.*} # final value is integer ( seconds )
     fi
 
     if $USE_MENCODER; then # any of: no/empty log file, ! $FAST, no tcdemux, or not an mpg
@@ -400,10 +408,6 @@ function get_info ()
             fi
         fi
         $VERBOSE && echo "$MENCODER_STATS"
-    elif $USE_NAVLOG; then
-        ID_VIDEO_FRAMES=$(awk 'END{print NR}' "${INFILE}.nav_log")
-        V_DUR=$(bc <<< "$ID_VIDEO_FRAMES / $ID_VIDEO_FPS")
-        V_DURATION=${V_DUR%%.*} # final value is integer ( seconds )
     fi
 
     # Use mplayer-reported length as a last resort (truncate floating-point)
@@ -473,7 +477,7 @@ function idvid_main ()
         echo "ID_VIDEO_FRAMES=$ID_VIDEO_FRAMES"
     elif $TABULAR; then
         FILE_SIZE=$(du -Dh "$INFILE" | awk '{print $1}')
-        echo "$INFILE||$FILE_SIZE||${ID_VIDEO_WIDTH}x${ID_VIDEO_HEIGHT}||$ID_VIDEO_BITRATE||$ID_AUDIO_BITRATE" >> "$TABLE"
+        echo "$INFILE||$FILE_SIZE||${ID_VIDEO_WIDTH}x${ID_VIDEO_HEIGHT}||$ID_VIDEO_FPS||$ID_VIDEO_BITRATE||$ID_AUDIO_BITRATE" >> "$TABLE"
     else
         echo $SEPARATOR
         echo "               File: $INFILE"
@@ -848,9 +852,9 @@ $TERSE || printf "%s\n" "$SCRIPT_NAME"
 
 # Column header for tabular output
 if $TABULAR; then
-    echo "--------||----||----------||--------||--------" >> "$TABLE"
-    echo "Filename||Size||Resolution||VBitrate||ABitrate" >> "$TABLE"
-    echo "--------||----||----------||--------||--------" >> "$TABLE"
+    echo "--------||----||----------||---||--------||--------" >> "$TABLE"
+    echo "Filename||Size||Resolution||FPS||VBitrate||ABitrate" >> "$TABLE"
+    echo "--------||----||----------||---||--------||--------" >> "$TABLE"
 fi
 
 for ((k=0; k<${#ID_FILES[@]}; k++)); do
