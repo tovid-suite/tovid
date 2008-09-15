@@ -217,8 +217,8 @@ for a widescreen monitor or TV.
     top-left corner at //X//, //Y//.
 
 : **-widetv**
-    Always encode to 16:9 widescreen (only supported by DVD, KDVD, BDVD), for
-    optimal viewing on a widescreen monitor or TV.
+    Always encode to 16:9 widescreen (only supported by **-dvd**, **-kdvd**,
+    **-bdvd**), for optimal viewing on a widescreen monitor or TV.
 
 
 ===Audio stream options===
