@@ -453,10 +453,12 @@ function get_args()
                 SAFE_AREA=$(echo $1 | sed 's/%//g')
                 ;;
             "-crop" )
+                USE_FILTERS=1
                 shift
                 CROP="$1"
                 ;;
             "-filters" )
+                USE_FILTERS=1
                 shift
                 # Parse comma-separated values
                 for FILTER in $(echo "$1" | sed 's/,/ /g'); do
@@ -906,6 +908,11 @@ if $USE_FFMPEG && $DO_SUBS; then
     usage_error "Sorry, -subtitles is not currently supported with -ffmpeg."
 fi
 
+if ((USE_FILTERS)) && $USE_FFMPEG; then
+    usage_error "Sorry, you are using ffmpeg to encode
+    video, either by choice or another option requires it.
+    You can not use -filters with -ffmpeg"
+fi
 # make sure we are not running from the gui and set some options
 ! $FROM_GUI && NOCONSOLE_CONTROLS="-noconsolecontrols"
 
@@ -1564,6 +1571,7 @@ fi
 
 # Apply requested postprocessing filters, or
 # fall back to the best alternative.
+    
 if $DO_DENOISE; then
     # If high-quality 3D denoising is available, use it
     if grep -q "^ *hqdn3d " "$SCRATCH_FILE"; then
