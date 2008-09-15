@@ -121,9 +121,10 @@ explicit aspect ratio in one of several ways:
     Custom aspect, where //WIDTH// and //HEIGHT// are integers.
 
 
-NOTE: This is the INPUT aspect ratio. tovid chooses an optimal output aspect
-ratio for the selected disc format (VCD, DVD, etc.) and does the appropriate
-letterboxing or anamorphic scaling.
+The above are the intended INPUT aspect ratio. tovid chooses an optimal output
+aspect ratio for the selected disc format (VCD, DVD, etc.) and does the
+appropriate letterboxing or anamorphic scaling. Use **-widetv** to encode
+for a widescreen monitor or TV.
 
 
 ===Video stream options===
@@ -214,6 +215,10 @@ letterboxing or anamorphic scaling.
 : **-crop** //WIDTH//://HEIGHT//://X//://Y//
     Crop a portion of the video //WIDTH// by //HEIGHT// in size, with the
     top-left corner at //X//, //Y//.
+
+: **-widetv**
+    Always encode to 16:9 widescreen (only supported by DVD, KDVD, BDVD), for
+    optimal viewing on a widescreen monitor or TV.
 
 
 ===Audio stream options===
@@ -324,7 +329,8 @@ letterboxing or anamorphic scaling.
     pipes, and not real files.
 
 : **-slice** //START//-//END//
-    Encode a segment from //START// to //END// (in seconds).
+    Encode a segment from //START// to //END// (in seconds). Only works with
+    -ffmpeg.
 
 : **-from-gui**
     Put tovid into a fully non-interactive state, suitable for calling from
