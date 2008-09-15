@@ -1624,11 +1624,14 @@ fi
 
 
 # Use anamorphic widescreen if supported and suitable
-if $ANAMORPH && test "$V_ASPECT_WIDTH" -ge 177; then
+# Aspects from 154:100 to 177+:100 are best letterboxed in 16:9
+# (i.e., more pixels devoted to picture)
+if $ANAMORPH && test "$V_ASPECT_WIDTH" -ge 153; then
     TGT_ASPECT_WIDTH=177
     FF_ASPECT="-aspect 16:9"
     ASPECT_FMT="--aspect 3"
 # For all others, overall aspect is 4:3 (133 / 100)
+# Aspects from 133:100 to 153:100 are best letterboxed in 4:3
 else
     TGT_ASPECT_WIDTH=133
     FF_ASPECT="-aspect 4:3"
