@@ -130,6 +130,8 @@ DO_CONTRAST=false
 DO_DEBLOCK=false
 # Use fifo for video encoding?
 USE_FIFO=:
+# Optimize for widescreen TV?
+WIDE_TV=false
 
 # Audio defaults
 AUD_SUF="ac3"
@@ -424,6 +426,7 @@ function get_args()
             "-full" ) ASPECT_RATIO="4:3" ;;
             "-panavision" ) ASPECT_RATIO="235:100" ;;
             "-force" ) FORCE_ENCODING=: ;;
+            "-widetv" ) WIDE_TV=: ;;
             "-fps" )
                 shift
                 # If user provided X:Y ratio, use it
@@ -1623,15 +1626,16 @@ else
 fi
 
 
-# Use anamorphic widescreen if supported and suitable
-# Aspects from 154:100 to 177+:100 are best letterboxed in 16:9
-# (i.e., more pixels devoted to picture)
-if $ANAMORPH && test "$V_ASPECT_WIDTH" -ge 153; then
+# Anamorphic widescreen (16:9 output)
+# Used if the format supports it, and it will minimize the number of pixels
+# wasted on letterbox bars (or if the user requested -widetv output).
+if $ANAMORPH && [[ test "$V_ASPECT_WIDTH" -ge 153 || $WIDE_TV ]]; then
     TGT_ASPECT_WIDTH=177
     FF_ASPECT="-aspect 16:9"
     ASPECT_FMT="--aspect 3"
-# For all others, overall aspect is 4:3 (133 / 100)
-# Aspects from 133:100 to 153:100 are best letterboxed in 4:3
+# For all others, use "non-anamorphic" (4:3 output)
+# Aspects from 133:100 to 153:100 have minimum pixel wastage
+# when letterboxed in 4:3
 else
     TGT_ASPECT_WIDTH=133
     FF_ASPECT="-aspect 4:3"
