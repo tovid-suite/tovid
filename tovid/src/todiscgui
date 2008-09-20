@@ -20,6 +20,7 @@ See the wiki page about metagui for more details:
 from libtovid.metagui import *
 from libtovid import filetypes
 
+# Define a few supporting functions
 import os
 def to_title(filename):
     basename = os.path.basename(filename)
@@ -29,43 +30,42 @@ def to_title(filename):
 def strip_all(filename):
     return ''
 
-x = 0
 def to_chapter_str(filename):
     cht_str='Chapters for video '
     return 6
 
-slideshow_tooltip='Image files for the slideshow.'
-group_tooltip='Video files to group together.  Select the video in the list \
-on the left, and add files to group with it by using the file \
-selector on the right'
-chapter_titles_tooltip='Chapter titles for each video.  Use \\n for a new \
-line in a multi-line title.  Number of titles given must equal the number of \
-chapters given for that video.'
-chain_tooltip='Enable this option and use the box at right to indicate the \
-number of the video you wish to "chain" to the next, so they play \
-sequentially before returning to the menu.  You can use single integers or \
-indicate a range with a "-" separator.  Example of a range: "1-2 4-6" \
-( no quotes).  This will play video 1 through video 3 before returning to the \
-menu, and the same for video 4 through video 6.'
-
-
-slideshow_filetypes = [filetypes.all_files]
-slideshow_filetypes.append(filetypes.image_files)
-slideshow_filetypes.extend(filetypes.match_types('image'))
+# List of file-type selections for Filename controls
+image_filetypes = [filetypes.all_files]
+image_filetypes.append(filetypes.image_files)
+image_filetypes.extend(filetypes.match_types('image'))
 
 
 ### --------------------------------------------------------------------
 ### Main todisc options
 ### --------------------------------------------------------------------
+"""Since todisc has a large number of options, it helps to store each
+one in a variable, named after the corresponding command-line option.
+
+Below are defined all the todisc options that will appear in the GUI.
+The actual GUI layout comes afterwards...
+"""
 
 _menu_title = Text('Menu title', '-menu-title', 'My video collection',
     'Title text displayed on the main menu. Use \\n for a new line '
      'in a multi-line title.')
 
-_files = List('Video files', '-files', None, '', Filename())
-_titles = List('Video titles', '-titles', None, '', Text())
+_files = List('Video files', '-files', None,
+    'List of video files to include on the disc',
+    Filename())
+_titles = List('Video titles', '-titles', None,
+    'Titles to display in the main menu, one for each video file on the disc',
+    Text())
 
-_group = List('Grouped videos', '-group', None, group_tooltip, Filename())        
+_group = List('Grouped videos', '-group', None,
+    'Video files to group together. Select the video in the list ' \
+    'on the left, and add files to group with it by using the file ' \
+    'selector on the right',
+    Filename())
 
 _dvd = Flag("DVD", '-dvd', True)
 _svcd = Flag("SVCD", '-svcd', False)
@@ -148,7 +148,8 @@ _bg_color = Color('Menu background color', '-bg-color', 'white',
 
 _background = Filename('Image or video', '-background', '',
     'Image or video displayed in the background of the main menu',
-    'load', 'Select an image or video file')
+    'load', 'Select an image or video file',
+    filetypes=image_filetypes)
 
 _bgvideo_seek = Number('Video seek', '-bgvideo-seek', 2,
     'Play background video from the given seek time (seconds)',
@@ -226,7 +227,7 @@ _submenu_audio = List('Audio', '-submenu-audio', None,
 
 _submenu_background = List('Image(s)', '-submenu-background', None,
     'Background image(s) for the submenus(s). Single value or list',
-    Filename())
+    Filename(filetypes=image_filetypes))
 
 _submenu_titles = RelatedList('-files', 'one',
     List('Titles', '-submenu-titles', None,
@@ -236,7 +237,9 @@ _submenu_titles = RelatedList('-files', 'one',
 
 _chapter_titles = RelatedList('-files', 'many',
     List('Chapter titles', '-chapter-titles', None,
-         chapter_titles_tooltip))
+        'Chapter titles for each video.  Use \\n for a new line in '
+        'a multi-line title.  Number of titles given must equal the '
+        'number of capters given for that video.'))
 
 
 _jobs = Number('Number of jobs to run simultaneously', '-jobs', 0,
@@ -254,7 +257,7 @@ _use_makemenu = Flag('Use makemenu', '-use-makemenu', False,
 
 _slides = List('Images for slideshow one', '-slides', None,
     "Image files for the slideshow",
-    Filename(filetypes=slideshow_filetypes))
+    Filename(filetypes=image_filetypes))
 
 _submenu_slide_total = SpacedText('Number of slides shown on submenu',
     '-submenu-slide-total', '',
@@ -300,7 +303,7 @@ _showcase_slideshow = Flag("Showcase", '-showcase-slideshow', False,
 _slideshow_menu_thumbs = List('Menu slide thumbs', '-slideshow-menu-thumbs', None,
     'Slides for the menu thumbnail.  For multiple slideshows or '
     'mixed slideshows/videos only.',
-    Filename(filetypes=slideshow_filetypes))
+    Filename(filetypes=image_filetypes))
 
 _use_dvd_slideshow = Flag('Use dvd-slideshow program', '-use-dvd-slideshow', False,
     'Use the "dvd-slideshow" program to make the animated '
@@ -319,14 +322,14 @@ _slides_to_bin = List('Slides to "bin"', '-slides-to-bin', None,
     'filter, which reduces "signal to noise ratio"'
     'Use in conjuction with the next option for burring, '
     'to achieve stronger denoising',
-    Filename(filetypes=slideshow_filetypes))
+    Filename(filetypes=image_filetypes))
 
 _slides_to_blur = List('Slides to blur', '-slides-to-blur', None,
     'Blurring the image can reduce noise such as "ringing" '
     'effects.  Use values between 0x0.1 and 0x0.9 for best '
     'results.  Enter a single value or 1 value for each slide '
     'to be blurred.',
-    Filename(filetypes=slideshow_filetypes))
+    Filename(filetypes=image_filetypes))
 
 _slide_blur = List('Slide blur amount', '-slide-blur', '',
     'How much to blur each slide given with "Slides to blur".  '
@@ -539,8 +542,8 @@ _device = Filename('Device to use for burning', '-device', '/dev/dvdrw',
 ### ---------------------------------------------------------------------------
 ### Main GUI layout and panel construction
 ### ---------------------------------------------------------------------------
-
-
+"""The todisc GUI is laid out using panels and tabs for logical grouping.
+"""
 
 main = VPanel("Main",
     _menu_title,
@@ -666,7 +669,8 @@ for num in range(2,  13):
     next_panel = VPanel(str(num),
         Text('Title', '-titles', '',
         'Title for this slideshow. Leave empty if doing a single slideshow.'),
-        List(title_str, '-slides', None, slideshow_tooltip, Filename()),
+        List(title_str, '-slides', None, 'Image files for the slideshow.',
+             Filename()),
         )
     tab_list.append(next_panel)
 
@@ -757,7 +761,14 @@ authoring = Tabs('Authoring',
                     'sequentially until the last, which will return to '
                     'the menu.  You can also specify individual videos to '
                     'behave like this by using the text box at the right. '),
-                Flag('Chain selected videos together', '', False, chain_tooltip,
+                Flag('Chain selected videos together', '', False, 
+                    'Enable this option and use the box at right to indicate the '
+                    'number of the video you wish to "chain" to the next, so '
+                    'they play sequentially before returning to the menu. '
+                    'You can use single integers or indicate a range with a '
+                    '"-" separator. Example of a range: "1-2 4-6" (no quotes). '
+                    'This will play video 1 through video 3 before returning '
+                    'to the menu, and the same for video 4 through video 6.',
                     enables=Text('', '-chain-videos', '', ''),
                 ),
             ),
