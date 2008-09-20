@@ -87,12 +87,13 @@ class Executor (Widget):
         """Save log window contents to a file.
         """
         filename = asksaveasfilename(parent=self,
-            title='Save log window output')
+            title='Save log window output',
+            initialfile='%s_output.log' % self.name)
         if filename:
             outfile = open(filename, 'w')
             outfile.write(self.text.get(1.0, 'end'))
             outfile.close()
-            self.write("\n<< Output saved to '%s' >>" % filename)
+            self.write("\n<< Output saved to '%s' >>\n" % filename)
 
 
     def poll(self):
@@ -160,7 +161,7 @@ class Application (Widget):
         """
         Widget.draw(self, master)
         # Add a LogViewer as the last panel
-        self.panels.append(Executor())
+        self.panels.append(Executor(self.program))
         # Draw all panels as tabs
         self.tabs = Tabs('', *self.panels)
         self.tabs.draw(self)
