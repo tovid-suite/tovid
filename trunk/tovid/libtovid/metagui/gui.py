@@ -67,7 +67,7 @@ class Executor (Widget):
         self.size = 0
 
         # Run the command, directing output to temporary file
-        self.command.run_redir(stdout=self.log)
+        self.command.run_redir(stdout=self.log, stderr=self.log)
 
         # Enable the kill button
         self.kill_button.config(state='normal')
