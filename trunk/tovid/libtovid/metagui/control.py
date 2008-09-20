@@ -441,7 +441,8 @@ class Filename (Control):
         if self.action == 'save':
             filename = asksaveasfilename(parent=self, title=self.desc)
         else: # 'load'
-            filename = askopenfilename(parent=self, title=self.desc)
+            filename = askopenfilename(parent=self, title=self.desc,
+                                       filetypes=self.filetypes)
         # Got a filename? Display it
         if filename:
             self.set(filename)

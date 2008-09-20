@@ -23,11 +23,12 @@ DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
 
 ### --------------------------------------------------------------------
 from ScrolledText import ScrolledText
+from tkFileDialog import asksaveasfilename, askopenfilename
 
 class Executor (Widget):
     """A widget for executing and viewing the output of a command-line program.
     """
-    def __init__(self, name='Log'):
+    def __init__(self, name='Executor'):
         Widget.__init__(self, name)
         self.command = None
         self.log = None
@@ -35,13 +36,30 @@ class Executor (Widget):
         self.size = 0
 
 
+    def draw(self, master):
+        """Draw the Executor in the given master widget.
+        """
+        Widget.draw(self, master)
+        self.text = ScrolledText(self) #, width=80, height=32)
+        # text area is not editable. ctrl-q and alt-f4 still quit parent
+        self.text.bind("<Key>", lambda e: "break")
+        self.text.pack(fill='both', expand=True)
+        # Button to stop the process
+        self.kill_button = tk.Button(self, text="Kill", command=self.kill)
+        self.kill_button.config(state='disabled')
+        self.kill_button.pack(anchor='nw')
+        # Button to save log output
+        self.save_button = tk.Button(self, text="Save", command=self.save)
+        self.save_button.pack(anchor='nw', side='left')
+
+
     def execute(self, command):
         """Execute the given command.
         """
         if not isinstance(command, Command):
             raise TypeError("execute() requires a Command instance.")
-
-        self.command = command
+        else:
+            self.command = command
 
         # Create a temporary file to hold command output, and open it
         self.log = tempfile.NamedTemporaryFile(prefix=self.command.program)
@@ -51,18 +69,30 @@ class Executor (Widget):
         # Run the command, directing output to temporary file
         self.command.run_redir(stdout=self.log)
 
+        # Enable the kill button
+        self.kill_button.config(state='normal')
+
         # Poll until command finishes (or is interrupted)
         self.poll()
 
 
-    def draw(self, master):
-        """Draw the Executor in the given master widget.
+    def kill(self):
+        """Kill the currently-running command process.
         """
-        Widget.draw(self, master)
-        self.text = ScrolledText(self, width=80, height=32)
-        # text area is not editable. ctrl-q and alt-f4 still quit parent
-        self.text.bind("<Key>", lambda e: "break")
-        self.text.pack(fill='both', expand=True)
+        if self.command:
+            self.command.kill()
+
+
+    def save(self):
+        """Save log window contents to a file.
+        """
+        filename = asksaveasfilename(parent=self,
+            title='Save log window output')
+        if filename:
+            outfile = open(filename, 'w')
+            outfile.write(self.text.get(1.0, 'end'))
+            outfile.close()
+            self.write("\n<< Output saved to '%s' >>" % filename)
 
 
     def poll(self):
@@ -78,16 +108,24 @@ class Executor (Widget):
         # Stop if command is done, or poll again
         if self.command.done():
             self.file.close()
-            self.write("Done executing!")
+            self.write("\nDone executing!\n")
+            self.kill_button.config(state='disabled')
         else:
             self.after(100, self.poll)
 
 
-    def write(self, output):
-        """Write literal output to the LogViewer window
-        (inserted wherever the cursor currently is).
+    def write(self, text):
+        """Write text to the end of the log.
         """
-        self.text.insert('end', output)
+        self.text.insert('end', text)
+        self.text.see('end')            
+
+    
+    def clear(self):
+        """Clear the log window.
+        """
+        self.text.delete(1.0, 'end')
+
 
 
 ### --------------------------------------------------------------------
@@ -149,12 +187,15 @@ class Application (Widget):
         executor = self.panels[-1]
 
         # Display the command to be executed
+        executor.clear()
         executor.write("Running command:\n")
         executor.write(str(command) + '\n')
 
         # Show prompt asking whether to continue
         if tkMessageBox.askyesno(message="Run %s now?" % self.program):
             executor.execute(command)
+        else:
+            executor.write("Cancelled.\n")
 
 
 ### --------------------------------------------------------------------

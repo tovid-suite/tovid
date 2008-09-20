@@ -83,7 +83,7 @@ class ConfirmDialog(AppDialog):
             self.label1 = Label(self.master, bd=2, relief='groove', image=img)
             self.label1.pack(padx=20, pady=20, side='top')
             if self.text:
-                label2 = Label(self.master, text=self.text, font=self.lrg_font, \
+                label2 = Label(self.master, text=self.text, font=tuple(self.lrg_font), \
                 justify='left', padx=20, pady=20)
                 label2.pack(side='top', fill='both', expand=1)
         elif self.text:
