@@ -19,9 +19,9 @@ See the wiki page about metagui for more details:
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
 from libtovid import filetypes
+import os
 
 # Define a few supporting functions
-import os
 def to_title(filename):
     basename = os.path.basename(filename)
     firstdot = basename.find('.')
@@ -30,9 +30,6 @@ def to_title(filename):
 def strip_all(filename):
     return ''
 
-def to_chapter_str(filename):
-    cht_str='Chapters for video '
-    return 6
 
 # List of file-type selections for Filename controls
 image_filetypes = [filetypes.all_files]
