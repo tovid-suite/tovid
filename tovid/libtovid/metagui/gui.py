@@ -43,19 +43,23 @@ class Executor (Widget):
         """
         Widget.draw(self, master)
         # TODO: Make text area expand/fill available space
-        self.text = ScrolledText(self) #, width=80, height=32)
+        self.text = ScrolledText(self, width=80, height=50)
         self.text.pack(fill='both', expand=True)
         # Text area for stdin input to the program
-        self.stdin_text = tk.Entry(self)
-        self.stdin_text.pack(anchor='nw')
+        frame = tk.Frame(self)
+        label = tk.Label(frame, text="Input:")
+        label.pack(side='left')
+        self.stdin_text = tk.Entry(frame)
+        self.stdin_text.pack(side='left')
         self.stdin_text.bind('<Return>', self.send_stdin)
         # Button to stop the process
-        self.kill_button = tk.Button(self, text="Kill", command=self.kill)
+        self.kill_button = tk.Button(frame, text="Kill", command=self.kill)
         self.kill_button.config(state='disabled')
-        self.kill_button.pack(anchor='nw')
+        self.kill_button.pack(side='left')
         # Button to save log output
-        self.save_button = tk.Button(self, text="Save", command=self.save)
-        self.save_button.pack(anchor='nw', side='left')
+        self.save_button = tk.Button(frame, text="Save", command=self.save)
+        self.save_button.pack(side='left')
+        frame.pack(anchor='nw')
 
 
     def send_stdin(self, event):
@@ -188,7 +192,7 @@ class Application (Widget):
         """
         Widget.draw(self, master)
         # Add a LogViewer as the last panel
-        self.panels.append(Executor(self.program))
+        self.panels.append(Executor("Log"))
         # Draw all panels as tabs
         self.tabs = Tabs('', *self.panels)
         self.tabs.draw(self)

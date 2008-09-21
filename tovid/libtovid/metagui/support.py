@@ -425,11 +425,13 @@ class Style:
         root.option_clear()
         # Font
         root.option_add("*font", self.font)
+        root.option_add("*Text.font", ('Courier', 10, 'normal'))
         # Background color
         root.option_add("*Scale.troughColor", self.bgcolor)
         root.option_add("*Spinbox.background", self.bgcolor)
         root.option_add("*Entry.background", self.bgcolor)
         root.option_add("*Listbox.background", self.bgcolor)
+        root.option_add("*Text.background", self.bgcolor)
         # Button colors
         root.option_add("*Radiobutton.selectColor", "#8888FF")
         root.option_add("*Checkbutton.selectColor", "#8888FF")
