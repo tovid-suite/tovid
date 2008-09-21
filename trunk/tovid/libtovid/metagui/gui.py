@@ -62,9 +62,12 @@ class Executor (Widget):
         """Send text to the running program's stdin.
         """
         text = self.stdin_text.get()
-        print("Sending '%s' to stdin" % text)
+        # Write the entered text to the command's stdin pipe
         self.command.proc.stdin.write(text + '\n')
         self.command.proc.stdin.flush()
+        # Show what was typed in the log window
+        self.write(text)
+        # Clear the stdin box
         self.stdin_text.delete(0, 'end')
 
 
@@ -98,6 +101,7 @@ class Executor (Widget):
         """Kill the currently-running command process.
         """
         if self.command:
+            self.notify("Killing command: %s" % self.command)
             self.command.kill()
 
 
@@ -111,7 +115,7 @@ class Executor (Widget):
             outfile = open(filename, 'w')
             outfile.write(self.text.get(1.0, 'end'))
             outfile.close()
-            self.write("\n<< Output saved to '%s' >>\n" % filename)
+            self.notify("Output saved to '%s'" % filename)
 
 
     def poll(self):
@@ -120,16 +124,22 @@ class Executor (Widget):
         # Read from output file and print to log window
         data = self.outfile.read()
         if data:
-            self.text.insert('end', data.replace('\r', '\n'))
-            self.text.see('end')
+            self.write(data.replace('\r', '\n'))
 
         # Stop if command is done, or poll again
         if self.command.done():
             #self.outfile.close()
-            self.write("\nDone executing!\n")
+            self.notify("Done executing!")
             self.kill_button.config(state='disabled')
         else:
             self.after(100, self.poll)
+
+
+    def notify(self, text):
+        """Like write, but meant for notifications by the Executor.
+        Adds newlines and angle brackets.
+        """
+        self.write("\n<< %s >>\n" % text)
 
 
     def write(self, text):
