@@ -236,14 +236,14 @@ class Pipe:
         for cmd in self.commands:
             # If this is not the last command, pipe into the next one
             if cmd != self.commands[-1]:
-                cmd.run_redir(prev_stdout, PIPE)
+                cmd.run_redir(prev_stdout, PIPE, None)
                 prev_stdout = cmd.proc.stdout
             # Last command in pipeline; direct output appropriately
             else:
                 if capture:
-                    cmd.run_redir(prev_stdout, PIPE)
+                    cmd.run_redir(prev_stdout, PIPE, None)
                 else:
-                    cmd.run_redir(prev_stdout, None)
+                    cmd.run_redir(prev_stdout, None, None)
         # Wait for last command to finish?
         if not background:
             cmd.wait()
