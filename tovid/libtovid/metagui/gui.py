@@ -24,26 +24,31 @@ DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
 ### --------------------------------------------------------------------
 from ScrolledText import ScrolledText
 from tkFileDialog import asksaveasfilename, askopenfilename
+from subprocess import PIPE
 
 class Executor (Widget):
-    """A widget for executing and viewing the output of a command-line program.
+    """Executes a command-line program, shows its output, and allows input.
     """
     def __init__(self, name='Executor'):
         Widget.__init__(self, name)
         self.command = None
-        self.log = None
-        self.file = None
-        self.size = 0
+        #self.size = 0
+        # Temporary files for program's stdin and stdout/err
+        self.infile = None
+        self.outfile = None
 
 
     def draw(self, master):
         """Draw the Executor in the given master widget.
         """
         Widget.draw(self, master)
+        # TODO: Make text area expand/fill available space
         self.text = ScrolledText(self) #, width=80, height=32)
-        # text area is not editable. ctrl-q and alt-f4 still quit parent
-        self.text.bind("<Key>", lambda e: "break")
         self.text.pack(fill='both', expand=True)
+        # Text area for stdin input to the program
+        self.stdin_text = tk.Entry(self)
+        self.stdin_text.pack(anchor='nw')
+        self.stdin_text.bind('<Return>', self.send_stdin)
         # Button to stop the process
         self.kill_button = tk.Button(self, text="Kill", command=self.kill)
         self.kill_button.config(state='disabled')
@@ -51,6 +56,16 @@ class Executor (Widget):
         # Button to save log output
         self.save_button = tk.Button(self, text="Save", command=self.save)
         self.save_button.pack(anchor='nw', side='left')
+
+
+    def send_stdin(self, event):
+        """Send text to the running program's stdin.
+        """
+        text = self.stdin_text.get()
+        print("Sending '%s' to stdin" % text)
+        self.command.proc.stdin.write(text + '\n')
+        self.command.proc.stdin.flush()
+        self.stdin_text.delete(0, 'end')
 
 
     def execute(self, command):
@@ -61,13 +76,16 @@ class Executor (Widget):
         else:
             self.command = command
 
-        # Create a temporary file to hold command output, and open it
-        self.log = tempfile.NamedTemporaryFile(prefix=self.command.program)
-        self.file = open(self.log.name, 'r')
-        self.size = 0
+        # Temporary file to hold stdout/stderr from command
+        name = self.command.program
+        self.outfile = tempfile.NamedTemporaryFile(
+            mode='a+', prefix=name + '_output')
 
-        # Run the command, directing output to temporary file
-        self.command.run_redir(stdout=self.log, stderr=self.log)
+        # Run the command, directing stdout/err to the temporary file
+        # (and piping stdin so send_stdin will work)
+        self.command.run_redir(stdin=PIPE,
+                               stdout=self.outfile.name,
+                               stderr=self.outfile.name)
 
         # Enable the kill button
         self.kill_button.config(state='normal')
@@ -99,16 +117,15 @@ class Executor (Widget):
     def poll(self):
         """Poll for process completion, and update the output window.
         """
-        # Update the output window with tempfile
-        if self.file and os.path.getsize(self.log.name) > self.size:
-            data = self.file.read()
-            if len(data) > 0:
-                self.text.insert('end', data)
-                self.text.see('end')            
+        # Read from output file and print to log window
+        data = self.outfile.read()
+        if data:
+            self.text.insert('end', data.replace('\r', '\n'))
+            self.text.see('end')
 
         # Stop if command is done, or poll again
         if self.command.done():
-            self.file.close()
+            #self.outfile.close()
             self.write("\nDone executing!\n")
             self.kill_button.config(state='disabled')
         else:

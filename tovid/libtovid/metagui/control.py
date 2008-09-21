@@ -794,8 +794,6 @@ class List (Control):
         # Index of first item to be added
         index = self.listbox.items.count()
 
-        print("List.add, adding at index %d" % index)
-
         # For filenames, show a file chooser to add one or more files
         if isinstance(self.control, Filename):
             files = askopenfilenames(parent=self, title='Add files',
