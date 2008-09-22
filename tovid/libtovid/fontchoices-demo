@@ -5,6 +5,7 @@ from Tkinter import *
 from tkSimpleDialog import Dialog
 import tkColorChooser
 from libtovid.cli import Command, Pipe
+from libtovid.utils import get_listtype
 import ImageTk
 import base64
  
@@ -45,7 +46,8 @@ class FontChooser (Frame):
  
     def get_fonts(self):
         """Return a list of font names available in ImageMagick."""
-        find = "convert -list type | sed '/Path/,/---/d' | awk '{print $1}'"
+        im_cmd = 'convert -list ' + get_listtype()
+        find = im_cmd + " | sed '/Path/,/---/d' | awk '{print $1}'"
         return [line.rstrip('\n') for line in os.popen(find).readlines()]
 
     def makePreview(self, event=None):
