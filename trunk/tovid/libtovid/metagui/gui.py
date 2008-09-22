@@ -32,9 +32,6 @@ class Executor (Widget):
     def __init__(self, name='Executor'):
         Widget.__init__(self, name)
         self.command = None
-        #self.size = 0
-        # Temporary files for program's stdin and stdout/err
-        self.infile = None
         self.outfile = None
 
 
@@ -45,8 +42,9 @@ class Executor (Widget):
         # TODO: Make text area expand/fill available space
         self.text = ScrolledText(self, width=80, height=50)
         self.text.pack(fill='both', expand=True)
-        # Text area for stdin input to the program
+        # Bottom frame to hold the next four widgets
         frame = tk.Frame(self)
+        # Text area for stdin input to the program
         label = tk.Label(frame, text="Input:")
         label.pack(side='left')
         self.stdin_text = tk.Entry(frame)
@@ -54,12 +52,15 @@ class Executor (Widget):
         self.stdin_text.bind('<Return>', self.send_stdin)
         # Button to stop the process
         self.kill_button = tk.Button(frame, text="Kill", command=self.kill)
-        self.kill_button.config(state='disabled')
         self.kill_button.pack(side='left')
         # Button to save log output
         self.save_button = tk.Button(frame, text="Save", command=self.save)
         self.save_button.pack(side='left')
+        # Pack the bottom frame
         frame.pack(anchor='nw')
+        # Disable stdin box and kill button until execution starts
+        self.stdin_text.config(state='disabled')
+        self.kill_button.config(state='disabled')
 
 
     def send_stdin(self, event):
@@ -94,8 +95,12 @@ class Executor (Widget):
                                stdout=self.outfile.name,
                                stderr=self.outfile.name)
 
-        # Enable the kill button
+        # Enable the stdin entry box and kill button
+        self.stdin_text.config(state='normal')
         self.kill_button.config(state='normal')
+
+        # Set focus in the stdin entry box
+        self.stdin_text.focus_set()
 
         # Poll until command finishes (or is interrupted)
         self.poll()
@@ -128,13 +133,16 @@ class Executor (Widget):
         # Read from output file and print to log window
         data = self.outfile.read()
         if data:
-            self.write(data.replace('\r', '\n'))
+            lines = data.splitlines()
+            for line in lines:
+                self.write(line + '\n')
 
         # Stop if command is done, or poll again
         if self.command.done():
             #self.outfile.close()
             self.notify("Done executing!")
             self.kill_button.config(state='disabled')
+            self.stdin_text.config(state='disabled')
         else:
             self.after(100, self.poll)
 
