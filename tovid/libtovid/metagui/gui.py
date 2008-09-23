@@ -190,17 +190,17 @@ class Application (Widget):
         # Initialize
         Widget.__init__(self)
         self.program = program
-        self.panels = list(panels)
         self.showing = False
         self.frame = None
+        self.panels = list(panels)
+        # Add a LogViewer as the last panel
+        self.panels.append(Executor("Log"))
 
 
     def draw(self, master):
         """Draw the Application in the given master.
         """
         Widget.draw(self, master)
-        # Add a LogViewer as the last panel
-        self.panels.append(Executor("Log"))
         # Draw all panels as tabs
         self.tabs = Tabs('', *self.panels)
         self.tabs.draw(self)
