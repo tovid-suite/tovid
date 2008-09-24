@@ -618,8 +618,8 @@ menus = Tabs('Menus',
 
 
 tab_list = []
-slideshow_panel = VPanel('slideshow',
-    Tabs('General options',
+slideshow_panel = Tabs('Slideshow',
+    VPanel('General options',
         Text('Title', '-titles', '', 'Title for this slideshow.'),
         _slides,
         FlagGroup("", 'exclusive',
@@ -633,10 +633,10 @@ slideshow_panel = VPanel('slideshow',
                 'look like a scattered stack of photos. This is the '
                 'same as setting -static on the Main tab.'),
         ),
-        Number('Number of slides shown on menu', '-menu-slide-total',
-        0, 'Use this many slides for making the slideshow menu. '
-        'The default is to use all the slides given.',
-        0, 100, toggles=True),
+        Number('Number of slides shown on menu', '-menu-slide-total', 0,
+            'Use this many slides for making the slideshow menu. '
+            'The default is to use all the slides given.',
+            0, 100, toggles=True),
         _submenu_slide_total,
         VPanel('Animated slideshow options',
             HPanel('',
@@ -645,7 +645,6 @@ slideshow_panel = VPanel('slideshow',
             ),
         ),
         _no_confirm_backup,
-
     ),
     VPanel('Advanced options',
         FlagGroup('Use slideshow as background or showcase video ',
@@ -658,16 +657,16 @@ slideshow_panel = VPanel('slideshow',
     VPanel('Denoising options', _slides_to_bin, _slides_to_blur, _slide_blur),
 )
 
-
 tab_list.append(slideshow_panel)
 
 for num in range(2,  13):
-    title_str = 'images for slideshow ' + str(num)
+    title_str = 'Images for slideshow ' + str(num)
     next_panel = VPanel(str(num),
         Text('Title', '-titles', '',
-        'Title for this slideshow. Leave empty if doing a single slideshow.'),
-        List(title_str, '-slides', None, 'Image files for the slideshow.',
-             Filename()),
+            'Title for this slideshow. Leave empty if doing a single slideshow.'),
+        List(title_str, '-slides', None,
+            'Image files for the slideshow.',
+            Filename()),
         )
     tab_list.append(next_panel)
 
