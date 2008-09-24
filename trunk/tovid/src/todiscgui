@@ -546,7 +546,7 @@ main = VPanel("Main",
     _menu_title,
 
     Tabs('Input files',
-        RelatedList(_files, 'one', _titles),
+        RelatedList(_files, 'one', _titles, filter=to_title),
         RelatedList('-files', 'many', _group),
     ),
 
