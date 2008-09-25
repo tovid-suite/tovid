@@ -1637,7 +1637,7 @@ fi
 # Anamorphic widescreen (16:9 output)
 # Used if the format supports it, and it will minimize the number of pixels
 # wasted on letterbox bars (or if the user requested -widetv output).
-if $ANAMORPH && [[ test "$V_ASPECT_WIDTH" -ge 153 || $WIDE_TV ]]; then
+if $ANAMORPH && { ((V_ASPECT_WIDTH >= 153)) || $WIDE_TV ; }; then
     TGT_ASPECT_WIDTH=177
     FF_ASPECT="-aspect 16:9"
     ASPECT_FMT="--aspect 3"
