@@ -869,7 +869,7 @@ mk_workdir()
     REAL_WORK_DIR=$(tempdir $CUR_DIR/todisc-work)
     WORK_DIR=$(tempdir /tmp/todisc-work nocreate)
     # tempdir() made a unique name with nocreate, now make it a symlink
-    ln -sfv "$REAL_WORK_DIR" "$WORK_DIR"
+    ln -sf "$REAL_WORK_DIR" "$WORK_DIR"
 }
 
 
