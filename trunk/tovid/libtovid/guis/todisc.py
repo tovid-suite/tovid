@@ -674,6 +674,7 @@ thumbnails = VPanel("Thumbnails",
     _align,
     _seek,
 )
+from libtovid.guis import tovid
 
 behavior = VPanel("Behavior",
     HPanel('',
@@ -684,8 +685,12 @@ behavior = VPanel("Behavior",
          'Space-separated list of custom options to pass to todisc.'),
     SpacedText('Custom tovid options', '', '',
          'Space-separated list of custom options to pass to tovid.'),
-    
-    #_tovid_encoding_options,
+    Tabs('tovid options',
+        tovid.BASIC_OPTS,
+        tovid.VIDEO,
+        tovid.AUDIO,
+        tovid.BEHAVIOR,
+    )
 )
 
 

@@ -183,8 +183,8 @@ _from_gui = Flag('From GUI', '-from-gui', True)
 ### Higher-level groups and panels
 ### ---------------------------------------------------------------------------
 
-MAIN = VPanel('Main',
-    VPanel('Filenames', _in, _out),
+IN_OUT = VPanel('Filenames', _in, _out)
+BASIC_OPTS = VPanel('Basic options',
     FlagGroup('Disc format', 'exclusive',
         _dvd, _svcd, _vcd,
         _dvd_vcd, _half_dvd, _kvcd,
@@ -198,6 +198,11 @@ MAIN = VPanel('Main',
         FlagGroup('Interlacing', 'exclusive',
                   _interlaced, _interlaced_bf, _deinterlace)
     ),
+)
+
+MAIN = VPanel('Main',
+    IN_OUT,
+    BASIC_OPTS,
 )
 
 VIDEO = HPanel('Video',
@@ -234,6 +239,8 @@ BEHAVIOR = VPanel('Behavior',
 ### main GUI
 ### --------------------------------------------------------------------
 
-tovid = Application('tovid', MAIN, VIDEO, AUDIO, BEHAVIOR)
-gui = GUI("tovid metagui", 640, 720, tovid)
-gui.run()
+def run():
+    app = Application('tovid', MAIN, VIDEO, AUDIO, BEHAVIOR)
+    gui = GUI("tovid metagui", 640, 720, app)
+    gui.run()
+
