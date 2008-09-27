@@ -12,6 +12,9 @@ _overwrite = Flag("Overwrite", '-overwrite', False,
 _quiet = Flag("Quiet", '-quiet', False,
     "Limit output to essential messages")
 
+# TODO: Figure out how to handle multiple cases
+# (video list, -menu <menu> video list, -slides <image list> etc.)
+# and how to deal with -group / -endgroup
 VIDEOS = List("Video files", '', None,
     "List of .mpg video files to include on the disc",
     Filename())
