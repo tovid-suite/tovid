@@ -160,6 +160,8 @@ EXTRA_DIST = \
 pythonLIBTOVID_PYTHON = libtovid/*.py
 pythonLIBTOVIDdir = $(pythondir)/libtovid
 # Submodules
+pythonAPPS_PYTHON = libtovid/apps/*.py
+pythonAPPSdir = $(pythondir)/libtovid/apps
 pythonBACKEND_PYTHON = libtovid/backend/*.py
 pythonBACKENDdir = $(pythondir)/libtovid/backend
 pythonRENDER_PYTHON = libtovid/render/*.py
@@ -179,6 +181,7 @@ dist-hook:
 
 # After uninstalling tovid, remove the python module directories
 uninstall-hook:
+	rmdir $(pythonAPPSdir)
 	rmdir $(pythonBACKENDdir)
 	rmdir $(pythonRENDERdir)
 	rmdir $(pythonTEMPLATEdir)
