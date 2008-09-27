@@ -34,9 +34,9 @@
 
 __all__ = [
     # Subdirectories
-    'apps',
     'backend',
     'gui',
+    'guis',
     'metagui',
     'render',
     'template',
