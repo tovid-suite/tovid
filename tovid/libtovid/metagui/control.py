@@ -661,12 +661,14 @@ class Text (Control):
         self.entry.pack(side='left', fill='x', expand=True)
         Control.post(self)
 
+
     def focus(self):
         """Highlight the text entry box for editing.
         """
         self.entry.select_range(0, 'end')
         self.entry.focus_set()
 
+### --------------------------------------------------------------------
 
 class SpacedText (Text):
     """Text string interpreted as a space-separated list of strings
