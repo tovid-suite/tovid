@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # todiscgui
 
-from libtovid.apps import todisc
+from libtovid.guis import todisc
 
 if __name__ == '__main__':
     todisc.run()
