@@ -1,132 +1,7 @@
 #! /usr/bin/env python
-# tovid-metagui
+# tovid.py
 
-"""Experimental tovid suite GUI, without any Tkinter code.
-
-Run this script standalone for a demonstration:
-
-    $ python tovid-metagui
-
-
-INTRODUCTION
-
-This module demonstrates a simplified approach to creating GUIs for
-command-line programs. It's designed so _anyone_ can easily write their
-own GUI, without having any programming experience.
-
-It assumes your GUI is a direct frontend to one or more command-line programs,
-with each command-line option having an associated GUI control widget. Several
-kinds of widget are provided, for setting Filename, Color, Number or Font, or
-for picking a Choice or Flag.
-
-You probably know of a handful of command-line applications that would be
-much better with a GUI, even a cheesy-looking Tkinter one. This module shows
-how easy it is to create one.
-
-
-CONTROLS
-
-Say, if you have a program that takes input and output filenames:
-
-    $ tovid -in movie.avi -out movie_encoded
-
-then you can create GUI widgets for those options like this:
-
-    Filename('-in', "Input filename")
-    Filename('-out', "Output prefix")
-
-These have the general format:
-
-    Control('-option', "Label", ...)
-
-where:
-
-    Control   is a Control subclass, such as Filename, Choice, or Number,
-              describing what type of value is being controlled;
-    'option'  is a command-line option (without the leading '-'),
-              whose value is set by the Control; and
-    "Label"   is the text that should appear next to the GUI Control.
-
-Other parameters include default value, help/tooltip text to show, allowable
-values, and hints about how to draw the GUI control widget; they are specific
-to the flavor of Control being used. For a full list of available Control
-subclasses and how to use them, see libtovid/metagui/control.py.
-
-This is 90% of the syntax you need to learn for creating your own GUIs. If
-you understand the above, you're almost ready to...
-
-
-CREATE A GUI
-
-First, give your Controls a place to live, in a Panel:
-
-    general = Panel("General",
-        Filename('-bgaudio', "Background audio file"),
-        Flag('-submenus', "Create submenus"),
-        Number('-menu-length', "Length of menu (seconds)", 0, 120)
-        )
-
-This will create three GUI widgets in a Panel labeled "General": one for typing
-or browsing to a filename, one for enabling or disabling submenus, and another 
-for setting menu length to a number between 0 and 120. You can nest panels
-inside one another for grouping; sub-Panels have their own label and list of
-Controls or sub-Panels.
-
-Once you have a Panel, you can create an Application:
-
-    app = Application('todisc', [general])
-
-This says your application will run the 'todisc' command-line program,
-passing options set by the "General" panel. Now, create the GUI:
-
-    gui = GUI('MyGUI', [app])
-    gui.run()
-
-This creates the GUI, draws all the widgets, and will run your command-line
-program at the push of a button.
-
-
-CREATE A MULTI-PANEL GUI
-
-If your program has a lot of options, one panel may not be enough to hold them
-all without looking cluttered, so you may break them down into multiple Panels,
-which will be shown in the GUI as tabs that you can switch between. Create
-Panels like this:
-
-    thumbs = Panel("Thumbnails",
-        Color('-thumb-mist-color', ...),
-        Text('-wave', ...)
-    )
-    text = Panel("Text",
-        Font('-menu-font', ...),
-        Number('-menu-fontsize', ...)
-    )
-
-then, create the Application and GUI:
-
-    todisc = Application('todisc', [thumbs, text])
-    gui = GUI('MyGUI', [todisc])
-    gui.run()
-
-If multiple panels are given to Application, a tabbed interface is created,
-with one tab for each panel.
-
-
-CREATE A MULTI-APPLICATION GUI
-
-If your GUI needs to be able to run several different command-line programs,
-you can create a multi-application GUI. Create panels for each application,
-then create the applications:
-
-    todisc = Application('todisc', [todisc_panel1, todisc_panel2])
-    tovid = Application('tovid', [tovid_panel1, tovid_panel2])
-
-and then the GUI:
-
-    gui = GUI('MultiGUI', [todisc, tovid])
-    gui.run()
-
-Run this script standalone for a demonstration of this feature.
+"""A GUI for the ``tovid`` script.
 """
 
 # Get supporting classes from libtovid.metagui
@@ -143,7 +18,7 @@ _out = Filename('Output prefix', '-out', '',
     'Name to use for encoded output file (.mpg added automatically)',
     'save', 'Choose an output prefix')
 
-# Formats
+# Standard formats
 _dvd = Flag("DVD", '-dvd', True,
     "(720x480 NTSC, 720x576 PAL) DVD-compatible output. May be burned "
     "to a DVD[+/-]R[W] disc. Also known as Digital [Versatile|Video] Disc, "
@@ -156,6 +31,7 @@ _vcd = Flag("Video CD (VCD)", '-vcd', False,
     "(320x240 NTSC, 320x288 PAL) Video CD format, may be burned to a CD-R. "
     "About 1 hour of playing time per disc.")
 
+# Extra formats
 _dvd_vcd = Flag('VCD-on-DVD', '-dvd-vcd', False,
     '(352x240 NTSC, 352x288 PAL) VCD-on-DVD output')
 _half_dvd = Flag('Half-DVD', '-half-dvd', False,
@@ -175,14 +51,13 @@ _bdvd = Flag('BDVD', '-bdvd', False,
 _full = Flag('4:3 (full-frame)', '-full', True)
 _wide = Flag('16:9 (widescreen)', '-wide', False)
 _panavision = Flag('2.35:1 (panavision)', '-panavision', False)
-
+_aspect = Text('Aspect ratio', '-aspect', '4:3',
+    'Explicit integer aspect ratio (ex. 6:4)')
 
 # TV Systems
 _ntsc = Flag("NTSC", '-ntsc', True, "NTSC, US standard, 29.97 fps")
 _ntscfilm = Flag("NTSC Film", '-ntscfilm', False, "NTSC Film, 23.976 fps")
 _pal = Flag("PAL", '-pal', False, "PAL, European standard, 25.00 fps")
-
-
 
 # Video quality/size controls
 _quality = Number('Quality', '-quality', 6,
@@ -203,20 +78,13 @@ _discsize = Number('Disc size', '-discsize', 0,
     'chunks of this size.',
     0, 4400, units='MiB')
 
-
-### ---------------------------------------------------------------------------
-
 # Encoder options
 _mplayeropts = SpacedText('mplayer options', '-mplayeropts', '', 'TODO: Tooltip')
 _filters = Choice('mplayer filters', '-filters', 'none', 'TODO: Tooltip',
     'none|denoise|deblock|contrast|all', packside='top')
-
 _ffmpeg = Flag('Encode using ffmpeg', '-ffmpeg', False)
 _parallel = Flag('Parallel video/audio encoding', '-parallel', False,
     "(mpeg2enc only) Rip, encode, and multiplex in parallel.")
-
-
-# Video encoding options
 
 # Interlacing
 _interlaced = Flag('Interlaced encoding', '-interlaced', False,
@@ -234,23 +102,18 @@ _safe = Number('Safe area', '-safe', 90,
     50, 100, 'scale')
 _crop = Text('Crop', '-crop', '', 'TODO: Tooltip')
 _slice = Number('Slice', '-slice', 0, 'TODO: Tooltip', 0, 220000)
-
-
 _fps = Text('FPS', '-fps', '', 'TODO: Tooltip')
 _type = Choice('Video type', '-type', 'live', 'TODO: Tooltip',
     'live|animation|bw', packside='top')
-
 
 # Subtitles
 _autosubs = Flag('Auto-subtitles', '-autosubs', False,
     'Automatically include subtitle files with the same '
     'name as the input video.')
-
 _mkvsub = Text('mkvsub', '-mkvsub', '',
     'EXPERIMENTAL. Attempt to encode an integrated subtitle stream '
     '(such as may be found in Matroska .mkv files) in the given '
     'language code (eng, jpn, etc.) May work for other formats.')
-
 _subtitles = Filename('subtitles', '-subtitles', '',
     'Get subtitles from FILE and encode them into the video. '
     'WARNING: This hard-codes the subtitles into the video, and you '
@@ -259,7 +122,6 @@ _subtitles = Filename('subtitles', '-subtitles', '',
     'format, it will be re-encoded to include the subtitles.',
     'load', 'Select a subtitle file')
 
-
 # Audio options
 _normalize = Flag('Normalize', '-normalize', False,
     'Analyze the audio stream and then normalize the volume of the audio. '
@@ -267,7 +129,6 @@ _normalize = Flag('Normalize', '-normalize', False,
     'make volume consistent for a bunch of videos. Similar to running '
     'normalize without any parameters. The default is -12dB average level '
     'with 0dB gain.')
-
 _downmix = Flag('Downmix', '-downmix', False,
     'Encode all audio tracks as stereo. This can save space on your DVD if '
     'your player only does stereo. The default behavior of tovid is to use the '
@@ -275,34 +136,27 @@ _downmix = Flag('Downmix', '-downmix', False,
     'not possible: tovid runs a quick 1 frame test to try to downmix the input '
     'track with the largest number of channels, and if it fails then it will '
     'revert to the default behavior of using the original channels.')
-
 _audiotrack = SpacedText('Audio track', '-audiotrack', '',
     'Encode  the  given  audio  track, if the input video has multiple '
     'audio tracks.  NUM is 1 for the first track, 2 for the second, etc. '
     'You may also provide a list of tracks, separated by spaces or commas, '
     'for example -audiotrack 3,1,2. Use idvid on your source video to '
     'determine which audio tracks it contains. ')
-
-_abitrate = Number('Audio bitrate', '-abitrate', 0,
+_abitrate = Number('Audio bitrate', '-abitrate', 224,
    'Encode audio at NUM kilobits per second. Reasonable values include 128, '
     '224,  and  384.  The default is 224 kbits/sec, good enough for most '
     'encodings. The value must be within the allowable range for the chosen '
     'disc format; Ignored for VCD, which must be 224.',
     128, 384, units='kbits/sec')
-
 _amplitude = Text('Amplitude', '-amplitude', '',
     'In addition to analyzing and normalizing, apply the gain to the audio '
     'such that the "average" (RMS) sound level is NUM. Valid values range '
     '0.0 - 1.0, with  0.0  being  silent and 1.0 being full scale. Use NUMdB '
     'for a decibel gain below full scale '
     '(the default without -amplitude is -12dB).')
-
 _async = Number('Audio sync', '-async', 0, 'Adjust audio synchronization',
     -600, 600, units='secs')
 
-# Runtime behavior
-_config = Filename('Configuration file', '-config', '', 'TODO: Tooltip',
-    'load', 'Select tovid configuration file')
 # File-related
 _keepfiles = Flag('Keep temporary files', '-keepfiles')
 _overwrite = Flag('Overwrite files', '-overwrite')
@@ -311,6 +165,9 @@ _nofifo = Flag('No FIFO', '-nofifo', False,
     "intermediate conversion files to disk. May take "
     "up lots of space!")
 
+# Runtime behavior
+_config = Filename('Configuration file', '-config', '', 'TODO: Tooltip',
+    'load', 'Select tovid configuration file')
 _priority = Choice('Process priority', '-priority', 'high', 'TODO: Tooltip',
     'low|medium|high')
 _update = Number('Update interval', '-update', 5, 'TODO: Tooltip', 1, 20)
@@ -321,7 +178,6 @@ _force = Flag('Force encoding', '-force')
 # Prompting
 _noask = Flag('No prompts',  '-noask', False, 'TODO: Tooltip')
 _from_gui = Flag('From GUI', '-from-gui', True)
-
 
 ### ---------------------------------------------------------------------------
 ### Higher-level groups and panels
@@ -343,7 +199,6 @@ MAIN = VPanel('Main',
                   _interlaced, _interlaced_bf, _deinterlace)
     ),
 )
-
 
 VIDEO = HPanel('Video',
     VPanel('Encoder options',
@@ -368,7 +223,6 @@ AUDIO = VPanel('Audio & Subtitles',
     _subtitles,
 )
 
-
 BEHAVIOR = VPanel('Behavior',
     _config,
     _priority,
@@ -376,17 +230,10 @@ BEHAVIOR = VPanel('Behavior',
     VPanel('Prompts and output options', _quiet, _noask, _from_gui, _update)
 )
 
-tovid_panel = Tabs('',
-    MAIN,
-    VIDEO,
-    AUDIO,
-    BEHAVIOR,
-)
-
 ### --------------------------------------------------------------------
 ### main GUI
 ### --------------------------------------------------------------------
 
-tovid = Application('tovid', tovid_panel)
+tovid = Application('tovid', MAIN, VIDEO, AUDIO, BEHAVIOR)
 gui = GUI("tovid metagui", 640, 720, tovid)
 gui.run()

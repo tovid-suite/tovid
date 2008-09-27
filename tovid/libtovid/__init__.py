@@ -32,23 +32,21 @@
 # <i>You'll find this page in %libtovid/__init__.py</i>
 
 
-__all__ = [\
+__all__ = [
     # Subdirectories
-    'author',
+    'apps',
     'backend',
     'gui',
     'metagui',
     'render',
     'template',
     'test',
-    'transcode',
     # .py files
+    'author',
     'cli',
     'deps',
     'encode',
     'filetypes',
-    'layout',
-    'media',
     'odict',
     'opts',
     'output',
@@ -58,7 +56,8 @@ __all__ = [\
     'standard',
     'stats',
     'utils',
-    'xml']
+    'xml',
+]
 
 import os
 import sys
