@@ -809,3 +809,6 @@ def run():
     gui = GUI("todiscgui", 640, 800, app)
     gui.run()
 
+if __name__ == '__main__':
+    run()
+

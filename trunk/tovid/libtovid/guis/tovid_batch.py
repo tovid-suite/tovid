@@ -18,4 +18,7 @@ def run():
         tovid.BEHAVIOR)
     gui = GUI("tovid-batch metagui", 640, 720, app)
     gui.run()
-    
+
+if __name__ == '__main__':
+    run()
+
