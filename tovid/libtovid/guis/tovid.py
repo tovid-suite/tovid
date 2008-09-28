@@ -244,3 +244,6 @@ def run():
     gui = GUI("tovid metagui", 640, 720, app)
     gui.run()
 
+if __name__ == '__main__':
+    run()
+
