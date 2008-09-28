@@ -34,3 +34,7 @@ def run():
     app = Application('idvid', MAIN)
     gui = GUI('idvid gui', 400, 600, app)
     gui.run()
+
+if __name__ == '__main__':
+    run()
+
