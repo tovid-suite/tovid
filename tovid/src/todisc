@@ -6038,7 +6038,10 @@ if $DO_CAROUSEL; then
     TT=1 # a constant value atm
     $SLIDE_FADE && MIX_SLIDE_LEN=$(bc_math "$MIX_SLIDE_LEN - $TT")
 
-    if [[ $(bc -l <<<  "$MIX_SLIDE_LEN < 0") -eq 1 ]]; then
+    if [[ $(bc -l <<< "$MIX_SLIDE_LEN == 0") -eq 1 ]]; then
+        # use 2 frames for each still so MIX_SLIDE_LEN is not 0
+        MIX_SLIDE_LEN=$(bc -l <<< "scale=3; 2 / $FRAME_RATE")
+    elif [[ $(bc -l <<<  "$MIX_SLIDE_LEN < 0") -eq 1 ]]; then
         runtime_error "The menu length is not long enough for an animated menu.
         For slideshows where -bgaudio FILE is supplied, this is determined by:
         1. -menu-length argument if supplied
