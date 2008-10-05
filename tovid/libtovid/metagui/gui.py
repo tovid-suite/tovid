@@ -171,6 +171,7 @@ class Executor (Widget):
 ### --------------------------------------------------------------------
 import tkMessageBox
 import tempfile
+from libtovid.metagui import Control
 
 class Application (Widget):
     """Graphical frontend for a command-line program
@@ -236,6 +237,32 @@ class Application (Widget):
             executor.execute(command)
         else:
             executor.write("Cancelled.\n")
+
+
+    def expect(self, arg_parts):
+        """Define the order of command-line options expected by the app.
+
+        Examples:
+
+            app.expect('[options]', '<outfile>')
+                gets all options but <outfile>, then <outfile>
+            app.expect('-in', '[options]', '-out')
+                gets -in, then remaining options except -out, then -out
+            app.expect('<infile>', '<outfile>')
+                No other options, so no [options] part
+        """
+        self.expected = []
+        used = []
+        for part in arg_parts:
+            if part == '[options]':
+                pass # TODO
+            elif part in Control.all:
+                self.expected.append(Control.all[part])
+                used.append(part)
+            else:
+                pass # TODO
+
+        # Add all unused options to [options]
 
 
 ### --------------------------------------------------------------------
