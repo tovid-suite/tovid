@@ -63,13 +63,12 @@ _out = Filename('Output name', '-out', '',
 
 _non_showcase = Flag('Basic thumbnails', '', True,
     'Thumbnail menu links, centred, and as large as space restraints allow')
-_showcase = Flag('Showcase', '-showcase', False,
+_showcase = FlagOpt('Showcase', '-showcase', False,
     "Arrange menu links along the outside edges, to leave room for"
     " an optional 'showcase' image or video.  The file entry box"
     " is for an optional image or video file to be showcased in a"
     " large central frame",
-    enables=Filename('', '', '', '',
-                     'load', 'Select an image or video file.'))
+    Filename('', '', '', '', 'load', 'Select an image or video file.'))
 
 _showcase_seek = Number('Video seek', '-showcase-seek', 2,
     'Play showcase video from the given seek time (seconds).  '
@@ -88,14 +87,14 @@ _text_start = Number('Start titles at', '-text-start', 50,
     'This value is applied before the menu is scaled.',
     0, 460, 'spin', 'pixels')
 
-_textmenu = Flag("Textmenu", '-textmenu', False,
+_textmenu = FlagOpt("Textmenu", '-textmenu', False,
     'Showcase style text only menu.  Optionally use a "showcase" '
     'image/video, or static/animated background.  Use the '
     '"columns" option to set the number of titles in '
     'column 1 (column 2 will use the remainder).  Note that '
     'column 2 titles are aligned right. '
     'See also quick-menu and switched menu.',
-    enables=Number('Columns', '', 13, '', 1, 50))
+    Number('Columns', '', 13, '', 1, 50))
 
 _quick_menu = Flag("Quick menu", '-quick-menu', False,
     'Ten times faster than normal showcase animation.  '
@@ -156,22 +155,20 @@ _menu_audio_fade = Number('Fade in audio', '-menu-audio-fade', 1,
     '(default: 1.0 seconds). Use a fade of "0" for no fade.',
     0, 10)
 
-_menu_fade = Flag('Fade in menu', '-menu-fade', False,
-    'Fade the menu in and out.  The background '
-    ' will fade in first, then the title '
-    '(and mist if called for), then the menu thumbs and/or titles.  '
+_menu_fade = FlagOpt('Fade in menu', '-menu-fade', False,
+    'Fade the menu in and out. The background will fade in first, then '
+    'the title (and mist if called for), then the menu thumbs and/or titles.  '
     'The fadeout is in reverse order.  The optional numerical argument '
     'is the length of time the background will play before the menu '
     'begins to fade in.',
-    enables = VPanel('',
-        Number(default=0.0, min=0.0, max=60.0, units='seconds', style='scale'),
-        Flag('Transition to menu', '-transition-to-menu', False,
-            'A convenience option for animated backgrounds: the background '
-            'will become static at the exact point the thumbs finish '
-            'fading in.  This menu does not loop '
-            'unless you pass -loop VALUE (authoring tab).'),
-    )
+    Number(default=0.0, min=0.0, max=60.0, units='seconds', style='scale')
 )
+
+_transition_to_menu = Flag('Transition to menu', '-transition-to-menu', False,
+    'A convenience option for animated backgrounds: the background '
+    'will become static at the exact point the thumbs finish '
+    'fading in.  This menu does not loop '
+    'unless you pass -loop VALUE (authoring tab).'),
 
 _intro = Filename('Intro video', '-intro', '',
     'Video to play before showing the main menu.  At present this must '
@@ -290,7 +287,7 @@ _slideshow_menu_thumbs = List('Menu slide thumbs', '-slideshow-menu-thumbs', Non
     'mixed slideshows/videos only.',
     Filename(filetypes=image_filetypes))
 
-_use_dvd_slideshow = Flag('Use dvd-slideshow program', '-use-dvd-slideshow', False,
+_use_dvd_slideshow = FlagOpt('Use dvd-slideshow program', '-use-dvd-slideshow', False,
     'Use the "dvd-slideshow" program to make the animated '
     'slideshow. You need of course to have installed this program '
     'to use this. You only need this for special effects like the '
@@ -299,8 +296,7 @@ _use_dvd_slideshow = Flag('Use dvd-slideshow program', '-use-dvd-slideshow', Fal
     'file you would need for non-todisc options, otherwise '
     'todisc will make the file for you. Using this option will '
     'void many todisc slideshow options.',
-    enables=Filename(action='load',
-                     help='Select the dvd-author configuration file.'))
+    Filename(action='load', help='Select the dvd-author configuration file.'))
 
 _slides_to_bin = List('Slides to "bin"', '-slides-to-bin', None,
     '"Binning" resizes the image to 640x480 using a "box" '
@@ -365,10 +361,9 @@ _rotate = Number('Rotate Showcase thumb', '-rotate', 0,
     'Rotate the showcase image|video clockwise by this number of degrees.',
     -30, 30, 'spin')
 
-_thumb_mist_color = Flag("No thumb mist", '-thumb-mist-color', False,
+_thumb_mist_color = FlagOpt("No thumb mist", '-thumb-mist-color', False,
     'Do not use mist behind thumbs (not a showcase option).  Warning: '
     'might cause contrast problems (use a large bold font)',
-    enables = \
     Color('Thumb mist color', '', 'white',
         'Color of mist behind thumbnails (not a showcase option). ' 
         'Default if not enabled: white')
@@ -750,7 +745,7 @@ authoring = Tabs('Authoring',
                     'sequentially until the last, which will return to '
                     'the menu.  You can also specify individual videos to '
                     'behave like this by using the text box at the right. '),
-                Flag('Chain selected videos together', '', False, 
+                FlagOpt('Chain selected videos together', '-chain-videos', False, 
                     'Enable this option and use the box at right to indicate the '
                     'number of the video you wish to "chain" to the next, so '
                     'they play sequentially before returning to the menu. '
@@ -758,16 +753,16 @@ authoring = Tabs('Authoring',
                     '"-" separator. Example of a range: "1-2 4-6" (no quotes). '
                     'This will play video 1 through video 3 before returning '
                     'to the menu, and the same for video 4 through video 6.',
-                    enables=Text('', '-chain-videos', '', ''),
+                    Text(''),
                 ),
             ),
             _playall,
             _videos_are_chapters,
             FlagGroup('', 'exclusive',
-                Flag('Pause', '', False, 'Pause in seconds at end of '
-                'menu.  Or leave this value at "10" and use the '
-                '"Indefinite pause item below.',
-                enables=Number('', '-loop', 10, '', 0, 30),
+                FlagOpt('Pause', '', False, 'Pause in seconds at end of '
+                    'menu.  Or leave this value at "10" and use the '
+                    '"Indefinite pause item below.',
+                    Number('', '-loop', 10, '', 0, 30),
                 ),
                 Flag('Indefinite pause', '-loop', False,
                 'Pause indefinitely at the end of the menu.'),
