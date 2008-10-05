@@ -29,6 +29,59 @@ Control subclasses:
 
 """
 
+"""Option revamp ideas
+
+Need a way to handle positional arguments, where the position in the
+command-line does not necessarily correspond to the draw-order in the GUI.
+
+Currently, an empty '' option is used for positional arguments, which
+prevents them from having a global name. If instead, a convention were
+adopted for option strings, where:
+
+    List('Input files', '<in_files>', ...)
+
+would create a positional argument, where the order of positioning is
+defined somewhere else, like:
+
+    Application('grep', panel1, panel2, ...
+        expected = '[options] <in_files>')
+
+or ffmpeg:
+
+    _infile = Filename('Input file', '<infile>')
+    _outfile = Filename('Output file', '<outfile>')
+    _options = VPanel('Options', ...)
+
+    expected = '[options] <infile> [options] <outfile>'
+
+Would that work?
+
+Or tovid-batch, where -infiles is an option, but must come last:
+
+    expected = '[options] -infiles'
+
+Q. How does '[options]' include everything _but_ -infiles?
+
+Focus on getting most of the tovid scripts metagui-ized, then go from there.
+
+Some options are like begin/end tokens:
+
+    makexml -group <file_list> -endgroup
+
+Some have complex expected followup options:
+
+    makexml -topmenu VIDEO \
+        -menu MENU1.mpg <file_list1> \
+        -menu MENU2.mpg <file_list2>
+
+How deep should metagui get into parsing all this?
+
+Shorthand for a FlagGroup of Flags might be handy:
+
+    format = FlagChoice('Format', '-vcd|-dvd|-svcd')
+
+"""
+
 __all__ = [
     'Control',
     # Subclasses
@@ -36,6 +89,7 @@ __all__ = [
     'Color',
     'Filename',
     'Flag',
+    'FlagOpt',
     'Font',
     'List',
     'Number',
@@ -84,7 +138,7 @@ class Control (Widget):
         if option != '' and option in Control.all:
             return Control.all[option]
         else:
-            return None
+            raise ValueError("No Control exists fot option: '%s'" % option)
     by_option = staticmethod(by_option)
 
 
@@ -96,6 +150,7 @@ class Control (Widget):
                  help='',
                  required=False,
                  toggles=False,
+                 enabled=True,
                  **kwargs):
         """Create a Control for an option.
 
@@ -108,10 +163,11 @@ class Control (Widget):
             help:     Help text to show in a tooltip
             required: Indicates a required (non-optional) option
             toggles:  Control widget may be toggled on/off
+            enabled:  True if Control is enabled by default
             **kwargs: Keyword arguments of the form key1=arg1, key2=arg2
         
         """
-        Widget.__init__(self, label)
+        Widget.__init__(self, label, toggles, enabled)
         self.vartype = vartype
         self.variable = None
         self.label = label
@@ -148,30 +204,15 @@ class Control (Widget):
         # Draw tooltip
         if self.help != '':
             self.tooltip = ToolTip(self, text=self.help, delay=1000)
-        # Draw enabler checkbox
-        if self.toggles:
-            self.enabled = tk.BooleanVar(self)
-            self.check = tk.Checkbutton(self, text='',
-                                        variable=self.enabled,
-                                        command=self.enabler)
-            self.check.pack(side='left')
 
 
     def post(self):
         """Post-draw initialization.
         """
         if self.toggles:
-            self.enabler()
-
-
-    def enabler(self):
-        """Event handler: Enable/disable the Control when self.check is toggled.
-        """
-        if self.enabled.get():
-            self.enable()
-        else:
+            Widget.toggle(self)
+        if not self.enabled:
             self.disable()
-            self.check.config(state='normal')
 
 
     def get(self):
@@ -232,24 +273,29 @@ class Control (Widget):
 
         # Return empty if the control is toggled off
         if self.toggles:
-            if not self.enabled.get():
+            if not self.enabled:
                 return []
         # Skip if unmodified or empty
-        elif value == self.default or value == []:
+        if value == self.default or value == []:
             # ...unless it's required
             if self.required:
                 raise MissingOption(self.option)
             else:
                 return []
 
-        # '-option'
+        # Add option string
         if self.option != '':
-            if type(value) == list:
+            # For <option>, don't pass the option string
+            if self.option.startswith('<') and self.option.endswith('>'):
+                pass
+            # For lists, only pass the option if the list has content
+            elif type(value) == list:
                 if any(value):
                     args.append(self.option)
+            # All others--just append the option string
             else:
                 args.append(self.option)
-            
+
         # List of arguments
         if type(value) == list:
             args.extend(value)
@@ -458,22 +504,25 @@ class Flag (Control):
                  option='',
                  default=False,
                  help='',
+                 enables=None,
                  **kwargs):
         """Create a Flag widget with the given label and default value.
 
-            label:    Text label for the flag
-            option:   Command-line flag passed
-            default:  Default value (True or False)
-            help:     Help text to show in a tooltip
+        label
+            Text label for the flag
+        option
+            Command-line flag passed
+        default
+            Default value (True or False)
+        help
+            Help text to show in a tooltip
+        enables
+            Option or list of options to enable when the Flag is checked
         """
         Control.__init__(self, bool, label, option, default, help, **kwargs)
-        # Enable an associated control when this Flag is True
-        if 'enables' in kwargs:
-            self.enables = kwargs['enables']
-            ensure_type("Flag can only enable a Widget", Widget, self.enables)
-        else:
-            self.enables = None
 
+        self.enables = enables or []
+        self.controls = []
 
 
     def draw(self, master):
@@ -484,25 +533,24 @@ class Flag (Control):
                                     variable=self.variable,
                                     command=self.enabler)
         self.check.pack(side='left', anchor='nw')
-        # Draw any controls enabled by this one
-        if self.enables:
-            self.enables.draw(self)
-            self.enables.pack(side='left', fill='x', expand=True)
-            # Disable if False
-            if not self.default:
-                self.enables.disable()
+
+        # Enable/disable related controls
+        self.controls = [Control.by_option(opt) for opt in self.enables]
+        Flag.enabler(self)
+
         Control.post(self)
 
 
     def enabler(self):
-        """Enable/disable a Control based on the value of the Flag.
+        """Enable/disable related Controls based on Flag state.
         """
-        if not self.enables:
+        if not self.controls:
             return
-        if self.get():
-            self.enables.enable()
-        else:
-            self.enables.disable()
+        for control in self.controls:
+            if self.get():
+                control.state = 'normal'
+            else:
+                control.state = 'disabled'
 
     
     def get_args(self):
@@ -510,12 +558,69 @@ class Flag (Control):
         draw() must be called before this function.
         """
         args = []
-        if self.get() == True:
-            if self.option:
-                args.append(self.option)
-            if self.enables:
-                args.extend(self.enables.get_args())
+        # If flag is true, and option is nonempty, append to args
+        if self.get() and self.option:
+            args.append(self.option)
         return args
+
+### --------------------------------------------------------------------
+
+class FlagOpt (Flag):
+    """Like a normal Flag, but has an optional argument following it.
+    """
+    def __init__(self,
+                 label="Flag",
+                 option='',
+                 default=False,
+                 help='',
+                 control=None,
+                 **kwargs):
+        """Create a FlagOpt widget; like a Flag, but has an optional argument
+        (which may be set using an associated Control).
+
+        label
+            Text label for the flag
+        option
+            Command-line flag passed
+        default
+            Default value (True or False)
+        help
+            Help text to show in a tooltip
+        control
+            Another Control, for setting the argument value (required)
+        """
+        Flag.__init__(self, label, option, default, help)
+        if control != None:
+            ensure_type("FlagOpt needs a Control instance", Control, control)
+        self.control = control
+
+
+    def draw(self, master):
+        Flag.draw(self, master)
+        # Pack the arg control next to the flag checkbox
+        self.control.draw(self)
+        self.control.pack(side='left', fill='x', expand=True)
+        # Disable if flag defaults to false
+        if not self.default:
+            self.control.disable()
+
+
+    def enabler(self):
+        """Enable or disable the arg Control when the flag changes.
+        """
+        Flag.enabler(self)
+        if self.get():
+            self.control.enable()
+        else:
+            self.control.disable()
+
+
+    def get_args(self):
+        args = Flag.get_args(self)
+        if len(args) > 0:
+            args.extend(self.control.get_args())
+        return args
+
 
 ### --------------------------------------------------------------------
 
