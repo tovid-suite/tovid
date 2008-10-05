@@ -405,7 +405,8 @@ class FlagGroup (Panel):
         """
         args = []
         for flag in self.flags:
-            if flag.option != 'none':
+            # Include only if set to a non-default value
+            if flag.option != 'none' and flag.get() != flag.default:
                 args.extend(flag.get_args())
         return args
 
