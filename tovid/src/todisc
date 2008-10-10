@@ -2045,6 +2045,14 @@ get_elapsed()
 {
     echo -e "\nIt took $(format_seconds $((etime-stime)) ) for the $1\n"
 }
+# make sure  correct sample size option for sox  is used, based on sox version
+get_sox_arg()
+{
+    sox_version=$(sox --version)
+    sox_version=${sox_version##*v}
+    test_version $sox_version 13.0.0 && echo '-2' || echo '-w'
+}
+
 ##############################################################################
 #                          	End of functions                             #
 ##############################################################################
@@ -8662,10 +8670,13 @@ fi
 BG_AUDIO_LENGTH="-t $MENU_ATIME"
 # create audio background for the main menu
 if $DO_MENU; then
+    sample_size=$(get_sox_arg)
     if [[ -z "$BG_AUDIO" || "$BG_AUDIO" = "none" ]]; then # use silence
         ! $SWITCHED && AUDIO_FADE=false # do not fade silence
-        cat /dev/zero 2>/dev/null | nice -n 0 sox -t raw -c 2 -r 48000 -w \
-        -s - $WORK_DIR/intro.wav  trim 0 $MENU_ATIME
+        echo "Running cat /dev/zero 2>/dev/null | nice -n 0 sox -t raw -c 2 -r 48000 \
+        $sample_size -s - $WORK_DIR/intro.wav  trim 0 $MENU_ATIME" |fold -bs #DEBUG
+        cat /dev/zero 2>/dev/null | nice -n 0 sox -t raw -c 2 -r 48000 \
+        $sample_size -s - $WORK_DIR/intro.wav  trim 0 $MENU_ATIME
     # Make sure file exists
     elif test ! -s "$BG_AUDIO"; then
         runtime_error "Cannot find background audio file: $BG_AUDIO"
