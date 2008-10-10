@@ -402,6 +402,26 @@ function root_warning()
 }
 
 # ******************************************************************************
+# takes 2 args: (1) version (2) the version testing against
+# return true if version is >= to the test version (same or newer)
+# ******************************************************************************
+test_version()
+{
+    OIFS=$IFS
+    IFS='.'
+    local version test_version
+    version=${1//,/.} # allow comma separated version string too
+    version=($version)
+    test_version=($2)
+    IFS=$OIFS
+    for i in ${!test_version[@]}; do
+        [[ -z ${version[i]} ]] && version[i]=0
+       (( ${version[i]} < ${test_version[i]} )) && return 1
+    done
+    return 0
+}
+
+# ******************************************************************************
 # ******************************************************************************
 #
 #
