@@ -94,27 +94,6 @@ function cleanup()
     fi
 }
 
-# make sure  correct argument to 'convert -list' is used, based on IM version
-get_listarg()
-{
-    version=$(convert -list configure | awk '/LIB_VERSION_NUMBER/ {print $2}')
-    im_version=( ${version//,/ } )
-    test_version=(6 3 5 7)
-    arg='font' # 'font' argument for IM versions >= 6.3.5-7
-
-    for i in ${!test_version[@]}; do
-        # make sure both arrays are equal in length
-        [[ -z ${im_version[i]} ]] && im_version[i]=0
-        # break from loop if any version index is higher than test_version's
-        (( ${im_version[i]} > ${test_version[i]} )) && break
-        # 'type' argument is for IM versions less than 6.3.5-7
-        (( ${im_version[i]} < ${test_version[i]} )) && arg='type'
-    done
-
-    echo $arg
-}
-
-
 # Initializations
 
 # No background image or audio
@@ -162,6 +141,12 @@ if mplex 2>&1 | grep -q "version 1.6.2"; then
     CHROMA_MODE="420_mpeg2"
 else
     CHROMA_MODE="420mpeg2"
+fi
+IM_VERSION=$(convert -list configure | awk '/LIB_VERSION_NUMBER/ {print $2}')
+if test_version $IM_VERSION 6.3.5.7; then
+    IM_LISTARG='font'
+else
+    IM_LISTARG='type'
 fi
 PPM_OPTS="-S $CHROMA_MODE -A 10:11 -F 30000:1001"
 # Direct stuff to /dev/null
@@ -468,14 +453,14 @@ if test -s "$TITLE_FONT"; then
 else
     # Check to see if the given font name is available in ImageMagick
     # (only return the first exact match)
-    USE_TITLE_FONT=$( convert -list $(get_listarg) | \
+    USE_TITLE_FONT=$( convert -list $IM_LISTARG | \
 	grep -m 1 "$TITLE_FONT" | awk '{print $1}' )
 
    # If not available, try to use something similar
     if test -z $USE_TITLE_FONT ; then
 	    echo $SEPARATOR
 	    echo "Font: \"$TITLE_FONT\" does not appear to be either a font file or registered with ImageMagick."
-	    USE_TITLE_FONT=$( convert -list $(get_listarg) | \
+	    USE_TITLE_FONT=$( convert -list $IM_LISTARG | \
 	    grep -i -m 1 "${TITLE_FONT:0:20}" | awk '{print $1}' )
 
         # If a similarly-named one does't exist, default to Helvetica
@@ -500,14 +485,14 @@ if test $RES = 'dvd'; then
     else
         # Check to see if the given button font is available in ImageMagick
         # (only return the first exact match)
-        USE_BUTTON_FONT=$( convert -list $(get_listarg) | \
+        USE_BUTTON_FONT=$( convert -list $IM_LISTARG | \
     	grep -m 1 "$BUTTON_FONT" | awk '{print $1}' )
 
         # If not available, try to use something similar
         if test -z $USE_BUTTON_FONT ; then
 	        echo $SEPARATOR
 	        echo "Button: \"$BUTTON_FONT\" does not appear to be either a font file or registered with ImageMagick."
-    	    USE_BUTTON_FONT=$( convert -list $(get_listarg) | \
+    	    USE_BUTTON_FONT=$( convert -list $IM_LISTARG | \
 	        grep -i -m 1 "${BUTTON_FONT:0:20}" | awk '{print $1}' )
 
             # If a similarly-named one does't exist, default to Helvetica
