@@ -163,11 +163,11 @@ class Control (Widget):
             help:     Help text to show in a tooltip
             required: Indicates a required (non-optional) option
             toggles:  Control widget may be toggled on/off
-            enabled:  True if Control is enabled by default
+            enabled:  True if Control is toggled on by default
             **kwargs: Keyword arguments of the form key1=arg1, key2=arg2
         
         """
-        Widget.__init__(self, label, toggles, enabled)
+        Widget.__init__(self, label)
         self.vartype = vartype
         self.variable = None
         self.label = label
@@ -176,6 +176,7 @@ class Control (Widget):
         self.help = help
         self.required = required
         self.toggles = toggles
+        self.enabled = enabled
         self.kwargs = kwargs
 
         # Add self to all
@@ -204,15 +205,49 @@ class Control (Widget):
         # Draw tooltip
         if self.help != '':
             self.tooltip = ToolTip(self, text=self.help, delay=1000)
+        # Draw the toggle checkbox if desired
+        if self.toggles:
+            self.check = tk.Checkbutton(self, text='',
+                                        command=self.toggle)
+            self.check.pack(side='left')
+
+
+    def toggle(self):
+        """Enable or disable the Control when self.check is toggled.
+        """
+        # If currently enabled, disable (then re-enable the checkbox)
+        if self.enabled:
+            self.disable()
+            self.check.config(state='normal')
+        # Otherwise, enable
+        else:
+            self.enable()
+
+
+    def enable(self, enabled=True):
+        """Enable or disable the Control.
+        """
+        self.enabled = enabled
+        # Enable/disable all child widgets that allow state changes
+        for widget in self.winfo_children():
+            if 'state' in widget.config():
+                if enabled:
+                    widget.config(state='normal')
+                else:
+                    widget.config(state='disabled')
+
+
+    def disable(self):
+        """Disable the Control.
+        """
+        self.enable(False)
 
 
     def post(self):
         """Post-draw initialization.
         """
         if self.toggles:
-            Widget.toggle(self)
-        if not self.enabled:
-            self.disable()
+            self.toggle()
 
 
     def get(self):
@@ -272,9 +307,8 @@ class Control (Widget):
             value = self.get()
 
         # Return empty if the control is toggled off
-        if self.toggles:
-            if not self.enabled:
-                return []
+        if self.toggles and not self.enabled:
+            return []
         # Skip if unmodified or empty
         if value == self.default or value == []:
             # ...unless it's required
@@ -521,7 +555,18 @@ class Flag (Control):
         """
         Control.__init__(self, bool, label, option, default, help, **kwargs)
 
-        self.enables = enables or []
+        # Ensure the "enables" arg is the right type
+        if not enables:
+            self.enables = []
+        elif type(enables) == list:
+            self.enables = enables
+        elif type(enables) == str:
+            self.enables = [enables]
+        else:
+            raise TypeError("Flag 'enables' argument must be"
+                            " an option string or list of option strings"
+                            " (got %s instead)" % enables)
+        # Will be a list of enabled Controls, filled in by draw()
         self.controls = []
 
 
@@ -535,9 +580,13 @@ class Flag (Control):
         self.check.pack(side='left', anchor='nw')
 
         # Enable/disable related controls
+        if self.enables:
+            #print("%s will enable:" % self.option)
+            #print(self.enables)
+            pass
+        
         self.controls = [Control.by_option(opt) for opt in self.enables]
         Flag.enabler(self)
-
         Control.post(self)
 
 
@@ -589,7 +638,7 @@ class FlagOpt (Flag):
         control
             Another Control, for setting the argument value (required)
         """
-        Flag.__init__(self, label, option, default, help)
+        Flag.__init__(self, label, option, default, help, **kwargs)
         if control != None:
             ensure_type("FlagOpt needs a Control instance", Control, control)
         self.control = control
