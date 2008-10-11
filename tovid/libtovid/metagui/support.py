@@ -195,9 +195,6 @@ class ScrollList (tk.Frame):
         # Select same index in linked ScrollList
         if self.linked and select_in_linked:
             self.linked.select_index(index, False)
-            #self.linked.listbox.selection_clear(0, item_count)
-            #self.linked.listbox.selection_set(index)
-            #self.linked.summon_callbacks('select', index, self.selected.get())
 
 
     def get(self):
@@ -376,23 +373,59 @@ class FontChooser (tkSimpleDialog.Dialog):
     def __init__(self, master=None):
         tkSimpleDialog.Dialog.__init__(self, master, "Font chooser")
 
-
     def body(self, master):
         """Draw widgets inside the Dialog, and return the widget that should
         have the initial focus. Called by the Dialog base class constructor.
         """
+        # Cache of PhotoImage previews, indexed by font name
+        self._cache = {}
+
         tk.Label(master, text="Available fonts").pack(side='top')
+
+        # List of fonts available to ImageMagick
         available_fonts = imagemagick_fonts()
         self.fontlist = ScrollList(master, available_fonts)
+        self.fontlist.callback('select', self.refresh)
         self.fontlist.pack(side='top', fill='both', expand=True)
+
+        # Font preview area
+        self.preview = tk.Label(master, image=None, height=6)
+        self.preview.pack(fill='both', expand=True)
+
+        # Draw the initial preview
+        self.refresh()
+
         # Return widget with initial focus
         return self.fontlist
 
 
     def apply(self):
-        """Set the selected font.
+        """Set the selected font. Called by the base class when "OK" is pressed.
         """
         self.result = self.fontlist.selected.get()
+
+
+    def refresh(self, index=0, fontname='Helvetica'):
+        """Redraw the preview using the current font and size.
+        """
+        # Cache a PhotoImage for this font name
+        if fontname not in self._cache:
+            self._cache[fontname] = self.render(fontname)
+        # Get the PhotoImage from the cache
+        photo_image = self._cache[fontname]
+        self.preview.configure(image=photo_image, height=photo_image.height())
+
+
+    def render(self, fontname):
+        """Return a PhotoImage preview of the given font.
+        """
+        cmd = Command('convert', '-size',  '255x150', "xc:#EFEFEF")
+        cmd.add('-font', fontname, '-pointsize', 24)
+        cmd.add('-gravity', 'center', '-annotate', '+0+0', fontname)
+        cmd.add('gif:-')
+        cmd.run(capture=True)
+        image_data = cmd.get_output()
+        return PhotoImage(data=base64.b64encode(image_data))
 
 ### --------------------------------------------------------------------
 from ConfigParser import ConfigParser
