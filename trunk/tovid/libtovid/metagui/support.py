@@ -372,16 +372,17 @@ import base64
 
 class FontChooser (tkSimpleDialog.Dialog):
     """A widget for choosing a font"""
+    # Cache of PhotoImage previews, indexed by font name
+    _cache = {}
+
     def __init__(self, master=None):
         tkSimpleDialog.Dialog.__init__(self, master, "Font chooser")
+
 
     def body(self, master):
         """Draw widgets inside the Dialog, and return the widget that should
         have the initial focus. Called by the Dialog base class constructor.
         """
-        # Cache of PhotoImage previews, indexed by font name
-        self._cache = {}
-
         tk.Label(master, text="Available fonts").pack(side='top')
 
         # List of fonts available to ImageMagick
