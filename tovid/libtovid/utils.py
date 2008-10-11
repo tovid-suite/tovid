@@ -267,7 +267,7 @@ def imagemagick_fonts():
 
     # Run the command and return the list of font names
     lines = os.popen(command).readlines()
-    return [line.rstrip('\n') for line in lines]
+    return sorted([line.rstrip('\n') for line in lines])
 
 
 if __name__ == '__main__':
