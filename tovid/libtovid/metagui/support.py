@@ -72,7 +72,7 @@ class ScrollList (tk.Frame):
 
     Similar to a tk.Listbox, a ScrollList shows a list of items. tk.Variables
     may be associated with both the list of items, and the one that is currently
-    chosen/highlighted.
+    selected.
     """
     def __init__(self, master=None, items=None,
                  selected=None):
@@ -369,7 +369,7 @@ class ComboBox (tk.Frame):
             self.command()
 
 ### --------------------------------------------------------------------
-from libtovid.utils import get_listtype
+from libtovid.utils import imagemagick_fonts
 
 class FontChooser (tkSimpleDialog.Dialog):
     """A widget for choosing a font"""
@@ -377,20 +377,13 @@ class FontChooser (tkSimpleDialog.Dialog):
         tkSimpleDialog.Dialog.__init__(self, master, "Font chooser")
 
 
-    def get_fonts(self):
-        """Return a list of font names available in ImageMagick.
-        """
-        im_cmd = 'convert -list ' + get_listtype()
-        find = im_cmd + " | sed '/Path/,/---/d' | awk '{print $1}'"
-        return [line.rstrip('\n') for line in os.popen(find).readlines()]
-
-
     def body(self, master):
         """Draw widgets inside the Dialog, and return the widget that should
         have the initial focus. Called by the Dialog base class constructor.
         """
         tk.Label(master, text="Available fonts").pack(side='top')
-        self.fontlist = ScrollList(master, self.get_fonts())
+        available_fonts = imagemagick_fonts()
+        self.fontlist = ScrollList(master, available_fonts)
         self.fontlist.pack(side='top', fill='both', expand=True)
         # Return widget with initial focus
         return self.fontlist
@@ -399,7 +392,7 @@ class FontChooser (tkSimpleDialog.Dialog):
     def apply(self):
         """Set the selected font.
         """
-        self.result = self.fontlist.chosen.get()
+        self.result = self.fontlist.selected.get()
 
 ### --------------------------------------------------------------------
 from ConfigParser import ConfigParser

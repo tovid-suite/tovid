@@ -5,7 +5,7 @@ from Tkinter import *
 from tkSimpleDialog import Dialog
 import tkColorChooser
 from libtovid.cli import Command, Pipe
-from libtovid.utils import get_listtype, imagemagick_version
+from libtovid.utils import imagemagick_fonts
 import ImageTk
 import base64
  
@@ -38,26 +38,17 @@ class FontChooser (Frame):
         self.preview.pack(fill=BOTH, expand=1)
         self.makePreview()
 
-    def get_fontlist_filter(self):
-        if imagemagick_version() >= [6, 4, 0, 0]:
-            filter = "awk '/Font:/ {print $2}'"
-        else:
-            filter = "awk '!/\-\-\-|Path|Name|^$/ {print $1}'"
-
-        return filter
  
     def select(self, event):
         self.index = self.fontlist.nearest(event.y)
         self.fontname.set(self.fontlist.get(self.index))
-#        self.font_colour = self.colour
+        #self.font_colour = self.colour
         self.makePreview()
  
     def get_fonts(self):
         """Return a list of font names available in ImageMagick."""
-        im_cmd = 'convert -list ' + get_listtype()
-        #find = im_cmd + " | sed '/Path/,/---/d' | awk '{print $1}'"
-        find = im_cmd + "|" + self.get_fontlist_filter()
-        return [line.rstrip('\n') for line in os.popen(find).readlines()]
+        return imagemagick_fonts()
+    
 
     def makePreview(self, event=None):
         """Make a BitmapImage with selected font and display in the label"""
