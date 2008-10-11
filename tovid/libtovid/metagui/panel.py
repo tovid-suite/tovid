@@ -5,6 +5,7 @@
 """
 
 __all__ = [
+    'Label',
     'Panel',
     'HPanel',
     'VPanel',
@@ -21,6 +22,20 @@ import sys
 from widget import Widget
 from control import Control, MissingOption, Flag
 from support import ensure_type, divide_list
+
+### --------------------------------------------------------------------
+
+class Label (Widget):
+    """A widget with a text label.
+    """
+    def __init__(self, text=''):
+        Widget.__init__(self, text)
+        self.text = text
+
+    def draw(self, master):
+        Widget.draw(self, master)
+        self.label = tk.Label(self, text=self.text)
+        self.label.pack()
 
 ### --------------------------------------------------------------------
 

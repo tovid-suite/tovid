@@ -184,13 +184,15 @@ _from_gui = Flag('From GUI', '-from-gui', True)
 ### ---------------------------------------------------------------------------
 
 IN_OUT = VPanel('Filenames', _in, _out)
+FORMAT = FlagGroup('Disc format', 'exclusive',
+    _dvd, _svcd, _vcd,
+    _dvd_vcd, _half_dvd, _kvcd,
+    _kvcdx3a, _kdvd, _bdvd,
+    side='top',
+    columns=3)
+
 BASIC_OPTS = VPanel('Basic options',
-    FlagGroup('Disc format', 'exclusive',
-        _dvd, _svcd, _vcd,
-        _dvd_vcd, _half_dvd, _kvcd,
-        _kvcdx3a, _kdvd, _bdvd,
-        side='top',
-        columns=3),
+    FORMAT,
     HPanel('Output file size', _quality, _vbitrate, _fit, _discsize),
     HPanel('',
         FlagGroup('TV System', 'exclusive', _ntsc, _ntscfilm, _pal),
