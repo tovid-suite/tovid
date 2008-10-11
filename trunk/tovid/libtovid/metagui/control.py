@@ -307,10 +307,12 @@ class Control (Widget):
             value = self.get()
 
         # Return empty if the control is toggled off
-        if self.toggles and not self.enabled:
-            return []
+        if self.toggles:
+            if not self.enabled:
+                return []
+
         # Skip if unmodified or empty
-        if value == self.default or value == []:
+        elif value == self.default or value == []:
             # ...unless it's required
             if self.required:
                 raise MissingOption(self.option)

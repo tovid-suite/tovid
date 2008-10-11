@@ -527,6 +527,8 @@ _device = Filename('Device to use for burning', '-device', '/dev/dvdrw',
 """
 
 main = VPanel("Main",
+    Label("Here's yer bloody label widget"),
+
     _menu_title,
 
     Tabs('Input files',
@@ -575,7 +577,6 @@ menus = Tabs('Menus',
     VPanel('Main menu',
 
         _menu_length,
-
         Tabs('Extra',
             showcase_options,
             main_menu_backgrounds,
