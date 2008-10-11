@@ -239,15 +239,36 @@ def imagemagick_version():
     version_string = lines[0].split()[1]
     return [int(n) for n in version_string.split(',')]
 
-def get_listtype():
-    """Return argument for finding ImageMagick's list of fonts,
-    based on the version of IM installed.
+
+def imagemagick_fonts():
+    """Return a list of fonts available to ImageMagick.
     """
-    if imagemagick_version() >= [6, 3, 5, 7]:
-        listarg = 'font'
+    version = imagemagick_version()
+
+    # ImageMagick 6.4.x prints fonts like this:
+    #   Font: Verdana-Italic
+    #     family: Verdana
+    #     style: Italic
+    #     stretch: Normal
+    #     weight: 400
+    if version >= [6, 4, 0, 0]:
+        command = "convert -list font | grep 'Font:' | awk '{print $2}'"
+
+    # ImageMagick 6.3.5.7 and later print fonts like this:
+    #   Name             Family       Style  Stretch Weight
+    #   ---------------------------------------------------
+    #   Verdana-Italic   Verdana      Italic  Normal    400
+    elif version >= [6, 3, 5, 7]:
+        command = "convert -list font | awk '!/\-\-\-|Path|Name|^$/ {print $1}'"
+
+    # Older versions use 'type' instead of 'font', same formatting as above
     else:
-        listarg = 'type'
-    return listarg
+        command = "convert -list type | awk '!/\-\-\-|Path|Name|^$/ {print $1}'"
+
+    # Run the command and return the list of font names
+    lines = os.popen(command).readlines()
+    return [line.rstrip('\n') for line in lines]
+
 
 if __name__ == '__main__':
     doctest.testmod(verbose=True)
