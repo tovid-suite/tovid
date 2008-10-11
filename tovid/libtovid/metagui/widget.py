@@ -41,4 +41,3 @@ class Widget (tk.Frame):
         """
         return []
 
-
