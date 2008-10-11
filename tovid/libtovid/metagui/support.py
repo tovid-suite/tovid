@@ -367,6 +367,8 @@ class ComboBox (tk.Frame):
 
 ### --------------------------------------------------------------------
 from libtovid.utils import imagemagick_fonts
+from libtovid.cli import Command
+import base64
 
 class FontChooser (tkSimpleDialog.Dialog):
     """A widget for choosing a font"""
@@ -389,7 +391,7 @@ class FontChooser (tkSimpleDialog.Dialog):
         self.fontlist.pack(side='top', fill='both', expand=True)
 
         # Font preview area
-        self.preview = tk.Label(master, image=None, height=6)
+        self.preview = tk.Label(master, image=None, height=4)
         self.preview.pack(fill='both', expand=True)
 
         # Draw the initial preview
@@ -417,7 +419,7 @@ class FontChooser (tkSimpleDialog.Dialog):
 
 
     def render(self, fontname):
-        """Return a PhotoImage preview of the given font.
+        """Return a tk.PhotoImage preview of the given font.
         """
         cmd = Command('convert', '-size',  '255x150', "xc:#EFEFEF")
         cmd.add('-font', fontname, '-pointsize', 24)
@@ -425,7 +427,7 @@ class FontChooser (tkSimpleDialog.Dialog):
         cmd.add('gif:-')
         cmd.run(capture=True)
         image_data = cmd.get_output()
-        return PhotoImage(data=base64.b64encode(image_data))
+        return tk.PhotoImage(data=base64.b64encode(image_data))
 
 ### --------------------------------------------------------------------
 from ConfigParser import ConfigParser
