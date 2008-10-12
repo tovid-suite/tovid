@@ -7,22 +7,25 @@
 __all__ = ['Widget']
 
 import Tkinter as tk
-
+import time
 
 ### --------------------------------------------------------------------
 class Widget (tk.Frame):
     """Generic metagui widget, suitable for Controls, Panels, etc.
     """
-    def __init__(self, name=''):
+    def __init__(self, name='', enabled=True):
         """Create a Widget.
         
         name
             Unique name for the widget, or '' for an anonymous widget
+        enabled
+            True if widget is initially enabled
         """
         if type(name) != str:
             raise TypeError("Widget name must be a string.")
 
         self.name = name
+        self.enabled = enabled
         self.active = False
 
 
@@ -40,4 +43,33 @@ class Widget (tk.Frame):
         """Return a list of command-line options for this widget.
         """
         return []
+
+
+    def enable(self, enabled=True):
+        """Enable or disable the Widget and all its children.
+        """
+        self.enabled = enabled
+        # Enable/disable all child widgets that allow state changes
+        for widget in self.winfo_children():
+            if 'state' in widget.config():
+                if enabled:
+                    widget.config(state='normal')
+                else:
+                    widget.config(state='disabled')
+
+
+    def disable(self):
+        """Disable the Widget.
+        """
+        self.enable(False)
+
+
+    def blink(self):
+        """Cause the Widget to "blink" by briefly changing its background color.
+        """
+        bgcolor = self.cget('background')
+        self.config(background='#C0C0F0')
+        self.update()
+        time.sleep(1)
+        self.config(background=bgcolor)
 

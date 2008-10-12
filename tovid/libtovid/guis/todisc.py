@@ -58,8 +58,7 @@ _ntsc = Flag("NTSC", '-ntsc', True)
 _pal = Flag("PAL", '-pal', False)
 _out = Filename('Output name', '-out', '',
     'Name to use for the output directory where the disc will be created.',
-    'save', 'Choose an output name',
-    required=True)
+    'save', 'Choose an output name')
 
 _non_showcase = Flag('Basic thumbnails', '', True,
     'Thumbnail menu links, centred, and as large as space restraints allow')
