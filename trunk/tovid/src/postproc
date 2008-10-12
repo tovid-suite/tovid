@@ -203,7 +203,7 @@ $PARALLEL || wait
 
 # Normalize/gain
 if $DO_NORM; then
-   AUDIO_NORM="normalize $AUDIO_AMPLITUDE audio_dump"
+   AUDIO_NORM="$NORMALIZE $AUDIO_AMPLITUDE audio_dump"
    
    echo "Normalizing audio/applying gain with the following command:"
    echo "$AUDIO_NORM"
