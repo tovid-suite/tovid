@@ -76,13 +76,17 @@ class Executor (Widget):
         self.stdin_text.delete(0, 'end')
 
 
-    def execute(self, command):
-        """Execute the given command.
+    def execute(self, command, callback=lambda x:x):
+        """Execute the given command, and call the given callback when done.
         """
         if not isinstance(command, Command):
             raise TypeError("execute() requires a Command instance.")
         else:
             self.command = command
+        if not callable(callback):
+            raise TypeError("execute() callback must be a function")
+        else:
+            self.callback = callback
 
         # Temporary file to hold stdout/stderr from command
         name = self.command.program
@@ -139,12 +143,12 @@ class Executor (Widget):
 
         # Stop if command is done, or poll again
         if self.command.done():
-            #self.outfile.close()
             self.notify("Done executing!")
             self.kill_button.config(state='disabled')
             self.stdin_text.config(state='disabled')
+            self.callback()
         else:
-            self.after(100, self.poll)
+            self.after(1000, self.poll)
 
 
     def notify(self, text):
@@ -254,12 +258,10 @@ class Application (Widget):
 
         # Show prompt asking whether to continue
         if tkMessageBox.askyesno(message="Run %s now?" % self.program):
-            self.executor.execute(command)
+            self.executor.execute(command, self.toolbar.enable)
         else:
             self.executor.notify("Cancelled.")
-
-        # Re-enable the toolbar upon completion
-        self.toolbar.enable()
+            self.toolbar.enable()
 
 
     def expect(self, arg_parts):
@@ -334,8 +336,8 @@ class GUI (tk.Tk):
         self.tk.call('set', '::tk::dialog::file::showHiddenBtn',  '1')
         self.tk.call('set', '::tk::dialog::file::showHiddenVar',  '0')
         # handle user closing window with window manager or ctrl-q
-        self.protocol("WM_DELETE_WINDOW", lambda:self.confirm_exit(self.application))
-        self.bind('<Control-q>', lambda e, : self.confirm_exit(self.application))
+        self.protocol("WM_DELETE_WINDOW", self.confirm_exit)
+        self.bind('<Control-q>', self.confirm_exit)
 
 
     def run(self):
@@ -374,7 +376,7 @@ class GUI (tk.Tk):
             self.redraw()
 
  
-    def confirm_exit(self):
+    def confirm_exit(self, evt=None):
         if tkMessageBox.askyesno(message="Exit?"):
             self.quit()
 
