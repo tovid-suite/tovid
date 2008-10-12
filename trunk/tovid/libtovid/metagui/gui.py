@@ -171,7 +171,7 @@ class Executor (Widget):
 ### --------------------------------------------------------------------
 import tkMessageBox
 import tempfile
-from libtovid.metagui import Control
+from libtovid.metagui.control import Control
 
 class Application (Widget):
     """Graphical frontend for a command-line program
@@ -195,7 +195,8 @@ class Application (Widget):
         self.frame = None
         self.panels = list(panels)
         # Add a LogViewer as the last panel
-        self.panels.append(Executor("Log"))
+        self.executor = Executor("Log")
+        self.panels.append(self.executor)
 
 
     def draw(self, master):
@@ -206,6 +207,24 @@ class Application (Widget):
         self.tabs = Tabs('', *self.panels)
         self.tabs.draw(self)
         self.tabs.pack(anchor='n', fill='x', expand=True)
+
+
+    def draw_toolbar(self, config_function, exit_function):
+        """Draw a toolbar at the bottom of the application.
+        """
+        self.toolbar = Widget()
+        self.toolbar.draw(self)
+        # Create the buttons
+        config_button = tk.Button(self.toolbar, text="Config", command=config_function)
+        run_button = tk.Button(self.toolbar, text="Run %s now" % self.program,
+                               command=self.execute)
+        exit_button = tk.Button(self.toolbar, text="Exit", command=exit_function)
+        # Pack the buttons
+        config_button.pack(anchor='w', side='left', fill='x')
+        run_button.pack(anchor='e', side='left', fill='x', expand=True, padx=32)
+        exit_button.pack(anchor='e', side='right', fill='x')
+        # Pack the toolbar
+        self.toolbar.pack(fill='x', anchor='sw', expand=True)
 
 
     def get_args(self):
@@ -220,23 +239,27 @@ class Application (Widget):
     def execute(self):
         """Run the program with all the supplied options.
         """
+        self.toolbar.disable()
+        self.executor.clear()
+
+        # Get args and assemble command-line
         args = self.get_args()
         command = Command(self.program, *args)
-
-        # Show the Executor
-        self.tabs.activate(len(self.panels)-1)
-        executor = self.panels[-1]
-
+        
         # Display the command to be executed
-        executor.clear()
-        executor.write("Running command:\n")
-        executor.write(str(command) + '\n')
+        self.executor.notify("Running command: " + str(command))
+
+        # Show the Executor panel
+        self.tabs.activate(self.executor)
 
         # Show prompt asking whether to continue
         if tkMessageBox.askyesno(message="Run %s now?" % self.program):
-            executor.execute(command)
+            self.executor.execute(command)
         else:
-            executor.write("Cancelled.\n")
+            self.executor.notify("Cancelled.")
+
+        # Re-enable the toolbar upon completion
+        self.toolbar.enable()
 
 
     def expect(self, arg_parts):
@@ -320,7 +343,6 @@ class GUI (tk.Tk):
         self.draw()
         # Enter the main event handler
         self.mainloop()
-        # TODO: Interrupt handling
 
 
     def draw(self):
@@ -329,11 +351,11 @@ class GUI (tk.Tk):
         self.frame = tk.Frame(self, width=self.width, height=self.height)
         self.frame.pack(fill='both', expand=True)
         self.resizable(width=True, height=True)
-        # Single-application GUI
+        # Draw the application
         self.application.draw(self.frame)
         self.application.pack(anchor='n', fill='both', expand=True)
-        self.draw_toolbar(self.application)
-        #self.frame.pack_propagate(False)
+        # Draw the toolbar
+        self.application.draw_toolbar(self.show_config, self.confirm_exit)
 
 
     def redraw(self):
@@ -341,21 +363,6 @@ class GUI (tk.Tk):
         self.draw()
 
 
-    def draw_toolbar(self, app):
-        """Draw a toolbar at the bottom of the application(s).
-        """
-        app.config_button = tk.Button(app, text="Config",
-                        command=self.show_config)
-        app.config_button.pack(anchor='w', side='left', fill='x')
-        app.run_button = tk.Button(app, text="Run %s now" % app.program,
-                                            command=app.execute)
-        app.run_button.pack(anchor='e', side='left', fill='x', expand=True,
-                                                            padx=32)
-        app.exit_button = tk.Button(app, text="Exit",
-                            command=lambda:self.confirm_exit(app))
-        app.exit_button.pack(anchor='e', side='right', fill='x')
-
-        
     def show_config(self):
         """Open the GUI configuration dialog."""
         config = ConfigWindow(self, self.style)
@@ -367,8 +374,8 @@ class GUI (tk.Tk):
             self.redraw()
 
  
-    def confirm_exit(self, app):
-        if tkMessageBox.askyesno(message="Exit %s now?" % app.program):
+    def confirm_exit(self):
+        if tkMessageBox.askyesno(message="Exit?"):
             self.quit()
 
 ### --------------------------------------------------------------------

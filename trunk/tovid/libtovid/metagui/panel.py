@@ -20,7 +20,7 @@ import Tkinter as tk
 import sys
 
 from widget import Widget
-from control import Control, MissingOption, Flag
+from control import Control, Flag
 from support import ensure_type, divide_list
 
 ### --------------------------------------------------------------------
@@ -87,16 +87,12 @@ class Panel (Widget):
 
     def get_args(self):
         """Return a list of all command-line options from contained widgets.
-        Print error messages if any required options are missing.
         """
         if not self.widgets:
             return []
         args = []
         for widget in self.widgets:
-            try:
-                args += widget.get_args()
-            except MissingOption, missing:
-                print "Missing a required option: " + missing.option
+            args += widget.get_args()
         return args
 
 
@@ -326,9 +322,19 @@ class Tabs (Panel):
         self.index = selected
 
 
-    def activate(self, index):
-        """Activate (display) the given tab index.
+    def activate(self, tab):
+        """Display the given tab (either by index or Widget instance).
         """
+        # Get index by Widget instance
+        if isinstance(tab, Widget):
+            if tab in self.widgets:
+                index = list(self.widgets).index(tab)
+            else:
+                raise ValueError("Widget '%s' not in Tabs" % tab.name)
+        # Or use index directly
+        else:
+            index = int(tab)
+        # Switch to the given tab index
         self.selected.set(index)
         self.change()
 
