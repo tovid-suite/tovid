@@ -150,6 +150,7 @@ OUT_FILE="$1"
 
 echo $SEPARATOR
 
+$DO_NORM && assert_dep "sox" "You are missing dependancies necessarily for processing audio wav's"
 if $DO_NORM && $PARALLEL; then
    echo "Cannot normalize audio in parallel mode! Turning off -parallel."
    PARALLEL=false
