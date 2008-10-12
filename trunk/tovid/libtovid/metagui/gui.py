@@ -148,7 +148,7 @@ class Executor (Widget):
             self.stdin_text.config(state='disabled')
             self.callback()
         else:
-            self.after(1000, self.poll)
+            self.after(100, self.poll)
 
 
     def notify(self, text):
