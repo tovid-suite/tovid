@@ -105,10 +105,6 @@ from support import DragList, ScrollList, FontChooser
 from support import ensure_type
 
 ### --------------------------------------------------------------------
-class MissingOption (Exception):
-    def __init__(self, option):
-        self.option = option
-
 class NotDrawn (Exception):
     pass
 
@@ -148,7 +144,6 @@ class Control (Widget):
                  option='',
                  default='',
                  help='',
-                 required=False,
                  toggles=False,
                  enabled=True,
                  **kwargs):
@@ -161,22 +156,19 @@ class Control (Widget):
                       or '' to create a positional argument
             default:  Default value for the Control
             help:     Help text to show in a tooltip
-            required: Indicates a required (non-optional) option
             toggles:  Control widget may be toggled on/off
             enabled:  True if Control is toggled on by default
             **kwargs: Keyword arguments of the form key1=arg1, key2=arg2
         
         """
-        Widget.__init__(self, label)
+        Widget.__init__(self, label, enabled)
         self.vartype = vartype
         self.variable = None
         self.label = label
         self.option = option
         self.default = default or vartype()
         self.help = help
-        self.required = required
         self.toggles = toggles
-        self.enabled = enabled
         self.kwargs = kwargs
 
         # Add self to all
@@ -222,25 +214,6 @@ class Control (Widget):
         # Otherwise, enable
         else:
             self.enable()
-
-
-    def enable(self, enabled=True):
-        """Enable or disable the Control.
-        """
-        self.enabled = enabled
-        # Enable/disable all child widgets that allow state changes
-        for widget in self.winfo_children():
-            if 'state' in widget.config():
-                if enabled:
-                    widget.config(state='normal')
-                else:
-                    widget.config(state='disabled')
-
-
-    def disable(self):
-        """Disable the Control.
-        """
-        self.enable(False)
 
 
     def post(self):
@@ -313,11 +286,7 @@ class Control (Widget):
 
         # Skip if unmodified or empty
         elif value == self.default or value == []:
-            # ...unless it's required
-            if self.required:
-                raise MissingOption(self.option)
-            else:
-                return []
+            return []
 
         # Add option string
         if self.option != '':
