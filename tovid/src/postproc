@@ -163,6 +163,7 @@ if eval $(idvid -terse "$IN_FILE"); then :; else
     echo "Could not identify source video: $IN_FILE"
     exit 1
 fi
+video_format=$(tr A-Z a-z <<< $ID_VIDEO_FORMAT)video
 
 if test $ID_AUDIO_RATE -eq "48000"; then
     MUX_OPTS="-V -f 8"
@@ -182,11 +183,12 @@ echo "Dumping audio and video streams with the following commands:"
 
 # Dump audio and video
 if $DO_NORM; then
-    AUDIO_DUMP="mplayer -quiet -vc null -vo null -ao pcm:waveheader:file=audio_dump \"$IN_FILE\""
+    AUDIO_DUMP="ffmpeg -i  \"$IN_FILE\" -vn -f wav -y audio_dump"
 else
-    AUDIO_DUMP="mplayer \"$IN_FILE\" -quiet -dumpaudio -dumpfile audio_dump"
+    #AUDIO_DUMP="mplayer \"$IN_FILE\" -quiet -dumpaudio -dumpfile audio_dump"
+    AUDIO_DUMP="ffmpeg -i \"$IN_FILE\" -vn -f $ID_AUDIO_CODEC -acodec copy -y audio_dump"
 fi
-VIDEO_DUMP="mplayer \"$IN_FILE\" -quiet -dumpvideo -dumpfile video_dump"
+VIDEO_DUMP="ffmpeg -i \"$IN_FILE\" -an -f $video_format -vcodec copy -y video_dump"
 VID_STREAM="video_dump"
 
 echo "$AUDIO_DUMP"
