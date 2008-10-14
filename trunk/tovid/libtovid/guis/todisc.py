@@ -67,7 +67,7 @@ _showcase = FlagOpt('Showcase', '-showcase', False,
     " an optional 'showcase' image or video.  The file entry box"
     " is for an optional image or video file to be showcased in a"
     " large central frame",
-    Filename('', '', '', '', 'load', 'Select an image or video file.'),
+    Filename('', action='load', desc='Select an image or video file.'),
     enables=['-showcase-seek', '-textmenu', '-quick-menu', '-switched-menus'])
 
 _showcase_seek = Number('Video seek', '-showcase-seek', 2,
@@ -572,13 +572,10 @@ main_menu_backgrounds = VPanel('Backgrounds',
 
 menus = Tabs('Menus',
     VPanel('Main menu',
-
         _menu_length,
-        Tabs('Extra',
-            showcase_options,
-            main_menu_backgrounds,
-            VPanel("Effects", _menu_fade, _intro)
-            ),
+        showcase_options,
+        main_menu_backgrounds,
+        VPanel("Effects", _menu_fade, _intro)
     ),
 
     VPanel('Submenus',
