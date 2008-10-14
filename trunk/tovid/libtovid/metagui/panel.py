@@ -72,7 +72,7 @@ class Panel (Widget):
         else:
             self.frame = tk.Frame(self)
         # Pack the frame
-        self.frame.pack(fill='both', expand=True)
+        self.frame.pack(side='top', fill='both', expand=True)
 
 
     def draw_widgets(self, side='top'):
@@ -506,6 +506,13 @@ class RelatedList (Panel):
         else:
             self.filter = lambda x: x
 
+        if 'side' in kwargs:
+            self.side = kwargs['side']
+            if self.side not in ['left', 'top']:
+                raise ValueError("RelatedList 'side' must be 'left' or 'top'")
+        else:
+            self.side = 'left'
+
 
     def draw(self, master, **kwargs):
         """Draw the parent copy and related list Control,
@@ -517,6 +524,7 @@ class RelatedList (Panel):
         if type(self.parent) == str:
             self.parent = Control.by_option(self.parent)
             self.draw_copy = True
+        # Or use the parent Control itself
         else:
             self.draw_copy = False
 
@@ -531,10 +539,11 @@ class RelatedList (Panel):
             frame = tk.LabelFrame(self.frame, text="%s (copy)" % self.parent.label)
             self.listbox = ScrollList(frame, self.parent.variable, self.selected)
             self.listbox.pack(expand=True, fill='both')
-            frame.pack(side='left', anchor='nw', expand=True, fill='both')
+            frame.pack(side=self.side, anchor='nw', expand=True, fill='both')
+        # Or draw the parent Control itself
         else:
             self.parent.draw(self.frame)
-            self.parent.pack(side='left', anchor='nw', expand=True, fill='both')
+            self.parent.pack(side=self.side, anchor='nw', expand=True, fill='both')
             self.listbox = self.parent.listbox
 
         # Draw the child control
@@ -545,8 +554,8 @@ class RelatedList (Panel):
         # 1:many, add/remove in child is allowed
         else:
             self.child.draw(self.frame)
-        # Pack the child control to the right of the parent copy
-        self.child.pack(side='left', anchor='nw', expand=True, fill='both')
+        # Pack the child control
+        self.child.pack(side=self.side, anchor='nw', expand=True, fill='both')
 
         # Add callbacks to handle changes in parent
         self.add_callbacks()
