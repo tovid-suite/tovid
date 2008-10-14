@@ -215,13 +215,14 @@ _submenu_titles = RelatedList('-files', 'one',
     List('Titles', '-submenu-titles', None,
         'Submenu titles for each video.  '
         'Use \\n for a new line in a multi-line title.'),
-    filter=strip_all)
+    filter=strip_all, side='top')
 
 _chapter_titles = RelatedList('-files', 'many',
     List('Chapter titles', '-chapter-titles', None,
         'Chapter titles for each video.  Use \\n for a new line in '
         'a multi-line title.  Number of titles given must equal the '
-        'number of capters given for that video.'))
+        'number of capters given for that video.'),
+    side='left')
 
 
 _jobs = Number('Number of jobs to run simultaneously', '-jobs', 0,
@@ -525,30 +526,33 @@ _device = Filename('Device to use for burning', '-device', '/dev/dvdrw',
 """The todisc GUI is laid out using panels and tabs for logical grouping.
 """
 
-main = VPanel("Main",
-    _menu_title,
+main = HPanel("Main",
 
-    Tabs('Input files',
-        RelatedList(_files, 'one', _titles, filter=to_title),
-        RelatedList('-files', 'many', _group),
+    VPanel('',
+        _menu_title,
+    
+        Tabs('',
+            RelatedList(_files, 'one', _titles, filter=to_title, side='top'),
+            RelatedList('-files', 'many', _group, side='top'),
+        ),
+    
     ),
-
-    HPanel('',
-        FlagGroup('Menu options', 'normal', _static, _submenus, side='left'),
-        FlagGroup('Format', 'exclusive', _dvd, _svcd, side='left'),
-        FlagGroup('TV System', 'exclusive', _ntsc, _pal, side='left'),
+    VPanel('',
+        HPanel('',
+            FlagGroup('Menu options', 'normal', _static, _submenus),
+            FlagGroup('Format', 'exclusive', _dvd, _svcd),
+            FlagGroup('TV System', 'exclusive', _ntsc, _pal),
+        ),
+        VPanel('Menu style',
+            FlagGroup('', 'exclusive', _non_showcase, _showcase),
+            VPanel('Showcase options', _textmenu, _quick_menu, _switched_menus)
+        ),
+        VPanel('Menu backgrounds',
+            _background,
+            _bgaudio,
+        ),
+        _out
     ),
-
-
-    VPanel('Menu style',
-        FlagGroup('', 'exclusive', _non_showcase, _showcase),
-        HPanel('Showcase options', _textmenu, _quick_menu, _switched_menus)
-    ),
-    VPanel('Menu backgrounds',
-        _background,
-        _bgaudio,
-    ),
-    _out
 )
 
 
@@ -797,7 +801,7 @@ burning = VPanel("Burning", _burn, _speed, _device)
 def run():
     app = Application('todisc',
         main, menus, behavior, thumbnails, text, slideshows, authoring, burning)
-    gui = GUI("todiscgui", 640, 800, app)
+    gui = GUI("todiscgui", 800, 600, app)
     gui.run()
 
 if __name__ == '__main__':
