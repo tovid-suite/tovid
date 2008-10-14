@@ -596,8 +596,8 @@ class FlagOpt (Flag):
                  control=None,
                  **kwargs):
         """Create a FlagOpt widget; like a Flag, but has an optional argument
-        (which may be set using an associated Control).
-
+        which may be set using an associated Control.
+        
         label
             Text label for the flag
         option
@@ -608,6 +608,7 @@ class FlagOpt (Flag):
             Help text to show in a tooltip
         control
             Another Control, for setting the argument value (required)
+        
         """
         Flag.__init__(self, label, option, default, help, **kwargs)
         if control != None:
