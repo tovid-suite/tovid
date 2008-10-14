@@ -39,7 +39,7 @@ def exit_with_traceback(error_message):
     filename, lineno, foo, code = last_error
     
     print "Error on line %(lineno)s of %(filename)s:" % vars()
-    print "    " + code
+    print "    " + str(code)
     print error_message
     sys.exit(1)
 
