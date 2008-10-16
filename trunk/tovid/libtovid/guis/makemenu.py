@@ -43,16 +43,16 @@ _crop = Flag('Crop', '-crop', True)
 _scale = Flag('Scale', '-scale', False)
 _audio = Filename('BG audio', '-audio')
 _length = Number('Duration', '-length', 30,
-    'Menu duration', 1, 600, 'spin', 'seconds')
+    'Menu duration', 1, 600, 'seconds')
 _nosafearea = Flag('No safe area', '-nosafearea', False)
 
 # Fonts
 _menu_title = Text('Menu title', '-menu-title')
 _font = Font('Menu font', '-font')
 _fontsize = Number('Font size', '-fontsize', 24,
-    'Menu font size', 10, 100, 'spin', 'pixels')
+    'Menu font size', 10, 100, 'pixels')
 _menu_title_fontsize = Number('Title font size', '-menu-title-fontsze', 32,
-    'Menu title (heading) font size', 10, 100, 'spin', 'pixels')
+    'Menu title (heading) font size', 10, 100, 'pixels')
 _fontdeco = Text('Font decoration', '-fontdeco')
 _align = Choice('Text alignment', '-align', 'left',
     'Align/justify the menu text', 'left|center|middle|right')

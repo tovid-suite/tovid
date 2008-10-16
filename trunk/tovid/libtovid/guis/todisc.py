@@ -53,15 +53,20 @@ _group = List('Grouped videos', '-group', None,
     Filename())
 
 _dvd = Flag("DVD", '-dvd', True)
+
 _svcd = Flag("SVCD", '-svcd', False)
+
 _ntsc = Flag("NTSC", '-ntsc', True)
+
 _pal = Flag("PAL", '-pal', False)
+
 _out = Filename('Output name', '-out', '',
     'Name to use for the output directory where the disc will be created.',
     'save', 'Choose an output name')
 
 _non_showcase = Flag('Basic thumbnails', '', True,
     'Thumbnail menu links, centred, and as large as space restraints allow')
+
 _showcase = FlagOpt('Showcase', '-showcase', False,
     "Arrange menu links along the outside edges, to leave room for"
     " an optional 'showcase' image or video.  The file entry box"
@@ -71,21 +76,21 @@ _showcase = FlagOpt('Showcase', '-showcase', False,
     enables=['-showcase-seek', '-textmenu', '-quick-menu', '-switched-menus'])
 
 _showcase_seek = Number('Video seek', '-showcase-seek', 2,
-    'Play showcase video from the given seek time (seconds).  '
+    'Play showcase video from the given seek time. '
     'Note: switched menus uses the value(s) from "Seek time" '
     'option above, not this one',
-    0, 3600, units='seconds')
+    0, 3600, 'seconds')
 
 _title_gap = Number('Space between titles', '-title-gap', 10,
     'Leave this much vertical gap between titles.  '
     'Default is 10 for line buttons, 15 for text-rect buttons.  '
     'This value is applied before the menu is scaled.',
-    0, 400, 'spin', 'pixels')
+    0, 400, 'pixels')
 
 _text_start = Number('Start titles at', '-text-start', 50,
     'Titles will start at this pixel in the vertical axis.  '
     'This value is applied before the menu is scaled.',
-    0, 460, 'spin', 'pixels')
+    0, 460, 'pixels')
 
 _textmenu = FlagOpt("Textmenu", '-textmenu', False,
     'Showcase style text only menu.  Optionally use a "showcase" '
@@ -137,7 +142,7 @@ _background = Filename('Image or video', '-background', '',
 
 _bgvideo_seek = Number('Video seek', '-bgvideo-seek', 2,
     'Play background video from the given seek time (seconds)',
-    0, 3600)
+    0, 3600, 'seconds')
 
 _bgaudio = Filename('Audio', '-bgaudio', '',
     'Audio file to play while the main menu plays.  '
@@ -147,13 +152,13 @@ _bgaudio = Filename('Audio', '-bgaudio', '',
     'load', 'Select an audio file')
 
 _bgaudio_seek = Number('Audio seek', '-bgaudio-seek', 2,
-    'Play background audio from the given seek time (seconds)',
-    0, 3600)
+    'Play background audio from the given seek time.',
+    0, 3600, 'seconds')
 
 _menu_audio_fade = Number('Fade in audio', '-menu-audio-fade', 1,
     'Number  of  sec to fade given menu audio in and out '
     '(default: 1.0 seconds). Use a fade of "0" for no fade.',
-    0, 10)
+    0, 10, 'seconds')
 
 _menu_fade = FlagOpt('Fade in menu', '-menu-fade', False,
     'Fade the menu in and out. The background will fade in first, then '
@@ -161,7 +166,7 @@ _menu_fade = FlagOpt('Fade in menu', '-menu-fade', False,
     'The fadeout is in reverse order.  The optional numerical argument '
     'is the length of time the background will play before the menu '
     'begins to fade in.',
-    Number(default=0.0, min=0.0, max=60.0, units='seconds', style='scale')
+    Number('', '', 0.0, '', 0.0, 60.0, 'seconds')
 )
 
 _transition_to_menu = Flag('Transition to menu', '-transition-to-menu', False,
@@ -181,9 +186,9 @@ _static = Flag('Static menus', '-static', False,
     'audio for static menus, use "menu length" on the "Menu" tab')
 
 _menu_length = Number('Menu length', '-menu-length', 20,
-    'Duration of menu in seconds.  The length of the menu will also set '
+    'Duration of menu. The length of the menu will also set '
     'the length of background audio for a static menu',
-    0, 120, toggles=True)
+    0, 120, 'seconds')
 
 _submenus = Flag('Submenus', '-submenus', False,
     'Create a submenu for each video title; takes more time.')
@@ -191,15 +196,15 @@ _submenus = Flag('Submenus', '-submenus', False,
 _submenu_length = Number('Submenu length', '-submenu-length', 14,
     'The length of the submenu. If doing static submenus and using audio '
     'for the submenu, this will be the length of the submenu audio',
-    0, 80, toggles=True)
+    0, 80, 'seconds')
 
 _ani_submenus = Flag('Animated submenus', '-ani-submenus', False,
     'Create an animated submenu for each video.  '
     'Submenu links lead to chapter points.')
 
 _submenu_audio_fade = Number('Audio fade', '-submenu-audio-fade', 1,
-    'Number of seconds to fade given submenu audio in and out (default=1).',
-    0, 10)
+    'Number of seconds to fade given submenu audio in and out.',
+    0, 10, 'seconds')
 
 _submenu_audio = List('Audio', '-submenu-audio', None,
     'File(s) that will play as background audio for each submenu.  '
@@ -222,13 +227,17 @@ _chapter_titles = RelatedList('-files', 'many',
         'Chapter titles for each video.  Use \\n for a new line in '
         'a multi-line title.  Number of titles given must equal the '
         'number of capters given for that video.'),
-    side='left')
+    side='top')
 
+
+### --------------------------------------------------------------------
+### Runtime behavior
+### --------------------------------------------------------------------
 
 _jobs = Number('Number of jobs to run simultaneously', '-jobs', 0,
     'Leave this value at 0 if you wish the default, which is to run '
     'as many jobs as processors found. Use this option if you wish '
-    'to limit or increase this number.  ', 0, 32)
+    'to limit or increase this number.', 0, 32)
 _keep_files = Flag('Keep intermediate files on exit', '-keep-files', False)
 _no_ask = Flag('No prompts for questions', '-no-ask', False)
 _no_warn = Flag('No pause at warnings', '-no-warn', False)
@@ -261,17 +270,20 @@ _slide_transition = Choice('Transition type', '-slide-transition', 'crossfade',
 
 _slide_border = Number('Slide border', '-slide-border', 100,
     'Use a border around animated slideshow slides (default: 100 pixels).',
-    0, 200, toggles=True)
+    0, 200, 'pixels')
 
 _slide_frame = Number('Slide frame', '-slide-frame', 12,
     'Use a frame around the animated slideshow slides (default: 12).',
-    0, 20, toggles=True)
+    0, 20, 'pixels')
 
 _no_confirm_backup = Flag('No reminder prompt for backing up files',
     '-no-confirm-backup', False, 'Todisc prompts you for a "yes" '
     ' to show you have taken backup precations.  This option '
     'disables that prompt.')
 
+### --------------------------------------------------------------------
+### Slideshows
+### --------------------------------------------------------------------
 
 _background_slideshow = Flag("Background", '-background-slideshow', False,
     'This option is only for multiple slideshows, '
@@ -320,6 +332,11 @@ _slide_blur = List('Slide blur amount', '-slide-blur', '',
     'values between 0x0.1 and 0x0.9 is probably the best range.',
     Filename())
 
+
+### --------------------------------------------------------------------
+### Thumbnail images
+### --------------------------------------------------------------------
+
 _thumb_shape = Choice('Thumb shape', '-thumb-shape', 'normal',
     'Apply a shaped transparency mask to thumbnail videos. '
     'Note: to disable the "mist" background '
@@ -327,17 +344,17 @@ _thumb_shape = Choice('Thumb shape', '-thumb-shape', 'normal',
     'normal|oval|plectrum|egg')
 
 _opacity = Number('Thumbnail opacity', '-opacity', 100,
-    'Opacity  of thumbnail videos as a percentage '
-    '(no percent sign).  Less than 100(%) '
-    'is semi-transparent.  Not recommended with dark backgrounds.',
-    1, 100, 'spin', toggles=True)
+    'Opacity  of thumbnail videos as a percentage. '
+    'Less than 100(%) is semi-transparent. '
+    'Not recommended with dark backgrounds.',
+    1, 100, '%')
 
 _blur = Number('Blur', '-blur', 4,
     'The amount of feather blur to apply to the thumb-shape.  '
     'Default is 4.0 which will more or less keep the shape, '
     'creating transparency at the edges.  Choose float or '
     'integer values between 0.1 and 5.0',
-    1, 5, 'spin')
+    1, 5, 'pixels')
 
 _3dthumbs = Flag('Create 3D thumbs', '-3dthumbs', False,
     'This will give an illusion of 3D to the thumbnails: '
@@ -360,12 +377,12 @@ _wave = Flag('Wave effect for showcase thumb', '-wave', False,
 
 _rotate = Number('Rotate Showcase thumb', '-rotate', 0,
     'Rotate the showcase image|video clockwise by this number of degrees.',
-    -30, 30, 'spin')
+    -30, 30, 'degrees')
 
-_thumb_mist_color = FlagOpt("No thumb mist", '-thumb-mist-color', False,
+_thumb_mist_color = FlagOpt("Thumb mist", '-thumb-mist-color', False,
     'Do not use mist behind thumbs (not a showcase option).  Warning: '
     'might cause contrast problems (use a large bold font)',
-    Color('Thumb mist color', '', 'white',
+    Color('Color', '', 'white',
         'Color of mist behind thumbnails (not a showcase option). ' 
         'Default if not enabled: white')
 )
@@ -389,46 +406,61 @@ _seek = SpacedText('Thumbnail seek', '-seek', '',
     'Also used for seeking in switched menus.')
 
 
+### --------------------------------------------------------------------
+### Fonts and font colors
+### --------------------------------------------------------------------
+
 _menu_font = Font('Font', '-menu-font', 'Helvetica',
-    'The font to use for the menu title', toggles=True)
+    'The font to use for the menu title')
+
 _menu_fontsize = Number('Font size', '-menu-fontsize', 30,
     'The font size to use for the menu title',
-    0, 80, toggles=True)
+    0, 80, 'pixels')
+
 _title_color = Color('Font color', '-title-color', '#CDC0B0',
-    'The font color to use for the menu title', toggles=True)
+    'The font color to use for the menu title')
+
 _title_stroke = Color('Stroke color', '-title-stroke', 'gray',
-    'Outline color for the main menu font.', toggles=True,
+    'Outline color for the main menu font.',
     initialcolor="gray")
 
 _menu_title_geo = Choice('Title position', '-menu-title-geo', 'south',
     'The position of the menu title',
     'north|south|west|east|center')
+
 _menu_title_offset = Text('Title offset', '-menu-title-offset', '+0+50',
     'Menu title position as an offset (in pixels) from '
     'the N/S/E/W "Title position".  Use +X+Y syntax.  This '
-    'value is applied to the video *before* is is scaled.',
-    toggles=True)
+    'value is applied to the video *before* is is scaled.')
+
 _text_mist = Flag('Text mist', '-text-mist', False,
     'Use "mist" behind the menu title (helps with contrast).')
+
 _text_mist_color = Color('Text mist color', '-text-mist-color', 'white',
-    'Color of the mist behind the menu title.', toggles=True)
+    'Color of the mist behind the menu title.')
+
 _text_mist_opacity = Number('Text mist opacity', '-text-mist-opacity', 60,
     'The opacity of the mist behind the menu title.',
-    1, 100, 'spin', toggles=True)
+    1, 100, '%')
+
 _title_opacity = Number('Title opacity', '-title-opacity', 100,
     'The opacity of the menu title.',
-    0, 100, toggles=True)
+    0, 100, '%')
+
 _titles_font = Font('Font', '-titles-font', 'Helvetica',
-    'The font to use for the video titles', toggles=True)
+    'The font to use for the video titles')
+
 _titles_fontsize = Number('Font size', '-titles-fontsize', 12,
     'The font size to use for the video titles.  '
     'Default size varies depending on options chosen.',
-    0, 80, toggles=True)
+    0, 80, 'pixels')
+
 _titles_color = Color('Font color', '-titles-color', '#CDC0B0',
-    'The font color to use for the video titles', toggles=True)
+    'The font color to use for the video titles')
+
 _titles_stroke = Color('Stroke Color', '-titles-stroke', '#CDC0B0',
-    'The color to use for the video titles font outline (stroke)',
-    toggles=True)
+    'The color to use for the video titles font outline (stroke)')
+
 _showcase_titles_align = Choice('Video(s) title alignment',
     '-showcase-titles-align', 'none',
     'This is a showcase style only option.  Default is to center '
@@ -436,53 +468,52 @@ _showcase_titles_align = Choice('Video(s) title alignment',
     'titles either to the left (west), right (east), or center.  '
     'Leave at "none" to let todisc sort it out for you.',
     'west|east|center|none')
+
 _titles_opacity = Number('Titles opacity', '-titles-opacity', 100,
     'The opacity of the video titles.',
-    0, 100, toggles=True)
+    0, 100, '%')
+
 _submenu_font = Font('Font', '-submenu-font', 'Helvetica',
-    'The font to use for the Submenu menu titles', toggles=True)
+    'The font to use for the Submenu menu titles')
+
 _submenu_fontsize = Number('Font size', '-submenu-fontsize', 30,
     'The font size to use for the submenu title',
-     0, 80, toggles=True)
+     0, 80)
+
 _submenu_title_color = Color('Font color', '-submenu-title-color', '#CDC0B0',
-    'The font color to use for submenu title(s)', toggles=True)
+    'The font color to use for submenu title(s)')
+
 _submenu_stroke = Color('Stroke color', '-submenu-stroke', '#101010',
-    'The color for the submenu font outline (stroke).', toggles=True)
+    'The color for the submenu font outline (stroke).')
+
 _submenu_title_opacity = Number('Submenu title opacity',
     '-submenu-title-opacity', 100,
     'The opacity of the submenu title.',
-    0, 100, toggles=True)
+    0, 100, '%')
+
 _chapter_font = Font('Font', '-chapter-font', 'Helvetica',
-    'The font to use for the chapter titles', toggles=True)
+    'The font to use for the chapter titles')
+
 _chapter_fontsize = Number('Font size', '-chapter-fontsize', 14,
     'The font size to use for the chapter titles',
-    0, 80, toggles=True)
+    0, 80, 'pixels')
+
 _chapter_color = Color('Font color', '-chapter-color', '#101010',
-    'The color for the chapters font.', toggles=True)
+    'The color for the chapters font.')
+
 _chapter_stroke = Color('Stroke color', '-chapter-stroke',
-    '#101010', 'The color for the chapters font outline (stroke).',
-    toggles=True)
+    '#101010', 'The color for the chapters font outline (stroke).')
+
 _chapter_title_opacity = Number('Chapter titles opacity',
     '-chapter-title-opacity', 100,
     'The opacity of the chapter titles.',
-    0, 100, toggles=True)
+    0, 100, '%')
 
-_widescreen = Choice('Widescreen', '-widescreen', 'none',
-    'This will output a <video widescreen=nopanscan /> tag '
-    '(for example) for the dvdauthor xml file.  It affects all '
-    'videos in the titleset.  Use in conjunction with "Aspect ratio" '
-    'if your dvd player is cropping your videos.  '
-    'Leave this at "none" to not output a widescreen tag',
-    'nopanscan|noletterbox|none')
-_aspect = Choice('Aspect ratio', '-aspect', 'none',
-    'This will output a <video aspect WIDTH:HEIGHT /> tag for the '
-    'dvdauthor xml file.  It will affect all videos in the titleset.  '
-    'Leave this at "none" to let dvdauthor figure it out for you',
-    '4:3|16:9|none')
-_audio_lang = SpacedText('Audio', '-audio-lang', '',
-    'Single value or list of language codes for audio')
-_subtitles = SpacedText('Subtitles', '-subtitles', '',
-    'Single value or list')
+
+### --------------------------------------------------------------------
+### Menu buttons (spumux)
+### --------------------------------------------------------------------
+
 _button_style = Choice('Style', '-button-style', 'none',
     'Style or shape of the buttons seen when playing the DVD '
     'menu.  "rect": rectangle around the thumbs, "text": uses '
@@ -493,31 +524,61 @@ _button_style = Choice('Style', '-button-style', 'none',
     'rect|line|text|text-rect|none')
 
 _highlight_color = Color('Highlight color', '-highlight-color', '#266CAE',
-    'Color for the menu buttons the dvd remote uses to navigate.',
-    toggles=True)
+    'Color for the menu buttons the dvd remote uses to navigate.')
+
 _select_color = Color('Selection color', '-select-color', '#DE7F7C',
-    'Color for the menu buttons the dvd remote uses to select.',
-    toggles=True)
+    'Color for the menu buttons the dvd remote uses to select.')
+
 _outlinewidth = Number('Outlinewidth for spumux', '-outlinewidth', 14,
     'For spumux outlinewidth variable.  This option helps if spumux '
     'fails because of a large gap between button words or characters.',
-    0, 20, toggles=True)
+    0, 20, 'pixels')
 
 _playall = Flag('"Play all" button', '-playall', False,
     'Create a "Play All" button that jumps to the 1st title and plays '
     'all the videos in succession before returning to the main menu.')
+
+
+### --------------------------------------------------------------------
+### Authoring / burning
+### --------------------------------------------------------------------
+
 _videos_are_chapters = Flag('Each video is a chapter',
     '-videos-are-chapters', False,
     'A button will be made on the main menu for each video which You '
     'can use as a chapter button .  Selecting any video will play '
     'them all in order starting with the selected one.' )
+
 _burn = Flag('Burn project on completion', '-burn', False)
+
 _speed = Number('Burning speed', '-speed', 8,
     'Speed for burning',
-    0, 30, toggles=True)
+    0, 30, 'X')
+
 _device = Filename('Device to use for burning', '-device', '/dev/dvdrw',
     'Select or type your burning device (default: /dev/dvdrw)',
     'load', 'Select or type your burning device')
+
+_widescreen = Choice('Widescreen', '-widescreen', 'none',
+    'This will output a <video widescreen=nopanscan /> tag '
+    '(for example) for the dvdauthor xml file.  It affects all '
+    'videos in the titleset.  Use in conjunction with "Aspect ratio" '
+    'if your dvd player is cropping your videos.  '
+    'Leave this at "none" to not output a widescreen tag',
+    'nopanscan|noletterbox|none')
+
+_aspect = Choice('Aspect ratio', '-aspect', 'none',
+    'This will output a <video aspect WIDTH:HEIGHT /> tag for the '
+    'dvdauthor xml file.  It will affect all videos in the titleset.  '
+    'Leave this at "none" to let dvdauthor figure it out for you',
+    '4:3|16:9|none')
+
+_audio_lang = SpacedText('Audio', '-audio-lang', '',
+    'Single value or list of language codes for audio')
+
+_subtitles = SpacedText('Subtitles', '-subtitles', '',
+    'Single value or list')
+
 
 
 ### ---------------------------------------------------------------------------
@@ -587,8 +648,8 @@ menus = Tabs('Menus',
         _ani_submenus,
         _submenu_audio_fade,
 
-        Tabs('Extra',
-            HPanel('Backgrounds',
+        HPanel('',
+            VPanel('Backgrounds',
                 _submenu_audio,
                 _submenu_background,
             ),
@@ -597,8 +658,6 @@ menus = Tabs('Menus',
         ),
     ),
 )
-
-
 
 tab_list = []
 slideshow_panel = Tabs('Slideshow',
@@ -657,18 +716,25 @@ slideshows = Tabs('Slideshows', *tab_list)
 
 
 thumbnails = VPanel("Thumbnails",
-    _thumb_shape,
-    _opacity,
-    _blur,
-    _3dthumbs,
-    _rotate_thumbs,
-    _wave,
-    _rotate,
-    _thumb_mist_color,
-    FlagGroup('Special thumb arrangements', 'exclusive', _tile3x1, _tile4x1),
-    _align,
-    _seek,
+    HPanel('',
+        VPanel("Effects",
+            _seek,
+            _opacity,
+            _blur,
+            _3dthumbs,
+            _wave,
+            _thumb_mist_color,
+            _rotate,
+            _rotate_thumbs,
+        ),
+        VPanel("Arrangement",
+            _thumb_shape,
+            _align,
+            FlagGroup('Rows', 'exclusive', _tile3x1, _tile4x1),
+        ),
+    ),
 )
+
 from libtovid.guis import tovid
 
 behavior = VPanel("Behavior",
@@ -762,7 +828,7 @@ authoring = Tabs('Authoring',
                 FlagOpt('Pause', '', False, 'Pause in seconds at end of '
                     'menu.  Or leave this value at "10" and use the '
                     '"Indefinite pause item below.',
-                    Number('', '-loop', 10, '', 0, 30),
+                    Number('', '-loop', 10, '', 0, 30, 'seconds'),
                 ),
                 Flag('Indefinite pause', '-loop', False,
                 'Pause indefinitely at the end of the menu.'),
@@ -801,7 +867,7 @@ burning = VPanel("Burning", _burn, _speed, _device)
 def run():
     app = Application('todisc',
         main, menus, behavior, thumbnails, text, slideshows, authoring, burning)
-    gui = GUI("todiscgui", 800, 600, app)
+    gui = GUI("todiscgui", 800, 640, app)
     gui.run()
 
 if __name__ == '__main__':

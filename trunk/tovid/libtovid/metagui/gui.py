@@ -40,7 +40,7 @@ class Executor (Widget):
         """
         Widget.draw(self, master)
         # TODO: Make text area expand/fill available space
-        self.text = ScrolledText(self, width=80, height=50)
+        self.text = ScrolledText(self, width=80, height=40)
         self.text.pack(fill='both', expand=True)
         # Bottom frame to hold the next four widgets
         frame = tk.Frame(self)

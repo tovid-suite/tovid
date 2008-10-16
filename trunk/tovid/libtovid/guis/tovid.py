@@ -63,7 +63,7 @@ _pal = Flag("PAL", '-pal', False, "PAL, European standard, 25.00 fps")
 _quality = Number('Quality', '-quality', 6,
     'Quality of encoding, on a scale of 1-10, with 10 giving the best '
     'quality, at the expense of a larger output file.',
-    1, 10, 'spin')
+    1, 10)
 _vbitrate = Number('Bitrate', '-vbitrate', 0,
     'Target video bit rate, in kilobits per second. Higher bit rates '
     'give better quality, but a larger output file.',
@@ -81,7 +81,7 @@ _discsize = Number('Disc size', '-discsize', 0,
 # Encoder options
 _mplayeropts = SpacedText('mplayer options', '-mplayeropts', '', 'TODO: Tooltip')
 _filters = Choice('mplayer filters', '-filters', 'none', 'TODO: Tooltip',
-    'none|denoise|deblock|contrast|all', packside='top')
+    'none|denoise|deblock|contrast|all', side='top')
 _ffmpeg = Flag('Encode using ffmpeg', '-ffmpeg', False)
 _parallel = Flag('Parallel video/audio encoding', '-parallel', False,
     "(mpeg2enc only) Rip, encode, and multiplex in parallel.")
@@ -104,7 +104,7 @@ _crop = Text('Crop', '-crop', '', 'TODO: Tooltip')
 _slice = Number('Slice', '-slice', 0, 'TODO: Tooltip', 0, 220000)
 _fps = Text('FPS', '-fps', '', 'TODO: Tooltip')
 _type = Choice('Video type', '-type', 'live', 'TODO: Tooltip',
-    'live|animation|bw', packside='top')
+    'live|animation|bw', side='top')
 
 # Subtitles
 _autosubs = Flag('Auto-subtitles', '-autosubs', False,

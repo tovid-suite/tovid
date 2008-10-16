@@ -334,7 +334,7 @@ class Choice (Control):
                  help='',
                  choices='A|B',
                  style='radio',
-                 packside='left',
+                 side='left',
                  **kwargs):
         """Initialize Choice widget with the given label and list of choices.
 
@@ -348,6 +348,8 @@ class Choice (Control):
                       A dictionary is also allowed, as long as you don't
                       care about preserving choice order.
             style:    'radio' for radiobuttons, 'dropdown' for a drop-down list
+            side:     'left' for horizontal, 'top' for vertical arrangement
+
         """
         self.choices = convert_list(choices)
         Control.__init__(self, str, label, option,
@@ -356,7 +358,7 @@ class Choice (Control):
         if style not in ['radio', 'dropdown']:
             raise ValueError("Choice style must be 'radio' or 'dropdown'")
         self.style = style
-        self.packside = packside
+        self.side = side
 
 
     def draw(self, master):
@@ -370,7 +372,7 @@ class Choice (Control):
             for choice, label in self.choices.items():
                 self.rb[choice] = tk.Radiobutton(frame,
                     text=label, value=choice, variable=self.variable)
-                self.rb[choice].pack(anchor='nw', side=self.packside)
+                self.rb[choice].pack(anchor='nw', side=self.side)
         else: # dropdown/combobox
             tk.Label(self, text=self.label).pack(side='left')
             self.combo = ComboBox(self, self.choices.keys(),
@@ -693,8 +695,8 @@ class Number (Control):
                  help='',
                  min=1,
                  max=10,
-                 style='spin',
                  units='',
+                 style='spin',
                  **kwargs):
         """Create a number-setting widget.
         
@@ -712,8 +714,8 @@ class Number (Control):
                          help, **kwargs)
         self.min = min
         self.max = max
-        self.style = style
         self.units = units
+        self.style = style
 
 
     def draw(self, master):
