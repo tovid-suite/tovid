@@ -418,6 +418,9 @@ class Color (Control):
         self.button = tk.Button(self, textvariable=self.variable,
                                 command=self.change)
         self.button.pack(side='left')
+        # If default color is hexadecimal, set the button color
+        if self.default.startswith('#'):
+            self.set(self.default)
         Control.post(self)
 
 
@@ -441,7 +444,7 @@ class Color (Control):
         else:
             fg_color = '#ffffff' # white
         # Set button background color to chosen color
-        self.button.config(text=color, foreground=fg_color, background=color)
+        self.button.config(foreground=fg_color, background=color)
 
 
 ### --------------------------------------------------------------------
