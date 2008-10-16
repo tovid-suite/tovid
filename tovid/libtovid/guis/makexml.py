@@ -45,7 +45,7 @@ _chapters = Number("Chapter interval", '-chapters', 5,
     "can be put at any position in a <file list> and is valid for "
     "all subsequent titles until a new -chapters option is encountered. "
     "Using this option may take some time, since the duration of the "
-    "video must be calculated.", 1, 60, 'spin', 'Minutes')
+    "video must be calculated.", 1, 60, 'minutes')
 
 _nochapters = Flag("No chapters", '-nochapters', False,
     "Don't add any chapter points to the video.")

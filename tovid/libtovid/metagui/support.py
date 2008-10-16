@@ -392,7 +392,7 @@ class FontChooser (tkSimpleDialog.Dialog):
         self.fontlist.pack(side='top', fill='both', expand=True)
 
         # Font preview area
-        self.preview = tk.Label(master, image=None)
+        self.preview = tk.Label(master, image=None, width=500)
         self.preview.pack(fill='both', expand=True)
 
         # Draw the initial preview
@@ -423,7 +423,7 @@ class FontChooser (tkSimpleDialog.Dialog):
         """Return a tk.PhotoImage preview of the given font.
         """
         cmd = Command('convert')
-        cmd.add('-size',  '300x60')
+        cmd.add('-size',  '500x60')
         cmd.add("xc:#EFEFEF")
         cmd.add('-font', fontname, '-pointsize', 24)
         cmd.add('-gravity', 'center', '-annotate', '+0+0', fontname)
