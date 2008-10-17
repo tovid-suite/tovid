@@ -420,11 +420,11 @@ _title_color = Color('Font color', '-title-color', '#EAEAEA',
     'The font color to use for the menu title')
 
 _title_stroke = Color('Stroke color', '-title-stroke', None,
-    'Outline color for the main menu font.')
+    'Outline color for the main menu font.', toggles=True)
 
-_menu_title_geo = Choice('Title position', '-menu-title-geo', 'south',
+_menu_title_geo = Choice('Title position', '-menu-title-geo', 'none',
     'The position of the menu title',
-    'north|south|west|east|center')
+    'north|south|west|east|center|none')
 
 _menu_title_offset = Text('Title offset', '-menu-title-offset', '+0+50',
     'Menu title position as an offset (in pixels) from '
@@ -454,10 +454,10 @@ _titles_fontsize = Number('Font size', '-titles-fontsize', 0,
     0, 80, 'pixels')
 
 _titles_color = Color('Font color', '-titles-color', None,
-    'The font color to use for the video titles')
+    'The font color to use for the video titles', toggles=True)
 
 _titles_stroke = Color('Stroke Color', '-titles-stroke', None,
-    'The color to use for the video titles font outline (stroke)')
+    'The color to use for the video titles font outline (stroke)', toggles=True)
 
 _showcase_titles_align = Choice('Video(s) title alignment',
     '-showcase-titles-align', 'none',
@@ -482,7 +482,7 @@ _submenu_title_color = Color('Font color', '-submenu-title-color', '#EAEAEA',
     'The font color to use for submenu title(s)')
 
 _submenu_stroke = Color('Stroke color', '-submenu-stroke', None,
-    'The color for the submenu font outline (stroke).')
+    'The color for the submenu font outline (stroke).', toggles=True)
 
 _submenu_title_opacity = Number('Submenu title opacity',
     '-submenu-title-opacity', 100,
@@ -497,10 +497,10 @@ _chapter_fontsize = Number('Font size', '-chapter-fontsize', 0,
     0, 80, 'pixels')
 
 _chapter_color = Color('Font color', '-chapter-color', None,
-    'The color for the chapters font.')
+    'The color for the chapters font.', toggles=True)
 
 _chapter_stroke = Color('Stroke color', '-chapter-stroke',
-    None, 'The color for the chapters font outline (stroke).')
+    None, 'The color for the chapters font outline (stroke).', toggles=True)
 
 _chapter_title_opacity = Number('Chapter titles opacity',
     '-chapter-title-opacity', 100,
@@ -755,7 +755,8 @@ behavior = VPanel("Behavior",
 
 
 text = VPanel('Text/Font',
-    Label('Leave options that are empty or set to "0" alone to accept todisc defaults'),
+    Label('Leave options that are untoggled or set to "0" or "None" alone '
+    'to accept todisc defaults'),
     HPanel('',
         VPanel('Menu titles',
             _menu_font,
