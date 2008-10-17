@@ -325,12 +325,11 @@ _slides_to_blur = List('Slides to blur', '-slides-to-blur', None,
     'to be blurred.',
     Filename(filetypes=image_filetypes))
 
-_slide_blur = List('Slide blur amount', '-slide-blur', '',
+_slide_blur = SpacedText('Slide blur amount', '-slide-blur', '',
     'How much to blur each slide given with "Slides to blur".  '
     'Use a single value, or a list with one value per slide given'
     'The format is {radius}x{sigma} and the default is 0x0.2.  Using '
-    'values between 0x0.1 and 0x0.9 is probably the best range.',
-    Filename())
+    'values between 0x0.1 and 0x0.9 is probably the best range.')
 
 
 ### --------------------------------------------------------------------
@@ -413,16 +412,15 @@ _seek = SpacedText('Thumbnail seek', '-seek', '',
 _menu_font = Font('Font', '-menu-font', 'Helvetica',
     'The font to use for the menu title')
 
-_menu_fontsize = Number('Font size', '-menu-fontsize', 30,
+_menu_fontsize = Number('Font size', '-menu-fontsize', 0,
     'The font size to use for the menu title',
     0, 80, 'pixels')
 
-_title_color = Color('Font color', '-title-color', '#CDC0B0',
+_title_color = Color('Font color', '-title-color', '#EAEAEA',
     'The font color to use for the menu title')
 
-_title_stroke = Color('Stroke color', '-title-stroke', 'gray',
-    'Outline color for the main menu font.',
-    initialcolor="gray")
+_title_stroke = Color('Stroke color', '-title-stroke', None,
+    'Outline color for the main menu font.')
 
 _menu_title_geo = Choice('Title position', '-menu-title-geo', 'south',
     'The position of the menu title',
@@ -450,15 +448,15 @@ _title_opacity = Number('Title opacity', '-title-opacity', 100,
 _titles_font = Font('Font', '-titles-font', 'Helvetica',
     'The font to use for the video titles')
 
-_titles_fontsize = Number('Font size', '-titles-fontsize', 12,
+_titles_fontsize = Number('Font size', '-titles-fontsize', 0,
     'The font size to use for the video titles.  '
     'Default size varies depending on options chosen.',
     0, 80, 'pixels')
 
-_titles_color = Color('Font color', '-titles-color', '#CDC0B0',
+_titles_color = Color('Font color', '-titles-color', None,
     'The font color to use for the video titles')
 
-_titles_stroke = Color('Stroke Color', '-titles-stroke', '#CDC0B0',
+_titles_stroke = Color('Stroke Color', '-titles-stroke', None,
     'The color to use for the video titles font outline (stroke)')
 
 _showcase_titles_align = Choice('Video(s) title alignment',
@@ -476,14 +474,14 @@ _titles_opacity = Number('Titles opacity', '-titles-opacity', 100,
 _submenu_font = Font('Font', '-submenu-font', 'Helvetica',
     'The font to use for the Submenu menu titles')
 
-_submenu_fontsize = Number('Font size', '-submenu-fontsize', 30,
+_submenu_fontsize = Number('Font size', '-submenu-fontsize', 0,
     'The font size to use for the submenu title',
      0, 80)
 
-_submenu_title_color = Color('Font color', '-submenu-title-color', '#CDC0B0',
+_submenu_title_color = Color('Font color', '-submenu-title-color', '#EAEAEA',
     'The font color to use for submenu title(s)')
 
-_submenu_stroke = Color('Stroke color', '-submenu-stroke', '#101010',
+_submenu_stroke = Color('Stroke color', '-submenu-stroke', None,
     'The color for the submenu font outline (stroke).')
 
 _submenu_title_opacity = Number('Submenu title opacity',
@@ -494,15 +492,15 @@ _submenu_title_opacity = Number('Submenu title opacity',
 _chapter_font = Font('Font', '-chapter-font', 'Helvetica',
     'The font to use for the chapter titles')
 
-_chapter_fontsize = Number('Font size', '-chapter-fontsize', 14,
+_chapter_fontsize = Number('Font size', '-chapter-fontsize', 0,
     'The font size to use for the chapter titles',
     0, 80, 'pixels')
 
-_chapter_color = Color('Font color', '-chapter-color', '#101010',
+_chapter_color = Color('Font color', '-chapter-color', None,
     'The color for the chapters font.')
 
 _chapter_stroke = Color('Stroke color', '-chapter-stroke',
-    '#101010', 'The color for the chapters font outline (stroke).')
+    None, 'The color for the chapters font outline (stroke).')
 
 _chapter_title_opacity = Number('Chapter titles opacity',
     '-chapter-title-opacity', 100,
@@ -746,6 +744,7 @@ behavior = VPanel("Behavior",
          'Space-separated list of custom options to pass to todisc.'),
     SpacedText('Custom tovid options', '', '',
          'Space-separated list of custom options to pass to tovid.'),
+    Label("\nVideo re-encoding options - you may leave these at defaults."),
     Tabs('tovid options',
         tovid.BASIC_OPTS,
         tovid.VIDEO,
@@ -756,6 +755,7 @@ behavior = VPanel("Behavior",
 
 
 text = VPanel('Text/Font',
+    Label('Leave options that are empty or set to "0" alone to accept todisc defaults'),
     HPanel('',
         VPanel('Menu titles',
             _menu_font,
