@@ -574,8 +574,11 @@ class Flag (Control):
         for control in self.controls:
             if self.get():
                 control.state = 'normal'
+                # FIXME: Won't work because control may not be drawn yet!
+                #control.enable()
             else:
                 control.state = 'disabled'
+                #control.disable()
 
     
     def get_args(self):
@@ -873,7 +876,7 @@ class List (Control):
         frame = tk.LabelFrame(self, text=self.label)
         frame.pack(fill='x', expand=True)
 
-        # Add/remove buttons
+        # Add/remove buttons (not shown for edit_only)
         if not edit_only:
             button_frame = tk.Frame(frame)
             add_button = \
@@ -892,12 +895,11 @@ class List (Control):
         self.listbox.callback('select', self.select)
         self.listbox.pack(fill='both', expand=True)
 
-        # Draw child Control
+        # Draw associated Control
         self.control.draw(frame)
         self.control.pack(anchor='nw', fill='x', expand=True)
-        # Child is disabled until values are added
-        if not edit_only:
-            self.control.disable()
+        # Disabled until values are added
+        self.control.disable()
 
         # Add event handler to child, to update selected list item
         # when child control's variable is modified

@@ -41,7 +41,7 @@ _menu_title = Text('Menu title', '-menu-title', 'My video collection',
 
 _files = List('Video files', '-files', None,
     'List of video files to include on the disc',
-    Filename())
+    Filename(''))
 _titles = List('Video titles', '-titles', None,
     'Titles to display in the main menu, one for each video file on the disc',
     Text())
@@ -50,7 +50,7 @@ _group = List('Grouped videos', '-group', None,
     'Video files to group together. Select the video in the list ' \
     'on the left, and add files to group with it by using the file ' \
     'selector on the right',
-    Filename())
+    Filename(''))
 
 _dvd = Flag("DVD", '-dvd', True)
 
@@ -128,12 +128,10 @@ _showcase_geo = Text('Showcase image position (XxY)', '-showcase-geo', '',
     'top left corner of the showcase image: e.g. "200x80".  This '
     'value is applied to the video *before* is is scaled.')
 
-_bg_color = Color('Menu background color', '-bg-color', 'white',
-    'Color of the menu background.  ' 
-    'Default if not enabled: ntsc color-safe black (#101010).  '
+_bg_color = Color('Menu background color', '-bg-color', '#101010',
+    'Color of the menu background. Default (#101010) is NTSC color-safe black. '
     'Note: the color turns out MUCH lighter than the one you choose, '
-    'so pick a VERY dark version of the color you want.',
-    toggles=True)
+    'so pick a VERY dark version of the color you want.')
 
 _background = Filename('Image or video', '-background', '',
     'Image or video displayed in the background of the main menu',
@@ -210,11 +208,11 @@ _submenu_audio = List('Audio', '-submenu-audio', None,
     'File(s) that will play as background audio for each submenu.  '
     'Use a single file for all submenus, or 1 file per submenu.  '
     'Any file containing audio can be used.',
-    Filename())
+    Filename(''))
 
 _submenu_background = List('Image(s)', '-submenu-background', None,
     'Background image(s) for the submenus(s). Single value or list',
-    Filename(filetypes=image_filetypes))
+    Filename('', filetypes=image_filetypes))
 
 _submenu_titles = RelatedList('-files', 'one',
     List('Titles', '-submenu-titles', None,
@@ -249,14 +247,13 @@ _use_makemenu = Flag('Use makemenu', '-use-makemenu', False,
 
 _slides = List('Images for slideshow one', '-slides', None,
     "Image files for the slideshow",
-    Filename(filetypes=image_filetypes))
+    Filename('', filetypes=image_filetypes))
 
 _submenu_slide_total = SpacedText('Number of slides shown on submenu',
     '-submenu-slide-total', '',
     'Use this many slides for making the slideshow submenus. '
     'The default is to use all the slides given.  '
-    'Use a single value for all or list one value per submenu.',
-    toggles=True)
+    'Use a single value for all or list one value per submenu.')
 
 _slide_transition = Choice('Transition type', '-slide-transition', 'crossfade',
     'The type of fade transition between slides in an '
@@ -298,7 +295,7 @@ _showcase_slideshow = Flag("Showcase", '-showcase-slideshow', False,
 _slideshow_menu_thumbs = List('Menu slide thumbs', '-slideshow-menu-thumbs', None,
     'Slides for the menu thumbnail.  For multiple slideshows or '
     'mixed slideshows/videos only.',
-    Filename(filetypes=image_filetypes))
+    Filename('', filetypes=image_filetypes))
 
 _use_dvd_slideshow = FlagOpt('Use dvd-slideshow program', '-use-dvd-slideshow', False,
     'Use the "dvd-slideshow" program to make the animated '
@@ -309,21 +306,21 @@ _use_dvd_slideshow = FlagOpt('Use dvd-slideshow program', '-use-dvd-slideshow', 
     'file you would need for non-todisc options, otherwise '
     'todisc will make the file for you. Using this option will '
     'void many todisc slideshow options.',
-    Filename(action='load', help='Select the dvd-author configuration file.'))
+    Filename('', action='load', help='Select the dvd-author configuration file.'))
 
 _slides_to_bin = List('Slides to "bin"', '-slides-to-bin', None,
     '"Binning" resizes the image to 640x480 using a "box" '
     'filter, which reduces "signal to noise ratio"'
     'Use in conjuction with the next option for burring, '
     'to achieve stronger denoising',
-    Filename(filetypes=image_filetypes))
+    Filename('', filetypes=image_filetypes))
 
 _slides_to_blur = List('Slides to blur', '-slides-to-blur', None,
     'Blurring the image can reduce noise such as "ringing" '
     'effects.  Use values between 0x0.1 and 0x0.9 for best '
     'results.  Enter a single value or 1 value for each slide '
     'to be blurred.',
-    Filename(filetypes=image_filetypes))
+    Filename('', filetypes=image_filetypes))
 
 _slide_blur = SpacedText('Slide blur amount', '-slide-blur', '',
     'How much to blur each slide given with "Slides to blur".  '
@@ -378,13 +375,9 @@ _rotate = Number('Rotate Showcase thumb', '-rotate', 0,
     'Rotate the showcase image|video clockwise by this number of degrees.',
     -30, 30, 'degrees')
 
-_thumb_mist_color = FlagOpt("Thumb mist", '-thumb-mist-color', False,
-    'Do not use mist behind thumbs (not a showcase option).  Warning: '
-    'might cause contrast problems (use a large bold font)',
-    Color('Color', '', 'white',
-        'Color of mist behind thumbnails (not a showcase option). ' 
-        'Default if not enabled: white')
-)
+_thumb_mist_color = Color('Thumb mist color', '-thumb-mist-color', '#FFFFFF',
+    'Color of the mist behind the thumbnails. This may cause '
+    'contrast problems, so use a large bold font.')
 
 _tile3x1 = Flag('1 row of 3 thumbs', '-tile3x1', False,
     'Use a montage tile of 3x1 instead of the usual 2x2 '
@@ -409,19 +402,114 @@ _seek = SpacedText('Thumbnail seek', '-seek', '',
 ### Fonts and font colors
 ### --------------------------------------------------------------------
 
-_menu_font = Font('Font', '-menu-font', 'Helvetica',
+# Menu title font
+_menu_font = Font('', '-menu-font', 'Helvetica',
     'The font to use for the menu title')
 
-_menu_fontsize = Number('Font size', '-menu-fontsize', 0,
+_menu_fontsize = Number('', '-menu-fontsize', 0,
     'The font size to use for the menu title',
-    0, 80, 'pixels')
+    0, 80, 'pixels', toggles=True)
 
-_title_color = Color('Font color', '-title-color', '#EAEAEA',
-    'The font color to use for the menu title')
+_title_color = Color('', '-title-color', '#EAEAEA',
+    'The font color to use for the menu title', toggles=True)
 
-_title_stroke = Color('Stroke color', '-title-stroke', None,
+_title_opacity = Number('Opacity', '-title-opacity', 100,
+    'The opacity of the menu title.',
+    0, 100, '%')
+
+_title_stroke = Color('Stroke', '-title-stroke', None,
     'Outline color for the main menu font.', toggles=True)
 
+menu_title_font = HPanel('Menu title font',
+    _menu_font,
+    _menu_fontsize,
+    _title_color,
+    _title_opacity,
+    _title_stroke,
+)
+
+# Video title font
+_titles_font = Font('', '-titles-font', 'Helvetica',
+    'The font to use for the video titles')
+
+_titles_fontsize = Number('', '-titles-fontsize', 0,
+    'The font size to use for the video titles.  '
+    'Default size varies depending on options chosen.',
+    0, 80, 'pixels', toggles=True)
+
+_titles_color = Color('', '-titles-color', None,
+    'The font color to use for the video titles', toggles=True)
+
+_titles_opacity = Number('Opacity', '-titles-opacity', 100,
+    'The opacity of the video titles.',
+    0, 100, '%')
+
+_titles_stroke = Color('Stroke', '-titles-stroke', None,
+    'The color to use for the video titles font outline (stroke)', toggles=True)
+
+video_title_font = HPanel('Video title font',
+    _titles_font,
+    _titles_fontsize,
+    _titles_color,
+    _titles_opacity,
+    _titles_stroke,
+)
+
+# Submenu font
+_submenu_font = Font('', '-submenu-font', 'Helvetica',
+    'The font to use for the Submenu menu titles')
+
+_submenu_fontsize = Number('', '-submenu-fontsize', 0,
+    'The font size to use for the submenu title',
+     0, 80, toggles=True)
+
+_submenu_title_color = Color('', '-submenu-title-color', '#EAEAEA',
+    'The font color to use for submenu title(s)', toggles=True)
+
+_submenu_title_opacity = Number('Opacity',
+    '-submenu-title-opacity', 100,
+    'The opacity of the submenu title.',
+    0, 100, '%')
+
+_submenu_stroke = Color('Stroke', '-submenu-stroke', None,
+    'The color for the submenu font outline (stroke).', toggles=True)
+
+submenu_title_font = HPanel('Submenu title font',
+    _submenu_font,
+    _submenu_fontsize,
+    _submenu_title_color,
+    _submenu_title_opacity,
+    _submenu_stroke,
+)
+
+# Submenu chapter font
+_chapter_font = Font('', '-chapter-font', 'Helvetica',
+    'The font to use for the chapter titles')
+
+_chapter_fontsize = Number('', '-chapter-fontsize', 0,
+    'The font size to use for the chapter titles',
+    0, 80, 'pixels', toggles=True)
+
+_chapter_color = Color('', '-chapter-color', None,
+    'The color for the chapters font.', toggles=True)
+
+_chapter_title_opacity = Number('Opacity',
+    '-chapter-title-opacity', 100,
+    'The opacity of the chapter titles.',
+    0, 100, '%')
+
+_chapter_stroke = Color('Stroke', '-chapter-stroke',
+    None, 'The color for the chapters font outline (stroke).', toggles=True)
+
+submenu_chapter_font = HPanel('Submenu chapter font',
+    _chapter_font,
+    _chapter_fontsize,
+    _chapter_color,
+    _chapter_title_opacity,
+    _chapter_stroke,
+)
+
+# Other stuff
 _menu_title_geo = Choice('Title position', '-menu-title-geo', 'none',
     'The position of the menu title',
     'north|south|west|east|center|none')
@@ -441,71 +529,13 @@ _text_mist_opacity = Number('Text mist opacity', '-text-mist-opacity', 60,
     'The opacity of the mist behind the menu title.',
     1, 100, '%')
 
-_title_opacity = Number('Title opacity', '-title-opacity', 100,
-    'The opacity of the menu title.',
-    0, 100, '%')
-
-_titles_font = Font('Font', '-titles-font', 'Helvetica',
-    'The font to use for the video titles')
-
-_titles_fontsize = Number('Font size', '-titles-fontsize', 0,
-    'The font size to use for the video titles.  '
-    'Default size varies depending on options chosen.',
-    0, 80, 'pixels')
-
-_titles_color = Color('Font color', '-titles-color', None,
-    'The font color to use for the video titles', toggles=True)
-
-_titles_stroke = Color('Stroke Color', '-titles-stroke', None,
-    'The color to use for the video titles font outline (stroke)', toggles=True)
-
-_showcase_titles_align = Choice('Video(s) title alignment',
+_showcase_titles_align = Choice('Video title alignment',
     '-showcase-titles-align', 'none',
     'This is a showcase style only option.  Default is to center '
     'the text above the thumbnails.  This option will align the '
-    'titles either to the left (west), right (east), or center.  '
+    'titles either to the left (west), center, or right (east).  '
     'Leave at "none" to let todisc sort it out for you.',
-    'west|east|center|none')
-
-_titles_opacity = Number('Titles opacity', '-titles-opacity', 100,
-    'The opacity of the video titles.',
-    0, 100, '%')
-
-_submenu_font = Font('Font', '-submenu-font', 'Helvetica',
-    'The font to use for the Submenu menu titles')
-
-_submenu_fontsize = Number('Font size', '-submenu-fontsize', 0,
-    'The font size to use for the submenu title',
-     0, 80)
-
-_submenu_title_color = Color('Font color', '-submenu-title-color', '#EAEAEA',
-    'The font color to use for submenu title(s)')
-
-_submenu_stroke = Color('Stroke color', '-submenu-stroke', None,
-    'The color for the submenu font outline (stroke).', toggles=True)
-
-_submenu_title_opacity = Number('Submenu title opacity',
-    '-submenu-title-opacity', 100,
-    'The opacity of the submenu title.',
-    0, 100, '%')
-
-_chapter_font = Font('Font', '-chapter-font', 'Helvetica',
-    'The font to use for the chapter titles')
-
-_chapter_fontsize = Number('Font size', '-chapter-fontsize', 0,
-    'The font size to use for the chapter titles',
-    0, 80, 'pixels')
-
-_chapter_color = Color('Font color', '-chapter-color', None,
-    'The color for the chapters font.', toggles=True)
-
-_chapter_stroke = Color('Stroke color', '-chapter-stroke',
-    None, 'The color for the chapters font outline (stroke).', toggles=True)
-
-_chapter_title_opacity = Number('Chapter titles opacity',
-    '-chapter-title-opacity', 100,
-    'The opacity of the chapter titles.',
-    0, 100, '%')
+    'none|west|center|east')
 
 
 ### --------------------------------------------------------------------
@@ -519,7 +549,7 @@ _button_style = Choice('Style', '-button-style', 'none',
     '"line": line underneath title.  The "line" style is showcase only'
     ', and the "text" buttons can not be used with "showcase" menus.'
     'Leave at "none" to let todisc pick the most appropriate style. ',
-    'rect|line|text|text-rect|none')
+    'none|rect|line|text|text-rect')
 
 _highlight_color = Color('Highlight color', '-highlight-color', '#266CAE',
     'Color for the menu buttons the dvd remote uses to navigate.')
@@ -551,7 +581,7 @@ _burn = Flag('Burn project on completion', '-burn', False)
 
 _speed = Number('Burning speed', '-speed', 8,
     'Speed for burning',
-    0, 30, 'X')
+    0, 30)
 
 _device = Filename('Device to use for burning', '-device', '/dev/dvdrw',
     'Select or type your burning device (default: /dev/dvdrw)',
@@ -615,47 +645,56 @@ main = HPanel("Main",
 )
 
 
-showcase_options = VPanel('Showcase options',
-    _showcase_seek,
-    _showcase_framestyle,
-    _showcase_geo,
-    _showcase_titles_align,
-    _title_gap,
-    _text_start,
-)
+main_menu = VPanel('Main menu',
+    _intro,
+    _menu_length,
+    _menu_fade,
 
+    menu_title_font,
+    video_title_font,
 
-main_menu_backgrounds = VPanel('Backgrounds',
-    _bg_color,
-    _bgvideo_seek,
-    _bgaudio_seek,
-    _menu_audio_fade,
-)
-
-
-menus = Tabs('Menus',
-    VPanel('Main menu',
-        _menu_length,
-        showcase_options,
-        main_menu_backgrounds,
-        VPanel("Effects", _menu_fade, _intro)
+    VPanel('Menu title options',
+        _menu_title_geo,
+        _menu_title_offset,
+        _text_mist,
+        _text_mist_color,
+        _text_mist_opacity,
     ),
+    Drawer('Showcase options',
+        _showcase_titles_align,
+        _showcase_framestyle,
+        _showcase_seek,
+        _showcase_geo,
+        _title_gap,
+        _text_start,
+    ),
+    Drawer('Backgrounds',
+        _bg_color,
+        _bgvideo_seek,
+        _bgaudio_seek,
+        _menu_audio_fade,
+    ),
+)
 
-    VPanel('Submenus',
-        _submenu_length,
-        _ani_submenus,
-        _submenu_audio_fade,
 
-        HPanel('',
-            VPanel('Backgrounds',
-                _submenu_audio,
-                _submenu_background,
-            ),
-            _submenu_titles,
-            _chapter_titles,
+submenus = VPanel('Submenus',
+    _submenu_length,
+    _ani_submenus,
+    _submenu_audio_fade,
+
+    submenu_title_font,
+    submenu_chapter_font,
+
+    HPanel('',
+        VPanel('Backgrounds',
+            _submenu_audio,
+            _submenu_background,
         ),
+        _submenu_titles,
+        _chapter_titles,
     ),
 )
+
 
 tab_list = []
 slideshow_panel = Tabs('Slideshow',
@@ -676,7 +715,7 @@ slideshow_panel = Tabs('Slideshow',
         Number('Number of slides shown on menu', '-menu-slide-total', 0,
             'Use this many slides for making the slideshow menu. '
             'The default is to use all the slides given.',
-            0, 100, toggles=True),
+            0, 100),
         _submenu_slide_total,
         VPanel('Animated slideshow options',
             HPanel('',
@@ -706,7 +745,7 @@ for num in range(2,  13):
             'Title for this slideshow. Leave empty if doing a single slideshow.'),
         List(title_str, '-slides', None,
             'Image files for the slideshow.',
-            Filename()),
+            Filename('')),
         )
     tab_list.append(next_panel)
 
@@ -753,7 +792,6 @@ behavior = VPanel("Behavior",
     )
 )
 
-
 text = VPanel('Text/Font',
     Label('Leave options that are untoggled or set to "0" or "None" alone '
     'to accept todisc defaults'),
@@ -794,7 +832,6 @@ text = VPanel('Text/Font',
         )
     ),
 )
-
 
 authoring = Tabs('Authoring',
     VPanel('General authoring options',
@@ -867,7 +904,7 @@ burning = VPanel("Burning", _burn, _speed, _device)
 
 def run():
     app = Application('todisc',
-        main, menus, behavior, thumbnails, text, slideshows, authoring, burning)
+        main, main_menu, submenus, thumbnails, slideshows, authoring, burning, behavior)
     gui = GUI("todiscgui", 800, 640, app)
     gui.run()
 
