@@ -470,7 +470,9 @@ class RelatedList (Panel):
     def __init__(self,
                  parent,
                  correspondence,
-                 child_control,
+                 child_list,
+                 filter=lambda x: x,
+                 side='left',
                  **kwargs):
         """Create a 1:1 or 1:* correspondence between two lists.
 
@@ -481,6 +483,10 @@ class RelatedList (Panel):
                 Either 'one' or 'many'
             child_list
                 List control for the child
+            filter
+                A function that translates parent values into child values
+            side
+                Pack the parent to the 'left' of child or on 'top' of child
 
         Examples:
 
@@ -489,29 +495,25 @@ class RelatedList (Panel):
             RelatedList('-files', 'many',
                 List('Grouped videos', '-group', Filename()))
         """
+        # Check for correct values / types
+        if type(parent) != str and not isinstance(parent, Control):
+            raise TypeError("Parent must be a Control or an option string.")
         if correspondence not in ['one', 'many']:
             raise ValueError("Correspondence must be 'one' or 'many'.")
-        if not isinstance(child_control, List):
+        if not isinstance(child_list, List):
             raise TypeError("Child must be a List instance.")
-        Panel.__init__(self, child_control.name)
+        if not callable(filter):
+            raise TypeError("Translation filter must be a function.")
+        if side not in ['left', 'top']:
+            raise ValueError("RelatedList 'side' must be 'left' or 'top'")
+
+        Panel.__init__(self, child_list.name)
         self.parent = parent
         self.correspondence = correspondence
-        self.child = child_control
+        self.child = child_list
+        self.filter = filter
+        self.side = side
         self.mapped = []
-
-        if 'filter' in kwargs:
-            if not callable(kwargs['filter']):
-                raise TypeError("Translation filter must be a function.")
-            self.filter = kwargs['filter']
-        else:
-            self.filter = lambda x: x
-
-        if 'side' in kwargs:
-            self.side = kwargs['side']
-            if self.side not in ['left', 'top']:
-                raise ValueError("RelatedList 'side' must be 'left' or 'top'")
-        else:
-            self.side = 'left'
 
 
     def draw(self, master, **kwargs):
@@ -530,7 +532,7 @@ class RelatedList (Panel):
 
         # Ensure parent control exists and is a List
         if not self.parent:
-            raise Exception("Control for '%s' does not exist" % self.option)
+            raise Exception("RelatedList parent '%s' does not exist" % self.option)
         ensure_type("RelatedList parent must be a List", List, self.parent)
 
         # Draw the read-only copy of parent's values
@@ -569,9 +571,13 @@ class RelatedList (Panel):
             def insert(index, value):
                 #print("%s, Inserting %d: %s" % (self.child.option, index, value))
                 self.child.variable.insert(index, self.filter(value))
+                self.child.control.enable()
             def remove(index, value):
                 #print("%s, Removing %d: %s" % (self.child.option, index, value))
                 self.child.variable.pop(index)
+                if self.child.listbox.items.count() == 0:
+                    self.child.control.disable()
+                    #self.child.control.reset()
             def swap(index_a, index_b):
                 #print("%s, Swapping %d and %d" % (self.child.option, index_a, index_b))
                 self.child.listbox.swap(index_a, index_b)
