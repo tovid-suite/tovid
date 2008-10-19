@@ -282,7 +282,7 @@ class DragList (ScrollList):
         """
         # If item is dragged to a new location, swap
         loc = self.listbox.nearest(event.y)
-        if loc != self.curindex:
+        if loc != self.curindex and self.items.count() > 0:
             self.swap(self.curindex, loc)
             self.curindex = loc
 
