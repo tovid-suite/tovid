@@ -236,9 +236,9 @@ class Drawer (Panel):
         self.frame.pack_forget()
         self.draw_widgets()
         # Add a checkbutton for showing/hiding
-        button = tk.Button(self, text=self.name,
+        self.button = tk.Button(self, text=self.name, relief='groove',
                            command=self.show_hide)
-        button.pack(anchor='nw', fill='x', expand=True)
+        self.button.pack(anchor='nw', fill='x', expand=True)
 
 
     def show_hide(self):
@@ -246,10 +246,12 @@ class Drawer (Panel):
         if self.visible:
             self.frame.pack_forget()
             self.visible = False
+            self.button.config(relief='groove')
         # Show if hidden
         else:
             self.frame.pack(anchor='nw', fill='both', expand=True)
             self.visible = True
+            self.button.config(relief='sunken')
 
 ### --------------------------------------------------------------------
 
