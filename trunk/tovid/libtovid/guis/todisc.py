@@ -214,13 +214,13 @@ _submenu_background = List('Image(s)', '-submenu-background', None,
     'Background image(s) for the submenus(s). Single value or list',
     Filename('', filetypes=image_filetypes))
 
-_submenu_titles = RelatedList('-files', 'one',
+_submenu_titles = RelatedList('-files', '1:1',
     List('Titles', '-submenu-titles', None,
         'Submenu titles for each video.  '
         'Use \\n for a new line in a multi-line title.'),
     filter=strip_all)
 
-_chapter_titles = RelatedList('-files', 'many',
+_chapter_titles = RelatedList('-files', '1:*',
     List('Chapter titles', '-chapter-titles', None,
         'Chapter titles for each video.  Use \\n for a new line in '
         'a multi-line title.  Number of titles given must equal the '
@@ -291,12 +291,11 @@ _showcase_slideshow = Flag("Showcase", '-showcase-slideshow', False,
     '(or mixed video and slideshow menus).  It uses the '
     'animated slideshow as the showcase video')
 
-_slideshow_menu_thumbs = RelatedList('-files', 'one',
-    List('Menu slide thumbs', '-slideshow-menu-thumbs', None,
-        'Slides for the menu thumbnail.  For multiple slideshows or '
-        'mixed slideshows/videos only.',
-        Filename('', filetypes=image_filetypes))
-)
+_slideshow_menu_thumbs = List('Menu slide thumbs', '-slideshow-menu-thumbs', None,
+    'Slides for the menu thumbnail.  For multiple slideshows or '
+    'mixed slideshows/videos only.',
+    Filename('', filetypes=image_filetypes))
+
 
 _use_dvd_slideshow = FlagOpt('Use dvd-slideshow program', '-use-dvd-slideshow', False,
     'Use the "dvd-slideshow" program to make the animated '
@@ -338,7 +337,7 @@ _thumb_shape = Choice('Thumb shape', '-thumb-shape', 'normal',
     'Apply a shaped transparency mask to thumbnail videos. '
     'Note: to disable the "mist" background '
     'behind each thumb, use see "Thumb mist" section below.',
-    'normal|oval|plectrum|egg')
+    'normal|oval|plectrum|egg', 'dropdown', labelside='top')
 
 _opacity = Number('Thumbnail opacity', '-opacity', 100,
     'Opacity  of thumbnail videos as a percentage. '
@@ -391,7 +390,7 @@ _tile4x1 = Flag('1 row of 4 thumbs', '-tile4x1', False,
 _align = Choice('Montage alignment', '-align', 'north',
     'Controls positioning of the thumbnails and their titles.  '
     'With some arrangements this will have limited effects however.',
-    'north|south|east|west|center')
+    'north|south|east|west|center', 'dropdown', labelside='top')
 
 _seek = SpacedText('Thumbnail seek', '-seek', '',
     'Play thumbnail videos from the given seek time (seconds).  '
@@ -513,7 +512,7 @@ submenu_chapter_font = HPanel('Submenu chapter font',
 # Other stuff
 _menu_title_geo = Choice('Title position', '-menu-title-geo', 'none',
     'The position of the menu title',
-    'north|south|west|east|center|none')
+    'north|south|west|east|center|none', 'dropdown')
 
 _menu_title_offset = Text('Title offset', '-menu-title-offset', '+0+50',
     'Menu title position as an offset (in pixels) from '
@@ -536,7 +535,7 @@ _showcase_titles_align = Choice('Video title alignment',
     'the text above the thumbnails.  This option will align the '
     'titles either to the left (west), center, or right (east).  '
     'Leave at "none" to let todisc sort it out for you.',
-    'none|west|center|east')
+    'none|west|center|east', 'dropdown')
 
 
 ### --------------------------------------------------------------------
@@ -550,7 +549,7 @@ _button_style = Choice('Button style', '-button-style', 'none',
     '"line": line underneath title.  The "line" style is showcase only'
     ', and the "text" buttons can not be used with "showcase" menus.'
     'Leave at "none" to let todisc pick the most appropriate style. ',
-    'none|rect|line|text|text-rect')
+    'none|rect|line|text|text-rect', 'dropdown')
 
 _highlight_color = Color('Highlight', '-highlight-color', '#266CAE',
     'Color for the menu buttons the dvd remote uses to navigate.')
@@ -594,13 +593,13 @@ _widescreen = Choice('Widescreen', '-widescreen', 'none',
     'videos in the titleset.  Use in conjunction with "Aspect ratio" '
     'if your dvd player is cropping your videos.  '
     'Leave this at "none" to not output a widescreen tag',
-    'none|nopanscan|noletterbox')
+    'none|nopanscan|noletterbox', 'dropdown')
 
 _aspect = Choice('Aspect ratio', '-aspect', 'none',
     'This will output a <video aspect WIDTH:HEIGHT /> tag for the '
     'dvdauthor xml file.  It will affect all videos in the titleset.  '
     'Leave this at "none" to let dvdauthor figure it out for you',
-    '4:3|16:9|none')
+    '4:3|16:9|none', 'dropdown')
 
 _audio_lang = SpacedText('Audio', '-audio-lang', '',
     'Single value or list of language codes for audio')
@@ -608,6 +607,25 @@ _audio_lang = SpacedText('Audio', '-audio-lang', '',
 _subtitles = SpacedText('Subtitles', '-subtitles', '',
     'Single value or list')
 
+_chapters = List('Chapters', '-chapters', None,
+    'Number of chapters or HH:MM:SS string for each video. '
+    'If only one value is given, use that for all videos. '
+    'For grouped videos, use a "+" separator for joining '
+    'the chapter string of each grouped video. '
+    'An example chapter string using HH:MM:SS format: '
+    '00:00:00,00:05:00,00:10:00.  An example of 2 grouped videos: '
+    '00:00:00,00:05:00+00:05:00,00:10:00.  '
+    'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.',
+    Text())
+
+_loop = FlagGroup('', 'exclusive',
+    Flag('Indefinite pause', '-loop', False,
+        'After playing the menu, pause indefinitely (do not loop the menu).'),
+    FlagOpt('Pause', '', False,
+        'After playing the menu, pause this long before looping.',
+        Number('', '-loop', 10, '', 0, 30, 'seconds'),
+    ),
+)
 
 
 ### ---------------------------------------------------------------------------
@@ -622,14 +640,13 @@ main = HPanel("Main",
         _menu_title,
     
         Tabs('',
-            RelatedList(_files, 'one', _titles, filter=to_title, side='top'),
-            RelatedList('-files', 'many', _group, side='top'),
+            RelatedList(_files, '1:1', _titles, filter=to_title, side='top'),
+            RelatedList('-files', '1:*', _group, side='top'),
         ),
-    
     ),
     VPanel('',
         HPanel('',
-            FlagGroup('Menu options', 'normal', _static, _submenus),
+            FlagGroup('Menu options', 'normal', _static, _submenus, _ani_submenus),
             FlagGroup('Format', 'exclusive', _dvd, _svcd),
             FlagGroup('TV System', 'exclusive', _ntsc, _pal),
         ),
@@ -685,13 +702,17 @@ main_menu = VPanel('Main menu',
     _intro,
     _menu_length,
     _menu_fade,
+    _loop,
 )
 
 
 submenus = VPanel('Submenus',
     Drawer('Backgrounds',
         HPanel('',
-            _submenu_audio,
+            VPanel('',
+                _submenu_audio,
+                _submenu_audio_fade,
+            ),
             _submenu_background,
         ),
     ),
@@ -706,9 +727,11 @@ submenus = VPanel('Submenus',
         _chapter_titles,
     ),
 
+    Drawer('Chapter breaks',
+        _chapters,
+    ),
+
     _submenu_length,
-    _ani_submenus,
-    _submenu_audio_fade,
 )
 
 
@@ -810,64 +833,30 @@ behavior = VPanel("Behavior",
     )
 )
 
-authoring = Tabs('Authoring',
-    VPanel('General authoring options',
-        VPanel('Play control',
-            Number('Number of chapters', '-chapters', 6,
-                'The number of chapters to use for all videos. If you  '
-                'wish to use a different value for each video, or supply '
-                'chapters in HH:MM:SS format, use the '
-                '"Advanced chapter options" tab.  That is also where to '
-                'configure grouped videos.',
-                0, 60),
-            FlagGroup('', 'exclusive',
-                Flag('Chain all videos together', '-chain-videos', False,
-                    'This option will "chain" videos so they play '
-                    'sequentially until the last, which will return to '
-                    'the menu.  You can also specify individual videos to '
-                    'behave like this by using the text box at the right. '),
-                FlagOpt('Chain selected videos together', '-chain-videos', False, 
-                    'Enable this option and use the box at right to indicate the '
-                    'number of the video you wish to "chain" to the next, so '
-                    'they play sequentially before returning to the menu. '
-                    'You can use single integers or indicate a range with a '
-                    '"-" separator. Example of a range: "1-2 4-6" (no quotes). '
-                    'This will play video 1 through video 3 before returning '
-                    'to the menu, and the same for video 4 through video 6.',
-                    Text(''),
-                ),
-            ),
-            _playall,
-            _videos_are_chapters,
-            FlagGroup('', 'exclusive',
-                FlagOpt('Pause', '', False, 'Pause in seconds at end of '
-                    'menu.  Or leave this value at "10" and use the '
-                    '"Indefinite pause item below.',
-                    Number('', '-loop', 10, '', 0, 30, 'seconds'),
-                ),
-                Flag('Indefinite pause', '-loop', False,
-                'Pause indefinitely at the end of the menu.'),
+authoring = VPanel('Authoring',
+    VPanel('Play control',
+        FlagGroup('', 'exclusive',
+            Flag('Chain all videos together', '-chain-videos', False,
+                'This option will "chain" videos so they play '
+                'sequentially until the last, which will return to '
+                'the menu.  You can also specify individual videos to '
+                'behave like this by using the text box at the right. '),
+            FlagOpt('Chain selected videos together', '-chain-videos', False, 
+                'Enable this option and use the box at right to indicate the '
+                'number of the video you wish to "chain" to the next, so '
+                'they play sequentially before returning to the menu. '
+                'You can use single integers or indicate a range with a '
+                '"-" separator. Example of a range: "1-2 4-6" (no quotes). '
+                'This will play video 1 through video 3 before returning '
+                'to the menu, and the same for video 4 through video 6.',
+                Text(''),
             ),
         ),
-        VPanel('Aspect', _widescreen, _aspect),
-        HPanel('Language(s)', _audio_lang, _subtitles),
+        _playall,
+        _videos_are_chapters,
     ),
-    VPanel('Advanced chapter options',
-        RelatedList('-files',
-            'many',
-            List('Chapters: use 1 line per video. Load files 1st !',
-                '-chapters', None,
-                'Number of chapters (integer) or HH:MM:SS string for each '
-                'video.  For grouped videos, use a "+" separator for joining '
-                'the chapter string of each grouped video.'
-                ''
-                '  An example chapter string using HH:MM:SS format: '
-                '  00:00:00,00:05:00,00:10:00.  An example of 2 grouped videos: '
-                '00:00:00,00:05:00+00:05:00,00:10:00.  '
-                'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.'),
-            filter=strip_all
-        )
-    )
+    VPanel('Aspect', _widescreen, _aspect),
+    HPanel('Language(s)', _audio_lang, _subtitles),
 )
 
 burning = VPanel("Burning", _burn, _speed, _device)
@@ -882,5 +871,10 @@ def run():
     gui.run()
 
 if __name__ == '__main__':
-    run()
 
+    try:
+        run()
+
+    except:
+        import traceback
+        traceback.print_exc(10)

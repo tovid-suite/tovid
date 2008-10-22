@@ -321,9 +321,11 @@ class ComboBox (tk.Frame):
         """
         # Text and button
         self.text = tk.Entry(self, textvariable=self.variable)
-        self.text.grid(row=0, column=0)
-        self.button = tk.Button(self, text="<", command=self.open)
-        self.button.grid(row=0, column=1)
+        self.button = tk.Button(self, text="...", command=self.open)
+        #self.text.grid(row=0, column=0)
+        #self.button.grid(row=0, column=1)
+        self.text.pack(anchor='nw', side='left', expand=True, fill='both')
+        self.button.pack(anchor='nw', side='left', expand=True, fill='both')
 
         # Dropdown list, displayed when button is clicked
         self.dropdown = tk.Toplevel(self)

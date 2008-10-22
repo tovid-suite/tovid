@@ -482,7 +482,7 @@ class RelatedList (Panel):
                 Parent List (a Control instance), or the option string
                 of the parent List control declared elsewhere
             correspondence
-                Either 'one' or 'many'
+                Either '1:1' (one-to-one) or '1:*' (one-to-many)
             child_list
                 List control for the child
             filter
@@ -492,16 +492,16 @@ class RelatedList (Panel):
 
         Examples:
 
-            RelatedList('-files', 'one',
+            RelatedList('-files', '1:1',
                 List('Video titles', '-titles', Text()))
-            RelatedList('-files', 'many',
+            RelatedList('-files', '1:*',
                 List('Grouped videos', '-group', Filename()))
         """
         # Check for correct values / types
         if type(parent) != str and not isinstance(parent, Control):
             raise TypeError("Parent must be a Control or an option string.")
-        if correspondence not in ['one', 'many']:
-            raise ValueError("Correspondence must be 'one' or 'many'.")
+        if correspondence not in ['1:1', '1:*']:
+            raise ValueError("Correspondence must be '1:1' or '1:*'.")
         if not isinstance(child_list, List):
             raise TypeError("Child must be a List instance.")
         if not callable(filter):
@@ -552,7 +552,7 @@ class RelatedList (Panel):
 
         # Draw the child control
         # 1:1, add/remove in child is NOT allowed, and lists are linked
-        if self.correspondence == 'one':
+        if self.correspondence == '1:1':
             self.child.draw(self.frame, edit_only=True)
             self.listbox.link(self.child.listbox)
         # 1:many, add/remove in child is allowed
@@ -568,7 +568,7 @@ class RelatedList (Panel):
     def add_callbacks(self):
         """Add callback functions for add/remove in the parent Control.
         """
-        if self.correspondence == 'one':
+        if self.correspondence == '1:1':
             # insert/remove callbacks for the parent listbox
             def insert(index, value):
                 #print("%s, Inserting %d: %s" % (self.child.option, index, value))
@@ -587,7 +587,7 @@ class RelatedList (Panel):
                 #print("%s, Selected %d: %s" % (self.child.option, index, value))
                 pass # already handled by listboxes being linked??
 
-        else: # 'many'
+        else: # '1:*'
             # insert/remove/swap callbacks for the parent listbox
             def insert(index, value):
                 #print("%s, Inserting %d: %s" % (self.child.option, index, value))
@@ -616,10 +616,10 @@ class RelatedList (Panel):
         if not self.draw_copy:
             args.extend(self.parent.get_args())
         # Add child args, for one or many children
-        if self.correspondence == 'many':
+        if self.correspondence == '1:*':
             for list_var in self.mapped:
                 args.extend(self.child.get_args(list_var))
-        else: # 'one'
+        else: # '1:1'
             args.extend(self.child.get_args())
         return args
 
