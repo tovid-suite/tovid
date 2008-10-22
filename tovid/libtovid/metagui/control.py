@@ -146,18 +146,29 @@ class Control (Widget):
                  help='',
                  toggles=False,
                  enabled=True,
+                 labelside='left',
                  **kwargs):
         """Create a Control for an option.
 
-            vartype:  Python type of stored variable
-                      (str, bool, int, float, list, dict)
-            label:    Label shown in the GUI for the Control
-            option:   Command-line option associated with this Control,
-                      or '' to create a positional argument
-            default:  Default value for the Control
-            help:     Help text to show in a tooltip
-            toggles:  Control widget may be toggled on/off
-            enabled:  True if Control is toggled on by default
+            vartype
+                Python type of stored variable
+                (str, bool, int, float, list, dict)
+            label
+                Label shown in the GUI for the Control
+            option
+                Command-line option associated with this Control,
+                or '' to create a positional argument
+            default
+                Default value for the Control
+            help
+                Help text to show in a tooltip
+            toggles
+                Control widget may be toggled on/off
+            enabled
+                True if Control is toggled on by default
+            labelside
+                Position of label ('left' or 'top'). It's up to the
+                derived Control class to use this appropriately.
             **kwargs: Keyword arguments of the form key1=arg1, key2=arg2
         
         """
@@ -169,6 +180,7 @@ class Control (Widget):
         self.default = default or vartype()
         self.help = help
         self.toggles = toggles
+        self.labelside = labelside
         self.kwargs = kwargs
 
         # Add self to all
@@ -374,7 +386,7 @@ class Choice (Control):
                     text=label, value=choice, variable=self.variable)
                 self.rb[choice].pack(anchor='nw', side=self.side)
         else: # dropdown/combobox
-            tk.Label(self, text=self.label).pack(side='left')
+            tk.Label(self, text=self.label).pack(anchor='w', side=self.labelside)
             self.combo = ComboBox(self, self.choices.keys(),
                                   variable=self.variable)
             self.combo.pack(side='left')
@@ -414,7 +426,7 @@ class Color (Control):
         """Draw control widgets in the given master.
         """
         Control.draw(self, master)
-        tk.Label(self, text=self.label).pack(side='left')
+        tk.Label(self, text=self.label).pack(side=self.labelside)
         self.button = tk.Button(self, textvariable=self.variable,
                                 command=self.change)
         self.button.pack(side='left')
@@ -484,7 +496,7 @@ class Filename (Control):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
         # Create and pack widgets
-        tk.Label(self, text=self.label, justify='left').pack(side='left')
+        tk.Label(self, text=self.label, justify='left').pack(side=self.labelside)
         self.entry = tk.Entry(self, textvariable=self.variable)
         self.button = tk.Button(self, text="Browse...", command=self.browse)
         self.entry.pack(side='left', fill='x', expand=True)
@@ -553,7 +565,7 @@ class Flag (Control):
         self.check = tk.Checkbutton(self, text=self.label,
                                     variable=self.variable,
                                     command=self.enabler)
-        self.check.pack(side='left', anchor='nw')
+        self.check.pack(side=self.labelside, anchor='nw')
 
         # Enable/disable related controls
         if self.enables:
@@ -675,7 +687,7 @@ class Font (Control):
         """Draw the Font selector in the given master widget.
         """
         Control.draw(self, master)
-        tk.Label(self, text=self.label).pack(side='left')
+        tk.Label(self, text=self.label).pack(side=self.labelside)
         self.button = tk.Button(self, textvariable=self.variable,
                                 command=self.choose)
         self.button.pack(side='left', padx=8)
@@ -728,7 +740,7 @@ class Number (Control):
         """Draw the Number entry in the given master widget.
         """
         Control.draw(self, master)
-        tk.Label(self, name='label', text=self.label).pack(side='left')
+        tk.Label(self, name='label', text=self.label).pack(side=self.labelside)
         if self.style == 'spin':
             self.number = tk.Spinbox(self, from_=self.min, to=self.max,
                                      width=4, textvariable=self.variable)
@@ -790,7 +802,7 @@ class Text (Control):
         """Draw the Text control in the given master widget.
         """
         Control.draw(self, master)
-        tk.Label(self, text=self.label, justify='left').pack(side='left')
+        tk.Label(self, text=self.label, justify='left').pack(side=self.labelside)
         self.entry = tk.Entry(self, textvariable=self.variable)
         self.entry.pack(side='left', fill='x', expand=True)
         Control.post(self)
@@ -874,7 +886,7 @@ class List (Control):
 
         # Frame to draw list and child Control in
         frame = tk.LabelFrame(self, text=self.label)
-        frame.pack(fill='x', expand=True)
+        frame.pack(fill='both', expand=True)
 
         # Add/remove buttons (not shown for edit_only)
         if not edit_only:
