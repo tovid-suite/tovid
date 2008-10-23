@@ -75,7 +75,7 @@ _showcase = FlagOpt('Showcase', '-showcase', False,
     Filename('', action='load', desc='Select an image or video file.'),
     enables=['-showcase-seek', '-textmenu', '-quick-menu', '-switched-menus'])
 
-_showcase_seek = Number('Video seek', '-showcase-seek', 2,
+_showcase_seek = Number('Showcase seek', '-showcase-seek', 2,
     'Play showcase video from the given seek time. '
     'Note: switched menus uses the value(s) from "Seek time" '
     'option above, not this one',
@@ -123,7 +123,7 @@ _showcase_framestyle = Choice('Showcase frame style', '-showcase-framestyle', 'n
     '-rotate and -wave options',
     'none|glass')
 
-_showcase_geo = Text('Showcase image position (XxY)', '-showcase-geo', '',
+_showcase_geo = Text('Showcase image position', '-showcase-geo', '',
     'This is a showcase style only option.  Enter the position of the '
     'top left corner of the showcase image: e.g. "200x80".  This '
     'value is applied to the video *before* is is scaled.')
@@ -138,16 +138,16 @@ _background = Filename('Image or video', '-background', '',
     'load', 'Select an image or video file',
     filetypes=image_filetypes)
 
-_bgvideo_seek = Number('Video seek', '-bgvideo-seek', 2,
-    'Play background video from the given seek time (seconds)',
-    0, 3600, 'seconds')
-
 _bgaudio = Filename('Audio', '-bgaudio', '',
     'Audio file to play while the main menu plays.  '
     'Static menus use default audio length of 20 seconds.  ' 
     'Change with "Menu length" on "Menu" tab.  '
     'Use almost any filetype containing audio.',
     'load', 'Select an audio file')
+
+_bgvideo_seek = Number('Video seek', '-bgvideo-seek', 2,
+    'Play background video from the given seek time (seconds)',
+    0, 3600, 'seconds')
 
 _bgaudio_seek = Number('Audio seek', '-bgaudio-seek', 2,
     'Play background audio from the given seek time.',
@@ -158,14 +158,13 @@ _menu_audio_fade = Number('Fade in audio', '-menu-audio-fade', 1,
     '(default: 1.0 seconds). Use a fade of "0" for no fade.',
     0, 10, 'seconds')
 
-_menu_fade = FlagOpt('Fade in menu', '-menu-fade', False,
+_menu_fade = Number('Fade in menu', '-menu-fade', 0.0,
     'Fade the menu in and out. The background will fade in first, then '
     'the title (and mist if called for), then the menu thumbs and/or titles.  '
     'The fadeout is in reverse order.  The optional numerical argument '
     'is the length of time the background will play before the menu '
     'begins to fade in.',
-    Number('', '', 0.0, '', 0.0, 60.0, 'seconds')
-)
+    0.0, 60.0, 'seconds')
 
 _transition_to_menu = Flag('Transition to menu', '-transition-to-menu', False,
     'A convenience option for animated backgrounds: the background '
@@ -224,7 +223,7 @@ _chapter_titles = RelatedList('-files', '1:*',
     List('Chapter titles', '-chapter-titles', None,
         'Chapter titles for each video.  Use \\n for a new line in '
         'a multi-line title.  Number of titles given must equal the '
-        'number of capters given for that video.'))
+        'number of capters given for that video.', side='top'))
 
 
 ### --------------------------------------------------------------------
@@ -542,7 +541,7 @@ _showcase_titles_align = Choice('Video title alignment',
 ### Menu buttons (spumux)
 ### --------------------------------------------------------------------
 
-_button_style = Choice('Button style', '-button-style', 'none',
+_button_style = Choice('Style', '-button-style', 'none',
     'Style or shape of the buttons seen when playing the DVD '
     'menu.  "rect": rectangle around the thumbs, "text": uses '
     'the title text, "text-rect": rectangle around the title text, '
@@ -557,7 +556,7 @@ _highlight_color = Color('Highlight', '-highlight-color', '#266CAE',
 _select_color = Color('Selection', '-select-color', '#DE7F7C',
     'Color for the menu buttons the dvd remote uses to select.')
 
-_outlinewidth = Number('Outlinewidth for spumux', '-outlinewidth', 14,
+_outlinewidth = Number('Outlinewidth', '-outlinewidth', 14,
     'For spumux outlinewidth variable.  This option helps if spumux '
     'fails because of a large gap between button words or characters.',
     0, 20, 'pixels')
@@ -618,7 +617,7 @@ _chapters = List('Chapters', '-chapters', None,
     'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.',
     Text())
 
-_loop = FlagGroup('', 'exclusive',
+_loop = FlagGroup('Looping', 'exclusive',
     Flag('Indefinite pause', '-loop', False,
         'After playing the menu, pause indefinitely (do not loop the menu).'),
     FlagOpt('Pause', '', False,
@@ -627,6 +626,9 @@ _loop = FlagGroup('', 'exclusive',
     ),
 )
 
+_loop = FlagOpt('Pause', '-loop', False,
+    'Pause before looping playback of the main menu. If 0, pause indefinitely.',
+    Number('', '', 0, '', 0, 30, 'seconds'))
 
 ### ---------------------------------------------------------------------------
 ### Main GUI layout and panel construction
@@ -663,52 +665,61 @@ main = HPanel("Main",
 )
 
 
-main_menu = VPanel('Main menu',
-    Drawer('Menu title settings',
-        menu_title_font,
-        HPanel('',
-            _menu_title_geo,
-            _menu_title_offset,
-        ),
-        HPanel('Mist',
-            _text_mist,
-            _text_mist_color,
-            _text_mist_opacity,
-        ),
-    ),
-
-    Drawer('Video title settings',
-        video_title_font,
-        _button_style,
-        _highlight_color,
-        _select_color,
-        _outlinewidth,
-    ),
-
-    Drawer('Showcase options',
-        _showcase_titles_align,
-        _showcase_framestyle,
-        _showcase_seek,
-        _showcase_geo,
-        _title_gap,
-        _text_start,
-    ),
-    Drawer('Backgrounds',
+main_menu = Tabs('Main menu',
+    VPanel('Settings',
+        _intro,
         _bg_color,
-        _bgvideo_seek,
-        _bgaudio_seek,
-        _menu_audio_fade,
+        HPanel('',
+            VPanel('Sequencing',
+                _menu_fade,
+                _menu_audio_fade,
+                _menu_length,
+                _loop,
+            ),
+            VPanel('Seek',
+                _bgvideo_seek,
+                _bgaudio_seek,
+                _showcase_seek,
+            ),
+        ),
+        VPanel('Showcase options',
+            _showcase_titles_align,
+            _showcase_framestyle,
+            _showcase_geo,
+        ),
     ),
-    _intro,
-    _menu_length,
-    _menu_fade,
-    _loop,
+
+    VPanel('Titles',
+        VPanel('Menu title',
+            HPanel('',
+                _menu_title_geo,
+                _menu_title_offset,
+            ),
+            menu_title_font,
+            HPanel('Mist',
+                _text_mist,
+                _text_mist_color,
+                _text_mist_opacity,
+            ),
+        ),
+        VPanel('Video titles',
+            HPanel('', _title_gap, _text_start),
+            video_title_font,
+            HPanel('Navigation buttons',
+                _button_style,
+                _highlight_color,
+                _select_color,
+                _outlinewidth,
+            ),
+        ),
+    ),
 )
 
 
-submenus = VPanel('Submenus',
-    Drawer('Backgrounds',
-        HPanel('',
+submenus = Tabs('Submenus',
+    VPanel('Settings',
+        _submenu_length,
+        HPanel('Backgrounds',
             VPanel('',
                 _submenu_audio,
                 _submenu_audio_fade,
@@ -717,21 +728,16 @@ submenus = VPanel('Submenus',
         ),
     ),
 
-    Drawer('Submenu titles',
+    VPanel('Titles',
         submenu_title_font,
+        submenu_chapter_font,
         _submenu_titles,
     ),
 
-    Drawer('Submenu chapters',
-        submenu_chapter_font,
+    VPanel('Chapters',
         _chapter_titles,
-    ),
-
-    Drawer('Chapter breaks',
         _chapters,
     ),
-
-    _submenu_length,
 )
 
 
