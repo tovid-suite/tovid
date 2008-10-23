@@ -25,15 +25,16 @@ image_filetypes.append(filetypes.image_files)
 image_filetypes.extend(filetypes.match_types('image'))
 
 
-### --------------------------------------------------------------------
-### Main todisc options
-### --------------------------------------------------------------------
 """Since todisc has a large number of options, it helps to store each
 one in a variable, named after the corresponding command-line option.
 
 Below are defined all the todisc options that will appear in the GUI.
 The actual GUI layout comes afterwards...
 """
+
+### --------------------------------------------------------------------
+### Main todisc options
+### --------------------------------------------------------------------
 
 _menu_title = Text('Menu title', '-menu-title', 'My video collection',
     'Title text displayed on the main menu. Use \\n for a new line '
@@ -42,6 +43,7 @@ _menu_title = Text('Menu title', '-menu-title', 'My video collection',
 _files = List('Video files', '-files', None,
     'List of video files to include on the disc',
     Filename(''))
+
 _titles = List('Video titles', '-titles', None,
     'Titles to display in the main menu, one for each video file on the disc',
     Text())
@@ -64,6 +66,11 @@ _out = Filename('Output name', '-out', '',
     'Name to use for the output directory where the disc will be created.',
     'save', 'Choose an output name')
 
+
+### --------------------------------------------------------------------
+### Showcase options
+### --------------------------------------------------------------------
+
 _non_showcase = Flag('Basic thumbnails', '', True,
     'Thumbnail menu links, centred, and as large as space restraints allow')
 
@@ -80,17 +87,6 @@ _showcase_seek = Number('Showcase seek', '-showcase-seek', 2,
     'Note: switched menus uses the value(s) from "Seek time" '
     'option above, not this one',
     0, 3600, 'seconds')
-
-_title_gap = Number('Space between titles', '-title-gap', 10,
-    'Leave this much vertical gap between titles.  '
-    'Default is 10 for line buttons, 15 for text-rect buttons.  '
-    'This value is applied before the menu is scaled.',
-    0, 400, 'pixels')
-
-_text_start = Number('Start titles at', '-text-start', 50,
-    'Titles will start at this pixel in the vertical axis.  '
-    'This value is applied before the menu is scaled.',
-    0, 460, 'pixels')
 
 _textmenu = FlagOpt("Textmenu", '-textmenu', False,
     'Showcase style text only menu.  Optionally use a "showcase" '
@@ -115,50 +111,59 @@ _switched_menus = Flag("Switched menus", '-switched-menus', False,
     'showcase file for this option.  Use with '
     '"Quick menu" option for a huge speed up !')
 
-_showcase_framestyle = Choice('Showcase frame style', '-showcase-framestyle', 'none',
+_showcase_framestyle = Choice('Frame style', '-showcase-framestyle', 'none',
     'This is a showcase style only option.  The "none" option will use '
     'the default frame method, using imagemagick. The "glass" option '
     'will use mplayer to make frames, giving an animated effect.  The ' 
     'glass style can be much faster - especially if used without '
     '-rotate and -wave options',
-    'none|glass')
+    'none|glass', 'dropdown')
 
-_showcase_geo = Text('Showcase image position', '-showcase-geo', '',
+_showcase_geo = Text('Image position', '-showcase-geo', '',
     'This is a showcase style only option.  Enter the position of the '
     'top left corner of the showcase image: e.g. "200x80".  This '
     'value is applied to the video *before* is is scaled.')
 
-_bg_color = Color('Menu background color', '-bg-color', '#101010',
+_showcase_titles_align = Choice('Title alignment',
+    '-showcase-titles-align', 'none',
+    'This is a showcase style only option.  Default is to center '
+    'the text above the thumbnails.  This option will align the '
+    'titles either to the left (west), center, or right (east).  '
+    'Leave at "none" to let todisc sort it out for you.',
+    'none|west|center|east', 'dropdown')
+
+# Menu settings
+_bg_color = Color('Background color', '-bg-color', '#101010',
     'Color of the menu background. Default (#101010) is NTSC color-safe black. '
     'Note: the color turns out MUCH lighter than the one you choose, '
     'so pick a VERY dark version of the color you want.')
 
-_background = Filename('Image or video', '-background', '',
+_background = Filename('File', '-background', '',
     'Image or video displayed in the background of the main menu',
     'load', 'Select an image or video file',
     filetypes=image_filetypes)
 
-_bgaudio = Filename('Audio', '-bgaudio', '',
+_bgaudio = Filename('File', '-bgaudio', '',
     'Audio file to play while the main menu plays.  '
     'Static menus use default audio length of 20 seconds.  ' 
     'Change with "Menu length" on "Menu" tab.  '
     'Use almost any filetype containing audio.',
     'load', 'Select an audio file')
 
-_bgvideo_seek = Number('Video seek', '-bgvideo-seek', 2,
+_bgvideo_seek = Number('Seek', '-bgvideo-seek', 2,
     'Play background video from the given seek time (seconds)',
     0, 3600, 'seconds')
 
-_bgaudio_seek = Number('Audio seek', '-bgaudio-seek', 2,
+_bgaudio_seek = Number('Seek', '-bgaudio-seek', 2,
     'Play background audio from the given seek time.',
     0, 3600, 'seconds')
 
-_menu_audio_fade = Number('Fade in audio', '-menu-audio-fade', 1,
+_menu_audio_fade = Number('Fade in', '-menu-audio-fade', 1,
     'Number  of  sec to fade given menu audio in and out '
     '(default: 1.0 seconds). Use a fade of "0" for no fade.',
     0, 10, 'seconds')
 
-_menu_fade = Number('Fade in menu', '-menu-fade', 0.0,
+_menu_fade = Number('Fade in', '-menu-fade', 0.0,
     'Fade the menu in and out. The background will fade in first, then '
     'the title (and mist if called for), then the menu thumbs and/or titles.  '
     'The fadeout is in reverse order.  The optional numerical argument '
@@ -182,7 +187,7 @@ _static = Flag('Static menus', '-static', False,
     'Create still-image menus; takes less time. For duration of background '
     'audio for static menus, use "menu length" on the "Menu" tab')
 
-_menu_length = Number('Menu length', '-menu-length', 20,
+_menu_length = Number('Length', '-menu-length', 20,
     'Duration of menu. The length of the menu will also set '
     'the length of background audio for a static menu',
     0, 120, 'seconds')
@@ -224,6 +229,18 @@ _chapter_titles = RelatedList('-files', '1:*',
         'Chapter titles for each video.  Use \\n for a new line in '
         'a multi-line title.  Number of titles given must equal the '
         'number of capters given for that video.', side='top'))
+
+_title_gap = Number('Space between titles', '-title-gap', 10,
+    'Leave this much vertical gap between titles.  '
+    'Default is 10 for line buttons, 15 for text-rect buttons.  '
+    'This value is applied before the menu is scaled.',
+    0, 400, 'pixels')
+
+_text_start = Number('Start titles at', '-text-start', 50,
+    'Titles will start at this pixel in the vertical axis.  '
+    'This value is applied before the menu is scaled.',
+    0, 460, 'pixels')
+
 
 
 ### --------------------------------------------------------------------
@@ -528,13 +545,7 @@ _text_mist_opacity = Number('Text mist opacity', '-text-mist-opacity', 60,
     'The opacity of the mist behind the menu title.',
     1, 100, '%')
 
-_showcase_titles_align = Choice('Video title alignment',
-    '-showcase-titles-align', 'none',
-    'This is a showcase style only option.  Default is to center '
-    'the text above the thumbnails.  This option will align the '
-    'titles either to the left (west), center, or right (east).  '
-    'Leave at "none" to let todisc sort it out for you.',
-    'none|west|center|east', 'dropdown')
+
 
 
 ### --------------------------------------------------------------------
@@ -565,10 +576,31 @@ _playall = Flag('"Play all" button', '-playall', False,
     'Create a "Play All" button that jumps to the 1st title and plays '
     'all the videos in succession before returning to the main menu.')
 
+_chapters = List('Chapters', '-chapters', None,
+    'Number of chapters or HH:MM:SS string for each video. '
+    'If only one value is given, use that for all videos. '
+    'For grouped videos, use a "+" separator for joining '
+    'the chapter string of each grouped video. '
+    'An example chapter string using HH:MM:SS format: '
+    '00:00:00,00:05:00,00:10:00.  An example of 2 grouped videos: '
+    '00:00:00,00:05:00+00:05:00,00:10:00.  '
+    'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.',
+    Text())
 
-### --------------------------------------------------------------------
-### Authoring / burning
-### --------------------------------------------------------------------
+_loop = FlagOpt('Pause', '-loop', False,
+    'Pause before looping playback of the main menu. If 0, pause indefinitely.',
+    Number('', '', 0, '', 0, 30, 'seconds'))
+
+_chain_videos = FlagOpt('Chain videos', '-chain-videos', False,
+    'This option will "chain" videos so they play '
+    'sequentially until the last, which will return to '
+    'the menu.  You can also specify individual videos to '
+    'behave like this by using the text box at the right. '
+    'You can use single integers or indicate a range with a '
+    '"-" separator. Example of a range: "1-2 4-6" (no quotes). '
+    'This will play video 1 through video 3 before returning '
+    'to the menu, and the same for video 4 through video 6.',
+    Text(''))
 
 _videos_are_chapters = Flag('Each video is a chapter',
     '-videos-are-chapters', False,
@@ -576,6 +608,12 @@ _videos_are_chapters = Flag('Each video is a chapter',
     'can use as a chapter button .  Selecting any video will play '
     'them all in order starting with the selected one.' )
 
+
+### --------------------------------------------------------------------
+### Authoring / burning
+### --------------------------------------------------------------------
+
+# Burning options
 _burn = Flag('Burn project on completion', '-burn', False)
 
 _speed = Number('Burning speed', '-speed', 8,
@@ -586,6 +624,7 @@ _device = Filename('Device to use for burning', '-device', '/dev/dvdrw',
     'Select or type your burning device (default: /dev/dvdrw)',
     'load', 'Select or type your burning device')
 
+# Authoring
 _widescreen = Choice('Widescreen', '-widescreen', 'none',
     'This will output a <video widescreen=nopanscan /> tag '
     '(for example) for the dvdauthor xml file.  It affects all '
@@ -606,29 +645,6 @@ _audio_lang = SpacedText('Audio', '-audio-lang', '',
 _subtitles = SpacedText('Subtitles', '-subtitles', '',
     'Single value or list')
 
-_chapters = List('Chapters', '-chapters', None,
-    'Number of chapters or HH:MM:SS string for each video. '
-    'If only one value is given, use that for all videos. '
-    'For grouped videos, use a "+" separator for joining '
-    'the chapter string of each grouped video. '
-    'An example chapter string using HH:MM:SS format: '
-    '00:00:00,00:05:00,00:10:00.  An example of 2 grouped videos: '
-    '00:00:00,00:05:00+00:05:00,00:10:00.  '
-    'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.',
-    Text())
-
-_loop = FlagGroup('Looping', 'exclusive',
-    Flag('Indefinite pause', '-loop', False,
-        'After playing the menu, pause indefinitely (do not loop the menu).'),
-    FlagOpt('Pause', '', False,
-        'After playing the menu, pause this long before looping.',
-        Number('', '-loop', 10, '', 0, 30, 'seconds'),
-    ),
-)
-
-_loop = FlagOpt('Pause', '-loop', False,
-    'Pause before looping playback of the main menu. If 0, pause indefinitely.',
-    Number('', '', 0, '', 0, 30, 'seconds'))
 
 ### ---------------------------------------------------------------------------
 ### Main GUI layout and panel construction
@@ -636,15 +652,11 @@ _loop = FlagOpt('Pause', '-loop', False,
 """The todisc GUI is laid out using panels and tabs for logical grouping.
 """
 
-main = HPanel("Main",
+main = VPanel("Main",
 
-    VPanel('',
-        _menu_title,
-    
-        Tabs('',
-            RelatedList(_files, '1:1', _titles, filter=to_title, side='top'),
-            RelatedList('-files', '1:*', _group, side='top'),
-        ),
+    Tabs('',
+        RelatedList(_files, '1:1', _titles, filter=to_title),
+        RelatedList('-files', '1:*', _group),
     ),
     VPanel('',
         HPanel('',
@@ -652,65 +664,67 @@ main = HPanel("Main",
             FlagGroup('Format', 'exclusive', _dvd, _svcd),
             FlagGroup('TV System', 'exclusive', _ntsc, _pal),
         ),
-        VPanel('Menu style',
-            FlagGroup('', 'exclusive', _non_showcase, _showcase),
-            VPanel('Showcase options', _textmenu, _quick_menu, _switched_menus)
-        ),
-        VPanel('Menu backgrounds',
-            _background,
-            _bgaudio,
-        ),
-        _out
+        _menu_title,
+        _out,
     ),
 )
 
 
 main_menu = Tabs('Main menu',
-    VPanel('Settings',
-        _intro,
-        _bg_color,
-        HPanel('',
-            VPanel('Sequencing',
-                _menu_fade,
-                _menu_audio_fade,
-                _menu_length,
-                _loop,
-            ),
-            VPanel('Seek',
-                _bgvideo_seek,
-                _bgaudio_seek,
+    HPanel('Basic settings',
+        VPanel('',
+            FlagGroup('', 'exclusive', _non_showcase, _showcase),
+            VPanel('Showcase options',
+                _showcase_geo,
                 _showcase_seek,
+                _showcase_framestyle,
+                _showcase_titles_align,
+                _textmenu,
+                _quick_menu,
+                _switched_menus
             ),
         ),
-        VPanel('Showcase options',
-            _showcase_titles_align,
-            _showcase_framestyle,
-            _showcase_geo,
+        VPanel('',
+            _intro,
+            VPanel('Background image or video',
+                _background,
+                HPanel('', _bgvideo_seek, _menu_fade),
+                _bg_color),
+            VPanel('Background audio',
+                _bgaudio, HPanel('', _bgaudio_seek, _menu_audio_fade)),
+            HPanel('', _menu_length, _loop),
         ),
     ),
 
-    VPanel('Titles',
-        VPanel('Menu title',
-            HPanel('',
-                _menu_title_geo,
-                _menu_title_offset,
-            ),
-            menu_title_font,
-            HPanel('Mist',
-                _text_mist,
-                _text_mist_color,
-                _text_mist_opacity,
-            ),
+    VPanel('Menu title',
+        menu_title_font,
+        HPanel('Layout',
+            _menu_title_geo,
+            _menu_title_offset,
         ),
-        VPanel('Video titles',
-            HPanel('', _title_gap, _text_start),
-            video_title_font,
-            HPanel('Navigation buttons',
-                _button_style,
-                _highlight_color,
-                _select_color,
-                _outlinewidth,
-            ),
+        HPanel('Mist',
+            _text_mist,
+            _text_mist_color,
+            _text_mist_opacity,
+        ),
+    ),
+
+    VPanel('Video titles',
+        video_title_font,
+        HPanel('Layout',
+            _text_start,
+            _title_gap,
+        ),
+        HPanel('Navigation',
+            _playall,
+            _videos_are_chapters,
+            _chain_videos,
+        ),
+        HPanel('Buttons',
+            _button_style,
+            _highlight_color,
+            _select_color,
+            _outlinewidth,
         ),
     ),
 )
@@ -839,40 +853,19 @@ behavior = VPanel("Behavior",
     )
 )
 
-authoring = VPanel('Authoring',
-    VPanel('Play control',
-        FlagGroup('', 'exclusive',
-            Flag('Chain all videos together', '-chain-videos', False,
-                'This option will "chain" videos so they play '
-                'sequentially until the last, which will return to '
-                'the menu.  You can also specify individual videos to '
-                'behave like this by using the text box at the right. '),
-            FlagOpt('Chain selected videos together', '-chain-videos', False, 
-                'Enable this option and use the box at right to indicate the '
-                'number of the video you wish to "chain" to the next, so '
-                'they play sequentially before returning to the menu. '
-                'You can use single integers or indicate a range with a '
-                '"-" separator. Example of a range: "1-2 4-6" (no quotes). '
-                'This will play video 1 through video 3 before returning '
-                'to the menu, and the same for video 4 through video 6.',
-                Text(''),
-            ),
-        ),
-        _playall,
-        _videos_are_chapters,
-    ),
+
+misc = VPanel('Misc',
     VPanel('Aspect', _widescreen, _aspect),
     HPanel('Language(s)', _audio_lang, _subtitles),
+    VPanel("Burning", _burn, _speed, _device),
 )
-
-burning = VPanel("Burning", _burn, _speed, _device)
 
 
 ### --------------------------------------------------------------------
 
 def run():
     app = Application('todisc',
-        main, main_menu, submenus, thumbnails, slideshows, authoring, burning, behavior)
+        main, main_menu, submenus, thumbnails, slideshows, misc, behavior)
     gui = GUI("todiscgui", 800, 640, app)
     gui.run()
 
