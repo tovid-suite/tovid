@@ -898,20 +898,20 @@ class List (Control):
 
         # Frame to hold add/remove buttons and child Control
         tool_frame = tk.Frame(frame)
-        tool_frame.pack(fill='x', expand=True)
+        tool_frame.pack(fill='x')
 
         # Add/remove buttons (not shown for edit_only)
         if not edit_only:
             add_button = \
-                tk.Button(tool_frame, text="+", command=self.add)
+                tk.Button(tool_frame, text="Add", command=self.add)
             remove_button = \
-                tk.Button(tool_frame, text="-", command=self.remove)
-            add_button.pack(fill='both', side='left')
-            remove_button.pack(fill='both', side='left')
+                tk.Button(tool_frame, text="Del", command=self.remove)
+            add_button.pack(fill='x', side='left')
+            remove_button.pack(fill='x', side='left')
 
         # Draw associated Control
         self.control.draw(tool_frame)
-        self.control.pack(anchor='nw', fill='both', expand=True)
+        self.control.pack(fill='x', side='left', expand=True)
         # Disabled until values are added
         self.control.disable()
 
