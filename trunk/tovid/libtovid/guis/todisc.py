@@ -117,7 +117,7 @@ _showcase_framestyle = Choice('Frame style', '-showcase-framestyle', 'none',
     'will use mplayer to make frames, giving an animated effect.  The ' 
     'glass style can be much faster - especially if used without '
     '-rotate and -wave options',
-    'none|glass', 'dropdown')
+    'none|glass')
 
 _showcase_geo = Text('Image position', '-showcase-geo', '',
     'This is a showcase style only option.  Enter the position of the '
@@ -130,7 +130,7 @@ _showcase_titles_align = Choice('Title alignment',
     'the text above the thumbnails.  This option will align the '
     'titles either to the left (west), center, or right (east).  '
     'Leave at "none" to let todisc sort it out for you.',
-    'none|west|center|east', 'dropdown')
+    'none|west|center|east')
 
 # Menu settings
 _bg_color = Color('Background color', '-bg-color', '#101010',
@@ -226,11 +226,11 @@ _submenu_titles = RelatedList('Titles', '-files', '1:1',
         'Use \\n for a new line in a multi-line title.'),
     filter=strip_all)
 
-_chapter_titles = RelatedList('Chapter titles', '-files', '1:*',
+_chapter_titles = RelatedList('Chapter titles', '-files', '1:1',
     List('Chapter titles', '-chapter-titles', None,
         'Chapter titles for each video.  Use \\n for a new line in '
-        'a multi-line title.  Number of titles given must equal the '
-        'number of capters given for that video.'), side='top')
+        'a multi-line title.  Number of titles given must equal the number '
+        'of capters given for that video.'), side='left', filter=strip_all)
 
 _title_gap = Number('Space between titles', '-title-gap', 10,
     'Leave this much vertical gap between titles.  '
@@ -355,7 +355,7 @@ _thumb_shape = Choice('Thumb shape', '-thumb-shape', 'normal',
     'Apply a shaped transparency mask to thumbnail videos. '
     'Note: to disable the "mist" background '
     'behind each thumb, use see "Thumb mist" section below.',
-    'normal|oval|plectrum|egg', 'dropdown', labelside='top')
+    'normal|oval|plectrum|egg')
 
 _opacity = Number('Thumbnail opacity', '-opacity', 100,
     'Opacity  of thumbnail videos as a percentage. '
@@ -408,7 +408,7 @@ _tile4x1 = Flag('1 row of 4 thumbs', '-tile4x1', False,
 _align = Choice('Montage alignment', '-align', 'north',
     'Controls positioning of the thumbnails and their titles.  '
     'With some arrangements this will have limited effects however.',
-    'north|south|east|west|center', 'dropdown', labelside='top')
+    'north|south|east|west|center')
 
 _seek = SpacedText('Thumbnail seek', '-seek', '',
     'Play thumbnail videos from the given seek time (seconds).  '
@@ -633,13 +633,13 @@ _widescreen = Choice('Widescreen', '-widescreen', 'none',
     'videos in the titleset.  Use in conjunction with "Aspect ratio" '
     'if your dvd player is cropping your videos.  '
     'Leave this at "none" to not output a widescreen tag',
-    'none|nopanscan|noletterbox', 'dropdown')
+    'none|nopanscan|noletterbox')
 
 _aspect = Choice('Aspect ratio', '-aspect', 'none',
     'This will output a <video aspect WIDTH:HEIGHT /> tag for the '
     'dvdauthor xml file.  It will affect all videos in the titleset.  '
     'Leave this at "none" to let dvdauthor figure it out for you',
-    '4:3|16:9|none', 'dropdown')
+    '4:3|16:9|none')
 
 _audio_lang = SpacedText('Audio', '-audio-lang', '',
     'Single value or list of language codes for audio')
@@ -679,7 +679,7 @@ main = VPanel("Main",
 main_menu = Tabs('Main menu',
     HPanel('Basic settings',
         VPanel('',
-            FlagGroup('', 'exclusive', _non_showcase, _showcase),
+            FlagGroup('Menu Style', 'exclusive', _non_showcase, _showcase),
             VPanel('Showcase options',
                 _showcase_geo,
                 _showcase_seek,
@@ -752,7 +752,7 @@ submenus = Tabs('Submenus',
         _submenu_titles,
     ),
 
-    HPanel('Chapters',
+    VPanel('Chapters',
         _chapter_titles,
         _chapters,
     ),
@@ -773,19 +773,19 @@ slideshow_panel = Tabs('Slideshow',
                 'This puts the  slides  onto  the  background in '
                 '"random" locations with random rotations, making it '
                 'look like a scattered stack of photos. This is the '
-                'same as setting -static on the Main tab.'),
+                'same as setting -static on the Main tab.'), side='left'
         ),
-        Number('Number of slides shown on menu', '-menu-slide-total', 0,
-            'Use this many slides for making the slideshow menu. '
-            'The default is to use all the slides given.',
-            0, 100),
-        _submenu_slide_total,
         VPanel('Animated slideshow options',
             HPanel('',
                 _slide_transition,
                 HPanel('', _slide_border, _slide_frame),
             ),
         ),
+        Number('Number of slides shown on menu', '-menu-slide-total', 0,
+            'Use this many slides for making the slideshow menu. '
+            'The default is to use all the slides given.',
+            0, 100),
+        _submenu_slide_total,
         _no_confirm_backup,
     ),
     VPanel('Advanced options',
@@ -868,7 +868,7 @@ encoding = VPanel('Encoding',
 def run():
     app = Application('todisc',
         main, main_menu, submenus, thumbnails, slideshows, behavior, encoding)
-    gui = GUI("todiscgui", 800, 640, app)
+    gui = GUI("todiscgui", 800, 660, app)
     gui.run()
 
 if __name__ == '__main__':
