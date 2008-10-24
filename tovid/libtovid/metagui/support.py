@@ -336,9 +336,8 @@ class ComboBox (tk.Frame):
 
         # List of choices
         self.chooser = tk.Listbox(self.dropdown, background='white',
-                                  listvariable=self.choices)
-        #for choice in self.choices:
-        #    self.chooser.insert('end', choice)
+                                  listvariable=self.choices,
+                                  height=self.choices.count())
         self.chooser.bind('<Button-1>', self.choose)
         self.chooser.grid()
 

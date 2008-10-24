@@ -888,17 +888,6 @@ class List (Control):
         frame = tk.LabelFrame(self, text=self.label)
         frame.pack(fill='both', expand=True)
 
-        # Add/remove buttons (not shown for edit_only)
-        if not edit_only:
-            button_frame = tk.Frame(frame)
-            add_button = \
-                tk.Button(button_frame, text="Add", command=self.add)
-            remove_button = \
-                tk.Button(button_frame, text="Remove", command=self.remove)
-            add_button.pack(fill='x', expand=True, side='left')
-            remove_button.pack(fill='x', expand=True, side='left')
-            button_frame.pack(fill='x', expand=True)
-
         # Scrolled or draggable listbox
         if edit_only:
             self.listbox = ScrollList(frame, self.variable)
@@ -907,9 +896,22 @@ class List (Control):
         self.listbox.callback('select', self.select)
         self.listbox.pack(fill='both', expand=True)
 
+        # Frame to hold add/remove buttons and child Control
+        tool_frame = tk.Frame(frame)
+        tool_frame.pack(fill='x', expand=True)
+
+        # Add/remove buttons (not shown for edit_only)
+        if not edit_only:
+            add_button = \
+                tk.Button(tool_frame, text="+", command=self.add)
+            remove_button = \
+                tk.Button(tool_frame, text="-", command=self.remove)
+            add_button.pack(fill='both', side='left')
+            remove_button.pack(fill='both', side='left')
+
         # Draw associated Control
-        self.control.draw(frame)
-        self.control.pack(anchor='nw', fill='x', expand=True)
+        self.control.draw(tool_frame)
+        self.control.pack(anchor='nw', fill='both', expand=True)
         # Disabled until values are added
         self.control.disable()
 
