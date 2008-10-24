@@ -186,13 +186,15 @@ _intro = Filename('Intro video', '-intro', '',
 _static = Flag('Static menus', '-static', False,
     'Create still-image menus; takes less time. For duration of background '
     'audio for static menus, use "menu length" on the "Menu" tab')
+_animated = Flag('Animated menus', '', True,
+    'Created animated menus')
 
 _menu_length = Number('Length', '-menu-length', 20,
     'Duration of menu. The length of the menu will also set '
     'the length of background audio for a static menu',
     0, 120, 'seconds')
 
-_submenus = Flag('Submenus', '-submenus', False,
+_submenus = Flag('Static submenus', '-submenus', False,
     'Create a submenu for each video title; takes more time.')
 
 _submenu_length = Number('Submenu length', '-submenu-length', 14,
@@ -660,7 +662,11 @@ main = VPanel("Main",
     ),
     VPanel('',
         HPanel('',
-            FlagGroup('Menu options', 'normal', _static, _submenus, _ani_submenus),
+            VPanel('Menu options',
+            FlagGroup('', 'exclusive',
+            _static, _animated, side='left',),
+             FlagGroup('', 'exclusive',
+                _submenus, _ani_submenus, side='left')),
             FlagGroup('Format', 'exclusive', _dvd, _svcd),
             FlagGroup('TV System', 'exclusive', _ntsc, _pal),
         ),
