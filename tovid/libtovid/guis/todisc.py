@@ -226,11 +226,11 @@ _submenu_titles = RelatedList('Titles', '-files', '1:1',
         'Use \\n for a new line in a multi-line title.'),
     filter=strip_all)
 
-_chapter_titles = RelatedList('Chapter titles', '-files', '1:1',
+_chapter_titles = RelatedList('Chapter titles', '-files', '1:*',
     List('Chapter titles', '-chapter-titles', None,
         'Chapter titles for each video.  Use \\n for a new line in '
-        'a multi-line title.  Number of titles given must equal the number '
-        'of capters given for that video.'), side='left', filter=strip_all)
+        'a multi-line title.  Number of titles given must equal the '
+        'number of capters given for that video.'), side='left')
 
 _title_gap = Number('Space between titles', '-title-gap', 10,
     'Leave this much vertical gap between titles.  '
