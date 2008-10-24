@@ -654,8 +654,8 @@ _subtitles = SpacedText('Subtitles', '-subtitles', '',
 """The todisc GUI is laid out using panels and tabs for logical grouping.
 """
 
-main = VPanel("Main",
-
+main = VPanel("Basic",
+    Label('You can make a simple menu using just this "Basic" pane'),
     Tabs('',
         RelatedList('Videos', _files, '1:1', _titles, filter=to_title),
         RelatedList('Grouped videos', '-files', '1:*', _group),
