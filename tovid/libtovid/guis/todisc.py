@@ -220,13 +220,13 @@ _submenu_background = List('Image(s)', '-submenu-background', None,
     'Background image(s) for the submenus(s). Single value or list',
     Filename('', filetypes=image_filetypes))
 
-_submenu_titles = RelatedList('-files', '1:1',
-    List('Titles', '-submenu-titles', None,
+_submenu_titles = RelatedList('Titles', '-files', '1:1',
+    List('Submenu titles', '-submenu-titles', None,
         'Submenu titles for each video.  '
         'Use \\n for a new line in a multi-line title.'),
     filter=strip_all)
 
-_chapter_titles = RelatedList('-files', '1:*',
+_chapter_titles = RelatedList('Chapter titles', '-files', '1:*',
     List('Chapter titles', '-chapter-titles', None,
         'Chapter titles for each video.  Use \\n for a new line in '
         'a multi-line title.  Number of titles given must equal the '
@@ -657,8 +657,8 @@ _subtitles = SpacedText('Subtitles', '-subtitles', '',
 main = VPanel("Main",
 
     Tabs('',
-        RelatedList(_files, '1:1', _titles, filter=to_title),
-        RelatedList('-files', '1:*', _group),
+        RelatedList('Videos', _files, '1:1', _titles, filter=to_title),
+        RelatedList('Grouped videos', '-files', '1:*', _group),
     ),
     VPanel('',
         HPanel('',

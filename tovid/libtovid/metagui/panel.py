@@ -470,6 +470,7 @@ class RelatedList (Panel):
     """
     
     def __init__(self,
+                 name,
                  parent,
                  correspondence,
                  child_list,
@@ -478,6 +479,8 @@ class RelatedList (Panel):
                  **kwargs):
         """Create a 1:1 or 1:* correspondence between two lists.
 
+            name
+                Name of the RelatedList, displayed as a label
             parent
                 Parent List (a Control instance), or the option string
                 of the parent List control declared elsewhere
@@ -509,7 +512,7 @@ class RelatedList (Panel):
         if side not in ['left', 'top']:
             raise ValueError("RelatedList 'side' must be 'left' or 'top'")
 
-        Panel.__init__(self, child_list.name)
+        Panel.__init__(self, name)
         self.parent = parent
         self.correspondence = correspondence
         self.child = child_list
