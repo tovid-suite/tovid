@@ -618,11 +618,11 @@ _videos_are_chapters = Flag('Each video is a chapter',
 # Burning options
 _burn = Flag('Burn project on completion', '-burn', False)
 
-_speed = Number('Burning speed', '-speed', 8,
+_speed = Number('Burn speed', '-speed', 8,
     'Speed for burning',
     0, 30)
 
-_device = Filename('Device to use for burning', '-device', '/dev/dvdrw',
+_device = Filename('Device', '-device', '/dev/dvdrw',
     'Select or type your burning device (default: /dev/dvdrw)',
     'load', 'Select or type your burning device')
 
@@ -670,6 +670,7 @@ main = VPanel("Main",
             FlagGroup('Format', 'exclusive', _dvd, _svcd),
             FlagGroup('TV System', 'exclusive', _ntsc, _pal),
         ),
+        HPanel("Burning", _burn, _speed, _device),
         _menu_title,
         _out,
     ),
@@ -846,9 +847,11 @@ behavior = VPanel("Behavior",
     ),
     SpacedText('Custom todisc options', '', '',
          'Space-separated list of custom options to pass to todisc.'),
-    VPanel('Aspect', _widescreen, _aspect),
+)
+
+playback = VPanel("Playback",
+    HPanel('Aspect', _widescreen, _aspect),
     HPanel('Language(s)', _audio_lang, _subtitles),
-    VPanel("Burning", _burn, _speed, _device),
 )
 
 encoding = VPanel('Encoding',
@@ -867,7 +870,7 @@ encoding = VPanel('Encoding',
 
 def run():
     app = Application('todisc',
-        main, main_menu, submenus, thumbnails, slideshows, behavior, encoding)
+        main, main_menu, submenus, thumbnails, slideshows, playback, behavior, encoding)
     gui = GUI("todiscgui", 800, 660, app)
     gui.run()
 
