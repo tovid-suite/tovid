@@ -230,7 +230,7 @@ _chapter_titles = RelatedList('-files', '1:*',
     List('Chapter titles', '-chapter-titles', None,
         'Chapter titles for each video.  Use \\n for a new line in '
         'a multi-line title.  Number of titles given must equal the '
-        'number of capters given for that video.', side='top'))
+        'number of capters given for that video.'), side='top')
 
 _title_gap = Number('Space between titles', '-title-gap', 10,
     'Leave this much vertical gap between titles.  '
@@ -754,7 +754,7 @@ submenus = Tabs('Submenus',
         _submenu_titles,
     ),
 
-    VPanel('Chapters',
+    HPanel('Chapters',
         _chapter_titles,
         _chapters,
     ),
@@ -848,30 +848,28 @@ behavior = VPanel("Behavior",
     ),
     SpacedText('Custom todisc options', '', '',
          'Space-separated list of custom options to pass to todisc.'),
-    SpacedText('Custom tovid options', '', '',
-         'Space-separated list of custom options to pass to tovid.'),
+    VPanel('Aspect', _widescreen, _aspect),
+    HPanel('Language(s)', _audio_lang, _subtitles),
+    VPanel("Burning", _burn, _speed, _device),
+)
+
+encoding = VPanel('Encoding',
     Label("\nVideo re-encoding options - you may leave these at defaults."),
     Tabs('tovid options',
         tovid.BASIC_OPTS,
         tovid.VIDEO,
         tovid.AUDIO,
         tovid.BEHAVIOR,
-    )
+    ),
+    SpacedText('Custom tovid options', '', '',
+         'Space-separated list of custom options to pass to tovid.'),
 )
-
-
-misc = VPanel('Misc',
-    VPanel('Aspect', _widescreen, _aspect),
-    HPanel('Language(s)', _audio_lang, _subtitles),
-    VPanel("Burning", _burn, _speed, _device),
-)
-
 
 ### --------------------------------------------------------------------
 
 def run():
     app = Application('todisc',
-        main, main_menu, submenus, thumbnails, slideshows, misc, behavior)
+        main, main_menu, submenus, thumbnails, slideshows, behavior, encoding)
     gui = GUI("todiscgui", 800, 640, app)
     gui.run()
 
