@@ -189,7 +189,7 @@ _static = Flag('Static menus', '-static', False,
 _animated = Flag('Animated menus', '', True,
     'Created animated menus')
 
-_menu_length = Number('Length', '-menu-length', 20,
+_menu_length = Number('Menu length', '-menu-length', 20,
     'Duration of menu. The length of the menu will also set '
     'the length of background audio for a static menu',
     0, 120, 'seconds')
@@ -230,7 +230,9 @@ _chapter_titles = RelatedList('Chapter titles', '-files', '1:*',
     List('Chapter titles', '-chapter-titles', None,
         'Chapter titles for each video.  Use \\n for a new line in '
         'a multi-line title.  Number of titles given must equal the '
-        'number of capters given for that video.'), side='left')
+        'number of chapters given for that video.  Click on a video '
+        'title in the list to the left, then click "Add" for each '
+        'chapter, typing the chapter name.'), side='left')
 
 _title_gap = Number('Space between titles', '-title-gap', 10,
     'Leave this much vertical gap between titles.  '
@@ -589,7 +591,7 @@ _chapters = List('Chapters', '-chapters', None,
     'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.',
     Text())
 
-_loop = FlagOpt('Pause', '-loop', False,
+_loop = FlagOpt('Menu looping (pause)', '-loop', False,
     'Pause before looping playback of the main menu. If 0, pause indefinitely.',
     Number('', '', 0, '', 0, 30, 'seconds'))
 
@@ -668,7 +670,7 @@ main = VPanel("Basic",
             FlagGroup('TV System', 'exclusive', _ntsc, _pal),
         ),
         HPanel("Burning", _burn, _speed, _device),
-        _menu_title,
+        HPanel('', _menu_title, _menu_length),
         _out,
     ),
 )
@@ -696,7 +698,6 @@ main_menu = Tabs('Main menu',
                 _bg_color),
             VPanel('Background audio',
                 _bgaudio, HPanel('', _bgaudio_seek, _menu_audio_fade)),
-            HPanel('', _menu_length, _loop),
         ),
     ),
 
@@ -719,11 +720,6 @@ main_menu = Tabs('Main menu',
             _text_start,
             _title_gap,
         ),
-        HPanel('Navigation',
-            _playall,
-            _videos_are_chapters,
-            _chain_videos,
-        ),
         HPanel('Buttons',
             _button_style,
             _highlight_color,
@@ -744,15 +740,14 @@ submenus = Tabs('Submenus',
         ),
     ),
 
-    VPanel('Titles',
+    VPanel('Submenu titles',
         submenu_title_font,
-        submenu_chapter_font,
         _submenu_titles,
     ),
 
-    VPanel('Chapters',
+    VPanel('Chapter titles',
+        submenu_chapter_font,
         _chapter_titles,
-        _chapters,
     ),
 )
 
@@ -850,6 +845,15 @@ playback = VPanel("Playback",
     RelatedList('Grouped videos', '-files', '1:*', _group),
     HPanel('Aspect', _widescreen, _aspect),
     HPanel('Language(s)', _audio_lang, _subtitles),
+    _chapters,
+    VPanel('Navigation',
+        HPanel('',
+            _playall,
+            _videos_are_chapters,
+            _chain_videos,
+        ),
+    ),
+    _loop,
 )
 
 encoding = VPanel('Encoding',
