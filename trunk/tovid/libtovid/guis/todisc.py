@@ -656,10 +656,7 @@ _subtitles = SpacedText('Subtitles', '-subtitles', '',
 
 main = VPanel("Basic",
     Label('You can make a simple menu using just this "Basic" pane'),
-    Tabs('',
-        RelatedList('Videos', _files, '1:1', _titles, filter=to_title),
-        RelatedList('Grouped videos', '-files', '1:*', _group),
-    ),
+    RelatedList('', _files, '1:1', _titles, filter=to_title),
     VPanel('',
         HPanel('',
             VPanel('Menu options',
@@ -850,6 +847,7 @@ behavior = VPanel("Behavior",
 )
 
 playback = VPanel("Playback",
+    RelatedList('Grouped videos', '-files', '1:*', _group),
     HPanel('Aspect', _widescreen, _aspect),
     HPanel('Language(s)', _audio_lang, _subtitles),
 )
