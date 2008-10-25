@@ -657,7 +657,7 @@ _subtitles = SpacedText('Subtitles', '-subtitles', '',
 """
 
 main = VPanel("Basic",
-    Label('You can make a simple menu using just this "Basic" pane', 'center'),
+    Label('You can author (and burn) a DVD with a simple menu using just this "Basic" pane', 'center'),
     RelatedList('', _files, '1:1', _titles, filter=to_title),
     VPanel('',
         HPanel('',
