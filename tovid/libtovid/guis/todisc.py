@@ -618,9 +618,9 @@ _videos_are_chapters = Flag('Each video is a chapter',
 ### --------------------------------------------------------------------
 
 # Burning options
-_burn = Flag('Burn project', '-burn', False)
+_burn = Flag('Burn project on completion', '-burn', False)
 
-_speed = Number('Burn speed', '-speed', 8,
+_speed = Number('Speed', '-speed', 8,
     'Speed for burning',
     0, 30)
 
@@ -668,10 +668,11 @@ main =  VPanel('Basic',
             FlagGroup('Format', 'exclusive', _dvd, _svcd),
             FlagGroup('TV System', 'exclusive', _ntsc, _pal),
             VPanel('Burning',
+                _burn,
                 HPanel('',
-                    _burn, _speed,
+                    _speed,
+                    _device,
                 ),
-                _device,
             ),
         ),
         HPanel('Backgrounds',
@@ -701,13 +702,15 @@ main_menu = Tabs('Main menu',
         ),
         VPanel('',
             _intro,
-            VPanel('Background image/video options',
-                _bgvideo_seek,
-                _menu_fade,
-                _bg_color),
-            VPanel('Background audio options',
-                _bgaudio_seek,
-                _menu_audio_fade),
+            VPanel('Backgrounds',
+                VPanel('Image or video options',
+                    _bgvideo_seek,
+                    _menu_fade),
+                    _bg_color,
+                VPanel('Audio options',
+                    _bgaudio_seek,
+                    _menu_audio_fade),
+            ),
         ),
     ),
 
