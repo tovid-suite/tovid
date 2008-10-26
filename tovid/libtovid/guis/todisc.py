@@ -680,6 +680,7 @@ main =  VPanel('Basic',
             HPanel('Audio',
             _bgaudio),
         ),
+        HPanel('', _menu_title, _menu_length),
         _out,
     ),
 )
