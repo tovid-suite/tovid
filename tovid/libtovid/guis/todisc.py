@@ -186,7 +186,7 @@ _intro = Filename('Intro video', '-intro', '',
 _static = Flag('Static menus', '-static', False,
     'Create still-image menus; takes less time. For duration of background '
     'audio for static menus, use "menu length" on the "Menu" tab')
-_animated = Flag('Animated menus', '', True,
+_animated = Flag('Animated', '', True,
     'Created animated menus')
 
 _menu_length = Number('Menu length', '-menu-length', 20,
@@ -202,7 +202,7 @@ _submenu_length = Number('Submenu length', '-submenu-length', 14,
     'for the submenu, this will be the length of the submenu audio',
     0, 80, 'seconds')
 
-_ani_submenus = Flag('Animated submenus', '-ani-submenus', False,
+_ani_submenus = Flag('Animated', '-ani-submenus', False,
     'Create an animated submenu for each video.  '
     'Submenu links lead to chapter points.')
 
@@ -618,15 +618,14 @@ _videos_are_chapters = Flag('Each video is a chapter',
 ### --------------------------------------------------------------------
 
 # Burning options
-_burn = Flag('Burn project on completion', '-burn', False)
+_burn = Flag('Burn project', '-burn', False)
 
 _speed = Number('Burn speed', '-speed', 8,
     'Speed for burning',
     0, 30)
 
-_device = Filename('Device', '-device', '/dev/dvdrw',
-    'Select or type your burning device (default: /dev/dvdrw)',
-    'load', 'Select or type your burning device')
+_device = Text('Device', '-device', '/dev/dvdrw',
+    'Select or type your burning device (default: /dev/dvdrw)')
 
 # Authoring
 _widescreen = Choice('Widescreen', '-widescreen', 'none',
@@ -656,35 +655,34 @@ _subtitles = SpacedText('Subtitles', '-subtitles', '',
 """The todisc GUI is laid out using panels and tabs for logical grouping.
 """
 
-main = Tabs("Basic",
-    VPanel('Basic options',
-        Label('You can author (and burn) a disc with a simple menu using just this "Basic" pane', 'center'),
-        RelatedList('', _files, '1:1', _titles, filter=to_title),
-        VPanel('',
-            HPanel('',
-                VPanel('Menu options',
-                FlagGroup('', 'exclusive',
-                _static, _animated, side='left',),
-                 FlagGroup('', 'exclusive',
-                    _submenus, _ani_submenus, side='left')),
-                FlagGroup('Format', 'exclusive', _dvd, _svcd),
-                FlagGroup('TV System', 'exclusive', _ntsc, _pal),
+main =  VPanel('Basic',
+    Label('You can author (and burn) a disc with a simple menu using just this "Basic" pane', 'center'),
+    RelatedList('', _files, '1:1', _titles, filter=to_title),
+    VPanel('',
+        HPanel('',
+            VPanel('Menu options',
+            FlagGroup('', 'exclusive',
+            _static, _animated, side='left',),
+             FlagGroup('', 'exclusive',
+                _submenus, _ani_submenus, side='left')),
+            FlagGroup('Format', 'exclusive', _dvd, _svcd),
+            FlagGroup('TV System', 'exclusive', _ntsc, _pal),
+            VPanel('Burning',
+                HPanel('',
+                    _burn, _speed,
+                ),
+                _device,
             ),
-            HPanel("Burning", _burn, _speed, _device),
-            HPanel('', _menu_title, _menu_length),
-            _out,
         ),
+        HPanel('Backgrounds',
+            HPanel('Video or image',
+            _background),
+            HPanel('Audio',
+            _bgaudio),
+        ),
+        _out,
     ),
-    VPanel('Backgrounds',
-            VPanel('Background image or video',
-                _background,
-                HPanel('', _bgvideo_seek, _menu_fade),
-                _bg_color),
-            VPanel('Background audio',
-                _bgaudio, HPanel('', _bgaudio_seek, _menu_audio_fade)),
-        ),
 )
-
 
 main_menu = Tabs('Main menu',
     HPanel('Basic settings',
@@ -697,9 +695,18 @@ main_menu = Tabs('Main menu',
                 _showcase_titles_align,
                 _textmenu,
                 _quick_menu,
-                _switched_menus,
-                _intro,
+                _switched_menus
             ),
+        ),
+        VPanel('',
+            _intro,
+            VPanel('Background image/video options',
+                _bgvideo_seek,
+                _menu_fade,
+                _bg_color),
+            VPanel('Background audio options',
+                _bgaudio_seek,
+                _menu_audio_fade),
         ),
     ),
 
@@ -730,7 +737,6 @@ main_menu = Tabs('Main menu',
         ),
     ),
 )
-
 
 submenus = Tabs('Submenus',
     VPanel('Settings',
