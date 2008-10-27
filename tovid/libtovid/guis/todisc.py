@@ -71,8 +71,10 @@ _out = Filename('Output name', '-out', '',
 ### Showcase options
 ### --------------------------------------------------------------------
 
-_non_showcase = Flag('Basic thumbnails', '', True,
-    'Thumbnail menu links, centred, and as large as space restraints allow')
+_non_showcase = Label(\
+    '    The default style is large centered thumbnail menu links.\n \
+    Or choose among the following options: ( see tooltips )',
+    side='center')
 
 _showcase = FlagOpt('Showcase', '-showcase', False,
     "Arrange menu links along the outside edges, to leave room for"
@@ -89,16 +91,16 @@ _showcase_seek = Number('Showcase seek', '-showcase-seek', 2,
     0, 3600, 'seconds')
 
 _textmenu = FlagOpt("Textmenu", '-textmenu', False,
-    'Showcase style text only menu.  Optionally use a "showcase" '
-    'image/video, or static/animated background.  Use the '
+    'A text only menu with links arranged at outside edges.  Optionally use a '
+    '"showcase" image/video, or static/animated background.  Use the '
     '"columns" option to set the number of titles in '
     'column 1 (column 2 will use the remainder).  Note that '
     'column 2 titles are aligned right. '
     'See also quick-menu and switched menu.',
     Number('Columns', '', 13, '', 1, 50))
 
-_quick_menu = Flag("Quick menu", '-quick-menu', False,
-    'Ten times faster than normal showcase animation.  '
+_quick_menu = Flag("Quick menu  ( This makes an animated menu very quickly! )",
+    '-quick-menu', False, 'Ten times faster than normal showcase animation.  '
     'A showcase video is required unless doing switched '
     'menus.  No video thumbs are made.  Not compatible '
     'with wave or rotate options')
@@ -689,15 +691,20 @@ main =  VPanel('Basic',
 main_menu = Tabs('Main menu',
     HPanel('Basic settings',
         VPanel('',
-            FlagGroup('Menu Style', 'exclusive', _non_showcase, _showcase),
+            VPanel('Menu Style',
+                _non_showcase,
+                _showcase,
+                _textmenu,
+                _quick_menu,
+                _switched_menus,
+            ),
             VPanel('Showcase options',
+                _showcase_titles_align,
+                Label('The following apply to any style using a showcase image',
+                side='center'),
                 _showcase_geo,
                 _showcase_seek,
                 _showcase_framestyle,
-                _showcase_titles_align,
-                _textmenu,
-                _quick_menu,
-                _switched_menus
             ),
         ),
         VPanel('',
