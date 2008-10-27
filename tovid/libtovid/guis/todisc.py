@@ -77,10 +77,10 @@ _non_showcase = Label(\
     side='center')
 
 _showcase = FlagOpt('Showcase', '-showcase', False,
-    "Arrange menu links along the outside edges, to leave room for"
-    " an optional 'showcase' image or video.  The file entry box"
-    " is for an optional image or video file to be showcased in a"
-    " large central frame",
+    'Arrange menu links along the outside edges, to leave room for'
+    ' an optional "showcase" image or video.  The file entry box'
+    ' is for an optional image or video file to be showcased in a'
+    ' large central frame',
     Filename('', action='load', desc='Select an image or video file.'),
     enables=['-showcase-seek', '-textmenu', '-quick-menu', '-switched-menus'])
 
@@ -99,11 +99,11 @@ _textmenu = FlagOpt("Textmenu", '-textmenu', False,
     'See also quick-menu and switched menu.',
     Number('Columns', '', 13, '', 1, 50))
 
-_quick_menu = Flag("Quick menu  ( This makes an animated menu very quickly! )",
+_quick_menu = Flag("Quick menu",
     '-quick-menu', False, 'Ten times faster than normal showcase animation.  '
     'A showcase video is required unless doing switched '
-    'menus.  No video thumbs are made.  Not compatible '
-    'with wave or rotate options')
+    'menus.  Menu links are text only.  Not compatible '
+    'with wave or rotate options.')
 
 _switched_menus = Flag("Switched menus", '-switched-menus', False,
     'This makes a showcase style menu with text menu '
@@ -114,10 +114,10 @@ _switched_menus = Flag("Switched menus", '-switched-menus', False,
     '"Quick menu" option for a huge speed up !')
 
 _showcase_framestyle = Choice('Frame style', '-showcase-framestyle', 'none',
-    'This is a showcase style only option.  The "none" option will use '
-    'the default frame method, using imagemagick. The "glass" option '
-    'will use mplayer to make frames, giving an animated effect.  The ' 
-    'glass style can be much faster - especially if used without '
+    'This option is only for menu styles with a "showcase" image.  '
+    'The "none" option will use the default frame method, using imagemagick.  '
+    'The "glass" option will use mplayer to make frames, giving an animated '
+    'effect.  The glass style can be much faster - especially if used without '
     '-rotate and -wave options',
     'none|glass')
 
@@ -128,10 +128,10 @@ _showcase_geo = Text('Image position', '-showcase-geo', '',
 
 _showcase_titles_align = Choice('Title alignment',
     '-showcase-titles-align', 'none',
-    'This is a showcase style only option.  Default is to center '
-    'the text above the thumbnails.  This option will align the '
-    'titles either to the left (west), center, or right (east).  '
-    'Leave at "none" to let todisc sort it out for you.',
+    'This option is only for showcase style menus with video thumbnails and '
+    'text.  Default is to center the text above the thumbnails.  This option '
+    'will align the titles either to the left (west), center, or right '
+    '(east).  Leave at "none" to let todisc sort it out for you.',
     'none|west|center|east')
 
 # Menu settings
@@ -699,12 +699,14 @@ main_menu = Tabs('Main menu',
                 _switched_menus,
             ),
             VPanel('Showcase options',
-                _showcase_titles_align,
                 Label('The following apply to any style using a showcase image',
                 side='center'),
                 _showcase_geo,
                 _showcase_seek,
                 _showcase_framestyle,
+                Label('The following is only for showcase menus with video thumbs',
+                side='center'),
+                _showcase_titles_align,
             ),
         ),
         VPanel('',
