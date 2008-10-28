@@ -185,13 +185,6 @@ _intro = Filename('Intro video', '-intro', '',
     'aspect is supported.',
     'load', 'Select a video file')
 
-_static = Flag('Static menus', '-static', False,
-    'Create still-image menus; takes less time. For duration of background '
-    'audio for static menus, use "menu length" on the "Menu" tab')
-
-_animated = Flag('Animated', '', True,
-    'Created animated menus')
-
 _menu_length = Number('Menu length', '-menu-length', 20,
     'Duration of menu. The length of the menu will also set '
     'the length of background audio for a static menu',
