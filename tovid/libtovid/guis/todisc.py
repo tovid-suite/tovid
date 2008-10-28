@@ -54,13 +54,13 @@ _group = List('Grouped videos', '-group', None,
     'selector on the right',
     Filename(''))
 
-_dvd = Flag("DVD", '-dvd', True)
+_dvd = Flag('DVD', '-dvd', True, 'DVD, for burning to a DVD-R/RW')
 
-_svcd = Flag("SVCD", '-svcd', False)
+_svcd = Flag('SVCD', '-svcd', False, 'Super Video CD, for burning to a CD-R/RW')
 
-_ntsc = Flag("NTSC", '-ntsc', True)
+_ntsc = Flag('NTSC', '-ntsc', True, 'NTSC, US standard')
 
-_pal = Flag("PAL", '-pal', False)
+_pal = Flag('PAL', '-pal', False, 'PAL, European standard')
 
 _out = Filename('Output name', '-out', '',
     'Name to use for the output directory where the disc will be created.',
@@ -71,10 +71,10 @@ _out = Filename('Output name', '-out', '',
 ### Showcase options
 ### --------------------------------------------------------------------
 
-_non_showcase = Label(\
-    '    The default style is large centered thumbnail menu links.\n \
-    Or choose among the following options: ( see tooltips )',
-    side='center')
+_non_showcase = Label(
+    'The default style is large centered thumbnail menu links.\n'
+    'Or choose among the following options: ( see tooltips )',
+    'center')
 
 _showcase = FlagOpt('Showcase', '-showcase', False,
     'Arrange menu links along the outside edges, to leave room for'
@@ -188,6 +188,7 @@ _intro = Filename('Intro video', '-intro', '',
 _static = Flag('Static menus', '-static', False,
     'Create still-image menus; takes less time. For duration of background '
     'audio for static menus, use "menu length" on the "Menu" tab')
+
 _animated = Flag('Animated', '', True,
     'Created animated menus')
 
@@ -196,17 +197,28 @@ _menu_length = Number('Menu length', '-menu-length', 20,
     'the length of background audio for a static menu',
     0, 120, 'seconds')
 
+
+# Static/animated main menu
+_static = Flag('Static menu', '-static', False,
+    'Create still-image menus; takes less time. For duration of background '
+    'audio for static menus, use "menu length" on the "Menu" tab')
+
+_animated = Flag('Animated menu', '', True,
+    'Created animated menus')
+
+# Static/animated submenus
 _submenus = Flag('Static submenus', '-submenus', False,
     'Create a submenu for each video title; takes more time.')
+
+_ani_submenus = Flag('Animated submenus', '-ani-submenus', False,
+    'Create an animated submenu for each video.  '
+    'Submenu links lead to chapter points.')
+
 
 _submenu_length = Number('Submenu length', '-submenu-length', 14,
     'The length of the submenu. If doing static submenus and using audio '
     'for the submenu, this will be the length of the submenu audio',
     0, 80, 'seconds')
-
-_ani_submenus = Flag('Animated', '-ani-submenus', False,
-    'Create an animated submenu for each video.  '
-    'Submenu links lead to chapter points.')
 
 _submenu_audio_fade = Number('Audio fade', '-submenu-audio-fade', 1,
     'Number of seconds to fade given submenu audio in and out.',
@@ -658,7 +670,8 @@ _subtitles = SpacedText('Subtitles', '-subtitles', '',
 """
 
 main =  VPanel('Basic',
-    Label('You can author (and burn) a disc with a simple menu using just this "Basic" pane', 'center'),
+    Label('You can author (and burn) a disc with a simple menu '
+          'using just this "Basic" pane', 'center'),
     RelatedList('', _files, '1:1', _titles, filter=to_title),
     VPanel('',
         HPanel('',
@@ -700,7 +713,7 @@ main_menu = Tabs('Main menu',
             ),
             VPanel('Showcase options',
                 Label('The following apply to any style using a showcase image',
-                side='center'),
+                      'center'),
                 _showcase_geo,
                 _showcase_seek,
                 _showcase_framestyle,
@@ -863,18 +876,19 @@ behavior = VPanel("Behavior",
 )
 
 playback = Tabs("Playback",
-    VPanel('Basic settings',
-        HPanel('Aspect', _widescreen, _aspect),
-        HPanel('Language(s)', _audio_lang, _subtitles),
-        _chapters,
-        VPanel('Navigation',
-            HPanel('',
+    HPanel('',
+        VPanel('Basic settings',
+            _loop,
+            _widescreen,
+            _aspect,
+            HPanel('Language(s)', _audio_lang, _subtitles),
+            VPanel('Navigation',
                 _playall,
                 _videos_are_chapters,
                 _chain_videos,
             ),
         ),
-        _loop,
+        _chapters,
     ),
     VPanel('Grouped Videos',
         RelatedList('Grouped videos', '-files', '1:*', _group),

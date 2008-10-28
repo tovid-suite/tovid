@@ -979,6 +979,27 @@ class List (Control):
 
 ### --------------------------------------------------------------------
 
+class ControlChoice (Control):
+    """A choice of values from any of several other Controls.
+    """
+    def __init__(self,
+                 label="Text List",
+                 option='',
+                 default=None,
+                 help='',
+                 *controls,
+                 **kwargs):
+        Control.__init__(self, str, label, option, default, help, **kwargs)
+        ensure_type("ControlChoice needs Control instances", Control, *controls)
+        self.controls = list(controls)
+
+
+    def draw(self, master):
+        pass
+
+
+### --------------------------------------------------------------------
+
 # Exported control classes, indexed by name
 CONTROLS = {
     'Choice': Choice,

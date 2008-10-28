@@ -28,26 +28,27 @@ from support import ensure_type, divide_list
 class Label (Widget):
     """A widget with a text label.
     """
-    def __init__(self, text='', side='left'):
+    def __init__(self, text='', justify='left'):
         """Create a Label with the given text.
 
             text
                 String to appear in the Label
-            side
-                'left', 'center', or 'right'
+            justify
+                Text justification: 'left', 'center', or 'right'
         """
         Widget.__init__(self, text)
         self.text = text
-        if side not in ['left', 'center', 'right']:
-            raise ValueError("Label side must be 'left', 'center', or 'right'.")
-        self.side = side
-        # 'side' translates to pack()'s 'anchor' argument
+        if justify not in ['left', 'center', 'right']:
+            raise ValueError("Label justify argument must be 'left', 'center', "
+                             "or 'right' (got '%s' instead)." % justify)
+        self.justify = justify
+        # In addition to justify, anchor to nw, n, or ne
         _anchors = {'left': 'nw', 'center': 'n', 'right': 'ne'}
-        self.anchor = _anchors[self.side]
+        self.anchor = _anchors[self.justify]
 
     def draw(self, master):
         Widget.draw(self, master)
-        self.label = tk.Label(self, text=self.text)
+        self.label = tk.Label(self, text=self.text, justify=self.justify)
         self.label.pack(anchor=self.anchor)
 
 ### --------------------------------------------------------------------
