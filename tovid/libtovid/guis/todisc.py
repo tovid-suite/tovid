@@ -639,7 +639,7 @@ _speed = Number('Speed', '-speed', 8,
     0, 30)
 
 _device = Text('Device', '-device', '/dev/dvdrw',
-    'Select or type your burning device (default: /dev/dvdrw)')
+    'Type your burning device (default: /dev/dvdrw)')
 
 # Authoring
 _widescreen = Choice('Widescreen', '-widescreen', 'none',
@@ -718,7 +718,7 @@ main_menu = Tabs('Main menu',
                 _showcase_seek,
                 _showcase_framestyle,
                 Label('The following is only for showcase menus with video thumbs',
-                side='center'),
+                'center'),
                 _showcase_titles_align,
             ),
         ),
