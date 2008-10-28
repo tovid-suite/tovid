@@ -72,8 +72,8 @@ _out = Filename('Output name', '-out', '',
 ### --------------------------------------------------------------------
 
 _non_showcase = Label(
-    'The default style is large centered thumbnail menu links.\n'
-    'Or choose among the following options: ( see tooltips )',
+    'The default is centered thumbnail menu links.  Or choose from\n'
+    'among the following "edge aligned" styles.( see tooltips )',
     'center')
 
 _showcase = FlagOpt('Showcase', '-showcase', False,
@@ -165,13 +165,13 @@ _menu_audio_fade = Number('Fade in', '-menu-audio-fade', 1,
     '(default: 1.0 seconds). Use a fade of "0" for no fade.',
     0, 10, 'seconds')
 
-_menu_fade = Number('Fade in', '-menu-fade', 0.0,
+_menu_fade = FlagOpt('Menu Fade (in/out)', '-menu-fade', True,
     'Fade the menu in and out. The background will fade in first, then '
     'the title (and mist if called for), then the menu thumbs and/or titles.  '
     'The fadeout is in reverse order.  The optional numerical argument '
     'is the length of time the background will play before the menu '
-    'begins to fade in.',
-    0.0, 60.0, 'seconds')
+    'begins to fade in.', 
+    Number('Fade start', '', 1, '', 0, 60, 'seconds'))
 
 _transition_to_menu = Flag('Transition to menu', '-transition-to-menu', False,
     'A convenience option for animated backgrounds: the background '
@@ -723,12 +723,13 @@ main_menu = Tabs('Main menu',
             ),
         ),
         VPanel('',
-            _intro,
+            VPanel('Special menu style options',
+                _menu_fade,
+                _intro,),
             VPanel('Backgrounds',
                 VPanel('Image or video options',
                     _bgvideo_seek,
-                    _menu_fade),
-                    _bg_color,
+                    _bg_color),
                 VPanel('Audio options',
                     _bgaudio_seek,
                     _menu_audio_fade),
