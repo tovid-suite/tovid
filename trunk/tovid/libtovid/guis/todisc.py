@@ -165,7 +165,7 @@ _menu_audio_fade = Number('Fade in', '-menu-audio-fade', 1,
     '(default: 1.0 seconds). Use a fade of "0" for no fade.',
     0, 10, 'seconds')
 
-_menu_fade = FlagOpt('Menu Fade (in/out)', '-menu-fade', False,
+_menu_fade = FlagOpt('Menu Fade (in/out)', '-menu-fade', True,
     'Fade the menu in and out. The background will fade in first, then '
     'the title (and mist if called for), then the menu thumbs and/or titles.  '
     'The fadeout is in reverse order.  The optional numerical argument '
@@ -194,7 +194,7 @@ _menu_length = Number('Menu length', '-menu-length', 20,
 # Static/animated main menu
 _static = Flag('Static menu', '-static', False,
     'Create still-image menus; takes less time. For duration of background '
-    'audio for static menus, use "menu length" on the "Menu" tab')
+    'audio for static menus, use "Menu length" on this tab')
 
 _animated = Flag('Animated menu', '', True,
     'Created animated menus')
@@ -288,7 +288,7 @@ _slide_transition = Choice('Transition type', '-slide-transition', 'crossfade',
     'between the slides.  The length is determined by  '
     '1)  the length  of  the -bgaudio AUDIO  2) the '
     'length given with -menu-length DURATION.  '
-    '* See Menu tab for menu length option *.',
+    '* See "Basic" tab for menu length option *.',
     'crossfade|fade')
 
 _slide_border = Number('Slide border', '-slide-border', 100,
@@ -745,15 +745,15 @@ main_menu = Tabs('Main menu',
 
     VPanel('Video titles',
         video_title_font,
+        HPanel('Layout ( "textmenu style" titles only )',
+            _text_start,
+            _title_gap,
+        ),
         HPanel('Buttons',
             _button_style,
             _highlight_color,
             _select_color,
             _outlinewidth,
-        ),
-        HPanel('Layout ( "textmenu style" titles only )',
-            _text_start,
-            _title_gap,
         ),
     ),
 )
