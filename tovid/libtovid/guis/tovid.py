@@ -177,7 +177,7 @@ _force = Flag('Force encoding', '-force')
 
 # Prompting
 _noask = Flag('No prompts',  '-noask', False, 'TODO: Tooltip')
-_from_gui = Flag('From GUI', '-from-gui', True)
+_from_gui = Flag('From GUI', '-from-gui', False)
 
 ### ---------------------------------------------------------------------------
 ### Higher-level groups and panels
