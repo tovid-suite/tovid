@@ -59,11 +59,14 @@ import math
 def divide_list(items, pieces):
     """Divide a list of things into several pieces, of roughly equal size.
     """
+    # Can't divide into fewer than 2 pieces
     if pieces < 2:
         return [items]
     else:
-        per_piece = int(math.ceil(float(len(items)) / pieces))
-        return [items[i*per_piece : (i+1)*per_piece] for i in range(pieces)]
+        # N = number of items in each piece
+        N = int(math.ceil(float(len(items)) / pieces))
+        # For each piece p, extract N items
+        return [items[N*p : N*p+N] for p in range(pieces)]
 
 ### --------------------------------------------------------------------
 
