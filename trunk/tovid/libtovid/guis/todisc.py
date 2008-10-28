@@ -165,7 +165,7 @@ _menu_audio_fade = Number('Fade in', '-menu-audio-fade', 1,
     '(default: 1.0 seconds). Use a fade of "0" for no fade.',
     0, 10, 'seconds')
 
-_menu_fade = FlagOpt('Menu Fade (in/out)', '-menu-fade', True,
+_menu_fade = FlagOpt('Menu Fade (in/out)', '-menu-fade', False,
     'Fade the menu in and out. The background will fade in first, then '
     'the title (and mist if called for), then the menu thumbs and/or titles.  '
     'The fadeout is in reverse order.  The optional numerical argument '
@@ -745,15 +745,15 @@ main_menu = Tabs('Main menu',
 
     VPanel('Video titles',
         video_title_font,
-        HPanel('Layout',
-            _text_start,
-            _title_gap,
-        ),
         HPanel('Buttons',
             _button_style,
             _highlight_color,
             _select_color,
             _outlinewidth,
+        ),
+        HPanel('Layout ( "textmenu style" titles only )',
+            _text_start,
+            _title_gap,
         ),
     ),
 )
