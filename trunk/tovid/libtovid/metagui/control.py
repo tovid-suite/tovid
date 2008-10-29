@@ -145,7 +145,6 @@ class Control (Widget):
                  default='',
                  help='',
                  toggles=False,
-                 enabled=True,
                  labelside='left',
                  **kwargs):
         """Create a Control for an option.
@@ -164,15 +163,13 @@ class Control (Widget):
                 Help text to show in a tooltip
             toggles
                 Control widget may be toggled on/off
-            enabled
-                True if Control is toggled on by default
             labelside
                 Position of label ('left' or 'top'). It's up to the
                 derived Control class to use this appropriately.
             **kwargs: Keyword arguments of the form key1=arg1, key2=arg2
         
         """
-        Widget.__init__(self, label, enabled)
+        Widget.__init__(self, label)
         self.vartype = vartype
         self.variable = None
         self.label = label
@@ -211,30 +208,31 @@ class Control (Widget):
             self.tooltip = ToolTip(self, text=self.help, delay=1000)
         # Draw the toggle checkbox if desired
         if self.toggles:
-            self.check = tk.Checkbutton(self, text='',
-                                        command=self.toggle)
+            self.checked = tk.BooleanVar()
+            self.check = tk.Checkbutton(self, text='', command=self.toggle,
+                                        var=self.checked)
             self.check.pack(side='left')
 
 
     def toggle(self):
         """Enable or disable the Control when self.check is toggled.
         """
-        # If currently enabled, disable (then re-enable the checkbox)
-        if self.enabled:
+        # If checkbox is checked, enable Control
+        if self.checked.get():
+            self.enable()
+        # Otherwise, disable (then re-enable checkbox)
+        else:
             self.disable()
             self.check.config(state='normal')
-        # Otherwise, enable
-        else:
-            self.enable()
 
 
     def post(self):
         """Post-draw initialization.
         """
-        #if self.toggles:
-        #    self.toggle()
         if not self.enabled:
             self.disable()
+        if self.toggles:
+            self.toggle()
 
 
     def get(self):
