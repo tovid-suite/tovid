@@ -299,7 +299,7 @@ _slide_frame = Number('Slide frame', '-slide-frame', 12,
     'Use a frame around the animated slideshow slides (default: 12).',
     0, 20, 'pixels')
 
-_no_confirm_backup = Flag('No reminder prompt for backing up files',
+_no_confirm_backup = Flag('No reminder prompt to  backup your slideshow files',
     '-no-confirm-backup', False, 'Todisc prompts you for a "yes" '
     ' to show you have taken backup precations.  This option '
     'disables that prompt.')
@@ -760,6 +760,8 @@ main_menu = Tabs('Main menu',
 
 submenus = Tabs('Submenus',
     VPanel('Settings',
+        Label('Enable a submenu option on the "Basic" tab to use submenus',
+        'center'),
         _submenu_length,
         _submenu_audio_fade,
         HPanel('Backgrounds',
@@ -783,7 +785,11 @@ submenus = Tabs('Submenus',
 tab_list = []
 slideshow_panel = Tabs('Slideshow',
     VPanel('General options',
-        Text('Title', '-titles', '', 'Title for this slideshow.'),
+        Label('Please choose an "Output name" on "Basic" tab before executing',
+        'center'),
+        Text('Title', '-titles', '', 'Title for this slideshow.  '
+        'Use a title ONLY for multiple slideshows '
+        'or slideshow(s) mixed with videos'),
         _slides,
         FlagGroup("", 'exclusive',
             Flag('Animated with transitions', '', True,
@@ -802,11 +808,13 @@ slideshow_panel = Tabs('Slideshow',
                 HPanel('', _slide_border, _slide_frame),
             ),
         ),
-        Number('Number of slides shown on menu', '-menu-slide-total', 0,
-            'Use this many slides for making the slideshow menu. '
-            'The default is to use all the slides given.',
-            0, 100),
-        _submenu_slide_total,
+        HPanel('',
+            Number('Number of slides shown on menu', '-menu-slide-total', 0,
+                'Use this many slides for making the slideshow menu. '
+                'The default is to use all the slides given.',
+                0, 100),
+            _submenu_slide_total,
+        ),
         _no_confirm_backup,
     ),
     VPanel('Advanced options',
@@ -861,10 +869,11 @@ thumbnails = VPanel("Thumbnails",
 from libtovid.guis import tovid
 
 behavior = VPanel("Behavior",
-    HPanel('',
-        VPanel('', _jobs, _keep_files, _no_ask),
-        VPanel('', _no_warn, _grid, _use_makemenu),
-    ),
+    VPanel('',
+        VPanel('Execution',_jobs),
+        VPanel('Interaction',_keep_files, _no_ask, _no_warn, _no_confirm_backup),
+        VPanel('Preview',_grid),
+        VPanel('Program',_use_makemenu)),
     SpacedText('Custom todisc options', '', '',
          'Space-separated list of custom options to pass to todisc.'),
 )
