@@ -640,7 +640,7 @@ class FlagOpt (Flag):
         Flag.draw(self, master)
         # Pack the arg control next to the flag checkbox
         self.control.draw(self)
-        self.control.pack(side='left', fill='x', expand=True)
+        self.control.pack(anchor='nw', side='left', fill='x', expand=True)
         # Disable if flag defaults to false
         if not self.default:
             self.control.disable()
