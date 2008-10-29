@@ -72,9 +72,7 @@ _out = Filename('Output name', '-out', '',
 ### --------------------------------------------------------------------
 
 _non_showcase = Label(
-    'The default is centered thumbnail menu links.  Or choose from\n'
-    'among the following "edge aligned" styles.( see tooltips )',
-    'center')
+    'Centered thumbnail menu links.  Or choose from "Edge aligned styles"')
 
 _showcase = FlagOpt('Showcase', '-showcase', False,
     'Arrange menu links along the outside edges, to leave room for'
@@ -100,7 +98,7 @@ _textmenu = FlagOpt("Textmenu", '-textmenu', False,
 
 _quick_menu = Flag("Quick menu",
     '-quick-menu', False, 'Ten times faster than normal showcase animation.  '
-    'A showcase video is required unless doing switched '
+    'A showcase or background video is required unless doing switched '
     'menus.  Menu links are text only.  Not compatible '
     'with wave or rotate options.')
 
@@ -701,13 +699,16 @@ main_menu = Tabs('Main menu',
     HPanel('Basic settings',
         VPanel('',
             VPanel('Menu Style',
-                _non_showcase,
+                VPanel('Default style',
+                _non_showcase),
                 VPanel('Edge aligned styles',
-                Label('All can use a Showcase FILE except "Switched menus"\n'
-                'A showcase video is required for "Quick menu"', 'center'),
+                Label('All can use a Showcase FILE except "Switched menus"',
+                'center'),
                 _showcase,
                 _textmenu,
-                _quick_menu,
+                HPanel('',
+                    _quick_menu,
+                    Label('( A showcase or background video is required for "Quick menu" )')),
                 _switched_menus),
             ),
             VPanel('Showcase options',
