@@ -231,8 +231,10 @@ class Control (Widget):
     def post(self):
         """Post-draw initialization.
         """
-        if self.toggles:
-            self.toggle()
+        #if self.toggles:
+        #    self.toggle()
+        if not self.enabled:
+            self.disable()
 
 
     def get(self):
@@ -585,12 +587,15 @@ class Flag (Control):
             return
         for control in self.controls:
             if self.get():
-                control.state = 'normal'
-                # FIXME: Won't work because control may not be drawn yet!
-                #control.enable()
+                if control.is_drawn:
+                    control.enable()
+                else:
+                    control.enabled = True
             else:
-                control.state = 'disabled'
-                #control.disable()
+                if control.is_drawn:
+                    control.disable()
+                else:
+                    control.enabled = False
 
     
     def get_args(self):

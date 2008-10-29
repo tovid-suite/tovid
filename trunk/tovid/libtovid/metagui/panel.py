@@ -229,7 +229,7 @@ class Dropdowns (Panel):
         """
         args = []
         for control in self.widgets:
-            if control.active:
+            if control.is_drawn:
                 args += control.get_args()
         return args
 
@@ -363,14 +363,14 @@ class FlagGroup (Panel):
     """
     def __init__(self,
                  name='',
-                 state='normal',
+                 kind='normal',
                  *flags,
                  **kwargs):
         """Create a FlagGroup with the given label and state.
         
             name
                 Name/label for the group
-            state
+            kind
                 'normal' for independent Flags, 'exclusive' for
                 mutually-exclusive Flags (more like a Choice)
             *flags
@@ -385,7 +385,7 @@ class FlagGroup (Panel):
         Panel.__init__(self, name)
         ensure_type("FlagGroup may only contain Flag instances", Flag, *flags)
         self.flags = flags
-        self.state = state
+        self.kind = kind
         # Keyword arguments
         self.side = 'top'
         if 'side' in kwargs:
@@ -428,7 +428,7 @@ class FlagGroup (Panel):
         """Event handler called when a Flag is selected.
         """
         # For normal flags, nothing to do
-        if self.state != 'exclusive':
+        if self.kind != 'exclusive':
             return
         # For exclusive flags, clear all but the clicked Flag
         for flag in self.flags:
