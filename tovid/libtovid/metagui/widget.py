@@ -26,17 +26,17 @@ class Widget (tk.Frame):
 
         self.name = name
         self.enabled = enabled
-        self.active = False
+        self.is_drawn = False
 
 
     def draw(self, master):
         tk.Frame.__init__(self, master)
-        self.active = True
+        self.is_drawn = True
 
 
     def destroy(self):
         tk.Frame.destroy(self)
-        self.active = False
+        self.is_drawn = False
 
 
     def get_args(self):
