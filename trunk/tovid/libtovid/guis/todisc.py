@@ -81,8 +81,7 @@ _showcase = FlagOpt('Showcase', '-showcase', False,
     ' an optional "showcase" image or video.  The file entry box'
     ' is for an optional image or video file to be showcased in a'
     ' large central frame',
-    Filename('', action='load', desc='Select an image or video file.'),
-    enables=['-showcase-seek', '-textmenu', '-quick-menu', '-switched-menus'])
+    Filename('', action='load', desc='Select an image or video file.'))
 
 _showcase_seek = Number('Showcase seek', '-showcase-seek', 2,
     'Play showcase video from the given seek time. '
@@ -279,6 +278,8 @@ _submenu_slide_total = SpacedText('Number of slides shown on submenu',
     '-submenu-slide-total', '',
     'Use this many slides for making the slideshow submenus. '
     'The default is to use all the slides given.  '
+    'For multiple slideshows or slideshow(s) mixed with video(s) only.  '
+    'Select a submenu option on the "Basic" tab to use this option. '
     'Use a single value for all or list one value per submenu.')
 
 _slide_transition = Choice('Transition type', '-slide-transition', 'crossfade',
@@ -433,11 +434,11 @@ _seek = SpacedText('Thumbnail seek', '-seek', '',
 _menu_font = Font('', '-menu-font', 'Helvetica',
     'The font to use for the menu title')
 
-_menu_fontsize = Number('', '-menu-fontsize', 24,
+_menu_fontsize = Number('Size', '-menu-fontsize', 24,
     'The font size to use for the menu title',
     0, 80, 'pixels', toggles=True)
 
-_title_color = Color('', '-title-color', '#EAEAEA',
+_title_color = Color('Color', '-title-color', '#EAEAEA',
     'The font color to use for the menu title')
 
 _title_opacity = Number('Opacity', '-title-opacity', 100,
@@ -459,12 +460,12 @@ menu_title_font = HPanel('Menu title font',
 _titles_font = Font('', '-titles-font', 'Helvetica',
     'The font to use for the video titles')
 
-_titles_fontsize = Number('', '-titles-fontsize', 12,
+_titles_fontsize = Number('Size', '-titles-fontsize', 12,
     'The font size to use for the video titles.  '
     'Default size varies depending on options chosen.',
     0, 80, 'pixels', toggles=True)
 
-_titles_color = Color('', '-titles-color', None,
+_titles_color = Color('Color', '-titles-color', None,
     'The font color to use for the video titles', toggles=True)
 
 _titles_opacity = Number('Opacity', '-titles-opacity', 100,
@@ -486,11 +487,11 @@ video_title_font = HPanel('Video title font',
 _submenu_font = Font('', '-submenu-font', 'Helvetica',
     'The font to use for the Submenu menu titles')
 
-_submenu_fontsize = Number('', '-submenu-fontsize', 24,
+_submenu_fontsize = Number('Size', '-submenu-fontsize', 24,
     'The font size to use for the submenu title',
      0, 80, toggles=True)
 
-_submenu_title_color = Color('', '-submenu-title-color', '#EAEAEA',
+_submenu_title_color = Color('Color', '-submenu-title-color', '#EAEAEA',
     'The font color to use for submenu title(s)')
 
 _submenu_title_opacity = Number('Opacity',
@@ -513,11 +514,11 @@ submenu_title_font = HPanel('Submenu title font',
 _chapter_font = Font('', '-chapter-font', 'Helvetica',
     'The font to use for the chapter titles')
 
-_chapter_fontsize = Number('', '-chapter-fontsize', 12,
+_chapter_fontsize = Number('Size', '-chapter-fontsize', 12,
     'The font size to use for the chapter titles',
     0, 80, 'pixels', toggles=True)
 
-_chapter_color = Color('', '-chapter-color', None,
+_chapter_color = Color('Color', '-chapter-color', None,
     'The color for the chapters font.', toggles=True)
 
 _chapter_title_opacity = Number('Opacity',
@@ -600,7 +601,9 @@ _chapters = List('Chapters', '-chapters', None,
 
 _loop = FlagOpt('Menu looping (pause)', '-loop', False,
     'Pause before looping playback of the main menu. If 0, pause indefinitely.',
-    Number('', '', 0, '', 0, 30, 'seconds'))
+    Number('', '', '', '', 0, 30, 'seconds'))
+_pause = Flag('Pause indefinately', '-loop', False,
+    'Pause at end of menu waiting for user interaction')
 
 _chain_videos = FlagOpt('Chain videos', '-chain-videos', False,
     'This option will "chain" videos so they play '
@@ -699,18 +702,20 @@ main_menu = Tabs('Main menu',
         VPanel('',
             VPanel('Menu Style',
                 _non_showcase,
+                VPanel('Edge aligned styles',
+                Label('All can use a Showcase FILE except "Switched menus"\n'
+                'A showcase video is required for "Quick menu"', 'center'),
                 _showcase,
                 _textmenu,
                 _quick_menu,
-                _switched_menus,
+                _switched_menus),
             ),
             VPanel('Showcase options',
                 Label('The following apply to any style using a showcase image',
                       'center'),
-                _showcase_geo,
-                _showcase_seek,
+                HPanel('', _showcase_geo, _showcase_seek),
                 _showcase_framestyle,
-                Label('The following is only for showcase menus with video thumbs',
+                Label('The following applies only to showcase menus with video thumbs',
                 'center'),
                 _showcase_titles_align,
             ),
@@ -785,7 +790,7 @@ submenus = Tabs('Submenus',
 tab_list = []
 slideshow_panel = Tabs('Slideshow',
     VPanel('General options',
-        Label('Please choose an "Output name" on "Basic" tab before executing',
+        Label('Choose "Output name" at bottom of "Basic" tab before executing',
         'center'),
         Text('Title', '-titles', '', 'Title for this slideshow.  '
         'Use a title ONLY for multiple slideshows '
@@ -880,11 +885,12 @@ behavior = VPanel("Behavior",
 
 playback = Tabs("Playback",
     VPanel('Basic settings',
-        _loop,
+        HPanel('Menu Pause',
+            _loop, _pause),
         HPanel('',
             _widescreen, _aspect),
         HPanel('Language(s)', _audio_lang, _subtitles),
-        VPanel('Navigation',
+        HPanel('Navigation',
             _playall,
             _videos_are_chapters,
             _chain_videos,
