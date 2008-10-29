@@ -13,19 +13,17 @@ import time
 class Widget (tk.Frame):
     """Generic metagui widget, suitable for Controls, Panels, etc.
     """
-    def __init__(self, name='', enabled=True):
+    def __init__(self, name=''):
         """Create a Widget.
         
         name
             Unique name for the widget, or '' for an anonymous widget
-        enabled
-            True if widget is initially enabled
         """
         if type(name) != str:
             raise TypeError("Widget name must be a string.")
 
         self.name = name
-        self.enabled = enabled
+        self.enabled = True
         self.is_drawn = False
 
 
