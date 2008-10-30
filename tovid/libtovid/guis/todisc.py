@@ -72,7 +72,8 @@ _out = Filename('Output name', '-out', '',
 ### --------------------------------------------------------------------
 
 _non_showcase = Label(
-    'Centered thumbnail menu links.  Or choose from "Edge aligned styles"')
+    'Default is centered thumbnail menu links.  Or choose \n'
+    'from among the "Edge aligned styles".( see tooltips )')
 
 _showcase = FlagOpt('Showcase', '-showcase', False,
     'Arrange menu links along the outside edges, to leave room for'
@@ -162,7 +163,7 @@ _menu_audio_fade = Number('Fade in', '-menu-audio-fade', 1,
     '(default: 1.0 seconds). Use a fade of "0" for no fade.',
     0, 10, 'seconds')
 
-_menu_fade = FlagOpt('Menu Fade (in/out)', '-menu-fade', True,
+_menu_fade = FlagOpt('Fade (in/out)', '-menu-fade', False,
     'Fade the menu in and out. The background will fade in first, then '
     'the title (and mist if called for), then the menu thumbs and/or titles.  '
     'The fadeout is in reverse order.  The optional numerical argument '
@@ -176,7 +177,7 @@ _transition_to_menu = Flag('Transition to menu', '-transition-to-menu', False,
     'fading in.  This menu does not loop '
     'unless you pass -loop VALUE (authoring tab).'),
 
-_intro = Filename('Intro video', '-intro', '',
+_intro = Filename('', '-intro', '',
     'Video to play before showing the main menu.  At present this must '
     'be a DVD compatible video at the correct resolution etc.  Only 4:3 '
     'aspect is supported.',
@@ -699,32 +700,34 @@ main_menu = Tabs('Main menu',
     HPanel('Basic settings',
         VPanel('',
             VPanel('Menu Style',
-                VPanel('Default style',
-                _non_showcase),
-                VPanel('Edge aligned styles',
-                Label('All can use a Showcase FILE except "Switched menus"',
-                'center'),
+                HPanel('Default style',  _non_showcase),
+                VPanel('Edged aligned styles',
                 _showcase,
                 _textmenu,
-                HPanel('',
-                    _quick_menu,
-                    Label('( A showcase or background video is required for "Quick menu" )')),
+                HPanel('', _quick_menu,
+                    Label('( showcase or background video required )')),
                 _switched_menus),
             ),
             VPanel('Showcase options',
-                Label('The following apply to any style using a showcase image',
+                Label('The following are for styles using a showcase image',
                       'center'),
-                HPanel('', _showcase_geo, _showcase_seek),
+                _showcase_geo,
+                _showcase_seek,
                 _showcase_framestyle,
-                Label('The following applies only to showcase menus with video thumbs',
+                Label('The following is for showcase menus with thumbs',
                 'center'),
                 _showcase_titles_align,
             ),
         ),
         VPanel('',
             VPanel('Special menu style options',
-                _menu_fade,
-                _intro,),
+                VPanel('Menu fade ( transition )',
+                    Label('This option can be used for fadein/fadeout \n'
+                    'and/or for a video "transition" to the menu'),
+                    _menu_fade),
+                VPanel('Introductory video',
+                    _intro,),
+            ),
             VPanel('Backgrounds',
                 VPanel('Image or video options',
                     _bgvideo_seek,
