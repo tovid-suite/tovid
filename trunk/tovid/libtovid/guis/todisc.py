@@ -547,7 +547,8 @@ _menu_title_offset = Text('Title offset', '-menu-title-offset', '+0+50',
     'value is applied to the video *before* is is scaled.')
 
 _text_mist = Flag('Text mist', '-text-mist', False,
-    'Use "mist" behind the menu title (helps with contrast).')
+    'Use "mist" behind the menu title (helps with contrast).',
+    enables=['-text-mist-color', '-text-mist-opacity'])
 
 _text_mist_color = Color('Text mist color', '-text-mist-color', '#FFFFFF',
     'Color of the mist behind the menu title.')
