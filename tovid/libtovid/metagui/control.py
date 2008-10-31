@@ -428,7 +428,7 @@ class Color (Control):
         Control.draw(self, master)
         tk.Label(self, text=self.label).pack(side=self.labelside)
         self.button = tk.Button(self, textvariable=self.variable,
-                                command=self.change)
+                                command=self.change, width=7)
         self.button.pack(side='left')
         # If default color is hexadecimal, set the button color
         if self.default.startswith('#'):
