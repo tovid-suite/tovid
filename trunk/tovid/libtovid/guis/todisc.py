@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 # todisc.py
+# breakpoint
 
 """A GUI for the todisc command-line program.
 """
@@ -72,8 +73,9 @@ _out = Filename('Output name', '-out', '',
 ### --------------------------------------------------------------------
 
 _non_showcase = Label(
-    'Default is centered thumbnail menu links.  Or choose \n'
-    'from among the "Edge aligned styles".( see tooltips )')
+    'Default is centered thumbnail menu links. Or choose \n'
+    'from among the following "Edge aligned styles".\n'
+    '( see tooltips )')
 
 _showcase = FlagOpt('Showcase', '-showcase', False,
     'Arrange menu links along the outside edges, to leave room for'
@@ -163,7 +165,7 @@ _menu_audio_fade = Number('Fade in', '-menu-audio-fade', 1,
     '(default: 1.0 seconds). Use a fade of "0" for no fade.',
     0, 10, 'seconds')
 
-_menu_fade = FlagOpt('Fade (in/out)', '-menu-fade', False,
+_menu_fade = FlagOpt('Menu fade (in/out)', '-menu-fade', False,
     'Fade the menu in and out. The background will fade in first, then '
     'the title (and mist if called for), then the menu thumbs and/or titles.  '
     'The fadeout is in reverse order.  The optional numerical argument '
@@ -175,9 +177,9 @@ _transition_to_menu = Flag('Transition to menu', '-transition-to-menu', False,
     'A convenience option for animated backgrounds: the background '
     'will become static at the exact point the thumbs finish '
     'fading in.  This menu does not loop '
-    'unless you pass -loop VALUE (authoring tab).'),
+    'unless you pass -loop VALUE (authoring tab).')
 
-_intro = Filename('', '-intro', '',
+_intro = Filename('Intro video', '-intro', '',
     'Video to play before showing the main menu.  At present this must '
     'be a DVD compatible video at the correct resolution etc.  Only 4:3 '
     'aspect is supported.',
@@ -710,33 +712,19 @@ main_menu = Tabs('Main menu',
                 HPanel('',_switched_menus,
                     Label('(try with "Quick menu" !)'))),
             ),
-            VPanel('Showcase options',
-                Label('The following are for styles using a showcase image',
-                      'center'),
-                _showcase_geo,
-                _showcase_seek,
-                _showcase_framestyle,
-                Label('The following is for showcase menus with thumbs',
-                'center'),
-                _showcase_titles_align,
-            ),
         ),
         VPanel('',
             VPanel('Special menu style options',
-                VPanel('Menu fade ( transition )',
-                    Label('This option can be used for fadein/fadeout \n'
-                    'and/or for a video "transition" to the menu'),
-                    _menu_fade),
-                VPanel('Introductory video',
-                    _intro,),
+                _menu_fade,
+                _transition_to_menu, 
+                _intro,
             ),
             VPanel('Backgrounds',
                 VPanel('Image or video options',
                     _bgvideo_seek,
                     _bg_color),
                 VPanel('Audio options',
-                    _bgaudio_seek,
-                    _menu_audio_fade),
+                    HPanel('',  _bgaudio_seek, _menu_audio_fade)),
             ),
         ),
     ),
@@ -756,10 +744,12 @@ main_menu = Tabs('Main menu',
 
     VPanel('Video titles',
         video_title_font,
-        HPanel('Layout ( "textmenu style" titles only )',
+        HPanel('Layout',
+            VPanel('For textmenu style titles',
             _text_start,
-            _title_gap,
-        ),
+            _title_gap),
+            VPanel('For showcase style menu with thumbs',
+            _showcase_titles_align)),
         HPanel('Buttons',
             _button_style,
             _highlight_color,
@@ -860,19 +850,26 @@ slideshows = Tabs('Slideshows', *tab_list)
 thumbnails = VPanel("Thumbnails",
     HPanel('',
         VPanel("Effects",
+            VPanel('Effects for the Menu link thumbnails',
             _seek,
             _opacity,
             _blur,
             _3dthumbs,
-            _wave,
             _thumb_mist_color,
-            _rotate,
-            _rotate_thumbs,
+            _rotate_thumbs),
+            VPanel('Effects for the Showcase thumbnail',
+                _showcase_seek,
+                _wave,
+                _rotate,
+                _showcase_framestyle,
+            ),
         ),
         VPanel("Arrangement",
+            VPanel('Arrangement of menu link thumbnails',
             _thumb_shape,
             _align,
-            FlagGroup('Rows', 'exclusive', _tile3x1, _tile4x1),
+            FlagGroup('Rows (for default menu style only)', 'exclusive', _tile3x1, _tile4x1)),
+            VPanel('Arrangement of the showcase thumb', _showcase_geo),
         ),
     ),
 )
