@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 # todisc.py
-# breakpoint
 
 """A GUI for the todisc command-line program.
 """
@@ -369,7 +368,7 @@ _thumb_shape = Choice('Thumb shape', '-thumb-shape', 'normal',
     'behind each thumb, use see "Thumb mist" section below.',
     'normal|oval|plectrum|egg')
 
-_opacity = Number('Thumbnail opacity', '-opacity', 100,
+_opacity = Number('Opacity', '-opacity', 100,
     'Opacity  of thumbnail videos as a percentage. '
     'Less than 100(%) is semi-transparent. '
     'Not recommended with dark backgrounds.',
@@ -422,7 +421,7 @@ _align = Choice('Montage alignment', '-align', 'north',
     'With some arrangements this will have limited effects however.',
     'north|south|east|west|center')
 
-_seek = SpacedText('Thumbnail seek', '-seek', '',
+_seek = SpacedText('Thumbnail seek(s)', '-seek', '',
     'Play thumbnail videos from the given seek time (seconds).  '
     'A single value or space separated list, 1 value per video.  '
     'Also used for seeking in switched menus.')
@@ -848,28 +847,28 @@ slideshows = Tabs('Slideshows', *tab_list)
 
 
 thumbnails = VPanel("Thumbnails",
+    HPanel('Seeking',
+        _seek,
+        _showcase_seek),
     HPanel('',
         VPanel("Effects",
-            VPanel('Effects for the Menu link thumbnails',
-            _seek,
-            _opacity,
-            _blur,
-            _3dthumbs,
-            _thumb_mist_color,
-            _rotate_thumbs),
-            VPanel('Effects for the Showcase thumbnail',
-                _showcase_seek,
+            VPanel('Menu link thumbnails',
+                HPanel('', _opacity, _blur),
+                _3dthumbs,
+                _thumb_mist_color,
+                _rotate_thumbs),
+            VPanel('Showcase thumbnail',
                 _wave,
                 _rotate,
                 _showcase_framestyle,
             ),
         ),
         VPanel("Arrangement",
-            VPanel('Arrangement of menu link thumbnails',
+            VPanel('Menu link thumbnails',
             _thumb_shape,
             _align,
             FlagGroup('Rows (for default menu style only)', 'exclusive', _tile3x1, _tile4x1)),
-            VPanel('Arrangement of the showcase thumb', _showcase_geo),
+            VPanel('Showcase thumbnail', _showcase_geo),
         ),
     ),
 )
