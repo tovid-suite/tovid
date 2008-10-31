@@ -881,8 +881,19 @@ if ! $QUIET; then
     yecho "$@"
 fi
 
-# Warn if running as root
-root_warning
+# ******************************************************************************
+# Print a warning if running as root
+# ******************************************************************************
+if [[ $UID -eq 0 ]]; then
+    echo $SEPARATOR
+    echo "You are running tovid as root."
+    echo "Most of the time, this is an incredibly bad idea."
+    echo "You have been warned..."
+    echo $SEPARATOR
+    sleep 3
+fi
+
+
 
 # ******************************************************************************
 #

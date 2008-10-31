@@ -385,23 +385,6 @@ function countdown()
 }
 
 # ******************************************************************************
-# Print a warning if running as root
-# ******************************************************************************
-function root_warning()
-{
-    if [[ $UID -eq 0 ]]; then
-        echo $SEPARATOR
-        echo "Removing unneeded temporary files in / ..."
-        sleep 5
-        echo "Just kidding! Had this been for real, your hard drive would be"
-        echo "well on its way to oblivion right now, because you're running as root."
-        echo "I hope you know what you're doing..."
-        echo $SEPARATOR
-        sleep 2
-    fi
-}
-
-# ******************************************************************************
 # takes 2 args: (1) version (2) the version testing against
 # return true if version is >= to the test version (same or newer)
 # ******************************************************************************
