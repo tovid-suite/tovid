@@ -99,13 +99,14 @@ _textmenu = FlagOpt("Textmenu", '-textmenu', False,
     'See also quick-menu and switched menu.',
     Number('Columns', '', 13, '', 1, 50))
 
-_quick_menu = Flag("Quick menu",
+_quick_menu = Flag('Quick menu (may need showcase or background video)',
     '-quick-menu', False, 'Ten times faster than normal showcase animation.  '
     'A showcase or background video is required unless doing switched '
     'menus.  Menu links are text only.  Not compatible '
     'with wave or rotate options.')
 
-_switched_menus = Flag("Switched menus", '-switched-menus', False,
+_switched_menus = Flag('Switched menus (try with "Quick menu" !)',
+    '-switched-menus', False,
     'This makes a showcase style menu with text menu '
     'links.  The showcased VIDEO or IMAGE will be of each '
     'video "title", and will change as you press the '
@@ -705,12 +706,11 @@ main_menu = Tabs('Main menu',
             VPanel('Menu Style',
                 HPanel('Default style',  _non_showcase),
                 VPanel('Edged aligned styles',
-                _showcase,
-                _textmenu,
-                HPanel('', _quick_menu,
-                    Label('(may need showcase or background video)')),
-                HPanel('',_switched_menus,
-                    Label('(try with "Quick menu" !)'))),
+                    _showcase,
+                    _textmenu,
+                    _quick_menu,
+                    _switched_menus,
+                ),
             ),
         ),
         VPanel('',
