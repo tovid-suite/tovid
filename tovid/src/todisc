@@ -696,6 +696,7 @@ check_compliance()
             # replace the symlink with actual mpeg
             OUTFILE="$WORK_DIR/${TSET_NUM}-$((i+1)).mpg"
         fi
+        
         spin "Checking compliance of file $((i+1))"
         # if file tested as an image when we were verifying input files 
         if [[ $is_image = "yes" ]]; then
@@ -2310,6 +2311,8 @@ while test $# -gt 0; do
             ;;
         "-transition-to-menu" )
             TRANSITION_TO_MENU=:
+            MENU_FADE=:
+            AUDIO_FADE=:
             ;;
         "-tile3x1" | "-tile-3x1" )
             THREExONE=:
@@ -2669,6 +2672,9 @@ while test $# -gt 0; do
             MIST_COLOUR="$1"
             ;;
         "-thumb-mist-colour" |"-thumb-mist-color" )
+            usage_error "This option has been removed.  Now use -thumb-mist COLOR"
+            ;;
+        "-thumb-mist" )
             unset thumb_bg_colour
             shift
             get_listargs "$@"
@@ -2676,9 +2682,9 @@ while test $# -gt 0; do
             if [[ -n $thumb_bg_colour ]]; then
                 THUMB_BG_CLR=$thumb_bg_colour
             else
-                # a hack to address a current lack in metagui for todiscgui
-                THUMB_BG_CLR="none"
+                THUMB_BG_CLR="#FFFFFF" # default colour without args
             fi
+            USE_FEATHER_MASK=:
             ;;
         "-opacity" )
             shift
@@ -3940,7 +3946,7 @@ if ! $VMGM_ONLY &&  ((${#FILES[@]} != ${#MENU_LEN[@]})); then
 fi
 # set a maximum # of videos
 if $SHOWCASE && ! $MK_CAROUSEL_MODE; then
-    $TEXTMENU && file_max=30 || file_max=10
+    $TEXTMENU && file_max=26 || file_max=10
     test  ${#FILES[@]} -gt $file_max && usage_error \
      "Sorry, a maximum of $file_max titles is allowed for this style
     You gave ${#FILES[@]} videos as input"
