@@ -201,11 +201,12 @@ _animated = Flag('Animated menu', '', True,
 
 # Static/animated submenus
 _submenus = Flag('Static submenus', '-submenus', False,
-    'Create a submenu for each video title; takes more time.')
+    'Create a submenu for each video title.  Submenu links lead to '
+    ' chapter points.  See "Submenus" tab for more submenu options.')
 
 _ani_submenus = Flag('Animated submenus', '-ani-submenus', False,
-    'Create an animated submenu for each video.  '
-    'Submenu links lead to chapter points.')
+    'Create an animated submenu for each video.  Submenu links lead to '
+    'chapter points.  See "Submenus" tab for more submenu options.')
 
 
 _submenu_length = Number('Submenu length', '-submenu-length', 14,
@@ -220,18 +221,16 @@ _submenu_audio_fade = Number('Audio fade', '-submenu-audio-fade', 1,
 _submenu_audio = List('Audio', '-submenu-audio', None,
     'File(s) that will play as background audio for each submenu.  '
     'Use a single file for all submenus, or 1 file per submenu.  '
-    'Any file containing audio can be used.',
+    'Any file containing audio (that ffmpeg can handle) can be used.',
     Filename(''))
 
 _submenu_background = List('Image(s)', '-submenu-background', None,
     'Background image(s) for the submenus(s). Single value or list',
     Filename('', filetypes=image_filetypes))
 
-_submenu_titles = RelatedList('Titles', '-files', '1:1',
-    List('Submenu titles', '-submenu-titles', None,
+_submenu_titles = List('Submenu titles', '-submenu-titles', None,
         'Submenu titles for each video.  '
-        'Use \\n for a new line in a multi-line title.'),
-    filter=strip_all)
+        'Use \\n for a new line in a multi-line title.', Text())
 
 _chapter_titles = RelatedList('Chapter titles', '-files', '1:*',
     List('Chapter titles', '-chapter-titles', None,
@@ -773,7 +772,7 @@ submenus = Tabs('Submenus',
 
     VPanel('Submenu titles',
         submenu_title_font,
-        _submenu_titles,
+        RelatedList('Submenu titles', '-files', '1:1', _submenu_titles, filter=strip_all),
     ),
 
     VPanel('Chapter titles',
@@ -898,7 +897,10 @@ playback = Tabs("Playback",
             _videos_are_chapters,
             _chain_videos,
         ),
-        _chapters,
+    ),
+    #VPanel('Chapters', _chapters),
+    VPanel('Chapters',
+        RelatedList('Chapters', '-files', '1:1', _chapters, side='top', filter=strip_all),
     ),
     VPanel('Grouped Videos',
         RelatedList('Grouped videos', '-files', '1:*', _group),
