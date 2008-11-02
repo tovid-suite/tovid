@@ -96,7 +96,7 @@ _textmenu = FlagOpt("Textmenu", '-textmenu', False,
     'column 1 (column 2 will use the remainder).  Note that '
     'column 2 titles are aligned right. '
     'See also quick-menu and switched menu.',
-    Number('Columns', '', 13, '', 1, 50))
+    Number('Columns', '', 13, '', 0, 13))
 
 _quick_menu = Flag('Quick menu (may need showcase or background video)',
     '-quick-menu', False, 'Ten times faster than normal showcase animation.  '
@@ -174,10 +174,10 @@ _menu_fade = FlagOpt('Menu fade (in/out)', '-menu-fade', False,
     Number('Fade start', '', 1, '', 0, 60, 'seconds'))
 
 _transition_to_menu = Flag('Transition to menu', '-transition-to-menu', False,
-    'A convenience option for animated backgrounds: the background '
-    'will become static at the exact point the thumbs finish '
+    'A convenience option for animated backgrounds using a menu fadein: the '
+    'background will become static at the exact point the thumbs finish '
     'fading in.  This menu does not loop '
-    'unless you pass -loop VALUE (authoring tab).')
+    'unless you pass -loop VALUE ("Behavior" tab).')
 
 _intro = Filename('Intro video', '-intro', '',
     'Video to play before showing the main menu.  At present this must '
@@ -404,9 +404,10 @@ _rotate = Number('Rotate Showcase thumb', '-rotate', 0,
     'Rotate the showcase image|video clockwise by this number of degrees.',
     -30, 30, 'degrees')
 
-_thumb_mist_color = Color('Thumb mist color', '-thumb-mist-color', '#FFFFFF',
-    'Color of the mist behind the thumbnails. This may cause '
-    'contrast problems, so use a large bold font.')
+_thumb_mist = Color('Use thumb mist    Color', '-thumb-mist',
+    '#FFFFFF',  'Use a mist behind shaped thumbnails for contrast.  The Color '
+    'option is the color of the mist. This may cause contrast problems with '
+    'some font and mist color combos, so use a large bold font.', toggles=True)
 
 _tile3x1 = Flag('1 row of 3 thumbs', '-tile3x1', False,
     'Use a montage tile of 3x1 instead of the usual 2x2 '
@@ -855,7 +856,7 @@ thumbnails = VPanel("Thumbnails",
             VPanel('Menu link thumbnails',
                 HPanel('', _opacity, _blur),
                 _3dthumbs,
-                _thumb_mist_color,
+                _thumb_mist,
                 _rotate_thumbs),
             VPanel('Showcase thumbnail',
                 _wave,
