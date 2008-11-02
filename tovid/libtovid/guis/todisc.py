@@ -177,7 +177,7 @@ _transition_to_menu = Flag('Transition to menu', '-transition-to-menu', False,
     'A convenience option for animated backgrounds using a menu fadein: the '
     'background will become static at the exact point the thumbs finish '
     'fading in.  This menu does not loop '
-    'unless you pass -loop VALUE ("Behavior" tab).')
+    'unless you enable "Menu looping" on the "Playback" tab).')
 
 _intro = Filename('Intro video', '-intro', '',
     'Video to play before showing the main menu.  At present this must '
@@ -397,8 +397,8 @@ _wave = Flag('Wave effect for showcase thumb', '-wave', False,
     'Wave effect for showcase image|video.  Alters thumbs along a sine '
     'wave.  This will pass a wave arg of -20x556, producing a gentle '
     'wave with a small amount of distortion.  To use other values you '
-    'will need to use the "tovidopts" box on the first panel.  '
-    'See man todisc for details.')
+    'will need to use "-wave VALUE" in the "todiscopts" box on the "Behavior" '
+    'tab.  See man todisc for details.')
 
 _rotate = Number('Rotate Showcase thumb', '-rotate', 0,
     'Rotate the showcase image|video clockwise by this number of degrees.',
