@@ -772,7 +772,8 @@ submenus = Tabs('Submenus',
 
     VPanel('Submenu titles',
         submenu_title_font,
-        RelatedList('Submenu titles', '-files', '1:1', _submenu_titles, filter=strip_all),
+        RelatedList('Submenu titles',
+                    '-files', '1:1', _submenu_titles, filter=to_title),
     ),
 
     VPanel('Chapter titles',
