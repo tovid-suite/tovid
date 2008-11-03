@@ -929,13 +929,17 @@ class List (Control):
         """
         index = self.listbox.curindex
         new_value = self.control.get()
-        self.variable[index] = new_value
+        # Only update the list if the new value is different
+        if self.variable[index] != new_value:
+            self.variable[index] = new_value
 
 
     def select(self, index, value):
         """Select an item in the list and enable editing.
         """
-        self.control.set(value)
+        # Only set control if value is different
+        if self.control.get() != value:
+            self.control.set(value)
         self.control.focus()
 
 
