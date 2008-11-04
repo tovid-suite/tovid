@@ -8184,8 +8184,11 @@ if ! $QUICK_MENU && $DO_MENU; then
     # convert images to video stream and encode to dvd compliant m2v
     [[ -n $PPM_LOOPS ]] && PPM_FRAMES=$PPM_LOOPS ||
     PPM_FRAMES=$((FRAMES))
-    # extra black frames for menu fade at the end
-    $MENU_FADE && PPM_FRAMES=$((PPM_FRAMES+18))
+    # extra black frames for menu fade at the end (check if doing fadeout 1st)
+    fadevals=( $(. todisc-fade-routine && \
+        echo ${ANIMENU_ENDFRAME} ${THUMBS_FADEOUT_STARTFRAME}) )
+    (( ${fadevals[0]} > ${fadevals[1]} )) && $MENU_FADE && \
+        PPM_FRAMES=$((PPM_FRAMES+18))
     TOYUV_CMD=(ppmtoy4m -v 2 -n $PPM_FRAMES -A 10:11 -I p -F $YUV_FR \
     -S 420mpeg2 -r)
     IMGENC_CMD=(ffmpeg $INSIZE -r $FRAME_RATE $PIPE_FORMAT -i - -an \
