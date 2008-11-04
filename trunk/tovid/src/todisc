@@ -4682,7 +4682,7 @@ else
     MASK_DIM="$DIMY1,$DIMY1 $DIMY2,$DIMX2"
 fi
 
-if [[ -n "$THUMB_SHAPE" ]]; then
+if [[ -n "$THUMB_SHAPE" ]] && $USE_FEATHER_MASK; then
     # make a mask for the mist if called for
     convert -size $THUMB_SIZE xc:none -fill  "$THUMB_BG_CLR" -stroke none \
     -draw "rectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2" "$WORK_DIR/feather_orig.png"
@@ -5364,7 +5364,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         IM_CMD4=(convert "${PICS[i]}" -background none -bordercolor "#444744" \
         "$WORK_DIR/thumb_title${i}.png" -gravity south \
         -geometry +0+5 -compose over -composite )
-        IM_CMD5=(convert - $THUMB_FRAME $THUMB_ROTATE -resize ${THUMB_SIZE}! \
+        IM_CMD5=(convert - -bordercolor none $THUMB_FRAME $THUMB_ROTATE -resize ${THUMB_SIZE}! \
         "${PICS[i]}" )
         if $FEATHER; then
             if $SHOWCASE; then
