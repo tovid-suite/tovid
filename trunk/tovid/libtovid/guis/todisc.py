@@ -170,7 +170,8 @@ _menu_fade = FlagOpt('Menu fade (in/out)', '-menu-fade', False,
     'the title (and mist if called for), then the menu thumbs and/or titles.  '
     'The fadeout is in reverse order.  The optional numerical argument '
     'is the length of time the background will play before the menu '
-    'begins to fade in.', 
+    'begins to fade in.  To disable the fadeout portion, set the '
+    '"Pause indefinately" flag on the "Playback" tab.', 
     Number('Fade start', '', 1, '', 0, 60, 'seconds'))
 
 _transition_to_menu = Flag('Transition to menu', '-transition-to-menu', False,
@@ -194,10 +195,12 @@ _menu_length = Number('Menu length', '-menu-length', 20,
 # Static/animated main menu
 _static = Flag('Static menu', '-static', False,
     'Create still-image menus; takes less time. For duration of background '
-    'audio for static menus, use "Menu length" on this tab')
+    'audio for static menus, use "Menu length" on this tab.  See "Main menu" '
+    'tab for other menu styles and options.')
 
 _animated = Flag('Animated menu', '', True,
-    'Created animated menus')
+    'Create animated menus.  See "Main menu" tab for other menu styles and '
+    'options.')
 
 # Static/animated submenus
 _submenus = Flag('Static submenus', '-submenus', False,
@@ -361,11 +364,13 @@ _slide_blur = SpacedText('Slide blur amount', '-slide-blur', '',
 ### Thumbnail images
 ### --------------------------------------------------------------------
 
-_thumb_shape = Choice('Thumb shape', '-thumb-shape', 'normal',
-    'Apply a shaped transparency mask to thumbnail videos. '
-    'Note: to disable the "mist" background '
-    'behind each thumb, use see "Thumb mist" section below.',
-    'normal|oval|plectrum|egg')
+_thumb_shape = Choice('Thumb shape', '-thumb-shape', 'none',
+    'Apply a shaped transparency mask to thumbnail videos.  These "feathered" '
+    'shapes look best against a plain background or used in conjunction with '
+    '**-thumb-mist** [COLOR], as in the note below'
+    'Note: to use a "mist" background behind each thumb, see "Thumb mist" '
+    'section below.',
+    'normal|oval|plectrum|egg|none')
 
 _opacity = Number('Opacity', '-opacity', 100,
     'Opacity  of thumbnail videos as a percentage. '
@@ -386,11 +391,11 @@ _3dthumbs = Flag('Create 3D thumbs', '-3dthumbs', False,
     ' effect on rectangular thumbs')
 
 _rotate_thumbs = SpacedText('Rotate Thumbs (list)', '-rotate-thumbs', '',
-    'Rotate  thumbs  the  given amount in degrees - can be positive '
-    'or negative.  There must be one value for each file given with '
-    'files.  If the values are not the same distance from zero, the '
-    'thumbs will be of  different sizes as images are necessarily '
-    'resized *after* rotating.')
+    'Rotate  thumbs  the  given amount in degrees - can be positive or '
+    'negative.  There must be one value for each file given with files.  If '
+    'the values are not the same distance from zero, the thumbs will be of '
+    'different sizes as images are necessarily resized *after* rotating.  '
+    'Note: this will not change a portait image into a landscape image!')
 
 _wave = Flag('Wave effect for showcase thumb', '-wave', False,
     'Wave effect for showcase image|video.  Alters thumbs along a sine '
@@ -400,7 +405,8 @@ _wave = Flag('Wave effect for showcase thumb', '-wave', False,
     'tab.  See man todisc for details.')
 
 _rotate = Number('Rotate Showcase thumb', '-rotate', 0,
-    'Rotate the showcase image|video clockwise by this number of degrees.',
+    'Rotate the showcase image|video clockwise by this number of degrees.'
+    'Note: this will not change a portait image into a landscape image!',
     -30, 30, 'degrees')
 
 _thumb_mist = Color('Use thumb mist    Color', '-thumb-mist',
@@ -602,10 +608,14 @@ _chapters = List('Chapters', '-chapters', None,
     Text())
 
 _loop = FlagOpt('Menu looping (pause)', '-loop', False,
-    'Pause before looping playback of the main menu. If 0, pause indefinitely.',
-    Number('', '', '', '', 0, 30, 'seconds'))
+    'Pause before looping playback of the main menu.  Set the number '
+    'spinbox to the pause desired.  Use "Pause indefinately" flag to '
+    'disable looping', Number('', '', '', '', 0, 30, 'seconds'))
+
 _pause = Flag('Pause indefinately', '-loop', False,
-    'Pause at end of menu waiting for user interaction')
+    'Disable looping.  Pause at end of menu waiting for user interaction. '
+    'This will also disable the fadeout portion when you use "Menu fade" on '
+    'the "Main menu" tab')
 
 _chain_videos = FlagOpt('Chain videos', '-chain-videos', False,
     'This option will "chain" videos so they play '
@@ -668,7 +678,7 @@ _subtitles = SpacedText('Subtitles', '-subtitles', '',
 """
 
 main =  VPanel('Basic',
-    Label('You can author (and burn) a disc with a simple menu '
+    Label('You can author (and burn) a video disc with a simple menu '
           'using just this "Basic" pane', 'center'),
     RelatedList('', _files, '1:1', _titles, filter=to_title),
     VPanel('',
@@ -773,7 +783,7 @@ submenus = Tabs('Submenus',
     VPanel('Submenu titles',
         submenu_title_font,
         RelatedList('Submenu titles',
-                    '-files', '1:1', _submenu_titles, filter=to_title),
+                    '-files', '1:1', _submenu_titles, filter=strip_all),
     ),
 
     VPanel('Chapter titles',
@@ -816,7 +826,6 @@ slideshow_panel = Tabs('Slideshow',
                 0, 100),
             _submenu_slide_total,
         ),
-        _no_confirm_backup,
     ),
     VPanel('Advanced options',
         FlagGroup('Use slideshow as background or showcase video ',
