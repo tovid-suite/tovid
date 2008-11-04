@@ -386,9 +386,10 @@ to tovid, use **-noprompt**.
 == Thumbnail style ==
 
 : **-thumb-shape** normal|oval|plectrum|egg
-    Apply a shaped transparency mask to thumbnail videos
-    You can also have a rectangular semi-transparent misted background
-    for each thumb:  see **-thumb-mist**.
+    Apply a shaped transparency mask to thumbnail videos.
+    These "feathered" shapes look best against a plain background (or used
+    in conjunction with **-thumb-mist** [COLOR]).  For this rectangular
+    semi-transparent misted background for each thumb:  see **-thumb-mist**.
 : **-3dthumbs**
     This will give an illusion of 3D to the thumbnails: dynamic lighting on
     rounded thumbs, and a raised effect on rectangular thumbs.  Try it !
@@ -726,7 +727,8 @@ to tovid, use **-noprompt**.
     titles vertically ( Y axis ).
 : **-rotate** DEGREES
     Rotate the showcase image|video clockwise by DEGREES.
-    (default: if used without options, the rotate will be 5 degrees)
+    (default: if used without options, the rotate will be 5 degrees).  Note:
+    this will not turn a portait image into a landscape image!
 : **-showcase-geo** GEOMETRY
     The position of the showcase image.  ( XxY position )
 : **-wave** default|GEOMETRY
@@ -802,6 +804,7 @@ to tovid, use **-noprompt**.
 ```
      **Note: this option does not work currently with shaped or 3d thumbs
      (**-thumb-shape** SHAPE' or **-3dthumbs** ) unless using showcase style.
+     Also note that this will not turn a portrait image into a landscape image!
 
 
 
