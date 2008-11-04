@@ -326,14 +326,15 @@ to tovid, use **-noprompt**.
     you to do a 'transition' to the menu: if you supply a -background VIDEO it
     will play for the indicated time before the menu fades in.  Leave the
     optional argument empty (just **-menu-fade**) to get the default behavior
-    of showing the background for 1 second before fading the menu in.  See
-    also:  **-transition-to-menu**
+    of showing the background for 1 second before fading the menu in.  To 
+    disable the fadeout portion, use '**-loop** inf'.  See also:
+    **-transition-to-menu** and **-loop**
 : **-transition-to-menu**
     This option goes with the **-menu-fade** option above, which must be
     enabled for it to have effect.  It is a convenience option for animated
     backgrounds: the background will become static at the exact point the
     thumbs finish fading in. This menu does not loop unless you pass
-    **-loop** VALUE.
+    **-loop** VALUE.  See also: **-loop**
 : **-bgaudio** FILE
     An file containing audio for the main menu background.  For static menus
     the default is to use 20 seconds of audio.  You can change this using the
@@ -386,8 +387,8 @@ to tovid, use **-noprompt**.
 
 : **-thumb-shape** normal|oval|plectrum|egg
     Apply a shaped transparency mask to thumbnail videos
-    The default is to have a rectangular semi-transparent misted background
-    for each thumb - to disable this mist use **-thumb-mist-color none**.
+    You can also have a rectangular semi-transparent misted background
+    for each thumb:  see **-thumb-mist**.
 : **-3dthumbs**
     This will give an illusion of 3D to the thumbnails: dynamic lighting on
     rounded thumbs, and a raised effect on rectangular thumbs.  Try it !
@@ -755,16 +756,16 @@ to tovid, use **-noprompt**.
     The amount of feather blur to apply to the thumb-shape.  The default is 4.0
     which will more or less keep the shape and produces transparency at the
     edges.  Choose float or integer values between 0.1 and 5.0.  Higher values
-    are possible, but you may not like the result, particularly when using
-    "-thumb-mist-colour none".
-    3D thumbs are automatically set to a negligible blur, so this option has no
-    effect on -3dthumbs option.
+    are possible, but you may not like the result. 3D thumbs are automatically
+    set to a tiny blur, so this option doesn't affect the **-3dthumbs** option.
 : **-align** north|south
     This will align  thumbs/titles north or south. 
     if **-align** south then menu title will align north, unless you manually
     set one or both of **-menu-title-geo** or **-menu-title-offset**.
-: **-thumb-mist-color**, **-thumb-mist-colour**
-    Color of mist behind thumbnails
+: **-thumb-mist** [COLOR]
+    Use a mist behind thumbnails.  The optional argument is the color of the
+    mist.  This option helps with contrast.  Be sure to set the font color
+    to an appropriate color if using a colored mist, and/or use a bold font.
 : **-titles-color**, **-titles-colour** COLOR
     Color to use for the thumb or textmenu titles.  If your titles are not
     clear enough or look washed out, try using a **-titles-stroke** that
@@ -807,8 +808,8 @@ to tovid, use **-noprompt**.
     ==Dvdauthor options==
 : **-loop** PAUSE
     Pause in seconds at end of menu.  Use "inf" if you wish indefinite pause.
-    (Note: you can't use inf with **-menu-fade** as you will get a black screen
-    at the end)  (default: "inf" for static menu, 10.0 seconds for animated)
+    Note: using "inf" with **-menu-fade** will disable the fadeout portion of
+    the fade.  (default: "inf" for static menu, 10.0 seconds for animated.)
 : **-playall**
     This option will create a button on the main menu that will allow going
     right to the 1st title and playing all videos in succession before
