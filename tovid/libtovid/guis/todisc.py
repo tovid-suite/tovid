@@ -367,9 +367,8 @@ _slide_blur = SpacedText('Slide blur amount', '-slide-blur', '',
 _thumb_shape = Choice('Thumb shape', '-thumb-shape', 'none',
     'Apply a shaped transparency mask to thumbnail videos.  These "feathered" '
     'shapes look best against a plain background or used in conjunction with '
-    '**-thumb-mist** [COLOR], as in the note below'
-    'Note: to use a "mist" background behind each thumb, see "Thumb mist" '
-    'section below.',
+    '**-thumb-mist** [COLOR].  To use a "mist" background behind each thumb, '
+    'see "Thumb mist" section.  Leave at "none" to not use a feathered shape',
     'normal|oval|plectrum|egg|none')
 
 _opacity = Number('Opacity', '-opacity', 100,
@@ -796,8 +795,10 @@ submenus = Tabs('Submenus',
 tab_list = []
 slideshow_panel = Tabs('Slideshow',
     VPanel('General options',
-        Label('Choose "Output name" at bottom of "Basic" tab before executing',
-        'center'),
+        Label('Do a single slideshow using this tab,  or multiple shows by also '
+        'using the numbered tabs.  You may also combine with \nvideos on the '
+        '"Basic tab" into a single menu and DVD.  Choose "Output name" on '
+        '"Basic" tab before executing', 'center'),
         Text('Title', '-titles', '', 'Title for this slideshow.  '
         'Use a title ONLY for multiple slideshows '
         'or slideshow(s) mixed with videos'),
