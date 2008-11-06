@@ -795,10 +795,10 @@ submenus = Tabs('Submenus',
 tab_list = []
 slideshow_panel = Tabs('Slideshow',
     VPanel('General options',
-        Label('Do a single slideshow using this tab,  or multiple shows by also '
-        'using the numbered tabs.  You may also combine with \nvideos on the '
-        '"Basic tab" into a single menu and DVD.  Choose "Output name" on '
-        '"Basic" tab before executing', 'center'),
+        Label('For a single slideshow use this tab,  or for multiple slideshows '
+        'also use the numbered tabs.  You may also combine\nwith videos on '
+        'the "Basic tab" into a single menu and DVD.  Choose "Output name" on '
+        '"Basic" tab before executing.', 'center'),
         Text('Title', '-titles', '', 'Title for this slideshow.  '
         'Use a title ONLY for multiple slideshows '
         'or slideshow(s) mixed with videos'),
@@ -827,8 +827,6 @@ slideshow_panel = Tabs('Slideshow',
                 0, 100),
             _submenu_slide_total,
         ),
-        Label('You can disable the reminder prompt for backing up your slides '
-        'on the "Behavior" tab'),
     ),
     VPanel('Advanced options',
         FlagGroup('Use slideshow as background or showcase video ',
