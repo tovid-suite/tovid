@@ -40,8 +40,8 @@ class Executor (Widget):
         """
         Widget.draw(self, master)
         # TODO: Make text area expand/fill available space
-        self.text = ScrolledText(self, width=80, height=40, highlightbackground='gray',
-        highlightcolor='gray', relief='groove')
+        self.text = ScrolledText(self, width=80, height=40,
+            highlightbackground='gray', highlightcolor='gray', relief='groove')
         self.text.pack(fill='both', expand=True)
         # Bottom frame to hold the next four widgets
         frame = tk.Frame(self)
@@ -49,7 +49,7 @@ class Executor (Widget):
         label = tk.Label(frame, text="Input:")
         label.pack(side='left')
         self.stdin_text = tk.Entry(frame)
-        self.stdin_text.pack(side='left')
+        self.stdin_text.pack(side='left', fill='x', expand=True)
         self.stdin_text.bind('<Return>', self.send_stdin)
         # Button to stop the process
         self.kill_button = tk.Button(frame, text="Kill", command=self.kill)
@@ -58,7 +58,7 @@ class Executor (Widget):
         self.save_button = tk.Button(frame, text="Save", command=self.save)
         self.save_button.pack(side='left')
         # Pack the bottom frame
-        frame.pack(anchor='nw')
+        frame.pack(anchor='nw', fill='x', expand=True)
         # Disable stdin box and kill button until execution starts
         self.stdin_text.config(state='disabled')
         self.kill_button.config(state='disabled')
@@ -138,9 +138,17 @@ class Executor (Widget):
         # Read from output file and print to log window
         data = self.outfile.read()
         if data:
-            lines = data.splitlines()
+            # Split on \n first, then handle \r later
+            lines = data.split('\n')
             for line in lines:
-                self.write(line + '\n')
+                #self.write(line)
+                if '\r' in line:
+                    for l in line.split('\r'):
+                        if l.strip(): # Don't overwrite with an empty line
+                            self.text.delete('insert linestart', 'insert lineend')
+                            self.text.insert('insert linestart', l.strip())
+                else:
+                    self.write('\n' + line)
 
         # Stop if command is done, or poll again
         if self.command.done():
@@ -153,19 +161,19 @@ class Executor (Widget):
 
 
     def notify(self, text):
-        """Like write, but meant for notifications by the Executor.
+        """Print a notification message to the Executor.
         Adds newlines and angle brackets.
         """
         self.write("\n<< %s >>\n" % text)
 
 
-    def write(self, text):
-        """Write text to the end of the log.
+    def write(self, line):
+        """Write a line of text to the end of the log.
         """
-        self.text.insert('end', text)
+        self.text.insert('end', line)
         self.text.see('end')            
 
-    
+
     def clear(self):
         """Clear the log window.
         """
