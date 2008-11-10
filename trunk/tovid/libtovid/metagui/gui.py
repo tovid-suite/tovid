@@ -138,17 +138,10 @@ class Executor (Widget):
         # Read from output file and print to log window
         data = self.outfile.read()
         if data:
-            # Split on \n first, then handle \r later
+            # Split on newlines (but not on \r)
             lines = data.split('\n')
             for line in lines:
-                #self.write(line)
-                if '\r' in line:
-                    for l in line.split('\r'):
-                        if l.strip(): # Don't overwrite with an empty line
-                            self.text.delete('insert linestart', 'insert lineend')
-                            self.text.insert('insert linestart', l.strip())
-                else:
-                    self.write('\n' + line)
+                self.write(line + '\n')
 
         # Stop if command is done, or poll again
         if self.command.done():
@@ -169,8 +162,16 @@ class Executor (Widget):
 
     def write(self, line):
         """Write a line of text to the end of the log.
+        If the line contains '\r', overwrite the current line.
         """
-        self.text.insert('end', line)
+        if '\r' in line:
+            for part in line.split('\r'):
+                if part.strip(): # Don't overwrite with an empty line
+                    self.text.delete('insert linestart', 'insert lineend')
+                    self.text.insert('insert linestart', part.strip())
+        else:
+            self.text.insert('end', line)
+
         self.text.see('end')            
 
 
