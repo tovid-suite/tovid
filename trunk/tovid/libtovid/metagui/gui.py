@@ -165,10 +165,11 @@ class Executor (Widget):
         If the line contains '\r', overwrite the current line.
         """
         if '\r' in line:
+            curline = self.text.index('end-1c linestart')
             for part in line.split('\r'):
                 if part.strip(): # Don't overwrite with an empty line
-                    self.text.delete('insert linestart', 'insert lineend')
-                    self.text.insert('insert linestart', part.strip())
+                    self.text.delete(curline, curline + ' lineend')
+                    self.text.insert(curline, part.strip())
         else:
             self.text.insert('end', line)
 
