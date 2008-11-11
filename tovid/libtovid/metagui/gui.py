@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 # gui.py
+#BREAKPOINT
 
 """Top-level GUI classes.
 """
@@ -141,7 +142,7 @@ class Executor (Widget):
             # Split on newlines (but not on \r)
             lines = data.split('\n')
             for line in lines:
-                self.write(line + '\n')
+                self.write(line)
 
         # Stop if command is done, or poll again
         if self.command.done():
@@ -171,7 +172,7 @@ class Executor (Widget):
                     self.text.delete(curline, curline + ' lineend')
                     self.text.insert(curline, part.strip())
         else:
-            self.text.insert('end', line)
+            self.text.insert('end', '\n' + line)
 
         self.text.see('end')            
 
