@@ -72,8 +72,8 @@ _out = Filename('Output name', '-out', '',
 ### --------------------------------------------------------------------
 
 _non_showcase = Label(
-    'Default is centered thumbnail menu links. Or choose \n'
-    'from among the following "Edge aligned styles".\n'
+    'Default is centered thumbnail menu links.\nOr choose '
+    'from the following "Edge aligned styles".\n'
     '( see tooltips )')
 
 _showcase = FlagOpt('Showcase', '-showcase', False,
@@ -87,7 +87,7 @@ _showcase_seek = Number('Showcase seek', '-showcase-seek', 2,
     'Play showcase video from the given seek time. '
     'Note: switched menus uses the value(s) from "Seek time" '
     'option above, not this one',
-    0, 3600, 'seconds')
+    0, 3600, 'secs')
 
 _textmenu = FlagOpt("Textmenu", '-textmenu', False,
     'A text only menu with links arranged at outside edges.  Optionally use a '
@@ -98,7 +98,7 @@ _textmenu = FlagOpt("Textmenu", '-textmenu', False,
     'See also quick-menu and switched menu.',
     Number('Columns', '', 13, '', 0, 13))
 
-_quick_menu = Flag('Quick menu (may need showcase or background video)',
+_quick_menu = Flag('Quick menu (may need a menu video)',
     '-quick-menu', False, 'Ten times faster than normal showcase animation.  '
     'A showcase or background video is required unless doing switched '
     'menus.  Menu links are text only.  Not compatible '
@@ -154,16 +154,16 @@ _bgaudio = Filename('File', '-bgaudio', '',
 
 _bgvideo_seek = Number('Seek', '-bgvideo-seek', 2,
     'Play background video from the given seek time (seconds)',
-    0, 3600, 'seconds')
+    0, 3600, 'secs')
 
 _bgaudio_seek = Number('Seek', '-bgaudio-seek', 2,
     'Play background audio from the given seek time.',
-    0, 3600, 'seconds')
+    0, 3600, 'secs')
 
 _menu_audio_fade = Number('Fade in', '-menu-audio-fade', 1,
     'Number  of  sec to fade given menu audio in and out '
     '(default: 1.0 seconds). Use a fade of "0" for no fade.',
-    0, 10, 'seconds')
+    0, 10, 'secs')
 
 _menu_fade = FlagOpt('Menu fade (in/out)', '-menu-fade', False,
     'Fade the menu in and out. The background will fade in first, then '
@@ -172,7 +172,7 @@ _menu_fade = FlagOpt('Menu fade (in/out)', '-menu-fade', False,
     'is the length of time the background will play before the menu '
     'begins to fade in.  To disable the fadeout portion, set the '
     '"Pause indefinately" flag on the "Playback" tab.', 
-    Number('Fade start', '', 1, '', 0, 60, 'seconds'))
+    Number('Start', '', 1, '', 0, 60, 'secs'))
 
 _transition_to_menu = Flag('Transition to menu', '-transition-to-menu', False,
     'A convenience option for animated backgrounds using a menu fadein: the '
@@ -189,7 +189,7 @@ _intro = Filename('Intro video', '-intro', '',
 _menu_length = Number('Menu length', '-menu-length', 20,
     'Duration of menu. The length of the menu will also set '
     'the length of background audio for a static menu',
-    0, 120, 'seconds')
+    0, 120, 'secs')
 
 
 # Static/animated main menu
@@ -198,7 +198,7 @@ _static = Flag('Static menu', '-static', False,
     'audio for static menus, use "Menu length" on this tab.  See "Main menu" '
     'tab for other menu styles and options.')
 
-_animated = Flag('Animated menu', '', True,
+_animated = Flag('Animated', '', True,
     'Create animated menus.  See "Main menu" tab for other menu styles and '
     'options.')
 
@@ -207,7 +207,7 @@ _submenus = Flag('Static submenus', '-submenus', False,
     'Create a submenu for each video title.  Submenu links lead to '
     ' chapter points.  See "Submenus" tab for more submenu options.')
 
-_ani_submenus = Flag('Animated submenus', '-ani-submenus', False,
+_ani_submenus = Flag('Animated', '-ani-submenus', False,
     'Create an animated submenu for each video.  Submenu links lead to '
     'chapter points.  See "Submenus" tab for more submenu options.')
 
@@ -215,11 +215,11 @@ _ani_submenus = Flag('Animated submenus', '-ani-submenus', False,
 _submenu_length = Number('Submenu length', '-submenu-length', 14,
     'The length of the submenu. If doing static submenus and using audio '
     'for the submenu, this will be the length of the submenu audio',
-    0, 80, 'seconds')
+    0, 80, 'secs')
 
 _submenu_audio_fade = Number('Audio fade', '-submenu-audio-fade', 1,
     'Number of seconds to fade given submenu audio in and out.',
-    0, 10, 'seconds')
+    0, 10, 'secs')
 
 _submenu_audio = List('Audio', '-submenu-audio', None,
     'File(s) that will play as background audio for each submenu.  '
@@ -609,7 +609,7 @@ _chapters = List('Chapters', '-chapters', None,
 _loop = FlagOpt('Menu looping (pause)', '-loop', False,
     'Pause before looping playback of the main menu.  Set the number '
     'spinbox to the pause desired.  Use "Pause indefinately" flag to '
-    'disable looping', Number('', '', '', '', 0, 30, 'seconds'))
+    'disable looping', Number('', '', '', '', 0, 30, 'secs'))
 
 _pause = Flag('Pause indefinately', '-loop', False,
     'Disable looping.  Pause at end of menu waiting for user interaction. '
@@ -652,15 +652,16 @@ _device = Text('Device', '-device', '/dev/dvdrw',
 _widescreen = Choice('Widescreen', '-widescreen', 'none',
     'This will output a <video widescreen=nopanscan /> tag '
     '(for example) for the dvdauthor xml file.  It affects all '
-    'videos in the titleset.  Use in conjunction with "Aspect ratio" '
+    'videos in the titleset.  Use in conjunction with "Video aspect ratio" '
     'if your dvd player is cropping your videos.  '
     'Leave this at "none" to not output a widescreen tag',
     'none|nopanscan|noletterbox')
 
-_aspect = Choice('Aspect ratio', '-aspect', 'none',
+_aspect = Choice('Video aspect ratio', '-aspect', 'none',
     'This will output a <video aspect WIDTH:HEIGHT /> tag for the '
     'dvdauthor xml file.  It will affect all videos in the titleset.  '
-    'Leave this at "none" to let dvdauthor figure it out for you',
+    'Leave this at "none" to let dvdauthor figure it out for you.'
+    'This also has the effect of forcing a thumb aspect ratio for the menu',
     '4:3|16:9|none')
 
 _audio_lang = SpacedText('Audio', '-audio-lang', '',
@@ -711,14 +712,12 @@ main =  VPanel('Basic',
 main_menu = Tabs('Main menu',
     HPanel('Basic settings',
         VPanel('',
-            VPanel('Menu Style',
-                HPanel('Default style',  _non_showcase),
-                VPanel('Edged aligned styles',
-                    _showcase,
-                    _textmenu,
-                    _quick_menu,
-                    _switched_menus,
-                ),
+            HPanel('Default style',  _non_showcase),
+            VPanel('Edged aligned styles',
+                _showcase,
+                _textmenu,
+                _quick_menu,
+                _switched_menus,
             ),
         ),
         VPanel('',
@@ -873,9 +872,12 @@ thumbnails = VPanel("Thumbnails",
         ),
         VPanel("Arrangement",
             VPanel('Menu link thumbnails',
+            HPanel('Thumb aspect ratio',
+            Label('Automatic (force video ratio on "Playback" tab")')),
             _thumb_shape,
             _align,
-            FlagGroup('Rows (for default menu style only)', 'exclusive', _tile3x1, _tile4x1)),
+            FlagGroup('Rows (for default menu style only)',
+                'exclusive', _tile3x1, _tile4x1, side='left')),
             VPanel('Showcase thumbnail', _showcase_geo),
         ),
     ),
