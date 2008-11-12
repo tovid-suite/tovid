@@ -103,7 +103,7 @@ PAUSE_TIME=10
 USER_LOOP=false
 MIST=false
 FEATHER=false
-BLUR=4
+BLUR=2
 SUB_MENU_FEATHER=false
 IMG_FMT="jpg"
 SM_IMG_FMT="jpg"  # submenu image format
@@ -2673,7 +2673,7 @@ while test $# -gt 0; do
             MIST_COLOUR="$1"
             ;;
         "-thumb-mist-colour" |"-thumb-mist-color" )
-            usage_error "This option has been removed.  Now use -thumb-mist COLOR"
+            usage_error "$1 has been removed.  Use ${1%-*} [COLOR]"
             ;;
         "-thumb-mist" )
             unset thumb_bg_colour
@@ -3245,6 +3245,14 @@ fi
 # set some vars for switched menus so we know where we are
 $SWITCHED_MODE && SWITCHED_MENUS=false
 { $SWITCHED_MODE || $SWITCHED_MENUS ; } && SWITCHED=:
+# warn about change in -thumb-mist option
+if $FEATHER && ! $USE_FEATHER_MASK; then
+    yecho
+    yecho "Note: feathered thumb shapes no longer have mist background
+        by default.  Use -thumb-mist [COLOR] to get the old behavior"
+    yecho
+    $WARN && sleep 10
+fi
 #
 # sanity checks for button style ( -button-style ) for menu buttons
 #
