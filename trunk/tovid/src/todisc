@@ -1634,7 +1634,7 @@ quick_menu()
     $QUICKMENU_IS_SHOWCASE || $RESIZE_BG && qm_seek=""
     VHOOK_CMD=(ffmpeg -t "$QM_MENU_TIME" $qm_seek -s $VIDSIZE -i  \
     "$PRE_VHOOK_FILE" -an -f mpeg2video -r $FRAME_RATE -tvstd $TV_STANDARD \
-    -b 7000k -maxrate 8000k -bufsize 224KiB -aspect $ASPECT_RATIO \
+    -b 7000k -maxrate 8000k -bufsize 224KiB -aspect 4:3 \
     -vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
     -y "$WORK_DIR/intro.m2v")
     $QM_PREVIEW && yecho
@@ -2244,7 +2244,7 @@ while test $# -gt 0; do
             ASPECT_ARG=$1
             if [[ ${#ASPECT_ARG[@]} -gt 0 ]]; then
             ASPECT_RATIO=$ASPECT_ARG
-            [[ $ASPECT_RATIO = "16:9" ]] && AR=1.777
+            [[ $ASPECT_RATIO = "16:9" ]] && AR=177 || AR=133
             V_ASPECT="aspect=\"$ASPECT_RATIO\""
             fi
             ;;
@@ -3420,10 +3420,34 @@ echo -e "\nYou are using the following locale settings:" >> "$LOG_FILE"
 locale >>  "$LOG_FILE" 2>&1
 echo >> "$LOG_FILE"
 
+# check aspect ratios of infiles so thumbs are in aspect without -aspect passed
+echo inc_files are $inc_files && sleep 5
+if [[ $MENU_NUM -eq 1 ]] && ! $TEXTMENU \
+  && ((inc_files)) && [[ -z "$V_ASPECT" ]]; then
+    yecho
+    yecho "Determining aspect ratio of videos"
+    for ((i=0; i<${#FILES[@]}; i++)); do
+        ! $SINGLE_SLIDESHOW && yecho "Checking aspect ratios: ${FILES[i]}"
+        stats[i]=$(idvid -terse -fast "${FILES[i]}" |
+          awk -F= '/V_ASPECT_WIDTH=/ {print $2}')
+        cur_aspect=${stats[i]}
+        if ((cur_aspect)); then
+            [[ $cur_aspect = 133 ]] && ASPECT_RATIO=4:3
+            [[ $cur_aspect = 177 ]] && ASPECT_RATIO=16:9
+            yecho "Aspect ratio of $ASPECT_RATIO found.
+            Videos in this menu (titleset) will be done using that ratio."
+        else
+            yecho "No aspect ratio was determined.  Videos in ths menu
+            (titleset) will be done using a ratio of 4:3"
+        fi
+        ((i>0 && cur_aspect==177||cur_aspect==133)) && break
+done
+    yecho
+fi
 ################################################
 #        recursive magic for titlesets,        #
 # switched menus, and animated slideshow menus #
-######################################
+################################################
 
 # if doing titlesets, call todisc recursively,
 # collect parts and author.  Then exit
@@ -4243,7 +4267,6 @@ NTSC_1333_DVD=(420x280 300x200 192x128 192x128 186x124 186x124 132x88 132x88 \
 84x56 84x56 84x56 60x40 60x40 60x40 60x40 60x40 60x40 \
 60x40 60x40 60x40 60x40 60x40 60x40 60x40 60x40 60x40
 60x40 60x40 60x40 60x40)
-# this is a TODO
 # *_1777_DVD is for 16:9 videos displayed in proper res on a 4:3 menu
 NTSC_1777_DVD=(420x210 300x150 240x120 240x120 186x98 186x98 180x90 180x90 \
 180x90 132x66 132x66 132x66 132x66 132x66 132x66 132x66 100x50 100x50 \
@@ -4267,8 +4290,7 @@ SVCD_GEO_ARRAY=(240x240 180x180 120x120 120x120 120x120 120x120 96x96 96x96 \
 48x48 48x48 40x40 40x40 40x40 40x40 40x40 40x40 40x40 40x40 \
 40x40 40x40 36x36 36x36 36x36 36x36 36x36 36x36 36x36 36x36 \
 36x36 36x36 30x30 30x30 30x30 30x30 30x30 30x30 30x30 30x30)
-#for i in {4..98}; do SVCD_GEO_ARRAY[i]="36x36"; done
-for i in {67..98}; do SVCD_GEO_ARRAY[i]="36x36"; done
+for i in {67..98}; do SVCD_GEO_ARRAY[i]="30x30"; done
 # 15 per row
 TILE_1333=(1x1 2x1 2x2 2x2 3x2 3x2 3x3 3x3 3x3 4x3 4x3 4x3 4x4 4x4 4x4 \
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5 \
@@ -4337,10 +4359,24 @@ if  [ $TARGET = "dvd" ]; then
         fi
         VIDSIZE="720x480"
         FRAME_RATE=29.970
+        if [[ $SC_AR = 133 ]]; then
+            SHOWCASE_SIZE=384x256
+            SM_SHOWCASE_SIZE=288x192
+        elif [[ $SC_AR = 177 ]]; then
+            SHOWCASE_SIZE=384x192
+            SM_SHOWCASE_SIZE=288x144
+        fi
     elif [ $TV_STANDARD = "pal" ]; then
         VIDSIZE="720x576"
         TILE_ARRAY=("${TILE_1333[@]}")
         FRAME_RATE=25
+        if [[ $SC_AR = 133 ]]; then
+            SHOWCASE_SIZE=380x304
+            SM_SHOWCASE_SIZE=290x232
+        elif [[ $SC_AR = 177 ]]; then
+            SHOWCASE_SIZE=384x230
+            SM_SHOWCASE_SIZE=290x174
+        fi
         if [[ $ASPECT_RATIO = "4:3" ]]; then
             GEO_ARRAY=("${PAL_1333_DVD[@]}") #TODO make sizes array for pal
         else
@@ -4355,6 +4391,7 @@ elif [ $TARGET = "svcd" ]; then
     FFMPEG_OPTS="-b 2200k -minrate 2200k -maxrate 2200k -bufsize 112KiB -aspect 4:3"
     ASPECT="-aspect $ASPECT_RATIO"
     SHOWCASE_SIZE=256x256
+    SM_SHOWCASE_SIZE=192x192 #FIXME make 16:9 sizes too
     BURN_TGT="${OUT_FILE}.xml"
     BURN_TGT_STR="SVCD image"
     BURN_PROG="makevcd"
@@ -4408,16 +4445,13 @@ done
 if $SHOWCASE && ! $TEXTMENU; then
     if [ $V_TOTAL -le 5 ]; then
         if [[ $SC_TITLE_ALIGN = "east" ]]; then
-            SHOWCASE_SIZE=288x192  # smaller to allow for titles
-            [ $TARGET = "svcd" ] && SHOWCASE_SIZE=192x192
-        else
-            SHOWCASE_SIZE=384x256
-            [ $TARGET = "svcd" ] && SHOWCASE_SIZE=256x256
+            SHOWCASE_SIZE=$SM_SHOWCASE_SIZE  # smaller to allow for titles
+            #[ $TARGET = "svcd" ] && SHOWCASE_SIZE=192x192 FIXME remove is SM_SHOWCASE_SIZE works
         fi
         AUTOORDER="rows"       # spumux var
     else
-        SHOWCASE_SIZE=288x192  # smaller showcase thumb because we have 2 rows
-        [ $TARGET = "svcd" ] && SHOWCASE_SIZE=192x192
+        SHOWCASE_SIZE=$SM_SHOWCASE_SIZE  # smaller showcase thumb because we have 2 rows
+        #[ $TARGET = "svcd" ] && SHOWCASE_SIZE=$ FIXME remove if SM_SHOWCASE_SIZE works
         AUTOORDER="columns"
         if $SC_THUMB && \
         [[ "$SC_TITLE_ALIGN" = "east" ]] && [[ -n $SHOWCASE_FILE ]]; then
@@ -5157,12 +5191,10 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
     fi
     if (( (WIDEST_TITLE + SAFE_AREA + TS + \
       ${SHOWCASE_SIZE/x*}) > ( ${VIDSIZE/x*} - SAFE_AREA) )); then
-            SHOWCASE_SIZE=288x192
-            [[ $TARGET = "svcd" ]] && SHOWCASE_SIZE=192x192
+            SHOWCASE_SIZE=$SM_SHOWCASE_SIZE
     fi
     if $TEXTMENU && [[ -n $tt_ygeos_col2 ]]; then
-        SHOWCASE_SIZE=288x192
-        [[ $TARGET = "svcd" ]] && SHOWCASE_SIZE=192x192
+        SHOWCASE_SIZE=$SM_SHOWCASE_SIZE
     fi
 
     if [[ -n "$SHOWCASE_VIDEO" ]]; then
