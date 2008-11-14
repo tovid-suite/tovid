@@ -3421,7 +3421,6 @@ locale >>  "$LOG_FILE" 2>&1
 echo >> "$LOG_FILE"
 
 # check aspect ratios of infiles so thumbs are in aspect without -aspect passed
-echo inc_files are $inc_files && sleep 5
 if [[ $MENU_NUM -eq 1 ]] && ! $TEXTMENU \
   && ((inc_files)) && [[ -z "$V_ASPECT" ]]; then
     yecho
@@ -3436,11 +3435,11 @@ if [[ $MENU_NUM -eq 1 ]] && ! $TEXTMENU \
             [[ $cur_aspect = 177 ]] && ASPECT_RATIO=16:9
             yecho "Aspect ratio of $ASPECT_RATIO found.
             Videos in this menu (titleset) will be done using that ratio."
+            ((cur_aspect==177||cur_aspect==133)) && break
         else
             yecho "No aspect ratio was determined.  Videos in ths menu
             (titleset) will be done using a ratio of 4:3"
         fi
-        ((i>0 && cur_aspect==177||cur_aspect==133)) && break
 done
     yecho
 fi
