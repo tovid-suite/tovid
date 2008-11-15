@@ -32,25 +32,13 @@ profiles of the input and output videos. Again, the "..." are optional keyword
 arguments.
 """
 
-__all__ = [\
+__all__ = [
     'encode',
     'get_encoder',
-    'ffmpeg_encode',
-    'encode_audio',
-    'mencoder_encode',
-    'mpeg2enc_encode']
+]
 
-import os
-import math
-import copy
-import glob
-from libtovid.cli import Command, Pipe
-from libtovid.utils import float_to_ratio
-from libtovid import rip
-from libtovid.backend import mplayer
-from libtovid.media import *
-from libtovid.standard import fps
-from libtovid import log
+from libtovid.backend import ffmpeg, mplayer, mpeg2enc
+from libtovid.media import MediaFile, standard_media, correct_aspect
 
 
 _bitrate_limits = {\
@@ -69,16 +57,16 @@ _bitrate_limits = {\
 # --------------------------------------------------------------------------
 
 def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
-           **kw):
+           **kwargs):
     """Encode a multimedia file according to a target profile, saving the
     encoded file to outfile.
     
-        infile:  Input filename
-        outfile: Desired output filename (.mpg implied)
-        format:  One of 'vcd', 'svcd', 'dvd' (case-insensitive)
-        tvsys:   One of 'ntsc', 'pal' (case-insensitive)
-        method:  Encoding backend: 'ffmpeg', 'mencoder', or 'mpeg2enc'
-        **kw:    Additional keyword arguments (name=value)
+        infile:   Input filename
+        outfile:  Desired output filename (.mpg implied)
+        format:   One of 'vcd', 'svcd', 'dvd' (case-insensitive)
+        tvsys:    One of 'ntsc', 'pal' (case-insensitive)
+        method:   Encoding backend: 'ffmpeg', 'mencoder', or 'mpeg2enc'
+        **kwargs: Additional keyword arguments (name=value)
     
     The supported keyword arguments vary by encoding method. See the encoding
     functions for what is available in each.
@@ -91,8 +79,8 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
     target = standard_media(format, tvsys)
     target.filename = outfile
     # Set desired aspect ratio, or auto
-    if 'aspect' in kw:
-        target = correct_aspect(source, target, kw['aspect'])
+    if 'aspect' in kwargs:
+        target = correct_aspect(source, target, kwargs['aspect'])
     else:
         target = correct_aspect(source, target, 'auto')
     
@@ -106,13 +94,10 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
     # Get the appropriate encoding backend
     encode_method = get_encoder(method)
     # Evaluate high-level keywords
-    kw = eval_keywords(**kw)
+    kwargs = eval_keywords(source, target, **kwargs)
     # Encode!
-    encode_method(source, target, **kw)
+    encode_method(source, target, **kwargs)
 
-
-# Import available backends
-from libtovid.backend import ffmpeg, mplayer, mpeg2enc
 
 def get_encoder(backend):
     """Get an encoding function."""
@@ -130,7 +115,7 @@ def get_encoder(backend):
 #
 # --------------------------------------------------------------------------
 
-def eval_keywords(**kw):
+def eval_keywords(source, target, **kwargs):
     """Interpret keywords that affect other keywords, and return the result.
     These are keywords that can be shared between multiple encoding backends.
 
@@ -143,14 +128,14 @@ def eval_keywords(**kw):
 
     """
     # Set quant and vbitrate to match desired quality
-    if 'quality' in kw:
-        kw['quant'] = 13-kw['quality']
+    if 'quality' in kwargs:
+        kwargs['quant'] = 13-kwargs['quality']
         max_bitrate = _bitrate_limits[target.format][1]
-        kw['vbitrate'] = kw['quality'] * max_bitrate / 10
+        kwargs['vbitrate'] = kwargs['quality'] * max_bitrate / 10
     # Set quant and vbitrate to fit desired size
-    if 'fit' in kw:
-        kw['quant'], kw['vbitrate'] = _fit(source, target, kw['fit'])
-    return kw
+    if 'fit' in kwargs:
+        kwargs['quant'], kwargs['vbitrate'] = _fit(source, target, kwargs['fit'])
+    return kwargs
 
 
 def _fit(source, target, fit_size):

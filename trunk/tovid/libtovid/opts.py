@@ -158,7 +158,7 @@ def parse(args):
         # Argument to current option
         elif current:
             # Was a flag, now has a single value
-            if options[current] == True:
+            if options[current] is True:
                 options[current] = arg
             # Was a single value, now a list
             elif type(options[current]) != list:

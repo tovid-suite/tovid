@@ -91,12 +91,12 @@ def fps(tvsys):
         25.0
     """
     # Valid frames per second, by TV system
-    fps = {\
+    _fps = {
         'pal': 25.0,
         'ntsc': 29.97,
         'ntscfilm': 23.976,
         }
-    return fps[tvsys]
+    return _fps[tvsys]
 
 
 def fpsratio(tvsys):
@@ -109,12 +109,12 @@ def fpsratio(tvsys):
         '25:1'
     """
     # Valid frames per second, by TV system
-    fps = {\
+    _fps = {
         'pal': '25:1',
         'ntsc': '30000:1001',
         'ntscfilm': '24000:1001',
         }
-    return fps[tvsys]
+    return _fps[tvsys]
 
 
 def vbitrate(format):

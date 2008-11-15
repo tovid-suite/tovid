@@ -69,7 +69,6 @@ class ListVar (tk.Variable):
         """Remove the item from the list, if it exists.
         """
         items = self.get()
-        index = items.index(item)
         items.remove(item)
         self.set(items)
 

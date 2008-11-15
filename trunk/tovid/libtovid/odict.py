@@ -27,16 +27,17 @@ class Odict (UserDict):
 
     def __setitem__(self, key, item):
         UserDict.__setitem__(self, key, item)
-        if key not in self._keys: self._keys.append(key)
+        if key not in self._keys:
+            self._keys.append(key)
 
     def clear(self):
         UserDict.clear(self)
         self._keys = []
 
     def copy(self):
-        dict = UserDict.copy(self)
-        dict._keys = self._keys[:]
-        return dict
+        dict_copy = UserDict.copy(self)
+        dict_copy._keys = self._keys[:]
+        return dict_copy
 
     def items(self):
         return zip(self._keys, self.values())
@@ -57,15 +58,17 @@ class Odict (UserDict):
 
     def setdefault(self, key, failobj = None):
         UserDict.setdefault(self, key, failobj)
-        if key not in self._keys: self._keys.append(key)
+        if key not in self._keys:
+            self._keys.append(key)
 
-    def update(self, dict):
-        UserDict.update(self, dict)
-        for key in dict.keys():
-            if key not in self._keys: self._keys.append(key)
+    def update(self, other_dict, **kwargs):
+        UserDict.update(self, other_dict, **kwargs)
+        for key in other_dict.keys():
+            if key not in self._keys:
+                self._keys.append(key)
 
     def values(self):
-        return map(self.get, self._keys)
+        return [self.get(key) for key in self._keys]
     
     def __str__(self):
         lines = []

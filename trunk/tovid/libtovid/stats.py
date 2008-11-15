@@ -72,8 +72,9 @@ class Statlist:
         # Otherwise, read from any provided filename
         else:
             self.records = []
-            if filename is not '':
+            if filename != '':
                 self.read_csv(filename)
+
 
     def read_csv(self, filename):
         """Import stats from a CSV (comma-delimited quoted text) file."""
@@ -87,13 +88,14 @@ class Statlist:
             for field in int_fields:
                 try:
                     num = int("%s" % line[field])
-                except ValueError, TypeError:
+                except (ValueError, TypeError):
                     num = 0
                 line[field] = num
             self.records.append(line)
 
         statfile.close()
         print "Read %s lines from %s" % (len(self.records), filename)
+
 
     def unique(self, field):
         """Return a list of unique values of the given field."""
@@ -102,6 +104,7 @@ class Statlist:
             if record[field] not in unique_values:
                 unique_values.append(record[field])
         return unique_values
+
 
     def count_unique(self, field):
         """Count the occurrences of each unique value of the given field.
@@ -118,7 +121,8 @@ class Statlist:
             else:
                 counts[value] += 1
         return counts
-        
+
+
     def average(self, attribute):
         """Calculate the average value for a given numeric VidStat attribute.
         For example, average('bitrate') returns the average overall bitrate of
@@ -136,7 +140,8 @@ class Statlist:
         if len(values) > 0:
             return float(sum(values) / len(values))
         else:
-            return 0
+            return 0.0
+
 
     def average_by(self, attribute, by_attribute):
         """Return a dictionary of averages of an attribute, indexed by another
@@ -158,6 +163,7 @@ class Statlist:
                     averages[key] = 0.0
         return averages
 
+
     def list_by(self, attribute, by_attribute, sort_lists=False):
         """Return a dictionary of lists of values of the given attribute,
         indexed by another attribute. If sort_lists is True, sort all lists."""
@@ -174,6 +180,7 @@ class Statlist:
             for index in values_by.iterkeys():
                 values_by[index].sort()
         return values_by
+
     
     def get_matching(self, attribute, value):
         """Return a list of records where the given attribute equals the given
@@ -186,6 +193,7 @@ class Statlist:
                 matches.append(record)
         return matches
     
+
     def length(self, field):
         """Return the length of the longest record in the given field, or the
         width of the field name itself, whichever is greater."""
@@ -196,16 +204,21 @@ class Statlist:
                 longest = cur_len
         return longest
     
-    def show(self, show_records='all', show_fields=FIELDS):
+
+    def show(self, show_records='all', show_fields='all'):
         """Print records matching given criteria, showing only the given fields.
         
-            show_records:   Number of record to show, or range of numbers
-            show_fields:    List of fields, by name as shown in FIELDS
+            show_records
+                Number of record to show, or range of numbers
+            show_fields
+                List of fields, by name as shown in FIELDS
         """
         # Remember field sizes (character widths)
         size = {}
         # Create field headings
         heading = ''
+        if show_fields == 'all':
+            show_fields = FIELDS
         for field in show_fields:
             if field in FIELDS:
                 size[field] = self.length(field)

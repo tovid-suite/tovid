@@ -27,9 +27,8 @@ Control subclasses:
     List
         List of values, editable in another Control
 
-"""
 
-"""Option revamp ideas
+Option revamp ideas
 
 Need a way to handle positional arguments, where the position in the
 command-line does not necessarily correspond to the draw-order in the GUI.
@@ -97,10 +96,9 @@ __all__ = [
     'Text',
 ]
 
-import os
 import Tkinter as tk
 from widget import Widget
-from variable import ListVar, DictVar, VAR_TYPES
+from variable import VAR_TYPES
 from support import DragList, ScrollList, FontChooser
 from support import ensure_type
 
@@ -349,17 +347,24 @@ class Choice (Control):
                  **kwargs):
         """Initialize Choice widget with the given label and list of choices.
 
-            label:    Text label for the choices
-            option:   Command-line option to set
-            default:  Default choice, or '' to use first choice in list
-            help:     Help text to show in a tooltip
-            choices:  Available choices, in string form: 'one|two|three'
-                      or list form: ['one', 'two', 'three'], or as a
-                      list-of-lists: [['a', "Use A"], ['b', "Use B"], ..].
-                      A dictionary is also allowed, as long as you don't
-                      care about preserving choice order.
-            style:    'radio' for radiobuttons, 'dropdown' for a drop-down list
-            side:     'left' for horizontal, 'top' for vertical arrangement
+            label
+                Text label for the choices
+            option
+                Command-line option to set
+            default
+                Default choice, or '' to use first choice in list
+            help
+                Help text to show in a tooltip
+            choices
+                Available choices, in string form: 'one|two|three'
+                or list form: ['one', 'two', 'three'], or as a
+                list-of-lists: [['a', "Use A"], ['b', "Use B"], ..].
+                A dictionary is also allowed, as long as you don't
+                care about preserving choice order.
+            style
+                'radio' for radiobuttons, 'dropdown' for a drop-down list
+            side
+                'left' for horizontal, 'top' for vertical arrangement
 
         """
         self.choices = convert_list(choices)
@@ -385,7 +390,8 @@ class Choice (Control):
                     text=label, value=choice, variable=self.variable)
                 self.rb[choice].pack(anchor='nw', side=self.side)
         else: # dropdown/combobox
-            tk.Label(self, text=self.label).pack(anchor='w', side=self.labelside)
+            label = tk.Label(self, text=self.label)
+            label.pack(anchor='w', side=self.labelside)
             self.combo = ComboBox(self, self.choices.keys(),
                                   variable=self.variable)
             self.combo.pack(side='left')
@@ -413,10 +419,14 @@ class Color (Control):
                  **kwargs):
         """Create a widget that opens a color-chooser dialog.
         
-            label:   Text label describing the color to be selected
-            option:  Command-line option to set
-            default: Default color (named color or hexadecimal RGB)
-            help:    Help text to show in a tooltip
+            label
+                Text label describing the color to be selected
+            option
+                Command-line option to set
+            default
+                Default color (named color or hexadecimal RGB)
+            help
+                Help text to show in a tooltip
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
 
@@ -471,31 +481,41 @@ class Filename (Control):
                  help='',
                  action='load',
                  desc='Select a file to load',
+                 filetypes='all',
                  **kwargs):
         """Create a Filename with label, text entry, and browse button.
         
-            label:   Text of label next to file entry box
-            option:  Command-line option to set
-            default: Default filename
-            help:    Help text to show in a tooltip
-            action:  Do you intend to 'load' or 'save' this file?
-            desc:    Brief description (shown in title bar of file
-                     browser dialog)
+            label
+                Text of label next to file entry box
+            option
+                Command-line option to set
+            default
+                Default filename
+            help
+                Help text to show in a tooltip
+            action
+                Do you intend to 'load' or 'save' this file?
+            desc
+                Brief description (shown in title bar of file browser dialog)
+            filetypes
+                Types of files to show in the file browser dialog. May be 'all'
+                for all file types, or a list of ('label', '*.ext') tuples.
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
         self.action = action
         self.desc = desc
-        # Type of files to load, with extensions
-        self.filetypes=[('All Files', '*.*')]
-        if 'filetypes' in kwargs:
-            self.filetypes = kwargs['filetypes']
+        if filetypes == 'all':
+            self.filetypes = [('All Files', '*.*')]
+        else:
+            self.filetypes = filetypes
 
 
     def draw(self, master):
         """Draw control widgets in the given master."""
         Control.draw(self, master)
         # Create and pack widgets
-        tk.Label(self, text=self.label, justify='left').pack(side=self.labelside)
+        label = tk.Label(self, text=self.label, justify='left')
+        label.pack(side=self.labelside)
         self.entry = tk.Entry(self, textvariable=self.variable)
         self.button = tk.Button(self, text="Browse...", command=self.browse)
         self.entry.pack(side='left', fill='x', expand=True)
@@ -529,16 +549,16 @@ class Flag (Control):
                  **kwargs):
         """Create a Flag widget with the given label and default value.
 
-        label
-            Text label for the flag
-        option
-            Command-line flag passed
-        default
-            Default value (True or False)
-        help
-            Help text to show in a tooltip
-        enables
-            Option or list of options to enable when the Flag is checked
+            label
+                Text label for the flag
+            option
+                Command-line flag passed
+            default
+                Default value (True or False)
+            help
+                Help text to show in a tooltip
+            enables
+                Option or list of options to enable when the Flag is checked
         """
         Control.__init__(self, bool, label, option, default, help, **kwargs)
 
@@ -620,16 +640,16 @@ class FlagOpt (Flag):
         """Create a FlagOpt widget; like a Flag, but has an optional argument
         which may be set using an associated Control.
         
-        label
-            Text label for the flag
-        option
-            Command-line flag passed
-        default
-            Default value (True or False)
-        help
-            Help text to show in a tooltip
-        control
-            Another Control, for setting the argument value (required)
+            label
+                Text label for the flag
+            option
+                Command-line flag passed
+            default
+                Default value (True or False)
+            help
+                Help text to show in a tooltip
+            control
+                Another Control, for setting the argument value (required)
         
         """
         Flag.__init__(self, label, option, default, help, **kwargs)
@@ -677,10 +697,14 @@ class Font (Control):
                  **kwargs):
         """Create a widget that opens a font chooser dialog.
         
-            label:   Text label for the font
-            option:  Command-line option to set
-            default: Default font
-            help:    Help text to show in a tooltip
+            label
+                Text label for the font
+            option
+                Command-line option to set
+            default
+                Default font
+            help
+                Help text to show in a tooltip
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
 
@@ -720,13 +744,20 @@ class Number (Control):
                  **kwargs):
         """Create a number-setting widget.
         
-            label:    Text label describing the meaning of the number
-            option:   Command-line option to set
-            default:  Default value
-            help:     Help text to show in a tooltip
-            min, max: Range of allowable numbers (inclusive)
-            style:    'spin' for a spinbox, or 'scale' for a slider
-            units:    Units of measurement (ex. "kbits/sec"), used as a label
+            label
+                Text label describing the meaning of the number
+            option
+                Command-line option to set
+            default
+                Default value
+            help
+                Help text to show in a tooltip
+            min, max
+                Range of allowable numbers (inclusive)
+            style
+                'spin' for a spinbox, or 'scale' for a slider
+            units
+                Units of measurement (ex. "kbits/sec"), used as a label
     
         The default/min/max may be integers or floats.
         """
@@ -792,10 +823,14 @@ class Text (Control):
                  **kwargs):
         """Create a text-entry control.
         
-            label:    Label for the text
-            option:   Command-line option to set
-            default:  Default value of text widget
-            help:     Help text to show in a tooltip
+            label
+                Label for the text
+            option
+                Command-line option to set
+            default
+                Default value of text widget
+            help
+                Help text to show in a tooltip
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
 
@@ -804,7 +839,8 @@ class Text (Control):
         """Draw the Text control in the given master widget.
         """
         Control.draw(self, master)
-        tk.Label(self, text=self.label, justify='left').pack(side=self.labelside)
+        label = tk.Label(self, text=self.label, justify='left')
+        label.pack(side=self.labelside)
         self.entry = tk.Entry(self, textvariable=self.variable)
         self.entry.pack(side='left', fill='x', expand=True)
         Control.post(self)

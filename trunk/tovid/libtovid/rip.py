@@ -28,9 +28,12 @@ from libtovid import log
 def rip_video(source, yuvfile, target):
     """Rip video to the given yuv4mpeg file.
     
-        source:  Input MediaFile
-        yuvfile: File to put ripped video in
-        target:  Output MediaFile
+        source
+            Input MediaFile
+        yuvfile
+            File to put ripped video in
+        target
+            Output MediaFile
         
     """
     # TODO: Custom mplayer options, subtitles, interlacing,
@@ -54,21 +57,24 @@ def rip_frames(media, out_dir, frames='all', size=(0, 0)):
     """Extract frame images from a MediaFile and return a list of frame image
     files.
     
-        media:    MediaFile to extract images from
-        out_dir:  Directory where output images should be stored; images
-                  are saved in a subdirectory of out_dir named after the
-                  input filename
-        frames:   Which frames to rip: 'all' for all frames, 15 to rip frame
-                  15; [30, 90] to rip frames 30 through 90, etc.
-        size:     Resolution of frame images (default: original size), used
-                  for prescaling
+        media
+            MediaFile to extract images from
+        out_dir
+            Directory where output images should be stored; images are saved
+            in a subdirectory of out_dir named after the input filename
+        frames
+            Which frames to rip: 'all' for all frames, 15 to rip frame 15;
+            [30, 90] to rip frames 30 through 90, etc.
+        size
+            Resolution of frame images (default: original size), used
+            for prescaling
         
     """
     out_dir = os.path.abspath(out_dir)
     try:
         os.mkdir(out_dir)
     except:
-        log.warn("Temp directory: %s already exists. Overwriting." % out_dir)
+        log.warning("Temp directory: %s already exists. Overwriting." % out_dir)
         os.system('rm -rf "%s"' % out_dir)
         os.mkdir(out_dir)
 

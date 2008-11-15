@@ -148,18 +148,18 @@ def tokenize(line, include_chars=''):
     return tokens
 
 
-def pretty_dict(dict):
+def pretty_dict(a_dict):
     """Return a pretty-printed dictionary, with one line for each key.
     Keys are printed in sorted ascending order.
     """
     result = ''
-    keys = dict.keys()
+    keys = a_dict.keys()
     keys.sort()
     for key in keys:
-        value = dict[key]
+        value = a_dict[key]
         # For boolean options, print Trues and omit Falses
         if value.__class__ == bool:
-            if value == True:
+            if value is True:
                 result += "    %s\n" % key
             else:
                 pass
@@ -188,14 +188,14 @@ def get_code_lines(filename):
 def get_file_type(filename):
     """Return 'image', 'audio', or 'video', if the given filename appears to be
     any of those types; otherwise, return None. Determined by file's mimetype,
-    which is based on filename extension, so possibly inaccurate. Will return
+    which is based on filename extension, so possibly inaccurate. Returns
     None for any directory or extensionless filename.
     """
-    type, encoding = mimetypes.guess_type(filename)
+    mimetype, encoding = mimetypes.guess_type(filename)
     # Get the base type (the part before '/')
     basetype = None
-    if type:
-        basetype = type[0:type.find('/')]
+    if mimetype:
+        basetype = mimetype[0:mimetype.find('/')]
     if basetype in ['image', 'audio', 'video']:
         return basetype
     else:
