@@ -18,6 +18,9 @@ def to_title(filename):
 def strip_all(filename):
     return ''
 
+def spacer(lines):
+    lines = '\n' * lines
+    return Label(lines)
 
 # List of file-type selections for Filename controls
 image_filetypes = [filetypes.all_files]
@@ -295,13 +298,13 @@ _slide_transition = Choice('Transition type', '-slide-transition', 'crossfade',
     '* See "Basic" tab for menu length option *.',
     'crossfade|fade')
 
-_slide_border = Number('Slide border', '-slide-border', 100,
+_slide_border = FlagOpt('Slide border', '-slide-border', False,
     'Use a border around animated slideshow slides (default: 100 pixels).',
-    0, 200, 'pixels')
+    Number('width', '', 100, '', 0, 200, 'pixels'))
 
-_slide_frame = Number('Slide frame', '-slide-frame', 12,
+_slide_frame = FlagOpt('Slide frame', '-slide-frame', False,
     'Use a frame around the animated slideshow slides (default: 12).',
-    0, 20, 'pixels')
+    Number('width', '', 12, '', 0, 20, 'pixels'))
 
 _no_confirm_backup = Flag('No reminder prompt to  backup your slideshow files',
     '-no-confirm-backup', False, 'Todisc prompts you for a "yes" '
@@ -408,10 +411,11 @@ _rotate = Number('Rotate Showcase thumb', '-rotate', 0,
     'Note: this will not change a portait image into a landscape image!',
     -30, 30, 'degrees')
 
-_thumb_mist = Color('Use thumb mist    Color', '-thumb-mist',
-    '#FFFFFF',  'Use a mist behind shaped thumbnails for contrast.  The Color '
+_thumb_mist = FlagOpt('Use thumb mist', '-thumb-mist', False,
+    'Use a mist behind shaped thumbnails for contrast.  The Color '
     'option is the color of the mist. This may cause contrast problems with '
-    'some font and mist color combos, so use a large bold font.', toggles=True)
+    'some font and mist color combos, so use a large bold font.',
+    Color('  Color', '', '#FFFFFF', ''))
 
 _tile3x1 = Flag('1 row of 3 thumbs', '-tile3x1', False,
     'Use a montage tile of 3x1 instead of the usual 2x2 '
@@ -607,9 +611,10 @@ _chapters = List('Chapters', '-chapters', None,
     Text())
 
 _loop = FlagOpt('Menu looping (pause)', '-loop', False,
-    'Pause before looping playback of the main menu.  Set the number '
-    'spinbox to the pause desired.  Use "Pause indefinately" flag to '
-    'disable looping', Number('', '', '', '', 0, 30, 'secs'))
+    'Pause before looping playback of the main menu.  Set the number spinbox '
+    'to the pause desired.  Default pause varies depending on other options '
+    'chosen.  Use -1 to disable looping',
+    Number('', '', '', '', -1, 30, 'secs'))
 
 _pause = Flag('Pause indefinately', '-loop', False,
     'Disable looping.  Pause at end of menu waiting for user interaction. '
@@ -660,8 +665,9 @@ _widescreen = Choice('Widescreen', '-widescreen', 'none',
 _aspect = Choice('Video aspect ratio', '-aspect', 'none',
     'This will output a <video aspect WIDTH:HEIGHT /> tag for the '
     'dvdauthor xml file.  It will affect all videos in the titleset.  '
-    'Leave this at "none" to let dvdauthor figure it out for you.'
-    'This also has the effect of forcing a thumb aspect ratio for the menu',
+    'This also has the effect of forcing a thumb aspect ratio for the menu, '
+    'which is otherwise determined automatically. '
+    'Leave this at "none" to let todisc and dvdauthor figure it out for you.',
     '4:3|16:9|none')
 
 _audio_lang = SpacedText('Audio', '-audio-lang', '',
@@ -791,10 +797,9 @@ submenus = Tabs('Submenus',
 tab_list = []
 slideshow_panel = Tabs('Slideshow',
     VPanel('General options',
-        Label('For a single slideshow use this tab,  or for multiple slideshows '
-        'also use the numbered tabs.  You may also combine\nwith videos on '
-        'the "Basic tab" into a single menu and DVD.  Choose "Output name" on '
-        '"Basic" tab before executing.', 'center'),
+        Label('Make a single slideshow on this tab.  Add slideshows using '
+        'numbered tabs.  On the\n"Basic" tab: mix with videos if desired, '
+        'and please set "Output name" before executing.', 'center'),
         Text('Title', '-titles', '', 'Title for this slideshow.  '
         'Use a title ONLY for multiple slideshows '
         'or slideshow(s) mixed with videos'),
@@ -858,27 +863,27 @@ thumbnails = VPanel("Thumbnails",
         _seek,
         _showcase_seek),
     HPanel('',
-        VPanel("Effects",
-            VPanel('Menu link thumbnails',
+        VPanel('Menu link thumbnails',
+            VPanel("Effects",
                 HPanel('', _opacity, _blur),
                 _3dthumbs,
                 _thumb_mist,
                 _rotate_thumbs),
-            VPanel('Showcase thumbnail',
+            VPanel('Arrangement',
+                HPanel('Thumb aspect ratio',
+                Label('Automatic (force video ratio on "Playback" tab)')),
+                _thumb_shape,
+                _align,
+                FlagGroup('Rows (for default menu style only)',
+                    'exclusive', _tile3x1, _tile4x1, side='left')),
+        ),
+        VPanel("Showcase thumbnail",
+            VPanel('Effects',
                 _wave,
                 _rotate,
-                _showcase_framestyle,
-            ),
-        ),
-        VPanel("Arrangement",
-            VPanel('Menu link thumbnails',
-            HPanel('Thumb aspect ratio',
-            Label('Automatic (force video ratio on "Playback" tab")')),
-            _thumb_shape,
-            _align,
-            FlagGroup('Rows (for default menu style only)',
-                'exclusive', _tile3x1, _tile4x1, side='left')),
-            VPanel('Showcase thumbnail', _showcase_geo),
+                _showcase_framestyle),
+            VPanel('Arrangement', _showcase_geo),
+            spacer(8),
         ),
     ),
 )
@@ -897,10 +902,8 @@ behavior = VPanel("Behavior",
 
 playback = Tabs("Playback",
     VPanel('Basic settings',
-        HPanel('Menu Pause',
-            _loop, _pause),
-        HPanel('',
-            _widescreen, _aspect),
+        HPanel('', _aspect,  _widescreen),
+        HPanel('Menu Pause', _loop),
         HPanel('Language(s)', _audio_lang, _subtitles),
         HPanel('Navigation',
             _playall,
