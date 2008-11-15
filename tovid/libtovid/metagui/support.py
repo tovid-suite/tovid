@@ -48,10 +48,10 @@ def ensure_type(message, required_type, *objects):
     """Ensure that the given objects are of the required type.
     If not, print a message and exit_with_traceback.
     """
-    for object in objects:
-        if not isinstance(object, required_type):
+    for obj in objects:
+        if not isinstance(obj, required_type):
             type_message = "Expected %s, got %s instead" % \
-                         (required_type, type(object))
+                         (required_type, type(obj))
             exit_with_traceback(type_message + '\n' + message)
 
 import math

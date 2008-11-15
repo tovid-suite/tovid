@@ -80,7 +80,7 @@ class Panel (Widget):
         """
         Widget.draw(self, master)
         # Get a labeled or unlabeled frame
-        if self.name != '' and labeled == True:
+        if self.name and labeled:
             self.frame = tk.LabelFrame(self, text=self.name,
                                        padx=8, pady=8)
         else:
@@ -378,9 +378,12 @@ class FlagGroup (Panel):
         
         These keyword arguments are accepted:
         
-            side:     'top' or 'left', to pack Flags vertically or horizontally
-            rows:     For 'left' packing, number of rows to split flags into
-            columns:  For 'top' packing, number of columns to split flags into
+            side
+                'top' or 'left', to pack Flags vertically or horizontally
+            rows
+                For 'left' packing, number of rows to split flags into
+            columns
+                For 'top' packing, number of columns to split flags into
         """
         Panel.__init__(self, name)
         ensure_type("FlagGroup may only contain Flag instances", Flag, *flags)
@@ -520,7 +523,7 @@ class RelatedList (Panel):
         if correspondence not in ['1:1', '1:*']:
             raise ValueError("Correspondence must be '1:1' or '1:*'.")
         if not isinstance(child_list, List):
-            raise TypeError("Child must be a List instance.")
+            raise TypeError("RelatedList child must be a List instance.")
         if not callable(filter):
             raise TypeError("Translation filter must be a function.")
         if side not in ['left', 'top']:
@@ -543,15 +546,17 @@ class RelatedList (Panel):
 
         # Lookup the parent Control by option
         if type(self.parent) == str:
-            self.parent = Control.by_option(self.parent)
             self.draw_copy = True
+            parent_control = Control.by_option(self.parent)
+            if not parent_control:
+                raise ValueError("RelatedList parent '%s' does not exist" % \
+                                 self.parent)
+            else:
+                self.parent = parent_control
         # Or use the parent Control itself
         else:
             self.draw_copy = False
 
-        # Ensure parent control exists and is a List
-        if not self.parent:
-            raise Exception("RelatedList parent '%s' does not exist" % self.option)
         ensure_type("RelatedList parent must be a List", List, self.parent)
 
         # Draw the read-only copy of parent's values

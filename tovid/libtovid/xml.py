@@ -58,9 +58,6 @@ class Element (object):
         # Set attributes from those provided
         self.set(attributes, **kwargs)
 
-    ###
-    ### Public functions
-    ###
 
     def set(self, attributes=None, **kwargs):
         """Set values for one or more attributes.
@@ -79,6 +76,7 @@ class Element (object):
             key = key.replace('_', '-')
             self.attributes[key] = value
 
+
     def add(self, child_name, content='', **kwargs):
         """Create and add a new child Element by providing its name, content,
         and attributes. Return the newly-added Element.
@@ -93,32 +91,15 @@ class Element (object):
         child = Element(child_name, content, kwargs)
         self.add_child(child)
         return child
+
     
     def add_child(self, element):
         """Add the given Element as a child of this Element."""
         assert isinstance(element, Element)
         self.children.append(element)
 
-    def __str__(self):
-        """Return a string containing formatted XML for the Element."""
-        return self._xml().rstrip('\n')
 
-    ###
-    ### Internal functions
-    ###
-    
-    def _open(self):
-        """Return the XML opening tag for the Element."""
-        attribs = ''
-        for key, value in self.attributes.items():
-            attribs += ' %s="%s"' % (key, value)
-        return '<' + self.name + attribs + '>'
-
-    def _close(self):
-        """Return the XML closing tag for the Element."""
-        return '</' + self.name + '>'
-
-    def _xml(self, indent_level=0):
+    def xml(self, indent_level=0):
         """Return formatted XML for this Element and all descendants."""
         indent = '  ' * indent_level
         # No children; write a single line
@@ -128,9 +109,27 @@ class Element (object):
         else:
             text = indent + self._open() + self.content + '\n'
             for child in self.children:
-                text += child._xml(indent_level + 1)
+                text += child.xml(indent_level + 1)
             text += indent + self._close() + '\n'
         return text
+
+
+    def __str__(self):
+        """Return a string containing formatted XML for the Element."""
+        return self.xml().rstrip('\n')
+
+    
+    def _open(self):
+        """Return the XML opening tag for the Element."""
+        attribs = ''
+        for key, value in self.attributes.items():
+            attribs += ' %s="%s"' % (key, value)
+        return '<' + self.name + attribs + '>'
+
+
+    def _close(self):
+        """Return the XML closing tag for the Element."""
+        return '</' + self.name + '>'
 
 
 

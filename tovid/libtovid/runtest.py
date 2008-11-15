@@ -26,25 +26,38 @@ import os
 import commands
 from glob import glob
 
-# Unit test modules
-mod_test = glob('test/*.py')
-# Library modules
-# mod_libtovid = glob('*.py') ?
-mod_libtovid = [\
+libtovid_modules = [
+    'author.py',
     'cli.py',
     'deps.py',
+    'encode.py',
+    'filetypes.py',
     'layout.py',
     'media.py',
     'opts.py',
     'standard.py',
     'stats.py',
-    'utils.py']
-mod_render = glob('render/*.py')
-modules = mod_test + mod_libtovid + mod_author + mod_render + mod_transcode
+    'utils.py',
+    'xml.py',
+]
+
+subdirs = [
+    'backend',
+    'metagui',
+    'render',
+    'template',
+    'test',
+]
+
+subdir_modules = []
+for subdir in subdirs:
+    subdir_modules.extend(glob('%s/*.py' % subdir))
+
+all_modules = libtovid_modules + subdir_modules
 
 if __name__ == '__main__':
     # Execute each module
-    for mod in modules:
+    for mod in all_modules:
         print "Testing: %s" % mod
         try:
             print commands.getoutput('python %s' % mod)

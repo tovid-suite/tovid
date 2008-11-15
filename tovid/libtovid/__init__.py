@@ -52,7 +52,6 @@ __all__ = [
     'output',
     'playtime',
     'rip',
-    'spumux',
     'standard',
     'stats',
     'utils',
@@ -60,9 +59,7 @@ __all__ = [
 ]
 
 import os
-import sys
 from ConfigParser import ConfigParser
-
 
 # Configuration file reader/writer
 class Config (ConfigParser):
