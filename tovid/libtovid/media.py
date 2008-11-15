@@ -29,14 +29,8 @@ __all__ = [\
     'standard_media',
     'correct_aspect']
 
-# From standard library
-import os
-import sys
 import copy
-import commands
-# From libtovid
 from libtovid import log
-from libtovid.cli import Command
 from libtovid import standard
 from libtovid.utils import ratio_to_float
 

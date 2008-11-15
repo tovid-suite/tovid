@@ -140,7 +140,7 @@ from support import __all__ as all_support
 from control import __all__ as all_control
 from panel import __all__ as all_panel
 from gui import __all__ as all_gui
-__all__ = [\
+__all__ = [
     'variable',
     'support',
     'control',

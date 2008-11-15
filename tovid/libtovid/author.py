@@ -72,10 +72,14 @@ class Disc:
                  titlesets=None):
         """Create a Disc with the given properties.
         
-            format:    'vcd', 'svcd', or 'dvd'
-            tvsys:     'pal' or 'ntsc'
-            title:     String containing the title of the disc
-            titlesets: List of Titlesets
+            format
+                'vcd', 'svcd', or 'dvd'
+            tvsys
+                'pal' or 'ntsc'
+            title
+                String containing the title of the disc
+            titlesets
+                List of Titlesets
         """
         self.name = name
         self.format = format

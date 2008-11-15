@@ -6,7 +6,7 @@ __all__ = ['TextMenu']
 from libtovid.cli import Command, Pipe
 from libtovid import deps
 from libtovid import log
-from libtovid import spumux
+from libtovid.backend import spumux
 
 class TextMenu:
     """Simple menu with selectable text titles. For now, basically a clone

@@ -2,7 +2,7 @@
 # appdialogs.py
 
 from Tkinter import *
-import sys, os
+import os
 from libtovid.metagui import Style
 
 
@@ -109,7 +109,6 @@ class ConfirmDialog(AppDialog):
         self.master.destroy()
 
 
-import time, tkMessageBox
 from ScrolledText import ScrolledText
 
 class LogViewer(AppDialog):
@@ -143,7 +142,6 @@ class LogViewer(AppDialog):
         self.after(100,self.poll)
 
 
-from Tkinter import *
 import linecache
 
 class Counter(AppDialog):
@@ -192,7 +190,7 @@ class Counter(AppDialog):
         self.file = open(self.countfile, 'r')
 
         # poll file for data
-        self.update_idletasks
+        self.update_idletasks()
         self.data = linecache.getline(self.countfile, 1)
         self.data = self.data.strip()
         self.after(100, self.poll)

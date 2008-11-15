@@ -16,8 +16,8 @@ class Widget (tk.Frame):
     def __init__(self, name=''):
         """Create a Widget.
         
-        name
-            Unique name for the widget, or '' for an anonymous widget
+            name
+                Unique name for the widget, or '' for an anonymous widget
         """
         if type(name) != str:
             raise TypeError("Widget name must be a string.")
@@ -28,11 +28,15 @@ class Widget (tk.Frame):
 
 
     def draw(self, master):
+        """Initialize the base tk.Frame class.
+        """
         tk.Frame.__init__(self, master)
         self.is_drawn = True
 
 
     def destroy(self):
+        """Destroy the widget.
+        """
         tk.Frame.destroy(self)
         self.is_drawn = False
 

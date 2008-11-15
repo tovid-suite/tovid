@@ -41,7 +41,7 @@ class Executor (Widget):
         """
         Widget.draw(self, master)
         # TODO: Make text area expand/fill available space
-        self.text = ScrolledText(self, width=80, height=40,
+        self.text = ScrolledText(self, width=1, height=1,
             highlightbackground='gray', highlightcolor='gray', relief='groove')
         self.text.pack(fill='both', expand=True)
         # Bottom frame to hold the next four widgets
@@ -59,7 +59,7 @@ class Executor (Widget):
         self.save_button = tk.Button(frame, text="Save", command=self.save)
         self.save_button.pack(side='left')
         # Pack the bottom frame
-        frame.pack(anchor='nw', fill='x', expand=True)
+        frame.pack(anchor='nw', fill='x')
         # Disable stdin box and kill button until execution starts
         self.stdin_text.config(state='disabled')
         self.kill_button.config(state='disabled')
@@ -97,9 +97,10 @@ class Executor (Widget):
 
         # Run the command, directing stdout/err to the temporary file
         # (and piping stdin so send_stdin will work)
+        output = open(self.outfile.name, 'w')
         self.command.run_redir(stdin=PIPE,
-                               stdout=self.outfile.name,
-                               stderr=self.outfile.name)
+                               stdout=output,
+                               stderr=output)
 
         # Enable the stdin entry box and kill button
         self.stdin_text.config(state='normal')
@@ -128,7 +129,7 @@ class Executor (Widget):
             initialfile='%s_output.log' % self.name)
         if filename:
             outfile = open(filename, 'w')
-            outfile.write(self.text.get(1.0, 'end'))
+            outfile.write(self.text.get('1.0', 'end'))
             outfile.close()
             self.notify("Output saved to '%s'" % filename)
 
@@ -180,7 +181,7 @@ class Executor (Widget):
     def clear(self):
         """Clear the log window.
         """
-        self.text.delete(1.0, 'end')
+        self.text.delete('1.0', 'end')
 
 
 
@@ -195,9 +196,11 @@ class Application (Widget):
     def __init__(self, program, *panels):
         """Define a GUI application frontend for a command-line program.
         
-            program: Command-line program that the GUI is a frontend for
-            panels:  One or more Panels, containing controls for the given
-                     program's options.
+            program
+                Command-line program that the GUI is a frontend for
+            panels
+                One or more Panels, containing controls for the given
+                program's options
 
         After defining the Application, call run() to show/execute it.
         """
@@ -222,7 +225,7 @@ class Application (Widget):
         # Draw all panels as tabs
         self.tabs = Tabs('', *self.panels)
         self.tabs.draw(self)
-        self.tabs.pack(anchor='n', fill='x', expand=True)
+        self.tabs.pack(anchor='n', fill='both', expand=True)
 
 
     def draw_toolbar(self, config_function, exit_function):
@@ -311,29 +314,34 @@ class GUI (tk.Tk):
     def __init__(self, title, width, height, application, **kwargs):
         """Create a GUI for the given application.
         
-            title:        Text shown in the title bar
-            width:        Initial width of GUI window in pixels
-            height:       Initial height of GUI window in pixels
-            application:  Application to show in the GUI
+            title
+                Text shown in the title bar
+            width
+                Initial width of GUI window in pixels
+            height
+                Initial height of GUI window in pixels
+            application
+                Application to show in the GUI
         
         Keywords arguments accepted:
 
             inifile:      Name of an .ini-formatted file with GUI configuration
         """
+        tk.Tk.__init__(self)
 
         # Ensure that one or more Application instances were provided
         ensure_type("GUI needs Application", Application, application)
         self.application = application
 
-        tk.Tk.__init__(self)
-
+        # Set main window attributes
         self.geometry("%dx%d" % (width, height))
         self.title(title)
         self.width = width
         self.height = height
+
         # Get style configuration from INI file
         if 'inifile' in kwargs:
-            self.inifile = inifile
+            self.inifile = kwargs['inifile']
         else:
             self.inifile = DEFAULT_CONFIG
         self.style = Style()
@@ -343,11 +351,13 @@ class GUI (tk.Tk):
         else:
             print "Creating config file", self.inifile
             self.style.save(self.inifile)
+
         # Show hidden file option in file dialogs
         self.tk.call('namespace', 'import', '::tk::dialog::file::')
         self.tk.call('set', '::tk::dialog::file::showHiddenBtn',  '1')
         self.tk.call('set', '::tk::dialog::file::showHiddenVar',  '0')
-        # handle user closing window with window manager or ctrl-q
+
+        # Handle user closing window with window manager or ctrl-q
         self.protocol("WM_DELETE_WINDOW", self.confirm_exit)
         self.bind('<Control-q>', self.confirm_exit)
 

@@ -45,7 +45,6 @@ __all__ = [\
     'Pipe']
 
 import os
-import sys
 import doctest
 import signal
 from subprocess import Popen, PIPE
@@ -178,7 +177,7 @@ class Command:
         return that command's output instead. Returns an empty string if the
         command has not been run yet.
         """
-        if self.output is '' and isinstance(self.proc, Popen):
+        if self.output == '' and isinstance(self.proc, Popen):
             self.output = self.proc.communicate()[0]
         return self.output
 
@@ -188,7 +187,7 @@ class Command:
         containing the command's standard error output. Returns an empty
         string if the command has not been run yet.
         """
-        if self.error is '' and isinstance(self.proc, Popen):
+        if self.error == '' and isinstance(self.proc, Popen):
             self.error = self.proc.communicate()[1]
         return self.error
 
@@ -214,6 +213,7 @@ class Pipe:
         for cmd in commands:
             self.add(cmd)
         self.proc = None
+        self.output = ''
 
     
     def add(self, *commands):
@@ -244,9 +244,9 @@ class Pipe:
                     cmd.run_redir(prev_stdout, PIPE, None)
                 else:
                     cmd.run_redir(prev_stdout, None, None)
-        # Wait for last command to finish?
-        if not background:
-            cmd.wait()
+                # Wait for last command to finish
+                if not background:
+                    cmd.wait()
 
 
     def get_output(self):
