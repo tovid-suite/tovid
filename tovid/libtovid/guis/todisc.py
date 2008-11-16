@@ -88,17 +88,17 @@ _showcase = FlagOpt('Showcase', '-showcase', False,
 
 _showcase_seek = Number('Showcase seek', '-showcase-seek', 2,
     'Play showcase video from the given seek time. '
-    'Note: switched menus uses the value(s) from "Seek time" '
-    'option above, not this one',
+    'Note: switched menus uses the value(s) from the '
+    ' "Thumbnail seek(s)" option, not this one',
     0, 3600, 'secs')
 
 _textmenu = FlagOpt("Textmenu", '-textmenu', False,
-    'A text only menu with links arranged at outside edges.  Optionally use a '
-    '"showcase" image/video, or static/animated background.  Use the '
-    '"columns" option to set the number of titles in '
-    'column 1 (column 2 will use the remainder).  Note that '
+    'A menu using just text for links instead of image AND text, arranged at '
+    'outside edges.  Optionally use a "showcase" image/video, or '
+    'static/animated background.  Use the "columns" option to set the number '
+    'of titles in column 1 (column 2 will use the remainder).  Note that '
     'column 2 titles are aligned right. '
-    'See also quick-menu and switched menu.',
+    'See also "Quick menu" and "Switched menus".',
     Number('Columns', '', 13, '', 0, 13))
 
 _quick_menu = Flag('Quick menu (may need a menu video)',
@@ -397,7 +397,7 @@ _rotate_thumbs = SpacedText('Rotate Thumbs (list)', '-rotate-thumbs', '',
     'negative.  There must be one value for each file given with files.  If '
     'the values are not the same distance from zero, the thumbs will be of '
     'different sizes as images are necessarily resized *after* rotating.  '
-    'Note: this will not change a portait image into a landscape image!')
+    'Note: this will not change a portrait image into a landscape image!')
 
 _wave = Flag('Wave effect for showcase thumb', '-wave', False,
     'Wave effect for showcase image|video.  Alters thumbs along a sine '
@@ -412,9 +412,9 @@ _rotate = Number('Rotate Showcase thumb', '-rotate', 0,
     -30, 30, 'degrees')
 
 _thumb_mist = FlagOpt('Use thumb mist', '-thumb-mist', False,
-    'Use a mist behind shaped thumbnails for contrast.  The Color '
-    'option is the color of the mist. This may cause contrast problems with '
-    'some font and mist color combos, so use a large bold font.',
+    'Use a mist behind shaped thumbnails for contrast with the background.  '
+    'The Color option is the color of the mist.  With some font and mist '
+    'color combos you may need to use a large bold font for readability.',
     Color('  Color', '', '#FFFFFF', ''))
 
 _tile3x1 = Flag('1 row of 3 thumbs', '-tile3x1', False,
