@@ -106,8 +106,7 @@ class ToolTip:
             if self._opts.has_key(key):
                 self._opts[key] = opts[key]
             else:
-                KeyError = 'KeyError: Unknown option: "%s"' %key
-                raise KeyError
+                raise KeyError('Unknown option: "%s"' % key)
 
     ### Event handlers
 
@@ -170,7 +169,8 @@ class ToolTip:
         # otherwise when the mouse enters the tip window we get
         # a leave event and it disappears, and then we get an enter
         # event and it reappears, and so on forever :-(
-        # or we take care that the mouse pointer is always outside the tipwindow :-)
+        # or we take care that the mouse pointer is always outside the
+        # tipwindow :-)
         tw = self._tipwindow
         twx, twy = tw.winfo_reqwidth(), tw.winfo_reqheight()
         w, h = tw.winfo_screenwidth(), tw.winfo_screenheight()
@@ -206,7 +206,8 @@ def demo():
     l = Tkinter.Listbox(root)
     l.insert('end', "I'm a listbox")
     l.pack(side='top')
-    t1 = ToolTip(l, follow_mouse=1, text="I'm a tooltip with follow_mouse set to 1, so I won't be placed outside my parent")
+    t1 = ToolTip(l, follow_mouse=1, text="I'm a tooltip with follow_mouse set "
+                 "to 1, so I won't be placed outside my parent")
     b = Tkinter.Button(root, text='Quit', command=root.quit)
     b.pack(side='bottom')
     t2 = ToolTip(b, text='Enough of this')

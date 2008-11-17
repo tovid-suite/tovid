@@ -89,7 +89,7 @@ _parallel = Flag('Parallel video/audio encoding', '-parallel', False,
 # Interlacing
 _interlaced = Flag('Interlaced encoding', '-interlaced', False,
     "Do interlaced encoding. Use this if your source material is interlaced.")
-_interlaced_bf =Flag('Interlaced (bottom first)', '-interlaced_bf', False,
+_interlaced_bf = Flag('Interlaced (bottom first)', '-interlaced_bf', False,
     "Do interlaced encoding, bottom-field first. Use this if "
     "the -interlaced option produces bad output.")
 _deinterlace = Flag('Deinterlace', '-deinterlace', False,

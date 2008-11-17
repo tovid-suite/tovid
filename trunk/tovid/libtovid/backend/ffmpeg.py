@@ -1,10 +1,11 @@
 #! /usr/bin/env python
 # ffmpeg.py
 
-__all__ = [\
+__all__ = [
     'encode',
     'encode_audio',
-    'identify']
+    'identify',
+]
 
 import re
 from libtovid import log
@@ -81,9 +82,12 @@ def encode_audio(source, audiofile, target):
     """Encode the audio stream in a source file to a target format, saving
     to the given filename.
 
-        source:    Input MediaFile
-        audiofile: Filename for encoded audio
-        target:    Output MediaFile
+        source
+            Input MediaFile
+        audiofile
+            Filename for encoded audio
+        target
+            Output MediaFile
 
     If no audio is present in the source file, encode silence.
     """
@@ -98,7 +102,7 @@ def encode_audio(source, audiofile, target):
         if source.length < 4:
             cmd.add('-t', '4.0')
         else:
-            cmd.add('-t', '%f' % length)
+            cmd.add('-t', '%f' % source.length)
 
     cmd.add('-vn', '-ac', '2', '-ab', '224k')
     cmd.add('-ar', target.samprate)

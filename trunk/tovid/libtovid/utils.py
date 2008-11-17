@@ -3,7 +3,7 @@
 
 # TODO: Categorize/reorganize these (or move some to a class)
 
-__all__ = [\
+__all__ = [
     'escape',
     'float_to_ratio',
     'get_code_lines',
@@ -17,7 +17,7 @@ __all__ = [\
     'temp_file',
     'to_unicode',
     'trim',
-    'wait'
+    'wait',
 ]
 
 import os
