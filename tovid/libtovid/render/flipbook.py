@@ -242,7 +242,7 @@ class Flipbook:
         
         tmp_prefix = '';tmp_workdir = '';
         while 1:
-            rnd = random.randint(1000000,9999999)
+            rnd = random.randint(1000000, 9999999)
             tmp_prefix = "%s/flipbook-%s" % (self.tmpdir, rnd)
             tmp_workdir = "%s-work" % (tmp_prefix)
 
@@ -263,10 +263,12 @@ class Flipbook:
         try:
             cairo.ImageSurface.get_data
 
-            pngorpnm = 'ppmtoy4m -F %s -A %s -Ip -B -S 420mpeg2' % (self.fpsratio, self.aspect)
+            pngorpnm = 'ppmtoy4m -F %s -A %s -Ip -B -S 420mpeg2' % \
+                     (self.fpsratio, self.aspect)
             _write_img = write_ppm  # set write function just below
         except:
-            pngorpnm = 'ppmtoy4m -F %s -A %s -Ip -S 420mpeg2' % (self.fpsratio, self.aspect)
+            pngorpnm = 'ppmtoy4m -F %s -A %s -Ip -S 420mpeg2' % \
+                     (self.fpsratio, self.aspect)
             _write_img = write_png
             
         # Cinelerra params: -b 0 -q 5 -a 2 -F 4 -I 0 -M 2 -f 8 -R 0
@@ -294,7 +296,9 @@ class Flipbook:
                 drawing = self.get_drawing(frame)
 
             # jpeg2yuv likes frames to start at 0
-                _write_img(drawing, pipe, self.output_size[0], self.output_size[1], tmp_workdir)
+                _write_img(drawing, pipe,
+                           self.output_size[0], self.output_size[1],
+                           tmp_workdir)
                 
             frame += 1
 
@@ -363,11 +367,11 @@ def draw_text_demo(flipbook):
          Keyframe(55, -2),
          Keyframe(60, 0)]
     text4.add_effect(effect.Whirl(k, center=(25, 10), units='deg'))
-    text4.add_effect(effect.Colorfade(1, last_frame, (1.0,0,0), (0, 1.0, 0)))
+    text4.add_effect(effect.Colorfade(1, last_frame, (1.0, 0, 0), (0, 1.0, 0)))
     flipbook.add(text4, (340, 350))
 
     text5 = layer.Text(u'Whirl effect demo2 ', color='white', align="center")
-    k2 = [Keyframe(0,0),
+    k2 = [Keyframe(0, 0),
           Keyframe(last_frame, 720)]
     text5.add_effect(effect.Whirl(k2, center=(25, 10), units='deg'))
     flipbook.add(text5, (450, 400))

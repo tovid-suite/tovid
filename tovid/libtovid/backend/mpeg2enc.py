@@ -1,11 +1,13 @@
 #! /usr/bin/env python
 # mpeg2enc.py
 
-__all__ = [\
+__all__ = [
     'encode',
     'encode_video',
-    'encode_frames']
+    'encode_frames',
+]
 
+import os
 from libtovid import log
 from libtovid.cli import Command, Pipe
 from libtovid.backend import mplex, ffmpeg
@@ -13,8 +15,10 @@ from libtovid.backend import mplex, ffmpeg
 def encode(source, target, **kw):
     """Encode a multimedia video using mplayer|yuvfps|mpeg2enc.
     
-        source:  Input MediaFile
-        target:  Output MediaFile
+        source
+            Input MediaFile
+        target
+            Output MediaFile
 
     """
     log.warning("This encoder is very experimental, and may not work.")
@@ -112,11 +116,16 @@ def encode_frames(imagedir, outfile, format, tvsys, aspect, interlaced=False):
     """Convert an image sequence in the given directory to match a target
     MediaFile, putting the output stream in outfile.
 
-        imagedir:   Directory containing images (and only images)
-        outfile:    Filename for output.
-        tvsys:      TVsys desired for output (to deal with FPS)
-        aspect:     Aspect ratio ('4:3', '16:9')
-        interlaced: Frames are interlaced material.
+        imagedir
+            Directory containing images (and only images)
+        outfile
+            Filename for output.
+        tvsys
+            TVsys desired for output (to deal with FPS)
+        aspect
+            Aspect ratio ('4:3', '16:9')
+        interlaced
+            Frames are interlaced material
         
     Currently supports JPG and PNG images; input images must already be
     at the desired target resolution.
@@ -205,3 +214,4 @@ def encode_frames(imagedir, outfile, format, tvsys, aspect, interlaced=False):
 
     pipe.run(capture=True)
     pipe.get_output() # and wait :)
+

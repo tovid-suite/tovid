@@ -274,7 +274,7 @@ class Drawing:
                        "to specify two-values tuples"
         # Map relative stuff to absolute, when rel=True
         if rel:
-            for x in range(0,len(points)):
+            for x in range(0, len(points)):
                 pt = points[x]
                 assert len(pt) == 3, "In relative mode, you must "\
                        "specify control points"
@@ -614,16 +614,15 @@ class Drawing:
         bw = bevel_width
         bh = bevel_height
         # Add bezier points
-        # Top left corner:
-        tl1 = [(x0, y0 + bh), (0,0), (0,0)]
-        tl2 = [(x0 + bw, y0), (0,0), (-bw,0)]
-        tr1 = [(x1 - bw, y0), (0,0), (-bw,0)]
-        tr2 = [(x1, y0 + bh), (0,0), (0,-bw)]
-        br1 = [(x1, y1 - bh), (0,0), (0,-bh)]
-        br2 = [(x1 - bw, y1), (0,0), (+bw,0)]
-        bl1 = [(x0 + bw, y1), (0,0), (+bw,0)]
-        bl2 = [(x0, y1 - bh), (0,0), (0,+bh)]
-        end = [(x0, y0 + bh), (0,0), (0,0)]
+        tl1 = [(x0, y0 + bh), (0, 0), (0, 0)]
+        tl2 = [(x0 + bw, y0), (0, 0), (-bw, 0)]
+        tr1 = [(x1 - bw, y0), (0, 0), (-bw, 0)]
+        tr2 = [(x1, y0 + bh), (0, 0), (0, -bw)]
+        br1 = [(x1, y1 - bh), (0, 0), (0, -bh)]
+        br2 = [(x1 - bw, y1), (0, 0), (+bw, 0)]
+        bl1 = [(x0 + bw, y1), (0, 0), (+bw, 0)]
+        bl2 = [(x0, y1 - bh), (0, 0), (0, +bh)]
+        end = [(x0, y0 + bh), (0, 0), (0, 0)]
         # Call in relative mode bezier control points.
         mylst = [tl1, tl2, tr1, tr2, br1, br2, bl1, bl2, end]
         # Let bezier do the work
@@ -1112,7 +1111,7 @@ def interlace_drawings(draw1, draw2):
     # create masks (only once)
     if (not interlace_fields):
         fields = [0, 1]
-        for f in range(0,2):
+        for f in range(0, 2):
             img = cairo.ImageSurface(cairo.FORMAT_ARGB32, draw1.w, draw1.h)
             cr = cairo.Context(img)
             cr.set_antialias(cairo.ANTIALIAS_NONE)
@@ -1134,9 +1133,9 @@ def interlace_drawings(draw1, draw2):
     # For bottom first, use fields[0] first, and fields[1] after.
     # For top-first, use draw1 with fields[1] and draw2 with fields[0]
     # paint first image
-    dr.image_surface(0,0,dr.w, dr.h, draw1.surface, fields[0])
+    dr.image_surface(0, 0, dr.w, dr.h, draw1.surface, fields[0])
     # paint second image
-    dr.image_surface(0,0,dr.w, dr.h, draw2.surface, fields[1])
+    dr.image_surface(0, 0, dr.w, dr.h, draw2.surface, fields[1])
 
     return dr
 
@@ -1332,7 +1331,7 @@ def draw_fontsize_demo(drawing):
     # Draw white text in a range of sizes
     drawing.set_source('white')
     
-    for size in [12,16,20,24,28,32]:
+    for size in [12, 16, 20, 24, 28, 32]:
         ypos = size * size / 5
         drawing.font('Nimbus Sans')
         drawing.font_size(size)

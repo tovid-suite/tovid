@@ -44,7 +44,7 @@ from inspect import getargspec
 
 from libtovid.odict import Odict
 from libtovid.metagui import Text, Number, Flag
-from libtovid.metagui import control
+from libtovid.metagui.control import CONTROLS
 
 ### --------------------------------------------------------------------
 
@@ -85,7 +85,7 @@ class ControlChooser (tk.Frame):
     
     def draw(self, master):
         tk.Frame.__init__(self, master)
-        self.choices = ComboBox(self, control.CONTROLS.keys(),
+        self.choices = ComboBox(self, CONTROLS.keys(),
                                 variable=self.control,
                                 command=self.refresh)
         self.choices.pack()
@@ -98,7 +98,7 @@ class ControlChooser (tk.Frame):
         """Show the editor for the currently selected control.
         """
         self.editor.pack_forget()
-        newcontrol = control.CONTROLS[self.control.get()]
+        newcontrol = CONTROLS[self.control.get()]
         self.editor = ControlEditor(newcontrol)
         self.editor.draw(self)
         self.editor.pack()
@@ -107,7 +107,6 @@ class ControlChooser (tk.Frame):
 
 # Demo
 if __name__ == '__main__':
-    import Tkinter as tk
     root = tk.Tk()
     chooser = ControlChooser()
     chooser.draw(root)

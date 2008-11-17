@@ -20,7 +20,7 @@ Effect classes are arranged in a (currently) simple hierarchy:
 
 """
 
-__all__ = [\
+__all__ = [
     'Effect',
     'Movement',
     'Translate',
@@ -104,7 +104,7 @@ class MyEffect (Effect):
 
         # Next, define any keyframes your effect needs to use. This
         # effect just varies something from start_val to end_val:
-        self.keyframes = [\
+        self.keyframes = [
             Keyframe(start, start_val),
             Keyframe(end, end_val)
             ]
@@ -158,7 +158,7 @@ class Movement (Effect):
     def __init__(self, start, end, (x0, y0), (x1, y1)):
         """Move from start (x0, y0) to end (x1, y1)."""
         Effect.__init__(self, start, end)
-        self.keyframes = [\
+        self.keyframes = [
             Keyframe(start, (x0, y0)),
             Keyframe(end, (x1, y1))
             ]
@@ -174,7 +174,7 @@ class Movement (Effect):
 class Translate (Movement):
     """Translates the layer to some relative (x,y) coordinates"""
     def __init__(self, start, end, (dx, dy)):
-        Movement.__init__(self, start, end, (0,0), (dx, dy))
+        Movement.__init__(self, start, end, (0, 0), (dx, dy))
         
 
 class Fade (Effect):
@@ -232,7 +232,7 @@ class FadeInOut(Fade):
         #        /      \
         # start./        \.end  0%
         #
-        self.keyframes = [\
+        self.keyframes = [
                 Keyframe(start, 0.0),                  # Start fading in
                 Keyframe(start + fade_length, 1.0),    # Fade-in done
                 Keyframe(end - fade_length, 1.0),      # Start fading out
@@ -247,7 +247,7 @@ class Colorfade (Effect):
     def __init__(self, start, end, (r0, g0, b0), (r1, g1, b1)):
         """Fade between the given RGB colors."""
         Effect.__init__(self, start, end)
-        self.keyframes = [\
+        self.keyframes = [
             Keyframe(start, (r0, g0, b0)),
             Keyframe(end, (r1, g1, b1))
             ]
@@ -267,7 +267,7 @@ class Spectrum (Effect):
     def __init__(self, start, end):
         Effect.__init__(self, start, end)
         step = (end - start) / 6
-        self.keyframes = [\
+        self.keyframes = [
             Keyframe(start, (1.0, 0, 0)),
             Keyframe(start + step, (1.0, 0, 1.0)),
             Keyframe(start + step*2, (0, 0, 1.0)),
@@ -289,7 +289,7 @@ class Scale (Effect):
     """A Scaling effect, from one size to another."""
     def __init__(self, start, end, (w0, h0), (w1, h1)):
         Effect.__init__(self, start, end)
-        self.keyframes =[\
+        self.keyframes = [
             Keyframe(start, (w0, h0)),
             Keyframe(end, (w1, h1))
             ]
@@ -307,7 +307,7 @@ class Scale (Effect):
 class Whirl(Effect):
     """Rotates an object a number of times.
     """
-    def __init__(self, keyframes, center=(0,0), method='linear', units='deg'):
+    def __init__(self, keyframes, center=(0, 0), method='linear', units='deg'):
         """Create a Whirl effect
         
         method -- 'linear' or 'cosine', for passing from one angle to another
@@ -345,7 +345,7 @@ class PhotoZoom(Effect):
 
     Normally applies to an Image layer, but can be used with others.
     """
-    def __init__(self, keyframes, subject=(0,0), direction=None, movement=50, method='linear'):
+    def __init__(self, keyframes, subject=(0, 0), direction=None, movement=50, method='linear'):
         """Create a PhotoZoom effect
 
         keyframes -- 0.0 for beginning of effect, and 1.0 to reach the end,
@@ -353,7 +353,7 @@ class PhotoZoom(Effect):
                      effect.
         subject -- Position of the subject of interest. That is the point where
                    the zoom in/out will focus it's attention.
-                   If (0,0), the focus will be chosen randomly in the 2/3 of
+                   If (0, 0), the focus will be chosen randomly in the 2/3 of
                    the center of the screen.
         direction -- 'in', 'out', None (random)
         movement -- 0 to 100, percentage of movement to create.
@@ -380,7 +380,7 @@ class PhotoZoom(Effect):
 
         fb = self._parent_flipbook
         # Use subject, or randomize in the center 1/3 of the image.
-        if (self.subject == (0,0)):
+        if (self.subject == (0, 0)):
             self.subject = (randint(int(0.33 * fb.w),
                                     int(0.66 * fb.w)),
                             randint(int(0.33 * fb.h),
