@@ -274,7 +274,7 @@ class VideoClip (Layer):
     TODO: num_frames should accept a range [first, end], an int (1-INT) and
     rip frames accordingly. For now, it only accepts an INT for the range 1-INT
     """
-    def __init__(self, filename, (width, height), position=(0,0), num_frames=120):
+    def __init__(self, filename, (width, height), position=(0, 0), num_frames=120):
         Layer.__init__(self)
         self.filename = filename
         self.mediafile = MediaFile(filename)
@@ -395,7 +395,7 @@ class Label (Text):
     """A text string with a rectangular background.
 
     You can access Text's extents() function from within here too."""
-    def __init__(self, text, position=(0,0), color='white', bgcolor='#555',
+    def __init__(self, text, position=(0, 0), color='white', bgcolor='#555',
                  fontsize=20, font='NimbusSans'):
         Text.__init__(self, text, position, color, fontsize, font)
         self.bgcolor = bgcolor
@@ -439,7 +439,7 @@ class Label (Text):
 
 class Thumb (Layer):
     """A thumbnail image or video."""
-    def __init__(self, filename, (width, height), position=(0,0), title=''):
+    def __init__(self, filename, (width, height), position=(0, 0), title=''):
         Layer.__init__(self)
         self.filename = filename
         self.size = (width, height)
@@ -764,7 +764,7 @@ class ColorBars (Layer):
     """Standard SMPTE color bars
     (http://en.wikipedia.org/wiki/SMPTE_color_bars)
     """
-    def __init__(self, size, position=(0,0)):
+    def __init__(self, size, position=(0, 0)):
         """Create color bars in a region of the given size and position.
         """
         Layer.__init__(self)

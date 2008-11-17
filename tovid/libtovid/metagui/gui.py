@@ -12,19 +12,18 @@ __all__ = [
 ]
 
 import os
-import sys
 import Tkinter as tk
 
 from widget import Widget
 from panel import Panel, Tabs
-from support import ensure_type, exit_with_traceback
+from support import ensure_type
 from libtovid.cli import Command
 
 DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
 
 ### --------------------------------------------------------------------
 from ScrolledText import ScrolledText
-from tkFileDialog import asksaveasfilename, askopenfilename
+from tkFileDialog import asksaveasfilename
 from subprocess import PIPE
 
 class Executor (Widget):

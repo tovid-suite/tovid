@@ -16,8 +16,10 @@ __all__ = [\
     'add_subpictures',
     'add_subtitles']
 
+import os
 from libtovid import utils
 from libtovid import xml
+from libtovid import cli
 from libtovid.backend import mplayer
 
 # spumux XML elements and valid attributes
@@ -63,36 +65,38 @@ spu
 ### Internal functions
 ###
 
-def get_xml(textsub_or_spu):
+def _get_xml(textsub_or_spu):
     subpictures = xml.Element('subpictures')
     stream = subpictures.add('stream')
     stream.add_child(textsub_or_spu)
     return str(subpictures)
 
 
-def get_xmlfile(textsub_or_spu):
+def _get_xmlfile(textsub_or_spu):
     """Write spumux XML file for the given Textsub or Spu element, and
     return the written filename.
     """
-    xmldata = get_xml(textsub_or_spu)
+    xmldata = _get_xml(textsub_or_spu)
     xmlfile = utils.temp_file(suffix=".xml")
     xmlfile.write(xmldata)
     xmlfile.close()
     return xmlfile.name
 
 
-def mux_subs(subtitle, movie_filename, stream_id=0):
+def _mux_subs(subtitle, movie_filename, stream_id=0):
     """Run spumux to multiplex the given subtitle with an .mpg file.
     
         subtitle:       Textsub or Spu element
         movie_filename: Name of an .mpg file to multiplex subtitle into
         stream_id:      Stream ID number to pass to spumux
     """
-    # Create temporary .mpg file in the same directory
-    base_dir = os.path.dirname(movie_filename)
-    subbed_filename = temp_name(suffix=".mpg", dir=base_dir)
+    # Create XML file for subtitle element
+    xmlfile = _get_xmlfile(subtitle)
+    # Create a temporary .mpg for the subtitled output
+    #base_dir = os.path.dirname(movie_filename)
+    subbed_filename = utils.temp_file(suffix=".mpg")
     # spumux xmlfile < movie_filename > subbed_filename
-    spumux = Command('spumux',
+    spumux = cli.Command('spumux',
                      '-s%s' % stream_id,
                      xmlfile.name)
     spumux.run_redir(movie_filename, subbed_filename)
@@ -127,9 +131,9 @@ def add_subpictures(movie_filename, select, image=None, highlight=None):
             image=image,
             highlight=highlight)
     # TODO Find a good default outlinewidth
-    spu.set(autooutline=infer, outlinewidth=10)
+    spu.set(autooutline='infer', outlinewidth='10')
     # TODO: Support explicit button regions
-    mux_subs(spu, movie_filename)
+    _mux_subs(spu, movie_filename)
 
 
 def add_subtitles(movie_filename, sub_filenames):
@@ -154,7 +158,7 @@ def add_subtitles(movie_filename, sub_filenames):
                     movie_width=width,
                     movie_height=height,
                     filename=sub_filename)
-        mux_subs(textsub, movie_filename, stream_id)
+        _mux_subs(textsub, movie_filename, stream_id)
 
 
 if __name__ == '__main__':
@@ -164,11 +168,11 @@ if __name__ == '__main__':
     spu = xml.Element('spu')
     spu.add('button', name='but1', down='but2')
     spu.add('button', name='but2', up='but1')
-    print get_xml(spu)
+    print _get_xml(spu)
 
     print "Text subtitle example:"
     textsub = xml.Element('textsub')
     textsub.set(filename='foo.sub',
                 fontsize=14.0,
                 font="Luxi Mono")
-    print get_xml(textsub)
+    print _get_xml(textsub)

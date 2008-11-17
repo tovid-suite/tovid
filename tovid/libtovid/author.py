@@ -4,14 +4,15 @@
 """This module is for authoring a DVD or (S)VCD using dvdauthor or vcdimager.
 """
 
-__all__ = [\
+__all__ = [
     'Disc',
     'Menu',
     'Video',
     'Group',
     'Titleset',
     'vcdimager_xml',
-    'dvdauthor_xml']
+    'dvdauthor_xml',
+]
 
 from libtovid import xml
 
