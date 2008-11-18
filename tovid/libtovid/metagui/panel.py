@@ -643,5 +643,10 @@ class RelatedList (Panel):
                 args.extend(self.child.get_args(list_var))
         else: # '1:1'
             args.extend(self.child.get_args())
-        return args
+        # Return args only if some list items are non-empty
+        if any(args):
+            return args
+        else:
+            return []
+
 
