@@ -40,7 +40,7 @@ class Executor (Widget):
         """Draw the Executor in the given master widget.
         """
         Widget.draw(self, master)
-        # TODO: Make text area expand/fill available space
+        # Log output text area
         self.text = ScrolledText(self, width=1, height=1,
             highlightbackground='gray', highlightcolor='gray', relief='groove')
         self.text.pack(fill='both', expand=True)
@@ -56,7 +56,8 @@ class Executor (Widget):
         self.kill_button = tk.Button(frame, text="Kill", command=self.kill)
         self.kill_button.pack(side='left')
         # Button to save log output
-        self.save_button = tk.Button(frame, text="Save", command=self.save_log)
+        self.save_button = tk.Button(frame, text="Save log",
+                                     command=self.save_log)
         self.save_button.pack(side='left')
         # Pack the bottom frame
         frame.pack(anchor='nw', fill='x')
@@ -230,8 +231,7 @@ class Application (Widget):
     def draw_toolbar(self, config_function, exit_function):
         """Draw a toolbar at the bottom of the application.
         """
-        self.toolbar = Widget()
-        self.toolbar.draw(self)
+        self.toolbar = tk.Frame(self)
         # Create the buttons
         config_button = tk.Button(self.toolbar, text="Config",
                                   command=config_function)
@@ -247,7 +247,7 @@ class Application (Widget):
         run_button.pack(anchor='w', side='left', fill='x', expand=True)
         exit_button.pack(anchor='e', side='right', fill='x')
         # Pack the toolbar
-        self.toolbar.pack(fill='x', anchor='sw', expand=True)
+        self.toolbar.pack(fill='x', anchor='sw')
 
 
     def get_args(self):
