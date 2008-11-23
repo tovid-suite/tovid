@@ -437,7 +437,8 @@ class Color (Control):
         """Draw control widgets in the given master.
         """
         Control.draw(self, master)
-        tk.Label(self, text=self.label).pack(side=self.labelside)
+        label = tk.Label(self, text=self.label)
+        label.pack(side=self.labelside)
         self.button = tk.Button(self, textvariable=self.variable,
                                 command=self.change, width=7)
         self.button.pack(side='left')
@@ -586,7 +587,7 @@ class Flag (Control):
         self.check = tk.Checkbutton(self, text=self.label,
                                     variable=self.variable,
                                     command=self.enabler)
-        self.check.pack(side=self.labelside, anchor='nw')
+        self.check.pack(side=self.labelside)
 
         # Enable/disable related controls
         if self.enables:

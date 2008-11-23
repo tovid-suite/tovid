@@ -86,7 +86,7 @@ class Panel (Widget):
         else:
             self.frame = tk.Frame(self)
         # Pack the frame
-        self.frame.pack(side='top', fill='both')
+        self.frame.pack(side='top', fill='both', expand=True)
 
 
     def draw_widgets(self, side='top'):
@@ -96,8 +96,7 @@ class Panel (Widget):
         for widget in self.widgets:
             widget.draw(self.frame)
             widget.pack(side=side, anchor='nw', fill='both',
-                        expand=True, padx=4, pady=2)
-
+                        expand=False, padx=4, pady=2)
 
     def get_args(self):
         """Return a list of all command-line options from contained widgets.
