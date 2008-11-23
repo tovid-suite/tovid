@@ -14,17 +14,24 @@ from libtovid.cli import Command
 def encode(source, target, **kw):
     """Encode a multimedia video using ffmpeg.
 
-        source:  Input MediaFile
-        target:  Output MediaFile
-        kw:      name=value keyword arguments
+        source
+            Input MediaFile
+        target
+            Output MediaFile
+        **kw
+            name=value keyword arguments
     
     Supported keywords:
     
-        quant:      Minimum quantization, from 1-31 (1 being fewest artifacts)
-        vbitrate:   Maximum video bitrate, in kilobits per second.
-        abitrate:   Audio bitrate, in kilobits per second
-        interlace:  'top' or 'bottom', to do interlaced encoding with
-                    top or bottom field first
+        quant
+            Minimum quantization, from 1-31 (1 being fewest artifacts)
+        vbitrate
+            Maximum video bitrate, in kilobits per second.
+        abitrate
+            Audio bitrate, in kilobits per second
+        interlace
+            'top' or 'bottom', to do interlaced encoding with
+            top or bottom field first
 
     For example:
     

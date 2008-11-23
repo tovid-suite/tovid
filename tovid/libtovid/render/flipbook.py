@@ -88,14 +88,17 @@ class Flipbook:
         """Create a flipbook of the given length in seconds, at the given
         resolution.
 
-            seconds: Length of flipbook playback in seconds
-            format:  'dvd', 'vcd', 'svcd', 'dvd-vcd', or 'half-dvd'
-            tvsys:   'ntsc' or 'pal'
-            aspect:  '4:3' or '16:9' (the latter only for format='dvd')
-                     (default: '4:3')
-            interlaced: True/False. When enabled, the framerate will be
-                     doubled, but only half the frames (twice the fields)
-                     will be rendered.
+            seconds
+                Length of flipbook playback in seconds
+            format
+                'dvd', 'vcd', 'svcd', 'dvd-vcd', or 'half-dvd'
+            tvsys
+                'ntsc' or 'pal'
+            aspect
+                '4:3' or '16:9' (the latter only for format='dvd')
+            interlaced
+                True/False. When enabled, the framerate will be doubled,
+                but only half the frames (twice the fields) will be rendered.
 
         Once you've created the Flipbook, you can grab the dimensions
         in with the property:
@@ -163,7 +166,8 @@ class Flipbook:
     # Utility functions
 
     def stof(self, seconds):
-        """Return the number of frames to the specified time (in seconds)"""
+        """Return the number of frames to the specified time (in seconds).
+        """
         return int(self.fps * float(seconds))
 
     def _get_canvas_size(self):
@@ -184,12 +188,14 @@ class Flipbook:
         
 
     def add(self, layer, position=(0, 0)):
-        """Add a Layer to the flipbook."""
+        """Add a Layer to the flipbook.
+        """
         self.layers.append((layer, position))
 
-    def render(self, frame=1):
-        """Render the given frame."""
 
+    def render(self, frame=1):
+        """Render the given frame.
+        """
         print "DEPRECATED FUNCTION."
         exit()
         
@@ -198,6 +204,7 @@ class Flipbook:
         drawing = self.get_drawing(frame)
 
         drawing.save_png(filename, self.output_size[0], self.output_size[1])
+
 
     def get_drawing(self, frame):
         """Get a Drawing of the given frame
@@ -223,9 +230,9 @@ class Flipbook:
     def render_video(self, out_filename=None):
         """Render the flipbook to an .m2v video stream file.
 
-            out_filename:    Filename for output.
-                             If not specified, a temporary filename
-                             will be given, and returned from the function.
+            out_filename
+                Filename for output. If not specified, a temporary filename
+                will be given, and returned from the function.
         
         Return the filename of the output, in both cases.
         """
@@ -334,10 +341,9 @@ class Flipbook:
         return out_filename
 
 
-        
-
 def draw_text_demo(flipbook):
-    """Draw a demonstration of Text layers with various effects."""
+    """Draw a demonstration of Text layers with various effects.
+    """
     assert isinstance(flipbook, Flipbook)
 
     last_frame = flipbook.frames

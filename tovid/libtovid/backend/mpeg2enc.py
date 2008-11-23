@@ -56,10 +56,14 @@ def encode(source, target, **kw):
 def encode_video(source, yuvfile, videofile, target):
     """Encode a yuv4mpeg stream to an MPEG video stream.
     
-        source:    Input MediaFile
-        yuvfile:   Filename of .yuv stream coming from mplayer
-        videofile: Filename of .m[1|2]v to write encoded video stream to
-        target:    Output MediaFile
+        source
+            Input MediaFile
+        yuvfile
+            Filename of .yuv stream coming from mplayer
+        videofile
+            Filename of .m[1|2]v to write encoded video stream to
+        target
+            Output MediaFile
         
     """
     # TODO: Control over quality (bitrate/quantization) and disc split size,

@@ -86,9 +86,12 @@ def _get_xmlfile(textsub_or_spu):
 def _mux_subs(subtitle, movie_filename, stream_id=0):
     """Run spumux to multiplex the given subtitle with an .mpg file.
     
-        subtitle:       Textsub or Spu element
-        movie_filename: Name of an .mpg file to multiplex subtitle into
-        stream_id:      Stream ID number to pass to spumux
+        subtitle
+            Textsub or Spu element
+        movie_filename
+            Name of an .mpg file to multiplex subtitle into
+        stream_id
+            Stream ID number to pass to spumux
     """
     # Create XML file for subtitle element
     xmlfile = _get_xmlfile(subtitle)
@@ -117,9 +120,12 @@ def _mux_subs(subtitle, movie_filename, stream_id=0):
 def add_subpictures(movie_filename, select, image=None, highlight=None):
     """Adds PNG image subpictures to an .mpg video file to create a DVD menu.
     
-        select:    Image shown as the navigational selector or "cursor"
-        image:     Image shown for non-selected regions
-        highlight: Image shown when "enter" is pressed
+        select
+            Image shown as the navigational selector or "cursor"
+        image
+            Image shown for non-selected regions
+        highlight
+            Image shown when "enter" is pressed
         
     All images must be indexed, 4-color, transparent, non-antialiased PNG.
     Button regions are auto-inferred.
@@ -139,9 +145,11 @@ def add_subpictures(movie_filename, select, image=None, highlight=None):
 def add_subtitles(movie_filename, sub_filenames):
     """Adds one or more subtitle files to an .mpg video file.
     
-        movie_filename: Name of .mpg file to add subtitles to
-        sub_filenames:  Filename or list of filenames of subtitle
-                        files to include (.sub/.srt etc.)
+        movie_filename
+            Name of .mpg file to add subtitles to
+        sub_filenames
+            Filename or list of filenames of subtitle
+            files to include (.sub/.srt etc.)
 
     """
     infile = mplayer.identify(movie_filename)

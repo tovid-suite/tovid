@@ -40,9 +40,11 @@ from random import randint
 
 class Effect:
     """A "special effect" created by keyframing a Cairo drawing command
-    along the given frame interval."""
+    along the given frame interval.
+    """
     def __init__(self, start, end):
-        """Create an effect lasting from start frame to end frame."""
+        """Create an effect lasting from start frame to end frame.
+        """
         self.start = start
         self.end = end
         # List of Keyframes
@@ -53,27 +55,35 @@ class Effect:
         self._parent_flipbook = None
         self._parent_layer = None
 
+
     def _init_parent_flipbook(self, fb):
         self._parent_flipbook = fb
+
 
     def _init_parent_layer(self, layer):
         self._parent_layer = layer
 
+
     def pre_draw(self, drawing, frame):
         """Set up effect elements that must be applied before drawing a Layer.
 
-            drawing: The Drawing to apply effects to
-            frame:   The frame for which to render the effect
+            drawing
+                The Drawing to apply effects to
+            frame
+                The frame for which to render the effect
 
         Extend this function in derived classes.
         """
         drawing.save()
 
+
     def post_draw(self, drawing, frame):
         """Finalize effect elements after a Layer is drawn.
 
-            drawing: The Drawing to apply effects to
-            frame:   The frame for which to render the effect
+            drawing
+                The Drawing to apply effects to
+            frame
+                The frame for which to render the effect
 
         Extend this function in derived classes.
         """
@@ -184,14 +194,17 @@ class Fade (Effect):
         """Fade in from start, for fade_length frames; hold at full
         opacity, then fade out for fade_length frames before end.
 
-        fade_length -- num of frames to fade-in from start, and num of
-                       frames to fade-out before end. Everything in-between
-                       is at full opacity.
-        keyframes -- a set of Keyframe() objects, determining the fading
-                     curve. Values of the Keyframe() must be floats ranging
-                     from 0.0 to 1.0 (setting opacity).
-        method -- linear, cosine
-
+            fade_length
+                Number of frames to fade-in from start, and number of
+                frames to fade-out before end. Everything in-between
+                is at full opacity.
+            keyframes
+                A set of Keyframe() objects, determining the fading
+                curve. Values of the Keyframe() must be floats ranging
+                from 0.0 to 1.0 (setting opacity).
+            method
+                'linear' or 'cosine' interpolation
+    
         """
         # A fill-opacity curve, something like:
         #         ______        100%
@@ -209,23 +222,27 @@ class Fade (Effect):
         
 
     def pre_draw(self, drawing, frame):
-        """Called before drawing on a layer"""
+        """Called before drawing on a layer.
+        """
         drawing.push_group()
 
     def post_draw(self, drawing, frame):
-        """Called after drawing on a layer"""
+        """Called after drawing on a layer.
+        """
         assert isinstance(drawing, Drawing)
         drawing.pop_group_to_source()
         drawing.paint_with_alpha(self.tween[frame])
 
-class FadeInOut(Fade):
+
+class FadeInOut (Fade):
     def __init__(self, start, end, fade_length=30):
         """Fade in from start, for fade_length frames; hold at full
         opacity, then fade out for fade_length frames before end.
 
-        fade_length -- num of frames to fade-in from start, and num of
-                       frames to fade-out before end. Everything in-between
-                       is at full opacity.
+            fade_length
+                Number of frames to fade-in from start, and number of
+                frames to fade-out before end. Everything in-between
+                is at full opacity.
         """
         # A fill-opacity curve, something like:
         #         ______        100%
@@ -286,7 +303,8 @@ class Spectrum (Effect):
 
 
 class Scale (Effect):
-    """A Scaling effect, from one size to another."""
+    """A Scaling effect, from one size to another.
+    """
     def __init__(self, start, end, (w0, h0), (w1, h1)):
         Effect.__init__(self, start, end)
         self.keyframes = [
@@ -310,9 +328,10 @@ class Whirl(Effect):
     def __init__(self, keyframes, center=(0, 0), method='linear', units='deg'):
         """Create a Whirl effect
         
-        method -- 'linear' or 'cosine', for passing from one angle to another
-                  Pass from one angle to another
-        units -- 'deg' or 'rad', the unit used in the Keyframes
+            method
+                'linear' or 'cosine', for passing from one angle to another
+            units
+                'deg' or 'rad', the unit used in the Keyframes
         """
         if units != 'deg' and units != 'rad':
             raise ValueError, "units must be 'rad' (radians) or 'deg' (degrees)"
@@ -348,16 +367,20 @@ class PhotoZoom(Effect):
     def __init__(self, keyframes, subject=(0, 0), direction=None, movement=50, method='linear'):
         """Create a PhotoZoom effect
 
-        keyframes -- 0.0 for beginning of effect, and 1.0 to reach the end,
-                     intermediate values show the intermediate state of the
-                     effect.
-        subject -- Position of the subject of interest. That is the point where
-                   the zoom in/out will focus it's attention.
-                   If (0, 0), the focus will be chosen randomly in the 2/3 of
-                   the center of the screen.
-        direction -- 'in', 'out', None (random)
-        movement -- 0 to 100, percentage of movement to create.
-        method -- 'linear' or 'cosine'
+            keyframes
+                0.0 for beginning of effect, and 1.0 to reach the end,
+                intermediate values show the intermediate state of the effect.
+            subject
+                Position of the subject of interest. That is the point where
+                the zoom in/out will focus it's attention.
+                If (0, 0), the focus will be chosen randomly in the 2/3 of
+                the center of the screen.
+            direction
+                'in', 'out', None (random)
+            movement
+                0 to 100, percentage of movement to create.
+            method
+                'linear' or 'cosine'
         """
         if direction != 'in' and direction != 'out' and direction != None:
             raise ValueError, "'direction' must be 'in', 'out' or None"
@@ -374,6 +397,7 @@ class PhotoZoom(Effect):
 
         self.keyframes = keyframes
         self.tween = Tween(self.keyframes, method)
+
 
     def pre_draw(self, drawing, frame):
         drawing.save()
@@ -408,9 +432,9 @@ class PhotoZoom(Effect):
 
 
 
-
 class KeyFunction (Effect):
-    """A keyframed effect on an arbitrary Drawing function."""
+    """A keyframed effect on an arbitrary Drawing function.
+    """
     def __init__(self, draw_function, keyframes, method='linear'):
         """Create an effect using the given Drawing function, with values
         determined by the given list of Keyframes. For example:
