@@ -231,7 +231,8 @@ class Application (Widget):
     def draw_toolbar(self, config_function, exit_function):
         """Draw a toolbar at the bottom of the application.
         """
-        self.toolbar = tk.Frame(self)
+        self.toolbar = Widget()
+        self.toolbar.draw(self)
         # Create the buttons
         config_button = tk.Button(self.toolbar, text="Config",
                                   command=config_function)
