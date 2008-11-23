@@ -104,6 +104,8 @@ from support import ensure_type
 
 ### --------------------------------------------------------------------
 class NotDrawn (Exception):
+    """Exception raised when a Control has not been drawn yet.
+    """
     pass
 
 ### --------------------------------------------------------------------

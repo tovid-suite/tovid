@@ -93,10 +93,11 @@ class Panel (Widget):
         """Draw contained widgets in self.frame,
         packed on the given side ('top' or 'left').
         """
+        _fill = {'top': 'x', 'left': 'y'}
         for widget in self.widgets:
             widget.draw(self.frame)
-            widget.pack(side=side, anchor='nw', fill='both',
-                        expand=True, padx=4, pady=2)
+            widget.pack(side=side, anchor='nw', fill=_fill[side],
+                        padx=4, pady=2)
 
 
     def get_args(self):
