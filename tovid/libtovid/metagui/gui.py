@@ -18,6 +18,7 @@ from widget import Widget
 from panel import Panel, Tabs
 from support import ensure_type
 from libtovid.cli import Command
+import shlex
 
 DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
 
@@ -55,7 +56,7 @@ class Executor (Widget):
         self.kill_button = tk.Button(frame, text="Kill", command=self.kill)
         self.kill_button.pack(side='left')
         # Button to save log output
-        self.save_button = tk.Button(frame, text="Save", command=self.save)
+        self.save_button = tk.Button(frame, text="Save", command=self.save_log)
         self.save_button.pack(side='left')
         # Pack the bottom frame
         frame.pack(anchor='nw', fill='x')
@@ -120,19 +121,6 @@ class Executor (Widget):
             self.command.kill()
 
 
-    def save(self):
-        """Save log window contents to a file.
-        """
-        filename = asksaveasfilename(parent=self,
-            title='Save log window output',
-            initialfile='%s_output.log' % self.name)
-        if filename:
-            outfile = open(filename, 'w')
-            outfile.write(self.text.get('1.0', 'end'))
-            outfile.close()
-            self.notify("Output saved to '%s'" % filename)
-
-
     def poll(self):
         """Poll for process completion, and update the output window.
         """
@@ -182,6 +170,18 @@ class Executor (Widget):
         """
         self.text.delete('1.0', 'end')
 
+
+    def save_log(self):
+        """Save log window contents to a file.
+        """
+        filename = asksaveasfilename(parent=self,
+            title='Save log window output',
+            initialfile='%s_output.log' % self.name)
+        if filename:
+            outfile = open(filename, 'w')
+            outfile.write(self.text.get('1.0', 'end'))
+            outfile.close()
+            self.notify("Output saved to '%s'" % filename)
 
 
 ### --------------------------------------------------------------------
@@ -233,13 +233,18 @@ class Application (Widget):
         self.toolbar = Widget()
         self.toolbar.draw(self)
         # Create the buttons
-        config_button = tk.Button(self.toolbar, text="Config", command=config_function)
+        config_button = tk.Button(self.toolbar, text="Config",
+                                  command=config_function)
         run_button = tk.Button(self.toolbar, text="Run %s now" % self.program,
                                command=self.execute)
-        exit_button = tk.Button(self.toolbar, text="Exit", command=exit_function)
+        save_button = tk.Button(self.toolbar, text="Save script",
+                                command=self.save_script)
+        exit_button = tk.Button(self.toolbar, text="Exit",
+                                command=exit_function)
         # Pack the buttons
         config_button.pack(anchor='w', side='left', fill='x')
-        run_button.pack(anchor='e', side='left', fill='x', expand=True, padx=32)
+        save_button.pack(anchor='w', side='left', fill='x')
+        run_button.pack(anchor='w', side='left', fill='x', expand=True)
         exit_button.pack(anchor='e', side='right', fill='x')
         # Pack the toolbar
         self.toolbar.pack(fill='x', anchor='sw', expand=True)
@@ -276,6 +281,36 @@ class Application (Widget):
         else:
             self.executor.notify("Cancelled.")
             self.toolbar.enable()
+
+
+    def make_script(self, command):
+        """Return a bash script for running the given command.
+        """
+        script = '#!/usr/bin/env bash' + '\n\n'
+        for index, word in enumerate(shlex.split(command)):
+            if ' ' in word or word[0] in '`%#$|&()<>':
+                word = "'%s'" % word
+            if index != len(shlex.split(command))-1:
+                word = word + ' \\' + '\n'
+            script += word
+        return script
+
+
+    def save_script(self):
+        """Save the current command as a bash script.
+        """
+        filename = asksaveasfilename(parent=self,
+            title="Select a filename for the script",
+            initialfile='%s_commands.bash' % self.program)
+        if filename:
+            args = self.get_args()
+            command = Command(self.program, *args)
+            script = self.make_script(str(command))
+            outfile = open(filename, 'w')
+            outfile.write(script)
+            outfile.close()
+            tkMessageBox.showinfo(title="Script saved",
+                                  message="Saved '%s'" % filename)
 
 
     def expect(self, arg_parts):
