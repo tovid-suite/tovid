@@ -56,8 +56,10 @@ class Command:
     def __init__(self, program, *args):
         """Create a Command to run a program with the given arguments.
         
-            program: A string containing the name of a program to execute
-            args:    Individual arguments to supply the command with
+            program
+                A string containing the name of a program to execute
+            args
+                Individual arguments to supply the command with
         
         For example:
         
@@ -86,11 +88,13 @@ class Command:
     def run(self, capture=False, background=False):
         """Run the command and capture or display output.
         
-            capture:    False to show command output/errors on stdout,
-                        True to capture output/errors for retrieval
-                        by get_output() and get_error()
-            background: False to wait for command to finish running,
-                        True to run process in the background
+            capture
+                False to show command output/errors on stdout,
+                True to capture output/errors for retrieval
+                by get_output() and get_error()
+            background
+                False to wait for command to finish running,
+                True to run process in the background
         
         By default, this function displays all command output, and waits
         for the program to finish running, which is usually what you'd want.
@@ -111,9 +115,12 @@ class Command:
     def run_redir(self, stdin=None, stdout=None, stderr=None):
         """Execute the command using the given stream redirections.
         
-            stdin:  Filename or File object to read input from
-            stdout: Filename or File object to write output to
-            stderr: Filename or File object to write errors to
+            stdin
+                Filename or File object to read input from
+            stdout
+                Filename or File object to write output to
+            stderr
+                Filename or File object to write errors to
         
         Use None for regular system stdin/stdout/stderr (default behavior).
         That is, if stdout=None, the command's standard output is printed.
@@ -226,8 +233,9 @@ class Pipe:
         """Run all Commands in the pipeline, doing appropriate stream
         redirection for piping.
         
-            capture:    False to show pipeline output on stdout,
-                        True to capture output for retrieval by get_output()
+            capture
+                False to show pipeline output on stdout,
+                True to capture output for retrieval by get_output()
         
         """
         self.output = ''

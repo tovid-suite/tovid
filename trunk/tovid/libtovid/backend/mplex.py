@@ -4,9 +4,12 @@
 def mux(vstream, astream, target):
     """Multiplex audio and video stream files to the given target.
     
-        vstream:  Filename of MPEG video stream
-        astream:  Filename of MP2/AC3 audio stream
-        target:   Profile of output file
+        vstream
+            Filename of MPEG video stream
+        astream
+            Filename of MP2/AC3 audio stream
+        target
+            Profile of output file
         
     """
     cmd = Command('mplex')

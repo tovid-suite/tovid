@@ -56,7 +56,8 @@ class Layer:
     def __init__(self):
         """Initialize the layer. Extend this in derived classes to accept
         configuration settings for drawing the layer; call this function
-        from any derived __init__ functions."""
+        from any derived __init__ functions.
+        """
         self.effects = []
         self.sublayers = []
         self._parent_flipbook = None
@@ -94,7 +95,8 @@ class Layer:
     
     def draw(self, drawing, frame):
         """Draw the layer and all sublayers onto the given Drawing. Override
-        this function in derived layers."""
+        this function in derived layers.
+        """
         assert isinstance(drawing, Drawing)
 
     ###
@@ -110,7 +112,8 @@ class Layer:
         self.sublayers.append((layer, position))
 
     def draw_sublayers(self, drawing, frame):
-        """Draw all sublayers onto the given Drawing for the given frame."""
+        """Draw all sublayers onto the given Drawing for the given frame.
+        """
         assert isinstance(drawing, Drawing)
         for sublayer, position in self.sublayers:
             drawing.save()
@@ -243,8 +246,9 @@ class Background (Layer):
 class Image (Layer):
     """A rectangular image, scaled to the given size.
 
-    image_source -- can be anything Drawing::image() can accept.
-                    See documentation in render/drawing.py.
+        image_source
+            Can be anything Drawing::image() can accept.
+            See documentation in render/drawing.py.
     """
     def __init__(self, image_source, (x, y), (width, height)):
         Layer.__init__(self)
@@ -318,11 +322,14 @@ class VideoClip (Layer):
 
 class Text (Layer):
     """A simple text string, with size, color and font.
-
-    text -- UTF8 encoded string.
     """
     def __init__(self, text, position=(0, 0), color='white', fontsize=20, \
                  font='Helvetica', align='left'):
+        """Create a Text layer.
+
+            text
+                UTF8 encoded string.
+        """
         Layer.__init__(self)
         self.text = text
         self.color = color
@@ -334,7 +341,8 @@ class Text (Layer):
 
     # TODO: This is gonna be pretty broken...
     def extents(self, drawing):
-        """Return the extents of the text as a (x0, y0, x1, y1) tuple."""
+        """Return the extents of the text as a (x0, y0, x1, y1) tuple.
+        """
         assert isinstance(drawing, Drawing)
         drawing.save()
         drawing.font(self.font)
@@ -367,8 +375,6 @@ class Text (Layer):
 
 class ShadedText (Layer):
     """A simple text string, with size, color and font.
-
-    text -- UTF8 encoded string.
     """
     def __init__(self, text, position=(0, 0), offset=(5, 5),
                  color='white', shade_color='gray', fontsize=20,
@@ -394,7 +400,8 @@ class ShadedText (Layer):
 class Label (Text):
     """A text string with a rectangular background.
 
-    You can access Text's extents() function from within here too."""
+    You can access Text's extents() function from within here too.
+    """
     def __init__(self, text, position=(0, 0), color='white', bgcolor='#555',
                  fontsize=20, font='NimbusSans'):
         Text.__init__(self, text, position, color, fontsize, font)
@@ -438,7 +445,8 @@ class Label (Text):
 ### --------------------------------------------------------------------
 
 class Thumb (Layer):
-    """A thumbnail image or video."""
+    """A thumbnail image or video.
+    """
     def __init__(self, filename, (width, height), position=(0, 0), title=''):
         Layer.__init__(self)
         self.filename = filename
@@ -675,10 +683,12 @@ class Scatterplot (Layer):
 class InterpolationGraph (Layer):
     # TODO: Support graphing of tuple data
     """A graph of an interpolation curve, defined by a list of Keyframes and
-    an interpolation method."""
+    an interpolation method.
+    """
     def __init__(self, keyframes, size=(240, 80), method='linear'):
         """Create an interpolation graph of the given keyframes, at the given
-        size, using the given interpolation method."""
+        size, using the given interpolation method.
+        """
         Layer.__init__(self)
                 
         self.keyframes = keyframes

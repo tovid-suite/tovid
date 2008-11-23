@@ -10,9 +10,12 @@ from libtovid.media import MediaFile
 def encode(source, target, **kw):
     """Encode a multimedia video using mencoder.
 
-        source:  Input MediaFile
-        target:  Output MediaFile
-        kw:      name=value keyword arguments
+        source
+            Input MediaFile
+        target
+            Output MediaFile
+        kw
+            name=value keyword arguments
     
     Supported keywords:
     """
