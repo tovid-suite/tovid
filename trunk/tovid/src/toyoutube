@@ -5,10 +5,10 @@
 
 import sys
 from libtovid.opts import parse
-from libtovid.cli import Command
+from libtovid import cli
 
 def convert(infile, outfile):
-    cmd = Command('ffmpeg')
+    cmd = cli.Command('ffmpeg')
     cmd.add('-i', infile,
             '-vcodec', 'libxvid',
             '-r', 30,
