@@ -1,6 +1,9 @@
 #! /usr/bin/env python
 # ffmpeg.py
 
+"""Video encoding and identification using ``ffmpeg``.
+"""
+
 __all__ = [
     'encode',
     'encode_audio',
@@ -9,7 +12,7 @@ __all__ = [
 
 import re
 from libtovid import log
-from libtovid.cli import Command
+from libtovid import cli
 
 def encode(source, target, **kw):
     """Encode a multimedia video using ffmpeg.
@@ -19,7 +22,7 @@ def encode(source, target, **kw):
         target
             Output MediaFile
         **kw
-            name=value keyword arguments
+            Keyword arguments to customize encoding behavior
     
     Supported keywords:
     
@@ -37,7 +40,7 @@ def encode(source, target, **kw):
     
         ffmpeg_encode(source, target, quant=4, vbitrate=7000)
     """
-    cmd = Command('ffmpeg', '-y', '-i', source.filename)
+    cmd = cli.Command('ffmpeg', '-y', '-i', source.filename)
 
     # Use format/tvsys that ffmpeg knows about
     if target.format in ['vcd', 'svcd', 'dvd']:
@@ -98,7 +101,7 @@ def encode_audio(source, audiofile, target):
 
     If no audio is present in the source file, encode silence.
     """
-    cmd = Command('ffmpeg')
+    cmd = cli.Command('ffmpeg')
 
     # If source has audio, encode it
     if source.has_audio:
@@ -127,7 +130,7 @@ def identify(filename):
     """
     result = MediaFile(filename)
 
-    cmd = Command('ffmpeg', '-i', filename)
+    cmd = cli.Command('ffmpeg', '-i', filename)
     cmd.run(capture=True)
 
     # ffmpeg puts its output on stderr

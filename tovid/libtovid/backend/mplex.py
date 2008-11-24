@@ -1,6 +1,15 @@
 #! /usr/bin/env python
 # mplex.py
 
+"""Multiplexing using ``mplex``.
+"""
+
+__all__ = [
+    'mux',
+]
+
+from libtovid import cli
+
 def mux(vstream, astream, target):
     """Multiplex audio and video stream files to the given target.
     
@@ -12,7 +21,7 @@ def mux(vstream, astream, target):
             Profile of output file
         
     """
-    cmd = Command('mplex')
+    cmd = cli.Command('mplex')
     format = target.format
     if format == 'vcd':
         cmd.add('-f', '1')
