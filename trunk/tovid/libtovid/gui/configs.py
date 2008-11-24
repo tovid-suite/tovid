@@ -7,7 +7,7 @@ import re
 import gettext
 import wx
 import locale
-from libtovid.utils import imagemagick_fonts
+from libtovid.util import imagemagick_fonts
 
 __all__ = ["TovidConfig"]
 class TovidConfig:

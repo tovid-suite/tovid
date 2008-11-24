@@ -6,7 +6,7 @@
 
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
-from libtovid import filetypes
+from libtovid.util import filetypes
 import os
 
 # Define a few supporting functions

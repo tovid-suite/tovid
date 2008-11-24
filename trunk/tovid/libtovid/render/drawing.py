@@ -89,7 +89,7 @@ import Image      # for JPG export
 import ImageColor # for getrgb, getcolor
 import ImageFile  # for write_png()
 from libtovid import log
-from libtovid.utils import to_unicode
+from libtovid.util import to_unicode
 
 ### --------------------------------------------------------------------
 ### Internal functions

@@ -14,7 +14,7 @@ __all__ = [
 
 import os, glob
 from libtovid import log
-from libtovid import utils
+from libtovid import util
 from libtovid import cli
 from libtovid.backend import mplex, mplayer, ffmpeg
 
@@ -89,7 +89,7 @@ def encode_video(source, yuvfile, videofile, target):
     if source.fps != target.fps:
         log.info("Adjusting framerate")
         yuvfps = cli.Command('yuvfps')
-        yuvfps.add('-r', utils.float_to_ratio(target.fps))
+        yuvfps.add('-r', util.float_to_ratio(target.fps))
         pipe.add(yuvfps)
 
     # Encode the resulting .yuv stream by piping into mpeg2enc

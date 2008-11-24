@@ -18,7 +18,7 @@ __all__ = [
 ]
 
 import os
-from libtovid import utils
+from libtovid import util
 from libtovid import xml
 from libtovid import cli
 from libtovid.backend import mplayer
@@ -41,7 +41,7 @@ def _get_xmlfile(textsub_or_spu):
     return the written filename.
     """
     xmldata = _get_xml(textsub_or_spu)
-    xmlfile = open(utils.temp_file(suffix=".xml"), 'w')
+    xmlfile = open(util.temp_file(suffix=".xml"), 'w')
     xmlfile.write(xmldata)
     xmlfile.close()
     return xmlfile.name
@@ -61,7 +61,7 @@ def _mux_subs(subtitle, movie_filename, stream_id=0):
     xmlfile = _get_xmlfile(subtitle)
     # Create a temporary .mpg for the subtitled output
     #base_dir = os.path.dirname(movie_filename)
-    subbed_filename = utils.temp_file(suffix=".mpg")
+    subbed_filename = util.temp_file(suffix=".mpg")
     # spumux xmlfile < movie_filename > subbed_filename
     spumux = cli.Command('spumux',
                      '-s%s' % stream_id,

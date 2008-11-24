@@ -3,16 +3,17 @@
 
 # WARNING: This module is a hack in progress
 
-__all__ = [\
+__all__ = [
     'Option',
     'Usage',
     'parse',
-    'validate']
+    'validate',
+]
 
 ### --------------------------------------------------------------------
 import textwrap
 from libtovid.odict import Odict
-from libtovid.utils import trim
+from libtovid.util import trim
 
 class Option (object):
     """A command-line-style option, expected argument formatting, default value,
