@@ -439,8 +439,9 @@ class Color (Control):
         Control.draw(self, master)
         label = tk.Label(self, text=self.label)
         label.pack(side=self.labelside)
-        self.button = tk.Button(self, textvariable=self.variable,
-                                command=self.change, width=7)
+        self.editbox = tk.Entry(self, textvariable=self.variable, width=7)
+        self.editbox.pack(side='left')
+        self.button = tk.Button(self, command=self.change)
         self.button.pack(side='left')
         # If default color is hexadecimal, set the button color
         if self.default.startswith('#'):
