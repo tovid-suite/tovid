@@ -17,7 +17,7 @@ import sys
 from copy import copy
 
 # Order of fields in stats.tovid
-FIELDS = [\
+FIELDS = [
     'tovid_version',
     'final_name',
     'length',          # a.k.a. CUR_LENGTH
@@ -41,11 +41,11 @@ FIELDS = [\
     'quant',
     'kbpm',
     'enc_time_ratio',
-    'backend'
+    'backend',
     ]
 
 # Integer numeric fields
-int_fields = [\
+int_fields = [
     'length',
     'avg_bitrate',
     'tgt_bitrate',
@@ -56,7 +56,7 @@ int_fields = [\
     'in_width',
     'in_height',
     'quant',
-    'kbpm'
+    'kbpm',
     ]
 
 class Statlist:

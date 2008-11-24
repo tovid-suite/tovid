@@ -5,7 +5,7 @@ from Tkinter import *
 from tkSimpleDialog import Dialog
 import tkColorChooser
 from libtovid.cli import Command, Pipe
-from libtovid.utils import imagemagick_fonts
+from libtovid.util import imagemagick_fonts
 import ImageTk
 import base64
  
