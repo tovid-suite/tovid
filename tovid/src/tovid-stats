@@ -8,7 +8,7 @@ in ~/.tovid/stats.tovid.
 import os
 import sys
 from libtovid import stats
-from libtovid.utils import pretty_dict
+from libtovid.util import pretty_dict
 from libtovid.render.drawing import Drawing, display
 from libtovid.render.layer import Scatterplot
 

@@ -20,7 +20,7 @@ import os
 import sys
 import libtovid
 from libtovid.author import *
-from libtovid.output import red, green, blue
+from libtovid.util.output import red, green, blue
 
 HEADER = """----------------------------------------------
 pymakexml, part of tovid (http://tovid.org/)
