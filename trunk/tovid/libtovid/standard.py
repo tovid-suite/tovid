@@ -6,7 +6,7 @@ standards, including functions for determining the appropriate resolution,
 video and audio codec, fps, and bitrates for a given format.
 """
 
-__all__ = [\
+__all__ = [
     'abitrate',
     'acodec',
     'fps',
@@ -15,7 +15,8 @@ __all__ = [\
     'samprate',
     'scaling',
     'vbitrate',
-    'vcodec']
+    'vcodec',
+]
 
 import doctest
 
@@ -29,7 +30,7 @@ def resolution(format, tvsys):
         (352, 480)
     """
     # Valid resolutions, indexed by format and tvsys
-    valid_size = {\
+    valid_size = {
         'vcd':
             {'pal': (352, 288), 'ntsc': (352, 240)},
         'dvd-vcd':
@@ -123,7 +124,7 @@ def vbitrate(format):
     formats.
     """
     # Valid video bitrates, indexed by format
-    valid_bitrates = {\
+    valid_bitrates = {
         'vcd': (1150, 1150),
         'svcd': (0, 2600),
         'dvd-vcd': (0, 9800),
