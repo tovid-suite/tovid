@@ -371,7 +371,7 @@ class ComboBox (tk.Frame):
 
 ### --------------------------------------------------------------------
 from libtovid.utils import imagemagick_fonts
-from libtovid.cli import Command
+from libtovid import cli
 import base64
 
 class FontChooser (tkSimpleDialog.Dialog):
@@ -426,7 +426,7 @@ class FontChooser (tkSimpleDialog.Dialog):
     def render(self, fontname):
         """Return a tk.PhotoImage preview of the given font.
         """
-        cmd = Command('convert')
+        cmd = cli.Command('convert')
         cmd.add('-size',  '500x60')
         cmd.add("xc:#EFEFEF")
         cmd.add('-font', fontname, '-pointsize', 24)
