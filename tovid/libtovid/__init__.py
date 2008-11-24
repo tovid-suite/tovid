@@ -41,6 +41,7 @@ __all__ = [
     'render',
     'template',
     'test',
+    'util',
     # .py files
     'author',
     'cli',
