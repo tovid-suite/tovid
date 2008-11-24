@@ -73,13 +73,14 @@ import cairo
 import shutil
 import random
 from libtovid.render.animation import Keyframe
-from libtovid.render.drawing import Drawing, write_ppm, write_png, interlace_drawings
+from libtovid.render.drawing import Drawing, interlace_drawings
+from libtovid.render.drawing import write_ppm, write_png, save_png
 from libtovid.render import layer, effect
 from libtovid import standard
-from libtovid.media import MediaFile, standard_media
-from libtovid.backend import mplex, mplayer
-from libtovid import encode
-from libtovid import utils
+from libtovid.media import MediaFile
+from libtovid.backend import mplex, mplayer, ffmpeg
+
+### --------------------------------------------------------------------------
 
 class Flipbook:
     """A collection of Drawings that together comprise an animation.
@@ -131,7 +132,7 @@ class Flipbook:
         if (aspect == '16:9'):
             self.widescreen = True
             
-        self.canvas = self._get_canvas_size()
+        self.canvas = self.get_canvas_size()
         self.w = self.canvas[0]
         self.h = self.canvas[1]
 
@@ -139,11 +140,10 @@ class Flipbook:
         self.layers = []
         self.drawings = []
 
-        self._called_init_childs = False
+        self.called_init_childs = False
 
 
-    ### Child-parent handling
-    def _init_childs(self):
+    def init_childs(self):
         """Give access to all descendant layers and effects to their parents.
 
         In layers, you can access your parent layer (if sublayed) with:
@@ -157,21 +157,22 @@ class Flipbook:
         It's also called in emergency if you call directly get_drawing().
         """
         for x in range(0, len(self.layers)):
-            self.layers[x][0]._init_parent_flipbook(self)
-            self.layers[x][0]._init_childs()
+            self.layers[x][0].init_parent_flipbook(self)
+            self.layers[x][0].init_childs()
 
-        self._called_init_childs = True
-        
-        
-    # Utility functions
+        self.called_init_childs = True
+
 
     def stof(self, seconds):
         """Return the number of frames to the specified time (in seconds).
         """
         return int(self.fps * float(seconds))
 
-    def _get_canvas_size(self):
-        ow = self.output_size[0]
+
+    def get_canvas_size(self):
+        """Return the dimensions of the canvas.
+        """
+        #ow = self.output_size[0]
         oh = self.output_size[1]
         a = self.aspect.split(':')
 
@@ -203,7 +204,7 @@ class Flipbook:
         print "Rendering Flipbook frame %s to %s" % (frame, filename)
         drawing = self.get_drawing(frame)
 
-        drawing.save_png(filename, self.output_size[0], self.output_size[1])
+        save_png(drawing, filename, self.output_size[0], self.output_size[1])
 
 
     def get_drawing(self, frame):
@@ -213,8 +214,8 @@ class Flipbook:
         """
 
         # Make sure all layers and effects has been initialized with parents.
-        if (not self._called_init_childs):
-            self._init_childs()
+        if (not self.called_init_childs):
+            self.init_childs()
             
         drawing = Drawing(self.canvas[0], self.canvas[1])
         # Draw each layer
@@ -236,8 +237,8 @@ class Flipbook:
         
         Return the filename of the output, in both cases.
         """
-        ## Make sure layers and effects have been initialized with parents.
-        self._init_childs()
+        # Make sure layers and effects have been initialized with parents.
+        self.init_childs()
 
         #
         # if self.tmpdir = /tmp, we get:
@@ -247,7 +248,8 @@ class Flipbook:
         # /tmp/flipbook-120391232.mpg -> final output..
         #
         
-        tmp_prefix = '';tmp_workdir = '';
+        tmp_prefix = ''
+        tmp_workdir = ''
         while 1:
             rnd = random.randint(1000000, 9999999)
             tmp_prefix = "%s/flipbook-%s" % (self.tmpdir, rnd)
@@ -268,8 +270,7 @@ class Flipbook:
 
 
         try:
-            cairo.ImageSurface.get_data
-
+            #cairo.ImageSurface.get_data
             pngorpnm = 'ppmtoy4m -F %s -A %s -Ip -B -S 420mpeg2' % \
                      (self.fpsratio, self.aspect)
             _write_img = write_ppm  # set write function just below
@@ -285,14 +286,13 @@ class Flipbook:
         # -b 0 -q 5
         #    or
         # -b 7500
-        pipe = os.popen("%s | mpeg2enc -q 5 -g 45 -G 45 -f 8 -a 2 -I 0 -o '%s'" % (pngorpnm,  m2v_file), 'w')
+        pipe = os.popen("%s | mpeg2enc -q 5 -g 45 -G 45 -f 8 -a 2 -I 0 "
+                        "-o '%s'" % (pngorpnm,  m2v_file), 'w')
         
         frame = 1
         while frame <= self.frames:
             print "Drawing frame %s of %s" % (frame, self.frames)
-            # Il faudra ici sauver DEUX drawing si on est en mode entrelacé, puis
-            # les combiner en UN drawing avant de rendre en .PNG.
-            # Entre les deux, on alterne les MASKS, ligne à ligne, etc..
+
             if (self.interlaced):
                 draw1 = self.get_drawing(frame)
                 frame += 1
@@ -328,7 +328,7 @@ class Flipbook:
         outvid.widescreen = self.widescreen
 
         print "Running audio encoder..."
-        encode.encode_audio(vidonly, ac3_file, outvid)
+        ffmpeg.encode_audio(vidonly, ac3_file, outvid)
 
         print "Mplex..."
         mplex.mux(m2v_file, ac3_file, outvid)
@@ -340,6 +340,7 @@ class Flipbook:
         print "Output: %s" % out_filename
         return out_filename
 
+### --------------------------------------------------------------------------
 
 def draw_text_demo(flipbook):
     """Draw a demonstration of Text layers with various effects.
@@ -407,7 +408,10 @@ def draw_text_demo(flipbook):
     flipbook.add(text_cosine, (340, 150))
     flipbook.add(graph_cosine, (340, 180))
 
-# Demo
+### --------------------------------------------------------------------------
+### Demo
+### --------------------------------------------------------------------------
+
 if __name__ == '__main__':
     start_time = time.time() # Benchmark
 

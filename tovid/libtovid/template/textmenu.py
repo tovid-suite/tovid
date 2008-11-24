@@ -23,26 +23,30 @@ class TextMenu:
         self.fg_highlight = self.basename + '.fg_highlight.png'
         self.fg_selection = self.basename + '.fg_selection.png'
 
+
     def generate(self):
+        """Generate the menu.
+        """
         # TODO: Store intermediate images in a temp folder
-        print "Creating a menu with %s titles" % len(self.titles)
+        log.info("Creating a menu with %s titles" % len(self.titles))
         self.build_reusables()
-        print "Drawing a background canvas..."
+        log.info("Drawing a background canvas...")
         self.draw_background_canvas()
-        print "Drawing the background layer..."
+        log.info("Drawing the background layer...")
         self.draw_background_layer()
-        print "Drawing the highlight layer..."
+        log.info("Drawing the highlight layer...")
         self.draw_highlight_layer()
-        print "Drawing the selection layer..."
+        log.info("Drawing the selection layer...")
         self.draw_selection_layer()
-        print "Generating the video stream..."
+        log.info("Generating the video stream...")
         self.gen_video()
-        print "Generating the audio stream..."
+        log.info("Generating the audio stream...")
         self.gen_audio()
-        print "Multiplexing audio and video streams..."
+        log.info("Multiplexing audio and video streams...")
         self.gen_mpeg()
-        print "Multiplexing subtitles into .mpg..."
+        log.info("Multiplexing subtitles into .mpg...")
         self.mux_subtitles()
+
 
     def build_reusables(self):
         """Assemble some re-usable ImageMagick command snippets.
@@ -56,7 +60,7 @@ class TextMenu:
         labels = ''
         buttons = ''
         for title in self.titles:
-            print "Adding '%s'" % title
+            log.info("Adding '%s'" % title)
             # TODO: Escape special characters in title
             
             # For VCD, number the titles
@@ -73,9 +77,11 @@ class TextMenu:
             titlenum += 1
         self.im_labels = labels
         self.im_buttons = buttons
-    
+
+
     def draw_background_canvas(self):
-        """Draw background canvas."""
+        """Draw background canvas.
+        """
         # Generate default blue-black gradient background
         # TODO: Implement -background
         convert = cli.Command('convert',
@@ -83,9 +89,9 @@ class TextMenu:
             'gradient:blue-black',
             '-gravity', 'center',
             '-matte', self.bg_canvas)
-        print "Running:", convert
         convert.run()
-    
+
+
     def draw_background_layer(self):
         """Draw the background layer for the menu, including static title text.
         """
@@ -109,11 +115,12 @@ class TextMenu:
             '-gravity', 'center',
             self.fg_canvas, self.bg_canvas,
             '-depth', 8, '%s.ppm' % self.basename)
-        print "Running:", composite
         composite.run()
-    
+
+
     def draw_highlight_layer(self):
-        """Draw menu highlight layer, suitable for multiplexing."""
+        """Draw menu highlight layer, suitable for multiplexing.
+        """
         # Create text layer (at safe-area size)
         convert = cli.Command('convert',
             '-size', '%sx%s' % self.target.scale,
@@ -132,9 +139,9 @@ class TextMenu:
             '-gravity', 'center',
             self.fg_highlight, self.bg_canvas,
             '%s.hi.png' % self.basename)
-        print "Running:", composite
         composite.run()
-    
+
+
     def draw_selection_layer(self):
         """Draw menu selections on a transparent background."""
         # Create text layer (at safe-area size)
@@ -155,9 +162,9 @@ class TextMenu:
             '-gravity', 'center',
             self.fg_selection, self.bg_canvas,
             '%s.sel.png' % self.basename)
-        print "Running:", composite
         composite.run()
-    
+
+
     def gen_video(self):
         """Generate a video stream (mpeg1/2) from the menu background image.
         """
@@ -190,9 +197,9 @@ class TextMenu:
                 mpeg2enc.add('-f', 4)
         mpeg2enc.add('-o', self.vstream)
         pipe = cli.Pipe(ppmtoy4m, mpeg2enc)
-        print "Running:", pipe
         pipe.run()
-    
+
+
     def gen_audio(self):
         """Generate an audio stream (mp2/ac3) from the given audio file
         (or generate silence instead).
@@ -212,9 +219,9 @@ class TextMenu:
                    '-acodec', self.target.acodec,
                    '-y',
                    self.astream)
-        print "Running:", ffmpeg
         ffmpeg.run()
-    
+
+
     def gen_mpeg(self):
         """Multiplex audio and video streams to create an mpeg.
         """
@@ -230,17 +237,17 @@ class TextMenu:
             elif self.target.format == 'svcd':
                 mplex.add('-f', 4)
         mplex.add(self.astream, self.vstream)
-        print "Running:", mplex
         mplex.run()
-    
+
+
     def mux_subtitles(self):
         """Multiplex the output video with highlight and selection
         subtitles, so the resulting menu can be navigated.
         """
-        print "Running spumux"
         # TODO: Fix all this silly hardcoding of filenames (duplicated above)
         menu_mpg = self.basename + '.mpg'
         image = None
         select = self.basename + '.sel.png'
         highlight = self.basename + '.hi.png'
         spumux.add_subpictures(menu_mpg, image, select, highlight)
+

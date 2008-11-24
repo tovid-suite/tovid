@@ -65,6 +65,8 @@ import copy
 import doctest
 import math
 
+### --------------------------------------------------------------------------
+
 class Keyframe:
     """Associates a specific frame in an animation with a numeric value.
     A Keyframe is a (frame, data) pair defining a "control point" on a graph:
@@ -98,8 +100,10 @@ class Keyframe:
         self.frame = frame
         self.data = data
 
+### --------------------------------------------------------------------------
+### Interpolation algorithms
+### --------------------------------------------------------------------------
 
-# Interpolation algorithms
 def lerp(x, (x0, y0), (x1, y1)):
     """Do linear interpolation between points (x0, y0), (x1, y1), and return
     the 'y' of the given 'x'.
@@ -131,7 +135,8 @@ def cos_interp(x, (x0, y0), (x1, y1)):
     return y_min + y_diff * (math.cos(x_norm) + 1) / 2.0
 
 
-# Single-interval interpolation function
+### --------------------------------------------------------------------------
+
 def interpolate(frame, left, right, method):
     """Interpolate data between left and right Keyframes at the given frame,
     using the given interpolation method ('linear' or 'cosine'). Return the
@@ -188,6 +193,7 @@ def interpolate(frame, left, right, method):
             dim += 1
         return tuple(result)
 
+### --------------------------------------------------------------------------
 
 class Tween:
     """An "in-between" sequence, calculated by interpolating the data in a
@@ -221,10 +227,10 @@ class Tween:
         See effect.py for implementation examples.
         """
         for keyframe in keyframes:
-            assert isinstance(keyframes, Keyframe)
+            assert isinstance(keyframe, Keyframe)
         self.keyframes = keyframes
-        self.start = keys[0].frame
-        self.end = keys[-1].frame
+        self.start = self.keyframes[0].frame
+        self.end = self.keyframes[-1].frame
         self.data = []
         self.method = method
         # Do the tweening
@@ -294,6 +300,7 @@ class Tween:
         else:
             return self.data[frame - self.start]
 
+### --------------------------------------------------------------------------
 
 if __name__ == '__main__':
     doctest.testmod(verbose=True)
