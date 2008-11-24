@@ -45,7 +45,7 @@ __all__ = [
 
 from subprocess import Popen, PIPE
 import textwrap
-from libtovid.output import red
+from libtovid.util.output import red
 
 ###
 ### Exceptions

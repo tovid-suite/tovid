@@ -33,7 +33,7 @@ __all__ = [
 import copy
 from libtovid import log
 from libtovid import standard
-from libtovid.utils import ratio_to_float
+from libtovid.util import ratio_to_float
 
 """
 Analysis of MediaFile attributes

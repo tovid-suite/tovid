@@ -40,9 +40,10 @@ Command output may be captured and retrieved later with get_output():
 # workaround is to use the "doctest: +SKIP" directive (new in python 2.5).
 # For other directives see http://www.python.org/doc/lib/doctest-options.html
 
-__all__ = [\
+__all__ = [
     'Command',
-    'Pipe']
+    'Pipe',
+]
 
 import os
 import doctest

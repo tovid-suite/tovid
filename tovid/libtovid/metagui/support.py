@@ -370,7 +370,7 @@ class ComboBox (tk.Frame):
             self.command()
 
 ### --------------------------------------------------------------------
-from libtovid.utils import imagemagick_fonts
+from libtovid.util import imagemagick_fonts
 from libtovid import cli
 import base64
 

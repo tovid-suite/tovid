@@ -1,9 +1,12 @@
 #! /usr/bin/env python
-# utils.py
-
-# TODO: Categorize/reorganize these (or move some to a class)
+# __init__.py (util)
 
 __all__ = [
+    # Submodules
+    'output',
+    'filetypes',
+    'playtime',
+    # Functions
     'escape',
     'float_to_ratio',
     'get_code_lines',

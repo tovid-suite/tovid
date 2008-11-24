@@ -38,7 +38,7 @@ import os
 import sys
 import math
 import commands
-from libtovid.utils import get_file_type
+from libtovid.util import get_file_type
 from libtovid.render.drawing import Drawing, save_image
 from libtovid.render.effect import Effect
 from libtovid.render.animation import Keyframe, Tween
