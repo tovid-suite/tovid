@@ -1,11 +1,19 @@
 #! /usr/bin/env python
 # mplayer.py
 
-__all__ = ['encode', 'identify']
+"""Video encoding, ripping, and identification using ``mplayer``.
+"""
+
+__all__ = [
+    'encode',
+    'identify',
+    'rip_video',
+]
 
 from libtovid import log
-from libtovid.cli import Command, Pipe
+from libtovid import cli
 from libtovid.media import MediaFile
+from libtovid.backend import ffmpeg
 
 def encode(source, target, **kw):
     """Encode a multimedia video using mencoder.
@@ -14,12 +22,15 @@ def encode(source, target, **kw):
             Input MediaFile
         target
             Output MediaFile
-        kw
-            name=value keyword arguments
+        **kw
+            Keyword arguments to customize encoding behavior
     
     Supported keywords:
+
+        None yet
+
     """
-    cmd = Command('mencoder')
+    cmd = cli.Command('mencoder')
     cmd.add(source.filename,
             '-o', target.filename,
             '-oac', 'lavc',
@@ -50,7 +61,7 @@ def encode(source, target, **kw):
             audiofile = '%s.mpa' % target.filename
         else:
             audiofile = '%s.ac3' % target.filename
-        encode_audio(source, audiofile, target)
+        ffmpeg.encode_audio(source, audiofile, target)
         # TODO: make this work, it's still not adding the ac3 file correctly.
         cmd.add('-audiofile', audiofile)
 
@@ -107,7 +118,7 @@ def identify(filename):
    
     mp_dict = {}
     # Use mplayer
-    cmd = Command('mplayer',
+    cmd = cli.Command('mplayer',
                   '-identify',
                   '%s' % filename,
                   '-vo', 'null',
@@ -148,7 +159,7 @@ def identify(filename):
         elif left == "ID_AUDIO_CODEC":
             media.acodec = right
         elif left == "ID_AUDIO_FORMAT":
-            audio_format = right
+            pass
         elif left == "ID_AUDIO_BITRATE":
             media.abitrate = int(right) / 1000
         elif left == "ID_AUDIO_RATE":
@@ -170,3 +181,34 @@ def identify(filename):
     elif media.vcodec == "0x10000002":
         media.vcodec = "mpeg2"
     return media
+
+
+
+
+def rip_video(source, yuvfile, target):
+    """Rip video to the given yuv4mpeg file.
+    
+        source
+            Input MediaFile
+        yuvfile
+            File to put ripped video in
+        target
+            Output MediaFile
+        
+    """
+    # TODO: Custom mplayer options, subtitles, interlacing,
+    # corresp.  to $MPLAYER_OPT, $SUBTITLES, $VF_PRE/POST, $YUV4MPEG_ILACE,
+    # etc.
+    cmd = cli.Command('mplayer')
+    cmd.add(source.filename)
+    cmd.add('-vo', 'yuv4mpeg:file=%s' % yuvfile)
+    cmd.add('-nosound', '-benchmark', '-noframedrop')
+    # TODO: Support subtitles. For now, use default tovid behavior.
+    cmd.add('-noautosub')
+    if target.scale:
+        cmd.add('-vf', 'scale=%s:%s' % target.scale)
+    if target.expand > target.scale:
+        cmd.add('-vf-add', 'expand=%s:%s' % target.expand)
+    # Run the command to rip the video
+    cmd.run(background=True)
+

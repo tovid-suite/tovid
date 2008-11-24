@@ -12,9 +12,10 @@ Use these if you just want to add subpictures or subtitles, and don't want
 to think much about the XML internals.
 """
 
-__all__ = [\
+__all__ = [
     'add_subpictures',
-    'add_subtitles']
+    'add_subtitles',
+]
 
 import os
 from libtovid import utils
@@ -22,50 +23,13 @@ from libtovid import xml
 from libtovid import cli
 from libtovid.backend import mplayer
 
-# spumux XML elements and valid attributes
-"""
-subpictures
-stream
-textsub
-    ['filename',
-    'characterset',
-    'fontsize',
-    'font',
-    'horizontal-alignment',
-    'vertical-alignment',
-    'left-margin',
-    'right-margin',
-    'subtitle-fps',
-    'movie-fps',
-    'movie-width',
-    'movie-height']
-button
-    ['name',
-    'x0', 'y0', # Upper-left corner, inclusively
-    'x1', 'y1', # Lower-right corner, exclusively
-    'up', 'down', 'left', 'right']
-action
-    ['name']
-spu
-    ['start',
-    'end',
-    'image',
-    'highlight',
-    'select',
-    'transparent',   # color code
-    'force',         # 'yes' (force display, required for menus)
-    'autooutline',   # 'infer'
-    'outlinewidth',
-    'autoorder',     # 'rows' or 'columns'
-    'xoffset',
-    'yoffset']
-"""
-
 ###
 ### Internal functions
 ###
 
 def _get_xml(textsub_or_spu):
+    """Return an XML string for the given Textsub or Spu element.
+    """
     subpictures = xml.Element('subpictures')
     stream = subpictures.add('stream')
     stream.add_child(textsub_or_spu)
@@ -77,7 +41,7 @@ def _get_xmlfile(textsub_or_spu):
     return the written filename.
     """
     xmldata = _get_xml(textsub_or_spu)
-    xmlfile = utils.temp_file(suffix=".xml")
+    xmlfile = open(utils.temp_file(suffix=".xml"), 'w')
     xmlfile.write(xmldata)
     xmlfile.close()
     return xmlfile.name
@@ -184,3 +148,44 @@ if __name__ == '__main__':
                 fontsize=14.0,
                 font="Luxi Mono")
     print _get_xml(textsub)
+
+
+# spumux XML elements and valid attributes
+"""
+subpictures
+stream
+textsub
+    ['filename',
+    'characterset',
+    'fontsize',
+    'font',
+    'horizontal-alignment',
+    'vertical-alignment',
+    'left-margin',
+    'right-margin',
+    'subtitle-fps',
+    'movie-fps',
+    'movie-width',
+    'movie-height']
+button
+    ['name',
+    'x0', 'y0', # Upper-left corner, inclusively
+    'x1', 'y1', # Lower-right corner, exclusively
+    'up', 'down', 'left', 'right']
+action
+    ['name']
+spu
+    ['start',
+    'end',
+    'image',
+    'highlight',
+    'select',
+    'transparent',   # color code
+    'force',         # 'yes' (force display, required for menus)
+    'autooutline',   # 'infer'
+    'outlinewidth',
+    'autoorder',     # 'rows' or 'columns'
+    'xoffset',
+    'yoffset']
+"""
+
