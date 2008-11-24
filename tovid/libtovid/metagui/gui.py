@@ -17,7 +17,7 @@ import Tkinter as tk
 from widget import Widget
 from panel import Panel, Tabs
 from support import ensure_type
-from libtovid.cli import Command
+from libtovid import cli
 import shlex
 
 DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
@@ -82,7 +82,7 @@ class Executor (Widget):
     def execute(self, command, callback=lambda x:x):
         """Execute the given command, and call the given callback when done.
         """
-        if not isinstance(command, Command):
+        if not isinstance(command, cli.Command):
             raise TypeError("execute() requires a Command instance.")
         else:
             self.command = command
@@ -268,7 +268,7 @@ class Application (Widget):
 
         # Get args and assemble command-line
         args = self.get_args()
-        command = Command(self.program, *args)
+        command = cli.Command(self.program, *args)
         
         # Display the command to be executed
         self.executor.notify("Running command: " + str(command))
@@ -305,7 +305,7 @@ class Application (Widget):
             initialfile='%s_commands.bash' % self.program)
         if filename:
             args = self.get_args()
-            command = Command(self.program, *args)
+            command = cli.Command(self.program, *args)
             script = self.make_script(str(command))
             outfile = open(filename, 'w')
             outfile.write(script)

@@ -3,7 +3,7 @@
 
 __all__ = ['TextMenu']
 
-from libtovid.cli import Command, Pipe
+from libtovid import cli
 from libtovid import deps
 from libtovid import log
 from libtovid.backend import spumux
@@ -78,7 +78,7 @@ class TextMenu:
         """Draw background canvas."""
         # Generate default blue-black gradient background
         # TODO: Implement -background
-        convert = Command('convert',
+        convert = cli.Command('convert',
             '-size', '%sx%s' % self.target.expand,
             'gradient:blue-black',
             '-gravity', 'center',
@@ -90,7 +90,7 @@ class TextMenu:
         """Draw the background layer for the menu, including static title text.
         """
         # Draw text titles on a transparent background.
-        convert = Command('convert',
+        convert = cli.Command('convert',
             '-size', '%sx%s' % self.target.scale,
             'xc:none', '+antialias',
             '-font', self.style.font,
@@ -104,7 +104,7 @@ class TextMenu:
             self.fg_canvas)
         convert.run()
         # Composite text over background
-        composite = Command('composite',
+        composite = cli.Command('composite',
             '-compose', 'Over',
             '-gravity', 'center',
             self.fg_canvas, self.bg_canvas,
@@ -115,7 +115,7 @@ class TextMenu:
     def draw_highlight_layer(self):
         """Draw menu highlight layer, suitable for multiplexing."""
         # Create text layer (at safe-area size)
-        convert = Command('convert',
+        convert = cli.Command('convert',
             '-size', '%sx%s' % self.target.scale,
             'xc:none', '+antialias',
             '-font', self.style.font,
@@ -127,7 +127,7 @@ class TextMenu:
             self.fg_highlight)
         convert.run()
         # Pseudo-composite, to expand layer to target size
-        composite = Command('composite',
+        composite = cli.Command('composite',
             '-compose', 'Src',
             '-gravity', 'center',
             self.fg_highlight, self.bg_canvas,
@@ -138,7 +138,7 @@ class TextMenu:
     def draw_selection_layer(self):
         """Draw menu selections on a transparent background."""
         # Create text layer (at safe-area size)
-        convert = Command('convert',
+        convert = cli.Command('convert',
             '-size', '%sx%s' % self.target.scale,
             'xc:none', '+antialias',
             '-font', self.style.font,
@@ -150,7 +150,7 @@ class TextMenu:
             self.fg_selection)
         convert.run()
         # Pseudo-composite, to expand layer to target size
-        composite = Command('composite',
+        composite = cli.Command('composite',
             '-compose', 'Src',
             '-gravity', 'center',
             self.fg_selection, self.bg_canvas,
@@ -162,7 +162,7 @@ class TextMenu:
         """Generate a video stream (mpeg1/2) from the menu background image.
         """
         # ppmtoy4m part
-        ppmtoy4m = Command('ppmtoy4m', '-S', '420mpeg2')
+        ppmtoy4m = cli.Command('ppmtoy4m', '-S', '420mpeg2')
         if self.target.tvsys == 'ntsc':
             ppmtoy4m.add('-A', '10:11', '-F', '30000:1001')
         else:
@@ -172,7 +172,7 @@ class TextMenu:
         ppmtoy4m.add('-r', '%s.ppm' % self.basename)
     
         # mpeg2enc part
-        mpeg2enc = Command('mpeg2enc', '-a', 2)
+        mpeg2enc = cli.Command('mpeg2enc', '-a', 2)
         # PAL/NTSC
         if self.target.tvsys == 'ntsc':
             mpeg2enc.add('-F', 4, '-n', 'n')
@@ -189,7 +189,7 @@ class TextMenu:
             elif self.target.format == 'svcd':
                 mpeg2enc.add('-f', 4)
         mpeg2enc.add('-o', self.vstream)
-        pipe = Pipe(ppmtoy4m, mpeg2enc)
+        pipe = cli.Pipe(ppmtoy4m, mpeg2enc)
         print "Running:", pipe
         pipe.run()
     
@@ -201,7 +201,7 @@ class TextMenu:
             self.astream = "%s.mp2" % self.basename
         else:
             self.astream = "%s.ac3" % self.basename
-        ffmpeg = Command('ffmpeg')
+        ffmpeg = cli.Command('ffmpeg')
         # TODO: Support including an audio stream.
         # For now, generate 4-second silence
         ffmpeg.add('-f', 's16le',
@@ -218,7 +218,7 @@ class TextMenu:
     def gen_mpeg(self):
         """Multiplex audio and video streams to create an mpeg.
         """
-        mplex = Command('mplex', '-o', '%s.mpg' % self.basename)
+        mplex = cli.Command('mplex', '-o', '%s.mpg' % self.basename)
         # Format flags
         if self.target.format == 'vcd':
             mplex.add('-f', 1)

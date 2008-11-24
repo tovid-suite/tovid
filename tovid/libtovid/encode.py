@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # encode.py
 
-"""This module provides several backends for encoding video and audio.
+"""Encode video to standard formats, using one of several supported backends.
 
 One high-level function is provided:
 
@@ -9,27 +9,23 @@ One high-level function is provided:
 
 where "..." is optional keyword arguments (described below). For example:
 
-    encode('/video/foo.avi', '/video/bar.mpg', 'dvd', 'ntsc', 'mencoder')
+    encode('/video/foo.avi', '/video/bar.mpg', 'dvd', 'ntsc', 'ffmpeg')
 
-This will encode '/video/foo.avi' to NTSC DVD format using mencoder, saving
-the result as '/video/bar.mpg'. Keyword arguments may be used to further
-refine encoding behavior, for example:
+This will encode '/video/foo.avi' to NTSC DVD format using ffmpeg, saving
+the result as '/video/bar.mpg'. The ``format``, ``tvsys``, and ``method``
+arguments are optional; if you do:
 
-    encode('foo.avi', 'foo.mpg', 'dvd', 'pal', 'ffmpeg',
+    encode('/video/foo.avi', '/video/bar.mpg')
+
+then encoding will be DVD NTSC, using ffmpeg.
+
+Keyword arguments may be used to further refine encoding behavior, for example:
+
+    encode('foo.avi', 'foo.mpg', 'dvd', 'pal',
            quality=7, interlace='bottom', ...)
 
-The supported keywords may vary by backend, but one of our goals should be to
-implement a set of commonly-used keywords in all the backends.
-
-Each backend has a top-level function:
-
-    ffmpeg.encode(source, target, ...)
-    mplayer.encode(source, target, ...)
-    mpeg2enc.encode(source, target, ...)
-
-The source and target are MediaFile objects from libtovid.media, containing
-profiles of the input and output videos. Again, the "..." are optional keyword
-arguments.
+The supported keywords may vary by backend, but some keywords are supported
+by all backends.
 """
 
 __all__ = [

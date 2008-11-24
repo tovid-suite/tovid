@@ -220,11 +220,16 @@ class Tween:
 
         See effect.py for implementation examples.
         """
-        assert isinstance(keyframes[0], Keyframe)
+        for keyframe in keyframes:
+            assert isinstance(keyframes, Keyframe)
         self.keyframes = keyframes
-        self.method = method
+        self.start = keys[0].frame
+        self.end = keys[-1].frame
         self.data = []
+        self.method = method
+        # Do the tweening
         self._tween()
+
 
     def _tween(self):
         """Perform in-betweening calculation on the current keyframes and
@@ -234,9 +239,7 @@ class Tween:
         # TODO: Sort keyframes in increasing order by frame number (to ensure
         # keyframes[0] is the first frame, and keyframes[-1] is the last frame)
         # Make a copy of keyframes
-        keys = copy.deepcopy(self.keyframes)
-        self.start = keys[0].frame
-        self.end = keys[-1].frame
+        keys = copy.copy(self.keyframes)
         first = self.start
         last = self.end
         
