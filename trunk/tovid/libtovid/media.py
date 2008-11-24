@@ -24,10 +24,11 @@ one of the backends in libtovid.transcode.encode. For example:
 
 """
 
-__all__ = [\
+__all__ = [
     'MediaFile',
     'standard_media',
-    'correct_aspect']
+    'correct_aspect',
+]
 
 import copy
 from libtovid import log

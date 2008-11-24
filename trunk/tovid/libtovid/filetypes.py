@@ -4,13 +4,14 @@
 """Defines several commonly-used multimedia and image file types.
 """
 
-__all__ = [\
+__all__ = [
     'match_types',
     'get_extensions',
     'all_files',
     'image_files',
     'video_files',
-    'audio_files']
+    'audio_files',
+]
 
 import mimetypes
 

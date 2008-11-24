@@ -38,6 +38,8 @@ from libtovid.render.drawing import Drawing
 from libtovid.render.animation import Keyframe, Tween
 from random import randint
 
+### --------------------------------------------------------------------------
+
 class Effect:
     """A "special effect" created by keyframing a Cairo drawing command
     along the given frame interval.
@@ -56,11 +58,11 @@ class Effect:
         self._parent_layer = None
 
 
-    def _init_parent_flipbook(self, fb):
+    def init_parent_flipbook(self, fb):
         self._parent_flipbook = fb
 
 
-    def _init_parent_layer(self, layer):
+    def init_parent_layer(self, layer):
         self._parent_layer = layer
 
 
@@ -90,10 +92,11 @@ class Effect:
         drawing.restore()
 
 
-# ============================================================================
-# New Effect template
-# Copy and paste this code to create your own Effect
-# ============================================================================
+### --------------------------------------------------------------------------
+### New Effect template
+### Copy and paste this code to create your own Effect
+### --------------------------------------------------------------------------
+
 # The first line defines your effect's name. (Effect) means it inherits from
 # the base Effect class, and shares some properties with it.
 class MyEffect (Effect):
@@ -159,14 +162,20 @@ class MyEffect (Effect):
     # That's it! Your effect is ready to use.
     # See libtovid/flipbook.py for examples on how to use effects
 
-# ============================================================================
-# End of new effect template
-# ============================================================================
+### --------------------------------------------------------------------------
+### End of new effect template
+### --------------------------------------------------------------------------
+
+
+### --------------------------------------------------------------------------
+### Built-in effects
+### --------------------------------------------------------------------------
 
 class Movement (Effect):
     """A movement effect, from one point to another."""
     def __init__(self, start, end, (x0, y0), (x1, y1)):
-        """Move from start (x0, y0) to end (x1, y1)."""
+        """Move from start (x0, y0) to end (x1, y1).
+        """
         Effect.__init__(self, start, end)
         self.keyframes = [
             Keyframe(start, (x0, y0)),
@@ -181,11 +190,16 @@ class Movement (Effect):
     def post_draw(self, drawing, frame):
         drawing.restore()
 
+### --------------------------------------------------------------------------
+
 class Translate (Movement):
-    """Translates the layer to some relative (x,y) coordinates"""
+    """Translates the layer to some relative (x,y) coordinates
+    """
     def __init__(self, start, end, (dx, dy)):
         Movement.__init__(self, start, end, (0, 0), (dx, dy))
         
+
+### --------------------------------------------------------------------------
 
 class Fade (Effect):
     """A generic fade effect, varying the opacity of a layer.
@@ -226,6 +240,7 @@ class Fade (Effect):
         """
         drawing.push_group()
 
+
     def post_draw(self, drawing, frame):
         """Called after drawing on a layer.
         """
@@ -233,6 +248,7 @@ class Fade (Effect):
         drawing.pop_group_to_source()
         drawing.paint_with_alpha(self.tween[frame])
 
+### --------------------------------------------------------------------------
 
 class FadeInOut (Fade):
     def __init__(self, start, end, fade_length=30):
@@ -258,9 +274,11 @@ class FadeInOut (Fade):
 
         self.tween = Tween(self.keyframes)
 
+### --------------------------------------------------------------------------
     
 class Colorfade (Effect):
-    """A color-slide effect between an arbitrary number of RGB colors."""
+    """A color-slide effect between an arbitrary number of RGB colors.
+    """
     def __init__(self, start, end, (r0, g0, b0), (r1, g1, b1)):
         """Fade between the given RGB colors."""
         Effect.__init__(self, start, end)
@@ -270,17 +288,21 @@ class Colorfade (Effect):
             ]
         self.tween = Tween(self.keyframes)
 
+
     def pre_draw(self, drawing, frame):
         """Set source color"""
         drawing.set_source(self.tween[frame])
+
 
     def post_draw(self, drawing, frame):
         pass
 
 
+### --------------------------------------------------------------------------
 
 class Spectrum (Effect):
-    """A full-spectrum color-fade effect between start and end frames."""
+    """A full-spectrum color-fade effect between start and end frames.
+    """
     def __init__(self, start, end):
         Effect.__init__(self, start, end)
         step = (end - start) / 6
@@ -295,12 +317,15 @@ class Spectrum (Effect):
             ]
         self.tween = Tween(self.keyframes)
 
+
     def pre_draw(self, drawing, frame):
         drawing.set_source(self.tween[frame])
+
 
     def post_draw(self, drawing, frame):
         pass
 
+### --------------------------------------------------------------------------
 
 class Scale (Effect):
     """A Scaling effect, from one size to another.
@@ -318,11 +343,13 @@ class Scale (Effect):
         drawing.save()
         drawing.scale(self.tween[frame])
 
+
     def post_draw(self, drawing, frame):
         drawing.restore()
 
+### --------------------------------------------------------------------------
 
-class Whirl(Effect):
+class Whirl (Effect):
     """Rotates an object a number of times.
     """
     def __init__(self, keyframes, center=(0, 0), method='linear', units='deg'):
@@ -344,6 +371,7 @@ class Whirl(Effect):
         self.keyframes = keyframes
         self.tween = Tween(self.keyframes, method)
 
+
     def pre_draw(self, drawing, frame):
         drawing.save()
         # how to center the thing ? so you give a rotation point ?
@@ -353,18 +381,20 @@ class Whirl(Effect):
         elif self.units is 'rad':
             drawing.rotate_rad(self.tween[frame])
 
+
     def post_draw(self, drawing, frame):
         drawing.translate(- self.center[0], - self.center[1])
         drawing.restore()
 
+### --------------------------------------------------------------------------
 
-
-class PhotoZoom(Effect):
+class PhotoZoom (Effect):
     """Zoom in and create dynamism by moving a picture.
 
     Normally applies to an Image layer, but can be used with others.
     """
-    def __init__(self, keyframes, subject=(0, 0), direction=None, movement=50, method='linear'):
+    def __init__(self, keyframes, subject=(0, 0), direction=None,
+                 movement=50, method='linear'):
         """Create a PhotoZoom effect
 
             keyframes
@@ -382,10 +412,10 @@ class PhotoZoom(Effect):
             method
                 'linear' or 'cosine'
         """
-        if direction != 'in' and direction != 'out' and direction != None:
+        if direction not in ['in', 'out', None]:
             raise ValueError, "'direction' must be 'in', 'out' or None"
         if (direction == None):
-            self.direction = randint(0,1) and 'in' or 'out'
+            self.direction = randint(0, 1) and 'in' or 'out'
         else:
             self.direction = direction
 
@@ -420,9 +450,6 @@ class PhotoZoom(Effect):
         else:
             gozoom = 1.0 + inter * zoomfactor
 
-
-        #print "Values: zoomfactor %s inter %s gozoom %s fb %s" % (zoomfactor, inter, gozoom, fb)
-
         drawing.scale_centered(self.subject[0], self.subject[1],
                                gozoom, gozoom)
 
@@ -430,7 +457,7 @@ class PhotoZoom(Effect):
     def post_draw(self, drawing, frame):
         drawing.restore()
 
-
+### --------------------------------------------------------------------------
 
 class KeyFunction (Effect):
     """A keyframed effect on an arbitrary Drawing function.
@@ -462,3 +489,5 @@ class KeyFunction (Effect):
 
     def post_draw(self, drawing, frame):
         drawing.restore()
+
+### --------------------------------------------------------------------------

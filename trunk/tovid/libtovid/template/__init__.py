@@ -4,13 +4,15 @@
 """This module provides an interface to menu-generation templates.
 
 libtovid.templates should provide an assortment of "plug-in" style templates
-for menu generation, and perhaps one day also for disc layout or video encoding profiles).
+for menu generation, and perhaps one day also for disc layout or video
+encoding profiles).
 """
 
-__all__ = [\
+__all__ = [
+    'Style',
     'textmenu',
     'thumbmenu',
-    'Style']
+]
 
 class Style:
     """Contains style attributes, including font, color, and alignment."""
