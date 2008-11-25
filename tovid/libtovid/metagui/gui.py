@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 # gui.py
-#BREAKPOINT
 
 """Top-level GUI classes.
 """

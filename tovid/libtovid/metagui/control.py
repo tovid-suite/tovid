@@ -180,6 +180,11 @@ class Control (Widget):
         self.labelside = labelside
         self.kwargs = kwargs
 
+        # Defined in draw()
+        self.checked = None
+        self.tooltip = None
+        self.check = None
+
         # Add self to all
         if self.option != '':
             Control.all[self.option] = self
