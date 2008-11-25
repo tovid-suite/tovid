@@ -18,7 +18,6 @@ from widget import Widget
 from panel import Panel, Tabs
 from support import ensure_type
 from libtovid import cli
-import shlex
 
 DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
 
