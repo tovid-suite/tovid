@@ -316,12 +316,7 @@ class ComboBox (tk.Frame):
         self.choices = choices or ListVar()
         self.variable = variable or tk.StringVar()
         self.command = command
-        self._draw()
 
-
-    def _draw(self):
-        """Draw and configure contained widgets.
-        """
         # Text and button
         self.text = tk.Entry(self, textvariable=self.variable)
         self.button = tk.Button(self, text="...", command=self.open)
@@ -517,7 +512,6 @@ class Style:
         self.font = (font['family'], int(font['size']), font['style'])
 
 ### --------------------------------------------------------------------
-from tkMessageBox import showinfo
 
 class ConfigWindow (tkSimpleDialog.Dialog):
     """Configuration settings dialog box.
@@ -600,10 +594,6 @@ class ScrolledWindow (tk.Tk):
         # Canvas scrollable area
         self.canvas.configure(scrollregion=(0, 0, self.width, self.height))
         self.canvas.grid(row=0, column=0, sticky='nsew')
-        self.draw_scrollbars()
-
-
-    def draw_scrollbars(self):
         # Attach scrollbars to the Canvas
         h_scroll = tk.Scrollbar(self, orient='horizontal',
                                 command=self.canvas.xview)

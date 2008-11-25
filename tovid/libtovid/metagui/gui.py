@@ -34,6 +34,12 @@ class Executor (Widget):
         Widget.__init__(self, name)
         self.command = None
         self.outfile = None
+        # Defined in draw()
+        self.text = None
+        self.callback = None
+        self.stdin_text = None
+        self.kill_button = None
+        self.save_button = None
 
 
     def draw(self, master):
@@ -216,6 +222,8 @@ class Application (Widget):
         # Add a LogViewer as the last panel
         self.executor = Executor("Log")
         self.panels.append(self.executor)
+        # Defined in draw()
+        self.tabs = None
 
 
     def draw(self, master):
@@ -284,19 +292,6 @@ class Application (Widget):
             self.toolbar.enable()
 
 
-    def make_script(self, command):
-        """Return a bash script for running the given command.
-        """
-        script = '#!/usr/bin/env bash' + '\n\n'
-        for index, word in enumerate(shlex.split(command)):
-            if ' ' in word or word[0] in '`%#$|&()<>':
-                word = "'%s'" % word
-            if index != len(shlex.split(command))-1:
-                word = word + ' \\' + '\n'
-            script += word
-        return script
-
-
     def save_script(self):
         """Save the current command as a bash script.
         """
@@ -306,9 +301,8 @@ class Application (Widget):
         if filename:
             args = self.get_args()
             command = cli.Command(self.program, *args)
-            script = self.make_script(str(command))
             outfile = open(filename, 'w')
-            outfile.write(script)
+            outfile.write(command.to_script())
             outfile.close()
             tkMessageBox.showinfo(title="Script saved",
                                   message="Saved '%s'" % filename)
@@ -398,14 +392,16 @@ class GUI (tk.Tk):
 
 
     def run(self):
-        """Run the GUI"""
+        """Run the GUI.
+        """
         self.draw()
         # Enter the main event handler
         self.mainloop()
 
 
     def draw(self):
-        """Draw widgets."""
+        """Draw widgets.
+        """
         self.style.apply(self)
         self.frame = tk.Frame(self, width=self.width, height=self.height)
         self.frame.pack(fill='both', expand=True)
@@ -418,12 +414,15 @@ class GUI (tk.Tk):
 
 
     def redraw(self):
+        """Destroy and re-draw the GUI.
+        """
         self.frame.destroy()
         self.draw()
 
 
     def show_config(self):
-        """Open the GUI configuration dialog."""
+        """Open the GUI configuration dialog.
+        """
         config = ConfigWindow(self, self.style)
         if config.result:
             self.style = config.result
@@ -434,6 +433,8 @@ class GUI (tk.Tk):
 
  
     def confirm_exit(self, evt=None):
+        """Exit the GUI, with confirmation prompt.
+        """
         if tkMessageBox.askyesno(message="Exit?"):
             self.quit()
 
