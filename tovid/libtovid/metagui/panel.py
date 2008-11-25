@@ -45,8 +45,12 @@ class Label (Widget):
         # In addition to justify, anchor to nw, n, or ne
         _anchors = {'left': 'nw', 'center': 'n', 'right': 'ne'}
         self.anchor = _anchors[self.justify]
+        # Will be set by draw()
+        self.label = None
 
     def draw(self, master):
+        """Draw the Label in the given master.
+        """
         Widget.draw(self, master)
         self.label = tk.Label(self, text=self.text, justify=self.justify)
         self.label.pack(anchor=self.anchor)
@@ -110,6 +114,8 @@ class Panel (Widget):
 
 
     def enable(self, enabled=True):
+        """Enable all widgets in the Panel.
+        """
         for widget in self.widgets:
             widget.enable(enabled)
 
@@ -179,6 +185,10 @@ class Dropdowns (Panel):
         self.controls = Odict()
         for control in self.widgets:
             self.controls[control.label] = control
+        # Set by draw()
+        self.choices = None
+        self.chosen = None
+        self.chooser = None
 
 
     def draw(self, master, **kwargs):
@@ -241,6 +251,8 @@ class Drawer (Panel):
     def __init__(self, name='', *widgets):
         Panel.__init__(self, name, *widgets)
         self.visible = False
+        # Set by draw()
+        self.button = None
 
 
     def draw(self, master, **kwargs):
@@ -277,6 +289,10 @@ class Tabs (Panel):
         Panel.__init__(self, name, *widgets, **kwargs)
         # Index of selected tab
         self.index = 0
+        # Set by draw()
+        self.buttons = None
+        self.selected = None
+        self.side = None
 
 
     def draw(self, master, side='top', **kwargs):
@@ -535,6 +551,10 @@ class RelatedList (Panel):
         self.filter = filter
         self.side = side
         self.mapped = []
+        # Set by draw()
+        self.selected = None
+        self.draw_copy = None
+        self.listbox = None
 
 
     def draw(self, master, **kwargs):
@@ -632,6 +652,8 @@ class RelatedList (Panel):
 
 
     def get_args(self):
+        """Return a list of arguments for the contained list(s).
+        """
         args = []
         # Add parent args, if parent was defined here
         if not self.draw_copy:

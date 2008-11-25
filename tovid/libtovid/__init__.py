@@ -92,6 +92,8 @@ class Config (ConfigParser):
 
 # Logging class
 class Log:
+    """Logging class, with five severity levels.
+    """
     # Increasing levels of severity
     _levels = {
         'debug': 1,

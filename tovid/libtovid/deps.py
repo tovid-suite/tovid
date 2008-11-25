@@ -51,9 +51,9 @@ from libtovid.util.output import red
 ### Exceptions
 ###
 
-class DepError(Exception): pass
-class InputError(DepError): pass
-class MissingError(DepError): pass
+class DepError (Exception): pass
+class InputError (DepError): pass
+class MissingError (DepError): pass
 
 ###
 ### Module data
@@ -161,7 +161,7 @@ def require(deps,
     elif type(deps) == str:
         deps = deps.split(' ')
     elif type(deps) != list:
-        raise InputError, "%s is not dictionary, list, or string!" % str(deps)
+        raise InputError("%s is not dictionary, list, or string!" % str(deps))
 
     # Find the missing dependencies
     have_deps = True
@@ -178,7 +178,7 @@ def require(deps,
     # Having reported the missing dependencies, print the help message and quit
     if not have_deps:
         print "\n", textwrap.fill(help + ' ' + __missing_dependency_message, 79)
-        raise MissingError, "Cannot find required dependencies!"
+        raise MissingError("Cannot find required dependencies!")
 
 
 ###

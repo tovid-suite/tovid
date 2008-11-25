@@ -211,6 +211,16 @@ class Command:
             ret += " %s" % _enc_arg(arg)
         return ret
 
+    
+    def to_script(self):
+        """Return a bash script for running the given command.
+        """
+        script = '#!/usr/bin/env bash' + '\n\n'
+        # Write arguments, one per line with backslash-continuation
+        words = [_enc_arg(arg) for arg in [self.program] + self.args]
+        script += ' \\\n'.join(words)
+        return script
+
 
 class Pipe:
     """A series of Commands, each having its output piped into the next.
