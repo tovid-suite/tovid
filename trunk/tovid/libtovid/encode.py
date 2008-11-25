@@ -130,7 +130,8 @@ def eval_keywords(source, target, **kwargs):
         kwargs['vbitrate'] = kwargs['quality'] * max_bitrate / 10
     # Set quant and vbitrate to fit desired size
     if 'fit' in kwargs:
-        kwargs['quant'], kwargs['vbitrate'] = _fit(source, target, kwargs['fit'])
+        kwargs['quant'], kwargs['vbitrate'] = \
+            _fit(source, target, kwargs['fit'])
     return kwargs
 
 
