@@ -154,10 +154,10 @@ class Drawing:
     def __init__(self, width=800, height=600, autodraw=False):
         """Create a blank drawing at the given size.
         
-            width, height: Dimensions of the drawable region,
-                           in arbitrary units
-            autodraw:      Redraw a preview image after each
-                           drawing operation
+            width, height
+                Dimensions of the drawable region, in arbitrary units
+            autodraw
+                Redraw a preview image after each drawing operation
         """
         self.size = (width, height)
         self.w = width
@@ -193,7 +193,7 @@ class Drawing:
 
 
     ### -----------------------------------------------------------------
-    ### Drawing commands
+    ### Drawing methods
     ### -----------------------------------------------------------------
 
     def affine(self, rot_x, rot_y, scale_x, scale_y, translate_x, translate_y):
@@ -307,8 +307,6 @@ class Drawing:
             cr.arc(center_x, center_y, radius, 0, 2*pi)
         self.doStep(_circle, center_x, center_y, radius)
 
-    # TODO: add clip stuff...
-
 
     def fill(self, source=None, opacity=None):
         """Fill the current (closed) path with an optionally given color.
@@ -348,11 +346,14 @@ class Drawing:
 
 
     def font(self, name, slant='normal', weight='normal'):
-        """Set the current font, by name.
+        """Set the current font.
 
-        name -- name of the Font, or family (sans-serif, serif)
-        slant -- one of: italic, normal, oblique
-        weight -- one of: normal, bold
+            name
+                name of the Font, or family (sans-serif, serif)
+            slant
+                one of: italic, normal, oblique
+            weight
+                one of: normal, bold
         """
         sl = {'italic': cairo.FONT_SLANT_ITALIC,
               'normal': cairo.FONT_SLANT_NORMAL,
@@ -365,7 +366,8 @@ class Drawing:
 
 
     def font_size(self, pointsize):
-        """Set the current font size in points."""
+        """Set the current font size in points.
+        """
         def _font_size(cr):
             cr.set_font_size(pointsize)
         self.doStep(_font_size, pointsize)
@@ -395,12 +397,12 @@ class Drawing:
             cr.set_font_matrix(m)
         self.doStep(_font_rotate, degrees)
 
+
     def image_surface(self, x, y, width, height, surface, mask=None):
         """Draw a given cairo.ImageSurface centered at (x, y), at the given
         width and height.
 
         If you specify mask, it must be a cairo ImageSurface.
-        
         """
         # Calculate centering and scaling
         add_x, add_y = (0, 0)
@@ -437,11 +439,12 @@ class Drawing:
         """Draw an image centered at (x, y), scaled to the given width and
         height. Return the corresponding cairo.ImageSurface object.
 
-        source -- a .png filename (quicker and alpha present),
-                  a cairo.ImageSurface object, which is even better,
-                  a file object
-                  a filename - any file supported by python-imaging,
-                               a.k.a PIL [1]
+            source
+                a .png filename (quicker and alpha present),
+                a cairo.ImageSurface object, which is even better,
+                a file object
+                a filename - any file supported by python-imaging,
+                             a.k.a PIL [1]
 
         Ref:
           [1] http://www.pythonware.com/library/pil/handbook/formats.htm
@@ -485,10 +488,9 @@ class Drawing:
     def operator(self, operator='clear'):
         """Set the operator mode.
 
-        operator -- One of: clear
-                            source, over, in, out, atop
-                            dest, dest_over, dest_in, dest_out, dest_atop
-                            xor, add, saturate
+            operator
+                One of: clear, source, over, in, out, atop, dest,
+                dest_over, dest_in, dest_out, dest_atop, xor, add, saturate
 
         """
         ops = {'clear': cairo.OPERATOR_CLEAR,
@@ -517,7 +519,8 @@ class Drawing:
 
     def paint(self):
         """Paint the current source everywhere within the current clip
-        region."""
+        region.
+        """
         def _paint(cr):
             cr.paint()
         self.doStep(_paint)
@@ -528,13 +531,16 @@ class Drawing:
         region using a mask of constant alpha value alpha.
 
         The effect is similar to paint(), but the drawing is faded out
-        using the alpha value."""
+        using the alpha value.
+        """
         def _paint_with_alpha(cr):
             cr.paint_with_alpha(alpha)
         self.doStep(_paint_with_alpha, alpha)
 
+
     def point(self, x, y):
-        """Draw a point (really a tiny circle) at (x, y)."""
+        """Draw a point at (x, y).
+        """
         # Circle radius 1/1000 the drawing width
         radius = float(self.size[0]) / 1000
         def _point(cr):
@@ -589,7 +595,8 @@ class Drawing:
 
 
     def rotate_deg(self, degrees):
-        """Rotate by the given number of degrees."""
+        """Rotate by the given number of degrees.
+        """
         def _rotate_deg(cr):
             m = cr.get_matrix()
             m.rotate(degrees * pi/180.)
@@ -600,7 +607,8 @@ class Drawing:
 
 
     def rotate_rad(self, rad):
-        """Rotate by the given number of radians."""
+        """Rotate by the given number of radians.
+        """
         def _rotate_rad(cr):
             m = cr.get_matrix()
             m.rotate(rad)
@@ -610,7 +618,8 @@ class Drawing:
 
     def roundrectangle(self, x0, y0, x1, y1, bevel_width, bevel_height):
         """Draw a rounded rectangle from (x0, y0) to (x1, y1), with
-        a bevel size of (bevel_width, bevel_height)."""
+        a bevel size of (bevel_width, bevel_height).
+        """
         bw = bevel_width
         bh = bevel_height
         # Add bezier points
@@ -631,12 +640,14 @@ class Drawing:
 
     def set_source(self, source, opacity=None):
         """
-        source -- One of the following color formats as a string or a tuple
-                  (see below), another Surface or Surface-derivative object,
-                  or a Pattern object (and its derivatives).
-        opacity -- Opacity ranging from 0.0 to 1.0. Defaults to None. If
-                   you specify a 'string' or 'tuple' RGB-like code as
-                   source, opacity defaults to 1.0
+            source
+                One of the following color formats as a string or a tuple
+                (see below), another Surface or Surface-derivative object,
+                or a Pattern object (and its derivatives).
+            opacity
+                Opacity ranging from 0.0 to 1.0. Defaults to None. If
+                you specify a 'string' or 'tuple' RGB-like code as
+                source, opacity defaults to 1.0
 
         You can use the following *tuple* format to specify color:
         * (red, green, blue) -- with colors ranging from 0.0 to 1.0, like
@@ -796,10 +807,12 @@ class Drawing:
     def stroke_dash(self, array, offset=0.0):
         """Set the dash style.
 
-            array:  A list of floats, alternating between ON and OFF for
-                    each value
-            offset: An offset into the dash pattern at which the stroke
-                    should start
+            array
+                A list of floats, alternating between ON and OFF for
+                each value
+            offset
+                An offset into the dash pattern at which the stroke
+                should start
         
         For example:
         
@@ -815,7 +828,8 @@ class Drawing:
     def stroke_linecap(self, cap_type):
         """Set the type of line cap to use for stroking.
 
-            cap_type:  One of 'butt', 'round', or 'square'
+            cap_type
+                'butt', 'round', or 'square'
         """
         dic = {'butt': cairo.LINE_CAP_BUTT,
                'round': cairo.LINE_CAP_ROUND,
@@ -832,7 +846,8 @@ class Drawing:
     def stroke_linejoin(self, join_type):
         """Set the type of line-joining to do for stroking.
 
-            join_type:  One of 'bevel', 'miter', or 'round'.
+            join_type
+                'bevel', 'miter', or 'round'
         """
         dic = {'bevel': cairo.LINE_JOIN_BEVEL,
                'miter': cairo.LINE_JOIN_MITER,
@@ -857,8 +872,10 @@ class Drawing:
     def text(self, text_string, x, y, align='left'):
         """Draw the given text string.
 
-            text_string: utf8 encoded text string
-            (x, y):      lower-left corner position
+            text_string
+                utf8 encoded text string
+            x, y
+                lower-left corner position
         
         Set the text's color with set_source() before calling text().
         """
@@ -954,43 +971,19 @@ class Drawing:
         self.doStep(_save)
     BEGIN = save
 
+
     def restore(self):
-        """Restore the previously saved context."""
+        """Restore the previously saved context.
+        """
         def _restore(cr):
             cr.restore()
         self.doStep(_restore)
     END = restore
 
+
     ### ----------------------------------------------------------------
     ### Untested methods
     ### ----------------------------------------------------------------
-    
-    
-#    def font_slant(self, style):
-#        """Set the font slant. Use one of:
-#    
-#           normal, italic, oblique
-#        """
-#        tr = {'italic': cairo.FONT_SLANT_ITALIC,
-#              'normal': cairo.FONT_SLANT_NORMAL,
-#              'oblique': cairo.FONT_SLANT_OBLIQUE}
-#        def _font_slant(cr):
-#            cr.set_slant(tr[style])
-#        self.doStep(_font_slant, style)
-#    # Alias
-#    font_style = font_slant
-
-
-#    def font_weight(self, weight):
-#        """Set the font weight to one of:
-#        
-#            normal, bold
-#        """
-#        tr = {'normal': cairo.FONT_WEIGHT_NORMAL,
-#              'bold': cairo.FONT_WEIGHT_BOLD}
-#        def _font_weight(cr):
-#            cr.set_font_weight(tr[weight])
-#        self.doStep(_font_weight, weight)
 
 
     def font_family(self, family):
@@ -998,17 +991,19 @@ class Drawing:
         def _font_family(cr):
             cr.select_font_face(family)
         self.doStep(_font_family, family)
-    # Alias
     font_face = font_family
 
 
     def text_align(self, text_string, x, y, align='left'):
         """Draw the given text string.
 
-            text_string: utf8 encoded text string
-            (x, y):      lower-left corner position
-            align:       'left', 'center', 'right'. This only changes the
-                         alignment in 'x', and 'y' stays the baseline.
+            text_string
+                UTF-8 encoded text string
+            x, y
+                Lower-left corner position
+            align
+                'left', 'center', 'right'. This only changes the
+                alignment in 'x', and 'y' stays the baseline.
 
         Set the text's color with set_source() before calling text().
         """
@@ -1034,60 +1029,6 @@ class Drawing:
             y = y + h / 2
         # Let text_path() do the drawing
         self.text_path(text_string, x, y)
-
-
-    #def gradient_units(self, units):
-    #    """Set gradient units to one of:
-    #    userSpace, userSpaceOnUse, objectBoundingBox
-    #    """
-    #    self.insert('gradient-units %s' % units)
-
-
-    #def gravity(self, direction):
-    #    """Set the gravity direction to one of:
-    #    
-    #        NorthWest, North, NorthEast,
-    #        West, Center, East,
-    #        SouthWest, South, SouthEast
-    #        
-    #    Note: gravity is known to affect text and images; it does not affect
-    #    points, lines, circles, rectangles, roundrectangles, polylines or
-    #    polygons.
-    #    """
-    #    self.insert('gravity %s' % direction)
-
-
-    #def matte(self, (x, y), method='floodfill'):
-    #    # method may be: point, replace, floodfill, filltoborder, reset
-    #    # (What do x, y mean?)
-    #    self.insert('matte %s,%s %s' % (x, y, method))
-
-
-    #def offset(self, offset):
-    #    self.insert('offset %s' % offset)
-
-
-    #def path(self, path_data):
-    #    """Draw a path. path_data is a list of instructions and coordinates,
-    #    e.g. ['M', (100,100), 'L', (200,200), ...]
-    #    Instructions are M (moveto), L (lineto), A (arc), Z (close path)
-    #    For more on using paths (and a complete list of commands), see:
-    #    http://www.cit.gu.edu.au/~anthony/graphics/imagick6/draw/#paths
-    #    http://www.w3.org/TR/SVG/paths.html#PathDataGeneralInformation
-    #    """
-    #    command = 'path'
-    #    for token in path_data:
-    #        if isinstance(token, tuple):
-    #            command += ' %s,%s' % token
-    #        else:
-    #            command += ' %s' % token
-    #    self.insert(command)
-
-
-    #def point(self, (x, y), size):
-    #    """Draw a point at position (x, y)"""
-    #    self.insert('point %s,%s' % (x, y))
-
 
 
 ### --------------------------------------------------------------------
@@ -1213,6 +1154,7 @@ def write_ppm(drawing, pipe, width, height, workdir=None):
     im.save(pipe, 'ppm')
     
     #print "write_ppm took %s seconds" % (time.time() - start)
+
     
 def write_png(drawing, pipe, width, height, workdir):
     """Write image as a PPM file to a file-object
@@ -1235,8 +1177,6 @@ def write_png(drawing, pipe, width, height, workdir):
     im.save(pipe, 'ppm')
     
     #print "write_png took %s seconds" % (time.time() - start)
-
-
 
 
 def save_png(drawing, filename, width, height):
