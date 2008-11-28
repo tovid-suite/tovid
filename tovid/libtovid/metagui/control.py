@@ -407,12 +407,19 @@ class Choice (Control):
 ### --------------------------------------------------------------------
 import tkColorChooser
 
-def hex_to_rgb(color):
-    """Convert a hexadecimal color '#aabbcc' to an rgb tuple.
+# Support functions for Color control
+def _hex_to_rgb(color):
+    """Convert a hexadecimal color string '#RRGGBB' to an RGB tuple.
     """
     color = color.lstrip('#')
     red, green, blue = (color[0:2], color[2:4], color[4:6])
     return (int(red, 16), int(green, 16), int(blue, 16))
+
+def _rgb_to_hex(rgb_tuple):
+    """Convert an RGB tuple into a hexadecimal color string '#RRGGBB'.
+    """
+    red, green, blue = rgb_tuple
+    return '#%02x%02x%02x' % (red, green, blue)
 
 
 class Color (Control):
@@ -444,9 +451,10 @@ class Color (Control):
         Control.draw(self, master)
         label = tk.Label(self, text=self.label)
         label.pack(side=self.labelside)
-        self.editbox = tk.Entry(self, textvariable=self.variable, width=7)
+        self.editbox = tk.Entry(self, textvariable=self.variable, width=8)
+        self.editbox.bind('<Return>', self.set_textcolor)
         self.editbox.pack(side='left')
-        self.button = tk.Button(self, command=self.change)
+        self.button = tk.Button(self, text='...', command=self.change)
         self.button.pack(side='left')
         # If default color is hexadecimal, set the button color
         if self.default.startswith('#'):
@@ -462,19 +470,37 @@ class Color (Control):
             self.set(color)
 
 
+    def set_textcolor(self, widget):
+        """Event handler when Enter is pressed in the color entry box.
+        """
+        color = self.variable.get().strip()
+        # If color is not a hexadecimal string, try to convert it to one
+        if not color.startswith('#'):
+            try:
+                # Get color by name, converting from 16-bit to 8-bit RGB
+                color = [x / 256 for x in self.winfo_rgb(color)]
+                color = _rgb_to_hex(color)
+            except (tk.TclError, ValueError):
+                color = self.default
+        if color.startswith('#'):
+            self.set(color)
+
+
     def set(self, color):
         """Set the current color to a hex value,
         and set the button's label and color to match.
         """
         self.variable.set(color)
-        # Choose a foreground color that will show up
-        r, g, b = hex_to_rgb(str(color))
+        r, g, b = _hex_to_rgb(str(color))
+        # Choose a foreground color that will be visible
         if (r + g + b) > 384:
             fg_color = '#000000' # black
         else:
             fg_color = '#ffffff' # white
-        # Set button background color to chosen color
-        self.button.config(foreground=fg_color, background=color)
+        # Set editbox background color to chosen color
+        self.editbox.config(foreground=fg_color, background=color,
+                            insertbackground=fg_color)
+        self.editbox.icursor('end')
 
 
 ### --------------------------------------------------------------------
