@@ -127,6 +127,7 @@ class Control (Widget):
     # Dict of all instantiated Controls, indexed by option string
     all = {}
 
+    @staticmethod
     def by_option(option):
         """Return the Control instance for a given option string,
         or None if no Control has that option string.
@@ -135,7 +136,6 @@ class Control (Widget):
             return Control.all[option]
         else:
             raise ValueError("No Control exists fot option: '%s'" % option)
-    by_option = staticmethod(by_option)
 
 
     def __init__(self,
