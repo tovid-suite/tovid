@@ -454,7 +454,7 @@ class Color (Control):
         self.editbox = tk.Entry(self, textvariable=self.variable, width=8)
         self.editbox.bind('<Return>', self.set_textcolor)
         self.editbox.pack(side='left')
-        self.button = tk.Button(self, text='...', command=self.change)
+        self.button = tk.Button(self, text='Color', command=self.change)
         self.button.pack(side='left')
         # If default color is hexadecimal, set the button color
         if self.default.startswith('#'):
@@ -475,15 +475,15 @@ class Color (Control):
         """
         color = self.variable.get().strip()
         # If color is not a hexadecimal string, try to convert it to one
-        if not color.startswith('#'):
-            try:
+        try:
+            if color.startswith('#'):
+                self.set(color)
+            else:
                 # Get color by name, converting from 16-bit to 8-bit RGB
                 color = [x / 256 for x in self.winfo_rgb(color)]
-                color = _rgb_to_hex(color)
-            except (tk.TclError, ValueError):
-                color = self.default
-        if color.startswith('#'):
-            self.set(color)
+                self.set(_rgb_to_hex(color))
+        except (tk.TclError, ValueError):
+            color = self.default
 
 
     def set(self, color):
