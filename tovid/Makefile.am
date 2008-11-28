@@ -30,15 +30,13 @@ sh_bin = \
 	src/makevcd \
 	src/makexml \
 	src/postproc \
-	src/previd \
 	src/todisc \
 	src/todisc-fade-routine \
 	src/tovid \
 	src/tovid-batch \
 	src/tovid-init \
 	src/tovid-interactive \
-	src/tovid-test \
-	src/toyoutube
+	src/tovid-test
 
 # List the source files for each python script
 py_bin = \
@@ -48,11 +46,9 @@ py_bin = \
 	src/pytovid \
 	src/pymakemenu \
 	src/pymakexml \
-	src/ripframes \
 	src/todiscgui \
 	src/tovidgui \
-	src/tovid-stats \
-	src/todraw
+	src/tovid-stats
 
 # Specify the scripts to make and install.
 bin_SCRIPTS = \
