@@ -138,7 +138,7 @@ _showcase_titles_align = Choice('Title alignment',
     'none|west|center|east')
 
 # Menu settings
-_bg_color = Color('Background color', '-bg-color', '#101010',
+_bg_color = Color('', '-bg-color', '#101010',
     'Color of the menu background. Default (#101010) is NTSC color-safe black. '
     'Note: the color turns out MUCH lighter than the one you choose, '
     'so pick a VERY dark version of the color you want.')
@@ -415,7 +415,7 @@ _thumb_mist = FlagOpt('Use thumb mist', '-thumb-mist', False,
     'Use a mist behind shaped thumbnails for contrast with the background.  '
     'The Color option is the color of the mist.  With some font and mist '
     'color combos you may need to use a large bold font for readability.',
-    Color('  Color', '', '#FFFFFF', ''))
+    Color('', '', '#ffffff', ''))
 
 _tile3x1 = Flag('1 row of 3 thumbs', '-tile3x1', False,
     'Use a montage tile of 3x1 instead of the usual 2x2 '
@@ -448,7 +448,7 @@ _menu_fontsize = Number('Size', '-menu-fontsize', 24,
     'The font size to use for the menu title',
     0, 80, 'pixels', toggles=True)
 
-_title_color = Color('Color', '-title-color', '#EAEAEA',
+_title_color = Color('', '-title-color', '#eaeaea',
     'The font color to use for the menu title')
 
 _title_opacity = Number('Opacity', '-title-opacity', 100,
@@ -456,7 +456,7 @@ _title_opacity = Number('Opacity', '-title-opacity', 100,
     0, 100, '%')
 
 _title_stroke = Color('Stroke', '-title-stroke', None,
-    'Outline color for the main menu font.', toggles=True)
+    'Outline color for the main menu font.')
 
 menu_title_font = HPanel('Menu title font',
     _menu_font,
@@ -475,15 +475,15 @@ _titles_fontsize = Number('Size', '-titles-fontsize', 12,
     'Default size varies depending on options chosen.',
     0, 80, 'pixels', toggles=True)
 
-_titles_color = Color('Color', '-titles-color', None,
-    'The font color to use for the video titles', toggles=True)
+_titles_color = Color('', '-titles-color', None,
+    'The font color to use for the video titles')
 
 _titles_opacity = Number('Opacity', '-titles-opacity', 100,
     'The opacity of the video titles.',
     0, 100, '%')
 
 _titles_stroke = Color('Stroke', '-titles-stroke', None,
-    'The color to use for the video titles font outline (stroke)', toggles=True)
+    'The color to use for the video titles font outline (stroke)')
 
 video_title_font = HPanel('Video title font',
     _titles_font,
@@ -501,7 +501,7 @@ _submenu_fontsize = Number('Size', '-submenu-fontsize', 24,
     'The font size to use for the submenu title',
      0, 80, toggles=True)
 
-_submenu_title_color = Color('Color', '-submenu-title-color', '#EAEAEA',
+_submenu_title_color = Color('', '-submenu-title-color', '#eaeaea',
     'The font color to use for submenu title(s)')
 
 _submenu_title_opacity = Number('Opacity',
@@ -510,7 +510,7 @@ _submenu_title_opacity = Number('Opacity',
     0, 100, '%')
 
 _submenu_stroke = Color('Stroke', '-submenu-stroke', None,
-    'The color for the submenu font outline (stroke).', toggles=True)
+    'The color for the submenu font outline (stroke).')
 
 submenu_title_font = HPanel('Submenu title font',
     _submenu_font,
@@ -528,8 +528,8 @@ _chapter_fontsize = Number('Size', '-chapter-fontsize', 12,
     'The font size to use for the chapter titles',
     0, 80, 'pixels', toggles=True)
 
-_chapter_color = Color('Color', '-chapter-color', None,
-    'The color for the chapters font.', toggles=True)
+_chapter_color = Color('', '-chapter-color', None,
+    'The color for the chapters font.')
 
 _chapter_title_opacity = Number('Opacity',
     '-chapter-title-opacity', 100,
@@ -537,7 +537,7 @@ _chapter_title_opacity = Number('Opacity',
     0, 100, '%')
 
 _chapter_stroke = Color('Stroke', '-chapter-stroke', None,
-    'The color for the chapters font outline (stroke).', toggles=True)
+    'The color for the chapters font outline (stroke).')
 
 submenu_chapter_font = HPanel('Submenu chapter font',
     _chapter_font,
@@ -561,10 +561,10 @@ _text_mist = Flag('Text mist', '-text-mist', False,
     'Use "mist" behind the menu title (helps with contrast).',
     enables=['-text-mist-color', '-text-mist-opacity'])
 
-_text_mist_color = Color('Text mist color', '-text-mist-color', '#FFFFFF',
+_text_mist_color = Color('', '-text-mist-color', '#ffffff',
     'Color of the mist behind the menu title.')
 
-_text_mist_opacity = Number('Text mist opacity', '-text-mist-opacity', 60,
+_text_mist_opacity = Number('Opacity', '-text-mist-opacity', 60,
     'The opacity of the mist behind the menu title.',
     1, 100, '%')
 
@@ -584,10 +584,10 @@ _button_style = Choice('Style', '-button-style', 'none',
     'Leave at "none" to let todisc pick the most appropriate style. ',
     'none|rect|line|text|text-rect', 'dropdown')
 
-_highlight_color = Color('Highlight', '-highlight-color', '#266CAE',
+_highlight_color = Color('Highlight', '-highlight-color', '#266cae',
     'Color for the menu buttons the dvd remote uses to navigate.')
 
-_select_color = Color('Selection', '-select-color', '#DE7F7C',
+_select_color = Color('Selection', '-select-color', '#de7f7c',
     'Color for the menu buttons the dvd remote uses to select.')
 
 _outlinewidth = Number('Outlinewidth', '-outlinewidth', 14,
