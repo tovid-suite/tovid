@@ -88,6 +88,13 @@ class ListVar (tk.Variable):
         return item
 
 
+    def index(self, value):
+        """Return the index of the given value.
+        """
+        items = self.get()
+        return items.index(value)
+
+
     def count(self):
         """Return the number of items in the list.
         """
