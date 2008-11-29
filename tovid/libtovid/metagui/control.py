@@ -463,7 +463,7 @@ class Color (Control):
         label = tk.Label(self, text=self.label)
         label.pack(side=self.labelside)
         # Button for opening a color picker popup
-        self.button = tk.Button(self, text=' ', command=self.pick_color)
+        self.button = tk.Button(self, text='Color', command=self.pick_color)
         self.button.pack(side='left')
         # Textbox for typing in an RGB hex value or color name
         self.editbox = tk.Entry(self, textvariable=self.variable, width=8)
@@ -513,7 +513,7 @@ class Color (Control):
 
 
     def indicate_color(self, bg_color):
-        """Change the editbox background color to the given RGB hex value.
+        """Change the button background color to the given RGB hex value.
         """
         if not _is_hex_rgb(bg_color):
             raise ValueError("indicate_color needs an 8-bit #RRGGBB hex string")
@@ -527,7 +527,7 @@ class Color (Control):
         #self.editbox.config(foreground=fg_color, background=bg_color,
         #                    insertbackground=fg_color)
         #self.editbox.icursor('end')
-        self.button.config(background=bg_color)
+        self.button.config(foreground=fg_color, background=bg_color)
 
 
 ### --------------------------------------------------------------------
