@@ -406,8 +406,19 @@ class Choice (Control):
 
 ### --------------------------------------------------------------------
 import tkColorChooser
+import re
 
 # Support functions for Color control
+def _is_hex_rgb(color):
+    """Return True if color appears to be a hex '#RRGGBB value.
+    """
+    if type(color) != str:
+        return False
+    if re.match('#[0-9a-fA-F]{3}', color):
+        return True
+    else:
+        return False
+
 def _hex_to_rgb(color):
     """Convert a hexadecimal color string '#RRGGBB' to an RGB tuple.
     """
@@ -423,7 +434,7 @@ def _rgb_to_hex(rgb_tuple):
 
 
 class Color (Control):
-    """RGB hexadecimal color chooser.
+    """A color chooser that may have hex '#RRGGBB' or 'ColorName' values.
     """
     def __init__(self,
                  label="Color",
@@ -451,54 +462,69 @@ class Color (Control):
         Control.draw(self, master)
         label = tk.Label(self, text=self.label)
         label.pack(side=self.labelside)
+        # Textbox for typing in an RGB hex value or color name
         self.editbox = tk.Entry(self, textvariable=self.variable, width=8)
-        self.editbox.bind('<Return>', self.set_textcolor)
+        self.editbox.bind('<Return>', self.enter_color)
         self.editbox.pack(side='left')
-        self.button = tk.Button(self, text='Color', command=self.change)
+        # Button for opening a color picker popup
+        self.button = tk.Button(self, text='...', command=self.pick_color)
         self.button.pack(side='left')
-        # If default color is hexadecimal, set the button color
-        if self.default.startswith('#'):
-            self.set(self.default)
+        # Indicate the current (default) color in the editbox
+        if _is_hex_rgb(self.default):
+            self.indicate_color(self.default)
         Control.post(self)
 
 
-    def change(self):
-        """Event handler for the color button; choose and set a new color.
-        """
-        rgb, color = tkColorChooser.askcolor(self.get())
-        if color:
-            self.set(color)
-
-
-    def set_textcolor(self, widget):
+    def enter_color(self, event):
         """Event handler when Enter is pressed in the color entry box.
         """
         color = self.variable.get().strip()
-        # If color is not a hexadecimal string, try to convert it to one
-        try:
-            if color.startswith('#'):
-                self.set(color)
-            else:
-                # Get color by name, converting from 16-bit to 8-bit RGB
-                color = [x / 256 for x in self.winfo_rgb(color)]
-                self.set(_rgb_to_hex(color))
-        except (tk.TclError, ValueError):
-            color = self.default
+        self.set(color)
+
+
+    def pick_color(self):
+        """Event handler for the color picker button; choose and set a color.
+        """
+        rgb, color = tkColorChooser.askcolor(self.get())
+        if color:
+            self.set(str(color))
 
 
     def set(self, color):
-        """Set the current color to a hex value,
-        and set the button's label and color to match.
+        """Set the current color to an RGB hex value or color name.
         """
+        # Update variable with whatever color name or RGB value was given
+        # (even if it's not necessarily a valid color)
         self.variable.set(color)
-        r, g, b = _hex_to_rgb(str(color))
+
+        if _is_hex_rgb(color):
+            self.indicate_color(color)
+        else:
+            # Try to get color by name, converting from 16-bit to 8-bit RGB
+            try:
+                hexcolor = _rgb_to_hex([x / 256 for x in self.winfo_rgb(color)])
+            # For unknown color names, 
+            except (tk.TclError):
+                if _is_hex_rgb(self.default):
+                    hexcolor = self.default
+                else:
+                    hexcolor = '#FFFFFF'
+            self.indicate_color(hexcolor)
+
+
+    def indicate_color(self, bg_color):
+        """Change the editbox background color to the given RGB hex value.
+        """
+        if not _is_hex_rgb(bg_color):
+            raise ValueError("indicate_color needs an 8-bit #RRGGBB hex string")
         # Choose a foreground color that will be visible
-        if (r + g + b) > 384:
+        r, g, b = _hex_to_rgb(bg_color)
+        if (r + g + b) > 384: # hack
             fg_color = '#000000' # black
         else:
             fg_color = '#ffffff' # white
         # Set editbox background color to chosen color
-        self.editbox.config(foreground=fg_color, background=color,
+        self.editbox.config(foreground=fg_color, background=bg_color,
                             insertbackground=fg_color)
         self.editbox.icursor('end')
 
