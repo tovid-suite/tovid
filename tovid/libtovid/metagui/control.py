@@ -485,7 +485,8 @@ class Color (Control):
     def pick_color(self):
         """Event handler for the color picker button; choose and set a color.
         """
-        rgb, color = tkColorChooser.askcolor(self.get())
+        current = self.hexcolor(self.get())
+        rgb, color = tkColorChooser.askcolor(current)
         if color:
             self.set(str(color))
 
@@ -497,19 +498,26 @@ class Color (Control):
         # (even if it's not necessarily a valid color)
         self.variable.set(color)
 
+        # Show the color in the indicator button
+        self.indicate_color(self.hexcolor(color))
+
+
+    def hexcolor(self, color):
+        """Return an 8-bit '#rrggbb' hex string for the given color.
+        If a given color name is unknown, return '#ffffff' (white).
+        """
+        # If color is already hex, return it
         if _is_hex_rgb(color):
-            self.indicate_color(color)
-        else:
-            # Try to get color by name, converting from 16-bit to 8-bit RGB
-            try:
-                hexcolor = _rgb_to_hex([x / 256 for x in self.winfo_rgb(color)])
-            # For unknown color names, 
-            except (tk.TclError):
-                if _is_hex_rgb(self.default):
-                    hexcolor = self.default
-                else:
-                    hexcolor = '#FFFFFF'
-            self.indicate_color(hexcolor)
+            return color
+
+        # Try to get color by name, converting from 16-bit to 8-bit RGB
+        try:
+            rgb = [x / 256 for x in self.winfo_rgb(color)]
+        # Use white for any unknown color name
+        except (tk.TclError):
+            rgb = [255, 255, 255]
+
+        return _rgb_to_hex(rgb)
 
 
     def indicate_color(self, bg_color):
@@ -523,11 +531,8 @@ class Color (Control):
             fg_color = '#000000' # black
         else:
             fg_color = '#ffffff' # white
-        # Set editbox background color to chosen color
-        #self.editbox.config(foreground=fg_color, background=bg_color,
-        #                    insertbackground=fg_color)
-        #self.editbox.icursor('end')
-        self.button.config(foreground=fg_color, background=bg_color)
+        # Set button background color to chosen color
+        self.button.config(background=bg_color, foreground=fg_color)
 
 
 ### --------------------------------------------------------------------
