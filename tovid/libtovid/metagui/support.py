@@ -316,6 +316,7 @@ class ComboBox (tk.Frame):
         self.choices = choices or ListVar()
         self.variable = variable or tk.StringVar()
         self.command = command
+        self.curindex = 0
 
         # Text and button
         # Fit to width of longest choice
@@ -337,9 +338,10 @@ class ComboBox (tk.Frame):
                                   listvariable=self.choices, width=_width,
                                   height=self.choices.count())
         # Use alternating white/gray for choices
-        for index in range(0, len(self.choices), 2):
-            self.chooser.itemconfig(index, bg='LightGray')
+        #for index in range(0, len(self.choices), 2):
+        #    self.chooser.itemconfig(index, bg='LightGray')
         self.chooser.bind('<Button-1>', self.choose)
+        self.chooser.bind('<Motion>', self.highlight)
         self.chooser.grid()
 
 
@@ -355,6 +357,18 @@ class ComboBox (tk.Frame):
             self.dropdown.wm_geometry("+%d+%d" % (x, y))
             # Show list
             self.dropdown.deiconify()
+
+        # Highlight the current selection
+        self.chooser.itemconfig(self.curindex, background='LightGray')
+
+
+    def highlight(self, event=None):
+        """Event handler to highlight an entry on mouse-over.
+        """
+        for index in range(len(self.choices)):
+            self.chooser.itemconfig(index, background='White')
+        index = self.chooser.nearest(event.y)
+        self.chooser.itemconfig(index, background='LightGray')
 
 
     def choose(self, event=None):
