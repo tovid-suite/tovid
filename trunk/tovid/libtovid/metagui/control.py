@@ -467,7 +467,7 @@ class Color (Control):
         self.editbox.bind('<Return>', self.enter_color)
         self.editbox.pack(side='left')
         # Button for opening a color picker popup
-        self.button = tk.Button(self, text='...', command=self.pick_color)
+        self.button = tk.Button(self, text=' ', command=self.pick_color)
         self.button.pack(side='left')
         # Indicate the current (default) color in the editbox
         if _is_hex_rgb(self.default):
@@ -524,9 +524,10 @@ class Color (Control):
         else:
             fg_color = '#ffffff' # white
         # Set editbox background color to chosen color
-        self.editbox.config(foreground=fg_color, background=bg_color,
-                            insertbackground=fg_color)
-        self.editbox.icursor('end')
+        #self.editbox.config(foreground=fg_color, background=bg_color,
+        #                    insertbackground=fg_color)
+        #self.editbox.icursor('end')
+        self.button.config(background=bg_color)
 
 
 ### --------------------------------------------------------------------
