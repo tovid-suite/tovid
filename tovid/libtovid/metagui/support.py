@@ -318,12 +318,12 @@ class ComboBox (tk.Frame):
         self.command = command
 
         # Text and button
-        self.text = tk.Entry(self, textvariable=self.variable)
+        # Fit to width of longest choice
+        _width = max([len(c) for c in choices])
+        self.text = tk.Entry(self, textvariable=self.variable, width=_width)
+        self.text.pack(side='left', expand=True, fill='both')
         self.button = tk.Button(self, text="...", command=self.open)
-        #self.text.grid(row=0, column=0)
-        #self.button.grid(row=0, column=1)
-        self.text.pack(anchor='nw', side='left', expand=True, fill='both')
-        self.button.pack(anchor='nw', side='left', expand=True, fill='both')
+        self.button.pack(side='left')
 
         # Dropdown list, displayed when button is clicked
         self.dropdown = tk.Toplevel(self)
@@ -334,8 +334,11 @@ class ComboBox (tk.Frame):
 
         # List of choices
         self.chooser = tk.Listbox(self.dropdown, background='white',
-                                  listvariable=self.choices,
+                                  listvariable=self.choices, width=_width,
                                   height=self.choices.count())
+        # Use alternating white/gray for choices
+        for index in range(0, len(self.choices), 2):
+            self.chooser.itemconfig(index, bg='LightGray')
         self.chooser.bind('<Button-1>', self.choose)
         self.chooser.grid()
 
