@@ -462,14 +462,14 @@ class Color (Control):
         Control.draw(self, master)
         label = tk.Label(self, text=self.label)
         label.pack(side=self.labelside)
+        # Button for opening a color picker popup
+        self.button = tk.Button(self, text=' ', command=self.pick_color)
+        self.button.pack(side='left')
         # Textbox for typing in an RGB hex value or color name
         self.editbox = tk.Entry(self, textvariable=self.variable, width=8)
         self.editbox.bind('<Return>', self.enter_color)
         self.editbox.pack(side='left')
-        # Button for opening a color picker popup
-        self.button = tk.Button(self, text=' ', command=self.pick_color)
-        self.button.pack(side='left')
-        # Indicate the current (default) color in the editbox
+        # Indicate the current (default) color
         if _is_hex_rgb(self.default):
             self.indicate_color(self.default)
         Control.post(self)
