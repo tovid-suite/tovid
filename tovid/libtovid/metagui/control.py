@@ -468,7 +468,7 @@ class Color (Control):
         # Textbox for typing in an RGB hex value or color name
         self.editbox = tk.Entry(self, textvariable=self.variable, width=8)
         self.editbox.bind('<Return>', self.enter_color)
-        self.editbox.pack(side='left')
+        self.editbox.pack(side='left', fill='y')
         # Indicate the current (default) color
         if _is_hex_rgb(self.default):
             self.indicate_color(self.default)
@@ -585,7 +585,7 @@ class Filename (Control):
         label.pack(side=self.labelside)
         self.entry = tk.Entry(self, textvariable=self.variable)
         self.button = tk.Button(self, text="Browse...", command=self.browse)
-        self.entry.pack(side='left', fill='x', expand=True)
+        self.entry.pack(side='left', fill='both', expand=True)
         self.button.pack(side='left')
         Control.post(self)
 
