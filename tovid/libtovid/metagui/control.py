@@ -245,7 +245,7 @@ class Control (Widget):
         """
         # self.variable isn't defined until draw() is called
         if not self.variable:
-            raise NotDrawn("Must call draw() before get()")
+            raise NotDrawn("Can't get() from '%s'" % self.name)
         return self.variable.get()
 
 

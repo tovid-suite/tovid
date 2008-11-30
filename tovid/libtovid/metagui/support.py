@@ -320,7 +320,7 @@ class ComboBox (tk.Frame):
 
         # Text and button
         # Fit to width of longest choice
-        _width = max([len(c) for c in choices])
+        _width = max([len(c) for c in self.choices.get()])
         self.text = tk.Entry(self, textvariable=self.variable, width=_width)
         self.text.pack(side='left', expand=True, fill='both')
         self.button = tk.Button(self, text="...", command=self.open)
