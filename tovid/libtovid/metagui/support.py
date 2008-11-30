@@ -365,7 +365,7 @@ class ComboBox (tk.Frame):
     def highlight(self, event=None):
         """Event handler to highlight an entry on mouse-over.
         """
-        for index in range(len(self.choices)):
+        for index in range(self.choices.count()):
             self.chooser.itemconfig(index, background='White')
         index = self.chooser.nearest(event.y)
         self.chooser.itemconfig(index, background='LightGray')
