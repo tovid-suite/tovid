@@ -100,8 +100,6 @@ class ListVar (tk.Variable):
         """
         return len(self.get())
 
-    __len__ = count
-
 
 ### --------------------------------------------------------------------
 from libtovid.odict import Odict
