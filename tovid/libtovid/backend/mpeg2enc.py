@@ -185,7 +185,7 @@ def encode_frames(imagedir, outfile, format, tvsys, aspect, interlaced=False):
         pipe.add(png2yuv)
 
         #pipe.add(ls, xargs, png2yuv)
-        #cmd += 'pnmtoy4m -Ip -F %s %s/*.png' % standard.fpsratio(tvsys)
+        #cmd += 'pnmtoy4m -Ip -F %s %s/*.png' % standard.fps_ratio(tvsys)
 
     # TODO: Scale to correct target size using yuvscaler or similar
     

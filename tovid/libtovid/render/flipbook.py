@@ -116,7 +116,7 @@ class Flipbook:
             self.tmpdir = os.environ['TMPDIR']
         self.seconds = float(seconds)
         self.fps = standard.fps(tvsys)
-        self.fpsratio = standard.fpsratio(tvsys)
+        self.fps_ratio = standard.fps_ratio(tvsys)
         if (interlaced):
             self.fps *= 2
         self.interlaced = interlaced
@@ -272,11 +272,11 @@ class Flipbook:
         try:
             #cairo.ImageSurface.get_data
             pngorpnm = 'ppmtoy4m -F %s -A %s -Ip -B -S 420mpeg2' % \
-                     (self.fpsratio, self.aspect)
+                     (self.fps_ratio, self.aspect)
             _write_img = write_ppm  # set write function just below
         except:
             pngorpnm = 'ppmtoy4m -F %s -A %s -Ip -S 420mpeg2' % \
-                     (self.fpsratio, self.aspect)
+                     (self.fps_ratio, self.aspect)
             _write_img = write_png
             
         # Cinelerra params: -b 0 -q 5 -a 2 -F 4 -I 0 -M 2 -f 8 -R 0

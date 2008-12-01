@@ -5,8 +5,10 @@
 
 Defined here are two functions for adding subtitles to an MPEG file:
 
-    add_subpictures:  Add image files (.png)
-    add_subtitles:    Add subtitle files (.sub, .srt etc.)
+    add_subpictures
+        Add image files (.png)
+    add_subtitles
+        Add subtitle files (.sub, .srt etc.)
 
 Use these if you just want to add subpictures or subtitles, and don't want
 to think much about the XML internals.
@@ -63,9 +65,7 @@ def _mux_subs(subtitle, movie_filename, stream_id=0):
     #base_dir = os.path.dirname(movie_filename)
     subbed_filename = util.temp_file(suffix=".mpg")
     # spumux xmlfile < movie_filename > subbed_filename
-    spumux = cli.Command('spumux',
-                     '-s%s' % stream_id,
-                     xmlfile.name)
+    spumux = cli.Command('spumux', '-s%s' % stream_id,  xmlfile.name)
     spumux.run_redir(movie_filename, subbed_filename)
     spumux.wait()
 

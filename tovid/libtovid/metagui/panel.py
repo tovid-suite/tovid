@@ -48,10 +48,11 @@ class Label (Widget):
         # Will be set by draw()
         self.label = None
 
-    def draw(self, master):
+
+    def draw(self, master, **kwargs):
         """Draw the Label in the given master.
         """
-        Widget.draw(self, master)
+        Widget.draw(self, master, **kwargs)
         self.label = tk.Label(self, text=self.text, justify=self.justify)
         self.label.pack(anchor=self.anchor)
 
@@ -60,10 +61,7 @@ class Label (Widget):
 class Panel (Widget):
     """A group of Widgets in a rectangular frame, with an optional label.
     """
-    def __init__(self,
-                 name='',
-                 *widgets,
-                 **kwargs):
+    def __init__(self, name='', *widgets, **kwargs):
         """Create a Panel containing one or more widgets or sub-panels.
         
             name
@@ -78,11 +76,11 @@ class Panel (Widget):
         self.widgets = list(widgets)
 
 
-    def draw(self, master, labeled=True):
+    def draw(self, master, labeled=True, **kwargs):
         """Draw the Panel, but not any contained widgets.
-        If labeled is True, and panel has a name, use a LabelFrame.
+        If labeled is True, and Panel has a name, use a LabelFrame.
         """
-        Widget.draw(self, master)
+        Widget.draw(self, master, **kwargs)
         # Get a labeled or unlabeled frame
         if self.name and labeled:
             self.frame = tk.LabelFrame(self, text=self.name,
@@ -93,14 +91,14 @@ class Panel (Widget):
         self.frame.pack(side='top', fill='both', expand=True)
 
 
-    def draw_widgets(self, side='top'):
-        """Draw contained widgets in self.frame,
-        packed on the given side ('top' or 'left').
+    def draw_widgets(self, side='top', expand=False):
+        """Draw contained widgets in self.frame.
         """
         for widget in self.widgets:
             widget.draw(self.frame)
-            widget.pack(side=side, anchor='nw', fill='both',
-                        expand=False, padx=4, pady=2)
+            widget.pack(side=side, expand=expand, anchor='nw',
+                        fill='both', padx=4, pady=2)
+
 
     def get_args(self):
         """Return a list of all command-line options from contained widgets.
@@ -135,12 +133,10 @@ class HPanel (Panel):
     """
     def __init__(self, name='', *widgets, **kwargs):
         Panel.__init__(self, name, *widgets, **kwargs)
- 
+
     def draw(self, master, **kwargs):
-        """Draw all widgets in the Panel, packed horizontally.
-        """
         Panel.draw(self, master, **kwargs)
-        self.draw_widgets('left')
+        self.draw_widgets(side='left', expand=True)
 
 ### --------------------------------------------------------------------
 
@@ -159,10 +155,8 @@ class VPanel (Panel):
         Panel.__init__(self, name, *widgets, **kwargs)
 
     def draw(self, master, **kwargs):
-        """Draw all widgets in the Panel, packed vertically.
-        """
         Panel.draw(self, master, **kwargs)
-        self.draw_widgets('top')
+        self.draw_widgets(side='top')
 
 
 ### --------------------------------------------------------------------
@@ -178,8 +172,8 @@ class Dropdowns (Panel):
     corresponding Control is displayed, along with a "remove" button to
     discard the control.
     """
-    def __init__(self, name='', *widgets):
-        Panel.__init__(self, name, *widgets)
+    def __init__(self, name='', *widgets, **kwargs):
+        Panel.__init__(self, name, *widgets, **kwargs)
         ensure_type("Dropdown contents must be Controls", Control, *widgets)
         # Controls, indexed by label
         self.controls = Odict()
@@ -248,8 +242,8 @@ class Dropdowns (Panel):
 class Drawer (Panel):
     """A Panel that may be hidden or "closed" like a drawer.
     """
-    def __init__(self, name='', *widgets):
-        Panel.__init__(self, name, *widgets)
+    def __init__(self, name='', *widgets, **kwargs):
+        Panel.__init__(self, name, *widgets, **kwargs)
         self.visible = False
         # Set by draw()
         self.button = None
@@ -289,17 +283,19 @@ class Tabs (Panel):
         Panel.__init__(self, name, *widgets, **kwargs)
         # Index of selected tab
         self.index = 0
+        if 'side' in kwargs:
+            self.side = kwargs['side']
+        else:
+            self.side = 'top'
         # Set by draw()
         self.buttons = None
         self.selected = None
-        self.side = None
 
 
-    def draw(self, master, side='top', **kwargs):
+    def draw(self, master, **kwargs):
         """Draw the Tabs widget in the given master.
         """
         Panel.draw(self, master, **kwargs)
-        self.side = side
         # Selected tab index
         self.selected = tk.IntVar()
         # Tkinter configuration common to all tab buttons
@@ -329,13 +325,12 @@ class Tabs (Panel):
                                     value=index, **config)
             button.pack(anchor='nw', side=button_side,
                         fill='both', expand=True)
-            # If widget is a Panel, draw it without a label
+            # For Panels, hide the panel's own label
             if isinstance(widget, Panel):
                 widget.draw(self.frame, labeled=False)
             else:
                 widget.draw(self.frame)
-        self.buttons.pack(anchor=bar_anchor, side=self.side,
-                          fill=bar_fill)
+        self.buttons.pack(anchor=bar_anchor, side=self.side, fill=bar_fill)
         # Activate the first tab
         self.selected.set(0)
         self.change()
@@ -400,7 +395,7 @@ class FlagGroup (Panel):
             columns
                 For 'top' packing, number of columns to split flags into
         """
-        Panel.__init__(self, name)
+        Panel.__init__(self, name, **kwargs)
         ensure_type("FlagGroup may only contain Flag instances", Flag, *flags)
         self.flags = flags
         self.kind = kind
@@ -544,7 +539,7 @@ class RelatedList (Panel):
         if side not in ['left', 'top']:
             raise ValueError("RelatedList 'side' must be 'left' or 'top'")
 
-        Panel.__init__(self, name)
+        Panel.__init__(self, name, **kwargs)
         self.parent = parent
         self.correspondence = correspondence
         self.child = child_list
@@ -553,7 +548,7 @@ class RelatedList (Panel):
         self.mapped = []
         # Set by draw()
         self.selected = None
-        self.draw_copy = None
+        self.parent_is_copy = False
         self.listbox = None
 
 
@@ -565,7 +560,7 @@ class RelatedList (Panel):
 
         # Lookup the parent Control by option
         if type(self.parent) == str:
-            self.draw_copy = True
+            self.parent_is_copy = True
             parent_control = Control.by_option(self.parent)
             if not parent_control:
                 raise ValueError("RelatedList parent '%s' does not exist" % \
@@ -574,12 +569,12 @@ class RelatedList (Panel):
                 self.parent = parent_control
         # Or use the parent Control itself
         else:
-            self.draw_copy = False
+            self.parent_is_copy = False
 
         ensure_type("RelatedList parent must be a List", List, self.parent)
 
         # Draw the read-only copy of parent's values
-        if self.draw_copy:
+        if self.parent_is_copy:
             self.selected = tk.StringVar()
             frame = tk.LabelFrame(self.frame, text="%s (copy)" % self.parent.label)
             self.listbox = ScrollList(frame, self.parent.variable, self.selected)
@@ -594,7 +589,8 @@ class RelatedList (Panel):
         # Draw the child control
         # 1:1, add/remove in child is NOT allowed, and lists are linked
         if self.correspondence == '1:1':
-            self.child.draw(self.frame, edit_only=True)
+            self.child.edit_only = True
+            self.child.draw(self.frame)
             self.listbox.link(self.child.listbox)
         # 1:many, add/remove in child is allowed
         else:
@@ -656,7 +652,7 @@ class RelatedList (Panel):
         """
         args = []
         # Add parent args, if parent was defined here
-        if not self.draw_copy:
+        if not self.parent_is_copy:
             args.extend(self.parent.get_args())
         # Add child args, for one or many children
         if self.correspondence == '1:*':
