@@ -54,12 +54,13 @@ to the right, to (80, 20), then diagonally to (100, 100).
 
 """
 
-__all__ = [\
+__all__ = [
     'Keyframe',
     'lerp',
     'cos_interp',
     'interpolate',
-    'tween']
+    'tween',
+]
 
 import copy
 import doctest
@@ -100,6 +101,7 @@ class Keyframe:
         self.frame = frame
         self.data = data
 
+
 ### --------------------------------------------------------------------------
 ### Interpolation algorithms
 ### --------------------------------------------------------------------------
@@ -111,6 +113,7 @@ def lerp(x, (x0, y0), (x1, y1)):
     This form of interpolation simply connects two points with a straight
     line. Blunt, but effective."""
     return y0 + (x - x0) * (y1 - y0) / (x1 - x0)
+
 
 def cos_interp(x, (x0, y0), (x1, y1)):
     """Do cosine-based interpolation between (x0, y0), (x1, y1) and return
@@ -188,8 +191,10 @@ def interpolate(frame, left, right, method):
         dim = 0
         result = []
         while dim < len(left.data):
-            result.append(interp_func(frame, (left.frame, left.data[dim]), \
-                 (right.frame, right.data[dim])))
+            interp_val = interp_func(frame,
+                                     (left.frame, left.data[dim]),
+                                     (right.frame, right.data[dim]))
+            result.append(interp_val)
             dim += 1
         return tuple(result)
 

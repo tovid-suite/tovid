@@ -43,14 +43,16 @@ Other parameters include default value, help/tooltip text to show, allowable
 values, and hints about how to draw the GUI control widget; they are specific
 to the flavor of Control being used. Here's a sampling:
 
-    Choice     Multiple-choice values
-    Color      Color selection button
-    Filename   Type or [Browse] a filename
-    Flag       Check box, yes or no
-    Font       Font selection button
-    SpacedText Space-separated list
-    Number     Number between A and B
-    Text       Plain old text
+    Choice      Multiple-choice values
+    Color       Color selection button
+    Filename    Type or [Browse] a filename
+    Flag        Check box, yes or no
+    Font        Font selection button
+    Number      Number between A and B
+    Text        Plain old text
+    SpacedText  Text with space-separated items
+    List        Multiple Text, Number, Color, or Font items
+    
 
 For a full list of available Control subclasses and how to use them,
 see libtovid/metagui/control.py.
@@ -111,23 +113,6 @@ then, create the Application and GUI:
 
 If multiple panels are given to Application, a tabbed interface is created,
 with one tab for each panel.
-
-
-CREATE A MULTI-APPLICATION GUI
-
-If your GUI needs to be able to run several different command-line programs,
-you can create a multi-application GUI. Create panels for each application,
-then create the applications:
-
-    todisc = Application('todisc', [todisc_panel1, todisc_panel2])
-    tovid = Application('tovid', [tovid_panel1, tovid_panel2])
-
-and then the GUI:
-
-    gui = GUI('MultiGUI', [todisc, tovid])
-    gui.run()
-
-See the apps/ directory for example GUIs.
 """
 
 # Export everything from support, control, panel, and gui modules
@@ -145,6 +130,7 @@ __all__ = [
     'support',
     'control',
     'gui',
+    'log',
     'manpage',
     'builder',
     'tooltip',

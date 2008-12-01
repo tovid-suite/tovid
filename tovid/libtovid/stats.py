@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # stats.py
 
-"""Classes and functions for dealing with video statistics.
+"""Classes and functions for dealing with tovid statistics.
 
 Future interface ideas:
 

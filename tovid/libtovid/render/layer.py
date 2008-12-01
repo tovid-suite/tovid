@@ -18,7 +18,7 @@ function. For more on how to use Layers, see the Layer class definition and
 template example below.
 """
 
-__all__ = [\
+__all__ = [
     'Layer',
     'Background',
     'Text',
@@ -32,7 +32,8 @@ __all__ = [\
     'SafeArea',
     'Scatterplot',
     'InterpolationGraph',
-    'ColorBars']
+    'ColorBars',
+]
 
 import os
 import sys

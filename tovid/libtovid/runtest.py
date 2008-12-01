@@ -31,13 +31,11 @@ libtovid_modules = [
     'cli.py',
     'deps.py',
     'encode.py',
-    'filetypes.py',
-    'layout.py',
     'media.py',
+    'odict.py',
     'opts.py',
     'standard.py',
     'stats.py',
-    'utils.py',
     'xml.py',
 ]
 
@@ -47,6 +45,7 @@ subdirs = [
     'render',
     'template',
     'test',
+    'util',
 ]
 
 subdir_modules = []

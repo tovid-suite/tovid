@@ -37,7 +37,7 @@ from libtovid.backend import ffmpeg, mplayer, mpeg2enc
 from libtovid.media import MediaFile, standard_media, correct_aspect
 
 
-_bitrate_limits = {\
+_bitrate_limits = {
     'vcd': (1150, 1150),
     'kvcd': (400, 4000),
     'dvd-vcd': (400, 4000),
@@ -57,12 +57,18 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
     """Encode a multimedia file according to a target profile, saving the
     encoded file to outfile.
     
-        infile:   Input filename
-        outfile:  Desired output filename (.mpg implied)
-        format:   One of 'vcd', 'svcd', 'dvd' (case-insensitive)
-        tvsys:    One of 'ntsc', 'pal' (case-insensitive)
-        method:   Encoding backend: 'ffmpeg', 'mencoder', or 'mpeg2enc'
-        **kwargs: Additional keyword arguments (name=value)
+        infile
+            Input filename
+        outfile
+            Desired output filename (.mpg implied)
+        format
+            One of 'vcd', 'svcd', 'dvd' (case-insensitive)
+        tvsys
+            One of 'ntsc', 'pal' (case-insensitive)
+        method
+            Encoding backend: 'ffmpeg', 'mencoder', or 'mpeg2enc'
+        **kwargs
+            Additional keyword arguments (name=value)
     
     The supported keyword arguments vary by encoding method. See the encoding
     functions for what is available in each.
@@ -117,10 +123,12 @@ def eval_keywords(source, target, **kwargs):
 
     Supported keywords:
     
-        quality:    From 1 (lowest) to 10 (highest) video quality.
-                    Overrides 'quant' and 'vbitrate' keywords.
-        fit:        Size in MiB to fit output video to (overrides 'quality')
-                    Overrides 'quant' and 'vbitrate' keywords.
+        quality
+            From 1 (lowest) to 10 (highest) video quality.
+            Overrides 'quant' and 'vbitrate' keywords.
+        fit
+            Size in MiB to fit output video to (overrides 'quality')
+            Overrides 'quant' and 'vbitrate' keywords.
 
     """
     # Set quant and vbitrate to match desired quality

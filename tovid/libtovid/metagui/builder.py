@@ -44,7 +44,7 @@ from inspect import getargspec
 
 from libtovid.odict import Odict
 from libtovid.metagui import Text, Number, Flag
-from libtovid.metagui.control import CONTROLS
+from control import CONTROLS
 
 ### --------------------------------------------------------------------
 
