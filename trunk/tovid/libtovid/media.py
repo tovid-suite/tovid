@@ -87,13 +87,13 @@ class MediaFile:
         self.aspect = '0:0'
         self.widescreen = False
 
+
     def __str__(self):
-        """Return a string representation of the MediaFile suitable for
-        printing.
+        """Return a string representation of the MediaFile.
         """
         width, height = self.expand or self.scale
         # List of lines of output
-        lines = [\
+        lines = [
             'Filename: %s' % self.filename,
             'Format: %s' % self.format,
             'TVsys: %s' % self.tvsys,
@@ -110,8 +110,10 @@ class MediaFile:
 def standard_media(format, tvsys):
     """Return a MediaFile compliant with a standard format and TV system.
     
-        format:  Standard format ('vcd', 'svcd', or 'dvd')
-        tvsys:   TV system ('pal' or 'ntsc')
+        format
+            Standard format ('vcd', 'svcd', or 'dvd')
+        tvsys
+            TV system ('pal' or 'ntsc')
 
     """
     log.debug("standard_media(%s, %s)" % (format, tvsys))
@@ -141,10 +143,13 @@ def correct_aspect(source, target, aspect='auto'):
     """Calculate the necessary scaling to fit source into target at a given
     aspect ratio, without distorting the picture.
 
-        source:  Input MediaFile
-        target:  Output MediaFile
-        aspect:  Aspect ratio to assume for input file (e.g., '4:3', '16:9')
-                 or 'auto' to use autodetection
+        source
+            Input MediaFile
+        target
+            Output MediaFile
+        aspect
+            Aspect ratio to assume for input file (e.g., '4:3', '16:9')
+            or 'auto' to use autodetection
 
     Return a new target MediaFile with correct scaling, using letterboxing
     if appropriate, and anamorphic widescreen if available.

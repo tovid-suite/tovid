@@ -10,10 +10,9 @@ __all__ = [
     'abitrate',
     'acodec',
     'fps',
-    'fpsratio',
+    'fps_ratio',
     'resolution',
     'samprate',
-    'scaling',
     'vbitrate',
     'vcodec',
 ]
@@ -60,8 +59,8 @@ def vcodec(format):
 
 
 def acodec(format):
-    """Return the audio codec (or codecs) supported by the given format. For
-    example:
+    """Return the audio codec (or codecs) supported by the given format.
+    For example:
     
         >>> acodec('vcd')
         'mp2'
@@ -75,7 +74,8 @@ def acodec(format):
 
 
 def samprate(format):
-    """Return the audio sampling rate used by the given format."""
+    """Return the audio sampling rate used by the given format.
+    """
     if format in ['vcd', 'svcd']:
         return 44100
     else:
@@ -83,8 +83,8 @@ def samprate(format):
     
 
 def fps(tvsys):
-    """Return the number of frames per second for the given TV system. For
-    example:
+    """Return the number of frames per second for the given TV system.
+    For example:
     
         >>> print fps('ntsc')
         29.97
@@ -100,13 +100,13 @@ def fps(tvsys):
     return _fps[tvsys]
 
 
-def fpsratio(tvsys):
-    """Return the number of frames per second for the given TV system, in
-    ratio form. For example:
+def fps_ratio(tvsys):
+    """Return the number of frames per second for the given TV system,
+    in ratio form. For example:
     
-        >>> fpsratio('ntsc')
+        >>> fps_ratio('ntsc')
         '30000:1001'
-        >>> fpsratio('pal')
+        >>> fps_ratio('pal')
         '25:1'
     """
     # Valid frames per second, by TV system
@@ -136,8 +136,7 @@ def vbitrate(format):
 
 def abitrate(format):
     """Return the range (min, max) of valid audio bitrates (in kilobits per
-    second) for the given format. min and max are the same for constant-bitrate
-    formats.
+    second) for the given format. For constant-bitrate formats, min == max.
     """
     if format == 'vcd':
         return (224, 224)

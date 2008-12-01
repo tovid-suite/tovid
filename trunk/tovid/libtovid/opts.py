@@ -37,11 +37,16 @@ class Option (object):
                  required=False):
         """Create a new option definition with the given attributes.
         
-            name:      Option name
-            argformat: String describing format of expected arguments
-            default:   Default value, if any
-            doc:       Manual-page-style documentation of the option
-            alias:     An ('option', 'value') equivalent for this option.
+            name
+                Option name
+            argformat
+                String describing format of expected arguments
+            default
+                Default value, if any
+            doc
+                Manual-page-style documentation of the option
+            alias
+                An ('option', 'value') equivalent for this option
 
         """
         self.name = name
@@ -56,9 +61,11 @@ class Option (object):
         if self.alias:
             self.doc = 'Same as -%s %s.' % alias
 
+
     def num_args(self):
-        """Return the number of arguments expected by this option, or -1 if
-        unlimited."""
+        """Return the number of arguments expected by this option,
+        or -1 if unlimited.
+        """
         # Flag alias for another option
         if self.alias:
             return 0
@@ -71,9 +78,11 @@ class Option (object):
         # Unary: one argument
         else:
             return 1
+
     
     def __str__(self):
-        """Return a string containing "usage notes" for this option."""
+        """Return a string containing "usage notes" for this option.
+"""
         if self.alias:
             usage = "-%s: Same as '-%s %s'\n" % \
                   (self.name, self.alias[0], self.alias[1])
@@ -117,8 +126,10 @@ class Usage (object):
         names = [opt.name for opt in options]
         self.options = Odict(names, options)
 
+
     def __str__(self):
-        """Return string-formatted usage notes."""
+        """Return string-formatted usage notes.
+        """
         result = "Usage: %s\n" % self.usage_string
         result += "Allowed options:\n"
         option_list = ['-' + opt.name for opt in self.options.values()]

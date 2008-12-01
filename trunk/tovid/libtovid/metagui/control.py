@@ -15,7 +15,9 @@ Control subclasses:
     Filename
         Filename selection, with filesystem browse button
     Flag
-        Checkbox for enabling/disabling an option
+        Checkbox for enabling/disabling a flag-type option
+    FlagOpt
+        Flag option, taking an argument when enabled
     Font
         Font name chooser
     Number
@@ -101,6 +103,7 @@ from widget import Widget
 from variable import VAR_TYPES
 from support import DragList, ScrollList, FontChooser
 from support import ensure_type
+import log
 
 ### --------------------------------------------------------------------
 class NotDrawn (Exception):
@@ -218,7 +221,6 @@ class Control (Widget):
                                         var=self.checked)
             self.check.pack(side='left')
 
-
     def toggle(self):
         """Enable or disable the Control when self.check is toggled.
         """
@@ -326,11 +328,14 @@ class Control (Widget):
         return args
 
 
-    def __repr__(self):
-        """Return a Python code representation of this Control.
-        """
-        return "%s('%s', '%s')" % \
-               (self.__class__.__name__, self.label, self.option)
+    #def __repr__(self):
+    #    """Return a Python code representation of this Control.
+    #    """
+    #    return repr(self)
+    #    return "%s('%s', '%s')" % \
+    #           (self.__class__.__name__, self.label, self.option)
+
+    #__str__ = __repr__
 
 
 ### --------------------------------------------------------------------
@@ -585,7 +590,7 @@ class Filename (Control):
         label.pack(side=self.labelside)
         self.entry = tk.Entry(self, textvariable=self.variable)
         self.button = tk.Button(self, text="Browse...", command=self.browse)
-        self.entry.pack(side='left', fill='both', expand=True)
+        self.entry.pack(side='left', fill='x', expand=True)
         self.button.pack(side='left')
         Control.post(self)
 
@@ -866,7 +871,7 @@ class Number (Control):
         """Enable or disable all sub-widgets.
         """
         # Overridden to make Scale widget look disabled
-        Control.enable(self, enabled)
+        Widget.enable(self, enabled)
         if self.style == 'scale':
             if enabled:
                 self.number['fg'] = 'black'
@@ -981,11 +986,12 @@ class List (Control):
         ensure_type("List requires a Control instance", Control, control)
         Control.__init__(self, list, label, option, default, help, **kwargs)
         self.control = control
+        # If edit_only=True, omit add/move/remove features.
+        self.edit_only = False
 
 
-    def draw(self, master, edit_only=False):
+    def draw(self, master):
         """Draw the List and associated Control in the given master.
-        If edit_only=True, omit add/move/remove features.
         """
         Control.draw(self, master)
 
@@ -994,7 +1000,7 @@ class List (Control):
         frame.pack(fill='both', expand=True)
 
         # Scrolled or draggable listbox
-        if edit_only:
+        if self.edit_only:
             self.listbox = ScrollList(frame, self.variable)
         else:
             self.listbox = DragList(frame, self.variable)
@@ -1006,7 +1012,7 @@ class List (Control):
         tool_frame.pack(fill='x')
 
         # Add/remove buttons (not shown for edit_only)
-        if not edit_only:
+        if not self.edit_only:
             add_button = \
                 tk.Button(tool_frame, text="Add", command=self.add)
             remove_button = \
@@ -1115,10 +1121,11 @@ CONTROLS = {
     'Color': Color,
     'Filename': Filename,
     'Flag': Flag,
+    'FlagOpt': FlagOpt,
     'Font': Font,
     'Number': Number,
-    'SpacedText': SpacedText,
     'Text': Text,
+    'SpacedText': SpacedText,
     'List': List,
 }
 

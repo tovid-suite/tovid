@@ -21,6 +21,8 @@ __all__ = [
     'to_unicode',
     'trim',
     'wait',
+    'imagemagick_version',
+    'imagemagick_fonts',
 ]
 
 import os
@@ -119,7 +121,7 @@ def ratio_to_float(ratio):
     elif len(values) == 1:
         return float(values[0])
     else:
-        raise Exception("ratio_to_float: too many values in ratio '%s'" % ratio)
+        raise ValueError("ratio_to_float: too many values in ratio '%s'" % ratio)
 
 
 def float_to_ratio(number):
