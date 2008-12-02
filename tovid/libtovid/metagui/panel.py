@@ -78,7 +78,12 @@ class Panel (Widget):
 
     def draw(self, master, labeled=True, **kwargs):
         """Draw the Panel, but not any contained widgets.
-        If labeled is True, and Panel has a name, use a LabelFrame.
+
+            labeled
+                True to use a LabelFrame with the panel's name
+        
+        Panel subclasses must pack the contained widgets, or
+        call ``draw_widgets`` to pack them.
         """
         Widget.draw(self, master, **kwargs)
         # Get a labeled or unlabeled frame
@@ -93,6 +98,14 @@ class Panel (Widget):
 
     def draw_widgets(self, side='top', expand=False):
         """Draw contained widgets in self.frame.
+
+            side
+                'top' or 'left', to pack widgets on that side
+            expand
+                True to make widgets fill all available space
+
+        Panel subclasses may call this method to pack widgets,
+        or do custom packing (and not call this method).
         """
         for widget in self.widgets:
             widget.draw(self.frame)
