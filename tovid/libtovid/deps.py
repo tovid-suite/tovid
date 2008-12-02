@@ -2,7 +2,7 @@
 # deps.py
 
 """This module is for verifying libtovid's run-time dependencies.
-For example:
+For example::
 
     deps.require(deps.core)
 
@@ -10,7 +10,7 @@ will look for all of tovid's core dependencies. If any cannot be found, the
 missing ones are printed and an exception is raised. Run deps.py from a prompt
 for further examples.
 
-In practice:
+In practice::
 
     try:
         deps.require(deps.core)
@@ -22,16 +22,24 @@ deps.core is an internal dictionary of tovid's core dependencies, where the
 keys are the names, and the values are brief descriptions with URLs.
 
 Provided dependency dictionaries:
-    core      -- grep/sed/md5sum, mplayer, mencoder, mpjpegtools, ffmpeg
-    magick    -- composite, convert
-    dvd       -- spumux, dvdauthor, growisofs
-    vcd       -- vcdxbuild, cdrdao
-    transcode -- tcprobe, tcrequant
-    plugin    -- sox, normalize
-    all       -- ALL dependencies above
+
+    core
+        grep/sed/md5sum, mplayer, mencoder, mpjpegtools, ffmpeg
+    magick
+        composite, convert
+    dvd
+        spumux, dvdauthor, growisofs
+    vcd
+        vcdxbuild, cdrdao
+    transcode
+        tcprobe, tcrequant
+    plugin
+        sox, normalize
+    all
+        ALL dependencies above
     
 If you don't want to use a provided dictionary, you can specify individual
-program names to look for:
+program names to look for::
 
     deps.require("more less cat")
 

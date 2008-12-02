@@ -18,11 +18,18 @@ import mimetypes
 def match_types(containing):
     """Return a list of (type, extensions) tuples for matching mimetypes.
     
-        containing: String or list of strings to match, for example:
-                match_types('image/jpeg')
-            Uses a "contains" search, so you can do:
-                match_types(['image', 'mpeg'])
-            to match any mimetype containing 'image' or 'mpeg'.
+        containing
+            String or list of strings to match
+
+    For example::
+
+        match_types('image/jpeg')
+
+    Uses a "contains" search, so you can do::
+
+        match_types(['image', 'mpeg'])
+
+    to match any mimetype containing 'image' or 'mpeg'.
 
     The returned tuples are suitable for use as the 'filetypes' argument of
     Tkinter file dialogs (askopenfilename etc.).

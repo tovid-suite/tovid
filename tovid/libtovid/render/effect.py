@@ -464,7 +464,7 @@ class KeyFunction (Effect):
     """
     def __init__(self, draw_function, keyframes, method='linear'):
         """Create an effect using the given Drawing function, with values
-        determined by the given list of Keyframes. For example:
+        determined by the given list of Keyframes. For example::
 
             KeyFunction(Drawing.stroke_width,
                         [Keyframe(1, 1), Keyframe(30, 12)])

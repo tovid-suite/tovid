@@ -36,7 +36,7 @@ def encode(source, target, **kw):
             'top' or 'bottom', to do interlaced encoding with
             top or bottom field first
 
-    For example:
+    For example::
     
         ffmpeg_encode(source, target, quant=4, vbitrate=7000)
     """

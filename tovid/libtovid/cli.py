@@ -152,10 +152,10 @@ class Command:
 
     def wait(self):
         """Wait for the command to finish running, and return the result
-        (self.proc.returncode attribute).
+        (``self.proc.returncode`` attribute).
 
-        If a KeyboardInterrupt occurs (user pressed Ctrl-C), the subprocess
-        is killed (and KeyboardInterrupt re-raised).
+        If a ``KeyboardInterrupt`` occurs (user pressed Ctrl-C), the
+        subprocess is killed (and ``KeyboardInterrupt`` re-raised).
         """
         if not isinstance(self.proc, Popen):
             print "**** Can't wait(): Command is not running"
