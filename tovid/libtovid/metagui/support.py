@@ -81,9 +81,12 @@ class ScrollList (tk.Frame):
                  selected=None):
         """Create a ScrollList widget.
 
-            master:   Tkinter widget that will contain the ScrollList
-            items:    ListVar or Python list of items to show in listbox
-            chosen:   Tk StringVar to store currently selected choice in
+            master
+                Tkinter widget that will contain the ScrollList
+            items
+                ListVar or Python list of items to show in listbox
+            chosen
+                Tk StringVar to store currently selected choice in
         """
         tk.Frame.__init__(self, master)
 
@@ -146,6 +149,8 @@ class ScrollList (tk.Frame):
         """Delete values in a given index range (first, last), not including
         last itself. If last is None, delete only the item at first index.
         """
+        if first == last:
+            return
         # Summon callbacks for each item/value about to be deleted
         for index in range(first, last or first+1):
             print("ScrollList.delete: deleting index %d" % index)
@@ -209,7 +214,11 @@ class ScrollList (tk.Frame):
     def set(self, values):
         """Set the list values to those given.
         """
-        self.items.set(values)
+        #self.items.set(values)
+        # Use delete / add so the relevant callbacks are summoned
+        print("Deleting from 0 to %s" % self.items.count())
+        self.delete(0, self.items.count())
+        self.add(*values)
 
 
     def link(self, scrolllist):
@@ -224,9 +233,11 @@ class ScrollList (tk.Frame):
     def callback(self, action, function):
         """Add a callback function for the given action.
 
-            action:   May be 'insert', 'remove', 'select', or 'swap'
-            function: Callback function, taking (index, value) arguments
-                      index is 0-based; passes -1 for the last item
+            action
+                May be 'insert', 'remove', 'select', or 'swap'
+            function
+                Callback function, taking (index, value) arguments
+                index is 0-based; passes -1 for the last item
 
         All callback functions (except 'swap') must take (index, value)
         parameters. The 'swap' callback should accept (index_a, index_b).
@@ -243,6 +254,7 @@ class ScrollList (tk.Frame):
         """Summon callbacks for the given action,
         passing index and item to each.
         """
+        print("summon_callbacks(%s, %s, %s)" % (action, index, item))
         if action not in ['insert', 'remove', 'select', 'swap']:
             raise ValueError("Callback action must be"
                              " 'insert', 'remove', 'select', or 'swap'")
