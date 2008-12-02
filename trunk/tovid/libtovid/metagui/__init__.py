@@ -19,11 +19,11 @@ it easy to create one.
 
 DEFINE CONTROLS
 
-Say, if you have a program that takes input and output filenames:
+Say, if you have a program that takes input and output filenames::
 
     $ tovid -in movie.avi -out movie_encoded
 
-then you can create GUI widgets for those options like this:
+then you can create GUI widgets for those options like this::
 
     Filename('Input filename', '-in')
     Filename('Output prefix', '-out')
@@ -34,25 +34,17 @@ These have the general format:
 
 where:
 
-    Control   is a Control subclass, such as Filename, Choice, or Number,
-              describing what type of value is being controlled;
-    '-option' is a command-line option whose value is set by the Control; and
-    'Label'   is the text that should appear next to the GUI Control.
+    Control
+        is a Control subclass, such as Filename, Choice, or Number,
+        describing what type of value is being controlled;
+    '-option'
+        is a command-line option whose value is set by the Control; and
+    'Label'
+        is the text that should appear next to the GUI Control.
 
 Other parameters include default value, help/tooltip text to show, allowable
 values, and hints about how to draw the GUI control widget; they are specific
-to the flavor of Control being used. Here's a sampling:
-
-    Choice      Multiple-choice values
-    Color       Color selection button
-    Filename    Type or [Browse] a filename
-    Flag        Check box, yes or no
-    Font        Font selection button
-    Number      Number between A and B
-    Text        Plain old text
-    SpacedText  Text with space-separated items
-    List        Multiple Text, Number, Color, or Font items
-    
+to the flavor of Control being used.    
 
 For a full list of available Control subclasses and how to use them,
 see libtovid/metagui/control.py.
@@ -61,7 +53,7 @@ see libtovid/metagui/control.py.
 CREATING THE GUI
 
 Controls can be grouped together either vertically or horizontally (using a
-VPanel or HPanel, respectively):
+VPanel or HPanel, respectively)::
 
     general = VPanel('General',
         Filename('Background audio file', '-bgaudio'),
@@ -75,12 +67,12 @@ for setting menu length to a number between 0 and 120. You can nest panels
 inside one another for grouping; sub-panels have their own label and list of
 Controls or sub-Panels.
 
-Once you have a panel, you can create an Application:
+Once you have a panel, you can create an Application::
 
     app = Application('todisc', [general])
 
 This says your application will run the 'todisc' command-line program,
-passing options set by the 'General' panel. Now, create the GUI:
+passing options set by the 'General' panel. Now, create the GUI::
 
     gui = GUI('MyGUI', [app])
     gui.run()
@@ -94,7 +86,7 @@ CREATE A MULTI-PANEL GUI
 If your program has a lot of options, one panel may not be enough to hold them
 all without looking cluttered, so you may break them down into multiple Panels,
 which will be shown in the GUI as tabs that you can switch between. Create
-Panels like this:
+Panels like this::
 
     thumbs = Panel('Thumbnails',
         Color('Mist color', '-thumb-mist-color', ...),
@@ -105,7 +97,7 @@ Panels like this:
         Number('Menu font size', '-menu-fontsize', ...)
     )
 
-then, create the Application and GUI:
+then, create the Application and GUI::
 
     todisc = Application('todisc', [thumbs, text])
     gui = GUI('MyGUI', [todisc])

@@ -15,7 +15,7 @@ This module provides a class called Drawing, which provides a blank canvas
 that can be painted with vector drawing functions, and later rendered to
 a raster image file (.png, .jpg etc.) at any desired resolution.
 
-To create a new, blank Drawing:
+To create a new, blank Drawing::
 
     >>> d = Drawing(800, 600)          # width, height
 
@@ -28,34 +28,34 @@ Note that you are still doing vector drawing, so whatever size you pick here
 has no bearing on your final target resolution--it's mostly intended for a
 convenient "preview" size while doing interactive drawing.
 
-Back on topic: you can now add shapes to the drawing, fill and stroke them:
+Back on topic: you can now add shapes to the drawing, fill and stroke them::
 
     >>> d.circle(500, 300, 150)        # (x, y, radius)
     >>> d.fill('blue', 0.8)            # color name with optional alpha
     >>> d.stroke('rgb(0, 128, 255)')   # rgb values 0-255
 
-Then add more shapes:
+Then add more shapes::
 
     >>> d.rectangle(25, 25, 320, 240)  # x, y, width, height
     >>> d.fill('rgb(40%, 80%, 10%)')   # rgb percentages
     >>> d.stroke('#FF0080', 0.5)       # rgb hex notation with an alpha
 
-To see what the drawing looks like so far, do:
+To see what the drawing looks like so far, do::
 
     >>> display(d)                     # display at existing size
     >>> display(d, 720, 480)           # display at different size
     >>> display(d, fix_aspect=True)    # display in correct aspect ratio
 
-You may then decide to add more to the drawing:
+You may then decide to add more to the drawing::
 
     >>> d.set_source('white')
     >>> d.text("Dennis", 50, 100)      # text, x, y
 
-And preview again:
+And preview again::
 
     >>> display(d)
 
-Once you finish your beautiful painting, save it as a nice high-res PNG!
+Once you finish your beautiful painting, save it as a nice high-res PNG::
 
     >>> save_png(d, "my.png", 1600, 1200)
     
@@ -197,7 +197,7 @@ class Drawing:
     ### -----------------------------------------------------------------
 
     def affine(self, rot_x, rot_y, scale_x, scale_y, translate_x, translate_y):
-        """Define a 3x3 transformation matrix:
+        """Define a 3x3 transformation matrix::
             
             [ scale_x  rot_y    translate_x ]
             [ rot_x    scale_y  translate_y ]
@@ -237,9 +237,9 @@ class Drawing:
 
     # TODO: Rewrite/cleanup bezier function
     def bezier(self, points, rel=False, close_path=False):
-        """Create a Bézier curve.
+        """Create a Bezier curve.
 
-            points should look like:
+        Points should look like::
             
             points = [[(x0, y0), (x_ctl1, y_ctl1), (x_ctl2, y_ctl2)],
                       [(x0, y0), (x_ctl1, y_ctl1), (x_ctl2, y_ctl2)],
@@ -256,10 +256,11 @@ class Drawing:
         The last line would specify that control points
         are at the same place (x0, y0), drawing straight lines.
 
-            rel -- when this is True, the x_ctl and y_ctl become relatives
-                   to the (x0, y0) points
-            close_path -- set this to True to call cr.close_path() before
-                          stroking.
+            rel
+                when this is True, the x_ctl and y_ctl become relatives
+                to the (x0, y0) points
+            close_path
+                set this to True to call cr.close_path() before stroking.
 
         """
         assert len(points) > 1, "You need at least two points"
@@ -440,11 +441,11 @@ class Drawing:
         height. Return the corresponding cairo.ImageSurface object.
 
             source
-                a .png filename (quicker and alpha present),
-                a cairo.ImageSurface object, which is even better,
-                a file object
-                a filename - any file supported by python-imaging,
-                             a.k.a PIL [1]
+                - a .png filename (quicker and alpha present),
+                - a cairo.ImageSurface object, which is even better,
+                - a file object
+                - a filename - any file supported by python-imaging,
+                  a.k.a PIL [1]
 
         Ref:
           [1] http://www.pythonware.com/library/pil/handbook/formats.htm
@@ -1104,13 +1105,17 @@ def render(drawing, context, width, height):
 def display(drawing, width=None, height=None, fix_aspect=False):
     """Render and display the given Drawing at the given size.
     
-        drawing:    A Drawing object to display
-        width:      Pixel width of displayed image,
-                    or 0 to use the given Drawing's size
-        height:     Pixel height of displayed image,
-                    or 0 to use the given Drawing's size
-        fix_aspect: True to adjust height to make the image
-                    appear in the correct aspect ratio
+        drawing
+            A Drawing object to display
+        width
+            Pixel width of displayed image,
+            or 0 to use the given Drawing's size
+        height
+            Pixel height of displayed image,
+            or 0 to use the given Drawing's size
+        fix_aspect
+            True to adjust height to make the image
+            appear in the correct aspect ratio
     """
     if not width:
         width = drawing.size[0]
@@ -1131,8 +1136,9 @@ def display(drawing, width=None, height=None, fix_aspect=False):
 def write_ppm(drawing, pipe, width, height, workdir=None):
     """Write image as a PPM file to a file-object
 
-      workdir - Unused in this context, just to have parallel parameters
-                with write_png().
+      workdir
+        Unused in this context, just to have parallel parameters
+        with write_png().
 
     Useful to pipe directly in ppmtoy4m and to pipe directly to mpeg2enc.
     """
@@ -1159,7 +1165,9 @@ def write_ppm(drawing, pipe, width, height, workdir=None):
 def write_png(drawing, pipe, width, height, workdir):
     """Write image as a PPM file to a file-object
 
-    Useful to pipe directly in pngtopnm -mix -background=rgb:00/00/00 | ppmtoy4m | mpeg2enc.
+    Useful to pipe directly in::
+
+        pngtopnm -mix -background=rgb:00/00/00 | ppmtoy4m | mpeg2enc.
     """
     # Timing
     start = time.time()
@@ -1182,7 +1190,8 @@ def write_png(drawing, pipe, width, height, workdir):
 def save_png(drawing, filename, width, height):
     """Saves a drawing to PNG, keeping alpha channel intact.
 
-    This is the quickest, since Cairo itself exports directly to .png"""
+    This is the quickest, since Cairo itself exports directly to .png
+    """
     # Timing
     start = time.time()
     if (width, height) == drawing.size:
@@ -1209,7 +1218,8 @@ def save_jpg(drawing, filename, width, height):
 
 
 def save_image(drawing, img_filename, width, height):
-    """Render drawing to a .jpg, .png or other image."""
+    """Render drawing to a .jpg, .png or other image.
+    """
     log.info("Saving Drawing to %s" % img_filename)
     if img_filename.endswith('.png'):
         save_png(drawing, img_filename, width, height)
@@ -1226,7 +1236,8 @@ def save_image(drawing, img_filename, width, height):
 
 
 def save_svg(drawing, filename, width, height):
-    """Render drawing to an SVG file."""
+    """Render drawing to an SVG file.
+    """
     surface = get_surface(width, height, 'svg', filename)
     context = cairo.Context(surface)
     render(drawing, context, width, height)
@@ -1236,7 +1247,8 @@ def save_svg(drawing, filename, width, height):
 
 
 def save_pdf(drawing, filename, width, height):
-    """Render drawing to a PDF file."""
+    """Render drawing to a PDF file.
+    """
     surface = get_surface(width, height, 'pdf', filename)
     context = cairo.Context(surface)
     render(drawing, context, width, height)
@@ -1246,7 +1258,8 @@ def save_pdf(drawing, filename, width, height):
 
 
 def save_ps(drawing, filename, width, height):
-    """Render drawing to a PostScript file."""
+    """Render drawing to a PostScript file.
+    """
     surface = get_surface(width, height, 'ps', filename)
     context = cairo.Context(surface)
     render(drawing, context, width, height)
@@ -1260,7 +1273,8 @@ def save_ps(drawing, filename, width, height):
 ### --------------------------------------------------------------------
 
 def draw_fontsize_demo(drawing):
-    """Draw font size samples on the given drawing."""
+    """Draw font size samples on the given drawing.
+    """
     assert isinstance(drawing, Drawing)
 
     # Save context
@@ -1282,7 +1296,8 @@ def draw_fontsize_demo(drawing):
 
 
 def draw_font_demo(drawing):
-    """Draw samples of different fonts on the given drawing."""
+    """Draw samples of different fonts on the given drawing.
+    """
     assert isinstance(drawing, Drawing)
 
     # Save context
@@ -1321,7 +1336,8 @@ def draw_font_demo(drawing):
 
 
 def draw_shape_demo(drawing):
-    """Draw shape samples on the given drawing."""
+    """Draw shape samples on the given drawing.
+    """
     assert isinstance(drawing, Drawing)
 
     # Save context
@@ -1386,7 +1402,8 @@ def draw_shape_demo(drawing):
 
 
 def draw_stroke_demo(drawing):
-    """Draw a stroke/strokewidth demo on the given drawing."""
+    """Draw a stroke/strokewidth demo on the given drawing.
+    """
     assert isinstance(drawing, Drawing)
 
     # Save context

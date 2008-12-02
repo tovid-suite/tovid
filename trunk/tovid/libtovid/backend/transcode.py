@@ -88,7 +88,7 @@ def rip_frames(media, out_dir, frames='all', size=(0, 0)):
         size
             Resolution of frame images (default: original size), used
             for prescaling
-        Command(
+
     """
     out_dir = os.path.abspath(out_dir)
     if os.path.exists(out_dir):

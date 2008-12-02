@@ -128,12 +128,15 @@ def require(deps,
     """Assert that one or more dependencies exist on the system, raise
     a 'MissingError' exception if not.
     
-        deps:        Names of dependencies to assert. May be a single name,
-                     a python list or space-separated string list of names,
-                     or a dictionary of the form {depname: description}.
-        help:        A help message about why the dependencies are needed
-        description: A short description of the dep, and its homepage URL
-                     (ignored if deps is a dictionary).
+        deps
+            Names of dependencies to assert. May be a single name,
+            a python list or space-separated string list of names,
+            or a dictionary of the form {depname: description}.
+        help
+            A help message about why the dependencies are needed
+        description
+            A short description of the dep, and its homepage URL
+            (ignored if deps is a dictionary).
 
     If a given dependency name is found in one of the internal dictionaries,
     (core, magick, etc.), its description is taken from there.

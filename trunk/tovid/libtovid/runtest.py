@@ -5,13 +5,13 @@
 
 Execute this script to run tests on the modules in libtovid. These tests
 consist of executing each libtovid module standalone; it is presumed that
-each module to be tested contains at least the following:
+each module to be tested contains at least the following::
 
     import unittest
     if __name__ == '__main__':
         unittest.main()
 
-which runs unit tests, or:
+which runs unit tests, or::
 
     import doctest
     if __name__ == '__main__':
@@ -19,7 +19,7 @@ which runs unit tests, or:
 
 which does an automated verification of the docstrings in each module.
 
-NB -- You're going to get lots of output, so a >log.txt is advised.
+NB -- You're going to get lots of output, so a ``> log.txt`` is advised.
 """
 
 import os

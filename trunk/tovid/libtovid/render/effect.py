@@ -7,16 +7,16 @@ of drawings (as in a Flipbook).
 Effect classes are arranged in a (currently) simple hierarchy:
 
     Effect (base class)
-    |-- Movement
-    |   \-- Translate
-    |-- Fade
-    |   \-- FadeInOut
-    |-- Colorfade
-    |-- Spectrum
-    |-- Scale
-    |-- Whirl
-    |-- PhotoZoom
-    \-- KeyFunction
+        Movement
+            Translate
+        Fade
+            FadeInOut
+        Colorfade
+        Spectrum
+        Scale
+        Whirl
+        PhotoZoom
+        KeyFunction
 
 """
 

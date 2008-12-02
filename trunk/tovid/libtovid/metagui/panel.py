@@ -396,7 +396,7 @@ class FlagGroup (Panel):
             kind
                 'normal' for independent Flags, 'exclusive' for
                 mutually-exclusive Flags (more like a Choice)
-            *flags
+            flags
                 One or more Flag controls to include in the group
         
         These keyword arguments are accepted:
@@ -517,7 +517,7 @@ class RelatedList (Panel):
                  filter=lambda x: x,
                  side='left',
                  **kwargs):
-        """Create a 1:1 or 1:* correspondence between two lists.
+        """Create a ``1:1`` or ``1:*`` correspondence between two lists.
 
             name
                 Name of the RelatedList, displayed as a label
@@ -525,7 +525,7 @@ class RelatedList (Panel):
                 Parent List (a Control instance), or the option string
                 of the parent List control declared elsewhere
             correspondence
-                Either '1:1' (one-to-one) or '1:*' (one-to-many)
+                Either ``1:1`` (one-to-one) or ``1:*`` (one-to-many)
             child_list
                 List control for the child
             filter
@@ -533,7 +533,7 @@ class RelatedList (Panel):
             side
                 Pack the parent to the 'left' of child or on 'top' of child
 
-        Examples:
+        Examples::
 
             RelatedList('-files', '1:1',
                 List('Video titles', '-titles', Text()))
