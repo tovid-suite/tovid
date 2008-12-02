@@ -11,7 +11,7 @@ A function is also provided:
         Return a MediaFile profile matching the given format and TV system
 
 These can be used for getting a target MediaFile for encoding via
-one of the backends in libtovid.transcode.encode. For example:
+one of the backends in libtovid.transcode.encode. For example::
 
     >>> dvd = standard_media('dvd', 'ntsc')
     >>> print dvd

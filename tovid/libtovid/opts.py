@@ -19,7 +19,7 @@ class Option (object):
     """A command-line-style option, expected argument formatting, default value,
     and notes on usage and purpose.
     
-    For example:
+    For example::
         
         debug_opt = Option(
             'debug',
@@ -30,7 +30,8 @@ class Option (object):
 
     This defines a 'debug' option, along with a human-readable string showing
     expected argument formatting, a default value, and a string documenting the
-    option's purpose and/or usage information."""
+    option's purpose and/or usage information.
+    """
 
     def __init__(self, name, argformat='', default=None,
                  doc='Undocumented option', alias=None,
@@ -82,7 +83,7 @@ class Option (object):
     
     def __str__(self):
         """Return a string containing "usage notes" for this option.
-"""
+        """
         if self.alias:
             usage = "-%s: Same as '-%s %s'\n" % \
                   (self.name, self.alias[0], self.alias[1])
@@ -103,22 +104,23 @@ class Usage (object):
     def __init__(self, usage_string='program [options]', *options):
         """Define usage of a command-line program.
         
-            usage_string: Command-line syntax and required options
-            *options:     List of allowed Options
+            usage_string
+                Command-line syntax and required options
+            options
+                List of allowed Options
 
-        Examples:
+        Examples::
 
-        usage = Usage('pytovid [options] -in FILENAME -out NAME',
-            Option('in', 'FILENAME', None,
-                "Input video file, in any format."),
-            Option('out', 'NAME', None,
-                "Output prefix or name."),
-            Option('format', 'vcd|svcd|dvd|half-dvd|dvd-vcd', 'dvd',
-                "Make video compliant with the specified format")
-        )
-        
-        print usage
-        print usage.options['format']
+            usage = Usage('pytovid [options] -in FILENAME -out NAME',
+                Option('in', 'FILENAME', None,
+                    "Input video file, in any format."),
+                Option('out', 'NAME', None,
+                    "Output prefix or name."),
+                Option('format', 'vcd|svcd|dvd|half-dvd|dvd-vcd', 'dvd',
+                    "Make video compliant with the specified format")
+            )
+            print usage
+            print usage.options['format']
         
         """
         self.usage_string = usage_string

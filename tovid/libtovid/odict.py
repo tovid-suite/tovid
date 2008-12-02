@@ -108,10 +108,14 @@ def convert_list(choices):
     """Convert a list of choices to an Odict (ordered dictionary).
     choices may be in one of several formats:
 
-               string: 'one|two|three'
-                 list: ['one', 'two', 'three']
-                 dict: {'a': "Choice A", 'b': "Choice B"}
-        list-of-lists: [['a', "Choice A"], ['b', "Choice B"], ..]
+        string
+            'one|two|three'
+        list
+            ['one', 'two', 'three']
+        dict
+            {'a': "Choice A", 'b': "Choice B"}
+        list-of-lists
+            [['a', "Choice A"], ['b', "Choice B"], ..]
     
     Note: the dict form does not preserve order. Use list-of-lists
     to maintain the specified order.
