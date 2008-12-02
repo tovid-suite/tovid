@@ -22,7 +22,7 @@ DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
 
 ### --------------------------------------------------------------------
 from ScrolledText import ScrolledText
-from tkFileDialog import asksaveasfilename
+from tkFileDialog import asksaveasfilename, askopenfilename
 from subprocess import PIPE
 
 class Executor (Widget):
@@ -193,6 +193,7 @@ class Executor (Widget):
 import tkMessageBox
 import tempfile
 from libtovid.metagui.control import Control
+import shlex
 
 class Application (Widget):
     """Graphical frontend for a command-line program
@@ -246,11 +247,14 @@ class Application (Widget):
                                command=self.execute)
         save_button = tk.Button(self.toolbar, text="Save script",
                                 command=self.save_script)
+        load_button = tk.Button(self.toolbar, text="Load script",
+                                command=self.load_script)
         exit_button = tk.Button(self.toolbar, text="Exit",
                                 command=exit_function)
         # Pack the buttons
         config_button.pack(anchor='w', side='left', fill='x')
         save_button.pack(anchor='w', side='left', fill='x')
+        load_button.pack(anchor='w', side='left', fill='x')
         run_button.pack(anchor='w', side='left', fill='x', expand=True)
         exit_button.pack(anchor='e', side='right', fill='x')
         # Pack the toolbar
@@ -304,6 +308,54 @@ class Application (Widget):
             outfile.close()
             tkMessageBox.showinfo(title="Script saved",
                                   message="Saved '%s'" % filename)
+
+
+    def load_script(self):
+        """Load current Control settings from a text file.
+        """
+        filename = askopenfilename(parent=self,
+            title="Select a shell script or text file to load")
+        if filename:
+            # Read nonempty, non-comment lines from the given file
+            infile = open(filename, 'r')
+            lines = [line.strip() for line in infile.readlines()
+                     if line.strip()
+                     and not line.strip().startswith('#')]
+            infile.close()
+            # Join backslash-escaped lines to form the complete command
+            command = ''
+            for line in lines:
+                if line.endswith('\\'):
+                    command += line.rstrip('\\')
+            # Parse the command to find options matching Controls in the GUI
+            options = Control.all.keys()
+            tokens = shlex.split(command)
+            program = tokens.pop(0)
+            if program != self.program:
+                print("This script runs '%s', expected '%s'" % 
+                      (program, self.program))
+            control = None
+            while tokens:
+                tok = tokens.pop(0)
+                if tok in options:
+                    print("Found option: %s" % tok)
+                    control = Control.by_option(tok)
+                    if control.vartype == bool:
+                        print("Setting flag to True")
+                        control.set(True)
+                    elif control.vartype == list:
+                        items = []
+                        while tokens and not tokens[0].startswith('-'):
+                            items.append(tokens.pop(0))
+                        print("Setting list to: %s" % items)
+                        control.set(items)
+                    elif control.vartype in (int, float, str):
+                        value = tokens.pop(0)
+                        print("Setting value to: %s" % value)
+                        control.set(control.vartype(value))
+                else:
+                    print("Unrecognized token: %s" % tok)
+            print("Done reading '%s'" % filename)
 
 
     def expect(self, arg_parts):
