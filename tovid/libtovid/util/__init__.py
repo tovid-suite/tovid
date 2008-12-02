@@ -109,7 +109,7 @@ def ratio_to_float(ratio):
     """Convert a string expressing a numeric ratio, with X and Y parts
     separated by a colon ':', into a decimal number.
 
-    For example:
+    For example::
 
         >>> ratio_to_float('4:3')
         1.33333

@@ -21,7 +21,7 @@ import doctest
 
 def resolution(format, tvsys):
     """Return the pixel resolution (x,y) for the given format and TV system.
-    For example:
+    For example::
 
         >>> resolution('dvd', 'pal')
         (720, 576)
@@ -45,7 +45,7 @@ def resolution(format, tvsys):
 
 
 def vcodec(format):
-    """Return the video codec used by the given format. For example:
+    """Return the video codec used by the given format. For example::
     
         >>> vcodec('vcd')
         'mpeg1'
@@ -60,7 +60,7 @@ def vcodec(format):
 
 def acodec(format):
     """Return the audio codec (or codecs) supported by the given format.
-    For example:
+    For example::
     
         >>> acodec('vcd')
         'mp2'
@@ -84,7 +84,7 @@ def samprate(format):
 
 def fps(tvsys):
     """Return the number of frames per second for the given TV system.
-    For example:
+    For example::
     
         >>> print fps('ntsc')
         29.97
@@ -102,7 +102,7 @@ def fps(tvsys):
 
 def fps_ratio(tvsys):
     """Return the number of frames per second for the given TV system,
-    in ratio form. For example:
+    in ratio form. For example::
     
         >>> fps_ratio('ntsc')
         '30000:1001'
