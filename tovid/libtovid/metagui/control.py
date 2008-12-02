@@ -138,7 +138,7 @@ class Control (Widget):
         if option != '' and option in Control.all:
             return Control.all[option]
         else:
-            raise ValueError("No Control exists fot option: '%s'" % option)
+            raise ValueError("No Control exists for option: '%s'" % option)
 
 
     def __init__(self,
@@ -190,6 +190,8 @@ class Control (Widget):
 
         # Add self to all
         if self.option != '':
+            if self.option in Control.all:
+                print("Redefining option: '%s'" % self.option)
             Control.all[self.option] = self
 
 
