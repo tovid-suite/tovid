@@ -226,6 +226,7 @@ class Control (Widget):
                                         var=self.checked)
             self.check.pack(side='left')
 
+
     def toggle(self):
         """Enable or disable the Control when self.check is toggled.
         """
@@ -1036,6 +1037,12 @@ class List (Control):
         def _modify(name, index, mode):
             self.modify()
         self.control.variable.trace_variable('w', _modify)
+
+
+    def set(self, value_list):
+        """Set all list values.
+        """
+        self.listbox.set(value_list)
 
 
     def modify(self):
