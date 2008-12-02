@@ -332,7 +332,7 @@ class ComboBox (tk.Frame):
 
         # Text and button
         # Fit to width of longest choice
-        _width = max([len(c) for c in self.choices.get()])
+        _width = max([len(str(c)) for c in self.choices.get()])
         self.text = tk.Entry(self, textvariable=self.variable, width=_width)
         self.text.pack(side='left', expand=True, fill='both')
         self.button = tk.Button(self, text="...", command=self.open)
@@ -353,7 +353,7 @@ class ComboBox (tk.Frame):
         #for index in range(0, len(self.choices), 2):
         #    self.chooser.itemconfig(index, bg='LightGray')
         self.chooser.bind('<Button-1>', self.choose)
-        self.bind_all('<Button>', self.close, '+')
+        #self.bind_all('<Button>', self.close, '+')
         self.chooser.bind('<Motion>', self.highlight)
         self.chooser.grid()
 
@@ -380,6 +380,7 @@ class ComboBox (tk.Frame):
         """
         if self.dropdown.winfo_viewable():
             self.dropdown.withdraw()
+        #self.dropdown.withdraw()
 
 
     def highlight(self, event=None):
