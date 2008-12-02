@@ -333,15 +333,13 @@ class Control (Widget):
             args.append(value)
         return args
 
+    def __repr__(self):
+        """Return a Python code representation of this Control.
+        """
+        return "%s('%s', '%s')" % \
+               (self.__class__.__name__, self.label, self.option)
 
-    #def __repr__(self):
-    #    """Return a Python code representation of this Control.
-    #    """
-    #    return repr(self)
-    #    return "%s('%s', '%s')" % \
-    #           (self.__class__.__name__, self.label, self.option)
-
-    #__str__ = __repr__
+    __str__ = __repr__
 
 
 ### --------------------------------------------------------------------

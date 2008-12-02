@@ -815,7 +815,7 @@ class Drawing:
                 An offset into the dash pattern at which the stroke
                 should start
         
-        For example:
+        For example::
         
             >>> stroke_dash([5.0, 3.0])
 
