@@ -190,9 +190,12 @@ class Control (Widget):
 
         # Add self to all
         if self.option != '':
+            # TODO: Handle multiple Controls with same option
+            # (for now, just ignore all but the first one)
             if self.option in Control.all:
-                print("Redefining option: '%s'" % self.option)
-            Control.all[self.option] = self
+                pass
+            else:
+                Control.all[self.option] = self
 
 
     def draw(self, master):
