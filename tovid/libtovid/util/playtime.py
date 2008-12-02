@@ -74,10 +74,14 @@ class AVstream:
         AVstream.bitrate.GiBph -- Gibibytes per hour
     
     There are four attributes:
-        play_length -- the length of the video in minutes
-        final_size -- the size of the video in MiB
-        bitrate -- the bitrate of the video
-        fixed_param -- the fixed characteristic
+        play_length
+            the length of the video in minutes
+        final_size
+            the size of the video in MiB
+        bitrate
+            the bitrate of the video
+        fixed_param
+            the fixed characteristic
     
     Each of these attributes have a 'set_NAME' method that should be used
     to make changes so that the other attributes are updated automatically.
@@ -86,9 +90,10 @@ class AVstream:
     def __init__(self, play_length=120.0, final_size=4400.0):
         """Create a new AVstream object
         
-        Keyword args:
-        [opt] play_length -- the length in minutes (default = 120.0)
-        [opt] final_size -- the final size in MiB (default = 4400.0)
+            play_length
+                the length in minutes (default = 120.0)
+            final_size
+                the final size in MiB (default = 4400.0)
         
         """
         self.play_length = play_length
@@ -100,12 +105,13 @@ class AVstream:
         """Set the bitrate for the stream and recalculate the variables
         according to the fixed parameter.
         
-        Keyword args:
-        bitrate: number (integer or float ok)
-        units: the units that the bitrate is in. Valid unit arguments are
-            kbps (kilobits per second)
-            MiBpm (Mibibytes per minute)
-            GiBph (Gibibytes per hour)
+            bitrate
+                number (integer or float ok)
+            units
+                the units that the bitrate is in. Valid unit arguments are
+                kbps (kilobits per second)
+                MiBpm (Mibibytes per minute)
+                GiBph (Gibibytes per hour)
         
         """
         self.bitrate.set(bitrate, units)
@@ -136,8 +142,8 @@ class AVstream:
         """Set the final size in MiB (Mebibytes) and recalculate variables
         according to the fixed parameter.
         
-        Keyword args:
-        final_size -- how large the final size can/should be (MiB)
+            final_size
+                how large the final size can/should be (MiB)
         
         """
         self.final_size = final_size
@@ -151,11 +157,11 @@ class AVstream:
     def set_fixed_param(self, param):
         """Set the fixed parameter of the AVstream object.
         
-        Keyword args:
-        param -- the parameter to fix. Valid arguments are
-            RATE (the bitrate of the AVstream)
-            LENGTH (the play length of the AVstream)
-            SIZE (the final size of the AVstream)
+            param
+                the parameter to fix. Valid arguments are
+                RATE (the bitrate of the AVstream)
+                LENGTH (the play length of the AVstream)
+                SIZE (the final size of the AVstream)
         
         """
         valid_params = ["RATE", "SIZE", "LENGTH"]
@@ -207,13 +213,18 @@ class Bitrate:
     def __init__(self, bitrate, unit='kbps'):
         """Create a new Bitrate object
         
-        Keyword args:
-        bitrate: the bitrate (int or float ok)
-        [opt] units: a string for units that bitrate is in (default: kbps). 
-            Valid arguments are
-                kbps (kilobits per second)
-                MiBpm (Mibibytes per minute)
-                GiBph (Gibibytes per hour)
+            bitrate
+                the bitrate (int or float ok)
+            units
+                a string for units that bitrate is in (default: kbps).
+                Valid arguments are:
+
+                kbps
+                    kilobits per second
+                MiBpm
+                    Mibibytes per minute
+                GiBph
+                    Gibibytes per hour
         
         """
         self.set(bitrate, unit)
@@ -221,12 +232,17 @@ class Bitrate:
     def set(self, bitrate, unit):
         """Set the bitrate in 'unit' units.
         
-        Keyword args:
-        bitrate: new bitrate (integer or float ok)
-        units: string for units that bitrate is in. Valid arguments are
-            kbps (kilobits per second)
-            MiBpm (Mibibytes per minute)
-            GiBph (Gibibytes per hour)
+            bitrate
+                new bitrate (integer or float ok)
+            units
+                string for units that bitrate is in. Valid arguments are:
+
+                kbps
+                    kilobits per second
+                MiBpm
+                    Mibibytes per minute
+                GiBph
+                    Gibibytes per hour
         
         Once set with a given bitrate and unit, the other remaining
         bitrates are automatically calculated.

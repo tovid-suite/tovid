@@ -271,9 +271,12 @@ class DragList (ScrollList):
                  selected=None):
         """Create a DragList widget.
 
-            master:   Tkinter widget that will contain the DragList
-            items:    ListVar or Python list of items to show in listbox
-            selected: Tk StringVar to store currently selected list item
+            master
+                Tkinter widget that will contain the DragList
+            items
+                ListVar or Python list of items to show in listbox
+            selected
+                Tk StringVar to store currently selected list item
         """
         ScrollList.__init__(self, master, items, selected)
         # Add bindings for drag/drop
@@ -317,10 +320,14 @@ class ComboBox (tk.Frame):
                  variable=None, command=None):
         """Create a ComboBox.
 
-            master:     Tk Widget that will contain the ComboBox
-            choices:    ListVar or Python list of available choices
-            variable:   Tk StringVar to store currently selected choice in
-            command:    Function to call when an item in the list is selected
+            master
+                Tk Widget that will contain the ComboBox
+            choices
+                ListVar or Python list of available choices
+            variable
+                Tk StringVar to store currently selected choice in
+            command
+                Function to call when an item in the list is selected
         """
         tk.Frame.__init__(self, master)
         if type(choices) == list:
@@ -353,7 +360,7 @@ class ComboBox (tk.Frame):
         #for index in range(0, len(self.choices), 2):
         #    self.chooser.itemconfig(index, bg='LightGray')
         self.chooser.bind('<Button-1>', self.choose)
-        #self.bind_all('<Button>', self.close, '+')
+        self.bind_all('<Button>', self.close)
         self.chooser.bind('<Motion>', self.highlight)
         self.chooser.grid()
 
@@ -557,7 +564,8 @@ class ConfigWindow (tkSimpleDialog.Dialog):
     def __init__(self, master=None, style=None):
         """Create and display a configuration window.
 
-            inifile:  An .ini-style file to load/save settings from
+            inifile
+                An .ini-style file to load/save settings from
         """
         self.style = style or Style()
         tkSimpleDialog.Dialog.__init__(self, master, "Configuration")

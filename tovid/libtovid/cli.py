@@ -4,8 +4,10 @@
 """This module provides an interface for running command-line applications.
 Two primary classes are provided:
 
-    Command:  For constructing and executing command-line commands
-    Pipe:     For piping commands together
+    Command
+        For constructing and executing command-line commands
+    Pipe
+        For piping commands together
     
 Commands are constructed by specifying a program to run, and each separate
 argument to pass to that program. Arguments are used in a platform-independent
@@ -15,20 +17,20 @@ of arguments.
 Commands may be executed in the foreground or background; they can print their
 output on standard output, or capture it in a string variable.
 
-For example:
+For example::
 
     >>> echo = Command('echo', "Hello world")
     >>> echo.run()                                # doctest: +SKIP
     Hello world
 
-Commands may be connected together with pipes:
+Commands may be connected together with pipes::
 
     >>> sed = Command('sed', 's/world/nurse/')
     >>> pipe = Pipe(echo, sed)
     >>> pipe.run()                                # doctest: +SKIP
     Hello nurse
 
-Command output may be captured and retrieved later with get_output():
+Command output may be captured and retrieved later with get_output()::
 
     >>> echo.run(capture=True)
     >>> echo.get_output()
@@ -62,7 +64,7 @@ class Command:
             args
                 Individual arguments to supply the command with
         
-        For example:
+        For example::
         
             >>> cmd = Command('echo', 'Hello world')
             
@@ -127,7 +129,7 @@ class Command:
         That is, if stdout=None, the command's standard output is printed.
         
         This function is used internally by run(); if you need to do stream
-        redirection (ex. `spumux < menu.mpg > menu_subs.mpg`), use this
+        redirection (ex. ``spumux < menu.mpg > menu_subs.mpg``), use this
         function instead of run(), and call wait() afterwards if needed.
         """
         print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"

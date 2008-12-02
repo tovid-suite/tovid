@@ -61,7 +61,7 @@ Or tovid-batch, where -infiles is an option, but must come last:
 
     expected = '[options] -infiles'
 
-Q. How does '[options]' include everything _but_ -infiles?
+How does '[options]' include everything _but_ -infiles?
 
 Focus on getting most of the tovid scripts metagui-ized, then go from there.
 
@@ -169,7 +169,7 @@ class Control (Widget):
             labelside
                 Position of label ('left' or 'top'). It's up to the
                 derived Control class to use this appropriately.
-            **kwargs: Keyword arguments of the form key1=arg1, key2=arg2
+            kwargs: Keyword arguments of the form key1=arg1, key2=arg2
         
         """
         Widget.__init__(self, label)

@@ -22,7 +22,7 @@ def encode(source, target, **kw):
             Input MediaFile
         target
             Output MediaFile
-        **kw
+        kw
             Keyword arguments to customize encoding behavior
     
     Supported keywords:

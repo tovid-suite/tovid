@@ -3,23 +3,23 @@
 
 """Encode video to standard formats, using one of several supported backends.
 
-One high-level function is provided:
+One high-level function is provided::
 
     encode(infile, outfile, format, tvsys, method, ...)
 
-where "..." is optional keyword arguments (described below). For example:
+where "..." is optional keyword arguments (described below). For example::
 
     encode('/video/foo.avi', '/video/bar.mpg', 'dvd', 'ntsc', 'ffmpeg')
 
 This will encode '/video/foo.avi' to NTSC DVD format using ffmpeg, saving
 the result as '/video/bar.mpg'. The ``format``, ``tvsys``, and ``method``
-arguments are optional; if you do:
+arguments are optional; if you do::
 
     encode('/video/foo.avi', '/video/bar.mpg')
 
 then encoding will be DVD NTSC, using ffmpeg.
 
-Keyword arguments may be used to further refine encoding behavior, for example:
+Keyword arguments may be used to further refine encoding behavior, for example::
 
     encode('foo.avi', 'foo.mpg', 'dvd', 'pal',
            quality=7, interlace='bottom', ...)
@@ -67,7 +67,7 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
             One of 'ntsc', 'pal' (case-insensitive)
         method
             Encoding backend: 'ffmpeg', 'mencoder', or 'mpeg2enc'
-        **kwargs
+        kwargs
             Additional keyword arguments (name=value)
     
     The supported keyword arguments vary by encoding method. See the encoding
@@ -146,9 +146,12 @@ def eval_keywords(source, target, **kwargs):
 def _fit(source, target, fit_size):
     """Return video (quantization, bitrate) to fit a video into a given size.
     
-        source:   MediaFile input (the video being encoded)
-        target:   MediaFile output (desired target profile)
-        fit_size: Desired encoded file size, in MiB
+        source
+            MediaFile input (the video being encoded)
+        target
+            MediaFile output (desired target profile)
+        fit_size
+            Desired encoded file size, in MiB
 
     """
     assert isinstance(source, MediaFile)

@@ -70,7 +70,7 @@ import math
 
 class Keyframe:
     """Associates a specific frame in an animation with a numeric value.
-    A Keyframe is a (frame, data) pair defining a "control point" on a graph:
+    A Keyframe is a (frame, data) pair defining a "control point" on a graph::
     
             100 |
                 |       Keyframe(10, 50)
@@ -80,7 +80,7 @@ class Keyframe:
                 1     10     20     30
                         frame
     
-    The data can represent anything you like. For instance, opacity:
+    The data can represent anything you like. For instance, opacity::
     
             100 |* Keyframe(1, 100)
                 |       
@@ -147,12 +147,12 @@ def interpolate(frame, left, right, method):
     
     The left and right Keyframes mark the endpoints of the curve to be
     interpolated. For example, if a value changes from 50 to 80 over the
-    course of frames 1 to 30:
+    course of frames 1 to 30::
 
         >>> left = Keyframe(1, 50)
         >>> right = Keyframe(30, 80)
     
-    Then, the value at frame 10 can be interpolated as follows:
+    Then, the value at frame 10 can be interpolated as follows::
     
         >>> interpolate(10, left, right, 'linear')
         59
@@ -160,7 +160,7 @@ def interpolate(frame, left, right, method):
         56.582194019564263
 
     For frames outside the keyframe interval, the corresponding endpoint value
-    is returned:
+    is returned::
     
         >>> interpolate(0, left, right, 'linear')
         50
@@ -204,21 +204,21 @@ class Tween:
     """An "in-between" sequence, calculated by interpolating the data in a
     list of keyframes according to a given interpolation method.
     
-    First, define some keyframes:
+    First, define some keyframes::
     
         >>> keyframes = [Keyframe(1, 1), Keyframe(10, 25)]
     
     At frame 1, the value is 1; at frame 10, the value is 25. To get an
-    interpolation of the data between these two keyframes, use:
+    interpolation of the data between these two keyframes, use::
     
         >>> tween = Tween(keyframes)
 
-    Now, retrieve the interpolated data all at once:
+    Now, retrieve the interpolated data all at once::
     
         >>> tween.data
         [1, 3, 6, 9, 11, 14, 17, 19, 22, 25]
     
-    Or by using array notation, indexed by frame number:
+    Or by using array notation, indexed by frame number::
     
         >>> tween[3]
         6
@@ -275,7 +275,7 @@ class Tween:
 
     def __getitem__(self, frame):
         """Return the interpolated data at the given frame. This allows
-        accessing a tweened value with subscripting by frame number:
+        accessing a tweened value with subscripting by frame number::
         
             >>> keys = [Keyframe(1, 1), Keyframe(30, 50)]
             >>> tween = Tween(keys)
@@ -287,7 +287,7 @@ class Tween:
             34
 
         Frame numbers outside the keyframed region have the same values as
-        those at the corresponding endpoints:
+        those at the corresponding endpoints::
         
             >>> tween[0]
             1
