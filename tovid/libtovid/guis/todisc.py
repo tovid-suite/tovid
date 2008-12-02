@@ -616,11 +616,6 @@ _loop = FlagOpt('Menu looping (pause)', '-loop', False,
     'chosen.  Use -1 to disable looping',
     Number('', '', '', '', -1, 30, 'secs'))
 
-_pause = Flag('Pause indefinately', '-loop', False,
-    'Disable looping.  Pause at end of menu waiting for user interaction. '
-    'This will also disable the fadeout portion when you use "Menu fade" on '
-    'the "Main menu" tab')
-
 _chain_videos = FlagOpt('Chain videos', '-chain-videos', False,
     'This option will "chain" videos so they play '
     'sequentially until the last, which will return to '
