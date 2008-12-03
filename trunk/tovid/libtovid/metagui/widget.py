@@ -13,7 +13,7 @@ import time
 class Widget (tk.Frame):
     """Generic metagui widget, suitable for Controls, Panels, etc.
     """
-    def __init__(self, name=''):
+    def __init__(self, name='', **kwargs):
         """Create a Widget.
         
             name
@@ -27,7 +27,7 @@ class Widget (tk.Frame):
         self.is_drawn = False
 
 
-    def draw(self, master):
+    def draw(self, master, **kwargs):
         """Initialize the base tk.Frame class.
         """
         tk.Frame.__init__(self, master)

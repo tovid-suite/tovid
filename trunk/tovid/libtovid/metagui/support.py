@@ -18,7 +18,7 @@ __all__ = [
     'Style',
 ]
 
-import os
+import os, sys, traceback, math
 import Tkinter as tk
 import tkSimpleDialog
 from variable import ListVar
@@ -26,9 +26,6 @@ from variable import ListVar
 ### --------------------------------------------------------------------
 ### Supporting functions
 ### --------------------------------------------------------------------
-
-import sys
-import traceback
 
 def exit_with_traceback(error_message):
     """Exit with a traceback, and print a custom error message.
@@ -38,9 +35,9 @@ def exit_with_traceback(error_message):
     traceback.print_stack()
     filename, lineno, foo, code = last_error
     
-    print "Error on line %(lineno)s of %(filename)s:" % vars()
-    print "    " + str(code)
-    print error_message
+    print("Error on line %(lineno)s of %(filename)s:" % vars())
+    print("    %s" % code)
+    print(error_message)
     sys.exit(1)
 
 
@@ -54,7 +51,6 @@ def ensure_type(message, required_type, *objects):
                          (required_type, type(obj))
             exit_with_traceback(type_message + '\n' + message)
 
-import math
 
 def divide_list(items, pieces):
     """Divide a list of things into several pieces, of roughly equal size.
@@ -121,10 +117,10 @@ class ScrollList (tk.Frame):
     def scroll(self, *args):
         """Event handler when the list is scrolled.
         """
-        apply(self.listbox.yview, args)
+        self.listbox.yview(*args)
         # Scroll in the linked list also
         if self.linked:
-            apply(self.linked.listbox.yview, args)
+            self.linked.listbox.yview(*args)
 
 
     def add(self, *values):
@@ -153,7 +149,6 @@ class ScrollList (tk.Frame):
             return
         # Summon callbacks for each item/value about to be deleted
         for index in range(first, last or first+1):
-            print("ScrollList.delete: deleting index %d" % index)
             value = self.items[index]
             self.summon_callbacks('remove', index, value)
         # Delete items from the listbox
@@ -216,7 +211,6 @@ class ScrollList (tk.Frame):
         """
         #self.items.set(values)
         # Use delete / add so the relevant callbacks are summoned
-        print("Deleting from 0 to %s" % self.items.count())
         self.delete(0, self.items.count())
         self.add(*values)
 
@@ -254,7 +248,6 @@ class ScrollList (tk.Frame):
         """Summon callbacks for the given action,
         passing index and item to each.
         """
-        print("summon_callbacks(%s, %s, %s)" % (action, index, item))
         if action not in ['insert', 'remove', 'select', 'swap']:
             raise ValueError("Callback action must be"
                              " 'insert', 'remove', 'select', or 'swap'")
@@ -266,7 +259,8 @@ class ScrollList (tk.Frame):
 ### --------------------------------------------------------------------
 
 class DragList (ScrollList):
-    """A scrollable listbox with drag-and-drop support"""
+    """A scrollable listbox with drag-and-drop support.
+    """
     def __init__(self, master=None, items=None,
                  selected=None):
         """Create a DragList widget.
@@ -414,13 +408,18 @@ from libtovid.util import imagemagick_fonts
 from libtovid import cli
 import base64
 
+
 class FontChooser (tkSimpleDialog.Dialog):
-    """A widget for choosing a font"""
+    """A widget for choosing a font.
+    """
     # Cache of PhotoImage previews, indexed by font name
     _cache = {}
 
     def __init__(self, master=None):
         tkSimpleDialog.Dialog.__init__(self, master, "Font chooser")
+        # Defined in body()
+        self.fontlist = None
+        self.preview = None
 
 
     def body(self, master):
@@ -457,13 +456,13 @@ class FontChooser (tkSimpleDialog.Dialog):
         """
         # Cache a PhotoImage for this font name
         if fontname not in self._cache:
-            self._cache[fontname] = self.render(fontname)
+            self._cache[fontname] = self.render_font(fontname)
         # Get the PhotoImage from the cache
         photo_image = self._cache[fontname]
         self.preview.configure(image=photo_image, height=photo_image.height())
 
 
-    def render(self, fontname):
+    def render_font(self, fontname):
         """Return a tk.PhotoImage preview of the given font.
         """
         cmd = cli.Command('convert')
@@ -476,11 +475,13 @@ class FontChooser (tkSimpleDialog.Dialog):
         image_data = cmd.get_output()
         return tk.PhotoImage(data=base64.b64encode(image_data))
 
+
 ### --------------------------------------------------------------------
 from ConfigParser import ConfigParser
 
 class Style:
-    """Generic widget style definitions."""
+    """Generic widget style definitions.
+    """
     def __init__(self,
                  bgcolor='white',
                  fgcolor='grey',
@@ -495,7 +496,8 @@ class Style:
 
 
     def apply(self, root):
-        """Apply the current style to the given Tkinter root window."""
+        """Apply the current style to the given Tkinter root window.
+        """
         assert isinstance(root, tk.Tk)
         root.option_clear()
         # Font
@@ -569,6 +571,10 @@ class ConfigWindow (tkSimpleDialog.Dialog):
         """
         self.style = style or Style()
         tkSimpleDialog.Dialog.__init__(self, master, "Configuration")
+        # Defined in body()
+        self.fontfamily = None
+        self.fontsize = None
+        self.fontstyle = None
 
 
     def body(self, master):

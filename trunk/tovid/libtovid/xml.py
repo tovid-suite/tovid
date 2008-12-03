@@ -5,23 +5,23 @@
 element hierarchies.
 
 To create a new element, use the Element class constructor, providing at least
-the element name:
+the element name::
 
     >>> video = Element('video')
 
-To see an XML representation of the Element:
+To see an XML representation of the Element::
 
     >>> print video
     <video></video>
 
 Since this is an empty element with no attributes yet, it's pretty boring.
-You can add or change attributes using the set method:
+You can add or change attributes using the set method::
 
     >>> video.set(file="Brian.mpg")
     >>> print video
     <video file="Brian.mpg"></video>
 
-To add children to an element, use the add method:
+To add children to an element, use the add method::
 
     >>> length = video.add('length', '15')
     >>> print video

@@ -8,15 +8,17 @@
 """Relate a video's bitrate, size, and play time
 
 A video file (a/v stream) has three related characteristics:
-  1. Play length
-  2. Final output size
-  3. Encoded (average) bitrate
-These are related by their units: bitrate = size / length. This module
+
+    - Play length
+    - Final output size
+    - Encoded (average) bitrate
+
+These are related by their units: ``bitrate = size / length``. This module
 provides ways to calculate these values. 
 
 You can predict/calculate any one of these characteristics given the
 other two. By default, a new AVstream object assumes you want to find
-the average bitrate from a known play length and final size:
+the average bitrate from a known play length and final size::
 
     >>> avs = playtime.AVstream()
     >>> avs.play_length
@@ -33,14 +35,14 @@ the average bitrate from a known play length and final size:
 Usually when putting video on a disc, the final output size is well
 defined and non-changing. By default, AVstream fixes this characteristic so
 that you can see how the bitrate changes for different amounts of time on 
-that disc:
+that disc::
 
     >>> avs.set_play_length(180)
     >>> avs.bitrate.kbps
     3417.5810370370368
 
 However, if you know the video is a certain length, you can fix that instead
-and find how bitrates change according to different output sizes:
+and find how bitrates change according to different output sizes::
 
     >>> avs.set_fixed_param('LENGTH')
     >>> avs.set_final_size(2000)
@@ -48,7 +50,7 @@ and find how bitrates change according to different output sizes:
     1537.9114666666667
 
 Finally, you're not limited to finding bitrates. You can fix the bitrate and
-see how output size and play length are related:
+see how output size and play length are related::
 
     >>> avs.set_bitrate(1152, 'kbps')
     >>> avs.set_fixed_param('RATE')
@@ -69,9 +71,10 @@ class AVstream:
     and this is what AVstream does by default.
     
     Once instantiated, the bitrate can be accessed in three different units:
-        AVstream.bitrate.kbps -- kilobits per second (conventional)
-        AVstream.bitrate.MiBpm -- Mibibytes per minute
-        AVstream.bitrate.GiBph -- Gibibytes per hour
+
+        - AVstream.bitrate.kbps -- kilobits per second (conventional)
+        - AVstream.bitrate.MiBpm -- Mibibytes per minute
+        - AVstream.bitrate.GiBph -- Gibibytes per hour
     
     There are four attributes:
         play_length
@@ -109,10 +112,8 @@ class AVstream:
                 number (integer or float ok)
             units
                 the units that the bitrate is in. Valid unit arguments are
-                kbps (kilobits per second)
-                MiBpm (Mibibytes per minute)
-                GiBph (Gibibytes per hour)
-        
+                'kbps', 'MiBpm', or 'GiBph'
+       
         """
         self.bitrate.set(bitrate, units)
         if self.fixed_param == "RATE":
@@ -126,8 +127,8 @@ class AVstream:
         """Set the play length in minutes and recalculate variables according
         to the fixed parameter.
         
-        Keyword args:
-        play_length -- how long the video is (minutes)
+            play_length
+                how long the video is (minutes)
         
         """
         self.play_length = play_length
@@ -158,10 +159,10 @@ class AVstream:
         """Set the fixed parameter of the AVstream object.
         
             param
-                the parameter to fix. Valid arguments are
-                RATE (the bitrate of the AVstream)
-                LENGTH (the play length of the AVstream)
-                SIZE (the final size of the AVstream)
+                The parameter to fix. Valid arguments are:
+                - RATE (the bitrate of the AVstream)
+                - LENGTH (the play length of the AVstream)
+                - SIZE (the final size of the AVstream)
         
         """
         valid_params = ["RATE", "SIZE", "LENGTH"]
@@ -189,11 +190,16 @@ class Bitrate:
     """Convert between different bitrate units
     
     A Bitrate object stores a bitrate in three different units:
-        kbps -- kilobits per second (the conventional unit)
-        MiBpm -- Mibibytes per minute (uses for S/VCD sizes)
-        GiBph -- Gibibytes per hour (useful for DVD sizes)
+
+        kbps
+            kilobits per second (the conventional unit)
+        MiBpm
+            Mibibytes per minute (uses for S/VCD sizes)
+        GiBph
+            Gibibytes per hour (useful for DVD sizes)
     
-    Access these by name: 
+    Access these by name::
+
         >>> br = playtime.Bitrate(3300)
         >>> br.kbps
         3300
@@ -203,7 +209,7 @@ class Bitrate:
         1.3830140233039856
         
     Once instantiated or set with a given bitrate and unit, the other
-    remaining bitrates are automatically calculated and updated:
+    remaining bitrates are automatically calculated and updated::
     
         >>> br.set(1, 'GiBph')
         >>> br.kbps
@@ -216,16 +222,7 @@ class Bitrate:
             bitrate
                 the bitrate (int or float ok)
             units
-                a string for units that bitrate is in (default: kbps).
-                Valid arguments are:
-
-                kbps
-                    kilobits per second
-                MiBpm
-                    Mibibytes per minute
-                GiBph
-                    Gibibytes per hour
-        
+                'kbps', 'MiBpm', or 'GiBph'
         """
         self.set(bitrate, unit)
 
@@ -235,14 +232,7 @@ class Bitrate:
             bitrate
                 new bitrate (integer or float ok)
             units
-                string for units that bitrate is in. Valid arguments are:
-
-                kbps
-                    kilobits per second
-                MiBpm
-                    Mibibytes per minute
-                GiBph
-                    Gibibytes per hour
+                'kbps', 'MiBpm', or 'GiBph'
         
         Once set with a given bitrate and unit, the other remaining
         bitrates are automatically calculated.

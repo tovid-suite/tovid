@@ -14,7 +14,7 @@ In practice::
 
     try:
         deps.require(deps.core)
-    except deps.MissingError:
+    except deps.MissingDep:
         print "Exiting..."
         sys.exit(1)
 
@@ -49,7 +49,8 @@ dependencies. See help(deps.require) or keep reading.
 
 __all__ = [
     'which',
-    'require']
+    'require',
+]
 
 from subprocess import Popen, PIPE
 import textwrap
@@ -59,9 +60,9 @@ from libtovid.util.output import red
 ### Exceptions
 ###
 
-class DepError (Exception): pass
-class InputError (DepError): pass
-class MissingError (DepError): pass
+class MissingDep (Exception):
+    """Missing dependency exception."""
+    pass
 
 ###
 ### Module data
@@ -133,8 +134,8 @@ def require(deps,
             help="You need these to finish what you were doing.",
             description="oops"):
 
-    """Assert that one or more dependencies exist on the system, raise
-    a 'MissingError' exception if not.
+    """Assert that one or more dependencies exist on the system. If any
+    are missing, raise a ``MissingDep`` exception.
     
         deps
             Names of dependencies to assert. May be a single name,
@@ -172,7 +173,7 @@ def require(deps,
     elif type(deps) == str:
         deps = deps.split(' ')
     elif type(deps) != list:
-        raise InputError("%s is not dictionary, list, or string!" % str(deps))
+        raise ValueError("%s is not dictionary, list, or string!" % str(deps))
 
     # Find the missing dependencies
     have_deps = True
@@ -189,7 +190,7 @@ def require(deps,
     # Having reported the missing dependencies, print the help message and quit
     if not have_deps:
         print "\n", textwrap.fill(help + ' ' + __missing_dependency_message, 79)
-        raise MissingError("Cannot find required dependencies!")
+        raise MissingDep("Cannot find required dependencies!")
 
 
 ###
@@ -208,7 +209,7 @@ if __name__ == "__main__":
             print "================================================"
             print "Starting test..."
             require(dep, help, url)
-        except MissingError:
+        except MissingDep:
             print "<< Would exit here. >>\n"
         else:
             print "Test passed!\n"
