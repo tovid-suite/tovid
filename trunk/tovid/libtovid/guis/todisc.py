@@ -18,10 +18,6 @@ def to_title(filename):
 def strip_all(filename):
     return ''
 
-def spacer(lines):
-    lines = '\n' * lines
-    return Label(lines)
-
 # List of file-type selections for Filename controls
 image_filetypes = [filetypes.all_files]
 image_filetypes.append(filetypes.image_files)
@@ -122,7 +118,7 @@ _showcase_framestyle = Choice('Frame style', '-showcase-framestyle', 'none',
     'The "glass" option will use mplayer to make frames, giving an animated '
     'effect.  The glass style can be much faster - especially if used without '
     '-rotate and -wave options',
-    'none|glass')
+    'none|glass', side='top')
 
 _showcase_geo = Text('Image position', '-showcase-geo', '',
     'This is a showcase style only option.  Enter the position of the '
@@ -876,7 +872,6 @@ thumbnails = VPanel("Thumbnails",
                 _rotate,
                 _showcase_framestyle),
             VPanel('Arrangement', _showcase_geo),
-            spacer(8),
         ),
     ),
 )
