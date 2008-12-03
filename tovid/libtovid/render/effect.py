@@ -4,7 +4,7 @@
 """This module defines classes for creating and drawing effects on a series
 of drawings (as in a Flipbook).
 
-Effect classes are arranged in a (currently) simple hierarchy:
+Effect classes are arranged in a (currently) simple hierarchy::
 
     Effect (base class)
         Movement

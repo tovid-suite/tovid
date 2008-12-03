@@ -103,7 +103,6 @@ from widget import Widget
 from variable import VAR_TYPES
 from support import DragList, ScrollList, FontChooser
 from support import ensure_type
-import log
 
 ### --------------------------------------------------------------------
 class NotDrawn (Exception):
@@ -169,7 +168,8 @@ class Control (Widget):
             labelside
                 Position of label ('left' or 'top'). It's up to the
                 derived Control class to use this appropriately.
-            kwargs: Keyword arguments of the form key1=arg1, key2=arg2
+            kwargs
+                Keyword arguments of the form key1=arg1, key2=arg2
         
         """
         Widget.__init__(self, label)
@@ -278,7 +278,8 @@ class Control (Widget):
     def reset(self):
         """Reset the Control's value to the default.
         """
-        self.set(self.default)
+        if self.variable:
+            self.set(self.default)
 
 
     def focus(self):
@@ -333,14 +334,6 @@ class Control (Widget):
             args.append(value)
         return args
 
-    def __repr__(self):
-        """Return a Python code representation of this Control.
-        """
-        return "%s('%s', '%s')" % \
-               (self.__class__.__name__, self.label, self.option)
-
-    __str__ = __repr__
-
 
 ### --------------------------------------------------------------------
 ### Control subclasses
@@ -391,6 +384,9 @@ class Choice (Control):
             raise ValueError("Choice style must be 'radio' or 'dropdown'")
         self.style = style
         self.side = side
+        # Defined in draw()
+        self.combo = None
+        self.rb = None
 
 
     def draw(self, master):
@@ -463,7 +459,9 @@ class Color (Control):
                 Help text to show in a tooltip
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
-
+        # Defined in draw()
+        self.button = None
+        self.editbox = None
 
     def draw(self, master):
         """Draw control widgets in the given master.
@@ -484,7 +482,7 @@ class Color (Control):
         Control.post(self)
 
 
-    def enter_color(self, event):
+    def enter_color(self, event=None):
         """Event handler when Enter is pressed in the color entry box.
         """
         color = self.variable.get().strip()
@@ -575,7 +573,7 @@ class Filename (Control):
                 Brief description (shown in title bar of file browser dialog)
             filetypes
                 Types of files to show in the file browser dialog. May be 'all'
-                for all file types, or a list of ('label', '*.ext') tuples.
+                for all file types, or a list of ``('label', '*.ext')`` tuples.
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
         self.action = action
@@ -584,6 +582,9 @@ class Filename (Control):
             self.filetypes = [('All Files', '*.*')]
         else:
             self.filetypes = filetypes
+        # Defined by draw()
+        self.entry = None
+        self.button = None
 
 
     def draw(self, master):
@@ -735,6 +736,8 @@ class FlagOpt (Flag):
 
 
     def draw(self, master):
+        """Draw the Flag and associated Control in the given master.
+        """
         Flag.draw(self, master)
         # Pack the arg control next to the flag checkbox
         self.control.draw(self)
@@ -755,6 +758,8 @@ class FlagOpt (Flag):
 
 
     def get_args(self):
+        """If the flag is enabled, return the flag and associated option.
+        """
         args = Flag.get_args(self)
         if len(args) > 0:
             args.extend(self.control.get_args())
@@ -783,6 +788,8 @@ class Font (Control):
                 Help text to show in a tooltip
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
+        # Defined by draw()
+        self.button = None
 
 
     def draw(self, master):
@@ -843,6 +850,8 @@ class Number (Control):
         self.max = max
         self.units = units
         self.style = style
+        # Defined by draw()
+        self.number = None
 
 
     def draw(self, master):
@@ -909,6 +918,8 @@ class Text (Control):
                 Help text to show in a tooltip
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
+        # Defined by draw()
+        self.entry = None
 
 
     def draw(self, master):
@@ -992,6 +1003,8 @@ class List (Control):
         self.control = control
         # If edit_only=True, omit add/move/remove features.
         self.edit_only = False
+        # Defined by draw()
+        self.listbox = None
 
 
     def draw(self, master):
@@ -1037,10 +1050,21 @@ class List (Control):
         self.control.variable.trace_variable('w', _modify)
 
 
+    def refresh_control(self):
+        """Enable the Control if there are items in the list,
+        otherwise disable it.
+        """
+        if self.listbox.items.count() > 0:
+            self.control.enable()
+        else:
+            self.control.disable()
+
+
     def set(self, value_list):
         """Set all list values.
         """
         self.listbox.set(value_list)
+        self.refresh_control()
 
 
     def modify(self):
@@ -1089,10 +1113,7 @@ class List (Control):
         if self.listbox.items.count() > 0:
             index = self.listbox.curindex
             self.listbox.delete(index)
-
-        # If last item was removed, disable the Control
-        if self.listbox.items.count() == 0:
-            self.control.disable()
+        self.refresh_control()
 
 
     def set_variable(self, variable):
@@ -1100,6 +1121,7 @@ class List (Control):
         """
         Control.set_variable(self, variable)
         self.listbox.set_variable(variable)
+        self.refresh_control()
 
 
 ### --------------------------------------------------------------------

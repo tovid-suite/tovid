@@ -45,7 +45,8 @@ def resolution(format, tvsys):
 
 
 def vcodec(format):
-    """Return the video codec used by the given format. For example::
+    """Return the video codec used by the given format.
+    For example::
     
         >>> vcodec('vcd')
         'mpeg1'
