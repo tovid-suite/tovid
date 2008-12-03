@@ -353,8 +353,8 @@ class ComboBox (tk.Frame):
         # Use alternating white/gray for choices
         #for index in range(0, len(self.choices), 2):
         #    self.chooser.itemconfig(index, bg='LightGray')
-        self.chooser.bind('<Button-1>', self.choose)
-        self.bind_all('<Button>', self.close)
+        self.chooser.bind('<Button-1>', self.choose, '+')
+        self.bind_all('<Button>', self.close, '+')
         self.chooser.bind('<Motion>', self.highlight)
         self.chooser.grid()
 
@@ -379,9 +379,11 @@ class ComboBox (tk.Frame):
     def close(self, event=None):
         """Close the panel showing the list of choices.
         """
-        if self.dropdown.winfo_viewable():
-            self.dropdown.withdraw()
-        #self.dropdown.withdraw()
+        try:
+            if self.dropdown.winfo_viewable():
+                self.dropdown.withdraw()
+        except tk.TclError:
+            pass
 
 
     def highlight(self, event=None):
