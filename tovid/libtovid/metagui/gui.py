@@ -315,47 +315,54 @@ class Application (Widget):
         """
         filename = askopenfilename(parent=self,
             title="Select a shell script or text file to load")
-        if filename:
-            # Read nonempty, non-comment lines from the given file
-            infile = open(filename, 'r')
-            lines = [line.strip() for line in infile.readlines()
-                     if line.strip()
-                     and not line.strip().startswith('#')]
-            infile.close()
-            # Join backslash-escaped lines to form the complete command
-            command = ''
-            for line in lines:
-                if line.endswith('\\'):
-                    command += line.rstrip('\\')
-            # Parse the command to find options matching Controls in the GUI
-            options = Control.all.keys()
-            tokens = shlex.split(command)
-            program = tokens.pop(0)
-            if program != self.program:
-                print("This script runs '%s', expected '%s'" % 
-                      (program, self.program))
-            control = None
-            while tokens:
-                tok = tokens.pop(0)
-                if tok in options:
-                    print("Found option: %s" % tok)
-                    control = Control.by_option(tok)
-                    if control.vartype == bool:
-                        print("Setting flag to True")
-                        control.set(True)
-                    elif control.vartype == list:
-                        items = []
-                        while tokens and not tokens[0].startswith('-'):
-                            items.append(tokens.pop(0))
-                        print("Setting list to: %s" % items)
-                        control.set(items)
-                    elif control.vartype in (int, float, str):
-                        value = tokens.pop(0)
-                        print("Setting value to: %s" % value)
-                        control.set(control.vartype(value))
-                else:
-                    print("Unrecognized token: %s" % tok)
-            print("Done reading '%s'" % filename)
+        if not filename:
+            return
+
+        # Clear all controls of existing values
+        for control in Control.all.values():
+            control.reset()
+        # Read nonempty, non-comment lines from the given file
+        infile = open(filename, 'r')
+        lines = [line.strip() for line in infile.readlines()
+                 if line.strip()
+                 and not line.strip().startswith('#')]
+        infile.close()
+        # Join backslash-escaped lines to form the complete command
+        command = ''
+        for line in lines:
+            if line.endswith('\\'):
+                command += line.rstrip('\\')
+        # Parse the command to find options matching Controls in the GUI
+        options = Control.all.keys()
+        tokens = shlex.split(command)
+        # Ensure the expected program is being run
+        program = tokens.pop(0)
+        if program != self.program:
+            print("This script runs '%s', expected '%s'" % 
+                  (program, self.program))
+        control = None
+        while tokens:
+            tok = tokens.pop(0)
+            if tok not in options:
+                print("Unrecognized token: %s" % tok)
+            else:
+                print("Found option: %s" % tok)
+                control = Control.by_option(tok)
+                if control.vartype == bool:
+                    print("  Setting flag to True")
+                    control.set(True)
+                elif control.vartype == list:
+                    items = []
+                    while tokens and not tokens[0].startswith('-'):
+                        items.append(tokens.pop(0))
+                    print("  Setting list to: %s" % items)
+                    control.set(items)
+                elif control.vartype in (int, float, str):
+                    value = tokens.pop(0)
+                    print("  Setting value to: %s" % value)
+                    control.set(control.vartype(value))
+
+        print("Done reading '%s'" % filename)
 
 
     def expect(self, arg_parts):
@@ -425,10 +432,10 @@ class GUI (tk.Tk):
             self.inifile = DEFAULT_CONFIG
         self.style = Style()
         if os.path.exists(self.inifile):
-            print "Loading style from config file", self.inifile
+            print("Loading style from config file: '%s'" % self.inifile)
             self.style.load(self.inifile)
         else:
-            print "Creating config file", self.inifile
+            print("Creating config file: '%s'" % self.inifile)
             self.style.save(self.inifile)
 
         # Show hidden file option in file dialogs
@@ -476,7 +483,7 @@ class GUI (tk.Tk):
         config = ConfigWindow(self, self.style)
         if config.result:
             self.style = config.result
-            print "Saving configuration to", self.inifile
+            print("Saving configuration to: '%s'" % self.inifile)
             self.style.save(self.inifile)
             self.style.apply(self)
             self.redraw()

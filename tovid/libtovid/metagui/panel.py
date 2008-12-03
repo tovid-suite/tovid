@@ -17,7 +17,6 @@ __all__ = [
 ]
 
 import Tkinter as tk
-import sys
 
 from widget import Widget
 from control import Control, Flag
@@ -69,11 +68,13 @@ class Panel (Widget):
             widgets
                 One or more Widgets (Controls, Panels, Drawers etc.)
         """
-        Widget.__init__(self, name)
+        Widget.__init__(self, name, **kwargs)
 
         # Ensure that Widgets were provided
         ensure_type("Panels may only contain Widgets.", Widget, *widgets)
         self.widgets = list(widgets)
+        # Defined by draw()
+        self.frame = None
 
 
     def draw(self, master, labeled=True, **kwargs):
@@ -145,9 +146,13 @@ class HPanel (Panel):
             )
     """
     def __init__(self, name='', *widgets, **kwargs):
+        """Create an HPanel to show the given widgets in a horizontal layout.
+        """
         Panel.__init__(self, name, *widgets, **kwargs)
 
     def draw(self, master, **kwargs):
+        """Draw the HPanel and its contained widgets in the given master.
+        """
         Panel.draw(self, master, **kwargs)
         self.draw_widgets(side='left', expand=True)
 
@@ -165,9 +170,13 @@ class VPanel (Panel):
             )
     """
     def __init__(self, name='', *widgets, **kwargs):
+        """Create a VPanel to show the given widgets in a vertical layout.
+        """
         Panel.__init__(self, name, *widgets, **kwargs)
 
     def draw(self, master, **kwargs):
+        """Draw the VPanel and its contained widgets in the given master.
+        """
         Panel.draw(self, master, **kwargs)
         self.draw_widgets(side='top')
 
@@ -256,6 +265,8 @@ class Drawer (Panel):
     """A Panel that may be hidden or "closed" like a drawer.
     """
     def __init__(self, name='', *widgets, **kwargs):
+        """Create a Drawer containing the given widgets.
+        """
         Panel.__init__(self, name, *widgets, **kwargs)
         self.visible = False
         # Set by draw()
@@ -263,6 +274,8 @@ class Drawer (Panel):
 
 
     def draw(self, master, **kwargs):
+        """Draw the Drawer, with contained widgets initially hidden.
+        """
         # Draw the base panel and contained widgets
         Panel.draw(self, master, **kwargs)
         self.frame.pack_forget()
@@ -274,6 +287,8 @@ class Drawer (Panel):
 
 
     def show_hide(self):
+        """Show or hide the widgets in the Drawer.
+        """
         # Hide if showing
         if self.visible:
             self.frame.pack_forget()
@@ -589,14 +604,17 @@ class RelatedList (Panel):
         # Draw the read-only copy of parent's values
         if self.parent_is_copy:
             self.selected = tk.StringVar()
-            frame = tk.LabelFrame(self.frame, text="%s (copy)" % self.parent.label)
-            self.listbox = ScrollList(frame, self.parent.variable, self.selected)
+            frame = tk.LabelFrame(self.frame,
+                                  text="%s (copy)" % self.parent.label)
+            self.listbox = ScrollList(frame, self.parent.variable,
+                                      self.selected)
             self.listbox.pack(expand=True, fill='both')
             frame.pack(side=self.side, anchor='nw', expand=True, fill='both')
         # Or draw the parent Control itself
         else:
             self.parent.draw(self.frame)
-            self.parent.pack(side=self.side, anchor='nw', expand=True, fill='both')
+            self.parent.pack(side=self.side, anchor='nw',
+                             expand=True, fill='both')
             self.listbox = self.parent.listbox
 
         # Draw the child control
@@ -619,39 +637,58 @@ class RelatedList (Panel):
         """Add callback functions for add/remove in the parent Control.
         """
         if self.correspondence == '1:1':
-            # insert/remove callbacks for the parent listbox
             def insert(index, value):
-                #print("%s, Inserting %d: %s" % (self.child.option, index, value))
+                """When a new item is inserted in the parent list,
+                insert a corresponding (filtered) item into the child list.
+                """
                 self.child.variable.insert(index, self.filter(value))
                 self.child.control.enable()
+
             def remove(index, value):
-                #print("%s, Removing %d: %s" % (self.child.option, index, value))
+                """When an item is removed from the parent list,
+                remove the corresponding item from the child list.
+                """
                 self.child.variable.pop(index)
                 if self.child.listbox.items.count() == 0:
                     self.child.control.disable()
-                    #self.child.control.reset()
+
             def swap(index_a, index_b):
-                #print("%s, Swapping %d and %d" % (self.child.option, index_a, index_b))
+                """When two items are swapped in the parent list,
+                swap the corresponding items in the child list.
+                """
                 self.child.listbox.swap(index_a, index_b)
+
             def select(index, value):
-                #print("%s, Selected %d: %s" % (self.child.option, index, value))
-                pass # already handled by listboxes being linked??
+                """When an item is selected in the parent list,
+                select the corresponding item in the child list.
+                """
+                pass # already handled by listboxes being linked
 
         else: # '1:*'
-            # insert/remove/swap callbacks for the parent listbox
             def insert(index, value):
-                #print("%s, Inserting %d: %s" % (self.child.option, index, value))
+                """When a new item is inserted in the parent list,
+                insert a new child list (initially empty) for that item.
+                """
                 self.mapped.insert(index, ListVar())
+
             def remove(index, value):
-                #print("%s, Removing %d: %s" % (self.child.option, index, value))
+                """When an item is removed from the parent list,
+                remove the corresponding child list.
+                """
                 self.mapped.pop(index)
+
             def swap(index_a, index_b):
-                #print("%s, Swapping %d and %d" % (self.child.option, index_a, index_b))
+                """When two items are swapped in the parent list,
+                swap the two corresponding child lists.
+                """
                 a_var = self.mapped[index_a]
                 self.mapped[index_a] = self.mapped[index_b]
                 self.mapped[index_b] = a_var
+
             def select(index, value):
-                #print("%s, Selected %d: %s" % (self.child.option, index, value))
+                """When an item is selected in the parent list,
+                display the corresponding child list for editing.
+                """
                 self.child.set_variable(self.mapped[index])
 
         self.listbox.callback('select', select)

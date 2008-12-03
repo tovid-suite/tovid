@@ -61,7 +61,7 @@ INITIALIZATION OPTIONS:
 
 WIDGET METHODS:
 
-    configure(**opts)
+    configure(``**opts``)
         change one or more of the widget's options as described
         above; the changes will take effect the next time the
         tooltip shows up; NOTE: follow_mouse cannot be changed
