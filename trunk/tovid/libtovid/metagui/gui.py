@@ -223,6 +223,8 @@ class Application (Widget):
         self.panels.append(self.executor)
         # Defined in draw()
         self.tabs = None
+        # Defined in draw_toolbar
+        self.toolbar = None
 
 
     def draw(self, master):
@@ -253,9 +255,9 @@ class Application (Widget):
                                 command=exit_function)
         # Pack the buttons
         config_button.pack(anchor='w', side='left', fill='x')
-        save_button.pack(anchor='w', side='left', fill='x')
         load_button.pack(anchor='w', side='left', fill='x')
         run_button.pack(anchor='w', side='left', fill='x', expand=True)
+        save_button.pack(anchor='w', side='left', fill='x')
         exit_button.pack(anchor='e', side='right', fill='x')
         # Pack the toolbar
         self.toolbar.pack(fill='x', anchor='sw')
@@ -363,32 +365,6 @@ class Application (Widget):
                     control.set(control.vartype(value))
 
         print("Done reading '%s'" % filename)
-
-
-    def expect(self, arg_parts):
-        """Define the order of command-line options expected by the app.
-
-        Examples:
-
-            app.expect('[options]', '<outfile>')
-                gets all options but <outfile>, then <outfile>
-            app.expect('-in', '[options]', '-out')
-                gets -in, then remaining options except -out, then -out
-            app.expect('<infile>', '<outfile>')
-                No other options, so no [options] part
-        """
-        self.expected = []
-        used = []
-        for part in arg_parts:
-            if part == '[options]':
-                pass # TODO
-            elif part in Control.all:
-                self.expected.append(Control.all[part])
-                used.append(part)
-            else:
-                pass # TODO
-
-        # Add all unused options to [options]
 
 
 ### --------------------------------------------------------------------
