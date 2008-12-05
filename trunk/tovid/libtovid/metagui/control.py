@@ -278,6 +278,7 @@ class Control (Widget):
     def reset(self):
         """Reset the Control's value to the default.
         """
+        print("Resetting %s to %s" % (self.option, self.default))
         if self.variable:
             self.set(self.default)
 
