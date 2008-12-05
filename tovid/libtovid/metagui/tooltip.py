@@ -91,6 +91,8 @@ __all__ = ['ToolTip']
 import Tkinter
 
 class ToolTip:
+    """A Tooltip widget for Tkinter.
+    """
     _defaults = {
         'anchor': 'center',
         'bd': 1,
@@ -107,6 +109,7 @@ class ToolTip:
         'width': 0,
         'wraplength': 150
     }
+
     def __init__(self, master, text='Your text here', delay=1500, **opts):
         self.master = master
         self._opts = self._defaults.copy()
@@ -122,7 +125,10 @@ class ToolTip:
             self._id4 = self.master.bind("<Motion>", self.motion, '+')
             self._follow_mouse = 1
 
+
     def configure(self, **opts):
+        """Update tooltip configuration.
+        """
         for key in opts:
             if self._opts.has_key(key):
                 self._opts[key] = opts[key]
@@ -132,13 +138,21 @@ class ToolTip:
     ### Event handlers
 
     def enter(self, event=None):
+        """Called when mouse pointer enters the parent widget.
+        """
         self._schedule()
 
+
     def leave(self, event=None):
+        """Called when mouse pointer leaves the parent widget.
+        """
         self._unschedule()
         self._hide()
 
+
     def motion(self, event=None):
+        """Called when mouse pointer moves inside the tooltip region.
+        """
         if self._tipwindow and self._follow_mouse:
             x, y = self.coords()
             self._tipwindow.wm_geometry("+%d+%d" % (x, y))
@@ -146,10 +160,13 @@ class ToolTip:
     ### Helpers
 
     def _schedule(self):
+        """Schedule the tooltip for display after ``delay`` milliseconds.
+        """
         self._unschedule()
         if self._opts['state'] == 'disabled':
             return
         self._id = self.master.after(self._opts['delay'], self._show)
+
 
     def _unschedule(self):
         id = self._id
@@ -157,7 +174,10 @@ class ToolTip:
         if id:
             self.master.after_cancel(id)
 
+
     def _show(self):
+        """Show the tooltip.
+        """
         if self._opts['state'] == 'disabled':
             self._unschedule()
             return
@@ -177,15 +197,21 @@ class ToolTip:
             tw.wm_geometry("+%d+%d" % (x, y))
             tw.deiconify()
 
+
     def _hide(self):
+        """Hide the tooltip.
+        """
         tw = self._tipwindow
         self._tipwindow = None
         if tw:
             tw.destroy()
 
+
     ##these methods might be overridden in derived classes:##
 
     def coords(self):
+        """Return the (x, y) coordinates of the tip window.
+        """
         # The tip window must be completely outside the master widget;
         # otherwise when the mouse enters the tip window we get
         # a leave event and it disappears, and then we get an enter
