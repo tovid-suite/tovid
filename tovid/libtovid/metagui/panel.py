@@ -648,7 +648,11 @@ class RelatedList (Panel):
                 """When an item is removed from the parent list,
                 remove the corresponding item from the child list.
                 """
-                self.child.variable.pop(index)
+                try:
+                    self.child.variable.pop(index)
+                except IndexError:
+                    pass
+                # Disable child editor control if child list is empty
                 if self.child.listbox.items.count() == 0:
                     self.child.control.disable()
 
@@ -675,7 +679,10 @@ class RelatedList (Panel):
                 """When an item is removed from the parent list,
                 remove the corresponding child list.
                 """
-                self.mapped.pop(index)
+                try:
+                    self.mapped.pop(index)
+                except IndexError:
+                    pass
 
             def swap(index_a, index_b):
                 """When two items are swapped in the parent list,

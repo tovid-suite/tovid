@@ -148,7 +148,7 @@ class ScrollList (tk.Frame):
         if first == last:
             return
         # Summon callbacks for each item/value about to be deleted
-        for index in range(first, last or first+1):
+        for index in reversed(range(first, last or first+1)):
             value = self.items[index]
             self.summon_callbacks('remove', index, value)
         # Delete items from the listbox
