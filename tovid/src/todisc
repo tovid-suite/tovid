@@ -2218,6 +2218,8 @@ while test $# -gt 0; do
             shift
             OUT_PREFIX="$1"
             OUT_PREFIX=${OUT_PREFIX%/}
+            [[ ! -d ${OUT_PREFIX%/*} ]] && usage_error \
+            "The -out path ${OUT_PREFIX%/*}/ does not exist"
             ;;
         "-no-ask" | "-noask" )
             NOASK=:
