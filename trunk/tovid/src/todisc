@@ -2218,8 +2218,6 @@ while test $# -gt 0; do
             shift
             OUT_PREFIX="$1"
             OUT_PREFIX=${OUT_PREFIX%/}
-            [[ ! -d ${OUT_PREFIX%/*} ]] && usage_error \
-            "The -out path ${OUT_PREFIX%/*}/ does not exist"
             ;;
         "-no-ask" | "-noask" )
             NOASK=:
@@ -3169,6 +3167,11 @@ fi
 # Make sure -out was provided
 if test -n "$OUT_PREFIX"; then
     OUT_DIR=$(readlink -f "$OUT_PREFIX")
+    yecho "$OUT_DIR"
+    if [[ ! -d ${OUT_DIR%/*} ]]; then
+        OUT_PATH=$(readlink -m "$OUT_PREFIX")
+        usage_error "The -out path ${OUT_PATH%/*}/ does not exist"
+    fi
     [[ $TARGET = "svcd" ]] && OUT_FILE="$OUT_DIR"
      if egrep -q '<|>|&' <<< "$OUT_DIR"; then
         usage_error "Sorry, dvdauthor will not let you use a -out name \
