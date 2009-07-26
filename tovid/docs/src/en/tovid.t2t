@@ -47,8 +47,8 @@ For example:
 : **-ffmpeg**
     Use ffmpeg for video encoding, instead of mplayer/mpeg2enc. Try this if
     you have any problems with the default encoding method. Using this option,
-    encoding will be considerably faster. Works with **-vcd**, **-svcd**, and
-    **-dvd**.
+    encoding will be considerably faster. Currently does not work with
+    **-subtitles** or  **-filters**.
 
 
 
