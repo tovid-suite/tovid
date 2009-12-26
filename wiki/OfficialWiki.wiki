@@ -2,4 +2,4 @@
 
 = Official tovid Wiki =
 
-The [http://tovid.org official tovid wiki] is hosted by wikia.com.
+The [http://tovid.wikia.com/wiki/Tovid_Wiki official tovid wiki] is hosted by wikia.com.
