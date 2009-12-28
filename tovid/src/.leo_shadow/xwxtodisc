@@ -1,0 +1,62 @@
+#--unknown-language--@+leo-ver=4-thin
+#--unknown-language--@+node:eric.20090722212922.3483:@shadow wxtodisc
+#! /usr/bin/env python
+
+# todisc GUI
+# ===============
+# A wxPython frontend for the todisc library
+#
+# Project homepage: http://tovid.org/
+#
+# This software is licensed under the GNU General Public License
+# For the full text of the GNU GPL, see:
+#
+#   http://www.gnu.org/copyleft/gpl.html
+#
+# No guarantees of any kind are associated with use of this software.
+#
+#
+# Developer Note:
+#  the code below was copied from tovidgui and should be consolidated to a
+#  common area for both scripts
+#
+import sys
+import traceback
+
+# Try to import wx 2.6; print error if it's unavailable
+try:
+    import wxversion
+    if wxversion.checkInstalled('2.6'):
+        wxversion.select('2.6')
+    else:
+        print("tovidgui requires wxPython 2.6; please install or upgrade wxPython.")
+        sys.exit()
+    import wx
+except ImportError:
+    traceback.print_exc()
+    print("There was an error importing the 'wx' libraries. The above")
+    print("output should help you find what went wrong. Re-installing")
+    print("wxPython 2.6 (or upgrading from wxPython 2.4 to 2.6) may")
+    print("help. Consult the tovid homepage (tovid.org) for further")
+    print("assistance.")
+    print("Sorry, 'tovidgui' will not work.")
+    sys.exit()
+
+from libtovid.gui.frames import TodiscFrame
+
+class TodiscGui(wx.App):
+    def OnInit(self):
+        wx.InitAllImageHandlers()
+        frame_1 = TodiscFrame(None, wx.ID_ANY, "todisc GUI")
+        self.SetTopWindow(frame_1)
+        frame_1.Show()
+        return 1
+
+# end of class TodiscGui
+
+if __name__ == "__main__":
+    app = TodiscGui(0)
+    app.MainLoop()
+#--unknown-language--@nonl
+#--unknown-language--@-node:eric.20090722212922.3483:@shadow wxtodisc
+#--unknown-language--@-leo

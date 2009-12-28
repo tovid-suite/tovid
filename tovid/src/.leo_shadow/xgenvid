@@ -1,0 +1,101 @@
+#--unknown-language--@+leo-ver=4-thin
+#--unknown-language--@+node:eric.20090722212922.3460:@shadow genvid
+#! /usr/bin/env python
+# genvid
+
+import os
+import sys
+from libtovid.opts import Option, OptionDict
+from libtovid.flipbook import Flipbook
+from libtovid.effect import Movement, Fade, Colorfade, Spectrum, Scale
+from libtovid import layer
+
+# Valid command-line options to this script
+cli_opts = [\
+    Option('out', 'FILE', None,
+           """Use the given output file prefix (.m2v added automatically)"""),
+    Option('format', '[vcd|svcd|dvd]', 'dvd',
+           """Output in the given video disc format."""),
+    Option('tvsys', '[pal|ntsc]', 'ntsc',
+           """Output for given TV system."""),
+    Option('seconds', 'NUM', 10,
+           """Number of seconds of output video"""),
+    Option('bgcolor', 'COLOR', 'black',
+           """Use the given background color"""),
+    Option('title', 'TEXT', '',
+           """Display the given title text"""),
+    Option('thumbs', 'FILE[,FILE...]', [],
+           """Create thumbnail images of the given list of images"""),
+    Option('test', '[safe|fonts]', 'all',
+           """Render a screen-test video, for gauging the safe area or font
+           capabilities of your TV or monitor.""")
+    ]
+
+# TODO: Write a backend to allow genvid to create a video sequence displaying
+# statistics about a video or videos (via 'idvid'), and for rendering something
+# equivalent to an "about this disc" still-image, i.e.
+#     "This disc was generated on 2006-07-04, by tovid version 0.27"
+# along with, i.e.
+#     101 - The Tick vs. The Idea Men.mpg
+#         303MB, 720x480, 9000kbps, 00h:20m:54s
+#     102 - The Tick vs. Chairface Chippendale.mpg
+#         234MB, 720x480, 9000kbps, 00h:19m:16s
+#     ...
+
+# Main function
+if __name__ == '__main__':
+    # Fill useropts with default values
+    useropts = OptionDict(cli_opts)
+
+    # Print usage notes if not enough arguments were given
+    if len(sys.argv) < 3:
+        print("Usage: genvid [OPTIONS] -out FILE")
+        print("where OPTIONS may be:")
+        print(useropts.usage())
+        sys.exit(1)
+    # Override with any options provided on the command-line
+    else:
+        useropts.override(sys.argv[1:])
+
+    # Make sure output prefix was provided
+    if not useropts['out']:
+        print("Please provide an output prefix with -out")
+        sys.exit(1)
+
+    # TODO: VCD/SVCD support
+    if useropts['tvsys'].lower() == 'pal':
+        flip = Flipbook(useropts['seconds'], (720, 576))
+    elif useropts['tvsys'].lower() == 'ntsc':
+        flip = Flipbook(useropts['seconds'], (720, 480))
+    else:
+        print("-tvsys must be 'pal' or 'ntsc'")
+        sys.exit(1)
+
+    # Background color
+    bgd = layer.Background(color=useropts['bgcolor'])
+    flip.add(bgd)
+
+    # Title string
+    if useropts['title'] is not '':
+        # TODO: Centered text! (gravity)
+        title = layer.Text(useropts['title'], fontsize=30)
+        flip.add(title, (240, 420))
+    # Thumbnails
+    if useropts['thumbs'] != []:
+        thumbs = layer.ThumbGrid(useropts['thumbs'], (600, 400))
+        flip.add(thumbs, (60, 40))
+
+
+    # Test safe area or fonts
+    if 'safe' in useropts['test']:
+        flip.add(layer.SafeArea(90, 'red'))
+        flip.add(layer.SafeArea(80, 'blue'))
+        flip.add(layer.SafeArea(70, 'green'))
+        flip.add(layer.SafeArea(60, 'yellow'))
+    if 'fonts' in useropts['test']:
+        pass
+
+    # Render the .m2v video
+    flip.render_video(useropts['out'], useropts['format'], useropts['tvsys'])
+#--unknown-language--@-node:eric.20090722212922.3460:@shadow genvid
+#--unknown-language--@-leo

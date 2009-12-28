@@ -1,0 +1,87 @@
+#--unknown-language--@+leo-ver=4-thin
+#--unknown-language--@+node:eric.20090722212922.3469:@shadow pymakemenu
+#! /usr/bin/env python
+# pymakemenu
+
+__doc__ = \
+"""Generate an (S)VCD/DVD menu MPEG (to replace the 'makemenu' shell script).
+"""
+
+import sys
+from libtovid.opts import Option, OptionDict
+from libtovid.media import standard_media
+from libtovid.template import Style, textmenu, thumbmenu
+from libtovid import log
+
+# Dictionary of valid options with documentation
+OPTION_DEFS = [\
+    Option('out', 'NAME', None,
+        """Output prefix or menu name."""),
+
+    Option('titles', '"TITLE"[, "TITLE"]', [],
+        """Comma-separated list of quoted titles; these are the titles that
+        will be displayed (and linked) from the menu."""),
+
+    Option('format', 'vcd|svcd|dvd', 'dvd',
+        """Generate a menu compliant with the specified disc format"""),
+    Option('tvsys', 'pal|ntsc', 'ntsc',
+        """Make the menu for the specified TV system"""),
+    Option('background', 'IMAGE', None,
+        """Use IMAGE (in most any graphic format) as a background."""),
+    Option('audio', 'AUDIOFILE', None,
+        """Use AUDIOFILE for background music while the menu plays."""),
+    Option('font', 'FONTNAME', 'Helvetica',
+        """Use FONTNAME for the menu text."""),
+    Option('fontsize', 'NUM', '24',
+        """Use a font size of NUM pixels."""),
+    Option('align', 'west|north|east|south|center', 'northwest'),
+    Option('textcolor', 'COLOR', 'white',
+        """Color of menu text. COLOR may be a hexadecimal triplet (#RRGGBB or
+        #RGB), or a color name from 'convert -list color."""),
+    Option('highlightcolor', 'COLOR', 'red',
+        """Color of menu highlights."""),
+    Option('selectcolor', 'COLOR', 'green',
+        """Color of menu selections."""),
+
+    # Thumbnail menus and effects
+    Option('thumbnails', 'FILE[, FILE ...]', [],
+        """Create thumbnails of the provided list of video files, which
+        should correspond to the given -titles list."""),
+    Option('border', 'NUM', '0',
+        """Add a border of NUM pixels around thumbnails."""),
+    Option('effects', 'shadow|round|glass [, ...]', [],
+        """Add the listed effects to the thumbnails.""")
+]
+
+
+if __name__ == '__main__':
+    """Create a Menu with provided options and generate it.
+    """
+    options = OptionDict(OPTION_DEFS)
+    # If no arguments were provided, print usage notes
+    # TODO: Proper argument verification
+    if len(sys.argv) < 3:
+        print('Usage: pymakemenu [options] -out NAME')
+        print('Where [options] may be any of the following:')
+        print(options.usage())
+        print('Please provide an output name (-out).')
+        sys.exit()
+    options.override(sys.argv[1:])
+    # Target MediaFile
+    target = standard_media(options['format'], options['tvsys'])
+    target.filename = options['out']
+    # Create the style
+    style = Style(options['font'],
+                  options['fontsize'],
+                  options['textcolor'],
+                  options['highlightcolor'],
+                  options['selectcolor'],
+                  options['align'])
+    if options['thumbnails'] != []:
+        menu = thumbmenu.ThumbMenu(target, options['thumbnails'],
+                                   options['titles'], style)
+    else:
+        menu = textmenu.TextMenu(target, options['titles'], style)
+    menu.generate()
+#--unknown-language--@-node:eric.20090722212922.3469:@shadow pymakemenu
+#--unknown-language--@-leo
