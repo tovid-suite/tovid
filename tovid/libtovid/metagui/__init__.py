@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# __init__.py (metagui)
-
 """A simplified GUI-writing module.
 
 This module provides a simplified approach to creating GUIs for
@@ -127,5 +124,4 @@ __all__ = [
     'builder',
     'tooltip',
     'widget'] + all_support + all_control + all_panel + all_gui
-
 

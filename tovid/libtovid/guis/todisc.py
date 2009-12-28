@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # todisc.py
 
 """A GUI for the todisc command-line program.

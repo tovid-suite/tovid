@@ -26,8 +26,8 @@ if __name__ == '__main__':
     options = parse(sys.argv)
 
     if 'files' not in options:
-        print usage
-        print "Please provide -files"
+        print(usage)
+        print("Please provide -files")
         sys.exit(1)
 
     files = options['files']
@@ -36,13 +36,13 @@ if __name__ == '__main__':
 
     if 'verbose' in options:
         log.level = 'debug'
-        
+
     for file in files:
         log.info("Identifying file: %s" % file)
         print
-        print "According to mplayer:"
-        print mplayer.identify(file)
-        print
-        print "According to ffmpeg:"
-        print ffmpeg.identify(file)
+        print("According to mplayer:")
+        print(mplayer.identify(file))
+        print(' ')
+        print("According to ffmpeg:")
+        print(ffmpeg.identify(file))
 

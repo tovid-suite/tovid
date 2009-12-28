@@ -1,13 +1,10 @@
-#! /usr/bin/env python
-# control.py
-
 """Control widget classes.
 
 This module defines a Control class and several derivatives. A Control is a
 special-purpose GUI widget for setting a value such as a number or filename.
 
 Control subclasses:
-    
+
     Choice
         Multiple-choice selection, with radiobutton or dropdown style
     Color
@@ -97,20 +94,45 @@ __all__ = [
     'SpacedText',
     'Text',
 ]
-
 import Tkinter as tk
 from widget import Widget
 from variable import VAR_TYPES
 from support import DragList, ScrollList, FontChooser
 from support import ensure_type
 
-### --------------------------------------------------------------------
+import tkColorChooser
+import re
+
+# Support functions for Color control
+def _is_hex_rgb(color):
+    """Return True if color appears to be a hex '#RRGGBB value.
+    """
+    if type(color) != str:
+        return False
+    if re.match('#[0-9a-fA-F]{3}', color):
+        return True
+    else:
+        return False
+
+def _hex_to_rgb(color):
+    """Convert a hexadecimal color string '#RRGGBB' to an RGB tuple.
+    """
+    color = color.lstrip('#')
+    red, green, blue = (color[0:2], color[2:4], color[4:6])
+    return (int(red, 16), int(green, 16), int(blue, 16))
+
+def _rgb_to_hex(rgb_tuple):
+    """Convert an RGB tuple into a hexadecimal color string '#RRGGBB'.
+    """
+    red, green, blue = rgb_tuple
+    return '#%02x%02x%02x' % (red, green, blue)
+
+
 class NotDrawn (Exception):
     """Exception raised when a Control has not been drawn yet.
     """
     pass
 
-### --------------------------------------------------------------------
 from tooltip import ToolTip
 
 class Control (Widget):
@@ -119,9 +141,9 @@ class Control (Widget):
     Control subclasses may have any number of sub-widgets such as labels,
     buttons or entry boxes; one of the sub-widgets should be linked to
     self.variable like so:
-    
+
         textbox = tk.Entry(self, textvariable=self.variable)
-    
+
     See the Control subclasses below for examples of how self.variable,
     get() and set() are used.
     """
@@ -170,7 +192,7 @@ class Control (Widget):
                 derived Control class to use this appropriately.
             kwargs
                 Keyword arguments of the form key1=arg1, key2=arg2
-        
+
         """
         Widget.__init__(self, label)
         self.vartype = vartype
@@ -200,12 +222,12 @@ class Control (Widget):
 
     def draw(self, master):
         """Draw the control widgets in the given master.
-        
+
         Override this method in derived classes, and call the base
         class draw() method:
-        
+
             Control.draw(self, master)
-        
+
         """
         Widget.draw(self, master)
         # Create tk.Variable to store Control's value
@@ -336,10 +358,6 @@ class Control (Widget):
         return args
 
 
-### --------------------------------------------------------------------
-### Control subclasses
-### --------------------------------------------------------------------
-
 from libtovid.odict import convert_list
 from support import ComboBox
 
@@ -410,35 +428,6 @@ class Choice (Control):
             self.combo.pack(side='left')
         Control.post(self)
 
-### --------------------------------------------------------------------
-import tkColorChooser
-import re
-
-# Support functions for Color control
-def _is_hex_rgb(color):
-    """Return True if color appears to be a hex '#RRGGBB value.
-    """
-    if type(color) != str:
-        return False
-    if re.match('#[0-9a-fA-F]{3}', color):
-        return True
-    else:
-        return False
-
-def _hex_to_rgb(color):
-    """Convert a hexadecimal color string '#RRGGBB' to an RGB tuple.
-    """
-    color = color.lstrip('#')
-    red, green, blue = (color[0:2], color[2:4], color[4:6])
-    return (int(red, 16), int(green, 16), int(blue, 16))
-
-def _rgb_to_hex(rgb_tuple):
-    """Convert an RGB tuple into a hexadecimal color string '#RRGGBB'.
-    """
-    red, green, blue = rgb_tuple
-    return '#%02x%02x%02x' % (red, green, blue)
-
-
 class Color (Control):
     """A color chooser that may have hex '#RRGGBB' or 'ColorName' values.
     """
@@ -449,7 +438,7 @@ class Color (Control):
                  help='',
                  **kwargs):
         """Create a widget that opens a color-chooser dialog.
-        
+
             label
                 Text label describing the color to be selected
             option
@@ -463,6 +452,7 @@ class Color (Control):
         # Defined in draw()
         self.button = None
         self.editbox = None
+
 
     def draw(self, master):
         """Draw control widgets in the given master.
@@ -543,7 +533,6 @@ class Color (Control):
         self.button.config(background=bg_color, foreground=fg_color)
 
 
-### --------------------------------------------------------------------
 from tkFileDialog import asksaveasfilename, askopenfilename
 
 class Filename (Control):
@@ -559,7 +548,7 @@ class Filename (Control):
                  filetypes='all',
                  **kwargs):
         """Create a Filename with label, text entry, and browse button.
-        
+
             label
                 Text of label next to file entry box
             option
@@ -612,8 +601,6 @@ class Filename (Control):
         if filename:
             self.set(filename)
 
-
-### --------------------------------------------------------------------
 
 class Flag (Control):
     """Yes/no checkbox, for flag-type options.
@@ -669,7 +656,7 @@ class Flag (Control):
             #print("%s will enable:" % self.option)
             #print(self.enables)
             pass
-        
+
         self.controls = [Control.by_option(opt) for opt in self.enables]
         Flag.enabler(self)
         Control.post(self)
@@ -692,7 +679,7 @@ class Flag (Control):
                 else:
                     control.enabled = False
 
-    
+
     def get_args(self):
         """Return a list of arguments for passing this command-line option.
         draw() must be called before this function.
@@ -702,8 +689,6 @@ class Flag (Control):
         if self.get() and self.option:
             args.append(self.option)
         return args
-
-### --------------------------------------------------------------------
 
 class FlagOpt (Flag):
     """Like a normal Flag, but has an optional argument following it.
@@ -717,7 +702,7 @@ class FlagOpt (Flag):
                  **kwargs):
         """Create a FlagOpt widget; like a Flag, but has an optional argument
         which may be set using an associated Control.
-        
+
             label
                 Text label for the flag
             option
@@ -728,7 +713,7 @@ class FlagOpt (Flag):
                 Help text to show in a tooltip
             control
                 Another Control, for setting the argument value (required)
-        
+
         """
         Flag.__init__(self, label, option, default, help, **kwargs)
         if control != None:
@@ -767,8 +752,6 @@ class FlagOpt (Flag):
         return args
 
 
-### --------------------------------------------------------------------
-
 class Font (Control):
     """Font name chooser."""
     def __init__(self,
@@ -778,7 +761,7 @@ class Font (Control):
                  help='',
                  **kwargs):
         """Create a widget that opens a font chooser dialog.
-        
+
             label
                 Text label for the font
             option
@@ -811,8 +794,6 @@ class Font (Control):
         if chooser.result:
             self.variable.set(chooser.result)
 
-### --------------------------------------------------------------------
-
 class Number (Control):
     """Numeric entry box or slider.
     """
@@ -827,7 +808,7 @@ class Number (Control):
                  style='spin',
                  **kwargs):
         """Create a number-setting widget.
-        
+
             label
                 Text label describing the meaning of the number
             option
@@ -842,7 +823,7 @@ class Number (Control):
                 'spin' for a spinbox, or 'scale' for a slider
             units
                 Units of measurement (ex. "kbits/sec"), used as a label
-    
+
         The default/min/max may be integers or floats.
         """
         Control.__init__(self, type(default), label, option, default,
@@ -893,9 +874,8 @@ class Number (Control):
             else:
                 self.number['fg'] = '#A3A3A3'
                 self.number['troughcolor'] = '#D9D9D9'
-                
 
-### --------------------------------------------------------------------
+
 import shlex
 
 class Text (Control):
@@ -908,7 +888,7 @@ class Text (Control):
                  help='',
                  **kwargs):
         """Create a text-entry control.
-        
+
             label
                 Label for the text
             option
@@ -939,8 +919,6 @@ class Text (Control):
         """
         self.entry.select_range(0, 'end')
         self.entry.focus_set()
-
-### --------------------------------------------------------------------
 
 class SpacedText (Text):
     """Text string interpreted as a space-separated list of strings
@@ -976,7 +954,6 @@ class SpacedText (Text):
         text = ' '.join([quote(val) for val in listvalue])
         Text.set(self, text)
 
-### --------------------------------------------------------------------
 from tkFileDialog import askopenfilenames
 
 class List (Control):
@@ -1125,8 +1102,6 @@ class List (Control):
         self.refresh_control()
 
 
-### --------------------------------------------------------------------
-
 class ControlChoice (Control):
     """A choice of values from any of several other Controls.
     """
@@ -1146,7 +1121,6 @@ class ControlChoice (Control):
         pass
 
 
-### --------------------------------------------------------------------
 
 # Exported control classes, indexed by name
 CONTROLS = {
@@ -1162,8 +1136,6 @@ CONTROLS = {
     'List': List,
 }
 
-### --------------------------------------------------------------------
-
 # Demo
 if __name__ == '__main__':
     root = tk.Tk()
@@ -1175,4 +1147,4 @@ if __name__ == '__main__':
         widget.draw(frame)
         widget.pack(fill='both')
     root.mainloop()
-    
+

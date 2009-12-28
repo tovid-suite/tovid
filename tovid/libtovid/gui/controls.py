@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # controls.py
 
 import wx
@@ -24,7 +23,7 @@ class BoldToggleButton(wx.ToggleButton):
 class FlexTreeCtrl(wx.TreeCtrl):
     """A more flexible tree control, with support for moving and copying
     branches."""
-    
+
     def __init__(self, parent, id, pos = wx.DefaultPosition,
         size = wx.DefaultSize, style = wx.TR_HAS_BUTTONS,
         validator = wx.DefaultValidator, name = "FlexTreeCtrl"):

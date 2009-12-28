@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # standard.py
 
 """This module defines functions for retrieving information about multimedia
@@ -47,7 +46,7 @@ def resolution(format, tvsys):
 def vcodec(format):
     """Return the video codec used by the given format.
     For example::
-    
+
         >>> vcodec('vcd')
         'mpeg1'
         >>> vcodec('svcd')
@@ -62,7 +61,7 @@ def vcodec(format):
 def acodec(format):
     """Return the audio codec (or codecs) supported by the given format.
     For example::
-    
+
         >>> acodec('vcd')
         'mp2'
         >>> acodec('dvd')
@@ -81,15 +80,15 @@ def samprate(format):
         return 44100
     else:
         return 48000
-    
+
 
 def fps(tvsys):
     """Return the number of frames per second for the given TV system.
     For example::
-    
-        >>> print fps('ntsc')
+
+        >>> print(fps('ntsc'))
         29.97
-        >>> print fps('pal')
+        >>> print(fps('pal'))
         25.0
     """
     # Valid frames per second, by TV system
@@ -104,7 +103,7 @@ def fps(tvsys):
 def fps_ratio(tvsys):
     """Return the number of frames per second for the given TV system,
     in ratio form. For example::
-    
+
         >>> fps_ratio('ntsc')
         '30000:1001'
         >>> fps_ratio('pal')
@@ -147,5 +146,4 @@ def abitrate(format):
         return (32, 1536)
 
 
-if __name__ == '__main__':
-    doctest.testmod(verbose=True)
+

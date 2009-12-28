@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# gui.py
-
 """Top-level GUI classes.
 """
 
@@ -18,12 +15,19 @@ from panel import Panel, Tabs
 from support import ensure_type
 from libtovid import cli
 
-DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
-
-### --------------------------------------------------------------------
 from ScrolledText import ScrolledText
 from tkFileDialog import asksaveasfilename, askopenfilename
 from subprocess import PIPE
+
+import tkMessageBox
+import tempfile
+from libtovid.metagui.control import Control
+import shlex
+
+from support import ConfigWindow, Style
+
+
+DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
 
 class Executor (Widget):
     """Executes a command-line program, shows its output, and allows input.
@@ -152,7 +156,8 @@ class Executor (Widget):
         """Print a notification message to the Executor.
         Adds newlines and angle brackets.
         """
-        self.write("\n<< %s >>\n" % text)
+        self.write("\n[[ %s ]]\n" % text)
+
 
 
     def write(self, line):
@@ -189,19 +194,12 @@ class Executor (Widget):
             outfile.close()
             self.notify("Output saved to '%s'" % filename)
 
-
-### --------------------------------------------------------------------
-import tkMessageBox
-import tempfile
-from libtovid.metagui.control import Control
-import shlex
-
 class Application (Widget):
     """Graphical frontend for a command-line program
     """
     def __init__(self, program, *panels):
         """Define a GUI application frontend for a command-line program.
-        
+
             program
                 Command-line program that the GUI is a frontend for
             panels
@@ -282,7 +280,7 @@ class Application (Widget):
         # Get args and assemble command-line
         args = self.get_args()
         command = cli.Command(self.program, *args)
-        
+
         # Display the command to be executed
         self.executor.notify("Running command: " + str(command))
 
@@ -300,6 +298,7 @@ class Application (Widget):
     def save_script(self):
         """Save the current command as a bash script.
         """
+        # TODO: Make initialfile same as last saved script, if it exists
         filename = asksaveasfilename(parent=self,
             title="Select a filename for the script",
             initialfile='%s_commands.bash' % self.program)
@@ -368,15 +367,12 @@ class Application (Widget):
         print("Done reading '%s'" % filename)
 
 
-### --------------------------------------------------------------------
-from support import ConfigWindow, Style
-
 class GUI (tk.Tk):
     """GUI with one or more Applications
     """
     def __init__(self, title, width, height, application, **kwargs):
         """Create a GUI for the given application.
-        
+
             title
                 Text shown in the title bar
             width
@@ -385,7 +381,7 @@ class GUI (tk.Tk):
                 Initial height of GUI window in pixels
             application
                 Application to show in the GUI
-        
+
         Keywords arguments accepted:
 
             inifile:      Name of an .ini-formatted file with GUI configuration
@@ -465,15 +461,11 @@ class GUI (tk.Tk):
             self.style.apply(self)
             self.redraw()
 
- 
+
     def confirm_exit(self, evt=None):
         """Exit the GUI, with confirmation prompt.
         """
         if tkMessageBox.askyesno(message="Exit?"):
             self.quit()
 
-### --------------------------------------------------------------------
-
-if __name__ == '__main__':
-    pass
 

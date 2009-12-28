@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # makemenu.py
 
 from libtovid.metagui import *
@@ -95,12 +94,12 @@ MAIN = VPanel('Makemenu options',
     _fontsize,
     _align,
     _fontdeco,
-    
+
     _debug,
     _overwrite,
     _noask,
     _quiet,
-    
+
     TITLES,
     OUT_PREFIX,
 )

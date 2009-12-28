@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# deps.py
-
 """This module is for verifying libtovid's run-time dependencies.
 For example::
 
@@ -15,7 +12,7 @@ In practice::
     try:
         deps.require(deps.core)
     except deps.MissingDep:
-        print "Exiting..."
+        print("Exiting...")
         sys.exit(1)
 
 deps.core is an internal dictionary of tovid's core dependencies, where the
@@ -37,7 +34,7 @@ Provided dependency dictionaries:
         sox, normalize
     all
         ALL dependencies above
-    
+
 If you don't want to use a provided dictionary, you can specify individual
 program names to look for::
 
@@ -55,10 +52,6 @@ __all__ = [
 from subprocess import Popen, PIPE
 import textwrap
 from libtovid.util.output import red
-
-###
-### Exceptions
-###
 
 class MissingDep (Exception):
     """Missing dependency exception."""
@@ -136,7 +129,7 @@ def require(deps,
 
     """Assert that one or more dependencies exist on the system. If any
     are missing, raise a ``MissingDep`` exception.
-    
+
         deps
             Names of dependencies to assert. May be a single name,
             a python list or space-separated string list of names,
@@ -184,18 +177,15 @@ def require(deps,
             elif dep in all:
                 description = all[dep]
             # Tell the user which dependencies they're missing
-            print red("MISSING:") + " %s, %s" % (dep, description)
+            print(red("MISSING:") + " %s, %s" % (dep, description))
             have_deps = False
 
     # Having reported the missing dependencies, print the help message and quit
     if not have_deps:
-        print "\n", textwrap.fill(help + ' ' + __missing_dependency_message, 79)
+        print("\n", textwrap.fill(help + ' ' + __missing_dependency_message, 79))
         raise MissingDep("Cannot find required dependencies!")
 
 
-###
-### Main
-###
 
 if __name__ == "__main__":
     trials = [  
@@ -206,11 +196,12 @@ if __name__ == "__main__":
 
     for dep, help, url in trials:
         try:
-            print "================================================"
-            print "Starting test..."
+            print("================================================")
+            print("Starting test...")
             require(dep, help, url)
         except MissingDep:
-            print "<< Would exit here. >>\n"
+            print("(Would exit here.)\n")
         else:
-            print "Test passed!\n"
+            print("Test passed!\n")
+
 

@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # odict.py
 
 """Ordered dictionary class, from a Python Cookbook recipe:
@@ -64,7 +63,7 @@ class Odict (UserDict):
         """Return the list of values, in order.
         """
         return [self.get(key) for key in self._keys]
-    
+
     def popitem(self):
         """Pop the last (key, value) pair from the Odict, and return it.
         """
@@ -116,7 +115,7 @@ def convert_list(choices):
             {'a': "Choice A", 'b': "Choice B"}
         list-of-lists
             [['a', "Choice A"], ['b', "Choice B"], ..]
-    
+
     Note: the dict form does not preserve order. Use list-of-lists
     to maintain the specified order.
     """

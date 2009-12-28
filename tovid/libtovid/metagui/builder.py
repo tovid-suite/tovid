@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# builder.py
-
 """This module is a GUI builder with a GUI. It generates metagui code for
 a specific program, with user interaction for fine-tuning the metagui widgets.
 
@@ -29,11 +26,12 @@ in the manpage, but you can make adjustments if necessary":
     [x] -option2 [Choice[^]] [Label] [default]
         [Tooltip text________________________]
         [a|b|c]
-        
+
 [Number[^]] is a combobox for choosing control type; [min] [max] [scale[^]]
 and [a|b|c] are control-configuration widgets that appear depending on the
 chosen control type. Checking an option includes it in the metaGUI.
 """
+
 __all__ = [
     'ControlEditor',
     'ControlChooser',
@@ -46,7 +44,7 @@ from libtovid.odict import Odict
 from libtovid.metagui import Text, Number, Flag
 from control import CONTROLS
 
-### --------------------------------------------------------------------
+from support import ComboBox
 
 class ControlEditor (tk.Frame):
     """A GUI control panel for setting Control arguments."""
@@ -75,14 +73,11 @@ class ControlEditor (tk.Frame):
             widget.pack()
 
 
-### --------------------------------------------------------------------
-from support import ComboBox
-
 class ControlChooser (tk.Frame):
     """A GUI panel for choosing a Control type and setting its arguments."""
     def __init__(self):
         self.control = tk.StringVar()
-    
+
     def draw(self, master):
         tk.Frame.__init__(self, master)
         self.choices = ComboBox(self, CONTROLS.keys(),
@@ -103,7 +98,6 @@ class ControlChooser (tk.Frame):
         self.editor.draw(self)
         self.editor.pack()
 
-### --------------------------------------------------------------------
 
 # Demo
 if __name__ == '__main__':

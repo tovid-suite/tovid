@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# ffmpeg.py
-
 """Video encoding and identification using ``ffmpeg``.
 """
 
@@ -23,9 +20,9 @@ def encode(source, target, **kw):
             Output MediaFile
         kw
             Keyword arguments to customize encoding behavior
-    
+
     Supported keywords:
-    
+
         quant
             Minimum quantization, from 1-31 (1 being fewest artifacts)
         vbitrate
@@ -37,7 +34,7 @@ def encode(source, target, **kw):
             top or bottom field first
 
     For example::
-    
+
         ffmpeg_encode(source, target, quant=4, vbitrate=7000)
     """
     cmd = cli.Command('ffmpeg', '-y', '-i', source.filename)
@@ -63,7 +60,7 @@ def encode(source, target, **kw):
     # Frame rate and audio sampling rate
     cmd.add('-r', target.fps,
             '-ar', target.samprate)
-    
+
     # Convert scale/expand to ffmpeg's padding system
     if target.scale:
         cmd.add('-s', '%sx%s' % target.scale)
@@ -86,7 +83,7 @@ def encode(source, target, **kw):
 
     cmd.add(target.filename)    
     cmd.run()
-    
+
 
 def encode_audio(source, audiofile, target):
     """Encode the audio stream in a source file to a target format, saving
@@ -150,27 +147,30 @@ def identify(filename):
         '(?P<samprate>\d+) Hz, '              # Sampling rate (ex. 44100 Hz)
         '(?P<channels>[^,]+), '               # Channels (ex. stereo)
         '(?P<abitrate>\d+) kb/s')             # Audio bitrate (ex. 128 kb/s)
-    
+
     # Parse ffmpeg output and set MediaFile attributes
     for line in output.split('\n'):
-        if 'Video:' in line:
-            match = video_line.search(line)
-            result.vcodec = match.group('vcodec')
-            result.scale = (int(match.group('width')),
-                            int(match.group('height')))
-            result.expand = result.scale
-            result.fps = float(match.group('fps'))
-            if match.group('vbitrate'):
-                result.vbitrate = int(match.group('vbitrate'))
+        video_match = video_line.search(line)
+        audio_match = audio_line.search(line)
 
-        elif 'Audio:' in line:
-            match = audio_line.search(line)
-            result.acodec = match.group('acodec')
-            result.samprate = int(match.group('samprate'))
-            result.abitrate = int(match.group('abitrate'))
-            if match.group('channels') == '5.1':
+        if video_match:
+            m = video_match
+            result.vcodec = m.group('vcodec')
+            result.scale = (int(m.group('width')),
+                            int(m.group('height')))
+            result.expand = result.scale
+            result.fps = float(m.group('fps'))
+            if m.group('vbitrate'):
+                result.vbitrate = int(m.group('vbitrate'))
+
+        elif audio_match:
+            m = audio_match
+            result.acodec = m.group('acodec')
+            result.samprate = int(m.group('samprate'))
+            result.abitrate = int(m.group('abitrate'))
+            if m.group('channels') == '5.1':
                 result.channels = 6
-            elif match.group('channels') == 'stereo':
+            elif m.group('channels') == 'stereo':
                 result.channels = 2
             else:
                 result.channels = 1

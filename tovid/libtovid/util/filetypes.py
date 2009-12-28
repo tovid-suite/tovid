@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# filetypes.py
-
 """Defines several commonly-used multimedia and image file types.
 """
 
@@ -17,7 +14,7 @@ import mimetypes
 
 def match_types(containing):
     """Return a list of (type, extensions) tuples for matching mimetypes.
-    
+
         containing
             String or list of strings to match
 
@@ -61,11 +58,12 @@ def get_extensions(containing):
     type_dict = dict(match_types(containing))
     ext_list = type_dict.values()
     return ' '.join(ext_list)
-    
+
+
 
 all_files = ('All files', '*.*')
 image_files = ('Image files', get_extensions('image'))
 video_files = ('Video files', get_extensions('video'))
 audio_files = ('Audio files', get_extensions('audio'))
 
- 
+

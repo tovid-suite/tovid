@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# variable.py
-
 """Contains Tkinter Variable subclasses for List and Dict variables.
 
 This module exists to supplement the built-in Tkinter Variable types,
@@ -14,10 +11,7 @@ __all__ = [
 ]
 
 import Tkinter as tk
-
-### --------------------------------------------------------------------
-### Tkinter Variable subclasses
-### --------------------------------------------------------------------
+from libtovid.odict import Odict
 
 class ListVar (tk.Variable):
     """A tk Variable suitable for associating with Listboxes.
@@ -101,9 +95,6 @@ class ListVar (tk.Variable):
         return len(self.get())
 
 
-### --------------------------------------------------------------------
-from libtovid.odict import Odict
-
 class DictVar (tk.Variable):
     """A tk Variable for storing a dictionary of values.
     """
@@ -152,7 +143,6 @@ class DictVar (tk.Variable):
         tup = tuple([(key, value) for key, value in new_dict.items()])
         tk.Variable.set(self, tup)
 
-### --------------------------------------------------------------------
 
 # Map python types to Tkinter variable types
 VAR_TYPES = {
@@ -163,5 +153,3 @@ VAR_TYPES = {
     list: ListVar,
     dict: DictVar,
 }
-
-### --------------------------------------------------------------------

@@ -10,7 +10,7 @@ def rungui(gui):
 if __name__ == '__main__':
     if len(sys.argv) < 2 or not \
       sys.argv[1] in ('-s', 'simple', '-f', 'fancy'):
-        print "Usage: tovidgui simple|-s fancy|-f"
+        print("Usage: tovidgui simple|-s fancy|-f")
         sys.exit(1)
 
     if sys.argv[1] in ('-s', 'simple'):

@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # __init__.py (guis)
 
 """This module contains metagui-based GUIs for several of the tovid scripts.

@@ -47,9 +47,9 @@ if __name__ == '__main__':
 
     # Print usage notes if not enough arguments were given
     if len(sys.argv) < 3:
-        print "Usage: genvid [OPTIONS] -out FILE"
-        print "where OPTIONS may be:"
-        print useropts.usage()
+        print("Usage: genvid [OPTIONS] -out FILE")
+        print("where OPTIONS may be:")
+        print(useropts.usage())
         sys.exit(1)
     # Override with any options provided on the command-line
     else:
@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     # Make sure output prefix was provided
     if not useropts['out']:
-        print "Please provide an output prefix with -out"
+        print("Please provide an output prefix with -out")
         sys.exit(1)
 
     # TODO: VCD/SVCD support
@@ -66,9 +66,9 @@ if __name__ == '__main__':
     elif useropts['tvsys'].lower() == 'ntsc':
         flip = Flipbook(useropts['seconds'], (720, 480))
     else:
-        print "-tvsys must be 'pal' or 'ntsc'"
+        print("-tvsys must be 'pal' or 'ntsc'")
         sys.exit(1)
-        
+
     # Background color
     bgd = layer.Background(color=useropts['bgcolor'])
     flip.add(bgd)
@@ -83,7 +83,7 @@ if __name__ == '__main__':
         thumbs = layer.ThumbGrid(useropts['thumbs'], (600, 400))
         flip.add(thumbs, (60, 40))
 
- 
+
     # Test safe area or fonts
     if 'safe' in useropts['test']:
         flip.add(layer.SafeArea(90, 'red'))
@@ -92,6 +92,6 @@ if __name__ == '__main__':
         flip.add(layer.SafeArea(60, 'yellow'))
     if 'fonts' in useropts['test']:
         pass
-    
+
     # Render the .m2v video
     flip.render_video(useropts['out'], useropts['format'], useropts['tvsys'])

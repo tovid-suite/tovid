@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # idvid.py
 
 from libtovid.metagui import *

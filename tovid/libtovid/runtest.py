@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # runtest.py
 
 """libtovid test script
@@ -57,9 +56,9 @@ all_modules = libtovid_modules + subdir_modules
 if __name__ == '__main__':
     # Execute each module
     for mod in all_modules:
-        print "Testing: %s" % mod
+        print("Testing: %s" % mod)
         try:
-            print commands.getoutput('python %s' % mod)
+            print(commands.getoutput('python %s' % mod))
         except KeyboardInterrupt:
-            print "Test interrupted."
+            print("Test interrupted.")
             exit()

@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # options.py
 
 __all__ = [\
@@ -68,7 +67,7 @@ class DiscOptions:
                     amInAGroup = False
                 else:
                     videosInGroup = videosInGroup - 1
-                
+
         # Use output filename based on disc title
         self.outPrefix = self.title.replace(' ', '_')
 
@@ -91,7 +90,7 @@ class DiscOptions:
 
         # Save output filename in global Config
         discName = "%s/%s.xml" % (curConfig.strOutputDirectory, self.outPrefix) 
-        
+
         #If specified, check whether it exists
         if os.path.exists(discName) == True:
             #If exists, check whether it is a file or directory
@@ -138,7 +137,7 @@ class DiscOptions:
                 wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
             response = msgDiscNameErrorDlg.ShowModal()
             msgDiscNameErrorDlg.Destroy()
-       
+
             if response != wx.ID_NO:
                 return False   
         #If get this far, file is OK
@@ -149,7 +148,7 @@ class DiscOptions:
         # Get global configuration (for output directory)
         curConfig = TovidConfig()
         outputDirectory = "%s" % (curConfig.strOutputDirectory)
- 
+
         #If specified, check whether it exists
         if os.path.exists(outputDirectory) == True:
             #If exists, check whether it is a file or directory
@@ -192,7 +191,7 @@ class DiscOptions:
                 wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
             response = msgOutputDirectoryErrorDlg.ShowModal()
             msgOutputDirectoryErrorDlg.Destroy()
-       
+
             if response != wx.ID_NO:
                 return False   
         #If get this far, file is OK
@@ -240,8 +239,8 @@ class GroupOptions:
 
     def fromElement(self, group):
         """Load options from a Group."""
-        print "Loading Group:"
-        print group.to_string()
+        print("Loading Group:")
+        print(group.to_string())
         self.type = ID_GROUP
         self.inFile = group['in']
         self.outPrefix = group['out']
@@ -302,7 +301,7 @@ class GroupOptions:
                 wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
             response = msgGroupOutputErrorDlg.ShowModal()
             msgGroupOutputErrorDlg.Destroy()
-       
+
             if response != wx.ID_NO:
                 return False   
         return True
@@ -427,7 +426,7 @@ class MenuOptions:
             fontDecoration += " -tile pattern:%s" % (self.pattern)
         else:
             pass
-        
+
         strCommand += "-fontdeco '%s' " % fontDecoration
 
         # For DVD, add button options
@@ -501,7 +500,7 @@ class MenuOptions:
         audioFile = self.audio
         if audioFile == "":
             return True
-        
+
         #If specified, check whether it exists
         if os.path.isfile(audioFile) == False:
             msgAudioFileMissingDlg = wx.MessageDialog(panel, \
@@ -531,7 +530,7 @@ class MenuOptions:
                 wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
             response = msgAudioErrorDlg.ShowModal()
             msgAudioErrorDlg.Destroy()
-       
+
             if response != wx.ID_NO:
                 return False   
         #If get this far, file is OK
@@ -543,7 +542,7 @@ class MenuOptions:
         imageFile = self.background
         if imageFile == "":
             return True
-        
+
         #If specified, check whether it exists
         if os.path.isfile(imageFile) == False:
             msgImageFileMissingDlg = wx.MessageDialog(panel, \
@@ -573,7 +572,7 @@ class MenuOptions:
                 wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
             response = msgImageErrorDlg.ShowModal()
             msgImageErrorDlg.Destroy()
-       
+
             if response != wx.ID_NO:
                 return False   
         #If get this far, file is OK
@@ -599,7 +598,7 @@ class MenuOptions:
                 wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
             response = msgMenuTitleErrorDlg.ShowModal()
             msgMenuTitleErrorDlg.Destroy()
-       
+
             if response != wx.ID_NO:
                 return False   
         #If get this far, file is OK
@@ -612,7 +611,7 @@ class MenuOptions:
 
         #First check if Image File is specified
         outputFile = "%s/%s.mpg" % (curConfig.strOutputDirectory, self.outPrefix)
-        
+
         #If specified, check whether it exists
         if os.path.exists(outputFile) == True:
             #If exists, check whether it is a file or directory
@@ -660,7 +659,7 @@ class MenuOptions:
                 wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
             response = msgMenuNameErrorDlg.ShowModal()
             msgMenuNameErrorDlg.Destroy()
-       
+
             if response != wx.ID_NO:
                 return False   
         #If get this far, file is OK
@@ -727,7 +726,7 @@ class VideoOptions:
         # Append encoding method if not default
         if self.encodingMethod == "ffmpeg":
             strCommand += "-ffmpeg "
- 
+
         # Append other options
         if self.addoptions:
             strCommand += "%s " % self.addoptions
@@ -769,7 +768,7 @@ class VideoOptions:
         """Check the video options for any errors detectable before encoding"""
         #First check if Video File is specified
         videoFile = self.inFile
-        
+
         #Check whether it exists
         if os.path.isfile(videoFile) == False:
             msgVideoFileMissingDlg = wx.MessageDialog(panel, \
@@ -799,7 +798,7 @@ class VideoOptions:
                 wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
             response = msgVideoErrorDlg.ShowModal()
             msgVideoErrorDlg.Destroy()
-       
+
             if response != wx.ID_NO:
                 return False   
         return True
@@ -836,7 +835,7 @@ class VideoOptions:
                     wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
                 response = msgVideoOutputExistsErrorDlg.ShowModal()
                 msgVideoOutputExistsErrorDlg.Destroy()
-       
+
                 if response != wx.ID_YES:
                     return False   
             else:   
@@ -872,7 +871,7 @@ class VideoOptions:
                 wx.YES_NO | wx.YES_DEFAULT | wx.ICON_ERROR)
             response = msgVideoOutputErrorDlg.ShowModal()
             msgVideoOutputErrorDlg.Destroy()
-       
+
             if response != wx.ID_NO:
                 return False   
         return True

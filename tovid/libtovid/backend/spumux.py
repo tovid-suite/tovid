@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# spumux.py
-
 """This module is for adding subtitles to MPEG video files using spumux.
 
 Defined here are two functions for adding subtitles to an MPEG file:
@@ -25,9 +22,43 @@ from libtovid import xml
 from libtovid import cli
 from libtovid.backend import mplayer
 
-###
-### Internal functions
-###
+# spumux XML elements and valid attributes
+# 
+# subpictures
+# stream
+# textsub
+#     ['filename',
+#     'characterset',
+#     'fontsize',
+#     'font',
+#     'horizontal-alignment',
+#     'vertical-alignment',
+#     'left-margin',
+#     'right-margin',
+#     'subtitle-fps',
+#     'movie-fps',
+#     'movie-width',
+#     'movie-height']
+# button
+#     ['name',
+#     'x0', 'y0', # Upper-left corner, inclusively
+#     'x1', 'y1', # Lower-right corner, exclusively
+#     'up', 'down', 'left', 'right']
+# action
+#     ['name']
+# spu
+#     ['start',
+#     'end',
+#     'image',
+#     'highlight',
+#     'select',
+#     'transparent',   # color code
+#     'force',         # 'yes' (force display, required for menus)
+#     'autooutline',   # 'infer'
+#     'outlinewidth',
+#     'autoorder',     # 'rows' or 'columns'
+#     'xoffset',
+#     'yoffset']
 
 def _get_xml(textsub_or_spu):
     """Return an XML string for the given Textsub or Spu element.
@@ -51,7 +82,7 @@ def _get_xmlfile(textsub_or_spu):
 
 def _mux_subs(subtitle, movie_filename, stream_id=0):
     """Run spumux to multiplex the given subtitle with an .mpg file.
-    
+
         subtitle
             Textsub or Spu element
         movie_filename
@@ -77,20 +108,16 @@ def _mux_subs(subtitle, movie_filename, stream_id=0):
     os.remove(xmlfile.name)
 
 
-###
-### Exported functions
-###
-
 def add_subpictures(movie_filename, select, image=None, highlight=None):
     """Adds PNG image subpictures to an .mpg video file to create a DVD menu.
-    
+
         select
             Image shown as the navigational selector or "cursor"
         image
             Image shown for non-selected regions
         highlight
             Image shown when "enter" is pressed
-        
+
     All images must be indexed, 4-color, transparent, non-antialiased PNG.
     Button regions are auto-inferred.
     """
@@ -108,7 +135,7 @@ def add_subpictures(movie_filename, select, image=None, highlight=None):
 
 def add_subtitles(movie_filename, sub_filenames):
     """Adds one or more subtitle files to an .mpg video file.
-    
+
         movie_filename
             Name of .mpg file to add subtitles to
         sub_filenames
@@ -133,59 +160,21 @@ def add_subtitles(movie_filename, sub_filenames):
         _mux_subs(textsub, movie_filename, stream_id)
 
 
-if __name__ == '__main__':
-    print "spumux XML examples"
 
-    print "Subpicture example:"
+if __name__ == '__main__':
+    print("spumux XML examples")
+
+    print("Subpicture example:")
     spu = xml.Element('spu')
     spu.add('button', name='but1', down='but2')
     spu.add('button', name='but2', up='but1')
-    print _get_xml(spu)
+    print(_get_xml(spu))
 
-    print "Text subtitle example:"
+    print("Text subtitle example:")
     textsub = xml.Element('textsub')
     textsub.set(filename='foo.sub',
                 fontsize=14.0,
                 font="Luxi Mono")
-    print _get_xml(textsub)
+    print(_get_xml(textsub))
 
-
-# spumux XML elements and valid attributes
-"""
-subpictures
-stream
-textsub
-    ['filename',
-    'characterset',
-    'fontsize',
-    'font',
-    'horizontal-alignment',
-    'vertical-alignment',
-    'left-margin',
-    'right-margin',
-    'subtitle-fps',
-    'movie-fps',
-    'movie-width',
-    'movie-height']
-button
-    ['name',
-    'x0', 'y0', # Upper-left corner, inclusively
-    'x1', 'y1', # Lower-right corner, exclusively
-    'up', 'down', 'left', 'right']
-action
-    ['name']
-spu
-    ['start',
-    'end',
-    'image',
-    'highlight',
-    'select',
-    'transparent',   # color code
-    'force',         # 'yes' (force display, required for menus)
-    'autooutline',   # 'infer'
-    'outlinewidth',
-    'autoorder',     # 'rows' or 'columns'
-    'xoffset',
-    'yoffset']
-"""
 

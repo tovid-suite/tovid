@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # tovid.py
 
 """A GUI for the ``tovid`` script.
