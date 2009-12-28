@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# panel.py
-
 """GUI widgets for grouping Controls together and defining layout.
 """
 
@@ -22,7 +19,12 @@ from widget import Widget
 from control import Control, Flag
 from support import ensure_type, divide_list
 
-### --------------------------------------------------------------------
+from support import ComboBox
+from variable import ListVar
+from libtovid.odict import Odict
+
+from support import ScrollList
+from control import List
 
 class Label (Widget):
     """A widget with a text label.
@@ -55,14 +57,12 @@ class Label (Widget):
         self.label = tk.Label(self, text=self.text, justify=self.justify)
         self.label.pack(anchor=self.anchor)
 
-### --------------------------------------------------------------------
-
 class Panel (Widget):
     """A group of Widgets in a rectangular frame, with an optional label.
     """
     def __init__(self, name='', *widgets, **kwargs):
         """Create a Panel containing one or more widgets or sub-panels.
-        
+
             name
                 Name (label) for panel, or '' for no label
             widgets
@@ -82,7 +82,7 @@ class Panel (Widget):
 
             labeled
                 True to use a LabelFrame with the panel's name
-        
+
         Panel subclasses must pack the contained widgets, or
         call ``draw_widgets`` to pack them.
         """
@@ -132,8 +132,6 @@ class Panel (Widget):
             widget.enable(enabled)
 
 
-### --------------------------------------------------------------------
-
 class HPanel (Panel):
     """A group of widgets or sub-panels, packed horizontally (left-to-right).
 
@@ -155,8 +153,6 @@ class HPanel (Panel):
         """
         Panel.draw(self, master, **kwargs)
         self.draw_widgets(side='left', expand=True)
-
-### --------------------------------------------------------------------
 
 class VPanel (Panel):
     """A group of widgets or sub-panels, packed vertically (top-to-bottom).
@@ -181,14 +177,9 @@ class VPanel (Panel):
         self.draw_widgets(side='top')
 
 
-### --------------------------------------------------------------------
-from support import ComboBox
-from variable import ListVar
-from libtovid.odict import Odict
-
 class Dropdowns (Panel):
     """A Panel with Controls that are shown/hidden using a dropdown list.
-    
+
     The Dropdowns panel initially displays a single dropdown list, with
     one entry for each Control. When a dropdown entry is selected, the
     corresponding Control is displayed, along with a "remove" button to
@@ -259,8 +250,6 @@ class Dropdowns (Panel):
         return args
 
 
-### --------------------------------------------------------------------
-
 class Drawer (Panel):
     """A Panel that may be hidden or "closed" like a drawer.
     """
@@ -299,8 +288,6 @@ class Drawer (Panel):
             self.frame.pack(anchor='nw', fill='both', expand=True)
             self.visible = True
             self.button.config(relief='sunken')
-
-### --------------------------------------------------------------------
 
 class Tabs (Panel):
     """A Panel with tab buttons that switch between several widgets.
@@ -393,8 +380,6 @@ class Tabs (Panel):
         self.change()
 
 
-### --------------------------------------------------------------------
-
 class FlagGroup (Panel):
     """A Panel that shows a group of several Flag controls,
     optionally making them mutually-exclusive.
@@ -405,7 +390,7 @@ class FlagGroup (Panel):
                  *flags,
                  **kwargs):
         """Create a FlagGroup with the given label and state.
-        
+
             name
                 Name/label for the group
             kind
@@ -413,9 +398,9 @@ class FlagGroup (Panel):
                 mutually-exclusive Flags (more like a Choice)
             flags
                 One or more Flag controls to include in the group
-        
+
         These keyword arguments are accepted:
-        
+
             side
                 'top' or 'left', to pack Flags vertically or horizontally
             rows
@@ -439,7 +424,7 @@ class FlagGroup (Panel):
         self.rows = 1
         if 'rows' in kwargs:
             self.rows = kwargs['rows']
-    
+
 
     def draw(self, master, **kwargs):
         """Draw the FlagGroup in the given master widget.
@@ -489,17 +474,13 @@ class FlagGroup (Panel):
         return args
 
 
-### --------------------------------------------------------------------
-from support import ScrollList
-from control import List
-
 class RelatedList (Panel):
     """A Panel showing two Lists, where one is related to the other.
 
     Relates a parent list to a child Control, with a parent:child
     relationship of 1:1 (each parent item has one child item)
     or 1:* (each parent item has a list of child items).
-    
+
     One to one:
 
         - Each item in parent list maps to an item in the child list
@@ -521,9 +502,9 @@ class RelatedList (Panel):
         - It item is added to parent, new child item/list is added also
         - If item in parent is deleted, child item/list is deleted also
         - Child option string is only passed once
-    
+
     """
-    
+
     def __init__(self,
                  name,
                  parent,

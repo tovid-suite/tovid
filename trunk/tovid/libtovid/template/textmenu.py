@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# textmenu.py
-
 __all__ = ['TextMenu']
 
 from libtovid import cli
@@ -62,7 +59,7 @@ class TextMenu:
         for title in self.titles:
             log.info("Adding '%s'" % title)
             # TODO: Escape special characters in title
-            
+
             # For VCD, number the titles
             if self.target.format == 'vcd':
                 labels += " text 0,%s '%s. %s' " % (y, titlenum, title)
@@ -70,7 +67,7 @@ class TextMenu:
             else:
                 labels += " text 15,%s '%s'" % (y, title)
                 buttons += " text 0,%s '>'" % y
-            
+
             # Increment y-coordinates and title number
             y = y2
             y2 += spacing
@@ -177,7 +174,7 @@ class TextMenu:
         # TODO: Remove hardcoded frame count
         ppmtoy4m.add('-n', 90)
         ppmtoy4m.add('-r', '%s.ppm' % self.basename)
-    
+
         # mpeg2enc part
         mpeg2enc = cli.Command('mpeg2enc', '-a', 2)
         # PAL/NTSC

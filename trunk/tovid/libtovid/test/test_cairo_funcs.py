@@ -1,7 +1,4 @@
-#! /usr/bin/env python
-# test_cairo_funcs.py
 # -=- encoding: latin-1 -=-
-
 import unittest
 import math
 # Fetch in subdir
@@ -19,7 +16,7 @@ class TestCairoRenderer(unittest.TestCase):
     def tearDown(self):
         """Delete the drawing"""
         del(self.d)
-        
+
     def test_init(self):
         """Blank test"""
         pass
@@ -31,13 +28,13 @@ class TestCairoRenderer(unittest.TestCase):
                [(3,3), (3,3), (3,3)]]
 
         self.d.bezier(pts)
-        
+
         pts = [[(1,1), (1,1)],
                [(2,2), (2,2), (2,2)],
                [(3,3), (3,3), (3,3)]]
 
         self.assertRaises(AssertionError, self.d.bezier, pts)
-            
+
         pts = [[(1,1), (1,1), (1,1)],
                [(2,2), (2,2)],
                [(3,3), (3,3), (3,3)]]
@@ -47,47 +44,47 @@ class TestCairoRenderer(unittest.TestCase):
                [(3,3), (3,3)]]
 
         self.assertRaises(AssertionError, self.d.bezier, pts)
-            
+
         pts = [[(1,1), (1), (1,1)],
                [(2,2), (2,2)],
                [(3,3), (3,3), (3)]]
 
         self.assertRaises(AssertionError, self.d.bezier, pts)
-            
+
         pts = [[(1,1), (1,1), (1,1)],
                [(2,2), (2,2), (2,2)],
                [(3,3), (3,3), (3,3,3,4,5)]]
 
         self.assertRaises(AssertionError, self.d.bezier, pts)
-            
+
         pts = [[(1,1), (1,1), (1,1)],
                [(2,2), (2,2,5,6), (2,2)],
                [(3,3), (3,3), (3,3)]]
 
         self.assertRaises(AssertionError, self.d.bezier, pts)
-            
+
         pts = [[(1,1), (1,1), (1,1)]]
 
         self.assertRaises(AssertionError, self.d.bezier, pts)
-            
+
         pts = [[(1,1), (1,1), (1,1)],
                [(2,2), (2,2), (2,2)],
                [(3,3), (3,3), (3,3)],
                [(1,1), (1), (1,1)]]
 
         self.assertRaises(AssertionError, self.d.bezier, pts)
-            
+
         pts = [[(1,1), (1,1)],
                [(2,2), (2,2)]]
 
         self.assertRaises(AssertionError, self.d.bezier, pts)
-            
+
         pts = [[(1,1), (1,1), (1,1), (1,1)],
                [(2,2), (2,2), (2,2), (2,2)],
                [(3,3), (3,3), (3,3), (3,3)]]
 
         self.assertRaises(AssertionError, self.d.bezier, pts)
-            
+
         pts = [[(1,1)],
                [(2,2)],
                [(3,3)]]
@@ -117,13 +114,13 @@ class TestCairoRenderer(unittest.TestCase):
         """
         # bezier is tested in test_bezier()
         self.d.stroke_width(5)
-        
+
         self.d.affine(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
         self.d.arc(25, 25, 15, 0, 270)
         self.d.arc_rad(125, 125, 50, 0, 1)
         self.d.circle(55, 55, 30)
         self.d.circle(250, 250, 20)
-        
+
         self.d.line(25, 25, 125, 125)
         self.d.line(125, 125, 55, 55)
         self.d.line(55, 55, 250, 250)
@@ -175,11 +172,15 @@ class TestCairoRenderer(unittest.TestCase):
 
     def test_operator(self):
         self.assertRaises(KeyError, self.d.operator, 'bad_arg')
-        l = "clear,source,over,in,out,atop,dest,dest_over,dest_in,dest_out,dest_atop,xor,add,saturate".split(',')
+        methods = [
+            'clear',  'source', 'over', 'in', 'out', 'atop',
+            'dest', 'dest_over', 'dest_in', 'dest_out', 'dest_atop',
+            'xor', 'add', 'saturate',
+        ]
         # Test all methods
-        for method in l:
+        for method in methods:
             self.d.operator(method)
-        
+
     def test_fill_funcs(self):
         self.assertRaises(KeyError, self.d.fill_rule, 'invalid')
         self.d.fill_rule('evenodd')
@@ -206,8 +207,8 @@ class TestCairoRenderer(unittest.TestCase):
         self.d.rectangle(20, 20, 200, 200)
         self.d.rectangle_corners(20, 20, 230, 230)
         self.d.roundrectangle(10, 445, 610, 470, 5, 5)
-        
-            
+
+
     def test_dash_stuff(self):
         self.d.stroke_dash([1.0, 2.0, 3.0], 1.0)
 

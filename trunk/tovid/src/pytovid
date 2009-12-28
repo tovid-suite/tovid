@@ -29,7 +29,7 @@ allowed_options = [\
     Option('dvd', alias=('format', 'dvd')),
     Option('half-dvd', alias=('format', 'half-dvd')),
     Option('dvd-vcd', alias=('format', 'dvd-vcd')),
-    
+
     # TV system options
     Option('tvsys', 'pal|ntsc|ntscfilm', 'ntsc',
         """Make the video compliant with the specified TV system"""),        
@@ -110,15 +110,15 @@ if __name__ == '__main__':
     options = parse(sys.argv)
 
     if 'in' not in options or 'out' not in options:
-        print usage
-        print "Please provide an input file (-in) and output name (-out)."
+        print(usage)
+        print("Please provide an input file (-in) and output name (-out).")
         sys.exit(1)
 
     encode.encode(options['in'], options['out'], **options)
-    
-    print
-    print "Done encoding '%s' to '%s.mpg'" % (options['in'], options['out'])
-    print
-    print "Please report bugs to http://code.google.com/p/tovid/issues/list"
-    print "Thanks for using pytovid!"
+
+    print(' ')
+    print("Done encoding '%s' to '%s.mpg'" % (options['in'], options['out']))
+    print(' ')
+    print("Please report bugs to http://code.google.com/p/tovid/issues/list")
+    print("Thanks for using pytovid!")
 

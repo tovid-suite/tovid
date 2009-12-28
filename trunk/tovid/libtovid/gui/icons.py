@@ -1,5 +1,6 @@
-#! /usr/bin/env python
 # icons.py
+
+"""Functions to return bitmaps for icons converted using img2py"""
 
 import zlib, cStringIO, wx
 
@@ -10,12 +11,6 @@ __all__ = [\
     "DiscIcon",
     "GroupIcon"]
 
-# ===================================================================
-#
-# EMBEDDED ICONS
-# Functions to return bitmaps for icons converted using img2py
-#
-# ===================================================================
 def MenuIcon():
     icon = zlib.decompress(
 "x\xda\xeb\x0c\xf0s\xe7\xe5\x92\xe2b``\xe0\xf5\xf4p\t\x02\xd2\x02 \xcc\xc1\
@@ -148,7 +143,7 @@ ND\xaeB`\x82\n\xfd\xd6$')
 
 def AppIcon():
     """The tovid application icon as a bitmap
-    
+
     This image is 32x32.  Although 16x16 would work, the image looks grainy in the application
     listing when switching windows (Alt+Tab)
     """
@@ -264,6 +259,3 @@ GS\xa9\xd4\xcf\xfa\xfa\xfa\xca\xd7\x8a\xfb\xb1\x01>\xa8\xad\xf7|\xa3\xa6\x14\
 \xb3')
     stream = cStringIO.StringIO(icon)
     return wx.BitmapFromImage(wx.ImageFromStream(stream))
-# ===================================================================
-# End embedded icons
-# ===================================================================

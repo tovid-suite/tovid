@@ -1,7 +1,4 @@
-#! /usr/bin/env python
 # -=- encoding: latin-1 -=-
-# test_cairo_newfuncs.py
-
 import unittest
 import math
 # Fetch in subdir
@@ -19,13 +16,12 @@ class TestCairoRenderer(unittest.TestCase):
     def tearDown(self):
         """Delete the drawing"""
         del(self.d)
-        
+
     def test_init(self):
         """Blank test"""
         pass
 
     def test_set_source(self):
-        # 
         p = cairo.SolidPattern(1, 1, 1, 0.5)
         # Image as source
         s = cairo.ImageSurface(cairo.FORMAT_ARGB32, 640, 480)

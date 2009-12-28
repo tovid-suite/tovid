@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# author.py
-
 """This module is for authoring a DVD or (S)VCD using dvdauthor or vcdimager.
 """
 
@@ -15,6 +12,7 @@ __all__ = [
 ]
 
 from libtovid import xml
+
 
 ###
 ### Supporting classes
@@ -67,12 +65,12 @@ class Titleset:
 class Disc:
     """A video disc containing one or more Titlesets, and an optional
     top Menu for navigating to each Titleset.
-    
+
     """
     def __init__(self, name='Untitled', format='dvd', tvsys='ntsc',
                  titlesets=None):
         """Create a Disc with the given properties.
-        
+
             format
                 'vcd', 'svcd', or 'dvd'
             tvsys
@@ -163,7 +161,7 @@ def vcdimager_xml(disc):
     else: # SVCD
         attributes['version'] = '1.0'
     root = xml.Element('videocd')
-    root.set(attributes)
+    root.set(**attributes)
     # Add info block
     info = root.add('info')
     info.add('album-id', 'VIDEO_DISC')
@@ -193,7 +191,7 @@ def vcdimager_xml(disc):
         # If we're doing a topmenu, add a link to the titleset menu
         if disc.topmenu:
             selection.add('select', ref='select-menu-%d' % ts_id)
-    
+
     # Return XML with header prepended
     return header + str(root) + '\n'
 
@@ -242,10 +240,6 @@ def dvdauthor_xml(disc):
     return str(root) + '\n'
 
 
-###
-### Self-test
-###
-
 if __name__ == '__main__':
     menu1 = Menu('menu1.mpg')
     videos1 = [
@@ -262,8 +256,8 @@ if __name__ == '__main__':
         Titleset(menu2, videos2)]
     disc = Disc('dvd_test', 'dvd', 'ntsc', titlesets)
 
-    print "dvdauthor XML example:"
-    print dvdauthor_xml(disc)
+    print("dvdauthor XML example:")
+    print(dvdauthor_xml(disc))
 
-    print "vcdimager XML example:"
-    print vcdimager_xml(disc)
+    print("vcdimager XML example:")
+    print(vcdimager_xml(disc))

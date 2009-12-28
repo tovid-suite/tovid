@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# mplex.py
-
 """Multiplexing using ``mplex``.
 """
 
@@ -12,14 +9,14 @@ from libtovid import cli
 
 def mux(vstream, astream, target):
     """Multiplex audio and video stream files to the given target.
-    
+
         vstream
             Filename of MPEG video stream
         astream
             Filename of MP2/AC3 audio stream
         target
             Profile of output file
-        
+
     """
     cmd = cli.Command('mplex')
     format = target.format
@@ -38,4 +35,4 @@ def mux(vstream, astream, target):
     cmd.add(vstream, astream, '-o', target.filename)
     # Run the command to multiplex the streams
     cmd.run()
-    
+

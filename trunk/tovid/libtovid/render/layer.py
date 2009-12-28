@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# layer.py
-
 """This module provides a Layer class and several derivatives. A Layer
 is a graphical overlay that may be composited onto an image canvas.
 
@@ -47,8 +44,6 @@ from libtovid.media import MediaFile
 from libtovid import rip
 from libtovid import log
 
-log.level = 'info'
-
 class Layer:
     """A visual element, or a composition of visual elements. Conceptually
     similar to a layer in the GIMP or Photoshop, with support for animation
@@ -93,7 +88,7 @@ class Layer:
     ###
     ### Derived-class interface
     ###
-    
+
     def draw(self, drawing, frame):
         """Draw the layer and all sublayers onto the given Drawing. Override
         this function in derived layers.
@@ -103,7 +98,7 @@ class Layer:
     ###
     ### Sublayer and effect interface
     ###
-    
+
     def add_sublayer(self, layer, position=(0, 0)):
         """Add the given Layer as a sublayer of this one, at the given position.
         Sublayers are drawn in the order they are added; each sublayer may have
@@ -131,10 +126,10 @@ class Layer:
 
     def draw_with_effects(self, drawing, frame):
         """Render the entire layer, with all effects applied.
-        
+
             drawing: A Drawing object to draw the Layer on
             frame:   The frame number that is being drawn
-            
+
         """
         # Do preliminary effect rendering
         for effect in self.effects:
@@ -146,22 +141,21 @@ class Layer:
             effect.post_draw(drawing, frame)
 
 
-# ============================================================================
 # Layer template
-# ============================================================================
+# 
 # Copy and paste the following code to create your own Layer.
-#
+# 
 # Layer subclasses should define two things:
-#
+# 
 #     __init__():  How to initialize the layer with parameters
 #     draw():   How do draw the layer on a Drawing
-#
-# First, declare the layer class name. Include (Layer) to indicate that your
+# 
+# First, declare the layer class name. Include (Layer) to indicate that your 
 # class is a Layer.
+
 class MyLayer (Layer):
     """Overlapping semitransparent rectangles.
     (Modify this documentation string to describe what's in your layer)"""
-
     # Here's the class initialization function, __init__. Define here any
     # parameters that might be used to configure your layer's behavior or
     # appearance in some way (along with default values, if you like). Here,
@@ -212,13 +206,6 @@ class MyLayer (Layer):
         # Be sure to restore the drawing context afterwards:
         drawing.restore()
 
-    # That's it! Your layer is ready to use. See the Demo section at the end of
-    # this file for examples on how to create and render Layers using Python.
-
-# ============================================================================
-# End of Layer template
-# ============================================================================
-
 
 class Background (Layer):
     """A background that fills the frame with a solid color, or an image."""
@@ -226,7 +213,7 @@ class Background (Layer):
         Layer.__init__(self)
         self.color = color
         self.filename = filename
-        
+
     def draw(self, drawing, frame):
         assert isinstance(drawing, Drawing)
         log.debug("Drawing Background")
@@ -241,8 +228,6 @@ class Background (Layer):
             drawing.fill(self.color)
         drawing.restore()
 
-
-### --------------------------------------------------------------------
 
 class Image (Layer):
     """A rectangular image, scaled to the given size.
@@ -270,8 +255,6 @@ class Image (Layer):
                                           self.image_source)
         drawing.restore()
 
-
-### --------------------------------------------------------------------
 
 class VideoClip (Layer):
     """A rectangular video clip, scaled to the given size.
@@ -303,7 +286,7 @@ class VideoClip (Layer):
     def draw(self, drawing, frame=1):
         """Draw ripped video frames to the given drawing. For now, it's
         necessary to call rip_frames() before calling this function.
-        
+
         Video is looped.
         """
         assert isinstance(drawing, Drawing)
@@ -319,8 +302,6 @@ class VideoClip (Layer):
         drawing.image(self.position, self.size, filename)
         drawing.restore()
 
-
-### --------------------------------------------------------------------
 
 class Text (Layer):
     """A simple text string, with size, color and font.
@@ -373,8 +354,6 @@ class Text (Layer):
         drawing.restore()
 
 
-### --------------------------------------------------------------------
-
 class ShadedText (Layer):
     """A simple text string, with size, color and font.
     """
@@ -396,8 +375,6 @@ class ShadedText (Layer):
         self.over.draw(drawing, frame)
         drawing.restore()
 
-
-### --------------------------------------------------------------------
 
 class Label (Text):
     """A text string with a rectangular background.
@@ -444,8 +421,6 @@ class Label (Text):
         drawing.restore()
 
 
-### --------------------------------------------------------------------
-
 class Thumb (Layer):
     """A thumbnail image or video.
     """
@@ -477,8 +452,6 @@ class Thumb (Layer):
         self.draw_sublayers(drawing, frame)
         drawing.restore()
 
-
-### --------------------------------------------------------------------
 
 class ThumbGrid (Layer):
     """A rectangular array of thumbnail images or videos."""
@@ -549,15 +522,13 @@ class ThumbGrid (Layer):
         drawing.restore()
 
 
-### --------------------------------------------------------------------
-
 class SafeArea (Layer):
     """Render a safe area box at a given percentage.
     """
     def __init__(self, percent, color):
         self.percent = percent
         self.color = color
-        
+
     def draw(self, drawing, frame=1):
         assert isinstance(drawing, Drawing)
         log.debug("Drawing SafeArea")
@@ -580,8 +551,6 @@ class SafeArea (Layer):
         # Restore context
         drawing.restore()
 
-
-### --------------------------------------------------------------------
 
 class Scatterplot (Layer):
     """A 2D scatterplot of data.
@@ -620,7 +589,7 @@ class Scatterplot (Layer):
         drawing.save()
         drawing.rectangle(0, 0, width, height)
         drawing.fill('white', 0.75)
-        
+
         # Draw axes
         #->comment("Axes of scatterplot")
         drawing.save()
@@ -675,12 +644,10 @@ class Scatterplot (Layer):
                 drawing.circle(x_coord, y_coord, 3)
                 drawing.fill('red', 0.2)
         drawing.restore()
-        
+
         # Restore context
         drawing.restore()
 
-
-### --------------------------------------------------------------------
 
 class InterpolationGraph (Layer):
     # TODO: Support graphing of tuple data
@@ -692,7 +659,7 @@ class InterpolationGraph (Layer):
         size, using the given interpolation method.
         """
         Layer.__init__(self)
-                
+
         self.keyframes = keyframes
         self.size = size
         self.method = method
@@ -748,7 +715,7 @@ class InterpolationGraph (Layer):
             x = int(key.frame * x_scale)
             drawing.line(x, 0,   x, height)
             drawing.stroke('red')
-            
+
         # Draw Keyframe labels
         drawing.set_source('white')
         for key in self.keyframes:
@@ -769,8 +736,6 @@ class InterpolationGraph (Layer):
         # Restore context
         drawing.restore()
 
-
-### --------------------------------------------------------------------
 
 class ColorBars (Layer):
     """Standard SMPTE color bars
@@ -847,6 +812,7 @@ class ColorBars (Layer):
 
 
 
+
 if __name__ == '__main__':
     images = None
     # Get arguments, if any
@@ -856,7 +822,7 @@ if __name__ == '__main__':
 
     # A Drawing to render Layer demos to
     drawing = Drawing(800, 600)
-    
+
     # Draw a background layer
     bgd = Background(color='#7080A0')
     bgd.draw(drawing, 1)
@@ -927,6 +893,7 @@ if __name__ == '__main__':
     plot = Scatterplot(xy_data, 200, 200, "Spam", "Eggs")
     plot.draw(drawing, 1)
     drawing.restore()
-    
+
     log.info("Output to /tmp/my.png")
     save_image(drawing, '/tmp/my.png', 800, 600)
+

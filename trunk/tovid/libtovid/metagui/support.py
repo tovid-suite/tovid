@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# support.py
-
 """Supporting classes for metagui"""
 
 __all__ = [
@@ -23,10 +20,15 @@ import Tkinter as tk
 import tkSimpleDialog
 from variable import ListVar
 
+from libtovid.util import imagemagick_fonts
+from libtovid import cli
+import base64
+
+from ConfigParser import ConfigParser
+
 ### --------------------------------------------------------------------
 ### Supporting functions
 ### --------------------------------------------------------------------
-
 def exit_with_traceback(error_message):
     """Exit with a traceback, and print a custom error message.
     """
@@ -34,7 +36,7 @@ def exit_with_traceback(error_message):
     last_error = traceback.extract_stack()[0]
     traceback.print_stack()
     filename, lineno, foo, code = last_error
-    
+
     print("Error on line %(lineno)s of %(filename)s:" % vars())
     print("    %s" % code)
     print(error_message)
@@ -65,7 +67,8 @@ def divide_list(items, pieces):
         return [items[N*p : N*p+N] for p in range(pieces)]
 
 ### --------------------------------------------------------------------
-
+### Classes
+### --------------------------------------------------------------------
 class ScrollList (tk.Frame):
     """A Listbox with a scrollbar.
 
@@ -81,7 +84,7 @@ class ScrollList (tk.Frame):
                 Tkinter widget that will contain the ScrollList
             items
                 ListVar or Python list of items to show in listbox
-            chosen
+            selected
                 Tk StringVar to store currently selected choice in
         """
         tk.Frame.__init__(self, master)
@@ -102,6 +105,7 @@ class ScrollList (tk.Frame):
         self.listbox.pack(side='left', fill='both', expand=True)
         self.scrollbar.pack(side='left', fill='y')
         self.listbox.bind('<Button-1>', self.select)
+        # Callback methods for the various list-modification actions
         self.callbacks = {'insert': [], 'remove': [], 'select': [], 'swap': []}
 
 
@@ -125,6 +129,7 @@ class ScrollList (tk.Frame):
 
     def add(self, *values):
         """Add the given values to the end of the list.
+        Calls ``insert`` callbacks for each added item.
         """
         for value in values:
             self.listbox.insert('end', value)
@@ -134,6 +139,7 @@ class ScrollList (tk.Frame):
 
     def insert(self, index, *values):
         """Insert values at a given index.
+        Calls ``insert`` callbacks for each added item.
         """
         for offset, value in enumerate(values):
             self.listbox.insert(index+offset, value)
@@ -144,6 +150,7 @@ class ScrollList (tk.Frame):
     def delete(self, first, last=None):
         """Delete values in a given index range (first, last), not including
         last itself. If last is None, delete only the item at first index.
+        Calls ``remove`` callbacks for each removed item.
         """
         if first == last:
             return
@@ -158,6 +165,7 @@ class ScrollList (tk.Frame):
 
     def swap(self, index_a, index_b):
         """Swap the element at index_a with the one at index_b.
+        Calls ``swap`` callbacks for the swapped items.
         """
         # Use a temporary list, so self.items is only modified once
         temp_list = self.items.get()
@@ -180,6 +188,7 @@ class ScrollList (tk.Frame):
 
     def select_index(self, index, select_in_linked=True):
         """Select (highlight) the list item at the given index.
+        Calls ``select`` callbacks for the selected item.
         """
         item_count = self.items.count()
         if item_count == 0:
@@ -209,7 +218,6 @@ class ScrollList (tk.Frame):
     def set(self, values):
         """Set the list values to those given.
         """
-        #self.items.set(values)
         # Use delete / add so the relevant callbacks are summoned
         self.delete(0, self.items.count())
         self.add(*values)
@@ -255,8 +263,6 @@ class ScrollList (tk.Frame):
             function(index, item)
 
 
-
-### --------------------------------------------------------------------
 
 class DragList (ScrollList):
     """A scrollable listbox with drag-and-drop support.
@@ -304,8 +310,6 @@ class DragList (ScrollList):
         """
         # Change the mouse cursor back to the default arrow.
         self.config(cursor="")
-
-### --------------------------------------------------------------------
 
 class ComboBox (tk.Frame):
     """A dropdown menu with several choices.
@@ -405,12 +409,6 @@ class ComboBox (tk.Frame):
         if self.command:
             self.command()
 
-### --------------------------------------------------------------------
-from libtovid.util import imagemagick_fonts
-from libtovid import cli
-import base64
-
-
 class FontChooser (tkSimpleDialog.Dialog):
     """A widget for choosing a font.
     """
@@ -477,9 +475,6 @@ class FontChooser (tkSimpleDialog.Dialog):
         image_data = cmd.get_output()
         return tk.PhotoImage(data=base64.b64encode(image_data))
 
-
-### --------------------------------------------------------------------
-from ConfigParser import ConfigParser
 
 class Style:
     """Generic widget style definitions.
@@ -560,8 +555,6 @@ class Style:
         font = dict(config.items('font'))
         self.font = (font['family'], int(font['size']), font['style'])
 
-### --------------------------------------------------------------------
-
 class ConfigWindow (tkSimpleDialog.Dialog):
     """Configuration settings dialog box.
     """
@@ -612,8 +605,6 @@ class ConfigWindow (tkSimpleDialog.Dialog):
                            self.fontsize.variable.get(),
                            self.fontstyle.variable.get())
         self.result = self.style
-
-### --------------------------------------------------------------------
 
 class ScrolledWindow (tk.Tk):
     """A top-level window with scrollbars.

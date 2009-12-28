@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# widget.py
-
 """A generic GUI widget class, wrapper for tk.Frame.
 """
 
@@ -9,13 +6,12 @@ __all__ = ['Widget']
 import Tkinter as tk
 import time
 
-### --------------------------------------------------------------------
 class Widget (tk.Frame):
     """Generic metagui widget, suitable for Controls, Panels, etc.
     """
     def __init__(self, name='', **kwargs):
         """Create a Widget.
-        
+
             name
                 Unique name for the widget, or '' for an anonymous widget
         """

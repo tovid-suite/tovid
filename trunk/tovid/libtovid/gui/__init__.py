@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # __init__.py
 
 """A wxPython GUI interface to tovid.

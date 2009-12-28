@@ -232,7 +232,6 @@ trap 'killsubprocs; exit 13' TERM INT
 # ******************************************************************************
 # ******************************************************************************
 
-
 # ******************************************************************************
 # Y-echo: echo to two places at once (stdout and logfile)
 # Output is preceded by the script name that produced it
@@ -253,7 +252,6 @@ function yecho()
             printf "%s %s\n" "$ME" "$@" >> "$LOG_FILE"
     fi
 }
-
 # ******************************************************************************
 # Print usage notes and optional error message, then exit.
 # Args: $@ == text string containing error message
@@ -265,7 +263,6 @@ function usage_error()
     printf "*** Usage error: %s\n" "$@"
     exit 1
 }
-
 # ******************************************************************************
 # Print out a runtime error specified as an argument, and exit
 # ******************************************************************************
@@ -283,8 +280,6 @@ function runtime_error()
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     exit 1
 }
-
-
 # ******************************************************************************
 # Execute the given command-line string, with appropriate stream redirection
 # Args: $@ == text string containing complete command-line
@@ -849,7 +844,6 @@ function goodbye()
     exit 0
 }
 
-
 # ******************************************************************************
 # ******************************************************************************
 #
@@ -881,6 +875,7 @@ if ! $QUIET; then
     yecho "$@"
 fi
 
+
 # ******************************************************************************
 # Print a warning if running as root
 # ******************************************************************************
@@ -892,7 +887,6 @@ if [[ $UID -eq 0 ]]; then
     echo $SEPARATOR
     sleep 3
 fi
-
 
 
 # ******************************************************************************
@@ -1258,7 +1252,6 @@ else # If $IN_FILE_TYPE != "file"
     yecho "Input video is not a locally-accessible file. The input video"
     yecho "will NOT be probed for resolution, length, or compliance."
 fi
-
 # Find the right video bitrate to use so that the output file fits inside
 # the user's given file size
 if $DO_FIT; then
@@ -1311,7 +1304,6 @@ if $DO_FIT; then
         VID_BITRATE=$VID_MAX_RATE
     fi
 fi
-
 # Set resolution and frame rate according to format and TV system
 case "$TGT_RES" in
     # VCD
@@ -1493,6 +1485,7 @@ case "$TGT_RES" in
 
 esac # End resolution
 
+
 # Now that res and bitrate are set-up, report the target characteristics
 yecho "Target format:"
 yecho "  $TGT_WIDTH x $TGT_HEIGHT pixels, $TGT_FPS fps"
@@ -1582,7 +1575,7 @@ fi
 
 # Apply requested postprocessing filters, or
 # fall back to the best alternative.
-    
+
 if $DO_DENOISE; then
     # If high-quality 3D denoising is available, use it
     if grep -q "^ *hqdn3d " "$SCRATCH_FILE"; then
@@ -1613,6 +1606,7 @@ if $DO_DEBLOCK; then
         yecho "Unable to find a suitable deblocking filter. Skipping."
     fi
 fi
+
 
 # Do fast encoding if requested. Sacrifice quality for encoding speed.
 # NOT IMPLEMENTED IN COMMAND-LINE YET!
@@ -1774,7 +1768,6 @@ fi
 if test -n "$VID_FILTER"; then
     VID_FILTER="-vf $(echo "$VID_FILTER" | sed -e 's/,,/,/g' -e 's/^,//')"
 fi
-
 # ******************************************************************************
 #
 # make sure # of channels correct for each audio track
@@ -1863,6 +1856,7 @@ else # set up mapping for ffmpeg, for each track we are going to encode
     ((${#AUDIO_TRACK[@]} > 1)) && OUTPUT_FILES="each file" && s=s
 fi
 
+
 # ******************************************************************************
 #
 # If using ffmpeg, encode and exit
@@ -1876,11 +1870,7 @@ if $USE_FFMPEG; then
     FF_FPS="-r $TGT_FPS"
     FF_SAMPRATE="-ar $SAMPRATE"
     # try to get -quality 9 between quality 8 and 10
-    if ((VID_QUALITY == 9)); then
-        FF_ADD_ARGS="-trellis 1"
-        ! ffmpeg  -h 2>&1 |grep -q trellis && usage_error \
-        "Your ffmpeg is too old to have the '-trellis' switch.  Use a -quality setting other than '9'."
-    fi
+    #((VID_QUALITY == 9)) && FF_ADD_ARGS="-trell 0"
     [[ $TARGET = "DVD-VCD" ]] && FF_ADD_ARGS="$FF_ADD_ARGS -g 12" # experiment FIXME
 
     # Padding, for any letterboxing to be done
@@ -1937,7 +1927,6 @@ if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; the
     cleanup
     goodbye
 fi
-
 
 # ******************************************************************************
 #

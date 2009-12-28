@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # util.py
 
 import threading, wx
@@ -27,7 +26,7 @@ def text_to_ID(txt):
         for id, value in subdict.iteritems():
             if value == txt:
                 return id
-    print "text_to_ID: Couldn't match '%s'. Returning 0." % txt
+    print("text_to_ID: Couldn't match '%s'. Returning 0." % txt)
     return 0
 
 # wx.TreeCtrl.GetFirstChild workaround
@@ -61,7 +60,7 @@ class VideoStatSeeker(threading.Thread):
             #curOpts.duration = curStatCmd.readline().strip('\n ')
             #curStatCmd.readlines()
             #curStatCmd.close()
-            #print "VideoStatSeeker: duration for %s is %s" % (curOpts.inFile, curOpts.duration)
+            #print("VideoStatSeeker: duration for %s is %s" % (curOpts.inFile, curOpts.duration))
 
         # Done with current batch of statistics
         self.doneWithStats = True

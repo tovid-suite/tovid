@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # configs.py
 
 import os
@@ -10,6 +9,7 @@ import locale
 from libtovid.util import imagemagick_fonts
 
 __all__ = ["TovidConfig"]
+
 class TovidConfig:
     """Borg monostate class containing global configuration information"""
     __shared_state = {}
@@ -36,11 +36,11 @@ class TovidConfig:
     cur_lang_code, cur_encoding = locale.getdefaultlocale()
     # Hack: Error out on undefined locale
     if cur_encoding is None:
-        print "Error: Could not get default locale."
-        print "You should be able to fix this by setting LANG or LC_ALL:"
-        print "   LANG=en_US.utf8 tovidgui, or"
-        print "   LC_ALL=en_US.utf8 tovidgui"
-        print "Set LANG or LC_ALL in your ~/.profile to avoid this error."
+        print("Error: Could not get default locale.")
+        print("You should be able to fix this by setting LANG or LC_ALL:")
+        print("   LANG=en_US.utf8 tovidgui, or")
+        print("   LC_ALL=en_US.utf8 tovidgui")
+        print("Set LANG or LC_ALL in your ~/.profile to avoid this error.")
         sys.exit(1)
 
     def __init__(self):
@@ -50,7 +50,7 @@ class TovidConfig:
         self.isInitialized = True
         self.ConfigAvailFonts()
         #self.InitLocales()
-    
+
 
     def ConfigAvailFonts(self):
         """Determine fonts that are available in both wx.Python and
@@ -138,13 +138,13 @@ class TovidConfig:
 
     def UseLanguage(self, lang):
         self.trans[ lang ].install()
-    
+
     def InitLocales(self):
         self.trans = {}
-    
+
         try:
             self.trans['en'] = gettext.translation('tovidgui', '.', ['en'])
             #self.trans['de'] = gettext.translation('tovidgui', '.', ['de'])
         except IOError:
-            print "Couldn't initialize translations"
+            print("Couldn't initialize translations")
 

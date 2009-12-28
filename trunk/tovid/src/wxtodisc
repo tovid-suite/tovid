@@ -27,17 +27,17 @@ try:
     if wxversion.checkInstalled('2.6'):
         wxversion.select('2.6')
     else:
-        print "tovidgui requires wxPython 2.6; please install or upgrade wxPython."
+        print("tovidgui requires wxPython 2.6; please install or upgrade wxPython.")
         sys.exit()
     import wx
 except ImportError:
     traceback.print_exc()
-    print "There was an error importing the 'wx' libraries. The above"
-    print "output should help you find what went wrong. Re-installing"
-    print "wxPython 2.6 (or upgrading from wxPython 2.4 to 2.6) may"
-    print "help. Consult the tovid homepage (tovid.org) for further"
-    print "assistance."
-    print "Sorry, 'tovidgui' will not work."
+    print("There was an error importing the 'wx' libraries. The above")
+    print("output should help you find what went wrong. Re-installing")
+    print("wxPython 2.6 (or upgrading from wxPython 2.4 to 2.6) may")
+    print("help. Consult the tovid homepage (tovid.org) for further")
+    print("assistance.")
+    print("Sorry, 'tovidgui' will not work.")
     sys.exit()
 
 from libtovid.gui.frames import TodiscFrame

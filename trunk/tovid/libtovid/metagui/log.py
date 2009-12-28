@@ -1,10 +1,10 @@
-#! /usr/bin/env python
-# log.py
-
 """Logging utilities for metagui.
 """
 
 import inspect
+import sys
+import os
+import linecache
 
 def dump_args(func):
     """Decorator for logging calls to the function, along with
@@ -20,12 +20,6 @@ def dump_args(func):
 
     return func_wrapper
 
-
-# -----------------------------------------------------------------------------
-
-import sys
-import os
-import linecache
 
 def trace(f):
     """Trace lines in the function.
@@ -43,8 +37,8 @@ def trace(f):
             lineno = frame.f_lineno
 
             bname = os.path.basename(filename)
-            print "%s(%d): %s" % (bname, lineno,
-                                  linecache.getline(filename, lineno)),
+            print("%s(%d): %s" % \
+                (bname, lineno, linecache.getline(filename, lineno)))
         return localtrace
 
     def _f(*args, **kwds):

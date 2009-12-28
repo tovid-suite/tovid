@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # tovid_batch.py
 
 from libtovid.metagui import *

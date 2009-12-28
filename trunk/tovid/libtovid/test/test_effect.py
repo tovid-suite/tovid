@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# test_effect.py
-
 import unittest
 import math
 # Fetch in subdir
@@ -13,11 +10,9 @@ from libtovid.render.animation import Keyframe
 
 class TestEffect(unittest.TestCase):
     """Test the Effect class"""
-
-    
     def test_effect(self):
         pass
-    
+
 
     def test_instantiate_effects(self):
         e1 = effect.Effect(0, 10)
@@ -28,7 +23,7 @@ class TestEffect(unittest.TestCase):
              Keyframe(10, 1.0),
              Keyframe(30, 0.0)]
         e5 = effect.Fade(k, method='cosine')
-                             
+
 
 if __name__ == '__main__':
     unittest.main()

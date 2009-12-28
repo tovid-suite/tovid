@@ -1,8 +1,19 @@
-#! /usr/bin/env python
-# transcode.py
-
 """Video frame ripping and video identification using ``transcode``.
 """
+
+# Sample output from tcprobe:
+# 
+# [tcprobe] RIFF data, AVI video
+# [avilib] V: 24.000 fps, codec=DIVX, frames=15691, width=1024, height=576
+# [avilib] A: 48000 Hz, format=0x2000, bits=0, channels=5, bitrate=448 kbps,
+# [avilib]    10216 chunks, 36614144 bytes, CBR
+# [tcprobe] summary for Elephants_1024.avi, (*) = not default, 0 = not 
+# detected
+# import frame size: -g 1024x576 [720x576] (*)
+#        frame rate: -f 24.000 [25.000] frc=0 (*)
+#       audio track: -a 0 [0] -e 48000,0,5 [48000,16,2] -n 0x2000 [0x2000] (*)
+#                    bitrate=448 kbps
+#            length: 15691 frames, frame_time=41 msec, duration=0:10:53.790
 
 __all__ = [
     'identify',
@@ -14,28 +25,12 @@ from libtovid import log
 from libtovid import cli
 from libtovid.media import MediaFile
 
-"""
-Sample output from tcprobe:
-
-[tcprobe] RIFF data, AVI video
-[avilib] V: 24.000 fps, codec=DIVX, frames=15691, width=1024, height=576
-[avilib] A: 48000 Hz, format=0x2000, bits=0, channels=5, bitrate=448 kbps,
-[avilib]    10216 chunks, 36614144 bytes, CBR
-[tcprobe] summary for Elephants_1024.avi, (*) = not default, 0 = not detected
-import frame size: -g 1024x576 [720x576] (*)
-       frame rate: -f 24.000 [25.000] frc=0 (*)
-      audio track: -a 0 [0] -e 48000,0,5 [48000,16,2] -n 0x2000 [0x2000] (*)
-                   bitrate=448 kbps
-           length: 15691 frames, frame_time=41 msec, duration=0:10:53.790
-"""
-
-
 def identify(filename):
     """Identify a video file using transcode (tcprobe), and return a MediaFile
     with the video's specifications.
     """
     result = MediaFile(filename)
-    
+
     cmd = cli.Command('tcprobe', '-i', filename)
     cmd.run(capture=True)
     output = cmd.get_output()
@@ -46,14 +41,14 @@ def identify(filename):
         'frames=\d+, '
         'width=(?P<width>\d+), '
         'height=(?P<height>\d+)')
-    
+
     audio_line = re.compile('A: '
         '(?P<samprate>\d+) Hz, '
         'format=(?P<acodec>[^,]+), '
         'bits=\d+, '
         'channels=(?P<channels>[^,]+), '
         'bitrate=(?P<abitrate>\d+) kbps')
-    
+
     for line in output.split('\n'):
         if 'V: ' in line:
             match = video_line.search(line)
@@ -69,14 +64,14 @@ def identify(filename):
             result.samprate = int(match.group('samprate'))
             result.abitrate = int(match.group('abitrate'))
             result.channels = int(match.group('channels'))
-    
+
     return result
 
 
 def rip_frames(media, out_dir, frames='all', size=(0, 0)):
     """Extract frame images from a MediaFile and return a list of frame image
     files.
-    
+
         media
             MediaFile to extract images from
         out_dir
@@ -98,7 +93,7 @@ def rip_frames(media, out_dir, frames='all', size=(0, 0)):
 
     # TODO: use tcdemux to generate a nav index, like:
     # tcdemux -f 29.970 -W -i "$FILE" > "$NAVFILE"
-    
+
     # Use transcode to rip frames
     cmd = cli.Command('transcode',
                   '-i', '%s' % media.filename)

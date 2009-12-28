@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# animation.py
-
 """This module provides classes and functions for working with animation.
 Two classes are provided:
 
@@ -37,7 +34,7 @@ to the right, to (80, 20), then diagonally to (100, 100).
 
     >>> tween = Tween(keys)
     >>> for (x, y) in tween.data:
-    ...     print (x, y)
+    ...     print((x, y))
     ...
     (20, 20)
     (32, 20)
@@ -66,12 +63,10 @@ import copy
 import doctest
 import math
 
-### --------------------------------------------------------------------------
-
 class Keyframe:
     """Associates a specific frame in an animation with a numeric value.
     A Keyframe is a (frame, data) pair defining a "control point" on a graph::
-    
+
             100 |
                 |       Keyframe(10, 50)
            data |      *
@@ -79,9 +74,9 @@ class Keyframe:
               0 |__________________________
                 1     10     20     30
                         frame
-    
+
     The data can represent anything you like. For instance, opacity::
-    
+
             100 |* Keyframe(1, 100)
                 |       
      opacity(%) |
@@ -138,22 +133,20 @@ def cos_interp(x, (x0, y0), (x1, y1)):
     return y_min + y_diff * (math.cos(x_norm) + 1) / 2.0
 
 
-### --------------------------------------------------------------------------
-
 def interpolate(frame, left, right, method):
     """Interpolate data between left and right Keyframes at the given frame,
     using the given interpolation method ('linear' or 'cosine'). Return the
     value at the given frame.
-    
+
     The left and right Keyframes mark the endpoints of the curve to be
     interpolated. For example, if a value changes from 50 to 80 over the
     course of frames 1 to 30::
 
         >>> left = Keyframe(1, 50)
         >>> right = Keyframe(30, 80)
-    
+
     Then, the value at frame 10 can be interpolated as follows::
-    
+
         >>> interpolate(10, left, right, 'linear')
         59
         >>> interpolate(10, left, right, 'cosine')
@@ -161,7 +154,7 @@ def interpolate(frame, left, right, method):
 
     For frames outside the keyframe interval, the corresponding endpoint value
     is returned::
-    
+
         >>> interpolate(0, left, right, 'linear')
         50
         >>> interpolate(40, left, right, 'linear')
@@ -198,28 +191,26 @@ def interpolate(frame, left, right, method):
             dim += 1
         return tuple(result)
 
-### --------------------------------------------------------------------------
-
 class Tween:
     """An "in-between" sequence, calculated by interpolating the data in a
     list of keyframes according to a given interpolation method.
-    
+
     First, define some keyframes::
-    
+
         >>> keyframes = [Keyframe(1, 1), Keyframe(10, 25)]
-    
+
     At frame 1, the value is 1; at frame 10, the value is 25. To get an
     interpolation of the data between these two keyframes, use::
-    
+
         >>> tween = Tween(keyframes)
 
     Now, retrieve the interpolated data all at once::
-    
+
         >>> tween.data
         [1, 3, 6, 9, 11, 14, 17, 19, 22, 25]
-    
+
     Or by using array notation, indexed by frame number::
-    
+
         >>> tween[3]
         6
         >>> tween[8]
@@ -253,12 +244,12 @@ class Tween:
         keys = copy.copy(self.keyframes)
         first = self.start
         last = self.end
-        
+
         # If keyframe interval is empty, use constant data from first keyframe
         if first == last:
             self.data = keys[0].data
             return
-    
+
         # Pop off keyframes as each interval is calculated
         left = keys.pop(0)
         right = keys.pop(0)
@@ -276,7 +267,7 @@ class Tween:
     def __getitem__(self, frame):
         """Return the interpolated data at the given frame. This allows
         accessing a tweened value with subscripting by frame number::
-        
+
             >>> keys = [Keyframe(1, 1), Keyframe(30, 50)]
             >>> tween = Tween(keys)
             >>> tween[1]
@@ -288,7 +279,7 @@ class Tween:
 
         Frame numbers outside the keyframed region have the same values as
         those at the corresponding endpoints::
-        
+
             >>> tween[0]
             1
             >>> tween[100]
@@ -305,16 +296,15 @@ class Tween:
         else:
             return self.data[frame - self.start]
 
-### --------------------------------------------------------------------------
 
 if __name__ == '__main__':
     doctest.testmod(verbose=True)
 
     p0 = (1, 1)
     p1 = (20, 20)
-    
-    print "Interpolation methods"
-    print "x      lerp     cos_interp"
+
+    print("Interpolation methods")
+    print("x      lerp     cos_interp")
     for x in range(1, 21):
-        print "%s      %s       %s" % \
-              (x, lerp(x, p0, p1), cos_interp(x, p0, p1))
+        print("%s      %s       %s" % \
+              (x, lerp(x, p0, p1), cos_interp(x, p0, p1)))

@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# encode.py
-
 """Encode video to standard formats, using one of several supported backends.
 
 One high-level function is provided::
@@ -56,7 +53,7 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
            **kwargs):
     """Encode a multimedia file according to a target profile, saving the
     encoded file to outfile.
-    
+
         infile
             Input filename
         outfile
@@ -69,7 +66,7 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
             Encoding backend: 'ffmpeg', 'mencoder', or 'mpeg2enc'
         kwargs
             Additional keyword arguments (name=value)
-    
+
     The supported keyword arguments vary by encoding method. See the encoding
     functions for what is available in each.
     """
@@ -85,14 +82,14 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
         target = correct_aspect(source, target, kwargs['aspect'])
     else:
         target = correct_aspect(source, target, 'auto')
-    
+
     # Some friendly output
-    print "Source media:"
-    print source
-    print
-    print "Target media:"
-    print target
-    
+    print("Source media:")
+    print(source)
+    print(' ')
+    print("Target media:")
+    print(target)
+
     # Get the appropriate encoding backend
     encode_method = get_encoder(method)
     # Evaluate high-level keywords
@@ -122,7 +119,7 @@ def eval_keywords(source, target, **kwargs):
     These are keywords that can be shared between multiple encoding backends.
 
     Supported keywords:
-    
+
         quality
             From 1 (lowest) to 10 (highest) video quality.
             Overrides 'quant' and 'vbitrate' keywords.
@@ -145,7 +142,7 @@ def eval_keywords(source, target, **kwargs):
 
 def _fit(source, target, fit_size):
     """Return video (quantization, bitrate) to fit a video into a given size.
-    
+
         source
             MediaFile input (the video being encoded)
         target
@@ -163,11 +160,11 @@ def _fit(source, target, fit_size):
     video_size = aud_vid_size - audio_size
     vid_bitrate = int(video_size*8*1024 / source.length)
 
-    print "Length:", source.length, "seconds"
-    print "Overhead:", mpeg_overhead, "MiB"
-    print "Audio:", audio_size, "MiB"
-    print "Video:", video_size, "MiB"
-    print "VBitrate:", vid_bitrate, "kbps"
+    print("Length: %s seconds" % source.length)
+    print("Overhead: %s MiB" % mpeg_overhead)
+    print("Audio: %s MiB" % audio_size)
+    print("Video: %s MiB" % video_size)
+    print("VBitrate: %s kbps" % vid_bitrate)
 
     # Keep bitrates sane for each disc format
     lower, upper = _bitrate_limits[target.format]

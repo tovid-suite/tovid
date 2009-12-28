@@ -59,10 +59,10 @@ if __name__ == '__main__':
     # If no arguments were provided, print usage notes
     # TODO: Proper argument verification
     if len(sys.argv) < 3:
-        print 'Usage: pymakemenu [options] -out NAME'
-        print 'Where [options] may be any of the following:'
-        print options.usage()
-        print 'Please provide an output name (-out).'
+        print('Usage: pymakemenu [options] -out NAME')
+        print('Where [options] may be any of the following:')
+        print(options.usage())
+        print('Please provide an output name (-out).')
         sys.exit()
     options.override(sys.argv[1:])
     # Target MediaFile

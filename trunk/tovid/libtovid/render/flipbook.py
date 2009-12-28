@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# flipbook.py
-
 """This module provides the Flipbook class, a collection of drawings that, when
 displayed in sequence, make up an animation or video.
 
@@ -80,7 +77,6 @@ from libtovid import standard
 from libtovid.media import MediaFile
 from libtovid.backend import mplex, mplayer, ffmpeg
 
-### --------------------------------------------------------------------------
 
 class Flipbook:
     """A collection of Drawings that together comprise an animation.
@@ -131,7 +127,7 @@ class Flipbook:
         self.widescreen = False
         if (aspect == '16:9'):
             self.widescreen = True
-            
+
         self.canvas = self.get_canvas_size()
         self.w = self.canvas[0]
         self.h = self.canvas[1]
@@ -186,7 +182,7 @@ class Flipbook:
         # since on TVs, the number of *lines* can't change (when interlacing
         # is into business)
         return (nw, oh)
-        
+
 
     def add(self, layer, position=(0, 0)):
         """Add a Layer to the flipbook.
@@ -197,11 +193,11 @@ class Flipbook:
     def render(self, frame=1):
         """Render the given frame.
         """
-        print "DEPRECATED FUNCTION."
+        print("DEPRECATED FUNCTION.")
         exit()
-        
+
         filename = "/tmp/flipbook_%s.png" % frame
-        print "Rendering Flipbook frame %s to %s" % (frame, filename)
+        print("Rendering Flipbook frame %s to %s" % (frame, filename))
         drawing = self.get_drawing(frame)
 
         save_png(drawing, filename, self.output_size[0], self.output_size[1])
@@ -216,7 +212,7 @@ class Flipbook:
         # Make sure all layers and effects has been initialized with parents.
         if (not self.called_init_childs):
             self.init_childs()
-            
+
         drawing = Drawing(self.canvas[0], self.canvas[1])
         # Draw each layer
         for layer, position in self.layers:
@@ -234,7 +230,7 @@ class Flipbook:
             out_filename
                 Filename for output. If not specified, a temporary filename
                 will be given, and returned from the function.
-        
+
         Return the filename of the output, in both cases.
         """
         # Make sure layers and effects have been initialized with parents.
@@ -247,7 +243,7 @@ class Flipbook:
         # /tmp/flipbook-120391232-work/bunch-of-files..m2v, .ac3, etc.
         # /tmp/flipbook-120391232.mpg -> final output..
         #
-        
+
         tmp_prefix = ''
         tmp_workdir = ''
         while 1:
@@ -278,7 +274,7 @@ class Flipbook:
             pngorpnm = 'ppmtoy4m -F %s -A %s -Ip -S 420mpeg2' % \
                      (self.fps_ratio, self.aspect)
             _write_img = write_png
-            
+
         # Cinelerra params: -b 0 -q 5 -a 2 -F 4 -I 0 -M 2 -f 8 -R 0
         # TODO: move this to encode.py
         # -M (multi-threading, num CPUs)
@@ -288,10 +284,10 @@ class Flipbook:
         # -b 7500
         pipe = os.popen("%s | mpeg2enc -q 5 -g 45 -G 45 -f 8 -a 2 -I 0 "
                         "-o '%s'" % (pngorpnm,  m2v_file), 'w')
-        
+
         frame = 1
         while frame <= self.frames:
-            print "Drawing frame %s of %s" % (frame, self.frames)
+            print("Drawing frame %s of %s" % (frame, self.frames))
 
             if (self.interlaced):
                 draw1 = self.get_drawing(frame)
@@ -306,13 +302,13 @@ class Flipbook:
                 _write_img(drawing, pipe,
                            self.output_size[0], self.output_size[1],
                            tmp_workdir)
-                
+
             frame += 1
 
-        print "Closing encoder. Output to %s" % out_filename
+        print("Closing encoder. Output to %s" % out_filename)
         pipe.close()
 
-        print "Waiting for encoder to finish..."
+        print("Waiting for encoder to finish...")
         time.sleep(0.5)
 
         os.system("ls -al %s" % m2v_file)
@@ -327,20 +323,19 @@ class Flipbook:
         # Important to render 16:9 video correctly.
         outvid.widescreen = self.widescreen
 
-        print "Running audio encoder..."
+        print("Running audio encoder...")
         ffmpeg.encode_audio(vidonly, ac3_file, outvid)
 
-        print "Mplex..."
+        print("Mplex...")
         mplex.mux(m2v_file, ac3_file, outvid)
 
         # Clean up
-        print "Cleaning up %s ..." % tmp_workdir
+        print("Cleaning up %s ..." % tmp_workdir)
         shutil.rmtree(tmp_workdir)
 
-        print "Output: %s" % out_filename
+        print("Output: %s" % out_filename)
         return out_filename
 
-### --------------------------------------------------------------------------
 
 def draw_text_demo(flipbook):
     """Draw a demonstration of Text layers with various effects.
@@ -348,7 +343,7 @@ def draw_text_demo(flipbook):
     assert isinstance(flipbook, Flipbook)
 
     last_frame = flipbook.frames
-    
+
     # Background image
     bgd = layer.Background('black')
     flipbook.add(bgd)
@@ -408,9 +403,6 @@ def draw_text_demo(flipbook):
     flipbook.add(text_cosine, (340, 150))
     flipbook.add(graph_cosine, (340, 180))
 
-### --------------------------------------------------------------------------
-### Demo
-### --------------------------------------------------------------------------
 
 if __name__ == '__main__':
     start_time = time.time() # Benchmark
@@ -428,9 +420,9 @@ if __name__ == '__main__':
     #clip.rip_frames(0, 90)
     #clip.effects.append(effect.Fade(1, 90, 20))
     #flip.add(clip, (260, 200))
-    
+
     # Render the final video
     filename = flip.render_video('/tmp/flipbook.mpg')
 
-    print "Took %f seconds to render: %s" % (time.time() - start_time, filename)
-    
+    print("Took %f seconds to render: %s" % (time.time() - start_time, filename))
+

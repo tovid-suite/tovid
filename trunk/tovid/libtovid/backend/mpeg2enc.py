@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# mpeg2enc.py
-
 """Video and frame encoding using ``mpeg2enc``.
 """
 
@@ -20,7 +17,7 @@ from libtovid.backend import mplex, mplayer, ffmpeg
 
 def encode(source, target, **kw):
     """Encode a multimedia video using mplayer|yuvfps|mpeg2enc.
-    
+
         source
             Input MediaFile
         target
@@ -40,7 +37,7 @@ def encode(source, target, **kw):
     yuvfile = '%s.yuv' % outname
     if os.path.exists(yuvfile):
         os.remove(yuvfile)
-    
+
     # Filenames for intermediate streams (ac3/m2v etc.)
     # Appropriate suffix for audio stream
     if target.format in ['vcd', 'svcd']:
@@ -59,12 +56,12 @@ def encode(source, target, **kw):
     encode_video(source, yuvfile, videofile, target)
     # Combine audio and video
     mplex.mux(videofile, audiofile, target)
-    
+
 
 
 def encode_video(source, yuvfile, videofile, target):
     """Encode a yuv4mpeg stream to an MPEG video stream.
-    
+
         source
             Input MediaFile
         yuvfile
@@ -73,7 +70,7 @@ def encode_video(source, yuvfile, videofile, target):
             Filename of .m[1|2]v to write encoded video stream to
         target
             Output MediaFile
-        
+
     """
     # TODO: Control over quality (bitrate/quantization) and disc split size,
     # corresp. to $VID_BITRATE, $MPEG2_QUALITY, $DISC_SIZE, etc.
@@ -114,7 +111,7 @@ def encode_video(source, yuvfile, videofile, target):
         mpeg2enc.add('-a', '2')
     mpeg2enc.add('-o', videofile)
     pipe.add(mpeg2enc)
-    
+
     # Run the pipeline to encode the video stream
     pipe.run()
 
@@ -140,14 +137,14 @@ def encode_frames(imagedir, outfile, format, tvsys, aspect, interlaced=False):
             Aspect ratio ('4:3', '16:9')
         interlaced
             Frames are interlaced material
-        
+
     Currently supports JPG and PNG images; input images must already be
     at the desired target resolution.
     """
-    
+
     # Use absolute path name
     imagedir = os.path.abspath(imagedir)
-    print "Creating video stream from image sequence in %s" % imagedir
+    print("Creating video stream from image sequence in %s" % imagedir)
     # Determine image type
     images = glob.glob("%s/*" % imagedir)
     extension = images[0][-3:]
@@ -165,7 +162,7 @@ def encode_frames(imagedir, outfile, format, tvsys, aspect, interlaced=False):
     # Use jpeg2yuv/png2yuv to stream images
     if extension == 'jpg':
         jpeg2yuv = cli.Command('jpeg2yuv')
-        
+
         jpeg2yuv.add('-Ip') # Progressive
 
         jpeg2yuv.add('-f', '%.3f' % standard.fps(tvsys),
@@ -177,18 +174,18 @@ def encode_frames(imagedir, outfile, format, tvsys, aspect, interlaced=False):
         png2yuv = cli.Command('png2yuv')
 
         png2yuv.add('-Ip') # Progressive
-            
+
 
         png2yuv.add('-f', '%.3f' % standard.fps(tvsys),
                     '-j', '%s/%%08d.png' % (imagedir))
-        
+
         pipe.add(png2yuv)
 
         #pipe.add(ls, xargs, png2yuv)
         #cmd += 'pnmtoy4m -Ip -F %s %s/*.png' % standard.fps_ratio(tvsys)
 
     # TODO: Scale to correct target size using yuvscaler or similar
-    
+
     # Pipe image stream into mpeg2enc to encode
     mpeg2enc = cli.Command('mpeg2enc')
 
@@ -199,7 +196,7 @@ def encode_frames(imagedir, outfile, format, tvsys, aspect, interlaced=False):
     if (interlaced):
         mpeg2enc.add('--playback-field-order', 'b')  # Bottom-first field order
         # conforming to drawing.py::interlace_drawings()
-    
+
     mpeg2enc.add('-v', '0',
                  '-q' '3',
                  '-o' '%s' % outfile)

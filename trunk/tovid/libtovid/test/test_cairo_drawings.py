@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# test_cairo_drawings.py
-
 import unittest
 import math
 # Fetch in subdir
@@ -14,7 +11,6 @@ import os
 
 class TestCairoDraws(unittest.TestCase):
     """Test several drawings, and view them"""
-    
     def setUp(self):
         """Set up a new drawing"""
         self.d = Drawing(640, 480)
@@ -23,7 +19,7 @@ class TestCairoDraws(unittest.TestCase):
         """Delete the drawing"""
         display(self.d)
         del(self.d)
-        
+
     def txt(self, txt):
         #self.d.rectangle(15, 445, 610, 20)
         self.d.save()
@@ -35,7 +31,6 @@ class TestCairoDraws(unittest.TestCase):
         self.d.text(txt, 15, 460)
         self.d.restore()
 
-    ################ Tests start here ###########
 
 class TestInterlaceDrawings(TestCairoDraws):
     def test_interlace_drawings(self):
@@ -47,7 +42,7 @@ class TestInterlaceDrawings(TestCairoDraws):
         im1.image(0,0,200,200, 'bleu.png')
         im2 = Drawing(200, 200)
         im2.image(0,0,200,200, 'rouge.png')
-        
+
         mix = interlace_drawings(im1, im2)
 
         save_png(mix, '/tmp/img.png', mix.w, mix.h)
@@ -105,7 +100,7 @@ class TestCircleStrokeFill(TestCairoDraws):
         self.d.circle(500, 100, 50) # same radius as others
         self.d.stroke(sc)
         self.d.restore()
-        
+
 class TestRoundRectangle(TestCairoDraws):        
     def test_round_rectangle(self):
         """Test bezier points placement to make a round rectangle."""

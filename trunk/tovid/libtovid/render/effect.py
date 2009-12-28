@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# effect.py
-
 """This module defines classes for creating and drawing effects on a series
 of drawings (as in a Flipbook).
 
@@ -31,14 +28,12 @@ __all__ = [
     'Scale',
     'Whirl',
     'PhotoZoom',
-    'KeyFunction'
-    ]
+    'KeyFunction',
+]
 
 from libtovid.render.drawing import Drawing
 from libtovid.render.animation import Keyframe, Tween
 from random import randint
-
-### --------------------------------------------------------------------------
 
 class Effect:
     """A "special effect" created by keyframing a Cairo drawing command
@@ -92,22 +87,21 @@ class Effect:
         drawing.restore()
 
 
-### --------------------------------------------------------------------------
-### New Effect template
-### Copy and paste this code to create your own Effect
-### --------------------------------------------------------------------------
-
+# New Effect template
+# 
+# Copy and paste this code to create your own Effect
+# 
 # The first line defines your effect's name. (Effect) means it inherits from
 # the base Effect class, and shares some properties with it.
+
 class MyEffect (Effect):
     """Modify this documentation string to describe what your effect does.
     """
-    
-    # The __init__ function is called whenever a MyEffect is created.
-    # Make sure your __init__ takes start and end arguments; additional
-    # arguments (such as start_val and end_val below) allow someone using
-    # your effect class to customize its behavior in some way. See the
-    # other effects below for examples.
+    # The __init__ function is called whenever a MyEffect is created. Make 
+    # sure your __init__ takes start and end arguments; additional arguments 
+    # (such as start_val and end_val below) allow someone using your effect 
+    # class to customize its behavior in some way. See the other effects below 
+    # for examples.
     def __init__(self, start, end, start_val, end_val):
         """Create a MyEffect lasting from start to end frame.
         """
@@ -131,10 +125,10 @@ class MyEffect (Effect):
         # The Layer must know that his particular effect requires the
         # calling of this function, or to add special parameters, or to
         # draw between items in the layer.
-        
+
         # First, it's good to make sure we really have a Drawing class
         assert isinstance(drawing, Drawing)
-        
+
         # This effect varies the stroke width across a sequence of frames.
         # Replace 'stroke_width' with your own drawing function(s)
         drawing.stroke_width(self.tween[frame])
@@ -146,7 +140,7 @@ class MyEffect (Effect):
         """Do preliminary effect rendering."""
         # Always call the base class pre_draw first:
         Effect.pre_draw(self, drawing, frame)
-        
+
         # This effect varies the stroke width across a sequence of frames.
         # Replace 'stroke_width' with your own drawing function(s)
         drawing.stroke_width(self.tween[frame])
@@ -159,17 +153,6 @@ class MyEffect (Effect):
         # Post-drawing cleanup here
         Effect.post_draw(self, drawing, frame)
 
-    # That's it! Your effect is ready to use.
-    # See libtovid/flipbook.py for examples on how to use effects
-
-### --------------------------------------------------------------------------
-### End of new effect template
-### --------------------------------------------------------------------------
-
-
-### --------------------------------------------------------------------------
-### Built-in effects
-### --------------------------------------------------------------------------
 
 class Movement (Effect):
     """A movement effect, from one point to another."""
@@ -190,16 +173,12 @@ class Movement (Effect):
     def post_draw(self, drawing, frame):
         drawing.restore()
 
-### --------------------------------------------------------------------------
-
 class Translate (Movement):
     """Translates the layer to some relative (x,y) coordinates
     """
     def __init__(self, start, end, (dx, dy)):
         Movement.__init__(self, start, end, (0, 0), (dx, dy))
-        
 
-### --------------------------------------------------------------------------
 
 class Fade (Effect):
     """A generic fade effect, varying the opacity of a layer.
@@ -218,7 +197,7 @@ class Fade (Effect):
                 from 0.0 to 1.0 (setting opacity).
             method
                 'linear' or 'cosine' interpolation
-    
+
         """
         # A fill-opacity curve, something like:
         #         ______        100%
@@ -233,7 +212,7 @@ class Fade (Effect):
             raise ValueError, "List of Keyframe objects required"
 
         self.tween = Tween(self.keyframes, method)
-        
+
 
     def pre_draw(self, drawing, frame):
         """Called before drawing on a layer.
@@ -247,8 +226,6 @@ class Fade (Effect):
         assert isinstance(drawing, Drawing)
         drawing.pop_group_to_source()
         drawing.paint_with_alpha(self.tween[frame])
-
-### --------------------------------------------------------------------------
 
 class FadeInOut (Fade):
     def __init__(self, start, end, fade_length=30):
@@ -274,8 +251,6 @@ class FadeInOut (Fade):
 
         self.tween = Tween(self.keyframes)
 
-### --------------------------------------------------------------------------
-    
 class Colorfade (Effect):
     """A color-slide effect between an arbitrary number of RGB colors.
     """
@@ -297,8 +272,6 @@ class Colorfade (Effect):
     def post_draw(self, drawing, frame):
         pass
 
-
-### --------------------------------------------------------------------------
 
 class Spectrum (Effect):
     """A full-spectrum color-fade effect between start and end frames.
@@ -325,8 +298,6 @@ class Spectrum (Effect):
     def post_draw(self, drawing, frame):
         pass
 
-### --------------------------------------------------------------------------
-
 class Scale (Effect):
     """A Scaling effect, from one size to another.
     """
@@ -347,14 +318,12 @@ class Scale (Effect):
     def post_draw(self, drawing, frame):
         drawing.restore()
 
-### --------------------------------------------------------------------------
-
 class Whirl (Effect):
     """Rotates an object a number of times.
     """
     def __init__(self, keyframes, center=(0, 0), method='linear', units='deg'):
         """Create a Whirl effect
-        
+
             method
                 'linear' or 'cosine', for passing from one angle to another
             units
@@ -363,7 +332,7 @@ class Whirl (Effect):
         if units != 'deg' and units != 'rad':
             raise ValueError, "units must be 'rad' (radians) or 'deg' (degrees)"
         self.units = units
-        
+
         if not isinstance(center, tuple):
             raise ValueError, "center must be a two-value tuple"
         self.center = center
@@ -385,8 +354,6 @@ class Whirl (Effect):
     def post_draw(self, drawing, frame):
         drawing.translate(- self.center[0], - self.center[1])
         drawing.restore()
-
-### --------------------------------------------------------------------------
 
 class PhotoZoom (Effect):
     """Zoom in and create dynamism by moving a picture.
@@ -419,8 +386,8 @@ class PhotoZoom (Effect):
         else:
             self.direction = direction
 
-        print "Zoom in direction: %s" % self.direction
-        
+        print("Zoom in direction: %s" % self.direction)
+
         self.subject = subject
 
         self.movement = movement
@@ -444,7 +411,7 @@ class PhotoZoom (Effect):
         zoomfactor = 0.25 * (self.movement / 100.)
 
         inter = self.tween[frame]
-        
+
         if (self.direction == 'in'):
             gozoom = 1.0 + (1.0 - inter) * zoomfactor
         else:
@@ -456,8 +423,6 @@ class PhotoZoom (Effect):
 
     def post_draw(self, drawing, frame):
         drawing.restore()
-
-### --------------------------------------------------------------------------
 
 class KeyFunction (Effect):
     """A keyframed effect on an arbitrary Drawing function.
@@ -490,4 +455,3 @@ class KeyFunction (Effect):
     def post_draw(self, drawing, frame):
         drawing.restore()
 
-### --------------------------------------------------------------------------

@@ -61,7 +61,7 @@ def get_statlist(statfile):
 if __name__ == '__main__':
     args = sys.argv[1:]
     if len(args) == 0:
-        print USAGE
+        print(USAGE)
         sys.exit(0)
 
     # Get stats from the default tovid stat file
@@ -74,20 +74,20 @@ if __name__ == '__main__':
         if arg == '-count':
             field = args.pop(0)
             counts = statlist.count_unique(field)
-            print "Total occurrences of each distinct value of '%s':" % field
-            print pretty_dict(counts)
-            print "Total of %s distinct values" % len(counts)
+            print("Total occurrences of each distinct value of '%s':" % field)
+            print(pretty_dict(counts))
+            print("Total of %s distinct values" % len(counts))
 
         elif arg == '-average':
             avg_field = args.pop(0)
             if args and args[0] == 'by':
                 args.pop(0)
                 by_field = args.pop(0)
-                print "Average %s, sorted by %s:" % (avg_field, by_field)
-                print pretty_dict(statlist.average_by(avg_field, by_field))
+                print("Average %s, sorted by %s:" % (avg_field, by_field))
+                print(pretty_dict(statlist.average_by(avg_field, by_field)))
             else:
-                print "Average %s:" % avg_field
-                print statlist.average(avg_field)
+                print("Average %s:" % avg_field)
+                print(statlist.average(avg_field))
 
         # Useful -list arguments:
         #    -list avg_bitrate by tgt_bitrate
@@ -98,26 +98,26 @@ if __name__ == '__main__':
             if args and args[0] == 'by':
                 args.pop(0)
                 by_field = args.pop(0)
-                print "List of %ss by by %s:" % (list_field, by_field)
-                print pretty_dict(statlist.list_by(list_field, by_field, True))
+                print("List of %ss by by %s:" % (list_field, by_field))
+                print(pretty_dict(statlist.list_by(list_field, by_field, True)))
             else:
-                print "Please use -list with a 'by' clause."
+                print("Please use -list with a 'by' clause.")
 
         elif arg == '-plot':
             list_field = args.pop(0)
             if list_field not in stats.int_fields:
-                print "The -plot option requires a numerical field."
+                print("The -plot option requires a numerical field.")
             elif args and args[0] == 'by':
                 args.pop(0)
                 by_field = args.pop(0)
                 if by_field not in stats.FIELDS:
-                    print "Invalid field name: %s" % by_field
+                    print("Invalid field name: %s" % by_field)
                     sys.exit(1)
 
-                print "Generating a scatterplot of %ss by %s" % \
-                      (list_field, by_field)
+                print("Generating a scatterplot of %ss by %s" % \
+                      (list_field, by_field))
                 xy_values = statlist.list_by(list_field, by_field, True)
-                
+
                 scatterplot = Scatterplot(xy_values, 640, 480,
                                           by_field, list_field)
                 drawing = Drawing(800, 600)
@@ -125,7 +125,7 @@ if __name__ == '__main__':
                 drawing.fill('white')
                 drawing.translate(80, 60)
                 scatterplot.draw(drawing, 1)
-                print "Showing scatterplot. Press 'q' to close."
+                print("Showing scatterplot. Press 'q' to close.")
                 display(drawing, 800, 600)
 
         elif arg == '-match':
@@ -133,18 +133,18 @@ if __name__ == '__main__':
             value = args.pop(0)
             if field in stats.int_fields:
                 value = int(value)
-            print "Finding statistics records where %s is %s" % (field, value)
+            print("Finding statistics records where %s is %s" % (field, value))
             matches = statlist.get_matching(field, value)
             # Change the statlist to contain only the matched records
             statlist = stats.Statlist(records=matches)
             #for match in matches:
-            #    print "Matching record:"
-            #    print pretty_dict(match)
+            #    print("Matching record:")
+            #    print(pretty_dict(match))
             if matches == []:
-                print "No matches found."
+                print("No matches found.")
             else:
-                print "Found %s records where %s is %s." % \
-                      (len(matches), field, value)
+                print("Found %s records where %s is %s." % \
+                      (len(matches), field, value))
 
         elif arg == '-show':
             fields = args.pop(0)
