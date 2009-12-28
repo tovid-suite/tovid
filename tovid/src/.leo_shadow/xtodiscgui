@@ -1,0 +1,12 @@
+#--unknown-language--@+leo-ver=4-thin
+#--unknown-language--@+node:eric.20090722212922.3474:@shadow todiscgui
+#! /usr/bin/env python
+# todiscgui
+
+from libtovid.guis import todisc
+
+if __name__ == '__main__':
+    todisc.run()
+
+#--unknown-language--@-node:eric.20090722212922.3474:@shadow todiscgui
+#--unknown-language--@-leo
