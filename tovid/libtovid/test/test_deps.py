@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# test_deps.py
-
 """Unit test for deps.py"""
 
 import unittest
@@ -29,11 +26,11 @@ class MissingDependency(unittest.TestCase):
 
     def testFoobar(self):
         """require should never find foo or bar!"""
-        print "Testing a dictionary.\n"
+        print("Testing a dictionary.\n")
         self.assertRaises(deps.MissingError, deps.require, self.D)
-        print "\n\nTesting a list.\n"
+        print("\n\nTesting a list.\n")
         self.assertRaises(deps.MissingError, deps.require, self.L)
-        print "\n\nTesting a string.\n"
+        print("\n\nTesting a string.\n")
         self.assertRaises(deps.MissingError, deps.require, self.S)
 
 if __name__ == "__main__":

@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# xml.py
-
 """This module is for defining XML elements and attributes, and for creating
 element hierarchies.
 
@@ -11,24 +8,24 @@ the element name::
 
 To see an XML representation of the Element::
 
-    >>> print video
+    >>> print(video)
     <video></video>
 
 Since this is an empty element with no attributes yet, it's pretty boring.
 You can add or change attributes using the set method::
 
     >>> video.set(file="Brian.mpg")
-    >>> print video
+    >>> print(video)
     <video file="Brian.mpg"></video>
 
 To add children to an element, use the add method::
 
     >>> length = video.add('length', '15')
-    >>> print video
+    >>> print(video)
     <video file="Brian.mpg">
       <length>15</length>
     </video>
-    
+
 See author.py and spumux.py for additional examples.
 """
 
@@ -36,73 +33,64 @@ __all__ = ['Element']
 
 class Element (object):
     """A named XML element having optional content, attributes, and children.
-    
+
     Attribute values may be set in the constructor, or by calling set() with a
     dictionary and/or attribute=value keywords.
-    
+
     Use add() or add_child() to create a hierarchy of Elements.
     """
-    
-    def __init__(self, name, content='', attributes=None, **kwargs):
+    def __init__(self, name, content='', **attributes):
         """Create a new Element with the given attributes.
-        
+
             name
                 Name of the Element
             content
                 Text content of the Element
             attributes
-                Dictionary of attributes and values
-            kwargs
-                Keyword arguments for setting specific attributes
+                Keyword=value for specific attributes
         """
         self.name = name
         self.content = content
         self.attributes = {}
         self.children = []
         # Set attributes from those provided
-        self.set(attributes, **kwargs)
+        self.set(**attributes)
 
 
-    def set(self, attributes=None, **kwargs):
+    def set(self, **attributes):
         """Set values for one or more attributes.
-        
+
             attributes
-                Dictionary of attributes and values
-            kwargs
                 Keyword arguments for setting specific attributes
-        
+
         Underscores in attribute names are converted to hyphens. If you don't
         like this behavior, please suggest a workaround :-)
         """
-        if attributes == None:
-            attributes = {}
-        # Override attributes with kwargs
-        attributes.update(kwargs)
         # Set attribute values; convert underscores to hyphens
         for key, value in attributes.iteritems():
             key = key.replace('_', '-')
             self.attributes[key] = value
 
 
-    def add(self, child_name, content='', **kwargs):
+    def add(self, child_name, content='', **attributes):
         """Create and add a new child Element by providing its name, content,
         and attributes. Return the newly-added Element.
-        
+
             child
                 String name of child element
             content
                 String content of child element
-            kwargs
+            attributes
                 Keyword arguments for setting child's attributes
-        
+
         This is a convenience function for creating and adding children
         on-the-fly.
         """
-        child = Element(child_name, content, kwargs)
+        child = Element(child_name, content, **attributes)
         self.children.append(child)
         return child
 
-    
+
     def add_child(self, element):
         """Add the given Element as a child of this Element.
         """
@@ -131,7 +119,7 @@ class Element (object):
         """
         return self.xml().rstrip('\n')
 
-    
+
     def _open(self):
         """Return the XML opening tag for the Element.
         """
@@ -148,6 +136,4 @@ class Element (object):
 
 
 
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod(verbose=True)
+

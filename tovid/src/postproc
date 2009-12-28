@@ -205,7 +205,7 @@ $PARALLEL || wait
 # Normalize/gain
 if $DO_NORM; then
    AUDIO_NORM="$NORMALIZE $AUDIO_AMPLITUDE audio_dump"
-   
+
    echo "Normalizing audio/applying gain with the following command:"
    echo "$AUDIO_NORM"
    eval $AUDIO_NORM
@@ -267,7 +267,7 @@ if $PARALLEL; then
     SHRINK_PERCENT=$(expr 100 \- \( 100 \* $SHRINK_SIZE \/ $START_SIZE \))
     echo "Video stream was shrunk by $SHRINK_PERCENT%"
 fi  
-  
+
 echo $SEPARATOR
 
 cleanup

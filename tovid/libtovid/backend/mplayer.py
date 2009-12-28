@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# mplayer.py
-
 """Video encoding, ripping, and identification using ``mplayer``.
 """
 
@@ -24,7 +21,7 @@ def encode(source, target, **kw):
             Output MediaFile
         kw
             Keyword arguments to customize encoding behavior
-    
+
     Supported keywords:
 
         None yet
@@ -42,7 +39,7 @@ def encode(source, target, **kw):
         cmd.add('format=x%s' % target.format)
     else:
         cmd.add('format=dvd')
-    
+
     # FIXME: This assumes we only have ONE audio track.
     if source.has_audio:
         # Adjust audio sampling rate if necessary
@@ -52,7 +49,7 @@ def encode(source, target, **kw):
             cmd.add('-af', 'lavcresample=%s' % target.samprate)
         else:
             log.info("No resampling needed, already at %d Hz" % target.samprate)
-        
+
     else:
         log.info("No audio file, generating silence of %f seconds." % \
                  source.length)
@@ -105,7 +102,7 @@ def encode(source, target, **kw):
         cmd.add('-vf', vfilter)
 
     cmd.run()
-    
+
 
 def identify(filename):
     """Identify a video file using mplayer, and return a MediaFile with
@@ -115,7 +112,7 @@ def identify(filename):
     # TODO: Infer aspect ratio
 
     media = MediaFile(filename)
-   
+
     mp_dict = {}
     # Use mplayer
     cmd = cli.Command('mplayer',
@@ -126,7 +123,7 @@ def identify(filename):
                   '-frames', '1',
                   '-channels', '6')
     cmd.run(capture=True)
-    
+
     # Look for mplayer's "ID_..." lines and include each assignment in mp_dict
     for line in cmd.get_output().splitlines():
         log.debug(line)
@@ -169,7 +166,7 @@ def identify(filename):
         elif left == 'ID_LENGTH':
             media.length = float(right)
     media.expand = media.scale
-    
+
     # Fix mplayer's audio codec naming for ac3 and mp2
     if media.acodec == "8192":
         media.acodec = "ac3"
@@ -187,14 +184,14 @@ def identify(filename):
 
 def rip_video(source, yuvfile, target):
     """Rip video to the given yuv4mpeg file.
-    
+
         source
             Input MediaFile
         yuvfile
             File to put ripped video in
         target
             Output MediaFile
-        
+
     """
     # TODO: Custom mplayer options, subtitles, interlacing,
     # corresp.  to $MPLAYER_OPT, $SUBTITLES, $VF_PRE/POST, $YUV4MPEG_ILACE,

@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# cli.py
-
 """This module provides an interface for running command-line applications.
 Two primary classes are provided:
 
@@ -8,7 +5,7 @@ Two primary classes are provided:
         For constructing and executing command-line commands
     Pipe
         For piping commands together
-    
+
 Commands are constructed by specifying a program to run, and each separate
 argument to pass to that program. Arguments are used in a platform-independent
 way, so there is no need to escape shell-specific characters or do any quoting
@@ -58,16 +55,16 @@ class Command:
     """
     def __init__(self, program, *args):
         """Create a Command to run a program with the given arguments.
-        
+
             program
                 A string containing the name of a program to execute
             args
                 Individual arguments to supply the command with
-        
+
         For example::
-        
+
             >>> cmd = Command('echo', 'Hello world')
-            
+
         """
         self.program = program
         self.args = []
@@ -87,10 +84,10 @@ class Command:
         for arg in args:
             self.args.append(str(arg))
 
-    
+
     def run(self, capture=False, background=False):
         """Run the command and capture or display output.
-        
+
             capture
                 False to show command output/errors on stdout,
                 True to capture output/errors for retrieval
@@ -98,7 +95,7 @@ class Command:
             background
                 False to wait for command to finish running,
                 True to run process in the background
-        
+
         By default, this function displays all command output, and waits
         for the program to finish running, which is usually what you'd want.
         Capture output if you don't want it printed immediately (and call
@@ -117,33 +114,33 @@ class Command:
 
     def run_redir(self, stdin=None, stdout=None, stderr=None):
         """Execute the command using the given stream redirections.
-        
+
             stdin
                 Filename or File object to read input from
             stdout
                 Filename or File object to write output to
             stderr
                 Filename or File object to write errors to
-        
+
         Use None for regular system stdin/stdout/stderr (default behavior).
         That is, if stdout=None, the command's standard output is printed.
-        
+
         This function is used internally by run(); if you need to do stream
         redirection (ex. ``spumux < menu.mpg > menu_subs.mpg``), use this
         function instead of run(), and call wait() afterwards if needed.
         """
-        print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        print "Running command:"
-        print str(self)
-        print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print("Running command:")
+        print(self)
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
         self.output = ''
         # Open files if string filenames were provided
-        if type(stdin) == str:
+        if type(stdin) in (str, unicode):
             stdin = open(stdin, 'r')
-        if type(stdout) == str:
+        if type(stdout) in (str, unicode):
             stdout = open(stdout, 'w')
-        if type(stderr) == str:
+        if type(stderr) in (str, unicode):
             stderr = open(stderr, 'w')
         # Run the subprocess
         self.proc = Popen([self.program] + self.args,
@@ -158,7 +155,7 @@ class Command:
         subprocess is killed (and ``KeyboardInterrupt`` re-raised).
         """
         if not isinstance(self.proc, Popen):
-            print "**** Can't wait(): Command is not running"
+            print("**** Can't wait(): Command is not running")
             return
         try:
             result = self.proc.wait()
@@ -202,8 +199,6 @@ class Command:
         return self.error
 
     get_errors = get_error
-
-
     def __str__(self):
         """Return a string representation of the Command, as it would look if
         run in a command-line shell.
@@ -213,7 +208,7 @@ class Command:
             ret += " %s" % _enc_arg(arg)
         return ret
 
-    
+
     def to_script(self):
         """Return a bash script for running the given command.
         """
@@ -235,7 +230,7 @@ class Pipe:
         self.proc = None
         self.output = ''
 
-    
+
     def add(self, *commands):
         """Append the given commands to the end of the pipeline."""
         for cmd in commands:
@@ -245,11 +240,11 @@ class Pipe:
     def run(self, capture=False, background=False):
         """Run all Commands in the pipeline, doing appropriate stream
         redirection for piping.
-        
+
             capture
                 False to show pipeline output on stdout,
                 True to capture output for retrieval by get_output()
-        
+
         """
         self.output = ''
         prev_stdout = None
@@ -288,13 +283,13 @@ def _enc_arg(arg):
     """Quote an argument for proper handling of special shell characters.
     Don't quote unless necessary. For example:
 
-        >>> print _enc_arg("spam")
+        >>> print(_enc_arg("spam"))
         spam
-        >>> print _enc_arg("spam & eggs")
+        >>> print(_enc_arg("spam & eggs"))
         'spam & eggs'
-        >>> print _enc_arg("['&&']")
+        >>> print(_enc_arg("['&&']"))
         '['\\''&&'\\'']'
-    
+
     This is used internally by Command; you'd only need this if you're running
     shell programs without using the Command class.
     """
@@ -308,5 +303,4 @@ def _enc_arg(arg):
     return arg
 
 
-if __name__ == '__main__':
-    doctest.testmod(verbose=True)
+

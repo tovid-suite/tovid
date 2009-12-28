@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# media.py
-
 """This module provides a multimedia file class (MediaFile), for storing
 a profile of attributes including resolution, audio and video codecs and
 bitrates.
@@ -14,7 +11,7 @@ These can be used for getting a target MediaFile for encoding via
 one of the backends in libtovid.transcode.encode. For example::
 
     >>> dvd = standard_media('dvd', 'ntsc')
-    >>> print dvd
+    >>> print(dvd)
     Filename:
     Format: DVD
     TVsys: NTSC
@@ -35,27 +32,25 @@ from libtovid import log
 from libtovid import standard
 from libtovid.util import ratio_to_float
 
-"""
-Analysis of MediaFile attributes
-
-acodec: ID, target
-abitrate: ID, target
-channels: ID
-samprate: ID, source, target
-vcodec: ID
-vbitrate: ID, target
-length: ID, source
-scale: (ID), (source), target
-expand: target
-fps: ID, source, target
-aspect: source
-widescreen: target
-
-
-Redundancies(?):
-widescreen/aspect
-scale/expand if aspect is known
-"""
+# Analysis of MediaFile attributes
+# 
+# acodec: ID, target
+# abitrate: ID, target
+# channels: ID
+# samprate: ID, source, target
+# vcodec: ID
+# vbitrate: ID, target
+# length: ID, source
+# scale: (ID), (source), target
+# expand: target
+# fps: ID, source, target
+# aspect: source
+# widescreen: target
+# 
+# 
+# Redundancies(?):
+# widescreen/aspect
+# scale/expand if aspect is known
 
 class MediaFile:
     """A multimedia video file, and its vital statistics.
@@ -109,7 +104,7 @@ class MediaFile:
 
 def standard_media(format, tvsys):
     """Return a MediaFile compliant with a standard format and TV system.
-    
+
         format
             Standard format ('vcd', 'svcd', or 'dvd')
         tvsys
@@ -149,23 +144,23 @@ def correct_aspect(source, target, aspect='auto'):
             Output MediaFile
         aspect
             Aspect ratio to assume for input file (e.g., '4:3', '16:9')
-            or 'auto' to use autodetection
+            or 'auto' to use autodetection based on source aspect
 
     Return a new target MediaFile with correct scaling, using letterboxing
-    if appropriate, and anamorphic widescreen if available.
+    if appropriate, and anamorphic widescreen if available (DVD only).
     """
     assert isinstance(source, MediaFile)
     assert isinstance(target, MediaFile)
 
     # Base new target on existing one
     target = copy.copy(target)
-    
+
     # Convert aspect (ratio) to a floating-point value
     if aspect == 'auto':
         src_aspect = ratio_to_float(source.aspect)
     else:
         src_aspect = ratio_to_float(aspect)
-    
+
     # Use anamorphic widescreen for any video ~16:9 or wider
     # (Only DVD supports this)
     if src_aspect >= 1.7 and target.format == 'dvd':
@@ -175,7 +170,9 @@ def correct_aspect(source, target, aspect='auto'):
         target_aspect = 4.0/3.0
         widescreen = False
 
+    # Start by assuming direct scaling to target resolution
     width, height = target.scale
+
     # If aspect matches target, no letterboxing is necessary
     tolerance = 0.05
     if abs(src_aspect - target_aspect) < tolerance:
@@ -186,6 +183,8 @@ def correct_aspect(source, target, aspect='auto'):
     # Otherwise (rare), letterbox horizontally
     else:
         scale = (int(width * src_aspect / target_aspect), height)
+
+    # Always expand to the target resolution
     expand = (width, height)
 
     # If input file is already the correct size, don't scale
@@ -199,6 +198,4 @@ def correct_aspect(source, target, aspect='auto'):
     return target
 
 
-# Self-test; executed when this file is run standalone
-if __name__ == '__main__':
-    pass
+

@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# __init__.py (util)
-
 __all__ = [
     # Submodules
     'output',
@@ -34,7 +31,6 @@ import tempfile
 
 # Special characters that may need escaping
 special_chars = '\\ #*:;&?!<>[]()"\''
-
 
 def safe_filename(filename, work_dir):
     """Ensure the given filename is free of quirky or problematic characters.
@@ -231,7 +227,7 @@ def temp_file(prefix='', suffix=''):
 def wait(seconds):
     """Print a message and pause for the given number of seconds.
     """
-    print "Resuming in %s seconds..." % seconds
+    print("Resuming in %s seconds..." % seconds)
     os.system('sleep %ss' % seconds)
 
 
@@ -276,5 +272,3 @@ def imagemagick_fonts():
         if not 'undefin' in line.lower()])
 
 
-if __name__ == '__main__':
-    doctest.testmod(verbose=True)

@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# manpage.py
-
 """This module is for parsing manual pages and extracting necessary information
 for creating a metaGUI.
 
@@ -15,7 +12,8 @@ Needed capabilities:
 
 __all__ = [
     'get',
-    'parse']
+    'parse',
+]
 
 import re
 import os
@@ -64,7 +62,7 @@ class Option:
         elif match.search('(-[-\w]+) \[?(\w+)]?', text):
             option = match[1]
             arg = match[2]
-            
+
         return (option, arg)
 
     def append(self, text):
@@ -83,7 +81,7 @@ class Option:
         text = self.header + '\n'
         text += textwrap.fill(self.doc.strip())
         return text
-    
+
 def parse(text):
     """Generate meta-GUI from manpage documentation"""
     options = []

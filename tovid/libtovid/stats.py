@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # stats.py
 
 """Classes and functions for dealing with tovid statistics.
@@ -94,7 +93,7 @@ class Statlist:
             self.records.append(line)
 
         statfile.close()
-        print "Read %s lines from %s" % (len(self.records), filename)
+        print("Read %s lines from %s" % (len(self.records), filename))
 
 
     def unique(self, field):
@@ -129,9 +128,9 @@ class Statlist:
         all videos in the list."""
         # Error if attribute is non-numeric
         if attribute not in int_fields:
-            print "Can't average %s: not defined as a numeric field"
+            print("Can't average %s: not defined as a numeric field")
             sys.exit()
-            
+
         values = []
         for record in self.records:
             # Only append non-zero values
@@ -149,7 +148,7 @@ class Statlist:
         bitrates for each format."""
         # Error if attribute is non-numeric
         if attribute not in int_fields:
-            print "Can't average %s: not defined as a numeric field"
+            print("Can't average %s: not defined as a numeric field")
             sys.exit()
 
         values_by = self.list_by(attribute, by_attribute)
@@ -181,7 +180,7 @@ class Statlist:
                 values_by[index].sort()
         return values_by
 
-    
+
     def get_matching(self, attribute, value):
         """Return a list of records where the given attribute equals the given
         value. Records are field-indexed dictionaries of values.
@@ -192,7 +191,7 @@ class Statlist:
             if record[attribute] == value:
                 matches.append(record)
         return matches
-    
+
 
     def length(self, field):
         """Return the length of the longest record in the given field, or the
@@ -203,11 +202,11 @@ class Statlist:
             if cur_len > longest:
                 longest = cur_len
         return longest
-    
+
 
     def show(self, show_records='all', show_fields='all'):
         """Print records matching given criteria, showing only the given fields.
-        
+
             show_records
                 Number of record to show, or range of numbers
             show_fields
@@ -224,16 +223,16 @@ class Statlist:
                 size[field] = self.length(field)
                 heading += "%s " % str.ljust(field, size[field])
             else:
-                print "Error: field '%s' does not exist" % field
+                print("Error: field '%s' does not exist" % field)
                 sys.exit()
-        print heading
+        print(heading)
         # Print fields from matching records
         for record in self.records:
             # TODO: support show_records
             line = ''
             for field in show_fields:
                 line += "%s " % str.ljust(str(record[field]), size[field])
-            print line
+            print(line)
         # Print heading at end too
-        print heading
- 
+        print(heading)
+

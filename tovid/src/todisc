@@ -56,6 +56,8 @@ See the todisc manual page ('man todisc') for additional documentation.
 EOF`
 # check that needed todisc deps are installed
 assert_dep "$todisc_deps"
+SCRIPT_START_TIME=`date +%s`
+
 # check if symlink in /tmp exists and use time stamped link if so
 WORK_DIR="/tmp/todisc-work"
 CUR_DIR=$(readlink -f "$PWD")
@@ -233,7 +235,6 @@ pngpipe="-quality 01 png:-"
 ani_pics=0
 JUSTIFY="center"
 CONTRAST_CLR='gray'
-SCRIPT_START_TIME=`date +%s`
 
 ##############################################################################
 #                                 Functions                                  #
@@ -244,7 +245,7 @@ SCRIPT_START_TIME=`date +%s`
 # Args: $@ == any text string
 # If no args are given, echo a separator bar
 # Use yecho if you want output to go to the logfile
-function yecho()
+yecho()
 {
     if test $# -eq 0; then
         printf "\n%s\n\n" "$SEPARATOR"
@@ -258,7 +259,6 @@ function yecho()
             fold -bs >> "$LOG_FILE"
     fi
 }
-
 # ******************************************************************************
 # Execute the given command-line string, with appropriate stream redirection
 # Args: $@ == text string containing complete command-line
@@ -274,7 +274,6 @@ cmd_exec()
     # Return exit status
     return $?
 }
-
 # Print script name, usage notes, and optional error message, then exit.
 # Args: $@ == text string(s) containing error message and help
 usage_error()
@@ -391,7 +390,6 @@ cleanup()
     yecho "Removing the symlink in /tmp . . . " >&2
     rm -fv "$WORK_DIR" >&2
 }
-
 # exit from all recursive todisc calls
 killall_instances()
 {
@@ -423,7 +421,7 @@ runtime_error()
     exit 1
 }
 
-running_total ()
+running_total()
 {
     LC_ALL="C" awk -v offset=$offset '{
     for (i=1; i<=NF; i++) if (s=s+$i) printf("%s ",s);printf ("\n")}'
@@ -445,8 +443,8 @@ format_seconds()
 }
 
 # generic function for using bc for floating point math
-bc_math()
 # usage: bc_math "expression" [int]
+bc_math()
 {
     bc_out=$(bc <<< "scale=3;$1" 2>/dev/null)
     if [[ -n $2 && $2 = "int" ]]; then
@@ -698,7 +696,7 @@ check_compliance()
             # replace the symlink with actual mpeg
             OUTFILE="$WORK_DIR/${TSET_NUM}-$((i+1)).mpg"
         fi
-        
+
         spin "Checking compliance of file $((i+1))"
         # if file tested as an image when we were verifying input files 
         if [[ $is_image = "yes" ]]; then
@@ -896,7 +894,7 @@ get_group_chapters()
             gc=( ${grp_arb_chts[y]//,/ } )
             # allow passing 00:00:00 for grouped chapters
             ((${#gc[@]} == 1 )) && [[ $gc = 00:00:00* ]] && gc=( 00:00:01 )
-            
+
             for g in ${gc[@]}; do GC="$GC $(unformat_time $g)"; done
             grp_chapters[y]=$GC
             if [[ ${grp_arb_chts[y]} = 0 ]]; then
@@ -941,7 +939,7 @@ get_group_chapters()
                 unset substr
             done
         fi
-        
+
         unset remainder
         for d in ${!group_chapters[@]}; do
             for number in ${group_chapters[d]}; do
@@ -994,7 +992,7 @@ get_177_ht()
 {
     image_width=$1
     bc_math "($image_width * 9)/16" int
- }
+}
 
 get_ntsc_ht()
 {
@@ -2063,20 +2061,20 @@ get_sox_arg()
     test_version $sox_version 13.0.0 && echo '-2' || echo '-w'
 }
 
-
 ##############################################################################
 #                          	End of functions                             #
 ##############################################################################
 
-trap 'cleanup; exit 13' TERM INT
 
-###############################################################################
-#       Process arguments to the script, set up VARS and WORK_DIR             #
-###############################################################################
+trap 'cleanup; exit 13' TERM INT
 
 # ***********************************
 # EXECUTION BEGINS HERE
 # ***********************************
+
+###############################################################################
+#       Process arguments to the script, set up VARS and WORK_DIR             #
+###############################################################################
 egrep -q 'titleset-mode|switched-mode|menu-only|carousel_menu_mode' <<< "$@" \
  && NONAME=:
 ! $NONAME && yecho $"$SCRIPT_NAME"
@@ -3023,7 +3021,6 @@ while test $# -gt 0; do
     esac
     $DO_SHIFT && shift
 done
-
 ##############################################################################
 #                      Sanity checks and preliminaries                       #
 ##############################################################################
@@ -3465,6 +3462,8 @@ if [[ $MENU_NUM -eq 1 ]] && ! $TEXTMENU \
 done
     yecho
 fi
+
+
 ################################################
 #        recursive magic for titlesets,        #
 # switched menus, and animated slideshow menus #
@@ -3532,6 +3531,8 @@ fi
 ######################################
 #       end recursive calls          #
 ######################################
+
+
 # if -slideshow-menu-thumbs passed, change with approprite FILE
 if [[ -n ${SLIDESHOW_MENU_THUMBS[@]} ]]; then
     unset sld
@@ -4170,6 +4171,8 @@ if [[ $FADE -eq 0 ]]; then # in case user thinks he needs to specify 0 for fade
 elif [[ $SM_FADE -eq 0 ]]; then
     SM_AUDIO_FADE=false
 fi
+
+
 ##############################################################################
 # Font defaults
 ##############################################################################
@@ -4278,7 +4281,6 @@ if $DO_MENU; then
         fi
     fi
 fi
-
 # TODO: Merge these globals with the ones up top
 # only the 1st 6 are mergable - keeping them here for debugging this beast :)
 # 9 /row
@@ -4662,7 +4664,7 @@ if $MENU_FADE; then
     fi
     START=$(format_seconds $THUMBS_FADEIN_STARTTIME)
     POST="<post> jump cell 1; </post>"
-    
+
     # only do imagemagick operations on frames we will actually see
     FIRST_PIC=$THUMBS_FADEIN_STARTFRAME # 1st image to use IM on
     LAST_PIC=$THUMBS_FADEOUT_ENDFRAME
@@ -4717,7 +4719,7 @@ if $SINGLE_SLIDESHOW && ! $DO_CAROUSEL && ! $MK_CAROUSEL_MODE; then
         spin $SPINNER
     done
     echo
-    
+
     # FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 224KiB -aspect 4:3"
    #MENU_N=$(bc_math "$FRAME_RATE * ${MENU_LEN[MENU_NUM-1]}" int)
     #ffmpeg -f image2 -loop_input -t $MENU_LEN -i "$WORK_DIR/image_stack.png" \
@@ -4835,7 +4837,7 @@ if $DO_MENU; then
     -stroke "$TITLE_STROKE" -strokewidth 1 -annotate +1+1 "$MENU_TITLE")
     TITLE_CMD0=(composite -blend 0x${TITLE_OPACITY}  null: - -matte)
     TITLE_CMD1=(convert - $TRIM_CMD  "$WORK_DIR/title_txt.png")
-    
+
     if [[ -n $TITLE_OPACITY ]]; then
         "${TITLE_CMD[@]}" miff:- | "${TITLE_CMD0[@]}" miff:- |
         "${TITLE_CMD1[@]}" >> "$LOG_FILE" 2>&1
@@ -5443,7 +5445,6 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         fi
     done
 fi
-
 ##############################################################################
 #                 create button layer for spumux                             #
 ##############################################################################
@@ -5547,7 +5548,7 @@ EOF
             "$WORK_DIR/$(printf %06d%s%s ${t} -select .png)"
             mogrify -channel A -threshold 50% \
             "$WORK_DIR/$(printf %06d%s%s ${t} -highlight .png)"
-            
+
         elif [[ $BUTTON_STYLE = "rect" ]]; then
             if  ! $PNG_IS_DONE; then
                 if $SHOWCASE; then
@@ -5796,7 +5797,7 @@ if $SINGLE_SLIDESHOW && [[ $TARGET = "dvd" ]]; then
         convert +antialias -size $VIDSIZE xc:none -fill none \
         "$WORK_DIR/Main_${HLIGHT_CLR/\#}.png" -gravity $RTN_BTN_GRAVITY \
         -geometry "$RTN_BTN_OFFSETS" -composite "$WORK_DIR/Highlight.png"
-        
+
         convert +antialias -gravity SouthEast -geometry \
         "$PLAYALL_BTN_OFFSETS"  "$WORK_DIR/Select.png" \
         "$WORK_DIR/Playall_${SELECT_CLR/\#}.png" \
@@ -6058,6 +6059,7 @@ fi
 rm -f "${PICS[@]}"
 unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
 
+
 ###############################################################################
 #   get information about input videos, and some post preview preliminaries   #
 ###############################################################################
@@ -6091,7 +6093,7 @@ if [[ -n "$BG_AUDIO" ]]; then
     yecho "Getting length of bg audio"
     $SINGLE_SLIDESHOW && end_pos="" || end_pos=${MENU_LEN[MENU_NUM-1]}
     BG_AUDIOLENGTH=$(audio_length "$BG_AUDIO")
-    
+
     # make sure user isn't trying to get a longer menu than the audio allows
     if [[ $(bc <<< "${MENU_LEN[MENU_NUM-1]} \
     > $BG_AUDIOLENGTH" 2>/dev/null)  -eq 1 ]]; then
@@ -6122,7 +6124,7 @@ if $DO_CAROUSEL; then
         1. -menu-length argument if supplied
         2. length of the supplied -bgaudio
         you gave ${#MIX_IN[@]} files
-        
+
         If -menu-length is not supplied, the length of the menu is the length
         the -bgaudio FILE, or 20 secs if silent background (no -bguaudio FILE)
         (Note: the fade effect duration is 1 second for each slide in the menu"
@@ -6197,7 +6199,7 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
             MIX_IN[p]="$WORK_DIR/${p}.ppm"
         fi
         # resize to $CAROUSEL_SIZE
-        
+
         # do not blur the file twice if already binned and blurred
         [[ ${F2BIN[p]} = "yes" ]] && unset SLIDEBLUR[p]
         if [[ $SBORDER_ARG || $SLIDE_FRAME ]]; then
@@ -6661,6 +6663,7 @@ else
 fi
 # menu-fade only processes up to the THUMBS_FADEOUT_ENDTIME set previously
 LAST_PIC=${LAST_PIC:-$FRAMES}
+
 ###############################################################################
 #                           End of info block                                 #
 ###############################################################################
@@ -6883,7 +6886,7 @@ EOF
             mogrify -channel A -threshold 99% \
             "$WORK_DIR/Submenu${s}_${button}.png"
         done
-            
+
         # make submenu spumux.xml
 (
     cat <<EOF
@@ -7360,7 +7363,6 @@ fi)
 EOF
 ) |sed '/^ *$/d' >> "$DVDAUTHOR_XML"
 fi
-
 ##############################################################################
 #                            Animenu stuff                                   #
 ##############################################################################
@@ -7506,7 +7508,7 @@ if $SUB_MENU; then
                             CUT+=( $( bc_math "$pnt * $FRAME_RATE" int) )
                         fi
                     done
-                    
+
                 done
             elif $USER_CHAPTERS; then
                 unset x CUT c_array
@@ -7551,7 +7553,7 @@ if $SUB_MENU; then
                 else
                     unset NAVSEEK NAVLOG
                 fi
-                    
+
                 TCODE_CMD=(nice transcode $transcode_arg 10 \
                 --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "$CUR_FILE" \
                 $NAVSEEK "$NAVLOG" -o "${PICS_OUT[@]}" -f \
@@ -7727,7 +7729,7 @@ if $SUB_MENU; then
                     unset IMGS TOYUV_CMD IMGENC_CMD
                 done > "$WORK_DIR/ppm.fifo"
                 $DEBUG && etime=$(date +%s) && get_elapsed "the submenu m2v"
-                
+
                 # wait for ppmtoyuv and ffmpeg to finish
                 wait
 
@@ -7823,7 +7825,7 @@ if $SUB_MENU; then
                 -gravity SouthEast -geometry +50+50 -composite \
                 -depth 8 "$WORK_DIR/polaroid_stack${i}.ppm")
                 "${IM_CMD[@]}"
-                
+
                 # encode to m2v
                 yecho "Encoding to compliant m2v video format"
                 PPM_CMD=(ppmtoy4m -v 0 -n ${SM_LOOPS[i]} -A 10:11 -I p -F $YUV_FR \
@@ -7934,7 +7936,6 @@ if $SUB_MENU; then
     rm -fv $WORK_DIR/submenu.{wav,$AUDIO_EXT}
     rm -fr $WORK_DIR/animenu/*
 fi
-
 ##############################################################################
 #                      Work on main menu                                     #
 ##############################################################################
@@ -8902,3 +8903,5 @@ if ! $VMGM_ONLY && ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
     $BURN && burn_disc
 fi
 ! $DO_TITLESETS && cleanup
+
+

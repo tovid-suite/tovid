@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # panels.py
 
 import os
@@ -109,7 +108,7 @@ class AuthorFilesTaskPanel(wx.Panel):
         else:
             self.btnBurn.Enable(False)
 
-       
+
     def OnLayout(self, evt):
         """Display controls for doing disc layout."""
         # Set buttons
@@ -252,11 +251,11 @@ class BurnDiscPanel(wx.Panel):
         self.sizMain.Add(self.panCmdList, 1, wx.EXPAND | wx.ALL, 8)
         self.sizMain.Add(self.btnStart, 0, wx.EXPAND | wx.ALL, 8)
         self.SetSizer(self.sizMain)
-    
+
     def OnDoAuthor(self, evt):
         self.doAuthor = evt.Checked()
         self.SetCommands()
-        
+
     def OnDoBurn(self, evt):
         self.doBurn = evt.Checked()
         self.SetCommands()
@@ -332,7 +331,6 @@ class BurnDiscPanel(wx.Panel):
         self.panCmdList.Enable(True)
         self.panCmdList.Execute(strAuthorCmd)
 
-# ===================================================================
 class CommandOutputPanel(wx.Panel):
     """A panel for executing and logging command-lines.
 
@@ -349,10 +347,10 @@ class CommandOutputPanel(wx.Panel):
     # Command queue (starts out empty)
     strCmdQueue = []
     strCurCmd = ""
-      
+
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
-        
+
         # Process list and labels
         self.lblCurCmd = wx.StaticText(self, wx.ID_ANY, _("Running command:"))
         self.txtCurCmd = wx.TextCtrl(self, wx.ID_ANY, "")
@@ -390,7 +388,7 @@ class CommandOutputPanel(wx.Panel):
         # Timer to produce continuous output and keep
         # running the next command
         self.idleTimer = wx.Timer(self, ID_CMD_TIMER)
-        
+
         # Event handlers
         #wx.EVT_IDLE(self, self.OnIdle)
         wx.EVT_TIMER(self, ID_CMD_TIMER, self.OnIdleTime)
@@ -505,7 +503,7 @@ class CommandOutputPanel(wx.Panel):
             stream = self.process.GetInputStream()
             if stream.CanRead():
                 self.txtOut.AppendText(unicode(stream.read(), errors='ignore'))
-            
+
     def StartNextProcess(self):
         """Start the next process in the queue."""
         # If there is a command in the queue
@@ -528,14 +526,14 @@ class CommandOutputPanel(wx.Panel):
         curExitStatus = evt.GetExitCode()
         # Print message to console if there was an error
         if curExitStatus != 0:
-            print "ERROR:"
-            print "The following command returned an exit status of %d:" % \
-                    curExitStatus
-            print self.strCurCmd
-            print "Please report this bug to the tovid issue tracker:"
-            print "    Forum: http://code.google.com/p/tovid/issues/list"
-            print "Include all the output shown above, as well as any output"
-            print "shown in the log window of the tovid GUI."
+            print("ERROR:")
+            print("The following command returned an exit status of %d:" % \
+                    curExitStatus)
+            print(self.strCurCmd)
+            print("Please report this bug to the tovid issue tracker:")
+            print("    Forum: http://code.google.com/p/tovid/issues/list")
+            print("Include all the output shown above, as well as any output")
+            print("shown in the log window of the tovid GUI.")
             self.errorOccurred = True
         # Print any remaining output
         stream = self.process.GetInputStream()
@@ -674,7 +672,7 @@ class DiscLayoutPanel(wx.Panel):
         self.discTree.Expand(self.rootItem)
         # topItem starts out being root
         self.topItem = self.rootItem
-        
+
         # Horizontal box sizer to hold tree manipulation buttons
         self.sizBtn = wx.GridSizer(2, 3, 0, 0)
         self.sizBtn.AddMany([ (self.btnAddMenu, 1, wx.EXPAND),
@@ -811,7 +809,7 @@ class DiscLayoutPanel(wx.Panel):
             self.panVideoOptions.Hide()
             self.panMenuOptions.Show()
             self.sizOptions.Layout()
-        
+
             # Set appropriate guide text
             self.curConfig.panGuide.SetTask(ID_TASK_MENU_SELECTED)
 
@@ -846,9 +844,9 @@ class DiscLayoutPanel(wx.Panel):
                 self.panMenuOptions.SetOptions(curOpts)
             elif curOpts.type == ID_VIDEO:
                 self.panVideoOptions.SetOptions(curOpts)
-                
+
                 # Update the titles shown list in the menu panel
-                
+
                 # Get the parent menu
                 curParent = self.discTree.GetItemParent(curItem)
                 # and the options for the parent menu
@@ -866,9 +864,9 @@ class DiscLayoutPanel(wx.Panel):
                             break
             elif curOpts.type == ID_GROUP:
                 self.panGroupOptions.SetOptions(curOpts)
-                
+
                 # Update the titles shown list in the menu panel
-                
+
                 # Get the parent menu
                 curParent = self.discTree.GetItemParent(curItem)
                 # and the options for the parent menu
@@ -1035,7 +1033,7 @@ class DiscLayoutPanel(wx.Panel):
         self.discTree.EnsureVisible(curItem)
         self.discTree.Expand(curItem)
         self.discTree.SelectItem(curItem)
-    
+
         # Set appropriate guide text
         self.curConfig.panGuide.SetTask(ID_TASK_GROUP_ADDED)
 
@@ -1169,7 +1167,7 @@ class DiscLayoutPanel(wx.Panel):
             while curChild.IsOk():
                 curOpts.groupMemberCount = curOpts.groupMemberCount + 1
                 curChild, cookie = self.discTree.GetNextChild(curItem, cookie)
-         
+
     def UseForAllItems(self, opts):
         """Use the given options for all videos/menus/slides."""
         # Get references for all items
@@ -1331,7 +1329,7 @@ class DiscPanel(wx.Panel):
 
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
-        
+
         # Global configuration
         self.curConfig = TovidConfig()
 
@@ -1346,7 +1344,7 @@ class DiscPanel(wx.Panel):
             "SVCD: Medium quality, 30 to 70 minutes of video",
             "DVD: Range of quality, from 1 to 8 hours of video"]
 
-        
+
         self.rbFormat = wx.RadioBox(self, wx.ID_ANY, "Disc format", \
                 wx.DefaultPosition, wx.DefaultSize, strFormats, 1, \
                 wx.RA_SPECIFY_COLS)
@@ -1355,7 +1353,7 @@ class DiscPanel(wx.Panel):
             " DVD, you need a DVD-recordable drive.")
         self.rbFormat.SetSelection(ID_FMT_DVD)
         wx.EVT_RADIOBOX(self, self.rbFormat.GetId(), self.OnFormat)
-        
+
         # Disc TV system selector
         strTVSystems = ["NTSC: Used in the Americas and East Asia",
                         "NTSC Film: Same as NTSC, with a film frame rate",
@@ -1475,22 +1473,22 @@ class EncodingPanel(wx.Panel):
         # If currently running, stop/suspend processing
         if self.panCmdList.idleTimer.IsRunning():
 
-# Disable 'suspend encoding' since it's not working
+    # Disable 'suspend encoding' since it's not working
             # Disable button temporarily, to allow processes to die
-#            self.btnStartStop.Enable(False)
-#            self.panCmdList.Stop()
-#            self.btnStartStop.SetLabel("Resume encoding")
-#            self.btnStartStop.SetToolTipString("Resume the encoding process " \
-#                "where it left off")
+    #            self.btnStartStop.Enable(False)
+    #            self.panCmdList.Stop()
+    #            self.btnStartStop.SetLabel("Resume encoding")
+    #            self.btnStartStop.SetToolTipString("Resume the encoding process " \
+    #                "where it left off")
             # Show message that processing stopped
-#            msgStopped = wx.MessageDialog(self,
-#                "Encoding is now suspended. You can continue\n" \
-#                "by selecting \"Resume encoding\".",
-#                "Encoding suspended", wx.OK | wx.ICON_INFORMATION)
-#            msgStopped.ShowModal()
+    #            msgStopped = wx.MessageDialog(self,
+    #                "Encoding is now suspended. You can continue\n" \
+    #                "by selecting \"Resume encoding\".",
+    #                "Encoding suspended", wx.OK | wx.ICON_INFORMATION)
+    #            msgStopped.ShowModal()
             # Give processes time to die before re-enabling button
-#            os.system("sleep 2s")
-#            self.btnStartStop.Enable(True)
+    #            os.system("sleep 2s")
+    #            self.btnStartStop.Enable(True)
             pass
         # Not running; start/resume processing
         else:
@@ -1498,8 +1496,8 @@ class EncodingPanel(wx.Panel):
             self.panCmdList.Start()
             self.btnStartStop.Enable(False)
             self.btnStartStop.SetLabel("Currently encoding...")
-#            self.btnStartStop.SetToolTipString("Interrupt the current " \
-#                "encoding process and return the current command to the queue")
+    #            self.btnStartStop.SetToolTipString("Interrupt the current " \
+    #                "encoding process and return the current command to the queue")
 
     def SetCommands(self, commands):
         """Set command-list to be executed from DiscLayoutPanel."""
@@ -1509,7 +1507,7 @@ class EncodingPanel(wx.Panel):
     def SetOutputDirectory(self, outDir):
         """Set the output directory to use."""
         self.txtOutDir.SetValue(outDir)
-          
+
     def ProcessingDone(self, errorOccurred):
         """Signify that processing (video encoding) is done."""
         self.parent.btnBurn.Enable(False)
@@ -1772,7 +1770,7 @@ class HidablePanel(wx.Panel):
         self.sizMain.Add(self.content, 1, wx.EXPAND)
         self.sizMain.SetItemMinSize(self.content, 200, 200)
         self.sizMain.Layout()
-    
+
     def SetParent(self, parent):
         """Set the parent sizer (the sizer that holds the HidablePanel)."""
         self.sizParent = parent
@@ -2230,8 +2228,8 @@ class MenuPanel(wx.Panel):
             self.sizTextFill.Show(self.cbPattern)
             self.chkStrokeColor.Enable(True)
         else:
-            print "DEBUG: invalid FillType: %d" % evt.GetSelection()
-            print "DEBUG: selection was: %s" % selection
+            print("DEBUG: invalid FillType: %d" % evt.GetSelection())
+            print("DEBUG: selection was: %s" % selection)
 
         self.sizTextFill.Layout()
         self.sizTextFormat.Layout()
@@ -2337,7 +2335,7 @@ class MenuPanel(wx.Panel):
                     pass
                 else:
                     self.chkButtonOutline.Enable(True)
-        
+
         elif evt.GetId() == self.chkSelColor.GetId():
             if evt.IsChecked():
                 self.btnSelColor.Enable(False)
@@ -2359,10 +2357,10 @@ class MenuPanel(wx.Panel):
                     pass
                 else:
                     self.chkButtonOutline.Enable(True)
-        
+
         else:
-            print "DEBUG: ", evt.IsChecked(), self.GetId()
-            print "DEBUG: ", self.chkFillColor.GetId(), self.chkFillColor2.GetId()
+            print("DEBUG: %s %s" % (evt.IsChecked(), self.GetId()))
+            print("DEBUG: %s %s" % (self.chkFillColor.GetId(), self.chkFillColor2.GetId()))
 
     def OnPattern(self, evt):
         """Set the patten that will fill the menu text."""
@@ -2569,7 +2567,7 @@ class MenuPanel(wx.Panel):
             "%d other menus on the disc." % countItems,
             "Settings copied", wx.OK | wx.ICON_INFORMATION)
         dlgAck.ShowModal()
-      
+
     def SetOptions(self, menuOpts):
         """Set control values based on the provided MenuOptions."""
         self.curOptions = menuOpts
@@ -2641,7 +2639,7 @@ class VideoPanel(wx.Panel):
         self.sizFileInfo = wx.StaticBoxSizer(self.sboxFileInfo, wx.HORIZONTAL)
         self.sizFileInfo.Add(self.lblInFile, 0, wx.EXPAND | wx.ALL, 6)
         self.sizFileInfo.Add(self.txtInFile, 1, wx.EXPAND | wx.ALL, 6)
-        
+
         # Radio buttons
         # Format-selection radio buttons
         outFormatList = ['352x240 VCD',
@@ -2676,7 +2674,7 @@ class VideoPanel(wx.Panel):
         self.sizResAspect = wx.BoxSizer(wx.HORIZONTAL)
         self.sizResAspect.Add(self.rbResolution, 1, wx.EXPAND | wx.ALL)
         self.sizResAspect.Add(self.rbAspect, 1, wx.EXPAND | wx.ALL)
-                
+
         # Direct-entry CLI option box
         self.lblCLIOptions = wx.StaticText(self, wx.ID_ANY, "Custom options:")
         self.txtCLIOptions = wx.TextCtrl(self, wx.ID_ANY, "")
@@ -2830,8 +2828,8 @@ class VideoPanel(wx.Panel):
             self.rbResolution.EnableItem(ID_FMT_SVCD, True)
         # Unknown format?
         else:
-            print "VideoPanel.SetDiscFormat: Unknown format %s" % format 
-    
+            print("VideoPanel.SetDiscFormat: Unknown format %s" % format)
+
     def SetDiscTVSystem(self, format):
         """Set NTSC or PAL, and show appropriate controls."""
         # Display NTSC resolutions in format radiobox
@@ -2850,7 +2848,7 @@ class VideoPanel(wx.Panel):
             self.rbResolution.SetItemLabel(ID_FMT_DVDVCD, '352x288 VCD on DVD')
         # Unknown format?
         else:
-            print "VideoPanel.SetDiscTVSystem: Unknown format %s" % format
+            print("VideoPanel.SetDiscTVSystem: Unknown format %s" % format)
 
 # ************************************************************************
 #
@@ -2955,14 +2953,14 @@ class PlaylistTabPanel(wx.Panel):
         self.out = wx.TextCtrl(self, wx.ID_ANY, "")
         self.btnOut = wx.Button(self, wx.ID_ANY, _("Browse"))
         wx.EVT_BUTTON(self, self.btnOut.GetId(), self.btnOut_OnClick)
-        
+
         self.discFormat.SetSelection(0)
         self.videoFormat.SetSelection(0)
         self.files.SetMinSize((414, 225))
         self.btnAddVideo.SetDefault()
         self.btnRemoveVideo.Disable()
         self.DisableSubmenus()
-        
+
         szFormats = wx.FlexGridSizer(1, 2, 0, 5)
         szFormats.Add(self.discFormat, 0,
                       wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL, 0)
@@ -2970,12 +2968,12 @@ class PlaylistTabPanel(wx.Panel):
                       wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL, 0)
         szFormats.AddGrowableCol(0)
         szFormats.AddGrowableCol(1)
-        
+
         szChapters = wx.GridSizer(1, 2, 0, 0)
         szChapters.Add(self.lblChapters, 0,
                        wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szChapters.Add(self.chapters, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
-        
+
         szTitleInfo = wx.FlexGridSizer(2, 2, 5, 5)
         szTitleInfo.Add(self.lblTitle, 0,
                         wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
@@ -2984,17 +2982,17 @@ class PlaylistTabPanel(wx.Panel):
                         wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szTitleInfo.Add(self.submenu_title, 0, wx.EXPAND, 0)
         szTitleInfo.AddGrowableCol(1)
-        
+
         szTitleInfoBox = \
             wx.StaticBoxSizer(self.szTitleInfoBox_staticbox, wx.VERTICAL)
         szTitleInfoBox.Add(szTitleInfo, 1, wx.EXPAND, 0)
-        
+
         szAudioInfo = wx.FlexGridSizer(1, 2, 5, 5)
         szAudioInfo.Add(self.lblSubmenuAudio, 0,
                         wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szAudioInfo.Add(self.submenu_audio, 0, wx.EXPAND, 0)
         szAudioInfo.AddGrowableCol(1)
-        
+
         szAudioOptions = wx.GridSizer(1, 2, 0, 5)
         szAudioOptions.Add(self.subaudio_all, 0,
                            wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
@@ -3004,28 +3002,28 @@ class PlaylistTabPanel(wx.Panel):
             wx.StaticBoxSizer(self.szAudioInfoBox_staticbox, wx.VERTICAL)
         szAudioInfoBox.Add(szAudioInfo, 1, wx.EXPAND, 0)
         szAudioInfoBox.Add(szAudioOptions, 1, wx.EXPAND, 0)
-        
+
         szVideoInfo = wx.FlexGridSizer(3, 1, 5, 5)
         szVideoInfo.Add(self.files, 0, wx.EXPAND, 0)
         szVideoInfo.Add(szTitleInfoBox, 1, wx.EXPAND, 0)
         szVideoInfo.Add(szAudioInfoBox, 1, wx.EXPAND, 0)
         szVideoInfo.AddGrowableRow(0)
         szVideoInfo.AddGrowableCol(0)
-        
+
         szVideoInfoBox = \
             wx.StaticBoxSizer(self.szVideoInfoBox_staticbox, wx.VERTICAL)
         szVideoInfoBox.Add(szVideoInfo, 0, wx.EXPAND, 0)
-        
+
         szVidButtons = wx.BoxSizer(wx.HORIZONTAL)
         szVidButtons.Add(self.btnAddVideo, 1, wx.ADJUST_MINSIZE, 0)
         szVidButtons.Add(self.btnRemoveVideo, 1, wx.ADJUST_MINSIZE, 0)
-        
+
         szOutput = wx.FlexGridSizer(1, 3, 0, 7)
         szOutput.Add(self.lblOut, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szOutput.Add(self.out, 0, wx.EXPAND, 0)
         szOutput.Add(self.btnOut, 0, wx.ADJUST_MINSIZE, 0)
         szOutput.AddGrowableCol(1)
-        
+
         szPlaylist = wx.FlexGridSizer(7, 1, 7, 0)
         szPlaylist.Add(szFormats, 0, wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL, 0)
         szPlaylist.Add(self.submenus, 0,
@@ -3039,10 +3037,10 @@ class PlaylistTabPanel(wx.Panel):
         szPlaylist.SetSizeHints(self)
         szPlaylist.AddGrowableRow(3)
         szPlaylist.AddGrowableCol(0)
-        
+
         self.SetAutoLayout(True)
         self.SetSizer(szPlaylist)
-        
+
 
     def EnableSubmenus(self):
         self.submenu_title.Enable()
@@ -3127,12 +3125,12 @@ class MenuTabPanel(wx.Panel):
             wx.StaticBox(self, wx.ID_ANY, _("Menu Animations"))
         self.szSubmenuBox_staticbox = \
             wx.StaticBox(self, wx.ID_ANY, _("Submenus"))
-        
+
         # Main menu title
         self.lblMenuTitle = wx.StaticText(self, wx.ID_ANY, _("Title:"))
         self.menu_title = wx.TextCtrl(self, wx.ID_ANY, "")
         #wx.EVT_TEXT(self, self.menu_title.GetId(), self.menu_title_OnEdit)
-        
+
         self.lblMenuFont = wx.StaticText(self, wx.ID_ANY, _("Title Font:"))
         self.btnMenuFont = wx.Button(self, wx.ID_ANY, _("Default"))
         self.lblTitleColor = wx.StaticText(self, wx.ID_ANY, _("Title Color:"))
@@ -3188,7 +3186,7 @@ class MenuTabPanel(wx.Panel):
         self.lblSubmenuStrokeColor = \
             wx.StaticText(self, wx.ID_ANY, _("Stroke Color:"))
         self.btnSubmenuStrokeColor = wx.Button(self, wx.ID_ANY, _("Choose"))
-        
+
         self.lblMenuTitle.SetFont(\
             wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
         self.lblMenuFont.SetFont(\
@@ -3208,19 +3206,19 @@ class MenuTabPanel(wx.Panel):
             wx.Font(9, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "DejaVu Sans"))
         self.btnTextMistColor.Disable()
         self.DisableSubmenus()
-        
+
         szMenuTitle = wx.FlexGridSizer(1, 2, 0, 5)
         szMenuTitle.Add(self.lblMenuTitle, 0,
                         wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szMenuTitle.Add(self.menu_title, 0, wx.EXPAND, 0)
         szMenuTitle.AddGrowableCol(1)
-        
+
         szTitleFont = wx.FlexGridSizer(2, 4, 0, 5)
         szTitleFont.Add(self.lblMenuFont, 0,
                         wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
         szTitleFont.Add(self.btnMenuFont, 0, wx.ADJUST_MINSIZE, 0)
-#        szTitleFont.Add(self.lblMenuFontSize, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
-#        szTitleFont.Add(self.menu_fontsize, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
+    #        szTitleFont.Add(self.lblMenuFontSize, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
+    #        szTitleFont.Add(self.menu_fontsize, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
         szTitleFont.Add(self.lblTitleColor, 0,
                         wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
         szTitleFont.Add(self.btnTitleColor, 0, wx.ADJUST_MINSIZE, 0)
@@ -3229,7 +3227,7 @@ class MenuTabPanel(wx.Panel):
         szTitleFont.Add(self.btnStrokeColor, 0,
                         wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szTitleFont.AddGrowableCol(1)
-        
+
         szTextMist = wx.FlexGridSizer(1, 3, 0, 5)
         szTextMist.Add(self.text_mist, 0,
                        wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
@@ -3237,11 +3235,11 @@ class MenuTabPanel(wx.Panel):
                        wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 0)
         szTextMist.Add(self.btnTextMistColor, 0, wx.ADJUST_MINSIZE, 0)
         szTextMist.AddGrowableCol(1)
-        
+
         szMistOpacity = \
             wx.StaticBoxSizer(self.szMistOpacity_staticbox, wx.VERTICAL)
         szMistOpacity.Add(self.opacity, 0, wx.EXPAND, 0)
-        
+
         szMainMenuBox = \
             wx.StaticBoxSizer(self.szMainMenuBox_staticbox, wx.VERTICAL)
         szMainMenuBox.Add(szMenuTitle, 0, wx.EXPAND, 0)
@@ -3253,7 +3251,7 @@ class MenuTabPanel(wx.Panel):
         szMainMenuBox.Add(self.static_line_2, 0, wx.EXPAND, 0)
         szMainMenuBox.Add(szTextMist, 0, wx.EXPAND, 0)
         szMainMenuBox.Add(szMistOpacity, 0, wx.EXPAND, 0)
-        
+
         szBackground = wx.FlexGridSizer(3, 3, 5, 5)
         szBackground.Add(self.lblBgAudio, 0,
                          wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
@@ -3268,11 +3266,11 @@ class MenuTabPanel(wx.Panel):
         szBackground.Add(self.bgvideo, 0, wx.EXPAND, 0)
         szBackground.Add(self.btnBgVideo, 0, wx.ADJUST_MINSIZE, 0)
         szBackground.AddGrowableCol(1)
-        
+
         szBackgroundBox = \
             wx.StaticBoxSizer(self.szBackgroundBox_staticbox, wx.VERTICAL)
         szBackgroundBox.Add(szBackground, 1, wx.EXPAND, 0)
-        
+
         szAudioFade = wx.FlexGridSizer(1, 4, 0, 5)
         szAudioFade.Add(self.lblMenuAudioFade, 0,
                         wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
@@ -3281,11 +3279,11 @@ class MenuTabPanel(wx.Panel):
                         wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szAudioFade.Add(self.submenu_audio_fade, 0, wx.ADJUST_MINSIZE, 0)
         szAudioFade.AddGrowableCol(1)
-        
+
         szAudioFadeBox = \
             wx.StaticBoxSizer(self.szAudioFadeBox_staticbox, wx.HORIZONTAL)
         szAudioFadeBox.Add(szAudioFade, 1, wx.EXPAND, 0)
-        
+
         szMenuLength = wx.FlexGridSizer(1, 2, 0, 0)
         szMenuLength.Add(self.lblMenuLength, 0,
                          wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
@@ -3293,12 +3291,12 @@ class MenuTabPanel(wx.Panel):
                          wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
         szMenuLength.AddGrowableCol(0)
         szMenuLength.AddGrowableCol(1)
-        
+
         szLoop = wx.GridSizer(1, 2, 0, 0)
         szLoop.Add(self.lblLoop, 0,
                    wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szLoop.Add(self.loop, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
-        
+
         szSubmenus = wx.FlexGridSizer(10, 1, 5, 0)
         szSubmenus.Add(self.static, 0, wx.ADJUST_MINSIZE, 0)
         szSubmenus.Add(szMenuLength, 1, wx.EXPAND, 0)
@@ -3307,10 +3305,10 @@ class MenuTabPanel(wx.Panel):
         szSubmenus.Add(self.ani_submenus, 0,
                        wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szSubmenus.AddGrowableCol(0)
-        
+
         szMenuAnim = wx.StaticBoxSizer(self.szMenuAnim_staticbox, wx.VERTICAL)
         szMenuAnim.Add(szSubmenus, 1, wx.EXPAND, 0)
-        
+
         szSubmenuColor = wx.FlexGridSizer(1, 4, 0, 7)
         szSubmenuColor.Add(self.lblSubmenuTitleColor, 0,
                            wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
@@ -3319,11 +3317,11 @@ class MenuTabPanel(wx.Panel):
                            wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
         szSubmenuColor.Add(self.btnSubmenuStrokeColor, 0, wx.ADJUST_MINSIZE, 0)
         szSubmenuColor.AddGrowableCol(1)
-        
+
         szSubmenuBox = \
             wx.StaticBoxSizer(self.szSubmenuBox_staticbox, wx.HORIZONTAL)
         szSubmenuBox.Add(szSubmenuColor, 1, wx.EXPAND, 0)
-        
+
         szMenus = wx.FlexGridSizer(5, 1, 7, 0)
         szMenus.Add(szMainMenuBox, 1, wx.EXPAND, 0)
         szMenus.Add(szBackgroundBox, 1, wx.EXPAND, 0)
@@ -3333,10 +3331,10 @@ class MenuTabPanel(wx.Panel):
         szMenus.Fit(self)
         szMenus.SetSizeHints(self)
         szMenus.AddGrowableCol(0)
-        
+
         self.SetAutoLayout(True)
         self.SetSizer(szMenus)
-        
+
         wx.EVT_BUTTON(self, self.btnMenuFont.GetId(), self.btnMenuFont_OnClick)
         wx.EVT_BUTTON(self, self.btnTitleColor.GetId(),
                       self.btnTitleColor_OnClick)
@@ -3397,7 +3395,7 @@ class MenuTabPanel(wx.Panel):
 
     def bgvideo_OnEdit(self, evt):
         self.todisc_opts['bgvideo'] = self.bgvideo.GetValue()
-    
+
 class ThumbnailTabPanel(wx.Panel):
     def __init__(self, parent, id):
         self.todisc_opts = {\
@@ -3425,10 +3423,10 @@ class ThumbnailTabPanel(wx.Panel):
         self.opacity = wx.Slider(self, wx.ID_ANY, 100, 0, 100, style=wx.SL_HORIZONTAL|wx.SL_AUTOTICKS|wx.SL_LABELS)
         self.lblSeek = wx.StaticText(self, wx.ID_ANY, _("Seconds to seek before generating thumbs:"))
         self.seek = wx.SpinCtrl(self, wx.ID_ANY, "", min=0, max=100, style=wx.TE_RIGHT)
-        
+
         self.thumb_shape.SetSelection(0)
         self.thumb_shape.Disable()
-        
+
         szThumbFont = wx.FlexGridSizer(2, 4, 5, 5)
         szThumbFont.Add(self.lblThumbTitleFont, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
         szThumbFont.Add(self.thumb_font, 0, wx.ADJUST_MINSIZE, 0)
@@ -3437,23 +3435,23 @@ class ThumbnailTabPanel(wx.Panel):
         szThumbFont.Add(self.lblThumbTitleMistColor, 0, wx.ALIGN_CENTER_VERTICAL|wx.SHAPED, 0)
         szThumbFont.Add(self.thumb_mist_color, 0, wx.ADJUST_MINSIZE, 0)
         szThumbFont.AddGrowableCol(1)
-        
+
         szThumbShape = wx.FlexGridSizer(2, 1, 5, 0)
         szThumbShape.Add(self.thumb_shape, 0, wx.EXPAND, 0)
         szThumbShape.Add(szThumbFont, 0, wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL, 0)
         szThumbShape.AddGrowableCol(0)
-        
+
         szBlur = wx.StaticBoxSizer(self.szBlur_staticbox, wx.VERTICAL)
         szBlur.Add(self.blur, 0, wx.EXPAND, 0)
-        
+
         szOpacity = wx.StaticBoxSizer(self.szOpacity_staticbox, wx.VERTICAL)
         szOpacity.Add(self.opacity, 0, wx.EXPAND, 0)
-        
+
         szSeek = wx.FlexGridSizer(1, 2, 0, 5)
         szSeek.Add(self.lblSeek, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szSeek.Add(self.seek, 0, wx.ALIGN_RIGHT|wx.ADJUST_MINSIZE, 0)
         szSeek.AddGrowableCol(0)
-        
+
         szThumbnails = wx.FlexGridSizer(5, 1, 7, 0)
         szThumbnails.Add(self.feather_thumbs, 0, wx.ADJUST_MINSIZE, 0)
         szThumbnails.Add(szThumbShape, 1, wx.EXPAND, 0)
@@ -3463,10 +3461,10 @@ class ThumbnailTabPanel(wx.Panel):
         szThumbnails.Fit(self)
         szThumbnails.SetSizeHints(self)
         szThumbnails.AddGrowableCol(0)
-        
+
         self.SetAutoLayout(True)
         self.SetSizer(szThumbnails)
-        
+
         wx.EVT_CHECKBOX(self, self.feather_thumbs.GetId(), self.feather_thumbs_OnClick)
 
     def feather_thumbs_OnClick(self, evt):
@@ -3481,17 +3479,17 @@ class DebugTabPanel(wx.Panel):
         self.szDebugBox_staticbox = wx.StaticBox(self, wx.ID_ANY, _("Debug Flags"))
         self.debug = wx.CheckBox(self, wx.ID_ANY, _("Turn on debug logging?"))
         self.keepfiles = wx.CheckBox(self, wx.ID_ANY, _("Keep files when finished?"))
-        
+
         szDebugBox = wx.StaticBoxSizer(self.szDebugBox_staticbox, wx.VERTICAL)
         szDebugBox.Add(self.debug, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
         szDebugBox.Add(self.keepfiles, 0, wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 0)
-        
+
         szDebug = wx.FlexGridSizer(1, 1, 7, 0)
         szDebug.Add(szDebugBox, 0, wx.EXPAND, 0)
         szDebug.Fit(self)
         szDebug.SetSizeHints(self)
         szDebug.AddGrowableRow(1)
         szDebug.AddGrowableCol(0)
-        
+
         self.SetAutoLayout(True)
         self.SetSizer(szDebug)

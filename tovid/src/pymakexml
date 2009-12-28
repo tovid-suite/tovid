@@ -28,27 +28,27 @@ pymakexml, part of tovid (http://tovid.org/)
 
 def error(message):
     """Exit with an error message, after printing usage notes."""
-    print __doc__
-    print red("Error: ") + message
+    print(__doc__)
+    print(red("Error: ") + message)
     sys.exit()
 
 # Main program
 if __name__ == '__main__':
-    print HEADER
+    print(HEADER)
 
     # If no args provided, print usage notes
     if len(sys.argv) < 2:
         error("Please provide at least one video to author,"\
               " and the name of an output file.")
-    
+
     args = sys.argv[1:]
     disc = Disc()
     outfile = None
     overwrite = False
     video = None
-    
+
     if '-menu' not in args:
-        print "No -menu option provided; creating a menuless disc."
+        print("No -menu option provided; creating a menuless disc.")
         titleset = Titleset()
         disc.titlesets.append(titleset)
 
@@ -98,28 +98,28 @@ if __name__ == '__main__':
     # Add .xml if necessary
     if not outfile.endswith('.xml'):
         outfile = outfile + '.xml'
-    
+
     # Check for existing output file
     if os.path.exists(outfile):
         if overwrite:
-            print blue("Overwriting existing file: %s" % outfile)
+            print(blue("Overwriting existing file: %s" % outfile))
         else:
             error("File '%s' already exists." % outfile +\
                   " Use the -overwrite option to overwrite it.")
 
     disc.name = outfile.rstrip('.xml')
-    
+
     # Print out disc structure
-    print
-    print "Creating the following disc structure:"
-    print
+    print(' ')
+    print("Creating the following disc structure:")
+    print(' ')
     if disc.topmenu:
-        print "  Top menu:", disc.topmenu.filename
+        print("  Top menu: %s" % disc.topmenu.filename)
     for ts in disc.titlesets:
         if ts.menu:
-            print "      Menu:", ts.menu.filename
+            print("      Menu: %s" % ts.menu.filename)
         for video in ts.videos:
-            print "          Video:", video.filename
+            print("          Video: %s" % video.filename)
     print
 
     # Get XML for authoring the disc
@@ -127,11 +127,11 @@ if __name__ == '__main__':
         xml = dvdauthor_xml(disc)
     else:
         xml = vcdimager_xml(disc)
-    
-    print "Writing XML to file:", outfile
+
+    print("Writing XML to file: %s" % outfile)
     xml_file = open(outfile, 'w')
     xml_file.write(xml)
     xml_file.close()
 
-    print "Done! Thanks for using pymakexml."
-    
+    print("Done! Thanks for using pymakexml.")
+

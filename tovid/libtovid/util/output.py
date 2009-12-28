@@ -1,11 +1,8 @@
-#! /usr/bin/env python
-# output.py
-
 """This module does colored console output by calling color-named functions.
 To use it, simply:
 
-    >>> print green("Looking good")
-    >>> print red("Uh-oh...")
+    >>> print(green("Looking good"))
+    >>> print(red("Uh-oh..."))
 
 It was stolen from an early version of a Gentoo module called output.py,
 copyright 1998-2003 Daniel Robbins, Gentoo Technologies, Inc., distributed

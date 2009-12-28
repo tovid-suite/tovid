@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# test_flipbook.py
-
 import unittest
 import math
 # Fetch in subdir
@@ -16,11 +13,10 @@ from libtovid import standard
 
 class TestFlipbook(unittest.TestCase):
     """Test the Flipbook class"""
-
     def setUp(self):
         if not os.path.isfile('/tmp/save_image.png'):
             self.test_save_an_image()
-    
+
     def test_save_an_image(self):
         # Save image to /tmp/save_image.[png|jpg]
         d = Drawing(250, 250)
@@ -30,7 +26,7 @@ class TestFlipbook(unittest.TestCase):
         d.save_png('/tmp/save_image.png')
         d.save_jpg('/tmp/save_image.jpg')
         del(d)
-    
+
     def test_flip_save_video(self):
         """First test drive for Flipbook"""
         fb = Flipbook(1, 'dvd', 'ntsc')
@@ -54,22 +50,22 @@ class TestFlipbook(unittest.TestCase):
         lst = mf.frame_files
         lst.append(VIDEO_FILE)
 
-        print "LIST", lst
+        print("LIST %s" % lst)
 
         thumbgrid = layer.ThumbGrid(lst)
 
         fb.add(thumbgrid)
 
         fb.render_video('/tmp/finalvideo')
-        
+
 global VIDEO_FILE
 
 if __name__ == '__main__':
     global VIDEO_FILE
     if len(sys.argv) < 2:
-        print "Please a video file as argument"
+        print("Please a video file as argument")
         sys.exit()
     VIDEO_FILE = sys.argv.pop()
-    
+
     unittest.main()
 

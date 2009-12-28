@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # makexml.py
 
 from libtovid.metagui import *

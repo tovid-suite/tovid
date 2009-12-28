@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # frames.py
 
 import os
@@ -68,7 +67,7 @@ class TovidFrame(wx.Frame):
         # Append language menu as a submenu of View
         #self.menuView.AppendMenu(ID_MENU_LANG, "Language", self.menuLang)
 
-        
+
         # Menu events
         # TODO: Re-enable save/open
         #wx.EVT_MENU(self, ID_MENU_FILE_PREFS, self.OnFilePrefs)
@@ -100,7 +99,7 @@ class TovidFrame(wx.Frame):
         self.panGuide.Hide()
         # Store guide panel reference in global config
         self.curConfig.panGuide = self.panGuide
-        
+
         # Task panels. AuthorFiles is currently the only working task.
         self.panAuthorFiles = AuthorFilesTaskPanel(self, wx.ID_ANY)
 
@@ -139,7 +138,7 @@ class TovidFrame(wx.Frame):
         else:
             # Disable tooltips globally
             wx.ToolTip_Enable(False)
-        
+
     def OnAbout(self, evt):
         """Display a dialog showing information about tovidgui."""
         strAbout = "You are using the tovid GUI, version 0.31,\n" \
@@ -154,7 +153,7 @@ class TovidFrame(wx.Frame):
         """Change GUI to selected language."""
         if evt.GetId() == ID_MENU_LANG_EN:
             self.curConfig.UseLanguage('en')
-            
+
         elif evt.GetId() == ID_MENU_LANG_DE:
             self.curConfig.UseLanguage('de')
 
@@ -287,7 +286,7 @@ class TodiscFrame(wx.Frame):
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
         self.SetTitle(_("todisc GUI"))
-        
+
         _icon = wx.EmptyIcon()
         _icon.CopyFromBitmap(AppIcon())
         self.SetIcon(_icon)
@@ -342,17 +341,17 @@ class TodiscFrame(wx.Frame):
         szFrame = wx.FlexGridSizer(2, 1, 5, 0)
         szFrame.Add(self.notebook_1, 1, wx.EXPAND, 0)
         szFrame.Add(szNav, 1, wx.ALIGN_RIGHT, 0)
-        
+
         szFrame.Fit(self)
         szFrame.SetSizeHints(self)
         szFrame.AddGrowableRow(0)
         szFrame.AddGrowableCol(0)
-        
+
         self.SetAutoLayout(True)
         self.SetSizer(szFrame)
         self.Layout()
         self.Centre()
-        
+
         # global events
         self.Bind(wx.EVT_KEY_UP, self.app_OnKeyUp)
         # menu events
@@ -416,8 +415,8 @@ class TodiscFrame(wx.Frame):
             # For all others, '-opt arg'
             elif arg is not None:
                 cmd += '-%s %s ' % (opt, arg)
-        print "Would run the following todisc command:"
-        print cmd
+        print("Would run the following todisc command:")
+        print(cmd)
         return
 
     def menu_OnAbout(self, evt):
@@ -445,4 +444,3 @@ class TodiscFrame(wx.Frame):
             controlDown = evt.ControlDown()
             if ((controlDown) and ("Q" == chr(key))):
                 self.Close()
-# end of class TodiscFrame

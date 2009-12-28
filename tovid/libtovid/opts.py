@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # opts.py
 
 # WARNING: This module is a hack in progress
@@ -10,7 +9,7 @@ __all__ = [
     'validate',
 ]
 
-### --------------------------------------------------------------------
+import sys
 import textwrap
 from libtovid.odict import Odict
 from libtovid.util import trim
@@ -18,9 +17,9 @@ from libtovid.util import trim
 class Option (object):
     """A command-line-style option, expected argument formatting, default value,
     and notes on usage and purpose.
-    
+
     For example::
-        
+
         debug_opt = Option(
             'debug',
             'none|some|all',
@@ -32,12 +31,11 @@ class Option (object):
     expected argument formatting, a default value, and a string documenting the
     option's purpose and/or usage information.
     """
-
     def __init__(self, name, argformat='', default=None,
                  doc='Undocumented option', alias=None,
                  required=False):
         """Create a new option definition with the given attributes.
-        
+
             name
                 Option name
             argformat
@@ -80,7 +78,7 @@ class Option (object):
         else:
             return 1
 
-    
+
     def __str__(self):
         """Return a string containing "usage notes" for this option.
         """
@@ -97,13 +95,11 @@ class Option (object):
                 usage += '    ' + line + '\n'
         return usage
 
-### --------------------------------------------------------------------
-
 class Usage (object):
     """Command-line usage definition."""
     def __init__(self, usage_string='program [options]', *options):
         """Define usage of a command-line program.
-        
+
             usage_string
                 Command-line syntax and required options
             options
@@ -119,9 +115,9 @@ class Usage (object):
                 Option('format', 'vcd|svcd|dvd|half-dvd|dvd-vcd', 'dvd',
                     "Make video compliant with the specified format")
             )
-            print usage
-            print usage.options['format']
-        
+            print(usage)
+            print(usage.options['format'])
+
         """
         self.usage_string = usage_string
         # Odict of options indexed by name
@@ -140,16 +136,15 @@ class Usage (object):
 
 
 
-### --------------------------------------------------------------------
 from copy import copy
 
 def parse(args):
     """Parse a list of arguments and return a dictionary of found options.
 
         args:    List of command-line arguments (such as from sys.argv)
-    
+
     The argument list is interpreted in this way:
-    
+
         * If it begins with '-', it's an option
         * Arguments that precede the first option are ignored
         * Anything following an option is an argument to that option
@@ -168,7 +163,7 @@ def parse(args):
             current = arg.lstrip('-')
             # Treat it as a flag unless we see arguments later
             options[current] = True
-            
+
         # Argument to current option
         elif current:
             # Was a flag, now has a single value
@@ -183,17 +178,16 @@ def parse(args):
     return options
 
 
-### --------------------------------------------------------------------
 import re
 
 def validate(option, arg):
     """Check whether an argument is valid for a given option.
-    
+
         option: An Option to validate
         arg:    Candidate argument
 
     Expected/allowed values are inferred from the argformat string.
-    
+
     argformat patterns to consider:
         opta|optb|optc      # Either opta, optb, or optc
         [100-999]           # Any integer between 100 and 999
@@ -245,16 +239,16 @@ def validate(option, arg):
     return True
 
 
-import sys
+
 if __name__ == '__main__':
-    print "Option-parsing demo"
+    print("Option-parsing demo")
 
-    print "You passed the following arguments:"
-    print sys.argv[1:]
+    print("You passed the following arguments:")
+    print(sys.argv[1:])
 
-    print "Parsing..."
+    print("Parsing...")
     options = parse(sys.argv[1:])
 
-    print "Found the following options:"
-    print options
-    
+    print("Found the following options:")
+    print(options)
+

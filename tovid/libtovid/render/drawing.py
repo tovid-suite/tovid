@@ -1,6 +1,4 @@
-#! /usr/bin/env python
 # -=- encoding: latin-1 -=-
-# drawing.py
 
 # Run this script standalone for a demonstration:
 #    $ python libtovid/render/drawing.py
@@ -58,7 +56,7 @@ And preview again::
 Once you finish your beautiful painting, save it as a nice high-res PNG::
 
     >>> save_png(d, "my.png", 1600, 1200)
-    
+
 Cairo references:
 
     [1] http://www.cairographics.org
@@ -76,7 +74,8 @@ __all__ = [
     'save_png',
     'save_ps',
     'save_svg',
-    'write_ppm']
+    'write_ppm',
+]
 
 import os
 import sys
@@ -90,10 +89,6 @@ import ImageColor # for getrgb, getcolor
 import ImageFile  # for write_png()
 from libtovid import log
 from libtovid.util import to_unicode
-
-### --------------------------------------------------------------------
-### Internal functions
-### --------------------------------------------------------------------
 
 def get_surface(width, height, surface_type='image', filename=''):
     """Get a cairo surface at the given dimensions.
@@ -117,7 +112,6 @@ def get_surface(width, height, surface_type='image', filename=''):
 ### --------------------------------------------------------------------
 ### Classes
 ### --------------------------------------------------------------------
-
 class Step:
     """An atomic drawing procedure, consisting of a closed function that
     draws on a given cairo surface, and human-readable information about
@@ -130,30 +124,30 @@ class Step:
     def __str__(self):
         return "%s%s" % (self.name, self.args)
 
-# Drawing class notes:
-#
-# The Drawing class has a number of methods (circle, rectangle, fill, stroke
-# and many others) that need to operate on a Cairo surface. But we'd like to
-# delay execution of actually drawing on that surface--otherwise, we can't
+# Drawing class notes
+# 
+# The Drawing class has a number of methods (circle, rectangle, fill, stroke 
+# and many others) that need to operate on a Cairo surface. But we'd like to 
+# delay execution of actually drawing on that surface--otherwise, we can't 
 # easily render a given Drawing to a custom resolution.
-#
-# Closures save the day here--that is, functions without "free variables".
-# Anytime you "paint" on the Drawing, what's actually happening is a new
-# function is getting created, whose sole purpose in life is to carry out
-# that specific paint operation. These tiny, single-purpose functions are
-# then added to a list of steps (self.steps) that will actually be
-# executed at rendering-time (i.e., when you do display() or save_png).
-#
-# This not only lets us render a Drawing to different resolutions, but allows
+# 
+# Closures save the day here--that is, functions without "free variables". 
+# Anytime you "paint" on the Drawing, what's actually happening is a new 
+# function is getting created, whose sole purpose in life is to carry out that 
+# specific paint operation. These tiny, single-purpose functions are then 
+# added to a list of steps (self.steps) that will actually be executed at 
+# rendering-time (i.e., when you do display() or save_png).
+# 
+# This not only lets us render a Drawing to different resolutions, but allows 
 # the possibility of rendering to different Cairo surfaces.
 
 class Drawing:
 
     tk = None # tkinter widget to send redraws to
-    
+
     def __init__(self, width=800, height=600, autodraw=False):
         """Create a blank drawing at the given size.
-        
+
             width, height
                 Dimensions of the drawable region, in arbitrary units
             autodraw
@@ -192,20 +186,16 @@ class Drawing:
         return result
 
 
-    ### -----------------------------------------------------------------
-    ### Drawing methods
-    ### -----------------------------------------------------------------
-
     def affine(self, rot_x, rot_y, scale_x, scale_y, translate_x, translate_y):
         """Define a 3x3 transformation matrix::
-            
+
             [ scale_x  rot_y    translate_x ]
             [ rot_x    scale_y  translate_y ]
             [ 0        0        1           ]
 
         This is scaling, rotation, and translation in a single matrix,
         so it's a compact way to represent any transformation.
-        
+
         See [http://www.w3.org/TR/SVG11/coords.html] for more on
         these matrices and how to use them.
         """
@@ -240,13 +230,13 @@ class Drawing:
         """Create a Bezier curve.
 
         Points should look like::
-            
+
             points = [[(x0, y0), (x_ctl1, y_ctl1), (x_ctl2, y_ctl2)],
                       [(x0, y0), (x_ctl1, y_ctl1), (x_ctl2, y_ctl2)],
                       [(x0, y0), (x_ctl1, y_ctl1), (x_ctl2, y_ctl2)],
                       [(x0, y0)],
                       ]
-             
+
         where (x0, y0) are the point coordinates, and x_ctl* are the control
         points coordinates.
 
@@ -286,7 +276,7 @@ class Drawing:
                 npt.append([pt[0][0] + pt[1][0], pt[0][1] + pt[1][1]])
                 npt.append([pt[0][0] + pt[2][0], pt[0][1] + pt[2][1]])
                 points[x] = npt
-                    
+
         # Define the actual drawing function
         def _bezier(cr):
             # Move to the first x,y in the first point
@@ -327,12 +317,12 @@ class Drawing:
 
     def fill_rule(self, rule):
         """Set the fill rule to one of:
-        
+
             evenodd, winding (nonzero)
 
         This determines which parts of an overlapping path polygon will
         be filled with the fill() command.
-            
+
         http://www.w3.org/TR/SVG/painting.html#FillRuleProperty
         """
         tr = {'evenodd': cairo.FILL_RULE_EVEN_ODD,
@@ -340,7 +330,7 @@ class Drawing:
 
         # Test value
         tr[rule]
-        
+
         def _fill_rule(cr):
             cr.set_fill_rule(tr[rule])
         self.doStep(_fill_rule, rule)
@@ -415,7 +405,7 @@ class Drawing:
         else:
             scale = dw
             add_y = (height - dw * float(surface.get_height())) / 2
-        
+
         # Save context and get the surface to right dimensions
         self.save()
         self.translate(x + add_x, y + add_y)
@@ -434,7 +424,7 @@ class Drawing:
             self.doStep(_image_surface, x, y, width, height, surface, mask)
 
         self.restore()
-    
+
 
     def image(self, x, y, width, height, source):
         """Draw an image centered at (x, y), scaled to the given width and
@@ -565,7 +555,7 @@ class Drawing:
             nlist.append([tup])
         self.bezier(nlist, False, close_path)
 
-    
+
     def polyline(self, points, close_path=True):
         """Draw a polygon defined by (x, y) points in the given list.
 
@@ -575,7 +565,7 @@ class Drawing:
         """
         self.polygon(points, close_path)
 
-    
+
     def rectangle_corners(self, x0, y0, x1, y1):
         """Draw a rectangle defined by opposite corners (x0, y0) and (x1, y1).
         """
@@ -605,8 +595,6 @@ class Drawing:
         self.doStep(_rotate_deg, degrees)
 
     rotate = rotate_deg
-
-
     def rotate_rad(self, rad):
         """Rotate by the given number of radians.
         """
@@ -657,7 +645,7 @@ class Drawing:
           like Cairo wants them
 
         You can use the following *string* formats to specify color:
-        
+
         - Hexadecimal color specifiers, given as '#rgb' or '#rrggbb'.
           For example, '#ff0000' specifies pure red.
         - RGB functions, given as 'rgb(red, green, blue)' where the colour
@@ -674,7 +662,7 @@ class Drawing:
           standard colour names, based on the colors supported by the X
           Window system and most web browsers. Colour names are case
           insensitive. For example, 'red' and 'Red' both specify pure red.
-         
+
         """
         mysource = self.create_source(source, opacity)
         def _set_source(cr):
@@ -793,7 +781,7 @@ class Drawing:
         """Enable/disable antialiasing for strokes.
 
             do_antialias: True, False, 'none', 'default', or 'gray'
-        
+
         This does not affect text. See text_antialias() for more info
         on text antialiasing.
         """
@@ -801,7 +789,7 @@ class Drawing:
             aa_type = cairo.ANTIALIAS_GRAY
         else:
             aa_type = cairo.ANTIALIAS_NONE
-            
+
         def _stroke_antialias(cr):
             cr.set_antialias(aa_type)
         self.doStep(_stroke_antialias, do_antialias)
@@ -816,9 +804,9 @@ class Drawing:
             offset
                 An offset into the dash pattern at which the stroke
                 should start
-        
+
         For example::
-        
+
             >>> stroke_dash([5.0, 3.0])
 
         alternates between 5 pixels on, and 3 pixels off.
@@ -840,7 +828,7 @@ class Drawing:
 
         # Test value
         dic[cap_type]
-        
+
         def _stroke_linecap(cr):
             cr.set_line_cap(dic[cap_type])
         self.doStep(_stroke_linecap, cap_type)
@@ -858,7 +846,7 @@ class Drawing:
 
         # Test value
         dic[join_type]
-        
+
         def _stroke_linejoin(cr):
             cr.set_line_join(dic[join_type])
         self.doStep(_stroke_linejoin, join_type)
@@ -879,7 +867,7 @@ class Drawing:
                 utf8 encoded text string
             x, y
                 lower-left corner position
-        
+
         Set the text's color with set_source() before calling text().
         """
         text_string = to_unicode(text_string)
@@ -972,31 +960,23 @@ class Drawing:
         def _save(cr):
             cr.save()
         self.doStep(_save)
+
     BEGIN = save
-
-
     def restore(self):
         """Restore the previously saved context.
         """
         def _restore(cr):
             cr.restore()
         self.doStep(_restore)
+
     END = restore
-
-
-    ### ----------------------------------------------------------------
-    ### Untested methods
-    ### ----------------------------------------------------------------
-
-
     def font_family(self, family):
         """Set the current font, by family name."""
         def _font_family(cr):
             cr.select_font_face(family)
         self.doStep(_font_family, family)
+
     font_face = font_family
-
-
     def text_align(self, text_string, x, y, align='left'):
         """Draw the given text string.
 
@@ -1037,8 +1017,6 @@ class Drawing:
 ### --------------------------------------------------------------------
 ### Exported functions
 ### --------------------------------------------------------------------
-
-
 # Cached masks, rendered only once.
 interlace_fields = None
 
@@ -1049,7 +1027,7 @@ def interlace_drawings(draw1, draw2):
     This method interlaces with the BOTTOM-FIRST field order.
     """
     global interlace_fields
-    
+
     dr = Drawing(draw1.w, draw1.h)
 
     # create masks (only once)
@@ -1064,7 +1042,7 @@ def interlace_drawings(draw1, draw2):
 
             for x in range(0, draw1.h / 2):
                 # x*2 + f = top field first.., each two lines..
-                # -1 à draw1.w +1 -> pour être sur de couvrir aussi les bouts.
+                # -1 Ã  draw1.w +1 -> pour Ãªtre sur de couvrir aussi les bouts.
                 cr.move_to(-1, x*2 + f)
                 cr.line_to(draw1.w + 1, x*2 + f)
                 cr.stroke()
@@ -1094,7 +1072,7 @@ def render(drawing, context, width, height):
     drawing.scale(scale_x, scale_y)
     # Sneaky bit--scaling needs to happen before everything else
     drawing.steps.insert(0, drawing.steps.pop(-1))
-    
+
     # Execute all draw commands
     for step in drawing.steps:
         log.debug("Drawing step: %s" % step)
@@ -1106,7 +1084,7 @@ def render(drawing, context, width, height):
 
 def display(drawing, width=None, height=None, fix_aspect=False):
     """Render and display the given Drawing at the given size.
-    
+
         drawing
             A Drawing object to display
         width
@@ -1130,9 +1108,9 @@ def display(drawing, width=None, height=None, fix_aspect=False):
     # Render and display a .png
     png_file = '/tmp/drawing.png'
     save_png(drawing, png_file, width, height)
-    print "Displaying", png_file, "at %sx%s" % (width, height)
-    print "(press 'q' in image window to continue)"
-    print commands.getoutput('display %s' % png_file)
+    print("Displaying %s at %sx%s" % (png_file, width, height))
+    print("(press 'q' in image window to continue)")
+    print(commands.getoutput('display %s' % png_file))
 
 
 def write_ppm(drawing, pipe, width, height, workdir=None):
@@ -1147,23 +1125,23 @@ def write_ppm(drawing, pipe, width, height, workdir=None):
     # Timing
     start = time.time()
     if (width, height) == drawing.size:
-        #print "Not re-rendering"
+        #print("Not re-rendering")
         surface = drawing.surface
     else:
         surface = get_surface(width, height, 'image')
         context = cairo.Context(surface)
         render(drawing, context, width, height)
-        
+
     buf = surface.get_data()
     # Assumes surface is cairo.FORMAT_ARGB32
     im = Image.frombuffer('RGBA', (surface.get_width(),  surface.get_height()),
                           buf)
     im = im.transpose(Image.FLIP_TOP_BOTTOM)
     im.save(pipe, 'ppm')
-    
-    #print "write_ppm took %s seconds" % (time.time() - start)
 
-    
+    #print("write_ppm took %s seconds" % (time.time() - start))
+
+
 def write_png(drawing, pipe, width, height, workdir):
     """Write image as a PPM file to a file-object
 
@@ -1174,7 +1152,7 @@ def write_png(drawing, pipe, width, height, workdir):
     # Timing
     start = time.time()
     if (width, height) == drawing.size:
-        #print "Not re-rendering"
+        #print("Not re-rendering")
         surface = drawing.surface
     else:
         surface = get_surface(width, height, 'image')
@@ -1185,8 +1163,8 @@ def write_png(drawing, pipe, width, height, workdir):
     im = Image.open('%s/tmp.png' % workdir)
     im.load()
     im.save(pipe, 'ppm')
-    
-    #print "write_png took %s seconds" % (time.time() - start)
+
+    #print("write_png took %s seconds" % (time.time() - start))
 
 
 def save_png(drawing, filename, width, height):
@@ -1197,14 +1175,14 @@ def save_png(drawing, filename, width, height):
     # Timing
     start = time.time()
     if (width, height) == drawing.size:
-        #print "Not re-rendering"
+        #print("Not re-rendering")
         surface = drawing.surface
     else:
         surface = get_surface(width, height, 'image')
         context = cairo.Context(surface)
         render(drawing, context, width, height)
     surface.write_to_png(filename)
-    #print "save_png took %s seconds" % (time.time() - start)
+    #print("save_png took %s seconds" % (time.time() - start))
 
 
 def save_jpg(drawing, filename, width, height):
@@ -1234,7 +1212,7 @@ def save_image(drawing, img_filename, width, height):
         log.debug("Converting temporary png to %s" % img_filename)
         cmd = "convert -size %sx%s " % drawing.size
         cmd += "%s %s" % (temp_png, img_filename)
-        print commands.getoutput(cmd)
+        print(commands.getoutput(cmd))
 
 
 def save_svg(drawing, filename, width, height):
@@ -1245,7 +1223,7 @@ def save_svg(drawing, filename, width, height):
     render(drawing, context, width, height)
     context.show_page()
     surface.finish()
-    print "Saved SVG to", filename
+    print("Saved SVG to %s" % filename)
 
 
 def save_pdf(drawing, filename, width, height):
@@ -1256,7 +1234,7 @@ def save_pdf(drawing, filename, width, height):
     render(drawing, context, width, height)
     context.show_page()
     surface.finish()
-    print "Saved PDF to", filename
+    print("Saved PDF to %s" % filename)
 
 
 def save_ps(drawing, filename, width, height):
@@ -1267,13 +1245,12 @@ def save_ps(drawing, filename, width, height):
     render(drawing, context, width, height)
     context.show_page()
     surface.finish()
-    print "Saved PostScript to", filename
+    print("Saved PostScript to %s" % filename)
 
 
 ### --------------------------------------------------------------------
 ### Demo functions
 ### --------------------------------------------------------------------
-
 def draw_fontsize_demo(drawing):
     """Draw font size samples on the given drawing.
     """
@@ -1283,16 +1260,16 @@ def draw_fontsize_demo(drawing):
     drawing.save()
     # TODO: Remove this scaling hack
     drawing.scale(800.0/720, 600.0/480)
-    
+
     # Draw white text in a range of sizes
     drawing.set_source('white')
-    
+
     for size in [12, 16, 20, 24, 28, 32]:
         ypos = size * size / 5
         drawing.font('Nimbus Sans')
         drawing.font_size(size)
         drawing.text("%s pt: The quick brown fox" % size, 700, ypos, 'right')
-    
+
     # Restore context
     drawing.restore()
 
@@ -1368,16 +1345,16 @@ def draw_shape_demo(drawing):
     # drawing.circle((65, 150), 5)
     # drawing.set_style(fill='black') # stroke stays the same as before
     # drawing.rectangle((40, 30), (50, 150))
-    
+
     drawing.stroke_width(2)
     drawing.circle(65, 50, 15)
     drawing.fill('#8080FF')
     drawing.stroke('#777')
-    
+
     drawing.circle(60, 100, 10)
     drawing.fill('#2020F0')
     drawing.stroke('#777')
-    
+
     drawing.circle(55, 150, 5)
     drawing.fill('#0000A0')
     drawing.stroke('#777')
@@ -1412,7 +1389,7 @@ def draw_stroke_demo(drawing):
     drawing.save()
     # TODO: Remove this scaling hack
     drawing.scale(800.0/720, 600.0/480)
-    
+
     for width in [1, 2, 4, 6, 8, 10, 12, 14, 16]:
         drawing.stroke_width(width)
         rgb = ((255 - width * 8), (120 - width * 5), 0)
@@ -1423,7 +1400,6 @@ def draw_stroke_demo(drawing):
     # Restore context
     drawing.restore()
 
-log.level = 'info'
 
 if __name__ == '__main__':
     mytime = time.time() # Benchmark
@@ -1464,7 +1440,7 @@ if __name__ == '__main__':
     # Close out the Cairo rendering...
     drawing.restore()
 
-    print "Took %f seconds" % (time.time() - mytime)
+    print("Took %f seconds" % (time.time() - mytime))
 
     # Render and display the Drawing at several different sizes
     resolutions = [(352, 240), (352, 480), (720, 480), (800, 600)]

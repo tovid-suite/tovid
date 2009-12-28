@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# tooltip.py
-
 # Stolen from: http://tkinter.unpythonic.net/wiki/ToolTip
 """
 Michael Lange <klappnase at 8ung dot at>
@@ -66,7 +63,7 @@ WIDGET METHODS:
         above; the changes will take effect the next time the
         tooltip shows up; NOTE: follow_mouse cannot be changed
         after widget initialization
-    
+
 Other widget methods that might be useful if you want to subclass ToolTip:
 
     enter
@@ -85,8 +82,6 @@ Other widget methods that might be useful if you want to subclass ToolTip:
 """
 
 __all__ = ['ToolTip']
-
-# Ideas gleaned from PySol
 
 import Tkinter
 
@@ -136,7 +131,6 @@ class ToolTip:
                 raise KeyError('Unknown option: "%s"' % key)
 
     ### Event handlers
-
     def enter(self, event=None):
         """Called when mouse pointer enters the parent widget.
         """
@@ -158,7 +152,6 @@ class ToolTip:
             self._tipwindow.wm_geometry("+%d+%d" % (x, y))
 
     ### Helpers
-
     def _schedule(self):
         """Schedule the tooltip for display after ``delay`` milliseconds.
         """
@@ -246,19 +239,4 @@ class ToolTip:
         label = Tkinter.Label(self._tipwindow, **opts)
         label.pack()
 
-##---------demo code-----------------------------------##
 
-def demo():
-    root = Tkinter.Tk(className='ToolTip-demo')
-    l = Tkinter.Listbox(root)
-    l.insert('end', "I'm a listbox")
-    l.pack(side='top')
-    t1 = ToolTip(l, follow_mouse=1, text="I'm a tooltip with follow_mouse set "
-                 "to 1, so I won't be placed outside my parent")
-    b = Tkinter.Button(root, text='Quit', command=root.quit)
-    b.pack(side='bottom')
-    t2 = ToolTip(b, text='Enough of this')
-    root.mainloop()
-
-if __name__ == '__main__':
-    demo()
