@@ -7,10 +7,9 @@ ME="[tovid-test]:"
 # =======================
 # A bash script for testing the tovid suite.
 #
-# Project homepage: http://www.tovid.org
+# Project homepage: http://tovid.wikia.com
 #
-#
-# Copyright (C) 2005 tovid.org <http://www.tovid.org>
+# Copyright (C) 2005 tovid.org <http://tovid.wikia.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -27,7 +26,7 @@ ME="[tovid-test]:"
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
 #
-#           http://www.gnu.org/licenses/gpl.txt
+#     http://www.gnu.org/licenses/gpl.txt
 
 # ******************************************************************************
 # ******************************************************************************

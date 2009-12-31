@@ -11,27 +11,30 @@ ME="[postproc]:"
 # MPEG video files. Can requantize (shrink) video and
 # adjust A/V sync.
 #
-# Project homepage: http://www.tovid.org
+#--unknown-language--@<<License>>
+#--unknown-language--@+node:eric.20091231151402.3682:<<License>>
+# Project homepage: http://tovid.wikia.com
 #
+# Copyright (C) 2005 tovid.org <http://tovid.wikia.com>
 #
-# Copyright (C) 2005 tovid.org <http://www.tovid.org>
-# 
-# This program is free software; you can redistribute it and/or 
-# modify it under the terms of the GNU General Public License 
-# as published by the Free Software Foundation; either 
-# version 2 of the License, or (at your option) any later 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
 # version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
 #
-#           http://www.gnu.org/licenses/gpl.txt
+#     http://www.gnu.org/licenses/gpl.txt
+#--unknown-language--@-node:eric.20091231151402.3682:<<License>>
+#--unknown-language--@nl
 
 SCRIPT_NAME=`cat << EOF
 --------------------------------
