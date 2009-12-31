@@ -13,10 +13,9 @@ ME="[makexml]:"
 # supports an optional top-level menu, any number of optional sub-menus,
 # and any number of videos reachable through those menus.
 #
-# Project homepage: http://www.tovid.org
+# Project homepage: http://tovid.wikia.com
 #
-#
-# Copyright (C) 2005 tovid.org <http://www.tovid.org>
+# Copyright (C) 2005 tovid.org <http://tovid.wikia.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -33,7 +32,7 @@ ME="[makexml]:"
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
 #
-#           http://www.gnu.org/licenses/gpl.txt
+#     http://www.gnu.org/licenses/gpl.txt
 
 SCRIPTNAME=`cat << EOF
 --------------------------------
@@ -178,7 +177,7 @@ function addTopMenu ()
   if test $XML_FORMAT = "dvd"; then
     # Set NOPANSCAN
     noPanScan "$1"
-    
+
     # Generate XML for the top menu, with a placeholder for
     # the titleset menu buttons (to be replaced later by sed)
     TOP_MENU_XML=`cat << EOF

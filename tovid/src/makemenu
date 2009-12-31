@@ -12,27 +12,26 @@ ME="[makemenu]:"
 # displaying the specified text, with subtitle-multiplexed menu
 # highlights (for DVD) or enumerated titles (for (S)VCD).
 #
-# Project homepage: http://www.tovid.org
+# Project homepage: http://tovid.wikia.com
 #
+# Copyright (C) 2005 tovid.org <http://tovid.wikia.com>
 #
-# Copyright (C) 2005 tovid.org <http://www.tovid.org>
-# 
-# This program is free software; you can redistribute it and/or 
-# modify it under the terms of the GNU General Public License 
-# as published by the Free Software Foundation; either 
-# version 2 of the License, or (at your option) any later 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
 # version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
 #
-#           http://www.gnu.org/licenses/gpl.txt
+#     http://www.gnu.org/licenses/gpl.txt
 
 # Options to consider
 # font selection
@@ -551,7 +550,7 @@ for ((i=0; i<$NUM_TITLES; i++)); do
         convert -size ${TILE_WIDTH}x${TILE_HEIGHT} xc:none "$TILE_CANVAS"
         composite -compose Over -gravity north "$TMP_DIR/01_entry-$SEQNUM.png" \
             "$TILE_CANVAS" "$TMP_DIR/01_entry-$SEQNUM.png"
- 
+
     # Use a highlight cursor for DVD titles (drawn later, for now just text)
     else
         ENTRY="${TITLES[i]}"
@@ -608,7 +607,7 @@ if test $RES = "dvd"; then
     # A placeholder to space the title text correctly
     DIMS=$(identify "$HIGHLIGHT_BUTTON" | grep -o -e " [0-9]\{1,\}x[0-9]\{1,\} " | tr -d ' ')
     convert -size $DIMS xc:none "$BUTTON_PLACEHOLDER"
-    
+
     # Next, join the button tiles with the title tiles:
     i=0
     while test $i -lt $NUM_TITLES; do
@@ -645,12 +644,12 @@ fi
 # If specified, add a menu title
 if $MAKE_TITLE; then
     echo "Adding the menu title..."
-    
+
     # Default title font size = current text size + 4
     if test -z "$MENU_TITLE_SIZE"; then
         let "MENU_TITLE_SIZE=TITLE_SIZE+8"
     fi
-    
+
     # Draw the menu title and pad the bottom with TILE_HEIGHT pixels
     convert -size 720x100 xc:none -font $TITLE_FONT -antialias $FONT_DECO -fill $TEXT_COLOR -pointsize $MENU_TITLE_SIZE -annotate +20+80 "$MENU_TITLE" -trim +repage "$MENU_TITLE_TEXT"
     convert "$MENU_TITLE_TEXT" -gravity south -background none -splice 0x$TILE_HEIGHT "$MENU_TITLE_TEXT"

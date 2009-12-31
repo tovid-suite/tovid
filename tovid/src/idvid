@@ -10,10 +10,9 @@ ME="[idvid]:"
 # A bash script for identifying arbitrary video files and
 # testing for VCD, SVCD, DVD or other video disc compliance.
 #
-# Project homepage: http://www.tovid.org
+# Project homepage: http://tovid.wikia.com
 #
-#
-# Copyright (C) 2005 tovid.org <http://www.tovid.org>
+# Copyright (C) 2005 tovid.org <http://tovid.wikia.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -30,7 +29,7 @@ ME="[idvid]:"
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
 #
-#           http://www.gnu.org/licenses/gpl.txt
+#     http://www.gnu.org/licenses/gpl.txt
 
 SCRIPT_NAME=`cat << EOF
 --------------------------------
@@ -267,7 +266,7 @@ function get_info ()
             else
                 MP_TRACKNUM=$i
             fi
-            
+
             # last ditch efforts to get audio bitrate if we still don't have it
             if test ${A_BITRATES[i]} -eq 0; then
                 MP_ABITRATE=$(mplayer -vo null -ao null -frames 30 -channels 6 -identify \
