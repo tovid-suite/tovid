@@ -14,7 +14,7 @@ import Tkinter as tk
 
 from widget import Widget
 from panel import Panel, Tabs
-from support import ensure_type
+from support import ensure_type, askyesno
 from libtovid import cli
 
 from ScrolledText import ScrolledText
@@ -172,7 +172,7 @@ class Executor (Widget):
     #@+node:eric.20090722212922.2636:notify
     def notify(self, text):
         """Print a notification message to the Executor.
-        Adds newlines and angle brackets.
+        Adds newlines and brackets.
         """
         self.write("\n[[ %s ]]\n" % text)
 
@@ -326,7 +326,7 @@ class Application (Widget):
         self.tabs.activate(self.executor)
 
         # Show prompt asking whether to continue
-        if tkMessageBox.askyesno(message="Run %s now?" % self.program):
+        if askyesno(message="Run %s now?" % self.program):
             self.executor.execute(command, self.toolbar.enable)
         else:
             self.executor.notify("Cancelled.")
@@ -523,7 +523,7 @@ class GUI (tk.Tk):
     def confirm_exit(self, evt=None):
         """Exit the GUI, with confirmation prompt.
         """
-        if tkMessageBox.askyesno(message="Exit?"):
+        if askyesno(message="Exit?"):
             self.quit()
 
     #@-node:eric.20090722212922.2651:confirm_exit

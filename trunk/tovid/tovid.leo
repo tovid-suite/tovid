@@ -3,7 +3,7 @@
 <leo_file>
 <leo_header file_format="2" tnodes="0" max_tnode_index="0" clone_windows="0"/>
 <globals body_outline_ratio="0.270883054893">
-	<global_window_position top="17" left="0" height="999" width="1155"/>
+	<global_window_position top="17" left="0" height="999" width="1104"/>
 	<global_log_window_position top="0" left="0" height="0" width="0"/>
 </globals>
 <preferences/>
@@ -55,13 +55,14 @@
 <v t="eric.20090722212922.2919"><vh>@shadow panels.py</vh></v>
 <v t="eric.20090722212922.3069"><vh>@shadow util.py</vh></v>
 </v>
-<v t="eric.20090722212922.2542"><vh>@path metagui</vh>
+<v t="eric.20090722212922.2542" a="E"><vh>@path metagui</vh>
 <v t="eric.20090722212922.2543"><vh>@shadow __init__.py</vh></v>
 <v t="eric.20090722212922.2554"><vh>@shadow control.py</vh></v>
 <v t="eric.20090722212922.2627"><vh>@shadow gui.py</vh></v>
 <v t="eric.20090722212922.2652"><vh>@shadow log.py</vh></v>
 <v t="eric.20090722212922.2668"><vh>@shadow panel.py</vh></v>
-<v t="eric.20090722212922.2710"><vh>@shadow support.py</vh></v>
+<v t="eric.20090722212922.2710" a="E"
+expanded="eric.20090723160216.3597,"><vh>@shadow support.py</vh></v>
 <v t="eric.20090722212922.2759"><vh>@shadow tooltip.py</vh></v>
 <v t="eric.20090722212922.2774"><vh>@shadow variable.py</vh></v>
 <v t="eric.20090722212922.2794"><vh>@shadow widget.py</vh></v>
@@ -109,7 +110,7 @@
 <v t="eric.20090722212922.3466"><vh>@shadow makexml</vh></v>
 <v t="eric.20090722212922.3467"><vh>@shadow postproc</vh></v>
 <v t="eric.20091222141351.3806"><vh>@shadow todisc</vh></v>
-<v t="eric.20090722212922.3473"><vh>@shadow todisc-fade-routine</vh></v>
+<v t="eric.20090722212922.3473" a="E"><vh>@shadow todisc-fade-routine</vh></v>
 <v t="eric.20090722212922.3475"><vh>@shadow tovid</vh></v>
 <v t="eric.20090722212922.3476"><vh>@shadow tovid-batch</vh></v>
 <v t="eric.20090722212922.3478"><vh>@shadow tovid-init.in</vh></v>
@@ -208,6 +209,6 @@ Unify command-line options and metagui controls?
 
 @c
 </t>
-<t tx="eric.20091231151402.3681" str_leo_pos="3,0,0"></t>
+<t tx="eric.20091231151402.3681" str_leo_pos="2,4,5"></t>
 </tnodes>
 </leo_file>
