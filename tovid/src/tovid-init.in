@@ -51,7 +51,7 @@ TOVID_VERSION="@VERSION@"
 SEPARATOR="========================================================="
 
 TOVID_HOME="$HOME/.tovid"
-TOVID_HOME_PAGE="http://tovid.org"
+TOVID_HOME_PAGE="http://tovid.wikia.com"
 TOVID_FORUMS="http://groups.google.com/group/tovid-users"
 
 

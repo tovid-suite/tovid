@@ -18,6 +18,7 @@ __all__ = [
 import os, sys, traceback, math
 import Tkinter as tk
 import tkSimpleDialog
+import tkMessageBox
 from variable import ListVar
 
 from libtovid.util import imagemagick_fonts
@@ -66,6 +67,21 @@ def divide_list(items, pieces):
         # For each piece p, extract N items
         return [items[N*p : N*p+N] for p in range(pieces)]
 
+def askyesno(title=None, message=None, **options):
+    """Show a popup with Yes / No options. Return True if Yes was clicked,
+    False if No was clicked.
+
+    This function is to work around a bug in Tkinter 8.5 / Python 2.6, where
+    the askyesno function always returns False after a file dialog has been
+    displayed.
+    """
+    result = tkMessageBox._show(title, message,
+        tkMessageBox.QUESTION, tkMessageBox.YESNO,
+        **options)
+    if str(result) == 'yes':
+        return True
+    else:
+        return False
 ### --------------------------------------------------------------------
 ### Classes
 ### --------------------------------------------------------------------

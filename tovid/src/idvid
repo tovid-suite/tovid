@@ -47,7 +47,7 @@ Where OPTIONS may be any of the following:
 
     -terse      Suitable for parsing
     -verbose    Also use ffmpeg and tcprobe
-    -fast       Skip lengthy playing time estimation
+    -accurate   Do accurate duration estimation
     -isformat [ntsc-vcd|pal-vcd|ntsc-svcd|pal-svcd|ntsc-dvd|pal-dvd]
         Tell whether the first file is compliant with the given
         format; prints "true" or "false" (returns shell 0 or 1)
@@ -68,7 +68,7 @@ EOF`
 # Do not use terse output by default
 TERSE=false
 VERBOSE=false
-FAST=false
+FAST=:
 TMP_DIR=$(tempdir "$WORKING_DIR/idvid")
 SCRATCH_FILE="$TMP_DIR/idvid.scratch"
 TABLE="$TMP_DIR/table"
@@ -832,6 +832,7 @@ while test $# -gt 0; do
         "-terse" ) TERSE=: ;;
         "-verbose" ) VERBOSE=: ;;
         "-fast" ) FAST=: ;;
+        "-accurate" ) FAST=false ;;
         "-tabular" ) TABULAR=: ;;
         "-isformat" )
             shift
