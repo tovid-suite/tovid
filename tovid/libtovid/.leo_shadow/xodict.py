@@ -10,7 +10,12 @@
 
 __all__ = ['Odict']
 
-from UserDict import UserDict
+# Python < 3.x
+try:
+    from UserDict import UserDict
+# Python 3.x
+except ImportError:
+    from collections import UserDict
 
 #@+others
 #@+node:eric.20090722212922.2449:class Odict

@@ -28,7 +28,13 @@ __all__ = [
 ]
 
 import os
-from ConfigParser import ConfigParser
+
+# Python < 3.x
+try:
+    from ConfigParser import ConfigParser
+# Python 3.x
+except ImportError:
+    from configparser import ConfigParser
 
 #@+others
 #@+node:eric.20090722212922.2397:class Config

@@ -7,10 +7,11 @@
 """A GUI for the todisc command-line program.
 """
 
+import os
+
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
 from libtovid.util import filetypes
-import os
 
 #@-node:eric.20090722212922.3294:todisc declarations
 #@+node:eric.20090722212922.3295:to_title

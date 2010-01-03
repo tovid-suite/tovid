@@ -49,8 +49,9 @@ __all__ = [
     'require',
 ]
 
-from subprocess import Popen, PIPE
+import subprocess
 import textwrap
+
 from libtovid.util.output import red
 
 class MissingDep (Exception):
@@ -120,7 +121,8 @@ def which(executable):
     """Locate the given executable program name on the current path.
     If found, return the full pathname; otherwise, return the empty string.
     """
-    proc = Popen(['which', executable], stdout=PIPE, stderr=PIPE)
+    proc = subprocess.Popen(['which', executable],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return proc.stdout.read().rstrip('\n')
 
 def require(deps, 

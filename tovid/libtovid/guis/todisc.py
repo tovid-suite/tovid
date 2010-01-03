@@ -3,10 +3,11 @@
 """A GUI for the todisc command-line program.
 """
 
+import os
+
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
 from libtovid.util import filetypes
-import os
 
 # Define a few supporting functions
 def to_title(filename):

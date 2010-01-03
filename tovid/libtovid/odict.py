@@ -8,7 +8,12 @@
 
 __all__ = ['Odict']
 
-from UserDict import UserDict
+# Python < 3.x
+try:
+    from UserDict import UserDict
+# Python 3.x
+except ImportError:
+    from collections import UserDict
 
 class Odict (UserDict):
     """Ordered dictionary class, compatible with the builtin dict.

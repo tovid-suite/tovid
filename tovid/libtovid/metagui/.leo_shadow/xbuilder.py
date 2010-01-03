@@ -39,14 +39,20 @@ __all__ = [
     'ControlChooser',
 ]
 
-import Tkinter as tk
 from inspect import getargspec
 
+# Python < 3.x
+try:
+    import Tkinter as tk
+# Python 3.x
+except ImportError:
+    import tkinter as tk
+
+# Absolute imports
 from libtovid.odict import Odict
 from libtovid.metagui import Text, Number, Flag
-from control import CONTROLS
-
-from support import ComboBox
+from libtovid.metagui.control import CONTROLS
+from libtovid.metagui.support import ComboBox
 
 #@+others
 #@+node:eric.20090722212922.2547:class ControlEditor

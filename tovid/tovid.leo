@@ -2,7 +2,7 @@
 <?xml-stylesheet ekr_test?>
 <leo_file>
 <leo_header file_format="2" tnodes="0" max_tnode_index="0" clone_windows="0"/>
-<globals body_outline_ratio="0.309782608696">
+<globals body_outline_ratio="0.307065217391">
 	<global_window_position top="17" left="0" height="999" width="1104"/>
 	<global_log_window_position top="0" left="0" height="0" width="0"/>
 </globals>
@@ -25,16 +25,8 @@ expanded="eric.20090722212922.2410,"><vh>@shadow cli.py</vh></v>
 <v t="eric.20090722212922.2474"><vh>@shadow runtest.py</vh></v>
 <v t="eric.20090722212922.2476"><vh>@shadow standard.py</vh></v>
 <v t="eric.20090722212922.2486"><vh>@shadow stats.py</vh></v>
-<v t="eric.20090722212922.2499"><vh>@shadow xml.py</vh></v>
-</v>
-<v t="eric.20090722212922.3079"><vh>@path guis</vh>
-<v t="eric.20090722212922.3282"><vh>@shadow __init__.py</vh></v>
-<v t="eric.20090722212922.3284"><vh>@shadow idvid.py</vh></v>
-<v t="eric.20090722212922.3287"><vh>@shadow makemenu.py</vh></v>
-<v t="eric.20090722212922.3290"><vh>@shadow makexml.py</vh></v>
-<v t="eric.20090722212922.3293"><vh>@shadow todisc.py</vh></v>
-<v t="eric.20090722212922.3298"><vh>@shadow tovid.py</vh></v>
-<v t="eric.20090722212922.3301"><vh>@shadow tovid_batch.py</vh></v>
+<v t="eric.20090722212922.2499"
+expanded="eric.20090722212922.2501,"><vh>@shadow xml.py</vh></v>
 </v>
 <v t="eric.20090722212922.3080"><vh>@path render</vh>
 <v t="eric.20090722212922.3081"><vh>@shadow __init__.py</vh></v>
@@ -56,17 +48,25 @@ expanded="eric.20090722212922.2410,"><vh>@shadow cli.py</vh></v>
 <v t="eric.20090722212922.2919"><vh>@shadow panels.py</vh></v>
 <v t="eric.20090722212922.3069"><vh>@shadow util.py</vh></v>
 </v>
+<v t="eric.20090722212922.3079"><vh>@path guis</vh>
+<v t="eric.20090722212922.3282"><vh>@shadow __init__.py</vh></v>
+<v t="eric.20090722212922.3284"><vh>@shadow idvid.py</vh></v>
+<v t="eric.20090722212922.3287"><vh>@shadow makemenu.py</vh></v>
+<v t="eric.20090722212922.3290"><vh>@shadow makexml.py</vh></v>
+<v t="eric.20090722212922.3293"><vh>@shadow todisc.py</vh></v>
+<v t="eric.20090722212922.3298"><vh>@shadow tovid.py</vh></v>
+<v t="eric.20090722212922.3301"><vh>@shadow tovid_batch.py</vh></v>
+</v>
 <v t="eric.20090722212922.2542" a="E"><vh>@path metagui</vh>
 <v t="eric.20090722212922.2543"><vh>@shadow __init__.py</vh></v>
 <v t="eric.20090722212922.2554"><vh>@shadow control.py</vh></v>
-<v t="eric.20090722212922.2627"
-expanded="eric.20090722212922.2629,"><vh>@shadow gui.py</vh></v>
+<v t="eric.20090722212922.2627"><vh>@shadow gui.py</vh></v>
 <v t="eric.20090722212922.2652"><vh>@shadow log.py</vh></v>
 <v t="eric.20090722212922.2668"><vh>@shadow panel.py</vh></v>
 <v t="eric.20090722212922.2710" a="E"
-expanded="eric.20090723160216.3597,"><vh>@shadow support.py</vh></v>
+expanded="eric.20090723212423.3614,eric.20090722212922.2715,"><vh>@shadow support.py</vh></v>
 <v t="eric.20090722212922.2759"><vh>@shadow tooltip.py</vh></v>
-<v t="eric.20090722212922.2774"><vh>@shadow variable.py</vh></v>
+<v t="eric.20090722212922.2774" a="E"><vh>@shadow variable.py</vh></v>
 <v t="eric.20090722212922.2794"><vh>@shadow widget.py</vh></v>
 <v t="eric.20090723212423.3613"><vh>Experimental</vh>
 <v t="eric.20090722212922.2656"><vh>@shadow manpage.py</vh></v>
@@ -211,6 +211,6 @@ Unify command-line options and metagui controls?
 
 @c
 </t>
-<t tx="eric.20091231151402.3681" str_leo_pos="2,0,2,0,5"></t>
+<t tx="eric.20091231151402.3681" str_leo_pos="2,0,2"></t>
 </tnodes>
 </leo_file>

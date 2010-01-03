@@ -12,7 +12,14 @@ __all__ = [
     'VAR_TYPES',
 ]
 
-import Tkinter as tk
+# Python < 3.x
+try:
+    import Tkinter as tk
+# Python 3.x
+except ImportError:
+    import tkinter as tk
+
+# Absolute imports
 from libtovid.odict import Odict
 
 #@+others

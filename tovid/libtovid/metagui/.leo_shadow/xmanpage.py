@@ -20,7 +20,7 @@ __all__ = [
 import re
 import os
 import textwrap
-from control import *
+from libtovid.metagui.control import *
 
 #@+others
 #@+node:eric.20090722212922.2658:class Matcher

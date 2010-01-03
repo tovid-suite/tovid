@@ -17,17 +17,33 @@ __all__ = [
     'Style',
 ]
 
-import os, sys, traceback, math
-import Tkinter as tk
-import tkSimpleDialog
-import tkMessageBox
-from variable import ListVar
-
-from libtovid.util import imagemagick_fonts
-from libtovid import cli
+#@<<imports>>
+#@+node:eric.20091231151402.3687:<<imports>>
+import os
+import sys
+import traceback
+import math
 import base64
 
-from ConfigParser import ConfigParser
+# Python < 3.x
+try:
+    import Tkinter as tk
+    from tkSimpleDialog import Dialog
+    import tkMessageBox
+    from ConfigParser import ConfigParser
+# Python 3.x
+except ImportError:
+    import tkinter as tk
+    from tkinter.simpledialog import Dialog
+    import tkinter.messagebox as tkMessageBox
+    from configparser import ConfigParser
+
+# Absolute imports
+from libtovid import cli
+from libtovid.util import imagemagick_fonts
+from libtovid.metagui.variable import ListVar
+#@-node:eric.20091231151402.3687:<<imports>>
+#@nl
 
 #@+others
 #@+node:eric.20090723160216.3597:Supporting functions
@@ -304,7 +320,7 @@ class ScrollList (tk.Frame):
         if action not in ['insert', 'remove', 'select', 'swap']:
             raise ValueError("List callback action must be"
                              " 'insert', 'remove', 'select', or 'swap'.")
-        if not callable(function):
+        if not hasattr(function, '__call__'):
             raise TypeError("List callback function must be callable.")
         self.callbacks[action].append(function)
 
@@ -498,7 +514,7 @@ class ComboBox (tk.Frame):
     #@-others
 #@-node:eric.20090722212922.2735:class ComboBox
 #@+node:eric.20090722212922.2741:class FontChooser
-class FontChooser (tkSimpleDialog.Dialog):
+class FontChooser (Dialog):
     """A widget for choosing a font.
     """
     # Cache of PhotoImage previews, indexed by font name
@@ -507,7 +523,7 @@ class FontChooser (tkSimpleDialog.Dialog):
     #@    @+others
     #@+node:eric.20090722212922.2742:__init__
     def __init__(self, master=None):
-        tkSimpleDialog.Dialog.__init__(self, master, "Font chooser")
+        Dialog.__init__(self, master, "Font chooser")
         # Defined in body()
         self.fontlist = None
         self.preview = None
@@ -670,7 +686,7 @@ class Style:
     #@-others
 #@-node:eric.20090722212922.2747:class Style
 #@+node:eric.20090722212922.2752:class ConfigWindow
-class ConfigWindow (tkSimpleDialog.Dialog):
+class ConfigWindow (Dialog):
     """Configuration settings dialog box.
     """
     #@    @+others
@@ -682,7 +698,7 @@ class ConfigWindow (tkSimpleDialog.Dialog):
                 An .ini-style file to load/save settings from
         """
         self.style = style or Style()
-        tkSimpleDialog.Dialog.__init__(self, master, "Configuration")
+        Dialog.__init__(self, master, "Configuration")
         # Defined in body()
         self.fontfamily = None
         self.fontsize = None
