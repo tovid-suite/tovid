@@ -184,7 +184,9 @@ class Command:
     def kill(self):
         """Abort!
         """
-        os.kill(self.proc.pid, signal.SIGTERM)
+        #os.kill(self.proc.pid, signal.SIGTERM)
+        self.proc.kill()
+
 
 
     #@-node:eric.20090722212922.2416:kill
