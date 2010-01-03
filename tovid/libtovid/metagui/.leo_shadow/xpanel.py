@@ -15,18 +15,24 @@ __all__ = [
     'RelatedList',
 ]
 
-import Tkinter as tk
+#@<<imports>>
+#@+node:eric.20091231151402.3685:<<imports>>
+# Python < 3.x
+try:
+    import Tkinter as tk
+# Python 3.x
+except ImportError:
+    import tkinter as tk
 
-from widget import Widget
-from control import Control, Flag
-from support import ensure_type, divide_list
-
-from support import ComboBox
-from variable import ListVar
+# Absolute imports
 from libtovid.odict import Odict
-
-from support import ScrollList
-from control import List
+from libtovid.metagui.widget import Widget
+from libtovid.metagui.control import Control, Flag, List
+from libtovid.metagui.support import \
+    (ComboBox, ScrollList, ensure_type, divide_list)
+from libtovid.metagui.variable import ListVar
+#@-node:eric.20091231151402.3685:<<imports>>
+#@nl
 
 #@+others
 #@+node:eric.20090722212922.2670:class Label
@@ -635,7 +641,7 @@ class RelatedList (Panel):
             raise ValueError("Correspondence must be '1:1' or '1:*'.")
         if not isinstance(child_list, List):
             raise TypeError("RelatedList child must be a List instance.")
-        if not callable(filter):
+        if not hasattr(filter, '__call__'):
             raise TypeError("Translation filter must be a function.")
         if side not in ['left', 'top']:
             raise ValueError("RelatedList 'side' must be 'left' or 'top'")

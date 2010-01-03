@@ -9,25 +9,39 @@ __all__ = [
     'GUI',
 ]
 
+#@<<imports>>
+#@+node:eric.20091231151402.3684:<<imports>>
 import os
-import Tkinter as tk
-
-from widget import Widget
-from panel import Panel, Tabs
-from support import ensure_type, askyesno
-from libtovid import cli
-
-from ScrolledText import ScrolledText
-from tkFileDialog import asksaveasfilename, askopenfilename
-from subprocess import PIPE
-
-import tkMessageBox
 import tempfile
-from libtovid.metagui.control import Control
 import shlex
+import subprocess
 
-from support import ConfigWindow, Style
+# Python < 3.x
+try:
+    import Tkinter as tk
+    from ScrolledText import ScrolledText
+    from tkFileDialog import \
+        (asksaveasfilename, askopenfilename)
+    from tkMessageBox import showinfo
+# Python 3.x
+except ImportError:
+    import tkinter as tk
+    from tkinter.scrolledtext import ScrolledText
+    from tkinter.filedialog import \
+        (asksaveasfilename, askopenfilename)
+    from tkinter.messagebox import showinfo
 
+# Absolute imports
+from libtovid import cli
+# Relative imports
+from libtovid.metagui.widget import Widget
+from libtovid.metagui.panel import Panel, Tabs
+from libtovid.metagui.support import \
+    (ConfigWindow, Style, ensure_type, askyesno)
+from libtovid.metagui.control import Control
+
+#@-node:eric.20091231151402.3684:<<imports>>
+#@nl
 
 DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
 
@@ -107,7 +121,7 @@ class Executor (Widget):
             raise TypeError("execute() requires a Command instance.")
         else:
             self.command = command
-        if not callable(callback):
+        if not hasattr(callback, '__call__'):
             raise TypeError("execute() callback must be a function")
         else:
             self.callback = callback
@@ -120,7 +134,7 @@ class Executor (Widget):
         # Run the command, directing stdout/err to the temporary file
         # (and piping stdin so send_stdin will work)
         output = open(self.outfile.name, 'w')
-        self.command.run_redir(stdin=PIPE,
+        self.command.run_redir(stdin=subprocess.PIPE,
                                stdout=output,
                                stderr=output)
 
@@ -348,8 +362,8 @@ class Application (Widget):
             outfile = open(filename, 'w')
             outfile.write(command.to_script())
             outfile.close()
-            tkMessageBox.showinfo(title="Script saved",
-                                  message="Saved '%s'" % filename)
+            showinfo(title="Script saved",
+                     message="Saved '%s'" % filename)
 
 
     #@-node:eric.20090722212922.2643:save_script

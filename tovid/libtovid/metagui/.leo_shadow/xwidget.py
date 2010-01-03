@@ -5,8 +5,14 @@
 
 __all__ = ['Widget']
 
-import Tkinter as tk
 import time
+
+# Python < 3.x
+try:
+    import Tkinter as tk
+# Python 3.x
+except ImportError:
+    import tkinter as tk
 
 #@+others
 #@+node:eric.20090722212922.2796:class Widget

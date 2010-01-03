@@ -18,7 +18,7 @@ __all__ = [
 import re
 import os
 import textwrap
-from control import *
+from libtovid.metagui.control import *
 
 class Matcher:
     def search(self, pattern, text):

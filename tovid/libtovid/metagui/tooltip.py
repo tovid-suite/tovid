@@ -83,7 +83,10 @@ Other widget methods that might be useful if you want to subclass ToolTip:
 
 __all__ = ['ToolTip']
 
-import Tkinter
+try:
+    import Tkinter as tk
+except ImportError:
+    import tkinter as tk
 
 class ToolTip:
     """A Tooltip widget for Tkinter.
@@ -175,7 +178,7 @@ class ToolTip:
             self._unschedule()
             return
         if not self._tipwindow:
-            self._tipwindow = tw = Tkinter.Toplevel(self.master)
+            self._tipwindow = tw = tk.Toplevel(self.master)
             # hide the window until we know the geometry
             tw.withdraw()
             tw.wm_overrideredirect(1)
@@ -236,7 +239,7 @@ class ToolTip:
         opts = self._opts.copy()
         for opt in ('delay', 'follow_mouse', 'state'):
             del opts[opt]
-        label = Tkinter.Label(self._tipwindow, **opts)
+        label = tk.Label(self._tipwindow, **opts)
         label.pack()
 
 

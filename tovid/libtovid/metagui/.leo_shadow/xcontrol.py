@@ -102,20 +102,36 @@ __all__ = [
 #@nl
 #@<<imports>>
 #@+node:eric.20090723212423.3625:<<imports>>
-import Tkinter as tk
-from widget import Widget
-from variable import VAR_TYPES
-from support import DragList, ScrollList, FontChooser
-from support import ensure_type
+import shlex
+import re
+
+# Python < 3.x
+try:
+    import Tkinter as tk
+    from tkFileDialog import \
+        (asksaveasfilename, askopenfilename, askopenfilenames)
+    from tkColorChooser import askcolor
+# Python 3.x
+except ImportError:
+    import tkinter as tk
+    from tkinter.filedialog import \
+        (asksaveasfilename, askopenfilename, askopenfilenames)
+    from tkinter.colorchooser import askcolor
+
+from libtovid.metagui.widget import Widget
+from libtovid.metagui.variable import VAR_TYPES
+from libtovid.metagui.support import \
+    (DragList, ScrollList, FontChooser, ensure_type, ComboBox)
+# Used in Control
+from libtovid.metagui.tooltip import ToolTip
+# Used in Choice control
+from libtovid.odict import convert_list
 #@-node:eric.20090723212423.3625:<<imports>>
 #@nl
 
 #@+others
 #@+node:eric.20090722212922.3501:RGB to hex
 #@+node:eric.20090722212922.2572:_is_hex_rgb
-import tkColorChooser
-import re
-
 # Support functions for Color control
 def _is_hex_rgb(color):
     """Return True if color appears to be a hex '#RRGGBB value.
@@ -155,8 +171,6 @@ class NotDrawn (Exception):
 
 #@-node:eric.20090722212922.2556:class NotDrawn
 #@+node:eric.20090722212922.2557:class Control
-from tooltip import ToolTip
-
 class Control (Widget):
     """A specialized GUI widget that controls a command-line option.
 
@@ -406,9 +420,6 @@ class Control (Widget):
     #@-others
 #@-node:eric.20090722212922.2557:class Control
 #@+node:eric.20090722212922.2569:class Choice
-from libtovid.odict import convert_list
-from support import ComboBox
-
 class Choice (Control):
     """Multiple-choice selector, with radiobutton or dropdown style.
     """
@@ -548,7 +559,7 @@ class Color (Control):
         """Event handler for the color picker button; choose and set a color.
         """
         current = self.hexcolor(self.get())
-        rgb, color = tkColorChooser.askcolor(current)
+        rgb, color = askcolor(current)
         if color:
             self.set(str(color))
 
@@ -607,8 +618,6 @@ class Color (Control):
     #@-others
 #@-node:eric.20090722212922.2575:class Color
 #@+node:eric.20090722212922.2583:class Filename
-from tkFileDialog import asksaveasfilename, askopenfilename
-
 class Filename (Control):
     """Filename entry box with browse button.
     """
@@ -1004,8 +1013,6 @@ class Number (Control):
     #@-others
 #@-node:eric.20090722212922.2601:class Number
 #@+node:eric.20090722212922.2605:class Text
-import shlex
-
 class Text (Control):
     """Text string entry box.
     """
@@ -1104,8 +1111,6 @@ class SpacedText (Text):
     #@-others
 #@-node:eric.20090722212922.2609:class SpacedText
 #@+node:eric.20090722212922.2614:class List
-from tkFileDialog import askopenfilenames
-
 class List (Control):
     """A list of values, editable with a given Control.
 

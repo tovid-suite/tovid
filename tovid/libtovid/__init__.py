@@ -26,7 +26,13 @@ __all__ = [
 ]
 
 import os
-from ConfigParser import ConfigParser
+
+# Python < 3.x
+try:
+    from ConfigParser import ConfigParser
+# Python 3.x
+except ImportError:
+    from configparser import ConfigParser
 
 # Configuration file reader/writer
 class Config (ConfigParser):

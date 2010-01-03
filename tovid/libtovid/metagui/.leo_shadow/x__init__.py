@@ -108,14 +108,15 @@ with one tab for each panel.
 
 # Export everything from support, control, panel, and gui modules
 # (I'm open to suggestion about more elegant ways to do this...)
-from support import *
-from control import *
-from panel import *
-from gui import *
-from support import __all__ as all_support
-from control import __all__ as all_control
-from panel import __all__ as all_panel
-from gui import __all__ as all_gui
+from libtovid.metagui.support import *
+from libtovid.metagui.control import *
+from libtovid.metagui.panel import *
+from libtovid.metagui.gui import *
+
+from libtovid.metagui.support import __all__ as all_support
+from libtovid.metagui.control import __all__ as all_control
+from libtovid.metagui.panel import __all__ as all_panel
+from libtovid.metagui.gui import __all__ as all_gui
 __all__ = [
     'variable',
     'support',
