@@ -47,7 +47,13 @@ __all__ = [
 import os
 import doctest
 import signal
-from subprocess import Popen, PIPE
+import subprocess
+
+# Small workaround for Python 3.x
+try:
+    _temp = unicode
+except NameError:
+    unicode = str
 
 class Command:
     """A command-line statement, consisting of a program and its arguments,
@@ -105,7 +111,7 @@ class Command:
         use run_redir().
         """
         if capture:
-            self.run_redir(None, PIPE, stderr=PIPE)
+            self.run_redir(None, subprocess.PIPE, stderr=subprocess.PIPE)
         else:
             self.run_redir(None, None, stderr=None)
         if not background:
@@ -143,7 +149,7 @@ class Command:
         if type(stderr) in (str, unicode):
             stderr = open(stderr, 'w')
         # Run the subprocess
-        self.proc = Popen([self.program] + self.args,
+        self.proc = subprocess.Popen([self.program] + self.args,
                           stdin=stdin, stdout=stdout, stderr=stderr)
 
 
@@ -154,7 +160,7 @@ class Command:
         If a ``KeyboardInterrupt`` occurs (user pressed Ctrl-C), the
         subprocess is killed (and ``KeyboardInterrupt`` re-raised).
         """
-        if not isinstance(self.proc, Popen):
+        if not isinstance(self.proc, subprocess.Popen):
             print("**** Can't wait(): Command is not running")
             return
         try:
@@ -186,7 +192,7 @@ class Command:
         return that command's output instead. Returns an empty string if the
         command has not been run yet.
         """
-        if self.output == '' and isinstance(self.proc, Popen):
+        if self.output == '' and isinstance(self.proc, subprocess.Popen):
             self.output = self.proc.communicate()[0]
         return self.output
 
@@ -196,7 +202,7 @@ class Command:
         containing the command's standard error output. Returns an empty
         string if the command has not been run yet.
         """
-        if self.error == '' and isinstance(self.proc, Popen):
+        if self.error == '' and isinstance(self.proc, subprocess.Popen):
             self.error = self.proc.communicate()[1]
         return self.error
 
@@ -254,12 +260,12 @@ class Pipe:
         for cmd in self.commands:
             # If this is not the last command, pipe into the next one
             if cmd != self.commands[-1]:
-                cmd.run_redir(prev_stdout, PIPE, None)
+                cmd.run_redir(prev_stdout, subprocess.PIPE, None)
                 prev_stdout = cmd.proc.stdout
             # Last command in pipeline; direct output appropriately
             else:
                 if capture:
-                    cmd.run_redir(prev_stdout, PIPE, None)
+                    cmd.run_redir(prev_stdout, subprocess.PIPE, None)
                 else:
                     cmd.run_redir(prev_stdout, None, None)
                 # Wait for last command to finish

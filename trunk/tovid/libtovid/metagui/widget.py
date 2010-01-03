@@ -3,8 +3,14 @@
 
 __all__ = ['Widget']
 
-import Tkinter as tk
 import time
+
+# Python < 3.x
+try:
+    import Tkinter as tk
+# Python 3.x
+except ImportError:
+    import tkinter as tk
 
 class Widget (tk.Frame):
     """Generic metagui widget, suitable for Controls, Panels, etc.
