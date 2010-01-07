@@ -2233,10 +2233,12 @@ while test $# -gt 0; do
             KEEP_FILES=:
             ;;
         "-dvd" )
-            TARGET="dvd"
+            usage_error "Option removed, as todisc only does DVD's now"
             ;;
         "-svcd" )
-            TARGET="svcd"
+            usage_error \
+            "Todisc does only DVD's now.  Use the tovid, makemenu, makexml
+            and makevcd scripts instead (simple menus)."
             ;;
         "-ntsc" )
             TV_STANDARD="ntsc"
