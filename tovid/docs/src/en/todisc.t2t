@@ -8,8 +8,8 @@ todisc: Create a DVD with animated menus
 
 == Description ==
 
-todisc is a command-line script for creating a DVD file-system or SVCD's
-with animated thumbnail menus, from a list of multimedia video files and their
+todisc is a command-line script for creating a DVD file-system with
+animated thumbnail menus, from a list of multimedia video files and their
 titles.  It also does static thumbnail menus and text only menus.
 In addition, todisc can do slideshows, using images as input.
 It supports sub-menus for chapter breaks, configurable menu style, animated
@@ -136,8 +136,7 @@ See also **-titleset** and **-vmgm**
 **Slideshows**
 
 You can also use todisc to make slideshows.  This can either be a single
-slideshow, or multiple slideshows on the same menu. (for SVCD only
-single slideshow is supported).
+slideshow, or multiple slideshows on the same menu.
 Remember to use **-slides** rather than **-files** for passing in the
 images.  Images can be any filetype that imagemagick supports: for example
 JPEG, PNG, GIF, TGA BMP etc.  For a single slideshow do not use **-titles**: 
@@ -148,9 +147,8 @@ slide to slide.  The default transition type is 'crossfade', which fades each
 slide into the next and loops back to the first slide at the end.  If instead
 you use **-static**, then a static 'polaroid stack' menu of all the slides is
 created, with a single spumux'ed button for navigating with the enter key.  You
-may have to experiment to find out which DVD remote button advances the slides,
-on my player it is different for DVD and SVCD.  Try the 'next chapter'
-(skip ?) button and the play or enter buttons.
+may have to experiment to find out which DVD remote button advances the slides.
+Try the 'next chapter'(skip ?) button and the play or enter buttons.
 If you want to limit the number of slides in the menu to a subset of all files
 entered with **-slides**, then use **-menu-slide-total** INT.  Be sure to use
 a long enough audio file for **-bgaudio** or set **-menu-length** so the menu
@@ -219,10 +217,6 @@ to tovid, use **-noprompt**.
 
 : **-keep-files**, **-keepfiles**
     Keep all intermediate/temporary files (helps with debugging)
-: **-dvd**
-    DVD-compatible output (default)
-: **-svcd**
-    Super Video-CD-compatible output: **This is disabled for -showcase-* styles
 : **-ntsc**
     720x480 output, compatible with NTSC standard (default)
 : **-pal**
@@ -407,7 +401,7 @@ to tovid, use **-noprompt**.
     next. If you use **-static**, a 'polaroid stack' montage is created.  This
     composites the slides onto the background in 'random' locations with random
     rotations.  **-slides**  IMAGES can be used multiple times if you wish to
-    make a menu with multiple slideshows (DVD only).  You can also make a menu
+    make a menu with multiple slideshows.  You can also make a menu
     of mixed videos and slideshows by using **-slides** IMAGES, and **-files**
     VIDEOS multiple times.  For such a menu, the number of **-titles**
     needs to match the number of **-files** passed in plus the number of
