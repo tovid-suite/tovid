@@ -4,7 +4,7 @@ ME="[todisc]:"
 # todisc
 # Part of the tovid suite
 # =======================
-# A bash script for generating a DVD or SVCD
+# A bash script for generating a DVD
 # with many styles of animated and static menus,
 # from a collection of MPEG video files.
 #
@@ -2940,9 +2940,7 @@ while test $# -gt 0; do
             VMGM_MENU=false
             ;;  
         "-no-top-menu" )
-            NO_TOP_MENU=:
-            MONTAGE_MENU=false
-            STATIC=:
+            usage_error "Option removed - no SVCD output available now"
             ;;
         "-videos-are-chapters" )
             MENUBUTTONS_ARE_CHAPTS=:
