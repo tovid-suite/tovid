@@ -266,11 +266,9 @@ _grid = Flag('Grid preview', '-grid', False,
     'Show a second preview image with a grid and numbers that will help in '
     'finding coordinates for options that might use them')
 
-_svcd = Flag('Make a SVCD with makemenu',
-    '-svcd', False, 'If using makemenu, make a SVCD disc.  ')
-
-_use_makemenu = FlagOpt('Use makemenu', '-use-makemenu', False,
-    'Create menus using the makemenu script instead of todisc', _svcd)
+_use_makemenu = Flag('Use makemenu', '-use-makemenu', False,
+    'Create menus using the makemenu script instead of todisc.  '
+    'Compliant files required!')
 
 _slides = List('Images for slideshow one', '-slides', None,
     "Image files for the slideshow",
