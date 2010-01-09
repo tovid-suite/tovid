@@ -8200,8 +8200,6 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             $(find $WORK_DIR/pics/$i -maxdepth 1 -name 00\*.$IMG_FMT|sort) )
             last_pic=$(( ${#IMAGES[@]} - 1 ))
             next_pic=$(($last_pic + 1))
-            echo "MAX_MENU_LEN is $MAX_MENU_LEN, last_pic is $last_pic, next_pic is $next_pic, LAST_PIC is $LAST_PIC"
-            sleep 7 # DEBUG 2 lines
             if (( (last_pic - 1) < MAX_MENU_LEN )) ; then
                 for ((l=next_pic; l<=MAX_MENU_LEN; l++)); do
                     cp -v $WORK_DIR/pics/$i/$( printf %06d $last_pic).$IMG_FMT \
