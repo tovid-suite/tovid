@@ -1946,7 +1946,7 @@ fi
 
 if $PARALLEL; then
     rm -f "$AUDIO_STREAM"
-    mkfifo "$AUDIO_STREAM"
+    mkfifo "$AUDIO_STREAM" || runtime_error "Cannot create fifo $AUDIO_STREAM"
 fi
 
 if ! $FORCE_ENCODING && $AUDIO_OK; then
@@ -2060,7 +2060,7 @@ yecho
 rm -f "$YUV_STREAM"
 if $PARALLEL; then
     rm -f "$VIDEO_STREAM"
-    mkfifo "$VIDEO_STREAM"
+    mkfifo "$VIDEO_STREAM" || runtime_error "Cannot create fifo $VIDEO_STREAM"
 fi
 
 # If existing video is OK, skip video encoding and just copy the stream
@@ -2084,7 +2084,7 @@ if ! $FORCE_ENCODING && $VIDEO_OK; then
 else
     # Normal one-pass encoding, with mplayer piped into the mjpegtools, or using ffmpeg
     if $USE_FIFO; then
-        mkfifo "$YUV_STREAM"
+        mkfifo "$YUV_STREAM" || runtime_error "Cannot create fifo $YUV_STREAM"
     fi
     VID_PLAY_CMD="$PRIORITY $MPLAYER $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\" $CLIP_SEEK $MP_FRAMES"
     if $USE_FFMPEG ; then
