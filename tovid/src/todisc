@@ -8067,19 +8067,20 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         PICS=( "${PICS[@]}" \
         $(find $WORK_DIR/pics/$i -maxdepth 1 -name \*[0-9]\*.$IMG_FMT|sort) )
         echo
-        ((${#PICS[@]} < LAST_PIC)) && LAST_PIC=${#PICS[@]}
+        LAST_IMG=$LAST_PIC
+        ((${#PICS[@]} < LAST_PIC)) && LAST_IMG=${#PICS[@]}
         if $STATIC; then
             START_PIC=0
-            LAST_PIC=1
+            LAST_IMG=1
         else
             START_PIC=$FIRST_PIC
         fi
         yecho "Working on ${#PICS[@]} images from ${IN_FILES[i]}"
         num_procs=0
-        for ((p=START_PIC; p<LAST_PIC; p++)); do
+        for ((p=START_PIC; p<LAST_IMG; p++)); do
             ((num_procs++))
             # only let one process use the spinner at a time
-            if ((num_procs==max_procs || p==LAST_PIC-1)); then
+            if ((num_procs==max_procs || p==LAST_IMG-1)); then
                 spin "\rProcessing frame $((p+1)) "
             fi
             unset IM_CMD6
@@ -8185,7 +8186,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             fi
             title_pids="$title_pids $!"
             # wait on processes to keep on or below max # of processes
-            if ((num_procs >= max_procs || i == LAST_PIC)); then
+            if ((num_procs >= max_procs || i == LAST_IMG)); then
                 wait
                 unset num_procs title_pids
             fi
@@ -8199,9 +8200,11 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             $(find $WORK_DIR/pics/$i -maxdepth 1 -name 00\*.$IMG_FMT|sort) )
             last_pic=$(( ${#IMAGES[@]} - 1 ))
             next_pic=$(($last_pic + 1))
-            if [ $last_pic -lt $MAX_MENU_LEN ]; then
+            echo "MAX_MENU_LEN is $MAX_MENU_LEN, last_pic is $last_pic, next_pic is $next_pic, LAST_PIC is $LAST_PIC"
+            sleep 7 # DEBUG 2 lines
+            if (( (last_pic - 1) < MAX_MENU_LEN )) ; then
                 for ((l=next_pic; l<=MAX_MENU_LEN; l++)); do
-                    cp $WORK_DIR/pics/$i/$( printf %06d $last_pic).$IMG_FMT \
+                    cp -v $WORK_DIR/pics/$i/$( printf %06d $last_pic).$IMG_FMT \
                     $WORK_DIR/pics/$i/$(printf %06d $l).$IMG_FMT
                 done
             fi
