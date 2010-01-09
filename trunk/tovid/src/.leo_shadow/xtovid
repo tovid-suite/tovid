@@ -1960,7 +1960,11 @@ if $USE_FFMPEG; then
     FF_FPS="-r $TGT_FPS"
     FF_SAMPRATE="-ar $SAMPRATE"
     # try to get -quality 9 between quality 8 and 10
-    #((VID_QUALITY == 9)) && FF_ADD_ARGS="-trell 0"
+    if ((VID_QUALITY == 9)); then
+        FF_ADD_ARGS="-trellis 1"
+        ! ffmpeg -h 2>&1 | grep -q trellis && usage_error \
+        "Your ffmpeg is too old to have the '-trellis' switch.  Use a -quality setting other than '9'."
+    fi
     [[ $TARGET = "DVD-VCD" ]] && FF_ADD_ARGS="$FF_ADD_ARGS -g 12" # experiment FIXME
 
     # Padding, for any letterboxing to be done
