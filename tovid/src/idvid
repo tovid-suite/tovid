@@ -437,6 +437,12 @@ function idvid_main ()
         exit 1
     fi
 
+    # Unset any variables that might have been assigned by previous files
+    unset NTSC_FPS
+    unset NTSC_FILM_FPS
+    unset PAL_FPS
+    unset ID_VIDEO_FPS
+
     # Set some frequently-used variables
     # Frames per second
     case "$ID_VIDEO_FPS" in
