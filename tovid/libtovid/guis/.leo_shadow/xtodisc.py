@@ -63,10 +63,6 @@ _group = List('Grouped videos', '-group', None,
     'selector on the right',
     Filename(''))
 
-_dvd = Flag('DVD', '-dvd', True, 'DVD, for burning to a DVD-R/RW')
-
-_svcd = Flag('SVCD', '-svcd', False, 'Super Video CD, for burning to a CD-R/RW')
-
 _ntsc = Flag('NTSC', '-ntsc', True, 'NTSC, US standard')
 
 _pal = Flag('PAL', '-pal', False, 'PAL, European standard')
@@ -279,8 +275,10 @@ _no_warn = Flag('No pause at warnings', '-no-warn', False)
 _grid = Flag('Grid preview', '-grid', False,
     'Show a second preview image with a grid and numbers that will help in '
     'finding coordinates for options that might use them')
+
 _use_makemenu = Flag('Use makemenu', '-use-makemenu', False,
-    'Create menus using the makemenu script instead of todisc')
+    'Create menus using the makemenu script instead of todisc.  '
+    'Compliant files required!')
 
 _slides = List('Images for slideshow one', '-slides', None,
     "Image files for the slideshow",
@@ -685,7 +683,7 @@ _subtitles = SpacedText('Subtitles', '-subtitles', '',
 """
 
 main =  VPanel('Basic',
-    Label('You can author (and burn) a video disc with a simple menu '
+    Label('You can author (and burn) a DVD with a simple menu '
           'using just this "Basic" pane', 'center'),
     RelatedList('', _files, '1:1', _titles, filter=to_title),
     VPanel('',
@@ -695,7 +693,6 @@ main =  VPanel('Basic',
             _static, _animated, side='left',),
              FlagGroup('', 'exclusive',
                 _submenus, _ani_submenus, side='left')),
-            FlagGroup('Format', 'exclusive', _dvd, _svcd),
             FlagGroup('TV System', 'exclusive', _ntsc, _pal),
             VPanel('Burning',
                 _burn,
@@ -924,7 +921,7 @@ playback = Tabs("Playback",
 )
 
 encoding = VPanel('Encoding',
-    Label("\nVideo re-encoding options - you may leave these at defaults."),
+    Label("\nVideo re-encoding options - you may leave these at defaults.", 'center'),
     Tabs('tovid options',
         tovid.BASIC_OPTS,
         tovid.VIDEO,

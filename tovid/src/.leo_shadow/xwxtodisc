@@ -6,15 +6,30 @@
 # ===============
 # A wxPython frontend for the todisc library
 #
-# Project homepage: http://tovid.org/
+#--unknown-language--@<<License>>
+#--unknown-language--@+node:eric.20091231151402.3682:<<License>>
+# Project homepage: http://tovid.wikia.com
 #
-# This software is licensed under the GNU General Public License
-# For the full text of the GNU GPL, see:
+# Copyright (C) 2005-2010
 #
-#   http://www.gnu.org/copyleft/gpl.html
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
+# version.
 #
-# No guarantees of any kind are associated with use of this software.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+#--unknown-language--@-node:eric.20091231151402.3682:<<License>>
+#--unknown-language--@nl
 #
 # Developer Note:
 #  the code below was copied from tovidgui and should be consolidated to a
@@ -37,8 +52,8 @@ except ImportError:
     print("There was an error importing the 'wx' libraries. The above")
     print("output should help you find what went wrong. Re-installing")
     print("wxPython 2.6 (or upgrading from wxPython 2.4 to 2.6) may")
-    print("help. Consult the tovid homepage (tovid.org) for further")
-    print("assistance.")
+    print("help. Consult the tovid homepage (http://tovid.wikia.com)")
+    print("for further assistance.")
     print("Sorry, 'tovidgui' will not work.")
     sys.exit()
 

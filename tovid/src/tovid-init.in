@@ -8,7 +8,7 @@
 #
 # Project homepage: http://tovid.wikia.com
 #
-# Copyright (C) 2005 tovid.org <http://tovid.wikia.com>
+# Copyright (C) 2005-2010
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -546,7 +546,7 @@ fi
 # Check for run-time dependencies
 # ******************************************************************************
 
-    DEP_ERROR_MSG="Please install the above MISSING dependencies and try again. See tovid.wikia.com/wiki/Tovid_dependencies or tovid.org for help."
+    DEP_ERROR_MSG="Please install the above MISSING dependencies and try again. See tovid.wikia.com/wiki/Tovid_dependencies for help."
 
     # debian based distros install normalize as
     # "normalize-audio" rather than "normalize"

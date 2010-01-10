@@ -10,7 +10,7 @@ ME="[makedvd]:"
 #
 # Project homepage: http://tovid.wikia.com
 #
-# Copyright (C) 2005 tovid.org <http://tovid.wikia.com>
+# Copyright (C) 2005-2010
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -74,8 +74,9 @@ runtime_error ()
     echo "makedvd encountered an error during the DVD creation process:"
     echo "$@"
     echo "See if anything in the above output helps you diagnose the"
-    echo "problem, and please file a bug report at tovid.org (_not_"
-    echo "the dvdauthor list) containing the above output."
+    echo "problem, and please file a bug report at:"
+    echo "   http://code.google.com/p/tovid/issues"
+    echo "(_not_ the dvdauthor list) containing the above output."
     echo "Sorry for the inconvenience!"
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     exit 1

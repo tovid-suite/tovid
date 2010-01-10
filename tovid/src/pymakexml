@@ -23,7 +23,7 @@ from libtovid.author import *
 from libtovid.util.output import red, green, blue
 
 HEADER = """----------------------------------------------
-pymakexml, part of tovid (http://tovid.org/)
+pymakexml, part of tovid (http://tovid.wikia.com/)
 ----------------------------------------------"""
 
 def error(message):
