@@ -73,7 +73,7 @@ class FontChooserDialog(wx.Dialog):
         if len(self.curConfig.wx_IM_FontMap.keys()) < 6:
             dlgGetMoreFonts = wx.MessageDialog(self,
                 "You have less than six fonts to choose from. See the\n"
-                "tovid documentation (http://tovid.org/)\n"
+                "tovid documentation (http://tovid.wikia.com/)\n"
                 "for instructions on how to get more.",
                 "How to get more fonts", wx.OK | wx.ICON_INFORMATION)
             dlgGetMoreFonts.ShowModal()

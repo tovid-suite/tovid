@@ -109,8 +109,7 @@ all.update(plugin)
 
 __missing_dependency_message = \
 """Please install the above MISSING dependencies and try again. See
-http://tovid.wikia.com/wiki/Tovid_dependencies or http://tovid.org
-for more help.
+http://tovid.wikia.com/wiki/Tovid_dependencies for more help.
 """
 
 ###
