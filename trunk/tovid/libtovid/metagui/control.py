@@ -1066,6 +1066,7 @@ class List (Control):
         # Only set control if value is different
         if self.control.get() != value:
             self.control.set(value)
+        print("Editing '%s'" % value)
         self.control.focus()
 
 

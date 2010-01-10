@@ -159,7 +159,7 @@ class TovidFrame(wx.Frame):
           "part of the tovid video disc authoring suite.\n\n" \
           "For more information and documentation, please\n" \
           "visit the tovid web site:\n\n" \
-          "http://tovid.org/"
+          "http://tovid.wikia.com/"
         dlgAbout = wx.MessageDialog(self, strAbout, "About tovid GUI", wx.OK)
         dlgAbout.ShowModal()
 
@@ -474,7 +474,7 @@ class TodiscFrame(wx.Frame):
           "part of the tovid video disc authoring suite.\n\n" \
           "For more information and documentation, please\n" \
           "visit the tovid web site:\n\n" \
-          "http://tovid.org/"
+          "http://tovid.wikia.com/"
         dlgAbout = wx.MessageDialog(self, strAbout, "About todisc GUI", wx.OK)
         dlgAbout.ShowModal()
 

@@ -2,8 +2,8 @@
 <?xml-stylesheet ekr_test?>
 <leo_file>
 <leo_header file_format="2" tnodes="0" max_tnode_index="0" clone_windows="0"/>
-<globals body_outline_ratio="0.307065217391">
-	<global_window_position top="17" left="0" height="999" width="1104"/>
+<globals body_outline_ratio="0.30563002681">
+	<global_window_position top="0" left="1680" height="866" width="1119"/>
 	<global_log_window_position top="0" left="0" height="0" width="0"/>
 </globals>
 <preferences/>
@@ -12,11 +12,10 @@
 <v t="eric.20091231151402.3681"><vh>@chapters</vh></v>
 <v t="eric.20091222141351.3805"><vh>Musings</vh></v>
 <v t="eric.20091222141351.3775" a="E"><vh>@path libtovid</vh>
-<v t="eric.20090722212922.3078" a="E"><vh>root</vh>
+<v t="eric.20090722212922.3078"><vh>root</vh>
 <v t="eric.20090722212922.2395"><vh>@shadow __init__.py</vh></v>
 <v t="eric.20090722212534.2374"><vh>@shadow author.py</vh></v>
-<v t="eric.20090722212922.2408" a="E"
-expanded="eric.20090722212922.2410,"><vh>@shadow cli.py</vh></v>
+<v t="eric.20090722212922.2408"><vh>@shadow cli.py</vh></v>
 <v t="eric.20090722212922.2429"><vh>@shadow deps.py</vh></v>
 <v t="eric.20090722212922.2434"><vh>@shadow encode.py</vh></v>
 <v t="eric.20090722212922.2440"><vh>@shadow media.py</vh></v>
@@ -25,8 +24,7 @@ expanded="eric.20090722212922.2410,"><vh>@shadow cli.py</vh></v>
 <v t="eric.20090722212922.2474"><vh>@shadow runtest.py</vh></v>
 <v t="eric.20090722212922.2476"><vh>@shadow standard.py</vh></v>
 <v t="eric.20090722212922.2486"><vh>@shadow stats.py</vh></v>
-<v t="eric.20090722212922.2499"
-expanded="eric.20090722212922.2501,"><vh>@shadow xml.py</vh></v>
+<v t="eric.20090722212922.2499"><vh>@shadow xml.py</vh></v>
 </v>
 <v t="eric.20090722212922.3080"><vh>@path render</vh>
 <v t="eric.20090722212922.3081"><vh>@shadow __init__.py</vh></v>
@@ -42,7 +40,8 @@ expanded="eric.20090722212922.2501,"><vh>@shadow xml.py</vh></v>
 <v t="eric.20090722212922.2814"><vh>@shadow constants.py</vh></v>
 <v t="eric.20090722212922.2816"><vh>@shadow controls.py</vh></v>
 <v t="eric.20090722212922.2838"><vh>@shadow dialogs.py</vh></v>
-<v t="eric.20090722212922.2847"><vh>@shadow frames.py</vh></v>
+<v t="eric.20090722212922.2847" a="E"
+expanded="eric.20090722212922.2864,"><vh>@shadow frames.py</vh></v>
 <v t="eric.20090722212922.2872"><vh>@shadow icons.py</vh></v>
 <v t="eric.20090722212922.2880"><vh>@shadow options.py</vh></v>
 <v t="eric.20090722212922.2919"><vh>@shadow panels.py</vh></v>
@@ -53,20 +52,20 @@ expanded="eric.20090722212922.2501,"><vh>@shadow xml.py</vh></v>
 <v t="eric.20090722212922.3284"><vh>@shadow idvid.py</vh></v>
 <v t="eric.20090722212922.3287"><vh>@shadow makemenu.py</vh></v>
 <v t="eric.20090722212922.3290"><vh>@shadow makexml.py</vh></v>
-<v t="eric.20090722212922.3293"><vh>@shadow todisc.py</vh></v>
+<v t="eric.20090722212922.3293" a="E"><vh>@shadow todisc.py</vh></v>
 <v t="eric.20090722212922.3298"><vh>@shadow tovid.py</vh></v>
 <v t="eric.20090722212922.3301"><vh>@shadow tovid_batch.py</vh></v>
 </v>
-<v t="eric.20090722212922.2542" a="E"><vh>@path metagui</vh>
+<v t="eric.20090722212922.2542"><vh>@path metagui</vh>
 <v t="eric.20090722212922.2543"><vh>@shadow __init__.py</vh></v>
-<v t="eric.20090722212922.2554"><vh>@shadow control.py</vh></v>
+<v t="eric.20090722212922.2554" a="E"
+expanded="eric.20090722212922.2614,"><vh>@shadow control.py</vh></v>
 <v t="eric.20090722212922.2627"><vh>@shadow gui.py</vh></v>
 <v t="eric.20090722212922.2652"><vh>@shadow log.py</vh></v>
 <v t="eric.20090722212922.2668"><vh>@shadow panel.py</vh></v>
-<v t="eric.20090722212922.2710" a="E"
-expanded="eric.20090723212423.3614,eric.20090722212922.2715,"><vh>@shadow support.py</vh></v>
+<v t="eric.20090722212922.2710"><vh>@shadow support.py</vh></v>
 <v t="eric.20090722212922.2759"><vh>@shadow tooltip.py</vh></v>
-<v t="eric.20090722212922.2774" a="E"><vh>@shadow variable.py</vh></v>
+<v t="eric.20090722212922.2774"><vh>@shadow variable.py</vh></v>
 <v t="eric.20090722212922.2794"><vh>@shadow widget.py</vh></v>
 <v t="eric.20090723212423.3613"><vh>Experimental</vh>
 <v t="eric.20090722212922.2656"><vh>@shadow manpage.py</vh></v>
@@ -104,7 +103,7 @@ expanded="eric.20090723212423.3614,eric.20090722212922.2715,"><vh>@shadow suppor
 </v>
 </v>
 <v t="eric.20091222141351.3776" a="E"><vh>@path src</vh>
-<v t="eric.20090722212922.3484" a="E"><vh>bash</vh>
+<v t="eric.20090722212922.3484"><vh>bash</vh>
 <v t="eric.20090722212922.3461"><vh>@shadow idvid</vh></v>
 <v t="eric.20090722212922.3462"><vh>@shadow makedvd</vh></v>
 <v t="eric.20090722212922.3463"><vh>@shadow makemenu</vh></v>
@@ -112,14 +111,14 @@ expanded="eric.20090723212423.3614,eric.20090722212922.2715,"><vh>@shadow suppor
 <v t="eric.20090722212922.3466"><vh>@shadow makexml</vh></v>
 <v t="eric.20090722212922.3467"><vh>@shadow postproc</vh></v>
 <v t="eric.20091222141351.3806"><vh>@shadow todisc</vh></v>
-<v t="eric.20090722212922.3473" a="E"><vh>@shadow todisc-fade-routine</vh></v>
+<v t="eric.20090722212922.3473"><vh>@shadow todisc-fade-routine</vh></v>
 <v t="eric.20090722212922.3475"><vh>@shadow tovid</vh></v>
 <v t="eric.20090722212922.3476"><vh>@shadow tovid-batch</vh></v>
 <v t="eric.20090722212922.3478"><vh>@shadow tovid-init.in</vh></v>
 <v t="eric.20090722212922.3479"><vh>@shadow tovid-interactive</vh></v>
 <v t="eric.20090722212922.3481"><vh>@shadow tovid-test</vh></v>
 </v>
-<v t="eric.20090722212922.3485"><vh>python</vh>
+<v t="eric.20090722212922.3485" a="E"><vh>python</vh>
 <v t="eric.20090722212922.3464"><vh>@shadow makemenugui</vh></v>
 <v t="eric.20090722212922.3460"><vh>@shadow genvid</vh></v>
 <v t="eric.20090722212922.3468"><vh>@shadow pyidvid</vh></v>
@@ -129,7 +128,7 @@ expanded="eric.20090723212423.3614,eric.20090722212922.2715,"><vh>@shadow suppor
 <v t="eric.20090722212922.3474"><vh>@shadow todiscgui</vh></v>
 <v t="eric.20090722212922.3480"><vh>@shadow tovid-stats</vh></v>
 <v t="eric.20090722212922.3482"><vh>@shadow tovidgui</vh></v>
-<v t="eric.20090722212922.3483"><vh>@shadow wxtodisc</vh></v>
+<v t="eric.20090722212922.3483" a="E"><vh>@shadow wxtodisc</vh></v>
 </v>
 </v>
 </vnodes>
@@ -211,6 +210,6 @@ Unify command-line options and metagui controls?
 
 @c
 </t>
-<t tx="eric.20091231151402.3681" str_leo_pos="2,0,2"></t>
+<t tx="eric.20091231151402.3681" str_leo_pos="3,1,9,0"></t>
 </tnodes>
 </leo_file>
