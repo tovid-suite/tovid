@@ -14,7 +14,7 @@ ME="[makemenu]:"
 #
 # Project homepage: http://tovid.wikia.com
 #
-# Copyright (C) 2005 tovid.org <http://tovid.wikia.com>
+# Copyright (C) 2005-2010
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -650,8 +650,14 @@ if $MAKE_TITLE; then
         let "MENU_TITLE_SIZE=TITLE_SIZE+8"
     fi
 
+    # Calculate number of \n characters in title, so menu title height
+    # will be set correctly
+    TITLE_LINES=$(echo "$MENU_TITLE" | sed 's/!//g;s/\\n/!/g;s/[^!]//g' | wc -c)
+    TITLE_HEIGHT=$((100 * $TITLE_LINES))
+
     # Draw the menu title and pad the bottom with TILE_HEIGHT pixels
-    convert -size 720x100 xc:none -font $TITLE_FONT -antialias $FONT_DECO -fill $TEXT_COLOR -pointsize $MENU_TITLE_SIZE -annotate +20+80 "$MENU_TITLE" -trim +repage "$MENU_TITLE_TEXT"
+    convert -size 720x$TITLE_HEIGHT xc:none -font $TITLE_FONT -antialias $FONT_DECO -fill $TEXT_COLOR -pointsize $MENU_TITLE_SIZE -annotate +20+80 "$MENU_TITLE" -trim +repage "$MENU_TITLE_TEXT"
+
     convert "$MENU_TITLE_TEXT" -gravity south -background none -splice 0x$TILE_HEIGHT "$MENU_TITLE_TEXT"
 
     # Put the menu title above the menu text (and buttons for DVDs)
@@ -851,9 +857,9 @@ if test -s "$OUT_FILENAME"; then
     fi
 else
     echo "It looks like something went wrong, because there is no output file."
-    echo "Please submit a bug report on the tovid homepage: add -debug to your"
-    echo "command (makemenu -debug ...) and post the log file and terminal"
-    echo "output. Sorry for the inconvenience. http://www.tovid.org"
+    echo "Please submit a bug report to http://code.google.com/p/tovid/issues.
+    echo "Please add -debug to your command (makemenu -debug ...) and post the
+    echo "log file and terminal output. Sorry for the inconvenience."
     exit 1
 fi
 
