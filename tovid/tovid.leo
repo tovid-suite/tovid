@@ -103,7 +103,7 @@ expanded="eric.20090722212922.2614,"><vh>@shadow control.py</vh></v>
 </v>
 </v>
 <v t="eric.20091222141351.3776" a="E"><vh>@path src</vh>
-<v t="eric.20090722212922.3484"><vh>bash</vh>
+<v t="eric.20090722212922.3484" a="E"><vh>bash</vh>
 <v t="eric.20090722212922.3461"><vh>@shadow idvid</vh></v>
 <v t="eric.20090722212922.3462"><vh>@shadow makedvd</vh></v>
 <v t="eric.20090722212922.3463"><vh>@shadow makemenu</vh></v>
@@ -118,7 +118,7 @@ expanded="eric.20090722212922.2614,"><vh>@shadow control.py</vh></v>
 <v t="eric.20090722212922.3479"><vh>@shadow tovid-interactive</vh></v>
 <v t="eric.20090722212922.3481"><vh>@shadow tovid-test</vh></v>
 </v>
-<v t="eric.20090722212922.3485" a="E"><vh>python</vh>
+<v t="eric.20090722212922.3485"><vh>python</vh>
 <v t="eric.20090722212922.3464"><vh>@shadow makemenugui</vh></v>
 <v t="eric.20090722212922.3460"><vh>@shadow genvid</vh></v>
 <v t="eric.20090722212922.3468"><vh>@shadow pyidvid</vh></v>
@@ -210,6 +210,6 @@ Unify command-line options and metagui controls?
 
 @c
 </t>
-<t tx="eric.20091231151402.3681" str_leo_pos="3,1,9,0"></t>
+<t tx="eric.20091231151402.3681" str_leo_pos="3,0,0"></t>
 </tnodes>
 </leo_file>
