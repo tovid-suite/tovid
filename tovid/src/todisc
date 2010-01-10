@@ -6477,6 +6477,13 @@ for i in ${!IN_FILES[@]}; do
         usage_error "A seek of ${SEEK_VAL[i]} seconds is too large for
         ${IN_FILES[i]}. The file is only ${VID_LEN[i]} seconds long"
     fi
+    # check if file is long enough for the submenu length
+    if $ANI_SUB_MENU; then
+        if ((${VID_LEN[i]%.*} < (${SUBMENU_LEN[i]} * ${CHAPTERS[i]}) )); then
+            usage_error "This video is not long enough for ${CHAPTERS[i]}
+                         animated submenu chapters of ${SUBMENU_LEN[i]} seconds"
+        fi
+    fi
     # add -force to makevcd if short file
     if [[ ${VID_LEN[i]%.*} -lt 5 && $TARGET = "svcd" ]]; then
         BURN_PROG="makevcd -force"
