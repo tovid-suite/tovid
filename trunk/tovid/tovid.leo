@@ -210,6 +210,6 @@ Unify command-line options and metagui controls?
 
 @c
 </t>
-<t tx="eric.20091231151402.3681" str_leo_pos="3,0,0"></t>
+<t tx="eric.20091231151402.3681" str_leo_pos="3,0,1"></t>
 </tnodes>
 </leo_file>

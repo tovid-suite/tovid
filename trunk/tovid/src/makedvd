@@ -413,7 +413,7 @@ else
     VOLID=$(echo "$DISC_LABEL" | tr a-z A-Z)
     # Make sure we have a valid VOLID at this point...can't be too long
     VALID_VOLID=$(echo $VOLID | awk '{ print substr($0, 0, 32) }')
-    if test $VOLID != $VALID_VOLID; then
+    if test "$VOLID" != "$VALID_VOLID"; then
         echo "Disk label is too long. Truncating to $VALID_VOLID"
         VOLID=$VALID_VOLID
     else
