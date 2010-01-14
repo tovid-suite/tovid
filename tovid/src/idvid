@@ -427,6 +427,13 @@ function get_info ()
 # in terse or human-readable form
 function idvid_main ()
 {
+
+    # Unset any variables that might have been assigned by previous files
+    unset NTSC_FPS
+    unset NTSC_FILM_FPS
+    unset PAL_FPS
+    unset ID_VIDEO_FPS
+
     # Accept regular filenames, or URI-style pathnames (like dvd://, http://)
     if test -e "$1" || expr "$1" : ".*:\/\/" >/dev/null; then
         get_info "$1"
@@ -436,12 +443,6 @@ function idvid_main ()
         rm -rf "$TMP_DIR"
         exit 1
     fi
-
-    # Unset any variables that might have been assigned by previous files
-    unset NTSC_FPS
-    unset NTSC_FILM_FPS
-    unset PAL_FPS
-    unset ID_VIDEO_FPS
 
     # Set some frequently-used variables
     # Frames per second
