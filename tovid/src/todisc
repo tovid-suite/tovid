@@ -6480,7 +6480,7 @@ for i in ${!IN_FILES[@]}; do
     # check if file is long enough for the submenu length
     if $ANI_SUB_MENU; then
         if ((${VID_LEN[i]%.*} < (${SUBMENU_LEN[i]} * ${CHAPTERS[i]}) )); then
-            usage_error "This video is not long enough for ${CHAPTERS[i]}
+            usage_error "${IN_FILES[i]} is not long enough for ${CHAPTERS[i]}
                          animated submenu chapters of ${SUBMENU_LEN[i]} seconds"
         fi
     fi
@@ -8209,7 +8209,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             next_pic=$(($last_pic + 1))
             if (( (last_pic - 1) < MAX_MENU_LEN )) ; then
                 for ((l=next_pic; l<=MAX_MENU_LEN; l++)); do
-                    cp -v $WORK_DIR/pics/$i/$( printf %06d $last_pic).$IMG_FMT \
+                    cp $WORK_DIR/pics/$i/$( printf %06d $last_pic).$IMG_FMT \
                     $WORK_DIR/pics/$i/$(printf %06d $l).$IMG_FMT
                 done
             fi
