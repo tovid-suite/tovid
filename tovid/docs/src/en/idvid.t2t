@@ -40,7 +40,7 @@ For example:
     Display output in a table format for easier comparison. Most useful
     when identifying multiple video files.
 
-: **-isformat** [//vcd//|//svcd//|//dvd//]
+: **-isformat** [//pal-dvd//|//ntsc-dvd//] (same syntax for vcd and svcd)
     Check //VIDEO_FILE// for compliance with the given disc format. 
     If //VIDEO_FILE// matches the given format, then idvid reports "true" 
     and exits successfully. Otherwise, idvid reports "false" and exits 
