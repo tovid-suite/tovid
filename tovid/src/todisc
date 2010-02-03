@@ -1428,12 +1428,15 @@ burn_disc()
     if [ ! -z "$input" -a "$input" = "yes" ]; then
         echo "Proceeding to burn, continuing."
         echo
-        if $BURN_PROG -burn -device "$BURN_DEVICE" \
-        $BURN_SPEED "$BURN_TGT" | tee -a "$LOG_FILE" 2>&1; then
+        $BURN_PROG -burn -device "$BURN_DEVICE" \
+        $BURN_SPEED "$BURN_TGT" | tee -a "$LOG_FILE" 2>&1
+        if ((${PIPESTATUS[0]}==0)); then
             echo "Your ${BURN_TGT_STR/ *} should be ready"
         else
-            echo "There was a problem creating the ${BURN_TGT_STR/ *}"
+            echo "There was a problem burning the ${BURN_TGT_STR/ *}"
             echo "Please see "$LOG_FILE" for details"
+            echo "When the problem is solved, try again with the command:"
+            echo "$BURN_PROG -burn -device $BURN_DEVICE $BURN_SPEED \"$BURN_TGT\""
         fi
     else
         echo "Not burning now - please see the parting message from todisc"
