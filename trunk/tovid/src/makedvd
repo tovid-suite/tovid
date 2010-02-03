@@ -56,6 +56,8 @@ OPTIONS may be any of the following:
 See the makedvd manual page ('man makedvd') for additional documentation.
 EOF`
 
+COMMAND="$@"
+
 # Print script name, usage notes, and optional error message, then exit.
 # Args: $1 == text string containing error message
 usage_error ()
@@ -105,13 +107,15 @@ DISC_LABEL=""
 function probe_media ()
 {
     # Grab entire media info
-    MEDIA_INFO=$(dvd+rw-mediainfo $DVDRW_DEVICE 2>&1)
+    if MEDIA_INFO=$(dvd+rw-mediainfo $DVDRW_DEVICE 2>&1); then
+        # Extract the status (either "blank" or "complete")
+        DISC_STATUS=$(awk '/Disc status/ {print $3}' <<< "$MEDIA_INFO")
+        # Extract the disc type
+        DISC_TYPE=$(awk '/Mounted Media/ {print $4}' <<< "$MEDIA_INFO")
+    else
+        DISC_TYPE=""
+    fi
 
-    # Extract the status (either "blank" or "complete")
-    DISC_STATUS=$(awk '/Disc status/ {print $3}' <<< "$MEDIA_INFO")
-
-    # Extract the disc type
-    DISC_TYPE=$(awk '/Mounted Media/ {print $4}' <<< "$MEDIA_INFO")
     if test -z $DISC_TYPE; then
         if echo "$MEDIA_INFO" | grep -q "non-DVD"; then
             DISC_TYPE="non-DVD media"
@@ -124,9 +128,10 @@ function probe_media ()
     if [[ "$DISC_TYPE" = *RW ]]; then
         DISC_CAPACITY=$(awk -F '*|:' '/Track Size/ {print $2}' <<< "$MEDIA_INFO")
     else
+        [[ $DISC_TYPE == "no disc" ]] ||
         DISC_CAPACITY=$(awk -F '*|:' '/Free Blocks/ {print $2}' <<< "$MEDIA_INFO")
     fi
-    if test -n $DISC_CAPACITY; then
+    if test -n "$DISC_CAPACITY"; then
         DISC_CAPACITY=$(expr $DISC_CAPACITY \* 2048)
     else
         DISC_CAPACITY=0
@@ -361,9 +366,12 @@ else
     probe_media
 
     if ! $HAVE_DVD_RW && ! $HAVE_BLANK_DVD_R; then
+      # COUNT is the number of times the script will retry in case of wrong or
+      # missing media, a "timeout".  Below it is set at 60 secs (6 * 10)
+      COUNT=0
       echo $SEPARATOR
       echo "Found $DISC_TYPE in $DVDRW_DEVICE. Cannot burn to this disc!"
-      until $HAVE_DVD_RW || $HAVE_BLANK_DVD_R
+      until $HAVE_DVD_RW || $HAVE_BLANK_DVD_R || ((COUNT==6))
       do
         TIME_SCALE=1
         # TODO: smarter loop. User feedback (ie "hit any key" [where's the "any"
@@ -372,10 +380,11 @@ else
         # there a better interface to it? Waiting till the drive's LED goes off
         # is good, but how?
         echo "Found $DISC_STATUS $DISC_TYPE. Please insert a usable DVD into $DVDRW_DEVICE."
-        for COUNTER in 5 4 3 2 1; do
-          printf "Trying again in %2s seconds...\r" $(expr $COUNTER \* $TIME_SCALE)
+        for COUNTER in {10..1}; do
+          printf "Trying again in %2s seconds...\r" $((COUNTER * TIME_SCALE))
           sleep ${TIME_SCALE}s
         done
+        ((COUNT++))
         echo
         echo "Looking for usable media..."
         probe_media
@@ -384,6 +393,11 @@ else
 
     echo $SEPARATOR
     echo "Found $DISC_STATUS $DISC_TYPE."
+    if [[ $DISC_TYPE == "no disc" ]]; then
+        echo "Cannot continue!  There is no usable media in the DVD drive"
+        echo "Exiting..."
+        exit 1
+    fi
 
     # complete DVD+/-RW need explicit blanking
     # a bug report for tkDVD points out that -use-the-force-luke=tty is req'd to
