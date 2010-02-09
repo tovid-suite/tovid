@@ -29,7 +29,7 @@ Commands may be connected together with pipes::
 
 Command output may be captured and retrieved later with get_output()::
 
-    >>> echo.run(capture=True)
+    >>> echo.run(capture=True)                    # doctest: +SKIP
     >>> echo.get_output()
     'Hello world\\n'
 
@@ -44,9 +44,6 @@ __all__ = [
     'Pipe',
 ]
 
-import os
-import doctest
-import signal
 import subprocess
 
 # Small workaround for Python 3.x

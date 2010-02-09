@@ -437,36 +437,36 @@ fi
 # ******************************************************************************
 # Find multiple version kludge
 # ******************************************************************************
-INSTALLED_TOVIDS=$(type -a tovid 2>>/dev/null | awk '{print $NF}' | tr '\n' ' ')
-NUM_INSTALLED=0
-INSTALLED_VERS=""
-INSTALLED_PREFS=""
+#INSTALLED_TOVIDS=$(type -a tovid 2>>/dev/null | awk '{print $NF}' | tr '\n' ' ')
+#NUM_INSTALLED=0
+#INSTALLED_VERS=""
+#INSTALLED_PREFS=""
 
-# Only count tovids that are different versions
-for tovid in $INSTALLED_TOVIDS; do
-    tovid_PREFIX=$(dirname $tovid)
-    tovid_VERSION=$(grep TOVID_VERSION $tovid_PREFIX/tovid-init | \
-        awk -F '"' '{print $2}')
-    INSTALLED_VERS="$INSTALLED_VERS $tovid_VERSION"
-done
-UNIQ_TOVIDS="$(echo $INSTALLED_VERS | tr ' ' '\n' | uniq)"
-NUM_INSTALLED="$(echo $INSTALLED_VERS | tr ' ' '\n' | uniq | wc -l)"
+## Only count tovids that are different versions
+#for tovid in $INSTALLED_TOVIDS; do
+    #tovid_PREFIX=$(dirname $tovid)
+    #tovid_VERSION=$(grep TOVID_VERSION $tovid_PREFIX/tovid-init | \
+        #awk -F '"' '{print $2}')
+    #INSTALLED_VERS="$INSTALLED_VERS $tovid_VERSION"
+#done
+#UNIQ_TOVIDS="$(echo $INSTALLED_VERS | tr ' ' '\n' | uniq)"
+#NUM_INSTALLED="$(echo $INSTALLED_VERS | tr ' ' '\n' | uniq | wc -l)"
 
-# Exit when there is more than one tovid installed
-if test $NUM_INSTALLED -ne 1; then
-    echo "Found $NUM_INSTALLED versions of tovid on your system!"
-    echo "I won't run until there is only one of me :)"
-    echo "Installed versions:"
-    i=1
-    while test $i -le $(echo "$INSTALLED_TOVIDS" | awk '{print NF}'); do
-        tovid_ver=$(echo $INSTALLED_VERS | awk '{print $'$i'}')
-        tovid_path=$(echo $INSTALLED_TOVIDS | awk '{print $'$i'}')
-        printf "   %s (%s)\n" $tovid_ver $tovid_path
-        let "i=i+1"
-    done
-    echo "Exiting..."
-    exit 1
-fi
+## Exit when there is more than one tovid installed
+#if test $NUM_INSTALLED -ne 1; then
+    #echo "Found $NUM_INSTALLED versions of tovid on your system!"
+    #echo "I won't run until there is only one of me :)"
+    #echo "Installed versions:"
+    #i=1
+    #while test $i -le $(echo "$INSTALLED_TOVIDS" | awk '{print NF}'); do
+        #tovid_ver=$(echo $INSTALLED_VERS | awk '{print $'$i'}')
+        #tovid_path=$(echo $INSTALLED_TOVIDS | awk '{print $'$i'}')
+        #printf "   %s (%s)\n" $tovid_ver $tovid_path
+        #let "i=i+1"
+    #done
+    #echo "Exiting..."
+    #exit 1
+#fi
 
 
 # ******************************************************************************

@@ -1786,7 +1786,7 @@ if test -n "$AUDIO_TRACK"; then
     done
     if (( $MAX_KEY > ${#AIDS[@]} )); then
         last_track=$(printf "%s\n" ${AUDIO_TRACK[@]} | sort -n| tail -n 1)
-        usage_error "You have asked for audio track $last_track, 
+        usage_error "You have asked for audio track $last_track,
         but the total audio track count is only ${#AIDS[@]}"
     fi
 fi

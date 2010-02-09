@@ -329,7 +329,7 @@ audio_length()
 {
     mplayer -noconsolecontrols -vo null -ao pcm:fast:file=/dev/null "$1" \
     2>&1 | tr '\r' '\n' | grep ^A: | tail -1 | sed s/^.*A:// | awk '{print $1}'
-} 
+}
 cleanup()
 {
     #TODO make a kill_pid function to avoid repetition below
@@ -374,7 +374,7 @@ cleanup()
     if $KEEP_FILES; then
         echo "Keeping temporary files in $REAL_WORK_DIR" >&2
         [[ -n $SUPPORT_VIDEOS ]] && yecho "Keeping ${SUPPORT_VIDEOS[@]}" && \
-            yecho "This sliced video will not work if todisc is run with 
+            yecho "This sliced video will not work if todisc is run with
              different seeks so should be deleted manually"
     else
         if [[ -d $REAL_WORK_DIR ]]; then
@@ -633,7 +633,7 @@ for ((i=0; i<TOT; i++)); do
         A_BR="No audio found"
     fi
     V_LENGTH=${VID_LEN[i]}
-    [[ $this_set = "group" ]] && V_LENGTH=${GROUP_VID_LEN[i]} 
+    [[ $this_set = "group" ]] && V_LENGTH=${GROUP_VID_LEN[i]}
     FPS="$(awk -F= '/ID_VIDEO_FPS/ {print $2}'    <<< "${IN_STATS[i]}")"
     yecho
     if [[ $this_set = "group" ]] && ((i == 0)); then
@@ -696,7 +696,7 @@ check_compliance()
         fi
 
         spin "Checking compliance of file $((i+1))"
-        # if file tested as an image when we were verifying input files 
+        # if file tested as an image when we were verifying input files
         if [[ $is_image = "yes" ]]; then
             $group_set && grp_use_image2mpeg2[i]="yes" ||
             use_image2mpeg2[i]="yes"
@@ -793,7 +793,7 @@ check_compliance()
                     yecho "Converting $THIS_FILE"
                     echo
                     countdown 3
-                    tovid $NO_ASK -$TV_STANDARD -$TARGET -in "$IN" \
+                    makempg $NO_ASK -$TV_STANDARD -$TARGET -in "$IN" \
                     -out "${IN}.enc" "${TOVID_OPTS[@]}"
                     # for grouped files replace symlink in $WORK_DIR
                     $group_set && [[ -L "${FILES_TO_ENCODE[i]}" ]] && \
@@ -831,8 +831,8 @@ tovid_reencode()
     VIDEO_IN_SEEK="$2"
     video_type=$3
     yecho
-    yecho "$VIDEO_IN is not compliant - re-encoding 
-      $(bc <<< "$VIDEO_IN_SEEK + ${MENU_LEN[MENU_NUM-1]}" 2>/dev/null) 
+    yecho "$VIDEO_IN is not compliant - re-encoding
+      $(bc <<< "$VIDEO_IN_SEEK + ${MENU_LEN[MENU_NUM-1]}" 2>/dev/null)
         second slice to DVD compliant file"
     yecho "For long seeks this will take some time and produce a large file."
     yecho "But if the file is not encoded this way there may be sync problems."
@@ -846,9 +846,9 @@ tovid_reencode()
         fi
     fi
     yecho
-    yecho "Converting files to $TGT_CAPS format with 'tovid'"
+    yecho "Converting files to $TGT_CAPS format with 'makempg'"
     countdown
-    tovid $NO_ASK -in "$VIDEO_IN" \
+    makempg $NO_ASK -in "$VIDEO_IN" \
     -slice 0-$(bc <<< "$VIDEO_IN_SEEK + ${MENU_LEN[MENU_NUM-1]}" 2>/dev/null) \
     -${TV_STANDARD} -${TARGET} -in "$VIDEO_IN" \
     -out "${VIDEO_IN}.enc" "${TOVID_OPTS[@]}"
@@ -1274,7 +1274,7 @@ EOF
     #################### test for incompatible options #######################
     # this unfortunate block helps user by testing for incompatible options
     # within titlesets, exiting BEFORE having done previous titlesets
-    general_options="-no-vmgm -skip-vmgm -out -quick-nav -burn -device 
+    general_options="-no-vmgm -skip-vmgm -out -quick-nav -burn -device
     -speed -no-confirm-backup"
     GREP="egrep -w -q --"
     for opt in $general_options; do
@@ -1365,7 +1365,7 @@ EOF
     yecho "Running: ${vmgm_menu_cmd[@]}"
     INITIALDIR="$BASEDIR"
     if ! "${vmgm_menu_cmd[@]}" ; then cleanup && exit 1; fi
-   # TODO move to function to avoid duplication - generalize for -vmgm too 
+   # TODO move to function to avoid duplication - generalize for -vmgm too
     while test $# -gt 0; do
         DO_SHIFT=:
         case "$1" in
@@ -1683,8 +1683,8 @@ dvdauthor_error()
 confirm_backup()
 {
     yecho
-    yecho "Slideshows are an experimental feature.  Todisc is unlikely to 
-    overwrite your personal files, but you should take precautions and backup 
+    yecho "Slideshows are an experimental feature.  Todisc is unlikely to
+    overwrite your personal files, but you should take precautions and backup
     your images/files, as you would with any alpha software."
     yecho "You can disable the check by using '-no-confirm-backup'"
     echo
@@ -1919,7 +1919,7 @@ get_binning_cmd()
 # make dvd-slideshow config file if using -use-dvd-slideshow
 mk_dvd_slideshow_conf()
 {
-    if $SLIDE_FADE; then   
+    if $SLIDE_FADE; then
         [[ $EFFECT = "fade" ]] && fadein=fadein:1 && fadeout=fadeout:1
         [[ $EFFECT = "crossfade" ]] && crossfade=crossfade:1
     fi
@@ -1932,7 +1932,7 @@ mk_dvd_slideshow_conf()
         if (( i < (${#MIX_IN[@]} - 1) )); then
             [[ $EFFECT = "crossfade" ]] && echo $crossfade
             echo $fadeout
-        fi 
+        fi
     done)
     fadeout:1
 EOF
@@ -2740,7 +2740,7 @@ while test $# -gt 0; do
             LANGS=( ${LANGS//,/ } )
             for i in ${LANGS[@]}; do
                 test_is_number "$i" && \
-                usage_error "$o is for language codes now: 
+                usage_error "$o is for language codes now:
                 perhaps you wanted '-audio-channel' ?"
             done
             ;;
@@ -2783,7 +2783,7 @@ while test $# -gt 0; do
             ;;
         "-submenu-audio-length" ) # removed
             usage_error "The $1 option has been removed. Use -submenu-length to
-            set the length of submenu audio for a static submenu. (yes now 
+            set the length of submenu audio for a static submenu. (yes now
             submenu lengths can be set)"
             ;;
         "-submenus" )
@@ -2884,8 +2884,8 @@ while test $# -gt 0; do
             ;;
         "-tovidopts" | "-tovid-opts" )
             usage_error "The -tovidopts option no longer exists.  Now just use
-            the tovid options directly on the command line.  Note 
-            that tovid's -noask (-no-ask) must be given as '-noprompt', 
+            the tovid options directly on the command line.  Note
+            that tovid's -noask (-no-ask) must be given as '-noprompt',
             to avoid conflict with the todisc option by the same name."
             ;;
         "-titleset-mode" ) # internal use only
@@ -2941,7 +2941,7 @@ while test $# -gt 0; do
             ;;
         "-no-vmgm-menu" | "-no-vmgm" )
             VMGM_MENU=false
-            ;;  
+            ;;
         "-no-top-menu" )
             usage_error "Option removed - no SVCD output available now"
             ;;
@@ -2993,8 +2993,8 @@ while test $# -gt 0; do
             # remove this warning for tovid 0.33 TODO
             if [[ $1 = "-subtitles" ]]; then
                 if (( ${#2} == 2 )); then
-                    usage_error "todisc's '-subtitles' option has been changed  
-                    to '-subtitle-lang', so it doesn't conflict with a tovid 
+                    usage_error "todisc's '-subtitles' option has been changed
+                    to '-subtitle-lang', so it doesn't conflict with a tovid
                     option by the same name"
                 elif [[ ! -e $2 ]]; then
                     usage_error " subtitle file $2 does not exist"
@@ -3061,7 +3061,7 @@ fi
 # Make sure equal, nonzero number of titles and files were provided
 
 if ! $VMGM_ONLY && ! $DO_TITLESETS; then
-    ((num_slideshows>0)) && ss_err="  A slideshow counts as one file.  
+    ((num_slideshows>0)) && ss_err="  A slideshow counts as one file.
      Please give one title for each slideshow. "
     if [[ ${#FILES[@]} -eq 0 ]]; then
         usage_error "Please provide at least one file."
@@ -3667,7 +3667,7 @@ if $QUICK_MENU && ! $QUICKMENU_IS_SHOWCASE && ! $QUICKMENU_IS_BACKGROUND; then
             yech=usage_error
         fi
         if $is_carousel; then
-            $yech "animated slideshows with quick-menu need either 
+            $yech "animated slideshows with quick-menu need either
             -background-slideshow  or -showcase-slideshow"
         else
             $yech "-quick-menu needs a -showcase VIDEO or a -background VIDEO"
@@ -3852,7 +3852,7 @@ if ! $DO_CAROUSEL; then
         fi
     done
 fi
-fi 
+fi
 
 
 # if more than one value for CHAPTERS, make sure they equal video #
@@ -3876,7 +3876,7 @@ if $USER_CHAPTERS; then
         # remove + sign and commas, count the number of chapters left
         str=$(sed 's/+/ /g;s/,/ /g' <<< ${CHAPTERS[i]})
         for substr in $str; do [[ $substr != 0 ]] && newchapts+=($substr); done
-        CHAPTERS[i]=${#newchapts[@]} 
+        CHAPTERS[i]=${#newchapts[@]}
     done
 fi
 # do not let user use -chapters 0 (-chapters 5 0 6)
@@ -3968,13 +3968,13 @@ if [ ${#SEEK_VAL[@]} -eq 1 ]; then
     for ((i=0; i<=NUM_FILES; i++)); do
         SEEK_VAL[i]=${SEEK_VAL[0]}
         SEEK[i]="-ss ${SEEK_VAL[i]}" # create seek value for each video
-    done   
+    done
 fi
 # if only one chapters fontsize, then use for all videos
 if ((${#CHAPT_FONTSIZE[@]} == 1 )); then
     for ((i=0; i<=NUM_FILES; i++)); do
         CHAPT_FONTSIZE[i]=${CHAPT_FONTSIZE[0]}
-    done   
+    done
 fi
 # make sure if more than one chapter fontsize, they equal the number of videos
 if ! $VMGM_ONLY && [[ -n $CHAPT_FONTSIZE ]] \
@@ -4023,7 +4023,7 @@ else
                 files.  Use titlesets for this many files.  Alternatively you
                 may use '-group' to group some of them under a single button"
             fi
-        else 
+        else
             ! $SINGLE_SLIDESHOW && usage_error \
              "Sorry, a maximum of 36 videos (thumbs) is supported
              You gave ${#FILES[@]} files as input.  Please use titlesets
@@ -4053,7 +4053,7 @@ if ! $VMGM_ONLY; then
         usage_error "Please use -slides IMAGES, not -files IMAGES
         for a slideshow"
     fi
-    if $GROUPING; then 
+    if $GROUPING; then
         echo
         echo "Verifying that grouped input files are video or image files"
         verify_infiles group
@@ -4134,7 +4134,7 @@ else
 fi
 # All files must be images for slide mix.
 # if all are images, then we are doing a slideshow.
-echo 
+echo
 if $SINGLE_SLIDESHOW; then
     # if -static was not passed we have already set DO_CAROUSEL to :
     # So here we set STATIC to : as ani slideshow has its own code
@@ -4533,7 +4533,7 @@ fi
 #  -align east uses text-rect
 if [[ $BUTTON_STYLE = "text-rect" ]] \
  && ! [[ $SC_TITLE_ALIGN = "east" ]] && $SHOWCASE && ! $TEXTMENU; then
-    yecho "***Warning***" 
+    yecho "***Warning***"
     yecho "text-rect buttons need to be aligned east of thumbs:  by using:"
     yecho " '-showcase-titles-align east'"
     yecho "Setting this option for you"
@@ -4635,7 +4635,7 @@ fi
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
 AUDIO_OPTS="-ab 224k -ar $SAMPLERATE -acodec $AUDIO_EXT"
 # spumux and dvdauthor vars
-$WIDE_SCRREN || [[ -n "$V_ASPECT" ]] && TITLES_VID_TAG="<video " 
+$WIDE_SCRREN || [[ -n "$V_ASPECT" ]] && TITLES_VID_TAG="<video "
 $WIDE_SCREEN && TITLES_VID_TAG=" $TITLES_VID_TAG widescreen=\"$WIDESCREEN\""
 [[ -n "$V_ASPECT" ]] && TITLES_VID_TAG="$TITLES_VID_TAG $V_ASPECT"
 [[ -n $TITLES_VID_TAG ]] && TITLES_VID_TAG="$TITLES_VID_TAG />"
@@ -5089,8 +5089,8 @@ if [[ $TARGET = "dvd" ]]; then
         if ! $SHOWCASE && $SINGLE_SLIDESHOW; then
             ss_geos=(x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\")
            btn_geos[0]=${ss_geos[@]}
-        fi 
-    fi  
+        fi
+    fi
 fi
 if $TITLESET_MODE && $VMGM_MENU && ! $VMGM_ONLY; then
     RTN_BTN_yOFFSET=50; RTN_BTN_xOFFSET=50
@@ -5135,7 +5135,7 @@ if $TITLESET_MODE && $VMGM_MENU && ! $VMGM_ONLY; then
             rtn_geos=(x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\")
             btn_geos[1]=${rtn_geos[@]}
         fi
-    fi 
+    fi
 fi
 
 if [[ -n $MENU_TITLE ]] && $DO_MENU; then
@@ -5608,7 +5608,7 @@ EOF
                     # get button locations for spumux
                     btn_size=$(get_image_dim "$WORK_DIR/${button}${i}.png")
                     # a couple of commented references
-                    #${SC_THUMB_X_ARRAY[i]}+${SC_THUMB_Y_ARRAY[i]} 
+                    #${SC_THUMB_X_ARRAY[i]}+${SC_THUMB_Y_ARRAY[i]}
                     #btn_geos[ind]="x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\""
                     X0=${SC_THUMB_X_ARRAY[i]}; X1=$((X0 + ${btn_size/x*}))
                     Y0=${SC_THUMB_Y_ARRAY[i]}; Y1=$((Y0 + ${btn_size/*x}))
@@ -6155,7 +6155,7 @@ done
 for i in "${!FILES[@]}"; do
     # do not overwrite slideshows if making them
     if $SINGLE_SLIDESHOW \
-     || { ${SLIDESHOW[i]} &&  [[ ${CAROUSEL[i]} != "carousel" ]] ; }; then 
+     || { ${SLIDESHOW[i]} &&  [[ ${CAROUSEL[i]} != "carousel" ]] ; }; then
         MPEGS2MOVE=( "${MPEGS2MOVE[@]}" "$WORK_DIR/${TSET_NUM}-$((i+1)).mpg")
     fi
 done
@@ -6495,7 +6495,7 @@ for i in ${!IN_FILES[@]}; do
     if [[ $(bc -l <<< "${VID_LEN[i]} < 1") -eq 1 ]]; then
         [[ $TARGET = "dvd" && -z ${VPAUSE[i]} ]] && VPAUSE[i]="inf"
         # 1 chapter per short file, (altered below if group short file)
-        ! $USER_CHAPTERS && CHAPTERS[i]=1 # each 'slide' is a chapter 
+        ! $USER_CHAPTERS && CHAPTERS[i]=1 # each 'slide' is a chapter
     fi
     $SINGLE_SLIDESHOW && [[ $TARGET = "svcd" && -z $SVCD_PAUSE ]] && \
     SVCD_PAUSE="-pause -1" #FIXME
@@ -6567,7 +6567,7 @@ if $SWITCHED; then
         # if -bgaudio is passed, use the provided file
         else
             yecho "Using $BG_AUDIO as audio background for "${FILES[vid]}""
-        fi    
+        fi
     else # audio detected in the video
         if [[ -z $BG_AUDIO && $BG_AUDIO != "none" ]]; then
             # use the audio from each video for each switched menu
@@ -6607,7 +6607,7 @@ if $SWITCHED; then
                 "Using "$BG_AUDIO" as audio background for $SHOWCASE_VIDEO"
             fi
         fi
-    fi 
+    fi
     yecho
 fi
 for ((i=0; i<${#VID_LEN[@]}; i++)); do
@@ -6636,7 +6636,7 @@ if $ANI_SUB_MENU; then
         if [ $((V - S)) -le $F ] ; then
             echo "Sorry, you can not use ${CHAPTERS[i]}
             chapters for ${IN_FILES[i]}.  Maximum chapters for this video
-            (using a -seek of ${SEEK_VAL[i]}): 
+            (using a -seek of ${SEEK_VAL[i]}):
             $(bc_math "($V - $S) / ${SUBMENU_FRAMES[i]}" int) chapters" |
              format_output
             exit 1
@@ -6798,11 +6798,11 @@ if [[ -n ${CHAPT_ARRAY[@]} ]]; then
     :
 else
     for ((s=0; s<=NUM_FILES; s++)); do
-        # make chapter points for videos, divide by $CHAPTERS to get 
+        # make chapter points for videos, divide by $CHAPTERS to get
         # chapter lengths, then get running totals
         CHAPT_INTERVALS[s]=$(bc_math "${VID_LEN[s]} / ${CHAPTERS[s]}")
-        # <TODO if GROUPING:  for group chapter thumbs feed group 
-        # chapter points to transcode in a loop as normal, but output 
+        # <TODO if GROUPING:  for group chapter thumbs feed group
+        # chapter points to transcode in a loop as normal, but output
         # to different subdirs. Then rename according to frame number
         # moving all to the same subdir. Then follow usual procedure,
         # moving  into chapter subdirs for final montages  /TODO>
@@ -6954,7 +6954,7 @@ fi
 $VMGM_ONLY && NUM_BUTTONS=${#TITLES[@]}
 $SWITCHED && SPUMUX_XML="$BASEDIR/spumux.xml"
 if $SWITCHED; then
-    down="down=\"ActionDown\"" && up="up=\"ActionUp\"" 
+    down="down=\"ActionDown\"" && up="up=\"ActionUp\""
     right="right=\"ActionDown\"" && left="left=\"ActionUp\""
     updown="down=\"ActionDown\" up=\"ActionUp\""
 fi
@@ -7130,7 +7130,7 @@ if [ "$TARGET" = "dvd" ]; then
 # TSET_NUM is the titleset number being worked on
 # ALLTITLES is an array of the number of titles in each titleset
 # NUM_MENUS is the # of menus being made
-# menu_num is the current menu being worked on 
+# menu_num is the current menu being worked on
 # the above 2 values always equal 1 unless doing switched menus
 # TSET_NUM supplied by the calling todisc script and is the current titleset #
 MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${MENU_NUM}.mpg"
@@ -7362,7 +7362,7 @@ $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
     fi
     ((t++)) # var for counting slides
 done)
-$( { $SINGLE_SLIDESHOW || $MENUBUTTONS_ARE_CHAPTS ; } && 
+$( { $SINGLE_SLIDESHOW || $MENUBUTTONS_ARE_CHAPTS ; } &&
  echo -e "      </pgc>")
     </titles>
   </titleset>
@@ -7443,7 +7443,7 @@ if $SUB_MENU; then
             cleanup && killall_instances
             exit 13
         fi
-    fi 
+    fi
     for ((i=0; i<${#IN_FILES[@]}; i++)); do
         smframes=${SUBMENU_FRAMES[i]}
         if ! ${SLIDESHOW[i]}; then
@@ -7823,7 +7823,7 @@ if $SUB_MENU; then
                     spin $SPINNER
                 done
                 echo
-                #cp "$WORK_DIR/polaroid_stack.png"  
+                #cp "$WORK_DIR/polaroid_stack.png"
                 #ss_ind=$(awk -F[-.] '{print $2}' <<< "$sld")
                 IM_CMD=(convert $WORK_DIR/submenu$((i+1))_template.jpg \
                 "$WORK_DIR/polaroid_stack.png" \
@@ -8418,7 +8418,7 @@ if $MENU_FADE && ! $QUICK_MENU; then
             endframe=$THUMBS_FADEOUT_STARTFRAME
             copy_frames=$((endframe - f))
             # no fadeout, just let ppmtoy4m repeat last frame till done
-            if ((ANIMENU_ENDFRAME<=THUMBS_FADEOUT_STARTFRAME)); then 
+            if ((ANIMENU_ENDFRAME<=THUMBS_FADEOUT_STARTFRAME)); then
                 spin  "\rEncoding frames $f to $endframe  " >&2
                 if [[ -n ${ppm_fifos[@]} ]]; then
                     cat "${ppm_fifos[@]}"
@@ -8781,7 +8781,7 @@ if $DO_MENU; then
 
         if $AUDIO_FADE; then  # bgaudio supplied and audio fade selected
             WAV_TIME=$(audio_length "$WORK_DIR/intro.wav")
-            echo "Running: 
+            echo "Running:
             sox $WORK_DIR/intro.wav $WORK_DIR/intro-processed.wav fade t
             $FADE $WAV_TIME $FADE" |format_output
             sox $WORK_DIR/intro.wav \

@@ -60,7 +60,7 @@ Common options:
     -audio AUDIOFILE                    ex: -audio foo_fighters.mp3
     -font "FONTNAME"                    ex: -font Courier
 
-Example: 
+Example:
 
     makemenu -background ocean.jpg "First" "Second" "Third" -out mymenu
         Create 'mymenu.mpg' with three titles and a custom background image.
@@ -165,7 +165,7 @@ TITLE_LEFT_SPACE=10
 
 # =========================================================================\
 # E X E C U T I O N   B E G I N S   H E R E
-# 
+#
 #
 
 echo "$SCRIPT_NAME"
@@ -267,7 +267,7 @@ while test $# -gt 0; do
         "-button" )
             shift
             case "$1" in
-                "play" ) 
+                "play" )
                     BUTTON_FONT="Webdings"
                     BUTTON_CHAR=4
                     ;;
@@ -281,7 +281,7 @@ while test $# -gt 0; do
                     OFFICIAL_PRINTF=$(which printf)
                     BUTTON_CHAR=$($OFFICIAL_PRINTF "\u$1")
                     ;;
-                * ) 
+                * )
                     BUTTON_CHAR="$1"
                     if test $(echo -n "$BUTTON_CHAR" | wc -c ) -ne 1; then
                         usage_error "Buttons must have only _one_ characater."
@@ -363,7 +363,7 @@ OUT_FILENAME="$OUT_PREFIX.mpg"
 # Temporary directory named after the given -out prefix
 OUTNAME=$(basename "$OUT_PREFIX")
 TMP_DIR=$(tempdir "$WORKING_DIR/$OUTNAME")
-$DEBUG && echo "Storing temporary files in $TMP_DIR" 
+$DEBUG && echo "Storing temporary files in $TMP_DIR"
 BG_CANVAS="$TMP_DIR/bg_canvas.png"
 MENU_PPM="$TMP_DIR/menu.ppm"
 MENU_MPEG="$TMP_DIR/menu.mpg"
@@ -400,7 +400,7 @@ else
     test $TVSYS = "ntsc" && HEIGHT="240"
     test $TVSYS = "pal" && HEIGHT="288"
     # Reduce font size and spacing
-    TITLE_SIZE=$(expr $TITLE_SIZE \/ 2)  
+    TITLE_SIZE=$(expr $TITLE_SIZE \/ 2)
 fi
 
 # Set audio stream format
@@ -453,22 +453,22 @@ else
     # Check to see if the given font name is available in ImageMagick
     # (only return the first exact match)
     USE_TITLE_FONT=$( convert -list $IM_LISTARG | \
-	grep -m 1 "$TITLE_FONT" | awk '{print $1}' )
+    grep -m 1 "$TITLE_FONT" | awk '{print $1}' )
 
    # If not available, try to use something similar
     if test -z $USE_TITLE_FONT ; then
-	    echo $SEPARATOR
-	    echo "Font: \"$TITLE_FONT\" does not appear to be either a font file or registered with ImageMagick."
-	    USE_TITLE_FONT=$( convert -list $IM_LISTARG | \
-	    grep -i -m 1 "${TITLE_FONT:0:20}" | awk '{print $1}' )
+        echo $SEPARATOR
+        echo "Font: \"$TITLE_FONT\" does not appear to be either a font file or registered with ImageMagick."
+        USE_TITLE_FONT=$( convert -list $IM_LISTARG | \
+        grep -i -m 1 "${TITLE_FONT:0:20}" | awk '{print $1}' )
 
         # If a similarly-named one does't exist, default to Helvetica
-	    if test -z "$USE_TITLE_FONT"; then
-	        echo "A similarly-named font was not found. Sorry!"
-	        USE_TITLE_FONT="Helvetica"
-	    fi
-	    echo "The font \"$USE_TITLE_FONT\" will be used instead."
-	    echo $SEPARATOR
+        if test -z "$USE_TITLE_FONT"; then
+            echo "A similarly-named font was not found. Sorry!"
+            USE_TITLE_FONT="Helvetica"
+        fi
+        echo "The font \"$USE_TITLE_FONT\" will be used instead."
+        echo $SEPARATOR
     fi
 fi
 
@@ -485,21 +485,21 @@ if test $RES = 'dvd'; then
         # Check to see if the given button font is available in ImageMagick
         # (only return the first exact match)
         USE_BUTTON_FONT=$( convert -list $IM_LISTARG | \
-    	grep -m 1 "$BUTTON_FONT" | awk '{print $1}' )
+        grep -m 1 "$BUTTON_FONT" | awk '{print $1}' )
 
         # If not available, try to use something similar
         if test -z $USE_BUTTON_FONT ; then
-	        echo $SEPARATOR
-	        echo "Button: \"$BUTTON_FONT\" does not appear to be either a font file or registered with ImageMagick."
-    	    USE_BUTTON_FONT=$( convert -list $IM_LISTARG | \
-	        grep -i -m 1 "${BUTTON_FONT:0:20}" | awk '{print $1}' )
+            echo $SEPARATOR
+            echo "Button: \"$BUTTON_FONT\" does not appear to be either a font file or registered with ImageMagick."
+            USE_BUTTON_FONT=$( convert -list $IM_LISTARG | \
+            grep -i -m 1 "${BUTTON_FONT:0:20}" | awk '{print $1}' )
 
             # If a similarly-named one does't exist, default to Helvetica
-    	    if test -z "$USE_BUTTON_FONT"; then
-	            echo "A similarly-named font was not found. Sorry!"
-	            USE_BUTTON_FONT="$TITLE_FONT"
-    	    fi
-	        echo "The font \"$USE_BUTTON_FONT\" will be used instead."
+            if test -z "$USE_BUTTON_FONT"; then
+                echo "A similarly-named font was not found. Sorry!"
+                USE_BUTTON_FONT="$TITLE_FONT"
+            fi
+            echo "The font \"$USE_BUTTON_FONT\" will be used instead."
         echo $SEPARATOR
         fi
     fi
@@ -531,7 +531,7 @@ TILE_HEIGHT=$(convert -size 720x200 xc:none -fill white -pointsize $TITLE_SIZE -
 
 let "TILE_HEIGHT=TILE_HEIGHT+TITLE_BOTTOM_SPACE"
 
-# Make text 'tiles' for each title. These will be pieced together later on. 
+# Make text 'tiles' for each title. These will be pieced together later on.
 echo "Adding $NUM_TITLES titles to the menu:"
 for ((i=0; i<$NUM_TITLES; i++)); do
     SEQNUM=$(printf "%02d" ${i})
@@ -745,7 +745,7 @@ if ! $NOASK; then
     echo -n "Was the preview ok [y/N]?  "
     ANSWER="N"
     read ANSWER
-    if ! ( test "$ANSWER" = "y" || test "$ANSWER" = "Y" ); then 
+    if ! ( test "$ANSWER" = "y" || test "$ANSWER" = "Y" ); then
         echo "Preview was not OK, exiting..."
         cleanup
         echo
@@ -754,7 +754,7 @@ if ! $NOASK; then
         echo "      -background IMAGE -audio AUDIOFILE"
         echo "to change the appearance. More in 'man makemenu'"
         exit 0
-    else 
+    else
         echo "Preview was OK. Continuing..."
     fi
 fi
@@ -857,8 +857,8 @@ if test -s "$OUT_FILENAME"; then
     fi
 else
     echo "It looks like something went wrong, because there is no output file."
-    echo "Please submit a bug report to http://code.google.com/p/tovid/issues.
-    echo "Please add -debug to your command (makemenu -debug ...) and post the
+    echo "Please submit a bug report to http://code.google.com/p/tovid/issues."
+    echo "Please add -debug to your command (makemenu -debug ...) and post the"
     echo "log file and terminal output. Sorry for the inconvenience."
     exit 1
 fi

@@ -33,22 +33,30 @@ sh_bin = \
 	src/todisc \
 	src/todisc-fade-routine \
 	src/tovid \
+	src/makempg \
 	src/tovid-batch \
 	src/tovid-init \
-	src/tovid-interactive \
-	src/tovid-test
+	src/tovid-interactive
+# Removed from sh_bin
+#src/tovid-test
 
 # List the source files for each python script
 py_bin = \
-	src/genvid \
 	src/makemenugui \
-	src/pyidvid \
-	src/pytovid \
-	src/pymakemenu \
-	src/pymakexml \
 	src/todiscgui \
 	src/tovidgui \
 	src/tovid-stats
+# Removed from py_bin
+#src/genvid
+#src/pyidvid
+#src/pytovid
+#src/pymakemenu
+#src/pymakexml
+
+# Override the default bindir, so the tovid executables are
+# installed to e.g. /usr/share/tovid/bin
+# FIXME: This is probably not the correct way to do it
+bindir = $(datadir)/tovid/bin
 
 # Specify the scripts to make and install.
 bin_SCRIPTS = \
@@ -62,7 +70,7 @@ man_MANS = \
 	$(man_dir)/idvid.1 \
 	$(man_dir)/makedvd.1 \
 	$(man_dir)/makemenu.1 \
-    $(man_dir)/makevcd.1 \
+	$(man_dir)/makevcd.1 \
 	$(man_dir)/makexml.1 \
 	$(man_dir)/pymakexml.1 \
 	$(man_dir)/postproc.1 \
@@ -73,7 +81,7 @@ src_MANS = \
 	$(man_src_dir)/idvid.t2t \
 	$(man_src_dir)/makedvd.t2t \
 	$(man_src_dir)/makemenu.t2t \
-    $(man_src_dir)/makevcd.t2t \
+	$(man_src_dir)/makevcd.t2t \
 	$(man_src_dir)/makexml.t2t \
 	$(man_src_dir)/pymakexml.t2t \
 	$(man_src_dir)/postproc.t2t \
@@ -107,9 +115,9 @@ appdir = $(datadir)/applications
 
 # Distribute the data
 dist_icon128_DATA = $(icon_top_dir)/$(icon_128_dir)/tovid.png
-dist_icon64_DATA = $(icon_top_dir)/$(icon_64_dir)/tovid.png 
-dist_icon48_DATA = $(icon_top_dir)/$(icon_48_dir)/tovid.png 
-dist_icon32_DATA = $(icon_top_dir)/$(icon_32_dir)/tovid.png 
+dist_icon64_DATA = $(icon_top_dir)/$(icon_64_dir)/tovid.png
+dist_icon48_DATA = $(icon_top_dir)/$(icon_48_dir)/tovid.png
+dist_icon32_DATA = $(icon_top_dir)/$(icon_32_dir)/tovid.png
 dist_iconSVG_DATA = $(icon_top_dir)/$(icon_svg_dir)/cd.svg \
 	$(icon_top_dir)/$(icon_svg_dir)/disc.svg \
 	$(icon_top_dir)/$(icon_svg_dir)/tovid.svg
@@ -153,29 +161,36 @@ EXTRA_DIST = \
 #   (1) pythonFOO_PYTHON   which takes the python source files
 #   (2) pythonFOOdir       which points to where the module should be installed
 #                          (CAPS are not required, but helps readability)
-pythonLIBTOVID_PYTHON = libtovid/*.py
-pythonLIBTOVIDdir = $(pythondir)/libtovid
+pythonLIBTOVID_PYTHON 	= libtovid/*.py
+pythonLIBTOVIDdir 		= $(pythondir)/libtovid
 # Submodules
-pythonGUIS_PYTHON = libtovid/guis/*.py
-pythonGUISdir = $(pythondir)/libtovid/guis
-pythonBACKEND_PYTHON = libtovid/backend/*.py
-pythonBACKENDdir = $(pythondir)/libtovid/backend
-pythonRENDER_PYTHON = libtovid/render/*.py
-pythonRENDERdir = $(pythondir)/libtovid/render
-pythonTEMPLATE_PYTHON = libtovid/template/*.py
-pythonTEMPLATEdir = $(pythondir)/libtovid/template
-pythonGUI_PYTHON = libtovid/gui/*.py
-pythonGUIdir = $(pythondir)/libtovid/gui
-pythonMETAGUI_PYTHON = libtovid/metagui/*.py
-pythonMETAGUIdir = $(pythondir)/libtovid/metagui
-pythonUTIL_PYTHON = libtovid/util/*.py
-pythonUTILdir = $(pythondir)/libtovid/util
+pythonGUIS_PYTHON 		= libtovid/guis/*.py
+pythonGUISdir 			= $(pythondir)/libtovid/guis
+pythonBACKEND_PYTHON 	= libtovid/backend/*.py
+pythonBACKENDdir 		= $(pythondir)/libtovid/backend
+pythonRENDER_PYTHON 	= libtovid/render/*.py
+pythonRENDERdir 		= $(pythondir)/libtovid/render
+pythonTEMPLATE_PYTHON 	= libtovid/template/*.py
+pythonTEMPLATEdir 		= $(pythondir)/libtovid/template
+pythonGUI_PYTHON 		= libtovid/gui/*.py
+pythonGUIdir 			= $(pythondir)/libtovid/gui
+pythonMETAGUI_PYTHON 	= libtovid/metagui/*.py
+pythonMETAGUIdir 		= $(pythondir)/libtovid/metagui
+pythonUTIL_PYTHON 		= libtovid/util/*.py
+pythonUTILdir 			= $(pythondir)/libtovid/util
 
 # src/tovid-init not needed b/c ./configure derives it from src/tovid-init.in
 # make the output directory for the man pages, since t2t won't
 dist-hook:
 	rm -rvf $(top_distdir)/src/tovid-init
 	mkdir $(top_distdir)/docs/man
+
+# Hook to create a symbolic link for the main 'tovid' script
+# FIXME: $(LN_S) is supposed to work since AC_PROG_LN_S is in configure.ac,
+# but it doesn't for whatever reason (evaluates to empty string).
+# For now, using explicit `ln -s`
+install-exec-hook:
+	ln -s "$(DESTDIR)$(bindir)/tovid" "$(prefix)/bin/tovid"
 
 # After uninstalling tovid, remove the python module directories
 uninstall-hook:
