@@ -125,14 +125,14 @@ while test ${1:0:1} = "-"; do
             mkfifo video_shrink
             BACKGR="&"
             ;;
-	"-normalize" )
-	    DO_NORM=:
-	    ;;
-	"-amplitude" )
-	    shift
-	    AUDIO_AMPLITUDE="--amplitude=$1"
-	    DO_NORM=:
-	    ;;
+        "-normalize" )
+            DO_NORM=:
+            ;;
+        "-amplitude" )
+            shift
+            AUDIO_AMPLITUDE="--amplitude=$1"
+            DO_NORM=:
+            ;;
         "-debug" )
             DEBUG=:
             ;;
@@ -197,7 +197,7 @@ echo "$VIDEO_DUMP"
 eval $AUDIO_DUMP > $TMP_FILE 2>&1 &
 eval $VIDEO_DUMP >> $TMP_FILE 2>&1 $BACKGR
 
-# Let the audio process finish if not in parallel mode (should always finish 
+# Let the audio process finish if not in parallel mode (should always finish
 # before video, so this is just precautionary)
 $PARALLEL || wait
 
@@ -265,7 +265,7 @@ if $PARALLEL; then
     SHRINK_SIZE=$( ls -l "$OUT_FILE" | awk '{print $5}' )
     SHRINK_PERCENT=$(expr 100 \- \( 100 \* $SHRINK_SIZE \/ $START_SIZE \))
     echo "Video stream was shrunk by $SHRINK_PERCENT%"
-fi  
+fi
 
 echo $SEPARATOR
 

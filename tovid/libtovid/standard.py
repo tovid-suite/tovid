@@ -16,8 +16,6 @@ __all__ = [
     'vcodec',
 ]
 
-import doctest
-
 def resolution(format, tvsys):
     """Return the pixel resolution (x,y) for the given format and TV system.
     For example::

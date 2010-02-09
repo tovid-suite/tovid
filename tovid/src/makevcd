@@ -119,7 +119,7 @@ while test x"${1:0:1}" = "x-"; do
         ;;
       "-force" )
         FORCE="--force"
-	;;
+        ;;
       * )
         usage_error "Error: Unrecognized command-line option $1"
         ;;
@@ -196,8 +196,8 @@ if $BURN; then
     echo $SEPARATOR
     echo "Found rewritable CD - starting to blank in 10 seconds - press ctrl-c to quit"
     countdown 10
-	cdrdao blank --driver generic-mmc  $CDRW_DEVICE
-    fi 
+        cdrdao blank --driver generic-mmc  $CDRW_DEVICE
+    fi
     # Burn the disc
     CDRDAO_CMD="cdrdao write --device $CDRW_DEVICE --driver generic-mmc \
         --speed $BURN_SPEED $FORCE \"$VCDIMAGER_XML.cue\""
