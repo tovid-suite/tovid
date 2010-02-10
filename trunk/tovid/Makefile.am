@@ -56,7 +56,8 @@ py_bin = \
 # Override the default bindir, so the tovid executables are
 # installed to e.g. /usr/share/tovid/bin
 # FIXME: This is probably not the correct way to do it
-bindir = $(datadir)/tovid/bin
+#bindir = $(datadir)/tovid/bin
+bindir = $(libdir)/tovid
 
 # Specify the scripts to make and install.
 bin_SCRIPTS = \
@@ -202,6 +203,7 @@ uninstall-hook:
 	rmdir $(pythonMETAGUIdir)
 	rmdir $(pythonUTILdir)
 	rmdir $(pythonLIBTOVIDdir)
+	rm $(prefix)/bin/tovid
 
 # A little fun :-)
 sense:
