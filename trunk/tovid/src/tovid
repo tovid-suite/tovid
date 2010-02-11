@@ -28,6 +28,7 @@ and what arguments it expects.
 
 import sys
 import os
+import subprocess
 
 # Command names to script mappings
 _scripts = {
@@ -70,7 +71,8 @@ if __name__ == '__main__':
             print("DEBUG: Missing script: '%s'" % script)
             sys.exit(1)
         else:
-            os.system(script + ' ' + ' '.join(args))
+            status = subprocess.call([script] + args)
+            sys.exit(status)
     else:
         print(usage)
         print("Unknown command: '%s'" % command)

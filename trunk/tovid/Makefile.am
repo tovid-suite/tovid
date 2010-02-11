@@ -191,6 +191,7 @@ dist-hook:
 # but it doesn't for whatever reason (evaluates to empty string).
 # For now, using explicit `ln -s`
 install-exec-hook:
+	rm -fv "$(prefix)/bin/tovid"
 	ln -s "$(DESTDIR)$(bindir)/tovid" "$(prefix)/bin/tovid"
 
 # After uninstalling tovid, remove the python module directories
