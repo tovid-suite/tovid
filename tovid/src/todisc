@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 ME="[todisc]:"
-. tovid-init
+. tovid-init 2>/dev/null ||
+{ echo -e "===============================================================\n"
+echo -e "'tovid-init' not found.  Was tovid improperly installed?"
+echo -e "Or are you trying to run the script directly?"
+echo -e "Please run todisc as:\ntovid disc OPTIONS"
+exit 1 ; }
 # todisc
 # Part of the tovid suite
 # =======================
@@ -1419,6 +1424,7 @@ parse_rotateargs()
 
 burn_disc()
 {
+    BURN_CMD=(tovid dvd -burn -device "$BURN_DEVICE" $BURN_SPEED \"$BURN_TGT\")
     yecho
     echo "You have indicated you want to burn the $BURN_TGT_STR"
     echo "Would you like to burn the ${BURN_TGT_STR/ *} now ?"
@@ -1434,9 +1440,9 @@ burn_disc()
             echo "Your ${BURN_TGT_STR/ *} should be ready"
         else
             echo "There was a problem burning the ${BURN_TGT_STR/ *}"
-            echo "Please see "$LOG_FILE" for details"
+            echo "Please see makedvd output above, and "$LOG_FILE" for details"
             echo "When the problem is solved, try again with the command:"
-            echo "$BURN_PROG -burn -device $BURN_DEVICE $BURN_SPEED \"$BURN_TGT\""
+            echo "${BURN_CMD[@]}"
         fi
     else
         echo "Not burning now - please see the parting message from todisc"
