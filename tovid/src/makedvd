@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 ME="[makedvd]:"
-. tovid-init
+. tovid-init 2>/dev/null ||
+{ echo -e "===============================================================\n"
+echo -e "'tovid-init' not found.  Was tovid improperly installed?"
+echo -e "Or are you trying to run the script directly?"
+echo -e "Please run makedvd as:\ntovid dvd OPTIONS"
+exit 1 ; }
 
 # makedvd
 # Part of the tovid suite
@@ -393,7 +398,7 @@ else
 
     echo $SEPARATOR
     echo "Found $DISC_STATUS $DISC_TYPE."
-    if [[ $DISC_TYPE == "no disc" ]]; then
+    if ! $HAVE_DVD_RW && ! $HAVE_BLANK_DVD_R; then
         echo "Cannot continue!  There is no usable media in the DVD drive"
         echo "Exiting..."
         exit 1
