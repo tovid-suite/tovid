@@ -29,6 +29,7 @@ and what arguments it expects.
 import sys
 import os
 import subprocess
+import time
 
 # Command names to script mappings
 _scripts = {
@@ -71,8 +72,15 @@ if __name__ == '__main__':
             print("DEBUG: Missing script: '%s'" % script)
             sys.exit(1)
         else:
-            status = subprocess.call([script] + args)
-            sys.exit(status)
+            try:
+                status = subprocess.call([script] + args)
+            except KeyboardInterrupt:
+                print("!!! tovid was manually interrupted. Exiting.")
+                # Sleep a second to let the script clean up
+                time.sleep(1)
+                sys.exit(1)
+            else:
+                sys.exit(status)
     else:
         print(usage)
         print("Unknown command: '%s'" % command)
