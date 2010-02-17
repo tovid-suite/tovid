@@ -198,6 +198,40 @@ function unformat_time()
     echo $TOT_SECONDS
 }
 
+# *****************************************************************************
+# Make video chapter points
+# of the given duration(secs) and chapter interval(min)
+# Usage: make_chapters duration interval
+# Example:  CHAPTERS=$(make_chapters 2400 5)
+#
+# Returns a comma separated string of chapter points
+# *****************************************************************************
+
+function make_chapters()
+{
+    DURATION=$1
+    CHAPTER_INTERVAL=$2
+    awk '{dur=$1;\
+            iv=$2*60;\
+            if (iv==0){\
+               printf "0";\
+               exit\
+            }\
+            cur=0;\
+            i=0;\
+            while(cur<dur){\
+               if(i>0){\
+                  printf ","\
+               }\
+               i++;\
+               hh=int(cur/3600);\
+               mm=int((cur-hh*3600)/60);\
+               ss=cur-hh*3600-mm*60;\
+               printf "%02d:%02d:%02d",hh,mm,ss;
+               cur+=iv\
+            }\
+        }'<<< "$DURATION $CHAPTER_INTERVAL"
+}
 
 # ******************************************************************************
 # Read a space-separated list of arguments, stopping before the next option
