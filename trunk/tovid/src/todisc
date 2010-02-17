@@ -219,7 +219,7 @@ SLIDE_FADE=false
 SINGLE_SLIDESHOW=false
 MK_CAROUSEL_MODE=false
 MTG_GEO="+12+6"
-MENUBUTTONS_ARE_CHAPTS=false
+VIDEOS_ARE_CHAPTERS=false
 CONFIRM_BACKUP=:
 USE_FEATHER_MASK=false
 DO_BINNING=:
@@ -238,6 +238,7 @@ pngpipe="-quality 01 png:-"
 ani_pics=0
 JUSTIFY="center"
 CONTRAST_CLR='gray'
+NOMENU=false
 
 ##############################################################################
 #                                 Functions                                  #
@@ -2217,8 +2218,8 @@ while test $# -gt 0; do
             SM_TITLES=( "${ARGS_ARRAY[@]}" )
             IFS=$OIFS
             ;;
-        "-use-makemenu" )
-            USE_MAKEMENU=:
+        "-nomenu" | "-no-menu" )
+            NOMENU=:
             ;;
         "-out" )
             shift
@@ -2952,7 +2953,7 @@ while test $# -gt 0; do
             usage_error "Option removed - no SVCD output available now"
             ;;
         "-videos-are-chapters" )
-            MENUBUTTONS_ARE_CHAPTS=:
+            VIDEOS_ARE_CHAPTERS=:
             ;;
         "-is_titleset" ) #FIXME - this is useless
             TSET_MODE=:
@@ -3086,7 +3087,7 @@ $NO_TOP_MENU && [[ $TARGET = "dvd" ]] && usage_error \
 $SWITCHED && MN=2 || MN=1
 
 if [[ ${#TITLES[@]} -eq 0 ]]; then
-    if [[ $MENU_NUM = $MN ]] \
+    if [[ $MENU_NUM = $MN ]] && ! $NOMENU \
      && ! $SINGLE_SLIDESHOW && ! $DO_TITLESETS && $MONTAGE_MENU; then
         yecho
         yecho "You did not provide any titles with -titles"
@@ -3739,6 +3740,7 @@ if ! $VMGM_ONLY; then
         (( ${#FILES[@]} < 12 )) && echo "Adding: $i" || spin "Adding: ${i##*/}"
     done
 fi
+
 $VMGM_ONLY && V_TOTAL=$(( ${#TITLES[@]} - 1 )) || V_TOTAL=${#IN_FILES[@]}
 $VMGM_ONLY && NUM_FILES=$(( ${#TITLES[@]} - 1 )) || NUM_FILES=$((V_TOTAL - 1))
 # slide mix sets MONTAGE_MENU to false
@@ -3797,7 +3799,7 @@ if $GROUPING && $USER_CHAPTERS; then
     done
 fi
 # if treating each video as a chapter, use 1 chapter.  No playall allowed here
-if $MENUBUTTONS_ARE_CHAPTS; then
+if $VIDEOS_ARE_CHAPTERS; then
     if [[ -n ${grouping[@]} ]]; then
         usage_error "-videos-are-chapters can not be used with -group"
     elif $SUB_MENU; then
@@ -3915,6 +3917,61 @@ if $SUB_MENU; then
         [ -z "$MIN_CHAPTERS" ]  || ((chapt_val < MIN_VAL)) \
         && MIN_CHAPTERS=$chapt_val && min_chapt_key=$i
     done
+fi
+
+if $NOMENU; then
+    cd "$WORK_DIR"
+    yecho
+    yecho "Making a DVD with no menus"
+    yecho "Identifying video files"
+    check_compliance
+    # link files in $WORK_DIR so an array with "$file $chapters" will work
+    for i in "${!IN_FILES[@]}"; do
+        ln -s "${IN_FILES[i]}" "$WORK_DIR/$(printf %03d%s%s $i .mpg)"
+        idvid_stats[i]=$(tovid id -terse "${IN_FILES[i]}" 2>/dev/null)
+        # run mencoder to get the length if using arbitrary chapters
+        if $USER_CHAPTERS; then
+            chapter_points[i]=${CHAPT_ARRAY[i]}
+        else
+            if $VIDEOS_ARE_CHAPTERS; then
+                : # we don't need file length or chapters if not making chapters
+            else
+                yecho "Getting video lengths"
+                VID_LEN[i]=$(vid_length  "${IN_FILES[i]}" )
+                chapter_points[i]=$(make_chapters ${VID_LEN[i]} ${CHAPTERS[i]} )
+            fi
+        fi
+    done
+    get_stats files
+    IN_FILES=( $WORK_DIR/*.mpg ) 
+    lastvid=${#IN_FILES[@]}
+    nomenu_cmd=(dvdauthor -o )
+    nomenu_cmd+=("$OUT_DIR")
+    $VIDEOS_ARE_CHAPTERS && nomenu_cmd+=( -t ) # only want 1 "-t" if 1 pgc
+    for i in ${!IN_FILES[@]}; do
+        curvid=$((i+1)) # zero based array, we want for ex. file 1 not file 0
+        # -videos-are-chapters needs no chapter points, else make them and jump
+        if ! $VIDEOS_ARE_CHAPTERS; then
+            yecho
+            echo -e "Chapters for ${IN_FILES[i]}\n${chapter_points[i]}"
+            nomenu_cmd+=(-t)
+            nomenu_cmd+=(-c ${chapter_points[i]})
+            if ((i != lastvid-1)); then # no jump on last video
+                nomenu_cmd+=(-i "post=jump title $((curvid+1)) ;")
+            fi
+            nomenu_cmd+=( -f )
+        fi
+        nomenu_cmd+=("${IN_FILES[i]}")
+    done
+    yecho
+    echo Running: "${nomenu_cmd[@]}" -o "$OUT_DIR" | format_output
+    yecho
+    "${nomenu_cmd[@]}" -o "$OUT_DIR" | tee -a "$LOG_FILE" 2>&1
+    dvdauthor -o "$OUT_DIR" -T
+    thanks_goodbye
+    $BURN && burn_disc
+    cleanup
+    exit 0
 fi
 yecho "Creating pics directories..."
 for ((i=0; i<=NUM_FILES; i++)); do
@@ -7180,7 +7237,7 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
         if $SINGLE_SLIDESHOW; then
             :
         else
-            if $MENUBUTTONS_ARE_CHAPTS && [[ -z ${grouping[@]} ]]; then
+            if $VIDEOS_ARE_CHAPTERS && [[ -z ${grouping[@]} ]]; then
                 echo -e \
                 "        <button name=\"$i\">g5=$i; jump title 1 chapter $i;</button>"
             else
@@ -7280,7 +7337,7 @@ $(if $SUBTITLES; then
         echo -e "      <subpicture lang=\"${SUBS_ARRAY[s]}\"/>"
     done
 fi)
-$(if $SINGLE_SLIDESHOW || $MENUBUTTONS_ARE_CHAPTS; then
+$(if $SINGLE_SLIDESHOW || $VIDEOS_ARE_CHAPTERS; then
     echo -e "      <pgc>"
 fi)
 $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
@@ -7288,7 +7345,7 @@ $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
     [[ -n ${VPAUSE[i]} ]] && vid_pause="pause=\"${VPAUSE[i]}\""
     [[ -n ${GRP_VPAUSE[i]} ]] && grp_vid_pause="pause=\"${GRP_VPAUSE[i]}\""
     unset j
-    if $SINGLE_SLIDESHOW || $MENUBUTTONS_ARE_CHAPTS; then
+    if $SINGLE_SLIDESHOW || $VIDEOS_ARE_CHAPTERS; then
         :
     else
         echo -e "      <pgc>"
@@ -7353,7 +7410,7 @@ $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
                 echo -e "        <post>call menu;</post>"
             fi
         else
-            if $SINGLE_SLIDESHOW || $MENUBUTTONS_ARE_CHAPTS; then
+            if $SINGLE_SLIDESHOW || $VIDEOS_ARE_CHAPTERS; then
                 [[ $i = $NUM_FILES ]] && \
                  echo -e "        <post>call menu;</post>"
             else
@@ -7361,14 +7418,14 @@ $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
             fi
         fi
     fi
-    if $SINGLE_SLIDESHOW || $MENUBUTTONS_ARE_CHAPTS; then
+    if $SINGLE_SLIDESHOW || $VIDEOS_ARE_CHAPTERS; then
         :
     else
         echo -e "      </pgc>"
     fi
     ((t++)) # var for counting slides
 done)
-$( { $SINGLE_SLIDESHOW || $MENUBUTTONS_ARE_CHAPTS ; } &&
+$( { $SINGLE_SLIDESHOW || $VIDEOS_ARE_CHAPTERS ; } &&
  echo -e "      </pgc>")
     </titles>
   </titleset>
@@ -8919,5 +8976,4 @@ if ! $VMGM_ONLY && ! $SWITCHED_MODE && ! $TITLESET_MODE && ! $DO_TITLESETS; then
     $BURN && burn_disc
 fi
 ! $DO_TITLESETS && cleanup
-
 
