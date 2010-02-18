@@ -129,7 +129,6 @@ SHOWCASE_VIDEO=""
 THREExONE=false
 FOURxONE=false
 PLAYALL=false
-USE_MAKEMENU=false
 THUMBS_3D=false
 RAISE=""
 CURVE_UPDATE=""
@@ -524,43 +523,6 @@ ${FRAME_SIZE/x*} - $((D * 2)) )):$(( ${FRAME_SIZE/*x} - \
 $((D * 2)) )),rectangle=$(( ${FRAME_SIZE/x*} - $((D * 3)) )):$(( \
 ${FRAME_SIZE/*x} - $((D * 3)) )) \
 -nosound -zoom -x ${FRAME_SIZE/x*} -y ${FRAME_SIZE/*x}  -frames $FRAMES "$1"
-}
-
-# Create a text-only menu, using makemenu/makexml
-call_makemenu()
-{
-    # Assemble and run makemenu command
-    MENU_OUT="${OUT_PREFIX}_menu"
-    MAKEMENU="makemenu"
-    for ((i=0; i<${#TITLES[@]}; i++)); do
-        MAKEMENU="$MAKEMENU \"${TITLES[i]}\""
-    done
-    MAKEMENU="$MAKEMENU -textcolor \"$TITLE_CLR\""
-    test -n "$BG_PIC" && MAKEMENU="$MAKEMENU -background \"$BG_PIC\""
-    test -n "$MENU_FONT" && MAKEMENU="$MAKEMENU -font \"$MENU_FONT\""
-    test -n "$MENU_FONTSIZE" && \
-    MAKEMENU="$MAKEMENU -fontsize \"$MENU_FONTSIZE\""
-    MAKEMENU="$MAKEMENU -out $MENU_OUT"
-
-    echo "Running the following makemenu command:"
-    echo $MAKEMENU
-    cmd_exec "$MAKEMENU"
-
-    # Assemble and run makexml command
-    MAKEXML="makexml -menu $MENU_OUT.mpg -out $OUT_PREFIX"
-    for ((i=0; i<${#FILES[@]}; i++)); do
-        MAKEXML="$MAKEXML \"${FILES[i]}\""
-    done
-    MAKEXML="$MAKEXML -out $OUT_PREFIX"
-    echo "Running the following makexml command:"
-    echo $MAKEXML
-    cmd_exec "$MAKEXML"
-
-    # Assemble and run makedvd command
-    MAKEDVD="makedvd -author ${OUT_PREFIX}.xml"
-    echo "Running the following makedvd command:"
-    echo $MAKEDVD
-    cmd_exec "$MAKEDVD"
 }
 
 stat_logfile()
@@ -3413,11 +3375,6 @@ if [[ -n "${ADV_OPT[@]}" ]] && ! $SWITCHED_MODE; then
     $WARN && sleep 15
 fi
 
-# Do text-only menu if requested
-if $USE_MAKEMENU; then
-    call_makemenu
-    exit
-fi
 # copy symlinks for -group hack
 if $GROUPING && $TITLESET_MODE; then
     find "$WORK_DIR"/  -name \*group\*.mpg -exec cp -P {} "$BASEDIR" \;
@@ -3919,6 +3876,7 @@ if $SUB_MENU; then
     done
 fi
 
+# a quick way to allow user to make a dvd with no menus
 if $NOMENU; then
     cd "$WORK_DIR"
     yecho
@@ -3973,6 +3931,7 @@ if $NOMENU; then
     cleanup
     exit 0
 fi
+
 yecho "Creating pics directories..."
 for ((i=0; i<=NUM_FILES; i++)); do
     mkdir -p "$REAL_WORK_DIR/pics/$i"
