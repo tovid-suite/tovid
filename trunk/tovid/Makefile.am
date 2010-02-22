@@ -68,27 +68,9 @@ bin_SCRIPTS = \
 man_dir = docs/man
 man_src_dir = docs/src/en
 man_MANS = \
-	$(man_dir)/idvid.1 \
-	$(man_dir)/makedvd.1 \
-	$(man_dir)/makemenu.1 \
-	$(man_dir)/makevcd.1 \
-	$(man_dir)/makexml.1 \
-	$(man_dir)/pymakexml.1 \
-	$(man_dir)/postproc.1 \
-	$(man_dir)/todisc.1 \
 	$(man_dir)/tovid.1 \
-	$(man_dir)/tovid-stats.1
 src_MANS = \
-	$(man_src_dir)/idvid.t2t \
-	$(man_src_dir)/makedvd.t2t \
-	$(man_src_dir)/makemenu.t2t \
-	$(man_src_dir)/makevcd.t2t \
-	$(man_src_dir)/makexml.t2t \
-	$(man_src_dir)/pymakexml.t2t \
-	$(man_src_dir)/postproc.t2t \
-	$(man_src_dir)/todisc.t2t \
 	$(man_src_dir)/tovid.t2t \
-	$(man_src_dir)/tovid-stats.t2t
 
 # Make the manpages for svn users (tarball users' man pages made in dist-hook)
 #   This is a static pattern rule as seen on (TV!)
