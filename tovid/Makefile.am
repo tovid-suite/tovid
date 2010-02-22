@@ -32,7 +32,6 @@ sh_bin = \
 	src/postproc \
 	src/todisc \
 	src/todisc-fade-routine \
-	src/tovid \
 	src/makempg \
 	src/tovid-batch \
 	src/tovid-init \
@@ -42,9 +41,8 @@ sh_bin = \
 
 # List the source files for each python script
 py_bin = \
-	src/makemenugui \
+	src/tovid \
 	src/todiscgui \
-	src/tovidgui \
 	src/tovid-stats
 # Removed from py_bin
 #src/genvid
@@ -68,9 +66,9 @@ bin_SCRIPTS = \
 man_dir = docs/man
 man_src_dir = docs/src/en
 man_MANS = \
-	$(man_dir)/tovid.1 \
+	$(man_dir)/tovid.1
 src_MANS = \
-	$(man_src_dir)/tovid.t2t \
+	$(man_src_dir)/tovid.t2t
 
 # Make the manpages for svn users (tarball users' man pages made in dist-hook)
 #   This is a static pattern rule as seen on (TV!)
