@@ -2,7 +2,7 @@
 Name=tovid GUI: fancy
 Type=Application
 Path=
-Exec=todiscgui
+Exec=tovid gui
 Icon=tovid.svg
 Terminal=true
 GenericName=DVD/(S)VCD creation with fancy menus
