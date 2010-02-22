@@ -173,8 +173,6 @@ pythonRENDER_PYTHON 	= libtovid/render/*.py
 pythonRENDERdir 		= $(pythondir)/libtovid/render
 pythonTEMPLATE_PYTHON 	= libtovid/template/*.py
 pythonTEMPLATEdir 		= $(pythondir)/libtovid/template
-pythonGUI_PYTHON 		= libtovid/gui/*.py
-pythonGUIdir 			= $(pythondir)/libtovid/gui
 pythonMETAGUI_PYTHON 	= libtovid/metagui/*.py
 pythonMETAGUIdir 		= $(pythondir)/libtovid/metagui
 pythonUTIL_PYTHON 		= libtovid/util/*.py
@@ -200,7 +198,6 @@ uninstall-hook:
 	rmdir $(pythonBACKENDdir)
 	rmdir $(pythonRENDERdir)
 	rmdir $(pythonTEMPLATEdir)
-	rmdir $(pythonGUIdir)
 	rmdir $(pythonMETAGUIdir)
 	rmdir $(pythonUTILdir)
 	rmdir $(pythonLIBTOVIDdir)
