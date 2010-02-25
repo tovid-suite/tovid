@@ -266,9 +266,12 @@ _grid = Flag('Grid preview', '-grid', False,
     'Show a second preview image with a grid and numbers that will help in '
     'finding coordinates for options that might use them')
 
-_use_makemenu = Flag('Use makemenu', '-use-makemenu', False,
-    'Create menus using the makemenu script instead of todisc.  '
-    'Compliant files required!')
+_no_menu = Flag('No menu', '-no-menu', False,
+    'Create a DVD with no menu. This creates a DVD with no menu '
+    'which will jump to the first video, and play all videos prvided '
+    'in sequence.  Chapters provided with the -chapters option will be '
+    'the chapter interval in minutes, or alternatively you can provide '
+    'a chapter list in HH:MM:SS format.')
 
 _slides = List('Images for slideshow one', '-slides', None,
     "Image files for the slideshow",
@@ -880,7 +883,7 @@ behavior = VPanel("Behavior",
         VPanel('Execution',_jobs),
         VPanel('Interaction',_keep_files, _no_ask, _no_warn, _no_confirm_backup),
         VPanel('Preview',_grid),
-        VPanel('Program',_use_makemenu)),
+        VPanel('No menu',_no_menu)),
     SpacedText('Custom todisc options', '', '',
          'Space-separated list of custom options to pass to todisc.'),
 )
