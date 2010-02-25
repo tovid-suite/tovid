@@ -268,10 +268,10 @@ _grid = Flag('Grid preview', '-grid', False,
 
 _no_menu = Flag('No menu', '-no-menu', False,
     'Create a DVD with no menu. This creates a DVD with no menu '
-    'which will jump to the first video, and play all videos prvided '
+    'which will jump to the first video, and play all videos provided '
     'in sequence.  Chapters provided with the -chapters option will be '
     'the chapter interval in minutes, or alternatively you can provide '
-    'a chapter list in HH:MM:SS format.')
+    'a single chapter list in HH:MM:SS format.')
 
 _slides = List('Images for slideshow one', '-slides', None,
     "Image files for the slideshow",
@@ -683,7 +683,7 @@ main =  VPanel('Basic',
         HPanel('',
             VPanel('Menu options',
             FlagGroup('', 'exclusive',
-            _static, _animated, side='left',),
+            _static, _animated, _no_menu, side='left',),
              FlagGroup('', 'exclusive',
                 _submenus, _ani_submenus, side='left')),
             FlagGroup('TV System', 'exclusive', _ntsc, _pal),
