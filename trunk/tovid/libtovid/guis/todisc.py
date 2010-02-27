@@ -142,7 +142,7 @@ _background = Filename('File', '-background', '',
 
 _bgaudio = Filename('File', '-bgaudio', '',
     'Audio file to play while the main menu plays.  '
-    'Static menus use default audio length of 20 seconds.  ' 
+    'Static menus use default audio length of 20 seconds.  '
     'Change with "Menu length" on "Menu" tab.  '
     'Use almost any filetype containing audio.',
     'load', 'Select a file containing audio')
@@ -166,7 +166,7 @@ _menu_fade = FlagOpt('Menu fade (in/out)', '-menu-fade', False,
     'The fadeout is in reverse order.  The optional numerical argument '
     'is the length of time the background will play before the menu '
     'begins to fade in.  To disable the fadeout portion, set the '
-    '"Pause indefinately" flag on the "Playback" tab.', 
+    '"Pause indefinately" flag on the "Playback" tab.',
     Number('Start', '', 1, '', 0, 60, 'secs'))
 
 _transition_to_menu = Flag('Transition to menu', '-transition-to-menu', False,
@@ -682,10 +682,11 @@ main =  VPanel('Basic',
     VPanel('',
         HPanel('',
             VPanel('Menu options',
-            FlagGroup('', 'exclusive',
-            _static, _animated, _no_menu, side='left',),
-             FlagGroup('', 'exclusive',
-                _submenus, _ani_submenus, side='left')),
+                FlagGroup('', 'exclusive',
+                    _static, _animated, _no_menu, side='left'),
+                FlagGroup('', 'exclusive',
+                    _submenus, _ani_submenus, side='left')
+            ),
             FlagGroup('TV System', 'exclusive', _ntsc, _pal),
             VPanel('Burning',
                 _burn,
@@ -718,7 +719,7 @@ main_menu = Tabs('Main menu',
         VPanel('',
             VPanel('Special menu style options',
                 _menu_fade,
-                _transition_to_menu, 
+                _transition_to_menu,
                 _intro,
             ),
             VPanel('Backgrounds',
@@ -882,8 +883,7 @@ behavior = VPanel("Behavior",
     VPanel('',
         VPanel('Execution',_jobs),
         VPanel('Interaction',_keep_files, _no_ask, _no_warn, _no_confirm_backup),
-        VPanel('Preview',_grid),
-        VPanel('No menu',_no_menu)),
+        VPanel('Preview',_grid)),
     SpacedText('Custom todisc options', '', '',
          'Space-separated list of custom options to pass to todisc.'),
 )
