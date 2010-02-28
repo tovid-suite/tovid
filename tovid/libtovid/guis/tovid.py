@@ -18,7 +18,7 @@ _out = Filename('Output prefix', '-out', '',
     'save', 'Choose an output prefix')
 
 # Standard formats
-_dvd = Flag("DVD", '-dvd', True,
+_dvd = Flag("DVD", '-dvd', False,
     "(720x480 NTSC, 720x576 PAL) DVD-compatible output. May be burned "
     "to a DVD[+/-]R[W] disc. Also known as Digital [Versatile|Video] Disc, "
     "or just DVD depending on who you talk to.")
@@ -47,14 +47,14 @@ _bdvd = Flag('BDVD', '-bdvd', False,
     '(720x480 NTSC, 720x576 PAL) BVCD-enhanced long-playing DVD')
 
 # Aspect ratio
-_full = Flag('4:3 (full-frame)', '-full', True)
+_full = Flag('4:3 (full-frame)', '-full', False)
 _wide = Flag('16:9 (widescreen)', '-wide', False)
 _panavision = Flag('2.35:1 (panavision)', '-panavision', False)
 _aspect = Text('Aspect ratio', '-aspect', '4:3',
     'Explicit integer aspect ratio (ex. 6:4)')
 
 # TV Systems
-_ntsc = Flag("NTSC", '-ntsc', True, "NTSC, US standard, 29.97 fps")
+_ntsc = Flag("NTSC", '-ntsc', False, "NTSC, US standard, 29.97 fps")
 _ntscfilm = Flag("NTSC Film", '-ntscfilm', False, "NTSC Film, 23.976 fps")
 _pal = Flag("PAL", '-pal', False, "PAL, European standard, 25.00 fps")
 
@@ -184,8 +184,7 @@ _from_gui = Flag('From GUI', '-from-gui', True)
 
 IN_OUT = VPanel('Filenames', _in, _out)
 FORMAT = FlagGroup('Disc format', 'exclusive',
-    _dvd, _svcd, _vcd,
-    _dvd_vcd, _half_dvd, _kvcd,
+    _dvd, _half_dvd, _kvcd,
     _kvcdx3a, _kdvd, _bdvd,
     side='top',
     columns=3)
