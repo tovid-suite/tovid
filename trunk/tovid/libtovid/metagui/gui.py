@@ -183,7 +183,7 @@ class Executor (Widget):
         else:
             self.text.insert('end', '\n' + line)
 
-        self.text.see('end')            
+        self.text.see('end')
 
 
     def clear(self):
@@ -350,7 +350,7 @@ class Application (Widget):
         # Ensure the expected program is being run
         program = tokens.pop(0)
         if program != self.program:
-            print("This script runs '%s', expected '%s'" % 
+            print("This script runs '%s', expected '%s'" %
                   (program, self.program))
         control = None
         while tokens:
@@ -363,6 +363,7 @@ class Application (Widget):
                 if control.vartype == bool:
                     print("  Setting flag to True")
                     control.set(True)
+                    control.enabler()
                 elif control.vartype == list:
                     items = []
                     while tokens and not tokens[0].startswith('-'):
