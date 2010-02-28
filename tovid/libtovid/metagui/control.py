@@ -314,7 +314,7 @@ class Control (Widget):
     def reset(self):
         """Reset the Control's value to the default.
         """
-        print("Resetting %s to %s" % (self.option, self.default))
+        #print("Resetting %s to %s" % (self.option, self.default))
         if self.variable:
             self.set(self.default)
 
@@ -699,6 +699,7 @@ class Flag (Control):
             args.append(self.option)
         return args
 
+
 class FlagOpt (Flag):
     """Like a normal Flag, but has an optional argument following it.
     """
@@ -1066,7 +1067,7 @@ class List (Control):
         # Only set control if value is different
         if self.control.get() != value:
             self.control.set(value)
-        print("Editing '%s'" % value)
+        #print("Editing '%s'" % value)
         self.control.focus()
 
 
