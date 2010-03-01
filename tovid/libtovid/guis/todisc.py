@@ -21,8 +21,21 @@ def strip_all(filename):
 # List of file-type selections for Filename controls
 image_filetypes = [filetypes.all_files]
 image_filetypes.append(filetypes.image_files)
-image_filetypes.extend(filetypes.match_types('image'))
-
+#image_filetypes.extend(filetypes.match_types('image'))  # confusing
+# video file-types from filetypes needs some additions
+pre_types = '*.m2v *.vob *.ts '
+post_types = ' *.mp4 *.mpeg4 *.mp4v *.mkv *.ogv *.ogm'
+post_types += ' *.ram *.rm *.rmvb *.wmv *.divx *.wmv'
+v_filetypes = [pre_types, filetypes.get_extensions('video'), post_types]
+v_filetypes = [('Video files', ''.join(v_filetypes))]
+video_filetypes = v_filetypes
+video_filetypes.insert(0, filetypes.all_files)
+# some selectors can use video or audio
+av_filetypes = [ filetypes.all_files, filetypes.audio_files ]
+av_filetypes.extend(v_filetypes)
+# some selectors can use image or video
+visual_filetypes = [ filetypes.all_files, filetypes.image_files ]
+visual_filetypes.extend(v_filetypes)
 
 """Since todisc has a large number of options, it helps to store each
 one in a variable, named after the corresponding command-line option.
@@ -41,7 +54,7 @@ _menu_title = Text('Menu title', '-menu-title', 'My video collection',
 
 _files = List('Video files', '-files', None,
     'List of video files to include on the disc',
-    Filename(''))
+    Filename('', filetypes=video_filetypes))
 
 _titles = List('Video titles', '-titles', None,
     'Titles to display in the main menu, one for each video file on the disc',
@@ -51,7 +64,7 @@ _group = List('Grouped videos', '-group', None,
     'Video files to group together. Select the video in the list ' \
     'on the left, and add files to group with it by using the file ' \
     'selector on the right',
-    Filename(''))
+    Filename('', filetypes=video_filetypes))
 
 _ntsc = Flag('NTSC', '-ntsc', True, 'NTSC, US standard')
 
@@ -76,7 +89,8 @@ _showcase = FlagOpt('Showcase', '-showcase', False,
     ' an optional "showcase" image or video.  The file entry box'
     ' is for an optional image or video file to be showcased in a'
     ' large central frame',
-    Filename('', action='load', desc='Select an image or video file.'))
+    Filename('', action='load', desc='Select an image or video file.',
+    filetypes=visual_filetypes))
 
 _showcase_seek = Number('Showcase seek', '-showcase-seek', 2,
     'Play showcase video from the given seek time. '
@@ -138,14 +152,14 @@ _bg_color = Color('', '-bg-color', '#101010',
 _background = Filename('File', '-background', '',
     'Image or video displayed in the background of the main menu',
     'load', 'Select an image or video file',
-    filetypes=image_filetypes)
+    filetypes=visual_filetypes)
 
 _bgaudio = Filename('File', '-bgaudio', '',
     'Audio file to play while the main menu plays.  '
     'Static menus use default audio length of 20 seconds.  '
     'Change with "Menu length" on "Menu" tab.  '
     'Use almost any filetype containing audio.',
-    'load', 'Select a file containing audio')
+    'load', 'Select a file containing audio', filetypes=av_filetypes)
 
 _bgvideo_seek = Number('Seek', '-bgvideo-seek', 2,
     'Play background video from the given seek time (seconds)',
