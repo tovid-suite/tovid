@@ -3,7 +3,7 @@
 """A GUI for the todisc command-line program.
 """
 
-import os, re
+import os
 
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
@@ -26,16 +26,17 @@ image_filetypes.append(filetypes.image_files)
 v_filetypes = 'm2v vob ts '
 v_filetypes += filetypes.get_extensions('video').replace('*.', '')
 v_filetypes += ' mp4 mpeg4 mp4v divx mkv ogv ogm ram rm rmvb wmv'
+vid_filetypes = filetypes.new_filetype('Video files', v_filetypes)
 video_filetypes = [filetypes.all_files]
-video_filetypes += [filetypes.new_filetype('Video files', v_filetypes)]
+video_filetypes += [vid_filetypes]
 
 # some selectors can use video or audio
 av_filetypes = [ filetypes.all_files, filetypes.audio_files ]
-av_filetypes.extend([filetypes.new_filetype('Video files', v_filetypes)])
+av_filetypes.extend([vid_filetypes])
 
 # some selectors can use image or video
 visual_filetypes = [ filetypes.all_files, filetypes.image_files ]
-visual_filetypes.extend([filetypes.new_filetype('Video files', v_filetypes)])
+visual_filetypes.extend([vid_filetypes])
 
 # DVD video
 dvdext = 'vob mpg mpeg mpeg2'
