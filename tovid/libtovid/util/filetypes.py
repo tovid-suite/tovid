@@ -54,15 +54,9 @@ def match_types(containing):
     elif type(containing) != list:
         raise TypeError("match_types requires a string or list argument.")
 
-
-    # Include all types from the mimetypes module, plus any found in
-    # /etc/mime.types
-    mimetypes_dict = mimetypes.types_map
-    mimetypes_dict.update(etc_mimetypes())
-
     types = {}
     # Check for matching types and remember their extensions
-    for ext, typename in mimetypes_dict.items():
+    for ext, typename in sorted(mimetypes.types_map.items()):
         for substr in containing:
             if substr in typename:
                 # Append or insert extension
