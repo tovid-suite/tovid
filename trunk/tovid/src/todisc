@@ -2024,12 +2024,22 @@ get_elapsed()
 {
     echo -e "\nIt took $(format_seconds $((etime-stime)) ) for the $1\n"
 }
-# make sure  correct sample size option for sox  is used, based on sox version
+# make sure  correct sample size option for sox  is used
+# getting sox version is inconsistent, so just run test command
 get_sox_arg()
 {
-    sox_version=$(sox --version)
-    sox_version=${sox_version##*v}
-    test_version $sox_version 13.0.0 && echo '-2' || echo '-w'
+if cat /dev/zero 2>/dev/null | nice -n 0 sox -t raw -c 2 -r 48000 -w -s - \
+"$WORK_DIR/foo.wav" trim 0 1 &>/dev/null; then
+    echo -w
+elif cat /dev/zero 2>/dev/null | nice -n 0 sox -t raw -c 2 -r 48000 -2 -s - \
+"$WORK_DIR/foo.wav" trim 0 1 &>/dev/null; then
+    echo -2
+else
+    runtime_error "Your sox appears to be incompatible with this program.  " \
+    "Attempted to create a wav file using both the -w and -2 switches"
+fi
+rm -f "$WORK_DIR/foo.wav"
+
 }
 
 ##############################################################################
@@ -3362,7 +3372,7 @@ fi
 if test -e "$OUT_DIR"; then
     echo "Cleaning up created dirs"
     yecho
-    echo "A file or directory named\"$OUT_DIR\" already exists."
+    echo "A file or directory named \"$OUT_DIR\" already exists."
     echo "Please use a different -out name, "
     echo "or (re)move the existing file or directory."
     rm -rf "$REAL_WORK_DIR"
