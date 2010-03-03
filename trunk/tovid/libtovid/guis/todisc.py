@@ -3,7 +3,7 @@
 """A GUI for the todisc command-line program.
 """
 
-import os
+import os, re
 
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
@@ -23,19 +23,23 @@ image_filetypes = [filetypes.all_files]
 image_filetypes.append(filetypes.image_files)
 #image_filetypes.extend(filetypes.match_types('image'))  # confusing
 # video file-types from filetypes needs some additions
-pre_types = '*.m2v *.vob *.ts '
-post_types = ' *.mp4 *.mpeg4 *.mp4v *.mkv *.ogv *.ogm'
-post_types += ' *.ram *.rm *.rmvb *.wmv *.divx *.wmv'
-v_filetypes = [pre_types, filetypes.get_extensions('video'), post_types]
-v_filetypes = [('Video files', ''.join(v_filetypes))]
-video_filetypes = v_filetypes
-video_filetypes.insert(0, filetypes.all_files)
+v_filetypes = 'm2v vob ts '
+v_filetypes += filetypes.get_extensions('video').replace('*.', '')
+v_filetypes += ' mp4 mpeg4 mp4v divx mkv ogv ogm ram rm rmvb wmv'
+video_filetypes = [filetypes.all_files]
+video_filetypes += [filetypes.new_filetype('Video files', v_filetypes)]
+
 # some selectors can use video or audio
 av_filetypes = [ filetypes.all_files, filetypes.audio_files ]
-av_filetypes.extend(v_filetypes)
+av_filetypes.extend([filetypes.new_filetype('Video files', v_filetypes)])
+
 # some selectors can use image or video
 visual_filetypes = [ filetypes.all_files, filetypes.image_files ]
-visual_filetypes.extend(v_filetypes)
+visual_filetypes.extend([filetypes.new_filetype('Video files', v_filetypes)])
+
+# DVD video
+dvdext = 'vob mpg mpeg mpeg2'
+dvd_video_files = [ filetypes.new_filetype('DVD video files', dvdext) ]
 
 """Since todisc has a large number of options, it helps to store each
 one in a variable, named after the corresponding command-line option.
@@ -193,7 +197,8 @@ _intro = Filename('Intro video', '-intro', '',
     'Video to play before showing the main menu.  At present this must '
     'be a DVD compatible video at the correct resolution etc.  Only 4:3 '
     'aspect is supported.',
-    'load', 'Select a video file')
+    'load', 'Select a video file',
+    filetypes=[('DVD video', dvd_video_files)])
 
 _menu_length = Number('Menu length', '-menu-length', 20,
     'Duration of menu. The length of the menu will also set '
@@ -234,7 +239,7 @@ _submenu_audio = List('Audio', '-submenu-audio', None,
     'File(s) that will play as background audio for each submenu.  '
     'Use a single file for all submenus, or 1 file per submenu.  '
     'Any file containing audio (that ffmpeg can handle) can be used.',
-    Filename(''))
+    Filename('', filetypes=av_filetypes))
 
 _submenu_background = List('Image(s)', '-submenu-background', None,
     'Background image(s) for the submenus(s). Single value or list',
