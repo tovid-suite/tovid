@@ -4792,7 +4792,7 @@ elif test "$THUMB_SHAPE" = "plectrum"; then
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
 elif test "$THUMB_SHAPE" = "wave"; then
     THUMB_MASK="$WORK_DIR/wave_mask.png"
-    yecho "Creating wave-shaped mask with the following command:"
+    #yecho "Creating wave-shaped mask with the following command:"
     MASK_CMD="convert -size 200x200 xc:none -fill white \
     -draw 'circle 25,30 10,30' -draw 'circle 25,170 10,170' \
     -draw 'circle 175,30 160,30' -draw 'circle 175,170 160,170' \
@@ -4804,7 +4804,7 @@ elif test "$THUMB_SHAPE" = "wave"; then
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
 elif test "$THUMB_SHAPE" = "galaxy"; then
     THUMB_MASK="$WORK_DIR/galaxy_mask.png"
-    yecho "Creating galaxy-shaped mask with the following command:"
+    #yecho "Creating galaxy-shaped mask with the following command:"
     MASK_CMD="convert -size 200x200 xc:none -fill white \
     -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
     -draw 'rectangle 60,38 140,162'  miff:-  |
@@ -4816,7 +4816,7 @@ elif test "$THUMB_SHAPE" = "galaxy"; then
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
 elif test "$THUMB_SHAPE" = "boomerang"; then
     THUMB_MASK="$WORK_DIR/boomerang_mask.png"
-    yecho "Creating boomerang-shaped mask with the following command:"
+    #yecho "Creating boomerang-shaped mask with the following command:"
     MASK_CMD="convert -size 200x200 xc:none -fill white \
     -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
     -draw 'rectangle 60,38 140,162'  miff:-  |
@@ -4827,7 +4827,7 @@ elif test "$THUMB_SHAPE" = "boomerang"; then
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
 elif test "$THUMB_SHAPE" = "spiral"; then
     THUMB_MASK="$WORK_DIR/spiral_mask.png"
-    yecho "Creating spiral-shaped mask with the following command:"
+    #yecho "Creating spiral-shaped mask with the following command:"
     MASK_CMD="convert -size 200x200 xc:none -fill white \
     -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
     -draw 'rectangle 60,38 140,162'  miff:-  |
@@ -4839,7 +4839,7 @@ elif test "$THUMB_SHAPE" = "spiral"; then
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
 elif test "$THUMB_SHAPE" = "flattube"; then
     THUMB_MASK="$WORK_DIR/flattube_mask.png"
-    yecho "Creating flattube-shaped mask with the following command:"
+    #yecho "Creating flattube-shaped mask with the following command:"
     MASK_CMD=" convert -size 200x200 xc:none -fill white \
     -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
     -draw 'rectangle 60,38 140,162'  miff:-  |
@@ -4850,7 +4850,7 @@ elif test "$THUMB_SHAPE" = "flattube"; then
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
 elif test "$THUMB_SHAPE" = "tilde"; then
     THUMB_MASK="$WORK_DIR/tilde_mask.png"
-    yecho "Creating tilde-shaped mask with the following command:"
+    #yecho "Creating tilde-shaped mask with the following command:"
     MASK_CMD="convert -size 200x200 xc:none -fill white \
     -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
     -draw 'rectangle 60,38 140,162'  miff:-  |
