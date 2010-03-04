@@ -31,12 +31,10 @@ video_filetypes = [filetypes.all_files]
 video_filetypes += [vid_filetypes]
 
 # some selectors can use video or audio
-av_filetypes = [ filetypes.all_files, filetypes.audio_files ]
-av_filetypes.extend([vid_filetypes])
+av_filetypes = [ filetypes.all_files, filetypes.audio_files, vid_filetypes ]
 
 # some selectors can use image or video
-visual_filetypes = [ filetypes.all_files, filetypes.image_files ]
-visual_filetypes.extend([vid_filetypes])
+visual_filetypes = [ filetypes.all_files, filetypes.image_files, vid_filetypes ]
 
 # DVD video
 dvdext = 'vob mpg mpeg mpeg2'
@@ -389,7 +387,8 @@ _thumb_shape = Choice('Thumb shape', '-thumb-shape', 'none',
     'shapes look best against a plain background or used in conjunction with '
     '**-thumb-mist** [COLOR].  To use a "mist" background behind each thumb, '
     'see "Thumb mist" section.  Leave at "none" to not use a feathered shape',
-    'normal|oval|plectrum|egg|none')
+    'normal|oval|plectrum|egg|wave|galaxy|boomerang|spiral|flattube|tilde|none',
+    'dropdown')
 
 _opacity = Number('Opacity', '-opacity', 100,
     'Opacity  of thumbnail videos as a percentage. '
