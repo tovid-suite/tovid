@@ -623,7 +623,9 @@ _chapters = List('Chapters', '-chapters', None,
     'An example chapter string using HH:MM:SS format: '
     '00:00:00,00:05:00,00:10:00.  An example of 2 grouped videos: '
     '00:00:00,00:05:00+00:05:00,00:10:00.  '
-    'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.',
+    'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.  '
+    'If using -no-menu and passing just integer(s), then the value '
+    'represents the chapter INTERVAL not the number of chapters',
     Text())
 
 _loop = FlagOpt('Menu looping (pause)', '-loop', False,
