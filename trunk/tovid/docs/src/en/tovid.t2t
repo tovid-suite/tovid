@@ -69,9 +69,10 @@ and all help is integrated in the form of tooltips.
 **tovid disc** creates a DVD file-system with animated thumbnail menus, from a
 list of multimedia video files and their titles.  It also does static thumbnail
 menus and text only menus.  In addition, it can do slideshows, using images
-as input.  It supports sub-menus for chapter breaks, configurable menu style,
-animated backgrounds and transparency effects. It can automatically convert
-non-compliant input files to the target format.
+as input, and combine slideshows with videos.  It supports sub-menus for
+chapter breaks, configurable menu style, animated backgrounds and
+transparency effects. It can automatically convertnon-compliant input files
+to the target format.
 
 
 ==Usage==
@@ -279,6 +280,13 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
 : **-ani-submenus**
     Create an animated sub-menu with chapters for each video (default: not
     animated)
+: **-no-menu | -nomenu**
+    With this option todisc will just create a DVD file system, ready for
+    burning, with NO MENU, just the supplied video files.  These do not need
+    to be compliant, as non-compliant files will be encoded as usual.  Each
+    video will be a chapter unless **-chapters** OPTION is passed.  The
+    **-chapters** option is a number indicating the chapter interval in
+    minutes, or a HH:MM:SS string indicating chapter points.  See **-chapters**
 
 
 ==Menu style==
@@ -432,7 +440,8 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
 
 ==Thumbnail style==
 
-: **-thumb-shape** normal|oval|plectrum|egg
+: **-thumb-shape**
+    normal|oval|plectrum|egg|wave|spiral|galaxy|flattube|tilde|boomerang
     Apply a shaped transparency mask to thumbnail videos.
     These "feathered" shapes look best against a plain background (or used
     in conjunction with **-thumb-mist** [COLOR]).  For this rectangular
@@ -597,21 +606,22 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
 
     If you just pass an integer for 'number of chapters', then tovid will
     make the chapter points for you by dividing the video length by the number
-    you supply.
+    you supply.  If using the **-no-menu** option, the INT passed in will be
+    the chapter interval in minutes, rather than the above formula.
 
-    If passing HH:MM:SS format you need to pass the group of chapter points for
-    each video and each group should have comma separated values.
+    If passing HH:MM:SS format you need to pass the string of chapter points for
+    each video and each string should have comma separated values.
     Additionally, the first chapter should always start at 00:00:00 as
     dvdauthor will add that if it is not there already.
 
     To get your time codes, you can play your videos in mplayer and press 'o'
-    to see them onscreen.  I have found these to be very accurate in my short
-    tests.  For absolute frame accuracy you could load the file in avidemux
-    and find the time codes for the frames you want.
+    to see them on-screen.  I have found these to be very accurate in my short
+    tests.  For greater frame accuracy you could try loading the file in
+    avidemux and find the time codes for the frames you want.
 
     If passing grouped chapters you need to join the chapters from all the
-    videos in a group with a '+' separator.  If you want to skip a video in
-    the group use '0' for its chapters.
+    videos in a group with a '+' separator.  If you want to skip creating
+    chapters for a video in the group use '0' for its chapters.
 
     Note: chapters for grouped videos should probably be passed in using the
     above HH:MM:SS format. (Arbitrary chapters using just an INT for the # of
@@ -862,7 +872,11 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
 : **-playall**
     This option will create a button on the main menu that will allow going
     right to the 1st title and playing all videos in succession before
-    returning to the main menu.
+    returning to the main menu.  If doing titlesets you can use this within
+    the **-vmgm** ... **-end-vmgm** options to allow playing ALL titlesets.
+    (If you want also to have a playall button in each titleset you could use
+    this option between each **-titleset** ... **-end-titleset** option or put
+    it outside of the vmgm and titlset options as a general option.
 : **-videos-are-chapters**
     A button will be made on the main menu for each video, which you can use as
     a chapter button.  Selecting any video will play them all in order
@@ -876,7 +890,7 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
     This allows selectable subtitles in the DVD, assuming you have optional
     subtitles muxed into your videos.  Use 2 character language codes.
 : **-audio-channel** "Video1_track Video2_track Video3_track . . ."
-    "VideoN_track" is the track number to use in a multitrack (multi-language)
+    "VideoN_track" is the track number to use in a multi-track (multi-language)
     mpeg: usually something like **-audio-channel** "1 0 1".  The 1st track is
     0, 2nd is 1 . . . etc.  If the tracks are 0. English 1.French, then the
     above would make French the audio language on Video1 and Video3, and
