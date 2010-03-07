@@ -1191,7 +1191,6 @@ titleset_mode()
         fi
     done
     # let titlesets know if there is a root menu playall
-    # let titlesets know if there is a root menu playall
     get_genopts "${args[@]}" # DEBUG not sure why this was a bad idea before
     if grep -q -- -playall <<< "${VMGM_OPTS[@]} ${GEN_OPTS[@]}"; then
         vmgm_playall="-vmgm_playall"
@@ -1203,7 +1202,7 @@ titleset_mode()
     VMGM_PRE="$VMGM_PRE\n        if ( g6 eq 0 ) g6 = 1; button = g6 * 1024;"
     grep -q -- -switched-menus <<< "${args[@]}" && \
     VMGM_PRE="$VMGM_PRE\n        if (g1 eq 0) g1=1;"
-    $DO_INTRO && VMGM_PRE="$VMGM_PRE\n        if (g2==1) jump cell 2; "
+    $DO_INTRO && INTRO_PRE="        if (g2==1) jump cell 2; "
     $SKIP_VMGM_MENU && VMGM_PRE="$VMGM_PRE\n        if ( g3 eq 0 )  g3 = 1 ;"
     # make dvdauthor.xml
 (
@@ -1225,11 +1224,12 @@ $(if $VMGM_PLAYALL; then
         # g8 tests if a video finished playing, if not do not jump to next
         echo -e "        if (g8==0) g7=0;" 
         echo -e "        if (g8==1) { " 
-        # for a vmgm playall g7 for jumping between titlesets after last video DEBUG
+        # for a vmgm playall g7 for jumping between titlesets after last video
         for ((i=1; i<=${#TITLESET_OPTS[@]}; i++)); do
             echo -e "          if ( g7 eq $i ) jump titleset $i menu;"
         done
         echo "        }"
+        [[ -n $INTRO_PRE ]] && echo "$INTRO_PRE"
 fi)
         </pre>
         <post>
@@ -1240,7 +1240,7 @@ $(for ((i=1; i<=${#TITLESET_OPTS[@]}; i++)); do
     echo \
     "        <button name=\"$i\">g1=1; g5=1; g6=$i; jump titleset $i menu;</button>"
 done)
-$(if $VMGM_PLAYALL; then # VMGM playall needs a playall button entry DEBUG
+$(if $VMGM_PLAYALL; then # VMGM playall needs a playall button entry
     pall=$((${#TITLESET_OPTS[@]} + 1))
     # set g8=1 for vmgm playall button even though it means vid finished
     echo -n \
@@ -3097,7 +3097,6 @@ if $DO_TITLESETS && ! $VMGM_MENU && ! $QUICK_NAV; then
 fi
 # some things the vmgm menu does not support
 if $VMGM_ONLY; then
-    #PLAYALL=false #DEBUG
     SUB_MENU=false
     ANI_SUB_MENU=false
 #    QUICK_MENU=false
@@ -5099,7 +5098,7 @@ fi
 # make a button for playall and one for jumping to the vmgm menu, if called for
 # or make a 'play' button if doing a montage slideshow menu
 pa_ind=$((NUM_FILES+1))
-if { $PLAYALL && $DO_MENU ; } || $SINGLE_SLIDESHOW; then #DEBUG may need to change this
+if { $PLAYALL && $DO_MENU ; } || $SINGLE_SLIDESHOW; then
     if { $TITLESET_MODE && $VMGM_MENU ; } && ! $VMGM_ONLY; then
         $SHOWCASE && PLAYALL_BTN_yOFFSET=50 || PLAYALL_BTN_yOFFSET=80
         PLAYALL_BTN_xOFFSET=50
@@ -5395,12 +5394,10 @@ if $SHOWCASE && $DO_MENU; then
     -composite -background none "$WORK_DIR/pics/template.png"
 fi
 if $PLAYALL || { $TITLESET_MODE && $VMGM_MENU; } || $SINGLE_SLIDESHOW ; then
-    #if ! $VMGM_ONLY; then DEBUG
-        convert "$WORK_DIR/pics/template.png" -background none \
-        "${ADD_PLAYALL_BTN[@]}" "${ADD_RTN_BTN[@]}" \
-        "$WORK_DIR/pics/template.png"
-        convert "$WORK_DIR/pics/template.png" "$WORK_DIR/pics/template.jpg"
-    #fi
+    convert "$WORK_DIR/pics/template.png" -background none \
+    "${ADD_PLAYALL_BTN[@]}" "${ADD_RTN_BTN[@]}" \
+    "$WORK_DIR/pics/template.png"
+    convert "$WORK_DIR/pics/template.png" "$WORK_DIR/pics/template.jpg"
 fi
 
 # copy the preview for -quick-menu
@@ -5824,7 +5821,7 @@ EOF
         "$WORK_DIR/Main_${HLIGHT_CLR/\#}.png" \
         -composite "$WORK_DIR/Highlight.png"
     fi
-    if $PLAYALL; then # && ! $VMGM_ONLY; then #DEBUG
+    if $PLAYALL; then
         convert +antialias -gravity SouthEast -geometry \
         "$PLAYALL_BTN_OFFSETS" "$WORK_DIR/Select.png" \
         "$WORK_DIR/Playall_${SELECT_CLR/\#}.png" \
@@ -6965,7 +6962,7 @@ else
 fi
 # no FILES for VMGM menu (titleset arrangements): use ${#TITLES[@]}
 $VMGM_ONLY && NUM_BUTTONS=${#TITLES[@]}
-$VMGM_ONLY && $PLAYALL && ((NUM_BUTTONS++)) #DEBUG
+$VMGM_ONLY && $PLAYALL && ((NUM_BUTTONS++))
 $SWITCHED && SPUMUX_XML="$BASEDIR/spumux.xml"
 if $SWITCHED; then
     down="down=\"ActionDown\"" && up="up=\"ActionUp\""
@@ -7138,11 +7135,11 @@ else
     JUMP=title
 fi
 # make dvdauthor.xml
-# REGISTERS: g1: switched menus, g2: vmgm intro g3: -quick-nav, g4: playall
-# g5: button highlight, g6: VMGM button highlight g7: vmgm playall
+# REGISTERS: g1: switched menus, g2: vmgm intro, g3: -quick-nav, g4: playall
+# g5: button highlight, g6: VMGM button highlight, g7: vmgm playall
 # g8: toggle showing if a video finished playing (used with g7)
 # Note: for switched menus g1 is used for 'button highlight', not g5
-# VMGM in this block refers to the VMGM of single titleset DVD's only
+
 # TSET_NUM is the titleset number being worked on
 # ALLTITLES is an array of the number of titles in each titleset
 # NUM_MENUS is the # of menus being made
@@ -7166,9 +7163,10 @@ fi
 
 $SWITCHED_MENUS && NUM_MENUS=${#FILES[@]} || NUM_MENUS=1
 ! $AUTHOR && DVDAUTHOR_XML="$BASEDIR/dvdauthor.xml"
+# this 1st block (if $AUTHOR) refers to the VMGM of single titleset DVD's only
 (
     cat <<EOF
-$(if $AUTHOR ; then
+$(if $AUTHOR; then
     echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
     echo -e "<dvdauthor dest=\"$OUT_DIR\" jumppad=\"0\">"
     echo -e "  <vmgm>\n    <menus>"
@@ -7250,7 +7248,6 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
             echo -e "        <pre>"
             echo -e "        button = g1 * 1024;"
             echo -e "        if (g1 ne $menu_num) jump menu $((menu_num+1)); g4=0;"
-            # DEBUG logic for VMGM_PLAYALL in next 2 lines
             echo -e "        if (g8==0) { g7=0; g4=0; }"
             echo -e "        if (g7==$TSET_NUM) { g4=1; jump title 1 chapter 1; }"
             echo -e "        </pre>"
@@ -7371,7 +7368,6 @@ $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
                 echo -e  "        </post>"
             else
                 if $VMGM_PLAYALL; then
-                    # DEBUG
                     echo -e "<pre>g8=0;</pre>"
                     echo -e \
                       "        <post>{ if (g7>0) {"
@@ -7399,7 +7395,6 @@ $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
                 echo "        </post>"
             else
                 if $VMGM_PLAYALL; then
-                    #DEBUG
                     echo "        <pre>g8=0;</pre>"
                     echo -e \
                       "        <post>{ if (g7>0) {"
