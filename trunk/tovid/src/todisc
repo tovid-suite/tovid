@@ -1198,12 +1198,12 @@ titleset_mode()
     fi
     unset vmgmopts tsetopts GEN_OPTS
     DVDAUTHOR_XML="$BASEDIR/dvdauthor.xml"
-    VMGM_PRE="        if ( g5 eq 0 ) g5 = 1;"
-    VMGM_PRE="$VMGM_PRE\n        if ( g6 eq 0 ) g6 = 1; button = g6 * 1024;"
+    VMGM_PRE="        if ( g5 eq 0 ) g5=1;"
+    VMGM_PRE="$VMGM_PRE\n        if ( g6 eq 0 ) g6=1; button = g6 * 1024;"
     grep -q -- -switched-menus <<< "${args[@]}" && \
     VMGM_PRE="$VMGM_PRE\n        if (g1 eq 0) g1=1;"
     $DO_INTRO && INTRO_PRE="        if (g2==1) jump cell 2; "
-    $SKIP_VMGM_MENU && VMGM_PRE="$VMGM_PRE\n        if ( g3 eq 0 )  g3 = 1 ;"
+    $SKIP_VMGM_MENU && VMGM_PRE="$VMGM_PRE\n        if ( g3 eq 0 )  g3=1 ;"
     # make dvdauthor.xml
 (
     cat <<EOF
@@ -7147,16 +7147,12 @@ fi
 # the above 2 values always equal 1 unless doing switched menus
 # TSET_NUM supplied by the calling todisc script and is the current titleset #
 MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${MENU_NUM}.mpg"
-$DO_INTRO && SET_REG="if ( g2 eq 1 )"
-VMGM_PREJUMP="$SET_REG jump titleset 1 menu;"
-$DO_INTRO && VMGM_POST="<post>g2=1; jump titleset 1 menu;</post>"
+$DO_INTRO && SET_REG="if ( g2 eq 1 ) "
+VMGM_PREJUMP="${SET_REG}jump titleset 1 menu;"
+#$DO_INTRO && VMGM_POST="<post>g2=1; jump titleset 1 menu;</post>"
 $VMGM_ONLY && MENU_FILE="$BASEDIR/VMGM.mpg"
 $SWITCHED_MODE && ! $VMGM_ONLY \
 && MENU_FILE="$BASEDIR/animenu${TSET_NUM}-${MENU_NUM}.mpg"
-VMGM_PRE="if ( g5 eq 0 ) g5 = 1; g4=0;"
-$SWITCHED_MENUS && VMGM_PRE="$VMGM_PRE if (g1 eq 0) g1=1;$VMGM_PREJUMP" ||
-VMGM_PRE="$VMGM_PRE $VMGM_PREJUMP"
-VMGM_PRE="<pre>$VMGM_PRE</pre>"
 if $PLAYALL || $VMGM_PLAYALL; then
     AUTHOR_PLAYALL=: # needed for VMGM playall logic
 fi
@@ -7167,16 +7163,22 @@ $SWITCHED_MENUS && NUM_MENUS=${#FILES[@]} || NUM_MENUS=1
 (
     cat <<EOF
 $(if $AUTHOR; then
-    echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
-    echo -e "<dvdauthor dest=\"$OUT_DIR\" jumppad=\"0\">"
-    echo -e "  <vmgm>\n    <menus>"
-    echo -e "      <video aspect=\"4:3\"/>"
-    echo -e "      <pgc entry=\"title\" pause=\"0\">"
-    echo -e "        $INTRO"
-    echo -e "        <vob file=\"$WORK_DIR/dummy.mpg\"/>"
-    echo -e "        $VMGM_PRE"
-    echo -e "        $VMGM_POST"
-    echo -e "      </pgc>\n    </menus>\n  </vmgm>"
+    echo     "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+    echo     "<dvdauthor dest=\"$OUT_DIR\" jumppad=\"0\">"
+    echo -e  "  <vmgm>\n    <menus>"
+    echo     "      <video aspect=\"4:3\"/>"
+    echo     "      <pgc entry=\"title\" pause=\"0\">"
+    echo     "        $INTRO"
+    echo     "        <vob file=\"$WORK_DIR/dummy.mpg\"/>"
+    echo     "        <pre>"
+    echo     "        if ( g5 eq 0 ) g5=1; g4=0;"
+    $SWITCHED_MENUS && \
+    echo     "        if (g1 eq 0) g1=1;"
+    echo     "        $VMGM_PREJUMP"
+    echo     "        </pre>"        
+    $DO_INTRO && \
+    echo     "        <post>g2=1; jump titleset 1 menu;</post>"
+    echo -e  "      </pgc>\n    </menus>\n  </vmgm>"
 fi)
   <titleset>
     <menus>
@@ -7230,8 +7232,8 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
             inc=$((menu_num+1))
         fi
         [[ $menu_num -eq 1 ]] && dec=$NUM_MENUS || dec=$((menu_num - 1))
-        echo -e "        <button name=\"ActionUp\">g1 = $dec; jump menu $dec;</button>"
-        echo -e "        <button name=\"ActionDown\">g1 = $inc; jump menu $inc;</button>"
+        echo -e "        <button name=\"ActionUp\">g1=$dec; jump menu $dec;</button>"
+        echo -e "        <button name=\"ActionDown\">g1=$inc; jump menu $inc;</button>"
     fi
     NAV_BTN_NUM=$V_TOTAL
     if $PLAYALL ; then # titleset playall has button here: not for $VMGM_PLAYALL
@@ -7260,9 +7262,9 @@ $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
         else
             if $VMGM_PLAYALL; then
                 echo "        <pre>"
-                echo -e "             button = g5 * 1024;"
-                echo -e "             if (g8==0) { g7=0; g4=0; }"
-                echo -e "             if (g7==$TSET_NUM) { g4=1; jump title 1 chapter 1; }"
+                echo "        button = g5 * 1024;"
+                echo "        if (g8==0) { g7=0; g4=0; }"
+                echo "        if (g7==$TSET_NUM) { g4=1; jump title 1 chapter 1; }"
                 echo "        </pre>"
             else
                 echo -e "        <pre>button = g5 * 1024; g4=0;</pre>"
@@ -7368,16 +7370,17 @@ $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
                 echo -e  "        </post>"
             else
                 if $VMGM_PLAYALL; then
-                    echo -e "<pre>g8=0;</pre>"
-                    echo -e \
-                      "        <post>{ if (g7>0) {"
-                    echo -e  "                   g8=1;"
-                    echo -ne "                   if (g7>=${TSET_TOT}) { g7=0; g4=0; } " 
-                    echo -e                        "else g7=$((TSET_NUM+1));"
-                    echo -e "                 call vmgm menu entry title; }"
-                    echo -e "                     }"
-                    echo -e "                 call menu;"
-                    echo -e "        </post>"
+                    echo -e  "        <pre>g8=0;</pre>"
+                    echo     "        <post>"
+                    echo     "        { if (g7>0) {"
+                    echo     "              g8=1;"
+                    echo -ne "              if (g7>=${TSET_TOT}) { g7=0; g4=0; } " 
+                    echo -e  "else g7=$((TSET_NUM+1));"
+                    echo     "              call vmgm menu entry title;"
+                    echo     "              }"
+                    echo -e  "        }"
+                    echo -e  "        call menu;"
+                    echo -e  "        </post>"
                 else
                     echo -e "        <post>call menu;</post>"
                 fi
@@ -7395,18 +7398,19 @@ $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
                 echo "        </post>"
             else
                 if $VMGM_PLAYALL; then
-                    echo "        <pre>g8=0;</pre>"
-                    echo -e \
-                      "        <post>{ if (g7>0) {"
-                    echo -e  "                   g8=1;"
-                    echo -ne "                   if (g7>=${TSET_TOT}) { g7=0; g4=0; } " 
-                    echo -e                     "else g7=$((TSET_NUM+1));"
-                    echo -e "                call vmgm menu entry title; }"
-                    echo -e "                     }"
-                    echo -e "                call menu;"
-                    echo -e "        </post>"
+                    echo     "        <pre>g8=0;</pre>"
+                    echo     "        <post>"
+                    echo     "        { if (g7>0) {"
+                    echo     "              g8=1;"
+                    echo -ne "              if (g7>=${TSET_TOT}) { g7=0; g4=0; } " 
+                    echo     "else g7=$((TSET_NUM+1));"
+                    echo     "              call vmgm menu entry title;"
+                    echo     "              }"
+                    echo     "        }"
+                    echo     "        call menu;"
+                    echo     "        </post>"
                 else
-                    echo -e "        <post>call menu;</post>"
+                    echo     "        <post>call menu;</post>"
                 fi
             fi
         else
