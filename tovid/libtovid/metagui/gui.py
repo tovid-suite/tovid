@@ -326,7 +326,9 @@ class Application (Widget):
         """Load current Control settings from a text file.
         """
         filename = askopenfilename(parent=self,
-            title="Select a shell script or text file to load")
+            title="Select a shell script or text file to load",
+            filetypes=[('Shell scripts', '*.sh *.bash'),
+            ('All files', '*.*')])
         if not filename:
             return
 
