@@ -57,11 +57,16 @@ if __name__ == '__main__':
     # (Assumes the 'tovid' in the user's path is a symbolic link
     # to the true installation directory)
     actual_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
-    print("DEBUG: tovid executables assumed to be in '%s'" % actual_dir)
     # Add the actual install path to the $PATH environment variable
     os.environ['PATH'] += os.pathsep + actual_dir
 
     command = args.pop(0)
+
+    if command in ['-prefix', '--prefix']:
+        print actual_dir
+        sys.exit(0)
+
+    print("DEBUG: tovid executables assumed to be in '%s'" % actual_dir)
 
     if command in _scripts:
         script = _scripts[command]
