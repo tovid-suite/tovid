@@ -8,6 +8,9 @@ import os
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
 from libtovid.util import filetypes
+import os
+import fnmatch
+from libtovid.cli import Command
 
 # Define a few supporting functions
 def to_title(filename):
@@ -17,6 +20,24 @@ def to_title(filename):
 
 def strip_all(filename):
     return ''
+
+def find_masks(dir, pattern):
+    file_list=[]
+    ext = pattern.replace('*', '')
+    for path, dirs, files in os.walk(os.path.abspath(dir)):
+        for filename in fnmatch.filter(files, pattern):
+            file_list+=[ filename.replace(ext, '') ]
+    return file_list
+
+def get_maskdir():
+    prefix = Command('tovid', "-prefix")
+    prefix.run(capture=True)
+    return prefix.get_output()
+
+def nodupes(seq):
+    noDupes = []
+    [noDupes.append(i) for i in seq if not noDupes.count(i)]
+    return noDupes
 
 # List of file-type selections for Filename controls
 image_filetypes = [filetypes.all_files]
@@ -39,6 +60,18 @@ visual_filetypes = [ filetypes.all_files, filetypes.image_files, vid_filetypes ]
 # DVD video
 dvdext = 'vob mpg mpeg mpeg2'
 dvd_video_files = [ filetypes.new_filetype('DVD video files', dvdext) ]
+
+# Users can use their own thumb masks.  Add to thumb mask control dropdown
+masks = [ 'normal', 'oval', 'plectrum', 'egg', \
+'wave', 'spiral', 'galaxy', 'flat-tube']
+output = []
+sys_dir = get_maskdir().strip() + '/masks'
+home_dir = os.path.expanduser("~") + '/.tovid/masks'
+for dir in sys_dir, home_dir:
+    masks_found = find_masks(dir, '*.png')
+    output.extend(masks_found)
+masks.extend(output)
+thumb_masks =  '|'.join(nodupes(masks))
 
 """Since todisc has a large number of options, it helps to store each
 one in a variable, named after the corresponding command-line option.
@@ -387,8 +420,7 @@ _thumb_shape = Choice('Thumb shape', '-thumb-shape', 'none',
     'shapes look best against a plain background or used in conjunction with '
     '**-thumb-mist** [COLOR].  To use a "mist" background behind each thumb, '
     'see "Thumb mist" section.  Leave at "none" to not use a feathered shape',
-    'normal|oval|plectrum|egg|wave|galaxy|boomerang|spiral|flattube|tilde|none',
-    'dropdown')
+    thumb_masks, 'dropdown')
 
 _opacity = Number('Opacity', '-opacity', 100,
     'Opacity  of thumbnail videos as a percentage. '
