@@ -3328,9 +3328,12 @@ if [[ -n "$SM_TITLES" ]]; then
 fi
 # check if user passed a usable button shape
 if [[ -n $THUMB_SHAPE ]]; then
+    tovid_prefix=$(tovid -prefix)
     ! egrep -q -w \
-    'egg|oval|plectrum|wave|tilde|spiral|galaxy|boomerang|flattube|normal' \
+    'egg|oval|plectrum|wave|spiral|galaxy|flat-tube|normal' \
     <<< "$THUMB_SHAPE"  && \
+    ! test -f "$tovid_prefix/masks/${THUMB_SHAPE}.png" && \
+    ! test -f "$HOME/.tovid/masks/$THUMB_SHAPE.png" && \
         usage_error "Please supply a usable thumb shape with
         -thumb-shape option. You gave \"$THUMB_SHAPE\""
 fi
@@ -4836,7 +4839,7 @@ elif test "$THUMB_SHAPE" = "spiral"; then
      convert - -bordercolor none -border 18x18 miff:- |
     ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
-elif test "$THUMB_SHAPE" = "flattube"; then
+elif test "$THUMB_SHAPE" = "flat-tube"; then
     THUMB_MASK="$WORK_DIR/flattube_mask.png"
     #yecho "Creating flattube-shaped mask with the following command:"
     MASK_CMD=" convert -size 200x200 xc:none -fill white \
@@ -4858,11 +4861,28 @@ elif test "$THUMB_SHAPE" = "tilde"; then
     convert - -bordercolor none -border 18x18 miff:- |
     ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
+elif test -f "$HOME/.tovid/masks/$THUMB_SHAPE.png"; then
+    THUMB_MASK="$WORK_DIR/${THUMB_SHAPE}_mask.png"
+    yecho "Creating ${THUMB_SHAPE}-shaped mask with the following command:"
+    MASK_CMD="convert "$HOME/.tovid/masks/$THUMB_SHAPE.png" \
+    -bordercolor none -border 3x3 -trim +repage miff:- |
+    convert - -bordercolor none -border 18x18 miff:- |
+    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
+    convert -resize $THUMB_SIZE! - $THUMB_MASK"
+elif test -f "$tovid_prefix/masks/$THUMB_SHAPE.png"; then
+    THUMB_MASK="$WORK_DIR/${THUMB_SHAPE}_mask.png"
+    yecho "Creating ${THUMB_SHAPE}-shaped mask with the following command:"
+    MASK_CMD="convert "$tovid_prefix/masks/$THUMB_SHAPE.png" \
+    -bordercolor none -border 3x3 -trim +repage miff:- |
+    convert - -bordercolor none -border 18x18 miff:- |
+    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
+    convert -resize $THUMB_SIZE! - $THUMB_MASK"
 fi
 
 # Print and execute the thumb-shape mask command
 if $DO_MENU; then
     if [[ -n $MASK_CMD ]]; then
+        #yecho "$MASK_CMD"
         cmd_exec "$MASK_CMD"
     fi
     yecho "Creating a menu title image"
