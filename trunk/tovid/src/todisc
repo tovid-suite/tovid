@@ -4816,17 +4816,6 @@ elif test "$THUMB_SHAPE" = "galaxy"; then
     convert - -bordercolor none -border 18x18 miff:- |
     ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
-elif test "$THUMB_SHAPE" = "boomerang"; then
-    THUMB_MASK="$WORK_DIR/boomerang_mask.png"
-    #yecho "Creating boomerang-shaped mask with the following command:"
-    MASK_CMD="convert -size 200x200 xc:none -fill white \
-    -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
-    -draw 'rectangle 60,38 140,162'  miff:-  |
-    convert -background none -wave 60x300 - miff:- | 
-    convert - -bordercolor none -border 3x3 -trim +repage miff:- |
-    convert - -bordercolor none -border 18x18 miff:- |
-    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-    convert -resize $THUMB_SIZE! - $THUMB_MASK"
 elif test "$THUMB_SHAPE" = "spiral"; then
     THUMB_MASK="$WORK_DIR/spiral_mask.png"
     #yecho "Creating spiral-shaped mask with the following command:"
@@ -4846,17 +4835,6 @@ elif test "$THUMB_SHAPE" = "flat-tube"; then
     -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
     -draw 'rectangle 60,38 140,162'  miff:-  |
     convert -background none -wave 25x700 - miff:- | 
-    convert - -bordercolor none -border 3x3 -trim +repage miff:- |
-    convert - -bordercolor none -border 18x18 miff:- |
-    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-    convert -resize $THUMB_SIZE! - $THUMB_MASK"
-elif test "$THUMB_SHAPE" = "tilde"; then
-    THUMB_MASK="$WORK_DIR/tilde_mask.png"
-    #yecho "Creating tilde-shaped mask with the following command:"
-    MASK_CMD="convert -size 200x200 xc:none -fill white \
-    -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
-    -draw 'rectangle 60,38 140,162'  miff:-  |
-    convert -background none -wave -50x188 - miff:- | 
     convert - -bordercolor none -border 3x3 -trim +repage miff:- |
     convert - -bordercolor none -border 18x18 miff:- |
     ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
