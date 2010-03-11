@@ -446,6 +446,10 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
     These "feathered" shapes look best against a plain background (or used
     in conjunction with **-thumb-mist** [COLOR]).  For this rectangular
     semi-transparent misted background for each thumb:  see **-thumb-mist**.
+    Note: if you wish to make your own mask PNGS you can put them in
+    $PREFIX/lib/tovid/masks/ or $HOME/.tovid/masks/ and use them on the
+    command line using the filename minus the path and extension.
+    i.e ~/.tovid/masks/duck.png becomes -thumb-shape duck
 : **-3dthumbs**
     This will give an illusion of 3D to the thumbnails: dynamic lighting on
     rounded thumbs, and a raised effect on rectangular thumbs.  Try it !
