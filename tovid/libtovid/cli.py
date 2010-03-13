@@ -45,6 +45,7 @@ __all__ = [
 ]
 
 import subprocess
+from os import environ
 
 # Small workaround for Python 3.x
 try:
