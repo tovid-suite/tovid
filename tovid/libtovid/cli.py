@@ -219,7 +219,8 @@ class Command:
         """Return a bash script for running the given command.
         """
         script = '#!/usr/bin/env bash' + '\n\n'
-        script += 'PATH=' + environ['PATH'] + '\n\n'
+        script_path = environ['PATH'].rsplit(':')
+        script += 'PATH=' + script_path[-1] + ':$PATH'  + '\n\n'
         # Write arguments, one per line with backslash-continuation
         words = [_enc_arg(arg) for arg in [self.program] + self.args]
         script += ' \\\n'.join(words)
