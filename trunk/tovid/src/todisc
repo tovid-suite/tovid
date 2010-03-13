@@ -1737,7 +1737,7 @@ verify_infiles()
     for ((i=0; i<${#in_files[@]}; i++)); do
         CROP_CMD=()
         IN_FILE="${in_files[i]}"
-        if test -e "$IN_FILE"; then
+        if test -s "$IN_FILE"; then
             check_filetype "$IN_FILE"
             if [[ $TYPE = "image" ]]; then
                 IMG_STATS=( $(identify -ping -format "%z %w %h" "$IN_FILE") )
@@ -1815,7 +1815,7 @@ verify_infiles()
                 usage_error "Sorry, $IN_FILE is not a supported file type"
             fi
         else
-            usage_error "Sorry, $IN_FILE does not exist"
+            usage_error "Sorry, $IN_FILE does not exist or is empty"
         fi
     done
 }
@@ -2037,14 +2037,14 @@ elif cat /dev/zero 2>/dev/null | nice -n 0 sox -t raw -c 2 -r 48000 -2 -s - \
     echo -2
 else
     runtime_error "Your sox appears to be incompatible with this program.  " \
-    "Attempted to create a wav file using both the -w and -2 switches"
+    "Attempted to create a wav file using the -w option, then the -2 option"
 fi
 rm -f "$WORK_DIR/foo.wav"
 
 }
 
 ##############################################################################
-#                          	End of Functions                             #
+#                          	 End of Functions                                #
 ##############################################################################
 
 
@@ -2055,7 +2055,11 @@ trap 'cleanup; exit 13' TERM INT
 # ***********************************
 
 ###############################################################################
+#       Process arguments to the script, set up VARS and WORK_DIR             #
 ###############################################################################
+# if -prefix is passed, show the prefix and exit
+[[ ${args[0]} == '-prefix' ]] && echo $TOVID_PREFIX && exit 0
+
 egrep -q 'titleset-mode|switched-mode|menu-only|carousel_menu_mode' <<< "$@" \
  && NONAME=:
 ! $NONAME && yecho $"$SCRIPT_NAME"
