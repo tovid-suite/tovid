@@ -241,6 +241,7 @@ ani_pics=0
 JUSTIFY="center"
 CONTRAST_CLR='gray'
 NOMENU=false
+TOVID_PREFIX=$(tovid -prefix)
 
 ##############################################################################
 #                                 Functions                                  #
@@ -2043,7 +2044,7 @@ rm -f "$WORK_DIR/foo.wav"
 }
 
 ##############################################################################
-#                          	End of functions                             #
+#                          	End of Functions                             #
 ##############################################################################
 
 
@@ -2054,7 +2055,6 @@ trap 'cleanup; exit 13' TERM INT
 # ***********************************
 
 ###############################################################################
-#       Process arguments to the script, set up VARS and WORK_DIR             #
 ###############################################################################
 egrep -q 'titleset-mode|switched-mode|menu-only|carousel_menu_mode' <<< "$@" \
  && NONAME=:
@@ -3328,11 +3328,10 @@ if [[ -n "$SM_TITLES" ]]; then
 fi
 # check if user passed a usable button shape
 if [[ -n $THUMB_SHAPE ]]; then
-    tovid_prefix=$(tovid -prefix)
     ! egrep -q -w \
     'egg|oval|plectrum|wave|spiral|galaxy|flat-tube|normal' \
     <<< "$THUMB_SHAPE"  && \
-    ! test -f "$tovid_prefix/masks/${THUMB_SHAPE}.png" && \
+    ! test -f "$TOVID_PREFIX/masks/${THUMB_SHAPE}.png" && \
     ! test -f "$HOME/.tovid/masks/$THUMB_SHAPE.png" && \
         usage_error "Please supply a usable thumb shape with
         -thumb-shape option. You gave \"$THUMB_SHAPE\""
@@ -4847,10 +4846,10 @@ elif test -f "$HOME/.tovid/masks/$THUMB_SHAPE.png"; then
     convert - -bordercolor none -border 18x18 miff:- |
     ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
     convert -resize $THUMB_SIZE! - $THUMB_MASK"
-elif test -f "$tovid_prefix/masks/$THUMB_SHAPE.png"; then
+elif test -f "$TOVID_PREFIX/masks/$THUMB_SHAPE.png"; then
     THUMB_MASK="$WORK_DIR/${THUMB_SHAPE}_mask.png"
     yecho "Creating ${THUMB_SHAPE}-shaped mask with the following command:"
-    MASK_CMD="convert "$tovid_prefix/masks/$THUMB_SHAPE.png" \
+    MASK_CMD="convert "$TOVID_PREFIX/masks/$THUMB_SHAPE.png" \
     -bordercolor none -border 3x3 -trim +repage miff:- |
     convert - -bordercolor none -border 18x18 miff:- |
     ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
