@@ -339,7 +339,8 @@ class Application (Widget):
         infile = open(filename, 'r')
         lines = [line.strip() for line in infile.readlines()
                  if line.strip()
-                 and not line.strip().startswith('#')]
+                 and not line.strip().startswith('#') \
+                 and not line.strip().startswith('PATH=')]
         infile.close()
         # Join backslash-escaped lines to form the complete command
         command = ''
