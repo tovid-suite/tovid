@@ -1,18 +1,13 @@
 [Desktop Entry]
-Name=tovid GUI: fancy
+Name=tovid GUI
 Type=Application
-Path=
 Exec=tovid gui
-Icon=tovid.svg
-Terminal=true
-GenericName=DVD/(S)VCD creation with fancy menus
-GenericName[en_US]=DVD/SVCD creation with fancy menus
-Comment=Author videos to DVD or SVCD with fancy menus
-Comment[en_US]=Author videos to DVD or SVCD with fancy menus
+Icon=tovid
+Terminal=false
+GenericName=DVD creation with menus
+GenericName[en_US]=DVD creation with menus
+Comment=Author videos to DVD with menus
+Comment[en_US]=Author videos to DVD with menus
 Categories=AudioVideo;Video
-MimeType=
 StartupNotify=true
-TerminalOptions=
-X-DCOP-ServiceType=
 X-KDE-SubstituteUID=false
-X-KDE-Username=
