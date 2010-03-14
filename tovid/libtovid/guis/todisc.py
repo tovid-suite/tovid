@@ -29,11 +29,6 @@ def find_masks(dir, pattern):
             file_list+=[ filename.replace(ext, '') ]
     return file_list
 
-def get_maskdir():
-    prefix = Command('tovid', "-prefix")
-    prefix.run(capture=True)
-    return prefix.get_output()
-
 def nodupes(seq):
     noDupes = []
     [noDupes.append(i) for i in seq if not noDupes.count(i)]
@@ -64,13 +59,12 @@ dvd_video_files = [ filetypes.new_filetype('DVD video files', dvdext) ]
 # Users can use their own thumb masks.  Add to thumb mask control dropdown
 masks = [ 'normal', 'oval', 'plectrum', 'egg', \
 'wave', 'spiral', 'galaxy', 'flat-tube']
-output = []
-sys_dir = get_maskdir().strip() + '/masks'
+prefix = Command('tovid', "-prefix")
+prefix.run(capture=True)
+sys_dir = prefix.get_output() + '/masks'
 home_dir = os.path.expanduser("~") + '/.tovid/masks'
 for dir in sys_dir, home_dir:
-    masks_found = find_masks(dir, '*.png')
-    output.extend(masks_found)
-masks.extend(output)
+    masks.extend(find_masks(dir, '*.png'))
 thumb_masks =  '|'.join(nodupes(masks))
 
 """Since todisc has a large number of options, it helps to store each
