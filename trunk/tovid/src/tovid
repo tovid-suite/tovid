@@ -57,8 +57,8 @@ if __name__ == '__main__':
     # (Assumes the 'tovid' in the user's path is a symbolic link
     # to the true installation directory)
     actual_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
-    # Add the actual install path to the $PATH environment variable
-    os.environ['PATH'] += os.pathsep + actual_dir
+    # Prepend the actual install path to the $PATH environment variable
+    os.environ['PATH'] = actual_dir + os.pathsep + os.environ['PATH']
 
     command = args.pop(0)
 
