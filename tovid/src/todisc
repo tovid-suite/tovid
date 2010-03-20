@@ -3781,6 +3781,8 @@ if $VIDEOS_ARE_CHAPTERS; then
         usage_error "-videos-are-chapters can not be used with -group"
     elif $SUB_MENU; then
         usage_error "-videos-are-chapters can not be used with submenus"
+    elif $USER_CHAPTERS; then
+        usage_error "HH:MM:SS chapters incompatible with -videos-are-chapters"
     else
          CHAPTERS=1 && PLAYALL=false
     fi
