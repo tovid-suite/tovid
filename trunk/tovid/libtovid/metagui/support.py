@@ -132,7 +132,10 @@ class ScrollList (tk.Frame):
                                   exportselection=0)
         self.listbox.pack(side='left', fill='both', expand=True)
         self.scrollbar.pack(side='left', fill='y')
-        self.listbox.bind('<Button-1>', self.select)
+        #self.listbox.bind('<Button-1>', self.select)
+        # use ButtonRelease so drag/drop functions don't mess with focus_set
+        self.listbox.bind('<ButtonRelease-1>', self.select)
+        self.listbox.bind('<Return>', self.next_item)
         # Callback methods for the various list-modification actions
         self.callbacks = {'insert': [], 'remove': [], 'select': [], 'swap': []}
 
@@ -213,6 +216,13 @@ class ScrollList (tk.Frame):
         index = self.listbox.nearest(event.y)
         self.select_index(index)
 
+    def next_item(self, event):
+        """Event handler when <Return> is pressed
+        """
+        self.curindex = self.curindex+1
+        if self.linked:
+            self.linked.curindex = self.curindex
+        self.select_index(self.curindex)
 
     def select_index(self, index, select_in_linked=True):
         """Select (highlight) the list item at the given index.
@@ -223,7 +233,9 @@ class ScrollList (tk.Frame):
             return
         # If index is negative, or past the end, select last item
         if index < 0 or index >= item_count:
-            index = item_count - 1
+            #index = item_count - 1
+            # allow cycling (any unforeseen consequences ?)
+            index = 0
         # Clear selection, and select only the given index
         self.listbox.selection_clear(0, item_count)
         self.listbox.selection_set(index)
@@ -338,7 +350,8 @@ class DragList (ScrollList):
         """
         # Change the mouse cursor back to the default arrow.
         self.config(cursor="")
-
+        # make sure drop doesn't mess with focus_set
+        self.select_index(self.curindex)
 class ComboBox (tk.Frame):
     """A dropdown menu with several choices.
     """
