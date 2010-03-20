@@ -909,6 +909,7 @@ class Text (Control):
         Control.__init__(self, str, label, option, default, help, **kwargs)
         # Defined by draw()
         self.entry = None
+        self.controls = []
 
 
     def draw(self, master):
@@ -920,6 +921,8 @@ class Text (Control):
         self.entry = tk.Entry(self, textvariable=self.variable)
         self.entry.pack(side='left', fill='x', expand=True)
         Control.post(self)
+        self.entry.bind('<Return>', self.next_item)
+
 
 
     def focus(self):
@@ -927,6 +930,16 @@ class Text (Control):
         """
         self.entry.select_range(0, 'end')
         self.entry.focus_set()
+
+    def get_control(self, control):
+        """Get list of controls Text control links to
+        """
+        self.controls.append(control)
+
+    def next_item(self, event):
+        for control in self.controls:
+            if not isinstance(control, Text):
+                control.listbox.next_item(event)
 
 class SpacedText (Text):
     """Text string interpreted as a space-separated list of strings
@@ -1005,6 +1018,7 @@ class List (Control):
             self.listbox = ScrollList(frame, self.variable)
         else:
             self.listbox = DragList(frame, self.variable)
+        self.listbox.bind('<Return>', self.listbox.next_item)
         self.listbox.callback('select', self.select)
         self.listbox.pack(fill='both', expand=True)
 
@@ -1024,6 +1038,9 @@ class List (Control):
         # Draw associated Control
         self.control.draw(tool_frame)
         self.control.pack(fill='x', side='left', expand=True)
+        self.control.bind('<Return>', self.listbox.next_item)
+        if isinstance(self.control, Text):
+            self.control.get_control(self)
         # Disabled until values are added
         self.control.disable()
 
