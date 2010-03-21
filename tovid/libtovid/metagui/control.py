@@ -909,7 +909,6 @@ class Text (Control):
         Control.__init__(self, str, label, option, default, help, **kwargs)
         # Defined by draw()
         self.entry = None
-        self.controls = []
 
 
     def draw(self, master):
@@ -923,8 +922,6 @@ class Text (Control):
         Control.post(self)
         self.entry.bind('<Return>', self.next_item)
 
-
-
     def focus(self):
         """Highlight the text entry box for editing.
         """
@@ -932,14 +929,13 @@ class Text (Control):
         self.entry.focus_set()
 
     def get_control(self, control):
-        """Get list of controls Text control links to
+        """Get the control Text control links to
         """
-        self.controls.append(control)
+        self.controller = control
 
     def next_item(self, event):
-        for control in self.controls:
-            if not isinstance(control, Text):
-                control.listbox.next_item(event)
+        if not isinstance(self.controller, Text):
+            self.controller.listbox.next_item(event)
 
 class SpacedText (Text):
     """Text string interpreted as a space-separated list of strings
