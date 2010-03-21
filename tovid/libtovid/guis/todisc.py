@@ -279,9 +279,11 @@ _chapter_titles = RelatedList('Chapter titles', '-files', '1:*',
     List('Chapter titles', '-chapter-titles', None,
         'Chapter titles for each video.  Use \\n for a new line in '
         'a multi-line title.  Number of titles given must equal the '
-        'number of chapters given for that video.  Click on a video '
-        'title in the list to the left, then click "Add" for each '
-        'chapter, typing the chapter name.'), side='left')
+        'number of chapters given for that video.  HINT: If you '
+        'click on a video title in the list to the left, then click '
+        '"Add" repeatedly untill you reach the desired number of '
+        'chapters, you can then edit the titles from the keyboard using '
+        'the Enter key to cycle through them. '), side='left')
 
 _title_gap = Number('Space between titles', '-title-gap', 10,
     'Leave this much vertical gap between titles.  '
