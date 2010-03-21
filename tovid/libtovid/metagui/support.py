@@ -94,9 +94,12 @@ def askyesno(title=None, message=None, **options):
         return True
     else:
         return False
+
+
 ### --------------------------------------------------------------------
 ### Classes
 ### --------------------------------------------------------------------
+
 class ScrollList (tk.Frame):
     """A Listbox with a scrollbar.
 
@@ -352,6 +355,7 @@ class DragList (ScrollList):
         self.config(cursor="")
         # make sure drop doesn't mess with focus_set
         self.select_index(self.curindex)
+
 class ComboBox (tk.Frame):
     """A dropdown menu with several choices.
     """
@@ -449,6 +453,7 @@ class ComboBox (tk.Frame):
         # Callback, if any
         if self.command:
             self.command()
+
 
 class FontChooser (Dialog):
     """A widget for choosing a font.
@@ -646,6 +651,7 @@ class ConfigWindow (Dialog):
                            self.fontsize.variable.get(),
                            self.fontstyle.variable.get())
         self.result = self.style
+
 
 class ScrolledWindow (tk.Tk):
     """A top-level window with scrollbars.
