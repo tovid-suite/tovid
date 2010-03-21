@@ -1,9 +1,9 @@
 # Process this file with automake to produce a Makefile.in
 
-# Project homepage: http://www.tovid.org
+# Project homepage: http://tovid.wikia.com
 #
 #
-# Copyright (C) 2005 tovid.org <http://www.tovid.org>
+# Copyright (C) 2005 tovid <http://tovid.wikia.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
