@@ -149,6 +149,7 @@ class NotDrawn (Exception):
     """
     pass
 
+
 class Control (Widget):
     """A specialized GUI widget that controls a command-line option.
 
@@ -438,6 +439,7 @@ class Choice (Control):
                                   variable=self.variable)
             self.combo.pack(side='left')
         Control.post(self)
+
 
 class Color (Control):
     """A color chooser that may have hex '#RRGGBB' or 'ColorName' values.
@@ -804,6 +806,7 @@ class Font (Control):
         if chooser.result:
             self.variable.set(chooser.result)
 
+
 class Number (Control):
     """Numeric entry box or slider.
     """
@@ -970,6 +973,7 @@ class SpacedText (Text):
             return '"%s"' % val.replace('"', '\\"')
         text = ' '.join([quote(val) for val in listvalue])
         Text.set(self, text)
+
 
 class List (Control):
     """A list of values, editable with a given Control.

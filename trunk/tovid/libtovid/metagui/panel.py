@@ -28,6 +28,7 @@ from libtovid.metagui.support import \
     (ComboBox, ScrollList, ensure_type, divide_list)
 from libtovid.metagui.variable import ListVar
 
+
 class Label (Widget):
     """A widget with a text label.
     """
@@ -58,6 +59,7 @@ class Label (Widget):
         Widget.draw(self, master, **kwargs)
         self.label = tk.Label(self, text=self.text, justify=self.justify)
         self.label.pack(anchor=self.anchor)
+
 
 class Panel (Widget):
     """A group of Widgets in a rectangular frame, with an optional label.
@@ -155,6 +157,7 @@ class HPanel (Panel):
         """
         Panel.draw(self, master, **kwargs)
         self.draw_widgets(side='left', expand=True)
+
 
 class VPanel (Panel):
     """A group of widgets or sub-panels, packed vertically (top-to-bottom).
@@ -290,6 +293,7 @@ class Drawer (Panel):
             self.frame.pack(anchor='nw', fill='both', expand=True)
             self.visible = True
             self.button.config(relief='sunken')
+
 
 class Tabs (Panel):
     """A Panel with tab buttons that switch between several widgets.
@@ -485,10 +489,10 @@ class RelatedList (Panel):
 
     One to one:
 
-        - Each item in parent list maps to an item in the child list
+        - Each item in parent list maps to one item in the child list
         - Parent copy and child list scroll in unison
         - If item in child is selected, parent item is selected also
-        - Drag/drop is not allowed (parent Control determines order)
+        - Drag/drop is allowed in parent list only
 
     One to many:
 
@@ -499,7 +503,6 @@ class RelatedList (Panel):
 
     Assumptions:
 
-        - Child Control is shown to the right of a read-only copy of the parent
         - If item in parent is selected, child item/list is selected also
         - It item is added to parent, new child item/list is added also
         - If item in parent is deleted, child item/list is deleted also
