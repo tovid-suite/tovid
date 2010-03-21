@@ -1,6 +1,6 @@
 INSTALL
 =====================================================
-tovid (http://tovid.org/)
+tovid (http://tovid.wikia.com/)
 Video disc authoring software
 =====================================================
 
@@ -17,7 +17,7 @@ as tovid-0.30.tar.gz), do the following after extracting the tarball:
     $ ./configure
     $ su -c "make install"
 
-See the tovid homepage (http://tovid.org/) for additional documentation.
+See the tovid homepage (http://tovid.wikia.com/) for additional documentation.
 
 Following are the standard, autotools installation instructions, which may be
 useful if you are a developer or packager.

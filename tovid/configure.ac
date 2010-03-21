@@ -2,10 +2,10 @@
 # Autoconf documentation:
 #     http://www.gnu.org/software/autoconf/manual/index.html
 
-# Project homepage: http://www.tovid.org
+# Project homepage: http://tovid.wikia.com
 #
 #
-# Copyright (C) 2005 tovid.org <http://www.tovid.org>
+# Copyright (C) 2005 tovid <http://tovid.wikia.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -37,7 +37,7 @@
 # The first arugment sets the package name, the second sets the package version.
 # eg [tovid], [0.40] would yield a tovid-0.40.tar.gz after "$ make dist"
 #                    the version number is also substituted into tovid-init.in
-AC_INIT([tovid], [svn])
+AC_INIT([tovid], [0.32])
 AC_CONFIG_SRCDIR([src/tovid])
 
 # Require minimum versions of the autotools
@@ -69,7 +69,7 @@ if ! $TXT2TAGS; then
  the man pages. Please install txt2tags (http://txt2tags.sf.net) and
  run ./configure again. Thanks!
 
-     -- http://tovid.org
+     -- http://tovid.wikia.com
 ])
 fi
 
@@ -145,7 +145,7 @@ if test -z $PYTHON_LOCAL && test x"$prefix" == "xNONE"; then
 
     to install tovid in a place where python will look for modules. Thanks!
 
-        -- http://tovid.org
+        -- http://tovid.wikia.com
     ])
 fi
 
