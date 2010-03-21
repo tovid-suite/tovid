@@ -234,11 +234,13 @@ class ScrollList (tk.Frame):
         item_count = self.items.count()
         if item_count == 0:
             return
-        # If index is negative, or past the end, select last item
+        # If index is negative, or past the end, cycle or select last item
         if index < 0 or index >= item_count:
-            #index = item_count - 1
             # allow cycling (any unforeseen consequences ?)
-            index = 0
+            if self.listbox.get(index-1):
+                index = 0
+            else:
+                index = item_count - 1
         # Clear selection, and select only the given index
         self.listbox.selection_clear(0, item_count)
         self.listbox.selection_set(index)
