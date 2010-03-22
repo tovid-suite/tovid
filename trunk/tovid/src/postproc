@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 ME="[postproc]:"
-. tovid-init
+. tovid-init 2>/dev/null ||
+{ echo -e "===============================================================\n"
+echo -e "'tovid-init' not found.  Was tovid improperly installed?"
+echo -e "Or are you trying to run the script directly?"
+echo -e "Please run postproc as:\ntovid postproc OPTIONS"
+exit 1 ; }
 
 # postproc
 # Part of the tovid suite
@@ -40,7 +45,7 @@ $TOVID_HOME_PAGE
 EOF`
 
 USAGE=`cat << EOF
-Usage: postproc [OPTIONS] {input file} {output file}
+Usage: tovid postproc [OPTIONS] {input file} {output file}
 
 Where OPTIONS may be any of the following:
 
