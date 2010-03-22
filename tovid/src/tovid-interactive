@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 ME="[tovid-interactive]:"
-. tovid-init
+. tovid-init 2>/dev/null ||
+{ echo -e "===============================================================\n"
+echo -e "'tovid-init' not found.  Was tovid improperly installed?"
+echo -e "Or are you trying to run the script directly?"
+echo -e "Please run tovid-interactive as:\ntovid interactive OPTIONS"
+exit 1 ; }
 
 # tovid-interactive
 # Part of the tovid suite

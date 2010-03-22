@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 ME="[tovid]:"
-. tovid-init
+. tovid-init 2>/dev/null ||
+{ echo -e "===============================================================\n"
+echo -e "'tovid-init' not found.  Was tovid improperly installed?"
+echo -e "Or are you trying to run the script directly?"
+echo -e "Please run makempg as:\ntovid mpg OPTIONS"
+exit 1 ; }
 
 # tovid
 # Part of the tovid suite
@@ -52,7 +57,7 @@ $TOVID_HOME_PAGE
 EOF`
 
 USAGE=`cat << EOF
-Usage: tovid [OPTIONS] -in {input file} -out {output prefix}
+Usage: tovid mpg [OPTIONS] -in {input file} -out {output prefix}
 
 Common options:
 

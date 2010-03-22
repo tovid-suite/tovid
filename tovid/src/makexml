@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 ME="[makexml]:"
-. tovid-init
+. tovid-init 2>/dev/null ||
+{ echo -e "===============================================================\n"
+echo -e "'tovid-init' not found.  Was tovid improperly installed?"
+echo -e "Or are you trying to run the script directly?"
+echo -e "Please run makexml as:\ntovid xml OPTIONS"
+exit 1 ; }
 
 # makexml
 # Part of the tovid suite
@@ -44,7 +49,7 @@ $TOVID_HOME_PAGE
 EOF`
 
 USAGE=`cat << EOF
-Usage:  makexml [OPTIONS] {video1.mpg video2.mpg ...} -out OUT_PREFIX
+Usage:  tovid xml [OPTIONS] {video1.mpg video2.mpg ...} -out OUT_PREFIX
 
 Common OPTIONS:
 
