@@ -56,7 +56,7 @@ visual_filetypes = [ filetypes.all_files, filetypes.image_files, vid_filetypes ]
 dvdext = 'vob mpg mpeg mpeg2'
 dvd_video_files = [ filetypes.new_filetype('DVD video files', dvdext) ]
 
-# Users can use their own thumb masks.  Add to thumb mask control dropdown
+# Users can use their own thumb masks.  Add to thumb mask control drop-down
 masks = [ 'normal', 'oval', 'plectrum', 'egg', \
 'wave', 'spiral', 'galaxy', 'flat-tube']
 # $PREFIX/lib/tovid is already added to end of PATH
@@ -210,7 +210,7 @@ _menu_fade = FlagOpt('Menu fade (in/out)', '-menu-fade', False,
     'The fadeout is in reverse order.  The optional numerical argument '
     'is the length of time the background will play before the menu '
     'begins to fade in.  To disable the fadeout portion, set the '
-    '"Pause indefinately" flag on the "Playback" tab.',
+    '"Pause indefinitely" flag on the "Playback" tab.',
     Number('Start', '', 1, '', 0, 60, 'secs'))
 
 _transition_to_menu = Flag('Transition to menu', '-transition-to-menu', False,
@@ -281,7 +281,7 @@ _chapter_titles = RelatedList('Chapter titles', '-files', '1:*',
         'a multi-line title.  Number of titles given must equal the '
         'number of chapters given for that video.  HINT: If you '
         'click on a video title in the list to the left, then click '
-        '"Add" repeatedly untill you reach the desired number of '
+        '"Add" repeatedly until you reach the desired number of '
         'chapters, you can then edit the titles from the keyboard using '
         'the Enter key to cycle through them. '), side='left')
 
