@@ -341,7 +341,7 @@ if ! $DO_BURN; then
         echo "If you'd like to preview the disc before burning, try:"
         echo "    gxine \"dvd:/$(pwd)/$OUT_DIR\""
         echo "You can burn the disc with a command like this:"
-        echo "    makedvd -burn \"$OUT_DIR\""
+        echo "    tovid dvd -burn \"$OUT_DIR\""
     fi
 
 # Otherwise, get on with burning
