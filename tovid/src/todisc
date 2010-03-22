@@ -54,7 +54,7 @@ Usage:
       -titles "Title 1" "Title 2" ... \\\\
       -out OUT_PREFIX
 You can also do slideshows using -slides IMAGES rather than -files VIDEOS
-See the todisc manual page ('man todisc') for additional documentation.
+See the tovid manual page ('man tovid') for additional documentation.
 
 EOF`
 # check that needed todisc deps are installed
@@ -499,7 +499,7 @@ confirm_preview()
         echo "try a larger font, or setting -title-stroke and -titles-stroke"
         echo "to a contrasting color.  Or set the strokes to the same color"
         echo "as your titles.  For black frames look at the -seek option."
-        echo "For other fine-tuning options, see 'man todisc'."
+        echo "For other fine-tuning options, see 'man tovid'."
         echo
         [ ! -z "$input" -a "$input" = "exit" ] && killall_instances
         exit 0
@@ -1437,7 +1437,7 @@ burn_disc()
         fi
     else
         echo "Not burning now - please see the parting message from todisc"
-        echo "for instructions on using ${BURN_PROG}, or see 'man $BURN_PROG'"
+        echo "for instructions on using ${BURN_PROG}, or see 'man tovid'"
     fi
 }
 
@@ -1452,7 +1452,7 @@ thanks_goodbye()
     echo "You can preview them in gxine with this command:"
     echo "    gxine \"dvd:/$OUT_DIR\""
     echo "If you are satisfied with the results, you can burn a disc with:"
-    echo "    makedvd -burn \"$OUT_DIR\""
+    echo "    tovid dvd -burn \"$OUT_DIR\""
     echo
     echo "Thanks for using todisc."
 }
@@ -3015,7 +3015,7 @@ while test $# -gt 0; do
             TOVID_OPTS+=( -noask )
             ;;
         -car* )
-            usage_error "$1: No such option.  Please see 'man todisc' ?"
+            usage_error "$1: No such option.  Please see 'man tovid' ?"
             ;;
     esac
     $DO_SHIFT && shift
