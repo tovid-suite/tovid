@@ -172,7 +172,7 @@ if $IMAGE; then
     echo $VCDIMAGER_CMD
     if eval $VCDIMAGER_CMD; then
         echo "Done."
-        $QUIET || echo "Use 'makevcd -burn $VCDIMAGER_XML' to burn your VCD."
+        $QUIET || echo "Use 'tovid vcd -burn $VCDIMAGER_XML' to burn your VCD."
         $QUIET || echo "Thanks for using tovid!"
     else
         runtime_error "Imaging failed, please see vcdxbuild output above."
