@@ -35,16 +35,16 @@ def nodupes(seq):
     return noDupes
 
 # List of file-type selections for Filename controls
-image_filetypes = [filetypes.all_files]
-image_filetypes.append(filetypes.image_files)
+image_filetypes = [filetypes.image_files]
+image_filetypes.append(filetypes.all_files)
 #image_filetypes.extend(filetypes.match_types('image'))  # confusing
 # video file-types from filetypes needs some additions
 v_filetypes = 'm2v vob ts '
 v_filetypes += filetypes.get_extensions('video').replace('*.', '')
 v_filetypes += ' mp4 mpeg4 mp4v divx mkv ogv ogm ram rm rmvb wmv'
 vid_filetypes = filetypes.new_filetype('Video files', v_filetypes)
-video_filetypes = [filetypes.all_files]
-video_filetypes += [vid_filetypes]
+video_filetypes = [vid_filetypes]
+video_filetypes += [filetypes.all_files]
 
 # some selectors can use video or audio
 av_filetypes = [ filetypes.all_files, filetypes.audio_files, vid_filetypes ]
