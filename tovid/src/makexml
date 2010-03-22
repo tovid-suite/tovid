@@ -60,10 +60,10 @@ Provide a list of .mpg video files, and they will be played back in
 sequence. You may organize several lists of videos into menus by
 providing the name of a menu .mpg:
 
-    makexml -menu menu1.mpg \\\\
+    tovid xml -menu menu1.mpg \\\\
         video1.mpg video2.mpg video3.mpg \\\\
         -out mydisc
-    makexml -topmenu topmenu.mpg \\\\
+    tovid xml -topmenu topmenu.mpg \\\\
         -menu submenu1.mpg vid1.mpg vid2.mpg vid3.mpg \\\\
         -menu submenu2.mpg vid4.mpg vid5.mpg vid6.mpg \\\\
         -out mydisc2
