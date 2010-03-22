@@ -56,7 +56,7 @@ Where OPTIONS may be any of the following:
   -parallel          Run all processes in parallel (can save time)
   -debug             Keep a log of actions and output
 
-See the postproc manual page ('man postproc') for additional documentation.
+See the tovid manual page ('man tovid') for additional documentation.
 
 EOF`
 

@@ -57,7 +57,7 @@ Where OPTIONS may be any of the following:
         Tell whether the first file is compliant with the given
         format; prints "true" or "false" (returns shell 0 or 1)
 
-See the idvid manual page ('man idvid') for additional documentation.
+See the tovid manual page ('man tovid') for additional documentation.
 
 EOF`
 

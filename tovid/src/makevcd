@@ -61,7 +61,7 @@ And:
       If you use(d) 'makexml' to create the XML file, you can use
       that as input here.
 
-See the makevcd manual page ('man makevcd') for additional documentation.
+See the tovid manual page ('man tovid') for additional documentation.
 
 EOF`
 

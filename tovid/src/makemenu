@@ -70,7 +70,7 @@ Example:
     makemenu -background ocean.jpg "First" "Second" "Third" -out mymenu
         Create 'mymenu.mpg' with three titles and a custom background image.
 
-See the makemenu manual page ('man makemenu') for additional documentation.
+See the tovid manual page ('man tovid') for additional documentation.
 
 EOF`
 
