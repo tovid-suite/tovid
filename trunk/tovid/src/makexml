@@ -68,7 +68,7 @@ providing the name of a menu .mpg:
         -menu submenu2.mpg vid4.mpg vid5.mpg vid6.mpg \\\\
         -out mydisc2
 
-See the makexml manual page ('man makexml') for additional documentation.
+See the tovid manual page ('man tovid') for additional documentation.
 
 EOF`
 

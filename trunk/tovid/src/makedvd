@@ -58,7 +58,7 @@ OPTIONS may be any of the following:
   -speed NUM           Burn speed (Default: automatic)
   -label DISC_LABEL    Disc label (Default: base name of FILE)
 
-See the makedvd manual page ('man makedvd') for additional documentation.
+See the tovid manual page ('man tovid') for additional documentation.
 EOF`
 
 COMMAND="$@"
