@@ -55,7 +55,7 @@ $TOVID_HOME_PAGE
 EOF`
 
 USAGE=`cat << EOF
-Usage: makemenu [OPTIONS] "Title1" "Title2" ... -out {output prefix}
+Usage: tovid menu [OPTIONS] "Title1" "Title2" ... -out {output prefix}
 
 Common options:
 
@@ -67,7 +67,7 @@ Common options:
 
 Example:
 
-    makemenu -background ocean.jpg "First" "Second" "Third" -out mymenu
+    tovid menu -background ocean.jpg "First" "Second" "Third" -out mymenu
         Create 'mymenu.mpg' with three titles and a custom background image.
 
 See the tovid manual page ('man tovid') for additional documentation.
@@ -357,7 +357,7 @@ if test -f "$OUT_PREFIX.mpg"; then
         rm -f "$OUT_PREFIX.mpg"
     else
         echo "There is already a file named \"$OUT_PREFIX.mpg\" in this directory!"
-        echo "Use '-overwrite' to replace this file. (makemenu -overwrite ...)"
+        echo "Use '-overwrite' to replace this file. (tovid menu -overwrite ...)"
         echo "Exiting..."
         exit 1
     fi
@@ -757,7 +757,7 @@ if ! $NOASK; then
         echo "Try:  -font FONT -fontsize NUM -textcolor '#RGB'"
         echo "      -fontdeco 'ImageMagick instr' -align left|center|right"
         echo "      -background IMAGE -audio AUDIOFILE"
-        echo "to change the appearance. More in 'man makemenu'"
+        echo "to change the appearance. More in 'man tovid'"
         exit 0
     else
         echo "Preview was OK. Continuing..."
@@ -863,7 +863,7 @@ if test -s "$OUT_FILENAME"; then
 else
     echo "It looks like something went wrong, because there is no output file."
     echo "Please submit a bug report to http://code.google.com/p/tovid/issues."
-    echo "Please add -debug to your command (makemenu -debug ...) and post the"
+    echo "Please add -debug to your command (tovid menu -debug ...) and post the"
     echo "log file and terminal output. Sorry for the inconvenience."
     exit 1
 fi
