@@ -838,7 +838,7 @@ function goodbye()
         echo "    makexml $OUT_FILENAME -out MyDisc"
         echo "    makedvd MyDisc.xml"
         echo "You can also use todisc or makemenu to create menus for your disc."
-        echo "See the manual pages (i.e. 'man todisc') for more information."
+        echo "See the tovid manual page ('man tovid') for more information."
         echo
         echo "Please report bugs to:"
         echo "   http://code.google.com/p/tovid/issues/list"
