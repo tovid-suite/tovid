@@ -2961,10 +2961,6 @@ while test $# -gt 0; do
         "-device" )
             shift
             BURN_DEVICE="$1"
-            if [[ ! -b $(readlink -f $BURN_DEVICE) ]]; then
-                usage_error "you gave \"-device ${BURN_DEVICE}\":
-                $BURN_DEVICE is not a block device file or link to a block device"
-            fi
             ;;
         "-speed" )
             shift
@@ -3059,6 +3055,15 @@ PREVIEW_IMG="$WORK_DIR/preview.jpg"
 if [[ -z $JOBS ]]; then
     proc_cnt=$(grep ^processor /proc/cpuinfo |awk 'END{print $NF+1}')
     max_procs=$proc_cnt
+fi
+
+if $BURN; then
+    if [[ ! -b $(readlink -f $BURN_DEVICE) ]]; then
+        usage_error \
+        "$BURN_DEVICE is not a valid block device file or link to a block device.
+        Are you sure your burner is \"${BURN_DEVICE}\"? Specify your burner with
+        -device /path/to/burner."
+    fi
 fi
 
 # Make sure equal, nonzero number of titles and files were provided
