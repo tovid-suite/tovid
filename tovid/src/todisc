@@ -241,6 +241,7 @@ ani_pics=0
 JUSTIFY="center"
 CONTRAST_CLR='gray'
 NOMENU=false
+SC_AR=133
 TOVID_PREFIX=$(tovid -prefix)
 
 ##############################################################################
@@ -2960,6 +2961,10 @@ while test $# -gt 0; do
         "-device" )
             shift
             BURN_DEVICE="$1"
+            if [[ ! -b $(readlink -f $BURN_DEVICE) ]]; then
+                usage_error "you gave \"-device ${BURN_DEVICE}\":
+                $BURN_DEVICE is not a block device file or link to a block device"
+            fi
             ;;
         "-speed" )
             shift
@@ -3020,6 +3025,7 @@ while test $# -gt 0; do
     esac
     $DO_SHIFT && shift
 done
+
 ##############################################################################
 #                      Sanity checks and preliminaries                       #
 ##############################################################################
