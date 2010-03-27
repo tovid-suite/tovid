@@ -437,7 +437,7 @@ test_version()
     return 0
 }
 
-# ******************************************************************************
+
 # ******************************************************************************
 #
 #
@@ -562,9 +562,9 @@ USER_PREFS=$TOVID_HOME/preferences
 WORKING_DIR=$PWD
 OUTPUT_DIR=$PWD
 
-# If prefs file exists, read it
+# If prefs file exists, source it
 if test -f $USER_PREFS; then
-    eval $(grep -v ^# $USER_PREFS)
+    . "$USER_PREFS"
 # Otherwise, create a default prefs file
 else
     PREFS_CONTENTS=`cat << EOF
@@ -575,6 +575,9 @@ else
 EOF`
     printf "$PREFS_CONTENTS\n" > "$USER_PREFS"
 fi
+# if preferences vars are set in the environment, use those (takes precedence).
+[[ $TOVID_WORKING_DIR ]] && WORKING_DIR="$TOVID_WORKING_DIR"
+[[ $TOVID_OUTPUT_DIR ]] && OUTPUT_DIR="$TOVID_WORKING_DIR"
 
 # ******************************************************************************
 # Check for run-time dependencies
