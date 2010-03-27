@@ -2863,7 +2863,8 @@ while test $# -gt 0; do
             ADV_OPT=( "${ADV_OPT[@]}" "$1" )
             USER_TITLE_GEO=:
             shift
-            [[ $1 =~ ([-+][0-9]+)([-+][0-9]+) ]]
+            xpr='([-+][0-9]+)([-+][0-9]+)'
+            [[ $1 =~ $xpr ]]
             [[ -n ${BASH_REMATCH[1]} ]] && title_xoffset=${BASH_REMATCH[1]}
             [[ -n ${BASH_REMATCH[2]} ]] && title_yoffset=${BASH_REMATCH[2]}
             ;;
