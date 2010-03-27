@@ -64,8 +64,10 @@ SCRIPT_START_TIME=`date +%s`
 # check if symlink in /tmp exists and use time stamped link if so
 WORK_DIR="/tmp/todisc-work"
 CUR_DIR=$(readlink -f "$PWD")
+WORKING_DIR=${WORKING_DIR:-CUR_DIR}
+
 # make unique REAL_WORK_DIR
-REAL_WORK_DIR="$CUR_DIR/todisc-work"
+#REAL_WORK_DIR="$CUR_DIR/todisc-work"
 LOG_FILE=$(readlink -f todisc.log)
 #RECURSIVE_LOG_FILE=$(tempfile -s -todisc.log)
 OUT_PREFIX=""
@@ -836,7 +838,7 @@ tovid_reencode()
 
 mk_workdir()
 {
-    REAL_WORK_DIR=$(tempdir $CUR_DIR/todisc-work)
+    REAL_WORK_DIR=$(tempdir "$WORKING_DIR/todisc-work")
     WORK_DIR=$(tempdir /tmp/todisc-work nocreate)
     # tempdir() made a unique name with nocreate, now make it a symlink
     ln -sf "$REAL_WORK_DIR" "$WORK_DIR"
@@ -3168,18 +3170,20 @@ fi
 # BASEDIR is supplied by the calling todisc with -basedir
 : ${BASEDIR:="$WORK_DIR"}
 
-# Make sure -out was provided
+# Make sure -out was provided and it is valid
 if test -n "$OUT_PREFIX"; then
     OUT_DIR=$(readlink -f "$OUT_PREFIX")
-    yecho "$OUT_DIR"
     if [[ ! -d ${OUT_DIR%/*} ]]; then
         OUT_PATH=$(readlink -m "$OUT_PREFIX")
         usage_error "The -out path ${OUT_PATH%/*}/ does not exist"
     fi
-     if egrep -q '<|>|&' <<< "$OUT_DIR"; then
+    if egrep -q '<|>|&' <<< "$OUT_DIR"; then
         usage_error "Sorry, dvdauthor will not let you use a -out name \
         with '>', '<' or '&' in it.  Please choose another directory or \
         name for -out  You used: $OUT_DIR"
+    elif test $(wc -l <<< "$(echo -e "$OUT_DIR")") -gt 1; then
+        usage_error "Dvdauthor does not allow multiline directory names.  
+        Please change the directory you gave as an -out argument."
     fi
 else
     usage_error "Please provide an output name with -out"
@@ -4593,8 +4597,6 @@ echo "$WORK_DIR will be a symlink pointing to this directory"
 echo -e "\n**************"
 $WARN && sleep 1
 cd "$WORK_DIR"
-# BASEDIR is the dir of the calling script, if unset, use WORK_DIR (For vmgm)
-: ${BASEDOR:-$WORK_DIR}
 
 # default of no blur if using 3D thumbs
 if $THUMBS_3D; then
