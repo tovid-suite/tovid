@@ -780,6 +780,7 @@ check_compliance()
                     test_file="${IN}.enc.mpg"
                 fi
                 if ! test -f "$test_file"; then
+                    KEEP_FILES=:
                     runtime_error "Could not encode file: $IN"
                 fi
                 #yecho
