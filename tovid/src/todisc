@@ -63,13 +63,8 @@ SCRIPT_START_TIME=`date +%s`
 
 # check if symlink in /tmp exists and use time stamped link if so
 WORK_DIR="/tmp/todisc-work"
-CUR_DIR=$(readlink -f "$PWD")
-WORKING_DIR=${WORKING_DIR:-CUR_DIR}
 
-# make unique REAL_WORK_DIR
-#REAL_WORK_DIR="$CUR_DIR/todisc-work"
 LOG_FILE=$(readlink -f todisc.log)
-#RECURSIVE_LOG_FILE=$(tempfile -s -todisc.log)
 OUT_PREFIX=""
 TV_STANDARD=ntsc
 MENU_LEN=( 20 )
