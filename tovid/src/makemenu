@@ -845,18 +845,18 @@ if test -s "$OUT_FILENAME"; then
         if test "$RES" = "vcd"; then
             echo "You can use this menu on an SVCD or VCD disc with:"
             echo
-            echo "  makexml -vcd -menu \"$OUT_FILENAME\" <title 1> <title 2> ... \\"
+            echo "  tovid xml -vcd -menu \"$OUT_FILENAME\" <title 1> <title 2> ... \\"
             echo "          <output name>"
         else
             echo "You can use this menu on a DVD disc with:"
             echo
-            echo "  makexml -dvd -menu \"$OUT_FILENAME\" <title 1> <title 2> ... \\"
+            echo "  tovid xml -dvd -menu \"$OUT_FILENAME\" <title 1> <title 2> ... \\"
             echo "          -out <output name>"
         fi
 
         echo
         echo "where <title N> is an MPEG video file corresponding to title N as listed"
-        echo "on your menu. Run 'makexml' without any options for more usage information."
+        echo "on your menu. Run tovid xml' without any options for more usage information."
     else
         echo "Done!"
     fi
