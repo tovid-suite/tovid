@@ -105,6 +105,11 @@ echo $"$SCRIPTNAME"
 
 assert_dep "$vcd" "You are missing dependencies required to image and burn (S)VCDs!"
 
+# check for valid CD burner.  This may fail but at least we tried
+OIFS=$IFS \
+IFS=$'\n' device=($(find -L /dev -type b -name 'cdrw*' 2>/dev/null )) IFS=$OIFS
+CDRW_DEVICE=${device:-$CDRW_DEVICE}
+
 while test x"${1:0:1}" = "x-"; do
     case "$1" in
       "-quiet" ) QUIET=: ;;
