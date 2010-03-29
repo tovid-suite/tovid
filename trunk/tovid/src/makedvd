@@ -180,6 +180,10 @@ fi
 if test $# -lt 1; then
     usage_error "Please provide a filename (.xml, or dvd filesystem folder)"
 fi
+# check for valid DVD burner.  This may fail but at least we tried
+OIFS=$IFS IFS=$'\n' device=($(find -L /dev -name 'dvdrw*' 2</dev/null )) IFS=$OIFS
+device=${device[0]}
+[[ -n $device && -b $(readlink -f $device) ]] && DVDRW_DEVICE=$device
 
 while test $# -gt 1; do
     case "$1" in
