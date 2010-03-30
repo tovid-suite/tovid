@@ -49,11 +49,17 @@ further arguments to get help on a command, and what options it expects.
 Two configuration files are created the first time you run tovid:
 
 : **~/.tovid/preferences**
-    Defines working directory and output directory
+    Defines working directory for all scripts.
+    In addition you can define the output directory for makempg here.
 : **~/.tovid/tovid.config**
-    Includes command-line options that should always be passed to tovid
+    Includes command-line options that should always be passed to
+    makempg.
 
 Edit these files if you wish to change your configuration.
+
+The following environment variables are also honoured:
+TOVID_WORKING_DIR (working directory for all scripts).
+TOVID_OUTPUT_DIR (output directory for the makempg script).
 
 
 =Command:gui=
@@ -61,7 +67,8 @@ Edit these files if you wish to change your configuration.
 **tovid gui** starts the graphical user interface (GUI) for tovid. This is
 the easiest way to start creating DVDs with tovid. At this time, there are no
 additional command-line options; the GUI controls take care of everything,
-and all help is integrated in the form of tooltips.
+and all help is integrated in the form of tooltips.  You can also see
+**Command:disc ** for more detail about the options.
 
 
 =Command:disc=
