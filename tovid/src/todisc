@@ -1672,9 +1672,9 @@ dvdauthor_error()
 confirm_backup()
 {
     yecho
-    yecho "Slideshows are an experimental feature.  Todisc is unlikely to
-    overwrite your personal files, but you should take precautions and backup
-    your images/files, as you would with any alpha software."
+    yecho "Slideshows are an experimental (but well tested) feature.  Todisc is
+    unlikely to overwrite your personal files, but you should take precautions
+    and backup your images/files, as you would with any beta software."
     yecho "You can disable the check by using '-no-confirm-backup'"
     echo
     yecho "If and when you have backed up your images, type 'yes' to continue"
