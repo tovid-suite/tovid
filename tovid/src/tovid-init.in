@@ -569,7 +569,8 @@ if test -f $USER_PREFS; then
 else
     PREFS_CONTENTS=`cat << EOF
 # tovid preferences
-# Configures working/output directories for tovid
+# Configures working directory for all scripts and
+# output directory for the makempg script
 #WORKING_DIR=/tmp
 #OUTPUT_DIR=/video/outfiles
 EOF`
