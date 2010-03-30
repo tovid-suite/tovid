@@ -3920,7 +3920,7 @@ if $NOMENU; then
     # link files in $WORK_DIR so an array with "$file $chapters" will work
     for i in "${!IN_FILES[@]}"; do
         ln -s "${IN_FILES[i]}" "$WORK_DIR/$(printf %03d%s%s $i .mpg)"
-        idvid_stats[i]=$(tovid id -terse "${IN_FILES[i]}" 2>/dev/null)
+        idvid_stats[i]=$(idvid -terse "${IN_FILES[i]}" 2>/dev/null)
         # run mencoder to get the length if using arbitrary chapters
         if $USER_CHAPTERS; then
             chapter_points[i]=${CHAPT_ARRAY[i]}
@@ -6473,7 +6473,7 @@ $SINGLE_SLIDESHOW && echo "Getting stats on the slides now"
 for ((i=0; i<${#IN_FILES[@]}; i++)); do
     if [[ $MENU_NUM -eq 1 ]]; then
         ! $SINGLE_SLIDESHOW && spin "Getting stats on ${IN_FILES[i]}"
-        idvid_stats[i]=$(idvid -terse "${IN_FILES[i]}" 2>/dev/null)
+        idvid_stats[i]=$(idvid -terse -accurate "${IN_FILES[i]}" 2>/dev/null)
     fi
     if [ -s  "${IN_FILES[i]}.nav_log" ]; then
         length[i]=$(awk 'END{print NR}' "${IN_FILES[i]}.nav_log")
@@ -6487,7 +6487,7 @@ if $GROUPING &&  [[ $MENU_NUM -eq 1 ]]; then
     for u in ${!grouping[@]}; do
         CUR_VID=$(readlink -f "${grouping[u]}")
         spin "Getting stats on "${CUR_VID##*/}""
-        group_idvid_stats[u]=$(idvid -terse "$CUR_VID" 2>/dev/null)
+        group_idvid_stats[u]=$(idvid -terse -accurate "$CUR_VID" 2>/dev/null)
         if [ -s "$CUR_VID.nav_log" ]; then
             group_length[u]=$(awk 'END{print NR}' "$CUR_VID.nav_log")
         fi
@@ -7960,10 +7960,10 @@ if $SUB_MENU; then
         fi
         # run if wav doesn't exist, or its a slideshow
         if [[ ! -s $WORK_DIR/submenu.wav ]] || ${SLIDESHOW[s]}; then
-            yecho "Running "${BGAUDIO_CMD[@]}"" |fold -bs >> "$LOG_FILE"
+            yecho "Running ${BGAUDIO_CMD[@]}"
             # run command, error out if problem
             ! "${BGAUDIO_CMD[@]}" 2>&1 |strings >> "$LOG_FILE" 2>&1 \
-            && runtime_error
+            && runtime_error "Problem getting audio for the submenu"
         fi
         # convert to DVD/SVCD format as long as not "none" or single audio file
         if $SUBMENU_AUDIO \
@@ -7981,7 +7981,7 @@ if $SUB_MENU; then
             fi
             echo "Running "${BGAUDIO_CMD2[@]}"" | fold -bs >> "$LOG_FILE"
             ! "${BGAUDIO_CMD2[@]}" 2>&1 |strings >> "$LOG_FILE" \
-            && runtime_error
+            && runtime_error "Problem getting audio for the submenu"
             unset TIME
         fi
         # if "1" audio file, then convert it if it has not been done yet
@@ -8079,9 +8079,18 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
         $SHOWCASE_SIZE -vframes $FRAMES -an -y "$WORK_DIR/showcase/%06d.png")
         echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
         SED_VAR="frame="
-        if ! "${FFMPEG_CMD[@]}" 2>&1 |strings >> "$LOG_FILE";then
-            runtime_error "Problem creating images from the video."
-        fi
+        "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1 &
+        ffm_pid=$!
+        while ps -p $ffm_pid >/dev/null; do
+            sleep 1
+            spin $SPINNER
+        done
+        wait $ffm_pid
+        (($?)) && runtime_error "Problem creating images from the video."
+            
+        strings "$LOG_FILE.tmp" >> "$LOG_FILE"
+        rm -f "$LOG_FILE.tmp"
+        echo
     fi
     for ((i=FIRST_PIC; i<LAST_PIC; i++)); do
         SC_PICS=( ${SC_PICS[@]} $(find $WORK_DIR/showcase -maxdepth 1 \
