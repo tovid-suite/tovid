@@ -80,7 +80,7 @@ if __name__ == '__main__':
             try:
                 status = subprocess.call([script] + args)
             except KeyboardInterrupt:
-                print("!!! tovid was manually interrupted. Exiting.")
+                print("\n!!! tovid was manually interrupted. Exiting.")
                 # Sleep a second to let the script clean up
                 time.sleep(1)
                 sys.exit(1)
