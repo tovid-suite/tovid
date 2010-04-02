@@ -385,15 +385,15 @@ cleanup()
              different seeks so should be deleted manually"
     else
         if [[ -d $REAL_WORK_DIR ]]; then
-            yecho "Removing $REAL_WORK_DIR" >&2
             [[ -n $SUPPORT_VIDEOS ]] && yecho \
-             "Removing "${SUPPORT_VIDEOS[@]}"" >&2 && \
-             rm -f "${SUPPORT_VIDEOS[@]}" >&2
+            "Removing "${SUPPORT_VIDEOS[@]}"" >&2 && \
+            rm -f "${SUPPORT_VIDEOS[@]}" >&2
+            #echo -n "Removing $REAL_WORK_DIR ..." >&2
             rm -rf "$REAL_WORK_DIR" >&2
         fi
     fi
-    yecho "Removing the symlink in /tmp . . . " >&2
-    rm -fv "$WORK_DIR" >&2
+    #yecho "Removing the symlink in /tmp" >&2 | tee -a "$LOG_FILE"
+    rm -f "$WORK_DIR" >&2
 }
 # exit from all recursive todisc calls
 killall_instances()
@@ -478,10 +478,11 @@ confirm_preview()
         yecho
     else
         yecho "Preview not OK, exiting."
-        echo -n "Deleting symlink in /tmp . . . "
-        rm -fv "$WORK_DIR"
+        #echo -n "Deleting symlink in /tmp . . . "
+        echo "Cleaning up..."
+        rm -f "$WORK_DIR"
         if ! $KEEP_FILES; then
-            echo -n "Deleting "$REAL_WORK_DIR" . . . "
+            #echo -n "Deleting "$REAL_WORK_DIR" . . . "
             rm -fr "$REAL_WORK_DIR"
         fi
         yecho
@@ -835,6 +836,7 @@ tovid_reencode()
 mk_workdir()
 {
     REAL_WORK_DIR=$(tempdir "$WORKING_DIR/todisc-work")
+    sleep .5 # avoid race condition
     WORK_DIR=$(tempdir /tmp/todisc-work nocreate)
     # tempdir() made a unique name with nocreate, now make it a symlink
     ln -sf "$REAL_WORK_DIR" "$WORK_DIR"
@@ -2100,6 +2102,7 @@ while test $# -gt 0; do
                 for ((i=0; i<${#ARGS_ARRAY[@]}; i++)); do
                     grp[x++]=$(readlink -f "${ARGS_ARRAY[i]}")
                 done
+                unset x
                 [[ -z ${FILES[@]} ]] && ss_index=0 || ss_index=${#FILES[@]}
                 SLIDESHOW[ss_index]=: # is this a slideshow ?
                 FILES[ss_index]=$(readlink -f "${ARGS_ARRAY[0]}")
@@ -2149,6 +2152,8 @@ while test $# -gt 0; do
                 grp[x++]=$(readlink -f "${ARGS_ARRAY[i]}")
             done
             GROUP_IN_FILES=( "${GROUP_IN_FILES[@]}" "${grp[@]}" )
+            ((${ARGS_ARRAY[0]})) 2>/dev/null || usage_error "Arguments to \
+            -group must be preceeded by a positive integer.  See 'man tovid'"
             groupkey=$(( ${ARGS_ARRAY[0]} - 1))
             GROUP[groupkey]=${#grp[@]}
             # temporary till I finish submenu groups TODO
@@ -2173,9 +2178,8 @@ while test $# -gt 0; do
             get_listargs "$@"
             OIFS=$IFS
             IFS=""
-            # undercolor box should have a space on either side of the title
             for c in ${!ARGS_ARRAY[@]}; do
-                CHAPTER_TITLES[c]=${ARGS_ARRAY[c]}
+                CHAPTER_TITLES=("${CHAPTER_TITLES[@]}" "${ARGS_ARRAY[c]}")
             done
             IFS=$OIFS
             ;;
@@ -4109,7 +4113,7 @@ if $DO_CAROUSEL; then
             MIXFILES[g]=$(readlink -f "${mixgroup[g]}")
             MIXLINKS[g]=${mixgroup[g]}
             # remove original link we can keep track of what is already encoded
-            rm -f "${MIXLINKS[g]}" #add -v for DEBUG
+            rm -f "${MIXLINKS[g]}"
         done
     else
         MIXFILES=( "${IN_FILES[@]}" )
@@ -4349,7 +4353,6 @@ TILE_1333=(1x1 2x1 2x2 2x2 3x2 3x2 3x3 3x3 3x3 4x3 4x3 4x3 4x4 4x4 4x4 \
 8x8 8x8 8x8 8x8 9x8 9x8 9x8 9x8 9x8 9x8  9x8 9x9 9x9 9x9 9x9 \
 9x9 9x9 9x9 9x9 9x9 10x9 10x9 10x9 10x9 10x9 10x9 10x9 10x9 10x9 10x10 \
 10x10 10x10 10x10 10x10 10x10 10x10 10x10)
-# this is a TODO
 TILE_1777=(1x1 2x1 2x2 2x2 3x2 3x2 3x3 3x3 3x3 4x3 4x3 4x3 4x4 4x4 4x4 \
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 5x6 5x6 5x6 5x6 5x6 \
 6x6 6x6 6x6 6x6 6x6 6x6)
@@ -4554,11 +4557,10 @@ if $SHOWCASE && [ "$SC_TITLE_ALIGN" = "east" ] && ! $TEXTMENU; then
         if [ ${SC_THUMB_X_ARRAY[i]} -gt 360 ]; then
             SC_THUMB_X_ARRAY[i]=360
         fi
-        if ! $TEXTMENU; then
-            SC_TITLES_X_ARRAY[i]=$(( ${SC_THUMB_X_ARRAY[i]} + \
-            ${THUMB_SIZE/x*} + 5 ))
-            SC_TITLES_Y_ARRAY[i]=$(( ${SC_TITLES_Y_ARRAY[i]} + 18 ))
-        fi
+        SC_TITLES_X_ARRAY[i]=$(( ${SC_THUMB_X_ARRAY[i]} + \
+        ${THUMB_SIZE/x*} + 5 ))
+        #SC_TITLES_Y_ARRAY[i]=$(( ${SC_TITLES_Y_ARRAY[i]} + 18 ))
+        SC_TITLES_Y_ARRAY[i]=${SC_THUMB_Y_ARRAY[i]} # DEBUG:why not originally?
     done
 fi
 if { $USER_GRAVITY && $SHOWCASE && ! $TEXTMENU ; } \
@@ -6222,7 +6224,6 @@ echo
 
 # animated slideshows join the slides and can add audio (-bgaudio)
 if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
-
     for i in ${!MIX_IN[@]}; do
         this_item=${MIX_IN[i]##*/}
         for f in ${!FILES2BIN[@]}; do
