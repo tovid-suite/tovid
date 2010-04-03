@@ -982,7 +982,7 @@ OUTNAME=$(basename "$OUT_PREFIX")
 TMP_DIR=$(tempdir "$WORKING_DIR/$OUTNAME")
 # Files to use for temporarily storing video info and encoding progress
 SCRATCH_FILE="$TMP_DIR/tovid.scratch"
-LOG_FILE="$TMP_DIR/tovid.log"
+LOG_FILE="$TMP_DIR/makempg.log"
 
 # Remove temp and log files if they exist
 rm -f "$SCRATCH_FILE" "$LOG_FILE"
