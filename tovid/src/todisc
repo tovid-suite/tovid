@@ -5658,7 +5658,7 @@ EOF
                 convert -size $BUTTON_DIM xc:none -background none \
                 $WORK_DIR/empty-button.png
                 fake_montage=( $WORK_DIR/Highlight0.png \
-                $(for ((i=0; i<NUM_FILES-1; i++)); do \
+                $(for ((i=0; i<NUM_FILES; i++)); do \
                 echo $WORK_DIR/empty-button.png; done))
                 for ((i=0; i<=NUM_FILES; i++)); do
                     fake_montage_cmd=( ${fake_montage_cmd[@]} \
@@ -5679,6 +5679,8 @@ EOF
                     btn_geos[i]=${button_geos[@]}
                     unset button_geos
                 done
+                echo "Running convert  -size $VIDSIZE xc:none -background none \
+                ${fake_montage_cmd[@]} -mosaic $WORK_DIR/fake_montage.png" | fold -bs
                 convert  -size $VIDSIZE xc:none -background none \
                 ${fake_montage_cmd[@]} -mosaic "$WORK_DIR/fake_montage.png"
                 convert +antialias -size $VIDSIZE xc:none \
