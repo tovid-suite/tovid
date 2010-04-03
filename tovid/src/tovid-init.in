@@ -513,14 +513,20 @@ if ! test -d "$TOVID_HOME"; then
 fi
 
 # Config file configuration and creation
-CONFIG_FILE=$TOVID_HOME/tovid.config
+CONFIG_FILE=$TOVID_HOME/makempg.config
 
 if ! test -f $CONFIG_FILE; then
-    CONFIG_CONTENTS=`cat << EOF
+    if test -f $TOVID_HOME/tovid.config; then
+        echo -e "${SEPARATOR}"
+        echo "INFO: renaming $TOVID_HOME/tovid.config to $CONFIG_FILE"
+        mv "$TOVID_HOME/tovid.config" "$CONFIG_FILE"
+        sleep 5
+    else
+        CONFIG_CONTENTS=`cat << EOF
 tovid
-# Sample tovid configuration file
-# Each line may have one or more tovid options
-# This file is read EVERY time tovid runs
+# Sample makempg ("tovid mpg") configuration file
+# Each line may have one or more makempg options
+# This file is read EVERY time makempg runs
 # DO NOT COMMENT IN LINE
 
 # See 'man tovid' for a complete list of options
@@ -552,7 +558,8 @@ tovid
 # Normalize audio
 #-normalize
 EOF`
-    printf "$CONFIG_CONTENTS\n" > "$CONFIG_FILE"
+        printf "$CONFIG_CONTENTS\n" > "$CONFIG_FILE"
+    fi
 fi
 
 # Working directory configuration
