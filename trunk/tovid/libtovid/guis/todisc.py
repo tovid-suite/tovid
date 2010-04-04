@@ -283,7 +283,9 @@ _chapter_titles = RelatedList('Chapter titles', '-files', '1:*',
         'click on a video title in the list to the left, then click '
         '"Add" repeatedly until you reach the desired number of '
         'chapters, you can then edit the titles from the keyboard using '
-        'the Enter key to cycle through them. '), side='left')
+        'the Enter key to cycle through them. '),
+    side='left',
+    repeat=False)
 
 _title_gap = Number('Space between titles', '-title-gap', 10,
     'Leave this much vertical gap between titles.  '
@@ -958,7 +960,7 @@ playback = Tabs("Playback",
         RelatedList('Chapters', '-files', '1:1', _chapters, side='top', filter=strip_all),
     ),
     VPanel('Grouped Videos',
-        RelatedList('Grouped videos', '-files', '1:*', _group),
+        RelatedList('Grouped videos', '-files', '1:*', _group, index=True, repeat=True),
     ),
 )
 
