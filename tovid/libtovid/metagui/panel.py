@@ -715,8 +715,10 @@ class RelatedList (Panel):
             # 'repeat' keywords
             print("Adding arguments for 1:* sub-list: '%s'" %
                   self.child.option)
-            # If not repeating child option, add it once now
-            if not self.repeat:
+            # If child list(s) are nonempty, and we're not repeating the
+            # child option, add it once now
+            child_vals = [l.get() for l in self.mapped]
+            if any(child_vals) and not self.repeat:
                 args.append(self.child.option)
             # Append arguments for each child list
             for index, list_var in enumerate(self.mapped):
