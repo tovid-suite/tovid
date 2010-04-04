@@ -327,6 +327,7 @@ class Control (Widget):
         pass
 
 
+    # FIXME: The variable argument here is entirely to support RelatedList
     def get_args(self, variable=None):
         """Return a list of arguments for passing this command-line option.
         draw() must be called before this function.

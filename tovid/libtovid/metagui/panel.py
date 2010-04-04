@@ -534,6 +534,15 @@ class RelatedList (Panel):
             side
                 Pack the parent to the 'left' of child or on 'top' of child
 
+        Keyword arguments:
+
+            index
+                True to pass an additional argument between the sub-list's
+                option and arguments with the 1-based index of the sub-list.
+            repeat
+                True to pass the sub-list's option for every sub-list; False
+                to pass the sub-list's option only once.
+
         Examples::
 
             RelatedList('-files', '1:1',
@@ -564,6 +573,9 @@ class RelatedList (Panel):
         self.selected = None
         self.parent_is_copy = False
         self.listbox = None
+        # Handle keyword args
+        self.index = kwargs.get('index', False)
+        self.repeat = kwargs.get('repeat', True)
 
 
     def draw(self, master, **kwargs):
@@ -699,8 +711,23 @@ class RelatedList (Panel):
             args.extend(self.parent.get_args())
         # Add child args, for one or many children
         if self.correspondence == '1:*':
-            for list_var in self.mapped:
-                args.extend(self.child.get_args(list_var))
+            # FIXME: Most of this is a total hack to support 'index' and
+            # 'repeat' keywords
+            print("Adding arguments for 1:* sub-list: '%s'" %
+                  self.child.option)
+            # If not repeating child option, add it once now
+            if not self.repeat:
+                args.append(self.child.option)
+            # Append arguments for each child list
+            for index, list_var in enumerate(self.mapped):
+                child_args = self.child.get_args(list_var)
+                if child_args:
+                    child_option = child_args.pop(0)
+                    if self.repeat:
+                        args.append(child_option)
+                    if self.index:
+                        args.append(index+1)
+                    args.extend(child_args)
         else: # '1:1'
             args.extend(self.child.get_args())
         # Return args only if some list items are non-empty
