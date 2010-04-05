@@ -120,6 +120,8 @@ CHAIN_VIDEOS=false
 NOASK=false
 SC_FRAMESTYLE="none"
 THUMB_FRAME="-shave 3x3 +repage -border 3x3"
+THUMB_FRAME_SIZE="3x3"
+THUMB_FRAME_CLR='#444744'
 SC_BORDERWIDTH=4x4
 SC_FRAME="-bordercolor  #6E6E6E -compose Copy -border $SC_BORDERWIDTH"
 SHOWCASE_VIDEO=""
@@ -481,7 +483,9 @@ confirm_preview()
         #echo -n "Deleting symlink in /tmp . . . "
         echo "Cleaning up..."
         rm -f "$WORK_DIR"
-        if ! $KEEP_FILES; then
+        if $KEEP_FILES; then
+            echo "Keeping temporary files in $REAL_WORK_DIR"
+        else
             #echo -n "Deleting "$REAL_WORK_DIR" . . . "
             rm -fr "$REAL_WORK_DIR"
         fi
@@ -762,8 +766,8 @@ check_compliance()
                     yecho "Converting $THIS_FILE"
                     echo
                     countdown 3
-                    makempg $NO_ASK -$TV_STANDARD -$TARGET -in "$IN" \
-                    -out "${IN}.enc" "${TOVID_OPTS[@]}"
+                    TOVID_WORKING_DIR=$WORKING_DIR makempg $NO_ASK \
+                    -$TV_STANDARD -$TARGET -in "$IN" -out "${IN}.enc" "${TOVID_OPTS[@]}"
                     # for grouped files replace symlink in $WORK_DIR
                     $group_set && [[ -L "${FILES_TO_ENCODE[i]}" ]] && \
                     ln -sf "${IN}.enc.mpg" "${FILES_TO_ENCODE[i]}"
@@ -1532,7 +1536,7 @@ quick_menu()
     unset LEFTPAD TOPPAD RIGHTPAD BOTTOMPAD
     # get width and height of background: we may need to resize it to $VIDSIZE
     if $QUICKMENU_IS_BACKGROUND; then
-        BG_VIDEO_STATS=$(idvid -fast "$BG_VIDEO")
+        BG_VIDEO_STATS=$(idvid -fast "$BG_VIDEO" 2>/dev/null)
         BG_VIDEO_WIDTH=$(awk '/Width:/ {print $2}' <<< "$BG_VIDEO_STATS")
         BG_VIDEO_HEIGHT=$(awk '/Height:/ {print $2}' <<< "$BG_VIDEO_STATS")
         if [[ ${BG_VIDEO_WIDTH}x${BG_VIDEO_HEIGHT} != $VIDSIZE ]]; then
@@ -2218,7 +2222,7 @@ while test $# -gt 0; do
         "-grid" )
             GRID=1
             ;;
-        "-keep-files" | "-keepfiles" )
+        "-keep-files" )
             KEEP_FILES=:
             ;;
         "-dvd" )
@@ -2593,6 +2597,19 @@ while test $# -gt 0; do
             THUMBS_3D=:
             RAISE="-raise 8x8"
             THUMB_FRAME=""
+            ;;
+        "-thumb-frame-colour" | "-thumb-frame-color" )
+            shift
+            THUMB_FRAME_CLR="$1"
+            ;;
+        "-thumb-frame-size" )
+            shift
+            tfsize="$1"
+            if test_is_number "$tfsize"; then
+                THUMB_FRAME_SIZE="${tfsize}x${tfsize}"
+            else
+                usage_error "-thumb-frame-size requires an integer as argument"
+            fi
             ;;
         "-blur" )
             shift
@@ -3448,8 +3465,8 @@ if [[ $MENU_NUM -eq 1 ]] && ! $TEXTMENU \
     yecho "Determining aspect ratio of videos"
     for ((i=0; i<${#FILES[@]}; i++)); do
         ! $SINGLE_SLIDESHOW && yecho "Checking aspect ratios: ${FILES[i]}"
-        stats[i]=$(idvid -terse -fast "${FILES[i]}" |
-          awk -F= '/V_ASPECT_WIDTH=/ {print $2}')
+        stats[i]=$(idvid -terse -fast "${FILES[i]}" 2>/dev/null |
+          awk -F= '/V_ASPECT_WIDTH=/ {print $2}' 2>/dev/null)
         cur_aspect=${stats[i]}
         if ((cur_aspect)); then
             [[ $cur_aspect = 133 ]] && ASPECT_RATIO=4:3
@@ -3584,6 +3601,7 @@ if [[ $TV_STANDARD = "ntsc" ]]; then
     get_safe_colour $BG_CLR && BG_CLR=$SAFE_CLR
     get_safe_colour $TITLES_STROKE && TITLES_STROKE=$SAFE_CLR
     get_safe_colour $SUBMENU_BG_CLR && SUBMENU_BG_CLR=$SAFE_CLR
+    get_safe_colour $THUMB_FRAME_CLR && THUMB_FRAME_CLR=$SAFE_CLR
     echo
     if [[ -n ${SUB_CLRS[@]} ]]; then
         echo "*** Note: ***"
@@ -3640,8 +3658,8 @@ if $SHOWCASE; then
 fi
 # find out the aspect ratio of the showcase file
 if [[ -n $SHOWCASE_VIDEO ]]; then
-    SC_AR=$(idvid -fast -terse "$SHOWCASE_VIDEO" |
-    awk -F= '/V_ASPECT_WIDTH/ {print $2}')
+    SC_AR=$(idvid -fast -terse "$SHOWCASE_VIDEO" 2>/dev/null |
+    awk -F= '/V_ASPECT_WIDTH/ {print $2}' 2>/dev/null)
 elif [[ -n $SHOWCASE_IMG && $SHOWCASE_IMG != "dummy" ]]; then
     SC_AR=$(identify -ping -format %wx%h "$SHOWCASE_IMG")
     SC_AR=$(bc_math "${SC_AR/x*} / ${SC_AR/*x}" )
@@ -5471,7 +5489,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                 "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD3[@]}"
             fi
         fi
-        IM_CMD=(convert -background none -bordercolor "#444744" $THUMB_FRAME \
+        IM_CMD=(convert -background none -bordercolor $THUMB_FRAME_CLR $THUMB_FRAME \
         $RAISE "${PICS[i]}")
         IM_CMD0=(composite -gravity center -compose DstOver \
         "$WORK_DIR/feather_mask2.png" "${PICS[i]}")
@@ -5484,11 +5502,13 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         ! $USE_FEATHER_MASK && IM_CMD3=(convert -)
         IM_CMD3b=(convert - "$WORK_DIR/thumb_title${i}.png" -gravity south \
         -geometry +0+5 -compose over -composite)
-        IM_CMD4=(convert "${PICS[i]}" -background none -bordercolor "#444744" \
-        "$WORK_DIR/thumb_title${i}.png" -gravity south \
+        IM_CMD4=(convert "${PICS[i]}" -background none -bordercolor $THUMB_FRAME_CLR \
+        -border $THUMB_FRAME_SIZE "$WORK_DIR/thumb_title${i}.png" -gravity south \
         -geometry +0+5 -compose over -composite )
         IM_CMD5=(convert - -bordercolor none $THUMB_FRAME $THUMB_ROTATE -resize ${THUMB_SIZE}! \
         "${PICS[i]}" )
+        IM_CMD6=(convert - $THUMB_ROTATE -resize ${THUMB_SIZE}! "${PICS[i]}") 
+        
         if $FEATHER; then
             if $SHOWCASE; then
                 "${IM_CMD0[@]}" miff:- | "${IM_CMD5[@]}"
@@ -5500,9 +5520,9 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         else  # not feather
             if $SHOWCASE; then
                 "${IM_CMD[@]}" miff:- | "${IM_CMD5[@]}"
+                "${IM_CMD[@]}" miff:- | "${IM_CMD6[@]}"
             else # not feather and not showcase
-#                "${IM_CMD1[@]}" miff:- | "${IM_CMD2[@]}" miff:- |
-                "${IM_CMD4[@]}" miff:- | "${IM_CMD5[@]}"
+                "${IM_CMD4[@]}" miff:- |  "${IM_CMD6[@]}"
             fi
         fi
     done
@@ -5679,8 +5699,6 @@ EOF
                     btn_geos[i]=${button_geos[@]}
                     unset button_geos
                 done
-                echo "Running convert  -size $VIDSIZE xc:none -background none \
-                ${fake_montage_cmd[@]} -mosaic $WORK_DIR/fake_montage.png" | fold -bs
                 convert  -size $VIDSIZE xc:none -background none \
                 ${fake_montage_cmd[@]} -mosaic "$WORK_DIR/fake_montage.png"
                 convert +antialias -size $VIDSIZE xc:none \
@@ -5698,7 +5716,7 @@ EOF
                 convert -size $BUTTON_DIM xc:none -background none \
                 $WORK_DIR/empty-button.png
                 fake_montage=( $WORK_DIR/Highlight0.png \
-                $(for ((i=0; i<NUM_FILES-1; i++)); do \
+                $(for ((i=0; i<NUM_FILES; i++)); do \
                 echo $WORK_DIR/empty-button.png; done))
                 montage -background none ${fake_montage[@]} \
                 -tile ${TILE_ARRAY[NUM_FILES]} -geometry ${THUMB_SIZE}${MTG_GEO} \
@@ -5747,7 +5765,7 @@ EOF
             convert -size $BUTTON_DIM xc:none -background none \
             $WORK_DIR/empty-button.png
             fake_montage=( $WORK_DIR/000000-highlight.png \
-            $(for ((i=0; i<NUM_FILES-1; i++)); do \
+            $(for ((i=0; i<NUM_FILES; i++)); do \
             echo $WORK_DIR/empty-button.png; done))
         fi
         if $SHOWCASE; then
@@ -5819,7 +5837,7 @@ EOF
         convert -size $BUTTON_DIM xc:none -background none \
         $WORK_DIR/empty-button.png
         fake_montage=( $WORK_DIR/000000-highlight.png \
-        $(for ((i=0; i<NUM_FILES-1; i++)); do \
+        $(for ((i=0; i<NUM_FILES; i++)); do \
         echo $WORK_DIR/empty-button.png; done))
 
         montage -background none ${fake_montage[@]} \
@@ -6126,7 +6144,7 @@ unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
 # in which case we want to skip this step anyway
 if ! $NOASK && ! $SWITCHED && [[ -n "$BG_VIDEO" ]]; then
     echo "Getting stats on the background video"
-    BGVIDEO_STATS=$(idvid -terse -fast "$BG_VIDEO" 2>&1)
+    BGVIDEO_STATS=$(idvid -terse -fast "$BG_VIDEO" 2>/dev/null)
     if [[ -z "$BG_AUDIO" ]]; then
         if grep -q "A_NOAUDIO=:" <<< "$BGVIDEO_STATS"; then
             :
@@ -7797,7 +7815,7 @@ if $SUB_MENU; then
                         sed -n -e "$a p") )
                     done
                     IM_CMD=(convert "${IMGS[@]}" -bordercolor '#6E6E6E' \
-                    -border 3x3 miff:-)
+                    -border $THUMB_FRAME_SIZE miff:-)
                     IM_CMD1=(montage - -tile ${TILE_ARRAY[C]} \
                     -geometry ${GEO_ARRAY[C]}+5+5 -bordercolor '#101010' \
                     -mattecolor '#101010' -background none miff:-)
@@ -7846,7 +7864,7 @@ if $SUB_MENU; then
                     done
                 fi
                 IM_CMD=(convert "${imgs[@]}" -bordercolor '#6E6E6E' \
-                -border 3x3 miff:-)
+                -border $THUMB_FRAME_SIZE miff:-)
                 IM_CMD1=(montage - -tile ${TILE_ARRAY[C]} -geometry \
                 ${GEO_ARRAY[C]}+5+5 -background none miff:-)
                 IM_CMD2=(convert $WORK_DIR/submenu$((i+1))_template.jpg \
@@ -8189,22 +8207,24 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             THUMB_ROTATE="-background none -rotate ${ROTATE_ARRAY[i]}"
             IM_CMD=(composite -compose CopyOpacity $THUMB_MASK \
             +matte "${PICS[p]}")
+            #IM_CMD01=(convert "${PICS[p]}" -background '#101010' \
+            #-bordercolor "#444744" $THUMB_FRAME )
             IM_CMD01=(convert "${PICS[p]}" -background '#101010' \
-            -bordercolor "#444744" $THUMB_FRAME )
+            -bordercolor $THUMB_FRAME_CLR $THUMB_FRAME )
             IM_CMD02=(convert "${PICS[p]}" $RAISE)
             IM_CMD03=(composite -compose CopyOpacity $THUMB_MASK +matte -)
             IM_CMD04=(convert - -background none \
-            -bordercolor "#444744"  "$WORK_DIR/thumb_title${i}.png" \
+            -bordercolor $THUMB_FRAME_CLR  "$WORK_DIR/thumb_title${i}.png" \
             -gravity south -geometry +0+5 -compose over -composite)
             IM_CMD1=(convert -resize ${THUMB_SIZE}! -)
             IM_CMD2=(composite -gravity center -compose DstOver \
             $WORK_DIR/feather_mask2.png -)
             ! $USE_FEATHER_MASK && IM_CMD2=(convert -)
             IM_CMD3=(convert "${PICS[p]}" -background none -bordercolor \
-            "#444744" $THUMB_FRAME "$WORK_DIR/thumb_title${i}.png" \
+            $THUMB_FRAME_CLR $THUMB_FRAME "$WORK_DIR/thumb_title${i}.png" \
             -gravity south -geometry +0+5 -compose over -composite)
-            IM_CMD4=(convert -background none -frame 3x3 \
-            -bordercolor "#444744" -)
+            IM_CMD4=(convert -background none -bordercolor $THUMB_FRAME_CLR \
+            -border $THUMB_FRAME_SIZE -)
             IM_CMD4b=(convert -background none -bordercolor none \
             $THUMB_FRAME -)
             IM_CMD5=(convert -size ${THUMB_SIZE} - $QUALITY $THUMB_ROTATE \
