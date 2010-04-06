@@ -58,7 +58,7 @@ dvd_video_files = [ filetypes.new_filetype('DVD video files', dvdext) ]
 
 # Users can use their own thumb masks.  Add to thumb mask control drop-down
 masks = [ 'normal', 'oval', 'plectrum', 'egg', \
-'wave', 'spiral', 'galaxy', 'flat-tube']
+'arch', 'spiral', 'galaxy', 'flat-tube']
 # $PREFIX/lib/tovid is already added to end of PATH
 os_path = os.environ['PATH'].rsplit(':')
 sys_dir = os_path[-1] + '/masks'
