@@ -152,18 +152,29 @@ _switched_menus = Flag('Switched menus (try with "Quick menu" !)',
     'showcase file for this option.  Use with '
     '"Quick menu" option for a huge speed up !')
 
-_showcase_framestyle = Choice('Frame style', '-showcase-framestyle', 'none',
+_showcase_framestyle = Choice('Frame style', '-showcase-framestyle', 'default',
     'This option is only for menu styles with a "showcase" image.  '
     'The "none" option will use the default frame method, using imagemagick.  '
     'The "glass" option will use mplayer to make frames, giving an animated '
     'effect.  The glass style can be much faster - especially if used without '
     '-rotate and -wave options',
-    'none|glass', side='top')
+    'default|glass')
+
+_showcase_framesize = Number('Frame size', '-showcase-framesize', 4,
+    'Width of the showcase image/video frame in pixels',
+    0, 20, 'pixels')
+
+_showcase_frame_color = Color('Frame color', '-showcase-frame-color',
+    '#6E6E6E', 'Color of the showcase frame. ')
+
+_showcase_shape = Choice('Showcase shape', '-showcase-shape', 'none',
+    'Apply a shaped transparency mask to showcase videos or images. '
+    'Leave at "none" to not use a feathered shape.',
+    thumb_masks, 'dropdown')
 
 _showcase_geo = Text('Image position', '-showcase-geo', '',
-    'This is a showcase style only option.  Enter the position of the '
-    'top left corner of the showcase image: e.g. "200x80".  This '
-    'value is applied to the video *before* is is scaled.')
+    'Enter the position of the top left corner of the showcase image: '
+    'e.g. "200x80".  This value is applied to the video *before* is is scaled.')
 
 _showcase_titles_align = Choice('Title alignment',
     '-showcase-titles-align', 'none',
@@ -414,10 +425,10 @@ _slide_blur = SpacedText('Slide blur amount', '-slide-blur', '',
 ### --------------------------------------------------------------------
 
 _thumb_shape = Choice('Thumb shape', '-thumb-shape', 'none',
-    'Apply a shaped transparency mask to thumbnail videos.  These "feathered" '
-    'shapes look best against a plain background or used in conjunction with '
+    'Apply a shaped transparency mask to thumbnail videos or images.  These '
+    '"feathered" shapes look best against a plain background or used with '
     '**-thumb-mist** [COLOR].  To use a "mist" background behind each thumb, '
-    'see "Thumb mist" section.  Leave at "none" to not use a feathered shape',
+    'see "Thumb mist" section.  Leave at "none" to not use a feathered shape.',
     thumb_masks, 'dropdown')
 
 _opacity = Number('Opacity', '-opacity', 100,
@@ -426,11 +437,10 @@ _opacity = Number('Opacity', '-opacity', 100,
     'Not recommended with dark backgrounds.',
     1, 100, '%')
 
-_blur = Number('Blur', '-blur', 4,
+_blur = Number('Blur', '-blur', 1,
     'The amount of feather blur to apply to the thumb-shape.  '
-    'Default is 4.0 which will more or less keep the shape, '
-    'creating transparency at the edges.  Choose float or '
-    'integer values between 0.1 and 5.0',
+    'Default is 1.0 which will more or less keep the shape, creating "soft" '
+    'edges.  Choose float or integer values between 0.1 and 5.0',
     1, 5, 'pixels')
 
 _3dthumbs = Flag('Create 3D thumbs', '-3dthumbs', False,
@@ -728,7 +738,7 @@ _subtitles = SpacedText('Subtitles', '-subtitles', '',
 
 main =  VPanel('Basic',
     Label('You can author (and burn) a DVD with a simple menu '
-          'using just this "Basic" pane', 'center'),
+          'using ONLY this "Basic" pane', 'center'),
     RelatedList('', _files, '1:1', _titles, filter=to_title),
     VPanel('',
         HPanel('',
@@ -910,20 +920,25 @@ thumbnails = VPanel("Thumbnails",
                 _3dthumbs,
                 _thumb_mist,
                 _rotate_thumbs),
-            VPanel('Arrangement',
-                HPanel('Thumb aspect ratio',
-                Label('Automatic (force video ratio on "Playback" tab)')),
+            VPanel('Arrangement (thumbnails)',
                 _thumb_shape,
                 _align,
                 FlagGroup('Rows (for default menu style only)',
-                    'exclusive', _tile3x1, _tile4x1, side='left')),
+                    'exclusive', _tile3x1, _tile4x1, side='left'),
+                HPanel('Thumb aspect ratio',
+                Label('Automatic (force video ratio on "Playback" tab)')),
+                ),
         ),
         VPanel("Showcase thumbnail",
             VPanel('Effects',
                 _wave,
                 _rotate,
                 _showcase_framestyle),
-            VPanel('Arrangement', _showcase_geo),
+            VPanel('Arrangement (showcase image)',
+                _showcase_shape,
+                _showcase_geo,
+                _showcase_framesize,
+                _showcase_frame_color),
         ),
     ),
 )
