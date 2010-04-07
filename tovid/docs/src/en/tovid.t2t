@@ -316,6 +316,8 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
     If no video files for either **-background** or **-showcase** are supplied,
     the menu will be static.
 : **-quick-menu**
+    (Note: unfortunately ffmpeg's 'vhooks' have been removed, so this
+    option may not be available for you depending on your ffmpeg version)
     This will make a very quick  menu by using ffmpeg instead of imagemagick.
     There are two choices: you can either use '-showcase IMAGE|VIDEO' or
     '-background VIDEO'.  There are no fancy effects like **-wave**
@@ -330,8 +332,6 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
     in which case the videos passed with **-files** automatically become the
     showcase videos.  If this is used in combination with **-switched-menus**
     it can really speed up an otherwise time consuming process.
-    On my athlon 2900+ system it makes a 4 video switched menu of 30 seconds
-    length (each) in about 4 minutes ( !! ).
 
     Example:
 ```
@@ -343,8 +343,8 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
 : **-bg-color** | **-bg-colour**
     The color to use for the menu background. (default: ntsc-safe black)
     Note: use a color a great deal darker than you want, as it appears quite
-    a bit lighter in the video version.  You can use '#FFFFFF' or named colors
-    syntax.
+    a bit lighter in the video version.  You can use hexadecimal ('#ffac5f')
+    or named colors notation.
 : **-submenu-bg-color** | **-submenu-bg-colour**
     The color to use as background for the  submenu(s).
     (default: ntsc-safe black)  See **-bg-color**
@@ -397,7 +397,7 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
     backgrounds: the background will become static at the exact point the
     thumbs finish fading in. This menu does not loop unless you pass
     **-loop** VALUE.  See also: **-loop**
-: **-bgaudio** FILE
+: **-bgaudio**, **-bg-audio*** FILE
     An file containing audio for the main menu background.  For static menus
     the default is to use 20 seconds of audio.  You can change this using the
     **-menu-length** option.
@@ -558,7 +558,7 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
     the video thumbs WILL be animated, so you may wish to use -static or
     -textmenu with the option in that case.
 
-: **-background-slideshow**
+: **-background-slideshow**, **-bg-slideshow**
     If doing multiple slideshows or mixed videos and slideshow(s), then use
     the animated slideshow as a background video.  See **-showcase-slideshow**
     for additional details.
@@ -685,10 +685,10 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
 : **-showcase-seek** NUM
     Seek to NUM seconds before generating thumbnails for showcase video
     (default: 2.0 seconds)
-: **-bgvideo-seek** NUM
+: **-bgvideo-seek**, **-bg-video-seek** NUM
     Seek to NUM seconds before generating images for background video
     (default: 2.0 seconds)
-: **-bgaudio-seek** NUM
+: **-bgaudio-seek**, **-bg-audio-seek NUM
     Seek to NUM seconds before generating audio for bgaudio
     (default: 2.0 seconds)
 : **-group** N VIDEO1 VIDEO2 . . .
@@ -805,6 +805,11 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
     produces a gentle wave with a small amount of distortion.
     See: http://www.imagemagick.org/Usage/distorts/#wave if you want
     to try other values.
+: **-showcase-shape**  egg|oval|plectrum|arch|spiral|galaxy|flat-tube|normal
+    Apply a shaped transparency mask to showcase videos or images.
+    Note: if you wish to make your own mask PNGS you can put them in
+    $PREFIX/lib/tovid/masks/ or $HOME/.tovid/masks/ and use them on the
+    command line using the filename minus the path and extension.
 : **-showcase-framestyle**  none|glass
     For -showcase-* style template only
     "none" will use the default frame method, using "convert -frame . . ."
@@ -813,7 +818,12 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
     don't use **-rotate** or **-wave** as thumbs will not need to be processed
     again after mplayer spits them out.  Note: you need to be using either
     **-showcase** IMAGE or **-showcase** VIDEO for this "frame style" to work.
-
+: **-showcase-frame-size** PIXELS
+    The size of the showcase frame.  This value will be used for both width and
+    height for the 'thickness' of the frame.
+: **-showcase-frame-color**, **-showcase-frame-colour** PIXELS
+    The color of the showcase frame.  Use hexadecimal or named colors notation.
+    Remember to quote! ( '#ffac5f' ).
 
 
 ==Thumbnail Style==
@@ -822,7 +832,7 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
     Anything less than 100(%) is semi-transparent. Not recommended with dark
     backgrounds.
 : **-blur** NUM
-    The amount of feather blur to apply to the thumb-shape.  The default is 4.0
+    The amount of feather blur to apply to the thumb-shape.  The default is 1.0
     which will more or less keep the shape and produces transparency at the
     edges.  Choose float or integer values between 0.1 and 5.0.  Higher values
     are possible, but you may not like the result. 3D thumbs are automatically
