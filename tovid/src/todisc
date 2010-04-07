@@ -105,7 +105,7 @@ PAUSE_TIME=10
 USER_LOOP=false
 MIST=false
 FEATHER=false
-BLUR=2
+BLUR=1
 SUB_MENU_FEATHER=false
 IMG_FMT="jpg"
 SM_IMG_FMT="jpg"  # submenu image format
@@ -122,8 +122,8 @@ SC_FRAMESTYLE="none"
 THUMB_FRAME="-shave 3x3 +repage -border 3x3"
 THUMB_FRAME_SIZE="3x3"
 THUMB_FRAME_CLR='#444744'
-SC_BORDERWIDTH=4x4
-SC_FRAME="-bordercolor  #6E6E6E -compose Copy -border $SC_BORDERWIDTH"
+SHOWCASE_FRAME_SIZE=4x4
+SHOWCASE_FRAME_CLR='#6E6E6E'
 SHOWCASE_VIDEO=""
 THREExONE=false
 FOURxONE=false
@@ -275,12 +275,6 @@ yecho()
 #    LOG_FILTER="sed 's/\r/\r\n/g'"    # Replace LF with CR/LF
 # ******************************************************************************
 
-cmd_exec()
-{
-    eval "$@" 2>&1 | ${LOG_FILTER:=cat} # >> "$LOG_FILE"
-    # Return exit status
-    return $?
-}
 # Print script name, usage notes, and optional error message, then exit.
 # Args: $@ == text string(s) containing error message and help
 usage_error()
@@ -2048,6 +2042,120 @@ rm -f "$WORK_DIR/foo.wav"
 
 }
 
+# Usage: check_maskshape SHAPE.  Returns 1 if SHAPE not found.
+check_maskshape()
+{
+    SHAPE="$1"
+    ! egrep -q -w \
+    'egg|oval|plectrum|arch|spiral|galaxy|flat-tube|normal' \
+    <<< "$SHAPE"  && \
+    ! test -f "$TOVID_PREFIX/masks/${SHAPE}.png" && \
+    ! test -f "$HOME/.tovid/masks/$SHAPE.png" 
+    (($? == 0)) && return 1 || return 0
+}
+
+# BREAK_POINT
+# make an image mask for feathered shapes
+# usage: make_mask SHAPE
+make_mask()
+{
+    shape="$1"
+    MASK="$WORK_DIR/${shape}_mask.png"
+
+    case "$shape" in
+      "normal")
+        convert -size $THUMB_SIZE xc:black -fill white \
+        -draw "Rectangle $MASK_DIM" \
+        +matte -compose CopyOpacity miff:- |
+        convert - -bordercolor none -border 8x8 miff:- |
+        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
+        convert -resize $THUMB_SIZE! - $MASK
+        ;;
+      "oval")
+        convert -size $THUMB_SIZE xc:black -fill white \
+        -draw "RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3" \
+        +matte -compose CopyOpacity miff:- | \
+        convert - -bordercolor none -border 6x6 miff:- |
+        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
+        convert -resize $THUMB_SIZE! - $MASK
+        ;;
+      "egg")
+        convert -size $THUMB_SIZE xc:black -fill white \
+        -draw \"circle $DIMY4,$DIMX4 $DIMY5,$DIMX5\" \
+        +matte -compose CopyOpacity miff:- | \
+        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
+        convert -resize $THUMB_SIZE! - $MASK
+        ;;
+      "plectrum")
+        convert -size 200x200 xc:none -fill white \
+        -draw 'circle 100,100 150,150' miff:- |
+        convert -background none -wave -50x456 - miff:- |
+        convert - -bordercolor none -border 3x3 -trim +repage miff:- |
+        convert - -bordercolor none -border 18x18 miff:- |
+        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
+        convert -resize $THUMB_SIZE! - $MASK
+        ;;
+      "arch")
+        convert -size 200x200 xc:none -fill white \
+        -draw 'circle 25,30 10,30' -draw 'circle 25,170 10,170' \
+        -draw 'circle 175,30 160,30' -draw 'circle 175,170 160,170' \
+        -draw 'rectangle 25,15 180,185' -draw 'rectangle 10,25 190,175' miff:- |
+        convert -background none -wave -50x456 - miff:- |
+        convert - -bordercolor none -border 3x3 -trim +repage miff:- |
+        convert - -bordercolor none -border 18x18 miff:- |
+        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
+        convert -resize $THUMB_SIZE! - $MASK
+        ;;
+      "galaxy")
+        convert -size 200x200 xc:none -fill white \
+        -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
+        -draw 'rectangle 60,38 140,162'  miff:-  |
+        convert -background none -swirl 1440 - miff:-  |
+        convert -background none -wave -50x456 - miff:- |
+        convert - -bordercolor none -border 3x3 -trim +repage miff:- |
+        convert - -bordercolor none -border 18x18 miff:- |
+        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
+        convert -resize $THUMB_SIZE! - $MASK
+        ;;
+      "spiral")
+        convert -size 200x200 xc:none -fill white \
+        -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
+        -draw 'rectangle 60,38 140,162'  miff:-  |
+        convert -background none -wave -80x188 - miff:- |
+        convert -background none -swirl 1440 - miff:- |
+        convert - -bordercolor none -border 3x3 -trim +repage miff:- |
+        convert - -bordercolor none -border 18x18 miff:- |
+        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
+        convert -resize $THUMB_SIZE! - $MASK
+        ;;
+      "flat-tube") 
+        convert -size 200x200 xc:none -fill white \
+        -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
+        -draw 'rectangle 60,38 140,162'  miff:-  |
+        convert -background none -wave 25x700 - miff:- | 
+        convert - -bordercolor none -border 3x3 -trim +repage miff:- |
+        convert - -bordercolor none -border 18x18 miff:- |
+        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
+        convert -resize $THUMB_SIZE! - $MASK
+        ;;
+      *)
+        if test -f "$HOME/.tovid/masks/$shape.png"; then
+            convert "$HOME/.tovid/masks/$shape.png" \
+            -bordercolor none -border 3x3 -trim +repage miff:- |
+            convert - -bordercolor none -border 18x18 miff:- |
+            ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
+            convert -resize $THUMB_SIZE! - $MASK
+
+        elif test -f "$TOVID_PREFIX/masks/$shape.png"; then
+            convert "$TOVID_PREFIX/masks/$shape.png" \
+            -bordercolor none -border 3x3 -trim +repage miff:- |
+            convert - -bordercolor none -border 18x18 miff:- |
+            ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
+            convert -resize $THUMB_SIZE! - $MASK
+        fi
+        ;;
+    esac
+}
 ##############################################################################
 #                          	 End of Functions                                #
 ##############################################################################
@@ -2588,6 +2696,10 @@ while test $# -gt 0; do
             FEATHER=:
             IMG_FMT="png"
             ;;
+        "-showcase-shape" )
+            shift
+            SHOWCASE_SHAPE="$1"
+            ;;
         "-button-style" )
             shift
             BUTTON_STYLE="$1"
@@ -2609,6 +2721,19 @@ while test $# -gt 0; do
                 THUMB_FRAME_SIZE="${tfsize}x${tfsize}"
             else
                 usage_error "-thumb-frame-size requires an integer as argument"
+            fi
+            ;;
+        "-showcase-frame-colour" | "-showcase-frame-color" )
+            shift
+            SHOWCASE_FRAME_CLR="$1"
+            ;;
+        "-showcase-frame-size" )
+            shift
+            sfsize="$1"
+            if test_is_number "$sfsize"; then
+                SHOWCASE_FRAME_SIZE="${sfsize}x${sfsize}"
+            else
+                usage_error "-showcase-frame-size requires an integer as argument"
             fi
             ;;
         "-blur" )
@@ -2758,7 +2883,7 @@ while test $# -gt 0; do
                 perhaps you wanted '-audio-channel' ?"
             done
             ;;
-        "-bgaudio" )
+        "-bgaudio" | "-bg-audio" )
             shift
             if [[ $1 = "none" ]]; then
                 BG_AUDIO="none" # for switched menus
@@ -3257,7 +3382,10 @@ if [[ -n $SLIDE_FRAME ]]; then # we are framing slides
     SFRAME=${SFRAME_ARG}x${SFRAME_ARG}
     SLIDE_FRAME="$SLIDE_FRAME $SFRAME"
 fi
-# borders
+# now that -showcase frame-size and frame colour has been read in, set this var
+SHOWCASE_FRAME="-bordercolor  $SHOWCASE_FRAME_CLR -compose Copy"
+SHOWCASE_FRAME="$SHOWCASE_FRAME -border $SHOWCASE_FRAME_SIZE"
+
 # honour -noask for functions and called scripts that use them
 $NOASK && NO_ASK="-noask"
 # Warn if thumb labels have more than 16 characters
@@ -3363,15 +3491,18 @@ if [[ -n "$SM_TITLES" ]]; then
         fi
     done
 fi
-# check if user passed a usable button shape
+# check if user passed a usable thumb or showcase shape
 if [[ -n $THUMB_SHAPE ]]; then
-    ! egrep -q -w \
-    'egg|oval|plectrum|wave|spiral|galaxy|flat-tube|normal' \
-    <<< "$THUMB_SHAPE"  && \
-    ! test -f "$TOVID_PREFIX/masks/${THUMB_SHAPE}.png" && \
-    ! test -f "$HOME/.tovid/masks/$THUMB_SHAPE.png" && \
+    if ! check_maskshape $THUMB_SHAPE; then
         usage_error "Please supply a usable thumb shape with
         -thumb-shape option. You gave \"$THUMB_SHAPE\""
+    fi
+fi
+if [[ -n $SHOWCASE_SHAPE ]]; then
+    if ! check_maskshape $SHOWCASE_SHAPE; then
+        usage_error "Please supply a usable showcase shape with
+        -showcase-shape option.  You gave \"$SHOWCASE_SHAPE\""
+    fi
 fi
 if [[ -n ${ROTATE_ARRAY[@]} ]]; then
     if ! $SHOWCASE; then
@@ -4644,8 +4775,11 @@ fi
 
 # do not use frame for showcase-framestyle glass
 if [[ "$SC_FRAMESTYLE" = "glass" && -n "$SHOWCASE_VIDEO" ]] ; then
-    unset SC_FRAME
+    unset SHOWCASE_FRAME
 fi
+# unset the showcase frame if the frame size is 0
+(( ${SHOWCASE_FRAME_SIZE/x*} )) || unset SHOWCASE_FRAME
+
 if $SHOWCASE; then
     THUMB_BG_CLR="none"   # mist backgrounds look a bit funny with showcase
 fi
@@ -4760,7 +4894,8 @@ DIMX4=$((DIMX / 2))
 DIMY5=$((DIMY / 3))
 DIMX5=$((DIMX4 / 3))
 BLUR_CMD=(convert - -blur 0x$BLUR -channel RGBA +matte miff:-)
-if $THUMBS_3D && $SHOWCASE && [ "$THUMB_SHAPE" = "normal" ]; then
+if $THUMBS_3D && $SHOWCASE && \
+    [[ $THUMB_SHAPE == "normal" || $SHOWCASE_SHAPE == "normal" ]]; then
     MASK_DIM="0,0 $DIMY,$DIMX"
     BLUR_CMD=(convert - miff:-)
 else
@@ -4785,118 +4920,19 @@ fi
 # set submenu font colours to defaults if not passed in
 [[ -z $CHAPTER_STROKE ]] && CHAPTER_STROKE="$SUBMENU_STROKE"
 [[ -z $CHAPTER_CLR ]] && CHAPTER_CLR="$TITLES_CLR"
-if test "$THUMB_SHAPE" = "normal"; then
-    THUMB_MASK="$WORK_DIR/feather_mask.png"
-    #yecho "Creating normal mask with the following command:"
-    MASK_CMD="convert -size $THUMB_SIZE xc:black -fill white \
-    -draw \"Rectangle $MASK_DIM\" \
-    +matte -compose CopyOpacity miff:- | \
-    convert - -bordercolor none -border 8x8 miff:- |
-    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
-    convert -resize $THUMB_SIZE! - $THUMB_MASK"
-
-elif test "$THUMB_SHAPE" = "oval"; then
-    THUMB_MASK="$WORK_DIR/oval_mask.png"
-    #yecho "Creating oval mask with the following command:"
-    MASK_CMD="convert -size $THUMB_SIZE xc:black -fill white \
-    -draw \"RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3\" \
-    +matte -compose CopyOpacity miff:- | \
-    convert - -bordercolor none -border 6x6 miff:- |
-    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
-    convert -resize $THUMB_SIZE! - $THUMB_MASK"
-    MASK_HILITE_CMD="convert -size $THUMB_SIZE xc:none \
-    -draw \"RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3\" \
-    -negate  -channel A -gaussian 0x8 $WORK_DIR/oval_highlight.png"
-
-elif test "$THUMB_SHAPE" = "egg"; then
-    THUMB_MASK="$WORK_DIR/egg_mask.png"
-    #yecho "Creating egg-shaped mask with the following command:"
-    MASK_CMD="convert -size $THUMB_SIZE xc:black -fill white \
-    -draw \"circle $DIMY4,$DIMX4 $DIMY5,$DIMX5\" \
-    +matte -compose CopyOpacity miff:- | \
-    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
-    convert -resize $THUMB_SIZE! - $THUMB_MASK"
-
-elif test "$THUMB_SHAPE" = "plectrum"; then
-    THUMB_MASK="$WORK_DIR/plectrum_mask.png"
-    #yecho "Creating plectrum-shaped mask with the following command:"
-    MASK_CMD="convert -size 200x200 xc:none -fill white \
-    -draw 'circle 100,100 150,150' miff:- |
-    convert -background none -wave -50x456 - miff:- |
-    convert - -bordercolor none -border 3x3 -trim +repage miff:- |
-    convert - -bordercolor none -border 18x18 miff:- |
-    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-    convert -resize $THUMB_SIZE! - $THUMB_MASK"
-elif test "$THUMB_SHAPE" = "wave"; then
-    THUMB_MASK="$WORK_DIR/wave_mask.png"
-    #yecho "Creating wave-shaped mask with the following command:"
-    MASK_CMD="convert -size 200x200 xc:none -fill white \
-    -draw 'circle 25,30 10,30' -draw 'circle 25,170 10,170' \
-    -draw 'circle 175,30 160,30' -draw 'circle 175,170 160,170' \
-    -draw 'rectangle 25,15 180,185' -draw 'rectangle 10,25 190,175' miff:- |
-    convert -background none -wave -50x456 - miff:- |
-    convert - -bordercolor none -border 3x3 -trim +repage miff:- |
-    convert - -bordercolor none -border 18x18 miff:- |
-    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-    convert -resize $THUMB_SIZE! - $THUMB_MASK"
-elif test "$THUMB_SHAPE" = "galaxy"; then
-    THUMB_MASK="$WORK_DIR/galaxy_mask.png"
-    #yecho "Creating galaxy-shaped mask with the following command:"
-    MASK_CMD="convert -size 200x200 xc:none -fill white \
-    -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
-    -draw 'rectangle 60,38 140,162'  miff:-  |
-    convert -background none -swirl 1440 - miff:-  |
-    convert -background none -wave -50x456 - miff:- |
-    convert - -bordercolor none -border 3x3 -trim +repage miff:- |
-    convert - -bordercolor none -border 18x18 miff:- |
-    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-    convert -resize $THUMB_SIZE! - $THUMB_MASK"
-elif test "$THUMB_SHAPE" = "spiral"; then
-    THUMB_MASK="$WORK_DIR/spiral_mask.png"
-    #yecho "Creating spiral-shaped mask with the following command:"
-    MASK_CMD="convert -size 200x200 xc:none -fill white \
-    -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
-    -draw 'rectangle 60,38 140,162'  miff:-  |
-    convert -background none -wave -80x188 - miff:- |
-    convert -background none -swirl 1440 - miff:- |
-    convert - -bordercolor none -border 3x3 -trim +repage miff:- |
-     convert - -bordercolor none -border 18x18 miff:- |
-    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-    convert -resize $THUMB_SIZE! - $THUMB_MASK"
-elif test "$THUMB_SHAPE" = "flat-tube"; then
-    THUMB_MASK="$WORK_DIR/flattube_mask.png"
-    #yecho "Creating flattube-shaped mask with the following command:"
-    MASK_CMD=" convert -size 200x200 xc:none -fill white \
-    -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
-    -draw 'rectangle 60,38 140,162'  miff:-  |
-    convert -background none -wave 25x700 - miff:- | 
-    convert - -bordercolor none -border 3x3 -trim +repage miff:- |
-    convert - -bordercolor none -border 18x18 miff:- |
-    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-    convert -resize $THUMB_SIZE! - $THUMB_MASK"
-elif test -f "$HOME/.tovid/masks/$THUMB_SHAPE.png"; then
-    THUMB_MASK="$WORK_DIR/${THUMB_SHAPE}_mask.png"
-    yecho "Creating ${THUMB_SHAPE}-shaped mask with the following command:"
-    MASK_CMD="convert "$HOME/.tovid/masks/$THUMB_SHAPE.png" \
-    -bordercolor none -border 3x3 -trim +repage miff:- |
-    convert - -bordercolor none -border 18x18 miff:- |
-    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-    convert -resize $THUMB_SIZE! - $THUMB_MASK"
-elif test -f "$TOVID_PREFIX/masks/$THUMB_SHAPE.png"; then
-    THUMB_MASK="$WORK_DIR/${THUMB_SHAPE}_mask.png"
-    yecho "Creating ${THUMB_SHAPE}-shaped mask with the following command:"
-    MASK_CMD="convert "$TOVID_PREFIX/masks/$THUMB_SHAPE.png" \
-    -bordercolor none -border 3x3 -trim +repage miff:- |
-    convert - -bordercolor none -border 18x18 miff:- |
-    ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-    convert -resize $THUMB_SIZE! - $THUMB_MASK"
-fi
 
 # Print and execute the thumb-shape mask command
 if $DO_MENU; then
-    if [[ -n $MASK_CMD ]]; then
-        #yecho "$MASK_CMD"
-        cmd_exec "$MASK_CMD"
+    if [[ -n $THUMB_SHAPE ]]; then
+        make_mask $THUMB_SHAPE
+        THUMB_MASK="$WORK_DIR/${THUMB_SHAPE}_mask.png"
+    fi
+    if [[ -n $SHOWCASE_SHAPE ]]; then
+        MASK="$WORK_DIR/${SHOWCASE_SHAPE}_mask.png"
+        [[ $SHOWCASE_SHAPE != $THUMB_SHAPE ]] && make_mask $SHOWCASE_SHAPE
+        convert "$MASK" -resize ${SHOWCASE_SIZE}! \
+        "$WORK_DIR/${SHOWCASE_SHAPE}_showcase_mask.png"
+        SHOWCASE_MASK="$WORK_DIR/${SHOWCASE_SHAPE}_showcase_mask.png"
     fi
     yecho "Creating a menu title image"
     echo
@@ -5337,12 +5373,17 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
                 runtime_error "Problem creating images from the video."
             fi
 
-            echo "Running convert $WORK_DIR/showcase_img.png -mattecolor gray
-            $SC_FRAME $WORK_DIR/showcase_img.png" |format_output >> "$LOG_FILE"
-            convert "$WORK_DIR/showcase_img.png" $SC_FRAME miff:- |
-            convert -background none $ROTATE $WAVE - miff:-|
-            convert -size $SHOWCASE_SIZE - -resize $SHOWCASE_SIZE! \
-             "$WORK_DIR/showcase_img.png"
+            if [[ -n $SHOWCASE_SHAPE ]]; then
+                composite -compose CopyOpacity $SHOWCASE_MASK +matte \
+                "$WORK_DIR/showcase_img.png" miff:- |
+                convert - -background none $ROTATE -resize $SHOWCASE_SIZE! \
+                "$WORK_DIR/showcase_img.png"
+            else
+                convert "$WORK_DIR/showcase_img.png" $SHOWCASE_FRAME miff:- |
+                convert -background none $ROTATE $WAVE - miff:-|
+                convert -size $SHOWCASE_SIZE - -resize $SHOWCASE_SIZE! \
+                 "$WORK_DIR/showcase_img.png"
+            fi
         fi
     elif [[ -n "$SHOWCASE_IMG" ]]; then
         echo "Running convert -resize $SHOWCASE_SIZE! $SHOWCASE_IMG miff:- | \
@@ -5350,7 +5391,7 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
         -border 8x8 - miff:- | convert - -trim +repage -resize \
         $SHOWCASE_SIZE! $WORK_DIR/showcase_img.png" |format_output>>"$LOG_FILE"
         convert -size  $SHOWCASE_SIZE "$SHOWCASE_IMG" \
-         -resize $SHOWCASE_SIZE! $SC_FRAME miff:- |
+         -resize $SHOWCASE_SIZE! $SHOWCASE_FRAME miff:- |
         convert - -background none -bordercolor Transparent -border 8x8 \
         $ROTATE $WAVE miff:- | convert -size $SHOWCASE_SIZE - -trim +repage \
         -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
@@ -6080,14 +6121,14 @@ if $QUICK_MENU; then
         convert -size $SHOWCASE_SIZE xc:black "$WORK_DIR/showcase_blank.png"
         # make a similar framed blank to composite onto the background
         frame_cmd=(convert -size $SHOWCASE_SIZE xc:black \
-        $SC_FRAME "$WORK_DIR/showcase_frame.png")
+        $SHOWCASE_FRAME "$WORK_DIR/showcase_frame.png")
         yecho "Running ${frame_cmd[@]}" | format_output >> "$LOG_FILE"
         "${frame_cmd[@]}" >> "$LOG_FILE"
         # composite the framed blank onto background subtracting the width \
         # of the frame (border) when calculating XxY geometry
         convert "$WORK_DIR/pics/template.png" \
         "$WORK_DIR/showcase_frame.png" -geometry \
-        +$((SC_X-${SC_BORDERWIDTH/x*}))+$((SC_Y-${SC_BORDERWIDTH/x*})) \
+        +$((SC_X-${SHOWCASE_FRAME_SIZE/x*}))+$((SC_Y-${SHOWCASE_FRAME_SIZE/x*})) \
         -composite "$WORK_DIR/pics/template.png"
         # add blank to a transparent image the size of the menu video
         convert -size  $VIDSIZE xc:none "$WORK_DIR/showcase_blank.png" \
@@ -8138,9 +8179,17 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
              [[ -z "$WAVE" && -z "$ROTATE" ]]; then
                 :
             else # not glass
-                { convert $QUALITY -size $SHOWCASE_SIZE "$pic" \
-                -mattecolor gray $SC_FRAME -background none $ROTATE $WAVE \
-                -resize ${SHOWCASE_SIZE}! "$pic" ; } 2>> "$LOG_FILE" &
+                if [[ -n $SHOWCASE_SHAPE ]]; then
+                    { composite -compose CopyOpacity $SHOWCASE_MASK +matte \
+                    "$pic" miff:- |
+                    convert $QUALITY -size $SHOWCASE_SIZE - -background none \
+                    $ROTATE -resize ${SHOWCASE_SIZE}! "$pic" ; } 2>> "$LOG_FILE" &
+                else 
+                        
+                    { convert $QUALITY -size $SHOWCASE_SIZE "$pic" \
+                    -mattecolor gray $SHOWCASE_FRAME -background none $ROTATE \
+                    $WAVE -resize ${SHOWCASE_SIZE}! "$pic" ; } 2>> "$LOG_FILE" &
+                fi
             fi
             impids="$impids $!"
             if ((num_procs==max_procs || p >= (${#SC_PICS[@]}-1) )); then
