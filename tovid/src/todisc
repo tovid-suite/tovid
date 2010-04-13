@@ -3033,9 +3033,7 @@ while test $# -gt 0; do
             ;;
         "-tovidopts" | "-tovid-opts" )
             usage_error "The -tovidopts option no longer exists.  Now just use
-            the tovid options directly on the command line.  Note
-            that tovid's -noask (-no-ask) must be given as '-noprompt',
-            to avoid conflict with the todisc option by the same name."
+            the tovid options directly on the command line."
             ;;
         "-titleset-mode" ) # internal use only
             AUTHOR=false
@@ -3159,18 +3157,12 @@ while test $# -gt 0; do
                 else
                     TOVID_OPTS+=( "$1" "$(readlink -f "$2")" )
                 fi
-            elif [[ $1 == "-keepfiles" ]]; then
-                TOVID_KEEPFILES=1
-                TOVID_OPTS+=( "$1" )
             else
                 TOVID_OPTS+=( "$1" )
                 shift
                 get_listargs "$@"
                 TOVID_OPTS+=( "${ARGS_ARRAY[@]}" )
             fi
-            ;;
-        "-noprompt" )
-            TOVID_OPTS+=( -noask )
             ;;
         -car* )
             usage_error "$1: No such option.  Please see 'man tovid' ?"
@@ -3184,13 +3176,6 @@ done
 ##############################################################################
 # get script pid so we can kill the parent if doing recursive todisc's
 TODISC_PIDS="$TODISC_PIDS $$"
-
-# if -keepfiles (not "-keep-files", the todisc option), output a warning
-if ((TOVID_KEEPFILES)); then
-    echo "NOTE: '-keepfiles' is an option passed to makempg.  If
-    you meant this option for todisc, use '-keep-files' instead." | format_output
-    $WARN && sleep 5
-fi
 
 # make sure dvd-slideshow is installed if user passed -use-dvd-slideshow
 $USE_DVD_SLIDESHOW && assert_dep dvd-slideshow \
