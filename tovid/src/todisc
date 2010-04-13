@@ -119,7 +119,6 @@ TOVID_OPTS=()
 CHAIN_VIDEOS=false
 NOASK=false
 SC_FRAMESTYLE="none"
-THUMB_FRAME="-shave 3x3 +repage -border 3x3"
 THUMB_FRAME_SIZE="3x3"
 THUMB_FRAME_CLR='#444744'
 SHOWCASE_FRAME_SIZE=4x4
@@ -130,6 +129,7 @@ FOURxONE=false
 PLAYALL=false
 AUTHOR_PLAYALL=false # needed for VMGM playall logic
 THUMBS_3D=false
+SHOWCASE_3D=false
 RAISE=""
 CURVE_UPDATE=""
 SUBTITLES=false
@@ -2499,7 +2499,7 @@ while test $# -gt 0; do
             fi
             SLIDE_FADE=:
             ;;
-        "-background-slideshow" )
+        "-background-slideshow" | "-bg-slideshow" )
             CAROUSEL_IS_BG=:
             SHOWCASE=:
             IMG_FMT="png"
@@ -2668,7 +2668,11 @@ while test $# -gt 0; do
         "-rotate" )
             shift
             ROTATE_DEGREES="$1"
-            ROTATE="-rotate $ROTATE_DEGREES"
+            if test_is_number $ROTATE_DEGREES; then
+                ROTATE="-rotate $ROTATE_DEGREES"
+            else
+                usage_error "Argument to -rotate must be a number"
+            fi
             IMG_FMT="png"
             ;;
         "-wave" )
@@ -2705,10 +2709,13 @@ while test $# -gt 0; do
             BUTTON_STYLE="$1"
             USER_BSTYLE=:
             ;;
-        "-3dthumbs" )
+        "-3d-thumbs" | "-3dthumbs" )
             THUMBS_3D=:
             RAISE="-raise 8x8"
-            THUMB_FRAME=""
+            ;;
+        "-3d-showcase" | "-3dshowcase" )
+            SHOWCASE_3D=:
+            SC_RAISE="-raise 8x8"
             ;;
         "-thumb-frame-colour" | "-thumb-frame-color" )
             shift
@@ -2719,6 +2726,7 @@ while test $# -gt 0; do
             tfsize="$1"
             if test_is_number "$tfsize"; then
                 THUMB_FRAME_SIZE="${tfsize}x${tfsize}"
+                USER_THUMB_FRAME_SIZE=1
             else
                 usage_error "-thumb-frame-size requires an integer as argument"
             fi
@@ -2732,6 +2740,7 @@ while test $# -gt 0; do
             sfsize="$1"
             if test_is_number "$sfsize"; then
                 SHOWCASE_FRAME_SIZE="${sfsize}x${sfsize}"
+                USER_SHOWCASE_FRAME_SIZE=1
             else
                 usage_error "-showcase-frame-size requires an integer as argument"
             fi
@@ -2973,11 +2982,11 @@ while test $# -gt 0; do
             shift
             SHOWCASE_SEEK_VAL="$1"
             ;;
-        "-bgvideo-seek" )
+        "-bg-video-seek" | "-bgvideo-seek" )
             shift
             BG_SEEK="$1"
             ;;
-        "-bgaudio-seek" )
+        "-bg-audio-seek" | "-bgaudio-seek" )
             shift
             BG_AUDIO_SEEK="$1"
             USER_BG_AUDIO_SEEK=:
@@ -3382,9 +3391,20 @@ if [[ -n $SLIDE_FRAME ]]; then # we are framing slides
     SFRAME=${SFRAME_ARG}x${SFRAME_ARG}
     SLIDE_FRAME="$SLIDE_FRAME $SFRAME"
 fi
-# now that -showcase frame-size and frame colour has been read in, set this var
+# now that frame-sizes and frame colours have been read in, set some vars
+
 SHOWCASE_FRAME="-bordercolor  $SHOWCASE_FRAME_CLR -compose Copy"
 SHOWCASE_FRAME="$SHOWCASE_FRAME -border $SHOWCASE_FRAME_SIZE"
+# no frame with -3d-showcase
+$SHOWCASE_3D && unset SHOWCASE_FRAME
+# allow -showcase-frame-size (otherwise unused for 3D showcase) to set -raise
+((USER_SHOWCASE_FRAME_SIZE)) && SC_RAISE="-raise $SHOWCASE_FRAME_SIZE"
+THUMB_FRAME="-shave $THUMB_FRAME_SIZE +repage -border $THUMB_FRAME_SIZE"
+# no frame with 3D thumbs which use '-raise'
+$THUMBS_3D && unset THUMB_FRAME
+# allow -thumb-frame-size (otherwise unused for 3D thumbs) to set -raise
+((USER_THUMB_FRAME_SIZE)) && RAISE="-raise $THUMB_FRAME_SIZE"
+
 
 # honour -noask for functions and called scripts that use them
 $NOASK && NO_ASK="-noask"
@@ -4148,13 +4168,17 @@ if [[ -n $AUDIO_CHANNEL ]] && \
     You gave ${#FILES[@]} videos and ${#AUDIO_CHANNEL[@]} audio channel values"
 fi
 # make sure number of -rotate-thumbs arguments equals number of videos
-if [[ -n ${ROTATE_ARRAY[@]} ]]; then
+if $ROTATE_THUMBS; then
     if  [[ ${#FILES[@]} -ne ${#ROTATE_ARRAY[@]} ]]; then
         usage_error "Please give the same number of thumb rotate values \
         as videos.  You gave  ${#FILES[@]} video files and \
         ${#ROTATE_ARRAY[@]} thumb rotate values."
     fi
 fi
+# if  -wave passed, usage error if -showcase-shape also passed
+#if [[ -n $WAVE && -n $SHOWCASE_SHAPE ]]; then
+#    usage_error "You can not use both -wave and a -showcase-shape"
+#fi
 
 # if Fading menu, and no BG IMAGE OR VIDEO, fade thumbs right in after title
 if $MENU_FADE; then
@@ -5336,6 +5360,20 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
         SHOWCASE_SIZE=$SM_SHOWCASE_SIZE
     fi
 
+    if $SHOWCASE_3D && [[ -n $SHOWCASE_SHAPE ]]; then
+        CURVE_VARS="5 3 5 1 1"
+        unset SC_RAISE # 3D shaped thumbs have no -raise - use command below
+        . todisc-fade-routine
+        sc_3d_cmd=(convert - -write mpr:1img -fx A  +matte \
+        -blur 0x$( LC_ALL="C" bash -c "printf  "%.2f" \
+        $(bc_math "6.9 + .${CURVE_ARRAY[i]/.}")" ) -shade \
+        $(bc_math "115 + ${CURVE_ARRAY[i]}" int)x30 \
+        -normalize mpr:1img \
+        -compose Overlay -composite mpr:1img -matte \
+        -compose Dst_In -composite)
+    else
+        sc_3d_cmd=(convert - $SC_RAISE)
+    fi
     if [[ -n "$SHOWCASE_VIDEO" ]]; then
         echo "Getting video images from $SHOWCASE_VIDEO"
         if [[ "$SC_FRAMESTYLE" = "glass" ]]; then
@@ -5372,26 +5410,31 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
             if ! "${FFMPEG_CMD[@]}" 2>&1 | strings >> "$LOG_FILE";then
                 runtime_error "Problem creating images from the video."
             fi
-
+            # SHOWCASE_FRAME includes size and colour, it is empty if size is 0
             if [[ -n $SHOWCASE_SHAPE ]]; then
                 composite -compose CopyOpacity $SHOWCASE_MASK +matte \
                 "$WORK_DIR/showcase_img.png" miff:- |
-                convert - -background none $ROTATE -resize $SHOWCASE_SIZE! \
-                "$WORK_DIR/showcase_img.png"
+                "${sc_3d_cmd[@]}" miff:- |
+                convert - -background none $ROTATE $WAVE \
+                -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
             else
-                convert "$WORK_DIR/showcase_img.png" $SHOWCASE_FRAME miff:- |
+                convert "$WORK_DIR/showcase_img.png" $SHOWCASE_FRAME $SC_RAISE miff:- |
                 convert -background none $ROTATE $WAVE - miff:-|
                 convert -size $SHOWCASE_SIZE - -resize $SHOWCASE_SIZE! \
                  "$WORK_DIR/showcase_img.png"
             fi
         fi
     elif [[ -n "$SHOWCASE_IMG" ]]; then
-        echo "Running convert -resize $SHOWCASE_SIZE! $SHOWCASE_IMG miff:- | \
-        convert -background none $ROTATE $WAVE -bordercolor Transparent \
-        -border 8x8 - miff:- | convert - -trim +repage -resize \
-        $SHOWCASE_SIZE! $WORK_DIR/showcase_img.png" |format_output>>"$LOG_FILE"
-        convert -size  $SHOWCASE_SIZE "$SHOWCASE_IMG" \
-         -resize $SHOWCASE_SIZE! $SHOWCASE_FRAME miff:- |
+        
+        if [[ -n $SHOWCASE_SHAPE ]]; then # apply mask and no -raise 
+            SHAPE_CMD=(composite -compose CopyOpacity $SHOWCASE_MASK +matte \
+            "$SHOWCASE_IMG")
+        else
+            SHAPE_CMD=(convert -size  $SHOWCASE_SIZE "$SHOWCASE_IMG" \
+            -resize $SHOWCASE_SIZE! $SHOWCASE_FRAME $SC_RAISE)
+        fi
+        "${SHAPE_CMD[@]}" miff:- |
+        "${sc_3d_cmd[@]}" miff:- |
         convert - -background none -bordercolor Transparent -border 8x8 \
         $ROTATE $WAVE miff:- | convert -size $SHOWCASE_SIZE - -trim +repage \
         -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
@@ -5485,6 +5528,7 @@ for ((i=0; i<=NUM_FILES; i++)); do
     $(find $WORK_DIR/pics/$i/  -maxdepth 1 -name 000\*.$IMG_FMT) )
 done
 if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
+    # feathered and 3d thumbs get their effect here
     for ((i=0; i<${#PICS[@]}; i++)); do
         [[ -n ${ROTATE_ARRAY[@]} ]] && \
         THUMB_ROTATE="-background none -rotate ${ROTATE_ARRAY[i]}"
@@ -5495,7 +5539,6 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         PVIEW_CMD=(composite -compose CopyOpacity $THUMB_MASK +matte \
         "${PICS[i]}")
         PVIEW_CMD0=(convert "${PICS[i]}" $RAISE)
-        PVIEW_CMD1=(convert - $RAISE)
         PVIEW_CMD2=(convert - -write mpr:${i}img -fx A  +matte \
         -blur 0x$( LC_ALL="C" bash -c "printf  "%.2f" \
        $(bc_math "6.9 + .${CURVE_ARRAY[i]/.}")" ) -shade \
@@ -5511,8 +5554,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                         "${PVIEW_CMD2[@]}" miff:- |
                         "${PVIEW_CMD3[@]}"
                     else # normal thumb shape
-                        "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD1[@]}" miff:- |
-                        "${PVIEW_CMD3[@]}"
+                        "${PVIEW_CMD0[@]}" miff:- | "${PVIEW_CMD3[@]}"
                     fi
                 else  # not $SHOWCASE
                     if [ "$THUMB_SHAPE" != "normal" ]; then
@@ -5544,11 +5586,13 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         IM_CMD3b=(convert - "$WORK_DIR/thumb_title${i}.png" -gravity south \
         -geometry +0+5 -compose over -composite)
         IM_CMD4=(convert "${PICS[i]}" -background none -bordercolor $THUMB_FRAME_CLR \
-        -border $THUMB_FRAME_SIZE "$WORK_DIR/thumb_title${i}.png" -gravity south \
+        $THUMB_FRAME "$WORK_DIR/thumb_title${i}.png" -gravity south \
         -geometry +0+5 -compose over -composite )
         IM_CMD5=(convert - -bordercolor none $THUMB_FRAME $THUMB_ROTATE -resize ${THUMB_SIZE}! \
         "${PICS[i]}" )
-        IM_CMD6=(convert - $THUMB_ROTATE -resize ${THUMB_SIZE}! "${PICS[i]}") 
+        IM_CMD6=(convert - -bordercolor $THUMB_FRAME_CLR $THUMB_FRAME \
+        $THUMB_ROTATE -resize ${THUMB_SIZE}! "${PICS[i]}")
+        IM_CMD7=(convert - $THUMB_ROTATE -resize ${THUMB_SIZE}! "${PICS[i]}")
         
         if $FEATHER; then
             if $SHOWCASE; then
@@ -5560,10 +5604,9 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             fi
         else  # not feather
             if $SHOWCASE; then
-                "${IM_CMD[@]}" miff:- | "${IM_CMD5[@]}"
                 "${IM_CMD[@]}" miff:- | "${IM_CMD6[@]}"
             else # not feather and not showcase
-                "${IM_CMD4[@]}" miff:- |  "${IM_CMD6[@]}"
+                "${IM_CMD4[@]}" miff:- |  "${IM_CMD7[@]}"
             fi
         fi
     done
@@ -8179,16 +8222,31 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
              [[ -z "$WAVE" && -z "$ROTATE" ]]; then
                 :
             else # not glass
+                if $SHOWCASE_3D && [[ -n $SHOWCASE_SHAPE ]]; then
+                    CURVE_VARS="5 3 5 1 1"
+                    unset SC_RAISE # 3D shaped thumbs have no -raise - use command below
+                    . todisc-fade-routine
+                    sc_3d_cmd=(convert - -write mpr:${p}img -fx A  +matte \
+                    -blur 0x$( LC_ALL="C" bash -c "printf  "%.2f" \
+                    $(bc_math "6.9 + .${CURVE_ARRAY[p]/.}")" ) -shade \
+                    $(bc_math "115 + ${CURVE_ARRAY[p]}" int)x30 \
+                    -normalize mpr:${p}img \
+                    -compose Overlay -composite mpr:${p}img -matte \
+                    -compose Dst_In -composite)
+                else
+                    sc_3d_cmd=(convert - $SC_RAISE)
+                fi
                 if [[ -n $SHOWCASE_SHAPE ]]; then
                     { composite -compose CopyOpacity $SHOWCASE_MASK +matte \
                     "$pic" miff:- |
+                    "${sc_3d_cmd[@]}" miff:- |
                     convert $QUALITY -size $SHOWCASE_SIZE - -background none \
-                    $ROTATE -resize ${SHOWCASE_SIZE}! "$pic" ; } 2>> "$LOG_FILE" &
+                    $ROTATE $WAVE -resize ${SHOWCASE_SIZE}! "$pic" ; } 2>> "$LOG_FILE" &
                 else 
-                        
-                    { convert $QUALITY -size $SHOWCASE_SIZE "$pic" \
-                    -mattecolor gray $SHOWCASE_FRAME -background none $ROTATE \
-                    $WAVE -resize ${SHOWCASE_SIZE}! "$pic" ; } 2>> "$LOG_FILE" &
+                    { convert -size $SHOWCASE_SIZE "$pic" $SC_RAISE miff:- |
+                    convert - $SHOWCASE_FRAME -background none $ROTATE $WAVE miff:- |
+                    convert - -$QUALITY  resize ${SHOWCASE_SIZE}! "$pic"  ; } \
+                      2>> "$LOG_FILE" &
                 fi
             fi
             impids="$impids $!"
