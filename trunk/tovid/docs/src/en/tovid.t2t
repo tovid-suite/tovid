@@ -68,18 +68,21 @@ TOVID_OUTPUT_DIR (output directory for the makempg script).
 the easiest way to start creating DVDs with tovid. At this time, there are no
 additional command-line options; the GUI controls take care of everything,
 and all help is integrated in the form of tooltips.  You can also see
-**Command:disc ** for more detail about the options.
+**Command:disc ** for more detail about the options.  Note: one limitation of
+the gui at present is that it does not do multiple titlesets (though it will do
+chapter menus).  Use the **tovid disc** command (below) for titlesets.
 
 
 =Command:disc=
 
-**tovid disc** creates a DVD file-system with animated thumbnail menus, from a
-list of multimedia video files and their titles.  It also does static thumbnail
-menus and text only menus.  In addition, it can do slideshows, using images
-as input, and combine slideshows with videos.  It supports sub-menus for
-chapter breaks, configurable menu style, animated backgrounds and
-transparency effects. It can automatically convertnon-compliant input files
-to the target format.
+**tovid disc** creates a DVD file-system with menus, from a list of multimedia
+video files and their titles.  As this is a low level script it is the easiest
+command line program for creating a DVD from start to finish, including
+automatically converting non-compliant videos and prompting to burn at
+completion.  It does animated menus, static thumbnail menus and text only
+menus.  In addition, it can do slideshows, using images as input, and combine
+slideshows with videos.  It supports sub-menus for chapter breaks, configurable
+menu style, animated backgrounds and transparency effects.
 
 
 ==Usage==
@@ -153,10 +156,11 @@ certain constraints of each arrangement.
 
 **Titlesets**
 
-A word should be mentioned here about titlesets.  You need to use titlesets,
-for example, if you have videos of different resolutions.  If you want to have
-titlesets you need to put all the options for each titleset menu you would
-like to have between **-titleset** and **-end-titleset** options.
+A word should be mentioned here about titlesets, which is really just a
+hierarchy of menus.  You need to use titlesets, for example, if you have videos
+of different resolutions, or otherwise want to arrange videos on separate menus.
+If you want to have titlesets you need to put all the options for each titleset
+menu you would like to have between **-titleset** and **-end-titleset** options.
 
 Additionally, for the main menu (the opening menu that will let you jump to
 each titleset), you need to put options between **-vmgm** and **-end-vmgm**.
@@ -167,6 +171,9 @@ Any options outside the **-titleset** **-end-titleset** and **-vmgm**
 **-end-vmgm** areas will be general options applying to every titleset.
 If a general option is duplicated inside a **-titleset** or **-vmgm** area, the
 general option will be overridden.
+
+Note: you do not need titlesets for a single menu with chapter break menus, for
+that just use **-submenus** or **-ani-submenus**
 
 Example of using **tovid disc** with titlesets:
 
@@ -269,10 +276,6 @@ Here is a list of possible options you can pass:
     **-mplayeropts**, **-audiotrack**, **-downmix**, **-ffmpeg**, **-nofifo**,
     **-from-gui**, **-slice**, **-async**, **-quiet**,
     **-fake**, **-keepfiles**
-
-Note: **-noask** is also a **tovid mpg** option: if you use it you will not get
-menu previews or other prompts from **tovid disc**.  If you just want to pass
-**-noask** to tovid, use **-noprompt**.
 
 ==Options==
 
@@ -457,7 +460,12 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
     $PREFIX/lib/tovid/masks/ or $HOME/.tovid/masks/ and use them on the
     command line using the filename minus the path and extension.
     i.e ~/.tovid/masks/duck.png becomes -thumb-shape duck
-: **-3dthumbs**
+: **-thumb-frame-size** INT
+    The size (thickness) of the thumb frames in pixels.  This will also set the
+    thickness of the raised "frame" of thumbs when you use **-3d-thumbs**.
+    See also **-showcase-frame-size** and **-thumb-frame-color**
+: **-thumb-frame-color**, **-thumb-frame-colour** COLOR
+: **-3d-thumbs**, **-3dthumbs**
     This will give an illusion of 3D to the thumbnails: dynamic lighting on
     rounded thumbs, and a raised effect on rectangular thumbs.  Try it !
 : **-titles-font** FONT
@@ -718,11 +726,11 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
     one processor free for other things.  At present this applies to the time
     consuming imagemagick loops: you will notice a substantial speedup now if
     you have a multi-cpu system.
-: **-noask**, **-no-ask**
+: **-no-ask**, **-noask**
     Skip all interactive questions.  No preview, automatic re-encoding with
     tovid if needed, no interactive option to use background video for bgaudio.
-: **-nowarn**, **-no-warn**
-    Don't pause after outputting warning messages
+: **-no-warn**, **-nowarn**
+    Don't pause after outputting warning or info messages
 : **-grid**
     Show a second preview image with a grid and numbers that will help in finding
     coordinates for options that might use them, like **-text-start**
@@ -820,10 +828,15 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
     **-showcase** IMAGE or **-showcase** VIDEO for this "frame style" to work.
 : **-showcase-frame-size** PIXELS
     The size of the showcase frame.  This value will be used for both width and
-    height for the 'thickness' of the frame.
+    height for the 'thickness' of the frame.  This will also set the thickness
+    of the raised "frame" of the showcase thumb when you use **-3d-showcase**.
+    See also **-thumb-frame-size** and **-showcase-frame-color**
 : **-showcase-frame-color**, **-showcase-frame-colour** PIXELS
     The color of the showcase frame.  Use hexadecimal or named colors notation.
     Remember to quote! ( '#ffac5f' ).
+: **-3d-showcase**, **-3dshowcase**
+    This will give an illusion of 3D to the showcase thumb: dynamic lighting on
+    rounded thumbs, and a raised effect on rectangular thumbs.  Try it !
 
 
 ==Thumbnail Style==
@@ -879,10 +892,7 @@ menu previews or other prompts from **tovid disc**.  If you just want to pass
 ```
     -rotate-thumbs -10 10 -10 10 -10  (for 5 files)
 ```
-     **Note: this option does not work currently with shaped or 3d thumbs
-     (**-thumb-shape** SHAPE' or **-3dthumbs** ) unless using showcase style.
-     Also note that this will not turn a portrait image into a landscape image!
-
+     **Note: this option will not turn a portrait image into a landscape image!
 
 
 ==Dvdauthor options==
@@ -1288,7 +1298,7 @@ for a widescreen monitor or TV.
     -ffmpeg.
 
 : **-from-gui**
-    Put tovid into a fully non-interactive state, suitable for calling from
+    Put makempg into a fully non-interactive state, suitable for calling from
     a gui.
 
 : **-noask**
