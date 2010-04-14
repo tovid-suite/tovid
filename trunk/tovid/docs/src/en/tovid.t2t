@@ -573,11 +573,11 @@ Here is a list of possible options you can pass:
     the animated slideshow as a background video.  See **-showcase-slideshow**
     for additional details.
 : **-no-confirm-backup**
-    tovid is alpha software, so for your protection tovid prompts you to back
-    up your files first.  It is unlikely that tovid will destroy or overwrite
-    your photos, but as with any largely untested software you should back up
-    first.  If you have already backed up and do not want to be prompted every
-    time, use this option.
+    Slideshows are an experimental (but well tested) feature.  Todisc is
+    unlikely to overwrite your personal files, but you should take precautions
+    and backup your images, as you would with any beta software.  Todisc
+    will prompt you to backup your files normally.  If you have already backed
+    up your images, use this option to disable the prompt.
 : **-use-dvd-slideshow** [CONFIG FILE]
     If you pass this option without an argument, tovid will use the
     dvd-slideshow program to create the animated slide menu, assuming you have
