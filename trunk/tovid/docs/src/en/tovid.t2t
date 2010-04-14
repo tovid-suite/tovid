@@ -465,6 +465,8 @@ Here is a list of possible options you can pass:
     thickness of the raised "frame" of thumbs when you use **-3d-thumbs**.
     See also **-showcase-frame-size** and **-thumb-frame-color**
 : **-thumb-frame-color**, **-thumb-frame-colour** COLOR
+    The color of frames for video thumbnails.  Use hexadecimal or named colors notation.
+    Remember to quote if using hexadecimal! ( '#ffac5f' ).
 : **-3d-thumbs**, **-3dthumbs**
     This will give an illusion of 3D to the thumbnails: dynamic lighting on
     rounded thumbs, and a raised effect on rectangular thumbs.  Try it !
