@@ -451,7 +451,7 @@ Here is a list of possible options you can pass:
 ==Thumbnail style==
 
 : **-thumb-shape**
-    normal|oval|plectrum|egg|wave|spiral|galaxy|flattube
+    normal|egg|oval|vignette|plectrum|arch|spiral|blob|star|flat-tube
     Apply a shaped transparency mask to thumbnail videos.
     These "feathered" shapes look best against a plain background (or used
     in conjunction with **-thumb-mist** [COLOR]).  For this rectangular
@@ -459,14 +459,14 @@ Here is a list of possible options you can pass:
     Note: if you wish to make your own mask PNGS you can put them in
     $PREFIX/lib/tovid/masks/ or $HOME/.tovid/masks/ and use them on the
     command line using the filename minus the path and extension.
-    i.e ~/.tovid/masks/duck.png becomes -thumb-shape duck
+    i.e ~/.tovid/masks/tux.png becomes -thumb-shape tux
 : **-thumb-frame-size** INT
     The size (thickness) of the thumb frames in pixels.  This will also set the
     thickness of the raised "frame" of thumbs when you use **-3d-thumbs**.
     See also **-showcase-frame-size** and **-thumb-frame-color**
 : **-thumb-frame-color**, **-thumb-frame-colour** COLOR
-    The color of frames for video thumbnails.  Use hexadecimal or named colors notation.
-    Remember to quote if using hexadecimal! ( '#ffac5f' ).
+    The color of frames for video thumbnails.  Use hexadecimal or named colors
+    notation.  Remember to quote if using hexadecimal! ( '#ffac5f' ).
 : **-3d-thumbs**, **-3dthumbs**
     This will give an illusion of 3D to the thumbnails: dynamic lighting on
     rounded thumbs, and a raised effect on rectangular thumbs.  Try it !
