@@ -105,7 +105,8 @@ PAUSE_TIME=10
 USER_LOOP=false
 MIST=false
 FEATHER=false
-BLUR=1
+THUMB_BLUR=1
+SC_BLUR=1
 SUB_MENU_FEATHER=false
 IMG_FMT="jpg"
 SM_IMG_FMT="jpg"  # submenu image format
@@ -289,6 +290,16 @@ usage_error()
     fi
     exit 1
 }
+warning_message()
+{
+    local MESSAGE=( "$@" )
+    yecho $SEPARATOR
+    for ((i=0; i<$#; i++)) ; do printf "%s" "${MESSAGE[i]}"; done |
+    format_output | tee -a "$LOG_FILE"
+    echo | tee -a "$LOG_FILE"
+    yecho "$SEPARATOR"
+}
+
 titlesafe_error()
 {
     echo "***** WARNING *****"
@@ -2047,20 +2058,25 @@ check_maskshape()
 {
     SHAPE="$1"
     ! egrep -q -w \
-    'egg|oval|plectrum|arch|spiral|galaxy|flat-tube|normal' \
+    'oval|vignette|plectrum|flare|arch|spiral|blob|star|normal' \
     <<< "$SHAPE"  && \
     ! test -f "$TOVID_PREFIX/masks/${SHAPE}.png" && \
     ! test -f "$HOME/.tovid/masks/$SHAPE.png" 
     (($? == 0)) && return 1 || return 0
 }
 
-# BREAK_POINT
 # make an image mask for feathered shapes
-# usage: make_mask SHAPE
+# usage: make_mask SHAPE thumb|showcase
 make_mask()
 {
-    shape="$1"
-    MASK="$WORK_DIR/${shape}_mask.png"
+    local shape="$1"
+    local mask_type="$2"
+    if [[ $mask_type == "thumb" ]]; then
+        local BLUR_CMD=( "${THUMB_BLUR_CMD[@]}" )
+    else
+        local BLUR_CMD=( "${SC_BLUR_CMD[@]]}" )
+    fi
+    MASK="$WORK_DIR/${shape}_${mask_type}_mask.png"
 
     case "$shape" in
       "normal")
@@ -2069,22 +2085,39 @@ make_mask()
         +matte -compose CopyOpacity miff:- |
         convert - -bordercolor none -border 8x8 miff:- |
         ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-        convert -resize $THUMB_SIZE! - $MASK
+        convert - -resize $THUMB_SIZE! $MASK
         ;;
       "oval")
         convert -size $THUMB_SIZE xc:black -fill white \
         -draw "RoundRectangle $DIMY1,$DIMY1 $DIMY2,$DIMX2, $DIMY3,$DIMX3" \
-        +matte -compose CopyOpacity miff:- | \
+        +matte -compose CopyOpacity miff:- |
         convert - -bordercolor none -border 6x6 miff:- |
-        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
-        convert -resize $THUMB_SIZE! - $MASK
+        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
+        convert - -resize $THUMB_SIZE! $MASK
         ;;
-      "egg")
-        convert -size $THUMB_SIZE xc:black -fill white \
-        -draw \"circle $DIMY4,$DIMX4 $DIMY5,$DIMX5\" \
-        +matte -compose CopyOpacity miff:- | \
-        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | \
-        convert -resize $THUMB_SIZE! - $MASK
+      "vignette")
+        convert -size 200x200 xc:white -background black -vignette 0x8 miff:- |
+        convert - -resize $THUMB_SIZE! $MASK
+        ;;
+      "flare")
+        # with thanks to Fred Weinhaus for his starburst script and
+        # Anthony Thyssen who did the original investigation of the technique
+        # http://www.imagemagick.org/Usage/advanced/#radial_flares
+        # test if imagemagick has -distort polar
+        if ! convert -list distort | grep -q -w Polar; then
+            usage_error "Your imagemagick version is too old to support the
+              \"-polar distort\" technique used.  Upgrade your imagemagick to
+              version 6.3.5-1 or newer, or use a different thumb shape."
+        fi
+        convert -size 200x1 xc: -seed 100 +noise Random -channel G -separate \
+        +channel +level-colors black,white -size 200x199 xc:black -append \
+        -motion-blur 66x65535-90 \( -size 200x132  gradient:white-black \
+        -evaluate cos .5 -negate -evaluate pow 1.5 \) -compose screen \
+        -composite -distort Polar -1 miff:- |
+        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
+        convert \( -size 200x200 xc:black \) \( - -level 0,100%  \) \
+        -geometry +0+0 -composite miff:- |
+        convert - -resize $THUMB_SIZE! $MASK
         ;;
       "plectrum")
         convert -size 200x200 xc:none -fill white \
@@ -2093,7 +2126,7 @@ make_mask()
         convert - -bordercolor none -border 3x3 -trim +repage miff:- |
         convert - -bordercolor none -border 18x18 miff:- |
         ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-        convert -resize $THUMB_SIZE! - $MASK
+        convert - -resize $THUMB_SIZE! $MASK
         ;;
       "arch")
         convert -size 200x200 xc:none -fill white \
@@ -2104,18 +2137,7 @@ make_mask()
         convert - -bordercolor none -border 3x3 -trim +repage miff:- |
         convert - -bordercolor none -border 18x18 miff:- |
         ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-        convert -resize $THUMB_SIZE! - $MASK
-        ;;
-      "galaxy")
-        convert -size 200x200 xc:none -fill white \
-        -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
-        -draw 'rectangle 60,38 140,162'  miff:-  |
-        convert -background none -swirl 1440 - miff:-  |
-        convert -background none -wave -50x456 - miff:- |
-        convert - -bordercolor none -border 3x3 -trim +repage miff:- |
-        convert - -bordercolor none -border 18x18 miff:- |
-        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-        convert -resize $THUMB_SIZE! - $MASK
+        convert - -resize $THUMB_SIZE! $MASK
         ;;
       "spiral")
         convert -size 200x200 xc:none -fill white \
@@ -2126,17 +2148,30 @@ make_mask()
         convert - -bordercolor none -border 3x3 -trim +repage miff:- |
         convert - -bordercolor none -border 18x18 miff:- |
         ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-        convert -resize $THUMB_SIZE! - $MASK
+        convert - -resize $THUMB_SIZE! $MASK
         ;;
-      "flat-tube") 
-        convert -size 200x200 xc:none -fill white \
-        -draw 'circle 65,100 100,150' -draw 'circle 135,100 100,150' \
-        -draw 'rectangle 60,38 140,162'  miff:-  |
-        convert -background none -wave 25x700 - miff:- | 
-        convert - -bordercolor none -border 3x3 -trim +repage miff:- |
-        convert - -bordercolor none -border 18x18 miff:- |
+      "star")
+        convert -size 290x200 xc:none -fill white \
+        -draw  "polygon 75,37.5  89.5,80.5 134.5,80.5 98.5,107.5 111.5,150.5 \
+        75,125    38.5,150.5   51.5,107.5 15.5,80.5    60.5,80.5" miff:- |
+        convert - -trim +repage miff:- |
         ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-        convert -resize $THUMB_SIZE! - $MASK
+        convert - -resize $THUMB_SIZE! $MASK
+        ;;    
+      "blob")
+        echo $SEPARATOR
+        echo "Running convert -size 100x60 xc:none -fill white \
+        -draw \"circle 41,39 44,57 circle 59,39 56,57 circle 50,21 50,3\" miff:- |
+        convert - -trim +repage -bordercolor none -border 10x10 miff:- |
+        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
+        convert - -resize $THUMB_SIZE! $MASK" | format_output
+        echo $SEPARATOR
+
+        convert -size 100x60 xc:none -fill white \
+        -draw "circle 41,39 44,57 circle 59,39 56,57 circle 50,21 50,3" miff:- |
+        convert - -trim +repage -bordercolor none -border 10x10 miff:- |
+        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
+        convert - -resize $THUMB_SIZE! $MASK
         ;;
       *)
         if test -f "$HOME/.tovid/masks/$shape.png"; then
@@ -2144,14 +2179,14 @@ make_mask()
             -bordercolor none -border 3x3 -trim +repage miff:- |
             convert - -bordercolor none -border 18x18 miff:- |
             ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-            convert -resize $THUMB_SIZE! - $MASK
+            convert - -resize $THUMB_SIZE! $MASK
 
         elif test -f "$TOVID_PREFIX/masks/$shape.png"; then
             convert "$TOVID_PREFIX/masks/$shape.png" \
             -bordercolor none -border 3x3 -trim +repage miff:- |
             convert - -bordercolor none -border 18x18 miff:- |
             ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-            convert -resize $THUMB_SIZE! - $MASK
+            convert - -resize $THUMB_SIZE! $MASK
         fi
         ;;
     esac
@@ -2170,6 +2205,7 @@ trap 'cleanup; exit 13' TERM INT
 ###############################################################################
 #       Process arguments to the script, set up VARS and WORK_DIR             #
 ###############################################################################
+
 # if -prefix is passed, show the prefix and exit
 [[ ${args[0]} == '-prefix' ]] && echo $TOVID_PREFIX && exit 0
 
@@ -2745,9 +2781,23 @@ while test $# -gt 0; do
                 usage_error "-showcase-frame-size requires an integer as argument"
             fi
             ;;
-        "-blur" )
+        "-thumb-blur" | "-blur" )
             shift
-            BLUR="$1"
+            if ! test_is_number "$BLUR"; then
+                usage_error "-blur requires an integer as argument"
+            fi
+            THUMB_BLUR="$1"
+            (( ${THUMB_BLUR%.*} >= 2 )) && THUMB_BLUR=2
+            USER_BLUR=1
+            ;;
+        "-showcase-blur" )
+            shift
+            if ! test_is_number "$SC_BLUR"; then
+                usage_error "-showcase-blur requires an integer as argument"
+            fi
+            SC_BLUR="$1"
+            (( ${SC_BLUR%.*} >= 2 )) && SC_BLUR=2
+            SC_USER_BLUR=1
             ;;
         "-title-colour" | "-title-color" )
             shift
@@ -3436,7 +3486,7 @@ if $FEATHER && ! $USE_FEATHER_MASK; then
     yecho "Note: feathered thumb shapes no longer have mist background
         by default.  Use -thumb-mist [COLOR] to get the old behavior"
     yecho
-    $WARN && sleep 10
+    $WARN && sleep 5
 fi
 #
 # sanity checks for button style ( -button-style ) for menu buttons
@@ -3512,6 +3562,7 @@ if [[ -n $THUMB_SHAPE ]]; then
         usage_error "Please supply a usable thumb shape with
         -thumb-shape option. You gave \"$THUMB_SHAPE\""
     fi
+            
 fi
 if [[ -n $SHOWCASE_SHAPE ]]; then
     if ! check_maskshape $SHOWCASE_SHAPE; then
@@ -3528,7 +3579,7 @@ if [[ -n ${ROTATE_ARRAY[@]} ]]; then
                 echo "'*rect' button styles with rotated thumbs don't play well"
                 echo "with spumux buttons. Setting button style to "
                 echo "'line'.  You may also use 'text' style"
-                echo "Ctrl-c now if you wish to exit and examine your options"
+                echo "Quit now if you wish to exit and examine your options"
                 yecho
                 $WARN && sleep 10
             fi
@@ -3563,6 +3614,26 @@ if test -e "$OUT_DIR"; then
     rm -f "$WORK_DIR"
     exit 1
 fi
+# Remove any existing log file unless recursing
+if ! $SWITCHED_MODE && ! $TITLESET_MODE && \
+! $MK_CAROUSEL_MODE && ! $VMGM_ONLY; then
+    test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
+fi
+# see if imagemagick supports -vignette for the oval shape
+if [[ $THUMB_SHAPE == "vignette" || $SHOWCASE_SHAPE == "vignette" ]]; then
+    if ! convert -help 2>&1 | egrep -q -- "-vignette"; then
+        [[ $THUMB_SHAPE == "vignette" ]] && THUMB_SHAPE="oval"
+        [[ $SHOWCASE_SHAPE == "vignette" ]] && SHOWCASE_SHAPE="oval"
+        ! ((USER_BLUR)) && BLUR=3
+        ! ((SC_USER_BLUR)) && SC_BLUR=3
+        warning_message \
+          "INFO: -vignette option not available in your imagemagick version.
+          You should upgrade it.  Using 'oval' mask shape instead which is
+          similar.  Setting the blur to 3 unless you used '-blur' (thumbs) or
+          '-showcase-blur' (showcase file)"
+        $WARN && sleep 5
+    fi
+fi
 # see if advanced options were used and give warning if so
 if [[ -n "${ADV_OPT[@]}" ]] && ! $SWITCHED_MODE; then
     yecho
@@ -3580,11 +3651,6 @@ fi
 # copy symlinks for -group hack
 if $GROUPING && $TITLESET_MODE; then
     find "$WORK_DIR"/  -name \*group\*.mpg -exec cp -P {} "$BASEDIR" \;
-fi
-# Remove any existing log file unless recursing
-if ! $SWITCHED_MODE && ! $TITLESET_MODE && \
-! $MK_CAROUSEL_MODE && ! $VMGM_ONLY; then
-    test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
 fi
 # carousel's are made BEFORE switched menus - so don't do them in switched mode
 $SWITCHED_MODE && DO_CAROUSEL=false
@@ -3859,9 +3925,9 @@ if $QUICK_MENU; then
 fi
 if [[ $SC_FRAMESTYLE = "glass" ]] && [[ -z $SHOWCASE_IMG && -z $SHOWCASE_VIDEO ]]; then
     yecho
-    yecho "You must use -showcase option for '-showcase-framestyle. Either '"
+    yecho "You must use a -showcase option for '-showcase-framestyle'. Either "
     yecho "-showcase IMAGE, -showcase VIDEO, -showcase mix, or '-showcase'"
-    yecho "Disabling this option for you - please ctrl-c now to exit"
+    yecho "Disabling this option for you - please exit now"
     yecho "if you wish to reexamine the situation"
     yecho
     SC_FRAMESTYLE="none"
@@ -4613,8 +4679,14 @@ if $SHOWCASE; then
     if [ -z ${BLUR/.*} ]; then
         BLUR=0.${BLUR/*.}
     fi
-    if [ ${BLUR/.*} -ge 2 ]; then
+    if (( ${BLUR/.*} > 2 )) && [[ -n $THUMB_SHAPE ]]; then
         BLUR=2.0
+        if ! $TEXTMENU; then
+            yecho
+            yecho "Reducing thumb blur to 2.0 because you are using -showcase"
+            yecho
+            $WARN && sleep 3
+        fi
     fi
     if [ $V_TOTAL -lt 3 ]; then
         THUMB_SIZE=${GEO_ARRAY[10]}
@@ -4765,9 +4837,22 @@ echo -e "\n**************"
 $WARN && sleep 1
 cd "$WORK_DIR"
 
-# default of no blur if using 3D thumbs
+# default of no blur if using 3D thumbs or flare shape
 if $THUMBS_3D; then
     BLUR=0.1
+fi
+if ! ((USER_BLUR)) && [[ $THUMB_SHAPE == "flare" ]]; then
+    BLUR=0.1
+fi
+if ! ((SC_USER_BLUR)) && [[ $SHOWCASE_SHAPE == "flare" ]]; then
+    SC_BLUR=0.1
+fi
+# no 3d thumbs for flare shape
+if $THUMBS_3D || $SHOWCASE_3D && \
+  [[ $THUMB_SHAPE == "flare" || $SHOWCASE_SHAPE == "flare" ]]; then
+    warning_message "There is no 3d thumbs available for the 'flare' shape. "
+    "Disabling this option for you"
+    $WARN && sleep 3
 fi
 
 $FOURxONE && $SHOWCASE && FOURxONE=false && tile_warning
@@ -4912,11 +4997,13 @@ DIMY4=$((DIMY / 2))
 DIMX4=$((DIMX / 2))
 DIMY5=$((DIMY / 3))
 DIMX5=$((DIMX4 / 3))
-BLUR_CMD=(convert - -blur 0x$BLUR -channel RGBA +matte miff:-)
+THUMB_BLUR_CMD=(convert - -blur 0x$THUMB_BLUR -channel RGBA +matte miff:-)
+SC_BLUR_CMD=(convert - -blur 0x$SC_BLUR -channel RGBA +matte miff:-)
 if $THUMBS_3D && $SHOWCASE && \
     [[ $THUMB_SHAPE == "normal" || $SHOWCASE_SHAPE == "normal" ]]; then
     MASK_DIM="0,0 $DIMY,$DIMX"
-    BLUR_CMD=(convert - miff:-)
+    THUMB_BLUR_CMD=(convert - miff:-)
+    SC_BLUR_CMD=(convert - miff:-)
 else
     MASK_DIM="$DIMY1,$DIMY1 $DIMY2,$DIMX2"
 fi
@@ -4943,15 +5030,14 @@ fi
 # Print and execute the thumb-shape mask command
 if $DO_MENU; then
     if [[ -n $THUMB_SHAPE ]]; then
-        make_mask $THUMB_SHAPE
-        THUMB_MASK="$WORK_DIR/${THUMB_SHAPE}_mask.png"
+        make_mask $THUMB_SHAPE thumb
+        THUMB_MASK="$MASK"
     fi
     if [[ -n $SHOWCASE_SHAPE ]]; then
         MASK="$WORK_DIR/${SHOWCASE_SHAPE}_mask.png"
-        [[ $SHOWCASE_SHAPE != $THUMB_SHAPE ]] && make_mask $SHOWCASE_SHAPE
-        convert "$MASK" -resize ${SHOWCASE_SIZE}! \
-        "$WORK_DIR/${SHOWCASE_SHAPE}_showcase_mask.png"
-        SHOWCASE_MASK="$WORK_DIR/${SHOWCASE_SHAPE}_showcase_mask.png"
+        make_mask $SHOWCASE_SHAPE showcase
+        convert "$MASK" -resize ${SHOWCASE_SIZE}! "$MASK"
+        SHOWCASE_MASK="$MASK"
     fi
     yecho "Creating a menu title image"
     echo
