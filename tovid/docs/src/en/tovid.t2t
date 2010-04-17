@@ -451,7 +451,7 @@ Here is a list of possible options you can pass:
 ==Thumbnail style==
 
 : **-thumb-shape**
-    normal|egg|oval|vignette|plectrum|arch|spiral|blob|star|flat-tube
+    normal|oval|vignette|plectrum|arch|spiral|blob|star|flare
     Apply a shaped transparency mask to thumbnail videos.
     These "feathered" shapes look best against a plain background (or used
     in conjunction with **-thumb-mist** [COLOR]).  For this rectangular
@@ -846,12 +846,15 @@ Here is a list of possible options you can pass:
     Opacity of thumbnail videos as a percentage (no percent sign).
     Anything less than 100(%) is semi-transparent. Not recommended with dark
     backgrounds.
-: **-blur** NUM
+: **-thumb-blur**, **-blur** NUM
     The amount of feather blur to apply to the thumb-shape.  The default is 1.0
     which will more or less keep the shape and produces transparency at the
-    edges.  Choose float or integer values between 0.1 and 5.0.  Higher values
-    are possible, but you may not like the result. 3D thumbs are automatically
+    edges.  Choose float or integer values between 0.1 and 2.0. 3D thumbs are
     set to a tiny blur, so this option doesn't affect the **-3dthumbs** option.
+: **-showcase-blur** NUM
+    The amount of 'feather' blur to apply to the showcase image/video.  Choose
+    values between 0.1 and 2.0.  This option has no effect on **-3d-showcase**.
+    See **-thumb-blur** for more info.
 : **-align** north|south
     This will align  thumbs/titles north or south.
     if **-align** south then menu title will align north, unless you manually
