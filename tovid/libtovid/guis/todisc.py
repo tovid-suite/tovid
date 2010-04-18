@@ -438,13 +438,13 @@ _opacity = Number('Opacity', '-opacity', 100,
     'Not recommended with dark backgrounds.',
     1, 100, '%')
 
-_blur = Text('Blur', '-blur', "",
-    'The amount of feather blur to apply to the thumb-shape.  '
+_blur = Text('Blur', '-thumb-blur', "",
+    'The amount of feather blur to apply to the thumb shape.  '
     'Default is 1.0 which will more or less keep the shape, creating "soft" '
     'edges.  Use float or integer values between 0.1 and 2.0')
 
-_showcase_blur = Text('Showcase blur', '-showcase-blur', "",
-    'The amount of feather blur to apply to the showcase thumb-shape.  '
+_showcase_blur = Text('Blur', '-showcase-blur', "",
+    'The amount of feather blur to apply to the showcase thumb shape.  '
     'Default is 1.0 which will more or less keep the shape, creating "soft" '
     'edges.  Use float or integer values between 0.1 and 2.0')
 
@@ -467,12 +467,12 @@ _wave = Flag('Wave effect', '-wave', False,
     'will need to use "-wave VALUE" in the "todiscopts" box on the "Behavior" '
     'tab.  See man todisc for details.')
 
-_3dshowcase = Flag('3D showcase thumb', '-3d-showcase', False,
+_3dshowcase = Flag('3D thumb', '-3d-showcase', False,
     'This will give an illusion of 3D to the thumbnails: '
     'dynamic lighting on rounded thumbs, and a  raised '
     ' effect on rectangular thumbs')
 
-_rotate = Number('Rotate Showcase thumb', '-rotate', 0,
+_rotate = Number('Rotate thumb', '-rotate', 0,
     'Rotate the showcase image|video clockwise by this number of degrees.'
     'Note: this will not change a portait image into a landscape image!',
     -30, 30, 'degrees')
@@ -920,16 +920,14 @@ slideshows = Tabs('Slideshows', *tab_list)
 
 
 thumbnails = VPanel("Thumbnails",
-    HPanel('Seeking',
-        _seek,
-        _showcase_seek),
     HPanel('',
         VPanel('Menu link thumbnails',
+            HPanel('Seeking', _seek),
             VPanel("Effects",
-                HPanel('', _opacity, _blur),
-                _3dthumbs,
-                _thumb_mist,
-                _rotate_thumbs),
+                _opacity,
+                HPanel('', _blur, _3dthumbs),
+                _rotate_thumbs,
+                _thumb_mist),
             VPanel('Arrangement (thumbnails)',
                 _thumb_shape,
                 _align,
@@ -940,9 +938,10 @@ thumbnails = VPanel("Thumbnails",
                 ),
         ),
         VPanel("Showcase thumbnail",
+            HPanel('Seeking', _showcase_seek),
             VPanel('Effects',
-                HPanel('',_wave, _3dshowcase),
-                _showcase_blur,
+                _wave,
+                HPanel('', _showcase_blur, _3dshowcase),
                 _rotate,
                 HPanel('', Label('Frame style'),_showcase_framestyle)),
             VPanel('Arrangement (showcase image)',
