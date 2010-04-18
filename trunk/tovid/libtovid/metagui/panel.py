@@ -20,7 +20,6 @@ try:
 except ImportError:
     import tkinter as tk
 
-# Absolute imports
 from libtovid.odict import Odict
 from libtovid.metagui.widget import Widget
 from libtovid.metagui.control import Control, Flag, List
