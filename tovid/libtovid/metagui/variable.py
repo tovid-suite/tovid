@@ -17,7 +17,6 @@ try:
 except ImportError:
     import tkinter as tk
 
-# Absolute imports
 from libtovid.odict import Odict
 
 class ListVar (tk.Variable):

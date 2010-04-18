@@ -46,7 +46,6 @@ try:
 except ImportError:
     import tkinter as tk
 
-# Absolute imports
 from libtovid.odict import Odict
 from libtovid.metagui import Text, Number, Flag
 from libtovid.metagui.control import CONTROLS

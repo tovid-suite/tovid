@@ -18,18 +18,16 @@ try:
     from ScrolledText import ScrolledText
     from tkFileDialog import \
         (asksaveasfilename, askopenfilename)
-    from tkMessageBox import showinfo
+    from tkMessageBox import showinfo, showerror
 # Python 3.x
 except ImportError:
     import tkinter as tk
     from tkinter.scrolledtext import ScrolledText
     from tkinter.filedialog import \
         (asksaveasfilename, askopenfilename)
-    from tkinter.messagebox import showinfo
+    from tkinter.messagebox import showinfo, showerror
 
-# Absolute imports
 from libtovid import cli
-# Relative imports
 from libtovid.metagui.widget import Widget
 from libtovid.metagui.panel import Panel, Tabs
 from libtovid.metagui.support import \
@@ -252,16 +250,16 @@ class Application (Widget):
         self.toolbar = Widget()
         self.toolbar.draw(self)
         # Create the buttons
-        config_button = tk.Button(self.toolbar, text="Config",
-                                  command=config_function)
-        run_button = tk.Button(self.toolbar, text="Run %s now" % self.program,
-                               command=self.execute)
-        save_button = tk.Button(self.toolbar, text="Save script",
-                                command=self.save_script)
-        load_button = tk.Button(self.toolbar, text="Load script",
-                                command=self.load_script)
-        exit_button = tk.Button(self.toolbar, text="Exit",
-                                command=exit_function)
+        config_button = tk.Button(
+            self.toolbar, text="Config", command=config_function)
+        run_button = tk.Button(
+            self.toolbar, text="Run %s now" % self.program, command=self.execute)
+        save_button = tk.Button(
+            self.toolbar, text="Save script", command=self.prompt_save_script)
+        load_button = tk.Button(
+            self.toolbar, text="Load script", command=self.prompt_load_script)
+        exit_button = tk.Button(
+            self.toolbar, text="Exit", command=exit_function)
         # Pack the buttons
         config_button.pack(anchor='w', side='left', fill='x')
         load_button.pack(anchor='w', side='left', fill='x')
@@ -305,33 +303,59 @@ class Application (Widget):
             self.toolbar.enable()
 
 
-    def save_script(self):
-        """Save the current command as a bash script.
+    def prompt_save_script(self):
+        """Prompt for a script filename, then save the current
+        command to that file.
         """
         # TODO: Make initialfile same as last saved script, if it exists
         filename = asksaveasfilename(parent=self,
             title="Select a filename for the script",
             initialfile='%s_commands.bash' % self.program)
-        if filename:
-            args = self.get_args()
-            command = cli.Command(self.program, *args)
-            outfile = open(filename, 'w')
-            outfile.write(command.to_script())
-            outfile.close()
-            showinfo(title="Script saved",
-                     message="Saved '%s'" % filename)
+
+        if not filename:
+            return
+
+        try:
+            self.save_script(filename)
+        except:
+            raise
+        else:
+            showinfo(title="Script saved", message="Saved '%s'" % filename)
 
 
-    def load_script(self):
-        """Load current Control settings from a text file.
+    def prompt_load_script(self):
+        """Prompt for a script filename, then load current Control settings
+        from that file.
         """
         filename = askopenfilename(parent=self,
             title="Select a shell script or text file to load",
             filetypes=[('Shell scripts', '*.sh *.bash'),
             ('All files', '*.*')])
+
         if not filename:
             return
 
+        try:
+            self.load_script(filename)
+        except:
+            raise
+        else:
+            showerror(title="Error", message="Failed to load '%s'" % filename)
+
+
+    def save_script(self, filename):
+        """Save the current command as a bash script.
+        """
+        args = self.get_args()
+        command = cli.Command(self.program, *args)
+        outfile = open(filename, 'w')
+        outfile.write(command.to_script())
+        outfile.close()
+
+
+    def load_script(self, filename):
+        """Load current Control settings from a text file.
+        """
         # Clear all controls of existing values
         for control in Control.all.values():
             control.reset()
