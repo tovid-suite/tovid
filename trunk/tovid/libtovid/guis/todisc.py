@@ -57,8 +57,8 @@ dvdext = 'vob mpg mpeg mpeg2'
 dvd_video_files = [ filetypes.new_filetype('DVD video files', dvdext) ]
 
 # Users can use their own thumb masks.  Add to thumb mask control drop-down
-masks = [ 'normal', 'oval', 'plectrum', 'egg', \
-'arch', 'spiral', 'galaxy', 'flat-tube']
+masks = [ 'normal', 'oval', 'vignette', 'plectrum', 'arch', 'spiral', \
+'blob', 'star', 'flare' ]
 # $PREFIX/lib/tovid is already added to end of PATH
 os_path = os.environ['PATH'].rsplit(':')
 sys_dir = os_path[-1] + '/masks'
@@ -153,7 +153,7 @@ _switched_menus = Flag('Switched menus (try with "Quick menu" !)',
     'showcase file for this option.  Use with '
     '"Quick menu" option for a huge speed up !')
 
-_showcase_framestyle = Choice('Frame style', '-showcase-framestyle', 'default',
+_showcase_framestyle = Choice('', '-showcase-framestyle', 'default',
     'This option is only for menu styles with a "showcase" image.  '
     'The "none" option will use the default frame method, using imagemagick.  '
     'The "glass" option will use mplayer to make frames, giving an animated '
@@ -438,13 +438,17 @@ _opacity = Number('Opacity', '-opacity', 100,
     'Not recommended with dark backgrounds.',
     1, 100, '%')
 
-_blur = Number('Blur', '-blur', 1,
+_blur = Text('Blur', '-blur', "",
     'The amount of feather blur to apply to the thumb-shape.  '
     'Default is 1.0 which will more or less keep the shape, creating "soft" '
-    'edges.  Choose float or integer values between 0.1 and 5.0',
-    1, 5, 'pixels')
+    'edges.  Use float or integer values between 0.1 and 2.0')
 
-_3dthumbs = Flag('Create 3D thumbs', '-3dthumbs', False,
+_showcase_blur = Text('Showcase blur', '-showcase-blur', "",
+    'The amount of feather blur to apply to the showcase thumb-shape.  '
+    'Default is 1.0 which will more or less keep the shape, creating "soft" '
+    'edges.  Use float or integer values between 0.1 and 2.0')
+
+_3dthumbs = Flag('3D thumbs', '-3d-thumbs', False,
     'This will give an illusion of 3D to the thumbnails: '
     'dynamic lighting on rounded thumbs, and a  raised '
     ' effect on rectangular thumbs')
@@ -456,12 +460,17 @@ _rotate_thumbs = SpacedText('Rotate Thumbs (list)', '-rotate-thumbs', '',
     'different sizes as images are necessarily resized *after* rotating.  '
     'Note: this will not change a portrait image into a landscape image!')
 
-_wave = Flag('Wave effect for showcase thumb', '-wave', False,
+_wave = Flag('Wave effect', '-wave', False,
     'Wave effect for showcase image|video.  Alters thumbs along a sine '
     'wave.  This will pass a wave arg of -20x556, producing a gentle '
     'wave with a small amount of distortion.  To use other values you '
     'will need to use "-wave VALUE" in the "todiscopts" box on the "Behavior" '
     'tab.  See man todisc for details.')
+
+_3dshowcase = Flag('3D showcase thumb', '-3d-showcase', False,
+    'This will give an illusion of 3D to the thumbnails: '
+    'dynamic lighting on rounded thumbs, and a  raised '
+    ' effect on rectangular thumbs')
 
 _rotate = Number('Rotate Showcase thumb', '-rotate', 0,
     'Rotate the showcase image|video clockwise by this number of degrees.'
@@ -932,9 +941,10 @@ thumbnails = VPanel("Thumbnails",
         ),
         VPanel("Showcase thumbnail",
             VPanel('Effects',
-                _wave,
+                HPanel('',_wave, _3dshowcase),
+                _showcase_blur,
                 _rotate,
-                _showcase_framestyle),
+                HPanel('', Label('Frame style'),_showcase_framestyle)),
             VPanel('Arrangement (showcase image)',
                 _showcase_shape,
                 _showcase_geo,
