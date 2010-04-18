@@ -820,6 +820,7 @@ class Number (Control):
                  max=10,
                  units='',
                  style='spin',
+                 step=1,
                  **kwargs):
         """Create a number-setting widget.
 
@@ -833,10 +834,13 @@ class Number (Control):
                 Help text to show in a tooltip
             min, max
                 Range of allowable numbers (inclusive)
-            style
-                'spin' for a spinbox, or 'scale' for a slider
             units
                 Units of measurement (ex. "kbits/sec"), used as a label
+            style
+                'spin' for a spinbox, or 'scale' for a slider
+            step
+                For 'scale' style, the amount to increment or
+                decrement when the slider is moved
 
         The default/min/max may be integers or floats.
         """
@@ -846,6 +850,7 @@ class Number (Control):
         self.max = max
         self.units = units
         self.style = style
+        self.step = step
         # Defined by draw()
         self.number = None
 
@@ -862,14 +867,9 @@ class Number (Control):
             tk.Label(self, name='units', text=self.units).pack(side='left')
 
         else: # 'scale'
-            # Use integer or float resolution
-            if type(self.default) == int:
-                res = 1
-            else:
-                res = 0.001
             tk.Label(self, name='units', text=self.units).pack(side='left')
             self.number = tk.Scale(self, from_=self.min, to=self.max,
-                                   resolution=res,
+                                   resolution=self.step,
                                    tickinterval=(self.max - self.min),
                                    variable=self.variable, orient='horizontal')
             self.number.pack(side='left', fill='x', expand=True)

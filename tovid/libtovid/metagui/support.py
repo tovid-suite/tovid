@@ -34,7 +34,6 @@ except ImportError:
     import tkinter.messagebox as tkMessageBox
     from configparser import ConfigParser
 
-# Absolute imports
 from libtovid import cli
 from libtovid.util import imagemagick_fonts
 from libtovid.metagui.variable import ListVar
