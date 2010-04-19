@@ -57,7 +57,7 @@ dvdext = 'vob mpg mpeg mpeg2'
 dvd_video_files = [ filetypes.new_filetype('DVD video files', dvdext) ]
 
 # Users can use their own thumb masks.  Add to thumb mask control drop-down
-masks = [ 'normal', 'oval', 'vignette', 'plectrum', 'arch', 'spiral', \
+masks = [ 'none', 'normal', 'oval', 'vignette', 'plectrum', 'arch', 'spiral', \
 'blob', 'star', 'flare' ]
 # $PREFIX/lib/tovid is already added to end of PATH
 os_path = os.environ['PATH'].rsplit(':')
@@ -441,7 +441,7 @@ _thumb_shape = Choice('Thumb shape', '-thumb-shape', 'none',
 
 _thumb_rows =  Choice('Rows', '', 'none',
     'tooltip text ....',
-    '-tile-3x1|-tile-4x1', 'dropdown')
+    'none|-tile-3x1|-tile-4x1', 'dropdown')
 
 _opacity = Number('Opacity', '-opacity', 100,
     'Opacity  of thumbnail videos as a percentage. '
