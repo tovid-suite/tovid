@@ -944,8 +944,6 @@ thumbnails = VPanel("Thumbnails",
                 _thumb_framesize,
                 _thumb_frame_color,
                 HPanel('', _thumb_rows, _align),
-                HPanel('Thumb aspect ratio',
-                Label('Automatic (force video ratio on "Playback" tab)')),
                 ),
         ),
         VPanel("Showcase thumbnail",
@@ -962,6 +960,7 @@ thumbnails = VPanel("Thumbnails",
                 _showcase_geo),
         ),
     ),
+    Label('Note: the aspect ratio of menu link thumbnails is automatic: (force video ratio on "Playback" tab)'),
 )
 
 from libtovid.guis import tovid
