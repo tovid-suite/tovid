@@ -502,7 +502,7 @@ _tile4x1 = Flag('1 row of 4 thumbs', '-tile4x1', False,
     'Use a montage tile of 4x1 instead of the usual 2x2 '
     '(4 videos only).  Not a showcase option.')
 
-_align = Choice('Alignment', '-align', 'north',
+_align = Choice('Align', '-align', 'north',
     'Controls positioning of the thumbnails and their titles.  '
     'With some arrangements this will have limited effects however.',
     'north|south|east|west|center', 'dropdown')
@@ -939,7 +939,7 @@ thumbnails = VPanel("Thumbnails",
                 HPanel('', _blur, _3dthumbs),
                 _rotate_thumbs,
                 _thumb_mist),
-            VPanel('Arrangement (thumbnails)',
+            VPanel('Arrangement',
                 _thumb_shape,
                 _thumb_framesize,
                 _thumb_frame_color,
@@ -955,7 +955,7 @@ thumbnails = VPanel("Thumbnails",
                 HPanel('', _showcase_blur, _3dshowcase),
                 _rotate,
                 HPanel('', Label('Frame style'),_showcase_framestyle)),
-            VPanel('Arrangement (showcase image)',
+            VPanel('Arrangement',
                 _showcase_shape,
                 _showcase_framesize,
                 _showcase_frame_color,
