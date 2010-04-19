@@ -168,6 +168,13 @@ _showcase_framesize = Number('Frame size', '-showcase-framesize', 4,
 _showcase_frame_color = Color('Frame color', '-showcase-frame-color',
     '#6E6E6E', 'Color of the showcase frame. ')
 
+_thumb_framesize = Number('Frame size', '-thumb-frame-size', 4,
+    'Width of the thumbnail link frame in pixels',
+    0, 20, 'pixels')
+
+_thumb_frame_color = Color('Frame color', '-thumb-frame-color',
+    '#6E6E6E', 'Color of the thumbnail link frame. ')
+
 _showcase_shape = Choice('Showcase shape', '-showcase-shape', 'none',
     'Apply a shaped transparency mask to showcase videos or images. '
     'Leave at "none" to not use a feathered shape.',
@@ -432,6 +439,10 @@ _thumb_shape = Choice('Thumb shape', '-thumb-shape', 'none',
     'see "Thumb mist" section.  Leave at "none" to not use a feathered shape.',
     thumb_masks, 'dropdown')
 
+_thumb_rows =  Choice('Rows', '', 'none',
+    'tooltip text ....',
+    '-tile-3x1|-tile-4x1', 'dropdown')
+
 _opacity = Number('Opacity', '-opacity', 100,
     'Opacity  of thumbnail videos as a percentage. '
     'Less than 100(%) is semi-transparent. '
@@ -491,10 +502,10 @@ _tile4x1 = Flag('1 row of 4 thumbs', '-tile4x1', False,
     'Use a montage tile of 4x1 instead of the usual 2x2 '
     '(4 videos only).  Not a showcase option.')
 
-_align = Choice('Montage alignment', '-align', 'north',
+_align = Choice('Alignment', '-align', 'north',
     'Controls positioning of the thumbnails and their titles.  '
     'With some arrangements this will have limited effects however.',
-    'north|south|east|west|center')
+    'north|south|east|west|center', 'dropdown')
 
 _seek = SpacedText('Thumbnail seek(s)', '-seek', '',
     'Play thumbnail videos from the given seek time (seconds).  '
@@ -930,9 +941,9 @@ thumbnails = VPanel("Thumbnails",
                 _thumb_mist),
             VPanel('Arrangement (thumbnails)',
                 _thumb_shape,
-                _align,
-                FlagGroup('Rows (for default menu style only)',
-                    'exclusive', _tile3x1, _tile4x1, side='left'),
+                _thumb_framesize,
+                _thumb_frame_color,
+                HPanel('', _thumb_rows, _align),
                 HPanel('Thumb aspect ratio',
                 Label('Automatic (force video ratio on "Playback" tab)')),
                 ),
@@ -946,9 +957,9 @@ thumbnails = VPanel("Thumbnails",
                 HPanel('', Label('Frame style'),_showcase_framestyle)),
             VPanel('Arrangement (showcase image)',
                 _showcase_shape,
-                _showcase_geo,
                 _showcase_framesize,
-                _showcase_frame_color),
+                _showcase_frame_color,
+                _showcase_geo),
         ),
     ),
 )
