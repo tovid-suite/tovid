@@ -439,9 +439,11 @@ _thumb_shape = Choice('Thumb shape', '-thumb-shape', 'none',
     'see "Thumb mist" section.  Leave at "none" to not use a feathered shape.',
     thumb_masks, 'dropdown')
 
-_thumb_rows =  Choice('Rows', '', 'none',
-    'tooltip text ....',
-    'none|-tile-3x1|-tile-4x1', 'dropdown')
+_thumb_columns =  Choice('Thumb columns', '-thumb-columns', 'none',
+    'Use a montage tile of 3x1 or 4x1 instead of the usual 2x2 for 3 videos.  '
+    'If you want 1 row with 3 thumbs choose "3", or for 1 row with 4 thumbs '
+    'choose "4".',
+    'none|3|4', 'dropdown')
 
 _opacity = Number('Opacity', '-opacity', 100,
     'Opacity  of thumbnail videos as a percentage. '
@@ -943,7 +945,7 @@ thumbnails = VPanel("Thumbnails",
                 _thumb_shape,
                 _thumb_framesize,
                 _thumb_frame_color,
-                HPanel('', _thumb_rows, _align),
+                HPanel('', _thumb_columns, _align),
                 ),
         ),
         VPanel("Showcase thumbnail",
