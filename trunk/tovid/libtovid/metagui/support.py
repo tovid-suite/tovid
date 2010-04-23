@@ -546,7 +546,6 @@ class PopupScale (Dialog):
         tk.Label(master, name='units', text=num.units).pack(side='left')
         # Set scale to parent Number's value initially
         self.scale.set(num.variable.get())
-        return self.scale
 
 
     def apply(self):
