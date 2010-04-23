@@ -877,7 +877,7 @@ class Number (Control):
         else: # 'popup'
             def popup():
                 p = PopupScale(self)
-                if p.result:
+                if p.result is not None:
                     self.variable.set(p.result)
             tk.Button(self, textvariable=self.variable, command=popup).pack(side='left')
 
