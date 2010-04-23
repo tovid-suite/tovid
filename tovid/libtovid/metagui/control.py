@@ -113,7 +113,7 @@ except ImportError:
 from libtovid.metagui.widget import Widget
 from libtovid.metagui.variable import VAR_TYPES
 from libtovid.metagui.support import \
-    (DragList, ScrollList, FontChooser, ensure_type, ComboBox)
+    (DragList, ScrollList, FontChooser, PopupScale, ensure_type, ComboBox)
 # Used in Control
 from libtovid.metagui.tooltip import ToolTip
 # Used in Choice control
@@ -866,13 +866,21 @@ class Number (Control):
             self.number.pack(side='left')
             tk.Label(self, name='units', text=self.units).pack(side='left')
 
-        else: # 'scale'
+        elif self.style == 'scale':
             tk.Label(self, name='units', text=self.units).pack(side='left')
             self.number = tk.Scale(self, from_=self.min, to=self.max,
                                    resolution=self.step,
                                    tickinterval=(self.max - self.min),
                                    variable=self.variable, orient='horizontal')
             self.number.pack(side='left', fill='x', expand=True)
+
+        else: # 'popup'
+            def popup():
+                p = PopupScale(self)
+                if p.result:
+                    self.variable.set(p.result)
+            tk.Button(self, textvariable=self.variable, command=popup).pack(side='left')
+
         Control.post(self)
 
 
