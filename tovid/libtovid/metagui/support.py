@@ -538,7 +538,9 @@ class PopupScale (Dialog):
         """
         num = self.parent
         tk.Label(master, name='label', text=num.label).pack(side='left')
-        self.scale = tk.Scale(master, from_=num.min, to=num.max,
+        frame = tk.Frame(master)
+        frame.pack(side='top', fill='x', expand=True)
+        self.scale = tk.Scale(frame, from_=num.min, to=num.max,
                                resolution=num.step,
                                tickinterval=(num.max - num.min),
                                orient='horizontal')
