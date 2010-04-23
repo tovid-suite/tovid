@@ -462,8 +462,8 @@ class FontChooser (Dialog):
     # Cache of PhotoImage previews, indexed by font name
     _cache = {}
 
-    def __init__(self, master=None):
-        Dialog.__init__(self, master, "Font chooser")
+    def __init__(self, parent=None):
+        Dialog.__init__(self, parent, "Font chooser")
         # Defined in body()
         self.fontlist = None
         self.preview = None
@@ -521,6 +521,39 @@ class FontChooser (Dialog):
         cmd.run(capture=True)
         image_data = cmd.get_output()
         return tk.PhotoImage(data=base64.b64encode(image_data))
+
+
+class PopupScale (Dialog):
+    """A popup widget with a scale for choosing a number.
+    """
+    def __init__(self, parent, title=''):
+        """Create the scale dialog with the given Number control as a parent.
+        """
+        Dialog.__init__(self, parent, title)
+
+
+    def body(self, master):
+        """Draw the popup dialog and return the widget that should have the
+        initial focus.
+        """
+        num = self.parent
+        tk.Label(master, name='label', text=num.label).pack(side='left')
+        self.scale = tk.Scale(master, from_=num.min, to=num.max,
+                               resolution=num.step,
+                               tickinterval=(num.max - num.min),
+                               orient='horizontal')
+        self.scale.pack(side='left', fill='x', expand=True)
+        tk.Label(master, name='units', text=num.units).pack(side='left')
+        # Set scale to parent Number's value initially
+        self.scale.set(num.variable.get())
+        return self.scale
+
+
+    def apply(self):
+        """Set the result to the current scale value. Called when "OK" is
+        pressed.
+        """
+        self.result = self.scale.get()
 
 
 class Style:
