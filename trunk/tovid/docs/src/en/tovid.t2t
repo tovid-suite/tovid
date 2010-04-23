@@ -886,6 +886,10 @@ Here is a list of possible options you can pass:
     Otherwise it will be silently ignored. Not used for -showcase-* style.
 : **-tile-4x1**, **-tile4x1**
     Same as **-tile-3x1** above, except use tile of 4x1. (one row of 4 videos)
+: **-thumb-columns 3|4
+    Same as **-tile-3x1** and tile-4x1** above, except it accepts either '3'
+    (1 row of 3 thumbs), or '4' (one row of 4 thumbs) as an argument.  This
+    alternative was added to help compact the gui layout.
 : **-rotate-thumbs** DEGREE LIST ( list of degrees, one for each thumb )
     Rotate thumbs the given amount in degrees - can be positive or negative.
     There must be one value for each file given with **-files**.
