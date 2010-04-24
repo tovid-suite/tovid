@@ -455,7 +455,7 @@ _blur = Number('Blur', '-thumb-blur', 1.0,
     'The amount of feather blur to apply to the thumb shape.  '
     'Default is 1.0 which will more or less keep the shape, creating "soft" '
     'edges.  Use float or integer values between 0.1 and 2.0',
-    0.1, 2.0, 'pixels', 'popup', 0.1)
+    0.1, 2.0, '', 'popup', 0.1)
 
 _showcase_blur = Text('Blur', '-showcase-blur', "",
     'The amount of feather blur to apply to the showcase thumb shape.  '
