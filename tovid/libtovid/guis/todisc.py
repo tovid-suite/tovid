@@ -844,7 +844,7 @@ main_menu = Tabs('Main menu',
     ),
 )
 
-submenus = Tabs('Submenus and Chapters',
+submenus = Tabs('Submenus',
     VPanel('Settings',
         Label('Enable a submenu option on the "Basic" tab to use submenus',
         'center'),
@@ -865,10 +865,9 @@ submenus = Tabs('Submenus and Chapters',
     VPanel('Chapter titles',
         submenu_chapter_font,
         _chapter_titles,
-    ),
-
-    VPanel('Chapters',
-        RelatedList('Chapters', '-files', '1:1', _chapters, side='top', filter=strip_all),
+        HPanel('Chapters',
+            Label('You will find chapter settings on the'
+             '"Playback" tab under the "Chapters" tab', 'center')),
     ),
 )
 
@@ -998,6 +997,9 @@ playback = Tabs("Playback",
             _select_color,
             _outlinewidth,
         ),
+    ),
+    VPanel('Chapters',
+        RelatedList('Chapters', '-files', '1:1', _chapters, side='top', filter=strip_all),
     ),
     VPanel('Grouped Videos',
         RelatedList('Grouped videos', '-files', '1:*', _group, index=True, repeat=True),
