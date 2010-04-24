@@ -909,6 +909,7 @@ class Text (Control):
                  option='',
                  default='',
                  help='',
+                 width=None,
                  **kwargs):
         """Create a text-entry control.
 
@@ -920,8 +921,12 @@ class Text (Control):
                 Default value of text widget
             help
                 Help text to show in a tooltip
+            width
+                Width in characters of the text field, or
+                None to maximize width in available space
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
+        self.width = width
         # Defined by draw()
         self.entry = None
 
@@ -933,7 +938,11 @@ class Text (Control):
         label = tk.Label(self, text=self.label, justify='left')
         label.pack(side=self.labelside)
         self.entry = tk.Entry(self, textvariable=self.variable)
-        self.entry.pack(side='left', fill='x', expand=True)
+        if self.width:
+            self.entry.config(width=self.width)
+            self.entry.pack(side='left')
+        else:
+            self.entry.pack(side='left', fill='x', expand=True)
         Control.post(self)
         self.entry.bind('<Return>', self.next_item)
 

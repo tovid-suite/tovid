@@ -182,7 +182,8 @@ _showcase_shape = Choice('Showcase shape', '-showcase-shape', 'none',
 
 _showcase_geo = Text('Image position', '-showcase-geo', '',
     'Enter the position of the top left corner of the showcase image: '
-    'e.g. "200x80".  This value is applied to the video *before* is is scaled.')
+    'e.g. "200x80".  This value is applied to the video *before* is is scaled.',
+    width=10)
 
 _showcase_titles_align = Choice('Title alignment',
     '-showcase-titles-align', 'none',
