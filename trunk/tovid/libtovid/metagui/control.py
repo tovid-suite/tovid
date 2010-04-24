@@ -880,6 +880,7 @@ class Number (Control):
                 if p.result is not None:
                     self.variable.set(p.result)
             tk.Button(self, textvariable=self.variable, command=popup).pack(side='left')
+            tk.Label(self, name='units', text=self.units).pack(side='left')
 
         Control.post(self)
 
