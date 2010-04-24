@@ -857,7 +857,7 @@ Here is a list of possible options you can pass:
     See **-thumb-blur** for more info.
 : **-align** north|south
     This will align  thumbs/titles north or south.
-    if **-align** south then menu title will align north, unless you manually
+    If **-align** south then menu title will align north, unless you manually
     set one or both of **-menu-title-geo** or **-menu-title-offset**.
 : **-thumb-mist** [COLOR]
     Use a mist behind thumbnails.  The optional argument is the color of the
