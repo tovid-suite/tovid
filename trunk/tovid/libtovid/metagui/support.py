@@ -526,10 +526,10 @@ class FontChooser (Dialog):
 class PopupScale (Dialog):
     """A popup widget with a scale for choosing a number.
     """
-    def __init__(self, parent, title='Scale'):
+    def __init__(self, parent, title=''):
         """Create the scale dialog with the given Number control as a parent.
         """
-        Dialog.__init__(self, parent, title)
+        Dialog.__init__(self, parent, parent.label)
 
 
     def body(self, master):
@@ -538,14 +538,14 @@ class PopupScale (Dialog):
         """
         num = self.parent
         frame = tk.Frame(self, relief=tk.GROOVE, borderwidth=3)
-        frame.pack(side='top', fill='both', expand=True)
-        tk.Label(master, name='label', text=num.label).pack(side='left')
+        frame.pack(side='top', fill='both', expand=True, pady=6)
+        #tk.Label(master, name='label', text=num.label).pack(side='left')
         self.scale = tk.Scale(frame, from_=num.min, to=num.max,
                                resolution=num.step,
                                tickinterval=(num.max - num.min),
                                orient='horizontal')
         self.scale.pack(side='left', fill='both', expand=True)
-        tk.Label(master, name='units', text=num.units).pack(side='left')
+        tk.Label(frame, name='units', text=num.units).pack(side='left')
         # Set scale to parent Number's value initially
         self.scale.set(num.variable.get())
 
