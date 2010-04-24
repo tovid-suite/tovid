@@ -837,7 +837,9 @@ class Number (Control):
             units
                 Units of measurement (ex. "kbits/sec"), used as a label
             style
-                'spin' for a spinbox, or 'scale' for a slider
+                'spin' for a spinbox
+                'scale' for a slider
+                'popup' for a slider in a popup window
             step
                 For 'scale' style, the amount to increment or
                 decrement when the slider is moved
@@ -876,8 +878,8 @@ class Number (Control):
 
         else: # 'popup'
             def popup():
-                p = PopupScale(self)
-                if p.result is not None:
+                scale = PopupScale(self)
+                if scale.result is not None:
                     self.variable.set(p.result)
             tk.Button(self, textvariable=self.variable, command=popup).pack(side='left')
             tk.Label(self, name='units', text=self.units).pack(side='left')
