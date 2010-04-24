@@ -772,13 +772,13 @@ main =  VPanel('Basic',
                 FlagGroup('', 'exclusive',
                     _submenus, _ani_submenus, side='left')
             ),
+            FlagGroup('TV System', 'exclusive', _ntsc, _pal),
             VPanel('Chapters', Number('', '-chapters', 6,
             'Number of chapters for each video.  '
             'You can instead set chapters or time codes individually '
             'for each video by using the "Chapters" tab on '
             'the "Playback" tab.  Do NOT use both settings.',
-            1, 25, '', 'popup', 1), Label('Chapters')),
-            FlagGroup('TV System', 'exclusive', _ntsc, _pal),
+            1, 25, '', 'popup', 1), Label('per video')),
             VPanel('Burning',
                 _burn,
                 HPanel('',
@@ -791,10 +791,7 @@ main =  VPanel('Basic',
             HPanel('Video or image background', _background),
             HPanel('Audio background', _bgaudio),
         ),
-        HPanel('', _menu_title,
-            HPanel('', _menu_length,
-            Number('Chapters', '-chapters', 6, '', 1, 25, '', 'popup', 1))
-        ),
+        HPanel('', _menu_title, _menu_length),
         _out,
     ),
 )
