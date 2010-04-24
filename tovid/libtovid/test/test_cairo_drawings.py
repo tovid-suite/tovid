@@ -27,7 +27,7 @@ class TestCairoDraws(unittest.TestCase):
         self.d.stroke('black')
         self.d.fill('black', 0.3)
         self.d.font_size(16)
-        self.d.set_source('white') 
+        self.d.set_source('white')
         self.d.text(txt, 15, 460)
         self.d.restore()
 
@@ -62,8 +62,8 @@ class TestImageLoad(TestCairoDraws):
         im.stroke('red')
         im.circle(25, 25, 10)
         im.stroke()
-        save_jpg(im, '/tmp/img.jpg')
-        save_png(im, '/tmp/img.png')
+        save_jpg(im, '/tmp/img.jpg', 640, 480)
+        save_png(im, '/tmp/img.png', 640, 480)
 
         # Load it with the image() function.
         self.d.image(5, 5, 25, 25, '/tmp/img.jpg')
@@ -101,13 +101,13 @@ class TestCircleStrokeFill(TestCairoDraws):
         self.d.stroke(sc)
         self.d.restore()
 
-class TestRoundRectangle(TestCairoDraws):        
+class TestRoundRectangle(TestCairoDraws):
     def test_round_rectangle(self):
         """Test bezier points placement to make a round rectangle."""
         self.txt(u"We should see here a round rectangle")
 
         self.d.stroke_width(1)
-        self.d.roundrectangle(20, 20, 400, 400, 20, 20) 
+        self.d.roundrectangle(20, 20, 400, 400, 20, 20)
         self.d.fill('red', 0.5)
         self.d.stroke('black')
 

@@ -4,7 +4,7 @@ import math
 import sys
 sys.path.insert(0, '..')
 # Get modules to test
-from render.drawing import Drawing
+from libtovid.render.drawing import Drawing
 from libtovid.render import effect
 from libtovid.render.animation import Keyframe
 

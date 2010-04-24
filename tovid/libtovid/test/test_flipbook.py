@@ -5,10 +5,10 @@ import sys
 import os
 sys.path.insert(0, '..')
 # Get modules to test
-from libtovid.render.drawing import Drawing
+from libtovid.render.drawing import Drawing, save_png, save_jpg
 from libtovid.render.flipbook import Flipbook
 from libtovid.render import layer
-from libtovid.backend import mplayer
+from libtovid.backend import mplayer, transcode
 from libtovid import standard
 
 class TestFlipbook(unittest.TestCase):
@@ -21,10 +21,10 @@ class TestFlipbook(unittest.TestCase):
         # Save image to /tmp/save_image.[png|jpg]
         d = Drawing(250, 250)
         d.stroke_width(10)
-        d.circle((125,125), 120)
+        d.circle(125, 125, 120)
         d.stroke('red')
-        d.save_png('/tmp/save_image.png')
-        d.save_jpg('/tmp/save_image.jpg')
+        save_png(d, '/tmp/save_image.png', 640, 480)
+        save_jpg(d, '/tmp/save_image.jpg', 640, 480)
         del(d)
 
     def test_flip_save_video(self):
@@ -44,7 +44,7 @@ class TestFlipbook(unittest.TestCase):
 
         # Add frames
         mf = mplayer.identify('/tmp/testflip.m2v')
-        mf.rip_frames([0, 10])
+        transcode.rip_frames(mf, '/tmp/testflip', [0, 10])
 
         # Add a video also
         lst = mf.frame_files
